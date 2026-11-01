@@ -929,3 +929,6 @@
 .wr-v6 .read .kv span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .wr-v6 .partner select{min-width:0}
 .wr-v6 .dir{white-space:nowrap}
+/* Live data must not reflow the header: fixed height, runway values never wrap. */
+.wr-v6 .table.fixed{height:90px;box-sizing:border-box;overflow:hidden}
+.wr-v6 .runw .y.fit{grid-template-columns:28px 1fr 56px;white-space:nowrap}

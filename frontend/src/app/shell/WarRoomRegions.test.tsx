@@ -258,7 +258,7 @@ describe('calendar draft drawer and plans', () => {
         close: null, live: false, secondsToClose: null }], exceptions: [], tradeDeadline:
         '2026-11-13T12:00:00Z', secondsToTradeDeadline: 100 } }));
     const events = await readWarRoomCalendar(nativeContext(port));
-    expect(events[0].label).toBe('draft'); expect(events[1].at).toBe('2026-11-13T12:00:00Z');
+    expect(events[0].label).toBe('Draft'); expect(events[1].at).toBe('2026-11-13T12:00:00Z');
     expect(port.mock.calls[0][0]).toMatchObject({ command: 'calendar.read', mode: 'read' });
   });
   it('renders the native draft read and honors round/mine filters', async () => {

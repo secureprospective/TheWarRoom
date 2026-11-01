@@ -1,6 +1,7 @@
 import { array, object, text, timestamp } from '../data/parseValues';
 import { hostedWorkflow } from '../commissioner/api';
 import type { WarRoomContext } from './warroomReads';
+import { deadlineLabel } from '../clock/labels';
 export type WarRoomEvent = { id: string; label: string; at?: string; closes?: string; live?: boolean };
 export async function readWarRoomCalendar(c: WarRoomContext): Promise<WarRoomEvent[]> {
   if (!c.native) return [];
@@ -15,7 +16,8 @@ export async function readWarRoomCalendar(c: WarRoomContext): Promise<WarRoomEve
   const events: WarRoomEvent[] = array(clock.windows, 'Windows', (v, p) => {
     const w = object(v, p, ['id', 'opens', 'start', 'close', 'live', 'secondsToClose']);
     if (typeof w.live !== 'boolean') throw new Error('Unreadable window state');
-    return { id: text(w.id, p), label: array(w.opens, p, text).join(' · '), at: timestamp(w.start, p),
+    return { id: text(w.id, p), label: array(w.opens, p, text).map(deadlineLabel).join(' · '),
+      at: timestamp(w.start, p),
       closes: w.close == null ? undefined : timestamp(w.close, p), live: w.live };
   });
   if (clock.tradeDeadline) events.push({ id: 'trade-deadline', label: 'Trade deadline', at:

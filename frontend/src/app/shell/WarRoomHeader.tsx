@@ -8,7 +8,7 @@ export function WarRoomEmpty({ reason }: { reason?: string }) {
   return <p className="empty" title={reason ? unavailable : undefined}>{unavailable}</p>;
 }
 export function WarRoomHeader({ name, reading }: { name?: string; reading?: WarRoomHeaderReading }) {
-  return <section className="table" aria-label="Franchise context">
+  return <section className="table fixed" aria-label="Franchise context">
     <div className="who"><b>{name ?? unavailable}</b><div>{reading?.record ?? unavailable} · {
       reading?.standing ?? unavailable} · window {unavailable}</div></div>
     <div className="mini"><span className="h">DIRECTION</span><div className="post">
@@ -21,7 +21,7 @@ export function WarRoomHeader({ name, reading }: { name?: string; reading?: WarR
       <div className="mini"><span className="h">VALUE BY AGE</span><WarRoomEmpty /></div></div>
     <div className="mini"><span className="h">NEEDS · NEXT SEASON</span><WarRoomEmpty /></div>
     <div className="mini"><span className="h">CAP RUNWAY</span><div className="runw">
-      {reading?.runway?.length ? reading.runway.slice(0, 3).map(y => <div className="y" key={y.season}>
+      {reading?.runway?.length ? reading.runway.slice(0, 3).map(y => <div className="y fit" key={y.season}>
         <span>{y.season}</span><span className="bar">{y.max && y.room !== undefined ? <i
           style={{ width: `${Math.min(100, Math.max(0, (y.max - y.room) / y.max * 100))}%` }} /> : null}
         </span><span>{money(y.room)}</span></div>) : <WarRoomEmpty />}</div></div>
