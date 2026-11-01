@@ -22,9 +22,13 @@ type NativeGame struct {
 	Status     string               `json:"status"`
 	HomePoints *leaguerules.Decimal `json:"homePoints,omitempty"`
 	AwayPoints *leaguerules.Decimal `json:"awayPoints,omitempty"`
-	Winner     string               `json:"winner,omitempty"`
-	Words      string               `json:"words"`
-	Why        []string             `json:"why"`
+	// HomeProvisional and AwayProvisional are the running scores while the game has no result:
+	// each side's points so far from evidence that is not final. They are never a result.
+	HomeProvisional *leaguerules.Decimal `json:"homeProvisional,omitempty"`
+	AwayProvisional *leaguerules.Decimal `json:"awayProvisional,omitempty"`
+	Winner          string               `json:"winner,omitempty"`
+	Words           string               `json:"words"`
+	Why             []string             `json:"why"`
 }
 
 // NativeResults is one week of the published schedule scored under the league's own rules.
@@ -138,6 +142,7 @@ func gameResult(week int, home, away NativeDirectorySeat, hs, as FranchiseWeekSc
 		}
 	}
 	if len(game.Why) != 0 {
+		game.HomeProvisional, game.AwayProvisional = hs.provisional(), as.provisional()
 		game.Words = "No result yet: " + strings.Join(game.Why, " ")
 		return game
 	}
