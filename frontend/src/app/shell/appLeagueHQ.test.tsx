@@ -81,13 +81,13 @@ afterEach(async () => {
   localStorage.clear(); vi.unstubAllGlobals(); delete (window as unknown as { go?: unknown }).go;
 });
 
-it('shows a no-seat chooser in the shell footer, then native roster and contracts from a fake port', async () => {
+it('shows a no-seat shell chooser, then native roster and contracts from a fake port', async () => {
   await mount();
   expect(container.querySelector('.rail nav[aria-label="Workspaces"]')).not.toBeNull();
   expect(container.textContent).toContain('Choose a franchise to view');
   expect(localWorkflow).not.toHaveBeenCalled();
   await choose('franchise.02');
-  expect(container.querySelector('.hq-v10 .board')?.textContent ?? container.querySelector('.hq-v10')?.textContent)
+  expect(container.querySelector('.hq-v10 .board')?.textContent)
     .toContain('Player, 1000');
   expect(container.querySelector('.hq-v10')).not.toBeNull();
   expect(document.querySelector('body > .hq-v10')).toBeNull();
@@ -95,7 +95,8 @@ it('shows a no-seat chooser in the shell footer, then native roster and contract
   expect(localStorage.getItem(`${FRANCHISE_KEY}:native.seed`)).toBe('franchise.02');
   expect(vi.mocked(localWorkflow).mock.calls.some(([r]) => r.command === 'lineup.read' &&
     r.arguments.franchise === 'franchise.02')).toBe(true);
-  const contracts = [...container.querySelectorAll('.hq-v10 button')].find(b => b.textContent === 'CONTRACTS AND CAP');
+  const contracts = [...container.querySelectorAll('.hq-v10 button')].find(
+    b => b.textContent === 'CONTRACTS AND CAP');
   await act(async () => { (contracts as HTMLButtonElement).click(); });
   expect(container.querySelector('.hq-v10')?.textContent).toContain('Player, 1000');
   expect(vi.mocked(localWorkflow).mock.calls.every(([r]) => r.mode === 'read')).toBe(true);
@@ -119,7 +120,8 @@ it('defaults to a held seat but restores only a valid choice for the selected le
   await settle();
   expect((container.querySelector('.me select') as HTMLSelectElement).value).toBe('franchise.02');
   await act(async () => { container.querySelector<HTMLButtonElement>('.league .pick')!.click(); });
-  const other = [...container.querySelectorAll('.league li button')].find(b => b.textContent?.includes('native.other'));
+  const other = [...container.querySelectorAll('.league li button')].find(
+    b => b.textContent?.includes('native.other'));
   await act(async () => { (other as HTMLButtonElement).click(); });
   await settle();
   expect((container.querySelector('.me select') as HTMLSelectElement).value).toBe('franchise.01');

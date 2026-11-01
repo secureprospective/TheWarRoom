@@ -21,8 +21,10 @@ import { countdown } from '../clock/urgency';
 import { connectClock } from '../clock/ticker';
 import './hq.css';
 
-export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded, tab: activeTab, navigate }: {
-  league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void; embedded?: boolean; tab?: HQTab; navigate?: (tab: HQTab) => void;
+export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded,
+  tab: activeTab, navigate }: {
+  league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void;
+  embedded?: boolean; tab?: HQTab; navigate?: (tab: HQTab) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [localTab, setLocalTab] = useState<HQTab>('lineup-and-roster');
@@ -49,7 +51,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     setRelease(undefined); } };
     document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key);
       }, []);
-  if (!reading) return <div className="hq-v10"><RailLeaguePicker /><p className="empty" role="status"
+  if (!reading) return <div className="hq-v10">{!embedded && <RailLeaguePicker />}
+    <p className="empty" role="status"
     title={error}>{unavailable}</p></div>;
   const { snapshot, lineup, runway, moves = [] } = reading;
   const settings = { ...reading.settings };
@@ -58,7 +61,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   if (settings.reserveExcluded === false && settings.active !== undefined)
     settings.active -= roster.filter(p => p.rosterStatus !== 'ROSTER').length;
   const cut = quote.reading?.revision === reading.revision ? quote.reading : undefined;
-  const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab} navigate={setTab} week={reading.week}
+  const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab} navigate={setTab}
+    week={reading.week}
     leagueName={reading.leagueName}
     navigateNode={node => { if (node !== 'hq') leave(node); }} lock={reading.lock ? { at: reading.lock } :
       undefined}

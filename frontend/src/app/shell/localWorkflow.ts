@@ -30,9 +30,3 @@ export const localWorkflow: HostedPort = async (request: NativeRequest, football
     data: direct ? await direct() : r.data,
   };
 };
-
-export const localReadOnlyWorkflow: HostedPort = async (request, football = '') => {
-  if (request.mode !== 'read') throw new Error('No franchise is assigned to you. This view is read-only.');
-  const result = await localWorkflow(request, football);
-  return { ...result, writable: false };
-};

@@ -17,7 +17,8 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
   children: ReactNode; inspector: ReactNode; queue?: ReactNode; leagueName?: string; fullscreen?: boolean;
     liveCount?: number; embedded?: boolean;
 }) {
-  return <div className={`hq-v10 shell${embedded ? ' embedded' : ''}`} ref={root} style={fullscreen ? { position: 'fixed', inset: 0,
+  return <div className={`hq-v10 shell${embedded ? ' embedded' : ''}`} ref={root}
+    style={fullscreen ? { position: 'fixed', inset: 0,
     zIndex: 10 } : undefined}>
     {!embedded && <nav className="rail" aria-label="Main">
       <RailLeaguePicker />

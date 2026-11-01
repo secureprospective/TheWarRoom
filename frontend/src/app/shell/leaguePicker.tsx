@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { array, integer, object, text } from '../data/parseValues';
 import { parsePeople } from '../commissioner/people';
+import { HQAct } from './HQAct';
 import { browserStorage, type SettingsStorage } from './franchise';
 
 export const LEAGUE_KEY = 'thewarroom.target.selected-league';
@@ -120,10 +121,6 @@ export async function readAppLeaguePeople(league: string) {
   return people;
 }
 
-export async function appLeagueFranchise(league: string): Promise<string> {
-  return (await readAppLeaguePeople(league)).yourFranchise;
-}
-
 export function leagueInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   const initials = words.length > 1 ? words[0][0] + words[words.length - 1][0] : words[0]?.slice(0, 2);
@@ -157,14 +154,15 @@ export function LeaguePicker({
           </small>
         </div>
       </div>
-      <button type="button" className="pick" aria-expanded={open}
-        onClick={() => setOpen(!open)}>Switch league</button>
+      <HQAct className="pick" expanded={open}
+        onAction={() => setOpen(!open)}>Switch league</HQAct>
       {open && <ul aria-label="Leagues">
         {leagues.map((league) => <li key={league.id}>
-          <button type="button" onClick={() => { onSelect(league.id); setOpen(false); }}>
+          <HQAct label={`${league.name} · ${league.app ? league.id : 'Synced from MFL'}`}
+            onAction={() => { onSelect(league.id); setOpen(false); }}>
             {league.name} — {league.teams} teams
             <small>{league.app ? league.id : 'Synced from MFL'}</small>
-          </button>
+          </HQAct>
         </li>)}
       </ul>}
       {error && <p role="alert">{error}</p>}
@@ -190,11 +188,11 @@ export function LeagueChoices({
         <ul>
           {leagues.map((league) => (
             <li key={league.id}>
-              <button type="button" onClick={() => onSelect(league.id)}
-                aria-current={selectedId === league.id ? 'true' : undefined}>
+              <HQAct label={`${league.name} · ${league.app ? league.id : 'Synced from MFL'}`}
+                onAction={() => onSelect(league.id)} active={selectedId === league.id}>
                 {league.name} — {league.teams} teams
                 <small>{league.app ? league.id : 'Synced from MFL'}</small>
-              </button>
+              </HQAct>
             </li>
           ))}
         </ul>

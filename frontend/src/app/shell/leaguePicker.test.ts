@@ -76,16 +76,32 @@ it('renders the Home choices as visible actions', async () => {
   expect(html).not.toContain('<select');
 });
 
-it('refuses changes in a league with no assigned franchise', async () => {
-  const { localReadOnlyWorkflow } = await import('./localWorkflow');
-  const request = { command: 'commish.lineup.set', mode: 'preview', arguments: {} } as never;
-  await expect(localReadOnlyWorkflow(request)).rejects.toThrow('read-only');
+it('uses the authorizer’s writable status rather than inferring rights from a franchise choice', async () => {
+  const { vi } = await import('vitest');
+  const api = await import('../commissioner/api');
+  const { localWorkflow } = await import('./localWorkflow');
+  vi.stubGlobal('window', { go: {} });
+  const authority = vi.fn().mockResolvedValue({ label: 'Local league', writable: false,
+    football: '', data: {} });
+  const spy = vi.spyOn(api, 'nativeBindings').mockReturnValue({ TargetWorkflow: authority } as never);
+  const request = { command: 'native.assets.read', mode: 'read',
+    arguments: { league: 'native.one' } } as const;
+  try {
+    expect((await localWorkflow(request)).writable).toBe(false);
+    authority.mockResolvedValue({ label: 'Local league', writable: true, football: '', data: {} });
+    expect((await localWorkflow(request)).writable).toBe(true);
+    authority.mockRejectedValue(new Error('Not authorized'));
+    await expect(localWorkflow(request)).rejects.toThrow('Not authorized');
+  } finally {
+    spy.mockRestore();
+    vi.unstubAllGlobals();
+  }
 });
 
 it('uses only the signed-in person’s franchise, including an empty seat', async () => {
   const { vi } = await import('vitest');
   const api = await import('../commissioner/api');
-  const { appLeagueFranchise } = await import('./leaguePicker');
+  const { readAppLeaguePeople } = await import('./leaguePicker');
   const people = {
     league: 'native.one', name: 'One', revision: 1,
     seats: [{ franchise: 'other', name: 'Other', abbreviation: 'O', owner: 'someone' }],
@@ -97,9 +113,9 @@ it('uses only the signed-in person’s franchise, including an empty seat', asyn
   const read = vi.fn().mockResolvedValue(people);
   const spy = vi.spyOn(api, 'nativeBindings').mockReturnValue({ TargetCommissionerPeople: read } as never);
   try {
-    expect(await appLeagueFranchise('native.one')).toBe('');
+    expect((await readAppLeaguePeople('native.one')).yourFranchise).toBe('');
     read.mockResolvedValue({ ...people, yourFranchise: 'mine' });
-    expect(await appLeagueFranchise('native.one')).toBe('mine');
+    expect((await readAppLeaguePeople('native.one')).yourFranchise).toBe('mine');
   } finally {
     spy.mockRestore();
     vi.unstubAllGlobals();

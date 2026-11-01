@@ -55,7 +55,8 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   };
   return <div className={`wr-v6${native?.embedded ? ' embedded' : ''}`} ref={root}><div className="shell">
     {!native?.embedded && <nav className="rail" aria-label="Main"><RailLeaguePicker />
-      {native && !mine && <p role="status">No franchise assigned · read-only</p>}<div className="rail-head"><div className="lg">THE WAR ROOM
+      {native && !mine && <p role="status">No franchise assigned · read-only</p>}<div className="rail-head">
+      <div className="lg">THE WAR ROOM
       </div><div className="ph">{header.reading?.name ?? unavailable} · <i>{week ? `Wk ${week}` :
         unavailable}</i></div></div><div className="rail-body"><div className="gl">MY SHORTCUTS</div>
       <WarRoomAct className="leaf" onAction={() => navigate('hq')}>

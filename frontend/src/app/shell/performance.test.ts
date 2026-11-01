@@ -119,7 +119,9 @@ describe('Performance is law (§18, §M3)', () => {
     const independent = (source: string) =>
       source.includes("lazy(() => import('../commands/CommandBar')") &&
       !/import\s+\{\s*CommandBar\s*\}\s+from/.test(source) &&
-      /<Suspense fallback=\{null\}>\s*<CommandBar snapshot=\{selectedLeague\?\.app \? undefined : snapshot\} \/>\s*<\/Suspense>/.test(source);
+      new RegExp(/<Suspense fallback=\{null\}>\s*/.source +
+        /<CommandBar snapshot=\{selectedLeague\?\.app \? undefined : snapshot\} \/>\s*<\/Suspense>/.source)
+        .test(source);
     const source = read('shell/TargetApp.tsx');
     expect(independent(source)).toBe(true);
     expect(independent(source.replace("import('../commands/CommandBar')", 'eagerBar'))).toBe(false);

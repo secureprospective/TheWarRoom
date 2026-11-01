@@ -67,7 +67,8 @@ export function OwnerFooter({ snapshot }: { snapshot?: Snapshot }) {
 
 export function TargetApp() {
   const leagues = useLeagues();
-  return <LeagueContext.Provider value={leagues}><TargetAppContent leagues={leagues} /></LeagueContext.Provider>;
+  return <LeagueContext.Provider value={leagues}>
+    <TargetAppContent leagues={leagues} /></LeagueContext.Provider>;
 }
 
 function TargetAppContent({ leagues }: { leagues: LeagueState }) {
@@ -115,9 +116,11 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   const appLeagueView = selectedLeague?.app
     ? s.node === 'hq' ? 'hq' : s.node === 'war' && workspace.slug !== 'research' ? 'war' : undefined
     : undefined;
-  if (selectedLeague && !selectedLeague.app && s.node === 'war' && workspace.slug !== 'research' && snapshot) return <Suspense
+  if (selectedLeague && !selectedLeague.app && s.node === 'war' && workspace.slug !== 'research' && snapshot)
+    return <Suspense
     fallback={<div className="twr-app"><LeaguePicker leagues={leagues.leagues} selected={selectedLeague}
-      onSelect={leagues.select} /><p role="status">Opening War Room…</p></div>}><WarRoom snapshot={snapshot} /></Suspense>;
+      onSelect={leagues.select} /><p role="status">Opening War Room…</p></div>}>
+      <WarRoom snapshot={snapshot} /></Suspense>;
   if (selectedLeague && !selectedLeague.app && s.node === 'hq' && snapshot) return <>
     <FranchiseHQMount snapshot={snapshot} />
     <div className="twr-app"><Suspense fallback={undefined}><CommandBar snapshot={snapshot}
@@ -167,7 +170,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             Status
           </Act>
         </div>
-        {selectedLeague?.app ? <div className="me" ref={setFranchiseFooter} /> : <OwnerFooter snapshot={snapshot} />}
+        {selectedLeague?.app ? <div className="me" ref={setFranchiseFooter} /> :
+          <OwnerFooter snapshot={snapshot} />}
       </aside>
       <section className="ws" aria-label={node.label}>
         <header className="ws-head">
@@ -213,11 +217,13 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             </p>
           )}
           {s.node === 'home' && workspace.slug === 'digests' && selectedLeague && !selectedLeague.app &&
-            <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId} onSelect={leagues.select} />}
+            <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
+              onSelect={leagues.select} />}
           {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
             view={appLeagueView} footer={franchiseFooter}
-            hqTab={s.node === 'hq' ? s.workspace.hq : undefined} leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
-          leagues.loading && !selectedLeague ? <p role="status">Opening league…</p> :
+            hqTab={s.node === 'hq' ? s.workspace.hq : undefined}
+            leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
+          leagues.loading && !selectedLeague ? <p role="status">Reading the league…</p> :
           selectedLeague?.app || !selectedLeague ? (
             s.node === 'home' ? <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
               onSelect={leagues.select} /> : <section className="shell-unwired"><h4>{workspace.label}</h4>
@@ -351,7 +357,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             Close
           </Act>
         </header>
-        {s.comms && !selectedLeague?.app && <Suspense fallback={<p role="status">Reading league communications…</p>}>
+        {s.comms && !selectedLeague?.app &&
+          <Suspense fallback={<p role="status">Reading league communications…</p>}>
           <Comms panel />
         </Suspense>}
         <EndpointIndex placement="Comms" />
@@ -374,7 +381,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
         </Suspense>
         <EndpointIndex placement="Calendar" />
       </aside>
-      {!selectedLeague?.app && (s.endpointSurface === 'Report drawer' || s.endpointSurface === 'Status strip') && (
+      {!selectedLeague?.app &&
+        (s.endpointSurface === 'Report drawer' || s.endpointSurface === 'Status strip') && (
         <aside className="shell-overlay registry-panel" data-open="true" aria-label={s.endpointSurface}>
           <header>
             {s.endpointSurface}
