@@ -25,3 +25,23 @@ func TestSettingsRunAsTheLeagueRuns(t *testing.T) {
 		}
 	}
 }
+
+func TestPartialLineupPermissionDoesNotInheritTopStarterPenalty(t *testing.T) {
+	config := league.RawConfig{PartialLineupAllowed: "YES"}
+	rules, problems, _ := Settings(config, leaguerules.LegacyNFL(), "")
+	if len(problems) != 0 || rules.Lineup.InvalidPenalty.Value != leaguerules.NoPenalty || rules.Lineup.InvalidPenalty.Citation != citation {
+		t.Fatalf("permitted partial lineup inherited a penalty: %+v %v", rules.Lineup.InvalidPenalty, problems)
+	}
+	for _, raw := range []string{"", "NO"} {
+		config.PartialLineupAllowed = raw
+		rules, _, _ = Settings(config, leaguerules.LegacyNFL(), "")
+		if rules.Lineup.InvalidPenalty.Value != leaguerules.ZeroTopStarter {
+			t.Fatalf("unrelated base changed for %q", raw)
+		}
+	}
+	config.PartialLineupAllowed = "maybe"
+	_, problems, _ = Settings(config, leaguerules.LegacyNFL(), "")
+	if len(problems) == 0 {
+		t.Fatal("unsupported permission silently accepted")
+	}
+}
