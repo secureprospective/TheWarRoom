@@ -2,6 +2,7 @@ package composition
 
 import (
 	"context"
+	"fmt"
 
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/seed"
@@ -10,7 +11,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -55,4 +58,18 @@ func (h commissionerHost) NativeAssets(ctx context.Context, league string) (comm
 	h.app.core.RefreshMu.Lock()
 	defer h.app.core.RefreshMu.Unlock()
 	return nativeapp.MirrorAssets(h.app.heldSource(), league) //nolint:wrapcheck // Preserve the held-data refusal.
+}
+
+// NativeProjections projects the MFL-mirror league under its held settings, translated the same way a
+// migration translates them; native leagues keep their rules in force.
+func (h commissionerHost) NativeProjections(ctx context.Context, league string, season, week int,
+	players []string) (history.NativeProjections, error) {
+	if league != ingestion.LeagueID {
+		return h.State.NativeProjections(ctx, league, season, week, players) //nolint:wrapcheck // Preserve the store wording.
+	}
+	if h.app.core.Rulebook == nil {
+		return history.NativeProjections{}, fmt.Errorf("projections: hold the league settings first")
+	}
+	rules, _, _ := mflsource.Settings(h.app.core.Rulebook.ActiveConfig())
+	return h.app.core.History.ProjectionsUnder(ctx, league, rules, season, week, players) //nolint:wrapcheck // Preserve the store wording.
 }
