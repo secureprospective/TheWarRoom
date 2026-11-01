@@ -121,3 +121,20 @@ func TestBackgroundRefreshReadinessAndLaunchOrder(t *testing.T) {
 		t.Fatal(dirty, logs)
 	}
 }
+
+func TestBackgroundReferenceSyncDoesNotRequireLaunchRefreshDue(t *testing.T) {
+	for _, due := range []bool{false, true} {
+		calls := []string{}
+		step := func(name string) func(context.Context) { return func(context.Context) { calls = append(calls, name) } }
+		s := BackgroundRefresh{Ready: func() error { return nil }, Start: func(f func()) { f() }, Due: func() bool { return due },
+			Clock: step("clock"), Watch: step("watch"), Sync: step("sync"), Launch: step("launch"), Weeks: step("weeks")}
+		s.StartWorkers(t.Context())
+		want := []string{"clock", "watch", "sync", "weeks"}
+		if due {
+			want = []string{"clock", "watch", "launch", "weeks"}
+		}
+		if !reflect.DeepEqual(calls, want) {
+			t.Fatalf("due=%t: %v", due, calls)
+		}
+	}
+}
