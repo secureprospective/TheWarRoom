@@ -340,6 +340,7 @@
 .wr-v6 .work{grid-template-rows:auto auto 1fr auto auto}
 
 /* the Table: direction at a glance */
+.wr-v6 .table{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:26px;align-items:center;padding:10px 20px;border-bottom:2px solid var(--black)}
 .wr-v6 .franchise-context{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:26px;align-items:center;padding:10px 20px;border-bottom:2px solid var(--black)}
 .wr-v6 .post{display:flex;border:2px solid var(--edge)}
 .wr-v6 .post button{padding:6px 10px;font:700 10px var(--mono);letter-spacing:.12em;color:var(--ink3);border-right:1px solid var(--black)}
