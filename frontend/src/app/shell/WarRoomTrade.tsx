@@ -4,7 +4,7 @@ import type { WarRoomContext } from './warroomReads';
 import { useWarRoomRead } from './warroomReads';
 import { readWarRoomDelta, readWarRoomPreview, readWarRoomPartner, type WarRoomAsset, type WarRoomCatalog,
   type WarRoomDeal, type WarRoomDeltaSide } from './warroomTradeReads';
-import { WarRoomEmpty } from './WarRoomHeader';
+import { CompactAbsent, WarRoomEmpty } from './WarRoomHeader';
 import { money, unavailable } from './hqModel';
 export function WarRoomAssetBlock({ asset, used, select, toggle, from, inTray }: { asset: WarRoomAsset;
   used?: boolean; inTray?: boolean; select: (a: WarRoomAsset) => void; toggle: () => void; from: string }) {
@@ -17,9 +17,9 @@ export function WarRoomAssetBlock({ asset, used, select, toggle, from, inTray }:
     <WarRoomAct className="nm" onAction={() => select(asset)} title={asset.contract}>{asset.name}
       <small>{asset.contract ?? unavailable}</small>
       </WarRoomAct>
-      <span className="ag">{asset.age ?? unavailable}</span>
-    <span className="vl" title={asset.now?.detail}>{asset.now?.held ? asset.now.text : unavailable}</span>
-    {inTray && <span className="v3">{unavailable}</span>}
+      <span className="ag">{asset.age ?? <CompactAbsent />}</span>
+    <span className="vl" title={asset.now?.detail}>{asset.now?.held ? asset.now.text : <CompactAbsent />}</span>
+    {inTray && <span className="v3"><CompactAbsent /></span>}
   </div>;
 }
 export function WarRoomDeltaSidePanel({ side, name, names }: { side?: WarRoomDeltaSide; name: string;
@@ -88,11 +88,11 @@ export function WarRoomTrade({ context, catalog, deal, change, select }: { conte
               .filter(a => deal[side].includes(a.token)).map(a => block(a, side, true)) :
               <div className="hint">Drag players or picks here</div>}</div>
           <div className="tot"><span>{side === 'give' ? 'total sent' : 'total received'}</span>
-            <b>{unavailable}</b></div></div>;
+            <b><CompactAbsent /></b></div></div>;
       })}</div>
       <div className="lenses">{['YOUR LENS', 'THEIR LENS'].map(label => <div className="lens" key={label}>
         <span className="lb">{label}<small>{unavailable}</small></span><div className="scale" />
-        <span className="n">{unavailable}</span></div>)}<div className="verdict" title={preview.error}>
+        <span className="n"><CompactAbsent /></span></div>)}<div className="verdict" title={preview.error}>
         <span className="vd">{preview.reading ? preview.reading.reasons.join(' · ') || 'Preview checked' :
           unavailable}</span></div></div>
       <div className="effect" title={delta.error}>{preview.reading?.teams.flatMap(t => t.figures.map(f =>

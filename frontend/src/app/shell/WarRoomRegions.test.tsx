@@ -65,6 +65,10 @@ describe('War Room header and settings congruence', () => {
     const after = renderToStaticMarkup(<WarRoomHeader reading={await readWarRoomHeader(context())} />);
     expect(before).toContain('Best 8 (any position)'); expect(after).toContain('Best 13 (any position)');
   });
+  it('labels compact missing numeric values without wrapping the full phrase', () => {
+    const html = renderToStaticMarkup(<WarRoomHeader />);
+    expect(html).toContain('aria-label="Not available yet">—</span>');
+  });
   it('renders honest empty regions rather than mock figures when all reads fail', () => {
     const html = renderToStaticMarkup(<WarRoomHeader />);
     expect(html).toContain(unavailable); expect(html).not.toContain('2026–27');

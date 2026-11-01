@@ -5,7 +5,7 @@ import type { WarRoomAsset } from './warroomTradeReads';
 import { readWarRoomInspector, changeWarRoomNote } from './warroomInspectorReads';
 import { researchFact } from './hqPlayerData';
 import { money, unavailable } from './hqModel';
-import { WarRoomEmpty } from './WarRoomHeader';
+import { CompactAbsent, WarRoomEmpty } from './WarRoomHeader';
 function Drawer({ label, detail, children, initial = true }: { label: string; detail?: ReactNode;
   children: ReactNode; initial?: boolean }) {
   const [open, setOpen] = useState(initial);
@@ -47,8 +47,8 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
     <span className="on">{asset ? 'PLAYER' : unavailable}</span></div><div className="nm">
       {research?.name ?? asset?.name ?? unavailable}</div><div className="sub">{research?.owner ??
         unavailable} · age {age ?? unavailable} · {asset?.contract ?? unavailable}</div></div>
-    <div className="lensrow"><div><b>{unavailable}</b><span>to you</span></div>
-      <div><b>{unavailable}</b><span>to them</span></div></div><div className="why" title={reading.error ??
+    <div className="lensrow"><div><b><CompactAbsent /></b><span>to you</span></div>
+      <div><b><CompactAbsent /></b><span>to them</span></div></div><div className="why" title={reading.error ??
         facts?.errors.join(' · ')}>{unavailable}</div>
     <div className="idrawers"><Drawer label="CONTRACT" detail={nativeContract?.yearsRemaining === undefined ?
       undefined : `${nativeContract.yearsRemaining} yrs`}>

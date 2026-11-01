@@ -1,6 +1,9 @@
 import { HQAct as WarRoomAct } from './HQAct';
 import type { WarRoomHeaderReading } from './warroomReads';
 import { money, unavailable } from './hqModel';
+export function CompactAbsent() {
+  return <span title={unavailable} aria-label={unavailable}>—</span>;
+}
 export function WarRoomEmpty({ reason }: { reason?: string }) {
   return <p className="empty" title={reason}>{unavailable}</p>;
 }
@@ -13,8 +16,8 @@ export function WarRoomHeader({ name, reading }: { name?: string; reading?: WarR
         active={false}>{p}</WarRoomAct>)}</div><small>{unavailable}</small></div>
     <div style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
       <div className="mini"><span className="h">{reading?.starterN === undefined ? 'BEST' :
-        `Best ${reading.starterN} (any position)`}</span><div><b>{reading?.best ?? unavailable}</b>
-        <small>{reading?.rank ?? unavailable}</small></div></div>
+        `Best ${reading.starterN} (any position)`}</span><div><b>{reading?.best ?? <CompactAbsent />}</b>
+        <small>{reading?.rank ?? <CompactAbsent />}</small></div></div>
       <div className="mini"><span className="h">VALUE BY AGE</span><WarRoomEmpty /></div></div>
     <div className="mini"><span className="h">NEEDS · NEXT SEASON</span><WarRoomEmpty /></div>
     <div className="mini"><span className="h">CAP RUNWAY</span><div className="runw">
