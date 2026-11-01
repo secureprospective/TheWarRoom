@@ -60,3 +60,12 @@ it("lists the matchup starters playing in the followed game, across league and E
   expect(html).toContain("Theirs In"); expect(html).not.toContain("Mine Out");
   expect(espnTeam("JAC")).toBe("JAX"); expect(espnTeam("MIA")).toBe("MIA");
 });
+
+it("says the lineups are still being read instead of claiming no starter plays", () => {
+  const game = parseLive(wire).games[0];
+  const reading = renderToStaticMarkup(<InThisGame followed={game}
+    sides={{ private: false, reading: true, left: [], right: [] }} />);
+  expect(reading).toContain("Reading this matchup"); expect(reading).not.toContain("No starter");
+  const read = renderToStaticMarkup(<InThisGame followed={game} sides={{ private: false, left: [], right: [] }} />);
+  expect(read).toContain("No starter");
+});

@@ -176,6 +176,8 @@ export function InThisGame({ followed, sides, row }: { followed?: LiveNflGame; s
   const inGame = (rows: PulseStarterRow[], mine: boolean) => rows
     .filter(r => teams.includes(espnTeam(r.team))).map(r => ({ ...r, mine }));
   const players = [...inGame(sides.left, true), ...inGame(sides.right, false)];
+  if (!players.length && sides.reading)
+    return <PulseIdle words="Reading this matchup’s lineups…" />;
   if (!players.length) return <PulseIdle words={`No starter in ${row ? `${row.game.awayName} v `
     + row.game.homeName : 'this matchup'} plays in ${teams.join(' at ')}.`} />;
   return <div className="scroll">{players.map(p =>
@@ -255,7 +257,9 @@ function GameRow({ row, selected, onPick }: { row: PulseRow; selected: boolean;
   </PulseAct>;
 }
 
-type StarterSides = { left: PulseStarterRow[]; right: PulseStarterRow[]; private: boolean };
+type StarterSides = { left: PulseStarterRow[]; right: PulseStarterRow[]; private: boolean;
+  /** The lineups are still being read, so who plays where is not known yet. */
+  reading?: boolean };
 
 /** useStarterSides reads the chosen matchup's two lineups once, for the starters and for who is in
  *  the followed NFL game. */
@@ -276,6 +280,7 @@ function useStarterSides(reading: NativePulse, week: number | undefined, results
     left: starterRows(scoreOf(results, away ?? ''), matchup.reading?.lineups[away ?? ''], projections),
     right: starterRows(scoreOf(results, home ?? ''), matchup.reading?.lineups[home ?? ''], projections),
     private: Boolean(matchup.reading?.errors.length || matchup.error),
+    reading: !matchup.reading && !matchup.error,
   };
 }
 
