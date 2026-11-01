@@ -236,6 +236,13 @@ func TestPinnedStatApprovalKeepsCompleteBaselineAndQueueParity(t *testing.T) {
 	newer.Weekly = strings.ReplaceAll(statBody(t, "245", true), ",2025,", ",2026,")
 	raw.Stats = []RawFootballStats{newer, older}
 	pinned := installScoringImport(t, f.s, raw)
+	evidence, err := source.ReadNativeEvidence(t.Context(), pinned, pinned, source.RawNativeScope{Player: "0099", Season: 2026, Week: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	v := evidence.Versions()[0]
+	id := commissioner.StatItemID{Player: "0099", Season: 2026, Week: 1, Seq: 0, Digest: v.Digest[:16]}.String()
+	runScoreCommand(t, f.s, statCommand(commissioner.StatApprove, commissioner.RawStatChange{Item: id}, revision(t, f.s), "pin-old"), "creator")
 	pinnedResultDigest(t, f.s)
 	queue, err := f.s.StatQueue(t.Context(), "native.test", 2026)
 	if err != nil || len(queue.Open) != 1 || queue.Open[0].Points == nil || *queue.Open[0].Points != 500 {
@@ -270,7 +277,7 @@ func TestPinnedStatApprovalKeepsCompleteBaselineAndQueueParity(t *testing.T) {
 		t.Fatalf("approved score digest changed: %v", err)
 	}
 	queue, err = f.s.StatQueue(t.Context(), "native.test", 2026)
-	if err != nil || len(queue.Open) != 0 || len(queue.Decided) != 1 {
+	if err != nil || len(queue.Open) != 0 || len(queue.Decided) != 2 {
 		t.Fatalf("approved queue: %+v %v", queue, err)
 	}
 }

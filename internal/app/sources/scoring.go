@@ -25,7 +25,13 @@ func SyncScheduledScoring(ctx context.Context, store *history.Store, transport *
 	if len(schedule.Weeks) == 0 || schedule.Season < 2021 {
 		return nil
 	}
-	return SyncScoring(ctx, store, transport, schedule.Season)
+	if err := SyncScoring(ctx, store, transport, schedule.Season); err != nil {
+		return err
+	}
+	if err := store.ProcessStatFeed(ctx, league, schedule.Season); err != nil {
+		return fmt.Errorf("record scoring revisions: %w", err)
+	}
+	return nil
 }
 
 // SyncScoring refreshes only the league season's scoring inputs, not the scouting backfill.

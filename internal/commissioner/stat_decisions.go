@@ -54,6 +54,11 @@ func (b queueBuilder) decisions(weeks []StatWeek) ([]StatDecision, error) {
 		decision := StatDecision{Entry: r.Receipt.Entry, Kind: statKind(command), Status: statStatus(command, active[r.Receipt.Entry]),
 			Player: key.player, Name: b.name(key.player), Season: key.season, Week: key.week,
 			By: personWords(r.Principal), At: r.Receipt.RecordedAt, Reason: r.Command.Reason}
+		if r.Principal == StatFeedPrincipal {
+			decision.By = r.Command.Reason
+			decision.Kind = "feed"
+			decision.Status = "Counted"
+		}
 		decision.Words = b.decisionWords(command, change, versions[key], counted[key])
 		out = append(out, decision)
 		if command == StatApprove && active[r.Receipt.Entry] {

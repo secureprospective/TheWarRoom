@@ -44,6 +44,9 @@ func CheckStatAppend(raw RawCommand, records []Record, facts StatFacts, now time
 	if err != nil {
 		return err
 	}
+	if raw.Command == StatApprove {
+		return approvableItem(id, effects, facts)
+	}
 	return waitingItem(id, effects, facts)
 }
 
@@ -127,4 +130,15 @@ func scoresStat(rules leaguerules.ScoringRules, player string, stat leaguerules.
 	}
 	_, scored := rules.Catalogue.Value[stat]
 	return scored
+}
+
+func approvableItem(id StatItemID, effects statEffects, facts StatFacts) error {
+	if id.Seq >= len(facts.Versions) || !strings.HasPrefix(facts.Versions[id.Seq].Digest, id.Digest) {
+		return Refused(errors.New("that change is not in the held NFL statistics"))
+	}
+	base := effects.baselines[statKey{id.Player, id.Season, id.Week}]
+	if base.Entry == "" {
+		return nil
+	}
+	return waitingItem(id, effects, facts)
 }

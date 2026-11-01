@@ -274,7 +274,12 @@ func (s *Store) checkAppend(ctx context.Context, raw commissioner.RawCommand, pr
 		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, now) }},
 		{"lineup", func() error { return commissioner.CheckLineupAppend(raw, records, now, facts.lineup) }},
 		{"playoffs", func() error { return commissioner.CheckPlayoffAppend(raw, records, now, facts.lineup) }},
-		{"statistic", func() error { return commissioner.CheckStatAppend(raw, records, facts.stat, now) }},
+		{"statistic", func() error {
+			if principal == commissioner.StatFeedPrincipal {
+				return commissioner.CheckFeedStatAppend(raw, records, facts.stat)
+			}
+			return commissioner.CheckStatAppend(raw, records, facts.stat, now)
+		}},
 	}
 	for _, c := range checks {
 		if err := c.check(); err != nil {

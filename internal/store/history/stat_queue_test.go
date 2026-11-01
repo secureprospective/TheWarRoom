@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -19,6 +20,7 @@ import (
 // statResults is the results league with a feed that can revise a starter's week after the league counted it.
 type statResults struct {
 	*resultsFixture
+	t *testing.T
 	// revisions are the quantities of tackles later versions of a week reported, by "player/week".
 	revisions map[string][]leaguerules.Decimal
 	// silent weeks are ones the feed never reported at all.
@@ -27,7 +29,7 @@ type statResults struct {
 
 func statResultsTest(t *testing.T) *statResults {
 	t.Helper()
-	f := &statResults{resultsFixture: resultsTest(t), revisions: map[string][]leaguerules.Decimal{},
+	f := &statResults{resultsFixture: resultsTest(t), t: t, revisions: map[string][]leaguerules.Decimal{},
 		silent: map[string]bool{}}
 	f.installFeed()
 	return f
@@ -101,6 +103,7 @@ func (f *statResults) queue(t *testing.T) commissioner.StatQueue {
 	if err != nil {
 		t.Fatal(err)
 	}
+	out.Decided = slices.DeleteFunc(out.Decided, func(d commissioner.StatDecision) bool { return strings.HasPrefix(d.Reason, "fixture: pin") })
 	return out
 }
 
@@ -149,6 +152,14 @@ func (f *statResults) approve(t *testing.T, item, request string) commissioner.R
 // revise has the feed report a later version of a starter's week.
 func (f *statResults) revise(franchise string, week int, tackles leaguerules.Decimal) {
 	key := fmt.Sprint(f.starter(franchise), "/", week)
+	if len(f.revisions[key]) == 0 {
+		player := f.starter(franchise)
+		v := f.evidenceFor(player, week).Versions()[0]
+		id := commissioner.StatItemID{Player: player, Season: 2026, Week: week, Seq: 0, Digest: v.Digest[:16]}.String()
+		raw := statCommand(commissioner.StatApprove, commissioner.RawStatChange{Item: id}, revision(f.t, f.s), "pin."+key)
+		raw.Reason = "fixture: pin original revision"
+		runScoreCommand(f.t, f.s, raw, "creator")
+	}
 	f.revisions[key] = append(f.revisions[key], tackles)
 }
 

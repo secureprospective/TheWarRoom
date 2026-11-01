@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -59,7 +60,18 @@ func queueOf(t *testing.T, b *ledgerBuilder, weeks ...StatWeek) StatQueue {
 	if err != nil {
 		t.Fatal(err)
 	}
+	out.Decided = slices.DeleteFunc(out.Decided, func(d StatDecision) bool { return strings.HasPrefix(d.Reason, "fixture: pin") })
 	return out
+}
+
+func pinnedStatLedger(t *testing.T) *ledgerBuilder {
+	b := seededLedger(t)
+	first := tackleVersion(0, "LB", 10000, 5)
+	for _, player := range []string{"0099", "0100"} {
+		id := StatItemID{Season: 2026, Week: 1, Player: player, Seq: 0, Digest: first.Digest[:statDigestLen]}
+		b.add(RawCommand{League: "native.test", Command: StatApprove, Args: RawArgs{Stat: &RawStatChange{Item: id.String()}}, Request: "pin." + player, Reason: "fixture: pin original revision", Effective: "now", Visibility: "league"}, seasonMoment(5))
+	}
+	return b
 }
 
 // seededLedger is a Legacy league started from the held snapshot, the way a real league is seeded.
@@ -84,7 +96,7 @@ func itemOf(version source.LineRevision) string {
 }
 
 func TestStatQueueMakesAnItemOnlyWhereTheFeedChangedWhatTheLeagueCounted(t *testing.T) {
-	b := seededLedger(t)
+	b := pinnedStatLedger(t)
 	first, second := tackleVersion(0, "LB", 10000, 5), tackleVersion(1, "LB", 20000, 6)
 	if out := queueOf(t, b, statWeek(first)); len(out.Open) != 0 || out.Words != "No statistics are waiting for a decision" {
 		t.Fatalf("an unrevised week made an item: %+v", out)
@@ -104,7 +116,7 @@ func TestStatQueueMakesAnItemOnlyWhereTheFeedChangedWhatTheLeagueCounted(t *test
 }
 
 func TestStatQueueRejectedItemStaysOutUntilTheFeedChangesAgain(t *testing.T) {
-	b := seededLedger(t)
+	b := pinnedStatLedger(t)
 	first, second, third := tackleVersion(0, "LB", 10000, 5), tackleVersion(1, "LB", 20000, 6), tackleVersion(2, "LB", 30000, 7)
 	rejection := b.statCommand(StatReject, RawStatChange{Item: itemOf(second)}, 8)
 	if out := queueOf(t, b, statWeek(first, second)); len(out.Open) != 0 || len(out.Decided) != 1 ||
@@ -125,7 +137,7 @@ func TestStatQueueRejectedItemStaysOutUntilTheFeedChangesAgain(t *testing.T) {
 }
 
 func TestStatQueueApprovalMovesTheBaselineAndUndoMovesItBack(t *testing.T) {
-	b := seededLedger(t)
+	b := pinnedStatLedger(t)
 	first, second := tackleVersion(0, "LB", 10000, 5), tackleVersion(1, "LB", 20000, 6)
 	approval := b.statCommand(StatApprove, RawStatChange{Item: itemOf(second)}, 8)
 	out := queueOf(t, b, statWeek(first, second))
@@ -141,7 +153,7 @@ func TestStatQueueApprovalMovesTheBaselineAndUndoMovesItBack(t *testing.T) {
 }
 
 func TestStatQueueNewestPositionChangeIsAnItemToo(t *testing.T) {
-	b := seededLedger(t)
+	b := pinnedStatLedger(t)
 	first, second := tackleVersion(0, "LB", 10000, 5), tackleVersion(1, "DT", 10000, 6)
 	out := queueOf(t, b, statWeek(first, second))
 	if len(out.Open) != 1 || !strings.Contains(out.Open[0].Words, "position LB → DT, +1 point") {
@@ -158,7 +170,7 @@ func TestStatQueueRefusesWhatTheLeagueHoldsOnlyAfterSeeding(t *testing.T) {
 }
 
 func TestStatQueueNewestFirst(t *testing.T) {
-	b := seededLedger(t)
+	b := pinnedStatLedger(t)
 	older := statWeek(tackleVersion(0, "LB", 10000, 5), tackleVersion(1, "LB", 20000, 6))
 	newer := statWeek(tackleVersion(0, "LB", 10000, 5), tackleVersion(1, "LB", 30000, 9))
 	newer.Player, older.Player = "0100", "0099"
