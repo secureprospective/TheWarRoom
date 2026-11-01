@@ -158,6 +158,7 @@ export function LeaguePicker({
         {leagues.map((league) => <li key={league.id}>
           <button type="button" onClick={() => { onSelect(league.id); setOpen(false); }}>
             {league.name} — {league.teams} teams
+            <small>{league.app ? league.id : 'Synced from MFL'}</small>
           </button>
         </li>)}
       </ul>}
@@ -187,6 +188,7 @@ export function LeagueChoices({
               <button type="button" onClick={() => onSelect(league.id)}
                 aria-current={selectedId === league.id ? 'true' : undefined}>
                 {league.name} — {league.teams} teams
+                <small>{league.app ? league.id : 'Synced from MFL'}</small>
               </button>
             </li>
           ))}

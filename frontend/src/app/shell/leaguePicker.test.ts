@@ -138,3 +138,15 @@ it('uses the selected league as the rail header without a static source label', 
   expect(html).toContain('Legacy NFL');
   expect(html).not.toContain('From MFL (reference only)');
 });
+
+it('distinguishes same-named league choices by their available identity', async () => {
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { createElement } = await import('react');
+  const { LeagueChoices } = await import('./leaguePicker');
+  const choices = [leagues[0], { ...leagues[1], name: 'Legacy NFL', teams: 32 }];
+  const html = renderToStaticMarkup(createElement(LeagueChoices, {
+    leagues: choices, selectedId: 'mirror', onSelect: () => {},
+  }));
+  expect(html).toContain('Synced from MFL');
+  expect(html).toContain('native.one');
+});

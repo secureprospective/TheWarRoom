@@ -68,7 +68,9 @@
 }
 .twr-app .league-choices ul, .twr-app .league ul { list-style: none; margin: 8px 0 0; padding: 0; }
 .twr-app .league-choices li + li, .twr-app .league li + li { margin-top: 4px; }
-.twr-app .league-choices small { color: var(--surface-tx3); font-size: 11px; white-space: nowrap; }
+.twr-app .league-choices small, .twr-app .league li small {
+  display: block; color: var(--surface-tx3); font-size: 11px;
+}
 .twr-app .act-command {
   margin: 10px 12px;
   padding: 7px 9px;
