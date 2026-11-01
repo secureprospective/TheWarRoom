@@ -87,7 +87,7 @@ export async function readPulseWeekResults(league: string, season: number, week:
 
 export async function readPulseMatchup(league: string, season: number, week: number,
   franchises: readonly string[], starters: Record<string, readonly string[]>,
-  port: HostedPort = hostedWorkflow): Promise<PulseMatchup> {
+  port: HostedPort = hostedWorkflow, publish?: (reading: PulseMatchup) => void): Promise<PulseMatchup> {
   const out: PulseMatchup = { lineups: {}, projections: {}, errors: [] };
   const apply = async (read: () => Promise<void>) => {
     try { await read(); } catch (error) {
@@ -99,6 +99,8 @@ export async function readPulseMatchup(league: string, season: number, week: num
       arguments: { league, franchise, week, at: '' } });
     out.lineups[franchise] = parsePulseLineup(r.data, league, franchise, week);
   })));
+  // Lineups show at once; projections wait for the value engine's first run after launch.
+  publish?.({ ...out, lineups: { ...out.lineups }, errors: [...out.errors] });
   const players = [...new Set(franchises.flatMap(f => [...(starters[f] ?? [])]))];
   await apply(async () => {
     for (let offset = 0; offset < players.length; offset += 120) {

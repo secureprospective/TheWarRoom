@@ -271,9 +271,9 @@ function useStarterSides(reading: NativePulse, week: number | undefined, results
     .map(s => s.player) ?? [];
   const matchup = usePulseRead<PulseMatchup>(
     JSON.stringify(['pulse-matchup', league, week, away, home]),
-    () => week && away && home
+    publish => week && away && home
       ? readPulseMatchup(league, reading.season, week, [away, home],
-        { [away]: starters(away), [home]: starters(home) }, port)
+        { [away]: starters(away), [home]: starters(home) }, port, publish)
       : Promise.reject(new Error('Choose a matchup to read its lineups.')));
   const projections = matchup.reading?.projections ?? {};
   return {
