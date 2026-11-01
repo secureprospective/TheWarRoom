@@ -173,6 +173,9 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 		if err != nil {
 			return Ledger{}, err
 		}
+		if RosterTimed(r.Command.Command) && r.Command.Effective != "" && r.Command.Effective != "now" {
+			what += "; effective " + r.Command.Effective
+		}
 		who := r.Principal
 		if strings.HasPrefix(who, "local.") {
 			who = "Local operator"

@@ -213,7 +213,16 @@ func (s *Store) committedReceipt(ctx context.Context, receipt commissioner.Recei
 func (s *Store) checkCommissionerCommand(ctx context.Context, raw commissioner.RawCommand, principal string,
 	auth commissioner.Authorizer, records []commissioner.Record,
 	facts appendFacts, now time.Time) (string, *commissioner.Receipt, error) {
-	role, err := commandRole(raw, principal, auth, records)
+	effective, err := raw.EffectiveTime(now)
+	if err != nil {
+		return "", nil, fmt.Errorf("date roster change: %w", err)
+	}
+	roleCommand := raw
+	if commissioner.RosterTimed(raw.Command) && effective.Before(now) {
+		roleCommand.Command = commissioner.CorrectRoster
+		roleCommand.Args = commissioner.RawArgs{}
+	}
+	role, err := commandRole(roleCommand, principal, auth, records)
 	if err != nil {
 		return "", nil, err
 	}
@@ -223,6 +232,9 @@ func (s *Store) checkCommissionerCommand(ctx context.Context, raw commissioner.R
 	}
 	if retried {
 		return role, &prior, nil
+	}
+	if err := commissioner.CheckRosterTime(raw, now, role); err != nil {
+		return role, nil, fmt.Errorf("check roster time: %w", err)
 	}
 	if err := s.checkAppend(ctx, raw, principal, records, facts, now); err != nil {
 		return role, nil, err
@@ -381,13 +393,9 @@ func (s *Store) appendAdmittedCommissioner(ctx context.Context, tx *sql.Tx, req 
 			return commissioner.Receipt{}, fmt.Errorf("freeze league schedule: %w", err)
 		}
 	}
-	effective := now
-	if raw.Effective != "now" && raw.Effective != "next_rollover" {
-		parsed, err := time.Parse(time.RFC3339Nano, raw.Effective)
-		if err != nil {
-			return commissioner.Receipt{}, fmt.Errorf("read effective time: %w", err)
-		}
-		effective = parsed
+	effective, err := raw.EffectiveTime(now)
+	if err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("date league change: %w", err)
 	}
 	event := LeagueEvent{ID: receipt.Entry, League: raw.League, Stream: commissioner.Stream,
 		EffectiveAt: effective, RecordedAt: now, Actor: principal, Scope: raw.Visibility, Kind: raw.Command,
