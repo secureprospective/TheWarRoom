@@ -158,7 +158,7 @@ func TestSetupIsLiveWhileARuleNeedsARulingThenLeavesTheList(t *testing.T) {
 	fields, values := leaguerules.Catalogue(), leaguerules.ReadSettings(rules)
 	needs := 0
 	for i := range fields {
-		if values[i].State == "Needs a ruling" {
+		if values[i].State == "Needs a ruling" && !leaguerules.Unused(rules, fields[i].Path) {
 			needs++
 		}
 	}

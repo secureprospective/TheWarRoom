@@ -146,7 +146,7 @@ func TestPrepareAndJobsRulingDifference(t *testing.T) {
 	var extra []string
 	fields, values := leaguerules.Catalogue(), leaguerules.ReadSettings(rules)
 	for i, field := range fields {
-		if values[i].State == "Needs a ruling" && !waiting[string(field.Path)] {
+		if values[i].State == "Needs a ruling" && !leaguerules.Unused(rules, field.Path) && !waiting[string(field.Path)] {
 			extra = append(extra, string(field.Path))
 		}
 	}
@@ -156,11 +156,11 @@ func TestPrepareAndJobsRulingDifference(t *testing.T) {
 		t.Fatal(err)
 	}
 	index := slices.IndexFunc(jobs.Jobs, func(job commissioner.Job) bool { return job.ID == "setup" })
-	if index < 0 || jobs.Jobs[index].Words != "8 league rules still need a ruling." {
+	if index < 0 || jobs.Jobs[index].Words != "6 league rules still need a ruling." {
 		t.Fatalf("setup job: %+v", jobs.Jobs)
 	}
 	t.Logf("Prepare waits for %d; extra setup rulings: %v", len(waiting), extra)
-	want := []string{"cap.complianceDeadline", "draft.laterPattern", "league.keepers"}
+	want := []string{"draft.laterPattern"}
 	if len(waiting) != 5 || !slices.Equal(extra, want) {
 		t.Fatalf("unexpected count/difference: %d / %v", len(waiting), extra)
 	}

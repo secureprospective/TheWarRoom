@@ -284,7 +284,7 @@ func waitingSettings(r leaguerules.RuleSet) []leaguemigration.WaitingSetting {
 	skip := leaguemigration.CarriedFields()
 	out := []leaguemigration.WaitingSetting{}
 	for _, c := range leaguerules.SeedChanges(r, "", 0, time.Unix(1, 0).UTC()) {
-		if skip[c.Field] || unused(r, c.Field) || leaguerules.DescribeField(c.Field, c.New).State == "Set" {
+		if skip[c.Field] || leaguerules.Unused(r, c.Field) || leaguerules.DescribeField(c.Field, c.New).State == "Set" {
 			continue
 		}
 		if f, ok := leaguerules.Field(c.Field); ok {
@@ -292,18 +292,4 @@ func waitingSettings(r leaguerules.RuleSet) []leaguemigration.WaitingSetting {
 		}
 	}
 	return out
-}
-
-// unused says a setting does nothing in this league as it stands, so it waits for no ruling: keepers in a
-// dynasty league (every player stays), a soft cap deadline under a hard cap, review seats with no review panel.
-func unused(r leaguerules.RuleSet, path leaguerules.FieldPath) bool {
-	switch path {
-	case "league.keepers":
-		return r.League.Dynasty.State == leaguerules.IsKnown && r.League.Dynasty.Value
-	case "cap.complianceDeadline":
-		return r.Cap.Enforcement.State == leaguerules.IsKnown && r.Cap.Enforcement.Value == leaguerules.HardCap
-	case "trades.dotSeats":
-		return r.Trades.Review.State == leaguerules.IsKnown && r.Trades.Review.Value != leaguerules.DOTReview
-	}
-	return false
 }
