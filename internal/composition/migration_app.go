@@ -143,6 +143,13 @@ func (a *App) syncFollowedLineups(ctx context.Context, ledger leagueservice.Migr
 	}
 	a.startWorker(func() { //nolint:contextcheck // Outlives the refresh by design; bound by the app worker lifetime.
 		defer a.playedLineupsRunning.Store(false)
+		if !a.playedLineupsStarted.Swap(true) { // first import of this launch: let startup settle
+			select {
+			case <-a.core.WorkCtx.Done():
+				return
+			case <-time.After(playedLineupsLaunchDelay):
+			}
+		}
 		work, cancel := context.WithTimeout(a.core.WorkCtx, playedLineupsTimeout)
 		defer cancel()
 		a.syncPlayedLineups(work, ledger, league, principal, season, source)
@@ -151,6 +158,11 @@ func (a *App) syncFollowedLineups(ctx context.Context, ledger leagueservice.Migr
 
 // playedLineupsTimeout bounds one played-week import; what it does not reach is retried next refresh.
 const playedLineupsTimeout = 10 * time.Minute
+
+// playedLineupsLaunchDelay holds the first played-week import of a launch back while the launch
+// refresh, player load and live points land. Played weeks are history; each re-checked franchise-week
+// holds the league write lock for seconds, which would otherwise time out every other startup read.
+const playedLineupsLaunchDelay = 5 * time.Minute
 
 func (a *App) syncPlayedLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
 	league, principal string, season int, source string) {

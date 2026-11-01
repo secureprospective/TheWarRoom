@@ -57,6 +57,7 @@ type App struct {
 	archiveCache         archiveapp.Snapshot
 	scheduleCache        nativeapp.ScheduleCache
 	playedLineupsRunning atomic.Bool
+	playedLineupsStarted atomic.Bool
 	controlHeld          *controlapp.Held
 	researchHeld         *researchapp.Held
 	raceHeld             *raceapp.Held
