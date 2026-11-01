@@ -6,10 +6,12 @@ import { browserStorage, FRANCHISE_KEY } from './franchise';
 import type { People } from '../commissioner/people';
 import { commands } from '../commands/registry';
 import type { HQTab } from './HQShell';
+import type { PulseTab } from './NativeLeaguePulse';
 import type { Node } from './nodes';
 
 let loadedHQ: typeof import('./NativeFranchiseHQ').default | undefined;
 let loadedWarRoom: typeof import('./WarRoomNative').default | undefined;
+let loadedPulse: typeof import('./NativeLeaguePulse').default | undefined;
 function loadHQ() {
   return import('./NativeFranchiseHQ').then(module => {
     loadedHQ = module.default;
@@ -22,15 +24,23 @@ function loadWarRoom() {
     return module;
   });
 }
+function loadPulse() {
+  return import('./NativeLeaguePulse').then(module => {
+    loadedPulse = module.default;
+    return module;
+  });
+}
 const NativeFranchiseHQ = lazy(loadHQ);
 const WarRoomNative = lazy(loadWarRoom);
+const NativeLeaguePulse = lazy(loadPulse);
+const loaders = { hq: loadHQ, war: loadWarRoom, pulse: loadPulse };
 
-export default function AppLeagueMount({ league, view, leave, footer, hqTab, tabs }: {
+export default function AppLeagueMount({ league, view, leave, footer, hqTab, pulseTab, tabs }: {
   league: LeagueChoice;
-  view: 'hq' | 'war';
+  view: 'hq' | 'war' | 'pulse';
   leave: (node?: Node) => void;
   footer?: HTMLElement | null;
-  hqTab?: HQTab; tabs?: HTMLElement | null;
+  hqTab?: HQTab; pulseTab?: PulseTab; tabs?: HTMLElement | null;
 }) {
   const [people, setPeople] = useState<People>();
   const [mine, setMine] = useState('');
@@ -38,7 +48,7 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, tab
   const key = `${FRANCHISE_KEY}:${league.id}`;
   useEffect(() => {
     let active = true;
-    void (view === 'hq' ? loadHQ() : loadWarRoom()).catch(cause => {
+    void loaders[view]().catch(cause => {
       if (active) setError(`Could not load the workspace: ${String(cause)}`);
     });
     return () => { active = false; };
@@ -81,6 +91,7 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, tab
   </label>;
   const HQ = loadedHQ ?? NativeFranchiseHQ;
   const WarRoom = loadedWarRoom ?? WarRoomNative;
+  const Pulse = loadedPulse ?? NativeLeaguePulse;
   return <>
     {footer ? createPortal(chooser, footer) : chooser}
     {!mine ? <p role="status">Choose a franchise to view its roster, contracts and War Room.</p> :
@@ -88,6 +99,8 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, tab
         {view === 'hq' ? <HQ embedded key={`${league.id}:${mine}`}
           league={league.id} mine={mine} name={league.name} port={localWorkflow} leave={leave}
           tab={hqTab} navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
+          view === 'pulse' ? <Pulse embedded key={`${league.id}:${mine}`} league={league.id}
+            mine={mine} port={localWorkflow} leave={leave} tab={pulseTab} /> :
           <WarRoom embedded key={`${league.id}:${mine}`} league={league.id} mine={mine}
             port={localWorkflow} leave={leave} tabs={tabs} />}
       </Suspense>}
