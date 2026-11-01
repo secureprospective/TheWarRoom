@@ -55,7 +55,7 @@ lineup refusals are not addressed. No GUI or independent review performed.
 
 New tests exercise a cut received after an award but effective before it, a trade
 between weeks, both sides of each instant, inclusive boundaries, reserve revision
- ties, correction/compensation, source immutability, actual seated-owner authority
+ties, correction/compensation, source immutability, actual seated-owner authority
 and preservation of commissioner-only trade override permissions.
 
 Focused race batch: **119 test/subtest PASS, 0 FAIL**, three passing packages.
@@ -70,3 +70,35 @@ expects `90ca21fd230f0aa6`, obtains `8a6936145d37309e`. The same race-enabled te
 all modified pre-existing production files restored to `0fd3b6c4` obtains exactly
 the same digest. Its frozen expectation is unchanged. Do not describe the full
 commissioner suite as green. The final batch and build results follow below.
+
+## Final verification (c770a6e00)
+
+- Admission commit: `5f7a14916`; projection commit: `c770a6e00`.
+- `go test -race -json ./internal/commissioner/... ./internal/store/history`:
+  **994 test/subtest PASS, 1 inherited FAIL, 4 SKIP**. Market and history packages
+  pass; commissioner fails only the unchanged startup digest test above. No race
+  diagnostic. Skips require optional study caches, kept-league data or benchmark
+  configuration (`TestSleeperUnknownIDReport`, `TestFullRealSeasonLoadsAsWeekParts`,
+  `TestKeptBigLeagueIdentityMigration`, `TestReplayCost`).
+- Plain `make build`: **PASS**, desktop binary compiled and packaged; not launched.
+  Wails emitted its existing generic-binding discovery warnings. No frontend source
+  or generated binding diff; no separate `tsc` run.
+- Both code commits passed golangci-lint-full, gitleaks and ifaceguard hooks.
+- No full `make verify`, independent reviewer or GUI test was performed. No remote
+  contact after the initial `git pull --ff-only` stopped for lack of upstream;
+  no fetch/push was attempted. No MFL calls or real roster changes.
+- Logs are ignored under `.tmp/roster3/`. No copied league profile was needed.
+
+Physical lines / Unicode code points including LF, baseline `0fd3b6c4` through
+`c770a6e00`, across all 10 affected production files: **2695 → 2873 lines**,
+**96837 → 102071 code points**. Three added test files: **308 lines / 12643 code
+points**. Docs/generated files excluded. This is added behavior, not a debloat claim.
+`internal/store/history/commissioner.go` remains cohesive transactional admission,
+preparation and persistence (634 → 668 lines); no size-only split was introduced.
+
+Operator/reviewer check: on a disposable post-seed league, submit a commissioner
+cut or reserve move with a past effective timestamp, inspect both effective and
+receipt times in the ledger, then read the roster immediately before/at that
+instant. Before must show the old membership/status, at must show the new one;
+owner backdating and future timing must refuse without appending. Pre-seed history
+still needs the separately scoped reconstruction rule, not this bounded reader.
