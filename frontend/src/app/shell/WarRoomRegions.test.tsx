@@ -74,6 +74,11 @@ describe('War Room header and settings congruence', () => {
     const html = renderToStaticMarkup(<WarRoomHeader />);
     expect(html).toContain('aria-label="Not available yet">—</span>');
   });
+  it('uses the public direction words and marks the unset choice', () => {
+    const html = renderToStaticMarkup(<WarRoomHeader />);
+    for (const word of ['Win now', 'Retool', 'Rebuild', 'Not set']) expect(html).toContain(word);
+    expect(html).not.toContain('CONTEND');
+  });
   it('renders honest empty regions rather than mock figures when all reads fail', () => {
     const html = renderToStaticMarkup(<WarRoomHeader />);
     expect(html).toContain(unavailable); expect(html).not.toContain('2026–27');

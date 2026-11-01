@@ -12,8 +12,8 @@ export function WarRoomHeader({ name, reading }: { name?: string; reading?: WarR
     <div className="who"><b>{name ?? unavailable}</b><div>{reading?.record ?? unavailable} · {
       reading?.standing ?? unavailable} · window {unavailable}</div></div>
     <div className="mini"><span className="h">DIRECTION</span><div className="post">
-      {['CONTEND', 'RETOOL', 'REBUILD'].map(p => <WarRoomAct key={p} disabled title={unavailable}
-        active={false}>{p}</WarRoomAct>)}</div><small>{unavailable}</small></div>
+      {['Win now', 'Retool', 'Rebuild'].map(p => <WarRoomAct key={p} disabled title={unavailable}
+        active={false}>{p}</WarRoomAct>)}</div><small>Not set</small></div>
     <div style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
       <div className="mini"><span className="h">{reading?.starterN === undefined ? 'BEST' :
         `Best ${reading.starterN} (any position)`}</span><div><b>{reading?.best ?? <CompactAbsent />}</b>
