@@ -100,7 +100,7 @@ func releaseWorkflowLeague(t *testing.T, store *history.Store, principal governa
 		}
 		revision = receipt.Revision
 	}
-	record(domain.Create, domain.RawArgs{Name: "Matrix league", Preset: domain.PresetLegacy, Season: 2026, FranchiseCount: 32})
+	record(domain.Create, domain.RawArgs{Name: "Matrix league", Preset: domain.PresetLegacy, Source: domain.SourceMFLImport, Season: 2026, FranchiseCount: 32})
 	seed := releaseMutationRows(t)[domain.NativeSeed].Args.Native
 	record(domain.NativeSeed, domain.RawArgs{Native: seed})
 	for _, rule := range []struct{ field, value string }{

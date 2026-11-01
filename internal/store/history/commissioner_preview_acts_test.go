@@ -264,7 +264,7 @@ func TestPreviewDoesNotInventScoresForAnUnheldSeason(t *testing.T) {
 func TestBlockedRolloverPreviewKeepsTheRealPlanAndRefusal(t *testing.T) {
 	t.Parallel()
 	s, c, _ := newStore(t)
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	runScoreCommand(t, s, heldSeedCommand(t), "creator")
 	c.now = time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC)
 	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.SeasonRollover,

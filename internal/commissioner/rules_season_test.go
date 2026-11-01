@@ -19,8 +19,12 @@ type ledgerBuilder struct {
 
 func newLedger(t *testing.T, preset string) *ledgerBuilder {
 	t.Helper()
+	source := SourceNative
+	if preset == PresetLegacy {
+		source = SourceMFLImport
+	}
 	create, err := RawCommand{League: "native.test", Command: Create, Args: RawArgs{Name: "Ours", Preset: preset,
-		Season: 2026, FranchiseCount: map[string]int{PresetLegacy: 32, PresetEmpty: 4}[preset]}, Request: "create",
+		Season: 2026, Source: source, FranchiseCount: map[string]int{PresetLegacy: 32, PresetEmpty: 4}[preset]}, Request: "create",
 		Effective: "now", Visibility: "league"}.Prepared()
 	if err != nil {
 		t.Fatal(err)

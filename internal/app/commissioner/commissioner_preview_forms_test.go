@@ -28,7 +28,7 @@ func atVersion(raw commissioner.RawCommand, version int64) commissioner.RawComma
 
 func createCommand(reason string) commissioner.RawCommand {
 	return commissioner.RawCommand{League: "native.fresh", Command: commissioner.Create,
-		Args: commissioner.RawArgs{Name: "Fresh league", Preset: commissioner.PresetLegacy,
+		Args: commissioner.RawArgs{Name: "Fresh league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport,
 			FranchiseCount: 12, Season: 2026},
 		Reason: reason, Request: "create.request", Effective: "now", Visibility: "league"}
 }

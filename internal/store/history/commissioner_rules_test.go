@@ -19,6 +19,12 @@ func createWith(preset string, count int) commissioner.RawCommand {
 	return raw
 }
 
+func importedLegacy(count int) commissioner.RawCommand {
+	raw := createWith(commissioner.PresetLegacy, count)
+	raw.Args.Source = commissioner.SourceMFLImport
+	return raw
+}
+
 func ruleCommand(field, value, effective, reason string, revision int64) commissioner.RawCommand {
 	return commissioner.RawCommand{League: "native.test", Command: commissioner.RulesSet,
 		Args: commissioner.RawArgs{Field: field, Value: json.RawMessage(value)}, Reason: reason, Expected: revision,
@@ -54,7 +60,7 @@ func revision(t *testing.T, s *Store) int64 {
 func TestCommissionerRulesPermissions(t *testing.T) {
 	t.Parallel()
 	s, _, _ := newStore(t)
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	limits := ruleCommand("roster.limits", `{"min":20,"max":70}`, "next_rollover", "", 1)
@@ -97,7 +103,7 @@ func TestCommissionerRulesPermissions(t *testing.T) {
 func TestCommissionerRulesTiming(t *testing.T) {
 	t.Parallel()
 	s, c, _ := newStore(t)
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	c.now = c.now.Add(time.Hour)
@@ -161,7 +167,7 @@ func TestCommissionerRulesTiming(t *testing.T) {
 func TestCommissionerRulesRefusals(t *testing.T) {
 	t.Parallel()
 	s, _, _ := newStore(t)
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	for _, raw := range []commissioner.RawCommand{
@@ -221,7 +227,7 @@ func TestCommissionerPresets(t *testing.T) {
 		t.Fatalf("empty league franchises: %+v %v", people.Seats, err)
 	}
 	s, _, _ = newStore(t)
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	for field, want := range map[string]string{"cap.amount": "$125,000,000", "roster.limits": "18 to 80",
@@ -240,7 +246,7 @@ func TestCommissionerPresets(t *testing.T) {
 func TestCommissionerRulesReplayAfterReopen(t *testing.T) {
 	t.Parallel()
 	s, c, pools := newStore(t)
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	for i, raw := range []commissioner.RawCommand{

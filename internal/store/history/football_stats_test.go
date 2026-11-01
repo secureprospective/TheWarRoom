@@ -199,7 +199,7 @@ func TestPinnedHeldFixtureDistanceAndKickerScores(t *testing.T) {
 
 func TestPinnedDistanceBonusesReachNativeScoresAtBoundaries(t *testing.T) {
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "distance.db"))
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	runScoreCommand(t, s, heldSeedCommand(t), "creator")
 	for _, tc := range []struct {
 		pass, rush, receive string
@@ -277,7 +277,7 @@ func TestPinnedStatApprovalKeepsCompleteBaselineAndQueueParity(t *testing.T) {
 
 func TestPinnedKickerFallsBackToBaselineWhenNewestFileOmitsHim(t *testing.T) {
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "kicker.db"))
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	runScoreCommand(t, s, heldSeedCommand(t), "creator")
 	raw := scoringImport(t)
 	newer := raw.Stats[0]

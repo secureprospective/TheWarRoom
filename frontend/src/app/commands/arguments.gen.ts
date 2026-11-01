@@ -246,6 +246,23 @@ string
 "starters": (string)[]
 }
 ];
+"commissioner.TargetNativeLineupDelta": [
+{
+"league": string;
+"franchise": string;
+"partner": string;
+"give": (string)[];
+"get": (string)[];
+"season": number;
+"week": number
+}
+];
+"commissioner.TargetNativeProjections": [
+string,
+string,
+number,
+number
+];
 "commissioner.TargetNativePlayerScore": [
 string,
 string,
@@ -1995,7 +2012,8 @@ string
 "id": string;
 "text": string;
 "action": string;
-"at"?: string
+"at"?: string;
+"with"?: string
 }
 ];
 "offers.TargetPersonalNotes": [

@@ -17,8 +17,12 @@ const waiverPolicyLeague = "native.waiver-policy"
 
 func createWaiverPolicyLeague(t *testing.T, app *App, preset string) commissioner.RawCommand {
 	t.Helper()
+	source := commissioner.SourceNative
+	if preset == commissioner.PresetLegacy {
+		source = commissioner.SourceMFLImport
+	}
 	raw := commissioner.RawCommand{League: waiverPolicyLeague, Command: commissioner.Create,
-		Args:    commissioner.RawArgs{Name: "Waiver policy league", Preset: preset, FranchiseCount: 3, Season: 2026},
+		Args:    commissioner.RawArgs{Name: "Waiver policy league", Preset: preset, Source: source, FranchiseCount: 3, Season: 2026},
 		Request: "create", Effective: "now", Visibility: "league", Reason: "Start this league"}
 	executeCommissionerTest(t, app, raw)
 	return raw

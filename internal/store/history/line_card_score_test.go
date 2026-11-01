@@ -16,7 +16,7 @@ import (
 // ARI (no game in a held week) is a bye, and an unheld week is not held.
 func TestScoreReaderScoresAnOLineCard(t *testing.T) {
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "card.db"))
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	runScoreCommand(t, s, heldSeedCommand(t), "creator")
 	pinned := installScoringImport(t, s, lineImport(t))
 	read := func(card string, week int) commissioner.NativePlayerScore {

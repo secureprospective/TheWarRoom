@@ -10,7 +10,7 @@ import (
 func TestRuleRowsCarryWhatTheFormNeeds(t *testing.T) {
 	t.Parallel()
 	s, _, _ := newStore(t)
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	if row := ruleRow(t, s, "roster.limits"); string(row.Current) != `{"Max":80,"Min":18}` ||
@@ -55,7 +55,7 @@ func undoOf(t *testing.T, s *Store, principal string) map[string]string {
 func TestLedgerSaysWhichEntriesThisPrincipalMayUndo(t *testing.T) {
 	t.Parallel()
 	s, _, _ := newStore(t)
-	created, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil)
+	created, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -63,7 +63,7 @@ func newDueFixture(t *testing.T) *dueFixture {
 
 func (f *dueFixture) seed(t *testing.T) {
 	t.Helper()
-	f.execute(t, "creator", commissioner.Create, commissioner.RawArgs{Name: "Worker league", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 32})
+	f.execute(t, "creator", commissioner.Create, commissioner.RawArgs{Name: "Worker league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 32})
 	at := f.clock.Now()
 	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at,
 

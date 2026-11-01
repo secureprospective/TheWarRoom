@@ -26,7 +26,7 @@ func previewApp(t *testing.T) *ledgerFixture {
 	app := commissionerTestApp(t)
 	executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.preview",
 		Command: commissioner.Create,
-		Args:    commissioner.RawArgs{Name: "Preview league", Preset: commissioner.PresetLegacy, Season: 2026},
+		Args:    commissioner.RawArgs{Name: "Preview league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026},
 		Reason:  "Start our league", Request: "create.preview", Effective: "now", Visibility: "league"})
 	return app
 }

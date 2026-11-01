@@ -284,7 +284,7 @@ func TestTheBracketWaitsForTheRegularSeasonAndSaysWhy(t *testing.T) {
 func TestTheBracketOfALeagueWithoutAStartingSnapshotSaysSo(t *testing.T) {
 	t.Parallel()
 	s, _, _ := newStore(t)
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	b, err := s.NativeBracket(t.Context(), bracketLeague, 2026)
 	if err != nil || b.Status != "Unavailable" || !strings.Contains(b.Words, "starting snapshot") {
 		t.Fatalf("%+v %v", b, err)

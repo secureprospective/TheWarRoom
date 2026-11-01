@@ -76,7 +76,7 @@ func newRolloverDB(t *testing.T) *rolloverDB {
 	t.Helper()
 	r := &rolloverDB{path: filepath.Join(t.TempDir(), "history.db")}
 	r.open(t)
-	r.do(t, createWith(commissioner.PresetLegacy, 0))
+	r.do(t, importedLegacy(0))
 	r.do(t, heldSeedCommand(t))
 	r.rule(t, "calendar.boundary", `"start_of_day"`, "now")
 	r.rule(t, "calendar.tradeDeadline", `"2026-11-09T05:00:00Z"`, "now")

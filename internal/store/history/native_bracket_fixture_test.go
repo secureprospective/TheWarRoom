@@ -54,7 +54,7 @@ func bracketTest(t *testing.T) *bracketFixture {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "bracket.db")
 	s, pools := statStore(t, path)
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	runScoreCommand(t, s, bracketSeedCommand(t), "creator")
 	runScoreCommand(t, s, ruleCommand("schedule.regularWeeks", "1", "now", "Choose the season length", 2), "creator")
 	runScoreCommand(t, s, ruleCommand("lineup.invalidPenalty", `"none"`, "now", "Score one-player lineups as they are", 3), "creator")

@@ -46,8 +46,8 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 		records, read string
 	}{
 		{PresetDefault32, 0, "5b88192c625de822", ""},
-		{PresetLegacy, 32, "e7b5be9d4e7ca9f7", "5d37e13bc3142b2a"},
-		{PresetLegacy, 12, "80efa35b8407cd77", "99f5d5d69e65ece4"},
+		{PresetLegacy, 32, "d029afc21f30ceda", "5d37e13bc3142b2a"},
+		{PresetLegacy, 12, "7c729379ba8c15ea", "99f5d5d69e65ece4"},
 		{PresetEmpty, 12, "2611477a23c36c30", "221cf99b129779db"},
 	} {
 		records := presetLeague(t, c.preset, c.teams)
@@ -221,7 +221,7 @@ func TestEveryNativePresetCreatesAnyAllowedSize(t *testing.T) {
 	}
 }
 
-// The start form offers what the catalog offers; Legacy NFL is the MFL import's bundle only.
+// The start form offers the native catalog, including Legacy NFL.
 func TestTheStartFormListsTheNativeCatalog(t *testing.T) {
 	var ids []string
 	for _, p := range ControlsReading().Presets {
@@ -230,7 +230,7 @@ func TestTheStartFormListsTheNativeCatalog(t *testing.T) {
 			t.Errorf("%s: incomplete catalog entry %+v", p.ID, p)
 		}
 	}
-	if !slices.Equal(ids, []string{PresetDefault32, PresetMirror16, PresetEmpty}) {
+	if !slices.Equal(ids, []string{PresetDefault32, PresetMirror16, PresetLegacy, PresetEmpty}) {
 		t.Fatalf("start form presets: %v", ids)
 	}
 	if MFLImportPreset() != PresetLegacy {
@@ -242,9 +242,10 @@ func TestTheStartFormListsTheNativeCatalog(t *testing.T) {
 // the catalog.
 func TestOnlyTheCatalogNamesAPreset(t *testing.T) {
 	presetNameSites := map[string]string{
-		"internal/commissioner/presets.go": "the catalog",
-		"tools/hostedfixture/fixture.go":   "hosted wire fixture tool: records an empty test league",
-		"tools/hostedfixture/workflows.go": "hosted wire fixture tool: records an MFL-import practice league",
+		"internal/commissioner/presets.go":   "the catalog",
+		"internal/commissioner/migration.go": "pre-source ledger compatibility",
+		"tools/hostedfixture/fixture.go":     "hosted wire fixture tool: records an empty test league",
+		"tools/hostedfixture/workflows.go":   "hosted wire fixture tool: records an MFL-import practice league",
 	}
 	names := regexp.MustCompile(`\b(PresetDefault32|PresetMirror16|PresetEmpty|PresetLegacy|IsDefault32|IsMirror16)\b`)
 	root := filepath.Join("..", "..")

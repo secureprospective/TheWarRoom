@@ -38,8 +38,8 @@ func importedSource(records []Record) string {
 		if args.Source != "" {
 			return args.Source
 		}
-		if p, ok := presetByID(args.Preset); ok {
-			return p.source
+		if args.Preset == PresetLegacy || args.Preset == PresetMFLLeague {
+			return SourceMFLImport
 		}
 	}
 	return SourceNative

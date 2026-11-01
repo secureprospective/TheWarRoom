@@ -12,7 +12,7 @@ import (
 func TestReverseReceiveFailurePreservesBothFences(t *testing.T) {
 	source, sp := openMoveTest(t, filepath.Join(t.TempDir(), "source.db"))
 	target, _ := openMoveTest(t, filepath.Join(t.TempDir(), "target.db"))
-	if _, err := source.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := source.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := source.ExecuteCommissioner(t.Context(), heldSeedCommand(t), "creator", nil); err != nil {

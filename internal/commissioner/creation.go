@@ -2,7 +2,6 @@ package commissioner
 
 import (
 	"bytes"
-	"cmp"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -78,7 +77,7 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 	a := r.Args
 	p, _ := presetByID(a.Preset)
 	if a.Source == "" {
-		a.Source = cmp.Or(p.source, SourceNative)
+		a.Source = SourceNative
 	}
 	if a.FranchiseCount == 0 {
 		a.FranchiseCount = p.defaultTeams

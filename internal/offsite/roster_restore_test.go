@@ -34,7 +34,7 @@ func TestR2RosterContractRecoveryRoundTrip(t *testing.T) {
 		franchises = append(franchises, f.ID)
 	}
 	commands := []commissioner.RawCommand{
-		{League: "native.r2", Command: commissioner.Create, Args: commissioner.RawArgs{Name: "R2 recovery fixture", Preset: commissioner.PresetLegacy, Season: held.Snapshot.Season, Franchises: franchises, FranchiseCount: 32}, Request: "create", Reason: "Recovery proof", Effective: "now", Visibility: "league"},
+		{League: "native.r2", Command: commissioner.Create, Args: commissioner.RawArgs{Name: "R2 recovery fixture", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: held.Snapshot.Season, Franchises: franchises, FranchiseCount: 32}, Request: "create", Reason: "Recovery proof", Effective: "now", Visibility: "league"},
 		{League: "native.r2", Command: commissioner.NativeSeed, Args: commissioner.RawArgs{Native: held.Snapshot}, Expected: 1, Request: "seed", Reason: "Recovery proof", Effective: "now", Visibility: "league"},
 	}
 	for _, command := range commands {

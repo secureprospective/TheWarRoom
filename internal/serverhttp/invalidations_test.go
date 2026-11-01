@@ -233,7 +233,7 @@ func prepareHiddenBid(t *testing.T, f *hostedFixture) func() {
 			t.Fatal(err)
 		}
 	}
-	execute(commissioner.Create, commissioner.RawArgs{Name: "Hidden league", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 32}, f.principal, "league")
+	execute(commissioner.Create, commissioner.RawArgs{Name: "Hidden league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 32}, f.principal, "league")
 	at := time.Now().UTC()
 	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at, Players: []commissioner.NativePlayer{{ID: "0099", Franchise: "franchise.01", Status: domain.RosterActive, Salary: 100000000, ExpirationYear: 2028, ContractStatus: domain.CStatusUFA}}}
 	for n := 1; n <= 32; n++ {

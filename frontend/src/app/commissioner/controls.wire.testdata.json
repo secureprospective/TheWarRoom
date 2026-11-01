@@ -943,6 +943,12 @@
       "suggestedTeams": 16
     },
     {
+      "id": "legacy_nfl",
+      "label": "Legacy NFL",
+      "description": "The Legacy NFL's rules, as its league runs them. Every value can be changed afterwards.",
+      "suggestedTeams": 32
+    },
+    {
       "id": "empty",
       "label": "Start empty: every rule Needs a ruling",
       "description": "An empty league has no suggested size; every rule waits for a ruling.",
