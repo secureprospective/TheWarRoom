@@ -1,71 +1,72 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { appLeagueFranchise, RailLeaguePicker, type LeagueChoice } from './leaguePicker';
-import { localReadOnlyWorkflow, localWorkflow } from './localWorkflow';
-import { Act } from '../commands/Act';
+import { createPortal } from 'react-dom';
+import { readAppLeaguePeople, type LeagueChoice } from './leaguePicker';
+import { localWorkflow } from './localWorkflow';
+import { browserStorage, FRANCHISE_KEY } from './franchise';
+import type { People } from '../commissioner/people';
+import { commands } from '../commands/registry';
+import type { HQTab } from './HQShell';
 import type { Node } from './nodes';
 
 const NativeFranchiseHQ = lazy(() => import('./NativeFranchiseHQ'));
 const WarRoomNative = lazy(() => import('./WarRoomNative'));
 
-export default function AppLeagueMount({
-  league,
-  view,
-  leave,
-}: {
+export default function AppLeagueMount({ league, view, leave, footer, hqTab }: {
   league: LeagueChoice;
   view: 'hq' | 'war';
   leave: (node?: Node) => void;
+  footer?: HTMLElement | null;
+  hqTab?: HQTab;
 }) {
-  const [mine, setMine] = useState<string>();
+  const [people, setPeople] = useState<People>();
+  const [mine, setMine] = useState('');
   const [error, setError] = useState<string>();
+  const key = `${FRANCHISE_KEY}:${league.id}`;
   useEffect(() => {
     let active = true;
-    setMine(undefined);
+    setPeople(undefined);
+    setMine('');
     setError(undefined);
-    appLeagueFranchise(league.id).then(
-      (franchise) => {
-        if (active) setMine(franchise);
+    readAppLeaguePeople(league.id).then(
+      (reading) => {
+        if (!active) return;
+        const saved = browserStorage()?.getItem(key);
+        const selected = reading.seats.some(s => s.franchise === saved) ? saved! : reading.yourFranchise;
+        setMine(reading.seats.some(s => s.franchise === selected) ? selected : '');
+        setPeople(reading);
       },
       (cause) => {
         if (active) setError(cause instanceof Error ? cause.message : String(cause));
       },
     );
-    return () => {
-      active = false;
-    };
-  }, [league.id]);
-  if (error)
-    return (
-      <main className="twr-app">
-        <RailLeaguePicker />
-        <p role="alert">Could not open {league.name}: {error}</p>
-        <Act variant="button" verb="nav.open" args={{ node: 'home' }}>
-          Back to Home
-        </Act>
-      </main>
-    );
-  if (mine === undefined) return <div className="twr-app"><RailLeaguePicker />
-    <p role="status">Opening {league.name}…</p></div>;
-  const port = mine ? localWorkflow : localReadOnlyWorkflow;
-  if (view === 'hq')
-    return (
-      <Suspense fallback={<div className="twr-app"><RailLeaguePicker />
-        <p role="status">Opening {league.name}…</p></div>}>
-        <NativeFranchiseHQ
-          embedded
-          key={`${league.id}:${mine}`}
-          league={league.id}
-          mine={mine}
-          name={league.name}
-          port={port}
-          leave={leave}
-        />
-      </Suspense>
-    );
-  return (
-    <Suspense fallback={<div className="twr-app"><RailLeaguePicker />
-        <p role="status">Opening {league.name}…</p></div>}>
-      <WarRoomNative embedded league={league.id} mine={mine} port={port} leave={leave} />
-    </Suspense>
-  );
+    return () => { active = false; };
+  }, [league.id, key]);
+  if (error) return <p role="alert">Could not open {league.name}: {error}</p>;
+  if (!people) return <p role="status">Opening {league.name}…</p>;
+  const chooser = <label>View a franchise
+    <select value={mine} onChange={event => {
+      const id = event.target.value;
+      if (!people.seats.some(s => s.franchise === id)) return;
+      try {
+        browserStorage()?.setItem(key, id);
+        setMine(id);
+      } catch (cause) {
+        setError(`Franchise selection failed: ${String(cause)}`);
+      }
+    }}>
+      <option value="">Choose a franchise</option>
+      {people.seats.map(s => <option key={s.franchise} value={s.franchise}>{s.name}</option>)}
+    </select>
+  </label>;
+  return <>
+    {footer ? createPortal(chooser, footer) : chooser}
+    {!mine ? <p role="status">Choose a franchise to view its roster, contracts and War Room.</p> :
+      <Suspense fallback={<p role="status">Opening {league.name}…</p>}>
+        {view === 'hq' ? <NativeFranchiseHQ embedded key={`${league.id}:${mine}`}
+          league={league.id} mine={mine} name={league.name} port={localWorkflow} leave={leave}
+          tab={hqTab} navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
+          <WarRoomNative embedded key={`${league.id}:${mine}`} league={league.id} mine={mine}
+            port={localWorkflow} leave={leave} />}
+      </Suspense>}
+  </>;
 }

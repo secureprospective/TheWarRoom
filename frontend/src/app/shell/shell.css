@@ -557,3 +557,6 @@
 .twr-app .insp .draft-report th, .twr-app .insp .draft-report th .act-button {
   overflow-wrap: normal; word-break: normal;
 }
+
+.twr-app .rail .me label{display:grid;gap:6px}
+.twr-app .rail .me select{width:100%;min-width:0}

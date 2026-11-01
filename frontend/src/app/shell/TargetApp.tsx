@@ -78,6 +78,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   useEffect(() => root.current ? connectDensity(commands, root.current) : undefined,
     [s.node, leagues.selectedId]);
   useWorkScrollReset(workspaceBody, s.scrollRevision);
+  const [franchiseFooter, setFranchiseFooter] = useState<HTMLDivElement | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [error, setError] = useState<string>();
   useEffect(() => {
@@ -166,7 +167,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             Status
           </Act>
         </div>
-        <OwnerFooter snapshot={selectedLeague?.app ? undefined : snapshot} />
+        {selectedLeague?.app ? <div className="me" ref={setFranchiseFooter} /> : <OwnerFooter snapshot={snapshot} />}
       </aside>
       <section className="ws" aria-label={node.label}>
         <header className="ws-head">
@@ -214,7 +215,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           {s.node === 'home' && workspace.slug === 'digests' && selectedLeague && !selectedLeague.app &&
             <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId} onSelect={leagues.select} />}
           {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
-            view={appLeagueView} leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
+            view={appLeagueView} footer={franchiseFooter}
+            hqTab={s.node === 'hq' ? s.workspace.hq : undefined} leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
           leagues.loading && !selectedLeague ? <p role="status">Opening league…</p> :
           selectedLeague?.app || !selectedLeague ? (
             s.node === 'home' ? <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}

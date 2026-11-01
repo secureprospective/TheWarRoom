@@ -21,11 +21,13 @@ import { countdown } from '../clock/urgency';
 import { connectClock } from '../clock/ticker';
 import './hq.css';
 
-export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded }: {
-  league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void; embedded?: boolean;
+export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded, tab: activeTab, navigate }: {
+  league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void; embedded?: boolean; tab?: HQTab; navigate?: (tab: HQTab) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
-  const [tab, setTab] = useState<HQTab>('lineup-and-roster');
+  const [localTab, setLocalTab] = useState<HQTab>('lineup-and-roster');
+  const tab = activeTab ?? localTab;
+  const setTab = navigate ?? setLocalTab;
   const [drawer, setDrawer] = useState<'ir' | 'taxi' | 'whatif'>();
   const [release, setRelease] = useState<string>();
   const [selected, select] = useState<string>();

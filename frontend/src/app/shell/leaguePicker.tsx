@@ -111,12 +111,17 @@ export function RailLeaguePicker() {
     onSelect={state.select} loading={state.loading} error={state.error} /></div>;
 }
 
-export async function appLeagueFranchise(league: string): Promise<string> {
+export async function readAppLeaguePeople(league: string) {
   if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
     throw new Error('This league requires the desktop app.');
   const { nativeBindings } = await import('../commissioner/api');
   const people = parsePeople(await nativeBindings().TargetCommissionerPeople(league));
-  return people.yourFranchise;
+  if (people.league !== league) throw new Error('People belong to another league');
+  return people;
+}
+
+export async function appLeagueFranchise(league: string): Promise<string> {
+  return (await readAppLeaguePeople(league)).yourFranchise;
 }
 
 export function leagueInitials(name: string): string {
