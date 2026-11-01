@@ -13,6 +13,9 @@ export const localWorkflow: HostedPort = async (request: NativeRequest, football
     direct = () => api.TargetNativeCapCheck(request.arguments.league, request.arguments.viewerZone);
   else if (request.command === 'contract.quote')
     direct = () => api.TargetNativeContractQuote(market.RawContractQuote.createFrom(request.arguments));
+  else if (request.command === 'calendar.read')
+    direct = () => api.TargetLeagueCalendar(
+      commissioner.RawLeagueCalendarScope.createFrom(request.arguments));
   else if (request.command === 'week.read')
     direct = () => api.TargetNativeWeek(commissioner.RawNativeWeekScope.createFrom(request.arguments));
   else if (request.command === 'lineupdelta.read')
