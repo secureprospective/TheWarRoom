@@ -70,3 +70,16 @@ func TestFeedCountedRevisionFollowsLiveThenNFLVerse(t *testing.T) {
 		t.Fatalf("manual override replaced: %+v %v", moves, err)
 	}
 }
+
+func TestLaterLiveEvidenceGapsDoNotDowngradeNFLVerseFinal(t *testing.T) {
+	b := seededLedger(t)
+	final, live := tackleVersion(0, "LB", 10000, 5), tackleVersion(1, "LB", 20000, 6)
+	final.Held.Authority = source.NFLVerse
+	live.Held.Missing = []string{"Live details are incomplete"}
+	week := statWeek(final, live)
+	week.Evidence.Missing = live.Held.Missing
+	got, err := NativePlayerScoreReading("native.test", source.RawNativeScope{Player: "0099", Season: 2026, Week: 1}, b.records, week.Evidence, seasonMoment(20))
+	if err != nil || got.Points == nil || *got.Points != 15000 || len(got.Missing) != 0 {
+		t.Fatalf("later live downgraded final: %+v %v", got, err)
+	}
+}

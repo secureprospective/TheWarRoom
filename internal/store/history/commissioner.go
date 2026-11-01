@@ -396,8 +396,11 @@ func (s *Store) appendAdmittedCommissioner(ctx context.Context, tx *sql.Tx, req 
 	if _, err := s.insertEvent(ctx, tx, event, int64(len(req.records))); err != nil {
 		return commissioner.Receipt{}, err
 	}
-	if err := saveRosterRestorePoint(ctx, tx, raw.League, append(slices.Clone(req.records), record)); err != nil {
-		return commissioner.Receipt{}, err
+	// Stat decisions cannot alter rosters or their recovery identities.
+	if !commissioner.IsStatCommand(raw.Command) {
+		if err := saveRosterRestorePoint(ctx, tx, raw.League, append(slices.Clone(req.records), record)); err != nil {
+			return commissioner.Receipt{}, err
+		}
 	}
 	return receipt, nil
 }

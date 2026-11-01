@@ -76,7 +76,11 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 	if team, ok := nativecheck.LineCardTeam(scope.Player); ok {
 		return out.countLineCard(rules.Scoring, team, evidence, folded.effects.corrections[key], changes.Delta)
 	}
-	out.Missing = append(out.Missing, evidence.Missing...)
+	for _, missing := range evidence.Missing {
+		if evidence.Held == nil || !slices.Contains(evidence.Held.Missing, missing) {
+			out.Missing = append(out.Missing, missing)
+		}
+	}
 	counted, err := countedVersion(evidence.Versions(), folded.effects.baselines[key])
 	if err != nil {
 		return out, err

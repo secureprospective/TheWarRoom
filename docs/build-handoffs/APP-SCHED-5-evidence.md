@@ -11,8 +11,8 @@ commands. No score arithmetic/settings changes. Automatic records never become c
 
 New race tests observe live → newer live → nflverse → ignored later live, correction/pin preservation,
 ledger who/what/when, repeated processing and reopening without duplicate entries, and refusal outside
-worker authorization. Historical automatic approvals describe held revision history; recorded time is
-ledger processing time, not the old source arrival time (held evidence retains arrival).
+worker authorization. Bootstrap records the currently selected revision, not fictitious intermediate counts. Recorded time is
+ledger processing time; held evidence retains source arrival.
 
 Changed tests (one line each):
 - TestStatItemIDRoundTripsAndRefusesAnythingElse: revision zero is now valid to record initial feed selection or explicitly pin it; negative sequence remains invalid.
@@ -28,3 +28,14 @@ Changed tests (one line each):
 Limits: no new ESPN-to-player-stat acquisition adapter; authority policy accepts live revisions when
 provided through existing evidence ports. nflverse weekly/plays and pinned nflverse evidence are tagged
 at their existing producers. No GUI or fleet review. Full-suite inherited startup digest failure remains.
+
+
+Bootstrap trial exposed a scaling defect (14,121 historical approvals; only 142 in 45 seconds).
+Fixed by recording only the actual current selection on adoption, gathering held facts once and
+checking/appending a batch under one immediate transaction. Checks use its locked starting snapshot:
+feed approvals cannot alter permissions, rules, rosters or manual pins. Each append keeps its normal
+sequential revision, canonical command, credential admission, event/audit writer and ledger readers.
+Stat-only commands do not rebuild the unchanged roster recovery point. The trial's cancelled batch
+appended zero events (atomic rollback). Final remaining 6,988 selections committed in **91.710 s**;
+142 earlier trial records remain on the disposable copy. Initial bootstrap latency is debt, not claimed fast.
+Later incomplete live evidence cannot downgrade a selected complete nflverse revision.
