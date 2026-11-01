@@ -21,14 +21,20 @@ import (
 )
 
 type scheduleRefreshTransport struct {
-	fail  bool
-	reads int
+	fail   bool
+	reads  int
+	weekly string
 }
 
 func (f *scheduleRefreshTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	switch r.URL.Query().Get("TYPE") {
 	case "league":
 		return seasonResponse(`{"league":{"baseURL":"https://www47.myfantasyleague.com/2026/home/14432"}}`), nil
+	case "weeklyResults":
+		if f.weekly == "" {
+			return seasonResponse(`{"allWeeklyResults":{"weeklyResults":{"week":"1"}}}`), nil
+		}
+		return seasonResponse(f.weekly), nil
 	case "schedule":
 		f.reads++
 		if f.fail {
@@ -135,5 +141,47 @@ func TestScheduleRefreshFillsOnlyMissingNFLDates(t *testing.T) {
 	week, _ := nativeOwnerRead(t, a, at)
 	if week.Current == nil || week.Current.Week != 8 {
 		t.Fatalf("current week: %+v", week)
+	}
+}
+
+func TestLaunchAutomaticallyImportsPlayedLineups(t *testing.T) {
+	a := commissionerTestApp(t)
+	a.core.ClockNow = func() time.Time { return migrationtest.ReadAt.Add(time.Hour) }
+	a.core.History.SetLineupEnvironment(appLineupEnv{app: a})
+	export, err := migrationtest.Legacy()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger := leagueservice.MigrationLedger{Store: a.core.History}
+	svc := leaguemigration.Service{Ledger: ledger, Now: a.timeNow, Source: func(string) (leaguemigration.Source, error) { return &migrationtest.Source{Export: export}, nil }}
+	if _, err := svc.Import(t.Context(), export.LeagueID, "Import", "creator"); err != nil {
+		t.Fatal(err)
+	}
+	league := leaguemigration.AppLeagueID(export.LeagueID, export.Season)
+	assets, err := a.core.History.NativeAssets(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := assets.Snapshot.Players[0]
+	// Launch has no target snapshot; the previously fetched player directory is sufficient.
+	recordSeasonArchiveForm(t, a, "players", "", fmt.Sprintf(`{"players":{"player":{"id":%q,"name":"Held starter","position":"QB","team":"BUF"}}}`, p.ID), migrationtest.ReadAt, true)
+	feed := &scheduleRefreshTransport{weekly: fmt.Sprintf(`{"allWeeklyResults":{"weeklyResults":[{"week":"1","franchise":{"id":"0001","score":"10","player":[{"id":%q,"status":"starter","score":"10"},{"id":"0000","status":"starter","score":"0"}]}},{"week":"2","franchise":{"id":"0001","player":{"id":%q,"status":"starter"}}}]}}`, p.ID, p.ID)}
+	a.core.MFLClient, err = mfl.New("api", 10000, mfl.WithTransport(feed))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for pass := range 2 {
+		a.syncLeagueSchedulesAtLaunch(t.Context())
+		records, err := ledger.Records(t.Context(), league)
+		if err != nil || len(records) != 5 {
+			t.Fatalf("pass %d entries=%d: %v", pass, len(records), err)
+		}
+		held, found, err := commissioner.RecordedLineupFor(records, p.Franchise, export.Season, 1)
+		if err != nil || !found || held.By != "creator" || len(held.Starters) != 1 || held.Starters[0] != p.ID {
+			t.Fatalf("%+v %t %v", held, found, err)
+		}
+		if _, found, err := commissioner.RecordedLineupFor(records, p.Franchise, export.Season, 2); err != nil || found {
+			t.Fatal("future lineup imported", err)
+		}
 	}
 }

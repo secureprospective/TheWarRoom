@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -109,5 +112,42 @@ func (a *App) syncLeagueSchedules(ctx context.Context) {
 		if err != nil {
 			log.Printf("refresh schedule for %s (held schedule kept): %v", league.ID, err)
 		}
+		weeks, lineupErr := weeklyresults.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
+		if lineupErr == nil {
+			var directory map[string]string
+			directory, lineupErr = a.heldLineupPlayers(ctx)
+			if lineupErr == nil {
+				_, lineupErr = mflsource.BackfillLineups(ctx, ledger, league.ID, "Import played starting lineups from the reference sync", principal, season, weeks, directory)
+			}
+		}
+		if lineupErr != nil {
+			log.Printf("refresh lineups for %s (refused franchise-weeks kept unchanged): %v", league.ID, lineupErr)
+		}
 	}
+}
+
+// Launch can precede the first target snapshot. Read the held directory, never
+// spend MFL's once-a-day players request just to map historical lineups.
+func (a *App) heldLineupPlayers(ctx context.Context) (map[string]string, error) {
+	directory := a.heldPlayerNames()
+	if len(directory) != 0 {
+		return directory, nil
+	}
+	found, err := a.core.History.ArchivedBodies(ctx, "TYPE=players", func(_ string, body []byte, _ time.Time) bool {
+		raw, parseErr := players.Parse(ctx, body)
+		if parseErr != nil {
+			return false
+		}
+		for _, p := range raw {
+			directory[p.ID] = p.Name
+		}
+		return len(directory) != 0
+	})
+	if err != nil {
+		return nil, fmt.Errorf("read held lineup player directory: %w", err)
+	}
+	if !found {
+		return nil, fmt.Errorf("no held player directory for lineup import")
+	}
+	return directory, nil
 }
