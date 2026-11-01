@@ -166,17 +166,18 @@ function Starters({ reading, week, results, row, league, port }: {
           <StarterRow key={`${label as string}-${a?.player ?? i}-${b?.player ?? i}`} away={a}
             home={b} />),
       ])}
-    {matchup.error && <p role="status" className="src">
-      Starter teams and projections are not read · {matchup.error}</p>}
+    {(matchup.reading?.errors.length || matchup.error) && <p role="status" className="src">
+      A starter&rsquo;s NFL team and lock come from that franchise&rsquo;s own lineup, which is
+      private to its team.</p>}
   </div>;
 }
 
 function StarterRow({ away, home }: { away?: PulseStarterRow; home?: PulseStarterRow }) {
   const cell = (p?: PulseStarterRow, right = false) => <div className={right ? 'p r' : 'p'}>
     <div className="nm">
-      {right && <small>{p?.team || '—'}</small>}
+      {right && <small>{p?.team ?? ''}</small>}
       <span>{p?.name ?? '—'}</span>
-      {!right && <small>{p?.team || '—'}</small>}
+      {!right && <small>{p?.team ?? ''}</small>}
     </div>
     <div className={`ln${p?.projection === undefined ? ' wait' : ''}`}>
       {p === undefined ? '' : p.projection === undefined ? 'no projection held'
@@ -188,9 +189,10 @@ function StarterRow({ away, home }: { away?: PulseStarterRow; home?: PulseStarte
     return <span className={`s${right ? ' r' : ''} ${p?.points === undefined ? 'tbd'
       : lead ? 'up' : 'dn'}`}>{pointsLabel(p?.points)}</span>;
   };
+  // A lock is known only for the franchise whose lineup this viewer may read; silence, not "OPEN".
   const chip = (p?: PulseStarterRow, right = false) => <span
     className={`chipc ${p?.locked ? 'F' : 'P'}${right ? ' r' : ''}`}>
-    {p === undefined ? '' : p.locked ? 'LOCKED' : 'OPEN'}</span>;
+    {p?.locked === undefined ? '' : p.locked ? 'LOCKED' : 'OPEN'}</span>;
   return <div className="mr">
     {cell(away)}
     {chip(away)}

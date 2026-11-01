@@ -50,6 +50,12 @@ it('scores one week and lines both lineups up with their teams and projections',
   const rows = starterRows(score, matchup.lineups['franchise.01'], matchup.projections);
   expect(rows).toEqual([{ slot: 'LB', player: '1001', name: 'franchise.01 starter', team: 'AAA',
     locked: true, points: 1.5, projection: 9.5, words: '1.5 points' }]);
+  // Another franchise's lineup is private, so its starters keep their points and lose the rest.
+  const theirs = starterRows(results.scores.find(s => s.franchise === 'franchise.32'), undefined,
+    matchup.projections);
+  expect(theirs[0].team).toBeUndefined();
+  expect(theirs[0].locked).toBeUndefined();
+  expect(theirs[0].points).toBe(3);
 });
 
 it('says the schedule is unpublished rather than inventing a week', async () => {

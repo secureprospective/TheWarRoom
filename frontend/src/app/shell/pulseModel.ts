@@ -67,18 +67,19 @@ export function groupRows(rows: PulseRow[]): { heading: string; rows: PulseRow[]
 }
 
 export type PulseStarterRow = {
-  slot: string; player: string; name: string; team: string; locked: boolean;
+  slot: string; player: string; name: string; team?: string; locked?: boolean;
   points: number | undefined; projection: number | undefined; words: string;
 };
 
-/** starterRows lines one franchise's starters up in lineup order. Points come from the week score;
- *  the team and the lock come from the lineup; the projection is the league's own held projection. */
+/** starterRows lines one franchise's starters up in lineup order. Points come from the week score,
+ *  which the whole league may read; the NFL team and the lock come from that franchise's own lineup
+ *  read, which is private to its team, so they are absent rather than guessed for anyone else. */
 export function starterRows(score: PulseScore | undefined, lineup: PulseLineupPlayer[] | undefined,
   projections: Record<string, number>): PulseStarterRow[] {
   return (score?.starters ?? []).map((s: PulseStarter) => {
     const held = lineup?.find(p => p.player === s.player);
-    return { slot: s.position ?? '—', player: s.player, name: s.name, team: held?.team ?? '',
-      locked: held?.locked ?? false, points: s.points, projection: projections[s.player],
+    return { slot: s.position ?? '—', player: s.player, name: s.name, team: held?.team,
+      locked: held?.locked, points: s.points, projection: projections[s.player],
       words: s.words };
   });
 }
