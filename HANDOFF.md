@@ -1,32 +1,33 @@
 # Handoff
 
 ## Baton
-ClaudeBox / review — 2026-11-01, build/SCHED-1. APP-SCHED-7 measurement only at 1207f2da.
-Local docs/evidence commit only; no remote contact or push.
+ClaudeBox / review — 2026-11-01, build/SCHED-1, APP-SCHED-8.
+Local commits only; no remote contact or push.
 
 ## Where it stands
-- Fresh scratch-profile SQLite backup; ordinary archived lineup/schedule backfill, scoring acquisition,
-  stat ledger, native results/standings: 148 recorded weeks, 24 exact / 0 within .01 / 9 differ /
-  115 unavailable. Evidence: `docs/build-handoffs/APP-SCHED-7-evidence.md` and its two TSVs.
-- Previous part 5 TSV is actually 4 exact / 29 differ / 115 unavailable; previous prose 4/33/111
-  was an arithmetic error. Completeness did not regress.
-- Bills MFL 6–1 / PF 1912.35; native 0/7 complete, W-L/PF unavailable (displayed zeros not outcomes).
-- 472 absent rows: 36 bye candidates (historical affiliation unverified), 53 exact-week injury Out,
-  141 positive snap/absent scoring-row, 242 unresolved. Seven separate 0835 identity gaps.
-- Disposable measurement PASS 208.44 s; eight native player-item readings race PASS 33.82 s.
-  Initial full measurement race run interrupted at external 600 s deadline during adoption;
-  non-race retry resumed idempotently on copy. No production changes, GUI or independent review.
+- PBP missing-row credits + source/revision provenance; affirmative snap/Out zeros + stat-queue
+  review flag. No math, origin branches or counted-revision changes. Code through d7ce8249.
+- Scratch-profile SQLite backup: 148 rows → 45 exact / 1 within .01 / 13 differ / 89 unavailable.
+  194 player-week zeros: 141 positive snaps, 53 Out; completed PBP and no named event required.
+  PBP positive-stat fallbacks 0; ESPN 0. Remaining 242 unresolved + 36 bye candidates + 7 identity.
+- Bills MFL 6–1 / PF 1912.35; native 0/7 complete, W-L/PF unavailable.
+- Evidence and TSVs: docs/build-handoffs/APP-SCHED-8-evidence.md, APP-SCHED-8-comparison.tsv,
+  APP-SCHED-8-absent.tsv. Final copied proof PASS 154.32 s; plain make build PASS.
+- Race: final source 39 PASS/4 SKIP, commissioner feed/queue 8 PASS. Earlier full history
+  256 PASS/4 SKIP, market 28 PASS; commissioner 271 PASS/2 FAIL (documented inherited
+  startup digest and scratch-copy preset scanner). Mutation killed by integrated test.
 
 ## Next move / blocked on
-- Position queue integration remains DEFERRED; do not start without head-brain authorization.
-- Resolve 242 unknown absences and historical affiliation for 36 bye candidates; existing MFL
-  bye and nflverse exact-week Out/snap sources are documented, no did-not-play zero built.
-- Nine complete score differences: largest Giants invalid-lineup penalty; remaining player credit
-  residuals need MFL stat breakdown, including Schultz W4. No scoring-rule diagnosis established.
-- Earlier debt: verified identity 0835; slow adoption/native reads; live/advanced inputs;
-  source-health UI; 76 historical-roster refusals.
+- Review this slice; no independent review or GUI evidence claimed.
+- ESPN/Sleeper fallback integration NOT delivered: no bodies held/no demonstrated positive
+  missing-stat gap in cohort. Unsupported held secondary data blocks zero admission safely.
+- Need inactive/historical-bye proof, identity 0835, rare lateral/split-return/two-point/kicker
+  fallback completeness, pinned absence proofs; 285 player-weeks remain unavailable.
+- Score residuals, native/MFL lineup penalties, slow adoption/feed, 76 roster backfill refusals.
+- Existing untracked sched8_measurement_test.go and .golangci-cache left untouched. Own
+  one-use harness removed; disposable artifacts remain under ignored .tmp/sched8*.
 
 ## Tried and rejected
-- Missing weekly row or missing snaps as proof of inactivity/zero: unsupported.
-- Current MFL injury status as historical nonparticipation: not week-specific.
-- Treating weekly StatApprove as durable player-position approval remains rejected.
+- Missing row/snaps alone, current injury status or MFL zero points as proof of zero.
+- Requiring expired overtime clock: declared END GAME can have remaining time (fixed/tested).
+- Treating unsupported secondary data or missing event columns as complete evidence.
