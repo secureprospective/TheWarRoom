@@ -165,3 +165,25 @@ func TestCommissionerPreviewDoesNotBypassRequestChecks(t *testing.T) {
 		t.Fatalf("preview wrote a retry: %+v %v", rules, err)
 	}
 }
+
+func TestTargetWorkflowRunsALocalRead(t *testing.T) {
+	t.Parallel()
+	app := previewApp(t)
+	body := `{"command":"standings.read","version":"1","mode":"read","arguments":{"league":"native.preview","season":2026}}`
+	got, err := app.TargetWorkflow(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Label == "" || !got.Writable || got.Football != "local league" || len(got.Data) == 0 {
+		t.Fatalf("local workflow response: %+v", got)
+	}
+}
+
+func TestTargetWorkflowRefusesAnUnknownAction(t *testing.T) {
+	t.Parallel()
+	app := previewApp(t)
+	body := `{"command":"not.a.command","version":"1","mode":"read","arguments":{"league":"native.preview"}}`
+	if _, err := app.TargetWorkflow(body); err == nil || !strings.Contains(err.Error(), "not available") {
+		t.Fatalf("unknown local workflow action: %v", err)
+	}
+}

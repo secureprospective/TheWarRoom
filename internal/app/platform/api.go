@@ -11,6 +11,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -20,12 +21,25 @@ import (
 // binding's original locks, startup check and error text.
 type Host interface {
 	Snapshot() (snapshot.Snapshot, error)
+	Leagues() ([]League, error)
 	Injuries() ([]leaguefeed.Injury, error)
 	Clock() (snapshot.Sourced[leagueclock.Reading], error)
 	planwatch.Host
 	// PlayerName is a player's directory name, if the directory has one.
 	PlayerName(mflID string) (string, bool)
 	PhotosOff() bool
+}
+
+// MirrorLeagueID identifies the held MFL league in the league picker without pretending it is an
+// app league. App leagues carry their own ids.
+const MirrorLeagueID = "mirror"
+
+// League is one choice in the desktop picker: the held MFL league or an app league.
+type League struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Teams int    `json:"teams"`
+	App   bool   `json:"app"`
 }
 
 // API is the platform binding. It holds no state.
@@ -66,6 +80,45 @@ func PhotoRoutes(photos http.Handler) http.Handler {
 
 func (a *API) TargetSnapshot() (snapshot.Snapshot, error) {
 	return a.host.Snapshot() //nolint:wrapcheck // Preserve the binding's existing error text.
+}
+
+// TargetLeagues lists every league the desktop can open: the held MFL reference league and the app
+// leagues on this computer.
+func (a *API) TargetLeagues() ([]League, error) {
+	return a.host.Leagues() //nolint:wrapcheck // Preserve the league list's startup context.
+}
+
+// BuildLeagues composes the held MFL league and every app league with its current team count.
+// The snapshot, store and record reads stay in composition; only the list policy lives here.
+func BuildLeagues(
+	ctx context.Context,
+	snapshot func() (snapshot.Snapshot, error),
+	mirrorName string,
+	natives func(context.Context) ([]commissioner.NativeLeague, error),
+	records func(context.Context, string) ([]commissioner.Record, error),
+) ([]League, error) {
+	appLeagues, err := natives(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("league list app leagues: %w", err)
+	}
+	out := make([]League, 0, len(appLeagues)+1)
+	if mirrorName != "" {
+		snap, err := snapshot()
+		if err != nil {
+			return nil, fmt.Errorf("league list mirror: %w", err)
+		}
+		out = append(out, League{ID: MirrorLeagueID, Name: mirrorName,
+			Teams: snap.League.Value.FranchiseCount, App: false})
+	}
+	for _, league := range appLeagues {
+		franchises, err := records(ctx, league.ID)
+		if err != nil {
+			return nil, fmt.Errorf("league list %s size: %w", league.ID, err)
+		}
+		out = append(out, League{ID: league.ID, Name: league.Name,
+			Teams: len(commissioner.LeagueFranchises(franchises)), App: true})
+	}
+	return out, nil
 }
 
 // TargetInjuries is the held NFL injury report with each expected return resolved to its NFL

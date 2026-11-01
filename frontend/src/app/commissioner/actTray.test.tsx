@@ -197,7 +197,7 @@ describe('Commissioner act families', () => {
   });
   it('shows an execute refusal verbatim, without a receipt or league refresh', async () => {
     const { host, app, calls } = await show('correct.roster');
-    const refusal = 'choose one active recorded cut, waiver award or draft pick';
+    const refusal = 'choose one active recorded cut, waiver award, draft pick or standing bid';
     expect(readFileSync(new URL('../../../../internal/commissioner/correction_command.go', import.meta.url),
       'utf8')).toContain(refusal);
     app.TargetCommissionerExecute = async () => { throw new Error(refusal); };

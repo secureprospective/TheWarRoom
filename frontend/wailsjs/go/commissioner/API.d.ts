@@ -106,3 +106,5 @@ export function TargetNativeWaivers(arg1:string,arg2:string,arg3:time.Time):Prom
 export function TargetNativeWeek(arg1:commissioner.RawNativeWeekScope):Promise<commissioner.NativeWeek>;
 
 export function TargetStatQueue(arg1:string,arg2:number):Promise<commissioner.StatQueue>;
+
+export function TargetWorkflow(arg1:string):Promise<commissioner.WorkflowResponse>;

@@ -9,6 +9,11 @@ import week from '../../../../testdata/wire/native/week.json';
 import standings from '../../../../testdata/wire/native/standings.json';
 import { parseRules } from './rules';
 import { nativeHQAssets, nativeHQCap, nativeHQMoves, nativeHQSettings, readNativeHQ } from './hqReading';
+import { selectProvider } from '../data/provider';
+import clockWire from '../data/fixtures/clock.json';
+
+vi.mock('../data/provider', () => ({ selectProvider: vi.fn() }));
+
 import type { HostedPort } from './hostedRoom';
 
 describe('native HQ existing reads', () => {
@@ -23,6 +28,16 @@ describe('native HQ existing reads', () => {
     expect(runway[0]).toEqual({ season: 2026, ir: 0, committed: 40_000_000, dead: 0, max: 100_000_000_000,
       room:
       99_960_000_000 });
+  });
+  it('reads an imported league whose MFL contract status was blank or held as written', () => {
+    const imported = structuredClone(assets) as { snapshot: { players: Record<string, unknown>[] } };
+    imported.snapshot.players[0].contractStatus = '';
+    imported.snapshot.players[0].heldContractStatus = 'EXT (2024)';
+    imported.snapshot.players[0].contractInfo = 'Imported salary contract';
+    const snapshot = nativeHQAssets(imported, 'native.seed');
+    const id = imported.snapshot.players[0].id;
+    const player = snapshot.rosters.value.flatMap(r => r.players).find(p => p.id === id);
+    expect(player?.contractStatus).toBe('FLAG');
   });
   it('changes the view model when cap, total slots, IR and taxi settings change', () => {
     const changed = parseRules(structuredClone(rules));
@@ -78,6 +93,52 @@ describe('native HQ existing reads', () => {
     const partial = await readNativeHQ(league, mine, broken);
     expect(partial.runway).toBeUndefined(); expect(partial.lineup?.starters.length).toBeGreaterThan(0);
     expect(partial.errors).toContain('Error: offline');
+    const imported = structuredClone(assets);
+    const importedPlayer = imported.snapshot.players[0] as Record<string, unknown>;
+    importedPlayer.contractStatus = ''; importedPlayer.heldContractStatus = 'EXT (2024)';
+    importedPlayer.contractInfo = 'Imported salary contract';
+    data['native.assets.read'] = imported;
+    data['week.read'] = { schedule: { league, franchise: mine, season: assets.snapshot.season,
+      revision: assets.revision, games: [], message: 'The schedule is not published yet.' },
+      message: 'The schedule is not published yet.' };
+    data['lineup.read'] = { ...lineup, starters: [], bench: [...lineup.starters, ...lineup.bench],
+      revision: assets.revision };
+    const clock = vi.fn().mockResolvedValue({ ...clockWire, value: { ...clockWire.value, week: 8 } });
+    vi.mocked(selectProvider).mockReturnValue({ clock } as unknown as ReturnType<typeof selectProvider>);
+    data['lineup.read'] = { ...data['lineup.read'] as object, week: 8 };
+    const unscheduled = await readNativeHQ(league, mine, port);
+    expect(unscheduled.errors).toEqual([]);
+    expect(unscheduled.week).toBe(8);
+    expect(unscheduled.weekNote).toBe('Viewing week 8 · The schedule is not published yet.');
+    expect(unscheduled.lineup?.starters).toEqual([]);
+    expect(unscheduled.lineup?.bench).toHaveLength(lineup.starters.length + lineup.bench.length);
+    expect(unscheduled.snapshot.players.value.find(p => p.id === '1008')?.position).toBe('K');
+    expect(unscheduled.lock).toBeUndefined();
+    expect(port.mock.calls.at(-1)?.[0]).toMatchObject({ command: 'lineup.read', arguments: { week: 8 } });
+    for (const value of [
+      { ...clockWire, value: { ...clockWire.value, week: undefined } },
+      { ...clockWire, value: { ...clockWire.value, season: 2025, week: 8 } },
+      { ...clockWire, value: { ...clockWire.value, week: 8 }, provenance: { ...clockWire.provenance,
+        freshness: { ...clockWire.provenance.freshness, state: 'fail' } } },
+    ]) {
+      clock.mockResolvedValue(value);
+      const unknown = await readNativeHQ(league, mine, port);
+      expect(unknown.week).toBeUndefined(); expect(unknown.lineup).toBeUndefined();
+      expect(unknown.weekNote).toContain('Current NFL week is unknown');
+    }
+    const failedWeek = await readNativeHQ(league, mine, async request => {
+      if (request.command === 'week.read') throw new Error('Week unavailable');
+      return port(request);
+    });
+    expect(failedWeek.week).toBeUndefined(); expect(failedWeek.lineup).toBeUndefined();
+    expect(failedWeek.errors).toContain('Error: Week unavailable');
+    data['week.read'] = { schedule: { league, franchise: 'another', season: assets.snapshot.season, revision: assets.revision,
+      games: [] } };
+    const wrongScope = await readNativeHQ(league, mine, port);
+    expect(wrongScope.week).toBeUndefined(); expect(wrongScope.lineup).toBeUndefined();
+    expect(wrongScope.errors.join(' ')).toContain('another franchise');
+    data['week.read'] = { ...week, schedule: { ...week.schedule, league, franchise: mine,
+      revision: assets.revision } };
     data['lineup.read'] = { ...lineup, revision: assets.revision + 1 };
     const mixed = await readNativeHQ(league, mine, port);
     expect(mixed.lineup).toBeUndefined();

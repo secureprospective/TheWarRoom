@@ -390,6 +390,9 @@ string
 string,
 string
 ];
+"commissioner.TargetWorkflow": [
+string
+];
 "commissioner.TargetNativeBidAction": [
 {
 "league": string;
@@ -2041,6 +2044,9 @@ string
 string
 ];
 "platform.TargetInjuries": [
+
+];
+"platform.TargetLeagues": [
 
 ];
 "platform.TargetMoves": [

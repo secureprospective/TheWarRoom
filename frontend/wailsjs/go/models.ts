@@ -4860,6 +4860,25 @@ export namespace commissioner {
 	
 	
 	
+	
+	export class WorkflowResponse {
+	    label: string;
+	    writable: boolean;
+	    football: string;
+	    data: number[];
+	
+	    static createFrom(source: any = {}) {
+	        return new WorkflowResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.writable = source["writable"];
+	        this.football = source["football"];
+	        this.data = source["data"];
+	    }
+	}
 
 }
 
@@ -12931,6 +12950,24 @@ export namespace personal {
 
 export namespace platform {
 	
+	export class League {
+	    id: string;
+	    name: string;
+	    teams: number;
+	    app: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new League(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.teams = source["teams"];
+	        this.app = source["app"];
+	    }
+	}
 	export class PhotoView {
 	    src: string;
 	    alt: string;

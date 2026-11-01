@@ -18,6 +18,8 @@ import '../look/look.css';
 import './shell.css';
 import { connectDensity } from './density';
 import { useWorkScrollReset } from './workScroll';
+import { LeagueChoices, LeagueContext, LeaguePicker, useLeagues, type LeagueState } from './leaguePicker';
+import AppLeagueMount from './AppLeagueMount';
 
 const ReportDrawer = lazy(() => import('../registry/ReportDrawer'));
 const StatusStrip = lazy(() => import('./StatusStrip'));
@@ -64,12 +66,21 @@ export function OwnerFooter({ snapshot }: { snapshot?: Snapshot }) {
 }
 
 export function TargetApp() {
+  const leagues = useLeagues();
+  return <LeagueContext.Provider value={leagues}>
+    <TargetAppContent leagues={leagues} /></LeagueContext.Provider>;
+}
+
+function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   const s = commands.use();
   const root = useRef<HTMLDivElement>(null);
   const clock = useLeagueClock(root);
   const workspaceBody = useRef<HTMLDivElement>(null);
-  useEffect(() => connectDensity(commands, root.current!), []);
+  useEffect(() => root.current ? connectDensity(commands, root.current) : undefined,
+    [s.node, leagues.selectedId]);
   useWorkScrollReset(workspaceBody, s.scrollRevision);
+  const [nativeTabs, setNativeTabs] = useState<HTMLDivElement | null>(null);
+  const [franchiseFooter, setFranchiseFooter] = useState<HTMLDivElement | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [error, setError] = useState<string>();
   useEffect(() => {
@@ -102,31 +113,31 @@ export function TargetApp() {
   const workspaces: readonly { slug: string; label: string; ring: string }[] = node.workspaces;
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
   const placement = `${node.label} › ${workspace.label}` as Placement;
-  if (s.node === 'war' && workspace.slug !== 'research' && snapshot) return <Suspense
-    fallback={<p role="status">Opening War Room…</p>}><WarRoom snapshot={snapshot} /></Suspense>;
-  if (s.node === 'hq' && snapshot) return <>
+  const selectedLeague = leagues.selected;
+  const appLeagueView = selectedLeague?.app
+    ? s.node === 'hq' ? 'hq' : s.node === 'war' && workspace.slug !== 'research' ? 'war' : undefined
+    : undefined;
+  if (selectedLeague && !selectedLeague.app && s.node === 'war' && workspace.slug !== 'research' && snapshot)
+    return <Suspense
+    fallback={<div className="twr-app"><LeaguePicker leagues={leagues.leagues} selected={selectedLeague}
+      onSelect={leagues.select} /><p role="status">Opening War Room…</p></div>}>
+      <WarRoom snapshot={snapshot} /></Suspense>;
+  if (selectedLeague && !selectedLeague.app && s.node === 'hq' && snapshot) return <>
     <FranchiseHQMount snapshot={snapshot} />
     <div className="twr-app"><Suspense fallback={undefined}><CommandBar snapshot={snapshot}
       /></Suspense></div>
   </>;
   return (
-    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}>
+    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}
+      data-native-workspace={Boolean(appLeagueView) || undefined}>
       <aside className="rail">
-        <div className="league">
-          <p>From MFL (reference only)</p>
-          <div className="crest">
-            <i>LN</i>
-            <div>
-              <b>Legacy NFL</b>
-              <small>
-                {snapshot?.league.provenance.freshness.state !== 'fail' && snapshot
-                  ? `${snapshot.league.value.franchiseCount} teams`
-                  : 'Teams unavailable'}{' '}
-                · dynasty IDP
-              </small>
-            </div>
-          </div>
-        </div>
+        <LeaguePicker
+          leagues={leagues.leagues}
+          selected={selectedLeague}
+          onSelect={leagues.select}
+          loading={leagues.loading}
+          error={leagues.error}
+        />
         <Act verb="commandbar.open" args={{}} variant="command">
           <span>Type a command</span>
           <kbd>/</kbd>
@@ -161,13 +172,15 @@ export function TargetApp() {
             Status
           </Act>
         </div>
-        <OwnerFooter snapshot={snapshot} />
+        {selectedLeague?.app ? <div className="me" ref={setFranchiseFooter} /> :
+          <OwnerFooter snapshot={snapshot} />}
       </aside>
       <section className="ws" aria-label={node.label}>
         <header className="ws-head">
           <h3>{node.label}</h3>
-          <div className="wtabs">
-            {workspaces.map((w) => (
+          <div className="wtabs" ref={appLeagueView === 'war' ? setNativeTabs : undefined}
+            role={appLeagueView === 'war' ? 'tablist' : undefined}>
+            {appLeagueView !== 'war' && workspaces.map((w) => (
               <Act
                 key={w.slug}
                 verb="nav.open"
@@ -197,19 +210,32 @@ export function TargetApp() {
           </div>
         </header>
         <div className="workspace-status" aria-label="Status strip">
-          <Suspense fallback={null}><StatusStrip /></Suspense>
-          <ClockStrip reading={clock} />
+          {!selectedLeague?.app && <><Suspense fallback={null}><StatusStrip /></Suspense>
+          <ClockStrip reading={clock} /></>}
         </div>
         <div className="wbody" ref={workspaceBody}>
-          {s.notice && (
+          {!selectedLeague?.app && s.notice && (
             <p role="status" className="not-wired">
               {s.notice}
             </p>
           )}
-          {(s.node === 'home' && ['seasonal-card', 'alert-tray'].includes(workspace.slug)) ||
+          {s.node === 'home' && workspace.slug === 'digests' && selectedLeague && !selectedLeague.app &&
+            <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
+              onSelect={leagues.select} />}
+          {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
+            view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs}
+            hqTab={s.node === 'hq' ? s.workspace.hq : undefined}
+            leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
+          leagues.loading && !selectedLeague ? <p role="status">Reading the league…</p> :
+          selectedLeague?.app || !selectedLeague ? (
+            s.node === 'home' ? <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
+              onSelect={leagues.select} /> : <section className="shell-unwired"><h4>{workspace.label}</h4>
+              <p className="not-wired">Not wired · {workspace.ring}</p></section>
+          ) : (s.node === 'home' && ['seasonal-card', 'alert-tray'].includes(workspace.slug)) ||
           (s.node === 'pulse' && workspace.slug === 'now') ? (
             <Suspense fallback={<p role="status">Opening workspace…</p>}>
-              <HomePulseMount snapshot={snapshot} reading={clock} />
+              <HomePulseMount snapshot={snapshot} reading={clock} leagues={leagues.leagues}
+                selectedLeague={leagues.selectedId} onLeague={leagues.select} />
             </Suspense>
           ) : s.node === 'hq' && workspace.slug === 'lineup-and-roster' && snapshot ? (
             <FranchiseHQMount snapshot={snapshot} />
@@ -260,11 +286,11 @@ export function TargetApp() {
               <p className="not-wired">Not wired · {workspace.ring}</p>
             </section>
           )}
-          <EndpointIndex placement={placement} />
+          {!selectedLeague?.app && <EndpointIndex placement={placement} />}
           {error && <p role="alert">{error}</p>}
         </div>
       </section>
-      <aside className="insp" aria-label="Inspector" aria-hidden={s.inspector === 'closed'}>
+      {!appLeagueView && <aside className="insp" aria-label="Inspector" aria-hidden={s.inspector === 'closed'}>
         <div className="insp-head">
           Inspector
           <span className="x">
@@ -281,13 +307,13 @@ export function TargetApp() {
           </span>
         </div>
         <div className="insp-body">
-          {s.entity && snapshot ? (
+          {!selectedLeague?.app && s.entity && snapshot ? (
             <Suspense fallback={null}><EntityInspector entity={s.entity} snapshot={snapshot} /></Suspense>
-          ) : s.asset ? (
+          ) : !selectedLeague?.app && s.asset ? (
             <Suspense fallback={null}>
               <Market kind={s.asset} snapshot={snapshot} />
             </Suspense>
-          ) : snapshot && s.subject ? (
+          ) : !selectedLeague?.app && snapshot && s.subject ? (
             <Suspense fallback={null}>
               <PlayerInspector snapshot={snapshot} subject={s.subject} />
             </Suspense>
@@ -298,8 +324,8 @@ export function TargetApp() {
           )}
           <EndpointIndex placement="Inspector" />
         </div>
-      </aside>
-      {s.inspector === 'closed' && (
+      </aside>}
+      {!appLeagueView && s.inspector === 'closed' && (
         <aside className="inspector-closed">
           <Act variant="button" verb="inspector.toggle" args={{}} label="Open inspector">
             Open
@@ -318,9 +344,9 @@ export function TargetApp() {
         </Act>
         <span className="vt">Comms · league feed</span>
       </aside>
-      <Suspense fallback={null}>
-        <CommandBar snapshot={snapshot} />
-      </Suspense>
+      {!selectedLeague?.app && <Suspense fallback={null}>
+        <CommandBar snapshot={selectedLeague?.app ? undefined : snapshot} />
+      </Suspense>}
       <aside
         id="target-comms"
         data-open={s.comms}
@@ -334,7 +360,8 @@ export function TargetApp() {
             Close
           </Act>
         </header>
-        {s.comms && <Suspense fallback={<p role="status">Reading league communications…</p>}>
+        {s.comms && !selectedLeague?.app &&
+          <Suspense fallback={<p role="status">Reading league communications…</p>}>
           <Comms panel />
         </Suspense>}
         <EndpointIndex placement="Comms" />
@@ -353,11 +380,12 @@ export function TargetApp() {
           </Act>
         </header>
         <Suspense fallback={null}>
-          <CalendarPanel reading={clock} />
+          {!selectedLeague?.app && <CalendarPanel reading={clock} />}
         </Suspense>
         <EndpointIndex placement="Calendar" />
       </aside>
-      {(s.endpointSurface === 'Report drawer' || s.endpointSurface === 'Status strip') && (
+      {!selectedLeague?.app &&
+        (s.endpointSurface === 'Report drawer' || s.endpointSurface === 'Status strip') && (
         <aside className="shell-overlay registry-panel" data-open="true" aria-label={s.endpointSurface}>
           <header>
             {s.endpointSurface}

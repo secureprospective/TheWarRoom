@@ -119,7 +119,9 @@ describe('Performance is law (§18, §M3)', () => {
     const independent = (source: string) =>
       source.includes("lazy(() => import('../commands/CommandBar')") &&
       !/import\s+\{\s*CommandBar\s*\}\s+from/.test(source) &&
-      /<Suspense fallback=\{null\}>\s*<CommandBar snapshot=\{snapshot\} \/>\s*<\/Suspense>/.test(source);
+      new RegExp(/<Suspense fallback=\{null\}>\s*/.source +
+        /<CommandBar snapshot=\{selectedLeague\?\.app \? undefined : snapshot\} \/>\s*<\/Suspense>/.source)
+        .test(source);
     const source = read('shell/TargetApp.tsx');
     expect(independent(source)).toBe(true);
     expect(independent(source.replace("import('../commands/CommandBar')", 'eagerBar'))).toBe(false);
@@ -129,7 +131,7 @@ describe('Performance is law (§18, §M3)', () => {
     expect(source).toContain("lazy(() => import('./AppSettings')");
     expect(source).not.toMatch(/import\s+\{\s*AppSettings\s*\}\s+from/);
     expect(source).toContain('<FranchiseHQMount snapshot={snapshot} />');
-    expect(source).toContain('<HomePulseMount snapshot={snapshot} reading={clock} />');
+    expect(source).toMatch(/<HomePulseMount snapshot=\{snapshot\} reading=\{clock\}[\s\S]*?\/>/);
     expect(source).toContain('<TradeDesk snapshot={snapshot} />');
   });
   it('requires snapshot-keyed roster and search memoization and rejects missing memos', () => {

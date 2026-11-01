@@ -35,6 +35,7 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetCommissionerSchedule", "commish", "G0"},
 		{"TargetCommissionerSeat", "gm,commish,admin", "G0"},
 		{"TargetCommissionerSeatSignIn", "gm,commish,admin", "G1"},
+		{"TargetWorkflow", "gm,commish", "argument-dependent"},
 		{"TargetCorrections", "gm,commish", "G0"},
 		{"TargetLeagueCalendar", "gm,commish", "G0"},
 		{"TargetLeagueSchedule", "gm,commish", "G0"},
@@ -185,7 +186,7 @@ func platformDesktop(_ []Command) []Command {
 	}
 	return []Command{
 		c("TargetCheckMoves", "gm,commish,admin", "G1", "both"), c("TargetClock", "gm,commish,admin", "G0", "both"), c("TargetDraftIR", "gm,commish", "G2", "both"),
-		c("TargetDraftTaxi", "gm,commish", "G2", "both"), c("TargetHandOff", "gm,commish", "G2", "desktop"), c("TargetInjuries", "gm,commish,admin", "G0", "both"), c("TargetMoves", "gm,commish,admin", "G0", "both"),
+		c("TargetDraftTaxi", "gm,commish", "G2", "both"), c("TargetHandOff", "gm,commish", "G2", "desktop"), c("TargetInjuries", "gm,commish,admin", "G0", "both"), c("TargetLeagues", "gm,commish,admin", "G0", "both"), c("TargetMoves", "gm,commish,admin", "G0", "both"),
 		c("TargetPhoto", "gm,commish,admin", "G0", "both"), c("TargetSnapshot", "gm,commish,admin", "G0", "both"), c("TargetWithdrawRoster", "gm,commish", "G1", "both"),
 	}
 }

@@ -8,7 +8,7 @@ export function WarRoomEmpty({ reason }: { reason?: string }) {
   return <p className="empty" title={reason ? unavailable : undefined}>{unavailable}</p>;
 }
 export function WarRoomHeader({ name, reading }: { name?: string; reading?: WarRoomHeaderReading }) {
-  return <section className="table fixed" aria-label="Franchise context">
+  return <section className="franchise-context" aria-label="Franchise context">
     <div className="who"><b>{name ?? unavailable}</b><div>{reading?.record ?? unavailable} · {
       reading?.standing ?? unavailable} · window {unavailable}</div></div>
     <div className="mini"><span className="h">DIRECTION</span><div className="post">

@@ -33,7 +33,7 @@ export function parseWarRoomOwnBids(value: unknown, league: string, mine: string
 export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarketReading> {
   const result: WarRoomMarketReading = { errors: [] };
   const apply = async (fn: () => Promise<void>) => { try { await fn(); } catch (e) {
-    result.errors.push(String(e)); } };
+    result.errors.push(String(e)); console.warn('War Room market read failed:', e); } };
   if (c.native) {
     const native = c.native;
     const port = native.port ?? hostedWorkflow;

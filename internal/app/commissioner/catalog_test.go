@@ -47,6 +47,7 @@ func TestNativeCatalogPublication(t *testing.T) {
 	// The desktop's local sign-in links an identity, and its backup copies its own files; neither is
 	// a league command a server could publish.
 	generic := map[string]bool{"TargetCommissionerExecute": true, "TargetCommissionerPreview": true, "TargetNativeScorePreview": true,
+		"TargetWorkflow":         true,
 		"TargetCommissionerSeat": true, "TargetCommissionerSeatSignIn": true, "TargetBackupNow": true}
 	typ := reflect.TypeFor[*API]()
 	for i := range typ.NumMethod() {
@@ -178,4 +179,17 @@ func TestDraftPickCatalogMatchesOwnerInput(t *testing.T) {
 			t.Fatal("draft pick must accept an owner choice, not a computed contract")
 		}
 	}
+}
+
+func TestWorkflowDesktopGravityDependsOnAction(t *testing.T) {
+	t.Parallel()
+	for _, command := range Commands() {
+		if command.Method == "TargetWorkflow" {
+			if command.Gravity != "argument-dependent" {
+				t.Fatalf("workflow gravity = %q", command.Gravity)
+			}
+			return
+		}
+	}
+	t.Fatal("workflow is missing from the desktop catalog")
 }

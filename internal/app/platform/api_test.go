@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
@@ -21,6 +23,7 @@ type fakeHost struct {
 }
 
 func (h *fakeHost) Snapshot() (snapshot.Snapshot, error) { return snapshot.Snapshot{}, nil }
+func (h *fakeHost) Leagues() ([]League, error)           { return nil, nil }
 func (h *fakeHost) Injuries() ([]leaguefeed.Injury, error) {
 	return nil, nil
 }
@@ -128,5 +131,62 @@ func TestPhotoRoutesAnswerTheNativeProbeWithNotFound(t *testing.T) {
 		if rec.Code != want {
 			t.Fatalf("GET %s = %d, want %d", path, rec.Code, want)
 		}
+	}
+}
+
+func TestBuildLeaguesAddsMirrorAndAppTeamCounts(t *testing.T) {
+	t.Parallel()
+	snap := func() (snapshot.Snapshot, error) {
+		return snapshot.Snapshot{League: snapshot.Sourced[snapshot.League]{
+			Value: snapshot.League{FranchiseCount: 32}}}, nil
+	}
+	natives := func(context.Context) ([]commissioner.NativeLeague, error) {
+		return []commissioner.NativeLeague{{ID: "native.one", Name: "One"}}, nil
+	}
+	records := func(_ context.Context, league string) ([]commissioner.Record, error) {
+		if league != "native.one" {
+			return nil, errors.New("unexpected league")
+		}
+		return []commissioner.Record{{Command: commissioner.RawCommand{
+			Args: commissioner.RawArgs{Franchises: []string{"f1", "f2", "f3"}}}}}, nil
+	}
+	got, err := BuildLeagues(context.Background(), snap, "Legacy NFL", natives, records)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []League{
+		{ID: MirrorLeagueID, Name: "Legacy NFL", Teams: 32},
+		{ID: "native.one", Name: "One", Teams: 3, App: true},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("league list: got %+v want %+v", got, want)
+	}
+}
+
+func TestBuildLeaguesNamesTheFailingRead(t *testing.T) {
+	t.Parallel()
+	snap := func() (snapshot.Snapshot, error) { return snapshot.Snapshot{}, nil }
+	natives := func(context.Context) ([]commissioner.NativeLeague, error) {
+		return []commissioner.NativeLeague{{ID: "native.one", Name: "One"}}, nil
+	}
+	records := func(context.Context, string) ([]commissioner.Record, error) {
+		return nil, errors.New("records unavailable")
+	}
+	_, err := BuildLeagues(context.Background(), snap, "Legacy NFL", natives, records)
+	if err == nil || !strings.Contains(err.Error(), "native.one size: records unavailable") {
+		t.Fatalf("league list error: %v", err)
+	}
+}
+
+func TestBuildLeaguesWithoutMirror(t *testing.T) {
+	t.Parallel()
+	snap := func() (snapshot.Snapshot, error) { return snapshot.Snapshot{}, errors.New("should not read") }
+	natives := func(context.Context) ([]commissioner.NativeLeague, error) {
+		return []commissioner.NativeLeague{{ID: "native.one", Name: "One"}}, nil
+	}
+	records := func(context.Context, string) ([]commissioner.Record, error) { return nil, nil }
+	got, err := BuildLeagues(context.Background(), snap, "", natives, records)
+	if err != nil || len(got) != 1 || got[0].ID != "native.one" {
+		t.Fatalf("without mirror: %+v, %v", got, err)
 	}
 }

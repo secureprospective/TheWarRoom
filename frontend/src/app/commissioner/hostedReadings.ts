@@ -167,6 +167,7 @@ export function parseHostedRoster(v: unknown): HostedRoster {
         'expirationYear',
         'contractStatus',
         'contractInfo',
+        'heldContractStatus',
       ]);
       const status = choice(r.status, p, ['ROSTER', 'IR', 'TAXI_SQUAD'] as const);
       return {
