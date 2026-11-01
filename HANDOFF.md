@@ -1,33 +1,35 @@
 # Handoff
 
 ## Baton
-ClaudeBox / review — 2026-11-01, build/SCHED-1, APP-SCHED-8.
-Local commits only; no remote contact or push.
+ClaudeBox / review — 2026-11-01, build/SCHED-1, APP-SCHED-9.
+Local commits only; no upstream configured, no push.
 
 ## Where it stands
-- PBP missing-row credits + source/revision provenance; affirmative snap/Out zeros + stat-queue
-  review flag. No math, origin branches or counted-revision changes. Code through d7ce8249.
-- Scratch-profile SQLite backup: 148 rows → 45 exact / 1 within .01 / 13 differ / 89 unavailable.
-  194 player-week zeros: 141 positive snaps, 53 Out; completed PBP and no named event required.
-  PBP positive-stat fallbacks 0; ESPN 0. Remaining 242 unresolved + 36 bye candidates + 7 identity.
-- Bills MFL 6–1 / PF 1912.35; native 0/7 complete, W-L/PF unavailable.
-- Evidence and TSVs: docs/build-handoffs/APP-SCHED-8-evidence.md, APP-SCHED-8-comparison.tsv,
-  APP-SCHED-8-absent.tsv. Final copied proof PASS 154.32 s; plain make build PASS.
-- Race: final source 39 PASS/4 SKIP, commissioner feed/queue 8 PASS. Earlier full history
-  256 PASS/4 SKIP, market 28 PASS; commissioner 271 PASS/2 FAIL (documented inherited
-  startup digest and scratch-copy preset scanner). Mutation killed by integrated test.
+- Through db6b642bc: reconciled full-snap/no-event zeros + dated depth membership; schedule
+  bye zeros; partialLineupAllowed YES maps to ordinary penalty none. No scoring math/forks.
+- Same 148 rows: 61 exact / 1 within .01 / 15 differ / 71 unavailable (was 45/1/13/89).
+  55 no-snap + 32 bye zeros newly admitted. 198 player-weeks remain unavailable (was 285).
+- Childress 0835 pending: no source-ID bridge; same-name IDs belong to canonical MFL 17372.
+- Bills MFL 6–1 / PF 1912.35; native still 0/7 complete, W-L/PF unavailable.
+- Evidence + full ledgers: docs/build-handoffs/APP-SCHED-9-evidence.md and matching TSVs.
+- Race: 319 top-level PASS / 9 opt-in SKIP across source/history/league/settings packages.
+  Final copied replay PASS 169.18 s, byte-identical results/standings, ledger idempotent 10478.
+  Plain make build PASS. Commit hooks PASS. No independent review or GUI evidence.
+- make lint blocked by inherited tiny_files 26 > 25. Separate source-branch and boundary
+  gates also fail on unchanged starting-ref files; details in evidence. No gate weakened.
 
 ## Next move / blocked on
-- Review this slice; no independent review or GUI evidence claimed.
-- ESPN/Sleeper fallback integration NOT delivered: no bodies held/no demonstrated positive
-  missing-stat gap in cohort. Unsupported held secondary data blocks zero admission safely.
-- Need inactive/historical-bye proof, identity 0835, rare lateral/split-return/two-point/kicker
-  fallback completeness, pinned absence proofs; 285 player-weeks remain unavailable.
-- Score residuals, native/MFL lineup penalties, slow adoption/feed, 76 roster backfill refusals.
-- Existing untracked sched8_measurement_test.go and .golangci-cache left untouched. Own
-  one-use harness removed; disposable artifacts remain under ignored .tmp/sched8*.
+- Review the new zero admission and partial-lineup translation; live-check imported partial
+  lineups and queue evidence on a disposable profile. Existing ledgers need an explicit ordinary
+  setting change; importer does not silently rewrite them.
+- Need historical membership / stronger snap completeness evidence for remaining gaps; no
+  identity guess or current-team zero. Bills Gonzalez W1–6 still lacks dated membership.
+- 15 complete residual differences, secondary adapters, pinned absence evidence, rare stat
+  fallback completeness, whole-season cost, 76 backfill refusals and inherited gates remain.
+- Pre-existing untracked sched8 measurement test/cache untouched; own one-use tests removed.
 
 ## Tried and rejected
-- Missing row/snaps alone, current injury status or MFL zero points as proof of zero.
-- Requiring expired overtime clock: declared END GAME can have remaining time (fixed/tested).
-- Treating unsupported secondary data or missing event columns as complete evidence.
+- Name-only merge of 0835 into 17372: external IDs already owned by another canonical player.
+- Rounded snap shares alone: partial files can fit adjacent totals; now require unique totals.
+- Zero for missing roster rows, current affiliations, absent partial-schedule entries or
+  conflicting team games. Those stay pending.
