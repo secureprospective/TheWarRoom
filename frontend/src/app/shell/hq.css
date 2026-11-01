@@ -359,3 +359,9 @@
 .hq-v10.embedded .ch{flex-wrap:wrap;gap:4px}
 
 .hq-v10 .roster-contract{font:10px var(--mono);color:var(--ink2);white-space:nowrap}
+
+/* The board owns the space between the header and the action bar. Its columns scroll inside that
+   space, so the bench list ends above DISCARD / CHECK AND SAVE PLAN instead of running on under it. */
+.hq-v10 .board{overflow:hidden}
+.hq-v10 .col{overflow:hidden}
+.hq-v10 .blist{flex:0 1 auto;min-height:0}

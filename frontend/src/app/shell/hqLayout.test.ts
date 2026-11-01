@@ -29,3 +29,10 @@ it('keeps a value band on one line and gives an empty lineup slot the whole row'
   expect(board).toContain("<span className=\"nm\" style={{ gridColumn: '2 / 7' }}>Empty · any ");
   expect(board).not.toContain('eligible player}</span><span /><span');
 });
+
+it('ends the bench list above the action bar instead of running on under it', () => {
+  const css = readFileSync(new URL('./hq.css', import.meta.url), 'utf8');
+  expect(css).toContain('.hq-v10 .board{overflow:hidden}');
+  expect(css).toContain('.hq-v10 .col{overflow:hidden}');
+  expect(css).toContain('.hq-v10 .blist{flex:0 1 auto;min-height:0}');
+});
