@@ -366,7 +366,7 @@
 .wr-v6 .desk{grid-template-columns:300px minmax(0,1fr) 340px;min-height:0;border-bottom:2px solid var(--black)}
 .wr-v6 .shelf{display:flex;flex-direction:column;min-height:0;border-right:2px solid var(--black)}
 .wr-v6 .shelf:last-child{border-right:0;border-left:2px solid var(--black)}
-.wr-v6 .shelf .list{flex:1;min-height:0;overflow:auto}
+.wr-v6 .shelf .list{flex:1;min-height:0;overflow-x:hidden;overflow-y:auto}
 .wr-v6 .shelf .list::-webkit-scrollbar{width:8px}.wr-v6 .shelf .list::-webkit-scrollbar-thumb{background:var(--edge)}
 
 /* the object: a player or pick is a block you pick up */
