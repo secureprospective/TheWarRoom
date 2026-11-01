@@ -271,3 +271,33 @@ GPT (Sol/Terra) resets ~09:50 CT.
 
 **Next:** 1) on each finish: review, cherry-pick into integrate, walk on Claude-OS if UI; 2) launch ledger first-adoption speed job (92 s → fast) when RAM allows; 3) walk Home / Trade Floor / Control Room on imported league; 4) Pulse walk after Tom; 5) one full suite; 6) hand Christopher build (flag CM-005/CM-008 ruling count change); merge only after his OK; 7) delete ~/scratch/cos-profile at end.
 **Hygiene:** /home 77% (24+9 old worktrees removed, logs in ~/logs/TheWarRoom/worktree-logs/); RAM ~7 GB avail, Claude-OS VM 8 GB; max 3 GPT lanes.
+
+## §22 — 11-01 13:20–15:35 CT: gates, rosters, sched-9, live Pulse (I took over building)
+
+**In flight: NOTHING running.** GPT hit its usage limit at 14:38 CT (5h resets ~18:20 CT). Tom hit his 5h limit at 14:13 (resets 18:00). My Tom 18:02 auto-launch (APP-PULSE-3) was CANCELLED because I took Pulse myself. No watchers are armed.
+
+**Worktrees and heads (all local, Beelink ~/work/TheWarRoom/.worktrees/):**
+- **integrate** (build/INTEGRATE-1101) at 7f899c77b. Includes 3dc1b84b (digest test, cherry-picked from gates), Tom 138a5cd25 (this week's lineups) and 095387d37 (provisional live score), 317280198 (WSL research doc), 7f899c77b (mine: ESPN live-stats poller internal/composition/live_stats_app.go, started in domReady; frontend parses homeProvisional/awayProvisional/provisional; current-week lineups read before the played-week import). Untracked logs only.
+- **gates** at c980afd9b: 0c23461c bloat, 709695a8 vitest timeout, dc3191373 schedule.follow setting, cd0c2070b calendar single status source (forks 18), fde9ecbc8 16 boundary fingerprints. placement/boundary/lint/vitest 1751/build PASS. NOT cherry-picked yet. Full go race suite NOT run (earlier composition failures incl. a panic, origin unproven).
+- **sched** at 61c50a5c6 (sched-8 48bacfac + sched-9). 148-row parity: 61 exact + 1 within .01, 15 differ (max 3.50), 71 unavailable. Lineup-penalty import bug fixed (3b7140f5f). Bills still 0/7: Zane Gonzalez W1–6 has no dated NFL team membership; W4 McLaurin, W6 Warren, W7 Ridley missing. 0835 Childress: no crosswalk link to 17372; pending, asked Christopher whether 0835 = Zion Childress (no answer yet). NOT cherry-picked.
+- **roster** at dca039191: part 1 5f7a14916/c770a6e00 (effective-dated admission + as-of projection), part 2 dca039191 (lineup membership at week's first kickoff). Part 3 (APP-ROSTER-5: replay 895 transactions, pre-seed, 76 refusals) brief at ~/fleet/briefs/APP-ROSTER-5.md, NEVER RAN (limit). NOT cherry-picked.
+
+**Rulings this window:**
+- Christopher: build backdated (effective-dated) roster moves for every league (the one sanctioned core extension).
+- Mine: schedule following is a league setting (schedule.follow). Zero-evidence also counts "complete snaps + pbp, no snap" and "team bye per league schedule with dated team". Next intended: not on any NFL roster that week = zero with evidence (Gonzalez), still to brief.
+- WSL: research logged only (docs/roadmap/research/windows-via-wsl-2026-11-01.md).
+
+**Not bugs (do not retest):** the 7,059 commish.stat.queue.approve entries (system.stat-feed, 20:14–20:15Z) are the one-time ledgered auto-final of nflverse weeks 1–7, per ruling. The ledger revision jumped 61→7151 because of them.
+
+**Pulse walk 15:31 CT (Claude-OS, 7f899c77b): live scores show** (Bills 8.5–Pats 11.5, etc.). Open defects:
+1. MY MATCHUP STARTERS panel unreadable: dozens of starters a side overlap and names are cut to 1 char. Needs layout (scroll/drawer, grip-not-glow).
+2. Some sides "–": week-8 lineup refused (e.g. franchise.18 "Mitchell, Elijah is not on this franchise's active roster"). Roster-5 should fix it.
+3. All 16 tagged LIVE regardless of state; clock/field/drive/play-by-play panels are still "needs the NFL read" (the livegame adapter is not wired to Pulse).
+4. The poller re-fetches the summary of finished games every minute (16 req/min). Trim later.
+5. Desktop launch is slow: the played-week import retries 76 refusals every launch (>70 s).
+
+**Next actions:**
+1. Fix the starters panel layout (PulseNow.tsx), then the LIVE tag from ESPN board state, then wire the clock/field/plays from livegame.Adapter details into Pulse.
+2. After ~18:20 CT: launch APP-ROSTER-5 (Sol medium, roster wt). Then the sched follow-up (Gonzalez no-roster zero; remaining 15 diffs).
+3. Then cherry-pick gates, sched and roster into integrate (Tom is not working there any more), run heavy-ok plus ONE full suite, and walk.
+4. Tell Christopher Pulse is demo-ready ONLY after a full walk is clean.
