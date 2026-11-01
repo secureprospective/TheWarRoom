@@ -2,12 +2,13 @@ import { HQAct as WarRoomAct } from './HQAct';
 import type { WarRoomHeaderReading } from './warroomReads';
 import type { WarRoomEvent } from './warroomCalendar';
 import { countdown } from '../clock/urgency';
-import { money, placeLine, unavailable } from './hqModel';
-export function CompactAbsent() {
-  return <span title={unavailable} aria-label={unavailable}>—</span>;
+import { absent, money, placeLine, unavailable } from './hqModel';
+export function CompactAbsent({ pending }: { pending?: boolean } = {}) {
+  return <span title={absent(pending)} aria-label={absent(pending)}>—</span>;
 }
-export function WarRoomEmpty({ reason }: { reason?: string }) {
-  return <p className="empty" title={reason ? unavailable : undefined}>{unavailable}</p>;
+export function WarRoomEmpty({ reason, pending }: { reason?: string; pending?: boolean }) {
+  return <p className="empty" role={pending ? 'status' : undefined}
+    title={reason ? unavailable : undefined}>{absent(pending)}</p>;
 }
 export function WarRoomHeader({ name, reading, windowLabel }: { name?: string;
   reading?: WarRoomHeaderReading; windowLabel?: string }) {

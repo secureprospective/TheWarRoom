@@ -15,7 +15,7 @@ import { HQContracts, HQReserves } from './HQPanels';
 import { HQMoves, HQQueue } from './HQMoves';
 import { HQRelease } from './HQRelease';
 import { HQInspector } from './HQInspector';
-import { unavailable } from './hqModel';
+import { absent, unavailable } from './hqModel';
 import { HQNativeWhatIf } from './HQNativeWhatIf';
 import { countdown } from '../clock/urgency';
 import { connectClock } from '../clock/ticker';
@@ -35,8 +35,9 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   const [selected, select] = useState<string>();
   const [revision, refresh] = useState(0);
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), [port]);
-  const { reading, error } = useContractRead<NativeHQ>(JSON.stringify([league, mine, revision]), publish =>
-    readNativeHQ(league, mine, port, publish), provider);
+  const { reading, error, pending } = useContractRead<NativeHQ>(
+    JSON.stringify([league, mine, revision]),
+    publish => readNativeHQ(league, mine, port, publish), provider);
   const editor = useNativeLineup(league, mine, reading?.lineup, port);
   const chosen = selected ?? reading?.lineup?.starters[0]?.id;
   const quote = useContractRead(JSON.stringify([league, mine, chosen]), () => chosen
@@ -52,7 +53,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       }, []);
   if (!reading) return <div className="hq-v10">{!embedded && <RailLeaguePicker />}
     <p className="empty" role="status"
-    title={error}>{unavailable}</p></div>;
+    title={error}>{absent(pending)}</p></div>;
   const { snapshot, lineup, runway, moves = [] } = reading;
   const settings = { ...reading.settings };
   const positions = new Map(lineup?.starters.concat(lineup.bench).map(p => [p.id, p.position ||

@@ -345,3 +345,15 @@ it.each(['hq', 'war'] as const)('fills %s while change events keep arriving', as
     }, { timeout: 4000 });
   } finally { storm = false; await keepChanging; }
 });
+
+// A read still in flight has not failed. Until it answers, the screen says it is still reading.
+it.each(['hq', 'war'] as const)('says %s is still reading while the first read is in flight',
+  async node => {
+  vi.mocked(localWorkflow).mockImplementation(() => new Promise(() => {}));
+  localStorage.setItem(`${FRANCHISE_KEY}:native.seed`, 'franchise.02');
+  commands.dispatch('nav.open', { node });
+  await mount();
+  const shell = container.querySelector(node === 'war' ? '.wr-v6' : '.hq-v10')!;
+  expect(shell.textContent).toContain('Still reading');
+  expect(shell.textContent).not.toContain('Not available yet');
+});

@@ -3,6 +3,11 @@ import type { Report } from '../reports/contract';
 import type { Readings } from '../contracts/contract';
 
 export const unavailable = 'Not available yet';
+// A read still in flight has not failed and has not come back empty. Say it is still reading, and
+// keep the unavailable words for a read that answered without the fact. Every empty state that can
+// be reached while a read is running goes through absent, so no region has to decide this itself.
+export const stillReading = 'Still reading…';
+export function absent(pending?: boolean): string { return pending ? stillReading : unavailable; }
 // Nothing selected is not a failed read. The detail panels say what to do next, in one calm line,
 // and keep the unavailable words for a read that actually failed.
 export const pickPlayer = 'Pick a player to see their details';
