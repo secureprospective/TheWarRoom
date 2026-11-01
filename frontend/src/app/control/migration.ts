@@ -26,7 +26,9 @@ export function parsePreparation(value: unknown): Preparation {
     }),
   };
 }
-export type MigrationPort = { run(command: string, body: string): Promise<unknown>; open(league: string): Promise<void> };
+export type MigrationPort = {
+  run(command: string, body: string): Promise<unknown>; open(league: string): Promise<void>;
+};
 type State = {
   id: string; key: string; preset: string; reason: string; prep?: Preparation;
   drafts: Record<string, Draft>; pending: boolean; error: string; done: string;
@@ -35,7 +37,10 @@ export function createMigration(port: MigrationPort) {
   const use = create<State>(() => ({ id: '', key: '', preset: '', reason: '', drafts: {},
     pending: false, error: '', done: '' }));
   const set = use.setState;
-  function input(id: string) { if (!use.getState().pending) set({ id, key: '', reason: '', prep: undefined, drafts: {}, preset: '', done: '', error: '' }); }
+  function input(id: string) {
+    if (!use.getState().pending) set({ id, key: '', reason: '', prep: undefined,
+      drafts: {}, preset: '', done: '', error: '' });
+  }
   async function prepare(preset = '') {
     const s = use.getState();
     if (s.pending) return;
@@ -56,7 +61,8 @@ export function createMigration(port: MigrationPort) {
   }
   function blocked() {
     const s = use.getState();
-    if (s.pending || s.done || !s.prep?.ready || s.prep.problems.length) return 'Prepare a league without problems first.';
+    if (s.pending || s.done || !s.prep?.ready || s.prep.problems.length)
+      return 'Prepare a league without problems first.';
     for (const answer of answers()) if (!answer.typed.ok) return answer.typed.error;
     return s.reason.trim() ? '' : 'Type a reason for importing this league.';
   }

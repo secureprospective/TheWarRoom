@@ -14,7 +14,8 @@ import type { RosterFacts } from './hqRosterFacts';
 export type HQLineup = Omit<LineupReading, 'starters' | 'bench'> & { starters: { id: string; position?:
   string }[]; bench: { id: string; position?: string }[] };
 export type HQBoardProps = { snapshot: Snapshot; mine: string; reading?: HQLineup;
-  showContracts?: boolean; error?: string; settings: HQSettings; values: Map<string, number>; facts?: RosterFacts;
+  showContracts?: boolean; error?: string; settings: HQSettings; values: Map<string, number>;
+  facts?: RosterFacts;
   byes?: Map<string, number>; injuries?: Injury[]; now?: Now; live?: LiveView; changed?: string[];
     canEdit?: boolean; select: (id: string) => void;
   place?: (id: string, out?: string) => void; bench?: (id: string) => void;
@@ -165,7 +166,8 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
           ?? unavailable : settings.defence ?? unavailable}
           <span>{reading ? totalProjection(slots.filter(s => s.side === side && s.id).map(s => s.id!),
             values) : unavailable}</span></div>
-        <div className="slots">{!reading ? <p className="empty" title={error}>{unavailable}</p> : slots.filter(s =>
+        <div className="slots">{!reading ? <p className="empty" title={error}>{unavailable}</p> :
+          slots.filter(s =>
           s.side === side).map((slot, i) => slot.id ? row(slot.id, slot)
           : <HQAct key={`empty:${i}`} className={`slot gap ${(drag?.id || picked) && canPlace((drag?.id ||
             picked)!, slot) ? 'target' : ''}`} attributes={{

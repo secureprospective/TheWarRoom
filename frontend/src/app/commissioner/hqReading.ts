@@ -57,7 +57,9 @@ export function nativeHQAssets(value: unknown, league: string): Snapshot {
   const players = array(raw.snapshot.players, 'Roster contracts', (v, p) => {
     const r = v as Record<string, unknown>;
     return { id: text(r.id, p), franchise: text(r.franchise, p), salary: integer(r.salaryCents, p),
-      expiration: integer(r.expirationYear, p), // An imported league may hold no contract status (MFL left it blank); the MFL mirror reads blank as FLAG.
+      // An imported league may hold no contract status (MFL left it blank);
+      // the MFL mirror reads blank as FLAG.
+      expiration: integer(r.expirationYear, p),
       contractStatus: choice(r.contractStatus === '' ? 'FLAG' : r.contractStatus, p, CONTRACT_STATUSES),
       rosterStatus: choice(r.status, p, ROSTER_STATUSES) };
   });
@@ -108,7 +110,8 @@ export function nativeHQMoves(value: unknown, league: string, mine: string): { m
 export type NativeHQ = { revision: number; snapshot: Snapshot; settings: HQSettings; leagueName?: string;
   lineup?: HQLineup; contracts?: Map<string, { season: number; cents: number }[]>;
   check?: string; lock?: string; runway?: HQCap[]; moves?: HQMove[]; moveReason?: string;
-  reserveNotes?: Map<string, string>; record?: string; standing?: string; week?: number; weekNote?: string; errors: string[] };
+  reserveNotes?: Map<string, string>; record?: string; standing?: string; week?: number; weekNote?: string;
+  errors: string[] };
 export async function readNativeHQ(league: string, mine: string, port: HostedPort = hostedWorkflow):
   Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });

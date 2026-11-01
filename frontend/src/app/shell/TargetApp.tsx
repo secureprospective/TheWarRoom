@@ -290,7 +290,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           {error && <p role="alert">{error}</p>}
         </div>
       </section>
-      {!appLeagueView && <aside className="insp" aria-label="Inspector" aria-hidden={s.inspector === 'closed'}>
+      {!appLeagueView && <aside className="insp" aria-label="Inspector"
+        aria-hidden={s.inspector === 'closed'}>
         <div className="insp-head">
           Inspector
           <span className="x">

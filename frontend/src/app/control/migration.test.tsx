@@ -13,7 +13,8 @@ const prep: Preparation = {
 const receipt = { entry: 'import.1', league: prep.league, revision: 1,
   recordedAt: '2026-10-31T12:00:00Z', message: 'Imported' };
 
-it('prepares, chooses a bundle, answers catalogue inputs and imports once into the selected league', async () => {
+it('prepares, chooses a bundle, answers catalogue inputs and imports once into the selected league',
+  async () => {
   const calls: { command: string; args: Record<string, unknown> }[] = [];
   let opened = '';
   const flow = createMigration({ run: async (command, body) => {

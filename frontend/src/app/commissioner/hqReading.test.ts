@@ -132,7 +132,8 @@ describe('native HQ existing reads', () => {
     });
     expect(failedWeek.week).toBeUndefined(); expect(failedWeek.lineup).toBeUndefined();
     expect(failedWeek.errors).toContain('Error: Week unavailable');
-    data['week.read'] = { schedule: { league, franchise: 'another', season: assets.snapshot.season, revision: assets.revision,
+    data['week.read'] = { schedule: { league, franchise: 'another', season: assets.snapshot.season,
+      revision: assets.revision,
       games: [] } };
     const wrongScope = await readNativeHQ(league, mine, port);
     expect(wrongScope.week).toBeUndefined(); expect(wrongScope.lineup).toBeUndefined();

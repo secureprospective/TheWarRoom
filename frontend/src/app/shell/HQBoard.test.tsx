@@ -114,7 +114,8 @@ it('renders five weekly bars, hatched bye, projection and average from the exten
 it('shows held roster salary and years instead of missing form in the app league contract column', () => {
   const snapshot = heldSnapshot(); const reading = heldLineup();
   const id = reading.bench[0].id;
-  const contract = snapshot.rosters.value.find(r => r.franchiseId === '0025')!.players.find(p => p.id === id)!;
+  const contract = snapshot.rosters.value.find(r => r.franchiseId === '0025')!
+    .players.find(p => p.id === id)!;
   contract.salary = 300_000_000; contract.yearsRemaining = 2;
   const render = () => renderToStaticMarkup(<HQBoard snapshot={snapshot} mine="0025" reading={reading}
     showContracts settings={{ positions: [] }} values={new Map()} select={() => {}} />);
