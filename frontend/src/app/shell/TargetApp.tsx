@@ -79,6 +79,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   useEffect(() => root.current ? connectDensity(commands, root.current) : undefined,
     [s.node, leagues.selectedId]);
   useWorkScrollReset(workspaceBody, s.scrollRevision);
+  const [nativeTabs, setNativeTabs] = useState<HTMLDivElement | null>(null);
   const [franchiseFooter, setFranchiseFooter] = useState<HTMLDivElement | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [error, setError] = useState<string>();
@@ -128,7 +129,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   </>;
   return (
     <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}
-      data-native-workspace={appLeagueView === 'hq' || undefined}>
+      data-native-workspace={Boolean(appLeagueView) || undefined}>
       <aside className="rail">
         <LeaguePicker
           leagues={leagues.leagues}
@@ -177,8 +178,9 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
       <section className="ws" aria-label={node.label}>
         <header className="ws-head">
           <h3>{node.label}</h3>
-          <div className="wtabs">
-            {workspaces.map((w) => (
+          <div className="wtabs" ref={appLeagueView === 'war' ? setNativeTabs : undefined}
+            role={appLeagueView === 'war' ? 'tablist' : undefined}>
+            {appLeagueView !== 'war' && workspaces.map((w) => (
               <Act
                 key={w.slug}
                 verb="nav.open"
@@ -221,7 +223,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
               onSelect={leagues.select} />}
           {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
-            view={appLeagueView} footer={franchiseFooter}
+            view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs}
             hqTab={s.node === 'hq' ? s.workspace.hq : undefined}
             leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
           leagues.loading && !selectedLeague ? <p role="status">Reading the league…</p> :
@@ -288,7 +290,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           {error && <p role="alert">{error}</p>}
         </div>
       </section>
-      {appLeagueView !== 'hq' && <aside className="insp" aria-label="Inspector" aria-hidden={s.inspector === 'closed'}>
+      {!appLeagueView && <aside className="insp" aria-label="Inspector" aria-hidden={s.inspector === 'closed'}>
         <div className="insp-head">
           Inspector
           <span className="x">
@@ -323,7 +325,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           <EndpointIndex placement="Inspector" />
         </div>
       </aside>}
-      {appLeagueView !== 'hq' && s.inspector === 'closed' && (
+      {!appLeagueView && s.inspector === 'closed' && (
         <aside className="inspector-closed">
           <Act variant="button" verb="inspector.toggle" args={{}} label="Open inspector">
             Open

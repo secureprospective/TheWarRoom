@@ -11,12 +11,12 @@ import type { Node } from './nodes';
 const NativeFranchiseHQ = lazy(() => import('./NativeFranchiseHQ'));
 const WarRoomNative = lazy(() => import('./WarRoomNative'));
 
-export default function AppLeagueMount({ league, view, leave, footer, hqTab }: {
+export default function AppLeagueMount({ league, view, leave, footer, hqTab, tabs }: {
   league: LeagueChoice;
   view: 'hq' | 'war';
   leave: (node?: Node) => void;
   footer?: HTMLElement | null;
-  hqTab?: HQTab;
+  hqTab?: HQTab; tabs?: HTMLElement | null;
 }) {
   const [people, setPeople] = useState<People>();
   const [mine, setMine] = useState('');
@@ -66,7 +66,7 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab }: {
           league={league.id} mine={mine} name={league.name} port={localWorkflow} leave={leave}
           tab={hqTab} navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
           <WarRoomNative embedded key={`${league.id}:${mine}`} league={league.id} mine={mine}
-            port={localWorkflow} leave={leave} />}
+            port={localWorkflow} leave={leave} tabs={tabs} />}
       </Suspense>}
   </>;
 }

@@ -349,3 +349,11 @@
 
 .hq-v10.shell.embedded{grid-template-columns:minmax(0,1fr) 316px;height:100%;min-height:650px;min-width:1040px}
 .hq-v10.embedded .work{grid-template-rows:auto minmax(0,1fr) auto}
+
+@container (max-width:640px){
+  .hq-v10.embedded .col:first-child .slot{grid-template-columns:40px 28px minmax(80px,1fr) 0 0 40px 30px;gap:4px;padding:0 12px}
+  .hq-v10.embedded .col:first-child .elig{display:none}
+}
+.hq-v10.embedded .mu-h{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.hq-v10.embedded .wp{grid-column:1/-1;grid-row:2;width:100%}
+.hq-v10.embedded .ch{flex-wrap:wrap;gap:4px}

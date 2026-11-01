@@ -933,5 +933,18 @@
 .wr-v6 .table.fixed{height:90px;box-sizing:border-box;overflow:hidden}
 .wr-v6 .runw .y.fit{grid-template-columns:28px 1fr 56px;white-space:nowrap}
 
-.wr-v6.embedded{position:relative;inset:auto;z-index:auto;min-height:650px}
+.wr-v6.embedded{position:relative;inset:auto;z-index:auto;height:100%;min-height:650px;min-width:1040px}
 .wr-v6.embedded .shell{grid-template-columns:minmax(0,1fr) 316px}
+
+.wr-v6.embedded .work{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto}
+.wr-v6.embedded .empty{overflow-wrap:anywhere}
+
+.wr-v6.embedded .desk{grid-template-columns:minmax(180px,1fr) minmax(360px,2fr) minmax(180px,1fr)}
+.wr-v6.embedded .desk>div,.wr-v6.embedded .dr5>div{min-width:0;overflow:auto}
+.wr-v6.embedded .effect{grid-template-columns:repeat(2,minmax(0,1fr))}
+.wr-v6.embedded .mk3{grid-template-columns:minmax(0,1fr);overflow:auto}
+.wr-v6.embedded .mk3>div{min-height:220px;overflow:auto}
+.wr-v6.embedded .fa-h,.wr-v6.embedded .fa-r{min-width:780px}
+.wr-v6.embedded .dr5{grid-template-columns:minmax(180px,1fr) minmax(300px,2fr) minmax(180px,1fr)}
+.wr-v6.embedded .table.fixed{height:auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.wr-v6.embedded .ch{flex-wrap:wrap;gap:4px}

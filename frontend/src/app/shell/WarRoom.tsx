@@ -1,4 +1,5 @@
 import { HQAct as WarRoomAct } from './HQAct';
+import { createPortal } from 'react-dom';
 import { RailLeaguePicker } from './leaguePicker';
 import { useRef, useState } from 'react';
 import type { Snapshot } from '../data/contract';
@@ -53,6 +54,10 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     if (native) { if (node !== 'war') native.leave(node); }
     else void commands.dispatch('nav.open', { node });
   };
+  const tabs = (['desk', 'market', 'draft', 'plans'] as const).map((t, i) => <WarRoomAct role="tab" key={t}
+    className={native?.embedded ? `act act-tab${tab === t ? ' on' : ''}` : undefined}
+    selected={tab === t} onAction={() => setTab(t)}>{['TRADE DESK', 'MARKET', 'DRAFT ROOM',
+      'PLANS'][i]}</WarRoomAct>);
   return <div className={`wr-v6${native?.embedded ? ' embedded' : ''}`} ref={root}><div className="shell">
     {!native?.embedded && <nav className="rail" aria-label="Main"><RailLeaguePicker />
       {native && !mine && <p role="status">No franchise assigned · read-only</p>}<div className="rail-head">
@@ -76,10 +81,8 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       <div className="rail-foot">
       <WarRoomAct className="btn" disabled title={unavailable}>CUSTOMIZE</WarRoomAct>
         <span>/ command</span></div></nav>}
-    <main className="work"><div className="ws-tabs" role="tablist">
-      {(['desk', 'market', 'draft', 'plans'] as const).map((t, i) => <WarRoomAct role="tab" key={t}
-        selected={tab === t} onAction={() => setTab(t)}>{['TRADE DESK', 'MARKET', 'DRAFT ROOM',
-          'PLANS'][i]}</WarRoomAct>)}</div>
+    <main className="work">{native?.embedded && native.tabs ? createPortal(tabs, native.tabs) :
+      <div className="ws-tabs" role="tablist">{tabs}</div>}
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
         reading={header.reading} />
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
@@ -92,12 +95,11 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
         className="ev" key={d.id}>
       <span className="w">{d.at ? new Date(d.at).toLocaleDateString() : unavailable}</span>
         <b>{d.label}</b><span className="c">{countdown(d.at, Date.now())}</span></div>) :
-        <WarRoomEmpty />}</div>
+        <WarRoomEmpty reason={calendar.error} />}</div>
       <div className="tray"><div className="pulls">{(['pocket', 'offers'] as const).map(d => <WarRoomAct
         key={d} className="pull" expanded={drawer === d} onAction={() =>
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}
-      </div><span className="msg" title={header.error || header.reading?.errors.length ?
-        unavailable : undefined}>{unavailable}
+      </div><span className="msg" title={[header.error, ...header.reading?.errors ?? []].filter(Boolean).join(' · ')}>{unavailable}
       </span>
       <WarRoomAct className="btn sp" disabled>SAVE TO POCKET</WarRoomAct>
       <WarRoomAct className="btn" onAction={() =>

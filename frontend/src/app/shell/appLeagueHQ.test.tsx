@@ -106,6 +106,15 @@ it('shows a no-seat shell chooser, then native roster and contracts from a fake 
   await act(async () => { commands.dispatch('nav.open', { node: 'war' }); });
   await settle();
   expect(container.querySelector('.wr-v6.embedded')).not.toBeNull();
+  expect(container.querySelector('.wr-v6 .ws-tabs')).toBeNull();
+  expect(container.querySelector('.target-frame > .insp')).toBeNull();
+  const tabs = [...container.querySelectorAll<HTMLButtonElement>('.wtabs [role="tab"]')];
+  expect(tabs.map(t => t.textContent)).toEqual(['TRADE DESK', 'MARKET', 'DRAFT ROOM', 'PLANS']);
+  await act(async () => { tabs[1].click(); }); await settle();
+  expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+  expect(container.querySelector('.wr-v6 [aria-label="Market"]')).not.toBeNull();
+  await act(async () => { tabs[0].click(); }); await settle();
+  expect(container.querySelector('.wr-v6 .shelf')?.textContent).toContain('Player, 1000');
   expect(container.querySelectorAll('.rail')).toHaveLength(1);
   expect((container.querySelector('.me select') as HTMLSelectElement).value).toBe('franchise.02');
 });
@@ -129,4 +138,30 @@ it('defaults to a held seat but restores only a valid choice for the selected le
   await settle();
   expect((container.querySelector('.me select') as HTMLSelectElement).value).toBe('franchise.01');
   expect(localStorage.getItem(`${FRANCHISE_KEY}:native.seed`)).toBe('franchise.02');
+});
+
+it('shows an imported-shaped 35-player roster before any schedule is published', async () => {
+  const original = vi.mocked(localWorkflow).getMockImplementation()!;
+  const imported = structuredClone(assets);
+  const player = imported.snapshot.players[0];
+  const players = Array.from({ length: 35 }, (_, i) => ({ ...player, id: String(2000 + i),
+    franchise: 'franchise.02', name: `Imported player ${i}`, contractStatus: '',
+    heldContractStatus: 'EXT (2024)', contractInfo: 'Imported contract' }));
+  imported.snapshot.players = players;
+  vi.mocked(localWorkflow).mockImplementation(async request => {
+    const data = request.command === 'native.assets.read' ? imported : request.command === 'week.read' ?
+      { schedule: { league: 'native.seed', franchise: 'franchise.02', season: imported.snapshot.season,
+        revision: imported.revision, games: [] }, message: 'The schedule is not published yet.' } :
+      request.command === 'lineup.read' ? { ...lineup, revision: imported.revision, starters: [],
+        bench: players.map(p => ({ player: p.id, name: p.name, position: 'QB',
+          locked: false, words: 'No NFL game this week' })) } : undefined;
+    return data ? { label: 'Import shape', writable: false, football: '', data } : original(request);
+  });
+  await mount(); await choose('franchise.02');
+  expect(container.textContent).toContain('Viewing week 1 · The schedule is not published yet.');
+  expect(container.querySelectorAll('.hq-v10 .blist [data-player]')).toHaveLength(35);
+  expect(container.querySelector('.hq-v10 .blist')?.textContent).toContain('Imported player 34');
+  await act(async () => { commands.dispatch('nav.open', { node: 'war' }); }); await settle();
+  expect(container.querySelectorAll('.wr-v6 .shelf:first-child .blk')).toHaveLength(35);
+  expect(container.querySelector('.wr-v6 .shelf')?.textContent).toContain('Imported player 34');
 });
