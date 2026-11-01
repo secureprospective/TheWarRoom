@@ -301,3 +301,24 @@ GPT (Sol/Terra) resets ~09:50 CT.
 2. After ~18:20 CT: launch APP-ROSTER-5 (Sol medium, roster wt). Then the sched follow-up (Gonzalez no-roster zero; remaining 15 diffs).
 3. Then cherry-pick gates, sched and roster into integrate (Tom is not working there any more), run heavy-ok plus ONE full suite, and walk.
 4. Tell Christopher Pulse is demo-ready ONLY after a full walk is clean.
+
+## §23 — 11-01 15:35–16:15 CT: League Pulse live end to end (I built it)
+
+**In flight: NOTHING.** App closed on Claude-OS. GPT back ~18:20 CT, Tom ~18:00.
+
+**Committed on integrate (build/INTEGRATE-1101):** 7d3979d8f (Pulse wired to the existing held live NFL view: NFL GAMES list, follow chips, game header, field/ball/first-down, down & distance, play-by-play; starters show OFFENCE/DEFENCE one at a time with side totals; LIVE only while an NFL game is `in`, else "IN PLAY"; player_score.go: a starter with no line yet keeps the listed position) · eaa07e153 (live read asked with mine="" because nowapp TargetLiveGame refuses native franchise ids — "live game: unknown franchise"; IN THIS GAME = matchup starters whose team (league→ESPN code map, espnTeam) is in the followed game) · 5b47772b0 (centre column min-width 0, compact chips). Shell vitest 329 pass, tsc clean, make build OK. Test file frontend/src/app/shell/pulseLive.test.tsx.
+
+**Walk 16:10 CT (Claude-OS, FULL 1920x1080 — Christopher's rule; resize with xdotool windowmove 0 0 windowsize 1920 1080):** auto-follows LAC@LAR, field + plays live, Bills 143.4–Pats 170.3, In This Game lists McConkey 6.2 etc. Works once warm.
+
+**Not bugs (do not retest):** offence "–" right after launch = first results read before the first live poll; ESPN parser and espn crosswalk verified fine (Willis 4242512, Brissett 2578570).
+
+**Open defects before demo:**
+1. Launch lag: raw "player NNNNN" ids for ~4 min, live points only ~7 min after launch. Log shows startup contention ("context deadline exceeded" on history/ledger reads) from the played-week import retrying 76 refusals. Fix: stop re-importing settled refusals every launch, and/or run the first live poll before that import.
+2. Refused week-8 lineups show "–" (Panthers, Dolphins, Saints…) → APP-ROSTER-5.
+3. Poller re-fetches finished games' summaries every minute (trim).
+
+**Next actions:**
+1. Fix launch lag (defect 1); walk a fresh launch full-screen; target live scores within ~1 min.
+2. After 18:20 CT launch APP-ROSTER-5 (Sol medium, roster wt); then sched follow-up (Gonzalez no-roster zero; 15 diffs).
+3. Cherry-pick gates, sched, roster into integrate; heavy-ok + ONE full suite; full walk.
+4. Tell Christopher Pulse is demo-ready only after a clean fresh-launch walk.
