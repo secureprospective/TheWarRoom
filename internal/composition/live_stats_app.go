@@ -76,7 +76,7 @@ func (a *App) pollLiveStats(ctx context.Context) time.Duration {
 		log.Printf("live stats: %v", err)
 		return liveStatsIdle
 	}
-	lines := liveStatLines(ctx, adapter, games, invertIDs(espn), a.core.Season, a.marketWeek())
+	lines := liveStatLines(ctx, adapter, games, invertIDs(espn), a.core.Season, a.marketWeek(), &a.liveFinals, time.Now())
 	// Say so when live lines first land, stop, or move to another week; not on every poll.
 	if state := fmt.Sprintf("%t/%d/%d", len(lines) > 0, a.core.Season, a.marketWeek()); state != a.liveStatsSaid {
 		a.liveStatsSaid = state
@@ -96,30 +96,47 @@ func (a *App) pollLiveStats(ctx context.Context) time.Duration {
 	return liveStatsIdle
 }
 
+// liveFinalReread is how often a finished game's box score is read again: stat corrections after the
+// final whistle still arrive, but not every minute.
+const liveFinalReread = 10 * time.Minute
+
+// liveFinals holds the box-score lines of finished games between re-reads, keyed by ESPN game id.
+// Only the poller goroutine touches it.
+type liveFinals map[string]liveFinal
+
+type liveFinal struct {
+	at    time.Time
+	lines []livestats.Line
+}
+
 // liveStatLines reads the box score of every game in progress or finished on the board and keys
-// each athlete line by league player id. An athlete the directory cannot place is left out: a
-// missing line stays pending, never a zero.
+// each athlete line by league player id. A finished game's lines are reused for liveFinalReread.
+// An athlete the directory cannot place is left out: a missing line stays pending, never a zero.
 func liveStatLines(ctx context.Context, adapter livegame.Adapter, games []livegame.Game,
-	byESPN map[string]string, season, week int) map[string]source.PlayerWeek {
+	byESPN map[string]string, season, week int, finals *liveFinals, now time.Time) map[string]source.PlayerWeek {
+	if *finals == nil {
+		*finals = liveFinals{}
+	}
 	out := map[string]source.PlayerWeek{}
 	for _, g := range games {
 		if g.Status == "pre" {
 			continue
 		}
-		body, err := adapter.Fetch(ctx, "summary", g.ID)
-		if err != nil {
-			log.Printf("live stats: game %s: %v", g.ID, err)
-			continue
-		}
-		game, err := livegame.ParseSummary(body)
-		if err != nil {
-			log.Printf("live stats: game %s: %v", g.ID, err)
-			continue
-		}
-		lines, err := livestats.Lines(game)
-		if err != nil {
-			log.Printf("live stats: game %s: %v", g.ID, err)
-			continue
+		held, fresh := (*finals)[g.ID]
+		lines := held.lines
+		if g.Status != "post" || !fresh || now.Sub(held.at) >= liveFinalReread {
+			read, err := gameLines(ctx, adapter, g.ID)
+			if err != nil {
+				log.Printf("live stats: game %s: %v", g.ID, err)
+				if !fresh {
+					continue
+				}
+			} else {
+				lines = read
+				if g.Status == "post" {
+					(*finals)[g.ID] = liveFinal{at: now, lines: read}
+				}
+			}
 		}
 		for _, l := range lines {
 			player, ok := byESPN[l.SourceID]
@@ -132,6 +149,17 @@ func liveStatLines(ctx context.Context, adapter livegame.Adapter, games []livega
 	return out
 }
 
+func gameLines(ctx context.Context, adapter livegame.Adapter, id string) ([]livestats.Line, error) {
+	body, err := adapter.Fetch(ctx, "summary", id)
+	if err != nil {
+		return nil, err //nolint:wrapcheck // The caller names the game.
+	}
+	game, err := livegame.ParseSummary(body)
+	if err != nil {
+		return nil, err //nolint:wrapcheck // The caller names the game.
+	}
+	return livestats.Lines(game) //nolint:wrapcheck // The caller names the game.
+}
 func invertIDs(byPlayer map[string]string) map[string]string {
 	out := make(map[string]string, len(byPlayer))
 	for player, id := range byPlayer {
