@@ -3,13 +3,16 @@ package history
 import (
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 func TestMigrationSourcePortPrepareImportReview(t *testing.T) {
@@ -99,5 +102,66 @@ func TestMigrationAnswersRollbackWithCreation(t *testing.T) {
 	}
 	if n := count(t, store, "league_event"); n != 3 {
 		t.Fatalf("want creation, snapshot and answer; got %d", n)
+	}
+}
+
+func TestPrepareAndJobsRulingDifference(t *testing.T) {
+	fixture, err := migrationtest.Legacy()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture.Base = leaguerules.LegacyNFL()
+	fixture.DraftType = "SAME"
+	svc, store, _ := migrationService(t, fixture)
+	prepared, err := mflsource.Prepare(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// An existing ledger can lack the draft-kind evidence a fresh read now holds.
+	fixture.DraftType = ""
+	plan, err := mflsource.Prepare(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	league := leaguemigration.AppLeagueID(fixture.LeagueID, fixture.Season)
+	_, err = svc.Ledger.Batch(t.Context(), []commissioner.RawCommand{
+		{League: league, Command: commissioner.Create, Args: plan.Create, Request: "create", Reason: "Check rulings", Effective: "now", Visibility: "league"},
+		{League: league, Command: commissioner.NativeSeed, Args: commissioner.RawArgs{Native: &plan.Seed}, Request: "seed", Reason: "Check rulings", Effective: "now", Visibility: "league"},
+	}, "creator")
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := store.nativeRecords(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rules, err := commissioner.RulesNow(records, svc.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	waiting := map[string]bool{}
+	for _, setting := range prepared.Waiting {
+		waiting[setting.Field] = true
+	}
+	var extra []string
+	fields, values := leaguerules.Catalogue(), leaguerules.ReadSettings(rules)
+	for i, field := range fields {
+		if values[i].State == "Needs a ruling" && !waiting[string(field.Path)] {
+			extra = append(extra, string(field.Path))
+		}
+	}
+	slices.Sort(extra)
+	jobs, err := store.CommissionerJobs(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	index := slices.IndexFunc(jobs.Jobs, func(job commissioner.Job) bool { return job.ID == "setup" })
+	if index < 0 || jobs.Jobs[index].Words != "8 league rules still need a ruling." {
+		t.Fatalf("setup job: %+v", jobs.Jobs)
+	}
+	t.Logf("Prepare waits for %d; extra setup rulings: %v", len(waiting), extra)
+	want := []string{"cap.complianceDeadline", "draft.laterPattern", "league.keepers"}
+	if len(waiting) != 5 || !slices.Equal(extra, want) {
+		t.Fatalf("unexpected count/difference: %d / %v", len(waiting), extra)
 	}
 }
