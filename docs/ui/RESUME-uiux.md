@@ -335,10 +335,9 @@ GPT (Sol/Terra) resets ~09:50 CT.
 
 **Walk-script lesson:** after `kill`, wait until `pgrep -x thewarroom` is empty before relaunching — the old instance can take >3 s (background import) and the new one hits the instance lock. Log has binary bytes: use `grep -a`.
 
-**Open, small:** matchup read waits on projections (ready after the first value-engine run, ~1.5 min) → split lineup.read from projections.read in readPulseMatchup so team/lock show with points. Refused week-8 lineups "–" → APP-ROSTER-5.
+**Done 16:56:** 40252a356 readPulseMatchup publishes lineups before projections. Walk 16:54 fresh launch full-screen: at 2:00 EVERYTHING complete (points, team/lock/proj, In This Game with points, Q3 drive live). Shell vitest 330 pass, tsc clean. **Open:** refused week-8 lineups "–" (Panthers etc.) → APP-ROSTER-5.
 
 **Next actions:**
 1. After 18:20 CT launch APP-ROSTER-5 (Sol medium, roster wt); then sched follow-up.
-2. Optional: split readPulseMatchup (lineups first, projections second).
 3. Cherry-pick gates, sched, roster into integrate; heavy-ok + ONE full suite; full walk.
 4. Tell Christopher Pulse is demo-ready only after that clean fresh-launch walk.
