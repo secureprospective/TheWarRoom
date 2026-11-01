@@ -4,14 +4,14 @@
 Review — 2026-10-31, build/WR-wire. Local only; no remote contact.
 
 ## Where it stands
-- War Room v6 wiring and known gaps: `docs/build-handoffs/WR-WIRE-report.md` and `docs/architecture/warroom-wire.md`.
-- HQ fixes, grid constraint and known gaps: `docs/build-handoffs/HQ-FIX-report.md` and `docs/architecture/hq-wire.md`.
-- Previous WR frontend suite had one HQ line-length failure; merged HQ changes require fresh verification.
+- WR-POLISH1 frontend fixes committed; full frontend suite: 151 files, 1684 tests pass; TypeScript passes.
+- Native shelf uses HQ lineup identities when available. Players without a resolved identity remain unavailable.
+- Fixture runway is based on a $1,000M cap and $997.45M room, not the $125M cap cited in the brief.
+- Browser evidence: `frontend/.tmp/wr/after-evidence.json` and `after-*.png` (untracked harness).
 
 ## Next move / blocked on
-- Verify merged frontend and Go build; compare War Room fixture screenshots with locked mock.
-- Native application acceptance, disposable mirror/native round trips, private reads and missing models remain open.
+- Review native app with real data, especially roster identities outside the owner's lineup and cap fixture selection.
+- Posture saving, missing models and native private reads remain unwired by design.
 
 ## Tried and rejected
-- No invented data or rival bids, and no native private/model reads mislabeled as hosted data.
-- No draft-result rows portrayed as prospects or commitments as future cap room.
+- No remote operations, Go changes, invented values, or posture writes.
