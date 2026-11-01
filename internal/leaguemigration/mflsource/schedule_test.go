@@ -3,6 +3,8 @@ package mflsource
 import (
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 )
 
@@ -40,5 +42,31 @@ func TestMFLShapedSchedule(t *testing.T) {
 				t.Fatal("home/away swapped", weeks)
 			}
 		})
+	}
+}
+
+func TestFollowingLeagueUsesRecordedImportIdentity(t *testing.T) {
+	t.Parallel()
+	records := []commissioner.Record{{Command: commissioner.RawCommand{Command: commissioner.Create,
+		Args: commissioner.RawArgs{Source: commissioner.SourceMFLImport, Season: 2026}}, Principal: "creator"}}
+	for _, tc := range []struct {
+		league string
+		source string
+		want   bool
+	}{
+		{"native.mfl-00123-2026", commissioner.SourceMFLImport, true},
+		{"native.mfl-00123-2026", commissioner.SourceNative, false},
+		{"native.mfl-00123-2025", commissioner.SourceMFLImport, false},
+		{"native.mfl-bad-2026", commissioner.SourceMFLImport, false},
+		{"native.other", commissioner.SourceMFLImport, false},
+	} {
+		records[0].Command.Args.Source = tc.source
+		id, season, principal, ok := FollowingLeague(tc.league, records)
+		if ok != tc.want || (ok && (id != "00123" || season != 2026 || principal != "creator")) {
+			t.Fatalf("%+v: %s %d %s %t", tc, id, season, principal, ok)
+		}
+	}
+	if _, _, _, ok := FollowingLeague("native.mfl-00123-2026", nil); ok {
+		t.Fatal("missing ledger followed")
 	}
 }

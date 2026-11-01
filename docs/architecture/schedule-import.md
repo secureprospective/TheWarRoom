@@ -1,59 +1,65 @@
-# Imported schedules use the league ledger
+# Schedule reference refresh
 
 MFL's `schedule` read (no week filter) → validated `RawScheduleWeek` → importer-only
 franchise mapping → `schedule.generate` with explicit fixtures → `schedule.publish`.
-Both commands use the ordinary commissioner checks and history-store append path;
-there is no source-dependent schedule or standings reader. A commissioner may also
-choose these fixtures directly, instead of asking the generator for pairings.
+Both commands use ordinary commissioner checks and the history-store append path;
+there is no source-dependent schedule or standings reader. Commissioners may also
+choose these fixtures directly instead of asking the generator for pairings.
 
 The import batch holds creation, starting assets, answers and schedule publication.
 A failed step rolls the entire batch back. Re-import of an existing league updates
-only its schedule; it does not re-seed or replace its roster. A changed source
-franchise directory is refused rather than silently assigning games to new teams.
+only its schedule; it does not replace its roster. Changed source identities are
+refused rather than silently assigning games to new teams.
 
-## Existing leagues
+## Automatic acquisition
 
-There was no existing migration sync command. With the app closed, first make a
-SQLite backup of the profile. Run the explicit one-off migration against that copy:
+The background launch worker refreshes reference schedules even when the ordinary
+roster refresh is not due. Manual refresh and watched roster refresh also acquire
+schedules under the existing refresh lock. The importer resolves its recorded
+league identity and original importing principal; normal ledger permissions still
+apply. Cut-over leagues no longer follow MFL. A failed read/publication logs the
+failure, preserves the held schedule and retries at the next refresh.
 
-```sh
-go run ./cmd/twr schedule-backfill \
-  --db /path/to/copied/profile/history.db \
-  --league native.example --mfl-league LEAGUE_NUMBER --season YEAR \
-  --principal RECORDED_COMMISSIONER_ID --reason 'Carry the published schedule'
-```
+`syncLeagueSchedules` → `mflsource.FollowingLeague` → validated source fetch →
+`BackfillSchedule` → atomic ordinary schedule commands. Unchanged schedules write
+nothing. No human runs a command. `twr schedule-backfill` remains available for
+operators using an explicit destination, principal and reason.
 
-The destination must exist. The principal must pass normal commissioner
-permissions. Backfill maps through the destination's recorded starting franchises,
-checks the season, then atomically drafts and publishes only a changed schedule.
-The first command fences the revision; concurrent league changes require retry.
-An unchanged schedule writes nothing. No command writes to MFL.
+All published leagues, regardless of origin, also acquire missing NFL week dates
+through the existing `nflSchedule` source. The archive transport saves these bodies;
+the ordinary local `ScheduleDates` reader selects them. Dates already held are not
+fetched again. No kickoff or current week is hard-coded.
 
-## Shape and limits
+## Shape and remaining limit
 
 - Weeks are consecutive from 1, bounded to 52; past weeks are not filtered out.
 - Home/away flags and leading-zero franchise identities are preserved.
-- Each game and each participating franchise occurs once per week. An odd number
-  of games is valid. Nonparticipating franchises rest; more than one may rest.
-- Empty weeks are retained in storage for unseeded playoffs, but are not shown as
-  fabricated franchise byes in owner schedule readings.
-- Weekly scores in the schedule are not imported as lineup/stat evidence. Existing
-  imports contain neither historical weekly lineups nor decided game results.
-  Standings must not treat absent scores as zero-point games.
-- `week.read` additionally needs held NFL week dates. The supplied profile has only
-  five distinct NFL weeks held, so its current-week selector still reports missing
-  dates, although its schedule contains the real week-8 opponent.
+- Each game and participating franchise occurs once per week. Odd game counts and
+  multiple resting franchises are valid.
+- Empty playoff weeks remain empty, not fabricated franchise byes.
+- Historical results are NOT imported. `NativeResults`/`NativeStandings` compute
+  from `ResultSources`: recorded lineups and NFL-stat-derived player scores. There
+  is no finalized franchise-score import port in that path. `ScoreFranchise` and
+  `ScorePlayer` are deltas, not replacement totals; standings overrides are not
+  game results. A reported-score evidence contract needs review before extending
+  durable storage; do not fabricate NFL statistics or use standings overrides.
 
-## Evidence
+## Evidence (APP-SCHED-2)
 
-`TestMFLShapedSchedule` exercises MFL JSON, odd matchup count, resting teams,
-empty playoffs, malformed/duplicate/missing weeks and unknown franchise rejection.
-History-store migration tests exercise new import, existing-league backfill,
-re-import/re-sync no-ops, changed publications, authorization, season rejection,
-rollback after drafting, and preserved starting assets.
+`TestLaunchAutomaticallyBackfillsSchedule` exercises the launch worker with roster
+refresh not due, repeated no-op publication and failed-read preservation.
+`TestBackgroundReferenceSyncDoesNotRequireLaunchRefreshDue` tests ordering;
+`TestFollowingLeagueUsesRecordedImportIdentity` tests identity selection.
+`TestScheduleRefreshFillsOnlyMissingNFLDates` proves the same acquisition for a
+non-imported league, no repeated date fetches and current week 8 on November 1.
 
-Copied-profile proof: 17 weeks read, two ledger entries; repeat writes zero.
-Bills week 8: away at New England Patriots. Matchup read returns that game with
-no result because neither team has a recorded lineup. Standings: zero decided,
-208 pending; displayed first three are Bills, Patriots, Jets, all 0–0—not played
-standings. No score, lineup, result or missing NFL date is invented.
+SQLite-backup copy proof, with the launch reference worker and no CLI:
+- Original NFL weeks: 7, 8, 9, 13, 14. Missing: 1–6, 10–12, 15–17.
+- After launch: all 17 weeks held; commissioner entries 2 → 4; repeat stays 4.
+- Bills week 8: away at New England Patriots; current week 8.
+- App standings still have 0 decided / 208 pending, all teams 0–0 with zero PF.
+- Read-only MFL `weeklyResults`: 16 completed games each in weeks 1–7, none later.
+  MFL Bills: 6–1, 1912.35 PF; app Bills: 0–0, 0 PF. This comparison FAILS.
+
+Proof output: `.tmp/sched2/profile-proof.log` (ignored local artifact). No GUI or
+real profile writes. Full task acceptance remains blocked on historical results.

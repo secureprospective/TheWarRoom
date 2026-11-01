@@ -132,11 +132,10 @@ func (s BackgroundRefresh) StartWorkers(ctx context.Context) {
 		if s.Ready() != nil {
 			return
 		}
-		if s.Sync != nil {
-			s.Sync(ctx)
-		}
 		if s.Due() {
 			s.Launch(ctx)
+		} else if s.Sync != nil {
+			s.Sync(ctx)
 		}
 		s.Weeks(ctx)
 	})
