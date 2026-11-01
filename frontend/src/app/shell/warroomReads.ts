@@ -1,6 +1,6 @@
 import type { AgeBand } from '../data/nativeValues';
 import type { Node } from './nodes';
-import { useContractRead } from '../contracts/Contracts';
+import { useContractRead, type ReadPublish } from '../contracts/Contracts';
 import { contractsProvider } from '../contracts/provider';
 import { controlAPI } from '../control/api';
 import { raceAPI } from '../race/api';
@@ -18,24 +18,28 @@ export type WarRoomContext = { snapshot: Snapshot; mine: string; week: number; n
 export type WarRoomHeaderReading = { name?: string; record?: string; standing?: string;
   starterN?: number; best?: string; rank?: string; age?: AgeBand[]; valueNote?: string;
   runway?: HQCap[]; errors: string[] };
-export function useWarRoomRead<T>(key: string, read: () => Promise<T>) {
-  return useContractRead(key, async () => {
-    try { return await read(); } catch (error) {
+export function useWarRoomRead<T>(key: string,
+  read: (publish: ReadPublish<T>) => Promise<T>) {
+  return useContractRead<T>(key, async publish => {
+    try { return await read(publish); } catch (error) {
       console.warn('War Room read failed:', error); throw error;
     }
   }, hqEvents);
+}
+export function nativeWarRoomHeader(r: NativeHQ): WarRoomHeaderReading {
+  return { name: r.leagueName, record: r.record, standing: r.standing,
+    starterN: r.values?.best.starterN || r.settings.starters,
+    best: r.values?.best.available ? r.values.best.value.toFixed(1) : undefined,
+    rank: r.values?.best.available ? `${r.values.best.rank} of ${r.values.best.of}` : undefined,
+    age: r.values?.age, valueNote: r.values ? [r.values.best.words, ...r.values.notes]
+      .join(' · ') : undefined,
+    runway: r.runway, errors: r.errors };
 }
 export async function readWarRoomHeader({ snapshot, mine, week, native }: WarRoomContext):
   Promise<WarRoomHeaderReading> {
   if (native) {
     const r = native.reading ?? await readNativeHQ(native.league, mine, native.port);
-    return { name: r.leagueName, record: r.record, standing: r.standing,
-      starterN: r.values?.best.starterN || r.settings.starters,
-      best: r.values?.best.available ? r.values.best.value.toFixed(1) : undefined,
-      rank: r.values?.best.available ? `${r.values.best.rank} of ${r.values.best.of}` : undefined,
-      age: r.values?.age, valueNote: r.values ? [r.values.best.words, ...r.values.notes]
-        .join(' · ') : undefined,
-      runway: r.runway, errors: r.errors };
+    return nativeWarRoomHeader(r);
   }
   const result: WarRoomHeaderReading = { errors: [] };
   const attempt = async (read: () => Promise<void>) => { try { await read(); } catch (e) {

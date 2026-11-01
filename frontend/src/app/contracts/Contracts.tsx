@@ -16,9 +16,11 @@ import ContractActs, { ContractMovePanel } from './ContractActs';
 import { WhatIfPanel, WhatIfActs } from './WhatIfPanel';
 
 type Result<T> = { reading?: T; error?: string };
+// Infer T from the returned promise, not from the progress callback.
+export type ReadPublish<T> = (reading: [T][T extends unknown ? 0 : never]) => void;
 export function useContractRead<T>(
   key: string,
-  read: () => Promise<T>,
+  read: (publish: ReadPublish<T>) => Promise<T>,
   provider: Pick<ContractsProvider, 'onChange'>,
   retain = false,
 ): Result<T> {
@@ -29,7 +31,10 @@ export function useContractRead<T>(
     const refresh = () => {
       const request = ++sequence;
       setResult(previous => retain && previous.key === key && previous.reading ? previous : { key });
-      void read().then(
+      const publish = (reading: T) => {
+        if (active && request === sequence) setResult({ key, reading });
+      };
+      void read(publish).then(
         (reading) => {
           if (active && request === sequence) setResult({ key, reading });
         },

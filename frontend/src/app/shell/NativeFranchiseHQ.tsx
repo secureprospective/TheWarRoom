@@ -4,7 +4,7 @@ import { useNativeLineup, NativeLineupReview } from './hqNativeLineup';
 import { HQAct } from './HQAct';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { readNativeHQ, readNativeCut } from '../commissioner/hqReading';
+import { readNativeHQ, readNativeCut, type NativeHQ } from '../commissioner/hqReading';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { useContractRead } from '../contracts/Contracts';
 import { hqEvents } from './hqReads';
@@ -35,9 +35,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   const [selected, select] = useState<string>();
   const [revision, refresh] = useState(0);
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), [port]);
-  const { reading, error } = useContractRead(JSON.stringify([league, mine, revision]), () =>
-    readNativeHQ(league,
-    mine, port), provider);
+  const { reading, error } = useContractRead<NativeHQ>(JSON.stringify([league, mine, revision]), publish =>
+    readNativeHQ(league, mine, port, publish), provider);
   const editor = useNativeLineup(league, mine, reading?.lineup, port);
   const chosen = selected ?? reading?.lineup?.starters[0]?.id;
   const quote = useContractRead(JSON.stringify([league, mine, chosen]), () => chosen

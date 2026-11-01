@@ -114,7 +114,8 @@ export type NativeHQ = { revision: number; snapshot: Snapshot; settings: HQSetti
   check?: string; lock?: string; runway?: HQCap[]; moves?: HQMove[]; moveReason?: string;
   reserveNotes?: Map<string, string>; record?: string; standing?: string; week?: number; weekNote?: string;
   values?: LeagueValues; projections?: Map<string, number>; errors: string[] };
-export async function readNativeHQ(league: string, mine: string, port: HostedPort = hostedWorkflow):
+export async function readNativeHQ(league: string, mine: string, port: HostedPort = hostedWorkflow,
+  publish?: (reading: NativeHQ) => void):
   Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
   const snapshot = nativeHQAssets(assets.data, league);
@@ -129,11 +130,13 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
   const result: NativeHQ = { revision, snapshot, settings: { positions: [] }, errors: [] };
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const apply = async (read: () => Promise<void>) => { try { await read(); } catch (e) {
-    result.errors.push(String(e)); console.warn('Franchise HQ read failed:', e); } };
+    result.errors.push(String(e)); console.warn('Franchise HQ read failed:', e);
+  } finally { publish?.({ ...result, errors: [...result.errors] }); } };
+  publish?.({ ...result });
+  const values = apply(async () => { const r = await port({ command: 'value.read', mode: 'read',
+    arguments: { league, franchise: mine, season } });
+    result.values = parseNativeValues(r.data, league, mine, season); });
   await Promise.all([
-    apply(async () => { const r = await port({ command: 'value.read', mode: 'read', arguments: {
-      league, franchise: mine, season } });
-      result.values = parseNativeValues(r.data, league, mine, season); }),
     apply(async () => { const r = await port({ command: 'commish.rules.read', mode: 'read', arguments: {
       league } });
       sameRevision(r.data);
@@ -245,6 +248,7 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
     }
     result.projections = values;
   });
+  await values;
   return result;
 }
 

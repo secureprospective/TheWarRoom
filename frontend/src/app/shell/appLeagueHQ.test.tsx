@@ -86,6 +86,31 @@ afterEach(async () => {
   localStorage.clear(); vi.unstubAllGlobals(); delete (window as unknown as { go?: unknown }).go;
 });
 
+it.each(['hq', 'war'] as const)('renders %s cap and roster while values are pending, then publishes values once', async node => {
+  const original = vi.mocked(localWorkflow).getMockImplementation()!;
+  let finish: () => void = () => {};
+  const pending = new Promise<void>(resolve => { finish = resolve; });
+  vi.mocked(localWorkflow).mockImplementation(async request => {
+    if (request.command !== 'value.read') return original(request);
+    await pending;
+    const { league, franchise, season } = request.arguments;
+    return { label: 'Local', writable: false, football: '', data: { league, franchise, season,
+      players: [], best: { franchise, starterN: 21, value: 243.3, age: 27, ageKnown: true,
+        rank: 3, of: 32, available: true, words: '35 of 35 players valued' }, age: [], notes: [] } };
+  });
+  localStorage.setItem(`${FRANCHISE_KEY}:native.seed`, 'franchise.02');
+  commands.dispatch('nav.open', { node });
+  await mount();
+  expect(container.querySelector(node === 'war' ? '.wr-v6 .shelf' : '.hq-v10 .board')?.textContent)
+    .toContain('Player, 1000');
+  expect(container.textContent).toContain('2026');
+  if (node === 'war') expect(container.querySelector('.runw')?.textContent).not.toContain('Not available yet');
+  expect(vi.mocked(localWorkflow).mock.calls.filter(([r]) => r.command === 'value.read')).toHaveLength(1);
+  await act(async () => { finish(); }); await settle();
+  if (node === 'war') expect(container.querySelector('.franchise-context')?.textContent).toContain('243.3');
+  expect(vi.mocked(localWorkflow).mock.calls.filter(([r]) => r.command === 'value.read')).toHaveLength(1);
+});
+
 it('shows a no-seat shell chooser, then native roster and contracts from a fake port', async () => {
   await mount();
   expect(container.querySelector('.rail nav[aria-label="Workspaces"]')).not.toBeNull();
@@ -126,6 +151,27 @@ it('shows a no-seat shell chooser, then native roster and contracts from a fake 
   expect(container.querySelector('.wr-v6 .shelf')?.textContent).toContain('Player, 1000');
   expect(container.querySelectorAll('.rail')).toHaveLength(1);
   expect((container.querySelector('.me select') as HTMLSelectElement).value).toBe('franchise.02');
+});
+
+it('discards partial and final publications from a franchise that was left', async () => {
+  const original = vi.mocked(localWorkflow).getMockImplementation()!;
+  let finish: () => void = () => {};
+  const pending = new Promise<void>(resolve => { finish = resolve; });
+  vi.mocked(localWorkflow).mockImplementation(async request => {
+    if (request.command !== 'value.read') return original(request);
+    const { league, franchise, season } = request.arguments;
+    if (franchise === 'franchise.01') await pending;
+    return { label: 'Local', writable: false, football: '', data: { league, franchise, season,
+      players: [], best: { franchise, starterN: 21, value: franchise === 'franchise.01' ? 999 : 243.3,
+        age: 27, ageKnown: true, rank: 3, of: 32, available: true, words: 'Held values' }, age: [], notes: [] } };
+  });
+  localStorage.setItem(`${FRANCHISE_KEY}:native.seed`, 'franchise.01');
+  commands.dispatch('nav.open', { node: 'war' });
+  await mount(); await choose('franchise.02');
+  expect(container.querySelector('.franchise-context')?.textContent).toContain('243.3');
+  await act(async () => { finish(); }); await settle();
+  expect(container.querySelector('.franchise-context')?.textContent).toContain('243.3');
+  expect(container.querySelector('.franchise-context')?.textContent).not.toContain('999');
 });
 
 it('defaults to a held seat but restores only a valid choice for the selected league', async () => {

@@ -8,7 +8,7 @@ import { useLeagueClock } from '../clock/useLeagueClock';
 import { countdown } from '../clock/urgency';
 import { FranchisePicker } from './FranchisePicker';
 import { WarRoomHeader, WarRoomEmpty } from './WarRoomHeader';
-import { readWarRoomHeader, useWarRoomRead, type WarRoomNative } from './warroomReads';
+import { readWarRoomHeader, nativeWarRoomHeader, useWarRoomRead, type WarRoomNative } from './warroomReads';
 import { unavailable } from './hqModel';
 import { WarRoomScouting, type WarRoomProspect } from './WarRoomScouting';
 import { WarRoomInspector } from './WarRoomInspector';
@@ -44,6 +44,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   const catalog = useWarRoomRead(JSON.stringify([native?.league, mine]), () => readWarRoomCatalog(context));
   const header = useWarRoomRead(JSON.stringify([native?.league, mine, week]), () =>
     readWarRoomHeader(context));
+  const headerReading = native?.reading ? nativeWarRoomHeader(native.reading) : header.reading;
   const calendar = useWarRoomRead(JSON.stringify([native?.league, mine, snapshot.league.value.season]),
     () => readWarRoomCalendar(context));
   const deadlines: WarRoomEvent[] = native ? calendar.reading ?? [] :
@@ -62,7 +63,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     {!native?.embedded && <nav className="rail" aria-label="Main"><RailLeaguePicker />
       {native && !mine && <p role="status">No franchise assigned · read-only</p>}<div className="rail-head">
       <div className="lg">THE WAR ROOM
-      </div><div className="ph">{header.reading?.name ?? unavailable} · <i>{week ? `Wk ${week}` :
+      </div><div className="ph">{headerReading?.name ?? unavailable} · <i>{week ? `Wk ${week}` :
         unavailable}</i></div></div><div className="rail-body"><div className="gl">MY SHORTCUTS</div>
       <WarRoomAct className="leaf" onAction={() => navigate('hq')}>
       <span className="tr">·</span>Lineup and roster
@@ -85,10 +86,10 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       {native?.embedded && native.tabs ? createPortal(tabs, native.tabs) :
       <div className="ws-tabs" role="tablist">{tabs}</div>}
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
-        reading={header.reading} />
+        reading={headerReading} />
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
         change={changeDeal} select={select} /> : tab === 'market' ? <WarRoomMarket context={context}
-          room={header.reading?.runway?.[0]?.room} select={p => select({ token: p.id, name: p.name })} /> :
+          room={headerReading?.runway?.[0]?.room} select={p => select({ token: p.id, name: p.name })} /> :
           tab === 'draft' ? <WarRoomDraft context={context} select={(id, name, position) =>
             setProspect({ id, name, position })}
             /> : <WarRoomPlans />}
@@ -101,7 +102,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
         key={d} className="pull" expanded={drawer === d} onAction={() =>
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}
       </div><span className="msg"
-        title={[header.error, ...header.reading?.errors ?? []].filter(Boolean).join(' · ')}>{unavailable}
+        title={[header.error, ...headerReading?.errors ?? []].filter(Boolean).join(' · ')}>{unavailable}
       </span>
       <WarRoomAct className="btn sp" disabled>SAVE TO POCKET</WarRoomAct>
       <WarRoomAct className="btn" onAction={() =>
