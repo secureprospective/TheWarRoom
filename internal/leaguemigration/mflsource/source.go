@@ -14,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/salaryadjustments"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
@@ -24,6 +25,8 @@ type Source struct {
 	ID     string
 	Now    func() time.Time
 	Held   func() map[string]string
+	// Base is how the league runs where MFL holds no setting (see Export.Base).
+	Base   leaguerules.RuleSet
 	season int
 }
 
@@ -111,15 +114,16 @@ func (s *Source) Players(context.Context) (map[string]string, error) {
 // Read reads every source part before preparing a native plan. A malformed plan
 // retains its metadata and owners so preparation and invitation wording stay intact.
 func (s *Source) Read(ctx context.Context, now time.Time) (leaguemigration.Candidate, error) {
-	return ReadCandidate(ctx, s, now)
+	return ReadCandidate(ctx, s, now, s.Base)
 }
 
-// ReadCandidate adapts a raw read-only source to the native migration port.
-func ReadCandidate(ctx context.Context, src Reader, now time.Time) (leaguemigration.Candidate, error) {
+// ReadCandidate adapts a raw read-only source to the native migration port; base fills what MFL does not hold.
+func ReadCandidate(ctx context.Context, src Reader, now time.Time, base leaguerules.RuleSet) (leaguemigration.Candidate, error) {
 	export, err := Read(ctx, src, now)
 	if err != nil {
 		return leaguemigration.Candidate{}, err
 	}
+	export.Base = base
 	plan, err := Prepare(export)
 	problems, ok := leaguemigration.AsProblems(err)
 	if err != nil && !ok {

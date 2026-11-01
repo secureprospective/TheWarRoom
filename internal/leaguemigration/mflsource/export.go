@@ -8,10 +8,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // Export is an MFL league as one read of it found it, every value as MFL states it.
 type Export struct {
+	// Base is how the league runs where MFL holds no setting: a bundle of setting values.
+	Base        leaguerules.RuleSet
 	LeagueID    string
 	Name        string
 	Season      int

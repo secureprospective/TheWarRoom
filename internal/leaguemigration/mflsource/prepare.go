@@ -23,7 +23,7 @@ import (
 func Prepare(export Export) (leaguemigration.Plan, error) {
 	p := preparation{export: export}
 	plan := leaguemigration.Plan{}
-	rules, problems, notes := Settings(export.Config)
+	rules, problems, notes := Settings(export.Config, export.Base)
 	p.problems = append(p.problems, problems...)
 	plan.Rules, plan.Notes = rules, notes
 	plan.Seed, plan.Mapping = p.snapshot()

@@ -9,6 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
@@ -32,7 +33,8 @@ func (a *App) migrationInputs() *catalog.MigrationInputs {
 			if err != nil {
 				return nil, fmt.Errorf("open the MFL reader: %w", err)
 			}
-			return &mflsource.Source{Client: client, ID: mflLeague, Now: a.timeNow, Held: a.heldPlayerNames}, nil
+			return &mflsource.Source{Client: client, ID: mflLeague, Now: a.timeNow, Held: a.heldPlayerNames,
+				Base: leaguerules.LegacyNFL()}, nil
 		}}
 	return &catalog.MigrationInputs{Service: service, Principal: a.commissionerPrincipal}
 }

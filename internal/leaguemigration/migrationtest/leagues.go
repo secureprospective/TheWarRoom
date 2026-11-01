@@ -17,6 +17,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -169,5 +170,5 @@ func pid(raw string) *playerid.PlayerID {
 }
 
 func (s *Source) Read(ctx context.Context, now time.Time) (leaguemigration.Candidate, error) {
-	return mflsource.ReadCandidate(ctx, s, now) //nolint:wrapcheck // Fixtures preserve production source refusals.
+	return mflsource.ReadCandidate(ctx, s, now, leaguerules.RuleSet{}) //nolint:wrapcheck // Fixtures preserve production source refusals.
 }

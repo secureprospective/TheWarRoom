@@ -19,9 +19,9 @@ const citation = "Your MFL league"
 const notHeld = "Your MFL league does not hold this setting"
 
 // Settings carries an MFL league's settings into the app value for value. What MFL holds is set as MFL
-// holds it; what it does not hold waits for a ruling and is listed; what MFL holds but the app cannot
-// read is a problem, never a guess.
-func Settings(config league.RawConfig) (leaguerules.RuleSet, []string, []string) {
+// holds it; what it does not hold is taken from base, how the league runs on MFL; anything left after
+// that waits for a ruling and is listed; what MFL holds but the app cannot read is a problem, never a guess.
+func Settings(config league.RawConfig, base leaguerules.RuleSet) (leaguerules.RuleSet, []string, []string) {
 	t := translation{}
 	r := leaguerules.RuleSet{}
 	t.league(&r, config)
@@ -33,6 +33,7 @@ func Settings(config league.RawConfig) (leaguerules.RuleSet, []string, []string)
 	if weeks, ok := t.regularWeeks(config); ok {
 		r.Schedule.RegularWeeks = known(weeks)
 	}
+	r = leaguerules.Fill(r, base)
 	t.waiting(r)
 	return r, t.problems, t.notes
 }
@@ -275,7 +276,7 @@ func (t *translation) waiting(r leaguerules.RuleSet) {
 		}
 	}
 	if len(labels) > 0 {
-		t.notes = append(t.notes, fmt.Sprintf("Your MFL league does not hold %d settings the app runs; "+
-			"each waits for your ruling on the rules screen: %s", len(labels), strings.Join(labels, ", ")))
+		t.notes = append(t.notes, fmt.Sprintf("%d settings are neither held by your MFL league nor in the "+
+			"bundle it runs by; each waits for your ruling on the rules screen: %s", len(labels), strings.Join(labels, ", ")))
 	}
 }
