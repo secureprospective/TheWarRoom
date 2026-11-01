@@ -81,7 +81,8 @@ League mates report back. Bugs, edge cases, and rule interpretation questions su
 - **Why:** owners should check the league through the day without the app monopolising their screen or phone (time suck / mind suck — the retention thesis). Customisation is part of the cool factor.
 - **Desktop first:** pop-out windows from the desktop UI — a small always-on-top glance window (live scores, league stats) that can tuck to a screen edge as a side tab, be pulled out and resized to show more; one pop-out per league so a multi-league owner can keep several up at once. Same backend reads as the main screens. Browser/PWA counterpart: Document Picture-in-Picture (Chrome-family).
 - **Phone later, the sanctioned way:** iOS Live Activities + Dynamic Island + Lock Screen (no floating windows allowed for non-video apps); Android live-update notifications, resizable home-screen widgets, and an optional edge "bubble" overlay (special permission, Play review). Needs a thin native shell around the web UI.
-- **Research:** Terra passes 2026-11-01, Beelink `~/fleet/runs/research-widget/` (R1 phone, R2 desktop/web).
+- **Findings (Terra, 2026-11-01):** Wails v2 cannot open a second window — desktop pop-outs need Wails v3 (multi-window + tray; a port, ~3–7 days after migration) or Document PiP in Chrome-family browsers (1–3 day prototype; one PiP per tab, user places it, no programmatic edge-dock). A retractable edge tab is custom work on any route (+3–10 days; Wayland may ignore always-on-top). Phones: iOS = Live Activity (8 h live, 4 KB, push updates; Yahoo Fantasy uses it), no floating UI; Android = Live Updates (Android 16) + widgets, optional SYSTEM_ALERT_WINDOW edge tab (user-granted, Play scrutiny). PWA reaches none of these; native shell ~2–4 weeks per platform.
+- **Research:** docs/roadmap/research/glance-widget-phone-2026-11-01.md and glance-widget-desktop-2026-11-01.md.
 
 ## Open Questions
 
