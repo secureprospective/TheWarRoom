@@ -108,18 +108,25 @@ func (s *Store) completeNewestFile(ctx context.Context, season int, files []held
 		return files, nil
 	}
 	weekly := files[0]
+	proofs, proofSHA, proofAt, err := s.heldAbsenceProofs(ctx, season)
+	if err != nil {
+		return nil, err
+	}
 	var completed heldFile
 	var parseErr error
 	found, err := s.ExactArchivedBodies(ctx, source.PlaysURL(season), func(_ string, body []byte, at time.Time) bool {
-		hash := sha256.Sum256(append([]byte(weekly.sha), body...))
+		hash := sha256.Sum256(append([]byte(weekly.sha+proofSHA), body...))
 		sha := hex.EncodeToString(hash[:])
-		weeks, err := s.completedWeeks(sha, weekly.weeks, body)
+		weeks, err := s.completedWeeks(sha, weekly.weeks, body, proofs)
 		if err != nil {
 			parseErr = err
 			return false
 		}
 		if weekly.at.After(at) {
 			at = weekly.at
+		}
+		if proofAt.After(at) {
+			at = proofAt
 		}
 		completed = heldFile{sha: sha, at: at, weeks: weeks, complete: true}
 		return true
@@ -136,7 +143,7 @@ func (s *Store) completeNewestFile(ctx context.Context, season int, files []held
 	return append([]heldFile{completed}, files...), nil
 }
 
-func (s *Store) completedWeeks(sha string, weekly []source.PlayerWeek, body []byte) ([]source.PlayerWeek, error) {
+func (s *Store) completedWeeks(sha string, weekly []source.PlayerWeek, body []byte, proofs []source.RawAbsenceProof) ([]source.PlayerWeek, error) {
 	s.weeklyMu.Lock()
 	defer s.weeklyMu.Unlock()
 	if file, ok := s.weekly[sha]; ok {
@@ -156,6 +163,10 @@ func (s *Store) completedWeeks(sha string, weekly []source.PlayerWeek, body []by
 	}
 	if err := source.AttachPlays(weeks, plays); err != nil {
 		return nil, fmt.Errorf("attach held plays: %w", err)
+	}
+	weeks, err = source.AddProvenZeros(weeks, plays, proofs)
+	if err != nil {
+		return nil, fmt.Errorf("verify empty player weeks: %w", err)
 	}
 	if s.weekly == nil {
 		s.weekly = map[string]weeklyFile{}

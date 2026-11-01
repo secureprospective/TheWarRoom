@@ -87,6 +87,7 @@ func TestMissingPlayWeeksDoesNotInventOrOverwrite(t *testing.T) {
 func TestMissingPlayWeeksReturnsAndFumbles(t *testing.T) {
 	p := creditPlay()
 	p.Punt = "1"
+	p.FumbleLost = "1"
 	p.Credits["punt_returner_player_id"] = "00-0030001"
 	p.Credits["return_yards"] = "17"
 	p.Credits["fumbled_1_player_id"] = "00-0030002"

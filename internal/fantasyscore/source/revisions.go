@@ -46,7 +46,7 @@ type lineHistory struct{ newestFirst []LineRevision }
 
 func (h *lineHistory) addHeld(held HeldWeek) {
 	digest := LineDigest(*held.Week)
-	if n := len(h.newestFirst); n != 0 && h.newestFirst[n-1].Digest == digest && h.newestFirst[n-1].Held.Authority == held.Authority && h.newestFirst[n-1].Held.Review == held.Review && slices.Equal(h.newestFirst[n-1].Held.Missing, held.Missing) {
+	if n := len(h.newestFirst); n != 0 && h.newestFirst[n-1].Digest == digest && h.newestFirst[n-1].Held.Authority == held.Authority && h.newestFirst[n-1].Held.Review == held.Review && h.newestFirst[n-1].Held.Evidence == held.Evidence && slices.Equal(h.newestFirst[n-1].Held.Missing, held.Missing) {
 		h.newestFirst[n-1].Held = held
 		return
 	}
@@ -103,7 +103,7 @@ func (b *LineBook) AddFile(sha string, at time.Time, weeks []PlayerWeek, missing
 		if week.Provenance != "" {
 			authority = week.Provenance
 		}
-		b.history[key].addHeld(HeldWeek{Authority: authority, SHA256: sha, FetchedAt: at, Week: &week, Missing: slices.Clone(missing), Review: week.Review})
+		b.history[key].addHeld(HeldWeek{Authority: authority, SHA256: sha, FetchedAt: at, Week: &week, Missing: slices.Clone(missing), Review: week.Review, Evidence: week.Evidence})
 	}
 }
 

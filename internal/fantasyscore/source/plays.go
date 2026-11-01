@@ -37,6 +37,10 @@ func ReadCompressedPlays(body []byte) ([]RawPlay, error) {
 // RawPlay retains the source's player credits and distances, not parsed descriptions.
 type RawPlay struct {
 	Credits      RawPlayerCredits
+	EndGame      string
+	GameSeconds  string
+	Safety       string
+	FumbleLost   string
 	GameID       string
 	PlayID       string
 	Season       string
@@ -81,7 +85,7 @@ func (r RawPlay) Validate() error {
 	if r.SeasonType != "REG" && r.SeasonType != "POST" {
 		return fmt.Errorf("play needs a season type")
 	}
-	for _, raw := range []string{r.Touchdown, r.Interception, r.Punt, r.Kickoff, r.Deleted, r.TwoPoint, r.PuntBlocked, r.FieldGoal, r.Sack} {
+	for _, raw := range []string{r.Touchdown, r.Interception, r.Punt, r.Kickoff, r.Deleted, r.TwoPoint, r.PuntBlocked, r.FieldGoal, r.Sack, r.Safety, r.FumbleLost} {
 		if !slices.Contains([]string{"0", "1", "NA", ""}, raw) {
 			return fmt.Errorf("play flag must be 0, 1 or absent")
 		}
@@ -159,7 +163,7 @@ func ReadPlays(input io.Reader) ([]RawPlay, error) {
 }
 
 func rawPlay(f map[string]string) RawPlay {
-	return RawPlay{Credits: rawCredits(f), GameID: f["game_id"], PlayID: f["play_id"],
+	return RawPlay{Safety: f["safety"], FumbleLost: f["fumble_lost"], EndGame: f["desc"], GameSeconds: f["game_seconds_remaining"], Credits: rawCredits(f), GameID: f["game_id"], PlayID: f["play_id"],
 		Season: f["season"], Week: f["week"], SeasonType: f["season_type"],
 		Passer: f["passer_player_id"], Receiver: f["receiver_player_id"], Rusher: f["rusher_player_id"],
 		Passing: f["passing_yards"], Receiving: f["receiving_yards"], Rushing: f["rushing_yards"],
@@ -221,7 +225,12 @@ func validateCoverage(weeks []PlayerWeek, plays []RawPlay) error {
 	games := make(map[string]bool)
 	seen := make(map[string]bool)
 	capabilities := make(map[string]bool)
+	credits := make(map[string]bool)
 	for _, play := range plays {
+		if capable, ok := credits[play.GameID]; ok && capable != play.Credits.complete() {
+			return fmt.Errorf("mixed player-credit capability for %s", play.GameID)
+		}
+		credits[play.GameID] = play.Credits.complete()
 		if err := play.Validate(); err != nil {
 			return fmt.Errorf("attach play: %w", err)
 		}

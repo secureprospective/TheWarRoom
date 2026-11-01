@@ -202,6 +202,10 @@ func (p *PinnedFootball) CanonicalPlayerWeekStats(ctx context.Context, scope sou
 		if week, ok := file.canonical[canonicalWeek{scope.Player, scope.Week}]; ok {
 			copied := clonePlayerWeek(week)
 			held.Week = &copied
+			if copied.Provenance != "" {
+				held.Authority = copied.Provenance
+			}
+			held.Review, held.Evidence = copied.Review, copied.Evidence
 		} else {
 			held.Missing = []string{"This held file does not report the player's regular-season week"}
 		}

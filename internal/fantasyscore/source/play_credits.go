@@ -36,7 +36,7 @@ func defensiveCredits() []playerCredit {
 }
 
 func creditColumns() []string {
-	out := []string{"punt_returner_player_id", "kickoff_returner_player_id", "return_yards", "fumbled_1_player_id", "fumbled_2_player_id",
+	out := []string{"safety_player_id", "blocked_player_id", "punt_returner_player_id", "kickoff_returner_player_id", "return_yards", "fumbled_1_player_id", "fumbled_2_player_id",
 		"fumble_recovery_1_player_id", "fumble_recovery_2_player_id", "fumble_recovery_1_team", "fumble_recovery_2_team",
 		"fumble_recovery_1_yards", "fumble_recovery_2_yards", "fumbled_1_team", "fumbled_2_team", "defteam"}
 	for _, c := range defensiveCredits() {
@@ -46,8 +46,7 @@ func creditColumns() []string {
 }
 
 func (r RawPlayerCredits) Validate() error {
-	for _, column := range creditColumns() {
-		value := r[column]
+	for column, value := range r {
 		if value == "" || value == "NA" {
 			continue
 		}
@@ -73,8 +72,8 @@ func (r RawPlayerCredits) Validate() error {
 
 func rawCredits(fields map[string]string) RawPlayerCredits {
 	out := make(RawPlayerCredits)
-	for _, column := range creditColumns() {
-		if value, ok := fields[column]; ok {
+	for column, value := range fields {
+		if strings.HasSuffix(column, "player_id") || slices.Contains(creditColumns(), column) {
 			out[column] = value
 		}
 	}
@@ -120,7 +119,7 @@ func MissingPlayWeeks(weeks []PlayerWeek, plays []RawPlay) ([]PlayerWeek, error)
 			w := found[key]
 			if w == nil {
 				w = &PlayerWeek{GSIS: id, Position: positions[id], Season: season, Week: week, SeasonType: p.SeasonType, GameID: p.GameID,
-					Provenance: "nflverse play-by-play", Review: "nflverse missing row",
+					Provenance: "nflverse play-by-play", Review: "nflverse missing row", Evidence: "player-id stat credits",
 					Line: fantasyscore.StatLine{Quantities: make(map[leaguerules.StatID]leaguerules.Decimal), Events: make(map[leaguerules.StatID][]leaguerules.Decimal)}}
 				found[key] = w
 			}
@@ -132,9 +131,11 @@ func MissingPlayWeeks(weeks []PlayerWeek, plays []RawPlay) ([]PlayerWeek, error)
 		attachReturnCredits(p, add)
 		attachFumbleCredits(p, add)
 		attachOffensiveCredits(p, add)
+		attachSpecialCredits(p, add)
 	}
 	out := slices.Clone(weeks)
 	for _, key := range slices.Sorted(maps.Keys(found)) {
+		found[key].RecoveryTDs = found[key].Line.Quantities["fumble_recovery_tds"]
 		out = append(out, *found[key])
 	}
 	return out, nil
@@ -175,10 +176,12 @@ func attachFumbleCredits(p RawPlay, add func(string, leaguerules.StatID, leaguer
 			stat = "opponent_fumble_recovery"
 		}
 		add(id, stat, 10000)
+		if p.Touchdown == "1" && p.Scorer == id && p.Punt != "1" && p.Kickoff != "1" {
+			add(id, "fumble_recovery_tds", 10000)
+		}
 		if stat == "opponent_fumble_recovery" {
 			yards, _ := decimal(p.Credits["fumble_recovery_"+slot+"_yards"])
 			add(id, "opponent_fumble_recovery_yards", yards)
-			add(p.Credits["fumbled_"+slot+"_player_id"], "fumble_lost", 10000)
 		}
 	}
 }
@@ -207,5 +210,23 @@ func attachOffensiveCredits(p RawPlay, add func(string, leaguerules.StatID, leag
 			add(p.Receiver, "receiving_td", 10000)
 			add(p.Passer, "passing_td", 10000)
 		}
+	}
+}
+
+func attachSpecialCredits(p RawPlay, add func(string, leaguerules.StatID, leaguerules.Decimal)) {
+	if p.Safety == "1" {
+		add(p.Credits["safety_player_id"], "safety", 10000)
+	}
+	if p.PuntBlocked == "1" {
+		add(p.Credits["blocked_player_id"], "blocked_punt", 10000)
+	}
+	if p.FieldGoal == "1" && p.FieldResult == "blocked" {
+		add(p.Credits["blocked_player_id"], "blocked_fg", 10000)
+	}
+	for _, slot := range []string{"1", "2"} {
+		add(p.Credits["fumbled_"+slot+"_player_id"], "fumbles_total", 10000)
+	}
+	if p.FumbleLost == "1" {
+		add(p.Credits["fumbled_1_player_id"], "fumble_lost", 10000)
 	}
 }
