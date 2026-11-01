@@ -84,6 +84,19 @@ func (f *bidFixture) withdraw(t *testing.T, principal, franchise string, bid com
 	return err
 }
 
+// reverse is the only way a standing bid ends early: the commissioner's recorded correction (a bid is a bid).
+func (f *bidFixture) reverse(t *testing.T, bid commissioner.Receipt) error {
+	t.Helper()
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
+	body, err := jsonOf(f.raw(t, commissioner.CorrectTransaction,
+		commissioner.RawArgs{Correction: &commissioner.RawCorrection{Entry: bid.Entry}}, "league"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(body)
+	return err
+}
+
 func (f *bidFixture) bids(t *testing.T, principal, franchise string) market.NativeBids {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{principal}

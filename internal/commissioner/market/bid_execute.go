@@ -133,17 +133,10 @@ func (x *bidExecution) raise(raw *commissioner.RawCommand) error {
 	return nil
 }
 
-func (x *bidExecution) withdraw(raw *commissioner.RawCommand) error {
-	args := raw.Args.Bid
-	auction, err := x.standingBid(args)
-	if err != nil {
-		return err
-	}
-	if err := x.auctionOpen(auction); err != nil {
-		return err
-	}
-	raw.Args.BidOutcome = &commissioner.BidOutcome{Player: auction.Player, Season: x.rules.Season}
-	return nil
+// withdraw is refused: a bid is a bid. It ends only when it is outbid or wins; a mistaken bid is removed
+// by the commissioner's recorded correction (correct.transaction), never by its owner.
+func (x *bidExecution) withdraw(_ *commissioner.RawCommand) error {
+	return fmt.Errorf("a bid is binding: it ends only when it is outbid or wins")
 }
 
 func (x *bidExecution) standingBid(args *commissioner.RawBidArgs) (*commissioner.BidAuction, error) {
