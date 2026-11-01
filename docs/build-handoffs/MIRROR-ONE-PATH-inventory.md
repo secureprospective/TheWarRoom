@@ -41,3 +41,34 @@ the mirror branches and mount one HQ. Never add a third path.
 | WR calendar strip | `readWarRoomCalendar` | shows raw codes (LINEUP_LOCK…) | plain labels as HQ/Home |
 
 Debt seen: `OL` maps to no position in identities (from WR-IDENT).
+
+## Progress (Claude, 10-31 21:00–21:40 CT)
+
+Done, one commit each, targeted tests green, lint clean:
+
+- `native.assets.read` → 8c099d9c. `mflseed.MirrorAssets`: held rosters via the existing CaptureSeed, MFL franchise IDs kept,
+  revision = held roster time (Unix seconds).
+- `projections.read` → 0631ebab. Store `ProjectionsUnder(rules)`; mirror rules = `mflsource.Settings(config)`.
+- `commish.rules.read` → 9154ebe9. `commissioner.MirrorRulesReading`; `leagueservice.ReadableLeague` admits the mirror to
+  READS only (writes keep AppLeague).
+- Pattern: override the method on `composition.commissionerHost` (native_seed_app.go) when `league == ingestion.LeagueID`.
+  Core cannot import features (depguard), so the routing lives in composition.
+- **Revision rule:** every mirror read returns `heldRosterAt.Unix()`, so the frontend `sameRevision` check agrees across reads.
+
+## Recommended next route (evaluate first; architecture-bearing)
+
+Every remaining native reading (cap, reserve, roster check, moves, standings, week, lineup, calendar) is
+`XReading(league, records, now)`. A **virtual ledger** for the mirror league would answer all of them unchanged, with no
+shim per read:
+
+- In store `nativeRecords`/`leagueRecords`, when league is the mirror, return in-memory records: a Create from the held
+  settings (`mflsource` create args, as Prepare builds them) plus a Seed from `CaptureSeed`.
+- Open questions to settle before building:
+  - Can records be built without the executor (Canonical, replay memo)? Look for the test helper that builds records
+    from RawCommands.
+  - Franchise IDs (franchise.NN vs MFL IDs, needed for `mine`).
+  - The revision must match the three reads above (switch them to the virtual ledger too, or keep `len(records)`).
+- If it fights back, keep the per-read override pattern above.
+
+Frontend still forks: `FranchiseHQ` (mirror) vs `NativeFranchiseHQ`, and the War Room's `native?` branches. Once the reads
+answer, mount the native screen for the mirror league with `league=14432` and delete the mirror branches.
