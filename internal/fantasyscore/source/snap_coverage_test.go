@@ -57,3 +57,19 @@ func TestCompleteSnapsAdmitOnlyAbsentRosterMembers(t *testing.T) {
 		}
 	}
 }
+
+func TestRoundedSnapSharesCannotCertifyAnAmbiguousPartialFile(t *testing.T) {
+	var rows []RawSnap
+	for i := 0; i < 28; i++ {
+		n, share := 60, 0.4
+		if i == 27 {
+			n, share = 19, 0.13
+		}
+		rows = append(rows, RawSnap{Proof: RawAbsenceProof{PFR: fmt.Sprint("Player", i), Season: "2026", Week: "1", GameID: "2026_01_BUF_NYJ", Team: "BUF", Evidence: "positive snaps; no play-by-play stat events"}, Date: "20260910", Counts: [3]int{n, n, n}, Shares: [3]float64{share, share, share}})
+	}
+	// The retained counts fit 149 snaps, but the rounded shares also fit 150.
+	// Eleven missing player-snaps cannot become an absence proof.
+	if completeSnapTeam(rows) {
+		t.Fatal("ambiguous rounded shares certified a partial file")
+	}
+}

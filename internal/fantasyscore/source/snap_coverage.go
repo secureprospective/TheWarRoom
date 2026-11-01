@@ -31,7 +31,7 @@ func (r RawSnap) Validate() error {
 	}
 	for i, n := range r.Counts {
 		share := r.Shares[i]
-		if n < 0 || math.IsNaN(share) || math.IsInf(share, 0) || share < 0 || share > 1 || (n == 0 && share != 0) {
+		if n < 0 || n > 1000 || math.IsNaN(share) || math.IsInf(share, 0) || share < 0 || share > 1 || (n == 0 && share != 0) {
 			return fmt.Errorf("invalid snap count or share")
 		}
 	}
@@ -124,11 +124,22 @@ func completeSnapTeam(rows []RawSnap) bool {
 		if total == 0 || total%11 != 0 {
 			return false
 		}
-		denominator := float64(total / 11)
-		for _, r := range rows {
-			if math.Abs(float64(r.Counts[i])/denominator-r.Shares[i]) > 0.00501 {
-				return false
-			}
+		denominator := total / 11
+		if !snapUnitMatches(rows, i, denominator) || snapUnitMatches(rows, i, denominator-1) || snapUnitMatches(rows, i, denominator+1) {
+			return false
+		}
+
+	}
+	return true
+}
+
+func snapUnitMatches(rows []RawSnap, unit, denominator int) bool {
+	if denominator < 1 {
+		return false
+	}
+	for _, r := range rows {
+		if r.Counts[unit] > denominator || math.Abs(float64(r.Counts[unit])/float64(denominator)-r.Shares[unit]) > 0.00501 {
+			return false
 		}
 	}
 	return true
