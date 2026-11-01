@@ -1,21 +1,22 @@
 # Handoff
 
 ## Baton
-Review — 2026-10-31, build/WR-wire. Local only; no remote contact.
+Review — 2026-11-01, build/WR-wire. Local commits only; no remote contact.
 
 ## Where it stands
-- WR-POLISH2 shelf spacing, compact contracts, dark scrollbars and header wrapping addressed; real-data screenshots in `frontend/.tmp/wrreal/after-*.png` (untracked).
-- Fixture salaries now use millions-to-cents mapping; cap read remains unavailable.
-- Partner positions remain missing. An attempted native assets enrichment was reverted: replacing snapshot player names caused composition correction and golden-wire tests to fail.
+- PICKER-6: d903e283 keeps native HQ/War Room inside the normal shell; 01178962 adds the per-league footer franchise chooser; a4f34846 fixes control/render gates and removes seat-based permission inference.
+- Flow: selected league → checked people/seats → saved valid franchise (otherwise held seat) → native HQ/War Room reads via localWorkflow. The workflow authorizer, not the viewed franchise, determines acting rights. No import-source branches added.
+- No-seat render tests exercise the real shell and native screens with a fake port: chooser, roster/contracts, War Room, navigation, held-seat default, invalid saved choice and league-isolated persistence.
+- Final make build (dev/picker6), frontend typecheck, 1704 frontend tests / 154 files, bundle budget (149081 / 321818 bytes), CSP and diff checks pass. Mechanical UI detector returned no findings before the final gate corrections.
+- One full Go run: `go test -race -timeout 40m ./...`; 130 packages pass, 1 fails, 20 have no tests. Failure: internal/leaguetransfer TestEncryptedExportRoundtripFrozenReplayParity, transfer_test.go:211, “roster differs”. No Go source changed. Logs: frontend/.tmp/picker6/.
+- heavy-ok passed three standalone checks. One combined invocation reported STOP (one suite running) and mistakenly continued into the suite; its shell command itself contained the matched suite text. No second full suite was launched.
+- Handwritten production footprint, e0be8be4 → a4f34846, 12 affected files: 2905 → 2931 physical lines; 183597 → 185466 Unicode code points including LF. Tests/docs excluded.
 
 ## Next move / blocked on
-- Add identity as a separate read-only wire field without changing recorded snapshot semantics; cover mirrored sides, regenerate bindings and update wire expectations. Then recapture and verify partner positions.
-- Verify full UI and contract values in the native app; fixture does not exercise cap.
+- Reviewer performs the requested desktop walk: app-league HQ/War Room must retain rail/picker/navigation/footer, franchise choice must display native roster/contracts and survive switching/relaunch, and refused actions must remain read-only.
+- Investigate the Go transfer parity failure before declaring the full gate green. No desktop walk was performed here.
+- Prior unrelated debt remains: partner-position enrichment needs a separate read-only wire field; overwriting recorded snapshot names broke composition/golden-wire tests.
 
 ## Tried and rejected
-- No remote operations. Directly overwriting the snapshot's recorded names with current facts breaks snapshot preservation.
-
-## Picker follow-up — Bee, 2026-10-31
-- Local commits 9b11837d and 90dccf54 remove the rail's static source label and distinguish league choices using mirror provenance or app league ID.
-- Still required: native HQ/War Room shell and franchise chooser, per-league persistence and authorization, plus the requested fake-port render test. Build, heavy gate and full suite have not run. No remote contact.
-- Existing untracked `.golangci-cache/`, `.picker-state.md`, and `.picker-tmp/` were left untouched.
+- Empty seat is not a permission rule: removed the local read-only wrapper; existing backend authorization stays authoritative.
+- Existing untracked .golangci-cache/, .picker-state.md and .picker-tmp/ left untouched.
