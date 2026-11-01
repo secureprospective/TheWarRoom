@@ -192,3 +192,13 @@ it('resolves human division standings from alignment settings, never ledger ids'
   alignment.current = { 'franchise.01': 'NFC West', 'franchise.02': 'NFC East' };
   expect(nativeHQStanding(changed, rows, 'franchise.02')).toBe('1st NFC East');
 });
+
+it('keeps a known zero cut price behind a closed gate, but never invents an unpriced zero', async () => {
+  const { default: quote } = await import('../../../../testdata/wire/native/contract-quote.json');
+  const { parseNativeCut } = await import('./hqReading');
+  const shut = { ...quote, allowed: false, reason: 'Cannot date this action', deadMoney: [] };
+  expect(parseNativeCut(shut, 'native.seed', '0099')).toMatchObject({ deadNow: 0, deadNext: 0,
+    reason: 'Cannot date this action' });
+  expect(parseNativeCut({ ...shut, cap: null, needs: ['Release rate'] }, 'native.seed', '0099'))
+    .toMatchObject({ deadNow: undefined, deadNext: undefined });
+});

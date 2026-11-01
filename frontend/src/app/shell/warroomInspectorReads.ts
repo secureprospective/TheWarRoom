@@ -21,7 +21,13 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string):
     const native = c.native;
     await Promise.all([
       apply(async () => { result.arc = parseArc(await readAgeArc(id)); }),
-      apply(async () => { result.cut = await readNativeCut(native.league, c.mine, id, native.port); }),
+      apply(async () => {
+        const owners = c.snapshot.rosters.value.filter(r => r.players.some(p => p.id === id));
+        const owner = owners.find(r => r.franchiseId === c.mine) ??
+          (owners.length === 1 ? owners[0] : undefined);
+        if (!owner) throw new Error('Choose the rostered copy to quote its contract');
+        result.cut = await readNativeCut(native.league, owner.franchiseId, id, native.port);
+      }),
       apply(async () => {
         if (!c.week) return;
         const season = c.snapshot.league.value.season;

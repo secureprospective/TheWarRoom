@@ -258,11 +258,12 @@ export function parseNativeCut(value: unknown, league: string, player: string): 
     const row = object(v, p, ['season', 'cents']);
     return { season: integer(row.season, p), cents: integer(row.cents, p) };
   });
-  const priced = r.allowed || dead.length > 0;
   const cap = r.cap == null ? undefined : object(r.cap, 'Cut cap', ['beforeCents', 'afterCents',
     'changeCents', 'roomAfterCents', 'words']);
   const amount = (key: string) => cap?.[key] == null ? undefined
     : integer(cap[key], key, Number.MIN_SAFE_INTEGER);
+  const priced = r.allowed || dead.length > 0 ||
+    (amount('beforeCents') !== undefined && amount('afterCents') !== undefined);
   const sum = (year: number) => priced ? dead.filter(d => d.season === year)
     .reduce((n, d) => n + d.cents, 0) : undefined;
   return { player, revision: integer(r.revision, 'Quote revision'), season,

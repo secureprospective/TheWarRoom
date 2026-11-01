@@ -357,3 +357,23 @@ it('does not retain a rejected research identity in the selected inspector readi
   expect(result.research).toBeUndefined();
   expect(result.errors.join(' · ')).toContain('another player');
 });
+
+it('quotes the selected player’s actual roster, not the viewing franchise', async () => {
+  const port = vi.fn<HostedPort>(async () => { throw new Error('Read captured'); });
+  const c = nativeContext(port);
+  const player = { id: '0042', salary: 100, contractStatus: 'UFA' as const, rosterStatus: 'ROSTER' as const };
+  c.snapshot.rosters.value = [{ franchiseId: 'franchise.02', players: [player] }];
+  await readWarRoomInspector(c, '0042');
+  expect(port.mock.calls.find(([r]) => r.command === 'contract.quote')?.[0].arguments)
+    .toMatchObject({ franchise: 'franchise.02' });
+  port.mockClear();
+  c.snapshot.rosters.value.push({ franchiseId: 'franchise.03', players: [player] });
+  const ambiguous = await readWarRoomInspector(c, '0042');
+  expect(port.mock.calls.some(([r]) => r.command === 'contract.quote')).toBe(false);
+  expect(ambiguous.errors.join(' ')).toContain('Choose the rostered copy');
+  port.mockClear();
+  c.snapshot.rosters.value.push({ franchiseId: c.mine, players: [player] });
+  await readWarRoomInspector(c, '0042');
+  expect(port.mock.calls.find(([r]) => r.command === 'contract.quote')?.[0].arguments)
+    .toMatchObject({ franchise: c.mine });
+});
