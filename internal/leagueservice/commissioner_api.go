@@ -99,7 +99,7 @@ func (a *Service) TargetCommissionerLeagues() ([]commissioner.NativeLeague, erro
 }
 
 func (a *Service) TargetCommissionerRules(league string) (commissioner.Rules, error) {
-	if err := AppLeague(league); err != nil {
+	if err := ReadableLeague(league); err != nil {
 		return commissioner.Rules{}, err
 	}
 	if err := a.admitRead(league, "commish.rules.read", ""); err != nil {

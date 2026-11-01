@@ -3,6 +3,7 @@ package composition
 import (
 	"context"
 	"fmt"
+	"time"
 
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/seed"
@@ -72,4 +73,26 @@ func (h commissionerHost) NativeProjections(ctx context.Context, league string, 
 	}
 	rules, _, _ := mflsource.Settings(h.app.core.Rulebook.ActiveConfig())
 	return h.app.core.History.ProjectionsUnder(ctx, league, rules, season, week, players) //nolint:wrapcheck // Preserve the store wording.
+}
+
+// CommissionerRules reads the MFL-mirror league's held settings in the native rules shape, at the held
+// roster revision so it agrees with the mirror's assets read.
+func (h commissionerHost) CommissionerRules(ctx context.Context, league string) (commissioner.Rules, error) {
+	if league != ingestion.LeagueID {
+		return h.State.CommissionerRules(ctx, league) //nolint:wrapcheck // Preserve the store wording.
+	}
+	h.app.core.RefreshMu.Lock()
+	defer h.app.core.RefreshMu.Unlock()
+	source := h.app.heldSource()
+	if !source.Available() {
+		return commissioner.Rules{}, fmt.Errorf("hold the league rosters and settings first")
+	}
+	_, at := source.Roster()
+	held, err := time.Parse(time.RFC3339Nano, at)
+	if err != nil {
+		return commissioner.Rules{}, fmt.Errorf("read held roster date: %w", err)
+	}
+	config := source.Config()
+	rules, _, _ := mflsource.Settings(config)
+	return commissioner.MirrorRulesReading(league, config.Name, rules, held.Unix()), nil
 }

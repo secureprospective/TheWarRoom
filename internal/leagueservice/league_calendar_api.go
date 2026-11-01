@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -167,6 +168,15 @@ func AppLeague(league string) error {
 		return fmt.Errorf("choose an app league")
 	}
 	return nil
+}
+
+// ReadableLeague admits an app league or the MFL-mirror league to a read: the mirror is a league
+// setting, so reads answer it in the same shape. Writes still use AppLeague.
+func ReadableLeague(league string) error {
+	if league == ingestion.LeagueID {
+		return nil
+	}
+	return AppLeague(league)
 }
 
 // Blocked is the preview of a body that could not be read: no fields, and the reason as its one blocker.
