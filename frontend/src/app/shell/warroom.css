@@ -915,3 +915,17 @@
 .wr-v6 .insp .kv{gap:8px;min-width:0}
 .wr-v6 .insp .kv span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wr-v6 .ia{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* Give shelf identities the row; secondary figures remain in the inspector. */
+.wr-v6 .shelf .blk{grid-template-columns:34px minmax(0,1fr);height:44px}
+.wr-v6 .shelf .blk .nm{display:grid;text-align:left;line-height:1.2}
+.wr-v6 .shelf .blk .nm small{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wr-v6 .shelf .blk .ag,.wr-v6 .shelf .blk .vl{display:none}
+.wr-v6 .shelf .list{scrollbar-width:thin;scrollbar-color:var(--edge) var(--sunken)}
+.wr-v6 .shelf .list::-webkit-scrollbar-track{background:var(--sunken)}
+.wr-v6 .mini .h{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-v6 .mini{min-width:0}
+.wr-v6 .read .kv{gap:8px;min-width:0;white-space:nowrap}
+.wr-v6 .read .kv span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wr-v6 .partner select{min-width:0}
+.wr-v6 .dir{white-space:nowrap}

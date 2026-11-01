@@ -6,7 +6,7 @@ import { all, button, click, flush, mount, render, rerender, type, unmount }
 import { heldSnapshot } from '../data/lineupTestData';
 import type { Report } from '../reports/contract';
 import { WarRoomEmpty, WarRoomHeader } from './WarRoomHeader';
-import { WarRoomDeltaSidePanel, WarRoomTrade } from './WarRoomTrade';
+import { WarRoomAssetBlock, WarRoomDeltaSidePanel, WarRoomTrade } from './WarRoomTrade';
 import { WarRoomOwnBids, WarRoomMarket } from './WarRoomMarket';
 import { WarRoomInspector } from './WarRoomInspector';
 import { WarRoomPlans } from './WarRoomPlans';
@@ -87,6 +87,14 @@ describe('War Room header and settings congruence', () => {
   });
 });
 describe('private trade workspace and lineup changes', () => {
+  it('keeps the full shelf name and compact contract in separate row content', () => {
+    const html = renderToStaticMarkup(<WarRoomAssetBlock asset={{ token: '0042',
+      name: 'McCaffrey, Christian', position: 'RB', contract: '$3.00M · 2y' }}
+      from="0025" select={() => {}} toggle={() => {}} />);
+    expect(html).toContain('McCaffrey, Christian');
+    expect(html).toContain('$3.00M · 2y');
+  });
+
   it('uses the HQ-resolved name for a native roster asset', async () => {
     const c = nativeContext(async () => reply(assetsWire));
     const id = assetsWire.snapshot.players[0].id;

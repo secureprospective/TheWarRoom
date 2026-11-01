@@ -110,10 +110,11 @@ export function WarRoomTrade({ context, catalog, deal, change, select }: { conte
       aria-label="Trade partner" value={deal.partner} onChange={e => change({ ...deal,
         partner: e.target.value, get: [] })}><option value="">Choose partner</option>
       {catalog?.teams.filter(t => t.id !== context.mine).map(t => <option key={t.id} value={t.id}>
-        {t.name}</option>)}</select><span className="dir">{unavailable}</span></div>
+        {t.name}</option>)}</select><span className="dir"><CompactAbsent /></span></div>
       {['Record · cap room', 'Needs', 'Spare'].map(label => <div className="kv" key={label}>
         <span>{label}</span><span>{label === 'Record · cap room' ?
-          `${partner.reading?.record ?? unavailable} · ${money(partner.reading?.room)}` : unavailable}
+          `${partner.reading?.record ?? '—'} · ${partner.reading?.room == null ? '—' :
+            money(partner.reading.room)}` : unavailable}
         </span></div>)}<div className="lean">{unavailable}</div>
     </div><div className="ch"><b>THEIR SHELF</b><span>drag to GET</span></div><div className="list">
       {theirs?.assets.length ? theirs.assets.map(a => block(a, 'get')) : <WarRoomEmpty />}</div></div>

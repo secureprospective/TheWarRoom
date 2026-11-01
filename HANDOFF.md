@@ -4,14 +4,13 @@
 Review — 2026-10-31, build/WR-wire. Local only; no remote contact.
 
 ## Where it stands
-- WR-POLISH1 frontend fixes committed; full frontend suite: 151 files, 1684 tests pass; TypeScript passes.
-- Native shelf uses HQ lineup identities when available. Players without a resolved identity remain unavailable.
-- Fixture runway is based on a $1,000M cap and $997.45M room, not the $125M cap cited in the brief.
-- Browser evidence: `frontend/.tmp/wr/after-evidence.json` and `after-*.png` (untracked harness).
+- WR-POLISH2 shelf spacing, compact contracts, dark scrollbars and header wrapping addressed; real-data screenshots in `frontend/.tmp/wrreal/after-*.png` (untracked).
+- Fixture salaries now use millions-to-cents mapping; cap read remains unavailable.
+- Partner positions remain missing. An attempted native assets enrichment was reverted: replacing snapshot player names caused composition correction and golden-wire tests to fail.
 
 ## Next move / blocked on
-- Review native app with real data, especially roster identities outside the owner's lineup and cap fixture selection.
-- Posture saving, missing models and native private reads remain unwired by design.
+- Add identity as a separate read-only wire field without changing recorded snapshot semantics; cover mirrored sides, regenerate bindings and update wire expectations. Then recapture and verify partner positions.
+- Verify full UI and contract values in the native app; fixture does not exercise cap.
 
 ## Tried and rejected
-- No remote operations, Go changes, invented values, or posture writes.
+- No remote operations. Directly overwriting the snapshot's recorded names with current facts breaks snapshot preservation.
