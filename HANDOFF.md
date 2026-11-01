@@ -14,3 +14,8 @@ Review — 2026-10-31, build/WR-wire. Local only; no remote contact.
 
 ## Tried and rejected
 - No remote operations. Directly overwriting the snapshot's recorded names with current facts breaks snapshot preservation.
+
+## Picker follow-up — Bee, 2026-10-31
+- Local commits 9b11837d and 90dccf54 remove the rail's static source label and distinguish league choices using mirror provenance or app league ID.
+- Still required: native HQ/War Room shell and franchise chooser, per-league persistence and authorization, plus the requested fake-port render test. Build, heavy gate and full suite have not run. No remote contact.
+- Existing untracked `.golangci-cache/`, `.picker-state.md`, and `.picker-tmp/` were left untouched.
