@@ -8,13 +8,23 @@ import (
 
 // NativeAssets is app-owned state, not an MFL roster or a what-if plan.
 type NativeAssets struct {
-	Corrections []Correction       `json:"corrections,omitempty"`
-	League      string             `json:"league"`
-	Revision    int64              `json:"revision"`
-	Seeded      bool               `json:"seeded"`
-	Entry       string             `json:"entry"`
-	Source      string             `json:"source"`
-	Snapshot    *RawNativeSnapshot `json:"snapshot"`
+	Identities  []NativeAssetIdentity `json:"identities,omitempty"`
+	Corrections []Correction          `json:"corrections,omitempty"`
+	League      string                `json:"league"`
+	Revision    int64                 `json:"revision"`
+	Seeded      bool                  `json:"seeded"`
+	Entry       string                `json:"entry"`
+	Source      string                `json:"source"`
+	Snapshot    *RawNativeSnapshot    `json:"snapshot"`
+}
+
+// NativeAssetIdentity holds public football facts separately from recorded roster state.
+type NativeAssetIdentity struct {
+	Player    string `json:"player"`
+	Franchise string `json:"franchise"`
+	Side      string `json:"side,omitempty"`
+	Name      string `json:"name"`
+	Position  string `json:"position"`
 }
 
 func NativeAssetsReading(league string, records []Record, at ...time.Time) (NativeAssets, error) {

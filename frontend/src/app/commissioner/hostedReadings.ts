@@ -1,4 +1,5 @@
 import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
+import { POSITIONS, type Position } from '../data/contract';
 
 const flag = (v: unknown): boolean => {
   if (typeof v !== 'boolean') throw new Error('Unreadable league status.');
@@ -74,6 +75,7 @@ export function parseHostedLineup(v: unknown): HostedLineup {
   };
 }
 export type HostedRoster = {
+  identities: { player: string; franchise: string; side: string; name: string; position?: Position }[];
   league: string;
   revision: number;
   season: number;
@@ -89,6 +91,7 @@ export type HostedRoster = {
 };
 export function parseHostedRoster(v: unknown): HostedRoster {
   const r = object(v, 'Roster', [
+    'identities',
     'corrections',
     'league',
     'revision',
@@ -116,6 +119,13 @@ export function parseHostedRoster(v: unknown): HostedRoster {
   return {
     league: text(r.league, 'League'),
     revision: integer(r.revision, 'Roster version'),
+    identities: array(r.identities ?? [], 'Player identities', (v, p) => {
+      const i = object(v, p, ['player', 'franchise', 'side', 'name', 'position']);
+      const position = choice(i.position, p, [...POSITIONS, 'PK', 'OL', ''] as const);
+      return { player: text(i.player, p), franchise: text(i.franchise, p),
+        side: i.side === undefined ? '' : text(i.side, p), name: text(i.name, p),
+        position: position === 'PK' ? 'K' : position === '' || position === 'OL' ? undefined : position };
+    }),
     season: integer(s.season, 'Roster season'),
     franchises: array(s.franchises, 'Franchises', (v) => {
       const f = object(v, 'Franchise', ['id', 'heldId', 'name', 'abbreviation', 'division']);

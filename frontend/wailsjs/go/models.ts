@@ -1429,6 +1429,26 @@ export namespace commissioner {
 	        this.flagged = source["flagged"];
 	    }
 	}
+	export class NativeAssetIdentity {
+	    player: string;
+	    franchise: string;
+	    side?: string;
+	    name: string;
+	    position: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeAssetIdentity(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.franchise = source["franchise"];
+	        this.side = source["side"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	    }
+	}
 	export class NativeCharge {
 	    kind?: string;
 	    season?: number;
@@ -1580,6 +1600,7 @@ export namespace commissioner {
 		}
 	}
 	export class NativeAssets {
+	    identities?: NativeAssetIdentity[];
 	    corrections?: Correction[];
 	    league: string;
 	    revision: number;
@@ -1594,6 +1615,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.identities = this.convertValues(source["identities"], NativeAssetIdentity);
 	        this.corrections = this.convertValues(source["corrections"], Correction);
 	        this.league = source["league"];
 	        this.revision = source["revision"];

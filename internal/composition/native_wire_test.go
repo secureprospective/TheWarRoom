@@ -55,6 +55,7 @@ func (r wireReadings) check(t *testing.T) {
 func TestNativeMarketWireMatchesGolden(t *testing.T) {
 	t.Parallel()
 	f := nativeMarketApp(t)
+	f.app.core.History.SetLineupEnvironment(appLineupEnv{app: f.app})
 	readings := wireReadings{}
 	cut, err := f.owner(t, "owner.two", commissioner.RosterCut, commissioner.RawWaiverArgs{Player: "1001",
 		Franchise: "franchise.02"})
@@ -92,6 +93,7 @@ func TestNativeMarketWireMatchesGolden(t *testing.T) {
 	if err == nil && assets.Snapshot != nil {
 		// A dozen players and picks keep the golden reviewable; the full snapshot has its own wire file.
 		assets.Snapshot.Players = assets.Snapshot.Players[:min(12, len(assets.Snapshot.Players))]
+		assets.Identities = assets.Identities[:min(12, len(assets.Identities))]
 		assets.Snapshot.Picks = assets.Snapshot.Picks[:min(12, len(assets.Snapshot.Picks))]
 		assets.Snapshot.RosterAt = time.Date(2026, 10, 13, 9, 0, 0, 0, time.UTC)
 	}

@@ -1,4 +1,78 @@
 {
+ "identities": [
+  {
+   "player": "1000",
+   "franchise": "franchise.02",
+   "name": "Player, 1000",
+   "position": "QB"
+  },
+  {
+   "player": "1002",
+   "franchise": "franchise.02",
+   "name": "Player, 1002",
+   "position": "RB"
+  },
+  {
+   "player": "1003",
+   "franchise": "franchise.02",
+   "name": "Player, 1003",
+   "position": "WR"
+  },
+  {
+   "player": "1004",
+   "franchise": "franchise.02",
+   "name": "Player, 1004",
+   "position": "WR"
+  },
+  {
+   "player": "1005",
+   "franchise": "franchise.02",
+   "name": "Player, 1005",
+   "position": "WR"
+  },
+  {
+   "player": "1006",
+   "franchise": "franchise.02",
+   "name": "Player, 1006",
+   "position": "TE"
+  },
+  {
+   "player": "1007",
+   "franchise": "franchise.02",
+   "name": "Player, 1007",
+   "position": "TE"
+  },
+  {
+   "player": "1008",
+   "franchise": "franchise.02",
+   "name": "Player, 1008",
+   "position": "PK"
+  },
+  {
+   "player": "1009",
+   "franchise": "franchise.02",
+   "name": "Player, 1009",
+   "position": "DT"
+  },
+  {
+   "player": "1010",
+   "franchise": "franchise.02",
+   "name": "Player, 1010",
+   "position": "DT"
+  },
+  {
+   "player": "1011",
+   "franchise": "franchise.02",
+   "name": "Player, 1011",
+   "position": "DE"
+  },
+  {
+   "player": "1012",
+   "franchise": "franchise.02",
+   "name": "Player, 1012",
+   "position": "DE"
+  }
+ ],
  "league": "native.seed",
  "revision": 23,
  "seeded": true,

@@ -36,6 +36,19 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 		return commissioner.NativeAssets{}, fmt.Errorf("read native assets: %w", err)
 	}
 	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
+	if s.lineupEnv != nil && reading.Snapshot != nil {
+		facts := s.lineupEnv.PlayerFacts()
+		for _, player := range reading.Snapshot.Players {
+			identity, held := facts[player.ID]
+			if !held {
+				continue
+			}
+			reading.Identities = append(reading.Identities, commissioner.NativeAssetIdentity{
+				Player: player.ID, Franchise: player.Franchise, Side: reading.Snapshot.SideOf(player.Franchise),
+				Name: identity.Name, Position: string(identity.Position),
+			})
+		}
+	}
 	return reading, nil
 }
 

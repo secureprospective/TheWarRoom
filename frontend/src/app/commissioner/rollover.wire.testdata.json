@@ -14351,6 +14351,38 @@
       "writable": true,
       "football": "5b65b963d1c1f73efe547ff1c1bf9abc7243cee6488c0414df8f3a0aa3862f36",
       "data": {
+        "identities": [
+          {
+            "player": "0099",
+            "franchise": "franchise.01",
+            "name": "Practice quarterback",
+            "position": "QB"
+          },
+          {
+            "player": "0100",
+            "franchise": "franchise.01",
+            "name": "Injured prospect",
+            "position": "WR"
+          },
+          {
+            "player": "0101",
+            "franchise": "franchise.01",
+            "name": "Young receiver",
+            "position": "WR"
+          },
+          {
+            "player": "0102",
+            "franchise": "franchise.02",
+            "name": "Other team receiver",
+            "position": "WR"
+          },
+          {
+            "player": "6001",
+            "franchise": "franchise.02",
+            "name": "Practice free agent",
+            "position": "WR"
+          }
+        ],
         "league": "native.hosted",
         "revision": 1165773618758567,
         "seeded": true,

@@ -96,13 +96,43 @@ describe('private trade workspace and lineup changes', () => {
   });
 
   it('uses the HQ-resolved name for a native roster asset', async () => {
-    const c = nativeContext(async () => reply(assetsWire));
+    const c = nativeContext(async () => reply({ ...assetsWire, identities: undefined }));
     const id = assetsWire.snapshot.players[0].id;
     c.snapshot.players.value = [{ id, name: 'Resolved player', position: 'QB' }];
     const catalog = await readWarRoomCatalog(c);
     const asset = catalog.teams.flatMap(t => t.assets).find(a => a.token === id);
     expect(asset?.name).toBe('Resolved player');
     expect(asset?.position).toBe('QB');
+  });
+  it('uses public identities for both shelves and the inspector, scoped to the franchise copy', async () => {
+    const wire = structuredClone(assetsWire);
+    const first = wire.snapshot.players[0];
+    const partner = wire.snapshot.franchises.find(f => f.id !== first.franchise)!;
+    wire.snapshot.players.push({ ...first, franchise: partner.id });
+    const identities = [
+      { player: first.id, franchise: first.franchise, side: 'AFC', name: 'Own identity', position: 'QB' },
+      { player: first.id, franchise: partner.id, side: 'NFC', name: 'Partner identity', position: 'RB' },
+    ];
+    const c = nativeContext(async () => reply({ ...wire, identities }));
+    c.snapshot.players.value = [{ id: first.id, name: 'Old HQ identity', position: 'TE' }];
+    const catalog = await readWarRoomCatalog(c);
+    const own = catalog.teams.find(t => t.id === first.franchise)!.assets.find(a => a.token === first.id)!;
+    const incoming = catalog.teams.find(t => t.id === partner.id)!.assets.find(a => a.token === first.id)!;
+    expect(own).toMatchObject({ name: 'Own identity', position: 'QB' });
+    expect(incoming).toMatchObject({ name: 'Partner identity', position: 'RB' });
+    const html = renderToStaticMarkup(<WarRoomInspector context={c} asset={incoming} />);
+    expect(html).toContain('Partner identity');
+    expect(html).toContain('class="pg">RB</span>');
+  });
+  it('does not invent absent public identity fields or use stale HQ values in their place', async () => {
+    const first = assetsWire.snapshot.players[0];
+    const c = nativeContext(async () => reply({ ...assetsWire, identities: [
+      { player: first.id, franchise: first.franchise, name: '', position: '' },
+    ] }));
+    c.snapshot.players.value = [{ id: first.id, name: 'Stale', position: 'QB' }];
+    const catalog = await readWarRoomCatalog(c);
+    expect(catalog.teams.flatMap(t => t.assets).find(a => a.token === first.id))
+      .toMatchObject({ name: '', position: undefined });
   });
   const catalog: WarRoomCatalog = { revision: 7, teams: [
     { id: '0025', name: 'Mine', assets: [{ token: '0042', name: 'Held player', position: 'RB',
