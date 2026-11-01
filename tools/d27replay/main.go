@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/pickvalue"
+
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -33,6 +35,8 @@ type trade struct {
 	bGave      []string
 	aPicks     int
 	bPicks     int
+	aPickIDs   []string // MFL pick strings a gave
+	bPickIDs   []string
 }
 
 type season struct {
@@ -61,7 +65,7 @@ func main() {
 	if err := h.Initialize(ctx); err != nil {
 		fail(err)
 	}
-	r := &replay{h: h, values: map[string]map[string]value{}}
+	r := &replay{h: h, values: map[string]map[string]value{}, players: map[string][]pickvalue.Player{}, picks: map[string]pickvalue.Model{}}
 	for _, ys := range strings.Split(*years, ",") {
 		y, err := strconv.Atoi(ys)
 		if err != nil {
@@ -177,8 +181,9 @@ func (s *season) loadTrades(path string) error {
 			week = int(at.Sub(firstClose).Hours()/(24*7)) + 1
 		}
 		tr := trade{at: at, year: s.year, week: week, a: t.Franchise, b: t.Franchise2}
-		tr.aGave, tr.aPicks = split(t.Gave1)
-		tr.bGave, tr.bPicks = split(t.Gave2)
+		tr.aGave, tr.aPickIDs = split(t.Gave1)
+		tr.bGave, tr.bPickIDs = split(t.Gave2)
+		tr.aPicks, tr.bPicks = len(tr.aPickIDs), len(tr.bPickIDs)
 		s.trades = append(s.trades, tr)
 	}
 	slices.SortFunc(s.trades, func(x, y trade) int { return x.at.Compare(y.at) })
@@ -186,13 +191,13 @@ func (s *season) loadTrades(path string) error {
 }
 
 // split separates players from draft picks (DP_ this year's slots, FP_ future rounds).
-func split(csv string) (ids []string, picks int) {
+func split(csv string) (ids, picks []string) {
 	for _, f := range strings.Split(csv, ",") {
 		f = strings.TrimSpace(f)
 		switch {
 		case f == "":
 		case strings.HasPrefix(f, "DP_"), strings.HasPrefix(f, "FP_"):
-			picks++
+			picks = append(picks, f)
 		default:
 			ids = append(ids, f)
 		}

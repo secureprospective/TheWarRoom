@@ -8,6 +8,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/modelrun"
+	"github.com/secureprospective/TheWarRoom/internal/pickvalue"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
@@ -16,15 +17,18 @@ import (
 )
 
 type value struct {
-	pos   string
-	ppg   float64
-	valid bool
+	pos    string
+	ppg    float64
+	valid  bool
+	status model.InputStatus
 }
 
 type replay struct {
 	h       *history.Store
 	seasons []*season
-	values  map[string]map[string]value // "season/lastWeek" → player → value
+	values  map[string]map[string]value   // "season/lastWeek" → player → value
+	players map[string][]pickvalue.Player // "season/lastWeek" → every record with its run value
+	picks   map[string]pickvalue.Model
 }
 
 // asOf is the model pass a trade is judged with: before the season, last season's finished
@@ -64,8 +68,14 @@ func (r *replay) valuesAt(ctx context.Context, s *season, y, lastWeek int) (map[
 	}
 	vals := map[string]value{}
 	for _, sc := range out.run.Scores {
-		vals[sc.MFLID] = value{pos: sc.Position, ppg: sc.DynastyPPG, valid: !sc.Unavailable}
+		vals[sc.MFLID] = value{pos: sc.Position, ppg: sc.DynastyPPG, valid: !sc.Unavailable, status: sc.InputStatus}
 	}
+	players := make([]pickvalue.Player, 0, len(book.Records))
+	for _, rec := range book.Records {
+		v, ok := vals[rec.MFL]
+		players = append(players, pickvalue.Player{Draft: rec.Draft, Value: v.ppg, Valued: ok && v.valid, InputStatus: v.status})
+	}
+	r.players[key] = players
 	say("model %s: %d players valued, %d in-season season-level/later rows withheld, %s",
 		key, len(vals), dropped, time.Since(start).Round(time.Second))
 	r.values[key] = vals

@@ -40,41 +40,20 @@ func signP(k, n int) float64 {
 	return p
 }
 
+// bar1 is the trade bars' tallies: bar 1 and its contrasts, and bar 3.
+type bar1 struct {
+	surplus, sold, bought tally
+	eq                    bar3
+	skipped, judged       int
+}
+
 func (r *replay) run(ctx context.Context) error {
-	var surplus, sold, bought tally
+	var b bar1
 	var critical, baseline tally
-	skipped, judged := 0, 0
 	for _, s := range r.seasons {
 		for _, t := range s.trades {
-			if (t.aPicks > 0) == (t.bPicks > 0) {
-				continue // the bar reads trades where exactly one side paid picks
-			}
-			ros, ok := s.before(t)
-			if !ok {
-				skipped++
-				continue
-			}
-			y, w := asOf(t)
-			vals, err := r.valuesAt(ctx, s, y, w)
-			if err != nil {
+			if err := r.judge(ctx, &b, s, t); err != nil {
 				return err
-			}
-			lg := league(ros, vals, s.pos)
-			// seller: received the picks, so sent the players.
-			seller, sGave, payer, pGave := t.a, t.aGave, t.b, t.bGave
-			if t.aPicks > 0 {
-				seller, sGave, payer, pGave = t.b, t.bGave, t.a, t.aGave
-			}
-			if len(sGave) == 0 {
-				continue
-			}
-			judged++
-			surplus.add(sideSurplus(lg.Teams[seller], sGave, vals, s.pos) > sideSurplus(lg.Teams[payer], pGave, vals, s.pos))
-			for _, p := range sGave {
-				sold.add(!lg.Teams[seller].InBest(p))
-			}
-			for _, p := range pGave {
-				bought.add(!lg.Teams[payer].InBest(p))
 			}
 		}
 		if err := r.needs(ctx, s, &critical, &baseline); err != nil {
@@ -83,13 +62,49 @@ func (r *replay) run(ctx context.Context) error {
 	}
 	say("")
 	say("D27 replay, league 14432, Best %d, model DynastyPPG", bestN)
-	say("Bar 1 (>= 70%%): one-sided pick trades judged %d (%d skipped: export and ledger disagree)", judged, skipped)
-	say("  pick receiver had more surplus at the positions it sold than the payer had at its own: %s", surplus)
-	say("  players sold for picks that sat outside the seller's Best %d: %s", bestN, sold)
-	say("  (contrast) players the pick payer also sent that sat outside its Best %d: %s", bestN, bought)
+	say("Bar 1 (>= 70%%): one-sided pick trades judged %d (%d skipped: export and ledger disagree)", b.judged, b.skipped)
+	say("  pick receiver had more surplus at the positions it sold than the payer had at its own: %s", b.surplus)
+	say("  players sold for picks that sat outside the seller's Best %d: %s", bestN, b.sold)
+	say("  (contrast) players the pick payer also sent that sat outside its Best %d: %s", bestN, b.bought)
+	b.eq.report()
 	say("Bar 2 (>= 50%%): critical needs at week 8 addressed by week 13 with a Best-%d-grade player: %s", bestN, critical)
 	say("  (baseline) same rate at positions with no need: %s", baseline)
 	return nil
+}
+
+// judge scores one trade where exactly one side paid picks: bar 1 (surplus) and bar 3 (equivalence).
+func (r *replay) judge(ctx context.Context, b *bar1, s *season, t trade) error {
+	if (t.aPicks > 0) == (t.bPicks > 0) {
+		return nil
+	}
+	ros, ok := s.before(t)
+	if !ok {
+		b.skipped++
+		return nil
+	}
+	y, w := asOf(t)
+	vals, err := r.valuesAt(ctx, s, y, w)
+	if err != nil {
+		return err
+	}
+	lg := league(ros, vals, s.pos)
+	// seller: received the picks, so sent the players.
+	seller, sGave, payer, pGave, paid := t.a, t.aGave, t.b, t.bGave, t.bPickIDs
+	if t.aPicks > 0 {
+		seller, sGave, payer, pGave, paid = t.b, t.bGave, t.a, t.aGave, t.aPickIDs
+	}
+	if len(sGave) == 0 {
+		return nil
+	}
+	b.judged++
+	b.surplus.add(sideSurplus(lg.Teams[seller], sGave, vals, s.pos) > sideSurplus(lg.Teams[payer], pGave, vals, s.pos))
+	for _, p := range sGave {
+		b.sold.add(!lg.Teams[seller].InBest(p))
+	}
+	for _, p := range pGave {
+		b.bought.add(!lg.Teams[payer].InBest(p))
+	}
+	return r.equivalence(&b.eq, t, fmt.Sprintf("%d/%d", y, w), sGave, pGave, paid, vals)
 }
 
 // sideSurplus is the franchise's surplus value summed over the positions of the players it sent.

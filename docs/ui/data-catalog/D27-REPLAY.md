@@ -28,7 +28,7 @@ Sample: 393 trades where exactly one side paid picks; 96 team-seasons for needs.
 |---|---|---|
 | The pick receiver had more surplus at the positions it sold than the payer had at its own | ≥ 70% | **65%** (256/393, p<.001): FAIL |
 | Critical needs at week 8 addressed by week 13 with a Best-21-grade player | ≥ 50% | **12%** (8/67): FAIL. The base rate at positions with no need is 9% |
-| Pick-equivalence labels within one round-band | ≥ 60% | NOT RUN (needs the pick model fitted as of each date) |
+| Pick-equivalence labels within one fifth-of-a-round band | ≥ 60% | **52%** raw (191/366), but 169 of those have both sides above the 1.01 pick, where every label matches; on the 197 informative trades **11%** (22/197): FAIL |
 
 Diagnostics:
 - Critical needs met by ANY added player at the position (no value bar): 21/67 = 31% (2023 17%, 2024 42%, 2025 33%).
@@ -51,4 +51,10 @@ Diagnostics:
   - unvalued players, named
 - No grade words. Comparing a team with the league's own shape is a fact.
 - D32 TRIM/ASK/SWEETEN may still *prefer* surplus assets. The 65% result supports that as a tiebreak, not as a claim.
-- Pick equivalence waits for its own replay.
+- **Pick equivalence does NOT ship.** Bar 3 (run 10-31) fits Pick Value v2 as of each trade (that date's model
+  values, only league drafts held then, default pickvalue.discount) against the same DynastyPPG player values.
+  - In 70% of one-sided pick trades (255/366) the model rates what the pick receiver sent above the picks (plus
+    players) it got back; the gap is 5 or more fifths of a round in 119 trades. Picks-only trades match 28%.
+  - The league prices picks far above the model's player-equivalent, so "worth about a late 2nd" would mislead.
+  - Cells use the method's own fallback: picks and players are not compared; each shows in its own units.
+  - Re-test if the pick model or the value model changes. Harness: tools/d27replay bar3.go + pickequiv.go.
