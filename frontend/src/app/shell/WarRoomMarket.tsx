@@ -27,7 +27,7 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
     if (pending) return;
     setPending(true); setError('');
     try { await changeWarRoomTarget(context, id, targets.has(id), withPlayer); setRefresh(n => n + 1); }
-    catch (e) { setError(String(e)); } finally { setPending(false); }
+    catch { setError(unavailable); } finally { setPending(false); }
   };
   const players = value?.players?.filter(p => filter !== 'Targets' || targets.has(p.id));
   return <section className="mk3 ws on" aria-label="Market"><div className="tg"><div className="ch">

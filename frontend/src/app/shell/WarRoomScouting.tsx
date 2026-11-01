@@ -35,7 +35,7 @@ export function WarRoomScouting({ context, prospect, close }: { context: WarRoom
     if (pending || !note.trim() || context.native) return;
     setPending(true); setError('');
     try { await changeWarRoomNote(context, prospect.id, note); setNote(''); setRefresh(n => n + 1); }
-    catch (e) { setError(String(e)); } finally { setPending(false); }
+    catch { setError(unavailable); } finally { setPending(false); }
   };
   const notes = reading.reading?.notes;
   return <div className="scrim open"><div className="scard" ref={root} role="dialog" aria-modal="true"

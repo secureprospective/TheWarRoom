@@ -76,8 +76,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     <main className="work"><div className="ws-tabs" role="tablist">
       {(['desk', 'market', 'draft', 'plans'] as const).map((t, i) => <WarRoomAct role="tab" key={t}
         selected={tab === t} onAction={() => setTab(t)}>{['TRADE DESK', 'MARKET', 'DRAFT ROOM',
-          'PLANS'][i]}</WarRoomAct>)}<div className="cmd" style={{ marginLeft: 'auto' }}><kbd>/</kbd>
-          trade.build with=… send=… get=…</div></div>
+          'PLANS'][i]}</WarRoomAct>)}</div>
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
         reading={header.reading} />
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
@@ -94,7 +93,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       <div className="tray"><div className="pulls">{(['pocket', 'offers'] as const).map(d => <WarRoomAct
         key={d} className="pull" expanded={drawer === d} onAction={() =>
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}
-      </div><span className="msg" title={header.error ?? header.reading?.errors.join(' · ')}>{unavailable}
+      </div><span className="msg" title={header.error || header.reading?.errors.length ? unavailable : undefined}>{unavailable}
       </span>
       <WarRoomAct className="btn sp" disabled>SAVE TO POCKET</WarRoomAct>
       <WarRoomAct className="btn" onAction={() =>

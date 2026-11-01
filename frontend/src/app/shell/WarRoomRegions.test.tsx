@@ -5,7 +5,7 @@ import { all, button, click, flush, mount, render, rerender, type, unmount }
   from '../commissioner/commissionerDom';
 import { heldSnapshot } from '../data/lineupTestData';
 import type { Report } from '../reports/contract';
-import { WarRoomHeader } from './WarRoomHeader';
+import { WarRoomEmpty, WarRoomHeader } from './WarRoomHeader';
 import { WarRoomDeltaSidePanel, WarRoomTrade } from './WarRoomTrade';
 import { WarRoomOwnBids, WarRoomMarket } from './WarRoomMarket';
 import { WarRoomInspector } from './WarRoomInspector';
@@ -64,6 +64,11 @@ describe('War Room header and settings congruence', () => {
     starters = 13;
     const after = renderToStaticMarkup(<WarRoomHeader reading={await readWarRoomHeader(context())} />);
     expect(before).toContain('Best 8 (any position)'); expect(after).toContain('Best 13 (any position)');
+  });
+  it('does not expose internal read failures in the empty-state tooltip', () => {
+    const html = renderToStaticMarkup(<WarRoomEmpty reason="native.secret.read failed" />);
+    expect(html).not.toContain('native.secret.read');
+    expect(html).toContain('title="Not available yet"');
   });
   it('labels compact missing numeric values without wrapping the full phrase', () => {
     const html = renderToStaticMarkup(<WarRoomHeader />);

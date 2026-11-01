@@ -33,7 +33,7 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
     if (!asset || pending) return;
     setPending(true); setError('');
     try { await changeWarRoomNote(context, asset.token, text, at); setNote('');
-      setRevision(n => n + 1); } catch (e) { setError(String(e)); } finally { setPending(false); }
+      setRevision(n => n + 1); } catch { setError(unavailable); } finally { setPending(false); }
   };
   const research = facts?.research;
   const nativeContract = context.native ? context.snapshot.rosters.value.flatMap(r => r.players)
@@ -48,12 +48,11 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
       {research?.name ?? asset?.name ?? unavailable}</div><div className="sub">{research?.owner ??
         unavailable} · age {age ?? unavailable} · {asset?.contract ?? unavailable}</div></div>
     <div className="lensrow"><div><b><CompactAbsent /></b><span>to you</span></div>
-      <div><b><CompactAbsent /></b><span>to them</span></div></div><div className="why" title={reading.error ??
-        facts?.errors.join(' · ')}>{unavailable}</div>
+      <div><b><CompactAbsent /></b><span>to them</span></div></div><div className="why" title={reading.error || facts?.errors.length ? unavailable : undefined}>{unavailable}</div>
     <div className="idrawers"><Drawer label="CONTRACT" detail={nativeContract?.yearsRemaining === undefined ?
       undefined : `${nativeContract.yearsRemaining} yrs`}>
       {facts?.contract?.value?.years.length ? facts.contract.value.years.map(y => <div className="kv"
-        key={y.season}><span>{y.season}</span><span title={y.reason}>{y.cost.text} · {y.tag}</span></div>) :
+        key={y.season}><span>{y.season}</span><span title={y.reason ? unavailable : undefined}>{y.cost.text} · {y.tag}</span></div>) :
         nativeContract ? <div className="kv"><span>{context.snapshot.league.value.season}</span>
           <span>{money(nativeContract.salary)} · {nativeContract.contractStatus} · {
             nativeContract.yearsRemaining ?? unavailable} yrs</span></div> : <WarRoomEmpty />}
@@ -64,7 +63,7 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
       </div>
     </Drawer><Drawer label="VALUE ARC" detail={arc?.points.length ? `age ${arc.points[0].age} → ${
       arc.points[arc.points.length - 1].age}` : undefined}>
-      {arc?.points.length ? <div className="arc" title={arc.reason}>{arc.points.map(p => <i key={p.season}
+      {arc?.points.length ? <div className="arc" title={arc.reason ? unavailable : undefined}>{arc.points.map(p => <i key={p.season}
         className={p.season === context.snapshot.league.value.season ? 'now' : ''}
         style={{ height: `${Math.max(0, p.level / maxArc * 100)}%` }}
         title={`${p.season} · age ${p.age} · ${p.level}`} />)}</div> : <WarRoomEmpty />}</Drawer>
@@ -87,10 +86,8 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
     <div className="iact"><span className="h">MOVE</span><div className="ia"><WarRoomAct className="btn"
       disabled={!add} onAction={add}>ADD TO TRADE</WarRoomAct>
       <WarRoomAct className="btn" disabled={!watch || pending}
-      onAction={() => { if (watch) { setPending(true); setError(''); void watch().catch(e => setError(
-        String(e))).finally(() => setPending(false)); } }}>WATCH</WarRoomAct></div></div>
+      onAction={() => { if (watch) { setPending(true); setError(''); void watch().catch(() => setError(unavailable)).finally(() => setPending(false)); } }}>WATCH</WarRoomAct></div></div>
     <div className="ifoot">
-      <span>/ inspect {asset?.token ?? '…'}</span>
       <WarRoomAct disabled title={unavailable}>
       + DRAWER</WarRoomAct></div>
   </aside>;

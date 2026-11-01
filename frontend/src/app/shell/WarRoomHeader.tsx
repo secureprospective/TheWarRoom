@@ -5,7 +5,7 @@ export function CompactAbsent() {
   return <span title={unavailable} aria-label={unavailable}>—</span>;
 }
 export function WarRoomEmpty({ reason }: { reason?: string }) {
-  return <p className="empty" title={reason}>{unavailable}</p>;
+  return <p className="empty" title={reason ? unavailable : undefined}>{unavailable}</p>;
 }
 export function WarRoomHeader({ name, reading }: { name?: string; reading?: WarRoomHeaderReading }) {
   return <section className="table" aria-label="Franchise context">
