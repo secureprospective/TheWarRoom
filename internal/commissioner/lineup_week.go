@@ -141,6 +141,12 @@ func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env Line
 	if _, err := RulesInForce(records, change.Season, at); err != nil {
 		return Refused(err)
 	}
+	if lock, held := firstKickoff(env); held && !now.Before(lock) {
+		base.Assets, err = NativeAssetsAsOf(raw.League, records, lock)
+		if err != nil {
+			return Refused(err)
+		}
+	}
 	if err := checkLineupRoster(base, change, env); err != nil {
 		return Refused(err)
 	}

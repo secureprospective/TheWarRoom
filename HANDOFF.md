@@ -2,34 +2,29 @@
 
 ## Baton
 Bee → ClaudeBox / review — 2026-11-01, build/ROSTER-1. Local commits only.
-APP-ROSTER-3 admission + post-seed as-of projection implemented; checks completed.
 
 ## Where it stands
-- `5f7a14916`: optional effective timestamps on ordinary roster moves, commissioner
-  authority for past moves, future refusal, durable effective + real receipt times.
-- `c770a6e00`: inclusive effective-time projection ordered by effective then revision;
-  historical market preparation, compensation, reserve ties and authority tests.
-- Final commissioner/history race batch: 994 test/subtest PASS, 1 inherited FAIL,
-  4 fixture/config SKIP. Only failure: `TestSinglePoolStartupDraftIsUnchanged`,
-  expected 90ca21fd230f0aa6, got 8a6936145d37309e; reproduced on starting production
-  files at 0fd3b6c4. Existing tests/expectations were not edited.
-- Focused race batch: 119 PASS / 0 FAIL. Three behavioral mutants rejected.
-  Plain make build PASS; both code commits' hooks PASS. Binary not launched.
-- Evidence: docs/build-handoffs/APP-ROSTER-3-evidence.md; ignored logs: .tmp/roster3/.
-  No independent review, GUI test, full verify, frontend or generated-binding change.
+- APP-ROSTER-4 checks lineup active membership at the week's first held kickoff,
+  once reached, using the effective-time projection. Before kickoff or without a
+  held schedule it uses today's roster; player-specific lineup locks are unchanged.
+- Eight table cases pass, including cuts, additions, inclusive boundaries, earliest
+  kickoff and schedule fallback. Targeted commissioner race: 574 PASS, 1 inherited
+  FAIL, 0 SKIP. `internal/commissioner/draft_startup_test.go:315` still expects
+  90ca21fd230f0aa6 and gets 8a6936145d37309e, reproduced before this work as recorded
+  in `docs/build-handoffs/APP-ROSTER-3-evidence.md`. No race diagnostic.
+- Plain `make build` PASS with existing Wails binding warnings; binary not launched.
+  Logs: `.tmp/roster4/`. No GUI test or independent review.
 
 ## Next move / blocked on
-- Review this slice; investigate inherited startup digest failure separately.
-- Pre-seed reconstruction remains open: seed = observation baseline. Unknown historical
-  acquisition contracts use league defaults, flagged "contract from import, unverified"
-  for commissioner review. No new ruling needed; not implemented in this scoped run.
-- Then lineup membership at kickoff and ordinary-command transaction translation;
-  importer/lineups/contracts untouched here. Refused 76 and 32-team replay equality
-  are not remeasured or claimed fixed. Replay idempotence still unproven.
+- Review lineup-at-lock; test a disposable historical week with a cut and an add
+  after its first kickoff: the cut starter should be accepted, the added starter
+  refused. Pre-observation kickoff remains refused, not guessed.
+- Investigate inherited startup digest separately. Pre-seed reconstruction,
+  unverified imported contracts, transaction translation/idempotency, 32-team
+  replay equality and the prior 76 lineup refusals remain open or unmeasured.
 
 ## Tried and rejected
-- Receipt-only history cannot answer backdated roster questions; replaced with
-  effective selection/order. Existing bid/claim/offer dependencies still apply.
-- No raw SQL, store-clock backdating, source-specific behavior, invented contracts
-  or lineup membership bypass. Invalid dependent timelines roll back.
-- No fetch/push: initial git pull stopped because branch lacks upstream.
+- Current roster for historical lineups loses valid cut players and admits late
+  additions. No importer, contracts, player-lock policy or bindings changed.
+- `git pull --ff-only` has no upstream; no push attempted. Pre-existing untracked
+  `.golangci-cache/` was left untouched.
