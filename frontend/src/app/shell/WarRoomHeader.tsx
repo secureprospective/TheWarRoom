@@ -1,5 +1,7 @@
 import { HQAct as WarRoomAct } from './HQAct';
 import type { WarRoomHeaderReading } from './warroomReads';
+import type { WarRoomEvent } from './warroomCalendar';
+import { countdown } from '../clock/urgency';
 import { money, placeLine, unavailable } from './hqModel';
 export function CompactAbsent() {
   return <span title={unavailable} aria-label={unavailable}>—</span>;
@@ -38,4 +40,20 @@ export function WarRoomHeader({ name, reading, windowLabel }: { name?: string;
           style={{ width: `${Math.min(100, Math.max(0, (y.max - y.room) / y.max * 100))}%` }} /> : null}
         </span><span>{money(y.room)}</span></div>) : <WarRoomEmpty />}</div></div>
   </section>;
+}
+
+// A league with no dated window is not a failed read: it has no dates yet. The unavailable words are
+// kept for a calendar that could not be read, with the reason in the hover.
+export function WarRoomDates({ events, failed, reason }: { events: WarRoomEvent[]; failed?: boolean;
+  reason?: string }) {
+  return <div className="cal" aria-label="Calendar">{events.length ? events.map(d => <div className="ev"
+    key={d.id}><span className="w">{d.at ? new Date(d.at).toLocaleDateString() : unavailable}</span>
+    <b>{d.label}</b><span className="c">{countdown(d.at, Date.now())}</span></div>) :
+    failed ? <WarRoomEmpty reason={reason} /> : <p className="empty">No dates yet</p>}</div>;
+}
+// The desk strip speaks only when a read failed. Working reads leave it quiet rather than filling it
+// with words that look like an error.
+export function WarRoomTrayMessage({ problems }: { problems: string[] }) {
+  const held = problems.filter(Boolean);
+  return <span className="msg" title={held.join(' · ')}>{held.length ? unavailable : ''}</span>;
 }

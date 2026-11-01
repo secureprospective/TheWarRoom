@@ -939,7 +939,8 @@
 
 .wr-v6.embedded .work{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto}
 .wr-v6.embedded .work:not(.external-tabs){grid-template-rows:auto auto minmax(0,1fr) auto auto}
-.wr-v6.embedded .empty{overflow-wrap:anywhere}
+/* A narrow cell wraps between words and never inside one: "Not availabl / e yet" is not a word. */
+.wr-v6.embedded .empty{overflow-wrap:break-word}
 
 .wr-v6.embedded .desk{grid-template-columns:minmax(180px,1fr) minmax(360px,2fr) minmax(180px,1fr)}
 .wr-v6.embedded .desk>div,.wr-v6.embedded .dr5>div{min-width:0;overflow:auto}
@@ -952,7 +953,7 @@
 .wr-v6.embedded .ch{flex-wrap:wrap;gap:4px}
 
 .wr-v6.embedded .franchise-context{overflow:visible;align-items:start}
-.wr-v6.embedded .franchise-context>div{min-width:0;overflow-wrap:anywhere}
+.wr-v6.embedded .franchise-context>div{min-width:0;overflow-wrap:break-word}
 .wr-v6.embedded .post{flex-wrap:wrap}
 .wr-v6.embedded .shelf>.ch,.wr-v6.embedded .shelf>.bench,.wr-v6.embedded .shelf>.read{flex-shrink:0}
 .wr-v6.embedded .read{grid-auto-rows:max-content}

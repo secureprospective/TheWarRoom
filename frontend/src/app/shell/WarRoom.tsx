@@ -7,7 +7,7 @@ import { commands } from '../commands/registry';
 import { useLeagueClock } from '../clock/useLeagueClock';
 import { countdown } from '../clock/urgency';
 import { FranchisePicker } from './FranchisePicker';
-import { WarRoomHeader, WarRoomEmpty } from './WarRoomHeader';
+import { WarRoomDates, WarRoomHeader, WarRoomTrayMessage } from './WarRoomHeader';
 import { readWarRoomHeader, nativeWarRoomHeader, useWarRoomRead, type WarRoomNative } from './warroomReads';
 import { unavailable } from './hqModel';
 import { WarRoomScouting, type WarRoomProspect } from './WarRoomScouting';
@@ -97,17 +97,13 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
           tab === 'draft' ? <WarRoomDraft context={context} select={(id, name, position) =>
             setProspect({ id, name, position })}
             /> : <WarRoomPlans />}
-      <div className="cal" aria-label="Calendar">{deadlines.length ? deadlines.map(d => <div
-        className="ev" key={d.id}>
-      <span className="w">{d.at ? new Date(d.at).toLocaleDateString() : unavailable}</span>
-        <b>{d.label}</b><span className="c">{countdown(d.at, Date.now())}</span></div>) :
-        <WarRoomEmpty reason={calendar.error} />}</div>
+      <WarRoomDates events={deadlines} failed={native ? Boolean(calendar.error) :
+        clock?.provenance.freshness.state === 'fail'} reason={calendar.error} />
       <div className="tray"><div className="pulls">{(['pocket', 'offers'] as const).map(d => <WarRoomAct
         key={d} className="pull" expanded={drawer === d} onAction={() =>
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}
-      </div><span className="msg"
-        title={[header.error, ...headerReading?.errors ?? []].filter(Boolean).join(' · ')}>{unavailable}
-      </span>
+      </div><WarRoomTrayMessage problems={[header.error ?? '', calendar.error ?? '',
+        ...headerReading?.errors ?? []]} />
       <WarRoomAct className="btn sp" disabled>SAVE TO POCKET</WarRoomAct>
       <WarRoomAct className="btn" onAction={() =>
           changeDeal({ ...deal, give: [], get: [] })}>
