@@ -12,3 +12,10 @@ Summary retains four player box categories, header and drive plays. Core retains
 Total trimmed JSON: 298386 B.
 
 The IPC wire fixtures in `frontend/src/app/now/live*.testdata.json` are generated from these captures by `livegame_test.go`, not additional external bodies. The crosswalk bridge in that test is an explicit synthetic CSV fixture (two MFL ids → captured ESPN participant ids); it proves id joining, not that those MFL ids are the live directory's current links. Fox bifrost was not captured and is not implemented.
+
+- `espn-summary-401873023.json`: captured 2026-11-02 from ESPN's site summary endpoint
+  (`event=401873023`); original SHA256
+  `6a0acc341faab221276c6a7cd10c272e06f0609de59aaeac94c17c4348063de6`.
+  Parser-field-only trim: 93,497 B, SHA256
+  `258c67430291a7ac4667e752351de65bd7c144e44876cd53525b7d3a02b24f38`.
+  Retains the actual numeric header week and season object, player boxes and drive plays.

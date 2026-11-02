@@ -71,6 +71,23 @@ func (r RawSeason) Validate() error {
 	}
 	return nil
 }
+
+// ESPN scoreboards wrap the week in an object; summary headers send its number.
+func (r *RawWeek) UnmarshalJSON(body []byte) error {
+	type weekObject RawWeek
+	var object weekObject
+	if err := json.Unmarshal(body, &object); err == nil {
+		*r = RawWeek(object)
+		return nil
+	}
+	var number int
+	if err := json.Unmarshal(body, &number); err != nil {
+		return fmt.Errorf("week: decode number or object: %w", err)
+	}
+	r.Number = number
+	return nil
+}
+
 func (r RawWeek) Validate() error {
 	if r.Number < 1 || r.Number > 25 {
 		return fmt.Errorf("week: invalid number")

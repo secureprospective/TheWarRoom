@@ -260,3 +260,13 @@ func TestScoreboardCarriesCheckedGameScope(t *testing.T) {
 		}
 	}
 }
+
+func TestSummaryCarriesRealNumericWeek(t *testing.T) {
+	game, err := ParseSummary(fixture(t, "espn-summary-401873023"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if game.Season != 2026 || game.SeasonType != 2 || game.Week != 8 || len(game.Box) == 0 {
+		t.Fatalf("summary lost scope or players: %+v", game)
+	}
+}
