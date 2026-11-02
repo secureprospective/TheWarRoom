@@ -28,3 +28,73 @@ Verification: test discovery followed by targeted `-race` schedule fetch/cache
 checks: **11 test/subtest PASS**, zero FAIL/SKIP; plain `make build` passed.
 Launch gate passed before heavy work. Logs in ignored `.tmp/roster12/`.
 Historical classification and performance work follow separately.
+
+## Step 2 — exact weekly classification
+
+Read back all 3,340 records from a fresh ordinary transaction import of the
+backup copy (2 → 3,340). `NativeAssetsAsOf` was exercised at each held week's
+first kickoff, not today's state or a calendar estimate. All 74 per-week rows
+are in `APP-ROSTER-12-rows.tsv`; held weekly bodies identify each as a starter.
+
+| Prior current-roster class | Before rows | Active at week cutoff | Acquired later / absent at cutoff |
+| --- | ---: | ---: | ---: |
+| IR | 27 | 27 | 0 |
+| Taxi | 1 | 1 | 0 |
+| Another franchise | 34 | 34 | 0 |
+| Unrostered | 12 | 11 | 1 |
+| **Total** | **74** | **73** | **1** |
+
+**No demonstrated misdated source move.** Re-translated the held 895-row
+transaction body through `TransactionCommands` and matched persisted commands
+by stable source request key: **1,937/1,937** source commands have the exact
+held transaction time as Effective. Reconstruction baselines were excluded, not
+mistaken for dated source moves. All 34 "another franchise" rows are active for
+the named franchise at their actual week cutoff; their later transfers explain
+the current location. Their dated transitions are retained per row. No invented
+transaction, reserve-rule change or direct ledger repair was needed.
+
+**73 rows addressed by supplying the missing football facts**, through the same
+held schedule read / ordinary lineup admission. **0 transaction repairs.**
+
+One of the 74 needs Christopher's ruling under the unchanged first-kickoff rule:
+week 3, franchise.18, **Case Keenum / 10948**. At `2026-09-25T00:15:00Z` he is
+absent. The held acquisition is `2026-09-27T04:32:28Z`; MFL lists him as starter.
+This is absence at the app's league-wide first kickoff, not proof of absence at
+his own NFL game's kickoff. The other 73 are not reserve/absent starters at the
+app's cutoff. Prior week-7 Kirk / Terrell / Miller conflicts remain separate.
+Full ordinary lineup replay and performance comparison are recorded below when
+complete; the 74-row audit is not a claim that only those 74 can refuse.
+
+Fresh importer on this copy, unchanged code: **3,338 appended / 8m36.294054093s**;
+repeat **0 / 552.127885ms**, within the unchanged ten-minute deadline. Prior
+APP-ROSTER-11 measurement was 7m12.678332031s; no importer change is claimed here.
+
+The suspected transfers also have a separate row-by-row raw timestamp audit:
+`APP-ROSTER-12-transfer-times.tsv`. **34/34** match the held transaction body's
+numeric epoch and the persisted ordinary removal command's Effective, and are
+active at the actual week cutoff. This checks the raw timestamp independently
+of the per-week roster fold, rather than inferring that a later owner implies a
+bad import date.
+
+### Additional cutoff conflicts surfaced by complete dates
+
+Checking *all* held starters, rather than only the first player named by each
+refusal, identifies **26 player-week conflicts across 20 franchise-weeks**:
+**22 absent, 2 taxi, 2 IR**. The complete dated/named list is
+`APP-ROSTER-12-cutoff-conflicts.tsv`; its transitions include only exact matched
+source commands, not reconstructed baseline removals. This includes Case Keenum,
+the prior three W7 players, and 22 further rows previously hidden by another
+player's refusal or by a current-roster check. W7 also includes Kris
+Abrams-Draine / 16735, franchise.15, acquired October 25, 01:52:26Z.
+
+These are ruling rows under the **existing league-wide first-kickoff check**.
+They do not establish that MFL let someone start before acquisition at his own
+NFL game's kickoff. No locked rule was changed to admit them. The completed
+unoptimized ordinary lineup call with W1–8 held dates appends **204**, refuses
+**20** (previous W7/8-only **77**); the original schedule-free **75** is a
+separate mode, not a claim that holding dates changes a date-free check.
+
+Step-2 verification: the focused race batch includes historical reconstruction
+and week-lock boundary tests (**15 test/subtest PASS** for those two tests),
+with 74 exact week classifications and 34 direct raw transfer timestamp checks.
+Plain `make build` passed on the working candidate; no full suite or remote.
