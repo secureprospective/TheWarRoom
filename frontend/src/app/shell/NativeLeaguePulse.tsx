@@ -77,6 +77,7 @@ function Strip({ reading, results, pending, error, mine, week, onWeek }: {
     </div>
     <div className="fresh">
       scores: <b>the league ledger</b><br />
+      feed policy: ESPN live · Sleeper gaps · nflverse final · commissioner overrides<br />
       revision {reading?.revision ?? '—'} · {results?.words ?? 'no week read'}
     </div>
     <div className="mybox">

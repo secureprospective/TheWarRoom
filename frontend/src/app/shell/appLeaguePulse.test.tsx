@@ -98,6 +98,8 @@ it('renders the Now tab from the week the league has actually scored', async () 
   expect(container.querySelector('.sline')?.textContent).toContain('WEEK 2');
   expect(container.querySelector('.sline .slate')?.textContent).toContain('16 with a result');
   expect(container.querySelector('.sline .mybox')?.textContent).toContain('1.5');
+  expect(container.querySelector('.sline .fresh')?.textContent)
+    .toContain('feed policy: ESPN live · Sleeper gaps · nflverse final · commissioner overrides');
   // The starters spine reads the week score's starters and the lineup's NFL team.
   const spine = container.querySelector('#ws-live .spine')!;
   expect(spine.textContent).toContain('franchise.01 starter');

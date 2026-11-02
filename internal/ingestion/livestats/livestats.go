@@ -21,8 +21,7 @@ const Authority = "ESPN live"
 // Pending is what a live box score never reports. Scoring keeps these absent rather than zero, so
 // a provisional total is marked incomplete and says what is still to come.
 func Pending() []string {
-	return []string{"A game in progress is scored from the live box score: fumbles, two-point " +
-		"conversions, return yards, kicking, safeties, snap counts and long-play bonuses land with the final feed"}
+	return []string{"Live source evidence is provisional: unreported stat fields and play distances remain pending until final evidence arrives"}
 }
 
 // Line is one player's live stat line as the live source reported it.
@@ -59,11 +58,20 @@ func columns(category string) []column {
 			{"YDS", []leaguerules.StatID{"receiving_yards"}}, {"TD", []leaguerules.StatID{"receiving_td"}},
 			{"TGTS", []leaguerules.StatID{"target"}}}
 	case "defensive":
-		// TOT is solo plus assisted tackles, which is what the league's "tackle" counts. The
-		// source does not separate assists, so "assist" stays absent.
-		return []column{{"TOT", []leaguerules.StatID{"tackle"}}, {"SACKS", []leaguerules.StatID{"sack"}},
+		// TOT is total tackles; AST, when supplied, records assists separately.
+		return []column{{"TOT", []leaguerules.StatID{"tackle"}}, {"AST", []leaguerules.StatID{"assist"}}, {"SACKS", []leaguerules.StatID{"sack"}},
 			{"TFL", []leaguerules.StatID{"tackle_for_loss"}}, {"PD", []leaguerules.StatID{"pass_defensed"}},
 			{"QB HTS", []leaguerules.StatID{"qb_hit"}}, {"TD", []leaguerules.StatID{"def_tds"}}}
+	case "fumbles":
+		return []column{{"FUM", []leaguerules.StatID{"fumbles_total"}}, {"LOST", []leaguerules.StatID{"fumble_lost"}}}
+	case "interceptions":
+		return []column{{"INT", []leaguerules.StatID{"interception_caught"}}, {"YDS", []leaguerules.StatID{"interception_return_yards"}}}
+	case "kickReturns":
+		return []column{{"YDS", []leaguerules.StatID{"kickoff_return_yards"}}}
+	case "puntReturns":
+		return []column{{"YDS", []leaguerules.StatID{"punt_return_yards"}}}
+	case "kicking":
+		return []column{{"XP", []leaguerules.StatID{"pat_made", "pat_attempt"}}}
 	default:
 		return nil
 	}
