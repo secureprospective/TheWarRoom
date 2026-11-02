@@ -69,6 +69,9 @@ func correctPick(seed *RawNativeSnapshot, r Record) error {
 	if !slices.ContainsFunc(seed.Franchises, func(f NativeFranchise) bool { return f.ID == c.Owner }) {
 		return fmt.Errorf("choose an owner in this app league")
 	}
+	if c.History != nil {
+		return correctHistoricalPick(seed, c)
+	}
 	for i := range seed.Picks {
 		p := &seed.Picks[i]
 		if p.Season != c.Pick.Season || p.Round != c.Pick.Round || p.Original != c.Pick.Original || p.Slot != c.Pick.Slot {

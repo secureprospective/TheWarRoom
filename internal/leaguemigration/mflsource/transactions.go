@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
@@ -38,7 +39,7 @@ func TransactionCommands(raw transactions.RawTransactions, league, reason string
 
 // BackfillTransactions uses the franchise directory recorded in the league, not
 // a newly sorted source directory. Ordinary append checks still own admission.
-func BackfillTransactions(ctx context.Context, ledger leaguemigration.Ledger, league, reason, principal string, season int, raw transactions.RawTransactions, heldPlayers map[string]string) ([]commissioner.Receipt, error) {
+func BackfillTransactions(ctx context.Context, ledger leaguemigration.Ledger, league, reason, principal string, season int, raw transactions.RawTransactions, heldPlayers map[string]string, draft ...[]draftreports.Pick) ([]commissioner.Receipt, error) {
 	records, err := ledger.Records(ctx, league)
 	if err != nil {
 		return nil, fmt.Errorf("read transaction identities: %w", err)
@@ -64,7 +65,7 @@ func BackfillTransactions(ctx context.Context, ledger leaguemigration.Ledger, le
 			break
 		}
 	}
-	groups, err := TransactionReplayCommands(raw, league, reason, seed, franchises, players)
+	groups, err := TransactionReplayCommands(raw, league, reason, seed, franchises, players, draft...)
 	if err != nil {
 		return nil, err
 	}

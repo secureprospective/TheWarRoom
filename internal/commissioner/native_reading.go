@@ -117,6 +117,7 @@ func seedNativeAssets(league string, records []Record) (NativeAssets, error) {
 		seed.Franchises = slices.Clone(seed.Franchises)
 		seed.Players = slices.Clone(seed.Players)
 		seed.Picks = slices.Clone(seed.Picks)
+		seed.PickHistory = slices.Clone(seed.PickHistory)
 		seed.Adjustments = slices.Clone(seed.Adjustments)
 		seed.Pool = slices.Clone(scopedOLineLots(seed))
 		out.Seeded, out.Entry, out.Snapshot = true, r.Receipt.Entry, &seed

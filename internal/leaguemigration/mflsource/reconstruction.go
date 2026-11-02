@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
@@ -16,7 +17,7 @@ import (
 // TransactionReplayCommands reconstructs the state before the first supplied move.
 // Baseline repairs and pre-observation moves form one ordinary atomic batch, so
 // readers never see a half-reconstructed present roster.
-func TransactionReplayCommands(raw transactions.RawTransactions, league, reason string, seed commissioner.RawNativeSnapshot, franchises, players map[string]string) ([][]commissioner.RawCommand, error) {
+func TransactionReplayCommands(raw transactions.RawTransactions, league, reason string, seed commissioner.RawNativeSnapshot, franchises, players map[string]string, draft ...[]draftreports.Pick) ([][]commissioner.RawCommand, error) {
 	groups, err := TransactionCommands(raw, league, reason, seed.Season, franchises, players)
 	if err != nil {
 		return nil, err
@@ -26,8 +27,10 @@ func TransactionReplayCommands(raw transactions.RawTransactions, league, reason 
 		return nil, fmt.Errorf("read reconstruction evidence: %w", err)
 	}
 	slices.SortStableFunc(rows, func(a, b leaguefeed.Transaction) int { return a.Time.Compare(b.Time) })
-	before := seed
-	before.Players, before.Picks = slices.Clone(seed.Players), slices.Clone(seed.Picks)
+	before := cloneReconstructionSeed(seed)
+	if err := annotateHistoricalGroups(groups, seed, draft); err != nil {
+		return nil, err
+	}
 	earliest := seed.RosterAt
 	for i := len(rows) - 1; i >= 0; i-- {
 		row := rows[i]
@@ -40,6 +43,7 @@ func TransactionReplayCommands(raw transactions.RawTransactions, league, reason 
 			return nil, err
 		}
 		for _, command := range inverse {
+			annotateHistoricalPick(command.Args.Correction, seed, draft)
 			if err := reconstructAsset(&before, seed, command.Args.Correction); err != nil {
 				return nil, fmt.Errorf("reconstruct %s at %s: %w", row.Kind, row.Time.Format(time.RFC3339Nano), err)
 			}
@@ -89,6 +93,17 @@ func reverseTransaction(row leaguefeed.Transaction) leaguefeed.Transaction {
 
 func reconstructAsset(before *commissioner.RawNativeSnapshot, observed commissioner.RawNativeSnapshot, c *commissioner.RawCorrection) error {
 	if c.Pick != nil {
+		if c.History != nil {
+			for i := range before.PickHistory {
+				p := &before.PickHistory[i]
+				if p.Pick == *c.Pick {
+					p.Owner = c.Owner
+					return nil
+				}
+			}
+			before.PickHistory = append(before.PickHistory, commissioner.HistoricalPick{Pick: *c.Pick, Owner: c.Owner, Evidence: *c.History})
+			return nil
+		}
 		return reconstructPick(before, c)
 	}
 	index := before.PlayerOf(c.Franchise, c.Player)
@@ -150,6 +165,11 @@ func baselineCorrections(league, reason string, seed, before commissioner.RawNat
 			add(commissioner.RawCorrection{Owner: p.Owner, Pick: &commissioner.CorrectionPick{Season: p.Season, Round: p.Round, Slot: p.Slot, Original: p.Original}})
 		}
 	}
+	for _, p := range before.PickHistory {
+		evidence := p.Evidence
+		pick := p.Pick
+		add(commissioner.RawCorrection{Owner: p.Owner, Pick: &pick, History: &evidence})
+	}
 	for _, command := range out {
 		if err := command.Validate(); err != nil {
 			return nil, fmt.Errorf("check roster reconstruction: %w", err)
@@ -175,4 +195,10 @@ func baselineRosterCorrections(seed, before commissioner.RawNativeSnapshot, add 
 			add(commissioner.RawCorrection{Player: p.ID, Franchise: p.Franchise, Action: "status", Status: p.Status})
 		}
 	}
+}
+
+func cloneReconstructionSeed(seed commissioner.RawNativeSnapshot) commissioner.RawNativeSnapshot {
+	seed.Players, seed.Picks = slices.Clone(seed.Players), slices.Clone(seed.Picks)
+	seed.PickHistory = slices.Clone(seed.PickHistory)
+	return seed
 }

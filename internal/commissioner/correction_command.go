@@ -27,6 +27,7 @@ type RawCorrection struct {
 	Status    domain.RosterStatus `json:"status,omitempty"`
 	Entry     string              `json:"entry,omitempty"`
 	Via       string              `json:"via,omitempty"`
+	History   *PickEvidence       `json:"history,omitempty"`
 	Pick      *CorrectionPick     `json:"pick,omitempty"`
 	Owner     string              `json:"owner,omitempty"`
 	Rule      string              `json:"rule,omitempty"`
@@ -86,7 +87,7 @@ func (r RawCorrection) Validate(command string) error {
 			return fmt.Errorf("choose how the player was acquired: held, draft, waiver, trade, free_agent or commissioner")
 		}
 	case CorrectPick:
-		expected.Pick, expected.Owner = r.Pick, r.Owner
+		expected.Pick, expected.Owner, expected.History = r.Pick, r.Owner, r.History
 		if err := r.validatePick(); err != nil {
 			return err
 		}
@@ -217,6 +218,11 @@ func checkExceptionScope(c RawCorrection, records []Record, snapshot *RawNativeS
 }
 
 func (r RawCorrection) validatePick() error {
+	if r.History != nil {
+		if err := r.History.Validate(); err != nil {
+			return err
+		}
+	}
 	if r.Pick == nil || r.Pick.Season < 1920 || r.Pick.Season > 9999 || r.Pick.Round < 1 ||
 		!strings.HasPrefix(r.Owner, "franchise.") {
 		return fmt.Errorf("choose the draft season, round, pick and corrected owner")

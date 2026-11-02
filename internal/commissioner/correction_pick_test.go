@@ -46,3 +46,53 @@ func TestCorrectCurrentPickSlot(t *testing.T) {
 		}
 	}
 }
+
+func TestHistoricalPickCorrection(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		evidence PickEvidence
+		bad      bool
+	}{
+		{"checked selection", PickEvidence{Slot: 2}, false},
+		{"unverified", PickEvidence{Unverified: true}, false},
+		{"missing selection", PickEvidence{Slot: 3}, true},
+		{"invented link", PickEvidence{Slot: 2, Unverified: true}, true},
+		{"blank", PickEvidence{}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			held := NativePick{Season: 2026, Round: 1, Slot: 2, Owner: "franchise.01", Player: "0099"}
+			seed := RawNativeSnapshot{Season: 2026, Franchises: []NativeFranchise{{ID: "franchise.01"}, {ID: "franchise.02"}}, Picks: []NativePick{held}}
+			c := RawCorrection{Owner: "franchise.02", Pick: &CorrectionPick{Season: 2026, Round: 1, Original: "franchise.01"}, History: &tc.evidence}
+			err := c.Validate(CorrectPick)
+			if err == nil {
+				err = correctPick(&seed, Record{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &c}}})
+			}
+			if (err != nil) != tc.bad {
+				t.Fatalf("error=%v", err)
+			}
+			if !reflect.DeepEqual(seed.Picks, []NativePick{held}) {
+				t.Fatal("historical correction changed selectable assets")
+			}
+			jobs := historicalPickJobs(NativeAssets{Seeded: true, Snapshot: &seed})
+			if tc.bad {
+				if len(seed.PickHistory) != 0 {
+					t.Fatal("refusal changed history")
+				}
+				return
+			}
+			if len(seed.PickHistory) != 1 || seed.PickHistory[0].Owner != c.Owner {
+				t.Fatal("lost ownership history")
+			}
+			if (len(jobs) == 1) != tc.evidence.Unverified {
+				t.Fatalf("jobs=%+v", jobs)
+			}
+			c.Owner = "franchise.01"
+			if err := correctPick(&seed, Record{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &c}}}); err != nil {
+				t.Fatal(err)
+			}
+			if len(seed.PickHistory) != 1 || seed.PickHistory[0].Owner != c.Owner {
+				t.Fatal("history duplicated")
+			}
+		})
+	}
+}

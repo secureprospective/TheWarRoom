@@ -35,6 +35,7 @@ type RawNativeSnapshot struct {
 	Franchises  []NativeFranchise `json:"franchises"`
 	Players     []NativePlayer    `json:"players"`
 	Picks       []NativePick      `json:"picks"`
+	PickHistory []HistoricalPick  `json:"pickHistory,omitempty"`
 	Adjustments []NativeCharge    `json:"adjustments"`
 	// Pool holds free-agent lots: undrafted rookies and unassigned league-start O-Line cards.
 	Pool []NativePoolEntry `json:"pool,omitempty"`
