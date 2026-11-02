@@ -30,6 +30,9 @@ func CheckStatAppend(raw RawCommand, records []Record, facts StatFacts, now time
 	if err != nil {
 		return err
 	}
+	if change.IsBatch() {
+		return Refused(errors.New("approve one change at a time; only the stat feed counts several together"))
+	}
 	if !seeded(records) {
 		return Refused(errors.New("record the starting snapshot first"))
 	}

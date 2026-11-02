@@ -2,6 +2,7 @@ package history
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -118,6 +119,9 @@ func (s *Store) previewStatReadings(ctx context.Context, raw commissioner.RawCom
 	c, err := commissioner.DecodeStatChange(raw.Args, raw.Command)
 	if err != nil {
 		return nil, fmt.Errorf("read stat preview target: %w", err)
+	}
+	if c.IsBatch() {
+		return nil, fmt.Errorf("read stat preview target: %w", commissioner.Refused(errors.New("approve one change at a time")))
 	}
 	player, season, week := c.Scope()
 	src := s.nativeSources(raw.League, season)

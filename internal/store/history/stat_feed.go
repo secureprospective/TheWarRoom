@@ -50,10 +50,9 @@ func (s *Store) ProcessStatFeed(ctx context.Context, league string, season int) 
 		return err
 	}
 	initial := records
-	for _, raw := range moves {
+	for _, raw := range commissioner.BatchFeedMoves(moves) {
 		raw.Expected = int64(len(records))
-		player, _, week := raw.Args.Stat.Scope()
-		record, err := s.appendFeedMove(ctx, tx, raw, facts[fmt.Sprintf("%s/%d", player, week)], check, initial, records)
+		record, err := s.appendFeedMove(ctx, tx, raw, facts, check, initial, records)
 		if err != nil {
 			return err
 		}
@@ -88,7 +87,7 @@ func (s *Store) feedBatchCheck(ctx context.Context, moves []commissioner.RawComm
 }
 
 func (s *Store) appendFeedMove(ctx context.Context, tx *sql.Tx, raw commissioner.RawCommand,
-	facts commissioner.StatFacts, check func(commissioner.RawCommand, commissioner.StatFacts) error,
+	facts map[string]commissioner.StatFacts, check func(commissioner.RawCommand, commissioner.StatFacts) error,
 	initial, records []commissioner.Record) (commissioner.Record, error) {
 	prepared, canonical, err := preparedCommand(raw, commissioner.StatFeedPrincipal, true)
 	if err != nil {
@@ -100,12 +99,16 @@ func (s *Store) appendFeedMove(ctx context.Context, tx *sql.Tx, raw commissioner
 	} else if retry {
 		return commissioner.Record{}, nil
 	}
-	if err := check(prepared, facts); err != nil {
-		return commissioner.Record{}, fmt.Errorf("check counted feed revision: %w", err)
+	for _, item := range prepared.Args.Stat.Items {
+		line := commissioner.FeedLine(prepared, item)
+		player, _, week := line.Args.Stat.Scope()
+		if err := check(line, facts[fmt.Sprintf("%s/%d", player, week)]); err != nil {
+			return commissioner.Record{}, fmt.Errorf("check counted feed revision: %w", err)
+		}
 	}
 	receipt, err := s.appendCommissioner(ctx, tx, appendRequest{raw: prepared, principal: commissioner.StatFeedPrincipal, role: "automatic", canonical: canonical, at: now, records: records})
 	if err != nil {
 		return commissioner.Record{}, fmt.Errorf("record counted feed revision: %w", err)
 	}
-	return commissioner.Record{Command: prepared, Principal: commissioner.StatFeedPrincipal, Receipt: receipt}, nil
+	return commissioner.Record{Command: prepared, Canonical: canonical, Principal: commissioner.StatFeedPrincipal, Receipt: receipt}, nil
 }

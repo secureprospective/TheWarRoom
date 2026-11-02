@@ -24,12 +24,16 @@ const (
 	// maxStatQuantity bounds a hand-entered stat; no player records a million of anything in a week.
 	maxStatQuantity = leaguerules.Decimal(1_000_000 * 10000)
 	maxSourceLen    = 200
+	// MaxStatBatch bounds one automatic approval entry; a larger feed pass records several entries.
+	MaxStatBatch = 500
 )
 
 // RawStatChange is a stat command's argument (Args.Stat). Approve and reject name a waiting item; a
 // correction names a player's week, one stat, its value and where the value came from.
 type RawStatChange struct {
-	Item   string               `json:"item,omitempty"`
+	Item string `json:"item,omitempty"`
+	// Items is a stat-feed approval batch: each names a waiting item exactly as Item would.
+	Items  []string             `json:"items,omitempty"`
 	Player string               `json:"player,omitempty"`
 	Season int                  `json:"season,omitempty"`
 	Week   int                  `json:"week,omitempty"`
@@ -103,6 +107,12 @@ func DecodeStatChange(a RawArgs, command string) (RawStatChange, error) {
 		return RawStatChange{}, fmt.Errorf("send only the details of this statistic change")
 	}
 	raw := *a.Stat
+	if len(raw.Items) > 0 {
+		return raw, raw.validateBatch(command)
+	}
+	if raw.Items != nil {
+		return raw, fmt.Errorf("choose at least one change from the statistics queue")
+	}
 	if command == StatCorrect {
 		return raw, raw.validateCorrection()
 	}
@@ -112,6 +122,45 @@ func DecodeStatChange(a RawArgs, command string) (RawStatChange, error) {
 	_, err := ParseStatItemID(raw.Item)
 	return raw, err
 }
+
+// validateBatch admits a batch of approvals only, each a distinct queue item, and nothing else.
+func (r RawStatChange) validateBatch(command string) error {
+	if command != StatApprove {
+		return fmt.Errorf("only approvals may be recorded together")
+	}
+	if r.Item != "" || r.Player != "" || r.Season != 0 || r.Week != 0 || r.Stat != "" || r.Value != nil || r.Source != "" {
+		return fmt.Errorf("send only the changes you are approving")
+	}
+	if len(r.Items) > MaxStatBatch {
+		return fmt.Errorf("approve at most %d changes at once", MaxStatBatch)
+	}
+	seen := make(map[string]bool, len(r.Items))
+	for _, item := range r.Items {
+		if _, err := ParseStatItemID(item); err != nil {
+			return err
+		}
+		if seen[item] {
+			return fmt.Errorf("each change may be approved once in a batch")
+		}
+		seen[item] = true
+	}
+	return nil
+}
+
+// Lines is the change as single-item decisions: a batch is read back exactly as its items one by one.
+func (r RawStatChange) Lines() []RawStatChange {
+	if len(r.Items) == 0 {
+		return []RawStatChange{r}
+	}
+	out := make([]RawStatChange, len(r.Items))
+	for i, item := range r.Items {
+		out[i] = RawStatChange{Item: item}
+	}
+	return out
+}
+
+// IsBatch says whether the change carries several approvals; only the stat feed records those.
+func (r RawStatChange) IsBatch() bool { return len(r.Items) > 0 }
 
 func (r RawStatChange) validateCorrection() error {
 	if r.Item != "" {
@@ -174,6 +223,9 @@ func (r RawStatChange) Scope() (player string, season, week int) {
 }
 
 func statChangeLabel(command string, change RawStatChange) string {
+	if change.IsBatch() {
+		return fmt.Sprintf("Counted the NFL's updated statistics for %d player weeks", len(change.Items))
+	}
 	key := change.key()
 	where := fmt.Sprintf("player %s in season %d, week %d", key.player, key.season, key.week)
 	switch command {

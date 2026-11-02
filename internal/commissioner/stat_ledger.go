@@ -49,20 +49,29 @@ func foldStatEffectsFrom(records []Record, active map[string]bool) (statEffects,
 		if err != nil {
 			return statEffects{}, err
 		}
-		key := change.key()
-		status := "Reversed"
-		if active[r.Receipt.Entry] {
-			status = "Applied"
-			if err := out.apply(command, change, r); err != nil {
+		for _, line := range change.Lines() {
+			if err := out.record(command, line, r, active[r.Receipt.Entry]); err != nil {
 				return statEffects{}, err
 			}
 		}
-		if command != StatReject {
-			out.changes[key] = append(out.changes[key], ScoreChange{Entry: r.Receipt.Entry,
-				What: statChangeLabel(command, change), Reason: r.Command.Reason, Status: status})
-		}
 	}
 	return out, nil
+}
+
+func (e *statEffects) record(command string, change RawStatChange, r Record, active bool) error {
+	status := "Reversed"
+	if active {
+		status = "Applied"
+		if err := e.apply(command, change, r); err != nil {
+			return err
+		}
+	}
+	if command != StatReject {
+		key := change.key()
+		e.changes[key] = append(e.changes[key], ScoreChange{Entry: r.Receipt.Entry,
+			What: statChangeLabel(command, change), Reason: r.Command.Reason, Status: status})
+	}
+	return nil
 }
 
 func (e *statEffects) apply(command string, change RawStatChange, r Record) error {

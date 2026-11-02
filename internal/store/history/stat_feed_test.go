@@ -70,8 +70,10 @@ func TestAutomaticStatFeedAdoptsSeasonWithinReadBudget(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := revision(t, f.s); got != before+count {
-			t.Fatalf("adopted revision %d, want %d", got, before+count)
+		// One ledger entry per approval batch, not per stat line.
+		want := before + int64((count+commissioner.MaxStatBatch-1)/commissioner.MaxStatBatch)
+		if got := revision(t, f.s); got != want {
+			t.Fatalf("adopted revision %d, want %d", got, want)
 		}
 	}
 	before := revision(t, f.s)
@@ -92,12 +94,12 @@ func TestAutomaticStatFeedRechecksAdmissionAndRollsBackBatch(t *testing.T) {
 		if access.Principal != commissioner.StatFeedPrincipal || access.Operation != commissioner.StatApprove {
 			t.Fatalf("unexpected feed authority: %+v", access)
 		}
-		if calls == 3 {
+		if calls == 1 {
 			return fmt.Errorf("feed admission revoked")
 		}
 		return nil
 	}))
-	if err := f.s.ProcessStatFeed(ctx, "native.test", 2026); err == nil || calls != 3 {
+	if err := f.s.ProcessStatFeed(ctx, "native.test", 2026); err == nil || calls != 1 {
 		t.Fatalf("revocation not rechecked: calls %d, error %v", calls, err)
 	}
 	if got := revision(t, f.s); got != before {
@@ -106,7 +108,12 @@ func TestAutomaticStatFeedRechecksAdmissionAndRollsBackBatch(t *testing.T) {
 	if err := f.s.ProcessStatFeed(t.Context(), "native.test", 2026); err != nil {
 		t.Fatal("refused batch prevented retry", err)
 	}
-	if got := revision(t, f.s); got != before+6 {
-		t.Fatalf("successful retry did not adopt all six weeks: revision %d", got)
+	// Six weeks are one batch per feed reason.
+	if got := revision(t, f.s); got < before+1 || got > before+2 {
+		t.Fatalf("successful retry did not adopt the six weeks as batches: revision %d", got)
+	}
+	adopted := revision(t, f.s)
+	if err := f.s.ProcessStatFeed(t.Context(), "native.test", 2026); err != nil || revision(t, f.s) != adopted {
+		t.Fatalf("retry re-approved adopted weeks: %v", err)
 	}
 }

@@ -3530,6 +3530,7 @@ export namespace commissioner {
 	}
 	export class RawStatChange {
 	    item?: string;
+	    items?: string[];
 	    player?: string;
 	    season?: number;
 	    week?: number;
@@ -3544,6 +3545,7 @@ export namespace commissioner {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.item = source["item"];
+	        this.items = source["items"];
 	        this.player = source["player"];
 	        this.season = source["season"];
 	        this.week = source["week"];

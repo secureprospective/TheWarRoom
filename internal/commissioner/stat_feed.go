@@ -1,7 +1,10 @@
 package commissioner
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
@@ -23,8 +26,10 @@ func FeedStatMoves(league string, records []Record, weeks []StatWeek, season int
 	}
 	seen := map[string]bool{}
 	for _, r := range records {
-		if r.Principal == StatFeedPrincipal && r.Command.Command == StatApprove {
-			seen[r.Command.Args.Stat.Item] = true
+		if r.Principal == StatFeedPrincipal && r.Command.Command == StatApprove && r.Command.Args.Stat != nil {
+			for _, line := range r.Command.Args.Stat.Lines() {
+				seen[line.Item] = true
+			}
 		}
 	}
 	out := []RawCommand{}
@@ -47,6 +52,37 @@ func FeedStatMoves(league string, records []Record, weeks []StatWeek, season int
 			Request: "feed." + id, Reason: feedReason(version), Effective: "now", Visibility: "league"})
 	}
 	return out, nil
+}
+
+// BatchFeedMoves records planned approvals as few entries: moves with the same reason share an entry,
+// up to MaxStatBatch items each. The request names the exact items, so a retried pass matches its receipt.
+func BatchFeedMoves(moves []RawCommand) []RawCommand {
+	byReason := map[string][]string{}
+	reasons := []string{}
+	for _, m := range moves {
+		if _, ok := byReason[m.Reason]; !ok {
+			reasons = append(reasons, m.Reason)
+		}
+		byReason[m.Reason] = append(byReason[m.Reason], m.Args.Stat.Item)
+	}
+	out := []RawCommand{}
+	for _, reason := range reasons {
+		items := byReason[reason]
+		for start := 0; start < len(items); start += MaxStatBatch {
+			chunk := slices.Clone(items[start:min(start+MaxStatBatch, len(items))])
+			sum := sha256.Sum256([]byte(strings.Join(chunk, "\n")))
+			out = append(out, RawCommand{League: moves[0].League, Command: StatApprove,
+				Args: RawArgs{Stat: &RawStatChange{Items: chunk}}, Request: "feed.batch." + hex.EncodeToString(sum[:8]),
+				Reason: reason, Effective: "now", Visibility: "league"})
+		}
+	}
+	return out
+}
+
+// FeedLine is one item of a feed approval as its own command, for per-item checks against its evidence.
+func FeedLine(raw RawCommand, item string) RawCommand {
+	raw.Args = RawArgs{Stat: &RawStatChange{Item: item}}
+	return raw
 }
 
 // CheckFeedStatAppend rechecks automatic approvals under the same append transaction as manual changes.
@@ -78,6 +114,9 @@ func checkFeedStatAppend(raw RawCommand, facts StatFacts, effects statEffects, s
 	change, err := DecodeStatChange(raw.Args, raw.Command)
 	if err != nil {
 		return err
+	}
+	if change.IsBatch() {
+		return Refused(fmt.Errorf("check each counted feed revision against its own evidence"))
 	}
 	id, err := ParseStatItemID(change.Item)
 	if err != nil {

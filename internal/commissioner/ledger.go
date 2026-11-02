@@ -23,6 +23,7 @@ const DurableCommandVersion = 1
 
 type Record struct {
 	replay     *replayMemo
+	govern     *governanceCache
 	books      *closedBooks
 	principals *governance.Principals
 
