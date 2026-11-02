@@ -19,15 +19,18 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 	if err != nil {
 		return err
 	}
+	needsContracts := needsNativeContractHistory(records)
 	since := 0
-	if visit == nil && !backdated {
+	if visit == nil && !backdated && !needsContracts {
 		since, err = resumeClosedNative(assets, records, waivers)
 		if err != nil {
 			return err
 		}
 	}
 	contracts := map[string]NativePlayer{}
-	rememberNativeContracts(assets, contracts)
+	if needsContracts {
+		rememberNativeContracts(assets, contracts)
+	}
 	for _, i := range order {
 		if i < since {
 			continue
@@ -36,10 +39,12 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 		if !active[record.Receipt.Entry] {
 			continue
 		}
+		if needsContracts && (RosterTimed(record.Command.Command) || record.Command.Command == DraftChange) {
+			rememberNativeContracts(assets, contracts)
+		}
 		if err := projectNativeEntry(assets, records, i, waivers, contracts); err != nil {
 			return err
 		}
-		rememberNativeContracts(assets, contracts)
 		if visit != nil {
 			visit(assets)
 		}
@@ -245,4 +250,10 @@ func rememberNativeContracts(assets *NativeAssets, contracts map[string]NativePl
 	for _, p := range assets.Snapshot.Players {
 		contracts[assets.Snapshot.SideOf(p.Franchise)+"/"+p.ID] = p
 	}
+}
+
+func needsNativeContractHistory(records []Record) bool {
+	return slices.ContainsFunc(records, func(r Record) bool {
+		return r.Command.Command == CorrectRoster && r.Command.Args.Correction != nil && r.Command.Args.Correction.Action == "add"
+	})
 }
