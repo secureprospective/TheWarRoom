@@ -200,3 +200,10 @@ worker/GUI and combined import+lineup timing are unproved. Existing general
 projection/governance/recovery costs and other real consumers of scoped exceptions
 are unchanged. Prior debt remains: off-roster missing-contract jobs and transaction
 follow activation on older imported leagues. Independent review is not claimed.
+
+Local commits: `a67aaece1` (schedules), `65dde3ab5` (classification),
+`b49ed4b78` (linear membership). Production lint/secrets/ifaceguard commit hooks
+passed without bypass. Final protected-file diff is empty. Own disposable DBs,
+binaries and one-job harnesses were deleted after `ps` / `lsof` showed no users;
+logs/profiles, paired comparison payloads/hashes and public schedule evidence
+remain. No remote git, source DB write or real MFL move occurred.
