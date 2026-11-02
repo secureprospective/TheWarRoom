@@ -76,8 +76,7 @@ function Strip({ reading, results, pending, error, mine, week, onWeek }: {
         </>}
     </div>
     <div className="fresh">
-      scores: <b>the league ledger</b><br />
-      feed policy: ESPN live · Sleeper gaps · nflverse final · commissioner overrides<br />
+      scores: <b>{scoreSources(results)}</b><br />
       revision {reading?.revision ?? '—'} · {results?.words ?? 'no week read'}
     </div>
     <div className="mybox">
@@ -88,4 +87,13 @@ function Strip({ reading, results, pending, error, mine, week, onWeek }: {
       <span className="t th">{theirs ? theirs.name.slice(0, 3).toUpperCase() : '—'}</span>
     </div>
   </section>;
+}
+
+export function scoreSources(results?: PulseResults): string {
+  const sources = new Set<string>();
+  for (const score of results?.scores ?? []) for (const starter of score.starters) {
+    if (starter.source) sources.add(starter.source);
+    for (const owner of Object.values(starter.fieldSources ?? {})) sources.add(owner);
+  }
+  return [...sources].sort().join(' · ') || 'source not reported';
 }

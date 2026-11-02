@@ -126,7 +126,8 @@ func checkFeedStatAppend(raw RawCommand, facts StatFacts, effects statEffects, s
 		return Refused(fmt.Errorf("that feed revision is not held"))
 	}
 	version := facts.Versions[id.Seq]
-	if !strings.HasPrefix(version.Digest, id.Digest) || FeedVersion(facts.Versions[:id.Seq+1]).Seq != id.Seq || raw.Reason != feedReason(version) {
+	selected := FeedVersion(facts.Versions[:id.Seq+1])
+	if selected == nil || !strings.HasPrefix(version.Digest, id.Digest) || selected.Seq != id.Seq || raw.Reason != feedReason(version) {
 		return Refused(fmt.Errorf("that revision is not the feed authority"))
 	}
 	if effects.baselines[change.key()].Entry != "" {

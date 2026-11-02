@@ -68,9 +68,11 @@ type Store struct {
 	projKey  string
 	projBook projectionBook
 	// liveMu guards the live stat lines held for the NFL week being played.
-	liveMu sync.Mutex
-	live   liveStatBook
-	wmu    sync.Mutex
+	liveMu        sync.Mutex
+	live          liveStatBook
+	liveHeld      map[liveStatKey]source.HeldWeek
+	liveRevisions map[liveStatKey]*liveRevisionState
+	wmu           sync.Mutex
 	// batchFault, set only by tests, fails a batch after the given step to prove nothing is kept.
 	batchFault func(step int) error
 }

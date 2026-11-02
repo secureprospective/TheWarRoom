@@ -30,11 +30,13 @@ type ResultSources interface {
 
 // StarterScore is one starter's contribution to a franchise's week.
 type StarterScore struct {
-	Player   string               `json:"player"`
-	Name     string               `json:"name"`
-	Position leaguerules.Position `json:"position,omitempty"`
-	Words    string               `json:"words"`
-	Points   *leaguerules.Decimal `json:"points,omitempty"`
+	Source       string                        `json:"source,omitempty"`
+	FieldSources map[leaguerules.StatID]string `json:"fieldSources,omitempty"`
+	Player       string                        `json:"player"`
+	Name         string                        `json:"name"`
+	Position     leaguerules.Position          `json:"position,omitempty"`
+	Words        string                        `json:"words"`
+	Points       *leaguerules.Decimal          `json:"points,omitempty"`
 	// Provisional is what the starter has scored so far from evidence that is not final: the game
 	// is still being played, or the final feed has not landed. It is never a result.
 	Provisional *leaguerules.Decimal `json:"provisional,omitempty"`
@@ -220,7 +222,7 @@ func (out *FranchiseWeekScore) addStarters(ctx context.Context, records []Record
 		if err != nil {
 			return 0, running, fmt.Errorf("score %s: %w", name, err)
 		}
-		item := StarterScore{Player: starter.Player, Name: name, Words: score.Words, Position: score.Position}
+		item := StarterScore{Player: starter.Player, Name: name, Words: score.Words, Position: score.Position, Source: score.Source, FieldSources: score.FieldSources}
 		switch {
 		case score.Status == "Complete" && score.Points != nil:
 			item.Points = score.Points

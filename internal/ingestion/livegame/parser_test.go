@@ -270,3 +270,34 @@ func TestSummaryCarriesRealNumericWeek(t *testing.T) {
 		t.Fatalf("summary lost scope or players: %+v", game)
 	}
 }
+
+func TestSummaryAdmitsAndChecksScoringCategories(t *testing.T) {
+	for _, category := range []string{"fumbles", "interceptions", "kickReturns", "puntReturns", "kicking"} {
+		t.Run(category, func(t *testing.T) {
+			body := strings.ReplaceAll(string(fixture(t, "espn-summary-401872991")), `"name":"passing"`, `"name":"`+category+`"`)
+			// Captured JSON is indented; replace the formatted spelling as well.
+			body = strings.ReplaceAll(body, `"name": "passing"`, `"name": "`+category+`"`)
+			game, err := ParseSummary([]byte(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, box := range game.Box {
+				if box.Category == category {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatal("scoring category silently dropped")
+			}
+			var box RawBox
+			bad := `{"team":{"id":"8","abbreviation":"DET"},"statistics":[{"name":"` + category + `","labels":["TD"],"athletes":[{"athlete":{"id":"bad","displayName":"Player"},"stats":["1"]}]}]}`
+			if err := json.Unmarshal([]byte(bad), &box); err != nil {
+				t.Fatal(err)
+			}
+			if err := box.Validate(); err == nil {
+				t.Fatal("new category escaped athlete validation")
+			}
+		})
+	}
+}

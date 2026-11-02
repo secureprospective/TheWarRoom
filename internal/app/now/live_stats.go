@@ -69,11 +69,13 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveS
 	body, err := fetch(ctx, "espn", "")
 	if err != nil {
 		log.Printf("live stats: scoreboard: %v", err)
+		p.sleeperFallback(ctx, run, held, season, week, at)
 		return liveStatsIdle
 	}
 	games, err := livegame.ParseScoreboard(body)
 	if err != nil {
 		log.Printf("live stats: scoreboard: %v", err)
+		p.sleeperFallback(ctx, run, held, season, week, at)
 		return liveStatsIdle
 	}
 	busy := false
@@ -85,6 +87,7 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveS
 	espn, err := held.SourceIDs(ctx, "espn")
 	if err != nil {
 		log.Printf("live stats: %v", err)
+		p.sleeperFallback(ctx, run, held, season, week, at)
 		return liveStatsIdle
 	}
 	lines, acquired := liveStatLines(ctx, adapter, games, invertIDs(espn), &p.finals, at)
@@ -94,8 +97,8 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveS
 		log.Printf("live stats: %d players from %d games, season %d week %d, %d ESPN ids held",
 			len(lines), len(games), season, week, len(espn))
 	}
-	if acquired {
-		fillLiveSleeper(ctx, run, held, games, lines)
+	sleeperAcquired := fillLiveSleeper(ctx, run, held, games, lines)
+	if acquired || sleeperAcquired {
 		held.SetLiveStats(season, week, at, livestats.Authority,
 			livestats.Pending(), lines)
 		if run.Changed != nil {
@@ -184,4 +187,18 @@ func invertIDs(byPlayer map[string]string) map[string]string {
 		out[id] = player
 	}
 	return out
+}
+
+// A scoreboard outage must not disable the independent weekly raw-stat feed.
+func (p *LiveStatsPoller) sleeperFallback(ctx context.Context, run LiveStatsRun, held liveStatsHistory,
+	season, week int, at time.Time) {
+	lines := map[string]source.PlayerWeek{}
+	fillLiveSleeper(ctx, run, held, []livegame.Game{{Season: season, Week: week, SeasonType: 2, Status: "in"}}, lines)
+	if len(lines) == 0 {
+		return
+	}
+	held.SetLiveStats(season, week, at, source.Sleeper, livestats.Pending(), lines)
+	if run.Changed != nil {
+		run.Changed(ctx)
+	}
 }

@@ -99,7 +99,7 @@ it('renders the Now tab from the week the league has actually scored', async () 
   expect(container.querySelector('.sline .slate')?.textContent).toContain('16 with a result');
   expect(container.querySelector('.sline .mybox')?.textContent).toContain('1.5');
   expect(container.querySelector('.sline .fresh')?.textContent)
-    .toContain('feed policy: ESPN live · Sleeper gaps · nflverse final · commissioner overrides');
+    .toContain('source not reported');
   // The starters spine reads the week score's starters and the lineup's NFL team.
   const spine = container.querySelector('#ws-live .spine')!;
   expect(spine.textContent).toContain('franchise.01 starter');
@@ -182,4 +182,25 @@ it('Race shows each team\'s power and playoff odds from the league\'s own odds r
   expect(table.textContent).toContain('POWER SCORE');
   expect(table.querySelectorAll('tbody tr')).toHaveLength(rows.length);
   expect(table.querySelector('tbody tr td')?.textContent).toBe('1');
+});
+
+it('renders selected sources, including field fills, instead of the feed policy', async () => {
+  const results = structuredClone(pulse.results);
+  const starter = results.scores[0].starters[0];
+  Object.assign(starter, { source: 'final · nflverse', fieldSources: {
+    tackle: 'final · nflverse', special_teams_solo_tackle: 'filled · Sleeper',
+    assist: 'commish override',
+    rushing_yards: 'live · ESPN',
+  } });
+  servePulse(results);
+  await mount();
+  await vi.waitFor(async () => {
+    await settle();
+    const label = container.querySelector('.sline .fresh')?.textContent;
+    expect(label).toContain('final · nflverse');
+    expect(label).toContain('filled · Sleeper');
+    expect(label).toContain('live · ESPN');
+    expect(label).toContain('commish override');
+    expect(label).not.toContain('feed policy');
+  }, { timeout: 4000 });
 });

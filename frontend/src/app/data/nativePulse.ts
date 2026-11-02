@@ -16,7 +16,7 @@ export function pointsLabel(value: number | undefined): string {
 }
 
 export type PulseStarter = { player: string; name: string; position?: string; words: string;
-  points?: number; provisional?: number };
+  points?: number; provisional?: number; source?: string; fieldSources?: Record<string, string> };
 export type PulseScore = { franchise: string; name: string; status: string; points?: number;
   provisional?: number;
   words: string; starters: PulseStarter[]; adjustment: number; lineupStatus: string;
@@ -32,11 +32,13 @@ export type PulseResults = { league: string; season: number; week: number; revis
 function parseStarters(value: unknown): PulseStarter[] {
   return array(value, 'Starters', (v, p) => {
     const s = object(v, p, ['player', 'name', 'position', 'words', 'points',
-      'provisional']);
+      'provisional', 'source', 'fieldSources']);
     return { player: text(s.player, p), name: text(s.name, p),
       position: s.position === undefined ? undefined : text(s.position, p),
       words: text(s.words, p), points: optionalPoints(s.points, p),
-      provisional: optionalPoints(s.provisional, p) };
+      provisional: optionalPoints(s.provisional, p),
+      source: s.source === undefined ? undefined : text(s.source, p),
+      fieldSources: parseFieldSources(s.fieldSources) };
   });
 }
 function parseScores(value: unknown): PulseScore[] {
@@ -278,4 +280,11 @@ export function myChance(odds: PulseOdds | undefined, franchise: string):
   if (!g) return undefined;
   const mine = g.home === franchise ? g.homeWin : 1 - g.homeWin;
   return { mine, theirs: 1 - mine, week: g.week };
+}
+
+function parseFieldSources(value: unknown): Record<string, string> | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    throw new Error('Unreadable field sources');
+  return Object.fromEntries(Object.entries(value).map(([field, owner]) => [field, text(owner, field)]));
 }

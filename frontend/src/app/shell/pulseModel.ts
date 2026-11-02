@@ -82,7 +82,8 @@ export function starterRows(score: PulseScore | undefined, lineup: PulseLineupPl
     const held = lineup?.find(p => p.player === s.player);
     return { slot: s.position ?? '—', player: s.player, name: s.name, team: held?.team,
       locked: held?.locked, points: s.points ?? s.provisional, projection: projections[s.player],
-      words: s.words };
+      words: [s.words, s.source, ...Object.entries(s.fieldSources ?? {}).map(([field, owner]) =>
+        `${field}: ${owner}`)].filter(Boolean).join(" · ") };
   });
 }
 

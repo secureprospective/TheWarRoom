@@ -20,21 +20,23 @@ type NativeScoreItem struct {
 
 // Points is present only for complete evidence and settled rules; incomplete totals are separate.
 type NativePlayerScore struct {
-	League        string               `json:"league"`
-	Player        string               `json:"player"`
-	Season        int                  `json:"season"`
-	Week          int                  `json:"week"`
-	Status        string               `json:"status"`
-	Words         string               `json:"words"`
-	Points        *leaguerules.Decimal `json:"points,omitempty"`
-	PartialPoints *leaguerules.Decimal `json:"partialPoints,omitempty"`
-	Position      leaguerules.Position `json:"position,omitempty"`
-	PositionWhy   string               `json:"positionWhy,omitempty"`
-	Missing       []string             `json:"missing"`
-	Items         []NativeScoreItem    `json:"items"`
-	Changes       []ScoreChange        `json:"changes"`
-	SHA256        string               `json:"sha256,omitempty"`
-	FetchedAt     *time.Time           `json:"fetchedAt,omitempty"`
+	Source        string                        `json:"source,omitempty"`
+	FieldSources  map[leaguerules.StatID]string `json:"fieldSources,omitempty"`
+	League        string                        `json:"league"`
+	Player        string                        `json:"player"`
+	Season        int                           `json:"season"`
+	Week          int                           `json:"week"`
+	Status        string                        `json:"status"`
+	Words         string                        `json:"words"`
+	Points        *leaguerules.Decimal          `json:"points,omitempty"`
+	PartialPoints *leaguerules.Decimal          `json:"partialPoints,omitempty"`
+	Position      leaguerules.Position          `json:"position,omitempty"`
+	PositionWhy   string                        `json:"positionWhy,omitempty"`
+	Missing       []string                      `json:"missing"`
+	Items         []NativeScoreItem             `json:"items"`
+	Changes       []ScoreChange                 `json:"changes"`
+	SHA256        string                        `json:"sha256,omitempty"`
+	FetchedAt     *time.Time                    `json:"fetchedAt,omitempty"`
 }
 
 func NativePlayerScoreReading(league string, scope source.RawNativeScope, records []Record,
@@ -102,6 +104,7 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 	default:
 		return out.uncounted(evidence, changes), nil
 	}
+	out.setSources(counted, folded.effects.baselines[key], corrections, changes.Delta)
 	week = withCorrections(week, corrections)
 	out.Position, out.PositionWhy = scoringPosition(week.Position, evidence.ListedPosition, changes)
 	if out.Position == "" {

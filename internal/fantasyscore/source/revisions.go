@@ -14,6 +14,7 @@ import (
 // are numbered from 0 in the order the feed gave them; a refetch that changed nothing is not a version, but
 // a return to an earlier line is a new one. Held is the earliest file that carried this version.
 type LineRevision struct {
+	Merged bool `json:",omitempty"`
 	Seq    int
 	Digest string
 	Held   HeldWeek
@@ -114,4 +115,20 @@ func (b *LineBook) Versions() map[WeekKey][]LineRevision {
 		out[key] = history.versions()
 	}
 	return out
+}
+
+// LiveRevisionDigest includes field attribution without changing historic held line digests.
+func LiveRevisionDigest(week PlayerWeek) string {
+	if len(week.FieldSources) == 0 {
+		return LineDigest(week)
+	}
+	body, err := json.Marshal(struct {
+		Line    string
+		Sources map[leaguerules.StatID]string
+	}{LineDigest(week), week.FieldSources})
+	if err != nil {
+		panic("source: live digest: " + err.Error())
+	}
+	sum := sha256.Sum256(body)
+	return hex.EncodeToString(sum[:])
 }

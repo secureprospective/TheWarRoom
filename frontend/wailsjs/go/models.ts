@@ -1112,6 +1112,8 @@ export namespace commissioner {
 	    }
 	}
 	export class StarterScore {
+	    source?: string;
+	    fieldSources?: Record<string, string>;
 	    player: string;
 	    name: string;
 	    position?: string;
@@ -1125,6 +1127,8 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.source = source["source"];
+	        this.fieldSources = source["fieldSources"];
 	        this.player = source["player"];
 	        this.name = source["name"];
 	        this.position = source["position"];
@@ -2624,6 +2628,8 @@ export namespace commissioner {
 	    }
 	}
 	export class NativePlayerScore {
+	    source?: string;
+	    fieldSources?: Record<string, string>;
 	    league: string;
 	    player: string;
 	    season: number;
@@ -2646,6 +2652,8 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.source = source["source"];
+	        this.fieldSources = source["fieldSources"];
 	        this.league = source["league"];
 	        this.player = source["player"];
 	        this.season = source["season"];

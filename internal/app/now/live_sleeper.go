@@ -33,7 +33,7 @@ func (r rawSleeperEndpoint) Validate() error {
 }
 
 // fillLiveSleeper is optional acquisition: a failed gap source never discards ESPN evidence.
-func fillLiveSleeper(ctx context.Context, run LiveStatsRun, held liveStatsHistory, games []livegame.Game, lines map[string]source.PlayerWeek) {
+func fillLiveSleeper(ctx context.Context, run LiveStatsRun, held liveStatsHistory, games []livegame.Game, lines map[string]source.PlayerWeek) bool {
 	scopes := map[[2]int]bool{}
 	for _, game := range games {
 		if game.SeasonType == 2 && game.Season > 0 && game.Week > 0 && game.Status != "pre" {
@@ -41,37 +41,41 @@ func fillLiveSleeper(ctx context.Context, run LiveStatsRun, held liveStatsHistor
 		}
 	}
 	if len(scopes) == 0 {
-		return
+		return false
 	}
 	ids, err := held.SourceIDs(ctx, "sleeper")
 	if err != nil {
 		log.Printf("live stats: Sleeper identities: %v", err)
-		return
+		return false
 	}
 	var endpoint rawSleeperEndpoint
 	if err := json.Unmarshal(liveGameSources, &endpoint); err != nil {
 		log.Printf("live stats: Sleeper endpoint: %v", err)
-		return
+		return false
 	}
 	if err := endpoint.Validate(); err != nil {
 		log.Printf("live stats: %v", err)
-		return
+		return false
 	}
 	client := &http.Client{Timeout: 10 * time.Second, Transport: run.Network}
+	complete := true
 	for scope := range scopes {
 		address := strings.NewReplacer("{season}", strconv.Itoa(scope[0]), "{week}", strconv.Itoa(scope[1])).Replace(endpoint.Sleeper)
 		body, err := ingestion.Get(ctx, client, address, 4<<20)
 		if err != nil {
 			log.Printf("live stats: Sleeper: %v", err)
+			complete = false
 			continue
 		}
 		gaps, err := source.LiveSleeperLines(source.RawSleeperWeek{Season: scope[0], Week: scope[1], Body: string(body)})
 		if err != nil {
 			log.Printf("live stats: %v", err)
+			complete = false
 			continue
 		}
 		mergeLiveSleeper(lines, gaps, invertIDs(ids), scope[0], scope[1])
 	}
+	return complete
 }
 
 func mergeLiveSleeper(lines map[string]source.PlayerWeek, gaps map[string]fantasyscore.StatLine, bySleeper map[string]string, season, week int) {
@@ -91,7 +95,7 @@ func mergeLiveSleeper(lines map[string]source.PlayerWeek, gaps map[string]fantas
 			live = source.PlayerWeek{Season: season, Week: week, SeasonType: "REG"}
 		}
 		line, owners := source.MergeStatSources(inputs)
-		live.Line, live.Provenance = line, source.LiveAuthority(owners)
+		live.Line, live.Provenance, live.FieldSources = line, source.LiveAuthority(owners), owners
 		lines[player] = live
 	}
 }

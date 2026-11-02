@@ -6,6 +6,7 @@ package livestats
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -65,13 +66,15 @@ func columns(category string) []column {
 	case "fumbles":
 		return []column{{"FUM", []leaguerules.StatID{"fumbles_total"}}, {"LOST", []leaguerules.StatID{"fumble_lost"}}}
 	case "interceptions":
-		return []column{{"INT", []leaguerules.StatID{"interception_caught"}}, {"YDS", []leaguerules.StatID{"interception_return_yards"}}}
+		return []column{{"INT", []leaguerules.StatID{"interception_caught"}}, {"YDS", []leaguerules.StatID{"interception_return_yards"}}, {"TD", []leaguerules.StatID{"interception_return_td"}}}
 	case "kickReturns":
-		return []column{{"YDS", []leaguerules.StatID{"kickoff_return_yards"}}}
+		return []column{{"YDS", []leaguerules.StatID{"kickoff_return_yards"}}, {"TD", []leaguerules.StatID{"kickoff_return_td"}}, {"NO", []leaguerules.StatID{"kickoff_return"}}}
 	case "puntReturns":
-		return []column{{"YDS", []leaguerules.StatID{"punt_return_yards"}}}
+		return []column{{"YDS", []leaguerules.StatID{"punt_return_yards"}}, {"TD", []leaguerules.StatID{"punt_return_td"}}, {"NO", []leaguerules.StatID{"punt_return"}}}
+	case "punting":
+		return []column{{"NO", []leaguerules.StatID{"punt"}}, {"YDS", []leaguerules.StatID{"punt_yards"}}, {"AVG", []leaguerules.StatID{"punt_average"}}, {"IN 20", []leaguerules.StatID{"punt_inside_20"}}, {"BLK", []leaguerules.StatID{"punt_had_blocked"}}}
 	case "kicking":
-		return []column{{"XP", []leaguerules.StatID{"pat_made", "pat_attempt"}}}
+		return []column{{"XP", []leaguerules.StatID{"pat_made", "pat_attempt"}}, {"FG", []leaguerules.StatID{"fg_made", "fg_attempt"}}}
 	default:
 		return nil
 	}
@@ -88,7 +91,7 @@ func decimal(raw string) (leaguerules.Decimal, bool, error) {
 		return 0, false, fmt.Errorf("read %q: %w", raw, err)
 	}
 	scaled := value * 10000
-	if scaled > 1<<53 || scaled < -(1<<53) {
+	if math.IsNaN(value) || math.IsInf(value, 0) || scaled > 1<<53 || scaled < -(1<<53) {
 		return 0, false, fmt.Errorf("read %q: outside the recordable range", raw)
 	}
 	return leaguerules.Decimal(scaled), true, nil
@@ -148,6 +151,7 @@ func Lines(game livegame.Game) ([]Line, error) {
 			held.Words = strings.TrimSpace(held.Words + " " + box.Category + " " + words)
 		}
 	}
+	attachPlayDetails(game, byID)
 	out := make([]Line, 0, len(order))
 	for _, id := range order {
 		out = append(out, *byID[id])

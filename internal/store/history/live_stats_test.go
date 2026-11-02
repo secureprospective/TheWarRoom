@@ -141,3 +141,58 @@ func TestLiveStatsKeepEachGamesWeekRatherThanRelabelToPollWeek(t *testing.T) {
 		t.Fatal("old game relabelled to poll week")
 	}
 }
+
+func TestLiveStatWorkerAndReadingShareMergedRevision(t *testing.T) {
+	s := &Store{}
+	line := liveLine(300000)
+	line.Line.Quantities["receiving_drop"] = 10000
+	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line, "0100": line})
+	original := nflverseEvidence(500000)
+	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 8}
+	reading := s.withLiveStats(original, scope)
+	weeks := s.withLiveStatWeeks([]commissioner.StatWeek{{Player: "0099", Week: 8, Evidence: original}}, 2026)
+	if len(weeks) != 2 {
+		t.Fatal(weeks)
+	}
+	counted := commissioner.FeedVersion(weeks[0].Evidence.Versions())
+	if counted.Digest != commissioner.FeedVersion(reading.Versions()).Digest || counted.Held.Week.Line.Quantities["receiving_drop"] != 10000 || counted.Held.Week.Line.Quantities["receiving_yards"] != 500000 {
+		t.Fatal(counted)
+	}
+	if original.Versions()[0].Digest != source.LineDigest(*original.Versions()[0].Held.Week) {
+		t.Fatal("rewrote held final")
+	}
+}
+
+func TestLiveOnlyFieldSurvivesFinalAfterBoardClears(t *testing.T) {
+	s := &Store{}
+	line := liveLine(300000)
+	line.Line.Quantities["receiving_drop"] = 20000
+	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line})
+	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, nil)
+	evidence := s.withLiveStats(nflverseEvidence(500000), source.RawNativeScope{Player: "0099", Season: 2026, Week: 8})
+	got := countedLive(t, evidence)
+	if got.Held.Week.Line.Quantities["receiving_drop"] != 20000 || got.Held.Week.Line.Quantities["receiving_yards"] != 500000 {
+		t.Fatal(got)
+	}
+}
+
+func TestLiveMergedPinSurvivesLaterPollAndFinalRevision(t *testing.T) {
+	s := &Store{}
+	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 8}
+	line := liveLine(300000)
+	line.Line.Quantities["receiving_drop"] = 10000
+	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line})
+	first := s.withLiveStats(nflverseEvidence(500000), scope)
+	pin := *commissioner.FeedVersion(first.Versions())
+	line = liveLine(400000)
+	line.Line.Quantities["receiving_drop"] = 20000
+	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line})
+	second := s.withLiveStats(nflverseEvidence(500000), scope)
+	if second.Versions()[pin.Seq].Digest != pin.Digest || second.Versions()[pin.Seq].Held.Week.Line.Quantities["receiving_drop"] != 10000 {
+		t.Fatal("pin overwritten", second)
+	}
+	third := s.withLiveStats(nflverseEvidence(600000), scope)
+	if third.Versions()[pin.Seq].Digest != pin.Digest || commissioner.FeedVersion(third.Versions()).Held.Week.Line.Quantities["receiving_yards"] != 600000 {
+		t.Fatal("later final lost pin or authority", third)
+	}
+}

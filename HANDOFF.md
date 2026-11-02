@@ -1,19 +1,22 @@
 # Handoff
 
 ## Baton
-Bee → ClaudeBox / APP-SCORE-1 — 2026-11-02, build/SCORE-1. Local commit only.
+Bee → ClaudeBox / APP-SCORE-2 — 2026-11-02, `build/SCORE-2`. Local only.
 
 ## Where it stands
-- `docs/build-handoffs/APP-SCORE-1.md`: map written before coding, implementation, verification and explicit remaining debt.
-- Partial: shared per-field precedence, live Sleeper gap acquisition, pinned nflverse overlap protection, additional ESPN categories and contributor authority.
-- Go targeted race: 71 PASS tests/subtests, 1 opt-in SKIP; frontend 4 PASS; changed-package lint and make build PASS. Inverted-priority mutant rejected.
-- Excluded commissioner files untouched. No full suite, desktop launch, remote operation or real-profile access.
+- `docs/build-handoffs/APP-SCORE-2.md` records changes, flow, verification and remaining acceptance debt.
+- Runtime chain: ESPN → Sleeper gaps/outage; MFL never counted; nflverse field authority plus live gaps;
+  commissioner pins/overrides last. New merged revisions preserve existing ones in process.
+- Worker and readings share revisions; player/field sources reach results labels and starter inspector.
+- Targeted race: 225 PASS, 1 opt-in SKIP; frontend 13 PASS; changed-package lint 0 issues; make build PASS.
+- Full make lint blocked by inherited tiny-file count 28 vs baseline 24 (base also 28); no baseline change.
 
 ## Next move / blocked on
-- Establish raw MFL stat contract (existing liveScoring supplies totals, not fields); actual outage fallback is not wired.
-- Finish ESPN/Sleeper conversion coverage, final/live field consolidation with immutable pin semantics, and selected-source provenance in aggregate score readings. Current scores text is policy, not runtime source attribution.
-- Coordinate any `stat_ledger.go` / `stat_feed.go` selection changes with APP-STALL-2. Do not mark task fully accepted.
+- Durable live/merged revision capture and restart tests: current chronology is in-process only.
+- Establish exhaustive Sleeper IDP/kicker and ESPN recovery coverage from checked responses; one public
+  Sleeper contract request returned 403. Do not certify full APP-SCORE-2 acceptance yet.
+- Integrate with Tom's held-season cache without hiding new revision/digest changes.
 
 ## Tried and rejected
-- Do not synthesize raw stats from MFL fantasy totals or infer absent players as zero.
-- Do not mutate historic final digests to insert live gap fields: commissioner pins must remain stable.
+- No MFL totals inversion, guessed distances, fuzzy attribution or promotion of live fills to final authority.
+- No archived digest rewriting, real-profile access, full suite, desktop launch, git remote or hook bypass.

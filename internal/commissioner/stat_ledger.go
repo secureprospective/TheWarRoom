@@ -153,6 +153,9 @@ func FeedVersion(versions []source.LineRevision) *source.LineRevision {
 	var selected *source.LineRevision
 	for i := range versions {
 		v := &versions[i]
+		if v.Held.Authority == source.MFLLive {
+			continue
+		}
 		if selected == nil || v.Held.Authority == source.NFLVerse || selected.Held.Authority != source.NFLVerse {
 			selected = v
 		}

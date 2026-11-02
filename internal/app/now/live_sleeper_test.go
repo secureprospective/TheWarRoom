@@ -2,6 +2,7 @@ package now
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -61,6 +62,33 @@ func TestLiveSleeperAcquisitionFillsOnlyGaps(t *testing.T) {
 				}
 			} else if len(lines) != 1 || len(lines["0099"].Line.Quantities) != 1 {
 				t.Fatalf("failure mutated evidence: %+v", lines)
+			}
+		})
+	}
+}
+
+type outageSleeperTransport struct{ failSleeper bool }
+
+func (n outageSleeperTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if !strings.Contains(r.URL.Path, "/stats/nfl/regular/") || n.failSleeper {
+		return nil, fmt.Errorf("provider unavailable")
+	}
+	return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(`{"1":{"pass_yd":245,"pass_td":2},"2":{"rec_drop":1}}`))}, nil
+}
+
+func TestLiveESPNOutageSelectsIndependentSleeper(t *testing.T) {
+	for _, fail := range []bool{false, true} {
+		t.Run(fmt.Sprint("SleeperDown=", fail), func(t *testing.T) {
+			held := &sleeperPollHistory{livePollHistory: livePollHistory{lines: map[string]source.PlayerWeek{"held": {Season: 2026, Week: 8}}}}
+			var poll LiveStatsPoller
+			changes := 0
+			poll.poll(t.Context(), LiveStatsRun{Season: 2026, Week: func() int { return 8 }, Network: outageSleeperTransport{failSleeper: fail}, Changed: func(context.Context) { changes++ }}, held)
+			if fail {
+				if held.writes != 0 || len(held.lines) != 1 || changes != 0 {
+					t.Fatal("outage discarded held evidence", held)
+				}
+			} else if held.writes != 1 || changes != 1 || held.lines["0099"].Line.Quantities["passing_yards"] != 2450000 || held.lines["0099"].Provenance != source.Sleeper {
+				t.Fatalf("Sleeper did not pick up: %+v", held)
 			}
 		})
 	}

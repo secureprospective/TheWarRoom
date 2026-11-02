@@ -65,6 +65,7 @@ func (f seasonStatFeed) Weeks(ctx context.Context) ([]commissioner.StatWeek, err
 		out = append(out, commissioner.StatWeek{Player: player, Week: key.Week, Evidence: source.NativeEvidence{
 			GSIS: key.GSIS, Held: &newest, Lines: versions, Missing: slices.Clone(newest.Missing)}})
 	}
+	out = f.store.withLiveStatWeeks(out, f.season)
 	slices.SortFunc(out, func(a, b commissioner.StatWeek) int {
 		if a.Player != b.Player {
 			return compareText(a.Player, b.Player)

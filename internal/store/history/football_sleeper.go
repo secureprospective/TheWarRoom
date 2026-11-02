@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
 
@@ -147,7 +148,7 @@ func (r RawFootballEvidence) mergeSleeperWeek(raw source.RawSleeperWeek, bridge 
 		if !ok {
 			week = source.PlayerWeek{Position: string(r.Players[mfl].Facts.Position), Season: raw.Season, Week: raw.Week, SeasonType: "REG", Line: line}
 		} else {
-			week.Line = source.FillStatGaps(week.Line, line)
+			week.Line, week.FieldSources = source.MergeStatSources(map[string]fantasyscore.StatLine{source.NFLVerse: week.Line, source.Sleeper: line})
 		}
 		canonical[key] = week
 	}

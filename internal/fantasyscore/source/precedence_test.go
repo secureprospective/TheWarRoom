@@ -22,7 +22,7 @@ func TestScoreSourcePrecedence(t *testing.T) {
 		{"ESPN explicit zero", map[string]fantasyscore.StatLine{source.ESPNLive: line(0), source.Sleeper: line(9)}, 0, source.ESPNLive},
 		{"Sleeper only", map[string]fantasyscore.StatLine{source.Sleeper: line(9)}, 9, source.Sleeper},
 		{"nflverse posted", map[string]fantasyscore.StatLine{source.NFLVerse: line(5), source.ESPNLive: line(7), source.Sleeper: line(9)}, 5, source.NFLVerse},
-		{"MFL candidate on outage", map[string]fantasyscore.StatLine{source.MFLLive: line(6), source.Sleeper: line(9)}, 6, source.MFLLive},
+		{"MFL ignored on outage", map[string]fantasyscore.StatLine{source.MFLLive: line(6), source.Sleeper: line(9)}, 9, source.Sleeper},
 		{"MFL cannot override ESPN", map[string]fantasyscore.StatLine{source.MFLLive: line(6), source.ESPNLive: line(7)}, 7, source.ESPNLive},
 		{"MFL cannot fill ESPN gaps", map[string]fantasyscore.StatLine{source.MFLLive: line(6), source.ESPNLive: {}, source.Sleeper: line(9)}, 9, source.Sleeper},
 	} {
