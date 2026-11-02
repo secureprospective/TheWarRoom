@@ -14,11 +14,12 @@ import { SituationsView } from './SituationsView';
 import { RulesView } from './RulesView';
 import { SeasonView } from './SeasonView';
 import { FixView } from './FixView';
+import { PicksView } from './PicksView';
 import './controlRoom.css';
 
 const views: Record<Tab, () => ReactNode> = {
   jobs: () => <JobsView />, sit: () => <SituationsView />, rules: () => <RulesView />,
-  season: () => <SeasonView />, fix: () => <FixView />, picks: () => <NotYet what="this branch is wired in a later commit" />,
+  season: () => <SeasonView />, fix: () => <FixView />, picks: () => <PicksView />,
   people: () => <NotYet what="this branch is wired in a later commit" />, league: () => <NotYet what="this branch is wired in a later commit" />, server: () => <NotYet what="this branch is wired in a later commit" />,
 };
 
