@@ -2,42 +2,36 @@
 
 ## Baton
 Bee → Christopher / ClaudeBox — 2026-11-02, `build/ROSTER-1`.
-APP-ROSTER-10 proof complete; worker-budget acceptance still fails. Local only.
+APP-ROSTER-11 runtime delivered; exact weekly classification blocked. Local only.
 
 ## Where it stands
-- `590f4caf0`: plain make build regenerated roster-history / transaction-follow bindings.
-- `2ee267af8`: measured contract-history capture optimization, side-qualified and tested.
-- Full importer: 3,338 appended, 17m50.423s → **10m43.485s**; final repeat **0**.
-  Still **43.485s over** the unchanged ten-minute worker lifetime, before lineups.
-- Refused: inherited **76 → 75** free; **107 → 77** kickoff-aware. Final repeats append
-  **0** with identical refusal text. No full refusal clearance claimed.
-- Both modes: **32/32** membership/status equality; Bills **W1–7 all recorded**,
-  including kickoff-aware W7. Explicit archived W8: **32 appended / 0 refused**;
-  repeat **0**. Actual commissioner jobs: **2 contracts / 0 unverified picks**.
-- Final focused race batch: **52 test/subtest PASS**, zero fail/skip; final plain build
-  and production commit hooks pass. Selective-capture mutant rejected; restored pass.
-- Evidence: `docs/build-handoffs/APP-ROSTER-10-evidence.md`; every remaining exact reason:
-  `docs/build-handoffs/APP-ROSTER-10-refusals.txt`. Logs/CPU profiles: `.tmp/roster10/`.
-  Own disposable DBs/raw bodies/harnesses deleted after process/open-file checks.
+- `b92ba6947`: atomic batches retain their checked prefix and read only new events.
+  Final full importer **3,338 appended / 7m12.678s**, down from 10m43.485s, under
+  the unchanged ten-minute context deadline. Repeat **0 / 538.781ms**.
+  Prefix reading **196.97 → 0.60 CPU seconds**; ordinary gates/recovery retained.
+- **32/32** current membership/status equality; jobs **2 contracts / 0 picks**.
+- All 74 W1–6 named players are MFL starters. Current replay classes: **IR 27,
+  taxi 1, another franchise 34, unrostered 12**. Not historical-week classifications:
+  no held W1–6 kickoffs. Dated replay transitions match held moves for all 32 pairs.
+- Fresh refusals **75 → 75 / 77 → 77**, exact prior refusal text unchanged.
+  Full lineup calls **10m22.422s / 10m56.621s**; Bills W1–7 recorded in both.
+  No lineup speed improvement, fresh full lineup repeat or W8 proof claimed.
+- Final focused race tests **42 test/subtest PASS**, zero fail/skip; mutant rejected;
+  plain final make build and production hooks pass. No full suite or remote.
+- Evidence: `docs/build-handoffs/APP-ROSTER-11-evidence.md`; all 74 rows:
+  `docs/build-handoffs/APP-ROSTER-11-rows.tsv`. Logs/profiles: `.tmp/roster11/`.
 
 ## Next move / blocked on
-- `internal/composition/migration_app.go:161`: ten-minute worker deadline still too
-  short for the actual importer. Do not raise it. First atomic batch cannot expose
-  partial progress. Full direct call is not automatic-worker acceptance.
-- Final CPU: correction projection 30.42%, full-prefix event rereads 22.17%, governance
-  15.29%, contract capture 13.69%, GC 20.69% (overlapping cumulative CPU, not wall shares).
-  Target measured prefix rereads/projection next while preserving every ordinary gate.
-- Lineup calls themselves now take 10m25s / 10m31s; repeats 3m15s / 3m30s. Expanded
-  history regresses overall refresh cost; transaction acceleration alone is not success.
-- Shared 74 W1–6 refusals lack held kickoff context. Free adds W7 All (04, currently IR).
-  Locked adds W7 Kirk (15), Terrell (32), Miller (20): inactive/absent at first kickoff,
-  activated/acquired October 25. Do not silently change the locked first-kickoff rule.
-- Prior debt: durable off-roster blank-contract review; older leagues need ordinary
-  enabling of transactions.follow; actual worker, independent review and GUI/Pulse proof.
+- `internal/commissioner/lineup_week.go:144`: supply held W1–6 first-kickoff facts;
+  then rerun the unchanged ordinary check. Historical fixed: 0; unresolved: 74.
+  Do not treat today's IR/taxi/absence as proof of an illegal historical starter.
+- Ruling-only W7: Kirk (15), Terrell (32) IR at first kickoff; Miller (20) absent.
+  Their October 25 activations/acquisition are already correctly recorded.
+- Next measured costs: correction projection, governance and GC; lineup calls still
+  exceed ten minutes. Combined actual worker progress/retry, GUI and review unproved.
+- Prior debt: off-roster missing-contract jobs; older leagues' transaction-follow setting.
 
 ## Tried and rejected
-No timeout increase, fabricated kickoff/contract, skipped asset, direct ledger SQL
-write, protected-file edit, remote or live MFL move. Capture-all mutant fails both
-bounded capture and side isolation. Initial perf commit hit complexity; simplified
-selection and passed the gate without bypass. Stopped pre-final attempts are not
-reported as completed timings; transaction rollback to two records was verified.
+No invented cutoff, reserve-rule weakening, timeout increase, direct ledger write,
+protected-file edit or source DB write. First perf commit hit statement/style gates;
+extracted suffix append, retested/rebuilt/replayed final commit, passed without bypass.
