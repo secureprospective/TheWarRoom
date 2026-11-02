@@ -1,4 +1,4 @@
-package composition
+package now
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestLiveStatLinesRereadsFinishedGamesOnlyEveryTenMinutes(t *testing.T) {
-	body, err := os.ReadFile("internal/ingestion/livegame/testdata/espn-summary-401872991.json")
+	body, err := os.ReadFile("../../ingestion/livegame/testdata/espn-summary-401872991.json")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -58,8 +58,7 @@ type App struct {
 	scheduleCache        nativeapp.ScheduleCache
 	playedLineupsRunning atomic.Bool
 	playedLineupsStarted atomic.Bool
-	liveFinals           liveFinals // finished games' box scores; the poller is its only user
-	liveStatsSaid        string     // live-stats state last logged; the poller is its only user
+	liveStats            nowapp.LiveStatsPoller // the live-stats poller is its only user
 	controlHeld          *controlapp.Held
 	researchHeld         *researchapp.Held
 	raceHeld             *raceapp.Held
