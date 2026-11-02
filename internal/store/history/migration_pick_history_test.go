@@ -70,3 +70,57 @@ func exportSeed(t *testing.T, export mflsource.Export) commissioner.RawNativeSna
 	}
 	return plan.Seed
 }
+
+func TestMigrationBatchRecoveryIsAtomic(t *testing.T) {
+	export := migrationtest.Synthetic("Recovery", migrationtest.Specs()["8 teams"])
+	svc, s, _ := migrationService(t, export)
+	if _, err := svc.Import(t.Context(), export.LeagueID, "Import", "creator"); err != nil {
+		t.Fatal(err)
+	}
+	league := leaguemigration.AppLeagueID(export.LeagueID, export.Season)
+	initial, err := s.RosterRestorePoint(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	player := initial.Snapshot.Players[0]
+	other := "franchise.01"
+	if player.Franchise == other {
+		other = "franchise.02"
+	}
+	records, err := s.nativeRecords(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raws := []commissioner.RawCommand{
+		{League: league, Command: commissioner.CorrectRoster, Args: commissioner.RawArgs{Correction: &commissioner.RawCorrection{Player: player.ID, Franchise: player.Franchise, Action: "remove"}}, Expected: int64(len(records)), Request: "recovery.remove", Reason: "Repair membership", Effective: "now", Visibility: "league"},
+		{League: league, Command: commissioner.CorrectRoster, Args: commissioner.RawArgs{Correction: &commissioner.RawCorrection{Player: player.ID, Franchise: other, Action: "add"}}, Request: "recovery.add", Reason: "Repair membership", Effective: "now", Visibility: "league"},
+	}
+	s.batchFault = func(step int) error {
+		if step == 1 {
+			return fmt.Errorf("stop before commit")
+		}
+		return nil
+	}
+	if _, err := s.ExecuteCommissionerBatch(t.Context(), raws, "creator", nil); err == nil {
+		t.Fatal("fault accepted")
+	}
+	after, err := s.RosterRestorePoint(t.Context(), league)
+	if err != nil || !reflect.DeepEqual(initial, after) {
+		t.Fatal("failed batch changed recovery", err)
+	}
+	unchanged, err := s.nativeRecords(t.Context(), league)
+	if err != nil || !reflect.DeepEqual(records, unchanged) {
+		t.Fatal("failed batch changed ledger", err)
+	}
+	s.batchFault = nil
+	if _, err := s.ExecuteCommissionerBatch(t.Context(), raws, "creator", nil); err != nil {
+		t.Fatal(err)
+	}
+	after, err = s.RosterRestorePoint(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.Revision != int64(len(records)+2) || after.Snapshot.PlayerOf(other, player.ID) < 0 || after.Snapshot.PlayerOf(player.Franchise, player.ID) >= 0 {
+		t.Fatal("recovery did not capture final batch state")
+	}
+}

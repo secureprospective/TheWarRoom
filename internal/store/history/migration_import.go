@@ -66,6 +66,10 @@ func (s *Store) ExecuteCommissionerBatchWithFacts(ctx context.Context, raws []co
 			return nil, err
 		}
 	}
+	// Intermediate states cannot commit; capture recovery once for the whole batch.
+	if err := saveRosterRestorePoint(ctx, tx, league, records); err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("record league changes: %w", err)
 	}
@@ -100,7 +104,7 @@ func (s *Store) batchStep(ctx context.Context, tx *sql.Tx, raw commissioner.RawC
 		return commissioner.Receipt{}, err
 	}
 	return s.appendCommissioner(ctx, tx, appendRequest{raw: raw, principal: principal, role: role,
-		canonical: canonical, at: now, before: before, plan: plan, records: records})
+		canonical: canonical, at: now, before: before, plan: plan, records: records, deferRosterRestore: true})
 }
 
 // batchable excludes operations whose other evidence has no batch preparation port.

@@ -374,6 +374,7 @@ func commandRole(raw commissioner.RawCommand, principal string, auth commissione
 // appendRequest is one league change ready to be recorded, with the instant it is recorded at, the ledger
 // it is appended to and, for a season rollover, its before-state and plan.
 type appendRequest struct {
+	deferRosterRestore         bool
 	raw                        commissioner.RawCommand
 	principal, role, canonical string
 	at                         time.Time
@@ -424,7 +425,7 @@ func (s *Store) appendAdmittedCommissioner(ctx context.Context, tx *sql.Tx, req 
 		return commissioner.Receipt{}, err
 	}
 	// Stat decisions cannot alter rosters or their recovery identities.
-	if !commissioner.IsStatCommand(raw.Command) {
+	if !req.deferRosterRestore && !commissioner.IsStatCommand(raw.Command) {
 		if err := saveRosterRestorePoint(ctx, tx, raw.League, append(slices.Clone(req.records), record)); err != nil {
 			return commissioner.Receipt{}, err
 		}
