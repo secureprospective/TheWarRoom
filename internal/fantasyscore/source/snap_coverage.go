@@ -66,8 +66,10 @@ func ReadSnaps(input io.Reader) ([]RawSnap, error) {
 	return out, err
 }
 
-// NonParticipationProofs requires every unit's counts to reconcile to eleven players
-// per snap and its rounded shares. A partial file cannot merely assert its own completeness.
+// NonParticipationProofs requires every unit's recovered play count to account for at least eleven
+// players a play. A file short of that is missing somebody's snaps, so it cannot prove non-participation;
+// counts above it are over-manned plays, which leaving a player out could never produce. A partial file
+// cannot merely assert its own completeness.
 func NonParticipationProofs(snaps []RawSnap, roster []RawAbsenceProof) []RawAbsenceProof {
 	teams := make(map[string][]RawSnap)
 	present := make(map[string]bool)
@@ -121,16 +123,32 @@ func completeSnapTeam(rows []RawSnap) bool {
 		}
 	}
 	for i, total := range totals {
-		if total == 0 || total%11 != 0 {
+		plays, ok := snapUnitPlays(rows, i, total)
+		if !ok || total < 11*plays {
 			return false
 		}
-		denominator := total / 11
-		if !snapUnitMatches(rows, i, denominator) || snapUnitMatches(rows, i, denominator-1) || snapUnitMatches(rows, i, denominator+1) {
-			return false
-		}
-
 	}
 	return true
+}
+
+// snapUnitPlays recovers how many plays a unit took from its rounded shares, which hold that count
+// independently of the counts themselves. Only one play count may fit every share: a file whose
+// shares leave the count ambiguous cannot say who is missing from it.
+func snapUnitPlays(rows []RawSnap, unit, total int) (int, bool) {
+	if total == 0 {
+		return 0, false
+	}
+	found := 0
+	for plays := 1; plays <= total; plays++ {
+		if !snapUnitMatches(rows, unit, plays) {
+			continue
+		}
+		if found != 0 {
+			return 0, false
+		}
+		found = plays
+	}
+	return found, found != 0
 }
 
 func snapUnitMatches(rows []RawSnap, unit, denominator int) bool {

@@ -73,3 +73,58 @@ func TestRoundedSnapSharesCannotCertifyAnAmbiguousPartialFile(t *testing.T) {
 		t.Fatal("ambiguous rounded shares certified a partial file")
 	}
 }
+
+// snapCSV writes a complete eleven-man file whose BUF special-teams rows are replaced by the
+// counts and shares given, so the unit can be made over-manned or short of a snap.
+func snapCSV(st [][2]float64) string {
+	s := "game_id,pfr_game_id,season,game_type,week,pfr_player_id,position,team,offense_snaps,offense_pct,defense_snaps,defense_pct,st_snaps,st_pct\n"
+	row := "2026_01_BUF_NYJ,202609100nyj,2026,REG,1,%s,LB,%s,%d,%g,%d,%g,%g,%g\n"
+	for i := 0; i < 11; i++ {
+		s += fmt.Sprintf(row, fmt.Sprint("NYJ", i), "NYJ", 60, 1.0, 60, 1.0, 20.0, 1.0)
+	}
+	for i, unit := range st {
+		offense, share := 60, 1.0
+		if i >= 11 {
+			offense, share = 0, 0
+		}
+		s += fmt.Sprintf(row, fmt.Sprint("BUF", i), "BUF", offense, share, offense, share, unit[0], unit[1])
+	}
+	return s
+}
+
+func elevenSpecialTeams(count float64, share float64) [][2]float64 {
+	out := make([][2]float64, 11)
+	for i := range out {
+		out[i] = [2]float64{count, share}
+	}
+	return out
+}
+
+func TestSnapFileShortOfAPlayIsNotCompleteButAnOverMannedOneIs(t *testing.T) {
+	short := elevenSpecialTeams(20, 1)
+	short[10] = [2]float64{19, 0.95}
+	for _, tc := range []struct {
+		name    string
+		st      [][2]float64
+		admits  bool
+		because string
+	}{
+		{"over-manned special teams", append(elevenSpecialTeams(20, 1), [2]float64{2, 0.1}), true,
+			"222 counts over 20 plays cannot come from leaving a player out"},
+		{"short of one snap", short, false,
+			"219 counts over 20 plays leaves a snap unaccounted for"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			snaps, err := ReadSnaps(strings.NewReader(snapCSV(tc.st)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			roster := []RawAbsenceProof{{GSIS: "00-0030001", PFR: "Absent00", Season: "2026", Week: "1",
+				Team: "BUF", Position: "LB", Evidence: "complete snaps + pbp, no snap"}}
+			got := NonParticipationProofs(snaps, roster)
+			if (len(got) == 1) != tc.admits {
+				t.Fatalf("%s: proofs=%+v", tc.because, got)
+			}
+		})
+	}
+}
