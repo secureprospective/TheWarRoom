@@ -80,6 +80,8 @@ export function TargetNativeLineupSet(arg1:string):Promise<commissioner.Receipt>
 
 export function TargetNativeMoves(arg1:string,arg2:string):Promise<market.NativeMoves>;
 
+export function TargetNativeOdds(arg1:string,arg2:number):Promise<commissioner.NativeOdds>;
+
 export function TargetNativePlayerScore(arg1:string,arg2:string,arg3:number,arg4:number):Promise<commissioner.NativePlayerScore>;
 
 export function TargetNativeProjections(arg1:string,arg2:string,arg3:number,arg4:number):Promise<history.NativeProjections>;

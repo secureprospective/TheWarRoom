@@ -270,6 +270,8 @@
 /* power / cap / picks / bids tiles */
 .hb .pw{grid-template-columns:26px 1fr 56px 74px}
 .hb .pw.me{background:var(--raised);box-shadow:inset 3px 0 0 var(--mine)}
+.hb .pw .bar{height:4px;background:var(--edge)} .hb .pw .bar i{display:block;height:100%;background:var(--edge-hi)}
+.hb .wpb{display:flex;height:6px;margin:4px 14px 10px;border:1px solid var(--edge)} .hb .wpb i{background:var(--mine)} .hb .wpb u{flex:1;background:var(--theirs);opacity:.55}
 .hb .capr{padding:12px 14px;border-bottom:1px solid var(--edge)}
 .hb .capr b{font:700 26px var(--mono)} .hb .capr span{font:10px var(--mono);color:var(--ink3);margin-left:8px}
 .hb .capbar{display:flex;height:10px;margin-top:8px;border:1px solid var(--edge)} .hb .capbar i{background:var(--edge-hi)} .hb .capbar u{background:var(--hatch),var(--edge)} .hb .capbar s{flex:1}

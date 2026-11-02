@@ -219,3 +219,63 @@ export function parsePulseLineup(value: unknown, league: string, franchise: stri
       locked: s.locked };
   });
 }
+
+/** PulseOdds is the league's own win chance, power and playoff odds (odds.read). Each part carries the words
+ *  that say why it is missing; a missing part is undefined, never zero. */
+export type PulseOddsRow = { franchise: string; name: string; rank: number; record: string;
+  power?: number; powerScore: number; expected: number; playoffOdds?: number };
+export type PulseOddsGame = { week: number; home: string; away: string; homeName: string; awayName: string;
+  homeWin: number };
+export type PulseOdds = { league: string; season: number; revision: number; status: string; words: string;
+  powerWords: string; gameWords: string; oddsWords: string; week: number; runs: number; seed: number;
+  rows: PulseOddsRow[]; games: PulseOddsGame[] };
+
+function share(value: unknown, path: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1)
+    throw new Error(`${path}: expected a chance between 0 and 1`);
+  return value;
+}
+function finite(value: unknown, path: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${path}: expected a number`);
+  return value;
+}
+
+export function parsePulseOdds(value: unknown, league: string, season: number): PulseOdds {
+  const r = object(value, 'Odds', ['league', 'name', 'season', 'revision', 'status', 'words', 'powerWords',
+    'gameWords', 'oddsWords', 'week', 'runs', 'seed', 'rows', 'games']);
+  if (r.league !== league || r.season !== season) throw new Error('Odds belong to another league or season');
+  return { league: text(r.league, 'League'), season: integer(r.season, 'Season', 1920),
+    revision: integer(r.revision, 'Revision'), status: text(r.status, 'Status'), words: text(r.words, 'Odds'),
+    powerWords: text(r.powerWords, 'Power'), gameWords: text(r.gameWords, 'Win chance'),
+    oddsWords: text(r.oddsWords, 'Playoff odds'), week: integer(r.week, 'Week'),
+    runs: integer(r.runs, 'Runs'),
+    seed: integer(r.seed, 'Seed'),
+    rows: array(r.rows, 'Odds rows', (v, p) => {
+      const s = object(v, p, ['franchise', 'name', 'rank', 'record', 'power', 'powerScore', 'expected',
+        'playoffOdds']);
+      const power = integer(s.power, p);
+      return { franchise: text(s.franchise, p), name: text(s.name, p), rank: integer(s.rank, p, 1),
+        record: text(s.record, p), power: power || undefined, powerScore: share(s.powerScore, p),
+        expected: finite(s.expected, p),
+        playoffOdds: s.playoffOdds == null ? undefined : share(s.playoffOdds, p) };
+    }),
+    games: array(r.games, 'Odds games', (v, p) => {
+      const g = object(v, p, ['week', 'home', 'away', 'homeName', 'awayName', 'homeWin']);
+      return { week: integer(g.week, p, 1), home: text(g.home, p), away: text(g.away, p),
+        homeName: text(g.homeName, p), awayName: text(g.awayName, p), homeWin: share(g.homeWin, p) };
+    }) };
+}
+
+/** percent writes a chance as the screens show it: a whole percent. */
+export function percent(chance: number | undefined): string {
+  return chance === undefined ? '—' : `${Math.round(chance * 100)}%`;
+}
+
+/** myChance is a franchise's chance in its game of the odds week, with its opponent's. */
+export function myChance(odds: PulseOdds | undefined, franchise: string):
+  { mine: number; theirs: number; week: number } | undefined {
+  const g = odds?.games.find(x => x.home === franchise || x.away === franchise);
+  if (!g) return undefined;
+  const mine = g.home === franchise ? g.homeWin : 1 - g.homeWin;
+  return { mine, theirs: 1 - mine, week: g.week };
+}

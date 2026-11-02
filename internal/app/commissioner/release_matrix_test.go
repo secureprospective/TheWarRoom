@@ -103,7 +103,7 @@ func releaseReadInputs(t *testing.T, name string, typ reflect.Type, league strin
 	case "TargetNativeResults":
 		args[1].SetInt(2026)
 		args[2].SetInt(1)
-	case "TargetNativeStandings", "TargetNativeBracket", "TargetStatQueue":
+	case "TargetNativeStandings", "TargetNativeOdds", "TargetNativeBracket", "TargetStatQueue":
 		args[1].SetInt(2026)
 	case "TargetNativeLineup":
 		args[1].SetString("franchise.01")
@@ -260,6 +260,7 @@ projections.read
 score.player.read
 oline.auction.close
 season.rollover
+odds.read
 standings.read
 stats.queue.read
 title.set

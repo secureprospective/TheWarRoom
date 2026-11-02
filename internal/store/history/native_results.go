@@ -231,3 +231,18 @@ func (s *Store) prepareRollover(ctx context.Context, raw commissioner.RawCommand
 	}
 	return before, plan, nil
 }
+
+// NativeOdds reads win chance, power and playoff odds from the league's own results and the values given.
+func (s *Store) NativeOdds(ctx context.Context, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return commissioner.NativeOdds{}, err
+	}
+	src := s.nativeSources(league, season)
+	out, err := commissioner.NativeOddsReading(ctx, league, records, src, season, src.now, values)
+	if err != nil {
+		return commissioner.NativeOdds{}, fmt.Errorf("read native odds: %w", err)
+	}
+	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
+	return out, nil
+}

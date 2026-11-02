@@ -64,6 +64,7 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetNativeScorePreview", "commish", "G0"},
 		{"TargetNativeSeed", "commish", "G3"},
 		{"TargetNativeStandings", "gm,commish,admin", "G0"},
+		{"TargetNativeOdds", "gm,commish,admin", "G0"},
 		{"TargetNativeTradeAction", "gm,commish", "G3"},
 		{"TargetNativeMoves", "gm,commish", "G0"},
 		{"TargetNativeTrades", "gm,commish", "G0"},

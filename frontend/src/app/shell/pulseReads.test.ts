@@ -1,19 +1,29 @@
 import { expect, it, vi } from 'vitest';
 import type { HostedPort } from '../commissioner/hostedRoom';
-import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseResults,
-  parsePulseStandings, parsePulseWeek, pointsLabel } from '../data/nativePulse';
+import { myChance, parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseOdds,
+  parsePulseResults, parsePulseStandings, parsePulseWeek, percent, pointsLabel } from '../data/nativePulse';
 import { readNativePulse, readPulseMatchup, readPulseWeekResults } from './pulseReads';
 import { applyFilter, filterCounts, groupRows, pulseRows, seedRows, starterRows, statusLabel }
   from './pulseModel';
 import pulse from './pulse.wire.testdata.json';
 
 const LEAGUE = 'native.test';
+const odds = { league: pulse.standings.league, name: 'Held league', season: 2026, revision: 3,
+  status: 'Ready', words: '', powerWords: 'Lineup value blended with results after 3 games',
+  gameWords: 'Week 2', oddsWords: 'Played out', week: 2, runs: 2000, seed: 9,
+  rows: [{ franchise: 'franchise.01', name: 'Held team 1', rank: 1,
+    record: '2-1', power: 2, powerScore: 0.9, expected: 98.25, playoffOdds: 0.615 },
+  { franchise: 'franchise.02', name: 'Held team 2', rank: 2, record: '1-2', power: 0, powerScore: 0,
+    expected: 0 }],
+  games: [{ week: 2, home: 'franchise.02', away: 'franchise.01', homeName: 'Held team 2',
+    awayName: 'Held team 1', homeWin: 0.25 }] };
 const port = (results: unknown = pulse.results): HostedPort => vi.fn(async request => {
   const franchise = 'franchise' in request.arguments ? String(request.arguments.franchise) : '';
   const lineups = pulse.lineups as Record<string, unknown>;
   const data: Record<string, unknown> = {
     'native.directory.read': pulse.directory, 'week.read': pulse.week,
     'standings.read': pulse.standings, 'bracket.read': pulse.bracket, 'results.read': results,
+    'odds.read': odds,
     'lineup.read': lineups[franchise],
     'projections.read': { ...pulse.projections, players: pulse.projections.players.filter(p =>
       String((request.arguments as { players?: string }).players ?? '').split(',').includes(p.player)) },
@@ -33,6 +43,20 @@ it('reads the league, the week, the standings and the playoff field through the 
   expect(reading.standings?.rows[0].record).toBe('2-1');
   expect(reading.bracket?.fields.map(f => f.conference)).toEqual(['East', 'West']);
   expect(reading.bracket?.perConference).toBe(7);
+  expect(reading.odds?.rows[0].playoffOdds).toBe(0.615);
+});
+
+it('reads odds as chances and keeps a missing number missing, never zero', () => {
+  const read = parsePulseOdds(odds, odds.league, 2026);
+  expect(read.rows[1].power).toBeUndefined();
+  expect(read.rows[1].playoffOdds).toBeUndefined();
+  expect(percent(read.rows[0].playoffOdds)).toBe('62%');
+  expect(percent(read.rows[1].playoffOdds)).toBe('—');
+  expect(myChance(read, 'franchise.01')).toEqual({ mine: 0.75, theirs: 0.25, week: 2 });
+  expect(myChance(read, 'franchise.03')).toBeUndefined();
+  expect(() => parsePulseOdds({ ...odds, rows: [{ ...odds.rows[0], playoffOdds: 1.2 }] }, odds.league, 2026))
+    .toThrow('chance between 0 and 1');
+  expect(() => parsePulseOdds(odds, odds.league, 2025)).toThrow('another league or season');
 });
 
 it('scores one week and lines both lineups up with their teams and projections', async () => {

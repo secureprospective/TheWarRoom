@@ -77,6 +77,9 @@ func workflowReads() map[string]WorkflowCommand {
 		"value.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeValues(leagueservice.RawValueScope{League: r.League, Franchise: r.Franchise, Season: r.Season}))
 		}),
+		"odds.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeOdds(r.League, r.Season))
+		}),
 		"standings.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeStandings(r.League, r.Season))
 		}),

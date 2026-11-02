@@ -87,6 +87,13 @@ func (a *API) TargetNativeStandings(league string, season int) (commissioner.Nat
 	return a.reads.TargetNativeStandings(league, season)
 }
 
+// TargetNativeOdds reads win chance, power and playoff odds from the league's own results, schedule, rosters
+// and values, under its own tie-breakers and playoff rules.
+func (a *API) TargetNativeOdds(league string, season int) (commissioner.NativeOdds, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeOdds(league, season)
+}
+
 // TargetNativeScorePreview reads a score adjustment, in the form it would be sent, and warns when it
 // would turn over a game's result. It records nothing.
 func (a *API) TargetNativeScorePreview(body string) (commissioner.ScorePreview, error) {

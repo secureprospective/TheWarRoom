@@ -22,7 +22,7 @@ func TestWorkflowModesAndUnknownCommand(t *testing.T) {
 	if err := json.Unmarshal(data, &before); err != nil {
 		t.Fatal(err)
 	}
-	if len(before) != 44 {
+	if len(before) != 45 {
 		t.Fatal("pre-migration workflow fixture changed")
 	}
 	for _, old := range before {
