@@ -86,6 +86,9 @@ func TestHostedRolloverAfterWorkerBidAwardKeepsEveryReadingOpen(t *testing.T) {
 	if err := json.Unmarshal(readings["bids.read"].Data, &bids); err != nil {
 		t.Fatal(err)
 	}
+	if len(bids.Awards) != 1 || bids.Awards[0].Player != "6001" || bids.Awards[0].Winner != "franchise.02" {
+		t.Fatalf("rollover hid the worker's bid award: %+v", bids.Awards)
+	}
 	if want := "Bids for the 2027 season open once the server operator selects football players and schedule for that season."; !slices.Contains(bids.Notes, want) {
 		t.Fatalf("new-season bids do not say why bidding waits: %q", bids.Notes)
 	}

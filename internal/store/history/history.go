@@ -88,6 +88,9 @@ func (s *Store) signalCommissionerCommit() {
 	}
 }
 
+// Now returns the same clock used to record ledger acts.
+func (s *Store) Now() time.Time { return s.now() }
+
 // SetClock replaces the store's clock. Tests use it to write corrections at known times.
 func (s *Store) SetClock(now func() time.Time) { s.now = now }
 

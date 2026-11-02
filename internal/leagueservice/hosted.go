@@ -34,7 +34,7 @@ func (h StoredHost) CommissionerPrincipal() (string, error) {
 	return h.Principal, nil
 }
 func (StoredHost) CommissionerAuthorization() commissioner.Authorizer { return nil }
-func (StoredHost) CommissionerNow() time.Time                         { return time.Now() }
+func (h StoredHost) CommissionerNow() time.Time                       { return h.Now() }
 func (StoredHost) CommissionerZone() *time.Location                   { return time.UTC }
 func (h StoredHost) CommissionerPreviewRegistry() string              { return h.Registry }
 func (StoredHost) NativeFacts() nativecheck.Facts                     { return nil }
