@@ -29,11 +29,11 @@ func TestLiveStatLinesRereadsFinishedGamesOnlyEveryTenMinutes(t *testing.T) {
 		reads[id]++
 		return body, nil
 	}}
-	games := []livegame.Game{{ID: "done", Status: "post"}, {ID: "playing", Status: "in"}, {ID: "later", Status: "pre"}}
+	games := []livegame.Game{{ID: "done", Status: "post", Season: 2026, Week: 8, SeasonType: 2}, {ID: "playing", Status: "in", Season: 2026, Week: 8, SeasonType: 2}, {ID: "later", Status: "pre"}}
 	var finals liveFinals
 	start := time.Date(2026, 11, 1, 21, 0, 0, 0, time.UTC)
 	for minute := 0; minute < 10; minute++ {
-		out := liveStatLines(context.Background(), adapter, games, byESPN, 2026, 8, &finals, start.Add(time.Duration(minute)*time.Minute))
+		out := liveStatLines(context.Background(), adapter, games, byESPN, &finals, start.Add(time.Duration(minute)*time.Minute))
 		if got := out["15263"]; got.Week != 8 || got.Season != 2026 {
 			t.Fatalf("minute %d: player line missing or misfiled: %+v", minute, got)
 		}
@@ -41,8 +41,25 @@ func TestLiveStatLinesRereadsFinishedGamesOnlyEveryTenMinutes(t *testing.T) {
 	if reads["done"] != 1 || reads["playing"] != 10 || reads["later"] != 0 {
 		t.Fatalf("ten polls read finished %d, playing %d, not started %d times; want 1, 10, 0", reads["done"], reads["playing"], reads["later"])
 	}
-	liveStatLines(context.Background(), adapter, games, byESPN, 2026, 8, &finals, start.Add(liveFinalReread))
+	liveStatLines(context.Background(), adapter, games, byESPN, &finals, start.Add(liveFinalReread))
 	if reads["done"] != 2 {
 		t.Fatalf("finished game not read again after %s: %d reads", liveFinalReread, reads["done"])
+	}
+}
+
+func TestLiveStatLinesUseEachGamesScope(t *testing.T) {
+	var finals liveFinals = map[string]liveFinal{
+		"old": {at: time.Now(), lines: []livestats.Line{{SourceID: "1"}}},
+		"new": {at: time.Now(), lines: []livestats.Line{{SourceID: "2"}}},
+	}
+	games := []livegame.Game{
+		{ID: "old", Status: "post", Season: 2025, Week: 18, SeasonType: 2},
+		{ID: "new", Status: "post", Season: 2026, Week: 1, SeasonType: 2},
+		{ID: "unknown", Status: "post"},
+		{ID: "postseason", Status: "post", Season: 2026, Week: 1, SeasonType: 3},
+	}
+	out := liveStatLines(t.Context(), livegame.Adapter{}, games, map[string]string{"1": "0099", "2": "0100"}, &finals, time.Now())
+	if len(out) != 2 || out["0099"].Season != 2025 || out["0099"].Week != 18 || out["0100"].Week != 1 {
+		t.Fatalf("misfiled lines: %+v", out)
 	}
 }

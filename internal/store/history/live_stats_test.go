@@ -128,3 +128,16 @@ func countedLive(t *testing.T, evidence source.NativeEvidence) source.LineRevisi
 	}
 	return *selected
 }
+
+func TestLiveStatsKeepEachGamesWeekRatherThanRelabelToPollWeek(t *testing.T) {
+	s := &Store{}
+	line := liveLine(300000)
+	line.Season, line.Week = 2025, 18
+	s.SetLiveStats(2026, 1, time.Now(), "ESPN live", nil, map[string]source.PlayerWeek{"0099": line})
+	if got, ok := s.liveHeldWeek("0099", 2025, 18); !ok || got.Week.Season != 2025 || got.Week.Week != 18 {
+		t.Fatalf("game scope lost: %+v %t", got, ok)
+	}
+	if _, ok := s.liveHeldWeek("0099", 2026, 1); ok {
+		t.Fatal("old game relabelled to poll week")
+	}
+}

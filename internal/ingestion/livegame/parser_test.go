@@ -233,3 +233,30 @@ func TestSummaryCountsTheDriveInProgressOnce(t *testing.T) {
 		t.Fatalf("plays %d, want %d", len(got.Plays), len(want.Plays))
 	}
 }
+
+func TestScoreboardCarriesCheckedGameScope(t *testing.T) {
+	body := fixture(t, "espn-scoreboard")
+	for _, tc := range []struct {
+		scope string
+		valid bool
+	}{
+		{`"season":{"year":2025,"type":2},"week":{"number":18},`, true},
+		{`"season":{"year":0,"type":2},`, false},
+		{`"week":{"number":0},`, false},
+	} {
+		scoped := strings.Replace(string(body), `"events":[{`, `"events":[{`+tc.scope, 1)
+		games, err := ParseScoreboard([]byte(scoped))
+		if !tc.valid {
+			if err == nil {
+				t.Fatal("invalid scope admitted")
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if games[0].Season != 2025 || games[0].Week != 18 || games[0].SeasonType != 2 {
+			t.Fatalf("scope lost: %+v", games[0])
+		}
+	}
+}

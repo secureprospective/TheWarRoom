@@ -51,10 +51,33 @@ type RawSituation struct {
 	LastPlay   *RawLastPlay `json:"lastPlay"`
 }
 type RawEvent struct {
+	Season       *RawSeason       `json:"season"`
+	Week         *RawWeek         `json:"week"`
 	ID           string           `json:"id"`
 	Competitions []RawCompetition `json:"competitions"`
 	Status       *RawStatus       `json:"status"`
 }
+type RawSeason struct {
+	Year int `json:"year"`
+	Type int `json:"type"`
+}
+type RawWeek struct {
+	Number int `json:"number"`
+}
+
+func (r RawSeason) Validate() error {
+	if r.Year < 1900 || r.Year > 9999 || r.Type < 1 || r.Type > 3 {
+		return fmt.Errorf("season: invalid year or type")
+	}
+	return nil
+}
+func (r RawWeek) Validate() error {
+	if r.Number < 1 || r.Number > 25 {
+		return fmt.Errorf("week: invalid number")
+	}
+	return nil
+}
+
 type RawScoreboard struct {
 	Events []RawEvent `json:"events"`
 }
@@ -86,6 +109,16 @@ func (r RawStatus) Validate() error {
 func (r RawEvent) Validate() error {
 	if !digits(r.ID) || len(r.Competitions) != 1 {
 		return fmt.Errorf("event.id/competitions: invalid")
+	}
+	if r.Season != nil {
+		if err := r.Season.Validate(); err != nil {
+			return err
+		}
+	}
+	if r.Week != nil {
+		if err := r.Week.Validate(); err != nil {
+			return err
+		}
 	}
 	c := r.Competitions[0]
 	if _, err := time.Parse("2006-01-02T15:04Z", c.Date); err != nil {
@@ -182,6 +215,12 @@ func (r RawEvent) game() Game {
 		kickoff, _ = time.Parse("2006-01-02T15:04Z", c.Date)
 	}
 	g := Game{ID: r.ID, Kickoff: kickoff, Status: s.Type.State, Clock: s.DisplayClock, Box: []Box{}, Plays: []Play{}}
+	if r.Season != nil {
+		g.Season, g.SeasonType = r.Season.Year, r.Season.Type
+	}
+	if r.Week != nil {
+		g.Week = r.Week.Number
+	}
 	if s.Period != nil {
 		g.Period = *s.Period
 	}

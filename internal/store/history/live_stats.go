@@ -33,22 +33,32 @@ func (s *Store) SetLiveStats(season, week int, at time.Time, authority string, m
 		s.live = liveStatBook{}
 		return
 	}
+	lines = maps.Clone(lines)
+	for player, line := range lines {
+		if line.Season == 0 {
+			line.Season = season
+		}
+		if line.Week == 0 {
+			line.Week = week
+		}
+		line.SeasonType = "REG"
+		lines[player] = line
+	}
 	s.live = liveStatBook{season: season, week: week, at: at, authority: authority,
-		missing: append([]string{}, missing...), lines: maps.Clone(lines)}
+		missing: append([]string{}, missing...), lines: lines}
 }
 
 // liveHeldWeek is the live revision of one player's week, when one is held for that exact week.
 func (s *Store) liveHeldWeek(player string, season, week int) (source.HeldWeek, bool) {
 	s.liveMu.Lock()
 	defer s.liveMu.Unlock()
-	if s.live.lines == nil || s.live.season != season || s.live.week != week {
+	if s.live.lines == nil {
 		return source.HeldWeek{}, false
 	}
 	line, ok := s.live.lines[player]
-	if !ok {
+	if !ok || line.Season != season || line.Week != week {
 		return source.HeldWeek{}, false
 	}
-	line.Season, line.Week, line.SeasonType = season, week, "REG"
 	digest := source.LineDigest(line)
 	sum := sha256.Sum256([]byte(s.live.authority + ":" + digest))
 	return source.HeldWeek{Authority: s.live.authority, SHA256: hex.EncodeToString(sum[:]),

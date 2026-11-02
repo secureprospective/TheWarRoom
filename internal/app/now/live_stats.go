@@ -48,6 +48,7 @@ func (p *LiveStatsPoller) Poll(ctx context.Context, run LiveStatsRun) time.Durat
 	if run.History == nil {
 		return liveStatsIdle
 	}
+	season, week, at := run.Season, run.Week(), time.Now()
 	endpoints, err := LiveEndpoints()
 	if err != nil {
 		log.Printf("live stats: %v", err)
@@ -76,15 +77,15 @@ func (p *LiveStatsPoller) Poll(ctx context.Context, run LiveStatsRun) time.Durat
 		log.Printf("live stats: %v", err)
 		return liveStatsIdle
 	}
-	lines := liveStatLines(ctx, adapter, games, invertIDs(espn), run.Season, run.Week(), &p.finals, time.Now())
+	lines := liveStatLines(ctx, adapter, games, invertIDs(espn), &p.finals, at)
 	// Say so when live lines first land, stop, or move to another week; not on every poll.
-	if state := fmt.Sprintf("%t/%d/%d", len(lines) > 0, run.Season, run.Week()); state != p.said {
+	if state := fmt.Sprintf("%t/%d/%d", len(lines) > 0, season, week); state != p.said {
 		p.said = state
 		log.Printf("live stats: %d players from %d games, season %d week %d, %d ESPN ids held",
-			len(lines), len(games), run.Season, run.Week(), len(espn))
+			len(lines), len(games), season, week, len(espn))
 	}
 	if len(lines) > 0 {
-		run.History.SetLiveStats(run.Season, run.Week(), time.Now(), livestats.Authority,
+		run.History.SetLiveStats(season, week, at, livestats.Authority,
 			livestats.Pending(), lines)
 		if run.Changed != nil {
 			run.Changed(ctx)
@@ -109,13 +110,13 @@ type liveFinal struct {
 // each athlete line by league player id. A finished game's lines are reused for liveFinalReread.
 // An athlete the directory cannot place is left out: a missing line stays pending, never a zero.
 func liveStatLines(ctx context.Context, adapter livegame.Adapter, games []livegame.Game,
-	byESPN map[string]string, season, week int, finals *liveFinals, now time.Time) map[string]source.PlayerWeek {
+	byESPN map[string]string, finals *liveFinals, now time.Time) map[string]source.PlayerWeek {
 	if *finals == nil {
 		*finals = liveFinals{}
 	}
 	out := map[string]source.PlayerWeek{}
 	for _, g := range games {
-		if g.Status == "pre" {
+		if g.Status == "pre" || g.Season == 0 || g.Week == 0 || g.SeasonType != 2 {
 			continue
 		}
 		held, fresh := (*finals)[g.ID]
@@ -139,7 +140,7 @@ func liveStatLines(ctx context.Context, adapter livegame.Adapter, games []livega
 			if !ok {
 				continue
 			}
-			out[player] = source.PlayerWeek{Season: season, Week: week, GameID: g.ID, SeasonType: "REG", Line: l.Stats}
+			out[player] = source.PlayerWeek{Season: g.Season, Week: g.Week, GameID: g.ID, SeasonType: "REG", Line: l.Stats}
 		}
 	}
 	return out
