@@ -59,9 +59,13 @@ func (s *Store) liveHeldWeek(player string, season, week int) (source.HeldWeek, 
 	if !ok || line.Season != season || line.Week != week {
 		return source.HeldWeek{}, false
 	}
+	authority := s.live.authority
+	if line.Provenance != "" {
+		authority = line.Provenance
+	}
 	digest := source.LineDigest(line)
-	sum := sha256.Sum256([]byte(s.live.authority + ":" + digest))
-	return source.HeldWeek{Authority: s.live.authority, SHA256: hex.EncodeToString(sum[:]),
+	sum := sha256.Sum256([]byte(authority + ":" + digest))
+	return source.HeldWeek{Authority: authority, SHA256: hex.EncodeToString(sum[:]),
 		FetchedAt: s.live.at, Week: &line, Missing: append([]string{}, s.live.missing...)}, true
 }
 

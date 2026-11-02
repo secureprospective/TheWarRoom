@@ -147,9 +147,7 @@ func (r RawFootballEvidence) mergeSleeperWeek(raw source.RawSleeperWeek, bridge 
 		if !ok {
 			week = source.PlayerWeek{Position: string(r.Players[mfl].Facts.Position), Season: raw.Season, Week: raw.Week, SeasonType: "REG", Line: line}
 		} else {
-			for stat, value := range line.Quantities {
-				week.Line.Quantities[stat] = value
-			}
+			week.Line = source.FillStatGaps(week.Line, line)
 		}
 		canonical[key] = week
 	}

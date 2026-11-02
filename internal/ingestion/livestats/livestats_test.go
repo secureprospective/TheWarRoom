@@ -130,3 +130,30 @@ func TestLiveLinesKeepAbsenceAndRefuseAnUnreadableCell(t *testing.T) {
 		t.Fatal("an unreadable cell was accepted")
 	}
 }
+
+func TestLiveLinesAdditionalESPNCategories(t *testing.T) {
+	for _, tc := range []struct {
+		category, label, value string
+		stat                   leaguerules.StatID
+		want                   leaguerules.Decimal
+	}{
+		{"defensive", "AST", "3", "assist", 30000},
+		{"fumbles", "FUM", "1", "fumbles_total", 10000},
+		{"fumbles", "LOST", "0", "fumble_lost", 0},
+		{"interceptions", "INT", "2", "interception_caught", 20000},
+		{"interceptions", "YDS", "30", "interception_return_yards", 300000},
+		{"kickReturns", "YDS", "45", "kickoff_return_yards", 450000},
+		{"puntReturns", "YDS", "-2", "punt_return_yards", -20000},
+		{"kicking", "XP", "3/4", "pat_made", 30000},
+	} {
+		t.Run(tc.category+"_"+tc.label, func(t *testing.T) {
+			lines, err := livestats.Lines(livegame.Game{Box: []livegame.Box{{Category: tc.category, Labels: []string{tc.label}, Rows: []livegame.BoxRow{{ID: "1", Stats: []string{tc.value}}}}}})
+			if err != nil || len(lines) != 1 {
+				t.Fatalf("%+v %v", lines, err)
+			}
+			if got, ok := lines[0].Stats.Quantities[tc.stat]; !ok || got != tc.want {
+				t.Fatalf("%s=%d, present %t", tc.stat, got, ok)
+			}
+		})
+	}
+}

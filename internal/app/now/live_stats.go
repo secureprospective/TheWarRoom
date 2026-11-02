@@ -95,6 +95,7 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveS
 			len(lines), len(games), season, week, len(espn))
 	}
 	if acquired {
+		fillLiveSleeper(ctx, run, held, games, lines)
 		held.SetLiveStats(season, week, at, livestats.Authority,
 			livestats.Pending(), lines)
 		if run.Changed != nil {
