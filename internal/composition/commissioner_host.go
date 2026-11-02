@@ -40,7 +40,8 @@ func (a *App) localSeat() commissionerapp.LocalSeat {
 		Status: func(ctx context.Context, local string) (accounts.SeatStatus, error) { return a.seat.Status(ctx, local) },
 		SignIn: func(ctx context.Context, raw accounts.RawCredentials, local string) (accounts.Account, error) {
 			return a.seat.SignIn(ctx, raw, local)
-		}}
+		},
+		Facts: func(ctx context.Context) ([]accounts.SignInFact, error) { return a.seat.SignInFacts(ctx) }}
 }
 func (a *App) commissionerSeat() (accounts.SeatStatus, error) {
 	return a.localSeat().Read() //nolint:wrapcheck // Preserve seat errors.
@@ -112,6 +113,9 @@ func (h commissionerHost) CaptureNativeSeed() (commissioner.RawNativeSnapshot, e
 }
 func (h commissionerHost) CommissionerSeat() (accounts.SeatStatus, error) {
 	return h.app.commissionerSeat()
+}
+func (h commissionerHost) CommissionerSignInFacts() ([]accounts.SignInFact, error) {
+	return h.app.localSeat().SignInFacts() //nolint:wrapcheck // Preserve seat errors.
 }
 func (h commissionerHost) CommissionerSeatSignIn(raw accounts.RawCredentials) (accounts.SeatStatus, error) {
 	return h.app.commissionerSeatSignIn(raw)

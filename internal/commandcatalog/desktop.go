@@ -35,6 +35,7 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetCommissionerSchedule", "commish", "G0"},
 		{"TargetCommissionerSeat", "gm,commish,admin", "G0"},
 		{"TargetCommissionerSeatSignIn", "gm,commish,admin", "G1"},
+		{"TargetSignInFacts", "commish,admin", "G0"},
 		{"TargetWorkflow", "gm,commish", "argument-dependent"},
 		{"TargetCorrections", "gm,commish", "G0"},
 		{"TargetLeagueCalendar", "gm,commish", "G0"},
@@ -90,7 +91,7 @@ func desktopCommands(methods []struct{ method, role, gravity string }, related [
 			command.ID = "commish.ledger.read"
 		case "TargetNativeLineupSet":
 			command.ID = "lineup.set"
-		case "TargetCommissionerSeat", "TargetCommissionerSeatSignIn":
+		case "TargetCommissionerSeat", "TargetCommissionerSeatSignIn", "TargetSignInFacts":
 			command.Availability = "desktop" // a hosted league signs in on the server
 		case "TargetBackupNow":
 			command.ID, command.Availability = "backup.now", "desktop" // a hosted league backs up on the server

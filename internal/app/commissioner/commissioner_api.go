@@ -96,6 +96,7 @@ func (a *API) TargetCommissionerSchedule(league string) (commissioner.ManagedSch
 type SeatHost interface {
 	CommissionerSeat() (accounts.SeatStatus, error)
 	CommissionerSeatSignIn(accounts.RawCredentials) (accounts.SeatStatus, error)
+	CommissionerSignInFacts() ([]accounts.SignInFact, error)
 	CommissionerBackupNow() (BackupResult, error)
 }
 
@@ -113,6 +114,12 @@ type BackupResult struct {
 // TargetCommissionerSeat says whether a local sign-in exists and whether this computer uses it.
 func (a *API) TargetCommissionerSeat() (accounts.SeatStatus, error) {
 	return a.host.CommissionerSeat() //nolint:wrapcheck // the seat's errors are already the words shown
+}
+
+// TargetSignInFacts lists each local identity's authenticator (on or off) and when it last acted,
+// for People's 2FA and SEEN columns.
+func (a *API) TargetSignInFacts() ([]accounts.SignInFact, error) {
+	return a.host.CommissionerSignInFacts() //nolint:wrapcheck // the seat's errors are already the words shown
 }
 
 // TargetCommissionerSeatSignIn creates the local sign-in, or proves it on a restored copy, and

@@ -67,6 +67,7 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetCommissionerActor":          catalog.Bind0(api.TargetCommissionerActor),
 		"TargetCommissionerSchedule":       catalog.Bind1(api.TargetCommissionerSchedule, "league"),
 		"TargetCommissionerSeat":           catalog.Bind0(api.TargetCommissionerSeat),
+		"TargetSignInFacts":                catalog.Bind0(api.TargetSignInFacts),
 		"TargetCommissionerSeatSignIn":     catalog.Bind2(api.TargetCommissionerSeatSignIn, "username", "password"),
 		"TargetWorkflow":                   catalog.Bind1(api.TargetWorkflow, "body"),
 		"TargetBackupNow":                  catalog.Bind0(api.TargetBackupNow),

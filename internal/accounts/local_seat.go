@@ -24,10 +24,19 @@ type SeatStatus struct {
 	Username   string `json:"username,omitempty"`
 }
 
+// SignInFact is what a commissioner may see of one identity's sign-in: whether its authenticator is
+// confirmed (TOTP is opt-in) and when it last acted, as RFC 3339 UTC, empty if never.
+type SignInFact struct {
+	Principal     governance.Principal `json:"principal"`
+	Authenticator bool                 `json:"authenticator"`
+	LastSeen      string               `json:"lastSeen,omitempty"`
+}
+
 type SeatRepository interface {
 	BindAlias(ctx context.Context, accountID, alias string) error
 	Aliases(ctx context.Context) ([]Alias, error)
 	SeatStatus(ctx context.Context, alias string) (SeatStatus, error)
+	SignInFacts(ctx context.Context) ([]SignInFact, error)
 }
 
 // LocalSeat keeps a desktop league identity across computers. The desktop's own principal
@@ -53,6 +62,15 @@ func (l *LocalSeat) Status(ctx context.Context, local string) (SeatStatus, error
 		return SeatStatus{}, fmt.Errorf("read sign-in: %w", err)
 	}
 	return status, nil
+}
+
+// SignInFacts lists every local identity's authenticator and last activity.
+func (l *LocalSeat) SignInFacts(ctx context.Context) ([]SignInFact, error) {
+	facts, err := l.store.SignInFacts(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("read sign-in facts: %w", err)
+	}
+	return facts, nil
 }
 
 // SignIn creates the first local account, or verifies the existing one, then links local.

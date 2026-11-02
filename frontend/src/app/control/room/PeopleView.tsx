@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { PeopleSeat } from '../../commissioner/people';
 import { openTeam } from './openers';
 import { Desk, Kv, NotYet, useDefaultInspector, useRoom } from './room';
+import { seenAgo, signInOf } from './roomReads';
 
 export function PeopleView() {
   const room = useRoom();
@@ -22,7 +23,8 @@ export function PeopleView() {
       <td className="seat">{s.caretaker ? <span className="cr-st pend">CARETAKER</span> : s.owner ? 'owner seated'
         : <span style={{ color: 'var(--amber)' }}>vacant</span>}</td>
       <td style={{ color: 'var(--ink2)' }}>{rolesOf(s)}</td>
-      <td className="seat" style={{ color: 'var(--ink3)' }}>—</td><td className="seat" /></tr>)}
+      <td className="seat" style={{ color: 'var(--ink3)' }}>{seenAgo(signInOf(room.data, s.owner)?.lastSeen, Date.now())}</td>
+      <td className="seat" style={{ color: 'var(--ink3)' }}>{signInOf(room.data, s.owner)?.authenticator ? '2FA' : ''}</td></tr>)}
   </tbody></table>;
   const seg = <div className="cr-seg"><button aria-pressed={mode === 'seats'} onClick={() => setMode('seats')}>SEATS
     &amp; ROLES</button><button aria-pressed={mode === 'perm'} onClick={() => setMode('perm')}>PERMISSIONS</button></div>;

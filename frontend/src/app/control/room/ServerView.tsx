@@ -18,7 +18,8 @@ export function ServerView() {
     <Desk title="UPGRADES" sub="signed bundles only"
       kv={[['Running', na('version')], ['Available', na('update check')]]} acts={[['UPGRADE', 'upgrade']]} />
     <Desk title="SIGN-IN HELP" sub="for owners who are stuck"
-      kv={[['Authenticator', na('authenticators')], ['Locked out', na('lockouts')]]}
+      kv={[['Authenticator', data.signIns ? `optional · ${data.signIns.filter(f =>
+        f.principal.startsWith('acct.') && f.authenticator).length} use it` : data.errors.signIns ?? '—'], ['Locked out', na('lockouts')]]}
       acts={[['RESET AN AUTHENTICATOR', 'account.totp.reset'], ['SIGN OUT ALL DEVICES OF…', 'auth.revoke'],
         ['RECOVERY CODES', 'auth.recovery']]} />
     <Desk title="FEEDS" sub="score truth ladder"

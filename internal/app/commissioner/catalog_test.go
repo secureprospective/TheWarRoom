@@ -48,7 +48,7 @@ func TestNativeCatalogPublication(t *testing.T) {
 	// a league command a server could publish.
 	generic := map[string]bool{"TargetCommissionerExecute": true, "TargetCommissionerPreview": true, "TargetNativeScorePreview": true,
 		"TargetWorkflow":         true,
-		"TargetCommissionerSeat": true, "TargetCommissionerSeatSignIn": true, "TargetBackupNow": true}
+		"TargetCommissionerSeat": true, "TargetCommissionerSeatSignIn": true, "TargetSignInFacts": true, "TargetBackupNow": true}
 	typ := reflect.TypeFor[*API]()
 	for i := range typ.NumMethod() {
 		name := typ.Method(i).Name

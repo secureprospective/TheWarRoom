@@ -1,5 +1,5 @@
 import type { CommissionerBindings, commissioner, market } from '../../commissioner/api';
-import type { control } from '../../../../wailsjs/go/models';
+import type { accounts, control } from '../../../../wailsjs/go/models';
 
 /** The commissioner reads the Control Room shows beside the league state (jobs, rules, people, ledger,
  *  notices), which leagueState already holds. Each is an existing binding; nothing here decides a rule. */
@@ -15,13 +15,15 @@ export type RoomData = {
   draft?: commissioner.NativeDraft;
   /** The engine's calibration parameters (GetParams). */
   params?: control.ParamsResult;
+  /** Each local identity's authenticator and last activity (TargetSignInFacts, the accounts store). */
+  signIns?: accounts.SignInFact[];
   errors: Partial<Record<RoomSource, string>>;
 };
 export type RoomSource = 'waivers' | 'bids' | 'trades' | 'statQueue' | 'calendar' | 'corrections'
-  | 'assets' | 'directory' | 'schedule' | 'houseRules' | 'week' | 'status' | 'draft' | 'params';
+  | 'assets' | 'directory' | 'schedule' | 'houseRules' | 'week' | 'status' | 'draft' | 'params' | 'signIns';
 export type RoomPort = Pick<CommissionerBindings, 'TargetCommissionerMarket' | 'TargetStatQueue'
   | 'TargetLeagueCalendar' | 'TargetCorrections' | 'TargetNativeAssets' | 'TargetNativeDirectory'
-  | 'TargetCommissionerSchedule' | 'TargetNativeHouseRules' | 'TargetNativeWeek' | 'TargetNativeDraft'>
+  | 'TargetCommissionerSchedule' | 'TargetNativeHouseRules' | 'TargetNativeWeek' | 'TargetNativeDraft' | 'TargetSignInFacts'>
   & { TargetShellStatus(): Promise<control.ShellStatus>; GetParams(): Promise<control.ParamsResult> };
 
 const say = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause)).replace(/^Error: /, '');
@@ -43,6 +45,7 @@ export async function readRoom(league: string, port: RoomPort): Promise<RoomData
     take('schedule', () => port.TargetCommissionerSchedule(league)),
     take('houseRules', () => port.TargetNativeHouseRules(league)),
     take('status', () => port.TargetShellStatus()),
+    take('signIns', () => port.TargetSignInFacts()),
     take('params', async () => {
       const result = await port.GetParams();
       if (!result.ok) throw new Error(result.error || 'The engine parameters could not be read');
@@ -76,4 +79,17 @@ export async function readRoom(league: string, port: RoomPort): Promise<RoomData
 /** A franchise's name from the league directory (HQ's identity block), never its id. */
 export function teamName(data: RoomData, franchise: string): string {
   return data.directory?.franchises.find(f => f.franchise === franchise)?.name ?? franchise;
+}
+
+/** One person's sign-in facts: the people reading names a principal, an account or a linked identity. */
+export const signInOf = (data: RoomData, person: string) => data.signIns?.find(f => f.principal === person);
+
+/** The mock's SEEN column: minutes, hours or days since the person's last session activity. */
+export function seenAgo(iso: string | undefined, now: number): string {
+  const at = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(at)) return '—';
+  const minutes = Math.max(0, Math.floor((now - at) / 60_000));
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 60 * 24) return `${Math.floor(minutes / 60)}h`;
+  return `${Math.floor(minutes / 1440)}d`;
 }

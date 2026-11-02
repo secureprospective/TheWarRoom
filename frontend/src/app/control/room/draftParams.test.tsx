@@ -29,7 +29,7 @@ describe('Control Room · draft order and engine parameters', () => {
       TargetNativeDirectory: ok({ rosterSeason: 2026, franchises: [{ franchise: 'franchise.01' }] }),
       TargetNativeAssets: ok(), TargetCommissionerMarket: ok(), TargetCorrections: ok(), TargetCommissionerSchedule: ok(),
       TargetNativeHouseRules: ok(), TargetShellStatus: ok(), TargetStatQueue: ok(), TargetLeagueCalendar: ok(),
-      TargetNativeWeek: ok(), TargetNativeDraft: async (s: unknown) => { asked.push(s); return draft; },
+      TargetNativeWeek: ok(), TargetSignInFacts: ok([]), TargetNativeDraft: async (s: unknown) => { asked.push(s); return draft; },
       GetParams: ok({ ok: false, error: 'params store closed', params: [] }),
     } as unknown as RoomPort;
     const d = await readRoom(league, port);
