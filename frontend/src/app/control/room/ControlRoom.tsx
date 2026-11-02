@@ -15,12 +15,13 @@ import { RulesView } from './RulesView';
 import { SeasonView } from './SeasonView';
 import { FixView } from './FixView';
 import { PicksView } from './PicksView';
+import { PeopleView } from './PeopleView';
 import './controlRoom.css';
 
 const views: Record<Tab, () => ReactNode> = {
   jobs: () => <JobsView />, sit: () => <SituationsView />, rules: () => <RulesView />,
   season: () => <SeasonView />, fix: () => <FixView />, picks: () => <PicksView />,
-  people: () => <NotYet what="this branch is wired in a later commit" />, league: () => <NotYet what="this branch is wired in a later commit" />, server: () => <NotYet what="this branch is wired in a later commit" />,
+  people: () => <PeopleView />, league: () => <NotYet what="this branch is wired in a later commit" />, server: () => <NotYet what="this branch is wired in a later commit" />,
 };
 
 const desktopPort = (): RoomPort => ({ ...nativeBindings(), TargetShellStatus: readShellStatus });
