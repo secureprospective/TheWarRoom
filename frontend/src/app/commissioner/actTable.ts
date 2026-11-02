@@ -1,7 +1,7 @@
 export type FieldKind = 'text' | 'number' | 'money' | 'decimal' | 'instant' | 'boolean'
   | 'franchise' | 'player' | 'bidPlayer' | 'pick' | 'entry' | 'window' | 'claim' | 'bid' | 'trade' | 'item'
   | 'self' | 'scheduleGame' | 'bracketNode' | 'bracketGame' | 'bracketSlot' | 'preset' | 'shape'
-  | 'order' | 'starters' | 'choice' | 'scope' | 'franchiseOrAll';
+  | 'order' | 'deputies' | 'starters' | 'choice' | 'scope' | 'franchiseOrAll';
 export type Field = {
   path: string; label: string; kind: FieldKind; choices?: readonly string[]; optional?: boolean;
 };
@@ -65,6 +65,8 @@ export const actTable: readonly ActDefinition[] = [
     f('on', 'Allow this ability', 'boolean')]),
   def('CM-020', 'commish.visibility.set', 'Change who can read a report', 'people',
     [f('report', 'Report name'), choice('audience', 'Who can read it', ['all', 'commish'])]),
+  def('CM-021', 'commish.deputy.order', 'Set the co-commissioner order', 'people',
+    [f('order', 'Co-commissioners, first to last', 'deputies')], true),
   def('CM-022', 'commish.succession.stepdown', 'Step down as commissioner', 'people',
     [self, { ...f('successor', 'Successor account (optional)'), optional: true }]),
   ...['accept', 'decline', 'activity'].map(action =>
@@ -141,6 +143,7 @@ export const actTable: readonly ActDefinition[] = [
   def('CM-035', 'waivers.order.auto', 'Use automatic waiver priority', 'waiver', []),
   def('CM-035', 'waivers.award.override', 'Correct a waiver award', 'waiver',
     [f('claim', 'Waiver claim', 'claim'), franchise]),
+  def('CM-036', 'oline.auction.close', 'Close the O-Line auction', '', []),
   def('CM-036', 'bids.process', 'Process bids for a player', 'bid', [f('player', 'Player', 'bidPlayer')]),
   def('CM-036', 'bids.award.override', 'Correct a bid award', 'bid', [f('bid', 'Bid', 'bid'), franchise]),
   ...['review', 'appeal.rule', 'override', 'recuse', 'appeal'].map(action =>

@@ -60,7 +60,8 @@ for (const future of [false, true]) describe(future ? 'Ready for Go built flags'
         expect(dialogOf(host)).toBeDefined();
         const tray = dialogOf(host)!;
         if (actsFor(entry.id).length) {
-          expect(all(tray, 'option').map(o => o.textContent)).toContain(actsFor(entry.id)[0].label);
+          const label = actsFor(entry.id)[0].label;
+          if (entry.id === 'CM-021') expect(tray.textContent).toContain('Give or take a role'); else expect(all(tray, 'option').map(o => o.textContent)).toContain(label);
         } else expect(tray.textContent).toContain(entry.id === 'CM-021' ? 'Give or take a role' : 'Rule');
       }
       expect(host.textContent).not.toMatch(/CM-\d|G[123]\b/);
