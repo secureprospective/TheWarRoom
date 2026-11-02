@@ -1020,7 +1020,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:schedule.generate",
-    "Schema": "7902fef2161bd730e7c6a4bdbd50c015410a2b0c98f95e50ab2fc95a4ed3d6d5",
+    "Schema": "7f3501916825db300386762efbc8b7e95de98919abb4414d6c5336f2a50ca084",
     "Modes": [
       "preview",
       "execute"
@@ -1035,7 +1035,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:schedule.edit",
-    "Schema": "b73fc39630ccd0466f0ee5fa3c1110e7aa1d1fbafc3c14499f83154b287a6c08",
+    "Schema": "aba201e18a707358ad015e4736876ded006ab06f8b76dddafa7074680d7bdcb9",
     "Modes": [
       "preview",
       "execute"
@@ -1050,7 +1050,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:schedule.publish",
-    "Schema": "51dd3fb7292c371c70f3821e164f3e1a8f63895221f30b6cd4db317fe9bd6ad9",
+    "Schema": "7004ec02381e49eece2c6ff65d64a3c78c1968af3b03bc91dd246099f9a52645",
     "Modes": [
       "preview",
       "execute"
