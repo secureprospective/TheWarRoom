@@ -115,7 +115,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   const placement = `${node.label} › ${workspace.label}` as Placement;
   const selectedLeague = leagues.selected;
   const appLeagueView = selectedLeague?.app
-    ? s.node === 'hq' ? 'hq' : s.node === 'pulse' ? 'pulse'
+    ? s.node === 'hq' ? 'hq' : s.node === 'pulse' ? 'pulse' : s.node === 'home' ? 'home'
       : s.node === 'war' && workspace.slug !== 'research' ? 'war' : undefined
     : undefined;
   if (selectedLeague && !selectedLeague.app && s.node === 'war' && workspace.slug !== 'research' && snapshot)

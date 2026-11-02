@@ -33,11 +33,13 @@ function loadPulse() {
 const NativeFranchiseHQ = lazy(loadHQ);
 const WarRoomNative = lazy(loadWarRoom);
 const NativeLeaguePulse = lazy(loadPulse);
-const loaders = { hq: loadHQ, war: loadWarRoom, pulse: loadPulse };
+const loadHome = () => import('./HomeBrief');
+const HomeBrief = lazy(loadHome);
+const loaders = { hq: loadHQ, war: loadWarRoom, pulse: loadPulse, home: loadHome };
 
 export default function AppLeagueMount({ league, view, leave, footer, hqTab, pulseTab, tabs }: {
   league: LeagueChoice;
-  view: 'hq' | 'war' | 'pulse';
+  view: 'hq' | 'war' | 'pulse' | 'home';
   leave: (node?: Node) => void;
   footer?: HTMLElement | null;
   hqTab?: HQTab; pulseTab?: PulseTab; tabs?: HTMLElement | null;
@@ -99,6 +101,8 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
         {view === 'hq' ? <HQ embedded key={`${league.id}:${mine}`}
           league={league.id} mine={mine} name={league.name} port={localWorkflow} leave={leave}
           tab={hqTab} navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
+          view === 'home' ? <HomeBrief key={`${league.id}:${mine}`} league={league.id} mine={mine}
+            port={localWorkflow} /> :
           view === 'pulse' ? <Pulse embedded key={`${league.id}:${mine}`} league={league.id}
             mine={mine} port={localWorkflow} leave={leave} tab={pulseTab} /> :
           <WarRoom embedded key={`${league.id}:${mine}`} league={league.id} mine={mine}
