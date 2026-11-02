@@ -107,3 +107,10 @@ func legacyBracket() []BracketNode {
 	}
 	return result
 }
+
+// TransactionRules controls automatic reference transaction refresh independently of schedules.
+type TransactionRules struct{ Follow Value[bool] }
+
+func transactionFields() []ruleField {
+	return []ruleField{field[bool]{path: "transactions.follow", label: "Follow reference transactions", access: func(r *RuleSet) *Value[bool] { return &r.Transactions.Follow }}}
+}

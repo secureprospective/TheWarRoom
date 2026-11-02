@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "5db2d43cd24e75532a9f357fed28fd62d4e55dfff0388d1d9003799d7481c97d",
+  "beforeDigest": "2c9d592c4c40d613fb089720db1b518f361ae01f4979b4c9147736757be0518d",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -4038,6 +4038,13 @@
         "State": 1,
         "Value": false,
         "Citation": "Rulebook §14"
+      }
+    },
+    "Transactions": {
+      "Follow": {
+        "State": 1,
+        "Value": false,
+        "Citation": "Follow reference transactions only when enabled"
       }
     },
     "Schedule": {

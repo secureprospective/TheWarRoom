@@ -530,6 +530,7 @@ export namespace commissioner {
 	    }
 	}
 	export class CorrectionPick {
+	    slot?: number;
 	    season: number;
 	    round: number;
 	    original: string;
@@ -540,6 +541,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.slot = source["slot"];
 	        this.season = source["season"];
 	        this.round = source["round"];
 	        this.original = source["original"];
@@ -1201,6 +1203,54 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class PickEvidence {
+	    slot?: number;
+	    unverified?: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new PickEvidence(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.slot = source["slot"];
+	        this.unverified = source["unverified"];
+	    }
+	}
+	export class HistoricalPick {
+	    pick: CorrectionPick;
+	    owner: string;
+	    evidence: PickEvidence;
+	
+	    static createFrom(source: any = {}) {
+	        return new HistoricalPick(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pick = this.convertValues(source["pick"], CorrectionPick);
+	        this.owner = source["owner"];
+	        this.evidence = this.convertValues(source["evidence"], PickEvidence);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class HistoryRecord {
 	    record: string;
 	    franchise: string;
@@ -1601,6 +1651,7 @@ export namespace commissioner {
 	    }
 	}
 	export class NativePlayer {
+	    contractMissing?: boolean;
 	    acquiredVia?: string;
 	    correction?: string;
 	    name?: string;
@@ -1610,8 +1661,8 @@ export namespace commissioner {
 	    id: string;
 	    franchise: string;
 	    status: string;
-	    salaryCents: number;
-	    expirationYear: number;
+	    salaryCents: number | null;
+	    expirationYear: number | null;
 	    contractStatus: string;
 	    contractInfo: string;
 	    heldContractStatus?: string;
@@ -1622,6 +1673,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.contractMissing = source["contractMissing"];
 	        this.acquiredVia = source["acquiredVia"];
 	        this.correction = source["correction"];
 	        this.name = source["name"];
@@ -1684,6 +1736,7 @@ export namespace commissioner {
 	    franchises: NativeFranchise[];
 	    players: NativePlayer[];
 	    picks: NativePick[];
+	    pickHistory?: HistoricalPick[];
 	    adjustments: NativeCharge[];
 	    pool?: NativePoolEntry[];
 	    sides?: Record<string, string>;
@@ -1705,6 +1758,7 @@ export namespace commissioner {
 	        this.franchises = this.convertValues(source["franchises"], NativeFranchise);
 	        this.players = this.convertValues(source["players"], NativePlayer);
 	        this.picks = this.convertValues(source["picks"], NativePick);
+	        this.pickHistory = this.convertValues(source["pickHistory"], HistoricalPick);
 	        this.adjustments = this.convertValues(source["adjustments"], NativeCharge);
 	        this.pool = this.convertValues(source["pool"], NativePoolEntry);
 	        this.sides = source["sides"];
@@ -3132,6 +3186,7 @@ export namespace commissioner {
 	
 	
 	
+	
 	export class PreviewAffects {
 	    readings: string[];
 	    count?: number;
@@ -4087,8 +4142,10 @@ export namespace commissioner {
 	    franchise?: string;
 	    player?: string;
 	    action?: string;
+	    status?: string;
 	    entry?: string;
 	    via?: string;
+	    history?: PickEvidence;
 	    pick?: CorrectionPick;
 	    owner?: string;
 	    rule?: string;
@@ -4104,8 +4161,10 @@ export namespace commissioner {
 	        this.franchise = source["franchise"];
 	        this.player = source["player"];
 	        this.action = source["action"];
+	        this.status = source["status"];
 	        this.entry = source["entry"];
 	        this.via = source["via"];
+	        this.history = this.convertValues(source["history"], PickEvidence);
 	        this.pick = this.convertValues(source["pick"], CorrectionPick);
 	        this.owner = source["owner"];
 	        this.rule = source["rule"];
@@ -11020,6 +11079,36 @@ export namespace leaguerules {
 	
 	
 	
+	export class TransactionRules {
+	    Follow: Value_bool_;
+	
+	    static createFrom(source: any = {}) {
+	        return new TransactionRules(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Follow = this.convertValues(source["Follow"], Value_bool_);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	
 	
 	

@@ -213,7 +213,7 @@ func (s *Store) committedReceipt(ctx context.Context, receipt commissioner.Recei
 func (s *Store) checkCommissionerCommand(ctx context.Context, raw commissioner.RawCommand, principal string,
 	auth commissioner.Authorizer, records []commissioner.Record,
 	facts appendFacts, now time.Time) (string, *commissioner.Receipt, error) {
-	role, err := commandRole(raw, principal, auth, records)
+	role, err := timedCommandRole(raw, principal, auth, records, now)
 	if err != nil {
 		return "", nil, err
 	}
@@ -223,6 +223,9 @@ func (s *Store) checkCommissionerCommand(ctx context.Context, raw commissioner.R
 	}
 	if retried {
 		return role, &prior, nil
+	}
+	if err := commissioner.CheckRosterTime(raw, now, role); err != nil {
+		return role, nil, fmt.Errorf("check roster time: %w", err)
 	}
 	if err := s.checkAppend(ctx, raw, principal, records, facts, now); err != nil {
 		return role, nil, err
@@ -317,6 +320,34 @@ func preparedCommand(raw commissioner.RawCommand, principal string,
 	return raw, canonical, nil
 }
 
+// Backdating lets a commissioner perform an owner's roster move, not acquire
+// unrelated powers such as overriding a trade reserved to the commissioner alone.
+func timedCommandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
+	records []commissioner.Record, now time.Time) (string, error) {
+	role, originalErr := commandRole(raw, principal, auth, records)
+	if raw.Command != commissioner.RosterCut && raw.Command != commissioner.RosterReserve && raw.Command != commissioner.TradeAccept {
+		return role, originalErr
+	}
+	at, err := raw.EffectiveTime(now)
+	if err != nil {
+		return "", fmt.Errorf("date roster authority: %w", err)
+	}
+	if !at.Before(now) {
+		return role, originalErr
+	}
+	permission := raw
+	permission.Command, permission.Args = commissioner.CorrectRoster, commissioner.RawArgs{}
+	commish, err := commandRole(permission, principal, auth, records)
+	if err == nil {
+		return commish, nil
+	}
+	if originalErr != nil {
+		return "", fmt.Errorf("league change refused: %w", commissioner.Refused(errors.New("only a commissioner may backdate a roster change")))
+	}
+	// A retry of an owner's explicit receipt-time command is not a new backdated move.
+	return role, nil
+}
+
 func commandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
 	records []commissioner.Record) (string, error) {
 	if clock, ok := auth.(clockReserveAuthorizer); ok {
@@ -343,6 +374,7 @@ func commandRole(raw commissioner.RawCommand, principal string, auth commissione
 // appendRequest is one league change ready to be recorded, with the instant it is recorded at, the ledger
 // it is appended to and, for a season rollover, its before-state and plan.
 type appendRequest struct {
+	deferRosterRestore         bool
 	raw                        commissioner.RawCommand
 	principal, role, canonical string
 	at                         time.Time
@@ -381,13 +413,9 @@ func (s *Store) appendAdmittedCommissioner(ctx context.Context, tx *sql.Tx, req 
 			return commissioner.Receipt{}, fmt.Errorf("freeze league schedule: %w", err)
 		}
 	}
-	effective := now
-	if raw.Effective != "now" && raw.Effective != "next_rollover" {
-		parsed, err := time.Parse(time.RFC3339Nano, raw.Effective)
-		if err != nil {
-			return commissioner.Receipt{}, fmt.Errorf("read effective time: %w", err)
-		}
-		effective = parsed
+	effective, err := raw.EffectiveTime(now)
+	if err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("date league change: %w", err)
 	}
 	event := LeagueEvent{ID: receipt.Entry, League: raw.League, Stream: commissioner.Stream,
 		EffectiveAt: effective, RecordedAt: now, Actor: principal, Scope: raw.Visibility, Kind: raw.Command,
@@ -397,7 +425,7 @@ func (s *Store) appendAdmittedCommissioner(ctx context.Context, tx *sql.Tx, req 
 		return commissioner.Receipt{}, err
 	}
 	// Stat decisions cannot alter rosters or their recovery identities.
-	if !commissioner.IsStatCommand(raw.Command) {
+	if !req.deferRosterRestore && !commissioner.IsStatCommand(raw.Command) {
 		if err := saveRosterRestorePoint(ctx, tx, raw.League, append(slices.Clone(req.records), record)); err != nil {
 			return commissioner.Receipt{}, err
 		}
@@ -561,6 +589,13 @@ func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissione
 
 func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records []commissioner.Record, now time.Time,
 	facts nativecheck.Facts, zone *time.Location, env market.BidEnvironment) error {
+	decisionAt, err := raw.EffectiveTime(now)
+	if err != nil {
+		return fmt.Errorf("date roster decision: %w", err)
+	}
+	if commissioner.RosterTimed(raw.Command) {
+		now = decisionAt
+	}
 	if principal == commissioner.ReserveClockPrincipal {
 		if err := market.PrepareDueReserve(raw, records, now, facts); err != nil {
 			return fmt.Errorf("check automatic reserve return: %w", commissioner.Refused(err))

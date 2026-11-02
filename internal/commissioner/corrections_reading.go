@@ -37,7 +37,14 @@ func CorrectionsReading(league string, records []Record, now time.Time) (Correct
 	active := Replay(records).Active
 	for i := len(records) - 1; i >= 0; i-- {
 		r := records[i]
-		if !correctionCommand(r.Command.Command) || !active[r.Receipt.Entry] || now.Before(r.Receipt.RecordedAt) {
+		if !correctionCommand(r.Command.Command) || !active[r.Receipt.Entry] {
+			continue
+		}
+		effective, err := nativeEntryTime(r)
+		if err != nil {
+			return Corrections{}, err
+		}
+		if now.Before(effective) {
 			continue
 		}
 		c, err := decodeCorrection(r.Command.Args, r.Command.Command)

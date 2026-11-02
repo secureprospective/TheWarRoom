@@ -35,6 +35,9 @@ func (x *bidExecution) openBidsFit(candidate *commissioner.RawNativeSnapshot, ru
 	if others == 0 {
 		return nil
 	}
+	if err := all.CheckContracts(franchise); err != nil {
+		return fmt.Errorf("judge open bids: %w", err)
+	}
 	players, charges := franchiseCapInputs(&all, franchise, rules.Season)
 	capState, err := nativecheck.CheckCap(rules.Cap, players, charges, x.zone, exceptions...)
 	if err != nil {

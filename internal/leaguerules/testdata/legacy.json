@@ -3722,6 +3722,13 @@
       "Citation": "Rulebook §14"
     }
   },
+  "Transactions": {
+    "Follow": {
+      "State": 1,
+      "Value": false,
+      "Citation": "Follow reference transactions only when enabled"
+    }
+  },
   "Schedule": {
     "Follow": {
       "State": 1,

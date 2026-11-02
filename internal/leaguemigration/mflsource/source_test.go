@@ -29,12 +29,15 @@ func (f *fixtureTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"draftResults":     "draftreports/testdata/results-2026.json",
 		"futureDraftPicks": "draftreports/testdata/future-2026.json",
 	}
-	if req.Method != http.MethodGet || (paths[kind] == "" && kind != "salaryAdjustments" && kind != "schedule") {
+	if req.Method != http.MethodGet || (paths[kind] == "" && kind != "salaryAdjustments" && kind != "schedule" && kind != "transactions") {
 		f.writes++
 		return nil, fmt.Errorf("unexpected MFL operation: %s %s", req.Method, kind)
 	}
 	f.reads++
 	body := []byte(`{"salaryAdjustments":{}}`)
+	if kind == "transactions" {
+		body = []byte(`{"transactions":{}}`)
+	}
 	if kind == "schedule" {
 		body = []byte(`{"schedule":{"weeklySchedule":{"week":"1"}}}`)
 	}

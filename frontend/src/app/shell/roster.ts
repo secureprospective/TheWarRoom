@@ -19,7 +19,7 @@ export function franchiseRoster(snapshot: Snapshot, franchiseId: string) {
       .filter((p) => p.rosterStatus === status)
       .sort(
         (a: RosterPlayer, b: RosterPlayer) =>
-          b.salary - a.salary ||
+          (b.salary ?? -1) - (a.salary ?? -1) ||
           (names.get(a.id) ?? a.id).localeCompare(names.get(b.id) ?? b.id),
       ),
   }));

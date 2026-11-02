@@ -155,7 +155,15 @@ func legalityAppWith(t *testing.T, ends map[string]int, named []snapshot.Player)
 	a.core.SeasonDraftResults = heldSeasonFeed[[]draftreports.Pick]{FetchedAt: at, Value: []draftreports.Pick{}}
 	a.core.SeasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{FetchedAt: at, Value: []draftreports.FuturePick{}}
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
-	seedNativeTest(t, a, input)
+	raw, err := a.nativeSeedCommand(t.Context(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// These historical fixtures observed the roster before their held games, not at the wall clock.
+	raw.Args.Native.RosterAt = at
+	if _, err := a.core.History.ExecuteCommissioner(t.Context(), raw, "creator", a.core.CommissionerAuthorizer); err != nil {
+		t.Fatal(err)
+	}
 	return &legalityFixture{app: a, path: path, pools: pools}
 }
 

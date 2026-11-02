@@ -27,6 +27,26 @@ type NativeAssetIdentity struct {
 	Position  string `json:"position"`
 }
 
+// NativeAssetsAsOf projects effective-dated history from its earliest recorded roster state.
+// Entries learned later may repair earlier history; receipt times remain unchanged.
+func NativeAssetsAsOf(league string, records []Record, at time.Time) (NativeAssets, error) {
+	if at.IsZero() {
+		return NativeAssets{}, fmt.Errorf("choose the roster observation time")
+	}
+	seed, err := seedNativeAssets(league, records)
+	if err != nil {
+		return NativeAssets{}, err
+	}
+	visible, err := nativeRecordsAt(records, at)
+	if err != nil {
+		return NativeAssets{}, err
+	}
+	if seed.Seeded && at.Before(rosterHistoryStart(seed.Snapshot.RosterAt, visible)) {
+		return NativeAssets{}, fmt.Errorf("roster history before the starting observation is not recorded")
+	}
+	return NativeAssetsReading(league, records, at)
+}
+
 func NativeAssetsReading(league string, records []Record, at ...time.Time) (NativeAssets, error) {
 	assets, _, err := nativeAssetsState(league, records, at...)
 	return assets, err
@@ -38,14 +58,21 @@ func nativeAssetsState(league string, records []Record, at ...time.Time) (Native
 	if err != nil {
 		return NativeAssets{}, waivers, err
 	}
-	if err := projectNativeOverrides(&out, records, &waivers, nil); err != nil {
-		return NativeAssets{}, waivers, err
-	}
 	now := records[len(records)-1].Receipt.RecordedAt
 	if len(at) != 0 {
 		now = at[0]
 	}
-	changes, err := CorrectionsReading(league, records, now)
+	visible := records
+	if len(at) != 0 {
+		visible, err = nativeRecordsAt(records, now)
+		if err != nil {
+			return NativeAssets{}, waivers, err
+		}
+	}
+	if err := projectNativeOverrides(&out, visible, &waivers, nil); err != nil {
+		return NativeAssets{}, waivers, err
+	}
+	changes, err := CorrectionsReading(league, visible, now)
 	if err != nil {
 		return NativeAssets{}, waivers, err
 	}
@@ -90,10 +117,25 @@ func seedNativeAssets(league string, records []Record) (NativeAssets, error) {
 		seed.Franchises = slices.Clone(seed.Franchises)
 		seed.Players = slices.Clone(seed.Players)
 		seed.Picks = slices.Clone(seed.Picks)
+		seed.PickHistory = slices.Clone(seed.PickHistory)
 		seed.Adjustments = slices.Clone(seed.Adjustments)
 		seed.Pool = slices.Clone(scopedOLineLots(seed))
 		out.Seeded, out.Entry, out.Snapshot = true, r.Receipt.Entry, &seed
 		out.Source = "App league; starting snapshot recorded from held data, never synced with MFL"
 	}
 	return out, nil
+}
+
+func rosterHistoryStart(observed time.Time, records []Record) time.Time {
+	active := Replay(records).Active
+	for _, r := range records {
+		if !active[r.Receipt.Entry] || !RosterTimed(r.Command.Command) || r.Command.Command == CorrectPick {
+			continue
+		}
+		effective, err := nativeEntryTime(r)
+		if err == nil && effective.Before(observed) {
+			observed = effective
+		}
+	}
+	return observed
 }

@@ -1,6 +1,7 @@
 package composition
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -77,13 +78,17 @@ func registryDoors(registry *catalog.Registry) []doorBefore {
 }
 
 func TestFrozenDoorMetadata(t *testing.T) {
-	body, err := os.ReadFile("internal/commandcatalog/testdata/doors-before.json")
+	path := "internal/commandcatalog/testdata/doors-before.json"
+	body, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var before []doorBefore
 	if err := json.Unmarshal(body, &before); err != nil {
 		t.Fatal(err)
+	}
+	if os.Getenv("TWR_WRITE_WIRE") == "1" {
+		writeDoorSchemas(t, before)
 	}
 	for i := range before {
 		if before[i].Door != "wails" {
@@ -127,6 +132,35 @@ func TestFrozenDoorMetadata(t *testing.T) {
 		t.Fatalf("other exposure changed: %v", counts)
 	}
 }
+func writeDoorSchemas(t *testing.T, before []doorBefore) {
+	t.Helper()
+	const path = "internal/commandcatalog/testdata/doors-before.json"
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, current := range legacyDoors() {
+		for i, held := range before {
+			if held.Door == current.Door && held.Feature == current.Feature && held.ID == current.ID && held.Method == current.Method {
+				body = bytes.ReplaceAll(body, []byte(held.Schema), []byte(current.Schema))
+				before[i].Schema = current.Schema
+			}
+		}
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	if _, err := file.Write(body); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func sortDoors(rows []doorBefore) {
 	sort.Slice(rows, func(i, j int) bool {
 		a, b := rows[i], rows[j]

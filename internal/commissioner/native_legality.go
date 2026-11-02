@@ -26,6 +26,7 @@ type NativeBase struct {
 }
 
 func ReadNativeBase(league string, records []Record, now time.Time) (NativeBase, error) {
+	now = ReadingInstant(records, now)
 	state, err := GovernanceState(records)
 	if err != nil {
 		return NativeBase{}, err

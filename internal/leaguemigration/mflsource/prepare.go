@@ -55,7 +55,7 @@ func Prepare(export Export) (leaguemigration.Plan, error) {
 		return leaguemigration.Plan{}, &leaguemigration.Problems{List: []string{"the league's settings do not hold together: " + err.Error()}}
 	}
 	plan.Create = create.Args
-	return plan, nil
+	return prepareTransactionPlan(export, plan), nil
 }
 
 type preparation struct {
@@ -209,7 +209,8 @@ func (p *preparation) players(seed *commissioner.RawNativeSnapshot, mapping map[
 			continue
 		}
 		player := commissioner.NativePlayer{Name: p.export.Players[id], ID: id,
-			Franchise: franchise, Status: status, Salary: salary, ExpirationYear: year,
+			ContractMissing: strings.TrimSpace(r.Salary) == "" && strings.TrimSpace(r.ContractYear) == "" && strings.TrimSpace(r.ContractStatus) == "",
+			Franchise:       franchise, Status: status, Salary: salary, ExpirationYear: year,
 			ContractStatus: record.ContractStatus, ContractInfo: r.ContractInfo}
 		switch {
 		case strings.TrimSpace(r.ContractStatus) == "":
@@ -321,4 +322,21 @@ func (p *preparation) owners(mapping map[string]string) []leaguemigration.Owner 
 	}
 	slices.SortFunc(out, func(a, b leaguemigration.Owner) int { return strings.Compare(a.Franchise, b.Franchise) })
 	return out
+}
+
+func prepareTransactionPlan(export Export, plan leaguemigration.Plan) leaguemigration.Plan {
+	if export.Transactions == nil {
+		return plan
+	}
+	plan.Transactions = func(league, reason string, seed commissioner.RawNativeSnapshot) ([][]commissioner.RawCommand, error) {
+		players, mapping := map[string]string{}, map[string]string{}
+		for id := range export.Players {
+			players[id] = id
+		}
+		for _, f := range seed.Franchises {
+			mapping[f.HeldID] = f.ID
+		}
+		return TransactionReplayCommands(*export.Transactions, league, reason, seed, mapping, players, export.Draft)
+	}
+	return plan
 }

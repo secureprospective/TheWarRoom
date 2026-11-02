@@ -83,7 +83,8 @@ describe('Fixture roster', () => {
       for (let i = 1; i < group.players.length; i++) {
         const previous = group.players[i - 1];
         const current = group.players[i];
-        expect(previous.salary).toBeGreaterThanOrEqual(current.salary);
+        expect(current.salary).not.toBeNull();
+        expect(previous.salary).toBeGreaterThanOrEqual(current.salary!);
         if (previous.salary === current.salary) {
           ties++;
           expect(

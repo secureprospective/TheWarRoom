@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -18,21 +19,24 @@ const (
 	RuleException      = "rule.exception"
 )
 
-// RawCorrection names one asset or one automated decision; contracts are never invented by a correction.
+// RawCorrection names one asset or one automated decision; unrecorded contracts stay missing.
 type RawCorrection struct {
-	Franchise string          `json:"franchise,omitempty"`
-	Player    string          `json:"player,omitempty"`
-	Action    string          `json:"action,omitempty"`
-	Entry     string          `json:"entry,omitempty"`
-	Via       string          `json:"via,omitempty"`
-	Pick      *CorrectionPick `json:"pick,omitempty"`
-	Owner     string          `json:"owner,omitempty"`
-	Rule      string          `json:"rule,omitempty"`
-	Scope     *ExceptionScope `json:"scope,omitempty"`
-	Until     string          `json:"until,omitempty"`
+	Franchise string              `json:"franchise,omitempty"`
+	Player    string              `json:"player,omitempty"`
+	Action    string              `json:"action,omitempty"`
+	Status    domain.RosterStatus `json:"status,omitempty"`
+	Entry     string              `json:"entry,omitempty"`
+	Via       string              `json:"via,omitempty"`
+	History   *PickEvidence       `json:"history,omitempty"`
+	Pick      *CorrectionPick     `json:"pick,omitempty"`
+	Owner     string              `json:"owner,omitempty"`
+	Rule      string              `json:"rule,omitempty"`
+	Scope     *ExceptionScope     `json:"scope,omitempty"`
+	Until     string              `json:"until,omitempty"`
 }
 
 type CorrectionPick struct {
+	Slot     int    `json:"slot,omitempty"`
 	Season   int    `json:"season"`
 	Round    int    `json:"round"`
 	Original string `json:"original"`
@@ -62,8 +66,14 @@ func (r RawCorrection) Validate(command string) error {
 	switch command {
 	case CorrectRoster:
 		expected.Player, expected.Franchise, expected.Action = r.Player, r.Franchise, r.Action
-		if !slices.Contains([]string{"add", "remove"}, r.Action) || !strings.HasPrefix(r.Franchise, "franchise.") {
+		if !slices.Contains([]string{"add", "remove", "status"}, r.Action) || !strings.HasPrefix(r.Franchise, "franchise.") {
 			return fmt.Errorf("choose a franchise and whether to add or remove the player")
+		}
+		if r.Action == "status" {
+			expected.Status = r.Status
+			if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, r.Status) {
+				return fmt.Errorf("choose active roster, injured reserve or taxi")
+			}
 		}
 	case CorrectTransaction:
 		expected.Entry = r.Entry
@@ -77,7 +87,7 @@ func (r RawCorrection) Validate(command string) error {
 			return fmt.Errorf("choose how the player was acquired: held, draft, waiver, trade, free_agent or commissioner")
 		}
 	case CorrectPick:
-		expected.Pick, expected.Owner = r.Pick, r.Owner
+		expected.Pick, expected.Owner, expected.History = r.Pick, r.Owner, r.History
 		if err := r.validatePick(); err != nil {
 			return err
 		}
@@ -208,9 +218,21 @@ func checkExceptionScope(c RawCorrection, records []Record, snapshot *RawNativeS
 }
 
 func (r RawCorrection) validatePick() error {
+	if r.History != nil {
+		if err := r.History.Validate(); err != nil {
+			return err
+		}
+	}
 	if r.Pick == nil || r.Pick.Season < 1920 || r.Pick.Season > 9999 || r.Pick.Round < 1 ||
-		!strings.HasPrefix(r.Pick.Original, "franchise.") || !strings.HasPrefix(r.Owner, "franchise.") {
-		return fmt.Errorf("choose the draft season, round, original franchise and corrected owner")
+		!strings.HasPrefix(r.Owner, "franchise.") {
+		return fmt.Errorf("choose the draft season, round, pick and corrected owner")
+	}
+	if r.Pick.Original == "" {
+		if r.Pick.Slot < 1 || r.Pick.Slot > 1000 {
+			return fmt.Errorf("choose the current draft slot")
+		}
+	} else if r.Pick.Slot != 0 || !strings.HasPrefix(r.Pick.Original, "franchise.") {
+		return fmt.Errorf("choose an original franchise or a current draft slot, not both")
 	}
 	return nil
 }

@@ -45,10 +45,10 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 		teams         int
 		records, read string
 	}{
-		{PresetDefault32, 0, "5b88192c625de822", ""},
-		{PresetLegacy, 32, "d029afc21f30ceda", "5d37e13bc3142b2a"},
-		{PresetLegacy, 12, "7c729379ba8c15ea", "99f5d5d69e65ece4"},
-		{PresetEmpty, 12, "2611477a23c36c30", "221cf99b129779db"},
+		{PresetDefault32, 0, "328e004b57850db3", ""},
+		{PresetLegacy, 32, "0dab923634344240", "f82e3e034a1231b2"},
+		{PresetLegacy, 12, "0fe8107e4cb66618", "1aef31821cc7eb5e"},
+		{PresetEmpty, 12, "2611477a23c36c30", "b507286dd0572b1f"},
 	} {
 		records := presetLeague(t, c.preset, c.teams)
 		rules, err := RulesInForce(records, 2026, noChangeTime())

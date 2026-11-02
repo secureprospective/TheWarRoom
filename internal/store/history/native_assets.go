@@ -32,7 +32,7 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 	if err != nil {
 		return commissioner.NativeAssets{}, err
 	}
-	reading, err := commissioner.NativeAssetsReading(league, records, s.now())
+	reading, err := commissioner.NativeAssetsReading(league, records, commissioner.ReadingInstant(records, s.now()))
 	if err != nil {
 		return commissioner.NativeAssets{}, fmt.Errorf("read native assets: %w", err)
 	}

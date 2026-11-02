@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
@@ -166,6 +167,30 @@ const playedLineupsLaunchDelay = 5 * time.Minute
 
 func (a *App) syncPlayedLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
 	league, principal string, season int, source string) {
+	records, err := ledger.Records(ctx, league)
+	if err != nil {
+		log.Printf("read transaction refresh league %s: %v", league, err)
+		return
+	}
+	rules, err := commissioner.RulesNow(records, a.timeNow())
+	if err != nil {
+		log.Printf("read transaction refresh rules %s: %v", league, err)
+		return
+	}
+	if rules.Transactions.Follow.State == leaguerules.IsKnown && rules.Transactions.Follow.Value {
+		raw, err := transactions.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
+		if err == nil {
+			var directory map[string]string
+			directory, err = a.heldLineupPlayers(ctx)
+			if err == nil {
+				_, err = mflsource.BackfillHeldTransactions(ctx, ledger, a.core.History, league, "Import reference transaction history", principal, season, raw, directory)
+			}
+		}
+		if err != nil {
+			log.Printf("refresh transactions for %s (held history kept): %v", league, err)
+			return
+		}
+	}
 	weeks, lineupErr := weeklyresults.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
 	if lineupErr == nil {
 		var directory map[string]string

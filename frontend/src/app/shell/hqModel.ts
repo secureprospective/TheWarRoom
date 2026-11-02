@@ -19,7 +19,7 @@ export type HQCap = { season: number; committed?: number; dead?: number; room?: 
 export function money(value?: number | null): string {
   return value == null ? unavailable : `$${(value / 100_000_000).toFixed(2)}M`;
 }
-export function rosterContract(contract?: { salary: number; yearsRemaining?: number }): string {
+export function rosterContract(contract?: { salary: number | null; yearsRemaining?: number }): string {
   return contract ? `${money(contract.salary)} · ${contract.yearsRemaining === undefined ? '—' :
     `${contract.yearsRemaining}y`}` : unavailable;
 }

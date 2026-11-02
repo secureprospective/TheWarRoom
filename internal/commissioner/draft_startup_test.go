@@ -293,8 +293,8 @@ func TestStartupListOffersTheLeaguesFranchises(t *testing.T) {
 	t.Fatal("no startup list row")
 }
 
-// A single-pool startup draft preserves the room, order and signed assets from before per-side pools.
-// Jobs also reflect which unresolved settings actually apply to the league.
+// A single-pool startup draft reads exactly as it did before per-side pools: its room, the assets it
+// signs and the league's jobs stay pinned; missing contracts are jobs, not a default-contract rule.
 func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
 	b := startupLeague(t)
 	facts := startupFacts()

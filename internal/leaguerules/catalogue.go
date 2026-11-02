@@ -83,9 +83,9 @@ func buildCatalogue() []CatalogueField {
 		value := reflect.ValueOf(f.read(RuleSet{})).FieldByName("Value")
 		schema := schemaFor(value.Type())
 		fieldBounds(f.pathName(), &schema)
-		// Reference text and the display timezone do not change competitive rules.
+		// Reference refresh, text and display timezone do not change competitive rules.
 		result = append(result, CatalogueField{f.pathName(), f.labelText(), sectionLabels()[section], schema,
-			section != "house" && section != "notify" && f.pathName() != "calendar.timezone"})
+			section != "house" && section != "notify" && f.pathName() != "calendar.timezone" && f.pathName() != "transactions.follow"})
 	}
 	return result
 }
@@ -94,7 +94,7 @@ func sectionLabels() map[string]string {
 	return map[string]string{"league": "League shape", "roster": "Roster", "lineup": "Lineup",
 		"scoring": "Scoring", "standings": "Standings", "cap": "Salary cap", "contracts": "Contracts",
 		"ir": "IR", "taxi": "Taxi squad", "waivers": "Waivers", "bids": "Free-agent bids", "trades": "Trades",
-		"schedule": "Schedule", "playoffs": "Playoffs", "house": "House rules", "calendar": "Calendar",
+		"transactions": "Reference transactions", "schedule": "Schedule", "playoffs": "Playoffs", "house": "House rules", "calendar": "Calendar",
 		"draft": "Draft", "notify": "Notifications", "players": "Player pools"}
 }
 

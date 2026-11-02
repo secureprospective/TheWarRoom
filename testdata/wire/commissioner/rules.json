@@ -12010,6 +12010,33 @@
    ]
   },
   {
+   "label": "Reference transactions",
+   "rows": [
+    {
+     "field": "transactions.follow",
+     "label": "Follow reference transactions",
+     "value": "Off",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "boolean",
+      "choices": [],
+      "fields": []
+     },
+     "competitive": false,
+     "pending": [],
+     "current": false,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "hold"
+     },
+     "governed": null
+    }
+   ]
+  },
+  {
    "label": "Playoffs",
    "rows": [
     {

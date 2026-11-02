@@ -1,7 +1,10 @@
 package commissioner
 
 import (
+	"cmp"
 	"fmt"
+	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -12,20 +15,34 @@ import (
 // given, sees the assets after each entry is applied.
 func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *MarketBook, visit func(*NativeAssets)) error {
 	active := Replay(records).Active
+	order, backdated, err := nativeEffectiveOrder(records)
+	if err != nil {
+		return err
+	}
+	needsContracts := needsNativeContractHistory(records)
 	since := 0
-	if visit == nil {
-		var err error
+	if visit == nil && !backdated && !needsContracts {
 		since, err = resumeClosedNative(assets, records, waivers)
 		if err != nil {
 			return err
 		}
 	}
-	for i := since; i < len(records); i++ {
+	contracts := map[string]NativePlayer{}
+	if needsContracts {
+		rememberNativeContracts(assets, contracts, nil)
+	}
+	for _, i := range order {
+		if i < since {
+			continue
+		}
 		record := records[i]
 		if !active[record.Receipt.Entry] {
 			continue
 		}
-		if err := projectNativeEntry(assets, records, i, waivers); err != nil {
+		if needsContracts && (RosterTimed(record.Command.Command) || record.Command.Command == DraftChange) {
+			rememberNativeContracts(assets, contracts, record.Command.Args.Correction)
+		}
+		if err := projectNativeEntry(assets, records, i, waivers, contracts); err != nil {
 			return err
 		}
 		if visit != nil {
@@ -36,7 +53,7 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 }
 
 // projectNativeEntry applies one active ledger entry to the native assets.
-func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *MarketBook) error {
+func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *MarketBook, contracts map[string]NativePlayer) error {
 	record := records[i]
 	if TradeCommand(record.Command.Command) {
 		return projectNativeTrade(assets, waivers, record)
@@ -59,7 +76,7 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 	case RulesSet:
 		return projectTeamsChange(assets, record)
 	case CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException:
-		return applyAssetCorrection(assets.Snapshot, records[:i], record)
+		return applyAssetCorrection(assets.Snapshot, contracts, record)
 	case SeasonRollover:
 		return applyNativeRollover(assets, record)
 	case DraftPick, DraftAssign, DraftInsert, DraftChange, DraftArchive:
@@ -123,6 +140,7 @@ func applyNativeOverride(seed *RawNativeSnapshot, record Record, value RawNative
 				return fmt.Errorf("the contract ends beyond the supported calendar")
 			}
 			player.Salary, player.ExpirationYear = *value.Salary, expiration
+			player.ContractMissing = false
 		case CapRelief:
 			seed.Adjustments = append(seed.Adjustments, NativeCharge{ID: record.Receipt.Entry,
 				Franchise: player.Franchise, Amount: -*value.Amount, Season: season,
@@ -175,4 +193,69 @@ func projectNativeTrade(assets *NativeAssets, book *MarketBook, record Record) e
 		return fmt.Errorf("record starting assets before trading")
 	}
 	return projectTrade(assets.Snapshot, book, record)
+}
+
+// Support entries keep receipt order. Only roster moves have independent effective times.
+func nativeEntryTime(r Record) (time.Time, error) {
+	if RosterTimed(r.Command.Command) {
+		return r.Command.EffectiveTime(r.Receipt.RecordedAt)
+	}
+	return r.Receipt.RecordedAt, nil
+}
+
+func nativeRecordsAt(records []Record, at time.Time) ([]Record, error) {
+	visible := make([]Record, 0, len(records))
+	for _, r := range records {
+		effective, err := nativeEntryTime(r)
+		if err != nil {
+			return nil, err
+		}
+		// The starting observation may have been received later than it was observed.
+		if r.Command.Command == Create || r.Command.Command == NativeSeed || !effective.After(at) {
+			visible = append(visible, r)
+		}
+	}
+	return visible, nil
+}
+
+func nativeEffectiveOrder(records []Record) ([]int, bool, error) {
+	order := make([]int, len(records))
+	times := make([]time.Time, len(records))
+	revisions := make([]int64, len(records))
+	backdated := false
+	for i, r := range records {
+		at, err := nativeEntryTime(r)
+		if err != nil {
+			return nil, false, err
+		}
+		order[i], times[i], revisions[i] = i, at, r.Receipt.Revision
+		if revisions[i] == 0 {
+			revisions[i] = math.MaxInt64 // Proposed records follow durable entries at the same instant.
+		}
+		backdated = backdated || !at.Equal(r.Receipt.RecordedAt)
+	}
+	slices.SortStableFunc(order, func(a, b int) int {
+		if c := times[a].Compare(times[b]); c != 0 {
+			return c
+		}
+		return cmp.Compare(revisions[a], revisions[b])
+	})
+	return order, backdated, nil
+}
+
+func rememberNativeContracts(assets *NativeAssets, contracts map[string]NativePlayer, target *RawCorrection) {
+	if !assets.Seeded {
+		return
+	}
+	for _, p := range assets.Snapshot.Players {
+		if target == nil || target.Player == "" || (p.ID == target.Player && assets.Snapshot.SideOf(p.Franchise) == assets.Snapshot.SideOf(target.Franchise)) {
+			contracts[assets.Snapshot.SideOf(p.Franchise)+"/"+p.ID] = p
+		}
+	}
+}
+
+func needsNativeContractHistory(records []Record) bool {
+	return slices.ContainsFunc(records, func(r Record) bool {
+		return r.Command.Command == CorrectRoster && r.Command.Args.Correction != nil && r.Command.Args.Correction.Action == "add"
+	})
 }

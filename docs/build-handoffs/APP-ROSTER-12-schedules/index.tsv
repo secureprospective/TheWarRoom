@@ -1,0 +1,7 @@
+week	url	fetched_at	sha256	size
+1	https://api.myfantasyleague.com/2026/export?JSON=1&TYPE=nflSchedule&W=1	2026-11-02T09:14:13.856326Z	eec61d7686129a634717fe6dafbc6d77dfcceba410eb2ced138892ef15b1aa56	6847
+2	https://api.myfantasyleague.com/2026/export?JSON=1&TYPE=nflSchedule&W=2	2026-11-02T09:14:14.856563Z	d6246ac4bb5ab7be943b63ff7d274c839e38706df095b48e7facafc5abb570b7	6840
+3	https://api.myfantasyleague.com/2026/export?JSON=1&TYPE=nflSchedule&W=3	2026-11-02T09:14:15.856422Z	a9184e144ec1cdff2acdd05975fa0bbdf4a8e8b8b63d6eb3649fd9484ce47b1b	6838
+4	https://api.myfantasyleague.com/2026/export?JSON=1&TYPE=nflSchedule&W=4	2026-11-02T09:14:16.856863Z	b4c016093f0e9d4b00ffddffd62a5074cbdad0a74af536d1cf4cad599873f1c4	6849
+5	https://api.myfantasyleague.com/2026/export?JSON=1&TYPE=nflSchedule&W=5	2026-11-02T09:14:17.856415Z	de40af2d96f9fd47ccd2be1ddab403349762f6ff852513bf7e9d5da8818bfa6c	6425
+6	https://api.myfantasyleague.com/2026/export?JSON=1&TYPE=nflSchedule&W=6	2026-11-02T09:14:18.856704Z	5c0aa34dfef8ad59b9d0f692ed386eac705434131f7348eefb64d01592ee63ef	5997

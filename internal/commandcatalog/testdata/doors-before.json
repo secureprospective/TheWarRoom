@@ -631,7 +631,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:correct.roster",
-    "Schema": "a5206cf186631f7926670fc66e7520867841f04ce780936c52cdf9c11bf1f460",
+    "Schema": "3b3b5b1491f1a77023ebd7c8f826002c15e895054525072706211b5459633349",
     "Modes": [
       "preview",
       "execute"
@@ -646,7 +646,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:correct.transaction",
-    "Schema": "52eee6a88e5ad34cb8f97ab529eb5866f7bc1d308ccd20df2d0bce038b711993",
+    "Schema": "f6687f7669fd5c8c1e66299e8e28e9c72abccf27d8020d8c65b526d183f6fcbe",
     "Modes": [
       "preview",
       "execute"
@@ -661,7 +661,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:correct.provenance",
-    "Schema": "b5a2758a91b4ae2150bccd609f5fcd63dd7097df39fd486c27db04cccc58ef05",
+    "Schema": "b165b8fb0ed68739be103178168b277e0c71264254e7ef083f4582f48677aac7",
     "Modes": [
       "preview",
       "execute"
@@ -676,7 +676,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:correct.pick",
-    "Schema": "aff855e89397b1e72a03c5f5686d3eef127fbc32947b4bfbf7cc1f036ddafd2b",
+    "Schema": "4eccf1215dfaac861a33a2dbc2cd75d44dfea181ca4ea9397da34c24ad402a54",
     "Modes": [
       "preview",
       "execute"
@@ -691,7 +691,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:rule.exception",
-    "Schema": "d43e9552d375a16cc12f09210f23fa3d3353ece3c871d5b253888b70d6bdf27c",
+    "Schema": "130e9f6ddf700e5bc9724ca95385a6b8233d74a7e847092e489428a1b2b547e0",
     "Modes": [
       "preview",
       "execute"

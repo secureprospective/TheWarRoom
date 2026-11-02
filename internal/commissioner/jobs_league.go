@@ -16,6 +16,8 @@ func ledgerJobs(league string, records []Record, rules leaguerules.RuleSet, at t
 		return nil, err
 	}
 	jobs := transactionJobs(assets, state, rules, at)
+	jobs = append(jobs, missingContractJobs(assets)...)
+	jobs = append(jobs, historicalPickJobs(assets)...)
 	if leaguerules.OLineOn(rules) {
 		jobs = append(jobs, olineJobs(state, assets.Snapshot)...)
 	}

@@ -71,6 +71,7 @@ func sameSeed(a, b []SeedValue) bool {
 // Prepared fills what Go owns on a new league: its franchise list and its preset values.
 // A caller may not supply either; a retry that repeats Go's own expansion is accepted.
 func (r RawCommand) Prepared() (RawCommand, error) {
+	r = r.defaultRosterTime()
 	if r.Command != Create {
 		return r, nil
 	}

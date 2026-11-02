@@ -28,12 +28,12 @@ export function CapRunway({ years }: { years?: HQCap[] }) {
     </div><b>{money(year.room)}</b></div>) : <p className="empty">{unavailable}</p>}</div>;
 }
 function ContractRow({ row, season, mine, years, facts, select, assets }: { assets?: AssetBoard; row: { id:
-  string; name: string; position: string; salary: number; status: string };
+  string; name: string; position: string; salary: number | null; status: string };
   season: number; mine: string; years: number[]; facts?: RosterFacts; select: (id: string) => void }) {
   const reading = useContractRead(row.id, () => contractsProvider().player(row.id), hqEvents);
   const asset = assets?.values.find(v => v.id === row.id);
   const dynasty = asset?.dynasty.held ? asset.dynastyValue : undefined;
-  const ratio = dynasty && dynasty > 0 ? row.salary / 1_000_000 / dynasty : undefined;
+  const ratio = row.salary !== null && dynasty && dynasty > 0 ? row.salary / 1_000_000 / dynasty : undefined;
   return <tr>
     <td><span className="pg">{row.position}</span></td><td><HQAct className="contract-row-act" onAction={() =>
        select(row.id)}>{row.name}</HQAct></td>
@@ -149,7 +149,7 @@ export function HQReserves({ kind, snapshot, mine, settings, injuries, close, na
     </div><div className="bd-side"><div className="sum"><div><b>{capacity(players.length,
       limit)}</b><span>{kind.toUpperCase()} SLOTS</span></div><div><b>{capacity(active.length,
       settings.active)}</b><span>ACTIVE</span></div>
-      <div><b>{kind === 'taxi' ? money(players.reduce((n, p) => n + p.salary, 0)) :
+      <div><b>{kind === 'taxi' ? money(players.some(p => p.salary === null) ? null : players.reduce((n, p) => n + (p.salary ?? 0), 0)) :
         money(countedIRPay)}</b><span>{kind === 'ir' ? 'IR PAY · ON CAP' : 'TAXI PAY'}</span></div>
       <div><b>{kind === 'ir' ? returns[0] ? `Wk ${returns[0].returnWeek}` : unavailable : limit ===
         undefined ? unavailable : limit - players.length}</b><span>{kind === 'ir' ? 'NEXT RETURN' :

@@ -141,6 +141,12 @@ func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env Line
 	if _, err := RulesInForce(records, change.Season, at); err != nil {
 		return Refused(err)
 	}
+	if lock, held := firstKickoff(env); held && !now.Before(lock) {
+		base.Assets, err = NativeAssetsAsOf(raw.League, records, lock)
+		if err != nil {
+			return Refused(err)
+		}
+	}
 	if err := checkLineupRoster(base, change, env); err != nil {
 		return Refused(err)
 	}
@@ -179,8 +185,10 @@ func checkOwnerLineup(records []Record, now time.Time, env LineupFacts, change R
 // cannot start.
 func checkLineupRoster(base NativeBase, change RawLineupChange, env LineupFacts) error {
 	active := map[string]bool{}
-	for _, p := range base.playersOf()[change.Franchise] {
-		active[p.ID] = p.Status == domain.RosterActive
+	for _, p := range base.Assets.Snapshot.Players {
+		if p.Franchise == change.Franchise {
+			active[p.ID] = p.Status == domain.RosterActive
+		}
 	}
 	for _, id := range change.Starters {
 		if !active[id] {

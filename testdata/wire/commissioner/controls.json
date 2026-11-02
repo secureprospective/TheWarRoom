@@ -701,7 +701,12 @@
      "id": "CM-038",
      "built": true,
      "note": "",
-     "fields": []
+     "fields": [
+      {
+       "field": "transactions.follow",
+       "label": "Follow reference transactions"
+      }
+     ]
     },
     {
      "id": "CM-039",

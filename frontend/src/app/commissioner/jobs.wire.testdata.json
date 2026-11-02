@@ -180,7 +180,7 @@
         "id": "setup",
         "name": "League setup",
         "state": "live",
-        "words": "129 league rules still need a ruling.",
+        "words": "130 league rules still need a ruling.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -205,6 +205,7 @@
           "CM-024",
           "CM-025",
           "CM-027",
+          "CM-038",
           "CM-040",
           "CM-041",
           "CM-051"

@@ -7,7 +7,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
-func applyAssetCorrection(seed *RawNativeSnapshot, records []Record, r Record) error {
+func applyAssetCorrection(seed *RawNativeSnapshot, contracts map[string]NativePlayer, r Record) error {
 	if seed == nil {
 		return fmt.Errorf("record the starting assets before correcting them")
 	}
@@ -29,6 +29,10 @@ func applyAssetCorrection(seed *RawNativeSnapshot, records []Record, r Record) e
 	if !slices.ContainsFunc(seed.Franchises, func(f NativeFranchise) bool { return f.ID == c.Franchise }) {
 		return fmt.Errorf("choose a franchise in this app league")
 	}
+	if c.Action == "status" {
+		return correctRosterStatus(seed, index, r)
+	}
+
 	if c.Action == "remove" {
 		if index < 0 || seed.Players[index].Franchise != c.Franchise {
 			return fmt.Errorf("this player is not on that franchise's roster")
@@ -39,12 +43,9 @@ func applyAssetCorrection(seed *RawNativeSnapshot, records []Record, r Record) e
 	if index >= 0 {
 		return fmt.Errorf("remove the player from his current roster before adding him elsewhere")
 	}
-	player, ok, err := recordedCorrectionPlayer(records, side, c.Player)
-	if err != nil {
-		return err
-	}
+	player, ok := contracts[side+"/"+c.Player]
 	if !ok {
-		return fmt.Errorf("record this player's contract before adding him; a correction cannot invent one")
+		player = NativePlayer{ID: c.Player, ContractMissing: true}
 	}
 	player.Franchise, player.Status = c.Franchise, domain.RosterActive
 	player.Correction = correctionWords(r)
@@ -63,39 +64,17 @@ func correctProvenance(seed *RawNativeSnapshot, index int, r Record) error {
 	return nil
 }
 
-// recordedCorrectionPlayer is the side's copy of the player as the ledger last held it, read in one pass over
-// the earlier entries.
-func recordedCorrectionPlayer(records []Record, side, id string) (NativePlayer, bool, error) {
-	assets, err := seedNativeAssets(records[0].Command.League, records)
-	if err != nil {
-		return NativePlayer{}, false, fmt.Errorf("read the last recorded contract: %w", err)
-	}
-	var last NativePlayer
-	found := false
-	keep := func(a *NativeAssets) {
-		if !a.Seeded {
-			return
-		}
-		if i := a.Snapshot.PlayerOn(side, id); i >= 0 {
-			last, found = a.Snapshot.Players[i], true
-		}
-	}
-	keep(&assets)
-	waivers := MarketBook{Windows: []WaiverWindow{}, Order: []string{}}
-	if err := projectNativeOverrides(&assets, records, &waivers, keep); err != nil {
-		return NativePlayer{}, false, fmt.Errorf("read the last recorded contract: %w", err)
-	}
-	return last, found, nil
-}
-
 func correctPick(seed *RawNativeSnapshot, r Record) error {
 	c := r.Command.Args.Correction
 	if !slices.ContainsFunc(seed.Franchises, func(f NativeFranchise) bool { return f.ID == c.Owner }) {
 		return fmt.Errorf("choose an owner in this app league")
 	}
+	if c.History != nil {
+		return correctHistoricalPick(seed, c)
+	}
 	for i := range seed.Picks {
 		p := &seed.Picks[i]
-		if p.Season != c.Pick.Season || p.Round != c.Pick.Round || p.Original != c.Pick.Original {
+		if p.Season != c.Pick.Season || p.Round != c.Pick.Round || p.Original != c.Pick.Original || p.Slot != c.Pick.Slot {
 			continue
 		}
 		if p.Player != "" || p.Skipped {
@@ -122,6 +101,9 @@ func correctionLabel(r Record) string {
 	case CorrectProvenance:
 		return fmt.Sprintf("Corrected how player %s was acquired: %s", c.Player, c.Via)
 	case CorrectPick:
+		if c.Pick.Original == "" {
+			return fmt.Sprintf("Corrected season %d round %d slot %d: owned by %s", c.Pick.Season, c.Pick.Round, c.Pick.Slot, c.Owner)
+		}
 		return fmt.Sprintf("Corrected season %d round %d pick from %s: owned by %s",
 			c.Pick.Season, c.Pick.Round, c.Pick.Original, c.Owner)
 	case RuleException:
@@ -132,4 +114,13 @@ func correctionLabel(r Record) string {
 		return "Allowed an exception to " + c.Rule + " " + end
 	}
 	return "Corrected a recorded asset"
+}
+
+func correctRosterStatus(seed *RawNativeSnapshot, index int, r Record) error {
+	c := r.Command.Args.Correction
+	if index < 0 || seed.Players[index].Franchise != c.Franchise {
+		return fmt.Errorf("choose a player on that franchise's recorded roster")
+	}
+	seed.Players[index].Status, seed.Players[index].Correction = c.Status, correctionWords(r)
+	return nil
 }

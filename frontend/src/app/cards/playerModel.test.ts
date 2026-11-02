@@ -66,6 +66,12 @@ describe('player-card view model', () => {
       '1 year',
     );
   });
+  it.each([null, 0])('does not turn missing salary %s into a zero contract', salary => {
+    const { snapshot, roster, contract, player } = input();
+    contract.salary = salary;
+    const model = playerCardModel(snapshot, roster.franchiseId, player.id, asOf);
+    expect(model.salary).toBe(salary === null ? 'Unavailable' : '$0.0M');
+  });
   it('shows the weakest section on the one provenance dot, with every section in the detail', () => {
     const { snapshot, roster, player } = input();
     snapshot.players.provenance.freshness.state = 'fail';

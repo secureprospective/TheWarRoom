@@ -35,6 +35,7 @@ type RawNativeSnapshot struct {
 	Franchises  []NativeFranchise `json:"franchises"`
 	Players     []NativePlayer    `json:"players"`
 	Picks       []NativePick      `json:"picks"`
+	PickHistory []HistoricalPick  `json:"pickHistory,omitempty"`
 	Adjustments []NativeCharge    `json:"adjustments"`
 	// Pool holds free-agent lots: undrafted rookies and unassigned league-start O-Line cards.
 	Pool []NativePoolEntry `json:"pool,omitempty"`
@@ -52,8 +53,9 @@ type NativeFranchise struct {
 }
 
 type NativePlayer struct {
-	AcquiredVia string `json:"acquiredVia,omitempty"`
-	Correction  string `json:"correction,omitempty"`
+	ContractMissing bool   `json:"contractMissing,omitempty"`
+	AcquiredVia     string `json:"acquiredVia,omitempty"`
+	Correction      string `json:"correction,omitempty"`
 	// Name is the name the app held for the player when the snapshot was captured.
 	Name string `json:"name,omitempty"`
 	// RookieRound is the draft round of the player's rookie contract, where it is recorded; 0 is unknown.
@@ -64,8 +66,8 @@ type NativePlayer struct {
 	ID             string                `json:"id"`
 	Franchise      string                `json:"franchise"`
 	Status         domain.RosterStatus   `json:"status"`
-	Salary         domain.Money          `json:"salaryCents"`
-	ExpirationYear int                   `json:"expirationYear"`
+	Salary         domain.Money          `json:"salaryCents" ts_type:"number | null"`
+	ExpirationYear int                   `json:"expirationYear" ts_type:"number | null"`
 	ContractStatus domain.ContractStatus `json:"contractStatus"`
 	ContractInfo   string                `json:"contractInfo"`
 	// HeldContractStatus is the contract status exactly as MFL wrote it ("EXT (2024)"), kept by an MFL
@@ -136,6 +138,9 @@ func (r RawNativeSnapshot) validate(rolled bool) error {
 		return err
 	}
 	if err := r.validateArchive(franchises); err != nil {
+		return err
+	}
+	if err := r.validateHistoricalPicks(franchises); err != nil {
 		return err
 	}
 	return r.validateCharges(franchises)
@@ -211,6 +216,9 @@ func (r RawNativeSnapshot) validatePlayers(franchises map[string]bool) error {
 		}
 		if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, p.Status) {
 			return fmt.Errorf("a held player has an unknown roster status")
+		}
+		if err := p.validateContract(); err != nil {
+			return err
 		}
 		players[copyOn] = true
 	}

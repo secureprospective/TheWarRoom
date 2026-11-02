@@ -40,7 +40,7 @@ export type League = { season: number; franchiseCount: number; salaryCap?: numbe
 export type Franchise = { id: string; name?: string; capUsed?: number; capRoom?: number };
 export type RosterPlayer = {
   id: string;
-  salary: number;
+  salary: number | null;
   yearsRemaining?: number;
   contractStatus: (typeof CONTRACT_STATUSES)[number];
   rosterStatus: (typeof ROSTER_STATUSES)[number];

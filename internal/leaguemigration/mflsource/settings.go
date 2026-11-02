@@ -25,6 +25,7 @@ func Settings(config league.RawConfig, base leaguerules.RuleSet, draftType strin
 	t := translation{}
 	r := leaguerules.RuleSet{}
 	r.Schedule.Follow = leaguerules.Known(leaguerules.ScheduleFollow{})
+	r.Transactions.Follow = known(true)
 	t.league(&r, config)
 	t.roster(&r, config)
 	t.lineup(&r, config)

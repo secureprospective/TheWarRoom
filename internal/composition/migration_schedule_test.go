@@ -39,6 +39,8 @@ func (f *scheduleRefreshTransport) RoundTrip(r *http.Request) (*http.Response, e
 	switch r.URL.Query().Get("TYPE") {
 	case "league":
 		return seasonResponse(`{"league":{"baseURL":"https://www47.myfantasyleague.com/2026/home/14432"}}`), nil
+	case "transactions":
+		return seasonResponse(`{"transactions":{}}`), nil
 	case "weeklyResults":
 		if f.weekly == "" {
 			return seasonResponse(`{"allWeeklyResults":{"weeklyResults":{"week":"1"}}}`), nil
