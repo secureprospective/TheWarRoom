@@ -311,6 +311,17 @@ func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for _, component := range []struct {
+		name, got, want string
+	}{
+		{"draft", digest(t, basis.draft), "988607205db9be4c"},
+		{"order", digest(t, basis.order), "43a01438c298d436"},
+		{"assets", digest(t, assets), "1589ca7aa9c8f465"},
+	} {
+		if component.got != component.want {
+			t.Errorf("single-pool startup %s digest %s", component.name, component.got)
+		}
+	}
 	if got := digest(t, basis.draft, basis.order, assets, jobs); got != "8a6936145d37309e" {
 		t.Fatalf("single-pool startup digest %s", got)
 	}

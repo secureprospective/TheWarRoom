@@ -20,6 +20,10 @@ export const localWorkflow: HostedPort = async (request: NativeRequest, football
     direct = () => api.TargetNativeWeek(commissioner.RawNativeWeekScope.createFrom(request.arguments));
   else if (request.command === 'lineupdelta.read')
     direct = () => api.TargetNativeLineupDelta(request.arguments);
+  else if (request.command === 'native.directory.read')
+    direct = () => api.TargetNativeDirectory(request.arguments.league);
+  else if (request.command === 'bracket.read')
+    direct = () => api.TargetNativeBracket(request.arguments.league, request.arguments.season);
   else if (request.command === 'projections.read')
     direct = () => api.TargetNativeProjections(request.arguments.league, request.arguments.players,
       request.arguments.season, request.arguments.week);

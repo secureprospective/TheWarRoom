@@ -252,3 +252,96 @@ Walked on Claude-OS (real-profile copy ~/f2click/config/TheWarRoom): app opens i
 GPT (Sol/Terra) resets ~09:50 CT.
 
 **Next:** 1) Re-arm watcher: `until [ -s R/completion.txt ] && [ R/completion.txt -nt /tmp/p8/tom9.mark ]` (R=~/fleet/runs/tom-integrate). 2) Review Tom's result, walk HQ + War Room on Claude-OS (copy via gzip|ssh claudeos; launch `ssh -f claudeos 'setsid ~/f2click/desk.sh ...'`; War Room click 396,348; HQ 407,384). 3) GPT back: slices — first-launch prep 2 min (prepare at import/refresh time), schedule import, gate debt (tiny-file 26>25, migrationInputs boundary). 4) One full Go suite. 5) Hand Christopher the build; merge only after his OK. 6) Delete ~/scratch/cos-profile (839M) when done.
+
+## §21 — 2026-11-01 08:00–13:20 CT: HQ/WR fixed, schedule+scoring import underway, 4 builders live
+
+**State:** integrate branch build/INTEGRATE-1101 HEAD ~68de3421 + docs commits (roadmap 43b347f8, 9ff7ba4f, 26230943, 007ddfec). HQ + War Room on imported league walked OK on Claude-OS (parts 9–11: names/positions/salaries, empty panel "Pick a player", 9 offence rows, bench above bar, second-screen-opened fix, loading≠failure, window from league calendar). First-launch values ~30 s (GPT perf 4 commits, byte-identical). Schedule: 17 weeks auto-import at launch/sync, current week 8, played starters imported (148/224; 76 refused vs today's roster), play-by-play acquired, counted revision follows live / nflverse final / commish wins, league position governs. MFL parity on 148 recorded weeks: 24 exact, 9 differ, 115 unavailable (missing nflverse rows). Bills app still 0/7 complete (MFL 6–1, 1912.35).
+
+**In flight (check: `ls -la ~/fleet/runs/<run>/sessions/*.jsonl` mtime; result in completion.txt + stdout.log):**
+- GPT Sol `app-sched-8` in .worktrees/sched (brief ~/fleet/briefs/APP-SCHED-8.md): play-by-play defensive credits + missing-row fallback + evidence-backed 0 + review flag; ESPN adapter only if gaps. Aborted first attempt is in `git stash` there (ignore).
+- GPT Sol `app-roster-1` in .worktrees/roster (APP-ROSTER-1.md): MFL transactions → ledger, roster as of week, 76 refused lineups.
+- GPT Terra `app-gates-1` in .worktrees/gates (APP-GATES-1.md): TestSinglePoolStartupDraftIsUnchanged digest drift (bisect), preset-guard failure, tiny-file 26>25, migrationInputs boundary, one full suite.
+- Tom `tom-integrate` (APP-PULSE-1.md, ~/fleet/briefs/purge/) League Pulse v14 wiring in integrate, started 13:03.
+- Watcher: one loop fires on first GPT finish (touches /tmp/p8/seen-<run>); re-arm for the others after compaction.
+- CT105 probe: week-8 live capture today 11:30 CT→00:30, MNF 18:45→23:45; keepalive.sh cron guards (remove entries after 11-03). Speed report: `python3 -I /root/mnf-probe/speed_week.py 8` (run 11-02 morning with compare).
+
+**Rulings today (Christopher):** counted stat revision follows live, nflverse auto-final, commish override wins, ledgered · a player missing from nflverse is checked against pbp/ESPN/Sleeper — real stats scored (flagged), 0 only with evidence, else pending; identity gap never 0 · League Pulse demo: tell him ONLY when fully working, no rushing · glance widgets/pop-outs: roadmap only, logged, not built (Wails v2 no 2nd window → v3 or Document PiP; phone = view-only video-PiP hack or Live Activities). **Mine:** played weeks score via imported lineups + app engine (no reported-score adapter); league-held position governs, feed position → commish queue (queue integration DEFERRED).
+
+**Refuted / don't retest:** part-9 "wrong league" = Tom built VERSION=dev (history-dev.db) — always plain make build · TNF probe stop = CT105 reboot by Christopher, not a bug · War Room blank at 4 s = second-screen poisoning (fixed 6757784a), not slowness.
+
+**Next:** 1) on each finish: review, cherry-pick into integrate, walk on Claude-OS if UI; 2) launch ledger first-adoption speed job (92 s → fast) when RAM allows; 3) walk Home / Trade Floor / Control Room on imported league; 4) Pulse walk after Tom; 5) one full suite; 6) hand Christopher build (flag CM-005/CM-008 ruling count change); merge only after his OK; 7) delete ~/scratch/cos-profile at end.
+**Hygiene:** /home 77% (24+9 old worktrees removed, logs in ~/logs/TheWarRoom/worktree-logs/); RAM ~7 GB avail, Claude-OS VM 8 GB; max 3 GPT lanes.
+
+## §22 — 11-01 13:20–15:35 CT: gates, rosters, sched-9, live Pulse (I took over building)
+
+**In flight: NOTHING running.** GPT hit its usage limit at 14:38 CT (5h resets ~18:20 CT). Tom hit his 5h limit at 14:13 (resets 18:00). My Tom 18:02 auto-launch (APP-PULSE-3) was CANCELLED because I took Pulse myself. No watchers are armed.
+
+**Worktrees and heads (all local, Beelink ~/work/TheWarRoom/.worktrees/):**
+- **integrate** (build/INTEGRATE-1101) at 7f899c77b. Includes 3dc1b84b (digest test, cherry-picked from gates), Tom 138a5cd25 (this week's lineups) and 095387d37 (provisional live score), 317280198 (WSL research doc), 7f899c77b (mine: ESPN live-stats poller internal/composition/live_stats_app.go, started in domReady; frontend parses homeProvisional/awayProvisional/provisional; current-week lineups read before the played-week import). Untracked logs only.
+- **gates** at c980afd9b: 0c23461c bloat, 709695a8 vitest timeout, dc3191373 schedule.follow setting, cd0c2070b calendar single status source (forks 18), fde9ecbc8 16 boundary fingerprints. placement/boundary/lint/vitest 1751/build PASS. NOT cherry-picked yet. Full go race suite NOT run (earlier composition failures incl. a panic, origin unproven).
+- **sched** at 61c50a5c6 (sched-8 48bacfac + sched-9). 148-row parity: 61 exact + 1 within .01, 15 differ (max 3.50), 71 unavailable. Lineup-penalty import bug fixed (3b7140f5f). Bills still 0/7: Zane Gonzalez W1–6 has no dated NFL team membership; W4 McLaurin, W6 Warren, W7 Ridley missing. 0835 Childress: no crosswalk link to 17372; pending, asked Christopher whether 0835 = Zion Childress (no answer yet). NOT cherry-picked.
+- **roster** at dca039191: part 1 5f7a14916/c770a6e00 (effective-dated admission + as-of projection), part 2 dca039191 (lineup membership at week's first kickoff). Part 3 (APP-ROSTER-5: replay 895 transactions, pre-seed, 76 refusals) brief at ~/fleet/briefs/APP-ROSTER-5.md, NEVER RAN (limit). NOT cherry-picked.
+
+**Rulings this window:**
+- Christopher: build backdated (effective-dated) roster moves for every league (the one sanctioned core extension).
+- Mine: schedule following is a league setting (schedule.follow). Zero-evidence also counts "complete snaps + pbp, no snap" and "team bye per league schedule with dated team". Next intended: not on any NFL roster that week = zero with evidence (Gonzalez), still to brief.
+- WSL: research logged only (docs/roadmap/research/windows-via-wsl-2026-11-01.md).
+
+**Not bugs (do not retest):** the 7,059 commish.stat.queue.approve entries (system.stat-feed, 20:14–20:15Z) are the one-time ledgered auto-final of nflverse weeks 1–7, per ruling. The ledger revision jumped 61→7151 because of them.
+
+**Pulse walk 15:31 CT (Claude-OS, 7f899c77b): live scores show** (Bills 8.5–Pats 11.5, etc.). Open defects:
+1. MY MATCHUP STARTERS panel unreadable: dozens of starters a side overlap and names are cut to 1 char. Needs layout (scroll/drawer, grip-not-glow).
+2. Some sides "–": week-8 lineup refused (e.g. franchise.18 "Mitchell, Elijah is not on this franchise's active roster"). Roster-5 should fix it.
+3. All 16 tagged LIVE regardless of state; clock/field/drive/play-by-play panels are still "needs the NFL read" (the livegame adapter is not wired to Pulse).
+4. The poller re-fetches the summary of finished games every minute (16 req/min). Trim later.
+5. Desktop launch is slow: the played-week import retries 76 refusals every launch (>70 s).
+
+**Next actions:**
+1. Fix the starters panel layout (PulseNow.tsx), then the LIVE tag from ESPN board state, then wire the clock/field/plays from livegame.Adapter details into Pulse.
+2. After ~18:20 CT: launch APP-ROSTER-5 (Sol medium, roster wt). Then the sched follow-up (Gonzalez no-roster zero; remaining 15 diffs).
+3. Then cherry-pick gates, sched and roster into integrate (Tom is not working there any more), run heavy-ok plus ONE full suite, and walk.
+4. Tell Christopher Pulse is demo-ready ONLY after a full walk is clean.
+
+## §23 — 11-01 15:35–16:15 CT: League Pulse live end to end (I built it)
+
+**In flight: NOTHING.** App closed on Claude-OS. GPT back ~18:20 CT, Tom ~18:00.
+
+**Committed on integrate (build/INTEGRATE-1101):** 7d3979d8f (Pulse wired to the existing held live NFL view: NFL GAMES list, follow chips, game header, field/ball/first-down, down & distance, play-by-play; starters show OFFENCE/DEFENCE one at a time with side totals; LIVE only while an NFL game is `in`, else "IN PLAY"; player_score.go: a starter with no line yet keeps the listed position) · eaa07e153 (live read asked with mine="" because nowapp TargetLiveGame refuses native franchise ids — "live game: unknown franchise"; IN THIS GAME = matchup starters whose team (league→ESPN code map, espnTeam) is in the followed game) · 5b47772b0 (centre column min-width 0, compact chips). Shell vitest 329 pass, tsc clean, make build OK. Test file frontend/src/app/shell/pulseLive.test.tsx.
+
+**Walk 16:10 CT (Claude-OS, FULL 1920x1080 — Christopher's rule; resize with xdotool windowmove 0 0 windowsize 1920 1080):** auto-follows LAC@LAR, field + plays live, Bills 143.4–Pats 170.3, In This Game lists McConkey 6.2 etc. Works once warm.
+
+**Not bugs (do not retest):** offence "–" right after launch = first results read before the first live poll; ESPN parser and espn crosswalk verified fine (Willis 4242512, Brissett 2578570).
+
+**Open defects before demo:**
+1. Launch lag: raw "player NNNNN" ids for ~4 min, live points only ~7 min after launch. Log shows startup contention ("context deadline exceeded" on history/ledger reads) from the played-week import retrying 76 refusals. Fix: stop re-importing settled refusals every launch, and/or run the first live poll before that import.
+2. Refused week-8 lineups show "–" (Panthers, Dolphins, Saints…) → APP-ROSTER-5.
+3. Poller re-fetches finished games' summaries every minute (trim).
+
+**Next actions:**
+1. Fix launch lag (defect 1); walk a fresh launch full-screen; target live scores within ~1 min.
+2. After 18:20 CT launch APP-ROSTER-5 (Sol medium, roster wt); then sched follow-up (Gonzalez no-roster zero; 15 diffs).
+3. Cherry-pick gates, sched, roster into integrate; heavy-ok + ONE full suite; full walk.
+4. Tell Christopher Pulse is demo-ready only after a clean fresh-launch walk.
+
+## §24 — 11-01 16:10–16:55 CT: launch lag fixed (live points ~2 s after launch)
+
+**In flight: NOTHING.** App closed on Claude-OS. GPT back ~18:20 CT, Tom ~18:00.
+
+**Commits on integrate:** 380f6e96a (ScheduleCache: held NFL schedule copies parsed once per season, keyed on count+newest fetch id; same output as ScheduleDates) · 83bfcca3f (played-week lineup import = own background worker, outside RefreshMu, never two at once, 10-min bound) · 6b1f2c6c5 (first played-week import of a launch waits 5 min) · a35d8f66f (**root cause of the 7-min lag**: domReady started the live poller before startup opened History; first poll saw nil store and slept the 5-min idle interval; now waits on core.Started; logs "live stats: N players…" only on start/stop/week change) · da6dfe56b (finished games' box scores re-read every 10 min, not every minute; test TestLiveStatLinesRereadsFinishedGamesOnlyEveryTenMinutes) · 46ec19f9b (In this game says "Reading this matchup's lineups…" instead of falsely "No starter…" while loading).
+
+**Walk 16:48 CT, fresh launch, full 1920x1080:** live lines 4 s after launch (683 players, 14 games); launch refresh 14 s (was 2 min); crosswalk 76 s (was 3–7 min); at 2:00 every matchup + starter scored, field/plays live; starter team/lock/proj + In This Game land ~1 min later.
+
+**Refuted (do not retest):** schedule re-parsing was NOT the 2-min import cost (cache kept, harmless); cost is ~7 s per refused franchise-week re-validated each launch (≈76 refusals; APP-ROSTER-5 should remove them).
+
+**Walk-script lesson:** after `kill`, wait until `pgrep -x thewarroom` is empty before relaunching — the old instance can take >3 s (background import) and the new one hits the instance lock. Log has binary bytes: use `grep -a`.
+
+**Done 16:56:** 40252a356 readPulseMatchup publishes lineups before projections. Walk 16:54 fresh launch full-screen: at 2:00 EVERYTHING complete (points, team/lock/proj, In This Game with points, Q3 drive live). Shell vitest 330 pass, tsc clean. **Open:** refused week-8 lineups "–" (Panthers etc.) → APP-ROSTER-5.
+
+**Next actions:**
+1. After 18:20 CT launch APP-ROSTER-5 (Sol medium, roster wt); then sched follow-up.
+3. Cherry-pick gates, sched, roster into integrate; heavy-ok + ONE full suite; full walk.
+4. Tell Christopher Pulse is demo-ready only after that clean fresh-launch walk.
+
+**Prep 17:05 CT for Tom + GPT (not launched):** briefs on Beelink ~/fleet/briefs: APP-SCHED-10.md (Tom, Opus medium, sched wt @61c50a5c6: Gonzalez "on no NFL roster that week" zero, Bills W4 McLaurin/W6 Warren/W7 Ridley, 15 half-point diffs, re-run 148 rows + Bills) · APP-ROSTER-5.md + addendum (Sol medium, roster wt @dca039191; stay below syncPlayedLineups; report refused before/after incl. week 8 and sync time). Exact launch lines: ~/fleet/briefs/LAUNCH-1101-evening.md. Both worktrees clean.
+
+**Compact-safe 17:08 CT:** in flight NOTHING (app closed, no agents). Next on resume: at ~18:00 launch Tom APP-SCHED-10, at ~18:20 Sol APP-ROSTER-5 (lines in ~/fleet/briefs/LAUNCH-1101-evening.md) with done-watchers; then cherry-pick gates/sched/roster → integrate, heavy-ok + ONE full suite, fresh-launch full-screen walk; only then tell Christopher Pulse is demo-ready.

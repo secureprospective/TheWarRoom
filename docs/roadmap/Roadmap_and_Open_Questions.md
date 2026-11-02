@@ -85,6 +85,13 @@ League mates report back. Bugs, edge cases, and rule interpretation questions su
 - **Phone browser route (Christopher, 2026-11-01):** the glance only needs to be VIEWABLE — no interaction. So the phone route to test first is the video picture-in-picture trick: draw the glance to a canvas, stream it into a video element, request video PiP; the phone floats it over other apps and the user resizes it (quarter / eighth screen). No native app needed if it holds. Unproven: iOS Safari vs Android Chrome behaviour, installed-PWA behaviour, update rate, OS updates breaking it. Not scheduled: logged only, pick up later (Christopher 2026-11-01: tokens go to the current build).
 - **Research:** docs/roadmap/research/glance-widget-phone-2026-11-01.md and glance-widget-desktop-2026-11-01.md.
 
+### Windows via a WSL installer (added 2026-11-01, Christopher) — NOT in the current build plan
+
+- **Idea:** WSL is open source; ship Windows as a one-click `.wsl` install of our slim Alpine image instead of maintaining a Windows build.
+- **Findings (first pass, untested):** `.wsl` single-file install exists (double-click or `wsl --install --from-file`); GUI apps run via WSLg; Alpine has WebKitGTK but Wails-on-Alpine-under-WSLg is unproven. First WSL install needs virtualization, admin and a reboot; unsigned installer may warn. WSL is a poor server host (idle shutdown, no boot start, NAT, sleep/updates).
+- **Recommendation:** Windows players use the PWA; optional `.wsl` Alpine desktop package from the server image; servers Linux only. Test on the Windows VM planned before item 52.
+- **Research:** docs/roadmap/research/windows-via-wsl-2026-11-01.md.
+
 ## Open Questions
 
 These must be resolved before the relevant build session begins.

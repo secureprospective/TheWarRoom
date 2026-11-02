@@ -78,3 +78,61 @@ func BackfillLineups(ctx context.Context, ledger leaguemigration.Ledger, league,
 	}
 	return receipts, nil
 }
+
+// LiveWeekResult turns MFL's live-scoring export for one week into the week-result shape the
+// lineup import reads. A franchise that MFL lists with starters has set its lineup, whether or
+// not the week has been scored, so each such side counts as recorded; a franchise with no
+// starters is left out, so an unset lineup stays a missed lineup rather than an import refusal.
+func LiveWeekResult(live leaguefeed.Lineups) leaguefeed.WeekResult {
+	sides := map[string]leaguefeed.Side{}
+	for _, f := range live.Franchises {
+		if len(f.Starters) == 0 {
+			continue
+		}
+		side := leaguefeed.Side{Franchise: f.Franchise, Scored: true, Players: []leaguefeed.WeekPlayer{}}
+		for _, id := range f.Starters {
+			side.Players = append(side.Players, leaguefeed.WeekPlayer{ID: id, Starter: true})
+		}
+		for _, id := range f.NonStarters {
+			side.Players = append(side.Players, leaguefeed.WeekPlayer{ID: id})
+		}
+		sides[f.Franchise] = side
+	}
+	out := leaguefeed.WeekResult{Week: live.Week}
+	paired := map[string]bool{}
+	for _, m := range live.Matchups {
+		home, okHome := sides[m.Home]
+		away, okAway := sides[m.Away]
+		paired[m.Home], paired[m.Away] = true, true
+		if !okHome && !okAway {
+			continue
+		}
+		if !okHome || !okAway {
+			// One side set a lineup and the other did not; the set one is still recorded.
+			for _, side := range []leaguefeed.Side{home, away} {
+				if side.Franchise != "" {
+					out.Others = append(out.Others, side)
+				}
+			}
+			continue
+		}
+		out.Games = append(out.Games, leaguefeed.Game{Regular: true, Home: home, Away: away})
+	}
+	for _, f := range live.Franchises {
+		if side, ok := sides[f.Franchise]; ok && !paired[f.Franchise] {
+			out.Others = append(out.Others, side)
+		}
+	}
+	return out
+}
+
+// BackfillLiveLineups records the starters MFL holds for one week in progress, through the same
+// ordinary lineup correction the played-week import uses.
+func BackfillLiveLineups(ctx context.Context, ledger leaguemigration.Ledger, league, reason, principal string,
+	season int, live leaguefeed.Lineups, heldPlayers map[string]string) ([]commissioner.Receipt, error) {
+	week := LiveWeekResult(live)
+	if len(week.Games) == 0 && len(week.Others) == 0 {
+		return []commissioner.Receipt{}, nil
+	}
+	return BackfillLineups(ctx, ledger, league, reason, principal, season, []leaguefeed.WeekResult{week}, heldPlayers)
+}

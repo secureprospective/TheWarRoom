@@ -115,7 +115,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   const placement = `${node.label} › ${workspace.label}` as Placement;
   const selectedLeague = leagues.selected;
   const appLeagueView = selectedLeague?.app
-    ? s.node === 'hq' ? 'hq' : s.node === 'war' && workspace.slug !== 'research' ? 'war' : undefined
+    ? s.node === 'hq' ? 'hq' : s.node === 'pulse' ? 'pulse'
+      : s.node === 'war' && workspace.slug !== 'research' ? 'war' : undefined
     : undefined;
   if (selectedLeague && !selectedLeague.app && s.node === 'war' && workspace.slug !== 'research' && snapshot)
     return <Suspense
@@ -225,6 +226,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
             view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs}
             hqTab={s.node === 'hq' ? s.workspace.hq : undefined}
+            pulseTab={s.node === 'pulse' ? s.workspace.pulse : undefined}
             leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
           leagues.loading && !selectedLeague ? <p role="status">Reading the league…</p> :
           s.node === 'control' && workspace.slug === 'app' ? (

@@ -1101,6 +1101,7 @@ export namespace commissioner {
 	    position?: string;
 	    words: string;
 	    points?: number;
+	    provisional?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new StarterScore(source);
@@ -1113,6 +1114,7 @@ export namespace commissioner {
 	        this.position = source["position"];
 	        this.words = source["words"];
 	        this.points = source["points"];
+	        this.provisional = source["provisional"];
 	    }
 	}
 	export class FranchiseWeekScore {
@@ -1122,6 +1124,7 @@ export namespace commissioner {
 	    points?: number;
 	    words: string;
 	    starters: StarterScore[];
+	    provisional?: number;
 	    adjustment: number;
 	    changes: ScoreChange[];
 	    lineup: nativecheck.LineupVerdict;
@@ -1139,6 +1142,7 @@ export namespace commissioner {
 	        this.points = source["points"];
 	        this.words = source["words"];
 	        this.starters = this.convertValues(source["starters"], StarterScore);
+	        this.provisional = source["provisional"];
 	        this.adjustment = source["adjustment"];
 	        this.changes = this.convertValues(source["changes"], ScoreChange);
 	        this.lineup = this.convertValues(source["lineup"], nativecheck.LineupVerdict);
@@ -2222,6 +2226,8 @@ export namespace commissioner {
 	    status: string;
 	    homePoints?: number;
 	    awayPoints?: number;
+	    homeProvisional?: number;
+	    awayProvisional?: number;
 	    winner?: string;
 	    words: string;
 	    why: string[];
@@ -2240,6 +2246,8 @@ export namespace commissioner {
 	        this.status = source["status"];
 	        this.homePoints = source["homePoints"];
 	        this.awayPoints = source["awayPoints"];
+	        this.homeProvisional = source["homeProvisional"];
+	        this.awayProvisional = source["awayProvisional"];
 	        this.winner = source["winner"];
 	        this.words = source["words"];
 	        this.why = source["why"];

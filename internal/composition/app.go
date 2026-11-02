@@ -8,7 +8,10 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
@@ -48,20 +51,25 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
-	commands            *catalog.Registry
-	core                *core.State
-	tradeBuilderTimeout time.Duration
-	archiveCache        archiveapp.Snapshot
-	controlHeld         *controlapp.Held
-	researchHeld        *researchapp.Held
-	raceHeld            *raceapp.Held
-	now                 nowSchedules
-	nowHeld             *nowapp.Held
-	sourcesHeld         *sourcesapp.Held
-	marketHeld          *marketapp.Held
-	seatStore           *accountstore.Store
-	seat                *accounts.LocalSeat
-	valuePreparation    appvalue.Preparation
+	commands             *catalog.Registry
+	core                 *core.State
+	tradeBuilderTimeout  time.Duration
+	archiveCache         archiveapp.Snapshot
+	scheduleCache        nativeapp.ScheduleCache
+	playedLineupsRunning atomic.Bool
+	playedLineupsStarted atomic.Bool
+	liveFinals           liveFinals // finished games' box scores; the poller is its only user
+	liveStatsSaid        string     // live-stats state last logged; the poller is its only user
+	controlHeld          *controlapp.Held
+	researchHeld         *researchapp.Held
+	raceHeld             *raceapp.Held
+	now                  nowSchedules
+	nowHeld              *nowapp.Held
+	sourcesHeld          *sourcesapp.Held
+	marketHeld           *marketapp.Held
+	seatStore            *accountstore.Store
+	seat                 *accounts.LocalSeat
+	valuePreparation     appvalue.Preparation
 }
 
 // attachSeat keeps the local sign-in beside the ledger, so a matched backup carries it.
@@ -170,6 +178,7 @@ func (a *App) finishStartup(ctx context.Context, refreshed bool) {
 // load run now, off the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
+	a.startLiveStats()
 	a.startDatabaseChecks()      //nolint:contextcheck // The app lifetime cancels and joins database checks on shutdown.
 	a.compileFactsInBackground() //nolint:contextcheck // The app lifetime cancels and joins facts work on shutdown.
 	a.startWorker(func() { a.publishAssetModel(ctx); a.sourceHealthChanged(ctx) })
