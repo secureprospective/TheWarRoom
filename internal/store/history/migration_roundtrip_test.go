@@ -13,6 +13,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // migrationLedger is the store as the move uses it.
@@ -112,6 +113,16 @@ func assertNativeEqualsMFL(t *testing.T, s *Store, svc *leaguemigration.Service,
 	if err != nil {
 		t.Fatal(err)
 	}
+	// A cutover moves the league off MFL, so it clears schedule following atomically; the native league
+	// must not keep following MFL's schedule. Only this one setting is folded to cleared on the MFL side;
+	// every other field still compares exactly.
+	if plan.Rules.Schedule.Follow.Value == (leaguerules.ScheduleFollow{}) {
+		t.Fatal("the MFL plan must follow MFL's schedule")
+	}
+	if app.Rules.Schedule.Follow.Value != (leaguerules.ScheduleFollow{}) {
+		t.Errorf("after the cutover the league still follows %+v", app.Rules.Schedule.Follow.Value)
+	}
+	plan.Rules.Schedule.Follow.Value = leaguerules.ScheduleFollow{}
 	for _, d := range leaguemigration.Compare(plan, app) {
 		t.Errorf("lossy field %s %s: MFL %s, app %s", d.Franchise, d.Field, d.MFL, d.App)
 	}
