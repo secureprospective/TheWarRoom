@@ -134,6 +134,11 @@ func attachPATMisses(line *Line) {
 	made, hasMade := line.Stats.Quantities["pat_made"]
 	attempts, hasAttempts := line.Stats.Quantities["pat_attempt"]
 	if hasMade && hasAttempts && attempts >= made {
-		line.Stats.Quantities["pat_missed_or_blocked"] = attempts - made
+		// ESPN does not split blocked from missed: count all as missed so the scored total is whole;
+		// the final nflverse revision carries the split.
+		line.Stats.Quantities["pat_missed"] = attempts - made
+		if _, held := line.Stats.Quantities["pat_blocked"]; !held {
+			line.Stats.Quantities["pat_blocked"] = 0
+		}
 	}
 }

@@ -40,7 +40,6 @@ func sleeperOffenseFields() map[string]leaguerules.StatID {
 		"cmp_pct":       "pass_completion_percentage",
 		"rush_ypa":      "rushing_average",
 		"rec_ypr":       "receiving_average",
-		"rush_rec_yd":   "scrimmage_yards",
 		"pass_rtg":      "passer_rating",
 		"pass_rz_att":   "red_zone_pass_attempt",
 		"pass_sack":     "times_sacked",
@@ -105,7 +104,6 @@ func sleeperKickingFields() map[string]leaguerules.StatID {
 		"punt":       "punt",
 		"punt_in_20": "punt_inside_20",
 		"punt_yd":    "punt_yards",
-		"xpa":        "pat_attempt",
 		"xpb":        "pat_blocked",
 		"xpm":        "pat_made",
 		"xpmiss":     "pat_missed",
@@ -172,6 +170,7 @@ func (r RawLiveSleeperStats) Convert() (fantasyscore.StatLine, error) {
 		}
 	}
 	fillSleeperBands(r, &line)
+	leaguerules.DropTotals(line.Quantities)
 
 	return line, nil
 }

@@ -154,6 +154,7 @@ func Lines(game livegame.Game) ([]Line, error) {
 	attachPlayDetails(game, byID)
 	out := make([]Line, 0, len(order))
 	for _, id := range order {
+		leaguerules.DropTotals(byID[id].Stats.Quantities)
 		out = append(out, *byID[id])
 	}
 	return out, nil

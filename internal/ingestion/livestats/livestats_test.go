@@ -145,7 +145,7 @@ func TestLiveLinesAdditionalESPNCategories(t *testing.T) {
 		{"kickReturns", "YDS", "45", "kickoff_return_yards", 450000},
 		{"puntReturns", "YDS", "-2", "punt_return_yards", -20000},
 		{"kicking", "XP", "3/4", "pat_made", 30000},
-		{"kicking", "XP", "3/4", "pat_missed_or_blocked", 10000},
+		{"kicking", "XP", "3/4", "pat_missed", 10000},
 		{"punting", "NO", "3", "punt", 30000},
 		{"punting", "IN 20", "2", "punt_inside_20", 20000},
 	} {
@@ -212,5 +212,26 @@ func TestLiveReturnAndRecoveryTouchdownsStayDistinct(t *testing.T) {
 				t.Fatalf("%+v %v", lines, err)
 			}
 		})
+	}
+}
+
+// A live line never carries a stat scoring counts from its parts; scoring refuses a recorded total, so one
+// would fail every reading of a league that scores it (11-02: pat_missed_or_blocked broke standings).
+func TestLiveLinesNeverRecordAPartsTotal(t *testing.T) {
+	lines, err := livestats.Lines(livegame.Game{Box: []livegame.Box{
+		{Category: "kicking", Labels: []string{"XP", "FG"}, Rows: []livegame.BoxRow{{ID: "1", Stats: []string{"3/4", "1/2"}}}},
+		{Category: "rushing", Labels: []string{"YDS"}, Rows: []livegame.BoxRow{{ID: "1", Stats: []string{"40"}}}},
+		{Category: "receiving", Labels: []string{"YDS"}, Rows: []livegame.BoxRow{{ID: "1", Stats: []string{"12"}}}},
+	}})
+	if err != nil || len(lines) != 1 {
+		t.Fatalf("%+v %v", lines, err)
+	}
+	for id := range lines[0].Stats.Quantities {
+		if s, ok := leaguerules.StatByID(id); ok && len(s.Parts) > 0 {
+			t.Fatalf("%s is a parts total and must not be recorded", id)
+		}
+	}
+	if lines[0].Stats.Quantities["pat_missed"] != 10000 || lines[0].Stats.Quantities["pat_blocked"] != 0 {
+		t.Fatalf("missed PAT parts: %+v", lines[0].Stats.Quantities)
 	}
 }
