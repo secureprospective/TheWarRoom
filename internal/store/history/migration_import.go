@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // ExecuteCommissionerBatch records several league changes as one: each is checked against the ledger
@@ -16,6 +17,14 @@ import (
 // starting snapshot) and an invitation send use it, so a failure at any step leaves no half league.
 func (s *Store) ExecuteCommissionerBatch(ctx context.Context, raws []commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer) ([]commissioner.Receipt, error) {
+	return s.ExecuteCommissionerBatchWithFacts(ctx, raws, principal, auth, nil, time.UTC)
+}
+
+// ExecuteCommissionerBatchWithFacts uses the ordinary preparation for every step.
+// Football facts are supplied before the writer is held; eligibility is judged
+// against each step's current ledger, never accepted as a caller's outcome.
+func (s *Store) ExecuteCommissionerBatchWithFacts(ctx context.Context, raws []commissioner.RawCommand,
+	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location) ([]commissioner.Receipt, error) {
 	if len(raws) == 0 {
 		return nil, fmt.Errorf("choose at least one league change")
 	}
@@ -41,9 +50,9 @@ func (s *Store) ExecuteCommissionerBatch(ctx context.Context, raws []commissione
 		}
 		now := s.now().UTC()
 		if i > 0 {
-			raw.Expected = expectedViewRevision(ctx, raw, principal, records, now)
+			raw.Expected = batchExpectedRevision(ctx, raw, principal, records, now)
 		}
-		receipt, err := s.batchStep(ctx, tx, raw, principal, auth, records, now)
+		receipt, err := s.batchStep(ctx, tx, raw, principal, auth, records, now, facts, zone)
 		if err != nil {
 			return nil, fmt.Errorf("league change %d of %d: %w", i+1, len(raws), err)
 		}
@@ -70,7 +79,7 @@ func (s *Store) ExecuteCommissionerBatch(ctx context.Context, raws []commissione
 // batchStep checks and appends one change of a batch inside the batch's transaction. A retried request
 // returns its stored receipt.
 func (s *Store) batchStep(ctx context.Context, tx *sql.Tx, raw commissioner.RawCommand, principal string,
-	auth commissioner.Authorizer, records []commissioner.Record, now time.Time) (commissioner.Receipt, error) {
+	auth commissioner.Authorizer, records []commissioner.Record, now time.Time, facts nativecheck.Facts, zone *time.Location) (commissioner.Receipt, error) {
 	raw, canonical, err := preparedCommand(raw, principal, true)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -79,25 +88,38 @@ func (s *Store) batchStep(ctx context.Context, tx *sql.Tx, raw commissioner.RawC
 		Operation: raw.Command, Mode: "execute", Raw: raw, Records: records}); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
 	}
-	role, retry, err := s.checkCommissionerCommand(ctx, raw, principal, auth, records, appendFacts{}, now)
+	role, retry, err := s.checkCommissionerCommand(ctx, raw, principal, auth, records, appendFacts{players: facts}, now)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
 	if retry != nil {
 		return *retry, nil
 	}
+	before, plan, err := s.prepareCommissionerTrial(ctx, &raw, principal, records, now, facts, zone, appendFacts{players: facts})
+	if err != nil {
+		return commissioner.Receipt{}, err
+	}
 	return s.appendCommissioner(ctx, tx, appendRequest{raw: raw, principal: principal, role: role,
-		canonical: canonical, at: now, records: records})
+		canonical: canonical, at: now, before: before, plan: plan, records: records})
 }
 
-// batchable changes need no football facts or market outcomes gathered before the write.
+// batchable excludes operations whose other evidence has no batch preparation port.
 func batchable(command string, creating bool) bool {
 	switch command {
 	case commissioner.RulesSet:
 		return creating
-	case commissioner.CorrectRoster, commissioner.CorrectPick,
+	case commissioner.RosterReserve, commissioner.CorrectRoster, commissioner.CorrectPick,
 		commissioner.Create, commissioner.NativeSeed, commissioner.ScheduleGenerate, commissioner.SchedulePublish, "commish.seat.invite":
 		return true
 	}
 	return false
+}
+
+func batchExpectedRevision(ctx context.Context, raw commissioner.RawCommand, principal string, records []commissioner.Record, now time.Time) int64 {
+	for _, r := range records {
+		if r.Command.Request == raw.Request && commissioner.SamePrincipal(records, principal, r.Principal) {
+			return r.Command.Expected
+		}
+	}
+	return expectedViewRevision(ctx, raw, principal, records, now)
 }

@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -70,6 +72,8 @@ func ChangeError(err error) error {
 // appends every other league change goes through.
 type MigrationLedger struct {
 	Store *history.Store
+	Facts func() nativecheck.Facts
+	Zone  func() *time.Location
 	// Auth is the commissioner authorization in force; nil reads permissions from the league's own ledger.
 	Auth func() commissioner.Authorizer
 }
@@ -89,7 +93,14 @@ func (l MigrationLedger) Records(ctx context.Context, league string) ([]commissi
 // Batch records every change or none.
 func (l MigrationLedger) Batch(ctx context.Context, raws []commissioner.RawCommand,
 	principal string) ([]commissioner.Receipt, error) {
-	receipts, err := l.Store.ExecuteCommissionerBatch(ctx, raws, principal, l.authorizer())
+	facts, zone := nativecheck.Facts(nil), time.UTC
+	if l.Facts != nil {
+		facts = l.Facts()
+	}
+	if l.Zone != nil {
+		zone = l.Zone()
+	}
+	receipts, err := l.Store.ExecuteCommissionerBatchWithFacts(ctx, raws, principal, l.authorizer(), facts, zone)
 	return receipts, ChangeError(err)
 }
 
