@@ -29,7 +29,7 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 	}
 	contracts := map[string]NativePlayer{}
 	if needsContracts {
-		rememberNativeContracts(assets, contracts)
+		rememberNativeContracts(assets, contracts, nil)
 	}
 	for _, i := range order {
 		if i < since {
@@ -40,7 +40,7 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 			continue
 		}
 		if needsContracts && (RosterTimed(record.Command.Command) || record.Command.Command == DraftChange) {
-			rememberNativeContracts(assets, contracts)
+			rememberNativeContracts(assets, contracts, record.Command.Args.Correction)
 		}
 		if err := projectNativeEntry(assets, records, i, waivers, contracts); err != nil {
 			return err
@@ -243,12 +243,14 @@ func nativeEffectiveOrder(records []Record) ([]int, bool, error) {
 	return order, backdated, nil
 }
 
-func rememberNativeContracts(assets *NativeAssets, contracts map[string]NativePlayer) {
+func rememberNativeContracts(assets *NativeAssets, contracts map[string]NativePlayer, target *RawCorrection) {
 	if !assets.Seeded {
 		return
 	}
 	for _, p := range assets.Snapshot.Players {
-		contracts[assets.Snapshot.SideOf(p.Franchise)+"/"+p.ID] = p
+		if target == nil || target.Player == "" || (p.ID == target.Player && assets.Snapshot.SideOf(p.Franchise) == assets.Snapshot.SideOf(target.Franchise)) {
+			contracts[assets.Snapshot.SideOf(p.Franchise)+"/"+p.ID] = p
+		}
 	}
 }
 
