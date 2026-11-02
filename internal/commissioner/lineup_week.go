@@ -185,8 +185,10 @@ func checkOwnerLineup(records []Record, now time.Time, env LineupFacts, change R
 // cannot start.
 func checkLineupRoster(base NativeBase, change RawLineupChange, env LineupFacts) error {
 	active := map[string]bool{}
-	for _, p := range base.playersOf()[change.Franchise] {
-		active[p.ID] = p.Status == domain.RosterActive
+	for _, p := range base.Assets.Snapshot.Players {
+		if p.Franchise == change.Franchise {
+			active[p.ID] = p.Status == domain.RosterActive
+		}
 	}
 	for _, id := range change.Starters {
 		if !active[id] {

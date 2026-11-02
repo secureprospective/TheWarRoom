@@ -98,3 +98,105 @@ Step-2 verification: the focused race batch includes historical reconstruction
 and week-lock boundary tests (**15 test/subtest PASS** for those two tests),
 with 74 exact week classifications and 34 direct raw transfer timestamp checks.
 Plain `make build` passed on the working candidate; no full suite or remote.
+
+## Step 3 — linear active-membership check
+
+Finding: `checkLineupRoster` called `NativeBase.playersOf`, which groups every
+player and computes five scoped decision exceptions for each, replaying/scanning
+the ledger repeatedly. This caller then discarded every exception and used only
+ID/status. Its measured W7/8-only profile spends **511.09 cumulative CPU seconds**
+in membership, **510.79s** in scoped exceptions. Tom's earlier 1,430s profile is
+not substituted for this run's measured baseline.
+
+Smallest change: read the already-projected snapshot directly, filter the named
+franchise, construct the same active-ID map, then check starters in their original
+order. The membership stage is **O(players + starters)** with no ledger replay.
+No general exception implementation, shared cache, bypass flag, timeout, provider,
+transaction importer or protected composition/Pulse file was changed.
+
+Preserved flow: ordinary importer → ordinary ledger Execute / authorization /
+preparation → CheckLineupAppend → already-projected current/as-of snapshot →
+active membership → unchanged lock/lineup judgment → ordinary atomic append and
+recovery. Error names and first-refused-starter order remain unchanged. Player
+copies on another franchise cannot satisfy membership; IR/taxi exceptions still
+cannot make a reserve player an active starter. General roster/cap/reserve
+legality retains its exception computation. `checkLineupRoster` is called only
+after the existing seeded-snapshot check; no new nil/unseeded contract is assumed.
+
+### Paired full-profile proof
+
+One backup-API snapshot after the ordinary 3,338-command import was used to make
+independent before/after copies. Fixed store clock, same held players, scored
+W1–7 weekly results and ledger prefix; one replay at a time. All calls use
+`BackfillLineups` and the existing MigrationLedger/store. Football facts are read
+by ScheduleCache from held bodies. "Old" hides W1–6 dates to reproduce the prior
+W7/8-only environment; "all" supplies W1–8. No source DB was modified.
+
+| Mode | Before elapsed | After elapsed | Appended before/after | Refused before/after |
+| --- | --- | --- | --- | --- |
+| W7/8-only (paired fresh) | 11m19.887266453s | **2m58.877046769s** | 147 / 147 | **77 / 77** |
+| Complete held W1–8 (paired fresh) | 12m7.918708927s | **3m53.981768607s** | 204 / 204 | **20 / 20** |
+| Schedule-free | 10m22.422436433s (inherited APP-ROSTER-11) | **2m48.018668836s** | 149 / 149 | **75 / 75** |
+
+Paired reductions: **73.69% / 67.86%**. Complete dates give the requested product
+refusal change **77 → 20**; optimizing alone changes no decision. Schedule-free
+remains **75** by definition. All post-change calls are inside the unchanged
+ten-minute worker budget; these isolated completed calls do not prove the GUI or
+combined transaction+lineup worker's cumulative deadline behavior.
+
+**Byte-identical paired results**, not just equal counts: `cmp` passed for the
+entire refusal text (including final LF) and JSON serialization of **every appended
+RawCommand** (all fields, including request/expected/reason/effective/visibility
+and complete lineup payload). Newly generated receipt entry IDs are intentionally
+not compared; they differ for independent appends. SHA256:
+
+| Artifact | Same before/after SHA256 |
+| --- | --- |
+| W7/8-only commands | `fac0533c141e46e5bd2b664df587277136319227144976633bd4ca83f1623fd5` |
+| W7/8-only refusals | `08e884f1a153eea48b8a2fefa899371bd4b931f0c62ba640d2abb7c5e9f7d49e` |
+| Complete-dates commands | `bb2a41f0d4e18353d10b4a1cc4a3a0572725f7d5bbf717fd8daa8c1ff1d66826` |
+| Complete-dates refusals | `845cb6fb21f3dda732f94ac1c2f60094785cc368e0955c167670c4037435e4d4` |
+
+The schedule-free refusal text and the fresh old-mode baseline also match the
+APP-ROSTER-11 artifacts; those older artifacts lack the final LF, so only that
+legacy comparison normalizes the terminal newline. Paired new comparisons do not.
+After membership consumes **0.02 cumulative CPU seconds** in the old-mode profile;
+ScopedDecisionExceptions / decisionException disappear from that lineup profile.
+Other projection/governance/recovery costs remain; no whole-engine linearity claim.
+
+Full complete-dates repeat: **0 appended, same 20 refused, 15.43699276s**.
+Bills W1–7 all recorded. After the final replay, current membership/status still
+matches the latest held reference for **32/32** franchises. The old seed observation
+alone matches 28/32; franchises 03/15/18/25 differ because of the already-recorded
+post-observation source moves, not this optimization. This comparison used held
+league/roster bodies via the existing MFL adapter and roster validator/normalizer,
+with a local-only transport that refuses unheld requests; no further network read.
+The final 74-row and 1,937 source-time audits reproduce unchanged after lineups.
+
+### Verification and footprint
+
+- Test discovery preceded targeted race batches. Final candidate: **35 test/subtest
+  PASS**, zero FAIL/SKIP (15 historical reconstruction/week-lock; 20 membership,
+  per-side exception, lineup authorization/legality/locks/corrections/idempotence).
+  With step 1, **46** final-candidate test/subtest PASS. No full suite.
+- New table tests cover active/IR/taxi/absent/other franchise, same ID on two sides,
+  five eligibility exceptions, empty starters, exact first-refusal text and no
+  membership input mutation. Existing real-store tests cover rejection with no
+  append, ordinary success and repeat-zero.
+- Franchise-filter mutant rejected by the new test; final source restored and the
+  complete focused race batch passed again.
+- Membership benchmark, 100 iterations: 100 / 1,000 / 3,000 players plus records:
+  **9,172 / 105,223 / 243,548 ns/op**. This is a scaling observation, not a timing
+  threshold or a comparison to an unmeasured old microbenchmark.
+- Plain `make build` passed on the candidate. No binding/protected-file changes.
+- Whole affected handwritten production file: **252 → 254 physical lines**;
+  test file: **50 → 125**. No dependency, new package or size-reduction claim.
+
+### Debt / limits
+
+Christopher's first-kickoff ruling for the 26 rows (20 franchise-weeks) remains;
+there is no demonstrated source transaction-date defect to fix. Actual background
+worker/GUI and combined import+lineup timing are unproved. Existing general
+projection/governance/recovery costs and other real consumers of scoped exceptions
+are unchanged. Prior debt remains: off-roster missing-contract jobs and transaction
+follow activation on older imported leagues. Independent review is not claimed.

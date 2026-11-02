@@ -1,9 +1,13 @@
 package commissioner
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func TestLineupRosterAtWeekLock(t *testing.T) {
@@ -44,6 +48,77 @@ func TestLineupRosterAtWeekLock(t *testing.T) {
 			}
 			if !tc.want && (err == nil || !strings.Contains(err.Error(), "not on this franchise's active roster")) {
 				t.Fatalf("expected roster refusal, got %v", err)
+			}
+		})
+	}
+}
+
+func TestLineupMembershipIgnoresEligibilityExceptions(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name     string
+		players  []NativePlayer
+		starters []string
+		want     string
+	}{
+		{"active", []NativePlayer{{ID: "0001", Franchise: "home", Status: domain.RosterActive}}, []string{"0001"}, ""},
+		{"IR", []NativePlayer{{ID: "0001", Franchise: "home", Status: domain.RosterIR}}, []string{"0001"}, "Held name"},
+		{"taxi", []NativePlayer{{ID: "0001", Franchise: "home", Status: domain.RosterTaxi}}, []string{"0001"}, "Held name"},
+		{"other franchise", []NativePlayer{{ID: "0001", Franchise: "away", Status: domain.RosterActive}}, []string{"0001"}, "Held name"},
+		{"absent", nil, []string{"0001"}, "Held name"},
+		{"same ID on another side", []NativePlayer{
+			{ID: "0001", Franchise: "home", Status: domain.RosterIR},
+			{ID: "0001", Franchise: "away", Status: domain.RosterActive},
+		}, []string{"0001"}, "Held name"},
+		{"active copy unaffected by other side", []NativePlayer{
+			{ID: "0001", Franchise: "home", Status: domain.RosterActive},
+			{ID: "0001", Franchise: "away", Status: domain.RosterIR},
+		}, []string{"0001"}, ""},
+		{"first refusal follows starters", nil, []string{"0002", "0001"}, "player 0002"},
+		{"empty starters", nil, nil, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			base := NativeBase{Now: seasonMoment(12), Assets: NativeAssets{Seeded: true,
+				Snapshot: &RawNativeSnapshot{Players: tc.players}}}
+			for _, rule := range []string{"roster.limits", "roster.positionBounds", "cap.enforcement", "ir.eligible", "taxi.maximumYears"} {
+				base.Records = append(base.Records, Record{Command: RawCommand{Command: RuleException,
+					Args:   RawArgs{Correction: &RawCorrection{Rule: rule, Scope: &ExceptionScope{Franchise: "home", Player: "0001"}}},
+					Reason: "Eligibility only"}, Receipt: Receipt{Entry: rule, RecordedAt: seasonMoment(1)}})
+			}
+			before := fmt.Sprintf("%+v", base.Assets.Snapshot.Players)
+			change := RawLineupChange{Franchise: "home", Starters: tc.starters}
+			env := LineupFacts{Facts: nativecheck.Facts{"0001": {Name: "Held name"}}}
+			err := checkLineupRoster(base, change, env)
+			want := tc.want
+			if want != "" {
+				want += " is not on this franchise's active roster, so cannot start"
+			}
+			got := ""
+			if err != nil {
+				got = err.Error()
+			}
+			if got != want || fmt.Sprintf("%+v", base.Assets.Snapshot.Players) != before {
+				t.Fatalf("got %q, want %q, or membership input changed", got, want)
+			}
+		})
+	}
+}
+
+func BenchmarkLineupRosterMembership(b *testing.B) {
+	for _, size := range []int{100, 1000, 3000} {
+		b.Run(fmt.Sprint(size), func(b *testing.B) {
+			base := NativeBase{Assets: NativeAssets{Seeded: true, Snapshot: &RawNativeSnapshot{}}}
+			for i := range size {
+				base.Records = append(base.Records, Record{Receipt: Receipt{Entry: fmt.Sprint(i)}})
+				base.Assets.Snapshot.Players = append(base.Assets.Snapshot.Players,
+					NativePlayer{ID: fmt.Sprint(i), Franchise: "home", Status: domain.RosterActive})
+			}
+			change := RawLineupChange{Franchise: "home", Starters: []string{"0"}}
+			b.ResetTimer()
+			for b.Loop() {
+				if err := checkLineupRoster(base, change, LineupFacts{}); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	}
