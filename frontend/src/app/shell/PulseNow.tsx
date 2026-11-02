@@ -203,7 +203,9 @@ export function Plays({ game }: { game?: LiveNflGame }) {
         <span className="rib" />
         <span className="hs">{team || '·'}</span>
         <span className="what">{p.text}</span>
-        <span className="d">{p.awayScore}-{p.homeScore}<small>{game.away.abbreviation}-{game.home.abbreviation}</small></span>
+        <span
+          className="d">{p.awayScore}-{p.homeScore}<small>{game.away.abbreviation}-{
+            game.home.abbreviation}</small></span>
       </div>;
     })}</div>;
 }

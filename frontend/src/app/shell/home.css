@@ -393,3 +393,9 @@
 .hb .t.loading .tb .empty{color:var(--ink3);font-style:italic}
 .hb .t.stale .tf span:first-child{color:var(--amber)}
 .hb .wsx .ct tr.me td{color:var(--mine)}
+
+/* Selection is a sibling control, so tile actions never nest inside a button. */
+.hb .tile-select{position:absolute;inset:0;width:100%;height:100%}
+.hb .t>.th,.hb .t>.tb,.hb .t>.tf{position:relative;pointer-events:none}
+.hb .t button:not(.tile-select){pointer-events:auto}
+.hb button.aband,.hb button.r.wire{width:100%;text-align:left}

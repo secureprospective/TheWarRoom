@@ -66,6 +66,7 @@ it("says the lineups are still being read instead of claiming no starter plays",
   const reading = renderToStaticMarkup(<InThisGame followed={game}
     sides={{ private: false, reading: true, left: [], right: [] }} />);
   expect(reading).toContain("Reading this matchup"); expect(reading).not.toContain("No starter");
-  const read = renderToStaticMarkup(<InThisGame followed={game} sides={{ private: false, left: [], right: [] }} />);
+  const read = renderToStaticMarkup(<InThisGame followed={game} sides={{ private: false, left: [], right: []
+    }} />);
   expect(read).toContain("No starter");
 });

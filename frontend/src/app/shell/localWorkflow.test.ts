@@ -53,11 +53,15 @@ it('refuses a league reading outside the desktop app', async () => {
 
 // TargetWorkflow refuses commands outside its bounded set with "this league action is not available
 // here"; Home's TRANSACTIONS and ALERTS read the ledger and the jobs board, so each goes to its own binding.
-it.each([['commish.ledger.read', 'TargetCommissionerLedger'], ['commish.jobs.read', 'TargetCommissionerJobs']] as const)(
+it.each([
+  ['commish.ledger.read', 'TargetCommissionerLedger'],
+  ['commish.jobs.read', 'TargetCommissionerJobs'],
+] as const)(
   'reads %s through its own binding, not the workflow envelope', async (command, method) => {
     const calls: Call[] = [];
     desktop(calls);
-    const api = (window as unknown as { go: { commissioner: { API: Record<string, unknown> } } }).go.commissioner.API;
+    const api = (window as unknown as { go: { commissioner: { API: Record<string, unknown> } }
+      }).go.commissioner.API;
     api[method] = (...args: unknown[]) => { calls.push({ method, arguments: args });
       return Promise.resolve({ league: 'native.seed' }); };
     const response = await localWorkflow({ command, mode: 'read', arguments: { league: 'native.seed' } });

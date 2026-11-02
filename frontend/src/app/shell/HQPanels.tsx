@@ -149,7 +149,8 @@ export function HQReserves({ kind, snapshot, mine, settings, injuries, close, na
     </div><div className="bd-side"><div className="sum"><div><b>{capacity(players.length,
       limit)}</b><span>{kind.toUpperCase()} SLOTS</span></div><div><b>{capacity(active.length,
       settings.active)}</b><span>ACTIVE</span></div>
-      <div><b>{kind === 'taxi' ? money(players.some(p => p.salary === null) ? null : players.reduce((n, p) => n + (p.salary ?? 0), 0)) :
+      <div><b>{kind === 'taxi' ? money(players.some(p => p.salary === null) ? null : players.reduce((n, p) =>
+        n + (p.salary ?? 0), 0)) :
         money(countedIRPay)}</b><span>{kind === 'ir' ? 'IR PAY · ON CAP' : 'TAXI PAY'}</span></div>
       <div><b>{kind === 'ir' ? returns[0] ? `Wk ${returns[0].returnWeek}` : unavailable : limit ===
         undefined ? unavailable : limit - players.length}</b><span>{kind === 'ir' ? 'NEXT RETURN' :

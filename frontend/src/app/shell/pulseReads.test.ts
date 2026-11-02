@@ -47,7 +47,8 @@ it('scores one week and lines both lineups up with their teams and projections',
   const early: { lineups: number; projections: number }[] = [];
   const matchup = await readPulseMatchup(LEAGUE, 2026, 2, ['franchise.01', 'franchise.32'],
     { 'franchise.01': score.starters.map(s => s.player) }, port(),
-    r => early.push({ lineups: Object.keys(r.lineups).length, projections: Object.keys(r.projections).length }));
+    r => early.push({ lineups: Object.keys(r.lineups).length, projections: Object.keys(r.projections).length
+      }));
   expect(matchup.errors).toEqual([]);
   // The lineups are shown before the projections read, which waits on the value engine at launch.
   expect(early).toEqual([{ lineups: Object.keys(matchup.lineups).length, projections: 0 }]);

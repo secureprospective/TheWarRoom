@@ -1,10 +1,23 @@
-import { useState, type ReactNode } from 'react';
-import { commands } from '../commands/registry';
+import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
+import { Act } from '../commands/Act';
+import { surfaceActions } from '../commissioner/surfaceActions';
+import { commands, type CommandArgs } from '../commands/registry';
 import type { HomeBrief, HomeSource } from './homeReads';
 import type { TileId } from './homeLayout';
 import { money, unavailable } from './hqModel';
 import type { Node } from './nodes';
 import { pointsLabel, type PulseStarter } from '../data/nativePulse';
+
+type HomeActProps = Omit<ComponentProps<typeof Act<'commissioner.surface'>>, 'verb' | 'args' | 'variant'> & {
+  action: string; value?: string; open?: { node: Node; workspace?: string };
+};
+export function HomeAct({ action, value = '', open, ...props }: HomeActProps) {
+  props = { ...props, label: props.label ?? (typeof props.children === 'string' ? props.children : action) };
+  if (action === 'navigate') return <Act {...props} variant="surface" verb="nav.open"
+    args={(open ?? { node: 'hq' }) as CommandArgs<'nav.open'>} disabled={props.disabled || !open} />;
+  return <Act {...props} variant="surface" verb="commissioner.surface"
+    args={{ screen: 'home-brief', action: 'pick', value: `${action}:${value}` }} />;
+}
 
 /** Each tile is the locked mock's tile: its title, source screen, the read that feeds it and where it
  *  opens. `missing` names the data the app does not hold yet; such a tile says so and shows nothing. */
@@ -21,14 +34,17 @@ export const TILES: Record<TileId, TileDef> = {
     link: 'RACE ›', refresh: 'after each final', open: { node: 'pulse', workspace: 'race' },
     needs: ['pulse'] },
   head: { t: 'LEAGUE HEADLINES', src: 'League record', prov: '—', link: 'PULSE ›', refresh: 'on event',
-    open: { node: 'pulse' }, needs: [], missing: 'No read writes league headlines from scores, trades and streaks' },
+    open: { node: 'pulse' }, needs: [], missing:
+      'No read writes league headlines from scores, trades and streaks' },
   news: { t: 'NFL NEWS', src: 'Player research · MFL player news', prov: 'research.TargetResearch (articles)',
-    link: 'RESEARCH ›', refresh: 'on research refresh', open: { node: 'war', workspace: 'research' }, needs: ['research'] },
+    link: 'RESEARCH ›', refresh: 'on research refresh', open: { node: 'war', workspace: 'research' }, needs:
+      ['research'] },
   wire: { t: 'TRANSACTIONS', src: 'League ledger', prov: 'commish.ledger.read', link: 'LEDGER ›',
     refresh: 'on event', open: { node: 'control', workspace: 'league' }, needs: ['ledger'] },
   sc: { t: 'MY SHORTCUTS', src: 'Owner', prov: 'owner pins (☆)', link: '', refresh: '—', needs: [] },
   pwr: { t: 'POWER', src: 'League Pulse · Race', prov: '—', link: 'POWER ›', refresh: 'weekly',
-    open: { node: 'pulse', workspace: 'race' }, needs: [], missing: 'No power ranking read for an app league' },
+    open: { node: 'pulse', workspace: 'race' }, needs: [], missing: 'No power ranking read for an app league'
+      },
   plan: { t: 'PLANS', src: 'War Room · Plans', prov: '—', link: 'PLANS ›', refresh: 'on edit',
     open: { node: 'war' }, needs: [], missing: 'No plans checklist is stored' },
   picks: { t: 'MY PICKS', src: 'War Room · Draft Room', prov: 'draft.read', link: 'DRAFT ›',
@@ -94,8 +110,8 @@ export function clock(iso: string, seconds = false): string {
     minute: '2-digit', ...(seconds ? { second: '2-digit' } : {}), hour12: false });
 }
 
-export function TileBody({ id, b, mine, onTx, pins }: { id: TileId; b: HomeBrief;
-  mine: string; onTx: (index: number) => void; pins: TileId[] }) {
+export function TileBody({ id, b, mine, pins }: { id: TileId; b: HomeBrief;
+  mine: string; pins: TileId[] }) {
   const def = TILES[id];
   if (def.missing) return <div className="empty">{unavailable} · {def.missing}</div>;
   const failed = def.needs.map(n => b.errors[n]).find(Boolean);
@@ -105,11 +121,13 @@ export function TileBody({ id, b, mine, onTx, pins }: { id: TileId; b: HomeBrief
     case 'mu': return <Matchup b={b} mine={mine} />;
     case 'race': return <Race b={b} mine={mine} />;
     case 'wire': return <>{(b.ledger?.entries ?? []).slice().reverse().map((e, i) =>
-      row('wire', <><span className="m">{shortTime(e.when)}</span>
+      <HomeAct key={e.id} className="r wire" action="transaction" value={String(i)}
+        attributes={{ 'data-tx': String(i) }} label={`${e.what} · ${e.who}`}><><span
+          className="m">{shortTime(e.when)}</span>
         <span className="tx">{e.what.split(' ')[0].toUpperCase()}</span>
-        <span className="nm">{e.what}<small>{e.who}{e.why ? ` · ${e.why}` : ''}</small></span></>, e.id,
-      { 'data-tx': i, onClick: () => onTx(i) }))}
-      {b.ledger && !b.ledger.entries.length && <div className="empty">No transactions in the ledger yet.</div>}</>;
+        <span className="nm">{e.what}<small>{e.who}{e.why ? ` · ${e.why}` : ''}</small></span></></HomeAct>)}
+      {b.ledger && !b.ledger.entries.length && <div className="empty">No transactions in the ledger
+        yet.</div>}</>;
     case 'sc': return <Shortcuts pins={pins} />;
     case 'form': return <Form b={b} />;
     case 'news': return <News b={b} mine={mine} />;
@@ -119,17 +137,21 @@ export function TileBody({ id, b, mine, onTx, pins }: { id: TileId; b: HomeBrief
         {b.draft!.season} {p.round}.{String(p.slot).padStart(2, '0')}</span>
         <span className="nm m">{p.original === mine ? 'own' : `from ${nameOf(b, p.original)}`}</span>
         <span className="m" style={{ textAlign: 'right' }}>—</span></>, `${p.round}.${p.slot}`))}
-        {b.draft && !picks.length && <div className="empty">You hold no picks in the {b.draft.season} draft.</div>}</>;
+        {b.draft && !picks.length && <div className="empty">You hold no picks in the {b.draft.season}{' '}
+          draft.</div>}</>;
     }
     case 'cap': {
       const [now, ...later] = b.runway ?? [];
       if (!now) return <div className="empty">{unavailable} · no cap runway for this franchise</div>;
       const pct = (v?: number) => now.max ? `${Math.min(100, ((v ?? 0) / now.max) * 100)}%` : '0%';
-      return <><div className="capr"><b>{money(now.room)}</b><span>ROOM {now.season} · of {money(now.max)}</span>
-        <div className="capbar"><i style={{ width: pct(now.committed) }} /><u style={{ width: pct(now.dead) }} /><s /></div>
+      return <><div className="capr"><b>{money(now.room)}</b><span>ROOM {now.season} · of{' '}
+        {money(now.max)}</span>
+        <div className="capbar"><i style={{ width: pct(now.committed) }} /><u style={{ width: pct(now.dead) }}
+          /><s /></div>
         <div className="m" style={{ font: '10px var(--mono)', color: 'var(--ink3)', marginTop: 5 }}>
           ■ committed {money(now.committed)} · ▤ dead {money(now.dead)}</div></div>
-        {[now, ...later].map(c => row('yr', <><span className="v" style={{ textAlign: 'left' }}>{c.season}</span>
+        {[now, ...later].map(c => row('yr', <><span className="v" style={{ textAlign: 'left'
+          }}>{c.season}</span>
           <span className="nm">{money(c.room)} room</span><span className="m" style={{ textAlign: 'right' }}>
             {capNote(b, mine, c.season)}</span></>, c.season))}</>;
     }
@@ -144,7 +166,8 @@ export function TileBody({ id, b, mine, onTx, pins }: { id: TileId; b: HomeBrief
       const due = (b.calendar ?? []).map(e => ({ ...e, when: e.live ? e.closes : e.at }))
         .filter(e => e.when && Date.parse(e.when) >= now)
         .sort((x, y) => Date.parse(x.when!) - Date.parse(y.when!));
-      return <>{due.map(d => row('dq', <><span className="k clock">CLOCK</span><span className="nm">{d.label}</span>
+      return <>{due.map(d => row('dq', <><span className="k clock">CLOCK</span><span
+        className="nm">{d.label}</span>
         <span className="m">{shortTime(d.when!)}</span>
         <span className="clock" style={{ textAlign: 'right' }}>{left(d.when!, now)}</span></>, d.id))}</>;
     }
@@ -166,20 +189,24 @@ function Matchup({ b, mine }: { b: HomeBrief; mine: string }) {
   const pair = Array.from({ length: Math.max(me?.starters.length ?? 0, op?.starters.length ?? 0) },
     (_, i) => [me?.starters[i], op?.starters[i]] as [PulseStarter | undefined, PulseStarter | undefined]);
   return <>
-    <div className="mx"><div className="sd me"><b>{nameOf(b, mine)}</b><span>{rec(mine)} · proj {proj(mine)}</span>
+    <div className="mx"><div className="sd me"><b>{nameOf(b, mine)}</b><span>{rec(mine)} · proj{' '}
+      {proj(mine)}</span>
       <div className="sc">{pointsLabel(pts(me))}</div></div><div className="vs">vs</div>
       <div className="sd op rt"><b>{nameOf(b, opp)}</b><span>{rec(opp)} · proj {proj(opp)}</span>
         <div className="sc">{pointsLabel(pts(op))}</div></div></div>
     <div className="wpl" title="Win probability is computed only for the MFL mirror's Now board (M-018)">
       <span className="g">—</span><span className="m" style={{ font: '10px var(--mono)',
       color: 'var(--ink3)' }}>WIN % · {unavailable}</span><span className="a">—</span></div>
-    <div className="prog" title="Kicked-off starters are locked; the lineup read cannot split playing from done">
+    <div className="prog"
+      title="Kicked-off starters are locked; the lineup read cannot split playing from done">
       <div><b>{final ? 0 : ups.length ? locked : '—'}</b><span>PLAYING</span></div>
       <div><b>{final ? 0 : ups.length ? ups.length - locked : '—'}</b><span>YET TO PLAY</span></div>
       <div><b>{final ? me?.starters.length ?? '—' : '—'}</b><span>DONE</span></div></div>
-    {pair.map(([a, c], i) => row('duo', <><span className="nm">{a ? playerName(b, a.player, a.name) : '—'} <span className="m">
+    {pair.map(([a, c], i) => row('duo', <><span className="nm">{
+      a ? playerName(b, a.player, a.name) : '—'}{' '}<span className="m">
       {a?.position ?? ''}</span></span><span className="v me">{pointsLabel(pts(a))}</span>
-      <span className="v op">{pointsLabel(pts(c))}</span><span className="nm rt">{c ? playerName(b, c.player, c.name) : '—'}</span></>, i))}
+      <span className="v op">{pointsLabel(pts(c))}</span><span className="nm rt">{c ? playerName(b, c.player,
+        c.name) : '—'}</span></>, i))}
   </>;
 }
 
@@ -191,14 +218,17 @@ function Race({ b, mine }: { b: HomeBrief; mine: string }) {
   const i = rows.findIndex(r => r.franchise === mine);
   const window = rows.slice(Math.max(0, i - 2));
   return <>
-    <div className="seedl" title={ranked(b) ? undefined : b.pulse?.standings?.words}><div><b>{ranked(b) ? me?.rank ?? '—' : '—'}</b><span>SEED NOW</span></div>
+    <div className="seedl" title={ranked(b) ? undefined : b.pulse?.standings?.words}><div><b>{ranked(b) ?
+      me?.rank ?? '—' : '—'}</b><span>SEED NOW</span></div>
       <div><b>—</b><span>PROJECTED</span></div><div><b>—</b><span>PLAYOFF ODDS</span></div>
       <div><b>—</b><span>POWER</span></div></div>
     <div className="runin">{next.map(f => <div key={f.week}>WK {f.week}<b>{f.venue === 'away' ? '@ ' : ''}
       {nameOf(b, f.opponent)}</b><i>—</i></div>)}</div>
     {window.map(r => row(`mini ${r.franchise === mine ? 'me' : r.rank === cut ? 'cut' : ''}`, <>
-      <span className="m">{r.rank}</span><span className="nm">{r.name}</span><span className="v">{ranked(b) ? r.record : '—'}</span>
-      <span className="m" style={{ textAlign: 'right' }}>{r.rank === cut ? 'CUT ─' : ''}</span></>, r.franchise))}
+      <span className="m">{r.rank}</span><span className="nm">{r.name}</span><span className="v">{ranked(b) ?
+        r.record : '—'}</span>
+      <span className="m" style={{ textAlign: 'right' }}>{r.rank === cut ? 'CUT ─' : ''}</span></>,
+        r.franchise))}
   </>;
 }
 
@@ -231,8 +261,10 @@ function Form({ b }: { b: HomeBrief }) {
     const avg = f.weeks.reduce((n, w) => n + w.points, 0) / f.weeks.length;
     return row('pw', <><span className="m">{f.position}</span><span className="nm">{f.name}</span>
       <span className="v">{Math.round(avg)}</span><span className="form" title={f.weeks.map(w =>
-        `W${w.week}: ${w.points}`).join(' · ')} style={{ display: 'flex', gap: 2, alignItems: 'end', height: 18 }}>
-        {f.weeks.map(w => <i key={w.week} style={{ width: 8, height: Math.max(0, Math.min(18, w.points / 1.8)),
+        `W${w.week}: ${w.points}`).join(' · ')} style={{ display: 'flex', gap: 2, alignItems: 'end', height:
+          18 }}>
+        {f.weeks.map(w => <i key={w.week} style={{ width: 8, height: Math.max(0, Math.min(18, w.points /
+          1.8)),
           background: 'var(--edge-hi)', display: 'block' }} />)}</span></>, f.player);
   })}</>;
 }
@@ -249,15 +281,19 @@ const NF = { all: 'ALL', mine: 'MY PLAYERS', inj: 'INJURIES', wire: 'ON THE WIRE
 const INJ = /\b(injur|out|IR\b|questionable|doubtful|susp|hamstring|ankle|knee|concussion)/i;
 function News({ b, mine }: { b: HomeBrief; mine: string }) {
   const [f, setF] = useState<keyof typeof NF>('all');
-  const owner = new Map((b.assets?.rosters.value ?? []).flatMap(r => r.players.map(p => [p.id, r.franchiseId])));
+  const owner = new Map((b.assets?.rosters.value ?? []).flatMap(r => r.players.map(p => [p.id,
+    r.franchiseId])));
   const items = (b.research?.articles ?? []).map(a => ({ ...a, who: owner.get(a.id) }))
     .filter(a => f === 'all' || (f === 'inj' ? INJ.test(a.headline)
       : f === 'mine' ? a.who === mine : a.who === undefined));
-  return <><div className="nfb">{(Object.keys(NF) as (keyof typeof NF)[]).map(k => <button key={k}
-    aria-pressed={k === f} onClick={e => { e.stopPropagation(); setF(k); }}>{NF[k]}</button>)}
+  useEffect(() => surfaceActions.register('home-news', ({ value }) => setF(value as keyof typeof NF)), []);
+  return <><div className="nfb">{(Object.keys(NF) as (keyof typeof NF)[]).map(k => <Act key={k}
+    variant="surface" verb="commissioner.surface"
+    args={{ screen: 'home-news', action: 'pick', value: k }} active={k === f} label={NF[k]}>{NF[k]}</Act>)}
     <span>{items.length} items</span></div>
     {items.map(a => row(`nw o-${a.who === mine ? 'mine' : a.who ? 'x' : 'wire'}`, <><span className="m" />
-      <span className={`k${INJ.test(a.headline) ? ' n-inj' : ''}`}>{INJ.test(a.headline) ? 'INJ' : 'NEWS'}</span>
+      <span className={`k${INJ.test(a.headline) ? ' n-inj' : ''}`}>{INJ.test(a.headline) ? 'INJ' :
+        'NEWS'}</span>
       <span className="nm"><b>{a.headline}</b><small>{newsLine(b, a)}</small></span>
       <span className="own">{a.who === mine ? 'Yours' : a.who ? nameOf(b, a.who) : 'Free agent'}</span></>,
     `${a.id}.${a.article}`))}
@@ -282,11 +318,12 @@ export const SHORTCUT_KEYS: Record<string, { node: Node; workspace?: string }> =
 function Shortcuts({ pins }: { pins: TileId[] }) {
   const pinned: [string, string, Short[]][] = pins.length ? [['PINNED', '☆', pins.map(id =>
     [TILES[id].t, '', TILES[id].open] as Short)]] : [];
-  return <><div className="scx">{[...pinned, ...SHORTCUTS].map(([g, home, xs]) => <div className="scgp" key={g}>
+  return <><div className="scx">{[...pinned, ...SHORTCUTS].map(([g, home, xs]) => <div className="scgp"
+    key={g}>
     <div className="sch"><b>{g}</b><span>{home}</span></div>
-    {xs.map(([label, key, open]) => <button className="scb" key={label} disabled={!open}
-      title={open ? undefined : unavailable} onClick={e => { e.stopPropagation(); go(open); }}>{label}
-      {key && <kbd>{key}</kbd>}</button>)}
+    {xs.map(([label, key, open]) => <HomeAct className="scb" key={label} disabled={!open}
+      label={open ? label : unavailable} action="navigate" open={open}>{label}
+      {key && <kbd>{key}</kbd>}</HomeAct>)}
   </div>)}</div>
   <div className="scf">☆ any screen to add it here · drag ⠿ to reorder in CUSTOMIZE</div></>;
 }

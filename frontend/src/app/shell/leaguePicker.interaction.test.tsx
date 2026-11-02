@@ -90,7 +90,8 @@ it('opens the Control Room on the locked mock for a picked app league', async ()
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
     expect(container.querySelector('[data-testid="control-room"]')).not.toBeNull();
     expect(container.querySelector('.shell-unwired')).toBeNull();
-    expect([...container.querySelectorAll('[data-testid="control-room"] [role="tab"]')].map(b => b.textContent))
+    expect([...container.querySelectorAll('[data-testid="control-room"] [role="tab"]')].map(b =>
+      b.textContent))
       .toEqual(['JOBS', 'SITUATIONS', 'RULES', 'SEASON DESK', 'FIX', 'PICKS', 'PEOPLE', 'LEAGUE', 'SERVER']);
     expect(container.querySelectorAll('.wtabs button')).toHaveLength(0);
   } finally {

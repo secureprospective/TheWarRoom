@@ -49,7 +49,8 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
   const out: HomeBrief = { at: {}, errors: {} };
   const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
   const apply = async (source: HomeSource, read: () => Promise<void>) => {
-    try { await read(); out.at[source] = new Date().toISOString(); delete out.errors[source]; } catch (error) {
+    try { await read(); out.at[source] = new Date().toISOString(); delete out.errors[source]; } catch (error)
+      {
       out.errors[source] = error instanceof Error ? error.message : String(error);
     } finally { send(); }
   };
