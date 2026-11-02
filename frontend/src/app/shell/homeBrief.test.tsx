@@ -361,6 +361,7 @@ it('uses sibling shared buttons for tile selection, with no nested interactive c
   const select = tile('race').querySelector('button.tile-select')!;
   expect(select.classList.contains('act-surface')).toBe(true);
   expect(select.getAttribute('aria-label')).toBe('Select RACE');
+  expect(select.textContent).toBe('');
   await click(select);
   expect(tile('race').classList.contains('sel')).toBe(true);
   expect(q('aside.insp')!.textContent).toContain('RACE');
