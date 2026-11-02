@@ -51,6 +51,7 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
+	engineNotDue         atomic.Int64
 	commands             *catalog.Registry
 	core                 *core.State
 	tradeBuilderTimeout  time.Duration
