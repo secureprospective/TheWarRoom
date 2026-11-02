@@ -1,0 +1,66 @@
+import type { CommissionerBindings, commissioner, market } from '../../commissioner/api';
+import type { control } from '../../../../wailsjs/go/models';
+
+/** The commissioner reads the Control Room shows beside the league state (jobs, rules, people, ledger,
+ *  notices), which leagueState already holds. Each is an existing binding; nothing here decides a rule. */
+export type RoomData = {
+  waivers?: market.Market; bids?: market.Market; trades?: market.Market;
+  statQueue?: commissioner.StatQueue; calendar?: commissioner.Calendar;
+  corrections?: commissioner.Corrections; assets?: commissioner.NativeAssets;
+  directory?: commissioner.NativeDirectory; schedule?: commissioner.ManagedSchedule;
+  houseRules?: commissioner.NativeHouseRules; week?: commissioner.NativeWeek;
+  /** The status strip's source health (TargetShellStatus). */
+  status?: control.ShellStatus;
+  errors: Partial<Record<RoomSource, string>>;
+};
+export type RoomSource = 'waivers' | 'bids' | 'trades' | 'statQueue' | 'calendar' | 'corrections'
+  | 'assets' | 'directory' | 'schedule' | 'houseRules' | 'week' | 'status';
+export type RoomPort = Pick<CommissionerBindings, 'TargetCommissionerMarket' | 'TargetStatQueue'
+  | 'TargetLeagueCalendar' | 'TargetCorrections' | 'TargetNativeAssets' | 'TargetNativeDirectory'
+  | 'TargetCommissionerSchedule' | 'TargetNativeHouseRules' | 'TargetNativeWeek'>
+  & { TargetShellStatus(): Promise<control.ShellStatus> };
+
+const say = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause)).replace(/^Error: /, '');
+
+/** readRoom reads every source at once; a source that fails leaves its field empty and its words in
+ *  errors, so one lost read never blanks the room. */
+export async function readRoom(league: string, port: RoomPort): Promise<RoomData> {
+  const out: RoomData = { errors: {} };
+  const take = async <K extends RoomSource>(source: K, read: () => Promise<RoomData[K]>) => {
+    try { out[source] = await read(); } catch (cause) { out.errors[source] = say(cause); }
+  };
+  await Promise.all([
+    take('directory', () => port.TargetNativeDirectory(league)),
+    take('assets', () => port.TargetNativeAssets(league)),
+    take('waivers', () => port.TargetCommissionerMarket(league, 'waivers.process')),
+    take('bids', () => port.TargetCommissionerMarket(league, 'bids.process')),
+    take('trades', () => port.TargetCommissionerMarket(league, 'trade.review')),
+    take('corrections', () => port.TargetCorrections(league)),
+    take('schedule', () => port.TargetCommissionerSchedule(league)),
+    take('houseRules', () => port.TargetNativeHouseRules(league)),
+    take('status', () => port.TargetShellStatus()),
+  ]);
+  const season = out.directory?.rosterSeason;
+  if (season) {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    // The War Room's calendar read (warroomCalendar.ts): the trade action's windows and the deadline.
+    await Promise.all([take('statQueue', () => port.TargetStatQueue(league, season)),
+      take('calendar', () => port.TargetLeagueCalendar({ league, season, franchise: '', action: 'trade',
+        localZone: zone } as commissioner.RawLeagueCalendarScope)),
+      // League Pulse's week read, through the first franchise: the league week is the same for every seat.
+      take('week', () => port.TargetNativeWeek({ league, season, localZone: zone,
+        franchise: out.directory?.franchises[0]?.franchise ?? '', at: new Date().toISOString() } as
+        unknown as commissioner.RawNativeWeekScope))]);
+  } else {
+    const why = out.errors.directory ?? 'The league has no roster season yet';
+    out.errors.statQueue = why;
+    out.errors.calendar = why;
+    out.errors.week = why;
+  }
+  return out;
+}
+
+/** A franchise's name from the league directory (HQ's identity block), never its id. */
+export function teamName(data: RoomData, franchise: string): string {
+  return data.directory?.franchises.find(f => f.franchise === franchise)?.name ?? franchise;
+}
