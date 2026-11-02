@@ -65,8 +65,8 @@ type NativePlayer struct {
 	ID             string                `json:"id"`
 	Franchise      string                `json:"franchise"`
 	Status         domain.RosterStatus   `json:"status"`
-	Salary         domain.Money          `json:"salaryCents"`
-	ExpirationYear int                   `json:"expirationYear"`
+	Salary         domain.Money          `json:"salaryCents" ts_type:"number | null"`
+	ExpirationYear int                   `json:"expirationYear" ts_type:"number | null"`
 	ContractStatus domain.ContractStatus `json:"contractStatus"`
 	ContractInfo   string                `json:"contractInfo"`
 	// HeldContractStatus is the contract status exactly as MFL wrote it ("EXT (2024)"), kept by an MFL

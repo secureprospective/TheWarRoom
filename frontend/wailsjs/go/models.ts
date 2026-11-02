@@ -1609,8 +1609,8 @@ export namespace commissioner {
 	    id: string;
 	    franchise: string;
 	    status: string;
-	    salaryCents: number;
-	    expirationYear: number;
+	    salaryCents: number | null;
+	    expirationYear: number | null;
 	    contractStatus: string;
 	    contractInfo: string;
 	    heldContractStatus?: string;
