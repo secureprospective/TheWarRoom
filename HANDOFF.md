@@ -1,35 +1,36 @@
 # Handoff
 
 ## Baton
-Bee → ClaudeBox / APP-MERGE-9 — 2026-11-02, build/INTEGRATE-1102. Local commits only.
+Bee → ClaudeBox / APP-MERGE-10 — 2026-11-02, build/INTEGRATE-1102. Local commits only.
 
 ## Where it stands
-- Report: docs/build-handoffs/APP-MERGE-9.md. Prior APP-MERGE-8 report remains unchanged.
-- f9af9632 numeric ESPN week verified failing-before; copied desktop logs 774 live players.
-- 6cc8ab15 fixes foreground refresh lock scope and repeated automatic-stat ledger folds.
-  1,200-player/two-generation race regression now takes 7.46/8.52 s within 15 s each.
-- 1239ba41 fixes painted accessible Home selection labels; abee0930 wraps the source line.
-- Name resolver from a8a31c434 remains intact. Copied Home eventually shows named TOP 5
-  players, live scores, week 8 and record/seed; final War Room shelf-name check remains open.
-- Targeted race: 69 PASS tests/subtests, zero failures. src/app: 180 files / 1,833 tests PASS.
-  tsc, boundarycheck (170 frozen functions/sources), plain make build and commit hooks PASS.
-- Evidence: .task-evidence/app-merge-9/. Temporary diagnostic source removed. No task desktop
-  remains running. Real profile untouched. No full Go suite or hook bypass.
+- Report: docs/build-handoffs/APP-MERGE-10.md. **Partial acceptance; RSS ceiling fails.**
+- 001825e9 streams depth parquet in 256-row batches, keeps only Research's newest
+  snapshot, and joins overlapping per-player depth refreshes. Historical evidence keeps all dates.
+- Baseline heap: ReadDepthHistory/parquet.Read accounts for 2,816.93 MiB of 3,476.27 MiB;
+  21 concurrent TargetResearchPlayer calls. Trigger is cbad237c3's Home FORM Promise.all;
+  whole-file parser dates to 5a1c3299, relocated in 152274c8. No binary bisect performed.
+- Targeted race: 253 PASS tests/subtests, 4 fixture-gated SKIP, zero failures. Allocation
+  regression: 152.6 MB before, 68.3 MB after; 80 MiB ceiling. Build, commit hooks and boundary PASS.
+- Copied desktop survives >10 minutes, 774 live players, zero deadline log occurrences.
+  War Room MY SHELF visibly shows Flowers, Metellus, Latu, Warren and Phillips by name.
+- Real profile untouched; no memory cap or diagnostic code shipped; no task desktop remains.
 
 ## Next move / blocked on
-- Five-minute acceptance NOT passed: copied desktop exits 137 around 2m15s; parent RSS reached
-  4,252,340 KiB even on a second launch with experimental GOMEMLIMIT=1500MiB. Suspected
-  memory pressure, not confirmed OOM (kernel records inaccessible). No panic/deadline logged.
-- Profile peak memory during a fresh copied-profile launch, distinguishing live/read sources;
-  then rerun uncapped five-minute acceptance and verify War Room shelf names.
-- Held standings diagnostic exceeded 20 s in score-evidence/directory reads; CPU profile points
-  at absence-depth reconstruction/scoring columns/GC, not yet a causal diagnosis.
-- Inherited keyring/calendar, backup-entry and Wails model-alias warnings remain.
-- origin actually points to a local bundle, not a receiving repository; no push attempted.
-  .golangci-cache/ and .task-evidence/ remain untracked.
+- RSS at 30-second samples ranges up to 1.894 GB; startup one-second peak 2.655 GB.
+  Full table in report. **Do not mark <1.5 GB acceptance complete.**
+- Profile the repaired build's first 20 seconds and steady native reads. Baseline cumulative
+  allocators also show heavy governance/native replay and evidence reconstruction churn;
+  not yet a causal diagnosis of the remaining fixed-build memory pressure.
+- make lint fails inherited bloat: ignored concurrent .worktrees/odds tree contributes;
+  tracked-only old/new metrics remain provenance 0, tiny 28 (baseline 24), comments 5%.
+  No other agent files or ratchet edited. Existing backup/model-alias warnings remain.
+- origin is a local bundle. No pull/push attempted. Evidence stays untracked under
+  .task-evidence/app-merge-10/; raw profiles/screenshots are disposable scratch.
 
 ## Tried and rejected
-- Initial failure precedes five-minute history worker; did not shorten its delay or bypass auth.
-- Kept per-event credential admission, stat evidence, retries, audit and atomic rollback.
-- Did not rewrite intact name resolvers or count early stand-in labels as a proven dropped source.
-- A memory cap did not prevent termination; it is diagnostic only, not a shipped workaround.
+- The five-minute history worker cannot explain the reproduced two-minute spike.
+- Streaming alone avoids the fatal spike but still exceeds RSS budget; coalescing helps
+  without satisfying the strict ceiling. Neither is reported as complete acceptance.
+- No GOMEMLIMIT workaround, authorization bypass, lost historical membership, skipped
+  older-row validation, real-profile mutation or speculative player-name rewrite.
