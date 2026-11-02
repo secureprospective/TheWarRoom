@@ -345,3 +345,76 @@ GPT (Sol/Terra) resets ~09:50 CT.
 **Prep 17:05 CT for Tom + GPT (not launched):** briefs on Beelink ~/fleet/briefs: APP-SCHED-10.md (Tom, Opus medium, sched wt @61c50a5c6: Gonzalez "on no NFL roster that week" zero, Bills W4 McLaurin/W6 Warren/W7 Ridley, 15 half-point diffs, re-run 148 rows + Bills) · APP-ROSTER-5.md + addendum (Sol medium, roster wt @dca039191; stay below syncPlayedLineups; report refused before/after incl. week 8 and sync time). Exact launch lines: ~/fleet/briefs/LAUNCH-1101-evening.md. Both worktrees clean.
 
 **Compact-safe 17:08 CT:** in flight NOTHING (app closed, no agents). Next on resume: at ~18:00 launch Tom APP-SCHED-10, at ~18:20 Sol APP-ROSTER-5 (lines in ~/fleet/briefs/LAUNCH-1101-evening.md) with done-watchers; then cherry-pick gates/sched/roster → integrate, heavy-ok + ONE full suite, fresh-launch full-screen walk; only then tell Christopher Pulse is demo-ready.
+
+## §25 — compact-safe 2026-11-02 07:07 CT (overnight build) — SUPERSEDES earlier NEXT
+**In flight:** Tom APP-MERGE-5 (brief ~/fleet/briefs/APP-MERGE-5.md; run ~/fleet/runs/tom-integrate2; PID 2551025; started ~05:40) merging build/CONTROL-1 (9d1468960, contains HOME-1) into build/INTEGRATE-1102 (.worktrees/integrate2, base f93ac4d4e) + fixing TestCommissionerControlsWire, TestReleaseMatrixCatalogDelegationCeiling, boundarycheck pollLiveStats. Alive: `kill -0 2551025`; done = completion.txt non-empty. Nothing else running; Claude-OS app closed.
+**Branches:** INTEGRATE-1102 = 1101 + SCHED-1 (fcbf10af4) + gates c980afd9b (3325a7e82) + fixes (cutover CLEARS schedule.follow — revert caa3938dd, beed3d356; player-score regressions e3cf731c0; goldens 5e38e4e2e) + ROSTER-1 (f93ac4d4e). HOME-1 (.worktrees/home, dd0a2a1a5). CONTROL-1 (.worktrees/control, 9d1468960).
+**Results overnight:** SCHED: 82/148 exact (was 61), 45 unavailable (nflverse rosters_weekly not held + Childress id), 20 differ = MFL vs nflverse tackle attribution; R11 missing-week fixed (84fc91129). ROSTER: 3,338 transactions, repeat 0, rosters 32/32, refusals 107→20 with W1–6 kickoffs held; lineup check 12m→3m54; importer 8m36s (<10m timeout); blank contracts → commissioner jobs (2). HOME: on mock, names/ledger/jobs fixed; records "—". CONTROL: on mock, 9 branches + debt wired.
+**Rulings made by Christopher 11-01/02:** unknown contract = BLANK + jobs-board alert (memory saved). Tom = Opus 5.5 LOW effort (launcher defaults changed, memory saved).
+**Questions for Christopher (he asked to be PINGED via PushNotification when ready, after full suite + walk):**
+1. Pre-import weeks' results: MFL's scores as-is (rec, Bills 6–1 now) vs app-recomputed (20 differ, 45 pending). Today standings 0-0 everywhere.
+2. Lineup lock: setting "week's first kickoff" vs "each player's game"; import takes MFL's (20 refused lineups = players added after first kickoff). Rec: setting.
+3. Presets APPLY/COMPARE on an existing league (locked Control Room mock has them; 10-27 rule says preset only at creation). 
+4. (info) win % / power / playoff odds / headlines not available for app leagues — engines read MFL only; ~1 day wiring.
+**Next actions:** 1) on Tom done: review report, check Pulse files + live_stats identical except boundary fix. 2) heavy-ok, then ONE full suite on integrate2 (composition -race needs -timeout 30m; make test GO_TEST_TIMEOUT). 3) fix failures (Tom low). 4) make build, install on Claude-OS (check ~/jobs/RUNNING; Mon–Thu 05–08 job run), walk all 5 screens full screen. 5) PushNotification Christopher with the 4 questions. 6) TS5 upgrade pending (tsconfig.node.json) — needs his OK (deps). 
+**Env notes:** heavy-ok pgrep fixed (anchored; backup heavy-ok.sh.bak-1102). Auto-mode classifier denied a shared /tmp sweep — never sweep /tmp. Go cache was cleared at 85% disk (now 66%). ETA revamp ~Nov 4–5.
+
+## §26 — 11-02 midday (compact-safe #2)
+
+**WHERE WORK RUNS NOW (ruling 11-02):** TheWarRoom builds/tests/agents run on **Claude-OS**, not the Beelink (Christopher works there). Tom = **Beelink** process that does all work on Claude-OS over ssh. Tom is free for WarRoom again (11-02 noon; his 5h resets ~14:40 CT). Memory: feedback_warroom_work_on_claudeos.md.
+
+**Claude-OS setup:** repo `~/work/TheWarRoom` (cloned from bundle; NO remote), branch build/INTEGRATE-1102. Go 1.26.10 /usr/local/go; wails v2.13.0, golangci-lint, gitleaks in ~/go/bin; pnpm (corepack) ~/.local/bin; hooks in .git/hooks. Sol launcher `~/fleet/bin/launch-sol-twr.sh` (SOL_BRIEF=X.md in ~/fleet/briefs → run ~/fleet/runs/sol-twr; rename run dir before relaunch). make build ≈80 s. 8 cores/7 GB → -race one pkg, -p 2. App profile ~/f2click/{config,data} (desk.sh, DISPLAY=:5); agents copy to ~/scratch/profile. Walk: cp build/bin/thewarroom ~/f2click/thewarroom; `ssh -f claudeos 'setsid ~/f2click/desk.sh'`; xdotool on DISPLAY=:5; ffmpeg x11grab -i :5.
+
+**Commits since §25 (all on INTEGRATE-1102):** Beelink integrate2 → d15cb9e13 (MERGE-5..8: CONTROL+HOME merged, boundarycheck 0, review fixes 1/4/5/6/7/8, fixtures). Claude-OS → f9af9632 (ESPN numeric week), 6cc8ab15 (refresh lock / read timeouts), 1239ba41 (painted labels), 73a9fd15 (MERGE-9 report). **Beelink repo is behind Claude-OS — bring commits back (bundle) after the batch, announced.**
+
+**Gates:** full race suite on d15cb9e13 = 134 ok, 0 FAIL (Beelink, ~/logs/TheWarRoom/suite-1102b.log). Not re-run since MERGE-9.
+
+**CURRENT BUG:** desktop OOM ~2 min after launch. My run 11:35: RSS 1.08 GB →1.13 GB (90 s) → 5.7 GB (120 s) → kernel OOM kill (anon 6.5 GB) right after `Engine run … 2262 players valued`. Hypothesis: a regression on this branch (earlier builds ran hours on same VM) — NOT proven which commit. Walk evidence: Claude-OS ~/fleet/walk-1102/, Beelink ~/logs/TheWarRoom/walk-1102/.
+
+**IN FLIGHT:**
+- Sol APP-MERGE-10 (OOM) on Claude-OS, PID 100693, started 11:40 CT. Alive: `ssh claudeos kill -0 100693`; transcript ~/fleet/runs/sol-twr/sessions/*.jsonl; result ~/fleet/runs/sol-twr/{completion.txt,stdout.log}. Acceptance: 10 min, RSS <1.5 GB, live players >0, no deadline errors; War Room shelf names.
+- Tom APP-ODDS-1 (win %/power/odds native wiring) — Beelink PID 3000844 (`~/fleet/bin/launch-tom-odds.sh`), run ~/fleet/runs/tom-odds; works in Claude-OS `~/work/TheWarRoom/.worktrees/odds` branch build/ODDS-1 from 73a9fd15. Brief ~/fleet/briefs/APP-ODDS-1.md.
+
+**Review (GPT, read-only) leftovers:** #2 valuation diffs = older work vs stale main, not acted. #3 seed/cutover MFL-origin checks are behaviour switches; replacing needs a "starting assets" setting → **add to questions**.
+
+**NEXT ACTIONS:**
+1. Review Sol MERGE-10; verify OOM fix myself (launch, RSS every 30 s for 10 min).
+2. Review Tom ODDS-1; merge build/ODDS-1 into INTEGRATE-1102 on Claude-OS.
+3. ONE full race suite on Claude-OS (-p 2, -timeout 30m; check ~/jobs/RUNNING first).
+4. make build, walk all 5 screens at 1920x1080 on DISPLAY=:5.
+5. PushNotification Christopher with questions: (1) pre-import results MFL as-is (rec) vs recomputed; (2) lineup lock as a setting (rec); (3) preset APPLY/COMPARE on existing league; (4) MFL-origin seed/cutover → "starting assets" setting? (win %/power/odds now being wired — no longer a question).
+6. Bundle Claude-OS commits back to Beelink repo, announced.
+Later: speed_week.py 8; remove keepalive crons after 11-03; delete ~/scratch/cos-profile at end.
+
+**HONEST STATUS:** not ready for his questions until the OOM is fixed and walk passes; ETA mid/late afternoon if the OOM cause is quick.
+
+## §27 — 11-02 evening (compact-safe ~17:00 CT)
+
+**WHAT:** Make 5 locked mocks work in the real app. All work on Claude-OS `~/work/TheWarRoom`, branch `build/INTEGRATE-1102` (no remote). HEAD 1dd4ad82 + this doc commit.
+
+**MERGED TODAY (in order):** 001825e9 OOM fix (Sol MERGE-10; my 10-min RSS check 1.6–1.9 GB) · 7371e620 ODDS-1 (Tom: native win %/power/playoff odds, odds.read) · STALL-1 9b516d67 (ledger read incremental, Home tiles retry) · STALL-2 851cac6e (replay once per revision, stat approvals one entry per batch, alias read-pool deadlock fixed, "engine: not due" log) · SCORE-1 e1a847d3 + SCORE-2 138803c7 (Sol: score chain) · STALL-3 c6bd263a (held-season cache, byte-identical) · **7b684d65 MY FIX**: live sources recorded parts-total stats (pat_missed_or_blocked, xpa→pat_attempt, rush_rec_yd→scrimmage_yards) → scoring refused → every standings/odds/bracket read failed; now DropTotals + ESPN XP misses as pat_missed (+pat_blocked 0); regression test · STALL-4 2e13889f (Tom: polling never overlaps + single-flight identical readings) · QUICK-1 1dd4ad82 (Terra: odds 525→204 ms; Home clip NOT fixed).
+Full race suite ran once at 7371e620: 134/134 ok (one failure was the .worktrees/odds copy being scanned — remove merged worktrees before suites).
+
+**RULINGS 11-02 (LOCKED):** ESPN = live scoring; Sleeper fills what ESPN lacks AND is the outage fallback; nflverse = authority; commish override wins; MFL live totals display-only, never counted. Probe crons removed (backup /root/mnf-probe/crontab-before-1102.txt). Week-8 evidence: ESPN 98.44% vs Sleeper 94.80% vs nflverse; misses ≈ all solo tackles. Builders: Sol medium (big), Terra medium (speed). Walk WAITS for MNF live (kickoff 19:15 CT) to watch feeds front+back end.
+
+**IN FLIGHT:**
+- Tom APP-STALL-5 (share one read-only ledger snapshot per revision; ignore recorded parts totals in old held stats; 5-screen pass) — Beelink PID 3202281 (claude -p), run dir Beelink ~/fleet/runs/tom-odds (pid.txt/start.txt now written), works in claudeos .worktrees/odds branch build/STALL-5. Brief ~/fleet/briefs/APP-STALL-5.md. Alive: `ssh beelink 'ps -p 3202281'`.
+- Sol APP-SCORE-3 (durable live revisions, append-only table, restart-safe) — Claude-OS PID 420463, run ~/fleet/runs/sol-twr, worktree .worktrees/score branch build/SCORE-3. Session JSONL ~/fleet/runs/sol-twr/sessions/.
+- Bash done-watcher becxj12d6 waits for BOTH (prints == TOM / == SOL blocks).
+- Terra launcher created: Claude-OS ~/fleet/bin/launch-terra-twr.sh (TERRA_BRIEF=, runs/terra-twr).
+
+**OPEN BUGS / DEBT:** Home right tile column clipped under inspector (Tom + Terra both failed; needs browser layout repro) · startup peak ~2.7 GB · STALL-4 run still ~780% CPU while navigating, RSS peak 4.0 GB (STALL-5 targets) · Power tile "values still being prepared" when engine not due (values from last run should serve — unverified) · SCORE-2 debt: fields only nflverse carries (play distances, 2-pt, recovery detail, O-line); Sleeper IDP/kicking schema unverified (403).
+
+**REFUTED — DO NOT RETEST:** stall was NOT a deadlock nor caused by 001825e9/7371e620 (bisect 73a9fd15 same) · 17k ledger approvals were NOT re-approvals (distinct player-weeks) · fleet panel invisibility is NOT "only Agent-tool subagents show" (it polls Pi/OpenCode sessions) · quick-scout watcher subagents fail: confirm-action hook DEFERS their ssh Bash calls (hook_deferred_tool) → subagent ends after 1 call. Don't use them.
+
+**FLEET PANEL (fix TOMORROW, he's done with it today):** mod = savvy-progress, source /root/.claude/dev-mods/savvy-progress (read live; /reload-plugins), cache copy also synced; Beelink copies synced; memory lesson_savvy_progress_fleet_panel.md. 11-02 edits: launch-*.sh regex, Claude-OS source (ssh claudeos pi-sessions-since.sh SINCE fleet/runs, persona hermes, ids cos:), Tom source (oc-runs-since.py SINCE tom-, persona claude, ids tom:). 29 mod tests pass. After reload his /fleet shows "Tracking 0"; headless `claude -p /fleet` shows 18 Claude, 0 Bender (Sol not appearing). Hypothesis (unproven): per-session saved state / dismissed list, or poll.timer non-null skips the one-off poll; Sol row missing in headless too → cos source likely failing inside mod. Backups /root/mod-backups-1102 (+ Beelink ~/archive/2026-11-savvy-progress-bak). Old drafts c1faa2aa-…/savvy-progress and savvy-progress.bak-20261031 — don't edit.
+
+**NEXT ACTIONS:**
+1. When becxj12d6 reports: review Tom STALL-5 + Sol SCORE-3; merge (--no-ff, identity from last commit, PYTHONPATH for hooks).
+2. Remove merged worktrees; run ONE full race suite (`go test -race -p 2 -timeout 30m ./...`, script ~/scratch/suite.sh).
+3. During MNF (≥19:15 CT): make build, fresh profile copy, walk 5 screens at 1920x1080 (nav Home 63,175 · War Room 76,212 · HQ 87,249 · Pulse 87,322 · Control 87,359; screenshots `DISPLAY=:5 scrot`); watch live feed provenance labels + desktop.log. Delete profile copy after.
+4. PushNotification with the 4 questions (pre-import results as-is? lineup lock setting? preset apply on existing league? MFL seed/cutover → "starting assets" setting?).
+5. Bundle Claude-OS commits back to Beelink repo, announce.
+6. Tomorrow: fix fleet panel (see above). Queue: Home clip, odds <150 ms, startup peak.
+
+**HONEST STATUS:** HQ/Pulse loading not yet proven fixed in a real walk (STALL-4 run showed pat error, fixed by 7b684d65 but unwalked). Christopher is at his daughter's birthday today — keep pings minimal.
