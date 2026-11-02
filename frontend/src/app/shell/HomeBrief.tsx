@@ -5,7 +5,7 @@ import type { ResearchReader } from '../research/api';
 import { readHomeBrief, type HomeBrief as Brief } from './homeReads';
 import { bump, current, defaultLayout, layoutKey, pack, parseLayout, place, remove, SPANS, swap,
   type Layout, type Phase, type Span, type TileId } from './homeLayout';
-import { clock, go, isFinal, myGame, myRow, nameOf, oldestAt, pts, SHORTCUT_KEYS, shortTime, TileBody, tileState,
+import { clock, go, isFinal, left, myGame, myRow, nameOf, oldestAt, pts, SHORTCUT_KEYS, shortTime, TileBody, tileState,
   TILES, topFive } from './homeTiles';
 import { browserStorage } from './franchise';
 import { money, unavailable } from './hqModel';
@@ -162,10 +162,11 @@ export default function HomeBrief({ league, mine, port, initial, research }: { l
           {alertsLost ? <><span className="ak">ALERTS UNAVAILABLE</span>
             <span className="at">{alertsLost} · this is not an all-clear</span></>
             : !b.at.jobs ? <><span className="ak">ALERTS</span><span className="at">Reading…</span></>
-            : alerts.length ? <><span className="ak">{alerts.length} ALERT{alerts.length > 1 ? 'S' : ''}</span>
-              <span className="at">{alerts[0].title} · {alerts[0].words}</span></>
+            : alerts.length ? <><span className="ak">▲ {alerts[0].title.toUpperCase()}</span>
+              <span className="at">{alerts[0].words}</span>
+              {alerts[0].when && <span className="clock">{left(alerts[0].when, Date.now())}</span>}</>
             : <><span className="ak">NO ALERTS</span><span className="at">Nothing needs you right now</span></>}
-          <span className="more">DETAILS ▸</span></div>
+          <span className="more">{alerts.length > 1 && <b>+{alerts.length - 1}</b>}ALL ALERTS ›</span></div>
         <div className="tick" title="Hover to pause"><span className="tl0">TOP 5 · WK {week ?? '—'}
           {g && !isFinal(g.status) ? ' LIVE' : ' FINAL'}</span>
           <div className="tkw"><div className="tkr">{ticker.length ? <>{tickerHtml}{tickerHtml}</>

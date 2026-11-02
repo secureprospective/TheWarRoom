@@ -235,7 +235,8 @@ it('ALERTS come from the commissioner jobs board: blocked jobs and live jobs wit
   const board = { ...jobs, league: LEAGUE, jobs: jobs.jobs.map(j => j.id === 'waivers' ? { ...j, closes } : j) };
   await mount(full({ 'commish.jobs.read': board }));
   const blocked = jobs.jobs.filter(j => j.state === 'blocked').length;
-  expect(q('.aband')!.textContent).toContain(`${blocked + 1} ALERTS`);
+  expect(q('.aband .more')!.textContent).toBe(`+${blocked}ALL ALERTS ›`);
+  expect(q('.aband .ak')!.textContent).toBe(`▲ ${jobs.jobs.find(j => j.state === 'blocked')!.name.toUpperCase()}`);
   expect(q('.aband')!.className).toContain('crit');
   const pull = Array.from(container.querySelectorAll('.pull')).find(b => b.textContent?.startsWith('ALERTS'))!;
   expect(pull.textContent).toBe(`ALERTS ${blocked + 1}`);
