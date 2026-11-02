@@ -48,6 +48,7 @@ func (s ScheduleSync) Sync(ctx context.Context) {
 	}
 	ledger := leagueservice.MigrationLedger{Store: s.History,
 		Auth: func() commissioner.Authorizer { return s.Authorizer() }}
+	var followed []followedLeague
 	for _, league := range leagues {
 		records, err := ledger.Records(ctx, league.ID)
 		if err != nil {
@@ -77,23 +78,36 @@ func (s ScheduleSync) Sync(ctx context.Context) {
 		if err != nil {
 			log.Printf("refresh schedule for %s (held schedule kept): %v", league.ID, err)
 		}
-		s.syncFollowedLineups(ctx, ledger, league.ID, principal, season, source)
+		if err := s.syncCurrentWeekLineups(ctx, ledger, league.ID, principal, season, source); err != nil {
+			log.Printf("refresh this week’s lineups for %s (held lineups kept): %v", league.ID, err)
+		}
+		followed = append(followed, followedLeague{league.ID, principal, season, source})
 	}
+	s.syncFollowedLineups(ctx, ledger, followed)
 }
 
-// syncFollowedLineups records the week in play, then starts the played-week import on its own. The
-// week in play goes first because it is what a live screen needs and it is one small read. The
-// played-week import re-checks every franchise-week the reference league starts differently from
-// the held lineup, which takes minutes on a big league; it runs as its own job, outside the refresh
-// lock, so the player load and live points never wait behind it. A refused franchise-week never
-// stops the other weeks, and held lineups are kept.
+type followedLeague struct {
+	league, principal string
+	season            int
+	source            string
+}
+
+// syncFollowedLineups starts one bounded history run for all eligible leagues.
 func (s ScheduleSync) syncFollowedLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
-	league, principal string, season int, source string) {
-	if err := s.syncCurrentWeekLineups(ctx, ledger, league, principal, season, source); err != nil {
-		log.Printf("refresh this week's lineups for %s (held lineups kept): %v", league, err)
+	leagues []followedLeague) {
+	if len(leagues) == 0 {
+		return
+	}
+	run := func(work context.Context) {
+		for _, league := range leagues {
+			if work.Err() != nil {
+				return
+			}
+			s.syncPlayedLineups(work, ledger, league.league, league.principal, league.season, league.source)
+		}
 	}
 	if s.WorkContext() == nil { // no worker lifetime yet: import inline
-		s.syncPlayedLineups(ctx, ledger, league, principal, season, source)
+		run(ctx)
 		return
 	}
 	if !s.Running.CompareAndSwap(false, true) {
@@ -110,7 +124,7 @@ func (s ScheduleSync) syncFollowedLineups(ctx context.Context, ledger leagueserv
 		}
 		work, cancel := context.WithTimeout(s.WorkContext(), playedLineupsTimeout)
 		defer cancel()
-		s.syncPlayedLineups(work, ledger, league, principal, season, source)
+		run(work)
 	})
 }
 
