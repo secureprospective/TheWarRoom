@@ -4038,5 +4038,33 @@
     "Modes": [
       "read"
     ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "odds.read",
+    "Method": "TargetNativeOdds",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "c51b796aa8f7b1caccc4c05428faf8eece820d925ac835c8a113c08783f105fa",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "odds.read",
+    "Method": "TargetNativeOdds",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "c51b796aa8f7b1caccc4c05428faf8eece820d925ac835c8a113c08783f105fa",
+    "Modes": [
+      "read"
+    ]
   }
 ]

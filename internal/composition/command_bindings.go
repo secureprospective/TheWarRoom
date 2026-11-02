@@ -35,6 +35,7 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetNativeContractQuote":        catalog.Bind1(api.TargetNativeContractQuote, "raw"),
 		"TargetNativeResults":              catalog.Bind3(api.TargetNativeResults, "league", "season", "week"),
 		"TargetNativeStandings":            catalog.Bind2(api.TargetNativeStandings, "league", "season"),
+		"TargetNativeOdds":                 catalog.Bind2(api.TargetNativeOdds, "league", "season"),
 		"TargetNativeScorePreview":         catalog.Bind1(api.TargetNativeScorePreview, "body"),
 		"TargetNativeBracket":              catalog.Bind2(api.TargetNativeBracket, "league", "season"),
 		"TargetStatQueue":                  catalog.Bind2(api.TargetStatQueue, "league", "season"),

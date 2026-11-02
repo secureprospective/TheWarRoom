@@ -290,5 +290,11 @@
     "modes": [
       "read"
     ]
+  },
+  {
+    "command": "odds.read",
+    "modes": [
+      "read"
+    ]
   }
 ]

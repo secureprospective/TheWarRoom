@@ -80,6 +80,7 @@ func TestHostedReadsAndPreviewsRequireCredential(t *testing.T) {
 			{"TargetNativeContractQuote", []any{market.RawContractQuote{League: "native.test", Player: "0099", Action: "tag", ViewerZone: "UTC"}}},
 			{"TargetNativeResults", []any{"native.test", 2026, 1}},
 			{"TargetNativeStandings", []any{"native.test", 2026}},
+			{"TargetNativeOdds", []any{"native.test", 2026}},
 			{"TargetNativeBracket", []any{"native.test", 2026}},
 			{"TargetStatQueue", []any{"native.test", 2026}},
 			{"TargetNativeScorePreview", []any{body}},

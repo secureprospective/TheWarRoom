@@ -105,6 +105,11 @@ func (s *State) NativeStandings(ctx context.Context, league string,
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.NativeStandings(ctx, league, season)
 }
+func (s *State) NativeOdds(ctx context.Context, league string, season int,
+	values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	//nolint:wrapcheck // Preserve the original store error for the API wording.
+	return s.History.NativeOdds(ctx, league, season, values)
+}
 func (s *State) NativeScorePreview(ctx context.Context,
 	raw commissioner.RawCommand) (commissioner.ScorePreview, error) {
 	//nolint:wrapcheck // Preserve the original store error for the API wording.

@@ -110,7 +110,7 @@ func TestFrozenDoorMetadata(t *testing.T) {
 	sortDoors(before)
 	for name, after := range map[string][]doorBefore{"feature views": legacyDoors(), "executable registry": registryDoors(registry)} {
 		sortDoors(after)
-		if len(before) != 291 || len(after) != len(before) {
+		if len(before) != 293 || len(after) != len(before) {
 			t.Fatalf("%s inventory changed: %d -> %d", name, len(before), len(after))
 		}
 		for i, want := range before {
@@ -128,7 +128,7 @@ func TestFrozenDoorMetadata(t *testing.T) {
 			counts["browser"]++
 		}
 	}
-	if counts["workflow"] != 44 || counts["browser"] != 60 {
+	if counts["workflow"] != 45 || counts["browser"] != 60 {
 		t.Fatalf("other exposure changed: %v", counts)
 	}
 }

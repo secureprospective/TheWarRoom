@@ -287,6 +287,10 @@ number
 "commissioner.TargetNativeRosterCheck": [
 string
 ];
+"commissioner.TargetNativeOdds": [
+string,
+number
+];
 "commissioner.TargetNativeStandings": [
 string,
 number
@@ -2283,6 +2287,7 @@ export type WorkflowArgumentMap = {
 "native.reserve.check": NativeArguments<"native.reserve.check">;
 "results.read": NativeArguments<"results.read">;
 "native.roster.check": NativeArguments<"native.roster.check">;
+"odds.read": NativeArguments<"odds.read">;
 "standings.read": NativeArguments<"standings.read">;
 "moves.read": NativeArguments<"moves.read">;
 "trades.read": NativeArguments<"trades.read">;
