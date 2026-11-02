@@ -5,15 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
+	migrationapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/migration"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -76,156 +72,25 @@ func (h controlHost) Migrate(command, body string) (json.RawMessage, error) {
 	return reply, nil
 }
 
-// syncLeagueSchedules is a reference-feed refresh. Failures retain the published ledger
-// and retry on the next refresh; they never stop the rest of the board.
-func (a *App) syncLeagueSchedules(ctx context.Context) {
-	if a.core.History == nil {
-		return
-	}
-	leagues, err := a.core.History.NativeLeagues(ctx)
-	if err != nil {
-		log.Printf("read leagues for schedule refresh: %v", err)
-		return
-	}
-	ledger := leagueservice.MigrationLedger{Store: a.core.History,
-		Auth: func() commissioner.Authorizer { return a.core.CommissionerAuthorizer }}
-	for _, league := range leagues {
-		records, err := ledger.Records(ctx, league.ID)
-		if err != nil {
-			log.Printf("read schedule refresh league: %v", err)
-			continue
-		}
-		if err := a.fillScheduleDates(ctx, records); err != nil {
-			log.Printf("refresh NFL dates for %s (held dates kept): %v", league.ID, err)
-		}
-		a.core.SerializeSourcesLoad(ctx, func() {
-			if err := sourcesapp.SyncScheduledScoring(ctx, a.core.History, a.core.Fetches, league.ID, records); err != nil {
-				log.Printf("refresh scoring evidence for %s (held data kept): %v", league.ID, err)
-			}
-		})
-		source, season, principal, follows := mflsource.FollowingLeague(league.ID, records)
-		if !follows {
-			continue
-		}
-		raw, err := leagueschedule.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
-		if err == nil {
-			_, err = mflsource.BackfillSchedule(ctx, ledger, league.ID, "Refresh the published schedule", principal, season, raw)
-		}
-		if err == nil {
-			records, err = ledger.Records(ctx, league.ID)
-			if err == nil {
-				err = a.fillScheduleDates(ctx, records)
-			}
-		}
-		if err != nil {
-			log.Printf("refresh schedule for %s (held schedule kept): %v", league.ID, err)
-		}
-		a.syncFollowedLineups(ctx, ledger, league.ID, principal, season, source)
-	}
+func (a *App) scheduleSync() migrationapp.ScheduleSync {
+	return migrationapp.ScheduleSync{History: a.core.History,
+		Authorizer: func() commissioner.Authorizer { return a.core.CommissionerAuthorizer },
+		Client:     a.core.MFLClient, Now: a.timeNow,
+		FillScheduleDates: a.fillScheduleDates, SyncScoring: a.syncScheduledScoring,
+		LineupPlayers: a.heldLineupPlayers, WorkContext: func() context.Context { return a.core.WorkCtx }, StartWorker: a.startWorker,
+		Running: &a.playedLineupsRunning, Started: &a.playedLineupsStarted}
 }
 
-// syncFollowedLineups records the week in play, then starts the played-week import on its own. The
-// week in play goes first because it is what a live screen needs and it is one small read. The
-// played-week import re-checks every franchise-week the reference league starts differently from
-// the held lineup, which takes minutes on a big league; it runs as its own job, outside the refresh
-// lock, so the player load and live points never wait behind it. A refused franchise-week never
-// stops the other weeks, and held lineups are kept.
-func (a *App) syncFollowedLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
-	league, principal string, season int, source string) {
-	if err := a.syncCurrentWeekLineups(ctx, ledger, league, principal, season, source); err != nil {
-		log.Printf("refresh this week's lineups for %s (held lineups kept): %v", league, err)
-	}
-	if a.core.WorkCtx == nil { // no worker lifetime yet: import inline
-		a.syncPlayedLineups(ctx, ledger, league, principal, season, source)
-		return
-	}
-	if !a.playedLineupsRunning.CompareAndSwap(false, true) {
-		return
-	}
-	a.startWorker(func() { //nolint:contextcheck // Outlives the refresh by design; bound by the app worker lifetime.
-		defer a.playedLineupsRunning.Store(false)
-		if !a.playedLineupsStarted.Swap(true) { // first import of this launch: let startup settle
-			select {
-			case <-a.core.WorkCtx.Done():
-				return
-			case <-time.After(playedLineupsLaunchDelay):
-			}
-		}
-		work, cancel := context.WithTimeout(a.core.WorkCtx, playedLineupsTimeout)
-		defer cancel()
-		a.syncPlayedLineups(work, ledger, league, principal, season, source)
+func (a *App) syncScheduledScoring(ctx context.Context, league string, records []commissioner.Record) error {
+	var err error
+	a.core.SerializeSourcesLoad(ctx, func() {
+		err = sourcesapp.SyncScheduledScoring(ctx, a.core.History, a.core.Fetches, league, records)
 	})
+	return err //nolint:wrapcheck // The service supplies scoring context.
 }
 
-// playedLineupsTimeout bounds one played-week import; what it does not reach is retried next refresh.
-const playedLineupsTimeout = 10 * time.Minute
-
-// playedLineupsLaunchDelay holds the first played-week import of a launch back while the launch
-// refresh, player load and live points land. Played weeks are history; each re-checked franchise-week
-// holds the league write lock for seconds, which would otherwise time out every other startup read.
-const playedLineupsLaunchDelay = 5 * time.Minute
-
-func (a *App) syncPlayedLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
-	league, principal string, season int, source string) {
-	records, err := ledger.Records(ctx, league)
-	if err != nil {
-		log.Printf("read transaction refresh league %s: %v", league, err)
-		return
-	}
-	rules, err := commissioner.RulesNow(records, a.timeNow())
-	if err != nil {
-		log.Printf("read transaction refresh rules %s: %v", league, err)
-		return
-	}
-	if rules.Transactions.Follow.State == leaguerules.IsKnown && rules.Transactions.Follow.Value {
-		raw, err := transactions.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
-		if err == nil {
-			var directory map[string]string
-			directory, err = a.heldLineupPlayers(ctx)
-			if err == nil {
-				_, err = mflsource.BackfillHeldTransactions(ctx, ledger, a.core.History, league, "Import reference transaction history", principal, season, raw, directory)
-			}
-		}
-		if err != nil {
-			log.Printf("refresh transactions for %s (held history kept): %v", league, err)
-			return
-		}
-	}
-	weeks, lineupErr := weeklyresults.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
-	if lineupErr == nil {
-		var directory map[string]string
-		directory, lineupErr = a.heldLineupPlayers(ctx)
-		if lineupErr == nil {
-			_, lineupErr = mflsource.BackfillLineups(ctx, ledger, league, "Import played starting lineups from the reference sync", principal, season, weeks, directory)
-		}
-	}
-	if lineupErr != nil {
-		log.Printf("refresh lineups for %s (refused franchise-weeks kept unchanged): %v", league, lineupErr)
-	}
-}
-
-// syncCurrentWeekLineups records the starters the reference league holds for the week in play.
-// The played-week import only reads weeks MFL has scored, so without this a week in progress has
-// no lineups at all and every franchise reads as a missed lineup while its game is being played.
-func (a *App) syncCurrentWeekLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
-	league, principal string, season int, source string) error {
-	raw, err := livescoring.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source, 0)
-	if err != nil {
-		return fmt.Errorf("read this week's live lineups: %w", err)
-	}
-	live, err := livescoring.ToLineups(raw)
-	if err != nil {
-		return fmt.Errorf("read this week's live lineups: %w", err)
-	}
-	directory, err := a.heldLineupPlayers(ctx)
-	if err != nil {
-		return err
-	}
-	if _, err := mflsource.BackfillLiveLineups(ctx, ledger, league,
-		"Record this week's starting lineups from the reference sync", principal, season, live, directory); err != nil {
-		return fmt.Errorf("record this week's lineups: %w", err)
-	}
-	return nil
+func (a *App) syncLeagueSchedules(ctx context.Context) {
+	a.scheduleSync().Sync(ctx)
 }
 
 // Launch can precede the first target snapshot. Read the held directory, never

@@ -1,4 +1,5 @@
 # Reviewed exact package paths; debt is an importer/target pair, not a wildcard.
+fence	internal/app/mflref/migration	-
 fence	internal/ingestion/draftreports	-
 fence	internal/ingestion/freeagents	-
 fence	internal/ingestion/league	-

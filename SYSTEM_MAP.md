@@ -66,6 +66,8 @@ availability is in Commissioner/native, model ID scope in Scoring, trade evidenc
 Trades, and rule-week capture/clock selection in Control. Composition retains their resource
 capture/refresh coordination, not those decisions.
 
+Reference schedule/lineup refresh policy lives in `internal/app/mflref/migration`; composition
+supplies the held resources, scoring serialization and worker lifetime.
 Reference schedule following is `schedule.follow` in `internal/leaguerules/competition.go`;
 import/backfill wiring and gate evidence: `docs/build-handoffs/APP-GATES-4.md`.
 Shared roster counting lives in `internal/powerrankings/lineup.go`, not the MFL-backed M2 service.

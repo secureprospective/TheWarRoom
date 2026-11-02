@@ -1111,3 +1111,13 @@ Creation-time presets fill only missing MFL settings; remaining catalogue answer
 are ordinary rule changes in the same creation transaction. A failed answer rolls
 back the whole league. The new league is selected through the existing shared
 commissioner state. Details and verification limits: `docs/ui/move-mfl.md`.
+
+## Reference schedule refresh
+
+`internal/composition/migration_app.go` injects resources into
+`internal/app/mflref/migration.ScheduleSync`. The fenced reference service selects followed
+schedules and imports current-week lineups inline. Played-week lineups and transaction history
+share the existing worker: first launch waits five minutes, then a ten-minute context bounds
+the import; one app-wide atomic guard prevents overlap. Scoring loads keep their shared
+serialization; failed feeds retain held ledger data. Cutover remains owned by the unchanged
+migration engine, which clears `schedule.follow`.
