@@ -126,6 +126,14 @@ func TestRealDepthNewestSnapshotParquetAndCSV(t *testing.T) {
 			t.Fatal("old snapshot leaked")
 		}
 	}
+	older.Rank = 0
+	buf.Reset()
+	if err := parquet.Write(&buf, append(rows, older)); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := ParseDepth(buf.Bytes()); err == nil || got != nil {
+		t.Fatalf("invalid discarded history admitted: %d rows, %v", len(got), err)
+	}
 	bad := strings.Replace(string(sample(t, "depth_charts_2026_latest.csv")), "pos_rank", "missing", 1)
 	if _, err := ParseDepthCSV([]byte(bad)); err == nil {
 		t.Fatal("missing header accepted")

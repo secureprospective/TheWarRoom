@@ -3,6 +3,7 @@ package source
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/parquet-go/parquet-go"
@@ -36,16 +37,38 @@ func (r RawDepth) Validate() error {
 
 // ReadDepthHistory validates every dated row without discarding earlier snapshots.
 func ReadDepthHistory(body []byte) ([]RawDepth, error) {
-	rows, err := parquet.Read[RawDepth](bytes.NewReader(body), int64(len(body)))
-	if err != nil {
-		return nil, fmt.Errorf("parquet rows: %w", err)
-	}
-	for _, row := range rows {
-		if err := row.Validate(); err != nil {
-			return nil, err
-		}
+	var rows []RawDepth
+	if err := ScanDepthHistory(body, func(row RawDepth) { rows = append(rows, row) }); err != nil {
+		return nil, err
 	}
 	return rows, nil
+}
+
+// ScanDepthHistory validates all dated rows in bounded batches. Consumers retain only the
+// snapshots they need; the parquet reader must never allocate a season-sized row buffer.
+func ScanDepthHistory(body []byte, accept func(RawDepth)) error {
+	file, err := parquet.OpenFile(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		return fmt.Errorf("open depth parquet: %w", err)
+	}
+	reader := parquet.NewGenericReader[RawDepth](file)
+	defer func() { _ = reader.Close() }()
+	batch := make([]RawDepth, 256)
+	for {
+		n, err := reader.Read(batch)
+		for _, row := range batch[:n] {
+			if err := row.Validate(); err != nil {
+				return err
+			}
+			accept(row)
+		}
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("read depth parquet: %w", err)
+		}
+	}
 }
 
 // DepthHistoryURL identifies the archived season membership feed.

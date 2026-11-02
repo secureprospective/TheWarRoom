@@ -61,6 +61,10 @@ func (a *App) researchLinks(ctx context.Context, lookup normalize.Lookup) (map[s
 	return researchapp.DepthLinks(ctx, lookup, a.core.History.SourceIDs) //nolint:wrapcheck // Preserve depth crosswalk errors.
 }
 func (a *App) refreshResearchDepth(ctx context.Context, force bool) {
+	a.researchHeld.PrepareDepth(ctx, func() { a.readResearchDepth(ctx, force) })
+}
+
+func (a *App) readResearchDepth(ctx context.Context, force bool) {
 	a.core.SeasonMu.Lock()
 	held := a.snapshotResearch().depth
 	a.core.SeasonMu.Unlock()

@@ -57,7 +57,17 @@ func newestDepth(rows []RawDepth) ([]RawDepth, error) {
 	return out, nil
 }
 func ParseDepth(body []byte) ([]RawDepth, error) {
-	rows, err := source.ReadDepthHistory(body)
+	var rows []RawDepth
+	var newest time.Time
+	err := source.ScanDepthHistory(body, func(row RawDepth) {
+		at, _ := time.Parse(time.RFC3339, row.DT) // The scanner validated the timestamp.
+		if at.After(newest) {
+			newest, rows = at, rows[:0]
+		}
+		if at.Equal(newest) {
+			rows = append(rows, row)
+		}
+	})
 	if err != nil {
 		return nil, fmt.Errorf("depth charts: %w", err)
 	}
