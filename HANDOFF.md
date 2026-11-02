@@ -2,46 +2,42 @@
 
 ## Baton
 Bee → Christopher / ClaudeBox — 2026-11-02, `build/ROSTER-1`.
-APP-ROSTER-9 implementation advanced; full acceptance blocked. Local only, no remote.
+APP-ROSTER-10 proof complete; worker-budget acceptance still fails. Local only.
 
 ## Where it stands
-- `d9845a841`: ordinary historical pick ownership, checked selection links or
-  explicit unverified references + commissioner jobs; selected live assets unchanged.
-- `91e32e292`: import and permitted played-worker transaction wiring; independent
-  `transactions.follow` ordinary rule; original recorded seed on repeat import.
-  Uses recorded commissioner authority, no privileged source-kind exemption.
-- `4bfa36d1a`: ordinary batch recovery captured once before atomic commit, not for
-  every uncommitted intermediate command. Rollback/final-state race test passes.
-- March 7 original Miami 2026 R3 has held evidence: slot 1, player 17529, used by
-  0027. Complete 895-row plan succeeds: 3,338 commands, first atomic batch 3,332;
-  85 historical references checked, zero unverified in the plan.
-- First full replay before the recovery optimization exceeded ten minutes;
-  terminated and rollback verified (followed ledger still two records). No complete
-  importer time or profile repeat-zero. Optimized replay remains unmeasured.
-- Latest focused results: 47 distinct test/subtest PASS, hooks pass. No full suite,
-  make verify, final plain make build, generated bindings, GUI or independent review.
-- Evidence: `docs/build-handoffs/APP-ROSTER-9-evidence.md`; logs `.tmp/roster9/`.
-  Own disposable DBs/harnesses removed after open-file checks; others' files kept.
+- `590f4caf0`: plain make build regenerated roster-history / transaction-follow bindings.
+- `2ee267af8`: measured contract-history capture optimization, side-qualified and tested.
+- Full importer: 3,338 appended, 17m50.423s → **10m43.485s**; final repeat **0**.
+  Still **43.485s over** the unchanged ten-minute worker lifetime, before lineups.
+- Refused: inherited **76 → 75** free; **107 → 77** kickoff-aware. Final repeats append
+  **0** with identical refusal text. No full refusal clearance claimed.
+- Both modes: **32/32** membership/status equality; Bills **W1–7 all recorded**,
+  including kickoff-aware W7. Explicit archived W8: **32 appended / 0 refused**;
+  repeat **0**. Actual commissioner jobs: **2 contracts / 0 unverified picks**.
+- Final focused race batch: **52 test/subtest PASS**, zero fail/skip; final plain build
+  and production commit hooks pass. Selective-capture mutant rejected; restored pass.
+- Evidence: `docs/build-handoffs/APP-ROSTER-10-evidence.md`; every remaining exact reason:
+  `docs/build-handoffs/APP-ROSTER-10-refusals.txt`. Logs/CPU profiles: `.tmp/roster10/`.
+  Own disposable DBs/raw bodies/harnesses deleted after process/open-file checks.
 
 ## Next move / blocked on
-- External heavy gate stops at disk 85% (`heavy-ok.sh:12`). Global Go cache about
-  95 GB is outside the authorized worktree; no global cleanup or gate bypass.
-  Operator must free disk, then heavy-ok, plain make build and final targeted tests.
-- One new full backup-API replay; verify optimized batch fits the protected
-  ten-minute worker lifetime (`internal/composition/migration_app.go:161`).
-- Complete repeat-zero, both kickoff modes / each reason, 32-team equality,
-  Bills 1–7 including locked 7, explicit week 8, full timings and actual job counts.
-- Prior acceptance only: refused 76 free / 107 locked; roster 28/32, differing
-  0003/0015/0018/0025; Bills free 1–7, locked 1–6; week 8 free 0 / locked 32 refused.
-  These were NOT freshly re-measured. Exact inherited reasons remain in
-  `docs/build-handoffs/APP-ROSTER-7-refusals.txt`.
-- Older imported leagues need `transactions.follow` explicitly enabled through
-  ordinary rules (new imports set true). Durable off-roster missing-contract jobs
-  remain prior debt; current contract jobs enumerate rostered players only.
+- `internal/composition/migration_app.go:161`: ten-minute worker deadline still too
+  short for the actual importer. Do not raise it. First atomic batch cannot expose
+  partial progress. Full direct call is not automatic-worker acceptance.
+- Final CPU: correction projection 30.42%, full-prefix event rereads 22.17%, governance
+  15.29%, contract capture 13.69%, GC 20.69% (overlapping cumulative CPU, not wall shares).
+  Target measured prefix rereads/projection next while preserving every ordinary gate.
+- Lineup calls themselves now take 10m25s / 10m31s; repeats 3m15s / 3m30s. Expanded
+  history regresses overall refresh cost; transaction acceleration alone is not success.
+- Shared 74 W1–6 refusals lack held kickoff context. Free adds W7 All (04, currently IR).
+  Locked adds W7 Kirk (15), Terrell (32), Miller (20): inactive/absent at first kickoff,
+  activated/acquired October 25. Do not silently change the locked first-kickoff rule.
+- Prior debt: durable off-roster blank-contract review; older leagues need ordinary
+  enabling of transactions.follow; actual worker, independent review and GUI/Pulse proof.
 
 ## Tried and rejected
-No guessed draft origins, invented contracts, skipped assets, selected-live-pick
-safeguard bypass, raw ledger writes, real MFL requests/moves or protected-file
-workaround. A disposable in-memory archive reduction hit append-only protection
-and was abandoned without disabling it. No speed/acceptance claim from planning,
-rollback, a stopped replay or synthetic-only idempotence.
+No timeout increase, fabricated kickoff/contract, skipped asset, direct ledger SQL
+write, protected-file edit, remote or live MFL move. Capture-all mutant fails both
+bounded capture and side isolation. Initial perf commit hit complexity; simplified
+selection and passed the gate without bypass. Stopped pre-final attempts are not
+reported as completed timings; transaction rollback to two records was verified.
