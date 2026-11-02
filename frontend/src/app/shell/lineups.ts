@@ -29,10 +29,10 @@ export function createReadings<T>(
     return query;
   }
   const queries = new Map<string, ReturnType<typeof createReading>>();
-  function refresh(id: string) {
+  function refresh(id: string, overlap: 'after' | 'join' = 'after') {
     let query = queries.get(id);
     if (!query) { query = createReading(id); queries.set(id, query); }
-    return query.load([id]);
+    return query.load([id], { overlap });
   }
   return {
     refresh,
@@ -56,7 +56,7 @@ export function useReading<T>(
     const read = () => store.refresh(id);
     const stop = store.onSeasonChange(read);
     const stopMoves = store.onMovesChange(read);
-    read();
+    void store.refresh(id, 'join');
     return () => { stop(); stopMoves(); };
   }, [store, id, snapshot]);
   return state;

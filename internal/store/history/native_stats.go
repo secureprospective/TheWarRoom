@@ -95,6 +95,18 @@ func (f seasonStatFeed) Name(player string) string {
 
 // StatQueue lists the NFL's changes to statistics the league has counted, and what was decided about them.
 func (s *Store) StatQueue(ctx context.Context, league string, season int) (commissioner.StatQueue, error) {
+	mark, err := s.recordsMarkFor(ctx, league)
+	if err != nil {
+		return commissioner.StatQueue{}, err
+	}
+	args := mark + "|" + fmt.Sprintf("%s|%d", league, season)
+	return shareReading(ctx, &s.flights, "StatQueue", args,
+		func(ctx context.Context) (commissioner.StatQueue, error) {
+			return s.readStatQueue(ctx, league, season)
+		})
+}
+
+func (s *Store) readStatQueue(ctx context.Context, league string, season int) (commissioner.StatQueue, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.StatQueue{}, err

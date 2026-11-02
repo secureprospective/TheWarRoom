@@ -65,6 +65,8 @@ type Store struct {
 	weekly    map[string]weeklyFile
 	// seasons holds the latest built held season per season, keyed on its archive and identity revision.
 	seasons heldSeasonCache
+	// flights joins concurrent identical readings; it holds nothing once a reading completes.
+	flights readingFlights
 	// projMu guards the one scored projections book, keyed by league, rules digest and files.
 	projMu   sync.Mutex
 	projKey  string

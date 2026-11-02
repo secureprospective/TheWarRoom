@@ -102,7 +102,11 @@ func ownsFranchise(records []commissioner.Record, principal, franchise string) e
 func (s *Store) draftStandings(ctx context.Context, league string) commissioner.DraftStandings {
 	return &commissioner.LazyStandings{Read: func(records []commissioner.Record, season int,
 		through time.Time) (commissioner.NativeStandings, error) {
-		return commissioner.FinalStandingsReading(ctx, league, records, s.nativeSources(league, season), season, through)
+		args := fmt.Sprintf("%s|%d|%d|%s", league, season, through.UnixNano(), recordsMark(records))
+		return shareReading(ctx, &s.flights, "FinalStandings", args,
+			func(ctx context.Context) (commissioner.NativeStandings, error) {
+				return commissioner.FinalStandingsReading(ctx, league, records, s.nativeSources(league, season), season, through)
+			})
 	}}
 }
 

@@ -17,15 +17,15 @@ export function useHQRead<K extends ReadCommandId, T>(command: K, args: ReadArgu
   useEffect(() => {
     if (!enabled) return;
     const load = () => { void query.load(args); };
-    load();
+    void query.load(args, { overlap: 'join' });
     const season = selectProvider().onSeasonChange(load);
     const moves = commands.onMovesChange(load);
     return () => { query.fence(); season(); moves(); };
     // The canonical binding arguments, not the array's render identity, own the request lifetime.
   }, [query, key, enabled]);
   const state = query.use();
-  return { ...state, value: enabled && state.scope === key && !state.error && !state.pending ? state.value
-    : undefined };
+  // A re-read of the same scope keeps showing what was read: a slow reading must not blank the screen.
+  return { ...state, value: enabled && state.scope === key && !state.error ? state.value : undefined };
 }
 export const readHQSettings = async () => report(await controlAPI.settings(), 'League settings');
 export const readHQRace = (week: number, team: string, mine: string, mode: string) =>

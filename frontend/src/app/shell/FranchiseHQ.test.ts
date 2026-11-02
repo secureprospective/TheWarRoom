@@ -199,20 +199,21 @@ describe('HQ saved lineup read and editor', () => {
     mounted.splice(mounted.indexOf(test.root), 1);
     expect(test.unsubscribe).toHaveBeenCalledTimes(1);
   });
-  it('ignores a slow initial response after a fast event and refreshes changed snapshots', async () => {
+  it('reads an event after the slow initial read, never beside it, and refreshes changed snapshots', async () => {
     const first = pending();
     const r = heldLineup();
-    const read = vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(first.promise)
+    const read = vi.fn().mockReturnValueOnce(first.promise)
       .mockResolvedValueOnce({ ...r, week: 6 }).mockResolvedValue({ ...r, week: 7 });
     const test = await setup(read);
     await act(async () => { test.event(); });
-    expect(test.element.textContent).toContain('Week 6 lineup');
-    const counts = test.counts();
+    expect(read).toHaveBeenCalledTimes(1); // the slow read is not re-issued while it runs
     await act(async () => { first.resolve(r); });
-    expect(test.counts()).toEqual(counts);
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(test.element.textContent).toContain('Week 6 lineup');
+    expect(test.element.textContent).not.toContain('Week 5 lineup');
     await test.replace(structuredClone(test.snapshot));
     expect(test.element.textContent).toContain('Week 7 lineup');
-    expect(read).toHaveBeenCalledTimes(4);
+    expect(read).toHaveBeenCalledTimes(3);
   });
 });
 

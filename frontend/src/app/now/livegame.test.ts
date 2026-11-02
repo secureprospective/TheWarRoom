@@ -91,16 +91,16 @@ describe('Personal live game view', () => {
     try {
       const load = vi.fn(async () => {}); const update = vi.fn(async () => {});
       const stop = startLivePolling('0001', load, update);
-      vi.advanceTimersByTime(0); await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
       expect(load).toHaveBeenCalledTimes(1);
-      vi.advanceTimersByTime(15000); await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(15000);
       expect(load).toHaveBeenCalledTimes(2);
-      doc.hidden = true; vi.advanceTimersByTime(30000); await Promise.resolve();
+      doc.hidden = true; await vi.advanceTimersByTimeAsync(30000);
       expect(load).toHaveBeenCalledTimes(2);
       doc.hidden = false; await listeners.get('visibilitychange')!();
       expect(load).toHaveBeenCalledTimes(3);
       stop(); expect(listeners.size).toBe(0);
-      vi.advanceTimersByTime(30000); await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(30000);
       expect(load).toHaveBeenCalledTimes(3);
       expect(update).toHaveBeenCalledTimes(3);
     } finally { vi.useRealTimers(); vi.stubGlobal('document', oldDocument); }
