@@ -1,25 +1,27 @@
 # Handoff
 
 ## Baton
-Bee / APP-MERGE-6 — 2026-11-02, build/INTEGRATE-1102. Local only; no remote.
+Bee / APP-MERGE-7 — 2026-11-02, build/INTEGRATE-1102. Local only; no remote.
 
 ## Where it stands
-- Reference schedule/current/played-lineup decisions now live in app/mflref/migration;
-  composition supplies resources and worker lifetime. Timing, transactions and cutover preserved.
-- Control Room uses shared Act controls; 53-method commissioner transport includes SignInFacts.
-- Commits: 68d39d77f (extraction), a9ad04e29 (fixture clock), 1f00dd7db (frontend).
-- Final targeted race: service 2 PASS, composition migration cases 4 PASS. Earlier extracted
-  composition candidate: 846 PASS; not a final-tree full-package rerun.
-- src/app: 1829 PASS / 2 inherited shell guard failures. tsc and plain make build pass.
-- Full evidence and scoped review: docs/build-handoffs/APP-MERGE-6.md.
+- Both APP-MERGE-7 blockers cleared. Full report: docs/build-handoffs/APP-MERGE-7.md.
+- 152274c88: history uses acquisition-free held depth/bye facts; shared envelope decoding
+  is in feedwire. Boundarycheck exits 0; no guard exemptions or policy changes.
+- 5110ff1d3: Home uses shared controls; all 86 original long shell lines wrapped.
+- Final code tree: 1,742 Go race PASS tests/subtests, 8 existing opt-in skips;
+  composition alone 846 PASS. Discovery preceded the explicit-package batch.
+- src/app: 180 files / 1,832 tests PASS. tsc and plain make build exit 0.
+- Untracked .task-evidence contains raw logs; existing .golangci-cache remains untracked.
 
 ## Next move / blocked on
-- Boundarycheck now exposes existing native history → ingestion → MFL transitive coupling.
-- Strict controls guards still find HomeBrief/homeTiles raw controls and 86 long shell lines.
-- Follow-up separation/control conversion, independent review and disposable-profile UI testing.
-- Prior unresolved operator rulings/transaction-follow activation: APP-MERGE-4 debt remains.
-- APP-MERGE-5.md was absent from this checkout.
+- Operator's full repository verification; no full suite or push run here.
+- Independent review/mutant check and disposable-profile visual/keyboard acceptance:
+  Home selection/navigation, layout controls, drag, filters, drawers and Escape.
+- Prior delayed-worker live shutdown/publication check and APP-MERGE-4's operator
+  rulings/transaction-follow activation debt remain unverified.
+- Wails still emits missing-model-alias diagnostics despite a successful build.
 
 ## Tried and rejected
-No fence exemptions, keyboard allowlist expansion, engine/model changes, remote contact or
-full Go repository suite. Did not turn the named room repair into an incidental Home rewrite.
+Removing only the contracts import left transitive routes through researchfeeds and
+nflschedule. Extracted shared held decoding/values instead of relaxing the boundary.
+No keyboard allowlist expansion, engine/model changes, remote contact or full Go suite.
