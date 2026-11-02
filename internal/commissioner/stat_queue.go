@@ -182,11 +182,16 @@ func (b queueBuilder) candidate(week StatWeek) (StatQueueItem, bool, error) {
 	}
 	newest := versions[len(versions)-1]
 	id := StatItemID{Season: b.season, Week: week.Week, Player: week.Player, Seq: newest.Seq, Digest: newest.Digest[:statDigestLen]}
-	if newest.Digest == counted.Digest || b.effects.rejected[id] || b.effects.baselines[key].Entry == "" {
+	review := newest.Held.Review != "" && b.effects.baselines[key].Entry == ""
+	if b.effects.rejected[id] || (!review && (newest.Digest == counted.Digest || b.effects.baselines[key].Entry == "")) {
 		return StatQueueItem{}, false, nil
 	}
+	changes := b.differences(*counted.Held.Week, *newest.Held.Week)
+	if review {
+		changes = append(changes, StatChange{Stat: "source", Label: newest.Held.Review, Before: "weekly row absent", After: newest.Held.Authority + "; " + newest.Held.Evidence})
+	}
 	return StatQueueItem{ID: id.String(), Player: week.Player, Name: b.name(week.Player), Season: b.season,
-		Week: week.Week, Changes: b.differences(*counted.Held.Week, *newest.Held.Week), Arrived: newest.Held.FetchedAt,
+		Week: week.Week, Changes: changes, Arrived: newest.Held.FetchedAt,
 		SHA256: newest.Held.SHA256}, true, nil
 }
 

@@ -89,6 +89,7 @@ func mapLeague(le leagueEnvelope) RawConfig {
 		StartWeek:                   l.StartWeek,
 		EndWeek:                     l.EndWeek,
 		LastRegularSeasonWeek:       l.LastRegularSeasonWeek,
+		PartialLineupAllowed:        l.PartialLineupAllowed,
 		IncludeTaxiWithSalary:       l.IncludeTaxiWithSalary,
 		IncludeIRWithSalary:         l.IncludeIRWithSalary,
 		IncludeTaxiWithContractYear: l.IncludeTaxiWithContractYear,

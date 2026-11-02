@@ -173,3 +173,10 @@ func TestAssemble_RealLeagueCarriesTheRaceStructure(t *testing.T) {
 		t.Fatalf("franchise = %+v", cfg.Franchises[0])
 	}
 }
+
+func TestParseCarriesPartialLineupPermission(t *testing.T) {
+	cfg, err := Parse([]byte(`{"league":{"partialLineupAllowed":"YES"}}`), []byte(rulesBody))
+	if err != nil || cfg.PartialLineupAllowed != "YES" {
+		t.Fatalf("partial-lineup permission lost: %+v %v", cfg, err)
+	}
+}

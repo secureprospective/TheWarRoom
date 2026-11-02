@@ -18,6 +18,9 @@ type RawWeek struct {
 }
 
 type PlayerWeek struct {
+	Provenance  string
+	Review      string
+	Evidence    string
 	GSIS        string
 	Position    string
 	Season      int

@@ -102,6 +102,10 @@ func (r RawFootballEvidence) scoringFile(raw RawFootballStats, parts partSource)
 			return heldFile{}, fmt.Errorf("statistics name a different season")
 		}
 	}
+	weeks, err = source.MissingPlayWeeks(weeks, plays)
+	if err != nil {
+		return heldFile{}, fmt.Errorf("build missing pinned player weeks: %w", err)
+	}
 	if err := source.AttachPlays(weeks, plays); err != nil {
 		return heldFile{}, fmt.Errorf("complete pinned statistics: %w", err)
 	}
@@ -198,6 +202,10 @@ func (p *PinnedFootball) CanonicalPlayerWeekStats(ctx context.Context, scope sou
 		if week, ok := file.canonical[canonicalWeek{scope.Player, scope.Week}]; ok {
 			copied := clonePlayerWeek(week)
 			held.Week = &copied
+			if copied.Provenance != "" {
+				held.Authority = copied.Provenance
+			}
+			held.Review, held.Evidence = copied.Review, copied.Evidence
 		} else {
 			held.Missing = []string{"This held file does not report the player's regular-season week"}
 		}

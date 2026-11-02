@@ -18,6 +18,7 @@ type RawConfig struct {
 	StartWeek             string // first scoring week
 	EndWeek               string // last scoring week
 	LastRegularSeasonWeek string // last week before playoffs
+	PartialLineupAllowed  string // YES permits an incomplete starting lineup
 	// The percent ("100") of a taxi or IR player's salary that counts against the cap.
 	IncludeTaxiWithSalary       string
 	IncludeIRWithSalary         string
@@ -100,6 +101,7 @@ type leagueEnvelope struct {
 		StartWeek                   string `json:"startWeek"`
 		EndWeek                     string `json:"endWeek"`
 		LastRegularSeasonWeek       string `json:"lastRegularSeasonWeek"`
+		PartialLineupAllowed        string `json:"partialLineupAllowed"`
 		IncludeTaxiWithSalary       string `json:"includeTaxiWithSalary"`
 		IncludeIRWithSalary         string `json:"includeIRWithSalary"`
 		IncludeTaxiWithContractYear string `json:"includeTaxiWithContractYear"`

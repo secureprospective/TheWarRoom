@@ -101,6 +101,14 @@ func (t *translation) roster(r *leaguerules.RuleSet, config league.RawConfig) {
 }
 
 func (t *translation) lineup(r *leaguerules.RuleSet, config league.RawConfig) {
+	switch strings.ToUpper(strings.TrimSpace(config.PartialLineupAllowed)) {
+	case "YES":
+		r.Lineup.InvalidPenalty = known(leaguerules.NoPenalty)
+	case "", "NO":
+	default:
+		t.problem("MFL's partial lineup permission reads %q, which is not YES or NO", config.PartialLineupAllowed)
+	}
+
 	if positions, ok := t.positionBounds("starting limit", config.Starters.Positions, false); ok {
 		r.Lineup.Positions = known(positions)
 	}

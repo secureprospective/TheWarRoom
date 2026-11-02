@@ -49,6 +49,8 @@ type HeldWeek struct {
 	FetchedAt time.Time
 	Week      *PlayerWeek
 	Missing   []string
+	Review    string
+	Evidence  string
 }
 
 func SelectHeldWeek(scope RawStatScope, weeks []PlayerWeek, sha string, at time.Time) HeldWeek {
@@ -104,5 +106,10 @@ func heldWeekAt(weeks []PlayerWeek, i int, sha string, at time.Time) HeldWeek {
 	}
 	found := weeks[i]
 	out.Week = &found
+	if found.Provenance != "" {
+		out.Authority = found.Provenance
+	}
+	out.Review = found.Review
+	out.Evidence = found.Evidence
 	return out
 }
