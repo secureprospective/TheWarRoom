@@ -8,7 +8,7 @@ import { readRoom, type RoomData, type RoomPort } from './roomReads';
 import { routeCommand, unbuiltWords, type Route } from './route';
 import { EditorTray, type TrayContent } from './EditorTray';
 import { runSearch, type Hit } from './search';
-import { NotYet, RoomContext, type Room, type Tab, type Card, tabs } from './room';
+import { RoomContext, type Room, type Tab, type Card, tabs } from './room';
 import { JobsView } from './JobsView';
 import { SituationsView } from './SituationsView';
 import { RulesView } from './RulesView';
@@ -17,12 +17,13 @@ import { FixView } from './FixView';
 import { PicksView } from './PicksView';
 import { PeopleView } from './PeopleView';
 import { LeagueView } from './LeagueView';
+import { ServerView } from './ServerView';
 import './controlRoom.css';
 
 const views: Record<Tab, () => ReactNode> = {
   jobs: () => <JobsView />, sit: () => <SituationsView />, rules: () => <RulesView />,
   season: () => <SeasonView />, fix: () => <FixView />, picks: () => <PicksView />,
-  people: () => <PeopleView />, league: () => <LeagueView />, server: () => <NotYet what="this branch is wired in a later commit" />,
+  people: () => <PeopleView />, league: () => <LeagueView />, server: () => <ServerView />,
 };
 
 const desktopPort = (): RoomPort => ({ ...nativeBindings(), TargetShellStatus: readShellStatus });
