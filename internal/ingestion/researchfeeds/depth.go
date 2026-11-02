@@ -11,40 +11,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/contracts"
 )
 
-type RawDepth struct {
-	DT       string  `parquet:"dt"`
-	Team     string  `parquet:"team"`
-	Name     string  `parquet:"player_name"`
-	ESPN     *string `parquet:"espn_id,optional"`
-	GSIS     *string `parquet:"gsis_id,optional"`
-	GroupID  int32   `parquet:"pos_grp_id"`
-	Group    string  `parquet:"pos_grp"`
-	Position string  `parquet:"pos_abb"`
-	Slot     int32   `parquet:"pos_slot"`
-	Rank     int32   `parquet:"pos_rank"`
-}
+type RawDepth = source.RawDepth
 
-func (r RawDepth) Validate() error {
-	if _, err := time.Parse(time.RFC3339, r.DT); err != nil {
-		return fmt.Errorf("depth snapshot: %w", err)
-	}
-	if r.Team == "" || r.Group == "" || r.Position == "" || r.Slot < 1 || r.Rank < 1 {
-		return fmt.Errorf("depth chart: missing identity, formation or rank")
-	}
-	if r.Name == "" && (r.GSIS == nil || *r.GSIS == "") && (r.ESPN == nil || *r.ESPN == "") {
-		return fmt.Errorf("depth chart: no player identity")
-	}
-	return nil
-}
 func newestDepth(rows []RawDepth) ([]RawDepth, error) {
 	var newest time.Time
 	for _, r := range rows {
 		if err := r.Validate(); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("depth row: %w", err)
 		}
 		at, err := time.Parse(time.RFC3339, r.DT)
 		if err != nil {
@@ -80,7 +57,7 @@ func newestDepth(rows []RawDepth) ([]RawDepth, error) {
 	return out, nil
 }
 func ParseDepth(body []byte) ([]RawDepth, error) {
-	rows, err := contracts.ReadRows[RawDepth](body)
+	rows, err := source.ReadDepthHistory(body)
 	if err != nil {
 		return nil, fmt.Errorf("depth charts: %w", err)
 	}
@@ -123,7 +100,7 @@ func ParseDepthCSV(body []byte) ([]RawDepth, error) {
 	return newestDepth(rows)
 }
 func DepthURL(season int) string {
-	return fmt.Sprintf("https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_%d.parquet", season)
+	return source.DepthHistoryURL(season)
 }
 func FetchDepth(ctx context.Context, client *http.Client, season int) ([]RawDepth, error) {
 	body, err := ingestion.Get(ctx, client, DepthURL(season), 32<<20)

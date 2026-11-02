@@ -1121,3 +1121,8 @@ share the existing worker: first launch waits five minutes, then a ten-minute co
 the import; one app-wide atomic guard prevents overlap. Scoring loads keep their shared
 serialization; failed feeds retain held ledger data. Cutover remains owned by the unchanged
 migration engine, which clears `schedule.follow`.
+
+Held membership and bye decoding lives in `internal/fantasyscore/source`; history consumes its
+validated depth/bye values, not acquisition packages. `internal/feedwire` owns singleton/array
+envelopes and API-error rejection shared by held decoding and ingestion. Acquisition wrappers
+retain their old public types as aliases. No feed selection or zero-admission policy changed.

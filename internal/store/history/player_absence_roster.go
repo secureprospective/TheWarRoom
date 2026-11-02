@@ -10,25 +10,15 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/contracts"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 )
 
-func (s *Store) heldDepthHistory(ctx context.Context, season int) ([]researchfeeds.RawDepth, []byte, time.Time, error) {
-	var rows []researchfeeds.RawDepth
+func (s *Store) heldDepthHistory(ctx context.Context, season int) ([]source.RawDepth, []byte, time.Time, error) {
+	var rows []source.RawDepth
 	var body []byte
 	var at time.Time
 	var parseErr error
-	_, err := s.ExactArchivedBodies(ctx, researchfeeds.DepthURL(season), func(_ string, b []byte, stamp time.Time) bool {
-		rows, parseErr = contracts.ReadRows[researchfeeds.RawDepth](b)
-		if parseErr == nil {
-			for _, r := range rows {
-				if parseErr = r.Validate(); parseErr != nil {
-					break
-				}
-			}
-		}
+	_, err := s.ExactArchivedBodies(ctx, source.DepthHistoryURL(season), func(_ string, b []byte, stamp time.Time) bool {
+		rows, parseErr = source.ReadDepthHistory(b)
 		body, at = b, stamp
 		return true
 	})
@@ -101,11 +91,11 @@ func weekStarts(snaps []source.RawSnap) map[string]time.Time {
 // say a player is on none of them. Only a player that history lists somewhere in the season can be
 // judged by it, because a player it never lists is outside its coverage and stays pending. A player
 // who took a snap that week was on a roster whatever the snapshot says, so he is never admitted here.
-func unrosteredWeeks(season int, depth []researchfeeds.RawDepth, snaps []source.RawSnap,
+func unrosteredWeeks(season int, depth []source.RawDepth, snaps []source.RawSnap,
 	pfrGSIS map[string]string) []source.RawAbsenceProof {
 	teams, players := make(map[string]bool), make(map[string]bool)
 	for _, r := range depth {
-		teams[livegame.Canonical(r.Team)] = true
+		teams[source.CanonicalTeam(r.Team)] = true
 		if r.GSIS != nil && *r.GSIS != "" {
 			players[*r.GSIS] = true
 		}
@@ -121,7 +111,7 @@ func unrosteredWeeks(season int, depth []researchfeeds.RawDepth, snaps []source.
 	for _, week := range slices.Sorted(maps.Keys(starts)) {
 		covered, rostered := make(map[string]bool), make(map[string]bool)
 		for _, r := range depthAt(depth, starts[week]) {
-			covered[livegame.Canonical(r.Team)] = true
+			covered[source.CanonicalTeam(r.Team)] = true
 			if r.GSIS != nil {
 				rostered[*r.GSIS] = true
 			}
@@ -145,7 +135,7 @@ func unrosteredWeeks(season int, depth []researchfeeds.RawDepth, snaps []source.
 
 // depthAt uses one complete dated snapshot, not the last row ever seen for a player
 // who may have since left the team. No current affiliation is carried backwards.
-func depthAt(rows []researchfeeds.RawDepth, cutoff time.Time) []researchfeeds.RawDepth {
+func depthAt(rows []source.RawDepth, cutoff time.Time) []source.RawDepth {
 	var latest time.Time
 	parsed := make(map[string]time.Time)
 	for _, r := range rows {
@@ -158,7 +148,7 @@ func depthAt(rows []researchfeeds.RawDepth, cutoff time.Time) []researchfeeds.Ra
 			latest = at
 		}
 	}
-	var out []researchfeeds.RawDepth
+	var out []source.RawDepth
 	if latest.IsZero() {
 		return out
 	}

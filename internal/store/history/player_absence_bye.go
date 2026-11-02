@@ -8,13 +8,10 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 )
 
-func (s *Store) heldRosterByes(ctx context.Context, season int, depth []researchfeeds.RawDepth, snaps []source.RawSnap) ([]source.RawAbsenceProof, []byte, time.Time, error) {
-	var byes []nflschedule.RawBye
+func (s *Store) heldRosterByes(ctx context.Context, season int, depth []source.RawDepth, snaps []source.RawSnap) ([]source.RawAbsenceProof, []byte, time.Time, error) {
+	var byes []source.RawBye
 	var body []byte
 	var at time.Time
 	var parseErr error
@@ -22,7 +19,7 @@ func (s *Store) heldRosterByes(ctx context.Context, season int, depth []research
 		if !strings.Contains(u, fmt.Sprintf("/%d/export?", season)) {
 			return false
 		}
-		byes, parseErr = nflschedule.ParseByes(b)
+		byes, parseErr = source.ParseByes(b)
 		body, at = b, stamp
 		return true
 	})
@@ -35,20 +32,20 @@ func (s *Store) heldRosterByes(ctx context.Context, season int, depth []research
 	return rosterByes(season, depth, snaps, byes), body, at, nil
 }
 
-func rosterByes(season int, depth []researchfeeds.RawDepth, snaps []source.RawSnap, byes []nflschedule.RawBye) []source.RawAbsenceProof {
+func rosterByes(season int, depth []source.RawDepth, snaps []source.RawSnap, byes []source.RawBye) []source.RawAbsenceProof {
 	starts := weekStarts(snaps)
 	playing := make(map[string]bool)
 	for _, snap := range snaps {
-		playing[snap.Proof.Week+"/"+livegame.Canonical(snap.Proof.Team)] = true
+		playing[snap.Proof.Week+"/"+source.CanonicalTeam(snap.Proof.Team)] = true
 	}
 	var out []source.RawAbsenceProof
 	for _, bye := range byes {
 		cutoff, ok := starts[bye.Week]
-		if !ok || playing[bye.Week+"/"+livegame.Canonical(bye.Team)] {
+		if !ok || playing[bye.Week+"/"+source.CanonicalTeam(bye.Team)] {
 			continue
 		}
 		for _, r := range depthAt(depth, cutoff) {
-			if r.GSIS == nil || *r.GSIS == "" || livegame.Canonical(r.Team) != livegame.Canonical(bye.Team) {
+			if r.GSIS == nil || *r.GSIS == "" || source.CanonicalTeam(r.Team) != source.CanonicalTeam(bye.Team) {
 				continue
 			}
 			proof := source.RawAbsenceProof{GSIS: *r.GSIS, Season: strconv.Itoa(season), Week: bye.Week, Team: r.Team, Position: r.Position, Evidence: "team bye per schedule"}

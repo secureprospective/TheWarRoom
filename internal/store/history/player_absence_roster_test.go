@@ -5,13 +5,11 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 )
 
 func TestDepthMembershipIsDatedAndDoesNotRetainDepartedPlayers(t *testing.T) {
 	cutoff := time.Date(2026, 9, 10, 0, 0, 0, 0, time.UTC)
-	rows := []researchfeeds.RawDepth{
+	rows := []source.RawDepth{
 		{DT: "2026-09-08T12:00:00Z", Team: "BUF", Name: "Departed"},
 		{DT: "2026-09-09T12:00:00Z", Team: "NYJ", Name: "Current"},
 		{DT: "2026-09-11T12:00:00Z", Team: "MIA", Name: "Future"},
@@ -30,18 +28,18 @@ func TestDepthMembershipIsDatedAndDoesNotRetainDepartedPlayers(t *testing.T) {
 
 func TestRosterByesRequireHistoricalTeamAndPositiveSchedule(t *testing.T) {
 	gsis := "00-0030001"
-	depth := []researchfeeds.RawDepth{{DT: "2026-10-07T12:00:00Z", Team: "NE", GSIS: &gsis, Position: "LB"}, {DT: "2026-10-09T12:00:00Z", Team: "BUF", GSIS: &gsis, Position: "LB"}}
+	depth := []source.RawDepth{{DT: "2026-10-07T12:00:00Z", Team: "NE", GSIS: &gsis, Position: "LB"}, {DT: "2026-10-09T12:00:00Z", Team: "BUF", GSIS: &gsis, Position: "LB"}}
 	snaps := []source.RawSnap{{Proof: source.RawAbsenceProof{Week: "5", Team: "NYJ"}, Date: "20261008"}}
 	for _, tc := range []struct {
 		name string
-		byes []nflschedule.RawBye
+		byes []source.RawBye
 		want int
 	}{
-		{"dated team", []nflschedule.RawBye{{Team: "NEP", Week: "5"}}, 1},
-		{"future team", []nflschedule.RawBye{{Team: "BUF", Week: "5"}}, 0},
+		{"dated team", []source.RawBye{{Team: "NEP", Week: "5"}}, 1},
+		{"future team", []source.RawBye{{Team: "BUF", Week: "5"}}, 0},
 		{"no schedule", nil, 0},
-		{"different week", []nflschedule.RawBye{{Team: "NEP", Week: "6"}}, 0},
-		{"team playing", []nflschedule.RawBye{{Team: "NYJ", Week: "5"}}, 0},
+		{"different week", []source.RawBye{{Team: "NEP", Week: "6"}}, 0},
+		{"team playing", []source.RawBye{{Team: "NYJ", Week: "5"}}, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := rosterByes(2026, depth, snaps, tc.byes)
@@ -51,16 +49,16 @@ func TestRosterByesRequireHistoricalTeamAndPositiveSchedule(t *testing.T) {
 		})
 	}
 	depth[0].GSIS = nil
-	if got := rosterByes(2026, depth, snaps, []nflschedule.RawBye{{Team: "NEP", Week: "5"}}); len(got) != 0 {
+	if got := rosterByes(2026, depth, snaps, []source.RawBye{{Team: "NEP", Week: "5"}}); len(got) != 0 {
 		t.Fatal("unknown identity zeroed", got)
 	}
 }
 
 func TestRosterByeLeavesLegacyNonGSISIdentifiersPending(t *testing.T) {
 	id := "THO581952"
-	depth := []researchfeeds.RawDepth{{DT: "2026-10-07T12:00:00Z", Team: "NE", GSIS: &id, Position: "LB"}}
+	depth := []source.RawDepth{{DT: "2026-10-07T12:00:00Z", Team: "NE", GSIS: &id, Position: "LB"}}
 	snaps := []source.RawSnap{{Proof: source.RawAbsenceProof{Week: "5", Team: "NYJ"}, Date: "20261008"}}
-	if got := rosterByes(2026, depth, snaps, []nflschedule.RawBye{{Team: "NEP", Week: "5"}}); len(got) != 0 {
+	if got := rosterByes(2026, depth, snaps, []source.RawBye{{Team: "NEP", Week: "5"}}); len(got) != 0 {
 		t.Fatal("legacy identity became zero", got)
 	}
 }
@@ -68,15 +66,15 @@ func TestRosterByeLeavesLegacyNonGSISIdentifiersPending(t *testing.T) {
 // unrosteredDepth lists two teams across two weeks: one player stays on NE both weeks, the
 // player under test is on NE in week five only, and NYJ keeps a listing in both snapshots so
 // each is covered. The second snapshot is the one that decides week six.
-func unrosteredDepth(absent string) []researchfeeds.RawDepth {
+func unrosteredDepth(absent string) []source.RawDepth {
 	stay, other := "00-0030009", "00-0030008"
-	var out []researchfeeds.RawDepth
+	var out []source.RawDepth
 	for _, dt := range []string{"2026-10-07T12:00:00Z", "2026-10-14T12:00:00Z"} {
-		out = append(out, researchfeeds.RawDepth{DT: dt, Team: "NE", GSIS: &stay, Position: "LB"},
-			researchfeeds.RawDepth{DT: dt, Team: "NYJ", GSIS: &other, Position: "LB"})
+		out = append(out, source.RawDepth{DT: dt, Team: "NE", GSIS: &stay, Position: "LB"},
+			source.RawDepth{DT: dt, Team: "NYJ", GSIS: &other, Position: "LB"})
 	}
 	gone := absent
-	out = append(out, researchfeeds.RawDepth{DT: "2026-10-07T12:00:00Z", Team: "NE", GSIS: &gone, Position: "LB"})
+	out = append(out, source.RawDepth{DT: "2026-10-07T12:00:00Z", Team: "NE", GSIS: &gone, Position: "LB"})
 	return out
 }
 
@@ -109,7 +107,7 @@ func TestAPlayerNoTeamListsThatWeekScoresZeroOnlyUnderCompleteMembership(t *test
 		}
 	}
 	short := unrosteredDepth(gsis)
-	short = append(short, researchfeeds.RawDepth{DT: "2026-10-07T12:00:00Z", Team: "MIA", GSIS: &[]string{"00-0030007"}[0], Position: "LB"})
+	short = append(short, source.RawDepth{DT: "2026-10-07T12:00:00Z", Team: "MIA", GSIS: &[]string{"00-0030007"}[0], Position: "LB"})
 	if weeks := weeksUnrostered(unrosteredWeeks(2026, short, unrosteredSnaps(), nil), gsis); len(weeks) != 0 {
 		t.Fatalf("a snapshot missing a team certified no roster: %+v", weeks)
 	}
