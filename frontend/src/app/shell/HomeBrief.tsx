@@ -4,7 +4,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import './home.css';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { ResearchReader } from '../research/api';
-import { readHomeBrief, type HomeBrief as Brief } from './homeReads';
+import { subscribeSeason } from '../market/api';
+import { mergeBrief, readHomeBrief, retryDelay, transientErrors, type HomeBrief as Brief } from './homeReads';
 import { bump, current, defaultLayout, layoutKey, pack, parseLayout, place, remove, SPANS, swap,
   type Layout, type Phase, type Span, type TileId } from './homeLayout';
 import { clock, go, isFinal, left, myGame, myRow, nameOf, oldestAt, pts, SHORTCUT_KEYS, shortTime, TileBody,
@@ -54,12 +55,29 @@ export default function HomeBrief({ league, mine, port, initial, research }: { l
   const [card, setCard] = useState<number>();
   const [msg, setMsg] = useState('');
   const [drag, setDrag] = useState<TileId>();
+  // pass counts reads; done is the last pass that finished. A startup timeout is not final: Home
+  // re-reads when the season's data changes, and on a backing-off timer, until the error clears.
+  const [pass, setPass] = useState(0);
+  const [done, setDone] = useState(-1);
+  const attempts = useRef(0);
+  const scope = useRef('');
   useEffect(() => {
     if (initial) return;
     let live = true;
-    void readHomeBrief(league, mine, port, r => { if (live) setB(r); }, ...(research ? [research] : []));
+    const first = scope.current !== `${league}|${mine}`;
+    scope.current = `${league}|${mine}`;
+    void readHomeBrief(league, mine, port, r => { if (live) setB(prev => first ? r : mergeBrief(prev, r)); },
+      ...(research ? [research] : [])).finally(() => { if (live) setDone(pass); });
     return () => { live = false; };
-  }, [league, mine, port, initial, research]);
+  }, [league, mine, port, initial, research, pass]);
+  const retrying = !initial && done === pass && transientErrors(b);
+  useEffect(() => {
+    if (!retrying) { if (done === pass) attempts.current = 0; return; }
+    const again = () => setPass(p => p + 1);
+    const timer = setTimeout(again, retryDelay(attempts.current++));
+    const stop = subscribeSeason(again);
+    return () => { clearTimeout(timer); stop(); };
+  }, [retrying, done, pass]);
   const save = (next: Layout) => {
     setLay(next);
     try { browserStorage()?.setItem(key, JSON.stringify(next)); } catch (e) {

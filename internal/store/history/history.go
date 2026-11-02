@@ -59,6 +59,8 @@ type Store struct {
 	leagues   nativeLeagueRevision
 	recordsMu sync.Mutex
 	records   map[string]recordRevision
+	eventsMu  sync.Mutex
+	events    map[eventStreamKey]eventRevision
 	weeklyMu  sync.Mutex
 	weekly    map[string]weeklyFile
 	// projMu guards the one scored projections book, keyed by league, rules digest and files.

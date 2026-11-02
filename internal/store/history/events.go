@@ -168,8 +168,17 @@ func (s *Store) insertEvent(ctx context.Context, tx *sql.Tx, e LeagueEvent, expe
 	return e, nil
 }
 
-// Events returns a stream's events after revision after, in revision order.
+// Events returns a stream's events after revision after, in revision order. A whole-stream read
+// (after 0) decodes only entries appended since the previous whole-stream read: the ledger is
+// append-only, so the held prefix stays valid while its newest entry is still in place.
 func (s *Store) Events(ctx context.Context, league, stream string, after int64) ([]LeagueEvent, error) {
+	if after == 0 {
+		return s.wholeStream(ctx, league, stream)
+	}
+	return s.eventsAfter(ctx, league, stream, after)
+}
+
+func (s *Store) eventsAfter(ctx context.Context, league, stream string, after int64) ([]LeagueEvent, error) {
 	rows, err := s.pools.Read().QueryContext(ctx, eventsQuery, league, stream, after)
 	if err != nil {
 		return nil, fmt.Errorf("league event: read: %w", err)

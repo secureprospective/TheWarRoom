@@ -404,3 +404,37 @@ it('uses sibling shared buttons for tile selection, with no nested interactive c
   await act(async () => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); });
   expect(q('.sdrawer.open')).toBeNull();
 });
+
+it('re-reads a tile whose read timed out during startup instead of keeping the error', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  let ledgerCalls = 0;
+  const base = port();
+  const p = vi.fn<HostedPort>(async request => {
+    if (request.command === 'commish.ledger.read' && ledgerCalls++ === 0)
+      throw new Error('read linked identities: context deadline exceeded');
+    return base(request);
+  });
+  await mount(p);
+  expect(tile('wire').textContent).toContain('deadline exceeded');
+  await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+  for (let i = 0; i < 20; i++)
+    await act(async () => { await vi.advanceTimersByTimeAsync(5); });
+  expect(ledgerCalls).toBe(2);
+  expect(tile('wire').textContent).not.toContain('deadline exceeded');
+  expect(tile('wire').textContent).toContain('Trade accepted');
+  vi.useRealTimers();
+});
+
+it('keeps a final read error without re-reading', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  let ledgerCalls = 0;
+  const base = port();
+  const p = vi.fn<HostedPort>(async request => {
+    if (request.command === 'commish.ledger.read') { ledgerCalls++; throw new Error('Ledger belongs to another league'); }
+    return base(request);
+  });
+  await mount(p);
+  await act(async () => { await vi.advanceTimersByTimeAsync(70_000); });
+  expect(ledgerCalls).toBe(1);
+  vi.useRealTimers();
+});

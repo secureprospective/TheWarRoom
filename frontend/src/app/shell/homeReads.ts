@@ -127,3 +127,22 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
   ]);
   return out;
 }
+
+/** A read that failed because the desktop was still starting (a timed-out or not-yet-ready store)
+ *  will answer once startup work lands; Home re-reads for these instead of keeping the error. */
+const TRANSIENT = /deadline exceeded|timed out|timeout|startup|not ready|not open yet/i;
+export const transientErrors = (b: HomeBrief): boolean =>
+  Object.values(b.errors).some(e => e !== undefined && TRANSIENT.test(e));
+
+/** retryDelay backs off Home's re-reads: 5 s, 10 s, 20 s, then every 60 s while still failing. */
+export const retryDelay = (attempt: number): number => Math.min(60_000, 5_000 * 2 ** Math.max(0, attempt));
+
+/** mergeBrief lays a re-read over the brief on screen: a source keeps its last answer until the
+ *  re-read answers it, and an error clears once its source answers. */
+export function mergeBrief(prev: HomeBrief, next: HomeBrief): HomeBrief {
+  const out: HomeBrief = { ...prev, at: { ...prev.at, ...next.at }, errors: { ...prev.errors, ...next.errors } };
+  for (const [k, v] of Object.entries(next) as [keyof HomeBrief, unknown][])
+    if (k !== 'at' && k !== 'errors' && v !== undefined) (out as Record<string, unknown>)[k] = v;
+  for (const source of Object.keys(next.at) as HomeSource[]) delete out.errors[source];
+  return out;
+}
