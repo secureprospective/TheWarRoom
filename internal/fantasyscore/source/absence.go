@@ -3,12 +3,24 @@ package source
 import (
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
+
+// absenceEvidence is every exact-week proof this app admits, in the words it ledgers.
+func absenceEvidence() []string {
+	return []string{"positive snaps; no play-by-play stat events",
+		"exact-week injury Out; no play-by-play stat events",
+		"complete snaps + pbp, no snap", "team bye per schedule", UnrosteredEvidence}
+}
+
+// UnrosteredEvidence says a complete dated membership snapshot for the week put the player on no
+// NFL team at all. Such a proof names no team and no game, because the player belonged to neither.
+const UnrosteredEvidence = "on no NFL roster that week"
 
 // RawAbsenceProof carries exact-week evidence, never an inferred zero from a missing row.
 type RawAbsenceProof struct {
@@ -32,7 +44,7 @@ func (r RawAbsenceProof) Validate() error {
 	if err := r.validateGame(season, week); err != nil {
 		return err
 	}
-	if r.Evidence != "positive snaps; no play-by-play stat events" && r.Evidence != "exact-week injury Out; no play-by-play stat events" && r.Evidence != "complete snaps + pbp, no snap" && r.Evidence != "team bye per schedule" {
+	if !slices.Contains(absenceEvidence(), r.Evidence) {
 		return fmt.Errorf("unknown absence evidence")
 	}
 	return nil
@@ -131,7 +143,7 @@ func AddProvenZeros(weeks []PlayerWeek, plays []RawPlay, proofs []RawAbsenceProo
 		if game == "" {
 			game = proofGame(r, final)
 		}
-		if !final[game] && r.Evidence != "team bye per schedule" {
+		if !final[game] && !teamless(r.Evidence) {
 			continue
 		}
 		w := PlayerWeek{GSIS: r.GSIS, Season: season, Week: week, SeasonType: "REG", GameID: game, Position: r.Position, Line: emptyRecordedLine()}
@@ -142,6 +154,11 @@ func AddProvenZeros(weeks []PlayerWeek, plays []RawPlay, proofs []RawAbsenceProo
 		known[key] = true
 	}
 	return out, nil
+}
+
+// teamless says the proof is about a week rather than a game, so no end-of-game record gates it.
+func teamless(evidence string) bool {
+	return evidence == "team bye per schedule" || evidence == UnrosteredEvidence
 }
 
 func proofGame(r RawAbsenceProof, final map[string]bool) string {
@@ -218,7 +235,16 @@ func zeroCoverage(plays []RawPlay) (map[string]bool, map[string]bool, error) {
 }
 
 func (r RawAbsenceProof) validatePeriod(season, week int) error {
-	if season < 1920 || season > 9999 || week < 1 || week > 22 || (r.GSIS == "" && r.PFR == "") || (r.GameID == "" && r.Team == "") {
+	if season < 1920 || season > 9999 || week < 1 || week > 22 || (r.GSIS == "" && r.PFR == "") {
+		return fmt.Errorf("absence proof needs identity, period and game or team")
+	}
+	if r.Evidence == UnrosteredEvidence {
+		if r.GameID != "" || r.Team != "" {
+			return fmt.Errorf("a player on no NFL roster has neither team nor game")
+		}
+		return nil
+	}
+	if r.GameID == "" && r.Team == "" {
 		return fmt.Errorf("absence proof needs identity, period and game or team")
 	}
 	return nil

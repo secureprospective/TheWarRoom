@@ -11,6 +11,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/contracts"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 )
 
@@ -70,6 +71,7 @@ func (s *Store) heldNonParticipation(ctx context.Context, season int, snapBody [
 		}
 	}
 	proofs := source.NonParticipationProofs(snaps, roster)
+	proofs = append(proofs, unrosteredWeeks(season, depth, snaps, pfrGSIS)...)
 	byes, byeBody, byeAt, err := s.heldRosterByes(ctx, season, depth, snaps)
 	if err != nil {
 		return nil, nil, time.Time{}, err
@@ -78,6 +80,67 @@ func (s *Store) heldNonParticipation(ctx context.Context, season int, snapBody [
 		at = byeAt
 	}
 	return append(proofs, byes...), append(body, byeBody...), at, nil
+}
+
+// weekStarts dates each week by its earliest held game, so a week's membership is read as it stood
+// before that week's first kickoff rather than against a later snapshot.
+func weekStarts(snaps []source.RawSnap) map[string]time.Time {
+	starts := make(map[string]time.Time)
+	for _, snap := range snaps {
+		day, _ := time.Parse("20060102", snap.Date)
+		week := snap.Proof.Week
+		if starts[week].IsZero() || day.Before(starts[week]) {
+			starts[week] = day
+		}
+	}
+	return starts
+}
+
+// unrosteredWeeks admits a zero for a player no NFL team listed that week. The deciding dated
+// snapshot must cover every team the season's membership history knows: one short of a team cannot
+// say a player is on none of them. Only a player that history lists somewhere in the season can be
+// judged by it, because a player it never lists is outside its coverage and stays pending. A player
+// who took a snap that week was on a roster whatever the snapshot says, so he is never admitted here.
+func unrosteredWeeks(season int, depth []researchfeeds.RawDepth, snaps []source.RawSnap,
+	pfrGSIS map[string]string) []source.RawAbsenceProof {
+	teams, players := make(map[string]bool), make(map[string]bool)
+	for _, r := range depth {
+		teams[livegame.Canonical(r.Team)] = true
+		if r.GSIS != nil && *r.GSIS != "" {
+			players[*r.GSIS] = true
+		}
+	}
+	played := make(map[string]bool)
+	for _, snap := range snaps {
+		if gsis, ok := pfrGSIS[snap.Proof.PFR]; ok && gsis != "" {
+			played[snap.Proof.Week+"/"+gsis] = true
+		}
+	}
+	starts := weekStarts(snaps)
+	var out []source.RawAbsenceProof
+	for _, week := range slices.Sorted(maps.Keys(starts)) {
+		covered, rostered := make(map[string]bool), make(map[string]bool)
+		for _, r := range depthAt(depth, starts[week]) {
+			covered[livegame.Canonical(r.Team)] = true
+			if r.GSIS != nil {
+				rostered[*r.GSIS] = true
+			}
+		}
+		if len(covered) != len(teams) {
+			continue
+		}
+		for _, gsis := range slices.Sorted(maps.Keys(players)) {
+			if rostered[gsis] || played[week+"/"+gsis] {
+				continue
+			}
+			proof := source.RawAbsenceProof{GSIS: gsis, Season: strconv.Itoa(season), Week: week,
+				Evidence: source.UnrosteredEvidence}
+			if proof.Validate() == nil {
+				out = append(out, proof)
+			}
+		}
+	}
+	return out
 }
 
 // depthAt uses one complete dated snapshot, not the last row ever seen for a player

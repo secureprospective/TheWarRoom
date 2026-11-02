@@ -64,3 +64,84 @@ func TestRosterByeLeavesLegacyNonGSISIdentifiersPending(t *testing.T) {
 		t.Fatal("legacy identity became zero", got)
 	}
 }
+
+// unrosteredDepth lists two teams across two weeks: one player stays on NE both weeks, the
+// player under test is on NE in week five only, and NYJ keeps a listing in both snapshots so
+// each is covered. The second snapshot is the one that decides week six.
+func unrosteredDepth(absent string) []researchfeeds.RawDepth {
+	stay, other := "00-0030009", "00-0030008"
+	var out []researchfeeds.RawDepth
+	for _, dt := range []string{"2026-10-07T12:00:00Z", "2026-10-14T12:00:00Z"} {
+		out = append(out, researchfeeds.RawDepth{DT: dt, Team: "NE", GSIS: &stay, Position: "LB"},
+			researchfeeds.RawDepth{DT: dt, Team: "NYJ", GSIS: &other, Position: "LB"})
+	}
+	gone := absent
+	out = append(out, researchfeeds.RawDepth{DT: "2026-10-07T12:00:00Z", Team: "NE", GSIS: &gone, Position: "LB"})
+	return out
+}
+
+func unrosteredSnaps() []source.RawSnap {
+	return []source.RawSnap{
+		{Proof: source.RawAbsenceProof{Week: "5", Team: "NYJ", PFR: "PlayA00"}, Date: "20261008"},
+		{Proof: source.RawAbsenceProof{Week: "6", Team: "NYJ", PFR: "PlayA00"}, Date: "20261015"},
+	}
+}
+
+func weeksUnrostered(proofs []source.RawAbsenceProof, gsis string) []string {
+	var out []string
+	for _, p := range proofs {
+		if p.GSIS == gsis && p.Evidence == source.UnrosteredEvidence {
+			out = append(out, p.Week)
+		}
+	}
+	return out
+}
+
+func TestAPlayerNoTeamListsThatWeekScoresZeroOnlyUnderCompleteMembership(t *testing.T) {
+	const gsis = "00-0030001"
+	got := unrosteredWeeks(2026, unrosteredDepth(gsis), unrosteredSnaps(), nil)
+	if weeks := weeksUnrostered(got, gsis); len(weeks) != 1 || weeks[0] != "6" {
+		t.Fatalf("week six membership not read: %+v", weeks)
+	}
+	for _, p := range got {
+		if p.Team != "" || p.GameID != "" || p.Evidence != source.UnrosteredEvidence {
+			t.Fatalf("a teamless proof named a team or game: %+v", p)
+		}
+	}
+	short := unrosteredDepth(gsis)
+	short = append(short, researchfeeds.RawDepth{DT: "2026-10-07T12:00:00Z", Team: "MIA", GSIS: &[]string{"00-0030007"}[0], Position: "LB"})
+	if weeks := weeksUnrostered(unrosteredWeeks(2026, short, unrosteredSnaps(), nil), gsis); len(weeks) != 0 {
+		t.Fatalf("a snapshot missing a team certified no roster: %+v", weeks)
+	}
+	bridge := map[string]string{"Snapped00": gsis}
+	snapped := append(unrosteredSnaps(), source.RawSnap{
+		Proof: source.RawAbsenceProof{Week: "6", Team: "NYJ", PFR: "Snapped00"}, Date: "20261015"})
+	if weeks := weeksUnrostered(unrosteredWeeks(2026, unrosteredDepth(gsis), snapped, bridge), gsis); len(weeks) != 0 {
+		t.Fatalf("a player who took a snap was called unrostered: %+v", weeks)
+	}
+	if weeks := weeksUnrostered(unrosteredWeeks(2026, unrosteredDepth("THO581952"), unrosteredSnaps(), nil), "THO581952"); len(weeks) != 0 {
+		t.Fatalf("legacy identity became a zero: %+v", weeks)
+	}
+}
+
+func TestUnrosteredZeroNeedsNoGameAndRefusesAPlayerWithAnEvent(t *testing.T) {
+	const gsis = "00-0030001"
+	proof := source.RawAbsenceProof{GSIS: gsis, Season: "2026", Week: "6", Evidence: source.UnrosteredEvidence}
+	if err := proof.Validate(); err != nil {
+		t.Fatalf("a teamless week proof was refused: %v", err)
+	}
+	named := proof
+	named.Team = "NE"
+	if named.Validate() == nil {
+		t.Fatal("a player on no roster was given a team")
+	}
+	got, err := source.AddProvenZeros(nil, nil, []source.RawAbsenceProof{proof})
+	if err != nil || len(got) != 1 || got[0].Evidence != source.UnrosteredEvidence || got[0].GameID != "" {
+		t.Fatalf("no-roster zero not admitted without a game: %+v %v", got, err)
+	}
+	play := source.RawPlay{Season: "2026", Week: "6", SeasonType: "REG", GameID: "2026_06_NE_NYJ",
+		PlayID: "1", Rusher: gsis, Credits: source.RawPlayerCredits{}}
+	if got, err := source.AddProvenZeros(nil, []source.RawPlay{play}, []source.RawAbsenceProof{proof}); err != nil || len(got) != 0 {
+		t.Fatalf("a player with an event that week was zeroed: %+v %v", got, err)
+	}
+}

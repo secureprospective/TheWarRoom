@@ -36,15 +36,10 @@ func (s *Store) heldRosterByes(ctx context.Context, season int, depth []research
 }
 
 func rosterByes(season int, depth []researchfeeds.RawDepth, snaps []source.RawSnap, byes []nflschedule.RawBye) []source.RawAbsenceProof {
-	starts := make(map[string]time.Time)
+	starts := weekStarts(snaps)
 	playing := make(map[string]bool)
 	for _, snap := range snaps {
-		day, _ := time.Parse("20060102", snap.Date)
-		week := snap.Proof.Week
-		if starts[week].IsZero() || day.Before(starts[week]) {
-			starts[week] = day
-		}
-		playing[week+"/"+livegame.Canonical(snap.Proof.Team)] = true
+		playing[snap.Proof.Week+"/"+livegame.Canonical(snap.Proof.Team)] = true
 	}
 	var out []source.RawAbsenceProof
 	for _, bye := range byes {
