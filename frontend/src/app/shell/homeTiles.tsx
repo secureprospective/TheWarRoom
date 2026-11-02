@@ -50,6 +50,15 @@ const row = (cls: string, children: ReactNode, key: string | number, extra: Reco
 export const nameOf = (b: HomeBrief, id: string) =>
   b.pulse?.seats.find(s => s.franchise === id)?.name ?? id;
 const pts = (s?: { points?: number; provisional?: number }) => s?.points ?? s?.provisional;
+/** A read's stand-in label for a player it cannot name ("player 13448"). */
+const STAND_IN = /^player \d+$/i;
+/** playerName is HQ's resolver: the identity block's held name (nativeHQAssets), then the read's own
+ *  name unless it is only a stand-in, then the id. */
+export function playerName(b: HomeBrief, id: string, given = ''): string {
+  const held = b.assets?.players.value.find(p => p.id === id)?.name;
+  if (held && !STAND_IN.test(held)) return held;
+  return given && !STAND_IN.test(given) ? given : held || given || id;
+}
 
 export function myGame(b: HomeBrief, mine: string) {
   return b.results?.games.find(g => g.home === mine || g.away === mine);
@@ -159,9 +168,9 @@ function Matchup({ b, mine }: { b: HomeBrief; mine: string }) {
       <div><b>{final ? 0 : ups.length ? locked : '—'}</b><span>PLAYING</span></div>
       <div><b>{final ? 0 : ups.length ? ups.length - locked : '—'}</b><span>YET TO PLAY</span></div>
       <div><b>{final ? me?.starters.length ?? '—' : '—'}</b><span>DONE</span></div></div>
-    {pair.map(([a, c], i) => row('duo', <><span className="nm">{a?.name ?? '—'} <span className="m">
+    {pair.map(([a, c], i) => row('duo', <><span className="nm">{a ? playerName(b, a.player, a.name) : '—'} <span className="m">
       {a?.position ?? ''}</span></span><span className="v me">{pointsLabel(pts(a))}</span>
-      <span className="v op">{pointsLabel(pts(c))}</span><span className="nm rt">{c?.name ?? '—'}</span></>, i))}
+      <span className="v op">{pointsLabel(pts(c))}</span><span className="nm rt">{c ? playerName(b, c.player, c.name) : '—'}</span></>, i))}
   </>;
 }
 
@@ -219,6 +228,14 @@ function Form({ b }: { b: HomeBrief }) {
   })}</>;
 }
 
+/** newsLine is an article's second line: the player's held name, else the research name when research
+ *  knows him; a player research cannot place (position "Unknown", the directory-miss words) shows nothing. */
+export function newsLine(b: HomeBrief, a: { id: string; name: string }): string {
+  const held = b.assets?.players.value.find(p => p.id === a.id)?.name;
+  if (held && !STAND_IN.test(held)) return held;
+  const known = b.research?.players.find(p => p.id === a.id);
+  return known && known.position !== 'Unknown' && known.name === a.name ? a.name : '';
+}
 const NF = { all: 'ALL', mine: 'MY PLAYERS', inj: 'INJURIES', wire: 'ON THE WIRE' } as const;
 const INJ = /\b(injur|out|IR\b|questionable|doubtful|susp|hamstring|ankle|knee|concussion)/i;
 function News({ b, mine }: { b: HomeBrief; mine: string }) {
@@ -232,7 +249,7 @@ function News({ b, mine }: { b: HomeBrief; mine: string }) {
     <span>{items.length} items</span></div>
     {items.map(a => row(`nw o-${a.who === mine ? 'mine' : a.who ? 'x' : 'wire'}`, <><span className="m" />
       <span className={`k${INJ.test(a.headline) ? ' n-inj' : ''}`}>{INJ.test(a.headline) ? 'INJ' : 'NEWS'}</span>
-      <span className="nm"><b>{a.headline}</b><small>{a.name}</small></span>
+      <span className="nm"><b>{a.headline}</b><small>{newsLine(b, a)}</small></span>
       <span className="own">{a.who === mine ? 'Yours' : a.who ? nameOf(b, a.who) : 'Free agent'}</span></>,
     `${a.id}.${a.article}`))}
     {!items.length && <div className="empty">No held news{f === 'all' ? '' : ` for ${NF[f]}`}.</div>}</>;
@@ -286,7 +303,7 @@ export function topFive(b: HomeBrief): [string, PulseStarter[]][] {
   const by = new Map<string, PulseStarter[]>();
   for (const s of b.results?.scores.flatMap(x => x.starters) ?? []) {
     if (!s.position || pts(s) === undefined) continue;
-    by.set(s.position, [...(by.get(s.position) ?? []), s]);
+    by.set(s.position, [...(by.get(s.position) ?? []), { ...s, name: playerName(b, s.player, s.name) }]);
   }
   return Array.from(by.entries()).map(([p, xs]): [string, PulseStarter[]] =>
     [p, xs.sort((a, c) => pts(c)! - pts(a)!).slice(0, 5)]);

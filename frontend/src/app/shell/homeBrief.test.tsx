@@ -292,3 +292,24 @@ it('hides rows that do not fit whole and says how many more live in the source s
   expect(rows.map(r => r.style.display)).toEqual(['', 'none']);
   expect(tile('wire').querySelector('.tf .more')!.textContent).toBe('+1 more in LEDGER');
 });
+
+// ---- APP-HOME-3: what the live walk on Claude-OS showed ----
+it('THIS WEEK and the TOP 5 ticker name players through HQ\'s identity block, not the read\'s stand-in', async () => {
+  const stand = { ...pulse.results, league: LEAGUE, scores: pulse.results.scores.map(s => ({ ...s,
+    starters: s.starters.map(x => ({ ...x, name: `player ${x.player}` })) })) };
+  await mount(full({ 'results.read': stand }));
+  expect(tile('mu').textContent).toContain('Player, 1001');
+  expect(tile('mu').textContent).not.toContain('player 1001');
+  expect(container.querySelector('.tick')!.textContent).toContain('Player, 1001');
+});
+
+it('NFL NEWS second line is the held or researched name, never the directory-miss words', async () => {
+  const miss = 'A player MFL’s directory does not list';
+  const r = reader({ articles: [{ id: '9999', article: 'a2', name: miss, headline: 'Signs a practice squad deal' },
+    { id: '1001', article: 'a1', name: miss, headline: 'Player 1001 ruled out' }],
+  players: [{ id: '9999', name: miss, position: 'Unknown', team: 'Unknown', franchiseId: '', owner: '' }] });
+  await mount(full(), r);
+  const news = tile('news');
+  expect(news.textContent).not.toContain('directory does not list');
+  expect(Array.from(news.querySelectorAll('.r.nw small')).map(x => x.textContent)).toEqual(['', 'Player, 1001']);
+});
