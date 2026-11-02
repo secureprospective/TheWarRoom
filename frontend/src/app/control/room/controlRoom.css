@@ -40,6 +40,9 @@
 .crx .cr-ph{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--rule);font:600 11px var(--mono);letter-spacing:.12em;color:var(--ink2)}
 .crx .cr-ph .sp{flex:1}
 .crx .cr-ph .ct{color:var(--ink3);font-weight:400;letter-spacing:0}
+/* The mock's table rule .ct{width:100%} also lands on these caption spans, so they fill the row and read
+   left of the spacer. Ported as the mock renders it. */
+.crx .cr-ph .ct{width:100%}
 .crx .cr-pb{padding:10px 12px;min-height:0;overflow:hidden}
 .crx .cr-launch{display:grid;grid-template-columns:1fr;gap:6px}
 .crx .cr-launch button,.crx .cr-act{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--raised);border:1px solid var(--edge);text-align:left;transition:transform 70ms linear}
