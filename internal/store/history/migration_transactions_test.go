@@ -91,13 +91,13 @@ func TestMigrationTransactionSync(t *testing.T) {
 		}
 	}
 	bad := groups[0][1]
-	bad.Request += ".missing-contract"
-	bad.Args = commissioner.RawArgs{Correction: &commissioner.RawCorrection{Action: "add", Player: "999999", Franchise: mapping[other]}}
+	bad.Request += ".invalid-franchise"
+	bad.Args = commissioner.RawArgs{Correction: &commissioner.RawCorrection{Action: "add", Player: "999999", Franchise: "franchise.missing"}}
 	removal := groups[0][0]
 	removal.Request += ".rollback"
 	removal.Args = commissioner.RawArgs{Correction: &commissioner.RawCorrection{Action: "remove", Player: p.ID, Franchise: mapping[other]}}
 	if _, err := leaguemigration.SyncTransactions(t.Context(), ledger, league, "creator", [][]commissioner.RawCommand{{removal, bad}}); err == nil {
-		t.Fatal("unknown contract admitted without policy")
+		t.Fatal("invalid franchise admitted")
 	}
 	unchanged, err = store.NativeAssets(t.Context(), league)
 	if err != nil || !reflect.DeepEqual(after, unchanged) {

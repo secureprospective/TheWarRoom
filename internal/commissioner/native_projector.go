@@ -132,6 +132,7 @@ func applyNativeOverride(seed *RawNativeSnapshot, record Record, value RawNative
 				return fmt.Errorf("the contract ends beyond the supported calendar")
 			}
 			player.Salary, player.ExpirationYear = *value.Salary, expiration
+			player.ContractMissing = false
 		case CapRelief:
 			seed.Adjustments = append(seed.Adjustments, NativeCharge{ID: record.Receipt.Entry,
 				Franchise: player.Franchise, Amount: -*value.Amount, Season: season,

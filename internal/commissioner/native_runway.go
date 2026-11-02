@@ -60,11 +60,7 @@ func NativeCapRunway(base NativeBase, franchise string) ([]NativeCapYear, error)
 		if err != nil {
 			return nil, fmt.Errorf("count dead cap for %s in %d: %w", franchise, season, err)
 		}
-		row := NativeCapYear{Season: season, CommittedCents: live.CommittedCents,
-			CapCents: total.CapCents, RoomCents: total.RoomCents}
-		if counted {
-			row.DeadCents = &dead
-		}
+		row := capRunwayYear(season, live, total, dead, counted, seed.CheckContracts(franchise))
 		out = append(out, row)
 	}
 	return out, nil
@@ -78,4 +74,16 @@ func runwayHorizon(players []NativePlayer, franchise string, firstSeason, maxYea
 		}
 	}
 	return horizon
+}
+
+func capRunwayYear(season int, live, total nativecheck.CapState, dead domain.Money, counted bool, missing error) NativeCapYear {
+	row := NativeCapYear{Season: season, CapCents: total.CapCents}
+	if missing != nil {
+		return row
+	}
+	row.CommittedCents, row.RoomCents = live.CommittedCents, total.RoomCents
+	if counted {
+		row.DeadCents = &dead
+	}
+	return row
 }

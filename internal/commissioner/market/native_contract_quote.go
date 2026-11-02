@@ -211,6 +211,9 @@ type contractCheck struct {
 // checkContract prices the action and then lets the calendar and the cap have their say. It is a pure
 // reading: nothing is recorded.
 func checkContract(in contractCheck) (ContractQuote, error) {
+	if err := in.base.Assets.Snapshot.CheckContracts(""); err != nil {
+		return ContractQuote{}, fmt.Errorf("quote contract: %w", commissioner.Refused(err))
+	}
 	fact := in.facts[in.player.ID]
 	name := fact.Name
 	if name == "" {

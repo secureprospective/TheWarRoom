@@ -310,6 +310,10 @@ func (x tradeExecution) describeAssets(assets []commissioner.TradeAsset) []commi
 				if d.Label == "" {
 					d.Label = "Player " + p.ID
 				}
+				if p.ContractMissing {
+					d.Contract = "No contract recorded"
+					continue
+				}
 				salary := p.Salary
 				d.Salary, d.Ends = &salary, p.ExpirationYear
 				d.Contract = nativecheck.ContractWords(p.Salary, max(0, p.ExpirationYear-x.rules.Season+1))

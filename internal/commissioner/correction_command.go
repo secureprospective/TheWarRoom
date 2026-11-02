@@ -18,7 +18,7 @@ const (
 	RuleException      = "rule.exception"
 )
 
-// RawCorrection names one asset or one automated decision; contracts are never invented by a correction.
+// RawCorrection names one asset or one automated decision; unrecorded contracts stay missing.
 type RawCorrection struct {
 	Franchise string          `json:"franchise,omitempty"`
 	Player    string          `json:"player,omitempty"`

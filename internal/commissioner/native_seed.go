@@ -52,8 +52,9 @@ type NativeFranchise struct {
 }
 
 type NativePlayer struct {
-	AcquiredVia string `json:"acquiredVia,omitempty"`
-	Correction  string `json:"correction,omitempty"`
+	ContractMissing bool   `json:"contractMissing,omitempty"`
+	AcquiredVia     string `json:"acquiredVia,omitempty"`
+	Correction      string `json:"correction,omitempty"`
 	// Name is the name the app held for the player when the snapshot was captured.
 	Name string `json:"name,omitempty"`
 	// RookieRound is the draft round of the player's rookie contract, where it is recorded; 0 is unknown.
@@ -211,6 +212,9 @@ func (r RawNativeSnapshot) validatePlayers(franchises map[string]bool) error {
 		}
 		if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, p.Status) {
 			return fmt.Errorf("a held player has an unknown roster status")
+		}
+		if err := p.validateContract(); err != nil {
+			return err
 		}
 		players[copyOn] = true
 	}

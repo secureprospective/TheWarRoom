@@ -44,7 +44,7 @@ func applyAssetCorrection(seed *RawNativeSnapshot, records []Record, r Record) e
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("record this player's contract before adding him; a correction cannot invent one")
+		player = NativePlayer{ID: c.Player, ContractMissing: true}
 	}
 	player.Franchise, player.Status = c.Franchise, domain.RosterActive
 	player.Correction = correctionWords(r)

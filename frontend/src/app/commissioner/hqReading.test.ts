@@ -40,6 +40,23 @@ describe('native HQ existing reads', () => {
     const player = snapshot.rosters.value.flatMap(r => r.players).find(p => p.id === id);
     expect(player?.contractStatus).toBe('FLAG');
   });
+  it.each([null, 0])('keeps missing salary %s distinct from a recorded zero', salary => {
+    const imported = structuredClone(assets) as { snapshot: { players: Record<string, unknown>[] } };
+    const row = imported.snapshot.players[0];
+    row.contractMissing = salary === null;
+    row.salaryCents = salary;
+    row.expirationYear = salary === null ? null : 2026;
+    row.contractStatus = '';
+    const snapshot = nativeHQAssets(imported, 'native.seed');
+    const player = snapshot.rosters.value.flatMap(r => r.players).find(p => p.id === row.id);
+    expect(player?.salary).toBe(salary);
+    expect(player?.yearsRemaining).toBe(salary === null ? undefined : 1);
+  });
+  it('rejects a missing-contract flag that disagrees with its terms', () => {
+    const imported = structuredClone(assets) as { snapshot: { players: Record<string, unknown>[] } };
+    imported.snapshot.players[0].contractMissing = true;
+    expect(() => nativeHQAssets(imported, 'native.seed')).toThrow('disagrees with its terms');
+  });
   it('changes the view model when cap, total slots, IR and taxi settings change', () => {
     const changed = parseRules(structuredClone(rules));
     const rows = changed.sections.flatMap(s => s.rows);

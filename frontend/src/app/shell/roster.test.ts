@@ -45,3 +45,12 @@ it('uses the ID when the directory is missing, without fabricating identity or s
   const roster = franchiseRoster(snapshot, '0025');
   expect(roster.groups[0].cards.find((c) => c.model.id === id)!.model.name).toBe(id);
 });
+
+it('keeps an unpriced player on the roster without sorting him as a zero salary', () => {
+  const snapshot = heldSnapshot();
+  const player = snapshot.rosters.value[0].players.find(p => p.rosterStatus === 'ROSTER')!;
+  player.salary = null;
+  const roster = franchiseRoster(snapshot, '0025');
+  expect(roster.groups[0].players.at(-1)?.id).toBe(player.id);
+  expect(roster.groups[0].cards.find(c => c.model.id === player.id)?.model.salary).toBe('Unavailable');
+});

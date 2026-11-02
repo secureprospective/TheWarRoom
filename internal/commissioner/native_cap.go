@@ -106,7 +106,7 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 		details[c.Franchise] = append(details[c.Franchise], c)
 	}
 	for _, seat := range base.Directory.Franchises {
-		state, err := nativecheck.CheckCap(base.Rules.Cap, players[seat.Franchise], charges[seat.Franchise], zone, ScopedDecisionExceptions(records, ExceptionScope{Franchise: seat.Franchise}, now)...)
+		state, err := recordedCapState(base, seat.Franchise, players[seat.Franchise], charges[seat.Franchise], zone)
 		if err != nil {
 			return NativeCapCheck{}, fmt.Errorf("judge salary cap for %s: %w", seat.Name, err)
 		}
@@ -155,8 +155,23 @@ func nativeContractYears(base NativeBase, franchise string) []NativeContractYear
 		if p.Franchise != franchise {
 			continue
 		}
+		if p.ContractMissing {
+			out = append(out, NativeContractYears{Player: p.ID, Years: []nativecheck.SeasonAmount{}})
+			continue
+		}
 		out = append(out, NativeContractYears{Player: p.ID, Years: nativecheck.ExistingContractSchedule(
 			base.Rules.Season, nativecheck.Contract{Salary: p.Salary, Expiration: p.ExpirationYear})})
 	}
 	return out
+}
+
+func recordedCapState(base NativeBase, franchise string, players []nativecheck.CapPlayer, charges []domain.Money, zone *time.Location) (nativecheck.CapState, error) {
+	if words := base.Assets.Snapshot.missingContractWords(franchise); words != "" {
+		return nativecheck.CapState{Words: words, Enforcement: words}, nil
+	}
+	state, err := nativecheck.CheckCap(base.Rules.Cap, players, charges, zone, ScopedDecisionExceptions(base.Records, ExceptionScope{Franchise: franchise}, base.Now)...)
+	if err != nil {
+		return nativecheck.CapState{}, fmt.Errorf("count recorded salary: %w", err)
+	}
+	return state, nil
 }

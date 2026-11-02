@@ -208,7 +208,8 @@ func (p *preparation) players(seed *commissioner.RawNativeSnapshot, mapping map[
 			continue
 		}
 		player := commissioner.NativePlayer{Name: p.export.Players[id], ID: id,
-			Franchise: franchise, Status: status, Salary: salary, ExpirationYear: year,
+			ContractMissing: strings.TrimSpace(r.Salary) == "" && strings.TrimSpace(r.ContractYear) == "" && strings.TrimSpace(r.ContractStatus) == "",
+			Franchise:       franchise, Status: status, Salary: salary, ExpirationYear: year,
 			ContractStatus: record.ContractStatus, ContractInfo: r.ContractInfo}
 		switch {
 		case strings.TrimSpace(r.ContractStatus) == "":

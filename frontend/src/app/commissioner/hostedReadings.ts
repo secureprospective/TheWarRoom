@@ -154,6 +154,7 @@ export function parseHostedRoster(v: unknown): HostedRoster {
     }),
     players: array(s.players, 'Roster players', (v, p) => {
       const r = object(v, p, [
+        'contractMissing',
         'acquiredVia',
         'correction',
         'name',
@@ -169,6 +170,11 @@ export function parseHostedRoster(v: unknown): HostedRoster {
         'contractInfo',
         'heldContractStatus',
       ]);
+      if (r.contractMissing !== undefined && typeof r.contractMissing !== 'boolean')
+        throw new Error(`${p}: unreadable missing-contract state`);
+      if (r.contractMissing === true && (r.salaryCents !== null || r.expirationYear !== null) ||
+          r.contractMissing !== true && (r.salaryCents === null || r.expirationYear === null))
+        throw new Error(`${p}: missing-contract state disagrees with its terms`);
       const status = choice(r.status, p, ['ROSTER', 'IR', 'TAXI_SQUAD'] as const);
       return {
         id: text(r.id, p),

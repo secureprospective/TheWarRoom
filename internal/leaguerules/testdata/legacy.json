@@ -2751,27 +2751,6 @@
     }
   },
   "Contracts": {
-    "UnknownAcquisition": {
-      "State": 0,
-      "Value": {
-        "Years": {
-          "State": 0,
-          "Value": 0,
-          "Citation": ""
-        },
-        "SalaryRule": {
-          "State": 0,
-          "Value": "",
-          "Citation": ""
-        },
-        "Salary": {
-          "State": 0,
-          "Value": 0,
-          "Citation": ""
-        }
-      },
-      "Citation": "Choose the contract years and salary rule for an unknown acquisition."
-    },
     "MaximumYears": {
       "State": 1,
       "Value": 4,
