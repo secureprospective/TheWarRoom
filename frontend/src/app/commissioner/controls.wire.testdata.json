@@ -456,6 +456,10 @@
           "note": "",
           "fields": [
             {
+              "field": "schedule.follow",
+              "label": "Follow reference schedule"
+            },
+            {
               "field": "schedule.regularWeeks",
               "label": "Regular season weeks"
             },
@@ -697,7 +701,12 @@
           "id": "CM-038",
           "built": true,
           "note": "",
-          "fields": []
+          "fields": [
+            {
+              "field": "transactions.follow",
+              "label": "Follow reference transactions"
+            }
+          ]
         },
         {
           "id": "CM-039",

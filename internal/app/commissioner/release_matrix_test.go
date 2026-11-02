@@ -274,6 +274,7 @@ trade.review
 trade.withdraw
 moves.read
 trades.read
+value.read
 waivers.award.override
 waivers.claim
 waivers.order.auto
