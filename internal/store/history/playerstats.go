@@ -157,6 +157,7 @@ func (s *Store) completedWeeks(sha string, weekly []source.PlayerWeek, body []by
 	for i := range weekly {
 		weeks[i] = clonePlayerWeek(weekly[i])
 	}
+	weeks, withheld := source.HeldPlayWeeks(weeks, plays)
 	weeks, err = source.MissingPlayWeeks(weeks, plays)
 	if err != nil {
 		return nil, fmt.Errorf("build missing player weeks: %w", err)
@@ -168,6 +169,7 @@ func (s *Store) completedWeeks(sha string, weekly []source.PlayerWeek, body []by
 	if err != nil {
 		return nil, fmt.Errorf("verify empty player weeks: %w", err)
 	}
+	weeks = source.WithoutWithheld(weeks, withheld)
 	if s.weekly == nil {
 		s.weekly = map[string]weeklyFile{}
 	}

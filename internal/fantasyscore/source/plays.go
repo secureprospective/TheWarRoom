@@ -199,6 +199,41 @@ func rawPlay(f map[string]string) RawPlay {
 		Yardline: f["yardline_100"], TackledForLoss: f["tackled_for_loss"]}
 }
 
+// HeldPlayWeeks splits the weekly lines into those whose game has held play-by-play and the keys of
+// those whose game does not. A week without its source cannot be completed, so it stays pending
+// (R11) while every other week scores; it is never a zero.
+func HeldPlayWeeks(weeks []PlayerWeek, plays []RawPlay) ([]PlayerWeek, map[string]bool) {
+	games := make(map[string]bool)
+	for _, play := range plays {
+		games[play.GameID+"/"+play.SeasonType+"/"+play.Season+"/"+play.Week] = true
+	}
+	held := make([]PlayerWeek, 0, len(weeks))
+	withheld := make(map[string]bool)
+	for _, week := range weeks {
+		if games[fmt.Sprintf("%s/%s/%d/%d", week.GameID, week.SeasonType, week.Season, week.Week)] {
+			held = append(held, week)
+		} else {
+			withheld[playKey(week.GSIS, week.Season, week.Week)] = true
+		}
+	}
+	return held, withheld
+}
+
+// WithoutWithheld drops any line for a player week whose source was withheld, so no later step
+// turns a week with an unread stat row into a recorded zero.
+func WithoutWithheld(weeks []PlayerWeek, withheld map[string]bool) []PlayerWeek {
+	if len(withheld) == 0 {
+		return weeks
+	}
+	out := weeks[:0:0]
+	for _, week := range weeks {
+		if !withheld[playKey(week.GSIS, week.Season, week.Week)] {
+			out = append(out, week)
+		}
+	}
+	return out
+}
+
 // AttachPlays completes the week lines in place using held play-by-play.
 func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 	if err := validateCoverage(weeks, plays); err != nil {
