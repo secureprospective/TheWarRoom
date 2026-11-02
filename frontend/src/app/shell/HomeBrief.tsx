@@ -11,7 +11,7 @@ import { clock, go, isFinal, left, myGame, myRow, nameOf, oldestAt, pts, SHORTCU
   tileState,
   TILES, topFive } from './homeTiles';
 import { browserStorage } from './franchise';
-import { money, unavailable } from './hqModel';
+import { money, stillReading, unavailable } from './hqModel';
 import { pointsLabel } from '../data/nativePulse';
 
 type Tab = 'brief' | 'depth' | 'stats';
@@ -118,8 +118,10 @@ export default function HomeBrief({ league, mine, port, initial, research }: { l
         opp)} ${myPts} – ${opPts}${
       next ? ` · ${next.label} ${shortTime(next.at!)}` : ''}`
     : next ? `${next.label} ${shortTime(next.at!)}` : b.pulse?.weekNote || 'Reading the league…';
+  const power = b.pulse?.odds?.rows.find(r => r.franchise === mine)?.power;
   const stats: [string, string][] = phase === 'in'
-    ? [[row?.record ?? '—', 'RECORD'], [row ? String(row.rank) : '—', 'SEED'], ['—', 'POWER'],
+    ? [[row?.record ?? '—', 'RECORD'], [row ? String(row.rank) : '—', 'SEED'],
+      [power ? `#${power}` : '—', 'POWER'],
       [room?.room === undefined ? '—' : money(room.room), 'CAP ROOM']]
     : [['—', 'POWER · DYN'], [firstPick(b, mine), 'FIRST PICK'],
       [b.runway?.[1]?.room === undefined ? '—' : money(b.runway[1].room), `${b.runway?.[1]?.season ??
@@ -323,7 +325,8 @@ export default function HomeBrief({ league, mine, port, initial, research }: { l
           <div className="nm">{nameOf(b, mine)}</div><div className="sub">{b.pulse?.name ?? ''}</div></div>
         <div className="nums"><div><b>{row?.record ?? '—'}</b><span>RECORD · SEED {row?.rank ?? '—'}</span>
           </div>
-          <div><b>—</b><span>POWER · {unavailable}</span></div></div>
+          <div title={b.pulse?.odds?.powerWords}><b>{power ? `#${power}` : '—'}</b>
+            <span>POWER · {power ? 'SEASON' : b.pulse?.odds ? unavailable : stillReading}</span></div></div>
         <div className="idrawers" style={{ overflow: 'hidden' }}>{sel ? <>
           <div className="ch"><b>SELECTED TILE</b><span>{TILES[sel].t}</span></div><div className="kv3">
             <span>ID</span><span className="mono">{sel}</span><span>SOURCE</span><span>{TILES[sel].src}</span>

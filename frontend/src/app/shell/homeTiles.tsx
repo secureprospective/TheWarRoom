@@ -4,9 +4,9 @@ import { surfaceActions } from '../commissioner/surfaceActions';
 import { commands, type CommandArgs } from '../commands/registry';
 import type { HomeBrief, HomeSource } from './homeReads';
 import type { TileId } from './homeLayout';
-import { money, unavailable } from './hqModel';
+import { absent, money, unavailable } from './hqModel';
 import type { Node } from './nodes';
-import { pointsLabel, type PulseStarter } from '../data/nativePulse';
+import { myChance, percent, pointsLabel, type PulseStarter } from '../data/nativePulse';
 
 type HomeActProps = Omit<ComponentProps<typeof Act<'commissioner.surface'>>, 'verb' | 'args' | 'variant'> & {
   action: string; value?: string; open?: { node: Node; workspace?: string };
@@ -27,10 +27,11 @@ export const TILES: Record<TileId, TileDef> = {
   due: { t: 'DECISIONS DUE', src: 'Clock + alerts', prov: 'calendar.read', link: 'HQ ›',
     refresh: 'on clock tick · 60s', open: { node: 'hq' }, needs: ['calendar'] },
   mu: { t: 'THIS WEEK', src: 'League Pulse · Live',
-    prov: 'results.read(week) + standings.read + lineup.read + projections.read',
+    prov: 'results.read(week) + standings.read + lineup.read + projections.read + odds.read',
     link: 'LIVE ›', refresh: 'live push', open: { node: 'pulse', workspace: 'now' },
     needs: ['pulse', 'results'] },
-  race: { t: 'RACE', src: 'League Pulse · Race', prov: 'standings.read + week.read + bracket.read',
+  race: { t: 'RACE', src: 'League Pulse · Race',
+    prov: 'standings.read + week.read + bracket.read + odds.read',
     link: 'RACE ›', refresh: 'after each final', open: { node: 'pulse', workspace: 'race' },
     needs: ['pulse'] },
   head: { t: 'LEAGUE HEADLINES', src: 'League record', prov: '—', link: 'PULSE ›', refresh: 'on event',
@@ -42,9 +43,9 @@ export const TILES: Record<TileId, TileDef> = {
   wire: { t: 'TRANSACTIONS', src: 'League ledger', prov: 'commish.ledger.read', link: 'LEDGER ›',
     refresh: 'on event', open: { node: 'control', workspace: 'league' }, needs: ['ledger'] },
   sc: { t: 'MY SHORTCUTS', src: 'Owner', prov: 'owner pins (☆)', link: '', refresh: '—', needs: [] },
-  pwr: { t: 'POWER', src: 'League Pulse · Race', prov: '—', link: 'POWER ›', refresh: 'weekly',
-    open: { node: 'pulse', workspace: 'race' }, needs: [], missing: 'No power ranking read for an app league'
-      },
+  pwr: { t: 'POWER', src: 'League Pulse · Race', prov: 'odds.read', link: 'POWER ›',
+    refresh: 'after each final',
+    open: { node: 'pulse', workspace: 'race' }, needs: ['pulse'] },
   plan: { t: 'PLANS', src: 'War Room · Plans', prov: '—', link: 'PLANS ›', refresh: 'on edit',
     open: { node: 'war' }, needs: [], missing: 'No plans checklist is stored' },
   picks: { t: 'MY PICKS', src: 'War Room · Draft Room', prov: 'draft.read', link: 'DRAFT ›',
@@ -120,6 +121,7 @@ export function TileBody({ id, b, mine, pins }: { id: TileId; b: HomeBrief;
   switch (id) {
     case 'mu': return <Matchup b={b} mine={mine} />;
     case 'race': return <Race b={b} mine={mine} />;
+    case 'pwr': return <Power b={b} mine={mine} />;
     case 'wire': return <>{(b.ledger?.entries ?? []).slice().reverse().map((e, i) =>
       <HomeAct key={e.id} className="r wire" action="transaction" value={String(i)}
         attributes={{ 'data-tx': String(i) }} label={`${e.what} · ${e.who}`}><><span
@@ -194,9 +196,7 @@ function Matchup({ b, mine }: { b: HomeBrief; mine: string }) {
       <div className="sc">{pointsLabel(pts(me))}</div></div><div className="vs">vs</div>
       <div className="sd op rt"><b>{nameOf(b, opp)}</b><span>{rec(opp)} · proj {proj(opp)}</span>
         <div className="sc">{pointsLabel(pts(op))}</div></div></div>
-    <div className="wpl" title="Win probability is computed only for the MFL mirror's Now board (M-018)">
-      <span className="g">—</span><span className="m" style={{ font: '10px var(--mono)',
-      color: 'var(--ink3)' }}>WIN % · {unavailable}</span><span className="a">—</span></div>
+    <WinChance b={b} mine={mine} />
     <div className="prog"
       title="Kicked-off starters are locked; the lineup read cannot split playing from done">
       <div><b>{final ? 0 : ups.length ? locked : '—'}</b><span>PLAYING</span></div>
@@ -210,9 +210,41 @@ function Matchup({ b, mine }: { b: HomeBrief; mine: string }) {
   </>;
 }
 
+/** WinChance is my game's chance from the league's own odds read, only for the week this tile shows. */
+function WinChance({ b, mine }: { b: HomeBrief; mine: string }) {
+  const odds = b.pulse?.odds;
+  const chance = myChance(odds, mine);
+  const shown = chance && chance.week === b.results?.week ? chance : undefined;
+  const pending = !odds && !b.at.pulse && !b.errors.pulse;
+  return <>
+    <div className="wpl" title={odds?.gameWords}>
+      <span className="g">{percent(shown?.mine)}</span><span className="m" style={{ font: '10px var(--mono)',
+      color: 'var(--ink3)' }}>WIN %{shown ? '' : ` · ${absent(pending)}`}</span>
+      <span className="a">{percent(shown?.theirs)}</span></div>
+    {shown && <div className="wpb"><i style={{ width: `${Math.round(shown.mine * 100)}%` }} /><u /></div>}
+  </>;
+}
+
+/** Power lists the league's season power ranking from the odds read, strongest first. */
+function Power({ b, mine }: { b: HomeBrief; mine: string }) {
+  const odds = b.pulse?.odds;
+  const rows = (odds?.rows ?? []).filter(r => r.power).sort((x, y) => (x.power ?? 0) - (y.power ?? 0));
+  if (!rows.length) return <div className="empty">{odds ? `${unavailable} · ${odds.powerWords}`
+    : absent(!b.errors.pulse)}</div>;
+  return <>
+    <div className="m" style={{ padding: '6px 12px', font: '10px var(--mono)', color: 'var(--ink3)',
+      borderBottom: '1px solid var(--edge)' }}>SEASON · {odds?.powerWords}</div>
+    {rows.map(r => row(`pw${r.franchise === mine ? ' me' : ''}`, <><span className="m">{r.power}</span>
+      <span className="nm">{r.name}</span><span className="v">{Math.round(r.powerScore * 100)}</span>
+      <span className="bar"><i style={{ width: `${Math.round(r.powerScore * 100)}%` }} /></span></>,
+      r.franchise))}
+  </>;
+}
+
 function Race({ b, mine }: { b: HomeBrief; mine: string }) {
   const rows = b.pulse?.standings?.rows ?? [];
   const me = rows.find(r => r.franchise === mine);
+  const odds = b.pulse?.odds?.rows.find(r => r.franchise === mine);
   const cut = (b.pulse?.bracket?.fields ?? []).reduce((n, f) => n + f.seeds.length, 0);
   const next = (b.pulse?.fixtures ?? []).filter(f => f.week > (b.pulse?.week ?? 0)).slice(0, 5);
   const i = rows.findIndex(r => r.franchise === mine);
@@ -220,8 +252,9 @@ function Race({ b, mine }: { b: HomeBrief; mine: string }) {
   return <>
     <div className="seedl" title={ranked(b) ? undefined : b.pulse?.standings?.words}><div><b>{ranked(b) ?
       me?.rank ?? '—' : '—'}</b><span>SEED NOW</span></div>
-      <div><b>—</b><span>PROJECTED</span></div><div><b>—</b><span>PLAYOFF ODDS</span></div>
-      <div><b>—</b><span>POWER</span></div></div>
+      <div><b>—</b><span>PROJECTED</span></div>
+      <div title={b.pulse?.odds?.oddsWords}><b>{percent(odds?.playoffOdds)}</b><span>PLAYOFF ODDS</span></div>
+      <div title={b.pulse?.odds?.powerWords}><b>{odds?.power ?? '—'}</b><span>POWER</span></div></div>
     <div className="runin">{next.map(f => <div key={f.week}>WK {f.week}<b>{f.venue === 'away' ? '@ ' : ''}
       {nameOf(b, f.opponent)}</b><i>—</i></div>)}</div>
     {window.map(r => row(`mini ${r.franchise === mine ? 'me' : r.rank === cut ? 'cut' : ''}`, <>

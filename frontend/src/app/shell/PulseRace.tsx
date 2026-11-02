@@ -3,7 +3,7 @@ import { HQAct as PulseAct } from './HQAct';
 import type { NativePulse } from './pulseReads';
 import { conferencesOf, divisionGroups, seedRows, type PulseSeedRow } from './pulseModel';
 import { PulseIdle } from './PulseNow';
-import type { PulseFixture, PulseStandings } from '../data/nativePulse';
+import { percent, type PulseFixture, type PulseOdds, type PulseStandings } from '../data/nativePulse';
 
 export function PulseRace({ reading, mine }: { reading: NativePulse; mine: string }) {
   const conferences = conferencesOf(reading.bracket);
@@ -52,11 +52,35 @@ export function PulseRace({ reading, mine }: { reading: NativePulse; mine: strin
         <span className="mode">{reading.bracket?.words || ''}</span>
       </div>
       {mode === 'power'
-        ? <PulseIdle words={'A power ranking is not held for this league. It fills when the league '
-          + 'records a power rank for a season.'} />
+        ? <Power reading={reading} mine={mine} />
         : <Path reading={reading} side={side} mine={mine} />}
     </div>
   </section>;
+}
+
+/** oddsOf is one franchise's row in the league's odds read. */
+const oddsOf = (odds: PulseOdds | undefined, franchise: string) =>
+  odds?.rows.find(r => r.franchise === franchise);
+
+function Power({ reading, mine }: { reading: NativePulse; mine: string }) {
+  const odds = reading.odds;
+  const rows = (odds?.rows ?? []).filter(r => r.power).sort((x, y) => (x.power ?? 0) - (y.power ?? 0));
+  if (!rows.length) return <PulseIdle words={odds ? `The power ranking is unavailable · ${odds.powerWords}`
+    : reading.errors.length ? `The power ranking is unavailable · ${reading.errors.join(' · ')}`
+      : 'Reading the power ranking…'} />;
+  return <>
+    <div className="scroll"><table className="ct pwr">
+      <thead><tr><th>PWR</th><th>FRANCHISE</th><th>W–L–T</th><th>POWER SCORE</th><th>EXP PTS</th>
+        <th>ODDS</th></tr></thead>
+      <tbody>{rows.map(r => <tr key={r.franchise} className={r.franchise === mine ? 'sel' : undefined}>
+        <td className="sd">{r.power}</td><td><span>{r.name}</span></td><td>{r.record}</td>
+        <td>{Math.round(r.powerScore * 100)}</td><td>{r.expected.toFixed(1)}</td>
+        <td>{percent(r.playoffOdds)}</td></tr>)}</tbody>
+    </table></div>
+    <div className="drawer-note">POWER = this season: {odds?.powerWords}. Lineup value is the league's own
+      on-field-now values; results are all-play when any week was all-played, else points for.
+      Not standings.</div>
+  </>;
 }
 
 function Divisions({ standings, mine }: { standings: PulseStandings; mine: string }) {
@@ -86,7 +110,8 @@ function Seeds({ reading, standings, side, mine }: { reading: NativePulse;
   const places = reading.bracket?.perConference ?? 0;
   if (!rows.length) return <PulseIdle words={standings.words} />;
   return <table className="ct stand">
-    <thead><tr><th>SEED</th><th>FRANCHISE</th><th>W–L–T</th><th>POINTS FOR</th></tr></thead>
+    <thead><tr><th>SEED</th><th>FRANCHISE</th><th>W–L–T</th><th>POINTS FOR</th><th>PWR</th><th>ODDS</th></tr>
+    </thead>
     <tbody>
       {rows.map((row, index) => <tr key={row.franchise}
         className={`${row.mine ? 'me' : ''} ${places && index === places ? 'cut' : ''}`.trim()
@@ -97,6 +122,8 @@ function Seeds({ reading, standings, side, mine }: { reading: NativePulse;
             {row.bye ? ' ★ BYE' : ''}</span></td>
         <td>{row.record}</td>
         <td>{row.pointsWords}</td>
+        <td>{oddsOf(reading.odds, row.franchise)?.power ?? '—'}</td>
+        <td title={reading.odds?.oddsWords}>{percent(oddsOf(reading.odds, row.franchise)?.playoffOdds)}</td>
       </tr>)}
     </tbody>
   </table>;
@@ -146,7 +173,8 @@ function Path({ reading, side, mine }: { reading: NativePulse; side: string; min
   return <>
     <div className="bigs">
       <div><b>{seat ? seat.seed : '—'}</b><span>MY SEED TODAY{seat?.bye ? ' · bye' : ''}</span></div>
-      <div><b>{bracket.perConference || '—'}</b><span>PLACES ON THIS SIDE</span></div>
+      <div title={reading.odds?.oddsWords}><b>{percent(oddsOf(reading.odds, mine)?.playoffOdds)}</b>
+        <span>MAKE PLAYOFFS · sim</span></div>
       <div><b>{bracket.byeSeeds || '—'}</b><span>FIRST-ROUND BYES</span></div>
       <div><b>{bracket.startWeek || '—'}</b><span>PLAYOFFS START · WEEK</span></div>
     </div>
@@ -156,18 +184,25 @@ function Path({ reading, side, mine }: { reading: NativePulse; side: string; min
         <span>on the bubble below the line</span>
       </div>
       {!rows.length ? <PulseIdle words={bracket.words || 'No playoff field is set yet.'} />
-        : rows.map(row => <div key={row.franchise}
-          className={`orow ${row.mine ? 'me' : ''} ${row.inField ? '' : 'out'}`.trim()}>
-          <span className="sn">{row.seed ? `SEED ${row.seed}${row.bye ? ' · BYE' : ''}` : 'OUT'}</span>
-          <span className="tn">{row.name}</span>
-          <span className="rc">{row.record}</span>
-          <span className="op">{row.kind || '—'}</span>
-        </div>)}
+        : rows.map(row => {
+          const chance = oddsOf(reading.odds, row.franchise)?.playoffOdds;
+          return <div key={row.franchise} title={row.kind || undefined}
+            className={`orow ${row.mine ? 'me' : ''} ${row.inField ? '' : 'out'}`.trim()}>
+            <span className="sn">{row.seed ? `SEED ${row.seed}${row.bye ? ' · BYE' : ''}` : 'OUT'}</span>
+            <span className="tn">{row.name}</span>
+            <span className="rc">{row.record}</span>
+            <span className="ob">
+              <i style={{ width: chance === undefined ? 0 : `${Math.round(chance * 100)}%` }} />
+            </span>
+            <span className="op">{percent(chance)}</span>
+          </div>;
+        })}
     </div>
     <div className="drawer-note" style={{ marginTop: 'auto' }}>
       {bracket.words || `Seeded from the standings under the league’s own tie-breakers.`}
-      {' '}Playoff odds, a magic number and week-by-week scenarios need a season simulation this
-      league does not run yet.
+      {' '}Playoff odds: {reading.odds?.oddsWords
+        ?? (reading.errors.length ? 'unavailable' : 'still reading')}.
+      A bye chance, a magic number and week-by-week scenarios are not read yet.
     </div>
   </>;
 }

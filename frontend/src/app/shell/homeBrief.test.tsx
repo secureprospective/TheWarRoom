@@ -199,6 +199,40 @@ it('THIS WEEK projects each side from League Pulse\'s matchup read and counts lo
   expect(mu).toContain('WIN % · Not available yet');
 });
 
+const odds = { league: LEAGUE, name: 'Held league', season: 2026, revision: 9, status: 'Ready', words: '',
+  powerWords: 'Lineup value blended with results after 3 games',
+  gameWords: 'Week 2: each side\'s expected score from its lineup and its points so far',
+  oddsWords: '32 open games played out 2000 times under the league\'s tie-breakers and playoff rules',
+  week: 2, runs: 2000, seed: 7, rows: [
+    { franchise: MINE, name: 'Held team 1', rank: 1, record: '2-1', power: 3, powerScore: 0.8,
+      expected: 101.5,
+      playoffOdds: 0.54 },
+    { franchise: 'franchise.32', name: 'Held team 32', rank: 2, record: '2-1', power: 1, powerScore: 1,
+      expected: 110, playoffOdds: 0.97 }],
+  games: [{ week: 2, home: MINE, away: 'franchise.32', homeName: 'Held team 1', awayName: 'Held team 32',
+    homeWin: 0.68 }] };
+
+it('WIN %, PLAYOFF ODDS and POWER come from the league\'s own odds read', async () => {
+  const p = full({ 'odds.read': odds });
+  await mount(p);
+  expect(p.mock.calls.map(([r]) => [r.command, r.arguments]))
+    .toContainEqual(['odds.read', { league: LEAGUE, season: 2026 }]);
+  const mu = tile('mu').textContent!;
+  expect(mu).toContain('68%WIN %32%');
+  expect(tile('mu').querySelector('.wpb i')?.getAttribute('style')).toContain('width: 68%');
+  const race = tile('race').textContent!;
+  expect(race).toContain('54%PLAYOFF ODDS');
+  expect(race).toContain('3POWER');
+  expect(container.textContent).toContain('#3POWER');
+  expect(container.textContent).not.toContain('POWER · Not available yet');
+});
+
+it('WIN % waits for the week the tile shows and says why a missing chance is missing', async () => {
+  await mount(full({ 'odds.read': { ...odds, games: [{ ...odds.games[0], week: 3 }] } }));
+  expect(tile('mu').textContent).toContain('—WIN % · Not available yet—');
+  expect(tile('mu').querySelector('.wpb')).toBeNull();
+});
+
 it('FORM · LAST 5 reads each of my starters through the research player read HQ\'s form chart uses',
   async () => {
   const r = reader({}, { '1001': [4, 8, 12, 16, 20, 24] });

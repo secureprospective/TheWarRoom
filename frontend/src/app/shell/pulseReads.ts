@@ -2,9 +2,9 @@ import { useContractRead } from '../contracts/Contracts';
 import { hqEvents } from './hqReads';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
-import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseResults,
+import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseOdds, parsePulseResults,
   parsePulseStandings, parsePulseWeek, type PulseBracket, type PulseFixture,
-  type PulseLineupPlayer, type PulseResults, type PulseSeat, type PulseStandings } from
+  type PulseLineupPlayer, type PulseOdds, type PulseResults, type PulseSeat, type PulseStandings } from
   '../data/nativePulse';
 import { parseWarRoomProjections } from '../data/nativeProjections';
 import type { Node } from './nodes';
@@ -22,6 +22,8 @@ export type NativePulse = {
   results?: PulseResults;
   standings?: PulseStandings;
   bracket?: PulseBracket;
+  /** Win chance, power and playoff odds from the league's own results, schedule and values. */
+  odds?: PulseOdds;
   errors: string[];
 };
 
@@ -71,6 +73,11 @@ export async function readNativePulse(league: string, mine: string, port: Hosted
       const r = await port({ command: 'bracket.read', mode: 'read',
         arguments: { league, season: held.season } });
       result.bracket = parsePulseBracket(r.data, league, held.season);
+    }),
+    apply(async () => {
+      const r = await port({ command: 'odds.read', mode: 'read',
+        arguments: { league, season: held.season } });
+      result.odds = parsePulseOdds(r.data, league, held.season);
     }),
   ]);
   return result;
