@@ -40,7 +40,7 @@ export function LeagueView({ readFiltered = readLedgerFiltered }: { readFiltered
               : <p role="status">Reading the people…</p>}
         </div></div>
       <Desk title="DATA & ENGINE" sub="feed health lives in Server"
-        kv={[['Last refresh', <NotYet key="r" />], ['Engine parameters', <NotYet key="e" />]]}
+        kv={[['Last refresh', <NotYet key="r" />], ['Engine parameters', paramWords(room.data)]]}
         acts={[['REFRESH NOW', 'data.refresh'], ['CLEAR A CACHE', 'cache.clear'], ['ENGINE (C ONLY)', 'engine.set']]} />
       <Desk title="LEAGUES" sub={data.directory?.name ?? room.state.rules?.name ?? '—'}
         kv={[['Source', data.directory?.source || '—'], ['Season', String(data.directory?.rosterSeason ?? '—')]]}
@@ -65,4 +65,13 @@ export function LeagueView({ readFiltered = readLedgerFiltered }: { readFiltered
         {!ledger && <div className="cr-note">{room.state.error || 'Reading the ledger…'}</div>}
       </div></div></div>
   </>;
+}
+
+/** The mock's summary of the engine parameters (GetParams): how many there are and how many are changed. */
+export function paramWords(data: ReturnType<typeof useRoom>['data']): string {
+  if (!data.params) return data.errors.params ?? '—';
+  const all = data.params.params ?? [];
+  if (!all.length) return 'none defined';
+  const changed = all.filter(p => p.overridden).length;
+  return `${all.length} defined${changed ? ` · ${changed} changed` : ''}`;
 }

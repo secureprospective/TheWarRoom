@@ -30,7 +30,7 @@ export function routeCommand(command: string): Route {
   if (name === 'league.migrate.prepare') return { kind: 'migrate' };
   if (name === 'data.refresh') return { kind: 'data', mode: 'refresh' };
   if (name === 'cache.clear') return { kind: 'data', mode: 'clear' };
-  if (['draft.revert', 'draft.archive', 'draft.timer', 'draft.skip', 'draft.assign'].includes(name))
+  if (['draft', 'draft.revert', 'draft.archive', 'draft.timer', 'draft.skip', 'draft.assign'].includes(name))
     return { kind: 'draft' };
   const action = actions[name];
   if (action) return { kind: 'action', action };

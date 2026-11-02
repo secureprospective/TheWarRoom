@@ -11,14 +11,18 @@ export type RoomData = {
   houseRules?: commissioner.NativeHouseRules; week?: commissioner.NativeWeek;
   /** The status strip's source health (TargetShellStatus). */
   status?: control.ShellStatus;
+  /** The next rookie draft as Go orders it (draft.read, TargetNativeDraft). */
+  draft?: commissioner.NativeDraft;
+  /** The engine's calibration parameters (GetParams). */
+  params?: control.ParamsResult;
   errors: Partial<Record<RoomSource, string>>;
 };
 export type RoomSource = 'waivers' | 'bids' | 'trades' | 'statQueue' | 'calendar' | 'corrections'
-  | 'assets' | 'directory' | 'schedule' | 'houseRules' | 'week' | 'status';
+  | 'assets' | 'directory' | 'schedule' | 'houseRules' | 'week' | 'status' | 'draft' | 'params';
 export type RoomPort = Pick<CommissionerBindings, 'TargetCommissionerMarket' | 'TargetStatQueue'
   | 'TargetLeagueCalendar' | 'TargetCorrections' | 'TargetNativeAssets' | 'TargetNativeDirectory'
-  | 'TargetCommissionerSchedule' | 'TargetNativeHouseRules' | 'TargetNativeWeek'>
-  & { TargetShellStatus(): Promise<control.ShellStatus> };
+  | 'TargetCommissionerSchedule' | 'TargetNativeHouseRules' | 'TargetNativeWeek' | 'TargetNativeDraft'>
+  & { TargetShellStatus(): Promise<control.ShellStatus>; GetParams(): Promise<control.ParamsResult> };
 
 const say = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause)).replace(/^Error: /, '');
 
@@ -39,6 +43,11 @@ export async function readRoom(league: string, port: RoomPort): Promise<RoomData
     take('schedule', () => port.TargetCommissionerSchedule(league)),
     take('houseRules', () => port.TargetNativeHouseRules(league)),
     take('status', () => port.TargetShellStatus()),
+    take('params', async () => {
+      const result = await port.GetParams();
+      if (!result.ok) throw new Error(result.error || 'The engine parameters could not be read');
+      return result;
+    }),
   ]);
   const season = out.directory?.rosterSeason;
   if (season) {
@@ -50,12 +59,16 @@ export async function readRoom(league: string, port: RoomPort): Promise<RoomData
       // League Pulse's week read, through the first franchise: the league week is the same for every seat.
       take('week', () => port.TargetNativeWeek({ league, season, localZone: zone,
         franchise: out.directory?.franchises[0]?.franchise ?? '', at: new Date().toISOString() } as
-        unknown as commissioner.RawNativeWeekScope))]);
+        unknown as commissioner.RawNativeWeekScope)),
+      // The Draft room's read (draftroom/state.ts): season 0 is the draft that is next; a zero time is now.
+      take('draft', () => port.TargetNativeDraft({ league, season: 0, at: '0001-01-01T00:00:00Z',
+        franchise: out.directory?.franchises[0]?.franchise ?? '' } as unknown as commissioner.RawNativeDraftScope))]);
   } else {
     const why = out.errors.directory ?? 'The league has no roster season yet';
     out.errors.statQueue = why;
     out.errors.calendar = why;
     out.errors.week = why;
+    out.errors.draft = why;
   }
   return out;
 }

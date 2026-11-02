@@ -1,5 +1,5 @@
 import type { leagueclock } from '../../../../wailsjs/go/models';
-import { Desk, NotYet, ruleValue, useDefaultInspector, useRoom, when } from './room';
+import { Desk, ruleValue, useDefaultInspector, useRoom, when } from './room';
 import { teamName } from './roomReads';
 
 const MONTHS = ['MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN', 'FEB'];
@@ -73,9 +73,12 @@ export function SeasonView() {
       </Desk>
       <Desk title="DRAFT" sub={`${rv('draft.mode')} · clock ${rv('draft.clock')}`}
         kv={[['Order', rv('draft.orderSource')], ['Rounds', rv('draft.rounds')], ['Startup draft', rv('draft.startupRounds')]]}
-        acts={[['SET ORDER', 'draft.order.set'], ['START', 'draft.start'], ['REVERT', 'draft.revert'],
-          ['ARCHIVE', 'draft.archive']]}>
-        <div className="cr-grp">ROUND 1 ORDER</div><div><span><NotYet what="projected order" /></span></div>
+        acts={[['SET ORDER', 'draft.order.set'], ['START', 'draft.start'], ['OPEN DRAFT ROOM TRAY ›', 'draft'],
+          ['REVERT', 'draft.revert'], ['ARCHIVE', 'draft.archive']]}>
+        <div className="cr-grp">{data.draft ? `${data.draft.season} ROUND 1` : 'ROUND 1 ORDER'}</div>
+        {roundOne(data).length ? rows3(chunk(roundOne(data), 3))
+          : <div><span>{missing('draft') ?? data.draft?.order.find(r => r.round === 1)?.words
+            ?? 'Go has not ordered round 1 yet.'}</span></div>}
       </Desk>
       <Desk title="SCHEDULE" sub={`${rv('schedule.regularWeeks')} weeks · ${rv('schedule.pattern')}`}
         kv={[['Published weeks', String(data.schedule?.published.length ?? '—')],
@@ -103,6 +106,11 @@ export function SeasonView() {
       </Desk>
     </div>
   </div>;
+}
+/** Round 1 as Go orders it: slot and owner, by team name. */
+export function roundOne(data: ReturnType<typeof useRoom>['data']): string[] {
+  const round = data.draft?.order.find(r => r.round === 1);
+  return (round?.picks ?? []).map(p => `${p.slot} ${teamName(data, p.owner)}`);
 }
 function chunk<T>(xs: T[], n: number): T[][] {
   const out: T[][] = [];

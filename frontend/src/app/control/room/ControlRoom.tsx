@@ -3,7 +3,7 @@ import { leagueState } from '../../commissioner/proxy';
 import { commands } from '../../commands/registry';
 import { draftRoom } from '../../draftroom/state';
 import { nativeBindings } from '../../commissioner/api';
-import { readShellStatus } from '../api';
+import { getParams, readShellStatus } from '../api';
 import { readRoom, type RoomData, type RoomPort } from './roomReads';
 import { routeCommand, unbuiltWords, type Route } from './route';
 import { EditorTray, type TrayContent } from './EditorTray';
@@ -26,7 +26,7 @@ const views: Record<Tab, () => ReactNode> = {
   people: () => <PeopleView />, league: () => <LeagueView />, server: () => <ServerView />,
 };
 
-const desktopPort = (): RoomPort => ({ ...nativeBindings(), TargetShellStatus: readShellStatus });
+const desktopPort = (): RoomPort => ({ ...nativeBindings(), TargetShellStatus: readShellStatus, GetParams: getParams });
 
 /** ControlRoom is Control Room for an app league, laid out as docs/ui/mocks/control-room-mock-v1.html:
  *  nine branches, a find box, the editor tray with the command line, the inspector and the centre card.

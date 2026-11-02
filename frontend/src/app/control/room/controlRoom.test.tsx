@@ -37,6 +37,7 @@ describe('Control Room · shell', () => {
       TargetCommissionerMarket: ok('market'), TargetCorrections: async () => { throw new Error('no corrections'); },
       TargetCommissionerSchedule: ok('schedule'), TargetNativeHouseRules: ok('house'), TargetShellStatus: ok('status'),
       TargetStatQueue: ok('stat'), TargetLeagueCalendar: ok('calendar'), TargetNativeWeek: ok('week'),
+      TargetNativeDraft: ok('draft'), GetParams: ok('params', { ok: true, error: '', params: [] }),
     } as unknown as RoomPort;
     const d = await readRoom(league, port);
     expect(d.errors).toEqual({ corrections: 'no corrections' });
