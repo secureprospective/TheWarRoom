@@ -65,6 +65,9 @@ func TestFollowingLeagueReadsSettingsNotIdentity(t *testing.T) {
 	set.Receipt.Entry = "clear"
 	set.Receipt.RecordedAt = at.Add(2 * time.Second)
 	records = append(records, set)
+	if id, season, _, ok := ReferenceLeague(records); !ok || id != "00123" || season != 2026 {
+		t.Fatalf("clearing schedule discarded reference identity: %s %d %t", id, season, ok)
+	}
 	if _, _, _, ok := FollowingLeague("native.mfl-00123-2026", records); ok {
 		t.Fatal("cleared setting still follows")
 	}

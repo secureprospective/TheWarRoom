@@ -195,7 +195,7 @@ func BackfillHeldTransactions(ctx context.Context, ledger leaguemigration.Ledger
 	if err != nil {
 		return nil, fmt.Errorf("read held draft identity: %w", err)
 	}
-	source, _, _, ok := FollowingLeague(league, records)
+	source, _, _, ok := ReferenceLeague(records)
 	if !ok {
 		return nil, fmt.Errorf("record a reference league identity before reading held draft evidence")
 	}

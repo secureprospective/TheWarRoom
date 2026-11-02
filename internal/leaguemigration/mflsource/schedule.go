@@ -122,3 +122,22 @@ func FollowingLeague(_ string, records []commissioner.Record) (string, int, stri
 	}
 	return follow.Value.League, follow.Value.Season, records[0].Principal, true
 }
+
+// ReferenceLeague keeps the last selected reference identity even when schedule following
+// is cleared. This is provenance, not permission to refresh any particular feed.
+func ReferenceLeague(records []commissioner.Record) (string, int, string, bool) {
+	active := commissioner.Replay(records).Active
+	for i := len(records); i > 0; i-- {
+		r := records[i-1]
+		if !active[r.Receipt.Entry] {
+			continue
+		}
+		if r.Command.Command != commissioner.Create && (r.Command.Command != commissioner.RulesSet || r.Command.Args.Field != "schedule.follow") {
+			continue
+		}
+		if source, season, principal, ok := FollowingLeague("", records[:i]); ok {
+			return source, season, principal, true
+		}
+	}
+	return "", 0, "", false
+}

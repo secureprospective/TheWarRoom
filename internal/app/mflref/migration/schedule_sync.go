@@ -61,25 +61,27 @@ func (s ScheduleSync) Sync(ctx context.Context) {
 		if err := s.SyncScoring(ctx, league.ID, records); err != nil {
 			log.Printf("refresh scoring evidence for %s (held data kept): %v", league.ID, err)
 		}
-		source, season, principal, follows := mflsource.FollowingLeague(league.ID, records)
-		if !follows {
+		source, season, principal, reference := mflsource.ReferenceLeague(records)
+		if !reference {
 			continue
 		}
-		raw, err := leagueschedule.Fetch(ctx, s.Client, strconv.Itoa(season), source)
-		if err == nil {
-			_, err = mflsource.BackfillSchedule(ctx, ledger, league.ID, "Refresh the published schedule", principal, season, raw)
-		}
-		if err == nil {
-			records, err = ledger.Records(ctx, league.ID)
+		if _, _, _, follows := mflsource.FollowingLeague(league.ID, records); follows {
+			raw, err := leagueschedule.Fetch(ctx, s.Client, strconv.Itoa(season), source)
 			if err == nil {
-				err = s.FillScheduleDates(ctx, records)
+				_, err = mflsource.BackfillSchedule(ctx, ledger, league.ID, "Refresh the published schedule", principal, season, raw)
 			}
-		}
-		if err != nil {
-			log.Printf("refresh schedule for %s (held schedule kept): %v", league.ID, err)
-		}
-		if err := s.syncCurrentWeekLineups(ctx, ledger, league.ID, principal, season, source); err != nil {
-			log.Printf("refresh this week’s lineups for %s (held lineups kept): %v", league.ID, err)
+			if err == nil {
+				records, err = ledger.Records(ctx, league.ID)
+				if err == nil {
+					err = s.FillScheduleDates(ctx, records)
+				}
+			}
+			if err != nil {
+				log.Printf("refresh schedule for %s (held schedule kept): %v", league.ID, err)
+			}
+			if err := s.syncCurrentWeekLineups(ctx, ledger, league.ID, principal, season, source); err != nil {
+				log.Printf("refresh this week’s lineups for %s (held lineups kept): %v", league.ID, err)
+			}
 		}
 		followed = append(followed, followedLeague{league.ID, principal, season, source})
 	}
@@ -159,8 +161,10 @@ func (s ScheduleSync) syncPlayedLineups(ctx context.Context, ledger leagueservic
 		}
 		if err != nil {
 			log.Printf("refresh transactions for %s (held history kept): %v", league, err)
-			return
 		}
+	}
+	if _, _, _, follows := mflsource.FollowingLeague(league, records); !follows {
+		return
 	}
 	weeks, lineupErr := weeklyresults.Fetch(ctx, s.Client, strconv.Itoa(season), source)
 	if lineupErr == nil {
