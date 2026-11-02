@@ -44,12 +44,28 @@ type recordRevision struct {
 	records  []commissioner.Record
 }
 
+// transactionRecords returns records the caller owns outright (write and preview paths change them).
 func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
 	records, err := s.cachedTransactionRecords(ctx, tx, league)
 	if err != nil {
 		return nil, err
 	}
-	ctx, err = s.linkedIdentities(ctx, league)
+	return s.resolveRecords(ctx, league, deepClone(records))
+}
+
+// sharedTransactionRecords is the read path: every reading of one revision shares the cached snapshot.
+// The caller owns only the outer slice; nested args, seeds and maps are read-only by contract
+// (TestSharedRecordsStayUnchangedByReadings guards it). Copying the ledger per reading dominated CPU.
+func (s *Store) sharedTransactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
+	records, err := s.cachedTransactionRecords(ctx, tx, league)
+	if err != nil {
+		return nil, err
+	}
+	return s.resolveRecords(ctx, league, slices.Clone(records))
+}
+
+func (s *Store) resolveRecords(ctx context.Context, league string, records []commissioner.Record) ([]commissioner.Record, error) {
+	ctx, err := s.linkedIdentities(ctx, league)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +112,7 @@ func (s *Store) cachedTransactionRecords(ctx context.Context, tx *sql.Tx, league
 		hit = recordRevision{}
 	}
 	if hit.revision == revision {
-		return deepClone(hit.records), nil
+		return hit.records, nil
 	}
 	rows, err := tx.QueryContext(ctx, eventsQuery, league, commissioner.Stream, hit.revision)
 	if err != nil {
@@ -117,8 +133,7 @@ func (s *Store) cachedTransactionRecords(ctx context.Context, tx *sql.Tx, league
 			return nil, err
 		}
 	}
-	records = s.cacheRecords(league, revision, records)
-	return deepClone(records), nil
+	return s.cacheRecords(league, revision, records), nil
 }
 
 // ExecuteCommissioner performs authorization, retry lookup and append in one

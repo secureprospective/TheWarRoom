@@ -24,7 +24,7 @@ func (s *Store) nativeRecords(ctx context.Context, league string) ([]commissione
 		return nil, fmt.Errorf("read native league events: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	records, err := s.transactionRecords(ctx, tx, league)
+	records, err := s.sharedTransactionRecords(ctx, tx, league)
 	if err != nil {
 		return nil, fmt.Errorf("read native league records: %w", err)
 	}

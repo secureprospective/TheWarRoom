@@ -48,7 +48,8 @@ func (f *readingFlights) inFlight(kind string) int {
 }
 
 // shareReading runs read once for every concurrent caller with the same kind, args and viewer. Joiners
-// get the same result, including the clock instant it was read at. The flight is detached from any one
+// get the same result, including the clock instant it was read at. The caller that started the flight gets
+// its value; each joiner gets its own deep copy, so no caller can change what another caller reads. The flight is detached from any one
 // caller's cancellation and is cancelled only when every waiting caller has gone.
 func shareReading[T any](ctx context.Context, f *readingFlights, kind, args string,
 	read func(context.Context) (T, error)) (T, error) {
@@ -80,6 +81,9 @@ func shareReading[T any](ctx context.Context, f *readingFlights, kind, args stri
 			return zero, fl.err
 		}
 		val, _ := fl.val.(T)
+		if joined {
+			return deepClone(val), nil
+		}
 		return val, nil
 	case <-ctx.Done():
 		f.mu.Lock()
