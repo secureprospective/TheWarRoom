@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { leagueState } from '../../commissioner/proxy';
 import { commands } from '../../commands/registry';
 import { draftRoom } from '../../draftroom/state';
@@ -26,13 +27,19 @@ const views: Record<Tab, () => ReactNode> = {
   people: () => <PeopleView />, league: () => <LeagueView />, server: () => <ServerView />,
 };
 
+/** The mock's rail leaf words (sentence case), where they differ from the branch tab. */
+const leafLabel: Partial<Record<Tab, string>> = { jobs: 'Jobs', sit: 'Situations', rules: 'Rules', season: 'Season desk',
+  fix: 'Fix', picks: 'Picks', people: 'People', league: 'League', server: 'Server' };
+
 const desktopPort = (): RoomPort => ({ ...nativeBindings(), TargetShellStatus: readShellStatus, GetParams: getParams });
 
 /** ControlRoom is Control Room for an app league, laid out as docs/ui/mocks/control-room-mock-v1.html:
  *  nine branches, a find box, the editor tray with the command line, the inspector and the centre card.
  *  Every value comes from an existing read; every button runs an existing command through its form. */
-export default function ControlRoom({ league, port = desktopPort, initial, start = 'jobs' }: {
+export default function ControlRoom({ league, port = desktopPort, initial, start = 'jobs', tree, footer }: {
   league: string; port?: () => RoomPort; initial?: RoomData; start?: Tab;
+  /** The shell's slot under the Control Room rail item, and the rail footer (the mock's tree and "Signed in"). */
+  tree?: HTMLElement | null; footer?: HTMLElement | null;
 }) {
   const state = leagueState.use();
   const [data, setData] = useState<RoomData>(initial ?? { errors: {} });
@@ -129,8 +136,13 @@ export default function ControlRoom({ league, port = desktopPort, initial, start
   }, []);
   const live = state.jobs?.jobs.filter(j => j.state === 'live').length ?? 0;
 
+  const leaves = tabs.map(([k, l], i) => <button key={k} className={`leaf${k === tab ? ' sel' : ''}`} data-tab={k}
+    aria-current={k === tab ? 'page' : undefined} onClick={() => go(k)}>
+    <span className="tr">{i === tabs.length - 1 ? '└' : '├'}</span>{leafLabel[k] ?? l}</button>);
   return (
     <RoomContext.Provider value={room}>
+      {tree && createPortal(<div className="crx-tree">{leaves}</div>, tree)}
+      {footer && createPortal(<span className="crx-who">Signed in: {(state.people?.yourRole ?? '').replace(/^./, c => c.toUpperCase()) || '—'}</span>, footer)}
       <div className="crx" data-testid="control-room">
         <main className="work">
           <div className="ws-tabs" role="tablist" aria-label="Control Room">

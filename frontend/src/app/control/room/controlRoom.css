@@ -222,3 +222,10 @@
 .crx .league-form button:disabled{opacity:.38;cursor:not-allowed}
 .crx .league-form [role=alert]{color:var(--red)} .crx .league-form [role=status]{color:var(--ink2)}
 .crx .cr-ed{max-height:46vh;overflow:auto}
+/* The rail tree and footer the room portals into the shell (mock lines 33-39); scoped to the room's nodes. */
+.crx-tree .leaf{display:flex;gap:6px;width:100%;padding:5px 14px 5px 26px;text-align:left;color:var(--ink2);font-size:12.5px;transition:transform 70ms linear;background:none;border:0;cursor:pointer}
+.crx-tree .leaf:hover{color:var(--ink);transform:translateX(2px)}
+.crx-tree .leaf .tr{font-family:var(--mono);color:var(--edge)}
+.crx-tree .leaf.sel{color:var(--ink);font-weight:600}
+.crx-tree .leaf.sel .tr::after{content:"▮";color:var(--edge-hi)}
+.crx-who{font:11px var(--mono);color:var(--ink3)}

@@ -39,12 +39,14 @@ const loadControl = () => import('../control/room/ControlRoom');
 const ControlRoom = lazy(loadControl);
 const loaders = { hq: loadHQ, war: loadWarRoom, pulse: loadPulse, home: loadHome, control: loadControl };
 
-export default function AppLeagueMount({ league, view, leave, footer, hqTab, pulseTab, tabs }: {
+export default function AppLeagueMount({ league, view, leave, footer, hqTab, pulseTab, tabs, tree }: {
   league: LeagueChoice;
   view: 'hq' | 'war' | 'pulse' | 'home' | 'control';
   leave: (node?: Node) => void;
   footer?: HTMLElement | null;
   hqTab?: HQTab; pulseTab?: PulseTab; tabs?: HTMLElement | null;
+  /** Control Room's rail slot under its nav item. */
+  tree?: HTMLElement | null;
 }) {
   const [people, setPeople] = useState<People>();
   const [mine, setMine] = useState('');
@@ -78,7 +80,7 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
   }, [league.id, key]);
   // The Control Room runs the league, not one franchise: it needs neither a franchise nor the seat list.
   if (view === 'control') return <Suspense fallback={<p role="status">Opening Control Room…</p>}>
-    <ControlRoom key={league.id} league={league.id} /></Suspense>;
+    <ControlRoom key={league.id} league={league.id} tree={tree} footer={footer} /></Suspense>;
   if (error) return <p role="alert">Could not open {league.name}: {error}</p>;
   if (!people) return <p role="status">Opening {league.name}…</p>;
   const chooser = <label>View a franchise
