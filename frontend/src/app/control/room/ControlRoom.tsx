@@ -12,11 +12,12 @@ import { NotYet, RoomContext, type Room, type Tab, type Card, tabs } from './roo
 import { JobsView } from './JobsView';
 import { SituationsView } from './SituationsView';
 import { RulesView } from './RulesView';
+import { SeasonView } from './SeasonView';
 import './controlRoom.css';
 
 const views: Record<Tab, () => ReactNode> = {
   jobs: () => <JobsView />, sit: () => <SituationsView />, rules: () => <RulesView />,
-  season: () => <NotYet what="this branch is wired in a later commit" />, fix: () => <NotYet what="this branch is wired in a later commit" />, picks: () => <NotYet what="this branch is wired in a later commit" />,
+  season: () => <SeasonView />, fix: () => <NotYet what="this branch is wired in a later commit" />, picks: () => <NotYet what="this branch is wired in a later commit" />,
   people: () => <NotYet what="this branch is wired in a later commit" />, league: () => <NotYet what="this branch is wired in a later commit" />, server: () => <NotYet what="this branch is wired in a later commit" />,
 };
 
