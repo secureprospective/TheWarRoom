@@ -313,3 +313,15 @@ it('NFL NEWS second line is the held or researched name, never the directory-mis
   expect(news.textContent).not.toContain('directory does not list');
   expect(Array.from(news.querySelectorAll('.r.nw small')).map(x => x.textContent)).toEqual(['', 'Player, 1001']);
 });
+
+it('RECORD, SEED and the RACE records say "—" while the standings have no decided game, not 0-0', async () => {
+  const none = { ...pulse.standings, league: LEAGUE, decided: 0, pending: 48,
+    words: 'Standings through week 7: 0 games have a result, 48 do not yet',
+    computed: pulse.standings.computed.map(r => ({ ...r, wins: 0, losses: 0, ties: 0, record: '0-0' })) };
+  await mount(full({ 'standings.read': none }));
+  expect(container.textContent).not.toContain('0-0');
+  expect(tile('race').querySelector('.seedl')!.getAttribute('title')).toContain('0 games have a result');
+  await act(async () => { root.unmount(); }); root = createRoot(container);
+  await mount(full());
+  expect(tile('race').textContent).toContain('1-2');
+});

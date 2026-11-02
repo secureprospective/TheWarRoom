@@ -63,9 +63,18 @@ export function playerName(b: HomeBrief, id: string, given = ''): string {
 export function myGame(b: HomeBrief, mine: string) {
   return b.results?.games.find(g => g.home === mine || g.away === mine);
 }
-export function myRow(b: HomeBrief, mine: string) {
-  return b.pulse?.standings?.rows.find(r => r.franchise === mine);
+/** ranked says the standings hold at least one decided game (or a commissioner's ruling). Before then
+ *  every row is 0-0 and rank is list order, which reads as a fact it is not: Home shows "—" instead,
+ *  with the standings' own words saying why (e.g. "0 games have a result, 48 do not yet"). */
+export function ranked(b: HomeBrief): boolean {
+  const s = b.pulse?.standings;
+  return !!s && (s.decided > 0 || s.overrideWords !== undefined);
 }
+export function myRow(b: HomeBrief, mine: string) {
+  return ranked(b) ? b.pulse?.standings?.rows.find(r => r.franchise === mine) : undefined;
+}
+const recordOf = (b: HomeBrief, id: string) =>
+  ranked(b) ? b.pulse?.standings?.rows.find(r => r.franchise === id)?.record ?? '—' : '—';
 
 /** tileState is a tile's lifecycle from its sources: loading until each has answered or failed,
  *  stale once the oldest answer is past STALE_MS, else fresh. Unavailable and error show in the body. */
@@ -148,7 +157,7 @@ function Matchup({ b, mine }: { b: HomeBrief; mine: string }) {
   if (!g) return <div className="empty">{b.results?.bye === mine ? 'Bye week.' : 'No game this week.'}</div>;
   const opp = g.home === mine ? g.away : g.home;
   const side = (id: string) => b.results?.scores.find(s => s.franchise === id);
-  const rec = (id: string) => b.pulse?.standings?.rows.find(r => r.franchise === id)?.record ?? '—';
+  const rec = (id: string) => recordOf(b, id);
   const me = side(mine), op = side(opp);
   const proj = (id: string) => projected(b, id);
   const ups = b.matchup?.lineups[mine] ?? [];
@@ -182,13 +191,13 @@ function Race({ b, mine }: { b: HomeBrief; mine: string }) {
   const i = rows.findIndex(r => r.franchise === mine);
   const window = rows.slice(Math.max(0, i - 2));
   return <>
-    <div className="seedl"><div><b>{me?.rank ?? '—'}</b><span>SEED NOW</span></div>
+    <div className="seedl" title={ranked(b) ? undefined : b.pulse?.standings?.words}><div><b>{ranked(b) ? me?.rank ?? '—' : '—'}</b><span>SEED NOW</span></div>
       <div><b>—</b><span>PROJECTED</span></div><div><b>—</b><span>PLAYOFF ODDS</span></div>
       <div><b>—</b><span>POWER</span></div></div>
     <div className="runin">{next.map(f => <div key={f.week}>WK {f.week}<b>{f.venue === 'away' ? '@ ' : ''}
       {nameOf(b, f.opponent)}</b><i>—</i></div>)}</div>
     {window.map(r => row(`mini ${r.franchise === mine ? 'me' : r.rank === cut ? 'cut' : ''}`, <>
-      <span className="m">{r.rank}</span><span className="nm">{r.name}</span><span className="v">{r.record}</span>
+      <span className="m">{r.rank}</span><span className="nm">{r.name}</span><span className="v">{ranked(b) ? r.record : '—'}</span>
       <span className="m" style={{ textAlign: 'right' }}>{r.rank === cut ? 'CUT ─' : ''}</span></>, r.franchise))}
   </>;
 }
