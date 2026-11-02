@@ -34,6 +34,12 @@ type LiveStatsPoller struct {
 	said   string     // live-stats state last logged
 }
 
+// liveStatsHistory is the live poll's identity lookup and held-evidence store.
+type liveStatsHistory interface {
+	SourceIDs(context.Context, string) (map[string]string, error)
+	SetLiveStats(int, int, time.Time, string, []string, map[string]source.PlayerWeek)
+}
+
 // LiveStatsRun is what one poll reads from the running app.
 type LiveStatsRun struct {
 	History *history.Store
@@ -48,6 +54,10 @@ func (p *LiveStatsPoller) Poll(ctx context.Context, run LiveStatsRun) time.Durat
 	if run.History == nil {
 		return liveStatsIdle
 	}
+	return p.poll(ctx, run, run.History)
+}
+
+func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveStatsHistory) time.Duration {
 	season, week, at := run.Season, run.Week(), time.Now()
 	endpoints, err := LiveEndpoints()
 	if err != nil {
@@ -72,20 +82,20 @@ func (p *LiveStatsPoller) Poll(ctx context.Context, run LiveStatsRun) time.Durat
 			busy = true
 		}
 	}
-	espn, err := run.History.SourceIDs(ctx, "espn")
+	espn, err := held.SourceIDs(ctx, "espn")
 	if err != nil {
 		log.Printf("live stats: %v", err)
 		return liveStatsIdle
 	}
-	lines := liveStatLines(ctx, adapter, games, invertIDs(espn), &p.finals, at)
+	lines, acquired := liveStatLines(ctx, adapter, games, invertIDs(espn), &p.finals, at)
 	// Say so when live lines first land, stop, or move to another week; not on every poll.
 	if state := fmt.Sprintf("%t/%d/%d", len(lines) > 0, season, week); state != p.said {
 		p.said = state
 		log.Printf("live stats: %d players from %d games, season %d week %d, %d ESPN ids held",
 			len(lines), len(games), season, week, len(espn))
 	}
-	if len(lines) > 0 {
-		run.History.SetLiveStats(season, week, at, livestats.Authority,
+	if acquired {
+		held.SetLiveStats(season, week, at, livestats.Authority,
 			livestats.Pending(), lines)
 		if run.Changed != nil {
 			run.Changed(ctx)
@@ -110,31 +120,26 @@ type liveFinal struct {
 // each athlete line by league player id. A finished game's lines are reused for liveFinalReread.
 // An athlete the directory cannot place is left out: a missing line stays pending, never a zero.
 func liveStatLines(ctx context.Context, adapter livegame.Adapter, games []livegame.Game,
-	byESPN map[string]string, finals *liveFinals, now time.Time) map[string]source.PlayerWeek {
+	byESPN map[string]string, finals *liveFinals, now time.Time) (map[string]source.PlayerWeek, bool) {
 	if *finals == nil {
 		*finals = liveFinals{}
 	}
 	out := map[string]source.PlayerWeek{}
+	acquired := true
 	for _, g := range games {
-		if g.Status == "pre" || g.Season == 0 || g.Week == 0 || g.SeasonType != 2 {
+		if g.Status == "pre" || g.SeasonType == 1 || g.SeasonType == 3 {
 			continue
 		}
-		held, fresh := (*finals)[g.ID]
-		lines := held.lines
-		if g.Status != "post" || !fresh || now.Sub(held.at) >= liveFinalReread {
-			read, err := gameLines(ctx, adapter, g.ID)
-			if err != nil {
-				log.Printf("live stats: game %s: %v", g.ID, err)
-				if !fresh {
-					continue
-				}
-			} else {
-				lines = read
-				if g.Status == "post" {
-					(*finals)[g.ID] = liveFinal{at: now, lines: read}
-				}
-			}
+		if g.Season == 0 || g.Week == 0 || g.SeasonType != 2 {
+			acquired = false
+			continue
 		}
+		lines, err := finals.game(ctx, adapter, g, now)
+		if err != nil {
+			log.Printf("live stats: game %s: %v", g.ID, err)
+			acquired = false
+		}
+
 		for _, l := range lines {
 			player, ok := byESPN[l.SourceID]
 			if !ok {
@@ -143,7 +148,22 @@ func liveStatLines(ctx context.Context, adapter livegame.Adapter, games []livega
 			out[player] = source.PlayerWeek{Season: g.Season, Week: g.Week, GameID: g.ID, SeasonType: "REG", Line: l.Stats}
 		}
 	}
-	return out
+	return out, acquired
+}
+
+func (f *liveFinals) game(ctx context.Context, adapter livegame.Adapter, g livegame.Game, now time.Time) ([]livestats.Line, error) {
+	held, fresh := (*f)[g.ID]
+	if g.Status == "post" && fresh && now.Sub(held.at) < liveFinalReread {
+		return held.lines, nil
+	}
+	lines, err := gameLines(ctx, adapter, g.ID)
+	if err != nil {
+		return held.lines, err
+	}
+	if g.Status == "post" {
+		(*f)[g.ID] = liveFinal{at: now, lines: lines}
+	}
+	return lines, nil
 }
 
 func gameLines(ctx context.Context, adapter livegame.Adapter, id string) ([]livestats.Line, error) {

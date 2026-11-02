@@ -175,7 +175,7 @@ func (r RawSituation) Validate(teams []RawCompetitor) error {
 	return nil
 }
 func (r RawScoreboard) Validate() error {
-	if len(r.Events) == 0 {
+	if r.Events == nil {
 		return fmt.Errorf("events: missing")
 	}
 	seen := map[string]bool{}

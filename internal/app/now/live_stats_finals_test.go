@@ -33,7 +33,7 @@ func TestLiveStatLinesRereadsFinishedGamesOnlyEveryTenMinutes(t *testing.T) {
 	var finals liveFinals
 	start := time.Date(2026, 11, 1, 21, 0, 0, 0, time.UTC)
 	for minute := 0; minute < 10; minute++ {
-		out := liveStatLines(context.Background(), adapter, games, byESPN, &finals, start.Add(time.Duration(minute)*time.Minute))
+		out, _ := liveStatLines(context.Background(), adapter, games, byESPN, &finals, start.Add(time.Duration(minute)*time.Minute))
 		if got := out["15263"]; got.Week != 8 || got.Season != 2026 {
 			t.Fatalf("minute %d: player line missing or misfiled: %+v", minute, got)
 		}
@@ -58,7 +58,7 @@ func TestLiveStatLinesUseEachGamesScope(t *testing.T) {
 		{ID: "unknown", Status: "post"},
 		{ID: "postseason", Status: "post", Season: 2026, Week: 1, SeasonType: 3},
 	}
-	out := liveStatLines(t.Context(), livegame.Adapter{}, games, map[string]string{"1": "0099", "2": "0100"}, &finals, time.Now())
+	out, _ := liveStatLines(t.Context(), livegame.Adapter{}, games, map[string]string{"1": "0099", "2": "0100"}, &finals, time.Now())
 	if len(out) != 2 || out["0099"].Season != 2025 || out["0099"].Week != 18 || out["0100"].Week != 1 {
 		t.Fatalf("misfiled lines: %+v", out)
 	}
