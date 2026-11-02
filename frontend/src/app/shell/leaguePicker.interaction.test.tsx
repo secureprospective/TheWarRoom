@@ -77,7 +77,7 @@ it('keeps app HQ and War Room failures inside the navigable shell', async () => 
   }
 });
 
-it('opens both Control Room tabs and MFL import for a picked app league', async () => {
+it('opens the Control Room on the locked mock for a picked app league', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   Object.defineProperty(window, 'go', { configurable: true, value: {} });
   localStorage.setItem(LEAGUE_KEY, 'native.one');
@@ -86,19 +86,13 @@ it('opens both Control Room tabs and MFL import for a picked app league', async 
   const root = createRoot(container);
   try {
     await act(async () => { root.render(<TargetApp />); });
-    for (let i = 0; i < 50 && !container.querySelector('.app-settings'); i++)
+    for (let i = 0; i < 50 && !container.querySelector('[data-testid="control-room"]'); i++)
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
-    expect(container.querySelector('.app-settings')).not.toBeNull();
+    expect(container.querySelector('[data-testid="control-room"]')).not.toBeNull();
     expect(container.querySelector('.shell-unwired')).toBeNull();
-    await act(async () => { commands.dispatch('nav.open', { node: 'control', workspace: 'league' }); });
-    for (let i = 0; i < 50 && (!container.querySelector('.move-mfl') ||
-      !container.querySelector('.league-landing')); i++)
-      await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
-    expect(container.querySelector('.league-landing')).not.toBeNull();
-    expect(container.querySelector('.move-mfl summary')?.textContent).toBe('Move my MFL league');
-    expect(container.querySelector('.shell-unwired')).toBeNull();
-    expect([...container.querySelectorAll('.wtabs button')].map(b => b.textContent))
-      .toEqual(['App', 'League']);
+    expect([...container.querySelectorAll('[data-testid="control-room"] [role="tab"]')].map(b => b.textContent))
+      .toEqual(['JOBS', 'SITUATIONS', 'RULES', 'SEASON DESK', 'FIX', 'PICKS', 'PEOPLE', 'LEAGUE', 'SERVER']);
+    expect(container.querySelectorAll('.wtabs button')).toHaveLength(0);
   } finally {
     await act(async () => { root.unmount(); });
     delete (window as unknown as { go?: unknown }).go;
