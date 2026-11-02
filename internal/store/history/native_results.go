@@ -50,6 +50,7 @@ type nativeSources struct {
 	now    time.Time
 	held   map[source.RawNativeScope]source.NativeEvidence
 	files  []heldFile
+	gsis   map[string]string
 	rules  *commissioner.RulesMemo
 	facts  nativecheck.Facts
 }

@@ -27,6 +27,8 @@ type heldSeasonEntry struct {
 	key     heldSeasonKey
 	files   []heldFile
 	indexed []heldFile
+	// gsis is the directory's gsis id per league player at key's identity revision, as SourceID reads it.
+	gsis map[string]string
 }
 
 type heldSeasonFlight struct {
@@ -46,25 +48,29 @@ type heldSeasonCache struct {
 	builds  int
 }
 
-func (s *Store) heldSeasonKey(ctx context.Context) (heldSeasonKey, error) {
+func (s *Store) heldSeasonKey(ctx context.Context) (heldSeasonKey, map[string]string, error) {
 	var key heldSeasonKey
+	var gsis map[string]string
 	err := s.pools.Read().QueryRowContext(ctx,
 		`SELECT count(*), coalesce(max(fetch_id), 0) FROM fetch_log WHERE status = 200`).Scan(&key.fetches, &key.newest)
 	if err != nil {
-		return key, fmt.Errorf("history: held season revision: %w", err)
+		return key, nil, fmt.Errorf("history: held season revision: %w", err)
 	}
 	h := sha256.New()
 	for _, idType := range []string{"gsis", "pfr"} {
 		ids, err := s.SourceIDs(ctx, idType)
 		if err != nil {
-			return key, err
+			return key, nil, err
+		}
+		if idType == "gsis" {
+			gsis = ids
 		}
 		for _, player := range slices.Sorted(maps.Keys(ids)) {
 			_, _ = fmt.Fprintf(h, "%s\x00%s\x00%s\n", idType, player, ids[player])
 		}
 	}
 	copy(key.identity[:], h.Sum(nil))
-	return key, nil
+	return key, gsis, nil
 }
 
 // heldSeason reads every held copy of a season's weekly file once per held revision, newest first. The
@@ -96,7 +102,7 @@ func (s *Store) cachedHeldSeason(ctx context.Context, season int) (*heldSeasonEn
 	}
 	// The key is read before the build, so a change that lands mid-build leaves a stale key on the entry and
 	// the next reader rebuilds; a reader is never served files older than the revision it saw.
-	key, err := s.heldSeasonKey(ctx)
+	key, gsis, err := s.heldSeasonKey(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +133,9 @@ func (s *Store) cachedHeldSeason(ctx context.Context, season int) (*heldSeasonEn
 		c.mu.Unlock()
 		// One reader's cancellation must not fail the others waiting on this build.
 		f.entry, f.err = s.buildHeldSeason(context.WithoutCancel(ctx), season, key)
+		if f.err == nil {
+			f.entry.gsis = gsis
+		}
 		c.mu.Lock()
 		delete(c.flights, season)
 		if f.err == nil {
@@ -151,4 +160,21 @@ func (s *Store) buildHeldSeason(ctx context.Context, season int, key heldSeasonK
 		indexed[i].index = source.IndexHeldWeeks(indexed[i].weeks)
 	}
 	return &heldSeasonEntry{key: key, files: files, indexed: indexed}, nil
+}
+
+// SourceID answers a reading's gsis lookups from the directory read with its held season, so scoring every
+// starter of every week does not query the directory once per starter. Other id types, and readings
+// without a cached season, ask the store.
+func (n *nativeSources) SourceID(ctx context.Context, playerID, idType string) (string, error) {
+	if idType == "gsis" {
+		if n.gsis == nil {
+			if entry, err := n.store.cachedHeldSeason(ctx, n.season); err == nil && entry.gsis != nil {
+				n.gsis = entry.gsis
+			}
+		}
+		if n.gsis != nil {
+			return n.gsis[playerID], nil
+		}
+	}
+	return n.store.SourceID(ctx, playerID, idType)
 }

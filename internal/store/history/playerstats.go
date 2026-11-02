@@ -261,7 +261,11 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 		}
 		return s.withLiveStats(out, scope), nil
 	}
-	out, err := source.ReadNativeEvidence(ctx, s, stats, scope)
+	var identity source.IdentityPort = s
+	if reading, ok := stats.(source.IdentityPort); ok {
+		identity = reading
+	}
+	out, err := source.ReadNativeEvidence(ctx, identity, stats, scope)
 	if err != nil {
 		return out, fmt.Errorf("read held native evidence: %w", err)
 	}
