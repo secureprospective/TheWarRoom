@@ -1,12 +1,21 @@
 package leaguerules
 
+// ScheduleFollow is empty when the commissioner is not following a reference schedule.
+type ScheduleFollow struct {
+	Source string
+	League string
+	Season int
+}
+
 type ScheduleRules struct {
+	Follow       Value[ScheduleFollow] `json:",omitzero"`
 	RegularWeeks Value[int]
 	Pattern      Value[SchedulePattern]
 }
 
 func legacySchedule() ScheduleRules {
 	return ScheduleRules{
+		Follow:       cited(ScheduleFollow{}, "Reference schedule following is off until selected"),
 		RegularWeeks: cited[int](13, "Rulebook §5"),
 		Pattern:      cited[SchedulePattern](DivisionWeighted, "Census CM-015"),
 	}
@@ -14,6 +23,7 @@ func legacySchedule() ScheduleRules {
 
 func scheduleFields() []ruleField {
 	return []ruleField{
+		field[ScheduleFollow]{path: "schedule.follow", label: "Follow reference schedule", access: func(r *RuleSet) *Value[ScheduleFollow] { return &r.Schedule.Follow }},
 		field[int]{path: "schedule.regularWeeks", label: "Regular season weeks", access: func(r *RuleSet) *Value[int] { return &r.Schedule.RegularWeeks }},
 		field[SchedulePattern]{path: "schedule.pattern", label: "Schedule pattern", access: func(r *RuleSet) *Value[SchedulePattern] { return &r.Schedule.Pattern }},
 	}

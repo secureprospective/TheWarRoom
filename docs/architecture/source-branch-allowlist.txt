@@ -13,3 +13,6 @@ internal/commissioner/roster_restore.go
 internal/leaguemigration/mflsource/prepare.go
 internal/store/history/native_assets.go
 internal/store/history/stand_up.go
+
+# One-time ordinary-command backfill for imports predating schedule.follow; never read during following.
+internal/leaguemigration/settings.go

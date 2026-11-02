@@ -1,10 +1,16 @@
 import { array, object, text, timestamp } from '../data/parseValues';
+import { selectProvider } from '../data/provider';
 import { hostedWorkflow } from '../commissioner/api';
 import type { WarRoomContext } from './warroomReads';
 import { deadlineLabel } from '../clock/labels';
 export type WarRoomEvent = { id: string; label: string; at?: string; closes?: string; live?: boolean };
 export async function readWarRoomCalendar(c: WarRoomContext): Promise<WarRoomEvent[]> {
-  if (!c.native) return [];
+  if (!c.native) {
+    const reading = await selectProvider().clock();
+    if (reading.provenance.freshness.state === 'fail')
+      throw new Error(reading.provenance.freshness.note || 'Calendar unavailable');
+    return reading.value.deadlines;
+  }
   const native = c.native;
   const { data } = await (native.port ?? hostedWorkflow)({ command: 'calendar.read', mode: 'read',
     arguments: { league: native.league, season: c.snapshot.league.value.season, franchise: c.mine,

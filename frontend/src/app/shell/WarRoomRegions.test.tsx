@@ -27,6 +27,7 @@ import bidsWire from '../../../../testdata/wire/native/bids.json';
 import draftWire from '../../../../testdata/wire/native/draft.json';
 import tradesWire from '../../../../testdata/wire/native/trades.json';
 import { researchAPI } from '../research/api';
+import * as clockProvider from '../data/provider';
 import { controlAPI } from '../control/api';
 import { raceAPI } from '../race/api';
 import { contractsProvider } from '../contracts/provider';
@@ -264,6 +265,17 @@ describe('market, stars and sealed-bid privacy', () => {
   });
 });
 describe('calendar draft drawer and plans', () => {
+  it('uses the reference calendar reading for deadlines and failure, just like the hosted read', async () => {
+    const provider = clockProvider.selectProvider();
+    const reading = await provider.clock();
+    vi.spyOn(provider, 'clock').mockResolvedValue(reading);
+    vi.spyOn(clockProvider, 'selectProvider').mockReturnValue(provider);
+    expect(await readWarRoomCalendar(context())).toEqual(reading.value.deadlines);
+    vi.mocked(provider.clock).mockResolvedValue({ ...reading, provenance: { ...reading.provenance,
+      freshness: { ...reading.provenance.freshness, state: 'fail', note: 'calendar offline' } } });
+    await expect(readWarRoomCalendar(context())).rejects.toThrow('calendar offline');
+  });
+
   it('reads commissioner calendar windows and the trade deadline, not mock dates', async () => {
     const port = vi.fn<HostedPort>(async () => reply({ league: 'native.seed', revision: 7, decision: {},
       clock: { windows: [{ id: 'rookies', opens: ['draft'], start: '2027-04-01T12:00:00Z',

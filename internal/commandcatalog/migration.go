@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
-	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 )
 
 // AssistDoor is the move from MFL's door: the AI assist and the chat drive the move through it.
@@ -17,7 +16,7 @@ const AssistDoor Door = "assist"
 type MigrationInputs struct {
 	Service   *leaguemigration.Service
 	Principal func() (string, error)
-	SaveKey   func(context.Context, string, mflkey.Key) error
+	SaveKey   func(context.Context, string, string) error
 }
 
 type migrationCommand struct {
@@ -112,7 +111,7 @@ func RunMigration(ctx context.Context, in MigrationInputs, command string, body 
 // RawMigrationStep keeps an optional write-only credential out of the assistant's persisted step.
 type RawMigrationStep struct {
 	leaguemigration.RawStep
-	APIKey mflkey.Key `json:"apiKey,omitempty"`
+	APIKey string `json:"apiKey,omitempty"`
 }
 
 func (r RawMigrationStep) Validate() error {

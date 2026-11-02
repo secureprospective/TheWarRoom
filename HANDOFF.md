@@ -1,30 +1,22 @@
 # Handoff
 
 ## Baton
-ClaudeBox / review — 2026-11-01, build/SCHED-1. APP-SCHED-7 measurement only at 1207f2da.
-Local docs/evidence commit only; no remote contact or push.
+Bee / APP-GATES-4 — 2026-11-01, build/GATES-1. Local commits only; do not push.
 
 ## Where it stands
-- Fresh scratch-profile SQLite backup; ordinary archived lineup/schedule backfill, scoring acquisition,
-  stat ledger, native results/standings: 148 recorded weeks, 24 exact / 0 within .01 / 9 differ /
-  115 unavailable. Evidence: `docs/build-handoffs/APP-SCHED-7-evidence.md` and its two TSVs.
-- Previous part 5 TSV is actually 4 exact / 29 differ / 115 unavailable; previous prose 4/33/111
-  was an arithmetic error. Completeness did not regress.
-- Bills MFL 6–1 / PF 1912.35; native 0/7 complete, W-L/PF unavailable (displayed zeros not outcomes).
-- 472 absent rows: 36 bye candidates (historical affiliation unverified), 53 exact-week injury Out,
-  141 positive snap/absent scoring-row, 242 unresolved. Seven separate 0835 identity gaps.
-- Disposable measurement PASS 208.44 s; eight native player-item readings race PASS 33.82 s.
-  Initial full measurement race run interrupted at external 600 s deadline during adoption;
-  non-race retry resumed idempotently on copy. No production changes, GUI or independent review.
+- `dc3191373`: A1 done. `schedule.follow` is an ordinary league rule; importer seeds it, launch backfills old imports by one optimistic ordinary command, explicit clear survives, cutover clears through the rule fold. Following reads no origin or app-ID convention. Compatibility initializer is the sole new allowlisted origin read.
+- `cd0c2070b`: A2 done. Shared calendar reader owns dates/failure for both hosts. Native forks tightened 19 → 18.
+- `fde9ecbc8`: B done. Refreshed the 15 approved boundary fingerprints plus launch backfill (16 identities total). Removed native transitive MFL leaks by putting shared counting in powerrankings and resolved listing facts in domain; no model math change, no fence exemption. Tiny files tightened 25 → 24.
+- `make placement` PASS (140 paths), `make boundary` PASS (169 functions/sources), `make lint` PASS (0 issues). Plain `make build` PASS; generated models committed from Wails.
+- Final race batch: 11 packages PASS, 752 named test/subtest passes. Composition migration/schedule batch: four PASS; enhanced ordinary set/clear/backfill/cutover integration passed afterward.
+- Whole Vitest once: 161 files / 1751 PASS. Added calendar regression afterward: region file 35 PASS.
+- Full race skipped: heavy-ok STOP, swap 83%, another full race suite active. No process interfered with.
+- Full evidence, current flow and all 16 hashes/causing commits: `docs/build-handoffs/APP-GATES-4.md`.
 
 ## Next move / blocked on
-- Position queue integration remains DEFERRED; do not start without head-brain authorization.
-- Resolve 242 unknown absences and historical affiliation for 36 bye candidates; existing MFL
-  bye and nflverse exact-week Out/snap sources are documented, no did-not-play zero built.
-- Nine complete score differences: largest Giants invalid-lineup penalty; remaining player credit
-  residuals need MFL stat breakdown, including Schultz W4. No scoring-rule diagnosis established.
-- Earlier debt: verified identity 0835; slow adoption/native reads; live/advanced inputs;
-  source-health UI; 76 historical-roster refusals.
+- Whole composition package remains unproven: earlier broad race attempt failed frozen-door schedule schemas and four native-stat tests, one panicking after an empty preview. Exact names in report. Their baseline origin was not independently reproduced; do not call the package green.
+- Preset archive guard remains not reproducible. Live UI/feed acceptance was not run.
+- Manual acceptance: change Follow reference schedule in settings, clear it and refresh (no following), then set it again; cutover must show an empty setting. Tests establish the backend path; no click-through claim.
 
 ## Tried and rejected
 - Missing weekly row or missing snaps as proof of inactivity/zero: unsupported.
@@ -62,3 +54,6 @@ Local commits only; no upstream configured, no push.
 - Rounded snap shares alone: partial files can fit adjacent totals; now require unique totals.
 - Zero for missing roster rows, current affiliations, absent partial-schedule entries or
   conflicting team games. Those stay pending.
+- Did not batch cutover + clear: store requires standalone cutover. Its existing atomic act now contributes the clear through the ordinary rules resolver, as other ledger acts contribute settings.
+- Did not exempt catalog credentials or native transitive MFL dependencies; removed them instead.
+- Initial pull attempt failed for lack of tracking before predecessor local-only rule was loaded. No merge or push; keep work local.

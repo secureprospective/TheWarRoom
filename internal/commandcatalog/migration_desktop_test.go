@@ -57,7 +57,9 @@ func TestDesktopMigrationBaseKeyAndAnswers(t *testing.T) {
 			return baseFixture{&migrationtest.Source{Export: export}, base}, nil
 		}}
 	in := MigrationInputs{Service: service, Principal: func() (string, error) { return "commish", nil },
-		SaveKey: func(ctx context.Context, id string, key mflkey.Key) error { return keys.ForLeague(id).Set(ctx, key) }}
+		SaveKey: func(ctx context.Context, id string, key string) error {
+			return keys.ForLeague(id).Set(ctx, mflkey.Key(key))
+		}}
 	raw := json.RawMessage(`{"mflLeague":"14432","preset":"default32","apiKey":"fixture-key-never-real"}`)
 	body, err := RunMigration(t.Context(), in, leaguemigration.CommandPrepare, raw)
 	if err != nil {

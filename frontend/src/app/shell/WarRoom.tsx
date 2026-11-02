@@ -47,9 +47,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   const headerReading = native?.reading ? nativeWarRoomHeader(native.reading) : header.reading;
   const calendar = useWarRoomRead(JSON.stringify([native?.league, mine, snapshot.league.value.season]),
     () => readWarRoomCalendar(context));
-  const deadlines: WarRoomEvent[] = native ? calendar.reading ?? [] :
-    clock?.provenance.freshness.state === 'fail' ? [] :
-    clock?.value.deadlines ?? [];
+  const deadlines: WarRoomEvent[] = calendar.error ? [] : calendar.reading ?? [];
   const deadline = deadlines.find(d => /trade/i.test(d.id + d.label));
   // The calendar says which action window is open now. An app league with none open is not an
   // unavailable fact: it is a closed window, and the header says so.
@@ -97,8 +95,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
           tab === 'draft' ? <WarRoomDraft context={context} select={(id, name, position) =>
             setProspect({ id, name, position })}
             /> : <WarRoomPlans />}
-      <WarRoomDates events={deadlines} failed={native ? Boolean(calendar.error) :
-        clock?.provenance.freshness.state === 'fail'} reason={calendar.error} />
+      <WarRoomDates events={deadlines} failed={Boolean(calendar.error)} reason={calendar.error} />
       <div className="tray"><div className="pulls">{(['pocket', 'offers'] as const).map(d => <WarRoomAct
         key={d} className="pull" expanded={drawer === d} onAction={() =>
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}

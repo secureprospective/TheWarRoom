@@ -63,6 +63,8 @@ func validateChildren(v reflect.Value) error {
 }
 func validateSpecial(v any) error {
 	switch value := v.(type) {
+	case ScheduleFollow:
+		return validateScheduleFollow(value)
 	case Bounds:
 		return validateBounds(value.Min, value.Max)
 	case BoundsMoney:
@@ -197,6 +199,21 @@ func validateMap(v reflect.Value) error {
 		}
 		if err := validateValue(iter.Value()); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func validateScheduleFollow(v ScheduleFollow) error {
+	if v == (ScheduleFollow{}) {
+		return nil
+	}
+	if v.Source != "mfl" || v.Season < 2000 || v.Season > 9999 || v.League == "" {
+		return fmt.Errorf("choose a reference source, league number and season, or clear all three")
+	}
+	for _, r := range v.League {
+		if r < '0' || r > '9' {
+			return fmt.Errorf("reference league number must contain only digits")
 		}
 	}
 	return nil

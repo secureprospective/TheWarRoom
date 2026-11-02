@@ -1,7 +1,9 @@
 package mflsource
 
 import (
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 
@@ -45,28 +47,28 @@ func TestMFLShapedSchedule(t *testing.T) {
 	}
 }
 
-func TestFollowingLeagueUsesRecordedImportIdentity(t *testing.T) {
+func TestFollowingLeagueReadsSettingsNotIdentity(t *testing.T) {
 	t.Parallel()
-	records := []commissioner.Record{{Command: commissioner.RawCommand{Command: commissioner.Create,
-		Args: commissioner.RawArgs{Source: commissioner.SourceMFLImport, Season: 2026}}, Principal: "creator"}}
-	for _, tc := range []struct {
-		league string
-		source string
-		want   bool
-	}{
-		{"native.mfl-00123-2026", commissioner.SourceMFLImport, true},
-		{"native.mfl-00123-2026", commissioner.SourceNative, false},
-		{"native.mfl-00123-2025", commissioner.SourceMFLImport, false},
-		{"native.mfl-bad-2026", commissioner.SourceMFLImport, false},
-		{"native.other", commissioner.SourceMFLImport, false},
-	} {
-		records[0].Command.Args.Source = tc.source
-		id, season, principal, ok := FollowingLeague(tc.league, records)
-		if ok != tc.want || (ok && (id != "00123" || season != 2026 || principal != "creator")) {
-			t.Fatalf("%+v: %s %d %s %t", tc, id, season, principal, ok)
-		}
+	at := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	records := []commissioner.Record{{Command: commissioner.RawCommand{League: "native.any", Command: commissioner.Create,
+		Args: commissioner.RawArgs{Source: commissioner.SourceNative, Season: 2026}}, Principal: "creator",
+		Receipt: commissioner.Receipt{Entry: "create", RecordedAt: at}}}
+	set := commissioner.Record{Command: commissioner.RawCommand{League: "native.any", Command: commissioner.RulesSet,
+		Args: commissioner.RawArgs{Field: "schedule.follow", Value: json.RawMessage(`{"Source":"mfl","League":"00123","Season":2026}`)}, Effective: "now"},
+		Receipt: commissioner.Receipt{Entry: "follow", RecordedAt: at.Add(time.Second)}}
+	records = append(records, set)
+	id, season, who, ok := FollowingLeague("not-an-import-id", records)
+	if !ok || id != "00123" || season != 2026 || who != "creator" {
+		t.Fatalf("%s %d %s %t", id, season, who, ok)
 	}
-	if _, _, _, ok := FollowingLeague("native.mfl-00123-2026", nil); ok {
-		t.Fatal("missing ledger followed")
+	set.Command.Args.Value = json.RawMessage(`{"Source":"","League":"","Season":0}`)
+	set.Receipt.Entry = "clear"
+	set.Receipt.RecordedAt = at.Add(2 * time.Second)
+	records = append(records, set)
+	if _, _, _, ok := FollowingLeague("native.mfl-00123-2026", records); ok {
+		t.Fatal("cleared setting still follows")
+	}
+	if _, _, _, ok := FollowingLeague("native.any", nil); ok {
+		t.Fatal("empty ledger follows")
 	}
 }
