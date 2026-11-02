@@ -100,9 +100,7 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 		week = source.PlayerWeek{Season: scope.Season, Week: scope.Week}
 		out.Missing = append(out.Missing, "Only the statistics the commissioner entered are counted; the NFL feed has none for this week")
 	default:
-		// A starter whose game has not produced a line yet still plays a position; the record says which.
-		out.Position, out.PositionWhy = scoringPosition("", evidence.ListedPosition, changes)
-		return out.withoutStatistics(evidence), nil
+		return out.uncounted(evidence, changes), nil
 	}
 	week = withCorrections(week, corrections)
 	out.Position, out.PositionWhy = scoringPosition(week.Position, evidence.ListedPosition, changes)
@@ -134,6 +132,17 @@ func scoreRules(league string, scope source.RawNativeScope, records []Record, no
 		return out, leaguerules.RuleSet{}, false, err
 	}
 	return out, rules, true, nil
+}
+
+// uncounted reads a week no statistics version is counted for. A starter whose game has not produced a
+// line yet still plays a position; the record says which, and no position gives no reason for one. No
+// version carries the held file's own gaps, so every gap is said.
+func (out NativePlayerScore) uncounted(evidence source.NativeEvidence, changes ScoreChanges) NativePlayerScore {
+	if position, why := scoringPosition("", evidence.ListedPosition, changes); position != "" {
+		out.Position, out.PositionWhy = position, why
+	}
+	out.Missing = append(out.Missing[:0:0], evidence.Missing...)
+	return out.withoutStatistics(evidence)
 }
 
 // withoutStatistics says why no statistics are counted for the week; no zero line is made up.

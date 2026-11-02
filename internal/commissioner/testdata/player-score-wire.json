@@ -1276,6 +1276,8 @@
     "week": 2,
     "status": "Unavailable",
     "words": "This player is not reported this week in the newest held statistics",
+    "position": "DT",
+    "positionWhy": "The commissioner chose this position for league scoring",
     "missing": [
       "Held play-by-play is needed for long plays and return touchdowns",
       "This held file does not report the player's regular-season week"
