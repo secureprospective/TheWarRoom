@@ -7,7 +7,6 @@ import (
 	"math"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -66,7 +65,18 @@ func ReadSnaps(input io.Reader) ([]RawSnap, error) {
 	return out, err
 }
 
-// NonParticipationProofs requires every unit's recovered play count to account for at least eleven
+// games lists every NFL game the snap file covers.
+func games(snaps []RawSnap) map[string]bool {
+	out := make(map[string]bool, len(snaps))
+	for _, s := range snaps {
+		out[s.Proof.GameID] = true
+	}
+	return out
+}
+
+// NonParticipationProofs judges each team's file on its own, because whether a player took a snap
+// for his team is answered by his team's rows; the opponent's are no evidence about him. A team
+// whose rows are missing from the file certifies nothing. It requires every unit's recovered play count to account for at least eleven
 // players a play. A file short of that is missing somebody's snaps, so it cannot prove non-participation;
 // counts above it are over-manned plays, which leaving a player out could never produce. A partial file
 // cannot merely assert its own completeness.
@@ -78,22 +88,16 @@ func NonParticipationProofs(snaps []RawSnap, roster []RawAbsenceProof) []RawAbse
 		present[s.Proof.GameID+"/"+s.Proof.PFR] = true
 	}
 	complete := make(map[string]bool)
-	for _, s := range snaps {
-		game := s.Proof.GameID
-		if _, seen := complete[game]; seen {
-			continue
-		}
-		parts := strings.Split(game, "_")
-		complete[game] = len(parts) == 4 && completeSnapTeam(teams[game+"/"+parts[2]]) && completeSnapTeam(teams[game+"/"+parts[3]])
+	for key, rows := range teams {
+		complete[key] = completeSnapTeam(rows)
 	}
 	var out []RawAbsenceProof
 	for _, r := range roster {
 		if r.GSIS == "" || r.PFR == "" {
 			continue
 		}
-		for _, game := range slices.Sorted(maps.Keys(complete)) {
-			ok := complete[game]
-			if !ok || present[game+"/"+r.PFR] || (r.GameID != "" && r.GameID != game) {
+		for _, game := range slices.Sorted(maps.Keys(games(snaps))) {
+			if !complete[game+"/"+r.Team] || present[game+"/"+r.PFR] || (r.GameID != "" && r.GameID != game) {
 				continue
 			}
 			proof := r
@@ -124,11 +128,23 @@ func completeSnapTeam(rows []RawSnap) bool {
 	}
 	for i, total := range totals {
 		plays, ok := snapUnitPlays(rows, i, total)
-		if !ok || total < 11*plays {
+		if !ok || total < 11*plays || fullTimeSnaps(rows, i, plays) > 11 {
 			return false
 		}
 	}
 	return true
+}
+
+// fullTimeSnaps counts the players the file says took every play of a unit. No more than eleven
+// can have, so a file claiming more is holding somebody else's rows rather than this team's.
+func fullTimeSnaps(rows []RawSnap, unit, plays int) int {
+	count := 0
+	for _, r := range rows {
+		if r.Counts[unit] == plays {
+			count++
+		}
+	}
+	return count
 }
 
 // snapUnitPlays recovers how many plays a unit took from its rounded shares, which hold that count

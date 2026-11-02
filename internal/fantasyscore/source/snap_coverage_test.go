@@ -128,3 +128,45 @@ func TestSnapFileShortOfAPlayIsNotCompleteButAnOverMannedOneIs(t *testing.T) {
 		})
 	}
 }
+
+func TestAnOpponentShortOfASnapDoesNotBlockThisTeamsAbsence(t *testing.T) {
+	// NYJ loses a special-teams snap; BUF's own rows stay whole.
+	body := strings.Replace(snapCSV(elevenSpecialTeams(20, 1)),
+		"2026_01_BUF_NYJ,202609100nyj,2026,REG,1,NYJ10,LB,NYJ,60,1,60,1,20,1\n",
+		"2026_01_BUF_NYJ,202609100nyj,2026,REG,1,NYJ10,LB,NYJ,60,1,60,1,19,0.95\n", 1)
+	snaps, err := ReadSnaps(strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		team    string
+		admits  bool
+		because string
+	}{
+		{"BUF", true, "BUF's own file is whole, so its absent member is proven"},
+		{"NYJ", false, "NYJ's file is short a snap, so its absent member is not"},
+	} {
+		t.Run(tc.team, func(t *testing.T) {
+			roster := []RawAbsenceProof{{GSIS: "00-0030001", PFR: "Absent00", Season: "2026", Week: "1",
+				Team: tc.team, Position: "LB", Evidence: "complete snaps + pbp, no snap"}}
+			if got := NonParticipationProofs(snaps, roster); (len(got) == 1) != tc.admits {
+				t.Fatalf("%s: proofs=%+v", tc.because, got)
+			}
+		})
+	}
+}
+
+func TestNoMoreThanElevenPlayersCanHaveTakenEveryPlay(t *testing.T) {
+	// Twelve players at every offensive play cannot be one team's file.
+	body := snapCSV(elevenSpecialTeams(20, 1))
+	body += "2026_01_BUF_NYJ,202609100nyj,2026,REG,1,BUFx,LB,BUF,60,1,0,0,0,0\n"
+	snaps, err := ReadSnaps(strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	roster := []RawAbsenceProof{{GSIS: "00-0030001", PFR: "Absent00", Season: "2026", Week: "1",
+		Team: "BUF", Position: "LB", Evidence: "complete snaps + pbp, no snap"}}
+	if got := NonParticipationProofs(snaps, roster); len(got) != 0 {
+		t.Fatalf("a twelfth full-time player certified a file: %+v", got)
+	}
+}
