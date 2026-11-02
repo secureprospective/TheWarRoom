@@ -674,3 +674,10 @@
 /* In the app the shell's own rail is the mock's rail; the brief keeps the work area and inspector. */
 .hb{height:100%;min-height:0}
 .hb .shell.hb-shell{grid-template-columns:minmax(0,1fr) 316px;height:100%}
+/* real-app states the mock names in its STATES list: loading, stale, clear, disabled */
+.hb .aband.clear::before{background:var(--green)} .hb .aband.clear .ak{color:var(--green)}
+.hb .scb:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;transform:none;background-image:none}
+.hb .scb:disabled kbd{border-style:dashed}
+.hb .t.loading .tb .empty{color:var(--ink3);font-style:italic}
+.hb .t.stale .tf span:first-child{color:var(--amber)}
+.hb .wsx .ct tr.me td{color:var(--mine)}

@@ -1,22 +1,45 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import './home.css';
 import type { HostedPort } from '../commissioner/hostedRoom';
+import type { ResearchReader } from '../research/api';
 import { readHomeBrief, type HomeBrief as Brief } from './homeReads';
 import { bump, current, defaultLayout, layoutKey, pack, parseLayout, place, remove, SPANS, swap,
   type Layout, type Phase, type Span, type TileId } from './homeLayout';
-import { go, isFinal, myGame, myRow, nameOf, pts, shortTime, TileBody, TILES, topFive } from './homeTiles';
+import { clock, go, isFinal, myGame, myRow, nameOf, oldestAt, pts, SHORTCUT_KEYS, shortTime, TileBody, tileState,
+  TILES, topFive } from './homeTiles';
 import { browserStorage } from './franchise';
 import { money, unavailable } from './hqModel';
 import { pointsLabel } from '../data/nativePulse';
 
 type Tab = 'brief' | 'depth' | 'stats';
-const ALERTS_MISSING = 'No alert read covers an app league yet';
+type Alert = { id: string; level: 'red' | 'amber'; title: string; words: string; when?: string };
+const TRAY: Record<Tab | 'edit', string> = {
+  brief: 'Home reads and links only · nothing here changes the league',
+  edit: 'CUSTOMIZE · drag ⠿ to move · size buttons resize · ✕ sends to overflow · nothing commits from Home',
+  depth: 'Depth source: nflverse depth charts, newest snapshot · names coloured by who has them in your league',
+  stats: 'NFL stats: no league-wide stats table read exists yet',
+};
+
+/** alertsOf is what the app already raises for this league and owner: the commissioner jobs board's
+ *  blocked jobs and live jobs with a deadline, and my cap check when it is over. Nothing here is invented. */
+export function alertsOf(b: Brief): Alert[] {
+  // A blocked job needs someone; a live job is an alert only when it has a deadline to meet.
+  const jobs = (b.jobs?.jobs ?? []).filter(j => j.state === 'blocked' || (j.state === 'live' && j.closes))
+    .map(j => ({
+    id: `job.${j.id}`, level: j.state === 'blocked' ? 'red' as const : 'amber' as const, title: j.name,
+    words: j.words, when: j.closes || undefined }));
+  const room = b.runway?.[0]?.room;
+  const cap = room !== undefined && room < 0 ? [{ id: 'cap', level: 'red' as const,
+    title: `Over the cap by ${money(-room)}`, words: "Your cap check is over this season's cap." }] : [];
+  return [...cap, ...jobs.filter(j => j.level === 'red'), ...jobs.filter(j => j.level !== 'red')];
+}
 
 /** HomeBrief is Home as the locked mock draws it (docs/ui/mocks/home-mock-v5.html), fed by the reads
  *  in homeReads. Layout is saved per owner per league; nothing here invents a number. */
-export default function HomeBrief({ league, mine, port, initial }: { league: string; mine: string;
-  port: HostedPort; initial?: Brief }) {
-  const [b, setB] = useState<Brief>(initial ?? { errors: {} });
+export default function HomeBrief({ league, mine, port, initial, research }: { league: string; mine: string;
+  port: HostedPort; initial?: Brief; research?: ResearchReader }) {
+  const [b, setB] = useState<Brief>(initial ?? { at: {}, errors: {} });
+  const grid = useRef<HTMLElement>(null);
   const [tab, setTab] = useState<Tab>('brief');
   const key = layoutKey(league, mine);
   const [lay, setLay] = useState<Layout>(() => parseLayout(browserStorage()?.getItem(key)));
@@ -30,9 +53,9 @@ export default function HomeBrief({ league, mine, port, initial }: { league: str
   useEffect(() => {
     if (initial) return;
     let live = true;
-    void readHomeBrief(league, mine, port, r => { if (live) setB(r); });
+    void readHomeBrief(league, mine, port, r => { if (live) setB(r); }, ...(research ? [research] : []));
     return () => { live = false; };
-  }, [league, mine, port, initial]);
+  }, [league, mine, port, initial, research]);
   const save = (next: Layout) => {
     setLay(next);
     try { browserStorage()?.setItem(key, JSON.stringify(next)); } catch (e) {
@@ -44,6 +67,37 @@ export default function HomeBrief({ league, mine, port, initial }: { league: str
   const tiles = current(lay, phase);
   const placed = useMemo(() => pack(tiles) ?? [], [tiles]);
   const onGrid = new Set(placed.map(p => p.id));
+  // Rows that don't fit are hidden whole; the footer says how many more live in the source screen.
+  useLayoutEffect(() => {
+    const trim = () => grid.current?.querySelectorAll<HTMLElement>('article.t').forEach(t => {
+      const body = t.querySelector<HTMLElement>('.tb'); const more = t.querySelector<HTMLElement>('.tf .more');
+      if (!body || !more) return;
+      const rows = [...body.querySelectorAll<HTMLElement>('.r')];
+      rows.forEach(r => { r.style.display = ''; });
+      const limit = body.getBoundingClientRect().bottom + 0.5;
+      const cut = rows.filter(r => r.getBoundingClientRect().bottom > limit);
+      cut.forEach(r => { r.style.display = 'none'; });
+      const where = TILES[t.dataset.id as TileId]?.link.replace(' ›', '') || 'source';
+      more.textContent = cut.length ? `+${cut.length} more in ${where}` : '';
+    });
+    trim();
+    window.addEventListener('resize', trim);
+    return () => window.removeEventListener('resize', trim);
+  });
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || edit || tab !== 'brief') return;
+      const el = e.target as HTMLElement | null;
+      if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return;
+      const open = SHORTCUT_KEYS[e.key.toLowerCase()];
+      if (open && e.key.length === 1) { e.preventDefault(); go(open); }
+    };
+    document.addEventListener('keydown', key);
+    return () => document.removeEventListener('keydown', key);
+  }, [edit, tab]);
+  const alerts = alertsOf(b);
+  const alertsLost = b.errors.jobs;
+  const pins = (Object.keys(lay.pins) as TileId[]).filter(id => lay.pins[id]);
   const row = myRow(b, mine);
   const room = b.runway?.[0];
   const week = b.pulse?.week;
@@ -103,19 +157,24 @@ export default function HomeBrief({ league, mine, port, initial }: { league: str
           <div className="nl"><span className="tag">{phase === 'off' ? 'OFFSEASON' : g && isFinal(g.status) ? 'FINAL' : 'LIVE'}</span>{nowLine}</div>
           {stats.map(([v, l]) => <div className="st" key={l}><b>{v}</b><span>{l}</span></div>)}
         </section>
-        <div className="aband unavail" title="Open all alerts" role="button" tabIndex={0}
-          onClick={() => setDrawer(drawer === 'al' ? undefined : 'al')}>
-          <span className="ak">ALERTS UNAVAILABLE</span>
-          <span className="at">{ALERTS_MISSING} · this is not an all-clear</span>
+        <div className={`aband${alertsLost ? ' unavail' : !alerts.length ? ' clear' : alerts[0].level === 'red' ? ' crit' : ''}`} title="Open all alerts"
+          role="button" tabIndex={0} onClick={() => setDrawer(drawer === 'al' ? undefined : 'al')}>
+          {alertsLost ? <><span className="ak">ALERTS UNAVAILABLE</span>
+            <span className="at">{alertsLost} · this is not an all-clear</span></>
+            : !b.at.jobs ? <><span className="ak">ALERTS</span><span className="at">Reading…</span></>
+            : alerts.length ? <><span className="ak">{alerts.length} ALERT{alerts.length > 1 ? 'S' : ''}</span>
+              <span className="at">{alerts[0].title} · {alerts[0].words}</span></>
+            : <><span className="ak">NO ALERTS</span><span className="at">Nothing needs you right now</span></>}
           <span className="more">DETAILS ▸</span></div>
         <div className="tick" title="Hover to pause"><span className="tl0">TOP 5 · WK {week ?? '—'}
           {g && !isFinal(g.status) ? ' LIVE' : ' FINAL'}</span>
           <div className="tkw"><div className="tkr">{ticker.length ? <>{tickerHtml}{tickerHtml}</>
             : <span className="tp">{b.errors.results ? `${unavailable} · ${b.errors.results}` : 'No scored starters yet'}</span>}
           </div></div></div>
-        <section className="grid" aria-label="Tiles">{placed.map(p => {
+        <section className="grid" aria-label="Tiles" ref={grid}>{placed.map(p => {
           const d = TILES[p.id];
-          return <article key={p.id} className={`t${sel === p.id ? ' sel' : ''}${drag && drag !== p.id ? '' : ''}`}
+          const state = tileState(p.id, b);
+          return <article key={p.id} className={`t ${state}${sel === p.id ? ' sel' : ''}`}
             data-id={p.id} draggable={edit}
             onDragStart={() => setDrag(p.id)} onDragEnd={() => setDrag(undefined)}
             onDragOver={e => { if (drag) e.preventDefault(); }}
@@ -138,19 +197,19 @@ export default function HomeBrief({ league, mine, port, initial }: { league: str
                   {lay.pins[p.id] ? '★' : '☆'}</button>
                 <button className="off" title="Move to overflow"
                   onClick={e => { e.stopPropagation(); save(remove(lay, phase, p.id)); }}>✕</button></span></div>
-            <div className="tb"><TileBody id={p.id} b={b} mine={mine}
+            <div className="tb"><TileBody id={p.id} b={b} mine={mine} pins={pins}
               onTx={i => { if (!edit) setCard(i); }} /></div>
-            <div className="tf"><span>{asOf(b)}</span><span className="more" /></div>
+            <div className="tf"><span>{asOf(p.id, b)}</span><span className="more" /></div>
           </article>;
         })}</section>
         <section className={`wsx${tab === 'depth' ? ' on' : ''}`} aria-label="Depth charts">
-          <div className="empty">{unavailable} · No depth-chart read exists (Sleeper depth order / ESPN source TBD)</div></section>
+          <Depth b={b} mine={mine} /></section>
         <section className={`wsx${tab === 'stats' ? ' on' : ''}`} aria-label="NFL stats">
           <div className="empty">{unavailable} · No league-wide NFL stats table read for an app league</div></section>
         <div className="tray">
           <div className="pulls">
             <button className="pull" aria-expanded={drawer === 'al'}
-              onClick={() => setDrawer(drawer === 'al' ? undefined : 'al')}>ALERTS <b>?</b></button>
+              onClick={() => setDrawer(drawer === 'al' ? undefined : 'al')}>ALERTS <b>{alertsLost ? '?' : alerts.length}</b></button>
             {edit && <button className="pull" onClick={() => setDrawer(drawer === 'add' ? undefined : 'add')}>
               ADD TILE <b>+</b></button>}
             <button className="pull" onClick={() => setDrawer(drawer === 'ov' ? undefined : 'ov')}>
@@ -158,7 +217,7 @@ export default function HomeBrief({ league, mine, port, initial }: { league: str
           </div>
           <span className={`msg${pick ? ' ask' : ''}`}>{pick
             ? `Grid full · click the tile to move to OVERFLOW to make room for ${TILES[pick.id].t} ${pick.span.replace('x', '×')}`
-            : msg}</span>
+            : msg || TRAY[edit ? 'edit' : tab]}</span>
           <span className="sp" />
           <span style={{ display: 'flex', gap: 8 }}>{pick
             ? <button className="btn" onClick={() => setPick(undefined)}>CANCEL</button>
@@ -197,12 +256,17 @@ export default function HomeBrief({ league, mine, port, initial }: { league: str
             <span style={{ display: 'flex', gap: 8 }}><button className="btn g2"
               onClick={() => go(TILES.wire.open)}>OPEN IN LEDGER ›</button></span></div></>}</div>
         <div className={`sdrawer${drawer === 'al' ? ' open' : ''}`}>
-          <div className="bd-head"><h2>ALERTS</h2><span className="sub">check unavailable</span>
+          <div className="bd-head"><h2>ALERTS</h2><span className="sub">{alertsLost ? 'check unavailable'
+            : 'commissioner jobs board · your cap check'}</span>
             <button className="x" onClick={() => setDrawer(undefined)}>ESC ✕</button></div>
-          <div style={{ overflow: 'hidden' }}><div className="al"><span className="s" style={{ background: 'var(--edge)' }} />
-            <div className="b"><div className="t1">{unavailable}</div>
-              <div className="t2">{ALERTS_MISSING}. Lineup, trade, IR and bye checks read the MFL mirror only. Nothing
-                here means all-clear.</div></div></div></div>
+          <div style={{ overflow: 'hidden' }}>{alertsLost ? <div className="al"><span className="s"
+            style={{ background: 'var(--edge)' }} /><div className="b"><div className="t1">{unavailable}</div>
+            <div className="t2">{alertsLost}. Nothing here means all-clear.</div></div></div>
+            : alerts.length ? alerts.map(a => <div className="al" key={a.id}><span className="s"
+              style={{ background: a.level === 'red' ? 'var(--red)' : 'var(--amber)' }} />
+              <div className="b"><div className="t1">{a.title}</div><div className="t2">{a.words}
+                {a.when ? ` · closes ${shortTime(a.when)}` : ''}</div></div></div>)
+            : <div className="empty" style={{ padding: 26 }}>No blocked jobs, no deadlines open, and your cap is in line.</div>}</div>
         </div>
       </main>
       <aside className="insp" aria-label="Inspector">
@@ -215,7 +279,7 @@ export default function HomeBrief({ league, mine, port, initial }: { league: str
           <div className="ch"><b>SELECTED TILE</b><span>{TILES[sel].t}</span></div><div className="kv3">
             <span>ID</span><span className="mono">{sel}</span><span>SOURCE</span><span>{TILES[sel].src}</span>
             <span>PROVIDER</span><span className="mono" style={{ fontSize: 11 }}>{TILES[sel].prov}</span>
-            <span>REFRESH</span><span>{TILES[sel].refresh}</span><span>AS OF</span><span>{asOf(b)}</span>
+            <span>REFRESH</span><span>{TILES[sel].refresh}</span><span>AS OF</span><span>{asOf(sel, b)}</span>
             <span>OPENS</span><span>{TILES[sel].link || '—'}</span>
             <span>SIZES</span><span>{SPANS[sel].map(s => s.replace('x', '×')).join(' · ')}</span>
             <span>STATES</span><span>loading · empty · stale · unavailable · error</span></div></>
@@ -232,8 +296,32 @@ export default function HomeBrief({ league, mine, port, initial }: { league: str
   </div>;
 }
 
-function asOf(b: Brief): string {
-  return b.pulse ? `revision ${b.pulse.revision}` : 'reading…';
+function asOf(id: TileId, b: Brief): string {
+  const state = tileState(id, b);
+  if (TILES[id].missing || !TILES[id].needs.length) return '—';
+  if (state === 'loading') return 'reading…';
+  const at = oldestAt(id, b);
+  if (!at) return 'unavailable';
+  return `as of ${clock(at, id === 'mu')}${id === 'mu' ? ' · live' : ''}${state === 'stale' ? ' · stale' : ''}`;
+}
+/** Depth is the research read's nflverse depth chart report (M-048), names tagged by who holds them here. */
+function Depth({ b, mine }: { b: Brief; mine: string }) {
+  if (b.errors.research) return <div className="empty">{unavailable} · {b.errors.research}</div>;
+  if (!b.research) return <div className="empty loading">Reading…</div>;
+  const r = b.research.board.reports.find(x => x.id === 'M-048');
+  if (!r || !r.rows.length) return <div className="empty">{unavailable} · {r?.note || 'No depth chart is held'}</div>;
+  // The report names players, not IDs: only a unique exact name joins to who holds him here.
+  const names = new Map<string, string[]>();
+  for (const x of b.assets?.rosters.value ?? []) for (const p of x.players) {
+    const n = b.assets!.players.value.find(q => q.id === p.id)?.name;
+    if (n) names.set(n, [...(names.get(n) ?? []), x.franchiseId]);
+  }
+  return <div className="ct-wrap"><table className="ct"><thead><tr>{r.columns.map(c => <th key={c}>{c}</th>)}
+    <th>HELD BY</th></tr></thead><tbody>{r.rows.map((x, i) => {
+      const held = names.get(x.cells[0]); const who = held?.length === 1 ? held[0] : undefined;
+      return <tr key={i} className={who === mine ? 'me' : ''}>{x.cells.map((c, j) => <td key={j}>{c}</td>)}
+        <td>{who === mine ? 'Yours' : who ? nameOf(b, who) : ''}</td></tr>;
+    })}</tbody></table></div>;
 }
 function firstPick(b: Brief, mine: string): string {
   const p = b.draft?.order.flatMap(o => o.picks).find(x => x.owner === mine);

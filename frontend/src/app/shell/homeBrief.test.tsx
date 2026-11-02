@@ -7,6 +7,10 @@ import { commands } from '../commands/registry';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { layoutKey } from './homeLayout';
 import pulse from './pulse.wire.testdata.json';
+import assets from '../../../../testdata/wire/native/assets.json';
+import jobs from '../../../../testdata/wire/commissioner/jobs.json';
+import type { ResearchReader } from '../research/api';
+import type { PlayerReading, Research } from '../research/contract';
 
 const LEAGUE = 'native.home';
 const MINE = 'franchise.01';
@@ -35,8 +39,8 @@ function port(over: Record<string, unknown> = {}) {
     return { label: 'Fake local port', writable: false, football: '', data: data[request.command] };
   });
 }
-async function mount(p: HostedPort) {
-  await act(async () => { root.render(<HomeBrief league={LEAGUE} mine={MINE} port={p} />); });
+async function mount(p: HostedPort, research?: ResearchReader) {
+  await act(async () => { root.render(<HomeBrief league={LEAGUE} mine={MINE} port={p} research={research} />); });
   for (let i = 0; i < 20; i++)
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 5)); });
 }
@@ -127,4 +131,163 @@ it('draws the playoff cut from the league bracket setting, not a fixed number', 
   const rank = pulse.standings.computed.find(r => r.franchise === MINE)!.rank;
   expect(await cutWith(rank - 1)).toBe(String(rank - 1));
   expect(await cutWith(rank - 2)).toBe(String(rank - 2));
+});
+
+// ---- APP-HOME-2: the reads HQ, the War Room, Pulse and Research already make ----
+const report = (id: string, columns: string[], rows: string[][]) => ({ id, title: id, note: '', status: 'ok',
+  source: '', asOf: '', how: '', columns, rows: rows.map(cells => ({ cells, range: null })), summary: [], link: null });
+function reader(over: Partial<Research> = {}, form: Record<string, number[]> = {}) {
+  const research: Research = { board: { reports: [report('M-048', ['Player', 'Position', 'Depth'],
+    [['Player, 1001', 'LB', '1'], ['Somebody Else', 'QB', '2']])] } as unknown as Research['board'],
+  news: report('M-058', [], []) as unknown as Research['news'], players: [], teams: [], positions: [],
+  articles: [{ id: '1001', article: 'a1', name: 'Player, 1001', headline: 'Player 1001 ruled out with a hamstring injury' },
+    { id: '9999', article: 'a2', name: 'Nobody Held', headline: 'Signs a practice squad deal' }],
+  scope: { mine: '', search: '', team: '', position: '', group: 'QB', trend: 'topAdds', depth: 'team', injuries: 'all' },
+  ...over };
+  const player = vi.fn(async (id: string) => ({ id, name: id, position: '', team: '', franchiseId: '', owner: '',
+    articles: [], howLabel: '', report: report('R', [], (form[id] ?? []).map((v, i) => [`Form · Wk ${i + 1}`, String(v)])),
+  }) as unknown as PlayerReading);
+  return { read: vi.fn(async () => research), refresh: vi.fn(), news: vi.fn(), open: vi.fn(), player } as
+    unknown as ResearchReader & { read: ReturnType<typeof vi.fn>; player: ReturnType<typeof vi.fn> };
+}
+// My roster in the assets fixture: player 1001 is mine, ends this season, and 1002 ends 2027 as an RFA.
+const myAssets = { ...assets, league: LEAGUE, identities: [...assets.identities,
+  { player: '1001', franchise: MINE, name: 'Player, 1001', position: 'LB' },
+  { player: '1003', franchise: MINE, name: 'Player, 1003', position: 'WR' }],
+  snapshot: { ...assets.snapshot, players: [...assets.snapshot.players,
+    { id: '1001', franchise: MINE, status: 'ROSTER', salaryCents: 100, expirationYear: 2026, contractStatus: 'UFA', contractInfo: '' },
+    { id: '1003', franchise: MINE, status: 'ROSTER', salaryCents: 100, expirationYear: 2027, contractStatus: 'RFA', contractInfo: '' }] } };
+const lineups = pulse.lineups as Record<string, unknown>;
+const full = (over: Record<string, unknown> = {}) => {
+  const base = port(over);
+  return vi.fn<HostedPort>(async request => {
+    const f = 'franchise' in request.arguments ? String(request.arguments.franchise) : '';
+    const extra: Record<string, unknown> = {
+      'lineup.read': lineups[f] && { ...(lineups[f] as object), league: LEAGUE },
+      'projections.read': { ...pulse.projections, league: LEAGUE, players: pulse.projections.players.filter(x =>
+        String((request.arguments as { players?: string }).players ?? '').split(',').includes(x.player)) },
+      'native.assets.read': myAssets,
+      'commish.jobs.read': { ...jobs, league: LEAGUE },
+      ...over,
+    };
+    if (extra[request.command] !== undefined)
+      return { label: 'Fake local port', writable: false, football: '', data: extra[request.command] };
+    return base(request);
+  });
+};
+
+it('THIS WEEK projects each side from League Pulse\'s matchup read and counts locked starters', async () => {
+  const p = full();
+  await mount(p);
+  const calls = p.mock.calls.map(([r]) => [r.command, r.arguments]);
+  expect(calls).toContainEqual(['lineup.read', { league: LEAGUE, franchise: MINE, week: 2, at: '' }]);
+  expect(calls).toContainEqual(['projections.read', expect.objectContaining({ league: LEAGUE, season: 2026, week: 2 })]);
+  const mu = tile('mu').textContent!;
+  expect(mu).toMatch(/proj \d+\.\d/);
+  expect(mu).toContain('WIN % · Not available yet');
+});
+
+it('FORM · LAST 5 reads each of my starters through the research player read HQ\'s form chart uses', async () => {
+  const r = reader({}, { '1001': [4, 8, 12, 16, 20, 24] });
+  localStorage.setItem(layoutKey(LEAGUE, MINE), JSON.stringify({ mode: 'custom', over: [], pins: {},
+    tiles: [['mu', '1x1'], ['news', '1x2'], ['wire', '1x1'], ['form', '1x1'], ['sc', '1x1']] }));
+  await mount(full(), r);
+  expect(r.player).toHaveBeenCalledWith('1001');
+  const form = tile('form');
+  expect(form.querySelector('.r.pw .v')!.textContent).toBe('16'); // last five: 8..24, mean 16
+  expect(form.querySelectorAll('.form i')).toHaveLength(5);
+});
+
+it('NFL NEWS lists the research articles and filters to my players by this league\'s rosters', async () => {
+  await mount(full(), reader());
+  const news = tile('news');
+  expect(news.querySelectorAll('.r.nw')).toHaveLength(2);
+  await click(Array.from(news.querySelectorAll('.nfb button')).find(b => b.textContent === 'MY PLAYERS')!);
+  expect(news.querySelectorAll('.r.nw')).toHaveLength(1);
+  expect(news.textContent).toContain('Yours');
+  await click(Array.from(news.querySelectorAll('.nfb button')).find(b => b.textContent === 'ON THE WIRE')!);
+  expect(news.textContent).toContain('practice squad');
+});
+
+it('DEPTH CHARTS shows the research depth report, tagging names held in this league', async () => {
+  await mount(full(), reader());
+  await click(Array.from(container.querySelectorAll('[role=tab]')).find(t => t.textContent === 'DEPTH CHARTS')!);
+  const rows = container.querySelectorAll('.wsx.on tbody tr');
+  expect(rows).toHaveLength(2);
+  expect(rows[0].className).toBe('me');
+  expect(rows[0].textContent).toContain('Yours');
+  expect(q('.tray .msg')!.textContent).toContain('nflverse');
+});
+
+it('CAP RUNWAY notes contracts ending each season from the league assets', async () => {
+  await mount(full({ 'native.cap.check': undefined }));
+  // cap.check has no fixture in the base port, so the tile is unavailable; the note logic is checked direct.
+  const { capNote } = await import('./homeTiles');
+  const { nativeHQAssets } = await import('../commissioner/hqReading');
+  const b = { at: {}, errors: {}, assets: nativeHQAssets(myAssets, LEAGUE) };
+  expect(capNote(b, MINE, 2026)).toBe('1 expiring');
+  expect(capNote(b, MINE, 2027)).toBe('RFA: Player, 1003');
+  expect(capNote(b, MINE, 2028)).toBe('');
+});
+
+it('ALERTS come from the commissioner jobs board: blocked jobs and live jobs with a deadline', async () => {
+  const closes = new Date(Date.now() + 86_400_000).toISOString();
+  const board = { ...jobs, league: LEAGUE, jobs: jobs.jobs.map(j => j.id === 'waivers' ? { ...j, closes } : j) };
+  await mount(full({ 'commish.jobs.read': board }));
+  const blocked = jobs.jobs.filter(j => j.state === 'blocked').length;
+  expect(q('.aband')!.textContent).toContain(`${blocked + 1} ALERTS`);
+  expect(q('.aband')!.className).toContain('crit');
+  const pull = Array.from(container.querySelectorAll('.pull')).find(b => b.textContent?.startsWith('ALERTS'))!;
+  expect(pull.textContent).toBe(`ALERTS ${blocked + 1}`);
+  await click(pull);
+  expect(q('.sdrawer.open')!.textContent).toContain('Waiver processing');
+  expect(q('.sdrawer.open')!.textContent).not.toContain('League setup'); // live without a deadline
+});
+
+it('binds the shortcut keys, ignores disabled ones, and adds pinned tiles to MY SHORTCUTS', async () => {
+  await mount(full());
+  const spy = vi.spyOn(commands, 'dispatch');
+  await act(async () => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'c' })); });
+  expect(spy).toHaveBeenCalledWith('nav.open', { node: 'hq', workspace: 'contracts-and-cap' });
+  spy.mockClear();
+  await act(async () => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p' })); });
+  expect(spy).not.toHaveBeenCalled();
+  const plans = Array.from(tile('sc').querySelectorAll('.scb')).find(b => b.textContent?.startsWith('Plans'))!;
+  expect((plans as HTMLButtonElement).disabled).toBe(true);
+  await click(q('.queue'));
+  await click(tile('race').querySelector('.pin'));
+  await click(q('.queue'));
+  const pinned = Array.from(tile('sc').querySelectorAll('.scb')).find(b => b.textContent?.startsWith('RACE'))!;
+  await click(pinned);
+  expect(spy).toHaveBeenCalledWith('nav.open', { node: 'pulse', workspace: 'race' });
+});
+
+it('footers show the Central clock time each tile was read, and the tray says Home only reads', async () => {
+  await mount(full());
+  expect(tile('wire').querySelector('.tf span')!.textContent).toMatch(/^as of \d{2}:\d{2}$/);
+  expect(tile('mu').querySelector('.tf span')!.textContent).toMatch(/^as of \d{2}:\d{2}:\d{2} · live$/);
+  expect(q('.tray .msg')!.textContent).toBe('Home reads and links only · nothing here changes the league');
+});
+
+it('marks a tile loading until its reads answer, and stale once they are old', async () => {
+  const { tileState, STALE_MS } = await import('./homeTiles');
+  const now = Date.parse('2026-11-02T12:00:00Z');
+  expect(tileState('wire', { at: {}, errors: {} }, now)).toBe('loading');
+  expect(tileState('wire', { at: { ledger: new Date(now - 1000).toISOString() }, errors: {} }, now)).toBe('fresh');
+  expect(tileState('wire', { at: { ledger: new Date(now - STALE_MS - 1).toISOString() }, errors: {} }, now)).toBe('stale');
+});
+
+it('hides rows that do not fit whole and says how many more live in the source screen', async () => {
+  // jsdom lays nothing out: each tile body ends at 100px and every ledger row is 60px tall.
+  const rect = (bottom: number) => ({ bottom, top: bottom - 60, left: 0, right: 0, width: 0, height: 60, x: 0, y: 0,
+    toJSON: () => ({}) }) as DOMRect;
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    if (this.classList.contains('tb')) return rect(100);
+    if (this.classList.contains('r')) return rect(60 * (Array.from(this.parentElement!.children).indexOf(this) + 1));
+    return rect(0);
+  });
+  await mount(full());
+  const rows = Array.from(tile('wire').querySelectorAll<HTMLElement>('.r.wire'));
+  expect(rows.map(r => r.style.display)).toEqual(['', 'none']);
+  expect(tile('wire').querySelector('.tf .more')!.textContent).toBe('+1 more in LEDGER');
 });
