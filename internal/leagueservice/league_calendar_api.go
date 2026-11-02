@@ -80,9 +80,22 @@ type Ledger interface {
 	Events(ctx context.Context, league, stream string, after int64) ([]history.LeagueEvent, error)
 }
 
+// heldLedger serves validated records from a revision-keyed cache, so a reader polling every second
+// does not decode and replay the whole ledger each time.
+type heldLedger interface {
+	HeldCommissionerRecords(ctx context.Context, league string) ([]commissioner.Record, error)
+}
+
 // Records replays one app league's commissioner ledger. subject names the reading in its errors
 // ("calendar", "schedule"), so each binding keeps its own words.
 func Records(ctx context.Context, ledger Ledger, league, subject string) ([]commissioner.Record, error) {
+	if held, ok := ledger.(heldLedger); ok {
+		records, err := held.HeldCommissionerRecords(ctx, league)
+		if err != nil {
+			return nil, fmt.Errorf("read league %s ledger: %w", subject, err)
+		}
+		return records, nil
+	}
 	events, err := ledger.Events(ctx, league, commissioner.Stream, 0)
 	if err != nil {
 		return nil, fmt.Errorf("read league %s ledger: %w", subject, err)

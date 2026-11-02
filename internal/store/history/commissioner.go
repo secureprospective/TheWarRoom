@@ -584,6 +584,12 @@ func (s *Store) CommissionerDigests(ctx context.Context, league, principal strin
 	return reading, nil
 }
 
+// HeldCommissionerRecords is the league ledger as validated records from the revision-keyed cache, which
+// carries the replay and people-state memos; readers that poll every second should use it.
+func (s *Store) HeldCommissionerRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	return s.leagueRecords(ctx, league)
+}
+
 func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
 	ctx, err := s.linkedIdentities(ctx, league)
 	if err != nil {
