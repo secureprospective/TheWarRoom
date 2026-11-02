@@ -1,30 +1,42 @@
 # Handoff
 
 ## Baton
-Bee → ClaudeBox / review — 2026-11-01, build/ROSTER-1. Local commits only.
+Bee → ClaudeBox / policy clarification and implementation — 2026-11-01,
+`build/ROSTER-1`. Local evidence commit only; APP-ROSTER-5 incomplete.
 
 ## Where it stands
-- APP-ROSTER-4 checks lineup active membership at the week's first held kickoff,
-  once reached, using the effective-time projection. Before kickoff or without a
-  held schedule it uses today's roster; player-specific lineup locks are unchanged.
-- Eight table cases pass, including cuts, additions, inclusive boundaries, earliest
-  kickoff and schedule fallback. Targeted commissioner race: 574 PASS, 1 inherited
-  FAIL, 0 SKIP. `internal/commissioner/draft_startup_test.go:315` still expects
-  90ca21fd230f0aa6 and gets 8a6936145d37309e, reproduced before this work as recorded
-  in `docs/build-handoffs/APP-ROSTER-3-evidence.md`. No race diagnostic.
-- Plain `make build` PASS with existing Wails binding warnings; binary not launched.
-  Logs: `.tmp/roster4/`. No GUI test or independent review.
+- No production code changed or transaction appended. New evidence and exact
+  refusals: `docs/build-handoffs/APP-ROSTER-5-{evidence.md,refusals.txt}`.
+- Schedule-free copied-profile baseline: 148 appended / 76 refused in 40.640 s;
+  repeat 0 / 76 in 10.446 s. Bills 1–7 recorded. Not launch timings.
+- Fresh copy with held week-7/8 kickoffs: 117 appended / 107 refused in 32.165 s;
+  repeat 0 / 107 in 9.955 s. All 32 week-7 lineups refuse pre-seed history,
+  including Bills. Weeks 1–6 have no held kickoffs in this harness.
+- Explicit archived week-8 starters: without kickoffs 32 appended / 0 refused;
+  with held kickoffs 0 / 32, all pre-observation history refusal. Archived week-8
+  results are unscored and ordinary historical backfill skips them.
+- Three post-seed transactions explain the four original franchise differences;
+  equality remains 28/32 baseline, not replay proof. Details in evidence.
+- Targeted existing race tests: 26 PASS, 0 FAIL. Plain make build PASS; not launched.
+  No implementation, independent review or GUI acceptance. Copies/harnesses deleted.
 
 ## Next move / blocked on
-- Review lineup-at-lock; test a disposable historical week with a cut and an add
-  after its first kickoff: the cut starter should be accepted, the added starter
-  refused. Pre-observation kickoff remains refused, not guessed.
-- Investigate inherited startup digest separately. Pre-seed reconstruction,
-  unverified imported contracts, transaction translation/idempotency, 32-team
-  replay equality and the prior 76 lineup refusals remain open or unmeasured.
+- Clarify unknown-contract salary/term: contracts settings define maximum years and
+  experience minimums, not an unknown-acquisition default. Is fallback one year at
+  lowest minimum, or experience-specific? No value was guessed.
+- Implement authorized generic pre-seed reconstruction and contract review intake;
+  current guards: `internal/commissioner/native_reading.go:40` and
+  `internal/commissioner/correction_projector.go:46`. These are implementation gaps,
+  not a claim that the task cannot be built.
+- Translate 895 validated rows through ordinary commands, stable retries, import and
+  independent sync setting; prove equality/repeat-zero/Bills/week 8 with kickoffs.
+- Keep changes below backfill/migration boundary for integration cherry-pick;
+  protected composition files untouched.
 
 ## Tried and rejected
-- Current roster for historical lineups loses valid cut players and admits late
-  additions. No importer, contracts, player-lock policy or bindings changed.
-- `git pull --ff-only` has no upstream; no push attempted. Pre-existing untracked
-  `.golangci-cache/` was left untouched.
+- No source branch, raw SQL ledger writes, receipt-clock backdating, lineup bypass,
+  fabricated default contract, or treating unscored week 8 as final results.
+- 76 refusals without kickoff facts is not a complete schedule-aware baseline.
+- No git remote contact or MFL requests. Pre-existing untracked `.golangci-cache/`
+  untouched. One heavy gate STOP was accidentally followed by the targeted race
+  batch; logged as a workflow error in evidence. Later heavy checks passed.
