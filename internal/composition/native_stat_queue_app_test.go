@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -20,6 +21,9 @@ func readStatQueue(t *testing.T, f *legalityFixture) commissioner.StatQueue {
 	if err != nil {
 		t.Fatal(err)
 	}
+	out.Decided = slices.DeleteFunc(out.Decided, func(d commissioner.StatDecision) bool {
+		return f.pins[d.Entry]
+	})
 	return out
 }
 
@@ -50,6 +54,7 @@ func assertQueue(t *testing.T, f *legalityFixture, open, decided int, newest str
 func TestNativeStatQueueCM031ApprovalGovernsScoreAndQueue(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	for pass := 0; pass < 2; pass++ {
 		assertNativePoints(t, f, 15000)
@@ -110,6 +115,7 @@ func TestNativeStatQueueCM031CorrectionGovernsScoreAndQueue(t *testing.T) {
 func TestNativeStatFeedRevisionNeverMovesTheScoreOnItsOwn(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	holdNativeStats(t, f, true, "DT", "3", 3)
 	for range 2 {
@@ -129,6 +135,7 @@ func TestNativeStatFeedRevisionNeverMovesTheScoreOnItsOwn(t *testing.T) {
 func TestNativeStatRejectedItemSurvivesTheFeedReturningToWhatWasCounted(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	item := readStatQueue(t, f).Open[0]
 	statDecide(t, f, commissioner.StatReject, "reject", commissioner.RawStatChange{Item: item.ID})
@@ -149,6 +156,7 @@ func TestNativeStatRejectedItemSurvivesTheFeedReturningToWhatWasCounted(t *testi
 func TestNativeStatPreviewStatesPointsAndFlipBeforeItFires(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	item := readStatQueue(t, f).Open[0]
 	houses := readDirectoryTest(t, f.app)
@@ -193,6 +201,7 @@ func TestNativeStatQueueWireFixtureMatchesGo(t *testing.T) {
 	at := func(hour int) {
 		f.app.core.History.SetClock(func() time.Time { return time.Date(2026, 10, 13, hour, 0, 0, 0, time.UTC) })
 	}
+	pinNativeStats(t, f)
 	readings := []commissioner.StatQueue{readStatQueue(t, f)}
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	readings = append(readings, readStatQueue(t, f))

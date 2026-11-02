@@ -46,6 +46,8 @@ type legalityFixture struct {
 	app   *App
 	path  string
 	pools *db.Pools
+	// pins are the ledger entries of fixture stat pins, which readStatQueue leaves out of the decisions.
+	pins map[string]bool
 }
 
 func legalityRaw(id, position, draft string) players.RawPlayer {

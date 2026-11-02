@@ -2,7 +2,7 @@
   {
     "league": "native.seed",
     "season": 2026,
-    "revision": 2,
+    "revision": 3,
     "words": "No statistics are waiting for a decision",
     "open": [],
     "decided": []
@@ -10,7 +10,7 @@
   {
     "league": "native.seed",
     "season": 2026,
-    "revision": 2,
+    "revision": 3,
     "words": "1 statistic change is waiting for a decision",
     "open": [
       {
@@ -40,7 +40,7 @@
   {
     "league": "native.seed",
     "season": 2026,
-    "revision": 3,
+    "revision": 4,
     "words": "No statistics are waiting for a decision",
     "open": [],
     "decided": [
@@ -62,7 +62,7 @@
   {
     "league": "native.seed",
     "season": 2026,
-    "revision": 6,
+    "revision": 7,
     "words": "No statistics are waiting for a decision",
     "open": [],
     "decided": [
