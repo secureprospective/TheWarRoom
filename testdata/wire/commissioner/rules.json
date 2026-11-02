@@ -11908,6 +11908,61 @@
    "label": "Schedule",
    "rows": [
     {
+     "field": "schedule.follow",
+     "label": "Follow reference schedule",
+     "value": "Source: None; League: None; Season: 0",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "record",
+      "choices": [],
+      "fields": [
+       {
+        "name": "Source",
+        "label": "Source",
+        "schema": {
+         "kind": "string",
+         "choices": [],
+         "fields": []
+        }
+       },
+       {
+        "name": "League",
+        "label": "League",
+        "schema": {
+         "kind": "string",
+         "choices": [],
+         "fields": []
+        }
+       },
+       {
+        "name": "Season",
+        "label": "Season",
+        "schema": {
+         "kind": "count",
+         "minimum": 0,
+         "choices": [],
+         "fields": []
+        }
+       }
+      ]
+     },
+     "competitive": true,
+     "pending": [],
+     "current": {
+      "League": "",
+      "Season": 0,
+      "Source": ""
+     },
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
      "field": "schedule.regularWeeks",
      "label": "Regular season weeks",
      "value": "13",

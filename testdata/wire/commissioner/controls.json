@@ -456,6 +456,10 @@
      "note": "",
      "fields": [
       {
+       "field": "schedule.follow",
+       "label": "Follow reference schedule"
+      },
+      {
        "field": "schedule.regularWeeks",
        "label": "Regular season weeks"
       },
