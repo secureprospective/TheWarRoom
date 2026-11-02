@@ -1,14 +1,18 @@
 # Handoff
 
 ## Baton
-Bee → ClaudeBox / APP-QUICK-1 — 2026-11-02, `build/QUICK-1`. Local only.
+Bee → reviewer / APP-STALL-6 — 2026-11-02, `build/STALL-6`. Local only.
 
 ## Where it stands
-- Partial odds optimization and before/after seeded fixture check; details in `docs/build-handoffs/APP-QUICK-1.md`.
-- Commissioner race: 613 PASS; `make build` PASS. Synthetic fixture 524.7 → 203.9 ms, not the requested fixture or target.
+- Revision-keyed season scores, concurrent sharing, live invalidation, caller isolation, facts reuse and held-key narrowing implemented.
+- Targeted race: history 25 PASS; commissioner 16 PASS including subtests. Build and targeted lint pass; mutation test rejects removal of copy isolation.
+- Desktop FAIL: HQ remains empty; Pulse data arrives late; idle CPU 746–769%. RSS peak 2,112 MiB; final countSeason stacks 0.
+- Full evidence/source trace: `docs/build-handoffs/APP-STALL-6.md`.
 
 ## Next move / blocked on
-- Reproduce and fix Home clipping; no CSS fix claimed. Benchmark actual fixture and reach <150 ms without changing seeded outcomes.
+- Final dump has 20 NativeLineupReading stacks: playersOf → ScopedDecisionExceptions → Replay repeatedly clones/hashes replay state. Fold shared legality inputs once per ledger/reading, preserve results, then repeat the desktop gate.
+- Review before integration; no remote git operations performed. Desktop stopped; tool blocked disposable-profile cleanup, so operator cleanup remains.
 
 ## Tried and rejected
-- No desktop launch, remote operation, full suite or speculative CSS fix.
+- Palette-only TargetWorkflow restriction: false diagnosis. The endpoint is the shared Home/HQ/Pulse transport; the palette does not prefetch workflows. Disabling it would remove screen data. No palette cancellation fix claimed.
+- No scoring/valuation changes, screen-specific hacks, weakened gates or full-suite run. Inherited bloat: identical 29 tiny files versus baseline 24.

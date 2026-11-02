@@ -11,11 +11,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
 
-// heldSeasonKey names everything a held season is built from. The archive mark counts every held fetch
-// and names the newest; the archive is append-only, so any new body (weekly, plays, snaps, injuries,
-// depth charts, byes, or a fetch that blocks zero proofs) moves it. The identity digest covers the
-// gsis/pfr bridge the absence proofs are matched through. Live lines, stat corrections, rules and
-// positions are applied after the held season is read, per starter, so they are not part of it.
+// heldSeasonKey covers weekly statistics, plays, absence proofs and their identity bridge.
+// Secondary statistics archives also invalidate it: their presence can block proven zeros.
 type heldSeasonKey struct {
 	fetches, newest int64
 	identity        [sha256.Size]byte
@@ -48,11 +45,20 @@ type heldSeasonCache struct {
 	builds  int
 }
 
-func (s *Store) heldSeasonKey(ctx context.Context) (heldSeasonKey, map[string]string, error) {
+func (s *Store) heldSeasonKey(ctx context.Context, season int) (heldSeasonKey, map[string]string, error) {
 	var key heldSeasonKey
 	var gsis map[string]string
+	var urls [3]string
+	for i, name := range []string{"stats_player_week", "snap_counts", "injuries"} {
+		if feed, ok := s.reg.Feed(name); ok {
+			urls[i] = feed.URLFor(season)
+		}
+	}
 	err := s.pools.Read().QueryRowContext(ctx,
-		`SELECT count(*), coalesce(max(fetch_id), 0) FROM fetch_log WHERE status = 200`).Scan(&key.fetches, &key.newest)
+		`SELECT count(*), coalesce(max(fetch_id), 0) FROM fetch_log WHERE status = 200 AND
+   (url IN (?, ?, ?, ?, ?) OR instr(url, ?) > 0 OR instr(url, ?) > 0 OR instr(url, ?) > 0)`,
+		urls[0], urls[1], urls[2], source.PlaysURL(season), source.DepthHistoryURL(season),
+		"TYPE=nflByeWeeks", "espn", "sleeper").Scan(&key.fetches, &key.newest)
 	if err != nil {
 		return key, nil, fmt.Errorf("history: held season revision: %w", err)
 	}
@@ -102,7 +108,7 @@ func (s *Store) cachedHeldSeason(ctx context.Context, season int) (*heldSeasonEn
 	}
 	// The key is read before the build, so a change that lands mid-build leaves a stale key on the entry and
 	// the next reader rebuilds; a reader is never served files older than the revision it saw.
-	key, gsis, err := s.heldSeasonKey(ctx)
+	key, gsis, err := s.heldSeasonKey(ctx, season)
 	if err != nil {
 		return nil, err
 	}

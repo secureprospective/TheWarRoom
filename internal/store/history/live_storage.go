@@ -81,6 +81,7 @@ func (s *Store) restoreLiveStats(ctx context.Context) error {
 		return err
 	}
 	s.liveHeld, s.live, s.liveRevisions = held, book, states
+	s.liveEpoch++
 	return nil
 }
 

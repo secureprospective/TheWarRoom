@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
 
 // heldSeasonLeague is the 32-team bracket league scored from real held weekly files instead of supplied
@@ -196,5 +197,57 @@ func TestHeldSeasonCacheBuildsOncePerRevision(t *testing.T) {
 	}
 	if got := len(f.s.seasons.entries); got != 1 {
 		t.Fatalf("%d seasons held, want the one read", got)
+	}
+}
+
+func TestHeldSeasonCacheIgnoresUnrelatedArchive(t *testing.T) {
+	t.Parallel()
+	f := scoreCacheLeague(t, true)
+	before := heldSeasonReadings(t, f.s)
+	builds := heldSeasonBuilds(f.s)
+	if err := f.s.Record(t.Context(), archiveFetch("https://example.test/unrelated-directory", "directory update", t0().Add(time.Hour))); err != nil {
+		t.Fatal(err)
+	}
+	after := heldSeasonReadings(t, f.s)
+	if after != before {
+		t.Fatal("unrelated archive changed readings")
+	}
+	if heldSeasonBuilds(f.s) != builds {
+		t.Fatal("unrelated archive rebuilt the season")
+	}
+	f.s.SetSeasonScoreCache(false)
+	setHeldSeasonCache(f.s, false)
+	if got := heldSeasonReadings(t, f.s); got != after {
+		t.Fatal("narrowed cache differs from uncached")
+	}
+}
+
+func TestHeldSeasonKeyIncludesEveryScoringFeed(t *testing.T) {
+	t.Parallel()
+	f := heldSeasonLeague(t)
+	urls := []string{source.PlaysURL(2026), source.DepthHistoryURL(2026),
+		"https://example.test/2026/export?TYPE=nflByeWeeks", "https://example.test/espn", "https://example.test/sleeper"}
+	for _, name := range []string{"stats_player_week", "snap_counts", "injuries"} {
+		feed, ok := f.s.reg.Feed(name)
+		if !ok {
+			t.Fatalf("missing feed %s", name)
+		}
+		urls = append(urls, feed.URLFor(2026))
+	}
+	for i, url := range urls {
+		before, _, err := f.s.heldSeasonKey(t.Context(), 2026)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := f.s.Record(t.Context(), archiveFetch(url, fmt.Sprint(i), t0().Add(time.Duration(i+1)*time.Hour))); err != nil {
+			t.Fatal(err)
+		}
+		after, _, err := f.s.heldSeasonKey(t.Context(), 2026)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if after == before {
+			t.Fatalf("scoring dependency omitted: %s", url)
+		}
 	}
 }

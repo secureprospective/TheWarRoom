@@ -53,6 +53,8 @@ type nativeSources struct {
 	gsis   map[string]string
 	rules  *commissioner.RulesMemo
 	facts  nativecheck.Facts
+	// revision is the season score cache's name for the ledger last scored, worked out once per ledger.
+	revision *scoreRevisionKey
 }
 
 func (s *Store) nativeSources(league string, season int) *nativeSources {
@@ -69,15 +71,20 @@ func (n *nativeSources) Lineup(ctx context.Context, records []commissioner.Recor
 	if n.store.lineupEnv == nil {
 		return lineup, nil
 	}
-	if n.facts == nil {
-		n.facts = n.store.lineupEnv.PlayerFacts()
-	}
+	n.playerFacts()
 	for i, starter := range lineup.Starters {
 		if starter.Name == "" {
 			lineup.Starters[i].Name = n.facts[starter.Player].Name
 		}
 	}
 	return lineup, nil
+}
+
+func (n *nativeSources) playerFacts() nativecheck.Facts {
+	if n.facts == nil && n.store.lineupEnv != nil {
+		n.facts = n.store.lineupEnv.PlayerFacts()
+	}
+	return n.facts
 }
 
 func (n *nativeSources) PlayerScore(ctx context.Context, records []commissioner.Record, player string,

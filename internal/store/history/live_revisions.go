@@ -3,6 +3,7 @@ package history
 import (
 	"context"
 	"maps"
+	"reflect"
 	"slices"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
@@ -57,6 +58,9 @@ func (s *Store) mergeLiveVersions(ctx context.Context, incoming []source.LineRev
 	if err := s.storeLiveVersions(ctx, key, state.versions[start:], origins); err != nil {
 		return nil, err
 	}
+	if changedRevisions(s.liveRevisions[key], state.versions) {
+		s.bumpLiveWeekLocked(scope.Season, scope.Week)
+	}
 	s.liveRevisions[key] = state
 	return deepClone(state.versions), nil
 }
@@ -69,4 +73,9 @@ func sameLiveRevision(versions []source.LineRevision, digest, authority string) 
 		return versions[i].Digest == digest && versions[i].Held.Authority == authority
 	}
 	return false
+}
+
+// changedRevisions says whether a player's week now offers different revisions than it held before.
+func changedRevisions(before *liveRevisionState, after []source.LineRevision) bool {
+	return before == nil || !reflect.DeepEqual(before.versions, after)
 }

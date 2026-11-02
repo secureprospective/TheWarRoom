@@ -252,7 +252,7 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 		if err != nil {
 			return out, fmt.Errorf("read pinned native evidence: %w", err)
 		}
-		return s.withLiveStats(ctx, s.withScoringPosition(out, scope.Player), scope)
+		return s.withLiveStats(ctx, s.withScoringPosition(out, scope.Player, stats), scope)
 	}
 	if s.evidence != nil {
 		out, err := s.evidence(ctx, scope)
@@ -269,10 +269,14 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 	if err != nil {
 		return out, fmt.Errorf("read held native evidence: %w", err)
 	}
-	return s.withLiveStats(ctx, s.withScoringPosition(out, scope.Player), scope)
+	return s.withLiveStats(ctx, s.withScoringPosition(out, scope.Player, stats), scope)
 }
 
-func (s *Store) withScoringPosition(evidence source.NativeEvidence, player string) source.NativeEvidence {
+func (s *Store) withScoringPosition(evidence source.NativeEvidence, player string, stats source.StatPort) source.NativeEvidence {
+	if reading, ok := stats.(*nativeSources); ok {
+		evidence.ListedPosition = string(reading.playerFacts()[player].Position)
+		return evidence
+	}
 	if s.lineupEnv != nil {
 		evidence.ListedPosition = string(s.lineupEnv.PlayerFacts()[player].Position)
 	}

@@ -61,7 +61,11 @@ func (s *Store) SetLiveStats(ctx context.Context, season, week int, at time.Time
 	}
 	for player, line := range lines {
 		s.liveHeld[liveStatKey{player, line.Season, line.Week}] = heldLiveLine(line, authority, at, missing)
+		s.bumpLiveWeekLocked(line.Season, line.Week)
 	}
+	// The week the old book offered stops offering it.
+	s.bumpLiveWeekLocked(s.live.season, s.live.week)
+	s.bumpLiveWeekLocked(season, week)
 	s.live = book
 	return nil
 }

@@ -76,7 +76,13 @@ type Store struct {
 	live          liveStatBook
 	liveHeld      map[liveStatKey]source.HeldWeek
 	liveRevisions map[liveStatKey]*liveRevisionState
-	wmu           sync.Mutex
+	// liveEpoch and liveWeeks name the live lines as held, so a score read from them is reused only while
+	// they stand: liveEpoch moves when the book is restored, liveWeeks when one week's lines change.
+	liveEpoch uint64
+	liveWeeks map[[2]int]uint64
+	// scores is the season score cache: each franchise-week scored once per revision.
+	scores seasonScoreCache
+	wmu    sync.Mutex
 	// batchFault, set only by tests, fails a batch after the given step to prove nothing is kept.
 	batchFault func(step int) error
 }

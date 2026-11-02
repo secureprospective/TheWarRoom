@@ -62,7 +62,29 @@ type FranchiseWeekScore struct {
 	Zeroed string                    `json:"zeroed,omitempty"`
 }
 
+// WeekScoreMemo is a ResultSources that can share a franchise's week score between readings of the same
+// ledger, evidence and rules. score computes it; the memo decides whether a held copy may stand for it.
+// Whatever it returns must be the caller's own: no reading may change what another one reads.
+type WeekScoreMemo interface {
+	MemoWeekScore(ctx context.Context, records []Record, rules leaguerules.LineupRules, seat NativeDirectorySeat,
+		season, week int, score func() (FranchiseWeekScore, error)) (FranchiseWeekScore, error)
+}
+
 func franchiseWeekScore(ctx context.Context, records []Record, src ResultSources, rules leaguerules.LineupRules,
+	seat NativeDirectorySeat, season, week int) (FranchiseWeekScore, error) {
+	if memo, ok := src.(WeekScoreMemo); ok {
+		out, err := memo.MemoWeekScore(ctx, records, rules, seat, season, week, func() (FranchiseWeekScore, error) {
+			return scoreFranchiseWeek(ctx, records, src, rules, seat, season, week)
+		})
+		if err != nil {
+			return out, fmt.Errorf("read memoized week score: %w", err)
+		}
+		return out, nil
+	}
+	return scoreFranchiseWeek(ctx, records, src, rules, seat, season, week)
+}
+
+func scoreFranchiseWeek(ctx context.Context, records []Record, src ResultSources, rules leaguerules.LineupRules,
 	seat NativeDirectorySeat, season, week int) (FranchiseWeekScore, error) {
 	out := FranchiseWeekScore{Franchise: seat.Franchise, Name: seat.Name, Status: "Incomplete",
 		Starters: []StarterScore{}, Changes: []ScoreChange{}}

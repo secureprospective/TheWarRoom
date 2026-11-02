@@ -35,6 +35,7 @@ func (s *Store) compactLiveStats(ctx context.Context, league string, records []c
 		if err := s.compactLivePlayer(ctx, key, *final.Held.Week); err != nil {
 			return err
 		}
+		s.bumpLiveWeekLocked(season, week.Week)
 	}
 	return nil
 }
