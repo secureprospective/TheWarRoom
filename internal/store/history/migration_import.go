@@ -62,7 +62,7 @@ func (s *Store) ExecuteCommissionerBatchWithFacts(ctx context.Context, raws []co
 			}
 		}
 		receipts = append(receipts, receipt)
-		if records, err = s.eventsInTransaction(ctx, tx, league); err != nil {
+		if records, err = s.extendBatchRecords(ctx, tx, league, records); err != nil {
 			return nil, err
 		}
 	}
@@ -78,6 +78,14 @@ func (s *Store) ExecuteCommissionerBatchWithFacts(ctx context.Context, raws []co
 		receipts[i] = viewReceipt(ctx, receipts[i], records)
 	}
 	return receipts, nil
+}
+
+func (s *Store) extendBatchRecords(ctx context.Context, tx *sql.Tx, league string, records []commissioner.Record) ([]commissioner.Record, error) {
+	tail, err := s.eventsAfterInTransaction(ctx, tx, league, int64(len(records)))
+	if err != nil {
+		return nil, err
+	}
+	return append(records, tail...), nil
 }
 
 // batchStep checks and appends one change of a batch inside the batch's transaction. A retried request
