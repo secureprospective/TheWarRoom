@@ -19,24 +19,46 @@ import jobsWire from './jobs.wire.testdata.json';
 let restore: () => void;
 beforeEach(async () => {
   restore = modelFocusApis();
-  Object.defineProperty(KeyInputElement.prototype, 'tabIndex', { configurable: true,
-    get() { return -1; }, set() {} });
-  await Promise.all([import('./CommissionerActTray'), import('./RuleTray'), import('./ActionTray'),
-    import('./SeedTray'), import('./LeagueRules'), import('./LeaguePeople')]);
+  Object.defineProperty(KeyInputElement.prototype, 'tabIndex', {
+    configurable: true,
+    get() {
+      return -1;
+    },
+    set() {},
+  });
+  await Promise.all([
+    import('./CommissionerActTray'),
+    import('./RuleTray'),
+    import('./ActionTray'),
+    import('./SeedTray'),
+    import('./LeagueRules'),
+    import('./LeaguePeople'),
+  ]);
 });
-afterEach(async () => { await unmount(); restore(); vi.restoreAllMocks(); });
-const inScope = (id: string) => actsFor(id).length > 0 || liveDraftControls.has(id) ||
-  ['CM-021', 'CM-040'].includes(id);
-const entries = entriesOf(parseControls(controlsWire)).filter(e => inScope(e.id));
+afterEach(async () => {
+  await unmount();
+  restore();
+  vi.restoreAllMocks();
+});
+const inScope = (id: string) =>
+  actsFor(id).length > 0 || liveDraftControls.has(id) || ['CM-021', 'CM-040'].includes(id);
+const entries = entriesOf(parseControls(controlsWire)).filter((e) => inScope(e.id));
 async function landing(future: boolean) {
-  const controls = { ...controlsWire, groups: controlsWire.groups.map(g => ({ ...g,
-    controls: g.controls.map(e => ({ ...e, built: e.built || (future && inScope(e.id)) })) })) };
-  const { app } = stub({ TargetCommissionerControls: async () => controls,
-    TargetCommissionerJobs: async () => jobsWire.fresh });
+  const controls = {
+    ...controlsWire,
+    groups: controlsWire.groups.map((g) => ({
+      ...g,
+      controls: g.controls.map((e) => ({ ...e, built: e.built || (future && inScope(e.id)) })),
+    })),
+  };
+  const { app } = stub({
+    TargetCommissionerControls: async () => controls,
+    TargetCommissionerJobs: async () => jobsWire.fresh,
+  });
   await mount(render(LeagueLanding), app);
   for (const g of leagueState.peek().controls?.groups ?? [])
-    for (const e of g.controls) e.built = controls.groups.flatMap(g => g.controls)
-      .find(c => c.id === e.id)?.built ?? false;
+    for (const e of g.controls)
+      e.built = controls.groups.flatMap((g) => g.controls).find((c) => c.id === e.id)?.built ?? false;
   await leagueState.choose();
   await unmount();
   const host = await mount(render(LeagueLanding), app);
@@ -44,37 +66,39 @@ async function landing(future: boolean) {
   await settle();
   return host;
 }
-for (const future of [false, true]) describe(future ? 'Ready for Go built flags' : 'Go controls wire', () => {
-  for (const entry of entries.filter(e => future || e.built))
-    it(`${entry.name} opens its tray or the existing live Draft room`, async () => {
-      const nav = vi.spyOn(commands, 'dispatch');
-      const host = await landing(future);
-      await act(async () => surfaceActions.run({ screen: 'landing', action: 'group', value: entry.group }));
-      await settle();
-      button(host, `Open ${entry.name}`).focus();
-      await click(button(host, `Open ${entry.name}`));
-      await settle();
-      if (liveDraftControls.has(entry.id)) {
-        expect(nav).toHaveBeenCalledWith('nav.open', { node: 'trade', workspace: 'draft-room' });
-      } else {
-        expect(dialogOf(host)).toBeDefined();
-        const tray = dialogOf(host)!;
-        if (actsFor(entry.id).length) {
-          const label = actsFor(entry.id)[0].label;
-          if (entry.id === 'CM-021') expect(tray.textContent).toContain('Give or take a role'); else expect(all(tray, 'option').map(o => o.textContent)).toContain(label);
-        } else expect(tray.textContent).toContain(entry.id === 'CM-021' ? 'Give or take a role' : 'Rule');
-      }
-      expect(host.textContent).not.toMatch(/CM-\d|G[123]\b/);
-    });
-});
+for (const future of [false, true])
+  describe(future ? 'Ready for Go built flags' : 'Go controls wire', () => {
+    for (const entry of entries.filter((e) => future || e.built))
+      it(`${entry.name} opens its tray or the existing live Draft room`, async () => {
+        const nav = vi.spyOn(commands, 'dispatch');
+        const host = await landing(future);
+        await act(async () => surfaceActions.run({ screen: 'landing', action: 'group', value: entry.group }));
+        await settle();
+        button(host, `Open ${entry.name}`).focus();
+        await click(button(host, `Open ${entry.name}`));
+        await settle();
+        if (liveDraftControls.has(entry.id)) {
+          expect(nav).toHaveBeenCalledWith('nav.open', { node: 'trade', workspace: 'draft-room' });
+        } else {
+          expect(dialogOf(host)).toBeDefined();
+          const tray = dialogOf(host)!;
+          if (actsFor(entry.id).length) {
+            const label = actsFor(entry.id)[0].label;
+            if (entry.id === 'CM-021') expect(tray.textContent).toContain('Give or take a role');
+            else expect(all(tray, 'option').map((o) => o.textContent)).toContain(label);
+          } else expect(tray.textContent).toContain(entry.id === 'CM-021' ? 'Give or take a role' : 'Rule');
+        }
+        expect(host.textContent).not.toMatch(/CM-\d|G[123]\b/);
+      });
+  });
 it('unbuilt action rows remain disabled and explain why', async () => {
   const host = await landing(false);
-  const unbuilt = entriesOf(parseControls(controlsWire)).filter(e => !e.built);
+  const unbuilt = entriesOf(parseControls(controlsWire)).filter((e) => !e.built);
   const group = unbuilt[0].group;
   await act(async () => surfaceActions.run({ screen: 'landing', action: 'group', value: group }));
   await settle();
-  for (const entry of unbuilt.filter(e => e.group === group)) {
-    const open = all(host, 'button').find(b => b.textContent === `Open ${entry.name}`);
+  for (const entry of unbuilt.filter((e) => e.group === group)) {
+    const open = all(host, 'button').find((b) => b.textContent === `Open ${entry.name}`);
     expect(open === undefined || open.attributes.has('disabled')).toBe(true);
   }
   expect(host.textContent).toContain('This action is not built yet.');
@@ -83,10 +107,10 @@ it('seed-blocked jobs open starting assets, not a rule or an unrelated control',
   const calls = vi.spyOn(surfaceActions, 'run');
   const jobs = parseJobs(jobsWire.fresh);
   const host = await mount(render(JobsStrip, { jobs }));
-  const blocked = jobs.jobs.filter(j => j.words === 'Record starting assets first.');
+  const blocked = jobs.jobs.filter((j) => j.words === 'Record starting assets first.');
   expect(blocked.length).toBeGreaterThan(0);
   for (const job of blocked) {
-    const b = all(host, 'button').find(b => b.textContent.startsWith(job.name))!;
+    const b = all(host, 'button').find((b) => b.textContent.startsWith(job.name))!;
     await click(b);
     expect(calls).toHaveBeenLastCalledWith({ screen: 'landing', action: 'tray', value: 'seed' });
   }
@@ -94,8 +118,11 @@ it('seed-blocked jobs open starting assets, not a rule or an unrelated control',
 it('live multi-control jobs prefer the matching act over their rule settings', async () => {
   const calls = vi.spyOn(surfaceActions, 'run');
   const jobs = parseJobs(jobsWire.fresh);
-  const job = { ...jobs.jobs.find(j => j.id === 'dot_review')!,
-    state: 'live' as const, words: 'Review trades' };
+  const job = {
+    ...jobs.jobs.find((j) => j.id === 'dot_review')!,
+    state: 'live' as const,
+    words: 'Review trades',
+  };
   const host = await mount(render(JobsStrip, { jobs: { ...jobs, jobs: [job] } }));
   await click(all(host, 'button')[0]);
   expect(calls).toHaveBeenLastCalledWith({ screen: 'landing', action: 'open', value: 'CM-037' });
@@ -103,16 +130,26 @@ it('live multi-control jobs prefer the matching act over their rule settings', a
 
 it('the startup draft job opens the draft room on the startup draft', async () => {
   const nav = vi.spyOn(commands, 'dispatch');
-  const job = { id: 'startup_draft', name: 'Run the startup draft', state: 'live',
-    words: 'Open the startup draft to fill the empty rosters.', opens: '', closes: '',
-    controls: ['CM-042', 'CM-043', 'CM-044', 'CM-045'] };
-  const { app } = stub({ TargetCommissionerControls: async () => controlsWire,
-    TargetCommissionerJobs: async () => ({ ...jobsWire.fresh, jobs: [job] }) });
+  const job = {
+    id: 'startup_draft',
+    name: 'Run the startup draft',
+    state: 'live',
+    words: 'Open the startup draft to fill the empty rosters.',
+    opens: '',
+    closes: '',
+    controls: ['CM-042', 'CM-043', 'CM-044', 'CM-045'],
+  };
+  const { app } = stub({
+    TargetCommissionerControls: async () => controlsWire,
+    TargetCommissionerJobs: async () => ({ ...jobsWire.fresh, jobs: [job] }),
+  });
   const host = await mount(render(LeagueLanding), app);
-  await act(async () => { await leagueState.choose(); });
+  await act(async () => {
+    await leagueState.choose();
+  });
   await settle();
   draftRoom.choose(false);
-  await click(all(host, 'button').find(b => b.textContent.startsWith('Run the startup draft'))!);
+  await click(all(host, 'button').find((b) => b.textContent.startsWith('Run the startup draft'))!);
   await settle();
   expect(nav).toHaveBeenCalledWith('nav.open', { node: 'trade', workspace: 'draft-room' });
   expect(draftRoom.peek().startup).toBe(true);
@@ -125,16 +162,35 @@ for (const source of ['mfl_import', 'native'] as const) {
     const name = `${source} ${state} league shows only its available start action`;
     it(name, async () => {
       const label = source === 'native' ? 'Start the league' : 'Record starting assets';
-      const jobs = { ...jobsWire.fresh, jobs: started ? [] : [{ id: 'seed', name: label,
-        state: 'live', words: 'Start this league.', controls: [], opens: '', closes: '' }] };
-      const { app } = stub({ TargetCommissionerControls: async () => controlsWire,
-        TargetCommissionerJobs: async () => jobs });
+      const jobs = {
+        ...jobsWire.fresh,
+        jobs: started
+          ? []
+          : [
+              {
+                id: 'seed',
+                name: label,
+                state: 'live',
+                words: 'Start this league.',
+                controls: [],
+                opens: '',
+                closes: '',
+              },
+            ],
+      };
+      const { app } = stub({
+        TargetCommissionerControls: async () => controlsWire,
+        TargetCommissionerJobs: async () => jobs,
+      });
       const host = await mount(render(LeagueLanding), app);
-      await act(async () => { await leagueState.choose(); });
+      await act(async () => {
+        await leagueState.choose();
+      });
       await act(async () =>
-        surfaceActions.run({ screen: 'landing', action: 'group', value: 'constitution' }));
+        surfaceActions.run({ screen: 'landing', action: 'group', value: 'constitution' }),
+      );
       await settle();
-      const launcher = all(host, 'button').find(b => b.textContent === label);
+      const launcher = all(host, 'button').find((b) => b.textContent === label);
       expect(launcher !== undefined).toBe(!started);
       expect(host.textContent.includes(`${label}Live`)).toBe(!started);
       await act(async () => surfaceActions.run({ screen: 'landing', action: 'tray', value: 'seed' }));

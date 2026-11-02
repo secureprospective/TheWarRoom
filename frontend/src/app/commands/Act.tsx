@@ -1,13 +1,13 @@
 import { type ReactNode, type CSSProperties, type AriaRole } from 'react';
 import { commands, dispatch, type CommandId, type CommandArgs } from './registry';
-type Variant = 'rail' | 'tab' | 'density' | 'icon' | 'text' | 'button' | 'card' | 'command';
+type Variant = 'rail' | 'tab' | 'density' | 'icon' | 'text' | 'button' | 'card' | 'command' | 'surface';
 type ActProps<K extends CommandId> = {
   verb: K;
   args: CommandArgs<K>;
   variant: Variant;
   children?: ReactNode;
   active?: boolean;
-  current?: boolean;
+  current?: boolean | 'page';
   label?: string;
   expanded?: boolean;
   controls?: string;
@@ -58,7 +58,7 @@ function ActButton<K extends CommandId>({
       data-d={densityKey}
       aria-label={accessibleLabel}
       aria-pressed={active}
-      aria-current={current ? 'true' : undefined}
+      aria-current={current ? (current === true ? 'true' : current) : undefined}
       aria-expanded={expanded}
       aria-controls={controls}
       title={title}

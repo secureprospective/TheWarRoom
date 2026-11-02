@@ -12,8 +12,11 @@ export function useFit(initial: number) {
       const th = p.querySelector('thead') as HTMLElement | null;
       const pg = p.querySelector('.cr-pager') as HTMLElement | null;
       if (!tr || !th || !pg || !tr.offsetHeight) return;
-      const n = Math.max(8, Math.floor((p.clientHeight - th.offsetHeight - pg.offsetHeight - 6) / tr.offsetHeight));
-      setPer(was => (was === n ? was : n));
+      const n = Math.max(
+        8,
+        Math.floor((p.clientHeight - th.offsetHeight - pg.offsetHeight - 6) / tr.offsetHeight),
+      );
+      setPer((was) => (was === n ? was : n));
     };
     const ro = new ResizeObserver(fit);
     ro.observe(p);

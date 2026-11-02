@@ -176,3 +176,12 @@ it.each(['war', 'hq', 'trade'] as const)('F: rail %s keeps its name without a na
   expect(html).toContain('aria-label="Open workspace"');
   expect(html).not.toContain('title=');
 });
+
+it('preserves a surface control’s page navigation semantics', () => {
+  const html = renderToStaticMarkup(createElement(Act, {
+    verb: 'commissioner.surface', args: { screen: 'control-room', action: 'view', value: 'people' },
+    variant: 'surface', current: 'page', label: 'People', children: 'People',
+  }));
+  expect(html).toContain('aria-current="page"');
+  expect(html).toContain('act-surface');
+});
