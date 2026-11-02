@@ -11,10 +11,11 @@ import { runSearch, type Hit } from './search';
 import { NotYet, RoomContext, type Room, type Tab, type Card, tabs } from './room';
 import { JobsView } from './JobsView';
 import { SituationsView } from './SituationsView';
+import { RulesView } from './RulesView';
 import './controlRoom.css';
 
 const views: Record<Tab, () => ReactNode> = {
-  jobs: () => <JobsView />, sit: () => <SituationsView />, rules: () => <NotYet what="this branch is wired in a later commit" />,
+  jobs: () => <JobsView />, sit: () => <SituationsView />, rules: () => <RulesView />,
   season: () => <NotYet what="this branch is wired in a later commit" />, fix: () => <NotYet what="this branch is wired in a later commit" />, picks: () => <NotYet what="this branch is wired in a later commit" />,
   people: () => <NotYet what="this branch is wired in a later commit" />, league: () => <NotYet what="this branch is wired in a later commit" />, server: () => <NotYet what="this branch is wired in a later commit" />,
 };
