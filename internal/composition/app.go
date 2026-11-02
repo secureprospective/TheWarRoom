@@ -56,6 +56,7 @@ type App struct {
 	tradeBuilderTimeout  time.Duration
 	archiveCache         archiveapp.Snapshot
 	scheduleCache        nativeapp.ScheduleCache
+	scheduleSyncMu       sync.Mutex
 	playedLineupsRunning atomic.Bool
 	playedLineupsStarted atomic.Bool
 	liveStats            nowapp.LiveStatsPoller // the live-stats poller is its only user
@@ -255,6 +256,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		Rules:    func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) },
 		Mirror:   mirror.Initialize, MirrorSeason: mirror.Season,
 		Refresh: func(c context.Context) error {
+			defer a.syncLeagueSchedules(c)
 			a.core.RefreshMu.Lock()
 			defer a.core.RefreshMu.Unlock()
 			_, err := a.refreshLeagueLocked(c, rb, mirror)

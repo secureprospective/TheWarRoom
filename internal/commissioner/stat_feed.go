@@ -51,6 +51,27 @@ func FeedStatMoves(league string, records []Record, weeks []StatWeek, season int
 
 // CheckFeedStatAppend rechecks automatic approvals under the same append transaction as manual changes.
 func CheckFeedStatAppend(raw RawCommand, records []Record, facts StatFacts) error {
+	check, err := FeedStatAppendChecker(records)
+	if err != nil {
+		return err
+	}
+	return check(raw, facts)
+}
+
+// FeedStatAppendChecker shares the immutable pin fold across one locked feed batch.
+// The caller must retain the same ledger snapshot until every check and append completes.
+func FeedStatAppendChecker(records []Record) (func(RawCommand, StatFacts) error, error) {
+	effects, err := foldStatEffects(records)
+	if err != nil {
+		return nil, err
+	}
+	started := seeded(records)
+	return func(raw RawCommand, facts StatFacts) error {
+		return checkFeedStatAppend(raw, facts, effects, started)
+	}, nil
+}
+
+func checkFeedStatAppend(raw RawCommand, facts StatFacts, effects statEffects, started bool) error {
 	if raw.Command != StatApprove {
 		return Refused(fmt.Errorf("the stat feed may only count feed revisions"))
 	}
@@ -62,16 +83,12 @@ func CheckFeedStatAppend(raw RawCommand, records []Record, facts StatFacts) erro
 	if err != nil {
 		return err
 	}
-	if !seeded(records) || id.Seq >= len(facts.Versions) {
+	if !started || id.Seq >= len(facts.Versions) {
 		return Refused(fmt.Errorf("that feed revision is not held"))
 	}
 	version := facts.Versions[id.Seq]
 	if !strings.HasPrefix(version.Digest, id.Digest) || FeedVersion(facts.Versions[:id.Seq+1]).Seq != id.Seq || raw.Reason != feedReason(version) {
 		return Refused(fmt.Errorf("that revision is not the feed authority"))
-	}
-	effects, err := foldStatEffects(records)
-	if err != nil {
-		return err
 	}
 	if effects.baselines[change.key()].Entry != "" {
 		return Refused(fmt.Errorf("the commissioner chose the counted revision"))

@@ -90,6 +90,8 @@ func (a *App) syncScheduledScoring(ctx context.Context, league string, records [
 }
 
 func (a *App) syncLeagueSchedules(ctx context.Context) {
+	a.scheduleSyncMu.Lock()
+	defer a.scheduleSyncMu.Unlock()
 	a.scheduleSync().Sync(ctx)
 }
 

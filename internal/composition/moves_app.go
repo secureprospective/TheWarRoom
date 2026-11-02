@@ -38,6 +38,7 @@ func (a *App) checkMoves(ctx context.Context) error { return a.moveWatch().Check
 func (a *App) refreshedObservation(
 	ctx context.Context, sources map[envelope.Source]bool,
 ) (envelope.Observation, error) {
+	defer a.syncLeagueSchedules(ctx)
 	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
 	return planwatch.ReadMoveObservation(ctx, sources, a.refreshMoveSources, a.moveObservation) //nolint:wrapcheck // Preserve observation errors.

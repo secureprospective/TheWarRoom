@@ -1,8 +1,10 @@
 package history
 
 import (
+	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -40,5 +42,71 @@ func TestAutomaticStatFeedUsesDurableApprovalLedger(t *testing.T) {
 	raw := statCommand(commissioner.StatApprove, commissioner.RawStatChange{Item: q.Decided[0].Entry}, revision(t, f.s), "spoof")
 	if _, err := f.s.ExecuteCommissioner(t.Context(), raw, commissioner.StatFeedPrincipal, nil); err == nil {
 		t.Fatal("feed identity allowed outside worker")
+	}
+}
+
+func TestAutomaticStatFeedAdoptsSeasonWithinReadBudget(t *testing.T) {
+	f := statResultsTest(t)
+	const count = 1200
+	generation := 0
+	f.s.statWeeks = func(context.Context, int) ([]commissioner.StatWeek, error) {
+		out := make([]commissioner.StatWeek, count)
+		for i := range out {
+			player := fmt.Sprint(20000 + i)
+			if generation > 0 {
+				f.revisions[player+"/1"] = []leaguerules.Decimal{30000}
+			}
+			out[i] = commissioner.StatWeek{Player: player, Week: 1, Evidence: f.evidenceFor(player, 1)}
+		}
+		return out, nil
+	}
+	for generation = 0; generation < 2; generation++ {
+		before := revision(t, f.s)
+		ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+		began := time.Now()
+		err := f.s.ProcessStatFeed(ctx, "native.test", 2026)
+		cancel()
+		t.Logf("generation %d: %s", generation, time.Since(began))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := revision(t, f.s); got != before+count {
+			t.Fatalf("adopted revision %d, want %d", got, before+count)
+		}
+	}
+	before := revision(t, f.s)
+	if err := f.s.ProcessStatFeed(t.Context(), "native.test", 2026); err != nil {
+		t.Fatal(err)
+	}
+	if got := revision(t, f.s); got != before {
+		t.Fatal("unchanged season duplicated approvals")
+	}
+}
+
+func TestAutomaticStatFeedRechecksAdmissionAndRollsBackBatch(t *testing.T) {
+	f := statResultsTest(t)
+	before := revision(t, f.s)
+	calls := 0
+	ctx := commissioner.WithCredentialAdmission(t.Context(), admissionFunc(func(_ context.Context, access commissioner.Access) error {
+		calls++
+		if access.Principal != commissioner.StatFeedPrincipal || access.Operation != commissioner.StatApprove {
+			t.Fatalf("unexpected feed authority: %+v", access)
+		}
+		if calls == 3 {
+			return fmt.Errorf("feed admission revoked")
+		}
+		return nil
+	}))
+	if err := f.s.ProcessStatFeed(ctx, "native.test", 2026); err == nil || calls != 3 {
+		t.Fatalf("revocation not rechecked: calls %d, error %v", calls, err)
+	}
+	if got := revision(t, f.s); got != before {
+		t.Fatalf("refused batch left partial approvals: revision %d, want %d", got, before)
+	}
+	if err := f.s.ProcessStatFeed(t.Context(), "native.test", 2026); err != nil {
+		t.Fatal("refused batch prevented retry", err)
+	}
+	if got := revision(t, f.s); got != before+6 {
+		t.Fatalf("successful retry did not adopt all six weeks: revision %d", got)
 	}
 }

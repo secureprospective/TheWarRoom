@@ -45,13 +45,15 @@ func (s *Store) ProcessStatFeed(ctx context.Context, league string, season int) 
 	if err != nil {
 		return fmt.Errorf("plan feed revisions: %w", err)
 	}
-	// Feed approvals cannot change permissions, rules, rosters or manual pins. Check the
-	// batch against the locked starting snapshot; appended events still carry sequential revisions.
+	check, err := s.feedBatchCheck(ctx, moves, records, facts)
+	if err != nil {
+		return err
+	}
 	initial := records
 	for _, raw := range moves {
 		raw.Expected = int64(len(records))
 		player, _, week := raw.Args.Stat.Scope()
-		record, err := s.appendFeedMove(ctx, tx, raw, appendFacts{stat: facts[fmt.Sprintf("%s/%d", player, week)]}, initial, records)
+		record, err := s.appendFeedMove(ctx, tx, raw, facts[fmt.Sprintf("%s/%d", player, week)], check, initial, records)
 		if err != nil {
 			return err
 		}
@@ -68,23 +70,40 @@ func (s *Store) ProcessStatFeed(ctx context.Context, league string, season int) 
 	return nil
 }
 
+// Feed approvals cannot change permissions, rules, rosters or manual pins. Validate those
+// invariant checks once under the write lock, then check each scope, evidence and retry separately.
+func (s *Store) feedBatchCheck(ctx context.Context, moves []commissioner.RawCommand, records []commissioner.Record,
+	facts map[string]commissioner.StatFacts) (func(commissioner.RawCommand, commissioner.StatFacts) error, error) {
+	if len(moves) == 0 {
+		return nil, nil
+	}
+	raw := moves[0]
+	raw.Expected = int64(len(records))
+	player, _, week := raw.Args.Stat.Scope()
+	if _, _, err := s.checkCommissionerCommand(ctx, raw, commissioner.StatFeedPrincipal, statFeedAuthorizer{},
+		records, appendFacts{stat: facts[fmt.Sprintf("%s/%d", player, week)]}, s.now().UTC()); err != nil {
+		return nil, fmt.Errorf("check feed batch: %w", err)
+	}
+	return commissioner.FeedStatAppendChecker(records) //nolint:wrapcheck // The checker supplies the stat refusal.
+}
+
 func (s *Store) appendFeedMove(ctx context.Context, tx *sql.Tx, raw commissioner.RawCommand,
-	gathered appendFacts, initial, records []commissioner.Record) (commissioner.Record, error) {
+	facts commissioner.StatFacts, check func(commissioner.RawCommand, commissioner.StatFacts) error,
+	initial, records []commissioner.Record) (commissioner.Record, error) {
 	prepared, canonical, err := preparedCommand(raw, commissioner.StatFeedPrincipal, true)
 	if err != nil {
 		return commissioner.Record{}, err
 	}
 	now := s.now().UTC()
-	check := prepared
-	check.Expected = int64(len(initial))
-	role, retry, err := s.checkCommissionerCommand(ctx, check, commissioner.StatFeedPrincipal, statFeedAuthorizer{}, initial, gathered, now)
-	if err != nil {
-		return commissioner.Record{}, fmt.Errorf("check counted feed revision: %w", err)
-	}
-	if retry != nil {
+	if _, retry, err := retriedReceipt(ctx, prepared, commissioner.StatFeedPrincipal, initial); err != nil {
+		return commissioner.Record{}, err
+	} else if retry {
 		return commissioner.Record{}, nil
 	}
-	receipt, err := s.appendCommissioner(ctx, tx, appendRequest{raw: prepared, principal: commissioner.StatFeedPrincipal, role: role, canonical: canonical, at: now, records: records})
+	if err := check(prepared, facts); err != nil {
+		return commissioner.Record{}, fmt.Errorf("check counted feed revision: %w", err)
+	}
+	receipt, err := s.appendCommissioner(ctx, tx, appendRequest{raw: prepared, principal: commissioner.StatFeedPrincipal, role: "automatic", canonical: canonical, at: now, records: records})
 	if err != nil {
 		return commissioner.Record{}, fmt.Errorf("record counted feed revision: %w", err)
 	}

@@ -45,17 +45,16 @@ func (a *App) seasonGuess() int {
 func (a *App) refreshLeague(
 	ctx context.Context, rb *rulebook.Store, mirror *state.Mirror,
 ) (RefreshResult, error) {
-	a.core.RefreshMu.Lock()
 	defer a.sourceHealthChanged(ctx)
-	defer a.core.RefreshMu.Unlock()
 	defer a.syncLeagueSchedules(ctx)
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	return a.leagueRefresh(rb, mirror).Refresh(ctx) //nolint:wrapcheck // Preserve refresh refusals.
 
 }
 
 // The caller holds refreshMu, including when the watcher refreshes several feeds.
 func (a *App) refreshLeagueLocked(ctx context.Context, rb *rulebook.Store, mirror *state.Mirror) (RefreshResult, error) {
-	defer a.syncLeagueSchedules(ctx)
 	return a.leagueRefresh(rb, mirror).Run(ctx) //nolint:wrapcheck // Preserve refresh refusals.
 }
 
@@ -109,8 +108,6 @@ func (a *App) launchRefresh(parent context.Context) {
 func (a *App) syncLeagueSchedulesAtLaunch(parent context.Context) {
 	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 	defer cancel()
-	a.core.RefreshMu.Lock()
-	defer a.core.RefreshMu.Unlock()
 	a.backfillScheduleFollowing(ctx)
 	a.syncLeagueSchedules(ctx)
 }

@@ -330,3 +330,58 @@ func TestScheduleFollowingBackfillAndCutover(t *testing.T) {
 		t.Fatal("backfill undid cutover", err)
 	}
 }
+
+type blockedScoringTransport struct {
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (f *blockedScoringTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	select {
+	case f.entered <- struct{}{}:
+	default:
+	}
+	select {
+	case <-f.release:
+		return (&scoringLaunchTransport{}).RoundTrip(r)
+	case <-r.Context().Done():
+		return nil, r.Context().Err()
+	}
+}
+
+func TestScheduleEvidenceDoesNotHoldRefreshReadLock(t *testing.T) {
+	at := time.Date(2026, 11, 1, 18, 0, 0, 0, time.UTC)
+	a, _ := calendarTestApp(t, at)
+	raw := seedScheduleTest(t, a)
+	executeCommissionerTest(t, a, raw)
+	records, err := a.leagueRecords(t.Context(), raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw.Command, raw.Expected, raw.Request = commissioner.SchedulePublish, int64(len(records)), "publish-unblocked"
+	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{}}
+	executeCommissionerTest(t, a, raw)
+	feed := &blockedScoringTransport{entered: make(chan struct{}, 1), release: make(chan struct{})}
+	a.core.Fetches = &archive.Transport{Base: feed, Sink: a.core.History}
+	a.core.MFLClient, err = mfl.New("api", 10000, mfl.WithTransport(&nflDatesTransport{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan struct{})
+	go func() { defer close(done); a.syncLeagueSchedulesAtLaunch(t.Context()) }()
+	defer func() { close(feed.release); <-done }()
+	select {
+	case <-feed.entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("scoring acquisition did not start")
+	}
+	if !a.core.RefreshMu.TryLock() {
+		t.Fatal("background scoring acquisition blocks foreground refresh reads")
+	}
+	a.core.RefreshMu.Unlock()
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	if _, err := a.core.History.NativeAssets(ctx, raw.League); err != nil {
+		t.Fatalf("held assets blocked behind scoring: %v", err)
+	}
+}
