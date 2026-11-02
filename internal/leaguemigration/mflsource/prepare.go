@@ -209,7 +209,7 @@ func (p *preparation) players(seed *commissioner.RawNativeSnapshot, mapping map[
 			continue
 		}
 		player := commissioner.NativePlayer{Name: p.export.Players[id], ID: id,
-			ContractMissing: strings.TrimSpace(r.Salary) == "" && strings.TrimSpace(r.ContractYear) == "" && strings.TrimSpace(r.ContractStatus) == "",
+			ContractMissing: strings.TrimSpace(r.Salary) == "" || strings.TrimSpace(r.ContractYear) == "" || strings.TrimSpace(r.ContractStatus) == "",
 			Franchise:       franchise, Status: status, Salary: salary, ExpirationYear: year,
 			ContractStatus: record.ContractStatus, ContractInfo: r.ContractInfo}
 		switch {
@@ -217,6 +217,9 @@ func (p *preparation) players(seed *commissioner.RawNativeSnapshot, mapping map[
 			player.ContractStatus = "" // MFL holds no contract status; none is invented
 		case r.ContractStatus != string(record.ContractStatus):
 			player.HeldContractStatus = r.ContractStatus
+		}
+		if player.ContractMissing {
+			player.Salary, player.ExpirationYear, player.ContractStatus = 0, 0, ""
 		}
 		seed.Players = append(seed.Players, player)
 	}
