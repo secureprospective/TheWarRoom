@@ -277,7 +277,7 @@ func (f *seasonFold) addChange(r Record) error {
 		for _, c := range seeded {
 			f.timed = append(f.timed, startedChange{c, c.RecordedAt})
 		}
-	case NativeSeed, Cutover:
+	case NativeSeed:
 		f.addInitialSettings(r)
 	case WindowSet, WindowMove, WindowRemove:
 		if !f.active[r.Receipt.Entry] {
@@ -308,15 +308,9 @@ func (f *seasonFold) addChange(r Record) error {
 	return nil
 }
 
-// addInitialSettings folds starting assets and the cutover's reference-feed clear into rules.
+// addInitialSettings folds the starting snapshot's divisions and conferences into the rules. A cutover
+// changes no setting: the reference schedule stays as the commissioner last set it, like every other value.
 func (f *seasonFold) addInitialSettings(r Record) {
-	if r.Command.Command == Cutover {
-		c := leaguerules.Change{LeagueID: r.Command.League, Field: "schedule.follow",
-			New: leaguerules.Known(leaguerules.ScheduleFollow{}), Season: f.season,
-			Effective: leaguerules.Effective{Kind: leaguerules.Now}, RecordedAt: r.Receipt.RecordedAt}
-		f.timed = append(f.timed, startedChange{c, c.RecordedAt})
-		return
-	}
 	if c, ok := carriedAlignment(r, f.alignmentSet); ok {
 		f.timed = append(f.timed, startedChange{c, c.RecordedAt})
 	}

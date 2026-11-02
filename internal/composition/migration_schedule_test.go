@@ -311,12 +311,18 @@ func TestScheduleFollowingBackfillAndCutover(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, _, ok := mflsource.FollowingLeague(league, records); ok {
-		t.Fatal("cutover still follows")
+	// A cutover changes no setting: the league keeps following until the commissioner clears it.
+	if id, _, _, ok := mflsource.FollowingLeague(league, records); !ok || id != export.LeagueID {
+		t.Fatal("cutover changed the reference schedule setting", id, ok)
+	}
+	setFollow(`{"Source":"","League":"","Season":0}`, "clear.after.cutover")
+	records, err = ledger.Records(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
 	}
 	rules, err := commissioner.RulesNow(records, a.timeNow())
 	if err != nil || rules.Schedule.Follow.Value != (leaguerules.ScheduleFollow{}) {
-		t.Fatal("cutover did not clear setting", err)
+		t.Fatal("the commissioner's clear after the cutover did not hold", err)
 	}
 	if err := leaguemigration.BackfillFollowing(t.Context(), ledger, league); err != nil {
 		t.Fatal(err)
