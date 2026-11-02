@@ -81,6 +81,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   useWorkScrollReset(workspaceBody, s.scrollRevision);
   const [nativeTabs, setNativeTabs] = useState<HTMLDivElement | null>(null);
   const [franchiseFooter, setFranchiseFooter] = useState<HTMLDivElement | null>(null);
+  // An app league's Control Room puts its branch leaves under its rail item (control-room-mock-v1).
+  const [controlTree, setControlTree] = useState<HTMLDivElement | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [error, setError] = useState<string>();
   useEffect(() => {
@@ -115,7 +117,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   const placement = `${node.label} › ${workspace.label}` as Placement;
   const selectedLeague = leagues.selected;
   const appLeagueView = selectedLeague?.app
-    ? s.node === 'hq' ? 'hq' : s.node === 'pulse' ? 'pulse'
+    ? s.node === 'hq' ? 'hq' : s.node === 'pulse' ? 'pulse' : s.node === 'home' ? 'home'
+      : s.node === 'control' ? 'control'
       : s.node === 'war' && workspace.slug !== 'research' ? 'war' : undefined
     : undefined;
   if (selectedLeague && !selectedLeague.app && s.node === 'war' && workspace.slug !== 'research' && snapshot)
@@ -155,7 +158,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
               <NavIcon node={key} />
               {nodes[key].label}
             </Act>
-          ))}
+          )).flatMap((item, i) => nodeKeys[i] === 'control' && appLeagueView === 'control'
+            ? [item, <div key="control-tree" className="rtree" ref={setControlTree} />] : [item])}
         </nav>
         <div className="rail-tools">
           <Act variant="button"
@@ -181,7 +185,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           <h3>{node.label}</h3>
           <div className="wtabs" ref={appLeagueView === 'war' ? setNativeTabs : undefined}
             role={appLeagueView === 'war' ? 'tablist' : undefined}>
-            {appLeagueView !== 'war' && workspaces.map((w) => (
+            {appLeagueView !== 'war' && appLeagueView !== 'control' && workspaces.map((w) => (
               <Act
                 key={w.slug}
                 verb="nav.open"
@@ -224,7 +228,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
               onSelect={leagues.select} />}
           {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
-            view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs}
+            view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs} tree={controlTree}
             hqTab={s.node === 'hq' ? s.workspace.hq : undefined}
             pulseTab={s.node === 'pulse' ? s.workspace.pulse : undefined}
             leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :

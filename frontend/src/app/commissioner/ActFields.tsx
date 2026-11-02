@@ -30,8 +30,8 @@ export function ActFields({ fields, values, held, onChange }: {
     if (field.kind === 'self') return null;
     const raw = values[field.path];
     const options = held.options[field.kind];
-    if (field.kind === 'order') {
-      const franchises = held.options.franchise ?? [];
+    if (field.kind === 'order' || field.kind === 'deputies') {
+      const franchises = (field.kind === 'order' ? held.options.franchise : held.options.deputies) ?? [];
       const order = Array.isArray(raw) ? raw : franchises.map(() => '');
       return <fieldset key={field.path}><legend>{field.label}</legend>
         {order.map((value, index) => <label key={index}>Place {index + 1}

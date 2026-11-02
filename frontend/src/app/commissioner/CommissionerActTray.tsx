@@ -12,8 +12,11 @@ import SideTray from './SideTray';
 import { surfaceActions } from './surfaceActions';
 import { useChangePreview } from './useChangePreview';
 
-export function CommissionerActForm({ definition, league }: { definition: ActDefinition; league: string }) {
-  const [values, setValues] = useState<ActValues>({});
+export function CommissionerActForm({ definition, league, initial }: {
+  definition: ActDefinition; league: string; /** Values a gesture already chose (a dragged window's new day). */
+  initial?: ActValues;
+}) {
+  const [values, setValues] = useState<ActValues>(initial ?? {});
   const [reason, setReason] = useState('');
   const [held, setHeld] = useState<ActReadings>();
   const [error, setError] = useState('');

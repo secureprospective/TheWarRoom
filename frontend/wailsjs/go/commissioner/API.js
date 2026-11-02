@@ -202,6 +202,10 @@ export function TargetNativeWeek(arg1) {
   return window['go']['commissioner']['API']['TargetNativeWeek'](arg1);
 }
 
+export function TargetSignInFacts() {
+  return window['go']['commissioner']['API']['TargetSignInFacts']();
+}
+
 export function TargetStatQueue(arg1, arg2) {
   return window['go']['commissioner']['API']['TargetStatQueue'](arg1, arg2);
 }

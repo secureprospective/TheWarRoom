@@ -33,14 +33,20 @@ function loadPulse() {
 const NativeFranchiseHQ = lazy(loadHQ);
 const WarRoomNative = lazy(loadWarRoom);
 const NativeLeaguePulse = lazy(loadPulse);
-const loaders = { hq: loadHQ, war: loadWarRoom, pulse: loadPulse };
+const loadHome = () => import('./HomeBrief');
+const HomeBrief = lazy(loadHome);
+const loadControl = () => import('../control/room/ControlRoom');
+const ControlRoom = lazy(loadControl);
+const loaders = { hq: loadHQ, war: loadWarRoom, pulse: loadPulse, home: loadHome, control: loadControl };
 
-export default function AppLeagueMount({ league, view, leave, footer, hqTab, pulseTab, tabs }: {
+export default function AppLeagueMount({ league, view, leave, footer, hqTab, pulseTab, tabs, tree }: {
   league: LeagueChoice;
-  view: 'hq' | 'war' | 'pulse';
+  view: 'hq' | 'war' | 'pulse' | 'home' | 'control';
   leave: (node?: Node) => void;
   footer?: HTMLElement | null;
   hqTab?: HQTab; pulseTab?: PulseTab; tabs?: HTMLElement | null;
+  /** Control Room's rail slot under its nav item. */
+  tree?: HTMLElement | null;
 }) {
   const [people, setPeople] = useState<People>();
   const [mine, setMine] = useState('');
@@ -72,6 +78,9 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
     );
     return () => { active = false; };
   }, [league.id, key]);
+  // The Control Room runs the league, not one franchise: it needs neither a franchise nor the seat list.
+  if (view === 'control') return <Suspense fallback={<p role="status">Opening Control Room…</p>}>
+    <ControlRoom key={league.id} league={league.id} tree={tree} footer={footer} /></Suspense>;
   if (error) return <p role="alert">Could not open {league.name}: {error}</p>;
   if (!people) return <p role="status">Opening {league.name}…</p>;
   const chooser = <label>View a franchise
@@ -99,6 +108,8 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
         {view === 'hq' ? <HQ embedded key={`${league.id}:${mine}`}
           league={league.id} mine={mine} name={league.name} port={localWorkflow} leave={leave}
           tab={hqTab} navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
+          view === 'home' ? <HomeBrief key={`${league.id}:${mine}`} league={league.id} mine={mine}
+            port={localWorkflow} /> :
           view === 'pulse' ? <Pulse embedded key={`${league.id}:${mine}`} league={league.id}
             mine={mine} port={localWorkflow} leave={leave} tab={pulseTab} /> :
           <WarRoom embedded key={`${league.id}:${mine}`} league={league.id} mine={mine}

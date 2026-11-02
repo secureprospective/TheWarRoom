@@ -14,6 +14,22 @@ export namespace accounts {
 	        this.username = source["username"];
 	    }
 	}
+	export class SignInFact {
+	    principal: string;
+	    authenticator: boolean;
+	    lastSeen?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SignInFact(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.principal = source["principal"];
+	        this.authenticator = source["authenticator"];
+	        this.lastSeen = source["lastSeen"];
+	    }
+	}
 
 }
 

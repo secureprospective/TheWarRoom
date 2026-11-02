@@ -1,7 +1,7 @@
 export type FieldKind = 'text' | 'number' | 'money' | 'decimal' | 'instant' | 'boolean'
   | 'franchise' | 'player' | 'bidPlayer' | 'pick' | 'entry' | 'window' | 'claim' | 'bid' | 'trade' | 'item'
   | 'self' | 'scheduleGame' | 'bracketNode' | 'bracketGame' | 'bracketSlot' | 'preset' | 'shape'
-  | 'order' | 'starters' | 'choice' | 'scope' | 'franchiseOrAll';
+  | 'order' | 'deputies' | 'starters' | 'choice' | 'scope' | 'franchiseOrAll';
 export type Field = {
   path: string; label: string; kind: FieldKind; choices?: readonly string[]; optional?: boolean;
 };
@@ -29,6 +29,9 @@ const def = (control: string, command: string, label: string, root: string, fiel
 
 // Paths mirror the hand-written Raw* boundary types; no server-computed outcome is sent by a form.
 export const actTable: readonly ActDefinition[] = [
+  def('CM-023', 'calendar.window.move', 'Move a league window', 'window',
+    [f('id', 'Window name'), f('start.month', 'New opening month (1-12)', 'number'),
+    f('start.day', 'New opening day', 'number')]),
   def('CM-015', 'schedule.generate', 'Generate a schedule', 'schedule',
     [f('weeks', 'Regular-season weeks', 'number'),
     choice('pattern', 'Matchup pattern', ['division_weighted'])]),
@@ -55,6 +58,7 @@ export const actTable: readonly ActDefinition[] = [
   def('CM-019', 'commish.seat.invite', 'Invite an owner', 'people', [id, franchise, principal], true),
   def('CM-019', 'commish.seat.invite.revoke', 'Revoke an invitation', 'people', [id], true),
   def('CM-019', 'commish.seat.invite.redeem', 'Accept an invitation', 'people', [id, self], true),
+  def('CM-019', 'commish.seat.caretaker', 'Seat a caretaker', 'people', [franchise, self]),
   def('CM-019', 'commish.seat.remove', 'Remove an owner', 'people', [franchise]),
   def('CM-019', 'commish.seat.replace', 'Replace an owner', 'people', [franchise, principal]),
   def('CM-020', 'commish.abilities.set', 'Change an owner ability', 'people',
@@ -64,6 +68,8 @@ export const actTable: readonly ActDefinition[] = [
     f('on', 'Allow this ability', 'boolean')]),
   def('CM-020', 'commish.visibility.set', 'Change who can read a report', 'people',
     [f('report', 'Report name'), choice('audience', 'Who can read it', ['all', 'commish'])]),
+  def('CM-021', 'commish.deputy.order', 'Set the co-commissioner order', 'people',
+    [f('order', 'Co-commissioners, first to last', 'deputies')], true),
   def('CM-022', 'commish.succession.stepdown', 'Step down as commissioner', 'people',
     [self, { ...f('successor', 'Successor account (optional)'), optional: true }]),
   ...['accept', 'decline', 'activity'].map(action =>
@@ -103,6 +109,10 @@ export const actTable: readonly ActDefinition[] = [
     [f('pick', 'Pick', 'pick'), f('owner', 'New owner', 'franchise')]),
   def('CM-029', 'commish.lineup.correct', 'Correct a lineup', 'lineup',
     [franchise, season, week, f('starters', 'Starting players', 'starters')]),
+  def('CM-032', 'commish.score.player', 'Adjust a player score', 'score',
+    [player, season, week, f('delta', 'Points to add or take (+/-)', 'decimal')]),
+  def('CM-032', 'commish.score.franchise', 'Adjust a franchise score', 'score',
+    [franchise, season, week, f('delta', 'Points to add or take (+/-)', 'decimal')]),
   def('CM-030', 'commish.player.position', 'Correct a player position', 'score',
     [player, choice('position', 'Scoring position',
       ['QB', 'RB', 'WR', 'TE', 'PK', 'DT', 'DE', 'LB', 'CB', 'S'])]),
@@ -136,6 +146,7 @@ export const actTable: readonly ActDefinition[] = [
   def('CM-035', 'waivers.order.auto', 'Use automatic waiver priority', 'waiver', []),
   def('CM-035', 'waivers.award.override', 'Correct a waiver award', 'waiver',
     [f('claim', 'Waiver claim', 'claim'), franchise]),
+  def('CM-036', 'oline.auction.close', 'Close the O-Line auction', '', []),
   def('CM-036', 'bids.process', 'Process bids for a player', 'bid', [f('player', 'Player', 'bidPlayer')]),
   def('CM-036', 'bids.award.override', 'Correct a bid award', 'bid', [f('bid', 'Bid', 'bid'), franchise]),
   ...['review', 'appeal.rule', 'override', 'recuse', 'appeal'].map(action =>
@@ -162,6 +173,8 @@ export const actTable: readonly ActDefinition[] = [
     [choice('tie', 'Tie breaker', ['League franchise order', 'Reverse league franchise order']), running]),
   def('CM-042', 'draft.start', 'Set the draft start', 'draft',
     [season, f('at', 'Starts at (your local time)', 'instant')]),
+  def('CM-048', 'title.set', 'Set the title label', 'title',
+    [season, { ...f('label', 'Title label ({year} stands for the season)'), optional: true }]),
 ];
 export const actsFor = (control: string) => actTable.filter(a => a.control === control);
 export const liveDraftControls = new Set(['CM-043', 'CM-044', 'CM-045']);

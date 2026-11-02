@@ -397,6 +397,9 @@ string
 string,
 string
 ];
+"commissioner.TargetSignInFacts": [
+
+];
 "commissioner.TargetWorkflow": [
 string
 ];
@@ -766,6 +769,15 @@ string
 "until": string
 }) | null;
 "schedule"?: ({
+"fixtures"?: ({
+"week": number;
+"games": ({
+"id": string;
+"home": string;
+"away": string
+})[];
+"bye"?: string
+})[];
 "weeks"?: number;
 "pattern"?: string;
 "week"?: number;
@@ -1265,6 +1277,15 @@ string
 "until": string
 }) | null;
 "schedule"?: ({
+"fixtures"?: ({
+"week": number;
+"games": ({
+"id": string;
+"home": string;
+"away": string
+})[];
+"bye"?: string
+})[];
 "weeks"?: number;
 "pattern"?: string;
 "week"?: number;
@@ -1739,6 +1760,15 @@ string
 "until": string
 }) | null;
 "schedule"?: ({
+"fixtures"?: ({
+"week": number;
+"games": ({
+"id": string;
+"home": string;
+"away": string
+})[];
+"bye"?: string
+})[];
 "weeks"?: number;
 "pattern"?: string;
 "week"?: number;

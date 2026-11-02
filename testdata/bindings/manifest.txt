@@ -48,6 +48,7 @@ commissioner.API.TargetNativeValues
 commissioner.API.TargetNativeWaiverAction
 commissioner.API.TargetNativeWaivers
 commissioner.API.TargetNativeWeek
+commissioner.API.TargetSignInFacts
 commissioner.API.TargetStatQueue
 commissioner.API.TargetWorkflow
 comms.API.TargetComms

@@ -289,7 +289,8 @@ it('every table field is a field on its Go Raw argument, including nested pick a
     override: ['native_override.go', 'RawNativeOverride'], waiver: ['market_wire.go', 'RawWaiverArgs'],
     bid: ['market_wire.go', 'RawBidArgs'], trade: ['market_wire.go', 'RawTradeArgs'],
     schedule: ['schedule.go', 'RawScheduleArgs'], bracket: ['bracket_commands.go', 'RawBracketChange'],
-    draft: ['draft_wire.go', 'RawDraftArgs'], '': ['command.go', 'RawArgs'],
+    draft: ['draft_wire.go', 'RawDraftArgs'], title: ['title_commands.go', 'RawTitleChange'],
+    window: ['windows.go', 'RawWindowArgs'], '': ['command.go', 'RawArgs'],
   };
   for (const def of actTable) {
     const [file, name] = structs[def.root];
@@ -412,11 +413,11 @@ it('sends invitations and ballots private and every other act to the league, as 
   // Go refuses the wrong visibility: governance events whose Private() is true,
   // and the private column of succession.go.
   const privateActs = ['commish.seat.invite', 'commish.seat.invite.revoke', 'commish.seat.invite.redeem',
-    'commish.vote.cast'];
+    'commish.vote.cast', 'commish.deputy.order'];
   const held = { league, revision: 3, principal: 'creator' } as Parameters<typeof actChange>[2];
   const sample = (kind: string): string | boolean | string[] => {
     if (kind === 'boolean') return true;
-    if (kind === 'order' || kind === 'starters') return ['a'];
+    if (kind === 'order' || kind === 'deputies' || kind === 'starters') return ['a'];
     if (['pick', 'scope', 'shape', 'scheduleGame'].includes(kind)) return '{}';
     if (kind === 'instant') return '2026-10-18T12:00';
     return ['number', 'money', 'decimal', 'bracketSlot'].includes(kind) ? '1' : 'x';

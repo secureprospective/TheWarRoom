@@ -40,6 +40,9 @@ export async function readActData(league: string, kinds: readonly FieldKind[], s
     entry: (ledger?.league === league ? ledger.entries : []).map(e => ({ value: e.id,
       label: `${e.what} — ${new Date(e.when).toLocaleString()}` })),
   };
+  // The deputy order lists every current co-commissioner once; the people reading holds who they are.
+  options.deputies = (people?.league === league ? people.roles : [])
+    .filter(r => r.role === 'co-commissioner').map(r => ({ value: r.person, label: r.person }));
   options.franchiseOrAll = [{ value: '*', label: 'All franchises' }, ...(options.franchise ?? [])];
   options.scope = [
     ...(options.franchise ?? []).map(o => ({ value: JSON.stringify({ franchise: o.value }),
