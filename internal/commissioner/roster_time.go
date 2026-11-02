@@ -8,7 +8,7 @@ import (
 // RosterTimed identifies ordinary moves whose effective time may differ from receipt time.
 func RosterTimed(command string) bool {
 	switch command {
-	case RosterCut, RosterReserve, CorrectRoster, WaiverProcess, WaiverOverride, BidsProcess, BidsOverride,
+	case RosterCut, RosterReserve, CorrectRoster, CorrectPick, WaiverProcess, WaiverOverride, BidsProcess, BidsOverride,
 		TradeAccept, TradeReview, TradeAppealRule, TradeOverride:
 		return true
 	}

@@ -90,12 +90,13 @@ func (s *Store) batchStep(ctx context.Context, tx *sql.Tx, raw commissioner.RawC
 		canonical: canonical, at: now, records: records})
 }
 
-// batchable are the setup changes a batch may hold: none needs football facts gathered before the write.
+// batchable changes need no football facts or market outcomes gathered before the write.
 func batchable(command string, creating bool) bool {
 	switch command {
 	case commissioner.RulesSet:
 		return creating
-	case commissioner.Create, commissioner.NativeSeed, commissioner.ScheduleGenerate, commissioner.SchedulePublish, "commish.seat.invite":
+	case commissioner.CorrectRoster, commissioner.CorrectPick,
+		commissioner.Create, commissioner.NativeSeed, commissioner.ScheduleGenerate, commissioner.SchedulePublish, "commish.seat.invite":
 		return true
 	}
 	return false

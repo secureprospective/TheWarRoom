@@ -8,7 +8,7 @@ import (
 
 func TestRosterEffectiveAdmission(t *testing.T) {
 	now := seasonMoment(9)
-	for _, command := range []string{RosterCut, RosterReserve, CorrectRoster, WaiverProcess, WaiverOverride,
+	for _, command := range []string{RosterCut, RosterReserve, CorrectRoster, CorrectPick, WaiverProcess, WaiverOverride,
 		BidsProcess, BidsOverride, TradeAccept, TradeReview, TradeAppealRule, TradeOverride} {
 		t.Run(command, func(t *testing.T) {
 			for _, tc := range []struct {
