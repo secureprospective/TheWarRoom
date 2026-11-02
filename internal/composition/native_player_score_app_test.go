@@ -365,6 +365,7 @@ func TestNativeScoreWireFixtureMatchesGo(t *testing.T) {
 func TestNativeScoreKeepsTheCountedVersionUntilTheLeagueApprovesTheNewest(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	counted := readNativeScore(t, f).SHA256
 	holdNativeScore(t, f, true, "DT", 2)
 	out := readNativeScore(t, f)
