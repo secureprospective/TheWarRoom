@@ -24,9 +24,12 @@ type eventRevision struct {
 // entries a day, so re-decoding it each time starved the read pool and pinned the CPU.
 func (s *Store) wholeStream(ctx context.Context, league, stream string) ([]LeagueEvent, error) {
 	key := eventStreamKey{league, stream}
+	// The lock guards only the map: the database reads run outside it, so one slow reader does not hold up
+	// the others. Held events are never changed in place (the tail goes onto a clipped copy).
 	s.eventsMu.Lock()
-	defer s.eventsMu.Unlock()
-	hit := s.events[key]
+	seen := s.events[key]
+	s.eventsMu.Unlock()
+	hit := seen
 	if hit.revision > 0 && !s.prefixHeld(ctx, key, hit) {
 		hit = eventRevision{}
 	}
@@ -41,7 +44,12 @@ func (s *Store) wholeStream(ctx context.Context, league, stream string) ([]Leagu
 	if n := len(hit.events); n > 0 {
 		hit.revision, hit.lastID = hit.events[n-1].Revision, hit.events[n-1].ID
 	}
-	s.cacheEvents(key, hit)
+	s.eventsMu.Lock()
+	// Another reader may have held a newer copy meanwhile; keep it rather than going back.
+	if now := s.events[key]; now.revision == seen.revision && now.lastID == seen.lastID {
+		s.cacheEvents(key, hit)
+	}
+	s.eventsMu.Unlock()
 	return deepClone(hit.events), nil
 }
 
