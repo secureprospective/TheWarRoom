@@ -410,6 +410,7 @@ string
 "args": {
 "olineOutcome"?: ({
 "assigned": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -426,6 +427,7 @@ string
 "heldContractStatus"?: string
 })[];
 "pending": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -447,9 +449,15 @@ string
 "franchise"?: string;
 "player"?: string;
 "action"?: string;
+"status"?: string;
 "entry"?: string;
 "via"?: string;
+"history"?: ({
+"slot"?: number;
+"unverified"?: boolean
+}) | null;
 "pick"?: ({
+"slot"?: number;
 "season": number;
 "round": number;
 "original": string
@@ -593,6 +601,7 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -721,6 +730,7 @@ string
 "division": string
 })[];
 "players": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -746,6 +756,19 @@ string
 "owner": string;
 "player": string;
 "skipped": boolean
+})[];
+"pickHistory"?: ({
+"pick": {
+"slot"?: number;
+"season": number;
+"round": number;
+"original": string
+};
+"owner": string;
+"evidence": {
+"slot"?: number;
+"unverified"?: boolean
+}
 })[];
 "adjustments": ({
 "kind"?: string;
@@ -918,6 +941,7 @@ string
 "args": {
 "olineOutcome"?: ({
 "assigned": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -934,6 +958,7 @@ string
 "heldContractStatus"?: string
 })[];
 "pending": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -955,9 +980,15 @@ string
 "franchise"?: string;
 "player"?: string;
 "action"?: string;
+"status"?: string;
 "entry"?: string;
 "via"?: string;
+"history"?: ({
+"slot"?: number;
+"unverified"?: boolean
+}) | null;
 "pick"?: ({
+"slot"?: number;
 "season": number;
 "round": number;
 "original": string
@@ -1101,6 +1132,7 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1229,6 +1261,7 @@ string
 "division": string
 })[];
 "players": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1254,6 +1287,19 @@ string
 "owner": string;
 "player": string;
 "skipped": boolean
+})[];
+"pickHistory"?: ({
+"pick": {
+"slot"?: number;
+"season": number;
+"round": number;
+"original": string
+};
+"owner": string;
+"evidence": {
+"slot"?: number;
+"unverified"?: boolean
+}
 })[];
 "adjustments": ({
 "kind"?: string;
@@ -1401,6 +1447,7 @@ string
 "args": {
 "olineOutcome"?: ({
 "assigned": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1417,6 +1464,7 @@ string
 "heldContractStatus"?: string
 })[];
 "pending": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1438,9 +1486,15 @@ string
 "franchise"?: string;
 "player"?: string;
 "action"?: string;
+"status"?: string;
 "entry"?: string;
 "via"?: string;
+"history"?: ({
+"slot"?: number;
+"unverified"?: boolean
+}) | null;
 "pick"?: ({
+"slot"?: number;
 "season": number;
 "round": number;
 "original": string
@@ -1584,6 +1638,7 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1712,6 +1767,7 @@ string
 "division": string
 })[];
 "players": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1737,6 +1793,19 @@ string
 "owner": string;
 "player": string;
 "skipped": boolean
+})[];
+"pickHistory"?: ({
+"pick": {
+"slot"?: number;
+"season": number;
+"round": number;
+"original": string
+};
+"owner": string;
+"evidence": {
+"slot"?: number;
+"unverified"?: boolean
+}
 })[];
 "adjustments": ({
 "kind"?: string;
