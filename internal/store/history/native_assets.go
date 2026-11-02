@@ -15,6 +15,10 @@ func (s *Store) nativeRecords(ctx context.Context, league string) ([]commissione
 	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
 		return nil, fmt.Errorf("choose an app league")
 	}
+	ctx, err := s.linkedIdentities(ctx, league)
+	if err != nil {
+		return nil, err
+	}
 	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("read native league events: %w", err)

@@ -60,8 +60,14 @@ func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league strin
 	return resolved, nil
 }
 
+// identitiesRead marks a context whose league was found to have no linked identities.
+type identitiesRead struct{}
+
+// linkedIdentities reads verified aliases from the account store, which shares the read pool. Read paths
+// call it before opening their transaction so no pooled connection is held while waiting for another.
 func (s *Store) linkedIdentities(ctx context.Context, league string) (context.Context, error) {
-	if s.aliases == nil || commissioner.HasPrincipals(ctx) || !strings.HasPrefix(league, "native.") {
+	if s.aliases == nil || commissioner.HasPrincipals(ctx) || !strings.HasPrefix(league, "native.") ||
+		ctx.Value(identitiesRead{}) == league {
 		return ctx, nil
 	}
 	aliases, err := s.aliases(ctx, league)
@@ -69,7 +75,7 @@ func (s *Store) linkedIdentities(ctx context.Context, league string) (context.Co
 		return nil, fmt.Errorf("read linked identities: %w", err)
 	}
 	if len(aliases) == 0 {
-		return ctx, nil
+		return context.WithValue(ctx, identitiesRead{}, league), nil
 	}
 	principals, err := governance.NewPrincipals(league, aliases)
 	if err != nil {
@@ -579,6 +585,10 @@ func (s *Store) CommissionerDigests(ctx context.Context, league, principal strin
 }
 
 func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	ctx, err := s.linkedIdentities(ctx, league)
+	if err != nil {
+		return nil, err
+	}
 	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("read league records: %w", err)

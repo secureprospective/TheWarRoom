@@ -30,6 +30,10 @@ func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commission
 		return previewRefusal(err)
 	}
 	facts.players = playerFacts
+	ctx, err = s.linkedIdentities(ctx, raw.League)
+	if err != nil {
+		return previewRefusal(err)
+	}
 	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("begin league preview: %w", err)
