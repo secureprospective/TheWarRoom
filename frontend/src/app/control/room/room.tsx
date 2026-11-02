@@ -15,7 +15,7 @@ export type Room = {
   inspect(node: ReactNode): void;
   card(card: Card | null): void;
   /** Open the command's existing form in the editor tray, or say it is not built. */
-  run(command: string): void;
+  run(command: string, initial?: Record<string, string>): void;
   /** Open the commissioner rule-change form on one rule. */
   rule(field: string): void;
   undo(entry: string): void;

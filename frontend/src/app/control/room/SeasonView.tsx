@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { leagueclock } from '../../../../wailsjs/go/models';
 import { Desk, ruleValue, useDefaultInspector, useRoom, when } from './room';
 import { teamName } from './roomReads';
@@ -28,8 +29,21 @@ export function placeWindows(windows: leagueclock.ActionWindow[], now: number) {
   };
 }
 
+/** The opening day a drag of dx pixels along a bar of the given width lands on (the bar spans one league
+ *  year), or null when the drag moves less than a day. */
+export function movedStart(start: string, dx: number, bar: number, now: number): { month: number; day: number } | null {
+  const d = new Date(now);
+  const year = d.getMonth() >= 2 ? d.getFullYear() : d.getFullYear() - 1;
+  const span = Date.UTC(year + 1, 2, 1) - Date.UTC(year, 2, 1);
+  const days = Math.round((dx / bar) * span / DAY);
+  if (!days) return null;
+  const at = new Date(Date.parse(start) + days * DAY);
+  return { month: at.getUTCMonth() + 1, day: at.getUTCDate() };
+}
+
 export function SeasonView() {
   const room = useRoom();
+  const [drag, setDrag] = useState<{ id: string; x: number; dx: number } | null>(null);
   const { data } = room;
   const rv = (f: string) => ruleValue(room, f);
   const windows = data.calendar?.clock.windows ?? [];
@@ -44,13 +58,26 @@ export function SeasonView() {
       These buttons are the manual trigger and the overrides.</div></>);
   const rows3 = (cells: string[][]) => cells.map((c, i) => <div key={i}>{[0, 1, 2].map(k => <span key={k}>{c[k] ?? ''}</span>)}</div>);
   return <div className="cr-col" style={{ flex: 1 }}>
-    <div className="cr-panel"><div className="cr-ph">LEAGUE YEAR · click a window to edit<span className="sp" />
+    <div className="cr-panel"><div className="cr-ph">LEAGUE YEAR · drag a window to move it · click to edit<span className="sp" />
       <span className="ct">timezone {rv('calendar.timezone')} · owners see their own time</span></div>
       <div className="cr-pb"><div className="cr-cal">
         {MONTHS.map((m, i) => <div key={m} className="mo" style={{ left: `${(i / 12) * 100}%` }}>{m}</div>)}
         {cal.items.map(w => <div key={w.id} className={`w${w.live ? ' ins' : ''}`} data-win={w.id} title={w.label}
-          style={{ left: `${w.left}%`, width: `${w.width}%`, top: 18 + w.lane * 26 }}
-          onClick={() => room.rule('calendar.windows')}>{w.label}</div>)}
+          style={{ left: `${w.left}%`, width: `${w.width}%`, top: 18 + w.lane * 26,
+            transform: drag?.id === w.id ? `translateX(${drag.dx}px)` : undefined }}
+          onPointerDown={e => { e.currentTarget.setPointerCapture?.(e.pointerId); setDrag({ id: w.id, x: e.clientX, dx: 0 }); }}
+          onPointerMove={e => drag?.id === w.id && setDrag({ ...drag, dx: e.clientX - drag.x })}
+          onPointerUp={e => {
+            const bar = e.currentTarget.parentElement?.getBoundingClientRect().width ?? 0;
+            const start = windows.find(x => x.id === w.id)?.start;
+            setDrag(null);
+            const moved = drag?.id === w.id && bar > 0 && start ? movedStart(iso(start), drag.dx, bar, Date.now()) : null;
+            // A drag moves the window's opening day through calendar.window.move (preview, reason, ledger);
+            // a click with no day change opens the windows rule, as before.
+            if (moved) room.run('calendar.window.move', { id: w.id, 'start.month': String(moved.month),
+              'start.day': String(moved.day) });
+            else room.rule('calendar.windows');
+          }}>{w.label}</div>)}
         {!windows.length && <div className="cr-na" style={{ position: 'absolute', top: 40, left: 8 }}>
           {missing('calendar') ?? 'No windows in the league calendar.'}</div>}
         <div className="today" style={{ left: `${cal.today}%` }} />

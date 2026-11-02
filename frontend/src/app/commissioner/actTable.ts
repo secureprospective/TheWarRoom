@@ -29,6 +29,9 @@ const def = (control: string, command: string, label: string, root: string, fiel
 
 // Paths mirror the hand-written Raw* boundary types; no server-computed outcome is sent by a form.
 export const actTable: readonly ActDefinition[] = [
+  def('CM-023', 'calendar.window.move', 'Move a league window', 'window',
+    [f('id', 'Window name'), f('start.month', 'New opening month (1-12)', 'number'),
+    f('start.day', 'New opening day', 'number')]),
   def('CM-015', 'schedule.generate', 'Generate a schedule', 'schedule',
     [f('weeks', 'Regular-season weeks', 'number'),
     choice('pattern', 'Matchup pattern', ['division_weighted'])]),

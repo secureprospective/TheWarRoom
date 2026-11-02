@@ -38,9 +38,10 @@ export function roomHooks() {
   afterEach(async () => { await unmount(); vi.useRealTimers(); });
 }
 
-export async function room(over: Parameters<typeof stub>[0] = {}, readings: Parameters<typeof stub>[1] = {}) {
+export async function room(over: Parameters<typeof stub>[0] = {}, readings: Parameters<typeof stub>[1] = {},
+  initial: RoomData = data) {
   const s = stub({ TargetCommissionerJobs: async () => jobs, ...over }, readings);
-  const host = await mount(render(ControlRoom, { league, initial: data }), s.app);
+  const host = await mount(render(ControlRoom, { league, initial }), s.app);
   await open(league);
   await settle();
   return { host, ...s };

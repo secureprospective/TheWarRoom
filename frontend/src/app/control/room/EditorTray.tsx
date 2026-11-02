@@ -35,7 +35,7 @@ export function EditorTray({ content }: { content: TrayContent }) {
   } else if (content.route.kind === 'act') {
     label = content.route.definition.label;
     body = <CommissionerActForm key={content.route.definition.command} definition={content.route.definition}
-      league={room.league} />;
+      league={room.league} initial={content.route.initial} />;
   } else if (content.route.kind === 'migrate') {
     label = 'Move my MFL league';
     body = <MoveMFL />;

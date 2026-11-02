@@ -4,7 +4,7 @@ import type { ActionKind } from '../../commissioner/landing';
 /** Where one of the mock's command buttons goes in the real app. Every button runs an existing command
  *  through its existing form (preview, confirm, typed reason); a command with no form says so. */
 export type Route =
-  | { kind: 'act'; definition: ActDefinition }
+  | { kind: 'act'; definition: ActDefinition; initial?: Record<string, string> }
   | { kind: 'action'; action: ActionKind }
   | { kind: 'backup' }
   /** The live draft's controls (revert, archive, timer) are in the Draft room's commissioner tray. */

@@ -97,13 +97,14 @@ export default function ControlRoom({ league, port = desktopPort, initial, start
     league, data, state, tab, go, toast,
     inspect: setInspector,
     card: setCard,
-    run: (command: string) => {
+    run: (command: string, initial?: Record<string, string>) => {
       setOut(`› ${command}`);
       // A rule's name opens the rule-change form: settings change only through the one rule-change flow.
       if (state.rules?.sections.some(s => s.rows.some(r => r.field === command))) {
         setCard(null); setTray({ kind: 'rule', field: command }); return;
       }
-      open(routeCommand(command));
+      const route = routeCommand(command);
+      open(route.kind === 'act' && initial ? { ...route, initial } : route);
     },
     rule: (field: string) => { setCard(null); setTray({ kind: 'rule', field }); },
     undo: (entry: string) => { setCard(null); setTray({ kind: 'undo', entry }); },
