@@ -223,7 +223,8 @@ export default function HomeBrief({ league, mine, port, initial, research }: { l
               if (n) save(n); else setMsg("Those two sizes don't fit swapped · resize one first");
               setDrag(undefined); }}
             style={{ gridRow: `${p.row + 1}/span ${p.h}`, gridColumn: `${p.col + 1}/span ${p.w}` }}>
-            <HomeAct className="tile-select" action="select" value={p.id} label={`Select ${d.t}`}>{''}</HomeAct>
+            <HomeAct className="tile-select" action="select" value={p.id}
+              label={`Select ${d.t}`}>{''}</HomeAct>
             <div className="th"><span className="ed"><span className="grip" title="Drag to move">⠿</span>
               </span>
               <b>{d.t}</b><span className="src">{d.src}</span>
