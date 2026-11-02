@@ -286,6 +286,7 @@ func playOut(s NativeStandings, expected map[string]float64, field competition.F
 	spread := powerrankings.GameSpread / math.Sqrt2
 	made := map[string]int{}
 	games := make([]competition.RankGame, 0, len(s.counted.games)+len(s.counted.open))
+	needAllPlay := slices.Contains(s.criteria, leaguerules.AllPlayPercentage)
 	for range runs {
 		games = append(games[:0], s.counted.games...)
 		points, allPlay := maps.Clone(s.counted.points), maps.Clone(s.counted.allPlay)
@@ -296,12 +297,14 @@ func playOut(s NativeStandings, expected map[string]float64, field competition.F
 			games = append(games, competition.RankGame{Home: g.Home, Away: g.Away, HomePoints: home, AwayPoints: away})
 			points[g.Home] += home
 			points[g.Away] += away
-			week = append(week, FranchiseWeekScore{Franchise: g.Home, Points: &home},
-				FranchiseWeekScore{Franchise: g.Away, Points: &away})
-			if i+1 == len(s.counted.open) || s.counted.open[i+1].Week != g.Week {
-				played := seasonGames{allPlay: allPlay}
-				played.addAllPlay(week)
-				week = nil
+			if needAllPlay {
+				week = append(week, FranchiseWeekScore{Franchise: g.Home, Points: &home},
+					FranchiseWeekScore{Franchise: g.Away, Points: &away})
+				if i+1 == len(s.counted.open) || s.counted.open[i+1].Week != g.Week {
+					played := seasonGames{allPlay: allPlay}
+					played.addAllPlay(week)
+					week = nil
+				}
 			}
 		}
 		ranking := competition.RankStandings(competition.RankInput{Teams: s.teams, Games: games, AllPlay: allPlay,
