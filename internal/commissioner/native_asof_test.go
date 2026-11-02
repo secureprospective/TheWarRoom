@@ -96,3 +96,29 @@ func TestNativeAssetsAsOfRejectsUnknownHistory(t *testing.T) {
 		t.Fatal("missing ledger returned success")
 	}
 }
+
+func TestPreObservationHistoryKeepsCompensationReceiptTime(t *testing.T) {
+	b := rolloverLedger(t)
+	effective := seasonMoment(1).Add(-time.Hour)
+	raw := RawCommand{League: rolloverLeague, Command: CorrectRoster, Request: "earlier-membership", Reason: "Correct historical membership", Effective: effective.Format(time.RFC3339Nano), Visibility: "league", Args: RawArgs{Correction: &RawCorrection{Player: "0003", Franchise: "franchise.02", Action: "remove"}}}
+	entry := b.add(raw, seasonMoment(5))
+	b.revert(entry, seasonMoment(7))
+	for _, tc := range []struct {
+		name    string
+		at      time.Time
+		present bool
+	}{
+		{"earlier history before compensation", effective.Add(time.Nanosecond), false},
+		{"compensation receipt", seasonMoment(7), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assets, err := NativeAssetsAsOf(rolloverLeague, b.records, tc.at)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if (assets.Snapshot.PlayerOf("franchise.02", "0003") >= 0) != tc.present {
+				t.Fatal("later compensation erased earlier roster history")
+			}
+		})
+	}
+}

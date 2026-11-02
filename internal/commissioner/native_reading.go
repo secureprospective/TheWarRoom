@@ -37,7 +37,11 @@ func NativeAssetsAsOf(league string, records []Record, at time.Time) (NativeAsse
 	if err != nil {
 		return NativeAssets{}, err
 	}
-	if seed.Seeded && at.Before(rosterHistoryStart(seed.Snapshot.RosterAt, records)) {
+	visible, err := nativeRecordsAt(records, at)
+	if err != nil {
+		return NativeAssets{}, err
+	}
+	if seed.Seeded && at.Before(rosterHistoryStart(seed.Snapshot.RosterAt, visible)) {
 		return NativeAssets{}, fmt.Errorf("roster history before the starting observation is not recorded")
 	}
 	return NativeAssetsReading(league, records, at)
@@ -124,7 +128,7 @@ func seedNativeAssets(league string, records []Record) (NativeAssets, error) {
 func rosterHistoryStart(observed time.Time, records []Record) time.Time {
 	active := Replay(records).Active
 	for _, r := range records {
-		if !active[r.Receipt.Entry] || !RosterTimed(r.Command.Command) {
+		if !active[r.Receipt.Entry] || !RosterTimed(r.Command.Command) || r.Command.Command == CorrectPick {
 			continue
 		}
 		effective, err := nativeEntryTime(r)
