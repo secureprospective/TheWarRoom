@@ -90,8 +90,9 @@ type heldFile struct {
 	lines   map[source.LineGame]fantasyscore.UnitLine
 }
 
-// heldSeason reads every held copy of a season's weekly file once, newest first.
-func (s *Store) heldSeason(ctx context.Context, season int) ([]heldFile, error) {
+// readHeldSeason reads every held copy of a season's weekly file, newest first. Readers go through
+// heldSeason, which builds it once per held revision.
+func (s *Store) readHeldSeason(ctx context.Context, season int) ([]heldFile, error) {
 	files := []heldFile{}
 	err := s.heldWeeklyFiles(ctx, season, func(sha string, at time.Time, weeks []source.PlayerWeek) {
 		files = append(files, heldFile{sha: sha, at: at, weeks: weeks})
@@ -260,7 +261,11 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 		}
 		return s.withLiveStats(out, scope), nil
 	}
-	out, err := source.ReadNativeEvidence(ctx, s, stats, scope)
+	var identity source.IdentityPort = s
+	if reading, ok := stats.(source.IdentityPort); ok {
+		identity = reading
+	}
+	out, err := source.ReadNativeEvidence(ctx, identity, stats, scope)
 	if err != nil {
 		return out, fmt.Errorf("read held native evidence: %w", err)
 	}
