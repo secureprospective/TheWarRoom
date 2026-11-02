@@ -1,31 +1,25 @@
 # Handoff
 
 ## Baton
-Bee / APP-MERGE-4 — 2026-11-02, build/INTEGRATE-1102. Local only; no remote.
+Bee / APP-MERGE-6 — 2026-11-02, build/INTEGRATE-1102. Local only; no remote.
 
 ## Where it stands
-- ROSTER-1 (`6dcf0224d`) merged with INTEGRATE-1102 (`5e38e4e2e`).
-- Both follow settings retained; cutover still clears schedule.follow. Inline current
-  week and delayed ten-minute played-week worker preserved; transactions run inside it.
-- Live stats and Pulse files unchanged. Current assets use the existing logical
-  reading instant; explicit historical reads keep their exact observation time.
-- Final race PASS totals (tests + subtests): composition 847, commissioner 599,
-  history 465 (4 opt-in skips), migration 33, mflsource 42, leaguerules 113.
-  Discovery preceded batches. Migrationtest has no test files. No full suite.
-- go build ./..., plain make build, shell Vitest (47 files / 332 tests) and tsc PASS.
-- Resolutions, generated-file reasons and evidence: docs/build-handoffs/APP-MERGE-4.md.
-  Prior work: APP-GATES-4.md, APP-SCHED-9-evidence.md, APP-ROSTER-12-evidence.md
-  in docs/build-handoffs/.
+- Reference schedule/current/played-lineup decisions now live in app/mflref/migration;
+  composition supplies resources and worker lifetime. Timing, transactions and cutover preserved.
+- Control Room uses shared Act controls; 53-method commissioner transport includes SignInFacts.
+- Commits: 68d39d77f (extraction), a9ad04e29 (fixture clock), 1f00dd7db (frontend).
+- Final targeted race: service 2 PASS, composition migration cases 4 PASS. Earlier extracted
+  composition candidate: 846 PASS; not a final-tree full-package rerun.
+- src/app: 1829 PASS / 2 inherited shell guard failures. tsc and plain make build pass.
+- Full evidence and scoped review: docs/build-handoffs/APP-MERGE-6.md.
 
 ## Next move / blocked on
-Claude's full suite and independent review; disposable-profile worker/UI acceptance.
-Christopher's 26 first-kickoff conflict rulings, older-import transaction-follow
-activation and off-roster missing-contract jobs remain. Combined worker timing and
-transaction activation independent of schedule following remain unproved.
+- Boundarycheck now exposes existing native history → ingestion → MFL transitive coupling.
+- Strict controls guards still find HomeBrief/homeTiles raw controls and 86 long shell lines.
+- Follow-up separation/control conversion, independent review and disposable-profile UI testing.
+- Prior unresolved operator rulings/transaction-follow activation: APP-MERGE-4 debt remains.
+- APP-MERGE-5.md was absent from this checkout.
 
 ## Tried and rejected
-Broadly clamping historical projector time hid historical cuts/trades: reverted;
-only current-reading callers advance to the logical reading instant. No rule
-weakening, invented source dates, direct production ledger writes, worker timeout
-increase or remote operation. Historical fixture observation dates are fixed;
-the production pre-observation guard stays intact.
+No fence exemptions, keyboard allowlist expansion, engine/model changes, remote contact or
+full Go repository suite. Did not turn the named room repair into an incidental Home rewrite.
