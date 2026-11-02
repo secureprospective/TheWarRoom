@@ -113,12 +113,9 @@ func (n *nativeSources) PlayerWeekStats(ctx context.Context, scope source.RawSta
 		return nil, fmt.Errorf("read held player statistics: %w", err)
 	}
 	if n.files == nil {
-		files, err := n.store.heldSeason(ctx, scope.Season)
+		files, err := n.store.indexedHeldSeason(ctx, scope.Season)
 		if err != nil {
 			return nil, err
-		}
-		for i := range files {
-			files[i].index = source.IndexHeldWeeks(files[i].weeks)
 		}
 		n.files = files
 	}

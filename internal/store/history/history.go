@@ -63,6 +63,8 @@ type Store struct {
 	events    map[eventStreamKey]eventRevision
 	weeklyMu  sync.Mutex
 	weekly    map[string]weeklyFile
+	// seasons holds the latest built held season per season, keyed on its archive and identity revision.
+	seasons heldSeasonCache
 	// projMu guards the one scored projections book, keyed by league, rules digest and files.
 	projMu   sync.Mutex
 	projKey  string
