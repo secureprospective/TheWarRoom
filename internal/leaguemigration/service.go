@@ -135,7 +135,7 @@ func (s *Service) ImportWithOptions(ctx context.Context, mflLeague, reason, prin
 		if err := checkScheduleMapping(records, plan.Mapping); err != nil {
 			return nil, err
 		}
-		return SyncSchedule(ctx, s.Ledger, league, reason, principal, export.Season, plan.Schedule)
+		return s.syncImportedReferences(ctx, league, reason, principal, export.Season, plan)
 	}
 	create := commissioner.RawCommand{League: league, Command: commissioner.Create, Args: plan.Create,
 		Request: "mfl-import.create", Reason: reason, Effective: "now", Visibility: "league"}
@@ -149,6 +149,13 @@ func (s *Service) ImportWithOptions(ctx context.Context, mflLeague, reason, prin
 	}
 	raws := append([]commissioner.RawCommand{create, start}, answers...)
 	raws = append(raws, ScheduleCommands(league, reason, plan.Schedule, 0)...)
+	groups, err := planTransactionCommands(plan, league, reason, seed)
+	if err != nil {
+		return nil, err
+	}
+	for _, group := range groups {
+		raws = append(raws, group...)
+	}
 	receipts, err := s.Ledger.Batch(ctx, raws, principal)
 	if err != nil {
 		return nil, fmt.Errorf("import the MFL league (nothing was recorded; start the import again): %w", err)
@@ -297,4 +304,46 @@ func (s *Service) SendInvites(ctx context.Context, req Request, digest, reason, 
 func inviteID(league, franchise, email string) string {
 	sum := sha256.Sum256([]byte(league + "\x00" + franchise + "\x00" + strings.ToLower(email)))
 	return "invite." + hex.EncodeToString(sum[:8])
+}
+
+func (s *Service) syncImportedReferences(ctx context.Context, league, reason, principal string, season int, plan Plan) ([]commissioner.Receipt, error) {
+	receipts, err := SyncSchedule(ctx, s.Ledger, league, reason, principal, season, plan.Schedule)
+	if err != nil {
+		return receipts, err
+	}
+	records, err := s.Ledger.Records(ctx, league)
+	if err != nil {
+		return receipts, fmt.Errorf("read transaction follow setting: %w", err)
+	}
+	rules, err := commissioner.RulesNow(records, s.Now())
+	if err != nil {
+		return receipts, fmt.Errorf("read transaction follow rules: %w", err)
+	}
+	if rules.Transactions.Follow.State != leaguerules.IsKnown || !rules.Transactions.Follow.Value {
+		return receipts, nil
+	}
+	seed := plan.Seed
+	for _, r := range records {
+		if r.Command.Command == commissioner.NativeSeed {
+			seed = *r.Command.Args.Native
+			break
+		}
+	}
+	groups, err := planTransactionCommands(plan, league, reason, seed)
+	if err != nil {
+		return receipts, err
+	}
+	txs, err := SyncTransactions(ctx, s.Ledger, league, principal, groups)
+	return append(receipts, txs...), err
+}
+
+func planTransactionCommands(plan Plan, league, reason string, seed commissioner.RawNativeSnapshot) ([][]commissioner.RawCommand, error) {
+	if plan.Transactions == nil {
+		return nil, nil
+	}
+	groups, err := plan.Transactions(league, reason, seed)
+	if err != nil {
+		return nil, fmt.Errorf("prepare transaction history: %w", err)
+	}
+	return groups, nil
 }

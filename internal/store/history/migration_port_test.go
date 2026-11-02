@@ -21,7 +21,7 @@ func TestMigrationSourcePortPrepareImportReview(t *testing.T) {
 	svc, store, src := migrationService(t, export)
 	ctx := t.Context()
 	ready, err := svc.Prepare(ctx, export.LeagueID)
-	if err != nil || !ready.Ready || ready.Players != len(export.Rosters) || src.Reads != 6 {
+	if err != nil || !ready.Ready || ready.Players != len(export.Rosters) || src.Reads != 7 {
 		t.Fatalf("prepare: %+v, reads=%d, err=%v", ready, src.Reads, err)
 	}
 	if n := count(t, store, "league_event"); n != 0 {
@@ -30,12 +30,12 @@ func TestMigrationSourcePortPrepareImportReview(t *testing.T) {
 	// Import must use a fresh read, not the candidate shown by Prepare.
 	src.Export.Rosters[0].Salary = "9.99"
 	receipts, err := svc.Import(ctx, export.LeagueID, "Import from the fixture", "creator")
-	if err != nil || len(receipts) != 2 || src.Reads != 12 {
+	if err != nil || len(receipts) != 2 || src.Reads != 14 {
 		t.Fatalf("import: receipts=%d, reads=%d, err=%v", len(receipts), src.Reads, err)
 	}
 	req := leaguemigration.Request{MFLLeague: export.LeagueID, League: ready.League}
 	review, err := svc.Review(ctx, req)
-	if err != nil || review.Differences != 0 || src.Reads != 18 {
+	if err != nil || review.Differences != 0 || src.Reads != 21 {
 		t.Fatalf("review: %+v, reads=%d, err=%v", review, src.Reads, err)
 	}
 	records, err := store.nativeRecords(ctx, req.League)

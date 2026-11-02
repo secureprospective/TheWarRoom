@@ -63,3 +63,23 @@ func historicalPickJobs(assets NativeAssets) []Job {
 	}
 	return jobs
 }
+
+func (r RawNativeSnapshot) validateHistoricalPicks(franchises map[string]bool) error {
+	seen := map[CorrectionPick]bool{}
+	for _, p := range r.PickHistory {
+		c := RawCorrection{Pick: &p.Pick, Owner: p.Owner, History: &p.Evidence}
+		if err := c.Validate(CorrectPick); err != nil {
+			return err
+		}
+		if seen[p.Pick] || !franchises[p.Owner] {
+			return fmt.Errorf("historical picks need unique identities and recorded owners")
+		}
+		seen[p.Pick] = true
+		trial := r
+		trial.PickHistory = nil
+		if err := correctHistoricalPick(&trial, &c); err != nil {
+			return err
+		}
+	}
+	return nil
+}

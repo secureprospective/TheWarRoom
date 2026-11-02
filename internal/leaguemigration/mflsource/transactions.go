@@ -6,7 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -178,4 +181,38 @@ func transactionReserve(row leaguefeed.Transaction, franchise string, players ma
 		return err
 	}
 	return transactionReserveAssets(change.Out, franchise, bucket, players, add)
+}
+
+// DraftArchive offers only held, successful reference fetches.
+type DraftArchive interface {
+	ArchivedBodies(context.Context, string, func(string, []byte, time.Time) bool) (bool, error)
+}
+
+// BackfillHeldTransactions uses checked held selections before leaving a pick unverified.
+func BackfillHeldTransactions(ctx context.Context, ledger leaguemigration.Ledger, archive DraftArchive, league, reason, principal string, season int, raw transactions.RawTransactions, players map[string]string) ([]commissioner.Receipt, error) {
+	var draft []draftreports.Pick
+	records, err := ledger.Records(ctx, league)
+	if err != nil {
+		return nil, fmt.Errorf("read held draft identity: %w", err)
+	}
+	source, _, _, ok := FollowingLeague(league, records)
+	if !ok {
+		return nil, fmt.Errorf("record a reference league identity before reading held draft evidence")
+	}
+	_, err = archive.ArchivedBodies(ctx, "TYPE=draftResults", func(rawURL string, body []byte, _ time.Time) bool {
+		u, err := url.Parse(rawURL)
+		if err != nil || u.Query().Get("L") != source || !strings.HasPrefix(u.Path, "/"+strconv.Itoa(season)+"/") {
+			return false
+		}
+		parsed, parseErr := draftreports.ParseResults(body)
+		if parseErr != nil {
+			return false
+		}
+		draft = parsed
+		return true
+	})
+	if err != nil {
+		return nil, fmt.Errorf("read held draft evidence: %w", err)
+	}
+	return BackfillTransactions(ctx, ledger, league, reason, principal, season, raw, players, draft)
 }

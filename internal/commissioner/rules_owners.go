@@ -24,7 +24,7 @@ func ruleOwners() []ruleOwner {
 		{"contracts.", "CM-009", "G2"}, {"ir.", "CM-010", "G2"},
 		{"taxi.", "CM-011", "G2"}, {"waivers.", "CM-012", "G2"},
 		{"bids.", "CM-013", "G2"}, {"trades.", "CM-014", "G2"},
-		{"schedule.", "CM-015", "G2"}, {"playoffs.", "CM-016", "G2"},
+		{"transactions.", "CM-038", "G2"}, {"schedule.", "CM-015", "G2"}, {"playoffs.", "CM-016", "G2"},
 		{"house.", "CM-017", "G1"}, {"calendar.windows", "CM-023", "G2"},
 		{"calendar.timezone", "CM-024", "G1"}, {"calendar.boundary", "CM-024", "G2"},
 		{"calendar.rollover", "CM-027", "G3"}, {"calendar.rolloverDate", "CM-027", "G3"},

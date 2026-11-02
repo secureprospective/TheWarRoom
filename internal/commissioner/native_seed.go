@@ -140,6 +140,9 @@ func (r RawNativeSnapshot) validate(rolled bool) error {
 	if err := r.validateArchive(franchises); err != nil {
 		return err
 	}
+	if err := r.validateHistoricalPicks(franchises); err != nil {
+		return err
+	}
 	return r.validateCharges(franchises)
 }
 

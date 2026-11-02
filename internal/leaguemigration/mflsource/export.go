@@ -8,12 +8,14 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // Export is an MFL league as one read of it found it, every value as MFL states it.
 type Export struct {
+	Transactions *transactions.RawTransactions
 	// Base is how the league runs where MFL holds no setting: a bundle of setting values.
 	Base        leaguerules.RuleSet
 	LeagueID    string
@@ -55,6 +57,10 @@ type Reader interface {
 	Adjustments(ctx context.Context) ([]Adjustment, error)
 	Draft(ctx context.Context) ([]draftreports.Pick, []draftreports.FuturePick, error)
 	Players(ctx context.Context) (map[string]string, error)
+}
+
+type TransactionReader interface {
+	Transactions(context.Context) (transactions.RawTransactions, error)
 }
 
 type ScheduleReader interface {
@@ -115,6 +121,13 @@ func Read(ctx context.Context, src Reader, now time.Time) (Export, error) {
 		if err != nil {
 			return Export{}, &leaguemigration.ReadError{Part: "weekly schedule", Err: err}
 		}
+	}
+	if reader, ok := src.(TransactionReader); ok {
+		raw, err := reader.Transactions(ctx)
+		if err != nil {
+			return Export{}, &leaguemigration.ReadError{Part: "transactions", Err: err}
+		}
+		out.Transactions = &raw
 	}
 	out.ReadAt = now.UTC()
 	return out, nil

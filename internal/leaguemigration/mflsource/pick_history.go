@@ -45,7 +45,7 @@ func originalPickEvidence(p commissioner.CorrectionPick, seed commissioner.RawNa
 	slot := 0
 	for _, draft := range drafts {
 		for _, selection := range draft {
-			if selection.Round != p.Round || !strings.HasPrefix(selection.Comments, "[Pick traded from "+name+".") {
+			if selection.Round != p.Round || !strings.HasPrefix(selection.Comments, "[Pick traded from "+name+".") || !heldSelection(seed, selection) {
 				continue
 			}
 			if slot != 0 && slot != selection.Slot {
@@ -73,4 +73,26 @@ func annotateHistoricalGroups(groups [][]commissioner.RawCommand, seed commissio
 		}
 	}
 	return nil
+}
+
+func heldSelection(seed commissioner.RawNativeSnapshot, selection draftreports.Pick) bool {
+	for _, p := range seed.Picks {
+		if p.Season != seed.Season || p.Round != selection.Round || p.Slot != selection.Slot {
+			continue
+		}
+		owner := ""
+		for _, f := range seed.Franchises {
+			if f.HeldID == selection.Franchise {
+				owner = f.ID
+			}
+		}
+		if owner != p.Owner {
+			return false
+		}
+		if selection.Skipped {
+			return p.Skipped
+		}
+		return selection.Player != nil && selection.Player.String() == p.Player
+	}
+	return false
 }

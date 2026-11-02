@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/salaryadjustments"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -185,4 +186,12 @@ func (s *Source) Schedule(ctx context.Context) ([]leagueschedule.RawScheduleWeek
 		return nil, fmt.Errorf("read weekly schedule: %w", err)
 	}
 	return weeks, nil
+}
+
+func (s *Source) Transactions(ctx context.Context) (transactions.RawTransactions, error) {
+	raw, err := transactions.Fetch(ctx, s.Client, s.year(), s.ID)
+	if err != nil {
+		return transactions.RawTransactions{}, fmt.Errorf("read transactions: %w", err)
+	}
+	return raw, nil
 }

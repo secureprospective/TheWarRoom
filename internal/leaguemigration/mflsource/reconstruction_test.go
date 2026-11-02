@@ -56,7 +56,7 @@ func TestHistoricalPickReconstruction(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			seed := commissioner.RawNativeSnapshot{Season: 2026, RosterAt: time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC),
-				Franchises: []commissioner.NativeFranchise{{ID: "franchise.01", Name: "Franchise 1"}, {ID: "franchise.02"}},
+				Franchises: []commissioner.NativeFranchise{{ID: "franchise.01", Name: "Franchise 1"}, {ID: "franchise.02", HeldID: "0002"}},
 				Picks:      []commissioner.NativePick{{Season: 2026, Round: 3, Slot: 2, Owner: "franchise.02", Player: "0099"}}}
 			raw, err := transactions.Parse([]byte(`{"transactions":{"transaction":{"timestamp":"1772888911","franchise":"0001","type":"TRADE","franchise2":"0002","franchise1_gave_up":"FP_0001_2026_3,","franchise2_gave_up":"","expires":"1773014400"}}}`))
 			if err != nil {
