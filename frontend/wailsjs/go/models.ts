@@ -11616,6 +11616,9 @@ export namespace livegame {
 	    }
 	}
 	export class Game {
+	    season?: number;
+	    week?: number;
+	    seasonType?: number;
 	    id: string;
 	    kickoff: string;
 	    home: Team;
@@ -11634,6 +11637,9 @@ export namespace livegame {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.week = source["week"];
+	        this.seasonType = source["seasonType"];
 	        this.id = source["id"];
 	        this.kickoff = source["kickoff"];
 	        this.home = this.convertValues(source["home"], Team);
