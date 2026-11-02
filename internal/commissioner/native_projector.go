@@ -26,6 +26,8 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 			return err
 		}
 	}
+	contracts := map[string]NativePlayer{}
+	rememberNativeContracts(assets, contracts)
 	for _, i := range order {
 		if i < since {
 			continue
@@ -34,9 +36,10 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 		if !active[record.Receipt.Entry] {
 			continue
 		}
-		if err := projectNativeEntry(assets, records, i, waivers); err != nil {
+		if err := projectNativeEntry(assets, records, i, waivers, contracts); err != nil {
 			return err
 		}
+		rememberNativeContracts(assets, contracts)
 		if visit != nil {
 			visit(assets)
 		}
@@ -45,7 +48,7 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 }
 
 // projectNativeEntry applies one active ledger entry to the native assets.
-func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *MarketBook) error {
+func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *MarketBook, contracts map[string]NativePlayer) error {
 	record := records[i]
 	if TradeCommand(record.Command.Command) {
 		return projectNativeTrade(assets, waivers, record)
@@ -68,7 +71,7 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 	case RulesSet:
 		return projectTeamsChange(assets, record)
 	case CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException:
-		return applyAssetCorrection(assets.Snapshot, records[:i], record)
+		return applyAssetCorrection(assets.Snapshot, contracts, record)
 	case SeasonRollover:
 		return applyNativeRollover(assets, record)
 	case DraftPick, DraftAssign, DraftInsert, DraftChange, DraftArchive:
@@ -233,4 +236,13 @@ func nativeEffectiveOrder(records []Record) ([]int, bool, error) {
 		return cmp.Compare(revisions[a], revisions[b])
 	})
 	return order, backdated, nil
+}
+
+func rememberNativeContracts(assets *NativeAssets, contracts map[string]NativePlayer) {
+	if !assets.Seeded {
+		return
+	}
+	for _, p := range assets.Snapshot.Players {
+		contracts[assets.Snapshot.SideOf(p.Franchise)+"/"+p.ID] = p
+	}
 }

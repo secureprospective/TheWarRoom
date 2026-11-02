@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -20,16 +21,17 @@ const (
 
 // RawCorrection names one asset or one automated decision; unrecorded contracts stay missing.
 type RawCorrection struct {
-	Franchise string          `json:"franchise,omitempty"`
-	Player    string          `json:"player,omitempty"`
-	Action    string          `json:"action,omitempty"`
-	Entry     string          `json:"entry,omitempty"`
-	Via       string          `json:"via,omitempty"`
-	Pick      *CorrectionPick `json:"pick,omitempty"`
-	Owner     string          `json:"owner,omitempty"`
-	Rule      string          `json:"rule,omitempty"`
-	Scope     *ExceptionScope `json:"scope,omitempty"`
-	Until     string          `json:"until,omitempty"`
+	Franchise string              `json:"franchise,omitempty"`
+	Player    string              `json:"player,omitempty"`
+	Action    string              `json:"action,omitempty"`
+	Status    domain.RosterStatus `json:"status,omitempty"`
+	Entry     string              `json:"entry,omitempty"`
+	Via       string              `json:"via,omitempty"`
+	Pick      *CorrectionPick     `json:"pick,omitempty"`
+	Owner     string              `json:"owner,omitempty"`
+	Rule      string              `json:"rule,omitempty"`
+	Scope     *ExceptionScope     `json:"scope,omitempty"`
+	Until     string              `json:"until,omitempty"`
 }
 
 type CorrectionPick struct {
@@ -63,8 +65,14 @@ func (r RawCorrection) Validate(command string) error {
 	switch command {
 	case CorrectRoster:
 		expected.Player, expected.Franchise, expected.Action = r.Player, r.Franchise, r.Action
-		if !slices.Contains([]string{"add", "remove"}, r.Action) || !strings.HasPrefix(r.Franchise, "franchise.") {
+		if !slices.Contains([]string{"add", "remove", "status"}, r.Action) || !strings.HasPrefix(r.Franchise, "franchise.") {
 			return fmt.Errorf("choose a franchise and whether to add or remove the player")
+		}
+		if r.Action == "status" {
+			expected.Status = r.Status
+			if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, r.Status) {
+				return fmt.Errorf("choose active roster, injured reserve or taxi")
+			}
 		}
 	case CorrectTransaction:
 		expected.Entry = r.Entry

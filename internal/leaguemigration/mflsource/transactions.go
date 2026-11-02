@@ -16,7 +16,8 @@ import (
 )
 
 // TransactionCommands translates checked feed evidence into ordinary commissioner
-// corrections and reserve moves. LOAD_ROSTERS is observation evidence, not an acquisition.
+// corrections, including reserve statuses and LOAD_ROSTERS membership observations.
+// An observation does not invent acquisition provenance or a contract.
 // It does not append commands or confer authority on a source's by_commish flag.
 func TransactionCommands(raw transactions.RawTransactions, league, reason string, season int, franchises, players map[string]string) ([][]commissioner.RawCommand, error) {
 	rows, err := transactions.ToTransactions(raw)
@@ -26,9 +27,6 @@ func TransactionCommands(raw transactions.RawTransactions, league, reason string
 	slices.SortStableFunc(rows, func(a, b leaguefeed.Transaction) int { return a.Time.Compare(b.Time) })
 	out := make([][]commissioner.RawCommand, 0, len(rows))
 	for _, row := range rows {
-		if row.Kind == "LOAD_ROSTERS" {
-			continue
-		}
 		commands, err := transactionCommands(row, league, reason, season, franchises, players)
 		if err != nil {
 			return nil, fmt.Errorf("translate %s at %s: %w", row.Kind, row.Time.Format(time.RFC3339Nano), err)
@@ -59,7 +57,14 @@ func BackfillTransactions(ctx context.Context, ledger leaguemigration.Ledger, le
 	for id := range heldPlayers {
 		players[id] = id
 	}
-	groups, err := TransactionCommands(raw, league, reason, season, franchises, players)
+	seed := *assets.Snapshot
+	for _, record := range records {
+		if record.Command.Command == commissioner.NativeSeed && record.Command.Args.Native != nil {
+			seed = *record.Command.Args.Native
+			break
+		}
+	}
+	groups, err := TransactionReplayCommands(raw, league, reason, seed, franchises, players)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +96,7 @@ func transactionCommands(row leaguefeed.Transaction, league, reason string, seas
 			Effective: row.Time.UTC().Format(time.RFC3339Nano), Visibility: "league"})
 	}
 	switch row.Kind {
-	case "FREE_AGENT":
+	case "FREE_AGENT", "LOAD_ROSTERS":
 		if err := transactionRosterAssets(row.AddsDrops.Out, franchise, "", "remove", franchises, players, season, add); err != nil {
 			return nil, err
 		}
@@ -158,7 +163,7 @@ func transactionReserveAssets(assets []leaguefeed.Asset, franchise, bucket strin
 		if asset.Player == nil || players[asset.Player.String()] == "" {
 			return fmt.Errorf("reserve move needs a known player")
 		}
-		add(commissioner.RosterReserve, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: players[asset.Player.String()], Franchise: franchise, Bucket: bucket}})
+		add(commissioner.CorrectRoster, commissioner.RawArgs{Correction: &commissioner.RawCorrection{Player: players[asset.Player.String()], Franchise: franchise, Action: "status", Status: commissioner.ReserveStatus(bucket)}})
 	}
 	return nil
 }

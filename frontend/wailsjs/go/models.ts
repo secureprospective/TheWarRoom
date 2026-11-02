@@ -4083,6 +4083,7 @@ export namespace commissioner {
 	    franchise?: string;
 	    player?: string;
 	    action?: string;
+	    status?: string;
 	    entry?: string;
 	    via?: string;
 	    pick?: CorrectionPick;
@@ -4100,6 +4101,7 @@ export namespace commissioner {
 	        this.franchise = source["franchise"];
 	        this.player = source["player"];
 	        this.action = source["action"];
+	        this.status = source["status"];
 	        this.entry = source["entry"];
 	        this.via = source["via"];
 	        this.pick = this.convertValues(source["pick"], CorrectionPick);

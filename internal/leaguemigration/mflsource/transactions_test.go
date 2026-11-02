@@ -18,7 +18,7 @@ func TestTransactionCommands(t *testing.T) {
 		count           int
 	}{
 		{"add and drop", `"type":"FREE_AGENT","transaction":"0099,|1000,"`, "", 2},
-		{"baseline only", `"type":"LOAD_ROSTERS","transaction":"0099,|"`, "", 0},
+		{"baseline membership", `"type":"LOAD_ROSTERS","transaction":"0099,|"`, "", 1},
 		{"trade players and pick", `"type":"TRADE","franchise2":"0002","franchise1_gave_up":"0099,","franchise2_gave_up":"FP_0002_2027_4,","expires":"1791000000"`, "", 3},
 		{"trade current pick", `"type":"TRADE","franchise2":"0002","franchise1_gave_up":"DP_2_0,","franchise2_gave_up":"0099,","expires":"1791000000"`, "", 3},
 		{"IR both ways", `"type":"IR","activated":"0099,","deactivated":"1000,"`, "", 2},

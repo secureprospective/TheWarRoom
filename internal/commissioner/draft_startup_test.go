@@ -294,7 +294,7 @@ func TestStartupListOffersTheLeaguesFranchises(t *testing.T) {
 }
 
 // A single-pool startup draft reads exactly as it did before per-side pools: its room, the assets it
-// signs and the league's jobs hash to what they were at b8a933e4.
+// signs and the league's jobs stay pinned; missing contracts are jobs, not a default-contract rule.
 func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
 	b := startupLeague(t)
 	facts := startupFacts()
@@ -311,7 +311,7 @@ func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := digest(t, basis.draft, basis.order, assets, jobs); got != "90ca21fd230f0aa6" {
+	if got := digest(t, basis.draft, basis.order, assets, jobs); got != "8a6936145d37309e" {
 		t.Fatalf("single-pool startup digest %s", got)
 	}
 }
