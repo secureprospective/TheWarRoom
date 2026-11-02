@@ -2,7 +2,24 @@ package leaguerules
 
 import "time"
 
+// UnknownAcquisitionRules is an explicit commissioner's choice, never a preset default.
+// Salary is used only by the fixed salary rule.
+type UnknownAcquisitionRules struct {
+	Years      Value[int]
+	SalaryRule Value[UnknownSalaryRule]
+	Salary     Value[Money]
+}
+
+type UnknownSalaryRule string
+
+const (
+	UnknownFixedSalary       UnknownSalaryRule = "fixed"
+	UnknownLowestMinimum     UnknownSalaryRule = "lowest_minimum"
+	UnknownExperienceMinimum UnknownSalaryRule = "experience_minimum"
+)
+
 type ContractsRules struct {
+	UnknownAcquisition      Value[UnknownAcquisitionRules]
 	MaximumYears            Value[int]
 	FlatSalaries            Value[bool]
 	MinimumSalaries         Value[[]ExperienceSalary]
@@ -23,6 +40,7 @@ type ContractsRules struct {
 
 func legacyContracts() ContractsRules {
 	return ContractsRules{
+		UnknownAcquisition:      Needs[UnknownAcquisitionRules]("Choose the contract years and salary rule for an unknown acquisition."),
 		MaximumYears:            cited[int](4, "Rulebook §6"),
 		FlatSalaries:            cited[bool](true, "Math §1"),
 		MinimumSalaries:         cited[[]ExperienceSalary](legacyMinimums(), "Rulebook §6; Math §14 ruling 2"),
@@ -44,6 +62,7 @@ func legacyContracts() ContractsRules {
 
 func contractsFields() []ruleField {
 	return []ruleField{
+		field[UnknownAcquisitionRules]{path: "contracts.unknown_acquisition", label: "Contract for an unknown acquisition", access: func(r *RuleSet) *Value[UnknownAcquisitionRules] { return &r.Contracts.UnknownAcquisition }},
 		field[int]{path: "contracts.maximumYears", label: "Maximum new contract years", access: func(r *RuleSet) *Value[int] { return &r.Contracts.MaximumYears }},
 		field[bool]{path: "contracts.flatSalaries", label: "Flat annual salaries", access: func(r *RuleSet) *Value[bool] { return &r.Contracts.FlatSalaries }},
 		field[[]ExperienceSalary]{path: "contracts.minimumSalaries", label: "Minimum bidding salaries", access: func(r *RuleSet) *Value[[]ExperienceSalary] { return &r.Contracts.MinimumSalaries }},

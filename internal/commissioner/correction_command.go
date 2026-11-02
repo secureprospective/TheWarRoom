@@ -33,6 +33,7 @@ type RawCorrection struct {
 }
 
 type CorrectionPick struct {
+	Slot     int    `json:"slot,omitempty"`
 	Season   int    `json:"season"`
 	Round    int    `json:"round"`
 	Original string `json:"original"`
@@ -209,8 +210,15 @@ func checkExceptionScope(c RawCorrection, records []Record, snapshot *RawNativeS
 
 func (r RawCorrection) validatePick() error {
 	if r.Pick == nil || r.Pick.Season < 1920 || r.Pick.Season > 9999 || r.Pick.Round < 1 ||
-		!strings.HasPrefix(r.Pick.Original, "franchise.") || !strings.HasPrefix(r.Owner, "franchise.") {
-		return fmt.Errorf("choose the draft season, round, original franchise and corrected owner")
+		!strings.HasPrefix(r.Owner, "franchise.") {
+		return fmt.Errorf("choose the draft season, round, pick and corrected owner")
+	}
+	if r.Pick.Original == "" {
+		if r.Pick.Slot < 1 || r.Pick.Slot > 1000 {
+			return fmt.Errorf("choose the current draft slot")
+		}
+	} else if r.Pick.Slot != 0 || !strings.HasPrefix(r.Pick.Original, "franchise.") {
+		return fmt.Errorf("choose an original franchise or a current draft slot, not both")
 	}
 	return nil
 }

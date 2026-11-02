@@ -83,10 +83,26 @@ func validateSpecial(v any) error {
 		return validateMonthDay(value)
 	case TimeoutPolicy:
 		return validateTimeouts(value)
+	case UnknownAcquisitionRules:
+		return validateUnknownAcquisition(value)
 
 	}
 	return nil
 }
+func validateUnknownAcquisition(v UnknownAcquisitionRules) error {
+	if v.Years.State != IsKnown || v.Years.Value < 1 || v.Years.Value > 9999 || v.SalaryRule.State != IsKnown {
+		return fmt.Errorf("choose the unknown acquisition's contract years and salary rule")
+	}
+	if v.SalaryRule.Value == UnknownFixedSalary {
+		if v.Salary.State != IsKnown {
+			return fmt.Errorf("choose the fixed salary for an unknown acquisition")
+		}
+	} else if v.Salary.State == IsKnown {
+		return fmt.Errorf("a minimum salary rule does not take a fixed salary")
+	}
+	return nil
+}
+
 func validateMonthDay(v MonthDay) error {
 	if v.Month.State != IsKnown || v.Day.State != IsKnown {
 		return nil
@@ -146,7 +162,8 @@ func validateNames(names Value[map[string]string]) error {
 // menus is every closed list of options a rule value may take, by the value's type name.
 func menus() map[string][]string {
 	return map[string][]string{
-		"Format": {"head_to_head"}, "InitialRosters": {"draft", "free_agency"},
+		"UnknownSalaryRule": {"fixed", "lowest_minimum", "experience_minimum"},
+		"Format":            {"head_to_head"}, "InitialRosters": {"draft", "free_agency"},
 		"PlayerPools": {"one", "per_side"}, "CarryPolicy": {"all", "keepers"},
 		"Penalty": {"zero_top_starter", "zero_slot", "none"}, "CapMode": {"hard", "soft"},
 		"NFLStatus":       {"IR", "PUP", "NFI", "Out", "suspended"},

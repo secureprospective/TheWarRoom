@@ -95,7 +95,7 @@ func correctPick(seed *RawNativeSnapshot, r Record) error {
 	}
 	for i := range seed.Picks {
 		p := &seed.Picks[i]
-		if p.Season != c.Pick.Season || p.Round != c.Pick.Round || p.Original != c.Pick.Original {
+		if p.Season != c.Pick.Season || p.Round != c.Pick.Round || p.Original != c.Pick.Original || p.Slot != c.Pick.Slot {
 			continue
 		}
 		if p.Player != "" || p.Skipped {
@@ -122,6 +122,9 @@ func correctionLabel(r Record) string {
 	case CorrectProvenance:
 		return fmt.Sprintf("Corrected how player %s was acquired: %s", c.Player, c.Via)
 	case CorrectPick:
+		if c.Pick.Original == "" {
+			return fmt.Sprintf("Corrected season %d round %d slot %d: owned by %s", c.Pick.Season, c.Pick.Round, c.Pick.Slot, c.Owner)
+		}
 		return fmt.Sprintf("Corrected season %d round %d pick from %s: owned by %s",
 			c.Pick.Season, c.Pick.Round, c.Pick.Original, c.Owner)
 	case RuleException:
