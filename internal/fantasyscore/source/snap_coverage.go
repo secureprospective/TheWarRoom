@@ -91,12 +91,13 @@ func NonParticipationProofs(snaps []RawSnap, roster []RawAbsenceProof) []RawAbse
 	for key, rows := range teams {
 		complete[key] = completeSnapTeam(rows)
 	}
+	held := slices.Sorted(maps.Keys(games(snaps)))
 	var out []RawAbsenceProof
 	for _, r := range roster {
 		if r.GSIS == "" || r.PFR == "" {
 			continue
 		}
-		for _, game := range slices.Sorted(maps.Keys(games(snaps))) {
+		for _, game := range held {
 			if !complete[game+"/"+r.Team] || present[game+"/"+r.PFR] || (r.GameID != "" && r.GameID != game) {
 				continue
 			}
