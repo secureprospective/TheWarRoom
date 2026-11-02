@@ -1,27 +1,27 @@
 # Handoff
 
 ## Baton
-Bee / APP-MERGE-7 — 2026-11-02, build/INTEGRATE-1102. Local only; no remote.
+Bee / APP-MERGE-8 — 2026-11-02, build/INTEGRATE-1102. Local only; no remote.
 
 ## Where it stands
-- Both APP-MERGE-7 blockers cleared. Full report: docs/build-handoffs/APP-MERGE-7.md.
-- 152274c88: history uses acquisition-free held depth/bye facts; shared envelope decoding
-  is in feedwire. Boundarycheck exits 0; no guard exemptions or policy changes.
-- 5110ff1d3: Home uses shared controls; all 86 original long shell lines wrapped.
-- Final code tree: 1,742 Go race PASS tests/subtests, 8 existing opt-in skips;
-  composition alone 846 PASS. Discovery preceded the explicit-package batch.
-- src/app: 180 files / 1,832 tests PASS. tsc and plain make build exit 0.
-- Untracked .task-evidence contains raw logs; existing .golangci-cache remains untracked.
+- Items 1, 4–10 fixed; item 3 report-only origin findings documented, no source edit.
+- Full report: docs/build-handoffs/APP-MERGE-8.md, including per-item commits and fixture explanations.
+- Live stats retain game season/week, clear on empty success, preserve evidence on failure.
+- Calendar drag uses league civil dates; Tokyo and DST cases tested.
+- Rollover award was hidden by inconsistent test clocks, not removed; hosted reads now use
+  the ledger clock. Award asserted present; only explained follow-setting fixtures regenerated.
+- Final explicit nine-package race batch: 2,022 PASS tests/subtests, four existing opt-in skips;
+  composition 846 PASS. Separate commissioner contract-alert checks: nine PASS.
+- src/app: 180 files / 1,833 tests PASS. tsc, boundarycheck and plain make build exit 0.
+- Build-generated game-scope bindings committed. Raw evidence remains in .task-evidence/.
 
 ## Next move / blocked on
-- Operator's full repository verification; no full suite or push run here.
-- Independent review/mutant check and disposable-profile visual/keyboard acceptance:
-  Home selection/navigation, layout controls, drag, filters, drawers and Escape.
-- Prior delayed-worker live shutdown/publication check and APP-MERGE-4's operator
-  rulings/transaction-follow activation debt remain unverified.
-- Wails still emits missing-model-alias diagnostics despite a successful build.
+- Operator full suite; independent review/mutant check and disposable-profile live acceptance.
+- Item 3 origin-based startup/cutover rules remain debt requiring approved setting semantics.
+- Wails still emits inherited missing-model-alias diagnostics despite a successful build.
+- Existing .golangci-cache/ and .task-evidence/ remain untracked.
 
 ## Tried and rejected
-Removing only the contracts import left transitive routes through researchfeeds and
-nflschedule. Extracted shared held decoding/values instead of relaxing the boundary.
-No keyboard allowlist expansion, engine/model changes, remote contact or full Go suite.
+- Did not accept empty rollover awards or weaken the as-of projector: aligned clocks instead.
+- Did not regenerate fixtures until complete normalized diffs were explained.
+- No engine/model changes, boundary exemptions, live-profile launch, full suite or remote contact.
