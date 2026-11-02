@@ -1,0 +1,220 @@
+free: historical 76 refusals, exact before/after unchanged
+backfill played lineups: record week 1 lineup of franchise.03: Dean, Nakobe is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.13: Pierce, Alec is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.15: Williams, Jameson is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.06: Watson, Deshaun is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.08: Horn, Jaycee is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.32: Jones, Chris is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.24: Davis, Jalen is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.22: Payne, Da'Ron is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.19: Ojulari, Azeez is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.17: Dart, Jaxson is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.20: Maddox, Avonte is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.18: Miller, Von is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.25: White, Devin is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.03: Dean, Nakobe is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.17: Dart, Jaxson is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.18: Rush, Cooper is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.19: Ojulari, Azeez is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.13: Pierce, Alec is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.20: Maddox, Avonte is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.25: Brooks, Chris is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.08: Horn, Jaycee is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.06: Watson, Deshaun is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.24: Davis, Jalen is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.32: Downs, Josh is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.22: Payne, Da'Ron is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.18: Keenum, Case is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.19: Ojulari, Azeez is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.03: Dean, Nakobe is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.13: Hodge, KhaDarel is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.08: Horn, Jaycee is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.32: Jones, Chris is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.24: Davis, Jalen is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.30: Odeyingbo, Dayo is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.25: Chenal, Leo is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.32: Jones, Chris is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.03: Williams, Tyleik is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.30: Odeyingbo, Dayo is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.24: Robinson, Tavius is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.18: Barnett, Derek is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.32: Downs, Josh is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.30: Odeyingbo, Dayo is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.24: Robinson, Tavius is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.18: Irving, Bucky is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.08: Evans, Akayleb is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.32: Downs, Josh is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.24: Robinson, Tavius is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.18: Williams, Kyle is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.20: Jones, Naquan is not on this franchise's active roster, so cannot start
+record week 7 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+
+locked: historical 107 refusals, exact before/after unchanged
+backfill played lineups: record week 1 lineup of franchise.03: Dean, Nakobe is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.13: Pierce, Alec is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.15: Williams, Jameson is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.06: Watson, Deshaun is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.08: Horn, Jaycee is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.32: Jones, Chris is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.24: Davis, Jalen is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.22: Payne, Da'Ron is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.19: Ojulari, Azeez is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.17: Dart, Jaxson is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.20: Maddox, Avonte is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.18: Miller, Von is not on this franchise's active roster, so cannot start
+record week 1 lineup of franchise.25: White, Devin is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.03: Dean, Nakobe is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.17: Dart, Jaxson is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.18: Rush, Cooper is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.19: Ojulari, Azeez is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.13: Pierce, Alec is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.20: Maddox, Avonte is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.25: Brooks, Chris is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.08: Horn, Jaycee is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.06: Watson, Deshaun is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.24: Davis, Jalen is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.32: Downs, Josh is not on this franchise's active roster, so cannot start
+record week 2 lineup of franchise.22: Payne, Da'Ron is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.18: Keenum, Case is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.19: Ojulari, Azeez is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.03: Dean, Nakobe is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.13: Hodge, KhaDarel is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.08: Horn, Jaycee is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.32: Jones, Chris is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.24: Davis, Jalen is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.30: Odeyingbo, Dayo is not on this franchise's active roster, so cannot start
+record week 3 lineup of franchise.25: Chenal, Leo is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.32: Jones, Chris is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.03: Williams, Tyleik is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.30: Odeyingbo, Dayo is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.24: Robinson, Tavius is not on this franchise's active roster, so cannot start
+record week 4 lineup of franchise.18: Barnett, Derek is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.04: All, Erick is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.09: Hunter, Danielle is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.32: Downs, Josh is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.30: Odeyingbo, Dayo is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.24: Robinson, Tavius is not on this franchise's active roster, so cannot start
+record week 5 lineup of franchise.18: Irving, Bucky is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.15: Phillips, Del'Shawn is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.14: Jones, Brandon is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.10: Edmunds, Tremaine is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.08: Evans, Akayleb is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.32: Downs, Josh is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.24: Robinson, Tavius is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.18: Williams, Kyle is not on this franchise's active roster, so cannot start
+record week 6 lineup of franchise.20: Jones, Naquan is not on this franchise's active roster, so cannot start
+record week 7 lineup of franchise.15: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.01: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.13: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.02: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.14: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.03: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.16: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.04: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.07: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.09: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.05: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.10: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.06: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.12: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.08: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.11: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.31: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.32: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.30: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.29: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.22: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.24: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.21: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.23: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.28: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.17: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.27: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.18: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.26: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.19: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.25: Roster history before the starting observation is not recorded
+record week 7 lineup of franchise.20: Roster history before the starting observation is not recorded
+
+locked: explicit archived week 8, 32 refusals, exact before/after unchanged
+record week 8 lineup of franchise.02: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.01: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.04: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.03: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.25: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.15: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.27: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.14: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.26: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.13: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.28: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.16: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.32: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.09: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.31: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.10: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.29: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.12: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.30: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.11: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.07: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.08: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.06: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.05: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.23: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.24: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.21: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.22: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.20: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.17: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.19: Roster history before the starting observation is not recorded
+record week 8 lineup of franchise.18: Roster history before the starting observation is not recorded
