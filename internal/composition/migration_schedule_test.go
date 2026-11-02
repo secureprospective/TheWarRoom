@@ -168,6 +168,8 @@ func TestScheduleRefreshFillsOnlyMissingNFLDates(t *testing.T) {
 	for _, week := range []int{7, 8, 9, 13} {
 		heldNativeWeek(t, a, week, time.Date(2026, 9, 11, 0, 15, 0, 0, time.UTC).AddDate(0, 0, (week-1)*7), week < 8)
 	}
+	// Feed freshness uses wall time; the league reading keeps its pinned instant.
+	a.core.History.SetClock(time.Now)
 	feed := &nflDatesTransport{}
 	stats := &scoringLaunchTransport{}
 	a.core.Fetches = &archive.Transport{Base: stats, Sink: a.core.History}
