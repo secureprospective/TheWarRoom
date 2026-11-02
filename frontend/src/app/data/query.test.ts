@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { createReadQuery, readKey } from './query';
+import { createReadQuery, poll, readKey } from './query';
 import { readCommands } from '../commands/reads.gen';
 
 function deferred<T>() {
@@ -260,3 +260,48 @@ it('shares a wrapper-owned view without losing independently accepted fields', a
   expect(league.peek()).toEqual({ accounting: 'ledger', news: 'news', pending: false, error: '' });
 });
 
+
+it('never overlaps a slow read of the same scope, across query instances', async () => {
+  const reads: ReturnType<typeof deferred<string>>[] = [];
+  const read = vi.fn(() => { const d = deferred<string>(); reads.push(d); return d.promise; });
+  const first = raceQuery(read);
+  const second = raceQuery(read);
+  const scope = [1, '0001', '0002', ''] as const;
+  const loads = [first.load([...scope]), first.load([...scope]), second.load([...scope]),
+    second.load([...scope])];
+  await Promise.resolve();
+  expect(read).toHaveBeenCalledTimes(1); // the slow read is not re-issued while it runs
+  void first.load([2, '0001', '0002', '']);
+  expect(read).toHaveBeenCalledTimes(2); // a different scope is its own read
+  reads[0].resolve('stale');
+  await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(3)); // one queued read, after it, for all
+  reads[2].resolve('fresh');
+  await Promise.all(loads);
+  expect(read).toHaveBeenCalledTimes(3);
+  expect(second.peek().value).toBe('fresh');
+  reads[1].resolve('two');
+  const later = second.load([...scope]);
+  expect(read).toHaveBeenCalledTimes(4); // nothing is kept once the reads settle
+  reads[3].resolve('later');
+  await later;
+});
+
+it('polls from completion, so a slow read is never overlapped, and stops on unmount', async () => {
+  vi.useFakeTimers();
+  try {
+    let pending = deferred<void>();
+    const read = vi.fn(() => pending.promise);
+    const stop = poll(read, 1000);
+    expect(read).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(read).toHaveBeenCalledTimes(1); // still in flight: no second read
+    const done = pending; pending = deferred<void>(); done.resolve();
+    await vi.advanceTimersByTimeAsync(999);
+    expect(read).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(read).toHaveBeenCalledTimes(2);
+    stop(); pending.resolve();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(read).toHaveBeenCalledTimes(2);
+  } finally { vi.useRealTimers(); }
+});

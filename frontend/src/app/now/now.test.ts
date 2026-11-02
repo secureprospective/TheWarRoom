@@ -120,7 +120,10 @@ it('never publishes an older weekly board after a newer request', async () => {
   };
   const state = createNowState(reader, () => '0001');
   const old = state.load(false);
-  const latest = state.load(false);
+  expect(state.load(false)).toBeDefined(); // the same scope again joins the read in flight
+  expect(waiting).toHaveLength(1);
+  const latest = state.choose('week', '6');
+  await vi.waitFor(() => expect(waiting).toHaveLength(2));
   const board = { ...now(), week: 6 };
   waiting[1](board);
   await latest;
