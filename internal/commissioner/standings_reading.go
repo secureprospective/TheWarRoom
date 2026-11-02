@@ -55,6 +55,10 @@ type NativeStandings struct {
 	// commissioner's records; the draft's first round reads them to apply its own tie rule.
 	level, overrideLevel [][]string
 	regularWeeks         int
+	// counted, teams and criteria are what the ranking read; the odds reading plays the open games on them.
+	counted  seasonGames
+	teams    []competition.RankTeam
+	criteria []leaguerules.Criterion
 }
 
 // seasonGames is every decided game and complete score of the counted weeks.
@@ -64,6 +68,14 @@ type seasonGames struct {
 	points  map[string]leaguerules.Decimal
 	decided int
 	pending int
+	// open is every counted week's game that has no result yet, in week order.
+	open []OpenGame
+}
+
+// OpenGame is a regular-season game still to be decided.
+type OpenGame struct {
+	Week       int
+	Home, Away string
 }
 
 // NativeStandingsReading counts games through the last regular-season week and no later.
@@ -134,6 +146,7 @@ func countSeason(ctx context.Context, league string, records []Record, src Resul
 		for _, g := range results.Games {
 			if g.Status == GameNoResult {
 				out.pending++
+				out.open = append(out.open, OpenGame{Week: week.Week, Home: g.Home, Away: g.Away})
 				continue
 			}
 			out.decided++
@@ -184,6 +197,7 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 	computed := competition.RankStandings(input)
 	out.Computed, out.level = standingRows(computed, teams, counted.points, nil), computed.Level
 	out.NoData = computed.Skipped
+	out.counted, out.teams, out.criteria = counted, teams, rules.Standings.Criteria.Value
 	out.Decided, out.Pending, out.Status = counted.decided, counted.pending, "Ranked"
 	out.Words = fmt.Sprintf("Standings through week %d: %d games have a result, %d do not yet", out.Through,
 		counted.decided, counted.pending)
