@@ -39,6 +39,19 @@ export function placeWindows(windows: leagueclock.ActionWindow[], now: number) {
   };
 }
 
+/** A civil date in the league's zone, represented on a UTC axis for day arithmetic. */
+function leagueDay(at: number, zone: string): Date | null {
+  let formatter: Intl.DateTimeFormat;
+  try { formatter = new Intl.DateTimeFormat('en-US', { timeZone: zone }); }
+  catch { return null; }
+  if (!Number.isFinite(at)) return null;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: formatter.resolvedOptions().timeZone, year: 'numeric', month: 'numeric', day: 'numeric',
+  }).formatToParts(at);
+  const value = (type: string) => Number(parts.find(p => p.type === type)?.value);
+  return new Date(Date.UTC(value('year'), value('month') - 1, value('day')));
+}
+
 /** The opening day a drag of dx pixels along a bar of the given width lands on (the bar spans one league
  *  year), or null when the drag moves less than a day. */
 export function movedStart(
@@ -46,13 +59,17 @@ export function movedStart(
   dx: number,
   bar: number,
   now: number,
+  zone: string,
 ): { month: number; day: number } | null {
-  const d = new Date(now);
-  const year = d.getMonth() >= 2 ? d.getFullYear() : d.getFullYear() - 1;
+  const d = leagueDay(now, zone);
+  if (!d) return null;
+  const year = d.getUTCMonth() >= 2 ? d.getUTCFullYear() : d.getUTCFullYear() - 1;
   const span = Date.UTC(year + 1, 2, 1) - Date.UTC(year, 2, 1);
   const days = Math.round(((dx / bar) * span) / DAY);
   if (!days) return null;
-  const at = new Date(Date.parse(start) + days * DAY);
+  const at = leagueDay(Date.parse(start), zone);
+  if (!at) return null;
+  at.setUTCDate(at.getUTCDate() + days);
   return { month: at.getUTCMonth() + 1, day: at.getUTCDate() };
 }
 
@@ -127,7 +144,7 @@ export function SeasonView() {
                   setDrag(null);
                   const moved =
                     drag?.id === w.id && bar > 0 && start
-                      ? movedStart(iso(start), drag.dx, bar, Date.now())
+                      ? movedStart(iso(start), drag.dx, bar, Date.now(), rv('calendar.timezone'))
                       : null;
                   // A drag moves the opening day through calendar.window.move (preview, reason, ledger);
                   // a click with no day change opens the windows rule, as before.

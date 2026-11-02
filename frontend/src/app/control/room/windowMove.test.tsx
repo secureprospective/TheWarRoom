@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { actChange } from '../../commissioner/actBody';
 import { actTable } from '../../commissioner/actTable';
+import rulesWire from '../../commissioner/rules.wire.testdata.json';
 import { movedStart } from './SeasonView';
 import { act } from 'react';
 import { all, settle } from '../../commissioner/commissionerDom';
@@ -11,11 +12,21 @@ const bar = 1200; // px for the league year Mar 1 2026 - Mar 1 2027 (365 days)
 
 describe('Control Room · dragging a season window', () => {
   it('a drag lands on the day it covers; under a day is a click', () => {
-    expect(movedStart('2026-09-01T00:00:00Z', 0, bar, now)).toBeNull();
-    expect(movedStart('2026-09-01T00:00:00Z', 1, bar, now)).toBeNull();
+    expect(movedStart('2026-09-01T00:00:00Z', 0, bar, now, 'UTC')).toBeNull();
+    expect(movedStart('2026-09-01T00:00:00Z', 1, bar, now, 'UTC')).toBeNull();
     const week = (7 / 365) * bar;
-    expect(movedStart('2026-09-01T00:00:00Z', week, bar, now)).toEqual({ month: 9, day: 8 });
-    expect(movedStart('2026-09-01T00:00:00Z', -week, bar, now)).toEqual({ month: 8, day: 25 });
+    expect(movedStart('2026-09-01T00:00:00Z', week, bar, now, 'UTC')).toEqual({ month: 9, day: 8 });
+    expect(movedStart('2026-09-01T00:00:00Z', -week, bar, now, 'UTC')).toEqual({ month: 8, day: 25 });
+  });
+  it('moves Tokyo midnight by league days rather than the previous UTC date', () => {
+    const day = bar / 365;
+    expect(movedStart('2026-09-01T00:00:00Z', day, bar, now, 'Needs a ruling')).toBeNull();
+    expect(movedStart('2026-09-01T00:00:00+09:00', day, bar, now, 'Asia/Tokyo'))
+      .toEqual({ month: 9, day: 2 });
+    expect(movedStart('2026-09-01T00:00:00+09:00', -day, bar, now, 'Asia/Tokyo'))
+      .toEqual({ month: 8, day: 31 });
+    expect(movedStart('2026-03-08T00:00:00-06:00', day * 2, bar, now, 'America/Chicago'))
+      .toEqual({ month: 3, day: 10 });
   });
   it('the move sends calendar.window.move with the window and its new month and day', () => {
     const def = actTable.find((a) => a.command === 'calendar.window.move')!;
@@ -48,7 +59,9 @@ describe('Control Room · drag interaction', () => {
           TargetNativeAssets: async () => data.assets,
           TargetNativeDirectory: async () => data.directory,
         } as never,
-        {},
+        { rules: { ...rulesWire, sections: rulesWire.sections.map(s => ({ ...s,
+          rows: s.rows.map(r => r.field === 'calendar.timezone' ? { ...r, value: 'UTC' } : r),
+        })) } },
         {
           ...data,
           calendar: {
