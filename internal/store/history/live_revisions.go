@@ -1,6 +1,8 @@
 package history
 
 import (
+	"context"
+	"maps"
 	"slices"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
@@ -18,8 +20,8 @@ type liveRevisionState struct {
 
 // Preserve the chronology once live evidence joins it: a later final or poll appends,
 // rather than reusing a sequence a commissioner may already have pinned.
-func (s *Store) mergeLiveVersions(incoming []source.LineRevision, live source.HeldWeek,
-	scope source.RawNativeScope) []source.LineRevision {
+func (s *Store) mergeLiveVersions(ctx context.Context, incoming []source.LineRevision, live source.HeldWeek,
+	scope source.RawNativeScope) ([]source.LineRevision, error) {
 	s.liveMu.Lock()
 	defer s.liveMu.Unlock()
 	key := liveStatKey{scope.Player, scope.Season, scope.Week}
@@ -29,8 +31,10 @@ func (s *Store) mergeLiveVersions(incoming []source.LineRevision, live source.He
 	state := s.liveRevisions[key]
 	if state == nil {
 		state = &liveRevisionState{archived: map[liveRevisionOrigin]bool{}}
-		s.liveRevisions[key] = state
 	}
+	state = &liveRevisionState{versions: slices.Clone(state.versions), archived: maps.Clone(state.archived)}
+	start := len(state.versions)
+	origins := map[int]int{}
 	for _, version := range incoming {
 		if version.Merged || version.Held.Authority != source.NFLVerse {
 			continue
@@ -40,15 +44,21 @@ func (s *Store) mergeLiveVersions(incoming []source.LineRevision, live source.He
 			continue
 		}
 		state.archived[origin] = true
+		origins[len(state.versions)] = version.Seq
+		version = deepClone(version)
 		version.Seq = len(state.versions)
 		state.versions = append(state.versions, version)
 	}
 	digest := source.LiveRevisionDigest(*live.Week)
 	if !sameLiveRevision(state.versions, digest, live.Authority) {
-		state.versions = append(state.versions, source.LineRevision{Seq: len(state.versions), Digest: digest, Held: live})
+		state.versions = append(state.versions, source.LineRevision{Seq: len(state.versions), Digest: digest, Held: deepClone(live)})
 	}
 	state.versions = source.ConsolidateFinal(state.versions)
-	return slices.Clone(state.versions)
+	if err := s.storeLiveVersions(ctx, key, state.versions[start:], origins); err != nil {
+		return nil, err
+	}
+	s.liveRevisions[key] = state
+	return deepClone(state.versions), nil
 }
 
 func sameLiveRevision(versions []source.LineRevision, digest, authority string) bool {

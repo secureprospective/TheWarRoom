@@ -66,7 +66,7 @@ func (s *Store) ProcessStatFeed(ctx context.Context, league string, season int) 
 	if len(moves) != 0 {
 		s.signalCommissionerCommit()
 	}
-	return nil
+	return s.compactLiveStats(ctx, league, records, weeks, season)
 }
 
 // Feed approvals cannot change permissions, rules, rosters or manual pins. Validate those

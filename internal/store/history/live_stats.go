@@ -1,19 +1,20 @@
 package history
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"maps"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // liveStatBook is the newest live stat lines the app holds for one NFL week, by league player id.
 // A live line is evidence like any other: it becomes the newest revision of a player's week, so the
-// league's own score ladder decides what counts. Nothing here is written to the database: a game in
-// progress is read again every poll, and only the final feed is archived.
+// league's own score ladder decides what counts. Changed lines and exposed revisions are durable.
 type liveStatBook struct {
 	season, week int
 	at           time.Time
@@ -31,15 +32,14 @@ type liveStatKey struct {
 
 // SetLiveStats replaces the live stat lines held for one NFL week. Lines are keyed by league player
 // id. An empty map clears them, so a week that has finished stops offering a live revision.
-func (s *Store) SetLiveStats(season, week int, at time.Time, authority string, missing []string,
-	lines map[string]source.PlayerWeek) {
+func (s *Store) SetLiveStats(ctx context.Context, season, week int, at time.Time, authority string, missing []string,
+	lines map[string]source.PlayerWeek) error {
 	s.liveMu.Lock()
 	defer s.liveMu.Unlock()
-	if len(lines) == 0 {
-		s.live = liveStatBook{}
-		return
+	if err := s.restoreLiveStats(ctx); err != nil {
+		return err
 	}
-	lines = maps.Clone(lines)
+	lines = deepClone(lines)
 	for player, line := range lines {
 		if line.Season == 0 {
 			line.Season = season
@@ -47,15 +47,23 @@ func (s *Store) SetLiveStats(season, week int, at time.Time, authority string, m
 		if line.Week == 0 {
 			line.Week = week
 		}
+		leaguerules.DropTotals(line.Line.Quantities)
 		line.SeasonType = "REG"
 		lines[player] = line
-		if s.liveHeld == nil {
-			s.liveHeld = map[liveStatKey]source.HeldWeek{}
-		}
+	}
+	book := liveStatBook{season: season, week: week, at: at, authority: authority,
+		missing: append([]string{}, missing...), lines: lines}
+	if err := s.storeLiveBook(ctx, book); err != nil {
+		return err
+	}
+	if s.liveHeld == nil {
+		s.liveHeld = map[liveStatKey]source.HeldWeek{}
+	}
+	for player, line := range lines {
 		s.liveHeld[liveStatKey{player, line.Season, line.Week}] = heldLiveLine(line, authority, at, missing)
 	}
-	s.live = liveStatBook{season: season, week: week, at: at, authority: authority,
-		missing: append([]string{}, missing...), lines: lines}
+	s.live = book
+	return nil
 }
 
 // liveHeldWeek is the live revision of one player's week, when one is held for that exact week.
@@ -69,29 +77,40 @@ func (s *Store) liveHeldWeek(player string, season, week int) (source.HeldWeek, 
 	if !ok || line.Season != season || line.Week != week {
 		return source.HeldWeek{}, false
 	}
-	return heldLiveLine(line, s.live.authority, s.live.at, s.live.missing), true
+	held, found := s.liveHeld[liveStatKey{player, season, week}]
+	return deepClone(held), found
 }
 
 // withLiveStats adds the live revision of a player's week as the newest version of the evidence.
 // It is appended last, so the sequence numbers of the versions a commissioner may already have
 // pinned never move. Which version counts stays the league's decision: the feed ladder prefers the
 // final authority when one is held, and a commissioner's choice overrides both.
-func (s *Store) withLiveStats(evidence source.NativeEvidence, scope source.RawNativeScope) source.NativeEvidence {
+func (s *Store) withLiveStats(ctx context.Context, evidence source.NativeEvidence, scope source.RawNativeScope) (source.NativeEvidence, error) {
+	if err := s.RestoreLiveStats(ctx); err != nil {
+		return evidence, err
+	}
 	live, ok := s.liveHeldWeek(scope.Player, scope.Season, scope.Week)
 	if !ok {
 		live, ok = s.finalLiveWeek(evidence, scope)
 	}
 	if !ok {
-		return evidence
+		return evidence, nil
 	}
-	evidence.Lines = s.mergeLiveVersions(evidence.Versions(), live, scope)
+	versions, err := s.mergeLiveVersions(ctx, evidence.Versions(), live, scope)
+	if err != nil {
+		return evidence, err
+	}
+	evidence.Lines = versions
 	evidence.Held = &live
 	evidence.Missing = append([]string{}, live.Missing...)
-	return evidence
+	return evidence, nil
 }
 
 // The approval worker must see exactly the same live/merged revisions as score readings.
-func (s *Store) withLiveStatWeeks(weeks []commissioner.StatWeek, season int) []commissioner.StatWeek {
+func (s *Store) withLiveStatWeeks(ctx context.Context, weeks []commissioner.StatWeek, season int) ([]commissioner.StatWeek, error) {
+	if err := s.RestoreLiveStats(ctx); err != nil {
+		return nil, err
+	}
 	type key struct {
 		player string
 		week   int
@@ -99,26 +118,44 @@ func (s *Store) withLiveStatWeeks(weeks []commissioner.StatWeek, season int) []c
 	seen := map[key]bool{}
 	for i := range weeks {
 		scope := source.RawNativeScope{Player: weeks[i].Player, Season: season, Week: weeks[i].Week}
-		weeks[i].Evidence = s.withLiveStats(weeks[i].Evidence, scope)
+		evidence, err := s.withLiveStats(ctx, weeks[i].Evidence, scope)
+		if err != nil {
+			return nil, err
+		}
+		weeks[i].Evidence = evidence
 		seen[key{scope.Player, scope.Week}] = true
 	}
 	s.liveMu.Lock()
-	players := make(map[string]int, len(s.live.lines))
-	for player, line := range s.live.lines {
-		if line.Season == season {
-			players[player] = line.Week
+	players := map[key]bool{}
+	for heldKey := range s.liveHeld {
+		if heldKey.season != season {
+			continue
+		}
+		active, ok := s.live.lines[heldKey.player]
+		if s.liveRevisions[heldKey] != nil || (ok && active.Season == season && active.Week == heldKey.week) {
+			players[key{heldKey.player, heldKey.week}] = true
 		}
 	}
 	s.liveMu.Unlock()
-	for player, week := range players {
-		if seen[key{player, week}] {
+	for playerWeek := range players {
+		player, week := playerWeek.player, playerWeek.week
+		if seen[playerWeek] {
 			continue
 		}
 		scope := source.RawNativeScope{Player: player, Season: season, Week: week}
-		evidence := s.withLiveStats(source.NativeEvidence{}, scope)
+		evidence, err := s.withLiveStats(ctx, source.NativeEvidence{}, scope)
+		if err != nil {
+			return nil, err
+		}
 		weeks = append(weeks, commissioner.StatWeek{Player: player, Week: week, Evidence: evidence})
 	}
-	return weeks
+	slices.SortFunc(weeks, func(a, b commissioner.StatWeek) int {
+		if a.Player != b.Player {
+			return compareText(a.Player, b.Player)
+		}
+		return a.Week - b.Week
+	})
+	return weeks, nil
 }
 
 func heldLiveLine(line source.PlayerWeek, authority string, at time.Time, missing []string) source.HeldWeek {
@@ -144,5 +181,5 @@ func (s *Store) finalLiveWeek(evidence source.NativeEvidence, scope source.RawNa
 		return source.HeldWeek{}, false
 	}
 	held, ok := s.liveHeld[liveStatKey{scope.Player, scope.Season, scope.Week}]
-	return held, ok
+	return deepClone(held), ok
 }

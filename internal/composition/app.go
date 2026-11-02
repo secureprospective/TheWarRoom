@@ -252,7 +252,12 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	var coord *transactions.Coordinator
 	//nolint:wrapcheck // The service retains the original step names and failures.
 	return (platformapp.StoreFloor{
-		History: hist.Initialize, Seat: a.seatStore.Initialize, Params: pstore.Initialize, Moves: moveStore.Initialize,
+		History: func(c context.Context) error {
+			if err := hist.Initialize(c); err != nil {
+				return err
+			}
+			return hist.RestoreLiveStats(c)
+		}, Seat: a.seatStore.Initialize, Params: pstore.Initialize, Moves: moveStore.Initialize,
 		Personal: personal.New(a.core.Pools).Initialize,
 		Rules:    func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) },
 		Mirror:   mirror.Initialize, MirrorSeason: mirror.Season,

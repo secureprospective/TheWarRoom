@@ -14,9 +14,10 @@ import (
 )
 
 type livePollHistory struct {
-	lines  map[string]source.PlayerWeek
-	writes int
-	fail   bool
+	lines       map[string]source.PlayerWeek
+	writes      int
+	fail        bool
+	captureFail bool
 }
 
 func (h *livePollHistory) SourceIDs(context.Context, string) (map[string]string, error) {
@@ -25,9 +26,13 @@ func (h *livePollHistory) SourceIDs(context.Context, string) (map[string]string,
 	}
 	return map[string]string{}, nil
 }
-func (h *livePollHistory) SetLiveStats(_, _ int, _ time.Time, _ string, _ []string, lines map[string]source.PlayerWeek) {
+func (h *livePollHistory) SetLiveStats(_ context.Context, _, _ int, _ time.Time, _ string, _ []string, lines map[string]source.PlayerWeek) error {
+	if h.captureFail {
+		return fmt.Errorf("capture unavailable")
+	}
 	h.lines = lines
 	h.writes++
+	return nil
 }
 
 type livePollTransport struct {
@@ -80,4 +85,14 @@ func TestLiveGameAcquisitionFailureIsNotAnEmptySuccess(t *testing.T) {
 }
 func livegameFailureAdapter() livegame.Adapter {
 	return livegame.Adapter{Fetch: func(context.Context, string, string) ([]byte, error) { return nil, fmt.Errorf("offline") }}
+}
+
+func TestLivePollCaptureFailureDoesNotPublishChange(t *testing.T) {
+	h := &livePollHistory{captureFail: true, lines: map[string]source.PlayerWeek{"0099": {Season: 2026, Week: 8}}}
+	changed := 0
+	var poll LiveStatsPoller
+	poll.poll(t.Context(), LiveStatsRun{Network: livePollTransport{body: `{"events":[]}`}, Season: 2026, Week: func() int { return 8 }, Changed: func(context.Context) { changed++ }}, h)
+	if changed != 0 || h.writes != 0 || len(h.lines) != 1 {
+		t.Fatal("capture failure published or lost evidence")
+	}
 }

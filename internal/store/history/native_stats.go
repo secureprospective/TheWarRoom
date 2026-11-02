@@ -19,16 +19,26 @@ type seasonStatFeed struct {
 
 // Weeks reads each held file once and keeps, per player's week, only the versions that differ.
 func (f seasonStatFeed) Weeks(ctx context.Context) ([]commissioner.StatWeek, error) {
+	var weeks []commissioner.StatWeek
+	var err error
 	if pinned, ok := f.store.lineupEnv.(*PinnedFootball); ok {
-		return pinned.statWeeks(ctx, f.season)
+		weeks, err = pinned.statWeeks(ctx, f.season)
+	} else if f.store.statWeeks != nil {
+		weeks, err = f.store.statWeeks(ctx, f.season)
+	} else {
+		weeks, err = f.archivedWeeks(ctx)
 	}
-	if f.store.statWeeks != nil {
-		return f.store.statWeeks(ctx, f.season)
+	if err != nil {
+		return nil, err
 	}
+	return f.store.withLiveStatWeeks(ctx, weeks, f.season)
+}
+
+func (f seasonStatFeed) archivedWeeks(ctx context.Context) ([]commissioner.StatWeek, error) {
 	book := source.NewLineBook(f.season)
 	files, err := f.store.heldSeason(ctx, f.season)
 	if errors.Is(err, source.ErrSeasonNotLoaded) {
-		return []commissioner.StatWeek{}, nil
+		return nil, nil
 	}
 	if err != nil {
 		return nil, err
@@ -65,13 +75,6 @@ func (f seasonStatFeed) Weeks(ctx context.Context) ([]commissioner.StatWeek, err
 		out = append(out, commissioner.StatWeek{Player: player, Week: key.Week, Evidence: source.NativeEvidence{
 			GSIS: key.GSIS, Held: &newest, Lines: versions, Missing: slices.Clone(newest.Missing)}})
 	}
-	out = f.store.withLiveStatWeeks(out, f.season)
-	slices.SortFunc(out, func(a, b commissioner.StatWeek) int {
-		if a.Player != b.Player {
-			return compareText(a.Player, b.Player)
-		}
-		return a.Week - b.Week
-	})
 	return out, nil
 }
 

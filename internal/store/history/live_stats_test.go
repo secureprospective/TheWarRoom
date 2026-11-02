@@ -29,12 +29,12 @@ func TestLiveStatsBecomeTheNewestRevisionWithoutMovingThePinnedOnes(t *testing.T
 	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 8}
 	// With nothing live held, the evidence is untouched.
 	held := nflverseEvidence(500000)
-	if got := s.withLiveStats(held, scope); len(got.Versions()) != 1 {
+	if got := liveEvidence(t, s, held, scope); len(got.Versions()) != 1 {
 		t.Fatalf("versions %+v", got.Versions())
 	}
-	s.SetLiveStats(2026, 8, at, "ESPN live", []string{"the game is being played"},
+	setLiveStats(t, s, 2026, 8, at, "ESPN live", []string{"the game is being played"},
 		map[string]source.PlayerWeek{"0099": liveLine(300000)})
-	got := s.withLiveStats(nflverseEvidence(500000), scope)
+	got := liveEvidence(t, s, nflverseEvidence(500000), scope)
 	versions := got.Versions()
 	if len(versions) != 2 {
 		t.Fatalf("versions %+v", versions)
@@ -61,13 +61,13 @@ func TestTheFinalFeedIsCountedOverALiveOne(t *testing.T) {
 	t.Parallel()
 	s, at := &Store{}, time.Now().UTC()
 	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 8}
-	s.SetLiveStats(2026, 8, at, "ESPN live", nil, map[string]source.PlayerWeek{"0099": liveLine(300000)})
-	liveOnly := s.withLiveStats(source.NativeEvidence{Missing: []string{}}, scope)
+	setLiveStats(t, s, 2026, 8, at, "ESPN live", nil, map[string]source.PlayerWeek{"0099": liveLine(300000)})
+	liveOnly := liveEvidence(t, s, source.NativeEvidence{Missing: []string{}}, scope)
 	counted := countedLive(t, liveOnly)
 	if counted.Held.Authority != "ESPN live" || counted.Held.Week.Line.Quantities["receiving_yards"] != 300000 {
 		t.Fatalf("a live revision should count when it is all that is held: %+v", counted)
 	}
-	withFinal := s.withLiveStats(nflverseEvidence(500000), scope)
+	withFinal := liveEvidence(t, s, nflverseEvidence(500000), scope)
 	counted = countedLive(t, withFinal)
 	if counted.Held.Authority != source.NFLVerse || counted.Held.Week.Line.Quantities["receiving_yards"] != 500000 {
 		t.Fatalf("the final feed should be counted: %+v", counted)
@@ -78,17 +78,17 @@ func TestTheFinalFeedIsCountedOverALiveOne(t *testing.T) {
 func TestLiveStatsAreScopedToTheirWeekAndCanBeCleared(t *testing.T) {
 	t.Parallel()
 	s, at := &Store{}, time.Now().UTC()
-	s.SetLiveStats(2026, 7, at, "ESPN live", nil, map[string]source.PlayerWeek{"0099": liveLine(300000)})
+	setLiveStats(t, s, 2026, 7, at, "ESPN live", nil, map[string]source.PlayerWeek{"0099": liveLine(300000)})
 	for _, scope := range []source.RawNativeScope{
 		{Player: "0099", Season: 2026, Week: 8}, {Player: "0099", Season: 2025, Week: 7},
 		{Player: "0100", Season: 2026, Week: 7},
 	} {
-		if got := s.withLiveStats(source.NativeEvidence{}, scope); got.Held != nil {
+		if got := liveEvidence(t, s, source.NativeEvidence{}, scope); got.Held != nil {
 			t.Fatalf("%+v was offered a live revision it does not own", scope)
 		}
 	}
-	s.SetLiveStats(2026, 7, at, "ESPN live", nil, nil)
-	if got := s.withLiveStats(source.NativeEvidence{}, source.RawNativeScope{Player: "0099", Season: 2026, Week: 7}); got.Held != nil {
+	setLiveStats(t, s, 2026, 7, at, "ESPN live", nil, nil)
+	if got := liveEvidence(t, s, source.NativeEvidence{}, source.RawNativeScope{Player: "0099", Season: 2026, Week: 7}); got.Held != nil {
 		t.Fatal("a cleared live book still offered a revision")
 	}
 }
@@ -99,20 +99,20 @@ func TestAnUnchangedLivePollDoesNotAddAVersion(t *testing.T) {
 	s := &Store{}
 	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 8}
 	first := time.Date(2026, 11, 1, 18, 0, 0, 0, time.UTC)
-	s.SetLiveStats(2026, 8, first, "ESPN live", nil, map[string]source.PlayerWeek{"0099": liveLine(300000)})
-	one := s.withLiveStats(source.NativeEvidence{}, scope)
-	s.SetLiveStats(2026, 8, first.Add(time.Minute), "ESPN live", nil,
+	setLiveStats(t, s, 2026, 8, first, "ESPN live", nil, map[string]source.PlayerWeek{"0099": liveLine(300000)})
+	one := liveEvidence(t, s, source.NativeEvidence{}, scope)
+	setLiveStats(t, s, 2026, 8, first.Add(time.Minute), "ESPN live", nil,
 		map[string]source.PlayerWeek{"0099": liveLine(300000)})
-	again := s.withLiveStats(one, scope)
+	again := liveEvidence(t, s, one, scope)
 	if len(again.Versions()) != 1 {
 		t.Fatalf("an unchanged poll added a version: %+v", again.Versions())
 	}
 	if !again.Held.FetchedAt.Equal(first.Add(time.Minute)) {
 		t.Fatalf("the held time did not move: %v", again.Held.FetchedAt)
 	}
-	s.SetLiveStats(2026, 8, first.Add(2*time.Minute), "ESPN live", nil,
+	setLiveStats(t, s, 2026, 8, first.Add(2*time.Minute), "ESPN live", nil,
 		map[string]source.PlayerWeek{"0099": liveLine(420000)})
-	moved := s.withLiveStats(again, scope)
+	moved := liveEvidence(t, s, again, scope)
 	if len(moved.Versions()) != 2 {
 		t.Fatalf("a changed line is a new version: %+v", moved.Versions())
 	}
@@ -133,7 +133,7 @@ func TestLiveStatsKeepEachGamesWeekRatherThanRelabelToPollWeek(t *testing.T) {
 	s := &Store{}
 	line := liveLine(300000)
 	line.Season, line.Week = 2025, 18
-	s.SetLiveStats(2026, 1, time.Now(), "ESPN live", nil, map[string]source.PlayerWeek{"0099": line})
+	setLiveStats(t, s, 2026, 1, time.Now(), "ESPN live", nil, map[string]source.PlayerWeek{"0099": line})
 	if got, ok := s.liveHeldWeek("0099", 2025, 18); !ok || got.Week.Season != 2025 || got.Week.Week != 18 {
 		t.Fatalf("game scope lost: %+v %t", got, ok)
 	}
@@ -146,11 +146,11 @@ func TestLiveStatWorkerAndReadingShareMergedRevision(t *testing.T) {
 	s := &Store{}
 	line := liveLine(300000)
 	line.Line.Quantities["receiving_drop"] = 10000
-	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line, "0100": line})
+	setLiveStats(t, s, 2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line, "0100": line})
 	original := nflverseEvidence(500000)
 	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 8}
-	reading := s.withLiveStats(original, scope)
-	weeks := s.withLiveStatWeeks([]commissioner.StatWeek{{Player: "0099", Week: 8, Evidence: original}}, 2026)
+	reading := liveEvidence(t, s, original, scope)
+	weeks := liveWeeks(t, s, []commissioner.StatWeek{{Player: "0099", Week: 8, Evidence: original}}, 2026)
 	if len(weeks) != 2 {
 		t.Fatal(weeks)
 	}
@@ -167,9 +167,9 @@ func TestLiveOnlyFieldSurvivesFinalAfterBoardClears(t *testing.T) {
 	s := &Store{}
 	line := liveLine(300000)
 	line.Line.Quantities["receiving_drop"] = 20000
-	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line})
-	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, nil)
-	evidence := s.withLiveStats(nflverseEvidence(500000), source.RawNativeScope{Player: "0099", Season: 2026, Week: 8})
+	setLiveStats(t, s, 2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line})
+	setLiveStats(t, s, 2026, 8, time.Now(), source.ESPNLive, nil, nil)
+	evidence := liveEvidence(t, s, nflverseEvidence(500000), source.RawNativeScope{Player: "0099", Season: 2026, Week: 8})
 	got := countedLive(t, evidence)
 	if got.Held.Week.Line.Quantities["receiving_drop"] != 20000 || got.Held.Week.Line.Quantities["receiving_yards"] != 500000 {
 		t.Fatal(got)
@@ -181,18 +181,41 @@ func TestLiveMergedPinSurvivesLaterPollAndFinalRevision(t *testing.T) {
 	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 8}
 	line := liveLine(300000)
 	line.Line.Quantities["receiving_drop"] = 10000
-	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line})
-	first := s.withLiveStats(nflverseEvidence(500000), scope)
+	setLiveStats(t, s, 2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line})
+	first := liveEvidence(t, s, nflverseEvidence(500000), scope)
 	pin := *commissioner.FeedVersion(first.Versions())
 	line = liveLine(400000)
 	line.Line.Quantities["receiving_drop"] = 20000
-	s.SetLiveStats(2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line})
-	second := s.withLiveStats(nflverseEvidence(500000), scope)
+	setLiveStats(t, s, 2026, 8, time.Now(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": line})
+	second := liveEvidence(t, s, nflverseEvidence(500000), scope)
 	if second.Versions()[pin.Seq].Digest != pin.Digest || second.Versions()[pin.Seq].Held.Week.Line.Quantities["receiving_drop"] != 10000 {
 		t.Fatal("pin overwritten", second)
 	}
-	third := s.withLiveStats(nflverseEvidence(600000), scope)
+	third := liveEvidence(t, s, nflverseEvidence(600000), scope)
 	if third.Versions()[pin.Seq].Digest != pin.Digest || commissioner.FeedVersion(third.Versions()).Held.Week.Line.Quantities["receiving_yards"] != 600000 {
 		t.Fatal("later final lost pin or authority", third)
 	}
+}
+
+func setLiveStats(t *testing.T, s *Store, season, week int, at time.Time, authority string, missing []string, lines map[string]source.PlayerWeek) {
+	t.Helper()
+	if err := s.SetLiveStats(t.Context(), season, week, at, authority, missing, lines); err != nil {
+		t.Fatal(err)
+	}
+}
+func liveEvidence(t *testing.T, s *Store, evidence source.NativeEvidence, scope source.RawNativeScope) source.NativeEvidence {
+	t.Helper()
+	out, err := s.withLiveStats(t.Context(), evidence, scope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+func liveWeeks(t *testing.T, s *Store, weeks []commissioner.StatWeek, season int) []commissioner.StatWeek {
+	t.Helper()
+	out, err := s.withLiveStatWeeks(t.Context(), weeks, season)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
 }

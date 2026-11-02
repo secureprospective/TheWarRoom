@@ -37,7 +37,7 @@ type LiveStatsPoller struct {
 // liveStatsHistory is the live poll's identity lookup and held-evidence store.
 type liveStatsHistory interface {
 	SourceIDs(context.Context, string) (map[string]string, error)
-	SetLiveStats(int, int, time.Time, string, []string, map[string]source.PlayerWeek)
+	SetLiveStats(context.Context, int, int, time.Time, string, []string, map[string]source.PlayerWeek) error
 }
 
 // LiveStatsRun is what one poll reads from the running app.
@@ -99,8 +99,11 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveS
 	}
 	sleeperAcquired := fillLiveSleeper(ctx, run, held, games, lines)
 	if acquired || sleeperAcquired {
-		held.SetLiveStats(season, week, at, livestats.Authority,
-			livestats.Pending(), lines)
+		if err := held.SetLiveStats(ctx, season, week, at, livestats.Authority,
+			livestats.Pending(), lines); err != nil {
+			log.Printf("live stats: capture: %v", err)
+			return liveStatsIdle
+		}
 		if run.Changed != nil {
 			run.Changed(ctx)
 		}
@@ -197,7 +200,10 @@ func (p *LiveStatsPoller) sleeperFallback(ctx context.Context, run LiveStatsRun,
 	if len(lines) == 0 {
 		return
 	}
-	held.SetLiveStats(season, week, at, source.Sleeper, livestats.Pending(), lines)
+	if err := held.SetLiveStats(ctx, season, week, at, source.Sleeper, livestats.Pending(), lines); err != nil {
+		log.Printf("live stats: capture: %v", err)
+		return
+	}
 	if run.Changed != nil {
 		run.Changed(ctx)
 	}
