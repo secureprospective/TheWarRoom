@@ -418,3 +418,51 @@ Full race suite ran once at 7371e620: 134/134 ok (one failure was the .worktrees
 6. Tomorrow: fix fleet panel (see above). Queue: Home clip, odds <150 ms, startup peak.
 
 **HONEST STATUS:** HQ/Pulse loading not yet proven fixed in a real walk (STALL-4 run showed pat error, fixed by 7b684d65 but unwalked). Christopher is at his daughter's birthday today — keep pings minimal.
+
+**RULINGS 11-02 ~21:40 (answered):** pre-import results MFL as-is · lineup lock = league setting · presets compare+apply on existing leagues · starting-assets setting replaces MFL-origin checks. Memory: project_warroom_rulings_1102_questions.md. Build 2–4 after STALL-9/FIX-1.
+
+## §28 — compact-safe 2026-11-02 ~21:55 CT — SUPERSEDES §27 NEXT ACTIONS
+
+**State:** Claude-OS `~/work/TheWarRoom` build/INTEGRATE-1102 HEAD **ffcbda6f** (merge FIX-1). Merged tonight in order:
+a5d60cfe SCORE-3 (live evidence durable, schema v13) · a37ad596 STALL-5 (shared ledger snapshot) · 955a0d04 STALL-6
+(season score cache; RSS ≤2.2 GB) · bc95f10e STALL-7 (lineup ledger; HQ fix = owner-only reads skipped for unowned
+franchise; Sol+Tom) · 81f094d3 FEED-1 (Sleeper URL needed /v1 → 200; Pulse uses ESPN scoreboard for clocks; week 8 correct,
+footer "through week 13" = intended full-season scope, wording confusing) · 930002e6 STALL-8 (sweep reads shared records,
+incremental stat-queue trial fold, RulesMemo leak fix) · ffcbda6f FIX-1 (v13 failure was fixture-only; real DB copy
+migrated v12→v13 clean; goldens regenerated = new provenance fields only).
+**MNF walk 19:48 (STALL-7 binary):** all screens show data; HQ full lineup; Pulse Now live scores. CPU after 15 s: Home 64,
+HQ 429, Now 45, Race 60. STALL-8 4-lap: HQ 138–175, Now 156–195, Race 152–207, Control 142–182, Home ~10, Trade ~0.
+Garbled odds_reading.go edit (16:47, unknown agent) is in `git stash` on Claude-OS main tree — inspect/drop later.
+
+**IN FLIGHT:**
+- Tom APP-STALL-9 (stat-queue read cancelled when caller leaves; per-player score index; HQ/Pulse first-lap) — Beelink
+  launcher PID 2440299, run ~/fleet/runs/tom-odds, worktree claudeos .worktrees/odds branch build/STALL-9. Alive:
+  Beelink transcript mtime `ls -lt ~/.claude/projects/-home-chris-scratch-tom-odds/`. Done = completion.txt non-empty.
+- Bash bm1ax2r13 = watcher (Tom part still pending). Bash bqz7zfynr = waits Tom done + no thewarroom → launches Sol
+  APP-MEM-1 (brief claudeos ~/fleet/briefs/APP-MEM-1.md: opt-in heap profile, measure 2.7 GB peak, LOG to
+  docs/debloat-log.md, NO fixes) → watches Sol done.
+
+**RULINGS 11-02 night (LOCKED, memory saved):** pre-import results = MFL as-is · lineup lock = league setting · presets
+compare+apply on existing leagues · "starting assets" setting replaces MFL-origin checks · memory bloat: measure+log now,
+debloat/code cleanup AFTER revamp (project_warroom_debloat_after_revamp.md).
+
+**NEXT ACTIONS:**
+1. Tom STALL-9 done → review, merge (squash; identity -c on merge+commit; GOLANGCI_LINT_CACHE=~/scratch/golangci-main-cache
+   for main-tree commits — shared cache has stale worktree paths). If idle CPU still >100%, one more round.
+2. Dispatch settings slices (rulings 2–4): lineup-lock setting, preset compare+apply, starting-assets setting (Tom big /
+   Sol medium; no `if MFL`; settings congruence). Ruling 1 = confirm import keeps MFL results; test only.
+3. Home right-column clip (needs real layout repro at 1920x1080; Tom+Terra failed before).
+4. Sol MEM-1 result → review debloat-log.md, merge diagnostic.
+5. Remove merged worktrees (.worktrees/fix has untracked files; .worktrees/quick merged — `--force` was classifier-denied,
+   ask or leave), then ONE full race suite (~/scratch/suite.sh, -p 2 -timeout 30m).
+6. make build, fresh profile copy (ONLY ~/f2click/config/TheWarRoom 1.4 GB + data; NOT all config = 8 GB backups),
+   walk 5 screens 1920x1080 vs locked mocks; delete profile.
+7. Bundle Claude-OS commits back to Beelink repo (announce). Merge to main only after Christopher's live test.
+8. Tomorrow: fleet panel (§27). Later: standings footer wording; odds <150 ms.
+
+**ENV:** disk 58% after `go clean -cache` (was 90% — go-build cache 31 GB; check df after heavy steps). Tom/Sol quotas:
+Tom 5h reset hit 17:08 → back 19:10; Sol GPT limit hit 18:26 → back ~19:50. When one runs out, hand the worktree +
+transcript to the other (brief must say "authorized to edit their uncommitted files; do not ask").
+Brief gotcha: unquoted remote heredocs execute backticks — write briefs locally, scp them.
+**HONEST STATUS:** screens work with live data; idle CPU still ~150% on HQ/Pulse/Control; settings rulings unbuilt;
+Home clip open. Revamp ETA ~11-04.
