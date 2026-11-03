@@ -108,6 +108,9 @@ func StatQueueReading(ctx context.Context, league string, records []Record, feed
 	builder := queueBuilder{league: league, season: season, records: records, feed: feed, src: src, rules: rules,
 		effects: effects, now: now, memo: NewRulesMemo(), flips: &queueFlips{}}
 	for _, week := range weeks {
+		if err := ctx.Err(); err != nil {
+			return out, fmt.Errorf("price the statistics queue: %w", err)
+		}
 		item, waiting, err := builder.item(ctx, week)
 		if err != nil {
 			return out, err
@@ -168,7 +171,7 @@ type queueFlips struct {
 	read bool
 }
 
-func (b queueBuilder) flipCheck(ctx context.Context, raw RawCommand, week int) (ResultFlip, error) {
+func (b queueBuilder) flipCheck(ctx context.Context, raw RawCommand, trial []Record, week int) (ResultFlip, error) {
 	if b.flips == nil {
 		return ResultFlipCheck(ctx, b.league, b.records, b.src, raw, b.season, week, b.now)
 	}
@@ -179,7 +182,7 @@ func (b queueBuilder) flipCheck(ctx context.Context, raw RawCommand, week int) (
 	if b.flips.err != nil {
 		return ResultFlip{}, b.flips.err
 	}
-	return b.flips.base.check(ctx, b.league, b.records, b.src, raw, b.season, week)
+	return b.flips.base.checkTrial(ctx, b.league, b.records, trial, b.src, raw, b.season, week)
 }
 
 // item makes the queue entry for one week, or reports that nothing is waiting.
@@ -236,12 +239,13 @@ func (b queueBuilder) price(ctx context.Context, item *StatQueueItem, week StatW
 		return err
 	}
 	// A stat approval changes no rule, and its fold extends the held ledger's (RulesMemo.fold).
-	after, err := b.memo.Score(b.league, scope, scoreTrial(raw, b.records), week.Evidence, b.now)
+	trial := scoreTrial(raw, b.records)
+	after, err := b.memo.Score(b.league, scope, trial, week.Evidence, b.now)
 	if err != nil {
 		return err
 	}
 	item.Points = pointsChange(before, after)
-	flip, err := b.flipCheck(ctx, raw, week.Week)
+	flip, err := b.flipCheck(ctx, raw, trial, week.Week)
 	if err != nil {
 		return err
 	}

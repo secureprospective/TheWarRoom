@@ -319,7 +319,8 @@ string
 ];
 "commissioner.TargetStatQueue": [
 string,
-number
+number,
+string
 ];
 "offers.TargetPool": [
 {
@@ -387,6 +388,9 @@ string
 ];
 "commissioner.TargetBackupNow": [
 
+];
+"commissioner.TargetCancelRead": [
+string
 ];
 "commissioner.TargetCommissionerExecute": [
 string
@@ -855,6 +859,7 @@ string
 }) | null;
 "stat"?: ({
 "item"?: string;
+"items"?: (string)[];
 "player"?: string;
 "season"?: number;
 "week"?: number;
@@ -1386,6 +1391,7 @@ string
 }) | null;
 "stat"?: ({
 "item"?: string;
+"items"?: (string)[];
 "player"?: string;
 "season"?: number;
 "week"?: number;
@@ -1892,6 +1898,7 @@ string
 }) | null;
 "stat"?: ({
 "item"?: string;
+"items"?: (string)[];
 "player"?: string;
 "season"?: number;
 "week"?: number;

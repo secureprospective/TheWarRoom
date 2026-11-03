@@ -96,6 +96,7 @@ describe('Control Room · shell', () => {
       TargetCommissionerSchedule: ok('schedule'),
       TargetNativeHouseRules: ok('house'),
       TargetShellStatus: ok('status'),
+      TargetCancelRead: async () => undefined,
       TargetStatQueue: ok('stat'),
       TargetLeagueCalendar: ok('calendar'),
       TargetNativeWeek: ok('week'),
@@ -110,6 +111,6 @@ describe('Control Room · shell', () => {
     const d = await readRoom(league, port);
     expect(d.errors).toEqual({ corrections: 'no corrections' });
     expect(calls).toContain(`market:${league},trade.review`);
-    expect(calls).toContain(`stat:${league},2026`);
+    expect(calls.some((c) => c.startsWith(`stat:${league},2026,room-`))).toBe(true);
   });
 });

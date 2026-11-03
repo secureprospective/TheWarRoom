@@ -552,7 +552,8 @@ const schema45 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema15}
+    {Name:"season",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2}
   ],
   Items:null,
 } as const;
@@ -2374,6 +2375,7 @@ const schema172 = {
   Nullable:true,
   Fields:[
     {Name:"item",Optional:true,Schema:schema2},
+    {Name:"items",Optional:true,Schema:schema30},
     {Name:"player",Optional:true,Schema:schema2},
     {Name:"season",Optional:true,Schema:schema15},
     {Name:"week",Optional:true,Schema:schema15},

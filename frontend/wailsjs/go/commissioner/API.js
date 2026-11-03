@@ -6,6 +6,10 @@ export function TargetBackupNow() {
   return window['go']['commissioner']['API']['TargetBackupNow']();
 }
 
+export function TargetCancelRead(arg1) {
+  return window['go']['commissioner']['API']['TargetCancelRead'](arg1);
+}
+
 export function TargetCommissionerActor() {
   return window['go']['commissioner']['API']['TargetCommissionerActor']();
 }
@@ -210,8 +214,8 @@ export function TargetSignInFacts() {
   return window['go']['commissioner']['API']['TargetSignInFacts']();
 }
 
-export function TargetStatQueue(arg1, arg2) {
-  return window['go']['commissioner']['API']['TargetStatQueue'](arg1, arg2);
+export function TargetStatQueue(arg1, arg2, arg3) {
+  return window['go']['commissioner']['API']['TargetStatQueue'](arg1, arg2, arg3);
 }
 
 export function TargetWorkflow(arg1) {

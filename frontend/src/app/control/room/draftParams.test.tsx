@@ -50,6 +50,7 @@ describe('Control Room · draft order and engine parameters', () => {
       TargetCommissionerSchedule: ok(),
       TargetNativeHouseRules: ok(),
       TargetShellStatus: ok(),
+      TargetCancelRead: async () => undefined,
       TargetStatQueue: ok(),
       TargetLeagueCalendar: ok(),
       TargetNativeWeek: ok(),
@@ -64,6 +65,40 @@ describe('Control Room · draft order and engine parameters', () => {
     expect(asked[0]).toMatchObject({ league, season: 0, franchise: 'franchise.01' });
     expect(d.draft).toBe(draft);
     expect(d.errors.params).toBe('params store closed');
+  });
+  it('aborting readRoom withdraws the statistics queue read it named', async () => {
+    const withdrawn: string[] = [];
+    let named = '';
+    let finish: (v: unknown) => void = () => undefined;
+    const ok = (v: unknown = {}) => async () => v;
+    const port = {
+      TargetNativeDirectory: ok({ rosterSeason: 2026, franchises: [{ franchise: 'franchise.01' }] }),
+      TargetNativeAssets: ok(),
+      TargetCommissionerMarket: ok(),
+      TargetCorrections: ok(),
+      TargetCommissionerSchedule: ok(),
+      TargetNativeHouseRules: ok(),
+      TargetShellStatus: ok(),
+      TargetCancelRead: async (request: string) => {
+        withdrawn.push(request);
+        finish({});
+      },
+      TargetStatQueue: (_l: string, _s: number, request: string) => {
+        named = request;
+        return new Promise((resolve) => (finish = resolve));
+      },
+      TargetLeagueCalendar: ok(),
+      TargetNativeWeek: ok(),
+      TargetSignInFacts: ok([]),
+      TargetNativeDraft: ok(),
+      GetParams: ok({ ok: true, error: '', params: [] }),
+    } as unknown as RoomPort;
+    const stop = new AbortController();
+    const reading = readRoom(league, port, stop.signal);
+    await vi.waitFor(() => expect(named).not.toBe(''));
+    stop.abort();
+    await reading;
+    expect(withdrawn).toEqual([named]);
   });
   it('the Season desk shows round 1; OPEN DRAFT ROOM TRAY opens the Draft room', async () => {
     const nav = vi.spyOn(commands, 'dispatch');

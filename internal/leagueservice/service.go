@@ -103,6 +103,7 @@ type Service struct {
 	host      Host
 	admission commissioner.CredentialAdmission
 	hosted    bool
+	cancels   readCancels
 }
 
 func New(host Host) *Service { return &Service{host: host} }

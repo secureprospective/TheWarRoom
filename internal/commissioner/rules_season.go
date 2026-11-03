@@ -450,6 +450,8 @@ type ledgerFold struct {
 	position map[string]int
 	effects  statEffects
 	err      error
+	latest   time.Time
+	scores   *scoreIndex
 }
 
 func NewRulesMemo() *RulesMemo {
@@ -458,7 +460,8 @@ func NewRulesMemo() *RulesMemo {
 }
 
 func foldLedger(records []Record) ledgerFold {
-	f := ledgerFold{active: Replay(records).Active, position: make(map[string]int, len(records))}
+	f := ledgerFold{active: Replay(records).Active, position: make(map[string]int, len(records)),
+		latest: latestRecorded(records), scores: newScoreIndex(records)}
 	for i, r := range records {
 		f.position[r.Receipt.Entry] = i
 	}
@@ -538,7 +541,10 @@ func proposedStatDecision(records []Record) bool {
 func (f ledgerFold) withProposal(records []Record) ledgerFold {
 	n := len(records)
 	r := records[n-1]
-	out := ledgerFold{active: maps.Clone(f.active), position: maps.Clone(f.position)}
+	out := ledgerFold{active: maps.Clone(f.active), position: maps.Clone(f.position), latest: f.latest, scores: f.scores}
+	if r.Receipt.RecordedAt.After(out.latest) {
+		out.latest = r.Receipt.RecordedAt
+	}
 	if out.active == nil {
 		out.active = map[string]bool{}
 	}

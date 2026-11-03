@@ -10,6 +10,8 @@ import {time} from '../models';
 
 export function TargetBackupNow():Promise<commissioner.BackupResult>;
 
+export function TargetCancelRead(arg1:string):Promise<void>;
+
 export function TargetCommissionerActor():Promise<string>;
 
 export function TargetCommissionerControls():Promise<commissioner.Controls>;
@@ -112,6 +114,6 @@ export function TargetNativeWeek(arg1:commissioner.RawNativeWeekScope):Promise<c
 
 export function TargetSignInFacts():Promise<Array<accounts.SignInFact>>;
 
-export function TargetStatQueue(arg1:string,arg2:number):Promise<commissioner.StatQueue>;
+export function TargetStatQueue(arg1:string,arg2:number,arg3:string):Promise<commissioner.StatQueue>;
 
 export function TargetWorkflow(arg1:string):Promise<commissioner.WorkflowResponse>;

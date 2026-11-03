@@ -134,7 +134,7 @@ func TestNativeLeagueWireMatchesGolden(t *testing.T) {
 	readings.add(t, "score-preview", preview, err)
 	bracket, err := newCommissionerAPI(scores.app).TargetNativeBracket(legalityLeague, 2026)
 	readings.add(t, "bracket", bracket, err)
-	queue, err := newCommissionerAPI(scores.app).TargetStatQueue(legalityLeague, 2026)
+	queue, err := newCommissionerAPI(scores.app).TargetStatQueue(legalityLeague, 2026, "")
 	readings.add(t, "stat-queue", queue, err)
 
 	lineups := lineupAppTest(t)
@@ -329,8 +329,11 @@ func TestNativeDenialsMatchGolden(t *testing.T) {
 		"results-league": func() error { _, err := newCommissionerAPI(f.app).TargetNativeResults("legacy", 2026, 1); return err },
 		"standings":      func() error { _, err := newCommissionerAPI(f.app).TargetNativeStandings("native.", 2026); return err },
 		"bracket":        func() error { _, err := newCommissionerAPI(f.app).TargetNativeBracket(legalityLeague, 0); return err },
-		"stat-queue":     func() error { _, err := newCommissionerAPI(f.app).TargetStatQueue("native.seed ", 2026); return err },
-		"score-preview":  func() error { _, err := newCommissionerAPI(f.app).TargetNativeScorePreview(`{`); return err },
+		"stat-queue": func() error {
+			_, err := newCommissionerAPI(f.app).TargetStatQueue("native.seed ", 2026, "")
+			return err
+		},
+		"score-preview": func() error { _, err := newCommissionerAPI(f.app).TargetNativeScorePreview(`{`); return err },
 		"schedule-zone": func() error {
 			scope := nativeOwnerScope()
 			scope.LocalZone = "Local"

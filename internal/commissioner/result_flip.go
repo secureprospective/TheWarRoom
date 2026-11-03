@@ -3,6 +3,7 @@ package commissioner
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -121,6 +122,12 @@ func readFlipBase(league string, records []Record, src ResultSources, season int
 // check is ResultFlipCheck against the held ledger this base was read from.
 func (b *flipBase) check(ctx context.Context, league string, records []Record, src ResultSources, raw RawCommand,
 	season, week int) (ResultFlip, error) {
+	return b.checkTrial(ctx, league, records, nil, src, raw, season, week)
+}
+
+// checkTrial is check with the proposal's trial ledger already built; nil builds it.
+func (b *flipBase) checkTrial(ctx context.Context, league string, records, trial []Record, src ResultSources,
+	raw RawCommand, season, week int) (ResultFlip, error) {
 	held, ok := b.before[week]
 	if !ok {
 		held.results, held.err = weekResults(ctx, league, records, src, b.rules.Lineup, b.directory, b.published, season, week)
@@ -136,12 +143,49 @@ func (b *flipBase) check(ctx context.Context, league string, records []Record, s
 	}
 	after := before
 	if touched := franchisesTouched(raw, before); len(touched) != 0 {
-		after, err = weekResults(ctx, league, scoreTrial(raw, records), src, b.rules.Lineup, b.directory, b.published, season, week)
+		if trial == nil {
+			trial = scoreTrial(raw, records)
+		}
+		if isStatCommand(raw.Command) {
+			after, err = b.rescored(ctx, trial, src, before, touched, season, week)
+		} else {
+			after, err = weekResults(ctx, league, trial, src, b.rules.Lineup, b.directory, b.published, season, week)
+		}
 		if err != nil {
 			return ResultFlip{}, err
 		}
 	}
 	return compareWeeks(before, after, franchisesTouched(raw, before, after)), nil
+}
+
+// rescored is the week after a statistics decision. That decision moves only the one player's score, so
+// only the franchises that start him are scored again; every other franchise keeps its score, and the
+// games between them their result. compareWeeks reads only games with a touched side
+// (TestRescoredFlipMatchesFullWeek).
+func (b *flipBase) rescored(ctx context.Context, trial []Record, src ResultSources,
+	before NativeResults, touched map[string]bool, season, week int) (NativeResults, error) {
+	names := b.directory.Seats()
+	after := before
+	after.Revision = int64(len(trial))
+	after.Scores = slices.Clone(before.Scores)
+	after.Games = slices.Clone(before.Games)
+	scored := map[string]FranchiseWeekScore{}
+	for i, s := range after.Scores {
+		if touched[s.Franchise] {
+			score, err := franchiseWeekScore(ctx, trial, src, b.rules.Lineup, names.Of(s.Franchise), season, week)
+			if err != nil {
+				return NativeResults{}, err
+			}
+			after.Scores[i] = score
+		}
+		scored[s.Franchise] = after.Scores[i]
+	}
+	for i, g := range after.Games {
+		if touched[g.Home] || touched[g.Away] {
+			after.Games[i] = gameResult(week, names.Of(g.Home), names.Of(g.Away), scored[g.Home], scored[g.Away])
+		}
+	}
+	return after, nil
 }
 
 // franchisesTouched names the franchises a proposed change can move: the one it names, or for a player's

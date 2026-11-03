@@ -45,6 +45,7 @@ export type RoomPort = Pick<
   CommissionerBindings,
   | 'TargetCommissionerMarket'
   | 'TargetStatQueue'
+  | 'TargetCancelRead'
   | 'TargetLeagueCalendar'
   | 'TargetCorrections'
   | 'TargetNativeAssets'
@@ -59,9 +60,26 @@ export type RoomPort = Pick<
 const say = (cause: unknown) =>
   (cause instanceof Error ? cause.message : String(cause)).replace(/^Error: /, '');
 
+let requests = 0;
+
+/** withdrawable runs the statistics queue read under a request name and withdraws it when signal aborts,
+ *  so pricing stops once the room that asked for it is gone or has asked again. */
+async function withdrawable(port: RoomPort, league: string, season: number, signal?: AbortSignal) {
+  if (signal?.aborted) throw new Error('The Control Room closed before the statistics queue was read');
+  requests += 1;
+  const request = `room-${Date.now().toString(36)}-${requests}`;
+  const withdraw = () => void port.TargetCancelRead(request).catch(() => undefined);
+  signal?.addEventListener('abort', withdraw, { once: true });
+  try {
+    return await port.TargetStatQueue(league, season, request);
+  } finally {
+    signal?.removeEventListener('abort', withdraw);
+  }
+}
+
 /** readRoom reads every source at once; a source that fails leaves its field empty and its words in
- *  errors, so one lost read never blanks the room. */
-export async function readRoom(league: string, port: RoomPort): Promise<RoomData> {
+ *  errors, so one lost read never blanks the room. Aborting signal withdraws the statistics queue read. */
+export async function readRoom(league: string, port: RoomPort, signal?: AbortSignal): Promise<RoomData> {
   const out: RoomData = { errors: {} };
   const take = async <K extends RoomSource>(source: K, read: () => Promise<RoomData[K]>) => {
     try {
@@ -92,7 +110,7 @@ export async function readRoom(league: string, port: RoomPort): Promise<RoomData
     const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     // The War Room's calendar read (warroomCalendar.ts): the trade action's windows and the deadline.
     await Promise.all([
-      take('statQueue', () => port.TargetStatQueue(league, season)),
+      take('statQueue', () => withdrawable(port, league, season, signal)),
       take('calendar', () =>
         port.TargetLeagueCalendar({
           league,

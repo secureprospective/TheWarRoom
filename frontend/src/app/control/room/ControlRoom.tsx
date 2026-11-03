@@ -104,11 +104,13 @@ export default function ControlRoom({
       setData({ errors: { directory: cause instanceof Error ? cause.message : String(cause) } });
       return;
     }
-    void readRoom(league, reader).then((d) => {
+    const stop = new AbortController();
+    void readRoom(league, reader, stop.signal).then((d) => {
       if (active) setData(d);
     });
     return () => {
       active = false;
+      stop.abort();
     };
   }, [league, port, initial, revision]);
 

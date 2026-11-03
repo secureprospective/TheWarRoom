@@ -109,10 +109,17 @@ func (a *API) TargetNativeBracket(league string, season int) (commissioner.Nativ
 }
 
 // TargetStatQueue lists the statistics the NFL changed after the league counted them, newest first, with the
-// decisions already made. Nothing in the queue moves a score until it is approved.
-func (a *API) TargetStatQueue(league string, season int) (commissioner.StatQueue, error) {
+// decisions already made. Nothing in the queue moves a score until it is approved. A non-empty request names
+// the read so TargetCancelRead can withdraw it.
+func (a *API) TargetStatQueue(league string, season int, request string) (commissioner.StatQueue, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
-	return a.reads.TargetStatQueue(league, season)
+	return a.reads.TargetStatQueue(league, season, request)
+}
+
+// TargetCancelRead withdraws a read the client named; it stops once no other caller waits for it.
+func (a *API) TargetCancelRead(request string) error {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCancelRead(request)
 }
 
 // TargetNativeValues reads this league's player values, Best N and dynasty value by age.

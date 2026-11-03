@@ -19,6 +19,7 @@ func heldRead(c Command) Command {
 func commissionerDesktop(related []Command) []Command {
 	methods := []struct{ method, role, gravity string }{
 		{"TargetBackupNow", "gm,commish,admin", "G1"},
+		{"TargetCancelRead", "gm,commish,admin", "G0"},
 		{"TargetCommissionerActor", "gm,commish", "G0"},
 		{"TargetCommissionerControls", "gm,commish", "G0"},
 		{"TargetCommissionerDigests", "gm,commish", "G0"},

@@ -61,13 +61,8 @@ func (m *RulesMemo) Score(league string, scope source.RawNativeScope, records []
 func nativePlayerScore(league string, scope source.RawNativeScope, records []Record,
 	evidence source.NativeEvidence, now time.Time, resolve RulesFunc,
 	fold func([]Record) ledgerFold) (NativePlayerScore, error) {
-	out, rules, ready, err := scoreRules(league, scope, records, now, resolve)
+	out, rules, folded, changes, ready, err := foldedScoreRules(league, scope, records, now, resolve, fold)
 	if err != nil || !ready {
-		return out, err
-	}
-	folded := fold(records)
-	changes, err := playerScoreChanges(records, folded.active, scope.Player, scope.Season, scope.Week)
-	if err != nil {
 		return out, err
 	}
 	if folded.err != nil {
@@ -114,9 +109,32 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 	return out.count(rules.Scoring, week.Line, changes.Delta)
 }
 
+// foldedScoreRules is scoreRules over the ledger's fold, read once, with the player's score changes.
+func foldedScoreRules(league string, scope source.RawNativeScope, records []Record, now time.Time, resolve RulesFunc,
+	fold func([]Record) ledgerFold) (NativePlayerScore, leaguerules.RuleSet, ledgerFold, ScoreChanges, bool, error) {
+	var folded ledgerFold
+	foldedOnce := false
+	instant := func() time.Time {
+		if !foldedOnce {
+			folded, foldedOnce = fold(records), true
+		}
+		return instantAfter(folded.latest, now)
+	}
+	out, rules, ready, err := scoreRules(league, scope, records, instant, resolve)
+	if err != nil || !ready {
+		return out, rules, folded, ScoreChanges{}, ready, err
+	}
+	instant()
+	if err := checkScoreScope(scope.Player, scope.Season, scope.Week); err != nil {
+		return out, rules, folded, ScoreChanges{}, false, err
+	}
+	changes, err := folded.scores.changes(folded.active, scope.Player, "", scope.Season, scope.Week)
+	return out, rules, folded, changes, err == nil, err
+}
+
 // scoreRules opens a score reading: the scope checked, the league seeded and its rules resolved. ready is
 // false when the reading stops before any statistics are counted.
-func scoreRules(league string, scope source.RawNativeScope, records []Record, now time.Time,
+func scoreRules(league string, scope source.RawNativeScope, records []Record, instant func() time.Time,
 	resolve RulesFunc) (NativePlayerScore, leaguerules.RuleSet, bool, error) {
 	out := NativePlayerScore{League: league, Player: scope.Player, Season: scope.Season, Week: scope.Week,
 		Status: "Unavailable", Missing: []string{}, Items: []NativeScoreItem{}, Changes: []ScoreChange{}}
@@ -130,7 +148,7 @@ func scoreRules(league string, scope source.RawNativeScope, records []Record, no
 		out.Words = "Record the starting snapshot first"
 		return out, leaguerules.RuleSet{}, false, nil
 	}
-	rules, err := resolve(records, scope.Season, ReadingInstant(records, now))
+	rules, err := resolve(records, scope.Season, instant())
 	if err != nil {
 		return out, leaguerules.RuleSet{}, false, err
 	}
