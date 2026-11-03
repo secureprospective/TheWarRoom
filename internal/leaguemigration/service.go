@@ -148,7 +148,7 @@ func (s *Service) ImportWithOptions(ctx context.Context, mflLeague, reason, prin
 		return nil, err
 	}
 	raws := append([]commissioner.RawCommand{create, start}, answers...)
-	raws = append(raws, ScheduleCommands(league, reason, plan.Schedule, 0)...)
+	raws = append(raws, ScheduleCommands(league, reason, plan.Schedule, 0, plan.Recorded)...)
 	groups, err := planTransactionCommands(plan, league, reason, seed)
 	if err != nil {
 		return nil, err
@@ -307,7 +307,7 @@ func inviteID(league, franchise, email string) string {
 }
 
 func (s *Service) syncImportedReferences(ctx context.Context, league, reason, principal string, season int, plan Plan) ([]commissioner.Receipt, error) {
-	receipts, err := SyncSchedule(ctx, s.Ledger, league, reason, principal, season, plan.Schedule)
+	receipts, err := SyncSchedule(ctx, s.Ledger, league, reason, principal, season, plan.Schedule, plan.Recorded)
 	if err != nil {
 		return receipts, err
 	}

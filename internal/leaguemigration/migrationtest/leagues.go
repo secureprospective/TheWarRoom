@@ -17,6 +17,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -187,4 +188,8 @@ func (s *Source) Transactions(context.Context) (transactions.RawTransactions, er
 		return transactions.RawTransactions{}, nil
 	}
 	return *s.Export.Transactions, nil
+}
+
+func (s *Source) Results(context.Context) ([]leaguefeed.WeekResult, error) {
+	return s.Export.Results, s.fail("results")
 }

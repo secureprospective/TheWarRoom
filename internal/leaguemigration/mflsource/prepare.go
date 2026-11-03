@@ -35,6 +35,12 @@ func Prepare(export Export) (leaguemigration.Plan, error) {
 	if err != nil {
 		p.problem("the weekly schedule could not be kept: %v", err)
 	}
+	if export.Results != nil {
+		plan.Recorded, err = RecordedResults(export.Results, export.Season, 0, plan.Mapping)
+		if err != nil {
+			p.problem("the recorded results could not be kept: %v", err)
+		}
+	}
 	plan.Create = p.create(rules)
 	if len(export.Rosters) == 0 {
 		p.problem("MFL holds no rostered players for this league, so there is nothing to move; " +

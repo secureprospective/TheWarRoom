@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	migrationapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/migration"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
@@ -77,7 +78,7 @@ func (a *App) scheduleSync() migrationapp.ScheduleSync {
 		Authorizer: func() commissioner.Authorizer { return a.core.CommissionerAuthorizer },
 		Client:     a.core.MFLClient, Now: a.timeNow,
 		FillScheduleDates: a.fillScheduleDates, SyncScoring: a.syncScheduledScoring,
-		LineupPlayers: a.heldLineupPlayers, WorkContext: func() context.Context { return a.core.WorkCtx }, StartWorker: a.startWorker,
+		LineupPlayers: a.heldLineupPlayers, ImportWeek: a.importWeek, WorkContext: func() context.Context { return a.core.WorkCtx }, StartWorker: a.startWorker,
 		Running: &a.playedLineupsRunning, Started: &a.playedLineupsStarted}
 }
 
@@ -136,4 +137,20 @@ func (a *App) backfillScheduleFollowing(ctx context.Context) {
 			log.Printf("backfill schedule setting for %s: %v", league.ID, err)
 		}
 	}
+}
+
+// importWeek is the week in play at an instant, from the held NFL schedule; the offseason is week 1.
+func (a *App) importWeek(ctx context.Context, season int, at time.Time) (int, bool) {
+	weeks, err := a.nativeScheduleDates(ctx, season, at)
+	if err != nil {
+		return 0, false
+	}
+	phase := nativeapp.WeekAt(weeks, at)
+	switch {
+	case phase.Offseason:
+		return 1, true
+	case phase.WeekKnown:
+		return phase.Week, true
+	}
+	return 0, false
 }

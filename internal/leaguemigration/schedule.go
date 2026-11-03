@@ -10,20 +10,24 @@ import (
 )
 
 // ScheduleCommands uses the same draft/publication path as a commissioner-chosen schedule.
-func ScheduleCommands(league, reason string, weeks []commissioner.ScheduleWeek, revision int64) []commissioner.RawCommand {
+func ScheduleCommands(league, reason string, weeks []commissioner.ScheduleWeek, revision int64, evidence ...*commissioner.RawRecordedResults) []commissioner.RawCommand {
 	if len(weeks) == 0 {
 		return nil
 	}
 	request := fmt.Sprintf("schedule.sync.%d", revision)
+	var recorded *commissioner.RawRecordedResults
+	if len(evidence) > 0 {
+		recorded = evidence[0]
+	}
 	return []commissioner.RawCommand{
-		{League: league, Command: commissioner.ScheduleGenerate, Args: commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: len(weeks), Fixtures: weeks}}, Expected: revision, Request: request + ".draft", Reason: reason, Effective: "now", Visibility: "league"},
+		{League: league, Command: commissioner.ScheduleGenerate, Args: commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: len(weeks), Fixtures: weeks, Recorded: recorded}}, Expected: revision, Request: request + ".draft", Reason: reason, Effective: "now", Visibility: "league"},
 		{League: league, Command: commissioner.SchedulePublish, Args: commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{}}, Request: request + ".publish", Reason: reason, Effective: "now", Visibility: "league"},
 	}
 }
 
 // SyncSchedule publishes only a changed schedule, atomically and with an optimistic revision fence.
 // Callers supply already mapped app franchise identities, never source IDs.
-func SyncSchedule(ctx context.Context, ledger Ledger, league, reason, principal string, season int, weeks []commissioner.ScheduleWeek) ([]commissioner.Receipt, error) {
+func SyncSchedule(ctx context.Context, ledger Ledger, league, reason, principal string, season int, weeks []commissioner.ScheduleWeek, evidence ...*commissioner.RawRecordedResults) ([]commissioner.Receipt, error) {
 	if strings.TrimSpace(reason) == "" {
 		return nil, fmt.Errorf("write the reason for updating the schedule")
 	}
@@ -41,10 +45,16 @@ func SyncSchedule(ctx context.Context, ledger Ledger, league, reason, principal 
 	if held.Season != season {
 		return nil, fmt.Errorf("the source schedule must match the league's current season")
 	}
-	if len(weeks) == 0 || reflect.DeepEqual(held.Weeks, weeks) {
+	var recorded *commissioner.RawRecordedResults
+	if len(evidence) > 0 {
+		recorded = evidence[0]
+	}
+	previous := commissioner.RecordedResults(records, season)
+	recorded = retainBoundary(recorded, previous)
+	if len(weeks) == 0 || (reflect.DeepEqual(held.Weeks, weeks) && (recorded == nil || reflect.DeepEqual(previous, recorded))) {
 		return []commissioner.Receipt{}, nil
 	}
-	receipts, err := ledger.Batch(ctx, ScheduleCommands(league, reason, weeks, int64(len(records))), principal)
+	receipts, err := ledger.Batch(ctx, ScheduleCommands(league, reason, weeks, int64(len(records)), recorded), principal)
 	if err != nil {
 		return nil, fmt.Errorf("publish schedule (nothing recorded): %w", err)
 	}
@@ -65,4 +75,19 @@ func checkScheduleMapping(records []commissioner.Record, mapping map[string]stri
 		}
 	}
 	return nil
+}
+
+func retainBoundary(recorded, previous *commissioner.RawRecordedResults) *commissioner.RawRecordedResults {
+	if recorded == nil || previous == nil {
+		return recorded
+	}
+	retained := *recorded
+	retained.CutoverWeek = previous.CutoverWeek
+	retained.Teams = []commissioner.RecordedTeamResult{}
+	for _, team := range recorded.Teams {
+		if team.Week < retained.CutoverWeek {
+			retained.Teams = append(retained.Teams, team)
+		}
+	}
+	return &retained
 }

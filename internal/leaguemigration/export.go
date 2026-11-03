@@ -78,6 +78,7 @@ func AsProblems(err error) ([]string, bool) {
 // owners for the invitations, and notes on what waits for the commissioner. Go builds every part of it
 // from the read; no caller supplies rosters or settings.
 type Plan struct {
+	Recorded     *commissioner.RawRecordedResults
 	Transactions func(league, reason string, seed commissioner.RawNativeSnapshot) ([][]commissioner.RawCommand, error)
 	Schedule     []commissioner.ScheduleWeek
 	Create       commissioner.RawArgs

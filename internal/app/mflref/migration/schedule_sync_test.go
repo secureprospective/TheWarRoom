@@ -18,6 +18,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -171,16 +173,72 @@ func TestFollowSettingsIndependent(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			s := ScheduleSync{History: store, Client: client, Now: time.Now, Authorizer: func() commissioner.Authorizer { return nil }, FillScheduleDates: func(context.Context, []commissioner.Record) error { return nil }, SyncScoring: func(context.Context, string, []commissioner.Record) error { return nil }, WorkContext: func() context.Context { return nil }}
+			s := ScheduleSync{History: store, Client: client, Now: time.Now, Authorizer: func() commissioner.Authorizer { return nil }, FillScheduleDates: func(context.Context, []commissioner.Record) error { return nil }, SyncScoring: func(context.Context, string, []commissioner.Record) error { return nil }, WorkContext: func() context.Context { return nil }, ImportWeek: func(context.Context, int, time.Time) (int, bool) { return 2, true }}
 			s.Sync(t.Context())
 			for _, want := range []struct {
 				kind    string
 				enabled bool
-			}{{"transactions", tc.transactions}, {"schedule", tc.schedule}, {"liveScoring", tc.schedule}, {"weeklyResults", tc.schedule}} {
+			}{{"transactions", tc.transactions}, {"schedule", tc.schedule}, {"liveScoring", tc.schedule}, {"weeklyResults", true}} {
 				if (feed.reads[want.kind] > 0) != want.enabled {
 					t.Errorf("%s requests=%d enabled=%t", want.kind, feed.reads[want.kind], want.enabled)
 				}
 			}
 		})
+	}
+}
+
+type recordedFeed struct{}
+
+func (recordedFeed) RoundTrip(r *http.Request) (*http.Response, error) {
+	body := `{"league":{"baseURL":"https://www1.myfantasyleague.com/2026/home/00123"}}`
+	if r.URL.Query().Get("TYPE") == "weeklyResults" {
+		body = `{"allWeeklyResults":{"weeklyResults":[{"week":"1","matchup":{"regularSeason":"1","franchise":[{"id":"0001","isHome":"1","score":"105.25","result":"W"},{"id":"0002","isHome":"0","score":"99.00","result":"L"}]}},{"week":"2"}]}}`
+	}
+	return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+}
+
+func TestRefreshBackfillsRecordedResultsWithoutScheduleFollowing(t *testing.T) {
+	store := syncTestStore(t)
+	export := migrationtest.Synthetic("Refresh", migrationtest.Specs()["8 teams"])
+	var err error
+	export.Schedule, err = leagueschedule.Parse([]byte(`{"schedule":{"weeklySchedule":[{"week":"1","matchup":{"franchise":[{"id":"0001","isHome":"1"},{"id":"0002","isHome":"0"}]}},{"week":"2"}]}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger := leagueservice.MigrationLedger{Store: store}
+	svc := leaguemigration.Service{Ledger: ledger, Now: time.Now, Source: func(string) (leaguemigration.Source, error) { return &migrationtest.Source{Export: export}, nil }}
+	if _, err := svc.Import(t.Context(), export.LeagueID, "Old import", "creator"); err != nil {
+		t.Fatal(err)
+	}
+	league := leaguemigration.AppLeagueID(export.LeagueID, export.Season)
+	for _, change := range []struct{ field, value string }{{"schedule.follow", `{"Source":"","League":"","Season":0}`}, {"transactions.follow", `false`}} {
+		records, err := ledger.Records(t.Context(), league)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = ledger.Execute(t.Context(), commissioner.RawCommand{League: league, Expected: int64(len(records)), Command: commissioner.RulesSet, Args: commissioner.RawArgs{Field: change.field, Value: json.RawMessage(change.value)}, Request: change.field, Reason: "Stop following", Effective: "now", Visibility: "league"}, "creator")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	client, err := mfl.New("api", 10000, mfl.WithTransport(recordedFeed{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := ScheduleSync{History: store, Client: client, Now: time.Now, Authorizer: func() commissioner.Authorizer { return nil }, FillScheduleDates: func(context.Context, []commissioner.Record) error { return nil }, SyncScoring: func(context.Context, string, []commissioner.Record) error { return nil }, WorkContext: func() context.Context { return nil }, ImportWeek: func(context.Context, int, time.Time) (int, bool) { return 2, true }}
+	for range 2 {
+		s.Sync(t.Context())
+		results, err := store.NativeResults(t.Context(), league, 2026, 1)
+		if err != nil || len(results.Games) != 1 || results.Games[0].HomePoints == nil || *results.Games[0].HomePoints != 1052500 || *results.Games[0].AwayPoints != 990000 {
+			t.Fatal(results, err)
+		}
+	}
+	records, err := ledger.Records(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	held := commissioner.RecordedResults(records, 2026)
+	if held == nil || held.CutoverWeek != 2 || len(held.Teams) != 2 {
+		t.Fatal(held)
 	}
 }

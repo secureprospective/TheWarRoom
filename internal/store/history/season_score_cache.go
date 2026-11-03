@@ -50,6 +50,7 @@ type scoreRevision struct {
 type weekScoreKey struct {
 	seat, lineup string
 	season, week int
+	boundary     int
 	live         liveWeekGen
 }
 
@@ -97,6 +98,9 @@ func (n *nativeSources) MemoWeekScore(ctx context.Context, records []commissione
 	}
 	key := weekScoreKey{seat: string(seatKey), lineup: string(lineupKey), season: season, week: week,
 		live: n.store.liveWeekGeneration(season, week)}
+	if held := commissioner.RecordedResults(records, season); held != nil {
+		key.boundary = held.CutoverWeek
+	}
 	c := &n.store.scores
 	for {
 		if hit, ok := c.get(revision, key); ok {

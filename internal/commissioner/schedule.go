@@ -18,6 +18,7 @@ const (
 )
 
 type RawScheduleArgs struct {
+	Recorded  *RawRecordedResults         `json:"recorded,omitempty"`
 	Fixtures  []ScheduleWeek              `json:"fixtures,omitempty"`
 	Weeks     int                         `json:"weeks,omitempty"`
 	Pattern   leaguerules.SchedulePattern `json:"pattern,omitempty"`
@@ -39,6 +40,12 @@ func (a RawArgs) validateSchedule(command string) error {
 	details := *a.Schedule
 	switch command {
 	case ScheduleGenerate:
+		if details.Recorded != nil {
+			if err := details.Recorded.Validate(); err != nil {
+				return err
+			}
+			details.Recorded = nil
+		}
 		if details.Weeks < 1 || details.Weeks > 52 {
 			return fmt.Errorf("choose between 1 and 52 regular-season weeks")
 		}
@@ -232,6 +239,11 @@ func CheckScheduleAppend(raw RawCommand, records []Record) error {
 	}
 	switch raw.Command {
 	case ScheduleGenerate:
+		if held := raw.Args.Schedule.Recorded; held != nil {
+			if err := checkRecordedAppend(*held, records); err != nil {
+				return Refused(err)
+			}
+		}
 		_, err = FreezeSchedule(raw, records)
 	case SchedulePublish:
 		if len(draft) == 0 {

@@ -45,12 +45,13 @@ type StarterScore struct {
 // FranchiseWeekScore is a franchise's score for one week: its starters' points plus any franchise
 // adjustment. Points is present only when every starter's score is complete.
 type FranchiseWeekScore struct {
-	Franchise string               `json:"franchise"`
-	Name      string               `json:"name"`
-	Status    string               `json:"status"`
-	Points    *leaguerules.Decimal `json:"points,omitempty"`
-	Words     string               `json:"words"`
-	Starters  []StarterScore       `json:"starters"`
+	RecordedResult string               `json:"recordedResult,omitempty"`
+	Franchise      string               `json:"franchise"`
+	Name           string               `json:"name"`
+	Status         string               `json:"status"`
+	Points         *leaguerules.Decimal `json:"points,omitempty"`
+	Words          string               `json:"words"`
+	Starters       []StarterScore       `json:"starters"`
 	// Provisional is the week's running score from evidence that is not final: every starter's
 	// points so far, plus the franchise adjustment. Present only while Points is not.
 	Provisional *leaguerules.Decimal `json:"provisional,omitempty"`
@@ -86,6 +87,9 @@ func franchiseWeekScore(ctx context.Context, records []Record, src ResultSources
 
 func scoreFranchiseWeek(ctx context.Context, records []Record, src ResultSources, rules leaguerules.LineupRules,
 	seat NativeDirectorySeat, season, week int) (FranchiseWeekScore, error) {
+	if recorded, ok := recordedWeekScore(records, seat, season, week); ok {
+		return recorded, nil
+	}
 	out := FranchiseWeekScore{Franchise: seat.Franchise, Name: seat.Name, Status: "Incomplete",
 		Starters: []StarterScore{}, Changes: []ScoreChange{}}
 	lineup, err := src.Lineup(ctx, records, seat.Franchise, week)

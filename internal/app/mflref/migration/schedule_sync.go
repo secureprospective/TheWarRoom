@@ -30,6 +30,7 @@ type ScheduleSync struct {
 	FillScheduleDates func(context.Context, []commissioner.Record) error
 	SyncScoring       func(context.Context, string, []commissioner.Record) error
 	LineupPlayers     func(context.Context) (map[string]string, error)
+	ImportWeek        mflsource.ImportWeek
 	WorkContext       func() context.Context
 	StartWorker       func(func())
 	Running, Started  *atomic.Bool
@@ -163,10 +164,17 @@ func (s ScheduleSync) syncPlayedLineups(ctx context.Context, ledger leagueservic
 			log.Printf("refresh transactions for %s (held history kept): %v", league, err)
 		}
 	}
+	weeks, lineupErr := weeklyresults.Fetch(ctx, s.Client, strconv.Itoa(season), source)
+	if lineupErr == nil {
+		_, lineupErr = mflsource.BackfillRecordedResults(ctx, ledger, league, "Capture recorded results before app scoring", principal, season, weeks, s.ImportWeek)
+	}
 	if _, _, _, follows := mflsource.FollowingLeague(league, records); !follows {
+		if lineupErr != nil {
+			log.Printf("refresh recorded results for %s (held results kept): %v", league, lineupErr)
+		}
 		return
 	}
-	weeks, lineupErr := weeklyresults.Fetch(ctx, s.Client, strconv.Itoa(season), source)
+
 	if lineupErr == nil {
 		var directory map[string]string
 		directory, lineupErr = s.LineupPlayers(ctx)

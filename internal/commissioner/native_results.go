@@ -147,6 +147,9 @@ func gameResult(week int, home, away NativeDirectorySeat, hs, as FranchiseWeekSc
 		return game
 	}
 	game.HomePoints, game.AwayPoints = hs.Points, as.Points
+	if applyRecordedVerdict(&game, hs.RecordedResult, as.RecordedResult) {
+		return game
+	}
 	switch {
 	case *hs.Points == *as.Points:
 		game.Status = GameTie

@@ -1138,6 +1138,7 @@ export namespace commissioner {
 	    }
 	}
 	export class FranchiseWeekScore {
+	    recordedResult?: string;
 	    franchise: string;
 	    name: string;
 	    status: string;
@@ -1156,6 +1157,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.recordedResult = source["recordedResult"];
 	        this.franchise = source["franchise"];
 	        this.name = source["name"];
 	        this.status = source["status"];
@@ -3682,7 +3684,60 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class RecordedTeamResult {
+	    franchise: string;
+	    week: number;
+	    points: number;
+	    result?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RecordedTeamResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.week = source["week"];
+	        this.points = source["points"];
+	        this.result = source["result"];
+	    }
+	}
+	export class RawRecordedResults {
+	    season: number;
+	    cutoverWeek: number;
+	    teams: RecordedTeamResult[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RawRecordedResults(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.cutoverWeek = source["cutoverWeek"];
+	        this.teams = this.convertValues(source["teams"], RecordedTeamResult);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class RawScheduleArgs {
+	    recorded?: RawRecordedResults;
 	    fixtures?: competition.ScheduleWeek[];
 	    weeks?: number;
 	    pattern?: string;
@@ -3696,6 +3751,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.recorded = this.convertValues(source["recorded"], RawRecordedResults);
 	        this.fixtures = this.convertValues(source["fixtures"], competition.ScheduleWeek);
 	        this.weeks = source["weeks"];
 	        this.pattern = source["pattern"];
@@ -4654,6 +4710,7 @@ export namespace commissioner {
 	
 	
 	
+	
 	export class RolloverPlan {
 	    from: number;
 	    to: number;
@@ -4742,6 +4799,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	export class ResultFlip {
 	    status: string;

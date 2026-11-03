@@ -29,7 +29,7 @@ func (f *fixtureTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"draftResults":     "draftreports/testdata/results-2026.json",
 		"futureDraftPicks": "draftreports/testdata/future-2026.json",
 	}
-	if req.Method != http.MethodGet || (paths[kind] == "" && kind != "salaryAdjustments" && kind != "schedule" && kind != "transactions") {
+	if req.Method != http.MethodGet || (paths[kind] == "" && kind != "salaryAdjustments" && kind != "schedule" && kind != "transactions" && kind != "weeklyResults") {
 		f.writes++
 		return nil, fmt.Errorf("unexpected MFL operation: %s %s", req.Method, kind)
 	}
@@ -37,6 +37,9 @@ func (f *fixtureTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	body := []byte(`{"salaryAdjustments":{}}`)
 	if kind == "transactions" {
 		body = []byte(`{"transactions":{}}`)
+	}
+	if kind == "weeklyResults" {
+		body = []byte(`{"allWeeklyResults":{"weeklyResults":{"week":"1"}}}`)
 	}
 	if kind == "schedule" {
 		body = []byte(`{"schedule":{"weeklySchedule":{"week":"1"}}}`)

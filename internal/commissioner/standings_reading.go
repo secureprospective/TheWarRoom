@@ -150,7 +150,7 @@ func countSeason(ctx context.Context, league string, records []Record, src Resul
 				continue
 			}
 			out.decided++
-			out.games = append(out.games, competition.RankGame{Home: g.Home, Away: g.Away, HomePoints: *g.HomePoints, AwayPoints: *g.AwayPoints})
+			out.games = append(out.games, rankingGame(g))
 		}
 		for _, score := range results.Scores {
 			if score.Points != nil {
@@ -267,4 +267,19 @@ func directoryIDs(d NativeDirectory) []string {
 		ids[i] = seat.Franchise
 	}
 	return ids
+}
+
+// RankGame consumes only score ordering for W/L/T, including head-to-head and
+// division records. Points-for is supplied separately with the untouched totals.
+func rankingGame(game NativeGame) competition.RankGame {
+	out := competition.RankGame{Home: game.Home, Away: game.Away, HomePoints: *game.HomePoints, AwayPoints: *game.AwayPoints}
+	switch {
+	case game.Status == GameTie:
+		out.HomePoints, out.AwayPoints = 0, 0
+	case game.Winner == game.Home && out.HomePoints <= out.AwayPoints:
+		out.HomePoints, out.AwayPoints = 1, 0
+	case game.Winner == game.Away && out.AwayPoints <= out.HomePoints:
+		out.HomePoints, out.AwayPoints = 0, 1
+	}
+	return out
 }
