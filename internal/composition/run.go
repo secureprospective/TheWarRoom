@@ -48,6 +48,8 @@ func entryPoints(embedded Embedded) platformapp.EntryPoints {
 }
 
 func runDesktop(embedded Embedded) int {
+	stopProfiles := platformapp.StartHeapProfiles()
+	defer stopProfiles()
 	app := NewApp()
 
 	err := wails.Run(&options.App{
