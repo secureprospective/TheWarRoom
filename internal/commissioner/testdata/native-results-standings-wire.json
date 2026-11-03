@@ -222,6 +222,9 @@
         "words": "Held team 1 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1001",
             "name": "franchise.01 starter",
             "position": "LB",
@@ -296,6 +299,9 @@
         "words": "Held team 32 scored 3 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1032",
             "name": "franchise.32 starter",
             "position": "LB",
@@ -370,6 +376,9 @@
         "words": "Held team 2 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1002",
             "name": "franchise.02 starter",
             "position": "LB",
@@ -444,6 +453,9 @@
         "words": "Held team 31 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1031",
             "name": "franchise.31 starter",
             "position": "LB",
@@ -518,6 +530,9 @@
         "words": "Held team 30 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1030",
             "name": "franchise.30 starter",
             "position": "LB",
@@ -592,6 +607,9 @@
         "words": "Held team 3 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1003",
             "name": "franchise.03 starter",
             "position": "LB",
@@ -666,6 +684,9 @@
         "words": "Held team 4 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1004",
             "name": "franchise.04 starter",
             "position": "LB",
@@ -740,6 +761,9 @@
         "words": "Held team 29 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1029",
             "name": "franchise.29 starter",
             "position": "LB",
@@ -814,6 +838,9 @@
         "words": "Held team 28 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1028",
             "name": "franchise.28 starter",
             "position": "LB",
@@ -888,6 +915,9 @@
         "words": "Held team 5 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1005",
             "name": "franchise.05 starter",
             "position": "LB",
@@ -962,6 +992,9 @@
         "words": "Held team 6 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1006",
             "name": "franchise.06 starter",
             "position": "LB",
@@ -1036,6 +1069,9 @@
         "words": "Held team 27 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1027",
             "name": "franchise.27 starter",
             "position": "LB",
@@ -1110,6 +1146,9 @@
         "words": "Held team 26 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1026",
             "name": "franchise.26 starter",
             "position": "LB",
@@ -1184,6 +1223,9 @@
         "words": "Held team 7 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1007",
             "name": "franchise.07 starter",
             "position": "LB",
@@ -1258,6 +1300,9 @@
         "words": "Held team 8 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1008",
             "name": "franchise.08 starter",
             "position": "LB",
@@ -1332,6 +1377,9 @@
         "words": "Held team 25 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1025",
             "name": "franchise.25 starter",
             "position": "LB",
@@ -1406,6 +1454,9 @@
         "words": "Held team 24 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1024",
             "name": "franchise.24 starter",
             "position": "LB",
@@ -1480,6 +1531,9 @@
         "words": "Held team 9 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1009",
             "name": "franchise.09 starter",
             "position": "LB",
@@ -1554,6 +1608,9 @@
         "words": "Held team 10 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1010",
             "name": "franchise.10 starter",
             "position": "LB",
@@ -1628,6 +1685,9 @@
         "words": "Held team 23 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1023",
             "name": "franchise.23 starter",
             "position": "LB",
@@ -1702,6 +1762,9 @@
         "words": "Held team 22 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1022",
             "name": "franchise.22 starter",
             "position": "LB",
@@ -1776,6 +1839,9 @@
         "words": "Held team 11 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1011",
             "name": "franchise.11 starter",
             "position": "LB",
@@ -1850,6 +1916,9 @@
         "words": "Held team 12 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1012",
             "name": "franchise.12 starter",
             "position": "LB",
@@ -1924,6 +1993,9 @@
         "words": "Held team 21 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1021",
             "name": "franchise.21 starter",
             "position": "LB",
@@ -1998,6 +2070,9 @@
         "words": "Held team 20 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1020",
             "name": "franchise.20 starter",
             "position": "LB",
@@ -2072,6 +2147,9 @@
         "words": "Held team 13 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1013",
             "name": "franchise.13 starter",
             "position": "LB",
@@ -2146,6 +2224,9 @@
         "words": "Held team 14 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1014",
             "name": "franchise.14 starter",
             "position": "LB",
@@ -2220,6 +2301,9 @@
         "words": "Held team 19 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1019",
             "name": "franchise.19 starter",
             "position": "LB",
@@ -2294,6 +2378,9 @@
         "words": "Held team 18 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1018",
             "name": "franchise.18 starter",
             "position": "LB",
@@ -2368,6 +2455,9 @@
         "words": "Held team 15 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1015",
             "name": "franchise.15 starter",
             "position": "LB",
@@ -2442,6 +2532,9 @@
         "words": "Held team 16 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1016",
             "name": "franchise.16 starter",
             "position": "LB",
@@ -2516,6 +2609,9 @@
         "words": "Held team 17 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1017",
             "name": "franchise.17 starter",
             "position": "LB",
@@ -2842,6 +2938,9 @@
         "words": "Held team 1 has 1.5 points so far, from evidence that is not final: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1001",
             "name": "franchise.01 starter",
             "position": "LB",
@@ -2867,6 +2966,9 @@
         "words": "Held team 32 has 3 points so far, from evidence that is not final: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1032",
             "name": "franchise.32 starter",
             "position": "LB",
@@ -2892,6 +2994,9 @@
         "words": "Held team 2 has 1.5 points so far, from evidence that is not final: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1002",
             "name": "franchise.02 starter",
             "position": "LB",
@@ -2917,6 +3022,9 @@
         "words": "Held team 31 has 1.5 points so far, from evidence that is not final: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1031",
             "name": "franchise.31 starter",
             "position": "LB",
@@ -2942,6 +3050,9 @@
         "words": "Held team 30 has 1.5 points so far, from evidence that is not final: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1030",
             "name": "franchise.30 starter",
             "position": "LB",
@@ -2967,6 +3078,9 @@
         "words": "Held team 3 has 1.5 points so far, from evidence that is not final: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1003",
             "name": "franchise.03 starter",
             "position": "LB",
@@ -2992,6 +3106,9 @@
         "words": "Held team 4 has 1.5 points so far, from evidence that is not final: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1004",
             "name": "franchise.04 starter",
             "position": "LB",
@@ -3017,6 +3134,9 @@
         "words": "Held team 29 has 1.5 points so far, from evidence that is not final: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1029",
             "name": "franchise.29 starter",
             "position": "LB",
@@ -3042,6 +3162,9 @@
         "words": "Held team 28 has 1.5 points so far, from evidence that is not final: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1028",
             "name": "franchise.28 starter",
             "position": "LB",
@@ -3067,6 +3190,9 @@
         "words": "Held team 5 has 1.5 points so far, from evidence that is not final: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1005",
             "name": "franchise.05 starter",
             "position": "LB",
@@ -3092,6 +3218,9 @@
         "words": "Held team 6 has 1.5 points so far, from evidence that is not final: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1006",
             "name": "franchise.06 starter",
             "position": "LB",
@@ -3117,6 +3246,9 @@
         "words": "Held team 27 has 1.5 points so far, from evidence that is not final: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1027",
             "name": "franchise.27 starter",
             "position": "LB",
@@ -3142,6 +3274,9 @@
         "words": "Held team 26 has 1.5 points so far, from evidence that is not final: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1026",
             "name": "franchise.26 starter",
             "position": "LB",
@@ -3167,6 +3302,9 @@
         "words": "Held team 7 has 1.5 points so far, from evidence that is not final: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1007",
             "name": "franchise.07 starter",
             "position": "LB",
@@ -3192,6 +3330,9 @@
         "words": "Held team 8 has 1.5 points so far, from evidence that is not final: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1008",
             "name": "franchise.08 starter",
             "position": "LB",
@@ -3217,6 +3358,9 @@
         "words": "Held team 25 has 1.5 points so far, from evidence that is not final: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1025",
             "name": "franchise.25 starter",
             "position": "LB",
@@ -3242,6 +3386,9 @@
         "words": "Held team 24 has 1.5 points so far, from evidence that is not final: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1024",
             "name": "franchise.24 starter",
             "position": "LB",
@@ -3267,6 +3414,9 @@
         "words": "Held team 9 has 1.5 points so far, from evidence that is not final: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1009",
             "name": "franchise.09 starter",
             "position": "LB",
@@ -3292,6 +3442,9 @@
         "words": "Held team 10 has 1.5 points so far, from evidence that is not final: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1010",
             "name": "franchise.10 starter",
             "position": "LB",
@@ -3317,6 +3470,9 @@
         "words": "Held team 23 has 1.5 points so far, from evidence that is not final: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1023",
             "name": "franchise.23 starter",
             "position": "LB",
@@ -3342,6 +3498,9 @@
         "words": "Held team 22 has 1.5 points so far, from evidence that is not final: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1022",
             "name": "franchise.22 starter",
             "position": "LB",
@@ -3367,6 +3526,9 @@
         "words": "Held team 11 has 1.5 points so far, from evidence that is not final: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1011",
             "name": "franchise.11 starter",
             "position": "LB",
@@ -3392,6 +3554,9 @@
         "words": "Held team 12 has 1.5 points so far, from evidence that is not final: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1012",
             "name": "franchise.12 starter",
             "position": "LB",
@@ -3417,6 +3582,9 @@
         "words": "Held team 21 has 1.5 points so far, from evidence that is not final: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1021",
             "name": "franchise.21 starter",
             "position": "LB",
@@ -3442,6 +3610,9 @@
         "words": "Held team 20 has 1.5 points so far, from evidence that is not final: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1020",
             "name": "franchise.20 starter",
             "position": "LB",
@@ -3467,6 +3638,9 @@
         "words": "Held team 13 has 1.5 points so far, from evidence that is not final: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1013",
             "name": "franchise.13 starter",
             "position": "LB",
@@ -3492,6 +3666,9 @@
         "words": "Held team 14 has 1.5 points so far, from evidence that is not final: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1014",
             "name": "franchise.14 starter",
             "position": "LB",
@@ -3517,6 +3694,9 @@
         "words": "Held team 19 has 1.5 points so far, from evidence that is not final: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1019",
             "name": "franchise.19 starter",
             "position": "LB",
@@ -3542,6 +3722,9 @@
         "words": "Held team 18 has 1.5 points so far, from evidence that is not final: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1018",
             "name": "franchise.18 starter",
             "position": "LB",
@@ -3567,6 +3750,9 @@
         "words": "Held team 15 has 1.5 points so far, from evidence that is not final: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1015",
             "name": "franchise.15 starter",
             "position": "LB",
@@ -3592,6 +3778,9 @@
         "words": "Held team 16 has 1.5 points so far, from evidence that is not final: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1016",
             "name": "franchise.16 starter",
             "position": "LB",
@@ -3617,6 +3806,9 @@
         "words": "Held team 17 has 1.5 points so far, from evidence that is not final: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1017",
             "name": "franchise.17 starter",
             "position": "LB",

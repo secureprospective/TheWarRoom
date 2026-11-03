@@ -1185,7 +1185,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:commish.stat.queue.approve",
-    "Schema": "16d3ce3236852ed7383843218a0a673c3ddb91532302752bf602eaabfc78daa0",
+    "Schema": "674db743a2d91c7589f08fd7ce033b2a608dac01e62969716bd7b661800bd747",
     "Modes": [
       "preview",
       "execute"
@@ -1200,7 +1200,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:commish.stat.queue.reject",
-    "Schema": "746847baecd1fb17ba885ab24efba2964a360f9ae7f5f6c0b0aba70640689aec",
+    "Schema": "337e616481090f9e81c4812e6fa323c77d60b5128048c98f8476a5a50f56b46b",
     "Modes": [
       "preview",
       "execute"
@@ -1215,7 +1215,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:commish.stat.correct",
-    "Schema": "b19c05e8f3515427d12ee2b66605828df4f467cb31e83361f9fb37e927591ce6",
+    "Schema": "8a5ee4d18503514f0734fe96bcbac4940f03675a05c53ea0ff28188bf23357b4",
     "Modes": [
       "preview",
       "execute"
