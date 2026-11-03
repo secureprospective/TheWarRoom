@@ -8,6 +8,37 @@
    "label": "League shape",
    "rows": [
     {
+     "field": "league.startingAssets",
+     "label": "Starting assets",
+     "value": "Held rosters, contracts and draft picks",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "string",
+      "choices": [
+       {
+        "value": "empty",
+        "label": "Empty rosters and rules-defined auction lots"
+       },
+       {
+        "value": "held",
+        "label": "Held rosters, contracts and draft picks"
+       }
+      ],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": "held",
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
      "field": "league.teams",
      "label": "Teams",
      "value": "32",
@@ -563,6 +594,37 @@
   {
    "label": "Lineup",
    "rows": [
+    {
+     "field": "lineup.lock",
+     "label": "Lineup lock",
+     "value": "Week’s first kickoff",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "string",
+      "choices": [
+       {
+        "value": "each_player_game",
+        "label": "Each player’s game"
+       },
+       {
+        "value": "first_kickoff",
+        "label": "Week’s first kickoff"
+       }
+      ],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": "first_kickoff",
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
     {
      "field": "lineup.positions",
      "label": "Starting position limits",

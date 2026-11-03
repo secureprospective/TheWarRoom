@@ -339,6 +339,22 @@ func TestInvalidLineupPenaltyAndMissedFlagAreTheLeaguesChoice(t *testing.T) {
 	f.governs(t, "lineup.missedFlag", `false`, missed, "missed true true", "missed false true")
 }
 
+func TestLineupLockIsTheLeaguesChoice(t *testing.T) {
+	t.Parallel()
+	f := legalityApp(t)
+	lock := func(t *testing.T, f *legalityFixture) string {
+		t.Helper()
+		for _, line := range f.lineup(t, firstStarters(21)).Rules {
+			if line.Label == "Lineup lock" {
+				return line.Words
+			}
+		}
+		t.Fatal("lineup lock missing from the lineup check")
+		return ""
+	}
+	f.governs(t, "lineup.lock", `"each_player_game"`, lock, "Week’s first kickoff", "Each player’s game")
+}
+
 func TestInjuredReserveRulesGovernWhoMustLeave(t *testing.T) {
 	t.Parallel()
 	f := legalityApp(t)
@@ -530,7 +546,7 @@ func TestNativeGovernedCatalogueHasNoOrphanedFields(t *testing.T) {
 		}
 	}
 	proved := []string{"roster.limits", "roster.reserveExcluded", "roster.positionBounds",
-		"lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag", "ir.slots",
+		"lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag", "lineup.lock", "ir.slots",
 		"ir.eligible", "ir.mustLeaveHealthy", "ir.autoReturn", "taxi.autoPromote", "taxi.slots", "taxi.maximumYears", "taxi.basis", "house.texts"}
 	for _, path := range proved {
 		if !seen[path] {

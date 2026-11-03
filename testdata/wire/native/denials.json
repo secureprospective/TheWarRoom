@@ -5,7 +5,7 @@
  "closed-window/lineup-set": "No league window opens this action now.",
  "closed-window/trade-accept": "No league window opens this action now.",
  "creator/lineup-set-franchise.03": "You may set a lineup only for your own franchise",
- "locked/lineup-set": "Player, 1021 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); Player, 1003 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); a lineup can't add or drop a player once that player's game has started",
+ "locked/lineup-set": "Player, 1021 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); Player, 1003 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); a lineup can't add or drop a player after the league’s lineup lock",
  "malformed/bid-no-details": "choose to place, raise or withdraw a bid",
  "malformed/bid-not-an-owner-act": "choose to place, raise or withdraw a bid",
  "malformed/bracket": "choose a season and week",

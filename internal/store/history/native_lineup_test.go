@@ -71,6 +71,10 @@ func TestLineupBelongsToItsOwnerAndTheAbilityToSetIt(t *testing.T) {
 func TestLockedPlayerCannotBeMovedInOrOutAfterKickoff(t *testing.T) {
 	t.Parallel()
 	f := lineupTest(t)
+	// The fixture is an import, which locks at the week's first kickoff (SET-1); this test is about
+	// each-player-game timing, so the commissioner sets that lock explicitly.
+	runScoreCommand(t, f.s, ruleCommand("lineup.lock", `"each_player_game"`, "now", "Lock each player at his game",
+		revision(t, f.s)), "creator")
 	qb2 := f.roster[f.a][leaguerules.QB][1]
 	f.mustSet(t, f.a, f.legal(f.a))
 	swapQB := append([]string{qb2}, f.legal(f.a)[1:]...)
@@ -79,7 +83,7 @@ func TestLockedPlayerCannotBeMovedInOrOutAfterKickoff(t *testing.T) {
 	f.mustSet(t, f.a, f.legal(f.a))
 	f.at = f.dallas
 	_, err := f.set(t, f.a, swapQB)
-	want := "QB1 of team 01 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); a lineup can't add or drop a player once that player's game has started"
+	want := "QB1 of team 01 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); a lineup can't add or drop a player after the league’s lineup lock"
 	if got := refusal(t, err); got != want {
 		t.Fatalf("locked player out:\n got %q\nwant %q", got, want)
 	}

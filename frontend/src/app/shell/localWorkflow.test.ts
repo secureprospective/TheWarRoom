@@ -3,19 +3,22 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { localWorkflow } from './localWorkflow';
 
 type Call = { method: string; arguments: unknown[] };
-function desktop(calls: Call[]) {
+// desktop installs a fake commissioner binding and returns it, so a test can replace one method.
+function desktop(calls: Call[]): Record<string, unknown> {
   const record = (method: string, data: unknown) => (...args: unknown[]) => {
     calls.push({ method, arguments: args });
     return Promise.resolve(data);
   };
   const authority = { label: 'This computer', writable: true, football: 'local league',
     data: { league: 'native.seed', revision: 2 } };
-  Object.defineProperty(window, 'go', { configurable: true, value: { commissioner: { API: {
+  const api: Record<string, unknown> = {
     TargetWorkflow: record('TargetWorkflow', authority),
     TargetLeagueCalendar: record('TargetLeagueCalendar', { league: 'native.seed', revision: 2,
       decision: {}, clock: { windows: [], exceptions: [], tradeDeadline: null,
         secondsToTradeDeadline: null } }),
-  } } } });
+  };
+  Object.defineProperty(window, 'go', { configurable: true, value: { commissioner: { API: api } } });
+  return api;
 }
 afterEach(() => { delete (window as unknown as { go?: unknown }).go; });
 
@@ -59,9 +62,7 @@ it.each([
 ] as const)(
   'reads %s through its own binding, not the workflow envelope', async (command, method) => {
     const calls: Call[] = [];
-    desktop(calls);
-    const api = (window as unknown as { go: { commissioner: { API: Record<string, unknown> } }
-      }).go.commissioner.API;
+    const api = desktop(calls);
     api[method] = (...args: unknown[]) => { calls.push({ method, arguments: args });
       return Promise.resolve({ league: 'native.seed' }); };
     const response = await localWorkflow({ command, mode: 'read', arguments: { league: 'native.seed' } });
@@ -72,11 +73,9 @@ it.each([
   });
 
 it('coalesces repeated reads with only one trailing refresh', async () => {
-  desktop([]);
+  const api = desktop([]);
   let release!: () => void;
   const pending = new Promise<void>(resolve => { release = resolve; });
-  const api = (window as unknown as { go: { commissioner: { API: Record<string, unknown> } }
-    }).go.commissioner.API;
   const call = vi.fn(async () => { await pending; return { label: 'Local', writable: false,
     football: '', data: { league: 'native.seed' } }; });
   api.TargetWorkflow = call;

@@ -10,6 +10,10 @@
      "note": "",
      "fields": [
       {
+       "field": "league.startingAssets",
+       "label": "Starting assets"
+      },
+      {
        "field": "league.teams",
        "label": "Teams"
       },
@@ -78,6 +82,10 @@
      "built": true,
      "note": "",
      "fields": [
+      {
+       "field": "lineup.lock",
+       "label": "Lineup lock"
+      },
       {
        "field": "lineup.positions",
        "label": "Starting position limits"

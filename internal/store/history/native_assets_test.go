@@ -153,7 +153,7 @@ func TestEmptySeedAdmissionBySource(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct{ preset, source, want string }{
 		{commissioner.PresetEmpty, commissioner.SourceNative, ""},
-		{commissioner.PresetLegacy, commissioner.SourceMFLImport, "hold the Legacy NFL rosters, franchises and both draft reports before seeding"},
+		{commissioner.PresetLegacy, commissioner.SourceMFLImport, "hold the rosters, franchises and both draft reports before seeding"},
 	} {
 		t.Run(tc.preset, func(t *testing.T) {
 			s, _, _ := newStore(t)

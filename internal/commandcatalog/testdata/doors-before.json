@@ -526,7 +526,7 @@
     "Gravity": "G0",
     "Availability": "both",
     "Permission": "statistics.manage",
-    "Schema": "553382b60ea43364eb812dd6ac6970b2375c3a7e14581410415665c684270a25",
+    "Schema": "673d8f8990eb124b312394fc9d4659884cec8ce44c8fcd0e4e91086cbfbbc4ad",
     "Modes": [
       "read"
     ]
@@ -1034,7 +1034,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:schedule.generate",
-    "Schema": "7f3501916825db300386762efbc8b7e95de98919abb4414d6c5336f2a50ca084",
+    "Schema": "f2cb1210d3ddb4d20afedb52544a8eb9b2a1a35395659241060ced6ebab831ff",
     "Modes": [
       "preview",
       "execute"
@@ -1049,7 +1049,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:schedule.edit",
-    "Schema": "aba201e18a707358ad015e4736876ded006ab06f8b76dddafa7074680d7bdcb9",
+    "Schema": "7d342c9e781bcebf4776f5acee68724efae6ee238b5186177f7cb4c65004b49a",
     "Modes": [
       "preview",
       "execute"
@@ -1064,7 +1064,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:schedule.publish",
-    "Schema": "7004ec02381e49eece2c6ff65d64a3c78c1968af3b03bc91dd246099f9a52645",
+    "Schema": "3b7bbb1abb96b92fb7aff6d176d4b2c0e198ec0617448cd6961dfdd2da6b0a46",
     "Modes": [
       "preview",
       "execute"
@@ -2435,7 +2435,7 @@
     "Method": "TargetCancelRead",
     "Role": "gm,commish,admin",
     "Gravity": "G0",
-    "Availability": "desktop",
+    "Availability": "both",
     "Permission": "",
     "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
     "Modes": null
@@ -2893,7 +2893,7 @@
     "Gravity": "G0",
     "Availability": "both",
     "Permission": "statistics.manage",
-    "Schema": "553382b60ea43364eb812dd6ac6970b2375c3a7e14581410415665c684270a25",
+    "Schema": "673d8f8990eb124b312394fc9d4659884cec8ce44c8fcd0e4e91086cbfbbc4ad",
     "Modes": [
       "read"
     ]

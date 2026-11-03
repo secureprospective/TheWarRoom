@@ -210,6 +210,22 @@ func TestCommissionerPresets(t *testing.T) {
 				}
 				continue
 			}
+			if row.Field == "league.startingAssets" {
+				// SET-1: native creation records empty starting assets as a setting, not a ruling to wait for.
+				if row.State != "Set" || row.Value != "Empty rosters and rules-defined auction lots" ||
+					row.Citation != "Empty league default" || row.ChangedAt != "" {
+					t.Fatalf("empty league starting assets: %+v", row)
+				}
+				continue
+			}
+			if row.Field == "lineup.lock" {
+				// SET-1: new native leagues lock each player at that player’s own game.
+				if row.State != "Set" || row.Value != "Each player’s game" ||
+					row.Citation != "Empty league default" || row.ChangedAt != "" {
+					t.Fatalf("empty league lineup lock: %+v", row)
+				}
+				continue
+			}
 			if row.Field == "league.sides" {
 				if row.State != "Set" || row.Value != "None" || row.Citation != "No player pool per side: the league has no sides" {
 					t.Fatalf("empty league sides: %+v", row)

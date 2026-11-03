@@ -315,7 +315,7 @@ func TestCutoverIsOnceOnlyAndPermanent(t *testing.T) {
 	}
 	if _, err := s.ExecuteCommissioner(ctx, commissioner.RawCommand{League: "native.test", Command: commissioner.Cutover,
 		Expected: 1, Request: "native", Reason: "Ready", Effective: "now", Visibility: "league"}, "creator", nil); err == nil ||
-		!strings.Contains(err.Error(), "only a league imported from MFL") {
+		!strings.Contains(err.Error(), "only a league with held starting assets can be moved over") {
 		t.Fatalf("an app league was cut over: %v", err)
 	}
 }

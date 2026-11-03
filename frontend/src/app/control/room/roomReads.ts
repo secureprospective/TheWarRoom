@@ -1,5 +1,6 @@
 import type { CommissionerBindings, commissioner, market } from '../../commissioner/api';
-import type { accounts, control } from '../../../../wailsjs/go/models';
+import type { accounts } from '../../../../wailsjs/go/models';
+import type { ParamsResult, ShellStatus } from '../api';
 
 /** The commissioner reads the Control Room shows beside the league state (jobs, rules, people, ledger,
  *  notices), which leagueState already holds. Each is an existing binding; nothing here decides a rule. */
@@ -16,11 +17,11 @@ export type RoomData = {
   houseRules?: commissioner.NativeHouseRules;
   week?: commissioner.NativeWeek;
   /** The status strip's source health (TargetShellStatus). */
-  status?: control.ShellStatus;
+  status?: ShellStatus;
   /** The next rookie draft as Go orders it (draft.read, TargetNativeDraft). */
   draft?: commissioner.NativeDraft;
   /** The engine's calibration parameters (GetParams). */
-  params?: control.ParamsResult;
+  params?: ParamsResult;
   /** Each local identity's authenticator and last activity (TargetSignInFacts, the accounts store). */
   signIns?: accounts.SignInFact[];
   errors: Partial<Record<RoomSource, string>>;
@@ -55,7 +56,7 @@ export type RoomPort = Pick<
   | 'TargetNativeWeek'
   | 'TargetNativeDraft'
   | 'TargetSignInFacts'
-> & { TargetShellStatus(): Promise<control.ShellStatus>; GetParams(): Promise<control.ParamsResult> };
+> & { TargetShellStatus(): Promise<ShellStatus>; GetParams(): Promise<ParamsResult> };
 
 const say = (cause: unknown) =>
   (cause instanceof Error ? cause.message : String(cause)).replace(/^Error: /, '');

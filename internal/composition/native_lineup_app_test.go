@@ -151,7 +151,7 @@ func TestNativeLineupSetThroughTheGateReadingAndRestart(t *testing.T) {
 	swapped[3] = legalityID(1000, 21) // a wide receiver for a wide receiver: legal, but the first is locked
 	_, err = newCommissionerAPI(f.app).TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, swapped))
 	want := "Player, 1021 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); " +
-		"Player, 1003 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); a lineup can't add or drop a player once that player's game has started"
+		"Player, 1003 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); a lineup can't add or drop a player after the league’s lineup lock"
 	if err == nil || err.Error() != want {
 		t.Fatalf("a locked player moved, or the refusal is wrong:\n got %v\nwant %s", err, want)
 	}

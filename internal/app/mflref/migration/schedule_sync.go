@@ -165,16 +165,17 @@ func (s ScheduleSync) syncPlayedLineups(ctx context.Context, ledger leagueservic
 		}
 	}
 	weeks, lineupErr := weeklyresults.Fetch(ctx, s.Client, strconv.Itoa(season), source)
-	if lineupErr == nil {
-		_, lineupErr = mflsource.BackfillRecordedResults(ctx, ledger, league, "Capture recorded results before app scoring", principal, season, weeks, s.ImportWeek)
+	// Recorded results wait on their own evidence (the import week); that wait must not hold back lineups.
+	resultsErr := lineupErr
+	if resultsErr == nil {
+		_, resultsErr = mflsource.BackfillRecordedResults(ctx, ledger, league, "Capture recorded results before app scoring", principal, season, weeks, s.ImportWeek)
+	}
+	if resultsErr != nil {
+		log.Printf("refresh recorded results for %s (held results kept): %v", league, resultsErr)
 	}
 	if _, _, _, follows := mflsource.FollowingLeague(league, records); !follows {
-		if lineupErr != nil {
-			log.Printf("refresh recorded results for %s (held results kept): %v", league, lineupErr)
-		}
 		return
 	}
-
 	if lineupErr == nil {
 		var directory map[string]string
 		directory, lineupErr = s.LineupPlayers(ctx)

@@ -91,6 +91,17 @@ func MatchesRetry(raw RawCommand, principal string, prior Record, records []Reco
 		raw.Args.Source == LeagueSource([]Record{prior}) {
 		raw.Args.Source = ""
 	}
+	if raw.Command == Create && prior.Command.Command == Create {
+		// A start recorded before the starting settings existed reads with them filled (seedChanges); a
+		// retry whose preset expansion adds exactly those defaults repeats the same change.
+		filled, err := startingDefaults(prior.Command.Args.Seed, importedSource([]Record{prior}))
+		if err != nil {
+			return false, fmt.Errorf("fill retried start: %w", err)
+		}
+		if len(filled) != len(prior.Command.Args.Seed) && sameSeed(raw.Args.Seed, filled) {
+			raw.Args.Seed = prior.Command.Args.Seed
+		}
+	}
 	canonical, err := raw.Canonical(prior.Principal)
 	if err != nil {
 		return false, fmt.Errorf("canonical retry: %w", err)
