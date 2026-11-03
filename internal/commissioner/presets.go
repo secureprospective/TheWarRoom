@@ -176,3 +176,17 @@ func builtInBracketByID(id string) (builtInBracket, bool) {
 	}
 	return builtInBrackets()[i], true
 }
+
+// importedSource is the league's source as its creation recorded it, before any cutover.
+func importedSource(records []Record) string {
+	if len(records) != 0 && records[0].Command.Command == Create {
+		args := records[0].Command.Args
+		if args.Source != "" {
+			return args.Source
+		}
+		if args.Preset == PresetLegacy || args.Preset == PresetMFLLeague {
+			return SourceMFLImport
+		}
+	}
+	return SourceNative
+}

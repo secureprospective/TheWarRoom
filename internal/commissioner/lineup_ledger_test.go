@@ -130,6 +130,7 @@ func legacyLineupReading(league, franchise, principal string, week int, records 
 	if err != nil {
 		return NativeLineup{}, err
 	}
+	env.lockPolicy = rules.Lineup.Lock.Value
 	held, set, err := RecordedLineupFor(records, franchise, season, week)
 	if err != nil {
 		return NativeLineup{}, err
@@ -140,7 +141,7 @@ func legacyLineupReading(league, franchise, principal string, week int, records 
 	out := NativeLineup{League: league, Name: Replay(records).Name, Revision: int64(len(records)), Season: season,
 		Week: week, Franchise: franchise, FranchiseName: seat.Name, Zone: env.zone().String(), Set: set,
 		Corrected: held.Corrected, Reason: held.Reason, Starters: []LineupPlayer{}, Bench: []LineupPlayer{},
-		Rules: RuleLines(base.Rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag")}
+		Rules: RuleLines(base.Rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag", "lineup.lock")}
 	starting := map[string]bool{}
 	for _, id := range held.Starters {
 		starting[id] = true

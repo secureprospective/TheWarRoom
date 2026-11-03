@@ -60,7 +60,7 @@ func TestLeagueSourceCompatibility(t *testing.T) {
 	}
 }
 
-func TestNativeStartsFollowSourceAndOLBounds(t *testing.T) {
+func TestNativeStartsFollowSettingsAndOLBounds(t *testing.T) {
 	for _, tc := range []struct {
 		name, preset, source string
 		bounded              bool
@@ -75,6 +75,7 @@ func TestNativeStartsFollowSourceAndOLBounds(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			b := newLedger(t, tc.preset)
 			b.records[0].Command.Args.Source = tc.source
+			b.set("league.startingAssets", `"empty"`, "now", seasonMoment(2))
 			if tc.bounded {
 				b.set("roster.positionBounds", `{"OL":{"min":1,"max":1}}`, "now", seasonMoment(2))
 				b.set("lineup.positions", `{"OL":{"min":1,"max":1}}`, "now", seasonMoment(2))

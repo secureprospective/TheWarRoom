@@ -148,7 +148,9 @@ func validateNames(names Value[map[string]string]) error {
 // menus is every closed list of options a rule value may take, by the value's type name.
 func menus() map[string][]string {
 	return map[string][]string{
-		"Format": {"head_to_head"}, "InitialRosters": {"draft", "free_agency"},
+		"LineupLock":     {"each_player_game", "first_kickoff"},
+		"StartingAssets": {"empty", "held"},
+		"Format":         {"head_to_head"}, "InitialRosters": {"draft", "free_agency"},
 		"PlayerPools": {"one", "per_side"}, "CarryPolicy": {"all", "keepers"},
 		"Penalty": {"zero_top_starter", "zero_slot", "none"}, "CapMode": {"hard", "soft"},
 		"NFLStatus":       {"IR", "PUP", "NFI", "Out", "suspended"},

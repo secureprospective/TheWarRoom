@@ -10,15 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-// LeagueSource is the single compatibility read for records written before Source existed.
-// A league imported from MFL reads as native once it has been moved over (Cutover).
-func LeagueSource(records []Record) string {
-	if source := importedSource(records); source != SourceMFLImport || !cutOver(records) {
-		return source
-	}
-	return SourceNative
-}
-
 // NativeSeedCommand prepares a native starting snapshot, preserving retries.
 func NativeSeedCommand(records []Record, league, request, reason string, expected int64,
 	now time.Time) (RawCommand, error) {
@@ -38,8 +29,12 @@ func NativeSeedCommand(records []Record, league, request, reason string, expecte
 
 // NativeStart captures empty rosters and, when OL is bounded, the unassigned O-Line lots.
 func NativeStart(league string, records []Record, now time.Time) (RawNativeSnapshot, error) {
-	if len(records) == 0 || LeagueSource(records) != SourceNative {
-		return RawNativeSnapshot{}, fmt.Errorf("only a native league starts without held data")
+	assets, err := StartingAssetsAt(records, now)
+	if err != nil {
+		return RawNativeSnapshot{}, err
+	}
+	if assets != leaguerules.EmptyAssets {
+		return RawNativeSnapshot{}, fmt.Errorf("choose empty starting assets to start without held data")
 	}
 	season := records[0].Command.Args.Season
 	directory, err := NativeDirectoryReading(league, records, now)

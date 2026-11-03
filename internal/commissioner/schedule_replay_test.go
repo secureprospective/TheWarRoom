@@ -16,7 +16,7 @@ func TestScheduleReplayUsesRecordedWeeks(t *testing.T) {
 		{ID: "held.game", Home: "b", Away: "a"},
 	}}}
 	records := []Record{
-		{Command: RawCommand{Command: Create, Args: RawArgs{Season: 2026}}, Receipt: Receipt{Entry: "create"}},
+		{Command: RawCommand{League: "native.replay", Command: Create, Args: RawArgs{Season: 2026}}, Receipt: Receipt{Entry: "create", RecordedAt: seasonMoment(1)}},
 		{Command: RawCommand{Command: ScheduleGenerate, Args: RawArgs{Schedule: &RawScheduleArgs{
 			Weeks: 1, Pattern: leaguerules.DivisionWeighted,
 		}}}, GeneratedSchedule: frozen, Receipt: Receipt{Entry: "generate"}},

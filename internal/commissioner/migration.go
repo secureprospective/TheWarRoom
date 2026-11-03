@@ -3,6 +3,9 @@ package commissioner
 import (
 	"fmt"
 	"reflect"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // Cutover moves a league imported from MFL over to the app. Until it is recorded the league follows MFL
@@ -31,20 +34,6 @@ func cutOver(records []Record) bool {
 	return false
 }
 
-// importedSource is the league's source as its creation recorded it, before any cutover.
-func importedSource(records []Record) string {
-	if len(records) != 0 && records[0].Command.Command == Create {
-		args := records[0].Command.Args
-		if args.Source != "" {
-			return args.Source
-		}
-		if args.Preset == PresetLegacy || args.Preset == PresetMFLLeague {
-			return SourceMFLImport
-		}
-	}
-	return SourceNative
-}
-
 // CheckCutoverAppend admits the cutover once, on a seeded league that still follows MFL, and never its
 // reversal: the app keeps no way back because the MFL league was never changed.
 func CheckCutoverAppend(raw RawCommand, records []Record) error {
@@ -59,9 +48,13 @@ func CheckCutoverAppend(raw RawCommand, records []Record) error {
 	if raw.Command != Cutover {
 		return nil
 	}
+	assets, err := StartingAssetsAt(records, ReadingInstant(records, time.Time{}))
+	if err != nil {
+		return Refused(err)
+	}
 	switch {
-	case importedSource(records) != SourceMFLImport:
-		return Refused(fmt.Errorf("only a league imported from MFL can be moved over"))
+	case assets != leaguerules.HeldAssets:
+		return Refused(fmt.Errorf("only a league with held starting assets can be moved over"))
 	case cutOver(records):
 		return Refused(fmt.Errorf("this league has already been moved over from MFL"))
 	case !seeded(records):

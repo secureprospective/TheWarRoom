@@ -53,9 +53,9 @@ func TestLeagueSeedUsesHeldCaptureAndPreservesFailure(t *testing.T) {
 		calls := 0
 		raw, err := BuildLeagueSeedCommand(t.Context(), input,
 			func(context.Context, string) ([]commissioner.Record, error) {
-				return []commissioner.Record{{Command: commissioner.RawCommand{Command: commissioner.Create, Args: commissioner.RawArgs{Preset: commissioner.PresetLegacy}}}}, nil
+				return []commissioner.Record{{Command: commissioner.RawCommand{League: input.League, Command: commissioner.Create, Args: commissioner.RawArgs{Preset: commissioner.PresetLegacy, Season: 2026}}, Receipt: commissioner.Receipt{RecordedAt: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)}}}, nil
 			},
-			func() time.Time { t.Fatal("held capture read the default clock"); return time.Time{} },
+			func() time.Time { return time.Date(2026, 10, 2, 0, 0, 0, 0, time.UTC) },
 			func() (commissioner.RawNativeSnapshot, error) {
 				calls++
 				return commissioner.RawNativeSnapshot{Season: 2026}, captureErr
@@ -69,7 +69,7 @@ func TestLeagueSeedUsesHeldCaptureAndPreservesFailure(t *testing.T) {
 	}
 }
 
-func TestLeagueSeedChoosesCaptureBySource(t *testing.T) {
+func TestLeagueSeedChoosesCaptureBySetting(t *testing.T) {
 	for _, tc := range []struct {
 		name, preset, source string
 		held                 bool
@@ -89,6 +89,15 @@ func TestLeagueSeedChoosesCaptureBySource(t *testing.T) {
 				t.Fatal(err)
 			}
 			create.Args.Source = tc.source
+			if tc.name == "old Legacy" { // Records predating the two settings carry neither.
+				seed := create.Args.Seed[:0]
+				for _, s := range create.Args.Seed {
+					if s.Field != "lineup.lock" && s.Field != "league.startingAssets" {
+						seed = append(seed, s)
+					}
+				}
+				create.Args.Seed = seed
+			}
 			at := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
 			records := []commissioner.Record{{Command: create, Principal: "creator",
 				Receipt: commissioner.Receipt{Entry: "create", Revision: 1, RecordedAt: at}}}
@@ -97,9 +106,7 @@ func TestLeagueSeedChoosesCaptureBySource(t *testing.T) {
 			raw, err := BuildLeagueSeedCommand(t.Context(), input,
 				func(context.Context, string) ([]commissioner.Record, error) { return records, nil },
 				func() time.Time {
-					if tc.held {
-						t.Fatal("MFL import used native clock")
-					}
+
 					return at.Add(time.Hour)
 				}, func() (commissioner.RawNativeSnapshot, error) {
 					calls++

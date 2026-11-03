@@ -74,7 +74,8 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 func withoutPools(records []Record, rules *leaguerules.RuleSet, reading *Rules) {
 	f8 := func(field string) bool {
 		return field == poolsField || field == sidesField || field == "scoring.rules" ||
-			field == "draft.startupRookies" || field == "schedule.follow"
+			field == "draft.startupRookies" || field == "schedule.follow" ||
+			field == "lineup.lock" || field == "league.startingAssets"
 	}
 	records[0].Command.Args.Seed = slices.DeleteFunc(slices.Clone(records[0].Command.Args.Seed),
 		func(s SeedValue) bool { return f8(s.Field) })
@@ -82,6 +83,12 @@ func withoutPools(records []Record, rules *leaguerules.RuleSet, reading *Rules) 
 	rules.Scoring.Rules = leaguerules.Value[map[leaguerules.StatID][]leaguerules.RangeRule]{}
 	rules.Draft.StartupRookies = leaguerules.Value[bool]{}
 	rules.Schedule.Follow = leaguerules.Value[leaguerules.ScheduleFollow]{}
+	rules.Lineup.Lock = leaguerules.Value[leaguerules.LineupLock]{}
+	rules.League.StartingAssets = leaguerules.Value[leaguerules.StartingAssets]{}
+	if len(records[0].Command.Args.Seed) == 0 {
+		// An entirely empty rule stream had no league identity until its first setting.
+		rules.LeagueID = ""
+	}
 	sections := []RuleSection{}
 	for _, s := range reading.Sections {
 		s.Rows = slices.DeleteFunc(slices.Clone(s.Rows), func(r RuleRow) bool { return f8(r.Field) })

@@ -70,3 +70,23 @@ func TestScheduleFollowSettingValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestStartingSettingsClosedMenus(t *testing.T) {
+	for _, tc := range []struct {
+		field, value string
+		valid        bool
+	}{
+		{"lineup.lock", `"each_player_game"`, true},
+		{"lineup.lock", `"first_kickoff"`, true},
+		{"lineup.lock", `"sunday"`, false},
+		{"league.startingAssets", `"empty"`, true},
+		{"league.startingAssets", `"held"`, true},
+		{"league.startingAssets", `"mfl"`, false},
+	} {
+		t.Run(tc.field+"/"+tc.value, func(t *testing.T) {
+			if _, err := DecodeSetting(FieldPath(tc.field), json.RawMessage(tc.value)); (err == nil) != tc.valid {
+				t.Fatalf("valid=%t: %v", tc.valid, err)
+			}
+		})
+	}
+}

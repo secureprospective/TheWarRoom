@@ -32,7 +32,22 @@ describe('Commissioner rules wire', () => {
       competitive: false, safeguards: { nextRollover: 'confirm', now: 'confirm' } });
     expect(all.find(r => r.field === 'scoring.catalogue')?.value.length).toBeGreaterThan(2000);
   });
-  it('refuses a reading Go did not send', () => {
+  it('exposes lineup lock and starting assets through the ordinary settings form', () => {
+    const all = parseRules(legacy).sections.flatMap(s => s.rows);
+    expect(all.find(r => r.field === 'lineup.lock')).toMatchObject({
+      label: 'Lineup lock', current: 'first_kickoff', schema: { choices: [
+        { value: 'each_player_game', label: 'Each player’s game' },
+        { value: 'first_kickoff', label: 'Week’s first kickoff' },
+      ] },
+    });
+    expect(all.find(r => r.field === 'league.startingAssets')).toMatchObject({
+      label: 'Starting assets', current: 'held', schema: { choices: [
+        { value: 'empty', label: 'Empty rosters and rules-defined auction lots' },
+        { value: 'held', label: 'Held rosters, contracts and draft picks' },
+      ] },
+    });
+  });
+  it('refuses a reading Go did not send' , () => {
     const [head] = wire.sections;
     const row = head.rows[0];
     const withRow = (change: object) => ({ ...wire, sections: [{ ...head, rows: [{ ...row, ...change }] }] });

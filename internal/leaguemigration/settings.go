@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -110,14 +111,19 @@ func BackfillFollowing(ctx context.Context, ledger Ledger, league string) error 
 			return nil
 		}
 	}
-	if commissioner.LeagueSource(records) != commissioner.SourceMFLImport {
+	assets, err := commissioner.StartingAssetsAt(records, time.Time{})
+	if err != nil {
+		return fmt.Errorf("read starting assets for reference setting: %w", err)
+	}
+	if assets != leaguerules.HeldAssets {
 		return nil
 	}
 	season := records[0].Command.Args.Season
 	prefix, suffix := "native.mfl-", "-"+strconv.Itoa(season)
 	id := strings.TrimSuffix(strings.TrimPrefix(league, prefix), suffix)
 	if id == "" || AppLeagueID(id, season) != league {
-		return fmt.Errorf("recorded import has no reference league identity")
+		// Held assets do not imply that a league has an MFL reference.
+		return nil
 	}
 	raw, err := followCommand(league, id, season, "Record reference schedule setting from the original import")
 	if err != nil {

@@ -188,7 +188,7 @@ func catalogueChoices(kind string) []Choice {
 		"slow", "live", "skip", "autopick", "standings", "linear", "snake", "random", "win_percentage", "head_to_head",
 		"division_percentage", "conference_percentage", "all_play_percentage", "points", "power_rank",
 		"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL", "offense", "defense", "total",
-		"one", "per_side"}
+		"one", "per_side", "each_player_game", "first_kickoff", "empty", "held"}
 	choices := []Choice{}
 	if validateMenu(kind, "not_an_option") == nil {
 		return choices
@@ -632,6 +632,14 @@ func renderRange(low, high string, hasLow, hasHigh bool) string {
 
 func choiceWords(option string) string {
 	switch option {
+	case "each_player_game":
+		return "Each player’s game"
+	case "first_kickoff":
+		return "Week’s first kickoff"
+	case "empty":
+		return "Empty rosters and rules-defined auction lots"
+	case "held":
+		return "Held rosters, contracts and draft picks"
 	case string(DOTReview):
 		return "DOT"
 	case string(NFLSeasons):

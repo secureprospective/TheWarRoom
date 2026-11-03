@@ -1,5 +1,15 @@
 package leaguerules
 
+type LineupLock string
+type StartingAssets string
+
+const (
+	EachPlayerGame LineupLock     = "each_player_game"
+	FirstKickoff   LineupLock     = "first_kickoff"
+	EmptyAssets    StartingAssets = "empty"
+	HeldAssets     StartingAssets = "held"
+)
+
 type Position string
 type LineupGroup string
 type StatID string

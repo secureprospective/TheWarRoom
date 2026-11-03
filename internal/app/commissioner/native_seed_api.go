@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 type RawNativeSeedRequest struct {
@@ -88,7 +89,11 @@ func BuildLeagueSeedCommand(ctx context.Context, input RawNativeSeedRequest,
 		raw, found := commissioner.NativeSeedRetry(records, request)
 		return raw, found, nil
 	}, func() (commissioner.RawNativeSnapshot, error) {
-		if commissioner.LeagueSource(records) == commissioner.SourceNative {
+		assets, err := commissioner.StartingAssetsAt(records, now())
+		if err != nil {
+			return commissioner.RawNativeSnapshot{}, fmt.Errorf("read starting assets: %w", err)
+		}
+		if assets == leaguerules.EmptyAssets {
 			return commissioner.NativeStart(input.League, records, now())
 		}
 		return capture()

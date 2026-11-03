@@ -24,7 +24,7 @@ func ledgerJobs(league string, records []Record, rules leaguerules.RuleSet, at t
 	if !assets.Seeded {
 		job := Job{ID: "seed", Name: "Record starting assets", State: JobLive, Controls: []string{},
 			Words: "Record the held franchises, rostered players and draft picks as this league’s starting assets."}
-		if LeagueSource(records) == SourceNative {
+		if rules.League.StartingAssets.State == leaguerules.IsKnown && rules.League.StartingAssets.Value == leaguerules.EmptyAssets {
 			job.Name, job.Words = "Start the league", "Start with empty rosters and the auction lots defined by this league’s rules."
 		}
 		jobs = append(jobs, job)

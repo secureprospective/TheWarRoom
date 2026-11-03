@@ -24,6 +24,8 @@ const notHeld = "Your MFL league does not hold this setting"
 func Settings(config league.RawConfig, base leaguerules.RuleSet, draftType string) (leaguerules.RuleSet, []string, []string) {
 	t := translation{}
 	r := leaguerules.RuleSet{}
+	r.Lineup.Lock = known(leaguerules.FirstKickoff)
+	r.League.StartingAssets = known(leaguerules.HeldAssets)
 	r.Schedule.Follow = leaguerules.Known(leaguerules.ScheduleFollow{})
 	r.Transactions.Follow = known(true)
 	t.league(&r, config)

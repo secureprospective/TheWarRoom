@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -315,7 +315,7 @@ func checkNativeAppend(raw RawCommand, records []Record, recovery bool) error {
 	if raw.Command != NativeSeed {
 		return nil
 	}
-	if err := checkSeedSource(raw, records, recovery); err != nil {
+	if err := checkStartingAssets(raw, records, recovery); err != nil {
 		return Refused(err)
 	}
 	if season := records[0].Command.Args.Season; season != 0 && season != raw.Args.Native.Season {
@@ -339,32 +339,30 @@ func checkNativeAppend(raw RawCommand, records []Record, recovery bool) error {
 	return nil
 }
 
-// checkSeedSource keeps native starts separate from MFL's held-data requirements.
-func checkSeedSource(raw RawCommand, records []Record, recovery bool) error {
+// checkStartingAssets holds the snapshot to the league’s selected starting assets.
+func checkStartingAssets(raw RawCommand, records []Record, recovery bool) error {
 	if len(records) == 0 {
 		return fmt.Errorf("create the league before recording its starting assets")
 	}
-	switch LeagueSource(records) {
-	case SourceNative:
+	assets, err := StartingAssetsAt(records, raw.Args.Native.RosterAt)
+	if err != nil {
+		return err
+	}
+	switch assets {
+	case leaguerules.EmptyAssets:
 		if recovery {
 			return nil
 		}
 		return checkNativeStart(records, raw.Args.Native)
-	case SourceMFLImport:
+	case leaguerules.HeldAssets:
 		if len(raw.Args.Native.Players) == 0 && len(raw.Args.Native.Pool) == 0 {
-			return fmt.Errorf("hold the Legacy NFL rosters, franchises and both draft reports before seeding")
+			return fmt.Errorf("hold the rosters, franchises and both draft reports before seeding")
 		}
 		if len(raw.Args.Native.Players) == 0 {
-			return fmt.Errorf("hold the imported league's rosters before recording them")
-		}
-		if slices.ContainsFunc(raw.Args.Native.Players, func(p NativePlayer) bool {
-			_, card := nativecheck.LineCardTeam(p.ID)
-			return card
-		}) {
-			return fmt.Errorf("an imported league's held rosters come from MFL, which has no O-Line cards; start the O-Line auction from the league's rules instead")
+			return fmt.Errorf("hold the league's rosters before recording them")
 		}
 	default:
-		return fmt.Errorf("choose a native league or an MFL import")
+		return fmt.Errorf("choose empty or held starting assets")
 	}
 	return nil
 }

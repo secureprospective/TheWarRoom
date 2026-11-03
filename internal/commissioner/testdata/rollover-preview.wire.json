@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "2c9d592c4c40d613fb089720db1b518f361ae01f4979b4c9147736757be0518d",
+  "beforeDigest": "752fa0183f27b7aa3583382d57c457c068175f3380c7d7ebdd2ec7055eb1e87a",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -320,6 +320,11 @@
     "LeagueID": "native.rollover",
     "Season": 2027,
     "League": {
+      "StartingAssets": {
+        "State": 1,
+        "Value": "empty",
+        "Citation": "New leagues start with empty rosters and their rules-defined auction lots"
+      },
       "Teams": {
         "State": 1,
         "Value": 32,
@@ -410,6 +415,11 @@
       }
     },
     "Lineup": {
+      "Lock": {
+        "State": 1,
+        "Value": "each_player_game",
+        "Citation": "New leagues lock each player at their own game"
+      },
       "Positions": {
         "State": 1,
         "Value": {

@@ -79,6 +79,10 @@
           "note": "",
           "fields": [
             {
+              "field": "lineup.lock",
+              "label": "Lineup lock"
+            },
+            {
               "field": "lineup.positions",
               "label": "Starting position limits"
             },

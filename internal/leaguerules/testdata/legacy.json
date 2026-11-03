@@ -2,6 +2,11 @@
   "LeagueID": "",
   "Season": 0,
   "League": {
+    "StartingAssets": {
+      "State": 1,
+      "Value": "empty",
+      "Citation": "New leagues start with empty rosters and their rules-defined auction lots"
+    },
     "Teams": {
       "State": 1,
       "Value": 32,
@@ -92,6 +97,11 @@
     }
   },
   "Lineup": {
+    "Lock": {
+      "State": 1,
+      "Value": "each_player_game",
+      "Citation": "New leagues lock each player at their own game"
+    },
     "Positions": {
       "State": 1,
       "Value": {
