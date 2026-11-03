@@ -128,10 +128,9 @@ func (b *flipBase) check(ctx context.Context, league string, records []Record, s
 // checkTrial is check with the proposal's trial ledger already built; nil builds it.
 func (b *flipBase) checkTrial(ctx context.Context, league string, records, trial []Record, src ResultSources,
 	raw RawCommand, season, week int) (ResultFlip, error) {
-	held, ok := b.before[week]
-	if !ok {
-		held.results, held.err = weekResults(ctx, league, records, src, b.rules.Lineup, b.directory, b.published, season, week)
-		b.before[week] = held
+	held, err := b.beforeWeek(ctx, league, records, src, season, week)
+	if err != nil {
+		return ResultFlip{}, err
 	}
 	before, err := held.results, held.err
 	if err != nil {
@@ -156,6 +155,21 @@ func (b *flipBase) checkTrial(ctx context.Context, league string, records, trial
 		}
 	}
 	return compareWeeks(before, after, franchisesTouched(raw, before, after)), nil
+}
+
+// beforeWeek is the week's results on the held ledger, read once per base. A cancelled reading is not kept.
+func (b *flipBase) beforeWeek(ctx context.Context, league string, records []Record, src ResultSources,
+	season, week int) (flipWeek, error) {
+	if held, ok := b.before[week]; ok {
+		return held, nil
+	}
+	var held flipWeek
+	held.results, held.err = weekResults(ctx, league, records, src, b.rules.Lineup, b.directory, b.published, season, week)
+	if err := ctx.Err(); err != nil {
+		return flipWeek{}, fmt.Errorf("read week %d results: %w", week, err)
+	}
+	b.before[week] = held
+	return held, nil
 }
 
 // rescored is the week after a statistics decision. That decision moves only the one player's score, so

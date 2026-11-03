@@ -81,6 +81,19 @@ type StatQueue struct {
 // Only a week whose lines differ makes an item, and a turned-down item stays out until the feed changes again.
 func StatQueueReading(ctx context.Context, league string, records []Record, feed StatFeed, src ResultSources,
 	season int, now time.Time) (StatQueue, error) {
+	return StatQueueReadingWith(ctx, league, records, feed, src, season, now, nil)
+}
+
+// StatQueueReadingWith is StatQueueReading with prices kept in cache across readings; nil prices every item.
+func StatQueueReadingWith(ctx context.Context, league string, records []Record, feed StatFeed, src ResultSources,
+	season int, now time.Time, cache *StatPriceCache) (StatQueue, error) {
+	return statQueueReading(ctx, league, records, feed, src, season, now, cache, true)
+}
+
+// statQueueReading prices with one shared trial ledger when share is set, and with a fresh copy of the
+// ledger per item otherwise (the equivalence tests' reference).
+func statQueueReading(ctx context.Context, league string, records []Record, feed StatFeed, src ResultSources,
+	season int, now time.Time, cache *StatPriceCache, share bool) (StatQueue, error) {
 	out := StatQueue{League: league, Season: season, Revision: int64(len(records)), Open: []StatQueueItem{},
 		Decided: []StatDecision{}}
 	if len(records) == 0 {
@@ -107,6 +120,13 @@ func StatQueueReading(ctx context.Context, league string, records []Record, feed
 	}
 	builder := queueBuilder{league: league, season: season, records: records, feed: feed, src: src, rules: rules,
 		effects: effects, now: now, memo: NewRulesMemo(), flips: &queueFlips{}}
+	if share {
+		builder.trials = &trialLedger{held: records}
+	}
+	if cache != nil {
+		builder.flips.load(league, records, src, season, now)
+		builder.prices = newPriceReading(cache, league, season, records, rules, builder.flips)
+	}
 	for _, week := range weeks {
 		if err := ctx.Err(); err != nil {
 			return out, fmt.Errorf("price the statistics queue: %w", err)
@@ -162,6 +182,36 @@ type queueBuilder struct {
 	now     time.Time
 	memo    *RulesMemo
 	flips   *queueFlips
+	// trials shares one copy of the held ledger between every item's trial; prices is the reading's
+	// share of the cross-reading price cache, nil when there is none.
+	trials *trialLedger
+	prices *priceReading
+}
+
+// trialLedger is the held ledger copied once, with room for one proposal at its end. Each trial overwrites
+// the last one's proposal, so a trial is read only until the next is made; a reading prices one item at a
+// time. Memos keyed by the ledger's address check the proposal too (RulesMemo.fold).
+type trialLedger struct {
+	held []Record
+	buf  []Record
+}
+
+func (t *trialLedger) with(raw RawCommand) []Record {
+	if t == nil {
+		return nil
+	}
+	if t.buf == nil {
+		t.buf = make([]Record, len(t.held), len(t.held)+1)
+		copy(t.buf, t.held)
+	}
+	return append(t.buf[:len(t.held)], proposalRecord(raw))
+}
+
+func (f *queueFlips) load(league string, records []Record, src ResultSources, season int, now time.Time) {
+	if !f.read {
+		f.base, f.err = readFlipBase(league, records, src, season, now)
+		f.read = true
+	}
 }
 
 // queueFlips holds the reading's flip base, read when the first item is priced and shared by the rest.
@@ -175,10 +225,7 @@ func (b queueBuilder) flipCheck(ctx context.Context, raw RawCommand, trial []Rec
 	if b.flips == nil {
 		return ResultFlipCheck(ctx, b.league, b.records, b.src, raw, b.season, week, b.now)
 	}
-	if !b.flips.read {
-		b.flips.base, b.flips.err = readFlipBase(b.league, b.records, b.src, b.season, b.now)
-		b.flips.read = true
-	}
+	b.flips.load(b.league, b.records, b.src, b.season, b.now)
 	if b.flips.err != nil {
 		return ResultFlip{}, b.flips.err
 	}
@@ -238,8 +285,24 @@ func (b queueBuilder) price(ctx context.Context, item *StatQueueItem, week StatW
 	if err != nil {
 		return err
 	}
+	var key string
+	if b.prices != nil && b.flips.err == nil {
+		weekDigest, err := b.prices.week(ctx, b, week.Week)
+		if err != nil {
+			return err
+		}
+		key = b.prices.key(b, *item, week, before, weekDigest)
+		if hit, ok := b.prices.cache.get(b.prices.used, key); ok {
+			item.Points = hit.points
+			b.priced(item, hit.flip)
+			return nil
+		}
+	}
 	// A stat approval changes no rule, and its fold extends the held ledger's (RulesMemo.fold).
-	trial := scoreTrial(raw, b.records)
+	trial := b.trials.with(raw)
+	if trial == nil {
+		trial = scoreTrial(raw, b.records)
+	}
 	after, err := b.memo.Score(b.league, scope, trial, week.Evidence, b.now)
 	if err != nil {
 		return err
@@ -249,10 +312,18 @@ func (b queueBuilder) price(ctx context.Context, item *StatQueueItem, week StatW
 	if err != nil {
 		return err
 	}
-	item.Flip, item.FlipWords, item.flip = flip.Status, flip.Words, flip
-	item.Words = fmt.Sprintf("%s, week %d: %s, %s, %s", item.Name, week.Week, changesWords(item.Changes),
-		signedPointsWords(item.Points), flipSummary(flip.Status))
+	if key != "" {
+		b.prices.cache.put(b.prices.used, key, pricedItem{points: item.Points, flip: flip})
+	}
+	b.priced(item, flip)
 	return nil
+}
+
+// priced fills the item in from its price.
+func (b queueBuilder) priced(item *StatQueueItem, flip ResultFlip) {
+	item.Flip, item.FlipWords, item.flip = flip.Status, flip.Words, flip
+	item.Words = fmt.Sprintf("%s, week %d: %s, %s, %s", item.Name, item.Week, changesWords(item.Changes),
+		signedPointsWords(item.Points), flipSummary(flip.Status))
 }
 
 // total is the points a reading counts, final or so far; absent while the reading has no number.

@@ -5,6 +5,7 @@ package commissioner
 import (
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
@@ -428,9 +429,13 @@ type RulesMemo struct {
 	bases     []heldFold
 	trial     ledgerKey
 	trialFold ledgerFold
-	lastTrial ledgerKey
-	lastHeld  []Record
-	full      int
+	trialLast Record
+	// lastPrefix is the held prefix heldFold last answered.
+	lastPrefix     ledgerKey
+	lastPrefixFold ledgerFold
+	lastTrial      ledgerKey
+	lastHeld       []Record
+	full           int
 }
 
 type heldFold struct {
@@ -480,12 +485,12 @@ func (m *RulesMemo) fold(records []Record) ledgerFold {
 		return hit
 	}
 	if proposedStatDecision(records) {
-		if m.trial == key {
+		n := len(records)
+		if m.trial == key && sameProposal(m.trialLast, records[n-1]) {
 			return m.trialFold
 		}
-		n := len(records)
 		f := m.heldFold(records[: n-1 : n-1]).withProposal(records)
-		m.trial, m.trialFold = key, f
+		m.trial, m.trialFold, m.trialLast = key, f, records[n-1]
 		return f
 	}
 	m.full++
@@ -495,14 +500,33 @@ func (m *RulesMemo) fold(records []Record) ledgerFold {
 	return f
 }
 
+// sameProposal says whether two trial entries propose the same command: a trial ledger shared between
+// proposals keeps its address and length, so the address alone does not name the trial.
+func sameProposal(a, b Record) bool {
+	return a.Receipt.Entry == b.Receipt.Entry && reflect.DeepEqual(a.Command, b.Command)
+}
+
 // heldFold is the fold of a ledger equal, entry for entry, to one already folded, or a new fold.
+// A shared trial ledger (trialLedger) asks with the same held prefix for every proposal, so the last
+// answer is kept by the prefix's address and length, as folds is.
 func (m *RulesMemo) heldFold(held []Record) ledgerFold {
+	if len(held) != 0 && m.lastPrefix == (ledgerKey{ledger: &held[0], length: len(held)}) {
+		return m.lastPrefixFold
+	}
+	f, found := ledgerFold{}, false
 	for _, base := range m.bases {
 		if sameLedger(base.records, held) {
-			return base.fold
+			f, found = base.fold, true
+			break
 		}
 	}
-	return m.fold(held)
+	if !found {
+		f = m.fold(held)
+	}
+	if len(held) != 0 {
+		m.lastPrefix, m.lastPrefixFold = ledgerKey{ledger: &held[0], length: len(held)}, f
+	}
+	return f
 }
 
 // sameLedger compares what a fold reads. Canonical is the recorded request, so it covers every argument;

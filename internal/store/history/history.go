@@ -82,7 +82,9 @@ type Store struct {
 	liveWeeks map[[2]int]uint64
 	// scores is the season score cache: each franchise-week scored once per revision.
 	scores seasonScoreCache
-	wmu    sync.Mutex
+	// statPrices keeps statistics queue prices across readings (commissioner.StatPriceCache).
+	statPrices statPrices
+	wmu        sync.Mutex
 	// batchFault, set only by tests, fails a batch after the given step to prove nothing is kept.
 	batchFault func(step int) error
 }

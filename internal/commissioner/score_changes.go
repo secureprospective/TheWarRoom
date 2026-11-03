@@ -117,7 +117,12 @@ func checkScoreAppend(raw RawCommand, records []Record) error {
 func scoreTrial(raw RawCommand, records []Record) []Record {
 	trial := make([]Record, len(records), len(records)+1)
 	copy(trial, records)
-	return append(trial, Record{Command: raw, Receipt: Receipt{Entry: "proposed." + raw.Request}})
+	return append(trial, proposalRecord(raw))
+}
+
+// proposalRecord is a proposed command as a trial ledger's last entry.
+func proposalRecord(raw RawCommand) Record {
+	return Record{Command: raw, Receipt: Receipt{Entry: "proposed." + raw.Request}}
 }
 
 func checkScoreCompensation(raw RawCommand, records []Record) error {

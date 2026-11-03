@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sync"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // seasonStatFeed is the held weekly files of one season, read for every league player the directory can
@@ -123,7 +125,8 @@ func (s *Store) readStatQueue(ctx context.Context, league string, season int) (c
 	for _, week := range weeks {
 		sources.held[source.RawNativeScope{Player: week.Player, Season: season, Week: week.Week}] = week.Evidence
 	}
-	out, err := commissioner.StatQueueReading(ctx, league, records, held{weeks, feed}, sources, season, sources.now)
+	out, err := commissioner.StatQueueReadingWith(ctx, league, records, held{weeks, feed, sources.playerFacts()}, sources, season, sources.now,
+		s.statPrices.get())
 	if err != nil {
 		return commissioner.StatQueue{}, fmt.Errorf("read statistics queue: %w", err)
 	}
@@ -131,10 +134,19 @@ func (s *Store) readStatQueue(ctx context.Context, league string, season int) (c
 	return out, nil
 }
 
-// held is a feed whose weeks were already read, so one reading scans the files once.
+// held is a feed whose weeks were already read, so one reading scans the files once. Its names come from
+// the player facts as read once for the reading, not rebuilt for every item.
 type held struct {
 	weeks []commissioner.StatWeek
 	seasonStatFeed
+	facts nativecheck.Facts
+}
+
+func (h held) Name(player string) string {
+	if h.facts == nil {
+		return h.seasonStatFeed.Name(player)
+	}
+	return h.facts[player].Name
 }
 
 func (h held) Weeks(context.Context) ([]commissioner.StatWeek, error) { return h.weeks, nil }
@@ -178,4 +190,15 @@ func (s *Store) statChangePreview(ctx context.Context, records []commissioner.Re
 		return commissioner.ScorePreview{}, fmt.Errorf("preview statistic change: %w", err)
 	}
 	return out, nil
+}
+
+// statPrices is the store's statistics price cache, made on first use.
+type statPrices struct {
+	once  sync.Once
+	cache *commissioner.StatPriceCache
+}
+
+func (p *statPrices) get() *commissioner.StatPriceCache {
+	p.once.Do(func() { p.cache = commissioner.NewStatPriceCache() })
+	return p.cache
 }
