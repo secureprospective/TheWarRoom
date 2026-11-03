@@ -186,6 +186,7 @@ commish.reserve.exception
 commish.role.grant
 commish.role.revoke
 commish.rules.read
+commish.rules.preset.read
 commish.rules.set
 commish.schedule.read
 commish.score.franchise

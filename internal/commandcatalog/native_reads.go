@@ -31,6 +31,7 @@ func nativeReads() []Command {
 		{"commish.notices.read", "TargetCommissionerNotices", "league:string", "league-view", "ledger"},
 		{"commish.people.read", "TargetCommissionerPeople", "league:string", "league-view", "ledger"},
 		{"commish.rules.read", "TargetCommissionerRules", "league:string", "league-view", "ledger"},
+		{"commish.rules.preset.read", "TargetCommissionerPresetCompare", "league:string preset:string", "league-view", "ledger"},
 		{"commish.schedule.read", "TargetCommissionerSchedule", "league:string", "schedule.manage", "ledger"},
 		{"commish.corrections.read", "TargetCorrections", "league:string", "league-view", "ledger"},
 		{"calendar.read", "TargetLeagueCalendar", "", "league-view", "ledger"},

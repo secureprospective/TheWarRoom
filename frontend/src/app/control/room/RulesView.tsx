@@ -5,6 +5,7 @@ import { entriesOf, type Entry } from '../../commissioner/controls';
 import { pendingWhen, type RuleRow } from '../../commissioner/rules';
 import { Kv, NotYet, useDefaultInspector, useRoom, when, type Room } from './room';
 import { useFit } from './useFit';
+import { PresetCompare } from './PresetCompare';
 
 /** One line of the rules list: a league rule from the rules reading, or a census control that is not
  *  built yet (the mock's PLANNED rows). */
@@ -183,8 +184,8 @@ export function RulesView() {
       </div>
       <div className="lbl">PRESETS</div>
       <div className="sub">
-        A preset is a bundle of suggested values applied when a league is created; after that, each rule
-        changes on its own here.
+        A preset is a bundle of setting values. Compare with a preset lists every setting where this league
+        differs; applying some or all of them is one ordinary rule change, checked like a change made here.
       </div>
     </>,
     [lines.length],
@@ -204,6 +205,10 @@ export function RulesView() {
       setSel('');
     }
     if (action === 'pick') setPage(Number(value));
+    if (action === 'view' && value === 'presets') {
+      setSel('');
+      room.inspect(<PresetCompare league={room.league} />);
+    }
     if (action === 'open') {
       const line = lines.find((l) => l.key === value);
       if (line) pick(line);
@@ -232,6 +237,15 @@ export function RulesView() {
         {c('need', 'NEEDS A RULING', need.length)}
         {c('pend', 'PENDING', pend.length)}
         {c('plan', 'PLANNED (BREADTH)', plan.length)}
+        <Act
+          className="cr-btn sm"
+          verb="commissioner.surface"
+          variant="surface"
+          label="COMPARE WITH A PRESET ›"
+          args={{ screen: 'room-rules', action: 'view', value: 'presets' }}
+        >
+          COMPARE WITH A PRESET ›
+        </Act>
       </div>
       <div className="cr-panel" style={{ flex: 1 }} ref={panel}>
         {!rules && <div className="cr-note">{room.state.error || 'Reading the league rules…'}</div>}

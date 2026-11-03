@@ -160,6 +160,10 @@ string
 "commissioner.TargetCommissionerRules": [
 string
 ];
+"commissioner.TargetCommissionerPresetCompare": [
+string,
+string
+];
 "commissioner.TargetCommissionerSchedule": [
 string
 ];
@@ -393,6 +397,9 @@ string
 string
 ];
 "commissioner.TargetCommissionerExecute": [
+string
+];
+"commissioner.TargetCommissionerPresetApply": [
 string
 ];
 "commissioner.TargetCommissionerPreview": [
@@ -800,6 +807,16 @@ string
 "until": string
 }) | null;
 "schedule"?: ({
+"recorded"?: ({
+"season": number;
+"cutoverWeek": number;
+"teams": ({
+"franchise": string;
+"week": number;
+"points": number;
+"result"?: string
+})[]
+}) | null;
 "fixtures"?: ({
 "week": number;
 "games": ({
@@ -1332,6 +1349,16 @@ string
 "until": string
 }) | null;
 "schedule"?: ({
+"recorded"?: ({
+"season": number;
+"cutoverWeek": number;
+"teams": ({
+"franchise": string;
+"week": number;
+"points": number;
+"result"?: string
+})[]
+}) | null;
 "fixtures"?: ({
 "week": number;
 "games": ({
@@ -1839,6 +1866,16 @@ string
 "until": string
 }) | null;
 "schedule"?: ({
+"recorded"?: ({
+"season": number;
+"cutoverWeek": number;
+"teams": ({
+"franchise": string;
+"week": number;
+"points": number;
+"result"?: string
+})[]
+}) | null;
 "fixtures"?: ({
 "week": number;
 "games": ({

@@ -31,6 +31,8 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetCommissionerMarket", "gm,commish", "G0"},
 		{"TargetCommissionerNotices", "gm,commish", "G0"},
 		{"TargetCommissionerPeople", "gm,commish", "G0"},
+		{"TargetCommissionerPresetApply", "commish", "G3"},
+		{"TargetCommissionerPresetCompare", "gm,commish", "G0"},
 		{"TargetCommissionerPreview", "commish", "G0"},
 		{"TargetCommissionerRules", "gm,commish", "G0"},
 		{"TargetCommissionerSchedule", "commish", "G0"},

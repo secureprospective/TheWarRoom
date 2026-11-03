@@ -8,9 +8,10 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-// The preset catalog is the only place a preset is named. A preset is a named bundle of setting values
-// applied when a league is created; the commissioner can reach the same league by setting each value by
-// hand, so nothing outside this file asks which preset a league started from.
+// The preset catalog is the only place a preset is named. A preset is a named bundle of setting values: a
+// league may start from one, and an existing league may be compared with one and take some or all of its
+// values as ordinary rules changes (preset_compare.go). The commissioner can reach the same league by
+// setting each value by hand, so nothing outside this file asks which preset a league started from.
 const (
 	PresetLegacy = "legacy_nfl"
 	PresetEmpty  = "empty"

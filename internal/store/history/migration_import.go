@@ -25,8 +25,53 @@ func (s *Store) ExecuteCommissionerBatch(ctx context.Context, raws []commissione
 // against each step's current ledger, never accepted as a caller's outcome.
 func (s *Store) ExecuteCommissionerBatchWithFacts(ctx context.Context, raws []commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location) ([]commissioner.Receipt, error) {
+	gathered := make([]appendFacts, len(raws))
+	for i := range gathered {
+		gathered[i] = appendFacts{players: facts}
+	}
+	return s.executeBatch(ctx, raws, principal, auth, zone, gathered, false)
+}
+
+// ExecuteRulesBatchWithFacts records several rules changes to an existing league as one: a preset applied
+// to a league. Each step gathers the same facts and passes the same checks as the change made by hand.
+func (s *Store) ExecuteRulesBatchWithFacts(ctx context.Context, raws []commissioner.RawCommand,
+	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location) ([]commissioner.Receipt, error) {
+	gathered := make([]appendFacts, 0, len(raws))
+	for _, raw := range raws {
+		if raw.Command != commissioner.RulesSet {
+			return nil, fmt.Errorf("%s is recorded on its own, not with rules changes", raw.Command)
+		}
+		f, err := s.appendFactsFor(ctx, raw)
+		if err != nil {
+			return nil, err
+		}
+		f.players = facts
+		gathered = append(gathered, f)
+	}
+	return s.executeBatch(ctx, raws, principal, auth, zone, gathered, true)
+}
+
+// checkBatch refuses a batch that spans leagues or holds a change recorded only on its own.
+func checkBatch(raws []commissioner.RawCommand, rulesOnly bool) error {
 	if len(raws) == 0 {
-		return nil, fmt.Errorf("choose at least one league change")
+		return fmt.Errorf("choose at least one league change")
+	}
+	for _, raw := range raws {
+		if raw.League != raws[0].League {
+			return fmt.Errorf("record changes to one league at a time")
+		}
+		if !batchable(raw.Command, raws[0].Command == commissioner.Create || rulesOnly) {
+			return fmt.Errorf("%s is recorded on its own, not in a batch", raw.Command)
+		}
+	}
+	return nil
+}
+
+// executeBatch is the one batch loop; gathered holds each step's append facts.
+func (s *Store) executeBatch(ctx context.Context, raws []commissioner.RawCommand, principal string,
+	auth commissioner.Authorizer, zone *time.Location, gathered []appendFacts, rulesOnly bool) ([]commissioner.Receipt, error) {
+	if err := checkBatch(raws, rulesOnly); err != nil {
+		return nil, err
 	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
@@ -42,17 +87,11 @@ func (s *Store) ExecuteCommissionerBatchWithFacts(ctx context.Context, raws []co
 	}
 	receipts := make([]commissioner.Receipt, 0, len(raws))
 	for i, raw := range raws {
-		if raw.League != league {
-			return nil, fmt.Errorf("record changes to one league at a time")
-		}
-		if !batchable(raw.Command, raws[0].Command == commissioner.Create) {
-			return nil, fmt.Errorf("%s is recorded on its own, not in a batch", raw.Command)
-		}
 		now := s.now().UTC()
 		if i > 0 {
 			raw.Expected = batchExpectedRevision(ctx, raw, principal, records, now)
 		}
-		receipt, err := s.batchStep(ctx, tx, raw, principal, auth, records, now, facts, zone)
+		receipt, err := s.batchStep(ctx, tx, raw, principal, auth, records, now, gathered[i], zone)
 		if err != nil {
 			return nil, fmt.Errorf("league change %d of %d: %w", i+1, len(raws), err)
 		}
@@ -91,7 +130,8 @@ func (s *Store) extendBatchRecords(ctx context.Context, tx *sql.Tx, league strin
 // batchStep checks and appends one change of a batch inside the batch's transaction. A retried request
 // returns its stored receipt.
 func (s *Store) batchStep(ctx context.Context, tx *sql.Tx, raw commissioner.RawCommand, principal string,
-	auth commissioner.Authorizer, records []commissioner.Record, now time.Time, facts nativecheck.Facts, zone *time.Location) (commissioner.Receipt, error) {
+	auth commissioner.Authorizer, records []commissioner.Record, now time.Time, gathered appendFacts, zone *time.Location) (commissioner.Receipt, error) {
+	facts := gathered.players
 	raw, canonical, err := preparedCommand(raw, principal, true)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -100,14 +140,14 @@ func (s *Store) batchStep(ctx context.Context, tx *sql.Tx, raw commissioner.RawC
 		Operation: raw.Command, Mode: "execute", Raw: raw, Records: records}); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
 	}
-	role, retry, err := s.checkCommissionerCommand(ctx, raw, principal, auth, records, appendFacts{players: facts}, now)
+	role, retry, err := s.checkCommissionerCommand(ctx, raw, principal, auth, records, gathered, now)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
 	if retry != nil {
 		return *retry, nil
 	}
-	before, plan, err := s.prepareCommissionerTrial(ctx, &raw, principal, records, now, facts, zone, appendFacts{players: facts})
+	before, plan, err := s.prepareCommissionerTrial(ctx, &raw, principal, records, now, facts, zone, gathered)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -119,6 +159,7 @@ func (s *Store) batchStep(ctx context.Context, tx *sql.Tx, raw commissioner.RawC
 func batchable(command string, creating bool) bool {
 	switch command {
 	case commissioner.RulesSet:
+		// At creation, or in a rules-only batch: a preset applied to the league.
 		return creating
 	case commissioner.RosterReserve, commissioner.CorrectRoster, commissioner.CorrectPick,
 		commissioner.Create, commissioner.NativeSeed, commissioner.ScheduleGenerate, commissioner.SchedulePublish, "commish.seat.invite":

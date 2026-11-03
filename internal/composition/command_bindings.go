@@ -60,6 +60,8 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetCommissionerPeople":         catalog.Bind1(api.TargetCommissionerPeople, "league"),
 		"TargetCommissionerLeagues":        catalog.Bind0(api.TargetCommissionerLeagues),
 		"TargetCommissionerRules":          catalog.Bind1(api.TargetCommissionerRules, "league"),
+		"TargetCommissionerPresetCompare":  catalog.Bind2(api.TargetCommissionerPresetCompare, "league", "preset"),
+		"TargetCommissionerPresetApply":    catalog.Bind1(api.TargetCommissionerPresetApply, "body"),
 		"TargetCommissionerJobs":           catalog.Bind1(api.TargetCommissionerJobs, "league"),
 		"TargetCommissionerControls":       catalog.Bind0Value(api.TargetCommissionerControls),
 		"TargetCommissionerNotices":        catalog.Bind1(api.TargetCommissionerNotices, "league"),

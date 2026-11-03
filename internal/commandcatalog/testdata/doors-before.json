@@ -142,6 +142,20 @@
   {
     "Door": "native",
     "Feature": "commissioner",
+    "ID": "commish.rules.preset.read",
+    "Method": "TargetCommissionerPresetCompare",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "a5473244964a15ef14f8e5420feca01e50a9c347c28822b55be6fd2abb7ab69a",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
     "ID": "commish.rules.read",
     "Method": "TargetCommissionerRules",
     "Role": "domain",
@@ -2332,6 +2346,32 @@
     "Availability": "both",
     "Permission": "league-view",
     "Schema": "aeeb9f3ba63dc8643c441f10f3c277489909da5f7e3a54cc89fafc65e5a10239",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetCommissionerPresetApply",
+    "Role": "commish",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.rules.preset.read",
+    "Method": "TargetCommissionerPresetCompare",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "a5473244964a15ef14f8e5420feca01e50a9c347c28822b55be6fd2abb7ab69a",
     "Modes": [
       "read"
     ]

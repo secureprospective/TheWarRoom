@@ -34,6 +34,10 @@ export function TargetCommissionerNotices(arg1:string):Promise<commissioner.Leag
 
 export function TargetCommissionerPeople(arg1:string):Promise<commissioner.People>;
 
+export function TargetCommissionerPresetApply(arg1:string):Promise<commissioner.PresetApplyResult>;
+
+export function TargetCommissionerPresetCompare(arg1:string,arg2:string):Promise<commissioner.PresetComparison>;
+
 export function TargetCommissionerPreview(arg1:string):Promise<commissioner.Preview>;
 
 export function TargetCommissionerRules(arg1:string):Promise<commissioner.Rules>;

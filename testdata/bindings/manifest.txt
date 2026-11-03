@@ -11,6 +11,8 @@ commissioner.API.TargetCommissionerLedgerFiltered
 commissioner.API.TargetCommissionerMarket
 commissioner.API.TargetCommissionerNotices
 commissioner.API.TargetCommissionerPeople
+commissioner.API.TargetCommissionerPresetApply
+commissioner.API.TargetCommissionerPresetCompare
 commissioner.API.TargetCommissionerPreview
 commissioner.API.TargetCommissionerRules
 commissioner.API.TargetCommissionerSchedule

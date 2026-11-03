@@ -23,6 +23,12 @@ func (s *State) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.ExecuteCommissionerWithFacts(ctx, raw, principal, auth, facts, zone)
 }
+func (s *State) ExecuteRulesBatchWithFacts(ctx context.Context, raws []commissioner.RawCommand,
+	principal string, auth commissioner.Authorizer, facts nativecheck.Facts,
+	zone *time.Location) ([]commissioner.Receipt, error) {
+	//nolint:wrapcheck // Preserve the original store error for the API wording.
+	return s.History.ExecuteRulesBatchWithFacts(ctx, raws, principal, auth, facts, zone)
+}
 func (s *State) PreviewCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, catalogue commissioner.PreviewCatalogue,
 	playerFacts nativecheck.Facts, zone *time.Location) (commissioner.Preview, error) {

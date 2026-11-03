@@ -54,6 +54,14 @@ export function TargetCommissionerPeople(arg1) {
   return window['go']['commissioner']['API']['TargetCommissionerPeople'](arg1);
 }
 
+export function TargetCommissionerPresetApply(arg1) {
+  return window['go']['commissioner']['API']['TargetCommissionerPresetApply'](arg1);
+}
+
+export function TargetCommissionerPresetCompare(arg1, arg2) {
+  return window['go']['commissioner']['API']['TargetCommissionerPresetCompare'](arg1, arg2);
+}
+
 export function TargetCommissionerPreview(arg1) {
   return window['go']['commissioner']['API']['TargetCommissionerPreview'](arg1);
 }

@@ -15,7 +15,7 @@ export type App = Record<'TargetCommissionerExecute' | 'TargetCommissionerLedger
   | 'TargetNativeWaivers' | 'TargetNativeBids' | 'TargetCommissionerActor' | 'TargetCommissionerMarket'
   | 'TargetCommissionerSchedule' | 'TargetCommissionerControls' | 'TargetCommissionerNotices'
   | 'TargetCommissionerDigests' | 'TargetCommissionerSeat' | 'TargetCommissionerSeatSignIn'
-  | 'TargetBackupNow', Binding>;
+  | 'TargetBackupNow' | 'TargetCommissionerPresetCompare' | 'TargetCommissionerPresetApply', Binding>;
 
 const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'];
 const held = globals.map(key => ({ key, descriptor: Object.getOwnPropertyDescriptor(globalThis, key) }));

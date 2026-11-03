@@ -3319,80 +3319,34 @@ export namespace commissioner {
 	
 	
 	
-	export class PreviewAffects {
-	    readings: string[];
-	    count?: number;
-	    words: string;
+	export class RolloverPlan {
+	    from: number;
+	    to: number;
+	    beforeDigest: string;
+	    blocked: boolean;
+	    reasons: string[];
+	    lines: string[];
+	    after: RawNativeSnapshot;
+	    pending: PendingExpiry[];
+	    rules: leaguerules.RuleSet;
+	    calendar: leagueclock.ActionCalendar;
 	
 	    static createFrom(source: any = {}) {
-	        return new PreviewAffects(source);
+	        return new RolloverPlan(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.readings = source["readings"];
-	        this.count = source["count"];
-	        this.words = source["words"];
-	    }
-	}
-	export class PreviewField {
-	    label: string;
-	    before: string;
-	    beforeSource: string;
-	    after: string;
-	    afterSource: string;
-	    when: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new PreviewField(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.label = source["label"];
-	        this.before = source["before"];
-	        this.beforeSource = source["beforeSource"];
-	        this.after = source["after"];
-	        this.afterSource = source["afterSource"];
-	        this.when = source["when"];
-	    }
-	}
-	export class PreviewTarget {
-	    league: string;
-	    name: string;
-	    version: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new PreviewTarget(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.league = source["league"];
-	        this.name = source["name"];
-	        this.version = source["version"];
-	    }
-	}
-	export class Preview {
-	    question: string;
-	    target: PreviewTarget;
-	    fields: PreviewField[];
-	    affects: PreviewAffects;
-	    blockers: string[];
-	    safeguard: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Preview(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.question = source["question"];
-	        this.target = this.convertValues(source["target"], PreviewTarget);
-	        this.fields = this.convertValues(source["fields"], PreviewField);
-	        this.affects = this.convertValues(source["affects"], PreviewAffects);
-	        this.blockers = source["blockers"];
-	        this.safeguard = source["safeguard"];
+	        this.from = source["from"];
+	        this.to = source["to"];
+	        this.beforeDigest = source["beforeDigest"];
+	        this.blocked = source["blocked"];
+	        this.reasons = source["reasons"];
+	        this.lines = source["lines"];
+	        this.after = this.convertValues(source["after"], RawNativeSnapshot);
+	        this.pending = this.convertValues(source["pending"], PendingExpiry);
+	        this.rules = this.convertValues(source["rules"], leaguerules.RuleSet);
+	        this.calendar = this.convertValues(source["calendar"], leagueclock.ActionCalendar);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -3413,9 +3367,46 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class Receipt {
+	    entry: string;
+	    league: string;
+	    revision: number;
+	    recordedAt: time.Time;
+	    message: string;
+	    plan?: RolloverPlan;
 	
+	    static createFrom(source: any = {}) {
+	        return new Receipt(source);
+	    }
 	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entry = source["entry"];
+	        this.league = source["league"];
+	        this.revision = source["revision"];
+	        this.recordedAt = this.convertValues(source["recordedAt"], time.Time);
+	        this.message = source["message"];
+	        this.plan = this.convertValues(source["plan"], RolloverPlan);
+	    }
 	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class RawContractAction {
 	    action: string;
 	    on?: boolean;
@@ -4478,8 +4469,6 @@ export namespace commissioner {
 		    return a;
 		}
 	}
-	
-	
 	export class RawCommand {
 	    league: string;
 	    command: string;
@@ -4526,6 +4515,206 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class PresetApplyResult {
+	    changes: RawCommand[];
+	    receipts: Receipt[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PresetApplyResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.changes = this.convertValues(source["changes"], RawCommand);
+	        this.receipts = this.convertValues(source["receipts"], Receipt);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class PresetDifference {
+	    field: string;
+	    label: string;
+	    section: string;
+	    league: string;
+	    preset: string;
+	    value: number[];
+	    nowOnly?: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new PresetDifference(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.field = source["field"];
+	        this.label = source["label"];
+	        this.section = source["section"];
+	        this.league = source["league"];
+	        this.preset = source["preset"];
+	        this.value = source["value"];
+	        this.nowOnly = source["nowOnly"];
+	    }
+	}
+	export class PresetComparison {
+	    league: string;
+	    preset: string;
+	    presetLabel: string;
+	    revision: number;
+	    summary: string;
+	    differences: PresetDifference[];
+	    presets: StartingPreset[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PresetComparison(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.preset = source["preset"];
+	        this.presetLabel = source["presetLabel"];
+	        this.revision = source["revision"];
+	        this.summary = source["summary"];
+	        this.differences = this.convertValues(source["differences"], PresetDifference);
+	        this.presets = this.convertValues(source["presets"], StartingPreset);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	export class PreviewAffects {
+	    readings: string[];
+	    count?: number;
+	    words: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PreviewAffects(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.readings = source["readings"];
+	        this.count = source["count"];
+	        this.words = source["words"];
+	    }
+	}
+	export class PreviewField {
+	    label: string;
+	    before: string;
+	    beforeSource: string;
+	    after: string;
+	    afterSource: string;
+	    when: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PreviewField(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.label = source["label"];
+	        this.before = source["before"];
+	        this.beforeSource = source["beforeSource"];
+	        this.after = source["after"];
+	        this.afterSource = source["afterSource"];
+	        this.when = source["when"];
+	    }
+	}
+	export class PreviewTarget {
+	    league: string;
+	    name: string;
+	    version: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PreviewTarget(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.name = source["name"];
+	        this.version = source["version"];
+	    }
+	}
+	export class Preview {
+	    question: string;
+	    target: PreviewTarget;
+	    fields: PreviewField[];
+	    affects: PreviewAffects;
+	    blockers: string[];
+	    safeguard: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Preview(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.question = source["question"];
+	        this.target = this.convertValues(source["target"], PreviewTarget);
+	        this.fields = this.convertValues(source["fields"], PreviewField);
+	        this.affects = this.convertValues(source["affects"], PreviewAffects);
+	        this.blockers = source["blockers"];
+	        this.safeguard = source["safeguard"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	
@@ -4711,94 +4900,7 @@ export namespace commissioner {
 	
 	
 	
-	export class RolloverPlan {
-	    from: number;
-	    to: number;
-	    beforeDigest: string;
-	    blocked: boolean;
-	    reasons: string[];
-	    lines: string[];
-	    after: RawNativeSnapshot;
-	    pending: PendingExpiry[];
-	    rules: leaguerules.RuleSet;
-	    calendar: leagueclock.ActionCalendar;
 	
-	    static createFrom(source: any = {}) {
-	        return new RolloverPlan(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.from = source["from"];
-	        this.to = source["to"];
-	        this.beforeDigest = source["beforeDigest"];
-	        this.blocked = source["blocked"];
-	        this.reasons = source["reasons"];
-	        this.lines = source["lines"];
-	        this.after = this.convertValues(source["after"], RawNativeSnapshot);
-	        this.pending = this.convertValues(source["pending"], PendingExpiry);
-	        this.rules = this.convertValues(source["rules"], leaguerules.RuleSet);
-	        this.calendar = this.convertValues(source["calendar"], leagueclock.ActionCalendar);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class Receipt {
-	    entry: string;
-	    league: string;
-	    revision: number;
-	    recordedAt: time.Time;
-	    message: string;
-	    plan?: RolloverPlan;
-	
-	    static createFrom(source: any = {}) {
-	        return new Receipt(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.entry = source["entry"];
-	        this.league = source["league"];
-	        this.revision = source["revision"];
-	        this.recordedAt = this.convertValues(source["recordedAt"], time.Time);
-	        this.message = source["message"];
-	        this.plan = this.convertValues(source["plan"], RolloverPlan);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	
 	
 	export class ResultFlip {
