@@ -37,8 +37,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   const [revision, refresh] = useState(0);
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), [port]);
   const { reading, error, pending } = useContractRead<NativeHQ>(
-    JSON.stringify([league, mine, revision]),
-    publish => readNativeHQ(league, mine, port, publish), provider);
+    JSON.stringify([league, mine, revision, canManage]),
+    publish => readNativeHQ(league, mine, port, publish, canManage), provider);
   const editor = useNativeLineup(league, mine, reading?.lineup, port, canManage);
   const chosen = selected ?? reading?.lineup?.starters[0]?.id;
   const quote = useContractRead(JSON.stringify([league, mine, chosen]), () => chosen

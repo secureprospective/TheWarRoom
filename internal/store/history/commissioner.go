@@ -606,6 +606,23 @@ func (s *Store) HeldCommissionerRecords(ctx context.Context, league string) ([]c
 	return s.leagueRecords(ctx, league)
 }
 
+// SharedCommissionerRecords is HeldCommissionerRecords without the per-call deep copy: every caller of one
+// revision shares the cached snapshot and owns only the outer slice. Nested args, seeds and maps are
+// read-only by contract (TestSharedRecordsStayUnchangedByReadings). Pollers that only read, such as the
+// value preparation sweep, use it; cloning the whole ledger every second dominated idle CPU.
+func (s *Store) SharedCommissionerRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	ctx, err := s.linkedIdentities(ctx, league)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := s.pools.Read().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("read league records: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	return s.sharedTransactionRecords(ctx, tx, league)
+}
+
 func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
 	ctx, err := s.linkedIdentities(ctx, league)
 	if err != nil {

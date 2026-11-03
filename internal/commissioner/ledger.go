@@ -105,6 +105,9 @@ func Replay(records []Record) Projection {
 	if p, ok := cachedReplay(records); ok {
 		return p
 	}
+	if p, ok := cachedTrialReplay(records); ok {
+		return p
+	}
 	if books := usableClosedBooks(records); books != nil {
 		return replayClosedBooks(records, books)
 	}

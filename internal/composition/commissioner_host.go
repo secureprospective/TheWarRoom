@@ -61,6 +61,17 @@ func (a *App) leagueRecords(parent context.Context, league string) ([]commission
 	return commissionerapp.Records(ctx, a.core.History, league, "calendar")
 }
 
+// sharedLeagueRecords is the read-only ledger for pollers: the held revision snapshot, not a deep copy.
+func (a *App) sharedLeagueRecords(parent context.Context, league string) ([]commissioner.Record, error) {
+	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
+	defer cancel()
+	records, err := a.core.History.SharedCommissionerRecords(ctx, league)
+	if err != nil {
+		return nil, fmt.Errorf("read league calendar ledger: %w", err)
+	}
+	return records, nil
+}
+
 // nativeFacts reads the football facts the app already holds, with no network: positions and draft years
 // from the held players directory under its lock, NFL listings from the held injuries feed.
 func (a *App) nativeFacts() nativecheck.Facts {
@@ -175,7 +186,7 @@ func (h commissionerHost) MirrorLineupDelta(ctx context.Context, season, week in
 }
 
 func (a *App) valueSource() appvalue.Source {
-	src := appvalue.Source{Facts: a.recordStore(), Held: a.core.History, Records: a.leagueRecords,
+	src := appvalue.Source{Facts: a.recordStore(), Held: a.core.History, Records: a.sharedLeagueRecords,
 		Params: a.core.Params.Snapshot, Now: a.timeNow, Revision: a.core.HistPools.Revision,
 		NextFeatureAt: a.core.History.NextFeatureAt, Evidence: a.core.History.ValueEvidence,
 	}

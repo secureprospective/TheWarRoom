@@ -21,6 +21,37 @@ type Scope struct {
 type Preparation struct {
 	mu     sync.Mutex
 	scopes map[Scope]*Cache
+
+	// Producer-only state. A scope whose ledger revision and params are unchanged, and whose pass is
+	// still current, is re-read only every recheck for as-of changes: reading the league base folds the
+	// whole ledger, and doing that every second was most of the app's idle CPU. A UI read in between
+	// computes its own key, so it sees "preparing", never a stale pass.
+	swept      map[Scope]sweepMark
+	discovered sweepMark
+}
+
+// recheck bounds how late the producer notices a change that comes only from time passing.
+const recheck = 30 * time.Second
+
+type sweepMark struct {
+	revision int64
+	params   string
+	at       time.Time
+	ok       bool
+}
+
+// unchanged reports that nothing but the clock moved since mark, and not for long.
+func (m sweepMark) unchanged(next sweepMark) bool {
+	return m.ok && m.revision == next.revision && m.params == next.params && next.at.Sub(m.at) < recheck &&
+		!next.at.Before(m.at)
+}
+
+func (src Source) mark(ctx context.Context) sweepMark {
+	revision, err := src.revision(ctx)
+	if err != nil {
+		return sweepMark{}
+	}
+	return sweepMark{revision: revision, params: fmt.Sprint(src.Params().Values()), at: src.Now(), ok: true}
 }
 
 func (p *Preparation) cache(scope Scope) *Cache {
@@ -48,12 +79,16 @@ func (p *Preparation) Run(ctx context.Context, src Source, discover func(context
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
-		scopes, err := discover(ctx)
-		if err != nil {
-			report(err)
-		}
-		for _, scope := range scopes {
-			p.cache(scope)
+		if mark := src.mark(ctx); !p.discovered.unchanged(mark) {
+			scopes, err := discover(ctx)
+			if err != nil {
+				report(err)
+				mark = sweepMark{}
+			}
+			for _, scope := range scopes {
+				p.cache(scope)
+			}
+			p.discovered = mark
 		}
 		p.sweep(ctx, src, changed, report)
 		select {
@@ -72,20 +107,36 @@ func (p *Preparation) sweep(ctx context.Context, src Source, changed func(), rep
 	}
 	p.mu.Unlock()
 	src.PreparedOnly = false
+	if p.swept == nil {
+		p.swept = map[Scope]sweepMark{}
+	}
 	for scope, cache := range scopes {
 		if ctx.Err() != nil {
 			return
+		}
+		mark := src.mark(ctx)
+		if p.swept[scope].unchanged(mark) && cache.current(mark.at) {
+			continue
 		}
 		src.Cache = cache
 		before := cache.version()
 		_, err := src.Read(ctx, scope.League, "", scope.Season)
 		if err != nil {
 			report(err)
+			mark = sweepMark{}
 		}
+		p.swept[scope] = mark
 		if cache.version() != before {
 			changed()
 		}
 	}
+}
+
+// current reports a published, successful pass that is still in force at.
+func (c *Cache) current(at time.Time) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.ready && c.failure == nil && !at.Before(c.from) && (c.until.IsZero() || at.Before(c.until))
 }
 
 func (c *Cache) version() uint64 {

@@ -10,7 +10,7 @@ import projections from '../data/projections.wire.testdata.json';
 import results from '../../../../testdata/wire/native/results.json';
 import standings from '../../../../testdata/wire/native/standings.json';
 import { parseRules } from './rules';
-import { nativeHQAssets, nativeHQCap, nativeHQMoves, nativeHQSettings, readNativeHQ } from './hqReading';
+import { OWNER_ONLY_MOVES, nativeHQAssets, nativeHQCap, nativeHQMoves, nativeHQSettings, readNativeHQ } from './hqReading';
 import { selectProvider } from '../data/provider';
 import clockWire from '../data/fixtures/clock.json';
 
@@ -117,6 +117,11 @@ describe('native HQ existing reads', () => {
     expect(result.week).toBe(1); expect(result.moves).toEqual([]); expect(result.settings.active).toBe(90);
     expect(port.mock.calls.map(c => c[0].command)).toContain('moves.read');
     expect(port.mock.calls.every(c => c[0].mode === 'read')).toBe(true);
+    port.mockClear();
+    const viewing = await readNativeHQ(league, mine, port, undefined, false);
+    expect(port.mock.calls.map(c => c[0].command)).not.toContain('moves.read');
+    expect(viewing.errors).toEqual([]); expect(viewing.moves).toEqual([]);
+    expect(viewing.moveReason).toBe(OWNER_ONLY_MOVES);
     const broken: HostedPort = async request => { if (request.command === 'native.cap.check') throw new
       Error('offline'); return port(request); };
     const partial = await readNativeHQ(league, mine, broken);

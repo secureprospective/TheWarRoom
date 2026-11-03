@@ -246,11 +246,13 @@ export type NativeHQ = {
   thisWeek?: PulseResults;
   errors: string[];
 };
+export const OWNER_ONLY_MOVES = 'Pending moves are visible only to this franchise\'s owner';
 export async function readNativeHQ(
   league: string,
   mine: string,
   port: HostedPort = hostedWorkflow,
   publish?: (reading: NativeHQ) => void,
+  owner = true,
 ): Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
   const snapshot = nativeHQAssets(assets.data, league);
@@ -343,6 +345,8 @@ export async function readNativeHQ(
       result.reserveNotes = new Map(reserves?.players.map((p) => [p.player, p.words]));
     }),
     apply(async () => {
+      // Moves are owner-only on the server; viewing another franchise must not ask for them.
+      if (!owner) { result.moves = []; result.moveReason = OWNER_ONLY_MOVES; return; }
       const r = await port({ command: 'moves.read', mode: 'read', arguments: { league, franchise: mine } });
       const moves = nativeHQMoves(r.data, league, mine);
       result.moves = moves.moves;

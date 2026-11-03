@@ -41,11 +41,14 @@ export type HomeBrief = {
 export type HomeSource = 'pulse' | 'results' | 'calendar' | 'cap' | 'ledger' | 'bids' | 'draft'
   | 'matchup' | 'assets' | 'jobs' | 'research' | 'form';
 
+export const defaultResearch = (): ResearchReader | undefined => researchAvailable() ? researchAPI : undefined;
+export const OWNER_ONLY_BIDS = 'Bids are visible only to this franchise\'s owner';
+
 /** readHomeBrief calls the reads League Pulse, Franchise HQ, the War Room and the ledger already
  *  use. It adds no rule of its own: every value comes from the league's settings through them. */
 export async function readHomeBrief(league: string, mine: string, port: HostedPort,
   publish?: (brief: HomeBrief) => void,
-  research: ResearchReader | undefined = researchAvailable() ? researchAPI : undefined): Promise<HomeBrief> {
+  research: ResearchReader | undefined = defaultResearch(), owner = true): Promise<HomeBrief> {
   const out: HomeBrief = { at: {}, errors: {} };
   const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
   const apply = async (source: HomeSource, read: () => Promise<void>) => {
@@ -112,6 +115,8 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       out.ledger = ledger;
     }),
     apply('bids', async () => {
+      // Bids are owner-only on the server; viewing another franchise must not ask for them.
+      if (!owner) throw new Error(OWNER_ONLY_BIDS);
       const r = await port({ command: 'bids.read', mode: 'read', arguments: { league, franchise: mine } });
       const bids = parseHostedBids(r.data);
       if (bids.league !== league || bids.franchise !== mine) throw new Error('Bids belong elsewhere');

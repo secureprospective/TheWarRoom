@@ -99,6 +99,22 @@ func cachedReplay(records []Record) (Projection, bool) {
 	return p, true
 }
 
+// cachedTrialReplay answers a priced proposal: a held, cached ledger with one proposed statistics decision
+// appended. That record is active, reverses nothing and restores no draft, so the replay is the held
+// projection plus that entry (TestTrialReplayMatchesFullReplay).
+func cachedTrialReplay(records []Record) (Projection, bool) {
+	n := len(records)
+	if n < 2 || !proposedStatDecision(records) || records[0].replay == nil || len(records[0].replay.keys) != n-1 {
+		return Projection{}, false
+	}
+	p, ok := cachedReplay(records[:n-1])
+	if !ok {
+		return Projection{}, false
+	}
+	p.Active[records[n-1].Receipt.Entry] = true
+	return p, true
+}
+
 // memoFor returns the memo only when records are exactly the revision it was built from, payloads included
 // (Canonical is the recorded request, so it covers every argument a fold reads).
 func memoFor(records []Record) *governanceCache {

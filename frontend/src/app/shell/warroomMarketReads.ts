@@ -55,12 +55,13 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
             ?.position ?? unavailable;
         }
       }),
-      apply(async () => { const r = await port({ command: 'bids.read', mode: 'read', arguments: {
+      apply(async () => { if (native.owner === false) return;
+        const r = await port({ command: 'bids.read', mode: 'read', arguments: {
         league: native.league, franchise: c.mine } });
         result.bids = parseWarRoomOwnBids(r.data, native.league,
           c.mine); }),
     ]);
-    await apply(async () => {
+    if (native.owner !== false) await apply(async () => {
       const { data } = await port({ command: 'waivers.read', mode: 'read', arguments: {
         league: native.league, franchise: c.mine, at: new Date().toISOString() } });
       const waivers = parseHostedWaivers(data);

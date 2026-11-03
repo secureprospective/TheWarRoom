@@ -44,8 +44,13 @@ func checkPreparation(t *testing.T, src Source, league string, want Reading) {
 		t.Fatal("warm sweep repeated valuation")
 	}
 	original := src.Records
+	revision := int64(1)
 	for _, kind := range []string{"roster", "contract", "setting"} {
 		t.Run(kind, func(t *testing.T) {
+			// A ledger change is a commit, so the store revision moves with the records.
+			revision++
+			next := revision
+			src.Revision = func(context.Context) (int64, error) { return next, nil }
 			src.Records = func(ctx context.Context, l string) ([]commissioner.Record, error) {
 				records, err := original(ctx, l)
 				if err != nil {

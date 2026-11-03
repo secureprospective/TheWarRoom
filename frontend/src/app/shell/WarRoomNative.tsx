@@ -7,8 +7,8 @@ import WarRoom from './WarRoom';
 import { WarRoomEmpty } from './WarRoomHeader';
 export default function WarRoomNative(native: NativeScope) {
   const port = native.port ?? hostedWorkflow;
-  const reading = useWarRoomRead<NativeHQ>(JSON.stringify([native.league, native.mine]), publish =>
-    readNativeHQ(native.league, native.mine, port, publish));
+  const reading = useWarRoomRead<NativeHQ>(JSON.stringify([native.league, native.mine, native.owner]),
+    publish => readNativeHQ(native.league, native.mine, port, publish, native.owner ?? true));
   if (!reading.reading) return <div className={`wr-v6${native.embedded ? ' embedded' : ''}`}>
     {!native.embedded && <RailLeaguePicker />}
     <WarRoomEmpty reason={reading.error} pending={reading.pending} /></div>;

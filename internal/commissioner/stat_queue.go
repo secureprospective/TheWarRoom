@@ -106,7 +106,7 @@ func StatQueueReading(ctx context.Context, league string, records []Record, feed
 		return out, fmt.Errorf("read the held weekly statistics: %w", err)
 	}
 	builder := queueBuilder{league: league, season: season, records: records, feed: feed, src: src, rules: rules,
-		effects: effects, now: now, memo: NewRulesMemo()}
+		effects: effects, now: now, memo: NewRulesMemo(), flips: &queueFlips{}}
 	for _, week := range weeks {
 		item, waiting, err := builder.item(ctx, week)
 		if err != nil {
@@ -158,6 +158,28 @@ type queueBuilder struct {
 	effects statEffects
 	now     time.Time
 	memo    *RulesMemo
+	flips   *queueFlips
+}
+
+// queueFlips holds the reading's flip base, read when the first item is priced and shared by the rest.
+type queueFlips struct {
+	base *flipBase
+	err  error
+	read bool
+}
+
+func (b queueBuilder) flipCheck(ctx context.Context, raw RawCommand, week int) (ResultFlip, error) {
+	if b.flips == nil {
+		return ResultFlipCheck(ctx, b.league, b.records, b.src, raw, b.season, week, b.now)
+	}
+	if !b.flips.read {
+		b.flips.base, b.flips.err = readFlipBase(b.league, b.records, b.src, b.season, b.now)
+		b.flips.read = true
+	}
+	if b.flips.err != nil {
+		return ResultFlip{}, b.flips.err
+	}
+	return b.flips.base.check(ctx, b.league, b.records, b.src, raw, b.season, week)
 }
 
 // item makes the queue entry for one week, or reports that nothing is waiting.
@@ -213,16 +235,13 @@ func (b queueBuilder) price(ctx context.Context, item *StatQueueItem, week StatW
 	if err != nil {
 		return err
 	}
-	after, err := NativePlayerScoreWith(b.league, scope, scoreTrial(raw, b.records), week.Evidence, b.now,
-		// A stat approval changes no rule: resolve against the held ledger at the trial's own instant.
-		func(_ []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
-			return b.memo.InForce(b.records, season, at)
-		})
+	// A stat approval changes no rule, and its fold extends the held ledger's (RulesMemo.fold).
+	after, err := b.memo.Score(b.league, scope, scoreTrial(raw, b.records), week.Evidence, b.now)
 	if err != nil {
 		return err
 	}
 	item.Points = pointsChange(before, after)
-	flip, err := ResultFlipCheck(ctx, b.league, b.records, b.src, raw, b.season, week.Week, b.now)
+	flip, err := b.flipCheck(ctx, raw, week.Week)
 	if err != nil {
 		return err
 	}

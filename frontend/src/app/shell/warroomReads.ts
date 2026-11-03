@@ -13,7 +13,7 @@ import { settingsFromReport, type HQCap } from './hqModel';
 import { standingFromReport } from './hqPlayerData';
 export type WarRoomNative = { league: string; mine: string; port?: HostedPort;
   leave: (node?: Node) => void; week?: number; embedded?: boolean; tabs?: HTMLElement | null;
-  reading?: NativeHQ };
+  reading?: NativeHQ; owner?: boolean };
 export type WarRoomContext = { snapshot: Snapshot; mine: string; week: number; native?: WarRoomNative };
 export type WarRoomHeaderReading = { name?: string; record?: string; standing?: string;
   standingsNote?: string;
@@ -41,7 +41,8 @@ export function nativeWarRoomHeader(r: NativeHQ): WarRoomHeaderReading {
 export async function readWarRoomHeader({ snapshot, mine, week, native }: WarRoomContext):
   Promise<WarRoomHeaderReading> {
   if (native) {
-    const r = native.reading ?? await readNativeHQ(native.league, mine, native.port);
+    const r = native.reading ?? await readNativeHQ(native.league, mine, native.port, undefined,
+      native.owner ?? true);
     return nativeWarRoomHeader(r);
   }
   const result: WarRoomHeaderReading = { errors: [] };

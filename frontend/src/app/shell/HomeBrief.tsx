@@ -5,7 +5,7 @@ import './home.css';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { ResearchReader } from '../research/api';
 import { subscribeSeason } from '../market/api';
-import { mergeBrief, readHomeBrief, retryDelay, transientErrors, type HomeBrief as Brief } from './homeReads';
+import { defaultResearch, mergeBrief, readHomeBrief, retryDelay, transientErrors, type HomeBrief as Brief } from './homeReads';
 import { bump, current, defaultLayout, layoutKey, pack, parseLayout, place, remove, SPANS, swap,
   type Layout, type Phase, type Span, type TileId } from './homeLayout';
 import { clock, go, isFinal, left, myGame, myRow, nameOf, oldestAt, pts, SHORTCUT_KEYS, shortTime, TileBody,
@@ -41,8 +41,8 @@ export function alertsOf(b: Brief): Alert[] {
 
 /** HomeBrief is Home as the locked mock draws it (docs/ui/mocks/home-mock-v5.html), fed by the reads
  *  in homeReads. Layout is saved per owner per league; nothing here invents a number. */
-export default function HomeBrief({ league, mine, port, initial, research }: { league: string; mine: string;
-  port: HostedPort; initial?: Brief; research?: ResearchReader }) {
+export default function HomeBrief({ league, mine, port, initial, research, owner = true }: { league: string;
+  mine: string; port: HostedPort; initial?: Brief; research?: ResearchReader; owner?: boolean }) {
   const [b, setB] = useState<Brief>(initial ?? { at: {}, errors: {} });
   const grid = useRef<HTMLElement>(null);
   const [tab, setTab] = useState<Tab>('brief');
@@ -67,9 +67,9 @@ export default function HomeBrief({ league, mine, port, initial, research }: { l
     const first = scope.current !== `${league}|${mine}`;
     scope.current = `${league}|${mine}`;
     void readHomeBrief(league, mine, port, r => { if (live) setB(prev => first ? r : mergeBrief(prev, r)); },
-      ...(research ? [research] : [])).finally(() => { if (live) setDone(pass); });
+      research ?? defaultResearch(), owner).finally(() => { if (live) setDone(pass); });
     return () => { live = false; };
-  }, [league, mine, port, initial, research, pass]);
+  }, [league, mine, port, initial, research, pass, owner]);
   const retrying = !initial && done === pass && transientErrors(b);
   useEffect(() => {
     if (!retrying) { if (done === pass) attempts.current = 0; return; }

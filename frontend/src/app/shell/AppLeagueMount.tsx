@@ -110,11 +110,11 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
           canManage={people.yourFranchise === mine}
           tab={hqTab} navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
           view === 'home' ? <HomeBrief key={`${league.id}:${mine}`} league={league.id} mine={mine}
-            port={localWorkflow} /> :
+            port={localWorkflow} owner={people.yourFranchise === mine} /> :
           view === 'pulse' ? <Pulse embedded key={`${league.id}:${mine}`} league={league.id}
             mine={mine} port={localWorkflow} leave={leave} tab={pulseTab} /> :
           <WarRoom embedded key={`${league.id}:${mine}`} league={league.id} mine={mine}
-            port={localWorkflow} leave={leave} tabs={tabs} />}
+            port={localWorkflow} leave={leave} tabs={tabs} owner={people.yourFranchise === mine} />}
       </Suspense>}
   </>;
 }

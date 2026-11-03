@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
@@ -74,13 +76,36 @@ func ScoreChangePreview(ctx context.Context, league string, records []Record, sr
 // known, with the reason.
 func ResultFlipCheck(ctx context.Context, league string, records []Record, src ResultSources, raw RawCommand, season, week int,
 	now time.Time) (ResultFlip, error) {
-	directory, err := NativeDirectoryReading(league, records, now)
+	base, err := readFlipBase(league, records, src, season, now)
 	if err != nil {
 		return ResultFlip{}, err
 	}
+	return base.check(ctx, league, records, src, raw, season, week)
+}
+
+// flipBase is what every result-flip check of one reading reads from the held ledger, whatever change it
+// prices: the directory, the published schedule, the rules and each week's results before the change.
+// A reading that prices many proposals reads it once (StatQueueReading). It is read-only once built.
+type flipBase struct {
+	directory NativeDirectory
+	published []ScheduleWeek
+	rules     leaguerules.RuleSet
+	before    map[int]flipWeek
+}
+
+type flipWeek struct {
+	results NativeResults
+	err     error
+}
+
+func readFlipBase(league string, records []Record, src ResultSources, season int, now time.Time) (*flipBase, error) {
+	directory, err := NativeDirectoryReading(league, records, now)
+	if err != nil {
+		return nil, err
+	}
 	published, err := resultSchedule(records, season, now)
 	if err != nil {
-		return ResultFlip{}, err
+		return nil, err
 	}
 	resolve := RulesInForce
 	if memo, ok := src.(interface{ RulesInForce() RulesFunc }); ok {
@@ -88,9 +113,20 @@ func ResultFlipCheck(ctx context.Context, league string, records []Record, src R
 	}
 	rules, err := resolve(records, season, ReadingInstant(records, now))
 	if err != nil {
-		return ResultFlip{}, err
+		return nil, err
 	}
-	before, err := weekResults(ctx, league, records, src, rules.Lineup, directory, published, season, week)
+	return &flipBase{directory: directory, published: published, rules: rules, before: map[int]flipWeek{}}, nil
+}
+
+// check is ResultFlipCheck against the held ledger this base was read from.
+func (b *flipBase) check(ctx context.Context, league string, records []Record, src ResultSources, raw RawCommand,
+	season, week int) (ResultFlip, error) {
+	held, ok := b.before[week]
+	if !ok {
+		held.results, held.err = weekResults(ctx, league, records, src, b.rules.Lineup, b.directory, b.published, season, week)
+		b.before[week] = held
+	}
+	before, err := held.results, held.err
 	if err != nil {
 		return ResultFlip{}, err
 	}
@@ -100,7 +136,7 @@ func ResultFlipCheck(ctx context.Context, league string, records []Record, src R
 	}
 	after := before
 	if touched := franchisesTouched(raw, before); len(touched) != 0 {
-		after, err = weekResults(ctx, league, scoreTrial(raw, records), src, rules.Lineup, directory, published, season, week)
+		after, err = weekResults(ctx, league, scoreTrial(raw, records), src, b.rules.Lineup, b.directory, b.published, season, week)
 		if err != nil {
 			return ResultFlip{}, err
 		}
