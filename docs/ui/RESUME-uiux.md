@@ -1,3 +1,56 @@
+# RESUME 2026-11-03 ~15:55 CT — TheWarRoom: locked mocks, mock-gated (supersedes the 10:50 section)
+
+## 1. WHAT WE ARE DOING
+Make the 5 LOCKED mocks (docs/ui/mocks: franchise-hq-mock-v10, warroom-mock-v6, home-mock-v5, league-pulse-mock-v14, control-room-mock-v1) work in the real app with REAL data, element by element; the mockgate is the gate. Map exists (DATA_FLOW_MAP.md, terra-*.md, tie-*.md) — never re-map. Claude-OS repo ~/work/TheWarRoom (no remote). Order: HQ -> War Room -> Home -> Pulse -> Control Room.
+
+## 2. AGENTS
+- Sol (GPT): `SOL_LANE=x SOL_WT=<FULL PATH> SOL_BRIEF=<file in ~/fleet/briefs> nohup setsid ~/fleet/bin/launch-sol-lane.sh` on claudeos. SOL_WT MUST be a full path (relative "gate" failed instantly). Runs: ~/fleet/runs/<lane>/. Sol resets ~19:25 CT; 75% left at 15:50.
+- Tom (Claude Opus) WORKS via the standard Beelink launcher only: `ssh -f -i /root/.ssh/beelink chris@192.168.1.191 'TOM_WT=hq-real TOM_BRIEF=<file in ~/fleet/briefs/purge> TOM_EFFORT=high nohup setsid ~/fleet/bin/launch-tom-build.sh >/dev/null 2>&1 </dev/null &'`. Brief must say: all repo work via `ssh claudeos`. Runs: Beelink ~/fleet/runs/tom-hq-real/. Tom 80% used, resets 17:40 CT — reserve for hard problems.
+- Terra = GPT too (shares quota).
+
+## 3. STATUS
+| Item | State |
+|---|---|
+| HQ (build/HQ-1, .worktrees/hq, head e62dd209) | gate mockgate-hq.LPPRiQ: Lineup OK82/MISS1(HQ-073)/PH16; Cap OK67/MISS4(HQ-096..099)/PH4. Real carried week-10 starters, Valid lineup, matchup vs Ravens. |
+| Sol lane sol-hq5 RUNNING (started 15:49) | brief APP-HQ-5.md: rail "Wk 9" -> 10; values regression ("being prepared"); own proj total/def total/win prob; cold-start standings timeout + memory (~2.5 GB); HQ-073 |
+| War Room gate (build/GATE-1 40ae37e0) | baseline ran on OBSOLETE ~/scratch/live-1103 seed — re-baseline required. 184 IDs unrendered; Desk 36/60/16, Market 25/74/4, Draft 33/48/2, Plans 20/53/2 |
+| Sol lane sol-wr RUNNING (started 15:49) | brief APP-WR-1.md, worktree .worktrees/wr (build/WR-1 from HQ-1 e62dd209): merge GATE-1, fresh baseline, build tab by tab |
+| Watchers | bwlhw9h8h (sol-hq5), b7o7yrpbt (sol-wr): until completion.txt |
+| Home, Pulse, Control Room | not started |
+
+## 4. ARTIFACTS
+Mock renders: claudeos ~/scratch/mockshots/*.png. Tom's report: Beelink ~/fleet/runs/tom-hq-real/stdout.log. Stack-dump script: claudeos ~/scratch/dump.sh. Christopher's live profile ~/scratch/live-1103b, his app PID 834408 on :0 — DON'T kill.
+
+## 5. OPEN DECISIONS (asked Christopher, unanswered)
+1. Dead money HQ-096..099: MFL salary adjustments are untyped free text ("Dropped X…"). Parse MFL text, or commissioner enters it?
+2. Weeks 5–7 never imported -> Bills 2-0. Pull real week results from MFL (recommended) vs carry lineups into past weeks (would invent scores).
+
+## 6. REFUTED — DO NOT RETEST
+- In-session Agent tool "Tom" (subagent_type claude) ends after 1 tool call with no report — 3 tries. Use the Beelink launcher.
+- Custom inline Tom launch (kill + bypassPermissions in one command) blocked by auto-mode classifier; standard launcher passes.
+- Blank HQ lineup was NOT carry-over cost; it was frontend parsers rejecting `carriedFrom` (Tom d5d09fd9).
+- held-season key memo alone did not fix timeouts; real cost = depthAt scanning 740k rows per game + ping-pong rebuilds (Tom fixed).
+- MFL liveScoring W=10 returns 0 starters for all franchises before set; carry-over is required (lineup.carryOver rule, default on).
+
+## 7. DECISIONS (11-03)
+Mock is the gate; Terra/Sol build, I review; correctness first; fantasy: week ends after last game (now week 10); lineups carry over; every week display = one derivation. "Do what you need to" on quota use (15:50).
+
+## 8. LEDGER
+build/HQ-1: f53e1738, eb7e0e50, 637d2ef4 (mine), d5d09fd9..e62dd209 (Tom, 7 commits). build/GATE-1 40ae37e0 (Sol WR gate). build/WR-1 created. Nothing merged into INTEGRATE-1102 yet (f08ce84e). .worktrees/mem has untracked files — ask before --force.
+
+## 9. NEXT ACTIONS
+1. On sol-hq5 completion: read report, fetch PNGs, compare to franchise-hq-mock-v10.png; check rail week = 10. If passing (bar dead money pending ruling) -> give Christopher HQ to calibrate (he closes PID 834408 window; run ~/scratch/live-1103b/run.sh with new build).
+2. On sol-wr completion: verify fresh-seed baseline used, review per-tab table and PNGs vs warroom-mock-v6.png; send exact diffs back.
+3. Apply Christopher's rulings on dead money / weeks 5–7 when given (brief Sol/Tom).
+4. After HQ+WR: extend gate to Home, Pulse, Control Room; dispatch.
+5. Merge to INTEGRATE only after his live confirmation.
+
+## 10. ENV
+Go env: PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 PYTHONPATH=$HOME/scratch/app-merge-9/python GOLANGCI_LINT_CACHE=<per-wt>. Edits over ssh: write python script locally, scp, run (heredoc quoting breaks). Hook blocks "DROP TABLE" text. Claude-OS disk 84%.
+
+## 11. HONEST STATUS
+HQ not yet passing; War Room far from mock; Home/Pulse/CR untouched. Christopher has not seen a passing screen.
+
 # RESUME 2026-11-03 ~10:50 CT — TheWarRoom: locked mocks, mock-gated (supersedes earlier sections for current state)
 
 ## 1. WHAT WE ARE DOING
