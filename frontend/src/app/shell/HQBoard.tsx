@@ -2,7 +2,7 @@ import { liveTeam } from './hqLive';
 import type { LiveView } from '../now/liveContract';
 import { HQAct } from './HQAct';
 import { fitsSlot, placePlayer } from './hqPlacement';
-import { useRef, useState, type PointerEvent } from 'react';
+import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import type { LineupReading, Snapshot } from '../data/contract';
 import type { HQSettings } from './hqModel';
 import { rosterContract, unavailable } from './hqModel';
@@ -14,7 +14,7 @@ import type { RosterFacts } from './hqRosterFacts';
 export type HQLineup = Omit<LineupReading, 'starters' | 'bench'> & { starters: { id: string; position?:
   string }[]; bench: { id: string; position?: string }[] };
 export type HQBoardProps = { snapshot: Snapshot; mine: string; reading?: HQLineup;
-  showContracts?: boolean; error?: string; settings: HQSettings; values: Map<string, number>;
+  showContracts?: boolean; matchup?: ReactNode; error?: string; settings: HQSettings; values: Map<string, number>;
   facts?: RosterFacts;
   byes?: Map<string, number>; injuries?: Injury[]; now?: Now; live?: LiveView; changed?: string[];
     canEdit?: boolean; select: (id: string) => void;
@@ -68,7 +68,7 @@ export function FormChart({ id, facts, projection, week, bye }: { id: string; fa
   </span>;
 }
 export function HQBoard({ snapshot, mine, reading, settings, values, facts, changed = [], canEdit, byes,
-  injuries, now, live, error, showContracts,
+  injuries, now, live, error, showContracts, matchup,
   select, place, bench, assign }: HQBoardProps) {
   const [filter, setFilter] = useState('ALL');
   const [picked, setPicked] = useState<string>();
@@ -185,9 +185,9 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
               'defender' : 'eligible player'}</span>
             <span className="st warn">OPEN</span></HQAct>)}</div>
       </div>)}
-      <HQMatchup now={now} values={values}
+      {matchup ?? <HQMatchup now={now} values={values}
         liveCount={live ? starters.filter(p => liveTeam(directory.get(p.id)?.team, live)).length : undefined}
-        ownProjection={reading ? totalProjection(starters.map(p => p.id), values) : unavailable} />
+        ownProjection={reading ? totalProjection(starters.map(p => p.id), values) : unavailable} />}
     </div>
     <div className={`col bench ${drag && slots.some(s => s.id === drag.id) ? 'dropzone' : ''}`}
       data-hq-bench=""><div

@@ -82,7 +82,11 @@ func ResultFlipCheck(ctx context.Context, league string, records []Record, src R
 	if err != nil {
 		return ResultFlip{}, err
 	}
-	rules, err := RulesInForce(records, season, ReadingInstant(records, now))
+	resolve := RulesInForce
+	if memo, ok := src.(interface{ RulesInForce() RulesFunc }); ok {
+		resolve = memo.RulesInForce()
+	}
+	rules, err := resolve(records, season, ReadingInstant(records, now))
 	if err != nil {
 		return ResultFlip{}, err
 	}

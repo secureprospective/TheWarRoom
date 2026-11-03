@@ -107,6 +107,7 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
       <Suspense fallback={<p role="status">Opening {league.name}…</p>}>
         {view === 'hq' ? <HQ embedded key={`${league.id}:${mine}`}
           league={league.id} mine={mine} name={league.name} port={localWorkflow} leave={leave}
+          canManage={people.yourFranchise === mine}
           tab={hqTab} navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
           view === 'home' ? <HomeBrief key={`${league.id}:${mine}`} league={league.id} mine={mine}
             port={localWorkflow} /> :

@@ -112,6 +112,9 @@ func (n *nativeSources) PlayerScore(ctx context.Context, records []commissioner.
 	return reading, nil
 }
 
+// RulesInForce lets a reading that prices many proposals resolve the held ledger's rules once.
+func (n *nativeSources) RulesInForce() commissioner.RulesFunc { return n.rules.InForce }
+
 // PlayerWeekStats selects the player's week from the season's held files, read on first use.
 func (n *nativeSources) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) ([]source.HeldWeek, error) {
 	if scope.Season != n.season {

@@ -52,9 +52,10 @@ func (b NativeBase) playersOf() map[string][]nativecheck.RosterPlayer {
 	if !b.Assets.Seeded {
 		return byFranchise
 	}
+	decisions := readDecisionExceptions(b.Records, b.Now)
 	for _, p := range b.Assets.Snapshot.Players {
 		byFranchise[p.Franchise] = append(byFranchise[p.Franchise], nativecheck.RosterPlayer{ID: p.ID, Status: p.Status,
-			Exceptions: ScopedDecisionExceptions(b.Records, ExceptionScope{Franchise: p.Franchise, Player: p.ID}, b.Now)})
+			Exceptions: decisions.scoped(ExceptionScope{Franchise: p.Franchise, Player: p.ID})})
 	}
 	return byFranchise
 }

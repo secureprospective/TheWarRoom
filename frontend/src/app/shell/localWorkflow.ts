@@ -1,9 +1,17 @@
+import { joinRead } from '../data/query';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { object, text } from '../data/parseValues';
 import { nativeEnvelope, type NativeRequest } from '../commands/native';
 import { commissioner, market, nativeBindings } from '../commissioner/api';
 
-export const localWorkflow: HostedPort = async (request: NativeRequest, football = '') => {
+// Mounts and change events may request the same reading from several screens.
+// Keep at most one trailing read so a mid-flight change is not lost.
+export const localWorkflow: HostedPort = (request, football = '') => request.mode === 'read'
+  ? joinRead(runLocalWorkflow, JSON.stringify([request.command,
+    Object.entries(request.arguments).sort(([a], [b]) => a.localeCompare(b)), football]),
+    () => runLocalWorkflow(request, football)) : runLocalWorkflow(request, football);
+
+const runLocalWorkflow: HostedPort = async (request: NativeRequest, football = '') => {
   if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
     throw new Error('League changes require the desktop app.');
   const envelope = nativeEnvelope(request);

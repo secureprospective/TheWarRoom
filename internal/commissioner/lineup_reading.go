@@ -54,6 +54,12 @@ func NativeLineupReading(league, franchise, principal string, week int, records 
 	if err != nil {
 		return NativeLineup{}, err
 	}
+	return nativeLineupFromBase(league, franchise, principal, week, base, at, env)
+}
+
+func nativeLineupFromBase(league, franchise, principal string, week int, base NativeBase, at time.Time,
+	env LineupFacts) (NativeLineup, error) {
+	records := base.Records
 	if !base.Assets.Seeded {
 		return NativeLineup{}, fmt.Errorf("record the league's starting snapshot before reading a lineup")
 	}
@@ -62,14 +68,7 @@ func NativeLineupReading(league, franchise, principal string, week int, records 
 		return NativeLineup{}, fmt.Errorf("choose one of this league's franchises")
 	}
 	instant := ReadingInstant(records, at)
-	season, err := SeasonAt(records, instant)
-	if err != nil {
-		return NativeLineup{}, err
-	}
-	rules, err := RulesInForce(records, season, instant)
-	if err != nil {
-		return NativeLineup{}, err
-	}
+	season := base.Rules.Season
 	held, set, err := RecordedLineupFor(records, franchise, season, week)
 	if err != nil {
 		return NativeLineup{}, err
@@ -77,7 +76,7 @@ func NativeLineupReading(league, franchise, principal string, week int, records 
 	if err := authorizeLineupReading(league, principal, seat.Owner, held.Corrected, records); err != nil {
 		return NativeLineup{}, err
 	}
-	out := NativeLineup{League: league, Name: Replay(records).Name, Revision: int64(len(records)), Season: season,
+	out := NativeLineup{League: league, Name: base.Directory.Name, Revision: int64(len(records)), Season: season,
 		Week: week, Franchise: franchise, FranchiseName: seat.Name, Zone: env.zone().String(), Set: set,
 		Corrected: held.Corrected, Reason: held.Reason, Starters: []LineupPlayer{}, Bench: []LineupPlayer{},
 		Rules: RuleLines(base.Rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag")}
@@ -88,13 +87,14 @@ func NativeLineupReading(league, franchise, principal string, week int, records 
 	for _, id := range held.Starters {
 		out.Starters = append(out.Starters, lineupPlayer(id, env, instant))
 	}
-	for _, p := range base.playersOf()[franchise] {
-		if p.Status == domain.RosterActive && !starting[p.ID] {
+	// A lineup needs roster membership, not every player's reserve exceptions.
+	for _, p := range base.Assets.Snapshot.Players {
+		if p.Franchise == franchise && p.Status == domain.RosterActive && !starting[p.ID] {
 			out.Bench = append(out.Bench, lineupPlayer(p.ID, env, instant))
 		}
 	}
 	sortLineupPlayers(out.Bench)
-	out.Verdict, _ = judgeStarters(rules.Lineup, set, held.Starters, env.Facts)
+	out.Verdict, _ = judgeStarters(base.Rules.Lineup, set, held.Starters, env.Facts)
 	out.Words = lineupWords(out, seat.Name)
 	return out, nil
 }

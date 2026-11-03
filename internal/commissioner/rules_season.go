@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -418,6 +419,8 @@ type rulesEntry struct {
 type RulesMemo struct {
 	entries  map[rulesKey]rulesEntry
 	folds    map[ledgerKey]ledgerFold
+	trials   map[ledgerKey][]Record
+	helds    map[*replayMemo][]Record
 	resolved int
 }
 
@@ -436,7 +439,8 @@ type ledgerFold struct {
 }
 
 func NewRulesMemo() *RulesMemo {
-	return &RulesMemo{entries: map[rulesKey]rulesEntry{}, folds: map[ledgerKey]ledgerFold{}}
+	return &RulesMemo{entries: map[rulesKey]rulesEntry{}, folds: map[ledgerKey]ledgerFold{},
+		trials: map[ledgerKey][]Record{}, helds: map[*replayMemo][]Record{}}
 }
 
 func foldLedger(records []Record) ledgerFold {
@@ -467,14 +471,44 @@ func (m *RulesMemo) InForce(records []Record, season int, at time.Time) (leaguer
 	if len(records) == 0 {
 		return RulesInForce(records, season, at)
 	}
-	key := rulesKey{ledger: &records[0], length: len(records), season: season, at: at.Round(0).UTC()}
+	ledger := m.ruleLedger(records)
+	key := rulesKey{ledger: &ledger[0], length: len(ledger), season: season, at: at.Round(0).UTC()}
 	if hit, ok := m.entries[key]; ok {
 		return hit.rules, hit.err
 	}
 	m.resolved++
-	rules, err := RulesInForce(records, season, at)
+	rules, err := RulesInForce(ledger, season, at)
 	m.entries[key] = rulesEntry{rules, err}
 	return rules, err
+}
+
+// ruleLedger answers a proposed statistics decision with the held ledger it was proposed against.
+// A stat decision is never a rule record and deactivates none, so both ledgers resolve the same rules;
+// the held ledger's replay is cached and is shared by every proposal the reading prices.
+func (m *RulesMemo) ruleLedger(records []Record) []Record {
+	n := len(records)
+	if n < 2 || records[0].replay == nil || len(records[0].replay.keys) != n-1 {
+		return records
+	}
+	last := records[n-1].Command.Command
+	if (last != StatApprove && last != StatReject) || !strings.HasPrefix(records[n-1].Receipt.Entry, "proposed.") {
+		return records
+	}
+	key := ledgerKey{ledger: &records[0], length: n}
+	if held, ok := m.trials[key]; ok {
+		return held
+	}
+	held := records
+	if _, ok := cachedReplay(records[:n-1]); ok {
+		held = records[:n-1]
+		if base, ok := m.helds[records[0].replay]; ok {
+			held = base
+		} else {
+			m.helds[records[0].replay] = held
+		}
+	}
+	m.trials[key] = held
+	return held
 }
 
 // Resolved counts the times the ledger was actually read, which is what the memo exists to keep small.

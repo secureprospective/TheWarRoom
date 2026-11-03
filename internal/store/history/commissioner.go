@@ -42,6 +42,7 @@ func commissionerRecords(events []LeagueEvent) ([]commissioner.Record, error) {
 type recordRevision struct {
 	revision int64
 	records  []commissioner.Record
+	lineups  *commissioner.LineupLedger
 }
 
 // transactionRecords returns records the caller owns outright (write and preview paths change them).
@@ -695,6 +696,6 @@ func (s *Store) cacheRecords(league string, revision int64, records []commission
 		s.records = map[string]recordRevision{}
 	}
 	records = commissioner.WithReplayCache(records)
-	s.records[league] = recordRevision{revision: revision, records: records}
+	s.records[league] = recordRevision{revision: revision, records: records, lineups: commissioner.NewLineupLedger(records)}
 	return records
 }

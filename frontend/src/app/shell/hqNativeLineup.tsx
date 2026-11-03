@@ -5,12 +5,15 @@ import { HoldToFire } from '../commissioner/HoldToFire';
 import { HQAct } from './HQAct';
 import type { HQLineup } from './HQBoard';
 
-export function useNativeLineup(league: string, mine: string, lineup?: HQLineup, port?: HostedPort) {
+export function useNativeLineup(league: string, mine: string, lineup?: HQLineup, port?: HostedPort, canManage = true) {
   const room = useMemo(() => createHostedRoom(league, mine, port), [league, mine, port]);
   const state = room.use();
   const [ids, setIds] = useState<string[]>();
   const [version, reset] = useState(0);
-  useEffect(() => { void room.refresh(lineup?.week); return room.dispose; }, [room, lineup?.week]);
+  useEffect(() => {
+    if (canManage && lineup) void room.refresh(lineup.week);
+    return room.dispose;
+  }, [room, lineup?.week, canManage]);
   const players = lineup?.starters.concat(lineup.bench) ?? [];
   const current = ids ?? lineup?.starters.map(p => p.id) ?? [];
   const edited = lineup && { ...lineup, starters: current.flatMap(id => players.filter(p => p.id === id)),
@@ -36,11 +39,11 @@ export function useNativeLineup(league: string, mine: string, lineup?: HQLineup,
       visibility: 'league' } }, `Move player to ${bucket === 'active' ? 'active roster' : bucket === 'ir' ?
         'injured reserve' : 'taxi squad'}`);
   };
-  const message = state.error || state.message || (changed.length ?
+  const message = !canManage ? 'Viewing this franchise. Lineup changes are read-only.' : state.error || state.message || (changed.length ?
     `${changed.length} players changed from saved`
     : 'No changes. Swaps stay a plan until you save.');
   return { room, state, edited, changed, assign: setIds, version, discard, save, reserve, message,
-    canEdit: room.canChange() && !state.review, dirty: ids !== undefined };
+    canEdit: canManage && room.canChange() && !state.review, dirty: ids !== undefined };
 }
 
 export function NativeLineupReview({ editor, refresh }: {

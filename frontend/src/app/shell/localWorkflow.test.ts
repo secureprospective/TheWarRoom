@@ -70,3 +70,20 @@ it.each([
     expect(calls[1].arguments).toEqual(['native.seed']);
     expect((response.data as { league: string }).league).toBe('native.seed');
   });
+
+it('coalesces repeated reads with only one trailing refresh', async () => {
+  desktop([]);
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  const api = (window as unknown as { go: { commissioner: { API: Record<string, unknown> } }
+    }).go.commissioner.API;
+  const call = vi.fn(async () => { await pending; return { label: 'Local', writable: false,
+    football: '', data: { league: 'native.seed' } }; });
+  api.TargetWorkflow = call;
+  const reads = Array.from({ length: 20 }, () => localWorkflow({ command: 'lineup.read', mode: 'read',
+    arguments: { league: 'native.seed', franchise: 'franchise.01', week: 8, at: '' } }));
+  expect(call).toHaveBeenCalledTimes(1);
+  release();
+  await Promise.all(reads);
+  expect(call).toHaveBeenCalledTimes(2);
+});

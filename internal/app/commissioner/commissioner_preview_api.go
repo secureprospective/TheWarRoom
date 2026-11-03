@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -78,6 +79,7 @@ func (a *API) TargetWorkflow(body string) (WorkflowResponse, error) {
 	}
 	data, err := catalog.RunWorkflow(a.host.CommissionerContext(), a.reads, raw)
 	if err != nil {
+		slog.Error("league workflow failed", "command", raw.Command, "error", err)
 		return WorkflowResponse{}, err //nolint:wrapcheck // Preserve the workflow's refusal text.
 	}
 	return WorkflowResponse{Label: location.Label, Writable: location.Writable, Football: "local league",

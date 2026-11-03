@@ -36,3 +36,21 @@ it('previews native lineup membership with the read revision; discard never exec
   expect(editor.edited?.starters).toEqual(lineup.starters);
   expect(port.mock.calls.some(([r]) => r.mode === 'execute')).toBe(false);
 });
+
+it('does not open the private owner bundle when viewing another franchise', async () => {
+  const port = vi.fn<HostedPort>();
+  let editor!: ReturnType<typeof useNativeLineup>;
+  function Probe() { editor = useNativeLineup('native.hosted', 'franchise.01', heldLineup(), port, false);
+    return <p>{editor.message}</p>; }
+  await mount(render(Probe, {})); await flush();
+  expect(port).not.toHaveBeenCalled();
+  expect(editor.canEdit).toBe(false);
+  expect(editor.message).toContain('read-only');
+});
+it('waits for the actual lineup week instead of requesting week one on mount', async () => {
+  const port = vi.fn<HostedPort>();
+  function Probe() { useNativeLineup('native.hosted', 'franchise.01', undefined, port);
+    return <p>Opening</p>; }
+  await mount(render(Probe, {})); await flush();
+  expect(port).not.toHaveBeenCalled();
+});

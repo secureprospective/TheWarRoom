@@ -106,7 +106,7 @@ func StatQueueReading(ctx context.Context, league string, records []Record, feed
 		return out, fmt.Errorf("read the held weekly statistics: %w", err)
 	}
 	builder := queueBuilder{league: league, season: season, records: records, feed: feed, src: src, rules: rules,
-		effects: effects, now: now}
+		effects: effects, now: now, memo: NewRulesMemo()}
 	for _, week := range weeks {
 		item, waiting, err := builder.item(ctx, week)
 		if err != nil {
@@ -157,6 +157,7 @@ type queueBuilder struct {
 	rules   leaguerules.RuleSet
 	effects statEffects
 	now     time.Time
+	memo    *RulesMemo
 }
 
 // item makes the queue entry for one week, or reports that nothing is waiting.
@@ -208,11 +209,15 @@ func (b queueBuilder) price(ctx context.Context, item *StatQueueItem, week StatW
 	raw := RawCommand{League: b.league, Command: StatApprove, Request: "queue." + item.ID,
 		Args: RawArgs{Stat: &RawStatChange{Item: item.ID}}}
 	scope := source.RawNativeScope{Player: week.Player, Season: b.season, Week: week.Week}
-	before, err := NativePlayerScoreReading(b.league, scope, b.records, week.Evidence, b.now)
+	before, err := b.memo.Score(b.league, scope, b.records, week.Evidence, b.now)
 	if err != nil {
 		return err
 	}
-	after, err := NativePlayerScoreReading(b.league, scope, scoreTrial(raw, b.records), week.Evidence, b.now)
+	after, err := NativePlayerScoreWith(b.league, scope, scoreTrial(raw, b.records), week.Evidence, b.now,
+		// A stat approval changes no rule: resolve against the held ledger at the trial's own instant.
+		func(_ []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
+			return b.memo.InForce(b.records, season, at)
+		})
 	if err != nil {
 		return err
 	}

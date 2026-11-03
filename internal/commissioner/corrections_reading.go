@@ -67,19 +67,23 @@ func CorrectionsReading(league string, records []Record, now time.Time) (Correct
 	return out, nil
 }
 
-// decisionException is shared by the calendar's actual enforcement point and the public reading.
-func decisionException(records []Record, rule string, scope ExceptionScope, now time.Time) (string, bool) {
-	active := Replay(records).Active
+// decisionExceptions folds active, unexpired decisions once for a roster reading.
+// The records remain read-only; each scope gets its own result slice.
+type decisionExceptions []Record
+
+func readDecisionExceptions(records []Record, now time.Time) decisionExceptions {
+	out := decisionExceptions{}
+	var active map[string]bool
 	for i := len(records) - 1; i >= 0; i-- {
 		r := records[i]
-		if r.Command.Command != RuleException || !active[r.Receipt.Entry] || now.Before(r.Receipt.RecordedAt) {
+		if r.Command.Command != RuleException || now.Before(r.Receipt.RecordedAt) {
 			continue
+		}
+		if active == nil {
+			active = Replay(records).Active
 		}
 		c := r.Command.Args.Correction
-		if c == nil || c.Rule != rule || c.Scope == nil || !exceptionScopeMatches(*c.Scope, scope) {
-			continue
-		}
-		if !exceptionScopeUsable(records, *c.Scope) {
+		if !active[r.Receipt.Entry] || c == nil || c.Scope == nil || !exceptionScopeUsable(records, *c.Scope) {
 			continue
 		}
 		if c.Until != "" {
@@ -88,7 +92,17 @@ func decisionException(records []Record, rule string, scope ExceptionScope, now 
 				continue
 			}
 		}
-		return "Commissioner exception: " + r.Command.Reason, true
+		out = append(out, r)
+	}
+	return out
+}
+
+func (d decisionExceptions) find(rule string, scope ExceptionScope) (string, bool) {
+	for _, r := range d {
+		c := r.Command.Args.Correction
+		if c.Rule == rule && exceptionScopeMatches(*c.Scope, scope) {
+			return "Commissioner exception: " + r.Command.Reason, true
+		}
 	}
 	return "", false
 }
@@ -108,9 +122,13 @@ func supportedExceptionRule(rule string) bool {
 }
 
 func ScopedDecisionExceptions(records []Record, scope ExceptionScope, now time.Time) []nativecheck.DecisionException {
+	return readDecisionExceptions(records, now).scoped(scope)
+}
+
+func (d decisionExceptions) scoped(scope ExceptionScope) []nativecheck.DecisionException {
 	out := []nativecheck.DecisionException{}
 	for _, rule := range []string{"roster.limits", "roster.positionBounds", "cap.enforcement", "ir.eligible", "taxi.maximumYears"} {
-		if why, allowed := decisionException(records, rule, scope, now); allowed {
+		if why, allowed := d.find(rule, scope); allowed {
 			out = append(out, nativecheck.DecisionException{Rule: rule, Reason: why})
 		}
 	}

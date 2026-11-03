@@ -7,6 +7,7 @@ import lineup from '../../../../testdata/wire/native/lineup.json';
 import movesWire from '../data/native-moves.wire.testdata.json';
 import week from '../../../../testdata/wire/native/week.json';
 import projections from '../data/projections.wire.testdata.json';
+import results from '../../../../testdata/wire/native/results.json';
 import standings from '../../../../testdata/wire/native/standings.json';
 import { parseRules } from './rules';
 import { nativeHQAssets, nativeHQCap, nativeHQMoves, nativeHQSettings, readNativeHQ } from './hqReading';
@@ -94,13 +95,14 @@ describe('native HQ existing reads', () => {
           { season: 2027, cents: 100000000 }] }] })) }, 'moves.read': { league, franchise: mine,
         planned: [], moves: [], reason:
         'native plans not yet stored' },
+      'results.read': { ...results, league, revision: assets.revision },
       'standings.read': { ...standings, league, revision: assets.revision },
       'week.read': { ...week, schedule: { ...week.schedule, league, franchise: mine, revision:
         assets.revision } },
       'lineup.read': { ...lineup, revision: assets.revision },
     };
     const port = vi.fn<HostedPort>(async request => ({ label: 'Native', writable: false, football: '',
-      data: request.command === 'projections.read' ? { ...projections, week: request.arguments.week } :
+      data: request.command === 'results.read' ? { ...results, league, revision: assets.revision, week: request.arguments.week } : request.command === 'projections.read' ? { ...projections, week: request.arguments.week } :
         data[request.command] }));
     const result = await readNativeHQ(league, mine, port);
     expect(result.errors).toEqual([]); expect(result.lineup?.starters[0].id).toBe('1000');
@@ -111,6 +113,7 @@ describe('native HQ existing reads', () => {
     expect(result.projections?.has('1008')).toBe(false);
     expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'projections.read', arguments:
       { league, season: 2026, week: 1, players: expect.stringContaining('1000') } }));
+    expect(result.thisWeek?.games.length).toBeGreaterThan(0);
     expect(result.week).toBe(1); expect(result.moves).toEqual([]); expect(result.settings.active).toBe(90);
     expect(port.mock.calls.map(c => c[0].command)).toContain('moves.read');
     expect(port.mock.calls.every(c => c[0].mode === 'read')).toBe(true);
@@ -182,6 +185,18 @@ describe('native HQ existing reads', () => {
     const mixed = await readNativeHQ(league, mine, port);
     expect(mixed.lineup).toBeUndefined();
     expect(mixed.errors.join(' ')).toContain('League changed during the read');
+    data['lineup.read'] = { ...lineup, revision: assets.revision };
+    let release!: () => void;
+    const slow = new Promise<void>(resolve => { release = resolve; });
+    const updates: Awaited<ReturnType<typeof readNativeHQ>>[] = [];
+    const pending = readNativeHQ(league, mine, async request => {
+      if (request.command === 'standings.read') await slow;
+      return port(request);
+    }, update => updates.push(update));
+    await vi.waitFor(() => expect(updates.some(r => r.lineup && r.thisWeek)).toBe(true));
+    expect(updates.at(-1)?.record).toBeUndefined();
+    release();
+    expect((await pending).record).toBeDefined();
   });
 });
 

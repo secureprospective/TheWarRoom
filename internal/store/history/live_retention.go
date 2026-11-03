@@ -15,6 +15,8 @@ import (
 func (s *Store) compactLiveStats(ctx context.Context, league string, records []commissioner.Record, weeks []commissioner.StatWeek, season int) error {
 	s.liveMu.Lock()
 	defer s.liveMu.Unlock()
+	memo := commissioner.NewRulesMemo()
+	at := s.now()
 	for _, week := range weeks {
 		key := liveStatKey{week.Player, season, week.Week}
 		if _, ok := s.liveHeld[key]; !ok {
@@ -25,7 +27,7 @@ func (s *Store) compactLiveStats(ctx context.Context, league string, records []c
 			continue
 		}
 		scope := source.RawNativeScope{Player: week.Player, Season: season, Week: week.Week}
-		counted, err := commissioner.NativePlayerScoreReading(league, scope, records, week.Evidence, s.now())
+		counted, err := memo.Score(league, scope, records, week.Evidence, at)
 		if err != nil {
 			return fmt.Errorf("check counted final for retention: %w", err)
 		}

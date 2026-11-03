@@ -9,6 +9,7 @@ import {
 } from '../data/contract';
 import { parseRules, type Rules } from './rules';
 import { parseHostedLineup, parseHostedRoster, parseHostedReserves } from './hostedReadings';
+import { parsePulseResults, type PulseResults } from '../data/nativePulse';
 import { parseNativeMoves } from '../data/nativeMoves';
 import type { HQMove } from '../shell/HQMoves';
 import type { HQCap, HQSettings } from '../shell/hqModel';
@@ -242,6 +243,7 @@ export type NativeHQ = {
   weekNote?: string;
   values?: LeagueValues;
   projections?: Map<string, number>;
+  thisWeek?: PulseResults;
   errors: string[];
 };
 export async function readNativeHQ(
@@ -281,7 +283,7 @@ export async function readNativeHQ(
     });
     result.values = parseNativeValues(r.data, league, mine, season);
   });
-  await Promise.all([
+  const regions = Promise.all([
     apply(async () => {
       const r = await port({
         command: 'commish.rules.read',
@@ -391,7 +393,8 @@ export async function readNativeHQ(
       result.record = rows.find((r) => r.franchise === mine)?.record;
       result.standingsNote = raw.words === undefined ? undefined : text(raw.words, 'Standings words');
     }),
-    apply(async () => {
+  ]);
+  await apply(async () => {
       const r = await port({
         command: 'week.read',
         mode: 'read',
@@ -427,9 +430,7 @@ export async function readNativeHQ(
           ? `Viewing week ${result.week} · ${message}`
           : `Current NFL week is unknown · ${message}`;
       }
-    }),
-  ]);
-  result.standing = nativeHQStanding(leagueRules, standingRows, mine);
+    });
   if (result.week)
     await apply(async () => {
       const r = await port({
@@ -486,6 +487,14 @@ export async function readNativeHQ(
         rulesSource: snapshot.league.provenance,
       };
     });
+  const thisWeek = result.week ? apply(async () => {
+    const r = await port({ command: 'results.read', mode: 'read',
+      arguments: { league, season, week: result.week! } });
+    sameRevision(r.data);
+    const games = parsePulseResults(r.data, league, result.week!);
+    if (games.season !== season) throw new Error('Results belong to another season');
+    result.thisWeek = games;
+  }) : Promise.resolve();
   if (result.week)
     await apply(async () => {
       const players =
@@ -509,7 +518,9 @@ export async function readNativeHQ(
       }
       result.projections = values;
     });
-  await values;
+  await Promise.all([regions, values, thisWeek]);
+  result.standing = nativeHQStanding(leagueRules, standingRows, mine);
+  publish?.({ ...result, errors: [...result.errors] });
   return result;
 }
 

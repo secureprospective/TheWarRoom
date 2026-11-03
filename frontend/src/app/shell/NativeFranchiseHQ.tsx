@@ -1,3 +1,4 @@
+import { pointsLabel, type PulseResults } from '../data/nativePulse';
 import { RailLeaguePicker } from './leaguePicker';
 import type { Node } from './nodes';
 import { useNativeLineup, NativeLineupReview } from './hqNativeLineup';
@@ -22,9 +23,9 @@ import { connectClock } from '../clock/ticker';
 import './hq.css';
 
 export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded,
-  tab: activeTab, navigate }: {
+  tab: activeTab, navigate, canManage = true }: {
   league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void;
-  embedded?: boolean; tab?: HQTab; navigate?: (tab: HQTab) => void;
+  embedded?: boolean; canManage?: boolean; tab?: HQTab; navigate?: (tab: HQTab) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [localTab, setLocalTab] = useState<HQTab>('lineup-and-roster');
@@ -38,7 +39,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   const { reading, error, pending } = useContractRead<NativeHQ>(
     JSON.stringify([league, mine, revision]),
     publish => readNativeHQ(league, mine, port, publish), provider);
-  const editor = useNativeLineup(league, mine, reading?.lineup, port);
+  const editor = useNativeLineup(league, mine, reading?.lineup, port, canManage);
   const chosen = selected ?? reading?.lineup?.starters[0]?.id;
   const quote = useContractRead(JSON.stringify([league, mine, chosen]), () => chosen
     ? readNativeCut(league, mine, chosen, port) : Promise.resolve(undefined), provider);
@@ -88,7 +89,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       lock={reading.lock ? { id: 'native-lineup', at:
         reading.lock, text: countdown(reading.lock, Date.now()) } : undefined} /></div>
     {tab === 'lineup-and-roster' ? <HQBoard showContracts snapshot={snapshot} mine={mine} key={editor.version}
-      reading={editor.edited} error={reading.errors.join(' · ')}
+      reading={editor.edited} matchup={<NativeHQMatchup results={reading.thisWeek} mine={mine} />}
+      error={reading.errors.join(' · ')}
       settings={settings} values={reading.projections ?? new Map()} select={select} canEdit={editor.canEdit}
       changed={editor.changed} assign={editor.assign} />
       : tab === 'contracts-and-cap' ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway}
@@ -128,4 +130,24 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       close={() => setRelease(undefined)} />}
   </HQShell>;
   return embedded || typeof document === 'undefined' ? view : createPortal(view, document.body);
+}
+
+function NativeHQMatchup({ results, mine }: { results?: PulseResults; mine: string }) {
+  const game = results?.games.find(g => g.home === mine || g.away === mine);
+  const own = results?.scores.find(s => s.franchise === mine);
+  const other = game && results?.scores.find(s => s.franchise === (game.home === mine ? game.away : game.home));
+  const ownPoints = own?.points ?? own?.provisional;
+  const otherPoints = other?.points ?? other?.provisional;
+  return <div className="mu"><div className="ch"><b>THIS WEEK{results ? ` · WK ${results.week}` : ''}</b>
+    <span>{game?.status ?? unavailable}</span></div>
+    <div className="mu-h"><div className="side"><b>{pointsLabel(ownPoints)}</b>
+      <span>{own?.name ?? unavailable}</span></div>
+      <div className="wp">{game?.words ?? results?.words ?? unavailable}</div>
+      <div className="side them"><b>{pointsLabel(otherPoints)}</b>
+        <span>{other?.name ?? unavailable}</span></div></div>
+    <div className="mu-rows">{own?.starters.length ? own.starters.map(p => <div key={p.player}>
+      <span className="sl">{p.position ?? '—'}</span><span>{p.name}</span>
+      <span className="n" title={p.words}>{pointsLabel(p.points ?? p.provisional)}</span>
+    </div>) : <p className="empty">{results?.bye === mine ? results.byeName : unavailable}</p>}</div>
+  </div>;
 }
