@@ -348,9 +348,11 @@ func TestNativeLineupReadingNamesLocksInTheOwnersTime(t *testing.T) {
 		!qb1.LocksAt.Equal(f.dallas) || qb1.LocksAt.Format("-07:00") != "-07:00" {
 		t.Fatalf("a starter's lock: %+v", qb1)
 	}
-	if qb2.Locked || qb2.LocksAt != nil || qb2.Words != "No NFL game this week, so this player never locks" ||
-		rb3.Locked || rb3.LocksAt != nil {
-		t.Fatalf("teamless and bye players never lock: %+v %+v", qb2, rb3)
+	// The fixture is an import, so its lineup lock is the week's first kickoff: every player, teamless and
+	// bye included, locks then. Each-player-game timing is covered by the lineup.lock setting tests.
+	if qb2.Locked || qb2.LocksAt == nil || !qb2.LocksAt.Equal(f.dallas) ||
+		rb3.Locked || rb3.LocksAt == nil || !rb3.LocksAt.Equal(f.dallas) {
+		t.Fatalf("first-kickoff lock covers teamless and bye players: %+v %+v", qb2, rb3)
 	}
 	f.at = f.dallas
 	locked := f.reading(t, f.a)
@@ -359,7 +361,7 @@ func TestNativeLineupReadingNamesLocksInTheOwnersTime(t *testing.T) {
 		byName[p.Name] = p
 	}
 	if !byName["QB1 of team 01"].Locked || byName["QB1 of team 01"].Words != "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT" ||
-		byName["DT1 of team 01"].Locked {
+		!byName["DT1 of team 01"].Locked {
 		t.Fatalf("lock state at kickoff: %+v", byName["QB1 of team 01"])
 	}
 	if !strings.Contains(locked.Words, "Held team 1's week 1 lineup is set. Valid lineup.") {
