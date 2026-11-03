@@ -51,3 +51,19 @@ func TestLiveSleeperSparseBandsNeedCompleteEvidence(t *testing.T) {
 		}
 	}
 }
+
+func TestLiveSleeperAllowsNegativeYardageAverages(t *testing.T) {
+	rows, err := source.LiveSleeperLines(source.RawSleeperWeek{Season: 2026, Week: 8,
+		Body: `{"1":{"rush_yd":-3,"rush_ypa":-1.5,"rec_ypr":-2,"pass_ypc":-1}}`})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[leaguerules.StatID]leaguerules.Decimal{"rushing_average": -15000, "receiving_average": -20000, "passing_average": -10000} {
+		if rows["1"].Quantities[id] != want {
+			t.Fatalf("%s: %v", id, rows["1"])
+		}
+	}
+	if _, err := source.LiveSleeperLines(source.RawSleeperWeek{Season: 2026, Week: 8, Body: `{"1":{"rush_att":-1}}`}); err == nil {
+		t.Fatal("negative count accepted")
+	}
+}

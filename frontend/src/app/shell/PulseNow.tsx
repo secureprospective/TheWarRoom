@@ -5,7 +5,7 @@ import { readPulseMatchup, usePulseRead, type NativePulse, type PulseMatchup } f
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
 import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveContract';
-import { usePulseLive } from './hqLive';
+import type { usePulseLive } from './hqLive';
 import { applyFilter, filterCounts, groupRows, pulseRows, scoreOf, starterRows, PULSE_FILTERS,
   type PulseFilter, type PulseRow, type PulseStarterRow } from './pulseModel';
 
@@ -17,16 +17,13 @@ export function PulseIdle({ words }: { words: string }) {
 const OFFENCE = ['QB', 'RB', 'WR', 'TE', 'K', 'PK', 'OL'];
 type Reading<T> = { reading?: T; pending?: boolean; error?: string };
 
-export function PulseNow({ reading, mine, week, results, league, port }: {
+export function PulseNow({ reading, mine, week, results, league, port, live }: {
   reading: NativePulse; mine: string; week?: number; results: Reading<PulseResults>;
-  league: string; port: HostedPort;
+  league: string; port: HostedPort; live: ReturnType<typeof usePulseLive>;
 }) {
   const [side, setSide] = useState<'mu' | 'nfl'>('mu');
   const [filter, setFilter] = useState<PulseFilter>('all');
   const [picked, pick] = useState<string>();
-  // The NFL board and the followed game are the same for every league; the matchup's own starters
-  // say who is in a game, so the live read is asked for no franchise.
-  const live = usePulseLive('');
   const current = week === reading.week;
   // Only the week being played can be live, and only while an NFL game is actually under way.
   const playing = Boolean(live.view?.games.some(g => g.status === 'in'));
@@ -63,7 +60,9 @@ export function PulseNow({ reading, mine, week, results, league, port }: {
             <span className="q">{clockWords(g)}</span>
           </PulseAct>)}
         {!games.some(g => g.status === 'in') && !followed && <span className="src">
-          {current ? 'no NFL game is being played right now' : 'live games show for the week being played'}
+          {!current ? 'live games show for the week being played'
+            : live.error ? `NFL scoreboard unavailable · ${live.error}`
+            : !live.view ? 'Reading the NFL scoreboard…' : 'no NFL game is being played right now'}
         </span>}
       </div>
       {followed ? <FollowedGame game={followed} /> : <>

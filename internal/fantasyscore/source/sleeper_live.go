@@ -136,7 +136,7 @@ func (r RawLiveSleeperStats) Validate() error {
 		if err != nil {
 			return fmt.Errorf("sleeper live %s: %w", id, err)
 		}
-		if value < 0 && !strings.Contains(string(id), "yards") {
+		if value < 0 && !strings.Contains(string(id), "yards") && !strings.HasSuffix(string(id), "_average") {
 			return fmt.Errorf("sleeper live %s cannot be negative", id)
 		}
 	}

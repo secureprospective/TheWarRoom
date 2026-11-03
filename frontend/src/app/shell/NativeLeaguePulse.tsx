@@ -7,6 +7,8 @@ import { readNativePulse, readPulseWeekResults, usePulseRead, type NativePulse, 
 import { scoreOf } from './pulseModel';
 import { PulseIdle, PulseNow } from './PulseNow';
 import { PulseRace } from './PulseRace';
+import { usePulseLive } from './hqLive';
+import type { LiveView } from '../now/liveContract';
 import './pulse.css';
 
 export type PulseTab = 'now' | 'race';
@@ -17,6 +19,7 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
   const [chosen, chooseWeek] = useState<number>();
   const league = usePulseRead<NativePulse>(JSON.stringify(['pulse', scope.league, scope.mine]),
     publish => readNativePulse(scope.league, scope.mine, port, publish));
+  const live = usePulseLive('');
   const reading = league.reading;
   const week = chosen ?? reading?.week;
   const results = usePulseRead<PulseResults>(
@@ -28,13 +31,13 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
       <main className="work">
         <Strip reading={reading} results={results.reading} pending={Boolean(league.pending)}
           error={league.error ?? (week ? results.error : undefined)} mine={scope.mine}
-          week={week} onWeek={chooseWeek} />
+          week={week} onWeek={chooseWeek} live={live} />
         {!reading ? <section className="ws cols on">
           <PulseIdle words={league.error ? `League Pulse is unavailable · ${league.error}`
             : `Reading ${scope.league}…`} /></section>
         : tab === 'race' ? <PulseRace reading={reading} mine={scope.mine} />
         : <PulseNow reading={reading} mine={scope.mine} week={week} results={results}
-            league={scope.league} port={port} />}
+            league={scope.league} port={port} live={live} />}
         <div className="tray">
           <span className="msg">{reading?.standings?.words ?? reading?.weekNote ?? ''}</span>
           <span className="sp" />
@@ -46,9 +49,9 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
   return body;
 }
 
-function Strip({ reading, results, pending, error, mine, week, onWeek }: {
+function Strip({ reading, results, pending, error, mine, week, onWeek, live }: {
   reading?: NativePulse; results?: PulseResults; pending: boolean; error?: string; mine: string;
-  week?: number; onWeek: (week: number) => void;
+  week?: number; onWeek: (week: number) => void; live: ReturnType<typeof usePulseLive>;
 }) {
   const last = reading?.lastWeek ?? 0;
   const decided = results?.games.filter(g => g.status !== 'No result yet').length ?? 0;
@@ -72,7 +75,7 @@ function Strip({ reading, results, pending, error, mine, week, onWeek }: {
         : <>
           <span><b>{decided}</b> with a result</span>
           <span><b>{waiting}</b> still to come</span>
-          <span className="src">NFL game clocks are not held yet</span>
+          <span className="src">{nflClockSummary(week === reading?.week ? live.view : undefined, live.error)}</span>
         </>}
     </div>
     <div className="fresh">
@@ -96,4 +99,13 @@ export function scoreSources(results?: PulseResults): string {
     for (const owner of Object.values(starter.fieldSources ?? {})) sources.add(owner);
   }
   return [...sources].sort().join(' · ') || 'source not reported';
+}
+
+export function nflClockSummary(view?: LiveView, error = ''): string {
+  if (error) return `NFL scoreboard unavailable · ${error}`;
+  if (!view) return 'Reading the NFL scoreboard…';
+  const playing = view.games.filter(g => g.status === 'in');
+  return playing.length ? playing.map(g => `${g.away.abbreviation}–${g.home.abbreviation} `
+    + `${g.period > 4 ? 'OT' : `Q${g.period}`} ${g.clock}`).join(' · ')
+    : 'No NFL game in progress';
 }

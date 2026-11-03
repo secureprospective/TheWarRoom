@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
@@ -46,7 +47,8 @@ type LiveStatsRun struct {
 	Network http.RoundTripper // nil is http.DefaultTransport
 	Season  int
 	Week    func() int
-	Changed func(context.Context) // the moves signal; may be nil
+	Board   func(int, livegame.Held) // publishes the validated scoreboard; may be nil
+	Changed func(context.Context)    // the moves signal; may be nil
 }
 
 // Poll reads the board once, holds any live lines, and says how long to wait before the next poll.
@@ -78,12 +80,10 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveS
 		p.sleeperFallback(ctx, run, held, season, week, at)
 		return liveStatsIdle
 	}
-	busy := false
-	for _, g := range games {
-		if g.Status == "in" {
-			busy = true
-		}
+	if run.Board != nil {
+		run.Board(week, livegame.Held{Games: games, Source: "ESPN", At: at})
 	}
+	busy := slices.ContainsFunc(games, func(g livegame.Game) bool { return g.Status == "in" })
 	espn, err := held.SourceIDs(ctx, "espn")
 	if err != nil {
 		log.Printf("live stats: %v", err)

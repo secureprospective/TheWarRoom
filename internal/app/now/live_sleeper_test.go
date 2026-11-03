@@ -29,7 +29,7 @@ type sleeperTransport struct {
 
 func (s *sleeperTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	s.calls++
-	if r.URL.Path != "/stats/nfl/regular/2026/8" {
+	if r.URL.Path != "/v1/stats/nfl/regular/2026/8" {
 		s.t.Fatal(r.URL)
 	}
 	return &http.Response{StatusCode: s.status, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(s.body))}, nil

@@ -59,12 +59,19 @@ func TestLivePollClearsOnlyAfterSuccessfulAcquisition(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := &livePollHistory{lines: map[string]source.PlayerWeek{"0099": {Season: 2026, Week: 8}}, fail: tc.identityFail}
-			calls, changed := 0, 0
+			calls, changed, boards := 0, 0, 0
 			var poll LiveStatsPoller
 			poll.poll(t.Context(), LiveStatsRun{Network: livePollTransport{body: tc.body, fail: tc.networkFail}, Season: 2026,
-				Week: func() int { calls++; return 8 }, Changed: func(context.Context) { changed++ }}, h)
+				Week: func() int { calls++; return 8 }, Board: func(int, livegame.Held) { boards++ }, Changed: func(context.Context) { changed++ }}, h)
 			if calls != 1 {
 				t.Fatalf("scope captured %d times", calls)
+			}
+			wantBoards := 0
+			if tc.clear || tc.identityFail {
+				wantBoards = 1
+			}
+			if boards != wantBoards {
+				t.Fatalf("published %d boards, want %d", boards, wantBoards)
 			}
 			if tc.clear {
 				if len(h.lines) != 0 || h.writes != 1 || changed != 1 {

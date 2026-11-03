@@ -70,3 +70,14 @@ it("says the lineups are still being read instead of claiming no starter plays",
     }} />);
   expect(read).toContain("No starter");
 });
+
+it('uses the held scoreboard clock in the Pulse strip and distinguishes unavailable from idle', async () => {
+  const { nflClockSummary } = await import('./NativeLeaguePulse');
+  const live = parseLive(wire);
+  const g = { ...live.games[0], status: 'in' as const, period: 2, clock: '15:00' };
+  expect(nflClockSummary({ ...live, games: [g] })).toContain('Q2 15:00');
+  expect(nflClockSummary({ ...live, games: [{ ...g, status: 'post' }] }))
+    .toBe('No NFL game in progress');
+  expect(nflClockSummary()).toContain('Reading');
+  expect(nflClockSummary(undefined, 'offline')).toContain('unavailable');
+});
