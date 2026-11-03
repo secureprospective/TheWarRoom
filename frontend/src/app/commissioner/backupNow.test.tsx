@@ -10,6 +10,15 @@ import { backupState } from './backupState';
 afterEach(unmount);
 
 describe('Back up now', () => {
+  it('offers sign-in when accounts exist but this computer is unlinked', async () => {
+    const { app } = stub({ TargetCommissionerSeat: async () => ({ hasAccount: true }) });
+    const host = await mount(render(BackupNow), app);
+    await settle();
+    expect(present(host, 'Restored from another computer?')).toBe(true);
+    expect(control(host, 'Username')).toBeTruthy();
+    expect(button(host, 'Sign in')).toBeTruthy();
+  });
+
   it('asks for a sign-in before the first backup, then backs up', async () => {
     let hasAccount = false;
     const backups: string[] = [];

@@ -4,6 +4,7 @@ import { all, click, mount, render, settle, type Element } from '../../commissio
 import { open, stub } from '../../commissioner/commissionerStub';
 import ControlRoom from './ControlRoom';
 import { data, league, roomHooks } from './roomTestKit';
+import peopleWire from '../../commissioner/people.wire.testdata.json';
 
 roomHooks();
 
@@ -25,6 +26,19 @@ const slot = (host: Element, name: string) =>
   all(host, 'div').find((d) => d.getAttribute('data-slot') === name)!;
 
 describe('Control Room · rail tree and Signed in footer', () => {
+  it('offers a visitor the sign-in form', async () => {
+    const s = stub({ TargetCommissionerSeat: async () => ({ hasAccount: true }) },
+      { people: { ...peopleWire.commissioner, yourRole: 'visitor' } });
+    const host = await mount(render(Shell, {}), s.app);
+    await open(league);
+    await settle();
+    const link = all(slot(host, 'footer'), 'button').find(b => b.textContent === 'Sign in to claim your seat');
+    expect(link).toBeTruthy();
+    await click(link!);
+    await settle();
+    expect(host.textContent).toContain('Restored from another computer?');
+  });
+
   it(
     "puts the nine leaves under the rail item and the viewer's role in the footer; " +
       'a leaf opens its branch',

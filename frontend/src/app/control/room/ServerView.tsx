@@ -1,7 +1,7 @@
+import MFLConnection from '../../shell/MFLConnection';
 import { Desk, NotYet, useDefaultInspector, useRoom } from './room';
 
-/** Server: the machine the league runs on. The app holds a backup command and nothing else about the
- *  server yet; every other value says so. */
+/** Server settings and the owner's MFL connection. Unavailable server values are marked as such. */
 export function ServerView() {
   const { data } = useRoom();
   const st = data.status;
@@ -15,7 +15,11 @@ export function ServerView() {
   );
   const na = (what: string) => <NotYet key={what} what={what} />;
   return (
-    <div className="cr-desk" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+    <div className="cr-desk" style={{ gridTemplateColumns: 'repeat(3,1fr)',
+      gridTemplateRows: 'minmax(260px, auto) repeat(2, minmax(220px, 1fr))', overflowY: 'auto' }}>
+      <div className="cr-panel" style={{ gridColumn: '1 / -1', padding: '16px', minHeight: 'max-content' }}>
+        <MFLConnection />
+      </div>
       <Desk
         title="STATUS"
         sub={st ? st.state : na('server status')}

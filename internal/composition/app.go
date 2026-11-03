@@ -136,7 +136,16 @@ func (a *App) startup(ctx context.Context) {
 	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(ctx)
 	defer a.settleStartupFailure()
 	refreshed, a.core.StartupErr = (platformapp.StartupWorkflow{
-		Directory: configDir, SetDirectory: func(dir string) { a.core.Paths.DataDir = dir }, Logging: setupLogging,
+		Directory: func() (string, error) {
+			dir, err := configDir()
+			if err != nil {
+				return "", err
+			}
+			if _, err := persistedIdentity(dir); err != nil {
+				return "", err
+			}
+			return dir, nil
+		}, SetDirectory: func(dir string) { a.core.Paths.DataDir = dir }, Logging: setupLogging,
 		Databases: a.openDatabases,
 		Client: func() error {
 			client, err := mfl.New("api", 2, mfl.WithTransport(a.core.Fetches),

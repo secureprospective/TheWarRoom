@@ -32,7 +32,7 @@ func (s localCommissionerSession) Principal() (string, error) {
 
 func (a *App) commissionerPrincipal() (string, error) {
 	return commissionerapp.ResolvePrincipal(a.core.CommissionerSession, func() (string, error) { //nolint:wrapcheck // Preserve local identity errors.
-		return (localCommissionerSession{installation: a.core.Paths.DataDir}).Principal()
+		return persistedIdentity(a.core.Paths.DataDir)
 	})
 }
 func (a *App) localSeat() commissionerapp.LocalSeat {

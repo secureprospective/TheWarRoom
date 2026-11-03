@@ -249,15 +249,16 @@ func TestCommissionerWire(t *testing.T) {
 
 func TestLocalCommissionerSessionStableAndNotFranchise(t *testing.T) {
 	t.Parallel()
-	first, err := (localCommissionerSession{"installation"}).Principal()
+	dir := t.TempDir()
+	first, err := (localCommissionerSession{dir}).Principal()
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := (localCommissionerSession{"installation"}).Principal()
+	second, err := (localCommissionerSession{dir}).Principal()
 	if err != nil || first != second || !strings.HasPrefix(first, "local.") {
 		t.Fatalf("local identity: %s %v", second, err)
 	}
-	app := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Paths: core.Paths{DataDir: "installation"}}}
+	app := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Paths: core.Paths{DataDir: dir}}}
 	principal, err := app.commissionerPrincipal()
 	if err != nil || principal != first {
 		t.Fatalf("production port: %s %v", principal, err)

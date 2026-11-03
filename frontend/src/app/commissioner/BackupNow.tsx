@@ -14,6 +14,7 @@ export function BackupNow() {
       <h4>Back up now</h4>
       {s.hasAccount ? <>
         <p>Saves your league, its history and your sign-in now. The app also backs up once a day.</p>
+        <LocalSignIn onSeat={seat => backupState.signedIn(seat.hasAccount)} />
         {s.error && <p role="alert">{s.error}</p>}
         {s.message && <p role="status">{s.message}</p>}
         <Act variant="button" verb="backup.now" args={{}} disabled={s.pending}

@@ -9,6 +9,8 @@ describe('Control Room · Server', () => {
   it('Server says what the app does not hold and runs Back up now', async () => {
     const { host } = await room();
     await tab(host, 'SERVER');
+    expect(present(host, 'MFL connection')).toBe(true);
+    expect(present(host, 'MFL API key')).toBe(true);
     expect(present(host, 'Not available yet')).toBe(true);
     await click(button(host, 'BACK UP NOW'));
     expect(region(host, 'Back up now')).toBeTruthy();

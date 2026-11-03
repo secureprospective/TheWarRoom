@@ -287,6 +287,12 @@ export default function ControlRoom({
         createPortal(
           <span className="crx-who">
             Signed in: {(state.people?.yourRole ?? '').replace(/^./, (c) => c.toUpperCase()) || '—'}
+            {state.people?.yourRole?.toLowerCase() === 'visitor' && <>{' · '}
+              <Act variant="button" verb="commissioner.surface"
+                args={{ screen: 'control-room', action: 'open', value: 'backup.now' }}>
+                Sign in to claim your seat
+              </Act>
+            </>}
           </span>,
           footer,
         )}

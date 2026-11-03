@@ -286,3 +286,19 @@ func OpenScratch(ctx context.Context) (*Pools, error) {
 	pools.scratchDir = dir
 	return pools, nil
 }
+
+// OpenReadOnly opens an existing database without creating or migrating it.
+func OpenReadOnly(ctx context.Context, path string, maxVersion int) (*Pools, error) {
+	if err := checkUserVersion(ctx, path, maxVersion); err != nil {
+		return nil, err
+	}
+	read, err := sql.Open("sqlite", fileURI(path)+"?mode=ro&_pragma=busy_timeout(5000)")
+	if err != nil {
+		return nil, fmt.Errorf("db: open read-only pool: %w", err)
+	}
+	if err := read.PingContext(ctx); err != nil {
+		_ = read.Close()
+		return nil, fmt.Errorf("db: read-only database: %w", err)
+	}
+	return &Pools{read: read, path: path}, nil
+}
