@@ -261,7 +261,7 @@ func TestOnlyTheCatalogNamesAPreset(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() && (d.Name() == "node_modules" || d.Name() == ".git" || d.Name() == "frontend") {
+		if d.IsDir() && (d.Name() == "node_modules" || d.Name() == ".git" || d.Name() == ".worktrees" || d.Name() == "frontend") {
 			return filepath.SkipDir
 		}
 		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
