@@ -111,6 +111,11 @@ describe('Personal live game view', () => {
     const bad = structuredClone(wire); bad.games[0].home.score = -1;
     expect(() => parseLive(bad)).toThrow('integer');
   });
+  it('accepts the season and week Go writes on each scoreboard game', () => {
+    const scoped = structuredClone(wire) as typeof wire & { games: Array<Record<string, unknown>> };
+    Object.assign(scoped.games[0], { season: 2026, week: 9, seasonType: 2 });
+    expect(() => parseLive(scoped)).not.toThrow();
+  });
   it('keeps the view on read failure and dispatches follow selection as a typed id', async () => {
     const read = vi.fn(async () => view()); const state = createLiveState(read);
     state.follow('DET-ARI'); await state.load(true, '0001');
