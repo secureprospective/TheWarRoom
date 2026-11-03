@@ -1,3 +1,61 @@
+# RESUME 2026-11-03 ~10:50 CT — TheWarRoom: locked mocks, mock-gated (supersedes earlier sections for current state)
+
+## 1. WHAT WE ARE DOING
+Make the 5 LOCKED mocks (docs/ui/mocks: franchise-hq-mock-v10, warroom-mock-v6, home-mock-v5, league-pulse-mock-v14, control-room-mock-v1) work in the real app with REAL data, element by element. Christopher 11-03 morning: the live test was "slop" — I had gated on render/CPU/suite, never on the mock. The element→data map ALREADY EXISTS (docs/ui/data-catalog/DATA_FLOW_MAP.md + terra-*.md/tie-*.md; use Terra's atomic IDs, duplicates get .NN suffix). Never re-map. Claude-OS repo ~/work/TheWarRoom, integrate branch build/INTEGRATE-1102 (head f8d1e52f, no remote).
+
+## 2. AGENTS
+- Sol (gpt-6.1-sol, medium) = builder for multi-step work: `SOL_LANE=<x> SOL_WT=<worktree> SOL_BRIEF=<file in ~/fleet/briefs> nohup setsid ~/fleet/bin/launch-sol-lane.sh` → ~/fleet/runs/<lane>/{stdout.log,completion.txt,sessions/}.
+- Terra (launch-terra-lane.sh, TERRA_LANE/TERRA_WT/TERRA_BRIEF/TERRA_THINK) = SMALL single-step jobs only: it stopped early 4x on the gate build (ends on its own after ~15-20 tool calls). He asked "Terra over Sol"; I told him the switch for long jobs.
+- Alive check: `stat -c %y $(ls -t ~/fleet/runs/<lane>/sessions/* | head -1)`; done = completion.txt.
+- No Gemini. Gate before my look = mockgate script.
+
+## 3. STATUS
+| Item | State |
+|---|---|
+| GREEN-3 86f6be02, GREEN-4 c1f94adb | suite green except none (both fixed) |
+| LOGIN-1 merged f8d1e52f | identity persisted in profile (`local-identity`), `thewarroom --relink-identity-from <orig cfg dir>`; Visitor sign-in link; MFL key form at Control Room → SERVER → MFL connection |
+| MFL key | Christopher connected it 09:35 CT in app (league 14432/2026) — in Claude-OS keyring |
+| GATE-1 (build/GATE-1) | `scripts/mockgate-walk.sh <profile>` HQ only; checker tools/mockgate; expected-elements.json; data-el tags; TWR_GATE_DIR audit |
+| HQ-1 (build/HQ-1, .worktrees/hq, head fed1965d+) | Lineup 72 OK/15 MISS/12 PH; Cap 69/4/2. Layout now close to mock. Report docs/ui/data-catalog/hq-conformance-final.md |
+| HQ-3 Sol RUNNING (started ~10:45 CT) | brief ~/fleet/briefs/APP-HQ-3.md: one current-week derivation (week 10 after MNF wk9), real current-week starters (MFL carry-over), native read timeouts (standings/odds/results), native notes, OPEN MFL handoff |
+| WR, Home, Pulse, CR | not started under the gate; need gate extension per screen |
+
+## 4. ARTIFACTS
+- Mock renders 1920x1080: claudeos ~/scratch/mockshots/*.png
+- Christopher's live profile: ~/scratch/live-1103b (relinked, run.sh) — his app PID 834408 running on :0; DON'T kill.
+- Old ~/scratch/live-1103 (unlinked) — obsolete; can delete after he confirms.
+- His screenshots: Beelink /home/chris/content/feedback ("check ss").
+
+## 5. CURRENT BUG(S)
+- Week confusion: rail "Wk 9", status strip "Week 8 · 1 NFL game in progress", lock "Thu 19:15" (week 10). Lineup read asks week 9 → "No lineup was set", 21 OPEN. Hypothesis: multiple current-week derivations; caveat: not proven which source is wrong (Sol HQ-3 on it).
+- Native reads (standings.read, odds.read, results.read) hit deadlines during capture.
+
+## 6. REFUTED — DO NOT RETEST
+- "Visitor because no keyring": wrong. Identity was SHA-256(config path + uid); a copied profile = new identity. Fixed by LOGIN-1.
+- secret-tool absent on claudeos (my "key-absent" check was invalid). Use the app's MFL connection panel to verify.
+- Desktop icon "The War Room (test build)" runs old ~/f2click/thewarroom 10-31 binary — not tonight's build.
+- Plain launch uses ~/.config/TheWarRoom (old profile, no league) — not the test profile.
+
+## 7. DECISIONS (11-03)
+- The mock is the gate; data map exists; mockgate before my one side-by-side look; he calibrates on HQ first.
+- Spend GPT tokens on building, mine on review. Terra small, Sol long.
+- Fantasy rules: week ends after its last game; current week = next; lineups carry over on MFL.
+
+## 8. LEDGER
+INTEGRATE-1102 f8d1e52f committed. build/GATE-1 and build/HQ-1 committed (not merged). .worktrees: gate, hq, login, mem (mem has untracked files — ask before --force).
+
+## 9. NEXT ACTIONS
+1. On Sol HQ-3 completion: read report, fetch ~/scratch/mockgate-hq.*/hq-*_000.png, compare side by side with ~/scratch/mockshots/franchise-hq-mock-v10.png. If not passing, send exact diffs back to Sol.
+2. When HQ passes: merge GATE-1 + HQ-1 into INTEGRATE, build, give Christopher HQ to calibrate (run ~/scratch/live-1103b/run.sh after closing his window).
+3. Extend gate to War Room (warroom-mock-v6 + terra-WR) and dispatch Sol; then Home, Pulse, Control Room in that order.
+4. Claude-OS disk 92% — reclaim (go clean -cache in worktrees? ask about .worktrees/mem).
+
+## 10. ENV
+Env for go: PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 PYTHONPATH=$HOME/scratch/app-merge-9/python GOLANGCI_LINT_CACHE=<per-wt>. Commits: -c user.name/email from last commit; wait pgrep -x golangci-lint. Hook blocks DROP TABLE text → hand him the command.
+
+## 11. HONEST STATUS
+HQ is not done; no other screen has been touched under the gate. Christopher has not yet seen a passing screen.
+
 # TheWarRoom UI/UX build — RESUME #11 (2026-10-31 ~15:15 CT, compact-safe)
 
 ## 1. WHAT WE ARE DOING (Christopher re-scoped 10-31 — READ FIRST)
