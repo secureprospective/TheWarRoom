@@ -10,6 +10,10 @@
           "note": "",
           "fields": [
             {
+              "field": "league.startingAssets",
+              "label": "Starting assets"
+            },
+            {
               "field": "league.teams",
               "label": "Teams"
             },
