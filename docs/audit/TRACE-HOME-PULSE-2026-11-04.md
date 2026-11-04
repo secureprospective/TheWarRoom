@@ -23,3 +23,19 @@ Home (`shell/homeReads.ts` → `readNativePulse` in `shell/pulseReads.ts:74`), H
   So HQ has two render paths and the late one shows nothing.
 - **Loop 40 Pulse Race: correct** (Bills 7-1, seeds, playoff odds). Footer says "Standings through week 13: 128 games have a result, 80 do not yet"
   while the header says week 9. Check that the "through week" wording is right.
+
+## Home loading: why it shows wrong data or stays stuck (code read, HQ-1)
+- **H1 — "OFFSEASON" is a fallback, not a reading.** `shell/HomeBrief.tsx`: `phase = g || b.results?.bye === mine ? 'in' : 'off'`.
+  Until Home finds the owner's game it labels the league OFFSEASON. Any slow or failed read shows "offseason" in week 9.
+- **H2 — a stale success is never refreshed.** Home retries only when `transientErrors(b)` is true, and subscribes to season changes
+  (`subscribeSeason`) only while retrying. A read that *succeeds* while history is still replaying (2-0 through an early week) stays
+  for the life of the mount.
+- **H3 — reads are serial.** `homeReads.ts:62` awaits the whole `readNativePulse` (directory → week → standings/bracket, `pulseReads.ts`)
+  before the other tiles start. One slow call blocks every tile ("Reading…" everywhere, franchise name falls back to the raw id).
+- Backend evidence that calls are slow: run-0952 `app.log` 09:56:40, a dozen `context deadline exceeded` in history/accounts reads and writes
+  while the launch refresh ran; 10:04:30 `standings.read` and `odds.read` failed with `context deadline exceeded`.
+
+## Stall timing (run-0952)
+Stalled loops (≤11 of 33 distinct): 27 (11:40), 29 (11:48), 34 (12:09), 36 (12:18), 41–43 (12:39–12:48).
+The hourly launch refreshes (10:56, 11:56, 12:57) don't line up, and the backend log is silent during the stalls.
+Diagnostic run-1332 (DIAG=1): per-process CPU/RSS (Go vs WebKit) every 5 s; at the first stall, thread snapshot + Go goroutine dump.

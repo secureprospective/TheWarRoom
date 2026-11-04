@@ -57,6 +57,15 @@ win=$(xdotool search --onlyvisible --pid $pid 2>/dev/null | head -1)
 xdotool windowmove "$win" 0 0 windowsize "$win" 1920 1080
 log "start pid=$pid bin=$(sha256sum "$BIN" | cut -c1-12) src=$(git -C "$SRC" rev-parse --short HEAD) hours=$HOURS"
 printf 'ts\tloop\trss_kb\n' >"$RUN/rss.tsv"
+# DIAG=1: per-process CPU/RSS every 5 s (Go app vs WebKit children); first stalled loop -> thread
+# snapshot + Go goroutine dump (SIGQUIT ends the run; coverage is not flushed in that case).
+if [[ ${DIAG:-0} == 1 ]]; then
+  ( while kill -0 $pid 2>/dev/null; do
+      kids=$(pgrep -P $pid | tr '\n' ,)
+      ps -o pid=,comm=,pcpu=,rss= -p "$pid,${kids%,}" 2>/dev/null | awk -v t="$(date +%H:%M:%S)" '{print t"\t"$1"\t"$2"\t"$3"\t"$4}' >>"$RUN/procs.tsv"
+      sleep 5
+    done ) &
+fi
 
 # name:x:y:dwell  (R = nav rail x=80; HQ has its own rail, Home there is y=221)
 STEPS=(
@@ -84,6 +93,11 @@ while :; do
   printf '%s\t%s\t%s\n' "$(date +%s)" "$loop" "$(ps -o rss= -p $pid)" >>"$RUN/rss.tsv"
   # UI keeps up when most of the ${#STEPS[@]} steps give distinct frames (11-04 prewalk: 9 of 33, clicks queued minutes)
   log "loop=$loop distinct=$(grep "loop=$loop step=" "$LOG" | awk '{print $4}' | sort -u | wc -l)/${#STEPS[@]}"
+  if [[ ${DIAG:-0} == 1 ]] && (( $(grep "loop=$loop step=" "$LOG" | awk '{print $4}' | sort -u | wc -l) < 15 )) && (( loop > 1 )); then
+    log "STALL loop=$loop: capturing threads + goroutines"
+    top -b -n 1 -H -p "$pid,$(pgrep -P $pid | paste -sd,)" | head -40 >"$RUN/stall-threads.txt"
+    kill -QUIT "$pid"; sleep 5; pid=''; status=5; exit
+  fi
   [[ $(df --output=avail -k "$HOME" | tail -1) -gt 3000000 ]] || { log 'disk under 3G, stopping'; status=4; exit; }
   [[ ${PREWALK:-0} == 1 || $(date +%s) -ge $end ]] && break
 done
