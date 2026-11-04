@@ -56,7 +56,7 @@ func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, erro
 		p.migrationChecked, p.checkedVersion = true, version
 		return result, nil
 	}
-	before, err := Check(ctx, p.write)
+	before, err := QuickCheck(ctx, p.write)
 	result.Before = before
 	if err != nil {
 		return result, err
@@ -72,7 +72,7 @@ func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, erro
 			return result, err
 		}
 	}
-	result.After, err = Check(ctx, p.write)
+	result.After, err = QuickCheck(ctx, p.write)
 	if err == nil {
 		p.migrationChecked, p.checkedVersion = true, len(steps)
 	}
