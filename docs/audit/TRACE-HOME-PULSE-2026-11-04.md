@@ -39,3 +39,13 @@ Home (`shell/homeReads.ts` → `readNativePulse` in `shell/pulseReads.ts:74`), H
 Stalled loops (≤11 of 33 distinct): 27 (11:40), 29 (11:48), 34 (12:09), 36 (12:18), 41–43 (12:39–12:48).
 The hourly launch refreshes (10:56, 11:56, 12:57) don't line up, and the backend log is silent during the stalls.
 Diagnostic run-1332 (DIAG=1): per-process CPU/RSS (Go vs WebKit) every 5 s; at the first stall, thread snapshot + Go goroutine dump.
+
+## F11 — The stall is the client (WebKit), triggered by Home (DIAG run-1332, 13:33–13:49 CT)
+- Loop 1–3 responsive (33, 32, 27 of 33). Startup took 48 s with no migration, so the morning's early lag was startup DB contention, not the screens.
+- Loop 4: the screen froze right after `home` → `home-brief` (13:45:20) and stayed frozen through Home, War Room and Trade Floor,
+  catching up only sporadically after that. 7 of 33 distinct.
+- Snapshot at 13:49:19 (`stall-threads.txt`): **WebKitWebProcess 92% CPU, 1.3 GB RES, 6:42 CPU time in 16 min. Go process 0% CPU, all threads sleeping.**
+- WebKit memory jumps when Home mounts: 431 MB → 993 MB at 13:45 (loop 4 Home), and 599 → 1,195 MB at 13:37 (loop 2 Home).
+- WebKit burns 24–56% CPU **all the time**, even when responsive. In a PWA on a phone that's battery drain and heat.
+- Conclusion: the freeze is client-side rendering/JS, mainly Home. Go and the database were idle at the freeze.
+  Not yet known: which Home tile or effect. Next: profile Home's render in a browser.
