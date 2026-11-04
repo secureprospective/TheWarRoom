@@ -2900,44 +2900,6 @@
   },
   {
     "Door": "wails",
-    "Feature": "comms",
-    "ID": "comms.read",
-    "Method": "TargetComms",
-    "Role": "gm,commish,admin",
-    "Gravity": "G0",
-    "Availability": "both",
-    "Permission": "",
-    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
-    "Modes": [
-      "read"
-    ]
-  },
-  {
-    "Door": "wails",
-    "Feature": "comms",
-    "ID": "comms.refresh",
-    "Method": "TargetCommsRefresh",
-    "Role": "gm,commish,admin",
-    "Gravity": "G0",
-    "Availability": "both",
-    "Permission": "",
-    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
-    "Modes": null
-  },
-  {
-    "Door": "wails",
-    "Feature": "comms",
-    "ID": "comms.open",
-    "Method": "TargetOpenComms",
-    "Role": "gm,commish,admin",
-    "Gravity": "G0",
-    "Availability": "desktop",
-    "Permission": "",
-    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
-    "Modes": null
-  },
-  {
-    "Door": "wails",
     "Feature": "contracts",
     "ID": "unset",
     "Method": "TargetAcquisition",

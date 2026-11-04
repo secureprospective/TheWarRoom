@@ -19,11 +19,11 @@ import (
 )
 
 type SeasonRefresh struct {
-	Changed                                                                                        func(context.Context)
-	Transactions, Comms, Shell, Lineups, Trades, Injuries, Draft, Market, Race, Firsts, Revalidate func(context.Context)
-	Pause                                                                                          func() func(context.Context, time.Duration) error
-	Week                                                                                           func() int
-	Schedule                                                                                       func(context.Context, int)
+	Changed                                                                                 func(context.Context)
+	Transactions, Shell, Lineups, Trades, Injuries, Draft, Market, Race, Firsts, Revalidate func(context.Context)
+	Pause                                                                                   func() func(context.Context, time.Duration) error
+	Week                                                                                    func() int
+	Schedule                                                                                func(context.Context, int)
 }
 
 func (s SeasonRefresh) Run(ctx context.Context) {
@@ -32,7 +32,6 @@ func (s SeasonRefresh) Run(ctx context.Context) {
 	}
 	defer s.Changed(ctx)
 	s.Transactions(ctx)
-	s.Comms(ctx)
 	s.Shell(ctx)
 	pause := s.Pause()
 	if err := pause(ctx, time.Second); err != nil {

@@ -298,7 +298,6 @@ describe('Endpoint verbs and search', () => {
       } else {
         expect(c.read().endpointSurface).toBe(row.placement);
         if (row.placement === 'Inspector') expect(c.read().inspector).toBe('rest');
-        if (row.placement === 'Comms') expect(c.read().comms).toBe(true);
         if (row.placement === 'Calendar') expect(c.read().summoned).toBe('calendar');
       }
       expect(c.read().commandbar).toBe(row.placement === 'Command bar');

@@ -498,22 +498,6 @@
     "label": "Player market reports"
   },
   {
-    "aliases": [],
-    "roles": [
-      "gm",
-      "commish",
-      "admin"
-    ],
-    "gravity": "G0",
-    "undo": "instant",
-    "args": [
-      "action",
-      "value"
-    ],
-    "id": "comms.read",
-    "label": "League communications"
-  },
-  {
     "aliases": [
       "backup",
       "save a backup"
@@ -922,22 +906,6 @@
     "args": [],
     "id": "calendar.summon",
     "label": "Summon calendar"
-  },
-  {
-    "aliases": [
-      "comms",
-      "chat"
-    ],
-    "roles": [
-      "gm",
-      "commish",
-      "admin"
-    ],
-    "gravity": "G0",
-    "undo": "instant",
-    "args": [],
-    "id": "comms.toggle",
-    "label": "Toggle comms"
   },
   {
     "aliases": [

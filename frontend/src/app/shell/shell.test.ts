@@ -72,25 +72,19 @@ describe('Shell transitions through dispatch only', () => {
     expect(c.read().inspector).toBe('rest');
     expect(c.read().subject).toBe(null);
   });
-  it('toggles summons, comms, notice and closes overlays', () => {
+  it('toggles summons, notice and closes overlays', () => {
     const c = createCommands();
     c.dispatch('calendar.summon', {});
     expect(c.read().summoned).toBe('calendar');
     c.dispatch('calendar.summon', {});
     expect(c.read().summoned).toBe(null);
-    c.dispatch('comms.toggle', {});
-    expect(c.read().comms).toBe(true);
-    c.dispatch('comms.toggle', {});
-    expect(c.read().comms).toBe(false);
     c.dispatch('commandbar.open', {});
     expect(c.read().commandbar).toBe(true);
     c.dispatch('calendar.summon', {});
-    c.dispatch('comms.toggle', {});
     c.dispatch('overlays.close', {});
     expect(c.read()).toMatchObject({
       inspector: 'closed',
       summoned: null,
-      comms: false,
       notice: null,
     });
   });

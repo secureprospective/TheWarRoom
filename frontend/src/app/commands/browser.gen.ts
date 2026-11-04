@@ -182,38 +182,6 @@ export const browserCommands = {
       "value"
     ]
   },
-  "comms.read": {
-    "id": "comms.read",
-    "label": "League communications",
-    "aliases": [],
-    "roles": [
-      "gm",
-      "commish",
-      "admin"
-    ],
-    "gravity": "G0",
-    "undo": "instant",
-    "args": [
-      "action",
-      "value"
-    ]
-  },
-  "comms.toggle": {
-    "id": "comms.toggle",
-    "label": "Toggle comms",
-    "aliases": [
-      "comms",
-      "chat"
-    ],
-    "roles": [
-      "gm",
-      "commish",
-      "admin"
-    ],
-    "gravity": "G0",
-    "undo": "instant",
-    "args": []
-  },
   "contracts.set": {
     "id": "contracts.set",
     "label": "Filter or sort contracts",

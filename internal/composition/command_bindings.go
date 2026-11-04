@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	commissionerapi "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
-	commsapi "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	controlapi "github.com/secureprospective/TheWarRoom/internal/app/control"
 	draftapi "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	marketapi "github.com/secureprospective/TheWarRoom/internal/app/market"
@@ -80,13 +79,6 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetLeagueSchedule":             catalog.Bind1(api.TargetLeagueSchedule, "raw"),
 		"TargetNativeFranchiseSchedule":    catalog.Bind1(api.TargetNativeFranchiseSchedule, "raw"),
 		"TargetNativeWeek":                 catalog.Bind1(api.TargetNativeWeek, "raw"),
-	}
-}
-func commsCommandBindings(api *commsapi.API) map[string]catalog.Binding {
-	return map[string]catalog.Binding{
-		"TargetComms":        catalog.Bind1(api.TargetComms, "raw"),
-		"TargetCommsRefresh": catalog.Bind1Error(api.TargetCommsRefresh, "force"),
-		"TargetOpenComms":    catalog.Bind1Error(api.TargetOpenComms, "destination"),
 	}
 }
 func contractsCommandBindings(api *contractsapi.API) map[string]catalog.Binding {
@@ -221,7 +213,6 @@ func tradesCommandBindings(api *tradesapi.API) map[string]catalog.Binding {
 func newCommandAPIs(app *App) commandAPIs {
 	return commandAPIs{
 		commissioner: newCommissionerAPI(app),
-		comms:        commsapi.New(commsHost{app.core}),
 		contracts:    contractsapi.New(contractsHost{State: app.core, app: app}),
 		control:      controlapi.New(controlHost{State: app.core, app: app}, app.controlHeld),
 		draft:        draftapi.New(draftHost{State: app.core, app: app}),
@@ -248,7 +239,6 @@ func (a commandAPIs) registryInputs(app *App) catalog.RegistryInputs {
 		Migration: app.migrationInputs(),
 		Desktop: map[string]map[string]catalog.Binding{
 			"commissioner": commissionerCommandBindings(a.commissioner),
-			"comms":        commsCommandBindings(a.comms),
 			"contracts":    contractsCommandBindings(a.contracts),
 			"control":      controlCommandBindings(a.control),
 			"draft":        draftCommandBindings(a.draft),

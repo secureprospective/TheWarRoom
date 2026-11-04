@@ -14,7 +14,7 @@ import (
 )
 
 // fallbackParent uses the application lifetime so a timed-out live request can still read history.
-func (a *App) fallbackParent() context.Context { return a.core.CommsContext() }
+func (a *App) fallbackParent() context.Context { return a.core.FeedContext() }
 
 type archivedFeed[T any] = report.ArchivedFeed[T]
 

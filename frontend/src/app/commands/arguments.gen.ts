@@ -68,8 +68,6 @@ export type BrowserArgumentMap = {
  { id: string; column: number };
 "market.reports":
  { action: 'refresh' };
-"comms.read":
- { action: 'refresh' | 'team' | 'kind' | 'more' | 'open'; value: string };
 "backup.now":
  Record<string, never>;
 "commissioner.surface":
@@ -115,8 +113,6 @@ export type BrowserArgumentMap = {
 "inspector.close":
  Record<string, never>;
 "calendar.summon":
- Record<string, never>;
-"comms.toggle":
  Record<string, never>;
 "overlays.close":
  Record<string, never>;
@@ -1993,18 +1989,6 @@ string
 "visibility": string;
 "gravity"?: string
 }
-];
-"comms.TargetComms": [
-{
-"team": string;
-"kind": string
-}
-];
-"comms.TargetCommsRefresh": [
-boolean
-];
-"comms.TargetOpenComms": [
-string
 ];
 "contracts.TargetAcquisition": [
 {

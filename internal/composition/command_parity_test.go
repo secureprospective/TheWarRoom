@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	commissioner "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
-	comms "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	control "github.com/secureprospective/TheWarRoom/internal/app/control"
 	draft "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	market "github.com/secureprospective/TheWarRoom/internal/app/market"
@@ -43,7 +42,6 @@ func legacyDoors() []doorBefore {
 	add("native", "commissioner", commissioner.NativeCommands())
 	add("mfl", "offers", offers.MFLCommands())
 	add("wails", "commissioner", commissioner.Commands())
-	add("wails", "comms", comms.Commands())
 	add("wails", "contracts", contracts.Commands())
 	add("wails", "control", control.Commands())
 	add("wails", "draft", draft.Commands())
@@ -110,7 +108,7 @@ func TestFrozenDoorMetadata(t *testing.T) {
 	sortDoors(before)
 	for name, after := range map[string][]doorBefore{"feature views": legacyDoors(), "executable registry": registryDoors(registry)} {
 		sortDoors(after)
-		if len(before) != 297 || len(after) != len(before) {
+		if len(before) != 294 || len(after) != len(before) {
 			t.Fatalf("%s inventory changed: %d -> %d", name, len(before), len(after))
 		}
 		for i, want := range before {
@@ -128,7 +126,7 @@ func TestFrozenDoorMetadata(t *testing.T) {
 			counts["browser"]++
 		}
 	}
-	if counts["workflow"] != 45 || counts["browser"] != 60 {
+	if counts["workflow"] != 45 || counts["browser"] != 58 {
 		t.Fatalf("other exposure changed: %v", counts)
 	}
 }

@@ -111,7 +111,6 @@ func NewApp() *App {
 		ClockChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:clock") },
 		SeasonChanged: func(ctx context.Context) { desktop.EventsEmit(ctx, "target:season") }},
 	}
-	a.configureArchive()
 	a.core.CaptureRace = a.raceSnapshot
 	a.core.RefreshRaceFeeds = a.refreshRace
 	a.core.RefreshMarketFeeds = a.refreshMarketFeeds

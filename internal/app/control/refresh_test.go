@@ -24,7 +24,7 @@ func TestSeasonRefreshOrderAndCancellation(t *testing.T) {
 		calls := []string{}
 		step := func(name string) func(context.Context) { return func(context.Context) { calls = append(calls, name) } }
 		pauses := 0
-		s := SeasonRefresh{Changed: step("changed"), Transactions: step("transactions"), Comms: step("comms"), Shell: step("shell"),
+		s := SeasonRefresh{Changed: step("changed"), Transactions: step("transactions"), Shell: step("shell"),
 			Lineups: step("lineups"), Trades: step("trades"), Injuries: step("injuries"), Draft: step("draft"), Market: step("market"),
 			Race: step("race"), Firsts: step("firsts"), Revalidate: step("revalidate"), Week: func() int { return 3 },
 			Schedule: func(_ context.Context, week int) {
@@ -44,14 +44,14 @@ func TestSeasonRefreshOrderAndCancellation(t *testing.T) {
 			},
 		}
 		s.Run(context.Background())
-		want := []string{"transactions", "comms", "shell", "lineups", "changed", "trades", "injuries", "draft", "market", "race", "firsts", "schedule", "revalidate", "changed"}
+		want := []string{"transactions", "shell", "lineups", "changed", "trades", "injuries", "draft", "market", "race", "firsts", "schedule", "revalidate", "changed"}
 		switch stop {
 		case 1:
-			want = []string{"transactions", "comms", "shell", "changed"}
+			want = []string{"transactions", "shell", "changed"}
 		case 3:
-			want = []string{"transactions", "comms", "shell", "lineups", "changed", "trades", "changed"}
+			want = []string{"transactions", "shell", "lineups", "changed", "trades", "changed"}
 		case 6:
-			want = append(want[:11], "changed")
+			want = append(want[:10], "changed")
 		}
 		if !reflect.DeepEqual(calls, want) {
 			t.Fatal(stop, calls, want)

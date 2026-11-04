@@ -11,5 +11,4 @@ export const commandBarIds = [
 "inspector.toggle",
 "inspector.close",
 "calendar.summon",
-"comms.toggle",
 ] as const;

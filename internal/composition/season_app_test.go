@@ -17,8 +17,6 @@ import (
 	"testing"
 	"time"
 
-	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
-	"github.com/secureprospective/TheWarRoom/internal/app/comms/commstest"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -184,10 +182,10 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 		t.Fatal("wrong real feed counts or week")
 	}
 	if !reflect.DeepEqual(transport.requests,
-		[]string{"transactions", "messageBoard", "polls", "calendar", "tradeBait", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks", "projectedScores", "playerRanks", "adp", "aav",
+		[]string{"transactions", "calendar", "tradeBait", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks", "projectedScores", "playerRanks", "adp", "aav",
 			"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings",
 			"nflSchedule", "nflByeWeeks"}) ||
-		!reflect.DeepEqual(*pauses, slices.Repeat([]time.Duration{time.Second}, 21)) ||
+		!reflect.DeepEqual(*pauses, slices.Repeat([]time.Duration{time.Second}, 19)) ||
 		*events != 2 { // once when lineups land (Franchise HQ opens on them), once when the refresh ends
 		t.Fatalf("requests %v pauses %v events %d", transport.requests, *pauses, *events)
 	}
@@ -196,7 +194,7 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 			t.Fatal("requests not spaced")
 		}
 	}
-	if transport.weeks[5] != "5" || transport.weeks[20] != "5" || r.Lineups.Provenance.Source != "liveScoring W=5" {
+	if transport.weeks[3] != "5" || transport.weeks[18] != "5" || r.Lineups.Provenance.Source != "liveScoring W=5" {
 		t.Fatal("requested wrong week")
 	}
 	a.core.Week.Number = 0
@@ -498,11 +496,11 @@ func TestSeasonWorkerUsesRefreshedWeek(t *testing.T) {
 	a.refreshInBackground(ctx)
 	a.core.WeekWorkers.Wait()
 	if !reflect.DeepEqual(transport.requests, []string{
-		"nflSchedule", "transactions", "messageBoard", "polls", "calendar", "tradeBait", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks",
+		"nflSchedule", "transactions", "calendar", "tradeBait", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks",
 		"projectedScores", "playerRanks", "adp", "aav",
 		"weeklyResults", "playoffBrackets", "playoffBracket", "playoffBracket", "playoffBracket", "leagueStandings",
 		"nflSchedule", "nflByeWeeks",
-	}) || transport.weeks[6] != "5" || transport.weeks[21] != "5" {
+	}) || transport.weeks[4] != "5" || transport.weeks[19] != "5" {
 		t.Fatalf("order %v weeks %v", transport.requests, transport.weeks)
 	}
 }
@@ -654,33 +652,6 @@ func TestSeasonPendingTradesNeverUsesArchive(t *testing.T) {
 	if r.PendingTrades.Provenance.Freshness.State != FreshFail ||
 		!strings.Contains(r.PendingTrades.Provenance.Freshness.Note, "synthetic offline") {
 		t.Fatal("pending trades used archived offers")
-	}
-}
-
-func TestCommsRefreshWire(t *testing.T) {
-	a, transport, pauses, _ := seasonTestApp(t)
-	if err := a.core.KeyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
-		t.Fatal(err)
-	}
-	err := commsapp.New(commsHost{a.core}).TargetCommsRefresh(true)
-	message := ""
-	if err != nil {
-		message = err.Error()
-	}
-	got, err := json.MarshalIndent(struct {
-		Error           string
-		Requests, Keyed []string
-		Pauses          int
-	}{message, transport.requests, transport.keyed, len(*pauses)}, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want, err := os.ReadFile(commstest.RepoPath("testdata", "wire", "comms", "refresh.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(append(got, '\n'), want) {
-		t.Fatal("Comms refresh binding contract changed")
 	}
 }
 

@@ -2,7 +2,7 @@ package catalog
 
 // DesktopCommands is the legacy binding view; availability describes the old adapter, not remote admission.
 func DesktopCommands(feature string, related []Command) []Command {
-	views := map[string]func([]Command) []Command{"commissioner": commissionerDesktop, "comms": commsDesktop, "contracts": contractsDesktop, "control": controlDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
+	views := map[string]func([]Command) []Command{"commissioner": commissionerDesktop, "contracts": contractsDesktop, "control": controlDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
 	if view, ok := views[feature]; ok {
 		return view(related)
 	}
@@ -107,14 +107,6 @@ func desktopCommands(methods []struct{ method, role, gravity string }, related [
 		commands = append(commands, command)
 	}
 	return commands
-}
-
-func commsDesktop(_ []Command) []Command {
-	return []Command{
-		{ID: "comms.read", Method: "TargetComms", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
-		{ID: "comms.refresh", Method: "TargetCommsRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: "comms.open", Method: "TargetOpenComms", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "desktop"},
-	}
 }
 
 func contractsDesktop(_ []Command) []Command {

@@ -79,7 +79,6 @@ export type Placement =
   | "Control Room › Data and sources"
   | "Control Room › League"
   | "Inspector"
-  | "Comms"
   | "Calendar"
   | "Command bar"
   | "Status strip"
@@ -106,7 +105,6 @@ const places = [
   "Control Room › Data and sources",
   "Control Room › League",
   "Inspector",
-  "Comms",
   "Calendar",
   "Command bar",
   "Status strip",

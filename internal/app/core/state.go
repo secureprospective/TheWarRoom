@@ -16,7 +16,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
@@ -50,17 +49,15 @@ type State struct {
 	ReadSourcesSettings       func() (string, bool, error)
 	RunSourcesLeagueRefresh   func(context.Context) (int, bool, bool, error)
 	WriteSourcesSettings      func(string, bool) error
-	// ReadCommsArchive runs under FactsMu; its cache remains with the archive feature.
-	ReadCommsArchive       func(context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error)
-	RefreshTransactions    func(context.Context)
-	CommissionerSession    commissioner.Session
-	CommissionerAuthorizer commissioner.Authorizer
-	WhatifMu               sync.Mutex
-	KeyMu                  sync.Mutex
-	KeyStore               *mflkey.Store
-	KeyVerifiedAt          string
-	MyFranchise            string // guarded by KeyMu; empty means identity is unknown
-	KeyGeneration          uint64
+	RefreshTransactions       func(context.Context)
+	CommissionerSession       commissioner.Session
+	CommissionerAuthorizer    commissioner.Authorizer
+	WhatifMu                  sync.Mutex
+	KeyMu                     sync.Mutex
+	KeyStore                  *mflkey.Store
+	KeyVerifiedAt             string
+	MyFranchise               string // guarded by KeyMu; empty means identity is unknown
+	KeyGeneration             uint64
 	//nolint:containedctx // Key-change refreshes run under it; shutdown cancels it.
 	WorkCtx    context.Context
 	WorkCancel context.CancelFunc
@@ -120,7 +117,6 @@ type State struct {
 	SeasonTradeBait     HeldFeed[[]ingestion.RawTradeBait]
 	ShellFeedDays       map[string]string
 	SeasonTransactions  HeldFeed[[]leaguefeed.Transaction]
-	CommsBoards         [2]HeldFeed[[]ingestion.RawLeaguePost]
 	SeasonLineups       HeldFeed[leaguefeed.Lineups]
 	SeasonPendingTrades HeldFeed[[]leaguefeed.PendingTrade]
 	SeasonInjuries      HeldFeed[[]leaguefeed.Injury]

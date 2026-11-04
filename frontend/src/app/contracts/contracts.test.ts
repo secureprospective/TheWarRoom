@@ -337,9 +337,9 @@ it('ships narrow/wide container layouts and a slim closed Inspector rail without
   expect(css).not.toMatch(/overflow-wrap:\s*anywhere|word-break:\s*break-all/);
   const shell = readFileSync('src/app/shell/shell.css', 'utf8');
   expect(shell).toMatch(
-    /target-frame\[data-inspector="closed"\]\s*\{\s*grid-template-columns: 192px minmax\(0, 1fr\) 40px 48px/,
+    /target-frame\[data-inspector="closed"\]\s*\{\s*grid-template-columns: 192px minmax\(0, 1fr\) 40px;/,
   );
-  expect(shell).toContain('grid-template-columns: 192px minmax(0, 1fr) 320px 48px');
+  expect(shell).toContain('grid-template-columns: 192px minmax(0, 1fr) 320px;');
   // At 1280px, closing frees 280px of workspace, rather than leaving a 320px strip.
   expect(1280 - 192 - 40 - 48).toBe(1000);
   const app = readFileSync('src/app/shell/TargetApp.tsx', 'utf8');

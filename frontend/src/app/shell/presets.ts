@@ -12,7 +12,6 @@ type Preset = {
   route: Route;
   density: Density;
   inspector: 'closed' | 'rest' | 'expanded';
-  comms: boolean;
   roles: readonly ('gm' | 'commish' | 'admin')[];
 };
 
@@ -22,7 +21,6 @@ export const presets = {
     route: { node: 'home', workspace: 'seasonal-card' },
     density: 'tactical',
     inspector: 'rest',
-    comms: true,
     roles: ['gm', 'commish', 'admin'],
   },
   draft: {
@@ -30,7 +28,6 @@ export const presets = {
     route: { node: 'trade', workspace: 'draft-room' },
     density: 'matrix',
     inspector: 'closed',
-    comms: true,
     roles: ['gm', 'commish', 'admin'],
   },
   gameday: {
@@ -38,7 +35,6 @@ export const presets = {
     route: { node: 'pulse', workspace: 'now' },
     density: 'tactical',
     inspector: 'expanded',
-    comms: false,
     roles: ['gm', 'commish', 'admin'],
   },
   trade: {
@@ -46,7 +42,6 @@ export const presets = {
     route: { node: 'trade', workspace: 'trade-desk' },
     density: 'tactical',
     inspector: 'closed',
-    comms: false,
     roles: ['gm', 'commish', 'admin'],
   },
   admin: {
@@ -54,7 +49,6 @@ export const presets = {
     route: { node: 'control', workspace: 'league' },
     density: 'matrix',
     inspector: 'closed',
-    comms: false,
     roles: ['commish', 'admin'],
   },
 } as const satisfies Record<string, Preset>;

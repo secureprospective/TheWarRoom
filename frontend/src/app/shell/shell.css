@@ -13,7 +13,7 @@
   width: 100%;
   height: 100vh;
   display: grid;
-  grid-template-columns: 192px minmax(0, 1fr) 320px 48px;
+  grid-template-columns: 192px minmax(0, 1fr) 320px;
   background: var(--surface-0);
   border: 1px solid var(--surface-line);
   overflow: hidden;
@@ -217,26 +217,6 @@
   }
 .twr-app .kv dt { color: var(--surface-tx3); }
 .twr-app .kv dd { font-family: var(--surface-mono); text-align: right; margin: 0; }
-.twr-app .comms {
-  background: var(--surface-1);
-  border-left: 1px solid var(--surface-line);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 12px 0;
-  gap: 14px;
-  grid-column: 4;
-  grid-row: 1;
-  }
-.twr-app .comms .vt {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font: 600 10px var(--surface-sans);
-  letter-spacing: .14em;
-  color: var(--surface-tx3);
-  text-transform: uppercase;
-  margin-top: 6px;
-  }
 .twr-app .act:hover { color: var(--surface-tx1); background: var(--surface-3); }
 .twr-app .strip .channel-chip { flex: none; font: 11px var(--surface-mono); }
 .twr-app .strip > span:not(.channel-chip) { flex: none; }
@@ -262,15 +242,6 @@
   font-size: 11px;
   color: var(--surface-tx3);
   }
-.twr-app .comms .act-icon {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--surface-line-hi);
-  display: grid;
-  place-items: center;
-  font: 600 11px var(--surface-mono);
-  color: var(--surface-tx2);
-  }
 .twr-app .shell-overlay {
   position: absolute;
   top: 44px;
@@ -288,8 +259,7 @@
   margin-bottom: 14px;
   font: 600 11px var(--surface-sans);
   }
-.twr-app .comms-panel { right: 48px; width: 280px; }
-.twr-app .calendar-panel { right: 368px; width: 480px; }
+.twr-app .calendar-panel { right: 320px; width: 480px; }
 .twr-app .roster-cap {
   display: flex;
   flex-wrap: wrap;
@@ -385,7 +355,7 @@
   background: var(--surface-4); color: var(--surface-tx1);
 }
 .twr-app > .insp {
-  position: absolute; right: 48px; top: 0; bottom: 0; width: 320px; z-index: 10;
+  position: absolute; right: 0; top: 0; bottom: 0; width: 320px; z-index: 10;
   grid-column: auto; grid-row: auto;
   transition: width 120ms ease-out, transform 120ms ease-out, opacity 120ms ease-out, visibility 120ms;
 }
@@ -472,7 +442,7 @@
   .twr-app > .insp, .twr-app .shell-overlay, .twr-app .command-bar { transition: none; }
 }
 
-.twr-app.target-frame[data-inspector="closed"] { grid-template-columns: 192px minmax(0, 1fr) 40px 48px; }
+.twr-app.target-frame[data-inspector="closed"] { grid-template-columns: 192px minmax(0, 1fr) 40px; }
 .twr-app > .inspector-closed {
   padding: 12px 0;
   display: flex;
@@ -527,7 +497,7 @@
 
 /* Reserve the Inspector's actual width in the frame; it must never overlay the workspace. */
 .twr-app.target-frame[data-inspector="expanded"] {
-  grid-template-columns: 192px minmax(0, 1fr) 480px 48px;
+  grid-template-columns: 192px minmax(0, 1fr) 480px;
 }
 .twr-app .insp-body, .twr-app .wbody { min-height: 0; min-width: 0; }
 .twr-app .strip { flex: 0 0 auto; overflow: visible; margin-left: auto; }
@@ -541,19 +511,8 @@
 .twr-app .report-table th:first-child { width: 22%; }
 .twr-app .act-text { padding: 0; }
 
-/* Comms owns a track beside the Inspector, even when that Inspector is closed. */
-.twr-app.target-frame[data-comms="true"] {
-  grid-template-columns: 192px minmax(0, 1fr) 600px 48px;
-}
-.twr-app.target-frame[data-inspector="expanded"][data-comms="true"] {
-  grid-template-columns: 192px minmax(0, 1fr) 760px 48px;
-}
-.twr-app.target-frame[data-inspector="closed"][data-comms="true"] {
-  grid-template-columns: 192px minmax(0, 1fr) 320px 48px;
-}
-.twr-app[data-comms="true"] .insp { right: 328px; }
+/* The closed Inspector keeps a 40px track. */
 .twr-app > .inspector-closed { width: 40px; box-sizing: border-box; }
-.twr-app .comms-panel { box-sizing: border-box; }
 .twr-app .insp .draft-report th, .twr-app .insp .draft-report th .act-button {
   overflow-wrap: normal; word-break: normal;
 }

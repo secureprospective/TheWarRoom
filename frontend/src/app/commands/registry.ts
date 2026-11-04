@@ -78,7 +78,6 @@ export function createCommands(
     if (route) state.navigate(route);
     else if (isSurface(place)) {
       if (place === 'Inspector') state.write({ inspector: 'rest' });
-      if (place === 'Comms') state.write({ comms: true });
       if (place === 'Calendar') state.write({ summoned: 'calendar' });
       if (place === 'Command bar') state.write({ commandbar: true });
       state.write({ endpointSurface: place });
@@ -391,15 +390,6 @@ export function createCommands(
           () => m.marketReportState.peek().error));
       },
     }),
-    'comms.read': command({
-      id: 'comms.read',
-      run: (args: BrowserArguments<'comms.read'>) => {
-        if (!['refresh', 'team', 'kind', 'more', 'open'].includes(args.action))
-          throw new Error('Comms: invalid action');
-        return import('../comms/state').then(m => completed(m.commsState.choose(args.action, args.value),
-          () => ['more', 'open'].includes(args.action) ? undefined : m.commsState.peek().error));
-      },
-    }),
     'backup.now': command({
       id: 'backup.now',
       run: (_args: BrowserArguments<'backup.now'>) => {
@@ -526,7 +516,7 @@ export function createCommands(
         if (!presetAllowed(args.preset, roles)) throw new Error('preset.apply: GM permission denied');
         const p = presets[args.preset];
         state.navigate(p.route);
-        state.write({ density: p.density, inspector: p.inspector, comms: p.comms });
+        state.write({ density: p.density, inspector: p.inspector });
       },
     }),
     'inspector.open': command({
@@ -585,17 +575,12 @@ export function createCommands(
       run: (_args: BrowserArguments<'calendar.summon'>) =>
         state.write({ summoned: state.read().summoned ? null : 'calendar' }),
     }),
-    'comms.toggle': command({
-      id: 'comms.toggle',
-      run: (_args: BrowserArguments<'comms.toggle'>) => state.write({ comms: !state.read().comms }),
-    }),
     'overlays.close': command({
       id: 'overlays.close',
       run: (_args: BrowserArguments<'overlays.close'>) =>
         state.write({
           inspector: 'closed',
           summoned: null,
-          comms: false,
           notice: null,
           endpointSurface: null,
           commandbar: false,

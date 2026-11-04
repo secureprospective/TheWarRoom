@@ -60,12 +60,12 @@ func TestCacheScopesOrderedAndDispatchOnlySelected(t *testing.T) {
 		}
 		return failure
 	}
-	scopes := CacheScopes(CacheRefreshers{Pool: refresh, Research: refresh, Race: refresh, Comms: refresh, Draft: refresh})
+	scopes := CacheScopes(CacheRefreshers{Pool: refresh, Research: refresh, Race: refresh, Draft: refresh})
 	var ids []string
 	for _, s := range CacheScopeReadings(scopes) {
 		ids = append(ids, s.ID)
 	}
-	if !reflect.DeepEqual(ids, []string{"pool", "research", "race", "comms", "draft"}) {
+	if !reflect.DeepEqual(ids, []string{"pool", "research", "race", "draft"}) {
 		t.Fatal(ids)
 	}
 	if label, found, err := ClearCache(scopes, "unknown"); label != "" || found || err != nil || calls != 0 {

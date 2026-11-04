@@ -1955,59 +1955,6 @@ export const readCommands = {
     "Items": null
   }
 },
-"comms.TargetComms": {
-  "command": "desktop.comms.TargetComms",
-  "arguments": {
-    "Type": "object",
-    "Enum": null,
-    "Format": "",
-    "Validator": "desktop adapter Raw validation",
-    "Nullable": false,
-    "Fields": [
-      {
-        "Name": "raw",
-        "Optional": false,
-        "Schema": {
-          "Type": "object",
-          "Enum": null,
-          "Format": "",
-          "Validator": "",
-          "Nullable": false,
-          "Fields": [
-            {
-              "Name": "team",
-              "Optional": false,
-              "Schema": {
-                "Type": "string",
-                "Enum": null,
-                "Format": "",
-                "Validator": "",
-                "Nullable": false,
-                "Fields": null,
-                "Items": null
-              }
-            },
-            {
-              "Name": "kind",
-              "Optional": false,
-              "Schema": {
-                "Type": "string",
-                "Enum": null,
-                "Format": "",
-                "Validator": "",
-                "Nullable": false,
-                "Fields": null,
-                "Items": null
-              }
-            }
-          ],
-          "Items": null
-        }
-      }
-    ],
-    "Items": null
-  }
-},
 "contracts.TargetLineup": {
   "command": "desktop.contracts.TargetLineup",
   "arguments": {

@@ -18,10 +18,10 @@ function raceQuery(
 }
 
 it('uses registry command identity and validated, canonical complete scopes', () => {
-  const first = readKey('comms.TargetComms', [{ team: '0001', kind: 'trade' }]);
-  expect(first).toContain(readCommands['comms.TargetComms'].command);
-  expect(first).toBe(readKey('comms.TargetComms', [{ kind: 'trade', team: '0001' }]));
-  expect(first).not.toBe(readKey('comms.TargetComms', [{ team: '0002', kind: 'trade' }]));
+  const first = readKey('commissioner.TargetNativeValues', [{ league: 'l', franchise: '0001', season: 2026 }]);
+  expect(first).toContain(readCommands['commissioner.TargetNativeValues'].command);
+  expect(first).toBe(readKey('commissioner.TargetNativeValues', [{ season: 2026, franchise: '0001', league: 'l' }]));
+  expect(first).not.toBe(readKey('commissioner.TargetNativeValues', [{ league: 'l', franchise: '0002', season: 2026 }]));
   expect(readKey('race.TargetRace', [2026, '0001', '0002', '']))
     .not.toBe(readKey('race.TargetRace', [2025, '0001', '0002', '']));
   expect(readKey('race.TargetRace', [1, '0001', '0001', '']))
@@ -30,7 +30,7 @@ it('uses registry command identity and validated, canonical complete scopes', ()
     .not.toBe(readKey('race.TargetRace', [1, '', '', 'sum']));
   expect(() => readKey('race.TargetRace', [NaN, '', '', ''])).toThrow('expected integer');
   expect(() => readKey('draft.TargetDraftReports', [1] as never)).toThrow('argument count');
-  expect(() => readKey('comms.TargetComms', [{ team: '0001', kind: '', injected: true }] as never))
+  expect(() => readKey('commissioner.TargetNativeValues', [{ league: 'l', franchise: '0001', season: 2026, injected: true }] as never))
     .toThrow('unknown argument');
 });
 
@@ -162,11 +162,11 @@ it('validates static inputs before actions and detaches them across an awaited r
 });
 
 it('does not erase unexpected undefined fields before runtime validation', async () => {
-  const read = vi.fn(async (_scope: { team: string; kind: string }) => 'held');
-  const query = createReadQuery('comms.TargetComms', {
+  const read = vi.fn(async (_scope: { league: string; franchise: string; season: number }) => 'held');
+  const query = createReadQuery('commissioner.TargetNativeValues', {
     initial: (): { value?: string } => ({}), read, accept: value => ({ value }),
   });
-  await query.load([{ team: '', kind: '', injected: undefined }] as never);
+  await query.load([{ league: '', franchise: '', season: 2026, injected: undefined }] as never);
   expect(read).not.toHaveBeenCalled();
   expect(query.peek().error).toContain('unknown argument injected');
 });

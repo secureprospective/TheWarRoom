@@ -7,7 +7,6 @@ import (
 	"time"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
-	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
@@ -15,7 +14,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
-	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 )
@@ -130,20 +128,11 @@ func (a *App) readArchiveFacts(ctx context.Context) (archiveapp.Snapshot, bool, 
 
 }
 
-// readCommsArchive borrows the snapshot under its caller's FactsMu; core detaches the columns.
-func (a *App) readCommsArchive(ctx context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error) {
-	cache, _, err := a.readArchiveFacts(ctx)
-	return cache.Facts.RosterWeek, cache.Facts.NflGame, err
-}
-
-func (a *App) configureArchive() { a.core.ReadCommsArchive = a.readCommsArchive }
-
 func (a *App) cacheScopes() []sourcesapp.CacheScope {
 	return sourcesapp.CacheScopes(sourcesapp.CacheRefreshers{
 		Pool:     offersapp.New(offersHost{State: a.core, app: a}).TargetPoolRefresh,
 		Research: researchapp.New(researchHost{app: a}, a.researchHeld).TargetResearchRefresh,
 		Race:     raceapp.New(raceHost{a.core}, a.raceHeld).TargetRaceRefresh,
-		Comms:    commsapp.New(commsHost{a.core}).TargetCommsRefresh,
 		Draft:    draftapp.New(draftHost{State: a.core, app: a}).TargetDraftReportsRefresh,
 	})
 }

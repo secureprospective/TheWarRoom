@@ -48,7 +48,6 @@ const WarRoom = lazy(() => import('./WarRoom'));
 const Market = lazy(loadMarket);
 const Research = lazy(() => import('../research/Research'));
 const Race = lazy(() => import('../race/Race'));
-const Comms = lazy(() => import('../comms/Comms'));
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
 
@@ -132,7 +131,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
       /></Suspense></div>
   </>;
   return (
-    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}
+    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector}
       data-native-workspace={Boolean(appLeagueView) || undefined}>
       <aside className="rail">
         <LeaguePicker
@@ -280,7 +279,6 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             </Suspense>
           ) : s.node === 'home' && workspace.slug === 'digests' ? (
             <Suspense fallback={<p role="status">Opening Digests…</p>}>
-              <Comms />
               <Research newsOnly />
             </Suspense>
           ) : !snapshot && snapshotWorkspaces.includes(`${s.node}/${workspace.slug}`) ? (
@@ -340,40 +338,9 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           </Act>
         </aside>
       )}
-      <aside className="comms">
-        <Act
-          verb="comms.toggle"
-          args={{}}
-          variant="icon"
-          expanded={s.comms}
-          controls="target-comms"
-        >
-          C
-        </Act>
-        <span className="vt">Comms · league feed</span>
-      </aside>
       {!selectedLeague?.app && <Suspense fallback={null}>
         <CommandBar snapshot={selectedLeague?.app ? undefined : snapshot} />
       </Suspense>}
-      <aside
-        id="target-comms"
-        data-open={s.comms}
-        aria-hidden={!s.comms}
-        className="shell-overlay comms-panel"
-        aria-label="Comms"
-      >
-        <header>
-          Comms
-          <Act variant="button" verb="comms.toggle" args={{}}>
-            Close
-          </Act>
-        </header>
-        {s.comms && !selectedLeague?.app &&
-          <Suspense fallback={<p role="status">Reading league communications…</p>}>
-          <Comms panel />
-        </Suspense>}
-        <EndpointIndex placement="Comms" />
-      </aside>
       <aside
         id="target-calendar"
         data-open={s.summoned === 'calendar'}

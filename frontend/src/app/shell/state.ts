@@ -25,7 +25,6 @@ export type ShellState = {
   franchiseId: string | null;
   commandbar: boolean;
   summoned: 'calendar' | null;
-  comms: boolean;
   notice: string | null;
   endpointIds: readonly EndpointId[];
   endpointSurface: Surface | null;
@@ -47,7 +46,6 @@ function initialShellState(): ShellState {
     franchiseId: null,
     commandbar: false,
     summoned: null,
-    comms: false,
     notice: null,
     endpointIds: [],
     endpointSurface: null,

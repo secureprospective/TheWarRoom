@@ -48,7 +48,7 @@ const workspaces = {
 };
 const placements = [
   ...Object.entries(workspaces).flatMap(([node, names]) => names.map((name) => `${node} › ${name}`)),
-  'Inspector', 'Comms', 'Calendar', 'Command bar', 'Status strip', 'Report drawer',
+  'Inspector', 'Calendar', 'Command bar', 'Status strip', 'Report drawer',
 ];
 const fields = [
   'id', 'source', 'name', 'kind', 'gm_question', 'when', 'gravity', 'clock', 'data', 'placement',
