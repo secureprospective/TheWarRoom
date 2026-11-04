@@ -1,5 +1,7 @@
 # RESUME 2026-11-03 ~23:10 CT — TheWarRoom: locked mocks, mock-gated (supersedes 15:55 section)
 
+> 11-04: CODEBASE SHAPE AUDIT in progress before any more building — see claudeos ~/scratch/shape/SHAPE.md (committed copy: docs/audit/SHAPE-2026-11-04.md).
+
 ## 1. WHAT WE ARE DOING
 Make the 5 LOCKED mocks (docs/ui/mocks: franchise-hq-mock-v10, warroom-mock-v6, home-mock-v5, league-pulse-mock-v14, control-room-mock-v1) work in the real app with REAL data; mockgate is the gate. Claude-OS repo ~/work/TheWarRoom (no remote). Order HQ -> War Room -> Home -> Pulse -> Control Room. Worktrees left: .worktrees/hq (build/HQ-1 @6984cd35), .worktrees/wr (build/WR-1 @1cbb44e6). login/mem/gate worktrees removed (branches kept; GATE-1 merged into WR-1).
 
