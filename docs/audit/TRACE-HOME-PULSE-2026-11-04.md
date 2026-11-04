@@ -77,3 +77,8 @@ Patch: Transactions tile draws the last 12 rows only (homeTiles.tsx:125); ticker
 **F12 + F13 PROVEN** as the cause of the client stall and the WebKit CPU/memory. Rendering the full ledger and the endless ticker did it.
 The fetch alone (still the full ledger) costs little on the client. The fix still pages the read, because PWA owners pay for the transfer.
 Loops 3+ at 24–27 distinct are a separate smaller gap (not a stall); not chased yet.
+
+## Real fix verified: run-1104-1507 (commit 23ea625a applied to the soak build, then reverted)
+The fix: a 12-row ledger page via commish.ledger.filtered.read last=12, one reverse, and the ticker plays once.
+Result: status 0, 9 loops, distinct 33, 31, 26, 26, 26, 26, 27, 27, 27, no stall.
+WebKit averaged 8% CPU and peaked at 357 MB RSS. The baseline was 24–56% CPU, 1.3 GB, and a stall in loop 4. App usable after 53 s.
