@@ -158,31 +158,6 @@ export namespace appvalue {
 
 }
 
-export namespace bid {
-	
-	export class Result {
-	    rule: string;
-	    label: string;
-	    verdict: string;
-	    reason: string;
-	    mark: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Result(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.rule = source["rule"];
-	        this.label = source["label"];
-	        this.verdict = source["verdict"];
-	        this.reason = source["reason"];
-	        this.mark = source["mark"];
-	    }
-	}
-
-}
-
 export namespace commissioner {
 	
 	export class AdjustedRecord {
@@ -13201,8 +13176,6 @@ export namespace offers {
 	    form: BidForm;
 	    state: string;
 	    status: string;
-	    rules: bid.Result[];
-	    ruleSummary: string;
 	    post: string;
 	    actions: BidAction[];
 	
@@ -13222,8 +13195,6 @@ export namespace offers {
 	        this.form = this.convertValues(source["form"], BidForm);
 	        this.state = source["state"];
 	        this.status = source["status"];
-	        this.rules = this.convertValues(source["rules"], bid.Result);
-	        this.ruleSummary = source["ruleSummary"];
 	        this.post = source["post"];
 	        this.actions = this.convertValues(source["actions"], BidAction);
 	    }
@@ -13253,11 +13224,7 @@ export namespace offers {
 	    salary: snapshot.ContractAmount;
 	    snapped: string;
 	    points: string;
-	    rules: bid.Result[];
-	    blocked: boolean;
-	    note: string;
 	    post: string;
-	    ruleSummary: string;
 	    closesNote: string;
 	
 	    static createFrom(source: any = {}) {
@@ -13272,11 +13239,7 @@ export namespace offers {
 	        this.salary = this.convertValues(source["salary"], snapshot.ContractAmount);
 	        this.snapped = source["snapped"];
 	        this.points = source["points"];
-	        this.rules = this.convertValues(source["rules"], bid.Result);
-	        this.blocked = source["blocked"];
-	        this.note = source["note"];
 	        this.post = source["post"];
-	        this.ruleSummary = source["ruleSummary"];
 	        this.closesNote = source["closesNote"];
 	    }
 	
@@ -15133,8 +15096,6 @@ export namespace sources {
 	    databaseChecks?: report.Report;
 	    health: report.Report;
 	    signals: report.Report;
-	    facts: report.Report;
-	    checks: report.Report;
 	    archiveDir: string;
 	    photosOn: boolean;
 	    scopes: DataScope[];
@@ -15149,8 +15110,6 @@ export namespace sources {
 	        this.databaseChecks = this.convertValues(source["databaseChecks"], report.Report);
 	        this.health = this.convertValues(source["health"], report.Report);
 	        this.signals = this.convertValues(source["signals"], report.Report);
-	        this.facts = this.convertValues(source["facts"], report.Report);
-	        this.checks = this.convertValues(source["checks"], report.Report);
 	        this.archiveDir = source["archiveDir"];
 	        this.photosOn = source["photosOn"];
 	        this.scopes = this.convertValues(source["scopes"], DataScope);
