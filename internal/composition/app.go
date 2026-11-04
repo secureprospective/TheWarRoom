@@ -15,7 +15,6 @@ import (
 
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
-	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
@@ -32,7 +31,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
@@ -55,7 +53,6 @@ type App struct {
 	commands             *catalog.Registry
 	core                 *core.State
 	tradeBuilderTimeout  time.Duration
-	archiveCache         archiveapp.Snapshot
 	scheduleCache        nativeapp.ScheduleCache
 	scheduleSyncMu       sync.Mutex
 	playedLineupsRunning atomic.Bool
@@ -99,7 +96,6 @@ func NewApp() *App {
 	var desktop core.Runtime = desktopRuntime{}
 	a := &App{tradeBuilderTimeout: m2Timeout, controlHeld: &controlapp.Held{}, researchHeld: &researchapp.Held{}, marketHeld: &marketapp.Held{}, nowHeld: &nowapp.Held{}, raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
 		BuildStamp:    buildLabel() + " " + buildDate,
-		LabData:       sync.OnceValues(lab.Load),
 		MovesWake:     make(chan struct{}, 1),
 		MovesChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:moves") },
 		OpenURL:       desktop.BrowserOpenURL,
@@ -188,8 +184,7 @@ func (a *App) finishStartup(ctx context.Context, refreshed bool) {
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
 	a.startLiveStats()
-	a.startDatabaseChecks()      //nolint:contextcheck // The app lifetime cancels and joins database checks on shutdown.
-	a.compileFactsInBackground() //nolint:contextcheck // The app lifetime cancels and joins facts work on shutdown.
+	a.startDatabaseChecks() //nolint:contextcheck // The app lifetime cancels and joins database checks on shutdown.
 	a.startWorker(func() { a.publishAssetModel(ctx); a.sourceHealthChanged(ctx) })
 }
 

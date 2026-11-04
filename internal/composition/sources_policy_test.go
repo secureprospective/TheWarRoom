@@ -10,31 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-func TestSourcesFactsSerializerKeepsTryLockAndCallbackSpan(t *testing.T) {
-	s := coretest.New(t).Build()
-	s.FactsMu.Lock()
-	called := false
-	msg, err := sourcesHost{State: s}.SerializeSourcesCompile(func() (string, error) { called = true; return "", nil })
-	s.FactsMu.Unlock()
-	if called || err != nil || msg != "The checked facts are already compiling." {
-		t.Fatal(msg, err, called)
-	}
-	_, err = sourcesHost{State: s}.SerializeSourcesCompile(func() (string, error) {
-		if s.FactsMu.TryLock() {
-			s.FactsMu.Unlock()
-			t.Error("compile callback lost original lock span")
-		}
-		return "compiled", nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !s.FactsMu.TryLock() {
-		t.Fatal("compile did not release serializer")
-	}
-	s.FactsMu.Unlock()
-}
-
 func TestSourcesSharedReadsDetached(t *testing.T) {
 	s := coretest.New(t).Build()
 	lookup, err := normalize.NewLookup([]players.RawPlayer{{ID: "0042", Name: "Held", Position: "QB"}})

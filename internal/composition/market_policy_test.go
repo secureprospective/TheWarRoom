@@ -10,7 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/core/coretest"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
 func TestMarketRefreshSerializesAndReadsContinue(t *testing.T) {
@@ -65,15 +64,11 @@ func TestMarketRefreshSerializesAndReadsContinue(t *testing.T) {
 	s.RefreshMu.Unlock()
 }
 
-func TestMarketRefreshStartupDenialAndLabLoad(t *testing.T) {
+func TestMarketRefreshStartupDenial(t *testing.T) {
 	s := coretest.New(t).Build()
 	s.RefreshMarketFeeds = func(context.Context, bool) { t.Fatal("refreshed before ready") }
 	s.StartupErr = errors.New("fixture startup failed")
 	if err := (marketHost{State: s}).RefreshMarket(true); err == nil || err.Error() != "market refresh: startup: fixture startup failed" {
 		t.Fatal(err)
-	}
-	s.LabData = func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }
-	if _, err := s.LabFacts(); err == nil || err.Error() != "fingerprint mismatch" {
-		t.Fatal("shared loader error rewritten", err)
 	}
 }

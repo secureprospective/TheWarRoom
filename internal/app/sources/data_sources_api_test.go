@@ -8,11 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
-
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
-
-	"github.com/secureprospective/TheWarRoom/internal/manifest"
 )
 
 // Two bodies byte for byte as the frozen Lab read them (2013/aav.json, 2013/tradeBait.json).
@@ -55,7 +51,7 @@ func archiveTree(t *testing.T) string {
 	return dir
 }
 
-func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
+func TestArchiveImportIsIdempotent(t *testing.T) {
 	t.Parallel()
 	a := testHost(t)
 
@@ -64,8 +60,7 @@ func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 		t.Fatal(r.Error)
 	}
 	first := a.api().TargetDataRefresh("archive")
-	if !first.OK || !strings.Contains(first.Summary, "Looked at 8 files: 8 new, 0 already held. MFL error bodies, kept as errors: 1.") ||
-		!strings.Contains(first.Summary, "1,482 files pinned, 1,480 not in the archive") {
+	if !first.OK || !strings.Contains(first.Summary, "Looked at 8 files: 8 new, 0 already held. MFL error bodies, kept as errors: 1.") {
 		t.Fatalf("first import = %+v", first)
 	}
 	again := a.api().TargetDataRefresh("archive")
@@ -77,35 +72,12 @@ func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 	if err != nil || len(fetches) != 8 {
 		t.Fatalf("archive fetches = %d, %v; want 8 after two runs", len(fetches), err)
 	}
-	m, published, err := sourcesapp.ServiceFor(a).PublishLabManifest(ctx)
-	if err != nil || published {
-		t.Fatalf("republish = %v, %v; want the same manifest already held", published, err)
-	}
-	var held []manifest.Entry
-	for _, e := range m.Entries {
-		if e.Held() {
-			held = append(held, e)
-		}
-	}
-	if len(held) != 2 || held[0].File != "2013/aav.json" || held[0].League != "" || held[0].Scope != "site" ||
-		held[1].File != "2013/tradeBait.json" || held[1].League != "51719" || held[1].CapturedAt != "2026-10-05T02:00:00Z" {
-		t.Fatalf("held entries = %+v, want the Lab's 2013 aav and trade bait", held)
-	}
-	if _, _, err := m.ResolveWithGaps(ctx, a.hist, nil); err == nil || !strings.Contains(err.Error(), "2013/assets.json") {
-		t.Errorf("resolve err = %v, want the missing frozen files named", err)
-	}
 	ds, err := a.api().TargetDataSources()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := cell(ds.Facts, "In the archive"); got != "2 of 1,482" {
-		t.Errorf("In the archive = %q", got)
-	}
-	if got := cell(ds.Facts, "Compiled snapshot"); !strings.HasPrefix(got, "None yet. Nothing has been compiled") {
-		t.Errorf("Compiled snapshot = %q", got)
-	}
-	if ds.ArchiveDir != dir || len(ds.Scopes) != 4 || len(ds.Checks.Rows) < 3 {
-		t.Errorf("data sources = dir %q, %d scopes, %d checks", ds.ArchiveDir, len(ds.Scopes), len(ds.Checks.Rows))
+	if ds.ArchiveDir != dir || len(ds.Scopes) != 4 {
+		t.Errorf("data sources = dir %q, %d scopes", ds.ArchiveDir, len(ds.Scopes))
 	}
 }
 
@@ -147,15 +119,6 @@ func TestArchiveImportRefusesAMalformedFileAndRecordsTheFailure(t *testing.T) {
 	}
 }
 
-func cell(r report.Report, key string) string {
-	for _, row := range r.Rows {
-		if row.Cells[0] == key {
-			return row.Cells[1]
-		}
-	}
-	return ""
-}
-
 func TestRefreshSummariesSayWhatHappened(t *testing.T) {
 	t.Parallel()
 	r := sourcesapp.SignalsReport{Loads: []sourcesapp.SignalLoad{{Status: sourcesapp.LoadDone, Added: 1200}, {Status: sourcesapp.LoadCurrent}, {Status: sourcesapp.LoadFailed},
@@ -176,35 +139,5 @@ func TestRefreshSummariesSayWhatHappened(t *testing.T) {
 		if got := sourcesapp.PlainAge(d); got != want {
 			t.Errorf("sourcesapp.PlainAge(%s) = %q, want %q", d, got, want)
 		}
-	}
-}
-
-func TestCheckedFactsNamesOnlyExactApprovedGaps(t *testing.T) {
-	t.Parallel()
-	a := testHost(t)
-
-	if r := a.api().SetLeagueArchiveDir(archiveTree(t)); !r.OK {
-		t.Fatal(r.Error)
-	}
-	if r := a.api().TargetDataRefresh("archive"); !r.OK {
-		t.Fatal(r.Error)
-	}
-	in, err := sourcesapp.ServiceFor(a).FactsInput(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	r := sourcesapp.FactsReport(in)
-	for _, gap := range in.Gaps {
-		if got := cell(r, "Named gap: "+gap.File); got != gap.Reason || !strings.Contains(got, "fed no fact") {
-			t.Errorf("gap %s = %q", gap.File, got)
-		}
-	}
-	for i := range in.Manifest.Entries {
-		if in.Manifest.Entries[i].File == in.Gaps[0].File {
-			in.Manifest.Entries[i].SHA256 = strings.Repeat("0", 64)
-		}
-	}
-	if got := cell(sourcesapp.FactsReport(in), "Named gap: "+in.Gaps[0].File); got != "" {
-		t.Errorf("changed pin incorrectly received exception: %q", got)
 	}
 }

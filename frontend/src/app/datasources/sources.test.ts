@@ -18,21 +18,13 @@ const provider = (): DataProvider => ({
 });
 const html = renderToStaticMarkup;
 describe('Control Room data and sources', () => {
-  it('renders Go health, the manifest standing and each check with its differences in words', () => {
+  it('renders Go health, signals and database checks', () => {
     const d = data();
-    for (const r of [d.health, d.facts, d.checks, d.databaseChecks]) {
+    for (const r of [d.health, d.signals, d.databaseChecks]) {
       const markup = html(createElement(ReportView, { report: r, howLabel: 'How this is counted' }));
       expect(markup).toContain(r.title);
       expect(markup).toContain(`data-endpoint="${r.id}"`);
     }
-    expect(d.facts.status).toBe('empty');
-    expect(d.facts.note).toContain('No manifest yet');
-    const checks = html(createElement(ReportView, { report: d.checks, howLabel: 'How this is counted' }));
-    expect(checks).toContain('Passed: 448 compared, 446 agree, 1 explained, 1 for review');
-    expect(checks).toContain('2014 Houston Texans: MFL standings 9-4-0, weekly games 9-3-0.');
-    expect(checks).toContain('For review');
-    expect(checks).not.toContain('2014/0009');
-    expect(d.checks.rows.some(r => r.cells[2] === 'Not run yet')).toBe(false);
   });
   it('routes all five built rows to the lazy workspace', () => {
     for (const id of ['C-07', 'C-08', 'C-09', 'L-34', 'S-09'] as const) {

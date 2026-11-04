@@ -19,7 +19,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -68,7 +67,6 @@ type State struct {
 	HistPools   *db.Pools // history.db: everything that cannot be rebuilt
 	WhatifPools *db.Pools // whatif.db: moves made in the app, apart from MFL truth (R2)
 	BuildStamp  string
-	LabData     func() (*lab.Data, error)
 	Params      *params.Store
 	Rulebook    *rulebook.Store
 	League      *state.Mirror // the league as MFL states it; every score surface reads it
@@ -84,7 +82,6 @@ type State struct {
 	Started     chan struct{}             // closed when startup returns; read the fields above through ready
 	LockFile    *os.File                  // single-instance lock, held until shutdown
 	Headshots   atomic.Pointer[headshot.Service]
-	FactsMu     sync.Mutex
 	PhotosOff   atomic.Bool
 
 	ModelMu    sync.Mutex

@@ -134,19 +134,3 @@ func TestAssetBoardOnFieldNowFromHeldWeeks(t *testing.T) {
 		t.Fatal("no model", c, b.DynastySource)
 	}
 }
-
-func TestAppLabDecodesOnce(t *testing.T) {
-	t.Parallel()
-	a := NewApp()
-	first, err := a.lab()
-	if err != nil {
-		t.Fatal(err)
-	}
-	second, err := a.lab()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if first != second {
-		t.Fatal("the App decoded the frozen Lab facts twice")
-	}
-}

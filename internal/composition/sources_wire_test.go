@@ -1,7 +1,6 @@
 package composition
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -15,7 +14,6 @@ import (
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
-	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 
@@ -88,16 +86,6 @@ func sourceAge(row healthRow, now time.Time) string {
 	return sourcesapp.PlainAge(now.Sub(row.lastGood))
 }
 
-func TestSourcesCompileRetainsRootLock(t *testing.T) {
-	a := targetTestApp(t)
-	a.core.FactsMu.Lock()
-	defer a.core.FactsMu.Unlock()
-	msg, err := a.compileFacts(context.Background())
-	if err != nil || msg != "The checked facts are already compiling." {
-		t.Fatalf("compile while held = %q, %v", msg, err)
-	}
-}
-
 func TestDataSourcesWireMatchesGo(t *testing.T) {
 	t.Parallel()
 	reg, err := measures.Embedded()
@@ -124,15 +112,6 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 				LastLoaded: "2026-10-11T18:00:00Z", Fresh: true, CoverageSeason: 2026,
 				Seasons:  []sourcesapp.SeasonCount{{Season: 2026, Players: 1300, Waiting: 37}},
 				Coverage: []sourcesapp.PositionShare{{Position: "WR", Rostered: 1454, WithData: 1105}}}}}, sourcesapp.SignalsReport{}, time.UTC),
-			Facts: sourcesapp.FactsReport(sourcesapp.FactsInput{LabBuilt: "2026-10-06T15:57:20+00:00", LabThrough: "2026-10-06T01:42:57+00:00", Zone: time.UTC}),
-			Checks: sourcesapp.ChecksReport(sourcesapp.FactsInput{Zone: time.UTC, Latest: &history.SnapshotRecord{BuiltAt: at}, Results: []facts.CheckResult{
-				{Name: "Win-loss records match MFL standings", Detail: "MFL counted playoff games in the 2013 standings.",
-					Checked: 448, Agreed: 446, Explained: 1, Review: 1, Passed: true, Items: []facts.CheckItem{
-						{Key: "2013/0001", Words: "2013 Buffalo Bills: MFL standings 11-3-0 count its playoff games (regular season 11-2-0).",
-							Class: facts.ClassExplained, Reason: "In 2013 MFL counted playoff games in the standings."},
-						{Key: "2014/0009", Words: "2014 Houston Texans: MFL standings 9-4-0, weekly games 9-3-0.",
-							Class: facts.ClassReview, Reason: "Possibly a commissioner adjustment."}}},
-				{Name: "Lineup scores equal MFL player scores", Checked: 202954, Agreed: 202954, Passed: true}}}),
 			ArchiveDir: "/fixture/raw", PhotosOn: true, Scopes: sourcesapp.DataScopes(), Words: sourcesapp.DataWords()},
 		Crosswalk: c, Params: controlapp.ParamsResult{OK: true, Params: []controlapp.ParamView{{Key: "test.weight", Label: "Test weight", Group: "Other settings", Position: "WR", Value: 0.5, Default: 0.5, Min: 0, Max: 1, Description: "Test weight", Overridden: true}}},
 		Result: sourcesapp.DataActResult{OK: true, Summary: "Looked at 8 files: 0 new, 8 already held."},

@@ -2,12 +2,10 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -57,18 +55,6 @@ func (s *State) CurrentWeek() int {
 
 // MarketContext is the app-lifetime context Market's held reads derive their bound from.
 func (s *State) MarketContext() context.Context { return s.Ctx }
-
-// LabFacts returns the shared Lab decode, or a fresh one for a State built without one.
-func (s *State) LabFacts() (*lab.Data, error) {
-	if s.LabData == nil {
-		d, err := lab.Load()
-		if err != nil {
-			return nil, fmt.Errorf("load lab facts: %w", err)
-		}
-		return d, nil
-	}
-	return s.LabData()
-}
 
 // MarketWeek is the league week the market reports are read for.
 func (s *State) MarketWeek() int {

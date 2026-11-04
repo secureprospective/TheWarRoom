@@ -14,7 +14,6 @@ import (
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -27,7 +26,6 @@ type fakeHost struct {
 	off       bool
 	startup   error
 	loading   sync.Mutex
-	compiling sync.Mutex
 	transport http.RoundTripper
 	changed   func()
 	cleared   []string
@@ -72,8 +70,8 @@ func (h *fakeHost) ClearCache(scope string) (string, bool, error) {
 }
 func (h *fakeHost) StoreSourcesRecords(context.Context) {}
 func (h *fakeHost) SourcesContext() context.Context     { return context.Background() }
-func (h *fakeHost) SourcesInputs() (*history.Store, int, http.RoundTripper, func() (*lab.Data, error)) {
-	return h.hist, 2026, h.transport, lab.Load
+func (h *fakeHost) SourcesInputs() (*history.Store, int, http.RoundTripper) {
+	return h.hist, 2026, h.transport
 }
 func (h *fakeHost) SourcesSettings() (string, bool, error) { return h.dir, h.off, nil }
 func (h *fakeHost) SaveSourcesSettings(dir string, off bool) error {
@@ -104,13 +102,6 @@ func (h *fakeHost) SerializeSourcesLoad(_ context.Context, load func()) {
 	h.loading.Lock()
 	defer h.loading.Unlock()
 	load()
-}
-func (h *fakeHost) SerializeSourcesCompile(compile func() (string, error)) (string, error) {
-	if !h.compiling.TryLock() {
-		return "The checked facts are already compiling.", nil
-	}
-	defer h.compiling.Unlock()
-	return compile()
 }
 
 func TestCrosswalkReportKeepsLeadingZeroIDsAndGoWording(t *testing.T) {
