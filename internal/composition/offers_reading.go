@@ -11,13 +11,10 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
-	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -92,21 +89,6 @@ func heldCutCharge(p state.MirrorPlayer, season int) (domain.Money, bool) {
 }
 func poolMarketLines(facts []MarketFact) []string {
 	return offersapp.MarketLines(offersMarketFacts(map[string][]MarketFact{"": facts})[""])
-}
-
-// The caller holds seasonMu, so the ending evidence and the pending read form one observation.
-func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error) error {
-	return offersapp.RecordOffers(ctx, pending, at, readErr, a.core.Pools != nil, //nolint:wrapcheck // Preserve original read/save errors.
-		func() (string, error) {
-			d, err := a.lab()
-			if err != nil {
-				return "", err
-			}
-			return lab.OfferOwner(d), nil
-		}, func(ctx context.Context, owner string, pending []leaguefeed.PendingTrade, at time.Time) error {
-			return personal.New(a.core.Pools).ObserveOffers(ctx, owner, a.core.Season, pending, a.core.SeasonTransactions.Value, at)
-		})
-
 }
 
 // archivedOnly reads already held exports; opening a list or the clock never calls MFL.

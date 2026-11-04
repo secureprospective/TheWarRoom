@@ -165,7 +165,7 @@ func (a *App) refreshPendingTrades(ctx context.Context) {
 		controlapp.CurrentPending(generation, a.core.KeyGeneration, func() {
 			a.core.SeasonMu.Lock()
 			defer a.core.SeasonMu.Unlock()
-			controlapp.PublishPending(ctx, &a.core.SeasonPendingTrades, value, err, a.timeNow, a.recordOffers, a.core.FallbackLog)
+			controlapp.PublishPending(&a.core.SeasonPendingTrades, value, err, a.timeNow)
 		})
 	})
 }

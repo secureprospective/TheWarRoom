@@ -83,35 +83,27 @@ func TestPendingRefreshKeyAndGenerationFences(t *testing.T) {
 	}
 	for _, keyErr := range []error{mflkey.ErrNoKey, mflkey.ErrUnavailable, mflkey.ErrTimeout, errors.New("offline"), nil} {
 		held := original
-		recorded, logged := 0, 0
-		record := func(_ context.Context, _ []leaguefeed.PendingTrade, _ time.Time, err error) error {
-			recorded++
-			if err != keyErr {
-				t.Fatal(err)
-			}
-			return errors.New("save failed")
-		}
 		CurrentPending(1, 2, func() { t.Fatal("entered season publication for old key generation") })
 		if !reflect.DeepEqual(held, original) {
 			t.Fatal("stale generation changed held", held)
 		}
-		PublishPending(context.Background(), &held, nil, keyErr, func() time.Time { return at }, record, func(string) { logged++ })
+		PublishPending(&held, nil, keyErr, func() time.Time { return at })
 		switch keyErr {
 		case mflkey.ErrNoKey:
-			if len(held.Value) != 0 || !held.FetchedAt.IsZero() || held.RefreshError != "MFL not connected" || recorded != 0 {
-				t.Fatal(held, recorded)
+			if len(held.Value) != 0 || !held.FetchedAt.IsZero() || held.RefreshError != "MFL not connected" {
+				t.Fatal(held)
 			}
 		case mflkey.ErrUnavailable, mflkey.ErrTimeout:
-			if len(held.Value) != 1 || held.RefreshError != "MFL keyring is locked or unavailable" || recorded != 0 {
-				t.Fatal(held, recorded)
+			if len(held.Value) != 1 || held.RefreshError != "MFL keyring is locked or unavailable" {
+				t.Fatal(held)
 			}
 		case nil:
-			if len(held.Value) != 0 || held.RefreshError != "" || recorded != 1 || logged != 1 {
-				t.Fatal(held, recorded, logged)
+			if len(held.Value) != 0 || held.RefreshError != "" {
+				t.Fatal(held)
 			}
 		default:
-			if len(held.Value) != 1 || held.RefreshError != "offline" || recorded != 1 || logged != 0 {
-				t.Fatal(held, recorded, logged)
+			if len(held.Value) != 1 || held.RefreshError != "offline" {
+				t.Fatal(held)
 			}
 		}
 	}
