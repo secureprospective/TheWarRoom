@@ -1,3 +1,49 @@
+# RESUME 2026-11-03 ~23:10 CT — TheWarRoom: locked mocks, mock-gated (supersedes 15:55 section)
+
+## 1. WHAT WE ARE DOING
+Make the 5 LOCKED mocks (docs/ui/mocks: franchise-hq-mock-v10, warroom-mock-v6, home-mock-v5, league-pulse-mock-v14, control-room-mock-v1) work in the real app with REAL data; mockgate is the gate. Claude-OS repo ~/work/TheWarRoom (no remote). Order HQ -> War Room -> Home -> Pulse -> Control Room. Worktrees left: .worktrees/hq (build/HQ-1 @6984cd35), .worktrees/wr (build/WR-1 @1cbb44e6). login/mem/gate worktrees removed (branches kept; GATE-1 merged into WR-1).
+
+## 2. AGENTS
+- Sol (GPT): `SOL_LANE=x SOL_WT=<FULL PATH> SOL_BRIEF=<file in ~/fleet/briefs> nohup setsid ~/fleet/bin/launch-sol-lane.sh` on claudeos; runs ~/fleet/runs/<lane>/ (completion.txt). GPT out until ~00:30 CT 11-04. Sol tends to stop early — briefs say "do not stop early".
+- Tom: DO NOT USE until weekly reset Sunday morning 11-08 (Christopher 22:20). I finish Tom's work myself. (Launcher now has TOM_SCOPE override; backup launch-tom-build.sh.bak-1103.)
+- Gate wait line MUST be `while ps -eo comm= | grep -q "^mockgate-walk"; do sleep 20; done` (args-grep matched itself and deadlocked Tom).
+
+## 3. IN FLIGHT
+- Local bg job bxe3cty0t: at 00:35 CT launches Sol lane sol-hq9 (brief ~/fleet/briefs/APP-HQ-9.md, 2479 B) in .worktrees/hq, then waits for ~/fleet/runs/sol-hq9/completion.txt. If the job is lost after compaction: check `ls ~/fleet/runs/sol-hq9`; launch manually if absent after 00:35.
+- On result: verify proofs (cached==full replay + mutant), gate table, record line stays 7-1.
+
+## 4. STATUS
+| Item | State |
+|---|---|
+| HQ gate (~/scratch/mockgate-hq.2EABAA, log ~/scratch/mockgate-a2.log) | Lineup OK88/MISS1/PH10, Cap OK71/MISS0/PH4. Record 7-1 = MFL (all 32 matched per Tom's backup-copy proof). Week = 9 everywhere (lock Thu 19:15) — correct. |
+| HQ-073 | conditional: Buffalo has no vacancy; render code correct (HQBoard.tsx ~186). Not faked. |
+| HQ placeholders | values 052/053/192/193, win prob 044/045, opp 021/033, status 023, matchup 046/082/083 — reads not ready in ~5 min gate window (slow appends). APP-HQ-9 targets. |
+| Ledger A | be3ed0ae people fold+replay advance (equiv proof 16,774 revisions + mutant). SyncLineups 31.0->20.3 s. Remaining: RulesNow (~4.7s), assets/directory (~4s), clone (~2.2s), restore point (~6.8s). Tom WIP patch ~/scratch/tom-restore-wip.patch (UNTESTED, not committed). |
+| Dead money | 3d5c0d83 done; Cap tab 5 rows $5.48M; season rules CONFIRMED by Christopher. |
+| War Room (WR-1 @1cbb44e6) | ~26 commits from WR-1/2/3. Last table (WR-2): Desk 40/54/18, others ~unchanged then WR-3 added Market/Plans/Draft/Pocket/inspector work (not re-gated by me). 305 non-OK IDs listed in docs/ui/data-catalog/wr-conformance-app-wr-2.md. Uncommitted notes wr-conformance-work.md/final.md in tree. |
+| Home, Pulse, CR | not started |
+
+## 5. REFUTED — DO NOT RETEST
+- In-chat Agent tool Tom fails; Beelink launcher only (and Tom is now off till Sunday).
+- "Current week is 10" was WRONG: week 9 unplayed (TNF Nov 5). All displays now week 9.
+- Blank lineup = frontend parser (carriedFrom), not carry-over cost.
+- HQ-073 missing is not a bug (no vacancy).
+
+## 6. DECISIONS (11-03)
+Dead money: parse MFL text + native cut + merge to native records; season rules (drop=final contract yr, buyout=season taken, retirement=text year, native cut=cut season) confirmed. Past weeks = real MFL results, never carry lineups backward. Ledger ruling A (cached state per revision, proven vs full replay), no panel. Tom off till Sun 11-08. Tom effort low when used.
+
+## 7. NEXT ACTIONS
+1. When sol-hq9 lands: review proof + gate; if HQ placeholders gone -> give Christopher HQ to try live (he closes PID 834408; ~/scratch/live-1103b/run.sh with new build).
+2. Re-gate War Room on WR-1 head; brief Sol WR-4 from wr-conformance notes (commit those notes first).
+3. Then Home, Pulse, Control Room gates.
+4. Merge to INTEGRATE only after his live confirmation.
+
+## 8. ENV
+Go env: PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 PYTHONPATH=$HOME/scratch/app-merge-9/python GOLANGCI_LINT_CACHE=<per-wt>. Briefs: write locally + scp (ssh heredocs with quotes break). Claude-OS disk 86%. Never kill PID 834408.
+
+## 9. HONEST STATUS
+HQ close but placeholders remain from slow reads; Christopher has not tried a passing screen. War Room far from mock. Home/Pulse/CR untouched.
+
 # RESUME 2026-11-03 ~15:55 CT — TheWarRoom: locked mocks, mock-gated (supersedes the 10:50 section)
 
 ## 1. WHAT WE ARE DOING
