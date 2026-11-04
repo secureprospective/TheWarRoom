@@ -34,3 +34,8 @@ It will take in other leagues' data, so it's built **multi-league from the start
 ## Correctness findings carried forward (not yet ruled on order)
 F3 Home vs HQ record disagree (2-0/week 8 vs 7-1/week 9) · F8 startup fails on schema migration (integrity check ×2 under 2-min deadline) ·
 F4/F9 click queueing at start and mid-run · F10 memory 2.1→3.5 GB · F6 per-launch nflverse downloads · F1 HQ second shell · F2 Trade Floor stub.
+
+## Comms (ruled 11-04, late afternoon)
+Comms is not a working version (never built) and is not in the locked mocks: **removed from the app.** Done in c7013152:
+app/comms, the core comms host, the Comms panel and its 48px rail column, the comms commands and cache row.
+The endpoint-registry rows placed in Comms are retired, not deleted.
