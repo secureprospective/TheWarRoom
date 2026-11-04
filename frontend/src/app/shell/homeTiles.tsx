@@ -77,6 +77,14 @@ export function playerName(b: HomeBrief, id: string, given = ''): string {
   return given && !STAND_IN.test(given) ? given : held || given || id;
 }
 
+/** seasonPhase reads the league's own week: in season while the open week is inside the schedule or
+ *  the playoffs, off season after it. undefined until the week has been read (H1: never guess). */
+export function seasonPhase(b: HomeBrief): 'in' | 'off' | undefined {
+  const p = b.pulse;
+  if (!p) return undefined;
+  const last = Math.max(p.lastWeek, p.bracket?.finalWeek ?? 0);
+  return p.week !== undefined && p.week <= last ? 'in' : 'off';
+}
 export function myGame(b: HomeBrief, mine: string) {
   return b.results?.games.find(g => g.home === mine || g.away === mine);
 }

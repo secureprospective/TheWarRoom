@@ -1,4 +1,4 @@
-import { HomeAct } from './homeTiles';
+import { seasonPhase, HomeAct } from './homeTiles';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import './home.css';
@@ -75,9 +75,10 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
     if (!retrying) { if (done === pass) attempts.current = 0; return; }
     const again = () => setPass(p => p + 1);
     const timer = setTimeout(again, retryDelay(attempts.current++));
-    const stop = subscribeSeason(again);
-    return () => { clearTimeout(timer); stop(); };
+    return () => clearTimeout(timer);
   }, [retrying, done, pass]);
+  // H2: a good read goes stale too; any change to the season's held data re-reads Home.
+  useEffect(() => initial ? undefined : subscribeSeason(() => setPass(p => p + 1)), [initial]);
   const save = (next: Layout) => {
     setLay(next);
     try { browserStorage()?.setItem(key, JSON.stringify(next)); } catch (e) {
@@ -85,7 +86,8 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
     }
   };
   const g = myGame(b, mine);
-  const phase: Phase = g || b.results?.bye === mine ? 'in' : 'off';
+  const known = seasonPhase(b);
+  const phase: Phase = known ?? 'in'; // layout only; the tag says READING until the week is known
   const tiles = current(lay, phase);
   const placed = useMemo(() => pack(tiles) ?? [], [tiles]);
   const onGrid = new Set(placed.map(p => p.id));
@@ -208,7 +210,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
             <span className="ql">CUSTOMIZE</span></HomeAct>
         </div>
         <section className="now" aria-label="Now">
-          <div className="nl"><span className="tag">{phase === 'off' ? 'OFFSEASON' : g && isFinal(g.status) ?
+          <div className="nl"><span className="tag">{known === undefined ? 'READING…' : known === 'off' ? 'OFFSEASON' : g && isFinal(g.status) ?
             'FINAL' : 'LIVE'}</span>{nowLine}</div>
           {stats.map(([v, l]) => <div className="st" key={l}><b>{v}</b><span>{l}</span></div>)}
         </section>

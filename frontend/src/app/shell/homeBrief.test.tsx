@@ -12,6 +12,11 @@ import jobs from '../../../../testdata/wire/commissioner/jobs.json';
 import type { ResearchReader } from '../research/api';
 import type { PlayerReading, Research } from '../research/contract';
 
+const season = vi.hoisted(() => ({ changed: [] as (() => void)[] }));
+vi.mock('../market/api', async real => ({ ...(await real<typeof import('../market/api')>()),
+  subscribeSeason: (f: () => void) => { season.changed.push(f); return () => {
+    season.changed = season.changed.filter(g => g !== f); }; } }));
+
 const LEAGUE = 'native.home';
 const MINE = 'franchise.01';
 const ledger = { league: LEAGUE, name: 'Held league', revision: 8, entries: [
@@ -437,4 +442,25 @@ it('keeps a final read error without re-reading', async () => {
   await act(async () => { await vi.advanceTimersByTimeAsync(70_000); });
   expect(ledgerCalls).toBe(1);
   vi.useRealTimers();
+});
+
+it('says OFFSEASON from the league week, not from a missing game (H1)', async () => {
+  const after = { ...pulse.week, current: null, nextWeek: undefined };
+  await mount(port({ 'week.read': { ...after, schedule: { ...pulse.week.schedule, league: LEAGUE,
+    franchise: MINE } } }));
+  expect(q('section.now .tag')!.textContent).toBe('OFFSEASON');
+});
+
+it('an open league week is in season even when results have not read yet (H1)', async () => {
+  await mount(port({ 'results.read': undefined }));
+  expect(q('section.now .tag')!.textContent).not.toBe('OFFSEASON');
+});
+
+it('re-reads a good Home when the season data changes (H2)', async () => {
+  const p = port();
+  await mount(p);
+  const before = p.mock.calls.filter(([r]) => r.command === 'standings.read').length;
+  await act(async () => { season.changed.forEach(f => f()); });
+  for (let i = 0; i < 20; i++) await act(async () => { await Promise.resolve(); });
+  expect(p.mock.calls.filter(([r]) => r.command === 'standings.read').length).toBe(before + 1);
 });
