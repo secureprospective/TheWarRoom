@@ -27,22 +27,33 @@ finish(){
 }
 trap finish EXIT
 
-[[ $(xrandr | head -1) == *'current 1920 x 1080'* ]] || { log 'DISPLAY :5 not 1920x1080'; exit 1; }
-go version -m "$BIN" | grep -q -- '-cover=true' || { log 'binary not coverage-built'; exit 1; }
-[[ $(df --output=avail -k "$HOME" | tail -1) -gt 4000000 ]] || { log 'under 4G free'; exit 1; }
+[[ $(xrandr | head -1) == *'current 1920 x 1080'* ]] || { log 'DISPLAY :5 not 1920x1080'; status=1; exit; }
+go version -m "$BIN" | grep -q -- '-cover=true' || { log 'binary not coverage-built'; status=1; exit; }
+[[ $(df --output=avail -k "$HOME" | tail -1) -gt 4000000 ]] || { log 'under 4G free'; status=1; exit; }
 
 rsync -a --exclude backups "$HOME/f2click/config/TheWarRoom/" "$PROF/config/TheWarRoom/"
 cp -a "$HOME/f2click/data/." "$PROF/data/"
 XDG_CONFIG_HOME=$PROF/config XDG_DATA_HOME=$PROF/data "$BIN" \
   --relink-identity-from "$HOME/f2click/config/TheWarRoom" >"$RUN/relink.log" 2>&1
-GOCOVERDIR=$COV XDG_CONFIG_HOME=$PROF/config XDG_DATA_HOME=$PROF/data "$BIN" >"$RUN/app.log" 2>&1 &
-pid=$!
-t0=$(date +%s)   # nav is dead until the launch refresh lands (measured ~3 min on 11-04)
-for _ in $(seq 300); do grep -q 'launch refresh:' "$RUN/app.log" && break; kill -0 $pid || { log 'app died at start'; exit 2; }; sleep 2; done
-grep -q 'launch refresh:' "$RUN/app.log" || { log 'no launch refresh in 10 min'; exit 2; }
+# F8: the old-schema copy migrates on launch (full integrity check x2 + backup) inside a 2-min
+# deadline and fails about half the time. A failed migration rolls back; retry on the same profile.
+for attempt in 1 2 3; do
+  GOCOVERDIR=$COV XDG_CONFIG_HOME=$PROF/config XDG_DATA_HOME=$PROF/data "$BIN" >"$RUN/app.log" 2>&1 &
+  pid=$!
+  t0=$(date +%s)   # nav is dead until the launch refresh lands (measured ~3 min on 11-04)
+  for _ in $(seq 300); do
+    grep -qE 'launch refresh:|startup failed' "$RUN/app.log" && break
+    kill -0 $pid || break; sleep 2
+  done
+  grep -q 'launch refresh:' "$RUN/app.log" && break
+  log "attempt=$attempt failed after $(( $(date +%s)-t0 ))s: $(grep -m1 -oE 'startup failed.*' "$RUN/app.log")"
+  cp "$RUN/app.log" "$RUN/app-attempt$attempt.log"
+  kill -TERM $pid 2>/dev/null; wait $pid 2>/dev/null; pid=''
+done
+[[ -n "$pid" ]] || { log 'startup failed 3 times'; status=2; exit; }
 log "usable after $(( $(date +%s)-t0 ))s"; sleep 10
 win=$(xdotool search --onlyvisible --pid $pid 2>/dev/null | head -1)
-[[ -n "$win" ]] || { log 'no window'; exit 2; }
+[[ -n "$win" ]] || { log 'no window'; status=2; exit; }
 xdotool windowmove "$win" 0 0 windowsize "$win" 1920 1080
 log "start pid=$pid bin=$(sha256sum "$BIN" | cut -c1-12) src=$(git -C "$SRC" rev-parse --short HEAD) hours=$HOURS"
 printf 'ts\tloop\trss_kb\n' >"$RUN/rss.tsv"

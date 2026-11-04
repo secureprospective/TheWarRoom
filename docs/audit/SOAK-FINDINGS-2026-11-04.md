@@ -49,3 +49,20 @@ cr-league and cr-server hashed the same in run-0859. This could be the lag from 
 
 ## Coverage so far (1-loop prewalks, not the soak result)
 run-0843: 58,068 statements, 18,488 ran (31.8%). run-0859: 17,104 ran. Too short and too laggy to judge. The full soak decides.
+
+## F8 — Startup fails about half the time on an old-schema history (upgrade path)
+- `startup failed: initialize history: history: migrate schema: db: integrity check: context deadline exceeded`.
+  run-0916 and run-0927 failed; run-0952 attempt 1 failed (124 s), attempt 2 passed (usable 132 s). Earlier run-0843/0859 passed.
+- Cause (`internal/db/migrations.go:53-75`): when the schema is behind, startup runs a full `PRAGMA integrity_check` before the migration,
+  takes a backup, migrates, then runs the full check again, all under the 2-min startup deadline. The same-version path skips this
+  (comment: "not a launch blocker; on a large history it took ~17 s").
+- Measured on the same 555 MB history.db with plain sqlite3: `integrity_check` 41.7 s, `quick_check` 4.4 s. Two full checks ≈ 84 s
+  plus a backup and the migration, so the deadline passes or fails by luck.
+- Who hits it: any owner with a big history who updates the app. `~/f2click` (11-02) is behind HQ-1, so every soak launch migrates.
+- Soak workaround (no code change): the script retries startup up to 3× on the same profile and logs each attempt.
+
+## Run log
+- run-0916: no launch refresh in 10 min (F8). Script bug: early exits wrote status 1. Fixed: each exit sets its own code.
+- run-0927: F8 again. Stopped it and measured the DB directly (above).
+- run-0952: the 3-hour soak. Attempt 2 started at 09:56 CT and it is walking.
+- Dispatch note: the bee-dispatcher hand-off to Luna never launched (1 tool call, 3 s, brief never reached the Beelink). I launched it directly; my done-watcher covers the watching.
