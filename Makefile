@@ -171,13 +171,6 @@ mutation-test:
 	go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 unleash ./internal/engine/...
 
 # Node is offline tooling only; the parity suite reads checked-in frozen fixtures.
-.PHONY: lab-goldens lab-mutants
-lab-goldens:
-	@test -n "$(LAB)" || { echo 'usage: make lab-goldens LAB=<reference Lab>'; exit 1; }
-	node tools/labparity/gen-goldens.mjs "$(LAB)"
-
-lab-mutants:
-	go test -race ./internal/lab -run TestMutants -v
 
 # Opt-in generated league benchmarks; neither make test nor verify enables leaguebench.
 .PHONY: bench-league bench-league-build
