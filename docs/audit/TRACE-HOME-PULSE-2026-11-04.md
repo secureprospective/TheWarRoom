@@ -65,3 +65,15 @@ Diagnostic run-1332 (DIAG=1): per-process CPU/RSS (Go vs WebKit) every 5 s; at t
 - Other always-on loops: `draftroom/useDraftReading.ts:15` 1 s clock, `research/state.ts:33` polling, `pulse.css:353` blink, `style.css:320` skeleton pulse.
 
 Not yet proven. The proof would be a throwaway build: cap the tile at the rows it shows, stop the ticker, rerun DIAG and compare WebKit CPU/RSS and stalls.
+
+## Result: experiment run-1104-1415 (throwaway patch, reverted after)
+Patch: Transactions tile draws the last 12 rows only (homeTiles.tsx:125); ticker animation off (home.css:323). The full ledger is still fetched.
+| | Baseline run-1332 (unpatched) | run-1415 (patched) |
+|---|---|---|
+| Distinct frames per loop | 33, 32, 27, then STALL 7/33 (loop 4) | 32, 31, 24, 25, 25, 26, 27, 27 (8 loops, no stall) |
+| WebKit CPU | 24–56% all the time, 92% at the stall | 7–13% |
+| WebKit RSS | 431→993 MB on a Home mount, 1.3 GB at the stall | 209–333 MB, flat |
+| Run status | 5 (stall) | 0 (30 min clean) |
+**F12 + F13 PROVEN** as the cause of the client stall and the WebKit CPU/memory. Rendering the full ledger and the endless ticker did it.
+The fetch alone (still the full ledger) costs little on the client. The fix still pages the read, because PWA owners pay for the transfer.
+Loops 3+ at 24–27 distinct are a separate smaller gap (not a stall); not chased yet.
