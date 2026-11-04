@@ -66,3 +66,16 @@ run-0843: 58,068 statements, 18,488 ran (31.8%). run-0859: 17,104 ran. Too short
 - run-0927: F8 again. Stopped it and measured the DB directly (above).
 - run-0952: the 3-hour soak. Attempt 2 started at 09:56 CT and it is walking.
 - Dispatch note: the bee-dispatcher hand-off to Luna never launched (1 tool call, 3 s, brief never reached the Beelink). I launched it directly; my done-watcher covers the watching.
+
+## Soak result — run-0952 (09:56–13:01 CT, 46 loops, DONE=0, 0 panics)
+Full table: `docs/audit/SOAK-COVERAGE-2026-11-04.md`.
+- **Coverage:** 58,068 Go statements; 19,376 ran (33.4%); 38,692 never ran. Never-ran ≠ unused (no draft, rollover, trade accept,
+  playoffs or commish fix fired in week 9). This is a review list, not a delete list.
+- **Biggest never-ran:** commissioner 6,658 (37% ran) · store/history 2,782 · app/mflref/contracts 1,482 (5%) · facts 1,373 (0%) ·
+  commissioner/market 1,357 (7%) · lab 1,197 (ruled out) · app/now 1,020 · store/state 982 · serverhttp 929 (0%) · serverclient 722 (0%) ·
+  mflref/envelope 723 (1%) · app/season 654 (1%) · app/mflref/trades 609 (2%) · app/research 595 (ruled out, but 55% DID run → still wired into a screen) ·
+  app/offers 545 (1%) · transactions 443 (1%).
+- **F9 — UI stalls mid-run:** distinct frames per loop were 26–28/33 most of the time, but dropped to 8–11/33 in loops 27, 29, 34, 36, 41, 42 and 43,
+  hours after startup. Clicks queued for minutes again. Cause unknown; candidates are the background refresh and live sync. Not investigated.
+- **F10 — Memory never settles:** RSS by loop: 1: 2.10 GB · 6: 2.66 · 11: 2.79 · 16: 3.20 · 21: 2.97 · 26: 3.21 · 36: 3.01 · 46: **3.47 GB**.
+  Read-only screen switching only.
