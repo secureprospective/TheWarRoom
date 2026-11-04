@@ -167,7 +167,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
   };
   const cls = ['hb', edit ? 'editing' : '', pick ? 'picking' : '', tab !== 'brief' ? `tab-${tab}` : '']
     .filter(Boolean).join(' ');
-  const entries = (b.ledger?.entries ?? []).slice().reverse();
+  const entries = b.ledger?.entries ?? [];
   const tx = card === undefined ? undefined : entries[card];
   useEffect(() => surfaceActions.register('home-brief', ({ value }) => {
     const [action, id, size] = value.split(':');

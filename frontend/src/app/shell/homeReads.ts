@@ -14,6 +14,9 @@ import { readNativePulse, readPulseMatchup, readPulseWeekResults, type NativePul
   from './pulseReads';
 import { readWarRoomCalendar, type WarRoomEvent } from './warroomCalendar';
 
+/** Newest ledger rows Home reads and draws. */
+export const HOME_LEDGER_ROWS = 12;
+
 /** HomeBrief is every fact the Home brief shows. Each field is one existing read; a read that fails
  *  leaves its field empty and its words in errors, so one lost source never blanks the page. */
 export type HomeBrief = {
@@ -109,10 +112,12 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       out.runway = nativeHQCap(r.data, league, mine);
     }),
     apply('ledger', async () => {
-      const r = await port({ command: 'commish.ledger.read', mode: 'read', arguments: { league } });
+      // Home shows a page of the newest entries, never the whole book (F12, run-1104-1415).
+      const r = await port({ command: 'commish.ledger.filtered.read', mode: 'read', arguments: { league,
+        filter: { person: '', kind: '', from: '', before: '', last: HOME_LEDGER_ROWS } } });
       const ledger = parseLedger(r.data);
       if (ledger.league !== league) throw new Error('Ledger belongs to another league');
-      out.ledger = ledger;
+      out.ledger = { ...ledger, entries: ledger.entries.slice().reverse() }; // newest first, once
     }),
     apply('bids', async () => {
       // Bids are owner-only on the server; viewing another franchise must not ask for them.

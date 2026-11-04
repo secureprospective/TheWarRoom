@@ -32,8 +32,9 @@ const runLocalWorkflow: HostedPort = async (request: NativeRequest, football = '
     direct = () => api.TargetNativeDirectory(request.arguments.league);
   // The bounded workflow envelope (internal/commandcatalog/workflow_commands.go) does not carry the
   // ledger or the jobs board, so TargetWorkflow refuses them; both have their own league-view binding.
-  else if (request.command === 'commish.ledger.read')
-    direct = () => api.TargetCommissionerLedger(request.arguments.league);
+  else if (request.command === 'commish.ledger.filtered.read')
+    direct = () => api.TargetCommissionerLedgerFiltered(request.arguments.league,
+      JSON.stringify(request.arguments.filter));
   else if (request.command === 'commish.jobs.read')
     direct = () => api.TargetCommissionerJobs(request.arguments.league);
   else if (request.command === 'bracket.read')

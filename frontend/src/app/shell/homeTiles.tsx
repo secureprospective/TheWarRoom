@@ -40,7 +40,7 @@ export const TILES: Record<TileId, TileDef> = {
   news: { t: 'NFL NEWS', src: 'Player research · MFL player news', prov: 'research.TargetResearch (articles)',
     link: 'RESEARCH ›', refresh: 'on research refresh', open: { node: 'war', workspace: 'research' }, needs:
       ['research'] },
-  wire: { t: 'TRANSACTIONS', src: 'League ledger', prov: 'commish.ledger.read', link: 'LEDGER ›',
+  wire: { t: 'TRANSACTIONS', src: 'League ledger', prov: 'commish.ledger.filtered.read', link: 'LEDGER ›',
     refresh: 'on event', open: { node: 'control', workspace: 'league' }, needs: ['ledger'] },
   sc: { t: 'MY SHORTCUTS', src: 'Owner', prov: 'owner pins (☆)', link: '', refresh: '—', needs: [] },
   pwr: { t: 'POWER', src: 'League Pulse · Race', prov: 'odds.read', link: 'POWER ›',
@@ -122,7 +122,7 @@ export function TileBody({ id, b, mine, pins }: { id: TileId; b: HomeBrief;
     case 'mu': return <Matchup b={b} mine={mine} />;
     case 'race': return <Race b={b} mine={mine} />;
     case 'pwr': return <Power b={b} mine={mine} />;
-    case 'wire': return <>{(b.ledger?.entries ?? []).slice().reverse().map((e, i) =>
+    case 'wire': return <>{(b.ledger?.entries ?? []).map((e, i) =>
       <HomeAct key={e.id} className="r wire" action="transaction" value={String(i)}
         attributes={{ 'data-tx': String(i) }} label={`${e.what} · ${e.who}`}><><span
           className="m">{shortTime(e.when)}</span>

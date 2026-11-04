@@ -32,7 +32,7 @@ function port(over: Record<string, unknown> = {}) {
       'standings.read': { ...pulse.standings, league },
       'bracket.read': { ...pulse.bracket, league },
       'results.read': { ...pulse.results, league },
-      'commish.ledger.read': ledger,
+      'commish.ledger.filtered.read': ledger,
       ...over,
     };
     if (data[request.command] === undefined) throw new Error(`No fixture for ${request.command}`);
@@ -65,7 +65,7 @@ it('reads each region from the existing league reads with this league and franch
   const calls = p.mock.calls.map(([r]) => [r.command, r.arguments]);
   expect(calls).toContainEqual(['standings.read', { league: LEAGUE, season: 2026 }]);
   expect(calls).toContainEqual(['results.read', { league: LEAGUE, season: 2026, week: 2 }]);
-  expect(calls).toContainEqual(['commish.ledger.read', { league: LEAGUE }]);
+  expect(calls).toContainEqual(['commish.ledger.filtered.read', { league: LEAGUE, filter: { person: '', kind: '', from: '', before: '', last: 12 } }]);
   expect(calls).toContainEqual(['bids.read', { league: LEAGUE, franchise: MINE }]);
   expect(calls).toContainEqual(['draft.read', expect.objectContaining({ league: LEAGUE, franchise: MINE })]);
 });
@@ -410,7 +410,7 @@ it('re-reads a tile whose read timed out during startup instead of keeping the e
   let ledgerCalls = 0;
   const base = port();
   const p = vi.fn<HostedPort>(async request => {
-    if (request.command === 'commish.ledger.read' && ledgerCalls++ === 0)
+    if (request.command === 'commish.ledger.filtered.read' && ledgerCalls++ === 0)
       throw new Error('read linked identities: context deadline exceeded');
     return base(request);
   });
@@ -430,7 +430,7 @@ it('keeps a final read error without re-reading', async () => {
   let ledgerCalls = 0;
   const base = port();
   const p = vi.fn<HostedPort>(async request => {
-    if (request.command === 'commish.ledger.read') { ledgerCalls++; throw new Error('Ledger belongs to another league'); }
+    if (request.command === 'commish.ledger.filtered.read') { ledgerCalls++; throw new Error('Ledger belongs to another league'); }
     return base(request);
   });
   await mount(p);

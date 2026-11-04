@@ -75,6 +75,15 @@ const schema6 = {
   Items:null,
 } as const;
 const schema7 = {
+  Type:"integer",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema8 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -84,11 +93,12 @@ const schema7 = {
     {Name:"person",Optional:false,Schema:schema2},
     {Name:"kind",Optional:false,Schema:schema2},
     {Name:"from",Optional:false,Schema:schema2},
-    {Name:"before",Optional:false,Schema:schema2}
+    {Name:"before",Optional:false,Schema:schema2},
+    {Name:"last",Optional:true,Schema:schema7}
   ],
   Items:null,
 } as const;
-const schema8 = {
+const schema9 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -96,11 +106,11 @@ const schema8 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"filter",Optional:false,Schema:schema7}
+    {Name:"filter",Optional:false,Schema:schema8}
   ],
   Items:null,
 } as const;
-const schema9 = {
+const schema10 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -112,7 +122,7 @@ const schema9 = {
   ],
   Items:null,
 } as const;
-const schema10 = {
+const schema11 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -123,7 +133,7 @@ const schema10 = {
   ],
   Items:null,
 } as const;
-const schema11 = {
+const schema12 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -134,7 +144,7 @@ const schema11 = {
   ],
   Items:null,
 } as const;
-const schema12 = {
+const schema13 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -145,7 +155,7 @@ const schema12 = {
   ],
   Items:null,
 } as const;
-const schema13 = {
+const schema14 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -157,7 +167,7 @@ const schema13 = {
   ],
   Items:null,
 } as const;
-const schema14 = {
+const schema15 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -168,7 +178,7 @@ const schema14 = {
   ],
   Items:null,
 } as const;
-const schema15 = {
+const schema16 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -179,15 +189,6 @@ const schema15 = {
   ],
   Items:null,
 } as const;
-const schema16 = {
-  Type:"integer",
-  Enum:null,
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
 const schema17 = {
   Type:"object",
   Enum:null,
@@ -196,7 +197,7 @@ const schema17 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"localZone",Optional:false,Schema:schema2},
     {Name:"franchise",Optional:false,Schema:schema2},
     {Name:"action",Optional:false,Schema:schema2}
@@ -245,7 +246,7 @@ const schema21 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16}
+    {Name:"season",Optional:false,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -273,10 +274,10 @@ const schema23 = {
     {Name:"franchise",Optional:true,Schema:schema2},
     {Name:"action",Optional:false,Schema:schema2},
     {Name:"viewerZone",Optional:false,Schema:schema2},
-    {Name:"years",Optional:false,Schema:schema16},
-    {Name:"level",Optional:false,Schema:schema16},
-    {Name:"moveCents",Optional:false,Schema:schema16},
-    {Name:"amountCents",Optional:false,Schema:schema16},
+    {Name:"years",Optional:false,Schema:schema7},
+    {Name:"level",Optional:false,Schema:schema7},
+    {Name:"moveCents",Optional:false,Schema:schema7},
+    {Name:"amountCents",Optional:false,Schema:schema7},
     {Name:"reason",Optional:false,Schema:schema2}
   ],
   Items:null,
@@ -318,7 +319,7 @@ const schema27 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"franchise",Optional:false,Schema:schema2},
     {Name:"at",Optional:false,Schema:schema25},
     {Name:"startup",Optional:true,Schema:schema26}
@@ -334,7 +335,7 @@ const schema28 = {
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"franchise",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"localZone",Optional:false,Schema:schema2}
   ],
   Items:null,
@@ -359,7 +360,7 @@ const schema30 = {
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"franchise",Optional:false,Schema:schema2},
-    {Name:"week",Optional:false,Schema:schema16},
+    {Name:"week",Optional:false,Schema:schema7},
     {Name:"at",Optional:false,Schema:schema2}
   ],
   Items:null,
@@ -399,8 +400,8 @@ const schema33 = {
     {Name:"partner",Optional:false,Schema:schema2},
     {Name:"give",Optional:false,Schema:schema31},
     {Name:"get",Optional:false,Schema:schema31},
-    {Name:"season",Optional:false,Schema:schema16},
-    {Name:"week",Optional:false,Schema:schema16}
+    {Name:"season",Optional:false,Schema:schema7},
+    {Name:"week",Optional:false,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -413,7 +414,7 @@ const schema34 = {
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"franchise",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16}
+    {Name:"season",Optional:false,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -426,8 +427,8 @@ const schema35 = {
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"players",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16},
-    {Name:"week",Optional:false,Schema:schema16}
+    {Name:"season",Optional:false,Schema:schema7},
+    {Name:"week",Optional:false,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -440,8 +441,8 @@ const schema36 = {
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"player",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16},
-    {Name:"week",Optional:false,Schema:schema16}
+    {Name:"season",Optional:false,Schema:schema7},
+    {Name:"week",Optional:false,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -464,8 +465,8 @@ const schema38 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16},
-    {Name:"week",Optional:false,Schema:schema16}
+    {Name:"season",Optional:false,Schema:schema7},
+    {Name:"week",Optional:false,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -488,7 +489,7 @@ const schema40 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16}
+    {Name:"season",Optional:false,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -500,7 +501,7 @@ const schema41 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16}
+    {Name:"season",Optional:false,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -550,7 +551,7 @@ const schema45 = {
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"franchise",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"localZone",Optional:false,Schema:schema2},
     {Name:"at",Optional:false,Schema:schema25}
   ],
@@ -564,7 +565,7 @@ const schema46 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2}
   ],
   Items:null,
@@ -589,8 +590,8 @@ const schema48 = {
   Fields:[
     {Name:"name",Optional:true,Schema:schema2},
     {Name:"preset",Optional:true,Schema:schema2},
-    {Name:"franchiseCount",Optional:true,Schema:schema16},
-    {Name:"season",Optional:true,Schema:schema16}
+    {Name:"franchiseCount",Optional:true,Schema:schema7},
+    {Name:"season",Optional:true,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -605,7 +606,7 @@ const schema49 = {
     {Name:"command",Optional:false,Schema:schema47},
     {Name:"args",Optional:false,Schema:schema48},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -646,7 +647,7 @@ const schema52 = {
     {Name:"command",Optional:false,Schema:schema50},
     {Name:"args",Optional:false,Schema:schema51},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -697,7 +698,7 @@ const schema56 = {
     {Name:"command",Optional:false,Schema:schema53},
     {Name:"args",Optional:false,Schema:schema55},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -760,7 +761,7 @@ const schema61 = {
     {Name:"command",Optional:false,Schema:schema57},
     {Name:"args",Optional:false,Schema:schema60},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -776,7 +777,7 @@ const schema62 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"reason",Optional:false,Schema:schema2}
   ],
@@ -800,7 +801,7 @@ const schema64 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"to",Optional:false,Schema:schema16},
+    {Name:"to",Optional:false,Schema:schema7},
     {Name:"dry_run",Optional:false,Schema:schema26}
   ],
   Items:null,
@@ -827,7 +828,7 @@ const schema66 = {
     {Name:"command",Optional:false,Schema:schema63},
     {Name:"args",Optional:false,Schema:schema65},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -881,7 +882,7 @@ const schema70 = {
     {Name:"command",Optional:false,Schema:schema67},
     {Name:"args",Optional:false,Schema:schema69},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -907,7 +908,7 @@ const schema72 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"slot",Optional:true,Schema:schema16},
+    {Name:"slot",Optional:true,Schema:schema7},
     {Name:"unverified",Optional:true,Schema:schema26}
   ],
   Items:null,
@@ -919,9 +920,9 @@ const schema73 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"slot",Optional:true,Schema:schema16},
-    {Name:"season",Optional:false,Schema:schema16},
-    {Name:"round",Optional:false,Schema:schema16},
+    {Name:"slot",Optional:true,Schema:schema7},
+    {Name:"season",Optional:false,Schema:schema7},
+    {Name:"round",Optional:false,Schema:schema7},
     {Name:"original",Optional:false,Schema:schema2}
   ],
   Items:null,
@@ -983,7 +984,7 @@ const schema77 = {
     {Name:"command",Optional:false,Schema:schema71},
     {Name:"args",Optional:false,Schema:schema76},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1013,7 +1014,7 @@ const schema79 = {
     {Name:"command",Optional:false,Schema:schema78},
     {Name:"args",Optional:false,Schema:schema76},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1043,7 +1044,7 @@ const schema81 = {
     {Name:"command",Optional:false,Schema:schema80},
     {Name:"args",Optional:false,Schema:schema76},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1073,7 +1074,7 @@ const schema83 = {
     {Name:"command",Optional:false,Schema:schema82},
     {Name:"args",Optional:false,Schema:schema76},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1103,7 +1104,7 @@ const schema85 = {
     {Name:"command",Optional:false,Schema:schema84},
     {Name:"args",Optional:false,Schema:schema76},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1129,8 +1130,8 @@ const schema87 = {
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"salaryCents",Optional:false,Schema:schema16},
-    {Name:"years",Optional:false,Schema:schema16},
+    {Name:"salaryCents",Optional:false,Schema:schema7},
+    {Name:"years",Optional:false,Schema:schema7},
     {Name:"rfaAfter",Optional:false,Schema:schema26}
   ],
   Items:null,
@@ -1144,9 +1145,9 @@ const schema88 = {
   Fields:[
     {Name:"franchise",Optional:false,Schema:schema2},
     {Name:"player",Optional:false,Schema:schema2},
-    {Name:"entrySeason",Optional:false,Schema:schema16},
-    {Name:"round",Optional:false,Schema:schema16},
-    {Name:"slot",Optional:false,Schema:schema16},
+    {Name:"entrySeason",Optional:false,Schema:schema7},
+    {Name:"round",Optional:false,Schema:schema7},
+    {Name:"slot",Optional:false,Schema:schema7},
     {Name:"original",Optional:false,Schema:schema2},
     {Name:"terms",Optional:false,Schema:schema87}
   ],
@@ -1159,14 +1160,14 @@ const schema89 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"round",Optional:true,Schema:schema16},
+    {Name:"round",Optional:true,Schema:schema7},
     {Name:"original",Optional:true,Schema:schema2},
-    {Name:"extra",Optional:true,Schema:schema16},
+    {Name:"extra",Optional:true,Schema:schema7},
     {Name:"player",Optional:true,Schema:schema2},
     {Name:"replaces",Optional:true,Schema:schema2},
     {Name:"franchise",Optional:true,Schema:schema2},
     {Name:"timer",Optional:true,Schema:schema2},
-    {Name:"seconds",Optional:true,Schema:schema16},
+    {Name:"seconds",Optional:true,Schema:schema7},
     {Name:"to",Optional:true,Schema:schema2}
   ],
   Items:null,
@@ -1178,8 +1179,8 @@ const schema90 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"season",Optional:true,Schema:schema16},
-    {Name:"round",Optional:true,Schema:schema16},
+    {Name:"season",Optional:true,Schema:schema7},
+    {Name:"round",Optional:true,Schema:schema7},
     {Name:"order",Optional:true,Schema:schema31},
     {Name:"source",Optional:true,Schema:schema2},
     {Name:"pattern",Optional:true,Schema:schema2},
@@ -1215,7 +1216,7 @@ const schema92 = {
     {Name:"command",Optional:false,Schema:schema86},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1245,7 +1246,7 @@ const schema94 = {
     {Name:"command",Optional:false,Schema:schema93},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1275,7 +1276,7 @@ const schema96 = {
     {Name:"command",Optional:false,Schema:schema95},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1305,7 +1306,7 @@ const schema98 = {
     {Name:"command",Optional:false,Schema:schema97},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1335,7 +1336,7 @@ const schema100 = {
     {Name:"command",Optional:false,Schema:schema99},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1351,11 +1352,11 @@ const schema101 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"franchise",Optional:false,Schema:schema2},
     {Name:"player",Optional:false,Schema:schema2},
     {Name:"request",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"startup",Optional:true,Schema:schema26}
   ],
   Items:null,
@@ -1382,7 +1383,7 @@ const schema103 = {
     {Name:"command",Optional:false,Schema:schema102},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1412,7 +1413,7 @@ const schema105 = {
     {Name:"command",Optional:false,Schema:schema104},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1442,7 +1443,7 @@ const schema107 = {
     {Name:"command",Optional:false,Schema:schema106},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1472,7 +1473,7 @@ const schema109 = {
     {Name:"command",Optional:false,Schema:schema108},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1502,7 +1503,7 @@ const schema111 = {
     {Name:"command",Optional:false,Schema:schema110},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1532,7 +1533,7 @@ const schema113 = {
     {Name:"command",Optional:false,Schema:schema112},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1562,7 +1563,7 @@ const schema115 = {
     {Name:"command",Optional:false,Schema:schema114},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1592,7 +1593,7 @@ const schema117 = {
     {Name:"command",Optional:false,Schema:schema116},
     {Name:"args",Optional:false,Schema:schema91},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1618,8 +1619,8 @@ const schema119 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"month",Optional:false,Schema:schema16},
-    {Name:"day",Optional:false,Schema:schema16}
+    {Name:"month",Optional:false,Schema:schema7},
+    {Name:"day",Optional:false,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -1659,7 +1660,7 @@ const schema122 = {
     {Name:"command",Optional:false,Schema:schema118},
     {Name:"args",Optional:false,Schema:schema121},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1689,7 +1690,7 @@ const schema124 = {
     {Name:"command",Optional:false,Schema:schema123},
     {Name:"args",Optional:false,Schema:schema121},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1719,7 +1720,7 @@ const schema126 = {
     {Name:"command",Optional:false,Schema:schema125},
     {Name:"args",Optional:false,Schema:schema121},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1759,7 +1760,7 @@ const schema129 = {
     {Name:"years",Optional:true,Schema:schema128},
     {Name:"salaryCents",Optional:true,Schema:schema128},
     {Name:"amountCents",Optional:true,Schema:schema128},
-    {Name:"season",Optional:true,Schema:schema16},
+    {Name:"season",Optional:true,Schema:schema7},
     {Name:"bucket",Optional:true,Schema:schema2},
     {Name:"until",Optional:true,Schema:schema2}
   ],
@@ -1787,7 +1788,7 @@ const schema131 = {
     {Name:"command",Optional:false,Schema:schema127},
     {Name:"args",Optional:false,Schema:schema130},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1817,7 +1818,7 @@ const schema133 = {
     {Name:"command",Optional:false,Schema:schema132},
     {Name:"args",Optional:false,Schema:schema130},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1847,7 +1848,7 @@ const schema135 = {
     {Name:"command",Optional:false,Schema:schema134},
     {Name:"args",Optional:false,Schema:schema130},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1877,7 +1878,7 @@ const schema137 = {
     {Name:"command",Optional:false,Schema:schema136},
     {Name:"args",Optional:false,Schema:schema130},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -1904,8 +1905,8 @@ const schema139 = {
   Nullable:false,
   Fields:[
     {Name:"franchise",Optional:false,Schema:schema2},
-    {Name:"week",Optional:false,Schema:schema16},
-    {Name:"points",Optional:false,Schema:schema16},
+    {Name:"week",Optional:false,Schema:schema7},
+    {Name:"points",Optional:false,Schema:schema7},
     {Name:"result",Optional:true,Schema:schema2}
   ],
   Items:null,
@@ -1926,8 +1927,8 @@ const schema141 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"season",Optional:false,Schema:schema16},
-    {Name:"cutoverWeek",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
+    {Name:"cutoverWeek",Optional:false,Schema:schema7},
     {Name:"teams",Optional:false,Schema:schema140}
   ],
   Items:null,
@@ -1961,7 +1962,7 @@ const schema144 = {
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"week",Optional:false,Schema:schema16},
+    {Name:"week",Optional:false,Schema:schema7},
     {Name:"games",Optional:false,Schema:schema143},
     {Name:"bye",Optional:true,Schema:schema2}
   ],
@@ -1985,9 +1986,9 @@ const schema146 = {
   Fields:[
     {Name:"recorded",Optional:true,Schema:schema141},
     {Name:"fixtures",Optional:true,Schema:schema145},
-    {Name:"weeks",Optional:true,Schema:schema16},
+    {Name:"weeks",Optional:true,Schema:schema7},
     {Name:"pattern",Optional:true,Schema:schema2},
-    {Name:"week",Optional:true,Schema:schema16},
+    {Name:"week",Optional:true,Schema:schema7},
     {Name:"games",Optional:true,Schema:schema143},
     {Name:"published",Optional:true,Schema:schema26}
   ],
@@ -2015,7 +2016,7 @@ const schema148 = {
     {Name:"command",Optional:false,Schema:schema138},
     {Name:"args",Optional:false,Schema:schema147},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2045,7 +2046,7 @@ const schema150 = {
     {Name:"command",Optional:false,Schema:schema149},
     {Name:"args",Optional:false,Schema:schema147},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2075,7 +2076,7 @@ const schema152 = {
     {Name:"command",Optional:false,Schema:schema151},
     {Name:"args",Optional:false,Schema:schema147},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2102,9 +2103,9 @@ const schema154 = {
   Nullable:false,
   Fields:[
     {Name:"id",Optional:false,Schema:schema2},
-    {Name:"week",Optional:false,Schema:schema16},
-    {Name:"homeSeed",Optional:true,Schema:schema16},
-    {Name:"awaySeed",Optional:true,Schema:schema16},
+    {Name:"week",Optional:false,Schema:schema7},
+    {Name:"homeSeed",Optional:true,Schema:schema7},
+    {Name:"awaySeed",Optional:true,Schema:schema7},
     {Name:"homeFrom",Optional:true,Schema:schema2},
     {Name:"awayFrom",Optional:true,Schema:schema2}
   ],
@@ -2126,11 +2127,11 @@ const schema156 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"started",Optional:true,Schema:schema26},
     {Name:"preset",Optional:true,Schema:schema2},
     {Name:"node",Optional:true,Schema:schema2},
-    {Name:"slot",Optional:true,Schema:schema16},
+    {Name:"slot",Optional:true,Schema:schema7},
     {Name:"game",Optional:true,Schema:schema2},
     {Name:"team",Optional:true,Schema:schema2},
     {Name:"name",Optional:true,Schema:schema2},
@@ -2160,7 +2161,7 @@ const schema158 = {
     {Name:"command",Optional:false,Schema:schema153},
     {Name:"args",Optional:false,Schema:schema157},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2190,7 +2191,7 @@ const schema160 = {
     {Name:"command",Optional:false,Schema:schema159},
     {Name:"args",Optional:false,Schema:schema157},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2220,7 +2221,7 @@ const schema162 = {
     {Name:"command",Optional:false,Schema:schema161},
     {Name:"args",Optional:false,Schema:schema157},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2250,7 +2251,7 @@ const schema164 = {
     {Name:"command",Optional:false,Schema:schema163},
     {Name:"args",Optional:false,Schema:schema157},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2280,7 +2281,7 @@ const schema166 = {
     {Name:"command",Optional:false,Schema:schema165},
     {Name:"args",Optional:false,Schema:schema157},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2306,11 +2307,11 @@ const schema168 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"franchise",Optional:true,Schema:schema2},
-    {Name:"wins",Optional:true,Schema:schema16},
-    {Name:"losses",Optional:true,Schema:schema16},
-    {Name:"ties",Optional:true,Schema:schema16},
+    {Name:"wins",Optional:true,Schema:schema7},
+    {Name:"losses",Optional:true,Schema:schema7},
+    {Name:"ties",Optional:true,Schema:schema7},
     {Name:"order",Optional:true,Schema:schema31}
   ],
   Items:null,
@@ -2337,7 +2338,7 @@ const schema170 = {
     {Name:"command",Optional:false,Schema:schema167},
     {Name:"args",Optional:false,Schema:schema169},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2367,7 +2368,7 @@ const schema172 = {
     {Name:"command",Optional:false,Schema:schema171},
     {Name:"args",Optional:false,Schema:schema169},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2397,7 +2398,7 @@ const schema174 = {
     {Name:"command",Optional:false,Schema:schema173},
     {Name:"args",Optional:false,Schema:schema169},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2426,8 +2427,8 @@ const schema176 = {
     {Name:"item",Optional:true,Schema:schema2},
     {Name:"items",Optional:true,Schema:schema31},
     {Name:"player",Optional:true,Schema:schema2},
-    {Name:"season",Optional:true,Schema:schema16},
-    {Name:"week",Optional:true,Schema:schema16},
+    {Name:"season",Optional:true,Schema:schema7},
+    {Name:"week",Optional:true,Schema:schema7},
     {Name:"stat",Optional:true,Schema:schema2},
     {Name:"value",Optional:true,Schema:schema128},
     {Name:"source",Optional:true,Schema:schema2}
@@ -2456,7 +2457,7 @@ const schema178 = {
     {Name:"command",Optional:false,Schema:schema175},
     {Name:"args",Optional:false,Schema:schema177},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2486,7 +2487,7 @@ const schema180 = {
     {Name:"command",Optional:false,Schema:schema179},
     {Name:"args",Optional:false,Schema:schema177},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2516,7 +2517,7 @@ const schema182 = {
     {Name:"command",Optional:false,Schema:schema181},
     {Name:"args",Optional:false,Schema:schema177},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2545,8 +2546,8 @@ const schema184 = {
     {Name:"player",Optional:true,Schema:schema2},
     {Name:"position",Optional:true,Schema:schema2},
     {Name:"franchise",Optional:true,Schema:schema2},
-    {Name:"season",Optional:true,Schema:schema16},
-    {Name:"week",Optional:true,Schema:schema16},
+    {Name:"season",Optional:true,Schema:schema7},
+    {Name:"week",Optional:true,Schema:schema7},
     {Name:"delta",Optional:true,Schema:schema128}
   ],
   Items:null,
@@ -2573,7 +2574,7 @@ const schema186 = {
     {Name:"command",Optional:false,Schema:schema183},
     {Name:"args",Optional:false,Schema:schema185},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2603,7 +2604,7 @@ const schema188 = {
     {Name:"command",Optional:false,Schema:schema187},
     {Name:"args",Optional:false,Schema:schema185},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2633,7 +2634,7 @@ const schema190 = {
     {Name:"command",Optional:false,Schema:schema189},
     {Name:"args",Optional:false,Schema:schema185},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2663,7 +2664,7 @@ const schema192 = {
     {Name:"command",Optional:false,Schema:schema191},
     {Name:"args",Optional:false,Schema:schema185},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2689,9 +2690,9 @@ const schema194 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"franchise",Optional:false,Schema:schema2},
-    {Name:"week",Optional:false,Schema:schema16},
+    {Name:"week",Optional:false,Schema:schema7},
     {Name:"starters",Optional:false,Schema:schema31}
   ],
   Items:null,
@@ -2718,7 +2719,7 @@ const schema196 = {
     {Name:"command",Optional:false,Schema:schema193},
     {Name:"args",Optional:false,Schema:schema195},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2748,7 +2749,7 @@ const schema198 = {
     {Name:"command",Optional:false,Schema:schema197},
     {Name:"args",Optional:false,Schema:schema195},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2774,7 +2775,7 @@ const schema200 = {
   Validator:"",
   Nullable:true,
   Fields:[
-    {Name:"season",Optional:false,Schema:schema16},
+    {Name:"season",Optional:false,Schema:schema7},
     {Name:"label",Optional:true,Schema:schema2}
   ],
   Items:null,
@@ -2801,7 +2802,7 @@ const schema202 = {
     {Name:"command",Optional:false,Schema:schema199},
     {Name:"args",Optional:false,Schema:schema201},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2854,7 +2855,7 @@ const schema206 = {
     {Name:"command",Optional:false,Schema:schema203},
     {Name:"args",Optional:false,Schema:schema205},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2907,7 +2908,7 @@ const schema210 = {
     {Name:"command",Optional:false,Schema:schema207},
     {Name:"args",Optional:false,Schema:schema209},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2937,7 +2938,7 @@ const schema212 = {
     {Name:"command",Optional:false,Schema:schema211},
     {Name:"args",Optional:false,Schema:schema209},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -2966,8 +2967,8 @@ const schema214 = {
     {Name:"from",Optional:false,Schema:schema2},
     {Name:"to",Optional:false,Schema:schema2},
     {Name:"player",Optional:true,Schema:schema2},
-    {Name:"season",Optional:true,Schema:schema16},
-    {Name:"round",Optional:true,Schema:schema16},
+    {Name:"season",Optional:true,Schema:schema7},
+    {Name:"round",Optional:true,Schema:schema7},
     {Name:"original",Optional:true,Schema:schema2}
   ],
   Items:null,
@@ -3018,7 +3019,7 @@ const schema218 = {
     {Name:"command",Optional:false,Schema:schema213},
     {Name:"args",Optional:false,Schema:schema217},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3048,7 +3049,7 @@ const schema220 = {
     {Name:"command",Optional:false,Schema:schema219},
     {Name:"args",Optional:false,Schema:schema217},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3078,7 +3079,7 @@ const schema222 = {
     {Name:"command",Optional:false,Schema:schema221},
     {Name:"args",Optional:false,Schema:schema217},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3108,7 +3109,7 @@ const schema224 = {
     {Name:"command",Optional:false,Schema:schema223},
     {Name:"args",Optional:false,Schema:schema217},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3138,7 +3139,7 @@ const schema226 = {
     {Name:"command",Optional:false,Schema:schema225},
     {Name:"args",Optional:false,Schema:schema217},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3168,7 +3169,7 @@ const schema228 = {
     {Name:"command",Optional:false,Schema:schema227},
     {Name:"args",Optional:false,Schema:schema217},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3198,7 +3199,7 @@ const schema230 = {
     {Name:"command",Optional:false,Schema:schema229},
     {Name:"args",Optional:false,Schema:schema217},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3228,7 +3229,7 @@ const schema232 = {
     {Name:"command",Optional:false,Schema:schema231},
     {Name:"args",Optional:false,Schema:schema217},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3258,7 +3259,7 @@ const schema234 = {
     {Name:"command",Optional:false,Schema:schema233},
     {Name:"args",Optional:false,Schema:schema217},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3315,7 +3316,7 @@ const schema238 = {
     {Name:"command",Optional:false,Schema:schema235},
     {Name:"args",Optional:false,Schema:schema237},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3345,7 +3346,7 @@ const schema240 = {
     {Name:"command",Optional:false,Schema:schema239},
     {Name:"args",Optional:false,Schema:schema237},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3375,7 +3376,7 @@ const schema242 = {
     {Name:"command",Optional:false,Schema:schema241},
     {Name:"args",Optional:false,Schema:schema237},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3405,7 +3406,7 @@ const schema244 = {
     {Name:"command",Optional:false,Schema:schema243},
     {Name:"args",Optional:false,Schema:schema237},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3435,7 +3436,7 @@ const schema246 = {
     {Name:"command",Optional:false,Schema:schema245},
     {Name:"args",Optional:false,Schema:schema237},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3465,7 +3466,7 @@ const schema248 = {
     {Name:"command",Optional:false,Schema:schema247},
     {Name:"args",Optional:false,Schema:schema237},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3495,7 +3496,7 @@ const schema250 = {
     {Name:"command",Optional:false,Schema:schema249},
     {Name:"args",Optional:false,Schema:schema237},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3525,8 +3526,8 @@ const schema252 = {
     {Name:"franchise",Optional:true,Schema:schema2},
     {Name:"side",Optional:true,Schema:schema2},
     {Name:"bid",Optional:true,Schema:schema2},
-    {Name:"salaryCents",Optional:true,Schema:schema16},
-    {Name:"years",Optional:true,Schema:schema16}
+    {Name:"salaryCents",Optional:true,Schema:schema7},
+    {Name:"years",Optional:true,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -3552,7 +3553,7 @@ const schema254 = {
     {Name:"command",Optional:false,Schema:schema251},
     {Name:"args",Optional:false,Schema:schema253},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3582,7 +3583,7 @@ const schema256 = {
     {Name:"command",Optional:false,Schema:schema255},
     {Name:"args",Optional:false,Schema:schema253},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3612,7 +3613,7 @@ const schema258 = {
     {Name:"command",Optional:false,Schema:schema257},
     {Name:"args",Optional:false,Schema:schema253},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3653,7 +3654,7 @@ const schema261 = {
     {Name:"command",Optional:false,Schema:schema259},
     {Name:"args",Optional:false,Schema:schema260},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3683,7 +3684,7 @@ const schema263 = {
     {Name:"command",Optional:false,Schema:schema262},
     {Name:"args",Optional:false,Schema:schema253},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3713,7 +3714,7 @@ const schema265 = {
     {Name:"command",Optional:false,Schema:schema264},
     {Name:"args",Optional:false,Schema:schema253},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3754,10 +3755,10 @@ const schema267 = {
     {Name:"successor",Optional:true,Schema:schema2},
     {Name:"commissioner",Optional:true,Schema:schema2},
     {Name:"choice",Optional:true,Schema:schema2},
-    {Name:"inSeasonDays",Optional:true,Schema:schema16},
-    {Name:"offseasonDays",Optional:true,Schema:schema16},
-    {Name:"electionDays",Optional:true,Schema:schema16},
-    {Name:"runoffDays",Optional:true,Schema:schema16}
+    {Name:"inSeasonDays",Optional:true,Schema:schema7},
+    {Name:"offseasonDays",Optional:true,Schema:schema7},
+    {Name:"electionDays",Optional:true,Schema:schema7},
+    {Name:"runoffDays",Optional:true,Schema:schema7}
   ],
   Items:null,
 } as const;
@@ -3783,7 +3784,7 @@ const schema269 = {
     {Name:"command",Optional:false,Schema:schema266},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3813,7 +3814,7 @@ const schema271 = {
     {Name:"command",Optional:false,Schema:schema270},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3843,7 +3844,7 @@ const schema273 = {
     {Name:"command",Optional:false,Schema:schema272},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3873,7 +3874,7 @@ const schema275 = {
     {Name:"command",Optional:false,Schema:schema274},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3903,7 +3904,7 @@ const schema277 = {
     {Name:"command",Optional:false,Schema:schema276},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3933,7 +3934,7 @@ const schema279 = {
     {Name:"command",Optional:false,Schema:schema278},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3963,7 +3964,7 @@ const schema281 = {
     {Name:"command",Optional:false,Schema:schema280},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -3993,7 +3994,7 @@ const schema283 = {
     {Name:"command",Optional:false,Schema:schema282},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4023,7 +4024,7 @@ const schema285 = {
     {Name:"command",Optional:false,Schema:schema284},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4053,7 +4054,7 @@ const schema287 = {
     {Name:"command",Optional:false,Schema:schema286},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4083,7 +4084,7 @@ const schema289 = {
     {Name:"command",Optional:false,Schema:schema288},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4113,7 +4114,7 @@ const schema291 = {
     {Name:"command",Optional:false,Schema:schema290},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4143,7 +4144,7 @@ const schema293 = {
     {Name:"command",Optional:false,Schema:schema292},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4173,7 +4174,7 @@ const schema295 = {
     {Name:"command",Optional:false,Schema:schema294},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4203,7 +4204,7 @@ const schema297 = {
     {Name:"command",Optional:false,Schema:schema296},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4233,7 +4234,7 @@ const schema299 = {
     {Name:"command",Optional:false,Schema:schema298},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4263,7 +4264,7 @@ const schema301 = {
     {Name:"command",Optional:false,Schema:schema300},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4293,7 +4294,7 @@ const schema303 = {
     {Name:"command",Optional:false,Schema:schema302},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4323,7 +4324,7 @@ const schema305 = {
     {Name:"command",Optional:false,Schema:schema304},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4353,7 +4354,7 @@ const schema307 = {
     {Name:"command",Optional:false,Schema:schema306},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4383,7 +4384,7 @@ const schema309 = {
     {Name:"command",Optional:false,Schema:schema308},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4413,7 +4414,7 @@ const schema311 = {
     {Name:"command",Optional:false,Schema:schema310},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4443,7 +4444,7 @@ const schema313 = {
     {Name:"command",Optional:false,Schema:schema312},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4473,7 +4474,7 @@ const schema315 = {
     {Name:"command",Optional:false,Schema:schema314},
     {Name:"args",Optional:false,Schema:schema268},
     {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema16},
+    {Name:"expected",Optional:false,Schema:schema7},
     {Name:"request",Optional:false,Schema:schema2},
     {Name:"effective",Optional:false,Schema:schema2},
     {Name:"visibility",Optional:false,Schema:schema2},
@@ -4611,7 +4612,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "none",
-    "Arguments": schema8
+    "Arguments": schema9
   },
   phrase: "read league ledger filtered",
 },
@@ -4630,7 +4631,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "none",
-    "Arguments": schema9
+    "Arguments": schema10
   },
   phrase: "read league market",
 },
@@ -4649,7 +4650,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "none",
-    "Arguments": schema10
+    "Arguments": schema11
   },
   phrase: "read league notices",
 },
@@ -4668,7 +4669,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "none",
-    "Arguments": schema11
+    "Arguments": schema12
   },
   phrase: "read league people",
 },
@@ -4687,7 +4688,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "none",
-    "Arguments": schema12
+    "Arguments": schema13
   },
   phrase: "read league rules",
 },
@@ -4706,7 +4707,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "none",
-    "Arguments": schema13
+    "Arguments": schema14
   },
   phrase: "read league rules preset",
 },
@@ -4725,7 +4726,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "none",
-    "Arguments": schema14
+    "Arguments": schema15
   },
   phrase: "read league schedule",
 },
@@ -4744,7 +4745,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "none",
-    "Arguments": schema15
+    "Arguments": schema16
   },
   phrase: "read league corrections",
 },

@@ -57,7 +57,6 @@ it('refuses a league reading outside the desktop app', async () => {
 // TargetWorkflow refuses commands outside its bounded set with "this league action is not available
 // here"; Home's TRANSACTIONS and ALERTS read the ledger and the jobs board, so each goes to its own binding.
 it.each([
-  ['commish.ledger.read', 'TargetCommissionerLedger'],
   ['commish.jobs.read', 'TargetCommissionerJobs'],
 ] as const)(
   'reads %s through its own binding, not the workflow envelope', async (command, method) => {
@@ -71,6 +70,17 @@ it.each([
     expect(calls[1].arguments).toEqual(['native.seed']);
     expect((response.data as { league: string }).league).toBe('native.seed');
   });
+
+it('reads a page of the ledger through its own binding', async () => {
+  const calls: Call[] = [];
+  const api = desktop(calls);
+  api.TargetCommissionerLedgerFiltered = (...args: unknown[]) => { calls.push({ method: 'filtered',
+    arguments: args }); return Promise.resolve({ league: 'native.seed' }); };
+  const filter = { person: '', kind: '', from: '', before: '', last: 12 };
+  await localWorkflow({ command: 'commish.ledger.filtered.read', mode: 'read',
+    arguments: { league: 'native.seed', filter } });
+  expect(calls[1].arguments).toEqual(['native.seed', JSON.stringify(filter)]);
+});
 
 it('coalesces repeated reads with only one trailing refresh', async () => {
   const api = desktop([]);

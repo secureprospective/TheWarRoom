@@ -320,7 +320,7 @@
 .hb .tick{display:flex;align-items:stretch;height:34px;border-bottom:2px solid var(--black);background:var(--sunken);overflow:hidden}
 .hb .tl0{display:flex;align-items:center;padding:0 14px;font:700 10px var(--mono);letter-spacing:.12em;color:var(--black);background:var(--edge-hi);white-space:nowrap}
 .hb .tkw{flex:1;overflow:hidden;position:relative}
-.hb .tkr{display:flex;width:max-content;height:100%;animation:tk 70s linear infinite}
+.hb .tkr{display:flex;width:max-content;height:100%;animation:tk 70s linear 1}
 .hb .tick:hover .tkr{animation-play-state:paused}
 @keyframes tk{to{transform:translateX(-50%)}}
 @media (prefers-reduced-motion:reduce){.hb .tkr{animation:none}}
