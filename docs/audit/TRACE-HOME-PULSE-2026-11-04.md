@@ -49,3 +49,19 @@ Diagnostic run-1332 (DIAG=1): per-process CPU/RSS (Go vs WebKit) every 5 s; at t
 - WebKit burns 24–56% CPU **all the time**, even when responsive. In a PWA on a phone that's battery drain and heat.
 - Conclusion: the freeze is client-side rendering/JS, mainly Home. Go and the database were idle at the freeze.
   Not yet known: which Home tile or effect. Next: profile Home's render in a browser.
+
+## F12 — Home's Transactions tile pulls and renders the WHOLE league ledger (leading suspect for F11)
+- `shell/homeReads.ts:112` sends `commish.ledger.read` with `{ league }` only: no limit, no paging. The full ledger crosses the bridge on every
+  Home mount (in a PWA that means across the network).
+- `shell/homeTiles.tsx:125` renders `entries.slice().reverse().map(...)`: **every** entry becomes a `HomeAct` row. The tile footer read
+  "+16,798 more in LEDGER" (soak frames), so about 16.8k DOM rows get built to show a few.
+- The same reverse-the-whole-ledger logic also sits in `HomeBrief.tsx:170` (the card drawer): two copies.
+- Matches F11: WebKit memory +560 MB on each Home mount, then the main thread pegged.
+
+## F13 — Home's ticker animates forever
+- `shell/home.css:323` `.hb .tkr{width:max-content; animation:tk 70s linear infinite}`, the "TOP 5 · WK n" strip. The content is duplicated
+  (`HomeBrief.tsx:230` renders `tickerHtml` twice) so it can loop. It repaints all the time, even when idle → the baseline 25–55% WebKit CPU.
+  (The Xvfb test box renders in software (llvmpipe), which magnifies this. A phone would still drain battery.)
+- Other always-on loops: `draftroom/useDraftReading.ts:15` 1 s clock, `research/state.ts:33` polling, `pulse.css:353` blink, `style.css:320` skeleton pulse.
+
+Not yet proven. The proof would be a throwaway build: cap the tile at the rows it shows, stop the ticker, rerun DIAG and compare WebKit CPU/RSS and stalls.
