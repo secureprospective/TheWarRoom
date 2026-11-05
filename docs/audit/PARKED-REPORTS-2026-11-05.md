@@ -60,3 +60,48 @@ The Home tab was removed; retain its content and deadline pinning for a future, 
 | M-153 | Pending Trades |
 | M-156 | Waiver Claims |
 | M-157 | Waiver Order |
+
+## Trade Floor (cut) — needs a War Room home
+
+War Room PLANS is a placeholder, not a saved-plan reader. Offers history and
+counterparties had no kept registry placements or current screen; their previously
+retired rows are now explicitly parked here. Saved proposals,
+saved versions/pocket persistence and historical draft analytics remain unhomed.
+Existing receipt plans still appear in HQ My moves; inspector owner actions remain.
+Backend and all five trade IPC methods are retained.
+
+| id | report |
+|---|---|
+| M-065 | Steals and Busts |
+| M-066 | Draft Recap |
+| M-068 | Future Draft Picks O=100 |
+| M-087 | NFL Draft O=215 |
+| M-103 | My Draft List O=129 |
+| M-179 | Draft Avg Time |
+| L-15 | Return as % of slot — 7 draft stretches (1.01–1.10 … 5+) |
+| L-16 | Return by season after draft (1–5) |
+| L-17 | Return by NFL draft round |
+| L-18 | Return by age band |
+| L-19 | "Plays like pick #N" per pick |
+| L-20 | Hit rate against the stretch's baseline |
+| L-21 | Kept by year 2 |
+| L-22 | Draft it or buy it (per position) |
+| M-199 | Propose trade |
+
+Moved: M-033, M-034, M-063, M-064, M-102, M-176, M-183, C-06.2, X-04, CM-043, CM-044, CM-045. M-033/M-034/X-04 go to Inspector, C-06.2 to War Room Trade desk; remaining moved rows to Draft room. Moving a draft row records the existing read/action home, not full historical-report parity.
+
+Previously retired offers-history/counterparties rows, now marked PARKED 11-05 trade:
+
+| id | report |
+|---|---|
+| L-23 | Tier cards: contender 1–10 · hunt 11–22 · rebuild 23–32 |
+| L-24 | Each tier's trend, earlier vs later seasons |
+| L-25 | Tier-against-tier matrix |
+| L-26 | Sortable 32-team trade table |
+| L-27 | Team panel: season cells marked when the team traded against its standing |
+| L-28 | Team panel: asset flows sent and taken |
+| L-29 | Team panel: trade partners |
+| L-30 | Offers and their endings across the 8 stretches |
+| L-31 | Sent / received / every visible offer split |
+| L-32 | Scope disclosure: MFL exposes only the GM's own offers |
+| L-36 | Posture selector: bought for now / built for later / like for like |

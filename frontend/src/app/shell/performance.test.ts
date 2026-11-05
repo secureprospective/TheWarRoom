@@ -132,7 +132,7 @@ describe('Performance is law (§18, §M3)', () => {
     expect(source).not.toMatch(/import\s+\{\s*AppSettings\s*\}\s+from/);
     expect(source).toContain('<FranchiseHQMount snapshot={snapshot} />');
     expect(source).toContain('<Now />');
-    expect(source).toContain('<TradeDesk snapshot={snapshot} />');
+    expect(source).not.toContain('TradeDesk');
   });
   it('requires snapshot-keyed roster and search memoization and rejects missing memos', () => {
     const roster = (source: string) => /useMemo\([\s\S]*?franchiseRoster[\s\S]*?\[snapshot, s.franchiseId\]/

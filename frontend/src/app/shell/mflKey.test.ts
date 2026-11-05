@@ -319,7 +319,7 @@ it('keeps the picker for viewing and shows Go refusal words on team-action butto
   expect(c.teamActionReason('contracts.set', {
     field: 'whatif', value: { mine: other, action: 'reset' },
   })).toContain('Switch the franchise view');
-  expect(c.teamActionReason('trade.builder', { action: 'preview', mine: other }))
+  expect(c.teamActionReason('trade.builder', { action: 'reject', mine: other, id: '901' }))
     .toContain('Switch the franchise view');
   read.mockResolvedValue({ ...absent, teamActionRefusal: 'Go: connect your MFL account.' });
   await c.loadMFLKey();

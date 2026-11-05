@@ -30,9 +30,9 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
         <HQAct className="leaf" onAction={() => { void navigateNode('war'); }}>Free-agent pool</HQAct>
         <HQAct className="leaf" disabled title={unavailable}>Offers</HQAct>
         <div className="gl">LEAGUE</div>
-        {(['Home', 'War Room', 'Franchise HQ', 'Trade Floor', 'League Pulse', 'Control Room'] as
+        {(['Home', 'War Room', 'Franchise HQ', 'League Pulse', 'Control Room'] as
           const).map((name, index) => <div className={`node ${index === 2 ? 'open' : ''}`} key={name}>
-          <HQAct className="nb" onAction={() => { void navigateNode((['home', 'war', 'hq', 'trade',
+          <HQAct className="nb" onAction={() => { void navigateNode((['home', 'war', 'hq',
             'pulse', 'control'] as const)[index]); }}>
             <span className="k">{index + 1}</span>{name}<span className="car">›</span></HQAct>
           {index === 2 && <><HQAct className="leaf now" disabled><span className="tag">NOW</span>{lock?.at

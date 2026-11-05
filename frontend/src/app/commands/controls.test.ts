@@ -169,7 +169,7 @@ it('replacement command buttons never carry native titles, even shortened or dis
   }
 });
 
-it.each(['war', 'hq', 'trade'] as const)('F: rail %s keeps its name without a native tooltip', node => {
+it.each(['war', 'hq', 'pulse'] as const)('F: rail %s keeps its name without a native tooltip', node => {
   const html = renderToStaticMarkup(createElement(Act, {
     verb: 'nav.open', args: { node }, variant: 'rail', children: node,
   }));

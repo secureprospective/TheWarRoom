@@ -40,9 +40,8 @@ export function parseCSV(source) {
 
 const workspaces = {
   Home: ['Overview'],
-  'War Room': ['Market', 'Valuations and pool'],
+  'War Room': ['Market', 'Valuations and pool', 'Trade desk', 'Draft room', 'Plans'],
   'Franchise HQ': ['Lineup and roster', 'Contracts and cap', 'My moves'],
-  'Trade Floor': ['Trade desk', 'Offers history', 'Counterparties', 'Draft room'],
   'League Pulse': ['Now', 'Race', 'Archive'],
   'Control Room': ['App', 'Data and sources', 'League'],
 };

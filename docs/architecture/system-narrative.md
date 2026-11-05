@@ -339,7 +339,8 @@ Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts
 `trades_app.go`: `TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Receipt, error)` saves an accept plan.
 `internal/envelope`: `trade.accept` watches post-hand-off TRADE asset sets; disappearance waits in DOTReview.
 
-Trade desk: `shell/TradeDesk.tsx` groups held offers; lazy `data/tradeProvider.ts` parses Go readings.
+War Room: `shell/WarRoom.tsx` owns the trade desk; Negotiations opens `shell/EntityInspector.tsx`
+for pending offers and their `OfferCard` accept/reject/withdraw plans; lazy `data/tradeProvider.ts` parses Go readings.
 Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.tsx` tracks desk hand-off.
 
 `control.API.TargetAlerts(franchiseID string) (AlertReading, error)` (`control_alerts.go` gathers) reads
@@ -500,7 +501,7 @@ two pinned what-if rosters through the coordinator, retaining exact cents, and r
 `internal/envelope/trade_acts.go` watches full asset sets; rejection/withdrawal disappearance stays
 ambiguous, never Landed. `acquisitions_app.go` prices held incoming contracts or saved bid terms
 and an optional unclaimed cut through the same coordinator. Lazy Trade desk and Contracts chunks
-host `shell/TradeBuilder.tsx` and `contracts/Acquisitions.tsx`; all controls use the command registry.
+host War Room’s trade desk and `contracts/Acquisitions.tsx`; all controls use the command registry.
 Trade receipts carry Go-authored asset labels using the desk/builder pick formatter. Proposal, rejection
 and withdrawal plans share local removal before hand-off; accept plans are unchanged. New pool bid forms
 release the old table anchor, reveal within the work column and focus the salary field after mounting.
@@ -649,7 +650,7 @@ waiver clock (`processNativeDraftsDue`); a person may close it sooner. `checkLiv
 change against the draft as it would stand, so the replay that reads it later is the one that refuses it
 now, and `DraftPreview` (`draft_preview.go`) words each change for the tray.
 
-`frontend/src/app/draftroom/` is the lazy Draft room above the Draft lab in Trade Floor › Draft room: the
+`frontend/src/app/draftroom/` is the lazy native Draft room in War Room › Draft room: the
 clock with a countdown and the pick's close in the viewer's own time (`DraftClock`), the board by round
 (`DraftBoard`), the owner's own pick (`YourPick`, `TargetNativeDraftPick`), what a close did
 (`DraftOutcome`) and, for a co-commissioner or above, the shared side tray (`DraftTray`, `trayAction.ts`).

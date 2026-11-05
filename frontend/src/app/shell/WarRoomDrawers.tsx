@@ -22,8 +22,8 @@ export async function readWarRoomOffers(c: WarRoomContext) {
   return reading.offers.map(o => ({ id: o.id, name: o.id, status: o.words, details: o.details,
     note: o.expires }));
 }
-export function WarRoomDrawers({ context, drawer, close }: { context: WarRoomContext;
-  drawer: 'pocket' | 'offers'; close: () => void }) {
+export function WarRoomDrawers({ context, drawer, close, openOffer }: { context: WarRoomContext;
+  drawer: 'pocket' | 'offers'; close: () => void; openOffer: (id: string) => void }) {
   const offers = useWarRoomRead(JSON.stringify([context.native?.league, context.mine, drawer]), () =>
     drawer === 'offers' ? readWarRoomOffers(context) : Promise.resolve(undefined));
   useEffect(() => { const key = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
@@ -37,7 +37,9 @@ export function WarRoomDrawers({ context, drawer, close }: { context: WarRoomCon
       'Every live trade talk. Open one to answer it on the desk.'}</span>
     <WarRoomAct className="x" onAction={close}>ESC</WarRoomAct></div><div className="bd-body pocket">
     {drawer === 'offers' && offers.reading?.length ? offers.reading.map(o => <div className="pk"
-      key={o.id}><div className="top">{o.status}</div><div className="ttl">{o.name}</div>
+      key={o.id}><div className="top">{o.status}</div>
+      <WarRoomAct className="ttl" disabled={Boolean(context.native)}
+        onAction={() => openOffer(o.id)}>{o.name}</WarRoomAct>
       <div className="legs">{o.details.map((d, i) => <span key={i}>{d}</span>)}</div>
       <div className="stale">{o.note}</div></div>) : <WarRoomEmpty reason={offers.error} />}
     <div className="pkside"><WarRoomEmpty reason="Saved versions and negotiation rounds have no read" />

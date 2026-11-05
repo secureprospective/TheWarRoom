@@ -18,7 +18,7 @@ vi.mock('../data/api', async (original) => ({
     { id: 'native.one', name: 'App league', teams: 12, app: true },
   ],
 }));
-vi.mock('./TradeDesk', () => ({ default: () => <p>Mirror trade desk</p> }));
+vi.mock('../now/Now', () => ({ default: () => <p>Mirror pulse</p> }));
 
 afterEach(() => { localStorage.clear(); vi.unstubAllGlobals(); });
 
@@ -26,23 +26,23 @@ it('switches the rendered route and stores the selected league', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   Object.defineProperty(window, 'go', { configurable: true, value: {} });
   localStorage.setItem(LEAGUE_KEY, 'mirror');
-  commands.dispatch('nav.open', { node: 'trade' });
+  commands.dispatch('nav.open', { node: 'pulse' });
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   try {
     await act(async () => { root.render(<TargetApp />); });
-    for (let i = 0; i < 30 && !container.textContent?.includes('Mirror trade desk'); i++)
+    for (let i = 0; i < 30 && !container.textContent?.includes('Mirror pulse'); i++)
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
-    expect(container.textContent).toContain('Mirror trade desk');
+    expect(container.textContent).toContain('Mirror pulse');
     const switcher = [...container.querySelectorAll('button')].find(b => b.textContent === 'Switch league');
     expect(switcher).toBeDefined();
     await act(async () => { switcher!.click(); });
     const app = [...container.querySelectorAll('button')].find(b => b.textContent?.includes('App league'));
     expect(app).toBeDefined();
     await act(async () => { app!.click(); });
-    expect(container.textContent).not.toContain('Mirror trade desk');
-    expect(container.textContent).toContain('Not wired');
+    expect(container.textContent).not.toContain('Mirror pulse');
+    expect(container.textContent).toContain('Could not open App league');
     expect(localStorage.getItem(LEAGUE_KEY)).toBe('native.one');
   } finally {
     await act(async () => { root.unmount(); });

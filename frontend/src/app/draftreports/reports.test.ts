@@ -24,7 +24,9 @@ describe('Go-authored draft reports', () => {
       const id = report.id as Parameters<typeof endpointById>[0];
       expect(endpointById(id).status).not.toBe('spec');
       const route = placementRoute(endpointById(id).placement);
-      expect(route).toMatchObject({ node: 'war', workspace: 'draft-room' });
+      if (endpointById(id).disposition === 'kept')
+        expect(route).toMatchObject({ node: 'war', workspace: 'draft-room' });
+      else expect(route).toBeUndefined();
       const markup = html(createElement(ReportsView, { board: board(), selected: [id] }));
       expect(markup).toContain(`data-endpoint="${id}"`);
       expect(markup).toContain(`aria-label="${report.title}" aria-pressed="true"`);

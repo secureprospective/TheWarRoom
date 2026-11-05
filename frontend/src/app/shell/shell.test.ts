@@ -6,22 +6,21 @@ import { parseRoute, formatRoute } from './routes';
 import { FixtureProvider } from '../data/provider';
 
 describe('Shell routes and data', () => {
-  it('keeps shell names, with War Room trade/draft destinations added ahead of the rail cut', () => {
+  it('keeps shell names, with War Room trade/draft destinations after the rail cut', () => {
     const spec = readFileSync('../docs/ui/Target_UI_Spec_2026-10.md', 'utf8');
-    expect(nodeKeys).toEqual(['home', 'war', 'hq', 'trade', 'pulse', 'control']);
+    expect(nodeKeys).toEqual(['home', 'war', 'hq', 'pulse', 'control']);
     for (const n of nodeKeys) {
       const row = spec
         .split('\n')
         .find((line) => line.startsWith(`| ${nodes[n].label} |`))!;
       expect(row).toBeDefined();
       const names = row.split('|')[2].trim().replace(' (owns the node)', '').split(' · ');
-      if (n === 'war') names.push('Trade desk', 'Draft room');
       // Tab labels are sentence case; the spec's table writes some workspaces in running text.
       expect(nodes[n].workspaces.map((w) => w.label.toLowerCase())).toEqual(
         names.map((name) => name.toLowerCase()).filter(name =>
           !['market', 'offers history', 'counterparties', 'archive', 'data and sources'].includes(name)),
       );
-      expect(nodes[n].workspaces.length).toBeLessThanOrEqual(n === 'trade' ? 4 : 3);
+      expect(nodes[n].workspaces.length).toBeLessThanOrEqual(3);
     }
   });
   it('round-trips every workspace and falls back safely', () => {
@@ -52,11 +51,11 @@ describe('Shell routes and data', () => {
 describe('Shell transitions through dispatch only', () => {
   it('remembers workspaces per node and isolates instances', () => {
     const c = createCommands();
-    c.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
+    c.dispatch('nav.open', { node: 'war', workspace: 'draft-room' });
     c.dispatch('nav.open', { node: 'hq', workspace: 'contracts-and-cap' });
-    c.dispatch('nav.open', { node: 'trade' });
-    expect(c.read().node).toBe('trade');
-    expect(c.read().workspace.trade).toBe('draft-room');
+    c.dispatch('nav.open', { node: 'war' });
+    expect(c.read().node).toBe('war');
+    expect(c.read().workspace.war).toBe('draft-room');
     expect(c.read().workspace.hq).toBe('contracts-and-cap');
     expect(createCommands().read().node).toBe('home');
   });

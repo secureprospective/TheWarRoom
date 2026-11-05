@@ -1,3 +1,4 @@
+import EntityInspector from './EntityInspector';
 import { HQAct as WarRoomAct } from './HQAct';
 import { createPortal } from 'react-dom';
 import { RailLeaguePicker } from './leaguePicker';
@@ -44,6 +45,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     void commands.dispatch('nav.open', { node: 'war', workspace: tab === 'draft' ? 'draft-room' :
       tab === 'desk' ? 'trade-desk' : 'valuations-and-pool' });
   };
+  const [offer, setOffer] = useState<string>();
   const [drawer, setDrawer] = useState<'pocket' | 'offers'>();
   const week = native ? native.week ?? 0 : clock?.value.week ?? 0;
   const [deal, changeDeal] = useState<WarRoomDeal>({ partner: '', give: [], get: [] });
@@ -119,8 +121,12 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       <WarRoomAct className="btn" onAction={() =>
           changeDeal({ ...deal, give: [], get: [] })}>
         CLEAR</WarRoomAct><WarRoomAct className="btn solid g2" disabled>SEND</WarRoomAct></div>
-      {drawer && <WarRoomDrawers context={context} drawer={drawer} close={() => setDrawer(undefined)} />}
-    </main><WarRoomInspector context={context} asset={selected} add={selected &&
+      {drawer && <WarRoomDrawers context={context} drawer={drawer} close={() => setDrawer(undefined)}
+        openOffer={id => { setOffer(id); setDrawer(undefined); }} />}
+    </main>{offer && !native ? <aside className="insp" aria-label="Inspector">
+      <WarRoomAct onAction={() => setOffer(undefined)}>Close offer</WarRoomAct>
+      <EntityInspector entity={{ kind: 'offer', id: offer, franchiseId: mine }} snapshot={snapshot} />
+    </aside> : <WarRoomInspector context={context} asset={selected} add={selected &&
       catalog.reading?.teams.some(t => (t.id === mine || t.id === deal.partner) && t.assets.some(a =>
         a.token === selected.token)) ? () => {
         const side = catalog.reading?.teams.find(t => t.assets.some(a => a.token === selected.token))?.id
@@ -128,7 +134,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
         if (!deal[side].includes(selected.token)) changeDeal({ ...deal, [side]: [...deal[side],
           selected.token] }); setTab('desk');
       } : undefined} watch={!native && selected && !selected.pick ? () =>
-        changeWarRoomTarget(context, selected.token, false) : undefined} />
+        changeWarRoomTarget(context, selected.token, false) : undefined} />}
   </div>{prospect && <WarRoomScouting context={context} prospect={prospect}
     close={() => setProspect(undefined)} />}</div>;
 }

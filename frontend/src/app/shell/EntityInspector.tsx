@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { Snapshot } from '../data/contract';
 import type { EntitySubject } from './state';
 import { commands } from '../commands/registry';
@@ -10,6 +11,11 @@ function OfferInspector({ entity, snapshot }: {
   entity: Extract<EntitySubject, { kind: 'offer' }>; snapshot: Snapshot;
 }) {
   const { reading, error } = useReading(commands.trades, entity.franchiseId, snapshot);
+  useEffect(() => {
+    const read = () => { void commands.loadMoves(entity.franchiseId); };
+    read();
+    return commands.onMovesChange(read);
+  }, [entity.franchiseId]);
   const offer = reading?.offers.find(o => o.tradeId === entity.id);
   return <section aria-label="Offer inspector">
     {error && <p role="alert">{error}</p>}

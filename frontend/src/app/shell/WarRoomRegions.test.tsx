@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { act } from 'react';
 import { all, button, click, flush, mount, render, rerender, type, unmount }
   from '../commissioner/commissionerDom';
+import { tradeReading } from '../data/tradeTestData';
 import { heldSnapshot } from '../data/lineupTestData';
 import type { Report } from '../reports/contract';
 import { WarRoomEmpty, WarRoomHeader } from './WarRoomHeader';
@@ -314,9 +315,17 @@ describe('calendar draft drawer and plans', () => {
   it('renders unavailable pocket and closes it without reading private saved versions', async () => {
     const close = vi.fn(); const port = vi.fn<HostedPort>();
     const host = await mount(render(WarRoomDrawers, { context: nativeContext(port), drawer: 'pocket',
-      close })); await flush();
+      close, openOffer: vi.fn() })); await flush();
     expect(host.textContent).toContain(unavailable); expect(port).not.toHaveBeenCalled();
     await click(button(host, 'ESC')); expect(close).toHaveBeenCalledTimes(1);
+  });
+  it('opens a mirror negotiation in the preserved offer inspector without a handoff', async () => {
+    const openOffer = vi.fn();
+    const host = await mount(render(WarRoomDrawers, { context: context(), drawer: 'offers',
+      close: vi.fn(), openOffer }), {}, { trades: { API: { TargetTrades: async () => tradeReading() } } });
+    await flush();
+    await click(button(host, 'Rivals'));
+    expect(openOffer).toHaveBeenCalledWith('901');
   });
   it('accepts only the asking native franchise’s offer reading', async () => {
     const wrong = { ...tradesWire, league: 'native.seed', viewer: 'franchise.02' };

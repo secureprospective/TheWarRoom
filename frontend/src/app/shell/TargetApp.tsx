@@ -43,7 +43,6 @@ const LeagueRoom = lazy(() => import('../control/LeagueRoom').then((m) => ({ def
 const AppSettings = lazy(() => import('./AppSettings').then((m) => ({ default: m.AppSettings })));
 const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ default: m.CommandBar })));
 const Now = lazy(() => import('../now/Now'));
-const TradeDesk = lazy(() => import('./TradeDesk'));
 const WarRoom = lazy(() => import('./WarRoom'));
 const Market = lazy(loadMarket);
 const Race = lazy(() => import('../race/Race'));
@@ -51,8 +50,7 @@ const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
 
 // Workspaces that read the league snapshot: before it arrives they are loading, not unwired.
-const snapshotWorkspaces = ['hq/lineup-and-roster', 'hq/contracts-and-cap', 'hq/my-moves',
-  'trade/trade-desk'];
+const snapshotWorkspaces = ['hq/lineup-and-roster', 'hq/contracts-and-cap', 'hq/my-moves'];
 
 export function OwnerFooter({ snapshot }: { snapshot?: Snapshot }) {
   const { franchiseId } = commands.use();
@@ -257,10 +255,6 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             </Suspense>
           ) : s.node === 'hq' && workspace.slug === 'my-moves' && snapshot ? (
             <MovesMount snapshot={snapshot} />
-          ) : s.node === 'trade' && workspace.slug === 'trade-desk' && snapshot ? (
-            <Suspense fallback={<p role="status">Opening Trade desk…</p>}>
-              <TradeDesk snapshot={snapshot} />
-            </Suspense>
           ) : ['valuations-and-pool', 'draft-room'].includes(
               workspace.slug,
             ) ? (

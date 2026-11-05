@@ -63,23 +63,13 @@ describe('Trade builder and acquisition wire boundaries', () => {
   });
 });
 
-it('names the counterpart and offers local removal on both the desk and shared My moves rail', async () => {
-  const { Deal } = await import('./TradeBuilder');
+it('offers local removal on the shared My moves rail', async () => {
   const { EnvelopeRail } = await import('./EnvelopeRail');
   const { FixtureProvider } = await import('../data/provider');
   const receipt = tradeReceipt('ready');
   receipt.spec.intent = 'trade.propose';
   receipt.spec.franchiseId = receipt.spec.expected.trade!.offering;
-  const plan = parseBuilder(tradeWire).value!.preview!;
-  plan.receipt = receipt;
-  plan.id = receipt.correlationId;
-  plan.teams[1].team = 'Buffalo Bills';
   const snapshot = await new FixtureProvider().snapshot();
-  const desk = renderToStaticMarkup(createElement(Deal, {
-    plan, mine: receipt.spec.franchiseId, busy: false,
-  }));
-  expect(desk).toContain('Trade with Buffalo Bills · Both rosters after this deal');
-  expect(desk).toContain('Remove plan');
   const rail = () => renderToStaticMarkup(createElement(EnvelopeRail, { receipt, snapshot }));
   expect(rail()).toContain('Remove plan');
   receipt.state = 'withdrawn';
@@ -110,11 +100,4 @@ it('keeps older trade plans in My moves using the shared receipt rail', async ()
   } }));
   expect(html).toContain('Trade proposal');
   expect(html).toContain('Remove plan');
-});
-
-it('explains why the franchise picker is unavailable when its read is refused', async () => {
-  const { BuilderUnavailable } = await import('./TradeBuilder');
-  const html = renderToStaticMarkup(createElement(BuilderUnavailable,
-    { error: 'Connect your MFL account to act for your team.' }));
-  expect(html).toContain('Franchises are unavailable: Connect your MFL account');
 });

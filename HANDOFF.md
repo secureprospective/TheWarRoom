@@ -4,15 +4,15 @@
 Bee → next worker, 2026-11-05, `session/trade-floor-cut` (local only).
 
 ## Where it stands
-Slice 2 repoints incoming draft/trade Acts and endpoint-placement navigation to War Room. HQ sends a roster-checked player into the existing War Room deal, scoped by league/franchise, including native HQ. Workspace state selects desk/draft tabs. Old Trade Floor rail/rendering remains for slice 3; five trade IPC methods unchanged. Trace: `docs/audit/TRADE-FLOOR-TRACE-2026-11-05.md`.
+All three slices implemented. Trade Floor node/rails/routes and duplicate TradeDesk/TradeBuilder UI cut. War Room owns native DraftRoom; Negotiations opens existing OfferCard in its inspector, preserving reject/withdraw plus receipt subscriptions. Parser/API and five trade IPC methods retained. Registry: 12 moved, 15 newly parked, 11 older retired history/counterparty rows explicitly parked; full IDs in `docs/audit/PARKED-REPORTS-2026-11-05.md`.
 
-TypeScript clean; 176 tests across 11 targeted files pass; plain `make build` passes. Live disposable Legacy NFL copy: HQ ADD TO TRADE opens War Room Trade desk with Adam Butler in YOU SEND. External scratch evidence: `soak-1105/sol2`. Own GUI stopped; copied profile deleted; PID 289151 untouched.
+TypeScript clean; full Vitest 1,822 passed, only four allowed inherited failures (assets, controls line length, personal, appLeaguePulse). Plain make build passed. Disposable Legacy NFL and MFL mirror: no Trade Floor on Home/War Room, all four War Room tabs open. External screenshots/logs: soak-1105/sol3. Own GUI stopped; copied profile deleted. PID 289151 untouched. Soak script backup retained, three trade steps removed, following rail coordinates adjusted.
 
 ## Next move
-Slice 3: cut old rail and proven-dead routes; decide parking for saved plans, OfferCard reject/withdraw builder actions, historical reports, offers history and counterparties. Registry placement aliases redirect navigation, not assert report parity. Keep the five IPC methods.
+Review slice 3 and the parked report homes; decide future saved plans/history/analytics UI from locked mocks. PLANS remains a placeholder, not saved-plan parity. HQ My moves still shows existing receipts.
 
 ## Blocked on
-No live MFL/hosted HQ handoff or per-report/commissioner-launcher acceptance. Slice-1 active draft gate still blocked by the copy's missing draft start/results. Pull unavailable: missing configured bundle remote. No merge/push authorized.
+Pull unavailable: configured bundle remote missing. No merge/push authorized. Native active draft needs standings (197 missing game results); live commissioner actions and offer reject/withdraw handoffs were not exercised. MFL read-only. Long soak not run.
 
 ## Tried and rejected
-No cloned builder/draft logic, new safety fences, invented draft results, or MFL button presses. Kept historical CSV dispositions pending slice-3 evidence instead of pretending navigation proves feature parity.
+No duplicate builder/draft logic, new safety fences, invented draft results, or MFL action presses. Parked unserved reports rather than asserting navigation proves parity. The current trace replaces obsolete preliminary notes in `docs/audit/TRADE-FLOOR-TRACE-2026-11-05.md`.

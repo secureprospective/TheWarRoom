@@ -81,7 +81,7 @@ describe('The startup draft room', () => {
 
 describe('The Draft room is lazy', () => {
   it('is loaded on demand from the Draft room, and so is its tray', () => {
-    const market = readFileSync('src/app/market/Market.tsx', 'utf8');
+    const market = readFileSync('src/app/shell/WarRoomDraft.tsx', 'utf8');
     expect(market).toContain("lazy(() => import('../draftroom/DraftRoom'))");
     const room = readFileSync('src/app/draftroom/DraftRoom.tsx', 'utf8');
     expect(room).toContain("lazy(() => import('./DraftTray'))");

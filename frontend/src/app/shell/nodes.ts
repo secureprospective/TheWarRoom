@@ -21,13 +21,6 @@ export const nodes = {
       { slug: 'my-moves', label: 'My moves', ring: 'Ring 1' },
     ],
   },
-  trade: {
-    label: 'Trade Floor',
-    workspaces: [
-      { slug: 'trade-desk', label: 'Trade desk', ring: 'Ring 1' },
-      { slug: 'draft-room', label: 'Draft room', ring: 'Ring 2' },
-    ],
-  },
   pulse: {
     label: 'League Pulse',
     workspaces: [

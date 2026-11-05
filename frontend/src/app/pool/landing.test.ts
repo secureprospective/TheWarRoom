@@ -11,8 +11,6 @@ import { commands } from '../commands/registry';
 import { ReportsView } from '../draftreports/Reports';
 import { parseBoard } from '../draftreports/provider';
 import draftWire from '../draftreports/wire.testdata.json';
-import { BuilderAsset } from '../shell/TradeBuilder';
-import { parseAssets } from '../shell/tradeBuilderState';
 
 it('keeps engine, season PPG and Lab in separate sortable headed columns', () => {
   const reading = parsePool(wire.pool);
@@ -41,19 +39,4 @@ it('starts with descending engine points and sends the no-team toggle to the poo
   expect(provider.pool).toHaveBeenLastCalledWith('0001', expect.objectContaining({ showNoTeam: true }));
   await state.change({ field: 'pool-sort', value: 'engine' });
   expect(state.peek().scope.desc).toBe(false);
-});
-
-it('parses and renders trade player details and shared value cells, and the Lab pick value', () => {
-  const cell = { text: '12.34 PPG', sub: 'WR 1/50', detail: 'league scores', held: true };
-  const assets = parseAssets([
-    { token: '13593', name: 'Player', position: 'WR', team: 'DAL', contract: '$530,000 · 2 years',
-      now: cell, dynasty: { ...cell, text: '0.56 wins' } },
-    { token: 'FP_0001_2027_1', name: '2027 round 1', dynasty: { ...cell, text: '0.78 wins' } },
-  ], 'Assets');
-  const player = renderToStaticMarkup(createElement(BuilderAsset, { asset: assets[0] }));
-  for (const text of ['WR', 'DAL', '$530,000 · 2 years', 'On-field-now', '12.34 PPG',
-    'Dynasty value', '0.56 wins', 'asset-value']) expect(player).toContain(text);
-  const pick = renderToStaticMarkup(createElement(BuilderAsset, { asset: assets[1] }));
-  expect(pick).toContain('Lab pick value');
-  expect(pick).toContain('0.78 wins');
 });
