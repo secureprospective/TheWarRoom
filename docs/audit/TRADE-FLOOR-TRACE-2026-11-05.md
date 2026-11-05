@@ -16,10 +16,12 @@ as the standalone MFL War Room rail.
 
 ## Confirmed live dependencies and duplicate surfaces
 
-- KEEP `shell/TradeDesk.tsx`'s `OfferCard`: `shell/EntityInspector.tsx`
-  imports it for offer inspection. The default TradeDesk workspace itself is
-  reached from the MFL `trade/trade-desk` route in `TargetApp.tsx`; a component
-  extraction may be needed before cutting the workspace.
+- KEEP `shell/OfferCard.tsx`: extracted unchanged from `TradeDesk.tsx` for
+  `shell/EntityInspector.tsx`; the old desk also imports it until cut. Its
+  rejection/withdrawal action still invokes `trade.builder`, so that action's
+  destination must be resolved before removing the old builder. The default
+  TradeDesk workspace is reached from the MFL `trade/trade-desk` route in
+  `TargetApp.tsx`.
 - KEEP `shell/tradeBuilderState.ts`'s parser: `shell/warroomTradeReads.ts`
   uses `parseBuilder` for War Room catalog and preview. Separately,
   `shell/hqReads.ts` uses builder state for `addHQTrade`, invoked by

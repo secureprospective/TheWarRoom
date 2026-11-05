@@ -4,7 +4,7 @@ import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import { NoteEditor } from '../personal/PersonalLists';
 import { useReading } from './lineups';
-import { OfferCard } from './TradeDesk';
+import { OfferCard } from './OfferCard';
 
 function OfferInspector({ entity, snapshot }: {
   entity: Extract<EntitySubject, { kind: 'offer' }>; snapshot: Snapshot;

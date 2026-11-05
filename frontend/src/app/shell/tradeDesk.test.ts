@@ -8,7 +8,8 @@ import type { Receipt, TradeReading } from '../data/contract';
 import { heldLineup, heldSnapshot } from '../data/lineupTestData';
 import { dotNote, tradeOffer, tradeReading, tradeReceipt } from '../data/tradeTestData';
 import { clockDom, TestElement } from '../clock/testDom';
-import TradeDesk, { tradeExpiry } from './TradeDesk';
+import TradeDesk from './TradeDesk';
+import { tradeExpiry } from './OfferCard';
 import { EnvelopeRail } from './EnvelopeRail';
 import EntityInspector from './EntityInspector';
 
