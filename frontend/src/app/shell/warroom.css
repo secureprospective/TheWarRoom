@@ -981,3 +981,8 @@
 .wr-v6 .value-ages dt, .wr-v6 .value-ages dd { white-space: nowrap; overflow-wrap: normal; }
 
 .wr-v6 .bid-salary{width:72px;min-width:0;font:inherit;background:var(--sunken);color:var(--ink);border:1px solid var(--rule)}
+
+@media(min-width:1800px){
+.wr-v6.embedded .mk3{grid-template-columns:220px minmax(0,1fr) 300px}
+.wr-v6.embedded .mk3>div{min-height:0}
+}

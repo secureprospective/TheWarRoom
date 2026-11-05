@@ -110,7 +110,7 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
               onAction={() => { void change(entry.id, lane[i - 1].entry.id); }}>↑</WarRoomAct>
           <WarRoomAct disabled={pending || i === lane.length - 1} label={`Move ${player.name} down`}
             onAction={() => { void change(entry.id, lane[i + 1].entry.id); }}>↓</WarRoomAct></div></div>)}
-    </div>) : <WarRoomEmpty reason={context.native ? 'No hosted private target read' :
+    </div>) : <WarRoomEmpty reason={context.native ? 'Private targets are not available for this league' :
       'Star a player to add a target'} />}</div></div>
     <div><div className="ch"><b>FREE AGENT POOL</b><span>in-season · drag a row to a target lane or to BIDS
     </span></div><div className="bench"><div className="filters">{['All', 'My needs', 'Targets',
@@ -124,11 +124,11 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
           disabled={pending || !!context.native || !value?.targets} onAction={() => { void change(p.id); }}>
           {targets.has(p.id) ? '★' : '☆'}</WarRoomAct><span className="ps">{p.position}</span>
         <WarRoomAct className="nm" onAction={() => select(p)}>{p.name}</WarRoomAct>
-      <span>{p.age ?? unavailable}</span>
+      <span>{p.age ?? "—"}</span>
         <span>{p.string ?? "—"}</span><span>{p.points ?? "—"}</span>
         <span className="fa-value">{p.value ?? "—"}</span><span>{p.minimum ?? "—"}</span></div>) :
-        <WarRoomEmpty pending={!value && !reading.error} reason={reading.error ? 'Pool could not be read' :
-          value?.players === undefined ? 'Pool could not be read' : 'No free agents match this view'} />}</div>
+        <WarRoomEmpty pending={!value && !reading.error} reason={reading.error ?? (value?.players === undefined ? value?.errors.join(' · ') ||
+          'Pool could not be read' : 'No free agents match this view')} />}</div>
         {error && <p className="empty" role="alert">{error}</p>}</div>
     <div className="bcol"><div className="budget"><div className="t"><span>CAP ROOM</span><b>{money(room)}
       </b><span className="lim">HARD LIMIT</span></div><div className="bar" /><div className="t">

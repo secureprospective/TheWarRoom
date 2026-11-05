@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"time"
 
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
@@ -14,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -56,6 +58,20 @@ func (h offersHost) OffersAssetValues(ctx context.Context, ids []playerid.Player
 	values, note := h.app.poolAssetValues(ctx, ids, at)
 	in := h.app.heldResearchInput().snapshot()
 	statuses := researchapp.PoolStrings(in)
+	if phase, err := h.Whatif.CurrentPhase(ctx); err == nil && phase == domain.PhaseOffseason {
+		end, err := strconv.Atoi(h.Rulebook.ActiveConfig().EndWeek)
+		if err == nil {
+			in.Held.Feeds = map[string]researchapp.Feed[[]researchfeeds.Feed]{}
+			for week := 1; week <= end; week++ {
+				period := strconv.Itoa(week)
+				in.Held.Feeds[researchapp.Key("playerScores", period)] = h.app.researchArchiveFeeds().Read(ctx, h.Season-1, "playerScores", period)
+			}
+			in.Week = end + 1
+			in.Finished = researchapp.FinishedScores(in).Rows
+		} else {
+			in.Finished = nil
+		}
+	}
 	out := make(map[string]offersapp.AssetValue, len(ids))
 	for _, player := range ids {
 		id := player.String()
