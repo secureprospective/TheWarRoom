@@ -17,7 +17,6 @@ import type {
   PoolScope,
   Preview,
   Reading,
-  Rule,
 } from './contract';
 
 type Parser<T> = (value: unknown, path: string) => T;

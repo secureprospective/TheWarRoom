@@ -173,7 +173,7 @@ describe('Fix 2: one plan per player', () => {
 
 describe('Fix 3: taking back a plan that was never posted', () => {
   const handedOff = (): Plan => ({
-    ...plan('ready'), stateCode: 'handed_off', state: 'Handed off', rules: [],
+    ...plan('ready'), stateCode: 'handed_off', state: 'Handed off',
     receipt: walk(['draft', 'ready', 'handed_off']),
     actions: [
       { id: 'copy', label: 'Copy post again', disabled: false, reason: '' },
