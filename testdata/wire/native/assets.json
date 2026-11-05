@@ -1,4 +1,279 @@
 {
+ "pool": [
+  {
+   "player": "1001",
+   "name": "Player, 1001",
+   "position": "RB",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "5001",
+   "name": "Player, 5001",
+   "position": "WR",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "5002",
+   "name": "Player, 5002",
+   "position": "WR",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "5003",
+   "name": "Player, 5003",
+   "position": "WR",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "5004",
+   "name": "Player, 5004",
+   "position": "WR",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "5005",
+   "name": "Player, 5005",
+   "position": "WR",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "5006",
+   "name": "Player, 5006",
+   "position": "WR",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990001",
+   "name": "ARI O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990002",
+   "name": "ATL O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990003",
+   "name": "BAL O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990004",
+   "name": "BUF O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990005",
+   "name": "CAR O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990006",
+   "name": "CHI O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990007",
+   "name": "CIN O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990008",
+   "name": "CLE O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990009",
+   "name": "DAL O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990010",
+   "name": "DEN O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990011",
+   "name": "DET O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990012",
+   "name": "GB O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990013",
+   "name": "HOU O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990014",
+   "name": "IND O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990015",
+   "name": "JAX O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990016",
+   "name": "KC O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990017",
+   "name": "LA O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990018",
+   "name": "LAC O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990019",
+   "name": "LV O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990020",
+   "name": "MIA O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990021",
+   "name": "MIN O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990022",
+   "name": "NE O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990023",
+   "name": "NO O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990024",
+   "name": "NYG O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990025",
+   "name": "NYJ O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990026",
+   "name": "PHI O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990027",
+   "name": "PIT O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990028",
+   "name": "SEA O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990029",
+   "name": "SF O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990030",
+   "name": "TB O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990031",
+   "name": "TEN O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  },
+  {
+   "player": "990032",
+   "name": "WAS O-Line",
+   "position": "OL",
+   "string": "—",
+   "points": "—"
+  }
+ ],
  "identities": [
   {
    "player": "1000",

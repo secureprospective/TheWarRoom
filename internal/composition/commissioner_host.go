@@ -223,6 +223,9 @@ func (h commissionerHost) NativeAssets(ctx context.Context, league string) (comm
 	if err != nil {
 		return out, fmt.Errorf("read Market assets: %w", err)
 	}
+	if h.app.researchHeld == nil {
+		return out, nil
+	}
 	h.app.hydrateResearchContext(ctx)
 	statuses := researchapp.PoolStrings(h.app.heldResearchInput().snapshot())
 	for i := range out.Pool {
