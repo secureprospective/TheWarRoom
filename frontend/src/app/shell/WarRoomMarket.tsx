@@ -24,7 +24,11 @@ export function WarRoomOwnBids({ reading, kind, revise }: { reading?: WarRoomMar
   return <>{bids ? bids.length ? bids.map((b, k) => <div className="bidb"
     key={b.player}><span className="nm">{kind === 'plan' ? `${k + 1}. ` : ''}{b.name}</span><b>{b.contract}</b>
       {revise && b.plan && <span className="step2"><WarRoomAct label={`Lower ${b.name} bid`}
-        onAction={() => revise(b, { salary: String(b.plan!.salary.cents / 1e8 - STEP) })}>−</WarRoomAct><b>{b.plan.salary.text}</b><WarRoomAct
+        onAction={() => revise(b, { salary: String(b.plan!.salary.cents / 1e8 - STEP) })}>−</WarRoomAct><input key={b.plan.salary.cents} aria-label={`${b.name} bid salary in millions`}
+          className="bid-salary" type="number" step="any" defaultValue={b.plan.salary.cents / 1e8}
+          onBlur={e => { if (e.currentTarget.value !== String(b.plan!.salary.cents / 1e8))
+            revise(b, { salary: e.currentTarget.value }); }}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} /><WarRoomAct
           label={`Raise ${b.name} bid`} onAction={() => revise(b, { salary: String(b.plan!.salary.cents / 1e8 + STEP) })}>+</WarRoomAct></span>}
       {revise && b.plan && <label>Years <select aria-label={`${b.name} bid years`}
         value={b.plan.years} disabled={!reading?.maxYears}
@@ -71,6 +75,12 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
     if (pending || !b.plan) return;
     if (change.years !== undefined && (!value?.maxYears || !Number.isSafeInteger(change.years) ||
       change.years < 1 || change.years > value.maxYears)) { setError('Choose a contract length within the league limit'); return; }
+    if (change.salary !== undefined) {
+      const salary = Number(change.salary);
+      if (!Number.isFinite(salary) || salary <= 0) { setError('Enter a bid greater than zero'); return; }
+      if (room === undefined) { setError('Cap room is unavailable; bid was not changed'); return; }
+      if (Math.round(salary * 1e8) > room) { setError('Bid exceeds your cap room'); return; }
+    }
     setPending(true); setError('');
     try {
       const plan = await poolProvider.revise(b.plan.id, context.mine,

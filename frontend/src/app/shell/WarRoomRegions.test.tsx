@@ -432,3 +432,32 @@ it('bounds READY years by the held league setting and revises the saved plan', a
   await type(all(host, 'select')[0], '2');
   expect(revise).toHaveBeenCalledWith(expect.objectContaining({ id: plan.id }), { years: 2 });
 });
+
+it('rejects invalid and over-cap typed salaries without changing the saved plan', async () => {
+  const { parseBoard, parsePool } = await import('../pool/provider');
+  const wire = await import('../pool/wire.testdata.json');
+  const board = parseBoard(wire.default.board);
+  const saved = board.value.plans[0];
+  vi.spyOn(poolProvider, 'plans').mockResolvedValue(board);
+  vi.spyOn(poolProvider, 'pool').mockResolvedValue(parsePool(wire.default.pool));
+  vi.spyOn(personalWire, 'read').mockResolvedValue({ entries: [], bait: emptyReport(), players: [] });
+  vi.spyOn(controlAPI, 'settings').mockResolvedValue({ ...emptyReport(), rows: [
+    { cells: ['Maximum new contract years', '3'], range: null }] });
+  const revise = vi.spyOn(poolProvider, 'revise').mockImplementation(async (_id, _mine, form) =>
+    ({ ...saved, years: form.years, salary: { cents: Number(form.salary) * 1e8, text: `$${form.salary}M` } }));
+  const host = await mount(render(WarRoomMarket, { context: context(), room: 200_000_000, select: vi.fn() }));
+  await flush();
+  const salary = () => all(host, 'input').find(e => e.props()['aria-label'] === `${saved.player} bid salary in millions`)!;
+  const blur = async (value: string) => {
+    await act(async () => { (salary().props().onBlur as (e: unknown) => void)({ currentTarget: { value } }); });
+    await flush();
+  };
+  for (const value of ['0', '-1', '', 'NaN']) {
+    await blur(value); expect(host.textContent).toContain('Enter a bid greater than zero');
+  }
+  await blur('2.01'); expect(host.textContent).toContain('Bid exceeds your cap room');
+  expect(revise).not.toHaveBeenCalled();
+  await blur('1.5');
+  expect(revise).toHaveBeenCalledWith(saved.id, '0025', expect.objectContaining({ salary: '1.5', years: saved.years }));
+  expect(salary().props().defaultValue).toBe(1.5);
+});

@@ -979,3 +979,5 @@
 .wr-v6 .value-ages { flex-wrap: wrap; }
 .wr-v6 .value-ages > div { flex: 0 0 auto; }
 .wr-v6 .value-ages dt, .wr-v6 .value-ages dd { white-space: nowrap; overflow-wrap: normal; }
+
+.wr-v6 .bid-salary{width:72px;min-width:0;font:inherit;background:var(--sunken);color:var(--ink);border:1px solid var(--rule)}
