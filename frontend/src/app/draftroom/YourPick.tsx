@@ -37,7 +37,7 @@ export function YourPick({ draft, outcome }: { draft: Draft; outcome: PickOutcom
       </label>
       {shown.length === 0 && <p>No player matches.</p>}
       <p>This pick signs for {contractWords(clock.contract)}.</p>
-      <Act verb="commissioner.surface" variant="button" disabled={!chosen || outcome.status === 'sending'}
+      <Act verb="commissioner.surface" variant="button" className="btn" disabled={!chosen || outcome.status === 'sending'}
         label={chosen ? `Pick ${chosen.name}` : 'Make this pick'}
         args={{ screen: 'draftroom', action: 'pick', value: choice }}>
         {chosen ? `Pick ${chosen.name}` : 'Make this pick'}

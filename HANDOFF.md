@@ -4,13 +4,15 @@
 Bee → next worker, 2026-11-05, `session/trade-floor-cut` (local only).
 
 ## Where it stands
-Extracted the existing offer card into `frontend/src/app/shell/OfferCard.tsx`; the inspector and old desk now share it. TypeScript and the 11 trade desk tests pass. The preliminary trace remains incomplete; no rail, registry, draft controls or HQ routing have been cut or moved. OfferCard's reject/withdraw actions still call the old builder and need a destination before its removal.
+Slice 1 mounts existing `draftroom/DraftRoom` in the local embedded War Room Draft tab; it receives the selected league. No copied action logic, new IPC or backend changes. Native board/clock/tray/owner pick remain the existing implementation; MFL and hosted readings stay unchanged. No Trade Floor cut or registry move yet. Uses the War Room action-card/button style because the locked mock has no commissioner-action area.
+
+TypeScript clean; 56 tests in six targeted files pass; plain `make build` passes. Added mount tests cover selected-league commissioner pause/confirmation, resume/open launchers, and owner submission without commissioner controls.
 
 ## Next move
-Move the native draft actions and owner pick into War Room Draft using the existing tray/IPC, with league and commissioner-role isolation verified. Repoint HQ's player action and all old draft navigation. Complete the trace and row dispositions before cutting the old node. Run the brief's gates, copied-profile checks and soak update.
+Complete live active-draft acceptance, then later-slice routing and Trade Floor removal. See `docs/audit/TRADE-FLOOR-TRACE-2026-11-05.md` for the remaining dependency trace. OfferCard reject/withdraw still targets the old builder.
 
 ## Blocked on
-Configured bundle remote is unavailable; pull and push cannot run. Existing app-league trade route displays Not wired before the old draft room can render; do not assume retained controls are accessible.
+The copied Legacy league has no 2027 draft start time and needs 197 game results from 2026, so no clock/action launchers can be exercised. Supported identity relinking restored Commissioner in the disposable copy; War Room opening and read-only MFL Draft capture were verified, but no live draft write or active-control screenshot was possible. External evidence: scratch `soak-1105/sol1`. Own GUI stopped; copied profile deleted. Pull unavailable: configured bundle remote is missing. No push or merge authorized.
 
 ## Tried and rejected
-Deleting the node immediately would strand dependencies and lacks a replacement for draft actions. No live actions were executed to establish their current behavior.
+Did not manufacture draft results/start state to force pause/resume. Did not clone the action logic or mount local commissioner controls on MFL/hosted-server readings. Old room stays until later routing/cut work.

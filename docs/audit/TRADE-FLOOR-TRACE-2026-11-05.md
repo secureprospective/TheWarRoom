@@ -2,7 +2,37 @@
 
 This is a preliminary trace, not a deletion authorization. Reachability of every
 component, command, IPC method, registry row, and test has not been established.
-No code or registry rows have been cut or moved.
+No registry rows have been cut or moved. Slice 1 wiring is recorded below.
+
+## Slice 1 — local War Room draft mount
+
+`WarRoomDraft` now lazy-mounts the existing `draftroom/DraftRoom` for the local
+embedded app-league shell. It passes the selected league to the existing
+`leagueState.choose` read. That room still owns the clock, board, commissioner
+permission (`people.mayChangeRules`), owner turn, polling, tray and commands;
+no second action implementation or IPC path was added. The old route remains
+until the later cut. MFL mirror and hosted-server draft readings are unchanged.
+
+The locked v6 mock has no commissioner-action area (its pause is a mock-draft
+control). The local draft uses a War Room action card/header and existing button
+style, with the original native room inside; it replaces, rather than duplicates,
+the native mock-oriented board. The historical parity table below predates this
+mount: all ten controls plus owner submission now share their old implementation
+in this local War Room destination, under their original state/role conditions.
+
+Evidence: TypeScript clean; 56 tests across six targeted files including the
+locked-style test; plain `make build` passed. The added War Room mount tests
+exercise selected-league commissioner pause/confirmation and owner submission
+without commissioner launchers. No backend code changed.
+
+Live copy: War Room > Draft room opens on DISPLAY :5. The supported identity
+relink command restored Commissioner on the disposable profile. Its 2027 rookie
+draft has no start time and needs 197 game results from 2026, so it has no clock
+or live-action launchers: a live pause/resume and a screenshot of active controls
+remain unverified. No draft write was attempted. MFL Draft room was captured
+read-only, with no action pressed. Captures/logs are external evidence under the
+operator's scratch soak directory, `soak-1105/sol1`; the copied profile is deleted
+at the end. This is not deletion authorization or full live parity acceptance.
 
 ## Rail discrepancy
 

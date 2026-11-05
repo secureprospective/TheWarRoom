@@ -799,6 +799,9 @@
 .wr-v6 .placebar .btn::after{content:" ▸"}
 .wr-v6 .pb .lk{font:700 9px var(--mono);letter-spacing:.06em;border:1px solid var(--ink3);padding:0 2px;color:var(--ink3);text-align:center}
 
+.wr-v6 .native-draft{min-height:0;overflow:auto;align-content:start;border:2px solid var(--black);background:var(--tile)}
+.wr-v6 .native-draft .draft-room{padding:12px}
+
 /* ================= v5: draft room — order, clock, live board ================= */
 .wr-v6 .dr5{grid-template-columns:340px minmax(0,1fr) 300px;grid-template-rows:auto 1fr;min-height:0;border-bottom:2px solid var(--black)}
 .wr-v6 .dr5>div:not(.clockbar){display:flex;flex-direction:column;min-height:0;border-right:2px solid var(--black)}
