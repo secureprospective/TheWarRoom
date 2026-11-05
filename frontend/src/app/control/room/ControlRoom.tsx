@@ -139,7 +139,7 @@ export default function ControlRoom({
       }
       if (route.kind === 'draft') {
         draftRoom.choose(false);
-        commands.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
+        commands.dispatch('nav.open', { node: 'war', workspace: 'draft-room' });
         return;
       }
       setCard(null);

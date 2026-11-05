@@ -1,7 +1,7 @@
 import { HQAct as WarRoomAct } from './HQAct';
 import { createPortal } from 'react-dom';
 import { RailLeaguePicker } from './leaguePicker';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { useLeagueClock } from '../clock/useLeagueClock';
@@ -34,10 +34,24 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   native?: WarRoomNative }) {
   const root = useRef<HTMLDivElement>(null);
   const clock = useLeagueClock(root);
-  const [tab, setTab] = useState<WarRoomTab>('desk');
+  const state = commands.use();
+  const workspace = state.workspace.war;
+  const routeTab = workspace === 'draft-room' ? 'draft' : workspace === 'trade-desk' ? 'desk' : undefined;
+  const [localTab, setLocalTab] = useState<WarRoomTab>('desk');
+  const tab = routeTab ?? localTab;
+  const setTab = (tab: WarRoomTab) => {
+    setLocalTab(tab);
+    void commands.dispatch('nav.open', { node: 'war', workspace: tab === 'draft' ? 'draft-room' :
+      tab === 'desk' ? 'trade-desk' : 'valuations-and-pool' });
+  };
   const [drawer, setDrawer] = useState<'pocket' | 'offers'>();
   const week = native ? native.week ?? 0 : clock?.value.week ?? 0;
   const [deal, changeDeal] = useState<WarRoomDeal>({ partner: '', give: [], get: [] });
+  const input = state.warTrade;
+  useEffect(() => {
+    if (input && input.mine === mine && input.league === native?.league)
+      changeDeal(d => d.give.includes(input.player) ? d : { ...d, give: [...d.give, input.player] });
+  }, [input, mine, native?.league]);
   const [selected, select] = useState<WarRoomAsset>();
   const [prospect, setProspect] = useState<WarRoomProspect>();
   const context = { snapshot, mine, week, native };

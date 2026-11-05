@@ -2,7 +2,7 @@
 
 This is a preliminary trace, not a deletion authorization. Reachability of every
 component, command, IPC method, registry row, and test has not been established.
-No registry rows have been cut or moved. Slice 1 wiring is recorded below.
+No registry rows have been cut or moved. Slices 1 and 2 wiring is recorded below.
 
 ## Slice 1 — local War Room draft mount
 
@@ -33,6 +33,67 @@ remain unverified. No draft write was attempted. MFL Draft room was captured
 read-only, with no action pressed. Captures/logs are external evidence under the
 operator's scratch soak directory, `soak-1105/sol1`; the copied profile is deleted
 at the end. This is not deletion authorization or full live parity acceptance.
+
+## Slice 2 — incoming navigation repointed
+
+Flow: HQ checks its held snapshot roster, then `nav.open` carries scoped trade
+input (league, franchise, player) into shell state. `WarRoom` adds the player to
+its existing `WarRoomDeal.give`; `WarRoomTrade` renders its existing catalog
+asset in YOU SEND. Native HQ now enables this local what-if handoff too. No old
+builder call, proposal, submission, new IPC or parallel trade implementation.
+War Room workspace state now selects the desk/draft tab.
+
+Navigation inventory (`git grep` of slice-1 HEAD, including indirect callers):
+
+| Caller | Old destination | New destination |
+| --- | --- | --- |
+| `frontend/src/app/shell/hqReads.ts` via `HQInspector.tsx` | trade/trade-desk + old builder give | war/trade-desk + War Room deal give |
+| `frontend/src/app/clock/deadlineRoute.ts` trade window | trade/trade-desk | war/trade-desk |
+| `frontend/src/app/shell/presets.ts` Trade Season | trade/trade-desk | war/trade-desk |
+| Same file, Draft Mode | trade/draft-room | war/draft-room |
+| `frontend/src/app/commands/registry.ts` DRAFT phase | trade/draft-room | war/draft-room |
+| `frontend/src/app/commissioner/LeagueLanding.tsx` startup and live draft (two sites) | trade/draft-room | war/draft-room |
+| `frontend/src/app/control/room/ControlRoom.tsx` draft controls | trade/draft-room | war/draft-room |
+| `frontend/src/app/shell/EntityInspector.tsx` pick link | trade/draft-room | war/draft-room |
+| `frontend/src/app/registry/index.ts` placement resolution for endpoint commands/reports | Trade Floor Trade desk / Draft room | war/trade-desk / war/draft-room |
+
+The placement aliases cover all 27 historical registry rows listed below,
+including command-bar endpoint navigation through `placementRoute`. CSV
+placements/dispositions remain unchanged pending slice-3 parity/parking. A new
+navigation destination does not prove every historical report is rendered
+there. The CLI catalog has no Trade Floor workspace routes; its five trade IPC
+methods remain unchanged.
+
+Remaining old navigation is the explicit slice-3 rail/rendering cut:
+`nodes.ts` still declares trade; `TargetApp.tsx` generates its rail from
+`nodeKeys` and retains its old route renderer; `HQShell.tsx` has a hard-coded
+Trade Floor rail entry. Existing trade hashes still parse to that node.
+`bindings.test.ts`, `shell.test.ts` and `leaguePicker.interaction.test.tsx`
+exercise the retained node. No compatibility guards added. Generator vocabulary
+in `frontend/scripts/gen-endpoints.mjs`, generated types and fixture tests keeps
+historical placements. Changed incoming-link assertions live in windows,
+shellRows, actRouting, draftParams, draftreports and registry tests.
+
+No production incoming links to offers-history or counterparties were found;
+those slugs remain in invalid-hash tests / generator vocabulary, not current
+node workspaces. War Room NEGOTIATIONS displays pending offers, not offers
+history or counterparties reports: **park those historical homes for slice 3**.
+`OfferCard` reject/withdraw still invokes `trade.builder` (action, not navigation).
+War Room has no equivalent saved-plan/action UI. Keep that dependency until
+slice 3 assigns its disposition. Saved versions / pocket persistence also lack
+a home. No plan/action deletion is authorized by this routing change.
+
+Evidence: TypeScript clean; 176 tests in 11 targeted files pass; plain
+`make build` passes. New tests cover scoped HQ input, invalid held roster,
+requested draft tab, tab navigation, league isolation and placement aliases.
+On DISPLAY :5, the disposable Legacy NFL copy's HQ ADD TO TRADE opened War Room
+Trade desk with Butler, Adam in YOU SEND. External scratch evidence:
+`soak-1105/sol2/hq.png` and `soak-1105/sol2/hq-player-in-warroom.png`.
+Draft-tab opening was captured too; no active draft write was tested. MFL
+buttons were not pressed. Live MFL/hosted handoff and every individual registry
+report/commissioner launcher remain unverified. Own GUI stopped and disposable
+profile deleted; PID 289151 untouched. Pull remains blocked by the missing
+configured bundle remote. No merge or push.
 
 ## Rail discrepancy
 

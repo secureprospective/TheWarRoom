@@ -6,7 +6,7 @@ import { parseRoute, formatRoute } from './routes';
 import { FixtureProvider } from '../data/provider';
 
 describe('Shell routes and data', () => {
-  it('matches all six names and workspace names in spec §4, with the Trade Floor history exception', () => {
+  it('keeps shell names, with War Room trade/draft destinations added ahead of the rail cut', () => {
     const spec = readFileSync('../docs/ui/Target_UI_Spec_2026-10.md', 'utf8');
     expect(nodeKeys).toEqual(['home', 'war', 'hq', 'trade', 'pulse', 'control']);
     for (const n of nodeKeys) {
@@ -15,6 +15,7 @@ describe('Shell routes and data', () => {
         .find((line) => line.startsWith(`| ${nodes[n].label} |`))!;
       expect(row).toBeDefined();
       const names = row.split('|')[2].trim().replace(' (owns the node)', '').split(' · ');
+      if (n === 'war') names.push('Trade desk', 'Draft room');
       // Tab labels are sentence case; the spec's table writes some workspaces in running text.
       expect(nodes[n].workspaces.map((w) => w.label.toLowerCase())).toEqual(
         names.map((name) => name.toLowerCase()).filter(name =>

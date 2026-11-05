@@ -78,7 +78,7 @@ for (const future of [false, true])
         await click(button(host, `Open ${entry.name}`));
         await settle();
         if (liveDraftControls.has(entry.id)) {
-          expect(nav).toHaveBeenCalledWith('nav.open', { node: 'trade', workspace: 'draft-room' });
+          expect(nav).toHaveBeenCalledWith('nav.open', { node: 'war', workspace: 'draft-room' });
         } else {
           expect(dialogOf(host)).toBeDefined();
           const tray = dialogOf(host)!;
@@ -151,7 +151,7 @@ it('the startup draft job opens the draft room on the startup draft', async () =
   draftRoom.choose(false);
   await click(all(host, 'button').find((b) => b.textContent.startsWith('Run the startup draft'))!);
   await settle();
-  expect(nav).toHaveBeenCalledWith('nav.open', { node: 'trade', workspace: 'draft-room' });
+  expect(nav).toHaveBeenCalledWith('nav.open', { node: 'war', workspace: 'draft-room' });
   expect(draftRoom.peek().startup).toBe(true);
   expect(host.textContent).not.toMatch(/CM-\d/);
 });

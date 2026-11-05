@@ -206,7 +206,7 @@ export function createCommands(
   };
   const phaseRoutes = {
     OFFSEASON: { node: 'hq', workspace: 'contracts-and-cap' },
-    DRAFT: { node: 'trade', workspace: 'draft-room' },
+    DRAFT: { node: 'war', workspace: 'draft-room' },
     REGULAR_SEASON: { node: 'hq', workspace: 'lineup-and-roster' },
     PLAYOFFS: { node: 'pulse', workspace: 'race' },
   } as const;
@@ -548,6 +548,7 @@ export function createCommands(
       run: (args: BrowserArguments<'nav.open'>) => {
         const route = routeFor(args.node, args.workspace ?? state.read().workspace[args.node]);
         if (!route) throw new Error(`nav.open: invalid workspace for ${args.node}`);
+        if ('trade' in args && args.trade) state.write({ warTrade: args.trade });
         state.navigate(route);
       },
     }),

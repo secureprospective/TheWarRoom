@@ -37,7 +37,7 @@ describe('league window editing and destinations', () => {
       verb: 'nav.open', args: { node: 'hq', workspace: 'lineup-and-roster' },
     });
     expect(deadlineRoute('window:trade_deadline')).toEqual({
-      verb: 'nav.open', args: { node: 'trade', workspace: 'trade-desk' },
+      verb: 'nav.open', args: { node: 'war', workspace: 'trade-desk' },
     });
     for (const kind of ['playoff_bids_only', 'multiyear_bids_close', 'ufa_bidding']) {
       expect(deadlineRoute(`window:${kind}`)).toEqual({

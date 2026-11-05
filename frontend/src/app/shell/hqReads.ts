@@ -37,14 +37,10 @@ export const hqEvents = { onChange: (load: () => void) => {
   return () => { season(); moves(); };
 } };
 
-export async function addHQTrade(mine: string, player: string): Promise<void> {
-  const { builderAction, useBuilder } = await import('./tradeBuilderState');
-  await builderAction({ action: 'read', mine });
-  const state = useBuilder.getState();
-  if (state.error) throw new Error(state.error);
-  const asset = state.reading?.value?.teams.find(t => t.id === mine)?.assets
-    .find(a => a.token === player);
-  if (!asset) throw new Error('This player is not on your held trade roster. Refresh before retrying.');
-  if (!state.give.includes(asset.token)) await builderAction({ action: 'give', value: asset.token });
-  await commands.dispatch('nav.open', { node: 'trade', workspace: 'trade-desk' });
+export async function addHQTrade(mine: string, player: string, snapshot: import('../data/contract').Snapshot,
+  league?: string): Promise<void> {
+  if (!snapshot.rosters.value.find(r => r.franchiseId === mine)?.players.some(p => p.id === player))
+    throw new Error('This player is not on your held trade roster. Refresh before retrying.');
+  await commands.dispatch('nav.open', { node: 'war', workspace: 'trade-desk',
+    trade: { mine, player, league } });
 }

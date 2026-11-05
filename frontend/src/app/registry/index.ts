@@ -10,6 +10,8 @@ export function isSurface(place: string): place is Surface {
   return surfacePlaces.some((surface) => surface === place);
 }
 export function placementRoute(place: string): Route | undefined {
+  if (place === 'Trade Floor › Trade desk') return { node: 'war', workspace: 'trade-desk' };
+  if (place === 'Trade Floor › Draft room') return { node: 'war', workspace: 'draft-room' };
   for (const node of nodeKeys) {
     const workspaces: readonly { label: string; slug: string }[] = nodes[node].workspaces;
     const workspace = workspaces.find((w) =>

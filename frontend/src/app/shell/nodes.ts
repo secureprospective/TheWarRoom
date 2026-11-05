@@ -9,6 +9,8 @@ export const nodes = {
     label: 'War Room',
     workspaces: [
       { slug: 'valuations-and-pool', label: 'Valuations and pool', ring: 'Ring 2' },
+      { slug: 'trade-desk', label: 'Trade desk', ring: 'Ring 1' },
+      { slug: 'draft-room', label: 'Draft room', ring: 'Ring 2' },
     ],
   },
   hq: {
@@ -43,7 +45,8 @@ export const nodes = {
 } as const;
 export type Node = keyof typeof nodes;
 export type Route = {
-  [N in Node]: { node: N; workspace: (typeof nodes)[N]['workspaces'][number]['slug'] };
+  [N in Node]: { node: N; workspace: (typeof nodes)[N]['workspaces'][number]['slug'];
+    trade?: N extends 'war' ? { mine: string; player: string; league?: string } : never };
 }[Node];
 export type WorkspaceMemory = {
   [N in Node]: (typeof nodes)[N]['workspaces'][number]['slug'];

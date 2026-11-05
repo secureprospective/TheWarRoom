@@ -57,7 +57,7 @@ export default function LeagueLanding() {
     }
     if (args.action === 'open' && args.value === startupDraftJob) {
       draftRoom.choose(true);
-      commands.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
+      commands.dispatch('nav.open', { node: 'war', workspace: 'draft-room' });
       return;
     }
     const opener = document.activeElement as HTMLElement;
@@ -83,7 +83,7 @@ export default function LeagueLanding() {
       }
       if (liveDraftControls.has(found.control.id)) {
         draftRoom.choose(false);
-        commands.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
+        commands.dispatch('nav.open', { node: 'war', workspace: 'draft-room' });
         return;
       }
       if (found.control.id === 'CM-021' && people?.mayGrantRoles) {

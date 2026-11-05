@@ -23,7 +23,7 @@ export default function EntityInspector({ entity, snapshot }: { entity: EntitySu
     <h5>{entity.name}</h5>
     <p>Held draft asset. Open Draft room for draft results and pick ownership.</p>
     <Act variant="text"
-      verb="nav.open" args={{ node: 'trade', workspace: 'draft-room' }}>Open Draft room</Act>
+      verb="nav.open" args={{ node: 'war', workspace: 'draft-room' }}>Open Draft room</Act>
   </section>;
   const franchise = snapshot.franchises.value.find(f => f.id === entity.id);
   const count = snapshot.rosters.value.find(r => r.franchiseId === entity.id)?.players.length;

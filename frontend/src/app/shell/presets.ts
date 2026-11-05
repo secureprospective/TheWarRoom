@@ -25,7 +25,7 @@ export const presets = {
   },
   draft: {
     label: 'Draft Mode',
-    route: { node: 'trade', workspace: 'draft-room' },
+    route: { node: 'war', workspace: 'draft-room' },
     density: 'matrix',
     inspector: 'closed',
     roles: ['gm', 'commish', 'admin'],
@@ -39,7 +39,7 @@ export const presets = {
   },
   trade: {
     label: 'Trade Season',
-    route: { node: 'trade', workspace: 'trade-desk' },
+    route: { node: 'war', workspace: 'trade-desk' },
     density: 'tactical',
     inspector: 'closed',
     roles: ['gm', 'commish', 'admin'],

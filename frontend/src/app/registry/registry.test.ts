@@ -76,7 +76,8 @@ describe('Endpoint map', () => {
     for (const node of nodeKeys) {
       for (const w of nodes[node].workspaces) {
         const place = `${nodes[node].label} › ${w.label}`;
-        expect(placementRoute(place)).toEqual({ node, workspace: w.slug });
+        expect(placementRoute(place)).toEqual({ node: node === 'trade' ? 'war' : node,
+          workspace: w.slug });
       }
     }
   });

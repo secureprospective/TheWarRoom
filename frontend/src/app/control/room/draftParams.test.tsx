@@ -106,6 +106,6 @@ describe('Control Room · draft order and engine parameters', () => {
     await tab(host, 'SEASON');
     expect(present(host, 'ROUND 1 ORDER')).toBe(true);
     await click(button(host, 'OPEN DRAFT ROOM TRAY ›'));
-    expect(nav).toHaveBeenCalledWith('nav.open', { node: 'trade', workspace: 'draft-room' });
+    expect(nav).toHaveBeenCalledWith('nav.open', { node: 'war', workspace: 'draft-room' });
   });
 });
