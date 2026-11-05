@@ -10,7 +10,6 @@ import type { PulseTab } from './NativeLeaguePulse';
 import type { Node } from './nodes';
 
 let loadedHQ: typeof import('./NativeFranchiseHQ').default | undefined;
-let loadedWarRoom: typeof import('./WarRoomNative').default | undefined;
 let loadedPulse: typeof import('./NativeLeaguePulse').default | undefined;
 function loadHQ() {
   return import('./NativeFranchiseHQ').then(module => {
@@ -19,10 +18,7 @@ function loadHQ() {
   });
 }
 function loadWarRoom() {
-  return import('./WarRoomNative').then(module => {
-    loadedWarRoom = module.default;
-    return module;
-  });
+  return import('./WarRoomNative');
 }
 function loadPulse() {
   return import('./NativeLeaguePulse').then(module => {
@@ -49,6 +45,9 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
   tree?: HTMLElement | null;
 }) {
   const [people, setPeople] = useState<People>();
+  // Navigation does not end a league's read lifetime; league/franchise changes still remount it.
+  const [warOpened, setWarOpened] = useState(view === 'war');
+  useEffect(() => { if (view === 'war') setWarOpened(true); }, [view]);
   const [mine, setMine] = useState('');
   const [error, setError] = useState<string>();
   const key = `${FRANCHISE_KEY}:${league.id}`;
@@ -79,14 +78,13 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
     return () => { active = false; };
   }, [league.id, key]);
   // The Control Room runs the league, not one franchise: it needs neither a franchise nor the seat list.
-  if (view === 'control') return <Suspense fallback={<p role="status">Opening Control Room…</p>}>
-    <ControlRoom key={league.id} league={league.id} tree={tree} footer={footer} /></Suspense>;
-  if (error) return <p role="alert">Could not open {league.name}: {error}</p>;
-  if (!people) return <p role="status">Opening {league.name}…</p>;
+  if (view !== 'control' && error) return <p role="alert">Could not open {league.name}: {error}</p>;
+  if (view !== 'control' && !people) return <p role="status">Opening {league.name}…</p>;
+  const seats = people?.seats ?? [];
   const chooser = <label>View a franchise
     <select value={mine} onChange={event => {
       const id = event.target.value;
-      if (!people.seats.some(s => s.franchise === id)) return;
+      if (!seats.some(s => s.franchise === id)) return;
       try {
         browserStorage()?.setItem(key, id);
         setMine(id);
@@ -95,26 +93,34 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
       }
     }}>
       <option value="">Choose a franchise</option>
-      {people.seats.map(s => <option key={s.franchise} value={s.franchise}>{s.name}</option>)}
+      {seats.map(s => <option key={s.franchise} value={s.franchise}>{s.name}</option>)}
     </select>
   </label>;
   const HQ = loadedHQ ?? NativeFranchiseHQ;
-  const WarRoom = loadedWarRoom ?? WarRoomNative;
   const Pulse = loadedPulse ?? NativeLeaguePulse;
   return <>
+    {view === 'control' ? <Suspense fallback={<p role="status">Opening Control Room…</p>}>
+      <ControlRoom key={league.id} league={league.id} tree={tree} footer={footer} /></Suspense> : <>
     {footer ? createPortal(chooser, footer) : chooser}
     {!mine ? <p role="status">Choose a franchise to view its roster, contracts and War Room.</p> :
       <Suspense fallback={<p role="status">Opening {league.name}…</p>}>
         {view === 'hq' ? <HQ embedded key={`${league.id}:${mine}`}
           league={league.id} mine={mine} name={league.name} port={localWorkflow} leave={leave}
-          canManage={people.yourFranchise === mine}
+          canManage={people?.yourFranchise === mine}
           tab={hqTab} navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
           view === 'home' ? <HomeBrief key={`${league.id}:${mine}`} league={league.id} mine={mine}
-            port={localWorkflow} owner={people.yourFranchise === mine} /> :
+            port={localWorkflow} owner={people?.yourFranchise === mine} /> :
           view === 'pulse' ? <Pulse embedded key={`${league.id}:${mine}`} league={league.id}
             mine={mine} port={localWorkflow} leave={leave} tab={pulseTab} /> :
-          <WarRoom embedded key={`${league.id}:${mine}`} league={league.id} mine={mine}
-            port={localWorkflow} leave={leave} tabs={tabs} owner={people.yourFranchise === mine} />}
+          null}
       </Suspense>}
+    </>}
+    {mine && (warOpened || view === 'war') && <div hidden={view !== 'war'}>
+      <Suspense fallback={<p role="status">Opening {league.name}…</p>}>
+        <WarRoomNative embedded key={`${league.id}:${mine}`} league={league.id} mine={mine}
+          port={localWorkflow} leave={leave} tabs={view === 'war' ? tabs : null}
+          owner={people?.yourFranchise === mine} />
+      </Suspense>
+    </div>}
   </>;
 }

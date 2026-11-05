@@ -1,18 +1,20 @@
 # Handoff
 
 ## Baton
-Bee → next worker, 2026-11-05, `session/trade-floor-cut` (local only).
+Bee → reviewer, 2026-11-05, `session/trade-floor-cut` (local only).
 
 ## Where it stands
-All three slices implemented. Trade Floor node/rails/routes and duplicate TradeDesk/TradeBuilder UI cut. War Room owns native DraftRoom; Negotiations opens existing OfferCard in its inspector, preserving reject/withdraw plus receipt subscriptions. Parser/API and five trade IPC methods retained. Registry: 12 moved, 15 newly parked, 11 older retired history/counterparty rows explicitly parked; full IDs in `docs/audit/PARKED-REPORTS-2026-11-05.md`.
+Trade Floor slices remain intact. Follow-up A: `32761874` removes Home's all-Pulse-before-any-tile dependency; existing progressive Pulse publications release week-dependent reads, other sources start immediately. Reproduced the empty Legacy Home on pre-branch `4e871c35`; MFL reference Home already loaded. No bisect needed.
 
-TypeScript clean; full Vitest 1,822 passed, only four allowed inherited failures (assets, controls line length, personal, appLeaguePulse). Plain make build passed. Disposable Legacy NFL and MFL mirror: no Trade Floor on Home/War Room, all four War Room tabs open. External screenshots/logs: soak-1105/sol3. Own GUI stopped; copied profile deleted. PID 289151 untouched. Soak script backup retained, three trade steps removed, following rail coordinates adjusted.
+Follow-up B: app and mirror mount owners retain one hidden War Room after first visit, preserving existing `useContractRead` state and change subscriptions. League/franchise changes dispose it. Stable lazy component identity avoids the extra lazy-to-loaded remount. No second cache; shared query audited, Pool remains G1 and ineligible for that held-read cache. HQ/Home/Pulse still remount and reread.
+
+TypeScript and plain `make build` pass. Targeted: 7 files, 89 tests pass. Final full Vitest: 1,826 passed; exactly four inherited failures (assets, controls readability, personal, appLeaguePulse). Live copied-profile Home sources visible; three Legacy War Room revisit samples: before 966/819/830 ms, final 194/112/114 ms, including click/capture overhead. External screenshots/logs retained. Own GUI stopped and disposable profile deleted before close; protected PID untouched.
 
 ## Next move
-Review slice 3 and the parked report homes; decide future saved plans/history/analytics UI from locked mocks. PLANS remains a placeholder, not saved-plan parity. HQ My moves still shows existing receipts.
+Review the retained-view lifetime (including open-dialog navigation and hidden-view refresh load). Verify complete standings/odds when the slow season scorer finishes; this run proves unrelated Home tiles no longer wait for it, not that scoring itself is fast.
 
 ## Blocked on
-Pull unavailable: configured bundle remote missing. No merge/push authorized. Native active draft needs standings (197 missing game results); live commissioner actions and offer reject/withdraw handoffs were not exercised. MFL read-only. Long soak not run.
+Pull unavailable: configured bundle remote missing. No merge/push authorized. No MFL actions performed. Long soak, hosted-account navigation and open-dialog navigation not exercised.
 
 ## Tried and rejected
-No duplicate builder/draft logic, new safety fences, invented draft results, or MFL action presses. Parked unserved reports rather than asserting navigation proves parity. The current trace replaces obsolete preliminary notes in `docs/audit/TRADE-FLOOR-TRACE-2026-11-05.md`.
+No parallel cache or registry-policy bypass for G1 Pool reads. No guessed standings, timeout-based success, MFL write, or hook bypass.

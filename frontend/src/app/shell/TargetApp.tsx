@@ -117,18 +117,23 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
       : s.node === 'control' ? 'control'
       : s.node === 'war' ? 'war' : undefined
     : undefined;
-  if (selectedLeague && !selectedLeague.app && s.node === 'war' && snapshot)
-    return <Suspense
-    fallback={<div className="twr-app"><LeaguePicker leagues={leagues.leagues} selected={selectedLeague}
-      onSelect={leagues.select} /><p role="status">Opening War Room…</p></div>}>
-      <WarRoom snapshot={snapshot} /></Suspense>;
-  if (selectedLeague && !selectedLeague.app && s.node === 'hq' && snapshot) return <>
-    <FranchiseHQMount snapshot={snapshot} />
-    <div className="twr-app"><Suspense fallback={undefined}><CommandBar snapshot={snapshot}
-      /></Suspense></div>
-  </>;
-  return (
-    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector}
+  const mirrorWar = Boolean(selectedLeague && !selectedLeague.app && s.node === 'war' && snapshot);
+  const mirrorHQ = Boolean(selectedLeague && !selectedLeague.app && s.node === 'hq' && snapshot);
+  const [warLeague, setWarLeague] = useState<string>();
+  useEffect(() => {
+    if (mirrorWar) setWarLeague(selectedLeague?.id);
+  }, [mirrorWar, selectedLeague?.id]);
+  return <>
+    {selectedLeague && !selectedLeague.app && snapshot && (mirrorWar || warLeague === selectedLeague.id) &&
+      <div hidden={!mirrorWar}><Suspense fallback={<p role="status">Opening War Room…</p>}>
+        <WarRoom key={selectedLeague.id} snapshot={snapshot} />
+      </Suspense></div>}
+    {mirrorHQ && snapshot && <>
+      <FranchiseHQMount snapshot={snapshot} />
+      <div className="twr-app"><Suspense fallback={undefined}><CommandBar snapshot={snapshot} />
+      </Suspense></div>
+    </>}
+    {!mirrorWar && !mirrorHQ && <div className="twr-app target-frame" ref={root} data-inspector={s.inspector}
       data-native-workspace={Boolean(appLeagueView) || undefined}>
       <aside className="rail">
         <LeaguePicker
@@ -359,6 +364,6 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           </Suspense> : <EndpointIndex placement={s.endpointSurface} />}
         </aside>
       )}
-    </div>
-  );
+    </div>}
+  </>;
 }
