@@ -71,6 +71,50 @@ implementations and the locked mocks before choosing moved versus parked;
 regenerate the registry after a decision. Other rows mention Trade Floor in
 notes without using it as their placement.
 
+## Commissioner draft controls: needs a War Room home
+
+Static comparison of `draftroom/DraftRoom.tsx`, `DraftClock.tsx`,
+`DraftBoard.tsx`, `DraftTray.tsx`, `trayAction.ts`, and `YourPick.tsx` against
+`shell/WarRoomDraft.tsx`: the new room has none of the following action
+controls. Each is **needs a War Room home**, not deletion-authorized:
+
+| Old control | Old action / command | War Room Draft equivalent |
+| --- | --- | --- |
+| Open startup draft | `open` / `draft.startup.open` | None |
+| Skip current pick | `skip` / `draft.skip` | None |
+| Pause clock | `pause` / `draft.timer` | None |
+| Resume clock | `resume` / `draft.timer` | None |
+| Set clock minutes | `set` / `draft.timer` | None |
+| Assign player to current or skipped pick | `assign` / `draft.assign` | None |
+| Change an existing pick | `change` / `draft.change` | None |
+| Insert extra pick | `insert` / `draft.insert` | None |
+| Restore checkpoint | `restore` / `draft.revert` | None |
+| Close draft | `close` / `draft.archive` | None |
+
+The old room also has the owner's **Make this pick** action through
+`draftRoom.pick` / `TargetNativeDraftPick`; the new room lists available
+players and opens their inspector, but has no pick submission control. This
+is not a commissioner action, but also needs a home before removal. The
+new room's Run Mock Draft button is disabled, not a substitute.
+
+KEEP the old room and its action/tray code pending a working replacement and
+routing verification. The code implements preview and confirmation via the
+shared commissioner change flow; this audit did not execute those actions or
+prove they currently work end-to-end. In fact, `TargetApp.tsx`'s app-league
+branch shows Not wired for `trade`, before the `Market` route can render the
+old room. `LeagueLanding.tsx` routes startup and live draft controls to that
+node, and `control/room/ControlRoom.tsx` routes draft controls there too.
+These routes are not evidence that the app-league UI presently reaches the old
+room. Do not silently claim that simply retaining the files preserves access.
+The MFL `draft-room` path does enter `Market`, but the old room reads native
+league state, so its live behavior also needs verification.
+
+`draftroom/draft.ts` and parser utilities are independently KEEP: the new
+War Room, Home, and commissioner hosted room import them. `draftroom/state.ts`
+is also imported by LeagueLanding and ControlRoom to select the draft, and by
+commissioner routing tests; replacing its navigation callers does not by
+itself prove the state implementation dead.
+
 ## Still required
 
 Complete transitive callers, all tests, CLI bindings and IPC/Go paths, and
