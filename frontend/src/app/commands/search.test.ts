@@ -49,7 +49,7 @@ it('maps places, named presets, density and rostered players to registered verbs
   const c = createCommands(() => undefined);
   c.loadSnapshot(snapshot);
   const results = searchCandidates(c, snapshot);
-  expect(results.filter((r) => r.kind === 'place')).toHaveLength(14);
+  expect(results.filter((r) => r.kind === 'place')).toHaveLength(12);
   expect(results.filter((r) => r.kind === 'player')).toHaveLength(
     snapshot.rosters.value.reduce((sum, r) => sum + r.players.length, 0),
   );
@@ -68,12 +68,12 @@ it('maps places, named presets, density and rostered players to registered verbs
     expect(command.roles).toContain('gm');
     for (const arg of command.args) expect(result.invocation.args).toHaveProperty(arg);
   }
-  const place = results.find((r) => r.label === 'War Room › Research')!;
+  const place = results.find((r) => r.label === 'Franchise HQ › Contracts and cap')!;
   c.dispatch('commandbar.open', {});
   runResult(c, place);
   expect(c.read()).toMatchObject({
-    node: 'war',
-    workspace: { war: 'research' },
+    node: 'hq',
+    workspace: { hq: 'contracts-and-cap' },
     commandbar: false,
   });
   expect(c.history().some((entry) => entry.id === 'nav.open')).toBe(true);
@@ -95,17 +95,17 @@ it('keeps the workspace for every player and treats pointer and Enter alike', ()
       r.invocation.verb === 'inspector.open' &&
       r.invocation.args.subject.franchiseId !== roster.franchiseId,
   )!;
-  c.dispatch('nav.open', { node: 'war', workspace: 'research' });
+  c.dispatch('nav.open', { node: 'hq', workspace: 'contracts-and-cap' });
   c.dispatch('commandbar.open', {});
   runResult(c, other);
-  expect(c.read()).toMatchObject({ node: 'war', inspector: 'rest', commandbar: false });
+  expect(c.read()).toMatchObject({ node: 'hq', inspector: 'rest', commandbar: false });
   c.dispatch('commandbar.open', {});
   runResult(c, own);
-  expect(c.read()).toMatchObject({ node: 'war', workspace: { war: 'research' } });
-  c.dispatch('nav.open', { node: 'war', workspace: 'research' });
+  expect(c.read()).toMatchObject({ node: 'hq', workspace: { hq: 'contracts-and-cap' } });
+  c.dispatch('nav.open', { node: 'hq', workspace: 'contracts-and-cap' });
   c.dispatch('commandbar.open', {});
   c.dispatch(own.invocation.verb, own.invocation.args);
-  expect(c.read()).toMatchObject({ node: 'war', inspector: 'rest', commandbar: false });
+  expect(c.read()).toMatchObject({ node: 'hq', inspector: 'rest', commandbar: false });
 });
 
 it('uses held roles for preset discovery and dispatch', () => {

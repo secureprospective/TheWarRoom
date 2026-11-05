@@ -250,10 +250,10 @@ describe('Endpoint verbs and search', () => {
       expect(offered.some(r =>
         r.invocation.verb === 'endpoint.open' && r.invocation.args.id === id)).toBe(false);
     const result = offered.find(r =>
-      r.invocation.verb === 'endpoint.open' && r.invocation.args.id === 'M-054')!;
+      r.invocation.verb === 'endpoint.open' && r.invocation.args.id === 'M-048')!;
     expect(result.label).not.toContain('O=');
     runResult(executor, result);
-    expect(executor.read().endpointIds).toEqual(['M-054']);
+    expect(executor.read().endpointIds).toEqual(['M-048']);
   });
   it('ranks endpoints after equally matching places and before players', () => {
     const result = rankResults('same', [

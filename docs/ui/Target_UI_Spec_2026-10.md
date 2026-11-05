@@ -136,8 +136,8 @@ provenance. Colour is always paired with a text label or icon.
 
 | Node | Workspaces | Notes |
 |---|---|---|
-| Home | Seasonal card (owns the node) · alert tray · digests | phase router |
-| War Room | Market · Valuations and pool · Research | Lab market, asset board, free-agent pool, bid tracker |
+| Home | Seasonal card (owns the node) · alert tray | phase router |
+| War Room | Market · Valuations and pool | Lab market, asset board, free-agent pool, bid tracker |
 | Franchise HQ | Lineup and roster · Contracts and cap · My moves | Act plans, what-if, dead cap, app-local lists |
 | Trade Floor | Trade desk · Offers history · Counterparties · Draft room | accept, reject, revoke, DOT state; draft timing inside the draft room |
 | League Pulse | Now · Race · Archive | live game view and Classic/Default matchup in Now; report drawer for every MFL read report |

@@ -75,7 +75,7 @@ it('carries player ownership and NFL context, place hierarchy and command bindin
   const candidates = searchCandidates(c, snapshot);
   const murray = candidates.find((result) => result.label.startsWith('Murray, Kyler ·'));
   expect(murray?.label).toBe('Murray, Kyler · QB · MIN · Cincinnati Bengals');
-  expect(candidates.find((result) => result.label === 'War Room › Research')?.kind).toBe('place');
+  expect(candidates.find((result) => result.label === 'Franchise HQ › Contracts and cap')?.kind).toBe('place');
   expect(candidates.find((result) => result.invocation.verb === 'inspector.toggle')?.label)
     .toBe('Toggle inspector · I');
   for (const plumbing of ['commandbar.open', 'commandbar.close', 'overlays.close']) {

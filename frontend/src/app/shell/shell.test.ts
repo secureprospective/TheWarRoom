@@ -51,11 +51,11 @@ describe('Shell routes and data', () => {
 describe('Shell transitions through dispatch only', () => {
   it('remembers workspaces per node and isolates instances', () => {
     const c = createCommands();
-    c.dispatch('nav.open', { node: 'war', workspace: 'research' });
+    c.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
     c.dispatch('nav.open', { node: 'hq', workspace: 'contracts-and-cap' });
-    c.dispatch('nav.open', { node: 'war' });
-    expect(c.read().node).toBe('war');
-    expect(c.read().workspace.war).toBe('research');
+    c.dispatch('nav.open', { node: 'trade' });
+    expect(c.read().node).toBe('trade');
+    expect(c.read().workspace.trade).toBe('draft-room');
     expect(c.read().workspace.hq).toBe('contracts-and-cap');
     expect(createCommands().read().node).toBe('home');
   });

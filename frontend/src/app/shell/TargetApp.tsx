@@ -46,7 +46,6 @@ const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
 const WarRoom = lazy(() => import('./WarRoom'));
 const Market = lazy(loadMarket);
-const Research = lazy(() => import('../research/Research'));
 const Race = lazy(() => import('../race/Race'));
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
@@ -118,9 +117,9 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   const appLeagueView = selectedLeague?.app
     ? s.node === 'hq' ? 'hq' : s.node === 'pulse' ? 'pulse' : s.node === 'home' ? 'home'
       : s.node === 'control' ? 'control'
-      : s.node === 'war' && workspace.slug !== 'research' ? 'war' : undefined
+      : s.node === 'war' ? 'war' : undefined
     : undefined;
-  if (selectedLeague && !selectedLeague.app && s.node === 'war' && workspace.slug !== 'research' && snapshot)
+  if (selectedLeague && !selectedLeague.app && s.node === 'war' && snapshot)
     return <Suspense
     fallback={<div className="twr-app"><LeaguePicker leagues={leagues.leagues} selected={selectedLeague}
       onSelect={leagues.select} /><p role="status">Opening War Room…</p></div>}>
@@ -269,17 +268,9 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             <Suspense fallback={null}>
               <Market snapshot={snapshot} />
             </Suspense>
-          ) : s.node === 'war' && workspace.slug === 'research' ? (
-            <Suspense fallback={<p role="status">Opening Research…</p>}>
-              <Research />
-            </Suspense>
           ) : s.node === 'pulse' && workspace.slug === 'race' ? (
             <Suspense fallback={<p role="status">Opening Race…</p>}>
               <Race />
-            </Suspense>
-          ) : s.node === 'home' && workspace.slug === 'digests' ? (
-            <Suspense fallback={<p role="status">Opening Digests…</p>}>
-              <Research newsOnly />
             </Suspense>
           ) : !snapshot && snapshotWorkspaces.includes(`${s.node}/${workspace.slug}`) ? (
             <p role="status">

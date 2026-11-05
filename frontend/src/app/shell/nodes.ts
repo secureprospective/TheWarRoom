@@ -4,14 +4,12 @@ export const nodes = {
     workspaces: [
       { slug: 'seasonal-card', label: 'Seasonal card', ring: 'Ring 1' },
       { slug: 'alert-tray', label: 'Alert tray', ring: 'Ring 1' },
-      { slug: 'digests', label: 'Digests', ring: 'Ring 3' },
     ],
   },
   war: {
     label: 'War Room',
     workspaces: [
       { slug: 'valuations-and-pool', label: 'Valuations and pool', ring: 'Ring 2' },
-      { slug: 'research', label: 'Research', ring: 'Ring 3' },
     ],
   },
   hq: {

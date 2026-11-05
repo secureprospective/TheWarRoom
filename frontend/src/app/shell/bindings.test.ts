@@ -3,24 +3,24 @@ import { createCommands } from '../commands/registry';
 import { connectRoutes, dispatchKey } from './bindings';
 it('opens a deep link, replaces on navigation, normalizes bad hashes and unsubscribes', () => {
   const c = createCommands();
-  const location = { hash: '#/war/research' };
+  const location = { hash: '#/hq/contracts-and-cap' };
   const replaced: string[] = [];
   const binding = connectRoutes(c, location, (hash) => {
     location.hash = hash;
     replaced.push(hash);
   });
-  expect(c.read()).toMatchObject({ node: 'war', workspace: { war: 'research' } });
+  expect(c.read()).toMatchObject({ node: 'hq', workspace: { hq: 'contracts-and-cap' } });
   expect(replaced).toEqual([]);
   c.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
   expect(location.hash).toBe('#/trade/draft-room');
   location.hash = '#/bad/unknown';
   binding.fromHash();
   expect(location.hash).toBe('#/home/seasonal-card');
-  c.dispatch('nav.open', { node: 'war' });
-  expect(location.hash).toBe('#/war/research');
-  binding.unsubscribe();
   c.dispatch('nav.open', { node: 'hq' });
-  expect(location.hash).toBe('#/war/research');
+  expect(location.hash).toBe('#/hq/contracts-and-cap');
+  binding.unsubscribe();
+  c.dispatch('nav.open', { node: 'war' });
+  expect(location.hash).toBe('#/hq/contracts-and-cap');
 });
 it('ignores typing and modified shortcuts without dispatching', () => {
   const c = createCommands();

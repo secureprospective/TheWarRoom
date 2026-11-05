@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KeyDocument, descendants } from '../shell/mflKeyTestDom';
 import { commands } from '../commands/registry';
 import * as registry from '../commands/registry';
-import { ResearchView } from './Research';
 import { PlayerResearchView } from './PlayerInspector';
 import { parseResearch, type PlayerReading } from './contract';
 import { createResearchState, type ResearchReader } from './state';
@@ -45,45 +44,6 @@ describe('Research live-look fixes', () => {
     await state.load(true);
     expect(state.peek().status).toBe('Refresh complete.');
     expect(state.peek().error).toBe('');
-  });
-  it('submits the search through the native Enter form path and its submit button', async () => {
-    const document = new KeyDocument();
-    const element = document.createElement('div');
-    vi.stubGlobal('document', document);
-    vi.stubGlobal('window', { document, HTMLIFrameElement: class {} });
-    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-    const dispatch = vi.spyOn(commands, 'dispatch').mockImplementation(() => undefined);
-    root = createRoot(element as unknown as HTMLElement);
-    await act(async () => root?.render(createElement(ResearchView, {
-      research: fixture, selected: ['M-037'],
-    })));
-    const form = descendants(element).find(e => e.tagName === 'FORM')!;
-    const button = descendants(element).find(e =>
-      e.tagName === 'BUTTON' && e.textContent === 'Search players')!;
-    expect(button.getAttribute('type')).toBe('submit');
-    expect(button.props().onClick).toBeUndefined();
-    const preventDefault = vi.fn();
-    await act(async () => {
-      (form.props().onSubmit as (event: { preventDefault(): void }) => void)({ preventDefault });
-    });
-    expect(preventDefault).toHaveBeenCalledOnce();
-    expect(dispatch).toHaveBeenCalledWith('research.read', { action: 'search', value: 'Gibbs' });
-    expect(element.textContent).toContain('Gibbs, Jahmyr · RB · DET ·');
-    expect(descendants(element).some(e => e.tagName === 'SUMMARY' && e.textContent.includes('matches')))
-      .toBe(false);
-  });
-  it('prompts on an empty query and uses one shared dark-theme search rule', () => {
-    const html = renderToStaticMarkup(createElement(ResearchView, {
-      research: { ...fixture, scope: { ...fixture.scope, search: '' } }, selected: ['M-037'],
-    }));
-    expect(html).toContain('Enter a name, position or NFL team');
-    expect(html).not.toContain('matches');
-    const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
-    expect(read('look/look.css').match(/\.twr-app \.search-input \{/g)).toHaveLength(1);
-    expect(read('control/control.css')).not.toContain("input[type='search']");
-    expect(read('control/LeagueRoom.tsx')).toContain('className="search-input"');
-    expect(read('research/Research.tsx')).toContain('className="search-input"');
-    expect(read('research/research.css')).toContain('scrollbar-gutter: stable');
   });
   it('renders held reports and missing feed times under both Inspector shapes', () => {
     const player: PlayerReading = { ...fixture.players[0], report: {
@@ -143,54 +103,6 @@ describe('Research live-look fixes', () => {
 });
 
 describe('One paged news list', () => {
-  it('opens the headline itself and expands by 25 through an Act, without another fetch', async () => {
-    const document = new KeyDocument();
-    const element = document.createElement('div');
-    vi.stubGlobal('document', document);
-    vi.stubGlobal('window', { document, HTMLIFrameElement: class {} });
-    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-    const articles = Array.from({ length: 60 }, (_, i) => ({ ...fixture.articles[0],
-      article: `article${i}`, headline: `Headline ${i}` }));
-    const news = { ...fixture.news, summary: [], rows: articles.map((a, i) => ({
-      cells: [a.name, '24', a.headline, 'Oct 12, 2026, about 9 PM'], range: null,
-    })) };
-    const research = { ...fixture, news, articles };
-    const dispatch = vi.spyOn(registry, 'dispatch').mockImplementation(() => undefined);
-    root = createRoot(element as unknown as HTMLElement);
-    const { NewsView } = await import('./Research');
-    const { researchState } = await import('./state');
-    await act(async () => root?.render(createElement(NewsView, { research })));
-    const headlineButtons = () => descendants(element).filter(e =>
-      e.tagName === 'BUTTON' && e.textContent.startsWith('Headline '));
-    expect(headlineButtons()).toHaveLength(25);
-    expect(headlineButtons()[0].textContent).toBe('Headline 0');
-    expect(element.textContent.split('Headline 0')).toHaveLength(2);
-    expect(element.textContent).not.toContain('Open article on MFL');
-    await act(async () => {
-      (headlineButtons()[0].props().onClick as () => void)();
-    });
-    expect(dispatch).toHaveBeenCalledWith('research.read', { action: 'open',
-      value: `${articles[0].id}:article0` });
-    const more = descendants(element).find(e => e.tagName === 'BUTTON' &&
-      e.textContent === 'Show 25 more')!;
-    await act(async () => (more.props().onClick as () => void)());
-    expect(dispatch).toHaveBeenCalledWith('research.read', { action: 'more', value: 'M-058' });
-    await act(async () => { await researchState.choose('more', 'M-058'); });
-    expect(headlineButtons()).toHaveLength(50);
-    await act(async () => { await researchState.choose('more', 'M-058'); });
-    expect(headlineButtons()).toHaveLength(60);
-    expect(descendants(element).some(e => e.textContent === 'Show 25 more')).toBe(false);
-  });
-  it('keeps report navigation visible when roster news is selected and expanded', async () => {
-    const { researchState } = await import('./state');
-    const render = () => renderToStaticMarkup(createElement(ResearchView, {
-      research: fixture, selected: ['M-060'],
-    }));
-    expect(render()).toContain('Position leaders');
-    await researchState.choose('more', 'M-060');
-    expect(render()).toContain('Position leaders');
-    expect(render()).toContain('My players’ news');
-  });
   it('does not render Inspector headlines a second time among the held facts', () => {
     const article = fixture.articles[0];
     const player: PlayerReading = { ...fixture.players[0], report: {
@@ -216,35 +128,6 @@ it('Inspector news uses a whole Posted header and a local absolute minute from G
   const css = readFileSync(new URL('../shell/shell.css', import.meta.url), 'utf8');
   expect(css).toContain('.twr-app .insp .draft-report th .act-button {');
   expect(css).toContain('overflow-wrap: normal; word-break: normal;');
-});
-
-it('renders one shared posted date without raw elapsed wording on all news tables', async () => {
-  const { NewsView } = await import('./Research');
-  const mine = fixture.board.reports.find(report => report.id === 'M-060')!;
-  const posted = fixture.news.rows[0].cells[3];
-  expect(posted).toBe('Oct 5, 2026');
-  expect(mine.rows[0].cells[3]).toBe(posted);
-  const player: PlayerReading = { ...fixture.players[0], report: {
-    ...fixture.news, rows: fixture.news.rows.map(row => ({ ...row,
-      cells: [`News · ${row.cells[3]}`, row.cells[2], fixture.news.asOf],
-    })),
-  }, articles: fixture.articles, howLabel: fixture.board.howLabel };
-  const surfaces = [createElement(NewsView, { research: fixture }),
-    createElement(NewsView, { research: fixture, mine: true }),
-    createElement(ResearchView, { research: fixture, selected: ['M-060'] }),
-    createElement(PlayerResearchView, { player, identity: false })];
-  for (const surface of surfaces) {
-    const html = renderToStaticMarkup(surface);
-    expect(html).toContain('Posted');
-    expect(html).toContain(posted);
-    expect(html).not.toContain('Published');
-    expect(html).not.toMatch(/\b\d+ (?:minutes?|hours?|days?)\b/);
-    expect(html).toContain('MFL’s elapsed wording at the fetch time');
-  }
-  const css = readFileSync(new URL('./research.css', import.meta.url), 'utf8');
-  expect(css).toContain('.draft-report[data-endpoint="M-058"] .draft-table-scroll :is(th, td),');
-  expect(css).toContain('.draft-report[data-endpoint="M-060"] .draft-table-scroll :is(th, td) {');
-  expect(css).toContain('overflow-wrap: normal; word-break: normal; white-space: normal;');
 });
 
 it('starter grid uses intrinsic columns and scrolls rather than overlapping names', () => {
