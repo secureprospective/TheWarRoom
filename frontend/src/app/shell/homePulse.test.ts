@@ -162,4 +162,3 @@ describe('Alert tray', () => {
     expect(t.text()).toContain('Nothing needs you right now');
   });
 });
-
