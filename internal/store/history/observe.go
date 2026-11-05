@@ -365,17 +365,8 @@ func (s *Store) LinkPlayerIDs(ctx context.Context, source string, links []Player
 		return 0, fmt.Errorf("history: link player ids: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	for _, l := range links {
-		id, err := playerid.New(l.PlayerID)
-		if err != nil {
-			return 0, fmt.Errorf("history: link %s %s: %w", l.IDType, l.IDValue, err)
-		}
-		if l.IDType == "" || l.IDType == measures.IDTypeMFL || l.IDValue == "" {
-			return 0, fmt.Errorf("history: cannot link id type %q value %q", l.IDType, l.IDValue)
-		}
-		if err := db.LinkPlayerExternalID(ctx, tx, l.IDType, l.IDValue, id.String()); err != nil {
-			return 0, fmt.Errorf("history: link %s %s: %w", l.IDType, l.IDValue, err)
-		}
+	if err := writeLinks(ctx, tx, links); err != nil {
+		return 0, err
 	}
 	const matched = `FROM unresolved_observations u JOIN player_ids p ON p.id_type = u.id_type AND p.id_value = u.id_value`
 	res, err := tx.ExecContext(ctx, `
@@ -402,6 +393,52 @@ INSERT INTO loads (source, loaded_at, facts, added, unresolved) VALUES (?, ?, ?,
 		return 0, fmt.Errorf("history: link player ids commit: %w", err)
 	}
 	return int(promoted), nil
+}
+
+// writeLinks writes the new or moved links. The crosswalk is reloaded whole each launch and
+// barely changes; a link already held is left as is.
+func writeLinks(ctx context.Context, tx *sql.Tx, links []PlayerIDLink) error {
+	held, err := heldLinks(ctx, tx)
+	if err != nil {
+		return err
+	}
+	for _, l := range links {
+		id, err := playerid.New(l.PlayerID)
+		if err != nil {
+			return fmt.Errorf("history: link %s %s: %w", l.IDType, l.IDValue, err)
+		}
+		if l.IDType == "" || l.IDType == measures.IDTypeMFL || l.IDValue == "" {
+			return fmt.Errorf("history: cannot link id type %q value %q", l.IDType, l.IDValue)
+		}
+		if held[[2]string{l.IDType, l.IDValue}] == id.String() {
+			continue
+		}
+		if err := db.LinkPlayerExternalID(ctx, tx, l.IDType, l.IDValue, id.String()); err != nil {
+			return fmt.Errorf("history: link %s %s: %w", l.IDType, l.IDValue, err)
+		}
+	}
+	return nil
+}
+
+// heldLinks reads every outside id already linked, keyed by type and value.
+func heldLinks(ctx context.Context, tx *sql.Tx) (map[[2]string]string, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT id_type, id_value, player_id FROM player_ids`)
+	if err != nil {
+		return nil, fmt.Errorf("history: held links: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	held := map[[2]string]string{}
+	for rows.Next() {
+		var t, v, p string
+		if err := rows.Scan(&t, &v, &p); err != nil {
+			return nil, fmt.Errorf("history: held links: %w", err)
+		}
+		held[[2]string{t, v}] = p
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("history: held links: %w", err)
+	}
+	return held, nil
 }
 
 // LinkedPlayers returns every player with an id of idType in the directory.
