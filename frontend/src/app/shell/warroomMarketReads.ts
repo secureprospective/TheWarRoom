@@ -81,7 +81,8 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       const years = Number(raw);
       if (Number.isSafeInteger(years) && years > 0) result.maxYears = years;
     }),
-    apply(async () => { const pool = await poolProvider.pool(c.mine, { position: '', sort: 'name',
+    apply(async () => { await poolProvider.refresh(false);
+      const pool = await poolProvider.pool(c.mine, { position: '', sort: 'name',
       desc: false });
       if (pool.status === 'failed' || pool.status === 'not_wired') throw new Error(pool.absenceReason ??
         'Pool unavailable');

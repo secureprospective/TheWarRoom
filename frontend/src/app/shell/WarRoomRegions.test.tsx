@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { act } from 'react';
 import { all, button, click, flush, mount, render, rerender, type, unmount }
@@ -41,6 +41,7 @@ const emptyReport = (): Report => ({ id: 'M-002', title: '', note: '', status: '
 const reply = (data: unknown) => ({ label: 'Native', writable: false, football: '', data });
 const nativeContext = (port: HostedPort): WarRoomContext => ({ ...context(), mine: 'franchise.01',
   native: { league: 'native.seed', mine: 'franchise.01', port, leave: () => {} } });
+beforeEach(() => { vi.spyOn(poolProvider, 'refresh').mockResolvedValue(); });
 afterEach(async () => { await unmount(); vi.restoreAllMocks(); });
 describe('War Room header and settings congruence', () => {
   it('renders record, Best-N model output, rank and runway from real read adapters', async () => {
@@ -246,7 +247,8 @@ describe('market, stars and sealed-bid privacy', () => {
     vi.spyOn(poolProvider, 'plans').mockRejectedValue(new Error('No plans'));
     const host = await mount(render(WarRoomMarket, { context: context(), select: vi.fn() }), {}, {
       offers: { API: { TargetPersonal: read, TargetPersonalChange: change } } });
-    await flush(); expect(host.textContent).toContain('RB2'); expect(host.textContent).toContain('87.5');
+    await flush(); expect(poolProvider.refresh).toHaveBeenCalledWith(false);
+    expect(host.textContent).toContain('RB2'); expect(host.textContent).toContain('87.5');
     expect(host.textContent).not.toContain('EST. WIN'); expect(host.textContent).not.toContain('TREND');
     expect(host.textContent).toContain('24.8'); expect(host.textContent).toContain('$1M');
     await click(button(host, 'Watch Pool runner')); await flush();
