@@ -2,6 +2,20 @@
 
 Baseline: `23eb29e7`, branch `session/market-rework`. Source trace only; no application changes.
 
+## Continuation outcome — Christopher's updates supersede the original stop
+
+- Native scope: `internal/store/history/native_assets.go:52` now builds the pool from held football facts minus all league rosters, preserving existing lots. Existing waiver entries still join through their existing reading. No second pool reader or row IPC fan-out.
+- STRING: `internal/app/research/context_reading.go:290` joins held depth through `DepthID`, then real NFL FA and NFL IR designations. Both existing pool routes carry these fields. Native held designations remain the fallback when research is not installed. No fantasy reserve/taxi inference.
+- MFL PTS: `internal/composition/offers_reading.go:56` carries existing `FinishedScores` totals in the pool's existing asset capture. Offseason reads previous-season archived weekly scores through the same archive owner. Live November screenshot shows season totals (including held zero), not PPG.
+- Native PTS: “—”. The attempted native weekly-score reducer was removed after the disposable app stalled and its process reached 42.8% memory while scoring the directory. No collector added; no current claim that the sum test or native totals are delivered. A bounded native season-total composition remains debt.
+- Legacy empty pool: fixed scope and live-observed populated. Native private targets remain unwired; native placed bids and local READY plans remain mismatched owners.
+- MFL cold pool also required `poolProvider.refresh(false)` before its existing read. Connected that owner; populated rows observed after refresh.
+- Years uses the native contract maximum. MFL's reference settings report does not expose a numeric maximum; its selector explicitly remains unavailable rather than guessing. Typed salary uses `planForm`/`revise`, with positive/finite/cap validation.
+- Evidence on production `a7940edc`: plain build PASS; targeted race tests 33 PASS; Vitest 74 PASS; tsc PASS. Native/MFL screenshots inspected at 1920×1080. Live $5M salary rejected against $4.5M room; $1.5M saved locally. No MFL website actions/writes. Disposable profile removed.
+- Limits: native PTS and live years edits not verified; offseason MFL selection not runtime-tested. Production grew by 173 physical lines vs `19358a9f` (tests/fixtures +361; generated +23): the brief's shrink/flat condition is not met. Review required, not a completion claim.
+
+The original trace below is retained as historical evidence, not the current disposition.
+
 ## Disposition: stop before mocks or implementation
 
 STRING is partly available, not wholly absent: depth rank, NFL injury/IR designation and NFL free-agent team code exist. **No real NFL practice-squad status reader or held field was found.** A missing depth slot does not establish practice-squad status. The brief requires real status and says stop/report if in doubt; do not substitute fantasy taxi/IR or invent a collector. Owner/head-brain decision needed: identify an existing authoritative practice-squad input, or authorize an explicitly unknown STRING for uncovered players. PTS exists; its active-league/offseason selection still needs wiring and verification, not another collector.
