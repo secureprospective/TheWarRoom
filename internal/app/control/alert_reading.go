@@ -179,13 +179,13 @@ type ByeAlertInput struct {
 	Byes           report.HeldFeed[[]nflschedule.RawBye]
 	Week           leagueweek.Week
 	WeekFailure    string
-	Starters       league.Starters
+	Config         league.RawConfig
 	RulesFreshness func() domain.Freshness
 	Now            time.Time
 }
 
 func ByeAlerts(r *AlertReading, in ByeAlertInput, weekLock func(int) time.Time) {
-	rules, err := lineup.ParseRules(in.Starters)
+	rules, err := lineup.ParseRules(in.Config)
 	note := ByeInputsNote(in.Snapshot, in.Franchise, in.Byes, in.Week)
 	if err != nil || in.RulesFreshness().State == domain.FreshFail {
 		note = "Bye-week check unavailable: lineup rules not held."

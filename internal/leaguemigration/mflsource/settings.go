@@ -48,6 +48,15 @@ func Settings(config league.RawConfig, base leaguerules.RuleSet, draftType strin
 	return r, t.problems, t.notes
 }
 
+// LineupRules carries only MFL's starting-lineup settings, by the same translation as Settings, for a
+// league still run on MFL. The problems are what MFL holds that the app cannot read.
+func LineupRules(config league.RawConfig) (leaguerules.LineupRules, []string) {
+	t := translation{}
+	r := leaguerules.RuleSet{}
+	t.lineup(&r, config)
+	return r.Lineup, t.problems
+}
+
 type translation struct{ problems, notes []string }
 
 func (t *translation) problem(format string, args ...any) {

@@ -19,7 +19,7 @@ type ByeShortfall struct {
 	Required  int
 }
 
-// ByeShortfalls counts active players left at each position against the held starter minimum.
+// ByeShortfalls counts active players left at each position against the league's starter minimum.
 // Unknown team byes are excluded: an incomplete feed must not promise a legal lineup.
 func ByeShortfalls(rules Rules, players []ByePlayer, byes map[string]int) []ByeShortfall {
 	weeks := map[int]bool{}
@@ -35,10 +35,9 @@ func ByeShortfalls(rules Rules, players []ByePlayer, byes map[string]int) []ByeS
 				counts[p.Position]++
 			}
 		}
-		for _, rule := range rules.Positions {
-			available := counts[rule.Position]
-			if available < rule.Min {
-				out = append(out, ByeShortfall{Week: week, Position: rule.Position, Available: available, Required: rule.Min})
+		for _, pos := range rules.order {
+			if available, required := counts[pos], rules.minimum(pos); available < required {
+				out = append(out, ByeShortfall{Week: week, Position: pos, Available: available, Required: required})
 			}
 		}
 	}

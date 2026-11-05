@@ -5,10 +5,15 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 )
 
 func TestByeShortfalls(t *testing.T) {
-	rules := Rules{Positions: []PositionRule{{Position: domain.PosQB, Min: 1}, {Position: domain.PosWR, Min: 2}}}
+	rules, err := ParseRules(league.RawConfig{Starters: league.Starters{Count: "3", Positions: []league.PositionLimit{
+		{Name: "QB", Limit: "1"}, {Name: "WR", Limit: "2-3"}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
 	players := []ByePlayer{
 		{Position: domain.PosQB, Team: "BUF", Active: true},
 		{Position: domain.PosQB, Team: "IND", Active: false},
