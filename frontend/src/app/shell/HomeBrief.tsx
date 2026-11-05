@@ -25,9 +25,41 @@ const TRAY: Record<Tab | 'edit', string> = {
   stats: 'NFL stats: no league-wide stats table read exists yet',
 };
 
-/** alertsOf is what the app already raises for this league and owner: the commissioner jobs board's
+/** alertsOf is what the app already raises for this league and owner: trade events, deadlines inside a week, the commissioner jobs board's
  *  blocked jobs and live jobs with a deadline, and my cap check when it is over. Nothing here is invented. */
-export function alertsOf(b: Brief): Alert[] {
+const WEEK = 7 * 24 * 3600 * 1000;
+const ENDINGS: Record<string, string> = { approved: 'went through', declined: 'was declined',
+  expired: 'expired', withdrawn: 'was withdrawn', vetoed: 'was vetoed', failed: 'failed review' };
+/** Trade events: offers waiting on me, trades in review, and my offers that ended this past week. */
+export function tradeAlerts(b: Brief, now: number): Alert[] {
+  const t = b.trades;
+  if (!t) return [];
+  return t.offers.filter(o => o.parties.includes(t.franchise)).flatMap(o => {
+    const names = new Map(o.teams);
+    const with_ = o.parties.filter(p => p !== t.franchise).map(p => names.get(p) ?? p).join(' + ');
+    if (o.status === 'offered' && !o.accepted.includes(t.franchise))
+      return [{ id: `trade.${o.id}`, level: 'amber' as const, title: `Trade offer from ${with_}`,
+        words: 'Waiting on your answer', when: o.expiresAt }];
+    if (o.status === 'review' || o.status === 'appealed')
+      return [{ id: `trade.${o.id}`, level: 'amber' as const, title: `Trade with ${with_} in review`,
+        words: o.words }];
+    if (ENDINGS[o.status] && now - Date.parse(o.offeredAt) < WEEK)
+      return [{ id: `trade.${o.id}`, level: 'amber' as const,
+        title: `Trade with ${with_} ${ENDINGS[o.status]}`, words: o.words }];
+    return [];
+  });
+}
+/** Seasonal items: league deadlines and windows closing inside the next week. */
+export function seasonAlerts(b: Brief, now: number): Alert[] {
+  return (b.calendar ?? []).flatMap(e => {
+    const when = e.closes ?? e.at;
+    const at = when ? Date.parse(when) : NaN;
+    if (!(at > now && at - now <= WEEK)) return [];
+    return [{ id: `season.${e.id}`, level: 'amber' as const, title: e.label,
+      words: e.closes ? 'Window closes this week' : 'League deadline this week', when }];
+  });
+}
+export function alertsOf(b: Brief, now = Date.now()): Alert[] {
   // A blocked job needs someone; a live job is an alert only when it has a deadline to meet.
   const jobs = (b.jobs?.jobs ?? []).filter(j => j.state === 'blocked' || (j.state === 'live' && j.closes))
     .map(j => ({
@@ -36,7 +68,8 @@ export function alertsOf(b: Brief): Alert[] {
   const room = b.runway?.[0]?.room;
   const cap = room !== undefined && room < 0 ? [{ id: 'cap', level: 'red' as const,
     title: `Over the cap by ${money(-room)}`, words: "Your cap check is over this season's cap." }] : [];
-  return [...cap, ...jobs.filter(j => j.level === 'red'), ...jobs.filter(j => j.level !== 'red')];
+  const rest = [...jobs, ...tradeAlerts(b, now), ...seasonAlerts(b, now)];
+  return [...cap, ...rest.filter(j => j.level === 'red'), ...rest.filter(j => j.level !== 'red')];
 }
 
 /** HomeBrief is Home as the locked mock draws it (docs/ui/mocks/home-mock-v5.html), fed by the reads
@@ -325,7 +358,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
               action="navigate" open={TILES.wire.open}>OPEN IN LEDGER ›</HomeAct></span></div></>}</div>
         <div className={`sdrawer${drawer === 'al' ? ' open' : ''}`}>
           <div className="bd-head"><h2>ALERTS</h2><span className="sub">{alertsLost ? 'check unavailable'
-            : 'commissioner jobs board · your cap check'}</span>
+            : 'jobs board · cap check · trades · deadlines this week'}</span>
             <HomeAct className="x" action="close-drawer">ESC ✕</HomeAct></div>
           <div style={{ overflow: 'hidden' }}>{alertsLost ? <div className="al"><span className="s"
             style={{ background: 'var(--edge)' }} /><div className="b"><div className="t1">{unavailable}</div>

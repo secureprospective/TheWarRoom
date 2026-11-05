@@ -1,5 +1,5 @@
 import type { HostedPort } from '../commissioner/hostedRoom';
-import { parseHostedBids } from '../commissioner/hostedMarkets';
+import { parseHostedBids, parseHostedTrades } from '../commissioner/hostedMarkets';
 import { nativeHQAssets, nativeHQCap } from '../commissioner/hqReading';
 import { parseJobs, type Jobs } from '../commissioner/jobs';
 import { researchAPI, researchAvailable, type ResearchReader } from '../research/api';
@@ -33,6 +33,8 @@ export type HomeBrief = {
   assets?: Snapshot;
   /** The commissioner jobs board: live and blocked jobs are the league's alerts. */
   jobs?: Jobs;
+  /** Every trade offer I am a party to, live and finished: the tray's trade alerts. */
+  trades?: ReturnType<typeof parseHostedTrades>;
   /** Player research (NFL news, depth charts): the same read the Research screen calls. */
   research?: Research;
   /** Each of my starters' last five finished weeks, from the research player read HQ's form chart uses. */
@@ -42,7 +44,7 @@ export type HomeBrief = {
   errors: Partial<Record<HomeSource, string>>;
 };
 export type HomeSource = 'pulse' | 'results' | 'calendar' | 'cap' | 'ledger' | 'bids' | 'draft'
-  | 'matchup' | 'assets' | 'jobs' | 'research' | 'form';
+  | 'matchup' | 'assets' | 'jobs' | 'trades' | 'research' | 'form';
 
 export const defaultResearch = (): ResearchReader | undefined => researchAvailable() ? researchAPI : undefined;
 export const OWNER_ONLY_BIDS = 'Bids are visible only to this franchise\'s owner';
@@ -105,6 +107,12 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       const jobs = parseJobs(r.data);
       if (jobs.league !== league) throw new Error('Jobs belong to another league');
       out.jobs = jobs;
+    }),
+    apply('trades', async () => {
+      const r = await port({ command: 'trades.read', mode: 'read', arguments: { league, viewer: mine } });
+      const trades = parseHostedTrades(r.data);
+      if (trades.league !== league || trades.franchise !== mine) throw new Error('Trades belong to another viewer');
+      out.trades = trades;
     }),
     apply('research', async () => {
       if (!research) throw new Error(noResearch);

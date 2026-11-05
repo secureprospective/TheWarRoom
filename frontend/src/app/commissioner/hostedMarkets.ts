@@ -157,7 +157,10 @@ export function parseHostedTrades(v: unknown) {
         id: text(t.id, 'Trade'),
         status: text(t.status, 'Trade status'),
         parties: strings(t.parties),
+        proposer: text(t.proposer, 'Proposer'),
+        accepted: strings(t.accepted),
         offeredAt: text(t.offeredAt, 'Offered'),
+        expiresAt: text(t.expiresAt, 'Expires'),
         teams: array(t.assets, 'Trade assets', (v) => {
           const a = object(v, 'Asset', ['from', 'to', 'player', 'season', 'round', 'original']);
           return [text(a.from, 'From'), text(a.to, 'To')];

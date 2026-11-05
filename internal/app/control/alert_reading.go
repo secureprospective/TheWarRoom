@@ -89,7 +89,7 @@ func TradeAlert(r *AlertReading, trades TradeAlertInput, now time.Time) {
 	}
 	r.Alerts = append(r.Alerts, Alert{
 		Kind: "trades", Urgency: AlertUrgency(now, soonest), Title: OffersTitle(count),
-		Detail: "Review pending trade offers", Node: "trade", Workspace: "trade-desk",
+		Detail: "Review pending trade offers", Node: "war", Workspace: "trade-desk",
 		At: soonest, Provenance: trades.Provenance,
 	})
 }
