@@ -323,8 +323,8 @@ describe('calendar draft drawer and plans', () => {
     expect(button(host, '▸ RUN MOCK DRAFT').disabled).toBe(true);
   });
   it('renders plans missing regions without made-up saved counts or cap outcomes', () => {
-    const html = renderToStaticMarkup(<WarRoomPlans />);
-    for (const label of ['PLANS', 'MY NEEDS', 'CONFLICTS', 'CAP IF THIS WORKS', 'POCKET', 'MARKET'])
+    const html = renderToStaticMarkup(<WarRoomPlans context={context()} openPocket={() => {}} />);
+    for (const label of ['PLANS', 'MY NEEDS', 'CONFLICTS', 'LOOKING BACK', 'COUNTERPARTIES', 'CAP IF THIS WORKS', 'POCKET', 'MARKET'])
       expect(html).toContain(label);
     expect(html).toContain(unavailable); expect(html).not.toContain('WIN NOW 2026');
   });

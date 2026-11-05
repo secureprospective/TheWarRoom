@@ -110,7 +110,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
           room={headerReading?.runway?.[0]?.room} select={p => select({ token: p.id, name: p.name })} /> :
           tab === 'draft' ? <WarRoomDraft context={context} select={(id, name, position) =>
             setProspect({ id, name, position })}
-            /> : <WarRoomPlans />}
+            /> : <WarRoomPlans context={context} openPocket={() => setDrawer('pocket')} />}
       <WarRoomDates events={deadlines} failed={Boolean(calendar.error)} reason={calendar.error} />
       <div className="tray"><div className="pulls">{(['pocket', 'offers'] as const).map(d => <WarRoomAct
         key={d} className="pull" expanded={drawer === d} onAction={() =>

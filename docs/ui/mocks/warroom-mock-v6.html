@@ -991,7 +991,8 @@ body.room{--canvas:hsl(28,9%,6%);--sunken:hsl(28,10%,4%);--tile:hsl(28,8%,8.5%);
       <button class="pl" style="border-style:dashed"><b>+ New plan</b><small>start empty or copy the active one</small></button></div>
     <div><div class="ch"><b id="ptitle">WIN NOW 2026</b><span>check steps off as you think them through · drag between events</span></div><div class="cols" id="pcols"></div></div>
     <div><div class="ch"><b>WHERE THINGS STAND</b><span>live from the other tabs</span></div><div id="pout"></div>
-      <div class="ch" style="border-top:2px solid var(--black)"><b>CONFLICTS</b><span id="pcn"></span></div><div id="pconf"></div></div>
+      <div class="ch" style="border-top:2px solid var(--black)"><b>CONFLICTS</b><span id="pcn"></span></div><div id="pconf"></div>
+      <div class="ch" style="border-top:2px solid var(--black)"><b>LOOKING BACK</b><span>how past talks ended</span></div><div id="pback"></div></div>
   </section>
 
   <section class="mk3 ws" id="ws-market">
@@ -1704,7 +1705,14 @@ document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g){ws(g.dataset.go);if(g.dataset.go==='draft')renderDraft();if(g.dataset.go==='market')renderMarket()}
 },true);
 
-renderNego();renderMarket();renderDraft();renderPlans();
+var BACK=[['Iron Curtain','Aug 14','ACCEPTED','s-h'],['Tundra Line','Aug 2','REJECTED','s-o'],['Iron Curtain','Jul 20','EXPIRED','s-t'],['Gulf Raiders','Jul 9','WITHDRAWN','s-t']];
+function renderBack(){
+  const by={};BACK.forEach(b=>{const t=by[b[0]]||(by[b[0]]=[0,0]);t[0]++;if(b[2]==='ACCEPTED')t[1]++});
+  $('#pback').innerHTML=`<div class="sblk"><div class="sh">PAST OFFERS</div>${BACK.map(b=>`<div class="srow"><span>${b[0]} · ${b[1]}</span><small class="${b[3]}">${b[2]}</small></div>`).join('')}</div>
+   <div class="sblk"><div class="sh">COUNTERPARTIES</div>${Object.entries(by).sort((x,y)=>y[1][0]-x[1][0]).map(([n,[o,d]])=>`<div class="srow"><span>${n}</span><b style="font:700 11px var(--mono)">${o} talk${o===1?"":"s"} · ${d} deal${d===1?'':'s'}</b></div>`).join('')}</div>
+   <div class="sblk"><div class="sh">SAVED PROPOSALS<button data-go="desk">POCKET ▸</button></div><div class="srow"><span>${PK.length} built, not sent</span><small class="s-t">${PK.length}</small></div></div>`;
+}
+renderNego();renderMarket();renderDraft();renderPlans();renderBack();
 render();inspect(byId.garrett);
 </script>
 </body>
