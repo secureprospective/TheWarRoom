@@ -76,14 +76,14 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
       <span>{context.native ? money(facts?.cut?.deadNow) :
         researchFact(research, 'Dead cap if cut today') ?? unavailable}</span>
       </div>
-    </Drawer><Drawer label="VALUE ARC" detail={arc?.points.length ? `age ${arc.points[0].age} → ${
-      arc.points[arc.points.length - 1].age}` : undefined}>
+    </Drawer><Drawer label="VALUE ARC" detail={arc?.points.length ? `age ${Math.floor(arc.points[0].age)} → ${
+      Math.floor(arc.points[arc.points.length - 1].age)}` : undefined}>
       {arc?.points.length ? <div className="arc" title={arc.reason ? unavailable : undefined}>
         {arc.points.map(p => <i
         key={p.season}
         className={p.season === context.snapshot.league.value.season ? 'now' : ''}
         style={{ height: `${Math.max(0, p.level / maxArc * 100)}%` }}
-        title={`${p.season} · age ${p.age} · ${p.level}`} />)}</div> : <WarRoomEmpty />}</Drawer>
+        title={`${p.season} · age ${p.age.toFixed(1)} · ${p.level.toFixed(1)}`} />)}</div> : <WarRoomEmpty />}</Drawer>
     <Drawer label="IN YOUR LINEUP"><div className="kv"><span>
       {fit?.removing ? 'Promotes' : 'Replaces'}</span><span>{fit ?
       fitNames(changedStarters ?? []) || 'No starter change' : unavailable}</span>

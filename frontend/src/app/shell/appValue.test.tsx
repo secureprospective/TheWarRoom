@@ -18,7 +18,7 @@ it('reads the same held player arc for an app War Room without mirror ownership 
   });
   await flush();
   expect(read).toHaveBeenCalledWith('0001');
-  expect(host.textContent).toContain(`age ${arc.points[0].age} → ${arc.points.at(-1)!.age}`);
+  expect(host.textContent).toContain(`age ${Math.floor(arc.points[0].age)} → ${Math.floor(arc.points.at(-1)!.age)}`);
   expect(host.textContent).toContain('Held player');
   expect(port.mock.calls.every(([r]) => ['contract.quote', 'value.read'].includes(r.command))).toBe(true);
 });

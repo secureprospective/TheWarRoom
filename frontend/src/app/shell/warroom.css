@@ -651,6 +651,7 @@
 .wr-v6 .tgt.next{border-color:var(--edge-hi);border-left-color:var(--amber)} .wr-v6 .tgt.next .p small{color:var(--amber)}
 .wr-v6 .fa-h,.wr-v6 .fa-r{grid-template-columns:22px 40px minmax(130px,1.4fr) 36px 62px 46px 64px 64px 54px}
 .wr-v6 .fa-r .st{font:14px var(--mono);color:var(--ink3);cursor:pointer;text-align:center}
+.wr-v6 .fa-r>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wr-v6 .fa-r .st.on{color:var(--edge-hi)}
 .wr-v6 .fa-r.out{color:var(--ink3)} .wr-v6 .fa-r.out .nm{color:var(--ink3);text-decoration:line-through hsla(36,12%,80%,.3)}
 .wr-v6 .trend.up{color:var(--amber)} .wr-v6 .trend.dn{color:var(--green)}
