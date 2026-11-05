@@ -19,6 +19,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 )
 
@@ -83,6 +84,9 @@ type Store struct {
 	// scores is the season score cache: each franchise-week scored once per revision.
 	scores seasonScoreCache
 	// statPrices keeps statistics queue prices across readings (commissioner.StatPriceCache).
+	poolMu     sync.Mutex
+	poolKey    string
+	poolPoints map[string]leaguerules.Decimal
 	statPrices statPrices
 	wmu        sync.Mutex
 	// batchFault, set only by tests, fails a batch after the given step to prove nothing is kept.

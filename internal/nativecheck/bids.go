@@ -208,7 +208,7 @@ func (p BidPolicy) salaryRefusal(in BidProposal, f BidFacts, _ *BidVerdict) stri
 	if in.Salary%p.quantum != 0 {
 		return fmt.Sprintf("A salary must be a multiple of %s.", dollars(p.quantum))
 	}
-	minimum, ok := p.minimumFor(f.ExperienceYears)
+	minimum, ok := MinimumSalary(p.minimumSalary, f.ExperienceYears)
 	if !ok {
 		return "The minimum bidding salary for this player's experience needs a ruling."
 	}
@@ -218,8 +218,9 @@ func (p BidPolicy) salaryRefusal(in BidProposal, f BidFacts, _ *BidVerdict) stri
 	return ""
 }
 
-func (p BidPolicy) minimumFor(years int) (domain.Money, bool) {
-	for _, row := range p.minimumSalary {
+// MinimumSalary reads the native contract minimum for the player's experience.
+func MinimumSalary(table []leaguerules.ExperienceSalary, years int) (domain.Money, bool) {
+	for _, row := range table {
 		if row.Minimum.State != leaguerules.IsKnown || row.Years.Min.State != leaguerules.IsKnown ||
 			years < row.Years.Min.Value {
 			continue

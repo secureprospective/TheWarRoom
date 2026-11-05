@@ -9,7 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
-	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
+	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
@@ -219,18 +220,36 @@ func (a *App) startValuePreparation() {
 }
 
 func (h commissionerHost) NativeAssets(ctx context.Context, league string) (commissioner.NativeAssets, error) {
+	if h.app.researchHeld == nil {
+		out, err := h.State.NativeAssets(ctx, league)
+		if err != nil {
+			return out, fmt.Errorf("read Market assets: %w", err)
+		}
+		return out, nil
+	}
+	host := offersHost(h)
+	lk, err := host.OffersDirectory(ctx)
+	if err != nil {
+		return commissioner.NativeAssets{}, fmt.Errorf("read Market directory: %w", err)
+	}
 	out, err := h.State.NativeAssets(ctx, league)
 	if err != nil {
 		return out, fmt.Errorf("read Market assets: %w", err)
 	}
-	if h.app.researchHeld == nil {
-		return out, nil
+	ids := make([]playerid.PlayerID, 0, len(out.Pool))
+	for _, p := range out.Pool {
+		id, err := playerid.New(p.Player)
+		if err != nil {
+			return out, fmt.Errorf("read Market player: %w", err)
+		}
+		ids = append(ids, id)
 	}
-	h.app.hydrateResearchContext(ctx)
-	statuses := researchapp.PoolStrings(h.app.heldResearchInput().snapshot())
-	for i := range out.Pool {
-		if status := statuses[out.Pool[i].Player]; status != "" {
-			out.Pool[i].String = status
+	engine, _ := host.OffersEngineValues(ctx)
+	assets, _ := host.OffersAssetValues(ctx, ids, h.app.timeNow())
+	for i, id := range ids {
+		if f, ok := lk.Facts(id.String()); ok {
+			row := offersapp.PoolPlayer(id, f, out.Snapshot.Season, h.app.timeNow(), engine, assets)
+			out.Pool[i].Age, out.Pool[i].String, out.Pool[i].Value = row.Age, row.String, row.EngineText
 		}
 	}
 	return out, nil

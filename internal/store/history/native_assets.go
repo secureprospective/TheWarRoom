@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 func (s *Store) nativeRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
@@ -43,8 +46,26 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 		return commissioner.NativeAssets{}, fmt.Errorf("read native assets: %w", err)
 	}
 	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
-	if s.lineupEnv != nil {
-		enrichNativeAssets(&reading, s.lineupEnv.PlayerFacts())
+	if s.lineupEnv != nil && reading.Snapshot != nil {
+		facts := s.lineupEnv.PlayerFacts()
+		enrichNativeAssets(&reading, facts)
+		rules, err := commissioner.RulesInForce(records, reading.Snapshot.Season, s.now())
+		if err != nil {
+			return commissioner.NativeAssets{}, fmt.Errorf("read Market minimum rules: %w", err)
+		}
+		for i, p := range reading.Pool {
+			f := facts[p.Player]
+			if rules.Contracts.MinimumSalaries.State == leaguerules.IsKnown {
+				if minimum, ok := nativecheck.MinimumSalary(rules.Contracts.MinimumSalaries.Value, nativecheck.ExperienceYears(reading.Snapshot.Season, f)); ok {
+					reading.Pool[i].Minimum = &snapshot.ContractAmount{Cents: minimum, Text: bid.MoneyText(minimum)}
+				}
+			}
+		}
+	}
+	if reading.Snapshot != nil {
+		if err := s.nativePoolPoints(ctx, &reading, records); err != nil {
+			reading.PoolPointsNote = err.Error()
+		}
 	}
 	return reading, nil
 }

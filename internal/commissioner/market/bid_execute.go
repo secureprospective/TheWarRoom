@@ -199,7 +199,7 @@ func (x *bidExecution) judge(player, franchise string, auction *commissioner.Bid
 	if err != nil {
 		return nil, fmt.Errorf("read bid mode: %w", err)
 	}
-	facts := nativecheck.BidFacts{Now: x.now, ExperienceYears: experienceYears(x.rules.Season, x.facts[player]),
+	facts := nativecheck.BidFacts{Now: x.now, ExperienceYears: nativecheck.ExperienceYears(x.rules.Season, x.facts[player]),
 		Season: x.env.Season, Playoff: x.env.Playoff[franchise], LateRule: mode == leaguerules.Open}
 	if startCard {
 		facts.Season = nativecheck.BidSeason{Offseason: true}
@@ -247,15 +247,6 @@ func (x *bidExecution) rosterAllowsContract(player, franchise string, salary dom
 		return err
 	}
 	return x.openBidsFit(&candidate, rules, player, franchise, exceptions)
-}
-
-// experienceYears is the player's NFL seasons so far. Without a real draft year the player is a rookie.
-func experienceYears(season int, f nativecheck.PlayerFacts) int {
-	const longestCareer = 30
-	if f.DraftYearHeld && f.DraftYear >= season-longestCareer && f.DraftYear <= season {
-		return season - f.DraftYear
-	}
-	return 0
 }
 
 // decide chooses the winner of a player's bids, or corrects the choice. A bid is judged again at the moment of

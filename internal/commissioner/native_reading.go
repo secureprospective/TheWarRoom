@@ -4,27 +4,33 @@ import (
 	"fmt"
 	"slices"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 // NativeAssets is app-owned state, not an MFL roster or a what-if plan.
 type NativeAssets struct {
-	Pool        []NativePoolPlayer    `json:"pool,omitempty"`
-	Identities  []NativeAssetIdentity `json:"identities,omitempty"`
-	Corrections []Correction          `json:"corrections,omitempty"`
-	League      string                `json:"league"`
-	Revision    int64                 `json:"revision"`
-	Seeded      bool                  `json:"seeded"`
-	Entry       string                `json:"entry"`
-	Source      string                `json:"source"`
-	Snapshot    *RawNativeSnapshot    `json:"snapshot"`
+	PoolPointsNote string                `json:"poolPointsNote,omitempty"`
+	Pool           []NativePoolPlayer    `json:"pool,omitempty"`
+	Identities     []NativeAssetIdentity `json:"identities,omitempty"`
+	Corrections    []Correction          `json:"corrections,omitempty"`
+	League         string                `json:"league"`
+	Revision       int64                 `json:"revision"`
+	Seeded         bool                  `json:"seeded"`
+	Entry          string                `json:"entry"`
+	Source         string                `json:"source"`
+	Snapshot       *RawNativeSnapshot    `json:"snapshot"`
 }
 
 type NativePoolPlayer struct {
-	Player   string `json:"player"`
-	Name     string `json:"name"`
-	Position string `json:"position"`
-	String   string `json:"string"`
-	Points   string `json:"points"`
+	Age      string                   `json:"age,omitempty"`
+	Value    string                   `json:"value,omitempty"`
+	Minimum  *snapshot.ContractAmount `json:"minimum,omitempty"`
+	Player   string                   `json:"player"`
+	Name     string                   `json:"name"`
+	Position string                   `json:"position"`
+	String   string                   `json:"string"`
+	Points   string                   `json:"points"`
 }
 
 // NativeAssetIdentity holds public football facts separately from recorded roster state.

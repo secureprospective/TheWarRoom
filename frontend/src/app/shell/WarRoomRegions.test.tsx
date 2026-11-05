@@ -230,6 +230,19 @@ describe('market, stars and sealed-bid privacy', () => {
     expect(privateRead).not.toHaveBeenCalled(); expect(plans).not.toHaveBeenCalled();
     await expect(changeWarRoomTarget(nativeContext(port), '0042', false)).rejects.toThrow('Hosted');
   });
+  it('carries the native pool held columns without per-player reads', async () => {
+    const assets = { ...structuredClone(assetsWire), pool: [{ player: '0042', name: 'Held runner',
+      position: 'RB', age: '25', string: 'RB2', points: '87.5', value: '12.75 points/game',
+      minimum: { cents: 87000000, text: '$870,000' } }] };
+    const port = vi.fn<HostedPort>(async r => r.command === 'native.assets.read' ? reply(assets) :
+      Promise.reject(new Error('Other reading unavailable')));
+    const reading = await readWarRoomMarket(nativeContext(port));
+    expect(reading.players).toEqual([{ id: '0042', name: 'Held runner', position: 'RB', age: '25',
+      string: 'RB2', points: '87.5', value: '12.75 points/game', minimum: '$870,000', minimumCents: 87000000 }]);
+    expect(port.mock.calls.filter(([r]) => r.command === 'native.assets.read')).toHaveLength(1);
+    assets.pool[0].minimum.cents = NaN;
+    expect((await readWarRoomMarket(nativeContext(port))).players).toBeUndefined();
+  });
   it('stars a real pool player, re-reads the lane, then swaps within that lane', async () => {
     const entries: { kind: string; entity: string; id: string; text: string; at: string; order: number }[]
       = [{ kind: 'watch', entity: 'player', id: '0043', text: '', at: '2026-10-31T10:00:00Z', order: 1 }];

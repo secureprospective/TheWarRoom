@@ -4,7 +4,9 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -72,5 +74,24 @@ func TestPoolLandingNoTeamToggle(t *testing.T) {
 	}
 	if !noNFLTeam("") || noNFLTeam("DAL") {
 		t.Fatal("NFL team classification")
+	}
+}
+
+func TestPoolPlayerSharesHeldFacts(t *testing.T) {
+	t.Parallel()
+	id, err := playerid.New("0042")
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC)
+	f := normalize.PlayerFacts{Name: "Held receiver", Position: domain.PosWR, Team: "BUF", HasBirthdate: true,
+		Birthdate: time.Date(2000, 11, 6, 0, 0, 0, 0, time.UTC).Unix()}
+	got := PoolPlayer(id, f, 2026, now, map[string]float64{"0042": 12.75}, map[string]AssetValue{"0042": {String: "WR2", Points: "87.5"}})
+	if got.ID != "0042" || got.Age != "25" || got.String != "WR2" || got.Points != "87.5" || got.EngineText != "12.75 points/game" {
+		t.Fatal(got)
+	}
+	absent := PoolPlayer(id, normalize.PlayerFacts{}, 2026, now, nil, nil)
+	if absent.Age != "—" || absent.String != "—" || absent.Points != "—" || absent.Engine != nil {
+		t.Fatal(absent)
 	}
 }

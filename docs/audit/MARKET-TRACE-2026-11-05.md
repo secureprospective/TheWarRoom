@@ -68,3 +68,57 @@ Resolve the authoritative PS/unknown-status decision and active-league PTS scope
 - `git pull --ff-only` failed: configured `/home/claude/twr.bundle` remote is unavailable. Requested branch was created from the exact supplied baseline.
 - No protected profile/path/PID touched; no GUI launched, no profile copied, no MFL interaction, no screenshots created.
 - No build/typecheck/Vitest run: documentation-only early stop. Existing supplied screenshot inspected at `~/scratch/soak-1105/run-1105-080433/shots/L1-war-market.png`.
+
+## Slice 2 flow
+
+The native assets reading keeps its directory-minus-owned scope. Its desktop host uses
+`offers.PoolPlayer`, also used by MFL's poolRows, with the existing Offers directory,
+asset/status and engine-value owners. Native minimums use the native contract table via
+`nativecheck.MinimumSalary`, shared with bid admission, never the MFL minimum.
+Season totals use the existing nativeSources scorer only for pool players represented in
+held NFL stats. One store-owned table replaces itself on league/season/finished-week or
+score-revision changes; no per-row IPC. Missing complete scoring evidence remains absent,
+not a zero. The assets reading carries a poolPointsNote on scoring acquisition failure.
+
+### Slice 2 verification
+
+- Cache key: league, season, finished weeks, SQLite commit revision, ledger mark,
+  resolved scoring rules and held football-facts digest. One table, replaced rather
+  than accumulated. The native scorer and its rule resolver remain the only scoring path.
+- Disposable-profile, windowless backend measurement (background workers stopped):
+  869 pool rows, age 791, STRING 489, value 810, minimum 869, complete PTS totals 616.
+  Eleven warm complete reads: 107–159 ms. Cold full read: 24.7 s; with the other
+  pool owners already opened, 19.0 s. RSS in that latter run: 68,516 KiB before,
+  683,956 after cold, peak 782,608, ending 681,760. These are whole-reader process
+  numbers, not an isolated allocation claim for the small totals table.
+- Native season sum test compares one, two and three finished weeks against the
+  existing weekly scorer, with incomplete-evidence and no-stats absence checks.
+  Cache reuse/archive invalidation and offseason selection are exercised.
+- Final batch: 93 Go race-test cases, 65 Vitest tests (four files), tsc, plain
+  make build, and golangci-lint (zero issues) pass. The native assets wire gained
+  settings-derived minimums. Generated Wails models came from make build.
+- DISPLAY=:5, 1920×1080: native and MFL Market screenshots inspected after loading;
+  native Keenum shows age 38 / QB3 / 32.5 points / 0.45 points-game / $630,000.
+  The initially preparing native header resolved to Best-21 249.8, rank 3/32.
+  Its read adapter, appvalue producer/cache and startup wiring are unchanged from
+  23eb29e7; only WarRoomEmpty's absence wording changed in that header file.
+  Verdict: loading, not a branch regression. No header change needed.
+- Disposable profile deleted after stopping this run's app. No protected process,
+  live profile or MFL website was used.
+
+### Residual limits
+
+Handwritten production delta is +204 physical lines for slice 2; +377 across both
+slices against 19358a9f (also 23eb29e7). The +173 ceiling is NOT met. Removed the
+superseded row wrapper and desktop-only status loop; moved native experience
+policy to its existing nativecheck owner so minimum display and bid admission
+share it. The remaining growth is chiefly bounded native season-total work.
+Cold acquisition remains expensive; absent birthdates/statuses/scores remain
+absent, not inferred. Hosted-server UI, live rule-change invalidation and a
+baseline-binary click comparison were not tested.
+
+make lint remains blocked by the inherited bloat gate: its recursive scan sees
+other existing worktrees (provenance 3, tiny files 141 versus baseline 0/24).
+Independent tracked-root counts are unchanged from b23dc0c5 (6% comments,
+34 tiny files, zero provenance), also above the 5%/24 baseline. No gate or
+other agent's files were changed. Pull/push remote is the missing local bundle.

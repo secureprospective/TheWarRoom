@@ -157,8 +157,8 @@ func (a *API) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 		if (!raw.ShowNoTeam && noNFLTeam(f.Team)) || (raw.Position != "" && raw.Position != string(f.Position)) {
 			continue
 		}
-		row := poolRow(id, f, season, now, plans[id.String()])
-		valuePoolRow(&row, values, assets)
+		row := PoolPlayer(id, f, season, now, values, assets)
+		row.Plan, row.PlanID = plans[id.String()].State, plans[id.String()].ID
 		row.Market = facts[id.String()]
 		if row.Market == nil {
 			row.Market = facts[""]
@@ -212,9 +212,13 @@ func MarketLines(facts []report.MarketFact) []string {
 	return []string{parts[0] + " · " + parts[1], parts[2] + " · " + parts[3]}
 }
 
-func poolRow(id playerid.PlayerID, f normalize.PlayerFacts, season int, now time.Time, plan bidPlanBrief) PoolRow {
-	p := poolapp.Row(id, f, season, now, poolapp.Plan(plan))
-	return PoolRow{ID: p.ID, Name: p.Name, Position: p.Position, Team: p.Team, Age: p.Age, Experience: p.Experience, Minimum: p.Minimum, Plan: p.Plan, PlanID: p.PlanID}
+// PoolPlayer joins held directory and value facts for both market pool readings.
+func PoolPlayer(id playerid.PlayerID, f normalize.PlayerFacts, season int, now time.Time,
+	engine map[string]float64, assets map[string]AssetValue) PoolRow {
+	p := poolapp.Row(id, f, season, now, poolapp.Plan{})
+	row := PoolRow{ID: p.ID, Name: p.Name, Position: p.Position, Team: p.Team, Age: p.Age, Experience: p.Experience, Minimum: p.Minimum}
+	valuePoolRow(&row, engine, assets)
+	return row
 }
 
 func noNFLTeam(team string) bool { return team == "" || team == "FA" || team == "—" }

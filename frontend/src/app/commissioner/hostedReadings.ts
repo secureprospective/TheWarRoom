@@ -81,7 +81,7 @@ export type HostedRoster = {
   season: number;
   franchises: { value: string; label: string }[];
   pool: { value: string; label: string }[];
-  market: { id: string; name: string; position: string; string: string; points: string }[];
+  market: { id: string; name: string; position: string; string: string; points: string; age?: string; value?: string; minimum?: string; minimumCents?: number }[];
   picks: { season: number; round: number; original: string; owner: string }[];
   players: {
     id: string;
@@ -92,7 +92,7 @@ export type HostedRoster = {
 };
 export function parseHostedRoster(v: unknown): HostedRoster {
   const r = object(v, 'Roster', [
-    'pool', 'identities',
+    'pool', 'identities', 'poolPointsNote',
     'corrections',
     'league',
     'revision',
@@ -120,9 +120,15 @@ export function parseHostedRoster(v: unknown): HostedRoster {
   return {
     league: text(r.league, 'League'),
     market: array(r.pool ?? [], 'Market pool', (v, p) => {
-      const row = object(v, p, ['player', 'name', 'position', 'string', 'points']);
+      const row = object(v, p, ['player', 'name', 'position', 'string', 'points', 'age', 'value', 'minimum']);
       return { id: text(row.player, p), name: text(row.name, p), position: text(row.position, p),
-        string: text(row.string, p), points: text(row.points, p) };
+        string: text(row.string, p), points: text(row.points, p),
+        age: row.age === undefined ? undefined : text(row.age, p),
+        value: row.value === undefined ? undefined : text(row.value, p),
+        ...(row.minimum === undefined ? {} : (() => {
+          const m = object(row.minimum, p, ['cents', 'text']);
+          return { minimum: text(m.text, p), minimumCents: integer(m.cents, p) };
+        })()) };
     }),
     revision: integer(r.revision, 'Roster version'),
     identities: array(r.identities ?? [], 'Player identities', (v, p) => {
