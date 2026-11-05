@@ -1779,7 +1779,28 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class NativePoolPlayer {
+	    player: string;
+	    name: string;
+	    position: string;
+	    string: string;
+	    points: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativePoolPlayer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.name = source["name"];
+	        this.position = source["position"];
+	        this.string = source["string"];
+	        this.points = source["points"];
+	    }
+	}
 	export class NativeAssets {
+	    pool?: NativePoolPlayer[];
 	    identities?: NativeAssetIdentity[];
 	    corrections?: Correction[];
 	    league: string;
@@ -1795,6 +1816,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pool = this.convertValues(source["pool"], NativePoolPlayer);
 	        this.identities = this.convertValues(source["identities"], NativeAssetIdentity);
 	        this.corrections = this.convertValues(source["corrections"], Correction);
 	        this.league = source["league"];
@@ -2666,6 +2688,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	export class NativeReserveFranchise {
 	    franchise: string;

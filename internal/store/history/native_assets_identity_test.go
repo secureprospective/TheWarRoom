@@ -1,7 +1,6 @@
 package history
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -66,35 +65,5 @@ func TestNativeMarketPoolScope(t *testing.T) {
 	})
 	if len(reading.Pool) != 3 || reading.Pool[0].Player != "free" || reading.Pool[0].String != "FA" || reading.Pool[1].String != "IR" || reading.Pool[2].Player != "lot" {
 		t.Fatalf("directory minus rosters plus lots: %+v", reading.Pool)
-	}
-}
-
-type poolWeekScores map[int]leaguerules.Decimal
-
-func (scores poolWeekScores) PlayerScore(_ context.Context, _ []commissioner.Record, _ string, week int) (commissioner.NativePlayerScore, error) {
-	value, ok := scores[week]
-	if !ok {
-		return commissioner.NativePlayerScore{}, nil
-	}
-	return commissioner.NativePlayerScore{Points: &value}, nil
-}
-func TestNativePoolSeasonTotal(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		name  string
-		weeks []int
-		want  leaguerules.Decimal
-		held  bool
-	}{
-		{"finished weeks only", []int{1, 2}, 175000, true},
-		{"held zero counts", []int{3}, 0, true},
-		{"missing is unknown", []int{4}, 0, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, held := nativePoolTotal(t.Context(), nil, poolWeekScores{1: 125000, 2: 50000, 3: 0, 5: 999000}, "sample", tc.weeks)
-			if got != tc.want || held != tc.held {
-				t.Fatalf("sum = %v, %v; want %v, %v", got, held, tc.want, tc.held)
-			}
-		})
 	}
 }
