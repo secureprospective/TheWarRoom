@@ -1,16 +1,16 @@
 # Handoff
 
 ## Baton
-Bee → reviewer, 2026-11-05, `session/soak-fixes` (local only).
+Bee → next worker, 2026-11-05, `session/trade-floor-cut` (local only).
 
 ## Where it stands
-Removed Home Alert tray; five registry reports and deadline pinning are parked in `docs/audit/PARKED-REPORTS-2026-11-05.md`. Home keeps an internal overview route without a tab. Build and TypeScript pass; Vitest has four known baseline failures. A 30-step visual walk completed; screenshots need detailed review, especially the blank Trade Floor views.
+Preliminary trace in `docs/audit/TRADE-FLOOR-TRACE-2026-11-05.md`; explicitly incomplete. No code cut, registry change, soak change, build or live check. Trade node still exists.
 
 ## Next move
-Review the commit and the soak evidence, then decide a new home for parked alerts. Do not merge without direction.
+Complete transitive trace and row-by-row mock coverage before cutting. Rewire HQ ADD TO TRADE and inspector/preset/phase routes, preserving live shared code and CLI IPC; examine old commissioner draft controls before retiring them. Then carry out the brief's gates and profile-copy checks.
 
 ## Blocked on
-Configured bundle remote is unavailable, so pull and push cannot run.
+Configured bundle remote is unavailable; pull and push cannot run.
 
 ## Tried and rejected
-None.
+Deleting the node immediately: old desk's OfferCard is used by the inspector, HQ routes a player into the old builder, and old draft room contains commissioner controls not established in the new room.
