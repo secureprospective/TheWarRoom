@@ -1,21 +1,16 @@
 # Handoff
 
 ## Baton
-Sol → reviewer, APP-FIX-1, 2026-11-02, `build/FIX-1`. Local only.
+Bee → reviewer, 2026-11-05, `session/soak-fixes` (local only).
 
 ## Where it stands
-Fixed the audit test's fake v4 schema (it retained v13 live tables). Production
-migration remains strict and atomic. Added adoption/rollback/retry/reopen evidence;
-refreshed only intended provenance fields and three batch-stat schema hashes.
-Real-history copy migrated v12 → v13, reopened cleanly, then was deleted.
-Full evidence and verification: `docs/build-handoffs/APP-FIX-1.md`.
+Removed Home Alert tray; five registry reports and deadline pinning are parked in `docs/audit/PARKED-REPORTS-2026-11-05.md`. Home keeps an internal overview route without a tab. Build and TypeScript pass; Vitest has four known baseline failures. A 30-step visual walk completed; screenshots need detailed review, especially the blank Trade Floor views.
 
 ## Next move
-Review the fixture correction and golden additions; integrate locally if accepted.
+Review the commit and the soak evidence, then decide a new home for parked alerts. Do not merge without direction.
 
 ## Blocked on
-No desktop launch attempted; Tom owns the display. No remote operations permitted.
+Configured bundle remote is unavailable, so pull and push cannot run.
 
 ## Tried and rejected
-`IF NOT EXISTS` on v13: would hide an artificially mismatched version/schema;
-the real v12 copy and atomic rollback/retry work with the existing migration.
+None.

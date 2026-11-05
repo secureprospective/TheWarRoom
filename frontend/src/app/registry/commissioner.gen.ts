@@ -59,7 +59,7 @@ export type CommissionerId =
   | "CM-056"
 ;
 export type Placement =
-  | "Home › Alert tray"
+  | "Home › Overview"
   | "War Room › Market"
   | "War Room › Valuations and pool"
   | "Franchise HQ › Lineup and roster"
@@ -82,7 +82,7 @@ export type Placement =
   | "Report drawer"
 ;
 const places = [
-  "Home › Alert tray",
+  "Home › Overview",
   "War Room › Market",
   "War Room › Valuations and pool",
   "Franchise HQ › Lineup and roster",

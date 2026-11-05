@@ -42,7 +42,7 @@ const CalendarPanel = lazy(() =>
 const LeagueRoom = lazy(() => import('../control/LeagueRoom').then((m) => ({ default: m.LeagueRoom })));
 const AppSettings = lazy(() => import('./AppSettings').then((m) => ({ default: m.AppSettings })));
 const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ default: m.CommandBar })));
-const HomePulseMount = lazy(() => import('./HomePulseMount'));
+const Now = lazy(() => import('../now/Now'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
 const WarRoom = lazy(() => import('./WarRoom'));
 const Market = lazy(loadMarket);
@@ -183,7 +183,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           <h3>{node.label}</h3>
           <div className="wtabs" ref={appLeagueView === 'war' ? setNativeTabs : undefined}
             role={appLeagueView === 'war' ? 'tablist' : undefined}>
-            {appLeagueView !== 'war' && appLeagueView !== 'control' && workspaces.map((w) => (
+            {s.node !== 'home' && appLeagueView !== 'war' && appLeagueView !== 'control' &&
+              workspaces.map((w) => (
               <Act
                 key={w.slug}
                 verb="nav.open"
@@ -222,9 +223,6 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
               {s.notice}
             </p>
           )}
-          {s.node === 'home' && workspace.slug === 'digests' && selectedLeague && !selectedLeague.app &&
-            <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
-              onSelect={leagues.select} />}
           {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
             view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs} tree={controlTree}
             hqTab={s.node === 'hq' ? s.workspace.hq : undefined}
@@ -244,11 +242,12 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             s.node === 'home' ? <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
               onSelect={leagues.select} /> : <section className="shell-unwired"><h4>{workspace.label}</h4>
               <p className="not-wired">Not wired · {workspace.ring}</p></section>
-          ) : (s.node === 'home' && workspace.slug === 'alert-tray') ||
-          (s.node === 'pulse' && workspace.slug === 'now') ? (
+          ) : s.node === 'home' ? (
+            <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
+              onSelect={leagues.select} />
+          ) : s.node === 'pulse' && workspace.slug === 'now' ? (
             <Suspense fallback={<p role="status">Opening workspace…</p>}>
-              <HomePulseMount snapshot={snapshot} reading={clock} leagues={leagues.leagues}
-                selectedLeague={leagues.selectedId} onLeague={leagues.select} />
+              <Now />
             </Suspense>
           ) : s.node === 'hq' && workspace.slug === 'lineup-and-roster' && snapshot ? (
             <FranchiseHQMount snapshot={snapshot} />

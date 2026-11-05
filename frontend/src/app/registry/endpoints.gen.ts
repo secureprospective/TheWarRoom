@@ -273,7 +273,7 @@ export type EndpointId =
   | "S-15"
 ;
 export type Placement =
-  | "Home › Alert tray"
+  | "Home › Overview"
   | "War Room › Market"
   | "War Room › Valuations and pool"
   | "Franchise HQ › Lineup and roster"
@@ -296,7 +296,7 @@ export type Placement =
   | "Report drawer"
 ;
 const places = [
-  "Home › Alert tray",
+  "Home › Overview",
   "War Room › Market",
   "War Room › Valuations and pool",
   "Franchise HQ › Lineup and roster",
@@ -2902,12 +2902,13 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     gm_question: "Is my lineup broken?",
     gravity: "G3",
     clock: "gameday",
-    placement: places[0],
+    placement: "",
     verb: "endpoint.open id=M-148",
-    disposition: "kept",
+    disposition: "retired",
     ring: 1,
     status: "built",
-    disposition_note: "kept",
+    disposition_note: "PARKED 11-05 alerts — tray removed; UI home TBD. See docs/audit/PARKED-REPORTS" +
+      "-2026-11-05.md",
     merged_into: Object.freeze([] as const),
     merged_place: "",
   } as const),
@@ -2919,12 +2920,13 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     gm_question: "Am I breaking IR rules?",
     gravity: "G2",
     clock: "none",
-    placement: places[0],
+    placement: "",
     verb: "endpoint.open id=M-149",
-    disposition: "kept",
+    disposition: "retired",
     ring: 3,
     status: "landed",
-    disposition_note: "kept",
+    disposition_note: "PARKED 11-05 alerts — tray removed; UI home TBD. See docs/audit/PARKED-REPORTS" +
+      "-2026-11-05.md",
     merged_into: Object.freeze([] as const),
     merged_place: "",
   } as const),
@@ -2987,12 +2989,13 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     gm_question: "What's on my desk?",
     gravity: "G3",
     clock: "while pending",
-    placement: places[0],
+    placement: "",
     verb: "endpoint.open id=M-153",
-    disposition: "kept",
+    disposition: "retired",
     ring: 1,
     status: "built",
-    disposition_note: "kept",
+    disposition_note: "PARKED 11-05 alerts — tray removed; UI home TBD. See docs/audit/PARKED-REPORTS" +
+      "-2026-11-05.md",
     merged_into: Object.freeze([] as const),
     merged_place: "",
   } as const),
@@ -3039,12 +3042,13 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     gm_question: "What am I owed from waivers?",
     gravity: "G2",
     clock: "window",
-    placement: places[0],
+    placement: "",
     verb: "endpoint.open id=M-156",
-    disposition: "kept",
+    disposition: "retired",
     ring: 4,
     status: "spec",
-    disposition_note: "kept",
+    disposition_note: "PARKED 11-05 alerts — tray removed; UI home TBD. See docs/audit/PARKED-REPORTS" +
+      "-2026-11-05.md",
     merged_into: Object.freeze([] as const),
     merged_place: "",
   } as const),
@@ -3056,12 +3060,13 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     gm_question: "Where am I in line?",
     gravity: "G2",
     clock: "weekly",
-    placement: places[0],
+    placement: "",
     verb: "endpoint.open id=M-157",
-    disposition: "kept",
+    disposition: "retired",
     ring: 4,
     status: "spec",
-    disposition_note: "kept",
+    disposition_note: "PARKED 11-05 alerts — tray removed; UI home TBD. See docs/audit/PARKED-REPORTS" +
+      "-2026-11-05.md",
     merged_into: Object.freeze([] as const),
     merged_place: "",
   } as const),

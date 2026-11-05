@@ -209,7 +209,7 @@ describe('Endpoint map', () => {
       }
       expect(() => assertEndpointRoutes(endpoints, searchCandidates(executor))).not.toThrow();
       commands.dispatch('overlays.close', {});
-      commands.dispatch('nav.open', { node: 'home', workspace: 'alert-tray' });
+      commands.dispatch('nav.open', { node: 'home', workspace: 'overview' });
     } finally {
       projection.mockRestore();
     }

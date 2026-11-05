@@ -39,7 +39,7 @@ export function parseCSV(source) {
 }
 
 const workspaces = {
-  Home: ['Alert tray'],
+  Home: ['Overview'],
   'War Room': ['Market', 'Valuations and pool'],
   'Franchise HQ': ['Lineup and roster', 'Contracts and cap', 'My moves'],
   'Trade Floor': ['Trade desk', 'Offers history', 'Counterparties', 'Draft room'],

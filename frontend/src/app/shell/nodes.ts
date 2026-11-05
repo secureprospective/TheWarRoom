@@ -2,7 +2,7 @@ export const nodes = {
   home: {
     label: 'Home',
     workspaces: [
-      { slug: 'alert-tray', label: 'Alert tray', ring: 'Ring 1' },
+      { slug: 'overview', label: 'Overview', ring: 'Ring 1' },
     ],
   },
   war: {
@@ -49,7 +49,7 @@ export type WorkspaceMemory = {
   [N in Node]: (typeof nodes)[N]['workspaces'][number]['slug'];
 };
 export const nodeKeys = Object.keys(nodes) as Node[];
-export const homeRoute: Route = { node: 'home', workspace: 'alert-tray' };
+export const homeRoute: Route = { node: 'home', workspace: 'overview' };
 export function isNode(value: string): value is Node {
   return Object.prototype.hasOwnProperty.call(nodes, value);
 }

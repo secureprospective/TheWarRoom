@@ -18,7 +18,7 @@ type Preset = {
 export const presets = {
   default: {
     label: 'Default',
-    route: { node: 'home', workspace: 'alert-tray' },
+    route: { node: 'home', workspace: 'overview' },
     density: 'tactical',
     inspector: 'rest',
     roles: ['gm', 'commish', 'admin'],

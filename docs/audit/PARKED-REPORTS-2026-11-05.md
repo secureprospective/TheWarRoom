@@ -48,3 +48,15 @@ The Home tab was removed; retain its content for a future, undecided UI home. Ex
 | M-189 | Depth Charts (merged into M-048) |
 | C-03 | Season, phase, week and deadlines |
 | S-13 | Seasonal phase links |
+
+## Alert tray (sometimes tab) — UI home TBD
+
+The Home tab was removed; retain its content and deadline pinning for a future, undecided UI home.
+
+| id | content |
+|---|---|
+| M-148 | Lineup Alert |
+| M-149 | Possible IR Violations |
+| M-153 | Pending Trades |
+| M-156 | Waiver Claims |
+| M-157 | Waiver Order |

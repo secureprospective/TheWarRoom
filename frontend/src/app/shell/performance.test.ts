@@ -131,7 +131,7 @@ describe('Performance is law (§18, §M3)', () => {
     expect(source).toContain("lazy(() => import('./AppSettings')");
     expect(source).not.toMatch(/import\s+\{\s*AppSettings\s*\}\s+from/);
     expect(source).toContain('<FranchiseHQMount snapshot={snapshot} />');
-    expect(source).toMatch(/<HomePulseMount snapshot=\{snapshot\} reading=\{clock\}[\s\S]*?\/>/);
+    expect(source).toContain('<Now />');
     expect(source).toContain('<TradeDesk snapshot={snapshot} />');
   });
   it('requires snapshot-keyed roster and search memoization and rejects missing memos', () => {

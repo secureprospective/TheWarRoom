@@ -28,7 +28,7 @@ it('dispatches the verb each phase registry row promises, using one table', asyn
       args: { id: player, entity: 'player', action: 'remove' } } },
     { row: 'M-118', invocation: { verb: 'note.add',
       args: { id: player, entity: 'player', action: 'add', text: 'My note' } } },
-    ...(['M-096', 'M-149', 'M-103', 'M-101', 'M-154', 'M-087',
+    ...(['M-096', 'M-103', 'M-101', 'M-154', 'M-087',
       'M-151', 'M-159', 'M-167', 'M-169'] as const).map(id => ({ row: id,
       invocation: { verb: 'endpoint.open', args: { id } } as Invocation })),
   ];

@@ -126,7 +126,7 @@ Christopher said on 2026-10-10 that the lineup UI will be reworked later. No rep
 
 **Ordering rule.** Time changes *placement*, not chrome:
 - At T−7d an item moves up its lane.
-- At T−48h it is pinned to Home's alert tray.
+- At T−48h deadline pinning is parked pending a new UI home.
 - Within a lane, items sort by urgency (U), then consequence (G), then stable ID.
 
 **Colour slots.** Each card has exactly four: status, verdict (only beyond chance), countdown and
@@ -136,7 +136,7 @@ provenance. Colour is always paired with a text label or icon.
 
 | Node | Workspaces | Notes |
 |---|---|---|
-| Home | Alert tray | deadlines and alerts |
+| Home | Overview | node route; no workspace tab |
 | War Room | Market · Valuations and pool | Lab market, asset board, free-agent pool, bid tracker |
 | Franchise HQ | Lineup and roster · Contracts and cap · My moves | Act plans, what-if, dead cap, app-local lists |
 | Trade Floor | Trade desk · Offers history · Counterparties · Draft room | accept, reject, revoke, DOT state; draft timing inside the draft room |
@@ -283,7 +283,7 @@ Answered items retain their answers and dates. Remaining questions are owed befo
 **What worked**
 - The lineup envelope Landed twice live on 2026-10-09: the change and its revert.
 - Persistent receipts and the watcher retain Not verified plans and can land later matching evidence.
-- Home alert surface, HQ lineup/roster, Classic Pulse Now and the trade desk were built.
+- HQ lineup/roster, Classic Pulse Now and the trade desk were built; Home alerts are parked.
 - Inspector IR/taxi drafts open the correct MFL pages. Neither intent has Landed live.
 
 **What revision 0 got wrong**
@@ -492,7 +492,7 @@ app's own checked facts.
   (M-087) and the app-local draft list (M-103).
 - **Franchise HQ.** Incoming contract and bid-plan cost by season (C-06.4); lineup and roster read as
   loading, never failing, while MFL answers at launch.
-- **Home.** IR alerts in the alert tray (M-149), digests, and the shell rows: presets (S-05), market
+- **Home.** Alerts and digests are parked; shell rows include presets (S-05), market
   filters kept per workspace (S-10), private watch, bait, note and draft lists (`app/personal/`).
 - **Comms.** The league feed, the message board and polls read with the MFL key, and the ProBoards
   hand-off for the league's own board.
