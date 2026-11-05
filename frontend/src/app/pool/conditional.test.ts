@@ -12,9 +12,7 @@ const form: BidFormState = {
   beat: '', evidence: '', snipe: false, closesOpen: false, closesDate: '', closesTime: '',
 };
 const preview = parsePreview(wire.preview);
-const over: Preview = { ...preview, blocked: true, rules: [{
-  rule: 'cap-room', label: 'Cap room', verdict: 'fail', mark: 'Fails', reason: 'Still $450,500 short.',
-}], conditionalDrops: [
+const over: Preview = { ...preview, conditionalDrops: [
   { id: '0042', name: 'Rostered, Rick (QB, BUF)', salary: 90000000, deadCap: 30000000,
     freed: 60000000, label: 'Rick · $900,000 salary · 2 years · $300,000 dead cap if dropped',
     covers: true, available: true },
@@ -23,12 +21,9 @@ const render = (f: BidFormState, p: Preview) => renderToStaticMarkup(
   createElement(BidForm, { form: f, preview: p, busy: '' }),
 );
 
-it('shows a secondary reveal only over room, then one roster select with the priced label', () => {
-  expect(render(form, preview)).not.toContain('Name a conditional drop');
-  const fittingOpen = render({ ...form, conditionalOpen: true }, preview);
-  expect(fittingOpen).not.toContain('<select aria-label="Conditional');
+it('offers a conditional drop behind one link, then one roster select with the priced label', () => {
   const closed = render(form, over);
-  expect(closed).toContain('Over your cap room? Name a conditional drop');
+  expect(closed).toContain('Name a conditional drop');
   expect(closed).not.toContain('<select aria-label="Conditional');
   const opened = render({ ...form, conditionalOpen: true }, over);
   expect(opened).toContain('<select aria-label="Conditional drop if you win"');
@@ -64,13 +59,3 @@ it('reveals, selects, sends, revises and clears the condition through the existi
   await state.flush();
 });
 
-it('states an over-cap shortfall once, in the cap rule, and points the status line at it', () => {
-  const text = render(form, { ...over, note: 'Still $450,500 short' });
-  expect(text.split('Still $450,500 short').length - 1).toBe(1);
-  expect(text).toContain('Blocked by the rule above. Saved now, the plan waits as Blocked until it passes.');
-  const two: Preview = { ...over, rules: [...over.rules, {
-    rule: 'years', label: 'Years', verdict: 'unknown', mark: 'Cannot tell', reason: 'Years unknown.',
-  }] };
-  expect(render(form, two)).toContain('Blocked by the 2 rules above.');
-  expect(render(form, { ...over, rules: [] })).toContain('Blocked: ');
-});

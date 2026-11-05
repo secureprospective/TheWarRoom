@@ -41,7 +41,10 @@ function fakeProvider(overrides: Partial<PoolProvider> = {}) {
   };
   return { provider, calls };
 }
-const plan = (code: string) => board().value.plans.find((p) => p.stateCode === code)!;
+// Smith (13593) and Adams (13595) are Ready; the third plan was withdrawn.
+const players: Record<string, string> = { ready: '13593', second: '13595' };
+const plan = (code: string) => board().value.plans.find((p) =>
+  players[code] ? p.playerId === players[code] : p.stateCode === code)!;
 const button = (markup: string, label: string) =>
   markup.split('<button').find((part) => part.includes(`aria-label="${label}"`)) ?? '';
 const tick = () => new Promise((resolve) => setTimeout(resolve, 5));
@@ -51,16 +54,15 @@ describe('Go wire', () => {
     expect(pool().status).toBe('ok');
     expect(pool().value.rows.map((r) => r.name)).toEqual(['Adams, Zed', 'Jones, Amy', 'Smith, John']);
     expect(parsePool(wire.empty).status).toBe('failed');
-    expect(board().value.plans.map((p) => p.state)).toEqual(['Withdrawn', 'Blocked', 'Ready']);
-    expect(plan('blocked').id).not.toBe(plan('ready').id);
-    expect(parsePreview(wire.preview).rules).toHaveLength(11);
+    expect(board().value.plans.map((p) => p.state)).toEqual(['Withdrawn', 'Ready', 'Ready']);
+    expect(plan('second').id).not.toBe(plan('ready').id);
     expect(parsePreview(wire.problem).problem).toContain('Enter the annual salary in millions');
   });
   it('refuses a wire that drifted', () => {
     expect(() => parsePool({ ...wire.pool, extra: 1 })).toThrow(/unexpected field/);
     expect(() => parsePool({ ...wire.pool, status: 'thin', absenceReason: null })).toThrow(/absence reason/);
     expect(() => parsePlan({ ...wire.board.value.plans[0], extra: 1 })).toThrow(/unexpected field/);
-    expect(() => parsePreview({ ...wire.preview, rules: [{ rule: 'x' }] })).toThrow();
+    expect(() => parsePreview({ ...wire.preview, rules: [] })).toThrow(/unexpected field/);
   });
 });
 
@@ -183,13 +185,13 @@ describe('Bid form re-queries Go', () => {
   it('renders the form, its verdicts, and holds Save until Go has answered', () => {
     const ready = html(createElement(BidForm, { form, preview: parsePreview(wire.preview), busy: '' }));
     for (const phrase of ['Plan a bid · Smith, John', 'Annual salary', 'Bid points', '7.000',
-      'Entered $5,004,000', 'Minimum salary', 'Save bid plan', 'Snipe: this bid lands after the 20-hour mark',
+      'Entered $5,004,000', 'checks no bid rules', 'Save bid plan', 'Snipe: this bid lands after the 20-hour mark',
       'cannot see the auction clock', 'ProBoards post preview', 'data-endpoint="M-194"',
       'data-endpoint="C-06.7"'])
       expect(ready).toContain(phrase);
     expect(button(ready, 'Save bid plan')).not.toContain('disabled');
     const waiting = html(createElement(BidForm, { form, preview: undefined, busy: '' }));
-    expect(waiting).toContain('Checking the bid rules…');
+    expect(waiting).toContain('Reading the bid…');
     expect(button(waiting, 'Save bid plan')).toContain('disabled=""');
     const problem = html(createElement(BidForm, { form, preview: parsePreview(wire.problem), busy: '' }));
     expect(problem).toContain('Enter the annual salary in millions, such as 5.25');
@@ -237,18 +239,12 @@ describe('Hand-off', () => {
     expect(text).toContain('Copy ProBoards post');
     expect(text).toContain('Bid to beat 5.500 · Snipe');
   });
-  it('leaves the Act off with Go\'s reason when the app cannot tell playoff status', () => {
-    const text = html(createElement(BidPlanCard, { plan: plan('blocked') }));
-    expect(button(text, 'Copy ProBoards post: Adams, Zed (CB, MIA)')).toContain('disabled=""');
-    expect(text).toContain('Copy ProBoards post is off: After Week 12 only playoff teams may bid');
-    expect(text).toContain('cannot tell whether yours is one');
-  });
 });
 
 describe('My moves and the Inspector', () => {
   it('lists bid plans with state, status and history like every other plan', () => {
     const text = html(createElement(BidBoardView, { board: board(), busy: '' }));
-    for (const phrase of ['Bid plans', '2 open of 3 bid plans', 'Blocked', 'Ready', 'Bid rules checked',
+    for (const phrase of ['Bid plans', '2 open of 3 bid plans', 'Ready', 'the league judges the bid',
       'History', 'Only your own plans are kept; nothing about other franchises', 'data-endpoint="M-194"',
       'How this is counted', 'the bid to beat is points you typed'])
       expect(text).toContain(phrase);

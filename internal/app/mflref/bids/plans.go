@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
-
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
@@ -83,12 +81,12 @@ func BeatText(f envelope.BidFacts) string {
 	return text
 }
 
-func BidActions(s envelope.State, status string, rules []bidrules.Result, problem string) []Action {
+func BidActions(s envelope.State, status, problem string) []Action {
 	copyPost := Action{ID: "hand-off", Label: "Copy ProBoards post"}
 	again := Action{ID: "copy", Label: "Copy post again"}
 	switch {
 	case slices.Contains([]envelope.State{envelope.Blocked, envelope.Ready, envelope.Draft}, s):
-		reason := BidBlockReason(rules, problem)
+		reason := problem
 		if reason == "" && s == envelope.Blocked {
 			reason = status + "; change the figures to check it again"
 		}
@@ -111,16 +109,6 @@ func BidActions(s envelope.State, status string, rules []bidrules.Result, proble
 		return []Action{{ID: "withdraw", Label: "Remove plan"}}
 	}
 	return []Action{}
-}
-
-func BidBlockReason(rules []bidrules.Result, problem string) string {
-	if problem != "" {
-		return problem
-	}
-	if bidrules.Blocked(rules) {
-		return bidrules.Note(rules)
-	}
-	return ""
 }
 
 func HeldCutCharge(p state.MirrorPlayer, season int) (domain.Money, bool) {

@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"testing"
 	"time"
-
-	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 )
 
 const poolWireFile = "frontend/src/app/pool/wire.testdata.json"
@@ -51,13 +49,11 @@ func TestPoolWireFixtureMatchesGo(t *testing.T) {
 	if _, err := offersTestAPI(a).TargetBidDraft(raw); err != nil {
 		t.Fatal(err)
 	}
-	a.core.Week = leagueweek.Week{Number: 13}
-	blocked := rawBid("2", 1)
-	blocked.Player = "13595"
-	if _, err := offersTestAPI(a).TargetBidDraft(blocked); err != nil {
+	second := rawBid("2", 1)
+	second.Player = "13595"
+	if _, err := offersTestAPI(a).TargetBidDraft(second); err != nil {
 		t.Fatal(err)
 	}
-	a.core.Week = leagueweek.Week{Number: 5}
 	dropped := rawBid("1", 1)
 	dropped.Player = "13594"
 	plan, err := offersTestAPI(a).TargetBidDraft(dropped)

@@ -48,7 +48,7 @@ func TestContractPendingCanBeWithdrawn(t *testing.T) {
 func TestEveryPlanViewOffersAnExit(t *testing.T) {
 	t.Parallel()
 	for _, state := range []envelope.State{envelope.Draft, envelope.Blocked, envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified, envelope.Stale, envelope.BidPending} {
-		actions := bidsapp.BidActions(state, "", nil, "")
+		actions := bidsapp.BidActions(state, "", "")
 		found := false
 		for _, action := range actions {
 			if action.ID == "withdraw" || action.ID == "unposted" {
