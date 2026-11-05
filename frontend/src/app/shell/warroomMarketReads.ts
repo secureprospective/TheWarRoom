@@ -7,11 +7,12 @@ import { parseHostedWaivers } from '../commissioner/hostedMarkets';
 import { hostedWorkflow } from '../commissioner/api';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
 import type { WarRoomContext } from './warroomReads';
+import type { Plan } from '../pool/contract';
 import { unavailable } from './hqModel';
 export type WarRoomMarketPlayer = { id: string; name: string; position: string; age?: string;
   minimum?: string; minimumCents?: number; value?: string };
 export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string;
-  kind?: 'plan' | 'placed'; id?: string; post?: string };
+  kind?: 'plan' | 'placed'; id?: string; post?: string; plan?: Plan };
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
   targets?: Entry[]; errors: string[] };
 export function parseWarRoomOwnBids(value: unknown, league: string, mine: string): WarRoomOwnBid[] {
@@ -87,7 +88,7 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       if (bids.status === 'failed' || bids.status === 'not_wired') throw new Error(bids.absenceReason ??
         'Bid plans unavailable');
       result.bids = bids.value.plans.filter(p => p.franchiseId === c.mine).map(p => ({ player: p.playerId,
-        name: p.player, contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post }));
+        name: p.player, contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post, plan: p }));
     }),
   ]);
   return result;

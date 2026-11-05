@@ -8,10 +8,14 @@ import { readWarRoomMarket, changeWarRoomTarget, warRoomTargetLanes, type WarRoo
 import { WarRoomEmpty } from './WarRoomHeader';
 import { money, unavailable } from './hqModel';
 import { poolProvider } from '../pool/provider';
-import { copyText } from '../pool/state';
+import { copyText, planForm } from '../pool/state';
+import type { Plan } from '../pool/contract';
 import { useWarRoomDrag } from './warroomDrag';
-export function WarRoomOwnBids({ reading, kind }: { reading?: WarRoomMarketReading;
-  kind?: 'plan' | 'placed' }) {
+export const ownBid = (p: Plan): WarRoomOwnBid => ({ player: p.playerId, name: p.player,
+  contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post, plan: p });
+const STEP = 0.1;
+export function WarRoomOwnBids({ reading, kind, step }: { reading?: WarRoomMarketReading;
+  kind?: 'plan' | 'placed'; step?: (b: WarRoomOwnBid, by: number) => void }) {
   const bids = reading?.bids?.filter(b => !kind || b.kind === kind);
   const [copied, setCopied] = useState('');
   const copy = async (b: WarRoomOwnBid) => {
@@ -19,6 +23,9 @@ export function WarRoomOwnBids({ reading, kind }: { reading?: WarRoomMarketReadi
   };
   return <>{bids ? bids.length ? bids.map((b, k) => <div className="bidb"
     key={b.player}><span className="nm">{kind === 'plan' ? `${k + 1}. ` : ''}{b.name}</span><b>{b.contract}</b>
+      {step && b.plan && <span className="step2"><WarRoomAct label={`Lower ${b.name} bid`}
+        onAction={() => step(b, -STEP)}>−</WarRoomAct><b>{b.plan.salary.text}</b><WarRoomAct
+          label={`Raise ${b.name} bid`} onAction={() => step(b, STEP)}>+</WarRoomAct></span>}
       <span className="chip2">{b.state}</span>{b.post && <WarRoomAct className="chip"
         label={`Copy ProBoards post for ${b.name}`} onAction={() => { void copy(b); }}>
         {copied === b.player ? 'COPIED' : 'COPY PROBOARDS POST'}</WarRoomAct>}</div>) :
@@ -42,16 +49,32 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
     catch { setError(unavailable); } finally { setPending(false); }
   };
   const bid = async (p: WarRoomMarketPlayer) => {
-    if (pending || value?.bids?.some(b => b.player === p.id)) return;
+    if (pending || value?.bids?.some(b => b.player === p.id) || own[p.id]) return;
     setPending(true); setError('');
     try {
-      await poolProvider.draft(context.mine, { planId: '', playerId: p.id, playerName: p.name,
+      const plan = await poolProvider.draft(context.mine, { planId: '', playerId: p.id, playerName: p.name,
         salary: String((p.minimumCents ?? 0) / 1e8), years: 1, snipe: false, beat: '', evidence: '',
         closesOpen: false, closesDate: '', closesTime: '', conditionalDrop: '', conditionalOpen: false });
-      setRefresh(n => n + 1);
+      setOwn(o => ({ ...o, [plan.playerId]: ownBid(plan) }));
     } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
     finally { setPending(false); }
   };
+  // A saved or revised plan updates its own card; the pool is not read again.
+  const [own, setOwn] = useState<Record<string, WarRoomOwnBid>>({});
+  const step = async (b: WarRoomOwnBid, by: number) => {
+    if (pending || !b.plan) return;
+    const salary = Math.round((b.plan.salary.cents / 1e8 + by) * 100) / 100;
+    if (salary <= 0) return;
+    setPending(true); setError('');
+    try {
+      const plan = await poolProvider.revise(b.plan.id, context.mine,
+        { ...planForm(b.plan), salary: String(salary) });
+      setOwn(o => ({ ...o, [plan.playerId]: ownBid(plan) }));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    finally { setPending(false); }
+  };
+  const bids = value && [...(value.bids ?? []).filter(b => !own[b.player]), ...Object.values(own)];
+  const shown = value && { ...value, bids };
   const drag = useWarRoomDrag((id, over) => {
     const p = value?.players?.find(x => x.id === id);
     if (!p) return;
@@ -80,7 +103,7 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
           unavailable : undefined} onAction={() => setFilter(f)}>{f}</WarRoomAct>)}</div></div>
       <div className="fa-h">{['', 'POS', 'PLAYER', 'AGE', 'MIN BID', 'VALUE', 'RIVALS', 'EST. WIN',
         'TREND'].map((h, i) => <span key={i}>{h}</span>)}</div><div className="fa-list">
-      {players?.length ? players.map(p => <div className={`fa-r${value?.bids?.some(b => b.player === p.id) ? ' bid' : ''}`}
+      {players?.length ? players.map(p => <div className={`fa-r${bids?.some(b => b.player === p.id) ? ' bid' : ''}`}
         key={p.id} onPointerDown={e => drag(e, p.id)}><WarRoomAct className="st"
           label={`${targets.has(p.id) ? 'Unwatch' : 'Watch'} ${p.name}`} active={targets.has(p.id)}
           disabled={pending || !!context.native || !value?.targets} onAction={() => { void change(p.id); }}>
@@ -95,7 +118,8 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
       </b><span className="lim">HARD LIMIT</span></div><div className="bar" /><div className="t">
         <span>committed {unavailable}</span><span>free {unavailable}</span></div></div>
       <div className="ch"><b>MY BIDS</b><span>{unavailable}</span></div><div className="bids">
-        <div className="ch"><b>READY</b></div><WarRoomOwnBids reading={value} kind="plan" />
+        <div className="ch"><b>READY</b></div><WarRoomOwnBids reading={shown} kind="plan"
+          step={(b, by) => { void step(b, by); }} />
         <div className="ch"><b>PLACED</b></div>
         <WarRoomOwnBids reading={value} kind="placed" /></div><div className="nested" />
       <div className="recent"><div className="ch"><b>RECENT WINS</b></div><WarRoomEmpty /></div></div>

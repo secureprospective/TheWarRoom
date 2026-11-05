@@ -32,6 +32,17 @@ export function localInput(iso: string): string {
     `T${pad(at.getHours())}:${pad(at.getMinutes())}`;
 }
 
+// The bid form a saved plan reopens as: every figure the owner typed, unchanged.
+export function planForm(p: Plan): BidFormState {
+  const closes = localInput(p.closes).split('T');
+  return {
+    conditionalDrop: p.conditionalDrop, conditionalOpen: false,
+    planId: p.id, playerId: p.playerId, playerName: p.player, salary: p.form.salary, years: p.years,
+    snipe: p.snipe, beat: p.form.beat, evidence: p.evidence, closesOpen: Boolean(p.closes),
+    closesDate: closes[0], closesTime: closes[1] ?? '',
+  };
+}
+
 export async function copyText(value: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(value);
@@ -213,14 +224,7 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
           playerName: row?.name ?? filter.value });
       }
       case 'pool-revise': {
-        const p = plan(filter.value);
-        const closes = localInput(p.closes).split('T');
-        return openForm({
-          conditionalDrop: p.conditionalDrop, conditionalOpen: false,
-          planId: p.id, playerId: p.playerId, playerName: p.player, salary: p.form.salary, years: p.years,
-          snipe: p.snipe, beat: p.form.beat, evidence: p.evidence, closesOpen: Boolean(p.closes),
-          closesDate: closes[0], closesTime: closes[1] ?? '',
-        });
+        return openForm(planForm(plan(filter.value)));
       }
       case 'pool-open':
         show(filter.value);
