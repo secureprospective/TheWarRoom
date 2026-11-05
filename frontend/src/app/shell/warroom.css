@@ -545,6 +545,10 @@
 .wr-v6 .fa-list{flex:1;min-height:0;overflow:auto}
 .wr-v6 .bids{flex:1;min-height:0;padding:4px 0}
 .wr-v6 .bids.over{outline:2px solid var(--edge-hi);outline-offset:-4px;background:var(--raised)}
+.wr-v6 .lane2.over{outline:2px solid var(--edge-hi);outline-offset:-3px;background:var(--raised)}
+.wr-v6 .fa-r.ghost{position:fixed;left:0;top:0;z-index:50;width:420px;pointer-events:none;background:var(--edge-hi);color:var(--black);box-shadow:4px 4px 0 var(--black)}
+.wr-v6 .bids .add{margin:8px 10px;border:1px dashed var(--edge);padding:12px;text-align:center;font:11px var(--mono);color:var(--ink3)}
+.wr-v6 .bids.over{outline:2px solid var(--edge-hi);outline-offset:-4px;background:var(--raised)}
 .wr-v6 .bidb{margin:6px 10px;padding:8px 10px;border:1px solid var(--edge);border-left:4px solid var(--edge-hi);background:var(--tile);display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
 .wr-v6 .bidb .nm{font-weight:600} .wr-v6 .bidb small{font:11px var(--mono);color:var(--ink2)}
 .wr-v6 .step2{display:flex;align-items:center;border:2px solid var(--edge)}

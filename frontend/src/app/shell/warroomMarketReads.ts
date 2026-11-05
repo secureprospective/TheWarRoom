@@ -9,9 +9,9 @@ import { parseHostedRoster } from '../commissioner/hostedReadings';
 import type { WarRoomContext } from './warroomReads';
 import { unavailable } from './hqModel';
 export type WarRoomMarketPlayer = { id: string; name: string; position: string; age?: string;
-  minimum?: string; value?: string };
+  minimum?: string; minimumCents?: number; value?: string };
 export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string;
-  kind?: 'plan' | 'placed' };
+  kind?: 'plan' | 'placed'; id?: string; post?: string };
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
   targets?: Entry[]; errors: string[] };
 export function parseWarRoomOwnBids(value: unknown, league: string, mine: string): WarRoomOwnBid[] {
@@ -78,7 +78,7 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       if (pool.status === 'failed' || pool.status === 'not_wired') throw new Error(pool.absenceReason ??
         'Pool unavailable');
       result.players = pool.value.rows.map(p => ({ id: p.id, name: p.name, position: p.position,
-        age: p.age, minimum: p.minimum.text, value: p.engineText }));
+        age: p.age, minimum: p.minimum.text, minimumCents: p.minimum.cents, value: p.engineText }));
     }),
     apply(async () => { const personal = parsePersonal(await personalWire.read(c.mine));
       result.targets = personal.entries.filter(e => e.kind === 'watch' && e.entity === 'player')
@@ -87,7 +87,7 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       if (bids.status === 'failed' || bids.status === 'not_wired') throw new Error(bids.absenceReason ??
         'Bid plans unavailable');
       result.bids = bids.value.plans.filter(p => p.franchiseId === c.mine).map(p => ({ player: p.playerId,
-        name: p.player, contract: p.contract, state: p.status || p.state, kind: 'plan' }));
+        name: p.player, contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post }));
     }),
   ]);
   return result;
