@@ -96,3 +96,22 @@ func TestPrepareSnapshotOwnsEnrichmentAndKeepsObservation(t *testing.T) {
 		}
 	}
 }
+
+func TestPoolStringsUsesRealNFLFacts(t *testing.T) {
+	t.Parallel()
+	lookup, err := normalize.NewLookup([]players.RawPlayer{
+		{ID: "0042", Position: "WR", Name: "Depth player", Team: "BUF"},
+		{ID: "0043", Position: "WR", Name: "Free player", Team: "FA"},
+		{ID: "0044", Position: "WR", Name: "Unknown player", Team: "BUF"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	gsis := "gsis42"
+	in := Snapshot{Lookup: lookup, Held: Values{Links: map[string]string{"gsis:" + gsis: "0042"},
+		Depth: Feed[[]researchfeeds.RawDepth]{Value: []researchfeeds.RawDepth{{GSIS: &gsis, Position: "WR", Rank: 2}}}}}
+	got := PoolStrings(in)
+	if got["0042"] != "WR2" || got["0043"] != "FA" || got["0044"] != "" {
+		t.Fatalf("NFL statuses: %+v", got)
+	}
+}
