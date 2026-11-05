@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -214,4 +216,19 @@ func (a *App) startValuePreparation() {
 				}
 			})
 	})
+}
+
+func (h commissionerHost) NativeAssets(ctx context.Context, league string) (commissioner.NativeAssets, error) {
+	out, err := h.State.NativeAssets(ctx, league)
+	if err != nil {
+		return out, fmt.Errorf("read Market assets: %w", err)
+	}
+	h.app.hydrateResearchContext(ctx)
+	statuses := researchapp.PoolStrings(h.app.heldResearchInput().snapshot())
+	for i := range out.Pool {
+		if status := statuses[out.Pool[i].Player]; status != "" {
+			out.Pool[i].String = status
+		}
+	}
+	return out, nil
 }

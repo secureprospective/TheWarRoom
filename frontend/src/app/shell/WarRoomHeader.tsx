@@ -8,7 +8,7 @@ export function CompactAbsent({ pending }: { pending?: boolean } = {}) {
 }
 export function WarRoomEmpty({ reason, pending }: { reason?: string; pending?: boolean }) {
   return <p className="empty" role={pending ? 'status' : undefined}
-    title={reason ? unavailable : undefined}>{absent(pending)}</p>;
+    >{pending ? absent(true) : reason || unavailable}</p>;
 }
 export function WarRoomHeader({ name, reading, windowLabel }: { name?: string;
   reading?: WarRoomHeaderReading; windowLabel?: string }) {

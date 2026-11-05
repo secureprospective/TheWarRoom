@@ -1,13 +1,17 @@
 package history
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
@@ -43,6 +47,7 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	if s.lineupEnv != nil {
 		enrichNativeAssets(&reading, s.lineupEnv.PlayerFacts())
+		s.nativePoolPoints(ctx, &reading, records)
 	}
 	return reading, nil
 }
@@ -51,6 +56,28 @@ func enrichNativeAssets(reading *commissioner.NativeAssets, facts nativecheck.Fa
 	if reading.Snapshot == nil {
 		return
 	}
+	owned := map[string]bool{}
+	for _, player := range reading.Snapshot.Players {
+		owned[player.ID] = true
+	}
+	pool := map[string]commissioner.NativePoolPlayer{}
+	for id, f := range facts {
+		if owned[id] {
+			continue
+		}
+		pool[id] = nativePoolPlayer(id, f)
+	}
+	for _, lot := range reading.Snapshot.Pool {
+		if !owned[lot.Player] {
+			if _, ok := pool[lot.Player]; !ok {
+				pool[lot.Player] = commissioner.NativePoolPlayer{Player: lot.Player, Name: lot.Name, Position: "—", String: "—", Points: "—"}
+			}
+		}
+	}
+	for _, player := range pool {
+		reading.Pool = append(reading.Pool, player)
+	}
+	slices.SortFunc(reading.Pool, func(a, b commissioner.NativePoolPlayer) int { return cmp.Compare(a.Player, b.Player) })
 	for _, player := range reading.Snapshot.Players {
 		identity, held := facts[player.ID]
 		if !held {
@@ -127,4 +154,75 @@ func (s *Store) appendNativeStart(ctx context.Context, tx *sql.Tx, records []com
 	_, err = s.appendAdmittedCommissioner(ctx, tx, appendRequest{raw: raw, principal: principal, role: role,
 		canonical: canonical, at: at, records: records})
 	return err
+}
+
+func (s *Store) nativePoolPoints(ctx context.Context, reading *commissioner.NativeAssets, records []commissioner.Record) {
+	schedule, ok := s.lineupEnv.(interface {
+		ScheduleDates(context.Context, int) ([]leagueweek.Week, error)
+	})
+	if !ok || reading.Snapshot == nil {
+		return
+	}
+	season := reading.Snapshot.Season
+	weeks, err := schedule.ScheduleDates(ctx, season)
+	if err != nil || len(weeks) == 0 {
+		return
+	}
+	started := false
+	for _, week := range weeks {
+		for _, game := range week.Games {
+			started = started || !game.Kickoff.After(s.now())
+		}
+	}
+	if !started {
+		season--
+		weeks, err = schedule.ScheduleDates(ctx, season)
+		if err != nil {
+			return
+		}
+	}
+	finished := []int{}
+	for _, week := range weeks {
+		if len(week.Games) == 0 {
+			continue
+		}
+		if _, open := leagueweek.LineupWeek(s.now(), week); !open {
+			finished = append(finished, week.Number)
+		}
+	}
+	src := s.nativeSources(reading.League, season)
+	for i, player := range reading.Pool {
+		if points, held := nativePoolTotal(ctx, records, src, player.Player, finished); held {
+			reading.Pool[i].Points = fmt.Sprintf("%.1f", float64(points)/10000)
+		}
+	}
+}
+
+func nativePoolTotal(ctx context.Context, records []commissioner.Record, src interface {
+	PlayerScore(context.Context, []commissioner.Record, string, int) (commissioner.NativePlayerScore, error)
+}, player string, weeks []int) (leaguerules.Decimal, bool) {
+	var total leaguerules.Decimal
+	held := false
+	for _, week := range weeks {
+		score, err := src.PlayerScore(ctx, records, player, week)
+		if err != nil {
+			return 0, false
+		}
+		if score.Points != nil {
+			total += *score.Points
+			held = true
+		}
+	}
+	return total, held
+}
+
+func nativePoolPlayer(id string, f nativecheck.PlayerFacts) commissioner.NativePoolPlayer {
+	status := "—"
+	if f.Team == "FA" {
+		status = "FA"
+	}
+	if f.DesignationHeld && (f.Designation == "IR" || f.Designation == "PUP" || f.Designation == "NFI") {
+		status = string(f.Designation)
+	}
+	return commissioner.NativePoolPlayer{Player: id, Name: f.Name, Position: string(f.Position), String: status, Points: "—"}
 }

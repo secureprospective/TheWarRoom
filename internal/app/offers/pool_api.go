@@ -17,6 +17,8 @@ import (
 )
 
 type PoolRow struct {
+	String      string                  `json:"string"`
+	Points      string                  `json:"points"`
 	Engine      *float64                `json:"engine"`
 	PPG         *float64                `json:"ppg"`
 	Lab         *float64                `json:"lab"`
@@ -218,12 +220,14 @@ func poolRow(id playerid.PlayerID, f normalize.PlayerFacts, season int, now time
 func noNFLTeam(team string) bool { return team == "" || team == "FA" || team == "—" }
 
 func valuePoolRow(row *PoolRow, engine map[string]float64, assets map[string]AssetValue) {
+	row.String, row.Points = "—", "—"
 	row.EngineText, row.PPGText, row.LabText = "Not valued", "No score", "Not valued"
 	if v, ok := engine[row.ID]; ok {
 		row.Engine = &v
 		row.EngineText = fmt.Sprintf("%.2f points/game", v)
 	}
 	if v, ok := assets[row.ID]; ok {
+		row.String, row.Points = v.String, v.Points
 		row.PPGText, row.LabText = v.NowText, v.DynastyText
 		if v.NowHeld {
 			row.PPG = &v.NowValue

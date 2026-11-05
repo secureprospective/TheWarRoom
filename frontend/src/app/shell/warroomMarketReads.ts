@@ -1,4 +1,3 @@
-import { parseWarRoomProjections } from '../data/nativeProjections';
 import { array, object, text } from '../data/parseValues';
 import { personalWire, swapPersonalTargets } from '../offers/api';
 import { parsePersonal, type Entry } from '../personal/contract';
@@ -9,7 +8,7 @@ import { parseHostedRoster } from '../commissioner/hostedReadings';
 import type { WarRoomContext } from './warroomReads';
 import type { Plan } from '../pool/contract';
 import { unavailable } from './hqModel';
-export type WarRoomMarketPlayer = { id: string; name: string; position: string; age?: string;
+export type WarRoomMarketPlayer = { id: string; name: string; position: string; age?: string; string?: string; points?: string;
   minimum?: string; minimumCents?: number; value?: string };
 export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string;
   kind?: 'plan' | 'placed'; id?: string; post?: string; plan?: Plan };
@@ -44,17 +43,8 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
         league: native.league } });
         const roster = parseHostedRoster(r.data);
         if (roster.league !== native.league) throw new Error('Pool belongs to another league');
-        result.players = roster.pool.map(p => ({ id: p.value, name: p.label, position: unavailable }));
-        if (c.week) for (let offset = 0; offset < result.players.length; offset += 120) {
-          const players = result.players.slice(offset, offset + 120);
-          const { data } = await port({ command: 'projections.read', mode: 'read', arguments: {
-            league: native.league, players: players.map(p => p.id).join(','),
-            season: c.snapshot.league.value.season, week: c.week } });
-          const projections = parseWarRoomProjections(data, native.league,
-            c.snapshot.league.value.season, c.week);
-          for (const player of players) player.position = projections.find(p => p.player === player.id)
-            ?.position ?? unavailable;
-        }
+        result.players = roster.market;
+
       }),
       apply(async () => { if (native.owner === false) return;
         const r = await port({ command: 'bids.read', mode: 'read', arguments: {
@@ -79,7 +69,7 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       if (pool.status === 'failed' || pool.status === 'not_wired') throw new Error(pool.absenceReason ??
         'Pool unavailable');
       result.players = pool.value.rows.map(p => ({ id: p.id, name: p.name, position: p.position,
-        age: p.age, minimum: p.minimum.text, minimumCents: p.minimum.cents, value: p.engineText }));
+        age: p.age, string: p.string, points: p.points, minimum: p.minimum.text, minimumCents: p.minimum.cents, value: p.engineText }));
     }),
     apply(async () => { const personal = parsePersonal(await personalWire.read(c.mine));
       result.targets = personal.entries.filter(e => e.kind === 'watch' && e.entity === 'player')

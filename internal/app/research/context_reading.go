@@ -285,3 +285,25 @@ func shortDepthNames(names []string) string {
 	}
 	return strings.Join(short, " · ")
 }
+
+// PoolStrings preserves actual NFL listings; a missing depth slot is not a roster status.
+func PoolStrings(in Snapshot) map[string]string {
+	out := map[string]string{}
+	for _, d := range in.Held.Depth.Value {
+		id := DepthID(d, in.Held.Links)
+		if id != "" && out[id] == "" {
+			out[id] = fmt.Sprintf("%s%d", d.Position, d.Rank)
+		}
+	}
+	for _, id := range in.Lookup.IDs() {
+		if f, ok := in.Lookup.Facts(id); ok && f.Team == "FA" {
+			out[id] = "FA"
+		}
+	}
+	for _, injury := range in.Injuries.Value {
+		if strings.HasPrefix(injury.Status, "IR") {
+			out[injury.ID.String()] = injury.Status
+		}
+	}
+	return out
+}

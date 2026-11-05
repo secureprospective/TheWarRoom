@@ -101,8 +101,7 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
       'Affordable'].map(f => <WarRoomAct key={f} className="chip" active={filter === f}
         disabled={f === 'My needs' || f === 'Affordable'} title={f === 'My needs' || f === 'Affordable' ?
           unavailable : undefined} onAction={() => setFilter(f)}>{f}</WarRoomAct>)}</div></div>
-      <div className="fa-h">{['', 'POS', 'PLAYER', 'AGE', 'MIN BID', 'VALUE', 'RIVALS', 'EST. WIN',
-        'TREND'].map((h, i) => <span key={i}>{h}</span>)}</div><div className="fa-list">
+      <div className="fa-h">{['☆', 'POS', 'PLAYER', 'AGE', 'STRING', 'PTS', 'VALUE', 'MIN BID'].map((h, i) => <span key={i}>{h}</span>)}</div><div className="fa-list">
       {players?.length ? players.map(p => <div className={`fa-r${bids?.some(b => b.player === p.id) ? ' bid' : ''}`}
         key={p.id} onPointerDown={e => drag(e, p.id)}><WarRoomAct className="st"
           label={`${targets.has(p.id) ? 'Unwatch' : 'Watch'} ${p.name}`} active={targets.has(p.id)}
@@ -110,9 +109,10 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
           {targets.has(p.id) ? '★' : '☆'}</WarRoomAct><span className="ps">{p.position}</span>
         <WarRoomAct className="nm" onAction={() => select(p)}>{p.name}</WarRoomAct>
       <span>{p.age ?? unavailable}</span>
-        <span>{p.minimum ?? unavailable}</span><span>{p.value ?? unavailable}</span>
-        <span>{unavailable}</span><span>{unavailable}</span><span>{unavailable}</span></div>) :
-        <WarRoomEmpty reason={reading.error ?? value?.errors.join(' · ')} />}</div>
+        <span>{p.string ?? "—"}</span><span>{p.points ?? "—"}</span>
+        <span className="fa-value">{p.value ?? "—"}</span><span>{p.minimum ?? "—"}</span></div>) :
+        <WarRoomEmpty pending={!value && !reading.error} reason={reading.error ? 'Pool could not be read' :
+          value?.players === undefined ? 'Pool could not be read' : 'No free agents match this view'} />}</div>
         {error && <p className="empty" role="alert">{error}</p>}</div>
     <div className="bcol"><div className="budget"><div className="t"><span>CAP ROOM</span><b>{money(room)}
       </b><span className="lim">HARD LIMIT</span></div><div className="bar" /><div className="t">

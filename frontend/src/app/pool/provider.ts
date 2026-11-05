@@ -36,9 +36,11 @@ function optionalNumber(v: unknown, p: string): number | null {
 const poolRow: Parser<PoolRow> = (v, p) => {
   const r = object(v, p, [
     'id', 'name', 'position', 'team', 'age', 'experience', 'minimum', 'plan', 'planId',
-    'market', 'marketLines', 'engine', 'ppg', 'lab', 'engineText', 'ppgText', 'labText',
+    'string', 'points', 'market', 'marketLines', 'engine', 'ppg', 'lab', 'engineText', 'ppgText', 'labText',
   ]);
   return {
+    string: r.string === undefined ? undefined : text(r.string, p),
+    points: r.points === undefined ? undefined : text(r.points, p),
     engineText: text(r.engineText, p), ppgText: text(r.ppgText, p), labText: text(r.labText, p),
     engine: optionalNumber(r.engine, p), ppg: optionalNumber(r.ppg, p), lab: optionalNumber(r.lab, p),
     marketLines: array(r.marketLines, p, text),

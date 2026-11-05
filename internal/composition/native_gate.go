@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -160,4 +162,8 @@ func (e appLineupEnv) LineupFacts(ctx context.Context, season, week int) (commis
 		return commissioner.LineupFacts{}, err
 	}
 	return nativeapp.HeldLineupFacts(weeks, week, e.app.nativeFacts(), e.app.ownerZone()), nil
+}
+
+func (e appLineupEnv) ScheduleDates(ctx context.Context, season int) ([]leagueweek.Week, error) {
+	return e.app.nativeScheduleDates(ctx, season, e.app.timeNow())
 }

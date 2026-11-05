@@ -81,6 +81,7 @@ export type HostedRoster = {
   season: number;
   franchises: { value: string; label: string }[];
   pool: { value: string; label: string }[];
+  market: { id: string; name: string; position: string; string: string; points: string }[];
   picks: { season: number; round: number; original: string; owner: string }[];
   players: {
     id: string;
@@ -91,7 +92,7 @@ export type HostedRoster = {
 };
 export function parseHostedRoster(v: unknown): HostedRoster {
   const r = object(v, 'Roster', [
-    'identities',
+    'pool', 'identities',
     'corrections',
     'league',
     'revision',
@@ -118,6 +119,11 @@ export function parseHostedRoster(v: unknown): HostedRoster {
   ]);
   return {
     league: text(r.league, 'League'),
+    market: array(r.pool ?? [], 'Market pool', (v, p) => {
+      const row = object(v, p, ['player', 'name', 'position', 'string', 'points']);
+      return { id: text(row.player, p), name: text(row.name, p), position: text(row.position, p),
+        string: text(row.string, p), points: text(row.points, p) };
+    }),
     revision: integer(r.revision, 'Roster version'),
     identities: array(r.identities ?? [], 'Player identities', (v, p) => {
       const i = object(v, p, ['player', 'franchise', 'side', 'name', 'position']);

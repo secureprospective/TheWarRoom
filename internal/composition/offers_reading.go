@@ -2,8 +2,11 @@ package composition
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"time"
+
+	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/bids"
@@ -51,9 +54,20 @@ func (h offersHost) OffersEngineValues(ctx context.Context) (map[string]float64,
 }
 func (h offersHost) OffersAssetValues(ctx context.Context, ids []playerid.PlayerID, at time.Time) (map[string]offersapp.AssetValue, string) {
 	values, note := h.app.poolAssetValues(ctx, ids, at)
-	out := make(map[string]offersapp.AssetValue, len(values))
-	for id, value := range values {
-		out[id] = offersapp.AssetValue{NowText: value.Now.Text, DynastyText: value.Dynasty.Text,
+	in := h.app.heldResearchInput().snapshot()
+	statuses := researchapp.PoolStrings(in)
+	out := make(map[string]offersapp.AssetValue, len(ids))
+	for _, player := range ids {
+		id := player.String()
+		value := values[id]
+		status, points := statuses[id], "—"
+		if status == "" {
+			status = "—"
+		}
+		if score := in.Finished[id]; score != nil {
+			points = fmt.Sprintf("%.1f", score.Sum)
+		}
+		out[id] = offersapp.AssetValue{String: status, Points: points, NowText: value.Now.Text, DynastyText: value.Dynasty.Text,
 			NowHeld: value.Now.Held, DynastyHeld: value.Dynasty.Held, NowValue: value.NowValue, DynastyValue: value.DynastyValue}
 	}
 	return out, note

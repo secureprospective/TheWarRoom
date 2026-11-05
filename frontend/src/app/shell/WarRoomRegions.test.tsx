@@ -70,10 +70,9 @@ describe('War Room header and settings congruence', () => {
     const after = renderToStaticMarkup(<WarRoomHeader reading={await readWarRoomHeader(context())} />);
     expect(before).toContain('Best 8 (any position)'); expect(after).toContain('Best 13 (any position)');
   });
-  it('does not expose internal read failures in the empty-state tooltip', () => {
-    const html = renderToStaticMarkup(<WarRoomEmpty reason="native.secret.read failed" />);
-    expect(html).not.toContain('native.secret.read');
-    expect(html).toContain('title="Not available yet"');
+  it('shows the supplied empty reason and distinguishes loading', () => {
+    expect(renderToStaticMarkup(<WarRoomEmpty reason="No free agents" />)).toContain('No free agents');
+    expect(renderToStaticMarkup(<WarRoomEmpty pending />)).toContain('Still reading');
   });
   it('labels compact missing numeric values without wrapping the full phrase', () => {
     const html = renderToStaticMarkup(<WarRoomHeader />);
@@ -240,14 +239,16 @@ describe('market, stars and sealed-bid privacy', () => {
       if (raw.action === 'swap') [entries[0].order, entries[1].order] = [entries[1].order, entries[0].order];
     });
     vi.spyOn(poolProvider, 'pool').mockResolvedValue({ status: 'ok', value: { rows: [
-      { id: '0042', name: 'Pool runner', position: 'RB', age: '25', minimum: { text: '$1M', cents:
+      { id: '0042', name: 'Pool runner', position: 'RB', age: '25', string: 'RB2', points: '87.5', minimum: { text: '$1M', cents:
         100_000_000 }, engineText: '24.8' }, { id: '0043', name: 'Other runner', position: 'RB',
         age: '26', minimum: { text: '$2M', cents: 200_000_000 }, engineText: '22.2' }], positions: [],
       summary: '', sorts: [] } } as unknown as Awaited<ReturnType<typeof poolProvider.pool>>);
     vi.spyOn(poolProvider, 'plans').mockRejectedValue(new Error('No plans'));
     const host = await mount(render(WarRoomMarket, { context: context(), select: vi.fn() }), {}, {
       offers: { API: { TargetPersonal: read, TargetPersonalChange: change } } });
-    await flush(); expect(host.textContent).toContain('24.8'); expect(host.textContent).toContain('$1M');
+    await flush(); expect(host.textContent).toContain('RB2'); expect(host.textContent).toContain('87.5');
+    expect(host.textContent).not.toContain('EST. WIN'); expect(host.textContent).not.toContain('TREND');
+    expect(host.textContent).toContain('24.8'); expect(host.textContent).toContain('$1M');
     await click(button(host, 'Watch Pool runner')); await flush();
     expect(change).toHaveBeenCalledWith(expect.objectContaining({ mine: '0025', kind: 'watch',
       entity: 'player', id: '0042', action: 'add' }));

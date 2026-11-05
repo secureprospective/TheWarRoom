@@ -19,6 +19,7 @@ export type Reading<T> = {
 };
 export type MarketFact = { label: string; text: string; reason: string; range: MarketRange | null };
 export type PoolRow = {
+ string?: string; points?: string;
   engineText?: string; ppgText?: string; labText?: string;
   engine?: number | null; ppg?: number | null; lab?: number | null;
   market?: MarketFact[];

@@ -8,6 +8,7 @@ import (
 
 // NativeAssets is app-owned state, not an MFL roster or a what-if plan.
 type NativeAssets struct {
+	Pool        []NativePoolPlayer    `json:"pool,omitempty"`
 	Identities  []NativeAssetIdentity `json:"identities,omitempty"`
 	Corrections []Correction          `json:"corrections,omitempty"`
 	League      string                `json:"league"`
@@ -16,6 +17,14 @@ type NativeAssets struct {
 	Entry       string                `json:"entry"`
 	Source      string                `json:"source"`
 	Snapshot    *RawNativeSnapshot    `json:"snapshot"`
+}
+
+type NativePoolPlayer struct {
+	Player   string `json:"player"`
+	Name     string `json:"name"`
+	Position string `json:"position"`
+	String   string `json:"string"`
+	Points   string `json:"points"`
 }
 
 // NativeAssetIdentity holds public football facts separately from recorded roster state.
