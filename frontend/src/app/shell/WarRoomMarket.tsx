@@ -14,8 +14,8 @@ import { useWarRoomDrag } from './warroomDrag';
 export const ownBid = (p: Plan): WarRoomOwnBid => ({ player: p.playerId, name: p.player,
   contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post, plan: p });
 const STEP = 0.1;
-export function WarRoomOwnBids({ reading, kind, step }: { reading?: WarRoomMarketReading;
-  kind?: 'plan' | 'placed'; step?: (b: WarRoomOwnBid, by: number) => void }) {
+export function WarRoomOwnBids({ reading, kind, revise }: { reading?: WarRoomMarketReading;
+  kind?: 'plan' | 'placed'; revise?: (b: WarRoomOwnBid, change: { salary?: string; years?: number }) => void }) {
   const bids = reading?.bids?.filter(b => !kind || b.kind === kind);
   const [copied, setCopied] = useState('');
   const copy = async (b: WarRoomOwnBid) => {
@@ -23,9 +23,15 @@ export function WarRoomOwnBids({ reading, kind, step }: { reading?: WarRoomMarke
   };
   return <>{bids ? bids.length ? bids.map((b, k) => <div className="bidb"
     key={b.player}><span className="nm">{kind === 'plan' ? `${k + 1}. ` : ''}{b.name}</span><b>{b.contract}</b>
-      {step && b.plan && <span className="step2"><WarRoomAct label={`Lower ${b.name} bid`}
-        onAction={() => step(b, -STEP)}>−</WarRoomAct><b>{b.plan.salary.text}</b><WarRoomAct
-          label={`Raise ${b.name} bid`} onAction={() => step(b, STEP)}>+</WarRoomAct></span>}
+      {revise && b.plan && <span className="step2"><WarRoomAct label={`Lower ${b.name} bid`}
+        onAction={() => revise(b, { salary: String(b.plan!.salary.cents / 1e8 - STEP) })}>−</WarRoomAct><b>{b.plan.salary.text}</b><WarRoomAct
+          label={`Raise ${b.name} bid`} onAction={() => revise(b, { salary: String(b.plan!.salary.cents / 1e8 + STEP) })}>+</WarRoomAct></span>}
+      {revise && b.plan && <label>Years <select aria-label={`${b.name} bid years`}
+        value={b.plan.years} disabled={!reading?.maxYears}
+        onChange={e => revise(b, { years: Number(e.target.value) })}>
+        {Array.from({ length: reading?.maxYears ?? 0 }, (_, i) => i + 1).map(year =>
+          <option key={year} value={year}>{year}</option>)}
+      </select>{!reading?.maxYears && <small>Contract length setting unavailable</small>}</label>}
       <span className="chip2">{b.state}</span>{b.post && <WarRoomAct className="chip"
         label={`Copy ProBoards post for ${b.name}`} onAction={() => { void copy(b); }}>
         {copied === b.player ? 'COPIED' : 'COPY PROBOARDS POST'}</WarRoomAct>}</div>) :
@@ -61,14 +67,14 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
   };
   // A saved or revised plan updates its own card; the pool is not read again.
   const [own, setOwn] = useState<Record<string, WarRoomOwnBid>>({});
-  const step = async (b: WarRoomOwnBid, by: number) => {
+  const revise = async (b: WarRoomOwnBid, change: { salary?: string; years?: number }) => {
     if (pending || !b.plan) return;
-    const salary = Math.round((b.plan.salary.cents / 1e8 + by) * 100) / 100;
-    if (salary <= 0) return;
+    if (change.years !== undefined && (!value?.maxYears || !Number.isSafeInteger(change.years) ||
+      change.years < 1 || change.years > value.maxYears)) { setError('Choose a contract length within the league limit'); return; }
     setPending(true); setError('');
     try {
       const plan = await poolProvider.revise(b.plan.id, context.mine,
-        { ...planForm(b.plan), salary: String(salary) });
+        { ...planForm(b.plan), ...change });
       setOwn(o => ({ ...o, [plan.playerId]: ownBid(plan) }));
     } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
     finally { setPending(false); }
@@ -119,7 +125,7 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
         <span>committed {unavailable}</span><span>free {unavailable}</span></div></div>
       <div className="ch"><b>MY BIDS</b><span>{unavailable}</span></div><div className="bids">
         <div className="ch"><b>READY</b></div><WarRoomOwnBids reading={shown} kind="plan"
-          step={(b, by) => { void step(b, by); }} />
+          revise={(b, change) => { void revise(b, change); }} />
         <div className="ch"><b>PLACED</b></div>
         <WarRoomOwnBids reading={value} kind="placed" /></div><div className="nested" />
       <div className="recent"><div className="ch"><b>RECENT WINS</b></div><WarRoomEmpty /></div></div>

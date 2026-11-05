@@ -419,3 +419,16 @@ it('quotes the selected player’s actual roster, not the viewing franchise', as
   expect(port.mock.calls.find(([r]) => r.command === 'contract.quote')?.[0].arguments)
     .toMatchObject({ franchise: c.mine });
 });
+
+it('bounds READY years by the held league setting and revises the saved plan', async () => {
+  const { parseBoard } = await import('../pool/provider');
+  const wire = await import('../pool/wire.testdata.json');
+  const plan = parseBoard(wire.default.board).value.plans[0];
+  const revise = vi.fn();
+  const { ownBid } = await import('./WarRoomMarket');
+  const host = await mount(render(WarRoomOwnBids, { kind: 'plan', revise,
+    reading: { errors: [], maxYears: 2, bids: [ownBid(plan)] } }));
+  expect(all(host, 'option').map(e => e.props().value)).toEqual([1, 2]);
+  await type(all(host, 'select')[0], '2');
+  expect(revise).toHaveBeenCalledWith(expect.objectContaining({ id: plan.id }), { years: 2 });
+});

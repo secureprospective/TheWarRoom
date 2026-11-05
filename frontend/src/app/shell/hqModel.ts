@@ -11,7 +11,7 @@ export function absent(pending?: boolean): string { return pending ? stillReadin
 // Nothing selected is not a failed read. The detail panels say what to do next, in one calm line,
 // and keep the unavailable words for a read that actually failed.
 export const pickPlayer = 'Pick a player to see their details';
-export type HQSettings = { active?: number; ir?: number; taxi?: number; starters?: number;
+export type HQSettings = { maxYears?: number; active?: number; ir?: number; taxi?: number; starters?: number;
   offence?: number; defence?: number; reserveExcluded?: boolean; positions: { code: string; min: number;
     max?: number }[] };
 export type HQCap = { season: number; committed?: number; dead?: number; room?: number; max?: number; ir?:

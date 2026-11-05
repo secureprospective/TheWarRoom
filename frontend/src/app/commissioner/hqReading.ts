@@ -75,6 +75,7 @@ export function nativeHQSettings(rules: Rules): HQSettings {
         ]);
   return {
     reserveExcluded: reserveExcluded == null ? undefined : (reserveExcluded as boolean),
+    maxYears: count('contracts.maximumYears'),
     active: bounds(current('roster.limits')).max,
     ir: count('ir.slots'),
     taxi: count('taxi.slots'),

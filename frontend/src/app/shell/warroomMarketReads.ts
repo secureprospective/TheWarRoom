@@ -1,3 +1,7 @@
+import { controlAPI } from '../control/api';
+import { report } from '../reports/contract';
+import { parseRules } from '../commissioner/rules';
+import { nativeHQSettings } from '../commissioner/hqReading';
 import { array, object, text } from '../data/parseValues';
 import { personalWire, swapPersonalTargets } from '../offers/api';
 import { parsePersonal, type Entry } from '../personal/contract';
@@ -13,7 +17,7 @@ export type WarRoomMarketPlayer = { id: string; name: string; position: string; 
 export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string;
   kind?: 'plan' | 'placed'; id?: string; post?: string; plan?: Plan };
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
-  targets?: Entry[]; errors: string[] };
+  targets?: Entry[]; maxYears?: number; errors: string[] };
 export function parseWarRoomOwnBids(value: unknown, league: string, mine: string): WarRoomOwnBid[] {
   const r = object(value, 'Bids', ['league', 'franchise', 'revision', 'season', 'mode', 'activeBids',
     'activeLimit', 'players', 'awards', 'notes']);
@@ -39,6 +43,13 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
     const native = c.native;
     const port = native.port ?? hostedWorkflow;
     await Promise.all([
+      apply(async () => {
+        if (native.reading) { result.maxYears = native.reading.settings.maxYears; return; }
+        const r = await port({ command: 'commish.rules.read', mode: 'read', arguments: { league: native.league } });
+        const rules = parseRules(r.data);
+        if (rules.league !== native.league) throw new Error('Rules belong to another league');
+        result.maxYears = nativeHQSettings(rules).maxYears;
+      }),
       apply(async () => { const r = await port({ command: 'native.assets.read', mode: 'read', arguments: {
         league: native.league } });
         const roster = parseHostedRoster(r.data);
@@ -64,6 +75,12 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
     return result;
   }
   await Promise.all([
+    apply(async () => {
+      const settings = report(await controlAPI.settings(), 'Settings');
+      const raw = settings.rows.find(r => r.cells[0] === 'Maximum new contract years')?.cells[1];
+      const years = Number(raw);
+      if (Number.isSafeInteger(years) && years > 0) result.maxYears = years;
+    }),
     apply(async () => { const pool = await poolProvider.pool(c.mine, { position: '', sort: 'name',
       desc: false });
       if (pool.status === 'failed' || pool.status === 'not_wired') throw new Error(pool.absenceReason ??
