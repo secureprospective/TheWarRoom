@@ -7,7 +7,7 @@ Each row below is `retired` in docs/ui/endpoint-registry.csv with a disposition_
 The backend still builds these reports (internal/app/research). To bring one back: place owner stat inquiries in a mock,
 set the row to `kept` with that placement, and give it a screen. List them: `grep "PARKED 11-05" docs/ui/endpoint-registry.csv`.
 
-Moved, not parked: M-048 depth charts, M-058 player news, M-059 article page -> Home > Seasonal card (mock tiles); M-060 my players' news -> Inspector.
+M-060 my players' news remains in Inspector.
 
 | id | report | owner question |
 |---|---|---|
@@ -32,3 +32,19 @@ Moved, not parked: M-048 depth charts, M-058 player news, M-059 article page -> 
 | M-164 | Top Adds/Drops/Started/Owned ◆ | Market pulse |
 | M-165 | LATEST NEWS tab (shell) | News view |
 | M-186 | Sortable Stats | Stat table |
+
+## Seasonal card (sometimes tab) — UI home TBD
+
+The Home tab was removed; retain its content for a future, undecided UI home. Existing Inspector news remains.
+
+| id | content |
+|---|---|
+| M-048 | Fantasy Depth Charts |
+| M-049 | Depth Chart Grid (merged into M-048) |
+| M-058 | Player News |
+| M-059 | News Article Page |
+| M-147 | HOME tab (merged into seasonal card) |
+| M-166 | News digests (merged into M-058 and C-05) |
+| M-189 | Depth Charts (merged into M-048) |
+| C-03 | Season, phase, week and deadlines |
+| S-13 | Seasonal phase links |

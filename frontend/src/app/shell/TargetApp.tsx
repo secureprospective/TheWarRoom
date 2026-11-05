@@ -244,7 +244,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             s.node === 'home' ? <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
               onSelect={leagues.select} /> : <section className="shell-unwired"><h4>{workspace.label}</h4>
               <p className="not-wired">Not wired · {workspace.ring}</p></section>
-          ) : (s.node === 'home' && ['seasonal-card', 'alert-tray'].includes(workspace.slug)) ||
+          ) : (s.node === 'home' && workspace.slug === 'alert-tray') ||
           (s.node === 'pulse' && workspace.slug === 'now') ? (
             <Suspense fallback={<p role="status">Opening workspace…</p>}>
               <HomePulseMount snapshot={snapshot} reading={clock} leagues={leagues.leagues}

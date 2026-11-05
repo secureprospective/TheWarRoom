@@ -15,7 +15,7 @@ it('opens a deep link, replaces on navigation, normalizes bad hashes and unsubsc
   expect(location.hash).toBe('#/trade/draft-room');
   location.hash = '#/bad/unknown';
   binding.fromHash();
-  expect(location.hash).toBe('#/home/seasonal-card');
+  expect(location.hash).toBe('#/home/alert-tray');
   c.dispatch('nav.open', { node: 'hq' });
   expect(location.hash).toBe('#/hq/contracts-and-cap');
   binding.unsubscribe();
@@ -45,17 +45,17 @@ it('normalizes removed Archive hashes', () => {
   const c = createCommands();
   const location = { hash: '#/pulse/pools-archive' };
   const binding = connectRoutes(c, location, hash => { location.hash = hash; });
-  expect(location.hash).toBe('#/home/seasonal-card');
+  expect(location.hash).toBe('#/home/alert-tray');
   binding.unsubscribe();
 });
 
 it('rejects removed workspaces while keeping the draft room and value board', () => {
   const c = createCommands();
-  for (const hash of ['#/war/market', '#/trade/counterparties', '#/trade/offers-history',
+  for (const hash of ['#/home/seasonal-card', '#/war/market', '#/trade/counterparties', '#/trade/offers-history',
     '#/pulse/archive', '#/control/data-and-sources']) {
     const location = { hash };
     const binding = connectRoutes(c, location, value => { location.hash = value; });
-    expect(location.hash).toBe('#/home/seasonal-card');
+    expect(location.hash).toBe('#/home/alert-tray');
     binding.unsubscribe();
   }
   for (const hash of ['#/trade/draft-room', '#/war/valuations-and-pool']) {

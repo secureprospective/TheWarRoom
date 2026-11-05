@@ -4,7 +4,6 @@ import type { ClockProps } from '../clock/labels';
 import { commands } from '../commands/registry';
 import { LeagueChoices, type LeagueChoice } from './leaguePicker';
 
-const SeasonalCard = lazy(() => import('./SeasonalCard'));
 const AlertTray = lazy(() => import('./AlertTray'));
 const Now = lazy(() => import('../now/Now'));
 
@@ -20,11 +19,9 @@ export default function HomePulseMount({
   selectedLeague?: string;
   onLeague?: (id: string) => void;
 }) {
-  const { node, workspace } = commands.use();
+  const { node } = commands.use();
   let screen;
-  if (node === 'home' && workspace.home === 'seasonal-card') {
-    screen = <SeasonalCard reading={reading} />;
-  } else if (node !== 'home') {
+  if (node !== 'home') {
     screen = <Now />;
   } else if (snapshot) {
     screen = <AlertTray snapshot={snapshot} reading={reading} />;

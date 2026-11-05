@@ -6,7 +6,6 @@ import fixture from '../data/fixtures/clock.json';
 import { parseClock } from '../data/parse';
 import { FixtureProvider, LiveProvider } from '../data/provider';
 import { createCommands } from '../commands/registry';
-import SeasonalCard from '../shell/SeasonalCard';
 import { CalendarPanel } from './CalendarPanel';
 import { deadlineRoute } from './deadlineRoute';
 import { localDate } from './labels';
@@ -47,20 +46,6 @@ describe('league window editing and destinations', () => {
     }
     expect(deadlineRoute('window:cut_day')).toEqual({ verb: 'calendar.summon', args: {} });
     expect(deadlineRoute('custom')).toEqual({ verb: 'calendar.summon', args: {} });
-  });
-  it('marks the current phase and makes every seasonal deadline an Act at G2', () => {
-    const html = renderToStaticMarkup(createElement(SeasonalCard, { reading: moved() }));
-    expect(html).toContain('twr-card gravity-g2');
-    expect(html.match(/aria-current="true"/g)).toHaveLength(1);
-    expect(html).toMatch(/class="act act-button on"[^>]*aria-label="Regular season · Lineup and roster"/);
-    expect(html).toContain('Offseason · Contracts and cap');
-    expect(html).toContain('Draft · Draft room');
-    expect(html).toContain('Playoffs · Race');
-    for (const label of ['lineup-w5', 'Trade deadline', 'UFA bidding', 'custom']) {
-      expect(html).toContain(`aria-label="${label}"`);
-    }
-    expect(html).toContain('League windows and their sources');
-    expect(html.match(/<button/g)).toHaveLength(9);
   });
   it('renders local dates, visible basis, commissioner marks and both calendar Acts', () => {
     const html = renderToStaticMarkup(createElement(CalendarPanel, { reading: moved() }));

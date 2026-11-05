@@ -126,7 +126,7 @@ Christopher said on 2026-10-10 that the lineup UI will be reworked later. No rep
 
 **Ordering rule.** Time changes *placement*, not chrome:
 - At T−7d an item moves up its lane.
-- At T−48h it is pinned to Home's alert tray and the seasonal card.
+- At T−48h it is pinned to Home's alert tray.
 - Within a lane, items sort by urgency (U), then consequence (G), then stable ID.
 
 **Colour slots.** Each card has exactly four: status, verdict (only beyond chance), countdown and
@@ -136,7 +136,7 @@ provenance. Colour is always paired with a text label or icon.
 
 | Node | Workspaces | Notes |
 |---|---|---|
-| Home | Seasonal card (owns the node) · alert tray | phase router |
+| Home | Alert tray | deadlines and alerts |
 | War Room | Market · Valuations and pool | Lab market, asset board, free-agent pool, bid tracker |
 | Franchise HQ | Lineup and roster · Contracts and cap · My moves | Act plans, what-if, dead cap, app-local lists |
 | Trade Floor | Trade desk · Offers history · Counterparties · Draft room | accept, reject, revoke, DOT state; draft timing inside the draft room |
@@ -283,7 +283,7 @@ Answered items retain their answers and dates. Remaining questions are owed befo
 **What worked**
 - The lineup envelope Landed twice live on 2026-10-09: the change and its revert.
 - Persistent receipts and the watcher retain Not verified plans and can land later matching evidence.
-- Home seasonal/alert surfaces, HQ lineup/roster, Classic Pulse Now and the trade desk were built.
+- Home alert surface, HQ lineup/roster, Classic Pulse Now and the trade desk were built.
 - Inspector IR/taxi drafts open the correct MFL pages. Neither intent has Landed live.
 
 **What revision 0 got wrong**

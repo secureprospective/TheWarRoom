@@ -209,7 +209,7 @@ describe('Endpoint map', () => {
       }
       expect(() => assertEndpointRoutes(endpoints, searchCandidates(executor))).not.toThrow();
       commands.dispatch('overlays.close', {});
-      commands.dispatch('nav.open', { node: 'home', workspace: 'seasonal-card' });
+      commands.dispatch('nav.open', { node: 'home', workspace: 'alert-tray' });
     } finally {
       projection.mockRestore();
     }
@@ -249,11 +249,9 @@ describe('Endpoint verbs and search', () => {
     for (const id of ['S-14', 'C-06.1'])
       expect(offered.some(r =>
         r.invocation.verb === 'endpoint.open' && r.invocation.args.id === id)).toBe(false);
-    const result = offered.find(r =>
-      r.invocation.verb === 'endpoint.open' && r.invocation.args.id === 'M-048')!;
-    expect(result.label).not.toContain('O=');
-    runResult(executor, result);
-    expect(executor.read().endpointIds).toEqual(['M-048']);
+    for (const id of ['M-048', 'M-058', 'M-059'])
+      expect(offered.some(r => r.invocation.verb === 'endpoint.open' &&
+        r.invocation.args.id === id)).toBe(false);
   });
   it('ranks endpoints after equally matching places and before players', () => {
     const result = rankResults('same', [

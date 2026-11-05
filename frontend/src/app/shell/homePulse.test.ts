@@ -8,7 +8,6 @@ import { heldLineup, heldSnapshot } from '../data/lineupTestData';
 import { parseAlerts } from '../data/parseAlerts';
 import { clockDom, TestElement } from '../clock/testDom';
 import AlertTray from './AlertTray';
-import SeasonalCard from './SeasonalCard';
 import * as registry from '../commands/registry';
 
 const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'].map((key) => ({
@@ -164,24 +163,3 @@ describe('Alert tray', () => {
   });
 });
 
-describe('Seasonal card', () => {
-  it('shows season, phase, week and the next deadline', async () => {
-    const dom = clockDom([]);
-    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-    vi.stubGlobal('document', dom.document);
-    vi.stubGlobal('window', { document: dom.document, HTMLIFrameElement: class {} });
-    const root = createRoot(dom.element);
-    roots.push(root);
-    const reading: Sourced<ClockReading> = { provenance, value: {
-      season: 2026, week: 5, phase: 'REGULAR_SEASON', windows: [], deadlines: [{
-        id: 'lineup-w5', label: 'LINEUP_LOCK', at: '2026-10-08T23:15:00Z', urgency: 'U2',
-        pinned: true, promoted: true,
-      }],
-    } };
-    await act(async () => { root.render(createElement(SeasonalCard, { reading })); });
-    const text = (dom.element as unknown as TestElement).textContent;
-    expect(text).toContain('Season 2026 · Regular season');
-    expect(text).toContain('NFL week 5');
-    expect(text).toContain('Lineup lock');
-  });
-});
