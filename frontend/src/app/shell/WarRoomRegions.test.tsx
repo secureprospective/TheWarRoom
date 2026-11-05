@@ -437,10 +437,11 @@ it('rejects invalid and over-cap typed salaries without changing the saved plan'
   const { parseBoard, parsePool } = await import('../pool/provider');
   const wire = await import('../pool/wire.testdata.json');
   const board = parseBoard(wire.default.board);
+  board.value.plans = board.value.plans.map(p => ({ ...p, franchiseId: '0025' }));
   const saved = board.value.plans[0];
   vi.spyOn(poolProvider, 'plans').mockResolvedValue(board);
   vi.spyOn(poolProvider, 'pool').mockResolvedValue(parsePool(wire.default.pool));
-  vi.spyOn(personalWire, 'read').mockResolvedValue({ entries: [], bait: emptyReport(), players: [] });
+  vi.spyOn(personalWire, 'read').mockRejectedValue(new Error('No targets'));
   vi.spyOn(controlAPI, 'settings').mockResolvedValue({ ...emptyReport(), rows: [
     { cells: ['Maximum new contract years', '3'], range: null }] });
   const revise = vi.spyOn(poolProvider, 'revise').mockImplementation(async (_id, _mine, form) =>
