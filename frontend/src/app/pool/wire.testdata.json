@@ -392,6 +392,8 @@
    ],
    "rows": [
     {
+     "string": "—",
+     "points": "—",
      "engine": null,
      "ppg": null,
      "lab": null,
@@ -442,6 +444,8 @@
      "planId": "bid-00000000000000000000000000000002"
     },
     {
+     "string": "—",
+     "points": "—",
      "engine": null,
      "ppg": null,
      "lab": null,
@@ -491,6 +495,8 @@
      "planId": ""
     },
     {
+     "string": "—",
+     "points": "—",
      "engine": null,
      "ppg": null,
      "lab": null,

@@ -58,7 +58,17 @@ func (h offersHost) OffersAssetValues(ctx context.Context, ids []playerid.Player
 	values, note := h.app.poolAssetValues(ctx, ids, at)
 	in := h.app.heldResearchInput().snapshot()
 	statuses := researchapp.PoolStrings(in)
-	if phase, err := h.Whatif.CurrentPhase(ctx); err == nil && phase == domain.PhaseOffseason {
+	offseason := false
+	if h.Whatif != nil {
+		phase, err := h.Whatif.CurrentPhase(ctx)
+		if err != nil {
+			in.Finished = nil
+			note += " Season phase is unavailable"
+		} else {
+			offseason = phase == domain.PhaseOffseason
+		}
+	}
+	if offseason {
 		end, err := strconv.Atoi(h.Rulebook.ActiveConfig().EndWeek)
 		if err == nil {
 			in.Held.Feeds = map[string]researchapp.Feed[[]researchfeeds.Feed]{}
