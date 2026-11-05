@@ -104,8 +104,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   links only; click nothing on owner pages, and keep owner-only captures out of git.
 - **MFL player IDs are strings.** IDs under 1000 keep their leading zeros. `playerid.New` is
   the only constructor; all SQLite id columns are TEXT.
-- **MFL wins (R2).** A refresh overwrites the app's league and ledger state. Moves made in the
-  app are what-if plans until made on MFL.
+- **Native ledger wins (2026-11-05 client/server ruling 5a; supersedes core-plan R2).** MFL is
+  import/reference only; solo owners and commissioners get a review banner for MFL changes.
 - **Confidence scores are internal engine flags.** Never surface them in the UI.
 - **No scoring leak into the scouting prior.** The prior (draft capital, combine, college,
   film, RAS, breakout) must not reference fantasy points, projected volume, MFL scoring config

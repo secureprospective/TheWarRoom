@@ -1,3 +1,5 @@
+> Superseded by [the governing client/server plan](../plans/CLIENT-SERVER-PLAN-2026-11-05.md), incorporating Christopher's rulings and all adopted Tom changes.
+
 # Client/server recommendation — 2026-11-05
 
 **Recommendation: one always-on authoritative Go server; Wails desktop, PWA and CLI/MCP are clients. Do not embed a second server in the desktop.** Build this by completing the hosted path already present, not by replacing the backend or inventing a sync platform.
