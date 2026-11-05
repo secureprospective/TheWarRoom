@@ -62,14 +62,26 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
   };
   const noResearch = 'Player research requires the desktop app';
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  await apply('pulse', async () => { out.pulse = await readNativePulse(league, mine, port); });
-  const season = out.pulse?.season;
-  const week = out.pulse?.week;
+  // Standings and odds can wait on season scoring. They must not hold unrelated Home tiles hostage.
+  let ready!: () => void;
+  const weekReady = new Promise<void>(resolve => { ready = resolve; });
+  const pulse = apply('pulse', async () => {
+    out.pulse = await readNativePulse(league, mine, port, reading => {
+      out.pulse = reading;
+      out.at.pulse = new Date().toISOString();
+      send();
+      if (reading.week !== undefined) ready();
+    });
+  }).finally(ready);
   await Promise.all([
+    pulse,
     apply('results', async () => {
+      await weekReady;
+      const season = out.pulse?.season, week = out.pulse?.week;
       if (season === undefined || week === undefined) throw new Error('No league week is open');
       out.results = await readPulseWeekResults(league, season, week, port);
     }).then(() => apply('matchup', async () => {
+      const season = out.pulse?.season, week = out.pulse?.week;
       const g = out.results?.games.find(x => x.home === mine || x.away === mine);
       if (!g || season === undefined || week === undefined) throw new Error('No game this week');
       const starters = (f: string) => out.results?.scores.find(s => s.franchise === f)?.starters
@@ -101,6 +113,8 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
         trend: 'topAdds', depth: 'team', injuries: 'all' });
     }),
     apply('calendar', async () => {
+      await weekReady;
+      const season = out.pulse?.season, week = out.pulse?.week;
       if (season === undefined) throw new Error('The league season is not known');
       const snapshot = { league: { value: { season } } } as unknown as Snapshot;
       out.calendar = await readWarRoomCalendar({ snapshot, mine, week: week ?? 0,

@@ -464,3 +464,24 @@ it('re-reads a good Home when the season data changes (H2)', async () => {
   for (let i = 0; i < 20; i++) await act(async () => { await Promise.resolve(); });
   expect(p.mock.calls.filter(([r]) => r.command === 'standings.read').length).toBe(before + 1);
 });
+
+
+it('loads independent tiles and the week while season scoring is still pending', async () => {
+  const base = port({ 'commish.jobs.read': { ...jobs, league: LEAGUE } });
+  const slow: HostedPort = request => request.command === 'odds.read'
+    ? new Promise(() => {}) : base(request);
+  await mount(slow);
+  expect(q('section.now')!.textContent).not.toContain('Reading the league');
+  expect(tile('wire').textContent).toContain('Released a player');
+  expect(tile('mu').textContent).toContain('Held team 1');
+  expect(base.mock.calls.some(([r]) => r.command === 'results.read')).toBe(true);
+});
+
+it('does not wait for the directory before showing independent Home tiles', async () => {
+  const base = port();
+  const slow: HostedPort = request => request.command === 'native.directory.read'
+    ? new Promise(() => {}) : base(request);
+  await mount(slow);
+  expect(tile('wire').textContent).toContain('Released a player');
+  expect(q('section.now')!.textContent).toContain('Reading the league');
+});
