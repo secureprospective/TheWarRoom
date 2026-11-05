@@ -1,20 +1,16 @@
 # Handoff
 
 ## Baton
-Bee → reviewer, 2026-11-05, `session/trade-floor-cut` (local only).
+Bee → head brain/operator, 2026-11-05, `session/market-rework` (local).
 
 ## Where it stands
-Trade Floor slices remain intact. Follow-up A: `32761874` removes Home's all-Pulse-before-any-tile dependency; existing progressive Pulse publications release week-dependent reads, other sources start immediately. Reproduced the empty Legacy Home on pre-branch `4e871c35`; MFL reference Home already loaded. No bisect needed.
-
-Follow-up B: app and mirror mount owners retain one hidden War Room after first visit, preserving existing `useContractRead` state and change subscriptions. League/franchise changes dispose it. Stable lazy component identity avoids the extra lazy-to-loaded remount. No second cache; shared query audited, Pool remains G1 and ineligible for that held-read cache. HQ/Home/Pulse still remount and reread.
-
-TypeScript and plain `make build` pass. Targeted: 7 files, 89 tests pass. Final full Vitest: 1,826 passed; exactly four inherited failures (assets, controls readability, personal, appLeaguePulse). Live copied-profile Home sources visible; three Legacy War Room revisit samples: before 966/819/830 ms, final 194/112/114 ms, including click/capture overhead. External screenshots/logs retained. Own GUI stopped and disposable profile deleted before close; protected PID untouched.
+Trace only, based on `23eb29e7`. Findings: `docs/audit/MARKET-TRACE-2026-11-05.md`. Depth, NFL injuries/IR, NFL FA team codes and season points already exist. No authoritative real NFL practice-squad input found. Stopped under the brief's “if in doubt” rule before mocks/code; no collector added. Legacy native Market reads limited recorded lots/waiver windows, not the complete free-agent directory; native private targets are unwired. Generic empty rendering hides the cause. No runtime fix or fresh reproduction claimed.
 
 ## Next move
-Review the retained-view lifetime (including open-dialog navigation and hidden-view refresh load). Verify complete standings/odds when the slow season scorer finishes; this run proves unrelated Home tiles no longer wait for it, not that scoring itself is fast.
+Resolve existing NFL practice-squad source versus permission for explicit unknown status; confirm active-league/offseason PTS source. Then resume mock, columns, years, typed amount as separate commits, preserving existing data owners and native ledger scope.
 
 ## Blocked on
-Pull unavailable: configured bundle remote missing. No merge/push authorized. No MFL actions performed. Long soak, hosted-account navigation and open-dialog navigation not exercised.
+Status coverage and PTS league scope decision. Pull failed: configured bundle remote unavailable. No push possible. No build/tests/live checks run for this documentation-only stop. Supplied soak screenshot inspected; no GUI/profile created or protected paths/PIDs touched.
 
 ## Tried and rejected
-No parallel cache or registry-policy bypass for G1 Pool reads. No guessed standings, timeout-based success, MFL write, or hook bypass.
+No inferred PS from missing depth, no fantasy taxi/IR masquerading as NFL status, no new collector or parallel reader. Do not extend existing local-plan/native-ledger mismatch without resolving ownership.
