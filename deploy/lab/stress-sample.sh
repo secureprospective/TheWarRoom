@@ -4,8 +4,16 @@
 # Survives server restarts (re-finds the pid). Usage: stress-sample.sh > /root/sample.csv &
 db=${1:-/var/lib/twr/server.db}
 echo t,pid,rss_anon_kb,rss_file_kb,cg_current,cg_peak,db_b,wal_b,fds,tcp_est
+# The server runs inside bwrap: find it by /proc exe + argv[1], not pgrep (whose -f pattern and PATH
+# differ between busybox and the pct exec environment, which left the pid column empty on CT 253).
+server_pid() {
+  for d in /proc/[0-9]*; do
+    [ "$(readlink "$d/exe" 2>/dev/null)" = /usr/local/bin/twr-server ] || continue
+    [ "$(tr '\0' ' ' < "$d/cmdline" 2>/dev/null | cut -d' ' -f2)" = hosted ] && { echo "${d#/proc/}"; return; }
+  done
+}
 while :; do
-  pid=$(pgrep -f "^/usr/local/bin/twr-server hosted" | head -1)
+  pid=$(server_pid)
   anon=; file=; fds=
   if [ -n "$pid" ]; then
     anon=$(awk '/^RssAnon/{print $2}' /proc/$pid/status 2>/dev/null)

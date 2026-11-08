@@ -6,6 +6,9 @@
   stress.py probe   BASE STATE            one owner: try every screen read once; print status per screen
   stress.py run     BASE STATE OUTDIR     every device: screen reads, confirmed lineup clicks, and an
                                           invalidation stream; phase from OUTDIR/phase (steady|burst|pause|stop)
+  stress.py hammer  BASE STATE SCREEN SECS  one device, back-to-back reads of one screen (for a profile)
+  stress.py digest  BASE STATE OUTFILE    sha256 + size of every screen for owners 1 and 2 (lab parity diff;
+                                          waivers at a fixed instant); bodies are never written
   stress.py reconcile OUTDIR CHECKFILE    every confirmed action is in the ledger once, at its receipt's
                                           revision; CHECKFILE is stresscheck's output
 
@@ -166,6 +169,46 @@ def probe(base, statefile):
             s, b, ms, _ = wf(c, bearer, name, "read", args(league, o["franchise"], season))
         why = "" if s == 200 else b.decode(errors="replace").strip()[:90]
         print(f"{name:24s} {s} {len(b):8d} B {ms:7.0f} ms {why}", flush=True)
+
+
+def read_screen(c, bearer, league, fid, season, name, args):
+    if args is None:
+        return c.post("/v1/native/ledger", {"protocol": 1, "league": league}, bearer)
+    return wf(c, bearer, name, "read", args(league, fid, season))
+
+
+def hammer(base, statefile, screen, secs):
+    state = json.load(open(statefile))
+    league, o = state["league"], state["owners"][0]
+    c, bearer = Client(base), o["bearers"][0]
+    season, _ = season_of(c, bearer, league)
+    args = dict(SCREENS)[screen]
+    lat, size, codes, end = [], 0, {}, time.time() + secs
+    while time.time() < end:
+        s, b, ms, _ = read_screen(c, bearer, league, o["franchise"], season, screen, args)
+        lat.append(ms)
+        size = len(b)
+        codes[s] = codes.get(s, 0) + 1
+    lat.sort()
+    print(json.dumps({"screen": screen, "n": len(lat), "p50": round(lat[len(lat) // 2]), "p95": round(lat[int(len(lat) * .95)]),
+                      "bytes": size, "codes": codes}), flush=True)
+
+
+FIXED_AT = "2026-11-08T12:00:00Z"
+
+
+def digest(base, statefile, outfile):
+    state = json.load(open(statefile))
+    league, out = state["league"], {}
+    for o in state["owners"][:2]:
+        c, bearer = Client(base), o["bearers"][0]
+        season, _ = season_of(c, bearer, league)
+        for name, args in SCREENS:
+            if name == "waivers.read":
+                args = lambda L, f, s: {"league": L, "franchise": f, "at": FIXED_AT}
+            s, b, _, _ = read_screen(c, bearer, league, o["franchise"], season, name, args)
+            out[f"{o['franchise']}/{name}"] = {"status": s, "bytes": len(b), "sha256": hashlib.sha256(b).hexdigest()}
+    json.dump(out, open(outfile, "w"), indent=1, sort_keys=True)
 
 
 class Run:
@@ -402,6 +445,10 @@ if __name__ == "__main__":
         onboard(sys.argv[2], sys.argv[3], sys.argv[4])
     elif cmd == "probe":
         probe(sys.argv[2], sys.argv[3])
+    elif cmd == "hammer":
+        hammer(sys.argv[2], sys.argv[3], sys.argv[4], float(sys.argv[5]))
+    elif cmd == "digest":
+        digest(sys.argv[2], sys.argv[3], sys.argv[4])
     elif cmd == "reconcile":
         reconcile(sys.argv[2], sys.argv[3])
     elif cmd == "run":
