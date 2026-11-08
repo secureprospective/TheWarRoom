@@ -26,3 +26,4 @@ TheWarRoom is AI first and CLI first, with a GUI overlay for people who aren't t
 
 Research behind the social builds: `docs/research/social-moments-2026-11-08.md`.
 Tiny specialised models (prospecting): `docs/research/tiny-models-2026-11-08.md`.
+Session summary of this direction: `docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md`.

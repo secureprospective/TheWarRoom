@@ -40,3 +40,42 @@ Licences conflict across secondary sources (FunctionGemma: Gemma Terms vs claims
 - https://huggingface.co/ibm-granite/granite-guardian-hap-125m · https://huggingface.co/AssistantsLab/Tiny-Toxic-Detector · https://arxiv.org/pdf/2411.17713
 - https://pkg.go.dev/github.com/knights-analytics/hugot
 - https://huggingface.co/nvidia/kokoro-82M-onnx-opt
+
+## Catalog: who makes tiny models (second pass, 11-08)
+
+Sizes are parameters; disk is roughly 0.5–1 byte per parameter when quantized. Licences are **as found** in secondary sources: confirm on the official model card before use. "⚠" means the licence restricts or conflicts.
+
+### General small models (fine-tune or prompt for a task)
+
+| Lab / project | Models under ~1B | Licence | Note |
+|---|---|---|---|
+| Alibaba Qwen | Qwen3-0.6B, Qwen3.5-0.8B (multimodal), Qwen2.5-0.5B | Apache-2.0 | Most-downloaded sub-1B family (ATOM report, Q2 2026) |
+| Google Gemma | Gemma 3 270M, Gemma 3 1B, Gemma 4 edge (2B+) | Gemma Terms ⚠ (Gemma 4: Apache-2.0) | 270M is the base for FunctionGemma |
+| IBM Granite | Granite 4.0 Nano 350M + 1B (hybrid-SSM and transformer, 8 models) | Apache-2.0 | Built for local/browser use |
+| Hugging Face SmolLM | SmolLM2 135M / 360M / 1.7B, SmolLM3 3B | Apache-2.0 | Fully open training recipe |
+| Liquid AI | LFM2.5 230M / 350M, LFM2 1.2B; "Liquid Nanos" task models | LFM Open v1.0 ⚠ (free under $10M revenue) | Most likely the company Christopher remembered |
+| Meta | Llama 3.2 1B; MobileLLM-R1 950M (reasoning) | Llama licence ⚠; MobileLLM licence conflicts (Apache vs FAIR non-commercial) ⚠ | |
+| Pleias | Pleias-RAG 350M / 1B (answers with inline citations, GGUF for CPU) | check card | Good for "answer from our rules with the source" |
+| Others just above 1B | Mistral Ministral 3B (Apache-2.0), Microsoft Phi-4-mini 3.8B, Cohere Tiny Aya 3.35B, NVIDIA Nemotron Nano, Apple OpenELM 270M–3B, TinyLlama 1.1B | varies | Over the <1 GB line once quantized, except OpenELM-270M |
+
+### Task-specialised tiny models
+
+| Job | Model (maker) | Size | Licence |
+|---|---|---|---|
+| Function / tool calling | FunctionGemma 270M (Google); LFM2.5-230M/350M (Liquid); xLAM-2 1B (Salesforce, unverified) | 230M–1B | Gemma Terms ⚠ · LFM ⚠ · check |
+| Structured extraction | LFM2.5-350M, LFM2.5-VL-450M-Extract (Liquid) | 350–450M | LFM ⚠ |
+| Named things in text (players, teams, dates), zero-shot | GLiNER small v2.1 / v2.5 (urchade / gliner-community) | small (DeBERTa-v3-small backbone) | Apache-2.0 (v1 small was CC-BY-NC ⚠) |
+| Embeddings / search | EmbeddingGemma 308M (Google); all-MiniLM-L6-v2 (sentence-transformers, ~22M) | <200 MB RAM | Gemma Terms ⚠ · Apache-2.0 |
+| Routing (which model or tool gets the request) | Arch-Router 1.5B (Katanemo) | 1.5B | custom research licence ⚠ |
+| Toxicity / chat moderation | Granite Guardian HAP 38M / 125M (IBM); Tiny-Toxic-Detector 2M; bert-tiny-toxicity 4M (ONNX); GLiGuard (Fastino) | 2M–125M | Apache-2.0 likely · check |
+| Safety / prompt-injection guard | Llama Guard 3-1B-INT4 (440 MB); Prompt Guard 2 22M (Meta) | 22M–1B | Llama licence ⚠ |
+| Text to speech | Kokoro 82M | ~327 MB | Apache-2.0 |
+| Speech to text | Moonshine tiny (Useful Sensors); Whisper tiny/base (OpenAI) | 27M–74M | not verified this pass |
+| Vision (screenshots, images) | Moondream 0.5B; LFM2.5-VL-450M | 0.5B | check |
+
+### Platforms for making our own tiny model
+- **Distil Labs:** distils a task model from about 50 examples or production traces (vendor claims).
+- **Unsloth / Hugging Face TRL:** fine-tune any of the above (FunctionGemma docs use these).
+- **Runtimes:** llama.cpp / Ollama (GGUF); ONNX Runtime; **hugot** (Go, Apache-2.0, pure-Go backend) for in-server classifiers and embeddings.
+
+Extra sources: https://arxiv.org/pdf/2604.07190 · https://www.bentoml.com/blog/the-best-open-source-small-language-models · https://huggingface.co/blog/ibm-granite/granite-4-nano · https://osai-index.eu/model/smollm · https://arxiv.org/pdf/2504.18225 · https://github.com/urchade/GLiNER · https://huggingface.co/katanemo/Arch-Router-1.5B · https://arxiv.org/abs/2509.24945
