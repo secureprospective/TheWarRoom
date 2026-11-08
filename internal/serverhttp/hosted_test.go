@@ -44,6 +44,8 @@ type hostedFixture struct {
 	now        time.Time
 	worker     *leagueservice.DueWorker
 	skew       *atomic.Int64
+	// commissioner caches one signed-in bearer and recent-auth proof (contract_parity_test.go).
+	commissioner [2]string
 }
 
 func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
