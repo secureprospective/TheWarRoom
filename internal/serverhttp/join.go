@@ -33,11 +33,13 @@ type JoinFranchisesResponse struct {
 	Franchises []accounts.JoinFranchise `json:"franchises"`
 }
 
-// JoinClaimResponse names the new account and its franchise; sign in with /v1/auth/login next.
+// JoinClaimResponse names the new account, its franchise and the one-time recovery codes; sign in
+// with /v1/auth/login next. The codes are shown once and the server keeps only their digests.
 type JoinClaimResponse struct {
-	Protocol  int              `json:"protocol"`
-	Account   accounts.Account `json:"account"`
-	Franchise string           `json:"franchise"`
+	Protocol      int              `json:"protocol"`
+	Account       accounts.Account `json:"account"`
+	Franchise     string           `json:"franchise"`
+	RecoveryCodes []string         `json:"recoveryCodes,omitempty"`
 }
 
 func decodeJoin(w http.ResponseWriter, r *http.Request) (RawJoinRequest, bool) {
@@ -106,7 +108,16 @@ func (h Hosted) join(w http.ResponseWriter, r *http.Request) {
 		joinFailure(w, err)
 		return
 	}
-	writeJoin(w, http.StatusCreated, JoinClaimResponse{Protocol: 1, Account: account, Franchise: raw.Claim.Franchise})
+	response := JoinClaimResponse{Protocol: 1, Account: account, Franchise: raw.Claim.Franchise}
+	if h.Recovery != nil {
+		codes, err := h.Recovery.IssueCodes(r.Context(), account)
+		if err != nil {
+			http.Error(w, "your account was created, but recovery codes could not be issued; sign in and print a new set", http.StatusServiceUnavailable)
+			return
+		}
+		response.RecoveryCodes = codes.Codes[:]
+	}
+	writeJoin(w, http.StatusCreated, response)
 }
 
 func writeJoin[T JoinFranchisesResponse | JoinClaimResponse](w http.ResponseWriter, status int, body T) {

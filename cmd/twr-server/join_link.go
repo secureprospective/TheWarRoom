@@ -77,8 +77,8 @@ func joinAction(ctx context.Context, service *accounts.JoinService, league strin
 		if err != nil {
 			return fmt.Errorf("new join link: %w", err)
 		}
-		_, err = fmt.Fprintf(output, "Join link for %s (private: anyone holding it can claim an open franchise; the previous link no longer works):\n  league %s\n  code   %s\nOwners POST it to %s to see open franchises, then to %s with their pick, username and password.\n",
-			league, league, code.Code, serverhttp.JoinFranchisesPath, serverhttp.JoinClaimPath)
+		_, err = fmt.Fprintf(output, "Join link for %s (private: anyone holding it can claim an open franchise; the previous link no longer works):\n  league %s\n  code   %s\n  open   %s\nOwners can use the link, or POST it to %s to see open franchises, then to %s with their pick, username and password.\n",
+			league, league, code.Code, serverhttp.JoinPageLink(league, code.Code, ""), serverhttp.JoinFranchisesPath, serverhttp.JoinClaimPath)
 		if err != nil {
 			return fmt.Errorf("print join link (the new link is already live): %w", err)
 		}

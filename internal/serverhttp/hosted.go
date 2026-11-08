@@ -44,6 +44,7 @@ type Hosted struct {
 	Sessions       *accounts.SessionService
 	TOTP           *accounts.TOTPService
 	Enrollment     *accounts.EnrollmentService
+	Passwords      *accounts.Service
 	Join           *accounts.JoinService
 	Recovery       *accounts.RecoveryService
 	Worker         *leagueservice.DueWorker
@@ -64,7 +65,7 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "account service unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	if r.TLS == nil || r.Header.Get("Origin") != "" || r.URL.RawQuery != "" {
+	if r.TLS == nil || !originAdmissible(r) || r.URL.RawQuery != "" {
 		http.Error(w, "request refused", http.StatusBadRequest)
 		return
 	}
@@ -79,6 +80,12 @@ func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
 		h.printRecoveryCodes(w, r)
 	case EnrollmentPath:
 		EnrollmentHandler(h.Enrollment).ServeHTTP(w, r)
+	case PasswordPagePath:
+		h.passwordPage(w, r)
+	case PasswordChangePath:
+		h.changePassword(w, r)
+	case JoinPagePath:
+		h.joinPage(w, r)
 	case JoinFranchisesPath, JoinClaimPath:
 		h.join(w, r)
 	case TOTPBeginPath, TOTPConfirmPath, TOTPStepUpPath:
@@ -389,7 +396,7 @@ func admitLeagueAccess(access commissioner.Access, policy governance.State, prin
 	return nil
 }
 
-func decodeHosted[T RawRecoveryRequest | RawRecoveryCodesRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator | RawAgentTokenRequest](w http.ResponseWriter, r *http.Request, raw *T) error {
+func decodeHosted[T RawRecoveryRequest | RawRecoveryCodesRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator | RawAgentTokenRequest | RawPasswordChangeRequest](w http.ResponseWriter, r *http.Request, raw *T) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -414,7 +421,7 @@ func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
 type hostedBody interface {
-	RecoveryResponse | RecoveryCodesResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse | WorkflowResponse
+	RecoveryResponse | RecoveryCodesResponse | PasswordChangeResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse | WorkflowResponse
 }
 
 func writeHosted[T hostedBody](w http.ResponseWriter, body T) {
@@ -490,7 +497,7 @@ func hostedMember(policy governance.State, principal governance.Principal, recor
 
 func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.TLS != nil && r.Header.Get("Origin") == "" && r.URL.RawQuery == "" && h.WriteAdmission != nil {
+		if r.Method == http.MethodPost && r.TLS != nil && originAdmissible(r) && r.URL.RawQuery == "" && h.WriteAdmission != nil {
 			if err := h.WriteAdmission(); err != nil {
 				http.Error(w, err.Error(), http.StatusServiceUnavailable)
 				return

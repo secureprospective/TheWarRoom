@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join the League · The War Room</title>
+<style nonce="__CSP_NONCE__">
+  :root{--bg:#0f1216;--panel:#171c22;--line:#2a323c;--text:#e8ecf0;--dim:#8b96a3;--edge:#f2b632;--ok:#3fbf7f;--taken:#3a424c}
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:flex;justify-content:center;padding:28px 16px}
+  main{width:100%;max-width:880px}
+  header{display:flex;align-items:baseline;justify-content:space-between;border-bottom:3px solid var(--edge);padding-bottom:12px;margin-bottom:20px}
+  h1{font-size:26px;letter-spacing:.5px}
+  .league{color:var(--dim);font-size:14px}
+  .steps{display:flex;gap:8px;margin-bottom:18px;font-size:13px;color:var(--dim);flex-wrap:wrap}
+  .steps span{padding:4px 10px;border:1px solid var(--line);border-radius:3px}
+  .steps .on{border-color:var(--edge);color:var(--text)}
+  h2{font-size:18px;margin-bottom:6px}
+  p.help{color:var(--dim);font-size:14px;margin-bottom:14px}
+  .side{font-size:12px;letter-spacing:1.5px;color:var(--dim);margin:14px 0 8px;text-transform:uppercase}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+  button.team{all:unset;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:3px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;transition:border-color .08s}
+  button.team:hover,button.team:focus-visible{border-color:var(--edge);border-left-color:var(--edge)}
+  button.team.picked{border-color:var(--edge);border-left-color:var(--edge);background:#211d12}
+  button.team[disabled]{cursor:not-allowed;color:#6b747e;background:#13171c;border-left-color:var(--taken)}
+  .tag{font-size:11px;color:var(--dim);white-space:nowrap}
+  .team[disabled] .tag{color:#59626c}
+  form{margin-top:22px;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--edge);border-radius:3px;padding:18px;display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}
+  label{font-size:13px;color:var(--dim);display:grid;gap:5px}
+  input{background:var(--bg);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:3px;font:inherit}
+  input:focus{outline:none;border-color:var(--edge)}
+  .back{all:unset;cursor:pointer;color:var(--dim);font-size:14px;padding:8px 0}
+  section{display:grid;gap:4px}
+  section .go{justify-self:start;margin-top:8px}
+  .go{background:var(--edge);color:#111;border:0;padding:11px 20px;font-weight:700;border-radius:3px;cursor:pointer;font:inherit}
+  .go[disabled]{opacity:.5;cursor:not-allowed}
+  .picked-line{grid-column:1/-1;font-size:14px}
+  .picked-line b{color:var(--edge)}
+  .fine{grid-column:1/-1;font-size:12px;color:var(--dim)}
+  .error{color:#ff8f8f;font-size:14px;min-height:1.2em}
+  .codes{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin:12px 0}
+  .codes code{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:9px 10px;font-size:15px;letter-spacing:.5px;user-select:all}
+  @media (max-width:600px){form{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>THE WAR ROOM</h1>
+    <span class="league">Join your league</span>
+  </header>
+  <div class="steps"><span id="s1" class="on">1 · Your team</span><span id="s2">2 · Password</span><span id="s3">3 · Done</span></div>
+
+  <section id="v0">
+    <h2>You're invited</h2>
+    <p class="help" id="welcomeHelp">This is your league's new home. It takes about a minute: pick your team, set a password, done. No app to install and no email needed.</p>
+    <p class="error" id="welcomeError"></p>
+    <button class="go" id="start">Get started</button>
+  </section>
+
+  <section id="v1" hidden>
+    <h2>Which team is yours?</h2>
+    <p class="help">Tap your team. Grey teams are already claimed. Picked the wrong one by mistake? Tell the commissioner and they'll free it up.</p>
+    <p class="error" id="pickError"></p>
+    <div class="side" id="sideA">AFC</div>
+    <div class="grid" id="afc"></div>
+    <div class="side" id="sideB">NFC</div>
+    <div class="grid" id="nfc"></div>
+  </section>
+
+  <section id="v2" hidden>
+    <h2>Set your password</h2>
+    <p class="help">You'll use this to sign in from any device.</p>
+    <form id="claimForm">
+      <div class="picked-line">Claiming: <b id="pick">your team</b></div>
+      <label>Sign-in name (what the league sees)<input id="username" autocomplete="username" minlength="3" maxlength="64" required placeholder="e.g. mike"></label>
+      <label>Password (at least 10 characters)<input id="password" type="password" autocomplete="new-password" minlength="10" required placeholder="••••••••••"></label>
+      <button class="go" id="claim">Claim my team</button>
+      <button type="button" class="back" id="back">Back to teams</button>
+      <div class="fine">No email needed. You can add an authenticator code later in Settings if you want one.</div>
+      <p class="error" id="claimError"></p>
+    </form>
+  </section>
+
+  <section id="v3" hidden>
+    <h2>You're in, <span id="doneTeam">your team</span> is yours.</h2>
+    <p class="help">Next time, just sign in. Tip: add this page to your home screen so it opens like an app.</p>
+    <div id="codesWrap" hidden>
+      <h2>Save these recovery codes</h2>
+      <p class="help">Each code works once if you forget your password. Keep them somewhere safe and offline. They will not be shown again.</p>
+      <ul class="codes" id="codes"></ul>
+    </div>
+    <p class="error" id="doneError"></p>
+  </section>
+</main>
+<script nonce="__CSP_NONCE__">
+  (function () {
+    "use strict";
+    var params = new URLSearchParams(window.location.hash.slice(1));
+    var league = params.get("league") || "";
+    var code = params.get("code") || "";
+    var preselect = params.get("franchise") || "";
+    var picked = null, pickedName = "";
+    function $(id) { return document.getElementById(id); }
+    function show(step) {
+      for (var i = 0; i < 4; i++) $("v" + i).hidden = i !== step;
+      ["s1", "s2", "s3"].forEach(function (id, i) {
+        $(id).classList.toggle("on", step >= i + 1 || (step === 0 && i === 0));
+      });
+      window.scrollTo(0, 0);
+    }
+    function error(id, text) { $(id).textContent = text || ""; }
+    function api(path, body) {
+      return fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }).then(function (response) {
+        return response.text().then(function (text) {
+          if (!response.ok) throw new Error((text || "").trim() || "Something went wrong. Try again.");
+          return text ? JSON.parse(text) : {};
+        });
+      });
+    }
+    function pick(franchise, name) {
+      picked = franchise;
+      pickedName = name;
+      $("pick").textContent = name;
+      var buttons = document.querySelectorAll("button.team");
+      for (var i = 0; i < buttons.length; i++) buttons[i].classList.toggle("picked", buttons[i].dataset.id === franchise);
+      error("pickError", "");
+      show(2);
+    }
+    function teamButton(franchise) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "team";
+      button.dataset.id = franchise.id;
+      var name = document.createElement("span");
+      name.textContent = franchise.name || franchise.id;
+      var tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = franchise.taken ? "claimed" : "open";
+      button.appendChild(name);
+      button.appendChild(tag);
+      button.disabled = !!franchise.taken;
+      button.addEventListener("click", function () { pick(franchise.id, franchise.name || franchise.id); });
+      return button;
+    }
+    function render(franchises) {
+      var afc = $("afc"), nfc = $("nfc");
+      afc.textContent = ""; nfc.textContent = "";
+      var half = Math.ceil(franchises.length / 2);
+      franchises.forEach(function (franchise, index) {
+        (index < half ? afc : nfc).appendChild(teamButton(franchise));
+      });
+      if (preselect) {
+        var chosen = franchises.find(function (franchise) { return franchise.id === preselect; });
+        if (chosen && !chosen.taken) pick(chosen.id, chosen.name || chosen.id);
+      }
+    }
+    function load() {
+      if (!league || !code) {
+        error("welcomeError", "This link is incomplete. Ask your commissioner for the current join link.");
+        $("start").disabled = true;
+        return;
+      }
+      $("start").disabled = true;
+      error("welcomeError", "");
+      api("/v1/auth/join/franchises", { protocol: 1, join: { league: league, code: code } })
+        .then(function (data) {
+          render(data.franchises || []);
+          show(1);
+        })
+        .catch(function (err) {
+          error("welcomeError", err.message);
+        })
+        .finally(function () { $("start").disabled = false; });
+    }
+    $("start").addEventListener("click", load);
+    $("back").addEventListener("click", function () { error("claimError", ""); show(1); });
+    $("claimForm").addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!picked) { error("claimError", "Pick a team first."); show(1); return; }
+      error("claimError", "");
+      $("claim").disabled = true;
+      api("/v1/auth/join/claim", {
+        protocol: 1,
+        claim: {
+          league: league, code: code, franchise: picked,
+          username: $("username").value, password: $("password").value
+        }
+      }).then(function (data) {
+        $("doneTeam").textContent = pickedName;
+        var codes = data.recoveryCodes || [];
+        if (codes.length) {
+          var list = $("codes");
+          list.textContent = "";
+          codes.forEach(function (value) {
+            var item = document.createElement("li");
+            var text = document.createElement("code");
+            text.textContent = value;
+            item.appendChild(text);
+            list.appendChild(item);
+          });
+          $("codesWrap").hidden = false;
+        }
+        show(3);
+      }).catch(function (err) {
+        error("claimError", err.message);
+      }).finally(function () { $("claim").disabled = false; });
+    });
+    show(0);
+  }());
+</script>
+</body>
+</html>

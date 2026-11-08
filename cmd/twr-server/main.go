@@ -48,6 +48,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runRecovery(ctx, args, os.Stdin, output)
 	case "join-link":
 		return true, runJoinLink(ctx, args, os.Stdin, output)
+	case "reset-password":
+		return true, runResetPassword(ctx, args, os.Stdin, output)
 	case "league-load":
 		return true, runLeagueLoad(ctx, args, os.Stdin, output)
 	case "stand-up":
