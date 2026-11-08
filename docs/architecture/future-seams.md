@@ -25,3 +25,4 @@ TheWarRoom is AI first and CLI first, with a GUI overlay for people who aren't t
 | `storage` | `internal/db/migrations.go` | A feature's own tables (moments, cards, chat, invites) | New tables come in as new migration steps. A feature never alters the league, roster or contract tables to hold its data. Backups and the snapshot pipeline cover the new tables automatically. |
 
 Research behind the social builds: `docs/research/social-moments-2026-11-08.md`.
+Tiny specialised models (prospecting): `docs/research/tiny-models-2026-11-08.md`.
