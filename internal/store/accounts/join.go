@@ -69,3 +69,20 @@ func (s *Store) JoinLink(ctx context.Context, league string) (string, governance
 	}
 	return digest, governance.Principal(issuer), nil
 }
+
+// SignInName resolves an account principal's sign-in name for the join listing. A seat held by a
+// non-account identity, or an unknown account, has no sign-in name to show.
+func (s *Store) SignInName(ctx context.Context, accountID string) (string, error) {
+	if _, err := governance.AccountPrincipal(accountID); err != nil {
+		return "", identity.ErrNotFound
+	}
+	var username string
+	err := s.pools.Read().QueryRowContext(ctx, `SELECT username FROM accounts WHERE id = ?`, accountID).Scan(&username)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", identity.ErrNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("accounts: read sign-in name: %w", err)
+	}
+	return username, nil
+}

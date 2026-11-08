@@ -50,7 +50,7 @@ func (j JoinSeats) Franchises(ctx context.Context, league string) ([]accounts.Jo
 		if name == "" {
 			name, abbreviation = named[id].Name, named[id].Abbreviation
 		}
-		out = append(out, accounts.JoinFranchise{ID: id, Name: name, Abbreviation: abbreviation, Taken: f.Seat != ""})
+		out = append(out, accounts.JoinFranchise{ID: id, Name: name, Abbreviation: abbreviation, Taken: f.Seat != "", Seat: string(f.Seat)})
 	}
 	return out, nil
 }

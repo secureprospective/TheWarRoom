@@ -28,6 +28,7 @@ type JoinRepository interface {
 	RevokeJoinLink(ctx context.Context, league string) error
 	JoinLink(ctx context.Context, league string) (string, governance.Principal, error)
 	Insert(ctx context.Context, credential Credential, onlyIfEmpty bool) error
+	SignInName(ctx context.Context, accountID string) (string, error)
 }
 
 // JoinFranchise is what a holder of the join link sees of one franchise before claiming.
@@ -36,6 +37,9 @@ type JoinFranchise struct {
 	Name         string `json:"name"`
 	Abbreviation string `json:"abbreviation,omitempty"`
 	Taken        bool   `json:"taken"`
+	ClaimedBy    string `json:"claimedBy"`
+	// Seat is the owner's principal, resolved into ClaimedBy and never sent to the browser.
+	Seat string `json:"-"`
 }
 
 // JoinSeats is the league ledger as the join link uses it. Seat and Release record league events
@@ -170,6 +174,17 @@ func (s *JoinService) Franchises(ctx context.Context, raw RawJoin) ([]JoinFranch
 	list, err := s.seats.Franchises(ctx, raw.League)
 	if err != nil {
 		return nil, fmt.Errorf("read franchises: %w", err)
+	}
+	for i := range list {
+		id := strings.TrimPrefix(list[i].Seat, "acct.")
+		if id == "" || id == list[i].Seat {
+			continue
+		}
+		name, err := s.store.SignInName(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("read claimant sign-in name: %w", err)
+		}
+		list[i].ClaimedBy = name
 	}
 	return list, nil
 }

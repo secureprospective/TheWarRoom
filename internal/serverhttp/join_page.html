@@ -140,7 +140,11 @@
       name.textContent = franchise.name || franchise.id;
       var tag = document.createElement("span");
       tag.className = "tag";
-      tag.textContent = franchise.taken ? "claimed" : "open";
+      if (franchise.taken) {
+        tag.textContent = franchise.claimedBy ? "claimed by " + franchise.claimedBy : "claimed";
+      } else {
+        tag.textContent = "open";
+      }
       button.appendChild(name);
       button.appendChild(tag);
       button.disabled = !!franchise.taken;

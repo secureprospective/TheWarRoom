@@ -22,18 +22,27 @@ func joinBody(code, franchise, username string) string {
 	return fmt.Sprintf(`{"protocol":1,"claim":{"league":"native.hosted","code":%q,"franchise":%q,"username":%q,"password":"private-password"}}`, code, franchise, username)
 }
 
-func (f *hostedFixture) openFranchises(t *testing.T, code string) map[string]bool {
+func (f *hostedFixture) franchises(t *testing.T, code string) map[string]accounts.JoinFranchise {
 	t.Helper()
 	var list serverhttp.JoinFranchisesResponse
 	if err := json.Unmarshal(f.post(t, serverhttp.JoinFranchisesPath, joinBody(code, "", ""), "", "", 200), &list); err != nil {
 		t.Fatal(err)
 	}
-	taken := map[string]bool{}
+	byID := map[string]accounts.JoinFranchise{}
 	for _, franchise := range list.Franchises {
 		if franchise.Name == "" {
 			t.Fatalf("franchise %s has no name", franchise.ID)
 		}
-		taken[franchise.ID] = franchise.Taken
+		byID[franchise.ID] = franchise
+	}
+	return byID
+}
+
+func (f *hostedFixture) openFranchises(t *testing.T, code string) map[string]bool {
+	t.Helper()
+	taken := map[string]bool{}
+	for id, franchise := range f.franchises(t, code) {
+		taken[id] = franchise.Taken
 	}
 	return taken
 }
@@ -81,8 +90,12 @@ func TestJoinLinkClaimReleaseAndRotation(t *testing.T) {
 	}
 	bearer := f.login(t, "fourth", "private-password")
 	f.post(t, serverhttp.LedgerPath, `{"protocol":1,"league":"native.hosted"}`, bearer, "", 200)
-	if f.openFranchises(t, code.Code)["franchise.04"] != true {
-		t.Fatal("claimed franchise still open")
+	listed := f.franchises(t, code.Code)
+	if !listed["franchise.04"].Taken || listed["franchise.04"].ClaimedBy != "fourth" {
+		t.Fatalf("claimed franchise = %+v, want claimedBy fourth", listed["franchise.04"])
+	}
+	if listed["franchise.05"].Taken || listed["franchise.05"].ClaimedBy != "" {
+		t.Fatalf("open franchise = %+v, want no claimant", listed["franchise.05"])
 	}
 
 	if err := f.join.Release(t.Context(), "native.hosted", "franchise.04", commish); err != nil {
@@ -96,8 +109,9 @@ func TestJoinLinkClaimReleaseAndRotation(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.post(t, serverhttp.JoinFranchisesPath, joinBody(code.Code, "", ""), "", "", http.StatusForbidden)
-	if f.openFranchises(t, rotated.Code)["franchise.04"] {
-		t.Fatal("released franchise still taken")
+	released := f.franchises(t, rotated.Code)
+	if released["franchise.04"].Taken || released["franchise.04"].ClaimedBy != "" {
+		t.Fatalf("released franchise = %+v, want open with no claimant", released["franchise.04"])
 	}
 	if err := f.join.Revoke(t.Context(), "native.hosted", commish); err != nil {
 		t.Fatal(err)

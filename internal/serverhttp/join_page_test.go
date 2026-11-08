@@ -83,6 +83,12 @@ func TestJoinPageServedWithStrictCSPAndNoHardcodedTeams(t *testing.T) {
 			t.Fatalf("page does not call %s", route)
 		}
 	}
+	if bytes.Contains(body, []byte("innerHTML")) {
+		t.Fatal("page script uses innerHTML")
+	}
+	if !bytes.Contains(body, []byte("claimed by")) {
+		t.Fatal("page does not show who claimed a team")
+	}
 	if status, _, _ := f.get(t, serverhttp.JoinPagePath+"?x=1"); status != http.StatusBadRequest {
 		t.Fatalf("join page accepted a query: %d", status)
 	}
