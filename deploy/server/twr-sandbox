@@ -14,7 +14,7 @@ if [ "$#" = 0 ]; then
 fi
 exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop ALL \
   --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind /bin /bin \
-  --ro-bind /etc/twr /etc/twr --ro-bind /etc/ssl/certs /etc/ssl/certs --proc /proc --dev /dev \
+  --ro-bind /etc/twr /etc/twr --ro-bind /etc/ssl/certs /etc/ssl/certs --ro-bind /etc/resolv.conf /etc/resolv.conf --proc /proc --dev /dev \
   --tmpfs /tmp --tmpfs /run --bind /var/lib/twr /var/lib/twr \
   --chdir /var/lib/twr --clearenv --setenv PATH /usr/bin:/bin \
   --setenv HOME /var/lib/twr --setenv TMPDIR /var/lib/twr \
