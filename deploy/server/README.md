@@ -169,4 +169,4 @@ unencrypted backing storage. No owners connect until the integrated release gate
 Update the server before desktop apps. Use [UPGRADE.md](UPGRADE.md) and the installed
 `/usr/local/libexec/twr-upgrade` with the intact bundle and metadata folder; never rerun the installer or replace only the binary over newer data.
 
-Staging drills (throwaway Proxmox VM, real installer and Tunnel): [STAGING.md](STAGING.md).
+Lab drills (nested Proxmox, real installer and Tunnel): [../lab/LAB.md](../lab/LAB.md).
