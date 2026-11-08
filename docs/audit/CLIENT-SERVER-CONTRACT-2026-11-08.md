@@ -10,7 +10,7 @@ Parity test: `internal/serverhttp/contract_parity_test.go` (`TestContractParityS
 |---|---|---|
 | **Wails, local** | `frontend/src/app/shell/localWorkflow.ts:47` `TargetWorkflow` → `internal/app/commissioner/commissioner_preview_api.go:67-80` | `catalog.RunWorkflow` → `leagueservice.Service` (local host). Ten reads bypass it: `localWorkflow.ts:20-44` call a direct Wails binding and send `native.assets.read` only for the authority label. Control forms call `TargetCommissionerPreview/Execute` (`commissioner/proxy.ts:37-38` → `commissioner_api.go:13`, `commissioner_preview_api.go:16`) → `Service.Preview/Execute`, not the catalog. |
 | **Hosted (runNative desktop / browser)** | `serverclient/desktop_handler.go:151` → `serverhttp` `WorkflowPath` → `workflow.go:56,68` | `catalog.RunWorkflow` → `leagueservice.NewHosted` (`hosted.go:232`) with football **pinned** (`hosted.go:227,240-249`). Only `WorkflowCommands()` (`commandcatalog/workflow_commands.go:20-34,57-106`) are served. The hosted desktop has no general commissioner preview/execute action (`serverclient/desktop.go:79-95` action list). |
-| **CLI / MCP** | `cmd/twr/main.go:191-200`, `cmd/twr/mcp.go:45-77` → `serverclient/agent.go` `Dispatch` | **Catalog commands** (`serverhttp.WorkflowCommand`): `Agent.workflow` reads `native.assets.read` for the pinned football digest, then sends the command on `WorkflowPath` → `token_policy.go` `agent` (football pinned via `workflowHost`) → `catalog.RunWorkflow`, the screens' path. **Other commissioner commands** still go `DispatchPath` → `Service.Preview/Execute` (debt, ruling 1 below). `DispatchPath` refuses catalog commands (400, "update twr"). Tokens are commissioner-only (`commissioner/token_scope.go:251`). |
+| **CLI / MCP** | `cmd/twr/main.go:191-200`, `cmd/twr/mcp.go:45-77` → `serverclient/agent.go` `Dispatch` | **Catalog commands** (`serverhttp.WorkflowCommand`): `Agent.workflow` reads `native.assets.read` for the pinned football digest, then sends the command on `WorkflowPath` → `token_policy.go` `agent` (football pinned via `workflowHost`) → `catalog.RunWorkflow`, the screens' path. **Other commissioner commands** still go `DispatchPath` → `Service.Preview/Execute` (debt, ruling 1 below). `DispatchPath` refuses catalog commands with the version gate's 426 update reply. Tokens are commissioner-only (`commissioner/token_scope.go:251`). |
 
 ## Per-screen map
 
@@ -82,7 +82,7 @@ allowed/changed/state for both doors; every refusal leaves the league unchanged.
 | execute (confirmed) | **both record, same state** |
 
 Also: `TestContractParityDraftPick` (CLI pick refused by the catalog, unchanged), `TestContractDispatchRefusesCatalogCommands`
-(catalog command on `DispatchPath` → 400 whose body says to update twr), `TestContractCLIRefusalWording` (a missing read is
+(catalog command on `DispatchPath` → 426 update-required envelope), `TestContractCLIRefusalWording` (a missing read is
 named; a refused preview reads as a preview refusal and is `ErrPreviewRefused`).
 
 ## Rulings 11-08
@@ -96,7 +96,7 @@ Step 1b, part 3 (Christopher + head brain):
 1. Non-catalog commissioner commands (`commish.rules.set`, `commish.notice.publish`/`commish.whatsnew.post`, `commish.league.create`, `commish.correction.revert`, …) keep `DispatchPath` for now. They join the catalog in step 2 with the hosted Control forms, and the bypass is deleted then.
 2. Option A: a CLI catalog command needs its token to also cover `native.directory.read` and `native.assets.read`. Desktop-issued tokens already carry both (`platform.DelegableCommands`). If a token lacks one, the CLI names the missing read and says to ask the commissioner for a new token.
 3. A refused catalog preview reads as a preview refusal (`serverclient.ErrPreviewRefused`), not "did not record this change". Execute refusals stay `ErrRefused`. Screens are unchanged.
-4. An older `twr` that sends a catalog command to `DispatchPath` is not caught by the version gate: it declares the same protocol, so the server answers 400. The 400 body now says to update twr. Caveat: older clients do not show the body (`agent.go` `post` default branch prints "the league refused this request (400); this token may not cover it"). See Needs ruling in the part-3 report.
+4. An older `twr` that sends a catalog command to `DispatchPath` is not caught by the version gate (same protocol). Head-brain ruling 11-08 (`f042f3cc`): the refusal reuses the version gate's 426 envelope (`writeUpdateRequired`), which every client build already shows as its update message (`serverclient/version.go` `versionedTransport`). No new mechanism.
 5. The failing goldens `hosted.wire.testdata.json` / `rollover.wire.testdata.json` were stale, not clock flakes and not a production bug. `b825060eb` (11-05) added the Market pool join (names, minimums, points) and `poolPointsNote` to `native.assets.read`, and the goldens were never regenerated. The fixture's evidence holds only season 2026, with every kickoff at now+24h, so the offseason fallback asks for 2025 (rollover: 2027) and records the note. That output is the same on any date. Regenerated with `TWR_UPDATE_HOSTED_WIRE=1`; the diff is the pool fields and the note, plus timestamps and ids that the comparison ignores.
 
 ## Debt
