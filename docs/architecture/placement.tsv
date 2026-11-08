@@ -144,3 +144,4 @@ internal/teamneeds	trades
 internal/appvalue	scoring
 internal/app/mflref/migration	control
 internal/feedwire	core
+internal/seams	core

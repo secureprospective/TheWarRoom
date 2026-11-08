@@ -141,6 +141,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 | The engine plan and rulings | `docs/build-handoffs/Core_Build_Plan_2026-10.md` |
 | Why the plan is shaped this way | `docs/build-handoffs/Core_Build_Reasoning_2026-10.md` |
 | Where each feature lives (two hops), and where new code goes | `SYSTEM_MAP.md` |
+| **Before any new server feature** (moments, shares, invites, chat, new AI powers): where it plugs in | `docs/architecture/future-seams.md` (`grep -rn "FUTURE-SEAM(" internal`) |
 | What exists at length, and the import rules | `docs/architecture/system-narrative.md` |
 | Which feature owns a root file or package | `docs/architecture/placement.tsv` |
 | Engine architecture | `docs/scoring-engine/Engine_Specification.md` |

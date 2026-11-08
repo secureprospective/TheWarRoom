@@ -107,6 +107,8 @@ func (s *Store) CommittedHead(ctx context.Context, league, stream string) (int64
 	return revision, nil
 }
 
+// FUTURE-SEAM(events): the one league event ledger. Moments, weekly shows and feeds read it on the
+// server; no feature keeps a second log. See docs/architecture/future-seams.md.
 // AppendEvent adds e as the stream's next revision when the stream holds exactly expected
 // revisions, and returns it with its revision and recorded time. A stale expected revision
 // returns ErrRevisionConflict: reread the stream before appending.

@@ -18,6 +18,8 @@ type WorkflowCommand struct {
 
 // Membership is executable: the same entry validates and runs a workflow. The changes are exactly
 // what an agent token can carry (accounts.DelegableCommand) less the desktop-only held-data seed; the service keeps each command's gates.
+// FUTURE-SEAM(commands): new actions (moments, invites, chat) arrive as commissioner definitions and
+// appear here by derivation; never hand-list one. See docs/architecture/future-seams.md.
 func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
 	for _, row := range nativeMutations() {

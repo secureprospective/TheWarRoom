@@ -15,6 +15,8 @@ import (
 
 const InvalidationPath = "/v1/native/invalidations"
 
+// FUTURE-SEAM(stream): live push for new features rides this "changed for you" signal; it never
+// carries event contents. See docs/architecture/future-seams.md.
 // Each Handler owns its connection budget. No event history, ledger cursor or bearer
 // is published. A slow consumer retains only its last observed recipient view.
 func (h Hosted) invalidationHandler(next http.Handler) http.Handler {

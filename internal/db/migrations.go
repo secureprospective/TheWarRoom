@@ -30,6 +30,8 @@ type CheckFindings struct {
 	ForeignKeys []ForeignKeyFinding
 }
 
+// FUTURE-SEAM(storage): a feature's own tables arrive as new migration steps, never as changes to
+// league, roster or contract tables. See docs/architecture/future-seams.md.
 // Migrate backs up before any pending step, then commits each step and marker atomically.
 // Findings are returned even when pre-existing foreign-key violations remain. Reinitialization
 // at the same version reuses this pool's completed checks; Check provides an explicit recheck.
