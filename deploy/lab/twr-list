@@ -9,13 +9,13 @@ for conf in /etc/pve/lxc/2[0-9][0-9].conf; do
   [[ -e $conf ]] || continue
   ct=$(basename "$conf" .conf)
   name=$(awk '/^hostname:/{print $2}' "$conf")
-  rel=$(awk '/^description:/{print $NF}' "$conf")
+  rel=$(awk '/^#lab bundle /{print $3; exit}' "$conf")
   state=$(pct status "$ct" | awk '{print $2}')
   ready=- mem=- disk=-
   if [[ $state == running ]]; then
     ready=$(pct exec "$ct" -- curl -s -o /dev/null -w '%{http_code}' --max-time 2 http://127.0.0.1:20241/ready || true)
     mem=$(( $(cat "/sys/fs/cgroup/lxc/$ct/memory.current") / 1048576 ))
-    disk=$(pct exec "$ct" -- df -m / | awk 'NR==2{print $3}')
+    disk=$(pct exec "$ct" -- df -mP / | awk 'NR==2{print $3}')
   fi
   # shellcheck disable=SC2059
   printf "$row" "$ct" "$name" "${rel:--}" "$state" "$ready" "$mem" "$disk"
