@@ -207,6 +207,13 @@ func draftCommand(command string, act commissioner.RawDraftAct) commissioner.Raw
 		Args: commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: 2027, Act: &act}}, Effective: "now", Visibility: "league"}
 }
 
+func noteCommand(command string) commissioner.RawCommand {
+	return commissioner.RawCommand{League: "native.hosted", Command: command, Request: command, Reason: "Parity", Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Note: &commissioner.RawNote{Text: "Parity note"}}}
+}
+
+func emptyNote(r *commissioner.RawCommand) { r.Args.Note = &commissioner.RawNote{} }
+
 func withDraftAct(edit func(*commissioner.RawDraftAct)) func(*commissioner.RawCommand) {
 	return func(r *commissioner.RawCommand) {
 		d, a := *r.Args.Draft, *r.Args.Draft.Act
@@ -253,6 +260,13 @@ func TestContractParityScreenAndCLI(t *testing.T) {
 			ineligible: withDraftAct(func(a *commissioner.RawDraftAct) { a.Timer = commissioner.TimerResume })},
 		{name: commissioner.DraftSkip, base: draftCommand(commissioner.DraftSkip, commissioner.RawDraftAct{Round: 1, Original: "franchise.01"}),
 			ineligible: withDraftAct(func(a *commissioner.RawDraftAct) { a.Round = 9 })},
+		// The hosted Control forms' commands (step 2): rule change and the two notes.
+		{name: commissioner.RulesSet,
+			base: commissioner.RawCommand{League: "native.hosted", Command: commissioner.RulesSet, Request: "rule", Reason: "Parity", Effective: "now", Visibility: "league",
+				Args: commissioner.RawArgs{Field: "bids.standFor", Value: json.RawMessage(`50000000`)}},
+			ineligible: func(r *commissioner.RawCommand) { r.Args.Value = json.RawMessage(`"forever"`) }},
+		{name: commissioner.NoticePublish, base: noteCommand(commissioner.NoticePublish), ineligible: emptyNote},
+		{name: commissioner.NotePost, base: noteCommand(commissioner.NotePost), ineligible: emptyNote},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -298,31 +312,36 @@ func TestContractParityDraftPick(t *testing.T) {
 	}
 }
 
-// TestContractDispatchRefusesCatalogCommands: one path per thing. A command the catalog serves is
-// refused on the generic dispatch door, so it can reach the league only through the workflow.
-func TestContractDispatchRefusesCatalogCommands(t *testing.T) {
+// TestContractDispatchRefusesOldTwr: one path per change. The old generic dispatch door is gone; an
+// older twr that still sends any league change there gets the version gate's 426 envelope, which every
+// twr build already shows as its update message (ruling 4, 11-08), and the league is unchanged.
+func TestContractDispatchRefusesOldTwr(t *testing.T) {
 	f := newHostedFixture(t, true)
 	bearer, _ := paritySessionCommissioner(t, f)
 	token, err := f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: bearer}, accounts.RawTokenScope{League: "native.hosted", Franchise: "franchise.01",
-		Commands: []string{commissioner.TradeOffer}, Modes: []string{"preview"}})
+		Commands: []string{commissioner.TradeOffer, commissioner.NotePost}, Modes: []string{"preview", "execute"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	before, _ := parityAssets(t, f)
-	raw := commissioner.RawCommand{League: "native.hosted", Command: commissioner.TradeOffer, Request: "dispatch", Reason: "Parity", Effective: "now", Visibility: "league", Expected: before.Revision,
-		Args: commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{Franchise: "franchise.01", Parties: []string{"franchise.01", "franchise.02"},
-			Assets: []commissioner.TradeAsset{{From: "franchise.01", To: "franchise.02", Player: "0101"}}}}}
-	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Command: &raw, Mode: "preview"})
-	if err != nil {
-		t.Fatal(err)
+	for _, command := range []string{commissioner.TradeOffer, commissioner.NotePost} {
+		for _, mode := range []string{"preview", "execute"} {
+			raw := commissioner.RawCommand{League: "native.hosted", Command: command, Request: "dispatch", Reason: "Parity", Effective: "now", Visibility: "league", Expected: before.Revision}
+			encoded, err := json.Marshal(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// The old twr's body: a raw command and a mode, which no current request type carries.
+			status, reply := f.send(t, serverhttp.DispatchPath, `{"protocol":1,"command":`+string(encoded)+`,"mode":"`+mode+`"}`, token.Bearer, "")
+			var update serverhttp.RawUpdateRequiredResponse
+			if status != http.StatusUpgradeRequired || json.Unmarshal(reply, &update) != nil || update.Validate() != nil ||
+				update.Update != "app" || !strings.Contains(update.Message, "update twr") {
+				t.Fatalf("%s %s on dispatch: status %d %s", command, mode, status, reply)
+			}
+		}
 	}
-	// An older twr still sends catalog commands here. The refusal is the version gate's 426 envelope,
-	// which every twr build already shows as its update message (ruling 4, 11-08).
-	status, reply := f.send(t, serverhttp.DispatchPath, string(body), token.Bearer, "")
-	var update serverhttp.RawUpdateRequiredResponse
-	if status != http.StatusUpgradeRequired || json.Unmarshal(reply, &update) != nil || update.Validate() != nil ||
-		update.Update != "app" || !strings.Contains(update.Message, "update twr") {
-		t.Fatalf("catalog command on dispatch: status %d %s", status, reply)
+	if after, _ := parityAssets(t, f); after.Revision != before.Revision {
+		t.Fatalf("old dispatch changed the league: %d -> %d", before.Revision, after.Revision)
 	}
 }
 
@@ -359,5 +378,62 @@ func TestContractCLIRefusalWording(t *testing.T) {
 		if err == nil || (tc.want != nil && !errors.Is(err, tc.want)) || !strings.Contains(err.Error(), tc.text) {
 			t.Errorf("reads %v: %v", tc.reads, err)
 		}
+	}
+}
+
+// TestContractParityRevertAndCreate: the catalog is what an agent token can carry, so neither generic
+// revert nor league creation is a workflow (accounts.DelegableCommand refuses both at token issuance).
+// Revert stays on the commissioner's own session; creation stays local (hosted.go accountAdmission:
+// no records means "league access unavailable", asserted in TestHostedAdmissionKeepsCreationLocal).
+func TestContractParityRevertAndCreate(t *testing.T) {
+	f := newHostedFixture(t, true)
+	bearer, proof := paritySessionCommissioner(t, f)
+	for _, command := range []string{commissioner.Revert, commissioner.Create} {
+		_, err := f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: bearer}, accounts.RawTokenScope{League: "native.hosted", Franchise: "franchise.01",
+			Commands: []string{command}, Modes: []string{"preview", "execute"}})
+		if !errors.Is(err, accounts.ErrTokenRefused) || accounts.DelegableCommand(command) {
+			t.Fatalf("%s token: %v", command, err)
+		}
+		if err := (serverhttp.RawWorkflow{Command: command, Version: "1", Mode: "execute", Arguments: json.RawMessage(`{}`)}).Validate(); err == nil || err.Error() != "this league action is not available here" {
+			t.Fatalf("%s is a workflow: %v", command, err)
+		}
+	}
+	// Cutover is delegable but has no native entry: it is recorded only through the MFL move's assist
+	// door, which checks the review digest (app/commissioner catalog_test domainCommandIDs).
+	if err := (serverhttp.RawWorkflow{Command: commissioner.Cutover, Version: "1", Mode: "preview", Arguments: json.RawMessage(`{}`)}).Validate(); err == nil || err.Error() != "this league action is not available here" {
+		t.Fatalf("cutover is a workflow: %v", err)
+	}
+	note := noteCommand(commissioner.NotePost)
+	before, _ := parityAssets(t, f)
+	note.Expected = before.Revision
+	if !screenDoor(t, f, "commissioner", "", note, "execute") {
+		t.Fatal("note refused")
+	}
+	var ledger commissioner.Ledger
+	if err := json.Unmarshal(f.post(t, serverhttp.LedgerPath, `{"protocol":1,"league":"native.hosted"}`, bearer, proof, 200), &ledger); err != nil {
+		t.Fatal(err)
+	}
+	last := ledger.Entries[0]
+	for _, e := range ledger.Entries {
+		if e.Undo != "" {
+			last = e
+		}
+	}
+	revert := commissioner.RawCommand{League: "native.hosted", Command: commissioner.Revert, Request: "undo", Reason: "Parity", Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Entry: last.ID}, Expected: ledger.Revision}
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Command: &revert})
+	if err != nil {
+		t.Fatal(err)
+	}
+	owner, ownerProof := paritySession(t, f, "owner")
+	f.post(t, serverhttp.ExecutePath, string(body), owner, ownerProof, http.StatusConflict)
+	f.post(t, serverhttp.PreviewPath, string(body), bearer, proof, http.StatusOK)
+	f.post(t, serverhttp.ExecutePath, string(body), bearer, proof, http.StatusOK)
+	var reverted commissioner.Ledger
+	if err := json.Unmarshal(f.post(t, serverhttp.LedgerPath, `{"protocol":1,"league":"native.hosted"}`, bearer, proof, 200), &reverted); err != nil {
+		t.Fatal(err)
+	}
+	if reverted.Revision == ledger.Revision || len(reverted.Entries) != len(ledger.Entries)+1 {
+		t.Fatalf("revert not recorded once: %d entries -> %d", len(ledger.Entries), len(reverted.Entries))
 	}
 }

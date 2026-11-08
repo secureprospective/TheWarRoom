@@ -1,10 +1,14 @@
 package serverhttp
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
 // Frozen from the pre-spine workflow allowlist, not generated from the new registry.
@@ -22,7 +26,7 @@ func TestWorkflowModesAndUnknownCommand(t *testing.T) {
 	if err := json.Unmarshal(data, &before); err != nil {
 		t.Fatal(err)
 	}
-	if len(before) != 45 {
+	if len(before) != 93 {
 		t.Fatal("pre-migration workflow fixture changed")
 	}
 	for _, old := range before {
@@ -51,5 +55,20 @@ func TestWorkflowModesAndUnknownCommand(t *testing.T) {
 	}
 	if _, err := runWorkflow(t.Context(), nil, RawWorkflow{Command: "unregistered", Version: "1"}); err == nil {
 		t.Fatal("dispatch bypassed validation")
+	}
+}
+
+type admitAll struct{}
+
+func (admitAll) Admit(context.Context, commissioner.Access) error { return nil }
+
+// TestHostedAdmissionKeepsCreationLocal: the hosted creation rule (accountAdmission.Admit) refuses a
+// league with no records, so a signed-in commissioner cannot start a league on the server.
+func TestHostedAdmissionKeepsCreationLocal(t *testing.T) {
+	gate := accountAdmission{sessions: admitAll{}, totp: &accounts.TOTPService{}}
+	create := commissioner.RawCommand{League: "native.new", Command: commissioner.Create}
+	err := gate.Admit(t.Context(), commissioner.Access{League: "native.new", Raw: create, Records: []commissioner.Record{}})
+	if err == nil || err.Error() != "league access unavailable" {
+		t.Fatalf("hosted creation: %v", err)
 	}
 }

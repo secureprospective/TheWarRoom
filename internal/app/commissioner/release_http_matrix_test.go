@@ -155,18 +155,14 @@ func (h *releaseHTTP) humanCell(t *testing.T, actor releaseActor, raw domain.Raw
 	if !denied {
 		return
 	}
-	for _, path := range []string{serverhttp.ExecutePath, serverhttp.DispatchPath} {
-		request.Mode = ""
-		if path == serverhttp.DispatchPath {
-			request.Mode = "execute"
-		}
-		status, body = h.post(t, path, actor.session.Bearer, h.proofs[actor.name], request)
-		if status != http.StatusConflict || string(body) != "native change refused; reread before retrying\n" {
-			t.Fatalf("%s: denial transcript differs: status=%d body=%s", path, status, body)
-		}
+	status, body = h.post(t, serverhttp.ExecutePath, actor.session.Bearer, h.proofs[actor.name], request)
+	if status != http.StatusConflict || string(body) != "native change refused; reread before retrying\n" {
+		t.Fatalf("execute: denial transcript differs: status=%d body=%s", status, body)
+	}
+	if status, body = h.post(t, serverhttp.DispatchPath, actor.session.Bearer, h.proofs[actor.name], request); status != http.StatusUpgradeRequired {
+		t.Fatalf("old dispatch door: status=%d body=%s", status, body)
 	}
 	if raw.Command == domain.LineupSet {
-		request.Mode = ""
 		status, body = h.post(t, serverhttp.LineupPath, actor.session.Bearer, h.proofs[actor.name], request)
 		if status != http.StatusConflict {
 			t.Fatalf("HTTP owner lineup admitted: %d %s", status, body)

@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 )
@@ -15,9 +17,24 @@ import (
 // The whole helper loop a commissioner runs: connect a helper from the desktop, let it preview a
 // bigger change, confirm that exact change, let it record it, then disconnect it.
 func TestDesktopConnectsConfirmsAndRevokesAnAIHelper(t *testing.T) {
-	f := newHostedFixture(t)
+	f := newHostedFixture(t, true)
+	// The desktop's full list includes owner and lineup/pick actions, which the server delegates only
+	// for a seat the commissioner holds (token_policy.go tokenSeatScope), as in production.
+	seat := commissioner.RawCommand{League: "native.hosted", Command: "commish.seat.replace", Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.01", Principal: f.principal}}, Reason: "Seat the commissioner", Request: "seat", Expected: int64(f.events(t)), Effective: "now", Visibility: "league"}
+	if _, err := f.history.ExecuteCommissioner(t.Context(), seat, f.principal, nil); err != nil {
+		t.Fatal(err)
+	}
 	desktop := desktopFor(t, f)
-	desktop.SetHelperCommands([]string{"commish.franchise.edit", "commish.ledger.read"})
+	base := f.events(t)
+	// The desktop's own list (composition.helperCommands = platform.DelegableCommands over the native
+	// catalog): every delegable catalog command, reads included.
+	var helper []string
+	for _, command := range catalog.NativeCommands(catalog.Schema{}) {
+		if accounts.DelegableCommand(command.ID) {
+			helper = append(helper, command.ID)
+		}
+	}
+	desktop.SetHelperCommands(helper)
 	credentials := serverclient.RawDesktop{Action: "login", Username: "commissioner", Password: "private-password"}
 	if _, err := desktop.Act(t.Context(), credentials); err != nil {
 		t.Fatal(err)
@@ -88,10 +105,10 @@ func TestDesktopConnectsConfirmsAndRevokesAnAIHelper(t *testing.T) {
 	if err != nil || checked.Confirmation != "" || preview.Question == "" ||
 		!strings.Contains(checked.HelperPreview, preview.Question) ||
 		!strings.Contains(checked.HelperPreview,
-			"Franchise 1 name changes from “Franchise 1 (F1)” to “Helper team (HT)”.") ||
+			"Practice team 1 name changes from “Practice team 1 (P1)” to “Helper team (HT)”.") ||
 		!strings.Contains(checked.HelperPreview, "Helper: "+id) ||
 		!strings.Contains(checked.HelperPreview, "Reason: “Use the new team name”") ||
-		!strings.Contains(checked.HelperPreview, "1 franchise affected: Franchise 1") {
+		!strings.Contains(checked.HelperPreview, "1 franchise affected: Practice team 1") {
 		t.Fatalf("check: %+v %v", checked, err)
 	}
 	confirmed, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "helper-confirm", Change: request})
@@ -101,7 +118,7 @@ func TestDesktopConnectsConfirmsAndRevokesAnAIHelper(t *testing.T) {
 	if _, err := agent.Dispatch(t.Context(), change, "execute", confirmed.Confirmation); err != nil {
 		t.Fatalf("confirmed execute: %v", err)
 	}
-	f.revision(t, 2)
+	f.revision(t, base+1)
 	change.Request = "stale-helper-name"
 	request, err = serverclient.EncodeConfirmRequest(id, change)
 	if err != nil {
@@ -113,7 +130,7 @@ func TestDesktopConnectsConfirmsAndRevokesAnAIHelper(t *testing.T) {
 			t.Fatalf("stale %s: %+v %v", action, stale, err)
 		}
 	}
-	f.revision(t, 2)
+	f.revision(t, base+1)
 
 	if _, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "helper-revoke", Code: id}); err != nil {
 		t.Fatal(err)

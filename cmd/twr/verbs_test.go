@@ -41,8 +41,13 @@ func TestGeneratedVerbsPreserveDispatchAndRefuseWrongInputs(t *testing.T) {
 			if mode == "" {
 				mode = "preview"
 			}
-			if got.Mode != mode || got.Command.Command != "correct.roster" || got.Command.League != "native.test" || got.Command.Expected != 7 || league.confirms[before] != "123456" {
-				t.Fatalf("dispatch changed: %+v", got)
+			// The workflow path (Agent.Dispatch) carries the person's code only on execute; a preview needs none.
+			confirm := "123456"
+			if mode == "preview" {
+				confirm = ""
+			}
+			if got.Mode != mode || got.Command.Command != "correct.roster" || got.Command.League != "native.test" || got.Command.Expected != 7 || league.confirms[before] != confirm {
+				t.Fatalf("dispatch changed: %+v %q", got, league.confirms[before])
 			}
 		})
 	}

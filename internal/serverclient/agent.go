@@ -80,19 +80,7 @@ func (a *Agent) Dispatch(ctx context.Context, raw commissioner.RawCommand, mode,
 	if mode == "" {
 		mode = "preview"
 	}
-	if serverhttp.WorkflowCommand(raw.Command) {
-		return a.workflow(ctx, raw, mode, confirmation)
-	}
-	body, err := a.post(ctx, serverhttp.DispatchPath, serverhttp.RawNativeRequest{Protocol: 1, Command: &raw, Mode: mode}, confirmation)
-	if err != nil {
-		return nil, err
-	}
-	return json.RawMessage(body), nil
-}
-
-// workflow sends a catalog command the way the screens do: read the league to learn the football
-// evidence the server holds, then preview or execute carrying that digest back.
-func (a *Agent) workflow(ctx context.Context, raw commissioner.RawCommand, mode, confirmation string) (json.RawMessage, error) {
+	// Like the screens: read the league for the football evidence the server holds, then send the change with that digest.
 	read := serverhttp.RawWorkflow{Command: "native.assets.read", Version: "1", Mode: "read", Arguments: json.RawMessage(`{"league":` + strconv.Quote(a.league) + `}`)}
 	league, err := a.postWorkflow(ctx, read, "")
 	var refused refusal

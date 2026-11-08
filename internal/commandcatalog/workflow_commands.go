@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
@@ -15,18 +16,14 @@ type WorkflowCommand struct {
 	Run      func(context.Context, *leagueservice.Service, RawWorkflow) (json.RawMessage, error)
 }
 
-// Membership is executable: the same entry validates and runs a workflow. This bounded
-// transport does not expose the other native commands supported by generic dispatch.
+// Membership is executable: the same entry validates and runs a workflow. The changes are exactly
+// what an agent token can carry (accounts.DelegableCommand) less the desktop-only held-data seed; the service keeps each command's gates.
 func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
-	for _, id := range []string{
-		commissioner.LineupSet, commissioner.RosterReserve, commissioner.DraftTimer, commissioner.DraftSkip,
-		commissioner.BidPlace, commissioner.BidRaise, commissioner.BidWithdraw, commissioner.BidsProcess, commissioner.BidsOverride,
-		commissioner.RosterCut, commissioner.WaiverClaim, commissioner.WaiverProcess, commissioner.WaiverOrderSet, commissioner.WaiverOrderAuto, commissioner.WaiverOverride,
-		commissioner.TradeOffer, commissioner.TradeAccept, commissioner.TradeDecline, commissioner.TradeWithdraw, commissioner.TradeReview, commissioner.TradeRecuse, commissioner.TradeAppeal, commissioner.TradeAppealRule, commissioner.TradeOverride,
-		commissioner.SeasonRollover, commissioner.ScoreFranchise, commissioner.StandingsRecordAdjust, commissioner.StandingsOverrideClear,
-	} {
-		out[id] = WorkflowCommand{Validate: validateWorkflowChange, Run: runWorkflowChange}
+	for _, row := range nativeMutations() {
+		if accounts.DelegableCommand(row.id) && row.id != commissioner.NativeSeed {
+			out[row.id] = WorkflowCommand{Validate: validateWorkflowChange, Run: runWorkflowChange}
+		}
 	}
 	out[commissioner.DraftPick] = WorkflowCommand{Validate: validateWorkflowPick, Run: runWorkflowPick}
 	return out

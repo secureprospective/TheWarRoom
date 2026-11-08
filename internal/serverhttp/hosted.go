@@ -83,7 +83,10 @@ func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
 		h.revoke(w, r)
 	case LoginPath:
 		h.login(w, r)
-	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, DispatchPath, LineupPath, PickPath, ConfirmPath, WorkflowPath:
+	case DispatchPath:
+		// An older twr sends league changes here; the 426 envelope is what every client version shows as "update".
+		writeUpdateRequired(w, serverversion.App, catalogUpdate)
+	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, LineupPath, PickPath, ConfirmPath, WorkflowPath:
 		h.native(w, r)
 	default:
 		http.NotFound(w, r)
@@ -135,7 +138,6 @@ type RawNativeRequest struct {
 	League   string                       `json:"league,omitempty"`
 	Command  *commissioner.RawCommand     `json:"command,omitempty"`
 	Pick     *commissioner.DraftPickInput `json:"pick,omitempty"`
-	Mode     string                       `json:"mode,omitempty"`
 	TokenID  string                       `json:"tokenId,omitempty"`
 }
 
@@ -144,14 +146,11 @@ func (r RawNativeRequest) Validate() error {
 		return fmt.Errorf("unsupported protocol")
 	}
 	if r.Workflow != nil {
-		if r.Command != nil || r.Pick != nil || r.League+r.Mode+r.TokenID != "" {
+		if r.Command != nil || r.Pick != nil || r.League+r.TokenID != "" {
 			return fmt.Errorf("send only a workflow")
 		}
 		//nolint:wrapcheck // Preserve the catalog-owned workflow refusal text.
 		return r.Workflow.Validate()
-	}
-	if !validDispatchMode(r.Mode) {
-		return fmt.Errorf("choose preview or execute")
 	}
 	if r.Pick != nil {
 		return r.validatePick()
@@ -172,7 +171,7 @@ func (r RawNativeRequest) Validate() error {
 }
 
 func (r RawNativeRequest) validatePick() error {
-	if r.Command != nil || r.League != "" || r.Mode != "" || r.TokenID != "" {
+	if r.Command != nil || r.League != "" || r.TokenID != "" {
 		return fmt.Errorf("send only a draft pick")
 	}
 	if err := r.Pick.Validate(); err != nil {
@@ -245,24 +244,14 @@ func (h Hosted) workflowHost(host leagueservice.Host, workflow bool) (leagueserv
 	return host, nil
 }
 
+const catalogUpdate = "League changes now go through the league catalog: update twr to the latest version, then run it again."
+
 func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
 	if raw.Workflow != nil {
 		h.workflow(w, r, service, *raw.Workflow)
 		return
 	}
-	path := r.URL.Path
-	if path == DispatchPath && WorkflowCommand(raw.Command.Command) {
-		// An older twr sends catalog commands here; the 426 envelope is what every client version shows as "update".
-		writeUpdateRequired(w, serverversion.App, "This league action now goes through the league catalog: update twr to the latest version, then run it again.")
-		return
-	}
-	if path == DispatchPath {
-		path = PreviewPath
-		if raw.Mode == "execute" {
-			path = ExecutePath
-		}
-	}
-	switch path {
+	switch r.URL.Path {
 	case LineupPath, PickPath:
 		h.dispatchOwner(w, r, service, raw)
 	case PeoplePath:
@@ -432,8 +421,6 @@ func hostedOwner(policy governance.State, principal governance.Principal, record
 	return false
 }
 
-func validDispatchMode(mode string) bool { return mode == "" || mode == "preview" || mode == "execute" }
-
 func (r RawNativeRequest) matchesPath(path string) bool {
 	if path == WorkflowPath || r.Workflow != nil {
 		return path == WorkflowPath && r.Workflow != nil
@@ -444,7 +431,7 @@ func (r RawNativeRequest) matchesPath(path string) bool {
 	if (path == PickPath) != (r.Pick != nil) {
 		return false
 	}
-	return (r.TokenID == "" || path == ConfirmPath) && (r.Mode == "" || path == DispatchPath)
+	return r.TokenID == "" || path == ConfirmPath
 }
 
 func (h Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {

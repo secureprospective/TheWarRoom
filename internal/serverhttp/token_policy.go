@@ -9,6 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -99,6 +100,11 @@ func (a agentAdmission) Admit(ctx context.Context, access commissioner.Access) e
 func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.RawSession, raw RawNativeRequest) {
 	if h.Tokens == nil || r.URL.Path == ConfirmPath {
 		http.Error(w, "session refused", http.StatusUnauthorized)
+		return
+	}
+	if r.URL.Path == PreviewPath || r.URL.Path == ExecutePath {
+		// No twr sends raw changes any more: the catalog workflow is an AI helper's only change path.
+		writeUpdateRequired(w, serverversion.App, catalogUpdate)
 		return
 	}
 	token, err := h.Tokens.Authenticate(r.Context(), session)

@@ -63,12 +63,6 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	writeHosted(w, WorkflowResponse{Label: location.Label, Writable: location.Writable, Football: h.FootballDigest, Data: data})
 }
 
-// WorkflowCommand is whether the catalog serves id; those commands have one path, the workflow.
-func WorkflowCommand(id string) bool {
-	_, ok := catalog.WorkflowCommands()[id]
-	return ok
-}
-
 func runWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
 	//nolint:wrapcheck // Preserve the existing workflow result and refusal text.
 	return catalog.RunWorkflow(ctx, service, raw)

@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"encoding/json"
 	"net/http"
 	"reflect"
 	"slices"
@@ -87,10 +88,7 @@ func releaseHelperRefusal(t *testing.T, h *releaseHTTP, service *leagueservice.S
 	if err == nil {
 		t.Fatalf("service %s revoked=%v admitted helper outside its ceiling", mode, revoked)
 	}
-	want := http.StatusConflict
-	if mode == "preview" {
-		want = http.StatusForbidden
-	}
+	want := http.StatusUpgradeRequired
 	if revoked {
 		want = http.StatusUnauthorized
 	}
@@ -98,14 +96,25 @@ func releaseHelperRefusal(t *testing.T, h *releaseHTTP, service *leagueservice.S
 	if mode == "preview" {
 		path = serverhttp.PreviewPath
 	}
+	// A helper's raw doors answer only the 426 update reply now (a revoked token is refused first on
+	// preview/execute; the old dispatch door answers 426 to everyone).
 	for _, route := range []string{path, serverhttp.DispatchPath} {
-		request := serverhttp.RawNativeRequest{Protocol: 1, Command: &raw}
+		status, body := h.post(t, route, token.Bearer, "", serverhttp.RawNativeRequest{Protocol: 1, Command: &raw})
 		if route == serverhttp.DispatchPath {
-			request.Mode = mode
+			want = http.StatusUpgradeRequired
 		}
-		status, body := h.post(t, route, token.Bearer, "", request)
 		if status != want {
 			t.Fatalf("%s %s revoked=%v: status=%d want=%d body=%s", raw.Command, route, revoked, status, want, body)
 		}
+	}
+	// The catalog workflow is the helper's change path; it refuses the same authority the service does.
+	args, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	workflow := serverhttp.RawWorkflow{Command: raw.Command, Version: "1", Mode: mode, Arguments: args, Football: h.football}
+	status, body := h.post(t, serverhttp.WorkflowPath, token.Bearer, "", serverhttp.RawNativeRequest{Protocol: 1, Workflow: &workflow})
+	if status == http.StatusOK || revoked && status != http.StatusUnauthorized {
+		t.Fatalf("%s workflow %s revoked=%v: status=%d body=%s", raw.Command, mode, revoked, status, body)
 	}
 }
