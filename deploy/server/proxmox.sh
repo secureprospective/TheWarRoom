@@ -107,6 +107,16 @@ RULES
 } > "/etc/pve/firewall/$ctid.fw"
 pve-firewall compile >/dev/null
 pct start "$ctid"
+# DHCP and DNS lag the CT start by seconds; installing before then fails at random (11-08 lab: 7.8 s).
+online=0
+for ((attempt=0; attempt<60; attempt++)); do
+  if pct exec "$ctid" -- sh -c 'ip -4 route | grep -q "^default" && nslookup dl-cdn.alpinelinux.org 1.1.1.1' >/dev/null 2>&1; then
+    online=1
+    break
+  fi
+  sleep 1
+done
+(( online )) || { echo 'The new container did not get a network address and DNS within 60 seconds; check the bridge, VLAN and DHCP.' >&2; exit 1; }
 pct exec "$ctid" -- mkdir -m 700 /root/twr
 pct push "$ctid" "$bundle" /root/twr.tar.gz --perms 0600
 pct exec "$ctid" -- tar -xzf /root/twr.tar.gz -C /root/twr
