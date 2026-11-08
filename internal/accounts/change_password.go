@@ -3,16 +3,19 @@ package accounts
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 // ErrPasswordChange is a malformed change request, not a wrong current password.
 var ErrPasswordChange = errors.New("choose a sign-in name and a new password that meet the account rules")
 
-// RawPasswordChange is an owner changing their own password with the current one.
+// RawPasswordChange is an owner changing their own password with the current one. Code is required
+// only when the account already has a confirmed authenticator.
 type RawPasswordChange struct {
 	Username    string `json:"username"`
 	OldPassword string `json:"-"`
 	NewPassword string `json:"-"`
+	Code        string `json:"-"`
 }
 
 func (r RawPasswordChange) String() string   { return "[password change redacted]" }
@@ -28,18 +31,35 @@ func (r RawPasswordChange) Validate() error {
 	if err := validatePassword(r.NewPassword); err != nil {
 		return ErrPasswordChange
 	}
+	if r.Code != "" {
+		if err := (RawTOTP{Code: r.Code}).Validate(); err != nil {
+			return ErrPasswordChange
+		}
+	}
 	return nil
 }
 
-// ChangePassword verifies the current password, then stores the new hash. The store moves the
-// account's credential generation, so every device session issued before this change stops matching.
-func (s *Service) ChangePassword(ctx context.Context, raw RawPasswordChange) error {
+// PasswordChangeAuthenticator checks a current authenticator code for an account that has one.
+type PasswordChangeAuthenticator interface {
+	VerifyPasswordChange(ctx context.Context, account Account, code string) error
+}
+
+// ChangePassword verifies the current password, then stores the new hash. When an authenticator is
+// supplied and the account has a confirmed one, the request must also prove a current code. The
+// store moves the account's credential generation, so every device session issued before this
+// change stops matching.
+func (s *Service) ChangePassword(ctx context.Context, raw RawPasswordChange, authenticator PasswordChangeAuthenticator) error {
 	if err := raw.Validate(); err != nil {
 		return err
 	}
 	credential, err := s.authenticateCredential(ctx, RawCredentials{Username: raw.Username, Password: raw.OldPassword})
 	if err != nil {
 		return err
+	}
+	if authenticator != nil {
+		if err := authenticator.VerifyPasswordChange(ctx, credential.Account, raw.Code); err != nil {
+			return fmt.Errorf("authenticator: %w", err)
+		}
 	}
 	hash, err := s.work.Hash(ctx, raw.NewPassword)
 	if err != nil {

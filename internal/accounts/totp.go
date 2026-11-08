@@ -139,6 +139,30 @@ func (s *TOTPService) verify(ctx context.Context, credentials RawCredentials, ra
 	if err != nil {
 		return RecentAuth{}, err
 	}
+	return s.verifyAccount(ctx, account, raw, confirming)
+}
+
+// VerifyPasswordChange checks code only when account has a confirmed authenticator; an account
+// without one needs no code, as before. It shares StepUp's code check and consumes the code.
+func (s *TOTPService) VerifyPasswordChange(ctx context.Context, account Account, code string) error {
+	state, err := s.store.TOTP(ctx, account.ID)
+	if errors.Is(err, ErrTOTPRequired) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("read authenticator: %w", err)
+	}
+	if !state.Confirmed {
+		return nil
+	}
+	_, err = s.verifyAccount(ctx, account, RawTOTP{Code: code}, false)
+	return err
+}
+
+func (s *TOTPService) verifyAccount(ctx context.Context, account Account, raw RawTOTP, confirming bool) (RecentAuth, error) {
+	if err := raw.Validate(); err != nil {
+		return RecentAuth{}, err
+	}
 	state, err := s.store.TOTP(ctx, account.ID)
 	if err != nil {
 		return RecentAuth{}, fmt.Errorf("read authenticator: %w", err)
