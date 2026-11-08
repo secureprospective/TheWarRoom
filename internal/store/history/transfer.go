@@ -249,13 +249,13 @@ func transferLineups(ctx context.Context, league string, records []commissioner.
 	if err != nil {
 		return nil, fmt.Errorf("replay league lineup: %w", err)
 	}
-	out := make([]commissioner.NativeLineup, 0, len(directory.Franchises))
+	franchises := make([]string, 0, len(directory.Franchises))
 	for _, seat := range directory.Franchises {
-		lineup, err := commissioner.NativeLineupReading(league, seat.Franchise, commissioner.PrincipalFor(records, commissioner.Replay(records).Creator), week, records, at, facts)
-		if err != nil {
-			return nil, fmt.Errorf("replay league lineup: %w", err)
-		}
-		out = append(out, lineup)
+		franchises = append(franchises, seat.Franchise)
+	}
+	out, err := commissioner.NativeLineupsReading(league, commissioner.PrincipalFor(records, commissioner.Replay(records).Creator), franchises, week, records, at, facts)
+	if err != nil {
+		return nil, fmt.Errorf("replay league lineup: %w", err)
 	}
 	return out, nil
 }

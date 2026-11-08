@@ -57,6 +57,28 @@ func NativeLineupReading(league, franchise, principal string, week int, records 
 	return nativeLineupFromBase(league, franchise, principal, week, base, at, env)
 }
 
+// NativeLineupsReading reads several franchises' lineups for one week from one replay of the ledger;
+// each equals NativeLineupReading for that franchise.
+func NativeLineupsReading(league, principal string, franchises []string, week int, records []Record, at time.Time,
+	env LineupFacts) ([]NativeLineup, error) {
+	if week < 1 || week > 22 {
+		return nil, fmt.Errorf("choose a week")
+	}
+	base, err := ReadNativeBase(league, records, at)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]NativeLineup, 0, len(franchises))
+	for _, franchise := range franchises {
+		lineup, err := nativeLineupFromBase(league, franchise, principal, week, base, at, env)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, lineup)
+	}
+	return out, nil
+}
+
 func nativeLineupFromBase(league, franchise, principal string, week int, base NativeBase, at time.Time,
 	env LineupFacts) (NativeLineup, error) {
 	env.lockPolicy = base.Rules.Lineup.Lock.Value
