@@ -139,13 +139,18 @@ func readConsoleCredentials(input io.Reader) (accounts.RawCredentials, error) {
 	}
 	decoder := json.NewDecoder(bytes.NewReader(body))
 	decoder.DisallowUnknownFields()
-	var raw accounts.RawCredentials
-	if err := decoder.Decode(&raw); err != nil {
+	// RawCredentials keeps the password out of JSON on purpose; this console input is the one place it is read.
+	var fields struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := decoder.Decode(&fields); err != nil {
 		return accounts.RawCredentials{}, fmt.Errorf("supply the commissioner's username and password as one JSON object on stdin")
 	}
 	if err := decoder.Decode(new(json.RawMessage)); err != io.EOF {
 		return accounts.RawCredentials{}, fmt.Errorf("supply exactly one JSON object on stdin")
 	}
+	raw := accounts.RawCredentials{Username: fields.Username, Password: fields.Password}
 	if err := raw.Validate(); err != nil {
 		return accounts.RawCredentials{}, fmt.Errorf("commissioner credentials: %w", err)
 	}
