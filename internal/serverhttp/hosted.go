@@ -16,6 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -251,7 +252,8 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 	}
 	path := r.URL.Path
 	if path == DispatchPath && WorkflowCommand(raw.Command.Command) {
-		http.Error(w, "this league action now goes through the league catalog: update twr to the latest version, then run it again", http.StatusBadRequest)
+		// An older twr sends catalog commands here; the 426 envelope is what every client version shows as "update".
+		writeUpdateRequired(w, serverversion.App, "This league action now goes through the league catalog: update twr to the latest version, then run it again.")
 		return
 	}
 	if path == DispatchPath {

@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -315,8 +316,12 @@ func TestContractDispatchRefusesCatalogCommands(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// An older twr still sends catalog commands here; the refusal tells it to update (ruling 4, 11-08).
-	if status, reply := f.send(t, serverhttp.DispatchPath, string(body), token.Bearer, ""); status != 400 || !strings.Contains(string(reply), "update twr") {
+	// An older twr still sends catalog commands here. The refusal is the version gate's 426 envelope,
+	// which every twr build already shows as its update message (ruling 4, 11-08).
+	status, reply := f.send(t, serverhttp.DispatchPath, string(body), token.Bearer, "")
+	var update serverhttp.RawUpdateRequiredResponse
+	if status != http.StatusUpgradeRequired || json.Unmarshal(reply, &update) != nil || update.Validate() != nil ||
+		update.Update != "app" || !strings.Contains(update.Message, "update twr") {
 		t.Fatalf("catalog command on dispatch: status %d %s", status, reply)
 	}
 }
