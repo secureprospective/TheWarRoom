@@ -59,10 +59,18 @@ cleanup() {
 }
 trap cleanup EXIT
 # This bundle is trusted release input, not a league archive. Never extract it on the host.
+if [[ -n ${TWR_TEMPLATE:-} ]]; then
+  # A prepared template beside its .sha256 (lab golden template); no download.
+  template=$TWR_TEMPLATE
+  [[ $template =~ ^[a-zA-Z0-9._-]+$ ]] || stop 'TWR_TEMPLATE must be a file name in template storage.'
+  tdir=$(dirname "$(pvesm path "$templates:vztmpl/$template")")
+  (cd "$tdir" && sha256sum --check --quiet "$template.sha256") || stop "Template $template failed its checksum."
+else
 pveam update
 template=$(pveam available --section system | awk '$2 ~ /^alpine-3\.23-default_.*amd64.tar.xz$/ {print $2}' | sort -V | tail -1)
 [[ -n $template ]] || { echo 'No Alpine 3.23 amd64 template is available.' >&2; exit 1; }
 pveam download "$templates" "$template"
+fi
 # The owner-only umask would make the rootfs unreadable to the unprivileged mapping.
 (umask 022; pct create "$ctid" "$templates:vztmpl/$template" --hostname "twr-$ctid" \
   --unprivileged 1 --features nesting=1 --cores 2 --memory 1024 --swap 0 \
