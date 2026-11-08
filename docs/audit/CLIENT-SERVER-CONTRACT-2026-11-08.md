@@ -10,7 +10,7 @@ Parity test: `internal/serverhttp/contract_parity_test.go` (`TestContractParityS
 |---|---|---|
 | **Wails, local** | `frontend/src/app/shell/localWorkflow.ts:47` `TargetWorkflow` → `internal/app/commissioner/commissioner_preview_api.go:67-80` | `catalog.RunWorkflow` → `leagueservice.Service` (local host). Ten reads bypass it: `localWorkflow.ts:20-44` call a direct Wails binding and send `native.assets.read` only for the authority label. Control forms call `TargetCommissionerPreview/Execute` (`commissioner/proxy.ts:37-38` → `commissioner_api.go:13`, `commissioner_preview_api.go:16`) → `Service.Preview/Execute`, not the catalog. |
 | **Hosted (runNative desktop / browser)** | `serverclient/desktop_handler.go:151` → `serverhttp` `WorkflowPath` → `workflow.go:56,68` | `catalog.RunWorkflow` → `leagueservice.NewHosted` (`hosted.go:232`) with football **pinned** (`hosted.go:227,240-249`). Only `WorkflowCommands()` (`commandcatalog/workflow_commands.go:20-34,57-106`) are served. The hosted desktop has no general commissioner preview/execute action (`serverclient/desktop.go:79-95` action list). |
-| **CLI / MCP** | `cmd/twr/main.go:191-200`, `cmd/twr/mcp.go:45-77` → `serverclient/agent.go:63-71` → `serverhttp` `DispatchPath` → `hosted.go:251-297` | `Service.Preview` / `Service.Execute` directly — **not** `catalog.RunWorkflow`, and football is **not** pinned (`workflowHost(host, false)`, `hosted.go:227`). The only read is the ledger (`agent.go:49`). Tokens are commissioner-only (`commissioner/token_scope.go:251`). |
+| **CLI / MCP** | `cmd/twr/main.go:191-200`, `cmd/twr/mcp.go:45-77` → `serverclient/agent.go` `Dispatch` | **Catalog commands** (`serverhttp.WorkflowCommand`): `Agent.workflow` reads `native.assets.read` for the pinned football digest, then sends the command on `WorkflowPath` → `token_policy.go` `agent` (football pinned via `workflowHost`) → `catalog.RunWorkflow`, the screens' path. **Other commissioner commands** still go `DispatchPath` → `Service.Preview/Execute` (debt, ruling 1 below). `DispatchPath` refuses catalog commands (400, "update twr"). Tokens are commissioner-only (`commissioner/token_scope.go:251`). |
 
 ## Per-screen map
 
@@ -44,11 +44,11 @@ Wails column: **cat** = `TargetWorkflow` → catalog; **direct** = own binding (
 | `bracket.read` | Pulse | direct `:41` | — | none | different path (`TargetNativeBracket`); missing on server; missing in CLI |
 | `commish.jobs.read` | Home | direct `:39` | — | none | different path (`TargetCommissionerJobs`); missing on server; missing in CLI |
 | `commish.ledger.filtered.read` | Home | direct `:36` | — (unfiltered `LedgerPath` only) | unfiltered ledger `agent.go:49` | different path (`TargetCommissionerLedgerFiltered`); missing on server (filter); CLI has unfiltered only |
-| `commish.lineup.set` | HQ (`hqNativeLineup.tsx:27`), Control (`HostedLeague.tsx:81`) | cat → `SetLineup` (`workflow_commands.go:133`) | catalog → `SetLineup` | `Service.Execute` → refused `leagueservice/mutations.go:33` | **different path** (DispatchPath bypasses catalog); CLI cannot set a lineup (test-proven) |
-| `roster.reserve` | HQ (`hqNativeLineup.tsx:36`), Control | cat | catalog, football pinned | `Service.Execute`, football unpinned | **different path** (DispatchPath, no pin); CLI execute refused "the NFL's listing of him is not held" even with human confirmation (test-proven) |
-| `trade.offer` | War Room Trade (`warroomTradeReads.ts:80`) | cat | catalog | `Service.Execute`, commissioner token only | different path (DispatchPath bypasses catalog; owners have no token) |
-| `draft.pick` | Control (`HostedLeague.tsx:149`) | cat | catalog (`runWorkflowPick`) | none (`Agent.Dispatch` sends `RawCommand` only, `agent.go:71`; `PickPath` unused by CLI) | missing in CLI |
-| `draft.timer`, `draft.skip` | Control (`HostedLeague.tsx:81`) | cat | catalog | `Service.Execute` | different path (DispatchPath) |
+| `commish.lineup.set` | HQ (`hqNativeLineup.tsx:27`), Control (`HostedLeague.tsx:81`) | cat → `SetLineup` (`workflow_commands.go:133`) | catalog → `SetLineup` | catalog (`WorkflowPath`, pinned) | **same service** (test-proven: screen and CLI both record) |
+| `roster.reserve` | HQ (`hqNativeLineup.tsx:36`), Control | cat | catalog, football pinned | catalog (`WorkflowPath`, pinned) | **same service** (test-proven) |
+| `trade.offer` | War Room Trade (`warroomTradeReads.ts:80`) | cat | catalog | catalog, commissioner token only | **same service** (test-proven; owners have no token, ruling 2 of part 2) |
+| `draft.pick` | Control (`HostedLeague.tsx:149`) | cat | catalog (`runWorkflowPick`) | catalog refuses: the pick entry takes the on-clock franchise's `DraftPickInput`, the CLI sends a `RawCommand` | refused by the catalog, state unchanged (test-proven; correct behaviour) |
+| `draft.timer`, `draft.skip` | Control (`HostedLeague.tsx:81`) | cat | catalog | catalog (`WorkflowPath`, pinned) | **same service** (test-proven) |
 | `commish.rules.set` | Control (`RuleChangeForm.tsx:61`) | cmd | none on hosted desktop (no action in `desktop.go:79-95`); `ExecutePath` exists | `Service.Execute` | missing on server (hosted screen route); CLI same service via generic dispatch |
 | `commish.notice.publish`, `commish.whatsnew.post` | Control (`NoteForm.tsx:11,14`) | cmd | as above | `Service.Execute` | missing on server (hosted screen route) |
 | `commish.league.create` | Control (`StartLeagueForm.tsx:34`) | cmd | as above | `Service.Execute` | missing on server (hosted screen route) |
@@ -57,24 +57,49 @@ Wails column: **cat** = `TargetWorkflow` → catalog; **direct** = own binding (
 
 ## Counts (rows above; a row may carry two marks)
 
-- same service via catalog on Wails + hosted: 14 reads, plus `commish.lineup.set`, `roster.reserve`, `trade.offer`, `draft.pick`, `draft.timer/skip` on those two doors.
-- **different path:** 10 Wails direct-binding reads + `commish.ledger.filtered.read` (11); CLI DispatchPath for `commish.lineup.set`, `roster.reserve`, `trade.offer`, `draft.timer/skip` (4 rows).
+- same service via catalog on Wails + hosted: 14 reads, plus `commish.lineup.set`, `roster.reserve`, `trade.offer`, `draft.pick`, `draft.timer/skip` on those two doors. The CLI joins on the four mutation rows `commish.lineup.set`, `roster.reserve`, `trade.offer`, `draft.timer/skip`; `draft.pick` is refused by the catalog for the CLI by design.
+- **different path:** 10 Wails direct-binding reads + `commish.ledger.filtered.read` (11). CLI: 0 catalog rows (was 4). The four non-catalog Control rows still reach `Service.Execute` through `DispatchPath` (debt below).
 - **missing on server:** 11 direct-binding reads; 4 Control form rows (hosted desktop has no preview/execute action); personal plans (1) = 16.
-- **missing in CLI:** every read except the unfiltered ledger (25 rows) and `draft.pick` = 26. Owners have no CLI at all (commissioner-only tokens).
+- **missing in CLI:** every read except the unfiltered ledger = 25 rows (`native.assets.read` is used internally for the football digest but not offered as a command). `draft.pick` is no longer counted: the catalog refuses it for the CLI by design. Owners have no CLI at all (commissioner-only tokens).
 
 ## What the parity test proves (`TestContractParityScreenAndCLI`)
 
 Same fixture league (`hostedfixture.CreateWorkflowLeague`), fresh per door, same steps, real TLS `serverhttp.Hosted` handler;
-screen door = `WorkflowPath` with a human session, CLI door = `serverclient.Agent.Dispatch` with an agent token.
+screen door = `WorkflowPath` with a human session, CLI door = `serverclient.Agent.Dispatch` with an agent token
+(scope: the command, `commish.ledger.read`, `native.directory.read`, `native.assets.read`).
 
-| Step | `roster.reserve` | `commish.lineup.set` |
-|---|---|---|
-| preview | both accept, no change | both accept, no change |
-| stale expected revision | both refuse, unchanged | both refuse, unchanged |
-| unknown command | both refuse, unchanged (screen 400; CLI 400) | same |
-| ineligible (`0099` not injured / `9999` not rostered) | both refuse, unchanged (CLI reason differs: missing football evidence) | both refuse, unchanged |
-| wrong role (owner, franchise.02) | both refuse, unchanged (screen: own-franchise gate; CLI: token issuance refused) | same |
-| missing confirmation (CLI only, G2/G3) | refused, unchanged | refused, unchanged |
-| execute (confirmed) | **screen records; CLI refused** | **screen records; CLI refused** |
+Rows: `roster.reserve`, `commish.lineup.set`, `trade.offer`, `draft.timer`, `draft.skip`. Every step asserts the same
+allowed/changed/state for both doors; every refusal leaves the league unchanged.
 
-The last row is asserted as the current divergence; it flips to parity only after a ruling (below).
+| Step | Outcome (all five rows) |
+|---|---|
+| preview | both accept, no change |
+| stale expected revision | both refuse, unchanged |
+| unknown command | both refuse, unchanged |
+| ineligible argument | both refuse, unchanged |
+| wrong role (owner, franchise.02) | both refuse, unchanged (screen: catalog role gate; CLI: token issuance refused) |
+| missing confirmation (CLI, G2/G3 only) | refused, unchanged |
+| execute (confirmed) | **both record, same state** |
+
+Also: `TestContractParityDraftPick` (CLI pick refused by the catalog, unchanged), `TestContractDispatchRefusesCatalogCommands`
+(catalog command on `DispatchPath` → 400 whose body says to update twr), `TestContractCLIRefusalWording` (a missing read is
+named; a refused preview reads as a preview refusal and is `ErrPreviewRefused`).
+
+## Rulings 11-08
+
+Step 1b, part 2 (Christopher):
+1. YES: CLI/MCP commands go through the same catalog path as the screens (`catalog.RunWorkflow`, pinned football). Done for every catalog command.
+2. NOT NOW: owner agent tokens. `TokenScopePermission` stays commissioner-only. Untouched.
+3. The 11 direct-binding reads and the Control forms on the server move to step 2. Left as rows above.
+
+Step 1b, part 3 (Christopher + head brain):
+1. Non-catalog commissioner commands (`commish.rules.set`, `commish.notice.publish`/`commish.whatsnew.post`, `commish.league.create`, `commish.correction.revert`, …) keep `DispatchPath` for now. They join the catalog in step 2 with the hosted Control forms, and the bypass is deleted then.
+2. Option A: a CLI catalog command needs its token to also cover `native.directory.read` and `native.assets.read`. Desktop-issued tokens already carry both (`platform.DelegableCommands`). If a token lacks one, the CLI names the missing read and says to ask the commissioner for a new token.
+3. A refused catalog preview reads as a preview refusal (`serverclient.ErrPreviewRefused`), not "did not record this change". Execute refusals stay `ErrRefused`. Screens are unchanged.
+4. An older `twr` that sends a catalog command to `DispatchPath` is not caught by the version gate: it declares the same protocol, so the server answers 400. The 400 body now says to update twr. Caveat: older clients do not show the body (`agent.go` `post` default branch prints "the league refused this request (400); this token may not cover it"). See Needs ruling in the part-3 report.
+5. The failing goldens `hosted.wire.testdata.json` / `rollover.wire.testdata.json` were stale, not clock flakes and not a production bug. `b825060eb` (11-05) added the Market pool join (names, minimums, points) and `poolPointsNote` to `native.assets.read`, and the goldens were never regenerated. The fixture's evidence holds only season 2026, with every kickoff at now+24h, so the offseason fallback asks for 2025 (rollover: 2027) and records the note. That output is the same on any date. Regenerated with `TWR_UPDATE_HOSTED_WIRE=1`; the diff is the pool fields and the note, plus timestamps and ids that the comparison ignores.
+
+## Debt
+
+- `DispatchPath` → `Service.Preview/Execute` stays for the non-catalog commissioner commands (+50 production LOC in step 1b part 2, +19 more in part 3 for the refusal wording). Payoff: in step 2 those commands join the catalog with the hosted Control forms, `DispatchPath` is deleted, and so are `WorkflowCommand`'s dispatch guard and `Agent.Dispatch`'s branch.
+- Each CLI catalog command costs one extra round trip (`native.assets.read` for the football digest).

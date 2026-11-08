@@ -203,10 +203,6 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if authenticationErr != nil {
-		if raw.Workflow != nil {
-			http.Error(w, "sign in with your own account", http.StatusUnauthorized)
-			return
-		}
 		h.agent(w, r, rawSession, raw)
 		return
 	}
@@ -254,6 +250,10 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	path := r.URL.Path
+	if path == DispatchPath && WorkflowCommand(raw.Command.Command) {
+		http.Error(w, "this league action now goes through the league catalog: update twr to the latest version, then run it again", http.StatusBadRequest)
+		return
+	}
 	if path == DispatchPath {
 		path = PreviewPath
 		if raw.Mode == "execute" {

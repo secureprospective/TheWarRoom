@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,17 @@ import (
 // ErrRefused is a change the league would not record. Bigger changes (G2/G3) also need a person
 // to confirm that exact change in The War Room; preview says what is blocking it.
 var ErrRefused = errors.New("the league did not record this change. Preview it to see why; bigger changes also need the commissioner to confirm them in The War Room")
+
+// ErrPreviewRefused is a preview the league refused: nothing was recorded and the change, as written, would be refused.
+var ErrPreviewRefused = errors.New("the league refused this preview: as written, the change would not be accepted. Refresh, then check your seat and the league rules")
+
+// refusal keeps the HTTP status of a refused request, so a caller can name what was refused.
+type refusal struct {
+	status int
+	error
+}
+
+func (r refusal) Unwrap() error { return r.error }
 
 // Agent is the twr CLI's connection: an agent token issued by a signed-in commissioner, used
 // over the same HTTPS dispatch as the desktop. It never logs in, mints tokens or confirms.
@@ -68,11 +80,55 @@ func (a *Agent) Dispatch(ctx context.Context, raw commissioner.RawCommand, mode,
 	if mode == "" {
 		mode = "preview"
 	}
+	if serverhttp.WorkflowCommand(raw.Command) {
+		return a.workflow(ctx, raw, mode, confirmation)
+	}
 	body, err := a.post(ctx, serverhttp.DispatchPath, serverhttp.RawNativeRequest{Protocol: 1, Command: &raw, Mode: mode}, confirmation)
 	if err != nil {
 		return nil, err
 	}
 	return json.RawMessage(body), nil
+}
+
+// workflow sends a catalog command the way the screens do: read the league to learn the football
+// evidence the server holds, then preview or execute carrying that digest back.
+func (a *Agent) workflow(ctx context.Context, raw commissioner.RawCommand, mode, confirmation string) (json.RawMessage, error) {
+	read := serverhttp.RawWorkflow{Command: "native.assets.read", Version: "1", Mode: "read", Arguments: json.RawMessage(`{"league":` + strconv.Quote(a.league) + `}`)}
+	league, err := a.postWorkflow(ctx, read, "")
+	var refused refusal
+	switch {
+	case errors.As(err, &refused) && refused.status == http.StatusForbidden:
+		return nil, fmt.Errorf("this connection token does not cover the league read native.directory.read; catalog commands need it and native.assets.read. Ask the commissioner for a new token from The War Room")
+	case errors.As(err, &refused):
+		return nil, fmt.Errorf("this connection token does not cover the league read native.assets.read; catalog commands need it and native.directory.read. Ask the commissioner for a new token from The War Room")
+	case err != nil:
+		return nil, err
+	}
+	args, err := json.Marshal(raw)
+	if err != nil {
+		return nil, fmt.Errorf("encode league action: %w", err)
+	}
+	if mode != "execute" {
+		confirmation = ""
+	}
+	request := serverhttp.RawWorkflow{Command: raw.Command, Version: "1", Mode: mode, Arguments: args, Football: league.Football}
+	response, err := a.postWorkflow(ctx, request, confirmation)
+	if mode != "execute" && errors.Is(err, ErrRefused) {
+		return nil, ErrPreviewRefused
+	}
+	return response.Data, err
+}
+
+func (a *Agent) postWorkflow(ctx context.Context, request serverhttp.RawWorkflow, confirmation string) (serverhttp.WorkflowResponse, error) {
+	var response serverhttp.WorkflowResponse
+	body, err := a.post(ctx, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &request}, confirmation)
+	if err != nil {
+		return response, err
+	}
+	if json.Unmarshal(body, &response) != nil || response.Validate() != nil {
+		return response, fmt.Errorf("the league server sent an unreadable reply; try again")
+	}
+	return response, nil
 }
 
 func (a *Agent) post(ctx context.Context, path string, payload serverhttp.RawNativeRequest, confirmation string) ([]byte, error) {
@@ -102,11 +158,11 @@ func (a *Agent) post(ctx context.Context, path string, payload serverhttp.RawNat
 	case http.StatusUnauthorized:
 		return nil, fmt.Errorf("the connection token was refused: it may have expired or been revoked. Ask the commissioner for a new one, then run twr connect")
 	case http.StatusConflict:
-		return nil, ErrRefused
+		return nil, refusal{status: response.StatusCode, error: ErrRefused}
 	case http.StatusServiceUnavailable:
 		return nil, fmt.Errorf("the league server is busy; try again in a minute")
 	default:
-		return nil, fmt.Errorf("the league refused this request (%d); this token may not cover it", response.StatusCode)
+		return nil, refusal{status: response.StatusCode, error: fmt.Errorf("the league refused this request (%d); this token may not cover it", response.StatusCode)}
 	}
 	body, err = io.ReadAll(io.LimitReader(response.Body, (1<<20)+1))
 	if err != nil || len(body) > 1<<20 || response.Header.Get("Content-Type") != "application/json" {

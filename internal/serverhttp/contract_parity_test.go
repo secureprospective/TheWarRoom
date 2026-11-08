@@ -3,7 +3,10 @@ package serverhttp_test
 import (
 	"crypto/x509"
 	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -92,7 +95,7 @@ func screenDoor(t *testing.T, f *hostedFixture, as, _ string, raw commissioner.R
 	return status == 200
 }
 
-// cliDoor is cmd/twr's route: serverclient.Agent.Dispatch → serverhttp DispatchPath, with the
+// cliDoor is cmd/twr's route: serverclient.Agent.Dispatch → serverhttp WorkflowPath (catalog), with the
 // agent token the person issued for their own franchise.
 func cliDoor(t *testing.T, f *hostedFixture, as, scope string, raw commissioner.RawCommand, mode string) bool {
 	t.Helper()
@@ -131,8 +134,10 @@ func agentDoor(t *testing.T, f *hostedFixture, as, scope string, raw commissione
 	if as != "commissioner" {
 		franchise = "franchise.02"
 	}
+	// A desktop-issued helper token carries every delegable read (platform.DelegableCommands); the
+	// workflow's league location and the assets read that names the football evidence are among them.
 	token, err := f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: bearer}, accounts.RawTokenScope{League: "native.hosted", Franchise: franchise,
-		Commands: []string{scope, "commish.ledger.read"}, Modes: []string{"read", "preview", "execute"}})
+		Commands: []string{scope, "commish.ledger.read", "native.directory.read", "native.assets.read"}, Modes: []string{"read", "preview", "execute"}})
 	if err != nil && as != "commissioner" {
 		// Agent tokens act for the current commissioner only (TokenScopePermission): an owner's
 		// CLI is refused at issuance, before any command reaches the league.
@@ -161,6 +166,9 @@ func agentDoor(t *testing.T, f *hostedFixture, as, scope string, raw commissione
 func runParity(t *testing.T, door parityEntry, base commissioner.RawCommand, steps []parityStep) []parityOutcome {
 	t.Helper()
 	f := newHostedFixture(t, true)
+	if strings.HasPrefix(base.Command, "draft.") {
+		time.Sleep(2 * time.Second) // the practice draft starts two seconds after provisioning
+	}
 	var out []parityOutcome
 	for _, step := range steps {
 		before, _ := parityAssets(t, f)
@@ -193,6 +201,20 @@ func rosterState(assets commissioner.NativeAssets) string {
 	return out
 }
 
+func draftCommand(command string, act commissioner.RawDraftAct) commissioner.RawCommand {
+	return commissioner.RawCommand{League: "native.hosted", Command: command, Request: command, Reason: "Run the draft from the tray",
+		Args: commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: 2027, Act: &act}}, Effective: "now", Visibility: "league"}
+}
+
+func withDraftAct(edit func(*commissioner.RawDraftAct)) func(*commissioner.RawCommand) {
+	return func(r *commissioner.RawCommand) {
+		d, a := *r.Args.Draft, *r.Args.Draft.Act
+		edit(&a)
+		d.Act = &a
+		r.Args.Draft = &d
+	}
+}
+
 func TestContractParityScreenAndCLI(t *testing.T) {
 	stale := func(r *commissioner.RawCommand) { r.Expected += 5 }
 	unknown := func(r *commissioner.RawCommand) { r.Command = "roster.teleport" }
@@ -200,13 +222,8 @@ func TestContractParityScreenAndCLI(t *testing.T) {
 		name       string
 		base       commissioner.RawCommand
 		ineligible func(*commissioner.RawCommand)
-		// cliExecutes is false where the CLI's DispatchPath cannot record what the screen records:
-		// it reaches service.Execute, not the catalog's runWorkflowChange (lineup.set refused), and
-		// carries no pinned football evidence (roster.reserve refused "listing not held"). Both rows
-		// are "different path" in docs/audit/CLIENT-SERVER-CONTRACT-2026-11-08.md, held for a ruling.
-		cliExecutes bool
 	}{
-		{name: commissioner.RosterReserve, cliExecutes: false,
+		{name: commissioner.RosterReserve,
 			base: commissioner.RawCommand{League: "native.hosted", Command: commissioner.RosterReserve, Request: "reserve",
 				Args: commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: "0100", Franchise: "franchise.01", Bucket: "ir"}}, Effective: "now", Visibility: "league"},
 			ineligible: func(r *commissioner.RawCommand) {
@@ -214,7 +231,7 @@ func TestContractParityScreenAndCLI(t *testing.T) {
 				w.Player = "0099"
 				r.Args.Waiver = &w
 			}},
-		{name: commissioner.LineupSet, cliExecutes: false,
+		{name: commissioner.LineupSet,
 			base: commissioner.RawCommand{League: "native.hosted", Command: commissioner.LineupSet, Request: "lineup",
 				Args: commissioner.RawArgs{Lineup: &commissioner.RawLineupChange{Season: 2026, Franchise: "franchise.01", Week: 1, Starters: []string{"0099"}}}, Effective: "now", Visibility: "private"},
 			ineligible: func(r *commissioner.RawCommand) {
@@ -222,6 +239,19 @@ func TestContractParityScreenAndCLI(t *testing.T) {
 				l.Starters = []string{"9999"}
 				r.Args.Lineup = &l
 			}},
+		{name: commissioner.TradeOffer,
+			base: commissioner.RawCommand{League: "native.hosted", Command: commissioner.TradeOffer, Request: "offer", Reason: "Parity", Effective: "now", Visibility: "league",
+				Args: commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{Franchise: "franchise.01", Parties: []string{"franchise.01", "franchise.02"},
+					Assets: []commissioner.TradeAsset{{From: "franchise.01", To: "franchise.02", Player: "0101"}}}}},
+			ineligible: func(r *commissioner.RawCommand) {
+				tr := *r.Args.Trade
+				tr.Assets = []commissioner.TradeAsset{{From: "franchise.01", To: "franchise.02", Player: "9999"}}
+				r.Args.Trade = &tr
+			}},
+		{name: commissioner.DraftTimer, base: draftCommand(commissioner.DraftTimer, commissioner.RawDraftAct{Timer: commissioner.TimerPause}),
+			ineligible: withDraftAct(func(a *commissioner.RawDraftAct) { a.Timer = commissioner.TimerResume })},
+		{name: commissioner.DraftSkip, base: draftCommand(commissioner.DraftSkip, commissioner.RawDraftAct{Round: 1, Original: "franchise.01"}),
+			ineligible: withDraftAct(func(a *commissioner.RawDraftAct) { a.Round = 9 })},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -236,15 +266,8 @@ func TestContractParityScreenAndCLI(t *testing.T) {
 			screen := runParity(t, screenDoor, tc.base, steps)
 			cli := runParity(t, cliDoor, tc.base, steps)
 			for i, step := range steps {
-				want := step.allow
-				if step.name == "execute" && !tc.cliExecutes {
-					if !screen[i].allowed || cli[i].allowed || cli[i].changed {
-						t.Errorf("execute: screen=%v cli=%v; known divergence changed, update the contract map", screen[i].allowed, cli[i].allowed)
-					}
-					continue
-				}
-				if screen[i].allowed != want || cli[i].allowed != want {
-					t.Errorf("%s: allowed screen=%v cli=%v want=%v", step.name, screen[i].allowed, cli[i].allowed, want)
+				if screen[i].allowed != step.allow || cli[i].allowed != step.allow {
+					t.Errorf("%s: allowed screen=%v cli=%v want=%v", step.name, screen[i].allowed, cli[i].allowed, step.allow)
 				}
 				if screen[i].changed != cli[i].changed || screen[i].state != cli[i].state {
 					t.Errorf("%s: outcome differs: screen changed=%v cli changed=%v", step.name, screen[i].changed, cli[i].changed)
@@ -252,10 +275,84 @@ func TestContractParityScreenAndCLI(t *testing.T) {
 			}
 			// Missing confirmation: a G2/G3 execute from the CLI without the human's code is refused and
 			// leaves the league unchanged (runParity checks unchanged state on every refusal).
+			definition, err := tc.base.EffectiveDefinition()
+			if err != nil {
+				t.Fatal(err)
+			}
 			unconfirmed := runParity(t, cliUnconfirmedDoor, tc.base, steps[len(steps)-1:])
-			if unconfirmed[0].allowed || unconfirmed[0].changed {
+			if needs := definition.Gravity == "G2" || definition.Gravity == "G3"; needs && (unconfirmed[0].allowed || unconfirmed[0].changed) {
 				t.Errorf("unconfirmed CLI execute accepted: %+v", unconfirmed[0])
 			}
 		})
+	}
+}
+
+// TestContractParityDraftPick: a pick is the on-clock franchise's DraftPickInput. The screen records
+// it; the CLI can only send a RawCommand, which the catalog's pick entry refuses, leaving the draft as it was.
+func TestContractParityDraftPick(t *testing.T) {
+	raw := draftCommand(commissioner.DraftPick, commissioner.RawDraftAct{Round: 1, Original: "franchise.01", Player: "5001"})
+	cli := runParity(t, cliDoor, raw, []parityStep{{name: "pick", as: "commissioner", mode: "execute"}})
+	if cli[0].allowed || cli[0].changed {
+		t.Fatalf("CLI pick: %+v", cli[0])
+	}
+}
+
+// TestContractDispatchRefusesCatalogCommands: one path per thing. A command the catalog serves is
+// refused on the generic dispatch door, so it can reach the league only through the workflow.
+func TestContractDispatchRefusesCatalogCommands(t *testing.T) {
+	f := newHostedFixture(t, true)
+	bearer, _ := paritySessionCommissioner(t, f)
+	token, err := f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: bearer}, accounts.RawTokenScope{League: "native.hosted", Franchise: "franchise.01",
+		Commands: []string{commissioner.TradeOffer}, Modes: []string{"preview"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, _ := parityAssets(t, f)
+	raw := commissioner.RawCommand{League: "native.hosted", Command: commissioner.TradeOffer, Request: "dispatch", Reason: "Parity", Effective: "now", Visibility: "league", Expected: before.Revision,
+		Args: commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{Franchise: "franchise.01", Parties: []string{"franchise.01", "franchise.02"},
+			Assets: []commissioner.TradeAsset{{From: "franchise.01", To: "franchise.02", Player: "0101"}}}}}
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Command: &raw, Mode: "preview"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// An older twr still sends catalog commands here; the refusal tells it to update (ruling 4, 11-08).
+	if status, reply := f.send(t, serverhttp.DispatchPath, string(body), token.Bearer, ""); status != 400 || !strings.Contains(string(reply), "update twr") {
+		t.Fatalf("catalog command on dispatch: status %d %s", status, reply)
+	}
+}
+
+// TestContractCLIRefusalWording: a token missing a catalog read names that read (ruling 2, 11-08),
+// and a refused preview reads as a preview refusal, not an unrecorded change (ruling 3).
+func TestContractCLIRefusalWording(t *testing.T) {
+	f := newHostedFixture(t, true)
+	bearer, _ := paritySessionCommissioner(t, f)
+	before, _ := parityAssets(t, f)
+	raw := commissioner.RawCommand{League: "native.hosted", Command: commissioner.TradeOffer, Request: "offer", Reason: "Parity", Effective: "now", Visibility: "league", Expected: before.Revision,
+		Args: commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{Franchise: "franchise.03", Parties: []string{"franchise.03", "franchise.02"},
+			Assets: []commissioner.TradeAsset{{From: "franchise.03", To: "franchise.02", Player: "0101"}}}}} // outside the token's franchise
+	roots := x509.NewCertPool()
+	roots.AddCert(f.server.Certificate())
+	for _, tc := range []struct {
+		reads []string
+		want  error
+		text  string
+	}{
+		{reads: []string{"native.assets.read"}, text: "does not cover the league read native.directory.read"},
+		{reads: []string{"native.directory.read"}, text: "does not cover the league read native.assets.read"},
+		{reads: []string{"native.directory.read", "native.assets.read"}, want: serverclient.ErrPreviewRefused},
+	} {
+		token, err := f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: bearer}, accounts.RawTokenScope{League: "native.hosted", Franchise: "franchise.01",
+			Commands: append([]string{commissioner.TradeOffer}, tc.reads...), Modes: []string{"read", "preview"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		agent, err := serverclient.NewAgent(f.server.URL, "native.hosted", token.Bearer, roots)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = agent.Dispatch(t.Context(), raw, "preview", "")
+		if err == nil || (tc.want != nil && !errors.Is(err, tc.want)) || !strings.Contains(err.Error(), tc.text) {
+			t.Errorf("reads %v: %v", tc.reads, err)
+		}
 	}
 }
