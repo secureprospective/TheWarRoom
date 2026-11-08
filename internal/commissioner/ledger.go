@@ -228,7 +228,7 @@ func entryLabel(records []Record, i int) (string, error) {
 func entryLabelTarget(records []Record, i int, target Record) (string, error) {
 	r := records[i]
 	if correctionCommand(r.Command.Command) {
-		return correctionDescription(records, r), nil
+		return correctionDescription(newAssetNames(records), r), nil
 	}
 	if label, ok, err := changeLabel(r); ok || err != nil {
 		return label, err

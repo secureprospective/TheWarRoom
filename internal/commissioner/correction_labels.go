@@ -7,10 +7,10 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-func correctionDescription(records []Record, r Record) string {
+func correctionDescription(names *assetNames, r Record) string {
 	c := r.Command.Args.Correction
-	team := func(id string) string { return correctionAssetName(records, id, false) }
-	player := func(id string) string { return correctionAssetName(records, id, true) }
+	team := func(id string) string { return names.name(id, false) }
+	player := func(id string) string { return names.name(id, true) }
 	switch r.Command.Command {
 	case CorrectRoster:
 		if c.Action == "add" {
@@ -18,7 +18,7 @@ func correctionDescription(records []Record, r Record) string {
 		}
 		return fmt.Sprintf("Removed %s from %s to correct the roster", player(c.Player), team(c.Franchise))
 	case CorrectTransaction:
-		for _, original := range records {
+		for _, original := range names.records {
 			if original.Receipt.Entry != c.Entry {
 				continue
 			}
@@ -55,27 +55,43 @@ func correctionDescription(records []Record, r Record) string {
 	return correctionLabel(r)
 }
 
-func correctionAssetName(records []Record, id string, player bool) string {
-	for _, r := range records {
-		if r.Command.Args.Native == nil {
-			continue
-		}
-		if player {
+// assetNames resolves player and franchise names from the first native snapshot in record order that
+// names them. The index is built once on first use: a per-lookup scan of every snapshot made corrections
+// quadratic in the ledger (lab profile, 11-08).
+type assetNames struct {
+	records        []Record
+	players, teams map[string]string
+}
+
+func newAssetNames(records []Record) *assetNames { return &assetNames{records: records} }
+
+func (n *assetNames) name(id string, player bool) string {
+	if n.players == nil {
+		n.players, n.teams = map[string]string{}, map[string]string{}
+		for _, r := range n.records {
+			if r.Command.Args.Native == nil {
+				continue
+			}
 			for _, p := range r.Command.Args.Native.Players {
-				if p.ID == id && p.Name != "" {
-					return p.Name
+				if _, seen := n.players[p.ID]; !seen && p.Name != "" {
+					n.players[p.ID] = p.Name
 				}
 			}
-		} else {
 			for _, f := range r.Command.Args.Native.Franchises {
-				if f.ID == id {
-					return f.Name
+				if _, seen := n.teams[f.ID]; !seen {
+					n.teams[f.ID] = f.Name
 				}
 			}
 		}
 	}
 	if player {
+		if name, ok := n.players[id]; ok {
+			return name
+		}
 		return "Player " + id
+	}
+	if name, ok := n.teams[id]; ok {
+		return name
 	}
 	return "Franchise " + strings.TrimPrefix(id, "franchise.")
 }

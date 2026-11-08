@@ -15,7 +15,6 @@ import (
 // fails, and so does one removed without lowering its count.
 func TestPlayerLookupsNameASide(t *testing.T) {
 	allowed := map[string]int{
-		"correction_labels.go":          1, // a player's name for a label: every copy has the same name
 		"result_flip.go":                1, // a lineup's starter within one franchise's lineup, not a copy
 		"market/native_contract_cap.go": 1, // inside one franchise's roster, already filtered by franchise
 		"preview_exceptions.go":         1, // preview words over every franchise's reserve verdicts
