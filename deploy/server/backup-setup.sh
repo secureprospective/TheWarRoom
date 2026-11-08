@@ -20,8 +20,12 @@ if [ ! -f "$input" ]; then
     jq -Rn '[inputs] | {endpoint:.[0],bucket:.[1],access_key:.[2],secret_key:.[3],recipient:.[4]}' > "$input"
 fi
 /usr/local/bin/twr-server backup-check -config "$input"
+# The Tunnel needs twr-server, so stopping the server stops it too: remember it and bring it back.
+tunnel=
+if rc-service twr-tunnel status >/dev/null 2>&1; then tunnel=yes; fi
 rc-service twr-server --ifstarted stop
 install -m 600 -o twr -g twr "$input" /etc/twr/backup.json
 rm "$input"
 rc-service twr-server start
+if [ -n "$tunnel" ]; then rc-service twr-tunnel start; fi
 printf 'Backup settings saved privately. Changes stay paused until an encrypted R2 upload passes read-back verification.\n'

@@ -68,6 +68,7 @@ STUB
   test ! -e /root/twr/backup.json
   grep -F "twr-server --ifstarted stop" /tmp/backup-service-calls
   grep -F "twr-server start" /tmp/backup-service-calls
+  grep -F "twr-tunnel start" /tmp/backup-service-calls
   /usr/local/bin/twr-server backup-check -config /etc/twr/backup.json
   rm /etc/twr/backup.json
   # Spare-host restore refuses a bad key before touching state, then restarts the fresh install.
