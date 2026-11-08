@@ -15,14 +15,53 @@ import (
 
 const InvalidationPath = "/v1/native/invalidations"
 
+// Stream budget: each league holds at most streamsPerSeat per seated franchise plus streamHeadroom (the
+// commissioner's and an unseated league's devices), and one device holds at most streamsPerDevice.
+const (
+	streamsPerSeat   = 3
+	streamHeadroom   = 8
+	streamsPerDevice = 2
+)
+
+// leagueStreamBudget scales with the league so every seated owner's phone, desktop and tablet fit.
+func leagueStreamBudget(seated int) int { return streamsPerSeat*max(seated, 0) + streamHeadroom }
+
+// streamBudget counts open streams per league and per device.
+type streamBudget struct {
+	mu      sync.Mutex
+	devices map[string]int
+	active  map[string]int
+}
+
+// acquire takes one stream slot for league and device; release must follow a true result.
+func (b *streamBudget) acquire(league, device string, seated int) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.active[league] >= leagueStreamBudget(seated) || b.devices[device] >= streamsPerDevice {
+		return false
+	}
+	b.active[league]++
+	b.devices[device]++
+	return true
+}
+
+func (b *streamBudget) release(league, device string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.active[league]--; b.active[league] == 0 {
+		delete(b.active, league)
+	}
+	if b.devices[device]--; b.devices[device] == 0 {
+		delete(b.devices, device)
+	}
+}
+
 // FUTURE-SEAM(stream): live push for new features rides this "changed for you" signal; it never
 // carries event contents. See docs/architecture/future-seams.md.
 // Each Handler owns its connection budget. No event history, ledger cursor or bearer
 // is published. A slow consumer retains only its last observed recipient view.
 func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
-	var mu sync.Mutex
-	devices := make(map[string]int)
-	active := 0
+	budget := &streamBudget{devices: make(map[string]int), active: make(map[string]int)}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != InvalidationPath {
 			next.ServeHTTP(w, r)
@@ -59,26 +98,16 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			http.Error(w, "native read refused", http.StatusForbidden)
 			return
 		}
-		mu.Lock()
-		allowed := active < 64 && devices[device] < 2
-		if allowed {
-			active++
-			devices[device]++
+		seated, err := leagueservice.JoinSeats{Store: h.Store}.Seated(r.Context(), league)
+		if err != nil {
+			http.Error(w, "native read unavailable", http.StatusServiceUnavailable)
+			return
 		}
-		mu.Unlock()
-		if !allowed {
+		if !budget.acquire(league, device, seated) {
 			http.Error(w, "too many streams", http.StatusTooManyRequests)
 			return
 		}
-		defer func() {
-			mu.Lock()
-			active--
-			devices[device]--
-			if devices[device] == 0 {
-				delete(devices, device)
-			}
-			mu.Unlock()
-		}()
+		defer budget.release(league, device)
 		h.streamRecipientInvalidations(w, r, service, league, device, head, reading.Revision, proofLapse(lifetime, limited))
 	})
 }

@@ -55,6 +55,21 @@ func (j JoinSeats) Franchises(ctx context.Context, league string) ([]accounts.Jo
 	return out, nil
 }
 
+// Seated counts the league's franchises that have an owner now (the invalidation stream budget scales with it).
+func (j JoinSeats) Seated(ctx context.Context, league string) (int, error) {
+	records, state, err := j.policy(ctx, league)
+	if err != nil {
+		return 0, err
+	}
+	seated := 0
+	for _, id := range commissioner.LeagueFranchises(records) {
+		if f, _ := state.Franchise(governance.FranchiseID(id)); f.Seat != "" {
+			seated++
+		}
+	}
+	return seated, nil
+}
+
 // IsCommissioner reports whether p holds the league's commissioner role now.
 func (j JoinSeats) IsCommissioner(ctx context.Context, league string, p governance.Principal) (bool, error) {
 	_, state, err := j.policy(ctx, league)
