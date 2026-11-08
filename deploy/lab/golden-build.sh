@@ -26,8 +26,9 @@ fi
   --net0 name=eth0,bridge=vmbr1,tag=51,ip=dhcp,ip6=manual)
 pct start $ID
 net=0
-for i in $(seq 1 30); do pct exec $ID -- wget -q --spider https://dl-cdn.alpinelinux.org/ 2>/dev/null && { net=1; break; }; sleep 2; done
+for _ in $(seq 1 30); do pct exec $ID -- wget -q --spider https://dl-cdn.alpinelinux.org/ 2>/dev/null && { net=1; break; }; sleep 2; done
 [ $net = 1 ] || { echo "FAIL: builder has no network (check lab-gw CT 110)" >&2; exit 1; }
+# shellcheck disable=SC2016 # expands inside the CT
 pct exec $ID -- sh -euc '
 sed -i "s|http://|https://|g" /etc/apk/repositories
 apk update -q
@@ -40,6 +41,7 @@ rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 find /var/log -type f -exec truncate -s 0 {} +
 '
 # Proof gates: no sshd; any openssh piece present must be at or past the sshole fix (CVE-2026-123158).
+# shellcheck disable=SC2016 # expands inside the CT
 pct exec $ID -- sh -euc '
 ! apk info -e openssh-server >/dev/null || { echo "FAIL: openssh-server present"; exit 1; }
 for p in $(apk info | grep "^openssh" || true); do
