@@ -81,3 +81,6 @@ Why a separate helper:
 ## 6. When this becomes work (not now)
 
 After the client/server stability work and the 10–30 league-mates phase: moments, then chat (DIRECTION §5 order). Before building, check every licence on the official model card, re-verify the marketing-sourced numbers, and measure the chosen models on the lab.
+
+## 7. Decision models (added 11-08)
+Jev (TypeSafe) and Clef / Clef-flash (Cloudflare, open Apache-2.0, Jev-compatible) return typed choices with probabilities. Pattern: engine frames options -> tiny model extracts state -> decision model chooses -> calibrated cascade to head brain or human; league changes always a confirmed preview. Pick: Clef-flash on Workers AI. Detail: `docs/research/decision-models-2026-11-08.md`.
