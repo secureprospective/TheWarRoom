@@ -23,6 +23,7 @@ TheWarRoom is AI first and CLI first, with a GUI overlay for people who aren't t
 | `events` | `internal/store/history/events.go` | Moments, weekly shows, chat history, activity feeds | Every confirmed league change is appended here as a revisioned event. Moment detectors **read** this ledger on the server. They never write a second log. |
 | `stream` | `internal/serverhttp/invalidations.go` | Live push to phones and desktops (a new moment, a chat message) | The stream only says "something changed for you". By design it never carries event contents, history or a bearer token. Clients reread through authorized reads. Keep it that way. |
 | `storage` | `internal/db/migrations.go` | A feature's own tables (moments, cards, chat, invites) | New tables come in as new migration steps. A feature never alters the league, roster or contract tables to hold its data. Backups and the snapshot pipeline cover the new tables automatically. |
+| `join` | `internal/accounts/join.go` | Link-based sign-up (league recruiting, share-to-join, a public "claim your team" page) | Redeem through `JoinService`: one revocable per-league secret held as a digest, compared in constant time, first pick binds, the seat is the existing owner seat recorded as a ledger event by the issuing commissioner. Never a second sign-up path, never more than owner power. |
 
 Research behind the social builds: `docs/research/social-moments-2026-11-08.md`.
 Tiny specialised models (prospecting): `docs/research/tiny-models-2026-11-08.md`.

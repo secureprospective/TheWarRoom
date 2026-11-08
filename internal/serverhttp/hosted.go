@@ -43,6 +43,7 @@ type Hosted struct {
 	Sessions       *accounts.SessionService
 	TOTP           *accounts.TOTPService
 	Enrollment     *accounts.EnrollmentService
+	Join           *accounts.JoinService
 	Recovery       *accounts.RecoveryService
 	Worker         *leagueservice.DueWorker
 	Registry       string
@@ -75,6 +76,8 @@ func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
 		h.printRecoveryCodes(w, r)
 	case EnrollmentPath:
 		EnrollmentHandler(h.Enrollment).ServeHTTP(w, r)
+	case JoinFranchisesPath, JoinClaimPath:
+		h.join(w, r)
 	case TOTPBeginPath, TOTPConfirmPath, TOTPStepUpPath:
 		h.authenticator(w, r)
 	case AgentTokenPath, AgentTokenRevokePath:

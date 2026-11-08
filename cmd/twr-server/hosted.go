@@ -214,7 +214,8 @@ func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, 
 	}
 	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
-		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Worker: worker, Registry: catalogue}
+		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Worker: worker, Registry: catalogue,
+		Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, work)}
 	if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("record server release: %w", err)
 	}

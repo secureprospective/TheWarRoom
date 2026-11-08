@@ -46,6 +46,7 @@ type hostedFixture struct {
 	skew       *atomic.Int64
 	// commissioner caches one signed-in bearer and recent-auth proof (contract_parity_test.go).
 	commissioner [2]string
+	join         *accounts.JoinService
 }
 
 func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
@@ -93,7 +94,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 		t.Fatal(err)
 	}
 	handler := serverhttp.Hosted{Tokens: f.tokens, Confirmations: confirmations, Store: store, Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Worker: worker,
-		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}),
+		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}), Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, nil),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
 			"CM-018,Franchise,What is this franchise called?,\n"}
 	if digest != "" {
@@ -105,7 +106,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 		store.SetPinnedFootball(handler.Football)
 		handler.Worker = leagueservice.NewDueWorker(store, handler.Football.PlayerFacts, workflowClock{f.skew})
 	}
-	f.worker = handler.Worker
+	f.worker, f.join = handler.Worker, handler.Join
 	f.server = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.server.Close)
 	return f

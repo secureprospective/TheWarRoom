@@ -250,3 +250,38 @@ working-server restore. `league.stand_up` has catalog metadata plus a typed hand
 and explicit `operator-console` exposure; it is deliberately absent from hosted
 command publication. Its wiring is isolated in `stand_up.go` for command-spine
 integration.
+
+## Load a league held as an MFL mirror (local console, service stopped)
+
+```
+rc-service twr-server stop
+twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db \
+  -mfl-league 14432 -football-pin /etc/twr/football.sha256 < commissioner.json
+chown twr:twr /var/lib/twr/server.db*; rc-service twr-server start
+```
+
+`commissioner.json` is `{"username":…,"password":…}` (owner-only tmpfs file; never an argument).
+On an empty server it becomes the first account; otherwise that account's password must check.
+The mirror (a *copy* of the desktop `history.db`) is opened read-only. The native league is built
+from held MFL reads only (`archive.Replay`: no connection is ever opened, so MFL cannot be reached),
+the commissioner's cutover is recorded, football evidence (held player directory + NFL kickoffs, no
+statistics) is pinned, then the existing Capture → encrypted export → inactive import → seal →
+activate path moves it. The server's copy is the only writable one. `twr-sandbox` passes
+`-football` from the pin file when it exists. Test: `go test ./internal/leagueload`.
+
+## Join link: owners pick their own team
+
+```
+twr-server join-link -db /var/lib/twr/server.db -league LEAGUE -rotate  < commissioner.json
+twr-server join-link -db … -league LEAGUE -revoke                       < commissioner.json
+twr-server join-link -db … -league LEAGUE -release franchise.07         < commissioner.json
+```
+
+`-rotate` prints a new code (the old one stops working). Holders POST
+`{"protocol":1,"join":{"league":…,"code":…}}` to `/v1/auth/join/franchises` (names + taken flags),
+then `{"protocol":1,"claim":{"league":…,"code":…,"franchise":…,"username":…,"password":…}}` to
+`/v1/auth/join/claim` (201, or 409 taken / username taken, 403 bad link), then sign in at
+`/v1/auth/login`. The first claim binds; the seat is `commish.seat.replace` recorded by the issuing
+commissioner, and `-release` is `commish.seat.remove` (also available to the commissioner in the
+app through the catalog). Both doors share login's per-client limit (10 a minute) and the backup
+write gate. Tests: `go test ./internal/serverhttp -run TestJoin`.
