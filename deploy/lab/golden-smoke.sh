@@ -25,5 +25,4 @@ c sh -c 'ls /etc/ssh/ssh_host_* 2>/dev/null' && echo "FAIL host keys present" ||
 # shellcheck disable=SC2016 # expands inside the CT
 c sh -c 'for p in openrc bubblewrap openssl ca-certificates curl jq logrotate busybox-openrc; do apk info -e $p >/dev/null || echo MISSING $p; done; echo "installer pkgs: checked"'
 c apk -q update && echo "upgradable: $(c apk -q version -l '<' | wc -l)"
-echo "mem used: $(c free -m | awk '/Mem/{print $3}') MiB  disk used: $(c df -m / | awk 'NR==2{print $3}') MiB"
 pct stop $ID; pct destroy $ID; echo "smoke CT removed"
