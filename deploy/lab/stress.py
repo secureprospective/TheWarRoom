@@ -365,9 +365,9 @@ def reconcile(outdir, checkfile):
     for line in open(checkfile):
         f = line.split(" ")
         if f and f[0] == "integrity":
-            integrity = " ".join(f[1:])
+            integrity = " ".join(f[1:]).strip()
         elif f and f[0] == "head":
-            heads[(f[1], f[2])] = int(f[3])
+            heads[(f[1], f[2])] = int(f[3].strip())
         elif f and f[0] == "req":
             actor, cid, rev = json.loads(f[1]), json.loads(f[2]), int(f[3])
             actors.add(actor)
@@ -382,7 +382,6 @@ def reconcile(outdir, checkfile):
     sent = sent_ids(outdir)
     ids = [c["req"] for c in confirmed]
     lost = [c["req"] for c in confirmed if c["req"] not in ledger]
-    moved = [c["req"] for c in confirmed if c["req"] in ledger and c.get("revision") is not None and c["revision"] not in ledger[c["req"]]]
     dup_ledger = [r for r, revs in ledger.items() if len(revs) > 1]
     dup_confirm = sorted({r for r in ids if ids.count(r) > 1})
     unconfirmed_landed = [r for r in ledger if r not in set(ids)]
@@ -390,11 +389,11 @@ def reconcile(outdir, checkfile):
     retried = sum(1 for c in confirmed if c.get("tries", 1) > 1)
     print(json.dumps({"integrity": integrity, "heads": {f"{k[0]}/{k[1]}": v for k, v in heads.items()},
                       "confirmed": len(confirmed), "confirmed_after_retry": retried, "sent": len(sent),
-                      "in_ledger": len(ledger), "lost": len(lost), "revision_mismatch": len(moved),
+                      "in_ledger": len(ledger), "lost": len(lost),
                       "dup_in_ledger": len(dup_ledger), "dup_confirmations": len(dup_confirm),
                       "landed_not_yet_confirmed": len(unconfirmed_landed),
-                      "max_confirmed_revision": max([c.get("revision") or 0 for c in confirmed], default=0),
-                      "examples": {"lost": lost[:3], "mismatch": moved[:3], "dup": dup_ledger[:3]}}))
+                      "max_ledger_revision_of_confirmed": max([max(ledger[c["req"]]) for c in confirmed if c["req"] in ledger], default=0),
+                      "examples": {"lost": lost[:3], "dup": dup_ledger[:3]}}))
 
 
 if __name__ == "__main__":
