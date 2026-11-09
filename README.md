@@ -2,55 +2,62 @@
 
 # 🏈 TheWarRoom
 
-### The front office, the league office and the stadium lights: one app, built for 32-team dynasty football
+### Bring your league. Any size, any rules. Run it from a phone, a desktop, a terminal or an AI.
 
-**A Go engine that knows every player, every contract and every cap dollar in a 32-team dynasty league. It values every player on the league's own scoring, and now it runs the league itself, on our own server, with every owner signing in from their own desktop.**
+**TheWarRoom houses your dynasty league: every roster, every contract, every cap dollar and every rule, in one ledger that is exact to the penny. It values every player on your league's own scoring. And everything in it, every single move, is a command that a person or an AI can run.**
 
 <br/>
 
-[![Client/Server](https://img.shields.io/badge/LEAGUE_SERVER-50_OF_52_SLICES_LANDED-DC143C?style=for-the-badge&labelColor=0d1117)](#-the-league-server)
+[![Import](https://img.shields.io/badge/BRING_YOUR_LEAGUE-MFL_→_NATIVE_IMPORT-DC143C?style=for-the-badge&labelColor=0d1117)](#-bring-your-league)
+[![AI First](https://img.shields.io/badge/AI_FIRST-EVERY_ACTION_IS_A_COMMAND-D97757?style=for-the-badge&labelColor=0d1117)](#-ai-first-cli-first)
 [![Opening Day](https://img.shields.io/badge/OPENING_DAY-THE_JULY_2027_ROOKIE_DRAFT-1F6FEB?style=for-the-badge&labelColor=0d1117)](#-the-road-to-the-draft)
 
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Fitted Model](https://img.shields.io/badge/Model-Fitted%202021–2025%20·%20Holdout%20Checked-8A2BE2)](#-two-numbers-per-player)
 [![Native League](https://img.shields.io/badge/Native%20League-Draft%20·%20Bids%20·%20Waivers%20·%20Trades%20·%20Rollover-orange)](#-the-native-league)
 [![Money](https://img.shields.io/badge/Money-int64%20cents%20·%20exact%20to%20the%20penny-9cf)](#-the-native-league)
-[![Security](https://img.shields.io/badge/Sign--in-Argon2id%20·%20TOTP%20·%20Device%20Keys-brightgreen)](#-the-vault-door)
-[![Backups](https://img.shields.io/badge/Backups-Encrypted%20·%20Off--site%20·%2015%20min-gold)](#-it-cannot-lose-the-league)
-[![AI Helpers](https://img.shields.io/badge/AI%20Helpers-CLI%20%2B%20MCP%20·%20Human%20Confirms-D97757)](#-the-command-line-and-ai-helpers)
+[![Speed](https://img.shields.io/badge/Screens-under%20200%20ms%20·%2032%20devices-brightgreen)](#-the-league-server)
+[![Backups](https://img.shields.io/badge/Backups-Encrypted%20·%20Off--site-gold)](#-it-cannot-lose-the-league)
 
-[![Wails v2](https://img.shields.io/badge/Wails%20v2-DF0000?logo=wails&logoColor=white)](https://wails.io)
+[![PWA](https://img.shields.io/badge/PWA-Browser%20%2B%20Phone-5A0FC8?logo=pwa&logoColor=white)](#-the-league-server)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://react.dev)
+[![Wails v2](https://img.shields.io/badge/Desktop-Wails%20v2-DF0000?logo=wails&logoColor=white)](https://wails.io)
 [![SQLite WAL](https://img.shields.io/badge/SQLite%20WAL-003B57?logo=sqlite&logoColor=white)](https://sqlite.org)
-[![Alpine](https://img.shields.io/badge/Alpine%20Linux-0D597F?logo=alpinelinux&logoColor=white)](https://alpinelinux.org)
 [![Cloudflare](https://img.shields.io/badge/Cloudflare%20Tunnel%20%2B%20R2-F38020?logo=cloudflare&logoColor=white)](https://cloudflare.com)
 
-*32 teams. Five seasons of history. One league server. **Every owner, one front office.***
+*Every rule is a setting. Every action is a command. **Every owner, one front office.***
 
 </div>
 
 ```
  ┌──────────────────────────────────────────────────────────────────────────────┐
- │  THEWARROOM // SYSTEM READOUT                                     2026-10-26 │
+ │  THEWARROOM // SYSTEM READOUT                                     2026-11-09 │
  │                                                                              │
+ │  IMPORT ......... OPEN       MFL → native · rosters · contracts · picks      │
+ │  AI + CLI ....... FIRST      137 commands · twr CLI + MCP · human confirms   │
+ │  WEB APP ........ LIVE       phone + browser · join page tested on a phone   │
+ │  SPEED .......... MEASURED   screens 106–142 ms · 32 devices · 32-team league│
  │  MODEL .......... FITTED     Now + Dynasty · 2021–2025 · holdout-checked     │
- │  HISTORY ........ STORED     ~1M values · 105 measures · append-only         │
  │  LEDGER ......... EXACT      int64 cents · hash-chained · $0.00 drift        │
  │  NATIVE LEAGUE .. HOSTED     draft · lineups · bids · waivers · trades · ✔   │
  │  LEAGUE SERVER .. BUILT      twr-server · Alpine · Cloudflare Tunnel         │
- │  SIGN-IN ........ LOCKED     invite codes · Argon2id · TOTP · device keys    │
- │  BACKUPS ........ ARMED      encrypted · Cloudflare R2 · every 15 minutes    │
+ │  BACKUPS ........ ARMED      encrypted · Cloudflare R2 · spare-host restore  │
  │  DESKTOPS ....... PACKAGED   Windows · Mac · Linux · signed self-updates     │
- │  AI HELPERS ..... LEASHED    twr CLI + MCP · scoped tokens · human confirms  │
- │  CLIENT/SERVER .. 50 / 52    two drills from release-candidate               │
- │  THE REVAMP ..... MAPPED     16 parts · a few big, tested branches           │
  │  OPENING DAY .... JULY 2027  the rookie draft, run through TheWarRoom        │
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-![The target Home screen: the seasonal card, the alert tray and the inspector](docs/ui/showcase/target-1-home.png)
+<div align="center">
 
-<sub>🎯 **The target, Home: "what needs me, and how long do I have?"** The league-year track and its nearest clocks, an alert tray sorted by urgency and then stakes, and the counterparty open in the inspector. Rosters and contracts are the real league; points, values and clocks are illustrative.</sub>
+[![Download the interactive preview](https://img.shields.io/badge/⬇_DOWNLOAD_THE_INTERACTIVE_PREVIEW-one_file_·_opens_in_any_browser_·_no_install-DC143C?style=for-the-badge&labelColor=0d1117)](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)
+
+**[Click to download](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)**, unzip, and open `TheWarRoom-preview.html`. Five screens to explore, nothing to install, and it works offline.
+
+</div>
+
+![League Pulse on a Sunday: your matchup starter by starter, the live NFL game on a field, every league matchup down the side and a play-by-play feed of your players](docs/ui/showcase/screen-pulse.png)
+
+<sub>🏟️ **This is Sunday in TheWarRoom.** Your matchup, the real game on a real field, every other matchup in the league and every play that touches your roster. One screen. No ads. No hunting. Player names are real; teams, scores and values in the preview are sample data.</sub>
 
 ---
 
@@ -58,27 +65,177 @@
 
 | | | |
 |:--|:--|:--|
-| ⚡ [The Hook](#-the-hook) | 🧠 [Two Numbers Per Player](#-two-numbers-per-player) | 🏟️ [The League Server](#-the-league-server) |
-| 🏈 [The Native League](#-the-native-league) | 🆚 [Two Ways to Play](#-two-ways-to-play) | 🔥 [The 32-Team Default](#-the-32-team-default-built-from-the-data) |
-| 🛡️ [The Vault Door](#-the-vault-door) | 💾 [It Cannot Lose the League](#-it-cannot-lose-the-league) | ⌨️ [CLI & AI Helpers](#-the-command-line-and-ai-helpers) |
-| 🎛️ [The Console](#-the-console) | 🔧 [The Revamp](#-the-revamp-season-two-of-the-build) | 🏛️ [Architecture](#-the-architecture) |
-| 🗺️ [The Road to the Draft](#-the-road-to-the-draft) | 🤖 [The AI Owners](#-horizon-the-ai-owners) | 🤝 [How It Gets Built](#-how-it-gets-built) |
+| 🎬 [See It Move](#-see-it-move) | ⚡ [The Hook](#-the-hook) | 🤖 [AI First, CLI First](#-ai-first-cli-first) |
+| 🚪 [Bring Your League](#-bring-your-league) | 🧩 [Any League You Can Imagine](#-any-league-you-can-imagine) | 🧠 [Two Numbers Per Player](#-two-numbers-per-player) |
+| 🏟️ [The League Server](#-the-league-server) | 🏈 [The Native League](#-the-native-league) | 🔥 [The 32-Team Default](#-the-32-team-default-built-from-the-data) |
+| 🛡️ [The Vault Door](#-the-vault-door) | 💾 [It Cannot Lose the League](#-it-cannot-lose-the-league) | 🎛️ [The Console](#-the-console) |
+| 🏛️ [Architecture](#-the-architecture) | 🗺️ [The Road to the Draft](#-the-road-to-the-draft) | 🤝 [How It Gets Built](#-how-it-gets-built) |
 | 🛠️ [Running It](#-running-it) |  |  |
+
+---
+
+## 🎬 See It Move
+
+> **You already know what's wrong with fantasy apps.**
+> The ad between you and your lineup. The trade screen that is two lists and a shrug. The "live" score that is four minutes old. The betting odds you never asked for. Six taps to find out who is on bye.
+>
+> **We got tired of it too. So we built the one we wanted.**
+
+Everything below is one file you can **[download](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)** and open right now. Five rooms. Go and poke at it.
+
+### 🏟️ Sunday is the crown jewel
+
+Other apps give you a list of names with numbers that tick up. **League Pulse gives you the game.**
+
+<p align="center">
+<img src="docs/ui/showcase/detail-pulse-game.png" width="66%" alt="The live game on a field with the ball spotted, above your matchup starter by starter"/> <img src="docs/ui/showcase/detail-pulse-plays.png" width="32.8%" alt="Your players in this game and the play-by-play feed"/>
+</p>
+
+- 🏈 **The real game, on a field.** Who has the ball, where it is spotted, the down and distance, and the last play in plain words.
+- ⚔️ **Your matchup, head to head, position by position.** Your quarterback beside theirs. A football marks every player who is **on the field right now**.
+- 📡 **Only the plays that matter to you.** The feed shows every snap involving your starters and what it was worth: *"Puka Nacua 18-yd catch over the middle · your starter · +2.8 pts"*.
+- 🧩 **Who owns everyone in this game.** Every rostered player in the game you are watching, whose team he is on, and who is still a free agent.
+- 👀 **The whole league at a glance.** All sixteen matchups down the side with live win odds, so you can watch your rival lose in real time.
+- 🕐 **It says how fresh it is.** "ESPN live · 4s ago", stamped right on the screen. No guessing whether the score is stale.
+
+### 🤝 A trade desk that tells you the truth
+
+Every other app hands you two lists and wishes you luck. Then you send the offer, wait three days, and get declined with no idea why.
+
+![The trade desk: what you send and get, valued through your lens and theirs, with the cap, roster and lineup effects and the smallest changes that keep the deal acceptable](docs/ui/showcase/detail-trade-lens.png)
+
+- 🔍 **Two lenses, one deal.** The same trade is valued the way *you* see it (contending, now beats later) and the way *they* see it (rebuilding, youth and picks). When both bars point right, it says so: **BOTH WIN**.
+- 💸 **The consequences, before you send.** Cap room after, roster count, whether it is legal, who drops out of your lineup and what that costs you per week.
+- 🎚️ **"Tune it."** The desk suggests the smallest change that keeps the deal acceptable: take that pick out, or ask for one more. One click to apply.
+- 🗂️ **Versions A, B and C.** Build three offers side by side. Nobody sees them until you send.
+- 🕵️ **It scouts the other owner for you.** Their record, their cap room, what they need and what they have to spare.
+
+And along the bottom, your whole year on one rail, so you never trade past a deadline you forgot:
+
+![The year rail: today, the trade deadline, playoffs, contract decisions, tags, free agency, the rookie draft and cutdown day](docs/ui/showcase/detail-trade-year.png)
+
+![The War Room trade desk in full](docs/ui/showcase/screen-warroom.png)
+
+### 📋 Lineup control nobody else has
+
+Setting a lineup in most apps is a drop-down and a prayer. Here the page does the worrying for you.
+
+![The lineup check: cap committed, dead money and room, and a warning that one slot is empty, one starter is on bye and two are questionable](docs/ui/showcase/detail-lineup-check.png)
+
+- 🚨 **It checks your lineup before the lock does.** *"1 empty · 1 on bye · 2 questionable · locks in 2d 05h."* You will never again find out on Monday that you started a player on bye.
+- 📊 **Every starter shows his recent games** as a row of bars, next to his average, his matchup and his projection.
+- 💰 **The cap is always in view.** Committed, dead and room, on one bar, on the same page as the lineup it pays for.
+- 🧾 **Click any player** and his contract by year, his dead cap if you cut him today, his age arc and **your private notes** open beside the roster.
+
+And then it tells you exactly what your mistakes are costing you, slot by slot:
+
+![An empty lineup slot flagged in hazard stripes, and this week's matchup broken down position by position with the points gained or lost at each](docs/ui/showcase/detail-lineup-gap.png)
+
+That empty slot is costing 7.2 points. It is striped like a hazard so you cannot miss it.
+
+![Franchise HQ in full: nineteen starters, the bench and the player inspector](docs/ui/showcase/screen-hq.png)
+
+### 🏠 Home answers one question: what needs me?
+
+Open the app and you know where you stand in about three seconds. Your matchup live. A trade offer with its clock running. League news tagged *your flex*, *your opponent's quarterback* or *on the wire*. The playoff race. Every move in the league. And your shortcuts, each one key away.
+
+![Home: the live matchup, the alert bar, the playoff race, tagged league news, the transaction ledger and keyboard shortcuts](docs/ui/showcase/screen-home.png)
+
+### 🎛️ And for the commissioner: the job, finally organised
+
+Running a league is unpaid work. The Control Room treats it that way. What needs a ruling comes to you, sorted by what is due first. Every change shows who it affects before it lands, goes on a ledger the owners can read, and can be undone. Along the bottom is the idea the whole product is built on: **every screen action is also a command.**
+
+![The Control Room: the commissioner's jobs, quick actions, the week at a glance and the command line](docs/ui/showcase/screen-control.png)
+
+<sub>The preview is a design mock with sample data, built in the same look the app ships in. It makes no network calls.</sub>
 
 ---
 
 ## ⚡ The Hook
 
 > MyFantasyLeague gives you a roster and a box score.
-> **TheWarRoom gives you a front office, and then it gives the league its own stadium.**
+> **TheWarRoom gives you a front office, gives the league its own stadium, and hands your AI the keys you choose to give it.**
 
 Stock platforms and fragile spreadsheets fall apart the moment a league gets *serious*: 32 teams, per-year salary caps, multi-year contracts, dead cap, franchise tags, IDP scoring, and years of history that all have to reconcile to the penny. That isn't a fantasy app's job anymore. **That's a data system.**
 
-TheWarRoom started as that data system, a front office for one GM. Then it kept going. **Now it hosts the league itself.** One server holds the one true ledger and runs the clock, the draft, the bids, the waivers, the trades and the season rollover. Every owner opens the app on Windows, Mac or Linux, signs in, and runs their franchise. No monthly platform bill. No one else's servers. **Our league, on our ground.**
+TheWarRoom is that data system, and it has one job: **be the home your league would be foolish not to move into.**
 
-### 🏟️ Why 32 teams
+- 🚪 **Bring the league you already have.** Import it from MFL with its rosters, contracts, picks and rules intact.
+- 🧩 **Or build the one you always wanted.** Every rule is a setting. The app doesn't care whether you run 10 teams or 32, one conference or two, with or without a cap.
+- 📱 **Play it anywhere.** A phone, a browser, a desktop app, a terminal.
+- 🤖 **Let an AI do the busywork.** It works for you, through the same commands you use, and a human confirms anything that changes the league.
 
-Every NFL franchise gets a GM. Rosters run deep, defenses score, the cap bites, and the waiver wire is thin. It's the closest thing to running a real front office, and it's where the serious players are heading. The platforms weren't built for it, and spreadsheets can't keep up. **TheWarRoom intends to lead that charge.**
+No monthly platform bill. No one else's servers. **Your league, on your ground.**
+
+### 🏟️ Why we go all the way to 32 teams
+
+Every NFL franchise gets a GM. Rosters run deep, defenses score, the cap bites, and the waiver wire is thin. It's the closest thing to running a real front office, and it's where the serious players are heading. If the engine holds at 32 teams with contracts and IDP, it holds for your 12-team league without breaking a sweat.
+
+---
+
+## 🤖 AI First, CLI First
+
+> **Every button in TheWarRoom is a command. The screens came second.**
+
+TheWarRoom is built from the command line out. The league runs on **one catalogue of 137 typed commands** behind one door, so a screen, a terminal and an AI helper all reach the same rules, the same checks and the same ledger. The screens you see are an output of that, and so is everything we build next: share cards, minigames, the weekly show.
+
+```
+   $ twr connect --address https://league.example --league native.example
+   $ twr ledger                      # the league's recorded changes
+   $ twr preview CHANGE.json         # what a change would do; records nothing
+   $ twr execute CHANGE.json         # records it; big moves need the commissioner's code
+   $ twr mcp                         # hand the league to an AI helper over MCP
+```
+
+**What that buys you:**
+
+- 🗣️ **Ask, don't click.** "Set my lineup for the bye weeks." "What's my dead cap in 2028 if I cut him?" The helper previews the move through the real rules and shows you the receipt.
+- 🧾 **Preview before anything is written.** Every change says "this will commit" or the exact reason it won't.
+- 🔐 **A leash, not a free hand.** A commissioner connects a helper, picks **"look and suggest"** or **"also record"**, and picks which franchise it works for. The helper gets a scoped, expiring token. **An AI never signs in, never makes its own tokens, and never confirms a change on its own.**
+- 🏷️ **The ledger remembers.** Every move a helper touches is marked **"via AI"**.
+
+([`cmd/twr`](cmd/twr/README.md))
+
+---
+
+## 🚪 Bring Your League
+
+> **Moving your league should be the easiest decision you make all season.**
+
+The import is the front door, and it is built to one standard: **your league lands whole, whatever its size or shape.**
+
+| What comes across | How it lands |
+|:--|:--|
+| 👥 **Rosters and contracts** | Every player, every salary year, to the cent |
+| 🎟️ **Draft picks** | Current and future, with who owns them |
+| 📜 **Your rules** | Scoring, lineups, roster limits and cap settings arrive as ordinary settings you can change later |
+| 🗂️ **Your season so far** | The schedule, recorded results, transactions and pick history come with it |
+| 🏷️ **Franchises and divisions** | Names and structure exactly as your league has them |
+| 🪪 **Your owners** | Each one picks their team on a join page and they're in |
+
+- **Nothing is locked because it came from MFL.** An imported league is a normal league. Change any setting the day after you arrive.
+- **It checks its own work.** Before you switch, a review compares the import with MFL item by item: rosters, contracts, picks, franchises, divisions and settings. Anything that differs is named in plain words. No silent drops, no "close enough".
+- **TheWarRoom never writes to MFL.** Your old league is untouched while you try the new one.
+
+**Not ready to move the whole league?** Use TheWarRoom solo. One owner can point it at their MFL league and get the values, the cap and contract maths and the what-if desk for their own team, with MFL still running the league.
+
+---
+
+## 🧩 Any League You Can Imagine
+
+> **The app houses the settings. A league format is just a set of values.**
+
+Fantasy football is whatever your group decides it is. TheWarRoom frames that instead of fencing it in:
+
+- ⚙️ **Every rule is a setting**, and every setting changes through one flow. Year-over-year rule changes need no new release.
+- 🧰 **Presets get you started in minutes.** They suggest values; they never limit them.
+- 🧠 **One engine runs them all.** There is no special build for a league type. If you could reach a league by changing settings by hand, the engine can run it.
+
+Two presets ship today:
+
+**🪞 The Mirrored Conference League.** 32 teams, two conferences, **two full player pools**. Each side has its own copy of every NFL player, so both conferences can have someone holding the league's best quarterback. Trades, bids and waivers stay inside your side, the schedule crosses over, and the two side champions meet in one final. It is the simplest way into 32-team dynasty.
+
+**🏛️ The 32-Team Default.** The flagship: deep contracts, per-year caps, IDP, and a lineup, roster and scoring rebuilt from three seasons of play-by-play data. [See how it was built.](#-the-32-team-default-built-from-the-data)
 
 ---
 
@@ -131,34 +288,44 @@ The model is fitted on the league's own scoring history, 2021–2025. Every opti
 
 > A front office for one is a tool. A front office for the whole league is a **platform.**
 
-In October 2026 the client/server plan was written: **52 slices, about 102 engineer-days**, scheduled to run to a **build freeze on May 28, 2027**. Expert panels ruled on five gates before a line of server code existed.
-
-**Within weeks, 50 of the 52 slices had landed on `main`**: each one reviewed, passed through CI, squash-merged, and click-tested in the real app where you can see it.
+One server holds the one true ledger and runs the clock, the draft, the bids, the waivers, the trades and the season rollover. Owners reach it from **a phone or a browser first**, from the desktop app, or from the command line. Same screens, same commands, same rules.
 
 ```
-   🖥️ Owner desktops ×12+              ☁️ Cloudflare Tunnel               🏠 twr-server
-   Windows · Mac · Linux      ──HTTPS──▶   no open ports at home  ◀────────  Alpine container
-   your password + device key             no exposed IP                       the ONE ledger
-   TOTP for the commissioners             outbound-only tunnel                owns every clock
+   📱 Phones · 🌐 Browsers            ☁️ Cloudflare Tunnel               🏠 twr-server
+   🖥️ Desktops · ⌨️ twr CLI · 🤖 AI ──HTTPS──▶ no open ports at home ◀──────  Alpine container
+   your sign-in, your team                no exposed IP                       the ONE ledger
+                                          outbound-only tunnel                owns every clock
         ▲                                                                        │
         │  ⚡ live updates: "something changed, re-read"  (never the raw ledger)  │
         └────────────────────────────────────────────────────────────────────────┤
-                                                                                 ▼ every 15 min
+                                                                                 ▼
                                                                     🔒☁️ encrypted backup → Cloudflare R2
 ```
 
-**One brain, one ledger, one clock.** The server owns time. When you hit *Submit* on a bid at 11:59:59, the **server** decides whether it beat the deadline, and no desktop can fake a clock.
+**One brain, one ledger, one clock.** The server owns time. When you hit *Submit* on a bid at 11:59:59, the **server** decides whether it beat the deadline, and no device can fake a clock.
 
-| Slices | What landed |
-|:--:|:--|
-| ✅ 01–12 | **The shared engine:** one HTTPS path, typed commands from one catalog, one mutation door, a server deadline worker, pinned stat evidence, native scoring |
-| ✅ 13–22 | **Accounts:** invite codes, Argon2id passwords, TOTP, printed recovery codes, device sessions in the OS keychain, revoke one device or all |
-| ✅ 23–26 | **Live and private:** hidden bids stay hidden everywhere, private-safe live updates, scoped AI tokens, the `twr` CLI and MCP |
-| ✅ 27–33 | **Hardened:** request and login limits, input guards, a hash-chained ledger and security audit, checkpoints that catch a rewritten history |
-| ✅ 34–38 | **The appliance:** one-command Alpine installer, sandboxed service, encrypted R2 backups, spare-host restore, health dashboard |
-| ✅ 39–45 | **Moving day and delivery:** encrypted league export and safe moves, free signed updates (TUF), Windows, Mac and Linux packages |
-| ✅ 46–50 | **The owner's season:** hosted lineups, draft, bids, waivers, trades, results and rollover, plus a matrix testing every command × every role |
-| ▶ 51–52 | **The drills:** tunnel, deploy and update-tamper drills, then three-OS novice installs and a full 12-owner dress rehearsal |
+**⚡ Lightning fast is law.** The budget is a screen in under 200 ms and a click in under 100 ms, with no spinners in normal use. Measured on the lab server with a real 32-team league:
+
+```
+   SCREENS   p50 106–142 ms at every step up to 32 devices at once      ✅ inside the 200 ms budget
+   ERRORS    0 server errors up to 32 devices
+   CLICKS    preview ~0.6 s · execute ~0.6 s                             🔧 still over budget, being cut
+```
+
+We print the miss next to the win. Clicks are the next thing to fall.
+
+**📲 The join page works on a phone.** An owner opens the link, picks their team from the real imported team names, sets a password and is in. Tested on a real phone over the real tunnel.
+
+| What is built | |
+|:--|:--|
+| ✅ **The shared engine** | One HTTPS path, typed commands from one catalogue, one mutation door, a server deadline worker, native scoring from pinned stat evidence |
+| ✅ **Accounts** | Invite codes, Argon2id passwords, TOTP, printed recovery codes, device sessions, revoke one device or all |
+| ✅ **Live and private** | Hidden bids stay hidden everywhere, private-safe live updates, scoped AI tokens, the `twr` CLI and MCP |
+| ✅ **Hardened** | Request and login limits, input guards, a hash-chained ledger and security audit, checkpoints that catch a rewritten history |
+| ✅ **The appliance** | One-command Alpine installer, sandboxed service, encrypted R2 backups, spare-host restore, health dashboard |
+| ✅ **Moving day and delivery** | Encrypted league export and safe moves, free signed updates (TUF), Windows, Mac and Linux packages |
+| ✅ **The owner's season** | Hosted lineups, draft, bids, waivers, trades, results and rollover |
+| ▶ **Now** | Finishing the browser app, moving the last desktop-only work onto the server, and cutting click times ([the plan](docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md)) |
 
 ---
 
@@ -166,7 +333,7 @@ In October 2026 the client/server plan was written: **52 slices, about 102 engin
 
 The native league is the real thing: a league whose **record of truth is TheWarRoom's own ledger**, not a mirror of somebody else's. Every move is a command, every command is checked against the rulebook, and every result is written once, forever.
 
-| The season | Hosted on the league server |
+| The season | Hosted on the league server, from any device |
 |:--|:--|
 | 🎓 **The rookie draft** | The draft room, the clock and the picks, live for every owner at once |
 | 📋 **Lineups and rosters** | Set your lineup, move players to IR and taxi, all legality-checked |
@@ -183,39 +350,6 @@ The native league is the real thing: a league whose **record of truth is TheWarR
 ![The target Trade Floor: an incoming offer as a move envelope](docs/ui/showcase/target-3-trade.png)
 
 <sub>🎯 **The target, Trade Floor:** an incoming offer with its checks, the league's comparable trades, and the hold-to-accept gate. Real rosters and salaries; values are illustrative.</sub>
-
----
-
-## 🆚 Two Ways to Play
-
-TheWarRoom will ship with **two default league modes**, ready to go on day one, so a new league can start in minutes instead of a season of setup.
-
-### 🪞 The Mirrored Conference League
-
-**32 teams. Two conferences. Two full player pools. One champion.**
-
-```
-          🔵 AFC SIDE · 16 teams                      🔴 NFC SIDE · 16 teams
-     ┌──────────────────────────────┐           ┌──────────────────────────────┐
-     │  its own copy of EVERY NFL    │           │  its own copy of EVERY NFL    │
-     │  player · each owned once     │           │  player · each owned once     │
-     │  trades & moves stay inside   │           │  trades & moves stay inside   │
-     └──────────────┬───────────────┘           └───────────────┬──────────────┘
-                    │      ◀──── the schedule crosses over ────▶   │
-                    └────────────▶  🏆 SIDE CHAMPS MEET  ◀─────────┘
-                                     IN THE FINAL
-```
-
-- **Everybody can own a star.** Each side has its own full pool, so the AFC side and the NFC side can each have someone holding the league's best quarterback.
-- **Your market is your conference.** Trades, bids and waivers only happen inside your side, so every deal is with the 15 rivals you know best.
-- **The games cross over.** The schedule plays across both sides like a normal season.
-- **One final.** Each side crowns a champion, and the two meet for the title.
-
-It's the simplest way into 32-team dynasty and the format built to bring new people in.
-
-### 🏛️ The Legacy Mode
-
-The flagship grows out of the Legacy league this whole project was born in. It keeps the deep contracts, per-year caps and full rulebook, and adds a default lineup, roster and scoring rebuilt from three seasons of play-by-play data. **See [The 32-Team Default](#-the-32-team-default-built-from-the-data) below.**
 
 ---
 
@@ -328,12 +462,12 @@ Security here is **proportionate**: this is a recreational league, so TheWarRoom
 
 | Lock | How it works |
 |:--|:--|
-| ✉️ **Invite-only** | The commissioner hands you a one-use code, valid 48 hours. There is no sign-up page |
+| ✉️ **Invite-only** | The commissioner hands you a one-use code. There is no open sign-up page |
 | 🔑 **Passwords** | Argon2id, login throttles, and a cap on hashing work so nobody can flood the server |
-| 📱 **TOTP for commissioners** | An authenticator code for anything privileged |
-| 🧾 **Recovery codes** | Eight printed one-time codes. Lose your phone, not your franchise |
-| 💻 **Device sessions** | Kept in your computer's keychain. Revoke one device or all of them, and their queued writes die too |
-| 🎭 **Every command knows its role** | All **101 league-changing commands** are checked against owner, commissioner, co-commissioner and AI-helper modes on every path. A denied attempt changes **nothing** |
+| 📱 **Authenticator codes** | TOTP guards privileged work, and no setting ever skips a permission check or a confirmation |
+| 🧾 **Recovery codes** | Printed one-time codes. Lose your phone, not your franchise |
+| 💻 **Device sessions** | Revoke one device or all of them, and their queued writes die too |
+| 🎭 **Every command knows its role** | Every league-changing command is checked against owner, commissioner, co-commissioner and AI-helper roles on every path. A denied attempt changes **nothing** |
 | 🙈 **Hidden bids stay hidden** | Not in the screens, not in live updates, not even in change-detection tokens |
 | ⛓️ **Tamper-evident history** | The ledger and the security audit are hash-chained, and checkpoints catch a rewritten history |
 | 🧱 **A sandboxed server** | Non-root, no capabilities, one writable folder, default-deny firewall |
@@ -346,30 +480,13 @@ Security here is **proportionate**: this is a recreational league, so TheWarRoom
 
 ```
    ⏱️  RPO  15 minutes     the most play you can ever lose
-   🛠️  RTO   4 hours       the longest the league can ever be down, new hardware included
+   🛠️  RTO   4 hours       the target for the longest the league is ever down, new hardware included
 ```
 
-- **🔒 Encrypted before it leaves the house.** Every 15 minutes the server seals a backup and ships it to **Cloudflare R2**, then downloads it again to prove it's good. If a backup goes overdue, the league pauses writes rather than risk them.
-- **🚑 Spare-host restore.** A dead server is a runbook, not a disaster: install fresh, run `twr-restore`, and the newest good set comes back, checked against the saved checkpoint.
+- **🔒 Encrypted before it leaves the house.** The server seals a backup on a timer and ships it to **Cloudflare R2**, then reads it back to prove it's good. If a backup goes overdue, the league pauses writes rather than risk them.
+- **🚑 Spare-host restore.** A dead server is a runbook, not a disaster: install fresh, run the restore, and the newest good set comes back, checked against the saved checkpoint.
 - **🚚 Moving day is safe.** Export a league encrypted, import it inactive, seal the source, activate the target. A crash at any step leaves exactly one live league.
 - **🩺 A health dashboard.** `twr-status` shows backups, history chains, the tunnel, the clock and the disk at a glance ([checklist](deploy/server/CHECKLIST.md)).
-- **🔜 Coming in the revamp:** a standalone **rosters-and-contracts restore point**, a recovery log for every league, and one tested **"stand the league back up"** command that a commissioner can run.
-
----
-
-## ⌨️ The Command Line and AI Helpers
-
-Every button in TheWarRoom is a command. The native league already runs on **one catalog of 136 typed commands** behind one mutation door, so the screen, the terminal and an AI helper reach the same rules, the same checks and the same ledger.
-
-```
-   $ twr connect --address https://league.example --league native.example
-   $ twr ledger                      # the league's recorded changes
-   $ twr preview CHANGE.json         # what a change would do; records nothing
-   $ twr execute CHANGE.json         # records it; big moves need the commissioner's code
-   $ twr mcp                         # hand the league to an AI helper over MCP
-```
-
-A commissioner connects a helper from the app, picks **"look and suggest"** or **"also record"**, and picks which franchise it works for. The helper gets a scoped token: read and preview for 30 days, execute for 24 hours. **An AI never signs in, never makes its own tokens, and never confirms a change on its own.** The ledger marks every move it touches **"via AI"**. ([`cmd/twr`](cmd/twr/README.md))
 
 ---
 
@@ -395,63 +512,42 @@ The bar is **Anduril, not SaaS**: dark, precise, data-dense, with no wasted pixe
 
 ---
 
-## 🔧 The Revamp: Season Two of the Build
-
-> We sprinted to a working platform. **Now we build it better, from the inside out.**
-
-Hundreds of build sessions got TheWarRoom to about **180,000 lines** and a working league server. With the platform standing, the next phase turns inward. Three independent AI mappers walked the entire codebase, and every subsystem was laid out, questioned and locked into a **16-part plan**, built in a few big, tested branches.
-
-| | Part | The upgrade |
-|:--:|:--|:--|
-| ⌨️ | **One command spine** | One standard registry that every button, CLI line, chat and AI helper runs through, enforced by CI |
-| 🧠 | **One shared brain** | League logic moves into shared services, so desktop, server and CLI run the exact same code |
-| 💾 | **Recovery first** | Rosters and contracts restorable on their own, with a recovery log and a one-command stand-up |
-| 🪪 | **Our own player IDs** | TheWarRoom's own identity for every player, with every outside source linked to it |
-| 📡 | **The widest stat suite** | A native stats pipeline built for depth and speed, down to QB hits and first downs, with IDP, play-level and live corrections |
-| 🏈 | **The league core, rebuilt** | The native league split into clean domains: market, governance, rules, draft, competition, season |
-| 📈 | **Sharper valuations** | Named, versioned value products, tuned native-first, with the research lab moved out of the app |
-| 🎨 | **A screen scorecard** | Every screen rated against the build philosophy: speed, plain words, no dead space, every button a command |
-
-**The laws don't change:** a CLI back end, every button a command, minimal code, lightning fast, and **non-technical owners first without ever limiting the experts.**
-
----
-
 ## 🏛️ The Architecture
 
-The boundaries aren't conventions; they're **compiler-enforced**. A violation is a build failure, not a code-review note.
+The boundaries aren't conventions; they're **enforced by the build**. A violation is a build failure, not a code-review note.
 
 ```
    ┌────────────────────────────────────────────────────────────────────────────┐
-   │   OWNER DESKTOPS  ·  Wails v2 + React                 ⌨️ twr CLI · 🤖 MCP    │
+   │   📱 PHONE + BROWSER (PWA)  ·  🖥️ DESKTOP  ·  ⌨️ twr CLI  ·  🤖 AI over MCP  │
    │   Home · War Room · Franchise HQ · Trade Floor · League Pulse · Control    │
    └──────────────┬────────────────────────────────────────────┬────────────────┘
                   │  HTTPS + JSON  ·  live change notices       │ scoped tokens
    ┌──────────────▼────────────────────────────────────────────▼────────────────┐
-   │   twr-server  ·  sign-in & device sessions  ·  role check on every command  │
-   │   ONE catalog of commands  →  ONE mutation door  →  ONE writer               │
+   │   twr-server  ·  sign-in & sessions  ·  role check on every command         │
+   │   ONE catalogue of commands  →  ONE mutation door  →  ONE writer             │
    │   server-owned clock  ·  deadline worker  ·  hidden-bid privacy             │
    └──────────────┬──────────────────────────────────────────┬──────────────────┘
                   │                                          │
    ┌──────────────▼───────────────┐          ┌───────────────▼──────────────────┐
    │   THE LEAGUE RULES + MODEL    │          │   THE LEDGER & STORAGE            │
-   │   native scoring · legality   │◄─────────│   SQLite WAL · append-only        │
+   │   rules as settings · legality│◄─────────│   SQLite WAL · append-only        │
    │   fitted credibility blend    │          │   hash-chained · pinned evidence  │
    └──────────────▲───────────────┘          └───────────────▲──────────────────┘
                   │                                          │
    ┌──────────────┴──────────────────────────────────────────┴──────────────────┐
-   │   DATA  ·  nflverse · DynastyProcess · CollegeFootballData · MFL reference  │
-   │   105 measures · every download saved and fingerprinted before it's read   │
+   │   DATA  ·  nflverse · DynastyProcess · CollegeFootballData · MFL import     │
+   │   every download saved and fingerprinted before it's read                  │
    └────────────────────────────────────────────────────────────────────────────┘
 ```
 
 - **One writer.** A single path changes league state.
 - **Immutable history.** Every result is appended, never edited, and every model run records the settings and inputs it used.
 - **Evidence you can replay.** Every downloaded file is saved and fingerprinted before it's parsed, so any number can be traced to its source.
-- **A walkable tree.** Every feature lives in `internal/app/<feature>`, and CI fails any file that isn't indexed. Find anything in two hops: [`SYSTEM_MAP.md`](SYSTEM_MAP.md).
+- **A walkable tree.** Every feature has one home, and CI fails any file that isn't indexed. Find anything in two hops: [`SYSTEM_MAP.md`](SYSTEM_MAP.md).
 
 ```
-   BY THE NUMBERS   ~122,000 lines of Go · ~106,000 lines of Go tests · ~56,000 lines of TypeScript
-                    604 commits · 136 typed league commands · 3 desktop platforms · 1 league server
+   BY THE NUMBERS   ~140,000 lines of Go · ~73,000 lines of TypeScript
+                    650+ merged changes · 137 typed league commands · 3 desktop platforms · 1 league server
 ```
 
 ---
@@ -461,9 +557,12 @@ The boundaries aren't conventions; they're **compiler-enforced**. A violation is
 ```
    ✅ THE CORE ──────────────────────── fitted model · Now + Dyn · exact ledger
    ✅ THE TRUTH PASS ───────────────── ledger replay: 2,000 events from 135 s → 66 ms
-   ✅ CLIENT/SERVER 01–50 ──────────── the league server, end to end
-   ▶  51–52 ────────────────────────── the final drills and the 12-owner dress rehearsal
-   🔧 THE REVAMP ───────────────────── 16 parts, built in a few big, tested branches
+   ✅ THE LEAGUE SERVER ─────────────── hosted season, accounts, backups, packages
+   ✅ THE JOIN PAGE ─────────────────── owners pick their team from a phone
+   ▶  THE WEB APP, COMPLETE ────────── every owner job from a browser or phone
+   ▶  CLICKS UNDER 100 MS ──────────── the last speed budget
+   ▶  THE IMPORT, EVERY LEAGUE ─────── any size, any type, lands whole
+   🤝 THE FIRST LEAGUE MATES ────────── our own 10–30 owners come in first
    🔒 MAY 28 2027 ─────────────────── build freeze
    ✉️ JUN 25 2027 ─────────────────── invitations go out
    🏈 JULY 2027 ───────────────────── THE ROOKIE DRAFT, run through TheWarRoom
@@ -471,7 +570,9 @@ The boundaries aren't conventions; they're **compiler-enforced**. A violation is
 
 **On the horizon:**
 
-- 🚪 **The MFL import door.** Bring an existing league over without losing a roster, contract or pick.
+- 🎉 **Moments.** Rare, brag-worthy, league-specific share cards, each carrying a "start your own league" link. Facts come from the ledger; AI only phrases them.
+- 📰 **The Tuesday wrap-up and Thursday look-ahead**, plus clean printable rosters and cheat sheets.
+- 💬 **First-class chat.** Fantasy grew on people talking to each other.
 - 🗣️ **The Capologist.** Ask *"What's my dead cap in 2028 if I cut him?"* and get the answer from the actual ledger, **with receipts**.
 - 🎖️ **The January War Room.** **Fork your franchise** and branch offseason futures like code, each run through the real rules.
 - 🎟️ **Side games.** Pools, pick'em and survivor are planned.
@@ -485,7 +586,7 @@ The append-only ledger is *already* a behavioral record: every bid war, every sn
 > A 32-team dynasty league shouldn't die because six people got busy.
 > **The seat stays filled. The league keeps playing.**
 
-🔭 [The vision](docs/roadmap/Vision_2026.md) · [The client/server plan](docs/build-handoffs/Client_Server_Build_Plan_2026-10.md)
+🔭 [The North Star](North_Star.md) · [The vision](docs/roadmap/Vision_2026.md) · [The client/server plan](docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md) · [What comes after](docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md)
 
 ---
 
@@ -529,12 +630,12 @@ make verify    # lint, tests and the frontend build
 
 | Program | What it is | Docs |
 |:--|:--|:--|
-| `thewarroom` | The desktop app every owner runs | [Owner install guide](docs/Owner_Install_Guide.md) |
-| `cmd/twr-server` | The league server: hosting, backups, restore, status, upgrades | [`cmd/twr-server`](cmd/twr-server/README.md) · [`deploy/server`](deploy/server/README.md) |
+| `cmd/twr-server` | The league server: hosting, the web app, backups, restore, status, upgrades | [`cmd/twr-server`](cmd/twr-server/README.md) · [`deploy/server`](deploy/server/README.md) |
 | `cmd/twr` | The command line and MCP server for people and AI helpers | [`cmd/twr`](cmd/twr/README.md) |
+| `thewarroom` | The desktop app, for owners who want one and for playing solo | [Owner install guide](docs/Owner_Install_Guide.md) |
 | `tools/twr-practice` | A development-only practice league for click tests | [`tools/twr-practice`](tools/twr-practice/README.md) |
 
-**Status, honestly:** the league server is **preproduction**. It opens to real owners after slices 51 and 52 pass, the build freezes on May 28, 2027, and invitations go out in June.
+**Status, honestly:** TheWarRoom is **preproduction**. The server runs a real 32-team league in the lab and owners can join from a phone. It opens to real owners when the web app is complete, clicks are inside the speed budget and the recovery drills have passed. The build freezes on May 28, 2027, and invitations go out in June.
 
 ---
 
@@ -554,10 +655,10 @@ make verify    # lint, tests and the frontend build
 
 <div align="center">
 
-*Built by Christopher Campbell with Claude (Anthropic), Sol (OpenAI) and Tom (Claude Opus).*
+*Built by Christopher Campbell with Claude (Anthropic), Sol (OpenAI) and Tom (Claude).*
 
 **Yesterday, MFL gave us a league and TheWarRoom helped us win it.**
 
-**This July, the league runs on our own server, and every owner walks into the War Room.**
+**This July, the league runs on our own server, every owner walks into the War Room, and yours is welcome to follow.**
 
 </div>

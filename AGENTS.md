@@ -6,7 +6,7 @@
 
 - **Project name:** TheWarRoom
 - **Primary language(s):** Go 1.26 (backend, scoring engine), TypeScript + React (frontend)
-- **Public exposure:** Internal (Phase 1 personal tool; League alpha / public beta are Phase 2–3)
+- **Public exposure:** Preproduction hosted league server (PWA, desktop, CLI/MCP); real owners join after the client/server plan's gates close
 - **Standards version:** christopher-coding-standards Go overlay (Phase 2)
 
 ## Build doctrine — load before writing or reviewing code
@@ -14,7 +14,8 @@
 - **`docs/standards/quality-contract.md`** and **`docs/standards/architecture-review.md`** govern how code is written and judged.
 - **`docs/agent-codex.md`** is reference only. Where it disagrees with the two above, they win.
 - **`CLAUDE.md` → Hard Constraints** — the never-route-around rules. Locked decisions are not reopened silently; flag conflicts to Christopher.
-- **`docs/build-handoffs/Hardening_Plan_2026-10.md`** — the current plan and its Method section.
+- **`North_Star.md`** — purpose and scope: AI and CLI first, PWA-centric, one build for every league, small on purpose.
+- **`docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`** — the governing plan. `docs/build-handoffs/Hardening_Plan_2026-10.md` is the earlier plan; its Method section still applies.
 - **`docs/build-handoffs/Core_Build_Plan_2026-10.md`** — the engine build plan and its rulings (R1–R12).
 
 ## Code footprint
@@ -71,6 +72,6 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 
 - `SYSTEM_MAP.md` — the feature directory: where each feature lives and where new code goes. Check before writing.
 - `docs/architecture/system-narrative.md` — what exists at length: layers, IPC, data, services.
-- `docs/build-handoffs/Hardening_Plan_2026-10.md` — the current plan, method and progress.
+- `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` — the governing plan; the newest `docs/RESUME-*.md` — latest state.
 - `docs/` — engine spec, rubrics, data layer, UI, backend architecture.
 - `.pre-commit-config.yaml` + `.golangci.yml` — the gates that run on your commit.
