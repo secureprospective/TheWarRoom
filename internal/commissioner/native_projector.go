@@ -19,7 +19,8 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 	if err != nil {
 		return err
 	}
-	needsContracts := needsNativeContractHistory(records)
+	wanted := contractTargets(records)
+	needsContracts := len(wanted) != 0
 	since := 0
 	if visit == nil && !backdated && !needsContracts {
 		since, err = resumeClosedNative(assets, records, waivers)
@@ -29,7 +30,7 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 	}
 	contracts := map[string]NativePlayer{}
 	if needsContracts {
-		rememberNativeContracts(assets, contracts, nil)
+		rememberNativeContracts(assets, contracts, nil, wanted)
 	}
 	for _, i := range order {
 		if i < since {
@@ -40,7 +41,7 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 			continue
 		}
 		if needsContracts && (RosterTimed(record.Command.Command) || record.Command.Command == DraftChange) {
-			rememberNativeContracts(assets, contracts, record.Command.Args.Correction)
+			rememberNativeContracts(assets, contracts, record.Command.Args.Correction, wanted)
 		}
 		if err := projectNativeEntry(assets, records, i, waivers, contracts); err != nil {
 			return err
@@ -243,19 +244,32 @@ func nativeEffectiveOrder(records []Record) ([]int, bool, error) {
 	return order, backdated, nil
 }
 
-func rememberNativeContracts(assets *NativeAssets, contracts map[string]NativePlayer, target *RawCorrection) {
+// rememberNativeContracts keeps the last recorded contract of each wanted player, per side. Only a roster
+// correction that adds a player reads it back, so only the players those corrections name are kept.
+func rememberNativeContracts(assets *NativeAssets, contracts map[string]NativePlayer, target *RawCorrection, wanted map[string]bool) {
 	if !assets.Seeded {
 		return
 	}
 	for _, p := range assets.Snapshot.Players {
+		if !wanted[p.ID] {
+			continue
+		}
 		if target == nil || target.Player == "" || (p.ID == target.Player && assets.Snapshot.SideOf(p.Franchise) == assets.Snapshot.SideOf(target.Franchise)) {
 			contracts[assets.Snapshot.SideOf(p.Franchise)+"/"+p.ID] = p
 		}
 	}
 }
 
-func needsNativeContractHistory(records []Record) bool {
-	return slices.ContainsFunc(records, func(r Record) bool {
-		return r.Command.Command == CorrectRoster && r.Command.Args.Correction != nil && r.Command.Args.Correction.Action == "add"
-	})
+// contractTargets names every player a roster correction adds (applyAssetCorrection reads his last contract).
+func contractTargets(records []Record) map[string]bool {
+	var out map[string]bool
+	for _, r := range records {
+		if c := r.Command.Args.Correction; r.Command.Command == CorrectRoster && c != nil && c.Action == "add" {
+			if out == nil {
+				out = map[string]bool{}
+			}
+			out[c.Player] = true
+		}
+	}
+	return out
 }
