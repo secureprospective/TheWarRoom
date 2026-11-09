@@ -57,9 +57,9 @@
 
 </div>
 
-![Home: this week's matchup live, the alert bar, league news, the ledger and your shortcuts on one screen](docs/ui/showcase/preview-home.png)
+![League Pulse on a Sunday: your matchup starter by starter, the live NFL game on a field, every league matchup down the side and a play-by-play feed of your players](docs/ui/showcase/screen-pulse.png)
 
-<sub>🏠 **Home: "what needs me, and how long do I have?"** Your matchup live, a trade offer on its clock, the playoff race, league news and every move on the ledger, on one screen. Player names are real; teams, scores and values in the preview are sample data.</sub>
+<sub>🏟️ **This is Sunday in TheWarRoom.** Your matchup, the real game on a real field, every other matchup in the league and every play that touches your roster. One screen. No ads. No hunting. Player names are real; teams, scores and values in the preview are sample data.</sub>
 
 ---
 
@@ -78,27 +78,78 @@
 
 ## 🎬 See It Move
 
-> **Don't take our word for it. Open it.**
+> **You already know what's wrong with fantasy apps.**
+> The ad between you and your lineup. The trade screen that is two lists and a shrug. The "live" score that is four minutes old. The betting odds you never asked for. Six taps to find out who is on bye.
+>
+> **We got tired of it too. So we built the one we wanted.**
 
-The screens below are not artwork. They are one HTML file you can **[download](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)** and click through right now: five rooms to move between, built in the same look the real app ships in.
+Everything below is one file you can **[download](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)** and open right now. Five rooms. Go and poke at it.
 
-**🏟️ League Pulse: game day, the way it should feel.** Your matchup starter by starter, the real NFL game on a field with the ball on it, every other matchup in the league down the side, and a play-by-play spine that only shows the plays that move *your* score.
+### 🏟️ Sunday is the crown jewel
 
-![League Pulse: your matchup, the live NFL field and every league matchup at once](docs/ui/showcase/preview-pulse.png)
+Other apps give you a list of names with numbers that tick up. **League Pulse gives you the game.**
 
-**🤝 The War Room: a trade desk that thinks with you.** Build an offer and see it through **your lens and theirs**. It tells you when both sides win, what the deal does to your cap, your lineup and your next three seasons, and the smallest change that keeps it acceptable.
+<p align="center">
+<img src="docs/ui/showcase/detail-pulse-game.png" width="66%" alt="The live game on a field with the ball spotted, above your matchup starter by starter"/> <img src="docs/ui/showcase/detail-pulse-plays.png" width="32.8%" alt="Your players in this game and the play-by-play feed"/>
+</p>
 
-![The War Room trade desk: both sides of a trade valued through each owner's lens](docs/ui/showcase/preview-warroom.png)
+- 🏈 **The real game, on a field.** Who has the ball, where it is spotted, the down and distance, and the last play in plain words.
+- ⚔️ **Your matchup, head to head, position by position.** Your quarterback beside theirs. A football marks every player who is **on the field right now**.
+- 📡 **Only the plays that matter to you.** The feed shows every snap involving your starters and what it was worth: *"Puka Nacua 18-yd catch over the middle · your starter · +2.8 pts"*.
+- 🧩 **Who owns everyone in this game.** Every rostered player in the game you are watching, whose team he is on, and who is still a free agent.
+- 👀 **The whole league at a glance.** All sixteen matchups down the side with live win odds, so you can watch your rival lose in real time.
+- 🕐 **It says how fresh it is.** "ESPN live · 4s ago", stamped right on the screen. No guessing whether the score is stale.
 
-**🏛️ Franchise HQ: your whole team on one page.** Nineteen starters, the bench, cap room and dead money, this week's matchup position by position, and any player open in the inspector with his contract, his age arc and your private notes.
+### 🤝 A trade desk that tells you the truth
 
-![Franchise HQ: the starting lineup, the bench, the cap bar and the player inspector](docs/ui/showcase/preview-hq.png)
+Every other app hands you two lists and wishes you luck. Then you send the offer, wait three days, and get declined with no idea why.
 
-**🎛️ The Control Room: the commissioner's job, finally organised.** Everything that needs a ruling comes to you, sorted by what is due first. Every action previews who it affects, lands on a ledger the owners can read, and can be undone. And at the bottom, the proof of how this whole thing is built: **every screen action is also a command.**
+![The trade desk: what you send and get, valued through your lens and theirs, with the cap, roster and lineup effects and the smallest changes that keep the deal acceptable](docs/ui/showcase/detail-trade-lens.png)
 
-![The Control Room: the commissioner's jobs queue, quick actions and the command line](docs/ui/showcase/preview-control.png)
+- 🔍 **Two lenses, one deal.** The same trade is valued the way *you* see it (contending, now beats later) and the way *they* see it (rebuilding, youth and picks). When both bars point right, it says so: **BOTH WIN**.
+- 💸 **The consequences, before you send.** Cap room after, roster count, whether it is legal, who drops out of your lineup and what that costs you per week.
+- 🎚️ **"Tune it."** The desk suggests the smallest change that keeps the deal acceptable: take that pick out, or ask for one more. One click to apply.
+- 🗂️ **Versions A, B and C.** Build three offers side by side. Nobody sees them until you send.
+- 🕵️ **It scouts the other owner for you.** Their record, their cap room, what they need and what they have to spare.
 
-<sub>The preview is a design mock with sample data. A few tiles carry build notes like "no producer yet", because we would rather show you the real state than a polished lie.</sub>
+And along the bottom, your whole year on one rail, so you never trade past a deadline you forgot:
+
+![The year rail: today, the trade deadline, playoffs, contract decisions, tags, free agency, the rookie draft and cutdown day](docs/ui/showcase/detail-trade-year.png)
+
+![The War Room trade desk in full](docs/ui/showcase/screen-warroom.png)
+
+### 📋 Lineup control nobody else has
+
+Setting a lineup in most apps is a drop-down and a prayer. Here the page does the worrying for you.
+
+![The lineup check: cap committed, dead money and room, and a warning that one slot is empty, one starter is on bye and two are questionable](docs/ui/showcase/detail-lineup-check.png)
+
+- 🚨 **It checks your lineup before the lock does.** *"1 empty · 1 on bye · 2 questionable · locks in 2d 05h."* You will never again find out on Monday that you started a player on bye.
+- 📊 **Every starter shows his recent games** as a row of bars, next to his average, his matchup and his projection.
+- 💰 **The cap is always in view.** Committed, dead and room, on one bar, on the same page as the lineup it pays for.
+- 🧾 **Click any player** and his contract by year, his dead cap if you cut him today, his age arc and **your private notes** open beside the roster.
+
+And then it tells you exactly what your mistakes are costing you, slot by slot:
+
+![An empty lineup slot flagged in hazard stripes, and this week's matchup broken down position by position with the points gained or lost at each](docs/ui/showcase/detail-lineup-gap.png)
+
+That empty slot is costing 7.2 points. It is striped like a hazard so you cannot miss it.
+
+![Franchise HQ in full: nineteen starters, the bench and the player inspector](docs/ui/showcase/screen-hq.png)
+
+### 🏠 Home answers one question: what needs me?
+
+Open the app and you know where you stand in about three seconds. Your matchup live. A trade offer with its clock running. League news tagged *your flex*, *your opponent's quarterback* or *on the wire*. The playoff race. Every move in the league. And your shortcuts, each one key away.
+
+![Home: the live matchup, the alert bar, the playoff race, tagged league news, the transaction ledger and keyboard shortcuts](docs/ui/showcase/screen-home.png)
+
+### 🎛️ And for the commissioner: the job, finally organised
+
+Running a league is unpaid work. The Control Room treats it that way. What needs a ruling comes to you, sorted by what is due first. Every change shows who it affects before it lands, goes on a ledger the owners can read, and can be undone. Along the bottom is the idea the whole product is built on: **every screen action is also a command.**
+
+![The Control Room: the commissioner's jobs, quick actions, the week at a glance and the command line](docs/ui/showcase/screen-control.png)
+
+<sub>The preview is a design mock with sample data, built in the same look the app ships in. It makes no network calls.</sub>
 
 ---
 
