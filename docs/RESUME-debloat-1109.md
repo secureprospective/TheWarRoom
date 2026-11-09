@@ -113,3 +113,19 @@ Nothing. No background jobs, dispatches, VMs or lab CTs were started by this ses
 About 35% of tracked lines are gone, almost all of it tests, test data and docs. Production Go is down
 1.2%. The handoff's definition of done (50% of code, gates at target, lab proof, PR) is not met. The
 structural production cut depends on the deferred import and commissioner read.
+
+## Update 2026-11-09 evening — batch 3 (commit 2f32cc00a)
+
+- Method changed for Go tests: per-test coverage, repo-wide (`tools/twr-cover/collect.py`, ~20 min;
+  data in `cover/tests.pkl`), then `select.py` (keep set pinned by package and name; any other test
+  survives only if it executes a statement no kept test executes). Result list: `cover/cut.tsv`.
+- Cut 295 of 2,301 tests; covered statements 45,826 before and after. Go tests 94.1k → 85.2k.
+  Build, vet, lint clean; full `go test -count=1 ./...` passed. Commits now: 2d3b2ecb6, 1970f5703,
+  69c3fdce6 (docs), 2f32cc00a.
+- FINDING: the ~40k Go-test target is not reachable without losing coverage. Even with the ledger
+  packages unpinned (name pins only) the rule frees ~18k lines (`cover/cut-nameonly.tsv`), i.e. ~75k.
+  Further test reduction must come from deleting production code (its tests go with it), not quota.
+- Frontend fixture finding: `frontend/src/app/data/fixtures/snapshot.json` (23.6k lines) is example
+  data for `FixtureProvider` (`data/provider.ts`), chosen when the app runs in a browser with no
+  Wails (`selectProvider`). ~30 files reference it, mostly tests. Not yet changed.
+- Next action 1 is DONE. Resume at 2 (commissioner testdata), then 3 (research out).
