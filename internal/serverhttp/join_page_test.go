@@ -86,7 +86,7 @@ func TestJoinPageServedWithStrictCSPAndNoHardcodedTeams(t *testing.T) {
 	if bytes.Contains(body, []byte("innerHTML")) {
 		t.Fatal("page script uses innerHTML")
 	}
-	if !bytes.Contains(body, []byte("claimed by")) {
+	if !bytes.Contains(body, []byte("Taken by ")) {
 		t.Fatal("page does not show who claimed a team")
 	}
 	if status, _, _ := f.get(t, serverhttp.JoinPagePath+"?x=1"); status != http.StatusBadRequest {

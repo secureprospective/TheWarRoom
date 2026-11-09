@@ -60,5 +60,5 @@ func pageNonce() (string, error) {
 // asset, frame, form navigation or injected script is allowed.
 func pageCSP(nonce string) string {
 	return "default-src 'none'; script-src 'nonce-" + nonce + "'; style-src 'nonce-" + nonce +
-		"'; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+		"'; font-src data:; connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
 }
