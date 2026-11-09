@@ -53,7 +53,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	ctx := leagueservice.WithFootballDigest(r.Context(), raw.Football)
-	data, err := runWorkflow(ctx, service, raw)
+	data, err := h.workflowData(ctx, service, raw, league)
 	if err != nil {
 		// The command name and mode are fixed catalogue words; arguments, bearer and proof are never logged.
 		log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
@@ -66,6 +66,19 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	writeHosted(w, response)
+}
+
+// workflowData runs a workflow, answering a league-state reading from the reply cache when it holds one.
+// The envelope (label, writable) is never cached: it is read for every request.
+func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service, raw RawWorkflow, league string) (json.RawMessage, error) {
+	if raw.Mode != "read" {
+		return runWorkflow(ctx, service, raw)
+	}
+	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.FootballDigest+"|"+raw.Football)
+	if err != nil {
+		return nil, err
+	}
+	return scope.reply(func() ([]byte, error) { return runWorkflow(ctx, service, raw) })
 }
 
 func runWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {

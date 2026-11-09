@@ -47,6 +47,8 @@ type Hosted struct {
 	Recovery       *accounts.RecoveryService
 	Worker         *leagueservice.DueWorker
 	Registry       string
+	// Replies caches league-state readings per head and reading epoch; nil reads every request afresh.
+	Replies *ReplyCache
 	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
 	TrustedProxy netip.Addr
 }
@@ -217,6 +219,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	if raw.Workflow != nil {
 		r = r.WithContext(leagueservice.WithFootballDigest(r.Context(), raw.Workflow.Football))
 	}
+	r = r.WithContext(withReplyPrincipal(r.Context(), string(principal)))
 	host := leagueservice.StoredHost{Store: h.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
@@ -259,20 +262,14 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 		h.dispatchOwner(w, r, service, raw)
 	case PeoplePath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing reading API.
-		reading, err := service.TargetCommissionerPeople(raw.League)
-		if err != nil {
-			http.Error(w, "native read refused", http.StatusForbidden)
-			return
-		}
-		writeHostedReading(w, r, reading)
+		h.cachedReading(w, r, service, raw.League, func() ([]byte, error) {
+			return encodeReading(service.TargetCommissionerPeople(raw.League))
+		})
 	case LedgerPath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing reading API.
-		reading, err := service.TargetCommissionerLedger(raw.League)
-		if err != nil {
-			http.Error(w, "native read refused", http.StatusForbidden)
-			return
-		}
-		writeHostedReading(w, r, reading)
+		h.cachedReading(w, r, service, raw.League, func() ([]byte, error) {
+			return encodeReading(service.TargetCommissionerLedger(raw.League))
+		})
 	case PreviewPath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing preview API.
 		preview, err := service.Preview(*raw.Command)
@@ -289,6 +286,21 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 		}
 		writeHosted(w, receipt)
 	}
+}
+
+// cachedReading answers a people or ledger reading, from the reply cache when it holds one.
+func (h Hosted) cachedReading(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, league string, read func() ([]byte, error)) {
+	scope, err := h.replyScope(r.Context(), service, r.URL.Path, league, nil, "")
+	if err != nil {
+		http.Error(w, "native read refused", http.StatusForbidden)
+		return
+	}
+	body, err := scope.reply(read)
+	if err != nil {
+		http.Error(w, "native read refused", http.StatusForbidden)
+		return
+	}
+	writeReading(w, r, body)
 }
 
 type accountAdmission struct {

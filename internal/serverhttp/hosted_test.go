@@ -32,8 +32,10 @@ import (
 )
 
 type hostedFixture struct {
-	pools      *db.Pools
-	server     *httptest.Server
+	pools  *db.Pools
+	server *httptest.Server
+	// fresh is the same server with no reply cache, sharing every store: the cache's parity reference.
+	fresh      *httptest.Server
 	history    *history.Store
 	accounts   *accountstore.Store
 	sessions   *accounts.SessionService
@@ -107,6 +109,9 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 		handler.Worker = leagueservice.NewDueWorker(store, handler.Football.PlayerFacts, workflowClock{f.skew})
 	}
 	f.worker, f.join = handler.Worker, handler.Join
+	f.fresh = httptest.NewTLSServer(handler.Handler())
+	t.Cleanup(f.fresh.Close)
+	handler.Replies = serverhttp.NewReplyCache(64 << 20)
 	f.server = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.server.Close)
 	return f
@@ -130,7 +135,12 @@ func (f *hostedFixture) post(t *testing.T, path, body, bearer, proof string, sta
 
 func (f *hostedFixture) send(t *testing.T, path, body, bearer, proof string) (int, []byte) {
 	t.Helper()
-	request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, f.server.URL+path, strings.NewReader(body))
+	return f.sendOn(t, f.server, path, body, bearer, proof)
+}
+
+func (f *hostedFixture) sendOn(t *testing.T, server *httptest.Server, path, body, bearer, proof string) (int, []byte) {
+	t.Helper()
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, server.URL+path, strings.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +149,7 @@ func (f *hostedFixture) send(t *testing.T, path, body, bearer, proof string) (in
 	}
 	request.Header.Set("X-TWR-Recent-Auth", proof)
 	request.Header.Set("X-Principal", f.principal) // An attacker-controlled header never selects identity.
-	response, err := f.server.Client().Do(request)
+	response, err := server.Client().Do(request)
 	if err != nil {
 		t.Fatal(err)
 	}
