@@ -86,26 +86,6 @@ func TestPickHistoryFailureDoesNotRemovePlayerValues(t *testing.T) {
 	}
 }
 
-func TestPickTotalsMissingAndOwnerHorizon(t *testing.T) {
-	at := time.Time{}
-	owners := []string{"zero", "buyer", "missing"}
-	inventory := []draftreports.FuturePick{{Year: 2027, Round: 1, Original: "original", Owner: "buyer"}, {Year: 2028, Round: 1, Owner: "buyer"}, {Year: 2029, Round: 1, Owner: "buyer"}, {Year: 2026, Round: 1, Owner: "buyer"}, {Year: 2027, Round: 2, Owner: "missing"}}
-	model := pickTotalModel{}
-	got := PickTotals(model, inventory, 2026, owners, at)
-	if got["buyer"] != 4 || got["zero"] != 0 {
-		t.Fatal(got)
-	}
-	if _, ok := got["missing"]; ok {
-		t.Fatal("unreadable pick became zero", got)
-	}
-	if PickTotals(nil, inventory, 2026, owners, at) != nil || PickTotals(model, nil, 2026, owners, at) != nil {
-		t.Fatal("missing inputs became zero")
-	}
-	if got := PickTotals(model, []draftreports.FuturePick{}, 2026, owners, at); len(got) != 3 {
-		t.Fatal("known empty inventory not zero", got)
-	}
-}
-
 type pickTotalModel struct {
 	reduced bool
 	reason  string

@@ -254,7 +254,6 @@ func poolOrder(row PoolRow) poolapp.Order {
 func SortPool(rows []PoolRow, raw RawPoolScope) {
 	slices.SortFunc(rows, func(x, y PoolRow) int { return poolapp.Compare(poolOrder(x), poolOrder(y), raw.Sort, raw.Desc) })
 }
-func PoolNumber(row PoolRow, key string) *float64 { return poolOrder(row).Number(key) }
 
 func (a *API) TargetPoolRefresh(force bool) error {
 	return a.host.RefreshOffersPool(force) //nolint:wrapcheck // Preserve refresh errors and serializer span.

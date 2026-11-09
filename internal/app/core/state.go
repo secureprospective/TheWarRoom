@@ -191,19 +191,6 @@ type ArchivedFeed[T any] = report.ArchivedFeed[T]
 func LiveOrArchive[T any](ctx, fallback context.Context, season int, source ArchivedFeed[T], logLine func(string)) ([]T, domain.Freshness, error) {
 	return report.LiveOrArchive(ctx, fallback, season, source, logLine) //nolint:wrapcheck // Preserve shared fallback errors.
 }
-func ReadArchivedFeed[T any](ctx context.Context, season int, source ArchivedFeed[T]) ([]T, time.Time, bool, error) {
-	return report.ReadArchivedFeed(ctx, season, source) //nolint:wrapcheck // Preserve shared archive errors.
-}
-func SameExport(raw, export string, season int, leagueless bool) bool {
-	return report.SameExport(raw, export, season, leagueless)
-}
-
-// LiveFreshness marks a successful fetch without changing its wire provenance.
-func LiveFreshness(t time.Time) domain.Freshness { return report.LiveFreshness(t) }
-
-func StaleFreshness(at time.Time, cause error) domain.Freshness {
-	return report.StaleFreshness(at, cause)
-}
 
 func ArchivedOnly[T any](ctx context.Context, s *State, export string, leagueless bool, parse func([]byte) ([]T, error)) HeldFeed[[]T] {
 	return report.ReadHeldArchive(ctx, s.History != nil, s.Season, report.ArchivedFeed[T]{Export: export, Leagueless: leagueless, Parse: parse, Bodies: s.History.ReferenceBodies})

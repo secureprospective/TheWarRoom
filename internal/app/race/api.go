@@ -6,7 +6,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
-	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
 )
 
@@ -63,8 +62,6 @@ func (a *API) TargetRaceRefresh(force bool) error {
 func wireRace(b Board) RaceBoard {
 	return RaceBoard(b)
 }
-
-func Commands() []catalog.Command { return catalog.DesktopCommands("race", nil) }
 
 // RaceBoard is League Pulse › Race: the standings on top, then the reports. Week and Team are the
 // choices the lineup and one-team reports follow, as Go accepted them.

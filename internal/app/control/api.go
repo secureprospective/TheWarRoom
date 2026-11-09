@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/sitenews"
@@ -331,12 +330,6 @@ func (a *API) TargetSetWindow(kind, at string) error {
 	}
 	return a.host.SetWindow(kind, at) //nolint:wrapcheck // the host keeps the binding's refusal text
 }
-
-// Commands records the existing bindings without inventing publication metadata. Opening MFL's
-// accounting page opens a browser, so it is desktop-only; the key lives in the OS keyring. League
-// dates copy the desktop window.set command's roles and gravity; the alert tray, season feeds and
-// status strip have no registry verb.
-func Commands() []catalog.Command { return catalog.DesktopCommands("control", nil) }
 
 type migrationHost interface {
 	Migrate(command, body string) (json.RawMessage, error)
