@@ -158,16 +158,11 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 			return time.Time{}, fmt.Errorf("record due work: %w", err)
 		}
 	}
-	events, err := w.store.Events(ctx, league, commissioner.Stream, 0)
+	// The held, memoised ledger the due processors just read: its fold is shared with every reader of this
+	// revision, where a fresh decode of the event log was folded again after every commit.
+	records, err := w.store.SharedCommissionerRecords(ctx, league)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("read pending deadlines: %w", err)
-	}
-	records := make([]commissioner.Record, 0, len(events))
-	for _, event := range events {
-		if event.Payload.Commissioner == nil {
-			return time.Time{}, fmt.Errorf("pending deadline has no commissioner record")
-		}
-		records = append(records, *event.Payload.Commissioner)
 	}
 	next, err := market.NextDueDeadline(league, records, at)
 	if err != nil {
