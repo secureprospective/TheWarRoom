@@ -15,3 +15,14 @@ Started 2026-11-09. One line per item: where, what it says, what is true now.
 11. "Import" vs "migration" vs "Move my MFL league" vs "seed": one thing, MFL→Native import. Pick one word.
 12. README, North Star and CLAUDE.md all describe a "desktop app" product; none says the PWA is the main interface (only `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` does). The debloat handoff does not mention the PWA at all.
 13. "hosted" / "browser" / "PWA" / "server client" name one surface in different files.
+14. "Research" (found 11-09 evening): the ruling "research screens split OUT of the app" is already done in the
+    frontend (the screen is gone; 307 lines remain). What is still named research (`internal/app/research`,
+    `ingestion/researchfeeds`, `frontend/src/app/research`, the `research.read` browser command) is now the
+    player-reading feed behind Home tiles, the Franchise HQ and War Room inspectors, roster facts and offers.
+    Not a cut. Rename candidate: "player readings".
+15. Project `CLAUDE.md` and `AGENTS.md` still name `docs/build-handoffs/Hardening_Plan_2026-10.md` as "the
+    current plan" and `UI_Target_Roadmap_2026-10.md` as the UI build order; the live direction is
+    `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` (PWA-centric) plus the 11-09 rulings. Six handoff docs that
+    those files and README link to were restored after batch 1 deleted them. Decide which are spent, then
+    fix the instruction files and delete together.
+16. `CLAUDE.md` names `registry/endpoints.gen.ts` (now `frontend/src/app/registry/endpoints.gen.ts`).
