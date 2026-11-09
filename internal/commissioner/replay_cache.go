@@ -49,6 +49,7 @@ type governanceCache struct {
 
 	assets assetsCache
 	epochs readingEpochs
+	rules  rulesCache
 	names  namesCache
 }
 

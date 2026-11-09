@@ -168,10 +168,10 @@ func countedShape(rules *leaguerules.RuleSet, records []Record) {
 	countSides(rules)
 }
 
-// RulesInForce is the one place a native league's rules are resolved. It returns the rules a season
+// rulesInForce is the one place a native league's rules are resolved. It returns the rules a season
 // held at an instant: a change counts from the moment it starts (a next-rollover change from the
 // rollover after it was recorded), and a season that has ended keeps the rules it ended with.
-func RulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
+func rulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
 	if len(records) == 0 {
 		return leaguerules.RuleSet{}, fmt.Errorf("this app league has not been created")
 	}
