@@ -13,7 +13,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
-	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 func (s *Store) nativeRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
@@ -57,7 +56,7 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 			f := facts[p.Player]
 			if rules.Contracts.MinimumSalaries.State == leaguerules.IsKnown {
 				if minimum, ok := nativecheck.MinimumSalary(rules.Contracts.MinimumSalaries.Value, nativecheck.ExperienceYears(reading.Snapshot.Season, f)); ok {
-					reading.Pool[i].Minimum = &snapshot.ContractAmount{Cents: minimum, Text: bid.MoneyText(minimum)}
+					reading.Pool[i].Minimum = &commissioner.PoolAmount{Cents: minimum, Text: bid.MoneyText(minimum)}
 				}
 			}
 		}

@@ -5,7 +5,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/snapshot"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
 // NativeAssets is app-owned state, not an MFL roster or a what-if plan.
@@ -22,15 +22,21 @@ type NativeAssets struct {
 	Snapshot       *RawNativeSnapshot    `json:"snapshot"`
 }
 
+// PoolAmount is a money value with its display text, as the pool shows a minimum bid.
+type PoolAmount struct {
+	Cents domain.Money `json:"cents"`
+	Text  string       `json:"text"`
+}
+
 type NativePoolPlayer struct {
-	Age      string                   `json:"age,omitempty"`
-	Value    string                   `json:"value,omitempty"`
-	Minimum  *snapshot.ContractAmount `json:"minimum,omitempty"`
-	Player   string                   `json:"player"`
-	Name     string                   `json:"name"`
-	Position string                   `json:"position"`
-	String   string                   `json:"string"`
-	Points   string                   `json:"points"`
+	Age      string      `json:"age,omitempty"`
+	Value    string      `json:"value,omitempty"`
+	Minimum  *PoolAmount `json:"minimum,omitempty"`
+	Player   string      `json:"player"`
+	Name     string      `json:"name"`
+	Position string      `json:"position"`
+	String   string      `json:"string"`
+	Points   string      `json:"points"`
 }
 
 // NativeAssetIdentity holds public football facts separately from recorded roster state.
