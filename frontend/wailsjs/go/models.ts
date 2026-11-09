@@ -1779,10 +1779,24 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class PoolAmount {
+	    cents: number;
+	    text: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PoolAmount(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.cents = source["cents"];
+	        this.text = source["text"];
+	    }
+	}
 	export class NativePoolPlayer {
 	    age?: string;
 	    value?: string;
-	    minimum?: snapshot.ContractAmount;
+	    minimum?: PoolAmount;
 	    player: string;
 	    name: string;
 	    position: string;
@@ -1797,7 +1811,7 @@ export namespace commissioner {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.age = source["age"];
 	        this.value = source["value"];
-	        this.minimum = this.convertValues(source["minimum"], snapshot.ContractAmount);
+	        this.minimum = this.convertValues(source["minimum"], PoolAmount);
 	        this.player = source["player"];
 	        this.name = source["name"];
 	        this.position = source["position"];
@@ -3336,6 +3350,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	

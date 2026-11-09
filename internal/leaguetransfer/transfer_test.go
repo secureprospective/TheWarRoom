@@ -220,6 +220,12 @@ func assertDirectTransferParity(t *testing.T, store *history.Store, got history.
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The live store decorates the Market pool from its football feed (minimum bid, last season's
+	// points); an isolated replay has no feed. Compare the league data, not those decorations.
+	assets.PoolPointsNote = ""
+	for i := range assets.Pool {
+		assets.Pool[i].Minimum = nil
+	}
 	if !reflect.DeepEqual(assets, got.Assets) {
 		t.Fatalf("roster differs: direct=%+v replay=%+v", assets, got.Assets)
 	}
