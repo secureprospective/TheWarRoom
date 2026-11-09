@@ -75,6 +75,8 @@ type scoreRevisionKey struct {
 	ledgerLen int
 	key       string
 	ok        bool
+	// boundaries holds each season's recorded-results cutover week for this ledger (0 when none is held).
+	boundaries map[int]int
 }
 
 // MemoWeekScore serves a franchise's week from the season score cache when this reading's revision has
@@ -99,9 +101,7 @@ func (n *nativeSources) MemoWeekScore(ctx context.Context, records []commissione
 	}
 	key := weekScoreKey{seat: string(seatKey), lineup: string(lineupKey), season: season, week: week,
 		live: n.store.liveWeekGeneration(season, week)}
-	if held := commissioner.RecordedResults(records, season); held != nil {
-		key.boundary = held.CutoverWeek
-	}
+	key.boundary = n.recordedBoundary(records, season)
 	c := &n.store.scores
 	for {
 		if hit, ok := c.get(revision, key); ok {
@@ -205,6 +205,29 @@ func (c *seasonScoreCache) touch(revision string) {
 		c.order = slices.Delete(c.order, i, i+1)
 	}
 	c.order = append(c.order, revision)
+}
+
+// recordedBoundary is the recorded-results cutover week of a season, worked out once per ledger like its
+// revision: RecordedResults replays the whole ledger, and a standings reading asks for every franchise-week.
+func (n *nativeSources) recordedBoundary(records []commissioner.Record, season int) int {
+	r := n.revision
+	same := r != nil && len(records) != 0 && r.ledgerLen == len(records) && &r.ledger[0] == &records[0]
+	if same {
+		if week, ok := r.boundaries[season]; ok {
+			return week
+		}
+	}
+	week := 0
+	if held := commissioner.RecordedResults(records, season); held != nil {
+		week = held.CutoverWeek
+	}
+	if same {
+		if r.boundaries == nil {
+			r.boundaries = map[int]int{}
+		}
+		r.boundaries[season] = week
+	}
+	return week
 }
 
 // scoreRevision works out the reading's revision once per ledger it scores.
