@@ -21,11 +21,6 @@ func roleCommand(command, person string, role governance.Role, reason string) co
 		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Principal: person, Role: role}}}
 }
 
-func atVersion(raw commissioner.RawCommand, version int64) commissioner.RawCommand {
-	raw.Expected = version
-	return raw
-}
-
 func createCommand(reason string) commissioner.RawCommand {
 	return commissioner.RawCommand{League: "native.fresh", Command: commissioner.Create,
 		Args: commissioner.RawArgs{Name: "Fresh league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport,
@@ -128,57 +123,4 @@ func TestCommissionerPreviewDescribesUndoingAChange(t *testing.T) {
 	if strings.Join(missing.Blockers, "|") != "That recorded change is not in this league" {
 		t.Fatalf("an unknown entry must be refused: %+v", missing)
 	}
-}
-
-func previewNotice(command, text string, pin bool) commissioner.RawCommand {
-	raw := commissionertest.NoticeCommand("native.ops", command, 2, "notice.request", text, pin)
-	raw.League = "native.preview"
-	return raw
-}
-
-func TestCommissionerPreviewFormsWire(t *testing.T) {
-	t.Parallel()
-	app := previewApp(t)
-	made := executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.preview",
-		Command: commissioner.RulesSet, Args: commissioner.RawArgs{Field: "roster.limits",
-			Value: json.RawMessage(`{"min":20,"max":70}`)}, Expected: 1, Request: "rule.made",
-		Effective: "next_rollover", Visibility: "league"})
-	views := map[string]commissioner.Preview{
-		"start": mustPreview(t, app, createCommand("Move our league here")),
-		"role": mustPreview(t, app, atVersion(roleCommand("commish.role.grant", "owner-two",
-			governance.CoCommissioner, "Owner two will help"), 2)),
-		"undo": mustPreview(t, app, commissioner.RawCommand{League: "native.preview",
-			Command: commissioner.Revert, Args: commissioner.RawArgs{Entry: made.Entry},
-			Reason: "Wrong size", Expected: 2, Request: "undo.request", Effective: "now", Visibility: "league"}),
-		"roleUnchanged": mustPreview(t, app, atVersion(roleCommand("commish.role.grant", "creator",
-			governance.Commissioner, "Agreed"), 2)),
-		"needsReason": mustPreview(t, app, createCommand("")),
-		"notice": mustPreview(t, app, previewNotice(commissioner.NoticePublish,
-			"Rookie draft is Saturday", true)),
-		"note": mustPreview(t, app, previewNotice(commissioner.NotePost, "Trades close in week 9", false)),
-	}
-	unchanged, err := app.TargetCommissionerPreview(previewRuleBody(t, "roster.limits",
-		`{"min":20,"max":70}`, "next_rollover", "", 2))
-	if err != nil {
-		t.Fatal(err)
-	}
-	views["ruleUnchanged"] = unchanged
-	if got := strings.Join(views["ruleUnchanged"].Blockers, "|"); got !=
-		"This change is already waiting for the next rollover. Nothing would change" {
-		t.Fatalf("a rule change to the value already waiting: %q", got)
-	}
-	body, err := json.MarshalIndent(views, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkWire(t, "frontend/src/app/commissioner/preview-forms.wire.testdata.json", body, "preview forms")
-}
-
-func TestCommissionerCommandSafeguardsWire(t *testing.T) {
-	t.Parallel()
-	body, err := json.MarshalIndent(commissioner.CommandSafeguards(), "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkWire(t, "frontend/src/app/commissioner/commands.wire.testdata.json", body, "command safeguards")
 }

@@ -127,9 +127,6 @@ func offersMarketFacts(facts map[string][]MarketFact) map[string][]report.Market
 func heldCutCharge(p state.MirrorPlayer, season int) (domain.Money, bool) {
 	return bidsapp.HeldCutCharge(p, season)
 }
-func poolMarketLines(facts []MarketFact) []string {
-	return offersapp.MarketLines(offersMarketFacts(map[string][]MarketFact{"": facts})[""])
-}
 
 // archivedOnly reads already held exports; opening a list or the clock never calls MFL.
 func archivedOnly[T any](ctx context.Context, a *App, export string, leagueless bool,

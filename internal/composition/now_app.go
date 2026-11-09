@@ -34,8 +34,6 @@ type nowHost struct {
 	app *App
 }
 
-func (a *App) nowAPI() *nowapp.API { return nowapp.New(nowHost{State: a.core, app: a}, a.nowHeld) }
-
 func (a *App) refreshScoreFirsts(ctx context.Context) {
 	a.core.SeasonMu.Lock()
 	prev := a.nowHeld.SnapshotFirsts()
@@ -242,10 +240,6 @@ func (a *App) seedLiveGames(at time.Time) livegame.Held {
 	return nowapp.SeedLiveGames(nowFeed(held), at)
 }
 
-func liveGameReading(a livegame.Adapter, follow string, active bool) nowapp.LiveGameView {
-	return nowapp.LiveReading(nowapp.LiveSnapshot{Board: a.Board, Details: maps.Clone(a.Details), Follow: follow, Active: active, Zone: time.Local})
-}
-
 func (a *App) heldMatchupStarters(mine string) map[string]bool {
 	week := a.marketWeek()
 	a.core.SeasonMu.Lock()
@@ -293,9 +287,7 @@ func nowFeed[T any](f heldSeasonFeed[T]) nowapp.Feed[T] {
 func heldFeed[T any](f nowapp.Feed[T]) heldSeasonFeed[T] {
 	return heldSeasonFeed[T]{Value: f.Value, FetchedAt: f.FetchedAt, RefreshError: f.RefreshError, ReadPending: f.ReadPending}
 }
-func liveWeek(l leaguefeed.Lineups, base leaguefeed.WeekResult) leaguefeed.WeekResult {
-	return nowapp.LiveWeek(l, base)
-}
+
 func liveWeekUnplayed(l heldSeasonFeed[leaguefeed.Lineups], s map[int]heldSeasonFeed[[]nflschedule.RawWeek], at time.Time) bool {
 	schedules := make(map[int]nowapp.Feed[[]nflschedule.RawWeek], len(s))
 	for k, v := range s {

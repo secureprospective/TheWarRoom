@@ -27,19 +27,6 @@ type (
 	AssetCell  = marketapp.AssetCell
 )
 
-// dynastyValue and assetModel are the service's native value and value model; the App holds the
-// model (assetModel) once a model run is read. Neither is on the wire.
-type (
-	dynastyValue = marketapp.Dynasty
-	assetModel   = marketapp.Model
-)
-
-// buildAssetBoard words C-01 in the service for every player with a held score this season, and
-// every id in also, and converts it to its wire type.
-func buildAssetBoard(v researchView, model assetModel, at time.Time, also []string) AssetBoard {
-	return marketapp.WireAssetBoard(marketapp.BuildBoard(v.onField(), model, at, also))
-}
-
 // onField is each scored player's points per game and rank at his position, in the service.
 func (v researchView) onField() marketapp.OnField {
 	finished := researchapp.FinishedScores(v.scoreInput())
@@ -48,16 +35,6 @@ func (v researchView) onField() marketapp.OnField {
 		scored = append(scored, marketapp.Scored{ID: id, Position: r.Position, Sum: r.Sum, Games: r.Games})
 	}
 	return marketapp.OnFieldNow(scored, finished.Held, finished.Weeks, finished.Latest, v.zone)
-}
-
-// onFieldNow is onField as wire cells.
-func (v researchView) onFieldNow() (map[string]AssetCell, map[string]float64, string) {
-	now := v.onField()
-	cells := make(map[string]AssetCell, len(now.Cells))
-	for id, c := range now.Cells {
-		cells[id] = AssetCell(c)
-	}
-	return cells, now.PPG, now.Source
 }
 
 // marketHost composes Market's Host: shared state from core, and the Research scores and the

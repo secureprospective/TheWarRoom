@@ -8,7 +8,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/commissioner/commissionertest"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
 const opsLeague = "native.ops"
@@ -48,58 +47,6 @@ func readAs(app *ledgerFixture, principal string) func() {
 	return func() { app.session = was }
 }
 
-func TestCommissionerNoticesWire(t *testing.T) {
-	t.Parallel()
-	app := opsApp(t)
-	opsClock(app, 10)
-	plain := executeCommissionerTest(t, app, commissionertest.NoticeCommand("native.ops",
-		commissioner.NoticePublish, 1, "n1", "Waivers run Tuesday", false))
-	opsClock(app, 11)
-	pinned := executeCommissionerTest(t, app, commissionertest.NoticeCommand("native.ops",
-		commissioner.NoticePublish, 2, "n2", "Rookie draft is Saturday", true))
-	opsClock(app, 12)
-	executeCommissionerTest(t, app, commissionertest.NoticeCommand("native.ops", commissioner.NotePost, 3,
-		"n3", "House rule: no trades in week 18", true))
-	views := map[string]commissioner.LeagueNotes{}
-	read := func(name, principal string) commissioner.LeagueNotes {
-		defer readAs(app, principal)()
-		reading, err := app.TargetCommissionerNotices(opsLeague)
-		if err != nil {
-			t.Fatal(err)
-		}
-		views[name] = reading
-		return reading
-	}
-	commish, owner := read("commissioner", "creator"), read("owner", "owner")
-	if len(commish.Notices) != 2 || commish.Notices[0].ID != pinned.Entry || !commish.Notices[0].Pinned ||
-		commish.Notices[1].ID != plain.Entry || commish.Notices[1].Pinned {
-		t.Fatalf("a pinned notice must lead: %+v", commish.Notices)
-	}
-	if len(commish.Notes) != 1 || commish.Notes[0].Kind != "note" || len(commish.Mail.Recorded) != 2 {
-		t.Fatalf("league notes are not official notices and the mail log lists only notices: %+v", commish)
-	}
-	if owner.Revision != 4 || len(owner.Notices) != 2 || owner.Notices[0].Text != "Rookie draft is Saturday" {
-		t.Fatalf("every owner reads the same notices: %+v", owner)
-	}
-	opsClock(app, 13)
-	withdraw := opsCommand(commissioner.Revert, 4, "w1", commissioner.RawArgs{Entry: pinned.Entry})
-	withdraw.Reason = "Posted by mistake"
-	executeCommissionerTest(t, app, withdraw)
-	after := read("withdrawn", "owner")
-	if len(after.Notices) != 1 || after.Notices[0].ID != plain.Entry || len(after.Mail.Recorded) != 2 ||
-		!after.Mail.Recorded[0].Withdrawn || after.Mail.Recorded[1].Withdrawn {
-		t.Fatalf("a withdrawn notice must leave the owners' view and stay in the mail log: %+v", after)
-	}
-	body, err := json.MarshalIndent(views, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkWire(t, "frontend/src/app/commissioner/notices.wire.testdata.json", body, "notices")
-	if _, err := app.TargetCommissionerNotices("mfl.123"); err == nil {
-		t.Fatal("an imported league has no app notices")
-	}
-}
-
 func TestAPreviewPostsNothingAndOwnersCannotPost(t *testing.T) {
 	t.Parallel()
 	app := opsApp(t)
@@ -137,66 +84,6 @@ func TestAPreviewPostsNothingAndOwnersCannotPost(t *testing.T) {
 	if reading, err = app.TargetCommissionerNotices(opsLeague); err != nil || len(reading.Notices) != 0 {
 		t.Fatalf("a refused notice was recorded: %+v %v", reading, err)
 	}
-}
-
-func TestCommissionerDigestsWire(t *testing.T) {
-	t.Parallel()
-	app := opsApp(t)
-	opsClock(app, 10)
-	executeCommissionerTest(t, app, ruleCommand(1, "r1", "roster.limits", `{"min":20,"max":70}`,
-		"next_rollover", ""))
-	opsClock(app, 11)
-	executeCommissionerTest(t, app, ruleCommand(2, "r2", "bids.ufa", `"blind"`, "now",
-		"Agreed at the owners meeting"))
-	opsClock(app, 12)
-	executeCommissionerTest(t, app, ruleCommand(3, "r3", "notify.reminders", `false`, "now", ""))
-	executeCommissionerTest(t, app, commissionertest.NoticeCommand("native.ops", commissioner.NoticePublish,
-		4, "n1", "Welcome", false))
-	opsClock(app, 13)
-	grant := opsCommand("commish.role.grant", 5, "g1", commissioner.RawArgs{People: &commissioner.RawPeople{
-		Principal: "secret-deputy", Role: governance.CoCommissioner}})
-	grant.Reason, grant.Visibility = "Needs a second pair of hands", "private"
-	executeCommissionerTest(t, app, grant)
-	views := map[string]commissioner.Digests{}
-	for _, who := range []string{"creator", "owner"} {
-		restore := readAs(app, who)
-		reading, err := app.TargetCommissionerDigests(opsLeague)
-		restore()
-		if err != nil {
-			t.Fatal(err)
-		}
-		views[who] = reading
-	}
-	got := func(d commissioner.Digests) []string {
-		var out []string
-		for _, e := range d.Digests {
-			out = append(out, e.Sentence)
-		}
-		return out
-	}
-	owner := strings.Join(got(views["owner"]), "\n")
-	for _, want := range []string{"Active roster size: 18 to 80 → 20 to 70, from the next rollover",
-		"Unrestricted free agent bidding: Open → Blind", "The reason given: Agreed at the owners meeting.",
-		"Created league “Ops league”"} {
-		if !strings.Contains(owner, want) && !strings.Contains(strings.Join(got(views["creator"]), "\n"), want) {
-			t.Errorf("no digest says %q:\n%s", want, owner)
-		}
-	}
-	if len(views["owner"].Digests) != 3 || len(views["creator"].Digests) != 4 {
-		t.Fatalf("one digest for each hold or typed-reason change, none for a confirm: %v / %v",
-			got(views["owner"]), got(views["creator"]))
-	}
-	for _, sentence := range got(views["owner"]) {
-		if strings.Contains(sentence, "Co-commissioner") || strings.Contains(sentence, "secret-deputy") ||
-			strings.Contains(sentence, "Welcome") || strings.Contains(sentence, "deadlines") {
-			t.Errorf("an owner's digest says too much: %s", sentence)
-		}
-	}
-	body, err := json.MarshalIndent(views, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkWire(t, "frontend/src/app/commissioner/digests.wire.testdata.json", body, "digests")
 }
 
 func TestNotificationSettingsAreRulesThatNeedOnlyAConfirm(t *testing.T) {

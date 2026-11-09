@@ -128,6 +128,7 @@ func (a *App) startup(ctx context.Context) {
 	var refreshed bool
 	defer func() { a.finishStartup(ctx, refreshed) }()
 	a.core.Ctx = ctx
+	//nolint:gosec // G118: shutdown cancels it through workerGroup().Stop.
 	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(ctx)
 	defer a.settleStartupFailure()
 	refreshed, a.core.StartupErr = (platformapp.StartupWorkflow{

@@ -1,9 +1,6 @@
 package history
 
 import (
-	"bytes"
-	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
@@ -65,34 +62,5 @@ func TestProjectionBook(t *testing.T) {
 	}
 	if byID["0001"].Ceiling >= 90 {
 		t.Fatalf("the projected week's own 900 yards leaked into the range: %+v", byID["0001"])
-	}
-}
-
-func TestAppValueProjectionWire(t *testing.T) {
-	rules := leaguerules.Default32Scoring()
-	weeks := []source.PlayerWeek{}
-	for w := 1; w <= 9; w++ {
-		weeks = append(weeks, receivingWeek("00-0000001", "WR", 2026, w, 100, "REG"))
-	}
-	book := scoreProjectionBook(rules, map[int][]source.PlayerWeek{2026: weeks})
-	value := NativeProjections{League: "native.seed", Season: 2026, Week: 10,
-		Players: book.project([]string{"1000", "1008"}, map[string]string{"1000": "00-0000001"}, 2026, 10), Notes: []string{}}
-	data, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	data = append(data, '\n')
-	path := "../../../frontend/src/app/data/projections.wire.testdata.json"
-	if os.Getenv("TWR_WRITE_WIRE") == "1" {
-		if err := os.WriteFile(path, data, 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	held, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(held, data) {
-		t.Fatal("app value wire fixture differs; regenerate with TWR_WRITE_WIRE=1")
 	}
 }

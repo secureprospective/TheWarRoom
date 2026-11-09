@@ -33,6 +33,7 @@ func TestShutdownWaitsForStartupWorker(t *testing.T) {
 func TestShutdownCancelsJoinsThenClosesDatabases(t *testing.T) {
 	a := NewApp()
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	a.core.WorkCtx, a.core.WorkCancel = ctx, cancel
 	for i, dest := range []**db.Pools{&a.core.Pools, &a.core.HistPools, &a.core.WhatifPools} {
 		p, err := db.Open(t.Context(), filepath.Join(t.TempDir(), []string{"main.db", "history.db", "whatif.db"}[i]))

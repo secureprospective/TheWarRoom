@@ -57,15 +57,11 @@ type sourcesHealthInput struct {
 func sourceStanding(in sourcesHealthInput) (string, string) {
 	return sourcesapp.SourceStanding(in.HealthInput)
 }
-func countText(n int, noun string) string      { return sourcesapp.CountText(n, noun) }
-func pluralNoun(n float64, noun string) string { return report.PluralNoun(n, noun) }
 
 const rasFetchTimeout = sourcesapp.RASFetchTimeout
 const signalsTimeout = sourcesapp.SignalsTimeout
 
 func (a *App) researchCrosswalkVersion() string { return a.sourcesHeld.SnapshotCrosswalk().LoadedAt }
-
-const dynastyProcessSource = sourcesapp.DynastyProcessSource
 
 func (a *App) cacheScopes() []sourcesapp.CacheScope {
 	return sourcesapp.CacheScopes(sourcesapp.CacheRefreshers{

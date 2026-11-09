@@ -49,8 +49,6 @@ func (a *App) powerSource() scoringapp.Source {
 		Picks: a.powerPicks, Ages: a.ages, SeasonWeeks: a.seasonWeeks, DeadCap: a.core.League.DeadCap}
 }
 
-func defaultAgg(view string) string { return scoringapp.DefaultAgg(view) }
-
 // ages reads each player's age today from the players directory. When the directory cannot be
 // read every age is unknown (NaN), and the board counts none.
 func (a *App) ages(ctx context.Context) func(mflID string) float64 {

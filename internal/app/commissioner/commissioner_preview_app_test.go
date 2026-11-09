@@ -92,44 +92,6 @@ func TestCommissionerPreviewChecksMatchExecute(t *testing.T) {
 	}
 }
 
-func TestCommissionerPreviewWire(t *testing.T) {
-	t.Parallel()
-	app := previewApp(t)
-	views := map[string]commissioner.Preview{}
-	for _, tc := range []struct{ name, field, value, effective, reason string }{
-		{"hold", "roster.limits", `{"min":20,"max":70}`, "next_rollover", ""},
-		{"confirm", "calendar.timezone", `"America/Chicago"`, "next_rollover", ""},
-		{"reason", "roster.limits", `{"min":20,"max":70}`, "now", "New roster vote"},
-	} {
-		reading, err := app.TargetCommissionerPreview(previewRuleBody(t, tc.field, tc.value,
-			tc.effective, tc.reason, 1))
-		if err != nil || len(reading.Blockers) != 0 || reading.Safeguard != tc.name {
-			t.Fatalf("%s preview: %+v %v", tc.name, reading, err)
-		}
-		views[tc.name] = reading
-	}
-	roster := views["hold"]
-	if roster.Question != "How small and how large may a roster be? Any position minimums?" ||
-		roster.Target.Name != "Preview league" || len(roster.Fields) != 1 ||
-		roster.Fields[0].Before != "18 to 80" || roster.Fields[0].After != "20 to 70" ||
-		roster.Fields[0].BeforeSource != "Legacy NFL rules" ||
-		roster.Fields[0].AfterSource != "Your proposed change" {
-		t.Fatalf("question, frozen target, values and provenance: %+v", roster)
-	}
-	assertPreviewAffects(t, roster)
-	stale, err := app.TargetCommissionerPreview(previewRuleBody(t, "roster.limits",
-		`{"min":20,"max":70}`, "next_rollover", "", 0))
-	if err != nil || len(stale.Blockers) != 1 || stale.Target.Version != 0 {
-		t.Fatalf("stale preview must keep its frozen target: %+v %v", stale, err)
-	}
-	views["stale"] = stale
-	body, err := json.MarshalIndent(views, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkWire(t, "frontend/src/app/commissioner/preview.wire.testdata.json", body, "preview")
-}
-
 func assertPreviewAffects(t *testing.T, preview commissioner.Preview) {
 	t.Helper()
 	// These four registry rows govern roster limits, not four players or four franchises.

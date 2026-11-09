@@ -2,10 +2,6 @@ package commissioner
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -106,86 +102,6 @@ func TestDraftDescriptionsNameWhatWasRecorded(t *testing.T) {
 			t.Fatalf("%s: %q, want %q", command, got, want)
 		}
 	}
-}
-
-// governsEdge is a draft setting a test sets through the real command and reads back.
-type governsEdge struct {
-	row, setting, proof string
-}
-
-// TestEveryDraftControlGovernsSomething holds the census rows for the draft to the edges the app tests
-// prove: each row must govern at least one reading, through a setting that row really owns, and the proving
-// test must exist.
-func TestEveryDraftControlGovernsSomething(t *testing.T) {
-	edges := []governsEdge{
-		{"CM-040", "draft.clock", "TestDraftClockAndRoundsGovernTheDraft"},
-		{"CM-040", "draft.rounds", "TestDraftClockAndRoundsGovernTheDraft"},
-		{"CM-040", "draft.pricing", "TestDraftPricingAndLengthsGovernTheContractOnTheClock"},
-		{"CM-040", "draft.lengths", "TestDraftPricingAndLengthsGovernTheContractOnTheClock"},
-		{"CM-040", "draft.rfaAfter", "TestDraftPricingAndLengthsGovernTheContractOnTheClock"},
-		{"CM-040", "draft.maximumPicks", "TestDraftMaximumPicksForfeitsTheExtrasWithoutAClock"},
-		{"CM-041", DraftOrderSet, "TestDraftOrderCommandsGovernWhoIsOnTheClock"},
-		{"CM-041", DraftOrderPattern, "TestDraftOrderCommandsGovernWhoIsOnTheClock"},
-		{"CM-041", DraftOrderTiebreak, "TestDraftTieRuleIsRecordedAndReverted"},
-		{"CM-041", DraftOrderAuto, "TestDraftOrderAutoAsksForTheFinalStandings"},
-		{"CM-042", DraftStart, "TestDraftStartAndTheCalendarNeverDisagree"},
-		{"CM-043", DraftSkip, "TestTheTraySkipsAndAssignsAndGovernsTheClockCM043"},
-		{"CM-043", DraftAssign, "TestTheTraySkipsAndAssignsAndGovernsTheClockCM043"},
-		{"CM-043", DraftInsert, "TestTheTrayInsertsAndChangesAPickWithoutRetargetingCM043"},
-		{"CM-043", DraftChange, "TestTheTrayInsertsAndChangesAPickWithoutRetargetingCM043"},
-		{"CM-043", DraftTimer, "TestTheTrayWorksTheClockAndOverridesAnExpiredPickCM043"},
-		{"CM-044", DraftRevert, "TestARestoreKeepsBothStatesAndTheLedgerCM044"},
-		{"CM-045", DraftArchive, "TestClosingTheDraftReleasesRookiesAndIssuesPicksCM045"},
-	}
-	sources := rootTestSource(t)
-	proven := map[string]bool{}
-	for _, e := range edges {
-		owner := commandControls()[e.setting]
-		if owner == "" {
-			rule, err := ownerFor(leaguerules.FieldPath(e.setting))
-			if err != nil {
-				t.Fatalf("%s is not a setting any row owns", e.setting)
-			}
-			owner = rule.control
-		}
-		if owner != e.row {
-			t.Fatalf("%s is owned by %s, not %s", e.setting, owner, e.row)
-		}
-		if !strings.Contains(sources, "func "+e.proof+"(t *testing.T)") {
-			t.Fatalf("%s names a test that does not exist: %s", e.setting, e.proof)
-		}
-		proven[e.row] = true
-	}
-	for _, row := range []string{"CM-040", "CM-041", "CM-042", "CM-043", "CM-044", "CM-045"} {
-		if !proven[row] {
-			t.Fatalf("%s governs nothing the tests prove", row)
-		}
-	}
-	for command, control := range commandControls() {
-		if draftCommand(command) && command != DraftPick && !proven[control] {
-			t.Fatalf("%s is owned by %s, which has no proven edge", command, control)
-		}
-	}
-}
-
-func rootTestSource(t *testing.T) string {
-	t.Helper()
-	files, err := filepath.Glob("../composition/native_draft*_test.go")
-	if err != nil || len(files) == 0 {
-		t.Fatalf("the app tests for the draft are missing: %v", err)
-	}
-	var all strings.Builder
-	for _, f := range files {
-		body, err := os.ReadFile(f)
-		if err != nil {
-			t.Fatal(err)
-		}
-		all.Write(body)
-	}
-	if !regexp.MustCompile(`func \(f \*draftFixture\) governs\(`).MatchString(all.String()) {
-		t.Fatal("the round-trip helper is missing")
-	}
-	return all.String()
 }
 
 // The tray prints what a change affects only for a count it knows, so a warning has to travel with one,

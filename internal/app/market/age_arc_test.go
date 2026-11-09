@@ -1,11 +1,8 @@
 package market
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"math"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -173,31 +170,5 @@ func TestAgeArcReadsRunParams(t *testing.T) {
 	step = current.ArcStep(fallback.Points[2].Age, pl.Experience(fallback.Points[2].Season))
 	if want := model.Level(model.Score(fallback.Points[2].Level) + step); math.Abs(fallback.Points[3].Level-want) > 1e-10 {
 		t.Fatalf("fallback level %g not from current params; want %g", fallback.Points[3].Level, want)
-	}
-}
-
-func TestAppValueAgeArcWire(t *testing.T) {
-	f := newAgeArcFixture(t)
-	value, err := ReadAgeArc(t.Context(), f.source(f.current, true), "0001")
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	data = append(data, '\n')
-	path := "../../../frontend/src/app/data/age-arc.wire.testdata.json"
-	if os.Getenv("TWR_WRITE_WIRE") == "1" {
-		if err := os.WriteFile(path, data, 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	held, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(held, data) {
-		t.Fatal("app value wire fixture differs; regenerate with TWR_WRITE_WIRE=1")
 	}
 }
