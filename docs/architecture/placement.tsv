@@ -3,10 +3,6 @@
 # scripts/check-placement.sh enforces it (make lint, CI). Add the row in the same commit as the file.
 path	feature
 main.go	platform
-internal/app/comms	comms
-internal/app/comms/commstest	comms
-internal/app/archive	archive
-internal/app/archive/archivetest	archive
 internal/app/commissioner	commissioner
 internal/app/mflref/contracts	contracts
 internal/app/mflref/contracts/contractstest	contracts
@@ -17,7 +13,7 @@ internal/app/market/markettest	market
 internal/app/commissioner/native	commissioner
 internal/app/report	platform
 internal/app/season	platform
-internal/archive	archive
+internal/archive	sources
 internal/commissioner	commissioner
 internal/commissioner/market	commissioner
 internal/db	platform
@@ -31,7 +27,6 @@ internal/engine/eligibility	contracts
 internal/engine/race	race
 internal/engine/rookiedraft	commissioner
 internal/mflref/envelope	core
-internal/facts	sources
 internal/fantasyscore	commissioner
 internal/fantasyscore/source	commissioner
 internal/governance	commissioner
@@ -62,15 +57,12 @@ internal/ingestion/salaryadjustments	contracts
 internal/ingestion/sitenews	control
 internal/ingestion/transactions	control
 internal/ingestion/weeklyresults	now
-internal/lab	market
-internal/labcompile	market
 internal/leagueclock	control
 internal/leaguefeed	control
 internal/leaguerules	commissioner
 internal/leagueweek	control
 internal/mflref/lineup	contracts
 internal/m2service	scoring
-internal/manifest	sources
 internal/measures	sources
 internal/mfl	core
 internal/mflkey	control
@@ -138,7 +130,6 @@ internal/app/mflref/planwatch	platform
 internal/mflref/whatif	contracts
 internal/app/mflref/seed	commissioner
 internal/store/mflref/tradeplans	trades
-internal/mflref/bid	offers
 internal/lineupdelta	trades
 internal/projection	scoring
 internal/teamneeds	trades
@@ -146,3 +137,5 @@ internal/appvalue	scoring
 internal/app/mflref/migration	control
 internal/feedwire	core
 internal/seams	core
+internal/ingestion/livestats	now
+internal/leagueload	platform
