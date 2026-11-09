@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 )
 
 func TestNativeRecordsCacheTracksCommittedRevision(t *testing.T) {
@@ -147,7 +148,7 @@ func TestDeepCloneSharesNothing(t *testing.T) {
 	}
 	src := value{At: time.Unix(5, 0), Ptr: &inner{Tags: []string{"a"}}, Map: map[string][]int{"k": {1}},
 		Any: &inner{Tags: []string{"b"}}, Fixed: [2]*inner{{Tags: []string{"c"}}}}
-	out := deepClone(src)
+	out := deepclone.Of(src)
 	out.Ptr.Tags[0], out.Map["k"][0], out.Fixed[0].Tags[0] = "x", 9, "x"
 	out.Any.(*inner).Tags[0] = "x"                                                          //nolint:forcetypeassert // the test built it
 	if src.Ptr.Tags[0] != "a" || src.Map["k"][0] != 1 || src.Any.(*inner).Tags[0] != "b" || //nolint:forcetypeassert // the test built it

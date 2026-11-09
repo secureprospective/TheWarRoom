@@ -21,6 +21,7 @@ internal/archive	archive
 internal/commissioner	commissioner
 internal/commissioner/market	commissioner
 internal/db	platform
+internal/deepclone	core
 internal/domain	core
 internal/engine	scoring
 internal/engine/bid	offers

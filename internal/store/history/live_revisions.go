@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
 
@@ -46,13 +47,13 @@ func (s *Store) mergeLiveVersions(ctx context.Context, incoming []source.LineRev
 		}
 		state.archived[origin] = true
 		origins[len(state.versions)] = version.Seq
-		version = deepClone(version)
+		version = deepclone.Of(version)
 		version.Seq = len(state.versions)
 		state.versions = append(state.versions, version)
 	}
 	digest := source.LiveRevisionDigest(*live.Week)
 	if !sameLiveRevision(state.versions, digest, live.Authority) {
-		state.versions = append(state.versions, source.LineRevision{Seq: len(state.versions), Digest: digest, Held: deepClone(live)})
+		state.versions = append(state.versions, source.LineRevision{Seq: len(state.versions), Digest: digest, Held: deepclone.Of(live)})
 	}
 	state.versions = source.ConsolidateFinal(state.versions)
 	if err := s.storeLiveVersions(ctx, key, state.versions[start:], origins); err != nil {
@@ -62,7 +63,7 @@ func (s *Store) mergeLiveVersions(ctx context.Context, incoming []source.LineRev
 		s.bumpLiveWeekLocked(scope.Season, scope.Week)
 	}
 	s.liveRevisions[key] = state
-	return deepClone(state.versions), nil
+	return deepclone.Of(state.versions), nil
 }
 
 func sameLiveRevision(versions []source.LineRevision, digest, authority string) bool {

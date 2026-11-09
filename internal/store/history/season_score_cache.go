@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -128,7 +129,7 @@ func (n *nativeSources) MemoWeekScore(ctx context.Context, records []commissione
 	// A live line that landed while this week was scored names a newer week; the score read for the older
 	// one is not kept under either.
 	if n.store.liveWeekGeneration(season, week) == key.live {
-		c.put(revision, key, deepClone(out))
+		c.put(revision, key, deepclone.Of(out))
 	}
 	return out, nil
 }
@@ -170,7 +171,7 @@ func (c *seasonScoreCache) get(revision string, key weekScoreKey) (commissioner.
 	}
 	c.hits++
 	c.touch(revision)
-	return deepClone(hit), true
+	return deepclone.Of(hit), true
 }
 
 func (c *seasonScoreCache) put(revision string, key weekScoreKey, score commissioner.FranchiseWeekScore) {

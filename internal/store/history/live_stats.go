@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -39,7 +40,7 @@ func (s *Store) SetLiveStats(ctx context.Context, season, week int, at time.Time
 	if err := s.restoreLiveStats(ctx); err != nil {
 		return err
 	}
-	lines = deepClone(lines)
+	lines = deepclone.Of(lines)
 	for player, line := range lines {
 		if line.Season == 0 {
 			line.Season = season
@@ -82,7 +83,7 @@ func (s *Store) liveHeldWeek(player string, season, week int) (source.HeldWeek, 
 		return source.HeldWeek{}, false
 	}
 	held, found := s.liveHeld[liveStatKey{player, season, week}]
-	return deepClone(held), found
+	return deepclone.Of(held), found
 }
 
 // withLiveStats adds the live revision of a player's week as the newest version of the evidence.
@@ -185,5 +186,5 @@ func (s *Store) finalLiveWeek(evidence source.NativeEvidence, scope source.RawNa
 		return source.HeldWeek{}, false
 	}
 	held, ok := s.liveHeld[liveStatKey{scope.Player, scope.Season, scope.Week}]
-	return deepClone(held), ok
+	return deepclone.Of(held), ok
 }

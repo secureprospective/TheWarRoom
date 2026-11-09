@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 )
 
 // readingFlights joins concurrent identical readings onto the one already in flight. Nothing is kept once
@@ -82,7 +83,7 @@ func shareReading[T any](ctx context.Context, f *readingFlights, kind, args stri
 		}
 		val, _ := fl.val.(T)
 		if joined {
-			return deepClone(val), nil
+			return deepclone.Of(val), nil
 		}
 		return val, nil
 	case <-ctx.Done():

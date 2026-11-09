@@ -46,6 +46,8 @@ type governanceCache struct {
 
 	mu    sync.Mutex
 	views map[governanceMemoKey]governanceMemo
+
+	assets assetsCache
 }
 
 // governanceMemoKey separates policy views: verified identities and closed books change the fold.

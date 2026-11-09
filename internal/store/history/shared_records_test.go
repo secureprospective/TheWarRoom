@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 )
 
 // ledgerView is the part of a held record a reading may see: everything but the private memos.
@@ -21,7 +22,7 @@ type ledgerView struct {
 func ledgerViews(records []commissioner.Record) []ledgerView {
 	out := make([]ledgerView, len(records))
 	for i, r := range records {
-		out[i] = deepClone(ledgerView{r.Receipt, r.Command, r.Principal, r.Canonical})
+		out[i] = deepclone.Of(ledgerView{r.Receipt, r.Command, r.Principal, r.Canonical})
 	}
 	return out
 }

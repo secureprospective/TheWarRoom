@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -51,7 +52,7 @@ func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league strin
 	if err != nil {
 		return nil, err
 	}
-	return s.resolveRecords(ctx, league, deepClone(records))
+	return s.resolveRecords(ctx, league, deepclone.Of(records))
 }
 
 // sharedTransactionRecords is the read path: every reading of one revision shares the cached snapshot.

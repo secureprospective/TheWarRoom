@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"slices"
+
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 )
 
 // maxCachedEvents bounds the decoded whole-stream events held across all streams.
@@ -38,7 +40,7 @@ func (s *Store) wholeStream(ctx context.Context, league, stream string) ([]Leagu
 		return nil, err
 	}
 	if len(tail) == 0 && hit.revision > 0 {
-		return deepClone(hit.events), nil
+		return deepclone.Of(hit.events), nil
 	}
 	hit.events = append(slices.Clip(hit.events), tail...)
 	if n := len(hit.events); n > 0 {
@@ -50,7 +52,7 @@ func (s *Store) wholeStream(ctx context.Context, league, stream string) ([]Leagu
 		s.cacheEvents(key, hit)
 	}
 	s.eventsMu.Unlock()
-	return deepClone(hit.events), nil
+	return deepclone.Of(hit.events), nil
 }
 
 // prefixHeld reports whether the held newest entry is still the stream's entry at that revision,

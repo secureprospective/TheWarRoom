@@ -1,10 +1,11 @@
-package history
+// Package deepclone copies a value and everything it reaches, for caches that hand out owned copies.
+package deepclone
 
 import "reflect"
 
-// deepClone copies v and everything it reaches through pointers, slices and maps. Records hold
+// Of copies v and everything it reaches through pointers, slices and maps. Records hold
 // nested args, seeds and rule maps, so a shallow copy would let a caller write into the cache.
-func deepClone[T any](v T) T {
+func Of[T any](v T) T {
 	var out T
 	c := cloner{flat: map[reflect.Type]bool{}}
 	c.copy(reflect.ValueOf(&out).Elem(), reflect.ValueOf(&v).Elem())
