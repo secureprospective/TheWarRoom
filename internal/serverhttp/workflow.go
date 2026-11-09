@@ -60,7 +60,12 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
 		return
 	}
-	writeHosted(w, WorkflowResponse{Label: location.Label, Writable: location.Writable, Football: h.FootballDigest, Data: data})
+	response := WorkflowResponse{Label: location.Label, Writable: location.Writable, Football: h.FootballDigest, Data: data}
+	if raw.Mode == "read" {
+		writeHostedReading(w, r, response)
+		return
+	}
+	writeHosted(w, response)
 }
 
 func runWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {

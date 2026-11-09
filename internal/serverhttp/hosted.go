@@ -264,7 +264,7 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 			http.Error(w, "native read refused", http.StatusForbidden)
 			return
 		}
-		writeHosted(w, reading)
+		writeHostedReading(w, r, reading)
 	case LedgerPath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing reading API.
 		reading, err := service.TargetCommissionerLedger(raw.League)
@@ -272,7 +272,7 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 			http.Error(w, "native read refused", http.StatusForbidden)
 			return
 		}
-		writeHosted(w, reading)
+		writeHostedReading(w, r, reading)
 	case PreviewPath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing preview API.
 		preview, err := service.Preview(*raw.Command)
@@ -396,7 +396,11 @@ type LoginResponse struct {
 func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
-func writeHosted[T RecoveryResponse | RecoveryCodesResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse | WorkflowResponse](w http.ResponseWriter, body T) {
+type hostedBody interface {
+	RecoveryResponse | RecoveryCodesResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse | WorkflowResponse
+}
+
+func writeHosted[T hostedBody](w http.ResponseWriter, body T) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)
@@ -406,6 +410,16 @@ func writeHosted[T RecoveryResponse | RecoveryCodesResponse | RevokeResponse | c
 	if _, err := w.Write(encoded); err != nil {
 		return
 	}
+}
+
+// writeHostedReading is writeHosted for league readings, which may be compressed (writeReading).
+func writeHostedReading[T commissioner.People | commissioner.Ledger | WorkflowResponse](w http.ResponseWriter, r *http.Request, body T) {
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		http.Error(w, "response unavailable", http.StatusInternalServerError)
+		return
+	}
+	writeReading(w, r, encoded)
 }
 
 // ServeHosted never registers fixture routes or manufactures a principal.
