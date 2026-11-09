@@ -129,3 +129,54 @@ structural production cut depends on the deferred import and commissioner read.
   data for `FixtureProvider` (`data/provider.ts`), chosen when the app runs in a browser with no
   Wails (`selectProvider`). ~30 files reference it, mostly tests. Not yet changed.
 - Next action 1 is DONE. Resume at 2 (commissioner testdata), then 3 (research out).
+
+## Update 2026-11-09 night — after batches 4–6 (head f66e816ee)
+
+Christopher agreed: stop cutting Go tests by quota; go through the remaining items in order.
+
+- Item 2 DONE (e72c82566): test data. Ran the suite under strace (`go test -exec "strace -f ..."`), deleted
+  the 51 data files nothing opens/embeds/names (~21k lines). Kept SOURCE.md notes and generator scripts.
+- Item 3 NOT A CUT: the research *screen* is already gone. What is still named "research" is the player
+  feed behind Home tiles, HQ and War Room inspectors, roster facts and offers. See semantic pot 14.
+- Item 5 DONE (c09449301): `deadcode` over all mains. Removed unreachable funcs + `seams`,
+  `store/playeridentity`, `teamneeds`. KEPT on purpose: `.sealed` interface markers, secret-redacting
+  String/GoString/MarshalJSON in `accounts`, engine/ledger/leaguerules accessors, test support
+  (`hostedfixture`, `NewFixtureChanges`, `NewMemory`, `ReadCandidate`), `composition.runFlag` (restore
+  tests), crosswalk/leaguearchive/app-scoring accessors, and `leaguemigration/assistant.go` (handoff says
+  cut, but it is the one-ask AI import path; left for the deferred import read).
+- Item 4 PARTLY: specimen page deleted (814a9f8f4). NOT cut, both are live and need rebuild not deletion:
+  (a) `frontend/src/app/registry` (6.6k generated) is used by the solo shell, command search, reports and
+  commissioner controls; `docs/ui/endpoint-registry.csv` is embedded in the desktop binary, read by
+  `twr-server --preview-registry`, and is in the offsite backup set. (b) `FixtureProvider` +
+  `snapshot.json` (23.6k): example data when no Wails; ~20 solo-owner tests use it as their data.
+- Gates (f4b8ec71d): placement and boundary inventories fixed; SYSTEM_MAP stale paths removed.
+  bloat.sh still at baseline (comment 6, tiny files 41); native forks 19. Not lowered yet.
+- MISTAKE CAUGHT: batch 1 deleted six handoff docs that project CLAUDE.md / AGENTS.md / README still
+  point to (Hardening_Plan = "the current plan"). Restored in f66e816ee; semantic pot 15.
+- Numbers (k lines): all 437.5 (from 725.4, -40%); Go prod 139.4; Go tests 84.5; testdata 40.0;
+  frontend 72.3; frontend tests 10.8; docs 52.2.
+- `make verify` first full run launched on f66e816ee; log `verify-f66e816ee.log` in this dir.
+
+Next: read the verify log and fix what it finds; then item 6 (comment share 6→5, tiny files 41→24,
+native forks → one seam; these are edits, not deletions), item 7 README rewrite, item 8 (make build, lab
+parity/speed, PWA phone width, Claude-OS desktop, mirror click-through with Christopher), then PR.
+
+## Update 2026-11-09 late — head a16b27114
+
+- `make verify` PASSED (exit 0) on f66e816ee: log `verify-f66e816ee.log`. Rerun once before the PR
+  (tree has changed since: restored tests, docs).
+- SECOND MISTAKE CAUGHT (8a9d52671): the coverage rule cut tests whose value is not coverage: repo
+  gates (`internal/seams` future-seams gate from the 11-08 binding direction, binding manifest, tzdata,
+  no-MFL-submit source scan), opt-in `TestLive_*`, race-detector tests, never/only/refuses invariants.
+  80 restored into `guards_test.go` files; `internal/seams` and the per-feature `Commands()` lists are
+  back. LESSON: zero-coverage or invariant-named tests are never "duplicates". `select.py` needs that pin
+  before any reuse.
+- Also restored: `docs/audit/CLIENT-SERVER-RULINGS-2026-11-05.md` and `...TOM-SECOND-OPINION...` (the
+  governing plan cites them).
+- Docs realigned (a16b27114): North_Star 2.1, CLAUDE.md 3.3, AGENTS.md, README rewritten (import first,
+  AI/CLI first, PWA, measured speed, the trim). NOT reviewed yet: `docs/roadmap/Vision_2026.md`,
+  `Roadmap_and_Open_Questions.md`, `docs/architecture/system-narrative.md`, `docs/Owner_Install_Guide.md`.
+- Note from `docs/RESUME-2026-11-08.md`: Christopher's 11-09 test rule was "a test that is done is
+  deleted, target ~3/4 cut, no proving coverage first". This session he agreed to stop quota cuts.
+- Next: rerun `make verify`; ratchets (comments, tiny files, native forks); `make build`; lab parity and
+  speed; PWA phone width; Claude-OS desktop; mirror screen with Christopher; push; PR.
