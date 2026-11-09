@@ -83,7 +83,8 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
         key={p.season}
         className={p.season === context.snapshot.league.value.season ? 'now' : ''}
         style={{ height: `${Math.max(0, p.level / maxArc * 100)}%` }}
-        title={`${p.season} · age ${p.age.toFixed(1)} · ${p.level.toFixed(1)}`} />)}</div> : <WarRoomEmpty />}</Drawer>
+        title={`${p.season} · age ${p.age.toFixed(1)} · ${p.level.toFixed(1)}`} />)}</div> :
+          <WarRoomEmpty />}</Drawer>
     <Drawer label="IN YOUR LINEUP"><div className="kv"><span>
       {fit?.removing ? 'Promotes' : 'Replaces'}</span><span>{fit ?
       fitNames(changedStarters ?? []) || 'No starter change' : unavailable}</span>

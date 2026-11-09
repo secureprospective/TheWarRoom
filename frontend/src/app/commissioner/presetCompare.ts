@@ -46,10 +46,12 @@ export const readPresetComparison = async (league: string, preset: string) =>
   parsePresetComparison(await bindings().TargetCommissionerPresetCompare(league, preset));
 
 export const presetChanges = async (apply: PresetApply) =>
-  parsePresetChanges(await bindings().TargetCommissionerPresetApply(JSON.stringify({ ...apply, dryRun: true })));
+  parsePresetChanges(await bindings().TargetCommissionerPresetApply(JSON.stringify({ ...apply, dryRun:
+    true })));
 
 export async function applyPreset(apply: PresetApply): Promise<number> {
-  const result = object(await bindings().TargetCommissionerPresetApply(JSON.stringify({ ...apply, dryRun: false })),
+  const result = object(await bindings().TargetCommissionerPresetApply(JSON.stringify({ ...apply, dryRun:
+    false })),
     'Preset change', ['changes', 'receipts']);
   return array(result.receipts, 'Receipts', d => d).length;
 }

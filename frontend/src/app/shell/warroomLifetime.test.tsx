@@ -15,7 +15,8 @@ vi.mock('../data/provider', async real => {
   return { ...actual, selectProvider: () => fixture };
 });
 vi.mock('../market/api', async real => ({ ...await real<typeof import('../market/api')>(),
-  subscribeSeason: (f: () => void) => { season.changed.add(f); return () => { season.changed.delete(f); }; } }));
+  subscribeSeason: (f: () => void) => { season.changed.add(f); return () => {
+    season.changed.delete(f); }; } }));
 vi.mock('./leaguePicker', async real => ({ ...await real<typeof import('./leaguePicker')>(),
   readAppLeaguePeople: async (league: string) => ({ league, yourFranchise: 'franchise.01',
     seats: [{ franchise: 'franchise.01', name: 'One' }, { franchise: 'franchise.02', name: 'Two' }] }) }));
@@ -24,7 +25,8 @@ vi.mock('../control/room/ControlRoom', () => ({ default: () => <p>Control</p> })
 it.each([
   ['war', '[aria-label="Trade desk"]'], ['hq', '.hq-v10'],
   ['home', '[data-testid="home-brief"]'], ['pulse', '.lp-v14'],
-] as const)('keeps actual %s reads across navigation, refreshes hidden reads, and resets scope', async (screen, selector) => {
+] as const)('keeps actual %s reads across navigation, refreshes hidden reads, and resets scope',
+  async (screen, selector) => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.mocked(localWorkflow).mockClear();
   vi.mocked(localWorkflow).mockImplementation(async request => {
@@ -76,7 +78,8 @@ it.each([
     const second = host.querySelector(selector);
     await render(screen, 'native.other');
     expect(host.querySelector(selector)).not.toBe(second);
-    expect(vi.mocked(localWorkflow).mock.calls.some(([r]) => r.arguments.league === 'native.other')).toBe(true);
+    expect(vi.mocked(localWorkflow).mock.calls.some(([r]) => r.arguments.league ===
+      'native.other')).toBe(true);
     expect(host.querySelectorAll(':scope > div')).toHaveLength(1);
   } finally {
     await act(async () => root.unmount()); host.remove(); localStorage.clear(); vi.unstubAllGlobals();

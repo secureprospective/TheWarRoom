@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { lookingBack } from './warroomPlansReads';
 
 const offer = (id: string, status: string, parties: string[], offeredAt: string) => ({ id, status, parties,
-  offeredAt, teams: [['f1', 'Syndicate'], ['f2', 'Iron Curtain'], ['f3', 'Tundra Line']] as [string, string][],
+  offeredAt, teams: [['f1', 'Syndicate'], ['f2', 'Iron Curtain'], ['f3', 'Tundra Line']] as [string,
+    string][],
   words: '', expires: '', expiresAt: '', proposer: '', accepted: [], details: [], reasons: [] });
 
 describe('lookingBack', () => {
@@ -16,7 +17,8 @@ describe('lookingBack', () => {
   it.each([
     ['ended offers only, newest first, accepted wording', (r: ReturnType<typeof lookingBack>) =>
       expect(r.offers.map(o => [o.id, o.partner, o.status])).toEqual([
-        ['a', 'Iron Curtain', 'accepted'], ['b', 'Tundra Line', 'declined'], ['c', 'Iron Curtain', 'expired']])],
+        ['a', 'Iron Curtain', 'accepted'], ['b', 'Tundra Line', 'declined'], ['c', 'Iron Curtain',
+          'expired']])],
     ['counterparties busiest first with deal counts', (r: ReturnType<typeof lookingBack>) =>
       expect(r.partners).toEqual([{ name: 'Iron Curtain', talks: 2, deals: 1 },
         { name: 'Tundra Line', talks: 1, deals: 0 }])],

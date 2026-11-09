@@ -46,7 +46,8 @@ export type HomeBrief = {
 export type HomeSource = 'pulse' | 'results' | 'calendar' | 'cap' | 'ledger' | 'bids' | 'draft'
   | 'matchup' | 'assets' | 'jobs' | 'trades' | 'research' | 'form';
 
-export const defaultResearch = (): ResearchReader | undefined => researchAvailable() ? researchAPI : undefined;
+export const defaultResearch = (): ResearchReader | undefined => researchAvailable() ? researchAPI :
+  undefined;
 export const OWNER_ONLY_BIDS = 'Bids are visible only to this franchise\'s owner';
 
 /** readHomeBrief calls the reads League Pulse, Franchise HQ, the War Room and the ledger already
@@ -111,7 +112,8 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
     apply('trades', async () => {
       const r = await port({ command: 'trades.read', mode: 'read', arguments: { league, viewer: mine } });
       const trades = parseHostedTrades(r.data);
-      if (trades.league !== league || trades.franchise !== mine) throw new Error('Trades belong to another viewer');
+      if (trades.league !== league || trades.franchise !==
+        mine) throw new Error('Trades belong to another viewer');
       out.trades = trades;
     }),
     apply('research', async () => {
@@ -172,7 +174,8 @@ export const retryDelay = (attempt: number): number => Math.min(60_000, 5_000 * 
 /** mergeBrief lays a re-read over the brief on screen: a source keeps its last answer until the
  *  re-read answers it, and an error clears once its source answers. */
 export function mergeBrief(prev: HomeBrief, next: HomeBrief): HomeBrief {
-  const out: HomeBrief = { ...prev, at: { ...prev.at, ...next.at }, errors: { ...prev.errors, ...next.errors } };
+  const out: HomeBrief = { ...prev, at: { ...prev.at, ...next.at }, errors: { ...prev.errors,
+    ...next.errors } };
   for (const [k, v] of Object.entries(next) as [keyof HomeBrief, unknown][])
     if (k !== 'at' && k !== 'errors' && v !== undefined) (out as Record<string, unknown>)[k] = v;
   for (const source of Object.keys(next.at) as HomeSource[]) delete out.errors[source];

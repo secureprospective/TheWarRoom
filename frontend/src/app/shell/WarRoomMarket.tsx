@@ -15,21 +15,26 @@ export const ownBid = (p: Plan): WarRoomOwnBid => ({ player: p.playerId, name: p
   contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post, plan: p });
 const STEP = 0.1;
 export function WarRoomOwnBids({ reading, kind, revise }: { reading?: WarRoomMarketReading;
-  kind?: 'plan' | 'placed'; revise?: (b: WarRoomOwnBid, change: { salary?: string; years?: number }) => void }) {
+  kind?: 'plan' | 'placed'; revise?: (b: WarRoomOwnBid, change: { salary?: string; years?: number }) =>
+    void }) {
   const bids = reading?.bids?.filter(b => !kind || b.kind === kind);
   const [copied, setCopied] = useState('');
   const copy = async (b: WarRoomOwnBid) => {
     setCopied((await copyText(b.post ?? '')) ? b.player : '');
   };
   return <>{bids ? bids.length ? bids.map((b, k) => <div className="bidb"
-    key={b.player}><span className="nm">{kind === 'plan' ? `${k + 1}. ` : ''}{b.name}</span><b>{b.contract}</b>
+    key={b.player}><span className="nm">{kind === 'plan' ? `${k + 1}. ` :
+      ''}{b.name}</span><b>{b.contract}</b>
       {revise && b.plan && <span className="step2"><WarRoomAct label={`Lower ${b.name} bid`}
-        onAction={() => revise(b, { salary: String(b.plan!.salary.cents / 1e8 - STEP) })}>−</WarRoomAct><input key={b.plan.salary.cents} aria-label={`${b.name} bid salary in millions`}
+        onAction={() => revise(b, { salary:
+          String(b.plan!.salary.cents / 1e8 - STEP) })}>−</WarRoomAct><input key={b.plan.salary.cents}
+          aria-label={`${b.name} bid salary in millions`}
           className="bid-salary" type="number" step="any" defaultValue={b.plan.salary.cents / 1e8}
           onBlur={e => { if (e.currentTarget.value !== String(b.plan!.salary.cents / 1e8))
             revise(b, { salary: e.currentTarget.value }); }}
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }} /><WarRoomAct
-          label={`Raise ${b.name} bid`} onAction={() => revise(b, { salary: String(b.plan!.salary.cents / 1e8 + STEP) })}>+</WarRoomAct></span>}
+          label={`Raise ${b.name} bid`} onAction={() => revise(b, { salary:
+            String(b.plan!.salary.cents / 1e8 + STEP) })}>+</WarRoomAct></span>}
       {revise && b.plan && <label>Years <select aria-label={`${b.name} bid years`}
         value={b.plan.years} disabled={!reading?.maxYears}
         onChange={e => revise(b, { years: Number(e.target.value) })}>
@@ -74,7 +79,8 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
   const revise = async (b: WarRoomOwnBid, change: { salary?: string; years?: number }) => {
     if (pending || !b.plan) return;
     if (change.years !== undefined && (!value?.maxYears || !Number.isSafeInteger(change.years) ||
-      change.years < 1 || change.years > value.maxYears)) { setError('Choose a contract length within the league limit'); return; }
+      change.years < 1 || change.years > value.maxYears)) {
+        setError('Choose a contract length within the league limit'); return; }
     if (change.salary !== undefined) {
       const salary = Number(change.salary);
       if (!Number.isFinite(salary) || salary <= 0) { setError('Enter a bid greater than zero'); return; }
@@ -102,7 +108,8 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
   return <section className="mk3 ws on" aria-label="Market"><div className="tg"><div className="ch">
     <b>MY TARGETS</b><span>ranked per need</span></div><div className="tg-l">
     {value?.targets?.length ? [...warRoomTargetLanes(context, value)].map(([position, lane]) => <div
-      className="lane2" key={position} data-lane={position}><div className="lh"><b>{position}</b><span>{unavailable}</span></div>
+      className="lane2" key={position} data-lane={position}><div
+        className="lh"><b>{position}</b><span>{unavailable}</span></div>
       {lane.map(({ entry, player }, i) => <div className="tgt" key={entry.id}>
         <span className="n">{i + 1}</span><WarRoomAct className="nm" onAction={() => select(player)}>
           {player.name}</WarRoomAct><small>{value.bids?.find(b => b.player === entry.id)?.contract ??
@@ -117,8 +124,10 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
       'Affordable'].map(f => <WarRoomAct key={f} className="chip" active={filter === f}
         disabled={f === 'My needs' || f === 'Affordable'} title={f === 'My needs' || f === 'Affordable' ?
           unavailable : undefined} onAction={() => setFilter(f)}>{f}</WarRoomAct>)}</div></div>
-      <div className="fa-h">{['☆', 'POS', 'PLAYER', 'AGE', 'STRING', 'PTS', 'VALUE', 'MIN BID'].map((h, i) => <span key={i}>{h}</span>)}</div><div className="fa-list">
-      {players?.length ? players.map(p => <div className={`fa-r${bids?.some(b => b.player === p.id) ? ' bid' : ''}`}
+      <div className="fa-h">{['☆', 'POS', 'PLAYER', 'AGE', 'STRING', 'PTS', 'VALUE', 'MIN BID'].map((h, i) =>
+        <span key={i}>{h}</span>)}</div><div className="fa-list">
+      {players?.length ? players.map(p =>
+        <div className={`fa-r${bids?.some(b => b.player === p.id) ? ' bid' : ''}`}
         key={p.id} onPointerDown={e => drag(e, p.id)}><WarRoomAct className="st"
           label={`${targets.has(p.id) ? 'Unwatch' : 'Watch'} ${p.name}`} active={targets.has(p.id)}
           disabled={pending || !!context.native || !value?.targets} onAction={() => { void change(p.id); }}>
@@ -127,7 +136,8 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
       <span>{p.age ?? "—"}</span>
         <span>{p.string ?? "—"}</span><span>{p.points ?? "—"}</span>
         <span className="fa-value">{p.value ?? "—"}</span><span>{p.minimum ?? "—"}</span></div>) :
-        <WarRoomEmpty pending={!value && !reading.error} reason={reading.error ?? (value?.players === undefined ? value?.errors.join(' · ') ||
+        <WarRoomEmpty pending={!value && !reading.error} reason={reading.error ?? (value?.players ===
+          undefined ? value?.errors.join(' · ') ||
           'Pool could not be read' : 'No free agents match this view')} />}</div>
         {error && <p className="empty" role="alert">{error}</p>}</div>
     <div className="bcol"><div className="budget"><div className="t"><span>CAP ROOM</span><b>{money(room)}

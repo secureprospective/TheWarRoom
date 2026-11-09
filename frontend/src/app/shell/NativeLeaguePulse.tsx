@@ -75,7 +75,8 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live }: {
         : <>
           <span><b>{decided}</b> with a result</span>
           <span><b>{waiting}</b> still to come</span>
-          <span className="src">{nflClockSummary(week === reading?.week ? live.view : undefined, live.error)}</span>
+          <span className="src">{nflClockSummary(week === reading?.week ? live.view : undefined,
+            live.error)}</span>
         </>}
     </div>
     <div className="fresh">

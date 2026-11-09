@@ -14,7 +14,8 @@ import type { RosterFacts } from './hqRosterFacts';
 export type HQLineup = Omit<LineupReading, 'starters' | 'bench'> & { starters: { id: string; position?:
   string }[]; bench: { id: string; position?: string }[] };
 export type HQBoardProps = { snapshot: Snapshot; mine: string; reading?: HQLineup;
-  showContracts?: boolean; matchup?: ReactNode; error?: string; settings: HQSettings; values: Map<string, number>;
+  showContracts?: boolean; matchup?: ReactNode; error?: string; settings: HQSettings; values: Map<string,
+    number>;
   facts?: RosterFacts;
   byes?: Map<string, number>; injuries?: Injury[]; now?: Now; live?: LiveView; changed?: string[];
     canEdit?: boolean; select: (id: string) => void;

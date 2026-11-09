@@ -32,7 +32,8 @@ describe('Control Room · rail tree and Signed in footer', () => {
     const host = await mount(render(Shell, {}), s.app);
     await open(league);
     await settle();
-    const link = all(slot(host, 'footer'), 'button').find(b => b.textContent === 'Sign in to claim your seat');
+    const link = all(slot(host, 'footer'), 'button').find(b => b.textContent ===
+      'Sign in to claim your seat');
     expect(link).toBeTruthy();
     await click(link!);
     await settle();

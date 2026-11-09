@@ -5,7 +5,8 @@ import './home.css';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { ResearchReader } from '../research/api';
 import { subscribeSeason } from '../market/api';
-import { defaultResearch, mergeBrief, readHomeBrief, retryDelay, transientErrors, type HomeBrief as Brief } from './homeReads';
+import { defaultResearch, mergeBrief, readHomeBrief, retryDelay, transientErrors,
+  type HomeBrief as Brief } from './homeReads';
 import { bump, current, defaultLayout, layoutKey, pack, parseLayout, place, remove, SPANS, swap,
   type Layout, type Phase, type Span, type TileId } from './homeLayout';
 import { clock, go, isFinal, left, myGame, myRow, nameOf, oldestAt, pts, SHORTCUT_KEYS, shortTime, TileBody,
@@ -25,7 +26,8 @@ const TRAY: Record<Tab | 'edit', string> = {
   stats: 'NFL stats: no league-wide stats table read exists yet',
 };
 
-/** alertsOf is what the app already raises for this league and owner: trade events, deadlines inside a week, the commissioner jobs board's
+/** alertsOf is what the app already raises for this league and owner: trade events, deadlines inside a week,
+  the commissioner jobs board's
  *  blocked jobs and live jobs with a deadline, and my cap check when it is over. Nothing here is invented. */
 const WEEK = 7 * 24 * 3600 * 1000;
 const ENDINGS: Record<string, string> = { approved: 'went through', declined: 'was declined',
@@ -243,7 +245,8 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
             <span className="ql">CUSTOMIZE</span></HomeAct>
         </div>
         <section className="now" aria-label="Now">
-          <div className="nl"><span className="tag">{known === undefined ? 'READING…' : known === 'off' ? 'OFFSEASON' : g && isFinal(g.status) ?
+          <div className="nl"><span className="tag">{known === undefined ? 'READING…' : known === 'off' ?
+            'OFFSEASON' : g && isFinal(g.status) ?
             'FINAL' : 'LIVE'}</span>{nowLine}</div>
           {stats.map(([v, l]) => <div className="st" key={l}><b>{v}</b><span>{l}</span></div>)}
         </section>

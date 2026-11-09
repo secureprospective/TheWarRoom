@@ -18,6 +18,8 @@ const keyHandlerAllowlist = {
     'Search input needs arrows, Enter and Escape; execution remains dispatch.',
   'commissioner/SideTray.tsx':
     'The tray dialog traps Tab focus and closes on Escape; its Close control is an Act.',
+  'shell/WarRoomMarket.tsx':
+    'Enter in a bid salary box only blurs it; the blur commits the typed salary, as tabbing away does.',
   'commissioner/HoldToFire.tsx':
     'Hold-to-fire times a held Space or Enter; the held button then dispatches commissioner.execute.',
 } as const;
@@ -50,6 +52,7 @@ describe('Controls are verbs (§M2/§M3)', () => {
       'shell/MFLConnection.tsx',
       'commands/CommandBar.tsx',
       'commissioner/SideTray.tsx',
+      'shell/WarRoomMarket.tsx',
       'commissioner/HoldToFire.tsx',
     ]);
     expect(keyHandlerAllowlist['commands/CommandBar.tsx']).toContain('dispatch');

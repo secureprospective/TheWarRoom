@@ -20,19 +20,22 @@ const differences = [
   { field: 'taxi.basis', label: 'Taxi experience measure', section: 'Taxi squad', league: 'Calendar years',
     preset: 'NFL seasons', value: 'nfl_seasons' },
 ];
-const change = (field: string, value: unknown, sent: { reason: string; effective: string; request: string }) => ({
+const change = (field: string, value: unknown, sent: { reason: string; effective: string; request:
+  string }) => ({
   league, command: 'commish.rules.set', args: { field, value }, reason: sent.reason, expected: 3,
   request: `${sent.request}.${field}`, effective: sent.effective, visibility: 'league',
 });
 
 describe('Control Room · Compare with a preset', () => {
-  it('lists the differences, applies the chosen ones as one rules change, after the ordinary preview', async () => {
+  it('lists the differences, applies the chosen ones as one rules change, after the ordinary preview',
+    async () => {
     const applied: Record<string, unknown>[] = [];
     const previewed: string[] = [];
     const { host } = await room({
       TargetCommissionerPresetCompare: async () => comparison(differences),
       TargetCommissionerPresetApply: async body => {
-        const sent = JSON.parse(body) as { fields: string[]; dryRun: boolean; reason: string; effective: string;
+        const sent = JSON.parse(body) as { fields: string[]; dryRun: boolean; reason: string; effective:
+          string;
           request: string };
         applied.push(sent);
         const changes = differences.filter(d => sent.fields.includes(d.field))
@@ -42,8 +45,10 @@ describe('Control Room · Compare with a preset', () => {
       TargetCommissionerPreview: async body => {
         const sent = JSON.parse(body) as { args: { field: string }; expected: number };
         previewed.push(sent.args.field);
-        return { question: 'Change this rule?', target: { league, name: 'Rules league', version: sent.expected },
-          fields: [{ label: sent.args.field, before: 'was', beforeSource: 's', after: 'will be', afterSource: 's',
+        return { question: 'Change this rule?', target: { league, name: 'Rules league', version:
+          sent.expected },
+          fields: [{ label: sent.args.field, before: 'was', beforeSource: 's', after: 'will be', afterSource:
+            's',
             when: 'Now' }], affects: { readings: [], count: 0, words: 'No franchise' }, blockers: [],
           safeguard: 'reason' };
       },
@@ -89,7 +94,8 @@ describe('Control Room · Compare with a preset', () => {
       TargetCommissionerPresetApply: async body => {
         const sent = JSON.parse(body) as { dryRun: boolean };
         if (!sent.dryRun) recorded++;
-        throw new Error('rule change refused: player pools can\'t change once the season has games or player moves');
+        throw new
+          Error('rule change refused: player pools can\'t change once the season has games or player moves');
       },
     });
     await tab(host, 'RULES');

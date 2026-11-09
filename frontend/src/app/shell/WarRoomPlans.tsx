@@ -24,13 +24,17 @@ export function WarRoomPlans({ context, openPocket }: { context: WarRoomContext;
       <div className="ch" style={{ borderTop: '2px solid var(--black)' }}><b>LOOKING BACK</b>
         <span>how past talks ended</span></div>
       <div className="sblk" aria-label="Past offers"><div className="sh">PAST OFFERS</div>
-        {b?.offers.length ? b.offers.map(o => <div className="srow" key={o.id}><span>{o.partner} · {o.date}</span>
+        {b?.offers.length ? b.offers.map(o =>
+          <div className="srow" key={o.id}><span>{o.partner} · {o.date}</span>
           <small className={CHIP[o.status] ?? 's-t'}>{o.status.toUpperCase()}</small></div>)
-          : <WarRoomEmpty pending={back.pending} reason={back.error ?? b?.offersNote ?? 'No finished offers yet'} />}</div>
+          : <WarRoomEmpty pending={back.pending} reason={back.error ?? b?.offersNote ??
+            'No finished offers yet'} />}</div>
       <div className="sblk" aria-label="Counterparties"><div className="sh">COUNTERPARTIES</div>
         {b?.partners.length ? b.partners.map(p => <div className="srow" key={p.name}><span>{p.name}</span>
-          <b className="mono">{p.talks} talk{p.talks === 1 ? '' : 's'} · {p.deals} deal{p.deals === 1 ? '' : 's'}</b>
-          </div>) : <WarRoomEmpty pending={back.pending} reason={back.error ?? b?.offersNote ?? 'No trade talks yet'} />}</div>
+          <b className="mono">{p.talks} talk{p.talks === 1 ? '' : 's'} · {p.deals} deal{p.deals === 1 ? '' :
+            's'}</b>
+          </div>) : <WarRoomEmpty pending={back.pending} reason={back.error ?? b?.offersNote ??
+            'No trade talks yet'} />}</div>
       <div className="sblk" aria-label="Saved proposals"><div className="sh">SAVED PROPOSALS
         <WarRoomAct onAction={openPocket}>POCKET ▸</WarRoomAct></div>
         {b?.saved !== undefined ? <div className="srow"><span>{b.saved} built, not sent</span>

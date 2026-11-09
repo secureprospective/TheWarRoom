@@ -199,7 +199,8 @@ describe('HQ saved lineup read and editor', () => {
     mounted.splice(mounted.indexOf(test.root), 1);
     expect(test.unsubscribe).toHaveBeenCalledTimes(1);
   });
-  it('reads an event after the slow initial read, never beside it, and refreshes changed snapshots', async () => {
+  it('reads an event after the slow initial read, never beside it, and refreshes changed snapshots',
+    async () => {
     const first = pending();
     const r = heldLineup();
     const read = vi.fn().mockReturnValueOnce(first.promise)

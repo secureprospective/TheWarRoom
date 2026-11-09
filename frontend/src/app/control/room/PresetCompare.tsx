@@ -58,7 +58,8 @@ export function PresetCompare({ league, initial = 'default_32' }: { league: stri
   const confirm = async (request: string) => {
     try {
       const count = await applyPreset(apply(request));
-      setDone(`Recorded ${count} rule ${count === 1 ? 'change' : 'changes'} from the ${comparison?.presetLabel}.`);
+      const noun = count === 1 ? 'change' : 'changes';
+      setDone(`Recorded ${count} rule ${noun} from the ${comparison?.presetLabel}.`);
       setReview(undefined);
       await leagueState.choose(league);
       load(preset);
@@ -85,7 +86,8 @@ export function PresetCompare({ league, initial = 'default_32' }: { league: stri
       <h3>Compare with a preset</h3>
       <div className="cr-chips">
         {(comparison?.presets ?? [{ id: preset, label: preset }]).map(p => (
-          <Act key={p.id} className="cr-chip" active={p.id === preset} verb="commissioner.surface" variant="surface"
+          <Act key={p.id} className="cr-chip" active={p.id ===
+            preset} verb="commissioner.surface" variant="surface"
             label={p.label} args={{ screen, action: 'open', value: p.id }}>{p.label}</Act>
         ))}
       </div>
@@ -93,7 +95,8 @@ export function PresetCompare({ league, initial = 'default_32' }: { league: stri
       {comparison && <p role="status">{comparison.summary}</p>}
       {comparison && comparison.differences.length > 0 && (
         <table className="cr-t">
-          <thead><tr><th>APPLY</th><th>SETTING</th><th>THIS LEAGUE</th><th>{comparison.presetLabel}</th></tr></thead>
+          <thead><tr><th>APPLY</th><th>SETTING</th><th>THIS
+            LEAGUE</th><th>{comparison.presetLabel}</th></tr></thead>
           <tbody>
             {comparison.differences.map(d => (
               <tr key={d.field} data-preset-field={d.field}>
@@ -114,15 +117,19 @@ export function PresetCompare({ league, initial = 'default_32' }: { league: stri
         <>
           <div className="cr-chips" aria-label="When it takes effect">
             {(['next_rollover', 'now'] as const).filter(t => !nowOnly || t === 'now').map(t => (
-              <Act key={t} className="cr-chip" active={timing === t} verb="commissioner.surface" variant="surface"
-                label={t === 'now' ? 'Now' : 'From the next rollover'} args={{ screen, action: 'pick', value: t }}>
+              <Act key={t} className="cr-chip" active={timing ===
+                t} verb="commissioner.surface" variant="surface"
+                label={t === 'now' ? 'Now' : 'From the next rollover'} args={{ screen, action: 'pick', value:
+                  t }}>
                 {t === 'now' ? 'Now' : 'From the next rollover'}
               </Act>
             ))}
           </div>
-          {nowOnly && <p className="change-note">A chosen setting changes only now, so every chosen setting does.</p>}
+          {nowOnly && <p className="change-note">A chosen setting changes only now,
+            so every chosen setting does.</p>}
           <label className="change-reason">Reason
-            <textarea value={reason} rows={2} onChange={e => { setReason(e.target.value); setReview(undefined); }} />
+            <textarea value={reason} rows={2} onChange={e => {
+              setReason(e.target.value); setReview(undefined); }} />
           </label>
           <Act className="cr-btn" verb="commissioner.surface" variant="surface"
             label={`Preview ${picked.length} rule ${picked.length === 1 ? 'change' : 'changes'}`}
@@ -137,7 +144,8 @@ export function PresetCompare({ league, initial = 'default_32' }: { league: stri
           <h5>Before → after</h5>
           {previews.flatMap(p => p.fields).map((f, i) => <p key={i}>{f.label}: {previewChange(f)}</p>)}
           <h5>Before you confirm</h5>
-          {blockers.length === 0 ? <p>No blockers.</p> : <ul role="alert">{blockers.map((b, i) => <li key={i}>{b}</li>)}</ul>}
+          {blockers.length === 0 ? <p>No blockers.</p> : <ul role="alert">{blockers.map((b, i) =>
+            <li key={i}>{b}</li>)}</ul>}
           {safeguard && <p className="change-safeguard">{safeguardWords[safeguard]}</p>}
           {need && <p className="change-why" role="status">{need}</p>}
           {safeguard === 'hold'

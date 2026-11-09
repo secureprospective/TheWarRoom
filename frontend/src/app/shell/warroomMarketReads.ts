@@ -12,7 +12,8 @@ import { parseHostedRoster } from '../commissioner/hostedReadings';
 import type { WarRoomContext } from './warroomReads';
 import type { Plan } from '../pool/contract';
 import { unavailable } from './hqModel';
-export type WarRoomMarketPlayer = { id: string; name: string; position: string; age?: string; string?: string; points?: string;
+export type WarRoomMarketPlayer = { id: string; name: string; position: string; age?: string; string?:
+  string; points?: string;
   minimum?: string; minimumCents?: number; value?: string };
 export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string;
   kind?: 'plan' | 'placed'; id?: string; post?: string; plan?: Plan };
@@ -45,7 +46,8 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
     await Promise.all([
       apply(async () => {
         if (native.reading) { result.maxYears = native.reading.settings.maxYears; return; }
-        const r = await port({ command: 'commish.rules.read', mode: 'read', arguments: { league: native.league } });
+        const r = await port({ command: 'commish.rules.read', mode: 'read', arguments: { league:
+          native.league } });
         const rules = parseRules(r.data);
         if (rules.league !== native.league) throw new Error('Rules belong to another league');
         result.maxYears = nativeHQSettings(rules).maxYears;
@@ -87,7 +89,8 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       if (pool.status === 'failed' || pool.status === 'not_wired') throw new Error(pool.absenceReason ??
         'Pool unavailable');
       result.players = pool.value.rows.map(p => ({ id: p.id, name: p.name, position: p.position,
-        age: p.age, string: p.string, points: p.points, minimum: p.minimum.text, minimumCents: p.minimum.cents, value: p.engineText }));
+        age: p.age, string: p.string, points: p.points, minimum: p.minimum.text, minimumCents:
+          p.minimum.cents, value: p.engineText }));
     }),
     apply(async () => { const personal = parsePersonal(await personalWire.read(c.mine));
       result.targets = personal.entries.filter(e => e.kind === 'watch' && e.entity === 'player')
@@ -96,7 +99,8 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       if (bids.status === 'failed' || bids.status === 'not_wired') throw new Error(bids.absenceReason ??
         'Bid plans unavailable');
       result.bids = bids.value.plans.filter(p => p.franchiseId === c.mine).map(p => ({ player: p.playerId,
-        name: p.player, contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post, plan: p }));
+        name: p.player, contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post:
+          p.post, plan: p }));
     }),
   ]);
   return result;

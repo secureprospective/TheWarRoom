@@ -4,7 +4,8 @@ import { alertsOf, seasonAlerts, tradeAlerts } from './HomeBrief';
 const now = Date.parse('2026-11-05T12:00:00Z');
 const day = 24 * 3600 * 1000;
 const iso = (ms: number) => new Date(now + ms).toISOString();
-const offer = (id: string, status: string, over: Partial<{ accepted: string[]; offeredAt: string }> = {}) => ({
+const offer = (id: string, status: string, over: Partial<{ accepted: string[]; offeredAt: string }> = {}) =>
+  ({
   id, status, parties: ['f1', 'f2'], proposer: 'f2', accepted: ['f2'], offeredAt: iso(-day),
   expiresAt: iso(day), teams: [['f1', 'Syndicate'], ['f2', 'Iron Curtain']] as [string, string][],
   words: `words ${status}`, expires: '', details: [], reasons: [], ...over });
@@ -24,14 +25,17 @@ describe('home tray trade alerts', () => {
     expect(got.map(a => a.title)).toEqual(title ? [title] : []);
   });
   it('ignores offers I am not party to', () => {
-    expect(tradeAlerts(trades([{ ...offer('g', 'offered'), parties: ['f2', 'f3'] }]) as never, now)).toEqual([]);
+    expect(tradeAlerts(trades([{ ...offer('g', 'offered'), parties: ['f2', 'f3'] }]) as never,
+      now)).toEqual([]);
   });
 });
 
 describe('home tray seasonal alerts', () => {
   it.each([
-    ['deadline in 7h', { id: 'td', label: 'Trade deadline', at: iso(7 * 3600 * 1000) }, 'League deadline this week'],
-    ['window closing in 6 days', { id: 'w', label: 'Free agency', at: iso(-day), closes: iso(6 * day) }, 'Window closes this week'],
+    ['deadline in 7h', { id: 'td', label: 'Trade deadline', at: iso(7 * 3600 * 1000) },
+      'League deadline this week'],
+    ['window closing in 6 days', { id: 'w', label: 'Free agency', at: iso(-day), closes: iso(6 * day) },
+      'Window closes this week'],
     ['beyond a week', { id: 'x', label: 'Draft', at: iso(8 * day) }, undefined],
     ['past', { id: 'y', label: 'Old', at: iso(-day) }, undefined],
     ['undated', { id: 'z', label: 'Someday' }, undefined],

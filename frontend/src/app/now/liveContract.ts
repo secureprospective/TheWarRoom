@@ -56,7 +56,8 @@ function box(v: unknown, p: string): Box {
   return { team: text(r.team, p), category: text(r.category, p), labels, rows };
 }
 function game(v: unknown, p: string): Game {
-  const r = object(v, p, ['id', 'season', 'week', 'seasonType', 'kickoff', 'home', 'away', 'status', 'clock', 'period', 'state', 'last',
+  const r = object(v, p, ['id', 'season', 'week', 'seasonType', 'kickoff', 'home', 'away', 'status', 'clock',
+    'period', 'state', 'last',
     'box', 'plays']);
   return { id: requiredText(r.id, p), kickoff: timestamp(r.kickoff, p), home: team(r.home, p),
     away: team(r.away, p),

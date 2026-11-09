@@ -151,7 +151,10 @@ it('says plainly that no schedule is published instead of reporting a failure', 
   expect(container.querySelector('.sline .slate')?.textContent)
     .toContain('schedule is not published yet');
   expect(container.textContent).not.toContain('Not available yet');
-  expect(container.textContent).not.toContain('unavailable');
+  // The schedule regions speak plainly; the NFL scoreboard line may still say it needs the desktop app.
+  expect(container.querySelector('#ws-live .scroll')?.textContent).not.toContain('unavailable');
+  expect(container.querySelector('.sline .slate')?.textContent).not.toContain('unavailable');
+  expect(container.textContent).not.toContain('TypeError');
 });
 
 it('Race shows each team\'s power and playoff odds from the league\'s own odds read', async () => {

@@ -185,7 +185,8 @@ describe('Bid form re-queries Go', () => {
   it('renders the form, its verdicts, and holds Save until Go has answered', () => {
     const ready = html(createElement(BidForm, { form, preview: parsePreview(wire.preview), busy: '' }));
     for (const phrase of ['Plan a bid · Smith, John', 'Annual salary', 'Bid points', '7.000',
-      'Entered $5,004,000', 'checks no bid rules', 'Save bid plan', 'Snipe: this bid lands after the 20-hour mark',
+      'Entered $5,004,000', 'checks no bid rules', 'Save bid plan',
+        'Snipe: this bid lands after the 20-hour mark',
       'cannot see the auction clock', 'ProBoards post preview', 'data-endpoint="M-194"',
       'data-endpoint="C-06.7"'])
       expect(ready).toContain(phrase);

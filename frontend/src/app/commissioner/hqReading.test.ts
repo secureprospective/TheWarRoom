@@ -10,7 +10,8 @@ import projections from '../data/projections.wire.testdata.json';
 import results from '../../../../testdata/wire/native/results.json';
 import standings from '../../../../testdata/wire/native/standings.json';
 import { parseRules } from './rules';
-import { OWNER_ONLY_MOVES, nativeHQAssets, nativeHQCap, nativeHQMoves, nativeHQSettings, readNativeHQ } from './hqReading';
+import { OWNER_ONLY_MOVES, nativeHQAssets, nativeHQCap, nativeHQMoves, nativeHQSettings,
+  readNativeHQ } from './hqReading';
 import { selectProvider } from '../data/provider';
 import clockWire from '../data/fixtures/clock.json';
 
@@ -102,7 +103,9 @@ describe('native HQ existing reads', () => {
       'lineup.read': { ...lineup, revision: assets.revision },
     };
     const port = vi.fn<HostedPort>(async request => ({ label: 'Native', writable: false, football: '',
-      data: request.command === 'results.read' ? { ...results, league, revision: assets.revision, week: request.arguments.week } : request.command === 'projections.read' ? { ...projections, week: request.arguments.week } :
+      data: request.command === 'results.read' ? { ...results, league, revision: assets.revision, week:
+        request.arguments.week } : request.command === 'projections.read' ? { ...projections, week:
+        request.arguments.week } :
         data[request.command] }));
     const result = await readNativeHQ(league, mine, port);
     expect(result.errors).toEqual([]); expect(result.lineup?.starters[0].id).toBe('1000');

@@ -18,10 +18,13 @@ function raceQuery(
 }
 
 it('uses registry command identity and validated, canonical complete scopes', () => {
-  const first = readKey('commissioner.TargetNativeValues', [{ league: 'l', franchise: '0001', season: 2026 }]);
+  const first = readKey('commissioner.TargetNativeValues', [{ league: 'l', franchise: '0001', season:
+    2026 }]);
   expect(first).toContain(readCommands['commissioner.TargetNativeValues'].command);
-  expect(first).toBe(readKey('commissioner.TargetNativeValues', [{ season: 2026, franchise: '0001', league: 'l' }]));
-  expect(first).not.toBe(readKey('commissioner.TargetNativeValues', [{ league: 'l', franchise: '0002', season: 2026 }]));
+  expect(first).toBe(readKey('commissioner.TargetNativeValues', [{ season: 2026, franchise: '0001', league:
+    'l' }]));
+  expect(first).not.toBe(readKey('commissioner.TargetNativeValues', [{ league: 'l', franchise: '0002', season:
+    2026 }]));
   expect(readKey('race.TargetRace', [2026, '0001', '0002', '']))
     .not.toBe(readKey('race.TargetRace', [2025, '0001', '0002', '']));
   expect(readKey('race.TargetRace', [1, '0001', '0001', '']))
@@ -30,7 +33,8 @@ it('uses registry command identity and validated, canonical complete scopes', ()
     .not.toBe(readKey('race.TargetRace', [1, '', '', 'sum']));
   expect(() => readKey('race.TargetRace', [NaN, '', '', ''])).toThrow('expected integer');
   expect(() => readKey('draft.TargetDraftReports', [1] as never)).toThrow('argument count');
-  expect(() => readKey('commissioner.TargetNativeValues', [{ league: 'l', franchise: '0001', season: 2026, injected: true }] as never))
+  expect(() => readKey('commissioner.TargetNativeValues', [{ league: 'l', franchise: '0001', season: 2026,
+    injected: true }] as never))
     .toThrow('unknown argument');
 });
 

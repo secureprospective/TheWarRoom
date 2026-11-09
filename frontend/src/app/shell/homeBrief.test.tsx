@@ -70,7 +70,8 @@ it('reads each region from the existing league reads with this league and franch
   const calls = p.mock.calls.map(([r]) => [r.command, r.arguments]);
   expect(calls).toContainEqual(['standings.read', { league: LEAGUE, season: 2026 }]);
   expect(calls).toContainEqual(['results.read', { league: LEAGUE, season: 2026, week: 2 }]);
-  expect(calls).toContainEqual(['commish.ledger.filtered.read', { league: LEAGUE, filter: { person: '', kind: '', from: '', before: '', last: 12 } }]);
+  expect(calls).toContainEqual(['commish.ledger.filtered.read', { league: LEAGUE, filter: { person: '', kind:
+    '', from: '', before: '', last: 12 } }]);
   expect(calls).toContainEqual(['bids.read', { league: LEAGUE, franchise: MINE }]);
   expect(calls).toContainEqual(['draft.read', expect.objectContaining({ league: LEAGUE, franchise: MINE })]);
 });
@@ -435,7 +436,8 @@ it('keeps a final read error without re-reading', async () => {
   let ledgerCalls = 0;
   const base = port();
   const p = vi.fn<HostedPort>(async request => {
-    if (request.command === 'commish.ledger.filtered.read') { ledgerCalls++; throw new Error('Ledger belongs to another league'); }
+    if (request.command === 'commish.ledger.filtered.read') {
+      ledgerCalls++; throw new Error('Ledger belongs to another league'); }
     return base(request);
   });
   await mount(p);

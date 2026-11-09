@@ -238,7 +238,8 @@ describe('market, stars and sealed-bid privacy', () => {
       Promise.reject(new Error('Other reading unavailable')));
     const reading = await readWarRoomMarket(nativeContext(port));
     expect(reading.players).toEqual([{ id: '0042', name: 'Held runner', position: 'RB', age: '25',
-      string: 'RB2', points: '87.5', value: '12.75 points/game', minimum: '$870,000', minimumCents: 87000000 }]);
+      string: 'RB2', points: '87.5', value: '12.75 points/game', minimum: '$870,000', minimumCents:
+        87000000 }]);
     expect(port.mock.calls.filter(([r]) => r.command === 'native.assets.read')).toHaveLength(1);
     assets.pool[0].minimum.cents = NaN;
     expect((await readWarRoomMarket(nativeContext(port))).players).toBeUndefined();
@@ -253,7 +254,8 @@ describe('market, stars and sealed-bid privacy', () => {
       if (raw.action === 'swap') [entries[0].order, entries[1].order] = [entries[1].order, entries[0].order];
     });
     vi.spyOn(poolProvider, 'pool').mockResolvedValue({ status: 'ok', value: { rows: [
-      { id: '0042', name: 'Pool runner', position: 'RB', age: '25', string: 'RB2', points: '87.5', minimum: { text: '$1M', cents:
+      { id: '0042', name: 'Pool runner', position: 'RB', age: '25', string: 'RB2', points: '87.5', minimum: {
+        text: '$1M', cents:
         100_000_000 }, engineText: '24.8' }, { id: '0043', name: 'Other runner', position: 'RB',
         age: '26', minimum: { text: '$2M', cents: 200_000_000 }, engineText: '22.2' }], positions: [],
       summary: '', sorts: [] } } as unknown as Awaited<ReturnType<typeof poolProvider.pool>>);
@@ -324,7 +326,8 @@ describe('calendar draft drawer and plans', () => {
   });
   it('renders plans missing regions without made-up saved counts or cap outcomes', () => {
     const html = renderToStaticMarkup(<WarRoomPlans context={context()} openPocket={() => {}} />);
-    for (const label of ['PLANS', 'MY NEEDS', 'CONFLICTS', 'LOOKING BACK', 'COUNTERPARTIES', 'CAP IF THIS WORKS', 'POCKET', 'MARKET'])
+    for (const label of ['PLANS', 'MY NEEDS', 'CONFLICTS', 'LOOKING BACK', 'COUNTERPARTIES',
+      'CAP IF THIS WORKS', 'POCKET', 'MARKET'])
       expect(html).toContain(label);
     expect(html).toContain(unavailable); expect(html).not.toContain('WIN NOW 2026');
   });
@@ -460,12 +463,15 @@ it('rejects invalid and over-cap typed salaries without changing the saved plan'
   vi.spyOn(controlAPI, 'settings').mockResolvedValue({ ...emptyReport(), rows: [
     { cells: ['Maximum new contract years', '3'], range: null }] });
   const revise = vi.spyOn(poolProvider, 'revise').mockImplementation(async (_id, _mine, form) =>
-    ({ ...saved, years: form.years, salary: { cents: Number(form.salary) * 1e8, text: `$${form.salary}M` } }));
+    ({ ...saved, years: form.years, salary: { cents: Number(form.salary) * 1e8, text:
+      `$${form.salary}M` } }));
   const host = await mount(render(WarRoomMarket, { context: context(), room: 200_000_000, select: vi.fn() }));
   await flush();
-  const salary = () => all(host, 'input').find(e => e.props()['aria-label'] === `${saved.player} bid salary in millions`)!;
+  const salary = () => all(host, 'input').find(e => e.props()['aria-label'] ===
+    `${saved.player} bid salary in millions`)!;
   const blur = async (value: string) => {
-    await act(async () => { (salary().props().onBlur as (e: unknown) => void)({ currentTarget: { value } }); });
+    await act(async () => { (salary().props().onBlur as (e: unknown) => void)({ currentTarget: {
+      value } }); });
     await flush();
   };
   for (const value of ['0', '-1', '', 'NaN']) {
@@ -474,6 +480,7 @@ it('rejects invalid and over-cap typed salaries without changing the saved plan'
   await blur('2.01'); expect(host.textContent).toContain('Bid exceeds your cap room');
   expect(revise).not.toHaveBeenCalled();
   await blur('1.5');
-  expect(revise).toHaveBeenCalledWith(saved.id, '0025', expect.objectContaining({ salary: '1.5', years: saved.years }));
+  expect(revise).toHaveBeenCalledWith(saved.id, '0025', expect.objectContaining({ salary: '1.5', years:
+    saved.years }));
   expect(salary().props().defaultValue).toBe(1.5);
 });

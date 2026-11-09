@@ -50,7 +50,8 @@ export function WarRoomDates({ events, failed, reason }: { events: WarRoomEvent[
   return <div className="cal" aria-label="Calendar">{events.length ? events.map(d => <div className="ev"
     key={d.id}><span className="w">{d.at ? new Date(d.at).toLocaleDateString() : unavailable}</span>
     <b>{d.label}</b><span className="c">{countdown(d.at, Date.now())}</span></div>) :
-    failed ? <WarRoomEmpty reason={reason} /> : <p className="empty">No dates yet</p>}</div>;
+    failed ? <p className="empty" title={reason}>{unavailable}</p> :
+      <p className="empty">No dates yet</p>}</div>;
 }
 // The desk strip speaks only when a read failed. Working reads leave it quiet rather than filling it
 // with words that look like an error.

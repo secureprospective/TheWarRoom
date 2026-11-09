@@ -5,8 +5,10 @@ const pulse = 'League Pulse needs the desktop app; no browser fixture is substit
 const live = 'Live games need the desktop app; no fixture is substituted.';
 
 function bindings(missing: string): typeof Bindings {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go) throw new Error(missing);
-  return (window as unknown as { go: { now: { API: typeof Bindings } } }).go.now.API;
+  const api = typeof window === 'undefined' ? undefined
+    : (window as unknown as { go?: { now?: { API?: typeof Bindings } } }).go?.now?.API;
+  if (!api) throw new Error(missing);
+  return api;
 }
 
 export async function targetNow(week: number, reportWeek: number, mine: string): Promise<unknown> {

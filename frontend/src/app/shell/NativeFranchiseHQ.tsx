@@ -135,7 +135,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
 function NativeHQMatchup({ results, mine }: { results?: PulseResults; mine: string }) {
   const game = results?.games.find(g => g.home === mine || g.away === mine);
   const own = results?.scores.find(s => s.franchise === mine);
-  const other = game && results?.scores.find(s => s.franchise === (game.home === mine ? game.away : game.home));
+  const other = game && results?.scores.find(s => s.franchise === (game.home === mine ? game.away :
+    game.home));
   const ownPoints = own?.points ?? own?.provisional;
   const otherPoints = other?.points ?? other?.provisional;
   return <div className="mu"><div className="ch"><b>THIS WEEK{results ? ` · WK ${results.week}` : ''}</b>
