@@ -28,17 +28,19 @@ export function useDraftCheck(
   saved?: LineupCheck,
 ) {
   const counter = useRef(0);
-  const [result, setResult] = useState<{ check?: LineupCheck; error?: string }>({});
+  const [result, setResult] = useState<{ check?: LineupCheck; error?: string; pending?: boolean }>({});
   useEffect(() => {
     const request = ++counter.current;
     if (!draft) {
       setResult({});
       return;
     }
+    setResult(previous => ({ ...previous, pending: true }));
     void read(draft.franchiseId, draft.starters).then((check) => {
-      if (counter.current === request) setResult({ check });
+      if (counter.current === request) setResult({ check, pending: false });
     }).catch((cause) => {
-      if (counter.current === request) setResult((previous) => ({ ...previous, error: String(cause) }));
+      if (counter.current === request) setResult((previous) => ({ ...previous, error: String(cause),
+        pending: false }));
     });
     return () => { ++counter.current; };
   }, [read, draft]);

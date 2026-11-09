@@ -7,11 +7,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
-
-	"github.com/secureprospective/TheWarRoom/internal/facts"
-
-	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -65,40 +60,6 @@ func TestHealthReportSaysWhatFailedAndWhenTheEngineRan(t *testing.T) {
 	}
 	if got := boardText(LeagueArchiveSource, in); got != "Not read by the board" {
 		t.Errorf("board text for a reference source = %q", got)
-	}
-}
-
-func TestFactsReportIsHonestBeforeAndAfterTheManifest(t *testing.T) {
-	t.Parallel()
-	in := FactsInput{Zone: time.UTC, LabBuilt: "2026-10-06T15:57:20+00:00", LabThrough: "2026-10-06T01:42:57+00:00"}
-	r := FactsReport(in)
-	if r.Status != "empty" || !strings.Contains(r.Note, "import the league archive") ||
-		cell(r, "Lab data") != "Captured through Oct 6, 2026, 1:42 AM; built Oct 6, 2026, 3:57 PM" {
-		t.Errorf("before the Manifest: %+v", r)
-	}
-	in.Published, in.PublishedAt = true, time.Date(2026, 10, 11, 20, 0, 0, 0, time.UTC)
-	in.Manifest = manifest.Manifest{SHA256: strings.Repeat("ab", 32), Entries: []manifest.Entry{
-		{File: "2013/polls.json", Export: "polls", Season: 2013, SHA256: "p", MFLError: "MFL error: login", FetchID: 1},
-		{File: "2013/assets.json", Export: "assets", Season: 2013, SHA256: "a"},
-		{File: "2026/rules.json", Export: "rules", Season: 2026, SHA256: "r", FetchID: 2},
-	}}
-	in.Held = map[string]bool{"p": true, "r": true}
-	built := time.Date(2026, 10, 12, 1, 0, 0, 0, time.UTC)
-	in.Status = manifest.Status{State: manifest.StateStale, Good: manifest.Attempt{BuiltAt: built},
-		Reason: "The inputs changed after it was built."}
-	r = FactsReport(in)
-	for k, v := range map[string]string{
-		"Manifest":           "abababababab, published Oct 11, 2026, 8:00 PM",
-		"Files pinned":       "3 archive files, over seasons 2013–2026",
-		"Exports":            "assets 1, polls 1, rules 1",
-		"In the archive":     "2 of 3",
-		"Not in the archive": "1: 2013/assets.json. No replacement bytes were used; approved non-data gaps are named below.",
-		"MFL error bodies":   "1 pinned files are MFL errors; they are kept as errors and never read as data",
-		"Compiled snapshot":  "Stale, built Oct 12, 2026, 1:00 AM. The inputs changed after it was built.",
-	} {
-		if got := cell(r, k); got != v {
-			t.Errorf("%s = %q, want %q", k, got, v)
-		}
 	}
 }
 
@@ -204,38 +165,6 @@ func TestSourceStandingAlarmsOnlyForTheBoard(t *testing.T) {
 	if state, _ := SourceStanding(in); state != "fail" {
 		t.Errorf("a once-read source that is lost still alarms: %s", state)
 	}
-}
-
-func TestCheckDifferencesSharingAnExplanationAreListedOnce(t *testing.T) {
-	t.Parallel()
-	why := "MFL counted playoff games in the 2013 standings."
-	c := facts.CheckResult{Name: "Win-loss records match MFL standings", Items: []facts.CheckItem{
-		{Words: "2013 Buffalo Bills: standings 11-3-0, games 11-2-0", Reason: why, Class: facts.ClassExplained},
-		{Words: "2014 Houston Texans: standings 9-4-0, games 9-3-0", Class: facts.ClassReview,
-			Reason: "No game accounts for the difference."},
-		{Words: "2013 Miami Dolphins: standings 8-6-0, games 8-5-0", Reason: why, Class: facts.ClassExplained},
-	}}
-	rows := checkItemRows(c)
-	if len(rows) != 2 {
-		t.Fatalf("rows = %d, want one per explanation: %+v", len(rows), rows)
-	}
-	if got := rows[0].Cells[0]; got != "2 differences\n2013 Buffalo Bills: standings 11-3-0, games 11-2-0\n"+
-		"2013 Miami Dolphins: standings 8-6-0, games 8-5-0" || rows[0].Cells[1] != why || rows[0].Cells[2] != "Explained" {
-		t.Fatal(rows[0].Cells)
-	}
-	if rows[1].Cells[0] != "2014 Houston Texans: standings 9-4-0, games 9-3-0" || rows[1].Cells[2] != "For review" ||
-		rows[1].Group != c.Name {
-		t.Fatal(rows[1])
-	}
-}
-
-func cell(r report.Report, key string) string {
-	for _, row := range r.Rows {
-		if row.Cells[0] == key {
-			return row.Cells[1]
-		}
-	}
-	return ""
 }
 
 func TestPositionsWithoutLookupDoesNotReadRoster(t *testing.T) {

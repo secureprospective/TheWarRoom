@@ -24,6 +24,7 @@ func proveStorePreview(t *testing.T, s *Store, raw commissioner.RawCommand, prin
 	if err != nil || len(preview.Blockers) != 0 || len(preview.Fields) == 0 {
 		t.Fatalf("%s legal preview: %+v %v", raw.Command, preview, err)
 	}
+	proveTrialIdentityIgnored(t, s, raw, principal)
 	if len(preview.Fields) == 1 && preview.Fields[0].Label == "League ledger" &&
 		preview.Fields[0].When != "Already recorded" {
 		t.Fatalf("%s has no current-value preview: %+v", raw.Command, preview)
@@ -264,7 +265,7 @@ func TestPreviewDoesNotInventScoresForAnUnheldSeason(t *testing.T) {
 func TestBlockedRolloverPreviewKeepsTheRealPlanAndRefusal(t *testing.T) {
 	t.Parallel()
 	s, c, _ := newStore(t)
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	runScoreCommand(t, s, heldSeedCommand(t), "creator")
 	c.now = time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC)
 	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.SeasonRollover,

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -21,6 +22,14 @@ import (
 // feed really did change back.
 func (s *Store) heldWeeklyFiles(ctx context.Context, season int,
 	accept func(sha string, at time.Time, weeks []source.PlayerWeek)) error {
+	return s.readWeeklyFiles(ctx, season, func(sha string, at time.Time, weeks []source.PlayerWeek) bool {
+		accept(sha, at, weeks)
+		return false
+	})
+}
+
+func (s *Store) readWeeklyFiles(ctx context.Context, season int,
+	accept func(sha string, at time.Time, weeks []source.PlayerWeek) bool) error {
 	feed, ok := s.reg.Feed("stats_player_week")
 	if !ok {
 		return fmt.Errorf("weekly NFL statistics feed is not registered")
@@ -46,8 +55,7 @@ func (s *Store) heldWeeklyFiles(ctx context.Context, season int,
 			parseErr = fmt.Errorf("read held weekly statistics %s: %w", sha, err)
 			return true
 		}
-		accept(sha, at, weeks)
-		return false
+		return accept(sha, at, weeks)
 	})
 	if err != nil {
 		return fmt.Errorf("read weekly statistics archive: %w", err)
@@ -56,7 +64,7 @@ func (s *Store) heldWeeklyFiles(ctx context.Context, season int,
 }
 
 // PlayerWeekStats reads the original weekly files, not the reduced floating-point observations.
-// Play-by-play is not loaded by Signals; Missing keeps those required inputs explicit.
+// Missing keeps absent play-by-play explicit until acquisition has held it.
 func (s *Store) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) ([]source.HeldWeek, error) {
 	if err := scope.Validate(); err != nil {
 		return nil, fmt.Errorf("read held player statistics: %w", err)
@@ -71,6 +79,7 @@ func (s *Store) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) 
 // heldFile is one held copy of a season's weekly file, already parsed.
 type heldFile struct {
 	sha            string
+	complete       bool
 	at             time.Time
 	weeks          []source.PlayerWeek
 	canonical      map[canonicalWeek]source.PlayerWeek
@@ -81,8 +90,9 @@ type heldFile struct {
 	lines   map[source.LineGame]fantasyscore.UnitLine
 }
 
-// heldSeason reads every held copy of a season's weekly file once, newest first.
-func (s *Store) heldSeason(ctx context.Context, season int) ([]heldFile, error) {
+// readHeldSeason reads every held copy of a season's weekly file, newest first. Readers go through
+// heldSeason, which builds it once per held revision.
+func (s *Store) readHeldSeason(ctx context.Context, season int) ([]heldFile, error) {
 	files := []heldFile{}
 	err := s.heldWeeklyFiles(ctx, season, func(sha string, at time.Time, weeks []source.PlayerWeek) {
 		files = append(files, heldFile{sha: sha, at: at, weeks: weeks})
@@ -90,7 +100,82 @@ func (s *Store) heldSeason(ctx context.Context, season int) ([]heldFile, error) 
 	if err != nil {
 		return nil, err
 	}
-	return files, nil
+	return s.completeNewestFile(ctx, season, files)
+}
+
+// completeNewestFile creates a new evidence revision, rather than rewriting older weekly revisions.
+func (s *Store) completeNewestFile(ctx context.Context, season int, files []heldFile) ([]heldFile, error) {
+	if len(files) == 0 {
+		return files, nil
+	}
+	weekly := files[0]
+	proofs, proofSHA, proofAt, err := s.heldAbsenceProofs(ctx, season)
+	if err != nil {
+		return nil, err
+	}
+	var completed heldFile
+	var parseErr error
+	found, err := s.ExactArchivedBodies(ctx, source.PlaysURL(season), func(_ string, body []byte, at time.Time) bool {
+		hash := sha256.Sum256(append([]byte(weekly.sha+proofSHA), body...))
+		sha := hex.EncodeToString(hash[:])
+		weeks, err := s.completedWeeks(sha, weekly.weeks, body, proofs)
+		if err != nil {
+			parseErr = err
+			return false
+		}
+		if weekly.at.After(at) {
+			at = weekly.at
+		}
+		if proofAt.After(at) {
+			at = proofAt
+		}
+		completed = heldFile{sha: sha, at: at, weeks: weeks, complete: true}
+		return true
+	})
+	if err != nil {
+		return nil, fmt.Errorf("read held plays: %w", err)
+	}
+	if !found {
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		return files, nil
+	}
+	return append([]heldFile{completed}, files...), nil
+}
+
+func (s *Store) completedWeeks(sha string, weekly []source.PlayerWeek, body []byte, proofs []source.RawAbsenceProof) ([]source.PlayerWeek, error) {
+	s.weeklyMu.Lock()
+	defer s.weeklyMu.Unlock()
+	if file, ok := s.weekly[sha]; ok {
+		return file.weeks, file.err
+	}
+	plays, err := source.ReadCompressedPlays(body)
+	if err != nil {
+		return nil, fmt.Errorf("read held compressed plays: %w", err)
+	}
+	weeks := make([]source.PlayerWeek, len(weekly))
+	for i := range weekly {
+		weeks[i] = clonePlayerWeek(weekly[i])
+	}
+	weeks, withheld := source.HeldPlayWeeks(weeks, plays)
+	weeks, err = source.MissingPlayWeeks(weeks, plays)
+	if err != nil {
+		return nil, fmt.Errorf("build missing player weeks: %w", err)
+	}
+	if err := source.AttachPlays(weeks, plays); err != nil {
+		return nil, fmt.Errorf("attach held plays: %w", err)
+	}
+	weeks, err = source.AddProvenZeros(weeks, plays, proofs)
+	if err != nil {
+		return nil, fmt.Errorf("verify empty player weeks: %w", err)
+	}
+	weeks = source.WithoutWithheld(weeks, withheld)
+	if s.weekly == nil {
+		s.weekly = map[string]weeklyFile{}
+	}
+	s.weekly[sha] = weeklyFile{weeks: weeks}
+	return weeks, nil
 }
 
 // selectHeldWeeks picks the player's week out of each held copy.
@@ -102,6 +187,9 @@ func selectHeldWeeks(scope source.RawStatScope, files []heldFile) []source.HeldW
 			held = f.index.Select(scope, f.weeks, f.sha, f.at)
 		} else {
 			held = source.SelectHeldWeek(scope, f.weeks, f.sha, f.at)
+		}
+		if f.complete && held.Week != nil {
+			held.Missing = held.Missing[1:]
 		}
 		if held.Week != nil {
 			week := clonePlayerWeek(*held.Week)
@@ -164,16 +252,35 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 		if err != nil {
 			return out, fmt.Errorf("read pinned native evidence: %w", err)
 		}
-		return out, nil
+		return s.withLiveStats(ctx, s.withScoringPosition(out, scope.Player, stats), scope)
 	}
 	if s.evidence != nil {
-		return s.evidence(ctx, scope)
+		out, err := s.evidence(ctx, scope)
+		if err != nil {
+			return out, err
+		}
+		return s.withLiveStats(ctx, out, scope)
 	}
-	out, err := source.ReadNativeEvidence(ctx, s, stats, scope)
+	var identity source.IdentityPort = s
+	if reading, ok := stats.(source.IdentityPort); ok {
+		identity = reading
+	}
+	out, err := source.ReadNativeEvidence(ctx, identity, stats, scope)
 	if err != nil {
 		return out, fmt.Errorf("read held native evidence: %w", err)
 	}
-	return out, nil
+	return s.withLiveStats(ctx, s.withScoringPosition(out, scope.Player, stats), scope)
+}
+
+func (s *Store) withScoringPosition(evidence source.NativeEvidence, player string, stats source.StatPort) source.NativeEvidence {
+	if reading, ok := stats.(*nativeSources); ok {
+		evidence.ListedPosition = string(reading.playerFacts()[player].Position)
+		return evidence
+	}
+	if s.lineupEnv != nil {
+		evidence.ListedPosition = string(s.lineupEnv.PlayerFacts()[player].Position)
+	}
+	return evidence
 }
 
 // lineCardEvidence reads an O-Line card's evidence: the season's held line games. A card has no NFL
@@ -219,4 +326,19 @@ func clonePlayerWeek(week source.PlayerWeek) source.PlayerWeek {
 		week.Line.Events[stat] = slices.Clone(events)
 	}
 	return week
+}
+
+// HeldWeeks is the newest held copy of an NFL season's weekly statistics and that copy's sha.
+// held is empty, with no error, when the season has not been loaded: a valuation that reads it
+// runs on the seasons still flowing (R11). It exists so a league valued from its own scoring
+// settings reads exactly the weekly lines the projections read.
+func (s *Store) HeldWeeks(ctx context.Context, season int) (held []source.PlayerWeek, sha string, err error) {
+	err = s.readWeeklyFiles(ctx, season, func(hash string, _ time.Time, weeks []source.PlayerWeek) bool {
+		held, sha = weeks, hash
+		return true
+	})
+	if errors.Is(err, source.ErrSeasonNotLoaded) {
+		return nil, "", nil
+	}
+	return held, sha, err
 }

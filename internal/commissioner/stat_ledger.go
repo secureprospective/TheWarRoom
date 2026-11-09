@@ -9,8 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-// StatBaseline is the version of a player's week the league counts: the first the feed gave, until the
-// commissioner approves a later one. The feed alone never moves it.
+// StatBaseline is an explicit commissioner choice; automatic approvals remain feed-following.
 type StatBaseline struct {
 	Seq int
 	// Digest is the start of the approved version's digest; it is empty until a version is approved.
@@ -50,20 +49,29 @@ func foldStatEffectsFrom(records []Record, active map[string]bool) (statEffects,
 		if err != nil {
 			return statEffects{}, err
 		}
-		key := change.key()
-		status := "Reversed"
-		if active[r.Receipt.Entry] {
-			status = "Applied"
-			if err := out.apply(command, change, r); err != nil {
+		for _, line := range change.Lines() {
+			if err := out.record(command, line, r, active[r.Receipt.Entry]); err != nil {
 				return statEffects{}, err
 			}
 		}
-		if command != StatReject {
-			out.changes[key] = append(out.changes[key], ScoreChange{Entry: r.Receipt.Entry,
-				What: statChangeLabel(command, change), Reason: r.Command.Reason, Status: status})
-		}
 	}
 	return out, nil
+}
+
+func (e *statEffects) record(command string, change RawStatChange, r Record, active bool) error {
+	status := "Reversed"
+	if active {
+		status = "Applied"
+		if err := e.apply(command, change, r); err != nil {
+			return err
+		}
+	}
+	if command != StatReject {
+		key := change.key()
+		e.changes[key] = append(e.changes[key], ScoreChange{Entry: r.Receipt.Entry,
+			What: statChangeLabel(command, change), Reason: r.Command.Reason, Status: status})
+	}
+	return nil
 }
 
 func (e *statEffects) apply(command string, change RawStatChange, r Record) error {
@@ -74,7 +82,9 @@ func (e *statEffects) apply(command string, change RawStatChange, r Record) erro
 		if err != nil {
 			return err
 		}
-		e.baselines[key] = StatBaseline{Seq: id.Seq, Digest: id.Digest, Entry: r.Receipt.Entry}
+		if r.Principal != StatFeedPrincipal {
+			e.baselines[key] = StatBaseline{Seq: id.Seq, Digest: id.Digest, Entry: r.Receipt.Entry}
+		}
 	case StatReject:
 		id, err := ParseStatItemID(change.Item)
 		if err != nil {
@@ -90,7 +100,7 @@ func (e *statEffects) apply(command string, change RawStatChange, r Record) erro
 	return nil
 }
 
-// countedVersion picks the version the league counts from the versions the feed has given, oldest first.
+// countedVersion follows the newest feed evidence unless the commissioner chose a revision.
 // A version the ledger approved but the held files no longer carry is an error, never a quiet fallback.
 func countedVersion(versions []source.LineRevision, base StatBaseline) (*source.LineRevision, error) {
 	if len(versions) == 0 {
@@ -99,7 +109,10 @@ func countedVersion(versions []source.LineRevision, base StatBaseline) (*source.
 		}
 		return nil, nil
 	}
-	if base.Seq >= len(versions) || !strings.HasPrefix(versions[base.Seq].Digest, base.Digest) {
+	if base.Entry == "" && base.Digest == "" {
+		return FeedVersion(versions), nil
+	}
+	if base.Seq < 0 || base.Seq >= len(versions) || !strings.HasPrefix(versions[base.Seq].Digest, base.Digest) {
 		return nil, fmt.Errorf("the statistics you approved are no longer in the held files")
 	}
 	return &versions[base.Seq], nil
@@ -133,4 +146,19 @@ func orderChanges(position map[string]int, lists ...[]ScoreChange) []ScoreChange
 		return []ScoreChange{}
 	}
 	return all
+}
+
+// FeedVersion prefers the newest nflverse revision over any live provider.
+func FeedVersion(versions []source.LineRevision) *source.LineRevision {
+	var selected *source.LineRevision
+	for i := range versions {
+		v := &versions[i]
+		if v.Held.Authority == source.MFLLive {
+			continue
+		}
+		if selected == nil || v.Held.Authority == source.NFLVerse || selected.Held.Authority != source.NFLVerse {
+			selected = v
+		}
+	}
+	return selected
 }

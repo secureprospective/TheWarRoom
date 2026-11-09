@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	commissionerapi "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
-	commsapi "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	controlapi "github.com/secureprospective/TheWarRoom/internal/app/control"
 	draftapi "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	marketapi "github.com/secureprospective/TheWarRoom/internal/app/market"
@@ -29,13 +28,19 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetNativeLineupCheck":          catalog.Bind1(api.TargetNativeLineupCheck, "input"),
 		"TargetNativeHouseRules":           catalog.Bind1(api.TargetNativeHouseRules, "leagueID"),
 		"TargetNativePlayerScore":          catalog.Bind4(api.TargetNativePlayerScore, "league", "player", "season", "week"),
+		"TargetNativeLineupDelta":          catalog.Bind1(api.TargetNativeLineupDelta, "raw"),
+		"TargetNativeValues":               catalog.Bind1(api.TargetNativeValues, "raw"),
+		"TargetNativeProjections":          catalog.Bind4(api.TargetNativeProjections, "league", "players", "season", "week"),
 		"TargetNativeContractQuote":        catalog.Bind1(api.TargetNativeContractQuote, "raw"),
 		"TargetNativeResults":              catalog.Bind3(api.TargetNativeResults, "league", "season", "week"),
 		"TargetNativeStandings":            catalog.Bind2(api.TargetNativeStandings, "league", "season"),
+		"TargetNativeOdds":                 catalog.Bind2(api.TargetNativeOdds, "league", "season"),
 		"TargetNativeScorePreview":         catalog.Bind1(api.TargetNativeScorePreview, "body"),
 		"TargetNativeBracket":              catalog.Bind2(api.TargetNativeBracket, "league", "season"),
-		"TargetStatQueue":                  catalog.Bind2(api.TargetStatQueue, "league", "season"),
+		"TargetStatQueue":                  catalog.Bind3(api.TargetStatQueue, "league", "season", "request"),
+		"TargetCancelRead":                 catalog.Bind1Error(api.TargetCancelRead, "request"),
 		"TargetNativeTradeAction":          catalog.Bind1(api.TargetNativeTradeAction, "raw"),
+		"TargetNativeMoves":                catalog.Bind2(api.TargetNativeMoves, "league", "franchise"),
 		"TargetNativeTrades":               catalog.Bind2(api.TargetNativeTrades, "league", "viewer"),
 		"TargetNativeWaiverAction":         catalog.Bind1(api.TargetNativeWaiverAction, "raw"),
 		"TargetNativeWaivers":              catalog.Bind3(api.TargetNativeWaivers, "league", "franchise", "at"),
@@ -54,6 +59,8 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetCommissionerPeople":         catalog.Bind1(api.TargetCommissionerPeople, "league"),
 		"TargetCommissionerLeagues":        catalog.Bind0(api.TargetCommissionerLeagues),
 		"TargetCommissionerRules":          catalog.Bind1(api.TargetCommissionerRules, "league"),
+		"TargetCommissionerPresetCompare":  catalog.Bind2(api.TargetCommissionerPresetCompare, "league", "preset"),
+		"TargetCommissionerPresetApply":    catalog.Bind1(api.TargetCommissionerPresetApply, "body"),
 		"TargetCommissionerJobs":           catalog.Bind1(api.TargetCommissionerJobs, "league"),
 		"TargetCommissionerControls":       catalog.Bind0Value(api.TargetCommissionerControls),
 		"TargetCommissionerNotices":        catalog.Bind1(api.TargetCommissionerNotices, "league"),
@@ -63,20 +70,15 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetCommissionerActor":          catalog.Bind0(api.TargetCommissionerActor),
 		"TargetCommissionerSchedule":       catalog.Bind1(api.TargetCommissionerSchedule, "league"),
 		"TargetCommissionerSeat":           catalog.Bind0(api.TargetCommissionerSeat),
+		"TargetSignInFacts":                catalog.Bind0(api.TargetSignInFacts),
 		"TargetCommissionerSeatSignIn":     catalog.Bind2(api.TargetCommissionerSeatSignIn, "username", "password"),
+		"TargetWorkflow":                   catalog.Bind1(api.TargetWorkflow, "body"),
 		"TargetBackupNow":                  catalog.Bind0(api.TargetBackupNow),
 		"TargetCommissionerPreview":        catalog.Bind1(api.TargetCommissionerPreview, "body"),
 		"TargetLeagueCalendar":             catalog.Bind1(api.TargetLeagueCalendar, "raw"),
 		"TargetLeagueSchedule":             catalog.Bind1(api.TargetLeagueSchedule, "raw"),
 		"TargetNativeFranchiseSchedule":    catalog.Bind1(api.TargetNativeFranchiseSchedule, "raw"),
 		"TargetNativeWeek":                 catalog.Bind1(api.TargetNativeWeek, "raw"),
-	}
-}
-func commsCommandBindings(api *commsapi.API) map[string]catalog.Binding {
-	return map[string]catalog.Binding{
-		"TargetComms":        catalog.Bind1(api.TargetComms, "raw"),
-		"TargetCommsRefresh": catalog.Bind1Error(api.TargetCommsRefresh, "force"),
-		"TargetOpenComms":    catalog.Bind1Error(api.TargetOpenComms, "destination"),
 	}
 }
 func contractsCommandBindings(api *contractsapi.API) map[string]catalog.Binding {
@@ -95,6 +97,7 @@ func contractsCommandBindings(api *contractsapi.API) map[string]catalog.Binding 
 }
 func controlCommandBindings(api *controlapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
+		"TargetMFLMigration":      catalog.Bind2(api.TargetMFLMigration, "command", "body"),
 		"TargetLeagueSettings":    catalog.Bind0(api.TargetLeagueSettings),
 		"TargetSiteNews":          catalog.Bind0(api.TargetSiteNews),
 		"TargetAccounting":        catalog.Bind0Value(api.TargetAccounting),
@@ -123,6 +126,7 @@ func draftCommandBindings(api *draftapi.API) map[string]catalog.Binding {
 func marketCommandBindings(api *marketapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetAssetBoard":           catalog.Bind0(api.TargetAssetBoard),
+		"TargetAgeArc":               catalog.Bind1(api.TargetAgeArc, "id"),
 		"TargetMarketReportsRefresh": catalog.Bind1Error(api.TargetMarketReportsRefresh, "force"),
 		"TargetMarketReports":        catalog.Bind0(api.TargetMarketReports),
 	}
@@ -138,6 +142,7 @@ func offersCommandBindings(api *offersapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetPersonal":        catalog.Bind1(api.TargetPersonal, "mine"),
 		"TargetPersonalChange":  catalog.Bind1Error(api.TargetPersonalChange, "raw"),
+		"TargetPersonalNotes":   catalog.Bind2(api.TargetPersonalNotes, "mine", "playerID"),
 		"TargetPersonalHandOff": catalog.Bind1Error(api.TargetPersonalHandOff, "kind"),
 		"TargetPool":            catalog.Bind1Value(api.TargetPool, "raw"),
 		"TargetPoolRefresh":     catalog.Bind1Error(api.TargetPoolRefresh, "force"),
@@ -153,7 +158,9 @@ func offersCommandBindings(api *offersapi.API) map[string]catalog.Binding {
 func platformCommandBindings(api *platformapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetSnapshot":       catalog.Bind0(api.TargetSnapshot),
+		"TargetLeagues":        catalog.Bind0(api.TargetLeagues),
 		"TargetClock":          catalog.Bind0(api.TargetClock),
+		"TargetInjuries":       catalog.Bind0(api.TargetInjuries),
 		"TargetDraftIR":        catalog.Bind2(api.TargetDraftIR, "franchiseID", "playerID"),
 		"TargetDraftTaxi":      catalog.Bind2(api.TargetDraftTaxi, "franchiseID", "playerID"),
 		"TargetMoves":          catalog.Bind1(api.TargetMoves, "franchiseID"),
@@ -174,6 +181,7 @@ func researchCommandBindings(api *researchapi.API) map[string]catalog.Binding {
 		"TargetResearch":            catalog.Bind1(api.TargetResearch, "raw"),
 		"TargetResearchRefresh":     catalog.Bind1Error(api.TargetResearchRefresh, "force"),
 		"TargetResearchNewsRefresh": catalog.Bind1Error(api.TargetResearchNewsRefresh, "mine"),
+		"TargetPlayerUsage":         catalog.Bind1(api.TargetPlayerUsage, "playerID"),
 		"TargetResearchPlayer":      catalog.Bind1(api.TargetResearchPlayer, "id"),
 		"TargetResearchStatus":      catalog.Bind0Value(api.TargetResearchStatus),
 		"TargetOpenResearchArticle": catalog.Bind2Error(api.TargetOpenResearchArticle, "id", "article"),
@@ -205,7 +213,6 @@ func tradesCommandBindings(api *tradesapi.API) map[string]catalog.Binding {
 func newCommandAPIs(app *App) commandAPIs {
 	return commandAPIs{
 		commissioner: newCommissionerAPI(app),
-		comms:        commsapi.New(commsHost{app.core}),
 		contracts:    contractsapi.New(contractsHost{State: app.core, app: app}),
 		control:      controlapi.New(controlHost{State: app.core, app: app}, app.controlHeld),
 		draft:        draftapi.New(draftHost{State: app.core, app: app}),
@@ -232,7 +239,6 @@ func (a commandAPIs) registryInputs(app *App) catalog.RegistryInputs {
 		Migration: app.migrationInputs(),
 		Desktop: map[string]map[string]catalog.Binding{
 			"commissioner": commissionerCommandBindings(a.commissioner),
-			"comms":        commsCommandBindings(a.comms),
 			"contracts":    contractsCommandBindings(a.contracts),
 			"control":      controlCommandBindings(a.control),
 			"draft":        draftCommandBindings(a.draft),

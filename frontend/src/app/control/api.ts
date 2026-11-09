@@ -35,8 +35,13 @@ export const setLeagueWindow = TargetSetWindow;
 // ParamsResult is the admin parameters payload, as the Data and sources screen reads it.
 export type ParamsResult = control.ParamsResult;
 export type ParamView = control.ParamView;
+/** ShellStatus is the status strip's source health (TargetShellStatus). */
+export type ShellStatus = control.ShellStatus;
 
 export async function copyHelperConnection(connection: string): Promise<boolean> {
   const { ClipboardSetText } = await import('../../../wailsjs/runtime/runtime');
   return ClipboardSetText(connection);
 }
+
+export const runMigration = (command: string, body: string): Promise<unknown> =>
+  bindings().TargetMFLMigration(command, body);

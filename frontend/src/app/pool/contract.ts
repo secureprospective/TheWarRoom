@@ -19,6 +19,7 @@ export type Reading<T> = {
 };
 export type MarketFact = { label: string; text: string; reason: string; range: MarketRange | null };
 export type PoolRow = {
+ string?: string; points?: string;
   engineText?: string; ppgText?: string; labText?: string;
   engine?: number | null; ppg?: number | null; lab?: number | null;
   market?: MarketFact[];
@@ -44,13 +45,6 @@ export type PoolScope = {
     | 'projected' | 'rank' | 'adp' | 'aav';
   desc: boolean;
 };
-export type Rule = {
-  rule: string;
-  label: string;
-  verdict: 'pass' | 'fail' | 'unknown' | 'info';
-  reason: string;
-  mark: string;
-};
 export type DropOption = {
   id: string; name: string; label: string; salary: number; deadCap: number; freed: number;
   covers: boolean; available: boolean;
@@ -62,11 +56,7 @@ export type Preview = {
   salary: Amount;
   snapped: string;
   points: string;
-  rules: Rule[];
-  blocked: boolean;
-  note: string;
   post: string;
-  ruleSummary: string;
   closesNote: string;
 };
 export type BidAction = { id: string; label: string; disabled: boolean; reason: string };
@@ -88,8 +78,6 @@ export type Plan = {
   beatText: string;
   state: string;
   status: string;
-  rules: Rule[];
-  ruleSummary: string;
   post: string;
   actions: BidAction[];
   history: { at: string; state: string; note: string }[];

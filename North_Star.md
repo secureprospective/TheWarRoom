@@ -42,6 +42,8 @@ Owners should never relearn what already works.
 1. **The app houses the settings.** A league format is a set of setting values. Presets suggest values;
    they never limit them. No engine, seed, legality, or UI code branches on a preset name. The only limits
    are what the engine truly cannot run (32 franchises is the cap).
+   An MFL import is just settings in the same app: no code branches on where a league came from or on
+   one league's ID, and nothing is locked because it came from MFL.
 2. **Settings change through one flow.** Every setting changes through the same rule-change path; the
    engine does the work behind it. Lock only when play makes a change unsafe, and say why in plain words.
 3. **Rules are league data.** Year-over-year changes need no code release.

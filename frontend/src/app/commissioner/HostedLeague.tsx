@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { HQAct as WarRoomAct } from '../shell/HQAct';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Act } from '../commands/Act';
 import { surfaceActions } from './surfaceActions';
 import { newKey } from './forms';
@@ -6,7 +7,7 @@ import { HoldToFire } from './HoldToFire';
 import { GovernedGlyph } from '../governed/GovernedGlyph';
 import { localTime } from '../clock/localTime';
 import { hostedWords } from './hostedWords';
-import { createHostedRoom, type HostedRoom } from './hostedRoom';
+import { createHostedRoom, type HostedRoom, type HostedPort } from './hostedRoom';
 import { previewChange } from './preview';
 import type { NativeArguments, NativeRequest } from '../commands/native';
 import type { HostedResponse } from './api';
@@ -28,7 +29,24 @@ const labels: Record<Tab, string> = {
 const hostedRule = (field: string) =>
   /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(field);
 const bucketNames = { active: 'Active roster', ir: 'Injured reserve', taxi: 'Taxi squad' };
-export default function HostedLeague({
+const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
+const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
+export default function HostedLeague(props: {
+  league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
+}) {
+  const [showWar, setWar] = useState(false);
+  const [showHQ, setHQ] = useState(props.hq ?? false);
+  if (showWar) return <Suspense fallback={<p>Opening War Room…</p>}><WarRoomNative
+    league={props.league} mine={props.franchise} port={props.port} leave={() => setWar(false)}
+    /></Suspense>;
+  if (showHQ) return <Suspense fallback={<p>Opening your franchise…</p>}>
+    <NativeFranchiseHQ key={`${props.league}:${props.franchise}`} league={props.league}
+      mine={props.franchise} name={props.name} port={props.port}
+      leave={() => setHQ(false)} />
+  </Suspense>;
+  return <><WarRoomAct onAction={() => setWar(true)}>War Room</WarRoomAct><HostedWorkRoom {...props} /></>;
+}
+function HostedWorkRoom({
   league,
   franchise,
   name,

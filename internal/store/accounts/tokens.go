@@ -39,7 +39,7 @@ func (s *Store) IssueToken(ctx context.Context, sessionDigest, digest, id string
 		return identity.AgentToken{}, fmt.Errorf("accounts: begin token: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	account, err := s.readSession(ctx, tx, sessionDigest)
+	account, _, err := s.readSession(ctx, tx, sessionDigest)
 	if err != nil {
 		return identity.AgentToken{}, err
 	}
@@ -103,7 +103,7 @@ func (s *Store) RevokeToken(ctx context.Context, sessionDigest, id string) error
 		return fmt.Errorf("accounts: begin token revoke: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	account, err := s.readSession(ctx, tx, sessionDigest)
+	account, _, err := s.readSession(ctx, tx, sessionDigest)
 	if err != nil {
 		return err
 	}

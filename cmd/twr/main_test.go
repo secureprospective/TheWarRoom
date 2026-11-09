@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -38,11 +39,17 @@ func (k memoryKey) Get() (string, error) {
 func (k memoryKey) Set(secret string) error { k.store.tokens[k.key] = secret; return nil }
 func (k memoryKey) Delete() error           { delete(k.store.tokens, k.key); return nil }
 
+// dispatched is one league change twr sent on the workflow path.
+type dispatched struct {
+	Mode    string
+	Command *commissioner.RawCommand
+}
+
 // fakeLeague answers the two paths twr uses and records what each dispatch asked for.
 type fakeLeague struct {
 	mu         sync.Mutex
 	revoked    bool
-	dispatched []serverhttp.RawNativeRequest
+	dispatched []dispatched
 	confirms   []string
 }
 
@@ -62,10 +69,21 @@ func (f *fakeLeague) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case serverhttp.LedgerPath:
 		_, _ = w.Write([]byte(`{"league":"native.test","revision":7}`))
-	case serverhttp.DispatchPath:
-		f.dispatched = append(f.dispatched, request)
-		f.confirms = append(f.confirms, r.Header.Get("X-TWR-Human-Confirmation"))
-		_, _ = w.Write([]byte(`{"mode":"` + request.Mode + `"}`))
+	case serverhttp.WorkflowPath:
+		if request.Workflow == nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if request.Workflow.Mode != "read" {
+			var command commissioner.RawCommand
+			if err := json.Unmarshal(request.Workflow.Arguments, &command); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			f.dispatched = append(f.dispatched, dispatched{Mode: request.Workflow.Mode, Command: &command})
+			f.confirms = append(f.confirms, r.Header.Get("X-TWR-Human-Confirmation"))
+		}
+		_, _ = w.Write([]byte(`{"label":"Hosted","writable":true,"football":"fb","data":{"mode":"` + request.Workflow.Mode + `"}}`))
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}

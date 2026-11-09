@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // Ledger is the app's league ledger as the move uses it. Batch records every change or none.
@@ -21,9 +22,10 @@ type Ledger interface {
 // Service moves one MFL league into the app. MFL is only read; every act is a ledger change.
 type Service struct {
 	// Source opens a read-only reader of the named MFL league.
-	Source func(mflLeague string) (Source, error)
-	Ledger Ledger
-	Now    func() time.Time
+	Source         func(mflLeague string) (Source, error)
+	SourceWithBase func(mflLeague string, base leaguerules.RuleSet) (Source, error)
+	Ledger         Ledger
+	Now            func() time.Time
 }
 
 // Request names the MFL league being moved and the app league it lands in.
@@ -37,11 +39,25 @@ func AppLeagueID(mflLeague string, season int) string {
 	return fmt.Sprintf("native.mfl-%s-%d", strings.TrimSpace(mflLeague), season)
 }
 
-func (s *Service) read(ctx context.Context, mflLeague string) (Candidate, error) {
+func (s *Service) read(ctx context.Context, mflLeague string, preset ...string) (Candidate, error) {
 	if strings.TrimSpace(mflLeague) == "" {
 		return Candidate{}, fmt.Errorf("name the MFL league to move, by its MFL league number")
 	}
-	src, err := s.Source(mflLeague)
+	var src Source
+	var err error
+	if s.SourceWithBase != nil {
+		choice := ""
+		if len(preset) > 0 {
+			choice = preset[0]
+		}
+		base, baseErr := Base(choice)
+		if baseErr != nil {
+			return Candidate{}, baseErr
+		}
+		src, err = s.SourceWithBase(mflLeague, base)
+	} else {
+		src, err = s.Source(mflLeague)
+	}
 	if err != nil {
 		return Candidate{}, &ReadError{"league", err}
 	}
@@ -50,26 +66,29 @@ func (s *Service) read(ctx context.Context, mflLeague string) (Candidate, error)
 
 // Preparation is what an import would land, in plain words; nothing is recorded by preparing.
 type Preparation struct {
-	League     string   `json:"league"`
-	Name       string   `json:"name"`
-	Season     int      `json:"season"`
-	Franchises int      `json:"franchises"`
-	Players    int      `json:"players"`
-	Picks      int      `json:"picks"`
-	Settings   int      `json:"settings"`
-	Notes      []string `json:"notes"`
-	Problems   []string `json:"problems"`
-	Ready      bool     `json:"ready"`
+	League     string           `json:"league"`
+	Name       string           `json:"name"`
+	Season     int              `json:"season"`
+	Franchises int              `json:"franchises"`
+	Players    int              `json:"players"`
+	Picks      int              `json:"picks"`
+	Settings   int              `json:"settings"`
+	Notes      []string         `json:"notes"`
+	Problems   []string         `json:"problems"`
+	Ready      bool             `json:"ready"`
+	Preset     string           `json:"preset"`
+	Waiting    []WaitingSetting `json:"waiting"`
 }
 
 // Prepare reads the MFL league and says what the import would land, or what stops it.
-func (s *Service) Prepare(ctx context.Context, mflLeague string) (Preparation, error) {
-	export, err := s.read(ctx, mflLeague)
+func (s *Service) Prepare(ctx context.Context, mflLeague string, preset ...string) (Preparation, error) {
+	export, err := s.read(ctx, mflLeague, preset...)
 	if err != nil {
 		return Preparation{}, err
 	}
 	out := Preparation{League: AppLeagueID(mflLeague, export.Season), Name: export.Name, Season: export.Season,
-		Notes: []string{}, Problems: []string{}}
+		Notes: []string{}, Problems: []string{}, Waiting: []WaitingSetting{},
+		Franchises: export.Franchises, Players: export.Players, Picks: export.Picks}
 	plan, err := export.prepared()
 	if problems, ok := AsProblems(err); ok {
 		out.Problems = problems
@@ -78,6 +97,11 @@ func (s *Service) Prepare(ctx context.Context, mflLeague string) (Preparation, e
 		return Preparation{}, err
 	}
 	out.Franchises, out.Players, out.Picks = len(plan.Seed.Franchises), len(plan.Seed.Players), len(plan.Seed.Picks)
+	out.Preset = DefaultPreset(out.Franchises)
+	if len(preset) > 0 && preset[0] != "" {
+		out.Preset = preset[0]
+	}
+	out.Waiting = plan.Waiting
 	out.Settings, out.Notes, out.Ready = len(plan.Create.Seed), plan.Notes, true
 	return out, nil
 }
@@ -86,10 +110,15 @@ func (s *Service) Prepare(ctx context.Context, mflLeague string) (Preparation, e
 // setting MFL holds, and its starting rosters, contracts, picks, franchises and divisions. Until the
 // cutover it follows MFL. A failure at any step records nothing.
 func (s *Service) Import(ctx context.Context, mflLeague, reason, principal string) ([]commissioner.Receipt, error) {
+	return s.ImportWithOptions(ctx, mflLeague, reason, principal, ImportOptions{})
+}
+
+// ImportWithOptions records the import and the commissioner's answers atomically.
+func (s *Service) ImportWithOptions(ctx context.Context, mflLeague, reason, principal string, options ImportOptions) ([]commissioner.Receipt, error) {
 	if strings.TrimSpace(reason) == "" {
 		return nil, fmt.Errorf("write the reason for importing the league")
 	}
-	export, err := s.read(ctx, mflLeague)
+	export, err := s.read(ctx, mflLeague, options.Preset)
 	if err != nil {
 		return nil, err
 	}
@@ -98,13 +127,36 @@ func (s *Service) Import(ctx context.Context, mflLeague, reason, principal strin
 		return nil, err
 	}
 	league := AppLeagueID(mflLeague, export.Season)
+	records, err := s.Ledger.Records(ctx, league)
+	if err != nil {
+		return nil, fmt.Errorf("check existing league: %w", err)
+	}
+	if len(records) > 0 {
+		if err := checkScheduleMapping(records, plan.Mapping); err != nil {
+			return nil, err
+		}
+		return s.syncImportedReferences(ctx, league, reason, principal, export.Season, plan)
+	}
 	create := commissioner.RawCommand{League: league, Command: commissioner.Create, Args: plan.Create,
 		Request: "mfl-import.create", Reason: reason, Effective: "now", Visibility: "league"}
 	seed := plan.Seed
 	start := commissioner.RawCommand{League: league, Command: commissioner.NativeSeed,
 		Args: commissioner.RawArgs{Native: &seed}, Request: "mfl-import.seed", Reason: reason, Effective: "now",
 		Visibility: "league"}
-	receipts, err := s.Ledger.Batch(ctx, []commissioner.RawCommand{create, start}, principal)
+	answers, err := answerCommands(plan, league, reason, options.Answers)
+	if err != nil {
+		return nil, err
+	}
+	raws := append([]commissioner.RawCommand{create, start}, answers...)
+	raws = append(raws, ScheduleCommands(league, reason, plan.Schedule, 0, plan.Recorded)...)
+	groups, err := planTransactionCommands(plan, league, reason, seed)
+	if err != nil {
+		return nil, err
+	}
+	for _, group := range groups {
+		raws = append(raws, group...)
+	}
+	receipts, err := s.Ledger.Batch(ctx, raws, principal)
 	if err != nil {
 		return nil, fmt.Errorf("import the MFL league (nothing was recorded; start the import again): %w", err)
 	}
@@ -252,4 +304,46 @@ func (s *Service) SendInvites(ctx context.Context, req Request, digest, reason, 
 func inviteID(league, franchise, email string) string {
 	sum := sha256.Sum256([]byte(league + "\x00" + franchise + "\x00" + strings.ToLower(email)))
 	return "invite." + hex.EncodeToString(sum[:8])
+}
+
+func (s *Service) syncImportedReferences(ctx context.Context, league, reason, principal string, season int, plan Plan) ([]commissioner.Receipt, error) {
+	receipts, err := SyncSchedule(ctx, s.Ledger, league, reason, principal, season, plan.Schedule, plan.Recorded)
+	if err != nil {
+		return receipts, err
+	}
+	records, err := s.Ledger.Records(ctx, league)
+	if err != nil {
+		return receipts, fmt.Errorf("read transaction follow setting: %w", err)
+	}
+	rules, err := commissioner.RulesNow(records, s.Now())
+	if err != nil {
+		return receipts, fmt.Errorf("read transaction follow rules: %w", err)
+	}
+	if rules.Transactions.Follow.State != leaguerules.IsKnown || !rules.Transactions.Follow.Value {
+		return receipts, nil
+	}
+	seed := plan.Seed
+	for _, r := range records {
+		if r.Command.Command == commissioner.NativeSeed {
+			seed = *r.Command.Args.Native
+			break
+		}
+	}
+	groups, err := planTransactionCommands(plan, league, reason, seed)
+	if err != nil {
+		return receipts, err
+	}
+	txs, err := SyncTransactions(ctx, s.Ledger, league, principal, groups)
+	return append(receipts, txs...), err
+}
+
+func planTransactionCommands(plan Plan, league, reason string, seed commissioner.RawNativeSnapshot) ([][]commissioner.RawCommand, error) {
+	if plan.Transactions == nil {
+		return nil, nil
+	}
+	groups, err := plan.Transactions(league, reason, seed)
+	if err != nil {
+		return nil, fmt.Errorf("prepare transaction history: %w", err)
+	}
+	return groups, nil
 }

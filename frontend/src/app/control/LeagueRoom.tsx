@@ -1,24 +1,30 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useContext, useEffect } from 'react';
+import { LeagueContext } from '../shell/leaguePicker';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { ReportView } from '../reports/ReportView';
 import { controlState, matching } from './state';
 import './control.css';
+const MoveMFL = lazy(() => import('./MoveMFL'));
 const PickSettings = lazy(() => import('./PickSettings'));
 
 const LeagueLanding = lazy(() => import('../commissioner/LeagueLanding'));
 
 // LeagueRoom is Control Room › League: the league's settings, its own by-laws and accounting.
 export function LeagueRoom() {
+  const rail = useContext(LeagueContext);
+  const reference = !rail || Boolean(rail.selected && !rail.selected.app);
   const s = controlState.use();
-  useEffect(() => { void controlState.choose('league'); }, []);
+  useEffect(() => { if (reference) void controlState.choose('league'); }, [reference]);
   const sections = s.bylaws ? matching(s.bylaws, s.search) : [];
   return (
     <section className="control-room" aria-busy={s.pending}>
-      {s.error && <p role="alert">{s.error}</p>}
+      {reference && s.error && <p role="alert">{s.error}</p>}
       <Suspense fallback={<p role="status">Reading the league…</p>}>
         <LeagueLanding />
       </Suspense>
+      <Suspense fallback={<p role="status">Opening MFL import…</p>}><MoveMFL /></Suspense>
+      {reference && <>
       <Suspense fallback={<p role="status">Reading pick settings…</p>}>
         <PickSettings />
       </Suspense>
@@ -44,6 +50,7 @@ export function LeagueRoom() {
       <Act variant="button"
         verb="control.read" args={{ action: 'open-accounting', value: '' }}>Open MFL accounting</Act>
       </details>
+      </>}
     </section>
   );
 }

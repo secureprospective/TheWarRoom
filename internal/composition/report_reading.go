@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -109,7 +108,7 @@ func wireRange(r *report.Range) *MarketRange {
 	if r == nil {
 		return nil
 	}
-	rng := MarketRange{Max: r.Max, Interval: lab.Interval(r.Interval), Text: r.Text}
+	rng := MarketRange{Max: r.Max, Interval: r.Interval, Text: r.Text}
 	return &rng
 }
 

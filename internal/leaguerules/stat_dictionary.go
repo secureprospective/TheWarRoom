@@ -61,6 +61,16 @@ func StatByID(id StatID) (StatDefinition, bool) {
 	return s, ok
 }
 
+// DropTotals removes every stat counted from its parts (scoring adds those totals itself and refuses a
+// recorded one), so a source that reports a total cannot block a league that scores it.
+func DropTotals(quantities map[StatID]Decimal) {
+	for id := range quantities {
+		if s, ok := stats().byID[id]; ok && len(s.Parts) > 0 {
+			delete(quantities, id)
+		}
+	}
+}
+
 // StatByMFL finds the stat an MFL event code scores.
 func StatByMFL(code string) (StatDefinition, bool) {
 	s, ok := stats().byMFL[code]

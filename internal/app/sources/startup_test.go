@@ -11,42 +11,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
-func TestStartupFactsStopsFailuresAndOrdersPublication(t *testing.T) {
-	failure := errors.New("failed")
-	for _, stop := range []string{"missing", "manifest error", "publish", "compile", ""} {
-		calls := []string{}
-		step := func(name string) func(context.Context) error {
-			return func(context.Context) error {
-				calls = append(calls, name)
-				if stop == name {
-					return failure
-				}
-				return nil
-			}
-		}
-		StartupFacts(context.Background(), func(context.Context) (bool, error) {
-			calls = append(calls, "exists")
-			if stop == "manifest error" {
-				return false, failure
-			}
-			return stop != "missing", nil
-		},
-			step("publish"), step("compile"), func(context.Context) { calls = append(calls, "warm") }, func(string) { calls = append(calls, "log") })
-		want := []string{"exists", "publish", "compile", "warm"}
-		switch stop {
-		case "missing", "manifest error":
-			want = want[:1]
-		case "publish":
-			want = []string{"exists", "publish", "log"}
-		case "compile":
-			want = []string{"exists", "publish", "compile", "log"}
-		}
-		if !reflect.DeepEqual(calls, want) {
-			t.Fatal(stop, calls, want)
-		}
-	}
-}
-
 func TestDirectoryCachesOnlyNormalizedSuccess(t *testing.T) {
 	failure := errors.New("fetch failed")
 	publishes := 0

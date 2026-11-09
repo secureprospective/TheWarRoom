@@ -13,7 +13,7 @@ import (
 func seededRecoveryStore(t *testing.T) (*Store, commissioner.RawCommand) {
 	t.Helper()
 	s, _, _ := newStore(t)
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	seed := heldSeedCommand(t)
@@ -57,7 +57,7 @@ func TestRosterRestorePointFailureRollsBackLedgerAndAudit(t *testing.T) {
 	for _, table := range []string{"league_roster_restore", "league_recovery_log"} {
 		t.Run(table, func(t *testing.T) {
 			s, _, _ := newStore(t)
-			if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+			if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 				t.Fatal(err)
 			}
 			before, err := s.VerifyAudit(t.Context())

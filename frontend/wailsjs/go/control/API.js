@@ -42,6 +42,10 @@ export function TargetLeagueSettings() {
   return window['go']['control']['API']['TargetLeagueSettings']();
 }
 
+export function TargetMFLMigration(arg1, arg2) {
+  return window['go']['control']['API']['TargetMFLMigration'](arg1, arg2);
+}
+
 export function TargetOpenMFLAccounting() {
   return window['go']['control']['API']['TargetOpenMFLAccounting']();
 }

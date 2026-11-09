@@ -1,12 +1,17 @@
 package leagueclock
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
+
+// ErrSharedDateUnruled marks one window whose opening date is shared with another window's closing
+// date while calendar.boundary has no ruling. Only that window is unreadable.
+var ErrSharedDateUnruled = errors.New("the shared date has no boundary ruling")
 
 type ActionWindow struct {
 	ID      string               `json:"id"`
@@ -58,6 +63,12 @@ func Calendar(at time.Time, year int, rules leaguerules.CalendarRules,
 	slices.Sort(ids)
 	for _, id := range ids {
 		window, err := dateWindow(id, year, zone, rules)
+		if errors.Is(err, ErrSharedDateUnruled) {
+			// The engine does not guess which side of a shared date opens a window. It also does not
+			// empty a league's whole calendar over one unruled boundary: that window is left out,
+			// and every window whose dates are unambiguous still reads.
+			continue
+		}
 		if err != nil {
 			return out, err
 		}
@@ -76,6 +87,31 @@ func Calendar(at time.Time, year int, rules leaguerules.CalendarRules,
 	return out, nil
 }
 
+// UnruledWindows lists, in order, the windows Calendar leaves out of a reading because their opening
+// date is shared and calendar.boundary has no ruling. A write that depends on the whole calendar —
+// a season rollover — refuses on this; a reading shows what it can.
+func UnruledWindows(rules leaguerules.CalendarRules) []string {
+	if rules.Timezone.State != leaguerules.IsKnown || rules.Windows.State != leaguerules.IsKnown {
+		return nil
+	}
+	zone, err := time.LoadLocation(rules.Timezone.Value)
+	if err != nil {
+		return nil
+	}
+	ids := make([]string, 0, len(rules.Windows.Value))
+	for id := range rules.Windows.Value {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	unruled := []string{}
+	for _, id := range ids {
+		if _, err := dateWindow(id, 2026, zone, rules); errors.Is(err, ErrSharedDateUnruled) {
+			unruled = append(unruled, id)
+		}
+	}
+	return unruled
+}
+
 func dateWindow(id string, year int, zone *time.Location,
 	rules leaguerules.CalendarRules) (ActionWindow, error) {
 	w := rules.Windows.Value[id]
@@ -89,7 +125,8 @@ func dateWindow(id string, year int, zone *time.Location,
 	}
 	if sharedStart(id, w.Start, rules.Windows.Value) {
 		if rules.Boundary.State != leaguerules.IsKnown {
-			return out, fmt.Errorf("choose which side of the shared date opens window %s", id)
+			return out, fmt.Errorf("choose which side of the shared date opens window %s: %w", id,
+				ErrSharedDateUnruled)
 		}
 		if rules.Boundary.Value == leaguerules.EndOfDay && w.DatedStart.State != leaguerules.IsKnown {
 			start = start.AddDate(0, 0, 1)

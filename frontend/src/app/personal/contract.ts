@@ -3,7 +3,8 @@ import { report, type Report } from '../reports/contract';
 
 export type ListKind = 'watch' | 'bait' | 'note' | 'draft';
 export type ListChange = {
-  id: string; entity: 'player' | 'franchise'; action: 'add' | 'remove' | 'up' | 'down'; text?: string;
+  id: string; entity: 'player' | 'franchise'; action: 'add' | 'remove' | 'up' | 'down'; text?: string; at?:
+    string;
 };
 export type Entry = {
   kind: ListKind; entity: 'player' | 'franchise'; id: string; text: string; at: string; order: number;

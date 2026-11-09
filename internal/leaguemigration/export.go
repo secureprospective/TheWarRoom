@@ -22,11 +22,14 @@ type Source interface {
 // Candidate separates source reading and translation from native ledger writes.
 // Problems block import, but owners remain available for invitation review.
 type Candidate struct {
-	Name     string
-	Season   int
-	Owners   []Owner
-	Plan     Plan
-	Problems []string
+	Franchises int
+	Players    int
+	Picks      int
+	Name       string
+	Season     int
+	Owners     []Owner
+	Plan       Plan
+	Problems   []string
 }
 
 func (c Candidate) prepared() (Plan, error) {
@@ -75,11 +78,15 @@ func AsProblems(err error) ([]string, bool) {
 // owners for the invitations, and notes on what waits for the commissioner. Go builds every part of it
 // from the read; no caller supplies rosters or settings.
 type Plan struct {
-	Create commissioner.RawArgs
-	Seed   commissioner.RawNativeSnapshot
-	Rules  leaguerules.RuleSet
-	Owners []Owner
-	Notes  []string
+	Recorded     *commissioner.RawRecordedResults
+	Transactions func(league, reason string, seed commissioner.RawNativeSnapshot) ([][]commissioner.RawCommand, error)
+	Schedule     []commissioner.ScheduleWeek
+	Create       commissioner.RawArgs
+	Seed         commissioner.RawNativeSnapshot
+	Rules        leaguerules.RuleSet
+	Owners       []Owner
+	Waiting      []WaitingSetting
+	Notes        []string
 	// Mapping is each MFL franchise id's app franchise.
 	Mapping map[string]string
 }

@@ -7,10 +7,14 @@ if [ "$#" = 0 ]; then
   -tls-key /etc/twr/origin.key -totp-key-file /etc/twr/authenticator.key \
   -backup-config /etc/twr/backup.json -preview-registry /etc/twr/endpoint-registry.csv -trusted-proxy 127.0.0.1 \
   -status-socket /var/lib/twr/status.sock
+  # A league loaded with `twr-server league-load -football-pin` pins its football evidence here.
+  if [ -s /etc/twr/football.sha256 ]; then
+    set -- "$@" -football "$(head -c 64 /etc/twr/football.sha256)"
+  fi
 fi
 exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop ALL \
   --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind /bin /bin \
-  --ro-bind /etc/twr /etc/twr --ro-bind /etc/ssl/certs /etc/ssl/certs --proc /proc --dev /dev \
+  --ro-bind /etc/twr /etc/twr --ro-bind /etc/ssl/certs /etc/ssl/certs --ro-bind /etc/resolv.conf /etc/resolv.conf --proc /proc --dev /dev \
   --tmpfs /tmp --tmpfs /run --bind /var/lib/twr /var/lib/twr \
   --chdir /var/lib/twr --clearenv --setenv PATH /usr/bin:/bin \
   --setenv HOME /var/lib/twr --setenv TMPDIR /var/lib/twr \

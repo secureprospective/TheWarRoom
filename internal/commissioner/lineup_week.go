@@ -15,6 +15,7 @@ import (
 // team he plays for, and when that team's game starts in the lineup's week. A lock is only as good as
 // these, so a week whose kickoffs are not held locks nobody in or out rather than guessing.
 type LineupFacts struct {
+	lockPolicy   leaguerules.LineupLock
 	Facts        nativecheck.Facts
 	Locks        map[string]time.Time
 	ScheduleHeld bool
@@ -38,6 +39,12 @@ func (f LineupFacts) zone() *time.Location {
 }
 
 func (f LineupFacts) lockOf(player string) (time.Time, lockKind) {
+	if f.lockPolicy == leaguerules.FirstKickoff {
+		if kickoff, ok := firstKickoff(f); ok {
+			return kickoff, lockAt
+		}
+		return time.Time{}, lockUnknown
+	}
 	team := f.Facts[player].Team
 	if team == "" || team == "FA" {
 		return time.Time{}, lockNoGame
@@ -141,6 +148,12 @@ func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env Line
 	if _, err := RulesInForce(records, change.Season, at); err != nil {
 		return Refused(err)
 	}
+	if lock, held := firstKickoff(env); held && !now.Before(lock) {
+		base.Assets, err = NativeAssetsAsOf(raw.League, records, lock)
+		if err != nil {
+			return Refused(err)
+		}
+	}
 	if err := checkLineupRoster(base, change, env); err != nil {
 		return Refused(err)
 	}
@@ -172,6 +185,10 @@ func checkOwnerLineup(records []Record, now time.Time, env LineupFacts, change R
 	if verdict, _ := judgeStarters(rules.Lineup, true, change.Starters, env.Facts); verdict.Status != nativecheck.LineupValid {
 		return Refused(fmt.Errorf("%s", verdict.Words))
 	}
+	if rules.Lineup.Lock.State != leaguerules.IsKnown {
+		return Refused(fmt.Errorf("set the league's lineup lock before setting a lineup"))
+	}
+	env.lockPolicy = rules.Lineup.Lock.Value
 	return checkLineupLocks(held.Starters, change, now, env)
 }
 
@@ -179,8 +196,10 @@ func checkOwnerLineup(records []Record, now time.Time, env LineupFacts, change R
 // cannot start.
 func checkLineupRoster(base NativeBase, change RawLineupChange, env LineupFacts) error {
 	active := map[string]bool{}
-	for _, p := range base.playersOf()[change.Franchise] {
-		active[p.ID] = p.Status == domain.RosterActive
+	for _, p := range base.Assets.Snapshot.Players {
+		if p.Franchise == change.Franchise {
+			active[p.ID] = p.Status == domain.RosterActive
+		}
 	}
 	for _, id := range change.Starters {
 		if !active[id] {
@@ -217,7 +236,7 @@ func checkLineupLocks(was []string, change RawLineupChange, now time.Time, env L
 	sentences := slices.Clone(unknown)
 	if len(locked) != 0 {
 		sentences = append(sentences, strings.Join(locked, "; ")+
-			"; a lineup can't add or drop a player once that player's game has started")
+			"; a lineup can't add or drop a player after the league’s lineup lock")
 	}
 	if len(sentences) != 0 {
 		return Refused(fmt.Errorf("%s", strings.Join(sentences, ". ")))

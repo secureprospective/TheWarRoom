@@ -1,0 +1,27 @@
+{
+  "league": "native.seed",
+  "season": 2026,
+  "week": 10,
+  "players": [
+    {
+      "player": "1000",
+      "position": "WR",
+      "floor": 10,
+      "median": 10,
+      "ceiling": 10,
+      "games": 9,
+      "available": true,
+      "words": "From 9 of his own weeks"
+    },
+    {
+      "player": "1008",
+      "floor": 0,
+      "median": 0,
+      "ceiling": 0,
+      "games": 0,
+      "available": false,
+      "words": "No NFL statistics identity for this player"
+    }
+  ],
+  "notes": []
+}

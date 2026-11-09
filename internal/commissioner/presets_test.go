@@ -45,10 +45,10 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 		teams         int
 		records, read string
 	}{
-		{PresetDefault32, 0, "5b88192c625de822", ""},
-		{PresetLegacy, 32, "e7b5be9d4e7ca9f7", "5d37e13bc3142b2a"},
-		{PresetLegacy, 12, "80efa35b8407cd77", "99f5d5d69e65ece4"},
-		{PresetEmpty, 12, "2611477a23c36c30", "221cf99b129779db"},
+		{PresetDefault32, 0, "328e004b57850db3", ""},
+		{PresetLegacy, 32, "0dab923634344240", "f82e3e034a1231b2"},
+		{PresetLegacy, 12, "0fe8107e4cb66618", "1aef31821cc7eb5e"},
+		{PresetEmpty, 12, "2611477a23c36c30", "b507286dd0572b1f"},
 	} {
 		records := presetLeague(t, c.preset, c.teams)
 		rules, err := RulesInForce(records, 2026, noChangeTime())
@@ -74,13 +74,21 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 func withoutPools(records []Record, rules *leaguerules.RuleSet, reading *Rules) {
 	f8 := func(field string) bool {
 		return field == poolsField || field == sidesField || field == "scoring.rules" ||
-			field == "draft.startupRookies"
+			field == "draft.startupRookies" || field == "schedule.follow" ||
+			field == "lineup.lock" || field == "league.startingAssets"
 	}
 	records[0].Command.Args.Seed = slices.DeleteFunc(slices.Clone(records[0].Command.Args.Seed),
 		func(s SeedValue) bool { return f8(s.Field) })
 	rules.League.Pools, rules.League.Sides = leaguerules.Value[leaguerules.PlayerPools]{}, leaguerules.Value[map[string]string]{}
 	rules.Scoring.Rules = leaguerules.Value[map[leaguerules.StatID][]leaguerules.RangeRule]{}
 	rules.Draft.StartupRookies = leaguerules.Value[bool]{}
+	rules.Schedule.Follow = leaguerules.Value[leaguerules.ScheduleFollow]{}
+	rules.Lineup.Lock = leaguerules.Value[leaguerules.LineupLock]{}
+	rules.League.StartingAssets = leaguerules.Value[leaguerules.StartingAssets]{}
+	if len(records[0].Command.Args.Seed) == 0 {
+		// An entirely empty rule stream had no league identity until its first setting.
+		rules.LeagueID = ""
+	}
 	sections := []RuleSection{}
 	for _, s := range reading.Sections {
 		s.Rows = slices.DeleteFunc(slices.Clone(s.Rows), func(r RuleRow) bool { return f8(r.Field) })
@@ -221,7 +229,7 @@ func TestEveryNativePresetCreatesAnyAllowedSize(t *testing.T) {
 	}
 }
 
-// The start form offers what the catalog offers; Legacy NFL is the MFL import's bundle only.
+// The start form offers the native catalog, including Legacy NFL.
 func TestTheStartFormListsTheNativeCatalog(t *testing.T) {
 	var ids []string
 	for _, p := range ControlsReading().Presets {
@@ -230,7 +238,7 @@ func TestTheStartFormListsTheNativeCatalog(t *testing.T) {
 			t.Errorf("%s: incomplete catalog entry %+v", p.ID, p)
 		}
 	}
-	if !slices.Equal(ids, []string{PresetDefault32, PresetMirror16, PresetEmpty}) {
+	if !slices.Equal(ids, []string{PresetDefault32, PresetMirror16, PresetLegacy, PresetEmpty}) {
 		t.Fatalf("start form presets: %v", ids)
 	}
 	if MFLImportPreset() != PresetLegacy {
@@ -242,9 +250,10 @@ func TestTheStartFormListsTheNativeCatalog(t *testing.T) {
 // the catalog.
 func TestOnlyTheCatalogNamesAPreset(t *testing.T) {
 	presetNameSites := map[string]string{
-		"internal/commissioner/presets.go": "the catalog",
-		"tools/hostedfixture/fixture.go":   "hosted wire fixture tool: records an empty test league",
-		"tools/hostedfixture/workflows.go": "hosted wire fixture tool: records an MFL-import practice league",
+		"internal/commissioner/presets.go":   "the catalog",
+		"internal/commissioner/migration.go": "pre-source ledger compatibility",
+		"tools/hostedfixture/fixture.go":     "hosted wire fixture tool: records an empty test league",
+		"tools/hostedfixture/workflows.go":   "hosted wire fixture tool: records an MFL-import practice league",
 	}
 	names := regexp.MustCompile(`\b(PresetDefault32|PresetMirror16|PresetEmpty|PresetLegacy|IsDefault32|IsMirror16)\b`)
 	root := filepath.Join("..", "..")
@@ -252,7 +261,7 @@ func TestOnlyTheCatalogNamesAPreset(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() && (d.Name() == "node_modules" || d.Name() == ".git" || d.Name() == "frontend") {
+		if d.IsDir() && (d.Name() == "node_modules" || d.Name() == ".git" || d.Name() == ".worktrees" || d.Name() == "frontend") {
 			return filepath.SkipDir
 		}
 		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {

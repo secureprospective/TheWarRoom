@@ -32,6 +32,7 @@ func offlineApp(t *testing.T) (*App, string) {
 		t.Fatal(err)
 	}
 	a, _, _, _ := isolatedSeasonTestApp(t)
+	a.attachSeat(a.core.History) // startup attaches the sign-in beside the ledger; the fixture must too
 	a.core.MovesChanged, a.core.ClockChanged = func(context.Context) {}, func(context.Context) {}
 	a.core.OpenURL = func(context.Context, string) {}
 	a.core.KeyStore = mflkey.NewMemory(ingestion.LeagueID, "2026")

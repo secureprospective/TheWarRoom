@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"log"
 	"os"
@@ -12,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
-	"github.com/secureprospective/TheWarRoom/internal/app/archive/archivetest"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -75,26 +72,6 @@ func suiteFixturePath(t *testing.T, name string) string {
 	return filepath.Join(dir, name)
 }
 
-func TestReducedArchiveCopiesAreIndependent(t *testing.T) {
-	t.Parallel()
-	first := reducedArchive(t)
-	if first.Facts.Fingerprint() != first.SHA {
-		t.Fatal("archive snapshot serialization changed its facts")
-	}
-	year := first.Facts.Season.Year[0]
-	if first.Facts.Season.Name[0] == nil {
-		t.Fatal("fixture must include a league name")
-	}
-	name := *first.Facts.Season.Name[0]
-	first.Facts.Season.Year[0] = -1
-	*first.Facts.Season.Name[0] = "mutated by this test"
-	second := reducedArchive(t)
-	if second.SHA != first.SHA || second.Facts.Season.Year[0] != year ||
-		second.Facts.Season.Name[0] == nil || *second.Facts.Season.Name[0] != name {
-		t.Fatal("mutating a test's archive changed the shared fixture")
-	}
-}
-
 func TestLineupFixtureDoesNotResetKeyring(t *testing.T) {
 	want := errors.New("keyring owned by a different test")
 	keyring.MockInitWithError(want)
@@ -132,29 +109,4 @@ func TestHistoryFixturesAreIndependent(t *testing.T) {
 	if _, err := second.core.History.Body(second.core.Ctx, sha); !errors.Is(err, history.ErrNoBody) {
 		t.Fatal("history fixtures share writes", err)
 	}
-}
-
-// Only serial tests call this helper. The on-disk snapshot is immutable after its first compile.
-func reducedArchive(t *testing.T) archiveapp.Snapshot {
-	t.Helper()
-	path := suiteFixturePath(t, "reduced-archive.json")
-	body, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		f := archivetest.Facts(t)
-		body, err = json.Marshal(archiveapp.Snapshot{SHA: f.Fingerprint(), Facts: f})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, body, 0o600); err != nil {
-			t.Fatal(err)
-		}
-	} else if err != nil {
-		t.Fatal(err)
-	}
-	var fixture archiveapp.Snapshot
-	if err := json.Unmarshal(body, &fixture); err != nil {
-		t.Fatal(err)
-	}
-	fixture.Cutoff = archivetest.Cutoff
-	return fixture
 }

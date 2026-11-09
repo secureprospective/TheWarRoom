@@ -102,7 +102,6 @@
   /* SHELL LAYOUT — zone widths (edge-resize commits new values here at runtime) */
   --nav-w:   192px;
   --insp-w:  320px;
-  --comms-w: 48px;
 
   /* DENSITY — default tactical; data-density on the shell root swaps these */
   --row-h:      32px;

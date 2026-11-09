@@ -1,15 +1,21 @@
+import { useEffect } from 'react';
 import type { Snapshot } from '../data/contract';
 import type { EntitySubject } from './state';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import { NoteEditor } from '../personal/PersonalLists';
 import { useReading } from './lineups';
-import { OfferCard } from './TradeDesk';
+import { OfferCard } from './OfferCard';
 
 function OfferInspector({ entity, snapshot }: {
   entity: Extract<EntitySubject, { kind: 'offer' }>; snapshot: Snapshot;
 }) {
   const { reading, error } = useReading(commands.trades, entity.franchiseId, snapshot);
+  useEffect(() => {
+    const read = () => { void commands.loadMoves(entity.franchiseId); };
+    read();
+    return commands.onMovesChange(read);
+  }, [entity.franchiseId]);
   const offer = reading?.offers.find(o => o.tradeId === entity.id);
   return <section aria-label="Offer inspector">
     {error && <p role="alert">{error}</p>}
@@ -23,7 +29,7 @@ export default function EntityInspector({ entity, snapshot }: { entity: EntitySu
     <h5>{entity.name}</h5>
     <p>Held draft asset. Open Draft room for draft results and pick ownership.</p>
     <Act variant="text"
-      verb="nav.open" args={{ node: 'trade', workspace: 'draft-room' }}>Open Draft room</Act>
+      verb="nav.open" args={{ node: 'war', workspace: 'draft-room' }}>Open Draft room</Act>
   </section>;
   const franchise = snapshot.franchises.value.find(f => f.id === entity.id);
   const count = snapshot.rosters.value.find(r => r.franchiseId === entity.id)?.players.length;

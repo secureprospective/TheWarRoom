@@ -2,7 +2,6 @@ package commissioner
 
 import (
 	"bytes"
-	"cmp"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -41,7 +40,7 @@ func franchiseIDs(count int) []string {
 func presetSeed(preset string, count, season int) ([]SeedValue, error) {
 	p, _ := presetByID(preset)
 	if p.rules == nil {
-		return nil, nil
+		return startingDefaults(nil, SourceNative)
 	}
 	changes := leaguerules.SeedChanges(p.rules(count), "preset", season, time.Unix(1, 0).UTC())
 	seed := make([]SeedValue, len(changes))
@@ -72,13 +71,14 @@ func sameSeed(a, b []SeedValue) bool {
 // Prepared fills what Go owns on a new league: its franchise list and its preset values.
 // A caller may not supply either; a retry that repeats Go's own expansion is accepted.
 func (r RawCommand) Prepared() (RawCommand, error) {
+	r = r.defaultRosterTime()
 	if r.Command != Create {
 		return r, nil
 	}
 	a := r.Args
 	p, _ := presetByID(a.Preset)
 	if a.Source == "" {
-		a.Source = cmp.Or(p.source, SourceNative)
+		a.Source = SourceNative
 	}
 	if a.FranchiseCount == 0 {
 		a.FranchiseCount = p.defaultTeams
@@ -100,6 +100,10 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 		return r, nil
 	}
 	seed, err := presetSeed(a.Preset, a.FranchiseCount, a.Season)
+	if err != nil {
+		return r, err
+	}
+	seed, err = initialStartingSettings(seed, a.Source)
 	if err != nil {
 		return r, err
 	}
@@ -155,7 +159,7 @@ func (a RawArgs) validateCreation() error {
 	}
 	if p, _ := presetByID(a.Preset); p.imported && a.Source != SourceMFLImport {
 		return fmt.Errorf("a league with its own MFL settings is imported from MFL")
-	} else if !p.seeds() && len(a.Seed) != 0 {
+	} else if !p.seeds() && !onlyStartingDefaults(a.Seed) {
 		return fmt.Errorf("an empty league starts with every rule waiting for a ruling")
 	} else if p.seeds() && len(a.Seed) == 0 {
 		return fmt.Errorf("a preset league needs its starting values")
@@ -189,8 +193,12 @@ func creationEvents(r Record) []governance.Event {
 }
 
 func seedChanges(r Record, season int) ([]leaguerules.Change, error) {
-	changes := make([]leaguerules.Change, 0, len(r.Command.Args.Seed))
-	for _, s := range r.Command.Args.Seed {
+	seed, err := startingDefaults(r.Command.Args.Seed, importedSource([]Record{r}))
+	if err != nil {
+		return nil, err
+	}
+	changes := make([]leaguerules.Change, 0, len(seed))
+	for _, s := range seed {
 		setting, err := leaguerules.DecodeStored(leaguerules.FieldPath(s.Field), s.Value)
 		if err != nil {
 			return nil, fmt.Errorf("read preset value: %w", err)
@@ -198,6 +206,9 @@ func seedChanges(r Record, season int) ([]leaguerules.Change, error) {
 		changes = append(changes, leaguerules.Change{LeagueID: r.Command.League, Field: leaguerules.FieldPath(s.Field),
 			New: setting, Effective: leaguerules.Effective{Kind: leaguerules.Now},
 			RecordedAt: r.Receipt.RecordedAt, Season: season})
+	}
+	if onlyStartingDefaults(seed) {
+		return changes, nil
 	}
 	return leaguerules.UpgradeSeed(changes), nil
 }

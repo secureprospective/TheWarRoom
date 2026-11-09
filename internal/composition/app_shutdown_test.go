@@ -10,23 +10,23 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
-func TestShutdownWaitsForFactsWorker(t *testing.T) {
+func TestShutdownWaitsForStartupWorker(t *testing.T) {
 	a := NewApp()
 	a.core.StartupErr = errors.New("fixture startup stopped")
-	a.compileFactsInBackground()
+	a.startWorker(func() { _ = a.ready() })
 	done := make(chan struct{})
 	go func() { a.shutdown(context.Background()); close(done) }()
 	select {
 	case <-done:
 		close(a.core.Started)
-		t.Fatal("shutdown returned with the facts worker still waiting for startup")
+		t.Fatal("shutdown returned with a worker still waiting for startup")
 	case <-time.After(30 * time.Millisecond):
 	}
 	close(a.core.Started)
 	select {
 	case <-done:
 	case <-time.After(time.Second):
-		t.Fatal("shutdown did not join the facts worker")
+		t.Fatal("shutdown did not join the worker")
 	}
 }
 

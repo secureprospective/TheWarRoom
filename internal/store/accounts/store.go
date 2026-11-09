@@ -92,6 +92,9 @@ func (s *Store) Initialize(ctx context.Context) error {
 	if err := s.initializeTokens(ctx); err != nil {
 		return err
 	}
+	if err := s.initializeJoin(ctx); err != nil {
+		return err
+	}
 	return s.initializeAudit(ctx)
 }
 

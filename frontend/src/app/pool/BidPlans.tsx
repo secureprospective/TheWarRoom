@@ -6,7 +6,7 @@ import { localDate } from '../clock/labels';
 import type { Signal } from '../look/channels';
 import { SignalChip } from '../look/Slots';
 import { RailStrip } from '../shell/EnvelopeRail';
-import type { BidAction, BoardReading, Plan, PoolFilter, Rule } from './contract';
+import type { BidAction, BoardReading, Plan, PoolFilter } from './contract';
 import { poolState, type PoolState } from './state';
 import './pool.css';
 
@@ -21,37 +21,6 @@ const verbFields: Record<string, PoolFilter['field']> = {
 };
 // The post is shown while the owner still has something to do with it.
 const showsPost = new Set(['blocked', 'ready', 'handed_off', 'not_yet_done', 'not_verified', 'bid_pending']);
-
-function RuleList({ rules }: { rules: Rule[] }) {
-  return (
-    <ul className="bid-rules">
-      {rules.map((r) => (
-        <li key={r.rule} data-verdict={r.verdict}>
-          <b>{r.label}</b>
-          <span className="bid-mark">{r.mark}</span>
-          <p>{r.reason}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-// Failures and notes show in full; the rules that pass fold into Go's one line.
-export function Rules({ rules, summary }: { rules: Rule[]; summary: string }) {
-  const passing = rules.filter((r) => r.verdict === 'pass');
-  const rest = rules.filter((r) => r.verdict !== 'pass');
-  return (
-    <div className="bid-rules-box" aria-label="Bid rules">
-      {rest.length > 0 && <RuleList rules={rest} />}
-      {passing.length > 0 && (
-        <details className="bid-pass">
-          <summary>{summary}</summary>
-          <RuleList rules={passing} />
-        </details>
-      )}
-    </div>
-  );
-}
 
 function ActionButton({ plan, action, busy }: { plan: Plan; action: BidAction; busy: string }) {
   return (
@@ -83,7 +52,6 @@ export function BidPlanCard({ plan, busy = '' }: { plan: Plan; busy?: string }) 
         {plan.contract} · {plan.points} points · {plan.beatText}
       </p>}
       <RailStrip receipt={plan.receipt} />
-      {!finished && plan.rules.length > 0 && <Rules rules={plan.rules} summary={plan.ruleSummary} />}
       {showsPost.has(plan.stateCode) && (
         <pre className="bid-post" aria-label="ProBoards post">
           {plan.post}

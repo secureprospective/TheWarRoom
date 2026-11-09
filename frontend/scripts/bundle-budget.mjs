@@ -78,11 +78,11 @@ const moveChunk = readdirSync(resolve(dist, 'assets'))
   .find((name) => /^MyMoves\..*\.js$/.test(name));
 if (!moveChunk) throw new Error('No lazy MyMoves chunk');
 const moveSource = readFileSync(resolve(dist, 'assets', moveChunk), 'utf8');
-// The rail is shared with the bid plans, so it may sit in its own lazy chunk beside MyMoves.
-const railSource = readdirSync(resolve(dist, 'assets'))
-  .filter((name) => /^EnvelopeRail\..*\.js$/.test(name))
-  .map((name) => readFileSync(resolve(dist, 'assets', name), 'utf8'))
-  .join(moveSource);
+// Shared plan consumers can rename the rail's extracted chunk. Follow MyMoves' static graph,
+// rather than guessing a bundler filename, and still refuse any eagerly loaded dependency.
+const railFiles = eagerFiles(resolve(dist, 'assets', moveChunk));
+const railSource = railFiles.filter((file) => !eager.has(file))
+  .map((file) => readFileSync(file, 'utf8')).join('');
 assert.ok(railSource.includes('Move stages'), 'Rail must live in a lazy chunk, not the entry');
 assert.ok(moveSource.includes('landing simulated from a real roster snapshot'),
   'MyMoves caption missing');

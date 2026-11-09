@@ -1,25 +1,34 @@
 package history
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func (s *Store) nativeRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
 	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
 		return nil, fmt.Errorf("choose an app league")
 	}
+	ctx, err := s.linkedIdentities(ctx, league)
+	if err != nil {
+		return nil, err
+	}
 	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("read native league events: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	records, err := s.transactionRecords(ctx, tx, league)
+	records, err := s.sharedTransactionRecords(ctx, tx, league)
 	if err != nil {
 		return nil, fmt.Errorf("read native league records: %w", err)
 	}
@@ -31,12 +40,71 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 	if err != nil {
 		return commissioner.NativeAssets{}, err
 	}
-	reading, err := commissioner.NativeAssetsReading(league, records, s.now())
+	reading, err := commissioner.NativeAssetsReading(league, records, commissioner.ReadingInstant(records, s.now()))
 	if err != nil {
 		return commissioner.NativeAssets{}, fmt.Errorf("read native assets: %w", err)
 	}
 	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
+	if s.lineupEnv != nil && reading.Snapshot != nil {
+		facts := s.lineupEnv.PlayerFacts()
+		enrichNativeAssets(&reading, facts)
+		rules, err := commissioner.RulesInForce(records, reading.Snapshot.Season, s.now())
+		if err != nil {
+			return commissioner.NativeAssets{}, fmt.Errorf("read Market minimum rules: %w", err)
+		}
+		for i, p := range reading.Pool {
+			f := facts[p.Player]
+			if rules.Contracts.MinimumSalaries.State == leaguerules.IsKnown {
+				if minimum, ok := nativecheck.MinimumSalary(rules.Contracts.MinimumSalaries.Value, nativecheck.ExperienceYears(reading.Snapshot.Season, f)); ok {
+					reading.Pool[i].Minimum = &commissioner.PoolAmount{Cents: minimum, Text: bid.MoneyText(minimum)}
+				}
+			}
+		}
+	}
+	if reading.Snapshot != nil {
+		if err := s.nativePoolPoints(ctx, &reading, records); err != nil {
+			reading.PoolPointsNote = err.Error()
+		}
+	}
 	return reading, nil
+}
+
+func enrichNativeAssets(reading *commissioner.NativeAssets, facts nativecheck.Facts) {
+	if reading.Snapshot == nil {
+		return
+	}
+	owned := map[string]bool{}
+	for _, player := range reading.Snapshot.Players {
+		owned[player.ID] = true
+	}
+	pool := map[string]commissioner.NativePoolPlayer{}
+	for id, f := range facts {
+		if owned[id] {
+			continue
+		}
+		pool[id] = nativePoolPlayer(id, f)
+	}
+	for _, lot := range reading.Snapshot.Pool {
+		if !owned[lot.Player] {
+			if _, ok := pool[lot.Player]; !ok {
+				pool[lot.Player] = commissioner.NativePoolPlayer{Player: lot.Player, Name: lot.Name, Position: "—", String: "—", Points: "—"}
+			}
+		}
+	}
+	for _, player := range pool {
+		reading.Pool = append(reading.Pool, player)
+	}
+	slices.SortFunc(reading.Pool, func(a, b commissioner.NativePoolPlayer) int { return cmp.Compare(a.Player, b.Player) })
+	for _, player := range reading.Snapshot.Players {
+		identity, held := facts[player.ID]
+		if !held {
+			continue
+		}
+		reading.Identities = append(reading.Identities, commissioner.NativeAssetIdentity{
+			Player: player.ID, Franchise: player.Franchise, Side: reading.Snapshot.SideOf(player.Franchise),
+			Name: identity.Name, Position: string(identity.Position),
+		})
+	}
 }
 
 func (s *Store) NativeDirectory(ctx context.Context, league string) (commissioner.NativeDirectory, error) {
@@ -103,4 +171,15 @@ func (s *Store) appendNativeStart(ctx context.Context, tx *sql.Tx, records []com
 	_, err = s.appendAdmittedCommissioner(ctx, tx, appendRequest{raw: raw, principal: principal, role: role,
 		canonical: canonical, at: at, records: records})
 	return err
+}
+
+func nativePoolPlayer(id string, f nativecheck.PlayerFacts) commissioner.NativePoolPlayer {
+	status := "—"
+	if f.Team == "FA" {
+		status = "FA"
+	}
+	if f.DesignationHeld && (f.Designation == "IR" || f.Designation == "PUP" || f.Designation == "NFI") {
+		status = string(f.Designation)
+	}
+	return commissioner.NativePoolPlayer{Player: id, Name: f.Name, Position: string(f.Position), String: status, Points: "—"}
 }

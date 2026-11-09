@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -44,7 +46,12 @@ func heldRoster(t *testing.T) snapshot.Snapshot {
 }
 
 func heldRules() lineup.Rules {
-	return lineup.Rules{Positions: []lineup.PositionRule{{Position: domain.PosQB, Min: 1, Max: 1}, {Position: domain.PosWR, Min: 1, Max: 3}}}
+	rules, err := lineup.ParseRules(league.RawConfig{Starters: league.Starters{Positions: []league.PositionLimit{
+		{Name: "QB", Limit: "1"}, {Name: "WR", Limit: "1-3"}}}})
+	if err != nil {
+		panic(err)
+	}
+	return rules
 }
 
 func TestAcquisitionValidateRefusesEachMalformedRequest(t *testing.T) {

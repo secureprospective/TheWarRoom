@@ -10,6 +10,8 @@ import (
 // ErrSeasonNotLoaded marks a season the weekly statistics feed does not reach.
 var ErrSeasonNotLoaded = errors.New("weekly NFL statistics are not loaded for this season")
 
+const NFLVerse = "nflverse"
+
 const missingPlayByPlay = "Held play-by-play is needed for long plays and return touchdowns"
 
 // StatPort reads held revisions newest first, without fetching. A missing player in a revision
@@ -42,10 +44,13 @@ func (r RawStatScope) Validate() error {
 // HeldWeek identifies the exact archived evidence. Week is nil when that version does not
 // report the player, never a fabricated zero. Missing lists evidence needed before native scoring.
 type HeldWeek struct {
+	Authority string
 	SHA256    string
 	FetchedAt time.Time
 	Week      *PlayerWeek
 	Missing   []string
+	Review    string
+	Evidence  string
 }
 
 func SelectHeldWeek(scope RawStatScope, weeks []PlayerWeek, sha string, at time.Time) HeldWeek {
@@ -94,12 +99,17 @@ func (index HeldWeekIndex) Select(scope RawStatScope, weeks []PlayerWeek, sha st
 
 // heldWeekAt is the held evidence for row i of a file, or for a file that does not report the week when i is -1.
 func heldWeekAt(weeks []PlayerWeek, i int, sha string, at time.Time) HeldWeek {
-	out := HeldWeek{SHA256: sha, FetchedAt: at, Missing: []string{missingPlayByPlay}}
+	out := HeldWeek{Authority: NFLVerse, SHA256: sha, FetchedAt: at, Missing: []string{missingPlayByPlay}}
 	if i < 0 {
 		out.Missing = append(out.Missing, "This held file does not report the player's regular-season week")
 		return out
 	}
 	found := weeks[i]
 	out.Week = &found
+	if found.Provenance != "" {
+		out.Authority = found.Provenance
+	}
+	out.Review = found.Review
+	out.Evidence = found.Evidence
 	return out
 }

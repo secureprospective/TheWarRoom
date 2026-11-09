@@ -133,17 +133,10 @@ func (x *bidExecution) raise(raw *commissioner.RawCommand) error {
 	return nil
 }
 
-func (x *bidExecution) withdraw(raw *commissioner.RawCommand) error {
-	args := raw.Args.Bid
-	auction, err := x.standingBid(args)
-	if err != nil {
-		return err
-	}
-	if err := x.auctionOpen(auction); err != nil {
-		return err
-	}
-	raw.Args.BidOutcome = &commissioner.BidOutcome{Player: auction.Player, Season: x.rules.Season}
-	return nil
+// withdraw is refused: a bid is a bid. It ends only when it is outbid or wins; a mistaken bid is removed
+// by the commissioner's recorded correction (correct.transaction), never by its owner.
+func (x *bidExecution) withdraw(_ *commissioner.RawCommand) error {
+	return fmt.Errorf("a bid is binding: it ends only when it is outbid or wins")
 }
 
 func (x *bidExecution) standingBid(args *commissioner.RawBidArgs) (*commissioner.BidAuction, error) {
@@ -206,7 +199,7 @@ func (x *bidExecution) judge(player, franchise string, auction *commissioner.Bid
 	if err != nil {
 		return nil, fmt.Errorf("read bid mode: %w", err)
 	}
-	facts := nativecheck.BidFacts{Now: x.now, ExperienceYears: experienceYears(x.rules.Season, x.facts[player]),
+	facts := nativecheck.BidFacts{Now: x.now, ExperienceYears: nativecheck.ExperienceYears(x.rules.Season, x.facts[player]),
 		Season: x.env.Season, Playoff: x.env.Playoff[franchise], LateRule: mode == leaguerules.Open}
 	if startCard {
 		facts.Season = nativecheck.BidSeason{Offseason: true}
@@ -249,16 +242,11 @@ func (x *bidExecution) rosterAllowsContract(player, franchise string, salary dom
 	if commissioner.StartingCardLot(x.records, player) {
 		rules.Roster.Limits.Value.Min = leaguerules.Known(0)
 	}
-	return rosterCapAllows(&candidate, rules, franchise, x.facts, x.zone, commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: franchise, Player: player}, x.now)...)
-}
-
-// experienceYears is the player's NFL seasons so far. Without a real draft year the player is a rookie.
-func experienceYears(season int, f nativecheck.PlayerFacts) int {
-	const longestCareer = 30
-	if f.DraftYearHeld && f.DraftYear >= season-longestCareer && f.DraftYear <= season {
-		return season - f.DraftYear
+	exceptions := commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: franchise, Player: player}, x.now)
+	if err := rosterCapAllows(&candidate, rules, franchise, x.facts, x.zone, exceptions...); err != nil {
+		return err
 	}
-	return 0
+	return x.openBidsFit(&candidate, rules, player, franchise, exceptions)
 }
 
 // decide chooses the winner of a player's bids, or corrects the choice. A bid is judged again at the moment of

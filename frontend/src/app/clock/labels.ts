@@ -23,9 +23,15 @@ const dates = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyl
 // The windows the rulebook dates; the rest have only the commissioner's date.
 export const ruleDatedWindows = new Set(['trade_deadline', 'playoff_bids_only', 'multiyear_bids_close']);
 
+// The actions an app league's own windows open, in the words a GM reads. Free text passes through.
+export const actionLabels: Record<string, string> = {
+  lineup: 'Lineup', cut: 'Cut', buyout: 'Buyout', waiver_claim: 'Waiver claim', trade: 'Trade',
+  ufa_bid: 'UFA bid', resign: 'Re-sign', draft_pick: 'Draft pick',
+};
 export function deadlineLabel(label: string): string {
   const kind = label.replace(/^window:/, '') as keyof typeof windowLabels;
   if (kind in windowLabels) return windowLabels[kind];
+  if (label in actionLabels) return actionLabels[label];
   if (!/^[A-Z0-9_]+$/.test(label)) return label;
   const words = label.toLowerCase().replaceAll('_', ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);

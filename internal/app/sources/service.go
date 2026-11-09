@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
-	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -20,15 +18,6 @@ type HealthHistory interface {
 	SourceHealth(context.Context) ([]history.SourceHealth, error)
 	FetchHealth(context.Context, string) ([]history.URLHealth, error)
 	LatestRun(context.Context, int, history.RunKind) (history.Run, bool, error)
-}
-
-// FactsHistory reads pinned inputs and records compilation attempts.
-type FactsHistory interface {
-	manifest.Bodies
-	LatestManifest(context.Context, string) (history.ManifestRecord, bool, error)
-	Snapshots(context.Context, string) ([]history.SnapshotRecord, error)
-	HeldBodies(context.Context, []string) (map[string]bool, error)
-	RecordSnapshot(context.Context, history.SnapshotRecord) error
 }
 
 // ArchiveHistory records imported files and publishes their pinned manifests.
@@ -63,14 +52,12 @@ type SignalsHistory interface {
 type Service struct {
 	Zone       *time.Location
 	Health     HealthHistory
-	Facts      FactsHistory
 	Archive    ArchiveHistory
 	Crosswalk  CrosswalkHistory
 	Signals    SignalsHistory
 	Season     int
 	CollegeKey string
 	Transport  http.RoundTripper
-	LabData    func() (*lab.Data, error)
 }
 
 func (a Service) zone() *time.Location {

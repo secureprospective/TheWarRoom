@@ -131,7 +131,8 @@ func TestSidesAndPoolsRefusals(t *testing.T) {
 		t.Fatal("refused twice")
 	}
 	imported := newLedger(t, PresetLegacy)
-	if err := imported.change(poolsField, `"per_side"`, 2); err == nil || !strings.Contains(err.Error(), "imported league") {
+	// An imported league meets the same engine limit as any league, not a refusal for where it came from.
+	if err := imported.change(poolsField, `"per_side"`, 2); err == nil || !strings.Contains(err.Error(), "every team needs a side") {
 		t.Fatalf("imported: %v", err)
 	}
 	later := handMirror(t)

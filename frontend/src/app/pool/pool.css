@@ -40,13 +40,6 @@
 .twr-app .bid-check { display: flex; gap: 6px; align-items: center; grid-column: 1 / -1; }
 .twr-app .bid-note, .twr-app .bid-why, .twr-app .bid-evidence { color: var(--surface-tx2); font-size: 11px;
   margin: 4px 0; }
-.twr-app .bid-rules { list-style: none; margin: 6px 0; padding: 0; }
-.twr-app .bid-rules li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; padding: 4px
-  0; border-bottom: 1px solid var(--surface-line); }
-.twr-app .bid-rules li p { grid-column: 1 / -1; margin: 2px 0 0; color: var(--surface-tx2); }
-.twr-app .bid-rules li[data-verdict="fail"] .bid-mark, .twr-app .bid-rules li[data-verdict="unknown"]
-  .bid-mark { color: var(--signal-red); }
-.twr-app .bid-mark { white-space: nowrap; font-family: var(--surface-mono); }
 .twr-app .bid-post { white-space: pre-wrap; overflow-wrap: normal; font-family: var(--surface-mono);
   background: var(--surface-0); border: 1px solid var(--surface-line); padding: 6px 8px; margin: 6px 0;
   user-select: all; }
@@ -64,8 +57,6 @@
   var(--surface-2); }
 .twr-app .bid-open-list .act > :last-child { margin-left: auto; }
 .twr-app .bid-open-card { scroll-margin-top: 8px; }
-.twr-app .bid-rules-box { margin: 6px 0; }
-.twr-app .bid-pass summary { color: var(--surface-tx2); cursor: pointer; }
 .twr-app .bid-closes { align-content: start; grid-column: 1 / -1; }
 .twr-app .bid-closes-set { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .twr-app .bid-fields .bid-closes-set input { width: auto; }

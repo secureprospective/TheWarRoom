@@ -103,12 +103,12 @@ func releaseReadInputs(t *testing.T, name string, typ reflect.Type, league strin
 	case "TargetNativeResults":
 		args[1].SetInt(2026)
 		args[2].SetInt(1)
-	case "TargetNativeStandings", "TargetNativeBracket", "TargetStatQueue":
+	case "TargetNativeStandings", "TargetNativeOdds", "TargetNativeBracket", "TargetStatQueue":
 		args[1].SetInt(2026)
 	case "TargetNativeLineup":
 		args[1].SetString("franchise.01")
 		args[2].SetInt(1)
-	case "TargetNativeBids", "TargetNativeTrades", "TargetNativeWaivers":
+	case "TargetNativeMoves", "TargetNativeBids", "TargetNativeTrades", "TargetNativeWaivers":
 		args[1].SetString("franchise.01")
 	}
 	if len(args) > 0 && args[0].Kind() == reflect.Struct {
@@ -186,6 +186,7 @@ commish.reserve.exception
 commish.role.grant
 commish.role.revoke
 commish.rules.read
+commish.rules.preset.read
 commish.rules.set
 commish.schedule.read
 commish.score.franchise
@@ -255,9 +256,12 @@ schedule.franchise.read
 schedule.generate
 schedule.publish
 schedule.read
+lineupdelta.read
+projections.read
 score.player.read
 oline.auction.close
 season.rollover
+odds.read
 standings.read
 stats.queue.read
 title.set
@@ -270,7 +274,9 @@ trade.override
 trade.recuse
 trade.review
 trade.withdraw
+moves.read
 trades.read
+value.read
 waivers.award.override
 waivers.claim
 waivers.order.auto

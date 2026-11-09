@@ -1,9 +1,11 @@
 package commissioner
 
 import (
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 func (a *API) TargetNativeCapCheck(leagueID, viewerZone string) (commissioner.NativeCapCheck, error) {
@@ -32,6 +34,19 @@ func (a *API) TargetNativeLineupCheck(
 func (a *API) TargetNativeHouseRules(leagueID string) (commissioner.NativeHouseRules, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeHouseRules(leagueID)
+}
+
+// TargetNativeProjections reads D11 projected ranges for a comma-separated list of league players.
+func (a *API) TargetNativeProjections(league, players string, season,
+	week int) (history.NativeProjections, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeProjections(league, players, season, week)
+}
+
+// TargetNativeLineupDelta reads what a proposed trade does to both parties' best lineups (D33).
+func (a *API) TargetNativeLineupDelta(raw leagueservice.RawLineupDeltaScope) (history.NativeLineupDelta, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeLineupDelta(raw)
 }
 
 // TargetNativePlayerScore reads only held NFL evidence and the app league's recorded decisions.
@@ -72,6 +87,13 @@ func (a *API) TargetNativeStandings(league string, season int) (commissioner.Nat
 	return a.reads.TargetNativeStandings(league, season)
 }
 
+// TargetNativeOdds reads win chance, power and playoff odds from the league's own results, schedule, rosters
+// and values, under its own tie-breakers and playoff rules.
+func (a *API) TargetNativeOdds(league string, season int) (commissioner.NativeOdds, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeOdds(league, season)
+}
+
 // TargetNativeScorePreview reads a score adjustment, in the form it would be sent, and warns when it
 // would turn over a game's result. It records nothing.
 func (a *API) TargetNativeScorePreview(body string) (commissioner.ScorePreview, error) {
@@ -87,8 +109,21 @@ func (a *API) TargetNativeBracket(league string, season int) (commissioner.Nativ
 }
 
 // TargetStatQueue lists the statistics the NFL changed after the league counted them, newest first, with the
-// decisions already made. Nothing in the queue moves a score until it is approved.
-func (a *API) TargetStatQueue(league string, season int) (commissioner.StatQueue, error) {
+// decisions already made. Nothing in the queue moves a score until it is approved. A non-empty request names
+// the read so TargetCancelRead can withdraw it.
+func (a *API) TargetStatQueue(league string, season int, request string) (commissioner.StatQueue, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
-	return a.reads.TargetStatQueue(league, season)
+	return a.reads.TargetStatQueue(league, season, request)
+}
+
+// TargetCancelRead withdraws a read the client named; it stops once no other caller waits for it.
+func (a *API) TargetCancelRead(request string) error {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCancelRead(request)
+}
+
+// TargetNativeValues reads this league's player values, Best N and dynasty value by age.
+func (a *API) TargetNativeValues(raw leagueservice.RawValueScope) (appvalue.Reading, error) {
+	//nolint:wrapcheck // The shared service supplies the read's context.
+	return a.reads.TargetNativeValues(raw)
 }

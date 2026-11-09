@@ -47,7 +47,7 @@ func resultsTestSeeded(t *testing.T, seed func(*commissioner.NativeAssets)) *res
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "history.db")
 	s, pools := statStore(t, path)
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	held := heldSeedCommand(t)
 	if seed != nil {
 		assets := commissioner.NativeAssets{Snapshot: held.Args.Native}

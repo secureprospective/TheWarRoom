@@ -3,12 +3,15 @@ package leagueservice
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 type RawNativeResultsScope struct {
@@ -137,6 +140,53 @@ func (a *Service) TargetNativePlayerScore(league, player string, season,
 	return reading, nil
 }
 
+// maxProjectionPlayers bounds one projections read: a roster or a target board, not the pool.
+const maxProjectionPlayers = 120
+
+// TargetNativeProjections reads D11 floor/median/ceiling for a comma-separated list of league
+// player ids, under the app league's rules in force.
+func (a *Service) TargetNativeProjections(league, players string, season,
+	week int) (history.NativeProjections, error) {
+	if err := a.admitReading(commissioner.Access{League: league, Operation: "projections.read", Mode: "read"}); err != nil {
+		return history.NativeProjections{}, err
+	}
+	ids, err := projectionPlayers(players)
+	if err != nil {
+		return history.NativeProjections{}, fmt.Errorf("projections input: %w", err)
+	}
+	if err := a.host.Ready(); err != nil {
+		return history.NativeProjections{}, fmt.Errorf("projections startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
+	defer cancel()
+	reading, err := a.host.NativeProjections(ctx, league, season, week, ids)
+	if err != nil {
+		return history.NativeProjections{}, fmt.Errorf("projections: %w", err)
+	}
+	return reading, nil
+}
+
+func projectionPlayers(raw string) ([]string, error) {
+	var ids []string
+	seen := map[string]bool{}
+	for _, part := range strings.Split(raw, ",") {
+		id := strings.TrimSpace(part)
+		if id == "" || seen[id] {
+			continue
+		}
+		pid, err := playerid.New(id)
+		if err != nil || pid.String() != id {
+			return nil, fmt.Errorf("use full league player ids")
+		}
+		seen[id] = true
+		ids = append(ids, id)
+	}
+	if len(ids) == 0 || len(ids) > maxProjectionPlayers {
+		return nil, fmt.Errorf("choose 1 to %d players", maxProjectionPlayers)
+	}
+	return ids, nil
+}
+
 func (a *Service) TargetNativeContractQuote(raw market.RawContractQuote) (market.ContractQuote,
 	error) {
 	if err := raw.Validate(); err != nil {
@@ -242,8 +292,13 @@ func (a *Service) TargetNativeBracket(league string, season int) (commissioner.N
 	return reading, nil
 }
 
-func (a *Service) TargetStatQueue(league string, season int) (commissioner.StatQueue, error) {
+// TargetStatQueue prices the statistics queue. A non-empty request names the read so the client can withdraw
+// it (TargetCancelRead) when its screen goes away.
+func (a *Service) TargetStatQueue(league string, season int, request string) (commissioner.StatQueue, error) {
 	if err := (RawNativeResultsScope{League: league, Season: season, Week: 1}).Validate(); err != nil {
+		return commissioner.StatQueue{}, err
+	}
+	if err := validRequest(request); err != nil {
 		return commissioner.StatQueue{}, err
 	}
 	if err := a.admitRead(league, "stats.queue.read", ""); err != nil {
@@ -254,6 +309,8 @@ func (a *Service) TargetStatQueue(league string, season int) (commissioner.StatQ
 	}
 	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
+	ctx, release := a.cancels.watch(ctx, a.requestKey(request))
+	defer release()
 	reading, err := a.host.StatQueue(ctx, league, season)
 	if err != nil {
 		return commissioner.StatQueue{}, fmt.Errorf("statistics queue: %w", err)

@@ -3,6 +3,7 @@ package now
 import (
 	"cmp"
 	"fmt"
+	"iter"
 	"slices"
 	"strconv"
 	"strings"
@@ -556,4 +557,25 @@ func (v nowView) liveScoring() report.Report {
 		r.Note += " " + v.now.Live.RefreshError
 	}
 	return r
+}
+
+// GamesPerSeason reads the season's games from held NFL schedule weeks. A complete schedule
+// gives every team the same game count, which is the answer. Otherwise it parses fallback, the
+// league's last scoring week: the number of games the model already scores a season over.
+func GamesPerSeason[T any](feeds iter.Seq[T], weeks func(T) []nflschedule.RawWeek, fallback string) (int, error) {
+	held := []nflschedule.RawWeek{}
+	for feed := range feeds {
+		held = append(held, weeks(feed)...)
+	}
+	if games, ok := nflschedule.SeasonGames(held); ok {
+		return games, nil
+	}
+	games, err := strconv.Atoi(fallback)
+	if err != nil {
+		return 0, fmt.Errorf("league endWeek %q: %w", fallback, err)
+	}
+	if games < 1 {
+		return 0, fmt.Errorf("league endWeek %q is not a number of games", fallback)
+	}
+	return games, nil
 }

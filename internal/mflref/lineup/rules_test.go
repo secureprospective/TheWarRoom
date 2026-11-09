@@ -45,18 +45,28 @@ func realStarters(t *testing.T) league.Starters {
 }
 
 func TestParseRealRules(t *testing.T) {
-	r, err := ParseRules(realStarters(t))
+	r, err := ParseRules(league.RawConfig{Starters: realStarters(t)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := Rules{OffenseCap: 8, DefenseTotal: 12, StarterCount: 21, Positions: []PositionRule{
-		{domain.PosQB, "QB", 1, 1}, {domain.PosRB, "RB", 1, 3}, {domain.PosWR, "WR", 2, 5},
-		{domain.PosTE, "TE", 1, 3}, {domain.PosK, "PK", 1, 1}, {domain.PosDT, "DT", 2, 4},
-		{domain.PosDE, "DE", 2, 4}, {domain.PosLB, "LB", 2, 4}, {domain.PosCB, "CB", 2, 4},
-		{domain.PosS, "S", 2, 4},
-	}}
-	if !reflect.DeepEqual(r, want) {
-		t.Fatalf("got %+v", r)
+	if r.StarterCount != 21 {
+		t.Fatalf("starter count %d", r.StarterCount)
+	}
+	order := []domain.Position{domain.PosQB, domain.PosRB, domain.PosWR, domain.PosTE, domain.PosK,
+		domain.PosDT, domain.PosDE, domain.PosLB, domain.PosCB, domain.PosS}
+	for i, pos := range order {
+		if r.Order(pos) != i {
+			t.Errorf("%s ordered %d, want %d", pos, r.Order(pos), i)
+		}
+	}
+	if r.Order(domain.PosFlag) != len(order) {
+		t.Error("an unlisted position was not placed last")
+	}
+	mins := map[domain.Position]int{domain.PosQB: 1, domain.PosRB: 1, domain.PosWR: 2, domain.PosK: 1, domain.PosS: 2}
+	for pos, want := range mins {
+		if got := r.minimum(pos); got != want {
+			t.Errorf("%s minimum %d, want %d", pos, got, want)
+		}
 	}
 }
 
@@ -72,18 +82,17 @@ func TestParseRuleFields(t *testing.T) {
 		t.Run(tc.name+tc.limit, func(t *testing.T) {
 			raw := realStarters(t)
 			raw.Positions = []league.PositionLimit{{Name: tc.name, Limit: tc.limit}}
-			r, err := ParseRules(raw)
+			r, err := ParseRules(league.RawConfig{Starters: raw})
 			if tc.bad {
-				if err == nil || !strings.Contains(err.Error(), tc.name) {
+				if err == nil || !strings.Contains(err.Error(), tc.name) && !strings.Contains(err.Error(), tc.limit) {
 					t.Fatalf("missing field error: %v", err)
 				}
 				return
 			}
-			if err != nil || r.Positions[0].Min != tc.min || r.Positions[0].Max != tc.max {
+			pos, _ := normalize.PositionFromMFL(tc.name)
+			b := r.Native.Positions.Value[native(pos)]
+			if err != nil || b.Min.Value != tc.min || b.Max.Value != tc.max {
 				t.Fatalf("%+v %v", r, err)
-			}
-			if tc.name == "PK" && r.Positions[0].Position != domain.PosK {
-				t.Fatal("PK not mapped")
 			}
 		})
 	}
@@ -97,14 +106,14 @@ func TestParseRuleFields(t *testing.T) {
 		default:
 			raw.IDPStarters = "x"
 		}
-		if _, err := ParseRules(raw); err == nil || !strings.Contains(err.Error(), field) {
+		if _, err := ParseRules(league.RawConfig{Starters: raw}); err == nil || !strings.Contains(err.Error(), `"x"`) {
 			t.Fatal(err)
 		}
 	}
 }
 
 func TestCheck(t *testing.T) {
-	rules, err := ParseRules(realStarters(t))
+	rules, err := ParseRules(league.RawConfig{Starters: realStarters(t)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,9 +144,9 @@ func TestCheck(t *testing.T) {
 		{"full", full, true, true, "", ""},
 		{"partial", full[:19], false, true, "S", "short"},
 		{"WR over", append(extra(full, domain.PosWR), domain.PosWR), false, false, "WR", "over"},
-		{"offense", extra(full, domain.PosRB), false, false, "QB/RB/WR/TE", "over"},
+		{"offense", extra(full, domain.PosRB), false, false, "Offense", "over"},
 		{"defense", append(append([]domain.Position{}, full...), domain.PosLB), false, false, "Defense", "over"},
-		{"unknown", extra(full, domain.Position("")), false, false, "Position", "unknown"},
+		{"unknown", extra(full, domain.Position("")), false, false, "", "unknown"},
 		{"flag", extra(full, domain.PosFlag), false, false, "FLAG", "unknown"},
 		{"empty", nil, false, true, "WR", "short"},
 	} {
@@ -169,7 +178,7 @@ func extra(full []domain.Position, pos domain.Position) []domain.Position {
 }
 
 func TestCheckMessages(t *testing.T) {
-	rules, err := ParseRules(realStarters(t))
+	rules, err := ParseRules(league.RawConfig{Starters: realStarters(t)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,9 +200,9 @@ func TestCheckMessages(t *testing.T) {
 		"short CB: 0 starting, needs at least 2",
 		"short S: 0 starting, needs at least 2",
 		"unknown Position unknown: 1 starting",
-		"over QB/RB/WR/TE: 11 starting, at most 8",
-		"short Defense: 0 starting, needs at least 12",
-		"short Total: 13 starting, needs at least 21",
+		"over Offense: 11 starting, needs exactly 8",
+		"short Defense: 0 starting, needs exactly 12",
+		"short Total: 13 starting, needs exactly 21",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %q", got)

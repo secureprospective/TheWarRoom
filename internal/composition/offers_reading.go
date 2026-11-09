@@ -2,8 +2,12 @@ package composition
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"strconv"
 	"time"
+
+	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/bids"
@@ -11,13 +15,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
-	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -54,9 +56,44 @@ func (h offersHost) OffersEngineValues(ctx context.Context) (map[string]float64,
 }
 func (h offersHost) OffersAssetValues(ctx context.Context, ids []playerid.PlayerID, at time.Time) (map[string]offersapp.AssetValue, string) {
 	values, note := h.app.poolAssetValues(ctx, ids, at)
-	out := make(map[string]offersapp.AssetValue, len(values))
-	for id, value := range values {
-		out[id] = offersapp.AssetValue{NowText: value.Now.Text, DynastyText: value.Dynasty.Text,
+	in := h.app.heldResearchInput().snapshot()
+	statuses := researchapp.PoolStrings(in)
+	offseason := false
+	if h.Whatif != nil {
+		phase, err := h.Whatif.CurrentPhase(ctx)
+		if err != nil {
+			in.Finished = nil
+			note += " Season phase is unavailable"
+		} else {
+			offseason = phase == domain.PhaseOffseason
+		}
+	}
+	if offseason {
+		end, err := strconv.Atoi(h.Rulebook.ActiveConfig().EndWeek)
+		if err == nil {
+			in.Held.Feeds = map[string]researchapp.Feed[[]researchfeeds.Feed]{}
+			for week := 1; week <= end; week++ {
+				period := strconv.Itoa(week)
+				in.Held.Feeds[researchapp.Key("playerScores", period)] = h.app.researchArchiveFeeds().Read(ctx, h.Season-1, "playerScores", period)
+			}
+			in.Week = end + 1
+			in.Finished = researchapp.FinishedScores(in).Rows
+		} else {
+			in.Finished = nil
+		}
+	}
+	out := make(map[string]offersapp.AssetValue, len(ids))
+	for _, player := range ids {
+		id := player.String()
+		value := values[id]
+		status, points := statuses[id], "—"
+		if status == "" {
+			status = "—"
+		}
+		if score := in.Finished[id]; score != nil {
+			points = fmt.Sprintf("%.1f", score.Sum)
+		}
+		out[id] = offersapp.AssetValue{String: status, Points: points, NowText: value.Now.Text, DynastyText: value.Dynasty.Text,
 			NowHeld: value.Now.Held, DynastyHeld: value.Dynasty.Held, NowValue: value.NowValue, DynastyValue: value.DynastyValue}
 	}
 	return out, note
@@ -92,21 +129,6 @@ func heldCutCharge(p state.MirrorPlayer, season int) (domain.Money, bool) {
 }
 func poolMarketLines(facts []MarketFact) []string {
 	return offersapp.MarketLines(offersMarketFacts(map[string][]MarketFact{"": facts})[""])
-}
-
-// The caller holds seasonMu, so the ending evidence and the pending read form one observation.
-func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error) error {
-	return offersapp.RecordOffers(ctx, pending, at, readErr, a.core.Pools != nil, //nolint:wrapcheck // Preserve original read/save errors.
-		func() (string, error) {
-			d, err := a.lab()
-			if err != nil {
-				return "", err
-			}
-			return lab.OfferOwner(d), nil
-		}, func(ctx context.Context, owner string, pending []leaguefeed.PendingTrade, at time.Time) error {
-			return personal.New(a.core.Pools).ObserveOffers(ctx, owner, a.core.Season, pending, a.core.SeasonTransactions.Value, at)
-		})
-
 }
 
 // archivedOnly reads already held exports; opening a list or the clock never calls MFL.

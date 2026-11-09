@@ -11,6 +11,8 @@ respawn_period=60
 umask=0077
 
 depend() {
-	need net twr-server
+	# Start after the server, but never stop with it: a server restart must not leave the Tunnel down.
+	need net
+	after twr-server
 	use dns
 }

@@ -24,7 +24,7 @@ func TestSeasonRefreshOrderAndCancellation(t *testing.T) {
 		calls := []string{}
 		step := func(name string) func(context.Context) { return func(context.Context) { calls = append(calls, name) } }
 		pauses := 0
-		s := SeasonRefresh{Changed: step("changed"), Transactions: step("transactions"), Comms: step("comms"), Shell: step("shell"),
+		s := SeasonRefresh{Changed: step("changed"), Transactions: step("transactions"), Shell: step("shell"),
 			Lineups: step("lineups"), Trades: step("trades"), Injuries: step("injuries"), Draft: step("draft"), Market: step("market"),
 			Race: step("race"), Firsts: step("firsts"), Revalidate: step("revalidate"), Week: func() int { return 3 },
 			Schedule: func(_ context.Context, week int) {
@@ -44,14 +44,14 @@ func TestSeasonRefreshOrderAndCancellation(t *testing.T) {
 			},
 		}
 		s.Run(context.Background())
-		want := []string{"transactions", "comms", "shell", "lineups", "changed", "trades", "injuries", "draft", "market", "race", "firsts", "schedule", "revalidate", "changed"}
+		want := []string{"transactions", "shell", "lineups", "changed", "trades", "injuries", "draft", "market", "race", "firsts", "schedule", "revalidate", "changed"}
 		switch stop {
 		case 1:
-			want = []string{"transactions", "comms", "shell", "changed"}
+			want = []string{"transactions", "shell", "changed"}
 		case 3:
-			want = []string{"transactions", "comms", "shell", "lineups", "changed", "trades", "changed"}
+			want = []string{"transactions", "shell", "lineups", "changed", "trades", "changed"}
 		case 6:
-			want = append(want[:11], "changed")
+			want = append(want[:10], "changed")
 		}
 		if !reflect.DeepEqual(calls, want) {
 			t.Fatal(stop, calls, want)
@@ -83,35 +83,27 @@ func TestPendingRefreshKeyAndGenerationFences(t *testing.T) {
 	}
 	for _, keyErr := range []error{mflkey.ErrNoKey, mflkey.ErrUnavailable, mflkey.ErrTimeout, errors.New("offline"), nil} {
 		held := original
-		recorded, logged := 0, 0
-		record := func(_ context.Context, _ []leaguefeed.PendingTrade, _ time.Time, err error) error {
-			recorded++
-			if err != keyErr {
-				t.Fatal(err)
-			}
-			return errors.New("save failed")
-		}
 		CurrentPending(1, 2, func() { t.Fatal("entered season publication for old key generation") })
 		if !reflect.DeepEqual(held, original) {
 			t.Fatal("stale generation changed held", held)
 		}
-		PublishPending(context.Background(), &held, nil, keyErr, func() time.Time { return at }, record, func(string) { logged++ })
+		PublishPending(&held, nil, keyErr, func() time.Time { return at })
 		switch keyErr {
 		case mflkey.ErrNoKey:
-			if len(held.Value) != 0 || !held.FetchedAt.IsZero() || held.RefreshError != "MFL not connected" || recorded != 0 {
-				t.Fatal(held, recorded)
+			if len(held.Value) != 0 || !held.FetchedAt.IsZero() || held.RefreshError != "MFL not connected" {
+				t.Fatal(held)
 			}
 		case mflkey.ErrUnavailable, mflkey.ErrTimeout:
-			if len(held.Value) != 1 || held.RefreshError != "MFL keyring is locked or unavailable" || recorded != 0 {
-				t.Fatal(held, recorded)
+			if len(held.Value) != 1 || held.RefreshError != "MFL keyring is locked or unavailable" {
+				t.Fatal(held)
 			}
 		case nil:
-			if len(held.Value) != 0 || held.RefreshError != "" || recorded != 1 || logged != 1 {
-				t.Fatal(held, recorded, logged)
+			if len(held.Value) != 0 || held.RefreshError != "" {
+				t.Fatal(held)
 			}
 		default:
-			if len(held.Value) != 1 || held.RefreshError != "offline" || recorded != 1 || logged != 0 {
-				t.Fatal(held, recorded, logged)
+			if len(held.Value) != 1 || held.RefreshError != "offline" {
+				t.Fatal(held)
 			}
 		}
 	}

@@ -41,7 +41,7 @@ func transferFixture(t *testing.T) (*history.Store, *db.Pools, RawExport) {
 	}
 	at := time.Date(2026, 10, 24, 12, 0, 0, 0, time.UTC)
 	store.SetClock(func() time.Time { return at })
-	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Moving league", Preset: commissioner.PresetLegacy, Season: 2026}, Request: "create", Reason: "Create the league", Effective: "now", Visibility: "league"}
+	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Moving league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026}, Request: "create", Reason: "Create the league", Effective: "now", Visibility: "league"}
 	runTransferCommand(t, store, raw, "creator")
 	seed, err := os.ReadFile("../commissioner/testdata/native-assets.wire.json")
 	if err != nil {
@@ -220,8 +220,14 @@ func assertDirectTransferParity(t *testing.T, store *history.Store, got history.
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The live store decorates the Market pool from its football feed (minimum bid, last season's
+	// points); an isolated replay has no feed. Compare the league data, not those decorations.
+	assets.PoolPointsNote = ""
+	for i := range assets.Pool {
+		assets.Pool[i].Minimum = nil
+	}
 	if !reflect.DeepEqual(assets, got.Assets) {
-		t.Fatal("roster differs")
+		t.Fatalf("roster differs: direct=%+v replay=%+v", assets, got.Assets)
 	}
 	records, err := store.Events(t.Context(), "native.test", commissioner.Stream, 0)
 	if err != nil {

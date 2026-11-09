@@ -775,6 +775,10 @@
   {
    "label": "Flag missed lineups",
    "words": "On"
+  },
+  {
+   "label": "Lineup lock",
+   "words": "Week’s first kickoff"
   }
  ]
 }

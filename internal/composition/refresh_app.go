@@ -45,8 +45,9 @@ func (a *App) seasonGuess() int {
 func (a *App) refreshLeague(
 	ctx context.Context, rb *rulebook.Store, mirror *state.Mirror,
 ) (RefreshResult, error) {
-	a.core.RefreshMu.Lock()
 	defer a.sourceHealthChanged(ctx)
+	defer a.syncLeagueSchedules(ctx)
+	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
 	return a.leagueRefresh(rb, mirror).Refresh(ctx) //nolint:wrapcheck // Preserve refresh refusals.
 
@@ -93,7 +94,7 @@ func (a *App) refreshInBackground(parent context.Context) {
 		parent, a.core.WeekCancel = context.WithCancel(parent) //nolint:gosec // WorkerGroup.Stop cancels the stored function under WorkerMu and joins before closing resources.
 		a.core.WorkerMu.Unlock()
 		(controlapp.BackgroundRefresh{Ready: a.ready, Start: a.startWorker,
-			Due: func() bool { return a.core.LaunchRefreshDue }, Clock: a.nativeWaiverClock, Watch: a.watchMoves,
+			Due: func() bool { return a.core.LaunchRefreshDue }, Sync: a.syncLeagueSchedulesAtLaunch, Clock: a.nativeWaiverClock, Watch: a.watchMoves,
 			Launch: a.launchRefresh, Weeks: a.refreshWeeksInBackground}).StartWorkers(parent)
 	})
 }
@@ -102,4 +103,11 @@ func (a *App) launchRefresh(parent context.Context) {
 	controlapp.LaunchLeagueRefresh(parent, refreshTimeout, func(ctx context.Context) (RefreshResult, error) {
 		return a.refreshLeague(ctx, a.core.Rulebook, a.core.League)
 	}, a.core.ModelDirty.Store, func(line string) { log.Print(line) })
+}
+
+func (a *App) syncLeagueSchedulesAtLaunch(parent context.Context) {
+	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
+	defer cancel()
+	a.backfillScheduleFollowing(ctx)
+	a.syncLeagueSchedules(ctx)
 }

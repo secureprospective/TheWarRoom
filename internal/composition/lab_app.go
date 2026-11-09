@@ -1,7 +1,7 @@
 package composition
 
 import (
-	"github.com/secureprospective/TheWarRoom/internal/lab"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -31,11 +31,6 @@ type Reading[T any] struct {
 // MarketRange is the wire twin of report.Range, on every report row and pool market fact.
 type MarketRange struct {
 	Max float64 `json:"max,omitempty"`
-	lab.Interval
+	report.Interval
 	Text string `json:"text"`
-}
-
-// lab returns the shared decode, preserving the zero-state fallback.
-func (a *App) lab() (*lab.Data, error) {
-	return a.core.LabFacts() //nolint:wrapcheck // Preserve the frozen Lab loader error text.
 }

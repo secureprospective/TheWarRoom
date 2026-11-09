@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -16,10 +17,13 @@ import (
 
 func readStatQueue(t *testing.T, f *legalityFixture) commissioner.StatQueue {
 	t.Helper()
-	out, err := newCommissionerAPI(f.app).TargetStatQueue(legalityLeague, 2026)
+	out, err := newCommissionerAPI(f.app).TargetStatQueue(legalityLeague, 2026, "")
 	if err != nil {
 		t.Fatal(err)
 	}
+	out.Decided = slices.DeleteFunc(out.Decided, func(d commissioner.StatDecision) bool {
+		return f.pins[d.Entry]
+	})
 	return out
 }
 
@@ -50,6 +54,7 @@ func assertQueue(t *testing.T, f *legalityFixture, open, decided int, newest str
 func TestNativeStatQueueCM031ApprovalGovernsScoreAndQueue(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	for pass := 0; pass < 2; pass++ {
 		assertNativePoints(t, f, 15000)
@@ -110,6 +115,7 @@ func TestNativeStatQueueCM031CorrectionGovernsScoreAndQueue(t *testing.T) {
 func TestNativeStatFeedRevisionNeverMovesTheScoreOnItsOwn(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	holdNativeStats(t, f, true, "DT", "3", 3)
 	for range 2 {
@@ -129,6 +135,7 @@ func TestNativeStatFeedRevisionNeverMovesTheScoreOnItsOwn(t *testing.T) {
 func TestNativeStatRejectedItemSurvivesTheFeedReturningToWhatWasCounted(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	item := readStatQueue(t, f).Open[0]
 	statDecide(t, f, commissioner.StatReject, "reject", commissioner.RawStatChange{Item: item.ID})
@@ -149,6 +156,7 @@ func TestNativeStatRejectedItemSurvivesTheFeedReturningToWhatWasCounted(t *testi
 func TestNativeStatPreviewStatesPointsAndFlipBeforeItFires(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	item := readStatQueue(t, f).Open[0]
 	houses := readDirectoryTest(t, f.app)
@@ -173,7 +181,7 @@ func TestNativeStatQueueScopeAndStartingSnapshot(t *testing.T) {
 	t.Parallel()
 	a := nativeSeedTestApp(t)
 	createNativeSeedLeague(t, a, commissioner.PresetLegacy)
-	q, err := newCommissionerAPI(a).TargetStatQueue(legalityLeague, 2026)
+	q, err := newCommissionerAPI(a).TargetStatQueue(legalityLeague, 2026, "")
 	if err != nil || q.Words != "Record the starting snapshot first" || len(q.Open) != 0 || len(q.Decided) != 0 {
 		t.Fatalf("an unseeded league queued: %+v %v", q, err)
 	}
@@ -181,7 +189,7 @@ func TestNativeStatQueueScopeAndStartingSnapshot(t *testing.T) {
 		league string
 		season int
 	}{{"native.", 2026}, {"native.missing", 2026}, {legalityLeague, 1919}} {
-		if _, err := newCommissionerAPI(a).TargetStatQueue(scope.league, scope.season); err == nil {
+		if _, err := newCommissionerAPI(a).TargetStatQueue(scope.league, scope.season, ""); err == nil {
 			t.Fatalf("invalid scope accepted: %+v", scope)
 		}
 	}
@@ -193,6 +201,7 @@ func TestNativeStatQueueWireFixtureMatchesGo(t *testing.T) {
 	at := func(hour int) {
 		f.app.core.History.SetClock(func() time.Time { return time.Date(2026, 10, 13, hour, 0, 0, 0, time.UTC) })
 	}
+	pinNativeStats(t, f)
 	readings := []commissioner.StatQueue{readStatQueue(t, f)}
 	holdNativeStats(t, f, true, "LB", "3", 2)
 	readings = append(readings, readStatQueue(t, f))

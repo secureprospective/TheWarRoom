@@ -84,10 +84,10 @@ describe('The launchers replace the old inline desk', () => {
       await settle();
       expect(control(dialogOf(host)!, 'League name')).toBeDefined();
     });
-  it('keeps one league picker with the selected league', async () => {
+  it('leaves league selection to the rail picker', async () => {
     const { host } = await landing();
-    expect(all(host, 'label').filter(l => l.textContent.startsWith('App league'))).toHaveLength(1);
-    expect(control(host, 'App league').props().value).toBe('native.rules');
+    expect(all(host, 'label').filter(l => l.textContent.startsWith('App league'))).toHaveLength(0);
+    expect(leagueState.peek().selected).toBe('native.rules');
   });
   it.each([
     { role: 'owner', people: peopleWire.owner },

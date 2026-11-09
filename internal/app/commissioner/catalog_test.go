@@ -45,9 +45,13 @@ func TestNativeCatalogPublication(t *testing.T) {
 	}
 	// Generic dispatch/preview doors cannot be published as commands with one blanket role.
 	// The desktop's local sign-in links an identity, and its backup copies its own files; neither is
-	// a league command a server could publish.
+	// a league command a server could publish. Withdrawing a named read changes nothing in the league.
+	// A preset apply dispatches the domain's own commish.rules.set changes, as the generic execute does.
 	generic := map[string]bool{"TargetCommissionerExecute": true, "TargetCommissionerPreview": true, "TargetNativeScorePreview": true,
-		"TargetCommissionerSeat": true, "TargetCommissionerSeatSignIn": true, "TargetBackupNow": true}
+		"TargetCommissionerPresetApply": true,
+		"TargetWorkflow":                true,
+		"TargetCommissionerSeat":        true, "TargetCommissionerSeatSignIn": true, "TargetSignInFacts": true, "TargetBackupNow": true,
+		"TargetCancelRead": true}
 	typ := reflect.TypeFor[*API]()
 	for i := range typ.NumMethod() {
 		name := typ.Method(i).Name
@@ -178,4 +182,17 @@ func TestDraftPickCatalogMatchesOwnerInput(t *testing.T) {
 			t.Fatal("draft pick must accept an owner choice, not a computed contract")
 		}
 	}
+}
+
+func TestWorkflowDesktopGravityDependsOnAction(t *testing.T) {
+	t.Parallel()
+	for _, command := range Commands() {
+		if command.Method == "TargetWorkflow" {
+			if command.Gravity != "argument-dependent" {
+				t.Fatalf("workflow gravity = %q", command.Gravity)
+			}
+			return
+		}
+	}
+	t.Fatal("workflow is missing from the desktop catalog")
 }

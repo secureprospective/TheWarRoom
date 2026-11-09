@@ -10,51 +10,15 @@ import (
 	"testing"
 	"time"
 
-	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
-	"github.com/secureprospective/TheWarRoom/internal/app/comms/commstest"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
-	"github.com/secureprospective/TheWarRoom/internal/store/state"
 
-	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
-	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
-
-func TestLandingDropUsesLastHeldWeekNotMirror(t *testing.T) {
-	t.Parallel()
-	in := realComms(t)
-	in.mirror.Players = nil
-	id, err := playerid.New("16162")
-	if err != nil {
-		t.Fatal(err)
-	}
-	first, last, future := int64(100), int64(200), int64(400)
-	in.rosterTimes = rosterWeekTimes(facts.NflGameColumns{Year: []int64{2026, 2026, 2026, 2026},
-		Week: []int64{1, 2, 2, 3}, Kickoff: []*int64{&first, &first, &last, &future}})
-	salary, old, later := 0.58, 0.4, 9.0
-	end := "2028"
-	in.rosters = facts.RosterWeekColumns{Year: []int64{2026, 2026, 2026, 2026, 2026},
-		Week: []int64{1, 3, 2, 0, 2}, Fid: []string{"0001", "0001", "0001", "0001", "0002"},
-		Pid:          []string{"16162", "16162", "16162", "16162", "16162"},
-		Salary:       []*float64{&old, &later, &salary, &later, &later},
-		ContractYear: []*string{&end, &end, &end, &end, &end}}
-	tx := leaguefeed.Transaction{Kind: "FREE_AGENT", Franchise: "0001", Time: time.Unix(300, 0),
-		AddsDrops: &leaguefeed.RosterChange{Out: []leaguefeed.Asset{{Player: &id}}}}
-	got := in.transactionSentence(tx)
-	if !strings.Contains(got, "dropped Jahmyr Gibbs") || !strings.Contains(got, "$580,000, contract through 2028") {
-		t.Fatal(got)
-	}
-	tx.Franchise = "0003"
-	if got := in.transactionSentence(tx); !strings.Contains(got, "salary not held") {
-		t.Fatal(got)
-	}
-}
 
 func TestLandingNewsTodayCacheNormalOldCacheOneNotice(t *testing.T) {
 	t.Parallel()
@@ -261,32 +225,4 @@ func TestLandingAlertOrderUrgencyGravityID(t *testing.T) {
 		alerts[2].PlayerID != "16162" || alerts[3].Kind != "lineup" {
 		t.Fatal(alerts)
 	}
-}
-
-// The Now landing scenario retains its fixture facade without owning Comms construction.
-type commsLandingInput struct {
-	commsapp.Input
-	mirror      state.MirrorSnapshot
-	rosters     facts.RosterWeekColumns
-	rosterTimes map[[2]int64]int64
-}
-
-func realComms(t *testing.T) commsLandingInput {
-	t.Helper()
-	in := commstest.Real(t)
-	return commsLandingInput{Input: in, mirror: in.Mirror, rosters: in.Rosters, rosterTimes: in.RosterTimes}
-}
-
-func rosterWeekTimes(games facts.NflGameColumns) map[[2]int64]int64 {
-	return commsapp.RosterWeekTimes(games)
-}
-
-func (in commsLandingInput) transactionSentence(tx leaguefeed.Transaction) string {
-	in.Mirror, in.Rosters, in.RosterTimes = in.mirror, in.rosters, in.rosterTimes
-	in.Transactions.Value = []leaguefeed.Transaction{tx}
-	board, err := commsapp.Build(in.Input, commsapp.RawCommsScope{})
-	if err != nil {
-		return err.Error()
-	}
-	return board.Events[0].Sentence
 }

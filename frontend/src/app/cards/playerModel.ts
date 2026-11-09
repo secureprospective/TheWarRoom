@@ -91,7 +91,7 @@ export function playerCardModel(
     ],
     status,
     contractStatus: contract?.contractStatus ?? 'Unavailable',
-    salary: contract ? formatMoney(contract.salary) : 'Unavailable',
+    salary: contract?.salary != null ? formatMoney(contract.salary) : 'Unavailable',
     years:
       contract?.yearsRemaining === undefined
         ? undefined

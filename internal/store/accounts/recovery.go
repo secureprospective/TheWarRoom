@@ -51,6 +51,46 @@ func (s *Store) ReplaceRecoveryCodes(ctx context.Context, accountID, proofDigest
 	return nil
 }
 
+// StoreInitialRecoveryCodes writes the first set for a just-created account. It is a trusted port
+// used only by the claim that created the account; it does not consult a second factor.
+func (s *Store) StoreInitialRecoveryCodes(ctx context.Context, accountID string, digests [identity.RecoveryCodeCount]string) error {
+	if err := validateTOTPAccount(accountID); err != nil {
+		return err
+	}
+	for _, digest := range digests {
+		if !validSecretDigest(digest) {
+			return identity.ErrRecoveryRefused
+		}
+	}
+	tx, err := s.pools.BeginWrite(ctx)
+	if err != nil {
+		return fmt.Errorf("accounts: begin initial recovery codes: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	var exists bool
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM accounts WHERE id = ?)`, accountID).Scan(&exists); err != nil {
+		return fmt.Errorf("accounts: initial recovery account: %w", err)
+	}
+	if !exists {
+		return identity.ErrNotFound
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM account_recovery_codes WHERE account_id = ?`, accountID); err != nil {
+		return fmt.Errorf("accounts: replace recovery codes: %w", err)
+	}
+	for _, digest := range digests {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO account_recovery_codes(account_id, code_hash) VALUES (?, ?)`, accountID, digest); err != nil {
+			return fmt.Errorf("accounts: save recovery code: %w", err)
+		}
+	}
+	if err := recoveryAudit(ctx, tx, accountID, "recovery_codes_issued", "", s.now().UTC().UnixNano()); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("accounts: commit initial recovery codes: %w", err)
+	}
+	return nil
+}
+
 // ResetAccount is a trusted service port. An empty digest is allowed only after
 // offline-key verification by the local console service, never by league policy.
 func (s *Store) ResetAccount(ctx context.Context, username, passwordHash, codeDigest, reason string) error {

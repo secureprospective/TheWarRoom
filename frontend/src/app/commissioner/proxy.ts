@@ -195,9 +195,9 @@ export function createLeagueState(proxy = createProxy(live)) {
   // The picker is read first and kept even when one league cannot be read, so the commissioner can still
   // choose another league or fix this one; each reading that failed is named. The query samples the league
   // only for its current request, so a superseded choice never publishes its picker or starts its readings.
-  async function choose(league = '') {
+  async function choose(league?: string) {
     const was = store.getState().selected;
-    if (league && league !== was) store.setState(readings);
+    if (league !== undefined && league !== was) store.setState(readings);
     let choices: NativeLeague[] = [];
     let selected = '';
     await query.load(() => {
@@ -205,7 +205,7 @@ export function createLeagueState(proxy = createProxy(live)) {
       return [selected];
     }, { before: async () => {
       choices = await proxy.leagues();
-      selected = league || was || choices[0]?.id || '';
+      selected = league ?? (was || choices[0]?.id || '');
       if (selected && !choices.some(choice => choice.id === selected))
         throw new Error('This app league is no longer available. Choose another league.');
     } });

@@ -1,6 +1,5 @@
 import { Act } from '../commands/Act';
 import type { BidFormState, FormField, Preview } from './contract';
-import { Rules } from './BidPlans';
 import { poolState } from './state';
 
 const edit = (field: FormField) => (value: string | number | boolean) => poolState.edit(field, value);
@@ -53,8 +52,6 @@ function ClosingTime({ form, note }: { form: BidFormState; note?: string }) {
 
 function ConditionalDrop({ form, preview }: { form: BidFormState; preview: Preview }) {
   const selected = form.conditionalDrop;
-  const over = preview.rules.some((r) => r.rule === 'cap-room' && r.verdict === 'fail');
-  if (!selected && !over) return null;
   const chosen = preview.conditionalDrops?.find((p) => p.id === selected);
   return (
     <div className="bid-field">
@@ -68,7 +65,7 @@ function ConditionalDrop({ form, preview }: { form: BidFormState; preview: Previ
         </Act>
       </span> : <Act variant="text" verb="market"
         args={{ field: 'pool-conditional-change', value: '' }}>
-        Over your cap room? Name a conditional drop
+        Name a conditional drop
       </Act>}
       {form.conditionalOpen && <>
         <select aria-label="Conditional drop if you win" value={selected ?? ''}
@@ -87,17 +84,8 @@ function ConditionalDrop({ form, preview }: { form: BidFormState; preview: Previ
   );
 }
 
-// The rules box above already states every rule that holds the plan back, in full, so the status
-// line only points at them instead of repeating their reasons.
-function blockedLine(preview: Preview) {
-  const held = preview.rules.filter((r) => r.verdict === 'fail' || r.verdict === 'unknown').length;
-  if (held === 0) return `Blocked: ${preview.note}.`;
-  const which = held === 1 ? 'the rule above' : `the ${held} rules above`;
-  return `Blocked by ${which}. Saved now, the plan waits as Blocked until it passes.`;
-}
-
 function PreviewView({ preview, form }: { preview?: Preview; form?: BidFormState }) {
-  if (!preview) return <p role="status">Checking the bid rules…</p>;
+  if (!preview) return <p role="status">Reading the bid…</p>;
   if (preview.problem) return <p role="status" className="bid-problem">{preview.problem}</p>;
   return (
     <div className="bid-preview" data-endpoint="C-06.7">
@@ -108,9 +96,8 @@ function PreviewView({ preview, form }: { preview?: Preview; form?: BidFormState
         <dd>{preview.points}</dd>
       </dl>
       {preview.snapped && <p>{preview.snapped}.</p>}
-      <Rules rules={preview.rules} summary={preview.ruleSummary} />
       {form && <ConditionalDrop form={form} preview={preview} />}
-      <p role="status">{preview.blocked ? blockedLine(preview) : 'Every rule passes.'}</p>
+      <p role="status">The app checks no bid rules: the league judges the bid where you place it.</p>
     </div>
   );
 }

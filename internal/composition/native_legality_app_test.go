@@ -46,6 +46,8 @@ type legalityFixture struct {
 	app   *App
 	path  string
 	pools *db.Pools
+	// pins are the ledger entries of fixture stat pins, which readStatQueue leaves out of the decisions.
+	pins map[string]bool
 }
 
 func legalityRaw(id, position, draft string) players.RawPlayer {
@@ -153,7 +155,15 @@ func legalityAppWith(t *testing.T, ends map[string]int, named []snapshot.Player)
 	a.core.SeasonDraftResults = heldSeasonFeed[[]draftreports.Pick]{FetchedAt: at, Value: []draftreports.Pick{}}
 	a.core.SeasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{FetchedAt: at, Value: []draftreports.FuturePick{}}
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
-	seedNativeTest(t, a, input)
+	raw, err := a.nativeSeedCommand(t.Context(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// These historical fixtures observed the roster before their held games, not at the wall clock.
+	raw.Args.Native.RosterAt = at
+	if _, err := a.core.History.ExecuteCommissioner(t.Context(), raw, "creator", a.core.CommissionerAuthorizer); err != nil {
+		t.Fatal(err)
+	}
 	return &legalityFixture{app: a, path: path, pools: pools}
 }
 
@@ -327,6 +337,22 @@ func TestInvalidLineupPenaltyAndMissedFlagAreTheLeaguesChoice(t *testing.T) {
 		return fmt.Sprintf("%s %v %v", v.Status, v.Flagged, v.Penalty == "")
 	}
 	f.governs(t, "lineup.missedFlag", `false`, missed, "missed true true", "missed false true")
+}
+
+func TestLineupLockIsTheLeaguesChoice(t *testing.T) {
+	t.Parallel()
+	f := legalityApp(t)
+	lock := func(t *testing.T, f *legalityFixture) string {
+		t.Helper()
+		for _, line := range f.lineup(t, firstStarters(21)).Rules {
+			if line.Label == "Lineup lock" {
+				return line.Words
+			}
+		}
+		t.Fatal("lineup lock missing from the lineup check")
+		return ""
+	}
+	f.governs(t, "lineup.lock", `"each_player_game"`, lock, "Week’s first kickoff", "Each player’s game")
 }
 
 func TestInjuredReserveRulesGovernWhoMustLeave(t *testing.T) {
@@ -520,7 +546,7 @@ func TestNativeGovernedCatalogueHasNoOrphanedFields(t *testing.T) {
 		}
 	}
 	proved := []string{"roster.limits", "roster.reserveExcluded", "roster.positionBounds",
-		"lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag", "ir.slots",
+		"lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag", "lineup.lock", "ir.slots",
 		"ir.eligible", "ir.mustLeaveHealthy", "ir.autoReturn", "taxi.autoPromote", "taxi.slots", "taxi.maximumYears", "taxi.basis", "house.texts"}
 	for _, path := range proved {
 		if !seen[path] {

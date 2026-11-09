@@ -271,6 +271,45 @@ export const readCommands = {
     "Items": null
   }
 },
+"commissioner.TargetCommissionerPresetCompare": {
+  "command": "commish.rules.preset.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "league",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "preset",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "commissioner.TargetCommissionerSchedule": {
   "command": "commish.schedule.read",
   "arguments": {
@@ -1130,6 +1169,271 @@ export const readCommands = {
     "Items": null
   }
 },
+"commissioner.TargetNativeLineupDelta": {
+  "command": "lineupdelta.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "league",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "franchise",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "partner",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "give",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "get",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "season",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "week",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"commissioner.TargetNativeValues": {
+  "command": "value.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "league",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "franchise",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "season",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"commissioner.TargetNativeProjections": {
+  "command": "projections.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "league",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "players",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "season",
+        "Optional": false,
+        "Schema": {
+          "Type": "integer",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "week",
+        "Optional": false,
+        "Schema": {
+          "Type": "integer",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "commissioner.TargetNativePlayerScore": {
   "command": "score.player.read",
   "arguments": {
@@ -1299,6 +1603,45 @@ export const readCommands = {
     "Items": null
   }
 },
+"commissioner.TargetNativeOdds": {
+  "command": "odds.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "league",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "season",
+        "Optional": false,
+        "Schema": {
+          "Type": "integer",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "commissioner.TargetNativeStandings": {
   "command": "standings.read",
   "arguments": {
@@ -1326,6 +1669,45 @@ export const readCommands = {
         "Optional": false,
         "Schema": {
           "Type": "integer",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"commissioner.TargetNativeMoves": {
+  "command": "moves.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "league",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "franchise",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
           "Enum": null,
           "Format": "",
           "Validator": "",
@@ -1555,57 +1937,17 @@ export const readCommands = {
           "Fields": null,
           "Items": null
         }
-      }
-    ],
-    "Items": null
-  }
-},
-"comms.TargetComms": {
-  "command": "desktop.comms.TargetComms",
-  "arguments": {
-    "Type": "object",
-    "Enum": null,
-    "Format": "",
-    "Validator": "desktop adapter Raw validation",
-    "Nullable": false,
-    "Fields": [
+      },
       {
-        "Name": "raw",
+        "Name": "request",
         "Optional": false,
         "Schema": {
-          "Type": "object",
+          "Type": "string",
           "Enum": null,
           "Format": "",
           "Validator": "",
           "Nullable": false,
-          "Fields": [
-            {
-              "Name": "team",
-              "Optional": false,
-              "Schema": {
-                "Type": "string",
-                "Enum": null,
-                "Format": "",
-                "Validator": "",
-                "Nullable": false,
-                "Fields": null,
-                "Items": null
-              }
-            },
-            {
-              "Name": "kind",
-              "Optional": false,
-              "Schema": {
-                "Type": "string",
-                "Enum": null,
-                "Format": "",
-                "Validator": "",
-                "Nullable": false,
-                "Fields": null,
-                "Items": null
-              }
-            }
-          ],
+          "Fields": null,
           "Items": null
         }
       }
@@ -1749,6 +2091,32 @@ export const readCommands = {
     "Items": null
   }
 },
+"market.TargetAgeArc": {
+  "command": "desktop.market.TargetAgeArc",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "id",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "market.TargetMarketReports": {
   "command": "desktop.market.TargetMarketReports",
   "arguments": {
@@ -1824,6 +2192,45 @@ export const readCommands = {
     "Fields": [
       {
         "Name": "mine",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"offers.TargetPersonalNotes": {
+  "command": "desktop.offers.TargetPersonalNotes",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "mine",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "playerID",
         "Optional": false,
         "Schema": {
           "Type": "string",
@@ -2028,6 +2435,32 @@ export const readCommands = {
               }
             }
           ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"research.TargetPlayerUsage": {
+  "command": "desktop.research.TargetPlayerUsage",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "playerID",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
           "Items": null
         }
       }

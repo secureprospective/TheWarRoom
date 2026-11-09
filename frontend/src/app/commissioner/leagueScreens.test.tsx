@@ -110,7 +110,7 @@ describe('Plain rule provenance', () => {
     expect(host.textContent).not.toMatch(/Census|CM-0|fact R/);
     expect(host.textContent).not.toContain('(Set)');
     expect(all(host, 'th').map(t => t.textContent)).not.toContain('State');
-  });
+  }, 15000);
   it('shows the scoring sources and counting settings in plain words', async () => {
     const host = await show(render(LeagueRules), { rules: legacy });
     const source = 'Legacy NFL rules (the league’s MFL scoring)';

@@ -2,6 +2,7 @@ package commissioner
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -19,21 +20,23 @@ type NativeScoreItem struct {
 
 // Points is present only for complete evidence and settled rules; incomplete totals are separate.
 type NativePlayerScore struct {
-	League        string               `json:"league"`
-	Player        string               `json:"player"`
-	Season        int                  `json:"season"`
-	Week          int                  `json:"week"`
-	Status        string               `json:"status"`
-	Words         string               `json:"words"`
-	Points        *leaguerules.Decimal `json:"points,omitempty"`
-	PartialPoints *leaguerules.Decimal `json:"partialPoints,omitempty"`
-	Position      leaguerules.Position `json:"position,omitempty"`
-	PositionWhy   string               `json:"positionWhy,omitempty"`
-	Missing       []string             `json:"missing"`
-	Items         []NativeScoreItem    `json:"items"`
-	Changes       []ScoreChange        `json:"changes"`
-	SHA256        string               `json:"sha256,omitempty"`
-	FetchedAt     *time.Time           `json:"fetchedAt,omitempty"`
+	Source        string                        `json:"source,omitempty"`
+	FieldSources  map[leaguerules.StatID]string `json:"fieldSources,omitempty"`
+	League        string                        `json:"league"`
+	Player        string                        `json:"player"`
+	Season        int                           `json:"season"`
+	Week          int                           `json:"week"`
+	Status        string                        `json:"status"`
+	Words         string                        `json:"words"`
+	Points        *leaguerules.Decimal          `json:"points,omitempty"`
+	PartialPoints *leaguerules.Decimal          `json:"partialPoints,omitempty"`
+	Position      leaguerules.Position          `json:"position,omitempty"`
+	PositionWhy   string                        `json:"positionWhy,omitempty"`
+	Missing       []string                      `json:"missing"`
+	Items         []NativeScoreItem             `json:"items"`
+	Changes       []ScoreChange                 `json:"changes"`
+	SHA256        string                        `json:"sha256,omitempty"`
+	FetchedAt     *time.Time                    `json:"fetchedAt,omitempty"`
 }
 
 func NativePlayerScoreReading(league string, scope source.RawNativeScope, records []Record,
@@ -58,13 +61,8 @@ func (m *RulesMemo) Score(league string, scope source.RawNativeScope, records []
 func nativePlayerScore(league string, scope source.RawNativeScope, records []Record,
 	evidence source.NativeEvidence, now time.Time, resolve RulesFunc,
 	fold func([]Record) ledgerFold) (NativePlayerScore, error) {
-	out, rules, ready, err := scoreRules(league, scope, records, now, resolve)
+	out, rules, folded, changes, ready, err := foldedScoreRules(league, scope, records, now, resolve, fold)
 	if err != nil || !ready {
-		return out, err
-	}
-	folded := fold(records)
-	changes, err := playerScoreChanges(records, folded.active, scope.Player, scope.Season, scope.Week)
-	if err != nil {
 		return out, err
 	}
 	if folded.err != nil {
@@ -75,7 +73,11 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 	if team, ok := nativecheck.LineCardTeam(scope.Player); ok {
 		return out.countLineCard(rules.Scoring, team, evidence, folded.effects.corrections[key], changes.Delta)
 	}
-	out.Missing = append(out.Missing, evidence.Missing...)
+	for _, missing := range evidence.Missing {
+		if evidence.Held == nil || !slices.Contains(evidence.Held.Missing, missing) {
+			out.Missing = append(out.Missing, missing)
+		}
+	}
 	counted, err := countedVersion(evidence.Versions(), folded.effects.baselines[key])
 	if err != nil {
 		return out, err
@@ -84,16 +86,22 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 	var week source.PlayerWeek
 	switch {
 	case counted != nil:
+		for _, missing := range counted.Held.Missing {
+			if !slices.Contains(out.Missing, missing) {
+				out.Missing = append(out.Missing, missing)
+			}
+		}
 		week = *counted.Held.Week
 		out.SHA256, out.FetchedAt = counted.Held.SHA256, &counted.Held.FetchedAt
 	case len(corrections) != 0:
 		week = source.PlayerWeek{Season: scope.Season, Week: scope.Week}
 		out.Missing = append(out.Missing, "Only the statistics the commissioner entered are counted; the NFL feed has none for this week")
 	default:
-		return out.withoutStatistics(evidence), nil
+		return out.uncounted(evidence, changes), nil
 	}
+	out.setSources(counted, folded.effects.baselines[key], corrections, changes.Delta)
 	week = withCorrections(week, corrections)
-	out.Position, out.PositionWhy = changes.PositionUsed(scoreFeedPosition(week.Position))
+	out.Position, out.PositionWhy = scoringPosition(week.Position, evidence.ListedPosition, changes)
 	if out.Position == "" {
 		out.Status, out.Words = "Needs a ruling", "Choose this player's position for league scoring"
 		return out, nil
@@ -101,9 +109,32 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 	return out.count(rules.Scoring, week.Line, changes.Delta)
 }
 
+// foldedScoreRules is scoreRules over the ledger's fold, read once, with the player's score changes.
+func foldedScoreRules(league string, scope source.RawNativeScope, records []Record, now time.Time, resolve RulesFunc,
+	fold func([]Record) ledgerFold) (NativePlayerScore, leaguerules.RuleSet, ledgerFold, ScoreChanges, bool, error) {
+	var folded ledgerFold
+	foldedOnce := false
+	instant := func() time.Time {
+		if !foldedOnce {
+			folded, foldedOnce = fold(records), true
+		}
+		return instantAfter(folded.latest, now)
+	}
+	out, rules, ready, err := scoreRules(league, scope, records, instant, resolve)
+	if err != nil || !ready {
+		return out, rules, folded, ScoreChanges{}, ready, err
+	}
+	instant()
+	if err := checkScoreScope(scope.Player, scope.Season, scope.Week); err != nil {
+		return out, rules, folded, ScoreChanges{}, false, err
+	}
+	changes, err := folded.scores.changes(folded.active, scope.Player, "", scope.Season, scope.Week)
+	return out, rules, folded, changes, err == nil, err
+}
+
 // scoreRules opens a score reading: the scope checked, the league seeded and its rules resolved. ready is
 // false when the reading stops before any statistics are counted.
-func scoreRules(league string, scope source.RawNativeScope, records []Record, now time.Time,
+func scoreRules(league string, scope source.RawNativeScope, records []Record, instant func() time.Time,
 	resolve RulesFunc) (NativePlayerScore, leaguerules.RuleSet, bool, error) {
 	out := NativePlayerScore{League: league, Player: scope.Player, Season: scope.Season, Week: scope.Week,
 		Status: "Unavailable", Missing: []string{}, Items: []NativeScoreItem{}, Changes: []ScoreChange{}}
@@ -117,11 +148,22 @@ func scoreRules(league string, scope source.RawNativeScope, records []Record, no
 		out.Words = "Record the starting snapshot first"
 		return out, leaguerules.RuleSet{}, false, nil
 	}
-	rules, err := resolve(records, scope.Season, ReadingInstant(records, now))
+	rules, err := resolve(records, scope.Season, instant())
 	if err != nil {
 		return out, leaguerules.RuleSet{}, false, err
 	}
 	return out, rules, true, nil
+}
+
+// uncounted reads a week no statistics version is counted for. A starter whose game has not produced a
+// line yet still plays a position; the record says which, and no position gives no reason for one. No
+// version carries the held file's own gaps, so every gap is said.
+func (out NativePlayerScore) uncounted(evidence source.NativeEvidence, changes ScoreChanges) NativePlayerScore {
+	if position, why := scoringPosition("", evidence.ListedPosition, changes); position != "" {
+		out.Position, out.PositionWhy = position, why
+	}
+	out.Missing = append(out.Missing[:0:0], evidence.Missing...)
+	return out.withoutStatistics(evidence)
 }
 
 // withoutStatistics says why no statistics are counted for the week; no zero line is made up.
@@ -196,4 +238,14 @@ func scoreFeedPosition(position string) leaguerules.Position {
 	default:
 		return ""
 	}
+}
+
+func scoringPosition(feed, listed string, changes ScoreChanges) (leaguerules.Position, string) {
+	if changes.Position != "" {
+		return changes.PositionUsed("")
+	}
+	if listed != "" {
+		return scoreFeedPosition(listed), "The position held in the player record; NFL statistics report " + orNone(feed)
+	}
+	return changes.PositionUsed(scoreFeedPosition(feed))
 }

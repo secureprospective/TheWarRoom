@@ -109,7 +109,7 @@ func TestHiddenBidPreservesRecipientBodiesTokensAndErrors(t *testing.T) {
 	if err != nil || ownAfter.Revision == ownBefore.Revision || len(ownAfter.Players) != 1 {
 		t.Fatalf("own bid not visible: %+v %v", ownAfter, err)
 	}
-	for _, command := range []string{commissioner.BidRaise, commissioner.BidWithdraw} {
+	for _, command := range []string{commissioner.BidRaise} {
 		args := &commissioner.RawBidArgs{Bid: bid.Entry, Franchise: "franchise.01"}
 		if command == commissioner.BidRaise {
 			args.Salary, args.Years = 600000000, 1

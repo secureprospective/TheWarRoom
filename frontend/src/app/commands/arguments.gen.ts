@@ -68,8 +68,6 @@ export type BrowserArgumentMap = {
  { id: string; column: number };
 "market.reports":
  { action: 'refresh' };
-"comms.read":
- { action: 'refresh' | 'team' | 'kind' | 'more' | 'open'; value: string };
 "backup.now":
  Record<string, never>;
 "commissioner.surface":
@@ -116,8 +114,6 @@ export type BrowserArgumentMap = {
  Record<string, never>;
 "calendar.summon":
  Record<string, never>;
-"comms.toggle":
- Record<string, never>;
 "overlays.close":
  Record<string, never>;
 "commandbar.open":
@@ -158,6 +154,10 @@ string
 string
 ];
 "commissioner.TargetCommissionerRules": [
+string
+];
+"commissioner.TargetCommissionerPresetCompare": [
+string,
 string
 ];
 "commissioner.TargetCommissionerSchedule": [
@@ -246,6 +246,30 @@ string
 "starters": (string)[]
 }
 ];
+"commissioner.TargetNativeLineupDelta": [
+{
+"league": string;
+"franchise": string;
+"partner": string;
+"give": (string)[];
+"get": (string)[];
+"season": number;
+"week": number
+}
+];
+"commissioner.TargetNativeValues": [
+{
+"league": string;
+"franchise": string;
+"season": number
+}
+];
+"commissioner.TargetNativeProjections": [
+string,
+string,
+number,
+number
+];
 "commissioner.TargetNativePlayerScore": [
 string,
 string,
@@ -263,9 +287,17 @@ number
 "commissioner.TargetNativeRosterCheck": [
 string
 ];
+"commissioner.TargetNativeOdds": [
+string,
+number
+];
 "commissioner.TargetNativeStandings": [
 string,
 number
+];
+"commissioner.TargetNativeMoves": [
+string,
+string
 ];
 "commissioner.TargetNativeTrades": [
 string,
@@ -287,7 +319,8 @@ string
 ];
 "commissioner.TargetStatQueue": [
 string,
-number
+number,
+string
 ];
 "offers.TargetPool": [
 {
@@ -356,7 +389,13 @@ string
 "commissioner.TargetBackupNow": [
 
 ];
+"commissioner.TargetCancelRead": [
+string
+];
 "commissioner.TargetCommissionerExecute": [
+string
+];
+"commissioner.TargetCommissionerPresetApply": [
 string
 ];
 "commissioner.TargetCommissionerPreview": [
@@ -369,6 +408,12 @@ string
 string,
 string
 ];
+"commissioner.TargetSignInFacts": [
+
+];
+"commissioner.TargetWorkflow": [
+string
+];
 "commissioner.TargetNativeBidAction": [
 {
 "league": string;
@@ -376,6 +421,7 @@ string
 "args": {
 "olineOutcome"?: ({
 "assigned": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -392,6 +438,7 @@ string
 "heldContractStatus"?: string
 })[];
 "pending": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -413,9 +460,15 @@ string
 "franchise"?: string;
 "player"?: string;
 "action"?: string;
+"status"?: string;
 "entry"?: string;
 "via"?: string;
+"history"?: ({
+"slot"?: number;
+"unverified"?: boolean
+}) | null;
 "pick"?: ({
+"slot"?: number;
 "season": number;
 "round": number;
 "original": string
@@ -559,6 +612,7 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -687,6 +741,7 @@ string
 "division": string
 })[];
 "players": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -713,6 +768,19 @@ string
 "player": string;
 "skipped": boolean
 })[];
+"pickHistory"?: ({
+"pick": {
+"slot"?: number;
+"season": number;
+"round": number;
+"original": string
+};
+"owner": string;
+"evidence": {
+"slot"?: number;
+"unverified"?: boolean
+}
+})[];
 "adjustments": ({
 "kind"?: string;
 "season"?: number;
@@ -735,6 +803,25 @@ string
 "until": string
 }) | null;
 "schedule"?: ({
+"recorded"?: ({
+"season": number;
+"cutoverWeek": number;
+"teams": ({
+"franchise": string;
+"week": number;
+"points": number;
+"result"?: string
+})[]
+}) | null;
+"fixtures"?: ({
+"week": number;
+"games": ({
+"id": string;
+"home": string;
+"away": string
+})[];
+"bye"?: string
+})[];
 "weeks"?: number;
 "pattern"?: string;
 "week"?: number;
@@ -785,6 +872,7 @@ string
 }) | null;
 "stat"?: ({
 "item"?: string;
+"items"?: (string)[];
 "player"?: string;
 "season"?: number;
 "week"?: number;
@@ -875,6 +963,7 @@ string
 "args": {
 "olineOutcome"?: ({
 "assigned": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -891,6 +980,7 @@ string
 "heldContractStatus"?: string
 })[];
 "pending": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -912,9 +1002,15 @@ string
 "franchise"?: string;
 "player"?: string;
 "action"?: string;
+"status"?: string;
 "entry"?: string;
 "via"?: string;
+"history"?: ({
+"slot"?: number;
+"unverified"?: boolean
+}) | null;
 "pick"?: ({
+"slot"?: number;
 "season": number;
 "round": number;
 "original": string
@@ -1058,6 +1154,7 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1186,6 +1283,7 @@ string
 "division": string
 })[];
 "players": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1212,6 +1310,19 @@ string
 "player": string;
 "skipped": boolean
 })[];
+"pickHistory"?: ({
+"pick": {
+"slot"?: number;
+"season": number;
+"round": number;
+"original": string
+};
+"owner": string;
+"evidence": {
+"slot"?: number;
+"unverified"?: boolean
+}
+})[];
 "adjustments": ({
 "kind"?: string;
 "season"?: number;
@@ -1234,6 +1345,25 @@ string
 "until": string
 }) | null;
 "schedule"?: ({
+"recorded"?: ({
+"season": number;
+"cutoverWeek": number;
+"teams": ({
+"franchise": string;
+"week": number;
+"points": number;
+"result"?: string
+})[]
+}) | null;
+"fixtures"?: ({
+"week": number;
+"games": ({
+"id": string;
+"home": string;
+"away": string
+})[];
+"bye"?: string
+})[];
 "weeks"?: number;
 "pattern"?: string;
 "week"?: number;
@@ -1284,6 +1414,7 @@ string
 }) | null;
 "stat"?: ({
 "item"?: string;
+"items"?: (string)[];
 "player"?: string;
 "season"?: number;
 "week"?: number;
@@ -1349,6 +1480,7 @@ string
 "args": {
 "olineOutcome"?: ({
 "assigned": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1365,6 +1497,7 @@ string
 "heldContractStatus"?: string
 })[];
 "pending": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1386,9 +1519,15 @@ string
 "franchise"?: string;
 "player"?: string;
 "action"?: string;
+"status"?: string;
 "entry"?: string;
 "via"?: string;
+"history"?: ({
+"slot"?: number;
+"unverified"?: boolean
+}) | null;
 "pick"?: ({
+"slot"?: number;
 "season": number;
 "round": number;
 "original": string
@@ -1532,6 +1671,7 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1660,6 +1800,7 @@ string
 "division": string
 })[];
 "players": ({
+"contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
 "name"?: string;
@@ -1686,6 +1827,19 @@ string
 "player": string;
 "skipped": boolean
 })[];
+"pickHistory"?: ({
+"pick": {
+"slot"?: number;
+"season": number;
+"round": number;
+"original": string
+};
+"owner": string;
+"evidence": {
+"slot"?: number;
+"unverified"?: boolean
+}
+})[];
 "adjustments": ({
 "kind"?: string;
 "season"?: number;
@@ -1708,6 +1862,25 @@ string
 "until": string
 }) | null;
 "schedule"?: ({
+"recorded"?: ({
+"season": number;
+"cutoverWeek": number;
+"teams": ({
+"franchise": string;
+"week": number;
+"points": number;
+"result"?: string
+})[]
+}) | null;
+"fixtures"?: ({
+"week": number;
+"games": ({
+"id": string;
+"home": string;
+"away": string
+})[];
+"bye"?: string
+})[];
 "weeks"?: number;
 "pattern"?: string;
 "week"?: number;
@@ -1758,6 +1931,7 @@ string
 }) | null;
 "stat"?: ({
 "item"?: string;
+"items"?: (string)[];
 "player"?: string;
 "season"?: number;
 "week"?: number;
@@ -1815,18 +1989,6 @@ string
 "visibility": string;
 "gravity"?: string
 }
-];
-"comms.TargetComms": [
-{
-"team": string;
-"kind": string
-}
-];
-"comms.TargetCommsRefresh": [
-boolean
-];
-"comms.TargetOpenComms": [
-string
 ];
 "contracts.TargetAcquisition": [
 {
@@ -1893,6 +2055,10 @@ string
 "move": string
 }
 ];
+"control.TargetMFLMigration": [
+string,
+string
+];
 "control.DeleteMFLKey": [
 
 ];
@@ -1957,6 +2123,9 @@ boolean
 "market.TargetAssetBoard": [
 
 ];
+"market.TargetAgeArc": [
+string
+];
 "market.TargetMarketReports": [
 
 ];
@@ -1987,8 +2156,14 @@ string
 "entity": string;
 "id": string;
 "text": string;
-"action": string
+"action": string;
+"at"?: string;
+"with"?: string
 }
+];
+"offers.TargetPersonalNotes": [
+string,
+string
 ];
 "offers.TargetPersonalHandOff": [
 string
@@ -2009,6 +2184,12 @@ string
 ];
 "platform.TargetHandOff": [
 string
+];
+"platform.TargetInjuries": [
+
+];
+"platform.TargetLeagues": [
+
 ];
 "platform.TargetMoves": [
 string
@@ -2047,6 +2228,9 @@ boolean
 boolean
 ];
 "research.TargetResearchNewsRefresh": [
+string
+];
+"research.TargetPlayerUsage": [
 string
 ];
 "research.TargetResearchPlayer": [
@@ -2127,20 +2311,69 @@ export type WorkflowArgumentMap = {
 "bids.read": NativeArguments<"bids.read">;
 "draft.read": NativeArguments<"draft.read">;
 "lineup.read": NativeArguments<"lineup.read">;
+"value.read": NativeArguments<"value.read">;
 "native.reserve.check": NativeArguments<"native.reserve.check">;
 "results.read": NativeArguments<"results.read">;
 "native.roster.check": NativeArguments<"native.roster.check">;
+"odds.read": NativeArguments<"odds.read">;
 "standings.read": NativeArguments<"standings.read">;
+"moves.read": NativeArguments<"moves.read">;
 "trades.read": NativeArguments<"trades.read">;
 "waivers.read": NativeArguments<"waivers.read">;
+"commish.rules.set": NativeArguments<"commish.rules.set">;
+"contract.action.set": NativeArguments<"contract.action.set">;
 "season.rollover": NativeArguments<"season.rollover">;
+"commish.calendar.exception": NativeArguments<"commish.calendar.exception">;
+"correct.roster": NativeArguments<"correct.roster">;
+"correct.transaction": NativeArguments<"correct.transaction">;
+"correct.provenance": NativeArguments<"correct.provenance">;
+"correct.pick": NativeArguments<"correct.pick">;
+"rule.exception": NativeArguments<"rule.exception">;
+"draft.order.auto": NativeArguments<"draft.order.auto">;
+"draft.order.set": NativeArguments<"draft.order.set">;
+"draft.order.pattern": NativeArguments<"draft.order.pattern">;
+"draft.order.tiebreak": NativeArguments<"draft.order.tiebreak">;
+"draft.start": NativeArguments<"draft.start">;
 "draft.pick": NativeArguments<"draft.pick">;
 "draft.skip": NativeArguments<"draft.skip">;
+"draft.assign": NativeArguments<"draft.assign">;
+"draft.insert": NativeArguments<"draft.insert">;
+"draft.change": NativeArguments<"draft.change">;
 "draft.timer": NativeArguments<"draft.timer">;
+"draft.revert": NativeArguments<"draft.revert">;
+"draft.archive": NativeArguments<"draft.archive">;
+"draft.startup.open": NativeArguments<"draft.startup.open">;
+"calendar.window.set": NativeArguments<"calendar.window.set">;
+"calendar.window.move": NativeArguments<"calendar.window.move">;
+"calendar.window.remove": NativeArguments<"calendar.window.remove">;
+"commish.contract.edit": NativeArguments<"commish.contract.edit">;
+"commish.cap.adjust": NativeArguments<"commish.cap.adjust">;
+"commish.cap.relief": NativeArguments<"commish.cap.relief">;
+"commish.reserve.exception": NativeArguments<"commish.reserve.exception">;
+"schedule.generate": NativeArguments<"schedule.generate">;
+"schedule.edit": NativeArguments<"schedule.edit">;
+"schedule.publish": NativeArguments<"schedule.publish">;
+"bracket.build": NativeArguments<"bracket.build">;
+"bracket.edit": NativeArguments<"bracket.edit">;
+"bracket.seed": NativeArguments<"bracket.seed">;
+"bracket.preset.save": NativeArguments<"bracket.preset.save">;
+"bracket.advance": NativeArguments<"bracket.advance">;
 "commish.standings.record.adjust": NativeArguments<"commish.standings.record.adjust">;
+"commish.standings.override": NativeArguments<"commish.standings.override">;
 "commish.standings.override.clear": NativeArguments<"commish.standings.override.clear">;
+"commish.stat.queue.approve": NativeArguments<"commish.stat.queue.approve">;
+"commish.stat.queue.reject": NativeArguments<"commish.stat.queue.reject">;
+"commish.stat.correct": NativeArguments<"commish.stat.correct">;
+"commish.player.position": NativeArguments<"commish.player.position">;
+"commish.player.position.clear": NativeArguments<"commish.player.position.clear">;
+"commish.score.player": NativeArguments<"commish.score.player">;
 "commish.score.franchise": NativeArguments<"commish.score.franchise">;
 "commish.lineup.set": NativeArguments<"commish.lineup.set">;
+"commish.lineup.correct": NativeArguments<"commish.lineup.correct">;
+"title.set": NativeArguments<"title.set">;
+"history.link": NativeArguments<"history.link">;
+"commish.notice.publish": NativeArguments<"commish.notice.publish">;
+"commish.whatsnew.post": NativeArguments<"commish.whatsnew.post">;
 "trade.offer": NativeArguments<"trade.offer">;
 "trade.accept": NativeArguments<"trade.accept">;
 "trade.decline": NativeArguments<"trade.decline">;
@@ -2160,8 +2393,10 @@ export type WorkflowArgumentMap = {
 "bid.place": NativeArguments<"bid.place">;
 "bid.raise": NativeArguments<"bid.raise">;
 "bid.withdraw": NativeArguments<"bid.withdraw">;
+"oline.auction.close": NativeArguments<"oline.auction.close">;
 "bids.process": NativeArguments<"bids.process">;
 "bids.award.override": NativeArguments<"bids.award.override">;
+"commish.franchise.edit": NativeArguments<"commish.franchise.edit">;
 };
 export type CommandArgumentMap = {
  native: { [K in NativeCommandId]: NativeArguments<K> };

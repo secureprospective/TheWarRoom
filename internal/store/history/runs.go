@@ -163,6 +163,31 @@ func (s *Store) LatestRun(ctx context.Context, season int, kind RunKind) (Run, b
 	return s.run(ctx, `WHERE season = ? AND kind = ? ORDER BY run_id DESC LIMIT 1`, season, string(kind))
 }
 
+// RunParams returns the parameter set a run scored with. ok is false when the set is absent, or
+// when no store is open yet.
+func (s *Store) RunParams(ctx context.Context, paramSetID string) (ParamSet, bool, error) {
+	if s == nil || paramSetID == "" {
+		return ParamSet{}, false, nil
+	}
+	var measures, values string
+	err := s.pools.Read().QueryRowContext(ctx,
+		`SELECT measures, params FROM param_sets WHERE param_set_id = ?`, paramSetID).Scan(&measures, &values)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ParamSet{}, false, nil
+	}
+	if err != nil {
+		return ParamSet{}, false, fmt.Errorf("history: read param set %s: %w", paramSetID, err)
+	}
+	var p ParamSet
+	if err := json.Unmarshal([]byte(values), &p.Params); err != nil {
+		return ParamSet{}, false, fmt.Errorf("history: param set %s params: %w", paramSetID, err)
+	}
+	if err := json.Unmarshal([]byte(measures), &p.Measures); err != nil {
+		return ParamSet{}, false, fmt.Errorf("history: param set %s measures: %w", paramSetID, err)
+	}
+	return p, true, nil
+}
+
 // PreviousRun returns the newest run of the same kind and season before r. ok is false when r
 // is the first.
 func (s *Store) PreviousRun(ctx context.Context, r Run) (Run, bool, error) {

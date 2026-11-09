@@ -4,7 +4,60 @@ import { readCommands, type ReadArguments, type ReadCommandId } from '../command
 import { validateShape } from '../commands/shape';
 
 export type ReadStatus = { pending: boolean; error: string };
-type LoadOptions = { before?: () => Promise<void>; policy?: 'revalidate' | 'cache-first' };
+
+// Reads of the same reader and scope never overlap: a slow reading must not stack up copies of itself
+// behind every poll and change event. A request while one runs queues at most one read after it, so a
+// change that lands mid-read is still read; further requests join that queued read. 'join' asks only for
+// the newest result already coming. Shared across query instances; nothing is kept after it settles.
+type Flight = { running: Promise<unknown>; queued?: Promise<unknown> };
+const inflight = new WeakMap<object, Map<string, Flight>>();
+const settle = () => undefined;
+export function joinRead<T>(reader: object, key: string, read: () => Promise<T>,
+  mode: 'after' | 'join' = 'after'): Promise<T> {
+  let flights = inflight.get(reader);
+  if (!flights) { flights = new Map(); inflight.set(reader, flights); }
+  const map = flights;
+  const held = map.get(key);
+  const done = (flight: Flight, p: Promise<unknown>) => {
+    if (flight.running === p && !flight.queued && map.get(key) === flight) map.delete(key);
+  };
+  if (!held) {
+    // The caller gets read's own promise, so joining adds no turn of the event loop to a lone read.
+    const running = read();
+    const flight: Flight = { running };
+    map.set(key, flight);
+    running.then(() => done(flight, running), () => done(flight, running));
+    return running;
+  }
+  if (held.queued || mode === 'join') return (held.queued ?? held.running) as Promise<T>;
+  const queued: Promise<T> = held.running.then(settle, settle).then(() => {
+    held.queued = undefined;
+    held.running = queued;
+    return read();
+  });
+  held.queued = queued;
+  queued.then(() => done(held, queued), () => done(held, queued));
+  return queued;
+}
+
+// poll runs read now and again `every` ms after each read completes, so reads never overlap. The
+// returned stop cancels the next read; a read already running is left to settle and is ignored.
+export function poll(read: () => Promise<unknown> | void, every: number): () => void {
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const run = async () => {
+    timer = undefined;
+    if (stopped) return;
+    try { await read(); } catch { /* the reader reports its own failure */ }
+    if (!stopped) timer = setTimeout(() => void run(), every);
+  };
+  void run();
+  return () => { stopped = true; if (timer !== undefined) clearTimeout(timer); };
+}
+// overlap: 'after' (default) reads again once a read of the same scope in flight has finished, for a
+// change that landed mid-read; 'join' takes the read already coming, for a mount or a poll.
+type LoadOptions = { before?: () => Promise<void>; policy?: 'revalidate' | 'cache-first';
+  overlap?: 'after' | 'join' };
 
 // Object order is not scope; array order is. Never share a cache between reader instances.
 function canonical(value: unknown): unknown {
@@ -82,7 +135,8 @@ export function createReadQuery<K extends ReadCommandId, T, S extends object, A 
       const cacheKey = key(requested);
       const args = canonical(requested) as A;
       const value = config.policy === 'cache-first' && cache.has(cacheKey)
-        ? cache.get(cacheKey)! : await options.read(...args);
+        ? cache.get(cacheKey)! : config.before ? await options.read(...args)
+          : await joinRead(options.read, cacheKey, () => options.read(...args), config.overlap);
       if (request !== revision) return;
       const accepted = options.accept(value, args);
       cache.delete(cacheKey);

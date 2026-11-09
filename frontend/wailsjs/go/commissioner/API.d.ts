@@ -3,9 +3,14 @@
 import {commissioner} from '../models';
 import {market} from '../models';
 import {accounts} from '../models';
+import {leagueservice} from '../models';
+import {history} from '../models';
+import {appvalue} from '../models';
 import {time} from '../models';
 
 export function TargetBackupNow():Promise<commissioner.BackupResult>;
+
+export function TargetCancelRead(arg1:string):Promise<void>;
 
 export function TargetCommissionerActor():Promise<string>;
 
@@ -28,6 +33,10 @@ export function TargetCommissionerMarket(arg1:string,arg2:string):Promise<market
 export function TargetCommissionerNotices(arg1:string):Promise<commissioner.LeagueNotes>;
 
 export function TargetCommissionerPeople(arg1:string):Promise<commissioner.People>;
+
+export function TargetCommissionerPresetApply(arg1:string):Promise<commissioner.PresetApplyResult>;
+
+export function TargetCommissionerPresetCompare(arg1:string,arg2:string):Promise<commissioner.PresetComparison>;
 
 export function TargetCommissionerPreview(arg1:string):Promise<commissioner.Preview>;
 
@@ -71,9 +80,17 @@ export function TargetNativeLineup(arg1:string,arg2:string,arg3:number,arg4:stri
 
 export function TargetNativeLineupCheck(arg1:commissioner.RawNativeLineup):Promise<commissioner.NativeLineupCheck>;
 
+export function TargetNativeLineupDelta(arg1:leagueservice.RawLineupDeltaScope):Promise<history.NativeLineupDelta>;
+
 export function TargetNativeLineupSet(arg1:string):Promise<commissioner.Receipt>;
 
+export function TargetNativeMoves(arg1:string,arg2:string):Promise<market.NativeMoves>;
+
+export function TargetNativeOdds(arg1:string,arg2:number):Promise<commissioner.NativeOdds>;
+
 export function TargetNativePlayerScore(arg1:string,arg2:string,arg3:number,arg4:number):Promise<commissioner.NativePlayerScore>;
+
+export function TargetNativeProjections(arg1:string,arg2:string,arg3:number,arg4:number):Promise<history.NativeProjections>;
 
 export function TargetNativeReserveCheck(arg1:string):Promise<commissioner.NativeReserveCheck>;
 
@@ -91,10 +108,16 @@ export function TargetNativeTradeAction(arg1:commissioner.RawCommand):Promise<co
 
 export function TargetNativeTrades(arg1:string,arg2:string):Promise<market.NativeTrades>;
 
+export function TargetNativeValues(arg1:leagueservice.RawValueScope):Promise<appvalue.Reading>;
+
 export function TargetNativeWaiverAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
 
 export function TargetNativeWaivers(arg1:string,arg2:string,arg3:time.Time):Promise<market.NativeWaivers>;
 
 export function TargetNativeWeek(arg1:commissioner.RawNativeWeekScope):Promise<commissioner.NativeWeek>;
 
-export function TargetStatQueue(arg1:string,arg2:number):Promise<commissioner.StatQueue>;
+export function TargetSignInFacts():Promise<Array<accounts.SignInFact>>;
+
+export function TargetStatQueue(arg1:string,arg2:number,arg3:string):Promise<commissioner.StatQueue>;
+
+export function TargetWorkflow(arg1:string):Promise<commissioner.WorkflowResponse>;

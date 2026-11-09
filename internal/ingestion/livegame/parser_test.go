@@ -233,3 +233,71 @@ func TestSummaryCountsTheDriveInProgressOnce(t *testing.T) {
 		t.Fatalf("plays %d, want %d", len(got.Plays), len(want.Plays))
 	}
 }
+
+func TestScoreboardCarriesCheckedGameScope(t *testing.T) {
+	body := fixture(t, "espn-scoreboard")
+	for _, tc := range []struct {
+		scope string
+		valid bool
+	}{
+		{`"season":{"year":2025,"type":2},"week":{"number":18},`, true},
+		{`"season":{"year":0,"type":2},`, false},
+		{`"week":{"number":0},`, false},
+	} {
+		scoped := strings.Replace(string(body), `"events":[{`, `"events":[{`+tc.scope, 1)
+		games, err := ParseScoreboard([]byte(scoped))
+		if !tc.valid {
+			if err == nil {
+				t.Fatal("invalid scope admitted")
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if games[0].Season != 2025 || games[0].Week != 18 || games[0].SeasonType != 2 {
+			t.Fatalf("scope lost: %+v", games[0])
+		}
+	}
+}
+
+func TestSummaryCarriesRealNumericWeek(t *testing.T) {
+	game, err := ParseSummary(fixture(t, "espn-summary-401873023"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if game.Season != 2026 || game.SeasonType != 2 || game.Week != 8 || len(game.Box) == 0 {
+		t.Fatalf("summary lost scope or players: %+v", game)
+	}
+}
+
+func TestSummaryAdmitsAndChecksScoringCategories(t *testing.T) {
+	for _, category := range []string{"fumbles", "interceptions", "kickReturns", "puntReturns", "kicking"} {
+		t.Run(category, func(t *testing.T) {
+			body := strings.ReplaceAll(string(fixture(t, "espn-summary-401872991")), `"name":"passing"`, `"name":"`+category+`"`)
+			// Captured JSON is indented; replace the formatted spelling as well.
+			body = strings.ReplaceAll(body, `"name": "passing"`, `"name": "`+category+`"`)
+			game, err := ParseSummary([]byte(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, box := range game.Box {
+				if box.Category == category {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatal("scoring category silently dropped")
+			}
+			var box RawBox
+			bad := `{"team":{"id":"8","abbreviation":"DET"},"statistics":[{"name":"` + category + `","labels":["TD"],"athletes":[{"athlete":{"id":"bad","displayName":"Player"},"stats":["1"]}]}]}`
+			if err := json.Unmarshal([]byte(bad), &box); err != nil {
+				t.Fatal(err)
+			}
+			if err := box.Validate(); err == nil {
+				t.Fatal("new category escaped athlete validation")
+			}
+		})
+	}
+}

@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 import wire from './wire.testdata.json';
 import { parseResearch } from './contract';
 import { createResearchState, type ResearchReader } from './state';
-import { NewsView, ResearchView } from './Research';
 import { reportSort, sortedRows } from '../reports/sortState';
 
 const fixture = parseResearch(wire);
@@ -23,32 +22,6 @@ describe('Player research', () => {
     expect(() => parseResearch({ ...wire, players: [{ ...wire.players[0], id: 'bad' }] }))
       .toThrow('canonical player');
     expect(fixture.board.reports.find(r => r.id === 'M-038')?.rows[0].mine).toBe(true);
-  });
-  it('renders the search first, report choices, source, counting disclosure and controls', () => {
-    const html = renderToStaticMarkup(createElement(ResearchView, {
-      research: fixture, selected: ['M-052'],
-    }));
-    expect(html.indexOf('data-endpoint="M-062"')).toBeLessThan(html.indexOf('<h4>Player research'));
-    expect(html).toContain('Gibbs, Jahmyr');
-    expect(html).toContain('open a player in the Inspector');
-    expect(html).toContain('Activity');
-    expect(html).toContain('MFL-wide, not this league');
-    expect(html).toContain('How this is counted');
-    expect(html).not.toContain('confidence');
-  });
-  it('makes group, depth-grid and game-injury choices reachable and names article hand-offs', () => {
-    for (const [id, label] of [['M-040', 'Position group'], ['M-048', 'Starter grid'],
-      ['M-057', 'This week’s games']]) {
-      const html = renderToStaticMarkup(createElement(ResearchView, { research: fixture, selected: [id] }));
-      expect(html).toContain(label);
-    }
-    const html = renderToStaticMarkup(createElement(NewsView, { research: fixture }));
-    expect(html).toContain('data-endpoint="M-058"');
-    expect(html).toContain('data-endpoint="M-059"');
-    expect(html).toContain('Oct 5, 2026');
-    expect(html).not.toContain('6 days');
-    expect(html).toContain('Open article on MFL');
-    expect(html).toContain('Source: MFL player news');
   });
   it('dispatches refresh, filters, daily scoped news and only held article hand-offs', async () => {
     const r = reader();

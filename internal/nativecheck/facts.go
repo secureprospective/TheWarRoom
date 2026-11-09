@@ -73,3 +73,12 @@ func designationWords(d leaguerules.NFLStatus) string {
 	}
 	return "as " + string(d)
 }
+
+// ExperienceYears is the player's NFL seasons so far. Without a real draft year the player is a rookie.
+func ExperienceYears(season int, f PlayerFacts) int {
+	const longestCareer = 30
+	if f.DraftYearHeld && f.DraftYear >= season-longestCareer && f.DraftYear <= season {
+		return season - f.DraftYear
+	}
+	return 0
+}

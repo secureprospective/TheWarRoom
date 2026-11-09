@@ -15,39 +15,60 @@ import ReleasePlans from './ReleasePlans';
 import ContractActs, { ContractMovePanel } from './ContractActs';
 import { WhatIfPanel, WhatIfActs } from './WhatIfPanel';
 
-type Result<T> = { reading?: T; error?: string };
+type Result<T> = { reading?: T; error?: string; pending?: boolean };
+// Infer T from the returned promise, not from the progress callback.
+export type ReadPublish<T> = (reading: [T][T extends unknown ? 0 : never]) => void;
+// The one read-state helper behind every screen. Two rules keep a working read from reading as a
+// failed one. A change event while a read is in flight does not restart it: the running read
+// finishes and at most one re-read follows, so a league whose values are being prepared, emitting a
+// change about once a second, cannot hold a screen at its first partial publication for ever. And a
+// re-read keeps what is already on screen until it has its own answer: its partial publications
+// fill an empty screen only, never blank a filled one. `pending` says a read is in flight, so the
+// screen can say it is still reading rather than that nothing is available.
 export function useContractRead<T>(
   key: string,
-  read: () => Promise<T>,
+  read: (publish: ReadPublish<T>) => Promise<T>,
   provider: Pick<ContractsProvider, 'onChange'>,
-  retain = false,
 ): Result<T> {
-  const [result, setResult] = useState<Result<T> & { key: string }>({ key });
+  const [result, setResult] = useState<Result<T> & { key: string }>({ key, pending: true });
   useEffect(() => {
-    let sequence = 0;
     let active = true;
+    let running = false;
+    let again = false;
+    let held: T | undefined;
+    const keep = (next: Result<T>) => {
+      held = next.reading;
+      setResult({ key, ...next });
+    };
     const refresh = () => {
-      const request = ++sequence;
-      setResult(previous => retain && previous.key === key && previous.reading ? previous : { key });
-      void read().then(
-        (reading) => {
-          if (active && request === sequence) setResult({ key, reading });
-        },
-        (cause) => {
-          if (active && request === sequence) setResult({ key, error: String(cause) });
-        },
-      );
+      if (running) { again = true; return; }
+      running = true;
+      const filled = held !== undefined;
+      setResult(previous => previous.key === key ? { ...previous, pending: true }
+        : { key, pending: true });
+      const publish = (reading: T) => {
+        if (active && !filled) keep({ reading, pending: true });
+      };
+      void read(publish).then(
+        reading => ({ reading, pending: false }) as Result<T>,
+        cause => ({ error: String(cause), pending: false }) as Result<T>,
+      ).then(next => {
+        running = false;
+        if (!active) return;
+        if (again) { again = false; refresh(); return; }
+        keep(next);
+      });
     };
     refresh();
     const unsubscribe = provider.onChange(refresh);
     return () => {
       active = false;
-      sequence += 1;
       unsubscribe();
     };
     // key describes every argument; callers memoize the provider.
   }, [key, provider]);
-  return result.key === key ? { reading: result.reading, error: result.error } : {};
+  return result.key === key ? { reading: result.reading, error: result.error, pending: result.pending }
+    : { pending: true };
 }
 
 export function ContractReading<T>({
@@ -190,7 +211,7 @@ export function ContractPanel({
   const provider = useMemo(() => supplied ?? contractsProvider(), [supplied]);
   const result = useContractRead<Reading<PlayerContract>>(id, () => provider.player(id), provider);
   const simulation = useMemo(() => suppliedWhatIf ?? whatIfProvider(), [suppliedWhatIf]);
-  const whatif = useContractRead<Reading<WhatIf>>(mine, () => simulation.query(mine), simulation, true);
+  const whatif = useContractRead<Reading<WhatIf>>(mine, () => simulation.query(mine), simulation);
   return (
     <div className="contracts">
       <ContractReading title="Contract years" endpoint="C-06.5" {...result}>
@@ -228,7 +249,7 @@ export default function Contracts({
   const provider = useMemo(() => supplied ?? contractsProvider(), [supplied]);
   const simulation = useMemo(() => suppliedWhatIf ?? whatIfProvider(), [suppliedWhatIf]);
   const whatif = useContractRead<Reading<WhatIf>>(
-    s.franchiseId ?? '', () => simulation.query(s.franchiseId ?? ''), simulation, true,
+    s.franchiseId ?? '', () => simulation.query(s.franchiseId ?? ''), simulation,
   );
   const root = useRef<HTMLDivElement>(null);
   useWorkAnchor(root, '.contract-table tbody tr, .bid-plan');

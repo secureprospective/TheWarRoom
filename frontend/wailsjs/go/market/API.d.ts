@@ -3,6 +3,8 @@
 import {market} from '../models';
 import {report} from '../models';
 
+export function TargetAgeArc(arg1:string):Promise<market.AgeArc>;
+
 export function TargetAssetBoard():Promise<market.AssetBoard>;
 
 export function TargetMarketReports():Promise<report.Board>;

@@ -339,7 +339,8 @@ Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts
 `trades_app.go`: `TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Receipt, error)` saves an accept plan.
 `internal/envelope`: `trade.accept` watches post-hand-off TRADE asset sets; disappearance waits in DOTReview.
 
-Trade desk: `shell/TradeDesk.tsx` groups held offers; lazy `data/tradeProvider.ts` parses Go readings.
+War Room: `shell/WarRoom.tsx` owns the trade desk; Negotiations opens `shell/EntityInspector.tsx`
+for pending offers and their `OfferCard` accept/reject/withdraw plans; lazy `data/tradeProvider.ts` parses Go readings.
 Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.tsx` tracks desk hand-off.
 
 `control.API.TargetAlerts(franchiseID string) (AlertReading, error)` (`control_alerts.go` gathers) reads
@@ -500,7 +501,7 @@ two pinned what-if rosters through the coordinator, retaining exact cents, and r
 `internal/envelope/trade_acts.go` watches full asset sets; rejection/withdrawal disappearance stays
 ambiguous, never Landed. `acquisitions_app.go` prices held incoming contracts or saved bid terms
 and an optional unclaimed cut through the same coordinator. Lazy Trade desk and Contracts chunks
-host `shell/TradeBuilder.tsx` and `contracts/Acquisitions.tsx`; all controls use the command registry.
+host War Room’s trade desk and `contracts/Acquisitions.tsx`; all controls use the command registry.
 Trade receipts carry Go-authored asset labels using the desk/builder pick formatter. Proposal, rejection
 and withdrawal plans share local removal before hand-off; accept plans are unchanged. New pool bid forms
 release the old table anchor, reveal within the work column and focus the salary field after mounting.
@@ -649,7 +650,7 @@ waiver clock (`processNativeDraftsDue`); a person may close it sooner. `checkLiv
 change against the draft as it would stand, so the replay that reads it later is the one that refuses it
 now, and `DraftPreview` (`draft_preview.go`) words each change for the tray.
 
-`frontend/src/app/draftroom/` is the lazy Draft room above the Draft lab in Trade Floor › Draft room: the
+`frontend/src/app/draftroom/` is the lazy native Draft room in War Room › Draft room: the
 clock with a countdown and the pick's close in the viewer's own time (`DraftClock`), the board by round
 (`DraftBoard`), the owner's own pick (`YourPick`, `TargetNativeDraftPick`), what a close did
 (`DraftOutcome`) and, for a co-commissioner or above, the shared side tray (`DraftTray`, `trayAction.ts`).
@@ -1101,3 +1102,28 @@ runtime escape. Native callers cannot import either. Research's `LeagueReference
 only held franchise names and starter limits, implemented by the MFL config adapter without
 fetching. Composition wiring and its frozen fingerprints remain unchanged. Other reference
 views still carry explicit debt; this is a direct-import fence, not transitive isolation.
+
+## Desktop MFL move
+
+Control Room's `TargetMFLMigration` forwards validated migration commands to the
+existing migration service. Credentials use the existing OS keyring provider,
+scoped to the requested MFL league and season, never the install's one league ID.
+Creation-time presets fill only missing MFL settings; remaining catalogue answers
+are ordinary rule changes in the same creation transaction. A failed answer rolls
+back the whole league. The new league is selected through the existing shared
+commissioner state. Details and verification limits: `docs/ui/move-mfl.md`.
+
+## Reference schedule refresh
+
+`internal/composition/migration_app.go` injects resources into
+`internal/app/mflref/migration.ScheduleSync`. The fenced reference service selects followed
+schedules and imports current-week lineups inline. Played-week lineups and transaction history
+share the existing worker: first launch waits five minutes, then a ten-minute context bounds
+the import; one app-wide atomic guard prevents overlap. Scoring loads keep their shared
+serialization; failed feeds retain held ledger data. Cutover remains owned by the unchanged
+migration engine, which clears `schedule.follow`.
+
+Held membership and bye decoding lives in `internal/fantasyscore/source`; history consumes its
+validated depth/bye values, not acquisition packages. `internal/feedwire` owns singleton/array
+envelopes and API-error rejection shared by held decoding and ingestion. Acquisition wrappers
+retain their old public types as aliases. No feed selection or zero-admission policy changed.

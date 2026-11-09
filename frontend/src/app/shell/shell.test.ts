@@ -6,9 +6,9 @@ import { parseRoute, formatRoute } from './routes';
 import { FixtureProvider } from '../data/provider';
 
 describe('Shell routes and data', () => {
-  it('matches all six names and workspace names in spec §4, with the Trade Floor history exception', () => {
+  it('keeps shell names, with War Room trade/draft destinations after the rail cut', () => {
     const spec = readFileSync('../docs/ui/Target_UI_Spec_2026-10.md', 'utf8');
-    expect(nodeKeys).toEqual(['home', 'war', 'hq', 'trade', 'pulse', 'control']);
+    expect(nodeKeys).toEqual(['home', 'war', 'hq', 'pulse', 'control']);
     for (const n of nodeKeys) {
       const row = spec
         .split('\n')
@@ -20,7 +20,7 @@ describe('Shell routes and data', () => {
         names.map((name) => name.toLowerCase()).filter(name =>
           !['market', 'offers history', 'counterparties', 'archive', 'data and sources'].includes(name)),
       );
-      expect(nodes[n].workspaces.length).toBeLessThanOrEqual(n === 'trade' ? 4 : 3);
+      expect(nodes[n].workspaces.length).toBeLessThanOrEqual(3);
     }
   });
   it('round-trips every workspace and falls back safely', () => {
@@ -43,7 +43,7 @@ describe('Shell routes and data', () => {
   });
   it('leaves freshness to the status strip, without a Home summary card', () => {
     const shell = readFileSync(new URL('./TargetApp.tsx', import.meta.url), 'utf8');
-    expect(shell).toContain('From MFL (reference only)');
+    expect(shell).toContain('LeaguePicker');
     expect(shell).not.toContain('Snapshot summary');
     expect(shell).not.toContain('snapshotSummary');
   });
@@ -51,11 +51,11 @@ describe('Shell routes and data', () => {
 describe('Shell transitions through dispatch only', () => {
   it('remembers workspaces per node and isolates instances', () => {
     const c = createCommands();
-    c.dispatch('nav.open', { node: 'war', workspace: 'research' });
+    c.dispatch('nav.open', { node: 'war', workspace: 'draft-room' });
     c.dispatch('nav.open', { node: 'hq', workspace: 'contracts-and-cap' });
     c.dispatch('nav.open', { node: 'war' });
     expect(c.read().node).toBe('war');
-    expect(c.read().workspace.war).toBe('research');
+    expect(c.read().workspace.war).toBe('draft-room');
     expect(c.read().workspace.hq).toBe('contracts-and-cap');
     expect(createCommands().read().node).toBe('home');
   });
@@ -72,25 +72,19 @@ describe('Shell transitions through dispatch only', () => {
     expect(c.read().inspector).toBe('rest');
     expect(c.read().subject).toBe(null);
   });
-  it('toggles summons, comms, notice and closes overlays', () => {
+  it('toggles summons, notice and closes overlays', () => {
     const c = createCommands();
     c.dispatch('calendar.summon', {});
     expect(c.read().summoned).toBe('calendar');
     c.dispatch('calendar.summon', {});
     expect(c.read().summoned).toBe(null);
-    c.dispatch('comms.toggle', {});
-    expect(c.read().comms).toBe(true);
-    c.dispatch('comms.toggle', {});
-    expect(c.read().comms).toBe(false);
     c.dispatch('commandbar.open', {});
     expect(c.read().commandbar).toBe(true);
     c.dispatch('calendar.summon', {});
-    c.dispatch('comms.toggle', {});
     c.dispatch('overlays.close', {});
     expect(c.read()).toMatchObject({
       inspector: 'closed',
       summoned: null,
-      comms: false,
       notice: null,
     });
   });

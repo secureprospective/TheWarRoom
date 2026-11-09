@@ -65,8 +65,12 @@ func nativeSeedTestApp(t *testing.T) *App {
 
 func createNativeSeedLeague(t *testing.T, a *App, preset string) RawNativeSeedRequest {
 	t.Helper()
+	source := commissioner.SourceMFLImport
+	if preset == commissioner.PresetEmpty {
+		source = commissioner.SourceNative
+	}
 	raw := commissioner.RawCommand{League: "native.seed", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Seed league", Preset: preset, Season: 2026, FranchiseCount: 32},
+		Args:   commissioner.RawArgs{Name: "Seed league", Preset: preset, Source: source, Season: 2026, FranchiseCount: 32},
 		Reason: "Create the league", Request: "create", Effective: "now", Visibility: "league"}
 	historicalLeague(t, a, raw)
 	return RawNativeSeedRequest{League: raw.League, Expected: 1, Request: "held.start", Reason: "Start from held data"}

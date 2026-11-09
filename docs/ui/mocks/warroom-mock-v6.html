@@ -533,7 +533,7 @@ body.room{--canvas:hsl(28,9%,6%);--sunken:hsl(28,10%,4%);--tile:hsl(28,8%,8.5%);
 .mk{grid-template-columns:minmax(0,1fr) 400px;min-height:0;border-bottom:2px solid var(--black)}
 .mk>div{display:flex;flex-direction:column;min-height:0}
 .mk>div:first-child{border-right:2px solid var(--black)}
-.fa-h,.fa-r{display:grid;grid-template-columns:44px minmax(150px,1.4fr) 44px 70px 56px 120px 90px 70px;gap:10px;align-items:center;padding:0 14px}
+.fa-h,.fa-r{display:grid;grid-template-columns:22px 40px minmax(160px,1.4fr) 36px 66px 64px minmax(100px,1fr) 80px;gap:10px;align-items:center;padding:0 14px}
 .fa-h{height:30px;background:var(--sunken);border-bottom:2px solid var(--black);font:600 10px var(--mono);letter-spacing:.12em;color:var(--ink3)}
 .fa-r{height:32px;border-bottom:1px solid var(--rule);font:12px var(--mono);cursor:grab;touch-action:none;transition:transform 70ms linear}
 .fa-r:hover{background:var(--raised);transform:translateX(2px)}
@@ -541,7 +541,6 @@ body.room{--canvas:hsl(28,9%,6%);--sunken:hsl(28,10%,4%);--tile:hsl(28,8%,8.5%);
 .fa-r .ps{font:700 10px var(--mono);text-align:center;border:1px solid var(--ink3);color:var(--ink2)}
 .fa-r.need .ps{border-color:var(--amber);color:var(--amber)}
 .fa-r.bid{opacity:.35}
-.riv{display:flex;gap:2px} .riv i{width:9px;height:12px;border:1px solid var(--edge)} .riv i.on{background:var(--ink2);border-color:var(--ink2)}
 .fa-list{flex:1;min-height:0;overflow:auto}
 .bids{flex:1;min-height:0;padding:4px 0}
 .bids.over{outline:2px solid var(--edge-hi);outline-offset:-4px;background:var(--raised)}
@@ -649,11 +648,10 @@ body.room{--canvas:hsl(28,9%,6%);--sunken:hsl(28,10%,4%);--tile:hsl(28,8%,8.5%);
 .tgt.out{background:repeating-linear-gradient(-45deg,hsla(36,12%,80%,.07) 0 5px,transparent 5px 10px),var(--tile);color:var(--ink3)}
 .tgt.out .p small{color:var(--red)}
 .tgt.next{border-color:var(--edge-hi);border-left-color:var(--amber)} .tgt.next .p small{color:var(--amber)}
-.fa-h,.fa-r{grid-template-columns:22px 40px minmax(130px,1.4fr) 36px 62px 46px 64px 64px 54px}
+.fa-h,.fa-r{grid-template-columns:22px 40px minmax(160px,1.4fr) 36px 66px 64px minmax(100px,1fr) 80px}
 .fa-r .st{font:14px var(--mono);color:var(--ink3);cursor:pointer;text-align:center}
 .fa-r .st.on{color:var(--edge-hi)}
 .fa-r.out{color:var(--ink3)} .fa-r.out .nm{color:var(--ink3);text-decoration:line-through hsla(36,12%,80%,.3)}
-.trend.up{color:var(--amber)} .trend.dn{color:var(--green)}
 .bcol{position:relative}
 .budget .bar span.rest{background:transparent;border-right:0}
 .budget .bar span.b{background:var(--edge-hi)} .budget .bar span.b.d{background:repeating-linear-gradient(-45deg,var(--edge-hi) 0 3px,hsl(30,6%,40%) 3px 6px)}
@@ -760,9 +758,7 @@ body.room{--canvas:hsl(28,9%,6%);--sunken:hsl(28,10%,4%);--tile:hsl(28,8%,8.5%);
 /* lanes: status from the machine only */
 .tgt .p small.h{color:var(--green)} .tgt .p small.o{color:var(--red)} .tgt .p small.d{color:var(--blue)}
 .tgt.h{border-left-color:var(--green)} .tgt.o{border-left-color:var(--red)} .tgt.d{border-left-color:var(--blue)}
-.fa-r .bs{font:700 9px var(--mono);letter-spacing:.06em;padding:1px 4px;text-align:center}
-.fa-r .bs.h{background:var(--green);color:var(--black)} .fa-r .bs.o{background:var(--red);color:var(--black)} .fa-r .bs.d{border:1px dashed var(--blue);color:var(--blue)}
-.fa-h,.fa-r{grid-template-columns:22px 40px minmax(130px,1.4fr) 36px 62px 46px 64px 64px 54px 70px}
+.fa-h,.fa-r{grid-template-columns:22px 40px minmax(160px,1.4fr) 36px 66px 64px minmax(100px,1fr) 80px}
 /* bid column: two clear stages */
 .bstage{border-bottom:2px solid var(--black)}
 .bstage .sh{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;font:700 10px var(--mono);letter-spacing:.14em}
@@ -995,14 +991,15 @@ body.room{--canvas:hsl(28,9%,6%);--sunken:hsl(28,10%,4%);--tile:hsl(28,8%,8.5%);
       <button class="pl" style="border-style:dashed"><b>+ New plan</b><small>start empty or copy the active one</small></button></div>
     <div><div class="ch"><b id="ptitle">WIN NOW 2026</b><span>check steps off as you think them through · drag between events</span></div><div class="cols" id="pcols"></div></div>
     <div><div class="ch"><b>WHERE THINGS STAND</b><span>live from the other tabs</span></div><div id="pout"></div>
-      <div class="ch" style="border-top:2px solid var(--black)"><b>CONFLICTS</b><span id="pcn"></span></div><div id="pconf"></div></div>
+      <div class="ch" style="border-top:2px solid var(--black)"><b>CONFLICTS</b><span id="pcn"></span></div><div id="pconf"></div>
+      <div class="ch" style="border-top:2px solid var(--black)"><b>LOOKING BACK</b><span>how past talks ended</span></div><div id="pback"></div></div>
   </section>
 
   <section class="mk3 ws" id="ws-market">
     <div class="tg"><div class="ch"><b>MY TARGETS</b><span>ranked per need</span></div><div id="tgt" class="tg-l"></div></div>
     <div><div class="ch"><b>FREE AGENT POOL</b><span>in-season · drag a row to a target lane or to BIDS</span></div>
       <div class="bench"><div class="filters" id="faf"></div></div>
-      <div class="fa-h"><span></span><span>POS</span><span>PLAYER</span><span>AGE</span><span>MIN BID</span><span>VALUE</span><span>RIVALS</span><span>EST. WIN</span><span>TREND</span></div>
+      <div class="fa-h"><span></span><span>POS</span><span>PLAYER</span><span>AGE</span><span>STRING</span><span>PTS</span><span>VALUE</span><span>MIN BID</span></div>
       <div class="fa-list" id="fal"></div></div>
     <div class="bcol"><div class="budget" id="budget"></div>
       <div class="ch"><b>MY BIDS</b><span id="bstate"></span></div><div class="bids" id="bids"></div>
@@ -1272,13 +1269,17 @@ const FA=[['RB','Rachaad White',27,0.5,48,4,2.8,'RB2'],['DE','Chase Young',27,0.
  ['WR','Romeo Doubs',26,0.4,36,1,0.9,''],['DE','Josh Uche',27,0.3,33,2,0.8,'DE2'],['CB','Cam Taylor-Britt',26,0.4,31,2,1.0,''],['RB','Jaylen Wright',23,0.3,30,3,1.2,'RB2'],
  ['S','Jalen Thompson',28,0.3,27,1,0.6,''],['TE','Cade Otton',27,0.3,25,1,0.5,''],['LB','Trevin Wallace',23,0.2,24,2,0.7,'LB2'],['WR','Jalen McMillan',25,0.2,22,0,0.3,''],
  ['QB','Tyler Huntley',28,0.2,18,0,0.2,''],['CB','Kool-Aid McKinstry',23,0.3,29,3,1.1,''],['DE','Boye Mafe',27,0.4,30,2,1.0,'DE2']];
+const NFL_STRING=['RB2','DE1','RB2','LB1','WR2','DE2','CB1','RB3','S1','TE1','LB2','IR','FA','CB2','DE1'];
+const SEASON_PTS=[102.4,87.5,74.2,121.8,68.1,43.0,83.6,22.4,91.2,65.8,49.1,0,9.6,57.3,78.4];
+function marketPoolCells(r,i,watched){
+  return `<span class="st${watched?' on':''}" data-star="${i}">${watched?'★':'☆'}</span><span class="ps">${r[0]}</span><span class="nm">${r[1]}</span><span>${r[2]}</span><span>${NFL_STRING[i]||'—'}</span><span>${SEASON_PTS[i]?.toFixed(1)??'—'}</span><b>${r[4]}</b><span>$${r[3].toFixed(1)}M</span>`;
+}
 const BIDS=[{i:0,m:3.0},{i:1,m:2.0}];let faf='ALL';
 function renderMarket(){
   const inb=new Set(BIDS.map(b=>b.i));
   $('#faf').innerHTML=['ALL','MY NEEDS','WATCH'].map(f=>`<button class="chip" aria-pressed="${f===faf}" data-faf="${f}">${f}</button>`).join('');
   $('#fal').innerHTML=FA.map((r,i)=>[r,i]).filter(([r])=>faf==='ALL'||(faf==='MY NEEDS'?r[7]:[2,6].includes(FA.indexOf(r)))).map(([r,i])=>`<div class="fa-r${r[7]?' need':''}${inb.has(i)?' bid':''}" data-x="fa:${i}">
-    <span class="ps">${r[0]}</span><span class="nm">${r[1]}</span><span>${r[2]}</span><span>$${r[3].toFixed(1)}M</span><b>${r[4]}</b>
-    <span class="riv">${[0,1,2,3,4].map(k=>`<i class="${k<r[5]?'on':''}"></i>`).join('')}</span><span>$${r[6].toFixed(1)}M</span><span style="color:var(--ink2)">${r[7]||'·'}</span></div>`).join('');
+    ${marketPoolCells(r,i,false)}</div>`).join('');
   const spent=BIDS.reduce((t,b)=>t+b.m,0);
   $('#bspent').textContent='$'+spent.toFixed(2)+'M';
   $('#bbar').innerHTML=BIDS.map(b=>`<span style="width:${b.m/6.4*100}%" title="${FA[b.i][1]}"></span>`).join('');
@@ -1440,7 +1441,7 @@ $('#send').addEventListener('pointerdown',()=>{if(!mode||edited()||curWs!=='desk
 $('#send').addEventListener('click',e=>{if(curWs==='market'){e.stopImmediatePropagation();openConfirm()}},true);
 
 /* ================= v3 MARKET: targets, hard cap, submit ================= */
-var CAP=6.40,PREV=[2.4,2.3,2.5,1.4,0.9,0.9,1.0,1.0,0.6,0.5,0.6,0.3,0.2,1.0,1.1];
+var CAP=6.40;
 var TG={RB:[2,0,7],DE:[1,14,5],LB:[3,10]},STAR=new Set([2,0,7,1,14,5,3,10]);
 BIDS.length=0;BIDS.push({i:2,m:3.2,st:'s'},{i:1,m:2.2,st:'d'});
 var committed=(skip)=>BIDS.filter(b=>b.i!==skip).reduce((t,b)=>t+b.m,0);
@@ -1449,10 +1450,9 @@ function renderMarket(){
   const bid=new Map(BIDS.map(b=>[b.i,b]));
   $('#faf').innerHTML=['ALL','MY NEEDS','★ TARGETS','AFFORDABLE'].map(f=>`<button class="chip" aria-pressed="${f===faf}" data-faf="${f}">${f}</button>`).join('');
   const out=i=>!bid.has(i)&&FA[i][6]>avail(i);
-  $('#fal').innerHTML=FA.map((r,i)=>[r,i]).filter(([r,i])=>faf==='ALL'||(faf==='MY NEEDS'?r[7]:faf==='AFFORDABLE'?!out(i):STAR.has(i))).map(([r,i])=>{const dt=r[6]-PREV[i];
+  $('#fal').innerHTML=FA.map((r,i)=>[r,i]).filter(([r,i])=>faf==='ALL'||(faf==='MY NEEDS'?r[7]:faf==='AFFORDABLE'?!out(i):STAR.has(i))).map(([r,i])=>{
     return `<div class="fa-r${r[7]?' need':''}${bid.has(i)?' bid':''}${out(i)?' out':''}" data-x="fa:${i}">
-    <span class="st${STAR.has(i)?' on':''}" data-star="${i}">${STAR.has(i)?'★':'☆'}</span><span class="ps">${r[0]}</span><span class="nm">${r[1]}</span><span>${r[2]}</span><span>$${r[3].toFixed(1)}M</span><b>${r[4]}</b>
-    <span class="riv">${[0,1,2,3,4].map(k=>`<i class="${k<r[5]?'on':''}"></i>`).join('')}</span><span>$${r[6].toFixed(1)}M</span><span class="trend ${dt>0.05?'up':dt<-0.05?'dn':''}">${dt>0.05?'▲ '+dt.toFixed(1):dt<-0.05?'▼ '+(-dt).toFixed(1):'·'}</span></div>`}).join('');
+    ${marketPoolCells(r,i,STAR.has(i))}</div>`}).join('');
   /* target lanes */
   $('#tgt').innerHTML=Object.entries(TG).map(([pos,L])=>{let nx=false;
     return `<div class="lane2" data-lane="${pos}"><div class="lh">${pos}<span class="${pos!=='LB'?'hole':''}">${pos==='RB'?'THIN':pos==='DE'?'HOLE':'DEPTH'}</span></div>${L.map((i,k)=>{const r=FA[i],b=bid.get(i);let c='',s='';
@@ -1558,12 +1558,10 @@ function renderMarket(){
   const n={ALL:FA.length,'MY NEEDS':FA.filter(r=>r[7]).length,'★ TARGETS':STAR.size,AFFORDABLE:FA.filter(r=>r[3]<=left).length};
   $('#faf').innerHTML=Object.keys(n).map(f=>`<button class="chip" aria-pressed="${f===faf}" data-faf="${f}">${f}<span class="c">${n[f]}</span></button>`).join('');
   const lab={h:'HIGH BID',o:'OUTBID',d:'NOT PLACED'};
-  $('#fal').innerHTML=FA.map((r,i)=>[r,i]).filter(([r,i])=>faf==='ALL'||(faf==='MY NEEDS'?r[7]:faf==='AFFORDABLE'?r[3]<=left:STAR.has(i))).map(([r,i])=>{const dt=r[6]-PREV[i],b=bidOf(i);
+  $('#fal').innerHTML=FA.map((r,i)=>[r,i]).filter(([r,i])=>faf==='ALL'||(faf==='MY NEEDS'?r[7]:faf==='AFFORDABLE'?r[3]<=left:STAR.has(i))).map(([r,i])=>{
     return `<div class="fa-r${r[7]?' need':''}" data-x="fa:${i}">
-    <span class="st${STAR.has(i)?' on':''}" data-star="${i}">${STAR.has(i)?'★':'☆'}</span><span class="ps">${r[0]}</span><span class="nm">${r[1]}</span><span>${r[2]}</span><span>$${r[3].toFixed(1)}M</span><b>${r[4]}</b>
-    <span class="riv">${[0,1,2,3,4].map(k=>`<i class="${k<r[5]?'on':''}"></i>`).join('')}</span><span>$${r[6].toFixed(1)}M</span><span class="trend ${dt>0.05?'up':dt<-0.05?'dn':''}">${dt>0.05?'▲ '+dt.toFixed(1):dt<-0.05?'▼ '+(-dt).toFixed(1):'·'}</span>
-    <span>${b?`<span class="bs ${b.st}">${b.st==='h'?'HIGH':b.st==='o'?'OUTBID':'DRAFT'}</span>`:''}</span></div>`}).join('');
-  $('.fa-h').innerHTML='<span></span><span>POS</span><span>PLAYER</span><span>AGE</span><span>MIN BID</span><span>VALUE</span><span>RIVALS</span><span>EST. WIN</span><span>TREND</span><span>MY BID</span>';
+    ${marketPoolCells(r,i,STAR.has(i))}</div>`}).join('');
+  $('.fa-h').innerHTML='<span></span><span>POS</span><span>PLAYER</span><span>AGE</span><span>STRING</span><span>PTS</span><span>VALUE</span><span>MIN BID</span>';
   $('#tgt').innerHTML=Object.entries(TG).map(([pos,L])=>`<div class="lane2" data-lane="${pos}"><div class="lh">${pos}<span class="${pos!=='LB'?'hole':''}">${pos==='RB'?'THIN':pos==='DE'?'HOLE':'DEPTH'}</span></div>${L.map((i,k)=>{const r=FA[i],b=bidOf(i);
       return `<div class="tgt ${b?b.st:''}" data-x="fa:${i}"><span class="n">${k+1}</span><span>${r[1]}</span><span class="p">$${(b?b.m:r[6]).toFixed(1)}M<small class="${b?b.st:''}">${b?lab[b.st]:'est. win'}</small></span></div>`}).join('')}</div>`).join('');
   const used=committed(-1);
@@ -1707,7 +1705,14 @@ document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');if(g){ws(g.dataset.go);if(g.dataset.go==='draft')renderDraft();if(g.dataset.go==='market')renderMarket()}
 },true);
 
-renderNego();renderMarket();renderDraft();renderPlans();
+var BACK=[['Iron Curtain','Aug 14','ACCEPTED','s-h'],['Tundra Line','Aug 2','REJECTED','s-o'],['Iron Curtain','Jul 20','EXPIRED','s-t'],['Gulf Raiders','Jul 9','WITHDRAWN','s-t']];
+function renderBack(){
+  const by={};BACK.forEach(b=>{const t=by[b[0]]||(by[b[0]]=[0,0]);t[0]++;if(b[2]==='ACCEPTED')t[1]++});
+  $('#pback').innerHTML=`<div class="sblk"><div class="sh">PAST OFFERS</div>${BACK.map(b=>`<div class="srow"><span>${b[0]} · ${b[1]}</span><small class="${b[3]}">${b[2]}</small></div>`).join('')}</div>
+   <div class="sblk"><div class="sh">COUNTERPARTIES</div>${Object.entries(by).sort((x,y)=>y[1][0]-x[1][0]).map(([n,[o,d]])=>`<div class="srow"><span>${n}</span><b style="font:700 11px var(--mono)">${o} talk${o===1?"":"s"} · ${d} deal${d===1?'':'s'}</b></div>`).join('')}</div>
+   <div class="sblk"><div class="sh">SAVED PROPOSALS<button data-go="desk">POCKET ▸</button></div><div class="srow"><span>${PK.length} built, not sent</span><small class="s-t">${PK.length}</small></div></div>`;
+}
+renderNego();renderMarket();renderDraft();renderPlans();renderBack();
 render();inspect(byId.garrett);
 </script>
 </body>

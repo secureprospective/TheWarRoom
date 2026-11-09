@@ -15,7 +15,7 @@ import (
 func TestTeamsChangeReachesEveryReading(t *testing.T) {
 	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "teams.db"))
-	create := createWith(commissioner.PresetLegacy, 12)
+	create := importedLegacy(12)
 	create.Args.Source = commissioner.SourceNative
 	if _, err := s.ExecuteCommissionerWithFacts(t.Context(), create, "creator", nil, nil, time.UTC); err != nil {
 		t.Fatal(err)

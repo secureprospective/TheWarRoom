@@ -41,17 +41,6 @@ func TestBidOnlyOnePlanOpenPerPlayer(t *testing.T) {
 	}
 }
 
-func TestBidBlockedPlanStillCountsAsTheOpenPlan(t *testing.T) {
-	t.Parallel()
-	a := bidTestApp(t)
-	if plan, err := a.TargetBidDraft(rawBid("5", 5)); err != nil || plan.Receipt.State != envelope.Blocked {
-		t.Fatalf("blocked plan = %v, %v", plan.Receipt.State, err)
-	}
-	if _, err := a.TargetBidDraft(rawBid("5", 3)); err == nil || !strings.Contains(err.Error(), "(blocked)") {
-		t.Errorf("a blocked plan did not hold the player: %v", err)
-	}
-}
-
 func TestBidHandedOffPlanCanBeWithdrawnAndItsFactsStayFrozen(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)
@@ -117,23 +106,11 @@ func TestBidPlanWordsForTheScreens(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.RuleSummary != "11 rules pass" || len(plan.Rules) != 11 {
-		t.Errorf("summary %q over %d rules", plan.RuleSummary, len(plan.Rules))
-	}
-	if got := ruleWords(plan, "flat-salary"); got != "OK: $5,000,000 a year, the same in each of the 3 years" {
-		t.Errorf("flat salary = %q", got)
-	}
-	if got := ruleWords(plan, "tier-years"); got != "OK: Up to $12,000,000 needs at least 1 year" {
-		t.Errorf("tier = %q", got)
-	}
 	one := rawBid("5", 1)
 	one.Player = "13595"
 	short, err := a.TargetBidDraft(one)
 	if err != nil {
 		t.Fatal(err)
-	}
-	if got := ruleWords(short, "flat-salary"); got != "OK: $5,000,000 a year for its 1 year" {
-		t.Errorf("one-year flat salary = %q", got)
 	}
 	for _, p := range []BidPlan{plan, short} {
 		if !strings.HasSuffix(p.Status, ".") {
@@ -145,23 +122,14 @@ func TestBidPlanWordsForTheScreens(t *testing.T) {
 			}
 		}
 	}
-	blocked, err := a.TargetBidDraft(RawBidInput{FranchiseID: "0001", Player: "13594", Salary: "0.32", Years: 1})
-	if err != nil || !strings.HasSuffix(blocked.Status, ".") || blocked.RuleSummary == "" {
-		t.Fatalf("blocked = %q %q, %v", blocked.Status, blocked.RuleSummary, err)
-	}
-	for _, action := range blocked.Actions {
-		if action.Reason != "" && !strings.HasSuffix(action.Reason, ".") {
-			t.Errorf("reason %q does not end in a period", action.Reason)
-		}
-	}
 }
 
 func TestBidPreviewSaysWhatTheClosingTimeDoes(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)
 	none := a.TargetBidPreview(rawBid("5", 3))
-	if !strings.HasPrefix(none.ClosesNote, "No closing time is set") || none.RuleSummary != "11 rules pass" {
-		t.Errorf("without a closing time: %q, %q", none.ClosesNote, none.RuleSummary)
+	if !strings.HasPrefix(none.ClosesNote, "No closing time is set") {
+		t.Errorf("without a closing time: %q", none.ClosesNote)
 	}
 	set := rawBid("5", 3)
 	set.Closes = time.Now().Add(time.Hour).UTC().Format(time.RFC3339)

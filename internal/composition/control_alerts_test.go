@@ -37,7 +37,7 @@ func TestTargetAlerts(t *testing.T) {
 		t.Fatalf("legal lineup, one offer: %v %v", alerts, unavailable)
 	}
 	trade := r.Alerts[0]
-	if trade.Title != "1 offer to you" || trade.Node != "trade" || trade.Workspace != "trade-desk" ||
+	if trade.Title != "1 offer to you" || trade.Node != "war" || trade.Workspace != "trade-desk" ||
 		!trade.At.Equal(a.core.MovesNow().Add(time.Hour)) {
 		t.Fatalf("trade alert: %+v", trade)
 	}

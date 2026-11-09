@@ -16,7 +16,10 @@ import wire from './wire.testdata.json';
 
 const pool = () => parsePool(wire.pool);
 const board = () => parseBoard(wire.board);
-const plan = (code: string) => board().value.plans.find((p) => p.stateCode === code)!;
+// Smith (13593) and Adams (13595) are Ready; the third plan was withdrawn.
+const players: Record<string, string> = { ready: '13593', second: '13595' };
+const plan = (code: string) => board().value.plans.find((p) =>
+  players[code] ? p.playerId === players[code] : p.stateCode === code)!;
 const html = (node: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(node);
 const tick = () => new Promise((resolve) => setTimeout(resolve, 5));
 const form: BidFormState = {
@@ -96,12 +99,12 @@ describe('Fix 1: open plans sit above the table', () => {
     expect(state.peek().form).toBeUndefined();
     expect(state.peek().openPlan).toBe(plan('ready').id);
     expect(state.peek().focus).toEqual({ id: '', seq: 0 });
-    await state.change({ field: 'pool-open', value: plan('blocked').id });
-    expect(state.peek()).toMatchObject({ openPlan: plan('blocked').id, focus: { seq: 1 } });
-    await state.change({ field: 'pool-toggle', value: plan('blocked').id });
+    await state.change({ field: 'pool-open', value: plan('second').id });
+    expect(state.peek()).toMatchObject({ openPlan: plan('second').id, focus: { seq: 1 } });
+    await state.change({ field: 'pool-toggle', value: plan('second').id });
     expect(state.peek().openPlan).toBe('');
-    await state.change({ field: 'pool-toggle', value: plan('blocked').id });
-    expect(state.peek()).toMatchObject({ openPlan: plan('blocked').id, focus: { seq: 2 } });
+    await state.change({ field: 'pool-toggle', value: plan('second').id });
+    expect(state.peek()).toMatchObject({ openPlan: plan('second').id, focus: { seq: 2 } });
   });
 });
 
@@ -164,13 +167,13 @@ describe('Fix 2: one plan per player', () => {
     await early.open();
     await early.change({ field: 'pool-plan', value: '13595' });
     expect(early.peek().form).toBeUndefined();
-    expect(early.peek().openPlan).toBe(plan('blocked').id);
+    expect(early.peek().openPlan).toBe(plan('second').id);
   });
 });
 
 describe('Fix 3: taking back a plan that was never posted', () => {
   const handedOff = (): Plan => ({
-    ...plan('ready'), stateCode: 'handed_off', state: 'Handed off', rules: [],
+    ...plan('ready'), stateCode: 'handed_off', state: 'Handed off',
     receipt: walk(['draft', 'ready', 'handed_off']),
     actions: [
       { id: 'copy', label: 'Copy post again', disabled: false, reason: '' },
@@ -206,26 +209,6 @@ describe('Fix 3: taking back a plan that was never posted', () => {
   });
 });
 
-describe('Fix 4: passing rules fold into Go\'s line', () => {
-  it('shows failures and notes in full, and one disclosure for the rest', () => {
-    const text = html(createElement(BidPlanCard, { plan: plan('blocked') }));
-    const fold = text.indexOf('<details class="bid-pass"><summary>');
-    expect(fold).toBeGreaterThan(-1);
-    expect(text).toContain(`<summary>${plan('blocked').ruleSummary}</summary>`);
-    expect(text.indexOf('data-verdict="unknown"')).toBeLessThan(fold);
-    expect(text.indexOf('data-verdict="info"')).toBeLessThan(fold);
-    expect(text.indexOf('data-verdict="pass"')).toBeGreaterThan(fold);
-    expect(text).not.toContain('<details class="bid-pass" open');
-  });
-  it('writes the summary in Go, for the plan and for the form\'s preview', () => {
-    expect(plan('ready').ruleSummary).toBe('11 rules pass');
-    expect(parsePreview(wire.preview).ruleSummary).toBe('11 rules pass');
-    const text = html(createElement(BidForm, { form, preview: parsePreview(wire.preview), busy: '' }));
-    expect(text).toContain('<summary>11 rules pass</summary>');
-    expect(text.split('<li data-verdict="pass"').length - 1).toBe(11);
-    expect(text).not.toContain('data-verdict="info"');
-  });
-});
 
 describe('Fix 5: unknown age and experience', () => {
   it('shows a dash for the age and a plain phrase for the experience, in separate cells', () => {
@@ -297,7 +280,7 @@ describe('Fix 7: the bid card uses the move rail\'s strip', () => {
     expect([...at].sort((a, b) => a - b)).toEqual(at);
     expect(at.every((index) => index > -1)).toBe(true);
     expect(text).toMatch(
-      /aria-current="step"[^>]*><span[^>]*>Ready<\/span><time[^>]*>[^<]+<\/time><p>Bid rules/,
+      /aria-current="step"[^>]*><span[^>]*>Ready<\/span><time[^>]*>[^<]+<\/time><p>Ready to copy/,
     );
     expect(text.match(/data-reached="false"/g)).toHaveLength(3);
   });
@@ -326,13 +309,9 @@ describe('Fix 7: the bid card uses the move rail\'s strip', () => {
 });
 
 describe('Fix 8: Go\'s wording reaches the screen', () => {
-  it('reads the rule sentences and status lines as Go wrote them', () => {
-    const words = (code: string, rule: string) =>
-      plan(code).rules.find((r) => r.rule === rule)?.reason;
-    expect(words('ready', 'flat-salary')).toBe('$5,000,000 a year, the same in each of the 3 years');
-    expect(words('blocked', 'flat-salary')).toBe('$2,000,000 a year for its 1 year');
-    expect(words('ready', 'tier-years')).toBe('Up to $12,000,000 needs at least 1 year');
-    for (const code of ['ready', 'blocked', 'withdrawn']) {
+  it('reads the status lines as Go wrote them', () => {
+    expect(plan('ready').status).toBe('Ready to copy; the league judges the bid where it is placed.');
+    for (const code of ['ready', 'second', 'withdrawn']) {
       expect(plan(code).status.endsWith('.')).toBe(true);
       for (const entry of plan(code).history) expect(entry.note.endsWith('.')).toBe(true);
     }

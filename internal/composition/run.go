@@ -43,11 +43,13 @@ func entryPoints(embedded Embedded) platformapp.EntryPoints {
 	return platformapp.EntryPoints{
 		Smoke:   func(directory string) int { return packageSmoke(directory, embedded, os.Stderr) },
 		Native:  func(address, league string) int { return runNative(address, league, embedded, os.Stderr) },
-		Desktop: func() int { return runDesktop(embedded) }, Probe: probe, Backups: listBackups, Restore: restoreBackup, Label: buildLabel(),
+		Desktop: func() int { return runDesktop(embedded) }, Probe: probe, Backups: listBackups, Restore: restoreBackup, Relink: relinkIdentity, Label: buildLabel(),
 	}
 }
 
 func runDesktop(embedded Embedded) int {
+	stopProfiles := platformapp.StartHeapProfiles()
+	defer stopProfiles()
 	app := NewApp()
 
 	err := wails.Run(&options.App{

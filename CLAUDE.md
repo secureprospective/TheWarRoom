@@ -104,8 +104,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   links only; click nothing on owner pages, and keep owner-only captures out of git.
 - **MFL player IDs are strings.** IDs under 1000 keep their leading zeros. `playerid.New` is
   the only constructor; all SQLite id columns are TEXT.
-- **MFL wins (R2).** A refresh overwrites the app's league and ledger state. Moves made in the
-  app are what-if plans until made on MFL.
+- **Native ledger wins (2026-11-05 client/server ruling 5a; supersedes core-plan R2).** MFL is
+  import/reference only; solo owners and commissioners get a review banner for MFL changes.
 - **Confidence scores are internal engine flags.** Never surface them in the UI.
 - **No scoring leak into the scouting prior.** The prior (draft capital, combine, college,
   film, RAS, breakout) must not reference fantasy points, projected volume, MFL scoring config
@@ -124,6 +124,10 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   and no code asks which preset a league came from. Each setting stands alone; changing one never forces
   another. Every setting changes through the one rule-change flow. The only refusals are what the
   engine truly cannot run, said in plain words. Be accommodating, not restrictive.
+  **An MFL import is just settings in the same app (10-31):** where a league came from is not a kind of
+  league. No code branches on a league's source or on one league's ID, and nothing is locked because it
+  came from MFL. Frontend = how a human works the backend; backend = engines (the math) + stores. Test:
+  could a human reach this league by changing settings by hand, and change it back? If not, it is slop.
 - **Do not reopen locked decisions** or add features the documents don't call for. If a locked
   decision creates a constraint that feels wrong, flag it to Christopher.
 
@@ -137,6 +141,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 | The engine plan and rulings | `docs/build-handoffs/Core_Build_Plan_2026-10.md` |
 | Why the plan is shaped this way | `docs/build-handoffs/Core_Build_Reasoning_2026-10.md` |
 | Where each feature lives (two hops), and where new code goes | `SYSTEM_MAP.md` |
+| Future direction: AI-first seams, social moments, tiny models (11-08) | `docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md` |
+| **Before any new server feature** (moments, shares, invites, chat, new AI powers): where it plugs in | `docs/architecture/future-seams.md` (`grep -rn "FUTURE-SEAM(" internal`) |
 | What exists at length, and the import rules | `docs/architecture/system-narrative.md` |
 | Which feature owns a root file or package | `docs/architecture/placement.tsv` |
 | Engine architecture | `docs/scoring-engine/Engine_Specification.md` |

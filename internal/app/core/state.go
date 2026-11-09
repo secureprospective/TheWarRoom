@@ -16,11 +16,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -50,17 +48,15 @@ type State struct {
 	ReadSourcesSettings       func() (string, bool, error)
 	RunSourcesLeagueRefresh   func(context.Context) (int, bool, bool, error)
 	WriteSourcesSettings      func(string, bool) error
-	// ReadCommsArchive runs under FactsMu; its cache remains with the archive feature.
-	ReadCommsArchive       func(context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error)
-	RefreshTransactions    func(context.Context)
-	CommissionerSession    commissioner.Session
-	CommissionerAuthorizer commissioner.Authorizer
-	WhatifMu               sync.Mutex
-	KeyMu                  sync.Mutex
-	KeyStore               *mflkey.Store
-	KeyVerifiedAt          string
-	MyFranchise            string // guarded by KeyMu; empty means identity is unknown
-	KeyGeneration          uint64
+	RefreshTransactions       func(context.Context)
+	CommissionerSession       commissioner.Session
+	CommissionerAuthorizer    commissioner.Authorizer
+	WhatifMu                  sync.Mutex
+	KeyMu                     sync.Mutex
+	KeyStore                  *mflkey.Store
+	KeyVerifiedAt             string
+	MyFranchise               string // guarded by KeyMu; empty means identity is unknown
+	KeyGeneration             uint64
 	//nolint:containedctx // Key-change refreshes run under it; shutdown cancels it.
 	WorkCtx    context.Context
 	WorkCancel context.CancelFunc
@@ -71,7 +67,6 @@ type State struct {
 	HistPools   *db.Pools // history.db: everything that cannot be rebuilt
 	WhatifPools *db.Pools // whatif.db: moves made in the app, apart from MFL truth (R2)
 	BuildStamp  string
-	LabData     func() (*lab.Data, error)
 	Params      *params.Store
 	Rulebook    *rulebook.Store
 	League      *state.Mirror // the league as MFL states it; every score surface reads it
@@ -87,7 +82,6 @@ type State struct {
 	Started     chan struct{}             // closed when startup returns; read the fields above through ready
 	LockFile    *os.File                  // single-instance lock, held until shutdown
 	Headshots   atomic.Pointer[headshot.Service]
-	FactsMu     sync.Mutex
 	PhotosOff   atomic.Bool
 
 	ModelMu    sync.Mutex
@@ -120,7 +114,6 @@ type State struct {
 	SeasonTradeBait     HeldFeed[[]ingestion.RawTradeBait]
 	ShellFeedDays       map[string]string
 	SeasonTransactions  HeldFeed[[]leaguefeed.Transaction]
-	CommsBoards         [2]HeldFeed[[]ingestion.RawLeaguePost]
 	SeasonLineups       HeldFeed[leaguefeed.Lineups]
 	SeasonPendingTrades HeldFeed[[]leaguefeed.PendingTrade]
 	SeasonInjuries      HeldFeed[[]leaguefeed.Injury]

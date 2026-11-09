@@ -7,8 +7,6 @@ package m2service
 import (
 	"fmt"
 	"math"
-	"slices"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -301,38 +299,17 @@ func (s *Service) inputStatus(values []PlayerValue) map[string]model.InputStatus
 	return out
 }
 
-// count is a franchise's value in the counter's mode, and the value-weighted age of the players
-// it counted (NaN when none of them has a known age and positive value). It sorts a copy.
+// Count shares the pure roster counter with league-scoped value readings.
+func Count(mode string, rules powerrankings.LineupRules, vals []PlayerValue) (value, age float64) {
+	counted := make([]powerrankings.CountValue, len(vals))
+	for i, v := range vals {
+		counted[i] = powerrankings.CountValue{Position: v.Position, Value: v.Value, Age: v.Age}
+	}
+	return powerrankings.Count(mode, rules, counted)
+}
+
 func (c counter) count(vals []PlayerValue) (value, age float64) {
-	counted := vals
-	switch c.mode {
-	case AggTopN:
-		cp := slices.Clone(vals)
-		sort.SliceStable(cp, func(i, j int) bool { return cp[i].Value > cp[j].Value })
-		counted = cp[:min(c.rules.Total, len(cp))]
-	case AggLineup:
-		cands := make([]powerrankings.Candidate, len(vals))
-		for i, v := range vals {
-			cands[i] = powerrankings.Candidate{Position: v.Position, Value: v.Value}
-		}
-		_, idx := powerrankings.Lineup(cands, c.rules)
-		counted = make([]PlayerValue, len(idx))
-		for i, j := range idx {
-			counted[i] = vals[j]
-		}
-	}
-	var weight, aged float64
-	for _, v := range counted {
-		value += v.Value
-		if !math.IsNaN(v.Age) && v.Value > 0 {
-			weight += v.Value
-			aged += v.Value * v.Age
-		}
-	}
-	if weight == 0 {
-		return value, math.NaN()
-	}
-	return value, aged / weight
+	return Count(c.mode, c.rules, vals)
 }
 
 // buildRows joins the blended scores with MFL's display columns and the rulebook's names.

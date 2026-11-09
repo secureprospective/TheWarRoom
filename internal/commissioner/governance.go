@@ -33,6 +33,10 @@ func recordEvents(r Record) ([]governance.Event, error) {
 }
 
 func GovernanceState(records []Record) (governance.State, error) {
+	return cachedGovernance(records, governanceFold)
+}
+
+func governanceFold(records []Record) (governance.State, error) {
 	records = policyRecords(records)
 	projection := Replay(records)
 	if books := usableClosedBooks(records); books != nil {

@@ -30,6 +30,8 @@ type CheckFindings struct {
 	ForeignKeys []ForeignKeyFinding
 }
 
+// FUTURE-SEAM(storage): a feature's own tables arrive as new migration steps, never as changes to
+// league, roster or contract tables. See docs/architecture/future-seams.md.
 // Migrate backs up before any pending step, then commits each step and marker atomically.
 // Findings are returned even when pre-existing foreign-key violations remain. Reinitialization
 // at the same version reuses this pool's completed checks; Check provides an explicit recheck.
@@ -50,7 +52,13 @@ func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, erro
 		result.Backup = ""
 		return result, nil
 	}
-	before, err := Check(ctx, p.write)
+	if version == len(steps) {
+		// Nothing to migrate: the full integrity check is the routine check that runs after
+		// launch (RoutineCheck), not a launch blocker; on a large history it took ~17 s.
+		p.migrationChecked, p.checkedVersion = true, version
+		return result, nil
+	}
+	before, err := QuickCheck(ctx, p.write)
 	result.Before = before
 	if err != nil {
 		return result, err
@@ -66,7 +74,7 @@ func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, erro
 			return result, err
 		}
 	}
-	result.After, err = Check(ctx, p.write)
+	result.After, err = QuickCheck(ctx, p.write)
 	if err == nil {
 		p.migrationChecked, p.checkedVersion = true, len(steps)
 	}

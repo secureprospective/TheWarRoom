@@ -18,14 +18,18 @@ type RawWeek struct {
 }
 
 type PlayerWeek struct {
-	GSIS        string
-	Position    string
-	Season      int
-	Week        int
-	GameID      string
-	SeasonType  string
-	RecoveryTDs leaguerules.Decimal
-	Line        fantasyscore.StatLine
+	FieldSources map[leaguerules.StatID]string `json:",omitempty"`
+	Provenance   string
+	Review       string
+	Evidence     string
+	GSIS         string
+	Position     string
+	Season       int
+	Week         int
+	GameID       string
+	SeasonType   string
+	RecoveryTDs  leaguerules.Decimal
+	Line         fantasyscore.StatLine
 }
 
 func mappings() map[leaguerules.StatID][]string {

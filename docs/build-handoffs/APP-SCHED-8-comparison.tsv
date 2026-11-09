@@ -1,0 +1,149 @@
+week	franchise	name	mfl_score	app_score	comparison	unavailable_causes
+1	franchise.01	Buffalo Bills	269.90		unavailable	1 This player is not reported this week in the newest held statistics
+1	franchise.02	New England Patriots	185.03	186.0300	differ	
+1	franchise.07	Las Vegas Raiders	145.60		unavailable	7 This player is not reported this week in the newest held statistics
+1	franchise.05	Los Angeles Chargers	147.53	147.5200	within .01	
+1	franchise.11	Jacksonville Jaguars	168.75		unavailable	4 This player is not reported this week in the newest held statistics
+1	franchise.12	Tennessee Titans	224.66		unavailable	1 This player is not reported this week in the newest held statistics
+1	franchise.16	Pittsburgh Steelers	140.48		unavailable	1 This player is not reported this week in the newest held statistics
+1	franchise.21	Chicago Bears	150.50		unavailable	1 This player has no NFL statistics identity; 2 This player is not reported this week in the newest held statistics
+1	franchise.23	Green Bay Packers	228.15	228.1500	exact	
+1	franchise.26	San Francisco 49ers	223.48	223.4800	exact	
+1	franchise.28	Seattle Seahawks	132.46		unavailable	5 This player is not reported this week in the newest held statistics
+1	franchise.27	Los Angeles Rams	230.58	230.5800	exact	
+1	franchise.29	Dallas Cowboys	136.56		unavailable	1 This player is not reported this week in the newest held statistics
+1	franchise.30	New York Giants	208.20	179.7000	differ	
+1	franchise.31	Philadelphia Eagles	65.35		unavailable	6 This player is not reported this week in the newest held statistics
+2	franchise.02	New England Patriots	214.60	214.6000	exact	
+2	franchise.01	Buffalo Bills	306.95		unavailable	1 This player is not reported this week in the newest held statistics
+2	franchise.11	Jacksonville Jaguars	160.65		unavailable	1 This player is not reported this week in the newest held statistics
+2	franchise.12	Tennessee Titans	217.68		unavailable	1 This player is not reported this week in the newest held statistics
+2	franchise.16	Pittsburgh Steelers	146.28	142.7800	differ	
+2	franchise.21	Chicago Bears	153.40		unavailable	1 This player has no NFL statistics identity; 2 This player is not reported this week in the newest held statistics
+2	franchise.30	New York Giants	205.65	182.2000	differ	
+2	franchise.29	Dallas Cowboys	173.15		unavailable	1 This player is not reported this week in the newest held statistics
+2	franchise.23	Green Bay Packers	215.45		unavailable	1 This player is not reported this week in the newest held statistics
+2	franchise.31	Philadelphia Eagles	70.45		unavailable	7 This player is not reported this week in the newest held statistics
+2	franchise.26	San Francisco 49ers	240.96	240.9600	exact	
+2	franchise.27	Los Angeles Rams	238.35	238.3500	exact	
+2	franchise.05	Los Angeles Chargers	179.04	179.0400	exact	
+2	franchise.28	Seattle Seahawks	113.55		unavailable	5 This player is not reported this week in the newest held statistics
+2	franchise.07	Las Vegas Raiders	105.75		unavailable	6 This player is not reported this week in the newest held statistics
+3	franchise.05	Los Angeles Chargers	150.63	150.6300	exact	
+3	franchise.12	Tennessee Titans	140.30		unavailable	1 This player is not reported this week in the newest held statistics
+3	franchise.06	Kansas City Chiefs	50.43		unavailable	6 This player is not reported this week in the newest held statistics
+3	franchise.07	Las Vegas Raiders	87.30		unavailable	8 This player is not reported this week in the newest held statistics
+3	franchise.11	Jacksonville Jaguars	189.03		unavailable	2 This player is not reported this week in the newest held statistics
+3	franchise.16	Pittsburgh Steelers	171.85	171.8500	exact	
+3	franchise.17	Atlanta Falcons	252.30	252.3000	exact	
+3	franchise.01	Buffalo Bills	278.35		unavailable	1 This player is not reported this week in the newest held statistics
+3	franchise.02	New England Patriots	247.58	249.0800	differ	
+3	franchise.20	Tampa Bay Buccaneers	186.30	184.3000	differ	
+3	franchise.21	Chicago Bears	159.90		unavailable	1 This player has no NFL statistics identity; 1 This player is not reported this week in the newest held statistics
+3	franchise.31	Philadelphia Eagles	99.35		unavailable	7 This player is not reported this week in the newest held statistics
+3	franchise.22	Detroit Lions	262.73	262.7300	exact	
+3	franchise.23	Green Bay Packers	222.55		unavailable	1 This player is not reported this week in the newest held statistics
+3	franchise.29	Dallas Cowboys	160.48	160.4800	exact	
+3	franchise.27	Los Angeles Rams	219.33	219.3300	exact	
+3	franchise.28	Seattle Seahawks	56.70		unavailable	6 This player is not reported this week in the newest held statistics
+3	franchise.26	San Francisco 49ers	286.63	286.6300	exact	
+4	franchise.05	Los Angeles Chargers	165.55	165.5500	exact	
+4	franchise.08	Denver Broncos	222.20	221.2000	differ	
+4	franchise.07	Las Vegas Raiders	95.50		unavailable	5 This player is not reported this week in the newest held statistics
+4	franchise.06	Kansas City Chiefs	65.65		unavailable	9 This player is not reported this week in the newest held statistics
+4	franchise.11	Jacksonville Jaguars	156.00		unavailable	1 This player is not reported this week in the newest held statistics
+4	franchise.12	Tennessee Titans	224.86		unavailable	2 This player is not reported this week in the newest held statistics
+4	franchise.13	Baltimore Ravens	260.53		unavailable	1 This player is not reported this week in the newest held statistics
+4	franchise.16	Pittsburgh Steelers	224.56	224.5600	exact	
+4	franchise.21	Chicago Bears	186.18		unavailable	1 This player has no NFL statistics identity; 1 This player is not reported this week in the newest held statistics
+4	franchise.23	Green Bay Packers	164.25		unavailable	1 This player is not reported this week in the newest held statistics
+4	franchise.22	Detroit Lions	263.03	264.5300	differ	
+4	franchise.25	Arizona Cardinals	294.90	292.9000	differ	
+4	franchise.17	Atlanta Falcons	283.80		unavailable	1 This player is not reported this week in the newest held statistics
+4	franchise.26	San Francisco 49ers	273.30	273.3000	exact	
+4	franchise.27	Los Angeles Rams	193.90	193.9000	exact	
+4	franchise.19	New Orleans Saints	235.30	235.3000	exact	
+4	franchise.28	Seattle Seahawks	70.45		unavailable	7 This player is not reported this week in the newest held statistics
+4	franchise.20	Tampa Bay Buccaneers	210.75	210.7500	exact	
+4	franchise.29	Dallas Cowboys	183.08	183.0800	exact	
+4	franchise.31	Philadelphia Eagles	75.00		unavailable	7 This player is not reported this week in the newest held statistics
+4	franchise.02	New England Patriots	146.70		unavailable	1 This player is not reported this week in the newest held statistics
+4	franchise.01	Buffalo Bills	248.90		unavailable	2 This player is not reported this week in the newest held statistics
+5	franchise.03	New York Jets	160.65		unavailable	3 This player is not reported this week in the newest held statistics
+5	franchise.02	New England Patriots	194.98		unavailable	1 This player is not reported this week in the newest held statistics
+5	franchise.01	Buffalo Bills	328.10		unavailable	1 This player is not reported this week in the newest held statistics
+5	franchise.11	Jacksonville Jaguars	200.28		unavailable	1 This player is not reported this week in the newest held statistics
+5	franchise.12	Tennessee Titans	135.03		unavailable	4 This player is not reported this week in the newest held statistics
+5	franchise.16	Pittsburgh Steelers	218.68	218.6800	exact	
+5	franchise.13	Baltimore Ravens	241.65	241.6500	exact	
+5	franchise.21	Chicago Bears	126.31		unavailable	1 This player has no NFL statistics identity; 1 This player is not reported this week in the newest held statistics
+5	franchise.23	Green Bay Packers	199.35		unavailable	1 This player is not reported this week in the newest held statistics
+5	franchise.22	Detroit Lions	221.58	221.5800	exact	
+5	franchise.25	Arizona Cardinals	266.85	266.8500	exact	
+5	franchise.19	New Orleans Saints	224.95		unavailable	1 This player is not reported this week in the newest held statistics
+5	franchise.26	San Francisco 49ers	304.81	304.8100	exact	
+5	franchise.17	Atlanta Falcons	238.88	238.8800	exact	
+5	franchise.27	Los Angeles Rams	273.00	273.0000	exact	
+5	franchise.20	Tampa Bay Buccaneers	184.33	184.3300	exact	
+5	franchise.28	Seattle Seahawks	120.33		unavailable	6 This player is not reported this week in the newest held statistics
+5	franchise.29	Dallas Cowboys	129.90	129.9000	exact	
+5	franchise.06	Kansas City Chiefs	63.30		unavailable	8 This player is not reported this week in the newest held statistics
+5	franchise.07	Las Vegas Raiders	137.20		unavailable	4 This player is not reported this week in the newest held statistics
+5	franchise.31	Philadelphia Eagles	144.50		unavailable	3 This player is not reported this week in the newest held statistics
+5	franchise.05	Los Angeles Chargers	164.88		unavailable	3 This player is not reported this week in the newest held statistics
+5	franchise.08	Denver Broncos	241.53	241.5300	exact	
+6	franchise.05	Los Angeles Chargers	212.53		unavailable	1 This player is not reported this week in the newest held statistics
+6	franchise.11	Jacksonville Jaguars	108.23		unavailable	4 This player is not reported this week in the newest held statistics
+6	franchise.06	Kansas City Chiefs	47.08		unavailable	8 This player is not reported this week in the newest held statistics
+6	franchise.09	Houston Texans	157.26		unavailable	5 This player is not reported this week in the newest held statistics
+6	franchise.07	Las Vegas Raiders	107.40		unavailable	5 This player is not reported this week in the newest held statistics
+6	franchise.12	Tennessee Titans	122.78		unavailable	2 This player is not reported this week in the newest held statistics
+6	franchise.13	Baltimore Ravens	207.93		unavailable	1 This player is not reported this week in the newest held statistics
+6	franchise.16	Pittsburgh Steelers	271.48	271.4800	exact	
+6	franchise.17	Atlanta Falcons	214.15	217.6500	differ	
+6	franchise.19	New Orleans Saints	190.90	190.9000	exact	
+6	franchise.21	Chicago Bears	164.63		unavailable	1 This player has no NFL statistics identity; 3 This player is not reported this week in the newest held statistics
+6	franchise.22	Detroit Lions	229.38	229.3800	exact	
+6	franchise.31	Philadelphia Eagles	150.80		unavailable	5 This player is not reported this week in the newest held statistics
+6	franchise.23	Green Bay Packers	166.20		unavailable	1 This player is not reported this week in the newest held statistics
+6	franchise.29	Dallas Cowboys	115.25		unavailable	3 This player is not reported this week in the newest held statistics
+6	franchise.30	New York Giants	196.18		unavailable	1 This player is not reported this week in the newest held statistics
+6	franchise.25	Arizona Cardinals	255.90		unavailable	2 This player is not reported this week in the newest held statistics
+6	franchise.01	Buffalo Bills	233.35		unavailable	3 This player is not reported this week in the newest held statistics
+6	franchise.26	San Francisco 49ers	134.75		unavailable	2 This player is not reported this week in the newest held statistics
+6	franchise.03	New York Jets	138.15		unavailable	2 This player is not reported this week in the newest held statistics
+6	franchise.27	Los Angeles Rams	233.40	233.4000	exact	
+6	franchise.02	New England Patriots	218.60	218.6000	exact	
+6	franchise.28	Seattle Seahawks	76.11		unavailable	6 This player is not reported this week in the newest held statistics
+6	franchise.04	Miami Dolphins	56.38		unavailable	4 This player is not reported this week in the newest held statistics
+7	franchise.05	Los Angeles Chargers	129.91		unavailable	1 This player is not reported this week in the newest held statistics
+7	franchise.10	Indianapolis Colts	211.85	211.8500	exact	
+7	franchise.06	Kansas City Chiefs	56.45		unavailable	9 This player is not reported this week in the newest held statistics
+7	franchise.12	Tennessee Titans	146.50	143.0000	differ	
+7	franchise.07	Las Vegas Raiders	119.15		unavailable	7 This player is not reported this week in the newest held statistics
+7	franchise.09	Houston Texans	168.96		unavailable	4 This player is not reported this week in the newest held statistics
+7	franchise.08	Denver Broncos	228.95	228.9500	exact	
+7	franchise.11	Jacksonville Jaguars	116.73		unavailable	7 This player is not reported this week in the newest held statistics
+7	franchise.13	Baltimore Ravens	216.90		unavailable	1 This player is not reported this week in the newest held statistics
+7	franchise.02	New England Patriots	231.13		unavailable	1 This player is not reported this week in the newest held statistics
+7	franchise.14	Cincinnati Bengals	145.60	117.5000	differ	
+7	franchise.03	New York Jets	201.40		unavailable	1 This player is not reported this week in the newest held statistics
+7	franchise.15	Cleveland Browns	197.45	197.4500	exact	
+7	franchise.01	Buffalo Bills	246.80		unavailable	3 This player is not reported this week in the newest held statistics
+7	franchise.16	Pittsburgh Steelers	249.26		unavailable	1 This player is not reported this week in the newest held statistics
+7	franchise.21	Chicago Bears	146.28		unavailable	1 This player has no NFL statistics identity; 2 This player is not reported this week in the newest held statistics
+7	franchise.23	Green Bay Packers	146.50		unavailable	1 This player is not reported this week in the newest held statistics
+7	franchise.22	Detroit Lions	151.73	151.7300	exact	
+7	franchise.24	Minnesota Vikings	330.20	330.2000	exact	
+7	franchise.25	Arizona Cardinals	207.20	207.2000	exact	
+7	franchise.20	Tampa Bay Buccaneers	161.70		unavailable	2 This player is not reported this week in the newest held statistics
+7	franchise.26	San Francisco 49ers	214.83	214.8300	exact	
+7	franchise.19	New Orleans Saints	283.28	283.2800	exact	
+7	franchise.27	Los Angeles Rams	276.85		unavailable	1 This player is not reported this week in the newest held statistics
+7	franchise.18	Carolina Panthers	154.78	154.7800	exact	
+7	franchise.28	Seattle Seahawks	65.33		unavailable	8 This player is not reported this week in the newest held statistics
+7	franchise.17	Atlanta Falcons	156.15		unavailable	1 This player is not reported this week in the newest held statistics
+7	franchise.30	New York Giants	118.90		unavailable	4 This player is not reported this week in the newest held statistics
+7	franchise.29	Dallas Cowboys	149.05		unavailable	1 This player is not reported this week in the newest held statistics
+7	franchise.31	Philadelphia Eagles	141.83		unavailable	4 This player is not reported this week in the newest held statistics
+7	franchise.32	Washington Commanders	341.38	340.3800	differ	

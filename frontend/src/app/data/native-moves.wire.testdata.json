@@ -1,0 +1,102 @@
+{
+  "league": "native.seed",
+  "franchise": "franchise.01",
+  "planned": [],
+  "reason": "native plans not yet stored",
+  "moves": [
+    {
+      "correlationId": "act.fe88644e6e23300b7a67a165d834457bbb495571f17c29f7441c754a7fc3dfc9",
+      "spec": {
+        "intent": "bid.place",
+        "leagueId": "native.seed",
+        "franchiseId": "franchise.01",
+        "subject": {
+          "players": [
+            "5001"
+          ],
+          "picks": []
+        },
+        "expected": {},
+        "gravity": "G0",
+        "undo": "irreversible",
+        "target": {
+          "kind": "native"
+        },
+        "deadline": "2026-10-14T12:00:00Z"
+      },
+      "state": "handed_off",
+      "audit": [
+        {
+          "at": "2026-10-13T12:00:00Z",
+          "from": "draft",
+          "event": "recorded",
+          "to": "handed_off",
+          "note": "Player, 5001: 1 year at $5,000,000 a year · Closes Oct 14, 2026 at 5:00 AM PDT"
+        }
+      ]
+    },
+    {
+      "correlationId": "act.135620993aab5cfbeb49e5b6a0b0ba2bf3c601581fd028ac574028fbae300494",
+      "spec": {
+        "intent": "waivers.claim",
+        "leagueId": "native.seed",
+        "franchiseId": "franchise.01",
+        "subject": {
+          "players": [
+            "1001"
+          ],
+          "picks": []
+        },
+        "expected": {},
+        "gravity": "G0",
+        "undo": "irreversible",
+        "target": {
+          "kind": "native"
+        },
+        "deadline": "2026-10-14T12:00:00Z"
+      },
+      "state": "handed_off",
+      "audit": [
+        {
+          "at": "2026-10-13T12:00:00Z",
+          "from": "draft",
+          "event": "recorded",
+          "to": "handed_off",
+          "note": "Player, 1001: claim waiting for processing · Oct 14, 2026 at 5:00 AM PDT"
+        }
+      ]
+    },
+    {
+      "correlationId": "act.21b52b24bf97f19c33aee964ef42e0ae60e29512daa16c68346854458368c49e",
+      "spec": {
+        "intent": "trade.offer",
+        "leagueId": "native.seed",
+        "franchiseId": "franchise.01",
+        "subject": {
+          "players": [
+            "1000",
+            "4000"
+          ],
+          "picks": []
+        },
+        "expected": {},
+        "gravity": "G0",
+        "undo": "irreversible",
+        "target": {
+          "kind": "native"
+        },
+        "deadline": "2026-10-20T12:00:00Z"
+      },
+      "state": "needs_you",
+      "audit": [
+        {
+          "at": "2026-10-13T12:00:00Z",
+          "from": "draft",
+          "event": "recorded",
+          "to": "needs_you",
+          "note": "Waiting for every party to accept · Player, 1000 3 years at $1,000,000 a year · Player, 4000 3 years at $10,000 a year"
+        }
+      ]
+    }
+  ]
+}

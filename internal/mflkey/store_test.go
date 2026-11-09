@@ -103,3 +103,32 @@ func TestMutationTimeouts(t *testing.T) {
 		})
 	}
 }
+
+func TestForLeagueIsolatesCredentials(t *testing.T) {
+	t.Parallel()
+	store := NewMemory("100", "2026")
+	first, second := store.ForLeague("101"), store.ForLeague("102")
+	if err := first.Set(t.Context(), Key("first-fixture-key")); err != nil {
+		t.Fatal(err)
+	}
+	if err := second.Set(t.Context(), Key("second-fixture-key")); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.ForLeague("101").Get(t.Context())
+	if err != nil || got.Reveal() != "first-fixture-key" {
+		t.Fatal("first league lost its key")
+	}
+	got, err = store.ForLeague("102").Get(t.Context())
+	if err != nil || got.Reveal() != "second-fixture-key" {
+		t.Fatal("second league lost its key")
+	}
+	if _, err := store.Get(t.Context()); !errors.Is(err, ErrNoKey) {
+		t.Fatal("credential crossed leagues")
+	}
+	if err := first.Delete(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := second.Get(t.Context()); err != nil {
+		t.Fatal("deleting one key affected another league")
+	}
+}

@@ -222,6 +222,9 @@
         "words": "Held team 1 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1001",
             "name": "franchise.01 starter",
             "position": "LB",
@@ -296,6 +299,9 @@
         "words": "Held team 32 scored 3 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1032",
             "name": "franchise.32 starter",
             "position": "LB",
@@ -370,6 +376,9 @@
         "words": "Held team 2 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1002",
             "name": "franchise.02 starter",
             "position": "LB",
@@ -444,6 +453,9 @@
         "words": "Held team 31 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1031",
             "name": "franchise.31 starter",
             "position": "LB",
@@ -518,6 +530,9 @@
         "words": "Held team 30 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1030",
             "name": "franchise.30 starter",
             "position": "LB",
@@ -592,6 +607,9 @@
         "words": "Held team 3 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1003",
             "name": "franchise.03 starter",
             "position": "LB",
@@ -666,6 +684,9 @@
         "words": "Held team 4 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1004",
             "name": "franchise.04 starter",
             "position": "LB",
@@ -740,6 +761,9 @@
         "words": "Held team 29 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1029",
             "name": "franchise.29 starter",
             "position": "LB",
@@ -814,6 +838,9 @@
         "words": "Held team 28 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1028",
             "name": "franchise.28 starter",
             "position": "LB",
@@ -888,6 +915,9 @@
         "words": "Held team 5 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1005",
             "name": "franchise.05 starter",
             "position": "LB",
@@ -962,6 +992,9 @@
         "words": "Held team 6 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1006",
             "name": "franchise.06 starter",
             "position": "LB",
@@ -1036,6 +1069,9 @@
         "words": "Held team 27 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1027",
             "name": "franchise.27 starter",
             "position": "LB",
@@ -1110,6 +1146,9 @@
         "words": "Held team 26 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1026",
             "name": "franchise.26 starter",
             "position": "LB",
@@ -1184,6 +1223,9 @@
         "words": "Held team 7 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1007",
             "name": "franchise.07 starter",
             "position": "LB",
@@ -1258,6 +1300,9 @@
         "words": "Held team 8 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1008",
             "name": "franchise.08 starter",
             "position": "LB",
@@ -1332,6 +1377,9 @@
         "words": "Held team 25 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1025",
             "name": "franchise.25 starter",
             "position": "LB",
@@ -1406,6 +1454,9 @@
         "words": "Held team 24 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1024",
             "name": "franchise.24 starter",
             "position": "LB",
@@ -1480,6 +1531,9 @@
         "words": "Held team 9 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1009",
             "name": "franchise.09 starter",
             "position": "LB",
@@ -1554,6 +1608,9 @@
         "words": "Held team 10 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1010",
             "name": "franchise.10 starter",
             "position": "LB",
@@ -1628,6 +1685,9 @@
         "words": "Held team 23 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1023",
             "name": "franchise.23 starter",
             "position": "LB",
@@ -1702,6 +1762,9 @@
         "words": "Held team 22 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1022",
             "name": "franchise.22 starter",
             "position": "LB",
@@ -1776,6 +1839,9 @@
         "words": "Held team 11 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1011",
             "name": "franchise.11 starter",
             "position": "LB",
@@ -1850,6 +1916,9 @@
         "words": "Held team 12 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1012",
             "name": "franchise.12 starter",
             "position": "LB",
@@ -1924,6 +1993,9 @@
         "words": "Held team 21 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1021",
             "name": "franchise.21 starter",
             "position": "LB",
@@ -1998,6 +2070,9 @@
         "words": "Held team 20 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1020",
             "name": "franchise.20 starter",
             "position": "LB",
@@ -2072,6 +2147,9 @@
         "words": "Held team 13 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1013",
             "name": "franchise.13 starter",
             "position": "LB",
@@ -2146,6 +2224,9 @@
         "words": "Held team 14 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1014",
             "name": "franchise.14 starter",
             "position": "LB",
@@ -2220,6 +2301,9 @@
         "words": "Held team 19 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1019",
             "name": "franchise.19 starter",
             "position": "LB",
@@ -2294,6 +2378,9 @@
         "words": "Held team 18 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1018",
             "name": "franchise.18 starter",
             "position": "LB",
@@ -2368,6 +2455,9 @@
         "words": "Held team 15 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1015",
             "name": "franchise.15 starter",
             "position": "LB",
@@ -2442,6 +2532,9 @@
         "words": "Held team 16 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1016",
             "name": "franchise.16 starter",
             "position": "LB",
@@ -2516,6 +2609,9 @@
         "words": "Held team 17 scored 1.5 points",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1017",
             "name": "franchise.17 starter",
             "position": "LB",
@@ -2600,10 +2696,12 @@
         "homeName": "Held team 1",
         "awayName": "Held team 32",
         "status": "No result yet",
-        "words": "No result yet: Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 30000,
+        "words": "No result yet: Held team 1 has 1.5 points so far, from evidence that is not final: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 32 has 3 points so far, from evidence that is not final: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported"
+          "Held team 1 has 1.5 points so far, from evidence that is not final: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 32 has 3 points so far, from evidence that is not final: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2613,10 +2711,12 @@
         "homeName": "Held team 2",
         "awayName": "Held team 31",
         "status": "No result yet",
-        "words": "No result yet: Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 2 has 1.5 points so far, from evidence that is not final: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 31 has 1.5 points so far, from evidence that is not final: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 2 has 1.5 points so far, from evidence that is not final: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 31 has 1.5 points so far, from evidence that is not final: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2626,10 +2726,12 @@
         "homeName": "Held team 30",
         "awayName": "Held team 3",
         "status": "No result yet",
-        "words": "No result yet: Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 30 has 1.5 points so far, from evidence that is not final: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 3 has 1.5 points so far, from evidence that is not final: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 30 has 1.5 points so far, from evidence that is not final: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 3 has 1.5 points so far, from evidence that is not final: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2639,10 +2741,12 @@
         "homeName": "Held team 4",
         "awayName": "Held team 29",
         "status": "No result yet",
-        "words": "No result yet: Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 4 has 1.5 points so far, from evidence that is not final: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 29 has 1.5 points so far, from evidence that is not final: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 4 has 1.5 points so far, from evidence that is not final: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 29 has 1.5 points so far, from evidence that is not final: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2652,10 +2756,12 @@
         "homeName": "Held team 28",
         "awayName": "Held team 5",
         "status": "No result yet",
-        "words": "No result yet: Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 28 has 1.5 points so far, from evidence that is not final: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 5 has 1.5 points so far, from evidence that is not final: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 28 has 1.5 points so far, from evidence that is not final: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 5 has 1.5 points so far, from evidence that is not final: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2665,10 +2771,12 @@
         "homeName": "Held team 6",
         "awayName": "Held team 27",
         "status": "No result yet",
-        "words": "No result yet: Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 6 has 1.5 points so far, from evidence that is not final: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 27 has 1.5 points so far, from evidence that is not final: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 6 has 1.5 points so far, from evidence that is not final: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 27 has 1.5 points so far, from evidence that is not final: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2678,10 +2786,12 @@
         "homeName": "Held team 26",
         "awayName": "Held team 7",
         "status": "No result yet",
-        "words": "No result yet: Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 26 has 1.5 points so far, from evidence that is not final: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 7 has 1.5 points so far, from evidence that is not final: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 26 has 1.5 points so far, from evidence that is not final: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 7 has 1.5 points so far, from evidence that is not final: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2691,10 +2801,12 @@
         "homeName": "Held team 8",
         "awayName": "Held team 25",
         "status": "No result yet",
-        "words": "No result yet: Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 8 has 1.5 points so far, from evidence that is not final: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 25 has 1.5 points so far, from evidence that is not final: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 8 has 1.5 points so far, from evidence that is not final: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 25 has 1.5 points so far, from evidence that is not final: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2704,10 +2816,12 @@
         "homeName": "Held team 24",
         "awayName": "Held team 9",
         "status": "No result yet",
-        "words": "No result yet: Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 24 has 1.5 points so far, from evidence that is not final: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 9 has 1.5 points so far, from evidence that is not final: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 24 has 1.5 points so far, from evidence that is not final: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 9 has 1.5 points so far, from evidence that is not final: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2717,10 +2831,12 @@
         "homeName": "Held team 10",
         "awayName": "Held team 23",
         "status": "No result yet",
-        "words": "No result yet: Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 10 has 1.5 points so far, from evidence that is not final: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 23 has 1.5 points so far, from evidence that is not final: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 10 has 1.5 points so far, from evidence that is not final: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 23 has 1.5 points so far, from evidence that is not final: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2730,10 +2846,12 @@
         "homeName": "Held team 22",
         "awayName": "Held team 11",
         "status": "No result yet",
-        "words": "No result yet: Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 22 has 1.5 points so far, from evidence that is not final: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 11 has 1.5 points so far, from evidence that is not final: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 22 has 1.5 points so far, from evidence that is not final: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 11 has 1.5 points so far, from evidence that is not final: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2743,10 +2861,12 @@
         "homeName": "Held team 12",
         "awayName": "Held team 21",
         "status": "No result yet",
-        "words": "No result yet: Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 12 has 1.5 points so far, from evidence that is not final: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 21 has 1.5 points so far, from evidence that is not final: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 12 has 1.5 points so far, from evidence that is not final: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 21 has 1.5 points so far, from evidence that is not final: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2756,10 +2876,12 @@
         "homeName": "Held team 20",
         "awayName": "Held team 13",
         "status": "No result yet",
-        "words": "No result yet: Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 20 has 1.5 points so far, from evidence that is not final: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 13 has 1.5 points so far, from evidence that is not final: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 20 has 1.5 points so far, from evidence that is not final: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 13 has 1.5 points so far, from evidence that is not final: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2769,10 +2891,12 @@
         "homeName": "Held team 14",
         "awayName": "Held team 19",
         "status": "No result yet",
-        "words": "No result yet: Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 14 has 1.5 points so far, from evidence that is not final: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 19 has 1.5 points so far, from evidence that is not final: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 14 has 1.5 points so far, from evidence that is not final: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 19 has 1.5 points so far, from evidence that is not final: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2782,10 +2906,12 @@
         "homeName": "Held team 18",
         "awayName": "Held team 15",
         "status": "No result yet",
-        "words": "No result yet: Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 18 has 1.5 points so far, from evidence that is not final: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 15 has 1.5 points so far, from evidence that is not final: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 18 has 1.5 points so far, from evidence that is not final: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 15 has 1.5 points so far, from evidence that is not final: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       },
       {
@@ -2795,10 +2921,12 @@
         "homeName": "Held team 16",
         "awayName": "Held team 17",
         "status": "No result yet",
-        "words": "No result yet: Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "homeProvisional": 15000,
+        "awayProvisional": 15000,
+        "words": "No result yet: Held team 16 has 1.5 points so far, from evidence that is not final: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported Held team 17 has 1.5 points so far, from evidence that is not final: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "why": [
-          "Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
-          "Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
+          "Held team 16 has 1.5 points so far, from evidence that is not final: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+          "Held team 17 has 1.5 points so far, from evidence that is not final: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported"
         ]
       }
     ],
@@ -2807,15 +2935,20 @@
         "franchise": "franchise.01",
         "name": "Held team 1",
         "status": "Incomplete",
-        "words": "Held team 1's score is incomplete: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 1 has 1.5 points so far, from evidence that is not final: franchise.01 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1001",
             "name": "franchise.01 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -2830,15 +2963,20 @@
         "franchise": "franchise.32",
         "name": "Held team 32",
         "status": "Incomplete",
-        "words": "Held team 32's score is incomplete: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 32 has 3 points so far, from evidence that is not final: franchise.32 starter: 3 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1032",
             "name": "franchise.32 starter",
             "position": "LB",
-            "words": "3 points counted so far; incomplete: A starter has not been reported"
+            "words": "3 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 30000
           }
         ],
+        "provisional": 30000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -2853,15 +2991,20 @@
         "franchise": "franchise.02",
         "name": "Held team 2",
         "status": "Incomplete",
-        "words": "Held team 2's score is incomplete: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 2 has 1.5 points so far, from evidence that is not final: franchise.02 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1002",
             "name": "franchise.02 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -2876,15 +3019,20 @@
         "franchise": "franchise.31",
         "name": "Held team 31",
         "status": "Incomplete",
-        "words": "Held team 31's score is incomplete: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 31 has 1.5 points so far, from evidence that is not final: franchise.31 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1031",
             "name": "franchise.31 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -2899,15 +3047,20 @@
         "franchise": "franchise.30",
         "name": "Held team 30",
         "status": "Incomplete",
-        "words": "Held team 30's score is incomplete: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 30 has 1.5 points so far, from evidence that is not final: franchise.30 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1030",
             "name": "franchise.30 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -2922,15 +3075,20 @@
         "franchise": "franchise.03",
         "name": "Held team 3",
         "status": "Incomplete",
-        "words": "Held team 3's score is incomplete: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 3 has 1.5 points so far, from evidence that is not final: franchise.03 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1003",
             "name": "franchise.03 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -2945,15 +3103,20 @@
         "franchise": "franchise.04",
         "name": "Held team 4",
         "status": "Incomplete",
-        "words": "Held team 4's score is incomplete: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 4 has 1.5 points so far, from evidence that is not final: franchise.04 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1004",
             "name": "franchise.04 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -2968,15 +3131,20 @@
         "franchise": "franchise.29",
         "name": "Held team 29",
         "status": "Incomplete",
-        "words": "Held team 29's score is incomplete: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 29 has 1.5 points so far, from evidence that is not final: franchise.29 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1029",
             "name": "franchise.29 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -2991,15 +3159,20 @@
         "franchise": "franchise.28",
         "name": "Held team 28",
         "status": "Incomplete",
-        "words": "Held team 28's score is incomplete: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 28 has 1.5 points so far, from evidence that is not final: franchise.28 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1028",
             "name": "franchise.28 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3014,15 +3187,20 @@
         "franchise": "franchise.05",
         "name": "Held team 5",
         "status": "Incomplete",
-        "words": "Held team 5's score is incomplete: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 5 has 1.5 points so far, from evidence that is not final: franchise.05 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1005",
             "name": "franchise.05 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3037,15 +3215,20 @@
         "franchise": "franchise.06",
         "name": "Held team 6",
         "status": "Incomplete",
-        "words": "Held team 6's score is incomplete: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 6 has 1.5 points so far, from evidence that is not final: franchise.06 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1006",
             "name": "franchise.06 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3060,15 +3243,20 @@
         "franchise": "franchise.27",
         "name": "Held team 27",
         "status": "Incomplete",
-        "words": "Held team 27's score is incomplete: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 27 has 1.5 points so far, from evidence that is not final: franchise.27 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1027",
             "name": "franchise.27 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3083,15 +3271,20 @@
         "franchise": "franchise.26",
         "name": "Held team 26",
         "status": "Incomplete",
-        "words": "Held team 26's score is incomplete: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 26 has 1.5 points so far, from evidence that is not final: franchise.26 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1026",
             "name": "franchise.26 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3106,15 +3299,20 @@
         "franchise": "franchise.07",
         "name": "Held team 7",
         "status": "Incomplete",
-        "words": "Held team 7's score is incomplete: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 7 has 1.5 points so far, from evidence that is not final: franchise.07 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1007",
             "name": "franchise.07 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3129,15 +3327,20 @@
         "franchise": "franchise.08",
         "name": "Held team 8",
         "status": "Incomplete",
-        "words": "Held team 8's score is incomplete: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 8 has 1.5 points so far, from evidence that is not final: franchise.08 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1008",
             "name": "franchise.08 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3152,15 +3355,20 @@
         "franchise": "franchise.25",
         "name": "Held team 25",
         "status": "Incomplete",
-        "words": "Held team 25's score is incomplete: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 25 has 1.5 points so far, from evidence that is not final: franchise.25 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1025",
             "name": "franchise.25 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3175,15 +3383,20 @@
         "franchise": "franchise.24",
         "name": "Held team 24",
         "status": "Incomplete",
-        "words": "Held team 24's score is incomplete: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 24 has 1.5 points so far, from evidence that is not final: franchise.24 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1024",
             "name": "franchise.24 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3198,15 +3411,20 @@
         "franchise": "franchise.09",
         "name": "Held team 9",
         "status": "Incomplete",
-        "words": "Held team 9's score is incomplete: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 9 has 1.5 points so far, from evidence that is not final: franchise.09 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1009",
             "name": "franchise.09 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3221,15 +3439,20 @@
         "franchise": "franchise.10",
         "name": "Held team 10",
         "status": "Incomplete",
-        "words": "Held team 10's score is incomplete: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 10 has 1.5 points so far, from evidence that is not final: franchise.10 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1010",
             "name": "franchise.10 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3244,15 +3467,20 @@
         "franchise": "franchise.23",
         "name": "Held team 23",
         "status": "Incomplete",
-        "words": "Held team 23's score is incomplete: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 23 has 1.5 points so far, from evidence that is not final: franchise.23 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1023",
             "name": "franchise.23 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3267,15 +3495,20 @@
         "franchise": "franchise.22",
         "name": "Held team 22",
         "status": "Incomplete",
-        "words": "Held team 22's score is incomplete: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 22 has 1.5 points so far, from evidence that is not final: franchise.22 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1022",
             "name": "franchise.22 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3290,15 +3523,20 @@
         "franchise": "franchise.11",
         "name": "Held team 11",
         "status": "Incomplete",
-        "words": "Held team 11's score is incomplete: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 11 has 1.5 points so far, from evidence that is not final: franchise.11 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1011",
             "name": "franchise.11 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3313,15 +3551,20 @@
         "franchise": "franchise.12",
         "name": "Held team 12",
         "status": "Incomplete",
-        "words": "Held team 12's score is incomplete: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 12 has 1.5 points so far, from evidence that is not final: franchise.12 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1012",
             "name": "franchise.12 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3336,15 +3579,20 @@
         "franchise": "franchise.21",
         "name": "Held team 21",
         "status": "Incomplete",
-        "words": "Held team 21's score is incomplete: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 21 has 1.5 points so far, from evidence that is not final: franchise.21 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1021",
             "name": "franchise.21 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3359,15 +3607,20 @@
         "franchise": "franchise.20",
         "name": "Held team 20",
         "status": "Incomplete",
-        "words": "Held team 20's score is incomplete: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 20 has 1.5 points so far, from evidence that is not final: franchise.20 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1020",
             "name": "franchise.20 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3382,15 +3635,20 @@
         "franchise": "franchise.13",
         "name": "Held team 13",
         "status": "Incomplete",
-        "words": "Held team 13's score is incomplete: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 13 has 1.5 points so far, from evidence that is not final: franchise.13 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1013",
             "name": "franchise.13 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3405,15 +3663,20 @@
         "franchise": "franchise.14",
         "name": "Held team 14",
         "status": "Incomplete",
-        "words": "Held team 14's score is incomplete: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 14 has 1.5 points so far, from evidence that is not final: franchise.14 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1014",
             "name": "franchise.14 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3428,15 +3691,20 @@
         "franchise": "franchise.19",
         "name": "Held team 19",
         "status": "Incomplete",
-        "words": "Held team 19's score is incomplete: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 19 has 1.5 points so far, from evidence that is not final: franchise.19 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1019",
             "name": "franchise.19 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3451,15 +3719,20 @@
         "franchise": "franchise.18",
         "name": "Held team 18",
         "status": "Incomplete",
-        "words": "Held team 18's score is incomplete: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 18 has 1.5 points so far, from evidence that is not final: franchise.18 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1018",
             "name": "franchise.18 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3474,15 +3747,20 @@
         "franchise": "franchise.15",
         "name": "Held team 15",
         "status": "Incomplete",
-        "words": "Held team 15's score is incomplete: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 15 has 1.5 points so far, from evidence that is not final: franchise.15 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1015",
             "name": "franchise.15 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3497,15 +3775,20 @@
         "franchise": "franchise.16",
         "name": "Held team 16",
         "status": "Incomplete",
-        "words": "Held team 16's score is incomplete: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 16 has 1.5 points so far, from evidence that is not final: franchise.16 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1016",
             "name": "franchise.16 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {
@@ -3520,15 +3803,20 @@
         "franchise": "franchise.17",
         "name": "Held team 17",
         "status": "Incomplete",
-        "words": "Held team 17's score is incomplete: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
+        "words": "Held team 17 has 1.5 points so far, from evidence that is not final: franchise.17 starter: 1.5 points counted so far; incomplete: A starter has not been reported",
         "starters": [
           {
+            "fieldSources": {
+              "tackle": ""
+            },
             "player": "1017",
             "name": "franchise.17 starter",
             "position": "LB",
-            "words": "1.5 points counted so far; incomplete: A starter has not been reported"
+            "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "provisional": 15000
           }
         ],
+        "provisional": 15000,
         "adjustment": 0,
         "changes": [],
         "lineup": {

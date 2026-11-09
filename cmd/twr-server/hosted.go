@@ -38,6 +38,9 @@ type hostedFlags struct {
 	status   *string
 }
 
+// replyCacheBytes bounds the league-state replies the server keeps in memory (serverhttp.ReplyCache).
+const replyCacheBytes = 256 << 20
+
 func parseHostedFlags(args []string) (hostedFlags, error) {
 	flags := flag.NewFlagSet("twr-server hosted", flag.ContinueOnError)
 	path := flags.String("db", "", "existing server-owned history and accounts database")
@@ -214,7 +217,9 @@ func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, 
 	}
 	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
-		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Worker: worker, Registry: catalogue}
+		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Passwords: passwords, Worker: worker, Registry: catalogue,
+		Join:    accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, work),
+		Replies: serverhttp.NewReplyCache(replyCacheBytes)}
 	if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("record server release: %w", err)
 	}

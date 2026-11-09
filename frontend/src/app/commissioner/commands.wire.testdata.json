@@ -548,8 +548,14 @@
   {
     "command": "commish.rules.set",
     "effective": "now",
-    "field": "league.teams",
+    "field": "league.startingAssets",
     "safeguard": "reason"
+  },
+  {
+    "command": "commish.rules.set",
+    "effective": "now",
+    "field": "transactions.follow",
+    "safeguard": "hold"
   },
   {
     "command": "commish.rules.set",
@@ -560,7 +566,7 @@
   {
     "command": "commish.rules.set",
     "effective": "next_rollover",
-    "field": "league.teams",
+    "field": "league.startingAssets",
     "safeguard": "hold"
   },
   {

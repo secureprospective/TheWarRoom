@@ -84,6 +84,7 @@ func (c Credential) Validate() error {
 type Repository interface {
 	Insert(ctx context.Context, credential Credential, onlyIfEmpty bool) error
 	Credential(ctx context.Context, username string) (Credential, error)
+	ChangePassword(ctx context.Context, accountID, passwordHash string) error
 }
 
 type Service struct {

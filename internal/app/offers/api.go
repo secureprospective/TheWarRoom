@@ -86,6 +86,7 @@ const readTimeout = 120 * time.Second
 // AssetValue is the reader's port over the shared asset board, not its owner's cache.
 type AssetValue struct {
 	NowText, DynastyText   string
+	String, Points         string
 	NowHeld, DynastyHeld   bool
 	NowValue, DynastyValue float64
 }

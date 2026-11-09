@@ -34,28 +34,21 @@ func (h StoredHost) CommissionerPrincipal() (string, error) {
 	return h.Principal, nil
 }
 func (StoredHost) CommissionerAuthorization() commissioner.Authorizer { return nil }
-func (StoredHost) CommissionerNow() time.Time                         { return time.Now() }
+func (h StoredHost) CommissionerNow() time.Time                       { return h.Now() }
 func (StoredHost) CommissionerZone() *time.Location                   { return time.UTC }
 func (h StoredHost) CommissionerPreviewRegistry() string              { return h.Registry }
 func (StoredHost) NativeFacts() nativecheck.Facts                     { return nil }
+
+// CommissionerRecords serves the store's revision-keyed shared snapshot, which carries the replay and
+// people-state memos; rebuilding records from a deep-cloned event list on every request defeated both and
+// was most of each hosted read's server time (lab CT 254 profile, 11-08). The snapshot is read-only by
+// contract (TestSharedRecordsStayUnchangedByReadings).
 func (h StoredHost) CommissionerRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
-	events, err := h.Events(ctx, league, commissioner.Stream, 0)
+	records, err := h.SharedCommissionerRecords(ctx, league)
 	if err != nil {
 		return nil, fmt.Errorf("server league records: %w", err)
 	}
-	records := make([]commissioner.Record, 0, len(events))
-	for _, event := range events {
-		if event.Payload.Commissioner == nil {
-			return nil, fmt.Errorf("invalid server league record")
-		}
-		records = append(records, *event.Payload.Commissioner)
-	}
-	// The same verified mappings, when supplied by trusted composition, apply to policy and retries.
-	resolved, err := commissioner.ResolvePrincipals(ctx, league, records)
-	if err != nil {
-		return nil, fmt.Errorf("resolve server identities: %w", err)
-	}
-	return resolved, nil
+	return records, nil
 }
 func (StoredHost) NativeScheduleDates(context.Context, int, time.Time) ([]leagueweek.Week, error) {
 	return nil, fmt.Errorf("use the server-held league schedule")

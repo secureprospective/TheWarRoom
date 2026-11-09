@@ -17,7 +17,6 @@ import type {
   PoolScope,
   Preview,
   Reading,
-  Rule,
 } from './contract';
 
 type Parser<T> = (value: unknown, path: string) => T;
@@ -37,9 +36,11 @@ function optionalNumber(v: unknown, p: string): number | null {
 const poolRow: Parser<PoolRow> = (v, p) => {
   const r = object(v, p, [
     'id', 'name', 'position', 'team', 'age', 'experience', 'minimum', 'plan', 'planId',
-    'market', 'marketLines', 'engine', 'ppg', 'lab', 'engineText', 'ppgText', 'labText',
+    'string', 'points', 'market', 'marketLines', 'engine', 'ppg', 'lab', 'engineText', 'ppgText', 'labText',
   ]);
   return {
+    string: r.string === undefined ? undefined : text(r.string, p),
+    points: r.points === undefined ? undefined : text(r.points, p),
     engineText: text(r.engineText, p), ppgText: text(r.ppgText, p), labText: text(r.labText, p),
     engine: optionalNumber(r.engine, p), ppg: optionalNumber(r.ppg, p), lab: optionalNumber(r.lab, p),
     marketLines: array(r.marketLines, p, text),
@@ -64,14 +65,6 @@ const pool: Parser<Pool> = (v, p) => {
     rows: array(r.rows, p, poolRow), positions: array(r.positions, p, text), summary: text(r.summary, p),
   };
 };
-const rule: Parser<Rule> = (v, p) => {
-  const r = object(v, p, ['rule', 'label', 'verdict', 'reason', 'mark']);
-  return {
-    rule: text(r.rule, p), label: text(r.label, p),
-    verdict: choice(r.verdict, p, ['pass', 'fail', 'unknown', 'info']),
-    reason: text(r.reason, p), mark: text(r.mark, p),
-  };
-};
 const dropOption: Parser<DropOption> = (v, p) => {
   const r = object(v, p, ['id', 'name', 'label', 'salary', 'deadCap', 'freed', 'covers', 'available']);
   return {
@@ -84,15 +77,13 @@ const dropOption: Parser<DropOption> = (v, p) => {
 export function parsePreview(v: unknown): Preview {
   const p = 'Bid preview';
   const r = object(v, p, [
-    'problem', 'player', 'salary', 'snapped', 'points', 'rules', 'blocked', 'note', 'post',
-    'ruleSummary', 'closesNote', 'conditionalDrops',
+    'problem', 'player', 'salary', 'snapped', 'points', 'post', 'closesNote', 'conditionalDrops',
   ]);
   return {
     conditionalDrops: r.conditionalDrops === null ? [] : array(r.conditionalDrops, p, dropOption),
     problem: text(r.problem, p), player: text(r.player, p), salary: amount(r.salary, p),
-    snapped: text(r.snapped, p), points: text(r.points, p), rules: array(r.rules, p, rule),
-    blocked: flag(r.blocked, p), note: text(r.note, p), post: text(r.post, p),
-    ruleSummary: text(r.ruleSummary, p), closesNote: text(r.closesNote, p),
+    snapped: text(r.snapped, p), points: text(r.points, p), post: text(r.post, p),
+    closesNote: text(r.closesNote, p),
   };
 }
 const action: Parser<Plan['actions'][number]> = (v, p) => {
@@ -104,7 +95,7 @@ const action: Parser<Plan['actions'][number]> = (v, p) => {
 export function parsePlan(v: unknown, path = 'Bid plan'): Plan {
   const r = object(v, path, [
     'receipt', 'facts', 'player', 'salary', 'points', 'contract', 'beatText', 'form', 'state',
-    'status', 'rules', 'ruleSummary', 'post', 'actions',
+    'status', 'post', 'actions',
   ]);
   const facts = object(r.facts, path, [
     'player', 'salary', 'years', 'points', 'snipe', 'beat', 'evidence', 'closes',
@@ -122,7 +113,7 @@ export function parsePlan(v: unknown, path = 'Bid plan'): Plan {
     player: text(r.player, path), salary: amount(r.salary, path), points: text(r.points, path),
     contract: text(r.contract, path), beatText: text(r.beatText, path),
     state: text(r.state, path), status: text(r.status, path),
-    rules: array(r.rules, path, rule), ruleSummary: text(r.ruleSummary, path), post: text(r.post, path),
+    post: text(r.post, path),
     actions: array(r.actions, path, action),
   };
 }

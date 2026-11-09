@@ -6,6 +6,10 @@ export function TargetBackupNow() {
   return window['go']['commissioner']['API']['TargetBackupNow']();
 }
 
+export function TargetCancelRead(arg1) {
+  return window['go']['commissioner']['API']['TargetCancelRead'](arg1);
+}
+
 export function TargetCommissionerActor() {
   return window['go']['commissioner']['API']['TargetCommissionerActor']();
 }
@@ -48,6 +52,14 @@ export function TargetCommissionerNotices(arg1) {
 
 export function TargetCommissionerPeople(arg1) {
   return window['go']['commissioner']['API']['TargetCommissionerPeople'](arg1);
+}
+
+export function TargetCommissionerPresetApply(arg1) {
+  return window['go']['commissioner']['API']['TargetCommissionerPresetApply'](arg1);
+}
+
+export function TargetCommissionerPresetCompare(arg1, arg2) {
+  return window['go']['commissioner']['API']['TargetCommissionerPresetCompare'](arg1, arg2);
 }
 
 export function TargetCommissionerPreview(arg1) {
@@ -134,12 +146,28 @@ export function TargetNativeLineupCheck(arg1) {
   return window['go']['commissioner']['API']['TargetNativeLineupCheck'](arg1);
 }
 
+export function TargetNativeLineupDelta(arg1) {
+  return window['go']['commissioner']['API']['TargetNativeLineupDelta'](arg1);
+}
+
 export function TargetNativeLineupSet(arg1) {
   return window['go']['commissioner']['API']['TargetNativeLineupSet'](arg1);
 }
 
+export function TargetNativeMoves(arg1, arg2) {
+  return window['go']['commissioner']['API']['TargetNativeMoves'](arg1, arg2);
+}
+
+export function TargetNativeOdds(arg1, arg2) {
+  return window['go']['commissioner']['API']['TargetNativeOdds'](arg1, arg2);
+}
+
 export function TargetNativePlayerScore(arg1, arg2, arg3, arg4) {
   return window['go']['commissioner']['API']['TargetNativePlayerScore'](arg1, arg2, arg3, arg4);
+}
+
+export function TargetNativeProjections(arg1, arg2, arg3, arg4) {
+  return window['go']['commissioner']['API']['TargetNativeProjections'](arg1, arg2, arg3, arg4);
 }
 
 export function TargetNativeReserveCheck(arg1) {
@@ -174,6 +202,10 @@ export function TargetNativeTrades(arg1, arg2) {
   return window['go']['commissioner']['API']['TargetNativeTrades'](arg1, arg2);
 }
 
+export function TargetNativeValues(arg1) {
+  return window['go']['commissioner']['API']['TargetNativeValues'](arg1);
+}
+
 export function TargetNativeWaiverAction(arg1) {
   return window['go']['commissioner']['API']['TargetNativeWaiverAction'](arg1);
 }
@@ -186,6 +218,14 @@ export function TargetNativeWeek(arg1) {
   return window['go']['commissioner']['API']['TargetNativeWeek'](arg1);
 }
 
-export function TargetStatQueue(arg1, arg2) {
-  return window['go']['commissioner']['API']['TargetStatQueue'](arg1, arg2);
+export function TargetSignInFacts() {
+  return window['go']['commissioner']['API']['TargetSignInFacts']();
+}
+
+export function TargetStatQueue(arg1, arg2, arg3) {
+  return window['go']['commissioner']['API']['TargetStatQueue'](arg1, arg2, arg3);
+}
+
+export function TargetWorkflow(arg1) {
+  return window['go']['commissioner']['API']['TargetWorkflow'](arg1);
 }

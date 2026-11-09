@@ -55,6 +55,7 @@ func (r wireReadings) check(t *testing.T) {
 func TestNativeMarketWireMatchesGolden(t *testing.T) {
 	t.Parallel()
 	f := nativeMarketApp(t)
+	f.app.core.History.SetLineupEnvironment(appLineupEnv{app: f.app})
 	readings := wireReadings{}
 	cut, err := f.owner(t, "owner.two", commissioner.RosterCut, commissioner.RawWaiverArgs{Player: "1001",
 		Franchise: "franchise.02"})
@@ -92,6 +93,7 @@ func TestNativeMarketWireMatchesGolden(t *testing.T) {
 	if err == nil && assets.Snapshot != nil {
 		// A dozen players and picks keep the golden reviewable; the full snapshot has its own wire file.
 		assets.Snapshot.Players = assets.Snapshot.Players[:min(12, len(assets.Snapshot.Players))]
+		assets.Identities = assets.Identities[:min(12, len(assets.Identities))]
 		assets.Snapshot.Picks = assets.Snapshot.Picks[:min(12, len(assets.Snapshot.Picks))]
 		assets.Snapshot.RosterAt = time.Date(2026, 10, 13, 9, 0, 0, 0, time.UTC)
 	}
@@ -132,7 +134,7 @@ func TestNativeLeagueWireMatchesGolden(t *testing.T) {
 	readings.add(t, "score-preview", preview, err)
 	bracket, err := newCommissionerAPI(scores.app).TargetNativeBracket(legalityLeague, 2026)
 	readings.add(t, "bracket", bracket, err)
-	queue, err := newCommissionerAPI(scores.app).TargetStatQueue(legalityLeague, 2026)
+	queue, err := newCommissionerAPI(scores.app).TargetStatQueue(legalityLeague, 2026, "")
 	readings.add(t, "stat-queue", queue, err)
 
 	lineups := lineupAppTest(t)
@@ -327,8 +329,11 @@ func TestNativeDenialsMatchGolden(t *testing.T) {
 		"results-league": func() error { _, err := newCommissionerAPI(f.app).TargetNativeResults("legacy", 2026, 1); return err },
 		"standings":      func() error { _, err := newCommissionerAPI(f.app).TargetNativeStandings("native.", 2026); return err },
 		"bracket":        func() error { _, err := newCommissionerAPI(f.app).TargetNativeBracket(legalityLeague, 0); return err },
-		"stat-queue":     func() error { _, err := newCommissionerAPI(f.app).TargetStatQueue("native.seed ", 2026); return err },
-		"score-preview":  func() error { _, err := newCommissionerAPI(f.app).TargetNativeScorePreview(`{`); return err },
+		"stat-queue": func() error {
+			_, err := newCommissionerAPI(f.app).TargetStatQueue("native.seed ", 2026, "")
+			return err
+		},
+		"score-preview": func() error { _, err := newCommissionerAPI(f.app).TargetNativeScorePreview(`{`); return err },
 		"schedule-zone": func() error {
 			scope := nativeOwnerScope()
 			scope.LocalZone = "Local"

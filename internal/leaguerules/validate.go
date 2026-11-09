@@ -63,6 +63,8 @@ func validateChildren(v reflect.Value) error {
 }
 func validateSpecial(v any) error {
 	switch value := v.(type) {
+	case ScheduleFollow:
+		return validateScheduleFollow(value)
 	case Bounds:
 		return validateBounds(value.Min, value.Max)
 	case BoundsMoney:
@@ -146,7 +148,9 @@ func validateNames(names Value[map[string]string]) error {
 // menus is every closed list of options a rule value may take, by the value's type name.
 func menus() map[string][]string {
 	return map[string][]string{
-		"Format": {"head_to_head"}, "InitialRosters": {"draft", "free_agency"},
+		"LineupLock":     {"each_player_game", "first_kickoff"},
+		"StartingAssets": {"empty", "held"},
+		"Format":         {"head_to_head"}, "InitialRosters": {"draft", "free_agency"},
 		"PlayerPools": {"one", "per_side"}, "CarryPolicy": {"all", "keepers"},
 		"Penalty": {"zero_top_starter", "zero_slot", "none"}, "CapMode": {"hard", "soft"},
 		"NFLStatus":       {"IR", "PUP", "NFI", "Out", "suspended"},
@@ -197,6 +201,21 @@ func validateMap(v reflect.Value) error {
 		}
 		if err := validateValue(iter.Value()); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func validateScheduleFollow(v ScheduleFollow) error {
+	if v == (ScheduleFollow{}) {
+		return nil
+	}
+	if v.Source != "mfl" || v.Season < 2000 || v.Season > 9999 || v.League == "" {
+		return fmt.Errorf("choose a reference source, league number and season, or clear all three")
+	}
+	for _, r := range v.League {
+		if r < '0' || r > '9' {
+			return fmt.Errorf("reference league number must contain only digits")
 		}
 	}
 	return nil

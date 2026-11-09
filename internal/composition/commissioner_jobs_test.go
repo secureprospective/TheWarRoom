@@ -11,8 +11,12 @@ import (
 
 func jobsLeague(t *testing.T, app *App, league, preset string) commissioner.RawCommand {
 	t.Helper()
+	source := commissioner.SourceNative
+	if preset == commissioner.PresetLegacy {
+		source = commissioner.SourceMFLImport
+	}
 	raw := commissioner.RawCommand{League: league, Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Jobs league", Preset: preset, FranchiseCount: 4, Season: 2026},
+		Args:   commissioner.RawArgs{Name: "Jobs league", Preset: preset, Source: source, FranchiseCount: 4, Season: 2026},
 		Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, app, raw)
 	return raw

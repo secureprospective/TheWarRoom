@@ -44,10 +44,12 @@ func (r RawNativeScope) Validate() error {
 // not it reports the player; Lines are the versions of the player's week the files reported, oldest first.
 // Which version counts is the league's decision, never the feed's.
 type NativeEvidence struct {
-	GSIS    string
-	Held    *HeldWeek
-	Lines   []LineRevision
-	Missing []string
+	// ListedPosition is the existing player record's specific position, used only when the stat feed is ambiguous.
+	ListedPosition string
+	GSIS           string
+	Held           *HeldWeek
+	Lines          []LineRevision
+	Missing        []string
 	// OLine is the season's held O-Line games, read only for an O-Line card; nil when none are held.
 	OLine *HeldLineGames
 }

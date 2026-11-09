@@ -39,3 +39,5 @@ export function subscribeResearch(changed: () => void): () => void {
 export function subscribeResearchPlayer(changed: () => void): () => void {
   return commands.alerts.onSeasonChange(changed);
 }
+
+export const readPlayerUsage = async (id: string): Promise<unknown> => bindings().TargetPlayerUsage(id);

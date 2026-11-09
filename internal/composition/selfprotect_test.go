@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/draft"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
@@ -164,7 +163,6 @@ func TestBindingManifestRejectsHeld(t *testing.T) {
 func boundCatalogs() map[reflect.Type][]catalog.Command {
 	return map[reflect.Type][]catalog.Command{
 		reflect.TypeFor[*commissioner.API](): commissioner.Commands(),
-		reflect.TypeFor[*comms.API]():        comms.Commands(),
 		reflect.TypeFor[*controlapp.API]():   controlapp.Commands(),
 		reflect.TypeFor[*contractsapp.API](): contractsapp.Commands(),
 		reflect.TypeFor[*draft.API]():        draft.Commands(),

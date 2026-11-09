@@ -110,6 +110,18 @@ func (s *Store) ExactArchivedBodies(ctx context.Context, wanted string,
 	return s.archivedBodies(ctx, wanted, accept, false, true)
 }
 
+// ArchiveMark counts the held copies whose URL contains part and names the newest, so a reader can
+// tell whether its parsed copies are still the held ones without reading any body.
+func (s *Store) ArchiveMark(ctx context.Context, part string) (count, newest int64, err error) {
+	err = s.pools.Read().QueryRowContext(ctx,
+		`SELECT count(*), coalesce(max(fetch_id), 0) FROM fetch_log WHERE status = 200 AND instr(url, ?) > 0`,
+		part).Scan(&count, &newest)
+	if err != nil {
+		return 0, 0, fmt.Errorf("history: archive mark: %w", err)
+	}
+	return count, newest, nil
+}
+
 const archiveContainsQuery = `
 SELECT f.source, f.url, f.fetched_at, r.size, r.body FROM fetch_log f JOIN raw_archive r ON r.sha256 = f.sha256
 WHERE f.status = 200 AND instr(f.url, ?) > 0 ORDER BY f.fetched_at DESC, f.fetch_id DESC`

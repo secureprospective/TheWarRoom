@@ -120,7 +120,8 @@ func TestStartupDraftJobFollowsFirstRostersSourceAndStart(t *testing.T) {
 	}{
 		{"drafted first rosters", func(*ledgerBuilder) {}, true},
 		{"free agency", func(b *ledgerBuilder) { b.set("league.initialRosters", `"free_agency"`, "now", seasonMoment(2)) }, false},
-		{"imported from MFL", func(b *ledgerBuilder) { b.records[0].Command.Args.Source = SourceMFLImport }, false},
+		// Where a league came from does not enter into it: the same settings and start give the same draft.
+		{"imported from MFL, same settings", func(b *ledgerBuilder) { b.records[0].Command.Args.Source = SourceMFLImport }, true},
 		{"rosters at the start", func(b *ledgerBuilder) {
 			native := b.records[2].Command.Args.Native
 			native.Players = []NativePlayer{{ID: "20000", Franchise: "franchise.01", Status: domain.RosterActive,
@@ -293,7 +294,7 @@ func TestStartupListOffersTheLeaguesFranchises(t *testing.T) {
 }
 
 // A single-pool startup draft reads exactly as it did before per-side pools: its room, the assets it
-// signs and the league's jobs hash to what they were at b8a933e4.
+// signs and the league's jobs stay pinned; missing contracts are jobs, not a default-contract rule.
 func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
 	b := startupLeague(t)
 	facts := startupFacts()
@@ -310,7 +311,18 @@ func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := digest(t, basis.draft, basis.order, assets, jobs); got != "90ca21fd230f0aa6" {
+	for _, component := range []struct {
+		name, got, want string
+	}{
+		{"draft", digest(t, basis.draft), "988607205db9be4c"},
+		{"order", digest(t, basis.order), "43a01438c298d436"},
+		{"assets", digest(t, assets), "1589ca7aa9c8f465"},
+	} {
+		if component.got != component.want {
+			t.Errorf("single-pool startup %s digest %s", component.name, component.got)
+		}
+	}
+	if got := digest(t, basis.draft, basis.order, assets, jobs); got != "8a6936145d37309e" {
 		t.Fatalf("single-pool startup digest %s", got)
 	}
 }

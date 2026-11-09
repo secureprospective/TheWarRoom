@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -16,6 +17,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -42,9 +44,13 @@ type Hosted struct {
 	Sessions       *accounts.SessionService
 	TOTP           *accounts.TOTPService
 	Enrollment     *accounts.EnrollmentService
+	Passwords      *accounts.Service
+	Join           *accounts.JoinService
 	Recovery       *accounts.RecoveryService
 	Worker         *leagueservice.DueWorker
 	Registry       string
+	// Replies caches league-state readings per head and reading epoch; nil reads every request afresh.
+	Replies *ReplyCache
 	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
 	TrustedProxy netip.Addr
 }
@@ -59,7 +65,7 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "account service unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	if r.TLS == nil || r.Header.Get("Origin") != "" || r.URL.RawQuery != "" {
+	if r.TLS == nil || !originAdmissible(r) || r.URL.RawQuery != "" {
 		http.Error(w, "request refused", http.StatusBadRequest)
 		return
 	}
@@ -74,6 +80,14 @@ func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
 		h.printRecoveryCodes(w, r)
 	case EnrollmentPath:
 		EnrollmentHandler(h.Enrollment).ServeHTTP(w, r)
+	case PasswordPagePath:
+		h.passwordPage(w, r)
+	case PasswordChangePath:
+		h.changePassword(w, r)
+	case JoinPagePath:
+		h.joinPage(w, r)
+	case JoinFranchisesPath, JoinClaimPath:
+		h.join(w, r)
 	case TOTPBeginPath, TOTPConfirmPath, TOTPStepUpPath:
 		h.authenticator(w, r)
 	case AgentTokenPath, AgentTokenRevokePath:
@@ -82,7 +96,10 @@ func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
 		h.revoke(w, r)
 	case LoginPath:
 		h.login(w, r)
-	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, DispatchPath, LineupPath, PickPath, ConfirmPath, WorkflowPath:
+	case DispatchPath:
+		// An older twr sends league changes here; the 426 envelope is what every client version shows as "update".
+		writeUpdateRequired(w, serverversion.App, catalogUpdate)
+	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, LineupPath, PickPath, ConfirmPath, WorkflowPath:
 		h.native(w, r)
 	default:
 		http.NotFound(w, r)
@@ -134,7 +151,6 @@ type RawNativeRequest struct {
 	League   string                       `json:"league,omitempty"`
 	Command  *commissioner.RawCommand     `json:"command,omitempty"`
 	Pick     *commissioner.DraftPickInput `json:"pick,omitempty"`
-	Mode     string                       `json:"mode,omitempty"`
 	TokenID  string                       `json:"tokenId,omitempty"`
 }
 
@@ -143,14 +159,11 @@ func (r RawNativeRequest) Validate() error {
 		return fmt.Errorf("unsupported protocol")
 	}
 	if r.Workflow != nil {
-		if r.Command != nil || r.Pick != nil || r.League+r.Mode+r.TokenID != "" {
+		if r.Command != nil || r.Pick != nil || r.League+r.TokenID != "" {
 			return fmt.Errorf("send only a workflow")
 		}
 		//nolint:wrapcheck // Preserve the catalog-owned workflow refusal text.
 		return r.Workflow.Validate()
-	}
-	if !validDispatchMode(r.Mode) {
-		return fmt.Errorf("choose preview or execute")
 	}
 	if r.Pick != nil {
 		return r.validatePick()
@@ -171,7 +184,7 @@ func (r RawNativeRequest) Validate() error {
 }
 
 func (r RawNativeRequest) validatePick() error {
-	if r.Command != nil || r.League != "" || r.Mode != "" || r.TokenID != "" {
+	if r.Command != nil || r.League != "" || r.TokenID != "" {
 		return fmt.Errorf("send only a draft pick")
 	}
 	if err := r.Pick.Validate(); err != nil {
@@ -188,12 +201,16 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	account, authenticationErr := h.Sessions.Authenticate(r.Context(), rawSession)
 	if authenticationErr != nil {
+		if !sessionRefused(authenticationErr) {
+			h.sessionFailure(w, authenticationErr)
+			return
+		}
 		if h.Tokens == nil {
-			h.writeFailure(w, "session refused", http.StatusUnauthorized)
+			h.sessionFailure(w, authenticationErr)
 			return
 		}
 		if _, err := h.Tokens.Authenticate(r.Context(), rawSession); err != nil {
-			h.writeFailure(w, "session refused", http.StatusUnauthorized)
+			h.sessionFailure(w, err)
 			return
 		}
 	}
@@ -203,10 +220,6 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if authenticationErr != nil {
-		if raw.Workflow != nil {
-			http.Error(w, "sign in with your own account", http.StatusUnauthorized)
-			return
-		}
 		h.agent(w, r, rawSession, raw)
 		return
 	}
@@ -218,6 +231,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	if raw.Workflow != nil {
 		r = r.WithContext(leagueservice.WithFootballDigest(r.Context(), raw.Workflow.Football))
 	}
+	r = r.WithContext(withReplyPrincipal(r.Context(), string(principal)))
 	host := leagueservice.StoredHost{Store: h.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
@@ -248,37 +262,26 @@ func (h Hosted) workflowHost(host leagueservice.Host, workflow bool) (leagueserv
 	return host, nil
 }
 
+const catalogUpdate = "League changes now go through the league catalog: update twr to the latest version, then run it again."
+
 func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
 	if raw.Workflow != nil {
 		h.workflow(w, r, service, *raw.Workflow)
 		return
 	}
-	path := r.URL.Path
-	if path == DispatchPath {
-		path = PreviewPath
-		if raw.Mode == "execute" {
-			path = ExecutePath
-		}
-	}
-	switch path {
+	switch r.URL.Path {
 	case LineupPath, PickPath:
 		h.dispatchOwner(w, r, service, raw)
 	case PeoplePath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing reading API.
-		reading, err := service.TargetCommissionerPeople(raw.League)
-		if err != nil {
-			http.Error(w, "native read refused", http.StatusForbidden)
-			return
-		}
-		writeHosted(w, reading)
+		h.cachedReading(w, r, service, raw.League, func() ([]byte, error) {
+			return encodeReading(service.TargetCommissionerPeople(raw.League))
+		})
 	case LedgerPath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing reading API.
-		reading, err := service.TargetCommissionerLedger(raw.League)
-		if err != nil {
-			http.Error(w, "native read refused", http.StatusForbidden)
-			return
-		}
-		writeHosted(w, reading)
+		h.cachedReading(w, r, service, raw.League, func() ([]byte, error) {
+			return encodeReading(service.TargetCommissionerLedger(raw.League))
+		})
 	case PreviewPath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing preview API.
 		preview, err := service.Preview(*raw.Command)
@@ -295,6 +298,21 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 		}
 		writeHosted(w, receipt)
 	}
+}
+
+// cachedReading answers a people or ledger reading, from the reply cache when it holds one.
+func (h Hosted) cachedReading(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, league string, read func() ([]byte, error)) {
+	scope, err := h.replyScope(r.Context(), service, r.URL.Path, league, nil, "")
+	if err != nil {
+		http.Error(w, "native read refused", http.StatusForbidden)
+		return
+	}
+	body, err := scope.reply(read)
+	if err != nil {
+		http.Error(w, "native read refused", http.StatusForbidden)
+		return
+	}
+	writeReading(w, r, body)
 }
 
 type accountAdmission struct {
@@ -378,7 +396,7 @@ func admitLeagueAccess(access commissioner.Access, policy governance.State, prin
 	return nil
 }
 
-func decodeHosted[T RawRecoveryRequest | RawRecoveryCodesRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator | RawAgentTokenRequest](w http.ResponseWriter, r *http.Request, raw *T) error {
+func decodeHosted[T RawRecoveryRequest | RawRecoveryCodesRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator | RawAgentTokenRequest | RawPasswordChangeRequest](w http.ResponseWriter, r *http.Request, raw *T) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -402,7 +420,11 @@ type LoginResponse struct {
 func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
-func writeHosted[T RecoveryResponse | RecoveryCodesResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse | WorkflowResponse](w http.ResponseWriter, body T) {
+type hostedBody interface {
+	RecoveryResponse | RecoveryCodesResponse | PasswordChangeResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse | WorkflowResponse
+}
+
+func writeHosted[T hostedBody](w http.ResponseWriter, body T) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)
@@ -412,6 +434,16 @@ func writeHosted[T RecoveryResponse | RecoveryCodesResponse | RevokeResponse | c
 	if _, err := w.Write(encoded); err != nil {
 		return
 	}
+}
+
+// writeHostedReading is writeHosted for league readings, which may be compressed (writeReading).
+func writeHostedReading[T commissioner.People | commissioner.Ledger | WorkflowResponse](w http.ResponseWriter, r *http.Request, body T) {
+	encoded, err := json.Marshal(body)
+	if err != nil {
+		http.Error(w, "response unavailable", http.StatusInternalServerError)
+		return
+	}
+	writeReading(w, r, encoded)
 }
 
 // ServeHosted never registers fixture routes or manufactures a principal.
@@ -430,8 +462,6 @@ func hostedOwner(policy governance.State, principal governance.Principal, record
 	return false
 }
 
-func validDispatchMode(mode string) bool { return mode == "" || mode == "preview" || mode == "execute" }
-
 func (r RawNativeRequest) matchesPath(path string) bool {
 	if path == WorkflowPath || r.Workflow != nil {
 		return path == WorkflowPath && r.Workflow != nil
@@ -442,7 +472,7 @@ func (r RawNativeRequest) matchesPath(path string) bool {
 	if (path == PickPath) != (r.Pick != nil) {
 		return false
 	}
-	return (r.TokenID == "" || path == ConfirmPath) && (r.Mode == "" || path == DispatchPath)
+	return r.TokenID == "" || path == ConfirmPath
 }
 
 func (h Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
@@ -467,7 +497,7 @@ func hostedMember(policy governance.State, principal governance.Principal, recor
 
 func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.TLS != nil && r.Header.Get("Origin") == "" && r.URL.RawQuery == "" && h.WriteAdmission != nil {
+		if r.Method == http.MethodPost && r.TLS != nil && originAdmissible(r) && r.URL.RawQuery == "" && h.WriteAdmission != nil {
 			if err := h.WriteAdmission(); err != nil {
 				http.Error(w, err.Error(), http.StatusServiceUnavailable)
 				return
@@ -485,4 +515,21 @@ func (h Hosted) writeFailure(w http.ResponseWriter, message string, status int) 
 		}
 	}
 	http.Error(w, message, status)
+}
+
+// sessionRefused reports whether an authentication error is a real refusal (unknown, expired
+// or revoked credentials) rather than the store being busy or the request running out of time.
+func sessionRefused(err error) bool {
+	return errors.Is(err, accounts.ErrSessionRefused) || errors.Is(err, accounts.ErrTokenRefused)
+}
+
+// sessionFailure answers an authentication error: a refusal is 401, anything else (store busy,
+// timeout, context deadline) is the server being busy, so a valid owner is not told to sign in.
+func (h Hosted) sessionFailure(w http.ResponseWriter, err error) {
+	if sessionRefused(err) {
+		h.writeFailure(w, "session refused", http.StatusUnauthorized)
+		return
+	}
+	w.Header().Set("Retry-After", "60")
+	h.writeFailure(w, BusyMessage, http.StatusServiceUnavailable)
 }

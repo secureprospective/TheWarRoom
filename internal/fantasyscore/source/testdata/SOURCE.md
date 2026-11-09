@@ -158,3 +158,6 @@ The expected totals in `e5_golden_test.go` come from `scripts/e5_study.py`, a Py
 implementation that counts the play-derived stats itself and prices them with the p6 study's legacy
 scorer. The ruled definitions behind those counts, and the one convention Claude had to pick (the
 red-zone boundary), are in `HANDOFF.md`.
+
+`missing_tackle.csv` is a synthetic boundary fixture: one GSIS solo-tackle credit and
+no weekly row, for exercising fallback decoding, ordinary feed approval, scoring and review.

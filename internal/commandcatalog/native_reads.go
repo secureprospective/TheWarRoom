@@ -31,6 +31,7 @@ func nativeReads() []Command {
 		{"commish.notices.read", "TargetCommissionerNotices", "league:string", "league-view", "ledger"},
 		{"commish.people.read", "TargetCommissionerPeople", "league:string", "league-view", "ledger"},
 		{"commish.rules.read", "TargetCommissionerRules", "league:string", "league-view", "ledger"},
+		{"commish.rules.preset.read", "TargetCommissionerPresetCompare", "league:string preset:string", "league-view", "ledger"},
 		{"commish.schedule.read", "TargetCommissionerSchedule", "league:string", "schedule.manage", "ledger"},
 		{"commish.corrections.read", "TargetCorrections", "league:string", "league-view", "ledger"},
 		{"calendar.read", "TargetLeagueCalendar", "", "league-view", "ledger"},
@@ -46,15 +47,20 @@ func nativeReads() []Command {
 		{"native.rules.read", "TargetNativeHouseRules", "league:string", "league-view", "ledger"},
 		{"lineup.read", "TargetNativeLineup", "league:string franchise:string week:integer at:string", "franchise-view", "ledger,schedule"},
 		{"lineup.check", "TargetNativeLineupCheck", "", "franchise-view", "ledger,player-facts"},
+		{"lineupdelta.read", "TargetNativeLineupDelta", "", "franchise-view", "ledger,stat-evidence,player-facts"},
+		{"value.read", "TargetNativeValues", "", "league-view", "ledger,stat-evidence,player-record,fitted-params"},
+		{"projections.read", "TargetNativeProjections", "league:string players:string season:integer week:integer", "league-view", "ledger,stat-evidence"},
 		{"score.player.read", "TargetNativePlayerScore", "league:string player:string season:integer week:integer", "league-view", "ledger,stat-evidence"},
 		{"native.reserve.check", "TargetNativeReserveCheck", "league:string", "league-view", "ledger,player-facts"},
 		{"results.read", "TargetNativeResults", "league:string season:integer week:integer", "league-view", "ledger,stat-evidence"},
 		{"native.roster.check", "TargetNativeRosterCheck", "league:string", "league-view", "ledger,player-facts"},
+		{"odds.read", "TargetNativeOdds", "league:string season:integer", "league-view", "ledger,stat-evidence,player-record,fitted-params"},
 		{"standings.read", "TargetNativeStandings", "league:string season:integer", "league-view", "ledger,stat-evidence"},
+		{"moves.read", "TargetNativeMoves", "league:string franchise:string", "franchise-view", "ledger,player-facts"},
 		{"trades.read", "TargetNativeTrades", "league:string viewer:string", "franchise-view", "ledger"},
 		{"waivers.read", "TargetNativeWaivers", "league:string franchise:string at:string", "franchise-view", "ledger,player-facts"},
 		{"week.read", "TargetNativeWeek", "", "league-view", "ledger,schedule"},
-		{"stats.queue.read", "TargetStatQueue", "league:string season:integer", "statistics.manage", "ledger,stat-evidence"},
+		{"stats.queue.read", "TargetStatQueue", "league:string season:integer request:string", "statistics.manage", "ledger,stat-evidence"},
 	}
 	out := make([]Command, 0, len(rows))
 	for _, row := range rows {
@@ -76,6 +82,10 @@ func NativeReadShape(method, fields string) Schema {
 		return Shape(reflect.TypeFor[commissioner.RawNativeDraftScope](), "RawNativeDraftScope.Validate")
 	case "TargetNativeFranchiseSchedule":
 		return Shape(reflect.TypeFor[leagueservice.RawNativeScheduleScope](), "RawNativeScheduleScope.Validate")
+	case "TargetNativeValues":
+		return Shape(reflect.TypeFor[leagueservice.RawValueScope](), "RawValueScope.Validate")
+	case "TargetNativeLineupDelta":
+		return Shape(reflect.TypeFor[leagueservice.RawLineupDeltaScope](), "RawLineupDeltaScope.Validate")
 	case "TargetNativeLineupCheck":
 		return Shape(reflect.TypeFor[commissioner.RawNativeLineup](), "RawNativeLineup.Validate")
 	case "TargetNativeWeek":

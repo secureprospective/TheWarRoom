@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -127,4 +128,11 @@ func NewMemory(league, season string) *Store {
 			return nil
 		},
 	}
+}
+
+// ForLeague keeps the provider and season, but isolates the credential by MFL league number.
+func (s *Store) ForLeague(league string) *Store {
+	scoped := *s
+	scoped.account = "mfl-apikey:" + league + s.account[strings.LastIndex(s.account, ":"):]
+	return &scoped
 }

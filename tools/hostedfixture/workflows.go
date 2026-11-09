@@ -30,7 +30,7 @@ func CreateWorkflowLeague(ctx context.Context, store *history.Store, principal g
 		revision = receipt.Revision
 		return nil
 	}
-	if err := record(commissioner.Create, commissioner.RawArgs{Name: "Practice league", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 32}); err != nil {
+	if err := record(commissioner.Create, commissioner.RawArgs{Name: "Practice league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 32}); err != nil {
 		return "", err
 	}
 	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at}

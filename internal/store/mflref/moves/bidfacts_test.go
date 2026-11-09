@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
-
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
@@ -29,10 +27,8 @@ func testBid(t *testing.T, id string) (envelope.Envelope, envelope.BidFacts) {
 	beat := bid.Points(6500)
 	facts := envelope.BidFacts{Player: player, Salary: 500_000_000, Years: 3, Points: 7000,
 		Snipe: true, Beat: &beat, Evidence: "https://example.invalid/thread#12", Closes: "2026-05-10T04:00:00Z"}
-	check := envelope.BidCheck{Input: bidrules.Input{Salary: facts.Salary, Years: facts.Years,
-		Minimum: bid.MinimumSalary(3), Experience: bid.Experience{Years: 3, Known: true}, WeekKnown: true}}
 	e, err := envelope.DraftBid(bidAt(), envelope.BidRequest{LeagueID: "1", FranchiseID: "0001", Facts: facts},
-		check, func() string { return id })
+		func() string { return id })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,8 +238,7 @@ func TestConditionalDropVersionsAreAppendOnlyAndFreezeWithBid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ready, err := draft.Check(bidAt().Add(3*time.Minute), snapshot.Snapshot{}, envelope.BidCheck{
-		Input: bidrules.Input{Salary: f.Salary, Years: f.Years, WeekKnown: true}})
+	ready, err := draft.Check(bidAt().Add(3*time.Minute), snapshot.Snapshot{}, envelope.BidCheck{})
 	if err != nil {
 		t.Fatal(err)
 	}

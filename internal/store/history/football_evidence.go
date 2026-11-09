@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
@@ -19,6 +21,26 @@ type PinnedFootball struct {
 	digest string
 	raw    RawFootballEvidence
 	stats  []heldFile
+
+	kickoffOnce sync.Once
+	kickoffs    []time.Time
+}
+
+// Kickoffs is every game kickoff the evidence holds, sorted: the only instants at which a reading of it
+// can change on its own (a game counts as final only once kicked off). Nil evidence holds none.
+func (p *PinnedFootball) Kickoffs() []time.Time {
+	if p == nil {
+		return nil
+	}
+	p.kickoffOnce.Do(func() {
+		for _, week := range p.raw.Weeks {
+			for _, game := range week.Games {
+				p.kickoffs = append(p.kickoffs, game.Kickoff)
+			}
+		}
+		slices.SortFunc(p.kickoffs, time.Time.Compare)
+	})
+	return p.kickoffs
 }
 
 // LoadFootball refuses missing or changed bodies, never substitutes the latest fetch.

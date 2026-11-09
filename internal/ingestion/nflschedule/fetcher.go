@@ -147,3 +147,37 @@ func ToWeek(raw RawWeek, at time.Time) (leagueweek.Week, error) {
 	}
 	return w, nil
 }
+
+// SeasonGames reports how many games each team plays in the season, counted from the held
+// schedule weeks. ok is false unless every scheduled team plays the same number of games and
+// the weeks held include the bye week that makes the season longer than each team's schedule;
+// a partial season therefore never passes for a full one.
+func SeasonGames(weeks []RawWeek) (games int, ok bool) {
+	played := map[string]int{}
+	weekNumbers := map[string]bool{}
+	for _, w := range weeks {
+		weekNumbers[w.Week] = true
+		for _, m := range w.Matchups {
+			played[m.Teams[0]]++
+			played[m.Teams[1]]++
+		}
+	}
+	if len(played) == 0 {
+		return 0, false
+	}
+	most := 0
+	for _, n := range played {
+		if n > most {
+			most = n
+		}
+	}
+	for _, n := range played {
+		if n != most {
+			return 0, false
+		}
+	}
+	if len(weekNumbers) <= most {
+		return 0, false
+	}
+	return most, true
+}

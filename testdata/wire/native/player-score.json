@@ -5,6 +5,8 @@
  "week": 1,
  "status": "Unavailable",
  "words": "This player has no NFL statistics identity",
+ "position": "QB",
+ "positionWhy": "The position held in the player record; NFL statistics report none",
  "missing": [
   "This player has no matching NFL statistics identity"
  ],

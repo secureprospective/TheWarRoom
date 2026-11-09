@@ -10,6 +10,10 @@
           "note": "",
           "fields": [
             {
+              "field": "league.startingAssets",
+              "label": "Starting assets"
+            },
+            {
               "field": "league.teams",
               "label": "Teams"
             },
@@ -78,6 +82,10 @@
           "built": true,
           "note": "",
           "fields": [
+            {
+              "field": "lineup.lock",
+              "label": "Lineup lock"
+            },
             {
               "field": "lineup.positions",
               "label": "Starting position limits"
@@ -456,6 +464,10 @@
           "note": "",
           "fields": [
             {
+              "field": "schedule.follow",
+              "label": "Follow reference schedule"
+            },
+            {
               "field": "schedule.regularWeeks",
               "label": "Regular season weeks"
             },
@@ -697,7 +709,12 @@
           "id": "CM-038",
           "built": true,
           "note": "",
-          "fields": []
+          "fields": [
+            {
+              "field": "transactions.follow",
+              "label": "Follow reference transactions"
+            }
+          ]
         },
         {
           "id": "CM-039",
@@ -941,6 +958,12 @@
       "label": "16-Team Mirror",
       "description": "The 16-Team Mirror is built for 16 franchises in two conferences. Each conference is a side with its own copy of every player: the sides meet only on the field and in the final. A startup draft runs on each side; there is no O-Line card. Every value can be changed afterwards.",
       "suggestedTeams": 16
+    },
+    {
+      "id": "legacy_nfl",
+      "label": "Legacy NFL",
+      "description": "The Legacy NFL's rules, as its league runs them. Every value can be changed afterwards.",
+      "suggestedTeams": 32
     },
     {
       "id": "empty",

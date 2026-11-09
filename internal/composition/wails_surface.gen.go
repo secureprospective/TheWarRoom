@@ -3,7 +3,6 @@ package composition
 
 import (
 	commissionerapi "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
-	commsapi "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	controlapi "github.com/secureprospective/TheWarRoom/internal/app/control"
 	draftapi "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	marketapi "github.com/secureprospective/TheWarRoom/internal/app/market"
@@ -19,7 +18,6 @@ import (
 
 type commandAPIs struct {
 	commissioner *commissionerapi.API
-	comms        *commsapi.API
 	contracts    *contractsapi.API
 	control      *controlapi.API
 	draft        *draftapi.API
@@ -36,7 +34,6 @@ type commandAPIs struct {
 func generatedWailsBindings(apis commandAPIs) []interface{} {
 	return []interface{}{
 		apis.commissioner,
-		apis.comms,
 		apis.contracts,
 		apis.control,
 		apis.draft,

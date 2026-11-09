@@ -87,14 +87,6 @@ func setRosters(t *testing.T, a *apiFixture, extra ...state.MirrorPlayer) {
 func rawBid(salary string, years int) RawBidInput {
 	return RawBidInput{FranchiseID: "0001", Player: "13593", Salary: salary, Years: years}
 }
-func ruleWords(plan BidPlan, rule string) string {
-	for _, r := range plan.Rules {
-		if r.Rule == rule {
-			return r.Mark + ": " + r.Reason
-		}
-	}
-	return ""
-}
 func actionIDs(plan BidPlan) string {
 	ids := []string{}
 	for _, a := range plan.Actions {
@@ -156,9 +148,9 @@ func (h *fakeHost) OffersAssetValues(context.Context, []playerid.PlayerID, time.
 	return nil, ""
 }
 
-func TestAPIMethodCatalogHasTwelveDoors(t *testing.T) {
+func TestAPIMethodCatalogHasThirteenDoors(t *testing.T) {
 	commands := Commands()
-	if got := len(commands); got != 12 {
+	if got := len(commands); got != 13 {
 		t.Fatalf("commands = %d", got)
 	}
 	for _, command := range commands {

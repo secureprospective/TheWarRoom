@@ -249,15 +249,16 @@ func TestCommissionerWire(t *testing.T) {
 
 func TestLocalCommissionerSessionStableAndNotFranchise(t *testing.T) {
 	t.Parallel()
-	first, err := (localCommissionerSession{"installation"}).Principal()
+	dir := t.TempDir()
+	first, err := (localCommissionerSession{dir}).Principal()
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := (localCommissionerSession{"installation"}).Principal()
+	second, err := (localCommissionerSession{dir}).Principal()
 	if err != nil || first != second || !strings.HasPrefix(first, "local.") {
 		t.Fatalf("local identity: %s %v", second, err)
 	}
-	app := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Paths: core.Paths{DataDir: "installation"}}}
+	app := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Paths: core.Paths{DataDir: dir}}}
 	principal, err := app.commissionerPrincipal()
 	if err != nil || principal != first {
 		t.Fatalf("production port: %s %v", principal, err)
@@ -328,7 +329,7 @@ func TestCommissionerLegacyRulesWire(t *testing.T) {
 	t.Parallel()
 	app := commissionerTestApp(t)
 	executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.legacy", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Legacy league", Preset: commissioner.PresetLegacy, Season: 2026},
+		Args:   commissioner.RawArgs{Name: "Legacy league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026},
 		Reason: "Start from the Legacy NFL rules", Request: "create", Effective: "now", Visibility: "league"})
 	reading, err := newCommissionerAPI(app).TargetCommissionerRules("native.legacy")
 	if err != nil {
@@ -345,7 +346,7 @@ func TestCommissionerReplacedRulesWire(t *testing.T) {
 	t.Parallel()
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.replaced", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Waiting rules", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 6},
+		Args:   commissioner.RawArgs{Name: "Waiting rules", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 6},
 		Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, app, raw)
 	raw.Command, raw.Effective, raw.Reason = commissioner.RulesSet, "next_rollover", ""

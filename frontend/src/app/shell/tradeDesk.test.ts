@@ -8,7 +8,7 @@ import type { Receipt, TradeReading } from '../data/contract';
 import { heldLineup, heldSnapshot } from '../data/lineupTestData';
 import { dotNote, tradeOffer, tradeReading, tradeReceipt } from '../data/tradeTestData';
 import { clockDom, TestElement } from '../clock/testDom';
-import TradeDesk, { tradeExpiry } from './TradeDesk';
+import { tradeExpiry } from './OfferCard';
 import { EnvelopeRail } from './EnvelopeRail';
 import EntityInspector from './EntityInspector';
 
@@ -67,7 +67,11 @@ async function setup(reading: TradeReading = tradeReading(), held: Receipt[] = [
   vi.stubGlobal('window', { document: dom.document, HTMLIFrameElement: class {} });
   const root = createRoot(dom.element);
   roots.push(root);
-  await act(async () => { root.render(createElement(TradeDesk, { snapshot })); await flush(); });
+  await act(async () => {
+    root.render(createElement(EntityInspector, {
+      entity: { kind: 'offer', id: '901', franchiseId: '0025' }, snapshot }));
+    await flush();
+  });
   const element = dom.element as unknown as TestElement;
   return {
     c, snapshot, root, element, trades, drafted, moves,
@@ -83,18 +87,9 @@ async function setup(reading: TradeReading = tradeReading(), held: Receipt[] = [
 }
 const handedText = "Opened MFL's trade desk. Accept offer 901 there.";
 
-describe('Trade desk', () => {
-  it('lists both groups with names, positions, unnamed assets, expiry and comments', async () => {
-    const t = await setup(tradeReading([tradeOffer('to_you', '901'), tradeOffer('by_you', '902')]));
-    for (const part of [
-      'Offered to you · 1', 'Your offers · 1', 'Rivals', 'You give', 'You get', 'Given, Player (WR)',
-      'Unnamed asset', 'Talked on ProBoards',
-    ]) expect(t.text()).toContain(part);
-    expect(t.buttons().filter((label) => label === 'Plan accept')).toHaveLength(1);
-    expect(hasLabel(t.element, 'Trade accept plan')).toBe(false);
-  });
+describe('Offer inspector', () => {
   it.each(['by_you', 'to_you'] as const)(
-    'hides a removed exit plan beside a pending %s offer on the desk and inspector', async (direction) => {
+    'hides a removed exit plan beside a pending %s offer in the inspector', async (direction) => {
       const receipt = tradeReceipt();
       receipt.spec.intent = direction === 'by_you' ? 'trade.revoke' : 'trade.reject';
       receipt.state = 'withdrawn';
@@ -140,18 +135,6 @@ describe('Trade desk', () => {
     expect(tradeExpiry('2026-10-07T13:00:00Z', now)).toBe('expired');
     expect(tradeExpiry('0001-01-01T00:00:00Z', now)).toBe('Expiry unknown');
   });
-  it('says when there are no offers, and hides offers when the feed failed', async () => {
-    const empty = await setup(tradeReading([]));
-    expect(empty.text()).toContain('No pending offers');
-    expect(empty.text()).not.toContain('Offered to you');
-    expect(empty.text()).not.toContain('Your offers');
-    const fresh = heldLineup().provenance;
-    const failed = await setup(tradeReading([tradeOffer()], {
-      ...fresh, freshness: { ...fresh.freshness, state: 'fail', note: 'MFL timed out' },
-    }));
-    expect(failed.text()).toContain('Pending trades unavailable · MFL timed out');
-    expect(failed.text()).not.toContain('Given, Player');
-  });
   it('plans, hands off, and follows the plan through DOT review to Landed', async () => {
     const t = await setup();
     const blocked = tradeReceipt('blocked', 'offer 901 is no longer pending');
@@ -169,9 +152,7 @@ describe('Trade desk', () => {
     expect(t.buttons()).not.toContain('Plan accept');
 
     t.moves.mockResolvedValue([tradeReceipt('dot_review', dotNote)]);
-    t.trades.mockResolvedValue(tradeReading([]));
     await t.event();
-    expect(t.text()).toContain('Saved trade plans');
     expect(t.text()).toContain(`DOT review · ${dotNote}`);
     expect(t.text()).toContain(handedText);
 
@@ -179,11 +160,6 @@ describe('Trade desk', () => {
     await t.event();
     expect(t.text()).toContain('Landed · TRADE row matched');
     expect(t.text()).not.toContain(handedText);
-  });
-  it('keeps unhanded plans for vanished offers off the desk', async () => {
-    const t = await setup(tradeReading([]), [tradeReceipt('blocked', 'offer 901 is no longer pending')]);
-    await t.event();
-    expect(t.text()).not.toContain('Saved trade plans');
   });
   it('drafts once for repeated clicks', async () => {
     const t = await setup();

@@ -2,30 +2,39 @@ package history
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"slices"
 	"strings"
 	"time"
 )
 
 // latestSQL is each source's latest value per player, period and measure, as of the bound or
 // literal time asOf. where adds further conditions on observations.
+// SQLite takes bare columns from the MAX row; the primary key makes that row unique.
+// This avoids sorting every observation through a second window before source selection.
 func latestSQL(asOf, where string) string {
 	return `
-SELECT player_id, season, week, measure, source, as_of, value, text,
-	ROW_NUMBER() OVER (PARTITION BY player_id, season, week, measure, source ORDER BY as_of DESC) AS newest
-FROM observations WHERE as_of <= ` + asOf + where
+SELECT player_id, season, week, measure, source, MAX(as_of) AS as_of, value, text, 1 AS newest
+FROM observations WHERE as_of <= ` + asOf + where + `
+GROUP BY player_id, season, week, measure, source`
 }
 
 // featuresSQL keeps one row per player, period and measure: the highest-priority source's
 // latest value. A source with no source_fields row for the measure is not read.
+// Materializing the small mapping lets SQLite index both join columns, rather than scan
+// every field of a source for each observation through source_fields' (source, field) key.
 func featuresSQL(asOf, where string) string {
 	return `
+WITH fields AS MATERIALIZED (SELECT source, measure, priority FROM source_fields)
 SELECT player_id, season, week, measure, source, as_of, value, text FROM (
 	SELECT l.*, ROW_NUMBER() OVER (
 		PARTITION BY l.player_id, l.season, l.week, l.measure ORDER BY f.priority) AS pick
 	FROM (` + latestSQL(asOf, where) + `) l
-	JOIN source_fields f ON f.source = l.source AND f.measure = l.measure
+	JOIN fields f ON f.source = l.source AND f.measure = l.measure
 	WHERE l.newest = 1
 ) WHERE pick = 1`
 }
@@ -59,40 +68,89 @@ type FeatureQuery struct {
 	Measures []string
 }
 
+func featureReadSQL(count int) string {
+	return `
+WITH fields AS MATERIALIZED (SELECT source, measure, priority FROM source_fields)
+SELECT o.player_id, o.season, o.week, o.measure, o.source, o.as_of, o.value, o.text, f.priority
+FROM observations o JOIN fields f ON f.source = o.source AND f.measure = o.measure
+WHERE o.as_of <= ? AND o.season = ? AND o.measure IN (?` + strings.Repeat(", ?", count-1) + ")"
+}
+
 // Features returns one row per player, period and measure, as known at q.AsOf.
+// Select winners while streaming to avoid SQLite sorting every observation twice.
 func (s *Store) Features(ctx context.Context, q FeatureQuery) ([]Feature, error) {
 	if len(q.Measures) == 0 {
 		return nil, nil
 	}
-	where := " AND season = ? AND measure IN (?" + strings.Repeat(", ?", len(q.Measures)-1) + ")"
 	args := []any{formatTime(q.AsOf), q.Season}
 	for _, m := range q.Measures {
 		args = append(args, m)
 	}
-	rows, err := s.pools.Read().QueryContext(ctx, featuresSQL("?", where)+` ORDER BY player_id, week, measure`, args...)
+	rows, err := s.pools.Read().QueryContext(ctx, featureReadSQL(len(q.Measures)), args...)
 	if err != nil {
 		return nil, fmt.Errorf("history: features: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
-	var out []Feature
+	type featureKey struct {
+		player, measure string
+		week            int
+	}
+	type chosenFeature struct {
+		feature  Feature
+		priority int
+		stamp    string
+	}
+	chosen := make(map[featureKey]chosenFeature)
 	for rows.Next() {
 		var f Feature
+		var priority int
 		var asOf string
 		var v sql.NullFloat64
 		var t sql.NullString
-		if err := rows.Scan(&f.PlayerID, &f.Season, &f.Week, &f.Measure, &f.Source, &asOf, &v, &t); err != nil {
+		if err := rows.Scan(&f.PlayerID, &f.Season, &f.Week, &f.Measure, &f.Source, &asOf, &v, &t, &priority); err != nil {
 			return nil, fmt.Errorf("history: scan feature: %w", err)
+		}
+		key := featureKey{f.PlayerID, f.Measure, f.Week}
+		prior, ok := chosen[key]
+		if ok && (priority > prior.priority || (priority == prior.priority && asOf <= prior.stamp)) {
+			continue
 		}
 		if f.AsOf, err = parseTime(asOf); err != nil {
 			return nil, err
 		}
 		f.Value, f.Text = v.Float64, t.String
-		out = append(out, f)
+		chosen[key] = chosenFeature{f, priority, asOf}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("history: features rows: %w", err)
 	}
+	var out []Feature
+	for _, selected := range chosen {
+		out = append(out, selected.feature)
+	}
+	slices.SortFunc(out, func(a, b Feature) int {
+		if a.PlayerID != b.PlayerID {
+			return strings.Compare(a.PlayerID, b.PlayerID)
+		}
+		if a.Week != b.Week {
+			return a.Week - b.Week
+		}
+		return strings.Compare(a.Measure, b.Measure)
+	})
 	return out, nil
+}
+
+// NextFeatureAt is the first future observation that could change an as-of book without a write.
+func (s *Store) NextFeatureAt(ctx context.Context, after time.Time) (time.Time, error) {
+	var at sql.NullString
+	if err := s.pools.Read().QueryRowContext(ctx, `SELECT MIN(as_of) FROM observations WHERE as_of > ?`,
+		formatTime(after)).Scan(&at); err != nil {
+		return time.Time{}, fmt.Errorf("history: next feature time: %w", err)
+	}
+	if !at.Valid {
+		return time.Time{}, nil
+	}
+	return parseTime(at.String)
 }
 
 // Disagreement is two sources holding different latest values for the same player, period and
@@ -136,4 +194,69 @@ ORDER BY a.measure, a.season, a.week, a.player_id, a.source, b.source`, formatTi
 		return nil, fmt.Errorf("history: disagreements rows: %w", err)
 	}
 	return out, nil
+}
+
+// valueEvidenceReads are the reads of mutable tables a league valuation depends on, written as
+// the columns the valuation reads: every launch rewrites player_record's as_of stamp and logs an
+// empty load, neither of which changes a value. Observations are append-only, so their newest
+// row id names their content.
+func valueEvidenceReads() []string {
+	return []string{
+		`SELECT player, listed, name, position, birth_date, college, rookie_season, draft, draft_year, draft_round,
+ draft_pick, draft_overall, draft_team, mislinked, sources, career FROM player_record ORDER BY player`,
+		"SELECT * FROM player_external_id ORDER BY 1, 2",
+		"SELECT * FROM source_fields ORDER BY 1, 2",
+		"SELECT * FROM measures ORDER BY 1",
+		"SELECT * FROM sources ORDER BY 1",
+	}
+}
+
+// ValueEvidence fingerprints everything a valuation reads from this database. Unlike
+// PRAGMA data_version it survives reopening, so a saved pass can be reused after a relaunch;
+// any added observation or changed record, link or source priority changes it.
+func (s *Store) ValueEvidence(ctx context.Context) (string, error) {
+	h := sha256.New()
+	var obs int64
+	if err := s.pools.Read().QueryRowContext(ctx, `SELECT COALESCE(MAX(rowid), 0) FROM observations`).Scan(&obs); err != nil {
+		return "", fmt.Errorf("history: value evidence: %w", err)
+	}
+	_, _ = fmt.Fprintf(h, "observations %d\n", obs)
+	for _, read := range valueEvidenceReads() {
+		if err := s.hashRead(ctx, h, read); err != nil {
+			return "", err
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func (s *Store) hashRead(ctx context.Context, h io.Writer, read string) error {
+	rows, err := s.pools.Read().QueryContext(ctx, read)
+	if err != nil {
+		return fmt.Errorf("history: value evidence: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	cols, err := rows.Columns()
+	if err != nil {
+		return fmt.Errorf("history: value evidence: %w", err)
+	}
+	cells := make([]sql.RawBytes, len(cols))
+	dest := make([]any, len(cols))
+	for i := range cells {
+		dest[i] = &cells[i]
+	}
+	_, _ = fmt.Fprintf(h, "read %s %d\n", read, len(cols))
+	for rows.Next() {
+		if err := rows.Scan(dest...); err != nil {
+			return fmt.Errorf("history: value evidence: %w", err)
+		}
+		for _, c := range cells {
+			_, _ = fmt.Fprintf(h, "%d:", len(c))
+			_, _ = h.Write(c)
+		}
+		_, _ = h.Write([]byte{'\n'})
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("history: value evidence: %w", err)
+	}
+	return nil
 }

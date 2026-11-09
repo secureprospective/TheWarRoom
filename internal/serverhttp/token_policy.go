@@ -9,6 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -101,9 +102,14 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 		http.Error(w, "session refused", http.StatusUnauthorized)
 		return
 	}
+	if r.URL.Path == PreviewPath || r.URL.Path == ExecutePath {
+		// No twr sends raw changes any more: the catalog workflow is an AI helper's only change path.
+		writeUpdateRequired(w, serverversion.App, catalogUpdate)
+		return
+	}
 	token, err := h.Tokens.Authenticate(r.Context(), session)
 	if err != nil {
-		http.Error(w, "session refused", http.StatusUnauthorized)
+		h.sessionFailure(w, err)
 		return
 	}
 	principal, err := token.Account.Principal()
@@ -112,9 +118,17 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 		return
 	}
 	ctx := commissioner.WithTokenAudit(r.Context(), token.ID)
+	if raw.Workflow != nil {
+		ctx = leagueservice.WithFootballDigest(ctx, raw.Workflow.Football)
+	}
 	host := leagueservice.StoredHost{Store: h.Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry}
 	gate := agentAdmission{token: h.Tokens.Admission(session), confirmations: h.Confirmations, confirmation: r.Header.Get("X-TWR-Human-Confirmation"), auditID: token.ID}
-	service := leagueservice.NewHosted(h.Worker.Host(host), gate)
+	pinned, err := h.workflowHost(host, raw.Workflow != nil)
+	if err != nil {
+		http.Error(w, "football reference unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	service := leagueservice.NewHosted(h.Worker.Host(pinned), gate)
 	h.dispatch(w, r.WithContext(ctx), service, raw)
 }
 

@@ -19,6 +19,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 )
 
@@ -59,9 +60,35 @@ type Store struct {
 	leagues   nativeLeagueRevision
 	recordsMu sync.Mutex
 	records   map[string]recordRevision
+	eventsMu  sync.Mutex
+	events    map[eventStreamKey]eventRevision
 	weeklyMu  sync.Mutex
 	weekly    map[string]weeklyFile
-	wmu       sync.Mutex
+	// seasons holds the latest built held season per season, keyed on its archive and identity revision.
+	seasons heldSeasonCache
+	// flights joins concurrent identical readings; it holds nothing once a reading completes.
+	flights readingFlights
+	// projMu guards the one scored projections book, keyed by league, rules digest and files.
+	projMu   sync.Mutex
+	projKey  string
+	projBook projectionBook
+	// liveMu guards the live stat lines held for the NFL week being played.
+	liveMu        sync.Mutex
+	live          liveStatBook
+	liveHeld      map[liveStatKey]source.HeldWeek
+	liveRevisions map[liveStatKey]*liveRevisionState
+	// liveEpoch and liveWeeks name the live lines as held, so a score read from them is reused only while
+	// they stand: liveEpoch moves when the book is restored, liveWeeks when one week's lines change.
+	liveEpoch uint64
+	liveWeeks map[[2]int]uint64
+	// scores is the season score cache: each franchise-week scored once per revision.
+	scores seasonScoreCache
+	// statPrices keeps statistics queue prices across readings (commissioner.StatPriceCache).
+	poolMu     sync.Mutex
+	poolKey    string
+	poolPoints map[string]leaguerules.Decimal
+	statPrices statPrices
+	wmu        sync.Mutex
 	// batchFault, set only by tests, fails a batch after the given step to prove nothing is kept.
 	batchFault func(step int) error
 }
@@ -80,6 +107,9 @@ func (s *Store) signalCommissionerCommit() {
 	default:
 	}
 }
+
+// Now returns the same clock used to record ledger acts.
+func (s *Store) Now() time.Time { return s.now() }
 
 // SetClock replaces the store's clock. Tests use it to write corrections at known times.
 func (s *Store) SetClock(now func() time.Time) { s.now = now }

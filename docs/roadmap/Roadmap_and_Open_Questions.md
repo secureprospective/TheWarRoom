@@ -76,6 +76,22 @@ League mates report back. Bugs, edge cases, and rule interpretation questions su
 
 ---
 
+### Glance widgets and pop-outs (added 2026-11-01, Christopher) — NOT in the current build plan
+
+- **Why:** owners should check the league through the day without the app monopolising their screen or phone (time suck / mind suck — the retention thesis). Customisation is part of the cool factor.
+- **Desktop first:** pop-out windows from the desktop UI — a small always-on-top glance window (live scores, league stats) that can tuck to a screen edge as a side tab, be pulled out and resized to show more; one pop-out per league so a multi-league owner can keep several up at once. Same backend reads as the main screens. Browser/PWA counterpart: Document Picture-in-Picture (Chrome-family).
+- **Phone later, the sanctioned way:** iOS Live Activities + Dynamic Island + Lock Screen (no floating windows allowed for non-video apps); Android live-update notifications, resizable home-screen widgets, and an optional edge "bubble" overlay (special permission, Play review). Needs a thin native shell around the web UI.
+- **Findings (Terra, 2026-11-01):** Wails v2 cannot open a second window — desktop pop-outs need Wails v3 (multi-window + tray; a port, ~3–7 days after migration) or Document PiP in Chrome-family browsers (1–3 day prototype; one PiP per tab, user places it, no programmatic edge-dock). A retractable edge tab is custom work on any route (+3–10 days; Wayland may ignore always-on-top). Phones: iOS = Live Activity (8 h live, 4 KB, push updates; Yahoo Fantasy uses it), no floating UI; Android = Live Updates (Android 16) + widgets, optional SYSTEM_ALERT_WINDOW edge tab (user-granted, Play scrutiny). PWA reaches none of these; native shell ~2–4 weeks per platform.
+- **Phone browser route (Christopher, 2026-11-01):** the glance only needs to be VIEWABLE — no interaction. So the phone route to test first is the video picture-in-picture trick: draw the glance to a canvas, stream it into a video element, request video PiP; the phone floats it over other apps and the user resizes it (quarter / eighth screen). No native app needed if it holds. Unproven: iOS Safari vs Android Chrome behaviour, installed-PWA behaviour, update rate, OS updates breaking it. Not scheduled: logged only, pick up later (Christopher 2026-11-01: tokens go to the current build).
+- **Research:** docs/roadmap/research/glance-widget-phone-2026-11-01.md and glance-widget-desktop-2026-11-01.md.
+
+### Windows via a WSL installer (added 2026-11-01, Christopher) — NOT in the current build plan
+
+- **Idea:** WSL is open source; ship Windows as a one-click `.wsl` install of our slim Alpine image instead of maintaining a Windows build.
+- **Findings (first pass, untested):** `.wsl` single-file install exists (double-click or `wsl --install --from-file`); GUI apps run via WSLg; Alpine has WebKitGTK but Wails-on-Alpine-under-WSLg is unproven. First WSL install needs virtualization, admin and a reboot; unsigned installer may warn. WSL is a poor server host (idle shutdown, no boot start, NAT, sleep/updates).
+- **Recommendation:** Windows players use the PWA; optional `.wsl` Alpine desktop package from the server image; servers Linux only. Test on the Windows VM planned before item 52.
+- **Research:** docs/roadmap/research/windows-via-wsl-2026-11-01.md.
+
 ## Open Questions
 
 These must be resolved before the relevant build session begins.

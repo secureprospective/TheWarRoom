@@ -43,22 +43,29 @@ func (b queueBuilder) decisions(weeks []StatWeek) ([]StatDecision, error) {
 		if !isStatCommand(command) {
 			continue
 		}
-		change, err := DecodeStatChange(r.Command.Args, command)
+		decoded, err := DecodeStatChange(r.Command.Args, command)
 		if err != nil {
 			return nil, err
 		}
-		key := change.key()
-		if key.season != b.season {
-			continue
-		}
-		decision := StatDecision{Entry: r.Receipt.Entry, Kind: statKind(command), Status: statStatus(command, active[r.Receipt.Entry]),
-			Player: key.player, Name: b.name(key.player), Season: key.season, Week: key.week,
-			By: personWords(r.Principal), At: r.Receipt.RecordedAt, Reason: r.Command.Reason}
-		decision.Words = b.decisionWords(command, change, versions[key], counted[key])
-		out = append(out, decision)
-		if command == StatApprove && active[r.Receipt.Entry] {
-			id, _ := ParseStatItemID(change.Item)
-			counted[key] = id.Seq
+		for _, change := range decoded.Lines() {
+			key := change.key()
+			if key.season != b.season {
+				continue
+			}
+			decision := StatDecision{Entry: r.Receipt.Entry, Kind: statKind(command), Status: statStatus(command, active[r.Receipt.Entry]),
+				Player: key.player, Name: b.name(key.player), Season: key.season, Week: key.week,
+				By: personWords(r.Principal), At: r.Receipt.RecordedAt, Reason: r.Command.Reason}
+			if r.Principal == StatFeedPrincipal {
+				decision.By = r.Command.Reason
+				decision.Kind = "feed"
+				decision.Status = "Counted"
+			}
+			decision.Words = b.decisionWords(command, change, versions[key], counted[key])
+			out = append(out, decision)
+			if command == StatApprove && active[r.Receipt.Entry] {
+				id, _ := ParseStatItemID(change.Item)
+				counted[key] = id.Seq
+			}
 		}
 	}
 	slices.Reverse(out)

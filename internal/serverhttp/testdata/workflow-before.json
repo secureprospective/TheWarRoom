@@ -278,5 +278,359 @@
     "modes": [
       "execute"
     ]
+  },
+  {
+    "command": "moves.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "value.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "odds.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "bracket.advance",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "bracket.build",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "bracket.edit",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "bracket.preset.save",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "bracket.seed",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "calendar.window.move",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "calendar.window.remove",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "calendar.window.set",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.calendar.exception",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.cap.adjust",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.cap.relief",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.contract.edit",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.franchise.edit",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.lineup.correct",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.notice.publish",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.player.position",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.player.position.clear",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.reserve.exception",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.rules.set",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.score.player",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.standings.override",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.stat.correct",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.stat.queue.approve",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.stat.queue.reject",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.whatsnew.post",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "contract.action.set",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "correct.pick",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "correct.provenance",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "correct.roster",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "correct.transaction",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.archive",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.assign",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.change",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.insert",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.order.auto",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.order.pattern",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.order.set",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.order.tiebreak",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.revert",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.start",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.startup.open",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "history.link",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "oline.auction.close",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "rule.exception",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "schedule.edit",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "schedule.generate",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "schedule.publish",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "title.set",
+    "modes": [
+      "preview",
+      "execute"
+    ]
   }
 ]

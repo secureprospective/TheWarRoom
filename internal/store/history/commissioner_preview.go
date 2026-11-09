@@ -30,6 +30,10 @@ func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commission
 		return previewRefusal(err)
 	}
 	facts.players = playerFacts
+	ctx, err = s.linkedIdentities(ctx, raw.League)
+	if err != nil {
+		return previewRefusal(err)
+	}
 	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("begin league preview: %w", err)
@@ -101,10 +105,10 @@ func blockedPreview(blockers []string) commissioner.Preview {
 
 // describeChange is the preview of one change. A live draft change is described with the standings and the
 // player names the draft room shows, where the store holds them.
-func (s *Store) describeChange(raw commissioner.RawCommand, records []commissioner.Record,
+func (s *Store) describeChange(raw commissioner.RawCommand, records, trial []commissioner.Record,
 	catalogue commissioner.PreviewCatalogue, facts appendFacts) (commissioner.Preview, error) {
 	if !commissioner.DraftTrayCommand(raw.Command) {
-		preview, err := commissioner.CommandPreview(raw, records, catalogue, s.now())
+		preview, err := commissioner.CommandPreviewOn(raw, records, trial, catalogue, s.now())
 		if err != nil {
 			return commissioner.Preview{}, fmt.Errorf("describe change: %w", err)
 		}
@@ -156,7 +160,14 @@ func recordedPreview(raw commissioner.RawCommand, records []commissioner.Record,
 func (s *Store) describePreparedChange(ctx context.Context, raw commissioner.RawCommand, principal string,
 	records []commissioner.Record, catalogue commissioner.PreviewCatalogue, facts appendFacts,
 	before *commissioner.RolloverBefore, plan *commissioner.RolloverPlan, accepted bool) (commissioner.Preview, error) {
-	preview, err := s.describeChange(raw, records, catalogue, facts)
+	// One trial ledger for the whole preview, so the change's own description and the owner readings
+	// share its folds (TestPreviewReadingsIgnoreTheTrialIdentity). When it cannot be built, the
+	// description reports why, before any reading needs it.
+	var trial []commissioner.Record
+	if accepted && plan == nil {
+		trial, _ = commissioner.PreviewTrial(raw, records, s.now())
+	}
+	preview, err := s.describeChange(raw, records, trial, catalogue, facts)
 	if err != nil {
 		return preview, err
 	}
@@ -165,7 +176,7 @@ func (s *Store) describePreparedChange(ctx context.Context, raw commissioner.Raw
 		return preview, nil
 	}
 	if accepted {
-		fields, err := s.previewReadingFields(ctx, raw, principal, records, facts)
+		fields, err := s.previewReadingFields(ctx, raw, principal, records, trial, facts)
 		if err != nil {
 			return commissioner.Preview{}, err
 		}

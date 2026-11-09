@@ -10,6 +10,7 @@ import (
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -100,4 +101,42 @@ func (a *App) windowInputs(now time.Time) leagueclock.WindowInputs {
 // timeNow is the league clock's current time: the wall clock unless a test pins it.
 func (a *App) timeNow() time.Time {
 	return controlapp.TimeNow(a.core.ClockNow)
+}
+
+// fillScheduleDates acquires only missing weeks from the same archived NFL source
+// used by the rest of the app. All leagues use the same dates, independent of origin.
+func (a *App) fillScheduleDates(ctx context.Context, records []commissioner.Record) error {
+	if len(records) == 0 {
+		return nil
+	}
+	schedule, err := commissioner.ScheduleReading(records[0].Command.League, records)
+	if err != nil {
+		return fmt.Errorf("read schedule dates needed: %w", err)
+	}
+	if len(schedule.Weeks) == 0 {
+		return nil
+	}
+	held, err := a.nativeScheduleDates(ctx, schedule.Season, a.timeNow())
+	if err != nil {
+		return fmt.Errorf("read NFL dates held: %w", err)
+	}
+	seen := map[int]bool{}
+	for _, w := range held {
+		if len(w.Games) != 0 {
+			seen[w.Number] = true
+		}
+	}
+	for _, w := range schedule.Weeks {
+		if seen[w.Week] {
+			continue
+		}
+		raw, err := nflschedule.Fetch(ctx, a.core.MFLClient, strconv.Itoa(schedule.Season), w.Week)
+		if err != nil {
+			return fmt.Errorf("read NFL dates for week %d: %w", w.Week, err)
+		}
+		if raw.Week != strconv.Itoa(w.Week) || len(raw.Matchups) == 0 {
+			return fmt.Errorf("NFL dates returned a different or empty week for %d", w.Week)
+		}
+	}
+	return nil
 }

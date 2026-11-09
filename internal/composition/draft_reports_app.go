@@ -47,7 +47,7 @@ func (a *App) measureMeanings(names []string) []string {
 func engineRunText(at time.Time, zone *time.Location) string { return report.EngineRun(at, zone) }
 
 func (h draftHost) DraftDestination() string {
-	host, season := h.CommsDestination()
+	host, season := h.MFLDestination()
 	return draftapp.Destination(host, season)
 }
 

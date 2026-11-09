@@ -59,7 +59,7 @@ it('commands render the bordered button face with hover, keyboard focus and disa
 it('expanded Inspector reserves its width; density wraps instead of being overlaid or clipped', () => {
   const source = css('shell/shell.css');
   expect(declarations(source, '.twr-app.target-frame[data-inspector="expanded"]'))
-    .toContain('grid-template-columns: 192px minmax(0, 1fr) 480px 48px');
+    .toContain('grid-template-columns: 192px minmax(0, 1fr) 480px;');
   const pane = 1280 - 2 - 192 - 480 - 48;
   expect(pane).toBe(558);
   expect(declarations(source, '.twr-app .ws-head')).toContain('flex-wrap: wrap');
@@ -119,30 +119,6 @@ it('every-matchup franchise group headings are inspectable, not just player cell
   const groups = [...html.matchAll(/class="report-group"><th[^>]*>(.*?)<\/th>/g)];
   expect(groups.length).toBeGreaterThan(0);
   for (const group of groups) expect(group[1]).toContain('aria-label="Inspect ');
-});
-
-it.each([1280, 1920])('Comms owns 280px without covering work at a %spx window', width => {
-  const shell = css('shell/shell.css'), comms = css('comms/comms.css');
-  expect(comms).not.toMatch(/width:\s*(?:min\(480px|480px)/);
-  expect(declarations(shell, '.twr-app .comms-panel')).toContain('width: 280px');
-  expect(declarations(shell, '.twr-app .comms-panel')).toContain('box-sizing: border-box');
-  expect(declarations(shell, '.twr-app[data-comms="true"] .insp')).toContain('right: 328px');
-  const app = css('shell/TargetApp.tsx');
-  expect(app).toContain('data-comms={s.comms}');
-  for (const [selector, inspector] of [
-    ['.twr-app.target-frame[data-comms="true"]', 320],
-    ['.twr-app.target-frame[data-inspector="expanded"][data-comms="true"]', 480],
-    ['.twr-app.target-frame[data-inspector="closed"][data-comms="true"]', 40],
-  ] as const) {
-    const tracks = declarations(shell, selector).match(/192px minmax\(0, 1fr\) (\d+)px 48px/);
-    expect(tracks).not.toBeNull();
-    const reserve = Number(tracks![1]);
-    expect(reserve).toBe(inspector + 280);
-    const workRight = width - 2 - 48 - reserve;
-    const commsLeft = width - 2 - 48 - 280;
-    expect(workRight).toBeLessThanOrEqual(commsLeft);
-    expect(workRight - 192).toBeGreaterThan(250);
-  }
 });
 
 it('command-bar empty copy separates endpoints from players', () => {

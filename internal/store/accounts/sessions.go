@@ -86,34 +86,39 @@ type sessionRow struct {
 	issued, used int64
 }
 
+// sessionTouchInterval bounds activity writes: a busy server reads the session without also
+// taking the single writer unless its last activity is at least this old.
+const sessionTouchInterval = time.Minute
+
 // Read admission uses the independent reader pool while the history writer is held.
 // Revocations share that single writer, so none can commit between this check and append.
+// Activity refreshes at most once per sessionTouchInterval through one guarded UPDATE.
 func (s *Store) SessionAccount(ctx context.Context, digest string, touch bool) (identity.Account, error) {
 	if !validSecretDigest(digest) {
 		return identity.Account{}, identity.ErrSessionRefused
 	}
-	if !touch {
-		return s.readSession(ctx, nil, digest)
-	}
-	tx, err := s.pools.BeginWrite(ctx)
-	if err != nil {
-		return identity.Account{}, fmt.Errorf("accounts: begin activity: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
-	account, err := s.readSession(ctx, tx, digest)
+	account, used, err := s.readSession(ctx, nil, digest)
 	if err != nil {
 		return identity.Account{}, err
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE account_sessions SET last_used_at = ? WHERE token_hash = ?`, s.now().UTC().UnixNano(), digest); err != nil {
-		return identity.Account{}, fmt.Errorf("accounts: record activity: %w", err)
+	if !touch {
+		return account, nil
 	}
-	if err := tx.Commit(); err != nil {
-		return identity.Account{}, fmt.Errorf("accounts: commit activity: %w", err)
+	now := s.now().UTC()
+	if now.Sub(used) < sessionTouchInterval {
+		return account, nil
+	}
+	if _, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `UPDATE account_sessions SET last_used_at = ? WHERE token_hash = ? AND last_used_at < ?`, now.UnixNano(), digest, now.Add(-sessionTouchInterval).UnixNano())
+	}); err != nil {
+		// The session was read and is valid; a busy writer only skips this activity stamp. Skipping can
+		// only shorten the idle lifetime, never lengthen it, so a valid owner is not told the server failed.
+		return account, nil //nolint:nilerr // a skipped activity stamp is not a refusal
 	}
 	return account, nil
 }
 
-func (s *Store) readSession(ctx context.Context, tx *sql.Tx, digest string) (identity.Account, error) {
+func (s *Store) readSession(ctx context.Context, tx *sql.Tx, digest string) (identity.Account, time.Time, error) {
 	var row sessionRow
 	const query = `SELECT a.id,a.username,s.issued_at,s.last_used_at FROM account_sessions s
  JOIN accounts a ON a.id = s.account_id JOIN account_auth_epoch e ON e.singleton = 1 AND e.epoch = s.epoch
@@ -124,17 +129,17 @@ func (s *Store) readSession(ctx context.Context, tx *sql.Tx, digest string) (ide
 	}
 	err := result(ctx, query, digest).Scan(&row.account.ID, &row.account.Username, &row.issued, &row.used)
 	if errors.Is(err, sql.ErrNoRows) {
-		return identity.Account{}, identity.ErrSessionRefused
+		return identity.Account{}, time.Time{}, identity.ErrSessionRefused
 	}
 	if err != nil {
-		return identity.Account{}, fmt.Errorf("accounts: read session: %w", err)
+		return identity.Account{}, time.Time{}, fmt.Errorf("accounts: read session: %w", err)
 	}
 	now := s.now().UTC()
 	issued, used := time.Unix(0, row.issued), time.Unix(0, row.used)
 	if now.Before(issued) || now.Before(used) || !now.Before(issued.Add(identity.SessionAbsoluteLifetime)) || !now.Before(used.Add(identity.SessionIdleLifetime)) {
-		return identity.Account{}, identity.ErrSessionRefused
+		return identity.Account{}, time.Time{}, identity.ErrSessionRefused
 	}
-	return row.account, nil
+	return row.account, used, nil
 }
 
 func (s *Store) RevokeSession(ctx context.Context, digest string, allDevices bool) error {
@@ -146,7 +151,7 @@ func (s *Store) RevokeSession(ctx context.Context, digest string, allDevices boo
 		return fmt.Errorf("accounts: begin revoke: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	account, err := s.readSession(ctx, tx, digest)
+	account, _, err := s.readSession(ctx, tx, digest)
 	if err != nil {
 		return err
 	}

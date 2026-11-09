@@ -19,7 +19,7 @@ func contractActionApp(t *testing.T) *legalityFixture {
 	store, pools := openDirectoryHistory(t, path)
 	a.core.History = store
 	executeCommissionerTest(t, a, commissioner.RawCommand{League: legalityLeague, Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Native contracts", Preset: commissioner.PresetLegacy, Season: 2026},
+		Args:   commissioner.RawArgs{Name: "Native contracts", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026},
 		Reason: "Start this league", Request: "create", Effective: "now", Visibility: "league"})
 	return &legalityFixture{app: a, path: path, pools: pools}
 }

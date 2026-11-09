@@ -1,0 +1,40 @@
+top - 13:49:19 up 25 min,  3 users,  load average: 2.39, 1.65, 1.17
+Threads:  65 total,   1 running,  64 sleeping,   0 stopped,   0 zombie
+%Cpu(s): 11.5 us,  3.3 sy,  0.0 ni, 82.0 id,  1.6 wa,  0.0 hi,  0.8 si,  0.8 st 
+MiB Mem :   7946.2 total,   1029.4 free,   6171.8 used,   1105.1 buff/cache     
+MiB Swap:   3973.1 total,   3577.2 free,    395.9 used.   1774.4 avail Mem 
+
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+   3054 claude    20   0   71.8g   1.3g 111080 R  92.3  16.4   6:42.24 WebKitW+
+   3057 claude    20   0   78.2g   2.6g 172152 S   7.7  33.4   0:09.31 Receive+
+   2996 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   1:13.23 thewarr+
+   3001 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:04.42 thewarr+
+   3002 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   1:16.61 thewarr+
+   3003 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   1:11.99 thewarr+
+   3004 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3005 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   1:35.47 thewarr+
+   3006 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   1:32.82 thewarr+
+   3007 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3008 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   1:17.09 thewarr+
+   3009 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3010 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:17.10 thewarr+
+   3011 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 pool-sp+
+   3012 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 gmain
+   3013 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 gdbus
+   3015 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 [pango]+
+   3033 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 llvmpip+
+   3034 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 llvmpip+
+   3035 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 llvmpip+
+   3036 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 llvmpip+
+   3037 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 llvmpip+
+   3038 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 llvmpip+
+   3039 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 llvmpip+
+   3040 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 llvmpip+
+   3041 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3042 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3043 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3044 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3045 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3046 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3047 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+
+   3048 claude    20   0   78.2g   2.6g 172152 S   0.0  33.4   0:00.00 thewarr+

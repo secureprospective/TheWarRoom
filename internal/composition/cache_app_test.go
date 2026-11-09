@@ -22,7 +22,7 @@ func TestEveryHeldCopyIsWiredToARefreshTheAppAlreadyHas(t *testing.T) {
 		}
 	}
 	listed := app.sourcesAPI().TargetCacheScopes()
-	if len(listed) != len(app.cacheScopes()) || len(listed) < 5 {
+	if len(listed) != len(app.cacheScopes()) || len(listed) < 4 {
 		t.Fatalf("the screen lists what Go can read again: %+v", listed)
 	}
 }

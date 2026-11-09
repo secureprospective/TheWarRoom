@@ -52,6 +52,9 @@ func FranchiseScheduleReading(league, franchise string, season int, records []Re
 		return reading, nil
 	}
 	for _, week := range published.Weeks {
+		if len(week.Games) == 0 && week.Bye == "" {
+			continue
+		}
 		game, err := franchiseScheduleGame(week, franchise)
 		if err != nil {
 			return FranchiseSchedule{}, err
@@ -84,7 +87,8 @@ func franchiseScheduleGame(week ScheduleWeek, franchise string) (FranchiseGame, 
 			return game, nil
 		}
 	}
-	return FranchiseGame{}, fmt.Errorf("the published week leaves this franchise without a game or bye")
+	game.Venue = "Bye"
+	return game, nil
 }
 
 func NativeWeekReading(schedule FranchiseSchedule, at time.Time, weeks []leagueweek.Week) (NativeWeek, error) {

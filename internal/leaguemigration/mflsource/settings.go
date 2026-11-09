@@ -19,11 +19,15 @@ const citation = "Your MFL league"
 const notHeld = "Your MFL league does not hold this setting"
 
 // Settings carries an MFL league's settings into the app value for value. What MFL holds is set as MFL
-// holds it; what it does not hold waits for a ruling and is listed; what MFL holds but the app cannot
-// read is a problem, never a guess.
-func Settings(config league.RawConfig) (leaguerules.RuleSet, []string, []string) {
+// holds it; what it does not hold is taken from base, how the league runs on MFL; anything left after
+// that waits for a ruling and is listed; what MFL holds but the app cannot read is a problem, never a guess.
+func Settings(config league.RawConfig, base leaguerules.RuleSet, draftType string) (leaguerules.RuleSet, []string, []string) {
 	t := translation{}
 	r := leaguerules.RuleSet{}
+	r.Lineup.Lock = known(leaguerules.FirstKickoff)
+	r.League.StartingAssets = known(leaguerules.HeldAssets)
+	r.Schedule.Follow = leaguerules.Known(leaguerules.ScheduleFollow{})
+	r.Transactions.Follow = known(true)
 	t.league(&r, config)
 	t.roster(&r, config)
 	t.lineup(&r, config)
@@ -33,8 +37,24 @@ func Settings(config league.RawConfig) (leaguerules.RuleSet, []string, []string)
 	if weeks, ok := t.regularWeeks(config); ok {
 		r.Schedule.RegularWeeks = known(weeks)
 	}
+	switch strings.ToUpper(strings.TrimSpace(draftType)) {
+	case "SAME":
+		r.Draft.LaterPattern = known(leaguerules.Linear)
+	case "SNAKE":
+		r.Draft.LaterPattern = known(leaguerules.Snake)
+	}
+	r = leaguerules.Fill(r, base)
 	t.waiting(r)
 	return r, t.problems, t.notes
+}
+
+// LineupRules carries only MFL's starting-lineup settings, by the same translation as Settings, for a
+// league still run on MFL. The problems are what MFL holds that the app cannot read.
+func LineupRules(config league.RawConfig) (leaguerules.LineupRules, []string) {
+	t := translation{}
+	r := leaguerules.RuleSet{}
+	t.lineup(&r, config)
+	return r.Lineup, t.problems
 }
 
 type translation struct{ problems, notes []string }
@@ -94,6 +114,14 @@ func (t *translation) roster(r *leaguerules.RuleSet, config league.RawConfig) {
 }
 
 func (t *translation) lineup(r *leaguerules.RuleSet, config league.RawConfig) {
+	switch strings.ToUpper(strings.TrimSpace(config.PartialLineupAllowed)) {
+	case "YES":
+		r.Lineup.InvalidPenalty = known(leaguerules.NoPenalty)
+	case "", "NO":
+	default:
+		t.problem("MFL's partial lineup permission reads %q, which is not YES or NO", config.PartialLineupAllowed)
+	}
+
 	if positions, ok := t.positionBounds("starting limit", config.Starters.Positions, false); ok {
 		r.Lineup.Positions = known(positions)
 	}
@@ -264,18 +292,25 @@ func (t *translation) regularWeeks(config league.RawConfig) (int, bool) {
 
 // waiting lists the settings MFL does not hold, by their labels on the rules screen.
 func (t *translation) waiting(r leaguerules.RuleSet) {
-	skip := leaguemigration.CarriedFields()
 	var labels []string
+	for _, field := range waitingSettings(r) {
+		labels = append(labels, field.Label)
+	}
+	if len(labels) > 0 {
+		t.notes = append(t.notes, fmt.Sprintf("MFL and the starting settings leave %d settings waiting for your answer: %s", len(labels), strings.Join(labels, ", ")))
+	}
+}
+
+func waitingSettings(r leaguerules.RuleSet) []leaguemigration.WaitingSetting {
+	skip := leaguemigration.CarriedFields()
+	out := []leaguemigration.WaitingSetting{}
 	for _, c := range leaguerules.SeedChanges(r, "", 0, time.Unix(1, 0).UTC()) {
-		if skip[c.Field] || leaguerules.DescribeField(c.Field, c.New).State == "Set" {
+		if skip[c.Field] || leaguerules.Unused(r, c.Field) || leaguerules.DescribeField(c.Field, c.New).State == "Set" {
 			continue
 		}
 		if f, ok := leaguerules.Field(c.Field); ok {
-			labels = append(labels, f.Label)
+			out = append(out, leaguemigration.WaitingSetting{Field: string(f.Path), Label: f.Label, Schema: f.Schema})
 		}
 	}
-	if len(labels) > 0 {
-		t.notes = append(t.notes, fmt.Sprintf("Your MFL league does not hold %d settings the app runs; "+
-			"each waits for your ruling on the rules screen: %s", len(labels), strings.Join(labels, ", ")))
-	}
+	return out
 }

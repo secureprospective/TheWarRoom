@@ -8,11 +8,13 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
-	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
@@ -24,11 +26,11 @@ import (
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
@@ -47,19 +49,25 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
-	commands            *catalog.Registry
-	core                *core.State
-	tradeBuilderTimeout time.Duration
-	archiveCache        archiveapp.Snapshot
-	controlHeld         *controlapp.Held
-	researchHeld        *researchapp.Held
-	raceHeld            *raceapp.Held
-	now                 nowSchedules
-	nowHeld             *nowapp.Held
-	sourcesHeld         *sourcesapp.Held
-	marketHeld          *marketapp.Held
-	seatStore           *accountstore.Store
-	seat                *accounts.LocalSeat
+	engineNotDue         atomic.Int64
+	commands             *catalog.Registry
+	core                 *core.State
+	tradeBuilderTimeout  time.Duration
+	scheduleCache        nativeapp.ScheduleCache
+	scheduleSyncMu       sync.Mutex
+	playedLineupsRunning atomic.Bool
+	playedLineupsStarted atomic.Bool
+	liveStats            nowapp.LiveStatsPoller // the live-stats poller is its only user
+	controlHeld          *controlapp.Held
+	researchHeld         *researchapp.Held
+	raceHeld             *raceapp.Held
+	now                  nowSchedules
+	nowHeld              *nowapp.Held
+	sourcesHeld          *sourcesapp.Held
+	marketHeld           *marketapp.Held
+	seatStore            *accountstore.Store
+	seat                 *accounts.LocalSeat
+	valuePreparation     appvalue.Preparation
 }
 
 // attachSeat keeps the local sign-in beside the ledger, so a matched backup carries it.
@@ -88,7 +96,6 @@ func NewApp() *App {
 	var desktop core.Runtime = desktopRuntime{}
 	a := &App{tradeBuilderTimeout: m2Timeout, controlHeld: &controlapp.Held{}, researchHeld: &researchapp.Held{}, marketHeld: &marketapp.Held{}, nowHeld: &nowapp.Held{}, raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
 		BuildStamp:    buildLabel() + " " + buildDate,
-		LabData:       sync.OnceValues(lab.Load),
 		MovesWake:     make(chan struct{}, 1),
 		MovesChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:moves") },
 		OpenURL:       desktop.BrowserOpenURL,
@@ -100,7 +107,6 @@ func NewApp() *App {
 		ClockChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:clock") },
 		SeasonChanged: func(ctx context.Context) { desktop.EventsEmit(ctx, "target:season") }},
 	}
-	a.configureArchive()
 	a.core.CaptureRace = a.raceSnapshot
 	a.core.RefreshRaceFeeds = a.refreshRace
 	a.core.RefreshMarketFeeds = a.refreshMarketFeeds
@@ -125,7 +131,16 @@ func (a *App) startup(ctx context.Context) {
 	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(ctx)
 	defer a.settleStartupFailure()
 	refreshed, a.core.StartupErr = (platformapp.StartupWorkflow{
-		Directory: configDir, SetDirectory: func(dir string) { a.core.Paths.DataDir = dir }, Logging: setupLogging,
+		Directory: func() (string, error) {
+			dir, err := configDir()
+			if err != nil {
+				return "", err
+			}
+			if _, err := persistedIdentity(dir); err != nil {
+				return "", err
+			}
+			return dir, nil
+		}, SetDirectory: func(dir string) { a.core.Paths.DataDir = dir }, Logging: setupLogging,
 		Databases: a.openDatabases,
 		Client: func() error {
 			client, err := mfl.New("api", 2, mfl.WithTransport(a.core.Fetches),
@@ -154,6 +169,9 @@ func (a *App) settleStartupFailure() {
 }
 
 func (a *App) finishStartup(ctx context.Context, refreshed bool) {
+	if a.core.StartupErr == nil {
+		a.startValuePreparation() //nolint:contextcheck // The app lifetime cancels and joins preparation before closing stores.
+	}
 	platformapp.FinishStartup(a.core.StartupErr, refreshed, func() { close(a.core.Started) }, func() {
 		a.core.RefreshMu.Lock()
 		defer a.core.RefreshMu.Unlock()
@@ -165,8 +183,8 @@ func (a *App) finishStartup(ctx context.Context, refreshed bool) {
 // load run now, off the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
-	a.startDatabaseChecks()      //nolint:contextcheck // The app lifetime cancels and joins database checks on shutdown.
-	a.compileFactsInBackground() //nolint:contextcheck // The app lifetime cancels and joins facts work on shutdown.
+	a.startLiveStats()
+	a.startDatabaseChecks() //nolint:contextcheck // The app lifetime cancels and joins database checks on shutdown.
 	a.startWorker(func() { a.publishAssetModel(ctx); a.sourceHealthChanged(ctx) })
 }
 
@@ -237,11 +255,17 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	var coord *transactions.Coordinator
 	//nolint:wrapcheck // The service retains the original step names and failures.
 	return (platformapp.StoreFloor{
-		History: hist.Initialize, Seat: a.seatStore.Initialize, Params: pstore.Initialize, Moves: moveStore.Initialize,
+		History: func(c context.Context) error {
+			if err := hist.Initialize(c); err != nil {
+				return err
+			}
+			return hist.RestoreLiveStats(c)
+		}, Seat: a.seatStore.Initialize, Params: pstore.Initialize, Moves: moveStore.Initialize,
 		Personal: personal.New(a.core.Pools).Initialize,
 		Rules:    func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) },
 		Mirror:   mirror.Initialize, MirrorSeason: mirror.Season,
 		Refresh: func(c context.Context) error {
+			defer a.syncLeagueSchedules(c)
 			a.core.RefreshMu.Lock()
 			defer a.core.RefreshMu.Unlock()
 			_, err := a.refreshLeagueLocked(c, rb, mirror)

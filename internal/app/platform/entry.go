@@ -18,6 +18,7 @@ type EntryPoints struct {
 	Desktop, Probe func() int
 	Backups        func(io.Writer, io.Writer) int
 	Restore        func(string, io.Writer, io.Writer) int
+	Relink         func(string, io.Writer, io.Writer) int
 	Label          string
 }
 
@@ -46,6 +47,8 @@ func (s EntryPoints) RunFlag(args []string, stdout, stderr io.Writer) int {
 		return 0
 	case len(args) == 1 && args[0] == "-backups":
 		return s.Backups(stdout, stderr)
+	case len(args) == 2 && args[0] == "--relink-identity-from":
+		return s.Relink(args[1], stdout, stderr)
 	case len(args) == 2 && args[0] == "-restore":
 		return s.Restore(args[1], stdout, stderr)
 	default:

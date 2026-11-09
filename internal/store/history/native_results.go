@@ -50,8 +50,11 @@ type nativeSources struct {
 	now    time.Time
 	held   map[source.RawNativeScope]source.NativeEvidence
 	files  []heldFile
+	gsis   map[string]string
 	rules  *commissioner.RulesMemo
 	facts  nativecheck.Facts
+	// revision is the season score cache's name for the ledger last scored, worked out once per ledger.
+	revision *scoreRevisionKey
 }
 
 func (s *Store) nativeSources(league string, season int) *nativeSources {
@@ -68,15 +71,20 @@ func (n *nativeSources) Lineup(ctx context.Context, records []commissioner.Recor
 	if n.store.lineupEnv == nil {
 		return lineup, nil
 	}
-	if n.facts == nil {
-		n.facts = n.store.lineupEnv.PlayerFacts()
-	}
+	n.playerFacts()
 	for i, starter := range lineup.Starters {
 		if starter.Name == "" {
 			lineup.Starters[i].Name = n.facts[starter.Player].Name
 		}
 	}
 	return lineup, nil
+}
+
+func (n *nativeSources) playerFacts() nativecheck.Facts {
+	if n.facts == nil && n.store.lineupEnv != nil {
+		n.facts = n.store.lineupEnv.PlayerFacts()
+	}
+	return n.facts
 }
 
 func (n *nativeSources) PlayerScore(ctx context.Context, records []commissioner.Record, player string,
@@ -104,6 +112,9 @@ func (n *nativeSources) PlayerScore(ctx context.Context, records []commissioner.
 	return reading, nil
 }
 
+// RulesInForce lets a reading that prices many proposals resolve the held ledger's rules once.
+func (n *nativeSources) RulesInForce() commissioner.RulesFunc { return n.rules.InForce }
+
 // PlayerWeekStats selects the player's week from the season's held files, read on first use.
 func (n *nativeSources) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) ([]source.HeldWeek, error) {
 	if scope.Season != n.season {
@@ -113,12 +124,9 @@ func (n *nativeSources) PlayerWeekStats(ctx context.Context, scope source.RawSta
 		return nil, fmt.Errorf("read held player statistics: %w", err)
 	}
 	if n.files == nil {
-		files, err := n.store.heldSeason(ctx, scope.Season)
+		files, err := n.store.indexedHeldSeason(ctx, scope.Season)
 		if err != nil {
 			return nil, err
-		}
-		for i := range files {
-			files[i].index = source.IndexHeldWeeks(files[i].weeks)
 		}
 		n.files = files
 	}
@@ -127,6 +135,18 @@ func (n *nativeSources) PlayerWeekStats(ctx context.Context, scope source.RawSta
 
 // NativeResults scores one week of the published schedule.
 func (s *Store) NativeResults(ctx context.Context, league string, season, week int) (commissioner.NativeResults, error) {
+	mark, err := s.recordsMarkFor(ctx, league)
+	if err != nil {
+		return commissioner.NativeResults{}, err
+	}
+	args := mark + "|" + fmt.Sprintf("%s|%d|%d", league, season, week)
+	return shareReading(ctx, &s.flights, "NativeResults", args,
+		func(ctx context.Context) (commissioner.NativeResults, error) {
+			return s.readNativeResults(ctx, league, season, week)
+		})
+}
+
+func (s *Store) readNativeResults(ctx context.Context, league string, season, week int) (commissioner.NativeResults, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeResults{}, err
@@ -142,6 +162,18 @@ func (s *Store) NativeResults(ctx context.Context, league string, season, week i
 
 // NativeStandings ranks a season's regular-season results.
 func (s *Store) NativeStandings(ctx context.Context, league string, season int) (commissioner.NativeStandings, error) {
+	mark, err := s.recordsMarkFor(ctx, league)
+	if err != nil {
+		return commissioner.NativeStandings{}, err
+	}
+	args := mark + "|" + fmt.Sprintf("%s|%d", league, season)
+	return shareReading(ctx, &s.flights, "NativeStandings", args,
+		func(ctx context.Context) (commissioner.NativeStandings, error) {
+			return s.readNativeStandings(ctx, league, season)
+		})
+}
+
+func (s *Store) readNativeStandings(ctx context.Context, league string, season int) (commissioner.NativeStandings, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeStandings{}, err
@@ -182,6 +214,18 @@ func (s *Store) NativeScorePreview(ctx context.Context, raw commissioner.RawComm
 // NativeBracket reads a season's playoffs. The first playoff week's kickoffs are added when the app holds
 // them, so the reading can say whether the playoffs have begun.
 func (s *Store) NativeBracket(ctx context.Context, league string, season int) (commissioner.NativeBracket, error) {
+	mark, err := s.recordsMarkFor(ctx, league)
+	if err != nil {
+		return commissioner.NativeBracket{}, err
+	}
+	args := mark + "|" + fmt.Sprintf("%s|%d", league, season)
+	return shareReading(ctx, &s.flights, "NativeBracket", args,
+		func(ctx context.Context) (commissioner.NativeBracket, error) {
+			return s.readNativeBracket(ctx, league, season)
+		})
+}
+
+func (s *Store) readNativeBracket(ctx context.Context, league string, season int) (commissioner.NativeBracket, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeBracket{}, err
@@ -230,4 +274,31 @@ func (s *Store) prepareRollover(ctx context.Context, raw commissioner.RawCommand
 		return before, plan, fmt.Errorf("prepare season rollover: %w", err)
 	}
 	return before, plan, nil
+}
+
+// NativeOdds reads win chance, power and playoff odds from the league's own results and the values given.
+func (s *Store) NativeOdds(ctx context.Context, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	mark, err := s.recordsMarkFor(ctx, league)
+	if err != nil {
+		return commissioner.NativeOdds{}, err
+	}
+	args := mark + "|" + oddsArgs(league, season, values)
+	return shareReading(ctx, &s.flights, "NativeOdds", args,
+		func(ctx context.Context) (commissioner.NativeOdds, error) {
+			return s.readNativeOdds(ctx, league, season, values)
+		})
+}
+
+func (s *Store) readNativeOdds(ctx context.Context, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return commissioner.NativeOdds{}, err
+	}
+	src := s.nativeSources(league, season)
+	out, err := commissioner.NativeOddsReading(ctx, league, records, src, season, src.now, values)
+	if err != nil {
+		return commissioner.NativeOdds{}, fmt.Errorf("read native odds: %w", err)
+	}
+	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
+	return out, nil
 }

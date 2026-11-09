@@ -12,7 +12,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -27,12 +26,11 @@ type Host interface {
 	Ready() error
 	SourcesContext() context.Context
 	RefreshSourcesLeague(context.Context) (int, bool, bool, error)
-	SerializeSourcesCompile(func() (string, error)) (string, error)
 }
 
 // ServiceHost supplies startup-owned dependencies and the presentation zone.
 type ServiceHost interface {
-	SourcesInputs() (*history.Store, int, http.RoundTripper, func() (*lab.Data, error))
+	SourcesInputs() (*history.Store, int, http.RoundTripper)
 	SourcesZone() *time.Location
 }
 
@@ -90,8 +88,6 @@ type DataSources struct {
 	DatabaseChecks *report.Report    `json:"databaseChecks"`
 	Health         report.Report     `json:"health"`
 	Signals        report.Report     `json:"signals"`
-	Facts          report.Report     `json:"facts"`
-	Checks         report.Report     `json:"checks"`
 	ArchiveDir     string            `json:"archiveDir"`
 	PhotosOn       bool              `json:"photosOn"`
 	Scopes         []DataScope       `json:"scopes"`
@@ -136,8 +132,7 @@ func (a *API) TargetDataSources() (DataSources, error) {
 	if err != nil {
 		return DataSources{}, err
 	}
-	return DataSources{DatabaseChecks: a.host.SourcesDatabaseChecks(), Health: view.Health, Signals: view.Signals,
-		Facts: view.Facts, Checks: view.Checks, ArchiveDir: dir, PhotosOn: !off, Scopes: view.Scopes, Words: view.Words}, nil
+	return DataSources{DatabaseChecks: a.host.SourcesDatabaseChecks(), Health: view.Health, Signals: view.Signals, ArchiveDir: dir, PhotosOn: !off, Scopes: view.Scopes, Words: view.Words}, nil
 }
 
 func (a *API) TargetDataRefresh(scope string) DataActResult {
@@ -228,9 +223,7 @@ func (a *API) refreshScope(scope string) (string, error) {
 		if dir == "" {
 			return "", fmt.Errorf("no league archive folder is set; set it under Data refresh first")
 		}
-		return ServiceFor(a.host).ImportLeagueArchive(ctx, dir, func(ctx context.Context) (string, error) {
-			return CompileFacts(ctx, a.host, lab.NoteReadings())
-		})
+		return ServiceFor(a.host).ImportLeagueArchive(ctx, dir)
 	}
 	return "", fmt.Errorf("unknown data scope %q", scope)
 }
@@ -247,9 +240,9 @@ func LeagueRefreshSummary(season int, changed, rulesChanged bool) string {
 }
 
 func ServiceFor(host ServiceHost) Service {
-	hist, season, transport, data := host.SourcesInputs()
-	return Service{Health: hist, Facts: hist, Archive: hist, Crosswalk: hist, Signals: hist,
-		Season: season, Zone: host.SourcesZone(), Transport: transport, LabData: data, CollegeKey: strings.TrimSpace(os.Getenv(CFBDEnvVar))}
+	hist, season, transport := host.SourcesInputs()
+	return Service{Health: hist, Archive: hist, Crosswalk: hist, Signals: hist,
+		Season: season, Zone: host.SourcesZone(), Transport: transport, CollegeKey: strings.TrimSpace(os.Getenv(CFBDEnvVar))}
 }
 
 func photoHealth(host ReadingHost) *PhotoHealth {
@@ -294,10 +287,6 @@ func LoadSignals(ctx context.Context, host Host, held *Held) SignalsReport {
 		held.PublishSignals(rep)
 	})
 	return rep
-}
-
-func CompileFacts(ctx context.Context, host Host, readings lab.Curated) (string, error) {
-	return host.SerializeSourcesCompile(func() (string, error) { return ServiceFor(host).CompileFactsWith(ctx, readings) }) //nolint:wrapcheck // Preserve the serializer's existing error.
 }
 
 func Commands() []catalog.Command { return catalog.DesktopCommands("sources", nil) }

@@ -17,6 +17,7 @@ type fakeHost struct {
 	readyErr     error
 	host, opened string
 	refresh      func(bool) error
+	usage        UsageSource
 }
 
 func (h *fakeHost) Ready() error { h.calls = append(h.calls, "ready"); return h.readyErr }
@@ -43,6 +44,10 @@ func (h *fakeHost) ResearchDestination() (string, int) {
 	return h.host, 2026
 }
 func (h *fakeHost) OpenBrowser(target string) { h.opened = target; h.calls = append(h.calls, "open") }
+func (h *fakeHost) UsageSource() UsageSource {
+	h.calls = append(h.calls, "usage")
+	return h.usage
+}
 
 func TestAPIValidationAndReadOrder(t *testing.T) {
 	h := &fakeHost{in: realResearch(t), names: map[string]string{"0001": "Mine"}}
@@ -130,5 +135,20 @@ func TestAPIStatusReadCompletesDuringBlockedRefresh(t *testing.T) {
 	close(release)
 	if err := <-done; err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestAPIPlayerUsageValidationAndReadOrder(t *testing.T) {
+	t.Parallel()
+	h := &fakeHost{in: realResearch(t), usage: UsageSource{Season: usageSeason, Rows: func() ([]UsageFeature, error) { return nil, nil }}}
+	a := New(h, &Held{})
+	if _, err := a.TargetPlayerUsage("bad"); err == nil || len(h.calls) != 0 {
+		t.Fatal(err, h.calls)
+	}
+	if _, err := a.TargetPlayerUsage("16162"); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(h.calls, []string{"ready", "snapshot", "usage"}) {
+		t.Fatal(h.calls)
 	}
 }

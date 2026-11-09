@@ -14,6 +14,8 @@ type RawLedgerFilter struct {
 	Kind   string `json:"kind"`
 	From   string `json:"from"`
 	Before string `json:"before"`
+	// Last keeps only the newest N matching entries; 0 keeps all. Home asks for a page, not the book.
+	Last int `json:"last,omitempty"`
 }
 
 func (r RawLedgerFilter) Validate() error {
@@ -21,6 +23,9 @@ func (r RawLedgerFilter) Validate() error {
 	case "", "setup", "rules", "people", "notices", "corrections":
 	default:
 		return fmt.Errorf("choose a kind of league change")
+	}
+	if r.Last < 0 {
+		return fmt.Errorf("choose how many recent ledger entries to show")
 	}
 	_, _, err := r.bounds()
 	return err
@@ -83,6 +88,9 @@ func FilteredReading(league, principal string, records []Record, auth Authorizer
 		if filter.matches(entry, kinds[entry.ID], from, before) {
 			entries = append(entries, entry)
 		}
+	}
+	if filter.Last > 0 && len(entries) > filter.Last {
+		entries = entries[len(entries)-filter.Last:]
 	}
 	reading.Entries = entries
 	return reading, nil

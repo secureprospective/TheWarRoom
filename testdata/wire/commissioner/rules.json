@@ -8,6 +8,37 @@
    "label": "League shape",
    "rows": [
     {
+     "field": "league.startingAssets",
+     "label": "Starting assets",
+     "value": "Held rosters, contracts and draft picks",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "string",
+      "choices": [
+       {
+        "value": "empty",
+        "label": "Empty rosters and rules-defined auction lots"
+       },
+       {
+        "value": "held",
+        "label": "Held rosters, contracts and draft picks"
+       }
+      ],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": "held",
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
      "field": "league.teams",
      "label": "Teams",
      "value": "32",
@@ -563,6 +594,37 @@
   {
    "label": "Lineup",
    "rows": [
+    {
+     "field": "lineup.lock",
+     "label": "Lineup lock",
+     "value": "Week’s first kickoff",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "string",
+      "choices": [
+       {
+        "value": "each_player_game",
+        "label": "Each player’s game"
+       },
+       {
+        "value": "first_kickoff",
+        "label": "Week’s first kickoff"
+       }
+      ],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": "first_kickoff",
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
     {
      "field": "lineup.positions",
      "label": "Starting position limits",
@@ -11908,6 +11970,61 @@
    "label": "Schedule",
    "rows": [
     {
+     "field": "schedule.follow",
+     "label": "Follow reference schedule",
+     "value": "Source: None; League: None; Season: 0",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "record",
+      "choices": [],
+      "fields": [
+       {
+        "name": "Source",
+        "label": "Source",
+        "schema": {
+         "kind": "string",
+         "choices": [],
+         "fields": []
+        }
+       },
+       {
+        "name": "League",
+        "label": "League",
+        "schema": {
+         "kind": "string",
+         "choices": [],
+         "fields": []
+        }
+       },
+       {
+        "name": "Season",
+        "label": "Season",
+        "schema": {
+         "kind": "count",
+         "minimum": 0,
+         "choices": [],
+         "fields": []
+        }
+       }
+      ]
+     },
+     "competitive": true,
+     "pending": [],
+     "current": {
+      "League": "",
+      "Season": 0,
+      "Source": ""
+     },
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
      "field": "schedule.regularWeeks",
      "label": "Regular season weeks",
      "value": "13",
@@ -11949,6 +12066,33 @@
      "safeguards": {
       "nextRollover": "hold",
       "now": "reason"
+     },
+     "governed": null
+    }
+   ]
+  },
+  {
+   "label": "Reference transactions",
+   "rows": [
+    {
+     "field": "transactions.follow",
+     "label": "Follow reference transactions",
+     "value": "Off",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "boolean",
+      "choices": [],
+      "fields": []
+     },
+     "competitive": false,
+     "pending": [],
+     "current": false,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "hold"
      },
      "governed": null
     }

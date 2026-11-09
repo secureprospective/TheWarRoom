@@ -59,10 +59,18 @@ cleanup() {
 }
 trap cleanup EXIT
 # This bundle is trusted release input, not a league archive. Never extract it on the host.
+if [[ -n ${TWR_TEMPLATE:-} ]]; then
+  # A prepared template beside its .sha256 (lab golden template); no download.
+  template=$TWR_TEMPLATE
+  [[ $template =~ ^[a-zA-Z0-9._-]+$ ]] || stop 'TWR_TEMPLATE must be a file name in template storage.'
+  tdir=$(dirname "$(pvesm path "$templates:vztmpl/$template")")
+  (cd "$tdir" && sha256sum --check --quiet "$template.sha256") || stop "Template $template failed its checksum."
+else
 pveam update
 template=$(pveam available --section system | awk '$2 ~ /^alpine-3\.23-default_.*amd64.tar.xz$/ {print $2}' | sort -V | tail -1)
 [[ -n $template ]] || { echo 'No Alpine 3.23 amd64 template is available.' >&2; exit 1; }
 pveam download "$templates" "$template"
+fi
 # The owner-only umask would make the rootfs unreadable to the unprivileged mapping.
 (umask 022; pct create "$ctid" "$templates:vztmpl/$template" --hostname "twr-$ctid" \
   --unprivileged 1 --features nesting=1 --cores 2 --memory 1024 --swap 0 \
@@ -99,6 +107,16 @@ RULES
 } > "/etc/pve/firewall/$ctid.fw"
 pve-firewall compile >/dev/null
 pct start "$ctid"
+# DHCP and DNS lag the CT start by seconds; installing before then fails at random (11-08 lab: 7.8 s).
+online=0
+for ((attempt=0; attempt<60; attempt++)); do
+  if pct exec "$ctid" -- sh -c 'ip -4 route | grep -q "^default" && nslookup dl-cdn.alpinelinux.org 1.1.1.1' >/dev/null 2>&1; then
+    online=1
+    break
+  fi
+  sleep 1
+done
+(( online )) || { echo 'The new container did not get a network address and DNS within 60 seconds; check the bridge, VLAN and DHCP.' >&2; exit 1; }
 pct exec "$ctid" -- mkdir -m 700 /root/twr
 pct push "$ctid" "$bundle" /root/twr.tar.gz --perms 0600
 pct exec "$ctid" -- tar -xzf /root/twr.tar.gz -C /root/twr

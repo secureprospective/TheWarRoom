@@ -7,6 +7,7 @@ import (
 )
 
 type LeagueRules struct {
+	StartingAssets Value[StartingAssets] `json:",omitzero"`
 	Teams          Value[int]
 	Conferences    Value[int]
 	Divisions      Value[int]
@@ -29,6 +30,7 @@ type LeagueRules struct {
 
 func legacyLeague() LeagueRules {
 	return LeagueRules{
+		StartingAssets:      cited(EmptyAssets, "New leagues start with empty rosters and their rules-defined auction lots"),
 		Teams:               cited[int](32, "Census CM-001"),
 		Conferences:         cited[int](2, "Census CM-001"),
 		Divisions:           cited[int](8, "Census CM-001"),
@@ -46,6 +48,7 @@ func legacyLeague() LeagueRules {
 
 func leagueFields() []ruleField {
 	return []ruleField{
+		field[StartingAssets]{path: "league.startingAssets", label: "Starting assets", access: func(r *RuleSet) *Value[StartingAssets] { return &r.League.StartingAssets }},
 		field[int]{path: "league.teams", label: "Teams", access: func(r *RuleSet) *Value[int] { return &r.League.Teams }},
 		field[int]{path: "league.conferences", label: "Conferences", access: func(r *RuleSet) *Value[int] { return &r.League.Conferences }},
 		field[int]{path: "league.divisions", label: "Divisions", access: func(r *RuleSet) *Value[int] { return &r.League.Divisions }},
@@ -84,6 +87,7 @@ func rosterFields() []ruleField {
 }
 
 type LineupRules struct {
+	Lock           Value[LineupLock] `json:",omitzero"`
 	Positions      Value[map[Position]Bounds]
 	Groups         Value[map[LineupGroup]Bounds]
 	InvalidPenalty Value[Penalty]
@@ -92,6 +96,7 @@ type LineupRules struct {
 
 func legacyLineup() LineupRules {
 	return LineupRules{
+		Lock:           cited(EachPlayerGame, "New leagues lock each player at their own game"),
 		Positions:      cited[map[Position]Bounds](legacyLineupBounds(), "Census CM-004 Q-A1"),
 		Groups:         cited[map[LineupGroup]Bounds](legacyGroups(), "Census CM-004 Q-A1"),
 		InvalidPenalty: cited[Penalty](ZeroTopStarter, "Rulebook §3"),
@@ -101,6 +106,7 @@ func legacyLineup() LineupRules {
 
 func lineupFields() []ruleField {
 	return []ruleField{
+		field[LineupLock]{path: "lineup.lock", label: "Lineup lock", access: func(r *RuleSet) *Value[LineupLock] { return &r.Lineup.Lock }},
 		field[map[Position]Bounds]{path: "lineup.positions", label: "Starting position limits", access: func(r *RuleSet) *Value[map[Position]Bounds] { return &r.Lineup.Positions }},
 		field[map[LineupGroup]Bounds]{path: "lineup.groups", label: "Starting group limits", access: func(r *RuleSet) *Value[map[LineupGroup]Bounds] { return &r.Lineup.Groups }},
 		field[Penalty]{path: "lineup.invalidPenalty", label: "Invalid lineup penalty", access: func(r *RuleSet) *Value[Penalty] { return &r.Lineup.InvalidPenalty }},

@@ -51,3 +51,42 @@ func TestPercentFieldsAreTheShares(t *testing.T) {
 		t.Fatal("percent fields are wrong")
 	}
 }
+
+func TestScheduleFollowSettingValidation(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		body  string
+		valid bool
+	}{
+		{`{"Source":"mfl","League":"00123","Season":2026}`, true},
+		{`{"Source":"","League":"","Season":0}`, true},
+		{`{"Source":"mfl","League":"bad","Season":2026}`, false},
+		{`{"Source":"other","League":"123","Season":2026}`, false},
+		{`{"Source":"mfl","League":"123","Season":0}`, false},
+		{`{"Source":"","League":"123","Season":2026}`, false},
+	} {
+		if _, err := DecodeSetting("schedule.follow", json.RawMessage(tc.body)); (err == nil) != tc.valid {
+			t.Errorf("%s: %v", tc.body, err)
+		}
+	}
+}
+
+func TestStartingSettingsClosedMenus(t *testing.T) {
+	for _, tc := range []struct {
+		field, value string
+		valid        bool
+	}{
+		{"lineup.lock", `"each_player_game"`, true},
+		{"lineup.lock", `"first_kickoff"`, true},
+		{"lineup.lock", `"sunday"`, false},
+		{"league.startingAssets", `"empty"`, true},
+		{"league.startingAssets", `"held"`, true},
+		{"league.startingAssets", `"mfl"`, false},
+	} {
+		t.Run(tc.field+"/"+tc.value, func(t *testing.T) {
+			if _, err := DecodeSetting(FieldPath(tc.field), json.RawMessage(tc.value)); (err == nil) != tc.valid {
+				t.Fatalf("valid=%t: %v", tc.valid, err)
+			}
+		})
+	}
+}

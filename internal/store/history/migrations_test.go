@@ -184,3 +184,65 @@ BEGIN SELECT RAISE(ABORT, 'old guard'); END`); err != nil {
 		t.Fatalf("versionless payload: %v", err)
 	}
 }
+
+func TestHistoryLiveMigrationRetriesAtomicallyAndReopens(t *testing.T) {
+	path, _, _ := legacyHistory(t)
+	pools, err := db.Open(t.Context(), path, SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = pools.Close() }()
+	steps := historyMigrations()
+	if _, err := pools.Migrate(t.Context(), steps[:12]...); err != nil {
+		t.Fatal(err)
+	}
+	injected := errors.New("injected after live DDL")
+	failing := append([]db.Migration{}, steps[:12]...)
+	failing = append(failing, func(ctx context.Context, tx *sql.Tx) error {
+		if err := addLiveEvidence(ctx, tx); err != nil {
+			return err
+		}
+		return injected
+	})
+	if _, err := pools.Migrate(t.Context(), failing...); !errors.Is(err, injected) {
+		t.Fatalf("failure=%v", err)
+	}
+	if got := historyJSON(t, pools.Read(), `SELECT json_array((SELECT user_version FROM pragma_user_version), (SELECT count(*) FROM sqlite_master WHERE name LIKE 'live_%'))`); got != "[12,0]" {
+		t.Fatalf("failed migration left schema or marker: %s", got)
+	}
+	s := New(pools, registry(t, ""))
+	if err := s.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if got := historyJSON(t, pools.Read(), `SELECT json_array((SELECT user_version FROM pragma_user_version), (SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('live_evidence','live_chronology','live_board')))`); got != "[13,3]" {
+		t.Fatalf("live migration=%s", got)
+	}
+	if _, err := pools.Write().ExecContext(t.Context(), `
+INSERT INTO live_evidence VALUES (1,'0099',2026,8,'game-8','espn','digest','2026-11-01','{}');
+INSERT INTO live_chronology VALUES ('0099',2026,8,0,-1,'{}');
+INSERT INTO live_board VALUES ('0099',1)`); err != nil {
+		t.Fatal(err)
+	}
+	if err := pools.Close(); err != nil {
+		t.Fatal(err)
+	}
+	pools, err = db.Open(t.Context(), path, SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if err := New(pools, s.Registry()).Initialize(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		if got := historyJSON(t, pools.Read(), `SELECT json_array((SELECT user_version FROM pragma_user_version), (SELECT count(*) FROM live_evidence), (SELECT count(*) FROM live_chronology), (SELECT evidence_id FROM live_board WHERE player='0099'))`); got != "[13,1,1,1]" {
+			t.Fatalf("restart changed live evidence: %s", got)
+		}
+	}
+	for _, table := range []string{"live_evidence", "live_chronology"} {
+		for _, op := range []string{"UPDATE " + table + " SET player='changed'", "DELETE FROM " + table} {
+			if _, err := pools.Write().ExecContext(t.Context(), op); err == nil || !strings.Contains(err.Error(), "append-only") {
+				t.Fatalf("lost append-only protection: %s: %v", op, err)
+			}
+		}
+	}
+}

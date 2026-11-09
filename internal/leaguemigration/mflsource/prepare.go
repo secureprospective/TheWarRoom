@@ -23,11 +23,24 @@ import (
 func Prepare(export Export) (leaguemigration.Plan, error) {
 	p := preparation{export: export}
 	plan := leaguemigration.Plan{}
-	rules, problems, notes := Settings(export.Config)
+	rules, problems, notes := Settings(export.Config, export.Base, export.DraftType)
+	rules.Schedule.Follow = leaguerules.Known(leaguerules.ScheduleFollow{Source: "mfl", League: export.LeagueID, Season: export.Season})
 	p.problems = append(p.problems, problems...)
 	plan.Rules, plan.Notes = rules, notes
+	plan.Waiting = waitingSettings(rules)
 	plan.Seed, plan.Mapping = p.snapshot()
 	plan.Owners = p.owners(plan.Mapping)
+	var err error
+	plan.Schedule, err = Schedule(export.Schedule, plan.Mapping)
+	if err != nil {
+		p.problem("the weekly schedule could not be kept: %v", err)
+	}
+	if export.Results != nil {
+		plan.Recorded, err = RecordedResults(export.Results, export.Season, 0, plan.Mapping)
+		if err != nil {
+			p.problem("the recorded results could not be kept: %v", err)
+		}
+	}
 	plan.Create = p.create(rules)
 	if len(export.Rosters) == 0 {
 		p.problem("MFL holds no rostered players for this league, so there is nothing to move; " +
@@ -48,7 +61,7 @@ func Prepare(export Export) (leaguemigration.Plan, error) {
 		return leaguemigration.Plan{}, &leaguemigration.Problems{List: []string{"the league's settings do not hold together: " + err.Error()}}
 	}
 	plan.Create = create.Args
-	return plan, nil
+	return prepareTransactionPlan(export, plan), nil
 }
 
 type preparation struct {
@@ -202,13 +215,17 @@ func (p *preparation) players(seed *commissioner.RawNativeSnapshot, mapping map[
 			continue
 		}
 		player := commissioner.NativePlayer{Name: p.export.Players[id], ID: id,
-			Franchise: franchise, Status: status, Salary: salary, ExpirationYear: year,
+			ContractMissing: strings.TrimSpace(r.Salary) == "" || strings.TrimSpace(r.ContractYear) == "" || strings.TrimSpace(r.ContractStatus) == "",
+			Franchise:       franchise, Status: status, Salary: salary, ExpirationYear: year,
 			ContractStatus: record.ContractStatus, ContractInfo: r.ContractInfo}
 		switch {
 		case strings.TrimSpace(r.ContractStatus) == "":
 			player.ContractStatus = "" // MFL holds no contract status; none is invented
 		case r.ContractStatus != string(record.ContractStatus):
 			player.HeldContractStatus = r.ContractStatus
+		}
+		if player.ContractMissing {
+			player.Salary, player.ExpirationYear, player.ContractStatus = 0, 0, ""
 		}
 		seed.Players = append(seed.Players, player)
 	}
@@ -314,4 +331,21 @@ func (p *preparation) owners(mapping map[string]string) []leaguemigration.Owner 
 	}
 	slices.SortFunc(out, func(a, b leaguemigration.Owner) int { return strings.Compare(a.Franchise, b.Franchise) })
 	return out
+}
+
+func prepareTransactionPlan(export Export, plan leaguemigration.Plan) leaguemigration.Plan {
+	if export.Transactions == nil {
+		return plan
+	}
+	plan.Transactions = func(league, reason string, seed commissioner.RawNativeSnapshot) ([][]commissioner.RawCommand, error) {
+		players, mapping := map[string]string{}, map[string]string{}
+		for id := range export.Players {
+			players[id] = id
+		}
+		for _, f := range seed.Franchises {
+			mapping[f.HeldID] = f.ID
+		}
+		return TransactionReplayCommands(*export.Transactions, league, reason, seed, mapping, players, export.Draft)
+	}
+	return plan
 }

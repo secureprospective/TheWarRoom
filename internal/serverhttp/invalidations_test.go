@@ -16,6 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
@@ -233,7 +234,7 @@ func prepareHiddenBid(t *testing.T, f *hostedFixture) func() {
 			t.Fatal(err)
 		}
 	}
-	execute(commissioner.Create, commissioner.RawArgs{Name: "Hidden league", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 32}, f.principal, "league")
+	execute(commissioner.Create, commissioner.RawArgs{Name: "Hidden league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 32}, f.principal, "league")
 	at := time.Now().UTC()
 	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at, Players: []commissioner.NativePlayer{{ID: "0099", Franchise: "franchise.01", Status: domain.RosterActive, Salary: 100000000, ExpirationYear: 2028, ContractStatus: domain.CStatusUFA}}}
 	for n := 1; n <= 32; n++ {
@@ -318,4 +319,58 @@ func TestSSEPrivilegedStreamClosesWhenProofLapses(t *testing.T) {
 	quiet := streamEvents(owner)
 	expectInvalidation(t, quiet)
 	expectQuiet(t, quiet)
+}
+
+// The stream budget scales with the league (3 per seated franchise + headroom), not a fixed server-wide
+// 64 that 32 owners on 2-3 devices exceed; one device still holds at most 2.
+func TestSSEStreamBudgetScalesWithSeatedFranchises(t *testing.T) {
+	f := newHostedFixture(t)
+	streamOwner(t, f)
+	device := func() string {
+		session, err := f.sessions.Login(t.Context(), accounts.RawCredentials{Username: "stream.owner", Password: "stream-owner-password"}, "test device")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return session.Bearer
+	}
+	seated := func() int {
+		n, err := leagueservice.JoinSeats{Store: f.history}.Seated(t.Context(), "native.hosted")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	fill := func(budget int, open *int) {
+		for *open < budget {
+			bearer := device()
+			for range min(2, budget-*open) {
+				r := openStream(t, f, bearer, "", 200)
+				t.Cleanup(func() { _ = r.Body.Close() })
+				*open++
+			}
+		}
+		r := openStream(t, f, device(), "", 429)
+		_ = r.Body.Close()
+	}
+	before := seated()
+	if before < 1 {
+		t.Fatalf("seated=%d, want the stream owner seated", before)
+	}
+	first := device()
+	one := openStream(t, f, first, "", 200)
+	defer func() { _ = one.Body.Close() }()
+	two := openStream(t, f, first, "", 200)
+	defer func() { _ = two.Body.Close() }()
+	over := openStream(t, f, first, "", 429)
+	_ = over.Body.Close() // device cap holds with league budget left
+	open := 2
+	fill(3*before+8, &open)
+	seat := commissioner.RawCommand{League: "native.hosted", Command: "commish.seat.replace", Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.02", Principal: f.principal}}, Expected: 2, Reason: "Seat a second franchise", Request: "stream.seat.2", Effective: "now", Visibility: "league"}
+	if _, err := f.history.ExecuteCommissioner(t.Context(), seat, f.principal, nil); err != nil {
+		t.Fatal(err)
+	}
+	if seated() != before+1 {
+		t.Fatalf("seated=%d want %d", seated(), before+1)
+	}
+	fill(3*(before+1)+8, &open)
 }

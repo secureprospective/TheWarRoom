@@ -2,7 +2,7 @@ package catalog
 
 // DesktopCommands is the legacy binding view; availability describes the old adapter, not remote admission.
 func DesktopCommands(feature string, related []Command) []Command {
-	views := map[string]func([]Command) []Command{"commissioner": commissionerDesktop, "comms": commsDesktop, "contracts": contractsDesktop, "control": controlDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
+	views := map[string]func([]Command) []Command{"commissioner": commissionerDesktop, "contracts": contractsDesktop, "control": controlDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
 	if view, ok := views[feature]; ok {
 		return view(related)
 	}
@@ -19,6 +19,7 @@ func heldRead(c Command) Command {
 func commissionerDesktop(related []Command) []Command {
 	methods := []struct{ method, role, gravity string }{
 		{"TargetBackupNow", "gm,commish,admin", "G1"},
+		{"TargetCancelRead", "gm,commish,admin", "G0"},
 		{"TargetCommissionerActor", "gm,commish", "G0"},
 		{"TargetCommissionerControls", "gm,commish", "G0"},
 		{"TargetCommissionerDigests", "gm,commish", "G0"},
@@ -30,11 +31,15 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetCommissionerMarket", "gm,commish", "G0"},
 		{"TargetCommissionerNotices", "gm,commish", "G0"},
 		{"TargetCommissionerPeople", "gm,commish", "G0"},
+		{"TargetCommissionerPresetApply", "commish", "G3"},
+		{"TargetCommissionerPresetCompare", "gm,commish", "G0"},
 		{"TargetCommissionerPreview", "commish", "G0"},
 		{"TargetCommissionerRules", "gm,commish", "G0"},
 		{"TargetCommissionerSchedule", "commish", "G0"},
 		{"TargetCommissionerSeat", "gm,commish,admin", "G0"},
 		{"TargetCommissionerSeatSignIn", "gm,commish,admin", "G1"},
+		{"TargetSignInFacts", "commish,admin", "G0"},
+		{"TargetWorkflow", "gm,commish", "argument-dependent"},
 		{"TargetCorrections", "gm,commish", "G0"},
 		{"TargetLeagueCalendar", "gm,commish", "G0"},
 		{"TargetLeagueSchedule", "gm,commish", "G0"},
@@ -53,13 +58,18 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetNativeLineupCheck", "gm,commish,admin", "G0"},
 		{"TargetNativeLineupSet", "gm,commish", "G2"},
 		{"TargetNativePlayerScore", "gm,commish,admin", "G0"},
+		{"TargetNativeValues", "gm,commish,admin", "G0"},
+		{"TargetNativeProjections", "gm,commish,admin", "G0"},
+		{"TargetNativeLineupDelta", "gm,commish,admin", "G0"},
 		{"TargetNativeReserveCheck", "gm,commish,admin", "G0"},
 		{"TargetNativeResults", "gm,commish,admin", "G0"},
 		{"TargetNativeRosterCheck", "gm,commish,admin", "G0"},
 		{"TargetNativeScorePreview", "commish", "G0"},
 		{"TargetNativeSeed", "commish", "G3"},
 		{"TargetNativeStandings", "gm,commish,admin", "G0"},
+		{"TargetNativeOdds", "gm,commish,admin", "G0"},
 		{"TargetNativeTradeAction", "gm,commish", "G3"},
+		{"TargetNativeMoves", "gm,commish", "G0"},
 		{"TargetNativeTrades", "gm,commish", "G0"},
 		{"TargetNativeWaiverAction", "gm,commish", "G3"},
 		{"TargetNativeWaivers", "gm,commish", "G0"},
@@ -85,7 +95,7 @@ func desktopCommands(methods []struct{ method, role, gravity string }, related [
 			command.ID = "commish.ledger.read"
 		case "TargetNativeLineupSet":
 			command.ID = "lineup.set"
-		case "TargetCommissionerSeat", "TargetCommissionerSeatSignIn":
+		case "TargetCommissionerSeat", "TargetCommissionerSeatSignIn", "TargetSignInFacts":
 			command.Availability = "desktop" // a hosted league signs in on the server
 		case "TargetBackupNow":
 			command.ID, command.Availability = "backup.now", "desktop" // a hosted league backs up on the server
@@ -97,14 +107,6 @@ func desktopCommands(methods []struct{ method, role, gravity string }, related [
 		commands = append(commands, command)
 	}
 	return commands
-}
-
-func commsDesktop(_ []Command) []Command {
-	return []Command{
-		{ID: "comms.read", Method: "TargetComms", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
-		{ID: "comms.refresh", Method: "TargetCommsRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: "comms.open", Method: "TargetOpenComms", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "desktop"},
-	}
 }
 
 func contractsDesktop(_ []Command) []Command {
@@ -128,6 +130,7 @@ func controlDesktop(_ []Command) []Command {
 			Gravity: gravity, Availability: availability}
 	}
 	return []Command{
+		c("TargetMFLMigration", "commish", "G3", "desktop"),
 		c("DeleteMFLKey", "gm,commish,admin", "G2", "desktop"), heldRead(c("GetParams", "gm,commish,admin", "G0", "both")), c("MFLKeyStatus", "gm,commish,admin", "G0", "desktop"), c("ResetParam", "admin", "G2", "both"),
 		c("SetMFLKey", "gm,commish,admin", "G2", "desktop"), c("SetParam", "admin", "G2", "both"), heldRead(c("TargetAccounting", "gm,commish,admin", "G0", "both")), heldRead(c("TargetAlerts", "gm,commish,admin", "G0", "both")),
 		heldRead(c("TargetBylaws", "gm,commish,admin", "G0", "both")), heldRead(c("TargetLeagueSettings", "gm,commish,admin", "G0", "both")), c("TargetOpenMFLAccounting", "gm,commish,admin", "G0", "desktop"),
@@ -152,6 +155,7 @@ func marketDesktop(_ []Command) []Command {
 	}
 	return []Command{
 		heldRead(read("TargetAssetBoard", "G0")),
+		heldRead(read("TargetAgeArc", "G0")),
 		heldRead(read("TargetMarketReports", "G0")),
 		read("TargetMarketReportsRefresh", "G1"),
 	}
@@ -169,6 +173,7 @@ func offersDesktop(related []Command) []Command {
 	return append(related, []Command{
 		{ID: Unset, Method: "TargetPersonal", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetPersonalChange", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
+		{ID: Unset, Method: "TargetPersonalNotes", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetPersonalHandOff", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "desktop"},
 	}...)
 }
@@ -180,7 +185,7 @@ func platformDesktop(_ []Command) []Command {
 	}
 	return []Command{
 		c("TargetCheckMoves", "gm,commish,admin", "G1", "both"), c("TargetClock", "gm,commish,admin", "G0", "both"), c("TargetDraftIR", "gm,commish", "G2", "both"),
-		c("TargetDraftTaxi", "gm,commish", "G2", "both"), c("TargetHandOff", "gm,commish", "G2", "desktop"), c("TargetMoves", "gm,commish,admin", "G0", "both"),
+		c("TargetDraftTaxi", "gm,commish", "G2", "both"), c("TargetHandOff", "gm,commish", "G2", "desktop"), c("TargetInjuries", "gm,commish,admin", "G0", "both"), c("TargetLeagues", "gm,commish,admin", "G0", "both"), c("TargetMoves", "gm,commish,admin", "G0", "both"),
 		c("TargetPhoto", "gm,commish,admin", "G0", "both"), c("TargetSnapshot", "gm,commish,admin", "G0", "both"), c("TargetWithdrawRoster", "gm,commish", "G1", "both"),
 	}
 }
@@ -197,6 +202,7 @@ func researchDesktop(_ []Command) []Command {
 		{ID: Unset, Method: "TargetResearch", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetResearchRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetResearchNewsRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
+		{ID: Unset, Method: "TargetPlayerUsage", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetResearchPlayer", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: Unset, Method: "TargetResearchStatus", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: Unset, Method: "TargetOpenResearchArticle", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "desktop"},

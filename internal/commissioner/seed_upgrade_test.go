@@ -25,8 +25,8 @@ func TestPrePartTwoLegacySeedUpgradesToANewLegacyLeague(t *testing.T) {
 	}
 	upgraded := legacyLeague(t)
 	fresh := legacyLeague(t)
-	if len(old) != len(fresh[0].Command.Args.Seed)-18 {
-		t.Fatalf("the held old seed should lack the six scoring kinds, two auto-move fields, division conferences, seven startup draft settings, sides and player pools: %d vs %d", len(old), len(fresh[0].Command.Args.Seed))
+	if len(old) != len(fresh[0].Command.Args.Seed)-22 {
+		t.Fatalf("the held old seed should lack the six scoring kinds, two auto-move fields, division conferences, seven startup draft settings, sides, player pools, schedule following, transaction following, lineup lock and starting assets: %d vs %d", len(old), len(fresh[0].Command.Args.Seed))
 	}
 	for _, s := range old {
 		if strings.Contains(string(s.Value), "blocked_fg_td") || strings.Contains(string(s.Value), "other_return_td") {
@@ -42,6 +42,10 @@ func TestPrePartTwoLegacySeedUpgradesToANewLegacyLeague(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if got.Transactions.Follow.State == leaguerules.IsKnown || !reflect.DeepEqual(want.Transactions, leaguerules.LegacyNFL().Transactions) {
+		t.Fatal("transaction following must stay unconfigured in the old seed and off in a new league")
+	}
+	want.Transactions = got.Transactions
 	if !reflect.DeepEqual(got, want) {
 		for _, f := range []string{"scoring.catalogue", "scoring.ranges", "scoring.extras", "scoring.scales", "scoring.totals", "scoring.lineUnit"} {
 			a, _ := ruleValue(upgraded, f)

@@ -126,20 +126,19 @@ Christopher said on 2026-10-10 that the lineup UI will be reworked later. No rep
 
 **Ordering rule.** Time changes *placement*, not chrome:
 - At T−7d an item moves up its lane.
-- At T−48h it is pinned to Home's alert tray and the seasonal card.
+- At T−48h deadline pinning is parked pending a new UI home.
 - Within a lane, items sort by urgency (U), then consequence (G), then stable ID.
 
 **Colour slots.** Each card has exactly four: status, verdict (only beyond chance), countdown and
 provenance. Colour is always paired with a text label or icon.
 
-## 4. Organization (GLM §4.1–4.2; three workspaces per node except Trade Floor)
+## 4. Organization (GLM §4.1–4.2; current shell routes)
 
 | Node | Workspaces | Notes |
 |---|---|---|
-| Home | Seasonal card (owns the node) · alert tray · digests | phase router |
-| War Room | Market · Valuations and pool · Research | Lab market, asset board, free-agent pool, bid tracker |
+| Home | Overview | node route; no workspace tab |
+| War Room | Valuations and pool · Trade desk · Draft room | Trade desk, Market, Draft room and Plans tabs; native draft actions; Plans is not yet wired |
 | Franchise HQ | Lineup and roster · Contracts and cap · My moves | Act plans, what-if, dead cap, app-local lists |
-| Trade Floor | Trade desk · Offers history · Counterparties · Draft room | accept, reject, revoke, DOT state; draft timing inside the draft room |
 | League Pulse | Now · Race · Archive | live game view and Classic/Default matchup in Now; report drawer for every MFL read report |
 | Control Room | App · Data and sources · League | engine params gated to Admin; League is a GM read (commissioner pages are ring 4) |
 
@@ -283,7 +282,7 @@ Answered items retain their answers and dates. Remaining questions are owed befo
 **What worked**
 - The lineup envelope Landed twice live on 2026-10-09: the change and its revert.
 - Persistent receipts and the watcher retain Not verified plans and can land later matching evidence.
-- Home seasonal/alert surfaces, HQ lineup/roster, Classic Pulse Now and the trade desk were built.
+- HQ lineup/roster, Classic Pulse Now and the trade desk were built; Home alerts are parked.
 - Inspector IR/taxi drafts open the correct MFL pages. Neither intent has Landed live.
 
 **What revision 0 got wrong**
@@ -331,19 +330,19 @@ receipts is the p2l report in the ring 2 run folder. Nothing in ring 2 posts to 
   stretches, how it compares with other assets, what came back in its trades, and who buys it (L-09–L-13).
 - Draft lab: return as a share of the slot, by season after the draft, by NFL round and by age;
   "plays like pick #N", hit rate, kept by year two, and draft it or buy it (L-15–L-22,
-  `frontend/src/app/market/Draft.tsx`). Draft lab has its primary home in Trade Floor › Draft room; the Market button is a second route to the same lazy component and commands.
+  `frontend/src/app/market/Draft.tsx`). Draft lab has its primary home in War Room › Draft room; the Market button is a second route to the same lazy component and commands.
 
-**Trade Floor › Draft room** (L-15–L-22)
+**War Room › Draft room** (L-15–L-22)
 - The same lazy Draft lab as the Market route: timing, plays-like-pick, return and draft-or-buy. MFL draft reports and live drafting remain deferred.
 
-**Trade Floor › Counterparties** (L-23–L-29, L-36)
+**Parked: Counterparties** (L-23–L-29, L-36)
 - Filters for standing on trade day, time of year and what the trade did (bought for now, built for
   later, like for like) (`frontend/src/app/counterparties/Counterparties.tsx:19`).
 - Tier cards, each tier's trend over time, tier against tier, and a sortable 32-team table; a team
   opens a panel with its season cells, what it sent and took, and its partners
   (`frontend/src/app/counterparties/TeamPanel.tsx`). Standings are as of the archive cutoff.
 
-**Trade Floor › Offers history** (L-30–L-32)
+**Parked: Offers history** (L-30–L-32)
 - How offers ended across the eight stretches, with sent / received / all. The header always says
   that MFL shows only the GM's own offers (`frontend/src/app/offers/Offers.tsx:21`).
 
@@ -462,11 +461,11 @@ This is the stand-alone app's plan. None of it is in ring 2. The full triage is
 |---|---|
 | M-046 | No projected-scores feed is held; ring 2 built only the free-agent pool and bid plans here. |
 | M-047 | No player-ranks feed is held; ring 2 built only the free-agent pool and bid plans here. |
-| M-063, M-064, M-065, M-066, M-087, M-102, M-176, M-179, M-183 | The MFL draft reports are not wired; the Lab's draft numbers (L-15–L-22) are in Trade Floor › Draft room and reachable from Market. |
+| M-063, M-064, M-065, M-066, M-087, M-102, M-176, M-179, M-183 | The MFL draft reports are not wired; the Lab's draft numbers (L-15–L-22) are in War Room › Draft room and reachable from Market. |
 | M-067 | No ADP feed is held; ring 2 built only the free-agent pool and bid plans here. |
-| M-068 | The MFL draft reports are not wired; the Lab's draft numbers (L-15–L-22) are in Trade Floor › Draft room and reachable from Market; no future-pick ownership feed is held. |
+| M-068 | The MFL draft reports are not wired; the Lab's draft numbers (L-15–L-22) are in War Room › Draft room and reachable from Market; no future-pick ownership feed is held. |
 | M-069 | No AAV feed is held; ring 2 built only the free-agent pool and bid plans here. |
-| M-103 | The MFL draft reports are not wired; the Lab's draft numbers (L-15–L-22) are in Trade Floor › Draft room and reachable from Market; the app-local draft list is not built. |
+| M-103 | The MFL draft reports are not wired; the Lab's draft numbers (L-15–L-22) are in War Room › Draft room and reachable from Market; the app-local draft list is not built. |
 | M-192 | No option Act is built; contract Acts cover tender, re-sign, tag, extension and restructure (ContractActs.tsx:13). |
 | L-34 | The stand-alone data pipeline (s0–s5, Facts_Schema_Panel_2026-10.md) is not built; Control Room › Data and sources is not wired. |
 | C-06.4 | No acquisitions screen is built (the Go roster handlers in internal/transactions/acquisitions have no Franchise HQ surface); free-agent adds are checked only by the bid plan rules (C-06.7). |
@@ -487,12 +486,12 @@ app's own checked facts.
   (M-046/047/067/069) and the **asset board** (C-01, `asset_board.go`, `app/assets/`): every rostered
   player's points per game with his rank at his position, and his dynasty value and market price from the
   Lab's value model, also on every player card, the roster table and the Inspector.
-- **Trade Floor.** The trade builder with propose, reject and withdraw hand-offs and the acquisition cost
+- **Historical Trade Floor (cut 11-05).** The trade builder with propose, reject and withdraw hand-offs and the acquisition cost
   (p3t); the Draft room's MFL draft reports (M-063–M-183) beside the Lab's Draft lab, the NFL draft
   (M-087) and the app-local draft list (M-103).
 - **Franchise HQ.** Incoming contract and bid-plan cost by season (C-06.4); lineup and roster read as
   loading, never failing, while MFL answers at launch.
-- **Home.** IR alerts in the alert tray (M-149), digests, and the shell rows: presets (S-05), market
+- **Home.** Alerts and digests are parked; shell rows include presets (S-05), market
   filters kept per workspace (S-10), private watch, bait, note and draft lists (`app/personal/`).
 - **Comms.** The league feed, the message board and polls read with the MFL key, and the ProBoards
   hand-off for the league's own board.
@@ -797,3 +796,7 @@ row sets, both fail the build. The proof runs headless in CI, then once live in 
 - Closed during K4: the rulebook's lineup penalties had no control. Ruled: CM-004 carries the penalty
   menu (Legacy: zero the highest-scoring starter); a missed lineup only flags the team; removing an
   owner stays a human G3 act (CM-019).
+
+Trade Floor was cut 2026-11-05. Unserved historical reports and saved plans are listed in
+`docs/audit/PARKED-REPORTS-2026-11-05.md`. Offer inspector retains accept/reject/withdraw plans;
+War Room Negotiations opens it for MFL offers. The five trade IPC methods remain for CLI use.

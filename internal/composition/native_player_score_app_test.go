@@ -16,6 +16,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -42,6 +43,52 @@ func holdNativeScore(t *testing.T, f *legalityFixture, include bool, position st
 // holdNativeStats archives one more copy of the season's weekly file, the way a feed refresh would, with the
 // player credited the given number of tackles.
 func holdNativeStats(t *testing.T, f *legalityFixture, include bool, position, tackles string, revision int) string {
+	t.Helper()
+	text := nativeStatsCSV(t, include, position, tackles)
+	var zipped bytes.Buffer
+	gz := gzip.NewWriter(&zipped)
+	if _, err := gz.Write(text.Bytes()); err != nil {
+		t.Fatal(err)
+	}
+	if err := gz.Close(); err != nil {
+		t.Fatal(err)
+	}
+	hash := sha256.Sum256(text.Bytes())
+	sha := hex.EncodeToString(hash[:])
+	reg, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	feed, ok := reg.Feed("stats_player_week")
+	if !ok {
+		t.Fatal("weekly feed missing")
+	}
+	at := time.Date(2026, 10, 13, 11, revision, 0, 0, time.UTC)
+	if err := f.app.core.History.Record(t.Context(), archive.Fetch{URL: feed.URLFor(2026), Status: 200,
+		SHA256: sha, Size: int64(text.Len()), Gzip: zipped.Bytes(), FetchedAt: at}); err != nil {
+		t.Fatal(err)
+	}
+	return sha
+}
+
+// pinNativeStats has the league explicitly count the first version of the player's week, the line
+// scoreApp holds. Since 02bea32fe an unpinned week follows the feed, so only a pinned week queues a revision.
+func pinNativeStats(t *testing.T, f *legalityFixture) {
+	t.Helper()
+	weeks, err := source.ReadWeeks(bytes.NewReader(nativeStatsCSV(t, true, "LB", "1").Bytes()))
+	if err != nil || len(weeks) != 1 {
+		t.Fatalf("read the held line: %v %d", err, len(weeks))
+	}
+	id := commissioner.StatItemID{Player: "1000", Season: 2026, Week: 1, Seq: 0, Digest: source.LineDigest(weeks[0])[:16]}
+	receipt := statDecide(t, f, commissioner.StatApprove, "pin.original", commissioner.RawStatChange{Item: id.String()})
+	if f.pins == nil {
+		f.pins = map[string]bool{}
+	}
+	f.pins[receipt.Entry] = true
+}
+
+// nativeStatsCSV is the season's weekly file holding one row for the player.
+func nativeStatsCSV(t *testing.T, include bool, position, tackles string) *bytes.Buffer {
 	t.Helper()
 	body, err := os.ReadFile("internal/fantasyscore/source/testdata/weeks.csv")
 	if err != nil {
@@ -78,30 +125,7 @@ func holdNativeStats(t *testing.T, f *legalityFixture, include bool, position, t
 	if err := writer.WriteAll(rows); err != nil {
 		t.Fatal(err)
 	}
-	var zipped bytes.Buffer
-	gz := gzip.NewWriter(&zipped)
-	if _, err := gz.Write(text.Bytes()); err != nil {
-		t.Fatal(err)
-	}
-	if err := gz.Close(); err != nil {
-		t.Fatal(err)
-	}
-	hash := sha256.Sum256(text.Bytes())
-	sha := hex.EncodeToString(hash[:])
-	reg, err := measures.Embedded()
-	if err != nil {
-		t.Fatal(err)
-	}
-	feed, ok := reg.Feed("stats_player_week")
-	if !ok {
-		t.Fatal("weekly feed missing")
-	}
-	at := time.Date(2026, 10, 13, 11, revision, 0, 0, time.UTC)
-	if err := f.app.core.History.Record(t.Context(), archive.Fetch{URL: feed.URLFor(2026), Status: 200,
-		SHA256: sha, Size: int64(text.Len()), Gzip: zipped.Bytes(), FetchedAt: at}); err != nil {
-		t.Fatal(err)
-	}
-	return sha
+	return &text
 }
 
 func readNativeScore(t *testing.T, f *legalityFixture) commissioner.NativePlayerScore {
@@ -341,6 +365,7 @@ func TestNativeScoreWireFixtureMatchesGo(t *testing.T) {
 func TestNativeScoreKeepsTheCountedVersionUntilTheLeagueApprovesTheNewest(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
+	pinNativeStats(t, f)
 	counted := readNativeScore(t, f).SHA256
 	holdNativeScore(t, f, true, "DT", 2)
 	out := readNativeScore(t, f)

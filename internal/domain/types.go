@@ -52,3 +52,21 @@ const (
 	FreshStale = "stale"
 	FreshFail  = "fail"
 )
+
+// PlayerFacts is the players-DB fact set the M1 runner reads per rostered id. It carries no
+// contract fields: contract state lives in the state store and must not be copied from a
+// static feed.
+type PlayerFacts struct {
+	Name         string
+	Team         string
+	Position     Position
+	IsRookie     bool
+	Birthdate    int64  // epoch seconds
+	HasBirthdate bool   // commissioner-created players lack one
+	DraftYear    int    // the §6 experience source
+	HasDraftYear bool   // false for undrafted ("0")
+	DraftRound   int    // NFL draft round; 0 when MFL lists no selection
+	DraftPick    int    // the pick within that round; 0 when MFL lists no selection
+	DraftTeam    string // the NFL team that drafted him, when MFL lists a selection
+	College      string // raw; the SchoolTier source
+}

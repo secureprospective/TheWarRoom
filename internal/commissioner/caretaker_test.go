@@ -8,6 +8,7 @@ import (
 func TestCaretakerLineupSeatEndsWhenOwnerArrives(t *testing.T) {
 	records := lineupGovernance()[:1]
 	records[0].Command.Args.Season = 2026
+	records[0].Receipt.RecordedAt = seasonMoment(1)
 	caretaker := Record{Receipt: Receipt{Entry: "caretaker"}, Principal: "boss", Command: RawCommand{League: "native.test", Command: CaretakerSeat, Args: RawArgs{People: &RawPeople{Franchise: "franchise.01", Principal: "boss"}}}}
 	if _, err := AuthorizeRecords(caretaker.Command, "boss", records); err != nil {
 		t.Fatal(err)

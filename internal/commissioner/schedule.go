@@ -18,6 +18,8 @@ const (
 )
 
 type RawScheduleArgs struct {
+	Recorded  *RawRecordedResults         `json:"recorded,omitempty"`
+	Fixtures  []ScheduleWeek              `json:"fixtures,omitempty"`
 	Weeks     int                         `json:"weeks,omitempty"`
 	Pattern   leaguerules.SchedulePattern `json:"pattern,omitempty"`
 	Week      int                         `json:"week,omitempty"`
@@ -38,13 +40,24 @@ func (a RawArgs) validateSchedule(command string) error {
 	details := *a.Schedule
 	switch command {
 	case ScheduleGenerate:
+		if details.Recorded != nil {
+			if err := details.Recorded.Validate(); err != nil {
+				return err
+			}
+			details.Recorded = nil
+		}
 		if details.Weeks < 1 || details.Weeks > 52 {
 			return fmt.Errorf("choose between 1 and 52 regular-season weeks")
 		}
 		if details.Pattern != "" && details.Pattern != leaguerules.DivisionWeighted {
 			return fmt.Errorf("choose a recognised schedule pattern")
 		}
-		details.Weeks, details.Pattern = 0, ""
+		if len(details.Fixtures) != 0 {
+			if err := validateFixtures(details.Fixtures, details.Weeks); err != nil {
+				return err
+			}
+		}
+		details.Weeks, details.Pattern, details.Fixtures = 0, "", nil
 	case ScheduleEdit:
 		if err := details.validateGamePatches(); err != nil {
 			return err
@@ -196,6 +209,9 @@ func FreezeSchedule(raw RawCommand, records []Record) ([]ScheduleWeek, error) {
 	if len(records) == 0 {
 		return nil, fmt.Errorf("create the league before generating its schedule")
 	}
+	if len(raw.Args.Schedule.Fixtures) != 0 {
+		return checkedFixtures(raw.Args.Schedule.Fixtures, raw.Args.Schedule.Weeks, LeagueFranchises(records))
+	}
 	rules, err := resolveRecords(records)
 	if err != nil {
 		return nil, err
@@ -223,6 +239,11 @@ func CheckScheduleAppend(raw RawCommand, records []Record) error {
 	}
 	switch raw.Command {
 	case ScheduleGenerate:
+		if held := raw.Args.Schedule.Recorded; held != nil {
+			if err := checkRecordedAppend(*held, records); err != nil {
+				return Refused(err)
+			}
+		}
 		_, err = FreezeSchedule(raw, records)
 	case SchedulePublish:
 		if len(draft) == 0 {
@@ -303,9 +324,12 @@ func (r Record) validateGeneratedSchedule() error {
 	if len(r.GeneratedSchedule) != r.Command.Args.Schedule.Weeks {
 		return fmt.Errorf("the recorded schedule does not contain its requested weeks")
 	}
+	if len(r.Command.Args.Schedule.Fixtures) != 0 && !reflect.DeepEqual(r.Command.Args.Schedule.Fixtures, r.GeneratedSchedule) {
+		return fmt.Errorf("the recorded schedule differs from the chosen fixtures")
+	}
 	ids := make(map[string]bool)
 	for i, week := range r.GeneratedSchedule {
-		if week.Week != i+1 || len(week.Games) == 0 {
+		if week.Week != i+1 || (len(week.Games) == 0 && len(r.Command.Args.Schedule.Fixtures) == 0) {
 			return fmt.Errorf("the recorded schedule has an invalid week")
 		}
 		if err := validateFrozenGames(week, ids); err != nil {
@@ -358,4 +382,43 @@ func ManagedScheduleReading(league, principal string, records []Record) (Managed
 	out.Draft = cloneSchedule(draft)
 	out.Published = cloneSchedule(published)
 	return out, nil
+}
+
+// validateFixtures checks a complete, manually chosen schedule. Omitted teams rest that week;
+// empty weeks retain their season number while playoff pairings are not yet known.
+func validateFixtures(weeks []ScheduleWeek, count int) error {
+	if count < 1 || count > 52 || len(weeks) != count {
+		return fmt.Errorf("choose between 1 and 52 consecutive schedule weeks")
+	}
+	ids := map[string]bool{}
+	for i, week := range weeks {
+		if week.Week != i+1 {
+			return fmt.Errorf("number schedule weeks consecutively from one")
+		}
+		if err := validateFrozenGames(week, ids); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func checkedFixtures(weeks []ScheduleWeek, count int, teams []string) ([]ScheduleWeek, error) {
+	if err := validateFixtures(weeks, count); err != nil {
+		return nil, err
+	}
+	known := map[string]bool{}
+	for _, team := range teams {
+		known[team] = true
+	}
+	for _, week := range weeks {
+		if week.Bye != "" && !known[week.Bye] {
+			return nil, fmt.Errorf("choose a franchise in this league for the bye")
+		}
+		for _, game := range week.Games {
+			if !known[game.Home] || !known[game.Away] {
+				return nil, fmt.Errorf("choose franchises in this league for every game")
+			}
+		}
+	}
+	return cloneSchedule(weeks), nil
 }

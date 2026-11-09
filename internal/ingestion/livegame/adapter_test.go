@@ -187,3 +187,29 @@ func TestFollowedCadenceAndErrorBackoff(t *testing.T) {
 		t.Fatal("summary retry missing")
 	}
 }
+
+func TestScoreboardSuppliesMissingWindowsAndStopsAtFinal(t *testing.T) {
+	at := time.Date(2026, 11, 3, 2, 0, 0, 0, time.UTC)
+	game := Game{ID: "1", Kickoff: at.Add(-time.Hour), Status: "in",
+		Home: Team{Abbreviation: "KC"}, Away: Team{Abbreviation: "DEN"}}
+	a := Adapter{Board: Held{Source: "ESPN", Games: []Game{game}}}
+	if !Live(at, a.EffectiveWindows(nil)) {
+		t.Fatal("board did not supply window")
+	}
+	windows := []Window{{Teams: [2]string{"DEN", "KC"}, Kickoff: game.Kickoff}}
+	if len(a.EffectiveWindows(windows)) != 1 {
+		t.Fatal("duplicated schedule window")
+	}
+	a.Board.Games[0].Status = "post"
+	if Live(at, a.EffectiveWindows(nil)) {
+		t.Fatal("finished board kept polling")
+	}
+	a.Board.Games[0].Status = "in"
+	if Live(game.Kickoff.Add(MaxGame), a.EffectiveWindows(nil)) {
+		t.Fatal("stale board escaped six-hour bound")
+	}
+	a.Board.Source = "Held NFL schedule"
+	if Live(at, a.EffectiveWindows(nil)) {
+		t.Fatal("unverified schedule created window")
+	}
+}

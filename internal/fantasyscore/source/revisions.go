@@ -14,6 +14,7 @@ import (
 // are numbered from 0 in the order the feed gave them; a refetch that changed nothing is not a version, but
 // a return to an earlier line is a new one. Held is the earliest file that carried this version.
 type LineRevision struct {
+	Merged bool `json:",omitempty"`
 	Seq    int
 	Digest string
 	Held   HeldWeek
@@ -44,13 +45,9 @@ func LineDigest(week PlayerWeek) string {
 // lineHistory collects one player-week's versions while files are offered newest first.
 type lineHistory struct{ newestFirst []LineRevision }
 
-func (h *lineHistory) add(week PlayerWeek, sha string, at time.Time) {
-	h.addHeld(HeldWeek{SHA256: sha, FetchedAt: at, Week: &week, Missing: []string{missingPlayByPlay}})
-}
-
 func (h *lineHistory) addHeld(held HeldWeek) {
 	digest := LineDigest(*held.Week)
-	if n := len(h.newestFirst); n != 0 && h.newestFirst[n-1].Digest == digest {
+	if n := len(h.newestFirst); n != 0 && h.newestFirst[n-1].Digest == digest && h.newestFirst[n-1].Held.Authority == held.Authority && h.newestFirst[n-1].Held.Review == held.Review && h.newestFirst[n-1].Held.Evidence == held.Evidence && slices.Equal(h.newestFirst[n-1].Held.Missing, held.Missing) {
 		h.newestFirst[n-1].Held = held
 		return
 	}
@@ -90,6 +87,11 @@ func NewLineBook(season int) *LineBook {
 
 // Add offers one held file's weeks. Files must be added newest first.
 func (b *LineBook) Add(sha string, at time.Time, weeks []PlayerWeek) {
+	b.AddFile(sha, at, weeks, []string{missingPlayByPlay})
+}
+
+// AddFile records a file with its actual evidence gaps, including completed play-by-play revisions.
+func (b *LineBook) AddFile(sha string, at time.Time, weeks []PlayerWeek, missing []string) {
 	for _, week := range weeks {
 		if week.Season != b.season || week.SeasonType != "REG" || week.Week < 1 || week.Week > 22 {
 			continue
@@ -98,7 +100,11 @@ func (b *LineBook) Add(sha string, at time.Time, weeks []PlayerWeek) {
 		if b.history[key] == nil {
 			b.history[key] = &lineHistory{}
 		}
-		b.history[key].add(week, sha, at)
+		authority := NFLVerse
+		if week.Provenance != "" {
+			authority = week.Provenance
+		}
+		b.history[key].addHeld(HeldWeek{Authority: authority, SHA256: sha, FetchedAt: at, Week: &week, Missing: slices.Clone(missing), Review: week.Review, Evidence: week.Evidence})
 	}
 }
 
@@ -109,4 +115,20 @@ func (b *LineBook) Versions() map[WeekKey][]LineRevision {
 		out[key] = history.versions()
 	}
 	return out
+}
+
+// LiveRevisionDigest includes field attribution without changing historic held line digests.
+func LiveRevisionDigest(week PlayerWeek) string {
+	if len(week.FieldSources) == 0 {
+		return LineDigest(week)
+	}
+	body, err := json.Marshal(struct {
+		Line    string
+		Sources map[leaguerules.StatID]string
+	}{LineDigest(week), week.FieldSources})
+	if err != nil {
+		panic("source: live digest: " + err.Error())
+	}
+	sum := sha256.Sum256(body)
+	return hex.EncodeToString(sum[:])
 }

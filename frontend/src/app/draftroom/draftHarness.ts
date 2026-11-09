@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { vi } from 'vitest';
 import { flush, mount, render, settle, type App, type Element } from '../commissioner/commissionerDom';
 import { commissionerPeople, ownerPeople, receipt, stub } from '../commissioner/commissionerStub';
@@ -27,7 +28,7 @@ export async function openRoom(over: {
   reading?: unknown | (() => unknown); people?: unknown; pick?: (choice: Choice) => Promise<unknown>;
   execute?: (body: string) => Promise<unknown>; leagues?: unknown;
   // Fake timers cannot wait on a timer, so the room is settled on promises alone.
-  fakeTimers?: boolean;
+  fakeTimers?: boolean; view?: ReactElement;
 } = {}) {
   leagueState.forget();
   draftRoom.reset();
@@ -58,7 +59,7 @@ export async function openRoom(over: {
       return over.pick ? over.pick(choice) : receipt({ message: 'Your pick is recorded.' });
     },
   } as unknown as Partial<App>;
-  const host: Element = await mount(render(DraftRoom), draftApp);
+  const host: Element = await mount(over.view ?? render(DraftRoom), draftApp);
   active(host);
   await (over.fakeTimers ? flush() : settle());
   return { host, sent, picks, reads, calls, restore };

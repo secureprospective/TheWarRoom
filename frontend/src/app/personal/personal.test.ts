@@ -92,10 +92,13 @@ it('keeps franchise reads independent and excludes older same-franchise publicat
   await state.change('0001', 'note', { id: '0816', entity: 'player', action: 'add', text: 'Do not send' });
   expect(provider.change).not.toHaveBeenCalled();
   const current = { ...reading, entries: [] };
-  waiting[2].finish(current);
-  await latest;
+  // The second 0001 load waits for the first read and reads again, so the newer answer lands last.
   waiting[0].finish(reading);
   await old;
+  await vi.waitFor(() => expect(waiting).toHaveLength(3));
+  expect(waiting[2].mine).toBe('0001');
+  waiting[2].finish(current);
+  await latest;
   expect(state.peek('0001').value).toBe(current);
   expect(state.peek('0002').pending).toBe(true);
   waiting[1].finish(reading);

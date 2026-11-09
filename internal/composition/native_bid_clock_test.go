@@ -211,22 +211,20 @@ func TestNativeBidClockRechecksDueInsideTransaction(t *testing.T) {
 	}
 }
 
-func TestNativeBidEveryNewBidResetsEvenWhenNotLeadingOrWithdrawn(t *testing.T) {
+// A bid is a bid: owners cannot withdraw, so a new bid resets the clock even when it does not lead.
+func TestNativeBidEveryNewBidResetsEvenWhenNotLeading(t *testing.T) {
 	t.Parallel()
 	f := bidApp(t)
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	f.advance(12 * time.Hour)
 	lower := f.place(t, "owner.three", "franchise.03", "5004", 4*million, 1)
-	if err := f.withdraw(t, "owner.three", "franchise.03", lower); err != nil {
-		t.Fatal(err)
-	}
 	f.set(t, "bids.ufa", `"open"`, "now")
 	f.closeAt(t, "5004", lower.RecordedAt.Add(24*time.Hour))
 	f.advance(12 * time.Hour)
 	f.tickBids(t)
 	if _, ok := f.roster(t, "5004"); ok {
-		t.Fatal("withdrawing a lower bid erased its clock reset")
+		t.Fatal("a lower bid did not reset the clock")
 	}
 	f.advance(12 * time.Hour)
 	f.tickBids(t)
@@ -285,7 +283,7 @@ func TestNativeBidClockRechecksLegalityAndClosesUnawardableBids(t *testing.T) {
 
 func TestNativeBidActionsRefusedAtAuctionDeadline(t *testing.T) {
 	t.Parallel()
-	for _, action := range []string{"place", "raise", "withdraw"} {
+	for _, action := range []string{"place", "raise"} {
 		t.Run(action, func(t *testing.T) {
 			f := bidApp(t)
 			bid := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
@@ -296,8 +294,6 @@ func TestNativeBidActionsRefusedAtAuctionDeadline(t *testing.T) {
 				err = f.tryPlace(t, "owner.two", "franchise.02", "5004", 7*million, 1)
 			case "raise":
 				_, err = f.raise(t, "owner.one", "franchise.01", bid, 6*million, 1)
-			case "withdraw":
-				err = f.withdraw(t, "owner.one", "franchise.01", bid)
 			}
 			if err == nil || !strings.Contains(err.Error(), "closed") {
 				t.Fatalf("%s at deadline: %v", action, err)
@@ -308,7 +304,7 @@ func TestNativeBidActionsRefusedAtAuctionDeadline(t *testing.T) {
 
 func TestNativeBidNanosecondAdmissionWithStoppedWorker(t *testing.T) {
 	for _, queued := range []bool{false, true} {
-		for _, action := range []string{commissioner.BidPlace, commissioner.BidRaise, commissioner.BidWithdraw} {
+		for _, action := range []string{commissioner.BidPlace, commissioner.BidRaise} {
 			for _, offset := range []time.Duration{-time.Nanosecond, 0, time.Nanosecond} {
 				t.Run(fmt.Sprintf("%s/%s/queued=%t", action, offset, queued), func(t *testing.T) {
 					testBidAdmissionBoundary(t, action, offset, queued)

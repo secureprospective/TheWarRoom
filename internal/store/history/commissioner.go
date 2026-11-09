@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -42,14 +43,31 @@ func commissionerRecords(events []LeagueEvent) ([]commissioner.Record, error) {
 type recordRevision struct {
 	revision int64
 	records  []commissioner.Record
+	lineups  *commissioner.LineupLedger
 }
 
+// transactionRecords returns records the caller owns outright (write and preview paths change them).
 func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
 	records, err := s.cachedTransactionRecords(ctx, tx, league)
 	if err != nil {
 		return nil, err
 	}
-	ctx, err = s.linkedIdentities(ctx, league)
+	return s.resolveRecords(ctx, league, deepclone.Of(records))
+}
+
+// sharedTransactionRecords is the read path: every reading of one revision shares the cached snapshot.
+// The caller owns only the outer slice; nested args, seeds and maps are read-only by contract
+// (TestSharedRecordsStayUnchangedByReadings guards it). Copying the ledger per reading dominated CPU.
+func (s *Store) sharedTransactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
+	records, err := s.cachedTransactionRecords(ctx, tx, league)
+	if err != nil {
+		return nil, err
+	}
+	return s.resolveRecords(ctx, league, slices.Clone(records))
+}
+
+func (s *Store) resolveRecords(ctx context.Context, league string, records []commissioner.Record) ([]commissioner.Record, error) {
+	ctx, err := s.linkedIdentities(ctx, league)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +78,14 @@ func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league strin
 	return resolved, nil
 }
 
+// identitiesRead marks a context whose league was found to have no linked identities.
+type identitiesRead struct{}
+
+// linkedIdentities reads verified aliases from the account store, which shares the read pool. Read paths
+// call it before opening their transaction so no pooled connection is held while waiting for another.
 func (s *Store) linkedIdentities(ctx context.Context, league string) (context.Context, error) {
-	if s.aliases == nil || commissioner.HasPrincipals(ctx) || !strings.HasPrefix(league, "native.") {
+	if s.aliases == nil || commissioner.HasPrincipals(ctx) || !strings.HasPrefix(league, "native.") ||
+		ctx.Value(identitiesRead{}) == league {
 		return ctx, nil
 	}
 	aliases, err := s.aliases(ctx, league)
@@ -69,7 +93,7 @@ func (s *Store) linkedIdentities(ctx context.Context, league string) (context.Co
 		return nil, fmt.Errorf("read linked identities: %w", err)
 	}
 	if len(aliases) == 0 {
-		return ctx, nil
+		return context.WithValue(ctx, identitiesRead{}, league), nil
 	}
 	principals, err := governance.NewPrincipals(league, aliases)
 	if err != nil {
@@ -90,7 +114,7 @@ func (s *Store) cachedTransactionRecords(ctx context.Context, tx *sql.Tx, league
 		hit = recordRevision{}
 	}
 	if hit.revision == revision {
-		return deepClone(hit.records), nil
+		return hit.records, nil
 	}
 	rows, err := tx.QueryContext(ctx, eventsQuery, league, commissioner.Stream, hit.revision)
 	if err != nil {
@@ -111,8 +135,7 @@ func (s *Store) cachedTransactionRecords(ctx context.Context, tx *sql.Tx, league
 			return nil, err
 		}
 	}
-	records = s.cacheRecords(league, revision, records)
-	return deepClone(records), nil
+	return s.cacheRecords(league, revision, records), nil
 }
 
 // ExecuteCommissioner performs authorization, retry lookup and append in one
@@ -213,7 +236,7 @@ func (s *Store) committedReceipt(ctx context.Context, receipt commissioner.Recei
 func (s *Store) checkCommissionerCommand(ctx context.Context, raw commissioner.RawCommand, principal string,
 	auth commissioner.Authorizer, records []commissioner.Record,
 	facts appendFacts, now time.Time) (string, *commissioner.Receipt, error) {
-	role, err := commandRole(raw, principal, auth, records)
+	role, err := timedCommandRole(raw, principal, auth, records, now)
 	if err != nil {
 		return "", nil, err
 	}
@@ -223,6 +246,9 @@ func (s *Store) checkCommissionerCommand(ctx context.Context, raw commissioner.R
 	}
 	if retried {
 		return role, &prior, nil
+	}
+	if err := commissioner.CheckRosterTime(raw, now, role); err != nil {
+		return role, nil, fmt.Errorf("check roster time: %w", err)
 	}
 	if err := s.checkAppend(ctx, raw, principal, records, facts, now); err != nil {
 		return role, nil, err
@@ -274,7 +300,12 @@ func (s *Store) checkAppend(ctx context.Context, raw commissioner.RawCommand, pr
 		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, now) }},
 		{"lineup", func() error { return commissioner.CheckLineupAppend(raw, records, now, facts.lineup) }},
 		{"playoffs", func() error { return commissioner.CheckPlayoffAppend(raw, records, now, facts.lineup) }},
-		{"statistic", func() error { return commissioner.CheckStatAppend(raw, records, facts.stat, now) }},
+		{"statistic", func() error {
+			if principal == commissioner.StatFeedPrincipal {
+				return commissioner.CheckFeedStatAppend(raw, records, facts.stat)
+			}
+			return commissioner.CheckStatAppend(raw, records, facts.stat, now)
+		}},
 	}
 	for _, c := range checks {
 		if err := c.check(); err != nil {
@@ -312,6 +343,34 @@ func preparedCommand(raw commissioner.RawCommand, principal string,
 	return raw, canonical, nil
 }
 
+// Backdating lets a commissioner perform an owner's roster move, not acquire
+// unrelated powers such as overriding a trade reserved to the commissioner alone.
+func timedCommandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
+	records []commissioner.Record, now time.Time) (string, error) {
+	role, originalErr := commandRole(raw, principal, auth, records)
+	if raw.Command != commissioner.RosterCut && raw.Command != commissioner.RosterReserve && raw.Command != commissioner.TradeAccept {
+		return role, originalErr
+	}
+	at, err := raw.EffectiveTime(now)
+	if err != nil {
+		return "", fmt.Errorf("date roster authority: %w", err)
+	}
+	if !at.Before(now) {
+		return role, originalErr
+	}
+	permission := raw
+	permission.Command, permission.Args = commissioner.CorrectRoster, commissioner.RawArgs{}
+	commish, err := commandRole(permission, principal, auth, records)
+	if err == nil {
+		return commish, nil
+	}
+	if originalErr != nil {
+		return "", fmt.Errorf("league change refused: %w", commissioner.Refused(errors.New("only a commissioner may backdate a roster change")))
+	}
+	// A retry of an owner's explicit receipt-time command is not a new backdated move.
+	return role, nil
+}
+
 func commandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
 	records []commissioner.Record) (string, error) {
 	if clock, ok := auth.(clockReserveAuthorizer); ok {
@@ -338,6 +397,7 @@ func commandRole(raw commissioner.RawCommand, principal string, auth commissione
 // appendRequest is one league change ready to be recorded, with the instant it is recorded at, the ledger
 // it is appended to and, for a season rollover, its before-state and plan.
 type appendRequest struct {
+	deferRosterRestore         bool
 	raw                        commissioner.RawCommand
 	principal, role, canonical string
 	at                         time.Time
@@ -376,13 +436,9 @@ func (s *Store) appendAdmittedCommissioner(ctx context.Context, tx *sql.Tx, req 
 			return commissioner.Receipt{}, fmt.Errorf("freeze league schedule: %w", err)
 		}
 	}
-	effective := now
-	if raw.Effective != "now" && raw.Effective != "next_rollover" {
-		parsed, err := time.Parse(time.RFC3339Nano, raw.Effective)
-		if err != nil {
-			return commissioner.Receipt{}, fmt.Errorf("read effective time: %w", err)
-		}
-		effective = parsed
+	effective, err := raw.EffectiveTime(now)
+	if err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("date league change: %w", err)
 	}
 	event := LeagueEvent{ID: receipt.Entry, League: raw.League, Stream: commissioner.Stream,
 		EffectiveAt: effective, RecordedAt: now, Actor: principal, Scope: raw.Visibility, Kind: raw.Command,
@@ -391,8 +447,11 @@ func (s *Store) appendAdmittedCommissioner(ctx context.Context, tx *sql.Tx, req 
 	if _, err := s.insertEvent(ctx, tx, event, int64(len(req.records))); err != nil {
 		return commissioner.Receipt{}, err
 	}
-	if err := saveRosterRestorePoint(ctx, tx, raw.League, append(slices.Clone(req.records), record)); err != nil {
-		return commissioner.Receipt{}, err
+	// Stat decisions cannot alter rosters or their recovery identities.
+	if !req.deferRosterRestore && !commissioner.IsStatCommand(raw.Command) {
+		if err := saveRosterRestorePoint(ctx, tx, raw.League, append(slices.Clone(req.records), record)); err != nil {
+			return commissioner.Receipt{}, err
+		}
 	}
 	return receipt, nil
 }
@@ -542,7 +601,34 @@ func (s *Store) CommissionerDigests(ctx context.Context, league, principal strin
 	return reading, nil
 }
 
+// HeldCommissionerRecords is the league ledger as validated records from the revision-keyed cache, which
+// carries the replay and people-state memos; readers that poll every second should use it.
+func (s *Store) HeldCommissionerRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	return s.leagueRecords(ctx, league)
+}
+
+// SharedCommissionerRecords is HeldCommissionerRecords without the per-call deep copy: every caller of one
+// revision shares the cached snapshot and owns only the outer slice. Nested args, seeds and maps are
+// read-only by contract (TestSharedRecordsStayUnchangedByReadings). Pollers that only read, such as the
+// value preparation sweep, use it; cloning the whole ledger every second dominated idle CPU.
+func (s *Store) SharedCommissionerRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	ctx, err := s.linkedIdentities(ctx, league)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := s.pools.Read().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("read league records: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	return s.sharedTransactionRecords(ctx, tx, league)
+}
+
 func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	ctx, err := s.linkedIdentities(ctx, league)
+	if err != nil {
+		return nil, err
+	}
 	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("read league records: %w", err)
@@ -553,6 +639,13 @@ func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissione
 
 func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records []commissioner.Record, now time.Time,
 	facts nativecheck.Facts, zone *time.Location, env market.BidEnvironment) error {
+	decisionAt, err := raw.EffectiveTime(now)
+	if err != nil {
+		return fmt.Errorf("date roster decision: %w", err)
+	}
+	if commissioner.RosterTimed(raw.Command) {
+		now = decisionAt
+	}
 	if principal == commissioner.ReserveClockPrincipal {
 		if err := market.PrepareDueReserve(raw, records, now, facts); err != nil {
 			return fmt.Errorf("check automatic reserve return: %w", commissioner.Refused(err))
@@ -621,6 +714,6 @@ func (s *Store) cacheRecords(league string, revision int64, records []commission
 		s.records = map[string]recordRevision{}
 	}
 	records = commissioner.WithReplayCache(records)
-	s.records[league] = recordRevision{revision: revision, records: records}
+	s.records[league] = recordRevision{revision: revision, records: records, lineups: commissioner.NewLineupLedger(records)}
 	return records
 }

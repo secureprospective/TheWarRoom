@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -105,5 +106,25 @@ func TestRosteredAssetScopeKeepsUnscoredIDsAndOrder(t *testing.T) {
 	ids[0] = "changed"
 	if mirror.Players[0].MFLID != "0099" || RosteredAssetIDs(state.MirrorSnapshot{}) == nil {
 		t.Fatal("scope aliases input or lost empty slice")
+	}
+}
+
+func TestWeeklyFormUsesFiveFinishedWeeksAndKeepsMissing(t *testing.T) {
+	t.Parallel()
+	in := Snapshot{Week: 9, Zone: time.UTC}
+	r := report.Report{}
+	(researchView{Snapshot: in}).playerWeeklyForm(&r, "0042", 5)
+	if len(r.Rows) != 5 || r.Rows[0].Cells[0] != "Form · Wk 4" || r.Rows[4].Cells[0] != "Form · Wk 8" {
+		t.Fatalf("window: %+v", r.Rows)
+	}
+	for _, row := range r.Rows {
+		if row.Cells[1] != "not held" {
+			t.Fatal(row)
+		}
+	}
+	r.Rows = nil
+	(researchView{Snapshot: in}).playerWeeklyForm(&r, "0042", 3)
+	if len(r.Rows) != 3 || r.Rows[0].Cells[0] != "Form · Wk 6" {
+		t.Fatal(r.Rows)
 	}
 }

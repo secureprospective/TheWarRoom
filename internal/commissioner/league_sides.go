@@ -115,9 +115,6 @@ func checkSidesChange(raw RawCommand, records []Record, at time.Time) error {
 
 // checkPoolsChange holds a player pools change to an app league, now, before play.
 func checkPoolsChange(raw RawCommand, records []Record) error {
-	if LeagueSource(records) != SourceNative {
-		return Refused(errors.New("rule change refused: an imported league keeps MFL's one player pool"))
-	}
 	if raw.Effective != "now" {
 		return Refused(errors.New("rule change refused: a Player pools change takes effect now; choose now"))
 	}
