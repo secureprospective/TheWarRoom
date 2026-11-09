@@ -228,13 +228,15 @@ func (h commissionerHost) NativeAssets(ctx context.Context, league string) (comm
 		return out, nil
 	}
 	host := offersHost(h)
-	lk, err := host.OffersDirectory(ctx)
-	if err != nil {
-		return commissioner.NativeAssets{}, fmt.Errorf("read Market directory: %w", err)
-	}
 	out, err := h.State.NativeAssets(ctx, league)
 	if err != nil {
 		return out, fmt.Errorf("read Market assets: %w", err)
+	}
+	// The directory only adds age, status and value to pool rows; offline, serve the league's own data.
+	lk, dirErr := host.OffersDirectory(ctx)
+	if dirErr != nil {
+		log.Printf("the war room: Market pool served without directory details: %v", dirErr)
+		return out, nil
 	}
 	ids := make([]playerid.PlayerID, 0, len(out.Pool))
 	for _, p := range out.Pool {
