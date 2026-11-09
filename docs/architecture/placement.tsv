@@ -118,7 +118,6 @@ internal/offsite	platform
 internal/serverstatus	platform
 internal/leaguetransfer	platform
 internal/serverversion	platform
-internal/store/playeridentity	core
 internal/leaguerecovery	platform
 internal/leaguemigration	platform
 internal/leaguemigration/migrationtest	platform
@@ -132,10 +131,8 @@ internal/app/mflref/seed	commissioner
 internal/store/mflref/tradeplans	trades
 internal/lineupdelta	trades
 internal/projection	scoring
-internal/teamneeds	trades
 internal/appvalue	scoring
 internal/app/mflref/migration	control
 internal/feedwire	core
-internal/seams	core
 internal/ingestion/livestats	now
 internal/leagueload	platform
