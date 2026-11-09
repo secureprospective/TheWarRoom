@@ -14,8 +14,10 @@
 
 STATE (0600, keep in /dev/shm) holds usernames, passwords and bearers. Logs hold ids, statuses,
 counts and timings only; never codes, bearers, passwords, names or row contents.
+STRESS_GZIP=1 asks for gzip, as the Go desktop client always does; bodies are decoded before use, and
+Client.wire is the size as sent.
 """
-import hashlib, http.client, json, os, random, re, secrets, ssl, sys, threading, time, urllib.parse
+import gzip, hashlib, http.client, json, os, random, re, secrets, ssl, sys, threading, time, urllib.parse
 
 HDR = {"Content-Type": "application/json", "X-TWR-Protocol": "1.1", "X-TWR-Commands": "1", "User-Agent": "twr-lab-stress"}
 SCREENS = [  # every owner read the hosted server serves (WorkflowCommands + /v1/native/ledger); f = franchise, s = season
@@ -43,12 +45,14 @@ class Client:
 
     def __init__(self, base):
         u = urllib.parse.urlsplit(base)
-        self.host, self.conn = u.hostname, None
+        self.host, self.conn, self.wire = u.hostname, None, 0
 
     def post(self, path, body, bearer=None, timeout=30):
         h = dict(HDR)
         if bearer:
             h["Authorization"] = "Bearer " + bearer
+        if os.environ.get("STRESS_GZIP") == "1":
+            h["Accept-Encoding"] = "gzip"
         data = json.dumps(body).encode()
         for attempt in (0, 1):
             try:
@@ -58,6 +62,9 @@ class Client:
                 self.conn.request("POST", path, body=data, headers=h)
                 r = self.conn.getresponse()
                 out = r.read()
+                self.wire = len(out)
+                if r.getheader("Content-Encoding") == "gzip":
+                    out = gzip.decompress(out)
                 return r.status, out, (time.perf_counter() - t) * 1000, r.getheader("Retry-After")
             except (OSError, http.client.HTTPException) as e:
                 self.close()
@@ -187,11 +194,11 @@ def hammer(base, statefile, screen, secs):
     while time.time() < end:
         s, b, ms, _ = read_screen(c, bearer, league, o["franchise"], season, screen, args)
         lat.append(ms)
-        size = len(b)
+        size, wire = len(b), c.wire
         codes[s] = codes.get(s, 0) + 1
     lat.sort()
     print(json.dumps({"screen": screen, "n": len(lat), "p50": round(lat[len(lat) // 2]), "p95": round(lat[int(len(lat) * .95)]),
-                      "bytes": size, "codes": codes}), flush=True)
+                      "bytes": size, "wire": wire, "codes": codes}), flush=True)
 
 
 FIXED_AT = "2026-11-08T12:00:00Z"
