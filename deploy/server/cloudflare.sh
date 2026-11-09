@@ -94,7 +94,7 @@ printf '%s\n' "$secret" | jq -Rn --arg account "$account" --arg tunnel "$tunnel"
 jq -n --arg tunnel "$tunnel" --arg hostname "$hostname" \
   '{tunnel:$tunnel,"credentials-file":"/etc/cloudflared/credentials.json",
     "metrics":"127.0.0.1:20241","no-autoupdate":true,
-    ingress:[{hostname:$hostname,path:"^/v1/.*$",service:"https://127.0.0.1:8443",
+    ingress:[{hostname:$hostname,path:"^/(v1/.*|join|password)$",service:"https://127.0.0.1:8443",
       originRequest:{caPool:"/etc/cloudflared/origin.pem",originServerName:"localhost"}},
       {service:"http_status:404"}]}' > /etc/cloudflared/config.yml
 jq -nc --arg name "$hostname" --arg target "$tunnel.cfargotunnel.com" \
