@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -73,3 +74,6 @@ func (a *API) TargetNFLDraft() (report.Report, error) {
 	held := a.host.DraftPlayers(ctx)
 	return NFL(season, Held[players.RawPlayer]{Value: held.Value, Feed: held.Feed}, zone), nil
 }
+
+// Commands records existing bindings without inventing publication metadata.
+func Commands() []catalog.Command { return catalog.DesktopCommands("draft", nil) }

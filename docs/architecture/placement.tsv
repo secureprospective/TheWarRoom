@@ -136,3 +136,4 @@ internal/app/mflref/migration	control
 internal/feedwire	core
 internal/ingestion/livestats	now
 internal/leagueload	platform
+internal/seams	core

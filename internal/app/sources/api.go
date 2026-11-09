@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -287,6 +288,8 @@ func LoadSignals(ctx context.Context, host Host, held *Held) SignalsReport {
 	})
 	return rep
 }
+
+func Commands() []catalog.Command { return catalog.DesktopCommands("sources", nil) }
 
 // TargetCacheScopes lists the held copies a person can ask the app to read afresh.
 func (a *API) TargetCacheScopes() []DataScope { return a.host.CacheScopes() }

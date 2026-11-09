@@ -3,6 +3,8 @@ package now
 import (
 	"fmt"
 	"regexp"
+
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 // Host supplies Now's detached held readings and runs the root-owned refresh and live-game poll
@@ -63,6 +65,10 @@ func (a *API) TargetLiveGame(open bool, follow, mine string) (LiveGameView, erro
 	}
 	return a.host.LiveGame(open, follow, mine) //nolint:wrapcheck // The host's errors keep their original text.
 }
+
+// Commands records existing bindings without inventing publication metadata. Only following a
+// game has a registry verb (game.follow, X-01).
+func Commands() []catalog.Command { return catalog.DesktopCommands("now", nil) }
 
 func KnownFranchise(names map[string]string, id string) bool {
 	_, ok := names[id]

@@ -10,6 +10,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -140,6 +141,9 @@ func (a *API) TargetPhoto(mflID string) PhotoView {
 	}
 	return Photo(mflID, report.ProseName(name), a.host.PhotosOff())
 }
+
+// Commands is the platform catalog.
+func Commands() []catalog.Command { return catalog.DesktopCommands("platform", nil) }
 
 // PhotoRuntime resolves IDs lazily; installing the cache never reads the crosswalk.
 type PhotoRuntime struct {

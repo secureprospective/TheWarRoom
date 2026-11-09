@@ -4,10 +4,12 @@ package offers
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -97,6 +99,19 @@ func (a *API) serializedMove(run func() (BidPlan, error)) (BidPlan, error) {
 		return err
 	})
 	return result, err //nolint:wrapcheck // Preserve the existing operation's error text.
+}
+
+func Commands() []catalog.Command { return catalog.DesktopCommands("offers", MFLCommands()) }
+
+// MFLCommands describes the solo owner's local desktop plans, not hosted league actions.
+// Desktop custody is the permission boundary; these declarations grant no remote access.
+func MFLCommands() []catalog.Command {
+	return catalog.MFLCommands(catalog.MFLShapes{
+		Bid:   catalog.Shape(reflect.TypeFor[RawBidInput](), "RawBidInput.Validate"),
+		Plan:  catalog.Shape(reflect.TypeFor[RawBidPlanScope](), "RawBidPlanScope.Validate"),
+		Pool:  catalog.Shape(reflect.TypeFor[RawPoolScope](), "RawPoolScope.Validate"),
+		Owner: catalog.Shape(reflect.TypeFor[RawBidOwner](), "RawBidOwner.Validate"),
+	})
 }
 
 // RawBidOwner selects the owner's plans on this computer, not a hosted franchise grant.

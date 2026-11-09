@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -123,6 +124,11 @@ func Reading[T any](value T, at, source, how string, count int, err error, stamp
 func contractReading[T any](a *API, value T, at, source, how string, count int, err error) report.Reading[T] {
 	return Reading(value, at, source, how, count, err, a.host.ContractsBuildStamp())
 }
+
+// Commands is data, not an API method: Wails must not bind the catalog itself. Only the lineup draft
+// has a registry verb (lineup.set); the rest are endpoint.open navigation rows with no backend verb.
+// A release hand-off opens MFL's drop page in the browser, so release plans are desktop-only.
+func Commands() []catalog.Command { return catalog.DesktopCommands("contracts", nil) }
 
 func (a *API) requirePlanFranchise(ctx context.Context, id, label string) error {
 	if id == "" {
