@@ -48,8 +48,6 @@ func (b *ledgerBuilder) set(field, value, effective string, at time.Time) string
 
 const rolloverLeague = "native.test"
 
-func rolloverMoment() time.Time { return time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC) }
-
 // ledgerSnapshot is a seeded Legacy league's assets: franchise.02 holds one taxi player whose contract
 // ends this season, one IR player and one active player; franchise.01 holds a pick owned by franchise.02.
 func ledgerSnapshot() *commissioner.RawNativeSnapshot {
@@ -81,33 +79,4 @@ func rolloverLedger(t *testing.T) *ledgerBuilder {
 	b.set("calendar.boundary", `"start_of_day"`, "now", seasonMoment(3))
 	b.set("calendar.tradeDeadline", `"2026-11-09T05:00:00Z"`, "now", seasonMoment(4))
 	return b
-}
-
-func (b *ledgerBuilder) rolloverCommand(to int, dry bool) commissioner.RawCommand {
-	return commissioner.RawCommand{League: rolloverLeague, Command: commissioner.SeasonRollover, Gravity: "G3",
-		Args:   commissioner.RawArgs{Rollover: &commissioner.RawRolloverArgs{To: to, DryRun: dry}},
-		Reason: "Turn the league year", Expected: int64(len(b.records)), Request: fmt.Sprintf("rollover.%d", to),
-		Effective: "now", Visibility: "league"}
-}
-
-// rollover records the act the way the store does: prepared under the ledger, then validated as read back.
-func (b *ledgerBuilder) rollover(to int, now time.Time) string {
-	b.t.Helper()
-	raw := b.rolloverCommand(to, false)
-	before, plan, err := commissioner.PrepareRollover(raw, b.records, now)
-	if err != nil {
-		b.t.Fatal(err)
-	}
-	canonical, err := raw.Canonical("creator")
-	if err != nil {
-		b.t.Fatal(err)
-	}
-	record := commissioner.Record{Command: raw, Principal: "creator", Role: "commissioner", Gravity: "G3", Canonical: canonical,
-		Before: before, Receipt: commissioner.Receipt{Entry: fmt.Sprintf("entry.%d", len(b.records)+1), League: rolloverLeague,
-			Revision: int64(len(b.records) + 1), RecordedAt: before.At, Plan: plan}}
-	if err := record.Validate(); err != nil {
-		b.t.Fatal(err)
-	}
-	b.records = append(b.records, record)
-	return record.Receipt.Entry
 }

@@ -356,10 +356,3 @@ func (s *Store) SetSeasonScoreCache(on bool) {
 	s.scores.off = !on
 	s.scores.revisions, s.scores.order = nil, nil
 }
-
-// seasonScoreCounts is the cache's hits and misses so far, for tests.
-func (s *Store) seasonScoreCounts() (hits, misses int) {
-	s.scores.mu.Lock()
-	defer s.scores.mu.Unlock()
-	return s.scores.hits, s.scores.misses
-}
