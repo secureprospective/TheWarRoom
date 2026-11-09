@@ -35,7 +35,7 @@ func CorrectionsReading(league string, records []Record, now time.Time) (Correct
 	}
 	out := Corrections{League: league, Revision: int64(len(records)), Items: []Correction{}}
 	active := Replay(records).Active
-	names := newAssetNames(records)
+	names := namesFor(records)
 	for i := len(records) - 1; i >= 0; i-- {
 		r := records[i]
 		if !correctionCommand(r.Command.Command) || !active[r.Receipt.Entry] {

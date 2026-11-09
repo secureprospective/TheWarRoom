@@ -164,6 +164,7 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 	out := Ledger{League: league, Name: p.Name, Entries: []Entry{}}
 	private := privilegedLedgerReader(league, principal, auth)
 	roots := reversalRoots(records)
+	names := namesFor(records)
 	hasRollover := slices.ContainsFunc(records, func(r Record) bool { return r.Command.Command == SeasonRollover })
 	for i := len(records) - 1; i >= 0; i-- {
 		r := records[i]
@@ -173,7 +174,7 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 		if !ledgerEntryVisible(r, records[roots[r.Receipt.Entry]], records, principal, private) {
 			continue
 		}
-		what, err := entryLabelTarget(records, i, records[roots[r.Receipt.Entry]])
+		what, err := entryLabelTarget(records, i, records[roots[r.Receipt.Entry]], names)
 		if err != nil {
 			return Ledger{}, err
 		}
@@ -222,13 +223,16 @@ func reversalRoots(records []Record) map[string]int {
 
 func entryLabel(records []Record, i int) (string, error) {
 	roots := reversalRoots(records[:i+1])
-	return entryLabelTarget(records, i, records[roots[records[i].Receipt.Entry]])
+	return entryLabelTarget(records, i, records[roots[records[i].Receipt.Entry]], nil)
 }
 
-func entryLabelTarget(records []Record, i int, target Record) (string, error) {
+func entryLabelTarget(records []Record, i int, target Record, names *assetNames) (string, error) {
 	r := records[i]
 	if correctionCommand(r.Command.Command) {
-		return correctionDescription(newAssetNames(records), r), nil
+		if names == nil {
+			names = namesFor(records)
+		}
+		return correctionDescription(names, r), nil
 	}
 	if label, ok, err := changeLabel(r); ok || err != nil {
 		return label, err

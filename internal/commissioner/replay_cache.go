@@ -49,6 +49,7 @@ type governanceCache struct {
 
 	assets assetsCache
 	epochs readingEpochs
+	names  namesCache
 }
 
 // governanceMemoKey separates policy views: verified identities and closed books change the fold.

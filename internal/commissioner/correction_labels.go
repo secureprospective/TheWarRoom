@@ -3,6 +3,7 @@ package commissioner
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -56,34 +57,56 @@ func correctionDescription(names *assetNames, r Record) string {
 }
 
 // assetNames resolves player and franchise names from the first native snapshot in record order that
-// names them. The index is built once on first use: a per-lookup scan of every snapshot made corrections
-// quadratic in the ledger (lab profile, 11-08).
+// names them. The index is built once per held revision and shared by every reading and owner on it
+// (namesFor); a per-entry rebuild was ~65% of server CPU under load (CT 256 profile, 11-09).
 type assetNames struct {
 	records        []Record
 	players, teams map[string]string
 }
 
-func newAssetNames(records []Record) *assetNames { return &assetNames{records: records} }
+func newAssetNames(records []Record) *assetNames {
+	n := &assetNames{records: records}
+	n.players, n.teams = nameIndex(records)
+	return n
+}
 
-func (n *assetNames) name(id string, player bool) string {
-	if n.players == nil {
-		n.players, n.teams = map[string]string{}, map[string]string{}
-		for _, r := range n.records {
-			if r.Command.Args.Native == nil {
-				continue
+// namesFor returns the shared index when records are exactly a held revision (memoFor checks every
+// payload), and builds one otherwise. The maps are read-only once built.
+func namesFor(records []Record) *assetNames {
+	memo := memoFor(records)
+	if memo == nil {
+		return newAssetNames(records)
+	}
+	memo.names.once.Do(func() { memo.names.players, memo.names.teams = nameIndex(records) })
+	return &assetNames{records: records, players: memo.names.players, teams: memo.names.teams}
+}
+
+type namesCache struct {
+	once           sync.Once
+	players, teams map[string]string
+}
+
+func nameIndex(records []Record) (players, teams map[string]string) {
+	players, teams = map[string]string{}, map[string]string{}
+	for _, r := range records {
+		if r.Command.Args.Native == nil {
+			continue
+		}
+		for _, p := range r.Command.Args.Native.Players {
+			if _, seen := players[p.ID]; !seen && p.Name != "" {
+				players[p.ID] = p.Name
 			}
-			for _, p := range r.Command.Args.Native.Players {
-				if _, seen := n.players[p.ID]; !seen && p.Name != "" {
-					n.players[p.ID] = p.Name
-				}
-			}
-			for _, f := range r.Command.Args.Native.Franchises {
-				if _, seen := n.teams[f.ID]; !seen {
-					n.teams[f.ID] = f.Name
-				}
+		}
+		for _, f := range r.Command.Args.Native.Franchises {
+			if _, seen := teams[f.ID]; !seen {
+				teams[f.ID] = f.Name
 			}
 		}
 	}
+	return players, teams
+}
+
+func (n *assetNames) name(id string, player bool) string {
 	if player {
 		if name, ok := n.players[id]; ok {
 			return name
