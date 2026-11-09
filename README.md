@@ -49,9 +49,17 @@
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-![The target Home screen: the seasonal card, the alert tray and the inspector](docs/ui/showcase/target-1-home.png)
+<div align="center">
 
-<sub>🎯 **The target, Home: "what needs me, and how long do I have?"** The league-year track and its nearest clocks, an alert tray sorted by urgency and then stakes, and the counterparty open in the inspector. Rosters and contracts are the real league; points, values and clocks are illustrative.</sub>
+[![Download the interactive preview](https://img.shields.io/badge/⬇_DOWNLOAD_THE_INTERACTIVE_PREVIEW-one_file_·_opens_in_any_browser_·_no_install-DC143C?style=for-the-badge&labelColor=0d1117)](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)
+
+**[Click to download](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)**, unzip, and open `TheWarRoom-preview.html`. Five screens to explore, nothing to install, and it works offline.
+
+</div>
+
+![Home: this week's matchup live, the alert bar, league news, the ledger and your shortcuts on one screen](docs/ui/showcase/preview-home.png)
+
+<sub>🏠 **Home: "what needs me, and how long do I have?"** Your matchup live, a trade offer on its clock, the playoff race, league news and every move on the ledger, on one screen. Player names are real; teams, scores and values in the preview are sample data.</sub>
 
 ---
 
@@ -59,12 +67,38 @@
 
 | | | |
 |:--|:--|:--|
-| ⚡ [The Hook](#-the-hook) | 🤖 [AI First, CLI First](#-ai-first-cli-first) | 🚪 [Bring Your League](#-bring-your-league) |
-| 🧩 [Any League You Can Imagine](#-any-league-you-can-imagine) | 🧠 [Two Numbers Per Player](#-two-numbers-per-player) | 🏟️ [The League Server](#-the-league-server) |
-| 🏈 [The Native League](#-the-native-league) | 🔥 [The 32-Team Default](#-the-32-team-default-built-from-the-data) | 🛡️ [The Vault Door](#-the-vault-door) |
-| 💾 [It Cannot Lose the League](#-it-cannot-lose-the-league) | 🎛️ [The Console](#-the-console) | ✂️ [The Trim](#-the-trim) |
-| 🏛️ [Architecture](#-the-architecture) | 🗺️ [The Road to the Draft](#-the-road-to-the-draft) | 🤝 [How It Gets Built](#-how-it-gets-built) |
-| 🛠️ [Running It](#-running-it) |  |  |
+| 🎬 [See It Move](#-see-it-move) | ⚡ [The Hook](#-the-hook) | 🤖 [AI First, CLI First](#-ai-first-cli-first) |
+| 🚪 [Bring Your League](#-bring-your-league) | 🧩 [Any League You Can Imagine](#-any-league-you-can-imagine) | 🧠 [Two Numbers Per Player](#-two-numbers-per-player) |
+| 🏟️ [The League Server](#-the-league-server) | 🏈 [The Native League](#-the-native-league) | 🔥 [The 32-Team Default](#-the-32-team-default-built-from-the-data) |
+| 🛡️ [The Vault Door](#-the-vault-door) | 💾 [It Cannot Lose the League](#-it-cannot-lose-the-league) | 🎛️ [The Console](#-the-console) |
+| ✂️ [The Trim](#-the-trim) | 🏛️ [Architecture](#-the-architecture) | 🗺️ [The Road to the Draft](#-the-road-to-the-draft) |
+| 🤝 [How It Gets Built](#-how-it-gets-built) | 🛠️ [Running It](#-running-it) |  |
+
+---
+
+## 🎬 See It Move
+
+> **Don't take our word for it. Open it.**
+
+The screens below are not artwork. They are one HTML file you can **[download](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)** and click through right now: five rooms to move between, built in the same look the real app ships in.
+
+**🏟️ League Pulse: game day, the way it should feel.** Your matchup starter by starter, the real NFL game on a field with the ball on it, every other matchup in the league down the side, and a play-by-play spine that only shows the plays that move *your* score.
+
+![League Pulse: your matchup, the live NFL field and every league matchup at once](docs/ui/showcase/preview-pulse.png)
+
+**🤝 The War Room: a trade desk that thinks with you.** Build an offer and see it through **your lens and theirs**. It tells you when both sides win, what the deal does to your cap, your lineup and your next three seasons, and the smallest change that keeps it acceptable.
+
+![The War Room trade desk: both sides of a trade valued through each owner's lens](docs/ui/showcase/preview-warroom.png)
+
+**🏛️ Franchise HQ: your whole team on one page.** Nineteen starters, the bench, cap room and dead money, this week's matchup position by position, and any player open in the inspector with his contract, his age arc and your private notes.
+
+![Franchise HQ: the starting lineup, the bench, the cap bar and the player inspector](docs/ui/showcase/preview-hq.png)
+
+**🎛️ The Control Room: the commissioner's job, finally organised.** Everything that needs a ruling comes to you, sorted by what is due first. Every action previews who it affects, lands on a ledger the owners can read, and can be undone. And at the bottom, the proof of how this whole thing is built: **every screen action is also a command.**
+
+![The Control Room: the commissioner's jobs queue, quick actions and the command line](docs/ui/showcase/preview-control.png)
+
+<sub>The preview is a design mock with sample data. A few tiles carry build notes like "no producer yet", because we would rather show you the real state than a polished lie.</sub>
 
 ---
 
