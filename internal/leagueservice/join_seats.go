@@ -44,12 +44,9 @@ func (j JoinSeats) Franchises(ctx context.Context, league string) ([]accounts.Jo
 	}
 	ids := commissioner.LeagueFranchises(records)
 	out := make([]accounts.JoinFranchise, 0, len(ids))
-	for _, id := range ids {
+	for i, id := range ids {
 		f, _ := state.Franchise(governance.FranchiseID(id))
-		name, abbreviation := f.Name, f.Abbreviation
-		if name == "" {
-			name, abbreviation = named[id].Name, named[id].Abbreviation
-		}
+		name, abbreviation := joinName(i, f.Name, f.Abbreviation, named[id])
 		out = append(out, accounts.JoinFranchise{ID: id, Name: name, Abbreviation: abbreviation, Taken: f.Seat != "", Seat: string(f.Seat)})
 	}
 	return out, nil
@@ -113,4 +110,13 @@ func (j JoinSeats) Release(ctx context.Context, league, franchise string, by gov
 	head := records[len(records)-1].Receipt.Revision
 	return j.record(ctx, league, "commish.seat.remove", fmt.Sprintf("join.release.%s.%d", franchise, head),
 		"Commissioner released this franchise for a new owner to claim", commissioner.RawPeople{Franchise: franchise}, by, head)
+}
+
+// joinName prefers a name the league has given the franchise: a commissioner rename, else the imported
+// team name, else the name it was created with.
+func joinName(position int, name, abbreviation string, imported commissioner.NativeFranchise) (string, string) {
+	if (name == "" || commissioner.IsDefaultFranchiseName(position, name)) && imported.Name != "" {
+		return imported.Name, imported.Abbreviation
+	}
+	return name, abbreviation
 }

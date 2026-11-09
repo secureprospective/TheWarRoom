@@ -78,6 +78,12 @@ func defaultFranchiseName(id string) (string, string) {
 	return fmt.Sprintf("Franchise %d", n), fmt.Sprintf("F%d", n)
 }
 
+// IsDefaultFranchiseName reports whether name is still the name creation gives the franchise at this
+// 0-based position in the league list.
+func IsDefaultFranchiseName(position int, name string) bool {
+	return name == fmt.Sprintf("Franchise %d", position+1)
+}
+
 // franchiseNumber is a franchise's seat number from its id, 0 for an id the app did not number.
 func franchiseNumber(id string) int {
 	n, err := strconv.Atoi(strings.TrimPrefix(id, "franchise."))
