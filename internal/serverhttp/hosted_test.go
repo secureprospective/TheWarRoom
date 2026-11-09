@@ -331,7 +331,9 @@ func TestHostedNilDependenciesFailClosed(t *testing.T) {
 func TestHostedHTTPSQueuedRevocation(t *testing.T) {
 	f := newHostedFixture(t)
 	bearer, proof := f.directCommissioner(t)
-	f.now = f.now.Add(time.Nanosecond)
+	// Activity refreshes at most once a minute, so move the stored last_used past that guard:
+	// the request's authenticated read is what this test waits on before revoking.
+	f.now = f.now.Add(2 * time.Minute)
 	digest := sha256.Sum256([]byte(bearer))
 	tokenHash := hex.EncodeToString(digest[:])
 	reader, writer := io.Pipe()

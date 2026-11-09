@@ -54,7 +54,11 @@ func (h Hosted) agentToken(w http.ResponseWriter, r *http.Request) {
 	}
 	session := accounts.RawSession{Bearer: strings.TrimPrefix(authorization, "Bearer ")}
 	account, err := h.Sessions.Authenticate(r.Context(), session)
-	if err != nil || h.Tokens == nil {
+	if err != nil {
+		h.sessionFailure(w, err)
+		return
+	}
+	if h.Tokens == nil {
 		// Agent tokens are never device sessions, so they cannot mint or revoke credentials.
 		http.Error(w, "session refused", http.StatusUnauthorized)
 		return

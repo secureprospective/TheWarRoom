@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -193,12 +194,16 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	account, authenticationErr := h.Sessions.Authenticate(r.Context(), rawSession)
 	if authenticationErr != nil {
+		if !sessionRefused(authenticationErr) {
+			h.sessionFailure(w, authenticationErr)
+			return
+		}
 		if h.Tokens == nil {
-			h.writeFailure(w, "session refused", http.StatusUnauthorized)
+			h.sessionFailure(w, authenticationErr)
 			return
 		}
 		if _, err := h.Tokens.Authenticate(r.Context(), rawSession); err != nil {
-			h.writeFailure(w, "session refused", http.StatusUnauthorized)
+			h.sessionFailure(w, err)
 			return
 		}
 	}
@@ -503,4 +508,21 @@ func (h Hosted) writeFailure(w http.ResponseWriter, message string, status int) 
 		}
 	}
 	http.Error(w, message, status)
+}
+
+// sessionRefused reports whether an authentication error is a real refusal (unknown, expired
+// or revoked credentials) rather than the store being busy or the request running out of time.
+func sessionRefused(err error) bool {
+	return errors.Is(err, accounts.ErrSessionRefused) || errors.Is(err, accounts.ErrTokenRefused)
+}
+
+// sessionFailure answers an authentication error: a refusal is 401, anything else (store busy,
+// timeout, context deadline) is the server being busy, so a valid owner is not told to sign in.
+func (h Hosted) sessionFailure(w http.ResponseWriter, err error) {
+	if sessionRefused(err) {
+		h.writeFailure(w, "session refused", http.StatusUnauthorized)
+		return
+	}
+	w.Header().Set("Retry-After", "60")
+	h.writeFailure(w, BusyMessage, http.StatusServiceUnavailable)
 }

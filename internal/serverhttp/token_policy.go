@@ -109,7 +109,7 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 	}
 	token, err := h.Tokens.Authenticate(r.Context(), session)
 	if err != nil {
-		http.Error(w, "session refused", http.StatusUnauthorized)
+		h.sessionFailure(w, err)
 		return
 	}
 	principal, err := token.Account.Principal()

@@ -275,3 +275,43 @@ func TestSessionCheckDoesNotTouchIdleAndRejectsRevocation(t *testing.T) {
 		t.Fatalf("check accepted revoked session: %v", err)
 	}
 }
+
+func TestSessionActivityWritesAtMostOncePerMinute(t *testing.T) {
+	f := newTOTPFixture(t)
+	service := accounts.NewSessions(accounts.New(f.store), f.store)
+	session := loginDevice(t, f, service, "throttled activity")
+	digest := digestToken(session.Bearer)
+	issued := f.now
+	readUsed := func() int64 {
+		t.Helper()
+		var used int64
+		if err := f.pools.Read().QueryRowContext(t.Context(), `SELECT last_used_at FROM account_sessions WHERE token_hash = ?`, digest).Scan(&used); err != nil {
+			t.Fatal(err)
+		}
+		return used
+	}
+	if used := readUsed(); used != issued.UnixNano() {
+		t.Fatalf("login last_used=%d want %d", used, issued.UnixNano())
+	}
+	f.now = issued.Add(2 * time.Minute)
+	if _, err := service.Authenticate(t.Context(), session.RawSession); err != nil {
+		t.Fatal(err)
+	}
+	refreshed := readUsed()
+	if refreshed != f.now.UnixNano() {
+		t.Fatalf("stale activity not refreshed: %d want %d", refreshed, f.now.UnixNano())
+	}
+	f.now = f.now.Add(30 * time.Second)
+	if _, err := service.Authenticate(t.Context(), session.RawSession); err != nil {
+		t.Fatal(err)
+	}
+	if used := readUsed(); used != refreshed {
+		t.Fatalf("second read inside a minute wrote activity: %d want unchanged %d", used, refreshed)
+	}
+	if err := service.Revoke(t.Context(), session.RawSession, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Authenticate(t.Context(), session.RawSession); !errors.Is(err, accounts.ErrSessionRefused) {
+		t.Fatalf("revoked session survived: %v", err)
+	}
+}
