@@ -180,3 +180,59 @@ parity/speed, PWA phone width, Claude-OS desktop, mirror click-through with Chri
   deleted, target ~3/4 cut, no proving coverage first". This session he agreed to stop quota cuts.
 - Next: rerun `make verify`; ratchets (comments, tiny files, native forks); `make build`; lab parity and
   speed; PWA phone width; Claude-OS desktop; mirror screen with Christopher; push; PR.
+
+## COMPACT POINT 2 — 2026-11-09 night — head 1aa41b1da (READ THIS BLOCK FIRST ON RESUME)
+
+In flight: NOTHING. No background jobs, no VMs started by me (Claude-OS was already up; left running).
+Branch `session/debloat-1109`, worktree clean, 17 commits on top of main 3a2843de4, NOT pushed, no PR.
+
+### NEXT ACTION 1 — Christopher's instruction at compact: "do the docs-only PR so it goes live today"
+1. `git fetch origin`; new worktree + branch off `origin/main`, e.g.
+   `git worktree add ~/work/TheWarRoom/.worktrees/docs-1109 -b session/docs-realign-1109 origin/main`.
+2. Bring over from `session/debloat-1109` (use `git checkout session/debloat-1109 -- <path>`):
+   `North_Star.md`, `README.md`, `CLAUDE.md`, `AGENTS.md`, and in `docs/ui/showcase/`: the 5
+   `screen-*.png`, 6 `detail-*.png`, `TheWarRoom-preview.zip` (sha256 starts f5c4f752e9e043b8).
+3. FIX BEFORE COMMIT, because main is not debloated yet:
+   - README: the Trim claims (badge "725k → 437k", readout line THE TRIM, section "✂️ The Trim",
+     its Contents entry, road-map line "✅ THE TRIM", BY THE NUMBERS line) are not true on main.
+     Either remove them for this PR (re-add with the debloat PR) or word as "under way". Recommend remove.
+   - CLAUDE.md "Latest state" names `docs/RESUME-debloat-1109.md` and `docs/DEBLOAT-semantic-pot-1109.md`,
+     which are not on main: drop that sentence in the docs PR. It says "the newest docs/RESUME-*.md";
+     `HANDOFF.md` still exists on main, so mention is harmless either way.
+   - Do NOT bring the `docs/plans/CLIENT-SERVER-PLAN` edit (on main its linked audit docs still exist).
+   - Check every README/CLAUDE/AGENTS link resolves on the docs branch (script used before:
+     grep `](path)` and backticked paths, test -e).
+4. Gates: `scripts/check-placement.sh` (reads SYSTEM_MAP only; should pass untouched). Pre-push hook
+   skips docs-only. Commit, push, `gh pr create` (PATH needs `$HOME/vendor/gh/bin`), body ends with the
+   Claude Code attribution line. Squash merge ONLY after Christopher says so (he asked for "live today",
+   so ask him to confirm the PR page, then `gh pr merge <n> --squash`).
+5. After it merges, rebase or merge main into `session/debloat-1109` (conflicts expected only in the four
+   doc files; keep the debloat-branch versions).
+
+### Then (debloat branch)
+- Rerun `make verify` once (first full run PASSED exit 0 on f66e816ee, log `verify-f66e816ee.log`; tree
+  changed since: 80 restored tests, docs, images).
+- Ratchets not started: comment share 6→5, tiny files 41→24, native forks 19→one seam.
+- `make build`, lab parity and speed, PWA phone width, Claude-OS desktop, one mirror screen with
+  Christopher, push, PR.
+- Docs not yet realigned: `docs/roadmap/Vision_2026.md`, `Roadmap_and_Open_Questions.md`,
+  `docs/architecture/system-narrative.md`, `docs/Owner_Install_Guide.md`.
+
+### Showcase facts (so they are not re-derived)
+- Source preview: `~/Downloads/TheWarRoom-preview.html` (untouched). Edited copy (build-note tags and
+  "Not built" row removed): `preview-build/TheWarRoom-preview.html` here. Raw 2x shots: `preview-shots/`,
+  finished assets `preview-shots/out/`.
+- Shots: Claude-OS, `chromium --headless=new --window-size=1920,1080 --force-device-scale-factor=2
+  --virtual-time-budget=8000 --screenshot=... "file://...#<home|hq|warroom|pulse|control>"`.
+  Fonts installed there by apt: fonts-inter, fonts-jetbrains-mono. Crops and 256-colour quantise with PIL.
+- README order ruled by Christopher: Live (League Pulse) is the crown jewel and hero, then trade desk,
+  lineup control, Home; voice = someone who hates fantasy apps and wants more.
+- Road-map dates in README (May 28 freeze, June invites, July 2027 rookie draft) were carried over from the
+  old README; he has not confirmed or changed them.
+
+### Mistakes made this session (do not repeat)
+1. Deleted docs that instruction files/plans still cite (six handoffs, two client/server ruling docs).
+   Check inbound links before deleting any doc.
+2. Coverage rule cut gates, live tests, race tests and invariants. Zero-coverage or invariant-named tests
+   are not duplicates.
+3. Deleted `internal/seams` (a gate from the 11-08 binding direction) as "no binary imports it".
