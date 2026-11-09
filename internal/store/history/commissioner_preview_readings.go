@@ -23,8 +23,9 @@ func (s *Store) previewReadingFields(ctx context.Context, raw commissioner.RawCo
 				BeforeSource: "App league history", After: words, AfterSource: "App league history", When: "now"}}, nil
 		}
 	}
-	trial := append(slices.Clone(records), commissioner.Record{Command: raw,
-		Receipt: commissioner.Receipt{Entry: "proposed." + raw.Request, RecordedAt: s.now()}})
+	// The trial ledger gets the held ledger's memo, so its readings fold it once, not once per reading.
+	trial := commissioner.WithReplayCache(append(slices.Clone(records), commissioner.Record{Command: raw,
+		Receipt: commissioner.Receipt{Entry: "proposed." + raw.Request, RecordedAt: s.now()}}))
 	before, err := s.previewReadings(ctx, raw, principal, records, facts)
 	if err != nil {
 		return nil, err
