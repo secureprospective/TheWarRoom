@@ -208,8 +208,13 @@ func RulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleS
 	return rules, nil
 }
 
-// recordsThrough prevents later corrections from rewriting an earlier season or instant.
+// recordsThrough prevents later corrections from rewriting an earlier season or instant. A ledger wholly
+// at or before the instant is returned as is, capacity clipped so an append never writes into it: callers
+// only read the result, and the held ledger keeps its replay memo instead of being copied on every read.
 func RecordsThrough(records []Record, at time.Time) []Record {
+	if !slices.ContainsFunc(records, func(r Record) bool { return r.Receipt.RecordedAt.After(at) }) {
+		return records[:len(records):len(records)]
+	}
 	out := make([]Record, 0, len(records))
 	for _, r := range records {
 		if !r.Receipt.RecordedAt.After(at) {
