@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
 // previewReadingFields compares owner readings on the same held evidence, before and after one trial act.
 func (s *Store) previewReadingFields(ctx context.Context, raw commissioner.RawCommand, principal string,
-	records []commissioner.Record, facts appendFacts) ([]commissioner.PreviewField, error) {
+	records, trial []commissioner.Record, facts appendFacts) ([]commissioner.PreviewField, error) {
 	if season := previewScoreSeason(raw); season != 0 {
 		recorded, err := commissioner.PreviewSeasonRecorded(records, season, s.now())
 		if err != nil {
@@ -23,9 +22,9 @@ func (s *Store) previewReadingFields(ctx context.Context, raw commissioner.RawCo
 				BeforeSource: "App league history", After: words, AfterSource: "App league history", When: "now"}}, nil
 		}
 	}
-	// The trial ledger gets the held ledger's memo, so its readings fold it once, not once per reading.
-	trial := commissioner.WithReplayCache(append(slices.Clone(records), commissioner.Record{Command: raw,
-		Receipt: commissioner.Receipt{Entry: "proposed." + raw.Request, RecordedAt: s.now()}}))
+	if trial == nil {
+		return nil, errors.New("read preview: the proposed change has no trial ledger")
+	}
 	before, err := s.previewReadings(ctx, raw, principal, records, facts)
 	if err != nil {
 		return nil, err

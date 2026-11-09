@@ -12,7 +12,13 @@ import (
 // CommandPreview describes the proposed change for a GM. The checks that may refuse it run elsewhere and
 // are added as blockers by the caller; a description is still returned when they refuse.
 func CommandPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, now time.Time) (Preview, error) {
-	preview, err := commandPreview(raw, records, catalogue, now)
+	return CommandPreviewOn(raw, records, nil, catalogue, now)
+}
+
+// CommandPreviewOn is CommandPreview reading the given PreviewTrial, so the store's own readings of the
+// same proposal share its folds; a nil trial is built when an operation needs one.
+func CommandPreviewOn(raw RawCommand, records, trial []Record, catalogue PreviewCatalogue, now time.Time) (Preview, error) {
+	preview, err := commandPreview(raw, records, trial, catalogue, now)
 	if err != nil {
 		return preview, err
 	}
@@ -20,7 +26,7 @@ func CommandPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue
 	return preview, err
 }
 
-func commandPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, now time.Time) (Preview, error) {
+func commandPreview(raw RawCommand, records, trial []Record, catalogue PreviewCatalogue, now time.Time) (Preview, error) {
 	switch raw.Command {
 	case ContractActionSet:
 		field, value, err := raw.Args.ContractAction.ruleValue()
@@ -40,7 +46,7 @@ func commandPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue
 	case NoticePublish, NotePost:
 		return notePreview(raw, records, catalogue)
 	}
-	return operationPreview(raw, records, catalogue, now)
+	return operationPreview(raw, records, trial, catalogue, now)
 }
 
 const (
