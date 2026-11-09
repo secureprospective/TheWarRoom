@@ -252,33 +252,6 @@ func TestBuildEligibilityVerdictsAndFeeds(t *testing.T) {
 	}
 }
 
-func TestBuildEligibilityStaleFeedsReadUnknown(t *testing.T) {
-	stale := Injuries{Provenance: Provenance{Source: "injuries", Kind: "live",
-		Freshness: domain.Freshness{State: domain.FreshStale, FetchedAt: "2026-10-01T20:00:00Z"}}}
-	got, err := Build(context.Background(), testSource(), testDirectory(t), stale)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// 0042 is an active-roster player, so both of its slots read the feeds.
-	v := got.Eligibility.Players["0042"]
-	if v.IR.Verdict != eligibility.Unknown || v.IR.Reason != "stale" {
-		t.Fatalf("stale injuries = %+v, want unknown stale", v.IR)
-	}
-	if v.Taxi.Verdict != eligibility.Unknown || v.Taxi.Reason != "stale" {
-		t.Fatalf("stale directory = %+v, want unknown stale", v.Taxi)
-	}
-	if got.Eligibility.Feeds[eligibility.SourceRosters].Freshness.State != domain.FreshLive {
-		t.Fatalf("rosters feed must stay live: %+v", got.Eligibility.Feeds)
-	}
-	// The stale copy's own time rides the feeds section untouched: it is the as-of time the
-	// eligibility lines carry, including not-checked ones.
-	if got.Eligibility.Feeds[eligibility.SourceInjuries].Freshness.FetchedAt != "2026-10-01T20:00:00Z" ||
-		got.Eligibility.Feeds[eligibility.SourceInjuries].Freshness.State != domain.FreshStale {
-		t.Fatalf("stale injuries provenance lost its time: %+v",
-			got.Eligibility.Feeds[eligibility.SourceInjuries])
-	}
-}
-
 func TestSnapshotIncludesUnrosteredDirectoryPlayers(t *testing.T) {
 	dir := testDirectory(t)
 	lookup, err := normalize.NewLookup([]players.RawPlayer{

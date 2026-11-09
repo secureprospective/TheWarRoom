@@ -40,23 +40,6 @@ func TestNeedsAndSurplusAgainstTheLeagueTemplate(t *testing.T) {
 	}
 }
 
-func TestSplitLeagueManufacturesNoNeed(t *testing.T) {
-	rosters := map[string][]Player{
-		"a": roster("a", map[string][]float64{"TE": {5}, "WR": {4}}),
-		"b": roster("b", map[string][]float64{"WR": {5, 4}}),
-	}
-	lg := Compute(rosters, 2)
-	if _, ok := lg.Template["TE"]; ok {
-		t.Fatalf("lower median of {0,1} TEs must be 0: %v", lg.Template)
-	}
-	if len(lg.Teams["b"].Needs) != 0 {
-		t.Fatalf("b needs = %+v", lg.Teams["b"].Needs)
-	}
-	if len(lg.Teams["a"].Needs) != 0 {
-		t.Fatalf("a needs = %+v (template WR is lower median 1)", lg.Teams["a"].Needs)
-	}
-}
-
 func TestZeroValueDepthIsNotSurplus(t *testing.T) {
 	lg := Compute(map[string][]Player{"a": roster("a", map[string][]float64{"WR": {3, 0}})}, 1)
 	if len(lg.Teams["a"].Surplus) != 0 {

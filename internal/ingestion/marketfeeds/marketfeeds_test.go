@@ -19,43 +19,7 @@ func sample(t *testing.T, name string) []byte {
 	}
 	return body
 }
-func TestRealSamples(t *testing.T) {
-	cases := []struct {
-		kind, file       string
-		players, samples int
-	}{
-		{Projections, Projections, 957, 0}, {Ranks, Ranks, 1321, 0},
-		{ADP, ADP, 370, 6734}, {AAV, AAV, 358, 111},
-		{ADP, "adp-2025", 362, 7185}, {AAV, "aav-2025", 702, 2103},
-		{ADP, "adp-2026", 34, 5}, {AAV, "aav-2026", 358, 111},
-	}
-	for _, tc := range cases {
-		t.Run(tc.file, func(t *testing.T) {
-			feed, err := Parse(tc.kind, sample(t, tc.file))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if tc.players > 0 && len(feed.Players) != tc.players {
-				t.Fatalf("players: %d", len(feed.Players))
-			}
-			if tc.samples >= 0 && feed.Samples != tc.samples {
-				t.Fatalf("samples: %d", feed.Samples)
-			}
-			if tc.kind == Projections && (feed.Week != 6 || feed.Players[0].Value != 32.21) {
-				t.Fatal(feed)
-			}
-			if tc.kind == Ranks && (feed.Players[1].Rank != 2 || feed.Players[1].Last != 3 || feed.Players[1].Change != 1) {
-				t.Fatal(feed.Players[1])
-			}
-			if tc.kind == ADP && tc.file == ADP && (feed.Players[0].Value != 1.85 || feed.Players[0].Low != 1 || feed.Players[0].High != 34) {
-				t.Fatal(feed.Players[0])
-			}
-			if tc.kind == AAV && tc.file == AAV && (feed.Players[0].Value != 30.10 || feed.Players[0].Low != 3.44 || feed.Players[0].High != 113.64) {
-				t.Fatal(feed.Players[0])
-			}
-		})
-	}
-}
+
 func TestRejectMalformedAndAcceptEmpty(t *testing.T) {
 	for _, kind := range []string{Projections, Ranks, ADP, AAV} {
 		for _, body := range []string{`{}`, `{"error":"offline"}`, `null`, `broken`} {

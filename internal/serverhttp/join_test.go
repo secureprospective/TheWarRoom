@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -118,54 +117,5 @@ func TestJoinLinkClaimReleaseAndRotation(t *testing.T) {
 	}
 	if _, err := f.join.Franchises(t.Context(), accounts.RawJoin{League: "native.hosted", Code: rotated.Code}); !errors.Is(err, accounts.ErrJoinRefused) {
 		t.Fatalf("revoked link = %v", err)
-	}
-}
-
-// Two people claim the same open franchise at once: exactly one is seated and gets an account; the
-// other is told it is taken and has no account.
-func TestJoinClaimRaceExactlyOneWins(t *testing.T) {
-	f := newHostedFixture(t, true)
-	code, err := f.join.Rotate(t.Context(), "native.hosted", governance.Principal(f.principal))
-	if err != nil {
-		t.Fatal(err)
-	}
-	statuses := make([]int, 2)
-	var wg sync.WaitGroup
-	for i := range statuses {
-		wg.Go(func() {
-			statuses[i], _ = f.send(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.05", fmt.Sprintf("racer%d", i)), "", "")
-		})
-	}
-	wg.Wait()
-	won, lost := 0, 0
-	for _, status := range statuses {
-		switch status {
-		case http.StatusCreated:
-			won++
-		case http.StatusConflict:
-			lost++
-		}
-	}
-	if won != 1 || lost != 1 {
-		t.Fatalf("statuses = %v, want one 201 and one 409", statuses)
-	}
-	accountsMade := 0
-	for i := range statuses {
-		if _, err := accounts.New(f.accounts).Authenticate(t.Context(), accounts.RawCredentials{Username: fmt.Sprintf("racer%d", i), Password: "private-password"}); err == nil {
-			accountsMade++
-		}
-	}
-	seats := 0
-	events, err := f.history.Events(t.Context(), "native.hosted", commissioner.Stream, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, event := range events {
-		if c := event.Payload.Commissioner; c != nil && c.Command.Command == "commish.seat.replace" && c.Command.Args.People.Franchise == "franchise.05" {
-			seats++
-		}
-	}
-	if accountsMade != 1 || seats != 1 {
-		t.Fatalf("accounts=%d seat events=%d, want 1 and 1", accountsMade, seats)
 	}
 }

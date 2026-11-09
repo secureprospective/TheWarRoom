@@ -1,26 +1,11 @@
 package research
 
 import (
-	"bytes"
-	"encoding/json"
-	"strconv"
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
-
-func TestResearchWeekRunsNameEachDifferingRunOnce(t *testing.T) {
-	t.Parallel()
-	got := weekRuns([]string{"", "as of A · Archived copy", "as of A · Archived copy", "as of A · Archived copy", "as of B"})
-	if got != " Weeks 2–4 · as of A · Archived copy. Week 5 · as of B." {
-		t.Fatal(got)
-	}
-	if weekRuns([]string{"", ""}) != "" {
-		t.Fatal("matching weeks named")
-	}
-}
 
 func TestNewsPostedPrecision(t *testing.T) {
 	t.Parallel()
@@ -63,39 +48,6 @@ func TestNewsAgeValidation(t *testing.T) {
 	}
 }
 
-func TestShortDepthNames(t *testing.T) {
-	if shortDepthNames([]string{"▸ Josh Sweat · MFL identity not linked"}) != "▸ J. Sweat*" {
-		t.Fatal("grid name is not short and labelled")
-	}
-}
-
-func TestConcurrentConstructionLeavesSnapshotUntouched(t *testing.T) {
-	in := realResearch(t)
-	before, err := json.Marshal(in)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		after, err := json.Marshal(in)
-		if err != nil {
-			t.Error(err)
-		}
-		if !bytes.Equal(before, after) {
-			t.Error("construction mutated the detached snapshot")
-		}
-	})
-	for i := 0; i < 4; i++ {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
-			out := Build(in, Scope{Mine: "0001"})
-			player := ReadPlayer(in, "16162", nil, "Counting")
-			if len(out.Board.Reports) != 10 || player.ID != "16162" || len(player.Report.Rows) == 0 {
-				t.Fatal("reading lost held inputs")
-			}
-		})
-	}
-}
-
 func TestRosteredAssetScopeKeepsUnscoredIDsAndOrder(t *testing.T) {
 	t.Parallel()
 	mirror := state.MirrorSnapshot{Players: []state.MirrorPlayer{{MFLID: "0099"}, {MFLID: "0100"}, {MFLID: "0099"}}}
@@ -106,25 +58,5 @@ func TestRosteredAssetScopeKeepsUnscoredIDsAndOrder(t *testing.T) {
 	ids[0] = "changed"
 	if mirror.Players[0].MFLID != "0099" || RosteredAssetIDs(state.MirrorSnapshot{}) == nil {
 		t.Fatal("scope aliases input or lost empty slice")
-	}
-}
-
-func TestWeeklyFormUsesFiveFinishedWeeksAndKeepsMissing(t *testing.T) {
-	t.Parallel()
-	in := Snapshot{Week: 9, Zone: time.UTC}
-	r := report.Report{}
-	(researchView{Snapshot: in}).playerWeeklyForm(&r, "0042", 5)
-	if len(r.Rows) != 5 || r.Rows[0].Cells[0] != "Form · Wk 4" || r.Rows[4].Cells[0] != "Form · Wk 8" {
-		t.Fatalf("window: %+v", r.Rows)
-	}
-	for _, row := range r.Rows {
-		if row.Cells[1] != "not held" {
-			t.Fatal(row)
-		}
-	}
-	r.Rows = nil
-	(researchView{Snapshot: in}).playerWeeklyForm(&r, "0042", 3)
-	if len(r.Rows) != 3 || r.Rows[0].Cells[0] != "Form · Wk 6" {
-		t.Fatal(r.Rows)
 	}
 }

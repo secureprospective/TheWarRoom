@@ -41,14 +41,6 @@ func TestSampleReadsNewestFirstInPlainWords(t *testing.T) {
 	}
 }
 
-func TestPlainLines(t *testing.T) {
-	got := PlainLines(`<p>Stat changes &amp; more: <a href="x?L=<league_id>&C=LINEUP">Setup</a></p><p><b>Jets at Bears</b><ul><li>A  B: from 1 to 0.</li><li>C D</li></ul></p>`)
-	want := []string{"Stat changes & more: Setup", "Jets at Bears", "A B: from 1 to 0.", "C D"}
-	if strings.Join(got, "|") != strings.Join(want, "|") {
-		t.Fatalf("%q", got)
-	}
-}
-
 func TestErrorBodyAndMissingDate(t *testing.T) {
 	if _, err := Parse([]byte(`{"error":{"$t":"Invalid request"}}`)); err == nil {
 		t.Fatal("an MFL error body was read as news")

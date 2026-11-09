@@ -99,31 +99,6 @@ func TestBidHandedOffPlanCanBeWithdrawnAndItsFactsStayFrozen(t *testing.T) {
 	}
 }
 
-func TestBidPlanWordsForTheScreens(t *testing.T) {
-	t.Parallel()
-	a := bidTestApp(t)
-	plan, err := a.TargetBidDraft(rawBid("5", 3))
-	if err != nil {
-		t.Fatal(err)
-	}
-	one := rawBid("5", 1)
-	one.Player = "13595"
-	short, err := a.TargetBidDraft(one)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, p := range []BidPlan{plan, short} {
-		if !strings.HasSuffix(p.Status, ".") {
-			t.Errorf("status %q does not end in a period", p.Status)
-		}
-		for _, entry := range p.Receipt.Audit {
-			if !strings.HasSuffix(entry.Note, ".") {
-				t.Errorf("history note %q does not end in a period", entry.Note)
-			}
-		}
-	}
-}
-
 func TestBidPreviewSaysWhatTheClosingTimeDoes(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)

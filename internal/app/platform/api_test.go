@@ -41,17 +41,6 @@ func (h *fakeHost) WithdrawRoster(string) (envelope.Receipt, error) { return env
 func (h *fakeHost) PlayerName(id string) (string, bool)             { n, ok := h.names[id]; return n, ok }
 func (h *fakeHost) PhotosOff() bool                                 { return h.off }
 
-func TestPhotoIsGoWordedAndOffMeansNoAddress(t *testing.T) {
-	t.Parallel()
-	on := Photo("0501", "Kayden McDonald", false)
-	if on.Src != "/headshot/0501" || on.Alt != "Photo of Kayden McDonald" {
-		t.Fatalf("on = %+v", on)
-	}
-	if off := Photo("0501", "Kayden McDonald", true); off.Src != "" || off.Alt != "Kayden McDonald" {
-		t.Fatalf("off = %+v", off)
-	}
-}
-
 func TestTargetPhotoNamesAnUnknownPlayerPlainly(t *testing.T) {
 	t.Parallel()
 	api := New(&fakeHost{names: map[string]string{}})

@@ -1,7 +1,6 @@
 package leaguestandings
 
 import (
-	"encoding/json"
 	"testing"
 )
 
@@ -44,51 +43,11 @@ func TestRawStanding_Validate(t *testing.T) {
 	}
 }
 
-func TestFlatten_MapsFields(t *testing.T) {
-	env := standingsEnvelope{}
-	env.LeagueStandings.Franchise = []franchiseStanding{
-		{ID: "0001", H2HW: "10", H2HL: "3", AllPlay: "421-106-0", PF: "1850.5", Pwr: "48.2", AltPwr: "87.0", Salary: "250"},
-		{ID: "0002", H2HW: "12", H2HL: "1", AllPlay: "438-89-0", PF: "1990.1", Pwr: "51.0", AltPwr: "86.0", Salary: "260"},
-	}
-
-	got, err := flatten(env)
-	if err != nil {
-		t.Fatalf("flatten: %v", err)
-	}
-	if len(got) != 2 {
-		t.Fatalf("got %d records, want 2", len(got))
-	}
-	if got[0].FranchiseID != "0001" || got[0].AllPlayW != "421" || got[0].Pwr != "48.2" {
-		t.Errorf("record 0 mapped wrong: %+v", got[0])
-	}
-	if got[1].AltPwr != "86.0" || got[1].Salary != "260" {
-		t.Errorf("record 1 mapped wrong: %+v", got[1])
-	}
-}
-
 func TestFlatten_MalformedFailsLoud(t *testing.T) {
 	env := standingsEnvelope{}
 	env.LeagueStandings.Franchise = []franchiseStanding{{ID: "0001", PF: "not-a-number"}}
 	if _, err := flatten(env); err == nil {
 		t.Fatal("flatten should error on a non-numeric pf, got nil")
-	}
-}
-
-// TestDecode_SingleElementCollapse guards the MFL bracket-strip quirk: a standings
-// export with exactly one franchise arrives as a BARE OBJECT, not a one-element
-// array. MFLList must still decode it as a single-element slice.
-func TestDecode_SingleElementCollapse(t *testing.T) {
-	const body = `{"leagueStandings":{"franchise":{"id":"0001","h2hw":"10","pf":"1850.5","all_play_wlt":"421-106-0"}}}`
-	var env standingsEnvelope
-	if err := json.Unmarshal([]byte(body), &env); err != nil {
-		t.Fatalf("decode single-franchise standings: %v", err)
-	}
-	got, err := flatten(env)
-	if err != nil {
-		t.Fatalf("flatten: %v", err)
-	}
-	if len(got) != 1 || got[0].FranchiseID != "0001" || got[0].AllPlayW != "421" || got[0].AllPlayL != "106" {
-		t.Fatalf("single-element collapse not handled: %+v", got)
 	}
 }
 

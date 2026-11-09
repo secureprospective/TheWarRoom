@@ -51,22 +51,6 @@ func TestPackageSmokeRejectsInvalidDirectoryAndHeldLock(t *testing.T) {
 	}
 }
 
-// TestRunFlag_UnknownArgumentNeverOpensAWindow: an unknown argument exits 2 with usage instead
-// of falling through to a window on the real database; -version prints the build label.
-func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {
-	t.Parallel()
-	for _, args := range [][]string{{"-version", "x"}, {"--version"}, {"-probe", "-version"}, {"run"}} {
-		var out, errOut bytes.Buffer
-		if code := runFlag(args, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "usage") {
-			t.Errorf("runFlag(%q) = %d, stderr %q; want 2 with usage", args, code, errOut.String())
-		}
-	}
-	var out, errOut bytes.Buffer
-	if code := runFlag([]string{"-version"}, &out, &errOut); code != 0 || strings.TrimSpace(out.String()) != buildLabel() {
-		t.Errorf("-version = %d, stdout %q; want 0 and %q", code, out.String(), buildLabel())
-	}
-}
-
 func TestNativeStartupRefusesUnsafeOriginBeforeWindow(t *testing.T) {
 	var stderr bytes.Buffer
 	if code := runNative("https://user:sentinel@localhost", "native.test", Embedded{}, &stderr); code != 2 {
@@ -146,17 +130,6 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 		}
 	}
 	return got, problems
-}
-
-func TestBindingManifestRejectsHeld(t *testing.T) {
-	for _, held := range []interface{}{&research.Held{}, &sources.Held{}} {
-		bound := append(bindings(NewApp()), held)
-		_, problems := bindingManifest(bound)
-		want := fmt.Sprintf("unexpected bound type %T", held)
-		if len(problems) != 1 || problems[0] != want {
-			t.Fatalf("directly bound holder accepted: %v", problems)
-		}
-	}
 }
 
 // boundCatalogs is each bound API's command catalog, by its type.

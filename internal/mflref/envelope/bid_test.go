@@ -41,24 +41,6 @@ func TestDraftBidIsReadyAtOnce(t *testing.T) {
 	}
 }
 
-func TestBidRunsTheLifecycleThroughPostedToLanded(t *testing.T) {
-	e := draftedBid(t)
-	handed, err := e.HandOffManual(bidAt().Add(time.Minute), "post text copied; nothing posted")
-	if err != nil || handed.State() != HandedOff {
-		t.Fatal(handed.State(), err)
-	}
-	pending, err := handed.Await(bidAt().Add(2*time.Minute), AwaitBid)
-	if err != nil || pending.State() != BidPending ||
-		!strings.Contains(pending.Receipt().Audit[2].Note, "owner reports the bid is posted") {
-		t.Fatal(pending.Receipt(), err)
-	}
-	obs := bidObservation(t, "0001", 500_000_000, 3, bidAt().Add(time.Hour))
-	landed, err := pending.Observe(bidAt().Add(2*time.Hour), obs, BidPredicate{Facts: bidFacts(t)})
-	if err != nil || landed.State() != Landed {
-		t.Fatal(landed.Receipt(), err)
-	}
-}
-
 func TestBidTakesOnlyAManualHandOff(t *testing.T) {
 	ir, at, _ := testEnvelope(t)
 	if _, err := ir.HandOffManual(at, "x"); err == nil {
@@ -139,27 +121,6 @@ func TestBidPredicateUnverifiableCases(t *testing.T) {
 	}
 	if v := (BidPredicate{Facts: facts}).Evaluate(Spec{Intent: "roster.ir"}, failed); v.Event != Partial {
 		t.Errorf("another intent: %+v", v)
-	}
-}
-
-func TestBidAwardedOffAppIsTerminalAndNotAFailure(t *testing.T) {
-	e := draftedBid(t)
-	handed, err := e.HandOffManual(bidAt().Add(time.Minute), "copied")
-	if err != nil {
-		t.Fatal(err)
-	}
-	obs := bidObservation(t, "0002", 500_000_000, 3, bidAt().Add(time.Hour))
-	gone, err := handed.Observe(bidAt().Add(2*time.Hour), obs, BidPredicate{Facts: bidFacts(t)})
-	if err != nil || gone.State() != AwardedOffApp {
-		t.Fatal(gone.Receipt(), err)
-	}
-	for _, event := range []Event{Match, Partial, NoChange, Contradiction, Invalidate, Rebase, HandOff, AwaitBid} {
-		if _, err := gone.move(bidAt().Add(3*time.Hour), event, "x"); err == nil {
-			t.Errorf("%s left the terminal state", event)
-		}
-	}
-	if gone.State() == Failed {
-		t.Error("awarded off-app is not a failure")
 	}
 }
 

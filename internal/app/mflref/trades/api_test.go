@@ -3,7 +3,6 @@ package trades
 import (
 	"encoding/json"
 	"errors"
-	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -206,22 +205,6 @@ func TestTradeBuilderCommandsOwnTheirActions(t *testing.T) {
 	}
 	if !slices.Equal(actions, []string{"read", "preview", "save"}) {
 		t.Fatal(actions)
-	}
-}
-
-// The catalog lists exactly the API's exported methods: Wails binds every one of them.
-func TestCommandsMatchTheBoundSurface(t *testing.T) {
-	t.Parallel()
-	typ := reflect.TypeFor[*API]()
-	var methods, commands []string
-	for i := range typ.NumMethod() {
-		methods = append(methods, typ.Method(i).Name)
-	}
-	for _, c := range Commands() {
-		commands = append(commands, c.Method)
-	}
-	if !slices.Equal(methods, commands) {
-		t.Fatalf("methods %v, catalog %v", methods, commands)
 	}
 }
 

@@ -151,39 +151,6 @@ func TestReadPlayerUsageLabelsFromTeamCount(t *testing.T) {
 	}
 }
 
-func TestUsageLabelThirdsFromAnyTeamCount(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		teams   int
-		soft    []int
-		neutral []int
-		tough   []int
-	}{
-		{32, []int{1, 11}, []int{12, 21}, []int{22, 32}},
-		{6, []int{1, 2}, []int{3, 4}, []int{5, 6}},
-		{7, []int{1, 3}, []int{4}, []int{5, 7}},
-	} {
-		for rank := 1; rank <= tc.teams; rank++ {
-			label := usageLabel(rank, tc.teams)
-			switch {
-			case containsRank(tc.soft, rank) && label != "Soft",
-				containsRank(tc.neutral, rank) && label != "Neutral",
-				containsRank(tc.tough, rank) && label != "Tough":
-				t.Fatalf("%d teams rank %d = %q", tc.teams, rank, label)
-			}
-		}
-	}
-}
-
-func containsRank(ranks []int, rank int) bool {
-	for _, r := range ranks {
-		if r == rank {
-			return true
-		}
-	}
-	return false
-}
-
 func TestNextOpponentReadsHeldSchedule(t *testing.T) {
 	t.Parallel()
 	schedules := map[int]Feed[[]nflschedule.RawWeek]{

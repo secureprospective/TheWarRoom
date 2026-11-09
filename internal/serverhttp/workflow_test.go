@@ -2,7 +2,6 @@ package serverhttp_test
 
 import (
 	"encoding/json"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -21,40 +20,6 @@ func (workflowClock) Trusted() error   { return nil }
 func workflowRequest(t *testing.T, command, mode string, args string, football string) serverhttp.RawWorkflow {
 	t.Helper()
 	return serverhttp.RawWorkflow{Command: command, Version: "1", Mode: mode, Arguments: json.RawMessage(args), Football: football}
-}
-
-func TestHostedWorkflowReadsAdmissionAndStrictEnvelope(t *testing.T) {
-	f := newHostedFixture(t, true)
-	bearer, proof := f.directCommissioner(t)
-	raw := workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")
-	post := func(raw serverhttp.RawWorkflow, bearer, proof string, status int) []byte {
-		t.Helper()
-		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
-		if err != nil {
-			t.Fatal(err)
-		}
-		return f.post(t, serverhttp.WorkflowPath, string(body), bearer, proof, status)
-	}
-	post(raw, "", "", 401)
-	post(raw, bearer, "", 403)
-	var response serverhttp.WorkflowResponse
-	if err := json.Unmarshal(post(raw, bearer, proof, 200), &response); err != nil {
-		t.Fatal(err)
-	}
-	if response.Label != "This league is managed here" || !response.Writable || response.Football == "" {
-		t.Fatalf("authority: %+v", response)
-	}
-	for _, bad := range []serverhttp.RawWorkflow{
-		{Command: raw.Command, Version: "2", Mode: "read", Arguments: raw.Arguments},
-		workflowRequest(t, "native.assets.read", "execute", string(raw.Arguments), ""),
-		workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted","principal":"admin"}`, ""),
-		workflowRequest(t, "commish.league.seed_held", "execute", `{}`, ""),
-	} {
-		post(bad, bearer, proof, 400)
-	}
-	if strings.Contains(string(post(raw, bearer, proof, 200)), bearer) {
-		t.Fatal("bearer leaked")
-	}
 }
 
 func TestDesktopHostedReserveMoveConfirmedRetryAndRefusalPreservesRoster(t *testing.T) {

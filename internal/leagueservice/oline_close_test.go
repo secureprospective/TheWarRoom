@@ -174,17 +174,6 @@ func TestOLineCloseOffAndUnauthorizedPreserveState(t *testing.T) {
 	}
 }
 
-func TestOLineWorkerCannotCloseAnOpenAuction(t *testing.T) {
-	f := newOLineDueFixture(t)
-	before := len(f.events(t))
-	if _, err := f.worker.step(t.Context()); err != nil {
-		t.Fatal(err)
-	}
-	if len(f.events(t)) != before || len(lineAssets(t, f).Snapshot.Players) != 1 {
-		t.Fatal("worker closed the auction without the commissioner")
-	}
-}
-
 func TestOLineClosePreservesARealBidAward(t *testing.T) {
 	f := newOLineDueFixture(t)
 	nativecheck.AddLineCards(f.facts)

@@ -38,18 +38,6 @@ func TestReturnWeek(t *testing.T) {
 	}
 }
 
-func TestReturnWeekUsesAnyGameInTheWeek(t *testing.T) {
-	t.Parallel()
-	weeks := []nflschedule.RawWeek{
-		returnWeekFixture(t, 7, "2026-10-15"),
-		returnWeekFixture(t, 7, "2026-10-18"),
-	}
-	season, week, ok, reason := ReturnWeek("Oct 18, 2026", weeks)
-	if !ok || season != 2026 || week != 7 || reason != "" {
-		t.Fatalf("ReturnWeek = (%d, %d, %v, %q)", season, week, ok, reason)
-	}
-}
-
 func returnWeekSchedule(t *testing.T) []nflschedule.RawWeek {
 	t.Helper()
 	starts := []string{

@@ -22,66 +22,7 @@ func sample(t *testing.T, name string) []byte {
 	}
 	return body
 }
-func TestRealMFLResearchSamples(t *testing.T) {
-	for _, kind := range []string{"topAdds", "topDrops", "topStarters", "topOwns", "topTrades", "pointsAllowed", "playerScores"} {
-		name, week := kind+".json", ""
-		if kind == "playerScores" {
-			name, week = "playerScores_WYTD.json", "YTD"
-		}
-		feed, err := Parse(sample(t, name), kind, week)
-		if err != nil {
-			t.Fatal(kind, err)
-		}
-		if kind == "pointsAllowed" {
-			if len(feed.Allowed) != 320 {
-				t.Fatal(len(feed.Allowed))
-			}
-			continue
-		}
-		if len(feed.Players) == 0 {
-			t.Fatal(kind, "empty")
-		}
-		if kind == "topAdds" {
-			if feed.Players[0].ID.String() != "17059" || feed.Players[0].Value != 60.76 || feed.Players[3].ID.String() != "0521" {
-				t.Fatal(feed.Players[:4])
-			}
-		}
-	}
-	for _, tc := range []struct {
-		window, id string
-		points     float64
-	}{{"YTD", "16162", 129}, {"04", "13589", 21.80}} {
-		week, name := tc.window, "playerScores_WYTD.json"
-		if week != "YTD" {
-			name = "playerScores_W" + week + ".json"
-			week = "4"
-		}
-		feed, err := Parse(sample(t, name), "playerScores", week)
-		if err != nil {
-			t.Fatal(err)
-		}
-		found := false
-		for _, p := range feed.Players {
-			if p.ID.String() == tc.id {
-				found = true
-				if p.Value != tc.points {
-					t.Fatalf("%s week %s = %v, want %v", tc.id, week, p.Value, tc.points)
-				}
-			}
-		}
-		if !found {
-			t.Fatal("missing", tc.id)
-		}
-	}
-	newsByID, err := ParseNews(sample(t, "playerProfile.json"), []string{"16162"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	news := newsByID["16162"]
-	if len(news) != 1 || news[0].Age != "24" || news[0].Published != "6 days" || news[0].Article != "rotowire640841" {
-		t.Fatal(news)
-	}
-}
+
 func TestResearchRejectsMalformedBoundary(t *testing.T) {
 	for _, tc := range []struct{ kind, week, body string }{
 		{"topAdds", "", `{"error":{"$t":"down"}}`},

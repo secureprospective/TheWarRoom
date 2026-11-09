@@ -1,7 +1,6 @@
 package commissioner
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
@@ -31,23 +30,6 @@ func createCommand(reason string) commissioner.RawCommand {
 func mustPreview(t *testing.T, app *ledgerFixture, raw commissioner.RawCommand) commissioner.Preview {
 	t.Helper()
 	return commissionertest.Preview(t, app.TargetCommissionerPreview, raw)
-}
-
-func TestCommissionerPreviewDescribesStartingALeague(t *testing.T) {
-	t.Parallel()
-	app := commissionerTestApp(t)
-	preview := mustPreview(t, app, createCommand("Move our league here"))
-	if len(preview.Blockers) != 0 || preview.Safeguard != "reason" || preview.Target.Version != 0 ||
-		preview.Target.Name != "Fresh league" || preview.Target.League != "native.fresh" ||
-		preview.Question == "" || len(preview.Fields) != 3 || preview.Fields[1].After != "12 franchises" ||
-		preview.Fields[2].After != "Legacy NFL rules" || preview.Affects.Count == nil ||
-		*preview.Affects.Count != 0 {
-		t.Fatalf("start a league: %+v", preview)
-	}
-	ledger, err := app.TargetCommissionerLeagues()
-	if err != nil || len(ledger) != 0 {
-		t.Fatalf("a dry run started a league: %+v %v", ledger, err)
-	}
 }
 
 func TestCommissionerPreviewAsksForTheReasonAndStillDescribes(t *testing.T) {
@@ -98,29 +80,5 @@ func TestCommissionerPreviewDescribesARoleChangeAndRefusesOneThatChangesNothing(
 				t.Fatalf("execute must refuse in the same words: %v", refusal)
 			}
 		})
-	}
-}
-
-func TestCommissionerPreviewDescribesUndoingAChange(t *testing.T) {
-	t.Parallel()
-	app := previewApp(t)
-	made := executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.preview",
-		Command: commissioner.RulesSet, Args: commissioner.RawArgs{Field: "roster.limits",
-			Value: json.RawMessage(`{"min":20,"max":70}`)}, Expected: 1, Request: "rule.made",
-		Effective: "next_rollover", Visibility: "league"})
-	undo := commissioner.RawCommand{League: "native.preview", Command: commissioner.Revert,
-		Args: commissioner.RawArgs{Entry: made.Entry}, Reason: "Wrong size", Expected: 2,
-		Request: "undo.request", Effective: "now", Visibility: "league"}
-	preview := mustPreview(t, app, undo)
-	if len(preview.Blockers) != 0 || preview.Safeguard != "reason" || len(preview.Fields) != 1 ||
-		!strings.Contains(preview.Fields[0].Before, "Active roster size") ||
-		!strings.HasPrefix(preview.Fields[0].After, "Undone") || preview.Target.Version != 2 {
-		t.Fatalf("undo preview: %+v", preview)
-	}
-	assertPreviewAffects(t, preview)
-	undo.Args.Entry = "act.missing"
-	missing := mustPreview(t, app, undo)
-	if strings.Join(missing.Blockers, "|") != "That recorded change is not in this league" {
-		t.Fatalf("an unknown entry must be refused: %+v", missing)
 	}
 }

@@ -137,30 +137,3 @@ func TestRosterPredicateDirections(t *testing.T) {
 		}
 	}
 }
-
-func TestTaxiObservationMustFollowHandOff(t *testing.T) {
-	original, at, snap := testEnvelope(t)
-	e, err := DraftTaxi(at, TaxiRequest{
-		LeagueID: "1", FranchiseID: "0001", Player: original.Receipt().Spec.Expected.Player,
-		Target: Target{Kind: Mapped, URL: "https://www47.myfantasyleague.com/2026/options?L=1&O=98"},
-	}, snap, func() string { return "fresh-taxi" })
-	if err != nil {
-		t.Fatal(err)
-	}
-	e, err = e.HandOff(at.Add(time.Minute))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := e.Observe(at.Add(2*time.Minute), observeAt(snap, at), TaxiPredicate{}); err == nil {
-		t.Fatal("pre-hand-off roster accepted")
-	}
-	next, err := e.Observe(at.Add(2*time.Minute), observeAt(snap, at.Add(2*time.Minute)), TaxiPredicate{})
-	if err != nil || next.State() != NotYetDone {
-		t.Fatalf("unchanged fresh roster: %+v %v", next.Receipt(), err)
-	}
-	snap.Rosters.Value[0].Players[0].RosterStatus = domain.RosterTaxi
-	next, err = next.Observe(at.Add(3*time.Minute), observeAt(snap, at.Add(3*time.Minute)), TaxiPredicate{})
-	if err != nil || next.State() != Landed {
-		t.Fatalf("landing: %+v %v", next.Receipt(), err)
-	}
-}

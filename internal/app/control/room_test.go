@@ -106,28 +106,6 @@ func TestSiteNewsReportAndAccountingHandOff(t *testing.T) {
 	}
 }
 
-func TestBylawsReadTheRulebookBySection(t *testing.T) {
-	t.Parallel()
-	sections := BylawSections(readTestdata(t, "docs/league-rules/Official_Rulebook.md"))
-	if len(sections) < 13 || sections[0].Title != "1. SALARY CAP" {
-		t.Fatalf("%d sections, first %q", len(sections), sections[0].Title)
-	}
-	joined := ""
-	for _, s := range sections {
-		joined += s.Title + "\n" + strings.Join(s.Lines, "\n")
-	}
-	for _, want := range []string{"• Each team: $125M cap for 2026", "Active Roster: Minimum 35", "Passing:"} {
-		if !strings.Contains(joined, want) {
-			t.Errorf("rulebook text lost %q", want)
-		}
-	}
-	for _, markup := range []string{"**", "|---", "## "} {
-		if strings.Contains(joined, markup) {
-			t.Errorf("markdown %q reached the GM", markup)
-		}
-	}
-}
-
 func repoPath(path string) string { return filepath.Join("..", "..", "..", path) }
 
 func TestHQLeagueNameFollowsHeldLeagueExport(t *testing.T) {

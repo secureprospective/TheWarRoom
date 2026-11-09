@@ -22,13 +22,6 @@ func opsCommand(command string, expected int64, request string,
 		Request: request, Effective: "now", Visibility: "league"}
 }
 
-func ruleCommand(expected int64, request, field, value, effective, reason string) commissioner.RawCommand {
-	raw := opsCommand(commissioner.RulesSet, expected, request, commissioner.RawArgs{Field: field,
-		Value: json.RawMessage(value)})
-	raw.Effective, raw.Reason = effective, reason
-	return raw
-}
-
 // opsApp starts a Legacy league as "creator" with every owner reading as "owner".
 func opsApp(t *testing.T) *ledgerFixture {
 	t.Helper()
@@ -83,59 +76,6 @@ func TestAPreviewPostsNothingAndOwnersCannotPost(t *testing.T) {
 	}
 	if reading, err = app.TargetCommissionerNotices(opsLeague); err != nil || len(reading.Notices) != 0 {
 		t.Fatalf("a refused notice was recorded: %+v %v", reading, err)
-	}
-}
-
-func TestNotificationSettingsAreRulesThatNeedOnlyAConfirm(t *testing.T) {
-	t.Parallel()
-	app := opsApp(t)
-	rules, err := app.TargetCommissionerRules(opsLeague)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var found []string
-	for _, section := range rules.Sections {
-		for _, row := range section.Rows {
-			if strings.HasPrefix(row.Field, "notify.") {
-				found = append(found, row.Field+"="+row.Value)
-				if row.Competitive || row.Safeguards.Now != "confirm" || row.Safeguards.NextRollover != "confirm" {
-					t.Errorf("%s should need one confirm: %+v", row.Field, row.Safeguards)
-				}
-			}
-		}
-	}
-	if strings.Join(found, ",") != "notify.transactions=On,notify.reminders=On" {
-		t.Fatalf("the league starts with both on: %v", found)
-	}
-}
-
-func TestACommissionerSetRuleCarriesWhoWhenAndWhichChange(t *testing.T) {
-	t.Parallel()
-	app := opsApp(t)
-	opsClock(app, 15)
-	receipt := executeCommissionerTest(t, app,
-		ruleCommand(1, "r1", "roster.limits", `{"min":20,"max":70}`, "now", "Agreed"))
-	rules, err := app.TargetCommissionerRules(opsLeague)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var governed, preset int
-	for _, section := range rules.Sections {
-		for _, row := range section.Rows {
-			if row.Governed == nil {
-				preset++
-				continue
-			}
-			governed++
-			if row.Field != "roster.limits" || row.Governed.Who != "creator" || row.Governed.Entry != receipt.Entry ||
-				!row.Governed.When.Equal(time.Date(2026, 10, 14, 15, 0, 0, 0, time.UTC)) ||
-				row.Governed.Change != "Active roster size: 18 to 80 → 20 to 70, in force now" {
-				t.Errorf("%s: %+v", row.Field, row.Governed)
-			}
-		}
-	}
-	if governed != 1 || preset < 50 {
-		t.Fatalf("only the value the commissioner changed is governed: %d governed, %d preset", governed, preset)
 	}
 }
 

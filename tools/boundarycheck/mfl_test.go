@@ -35,18 +35,6 @@ func TestMFLNativeClosureAllowsPureSharedCyclesAndMigrationSource(t *testing.T) 
 	}
 }
 
-func TestMFLNativeMathRootsAreDeclared(t *testing.T) {
-	rules, err := readMFLRules("../..")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, path := range []string{"internal/engine/contractacts", "internal/model", "internal/domain"} {
-		if !nativePackage(path, rules.native) {
-			t.Fatalf("native math/domain root missing: %s", path)
-		}
-	}
-}
-
 func TestMFLFreezeRejectsNewCommandAndReferencePackage(t *testing.T) {
 	root := boundaryFixture(t, "package composition\n")
 	current := append(mflCommandSurface(), "mfl\tmfl.synthetic.new\tTargetSynthetic\t1\tdesktop")

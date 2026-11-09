@@ -1,11 +1,8 @@
 package composition
 
 import (
-	"bytes"
 	"compress/gzip"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,11 +18,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
-	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
@@ -533,29 +528,4 @@ func targetTestAppAt(t *testing.T, path string) *App {
 	a.core.History = hs
 	close(a.core.Started)
 	return a
-}
-
-func recordTargetPlayers(t *testing.T, hs *history.Store) {
-	t.Helper()
-	body := []byte(`{"players":{"player":{"id":"0042","name":"Archived","position":"QB","team":"BUF"}}}`)
-	var gz bytes.Buffer
-	zw := gzip.NewWriter(&gz)
-	if _, err := zw.Write(body); err != nil {
-		t.Fatal(err)
-	}
-	if err := zw.Close(); err != nil {
-		t.Fatal(err)
-	}
-	sum := sha256.Sum256(body)
-	err := hs.Record(context.Background(), archive.Fetch{
-		URL:       "/2026/export?TYPE=players&L=" + ingestion.LeagueID,
-		Status:    200,
-		SHA256:    hex.EncodeToString(sum[:]),
-		Size:      int64(len(body)),
-		Gzip:      gz.Bytes(),
-		FetchedAt: time.Date(2026, 10, 5, 10, 0, 0, 0, time.UTC),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
 }

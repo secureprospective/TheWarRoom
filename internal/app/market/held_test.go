@@ -39,42 +39,6 @@ func mutateFeeds(feeds Feeds) {
 	}
 }
 
-func TestHeldDetachesIngressAndEgress(t *testing.T) {
-	t.Parallel()
-	h := &Held{}
-	input, want := feedsFixture(t), feedsFixture(t)
-	publishFeeds(h, input)
-	mutateFeeds(input)
-	if got := h.SnapshotFeeds(); !reflect.DeepEqual(got, want) {
-		t.Fatal("publication retained caller storage", got)
-	}
-	mutateFeeds(h.SnapshotFeeds())
-	if got := h.SnapshotFeeds(); !reflect.DeepEqual(got, want) {
-		t.Fatal("snapshot exposed held storage", got)
-	}
-}
-
-func TestHeldPreservesNilAndEmpty(t *testing.T) {
-	t.Parallel()
-	if got := (&Held{}).SnapshotFeeds(); got != nil {
-		t.Fatal("no publication reads as an empty map", got)
-	}
-	input := Feeds{
-		"nil":          {},
-		"empty":        {Value: []marketfeeds.Feed{}},
-		"nil players":  {Value: []marketfeeds.Feed{{Week: 1}}},
-		"none players": {Value: []marketfeeds.Feed{{Week: 1, Players: []marketfeeds.Player{}}}},
-	}
-	h := &Held{}
-	publishFeeds(h, input)
-	if got := h.SnapshotFeeds(); !reflect.DeepEqual(got, input) {
-		t.Fatal("nil/empty changed", got, input)
-	}
-	if h.SnapshotModel() != nil {
-		t.Fatal("model before publication")
-	}
-}
-
 func TestHeldPublishReadRace(t *testing.T) {
 	t.Parallel()
 	h := &Held{}

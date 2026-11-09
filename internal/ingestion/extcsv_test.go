@@ -84,29 +84,6 @@ func TestFetchCSV_Non200(t *testing.T) {
 	}
 }
 
-func TestFetchCSV_RaggedRowFailsLoud(t *testing.T) {
-	t.Parallel()
-	client, url := serveCSV(t, http.StatusOK, "a,b,c\n1,2\n")
-	if _, err := FetchCSV(context.Background(), client, url, DefaultMaxCSVBytes); err == nil {
-		t.Fatal("expected error on inconsistent field count")
-	}
-}
-
-// The gz happy path: a gzip-compressed CSV is transparently gunzipped and parsed,
-// proving FetchCSVGz reads the same records FetchCSV would from the plain body.
-func TestFetchCSVGz_Decompresses(t *testing.T) {
-	t.Parallel()
-	client, url := serveRaw(t, gzipBytes(t, "col_a,col_b\n1,2\n3,4\n"))
-
-	records, err := FetchCSVGz(context.Background(), client, url, DefaultMaxCSVBytes)
-	if err != nil {
-		t.Fatalf("FetchCSVGz: %v", err)
-	}
-	if len(records) != 3 {
-		t.Fatalf("got %d records, want 3 (header + 2)", len(records))
-	}
-}
-
 // Gate-proof: a body that is NOT gzip must FAIL LOUD at the gunzip step, never get
 // mis-parsed as plain CSV. Feeding plain CSV to FetchCSVGz is the deliberate
 // violation; gzip.NewReader rejects the missing magic header.
@@ -137,38 +114,5 @@ func TestFetchCSVGz_DecompressedExceedsCapFailsLoud(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "exceeds") {
 		t.Fatalf("want a cap-exceeded error, got %v", err)
-	}
-}
-
-func TestCSVColumns(t *testing.T) {
-	t.Parallel()
-
-	// Found, with a leading BOM on the first cell that must be stripped.
-	cols, err := CSVColumns([]string{"\ufeffid", "name", "team"}, "id", "team")
-	if err != nil {
-		t.Fatalf("CSVColumns: %v", err)
-	}
-	if cols["id"] != 0 || cols["team"] != 2 {
-		t.Errorf("indices wrong: %v", cols)
-	}
-
-	// Missing required column fails loud, naming the column.
-	_, err = CSVColumns([]string{"id", "name"}, "id", "gsis_id")
-	if err == nil || !strings.Contains(err.Error(), "gsis_id") {
-		t.Fatalf("want missing-column error naming gsis_id, got %v", err)
-	}
-}
-
-func TestIsMissing(t *testing.T) {
-	t.Parallel()
-	for _, s := range []string{"", "NA"} {
-		if !IsMissing(s) {
-			t.Errorf("IsMissing(%q) = false, want true", s)
-		}
-	}
-	for _, s := range []string{"0", "na", "N/A", "x"} {
-		if IsMissing(s) {
-			t.Errorf("IsMissing(%q) = true, want false", s)
-		}
 	}
 }

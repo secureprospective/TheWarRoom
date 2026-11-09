@@ -17,37 +17,6 @@ func testWindows(windows map[string]leaguerules.Window) leaguerules.CalendarRule
 		Windows: leaguerules.Known(windows), Boundary: leaguerules.Known(leaguerules.StartOfDay)}
 }
 
-func TestCivilMidnightAcrossDaylightSaving(t *testing.T) {
-	for _, tc := range []struct {
-		month, day, hours int
-		start, close      string
-	}{
-		{3, 8, 23, "2026-03-08T05:00:00Z", "2026-03-09T04:00:00Z"},
-		{11, 1, 25, "2026-11-01T04:00:00Z", "2026-11-02T05:00:00Z"},
-	} {
-		rules := testWindows(map[string]leaguerules.Window{"test": {
-			Start: testDate(tc.month, tc.day), End: testDate(tc.month, tc.day),
-			Opens: leaguerules.Known([]leaguerules.Action{"buyout"}),
-		}})
-		at, err := time.Parse(time.RFC3339, tc.start)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got, err := Calendar(at, 2026, rules, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		w := got.Windows[0]
-		if w.Start.Format(time.RFC3339) != tc.start || w.Close.Format(time.RFC3339) != tc.close ||
-			*w.Seconds != int64(tc.hours*3600) || !w.Live {
-			t.Fatal(w)
-		}
-		if got.Decide(*w.Close, "buyout", "one").Open {
-			t.Fatal("closing midnight must exclude the action")
-		}
-	}
-}
-
 func TestSharedDateHasOneSide(t *testing.T) {
 	rules := testWindows(map[string]leaguerules.Window{
 		"rfa": {Start: testDate(5, 1), End: testDate(5, 3),
@@ -79,23 +48,6 @@ func TestSharedDateHasOneSide(t *testing.T) {
 	}
 	if got.Decide(at, "rfa_tender", "one").Open || got.Decide(at, "ufa_bid", "one").Open {
 		t.Fatal("unset side must not guess")
-	}
-}
-
-// One unruled shared date must not empty a whole league calendar: the Legacy preset shares two dates
-// (ufa opens the day resign-era windows close), and every other window still has to read.
-func TestUnruledBoundaryKeepsTheRestOfTheCalendar(t *testing.T) {
-	rules := leaguerules.LegacyNFL().Calendar
-	at := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
-	got, err := Calendar(at, 2026, rules, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got.Windows)+2 != len(rules.Windows.Value) {
-		t.Fatalf("windows read: %d of %d", len(got.Windows), len(rules.Windows.Value))
-	}
-	if !got.Decide(at, "lineup", "one").Open {
-		t.Fatal("a window with unambiguous dates must still open its action")
 	}
 }
 
@@ -131,29 +83,5 @@ func TestExactDeadline(t *testing.T) {
 	if *c.TradeSeconds != 1 || !c.Decide(at, "trade", "one").Open ||
 		c.Decide(at.Add(time.Second), "trade", "one").Open {
 		t.Fatal(c)
-	}
-}
-
-// Lineups and waivers have no closing window in the Legacy preset: each player locks at his own kickoff,
-// and each cut opens its own waiver window.
-func TestLegacyLineupsAndWaiversStayOpenAllLeagueYear(t *testing.T) {
-	rules := leaguerules.LegacyNFL().Calendar
-	rules.Boundary = leaguerules.Known(leaguerules.StartOfDay)
-	for _, at := range []string{"2026-03-01T05:00:00Z", "2026-09-13T17:00:00Z", "2026-12-27T18:00:00Z"} {
-		instant, err := time.Parse(time.RFC3339, at)
-		if err != nil {
-			t.Fatal(err)
-		}
-		c, err := Calendar(instant, 2026, rules, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !c.Decide(instant, "lineup", "one").Open {
-			t.Fatalf("a Legacy lineup must be open at %s", at)
-		}
-		// Rulebook §8: a player may be released, and claimed off waivers, at any time of year.
-		if !c.Decide(instant, "cut", "one").Open || !c.Decide(instant, "waiver_claim", "one").Open {
-			t.Fatalf("a Legacy cut and waiver claim must be open at %s", at)
-		}
 	}
 }

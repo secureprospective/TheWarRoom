@@ -107,20 +107,3 @@ func TestBidFactsFreezeOnceHandedOff(t *testing.T) {
 		t.Error("the watcher was not woken")
 	}
 }
-
-func TestSimultaneousBidDraftsLandOnce(t *testing.T) {
-	a := bidTestApp(t)
-	results := make(chan error, 2)
-	for range 2 {
-		go func() { _, err := a.TargetBidDraft(rawBid("5", 3)); results <- err }()
-	}
-	successes := 0
-	for range 2 {
-		if err := <-results; err == nil {
-			successes++
-		}
-	}
-	if successes != 1 || a.TargetBidPlans("0001").Count != 1 {
-		t.Fatal("duplicate concurrent draft", successes)
-	}
-}

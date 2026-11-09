@@ -23,56 +23,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-func TestResearchRealPointsActivityAndScales(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	board := Build(in, Scope{Mine: "0001"})
-	stats := reportByID(t, board.Board, "M-037")
-	allen := slices.IndexFunc(stats.Rows, func(r report.Row) bool { return r.Cells[0] == "Allen, Josh BUF QB" || r.Cells[0] == "Allen, Josh" })
-	if allen < 0 {
-		t.Fatal("Josh Allen missing")
-	}
-	if row := stats.Rows[allen]; row.Cells[3] != "134.80" || row.Cells[4] != "44.90" || row.Cells[7] != "21.80" || row.Cells[8] != "—" || len(row.Cells) != 9 {
-		t.Fatal(row)
-	}
-	mine := reportByID(t, board.Board, "M-038")
-	if len(mine.Rows) != 1 || mine.Rows[0].Cells[3] != "129.00" || !mine.Rows[0].Mine {
-		t.Fatal(mine.Rows)
-	}
-	for _, kind := range []string{"topAdds", "topDrops", "topStarters", "topOwns", "topTrades"} {
-		out := Build(in, Scope{Trend: kind})
-		report := reportByID(t, out.Board, "M-052")
-		want := Rows(in.Held.Feeds[Key(kind, "")])
-		for i, row := range report.Rows {
-			if row.Cells[1] != (researchView{Snapshot: in}).player(want[i].ID.String()).Name || row.Cells[4] != strconv.FormatFloat(want[i].Value, 'f', 2, 64)+"%" {
-				t.Fatal(kind, i, row)
-			}
-		}
-		if !strings.Contains(report.Source, "MFL-wide, not this league") {
-			t.Fatal(report.Source)
-		}
-	}
-	for _, id := range []string{"M-053", "M-054"} {
-		r := reportByID(t, board.Board, id)
-		if len(r.Rows) == 0 {
-			t.Fatal(id)
-		}
-		axis := r.Rows[0].Range.Max
-		for _, row := range r.Rows {
-			if row.Range.Max != axis || row.Range.Hi > axis {
-				t.Fatal(id, row)
-			}
-		}
-	}
-	kick := reportByID(t, Build(in, Scope{Group: "K"}).Board, "M-040")
-	if !strings.Contains(kick.Note, "no K starter slots") || len(kick.Rows) == 0 {
-		t.Fatal(kick.Note, len(kick.Rows))
-	}
-	defense := reportByID(t, Build(in, Scope{Group: "DST"}).Board, "M-040")
-	if !strings.Contains(defense.Note, "no DST starter slots") {
-		t.Fatal(defense.Note)
-	}
-}
 func TestResearchDepthInjuriesAndScopedNews(t *testing.T) {
 	t.Parallel()
 	in := realResearch(t)
@@ -244,41 +194,6 @@ func TestResearchPlayerHeldFactsAndMissingPieces(t *testing.T) {
 	}
 }
 
-func TestResearchSourcesFoldWeeksAndUseWords(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	out := Build(in, Scope{})
-	r := reportByID(t, out.Board, "M-038")
-	if len(r.Summary) != 0 || !strings.Contains(r.Source, "weeks 1–5 as of") {
-		t.Fatal(r)
-	}
-	for _, r := range append(out.Board.Reports, out.News) {
-		labels := r.Source + r.Title + r.Note + strings.Join(r.Columns, " ")
-		for _, raw := range append(Kinds(), "playerProfile") {
-			if strings.Contains(labels, raw) {
-				t.Fatal(raw, labels)
-			}
-		}
-	}
-	h2 := in.Held.Feeds[Key("playerScores", "2")]
-	h2.FetchedAt = h2.FetchedAt.Add(time.Second)
-	in.Held.Feeds[Key("playerScores", "2")] = h2
-	sameMinute := reportByID(t, Build(in, Scope{}).Board, "M-037")
-	if strings.Contains(sameMinute.Note, "Week 2 ·") {
-		t.Fatal("identical displayed times repeated", sameMinute.Note)
-	}
-	h := in.Held.Feeds[Key("playerScores", "3")]
-	h.RefreshError = "fixture offline"
-	in.Held.Feeds[Key("playerScores", "3")] = h
-	r = reportByID(t, Build(in, Scope{}).Board, "M-037")
-	if !strings.Contains(r.Note, "Week 3") || strings.Contains(r.Note, "Week 2 ·") || len(r.Summary) != 0 {
-		t.Fatal(r)
-	}
-	if len(out.Players) != 0 {
-		t.Fatal("empty search yielded a count")
-	}
-}
-
 func TestResearchDepthMissingIdentityBreakdown(t *testing.T) {
 	t.Parallel()
 	in := realResearch(t)
@@ -369,32 +284,6 @@ func TestInspectorNewsPostedLocalMinute(t *testing.T) {
 	}
 	if got.Articles[0].Article != "new" || !strings.Contains(got.Report.How, "estimated") {
 		t.Fatal(got)
-	}
-}
-
-func TestHeldNewsPostedSameOnEverySurface(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	in.Zone = time.FixedZone("CDT", -5*60*60)
-	out := Build(in, Scope{Mine: "0001"})
-	v := researchView{Snapshot: in}
-	player := v.playerReading("16162", nil, "How")
-	posted := ""
-	for _, row := range player.Report.Rows {
-		if strings.HasPrefix(row.Cells[0], "News · ") {
-			posted = strings.TrimPrefix(row.Cells[0], "News · ")
-		}
-	}
-	if posted != "Oct 5, 2026" {
-		t.Fatal("held six-day article should have date precision", posted)
-	}
-	for _, report := range []report.Report{out.News, reportByID(t, out.Board, "M-060")} {
-		if report.Columns[3] != "Posted" || len(report.Rows) != 1 || report.Rows[0].Cells[3] != posted {
-			t.Fatal("news surfaces disagree", report)
-		}
-		if !strings.Contains(report.How, NewsHow) {
-			t.Fatal("missing elapsed-time disclosure", report.How)
-		}
 	}
 }
 

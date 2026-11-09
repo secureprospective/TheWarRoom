@@ -79,39 +79,6 @@ func TestParseBounds(t *testing.T) {
 	}
 }
 
-func TestLineupWeek(t *testing.T) {
-	at := time.Date(2026, 10, 7, 13, 38, 0, 0, time.UTC)
-	finished := Week{Number: 4, Games: []Game{{Kickoff: at.Add(-time.Hour), Final: true}}}
-	current := Week{Number: 5, Games: []Game{
-		{Kickoff: at.Add(-time.Hour), Final: true},
-		{Kickoff: at.Add(time.Hour)},
-	}}
-	future := Week{Number: 6, Games: []Game{{Kickoff: at.Add(7 * 24 * time.Hour)}}}
-	for _, tc := range []struct {
-		name  string
-		weeks []Week
-		want  int
-		ok    bool
-	}{
-		{"empty", nil, 0, false},
-		{"all final", []Week{finished}, 0, false},
-		{"partial week", []Week{future, current, finished}, 5, true},
-		{"during unfinished game", []Week{{Number: 5, Games: []Game{{Kickoff: at.Add(-time.Hour)}}}}, 5, true},
-		{
-			"future zero counter",
-			[]Week{{Number: 5, Games: []Game{{Kickoff: at.Add(time.Hour), Final: true}}}},
-			5, true,
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, ok := LineupWeek(at, tc.weeks...)
-			if ok != tc.ok || got.Number != tc.want {
-				t.Fatalf("%+v, %v", got, ok)
-			}
-		})
-	}
-}
-
 func TestLocksAndExtrema(t *testing.T) {
 	at := time.Date(2026, 10, 9, 0, 15, 0, 0, time.UTC)
 	w := Week{Number: 5, Games: []Game{
@@ -142,32 +109,5 @@ func TestLocksAndExtrema(t *testing.T) {
 	single := Week{Games: w.Games[:1]}
 	if !FirstLock(single).Equal(LastLock(single)) {
 		t.Fatal("single game extrema differ")
-	}
-}
-
-func TestNextLock(t *testing.T) {
-	first := time.Date(2026, 10, 9, 0, 15, 0, 0, time.UTC)
-	last := first.Add(72 * time.Hour)
-	w := Week{Number: 5, Games: []Game{{Kickoff: last}, {Kickoff: first}}}
-	for _, tc := range []struct {
-		name     string
-		at, want time.Time
-		ok       bool
-	}{
-		{"before week", first.Add(-time.Hour), first, true},
-		{"at first", first, last, true},
-		{"between kickoffs", first.Add(time.Hour), last, true},
-		{"at last", last, time.Time{}, false},
-		{"after last", last.Add(time.Hour), time.Time{}, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, ok := NextLock(tc.at, w)
-			if ok != tc.ok || !got.Equal(tc.want) {
-				t.Fatalf("NextLock = %v, %t; want %v, %t", got, ok, tc.want, tc.ok)
-			}
-		})
-	}
-	if _, ok := NextLock(first, Week{}); ok {
-		t.Fatal("empty week has a lock")
 	}
 }

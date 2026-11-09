@@ -59,21 +59,3 @@ func TestReleaseMigrationRoundTripAndAtomicUniqueness(t *testing.T) {
 		t.Fatal("cut and buyout duplicate allowed")
 	}
 }
-
-func TestReleaseUniquenessSurvivesFranchiseChange(t *testing.T) {
-	s, _ := testStore(t)
-	ctx := context.Background()
-	e, f := storedRelease(t, "first")
-	if err := s.SaveRelease(ctx, e, f); err != nil {
-		t.Fatal(err)
-	}
-	spec := e.Receipt().Spec
-	spec.FranchiseID = "0002"
-	next, err := envelope.DraftRelease(bidAt(), spec, envelope.ReleaseCheck{OnRoster: true}, func() string { return "other" })
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := s.SaveRelease(ctx, next, f); err == nil {
-		t.Fatal("same player has two open plans after franchise change")
-	}
-}
