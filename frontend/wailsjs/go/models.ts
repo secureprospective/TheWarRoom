@@ -1086,6 +1086,58 @@ export namespace commissioner {
 	        this.status = source["status"];
 	    }
 	}
+	export class StatMove {
+	    stat: string;
+	    label: string;
+	    was: number;
+	    now: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new StatMove(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.stat = source["stat"];
+	        this.label = source["label"];
+	        this.was = source["was"];
+	        this.now = source["now"];
+	    }
+	}
+	export class StatRevision {
+	    stats: StatMove[];
+	    was: number;
+	    now: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new StatRevision(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.stats = this.convertValues(source["stats"], StatMove);
+	        this.was = source["was"];
+	        this.now = source["now"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class StarterScore {
 	    source?: string;
 	    fieldSources?: Record<string, string>;
@@ -1095,6 +1147,7 @@ export namespace commissioner {
 	    words: string;
 	    line?: Record<string, number>;
 	    points?: number;
+	    revision?: StatRevision;
 	    provisional?: number;
 	
 	    static createFrom(source: any = {}) {
@@ -1111,8 +1164,27 @@ export namespace commissioner {
 	        this.words = source["words"];
 	        this.line = source["line"];
 	        this.points = source["points"];
+	        this.revision = this.convertValues(source["revision"], StatRevision);
 	        this.provisional = source["provisional"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class FranchiseWeekScore {
 	    recordedResult?: string;
@@ -2686,6 +2758,7 @@ export namespace commissioner {
 	    missing: string[];
 	    items: NativeScoreItem[];
 	    line?: Record<string, number>;
+	    revision?: StatRevision;
 	    changes: ScoreChange[];
 	    sha256?: string;
 	    fetchedAt?: time.Time;
@@ -2711,6 +2784,7 @@ export namespace commissioner {
 	        this.missing = source["missing"];
 	        this.items = this.convertValues(source["items"], NativeScoreItem);
 	        this.line = source["line"];
+	        this.revision = this.convertValues(source["revision"], StatRevision);
 	        this.changes = this.convertValues(source["changes"], ScoreChange);
 	        this.sha256 = source["sha256"];
 	        this.fetchedAt = this.convertValues(source["fetchedAt"], time.Time);
@@ -5293,6 +5367,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	export class StatQueueItem {
 	    id: string;
 	    player: string;
@@ -5385,6 +5460,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	
