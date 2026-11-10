@@ -23,7 +23,8 @@ body{color:var(--ink);font:16px/1.4 var(--sans);overflow-x:hidden;-webkit-font-s
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 a{color:inherit}
 #track{width:1px}
-#field{position:fixed;inset:0;width:100%;height:100%;display:block}
+#field,#fx{position:fixed;inset:0;width:100%;height:100%;display:block}
+#fx{z-index:4;pointer-events:none}
 
 /* ---------- the 3D stage: one camera flying down a field ---------- */
 .lens{position:fixed;left:50%;top:50%;width:0;height:0;perspective:1000px;pointer-events:none}
@@ -123,6 +124,19 @@ h1{font-size:86px} h2{font-size:58px}
 .chat q{display:block;quotes:none;background:hsl(220,6%,54%);padding:6px 9px;margin:6px 0;width:fit-content;max-width:86%;font-size:12px}
 .chat q.me{margin-left:auto;background:hsl(220,8%,30%);color:hsl(220,8%,86%)}
 
+/* the roast: the spreadsheet splits, the 1998 page drops apart */
+.half.b{position:absolute;left:0;top:0}
+.half{transition:transform 260ms cubic-bezier(.2,0,0,1) 700ms}
+.seen .half.a{transform:translate(-13px,7px) rotate(-3.5deg)}
+.seen .half.b{transform:translate(15px,-5px) rotate(4deg)}
+.old .links u,.old .body>u{display:inline-block}
+.old.fall tr,.old.fall .links u,.old.fall .h6,.old.fall .body>u{transform:translateY(520px) rotate(var(--r,9deg));opacity:0;
+  transition:transform 620ms cubic-bezier(.5,0,1,.6) var(--dl,0ms),opacity 200ms linear calc(var(--dl,0ms) + 420ms)}
+.old.fall tr:nth-child(odd),.old.fall .links u:nth-child(3n){--r:-14deg;--dl:70ms}
+.old.fall tr:nth-child(3n),.old.fall .links u:nth-child(4n+1){--r:22deg;--dl:150ms}
+.old.fall .body>u:nth-of-type(even){--r:-18deg;--dl:110ms}
+.old.fall .links u:nth-child(5n){--dl:240ms}
+
 /* ---------- game day ---------- */
 .fieldp{width:780px}
 .fieldp .grass{position:relative;height:150px;margin:12px;border:1px solid var(--edge);
@@ -139,6 +153,12 @@ h1{font-size:86px} h2{font-size:58px}
 .match .t.them{color:var(--ink2);border-top:1px solid var(--rule)}
 .match .bar{height:8px;margin:0 14px 14px;background:var(--sunken);border:1px solid var(--edge)}
 .match .bar i{display:block;height:100%;width:53%;background:var(--edge-hi);transition:width 400ms cubic-bezier(.2,0,0,1)}
+.match .wp{display:flex;align-items:baseline;gap:10px;padding:0 14px 12px;font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3)}
+.match .wp b{font-size:17px;color:var(--green);letter-spacing:0}
+.around{display:grid;grid-template-columns:1fr 1fr;border-top:2px solid var(--black)}
+.around span{display:flex;justify-content:space-between;padding:7px 14px;font-size:12.5px;color:var(--ink2);border-bottom:1px solid var(--rule)}
+.around span:nth-child(odd){border-right:1px solid var(--rule)}
+.around b{color:var(--ink)}
 .pbp{width:400px;height:330px;overflow:hidden}
 .pbp ol{list-style:none;padding:0}
 .pbp li{display:grid;grid-template-columns:62px 1fr auto;gap:8px;padding:9px 14px;border-bottom:1px solid var(--rule);font-size:13.5px}
@@ -161,6 +181,11 @@ h1{font-size:86px} h2{font-size:58px}
 .after .k{font:700 10px var(--mono);letter-spacing:.16em;color:var(--ink3)}
 .after .v{font:700 24px var(--mono);margin-top:2px}
 .after small{font:11px var(--mono);color:var(--ink3)}
+.value{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:0 14px 12px;font:700 11px var(--mono);letter-spacing:.14em;color:var(--ink3)}
+.value .vb{height:8px;background:var(--sunken);border:1px solid var(--edge);position:relative}
+.value .vb::after{content:"";position:absolute;left:50%;top:-4px;bottom:-4px;width:2px;background:var(--edge)}
+.value .vb i{position:absolute;left:50%;top:0;bottom:0;width:9%;background:var(--green)}
+.value b{color:var(--green)}
 .shelf{width:300px}
 .shelf .blk{margin:8px 10px}
 
@@ -205,10 +230,13 @@ h1{font-size:86px} h2{font-size:58px}
 .hud .score span{color:var(--ink3);margin-right:8px}
 .hud .score b{font-size:15px;margin-right:14px;color:var(--ink3)}
 .hud .score b.us{color:var(--ink);margin-right:0}
+.hud .snd{color:var(--ink3);gap:8px;letter-spacing:.14em;font:inherit}
+.hud .snd b{color:var(--ink);min-width:3ch}
+.hud .snd[aria-pressed=true] b{color:var(--green)}
 .hud .go{border-right:0;background:var(--edge-hi);color:var(--black);text-decoration:none;transition:transform 70ms linear}
 .hud .go:hover{transform:translateY(1px)}
-@media (max-width:900px){.hud .ch,.hud .score,.hud .mini span{display:none}.hud .on-yd{min-width:0}.hud>*{padding:0 10px}}
-@media (max-width:520px){.hud .mini{display:none}.hud .on-yd{flex:1}}
+@media (max-width:900px){.hud .snd{font-size:0}.hud .snd b{font-size:11px}.hud .snd b::before{content:"♪ "}.hud .ch,.hud .score,.hud .mini span{display:none}.hud .on-yd{min-width:0}.hud>*{padding:0 10px}}
+@media (max-width:520px){.hud .mini,.hud .on-yd{display:none}.hud .logo{flex:1}}
 
 /* phones: one column, sized for a 580-unit-wide stage */
 @media (orientation:portrait){
@@ -221,6 +249,14 @@ h1{font-size:86px} h2{font-size:58px}
   .dial{grid-template-columns:110px 1fr}
   .old{width:520px;height:360px} .wordmark{font-size:78px}
   .btn.big{padding:18px 22px;font-size:15px}
+  /* phone reading sizes: the stage is drawn at about two thirds, so type and targets are set larger here */
+  .lead,.lead[style]{font-size:24px!important}
+  .pbp{width:540px;height:auto} .pbp li{font-size:19px;grid-template-columns:74px 1fr auto} .pbp li .n,.pbp li em{font-size:14px}
+  .match{width:540px} .match .t{font-size:22px} .around span{font-size:17px} .match .wp{font-size:13px}
+  .blk{font-size:19px} .blk small{font-size:14px} .after .k,.after small,.ph,.tray .th,.value{font-size:13px}
+  .mbtn,.picks .mbtn{font-size:17px;padding:13px 8px} .pbp li:nth-child(n+5){display:none} .dial .k{font-size:14px}
+  .fr{grid-template-columns:repeat(3,1fr)} .fr span{font-size:13.5px;padding:6px}
+  .card ul{font-size:18px} .fine{font-size:15px}
 }
 .nojs{position:relative;z-index:9;max-width:640px;margin:90px auto;padding:24px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
