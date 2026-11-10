@@ -44,8 +44,8 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
     <div className="pcol">
       <div className="ch">
         <div className="seg">
-          <PulseAct selected={side === 'mu'} onAction={() => setSide('mu')}>MATCHUPS</PulseAct>
-          <PulseAct selected={side === 'nfl'} onAction={() => setSide('nfl')}>NFL GAMES</PulseAct>
+          <PulseAct active={side === 'mu'} onAction={() => setSide('mu')}>MATCHUPS</PulseAct>
+          <PulseAct active={side === 'nfl'} onAction={() => setSide('nfl')}>NFL GAMES</PulseAct>
         </div>
         <span>{week ? `week ${week}` : 'no week'}</span>
       </div>
@@ -285,7 +285,7 @@ function MatchupList({ rows, filter, onFilter, results, selected, onPick, odds }
   const shown = applyFilter(rows, filter);
   return <>
     <div className="fbar">
-      {PULSE_FILTERS.map(f => <PulseAct key={f.key} className="mbtn" selected={filter === f.key}
+      {PULSE_FILTERS.map(f => <PulseAct key={f.key} className="mbtn" active={filter === f.key}
         onAction={() => onFilter(f.key)}>{f.label}<small>{counts[f.key]}</small></PulseAct>)}
     </div>
     <div className="scroll">

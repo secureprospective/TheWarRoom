@@ -1,9 +1,9 @@
 import type { PulseGame, PulseResults, PulseScore, PulseSeat, PulseStandings, PulseStarter,
   PulseLineupPlayer, PulseBracket, PulseRevision } from '../data/nativePulse';
 
-export type PulseFilter = 'all' | 'mine' | 'live' | 'close';
+export type PulseFilter = 'all' | 'live' | 'close';
 export const PULSE_FILTERS: readonly { key: PulseFilter; label: string }[] = [
-  { key: 'all', label: 'ALL' }, { key: 'mine', label: 'MINE' }, { key: 'live', label: 'LIVE' },
+  { key: 'all', label: 'ALL' }, { key: 'live', label: 'LIVE' },
   { key: 'close', label: 'CLOSE' },
 ];
 /** A game is close when fewer than ten points separate two complete-enough scores. */
@@ -18,12 +18,14 @@ export type PulseRow = {
 export function gameKey(game: PulseGame): string { return `${game.away}-${game.home}`; }
 
 /** statusLabel says where a game stands in the league's own words: a result, or still to come.
- *  Only the week the league is playing now can be live; an earlier week is simply waiting. */
+ *  Only the week the league is playing now can be live; an earlier week is simply waiting, and a
+ *  game neither side has scored in has yet to be played. */
 export function statusLabel(game: PulseGame, current: boolean, playing = true): string {
   if (game.status === 'Tie') return 'TIED';
   if (game.status !== 'No result yet') return 'FINAL';
   if (!current) return 'WAITING';
-  return playing ? 'LIVE' : 'IN PLAY';
+  if (playing) return 'LIVE';
+  return game.homeProvisional === undefined && game.awayProvisional === undefined ? 'TO PLAY' : 'IN PLAY';
 }
 
 export function pulseRows(results: PulseResults, mine: string, seats: PulseSeat[],
@@ -41,13 +43,12 @@ export function pulseRows(results: PulseResults, mine: string, seats: PulseSeat[
 }
 
 export function filterCounts(rows: PulseRow[]): Record<PulseFilter, number> {
-  return { all: rows.length, mine: rows.filter(r => r.mine).length,
+  return { all: rows.length,
     live: rows.filter(r => r.status === 'LIVE').length,
     close: rows.filter(r => r.margin !== undefined && r.margin < CLOSE).length };
 }
 
 export function applyFilter(rows: PulseRow[], filter: PulseFilter): PulseRow[] {
-  if (filter === 'mine') return rows.filter(r => r.mine);
   if (filter === 'live') return rows.filter(r => r.status === 'LIVE');
   if (filter === 'close') return rows.filter(r => r.margin !== undefined && r.margin < CLOSE);
   return rows;

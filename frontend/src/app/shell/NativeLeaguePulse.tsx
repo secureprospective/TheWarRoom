@@ -25,9 +25,13 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
   useEffect(() => setDrawer(undefined), [tab]);
   useEffect(() => {
     if (!drawer) return;
-    const close = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrawer(undefined); };
-    window.addEventListener('keydown', close);
-    return () => window.removeEventListener('keydown', close);
+    // Escape closes only the drawer: capture it before the shell's Escape closes the inspector too.
+    const close = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault(); e.stopPropagation(); setDrawer(undefined);
+    };
+    document.addEventListener('keydown', close, { capture: true });
+    return () => document.removeEventListener('keydown', close, { capture: true });
   }, [drawer]);
   const league = usePulseRead<NativePulse>(JSON.stringify(['pulse', scope.league, scope.mine]),
     publish => readNativePulse(scope.league, scope.mine, port, publish));

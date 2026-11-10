@@ -23,11 +23,11 @@ export function PulseRace({ reading, mine, drawer, onClose }: { reading: NativeP
         <b>STANDINGS</b>
         <div style={{ display: 'flex', gap: '8px' }}>
           <div className="seg">
-            <PulseAct selected={view === 'seed'} onAction={() => setView('seed')}>SEEDS</PulseAct>
-            <PulseAct selected={view === 'div'} onAction={() => setView('div')}>DIVISIONS</PulseAct>
+            <PulseAct active={view === 'seed'} onAction={() => setView('seed')}>SEEDS</PulseAct>
+            <PulseAct active={view === 'div'} onAction={() => setView('div')}>DIVISIONS</PulseAct>
           </div>
           {conferences.length > 1 && <div className="seg">
-            {conferences.map(name => <PulseAct key={name} selected={side === name}
+            {conferences.map(name => <PulseAct key={name} active={side === name}
               onAction={() => setConference(name)}>{name.toUpperCase()}</PulseAct>)}
           </div>}
         </div>
@@ -49,9 +49,9 @@ export function PulseRace({ reading, mine, drawer, onClose }: { reading: NativeP
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
           <b>{mode === 'path' ? 'PLAYOFF PATH' : 'POWER'}</b>
           <div className="seg">
-            <PulseAct selected={mode === 'path'} onAction={() => setMode('path')}>
+            <PulseAct active={mode === 'path'} onAction={() => setMode('path')}>
               PLAYOFF PATH</PulseAct>
-            <PulseAct selected={mode === 'power'} onAction={() => setMode('power')}>POWER</PulseAct>
+            <PulseAct active={mode === 'power'} onAction={() => setMode('power')}>POWER</PulseAct>
           </div>
         </div>
         <span className="mode">{reading.bracket?.words || ''}</span>
