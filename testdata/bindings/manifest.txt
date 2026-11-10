@@ -47,6 +47,7 @@ commissioner.API.TargetNativeScorePreview
 commissioner.API.TargetNativeSeed
 commissioner.API.TargetNativeStandings
 commissioner.API.TargetNativeTradeAction
+commissioner.API.TargetNativeTradeLens
 commissioner.API.TargetNativeTrades
 commissioner.API.TargetNativeValues
 commissioner.API.TargetNativeWaiverAction

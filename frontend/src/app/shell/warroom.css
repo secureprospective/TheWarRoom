@@ -986,3 +986,9 @@
 .wr-v6.embedded .mk3{grid-template-columns:220px minmax(0,1fr) 300px}
 .wr-v6.embedded .mk3>div{min-height:0}
 }
+.wr-v6 .tray2 .tot b{display:grid;grid-template-columns:44px 44px;gap:8px;text-align:right;margin-right:-4px}
+.wr-v6 .tray2 .tot .y{color:var(--mine)} .wr-v6 .tray2 .tot .t{color:var(--theirs);font-weight:400}
+.wr-v6 .mini .h small{font-weight:400;letter-spacing:.02em;color:var(--amber)}
+.wr-v6 .effect .blocked{box-shadow:inset 3px 0 0 var(--red)} .wr-v6 .effect .blocked .h{color:var(--red);margin-right:10px}
+.wr-v6 .sg .quiet{color:var(--ink3)}
+.wr-v6 .blk .v2:empty::after,.wr-v6 .blk .vl:empty::after{content:"—";color:var(--ink3)}

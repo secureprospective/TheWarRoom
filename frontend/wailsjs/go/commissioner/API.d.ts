@@ -5,6 +5,7 @@ import {market} from '../models';
 import {accounts} from '../models';
 import {leagueservice} from '../models';
 import {history} from '../models';
+import {tradelens} from '../models';
 import {appvalue} from '../models';
 import {time} from '../models';
 
@@ -105,6 +106,8 @@ export function TargetNativeSeed(arg1:commissioner.RawNativeSeedRequest):Promise
 export function TargetNativeStandings(arg1:string,arg2:number):Promise<commissioner.NativeStandings>;
 
 export function TargetNativeTradeAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
+
+export function TargetNativeTradeLens(arg1:leagueservice.RawTradeLensScope):Promise<tradelens.Reading>;
 
 export function TargetNativeTrades(arg1:string,arg2:string):Promise<market.NativeTrades>;
 

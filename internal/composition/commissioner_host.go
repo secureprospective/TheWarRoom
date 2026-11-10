@@ -17,6 +17,7 @@ import (
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -24,6 +25,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/tradelens"
 )
 
 func (a *App) commissionerPrincipal() (string, error) {
@@ -175,6 +177,19 @@ func (a *App) nativeWaiverClock(ctx context.Context) {
 
 func (h commissionerHost) NativeValues(ctx context.Context, league, franchise string, season int) (appvalue.Reading, error) {
 	return h.app.valuePreparation.Read(ctx, h.app.valueSource(), league, franchise, season) //nolint:wrapcheck // The adapter names its failures.
+}
+
+// NativeTradeLens reads a proposed trade through both sides' directions from held values and the ledger.
+func (h commissionerHost) NativeTradeLens(ctx context.Context, scope tradelens.Scope) (tradelens.Reading, error) {
+	a := h.app
+	//nolint:wrapcheck // The adapter names its failures.
+	return marketapp.TradeLens(ctx, marketapp.TradeLensSource{
+		Values: func(ctx context.Context, league string, season int) (appvalue.Reading, error) {
+			return a.valuePreparation.Read(ctx, a.valueSource(), league, "", season) //nolint:wrapcheck // As NativeValues.
+		},
+		Records: a.sharedLeagueRecords, Standings: h.NativeStandings, Drafts: a.core.History.PickValueDrafts,
+		Players: a.recordStore().Records, Params: a.core.Params.Snapshot, Now: a.timeNow,
+	}, scope)
 }
 
 func (h commissionerHost) MirrorLineupDelta(ctx context.Context, season, week int, trade history.TradeSides) (history.NativeLineupDelta, error) {

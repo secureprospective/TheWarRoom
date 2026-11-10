@@ -31,6 +31,8 @@ const runLocalWorkflow: HostedPort = async (request: NativeRequest, football = '
     direct = () => api.TargetNativeWeek(commissioner.RawNativeWeekScope.createFrom(request.arguments));
   else if (request.command === 'lineupdelta.read')
     direct = () => api.TargetNativeLineupDelta(request.arguments);
+  else if (request.command === 'tradelens.read')
+    direct = () => api.TargetNativeTradeLens(request.arguments);
   else if (request.command === 'native.directory.read')
     direct = () => api.TargetNativeDirectory(request.arguments.league);
   // The bounded workflow envelope (internal/commandcatalog/workflow_commands.go) does not carry the

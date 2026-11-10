@@ -16,8 +16,9 @@ func heldRead(c Command) Command {
 	return c
 }
 
-func commissionerDesktop(related []Command) []Command {
-	methods := []struct{ method, role, gravity string }{
+// officeMethods is the commissioner office bindings: who may call each and how heavy it is.
+func officeMethods() []struct{ method, role, gravity string } {
+	return []struct{ method, role, gravity string }{
 		{"TargetBackupNow", "gm,commish,admin", "G1"},
 		{"TargetCancelRead", "gm,commish,admin", "G0"},
 		{"TargetCommissionerActor", "gm,commish", "G0"},
@@ -43,6 +44,13 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetCorrections", "gm,commish", "G0"},
 		{"TargetLeagueCalendar", "gm,commish", "G0"},
 		{"TargetLeagueSchedule", "gm,commish", "G0"},
+		{"TargetStatQueue", "commish", "G0"},
+	}
+}
+
+// nativeMethods is the native league bindings, in the same form.
+func nativeMethods() []struct{ method, role, gravity string } {
+	return []struct{ method, role, gravity string }{
 		{"TargetNativeAssets", "gm,commish", "G0"},
 		{"TargetNativeBidAction", "gm,commish", "G3"},
 		{"TargetNativeBids", "gm,commish", "G0"},
@@ -59,6 +67,7 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetNativeLineupSet", "gm,commish", "G2"},
 		{"TargetNativePlayerScore", "gm,commish,admin", "G0"},
 		{"TargetNativeValues", "gm,commish,admin", "G0"},
+		{"TargetNativeTradeLens", "gm,commish,admin", "G0"},
 		{"TargetNativeProjections", "gm,commish,admin", "G0"},
 		{"TargetNativeLineupDelta", "gm,commish,admin", "G0"},
 		{"TargetNativeReserveCheck", "gm,commish,admin", "G0"},
@@ -74,10 +83,13 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetNativeWaiverAction", "gm,commish", "G3"},
 		{"TargetNativeWaivers", "gm,commish", "G0"},
 		{"TargetNativeWeek", "gm,commish,admin", "G0"},
-		{"TargetStatQueue", "commish", "G0"},
 	}
-	return desktopCommands(methods, related)
 }
+
+func commissionerDesktop(related []Command) []Command {
+	return desktopCommands(append(officeMethods(), nativeMethods()...), related)
+}
+
 func desktopCommands(methods []struct{ method, role, gravity string }, related []Command) []Command {
 	reads := map[string]Command{}
 	for _, read := range related {

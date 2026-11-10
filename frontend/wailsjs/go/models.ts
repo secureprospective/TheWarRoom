@@ -3968,6 +3968,7 @@ export namespace commissioner {
 	    successor?: string;
 	    commissioner?: string;
 	    choice?: string;
+	    direction?: string;
 	    inSeasonDays?: number;
 	    offseasonDays?: number;
 	    electionDays?: number;
@@ -3994,6 +3995,7 @@ export namespace commissioner {
 	        this.successor = source["successor"];
 	        this.commissioner = source["commissioner"];
 	        this.choice = source["choice"];
+	        this.direction = source["direction"];
 	        this.inSeasonDays = source["inSeasonDays"];
 	        this.offseasonDays = source["offseasonDays"];
 	        this.electionDays = source["electionDays"];
@@ -11670,6 +11672,28 @@ export namespace leagueservice {
 	        this.week = source["week"];
 	    }
 	}
+	export class RawTradeLensScope {
+	    league: string;
+	    franchise: string;
+	    partner: string;
+	    give: string[];
+	    get: string[];
+	    season: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawTradeLensScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.partner = source["partner"];
+	        this.give = source["give"];
+	        this.get = source["get"];
+	        this.season = source["season"];
+	    }
+	}
 	export class RawValueScope {
 	    league: string;
 	    franchise: string;
@@ -15299,6 +15323,174 @@ export namespace time {
 	
 	    }
 	}
+
+}
+
+export namespace tradelens {
+	
+	export class AssetValue {
+	    token: string;
+	    now: number;
+	    dynasty: number;
+	    you: number;
+	    them: number;
+	    valued: boolean;
+	    words: string;
+	    age: number;
+	    ageKnown: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new AssetValue(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.token = source["token"];
+	        this.now = source["now"];
+	        this.dynasty = source["dynasty"];
+	        this.you = source["you"];
+	        this.them = source["them"];
+	        this.valued = source["valued"];
+	        this.words = source["words"];
+	        this.age = source["age"];
+	        this.ageKnown = source["ageKnown"];
+	    }
+	}
+	export class Need {
+	    position: string;
+	    state: string;
+	    have: number;
+	    starts: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Need(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.position = source["position"];
+	        this.state = source["state"];
+	        this.have = source["have"];
+	        this.starts = source["starts"];
+	    }
+	}
+	export class Suggestion {
+	    kind: string;
+	    token: string;
+	    you: number;
+	    them: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Suggestion(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.token = source["token"];
+	        this.you = source["you"];
+	        this.them = source["them"];
+	    }
+	}
+	export class SideReading {
+	    franchise: string;
+	    direction: string;
+	    set: boolean;
+	    nowWeight: number;
+	    before: number;
+	    after: number;
+	    net: number;
+	    out: number;
+	    in: number;
+	    needs: Need[];
+	    spare: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new SideReading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.direction = source["direction"];
+	        this.set = source["set"];
+	        this.nowWeight = source["nowWeight"];
+	        this.before = source["before"];
+	        this.after = source["after"];
+	        this.net = source["net"];
+	        this.out = source["out"];
+	        this.in = source["in"];
+	        this.needs = this.convertValues(source["needs"], Need);
+	        this.spare = source["spare"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Reading {
+	    preparing?: boolean;
+	    league: string;
+	    season: number;
+	    starterN: number;
+	    you: SideReading;
+	    them: SideReading;
+	    assets: AssetValue[];
+	    verdict: string;
+	    tune: Suggestion[];
+	    notes: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Reading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.preparing = source["preparing"];
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.starterN = source["starterN"];
+	        this.you = this.convertValues(source["you"], SideReading);
+	        this.them = this.convertValues(source["them"], SideReading);
+	        this.assets = this.convertValues(source["assets"], AssetValue);
+	        this.verdict = source["verdict"];
+	        this.tune = this.convertValues(source["tune"], Suggestion);
+	        this.notes = source["notes"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
 
 }
 

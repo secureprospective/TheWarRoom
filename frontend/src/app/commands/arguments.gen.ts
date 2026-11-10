@@ -264,6 +264,16 @@ string
 "season": number
 }
 ];
+"commissioner.TargetNativeTradeLens": [
+{
+"league": string;
+"franchise": string;
+"partner": string;
+"give": (string)[];
+"get": (string)[];
+"season": number
+}
+];
 "commissioner.TargetNativeProjections": [
 string,
 string,
@@ -703,6 +713,7 @@ string
 "successor"?: string;
 "commissioner"?: string;
 "choice"?: string;
+"direction"?: string;
 "inSeasonDays"?: number;
 "offseasonDays"?: number;
 "electionDays"?: number;
@@ -1245,6 +1256,7 @@ string
 "successor"?: string;
 "commissioner"?: string;
 "choice"?: string;
+"direction"?: string;
 "inSeasonDays"?: number;
 "offseasonDays"?: number;
 "electionDays"?: number;
@@ -1762,6 +1774,7 @@ string
 "successor"?: string;
 "commissioner"?: string;
 "choice"?: string;
+"direction"?: string;
 "inSeasonDays"?: number;
 "offseasonDays"?: number;
 "electionDays"?: number;
@@ -2397,6 +2410,7 @@ export type WorkflowArgumentMap = {
 "bids.process": NativeArguments<"bids.process">;
 "bids.award.override": NativeArguments<"bids.award.override">;
 "commish.franchise.edit": NativeArguments<"commish.franchise.edit">;
+"commish.franchise.direction.set": NativeArguments<"commish.franchise.direction.set">;
 };
 export type CommandArgumentMap = {
  native: { [K in NativeCommandId]: NativeArguments<K> };

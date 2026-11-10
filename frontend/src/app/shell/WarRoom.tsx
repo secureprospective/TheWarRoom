@@ -21,6 +21,7 @@ import { WarRoomMarket } from './WarRoomMarket';
 import { WarRoomDraft } from './WarRoomDraft';
 import { WarRoomTrade } from './WarRoomTrade';
 import { readWarRoomCatalog, type WarRoomDeal, type WarRoomAsset } from './warroomTradeReads';
+import { readWarRoomLens, setWarRoomDirection, type Direction, type WarRoomLens } from './warroomLens';
 import './warroom.css';
 export type WarRoomTab = 'desk' | 'market' | 'draft' | 'plans';
 export default function WarRoom({ snapshot, native }: { snapshot: Snapshot; native?: WarRoomNative }) {
@@ -57,7 +58,23 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   const [selected, select] = useState<WarRoomAsset>();
   const [prospect, setProspect] = useState<WarRoomProspect>();
   const context = { snapshot, mine, week, native };
-  const catalog = useWarRoomRead(JSON.stringify([native?.league, mine]), () => readWarRoomCatalog(context));
+  const [recorded, setRecorded] = useState(0);
+  const [directing, setDirecting] = useState<{ pending?: boolean; error?: string }>({});
+  const catalog = useWarRoomRead(JSON.stringify([native?.league, mine, recorded]), () =>
+    readWarRoomCatalog(context));
+  const lens = useWarRoomRead(JSON.stringify([native?.league, mine, deal, catalog.reading?.revision,
+    recorded]), () => readWarRoomLens(context, deal));
+  // A new deal re-reads the lens; the last answer stays on the desk until the next one lands.
+  const lastLens = useRef<WarRoomLens>();
+  if (lens.reading) lastLens.current = lens.reading;
+  const lensReading = lens.error ? undefined : lens.reading ?? lastLens.current;
+  const revision = catalog.reading?.revision;
+  const choose = native && mine && native.owner !== false && revision !== undefined ?
+    (direction: Direction) => {
+      setDirecting({ pending: true });
+      setWarRoomDirection(context, direction, revision).then(() => { setDirecting({});
+        setRecorded(n => n + 1); }, cause => setDirecting({ error: String(cause) }));
+    } : undefined;
   const header = useWarRoomRead(JSON.stringify([native?.league, mine, week]), () =>
     readWarRoomHeader(context));
   const headerReading = native?.reading ? nativeWarRoomHeader(native.reading) : header.reading;
@@ -104,19 +121,21 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       {native?.embedded && native.tabs ? createPortal(tabs, native.tabs) :
       <div className="ws-tabs" role="tablist">{tabs}</div>}
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
-        reading={headerReading} windowLabel={windowLabel} />
+        reading={headerReading} windowLabel={windowLabel} lens={lensReading} choose={choose}
+        pending={directing.pending} />
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
-        change={changeDeal} select={select} /> : tab === 'market' ? <WarRoomMarket context={context}
+        change={changeDeal} select={select} lens={lensReading} lensPending={lens.pending} /> : tab === 'market' ? <WarRoomMarket context={context}
           room={headerReading?.runway?.[0]?.room} select={p => select({ token: p.id, name: p.name })} /> :
           tab === 'draft' ? <WarRoomDraft context={context} select={(id, name, position) =>
             setProspect({ id, name, position })}
             /> : <WarRoomPlans context={context} openPocket={() => setDrawer('pocket')} />}
-      <WarRoomDates events={deadlines} failed={Boolean(calendar.error)} reason={calendar.error} />
+      <WarRoomDates events={deadlines.filter(d => d.live || !d.at || Date.parse(d.closes ?? d.at) >
+        Date.now()).slice(0, 8)} failed={Boolean(calendar.error)} reason={calendar.error} />
       <div className="tray"><div className="pulls">{(['pocket', 'offers'] as const).map(d => <WarRoomAct
         key={d} className="pull" expanded={drawer === d} onAction={() =>
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}
-      </div><WarRoomTrayMessage problems={[header.error ?? '', calendar.error ?? '',
-        ...headerReading?.errors ?? []]} />
+      </div><WarRoomTrayMessage problems={[header.error ?? '', calendar.error ?? '', lens.error ?? '',
+        directing.error ?? '', ...headerReading?.errors ?? []]} />
       <WarRoomAct className="btn sp" disabled>SAVE TO POCKET</WarRoomAct>
       <WarRoomAct className="btn" onAction={() =>
           changeDeal({ ...deal, give: [], get: [] })}>
@@ -126,7 +145,9 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     </main>{offer && !native ? <aside className="insp" aria-label="Inspector">
       <WarRoomAct onAction={() => setOffer(undefined)}>Close offer</WarRoomAct>
       <EntityInspector entity={{ kind: 'offer', id: offer, franchiseId: mine }} snapshot={snapshot} />
-    </aside> : <WarRoomInspector context={context} asset={selected} add={selected &&
+    </aside> : <WarRoomInspector context={context} asset={selected} lens={lensReading}
+      theirs={Boolean(selected && deal.partner && catalog.reading?.teams.find(t => t.id === deal.partner)
+        ?.assets.some(a => a.token === selected.token))} add={selected &&
       catalog.reading?.teams.some(t => (t.id === mine || t.id === deal.partner) && t.assets.some(a =>
         a.token === selected.token)) ? () => {
         const side = catalog.reading?.teams.find(t => t.assets.some(a => a.token === selected.token))?.id

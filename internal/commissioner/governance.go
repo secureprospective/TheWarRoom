@@ -153,6 +153,19 @@ func ledgerReader(state governance.State, principal string) string {
 	return "owner"
 }
 
+// authorizeOwnFranchise answers for the commands a seated owner runs on their own franchise.
+func authorizeOwnFranchise(auth GovernanceAuthorizer, raw RawCommand, principal string) (string, bool, error) {
+	switch raw.Command {
+	case LineupSet:
+		role, err := authorizeLineupSet(auth.State, raw, principal)
+		return role, true, err
+	case FranchiseDirection:
+		role, err := authorizeDirection(auth, raw, principal)
+		return role, true, err
+	}
+	return "", false, nil
+}
+
 func AuthorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {
 	raw = policyCommand(raw, records)
 	principal = PrincipalFor(records, principal)
@@ -185,8 +198,8 @@ func AuthorizeRecords(raw RawCommand, principal string, records []Record) (strin
 	if raw.Command == RulesSet {
 		return authorizeRule(auth, raw, principal)
 	}
-	if raw.Command == LineupSet {
-		return authorizeLineupSet(state, raw, principal)
+	if role, ok, err := authorizeOwnFranchise(auth, raw, principal); ok {
+		return role, err
 	}
 	role, err := auth.Allow(raw.League, principal, raw.Command)
 	if err != nil {
