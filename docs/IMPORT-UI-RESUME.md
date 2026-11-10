@@ -1,8 +1,9 @@
-# TheWarRoom — Import + UI-to-mocks RESUME (compact-safe #4, 2026-11-10 ~00:50 CT)
+# TheWarRoom — Import + UI-to-mocks RESUME (updated 2026-11-10 ~07:30 CT, after Stat Changes)
 
 ## 0. FIRST THING AFTER COMPACT
-Christopher's /compact-safe said "then go ahead with the Race drawers": they are ALREADY DONE (9.2). Tell him so in
-one line, then go on with 9.3 (STAT CHANGES drawer). Nothing is running.
+9.3 (STAT CHANGES) is DONE and reported to Christopher with two open points for him: (a) the live feed counts more
+tackles than the final feed (finding below), (b) my call that "was" = the last live line. He gates step by step:
+wait for his word, then 9.4. Nothing is running.
 
 ## IN-FLIGHT
 Nothing. The test app is stopped. Xvfb :5 (PID 1178155) is left up on Claude-OS for the next launch.
@@ -43,10 +44,10 @@ remove BY NAME afterwards (a wildcard rm in /tmp is refused).
 ## 3. Gates
 | Gate | State |
 |---|---|
-| vitest src/app/shell + src/app/data | 413/413 on f17b8d4f (86b1d7f3 after it is CSS only) |
-| tsc --noEmit | clean on f17b8d4f |
+| vitest src/app/shell + src/app/data | 416/416 on 9bc50015 |
+| tsc --noEmit | clean on 9bc50015 |
 | Targeted go tests (player score Line, recorded starters, open-season projected field + row conference) | pass |
-| pre-commit golangci-lint-full | passed on df01ea41 and f17b8d4f |
+| pre-commit golangci-lint-full | passed on df01ea41, f17b8d4f and 9bc50015 |
 | make build | pass |
 | make verify (full) | NOT run; once before the push |
 | native_forks ratchet (19) | not lowered |
@@ -56,10 +57,11 @@ remove BY NAME afterwards (a wildcard rm in /tmp is refused).
 - Commits on session/ui-to-mocks: db668c16 Pulse slice 1; a75661a5 one rail; a9e364dc unusable stats id + recorded
   weeks parse; 05110385 pre-cutover lineups + recorded starters + slate/back button/matchup box; a8b4ab8a schedule
   drawer; df01ea41 starter stat lines; f17b8d4f Race drawers + projected seeds + row conference; 86b1d7f3 Race
-  standings column; plus resume commits.
+  standings column; 9bc50015 Stat Changes drawer; ab414706 its regenerated bindings; plus resume commits.
 - Beelink ~/Downloads: twr-pulse-fresh-week{8,9}-1109.png, twr-pulse-fresh-week8-box-1109.png,
   twr-pulse-schedule-{league,myteam}-1109.png, twr-rail-{pulse,hq,control}-1109.png,
-  twr-pulse-statline-{week9,box}-1110.png, twr-pulse-race-{race,tb,bk}-1110.png.
+  twr-pulse-statline-{week9,box}-1110.png, twr-pulse-race-{race,tb,bk}-1110.png,
+  twr-pulse-statchanges-week{9,8}-1110.png.
 
 ## 5. Current bug
 None open.
@@ -109,7 +111,12 @@ Everything committed (+ this resume). Not pushed. Beelink repo untouched. Untrac
    twr-pulse-race-{race,tb,bk}-1110.png. PRODUCTION pull deferred (9.6). NEXT IS 9.3. Original note:
    Race drawers from reads already served: BRACKET (bracket.read is parsed already) and TIEBREAKERS (check what
    standings.read says about ties first). Pulls on the Race tab. Mock DRAWERS.race, lines 1345-1360.
-3. STAT CHANGES drawer: score changes are already in results.read (`changes`, currently dropped by the parser);
+3. DONE 11-10 (commit 9bc50015, not pushed): STAT CHANGES drawer. Backend: NativePlayerScore/StarterScore carry
+   `revision` {stats[{stat,label,was,now}], was, now} (commissioner/score_revision.go) when the counted line is the
+   final feed's and scores differently from the newest live (ESPN/Sleeper) line held; read only. Frontend:
+   pulseModel statChanges/changePoints/changeVerdict, StatChangesDrawer in PulseNow.tsx, pull STAT CHANGES n at
+   (545,1060) with the count; PulseScore.recorded. Results `changes` (commissioner adjustments) is still not shown:
+   it is a different thing from the mock's drawer. NEXT IS 9.4 on his word. Original note: score changes are already in results.read (`changes`, currently dropped by the parser);
    line revisions exist in fantasyscore/source. Show first held vs latest. Mock line 1340.
 4. One screenshot pass of Pulse (Live wk 9, wk 8, Race, each drawer) against the mock; fix what differs.
 5. Batch point: make verify; bundle to the Beelink; push; PR; launch on :0 for Christopher's real-screen look
@@ -120,6 +127,9 @@ Everything committed (+ this resume). Not pushed. Beelink repo untouched. Untrac
 Stop rule: if a step needs a new ledger event, a schema change or a permission change, stop and tell him first.
 
 ## 10. Findings log (evidence seen; report, do not hunt)
+- Week 9, my matchup: the last live line counts more tackles than the final feed for 9 of 13 changed starters
+  (Chinn 10 -> 6, 24.0 -> 16.0 pts): looks like live = solo + assists, final = solo only. Told Christopher 11-10.
+- Week 8 (recorded week) shows no stat changes: the live and final lines held at import score the same.
 - The league is in week 10 now; week 9 still reads "0 with a result, 16 still to come / WAITING" (final stats not in).
 - Pulse past-week view (week 9) drew without the right-hand inspector in one launch and with it in the next.
 - Tie reasons name teams from both conferences (the tie is league-wide); the drawer shows this side's teams only.
@@ -137,7 +147,7 @@ Stop rule: if a step needs a new ledger event, a schema change or a permission c
 - Claude-OS /tmp has fixwalk.py and mark.py of unknown origin: left alone.
 
 ## 11. Honest status
-Rail matches the mock. Pulse: Live works on real data with starter stat lines and two of five drawers (box,
-schedule); Race shows today's projected seeds with two of three drawers (tiebreakers, bracket); Archive is not
-started. Missing: STAT CHANGES, WEEK STORY, NFL BOX SCORE, PRODUCTION. Nothing is pushed, the full suite has not run
+Rail matches the mock. Pulse: Live works on real data with starter stat lines and three of five drawers (box,
+schedule, stat changes); Race shows today's projected seeds with two of three drawers (tiebreakers, bracket); Archive is not
+started. Missing: WEEK STORY, NFL BOX SCORE, PRODUCTION. Nothing is pushed, the full suite has not run
 on these commits, and Christopher has only seen screenshots.
