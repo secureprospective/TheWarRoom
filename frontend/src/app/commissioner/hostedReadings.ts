@@ -115,8 +115,10 @@ export function parseHostedRoster(v: unknown): HostedRoster {
     'franchises',
     'players',
     'picks',
+    'pickHistory',
     'adjustments',
     'pool',
+    'sides',
   ]);
   return {
     league: text(r.league, 'League'),
@@ -150,6 +152,8 @@ export function parseHostedRoster(v: unknown): HostedRoster {
     }),
     picks: array(s.picks, 'Picks', (v) => {
       const p = object(v, 'Pick', [
+        'compensatory',
+        'correction',
         'season',
         'round',
         'slot',
