@@ -1093,6 +1093,7 @@ export namespace commissioner {
 	    name: string;
 	    position?: string;
 	    words: string;
+	    line?: Record<string, number>;
 	    points?: number;
 	    provisional?: number;
 	
@@ -1108,6 +1109,7 @@ export namespace commissioner {
 	        this.name = source["name"];
 	        this.position = source["position"];
 	        this.words = source["words"];
+	        this.line = source["line"];
 	        this.points = source["points"];
 	        this.provisional = source["provisional"];
 	    }
@@ -2681,6 +2683,7 @@ export namespace commissioner {
 	    positionWhy?: string;
 	    missing: string[];
 	    items: NativeScoreItem[];
+	    line?: Record<string, number>;
 	    changes: ScoreChange[];
 	    sha256?: string;
 	    fetchedAt?: time.Time;
@@ -2705,6 +2708,7 @@ export namespace commissioner {
 	        this.positionWhy = source["positionWhy"];
 	        this.missing = source["missing"];
 	        this.items = this.convertValues(source["items"], NativeScoreItem);
+	        this.line = source["line"];
 	        this.changes = this.convertValues(source["changes"], ScoreChange);
 	        this.sha256 = source["sha256"];
 	        this.fetchedAt = this.convertValues(source["fetchedAt"], time.Time);

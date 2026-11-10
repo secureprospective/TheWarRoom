@@ -2,6 +2,7 @@ package commissioner
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -34,9 +35,11 @@ type NativePlayerScore struct {
 	PositionWhy   string                        `json:"positionWhy,omitempty"`
 	Missing       []string                      `json:"missing"`
 	Items         []NativeScoreItem             `json:"items"`
-	Changes       []ScoreChange                 `json:"changes"`
-	SHA256        string                        `json:"sha256,omitempty"`
-	FetchedAt     *time.Time                    `json:"fetchedAt,omitempty"`
+	// Line is every statistic recorded for the week, scored or not, so a screen can say what the player did.
+	Line      map[leaguerules.StatID]leaguerules.Decimal `json:"line,omitempty"`
+	Changes   []ScoreChange                              `json:"changes"`
+	SHA256    string                                     `json:"sha256,omitempty"`
+	FetchedAt *time.Time                                 `json:"fetchedAt,omitempty"`
 }
 
 func NativePlayerScoreReading(league string, scope source.RawNativeScope, records []Record,
@@ -189,6 +192,7 @@ func (out NativePlayerScore) count(rules leaguerules.ScoringRules, line fantasys
 	for _, item := range items {
 		out.Items = append(out.Items, nativeScoreItem(item))
 	}
+	out.Line = maps.Clone(line.Quantities)
 	if points.State != leaguerules.IsKnown {
 		out.Status, out.Words = "Needs a ruling", "Needs a ruling: "+points.Citation
 		return out, nil

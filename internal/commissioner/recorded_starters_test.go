@@ -19,9 +19,11 @@ func TestRecordedStartersExplainTheWeekWithoutChangingIt(t *testing.T) {
 	lineup := WeekLineup{Set: true, Starters: []Starter{{Player: "0001", Name: "Purdy, Brock"}}}
 	got := week()
 	RecordedStarters(t.Context(), nil, scoreSource{lineup: lineup,
-		score: NativePlayerScore{Status: "Complete", Points: &points}}, &got)
+		score: NativePlayerScore{Status: "Complete", Points: &points,
+			Line: map[leaguerules.StatID]leaguerules.Decimal{"passing_yards": 2850000}}}, &got)
 	recorded := got.Scores[0]
-	if len(recorded.Starters) != 1 || *recorded.Starters[0].Points != points || *recorded.Points != total {
+	if len(recorded.Starters) != 1 || *recorded.Starters[0].Points != points || *recorded.Points != total ||
+		recorded.Starters[0].Line["passing_yards"] != 2850000 {
 		t.Fatalf("recorded week: %+v", recorded)
 	}
 	if len(got.Scores[1].Starters) != 0 {

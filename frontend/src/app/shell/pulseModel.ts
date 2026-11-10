@@ -71,6 +71,7 @@ export function groupRows(rows: PulseRow[]): { heading: string; rows: PulseRow[]
 export type PulseStarterRow = {
   slot: string; player: string; name: string; team?: string; locked?: boolean;
   points: number | undefined; projection: number | undefined; words: string;
+  line?: Record<string, number>;
   /** The score is settled, not a running total. */
   final: boolean;
 };
@@ -118,6 +119,7 @@ export function starterRows(score: PulseScore | undefined, lineup: PulseLineupPl
     return { slot: s.position ?? '—', player: s.player, name: naturalName(s.name), team: held?.team,
       final: s.points !== undefined,
       locked: held?.locked, points: s.points ?? s.provisional, projection: projections[s.player],
+      line: s.line,
       words: [s.words, s.source, ...Object.entries(s.fieldSources ?? {}).map(([field, owner]) =>
         `${field}: ${owner}`)].filter(Boolean).join(" · ") };
   });

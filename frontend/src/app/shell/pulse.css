@@ -920,8 +920,7 @@
 /* LIVE v5: starters fit any lineup size — one side of the ball at a time, rows never collapse */
 .lp-v14 .mym .mh .a,.lp-v14 .mym .mh .b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lp-v14 .mym .mh .t{font:700 14px var(--mono)}
-.lp-v14 .mym.tight .mr .p{display:flex;align-items:baseline;gap:8px}
-.lp-v14 .mym.tight .mr .p.r{flex-direction:row-reverse}
+.lp-v14 .mym.tight .mr .p .nm{font-size:12px}
 .lp-v14 .mym.tight .mr .p .ln{margin-top:0}
 .lp-v14 .mym.tight .mr .ps{height:76%}
 /* rows are buttons: they fill their column so every game lines up */

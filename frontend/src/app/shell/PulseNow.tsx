@@ -6,6 +6,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
 import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveContract';
 import type { usePulseLive } from './hqLive';
+import { boxLine, compactLine } from './statLine';
 import { applyFilter, bySlot, filterCounts, groupRows, pairStarters, pulseRows, scoreOf, starterRows,
   PULSE_FILTERS, type PulseFilter, type PulseRow, type PulseStarterRow, type StarterPair }
   from './pulseModel';
@@ -116,12 +117,11 @@ function BoxDrawer({ open, onClose, sides, week }: { open: boolean; onClose: () 
     <div className="dbody">
       {!rows.length ? <PulseIdle words="No lineup is recorded for this side this week." />
         : <div className="scroll"><table className="ct"><thead><tr>
-          <th>SLOT</th><th>PLAYER</th><th>CLUB</th><th>STATE</th><th>PROJ</th><th>PTS</th>
+          <th>SLOT</th><th>PLAYER</th><th>LINE 1</th><th>LINE 2</th><th>TD / TO</th><th>STATE</th><th>PTS</th>
         </tr></thead><tbody>
           {rows.map(r => <tr key={r.player} title={r.words}>
-            <td>{r.slot}</td><td>{r.name}</td><td>{r.team ?? '–'}</td>
+            <td>{r.slot}</td><td>{r.name}</td>{boxLine(r.line, r.slot).map((words, i) => <td key={i}>{words}</td>)}
             <td>{r.final ? 'done' : r.points !== undefined ? 'playing' : 'to play'}</td>
-            <td>{r.projection === undefined ? '–' : r.projection.toFixed(1)}</td>
             <td>{pointsLabel(r.points)}</td>
           </tr>)}
         </tbody></table></div>}
@@ -366,6 +366,18 @@ function Starters({ results, row, sides, games }: { results?: PulseResults; row?
 }
 
 /** gameOf is the live NFL game a starter's club is in, when the scoreboard and the club are known. */
+/** Line is what a starter has done: the stat line once anything is recorded, the projection before. */
+function Line({ p }: { p: PulseStarterRow }) {
+  const parts = compactLine(p.line, p.slot);
+  if (!parts.length) return p.final || p.projection === undefined ? null
+    : <div className="ln wait">proj {p.projection.toFixed(1)}</div>;
+  return <div className="ln">{parts.map((part, i) => <span key={part}>
+    {i > 0 && <span className="sep">|</span>}
+    {part.endsWith(' TD') ? <span className="td">{part}</span>
+      : part.split(/(\d+(?:\.\d+)?)/).map((piece, j) => j % 2 ? <b key={j}>{piece}</b> : piece)}
+  </span>)}</div>;
+}
+
 function gameOf(p: PulseStarterRow | undefined, games: LiveNflGame[]) {
   const club = espnTeam(p?.team);
   return club ? games.find(g => g.away.abbreviation === club || g.home.abbreviation === club) : undefined;
@@ -391,8 +403,7 @@ function StarterRow({ pair, games, defense }: { pair: StarterPair; games: LiveNf
   const cell = (p?: PulseStarterRow, r = false) => <div className={r ? 'p r' : 'p'} title={p?.words}>
     <div className="nm">{r && p?.team && <small>{p.team}</small>}<span>{p?.name ?? ''}</span>
       {!r && p?.team && <small>{p.team}</small>}</div>
-    {p && !p.final && p.projection !== undefined
-      && <div className="ln wait">proj {p.projection.toFixed(1)}</div>}
+    {p && <Line p={p} />}
   </div>;
   const score = (p?: PulseStarterRow, other?: PulseStarterRow, r = false) => {
     const lead = p?.points !== undefined && (other?.points === undefined || p.points >= other.points);
