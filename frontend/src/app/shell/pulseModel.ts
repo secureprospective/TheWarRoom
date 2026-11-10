@@ -136,7 +136,8 @@ export function statChanges(left: PulseStarterRow[], right: PulseStarterRow[]): 
     player: r.player, name: r.name, left: isLeft, was: r.revision.was, now: r.revision.now,
     delta: r.revision.now - r.revision.was,
     // A scoring rule's label ends with the range it prices; the row already says the numbers.
-    stats: r.revision.stats.map(s => `${s.label.replace(/ \([^)]*\)$/, '').toLowerCase()} ${s.was} → ${s.now}`)
+    stats: r.revision.stats.map(s =>
+      `${s.label.replace(/ \([^)]*\)$/, '').toLowerCase()} ${s.was} → ${s.now}`)
       .join(' · '),
   }] : []);
   return [...side(left, true), ...side(right, false)]

@@ -230,7 +230,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             </p>
           )}
           {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
-            view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs} tree={controlTree} onRail={setRail}
+            view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs} tree={controlTree}
+              onRail={setRail}
             hqTab={s.node === 'hq' ? s.workspace.hq : undefined}
             pulseTab={s.node === 'pulse' ? s.workspace.pulse : undefined}
             leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :

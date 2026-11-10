@@ -123,7 +123,8 @@ function BoxDrawer({ open, onClose, sides, week }: { open: boolean; onClose: () 
           <th>SLOT</th><th>PLAYER</th><th>LINE 1</th><th>LINE 2</th><th>TD / TO</th><th>STATE</th><th>PTS</th>
         </tr></thead><tbody>
           {rows.map(r => <tr key={r.player} title={r.words}>
-            <td>{r.slot}</td><td>{r.name}</td>{boxLine(r.line, r.slot).map((words, i) => <td key={i}>{words}</td>)}
+            <td>{r.slot}</td><td>{r.name}</td>
+              {boxLine(r.line, r.slot).map((words, i) => <td key={i}>{words}</td>)}
             <td>{r.final ? 'done' : r.points !== undefined ? 'playing' : 'to play'}</td>
             <td>{pointsLabel(r.points)}</td>
           </tr>)}
@@ -143,7 +144,8 @@ function StatChangesDrawer({ open, onClose, sides, week, changes, left, right }:
   return <PulseDrawer open={open} onClose={onClose} title="Stat changes"
     sub={`last live line vs final stats · week ${week ?? '—'}`}>
     {!changes.length
-      ? <PulseIdle words="The final stats scored every starter in this matchup the same as the last live line." />
+      ? <PulseIdle
+        words="The final stats scored every starter in this matchup the same as the last live line." />
       : <div className="scroll"><table className="ct"><thead><tr>
         <th>WK</th><th>PLAYER</th><th>STAT</th><th>WAS</th><th>NOW</th><th>PTS Δ</th><th>RESULT</th>
       </tr></thead><tbody>
@@ -250,7 +252,8 @@ export function InThisGame({ followed, sides, row }: { followed?: LiveNflGame; s
   return <div className="scroll">{players.map(p =>
     <div key={p.player} className={`onf ${p.mine ? 'me' : 'th'}`} title={p.words}>
       <span className="rib" />
-      <span className="nm">{p.name}<small>{p.slot} · {p.team} · {p.mine ? sides.leftName : sides.rightName}</small></span>
+      <span className="nm">{p.name}
+        <small>{p.slot} · {p.team} · {p.mine ? sides.leftName : sides.rightName}</small></span>
       <b>{pointsLabel(p.points)}</b>
     </div>)}</div>;
 }

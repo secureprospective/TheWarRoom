@@ -53,7 +53,8 @@ export function PulseInspector({ reading, results, franchise, mine, week, leave 
           <div className="kv"><span>points for</span><span>{row.pointsFor.toFixed(1)}</span></div>
           <div className="kv"><span>standing</span><span>{row.rank} of {reading.standings?.rows.length}</span>
           </div>
-        </> : <div className="kv"><span>{reading.standings?.words ?? 'standings not read'}</span><span /></div>}
+        </> : <div className="kv"><span>{reading.standings?.words ?? 'standings not read'}</span>
+          <span /></div>}
       </div></div>
     </div>
     <div className="iact"><span className="h">GO TO · links, nothing executes here</span>

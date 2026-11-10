@@ -159,7 +159,8 @@ export type PulseBracket = { league: string; season: number; revision: number; s
 
 export function parsePulseBracket(value: unknown, league: string, season: number): PulseBracket {
   const r = object(value, 'Playoffs', ['league', 'name', 'season', 'revision', 'status', 'words',
-    'preset', 'presets', 'rules', 'started', 'startKnown', 'fields', 'projected', 'rounds', 'champion', 'title',
+    'preset', 'presets', 'rules', 'started', 'startKnown', 'fields', 'projected', 'rounds', 'champion',
+      'title',
     'history', 'changes']);
   if (r.league !== league || r.season !== season)
     throw new Error('Playoffs belong to another league or season');

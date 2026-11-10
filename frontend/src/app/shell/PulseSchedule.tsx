@@ -41,7 +41,8 @@ function cellOf(season: PulseSeason, franchise: string, week: number, nameOf: (i
 function Body({ reading, mine, port, team }: { reading: NativePulse; mine: string; port: HostedPort;
   team: boolean }) {
   const now = reading.week ?? 0;
-  const season = usePulseRead<PulseSeason>(JSON.stringify(['pulse-season', reading.league, reading.season, now]),
+  const season = usePulseRead<PulseSeason>(
+    JSON.stringify(['pulse-season', reading.league, reading.season, now]),
     () => readPulseSeason(reading.league, reading.season, now, port));
   if (!season.reading) return <PulseIdle words={season.error ? `The schedule is unavailable · ${season.error}`
     : 'Reading the schedule…'} />;

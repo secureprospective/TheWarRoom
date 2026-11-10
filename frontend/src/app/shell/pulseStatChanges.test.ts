@@ -4,7 +4,8 @@ import { changePoints, changeVerdict, statChanges, type PulseStarterRow } from '
 const starter = (player: string, was?: number, now?: number): PulseStarterRow => ({ slot: 'RB', player,
   name: `Player ${player}`, points: now, projection: undefined, words: '', final: true,
   revision: was === undefined || now === undefined ? undefined
-    : { was, now, stats: [{ stat: 'rushing_yards', label: 'Rushing yards (0 to 999)', was: 88, now: 94 }] } });
+    : { was, now, stats: [{ stat: 'rushing_yards', label: 'Rushing yards (0 to 999)',
+      was: 88, now: 94 }] } });
 
 it('lists only re-scored starters, biggest move first, and says what moved', () => {
   const rows = statChanges([starter('1', 18.8, 19.4), starter('2')], [starter('3', 10, 8.5)]);

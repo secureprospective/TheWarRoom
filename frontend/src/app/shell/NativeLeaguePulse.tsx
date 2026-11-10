@@ -52,7 +52,8 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
           <PulseIdle words={league.error ? `League Pulse is unavailable · ${league.error}`
             : `Reading ${scope.league}…`} /></section>
         : tab === 'race' ? <PulseRace reading={reading} mine={scope.mine}
-            drawer={drawer === 'tb' || drawer === 'bk' ? drawer : undefined} onClose={() => setDrawer(undefined)} />
+            drawer={drawer === 'tb' || drawer === 'bk' ? drawer : undefined}
+              onClose={() => setDrawer(undefined)} />
         : <PulseNow reading={reading} mine={scope.mine} week={week} results={results}
             league={scope.league} port={port} live={live} 
             drawer={drawer === 'box' || drawer === 'corr' ? drawer : undefined}
@@ -127,7 +128,8 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live }: {
       <span className="t me">YOU</span>
       <span className="s">{pointsLabel(mineScore?.points ?? mineScore?.provisional)}</span>
       <span className="wpm" title={win === undefined ? 'win probability shows while the game is open'
-        : `win probability ${percent(win)}`}>{win !== undefined && <i style={{ width: percent(win) }} />}</span>
+        : `win probability ${percent(win)}`}>
+          {win !== undefined && <i style={{ width: percent(win) }} />}</span>
       <span className="s">{pointsLabel(theirs?.points ?? theirs?.provisional)}</span>
       <span className="t th">{theirs ? theirs.name.slice(0, 3).toUpperCase() : '—'}</span>
     </div>

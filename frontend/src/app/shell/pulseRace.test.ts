@@ -4,11 +4,13 @@ import { bracketRounds, seedRows, tieGroups, type PulseSeedRow } from './pulseMo
 
 const seed = (n: number, name: string) => ({ seed: n, franchise: `f.${name}`, name, division: 'East',
   rank: n, kind: '', bye: n === 1, byHand: false });
-const bracket = { fields: [{ conference: 'NFC', seeds: [seed(1, 'Dallas'), seed(2, 'Chicago'), seed(3, 'Seattle')] },
+const bracket = { fields: [{ conference: 'NFC', seeds: [seed(1, 'Dallas'), seed(2, 'Chicago'),
+  seed(3, 'Seattle')] },
   { conference: 'AFC', seeds: [seed(1, 'Denver')] }],
 shape: [{ id: 'wildcard_2', week: 14, homeSeed: 2, awaySeed: 3 },
   { id: 'division_1', week: 15, homeSeed: 1, awayFrom: 'lowest remaining seed' },
-  { id: 'championship', week: 17, homeFrom: 'conference winner', awayFrom: 'conference winner' }] } as PulseBracket;
+  { id: 'championship', week: 17, homeFrom: 'conference winner',
+    awayFrom: 'conference winner' }] } as PulseBracket;
 
 it('lays the bracket out in the league\'s own shape, the final shared between sides', () => {
   const read = bracketRounds(bracket);
@@ -22,16 +24,21 @@ it('lays the bracket out in the league\'s own shape, the final shared between si
 
 it('reads each tie once, with the step that split it, and leaves out the whole-table split', () => {
   const all = 'Win percentage put Dallas ahead of Chicago and Seattle.';
-  const tie = 'Chicago and Seattle were level on win percentage. Points put Chicago (955.0 points) ahead of Seattle.';
-  const level = 'Denver and Miami remain level on the available tie-breakers, so they are listed in the league\'s franchise order.';
+  const tie =
+    'Chicago and Seattle were level on win percentage. Points put Chicago (955.0 points) ahead of Seattle.';
+  const level =
+    'Denver and Miami remain level on the available tie-breakers, '
+    + 'so they are listed in the league\'s franchise order.';
   const rows = [['Dallas', [all]], ['Chicago', [all, tie]], ['Seattle', [all, tie]], ['Denver', [level]],
     ['Miami', [level]]] as const;
-  const standings = { rows: rows.map(([name, why]) => ({ franchise: `f.${name}`, why })) } as unknown as PulseStandings;
+  const standings =
+    { rows: rows.map(([name, why]) => ({ franchise: `f.${name}`, why })) } as unknown as PulseStandings;
   const side = ['Dallas', 'Chicago', 'Seattle', 'Denver', 'Miami'].map(name =>
     ({ franchise: `f.${name}`, name }) as PulseSeedRow);
   expect(tieGroups(standings, side.slice(0, 3)).map(t => [t.step, t.teams.map(x => x.name)]))
     .toEqual([['Points', ['Chicago', 'Seattle']]]);
-  expect(tieGroups(standings, side).map(t => t.step)).toEqual(['Win percentage', 'Points', 'Franchise order']);
+  expect(tieGroups(standings, side).map(t => t.step))
+    .toEqual(['Win percentage', 'Points', 'Franchise order']);
 });
 
 it('keeps the other side out of a side\'s bubble', () => {

@@ -27,7 +27,8 @@ it('reads a starter\'s stat line in whole units', () => {
 
 it('reads how the final stats moved a starter, and which totals are recorded ones', () => {
   const lineup = { status: 'Valid', words: 'Lineup is valid', problems: [], flagged: false };
-  const starter = { player: '13589', name: 'Gibbs, Jahmyr', position: 'RB', words: '19.4 points', points: 194000,
+  const starter = { player: '13589', name: 'Gibbs, Jahmyr', position: 'RB', words: '19.4 points',
+    points: 194000,
     revision: { was: 188000, now: 194000,
       stats: [{ stat: 'rushing_yards', label: 'Rushing yards', was: 880000, now: 940000 }] } };
   const score = (extra: object) => parsePulseResults({ league: 'native.x', season: 2026, week: 9,
