@@ -940,3 +940,6 @@
 .lp-v14 .ct.ties th{text-align:left}
 .lp-v14 .ct.ties td:last-child{white-space:nowrap}
 .lp-v14 .bk .rh{font:700 9px var(--mono);letter-spacing:.14em;color:var(--ink3)}
+/* Race standings: the franchise cell takes the slack, so a long name clips before the table outgrows its column. */
+.lp-v14 #ws-race .stand{width:100%}
+.lp-v14 #ws-race .stand td:nth-child(2){width:100%;max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
