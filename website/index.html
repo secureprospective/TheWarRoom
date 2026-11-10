@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The War Room · Fantasy football, the way it should be played</title>
+<meta name="description" content="You're playing fantasy football the dumbest way possible. The War Room puts your whole league in one room: contracts, salary cap, up to 32 teams. No ads. No betting odds.">
+<meta name="theme-color" content="#0a0c10">
+<link rel="preload" href="fonts/inter-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<canvas id="field" aria-hidden="true"></canvas>
+
+<header class="hud" id="hud">
+  <div class="logo">THE WAR ROOM</div>
+  <div class="ch" id="hud-ch">KICKOFF</div>
+  <div class="mini"><span>OWN</span><div class="bar"><i class="ball"></i></div><span>GOAL</span></div>
+  <div class="on-yd" id="hud-yd">OWN GOAL LINE</div>
+  <div class="score"><span>OLD WAY</span><b>0</b><span>YOU</span><b class="us" id="hud-us">0</b></div>
+  <button class="snd" id="snd" aria-pressed="false" aria-label="Crowd sound">CROWD <b>OFF</b></button>
+  <a class="go" href="#open" data-goto="10">OPEN YOUR LEAGUE</a>
+</header>
+
+<main class="lens" id="lens"><div class="world" id="world">
+
+  <!-- 0 · own goal line: the charge on the left, the War Room already at work on the right -->
+  <section class="scene" data-ch="KICKOFF">
+    <div class="ly" style="--x:-385;--y:15;--px:0;--py:-325"><div class="in copy hero">
+      <h1>You're playing fantasy football the <span class="hzu">dumbest</span> way possible.</h1>
+      <p class="lead">Give us 100 yards. We'll prove it, then we'll fix it.</p>
+      <div class="row"><button class="btn solid big" data-goto="1">▼ Snap the ball</button></div>
+    </div></div>
+
+    <div class="ly rc p0" data-beat="lineup" aria-hidden="true"><div class="in pnl hz rcard">
+      <div class="ph">SET LINEUP · WEEK 9 <span data-r="state">lineup set</span></div>
+      <div class="lu">
+        <div class="lr"><span class="tagp">QB</span><span>Joe Montano</span><b class="n">21.4</b></div>
+        <div class="lr"><span class="tagp">RB</span><span>Emmett Smyth</span><b class="n">15.2</b></div>
+        <div class="lr slot full" data-r="slot"><span class="tagp">RB</span><span class="e">Open slot</span><span class="f">Walter Peyton</span><b class="n f">16.9</b></div>
+        <div class="lr"><span class="tagp">WR</span><span>Berry Rice</span><b class="n">17.8</b></div>
+        <div class="lr"><span class="tagp">WR</span><span>Steve Largeant</span><b class="n">12.6</b></div>
+      </div>
+      <div class="side"><div class="th">BENCH</div>
+        <div class="blk vacant" data-r="src"><span class="tagp">RB</span><span>Walter Peyton</span><span class="n">16.9</span></div>
+        <div class="blk"><span class="tagp">QB</span><span>Dan Merino</span><span class="n">18.3</span></div>
+      </div>
+      <div class="after rf">
+        <div><div class="k">PROJECTED</div><div class="v n" data-r="proj">83.9</div></div>
+        <div><div class="k">THEM</div><div class="v n dim">79.5</div></div>
+        <span class="stamp good" data-r="stamp">AHEAD BY 4.4</span>
+      </div>
+      <svg class="cur" viewBox="0 0 20 26"><path d="M2 2v19l5-4.5 3.4 7.5 3-1.4-3.4-7.3H17z"/></svg>
+    </div></div>
+
+    <div class="ly rc p1" data-beat="live" aria-hidden="true"><div class="in pnl hz rcard">
+      <div class="ph">LIVE · SUNDAY · WEEK 9 <span data-r="clk">Q4 2:11</span></div>
+      <div class="t" data-r="row"><span>Gridiron Syndicate</span><span class="n" data-r="us">107.8</span></div>
+      <div class="t them"><span>Burnt Orange Militia</span><span class="n">104.3</span></div>
+      <div class="bar"><i data-r="bar" style="width:58%"></i></div>
+      <div class="wp"><span>WIN CHANCE</span><b class="n" data-r="wp">81%</b><span data-r="lead">YOU LEAD BY 3.5</span></div>
+      <ol class="feed" data-r="feed">
+        <li class="mine td"><span class="n">Q4 2:11</span><span>Brett Favor deep left to Berry Rice, 31 yds. <b>Touchdown.</b></span><em>+9.1</em></li>
+        <li><span class="n">Q4 2:48</span><span>Emmett Smyth right side for 3 yds</span><em></em></li>
+        <li class="mine"><span class="n">Q4 3:20</span><span>Reggie Wight sacks the quarterback</span><em>+2.0</em></li>
+      </ol>
+    </div></div>
+
+    <div class="ly rc p2" data-beat="trade" aria-hidden="true"><div class="in pnl hz rcard">
+      <div class="ph">TRADE DESK <span>unsent · only you see this</span></div>
+      <div class="trays">
+        <div class="tray send"><div class="th">YOU SEND</div>
+          <div class="blk"><span class="tagp">RB</span><span>Berry Sanders <small>$4.2M</small></span><span class="n">55</span></div>
+          <div class="blk"><span class="tagp">PK</span><span>2027 2nd round</span><span class="n">15</span></div></div>
+        <div class="tray get"><div class="th">YOU GET</div>
+          <div class="blk slot full" data-r="slot"><span class="e">Drop a player here</span><span class="tagp f">DE</span><span class="f">Reggie Wight <small>$10.2M</small></span><span class="n f">77</span></div></div>
+      </div>
+      <div class="side"><div class="th">THEIR ROSTER · BURNT ORANGE MILITIA</div>
+        <div class="blk vacant" data-r="src"><span class="tagp">DE</span><span>Reggie Wight <small>$10.2M</small></span><span class="n">77</span></div>
+        <div class="blk"><span class="tagp">LB</span><span>Mike Singletarry</span><span class="n">31</span></div>
+      </div>
+      <div class="after rf">
+        <div><div class="k">CAP ROOM AFTER</div><div class="v n" data-r="cap">$0.40M</div></div>
+        <div><div class="k">VALUE</div><div class="v n" data-r="val" style="color:var(--green)">YOU +7</div></div>
+        <span class="stamp good" data-r="stamp">LEGAL</span>
+      </div>
+      <svg class="cur" viewBox="0 0 20 26"><path d="M2 2v19l5-4.5 3.4 7.5 3-1.4-3.4-7.3H17z"/></svg>
+    </div></div>
+
+    <div class="ly" style="--x:150;--y:246;--z:80;--px:-95;--py:476" aria-hidden="true"><div class="in wide-only"><div class="plate tilt">MEANWHILE, IN THE WAR ROOM</div></div></div>
+  </section>
+
+  <!-- 1 · own 10 -->
+  <section class="scene" data-ch="EXHIBIT A · ESPN + YAHOO">
+    <div class="ly" style="--z:1250;--y:-20"><div class="in fly" aria-hidden="true">Exhibit A</div></div>
+    <div class="ly" style="--x:-360;--y:30;--z:-160;--px:0;--py:215;--pz:-120"><div class="in junk phone" aria-hidden="true">
+      <div class="bar"><i></i> MY TEAM · THE FREE APP</div>
+      <div class="bet">ODDS BOOST · TAP TO BET TONIGHT'S GAME ›</div>
+      <div class="body">
+        <div class="prow"><b>QB</b><div class="sk l"></div><div class="sk"></div></div>
+        <div class="prow"><b>RB</b><div class="sk m"></div><div class="sk"></div></div>
+        <div class="ad">ADVERTISEMENT</div>
+        <div class="prow"><b>RB</b><div class="sk l"></div><div class="sk"></div></div>
+        <div class="prow"><b>WR</b><div class="sk m"></div><div class="sk"></div></div>
+        <div class="prow"><b>WR</b><div class="sk l"></div><div class="sk"></div></div>
+        <div class="ad">ADVERTISEMENT</div>
+        <div class="prow"><b>TE</b><div class="sk m"></div><div class="sk"></div></div>
+        <div class="prow"><b>FLX</b><div class="sk l"></div><div class="sk"></div></div>
+        <div class="ad">SPONSORED · PLACE YOUR PARLAY</div>
+      </div>
+    </div></div>
+    <div class="ly late" style="--x:-250;--y:-170;--z:120;--px:130;--py:-60;--i:3"><div class="in"><div class="plate tilt xl red">ADS + ODDS</div></div></div>
+    <div class="ly" style="--x:300;--y:10;--px:0;--py:-360"><div class="in copy">
+      <h2>ESPN. Yahoo. Free, because you're the product.</h2>
+      <p class="lead">Ads between your players. Sportsbook odds next to your lineup. No dynasty. <b>Sleeper skips the ads and still can't run a contract or a salary cap.</b> Its commissioners keep those in a Google Sheet.</p>
+    </div></div>
+  </section>
+
+  <!-- 2 · own 20 -->
+  <section class="scene" data-ch="EXHIBIT B · MYFANTASYLEAGUE">
+    <div class="ly" style="--z:1250;--y:-20"><div class="in fly" aria-hidden="true">Exhibit B</div></div>
+    <div class="ly" style="--x:340;--y:30;--z:-180;--px:0;--py:215;--pz:0"><div class="in junk old" data-fall aria-hidden="true">
+      <div class="bar"><i></i><i></i><i></i> MFL · League Home</div>
+      <div class="body">
+        <div class="h6">League Home Page</div>
+        <u>Standings</u> | <u class="v">Rosters</u> | <u>Transactions</u> | <u>Submit Lineup</u> | <u class="v">Salaries</u> | <u>Draft</u> | <u>Options</u> | <u>Reports</u> | <u>For Commissioners</u>
+        <table><tr><th>Franchise</th><th>W-L-T</th><th>PF</th><th>PA</th><th>Cap Room</th><th>Opt</th></tr>
+          <tr><td><u>Franchise 01</u></td><td>6-2-0</td><td>1012.4</td><td>861.0</td><td>$6,400,000</td><td><u>edit</u></td></tr>
+          <tr><td><u class="v">Franchise 02</u></td><td>5-3-0</td><td>988.1</td><td>902.7</td><td>$1,150,000</td><td><u>edit</u></td></tr>
+          <tr><td><u>Franchise 03</u></td><td>5-3-0</td><td>941.9</td><td>915.2</td><td>$310,000</td><td><u>edit</u></td></tr>
+          <tr><td><u>Franchise 04</u></td><td>4-4-0</td><td>930.6</td><td>944.8</td><td>$8,925,000</td><td><u>edit</u></td></tr>
+          <tr><td><u class="v">Franchise 05</u></td><td>4-4-0</td><td>902.3</td><td>899.0</td><td>$75,000</td><td><u>edit</u></td></tr>
+          <tr><td><u>Franchise 06</u></td><td>3-5-0</td><td>871.5</td><td>960.4</td><td>$2,200,000</td><td><u>edit</u></td></tr></table>
+        <div class="links"><u>Contract Years Report</u><br><u>Upload Salaries (CSV)</u><br><u class="v">Message Board</u><br><u>Trade Bait</u><br><u>Waiver Requests</u><br><u>Accounting</u><br><u>Injured Reserve</u><br><u class="v">Taxi Squad</u><br><u>League Calendar</u><br><u>Help</u><br><u>Site Map</u><br><u>Printer Friendly</u></div>
+      </div>
+    </div></div>
+    <div class="ly late" style="--x:520;--y:-190;--z:100;--px:110;--py:-20;--i:3"><div class="in"><div class="plate tilt xl amber">STUCK IN 1998</div></div></div>
+    <div class="ly" style="--x:-320;--y:10;--px:0;--py:-300"><div class="in copy">
+      <h2>MyFantasyLeague. Every rule you want. On a screen from 1998.</h2>
+      <p class="lead">It will run your contracts and your cap. It also bills your league $70 to $90 every year, has no official app and has barely changed in years. <b>Your league mates open it and close it.</b></p>
+    </div></div>
+  </section>
+
+  <!-- 3 · own 30 -->
+  <section class="scene" data-ch="EXHIBIT C · THE DUCT TAPE">
+    <div class="ly" style="--z:1250;--y:-20"><div class="in fly" aria-hidden="true">Exhibit C</div></div>
+    <div class="ly" style="--x:-470;--y:-190;--z:-420;--px:-125;--py:40;--pz:-120"><div class="in junk sheet" data-crack aria-hidden="true">
+      <div class="bar"><i></i> contracts_FINAL_v7 (2).xlsx</div>
+      <div class="grid"><span class="h">Player</span><span class="h">Yr 1</span><span class="h">Yr 2</span><span class="h">Yr 3</span><span class="h">Dead $</span>
+        <span>—</span><span>8.2</span><span>8.6</span><span>#REF!</span><span>4.1</span><span>—</span><span>3.1</span><span>3.3</span><span>3.5</span><span>0.0</span>
+        <span>—</span><span>12.0</span><span>12.0</span><span></span><span>#REF!</span><span>—</span><span>0.9</span><span>0.9</span><span>1.0</span><span>0.2</span>
+        <span>—</span><span>7.5</span><span>??</span><span></span><span>2.5</span><span>—</span><span>2.4</span><span>2.6</span><span>2.8</span><span>0.6</span></div>
+    </div></div>
+    <div class="ly" style="--x:480;--y:-200;--z:-250;--px:125;--py:185;--pz:-60"><div class="in junk board" aria-hidden="true">
+      <div class="bar"><i></i> ProBoards · League Message Board</div>
+      <div class="body"><p><b>RE: RE: RE: RE: trade vetoed??</b>47 replies · page 1 of 4</p><p><b>WHO IS ON THE CLOCK</b>12 replies</p><p><b>Rule change vote (2019) — bump</b>3 replies</p></div>
+    </div></div>
+    <div class="ly" style="--x:-500;--y:210;--z:-80;--px:-140;--py:340;--pz:0"><div class="in junk calc" aria-hidden="true">
+      <div class="bar"><i></i> KeepTradeCut · Trade Calculator</div>
+      <div class="body"><div class="cols"><div>Side A<div class="sk l"></div><div class="sk m"></div><div class="tot">6,214</div></div><div>Side B<div class="sk m"></div><div class="sk s"></div><div class="tot">5,980</div></div></div></div>
+    </div></div>
+    <div class="ly" style="--x:500;--y:200;--z:60;--px:130;--py:420;--pz:40"><div class="in junk chat" aria-hidden="true">
+      <div class="bar"><i></i> GroupMe · The League 🏈 (31)</div>
+      <div class="body"><q>who's up</q><q>check the board</q><q class="me">which board</q><q>did the cap sheet get updated</q><q class="me">??</q></div>
+    </div></div>
+    <div class="ly late" style="--x:0;--y:250;--z:160;--px:0;--py:-125;--pz:60;--i:4"><div class="in"><div class="plate tilt xl red">TOOLS OPEN: 5</div></div></div>
+    <div class="ly" style="--y:-10;--py:-340"><div class="in copy center" style="width:640px">
+      <h2>Five tools. One league. None of them talk.</h2>
+      <p class="lead">MFL. ProBoards. Excel. KeepTradeCut. GroupMe. <b>Somebody keeps all of that in sync by hand.</b></p>
+    </div></div>
+  </section>
+
+  <!-- 4 · own 40 -->
+  <section class="scene" data-ch="WHY PEOPLE QUIT" data-jolt>
+    <div class="ly slam" style="--y:-230;--z:-500;--x:-130;--px:0;--py:-250;--pz:-200;--ps:98;--i:1"><div class="in shout dim">Time suck.</div></div>
+    <div class="ly slam" style="--y:-70;--z:-250;--x:110;--px:0;--py:-125;--pz:-100;--ps:90;--i:3"><div class="in shout out">Mind suck.</div></div>
+    <div class="ly slam" style="--y:95;--z:0;--px:0;--py:10;--i:5"><div class="in shout">No cool factor.</div></div>
+    <div class="ly" style="--y:-350;--py:-390"><div class="in kick">Why people quit leagues</div></div>
+    <div class="ly late" style="--y:270;--py:210;--i:8"><div class="in copy center" style="width:760px">
+      <p class="lead" style="margin:0">Nobody quits because they stopped loving football. They quit because running a team turned into a chore.</p>
+    </div></div>
+  </section>
+
+  <!-- 5 · midfield -->
+  <section class="scene" data-ch="MIDFIELD" data-jolt data-lights>
+    <div class="ly" style="--z:1150;--y:-10"><div class="in fly solid">Enough.</div></div>
+    <div class="ly late" style="--y:-205;--py:-270;--i:0"><div class="in"><div class="plate xl">THE WAR ROOM</div></div></div>
+    <div class="ly slam" style="--y:-20;--py:-130;--ps:96;--i:2"><div class="in shout" style="font-size:200px">One room.</div></div>
+    <div class="ly late" style="--y:180;--py:50;--i:5"><div class="in copy center" style="width:780px">
+      <p class="lead" style="margin:0;font-size:25px"><b>Your league, your rules and your whole Sunday</b> <br>in one place, built like a command center.</p>
+    </div></div>
+  </section>
+
+  <!-- 6 · opp 40 -->
+  <section class="scene" data-ch="GAME DAY" data-live>
+    <div class="ly" style="--z:1250;--y:-20"><div class="in fly" aria-hidden="true">Game day</div></div>
+    <div class="ly" style="--x:250;--y:-228;--z:-320;--ry:-6;--px:0;--py:60" ><div class="in pnl hz fieldp wide-only">
+      <div class="ph">LIVE · WEEK 9 <span id="clock">Q3 8:42</span></div>
+      <div class="grass"><div class="ez"></div><div class="ez r"></div><div class="drive" id="drive"></div><div class="los" id="los"></div><div class="fd"></div></div>
+      <div class="last"><span>1st &amp; 10</span><span id="lastplay">Berry Rice 18-yd catch over the middle</span></div>
+    </div></div>
+    <div class="ly" style="--x:-90;--y:165;--z:-60;--ry:-3;--px:0;--py:-40;--pz:0"><div class="in pnl hz match">
+      <div class="ph">MY MATCHUP <span>live</span></div>
+      <div class="t"><span>Gridiron Syndicate</span><span class="n" id="us">101.2</span></div>
+      <div class="t them"><span>Burnt Orange Militia</span><span class="n">88.2</span></div>
+      <div class="bar"><i id="usbar"></i></div>
+      <div class="wp"><span>WIN CHANCE</span><b class="n" id="wp">71%</b><span>3 OF YOUR PLAYERS STILL TO PLAY</span></div>
+      <div class="around"><span>Cascade Hammers <b class="n">94.6</b></span><span>Desert Wolves <b class="n">91.0</b></span><span>Motor City Rust <b class="n">77.3</b></span><span>Bayou Bandits <b class="n">102.8</b></span></div>
+    </div></div>
+    <div class="ly" style="--x:410;--y:168;--z:90;--ry:-9;--px:0;--py:330;--pz:0"><div class="in pnl pbp">
+      <div class="ph">PLAY-BY-PLAY <span>newest first</span></div>
+      <ol id="pbp"></ol>
+    </div></div>
+    <div class="ly" style="--x:-410;--y:-150;--px:0;--py:-350"><div class="in copy" style="width:500px">
+      <h2>Sunday on one screen.</h2>
+      <p class="lead">Your matchup, every other matchup and every play as it lands, <b>with nothing to refresh and no second app to open.</b></p>
+    </div></div>
+  </section>
+
+  <!-- 7 · opp 30 -->
+  <section class="scene" data-ch="THE TRADE DESK">
+    <div class="ly" style="--z:1250;--y:-20"><div class="in fly" style="font-size:160px" aria-hidden="true">The back room</div></div>
+    <div class="ly" style="--x:300;--y:125;--z:-40;--ry:-7;--px:0;--py:175;--pz:0"><div class="in pnl hz desk">
+      <div class="ph">TRADE DESK <span>unsent · only you see this</span></div>
+      <div class="vers" id="ver"><button class="mbtn" aria-pressed="true">VERSION A</button><button class="mbtn" aria-pressed="false">VERSION B</button><span>Build two. Send the better one.</span></div>
+      <div class="trays">
+        <div class="tray send" id="t-send"><div class="th">YOU SEND</div></div>
+        <div class="tray get" id="t-get"><div class="th">YOU GET</div></div>
+      </div>
+      <div class="value"><span>VALUE</span><div class="vb"><i id="t-vb"></i></div><b class="n" id="t-val">YOU +7</b></div>
+      <div class="after">
+        <div><div class="k">CAP ROOM AFTER</div><div class="v n" id="t-cap">$0.40M</div><small>was $6.40M · legal</small></div>
+        <div><div class="k">ROSTER AFTER</div><div class="v n" id="t-ros">41 / 44</div><small>legal</small></div>
+        <div><div class="k">LINEUP CHANGE</div><div class="v n" id="t-lu">+0.7</div><small>points a week</small></div>
+      </div>
+    </div></div>
+    <div class="ly" style="--x:480;--y:-200;--z:140;--ry:-11"><div class="in pnl shelf wide-only" id="t-shelf">
+      <div class="ph">MY SHELF <span>drag to send</span></div>
+    </div></div>
+    <div class="ly" style="--x:-440;--y:-60;--px:0;--py:-330"><div class="in copy" style="width:440px">
+      <h2>Know what a trade does before you send it.</h2>
+      <p class="lead">Value on both sides. Your cap after the deal. Your roster after the deal. <b>All on the desk before anyone hits send.</b></p>
+    </div></div>
+  </section>
+
+  <!-- 8 · opp 20 -->
+  <section class="scene" data-ch="ANY LEAGUE">
+    <div class="ly" style="--z:1250;--y:-20"><div class="in fly" aria-hidden="true">Any league</div></div>
+    <div class="ly" style="--x:310;--y:-118;--z:-90;--ry:-7;--px:0;--py:-55;--pz:0"><div class="in pnl hz league" id="league">
+      <div class="ph">YOUR LEAGUE <span id="teamcount">32 franchises</span></div>
+      <div class="fr" id="fr"></div>
+      <div class="sample"><span class="k">A ROSTER SPOT</span>
+        <div class="blk"><span class="tagp">WR</span><span>Berry Rice</span><span class="chips"><i class="yrs">3 YRS</i><i class="cap">$8.2M</i></span></div>
+        <div class="blk idp"><span class="tagp">DE</span><span>Reggie Wight</span><span class="chips"><i class="yrs">2 YRS</i><i class="cap">$10.2M</i></span></div>
+        <div class="blk dst"><span class="tagp">DEF</span><span>Team defense</span><span class="chips"><i>ONE UNIT</i></span></div>
+      </div>
+    </div></div>
+    <div class="ly" style="--x:400;--y:236;--z:30;--ry:-10;--px:0;--py:345;--pz:0"><div class="in pnl dials">
+      <div class="ph">LEAGUE SETTINGS <span>every rule is a switch</span></div>
+      <div class="dial"><span class="k">TEAMS</span><div class="o" data-teams><button class="mbtn" aria-pressed="false">10</button><button class="mbtn" aria-pressed="false">12</button><button class="mbtn" aria-pressed="false">16</button><button class="mbtn" aria-pressed="true">32</button></div></div>
+      <div class="dial"><span class="k">CONTRACTS</span><div class="o" data-one="yrs"><button class="mbtn" aria-pressed="true">ON</button><button class="mbtn" aria-pressed="false" data-off>OFF</button></div></div>
+      <div class="dial"><span class="k">SALARY CAP</span><div class="o" data-one="cap"><button class="mbtn" aria-pressed="true">ON</button><button class="mbtn" aria-pressed="false" data-off>OFF</button></div></div>
+      <div class="dial"><span class="k">DEFENSE</span><div class="o" data-one="def"><button class="mbtn" aria-pressed="false" data-off>TEAM</button><button class="mbtn" aria-pressed="true">EVERY PLAYER</button></div></div>
+    </div></div>
+    <div class="ly" style="--x:-410;--y:-20;--px:0;--py:-390"><div class="in copy" style="width:480px">
+      <h2>Every rule is a setting.</h2>
+      <p class="lead">Ten teams or thirty-two. Contracts. Salary cap. Individual defenders. Set it the way <b>your</b> league plays.</p>
+      <p class="lead more" style="margin-top:14px">Already running one somewhere else? <b>Bring the whole league:</b> rosters, contracts, picks, rules and history.</p>
+    </div></div>
+  </section>
+
+  <!-- 9 · opp 10 -->
+  <section class="scene" data-ch="RED ZONE · THE PROMISE" data-jolt>
+    <div class="ly" style="--z:1250;--y:-20"><div class="in fly" aria-hidden="true">Red zone</div></div>
+    <div class="ly slam" style="--y:-225;--z:-300;--x:-90;--px:0;--py:-250;--pz:-150;--ps:76;--i:1"><div class="in shout" style="font-size:128px">No ads. Ever.</div></div>
+    <div class="ly slam" style="--y:-85;--z:-150;--x:90;--px:0;--py:-145;--pz:-80;--ps:62;--i:3"><div class="in shout out" style="font-size:128px">No betting odds.</div></div>
+    <div class="ly slam" style="--y:60;--z:0;--px:0;--py:-30;--ps:66;--i:5"><div class="in shout" style="font-size:128px">Just the game.</div></div>
+    <div class="ly late" style="--y:235;--py:150;--i:8"><div class="in copy center" style="width:860px">
+      <p class="lead" style="margin:0;font-size:25px">This is fantasy football. <b>The best thing you ever played with your family, your friends and the people you work with.</b></p>
+    </div></div>
+  </section>
+
+  <!-- 10 · goal line -->
+  <section class="scene" data-ch="TOUCHDOWN" data-jolt data-td id="open">
+    <div class="ly" style="--z:1150;--y:-10"><div class="in fly solid">Touchdown.</div></div>
+    <div class="ly" style="--y:20;--py:-60"><div class="in copy center">
+      <h1 style="font-size:124px">Open your league.</h1>
+      <p class="lead">Start a new one, or bring the one you already run.</p>
+      <div class="row"><a class="btn solid big" href="#open">Open your league</a><a class="btn big" href="#open">Bring your league over</a></div>
+    </div></div>
+  </section>
+
+  <!-- 11 · end zone -->
+  <section class="scene" data-ch="EXTRA POINT" data-xp>
+    <div class="ly" style="--x:-420;--y:-35;--px:0;--py:-285"><div class="in roast">
+      <h2 style="font-size:46px">How dumb is your league's setup?</h2>
+      <p class="lead" style="margin-top:12px">Pick what your league runs on, then send the card to the group chat.</p>
+      <div class="picks" id="picks">
+        <button class="mbtn" aria-pressed="true">ESPN or Yahoo</button>
+        <button class="mbtn" aria-pressed="true">MyFantasyLeague</button>
+        <button class="mbtn" aria-pressed="true">A contract spreadsheet</button>
+        <button class="mbtn" aria-pressed="false">A ProBoards forum</button>
+        <button class="mbtn" aria-pressed="false">A trade calculator</button>
+        <button class="mbtn" aria-pressed="true">A group text</button>
+      </div>
+      <div class="row"><button class="btn solid" id="share">Send the text</button><button class="btn" id="shareimg">Save the image</button></div>
+    </div></div>
+    <div class="ly" style="--x:430;--y:-30;--z:120;--px:0;--py:205;--pz:0"><div class="in pnl hz card" id="card">
+      <div class="kick">My league runs on</div>
+      <div class="big" id="card-n">4</div>
+      <h3 id="card-h">different things</h3>
+      <ul id="card-l"></ul>
+      <div class="verdict" id="card-v"></div>
+      <div class="url">WARROOM.SECUREPROSPECTIVE.COM</div>
+    </div></div>
+    <div class="ly" style="--y:330;--z:-500;--py:640"><div class="in wordmark wide-only" aria-hidden="true">THE WAR ROOM</div></div>
+    <div class="ly" style="--y:368;--py:488"><div class="in fine">A game you play with people you know. No ads. No betting. No real money.<br>THE WAR ROOM · DYNASTY FANTASY FOOTBALL</div></div>
+  </section>
+
+</div></main>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="track"></div>
+<noscript><div class="nojs"><h2>You're playing fantasy football the dumbest way possible.</h2><p class="lead">The War Room puts your whole league in one room: contracts, salary cap, up to 32 teams. No ads. No betting odds. This page needs JavaScript to play.</p></div></noscript>
+<script src="steel.js"></script>
+<script src="site.js"></script>
+</body>
+</html>

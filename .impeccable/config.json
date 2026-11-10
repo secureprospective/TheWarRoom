@@ -1,0 +1,38 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-10T14:47:19.526Z",
+        "reason": "project design system: handoff section 5 and locked mocks fix Inter and JetBrains Mono as the app's type"
+      },
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "createdAt": "2026-11-10T14:47:19.540Z",
+        "reason": "intentional fixture: Arial is used only inside the mock 'old way' competitor windows the page parodies"
+      },
+      {
+        "rule": "wide-tracking",
+        "value": "*",
+        "files": [
+          "website/index.html"
+        ],
+        "createdAt": "2026-11-10T14:47:35.827Z",
+        "reason": "project design system: short uppercase mono panel labels and buttons, tracking copied from locked mock league-pulse-mock-v14"
+      },
+      {
+        "rule": "aphoristic-cadence",
+        "value": "*",
+        "files": [
+          "website/index.html"
+        ],
+        "createdAt": "2026-11-10T15:04:59.035Z",
+        "reason": "user confirmed 2026-11-10: 'I like punchy wording, stick with it'"
+      }
+    ]
+  }
+}
