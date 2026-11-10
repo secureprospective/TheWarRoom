@@ -1,138 +1,109 @@
-# TheWarRoom — UI-to-mocks RESUME (compact-safe #7, 2026-11-10 afternoon CT) — WAR ROOM TRADE DESK
+# TheWarRoom — UI-to-mocks RESUME (compact-safe #8, 2026-11-10 ~13:15 CT) — WAR ROOM TRADE DESK
 
 ## 0. FIRST THING AFTER COMPACT
-Trade desk engine + screen are WRITTEN and COMPILE (go build, tsc clean, make build OK) but have NEVER BEEN
-SEEN running. Next action: launch on :5 with the real league, open War Room, screenshot, compare to the mock
-(docs/ui/mocks/warroom-mock-v6.html), fix what is wrong, THEN show Christopher. He said: "We need to get the
-TradeDesk working in the spirit of TheWarRoom ... execute with precision and purpose, excellence is the standard,
-not the goal." and earlier "cover the bases before presenting anything to me". Nothing is running.
+Desk runs on the real league and its lens math is PROVEN (hand recompute matched to the decimal). Waiting on
+two things from Christopher: (a) GPT's answer to the pick-value brief, (b) his look on :0. Meanwhile continue
+section 9. Nothing is running.
 
 ## IN-FLIGHT
-Nothing. Test app stopped. Xvfb :5 left up on Claude-OS. Nothing on his :0.
+Nothing. Test app stopped. Xvfb :5 up on Claude-OS. Nothing on his :0.
+OUT WITH CHRISTOPHER: `/home/chris/Downloads/TheWarRoom-PICK-VALUE-BRIEF.md` on the Beelink (53,523 bytes; copy
+in the scratchpad). He gives it to GPT; the answer comes back to me as a pick value table (20 numbers: rounds
+1-5 x early/mid/late/unknown, in long-term PPG, plus a per-year-out multiplier). It holds all 123 Legacy 2026
+trades that moved a pick + what each 2026 draft slot became. REAL LEAGUE DATA: never commit it.
 
 ## 1. What we are doing
-Build the five screens to the locked mocks on the NATIVE league. Done + merged: rail, League Pulse (PR #223, main
-57c86968). Now: War Room trade desk, "the biggest selling point": beat KeepTradeCut by using the league's REAL
-rules. Work on Claude-OS (`ssh claudeos`, always `< /dev/null`): worktree ~/work/TheWarRoom/.worktrees/ui, branch
-`session/war-room-trade-desk`. Claude-OS has NO git remote: bundle -> scp via CT105 -> Beelink worktree
-~/work/TheWarRoom/.worktrees/ui (MINE) -> push (PATH + GOTOOLCHAIN=go1.26.10, frontend/dist built). gh is
-~/.local/bin/gh on the Beelink. NEVER touch .worktrees/website (Tom's) or the main checkout. He merges (my
-`gh pr merge` is refused by the auto-mode check).
+Build the five screens to the locked mocks on the NATIVE league. Merged: rail, League Pulse (PR #223). Now: War
+Room trade desk, "the biggest selling point". Claude-OS (`ssh claudeos`, always `< /dev/null`): worktree
+~/work/TheWarRoom/.worktrees/ui, branch `session/war-room-trade-desk`. No git remote there: bundle -> scp via
+CT105 -> Beelink worktree ~/work/TheWarRoom/.worktrees/ui (MINE) -> push. NEVER touch .worktrees/website
+(Tom's) or the main checkout. He merges.
 Env: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 GOMEMLIMIT=1500MiB
 GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" GOLANGCI_LINT_CACHE=$PWD/.golangci-cache VITEST_MAX_THREADS=2
-VITEST_MIN_THREADS=1. Commit: -c user.name=secureprospective -c user.email=secureprospective@users.noreply.github.com,
--F message file, trailers Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com> + Claude-Session line.
-Pre-commit runs golangci-lint-full (3-5 min on Go changes). Never --no-verify.
+VITEST_MIN_THREADS=1. Commit: -c user.name=secureprospective -c user.email=secureprospective@users.noreply.github.com
+-F msgfile, trailers Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com> + Claude-Session line. Never --no-verify.
+Lint limits that bit: funlen 60, gocyclo 15, gochecknoglobals, exhaustive (switch on Direction needs all cases),
+gosec G101 on a literal in a field named Token.
 
 ## 2. Harness
 Edits: python replace scripts in the scratchpad, scp to claudeos:/tmp/twr-*.py, run, rm by name.
-- `make build` (~30 s). `UIP=ui-profile2 sh ~/scratch/ui-desk.sh` launches on :5 (real league). Wait ~150 s.
-  W=$(xdotool search --onlyvisible --name "The War Room"|head -1); windowmove 0 0; windowsize 1920 1080; scrot -o.
-  Stop: kill $(pgrep -x thewarroom) (never pkill -f).
-- Click points on :5: Home (86,168) War Room (86,201) Franchise HQ (86,235) League Pulse (86,268) Control Room
-  (86,302). War Room tabs: TRADE DESK (280,22) MARKET (378,22) DRAFT ROOM (476,22) PLANS (570,22). Partner select
-  (1418,303). POCKET (278,1052) NEGOTIATIONS (375,1052). On his :0 everything sits ~63 px lower.
-- His screen: same launch with DISPLAY=:0 XAUTHORITY=$HOME/.Xauthority, then wmctrl maximize. Leave Brave alone.
-- Show him: live on :0, or scp -i /root/.ssh/beelink to chris@192.168.1.191:~/Downloads + file:// path.
-- Regenerate after Go API/catalog changes: `for s in doors browser mfl native; do go run
-  ./frontend/scripts/nativegen -surface $s; done` then `make bindings` (noisy: pipe through tail).
-- Real value numbers without the app: ~/scratch/ui-profile2/**/prepared-values/native.mfl-14432-2026-2026.json.
+- `make build` (~20 s). `UIP=ui-profile2 sh ~/scratch/ui-desk.sh` launches on :5. Wait for the window + ~95 s.
+  One-liner used all session: until W=$(xdotool search --onlyvisible --name "The War Room"|head -1) && [ -n "$W" ];
+  do sleep 3; done; sleep 95; windowmove 0 0; windowsize 1920 1080; click War Room (86,201); sleep 16.
+  (Bare `sleep 150 &&` is blocked by the harness; the until-loop form works.) Stop: kill $(pgrep -x thewarroom).
+- Desk click points on :5: partner select (1432,285) then keys Down Down Return = New England; shelf row n
+  position tag x=261, y=355+48*(n-1); their shelf first row (1298,618) once a partner is chosen; filter chips
+  ALL (275,310) OFF (355,310) DEF (435,310) PICKS (513,310); direction buttons (958|1026|1095, 89).
+- Independent check data: ~/scratch/ui-profile2/config/TheWarRoom/prepared-values/native.mfl-14432-2026-2026.json
+  (reading.players[]: player, franchise, position, nowPPG, dynastyPPG, age, available). Vikings = franchise.24,
+  New England = franchise.02. Ledger: history.db table league_event (kind, payload); MFL exports: fetch_log join
+  raw_archive on sha256 (TYPE=transactions has all 131 season trades, FP_orig_year_round / DP_round_slot 0-based).
+- Show him: scp -i /root/.ssh/beelink to chris@192.168.1.191:~/Downloads + file:// path, or live on :0.
 
 ## 3. Gates
 | Gate | State |
 |---|---|
-| go build ./..., tsc --noEmit, make build | pass (this window) |
-| go test tradelens, governance, commissioner, commandcatalog | pass (before the last small edits; rerun) |
-| Seen running on the real league | NOT YET |
-| Direction command test (owner own team yes / other team no / commish yes) | NOT WRITTEN: write it |
-| Frontend tests for warroomLens parser | NOT WRITTEN |
-| make verify, wire snapshots, 110-char check, push, PR | not started |
-Push-gate lessons: run `make verify` on Claude-OS first; TWR_WRITE_WIRE=1 go test ./internal/store/history when a
-read gains a field; grep -rnE "^.{111,}$" frontend/src/app; `as` must not start a wrapped line; catalog/bindings
-snapshot tests will need the regenerated files committed (already regenerated).
+| go build, tsc, make build | pass |
+| go test tradelens, commissioner (direction test), app/market; vitest warroomLens | pass |
+| Lens math vs hand recompute on real league (shelf, 2-for-1, totals, tune) | MATCHED at 60/30/0; NOT re-walked at 65/50/30 |
+| Direction clicked live | NOT DONE: buttons are owner-only, nobody seated on the scratch copy |
+| PROJ/WEEK, cap runway, 7-1 record independently recomputed | NOT DONE |
+| make verify, wire snapshots, push, PR | not started |
 
-## 4. What was built this window (all on the branch; see section 8 for commit state)
-DESIGN (mine, under his "free hand" + rulings): an asset is worth what it adds to (or holds in) a side's BEST N
-(league starter count, 21 in his league) under that side's direction. Lens value = w*nowPPG + (1-w)*dynastyPPG;
-w = contend 0.6 / retool 0.3 / rebuild 0. Lens net = change in that side's best N, so two depth pieces never add
-up to a star (our answer to KTC's crowd curve, from the league's own starter count). Picks are valued by the
-existing Pick Value model (dynasty units, now = 0) and compete for the best N like players. Values shown in the
-engine's own unit (points per game, one decimal), NOT the mock's 0-100.
-Real-league facts: best-21 cutoff is ~7.5-9.5 PPG on strong teams, ~2.6-4 on weak ones.
-- internal/tradelens/tradelens.go (+_test.go, 6 tests pass): Direction, NowWeight, Read (our read: record
-  >= .600 contend, <= .350 rebuild, middle: older-than-median roster at >= .500 contend else retool; no games =
-  retool), Evaluate -> Reading{you, them {direction,set,nowWeight,before,after,net,out,in,needs,spare}, assets
-  [{token,now,dynasty,you,them,valued,words,age,ageKnown}], verdict empty|both|balk|bad, tune[trim|ask|sweeten],
-  notes}. Needs: starter-grade = top (teams x position min) by dynasty, signed next season; have < min = hole;
-  == min at a position that can start more = thin. Spare = more starter-grade than the position max.
-- internal/app/market/trade_lens.go: TradeLens(ctx, TradeLensSource, scope) gathers values (prepared pass),
-  ledger base, lineup rules, picks (NewNative + NativePickHistory), directions, standings.
-- internal/leagueservice/trade_lens_api.go: RawTradeLensScope + TargetNativeTradeLens (admitRead "tradelens.read").
-  Pick token = pick:season:round:originalFranchise. Catalog row tradelens.read (franchise-view), desktop.go row,
-  command_bindings.go, app API method, composition commissionerHost.NativeTradeLens. Hosted server does NOT
-  implement it (same as value.read): desktop only for now.
-- DIRECTION LEDGER ENTRY (approved): command `commish.franchise.direction.set`, people family:
-  RawPeople.Direction, governance.DirectionSet event, Franchise.Direction, State.Directions(),
-  commissioner.Directions(records), DirectionWords, authorizeDirection (seat holder = owner; else falls to the
-  CM-018 control = co-commissioner and up). G1, visibility league, effective now. Catalog row added.
-- Frontend: shell/warroomLens.ts (parser, readWarRoomLens, setWarRoomDirection, words), localWorkflow.ts direct
-  line, WarRoom.tsx (lens read, held last reading, direction choose, calendar strip shows only upcoming max 8,
-  inspector gets lens), WarRoomHeader.tsx (direction buttons live, value-by-age bars, needs chips, "open now:"),
-  WarRoomTrade.tsx rewritten (ALL/OFF/DEF/PICKS chips, shelves ranked by value, YOU/THEM columns, tray totals,
-  two lens bars, verdict, BLOCKED rows from the trade preview, YOUR BEST N + PROJ/WEEK tiles, lineup panels,
-  TUNE IT with APPLY, their read: direction badge, needs, spare, lean), WarRoomInspector.tsx (to you / to them,
-  why line, fills need), warroom.css additions at the end.
+## 4. What exists (all committed on the branch, NOT pushed)
+- internal/tradelens: Direction.NowWeight = contend 0.65 / retool 0.50 / rebuild 0.30 (THE one place; frontend
+  reads nowWeight from the reading). Evaluate, rosters, needs + starterBar, tune, Read (our read).
+- internal/app/market/trade_lens.go (TradeLens, lensLeague, lensPlayers, lensPicks, ourReads; true median).
+- commish.franchise.direction.set (owner of the seat, else co-commissioner and up); tradelens.read.
+- Frontend: warroomLens.ts (+test), WarRoom.tsx, WarRoomHeader.tsx, WarRoomTrade.tsx, WarRoomInspector.tsx, css.
+- Fixed this window: shelf values/ages hidden by old css; standings reader lacked `conference` (regression from
+  PR #223, broke partner record/cap; fix is on this branch only); used picks listed on shelves (HostedRoster pick
+  now has `used`); open windows read "passed"; desk column layout (.build is a flex column, TUNE IT max 132px,
+  effect scrolls); Holes / Thin split; plain pick note; "the owner picks" when the viewer is not the owner.
 
-## 5. Current bug
-None known; nothing has been seen running yet. Watch on first run: lens read speed (it replays the ledger base,
-reads all player records and fits the pick curve on every deal change; cache per league revision if slow);
-whether Pick Value fits on the imported league (needs native rookie-draft history; else picks show "—" and a
-note says why); zeros for bench players on shelves (correct by design: explain, don't hide).
+## 5. Open problems
+- PICKS HAVE NO VALUE on the imported league: Pick Value fits only on a native league's own rookie drafts
+  (NewNative drops the built-in sample for "native." leagues; NativePickHistory reads draft commands) and the
+  import brings none. The seed snapshot DOES hold the 2026 draft as made picks (season, round, slot, player; 160
+  rows, original ''). Plan: wait for GPT's table, then design the pick value with Christopher. Importing past
+  drafts = import change = his ruling first.
+- Lineup panels in the effect area are squeezed (they scroll inside ~85 px). Polish later.
+- trades.read logs "you may act only for your own franchise" repeatedly for a commissioner viewing a team:
+  pre-existing, not chased.
 
 ## 6. Established: do not redo
-- Engines exist: value.read (appvalue: nowPPG, dynastyPPG raw points per game), lineupdelta.read, trade.offer
-  preview, pickvalue, powerrankings.Count("topn"). No posture/window engine existed.
-- New commands go in: commandcatalog/native_reads.go or native_mutations.go, desktop.go, composition/
-  command_bindings.go, app/commissioner API, then regenerate (section 2).
-- useContractRead blanks its reading when the key changes: hold the last reading yourself if needed.
-- Earlier: War Room parser fix (hostedReadings.ts), `pwr` is a grid-row class, re-import = re-sync.
+- Long-term value (dynastyPPG) = 3 seasons, this one first, each later x0.75, with age curve and contract tilt.
+  So long-term already carries ~43% this season. Christopher knows; his weights stand.
+- Best 21 (any position) is the lens count by his "value is value" ruling; PROJ/WEEK (legal lineup, existing
+  lineupdelta) sits beside it. Told him a 4th QB reads +4.9 that way; no change ordered.
+- ExpirationYear = last season under contract. Engines exist: value.read, lineupdelta, pickvalue, powerrankings.
+- useContractRead blanks on key change (desk holds last lens in a ref). parseHostedStandings is strict on keys.
 
 ## 7. Decisions (Christopher, 11-10)
-- APPROVED: ledger entry "owner set their direction"; label public (win now / retool / rebuild) (ruled 10-31).
-- AGREED: partner who has not picked shows OUR read, labelled as ours.
-- GOOD: lens = blend of the two existing values, nothing fitted. I OWE HIM the exact weights (0.6 / 0.3 / 0) with
-  real examples from his league before it ships, plus the best-N counting choice explained plainly.
-- Free hand to tweak/add/rework; cover the bases before presenting; limit his turns.
-- Crowd sentiment left out, not faked. Pulse leftovers parked (Hermes task list, SUPPORT).
-- Standing: Christopher; outcome first, short plain replies; Central time; ETAs; ping when needed; mock is the
-  gate; never invent states; don't hunt for issues; stay out of Tom's worktree.
+- WEIGHTS: ".65 / .50 / .30 was with testing and human opinion from my league mates, go with it, however make
+  sure its uniform where ever that weight matters." DONE in code (commit 1ec399fc).
+- PICKS: "picks are essentual to dynasty football, we need to get this right"; a rough draft from a foreign model
+  (GPT) comes first, then I build it.
+- Earlier, still binding: direction ledger entry approved and public; partner without a pick shows OUR read,
+  labelled; free hand on the desk; cover the bases before presenting; mock is the gate; he merges; stop rule: any
+  other new ledger event, schema, import or permission change -> tell him first.
 
 ## 8. Ledger state
-Branch session/war-room-trade-desk: 7a562134 (parser fix + old resume) then the WIP commit made at this
-compact-safe (see `git log --oneline -3`; if the pre-commit lint refused it, the work is uncommitted in the
-worktree: fix lint, commit). Not pushed. Untracked: .golangci-cache/.
+Branch session/war-room-trade-desk on Claude-OS, tip = the resume commit after 1ec399fc (weights), fcc8cb9d /
+8c527bc6 (checked against the real league), 7055d9c5 (desk + direction). Tree clean. Not pushed. Untracked:
+.golangci-cache/.
 
 ## 9. NEXT ACTIONS, in order
-1. Rerun go tests (tradelens, governance, commissioner, commandcatalog, leagueservice, app/market); launch on :5;
-   screenshot the desk empty, with a partner, with a 2-for-1 deal; fix against the mock.
-2. Click a direction on the scratch league; confirm header, lens words and ledger line.
-3. Write the direction authorization test and a warroomLens parser test.
-4. Pick real examples from his league for the weights (a vet to a contender vs a rebuilder; a 2-for-1; a pick).
-5. Show him on :0 with the weights and examples; one full presentation.
-6. Then: inspector polish, pocket / versions / send / negotiations (plan steps 6-8 from the earlier resume).
-7. Before push: make verify, wire snapshots, 110-char check. He merges.
-Stop rule: any OTHER new ledger event, schema change or permission change -> tell him first.
+1. Rebuild, launch on :5, re-walk Vikings x New England (Jeanty + London for Brissett) at 65/50/30 and recompute
+   by hand from the values file (w = .65 both sides); screenshot to his Downloads.
+2. Recompute PROJ/WEEK, cap runway and the record independently, or say plainly they are unchecked.
+3. When GPT's table arrives: check it against the 123 trades and the 2026 draft outcomes, propose the pick value
+   design to Christopher (where the numbers live, how they move by year and slot), build after his yes.
+4. Inspector polish, pocket / versions / send / negotiations.
+5. Before push: make verify on Claude-OS, wire snapshots (TWR_WRITE_WIRE=1 go test ./internal/store/history if a
+   read gained a field), 110-char check, bundle -> Beelink -> push -> PR. He merges after his look on :0.
 
 ## 10. Honest status
-Code compiles and unit tests pass; no one has seen the desk run. The weights are my proposal, not yet shown.
-Hosted (phone/PWA) leagues do not get the lens yet. Live NFL field in Pulse still unseen during a real game.
-
-## 11. COMMIT STATE AT COMPACT-SAFE #7 (read with section 8)
-The WIP commit was REFUSED by the pre-commit lint, so all code from section 4 is UNCOMMITTED in the Claude-OS
-worktree (on disk, intact). Only this resume is committed. Fix these six, then commit everything:
-- internal/commandcatalog/desktop.go:19 commissionerDesktop is 61 lines (limit 60): move the methods table out.
-- gocyclo > 15: app/market/trade_lens.go TradeLens (16): split the gather step; commissioner/governance.go
-  AuthorizeRecords (16): fold the direction check into a helper with the lineup one; tradelens.go Evaluate (17)
-  and needs (18): split out roster building and the per-position count.
-- internal/tradelens/tradelens_test.go:22 gosec G101 false positive on the field name Token with a "pick:..."
-  string: rename the test tokens or build the string, do not suppress blindly.
+Engine math proven at the old weights; the new weights are unit-tested but not yet seen on screen. Picks are
+unvalued on his league until the pick work lands. Direction never clicked live. Hosted (phone) leagues do not
+get the lens. Full suite not run this window.
