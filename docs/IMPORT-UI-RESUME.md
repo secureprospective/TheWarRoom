@@ -1,9 +1,14 @@
-# TheWarRoom — Import + UI-to-mocks RESUME (updated 2026-11-10 ~09:00 CT, after the mock pass and the tackle fix)
+# TheWarRoom — Import + UI-to-mocks RESUME (compact-safe #5, 2026-11-10 ~09:40 CT)
 
 ## 0. FIRST THING AFTER COMPACT
-9.3 (STAT CHANGES), 9.4 (mock pass) and the tackle fix are DONE and reported. He gates step by step: wait for his
-word on what is next (my proposal: 9.5 batch point, or pick from the 9.4 "needs data or his word" list). Open with
-him: my call that "was" = the last live line. Nothing is running.
+Christopher's /compact-safe 11-10: "after compaction we will move to the next step of the plan". That is 9.5, the
+batch point: make verify, bundle to the Beelink, push, PR, then launch on :0 for his real-screen look. Start it when
+he says "we are back". 9.3, 9.4 and the tackle fix are DONE and reported. Still open with him: my call that the
+Stat Changes "was" = the last live line. Nothing is running.
+SEPARATE WORK, not mine: he will build the warroom.secureprospective.com website with Tom (Fable 5.2 on the
+Beelink). I wrote Tom's prompt: Beelink ~/Downloads/TheWarRoom-WEBSITE-HANDOFF.md (copy /root/TheWarRoom-WEBSITE-
+HANDOFF.md). Tom works in ~/work/TheWarRoom/.worktrees/website on session/website; when I push in 9.5 I make my own
+NEW worktree and leave his alone.
 
 ## IN-FLIGHT
 Nothing. The test app is stopped. Xvfb :5 (PID 1178155) is left up on Claude-OS for the next launch.
