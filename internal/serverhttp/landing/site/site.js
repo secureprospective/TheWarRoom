@@ -20,7 +20,6 @@
 
   // ---- scenes and their layers
   const scenes = [...world.querySelectorAll('.scene')].map((el, i) => {
-    el.style.transform = `translate3d(0,${HY[i]}px,${-i * D}px)`;
     const layers = [...el.querySelectorAll('.ly')].map((l) => ({ el: l, z: 0, z0: parseFloat(l.style.getPropertyValue('--z')) || 0, pz: parseFloat(l.style.getPropertyValue('--pz')), o: -1, junk: l.querySelector('.junk'), broke: false, deck: l.classList.contains('rc') }));
     el.inert = true;
     return { el, i, layers, near: false, seen: false, on: false, fall: el.querySelector('[data-fall]'), fell: false };
@@ -39,6 +38,8 @@
     lens.style.transform = `translateY(23px) scale(${S})`;
     cv.width = fx.width = W * dpr; cv.height = fx.height = H * dpr;
     WEAVE = portrait ? 55 : 150;
+    const fit = portrait ? Math.min(1, H / (S * 1220)) : 1;   // short phones (browser bars top and bottom) shrink each scene so nothing runs under the bars
+    for (const s of scenes) s.el.style.transform = `translate3d(0,${HY[s.i]}px,${-s.i * D}px) scale(${fit})`;
     for (const s of scenes) for (const l of s.layers) if (!l.deck) l.z = portrait && !Number.isNaN(l.pz) ? l.pz : l.z0;   // phones bring the deep layers forward so they stay readable
     $('track').style.height = `${(TOP[N - 1] + 1) * innerHeight}px`;
     if (keep) scrollTo(0, topOf(keep));
