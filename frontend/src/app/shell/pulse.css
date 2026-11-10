@@ -910,33 +910,20 @@
 
 /* embedded: the shell owns the rail, the tabs and the page, so Pulse drops its own. */
 .lp-v14.embedded{position:relative;inset:auto;z-index:auto;height:100%;min-height:650px;min-width:1040px}
-.lp-v14.embedded .shell{grid-template-columns:minmax(0,1fr)}
+.lp-v14.embedded .shell{grid-template-columns:minmax(0,1fr) 316px}
+.lp-v14.embedded .shell>.work:only-child{grid-column:1/-1}
 .lp-v14.embedded .work{grid-template-rows:auto minmax(0,1fr) auto}
 .lp-v14.embedded .ws.cols>.pcol{min-width:0}
 .lp-v14.embedded .sline{flex-wrap:wrap;gap:8px}
 .lp-v14.embedded .idle{overflow-wrap:break-word}
 
 /* LIVE v5: starters fit any lineup size — one side of the ball at a time, rows never collapse */
-.lp-v14 .mym.v2{display:flex;flex-direction:column;min-height:0;flex:1}
-.lp-v14 .mym.v2 .mh{grid-template-columns:minmax(0,1fr) 56px 34px 56px minmax(0,1fr)}
-.lp-v14 .mym.v2 .mh .a,.lp-v14 .mym.v2 .mh .b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lp-v14 .mym.v2 .mh .t{font:700 14px var(--mono)}
-.lp-v14 .mside{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--edge)}
-.lp-v14 .mside>*{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:6px 12px;font:700 9.5px var(--mono);letter-spacing:.14em;color:var(--ink3);background:var(--canvas);border:0;border-bottom:2px solid transparent;cursor:pointer}
-.lp-v14 .mside>* b{text-align:center;font-weight:700}
-.lp-v14 .mside>* .sv{font:600 10px var(--mono);letter-spacing:0;color:var(--ink3)}
-.lp-v14 .mside>*:hover{color:var(--ink2);background:hsl(0,0%,6%)}
-.lp-v14 .mside>[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--hazard)}
-.lp-v14 .mside>[aria-selected="true"] .sv{color:var(--ink2)}
-.lp-v14 .mside>[disabled]{opacity:.4;cursor:default}
-.lp-v14 .mrows{flex:1;min-height:0;display:grid;grid-auto-rows:minmax(30px,46px);align-content:start;overflow-y:auto}
-.lp-v14 .mym.v2 .mr{grid-template-columns:minmax(0,1fr) 56px 34px 56px minmax(0,1fr);min-height:30px}
-.lp-v14 .mym.v2 .mr .p{display:flex;flex-direction:column;justify-content:center;padding:0 12px;min-width:0}
-.lp-v14 .mym.v2 .mr .p.r{align-items:flex-end}
-.lp-v14 .mym.v2 .mr .p .nm{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lp-v14 .mym.v2 .mr .p .ln{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9.5px}
-.lp-v14 .mym.v2 .mr .ps{height:20px;align-self:center}
-.lp-v14 .mym.v2 .mr .s{padding:0 6px;font-size:13.5px}
+.lp-v14 .mym .mh .a,.lp-v14 .mym .mh .b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lp-v14 .mym .mh .t{font:700 14px var(--mono)}
+.lp-v14 .mym.tight .mr .p{display:flex;align-items:baseline;gap:8px}
+.lp-v14 .mym.tight .mr .p.r{flex-direction:row-reverse}
+.lp-v14 .mym.tight .mr .p .ln{margin-top:0}
+.lp-v14 .mym.tight .mr .ps{height:76%}
 /* rows are buttons: they fill their column so every game lines up */
 .lp-v14 #ws-live .game,.lp-v14 #ws-live .nfl{width:100%;text-align:left;font:inherit;color:inherit;border-left:0;border-right:0;border-top:0;background-clip:padding-box}
 .lp-v14 #ws-live .nfl:not(.sel){background:transparent}

@@ -119,10 +119,7 @@ func (p *preparation) franchises() []commissioner.NativeFranchise {
 	if len(held) < 2 || len(held) > 32 {
 		p.problem("MFL lists %d franchises; a league needs between 2 and 32", len(held))
 	}
-	divisions := map[string]bool{}
-	for _, d := range p.export.Config.Divisions {
-		divisions[d.ID] = true
-	}
+	divisions := divisionNames(p.export.Config)
 	out := make([]commissioner.NativeFranchise, 0, len(held))
 	seen := map[string]bool{}
 	for i, f := range held {
@@ -131,12 +128,31 @@ func (p *preparation) franchises() []commissioner.NativeFranchise {
 			p.problem("MFL lists franchise %q more than once or without an id", f.ID)
 		case strings.TrimSpace(f.Name) == "":
 			p.problem("franchise %s has no name on MFL; name it there, then import again", f.ID)
-		case f.Division != "" && !divisions[f.Division]:
+		case f.Division != "" && divisions[f.Division] == "":
 			p.problem("franchise %s sits in division %q, which MFL does not list", f.ID, f.Division)
 		}
 		seen[f.ID] = true
 		out = append(out, commissioner.NativeFranchise{ID: fmt.Sprintf("franchise.%02d", i+1), HeldID: f.ID,
-			Name: f.Name, Abbreviation: f.Abbrev, Division: f.Division})
+			Name: f.Name, Abbreviation: f.Abbrev, Division: divisions[f.Division]})
+	}
+	return out
+}
+
+// divisionNames is what each MFL division is called in the league: its own name, so owners read
+// "AFC East" and not MFL's "00". When any name is blank or two divisions share one, names cannot
+// tell the divisions apart, so every division keeps its MFL id.
+func divisionNames(config league.RawConfig) map[string]string {
+	out, seen, named := map[string]string{}, map[string]bool{}, true
+	for _, d := range config.Divisions {
+		name := strings.TrimSpace(d.Name)
+		named = named && name != "" && !seen[name]
+		seen[name] = true
+		out[d.ID] = name
+	}
+	if !named {
+		for _, d := range config.Divisions {
+			out[d.ID] = d.ID
+		}
 	}
 	return out
 }
@@ -147,10 +163,11 @@ func conferences(config league.RawConfig) map[string]string {
 	for _, c := range config.Conferences {
 		names[c.ID] = cmp.Or(strings.TrimSpace(c.Name), c.ID)
 	}
+	divisions := divisionNames(config)
 	out := map[string]string{}
 	for _, d := range config.Divisions {
 		if conference := cmp.Or(names[d.Conference], d.Conference); conference != "" {
-			out[d.ID] = conference
+			out[divisions[d.ID]] = conference
 		}
 	}
 	if len(out) == 0 {

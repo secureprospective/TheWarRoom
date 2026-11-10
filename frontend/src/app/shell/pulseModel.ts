@@ -71,7 +71,39 @@ export function groupRows(rows: PulseRow[]): { heading: string; rows: PulseRow[]
 export type PulseStarterRow = {
   slot: string; player: string; name: string; team?: string; locked?: boolean;
   points: number | undefined; projection: number | undefined; words: string;
+  /** The score is settled, not a running total. */
+  final: boolean;
 };
+
+/** naturalName reads a directory's "Last, First" the way people say it. */
+export function naturalName(name: string): string {
+  const [last, first, ...more] = name.split(', ');
+  return first && !more.length ? `${first} ${last}` : name;
+}
+
+const OFFENSE = ['QB', 'RB', 'WR', 'TE', 'FLX', 'K', 'PK', 'OL'];
+const DEFENSE = ['DT', 'DE', 'DL', 'LB', 'CB', 'S', 'DB'];
+export type StarterPair = { slot: string; left?: PulseStarterRow; right?: PulseStarterRow };
+
+/** pairStarters sets two lineups across the line like for like: offense then defense, one row per
+ *  starter at each position either side fills, so a pair never sets a kicker against a running back. */
+export function pairStarters(left: PulseStarterRow[], right: PulseStarterRow[]):
+  { heading: 'OFFENSE' | 'DEFENSE'; pairs: StarterPair[] }[] {
+  const order = [...OFFENSE, ...DEFENSE];
+  const rank = (slot: string) => (order.indexOf(slot) + order.length + 1) % (order.length + 1);
+  const slots = [...new Set([...left, ...right].map(r => r.slot))]
+    .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  const groups: { heading: 'OFFENSE' | 'DEFENSE'; pairs: StarterPair[] }[] =
+    [{ heading: 'OFFENSE', pairs: [] }, { heading: 'DEFENSE', pairs: [] }];
+  for (const slot of slots) {
+    const l = left.filter(r => r.slot === slot);
+    const r = right.filter(x => x.slot === slot);
+    const into = groups[OFFENSE.includes(slot) ? 0 : 1];
+    for (let i = 0; i < Math.max(l.length, r.length); i++)
+      into.pairs.push({ slot, left: l[i], right: r[i] });
+  }
+  return groups.filter(g => g.pairs.length);
+}
 
 /** starterRows lines one franchise's starters up in lineup order. Points come from the week score,
  *  which the whole league may read; the NFL team and the lock come from that franchise's own lineup
@@ -80,7 +112,8 @@ export function starterRows(score: PulseScore | undefined, lineup: PulseLineupPl
   projections: Record<string, number>): PulseStarterRow[] {
   return (score?.starters ?? []).map((s: PulseStarter) => {
     const held = lineup?.find(p => p.player === s.player);
-    return { slot: s.position ?? '—', player: s.player, name: s.name, team: held?.team,
+    return { slot: s.position ?? '—', player: s.player, name: naturalName(s.name), team: held?.team,
+      final: s.points !== undefined,
       locked: held?.locked, points: s.points ?? s.provisional, projection: projections[s.player],
       words: [s.words, s.source, ...Object.entries(s.fieldSources ?? {}).map(([field, owner]) =>
         `${field}: ${owner}`)].filter(Boolean).join(" · ") };

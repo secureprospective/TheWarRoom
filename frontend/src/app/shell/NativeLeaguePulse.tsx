@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { HQAct as PulseAct } from './HQAct';
 import { hostedWorkflow } from '../commissioner/api';
-import { pointsLabel, type PulseResults } from '../data/nativePulse';
+import { myChance, percent, pointsLabel, type PulseResults } from '../data/nativePulse';
 import { readNativePulse, readPulseWeekResults, usePulseRead, type NativePulse, type PulseScope }
   from './pulseReads';
 import { scoreOf } from './pulseModel';
 import { PulseIdle, PulseNow } from './PulseNow';
 import { PulseRace } from './PulseRace';
+import { PulseInspector } from './PulseInspector';
 import { usePulseLive } from './hqLive';
 import type { LiveView } from '../now/liveContract';
 import './pulse.css';
@@ -44,6 +45,8 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
           <span className="src">reads only · nothing here changes the league</span>
         </div>
       </main>
+      {reading && <PulseInspector reading={reading} results={results.reading} franchise={scope.mine}
+        mine={scope.mine} week={week} leave={scope.leave} />}
     </div>
   </div>;
   return body;
@@ -60,6 +63,8 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live }: {
   const game = results?.games.find(g => g.home === mine || g.away === mine);
   const opponent = game ? (game.home === mine ? game.away : game.home) : undefined;
   const theirs = opponent === undefined ? undefined : scoreOf(results, opponent);
+  const chance = myChance(reading?.odds, mine);
+  const win = chance && chance.week === week && !game?.winner ? chance.mine : undefined;
   return <section className="sline">
     <div className="wk">
       <PulseAct title="Previous week" disabled={!week || week <= 1}
@@ -85,9 +90,10 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live }: {
     </div>
     <div className="mybox">
       <span className="t me">YOU</span>
-      <span className="s">{pointsLabel(mineScore?.points)}</span>
-      <span className="wpm" title="win probability is not held yet" />
-      <span className="s">{pointsLabel(theirs?.points)}</span>
+      <span className="s">{pointsLabel(mineScore?.points ?? mineScore?.provisional)}</span>
+      <span className="wpm" title={win === undefined ? 'win probability shows while the game is open'
+        : `win probability ${percent(win)}`}>{win !== undefined && <i style={{ width: percent(win) }} />}</span>
+      <span className="s">{pointsLabel(theirs?.points ?? theirs?.provisional)}</span>
       <span className="t th">{theirs ? theirs.name.slice(0, 3).toUpperCase() : '—'}</span>
     </div>
   </section>;
