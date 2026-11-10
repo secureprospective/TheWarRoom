@@ -11,9 +11,9 @@ export function WarRoomEmpty({ reason, pending }: { reason?: string; pending?: b
   return <p className="empty" role={pending ? 'status' : undefined}
     >{pending ? absent(true) : reason || unavailable}</p>;
 }
-export function WarRoomHeader({ name, reading, windowLabel, lens, choose, pending }: { name?: string;
+export function WarRoomHeader({ name, reading, windowLabel, lens, choose, pending, problem }: { name?: string;
   reading?: WarRoomHeaderReading; windowLabel?: string; lens?: WarRoomLens;
-  choose?: (d: Direction) => void; pending?: boolean }) {
+  choose?: (d: Direction) => void; pending?: boolean; problem?: string }) {
   const you = lens && !lens.preparing ? lens.you : undefined;
   const ages = reading?.age ?? [];
   const peak = Math.max(0, ...ages.map(b => b.value));
@@ -25,7 +25,9 @@ export function WarRoomHeader({ name, reading, windowLabel, lens, choose, pendin
       windowLabel === 'none open' ? ' · no window open' : ` · open now: ${windowLabel}`}</div>
     </div>
     <div className="mini"><span className="h">DIRECTION{you && !you.set &&
-      <small>our read: {directionLabel[you.direction].toLowerCase()} · pick yours</small>}</span>
+      <small>our read: {directionLabel[you.direction].toLowerCase()}{choose ? ' · pick yours' :
+        ' · the owner picks'}</small>}
+      {problem && <small role="alert">not recorded: {problem}</small>}</span>
       <div className="post">{directions.map(d => <WarRoomAct key={d} disabled={!choose || !you || pending}
         title="Your direction is shown to the whole league. Your lens follows it."
         active={Boolean(you?.set && you.direction === d)} onAction={() => choose?.(d)}>
@@ -63,9 +65,13 @@ export function WarRoomHeader({ name, reading, windowLabel, lens, choose, pendin
 // kept for a calendar that could not be read, with the reason in the hover.
 export function WarRoomDates({ events, failed, reason }: { events: WarRoomEvent[]; failed?: boolean;
   reason?: string }) {
+  // A window that has opened counts down to its close; one with no close stays open.
+  const when = (d: WarRoomEvent) => d.live ? d.closes : d.at;
   return <div className="cal" aria-label="Calendar">{events.length ? events.map(d => <div className="ev"
-    key={d.id}><span className="w">{d.at ? new Date(d.at).toLocaleDateString() : unavailable}</span>
-    <b>{d.label}</b><span className="c">{countdown(d.at, Date.now())}</span></div>) :
+    key={d.id}><span className="w">{when(d) ? new Date(when(d) ?? '').toLocaleDateString() : d.live ?
+      'open now' : unavailable}</span><b>{d.label}</b><span className="c">{d.live ? d.closes ?
+      `closes ${countdown(d.closes, Date.now())}` : 'no close set' : countdown(d.at, Date.now())}</span>
+  </div>) :
     failed ? <p className="empty" title={reason}>{unavailable}</p> :
       <p className="empty">No dates yet</p>}</div>;
 }

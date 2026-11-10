@@ -85,8 +85,9 @@ export async function setWarRoomDirection(c: WarRoomContext, direction: Directio
 export const directionLabel: Record<Direction, string> = { contend: 'Win now', retool: 'Retool',
   rebuild: 'Rebuild' };
 export function lensWords(s: LensSide): string {
+  const now = Math.round(s.nowWeight * 100);
   const words = s.direction === 'rebuild' ? 'rebuild: long-term value only' :
-    `${directionLabel[s.direction].toLowerCase()}: ${Math.round(s.nowWeight * 100)}% this season`;
+    `${directionLabel[s.direction].toLowerCase()}: ${now}% this season, ${100 - now}% long term`;
   return s.set ? words : `our read · ${words}`;
 }
 export const signed = (n: number) => `${n > -0.05 ? '+' : '−'}${Math.abs(n).toFixed(1)}`;
@@ -105,12 +106,14 @@ export function verdictWords(lens: WarRoomLens): { tag: string; className: strin
     words: `You give up ${Math.abs(you).toFixed(1)} of your own best ${n}.` };
 }
 export function leanWords(them: LensSide): string {
-  const short = them.needs.filter(n => n.state !== 'ok').map(n => n.position);
+  const holes = them.needs.filter(n => n.state === 'hole').map(n => n.position);
+  const short = holes.length ? holes : them.needs.filter(n => n.state === 'thin').map(n => n.position);
   const want = short.length ? ` Starters at ${short.join(', ')} move them most.` : '';
   if (them.direction === 'rebuild')
-    return `Their lens counts long-term value only: youth and picks hold up, this season's points alone ` +
-      `buy nothing.${want}`;
+    return `Their lens counts long-term value only: youth and picks hold up, an older player's big ` +
+      `season counts for less.${want}`;
+  const now = Math.round(them.nowWeight * 100);
   if (them.direction === 'contend')
-    return `Their lens leans on this season (60%): proven starters count, picks count little.${want}`;
-  return `Their lens is mostly long-term (70%), with some weight on this season.${want}`;
+    return `Their lens leans on this season (${now}%): proven starters count, picks count less.${want}`;
+  return `Their lens is mostly long-term (${100 - now}%), with some weight on this season.${want}`;
 }

@@ -9,6 +9,10 @@ import { directionLabel, leanWords, lensValue, lensWords, signed, verdictWords, 
 import { CompactAbsent, WarRoomEmpty } from './WarRoomHeader';
 import { absent, money, unavailable } from './hqModel';
 const offence = ['QB', 'RB', 'WR', 'TE'];
+const needWords = {
+  hole: 'Fewer starter-grade players signed for next season than the lineup must start',
+  thin: 'Exactly as many starter-grade players as the lineup must start, where it can start more',
+};
 const filters = ['ALL', 'OFF', 'DEF', 'PICKS'] as const;
 const isPick = (a: WarRoomAsset) => Boolean(a.pick) || a.token.startsWith('pick:');
 const passes = (a: WarRoomAsset, filter: typeof filters[number]) => filter === 'ALL' ||
@@ -38,8 +42,8 @@ export function WarRoomDeltaSidePanel({ side, name, names }: { side?: WarRoomDel
   const player = (id: string) => names.get(id) ?? id;
   if (!side) return null;
   const known = !side.unprojected.length;
-  return <div className="wide"><span className="h">{name} LINEUP · {known ? `${signed(side.perWeek)} / WEEK` :
-    'PROJECTION MISSING'}</span>
+  return <div className="wide half"><span className="h">{name} LINEUP · {known ?
+    `${signed(side.perWeek)} / WEEK` : 'PROJECTION MISSING'}</span>
     {side.changes.length ? side.changes.map(c => <div className="swap" key={`${c.kind}:${c.player}`}>
       <span className="sl">{c.position}</span><span>{player(c.player)}</span><span>{c.kind === 'enters' ?
         'starts' : c.kind === 'promoted' ? 'moves up to start' : c.kind === 'benched' ? 'goes to the bench' :
@@ -80,7 +84,7 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
   const block = (a: WarRoomAsset, side: 'give' | 'get', inTray = false) => {
     const owner = side === 'give' ? context.mine : deal.partner;
     return <WarRoomAssetBlock key={a.token} asset={a} lens={value(a)} inTray={inTray} from={owner}
-      note={a.pick && a.pick.original !== owner ? `from ${teamName(a.pick.original)}` : ''}
+      note={a.pick?.original && a.pick.original !== owner ? `from ${teamName(a.pick.original)}` : ''}
       select={select} used={deal[side].includes(a.token)} toggle={() => toggle(side, a.token)} />;
   };
   const names = new Map(catalog?.teams.flatMap(t => t.assets.map(a => [a.token, a.name] as const)));
@@ -137,11 +141,12 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
         {held && held.verdict !== 'empty' && <div><span className="h">YOUR BEST {n}</span>
           <b>{held.you.after.toFixed(1)}</b><small>was {held.you.before.toFixed(1)} · {signed(held.you.net)}
           </small></div>}
-        {delta.reading && <div><span className="h">PROJ / WEEK</span><b>{delta.reading.you.unprojected.length ?
-          '—' : signed(delta.reading.you.perWeek)}</b><small>your best lineup</small></div>}
+        {delta.reading && <div><span className="h">PROJ / WEEK</span>
+          <b>{delta.reading.you.unprojected.length ? '—' : signed(delta.reading.you.perWeek)}</b><small>your best lineup</small></div>}
         <WarRoomDeltaSidePanel side={delta.reading?.you} name="YOUR" names={names} />
         <WarRoomDeltaSidePanel side={delta.reading?.them} name="THEIR" names={names} />
-        {delta.reading?.notes.map(note => <div className="wide" key={note}><small>{note}</small></div>)}
+        {[...delta.reading?.notes ?? [], ...held?.notes ?? []].map(note => <div className="wide" key={note}>
+          <small>{note}</small></div>)}
       </div><div className="sugg"><div className="ch"><b>TUNE IT</b>
         <span>smallest changes that keep it acceptable</span></div>
         {held?.tune.length ? held.tune.map(s => <div className="sg" key={`${s.kind}:${s.token}`}>
@@ -159,12 +164,15 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
         partner: e.target.value, get: [] })}><option value="">Choose partner</option>
       {catalog?.teams.filter(t => t.id !== context.mine).map(t => <option key={t.id} value={t.id}>
         {t.name}</option>)}</select>{held?.them && <span className="dir" title={held.them.set ?
-          'Their owner set this direction' : 'Our read from their record and roster age. They have not set one.'}>
+          'Their owner set this direction' :
+          'Our read from their record and roster age. They have not set one.'}>
         {directionLabel[held.them.direction].toUpperCase()}</span>}</div>
       {deal.partner ? <><div className="kv"><span>Record · cap room</span><span>
         {partner.reading?.record ?? '—'} · {partner.reading?.room == null ? '—' : money(partner.reading.room)}
-      </span></div><div className="kv"><span>Needs</span><span>{held?.them ? held.them.needs.filter(x =>
-        x.state !== 'ok').map(x => x.position).join(' · ') || 'none' : '—'}</span></div>
+      </span></div>{(['hole', 'thin'] as const).map(state => <div className="kv" key={state}
+        title={needWords[state]}>
+        <span>{state === 'hole' ? 'Holes' : 'Thin'}</span><span>{held?.them ? held.them.needs.filter(x =>
+          x.state === state).map(x => x.position).join(' · ') || 'none' : '—'}</span></div>)}
       <div className="kv"><span>Spare</span><span>{held?.them ? held.them.spare.join(' · ') || 'none' : '—'}
       </span></div><div className="lean">{held?.them ? <>{held.them.set ? '' : <b>Our read · </b>}
         {leanWords(held.them)}</> : waiting}</div></> :

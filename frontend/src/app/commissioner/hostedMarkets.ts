@@ -260,6 +260,7 @@ export function parseHostedStandings(v: unknown) {
         'franchise',
         'name',
         'division',
+        'conference',
         'wins',
         'losses',
         'ties',

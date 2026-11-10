@@ -85,7 +85,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   // The calendar says which action window is open now. An app league with none open is not an
   // unavailable fact: it is a closed window, and the header says so.
   const windowLabel = !native || calendar.error ? undefined :
-    calendar.reading ? deadlines.find(d => d.live)?.label ?? 'none open' : undefined;
+    calendar.reading ? deadlines.filter(d => d.live).map(d => d.label).join(' · ') || 'none open' : undefined;
   const navigate = (node: 'home' | 'war' | 'hq' | 'pulse' | 'control') => {
     if (native) { if (node !== 'war') native.leave(node); }
     else void commands.dispatch('nav.open', { node });
@@ -122,15 +122,16 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       <div className="ws-tabs" role="tablist">{tabs}</div>}
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
         reading={headerReading} windowLabel={windowLabel} lens={lensReading} choose={choose}
-        pending={directing.pending} />
+        pending={directing.pending} problem={directing.error} />
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
-        change={changeDeal} select={select} lens={lensReading} lensPending={lens.pending} /> : tab === 'market' ? <WarRoomMarket context={context}
+        change={changeDeal} select={select} lens={lensReading} lensPending={lens.pending} /> :
+        tab === 'market' ? <WarRoomMarket context={context}
           room={headerReading?.runway?.[0]?.room} select={p => select({ token: p.id, name: p.name })} /> :
           tab === 'draft' ? <WarRoomDraft context={context} select={(id, name, position) =>
             setProspect({ id, name, position })}
             /> : <WarRoomPlans context={context} openPocket={() => setDrawer('pocket')} />}
-      <WarRoomDates events={deadlines.filter(d => d.live || !d.at || Date.parse(d.closes ?? d.at) >
-        Date.now()).slice(0, 8)} failed={Boolean(calendar.error)} reason={calendar.error} />
+      <WarRoomDates events={deadlines.filter(d => d.live || !d.at || Date.parse(d.at) > Date.now())
+        .slice(0, 8)} failed={Boolean(calendar.error)} reason={calendar.error} />
       <div className="tray"><div className="pulls">{(['pocket', 'offers'] as const).map(d => <WarRoomAct
         key={d} className="pull" expanded={drawer === d} onAction={() =>
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}

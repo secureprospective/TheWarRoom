@@ -162,6 +162,10 @@ func lensPicks(ctx context.Context, src TradeLensSource, scope tradelens.Scope, 
 	} else {
 		in.History, in.Slots = NativePickHistory(drafts, scope.Season, in.Records)
 	}
+	why := ""
+	if err == nil && len(in.History) == 0 {
+		why = "Picks have no value yet: this league has no rookie draft on record to learn from"
+	}
 	model := NewNative(in)
 	var out []tradelens.Asset
 	note := ""
@@ -173,6 +177,9 @@ func lensPicks(ctx context.Context, src TradeLensSource, scope tradelens.Scope, 
 		words := d.ClassLabel
 		if !d.Valued {
 			words, note = d.Reason, d.Reason
+			if why != "" {
+				words, note = why, why
+			}
 		}
 		out = append(out, tradelens.Asset{Token: fmt.Sprintf("pick:%d:%d:%s", p.Season, p.Round, p.Original),
 			Franchise: p.Owner, Pick: true, Dynasty: d.Discounted, Valued: d.Valued, Words: words,

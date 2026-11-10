@@ -929,10 +929,9 @@
 .wr-v6 .ia{grid-template-columns:repeat(2,minmax(0,1fr))}
 
 /* Give shelf identities the row; secondary figures remain in the inspector. */
-.wr-v6 .shelf .blk{grid-template-columns:34px minmax(0,1fr);height:44px}
+.wr-v6 .shelf .blk{grid-template-columns:34px minmax(0,1fr) 22px 40px;height:44px}
 .wr-v6 .shelf .blk .nm{display:grid;text-align:left;line-height:1.2}
 .wr-v6 .shelf .blk .nm small{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wr-v6 .shelf .blk .ag,.wr-v6 .shelf .blk .vl{display:none}
 .wr-v6 .shelf .list{scrollbar-width:thin;scrollbar-color:var(--edge) var(--sunken)}
 .wr-v6 .shelf .list::-webkit-scrollbar-track{background:var(--sunken)}
 .wr-v6 .mini .h{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -992,3 +991,8 @@
 .wr-v6 .effect .blocked{box-shadow:inset 3px 0 0 var(--red)} .wr-v6 .effect .blocked .h{color:var(--red);margin-right:10px}
 .wr-v6 .sg .quiet{color:var(--ink3)}
 .wr-v6 .blk .v2:empty::after,.wr-v6 .blk .vl:empty::after{content:"—";color:var(--ink3)}
+.wr-v6 .build{display:flex;flex-direction:column;overflow:hidden}
+.wr-v6 .build>*{flex:none} .wr-v6 .build>.effect{flex:0 1 auto;min-height:0;overflow-y:auto}
+.wr-v6 .build>.sugg{flex:0 0 auto;max-height:132px;overflow-y:auto}
+.wr-v6 .effect .wide.half{grid-column:span 1}
+.wr-v6 .read .kv span:first-child{flex:none;margin-right:12px} .wr-v6 .read .kv span:last-child{text-align:right}
