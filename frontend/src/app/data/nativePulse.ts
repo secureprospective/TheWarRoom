@@ -155,6 +155,21 @@ export function parsePulseBracket(value: unknown, league: string, season: number
     }) };
 }
 
+export type PulseSchedule = { season: number;
+  weeks: { week: number; games: { home: string; away: string }[]; bye?: string }[] };
+export function parsePulseSchedule(value: unknown, league: string): PulseSchedule {
+  const r = object(value, 'Schedule', ['league', 'revision', 'season', 'weeks']);
+  if (r.league !== league) throw new Error('The schedule belongs to another league');
+  return { season: integer(r.season, 'Season', 1920), weeks: array(r.weeks, 'Weeks', (v, p) => {
+    const w = object(v, p, ['week', 'games', 'bye']);
+    return { week: integer(w.week, p, 1), bye: w.bye === undefined ? undefined : text(w.bye, p),
+      games: array(w.games, 'Games', (g, q) => {
+        const game = object(g, q, ['id', 'home', 'away']);
+        return { home: text(game.home, q), away: text(game.away, q) };
+      }) };
+  }) };
+}
+
 export type PulseFixture = { week: number; opponent: string; venue: string; kickoff?: string };
 export type PulseWeek = { league: string; franchise: string; season: number; revision: number;
   message: string; games: PulseFixture[]; week?: number; nextWeek?: number; note: string };

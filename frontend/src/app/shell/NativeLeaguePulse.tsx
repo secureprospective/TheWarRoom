@@ -8,6 +8,7 @@ import { scoreOf } from './pulseModel';
 import { PulseIdle, PulseNow } from './PulseNow';
 import { PulseRace } from './PulseRace';
 import { PulseInspector } from './PulseInspector';
+import { ScheduleDrawer } from './PulseSchedule';
 import { usePulseLive } from './hqLive';
 import type { LiveView } from '../now/liveContract';
 import './pulse.css';
@@ -18,13 +19,14 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
   const port = scope.port ?? hostedWorkflow;
   const tab: PulseTab = scope.tab ?? 'now';
   const [chosen, chooseWeek] = useState<number>();
-  const [box, setBox] = useState(false);
+  const [drawer, setDrawer] = useState<'box' | 'sched'>();
+  const pull = (key: 'box' | 'sched') => setDrawer(drawer === key ? undefined : key);
   useEffect(() => {
-    if (!box) return;
-    const close = (e: KeyboardEvent) => { if (e.key === 'Escape') setBox(false); };
+    if (!drawer) return;
+    const close = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrawer(undefined); };
     window.addEventListener('keydown', close);
     return () => window.removeEventListener('keydown', close);
-  }, [box]);
+  }, [drawer]);
   const league = usePulseRead<NativePulse>(JSON.stringify(['pulse', scope.league, scope.mine]),
     publish => readNativePulse(scope.league, scope.mine, port, publish));
   const live = usePulseLive('');
@@ -45,10 +47,15 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
             : `Reading ${scope.league}…`} /></section>
         : tab === 'race' ? <PulseRace reading={reading} mine={scope.mine} />
         : <PulseNow reading={reading} mine={scope.mine} week={week} results={results}
-            league={scope.league} port={port} live={live} box={box} onBox={setBox} />}
+            league={scope.league} port={port} live={live} box={drawer === 'box'} onBox={() => setDrawer(undefined)} />}
+        {reading && tab === 'now' && <ScheduleDrawer open={drawer === 'sched'} reading={reading}
+          mine={scope.mine} port={port} onClose={() => setDrawer(undefined)} />}
         <div className="tray">
           {reading && tab === 'now' && <div className="pulls">
-            <PulseAct className="pull" expanded={box} onAction={() => setBox(!box)}>MATCHUP BOX ▴</PulseAct>
+            <PulseAct className="pull" expanded={drawer === 'box'} onAction={() => pull('box')}>
+              MATCHUP BOX ▴</PulseAct>
+            <PulseAct className="pull" expanded={drawer === 'sched'} onAction={() => pull('sched')}>
+              SCHEDULE ▴</PulseAct>
           </div>}
           <span className="msg">{reading?.standings?.words ?? reading?.weekNote ?? ''}</span>
           <span className="sp" />

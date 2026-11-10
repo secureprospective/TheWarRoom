@@ -2,7 +2,7 @@ import { useContractRead } from '../contracts/Contracts';
 import { hqEvents } from './hqReads';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
-import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseOdds, parsePulseResults,
+import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseOdds, parsePulseResults, parsePulseSchedule, type PulseSchedule,
   parsePulseStandings, parsePulseWeek, type PulseBracket, type PulseFixture,
   type PulseLineupPlayer, type PulseOdds, type PulseResults, type PulseSeat, type PulseStandings } from
   '../data/nativePulse';
@@ -90,6 +90,17 @@ export async function readPulseWeekResults(league: string, season: number, week:
   const r = await port({ command: 'results.read', mode: 'read',
     arguments: { league, season, week } });
   return parsePulseResults(r.data, league, week);
+}
+
+/** PulseSeason is the published schedule and the result of every week played so far. */
+export type PulseSeason = { schedule: PulseSchedule; played: Record<number, PulseResults> };
+export async function readPulseSeason(league: string, season: number, through: number,
+  port: HostedPort = hostedWorkflow): Promise<PulseSeason> {
+  const r = await port({ command: 'schedule.read', mode: 'read', arguments: { league } });
+  const schedule = parsePulseSchedule(r.data, league);
+  const played = await Promise.all(schedule.weeks.filter(w => w.week <= through)
+    .map(w => readPulseWeekResults(league, season, w.week, port)));
+  return { schedule, played: Object.fromEntries(played.map(week => [week.week, week])) };
 }
 
 export async function readPulseMatchup(league: string, season: number, week: number,
