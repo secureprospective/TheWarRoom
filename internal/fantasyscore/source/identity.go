@@ -83,15 +83,13 @@ func ReadNativeEvidence(ctx context.Context, identity IdentityPort, stats StatPo
 	if canonical, ok := stats.(CanonicalStatPort); ok {
 		revisions, err = canonical.CanonicalPlayerWeekStats(ctx, raw)
 	} else {
-		if gsis == "" {
+		// The directory holds a few pre-GSIS ids (e.g. THO581952) in the gsis slot. No statistics file
+		// can match one, so it reads as no identity: one bad link must not stop the whole league's week.
+		if !isGSIS(gsis) {
 			out.Missing = append(out.Missing, "This player has no matching NFL statistics identity")
 			return out, nil
 		}
-		scope := RawStatScope{GSIS: gsis, Season: raw.Season, Week: raw.Week}
-		if err := scope.Validate(); err != nil {
-			return NativeEvidence{}, fmt.Errorf("read matched NFL identity: %w", err)
-		}
-		revisions, err = stats.PlayerWeekStats(ctx, scope)
+		revisions, err = stats.PlayerWeekStats(ctx, RawStatScope{GSIS: gsis, Season: raw.Season, Week: raw.Week})
 	}
 	if err != nil {
 		return NativeEvidence{}, fmt.Errorf("read the player's held statistics: %w", err)

@@ -3,26 +3,31 @@ import { HQAct as PulseAct } from './HQAct';
 import type { NativePulse } from './pulseReads';
 import { conferencesOf, divisionGroups, seedRows, type PulseSeedRow } from './pulseModel';
 import { PulseIdle } from './PulseNow';
+import { BracketDrawer, TiebreakDrawer } from './PulseRaceDrawers';
 import { percent, type PulseFixture, type PulseOdds, type PulseStandings } from '../data/nativePulse';
 
-export function PulseRace({ reading, mine }: { reading: NativePulse; mine: string }) {
+export type RaceDrawer = 'tb' | 'bk';
+
+export function PulseRace({ reading, mine, drawer, onClose }: { reading: NativePulse; mine: string;
+  drawer?: RaceDrawer; onClose: () => void }) {
   const conferences = conferencesOf(reading.bracket);
   const [conference, setConference] = useState<string>();
   const [view, setView] = useState<'seed' | 'div'>('seed');
   const [mode, setMode] = useState<'path' | 'power'>('path');
-  const side = conference && conferences.includes(conference) ? conference : conferences[0] ?? '';
   const standings = reading.standings;
-  return <section className="ws cols on" id="ws-race">
+  const own = standings?.rows.find(r => r.franchise === mine)?.conference;
+  const side = [conference, own, conferences[0]].find(name => name && conferences.includes(name)) ?? '';
+  return <><section className="ws cols on" id="ws-race">
     <div className="pcol">
       <div className="ch">
         <b>STANDINGS</b>
         <div style={{ display: 'flex', gap: '8px' }}>
           <div className="seg">
-            <PulseAct selected={view === 'seed'} onAction={() => setView('seed')}>SEEDS</PulseAct>
-            <PulseAct selected={view === 'div'} onAction={() => setView('div')}>DIVISIONS</PulseAct>
+            <PulseAct active={view === 'seed'} onAction={() => setView('seed')}>SEEDS</PulseAct>
+            <PulseAct active={view === 'div'} onAction={() => setView('div')}>DIVISIONS</PulseAct>
           </div>
           {conferences.length > 1 && <div className="seg">
-            {conferences.map(name => <PulseAct key={name} selected={side === name}
+            {conferences.map(name => <PulseAct key={name} active={side === name}
               onAction={() => setConference(name)}>{name.toUpperCase()}</PulseAct>)}
           </div>}
         </div>
@@ -44,9 +49,9 @@ export function PulseRace({ reading, mine }: { reading: NativePulse; mine: strin
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
           <b>{mode === 'path' ? 'PLAYOFF PATH' : 'POWER'}</b>
           <div className="seg">
-            <PulseAct selected={mode === 'path'} onAction={() => setMode('path')}>
+            <PulseAct active={mode === 'path'} onAction={() => setMode('path')}>
               PLAYOFF PATH</PulseAct>
-            <PulseAct selected={mode === 'power'} onAction={() => setMode('power')}>POWER</PulseAct>
+            <PulseAct active={mode === 'power'} onAction={() => setMode('power')}>POWER</PulseAct>
           </div>
         </div>
         <span className="mode">{reading.bracket?.words || ''}</span>
@@ -55,7 +60,11 @@ export function PulseRace({ reading, mine }: { reading: NativePulse; mine: strin
         ? <Power reading={reading} mine={mine} />
         : <Path reading={reading} side={side} mine={mine} />}
     </div>
-  </section>;
+  </section>
+    <TiebreakDrawer open={drawer === 'tb'} onClose={onClose} standings={standings} side={side}
+      rows={standings ? seedRows(standings, reading.bracket, side, mine) : []} />
+    <BracketDrawer open={drawer === 'bk'} onClose={onClose} bracket={reading.bracket} />
+  </>;
 }
 
 /** oddsOf is one franchise's row in the league's odds read. */
@@ -69,12 +78,13 @@ function Power({ reading, mine }: { reading: NativePulse; mine: string }) {
     : reading.errors.length ? `The power ranking is unavailable · ${reading.errors.join(' · ')}`
       : 'Reading the power ranking…'} />;
   return <>
-    <div className="scroll"><table className="ct pwr">
+    <div className="scroll"><table className="ct power">
       <thead><tr><th>PWR</th><th>FRANCHISE</th><th>W–L–T</th><th>POWER SCORE</th><th>EXP PTS</th>
         <th>ODDS</th></tr></thead>
       <tbody>{rows.map(r => <tr key={r.franchise} className={r.franchise === mine ? 'sel' : undefined}>
         <td className="sd">{r.power}</td><td><span>{r.name}</span></td><td>{r.record}</td>
-        <td>{Math.round(r.powerScore * 100)}</td><td>{r.expected.toFixed(1)}</td>
+        <td><span className="tk"><i style={{ width: percent(r.powerScore) }} /></span>
+          {Math.round(r.powerScore * 100)}</td><td>{r.expected.toFixed(1)}</td>
         <td>{percent(r.playoffOdds)}</td></tr>)}</tbody>
     </table></div>
     <div className="drawer-note">POWER = this season: {odds?.powerWords}. Lineup value is the league's own
@@ -84,7 +94,7 @@ function Power({ reading, mine }: { reading: NativePulse; mine: string }) {
 }
 
 function Divisions({ standings, mine }: { standings: PulseStandings; mine: string }) {
-  return <table className="ct stand">
+  return <div className="scroll" style={{ flex: 3 }}><table className="ct stand">
     <thead><tr><th>#</th><th>FRANCHISE</th><th>W–L–T</th><th>POINTS FOR</th></tr></thead>
     <tbody>
       {divisionGroups(standings).flatMap(group => [
@@ -97,11 +107,11 @@ function Divisions({ standings, mine }: { standings: PulseStandings; mine: strin
           <td className="sd">{row.rank}</td>
           <td><span>{row.name}</span></td>
           <td>{row.record}</td>
-          <td>{row.pointsWords}</td>
+          <td title={row.pointsWords}>{row.pointsFor.toFixed(2)}</td>
         </tr>),
       ])}
     </tbody>
-  </table>;
+  </table></div>;
 }
 
 function Seeds({ reading, standings, side, mine }: { reading: NativePulse;
@@ -114,14 +124,14 @@ function Seeds({ reading, standings, side, mine }: { reading: NativePulse;
     </thead>
     <tbody>
       {rows.map((row, index) => <tr key={row.franchise}
-        className={`${row.mine ? 'me' : ''} ${places && index === places ? 'cut' : ''}`.trim()
+        className={`${row.mine ? 'me' : ''} ${index === places - 1 ? 'cut' : ''}`.trim()
           || undefined}>
         <td className="sd">{row.seed ?? '—'}</td>
         <td><span>{row.name}</span>
-          <span className="div">{row.division ? row.division.toUpperCase() : ''}
+          <span className="div">{row.division.toUpperCase().replace(`${side.toUpperCase()} `, '')}
             {row.bye ? ' ★ BYE' : ''}</span></td>
         <td>{row.record}</td>
-        <td>{row.pointsWords}</td>
+        <td title={row.pointsWords}>{row.pointsFor?.toFixed(2) ?? '—'}</td>
         <td>{oddsOf(reading.odds, row.franchise)?.power ?? '—'}</td>
         <td title={reading.odds?.oddsWords}>{percent(oddsOf(reading.odds, row.franchise)?.playoffOdds)}</td>
       </tr>)}

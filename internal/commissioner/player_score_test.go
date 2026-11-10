@@ -25,7 +25,7 @@ func TestNativePlayerScoreCompleteAndIncompleteNeverShareTotal(t *testing.T) {
 	out, err := NativePlayerScoreReading("native.test", scope, b.records, evidence, seasonMoment(5))
 	if err != nil || out.Status != "Complete" || out.Points == nil || *out.Points != 15000 ||
 		out.PartialPoints != nil || out.Position != leaguerules.LB || out.Words != "1.5 points" ||
-		len(out.Items) != 1 || out.Items[0].Words != "Tackle: 1 recorded; 1.5 points" {
+		len(out.Items) != 1 || out.Items[0].Words != "Tackle: 1 recorded; 1.5 points" || out.Line["tackle"] != 10000 {
 		t.Fatalf("complete reading: %+v %v", out, err)
 	}
 	evidence.Missing = []string{"Play-by-play is needed for long plays and return touchdowns"}

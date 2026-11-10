@@ -1,0 +1,65 @@
+/* rail.css — the one left rail for an app league, from docs/ui/mocks/rail-mock-v1.html (option 3,
+   ruled) as drawn in league-pulse-mock-v14.html. Scoped to .rail.mock; the workspace tab row beside
+   it takes the same mock's .ws-tabs look. */
+.twr-app.target-frame[data-native-workspace="true"] { grid-template-columns: 224px minmax(0, 1fr); border: 0; }
+.twr-app .rail.mock, .twr-app .ws-head.mock {
+  --canvas:hsl(0,0%,1.6%); --sunken:hsl(0,0%,0%); --tile:hsl(0,0%,4.2%); --raised:hsl(0,0%,7.5%);
+  --ink:hsl(40,8%,84%); --ink2:hsl(40,4%,64%); --ink3:hsl(40,3%,47%); --edge:hsl(0,0%,19%);
+  --edge-hi:hsl(40,6%,70%); --black:hsl(0,0%,0%); --green:hsl(145,48%,52%);
+  --mono:"JetBrains Mono","DejaVu Sans Mono",monospace; --sans:"Inter","Noto Sans",system-ui,sans-serif;
+  --knurl:repeating-linear-gradient(45deg,hsla(0,0%,100%,.035) 0 1px,transparent 1px 4px),
+          repeating-linear-gradient(-45deg,hsla(0,0%,0%,.35) 0 1px,transparent 1px 4px);
+  --hazard:repeating-linear-gradient(-45deg,var(--edge-hi) 0 6px,var(--black) 6px 12px);
+}
+.twr-app .rail.mock{background:var(--tile);background-image:var(--knurl);border-right:3px solid var(--black);
+  display:flex;flex-direction:column;min-height:0;color:var(--ink);font:13px/1.35 var(--sans)}
+.twr-app .rail.mock *{box-sizing:border-box;margin:0}
+.twr-app .rail.mock .act{border:0;border-radius:0;background:none;box-shadow:none}
+.twr-app[data-native-workspace="true"] .workspace-status{display:none}
+.twr-app .rail.mock .rail-head{padding:14px 14px 12px;border-bottom:2px solid var(--black)}
+.twr-app .rail.mock .lg{font:700 12px var(--mono);letter-spacing:.16em}
+.twr-app .rail.mock .ph{margin-top:6px;font:11px var(--mono);color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.twr-app .rail.mock .ph i{font-style:normal;color:var(--green)}
+.twr-app .rail.mock .lgn{font:inherit;color:inherit;padding:0}
+.twr-app .rail.mock .lgn:hover{color:var(--ink)}
+.twr-app .rail.mock .lgs{list-style:none;padding:0;margin-top:8px;border:1px solid var(--edge);background:var(--sunken)}
+.twr-app .rail.mock .lgs .act{display:block;width:100%;padding:6px 8px;font-size:12px;color:var(--ink2)}
+.twr-app .rail.mock .lgs .act:hover,.twr-app .rail.mock .lgs .act.sel{color:var(--ink);background:var(--raised)}
+.twr-app .rail.mock .lgs small{display:block;font:10px var(--mono);color:var(--ink3)}
+.twr-app .rail.mock .rail-body{flex:1;min-height:0;padding:6px 0;overflow:hidden}
+.twr-app .rail.mock .gl{padding:10px 14px 4px;font:600 10px var(--mono);letter-spacing:.16em;color:var(--ink3)}
+.twr-app .rail.mock .nb{width:100%;display:flex;align-items:center;gap:10px;padding:8px 14px;text-align:left;
+  font-weight:600;border-left:4px solid transparent;transition:transform 70ms linear}
+.twr-app .rail.mock .nb .k{font:11px var(--mono);color:var(--ink3);width:10px}
+.twr-app .rail.mock .nb .car{margin-left:auto;font:11px var(--mono);color:var(--ink3)}
+.twr-app .rail.mock .nb:hover{transform:translateX(2px);background:var(--raised)}
+.twr-app .rail.mock .node.open>.nb{background:var(--raised);border-image:var(--hazard) 1}
+.twr-app .rail.mock .node.open .car{transform:rotate(90deg)}
+.twr-app .rail.mock .mark{width:6px;height:6px;background:var(--green);margin-left:4px}
+.twr-app .rail.mock .leaf{display:flex;gap:6px;width:100%;padding:5px 14px 5px 26px;text-align:left;
+  color:var(--ink2);font-size:12.5px;transition:transform 70ms linear}
+.twr-app .rail.mock .leaf:hover{color:var(--ink);transform:translateX(2px)}
+.twr-app .rail.mock .leaf .tr{font-family:var(--mono);color:var(--edge)}
+.twr-app .rail.mock .leaf.sel{color:var(--ink);font-weight:600}
+.twr-app .rail.mock .leaf.sel .tr::after{content:"▮";color:var(--edge-hi)}
+.twr-app .rail.mock .leaf.now{border:1px solid var(--edge);margin:2px 10px 4px 22px;width:calc(100% - 32px);
+  padding-left:8px;color:var(--ink);white-space:nowrap}
+.twr-app .rail.mock .tag{font:700 9px var(--mono);letter-spacing:.12em;background:var(--edge-hi);color:var(--black);
+  padding:1px 4px;align-self:center}
+.twr-app .rail.mock .me{border-top:2px solid var(--black);padding:10px 14px;font:11px var(--mono);color:var(--ink3)}
+.twr-app .rail.mock .me:empty{display:none}
+.twr-app .rail.mock .me label{display:grid;gap:6px;letter-spacing:.08em;text-transform:uppercase;font-size:10px}
+.twr-app .rail.mock .me select{width:100%;min-width:0;background:var(--sunken);color:var(--ink);
+  border:1px solid var(--edge);padding:5px 6px;font:12px var(--sans);border-radius:0}
+.twr-app .rail.mock .rail-foot{border-top:2px solid var(--black);padding:10px 14px;display:flex;
+  justify-content:space-between;align-items:center;font:11px var(--mono);color:var(--ink3)}
+.twr-app .rail.mock .rail-foot .btn{border:2px solid var(--edge);padding:3px 8px;font:600 10px var(--mono);letter-spacing:.06em}
+
+/* The workspace tab row (the mocks' .ws-tabs). */
+.twr-app .ws-head.mock{display:flex;align-items:stretch;height:auto;min-height:0;padding:0;gap:0;
+  border-bottom:2px solid var(--black);background:var(--sunken)}
+.twr-app .ws-head.mock .wtabs{display:flex;align-items:stretch}
+.twr-app .ws-head.mock .wtabs .act-tab{padding:11px 16px;margin:0;font:600 11px var(--mono);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3);border:0;border-right:1px solid var(--black)}
+.twr-app .ws-head.mock .wtabs .act-tab.on{color:var(--ink);background:var(--canvas);box-shadow:inset 0 3px 0 var(--edge-hi)}
+.twr-app .ws-head.mock:has(.wtabs:empty){display:none}

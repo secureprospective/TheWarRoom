@@ -113,3 +113,27 @@ func TestLiveReturnAndRecoveryTouchdownsStayDistinct(t *testing.T) {
 		})
 	}
 }
+
+func TestADefendersTacklesAreSoloAndAssistedNeverBoth(t *testing.T) {
+	read := func(labels, stats []string) map[leaguerules.StatID]leaguerules.Decimal {
+		t.Helper()
+		lines, err := livestats.Lines(livegame.Game{Box: []livegame.Box{{Category: "defensive", Labels: labels,
+			Rows: []livegame.BoxRow{{ID: "1", Stats: stats}}}}})
+		if err != nil || len(lines) != 1 {
+			t.Fatalf("%+v %v", lines, err)
+		}
+		return lines[0].Stats.Quantities
+	}
+	got := read([]string{"TOT", "SOLO", "SACKS"}, []string{"10", "6", "1"})
+	if got["tackle"] != 60000 || got["assist"] != 40000 || got["sack"] != 10000 {
+		t.Fatalf("total and solo: %+v", got)
+	}
+	got = read([]string{"TOT", "SOLO", "AST"}, []string{"10", "6", "3"})
+	if got["tackle"] != 60000 || got["assist"] != 30000 {
+		t.Fatalf("the box score's own assists were replaced: %+v", got)
+	}
+	got = read([]string{"TOT"}, []string{"10"})
+	if _, held := got["tackle"]; held || len(got) != 0 {
+		t.Fatalf("a total was counted as tackles: %+v", got)
+	}
+}

@@ -229,6 +229,9 @@
             "name": "franchise.01 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -306,6 +309,9 @@
             "name": "franchise.32 starter",
             "position": "LB",
             "words": "3 points",
+            "line": {
+              "tackle": 20000
+            },
             "points": 30000
           }
         ],
@@ -383,6 +389,9 @@
             "name": "franchise.02 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -460,6 +469,9 @@
             "name": "franchise.31 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -537,6 +549,9 @@
             "name": "franchise.30 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -614,6 +629,9 @@
             "name": "franchise.03 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -691,6 +709,9 @@
             "name": "franchise.04 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -768,6 +789,9 @@
             "name": "franchise.29 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -845,6 +869,9 @@
             "name": "franchise.28 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -922,6 +949,9 @@
             "name": "franchise.05 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -999,6 +1029,9 @@
             "name": "franchise.06 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1076,6 +1109,9 @@
             "name": "franchise.27 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1153,6 +1189,9 @@
             "name": "franchise.26 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1230,6 +1269,9 @@
             "name": "franchise.07 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1307,6 +1349,9 @@
             "name": "franchise.08 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1384,6 +1429,9 @@
             "name": "franchise.25 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1461,6 +1509,9 @@
             "name": "franchise.24 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1538,6 +1589,9 @@
             "name": "franchise.09 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1615,6 +1669,9 @@
             "name": "franchise.10 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1692,6 +1749,9 @@
             "name": "franchise.23 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1769,6 +1829,9 @@
             "name": "franchise.22 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1846,6 +1909,9 @@
             "name": "franchise.11 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -1923,6 +1989,9 @@
             "name": "franchise.12 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2000,6 +2069,9 @@
             "name": "franchise.21 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2077,6 +2149,9 @@
             "name": "franchise.20 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2154,6 +2229,9 @@
             "name": "franchise.13 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2231,6 +2309,9 @@
             "name": "franchise.14 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2308,6 +2389,9 @@
             "name": "franchise.19 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2385,6 +2469,9 @@
             "name": "franchise.18 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2462,6 +2549,9 @@
             "name": "franchise.15 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2539,6 +2629,9 @@
             "name": "franchise.16 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2616,6 +2709,9 @@
             "name": "franchise.17 starter",
             "position": "LB",
             "words": "1.5 points",
+            "line": {
+              "tackle": 10000
+            },
             "points": 15000
           }
         ],
@@ -2945,6 +3041,9 @@
             "name": "franchise.01 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -2973,6 +3072,9 @@
             "name": "franchise.32 starter",
             "position": "LB",
             "words": "3 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 20000
+            },
             "provisional": 30000
           }
         ],
@@ -3001,6 +3103,9 @@
             "name": "franchise.02 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3029,6 +3134,9 @@
             "name": "franchise.31 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3057,6 +3165,9 @@
             "name": "franchise.30 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3085,6 +3196,9 @@
             "name": "franchise.03 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3113,6 +3227,9 @@
             "name": "franchise.04 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3141,6 +3258,9 @@
             "name": "franchise.29 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3169,6 +3289,9 @@
             "name": "franchise.28 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3197,6 +3320,9 @@
             "name": "franchise.05 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3225,6 +3351,9 @@
             "name": "franchise.06 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3253,6 +3382,9 @@
             "name": "franchise.27 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3281,6 +3413,9 @@
             "name": "franchise.26 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3309,6 +3444,9 @@
             "name": "franchise.07 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3337,6 +3475,9 @@
             "name": "franchise.08 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3365,6 +3506,9 @@
             "name": "franchise.25 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3393,6 +3537,9 @@
             "name": "franchise.24 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3421,6 +3568,9 @@
             "name": "franchise.09 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3449,6 +3599,9 @@
             "name": "franchise.10 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3477,6 +3630,9 @@
             "name": "franchise.23 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3505,6 +3661,9 @@
             "name": "franchise.22 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3533,6 +3692,9 @@
             "name": "franchise.11 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3561,6 +3723,9 @@
             "name": "franchise.12 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3589,6 +3754,9 @@
             "name": "franchise.21 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3617,6 +3785,9 @@
             "name": "franchise.20 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3645,6 +3816,9 @@
             "name": "franchise.13 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3673,6 +3847,9 @@
             "name": "franchise.14 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3701,6 +3878,9 @@
             "name": "franchise.19 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3729,6 +3909,9 @@
             "name": "franchise.18 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3757,6 +3940,9 @@
             "name": "franchise.15 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3785,6 +3971,9 @@
             "name": "franchise.16 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],
@@ -3813,6 +4002,9 @@
             "name": "franchise.17 starter",
             "position": "LB",
             "words": "1.5 points counted so far; incomplete: A starter has not been reported",
+            "line": {
+              "tackle": 10000
+            },
             "provisional": 15000
           }
         ],

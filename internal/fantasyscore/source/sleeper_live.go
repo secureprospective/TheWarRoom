@@ -80,9 +80,10 @@ func sleeperDefenseFields() map[string]leaguerules.StatID {
 		"idp_sack":       "sack",
 		"idp_sack_yd":    "defensive_sack_yards",
 		"idp_safe":       "safety",
-		"idp_tkl":        "tackle",
-		"idp_tkl_ast":    "assist",
-		"idp_tkl_loss":   "tackle_for_loss",
+		// idp_tkl is solo plus assisted; the tackle stat is the solo ones.
+		"idp_tkl_solo": "tackle",
+		"idp_tkl_ast":  "assist",
+		"idp_tkl_loss": "tackle_for_loss",
 	}
 }
 

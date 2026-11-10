@@ -1086,6 +1086,58 @@ export namespace commissioner {
 	        this.status = source["status"];
 	    }
 	}
+	export class StatMove {
+	    stat: string;
+	    label: string;
+	    was: number;
+	    now: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new StatMove(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.stat = source["stat"];
+	        this.label = source["label"];
+	        this.was = source["was"];
+	        this.now = source["now"];
+	    }
+	}
+	export class StatRevision {
+	    stats: StatMove[];
+	    was: number;
+	    now: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new StatRevision(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.stats = this.convertValues(source["stats"], StatMove);
+	        this.was = source["was"];
+	        this.now = source["now"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class StarterScore {
 	    source?: string;
 	    fieldSources?: Record<string, string>;
@@ -1093,7 +1145,9 @@ export namespace commissioner {
 	    name: string;
 	    position?: string;
 	    words: string;
+	    line?: Record<string, number>;
 	    points?: number;
+	    revision?: StatRevision;
 	    provisional?: number;
 	
 	    static createFrom(source: any = {}) {
@@ -1108,9 +1162,29 @@ export namespace commissioner {
 	        this.name = source["name"];
 	        this.position = source["position"];
 	        this.words = source["words"];
+	        this.line = source["line"];
 	        this.points = source["points"];
+	        this.revision = this.convertValues(source["revision"], StatRevision);
 	        this.provisional = source["provisional"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class FranchiseWeekScore {
 	    recordedResult?: string;
@@ -1948,6 +2022,7 @@ export namespace commissioner {
 	    started: boolean;
 	    startKnown: boolean;
 	    fields: competition.ConferenceField[];
+	    projected: competition.ConferenceField[];
 	    rounds: competition.BracketRound[];
 	    champion?: BracketChampion;
 	    title: BracketTitle;
@@ -1972,6 +2047,7 @@ export namespace commissioner {
 	        this.started = source["started"];
 	        this.startKnown = source["startKnown"];
 	        this.fields = this.convertValues(source["fields"], competition.ConferenceField);
+	        this.projected = this.convertValues(source["projected"], competition.ConferenceField);
 	        this.rounds = this.convertValues(source["rounds"], competition.BracketRound);
 	        this.champion = this.convertValues(source["champion"], BracketChampion);
 	        this.title = this.convertValues(source["title"], BracketTitle);
@@ -2681,6 +2757,8 @@ export namespace commissioner {
 	    positionWhy?: string;
 	    missing: string[];
 	    items: NativeScoreItem[];
+	    line?: Record<string, number>;
+	    revision?: StatRevision;
 	    changes: ScoreChange[];
 	    sha256?: string;
 	    fetchedAt?: time.Time;
@@ -2705,6 +2783,8 @@ export namespace commissioner {
 	        this.positionWhy = source["positionWhy"];
 	        this.missing = source["missing"];
 	        this.items = this.convertValues(source["items"], NativeScoreItem);
+	        this.line = source["line"];
+	        this.revision = this.convertValues(source["revision"], StatRevision);
 	        this.changes = this.convertValues(source["changes"], ScoreChange);
 	        this.sha256 = source["sha256"];
 	        this.fetchedAt = this.convertValues(source["fetchedAt"], time.Time);
@@ -3002,6 +3082,7 @@ export namespace commissioner {
 	    franchise: string;
 	    name: string;
 	    division?: string;
+	    conference?: string;
 	    wins: number;
 	    losses: number;
 	    ties: number;
@@ -3021,6 +3102,7 @@ export namespace commissioner {
 	        this.franchise = source["franchise"];
 	        this.name = source["name"];
 	        this.division = source["division"];
+	        this.conference = source["conference"];
 	        this.wins = source["wins"];
 	        this.losses = source["losses"];
 	        this.ties = source["ties"];
@@ -5285,6 +5367,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	export class StatQueueItem {
 	    id: string;
 	    player: string;
@@ -5377,6 +5460,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	

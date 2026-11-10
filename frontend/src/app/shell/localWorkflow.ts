@@ -24,6 +24,9 @@ const runLocalWorkflow: HostedPort = async (request: NativeRequest, football = '
   else if (request.command === 'calendar.read')
     direct = () => api.TargetLeagueCalendar(
       commissioner.RawLeagueCalendarScope.createFrom(request.arguments));
+  else if (request.command === 'schedule.read')
+    direct = () => api.TargetLeagueSchedule(
+      commissioner.RawLeagueScheduleScope.createFrom(request.arguments));
   else if (request.command === 'week.read')
     direct = () => api.TargetNativeWeek(commissioner.RawNativeWeekScope.createFrom(request.arguments));
   else if (request.command === 'lineupdelta.read')

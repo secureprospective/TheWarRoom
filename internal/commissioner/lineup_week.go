@@ -148,6 +148,12 @@ func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env Line
 	if _, err := RulesInForce(records, change.Season, at); err != nil {
 		return Refused(err)
 	}
+	// A week played before the league came into the app is history as recorded: the league holds no roster
+	// for it, so the record of who started is not held to a later roster.
+	if held := RecordedResults(records, change.Season); raw.Command == LineupCorrect && held != nil &&
+		change.Week < held.CutoverWeek {
+		return nil
+	}
 	if lock, held := firstKickoff(env); held && !now.Before(lock) {
 		base.Assets, err = NativeAssetsAsOf(raw.League, records, lock)
 		if err != nil {

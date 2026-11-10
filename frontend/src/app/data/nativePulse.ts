@@ -16,11 +16,19 @@ export function pointsLabel(value: number | undefined): string {
 }
 
 export type PulseStarter = { player: string; name: string; position?: string; words: string;
+  /** What the starter recorded this week, by league stat id, in whole units. */
+  line?: Record<string, number>;
+  revision?: PulseRevision;
   points?: number; provisional?: number; source?: string; fieldSources?: Record<string, string> };
+/** How the final statistics moved a starter's points off the last live line the app held. */
+export type PulseRevision = { was: number; now: number;
+  stats: { stat: string; label: string; was: number; now: number }[] };
 export type PulseScore = { franchise: string; name: string; status: string; points?: number;
   provisional?: number;
   words: string; starters: PulseStarter[]; adjustment: number; lineupStatus: string;
-  lineupWords: string; flagged: boolean; zeroed?: string };
+  lineupWords: string; flagged: boolean; zeroed?: string;
+  /** The total is the source's recorded result, not the app's own count of the starters. */
+  recorded: boolean };
 export type PulseGame = { week: number; home: string; away: string; homeName: string; awayName: string;
   status: string; homePoints?: number; awayPoints?: number; homeProvisional?: number;
   awayProvisional?: number; winner?: string; words: string;
@@ -29,13 +37,28 @@ export type PulseResults = { league: string; season: number; week: number; revis
   published: boolean; words: string; games: PulseGame[]; bye?: string; byeName?: string;
   scores: PulseScore[]; missed: { franchise: string; name: string; flagged: boolean }[] };
 
+function parseLine(value: unknown, path: string): Record<string, number> | undefined {
+  if (value === undefined) return undefined;
+  return Object.fromEntries(Object.entries(object(value, `${path}.line`, Object.keys(Object(value))))
+    .map(([stat, quantity]) => [stat, points(quantity, `${path}.line.${stat}`)]));
+}
+function parseRevision(value: unknown, path: string): PulseRevision | undefined {
+  if (value === undefined) return undefined;
+  const r = object(value, `${path}.revision`, ['stats', 'was', 'now']);
+  return { was: points(r.was, path), now: points(r.now, path),
+    stats: array(r.stats, 'Stat changes', (v, p) => {
+      const s = object(v, p, ['stat', 'label', 'was', 'now']);
+      return { stat: text(s.stat, p), label: text(s.label, p), was: points(s.was, p), now: points(s.now, p) };
+    }) };
+}
 function parseStarters(value: unknown): PulseStarter[] {
   return array(value, 'Starters', (v, p) => {
-    const s = object(v, p, ['player', 'name', 'position', 'words', 'points',
+    const s = object(v, p, ['player', 'name', 'position', 'words', 'line', 'revision', 'points',
       'provisional', 'source', 'fieldSources']);
     return { player: text(s.player, p), name: text(s.name, p),
       position: s.position === undefined ? undefined : text(s.position, p),
-      words: text(s.words, p), points: optionalPoints(s.points, p),
+      words: text(s.words, p), line: parseLine(s.line, p), revision: parseRevision(s.revision, p),
+      points: optionalPoints(s.points, p),
       provisional: optionalPoints(s.provisional, p),
       source: s.source === undefined ? undefined : text(s.source, p),
       fieldSources: parseFieldSources(s.fieldSources) };
@@ -43,8 +66,8 @@ function parseStarters(value: unknown): PulseStarter[] {
 }
 function parseScores(value: unknown): PulseScore[] {
   return array(value, 'Week scores', (v, p) => {
-    const s = object(v, p, ['franchise', 'name', 'status', 'points', 'provisional', 'words', 'starters',
-      'adjustment', 'changes', 'lineup', 'zeroed']);
+    const s = object(v, p, ['recordedResult', 'franchise', 'name', 'status', 'points', 'provisional',
+      'words', 'starters', 'adjustment', 'changes', 'lineup', 'zeroed']);
     const lineup = object(s.lineup, 'Lineup verdict', ['status', 'words', 'problems', 'flagged',
       'penalty']);
     if (typeof lineup.flagged !== 'boolean') throw new Error('Unreadable lineup flag');
@@ -53,7 +76,8 @@ function parseScores(value: unknown): PulseScore[] {
       words: text(s.words, p), starters: parseStarters(s.starters),
       adjustment: points(s.adjustment, p), lineupStatus: text(lineup.status, p),
       lineupWords: text(lineup.words, p), flagged: lineup.flagged,
-      zeroed: s.zeroed === undefined ? undefined : text(s.zeroed, p) };
+      zeroed: s.zeroed === undefined ? undefined : text(s.zeroed, p),
+      recorded: s.recordedResult !== undefined };
   });
 }
 export function parsePulseResults(value: unknown, league: string, week: number): PulseResults {
@@ -87,6 +111,7 @@ export function parsePulseResults(value: unknown, league: string, week: number):
 }
 
 export type PulseStandingRow = { rank: number; franchise: string; name: string; division: string;
+  conference: string;
   wins: number; losses: number; ties: number; record: string; pointsFor: number;
   pointsWords: string; why: string[] };
 export type PulseStandings = { league: string; name: string; season: number; revision: number;
@@ -99,10 +124,11 @@ export function parsePulseStandings(value: unknown, league: string, season: numb
   if (r.league !== league || r.season !== season)
     throw new Error('Standings belong to another league or season');
   const rows = (v: unknown) => array(v, 'Standings rows', (v, p) => {
-    const s = object(v, p, ['rank', 'franchise', 'name', 'division', 'wins', 'losses', 'ties',
+    const s = object(v, p, ['rank', 'franchise', 'name', 'division', 'conference', 'wins', 'losses', 'ties',
       'record', 'computedRecord', 'pointsFor', 'pointsWords', 'why']);
     return { rank: integer(s.rank, p, 1), franchise: text(s.franchise, p), name: text(s.name, p),
-      division: s.division === undefined ? '' : text(s.division, p), wins: integer(s.wins, p),
+      division: s.division === undefined ? '' : text(s.division, p),
+      conference: s.conference === undefined ? '' : text(s.conference, p), wins: integer(s.wins, p),
       losses: integer(s.losses, p), ties: integer(s.ties, p), record: text(s.record, p),
       pointsFor: points(s.pointsFor, p), pointsWords: text(s.pointsWords, p),
       why: array(s.why, 'Reasons', (v, p) => text(v, p)) };
@@ -124,15 +150,34 @@ export type PulseSeed = { seed: number; franchise: string; name: string; divisio
   rank: number; kind: string; bye: boolean; byHand: boolean };
 export type PulseBracket = { league: string; season: number; revision: number; status: string;
   words: string; startWeek: number; finalWeek: number; perConference: number; byeSeeds: number;
-  started: boolean; fields: { conference: string; seeds: PulseSeed[] }[] };
+  started: boolean; fields: { conference: string; seeds: PulseSeed[] }[];
+  /** The fields are today's standings read as seeds, not a set playoff field. */
+  projected: boolean;
+  /** The bracket each side plays: a game names a seed, or says in words who reaches it. */
+  shape: { id: string; week: number; homeSeed?: number; awaySeed?: number; homeFrom?: string;
+    awayFrom?: string }[] };
 
 export function parsePulseBracket(value: unknown, league: string, season: number): PulseBracket {
   const r = object(value, 'Playoffs', ['league', 'name', 'season', 'revision', 'status', 'words',
-    'preset', 'presets', 'rules', 'started', 'startKnown', 'fields', 'rounds', 'champion', 'title',
+    'preset', 'presets', 'rules', 'started', 'startKnown', 'fields', 'projected', 'rounds', 'champion',
+      'title',
     'history', 'changes']);
   if (r.league !== league || r.season !== season)
     throw new Error('Playoffs belong to another league or season');
   if (typeof r.started !== 'boolean') throw new Error('Unreadable playoff start');
+  const fields = (value: unknown) => array(value, 'Playoff fields', (v, p) => {
+    const f = object(v, p, ['conference', 'seeds']);
+    return { conference: text(f.conference, p), seeds: array(f.seeds, 'Seeds', (v, p) => {
+      const s = object(v, p, ['seed', 'franchise', 'name', 'division', 'rank', 'kind', 'bye',
+        'byHand']);
+      if (typeof s.bye !== 'boolean' || typeof s.byHand !== 'boolean')
+        throw new Error('Unreadable seed');
+      return { seed: integer(s.seed, p, 1), franchise: text(s.franchise, p), name: text(s.name, p),
+        division: text(s.division, p), rank: integer(s.rank, p, 1), kind: text(s.kind, p),
+        bye: s.bye, byHand: s.byHand };
+    }) };
+  });
+  const set = fields(r.fields);
   const rules = object(r.rules, 'Playoff rules', ['words', 'perConference', 'divisionWinners',
     'wildCards', 'byeSeeds', 'seeding', 'reseed', 'startWeek', 'finalWeek', 'homeBonus', 'shape']);
   return { league: text(r.league, 'League'), season: integer(r.season, 'Season', 1920),
@@ -141,18 +186,29 @@ export function parsePulseBracket(value: unknown, league: string, season: number
     finalWeek: integer(rules.finalWeek, 'Playoff final'),
     perConference: integer(rules.perConference, 'Playoff places'),
     byeSeeds: integer(rules.byeSeeds, 'Bye seeds'), started: r.started,
-    fields: array(r.fields, 'Playoff fields', (v, p) => {
-      const f = object(v, p, ['conference', 'seeds']);
-      return { conference: text(f.conference, p), seeds: array(f.seeds, 'Seeds', (v, p) => {
-        const s = object(v, p, ['seed', 'franchise', 'name', 'division', 'rank', 'kind', 'bye',
-          'byHand']);
-        if (typeof s.bye !== 'boolean' || typeof s.byHand !== 'boolean')
-          throw new Error('Unreadable seed');
-        return { seed: integer(s.seed, p, 1), franchise: text(s.franchise, p), name: text(s.name, p),
-          division: text(s.division, p), rank: integer(s.rank, p, 1), kind: text(s.kind, p),
-          bye: s.bye, byHand: s.byHand };
+    shape: array(rules.shape, 'Bracket shape', (v, p) => {
+      const n = object(v, p, ['id', 'week', 'homeSeed', 'awaySeed', 'homeFrom', 'awayFrom']);
+      const seed = (s: unknown) => s === undefined ? undefined : integer(s, p, 1);
+      const from = (s: unknown) => s === undefined ? undefined : text(s, p);
+      return { id: text(n.id, p), week: integer(n.week, p, 1), homeSeed: seed(n.homeSeed),
+        awaySeed: seed(n.awaySeed), homeFrom: from(n.homeFrom), awayFrom: from(n.awayFrom) };
+    }),
+    fields: set.length ? set : fields(r.projected), projected: !set.length };
+}
+
+export type PulseSchedule = { season: number;
+  weeks: { week: number; games: { home: string; away: string }[]; bye?: string }[] };
+export function parsePulseSchedule(value: unknown, league: string): PulseSchedule {
+  const r = object(value, 'Schedule', ['league', 'revision', 'season', 'weeks']);
+  if (r.league !== league) throw new Error('The schedule belongs to another league');
+  return { season: integer(r.season, 'Season', 1920), weeks: array(r.weeks, 'Weeks', (v, p) => {
+    const w = object(v, p, ['week', 'games', 'bye']);
+    return { week: integer(w.week, p, 1), bye: w.bye === undefined ? undefined : text(w.bye, p),
+      games: array(w.games, 'Games', (g, q) => {
+        const game = object(g, q, ['id', 'home', 'away']);
+        return { home: text(game.home, q), away: text(game.away, q) };
       }) };
-    }) };
+  }) };
 }
 
 export type PulseFixture = { week: number; opponent: string; venue: string; kickoff?: string };

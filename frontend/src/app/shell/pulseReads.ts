@@ -2,7 +2,8 @@ import { useContractRead } from '../contracts/Contracts';
 import { hqEvents } from './hqReads';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
-import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseOdds, parsePulseResults,
+import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseOdds,
+  parsePulseResults, parsePulseSchedule, type PulseSchedule,
   parsePulseStandings, parsePulseWeek, type PulseBracket, type PulseFixture,
   type PulseLineupPlayer, type PulseOdds, type PulseResults, type PulseSeat, type PulseStandings } from
   '../data/nativePulse';
@@ -92,6 +93,17 @@ export async function readPulseWeekResults(league: string, season: number, week:
   return parsePulseResults(r.data, league, week);
 }
 
+/** PulseSeason is the published schedule and the result of every week played so far. */
+export type PulseSeason = { schedule: PulseSchedule; played: Record<number, PulseResults> };
+export async function readPulseSeason(league: string, season: number, through: number,
+  port: HostedPort = hostedWorkflow): Promise<PulseSeason> {
+  const r = await port({ command: 'schedule.read', mode: 'read', arguments: { league } });
+  const schedule = parsePulseSchedule(r.data, league);
+  const played = await Promise.all(schedule.weeks.filter(w => w.week <= through)
+    .map(w => readPulseWeekResults(league, season, w.week, port)));
+  return { schedule, played: Object.fromEntries(played.map(week => [week.week, week])) };
+}
+
 export async function readPulseMatchup(league: string, season: number, week: number,
   franchises: readonly string[], starters: Record<string, readonly string[]>,
   port: HostedPort = hostedWorkflow, publish?: (reading: PulseMatchup) => void): Promise<PulseMatchup> {
@@ -121,4 +133,29 @@ export async function readPulseMatchup(league: string, season: number, week: num
     }
   });
   return out;
+}
+
+/** RailNow is what the shell rail says on every screen: the week being played and where my
+ *  matchup stands in it. Lines the league does not hold stay undefined and are left out. */
+export type RailNow = { week?: number; mine?: number; theirs?: number; decided: boolean };
+
+export async function readRailNow(league: string, mine: string, port: HostedPort = hostedWorkflow):
+  Promise<RailNow> {
+  const directory = await port({ command: 'native.directory.read', mode: 'read', arguments: { league } });
+  const held = parsePulseDirectory(directory.data, league);
+  const r = await port({ command: 'week.read', mode: 'read', arguments: { league, franchise: mine,
+    season: held.season, localZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    at: new Date().toISOString() } });
+  const read = parsePulseWeek(r.data, league, mine, held.season);
+  const week = read.week ?? read.nextWeek;
+  if (!week || !mine) return { week, decided: false };
+  const results = await readPulseWeekResults(league, held.season, week, port);
+  const game = results.games.find(g => g.home === mine || g.away === mine);
+  if (!game) return { week, decided: false };
+  const points = (franchise: string) => {
+    const score = results.scores.find(s => s.franchise === franchise);
+    return score?.points ?? score?.provisional;
+  };
+  return { week, mine: points(mine), theirs: points(game.home === mine ? game.away : game.home),
+    decided: Boolean(game.winner) };
 }

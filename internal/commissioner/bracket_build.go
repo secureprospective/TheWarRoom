@@ -16,15 +16,18 @@ func (b *bracketReader) build(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if words := regularSeasonOpen(standings, b.rules); words != "" {
-		b.stop(bracketWaiting, words)
-		return nil
-	}
 	rows := standings.Computed
 	if standings.Override != nil {
 		rows = standings.Override.Rows
 	}
 	field, names, rank := b.fieldInput(rows)
+	if words := regularSeasonOpen(standings, b.rules); words != "" {
+		b.stop(bracketWaiting, words)
+		if projected, unseeded := competition.SeedField(field); standings.Status == "Ranked" && unseeded == "" {
+			b.out.Projected = projected
+		}
+		return nil
+	}
 	fields, words := competition.SeedField(field)
 	if words != "" {
 		b.stop(bracketNeeds, words)

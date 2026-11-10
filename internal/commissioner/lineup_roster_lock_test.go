@@ -2,6 +2,7 @@ package commissioner
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -50,6 +51,31 @@ func TestLineupRosterAtWeekLock(t *testing.T) {
 				t.Fatalf("expected roster refusal, got %v", err)
 			}
 		})
+	}
+}
+
+func TestLineupBeforeCutoverIsHistoryNotHeldToTheRoster(t *testing.T) {
+	b := rolloverLedger(t)
+	player := b.records[1].Command.Args.Native.Players[2]
+	other := "franchise.01"
+	if player.Franchise == other {
+		other = "franchise.02"
+	}
+	records := append(slices.Clone(b.records), Record{Command: RawCommand{League: rolloverLeague, Command: ScheduleGenerate,
+		Args: RawArgs{Schedule: &RawScheduleArgs{Recorded: &RawRecordedResults{Season: 2026, CutoverWeek: 3}}}},
+		Receipt: Receipt{Entry: "recorded", RecordedAt: seasonMoment(11)}})
+	for week, want := range map[int]bool{2: true, 3: false} {
+		raw := RawCommand{League: rolloverLeague, Command: LineupCorrect, Args: RawArgs{Lineup: &RawLineupChange{
+			Season: 2026, Week: week, Franchise: other, Starters: []string{player.ID}}}}
+		err := CheckLineupAppend(raw, records, seasonMoment(12), LineupFacts{})
+		if want != (err == nil) {
+			t.Fatalf("week %d: accepted=%v, got %v", week, want, err)
+		}
+	}
+	owner := RawCommand{League: rolloverLeague, Command: LineupSet, Args: RawArgs{Lineup: &RawLineupChange{
+		Season: 2026, Week: 2, Franchise: other, Starters: []string{player.ID}}}}
+	if err := CheckLineupAppend(owner, records, seasonMoment(12), LineupFacts{}); err == nil {
+		t.Fatal("an owner's lineup skipped the roster check")
 	}
 }
 

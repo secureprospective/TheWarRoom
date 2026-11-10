@@ -156,6 +156,7 @@ func (s *Store) readNativeResults(ctx context.Context, league string, season, we
 	if err != nil {
 		return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
 	}
+	commissioner.RecordedStarters(ctx, records, src, &out)
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }

@@ -994,6 +994,9 @@
             "name": "QB1 of team 01",
             "position": "QB",
             "words": "30 points; zeroed because the lineup is invalid",
+            "line": {
+              "reception": 300000
+            },
             "points": 0
           },
           {
@@ -1004,6 +1007,9 @@
             "name": "RB1 of team 01",
             "position": "RB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1014,6 +1020,9 @@
             "name": "RB2 of team 01",
             "position": "RB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1024,6 +1033,9 @@
             "name": "WR1 of team 01",
             "position": "WR",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1034,6 +1046,9 @@
             "name": "WR2 of team 01",
             "position": "WR",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1044,6 +1059,9 @@
             "name": "WR3 of team 01",
             "position": "WR",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1054,6 +1072,9 @@
             "name": "WR4 of team 01",
             "position": "WR",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1064,6 +1085,9 @@
             "name": "TE1 of team 01",
             "position": "TE",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1074,6 +1098,9 @@
             "name": "PK1 of team 01",
             "position": "PK",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1084,6 +1111,9 @@
             "name": "DT1 of team 01",
             "position": "DT",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1094,6 +1124,9 @@
             "name": "DT2 of team 01",
             "position": "DT",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1104,6 +1137,9 @@
             "name": "DE1 of team 01",
             "position": "DE",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1114,6 +1150,9 @@
             "name": "DE2 of team 01",
             "position": "DE",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1124,6 +1163,9 @@
             "name": "LB1 of team 01",
             "position": "LB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1134,6 +1176,9 @@
             "name": "LB2 of team 01",
             "position": "LB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1144,6 +1189,9 @@
             "name": "LB3 of team 01",
             "position": "LB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1154,6 +1202,9 @@
             "name": "CB1 of team 01",
             "position": "CB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1164,6 +1215,9 @@
             "name": "CB2 of team 01",
             "position": "CB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1174,6 +1228,9 @@
             "name": "S1 of team 01",
             "position": "S",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1184,6 +1241,9 @@
             "name": "S2 of team 01",
             "position": "S",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           }
         ],
@@ -1222,6 +1282,9 @@
             "name": "QB1 of team 32",
             "position": "QB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1232,6 +1295,9 @@
             "name": "RB1 of team 32",
             "position": "RB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1242,6 +1308,9 @@
             "name": "RB2 of team 32",
             "position": "RB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1252,6 +1321,9 @@
             "name": "WR1 of team 32",
             "position": "WR",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1262,6 +1334,9 @@
             "name": "WR2 of team 32",
             "position": "WR",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1272,6 +1347,9 @@
             "name": "WR3 of team 32",
             "position": "WR",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1282,6 +1360,9 @@
             "name": "WR4 of team 32",
             "position": "WR",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1292,6 +1373,9 @@
             "name": "TE1 of team 32",
             "position": "TE",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1302,6 +1386,9 @@
             "name": "PK1 of team 32",
             "position": "PK",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1312,6 +1399,9 @@
             "name": "DT1 of team 32",
             "position": "DT",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1322,6 +1412,9 @@
             "name": "DT2 of team 32",
             "position": "DT",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1332,6 +1425,9 @@
             "name": "DE1 of team 32",
             "position": "DE",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1342,6 +1438,9 @@
             "name": "DE2 of team 32",
             "position": "DE",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1352,6 +1451,9 @@
             "name": "LB1 of team 32",
             "position": "LB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1362,6 +1464,9 @@
             "name": "LB2 of team 32",
             "position": "LB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1372,6 +1477,9 @@
             "name": "LB3 of team 32",
             "position": "LB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1382,6 +1490,9 @@
             "name": "CB1 of team 32",
             "position": "CB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1392,6 +1503,9 @@
             "name": "CB2 of team 32",
             "position": "CB",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1402,6 +1516,9 @@
             "name": "S1 of team 32",
             "position": "S",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1412,6 +1529,9 @@
             "name": "S2 of team 32",
             "position": "S",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           },
           {
@@ -1422,6 +1542,9 @@
             "name": "S3 of team 32",
             "position": "S",
             "words": "1 points",
+            "line": {
+              "reception": 10000
+            },
             "points": 10000
           }
         ],

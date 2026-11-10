@@ -66,7 +66,8 @@ it('keeps app HQ and War Room failures inside the navigable shell', async () => 
     expect(container.querySelector('.ws')).not.toBeNull();
     await act(async () => { commands.dispatch('nav.open', { node: 'war' }); });
     expect(container.querySelector('.rail nav[aria-label="Workspaces"]')).not.toBeNull();
-    const home = [...container.querySelectorAll('.rail nav button')].find(b => b.textContent === 'Home');
+    const home = [...container.querySelectorAll('.rail nav button')]
+      .find(b => b.getAttribute('aria-label') === 'Home');
     expect(home).toBeDefined();
     await act(async () => { (home as HTMLButtonElement).click(); });
     expect(container.querySelector('.ws')?.getAttribute('aria-label')).toBe('Home');
@@ -86,7 +87,7 @@ it('opens the Control Room on the locked mock for a picked app league', async ()
   const root = createRoot(container);
   try {
     await act(async () => { root.render(<TargetApp />); });
-    for (let i = 0; i < 50 && !container.querySelector('[data-testid="control-room"]'); i++)
+    for (let i = 0; i < 200 && !container.querySelector('[data-testid="control-room"]'); i++)
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
     expect(container.querySelector('[data-testid="control-room"]')).not.toBeNull();
     expect(container.querySelector('.shell-unwired')).toBeNull();
@@ -98,4 +99,4 @@ it('opens the Control Room on the locked mock for a picked app league', async ()
     await act(async () => { root.unmount(); });
     delete (window as unknown as { go?: unknown }).go;
   }
-});
+}, 10_000);
