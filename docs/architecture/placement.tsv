@@ -109,6 +109,7 @@ internal/app/platform	platform
 internal/composition	platform
 internal/leagueservice	platform
 internal/serverhttp	platform
+internal/serverhttp/landing	platform
 internal/serverclient	platform
 internal/accounts	platform
 internal/store/accounts	platform

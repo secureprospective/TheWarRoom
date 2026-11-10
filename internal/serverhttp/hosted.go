@@ -17,6 +17,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/serverhttp/landing"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -65,7 +66,16 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "account service unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	if r.TLS == nil || !originAdmissible(r) || r.URL.RawQuery != "" {
+	if r.TLS == nil || !originAdmissible(r) {
+		http.Error(w, "request refused", http.StatusBadRequest)
+		return
+	}
+	// The landing page ignores its query: shared links arrive with tracking parameters.
+	if landing.Has(r.URL.Path) {
+		landing.Serve(w, r)
+		return
+	}
+	if r.URL.RawQuery != "" {
 		http.Error(w, "request refused", http.StatusBadRequest)
 		return
 	}

@@ -19,7 +19,7 @@
         "rule": "wide-tracking",
         "value": "*",
         "files": [
-          "website/index.html"
+          "internal/serverhttp/landing/site/index.html"
         ],
         "createdAt": "2026-11-10T14:47:35.827Z",
         "reason": "project design system: short uppercase mono panel labels and buttons, tracking copied from locked mock league-pulse-mock-v14"
@@ -28,7 +28,7 @@
         "rule": "aphoristic-cadence",
         "value": "*",
         "files": [
-          "website/index.html"
+          "internal/serverhttp/landing/site/index.html"
         ],
         "createdAt": "2026-11-10T15:04:59.035Z",
         "reason": "user confirmed 2026-11-10: 'I like punchy wording, stick with it'"
