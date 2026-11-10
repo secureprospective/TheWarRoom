@@ -135,3 +135,24 @@ Measured by me (prototype, reverted, tree clean at bd4f6c6e):
   If he approves: make 1.2 a league setting (pickvalue.market), drop unused TradeLensSource.Players, relabel
   "YOUR BEST 21" (it now includes picks' worth; header 281.8 is the long-term best 21, a different read), reconcile
   with pickvalue v2 used by power rankings (two pick valuers now).
+- 11-10 ~17:15 HIS READ of the 4 shots: 1 wrong (a 1st >> Brissett, stopgap), 2 about even (OK), 3 wrong (they would
+  snatch picks for Downs; safeties plentiful), 4 wrong (franchise QB Herbert >= two 1sts + two 2nds). Power rankings
+  to be updated after this is ironed out. Anchors saved in memory project_warroom_trade_value_human_anchors.md.
+  MEASURED causes: (a) no positional scarcity: league replacement (first non-starter, retool lens) QB 14.7, S 9.1,
+  CB 7.9, DE 7.5, DT 6.3, LB 5.8, RB 5.1, K 4.6, WR 4.4, TE 3.9; (b) model_scores: Herbert now pct .30 on 8 games
+  with z_now .78 vs 45 past games -> QB30, dyn 15.95 < Cousins (38) 19.17; (c) 3-season horizon.
+  Tested over-replacement measure in Python: Brissett 0.3 vs a 1st 4.0 (read 1 passes); Downs 5.4 vs picks ~3.8-4.6
+  (read 3 closer, not passing); 2nd+3rd+3rd = 1.5 vs 1st 4.0 (read 2 BREAKS); Herbert 0.0 (read 4 fails: base model).
+  NOT built. Waiting on his rulings: scarcity in trade value; Part 7 tune of how far half a season moves a veteran.
+- 11-10 ~18:30 RULED: "scarcity has to be a factor in the actual trade calculator" (and draft value), NOT power
+  rankings; veterans "we're probably going to have to work through that" (Part 7 with him).
+  BUILT: tradelens.replacement (per position, per lens: seats = teams x (min + flex shared by room above min);
+  level = first player past the seats, free agents included), roster.over, picks' comps carry Position; panel label
+  "YOUR EDGE". Re-staged his four reads (shots warroom-scarcity-{1..4}.png in his Downloads):
+  1 PASS (1st for Brissett: you -2.4, them +4.3). 2 FAIL (2nd+3rd+3rd for 1st: them -2.0; he says even).
+  3 CLOSER, FAIL (Downs: them -1.5, was -2.9). 4 FAIL WORSE (Herbert reads 0.0; every QB is near 0 because
+  QB33 scores 14.7; model also rates him QB30).
+  Oddities seen: kickers read high (Patterson 4.2 > Downs 2.1); a 0-value starter can show -0.0 held because his
+  leaving lowers the bar picks must beat. Proportional flex rule vs week-9 real starts: within 0.3 except RB
+  (1.59 vs 2.16) and WR (2.88 vs 3.28).
+  NEXT with him: veteran/half-season weight (z_now), QB worth in a 1-QB 32-team league, later-round pick depth.

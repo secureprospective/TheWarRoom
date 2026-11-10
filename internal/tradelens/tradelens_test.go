@@ -34,12 +34,13 @@ func TestTwoForOneCountsOnlyTheBestN(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// You: 20+12 becomes 20+10. They: 10+9 becomes 12+11; their pick is 6.65 at 70% long term and
-	// starts for nobody. Raw sums would call it 23 for 10.
-	if !near(got.You.Net, -2) || !near(got.Them.Net, 4) || got.Verdict != "bad" {
+	// The league's best benched receiver is the 9, so each player counts for what he scores over 9.
+	// You: 11+3 becomes 11+1. They: 1+0 becomes 3+2, and their pick, 6.65 at 70% long term, now has
+	// a 2 to beat where it had nothing. Raw sums would call it 23 for 10.
+	if !near(got.You.Net, -2) || !near(got.Them.Net, 2) || got.Verdict != "bad" {
 		t.Fatalf("you %v them %v verdict %q", got.You.Net, got.Them.Net, got.Verdict)
 	}
-	if !near(got.You.Out, 12) || !near(got.You.In, 10) || !near(got.You.In-got.You.Out, got.You.Net) {
+	if !near(got.You.Out, 3) || !near(got.You.In, 1) || !near(got.You.In-got.You.Out, got.You.Net) {
 		t.Fatalf("out %v in %v", got.You.Out, got.You.In)
 	}
 }
@@ -49,8 +50,8 @@ func TestShelfValuesAreWhatEachSideGainsOrLoses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string][2]float64{"a1": {9, 11}, "a2": {1, 3}, "a3": {0, 2}, "b1": {0, 3.35},
-		"b2": {0, 2.35}, "pick:2027:1:b": {0, 0}}
+	want := map[string][2]float64{"a1": {9, 10}, "a2": {1, 2}, "a3": {0, 1}, "b1": {0, 1},
+		"b2": {0, 0}, "pick:2027:1:b": {3.65, 6.65}}
 	for _, a := range got.Assets {
 		if w, ok := want[a.Token]; ok && (!near(a.You, w[0]) || !near(a.Them, w[1])) {
 			t.Errorf("%s: you %v them %v, want %v", a.Token, a.You, a.Them, w)
@@ -130,7 +131,8 @@ func TestPickIsWorthWhatItsPlayersWouldAdd(t *testing.T) {
 	in := league()
 	in.Assets = in.Assets[:len(in.Assets)-1]
 	pick := heldPick("pick:2027:1:b", "b", 10)
-	pick.Comps, pick.Weight = [][]Comp{{{Now: 20, Dynasty: 20}, {}}, {{Now: 20, Dynasty: 20}, {}, {}, {}}}, 1
+	pick.Comps, pick.Weight = [][]Comp{{{Position: "WR", Now: 20, Dynasty: 20}, {}},
+		{{Position: "WR", Now: 20, Dynasty: 20}, {}, {}, {}}}, 1
 	in.Assets = append(in.Assets, pick)
 	got, err := Evaluate(in)
 	if err != nil {
@@ -138,10 +140,30 @@ func TestPickIsWorthWhatItsPlayersWouldAdd(t *testing.T) {
 	}
 	for _, a := range got.Assets {
 		if a.Token == pick.Token && (math.Abs(a.You-4) > 1e-9 || math.Abs(a.Them-5.5) > 1e-9) {
-			t.Fatalf("pick adds %v to a bar of 12 and holds %v over a bar of 9, want 4 and 5.5", a.You, a.Them)
+			t.Fatalf("pick adds %v over your second starter and holds %v over theirs, want 4 and 5.5", a.You, a.Them)
 		}
 	}
-	if math.Abs(got.Them.Before-24.5) > 1e-9 {
-		t.Fatalf("their count is %v, want 19 in players and 5.5 in the pick", got.Them.Before)
+	if math.Abs(got.Them.Before-6.5) > 1e-9 {
+		t.Fatalf("their count is %v, want 1 in players and 5.5 in the pick", got.Them.Before)
+	}
+}
+
+// Equal scorers are not equal in a trade: the league's spare quarterback is a 4 and its spare safety
+// an 18, so a 20 at quarterback is worth 16 and a 20 at safety is worth 2.
+func TestScarcePositionsAreWorthMore(t *testing.T) {
+	at := func(token, franchise, position string, v float64) Asset {
+		return Asset{Token: token, Franchise: franchise, Position: position, Now: v, Dynasty: v, Valued: true}
+	}
+	got, err := Evaluate(Input{N: 2, Teams: 2, Slots: []Slot{{"QB", 1, 1}, {"S", 1, 1}},
+		You: Side{Franchise: "a", Direction: Retool}, Them: Side{Franchise: "b", Direction: Retool},
+		Assets: []Asset{at("qb", "a", "QB", 20), at("s", "a", "S", 20), at("b1", "b", "QB", 10),
+			at("b2", "b", "S", 19), at("b3", "b", "QB", 4), at("b4", "b", "S", 18)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range got.Assets {
+		if want, ok := map[string]float64{"qb": 16, "s": 2}[a.Token]; ok && !near(a.You, want) {
+			t.Errorf("%s holds %v, want %v", a.Token, a.You, want)
+		}
 	}
 }

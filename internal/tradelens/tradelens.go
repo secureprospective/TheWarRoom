@@ -67,6 +67,7 @@ func Read(s Standing, medianAge float64) Direction {
 
 // Comp is one player a league really took where a pick sits, as the model values him today.
 type Comp struct {
+	Position     string
 	Now, Dynasty float64
 }
 
@@ -197,9 +198,43 @@ func (d Direction) blend(now, dynasty float64) float64 {
 	return w*now + (1-w)*dynasty
 }
 
+// replacement is each position's replacement level under a lens: the best player there who would
+// not start anywhere in the league. Every lineup seats its minimum at each position, and its
+// flexible spots are shared among positions by the room each has above its minimum. Scarcity
+// lives here: a position deep in good players has a high level, so its players are worth less.
+func replacement(in Input, d Direction) map[string]float64 {
+	flex, room := in.N, 0
+	for _, s := range in.Slots {
+		flex, room = flex-s.Min, room+s.Max-s.Min
+	}
+	out := map[string]float64{}
+	for _, s := range in.Slots {
+		seats := float64(s.Min)
+		if room > 0 {
+			seats += float64(max(flex, 0)) * float64(s.Max-s.Min) / float64(room)
+		}
+		var league []float64
+		for _, a := range in.Assets {
+			if a.plays(s.Position) {
+				league = append(league, a.lens(d))
+			}
+		}
+		sort.Sort(sort.Reverse(sort.Float64Slice(league)))
+		if bench := int(math.Round(seats * float64(in.Teams))); bench < len(league) {
+			out[s.Position] = league[bench]
+		}
+	}
+	return out
+}
+
+// over is a player's lens value over his position's replacement level, never below nothing.
+func (r roster) over(position string, now, dynasty float64) float64 {
+	return max(0, r.side.Direction.blend(now, dynasty)-r.floor[position])
+}
+
 // worth is what a pick adds to a roster whose last counted player is worth bar: each player taken
 // where it sits counts for what he would add, so a pick is priced on its chance, not its average.
-func (a Asset) worth(d Direction, bar float64) float64 {
+func (r roster) worth(a Asset, bar float64) float64 {
 	if !a.Valued {
 		return 0
 	}
@@ -207,7 +242,7 @@ func (a Asset) worth(d Direction, bar float64) float64 {
 	for _, group := range a.Comps {
 		sum := 0.0
 		for _, c := range group {
-			sum += max(0, d.blend(c.Now, c.Dynasty)-bar)
+			sum += max(0, r.over(c.Position, c.Now, c.Dynasty)-bar)
 		}
 		top = max(top, sum/float64(max(len(group), 1)))
 	}
@@ -238,10 +273,11 @@ type roster struct {
 	side   Side
 	n      int
 	assets map[string]Asset
+	floor  map[string]float64 // each position's replacement level under this side's lens
 }
 
-// count is the roster's best N players under its own lens with out removed and in added, plus
-// what each pick it then holds is worth against that best N.
+// count is the roster's best N players under its own lens, each over his position's replacement
+// level, with out removed and in added, plus what each pick it then holds is worth against them.
 func (r roster) count(out map[string]bool, in []Asset) float64 {
 	held := make([]Asset, 0, len(r.assets)+len(in))
 	for token, a := range r.assets {
@@ -252,14 +288,14 @@ func (r roster) count(out map[string]bool, in []Asset) float64 {
 	held = append(held, in...)
 	values := make([]float64, 0, len(held))
 	for _, a := range held {
-		if !a.Pick {
-			values = append(values, a.lens(r.side.Direction))
+		if !a.Pick && a.Valued {
+			values = append(values, r.over(a.Position, a.Now, a.Dynasty))
 		}
 	}
 	total, bar := best(values, r.n)
 	for _, a := range held {
 		if a.Pick {
-			total += a.worth(r.side.Direction, bar)
+			total += r.worth(a, bar)
 		}
 	}
 	return total
@@ -310,8 +346,8 @@ func Evaluate(in Input) (Reading, error) {
 
 // rosters splits the league's assets into the two sides' holdings.
 func rosters(in Input) (roster, roster) {
-	you := roster{side: in.You, n: in.N, assets: map[string]Asset{}}
-	them := roster{side: in.Them, n: in.N, assets: map[string]Asset{}}
+	you := roster{side: in.You, n: in.N, assets: map[string]Asset{}, floor: replacement(in, in.You.Direction)}
+	them := roster{side: in.Them, n: in.N, assets: map[string]Asset{}, floor: replacement(in, in.Them.Direction)}
 	for _, a := range in.Assets {
 		switch {
 		case a.Franchise == in.You.Franchise:

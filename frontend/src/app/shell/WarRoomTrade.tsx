@@ -138,9 +138,9 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
         {preview.reading?.teams.flatMap(t => t.figures.map(f =>
         <div key={`${t.team}:${f.label}`}><span className="h">{f.label.toUpperCase()}</span><b>{f.after}</b>
           <small>was {f.before}</small></div>))}
-        {held && held.verdict !== 'empty' && <div><span className="h">YOUR BEST {n}</span>
+        {held && held.verdict !== 'empty' && <div><span className="h">YOUR EDGE</span>
           <b>{held.you.after.toFixed(1)}</b><small>was {held.you.before.toFixed(1)} · {signed(held.you.net)}
-          </small></div>}
+            {' '}· best {n} over replacement, plus picks</small></div>}
         {delta.reading && <div><span className="h">PROJ / WEEK</span>
           <b>{delta.reading.you.unprojected.length ? '—' :
             signed(delta.reading.you.perWeek)}</b><small>your best lineup</small></div>}

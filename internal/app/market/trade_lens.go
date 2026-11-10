@@ -109,8 +109,8 @@ func lensLeague(ctx context.Context, src TradeLensSource, scope tradelens.Scope,
 	return records, base.Assets.Snapshot, in, nil
 }
 
-// lensPlayers is every rostered player with the model's two values; a contract with no known end
-// counts as signed, since nothing says he leaves.
+// lensPlayers is every rostered player with the model's two values, then every valued free agent; a
+// contract with no known end counts as signed, since nothing says he leaves.
 func lensPlayers(values appvalue.Reading, snapshot *commissioner.RawNativeSnapshot, season int) []tradelens.Asset {
 	valued := make(map[string]appvalue.Player, len(values.Players))
 	for _, p := range values.Players {
@@ -129,6 +129,14 @@ func lensPlayers(values appvalue.Reading, snapshot *commissioner.RawNativeSnapsh
 		out = append(out, tradelens.Asset{Token: p.ID, Franchise: p.Franchise, Position: v.Position,
 			Now: v.NowPPG, Dynasty: v.DynastyPP, Valued: v.Available, Words: words, Age: v.Age, AgeKnown: v.AgeKnown,
 			SignedNext: p.ExpirationYear == 0 || p.ExpirationYear > season})
+		delete(valued, p.ID)
+	}
+	// Free agents belong to nobody but set each position's replacement level: anyone can sign one.
+	for id, v := range valued {
+		if v.Available {
+			out = append(out, tradelens.Asset{Token: id, Position: v.Position, Now: v.NowPPG, Dynasty: v.DynastyPP,
+				Valued: true})
+		}
 	}
 	return out
 }
@@ -156,7 +164,7 @@ func takenPicks(values appvalue.Reading, picks []commissioner.NativePick, season
 		}
 		t := takenPick{round: p.Round, slot: p.Slot}
 		if v := valued[p.Player]; v.Available {
-			t.comp = tradelens.Comp{Now: v.NowPPG, Dynasty: v.DynastyPP}
+			t.comp = tradelens.Comp{Position: v.Position, Now: v.NowPPG, Dynasty: v.DynastyPP}
 		}
 		out = append(out, t)
 	}
