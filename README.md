@@ -18,6 +18,7 @@
 [![Money](https://img.shields.io/badge/Money-int64%20cents%20·%20exact%20to%20the%20penny-9cf)](#-the-native-league)
 [![Speed](https://img.shields.io/badge/Screens-under%20200%20ms%20·%2032%20devices-brightgreen)](#-the-league-server)
 [![Backups](https://img.shields.io/badge/Backups-Encrypted%20·%20Off--site-gold)](#-it-cannot-lose-the-league)
+[![Leaner](https://img.shields.io/badge/The%20Trim-725k%20→%20448k%20lines-success)](#-the-trim)
 
 [![PWA](https://img.shields.io/badge/PWA-Browser%20%2B%20Phone-5A0FC8?logo=pwa&logoColor=white)](#-the-league-server)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://react.dev)
@@ -43,6 +44,7 @@
  │  LEAGUE SERVER .. BUILT      twr-server · Alpine · Cloudflare Tunnel         │
  │  BACKUPS ........ ARMED      encrypted · Cloudflare R2 · spare-host restore  │
  │  DESKTOPS ....... PACKAGED   Windows · Mac · Linux · signed self-updates     │
+ │  THE TRIM ....... −38%       725k → 448k lines · every gate still green      │
  │  OPENING DAY .... JULY 2027  the rookie draft, run through TheWarRoom        │
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -69,8 +71,8 @@
 | 🚪 [Bring Your League](#-bring-your-league) | 🧩 [Any League You Can Imagine](#-any-league-you-can-imagine) | 🧠 [Two Numbers Per Player](#-two-numbers-per-player) |
 | 🏟️ [The League Server](#-the-league-server) | 🏈 [The Native League](#-the-native-league) | 🔥 [The 32-Team Default](#-the-32-team-default-built-from-the-data) |
 | 🛡️ [The Vault Door](#-the-vault-door) | 💾 [It Cannot Lose the League](#-it-cannot-lose-the-league) | 🎛️ [The Console](#-the-console) |
-| 🏛️ [Architecture](#-the-architecture) | 🗺️ [The Road to the Draft](#-the-road-to-the-draft) | 🤝 [How It Gets Built](#-how-it-gets-built) |
-| 🛠️ [Running It](#-running-it) |  |  |
+| ✂️ [The Trim](#-the-trim) | 🏛️ [Architecture](#-the-architecture) | 🗺️ [The Road to the Draft](#-the-road-to-the-draft) |
+| 🤝 [How It Gets Built](#-how-it-gets-built) | 🛠️ [Running It](#-running-it) |  |
 
 ---
 
@@ -512,6 +514,27 @@ The bar is **Anduril, not SaaS**: dark, precise, data-dense, with no wasted pixe
 
 ---
 
+## ✂️ The Trim
+
+> We sprinted to a working platform. **Then we cut it to the bone, and it still stands.**
+
+Hundreds of AI build sessions got TheWarRoom to a working league server. They also left a lot behind: tests that had done their job, frozen snapshots, old mock-ups, spent plans. In November 2026 we went back through all of it with one rule: **keep what is good and working, delete the rest, and prove nothing broke.**
+
+```
+   BEFORE   725,000 tracked lines
+   AFTER    448,000 tracked lines          −38%, with more to come
+   ─────────────────────────────────────────────────────────────────────────────
+   HOW      spent tests, frozen snapshots and old mock-ups retired first; then every
+            remaining Go test was measured for the production lines it exercises,
+            and only true duplicates were cut
+   KEPT     ledger replay · privacy · durability · contracts · sign-in · the import · the engines
+   PROOF    lint, the race-detector suite, the vulnerability scan and the frontend build, all green
+```
+
+**Why it matters to you:** less code is a faster app, fewer places for a bug to hide, and a codebase an AI can change safely. The laws don't change: every button is a command, one build serves every league, and **non-technical owners come first without ever limiting the experts.**
+
+---
+
 ## 🏛️ The Architecture
 
 The boundaries aren't conventions; they're **enforced by the build**. A violation is a build failure, not a code-review note.
@@ -546,7 +569,7 @@ The boundaries aren't conventions; they're **enforced by the build**. A violatio
 - **A walkable tree.** Every feature has one home, and CI fails any file that isn't indexed. Find anything in two hops: [`SYSTEM_MAP.md`](SYSTEM_MAP.md).
 
 ```
-   BY THE NUMBERS   ~140,000 lines of Go · ~73,000 lines of TypeScript
+   BY THE NUMBERS   ~139,000 lines of Go · ~87,000 lines of Go tests · ~72,000 lines of TypeScript
                     650+ merged changes · 137 typed league commands · 3 desktop platforms · 1 league server
 ```
 
@@ -559,6 +582,7 @@ The boundaries aren't conventions; they're **enforced by the build**. A violatio
    ✅ THE TRUTH PASS ───────────────── ledger replay: 2,000 events from 135 s → 66 ms
    ✅ THE LEAGUE SERVER ─────────────── hosted season, accounts, backups, packages
    ✅ THE JOIN PAGE ─────────────────── owners pick their team from a phone
+   ✅ THE TRIM ──────────────────────── 725k → 448k lines, gates green
    ▶  THE WEB APP, COMPLETE ────────── every owner job from a browser or phone
    ▶  CLICKS UNDER 100 MS ──────────── the last speed budget
    ▶  THE IMPORT, EVERY LEAGUE ─────── any size, any type, lands whole

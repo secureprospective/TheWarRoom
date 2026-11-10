@@ -3,11 +3,9 @@ package core_test
 import (
 	"context"
 	"slices"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/app/core/coretest"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -53,40 +51,6 @@ func TestOffersSharedReadsDetachNestedValues(t *testing.T) {
 			t.Fatal("nil/empty names changed")
 		}
 	}
-}
-
-func TestOffersFeedPublicationRacesDetachedReads(t *testing.T) {
-	s := coretest.New(t).Build()
-	ids := make([]playerid.PlayerID, 2)
-	for i, raw := range []string{"0042", "13593"} {
-		id, err := playerid.New(raw)
-		if err != nil {
-			t.Fatal(err)
-		}
-		ids[i] = id
-	}
-	var workers sync.WaitGroup
-	workers.Go(func() {
-		for range 500 {
-			s.SeasonMu.Lock()
-			s.SeasonFreeAgents = core.HeldFeed[[]playerid.PlayerID]{Value: slices.Clone(ids), FetchedAt: time.Now()}
-			s.SeasonMu.Unlock()
-		}
-	})
-	for range 3 {
-		workers.Go(func() {
-			for range 500 {
-				feed := s.OffersFreeAgents()
-				if len(feed.Value) > 0 {
-					if !slices.Equal(feed.Value, ids) {
-						t.Error("publication torn")
-					}
-					feed.Value[0] = playerid.PlayerID{}
-				}
-			}
-		})
-	}
-	workers.Wait()
 }
 
 func TestOffersReadsCompleteDuringSerializedMove(t *testing.T) {

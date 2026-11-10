@@ -115,11 +115,6 @@ func (a *App) builderPickValue(year, round int, original string, at time.Time) *
 
 }
 
-func (a *App) removeTradePlan(ctx context.Context, r tradesapp.RawTradeBuilder) error {
-	//nolint:wrapcheck // Preserve trade plan workflow errors.
-	return a.tradePlans().Remove(ctx, r)
-}
-
 func (a *App) tradeBuilderPlanAction(ctx context.Context, r tradesapp.RawTradeBuilder, snap snapshot.Snapshot) error {
 	//nolint:wrapcheck // Preserve trade plan workflow errors.
 	return a.tradePlans().Action(ctx, r, snap)
@@ -160,9 +155,6 @@ func (a *App) tradeClockReasons(ctx context.Context) []string {
 
 func tradeCentsCorrection(p state.MirrorPlayer, afterOwner string, s mflwhatif.WhatIfSession) domain.Money {
 	return tradesapp.CentsCorrection(p, afterOwner, s)
-}
-func tradeDeadlineReasons(now time.Time, windows []leagueclock.Window) []string {
-	return tradesapp.DeadlineReasons(now, windows, time.Local)
 }
 
 func (a *App) requireTradePlanFranchise(ctx context.Context, r tradesapp.RawTradeBuilder) error {

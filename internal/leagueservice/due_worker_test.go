@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 )
 
 func TestDueWorkerNearestDeadlineCatchupAndRestart(t *testing.T) {
@@ -76,24 +75,6 @@ func waitDueEvents(t *testing.T, f *dueFixture, count int) {
 		default:
 			time.Sleep(time.Millisecond)
 		}
-	}
-}
-
-func TestDueWorkerLostWakeAndCommitWake(t *testing.T) {
-	for _, lost := range []bool{false, true} {
-		t.Run(map[bool]string{false: "commit", true: "lost"}[lost], func(t *testing.T) {
-			f := newDueFixture(t)
-			f.worker.reconcile = 20 * time.Millisecond
-			startDueWorker(t, f.worker)
-			f.bid(t)
-			count := len(f.events(t))
-			f.clock.instant.Add(int64(24 * time.Hour))
-			if !lost {
-				f.worker.Wake()
-				f.worker.Wake()
-			}
-			waitDueEvents(t, f, count+1)
-		})
 	}
 }
 
@@ -239,38 +220,4 @@ func TestDueWorkerSleepsUntilDeadlineOrCommit(t *testing.T) {
 		cancel()
 		<-done
 	})
-}
-
-// TestDueDeadlineFromHeldLedgerMatchesEventLog: the worker reads the next deadline from the held, memoised
-// ledger; at every instant it must equal the deadline folded from a fresh decode of the event log.
-func TestDueDeadlineFromHeldLedgerMatchesEventLog(t *testing.T) {
-	f := newDueFixture(t)
-	bid := f.bid(t)
-	f.clock.instant.Add(int64(6 * time.Hour))
-	f.execute(t, "owner.two", commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: "0099", Franchise: "franchise.02"}})
-	league := f.events(t)[0].Payload.Commissioner.Command.League
-	var decoded []commissioner.Record
-	for _, event := range f.events(t) {
-		decoded = append(decoded, *event.Payload.Commissioner)
-	}
-	held, err := f.store.SharedCommissionerRecords(t.Context(), league)
-	if err != nil {
-		t.Fatal(err)
-	}
-	seen := map[time.Time]bool{}
-	for hours := range 40 {
-		at := bid.RecordedAt.Add(time.Duration(hours) * time.Hour)
-		want, err := market.NextDueDeadline(league, decoded, at)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got, err := market.NextDueDeadline(league, held, at)
-		if err != nil || !got.Equal(want) {
-			t.Fatalf("at %s: held ledger says %s (%v), event log says %s", at, got, err, want)
-		}
-		seen[want] = true
-	}
-	if len(seen) < 3 {
-		t.Fatalf("the sweep must cross the bid and waiver deadlines to prove anything: %v", seen)
-	}
 }

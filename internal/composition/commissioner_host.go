@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -26,12 +25,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
-
-type localCommissionerSession struct{ installation string }
-
-func (s localCommissionerSession) Principal() (string, error) {
-	return commissionerapp.LocalPrincipal(s.installation, os.Getuid()) //nolint:wrapcheck // Preserve missing local identity refusal.
-}
 
 func (a *App) commissionerPrincipal() (string, error) {
 	return commissionerapp.ResolvePrincipal(a.core.CommissionerSession, func() (string, error) { //nolint:wrapcheck // Preserve local identity errors.

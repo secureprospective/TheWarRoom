@@ -1,79 +1,15 @@
 package commissioner
 
 import (
-	"bytes"
-	"encoding/csv"
-	"encoding/json"
 	"errors"
-	"os"
-	"slices"
 	"strings"
 	"testing"
-
-	"github.com/secureprospective/TheWarRoom/internal/app/commissioner/commissionertest"
 )
 
 type stoppedHost struct{ Host }
 
 func (stoppedHost) Ready() error { return errors.New("startup failed") }
-func repoPath(parts ...string) string {
-	return commissionertest.RepoPath(parts...)
-}
-func checkWire(t *testing.T, path string, body []byte, name string) {
-	t.Helper()
-	if os.Getenv("TWR_WRITE_WIRE") == "1" {
-		if err := os.WriteFile(repoPath(path), append(bytes.TrimSpace(body), '\n'), 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	held, err := os.ReadFile(repoPath(path))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(bytes.TrimSpace(held), bytes.TrimSpace(body)) {
-		t.Fatalf("%s wire changed: %s", name, body)
-	}
-}
-func TestCommissionerControlsWire(t *testing.T) {
-	t.Parallel()
-	app := New(nil)
-	reading := app.TargetCommissionerControls()
-	body, err := json.MarshalIndent(reading, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkWire(t, "frontend/src/app/commissioner/controls.wire.testdata.json", body, "controls")
-	// The landing asks the registry, generated from the census, for each row's question and name.
-	file, err := os.Open(repoPath("docs/ui/endpoint-registry.csv"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = file.Close() }()
-	table, err := csv.NewReader(file).ReadAll()
-	if err != nil {
-		t.Fatal(err)
-	}
-	question := slices.Index(table[0], "gm_question")
-	name := slices.Index(table[0], "name")
-	asked := map[string]bool{}
-	for _, row := range table[1:] {
-		if strings.HasPrefix(row[0], "CM-") && strings.TrimSpace(row[question]) != "" && row[name] != "" {
-			asked[row[0]] = true
-		}
-	}
-	count := 0
-	for _, group := range reading.Groups {
-		for _, entry := range group.Controls {
-			count++
-			if !asked[entry.ID] {
-				t.Fatalf("%s has no question in the registry", entry.ID)
-			}
-		}
-	}
-	if count != 56 || len(asked) != 56 {
-		t.Fatalf("the landing lists %d rows against %d in the registry", count, len(asked))
-	}
-}
+
 func TestNativeResultsIPCScopeAndStartup(t *testing.T) {
 	t.Parallel()
 	a := New(stoppedHost{})

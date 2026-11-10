@@ -126,12 +126,6 @@ func (a *API) TargetCheckLineup(franchiseID string, starters []string) (lineup.R
 	return lineup.Check(rules, envelope.LineupPositions(ids, snap)), nil
 }
 
-// LineupPlan is the request and check a lineup draft builds for franchiseID now. It is a package
-// function, never bound; root cross-feature scenarios use it to stage a competing plan.
-func LineupPlan(a *API, franchiseID string, ids []playerid.PlayerID, now time.Time) (envelope.LineupRequest, envelope.LineupCheck) {
-	return a.lineupRequest(franchiseID, ids, now)
-}
-
 func (a *API) lineupRequest(
 	franchiseID string, ids []playerid.PlayerID, now time.Time,
 ) (envelope.LineupRequest, envelope.LineupCheck) {

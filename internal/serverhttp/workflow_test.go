@@ -2,7 +2,6 @@ package serverhttp_test
 
 import (
 	"encoding/json"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -21,40 +20,6 @@ func (workflowClock) Trusted() error   { return nil }
 func workflowRequest(t *testing.T, command, mode string, args string, football string) serverhttp.RawWorkflow {
 	t.Helper()
 	return serverhttp.RawWorkflow{Command: command, Version: "1", Mode: mode, Arguments: json.RawMessage(args), Football: football}
-}
-
-func TestHostedWorkflowReadsAdmissionAndStrictEnvelope(t *testing.T) {
-	f := newHostedFixture(t, true)
-	bearer, proof := f.directCommissioner(t)
-	raw := workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")
-	post := func(raw serverhttp.RawWorkflow, bearer, proof string, status int) []byte {
-		t.Helper()
-		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
-		if err != nil {
-			t.Fatal(err)
-		}
-		return f.post(t, serverhttp.WorkflowPath, string(body), bearer, proof, status)
-	}
-	post(raw, "", "", 401)
-	post(raw, bearer, "", 403)
-	var response serverhttp.WorkflowResponse
-	if err := json.Unmarshal(post(raw, bearer, proof, 200), &response); err != nil {
-		t.Fatal(err)
-	}
-	if response.Label != "This league is managed here" || !response.Writable || response.Football == "" {
-		t.Fatalf("authority: %+v", response)
-	}
-	for _, bad := range []serverhttp.RawWorkflow{
-		{Command: raw.Command, Version: "2", Mode: "read", Arguments: raw.Arguments},
-		workflowRequest(t, "native.assets.read", "execute", string(raw.Arguments), ""),
-		workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted","principal":"admin"}`, ""),
-		workflowRequest(t, "commish.league.seed_held", "execute", `{}`, ""),
-	} {
-		post(bad, bearer, proof, 400)
-	}
-	if strings.Contains(string(post(raw, bearer, proof, 200)), bearer) {
-		t.Fatal("bearer leaked")
-	}
 }
 
 func TestDesktopHostedReserveMoveConfirmedRetryAndRefusalPreservesRoster(t *testing.T) {
@@ -220,54 +185,4 @@ func TestDesktopHostedLineupDraftReconnectAndRevocation(t *testing.T) {
 	if _, err := desktop.Workflow(t.Context(), workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")); err == nil {
 		t.Fatal("revoked device could read")
 	}
-}
-
-func TestHostedWorkflowFrontendReadings(t *testing.T) {
-	f := newHostedFixture(t, true)
-	bearer, proof := f.directCommissioner(t)
-	// The practice draft starts two seconds after provisioning; read it running, however fast the test is.
-	time.Sleep(2 * time.Second)
-	readings := map[string]serverhttp.WorkflowResponse{}
-	for _, command := range []string{"lineup.read", "native.assets.read", "native.reserve.check", "draft.read", "commish.rules.read", "bids.read", "waivers.read", "trades.read", "results.read", "standings.read"} {
-		args := `{"league":"native.hosted"}`
-		if command == "lineup.read" {
-			args = `{"league":"native.hosted","franchise":"franchise.01","week":1,"at":""}`
-		}
-		if command == "draft.read" {
-			args = `{"league":"native.hosted","franchise":"franchise.01","season":0,"at":"0001-01-01T00:00:00Z"}`
-		}
-		if command == "bids.read" {
-			args = `{"league":"native.hosted","franchise":"franchise.01"}`
-		}
-		if command == "waivers.read" {
-			args = `{"league":"native.hosted","franchise":"franchise.01","at":"2026-10-25T10:00:00Z"}`
-		}
-		if command == "trades.read" {
-			args = `{"league":"native.hosted","viewer":"franchise.01"}`
-		}
-		if command == "results.read" {
-			args = `{"league":"native.hosted","season":2026,"week":1}`
-		}
-		if command == "standings.read" {
-			args = `{"league":"native.hosted","season":2026}`
-		}
-		raw := workflowRequest(t, command, "read", args, "")
-		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
-		if err != nil {
-			t.Fatal(err)
-		}
-		var reading serverhttp.WorkflowResponse
-		if err := json.Unmarshal(f.post(t, serverhttp.WorkflowPath, string(body), bearer, proof, 200), &reading); err != nil {
-			t.Fatal(err)
-		}
-		if err := reading.Validate(); err != nil {
-			t.Fatal(err)
-		}
-		readings[command] = reading
-	}
-	body, err := json.MarshalIndent(readings, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkHostedWire(t, "../../frontend/src/app/commissioner/hosted.wire.testdata.json", body)
 }

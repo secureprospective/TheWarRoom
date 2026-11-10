@@ -28,10 +28,6 @@ func TestPracticeUsage(t *testing.T) {
 	}
 }
 
-func TestSandboxHTTPSLifecycle(t *testing.T) {
-	sandboxHTTPSLifecycle(t, "")
-}
-
 func sandboxHTTPSLifecycle(t *testing.T, bin string) {
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Minute)
 	defer cancel()

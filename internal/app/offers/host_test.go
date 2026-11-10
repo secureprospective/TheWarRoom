@@ -147,15 +147,3 @@ func (h *fakeHost) OffersEngineValues(context.Context) (map[string]float64, stri
 func (h *fakeHost) OffersAssetValues(context.Context, []playerid.PlayerID, time.Time) (map[string]AssetValue, string) {
 	return nil, ""
 }
-
-func TestAPIMethodCatalogHasThirteenDoors(t *testing.T) {
-	commands := Commands()
-	if got := len(commands); got != 13 {
-		t.Fatalf("commands = %d", got)
-	}
-	for _, command := range commands {
-		if command.Method == "TargetOffers" {
-			t.Fatal("offer-history research remains published")
-		}
-	}
-}

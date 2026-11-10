@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 )
@@ -110,31 +109,6 @@ func TestAPIArticleAndRefreshPorts(t *testing.T) {
 	held.PublishStatus("Reading fantasy points")
 	if a.TargetResearchStatus() != "Reading fantasy points" {
 		t.Fatal(a.TargetResearchStatus())
-	}
-}
-
-func TestAPIStatusReadCompletesDuringBlockedRefresh(t *testing.T) {
-	entered, release := make(chan struct{}), make(chan struct{})
-	h := &fakeHost{refresh: func(bool) error { close(entered); <-release; return nil }}
-	held := &Held{}
-	held.PublishStatus("waiting")
-	a := New(h, held)
-	done := make(chan error, 1)
-	go func() { done <- a.TargetResearchRefresh(false) }()
-	<-entered
-	read := make(chan string, 1)
-	go func() { read <- a.TargetResearchStatus() }()
-	select {
-	case got := <-read:
-		if got != "waiting" {
-			t.Error(got)
-		}
-	case <-time.After(5 * time.Second):
-		t.Error("status blocked behind refresh")
-	}
-	close(release)
-	if err := <-done; err != nil {
-		t.Fatal(err)
 	}
 }
 

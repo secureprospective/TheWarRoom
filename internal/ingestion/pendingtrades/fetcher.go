@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -44,14 +43,6 @@ func (r RawPendingTrade) Validate() error {
 
 func Fetch(ctx context.Context, c *mfl.Client, year, league string) (RawPendingTrades, error) {
 	env, err := fetchEnvelope(ctx, c, year, league)
-	if err != nil {
-		return RawPendingTrades{}, err
-	}
-	return parseTrades(env)
-}
-
-func Parse(body []byte) (RawPendingTrades, error) {
-	env, err := decodeEnvelope(body, http.StatusOK)
 	if err != nil {
 		return RawPendingTrades{}, err
 	}

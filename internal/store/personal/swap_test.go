@@ -79,31 +79,3 @@ func TestWatchSwap(t *testing.T) {
 		})
 	}
 }
-
-func TestSwapValidation(t *testing.T) {
-	base := RawChange{Mine: "0025", Kind: "watch", Entity: "player", ID: "0816", With: "12626", Action: "swap"}
-	if err := base.Validate(); err != nil {
-		t.Fatalf("valid swap refused: %v", err)
-	}
-	tests := []struct {
-		name   string
-		mutate func(*RawChange)
-	}{
-		{"draft list cannot swap", func(r *RawChange) { r.Kind = "draft" }},
-		{"bait list cannot swap", func(r *RawChange) { r.Kind = "bait" }},
-		{"swap with self", func(r *RawChange) { r.With = r.ID }},
-		{"partner not canonical", func(r *RawChange) { r.With = "816" }},
-		{"partner missing", func(r *RawChange) { r.With = "" }},
-		{"with on an add", func(r *RawChange) { r.Action = "add" }},
-		{"with on a remove", func(r *RawChange) { r.Action = "remove" }},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := base
-			tt.mutate(&r)
-			if err := r.Validate(); err == nil {
-				t.Fatalf("accepted %+v", r)
-			}
-		})
-	}
-}

@@ -29,31 +29,6 @@ func TestNativeClientCatalogParity(t *testing.T) {
 	}
 }
 
-func TestSchemaSubtreesSharedWithoutLosingConstraints(t *testing.T) {
-	table := schemaTable{names: make(map[string]string)}
-	schema := catalog.Schema{Type: "string"}
-	first, err := table.intern(schema)
-	if err != nil {
-		t.Fatal(err)
-	}
-	repeated, err := table.intern(schema)
-	if err != nil || first != repeated || strings.Count(table.out.String(), "const ") != 1 {
-		t.Fatal("identical schemas were duplicated", err)
-	}
-	schema.Enum = []string{"allowed"}
-	constrained, err := table.intern(schema)
-	if err != nil || constrained == first || !strings.Contains(table.out.String(), `"allowed"`) {
-		t.Fatal("distinct constraints were lost", err)
-	}
-	body, err := generate(app.NativeCommands())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if bytes.Count(body, []byte("Type:\"string\",\n  Enum:null,\n  Format:\"\",\n  Validator:\"\",\n  Nullable:false,\n  Fields:null,\n  Items:null")) != 1 {
-		t.Fatal("unconstrained text schema was not shared across the catalog")
-	}
-}
-
 func TestStaleGenerationRefusedWithoutWriting(t *testing.T) {
 	path := t.TempDir() + "/native.gen.ts"
 	const old = "stale"

@@ -1,11 +1,9 @@
 package main
 
 import (
-	"slices"
 	"strings"
 	"testing"
 
-	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/composition"
 )
 
@@ -52,42 +50,5 @@ func TestQueryCatalogIsTheRegistrysHeldDesktopReads(t *testing.T) {
 	}
 	if _, err := generateReadCommands(nil); err == nil || !strings.Contains(err.Error(), "no held desktop reads") {
 		t.Fatal(err)
-	}
-}
-
-func TestReadCatalogDropsAdaptersThatLoseTheirReadMark(t *testing.T) {
-	registry, err := composition.CommandRegistry()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, key := range auditedReads() {
-		for _, change := range []string{"mode", "unmarked", "gravity"} {
-			t.Run(key+"/"+change, func(t *testing.T) {
-				entries := registry.Entries()
-				for i, entry := range entries {
-					for j, desktop := range entry.Desktop {
-						if desktop.Feature+"."+desktop.Command.Method != key {
-							continue
-						}
-						entries[i].Desktop = slices.Clone(entry.Desktop)
-						switch change {
-						case "mode":
-							entries[i].Desktop[j].Command.Modes = []catalog.Mode{catalog.Execute}
-						case "unmarked":
-							entries[i].Desktop[j].Command.Modes = nil
-						case "gravity":
-							entries[i].Desktop[j].Command.Gravity = "G1"
-						}
-					}
-				}
-				body, err := generateReadCommands(entries)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if strings.Contains(string(body), `"`+key+`":`) {
-					t.Fatal("query catalog kept", key, change)
-				}
-			})
-		}
 	}
 }

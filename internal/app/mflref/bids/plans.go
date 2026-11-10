@@ -132,8 +132,3 @@ func PointsText(salary domain.Money, years int) string {
 func PostText(line string, f envelope.BidFacts) string {
 	return bid.Post{Conditional: f.ConditionalName, Player: line, Salary: f.Salary, Years: f.Years, Points: f.Points, Snipe: f.Snipe}.Text()
 }
-
-func Active(s envelope.State) bool {
-	return slices.Contains([]envelope.State{envelope.Ready, envelope.HandedOff, envelope.NotYetDone,
-		envelope.NotVerified, envelope.BidPending}, s)
-}

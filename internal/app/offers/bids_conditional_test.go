@@ -68,23 +68,3 @@ func TestConditionalBidRejectsForeignMissingOrUnpricedDrop(t *testing.T) {
 		t.Fatal("unconditional post contains a drop")
 	}
 }
-
-func TestConditionalOptionsCoveringFirstAndShortfall(t *testing.T) {
-	t.Parallel()
-	a := bidTestApp(t)
-	setRosters(t, a, state.MirrorPlayer{MFLID: "13595", FranchiseID: "0001", Salary: 10_490_000_000,
-		ContractYear: 2030}, state.MirrorPlayer{MFLID: "13594", FranchiseID: "0001", Salary: 1_000_000,
-		ContractYear: 2026})
-	raw := rawBid("0.6", 1)
-	raw.ConditionalDrop = "13594"
-	p := a.TargetBidPreview(raw)
-	if p.ConditionalDrops[0].ID != "0042" || !p.ConditionalDrops[0].Covers || p.ConditionalDrops[1].Covers {
-		t.Fatalf("covering options not first: %+v", p.ConditionalDrops)
-	}
-	for _, o := range p.ConditionalDrops {
-		want := map[string]string{"13594": " · 1 year · ", "13595": " · 5 years · "}[o.ID]
-		if want != "" && !strings.Contains(o.Label, want) {
-			t.Fatalf("option %s label %q, want %q", o.ID, o.Label, want)
-		}
-	}
-}

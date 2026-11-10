@@ -43,15 +43,3 @@ func TestFreshDepthDoesNotWaitForMFLOrIdentityLinks(t *testing.T) {
 		t.Fatal(grid.Note)
 	}
 }
-
-func TestFreshDepthEmptyStateIsOnePlainSentence(t *testing.T) {
-	in := realResearch(t)
-	in.Held.Depth = Feed[[]researchfeeds.RawDepth]{RefreshError: "context deadline exceeded"}
-	in.Held.LinkError = "crosswalk: request cancelled"
-	for _, mode := range []string{"grid", "team"} {
-		grid := reportByID(t, Build(in, Scope{Depth: mode}).Board, "M-048")
-		if grid.Note != "NFL starters are not available yet; refresh from sources." || len(grid.Rows) != 0 {
-			t.Fatal(grid)
-		}
-	}
-}

@@ -46,18 +46,6 @@ func Records(ctx context.Context, ledger Ledger, league, subject string) ([]comm
 	return leagueservice.Records(ctx, ledger, league, subject)
 }
 
-// Schedule reads the league schedule from its replayed ledger.
-func Schedule(league string, records []commissioner.Record) (commissioner.Schedule, error) {
-	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
-	return leagueservice.Schedule(league, records)
-}
-
-// Calendar reads the league calendar for one franchise and action at the given time, in the owner's zone.
-func Calendar(scope CalendarScope, records []commissioner.Record, at time.Time) (commissioner.Calendar, error) {
-	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
-	return leagueservice.Calendar(leagueservice.CalendarScope(scope), records, at)
-}
-
 // CalendarScope is the twin of the root RawLeagueCalendarScope: the same fields in the same order.
 type CalendarScope leagueservice.CalendarScope
 
@@ -70,22 +58,9 @@ type ScheduleScope leagueservice.ScheduleScope
 //nolint:wrapcheck // The service owns validation context; keep desktop refusals identical.
 func (r ScheduleScope) Validate() error { return leagueservice.ScheduleScope(r).Validate() }
 
-// AppLeague admits an app league id: "native." and a name, with no surrounding space.
-func AppLeague(league string) error {
-	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
-	return leagueservice.AppLeague(league)
-}
-
 // Blocked is the preview of a body that could not be read: no fields, and the reason as its one blocker.
 func Blocked(err error) commissioner.Preview {
 	return leagueservice.Blocked(err)
-}
-
-// ChangeError words a recorded change's failure: a refusal reads as its reason alone, without the
-// context each layer adds for the log; anything else keeps the "league change" context.
-func ChangeError(err error) error {
-	//nolint:wrapcheck // The shared service supplies the user-facing context.
-	return leagueservice.ChangeError(err)
 }
 
 type RawNativeScheduleScope struct {

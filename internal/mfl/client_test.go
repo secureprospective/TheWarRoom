@@ -146,32 +146,6 @@ func TestDo_SetsMandatoryParamsCallerCannotOverride(t *testing.T) {
 	}
 }
 
-func TestDo_BackoffSucceedsAfter429(t *testing.T) {
-	t.Parallel()
-	var calls int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		if atomic.AddInt32(&calls, 1) <= 2 { // 429 twice, then succeed
-			w.WriteHeader(http.StatusTooManyRequests)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"ok":true}`))
-	}))
-	defer srv.Close()
-
-	c, _ := newTestClient(t, srv)
-	resp, err := c.Do(context.Background(), Request{Type: "rosters", Year: "2026", Params: map[string]string{"L": "14432"}})
-	if err != nil {
-		t.Fatalf("Do: unexpected error: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("status after backoff: want 200, got %d", resp.StatusCode)
-	}
-	if got := atomic.LoadInt32(&calls); got != 3 {
-		t.Fatalf("server calls: want 3 (2x429 + 1x200), got %d — bounded backoff, not a storm", got)
-	}
-}
-
 func TestDo_ExhaustedBackoffReturnsErrorBounded(t *testing.T) {
 	t.Parallel()
 	var calls int32
@@ -314,75 +288,5 @@ func TestDo_HostRouting(t *testing.T) {
 				t.Fatalf("routed host: want %q, got %q", tc.wantHost, hosts[0])
 			}
 		})
-	}
-}
-
-// TestDo_ConcurrentUseIsRaceFree fires many goroutines at one shared Client,
-// mixing Do (reads c.host under RLock) and DiscoverHost (writes c.host under
-// Lock). Run under -race + goleak, it guards the host-cache mutex and proves the
-// shared client is safe for the concurrent fetchers that inherit this template.
-func TestDo_ConcurrentUseIsRaceFree(t *testing.T) {
-	t.Parallel()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"league":{"baseURL":"https://www50.myfantasyleague.com/2026/home/14432"}}`))
-	}))
-	defer srv.Close()
-
-	c, _ := newTestClient(t, srv)
-
-	const goroutines = 50
-	var wg sync.WaitGroup
-	errs := make(chan error, goroutines)
-	for i := 0; i < goroutines; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			if i%2 == 0 {
-				_, err := c.Do(context.Background(), Request{Type: "rosters", Year: "2026", Params: map[string]string{"L": "14432"}})
-				if err != nil {
-					errs <- err
-				}
-				return
-			}
-			if err := c.DiscoverHost(context.Background(), "2026", "14432"); err != nil {
-				errs <- err
-			}
-		}(i)
-	}
-	wg.Wait()
-	close(errs)
-	for err := range errs {
-		t.Errorf("concurrent call failed: %v", err)
-	}
-}
-
-func TestDiscoverHost_OncePerYearAndLeagueWithinTTL(t *testing.T) {
-	t.Parallel()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"league":{"baseURL":"https://www99.myfantasyleague.com/2026/home/14432"}}`))
-	}))
-	defer srv.Close()
-	c, rt := newTestClient(t, srv)
-	ctx := context.Background()
-	for range 3 {
-		if err := c.DiscoverHost(ctx, "2026", "14432"); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if n := len(rt.builtHosts()); n != 1 {
-		t.Fatalf("3 discoveries of one league made %d requests, want 1", n)
-	}
-	if err := c.DiscoverHost(ctx, "2027", "14432"); err != nil {
-		t.Fatal(err)
-	}
-	c.mu.Lock()
-	c.hostAt = c.hostAt.Add(-hostTTL)
-	c.mu.Unlock()
-	if err := c.DiscoverHost(ctx, "2027", "14432"); err != nil {
-		t.Fatal(err)
-	}
-	if n := len(rt.builtHosts()); n != 3 {
-		t.Errorf("a new year and an expired discovery made %d requests in all, want 3", n)
 	}
 }

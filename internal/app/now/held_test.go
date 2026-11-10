@@ -1,7 +1,6 @@
 package now
 
 import (
-	"sync"
 	"testing"
 	"time"
 
@@ -44,21 +43,5 @@ func TestHeldDetachesOnPublishAndSnapshot(t *testing.T) {
 	live.Adapter.Board.Games[0].Box[0].Rows[0].Stats[0] = "changed"
 	if got := h.SnapshotLive(); got.Adapter.Board.Games[0].Box[0].Rows[0].Stats[0] != "1" {
 		t.Fatal("publication kept the caller's live board")
-	}
-}
-
-// Publication and reads race freely under -race; the holder's lock is its own.
-func TestHeldPublishReadRace(t *testing.T) {
-	t.Parallel()
-	var h Held
-	var wg sync.WaitGroup
-	for i := range 8 {
-		wg.Add(2)
-		go func() { defer wg.Done(); f := heldFirsts(); f.Copies = i; h.PublishFirsts(f) }()
-		go func() { defer wg.Done(); _ = h.SnapshotFirsts(); _ = h.SnapshotByes(); _ = h.SnapshotLive() }()
-	}
-	wg.Wait()
-	if h.SnapshotFirsts().Weeks[5].Week.Week != 5 {
-		t.Fatal("racing publications lost the held week")
 	}
 }

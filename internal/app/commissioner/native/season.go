@@ -7,8 +7,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
-
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -60,15 +58,6 @@ func PlayoffField(bracket commissioner.NativeBracket, directory commissioner.Nat
 		}
 	}
 	return field
-}
-
-// ScheduleDates reads local reference bodies only; its caller bounds the resource lifetime.
-func ScheduleDates(ctx context.Context, bodies Bodies, season int, at time.Time) ([]leagueweek.Week, error) {
-	raws, err := heldScheduleCopies(ctx, bodies, "TYPE="+nflschedule.Export, season)
-	if err != nil {
-		return nil, err
-	}
-	return gradeWeeks(raws, at), nil
 }
 
 // HeldLineupFacts uses only the selected week's held locks; later duplicates retain precedence.

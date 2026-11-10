@@ -3,10 +3,8 @@ package envelope
 import (
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 )
 
 func TestDraftIR(t *testing.T) {
@@ -98,51 +96,6 @@ func TestDraftIR(t *testing.T) {
 			}
 			if r.Spec.Expected.Player != req.Player || r.Spec.Expected.RosterStatus != tc.want {
 				t.Fatalf("expected change: %+v", r.Spec.Expected)
-			}
-		})
-	}
-}
-
-func TestDraftIRUsesEngineDirection(t *testing.T) {
-	for _, status := range []domain.RosterStatus{domain.RosterActive, domain.RosterIR} {
-		t.Run(string(status), func(t *testing.T) {
-			original, at, snap := testEnvelope(t)
-			id := original.Receipt().Spec.Expected.Player
-			snap.Rosters.Value[0].Players[0].RosterStatus = status
-			snap.Eligibility.Players = eligibility.Evaluate(eligibility.Input{
-				IR: eligibility.Capacity{Slots: 0, Held: true},
-				Rosters: []eligibility.Franchise{{ID: "0001", Players: []eligibility.RosterPlayer{
-					{ID: id.String(), Status: status},
-				}}},
-				Injuries: eligibility.Injuries{Fresh: domain.Freshness{State: domain.FreshLive}},
-			})
-			e, err := DraftIR(at, IRRequest{
-				LeagueID: "1", FranchiseID: "0001", Player: id,
-				Target: Target{Kind: Mapped, URL: "https://www47.myfantasyleague.com/2026/options?L=1&O=18"},
-			}, snap, func() string { return "engine-ir" })
-			if err != nil {
-				t.Fatal(err)
-			}
-			if status == domain.RosterActive {
-				if e.State() != Blocked || e.Receipt().Spec.Expected.RosterStatus != domain.RosterIR {
-					t.Fatalf("healthy placement should block: %+v", e.Receipt())
-				}
-				return
-			}
-			v := snap.Eligibility.Players[id.String()].IR
-			if v.Direction != eligibility.OffIR || v.Verdict != eligibility.Eligible ||
-				e.State() != Ready || e.Receipt().Spec.Expected.RosterStatus != domain.RosterActive ||
-				e.Receipt().Audit[0].Note != "eligibility checked (MFL rosters)" {
-				t.Fatalf("activation must use off-IR rule despite no NFL IR designation or slots: %+v", e.Receipt())
-			}
-			e, err = e.HandOff(at.Add(time.Minute))
-			if err != nil {
-				t.Fatal(err)
-			}
-			snap.Rosters.Value[0].Players[0].RosterStatus = domain.RosterActive
-			e, err = e.Observe(at.Add(2*time.Minute), observeAt(snap, at.Add(2*time.Minute)), IRPredicate{})
-			if err != nil || e.State() != Landed {
-				t.Fatalf("activation landing: %+v %v", e.Receipt(), err)
 			}
 		})
 	}

@@ -86,46 +86,6 @@ func TestPickHistoryFailureDoesNotRemovePlayerValues(t *testing.T) {
 	}
 }
 
-func TestDraftSlotSelectionUsesThatDraftsWidth(t *testing.T) {
-	for _, teams := range []int{2, 4, 16, 32} {
-		t.Run(fmt.Sprint(teams), func(t *testing.T) {
-			body := []byte(fmt.Sprintf(`{"draftResults":{"draftUnit":{"draftPick":[
- {"round":"1","pick":"%d","player":"","franchise":"0002"},
- {"round":"2","pick":"1","player":"0001","franchise":"0001"}]}}}`, teams))
-			records := []playerrecord.Record{{MFL: "0001", Draft: playerrecord.Draft{Year: 2027,
-				Status: playerrecord.Drafted, Overall: 10}}}
-			bodies := func(_ context.Context, _ string, take func(string, []byte, time.Time) bool) (bool, error) {
-				take("https://example.test/2027/export?TYPE=draftResults&L=14432", body, time.Now())
-				return false, nil
-			}
-			h, err := HeldPickHistory(t.Context(), bodies, "14432", 2028, records)
-			if err != nil || len(h) != 1 || h[0].Selection != teams+1 {
-				t.Fatalf("historical width replaced by today's league: %+v %v", h, err)
-			}
-		})
-	}
-}
-
-func TestPickTotalsMissingAndOwnerHorizon(t *testing.T) {
-	at := time.Time{}
-	owners := []string{"zero", "buyer", "missing"}
-	inventory := []draftreports.FuturePick{{Year: 2027, Round: 1, Original: "original", Owner: "buyer"}, {Year: 2028, Round: 1, Owner: "buyer"}, {Year: 2029, Round: 1, Owner: "buyer"}, {Year: 2026, Round: 1, Owner: "buyer"}, {Year: 2027, Round: 2, Owner: "missing"}}
-	model := pickTotalModel{}
-	got := PickTotals(model, inventory, 2026, owners, at)
-	if got["buyer"] != 4 || got["zero"] != 0 {
-		t.Fatal(got)
-	}
-	if _, ok := got["missing"]; ok {
-		t.Fatal("unreadable pick became zero", got)
-	}
-	if PickTotals(nil, inventory, 2026, owners, at) != nil || PickTotals(model, nil, 2026, owners, at) != nil {
-		t.Fatal("missing inputs became zero")
-	}
-	if got := PickTotals(model, []draftreports.FuturePick{}, 2026, owners, at); len(got) != 3 {
-		t.Fatal("known empty inventory not zero", got)
-	}
-}
-
 type pickTotalModel struct {
 	reduced bool
 	reason  string

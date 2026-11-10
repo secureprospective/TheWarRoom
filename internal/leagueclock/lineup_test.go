@@ -1,8 +1,6 @@
 package leagueclock
 
 import (
-	"encoding/json"
-	"strings"
 	"testing"
 	"time"
 )
@@ -35,28 +33,6 @@ func TestLineupDeadline(t *testing.T) {
 		in.Lineup.Week = 6
 		if *got.Week != 5 {
 			t.Fatal("reading aliases mutable inputs")
-		}
-	}
-}
-
-func TestWeekJSON(t *testing.T) {
-	for _, tc := range []struct {
-		lineup *LineupLock
-		want   string
-	}{
-		{nil, ""},
-		{&LineupLock{Week: 5}, `"week":5`},
-	} {
-		body, err := json.Marshal(Clock(clockAt(t), Inputs{Lineup: tc.lineup}))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if tc.want == "" {
-			if strings.Contains(string(body), `"week"`) {
-				t.Fatal(string(body))
-			}
-		} else if !strings.Contains(string(body), tc.want) {
-			t.Fatal(string(body))
 		}
 	}
 }

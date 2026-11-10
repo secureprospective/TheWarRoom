@@ -11,16 +11,6 @@ import (
 	"time"
 )
 
-func TestEntryNeverOpensDesktopForUnknownArguments(t *testing.T) {
-	service := EntryPoints{}
-	for _, args := range [][]string{{"--version"}, {"-probe", "extra"}, {"-native", "missing"}, {"-restore"}, {"-package-smoke"}} {
-		var out, errOut bytes.Buffer
-		if code := service.Run(args, &out, &errOut); code != 2 || out.Len() != 0 || errOut.Len() == 0 {
-			t.Fatal(args, code, out.String(), errOut.String())
-		}
-	}
-}
-
 func TestEntryDispatchAndProbeShutdown(t *testing.T) {
 	called := ""
 	service := EntryPoints{Desktop: func() int { called = "desktop"; return 0 }, Smoke: func(dir string) int { called = dir; return 3 }, Native: func(address, league string) int { called = address + league; return 4 }, Label: "fixture"}

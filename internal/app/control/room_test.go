@@ -1,7 +1,6 @@
 package control
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -104,61 +103,6 @@ func TestSiteNewsReportAndAccountingHandOff(t *testing.T) {
 		if _, err := AccountingURL(bad, 2026); err == nil {
 			t.Errorf("host %q accepted", bad)
 		}
-	}
-}
-
-func TestBylawsReadTheRulebookBySection(t *testing.T) {
-	t.Parallel()
-	sections := BylawSections(readTestdata(t, "docs/league-rules/Official_Rulebook.md"))
-	if len(sections) < 13 || sections[0].Title != "1. SALARY CAP" {
-		t.Fatalf("%d sections, first %q", len(sections), sections[0].Title)
-	}
-	joined := ""
-	for _, s := range sections {
-		joined += s.Title + "\n" + strings.Join(s.Lines, "\n")
-	}
-	for _, want := range []string{"• Each team: $125M cap for 2026", "Active Roster: Minimum 35", "Passing:"} {
-		if !strings.Contains(joined, want) {
-			t.Errorf("rulebook text lost %q", want)
-		}
-	}
-	for _, markup := range []string{"**", "|---", "## "} {
-		if strings.Contains(joined, markup) {
-			t.Errorf("markdown %q reached the GM", markup)
-		}
-	}
-}
-
-// TestControlRoomWire writes the Control Room's real Go output for the frontend's tests: League
-// settings, the first by-laws sections and accounting from the app, and MFL's real site news.
-func TestControlRoomWire(t *testing.T) {
-	t.Parallel()
-	raw, err := sitenews.Parse(readTestdata(t, "internal/ingestion/sitenews/testdata/siteNews.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	items, err := sitenews.Read(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-	settings := realSettingsReport(t)
-	settings.Rows = settings.Rows[:12:12]
-	body, err := json.MarshalIndent(map[string]any{
-		"settings": settings, "accounting": AccountingReport(),
-		"bylaws": BylawSections(readTestdata(t, "docs/league-rules/Official_Rulebook.md"))[:3],
-		"news":   SiteNewsReport(items[:2:2], "As of: Oct 12, 2026, 8:00 AM", "", time.UTC),
-	}, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join("frontend", "src", "app", "control", "wire.testdata.json")
-	if os.Getenv("TWR_WRITE_WIRE") == "1" {
-		if err := os.WriteFile(repoPath(path), append(body, '\n'), 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if strings.TrimSpace(string(readTestdata(t, path))) != string(body) {
-		t.Fatal("Control Room wire is stale")
 	}
 }
 

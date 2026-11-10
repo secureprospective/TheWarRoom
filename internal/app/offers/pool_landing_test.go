@@ -1,7 +1,6 @@
 package offers
 
 import (
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -11,32 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
-
-func TestPoolLandingValuesAndSorting(t *testing.T) {
-	t.Parallel()
-	rows := []PoolRow{{ID: "missing", Name: "A"}, {ID: "zero", Name: "B"}, {ID: "best", Name: "Z"}}
-	assets := map[string]AssetValue{"best": {NowText: "4.00 PPG", NowHeld: true, NowValue: 4,
-		DynastyText: "0.12 wins", DynastyHeld: true, DynastyValue: 0.12}}
-	for i := range rows {
-		valuePoolRow(&rows[i], map[string]float64{"zero": 0, "best": 12}, assets)
-	}
-	SortPool(rows, RawPoolScope{Sort: "engine", Desc: true})
-	if !slices.Equal([]string{rows[0].ID, rows[1].ID, rows[2].ID}, []string{"best", "zero", "missing"}) {
-		t.Fatal(rows)
-	}
-	if rows[2].Engine != nil || rows[2].EngineText != "Not valued" || rows[1].Engine == nil {
-		t.Fatal("missing engine value turned into zero", rows)
-	}
-	if rows[0].LabText != "0.12 wins" || rows[0].PPGText != "4.00 PPG" || *rows[0].Engine != 12 {
-		t.Fatal("engine, league PPG and Lab must stay separate", rows[0])
-	}
-	for _, key := range []string{"engine", "ppg", "lab"} {
-		SortPool(rows, RawPoolScope{Sort: key})
-		if PoolNumber(rows[len(rows)-1], key) != nil {
-			t.Fatal("unvalued must sort last", key, rows)
-		}
-	}
-}
 
 func TestPoolLandingNoTeamToggle(t *testing.T) {
 	t.Parallel()

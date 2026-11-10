@@ -27,16 +27,6 @@ type researchInput struct {
 }
 type researchView struct{ researchInput }
 
-func (v researchView) feed(kind, week string) heldSeasonFeed[[]researchfeeds.Feed] {
-	return v.held.feeds[researchKey(kind, week)]
-}
-func researchRows(feed heldSeasonFeed[[]researchfeeds.Feed]) []researchfeeds.Entry {
-	return researchapp.Rows(feed)
-}
-func (v researchView) player(id string) researchapp.ResearchPlayer {
-	return researchapp.ResearchPlayer(researchapp.Player(v.lookup, v.mirror, v.config, id))
-}
-
 // snapshot detaches mutable indexes. Feed payloads, directory lookups, roster views and
 // rulebook configs are published values: refresh replaces them rather than mutating them.
 func (in researchInput) snapshot() researchapp.Snapshot {

@@ -43,9 +43,6 @@ func (a *App) measureMeanings(names []string) []string {
 	return out
 }
 
-// engineRunText is report.EngineRun, the one wording for when the engine last valued players.
-func engineRunText(at time.Time, zone *time.Location) string { return report.EngineRun(at, zone) }
-
 func (h draftHost) DraftDestination() string {
 	host, season := h.MFLDestination()
 	return draftapp.Destination(host, season)

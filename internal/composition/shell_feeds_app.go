@@ -7,7 +7,6 @@ import (
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -25,10 +24,6 @@ func readShellFeed[T any](ctx context.Context, a *App, held *heldSeasonFeed[[]T]
 			defer a.core.SeasonMu.Unlock()
 			return controlapp.MergeDailyShell(held, archived, a.timeNow())
 		})
-}
-
-func shellFeedTime[T any](feed heldSeasonFeed[[]T], zone *time.Location) string {
-	return report.FeedTime(feed.FeedState(), zone)
 }
 
 func refreshDailyShellFeed[T any](ctx context.Context, a *App, held *heldSeasonFeed[[]T], now time.Time,

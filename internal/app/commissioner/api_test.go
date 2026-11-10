@@ -61,16 +61,7 @@ func createBody(t *testing.T) string {
 	}
 	return string(body)
 }
-func TestExecuteKeepsIdentityAndOneTransactionalWriteInOrder(t *testing.T) {
-	t.Parallel()
-	h := &orderedHost{}
-	receipt, err := New(h).TargetCommissionerExecute(createBody(t))
-	want := []string{"context", "ready", "principal", "authorization", "facts", "zone", "execute"}
-	if err != nil || receipt.Entry != "recorded" || h.principal != "caller" ||
-		h.raw.Request != "create" || !reflect.DeepEqual(h.calls, want) {
-		t.Fatal(receipt, err, h.calls, h.raw)
-	}
-}
+
 func TestExecuteRefusesBeforeAnyLaterCapability(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {

@@ -85,12 +85,6 @@ func draftSlots(year int, picks []draftreports.Pick, byMFL map[string]playerreco
 	return out
 }
 
-// PickTotals reads the next two drafts without substituting zero for unreadable inventory or
-// an unreadable value. One bad pick blanks its owner's total, not any other franchise's.
-func PickTotals(model Model, inventory []draftreports.FuturePick, season int, owners []string, at time.Time) map[string]float64 {
-	return pickCapital(model, inventory, season, owners, at).Totals
-}
-
 func pickCapital(values Model, inventory []draftreports.FuturePick, season int, owners []string, at time.Time) m2service.PickCapital {
 	capital := m2service.PickCapital{}
 	if values == nil || inventory == nil {

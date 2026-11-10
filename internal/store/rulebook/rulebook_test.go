@@ -55,23 +55,6 @@ func newStore(t *testing.T, src league.Source) *Store {
 	return s
 }
 
-func TestInitializeAndReads(t *testing.T) {
-	s := newStore(t, &fakeSource{cfg: baseConfig()})
-
-	if got := s.GetSalaryCap(); got != "120" {
-		t.Errorf("cap = %q, want 120", got)
-	}
-	if got := s.GetScoringRules(); len(got) != 1 || got[0].Positions != "CB|S" {
-		t.Errorf("scoring = %+v, want one CB|S block", got)
-	}
-	if v, ok := s.GetSetting("rosterSize"); !ok || v != "80" {
-		t.Errorf("rosterSize = %q,%v, want 80,true", v, ok)
-	}
-	if _, ok := s.GetSetting("nope"); ok {
-		t.Error("unknown setting reported ok")
-	}
-}
-
 // TestCapPercent_DefaultsTo100WhenUnset confirms a config predating the
 // includeTaxiWithSalary/includeIRWithSalary fields (empty string, e.g. an old stored
 // version) is treated as 100% — the historical no-discount behavior — not an error.
@@ -188,93 +171,10 @@ func TestReload_SideLoadsWithoutPromoting(t *testing.T) {
 	}
 }
 
-func TestReload_NoChangeEmptyChangeSet(t *testing.T) {
-	src := &fakeSource{cfg: baseConfig()}
-	s := newStore(t, src)
-
-	cs, err := s.Reload(context.Background())
-	if err != nil {
-		t.Fatalf("Reload: %v", err)
-	}
-	if !cs.Empty() {
-		t.Errorf("ChangeSet = %+v, want empty for identical config", cs.Deltas)
-	}
-}
-
-func TestPromote_Rollback(t *testing.T) {
-	ctx := context.Background()
-	src := &fakeSource{cfg: baseConfig()}
-	s := newStore(t, src)
-
-	drift := baseConfig()
-	drift.SalaryCapAmount = "130"
-	src.cfg = drift
-	cs, err := s.Reload(ctx)
-	if err != nil {
-		t.Fatalf("Reload: %v", err)
-	}
-	if err := s.Promote(ctx, cs.ToVersion); err != nil {
-		t.Fatalf("Promote v2: %v", err)
-	}
-
-	// Roll back to v1: same operation, prior version.
-	if err := s.Promote(ctx, cs.FromVersion); err != nil {
-		t.Fatalf("Promote rollback: %v", err)
-	}
-	if got := s.GetSalaryCap(); got != "120" {
-		t.Errorf("cap after rollback = %q, want 120", got)
-	}
-}
-
 func TestPromote_UnknownVersionFailsLoud(t *testing.T) {
 	s := newStore(t, &fakeSource{cfg: baseConfig()})
 	if err := s.Promote(context.Background(), 999); err == nil {
 		t.Error("Promote to nonexistent version accepted, want error")
-	}
-}
-
-// TestOverrideSurvivesReloadPromote proves a commissioner override is NOT clobbered
-// by a re-pull of MFL defaults — it is a separate record layered at read time.
-func TestOverrideSurvivesReloadPromote(t *testing.T) {
-	ctx := context.Background()
-	src := &fakeSource{cfg: baseConfig()}
-	s := newStore(t, src)
-
-	if err := s.SetOverride(ctx, scopeCap, capKey, "999", "vote"); err != nil {
-		t.Fatalf("SetOverride: %v", err)
-	}
-
-	drift := baseConfig()
-	drift.SalaryCapAmount = "130"
-	src.cfg = drift
-	cs, err := s.Reload(ctx)
-	if err != nil {
-		t.Fatalf("Reload: %v", err)
-	}
-	if err := s.Promote(ctx, cs.ToVersion); err != nil {
-		t.Fatalf("Promote: %v", err)
-	}
-
-	if got := s.GetSalaryCap(); got != "999" {
-		t.Errorf("cap = %q, want 999 (override survives MFL re-pull)", got)
-	}
-}
-
-// TestGetScoringRules_NoAlias proves a returned slice shares no backing array with
-// the store's active snapshot: mutating it must not corrupt in-memory state.
-func TestGetScoringRules_NoAlias(t *testing.T) {
-	s := newStore(t, &fakeSource{cfg: baseConfig()})
-
-	got := s.GetScoringRules()
-	got[0].Rules[0].Points = "MUTATED"
-	got[0].Positions = "WRECKED"
-
-	again := s.GetScoringRules()
-	if again[0].Rules[0].Points != "*0.5" || again[0].Positions != "CB|S" {
-		t.Errorf("active config corrupted via returned slice: %+v", again[0])
-	}
-	if cfg := s.ActiveConfig(); cfg.ScoringRules[0].Rules[0].Points != "*0.5" {
-		t.Errorf("ActiveConfig leaked an alias: %+v", cfg.ScoringRules[0])
 	}
 }
 

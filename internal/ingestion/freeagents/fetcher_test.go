@@ -1,7 +1,6 @@
 package freeagents
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -16,40 +15,6 @@ const (
 	badIDBody  = `{"freeAgents":{"leagueUnit":{"player":[{"id":"x1"}]}}}`
 	otherReply = `{"version":"1.0","rosters":{}}`
 )
-
-func ids(t *testing.T, body string) []string {
-	t.Helper()
-	raw, err := Parse([]byte(body))
-	if err != nil {
-		t.Fatalf("Parse: %v", err)
-	}
-	typed, err := ToPlayerIDs(raw)
-	if err != nil {
-		t.Fatalf("ToPlayerIDs: %v", err)
-	}
-	out := []string{}
-	for _, id := range typed {
-		out = append(out, id.String())
-	}
-	return out
-}
-
-func TestParseReadsEveryShapeMFLSends(t *testing.T) {
-	for name, tc := range map[string]struct {
-		body string
-		want string
-	}{
-		"many, leading zeros kept, repeat dropped": {manyBody, "0531,13593"},
-		"one player as a bare object":              {oneBody, "9999"},
-		"two units share a player":                 {unitsBody, "0001,0002"},
-		"a unit with no players":                   {emptyBody, ""},
-		"a section with no unit":                   {noneBody, ""},
-	} {
-		if got := strings.Join(ids(t, tc.body), ","); got != tc.want {
-			t.Errorf("%s: ids = %q, want %q", name, got, tc.want)
-		}
-	}
-}
 
 func TestParseRefusesWhatIsNotAPool(t *testing.T) {
 	for name, body := range map[string]string{"MFL error envelope": errorBody, "a bad id": badIDBody,

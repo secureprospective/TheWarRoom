@@ -1,6 +1,6 @@
 # Client/server governing plan — 2026-11-05
 
-**Final plan; implementation gates are not yet passed.** Christopher's [rulings](../audit/CLIENT-SERVER-RULINGS-2026-11-05.md) and his 11-05 adoption of **all** of [Tom's changes](../audit/CLIENT-SERVER-TOM-SECOND-OPINION-2026-11-05.md) govern. This replaces [Sol's recommendations](../audit/CLIENT-SERVER-RECOMMENDATIONS-2026-11-05.md); the [inventory](../audit/INVENTORY-2026-11-05.md) is baseline evidence, not proof of this target. R1–R7 below mean the client/server rulings, not the older engine rulings.
+**Final plan; implementation gates are not yet passed.** Christopher's [rulings](../audit/CLIENT-SERVER-RULINGS-2026-11-05.md) and his 11-05 adoption of **all** of [Tom's changes](../audit/CLIENT-SERVER-TOM-SECOND-OPINION-2026-11-05.md) govern. This replaces Sol's recommendations (removed 2026-11-09; in git history); the inventory (removed 2026-11-09; in git history) is baseline evidence, not proof of this target. R1–R7 below mean the client/server rulings, not the older engine rulings.
 
 ## Target and fixed boundaries
 

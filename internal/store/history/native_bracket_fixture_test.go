@@ -8,13 +8,11 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
-	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -98,12 +96,6 @@ func (f *bracketFixture) reopen(t *testing.T) {
 	f.install()
 }
 
-// kickoff holds the NFL calendar: the first playoff week's games start at the given time.
-func (f *bracketFixture) kickoff(at time.Time) {
-	f.env = &lineupEnvFake{locks: map[int]map[string]time.Time{14: {"KC": at, "BUF": at.Add(3 * time.Hour)}}}
-	f.s.SetLineupEnvironment(f.env)
-}
-
 func (f *bracketFixture) bracket(t *testing.T) commissioner.NativeBracket {
 	t.Helper()
 	out, err := f.s.NativeBracket(t.Context(), bracketLeague, 2026)
@@ -154,13 +146,6 @@ func (f *bracketFixture) refused(t *testing.T, raw commissioner.RawCommand, prin
 		t.Fatalf("a refused %s was recorded", raw.Command)
 	}
 	return err.Error()
-}
-
-// grantCoCommissioner gives a principal the co-commissioner role through the real command.
-func (f *bracketFixture) grantCoCommissioner(t *testing.T, principal string) {
-	t.Helper()
-	executePeople(t, f.s, "creator", "commish.role.grant",
-		commissioner.RawPeople{Principal: principal, Role: governance.CoCommissioner}, f.rev(t))
 }
 
 func gameIn(b commissioner.NativeBracket, id string) commissioner.BracketGame {

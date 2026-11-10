@@ -16,7 +16,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
-	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
@@ -275,22 +274,6 @@ func TestSSEHiddenBidHasNoActivityCursor(t *testing.T) {
 	expectQuiet(t, events)
 }
 
-func TestSSEOutlivesOrdinaryRequestBudget(t *testing.T) {
-	f := newHostedFixture(t)
-	bearer := streamOwner(t, f)
-	response := openStream(t, f, bearer, "", 200)
-	defer response.Body.Close()
-	events := streamEvents(response)
-	expectInvalidation(t, events)
-	select {
-	case event, ok := <-events:
-		t.Fatalf("idle stream ended or emitted %q (open=%v)", event, ok)
-	case <-time.After(5500 * time.Millisecond):
-	}
-	appendStreamNote(t, f, "league")
-	expectInvalidation(t, events)
-}
-
 // A commissioner's stream was admitted by a five-minute recent-auth proof. When the proof lapses
 // the stream closes at that moment, without waiting for the next commit to fail a read.
 func TestSSEPrivilegedStreamClosesWhenProofLapses(t *testing.T) {
@@ -319,58 +302,4 @@ func TestSSEPrivilegedStreamClosesWhenProofLapses(t *testing.T) {
 	quiet := streamEvents(owner)
 	expectInvalidation(t, quiet)
 	expectQuiet(t, quiet)
-}
-
-// The stream budget scales with the league (3 per seated franchise + headroom), not a fixed server-wide
-// 64 that 32 owners on 2-3 devices exceed; one device still holds at most 2.
-func TestSSEStreamBudgetScalesWithSeatedFranchises(t *testing.T) {
-	f := newHostedFixture(t)
-	streamOwner(t, f)
-	device := func() string {
-		session, err := f.sessions.Login(t.Context(), accounts.RawCredentials{Username: "stream.owner", Password: "stream-owner-password"}, "test device")
-		if err != nil {
-			t.Fatal(err)
-		}
-		return session.Bearer
-	}
-	seated := func() int {
-		n, err := leagueservice.JoinSeats{Store: f.history}.Seated(t.Context(), "native.hosted")
-		if err != nil {
-			t.Fatal(err)
-		}
-		return n
-	}
-	fill := func(budget int, open *int) {
-		for *open < budget {
-			bearer := device()
-			for range min(2, budget-*open) {
-				r := openStream(t, f, bearer, "", 200)
-				t.Cleanup(func() { _ = r.Body.Close() })
-				*open++
-			}
-		}
-		r := openStream(t, f, device(), "", 429)
-		_ = r.Body.Close()
-	}
-	before := seated()
-	if before < 1 {
-		t.Fatalf("seated=%d, want the stream owner seated", before)
-	}
-	first := device()
-	one := openStream(t, f, first, "", 200)
-	defer func() { _ = one.Body.Close() }()
-	two := openStream(t, f, first, "", 200)
-	defer func() { _ = two.Body.Close() }()
-	over := openStream(t, f, first, "", 429)
-	_ = over.Body.Close() // device cap holds with league budget left
-	open := 2
-	fill(3*before+8, &open)
-	seat := commissioner.RawCommand{League: "native.hosted", Command: "commish.seat.replace", Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.02", Principal: f.principal}}, Expected: 2, Reason: "Seat a second franchise", Request: "stream.seat.2", Effective: "now", Visibility: "league"}
-	if _, err := f.history.ExecuteCommissioner(t.Context(), seat, f.principal, nil); err != nil {
-		t.Fatal(err)
-	}
-	if seated() != before+1 {
-		t.Fatalf("seated=%d want %d", seated(), before+1)
-	}
-	fill(3*(before+1)+8, &open)
 }

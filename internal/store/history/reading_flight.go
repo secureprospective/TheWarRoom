@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -26,26 +25,6 @@ type readingFlight struct {
 	err     error
 	waiters int
 	cancel  context.CancelFunc
-}
-
-// runs reports how many readings of kind were actually run.
-func (f *readingFlights) runs(kind string) int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.started[kind]
-}
-
-// inFlight reports how many distinct readings of kind are running now.
-func (f *readingFlights) inFlight(kind string) int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	n := 0
-	for k := range f.flights {
-		if strings.HasPrefix(k, kind+"\x00") {
-			n++
-		}
-	}
-	return n
 }
 
 // shareReading runs read once for every concurrent caller with the same kind, args and viewer. Joiners

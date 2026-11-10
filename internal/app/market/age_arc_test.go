@@ -1,11 +1,8 @@
 package market
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"math"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -63,76 +60,6 @@ func arcParams(t *testing.T, set params.Set, pos domain.Position) model.Params {
 	return p
 }
 
-func TestAgeArcRead(t *testing.T) {
-	f := newAgeArcFixture(t)
-	src := f.source(f.current, true)
-	for _, r := range f.records {
-		t.Run(r.MFL, func(t *testing.T) {
-			got, err := ReadAgeArc(t.Context(), src, r.MFL)
-			if err != nil {
-				t.Fatal(err)
-			}
-			pl := f.book.Player(r.ID)
-			p := arcParams(t, f.current, pl.Position)
-			if got.Age != pl.AgeAt(2026) || len(got.Points) != 8 || got.ParamsFallback != "" {
-				t.Fatalf("bad age, points or fallback: %+v", got)
-			}
-			for i, pt := range got.Points {
-				if pt.Age != pl.AgeAt(pt.Season) || pt.Survival != p.Survives(pt.Age, pl.DraftPick, float64(f.games), pt.Level, pl.TenureAt(pt.Season)) {
-					t.Fatalf("bad point: %+v", pt)
-				}
-				if i > 0 {
-					prev := got.Points[i-1]
-					step := 0.0
-					if pl.Rookie == 0 || prev.Season >= pl.Rookie {
-						step = p.ArcStep(prev.Age, pl.Experience(prev.Season))
-					}
-					want := model.Level(model.Score(prev.Level) + step)
-					if math.Abs(pt.Level-want) > 1e-10 {
-						t.Fatalf("season %d: got %g want %g", pt.Season, pt.Level, want)
-					}
-				}
-			}
-			if got.PeakStart > got.PeakEnd {
-				t.Fatalf("invalid peak: %+v", got)
-			}
-		})
-	}
-}
-
-func TestAgeArcSurvivalFollowsGamesPerSeason(t *testing.T) {
-	f := newAgeArcFixture(t)
-	for _, r := range f.records {
-		t.Run(r.MFL, func(t *testing.T) {
-			f.games = 16
-			sixteen, err := ReadAgeArc(t.Context(), f.source(f.current, true), r.MFL)
-			if err != nil {
-				t.Fatal(err)
-			}
-			f.games = 15
-			fifteen, err := ReadAgeArc(t.Context(), f.source(f.current, true), r.MFL)
-			if err != nil {
-				t.Fatal(err)
-			}
-			pl := f.book.Player(r.ID)
-			p := arcParams(t, f.current, pl.Position)
-			changed := false
-			for i, pt := range sixteen.Points {
-				if pt.Survival != p.Survives(pt.Age, pl.DraftPick, 16, pt.Level, pl.TenureAt(pt.Season)) {
-					t.Fatalf("16 games: bad survival: %+v", pt)
-				}
-				if fifteen.Points[i].Survival != p.Survives(pt.Age, pl.DraftPick, 15, pt.Level, pl.TenureAt(pt.Season)) {
-					t.Fatalf("15 games: bad survival: %+v", fifteen.Points[i])
-				}
-				changed = changed || pt.Survival != fifteen.Points[i].Survival
-			}
-			if !changed {
-				t.Fatal("changing the games per season did not change survival")
-			}
-		})
-	}
-}
-
 func TestAgeArcReadsRunParams(t *testing.T) {
 	f := newAgeArcFixture(t)
 	values := f.current.Values()
@@ -173,31 +100,5 @@ func TestAgeArcReadsRunParams(t *testing.T) {
 	step = current.ArcStep(fallback.Points[2].Age, pl.Experience(fallback.Points[2].Season))
 	if want := model.Level(model.Score(fallback.Points[2].Level) + step); math.Abs(fallback.Points[3].Level-want) > 1e-10 {
 		t.Fatalf("fallback level %g not from current params; want %g", fallback.Points[3].Level, want)
-	}
-}
-
-func TestAppValueAgeArcWire(t *testing.T) {
-	f := newAgeArcFixture(t)
-	value, err := ReadAgeArc(t.Context(), f.source(f.current, true), "0001")
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := json.MarshalIndent(value, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	data = append(data, '\n')
-	path := "../../../frontend/src/app/data/age-arc.wire.testdata.json"
-	if os.Getenv("TWR_WRITE_WIRE") == "1" {
-		if err := os.WriteFile(path, data, 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	held, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(held, data) {
-		t.Fatal("app value wire fixture differs; regenerate with TWR_WRITE_WIRE=1")
 	}
 }

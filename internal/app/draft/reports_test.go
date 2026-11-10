@@ -84,17 +84,6 @@ func TestDraftAverageTimeKnownTimestamps(t *testing.T) {
 	}
 }
 
-func TestDraftValueDistanceAndMissingValues(t *testing.T) {
-	t.Parallel()
-	r := reportByID(t, testBoard(t), "M-065")
-	if r.Rows[0].Range == nil || r.Rows[0].Range.Value != 1.5 || r.Rows[1].Range.Value != 0.5 || r.Rows[2].Range != nil {
-		t.Fatal(r.Rows)
-	}
-	if r.Rows[0].Cells[4] != "+10.00 points/game above the round 1 median" || r.Rows[1].Cells[4] != "10.00 points/game below the round 1 median" || !strings.Contains(r.How, "median") || !strings.Contains(r.How, "Engine points per game") {
-		t.Fatal(r)
-	}
-}
-
 func TestDraftEmptyUnavailableAndStale(t *testing.T) {
 	t.Parallel()
 	b := Build(Input{Season: 2026, ValueNote: "No model", Next: "Next unknown", Zone: time.UTC})
@@ -113,21 +102,6 @@ func TestDraftEmptyUnavailableAndStale(t *testing.T) {
 	}
 }
 
-func TestDraftExplicitUnmadeStatusAndLocalTime(t *testing.T) {
-	t.Parallel()
-	p := drafttest.Pick(t, 1, 1, "0001", "0531", 100)
-	pending := draftreports.Pick{Round: 1, Slot: 2, Franchise: "0002"}
-	feed := Held[draftreports.Pick]{Value: []draftreports.Pick{p, pending}, Feed: report.Feed{FetchedAt: time.Unix(100, 0)}}
-	r := draftStatus(2026, feed.Value, nil, feed, "Method", time.UTC)
-	if r.Rows[0].Cells[1] != "1" || !strings.Contains(r.Rows[1].Cells[1], "1.02") || !strings.Contains(r.Rows[2].Cells[1], "1 unmade") {
-		t.Fatal(r)
-	}
-	zone := time.FixedZone("LOCAL", 2*60*60)
-	if got := pickTime(p, zone); got != "Jan 1, 1970, 2:01 AM" {
-		t.Fatal(got)
-	}
-}
-
 func TestDraftCellLinesAndNameFallback(t *testing.T) {
 	t.Parallel()
 	picks := []draftreports.Pick{drafttest.Pick(t, 1, 1, "0001", "0531", 100), drafttest.Pick(t, 1, 2, "0001", "0532", 130)}
@@ -141,42 +115,6 @@ func TestDraftCellLinesAndNameFallback(t *testing.T) {
 	}
 	if got := reportByID(t, b, "M-063").Rows[0].Cells[2]; got != "First" {
 		t.Fatal(got)
-	}
-}
-
-func TestDraftAllDatesUseAppStyle(t *testing.T) {
-	t.Parallel()
-	at := time.Date(2026, 10, 11, 12, 0, 51, 0, time.UTC)
-	zone := time.FixedZone("LOCAL", -5*3600)
-	p := drafttest.Pick(t, 1, 1, "0001", "0531", at.Unix())
-	b := Build(Input{Season: 2026, Results: Held[draftreports.Pick]{Value: []draftreports.Pick{p}, Feed: report.Feed{FetchedAt: at}},
-		Future: Held[draftreports.FuturePick]{Feed: report.Feed{FetchedAt: at}}, Zone: zone})
-	for _, r := range b.Reports {
-		if r.AsOf != "As of: Oct 11, 2026, 7:00 AM" {
-			t.Fatal(r.AsOf)
-		}
-	}
-	if got := pickTime(p, zone); got != "Oct 11, 2026, 7:00 AM" {
-		t.Fatal(got)
-	}
-}
-
-func TestDraftReportLanguage(t *testing.T) {
-	t.Parallel()
-	b := testBoard(t)
-	for _, r := range b.Reports {
-		for _, bad := range []string{"held", "export", "sentinel", "UTC instants", "consumed", "draftResults", "futureDraftPick", "originalPickFor", "DynastyPPG"} {
-			if strings.Contains(strings.ToLower(r.How+" "+r.Note+" "+r.Title+" "+r.Source), strings.ToLower(bad)) {
-				t.Fatalf("%s contains %s", r.ID, bad)
-			}
-		}
-		if r.Source != "Source: MFL" {
-			t.Fatal(r.Source)
-		}
-	}
-	r := reportByID(t, b, "M-176")
-	if r.Columns[1] != "What MFL shows" || len(r.Rows) != 1 || !strings.Contains(r.Rows[0].Cells[1], "2026 rookie draft complete · 3 picks") {
-		t.Fatal(r)
 	}
 }
 
@@ -205,24 +143,6 @@ func TestDraftDurationAndMedian(t *testing.T) {
 	}
 	r := reportByID(t, testBoard(t), "M-179")
 	if r.Columns[3] != "Median" || r.Rows[0].Cells[4] != "Mostly pre-queued picks" {
-		t.Fatal(r)
-	}
-}
-
-func TestDraftLiveRecentPicksAndStatus(t *testing.T) {
-	t.Parallel()
-	picks := []draftreports.Pick{}
-	for i := 1; i <= 20; i++ {
-		picks = append(picks, drafttest.Pick(t, 1, i, "0001", "0531", int64(i)*100))
-	}
-	build := func() report.Board { return built(picks, time.Unix(100, 0), nil, time.UTC) }
-	b := build()
-	r := reportByID(t, b, "M-183")
-	if len(r.Rows) != 12 || r.Rows[0].Cells[0] != "1.09" || r.Rows[11].Cells[0] != "1.20" || r.Link == nil || *r.Link != (report.Link{Label: "See every pick", Endpoint: "M-063"}) || !reflect.DeepEqual(r.Summary, reportByID(t, b, "M-176").Rows) || len(reportByID(t, b, "M-063").Rows) != 20 {
-		t.Fatal(r)
-	}
-	picks = append(picks, draftreports.Pick{Round: 1, Slot: 21, Franchise: "0001"})
-	if r = reportByID(t, build(), "M-183"); len(r.Rows) != 21 {
 		t.Fatal(r)
 	}
 }

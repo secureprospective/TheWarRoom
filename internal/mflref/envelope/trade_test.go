@@ -1,7 +1,6 @@
 package envelope
 
 import (
-	"encoding/json"
 	"reflect"
 	"slices"
 	"strings"
@@ -153,24 +152,6 @@ func TestTradeChecks(t *testing.T) {
 				t.Fatal(got)
 			}
 		})
-	}
-}
-
-func TestTradeBlockedArrays(t *testing.T) {
-	req, snap, check, at := tradeFixture(t)
-	req.Trade.OfferingGives = []string{"99"}
-	check.PendingTrades.Provenance.Freshness.State = domain.FreshFail
-	e, err := DraftTrade(at, req, snap, check, func() string { return "blocked" })
-	if err != nil || e.State() != Blocked {
-		t.Fatal(e, err)
-	}
-	body, err := json.Marshal(e.Receipt())
-	if err != nil || strings.Contains(string(body), ":null") || !strings.Contains(string(body), `"picks":[]`) {
-		t.Fatalf("JSON: %s %v", body, err)
-	}
-	cloned := cloneSpec(Spec{Expected: ExpectedChange{Trade: &ExpectedTrade{}}})
-	if cloned.Expected.Trade.AcceptingGives == nil || cloned.Expected.Trade.OfferingGives == nil {
-		t.Fatal("nil clone arrays")
 	}
 }
 

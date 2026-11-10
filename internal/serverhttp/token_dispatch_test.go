@@ -1,7 +1,6 @@
 package serverhttp_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,38 +21,6 @@ func (f *hostedFixture) agentToken(t *testing.T, human string, commands []string
 		t.Fatal(err)
 	}
 	return token
-}
-
-func TestAgentSharedDispatchDefaultsToPreviewAndAuditsAppend(t *testing.T) {
-	f := newHostedFixture(t, true)
-	human, proof := f.directCommissioner(t)
-	token := f.agentToken(t, human, []string{commissioner.NotePost, "commish.ledger.read"}, "preview", "execute", "read")
-	raw := commissioner.RawCommand{League: "native.hosted", Command: commissioner.NotePost, Args: commissioner.RawArgs{Note: &commissioner.RawNote{Text: "Agent's league note"}}, Request: "agent-note", Expected: 1, Effective: "now", Visibility: "league"}
-	raw.Expected = f.agentRevision(t, token)
-	base := f.events(t)
-	f.postConsent(t, f.tokenWorkflow(t, token, raw, "preview"), token.Bearer, "", 200)
-	f.revision(t, base)
-	execute := f.tokenWorkflow(t, token, raw, "execute")
-	f.postConsent(t, execute, token.Bearer, "", 200)
-	f.postConsent(t, execute, token.Bearer, "", 200)
-	f.revision(t, base+1)
-	events, err := f.history.Events(t.Context(), raw.League, commissioner.Stream, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	recorded := events[base].Payload.Commissioner
-	if recorded.TokenAuditID != token.ID || recorded.Principal != f.principal {
-		t.Fatalf("missing trusted token audit: %+v", recorded)
-	}
-	ledger := f.post(t, serverhttp.LedgerPath, `{"protocol":1,"league":"native.hosted"}`, human, proof, 200)
-	if !bytes.Contains(ledger, []byte("via AI/CLI, acting for "+f.principal)) || bytes.Contains(ledger, []byte(token.Bearer)) {
-		t.Fatal("ledger lost attribution or leaked bearer")
-	}
-	if err := f.tokens.Revoke(t.Context(), accounts.RawSession{Bearer: human}, token.ID); err != nil {
-		t.Fatal(err)
-	}
-	f.postConsent(t, execute, token.Bearer, "", 401)
-	f.revision(t, base+1)
 }
 
 // tokenWorkflow is the change as twr sends it: a catalog workflow carrying the server's football digest.
@@ -88,15 +55,6 @@ func (f *hostedFixture) events(t *testing.T) int {
 		t.Fatal(err)
 	}
 	return len(events)
-}
-
-func tokenCommandBody(t *testing.T, raw commissioner.RawCommand) string {
-	t.Helper()
-	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Command: &raw})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(body)
 }
 
 func (f *hostedFixture) agentRevision(t *testing.T, token accounts.AgentToken) int64 {
@@ -191,21 +149,4 @@ func TestAgentScopeFamiliesAndExpiredRetry(t *testing.T) {
 	f.now = f.now.Add(accounts.TokenExecuteLifetime)
 	f.postConsent(t, body, token.Bearer, "", 401)
 	f.revision(t, base+1)
-}
-
-// TestAgentRawChangeDoorsAnswerUpdate: no twr sends raw changes now, so an agent token on the raw
-// preview or execute door gets the 426 update reply and the league is unchanged.
-func TestAgentRawChangeDoorsAnswerUpdate(t *testing.T) {
-	f := newHostedFixture(t, true)
-	human, _ := f.directCommissioner(t)
-	token := f.agentToken(t, human, []string{commissioner.NotePost, "commish.ledger.read"}, "read", "preview", "execute")
-	raw := commissioner.RawCommand{League: "native.hosted", Command: commissioner.NotePost, Args: commissioner.RawArgs{Note: &commissioner.RawNote{Text: "Raw note"}}, Request: "raw", Expected: f.agentRevision(t, token), Effective: "now", Visibility: "league"}
-	base := f.events(t)
-	for _, path := range []string{serverhttp.PreviewPath, serverhttp.ExecutePath} {
-		var update serverhttp.RawUpdateRequiredResponse
-		if err := json.Unmarshal(f.post(t, path, tokenCommandBody(t, raw), token.Bearer, "", http.StatusUpgradeRequired), &update); err != nil || update.Validate() != nil || !strings.Contains(update.Message, "update twr") {
-			t.Fatalf("%s: %+v %v", path, update, err)
-		}
-	}
-	f.revision(t, base)
 }

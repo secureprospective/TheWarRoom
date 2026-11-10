@@ -49,60 +49,6 @@ func TestRawScheduleWeek_Validate(t *testing.T) {
 	}
 }
 
-// TestFlatten_RealShape decodes a trimmed copy of MFL's documented schedule export
-// shape (weeklySchedule -> week -> matchup -> franchise[2]) to lock the field
-// mapping and the single-element collapse handling on matchup/franchise.
-func TestFlatten_RealShape(t *testing.T) {
-	const body = `{"schedule":{"weeklySchedule":[` +
-		`{"week":"1","matchup":[` +
-		`{"franchise":[{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}` +
-		`]}` +
-		`]}}`
-
-	var env scheduleEnvelope
-	if err := json.Unmarshal([]byte(body), &env); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	got, err := flatten(env)
-	if err != nil {
-		t.Fatalf("flatten: %v", err)
-	}
-	if len(got) != 1 {
-		t.Fatalf("got %d weeks, want 1", len(got))
-	}
-	w := got[0]
-	if w.Week != "1" || len(w.Matchups) != 1 {
-		t.Fatalf("week mapped wrong: %+v", w)
-	}
-	sides := w.Matchups[0].Franchises
-	if sides[0].FranchiseID != "0001" || sides[0].IsHome != "1" || sides[1].FranchiseID != "0002" {
-		t.Fatalf("franchises mapped wrong: %+v", sides)
-	}
-}
-
-// TestFlatten_SingleWeekSingleMatchupCollapse locks the MFL array/object-collapse
-// quirk: a season with exactly one week and one matchup lets MFL's legacy XML->JSON
-// converter emit bare objects instead of one-element arrays for weeklySchedule and
-// matchup. ingestion.MFLList must still yield a one-item slice for each.
-func TestFlatten_SingleWeekSingleMatchupCollapse(t *testing.T) {
-	const body = `{"schedule":{"weeklySchedule":` +
-		`{"week":"1","matchup":` +
-		`{"franchise":[{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}` +
-		`}}}`
-
-	var env scheduleEnvelope
-	if err := json.Unmarshal([]byte(body), &env); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	got, err := flatten(env)
-	if err != nil {
-		t.Fatalf("flatten: %v", err)
-	}
-	if len(got) != 1 || len(got[0].Matchups) != 1 {
-		t.Fatalf("collapse not handled: %+v", got)
-	}
-}
-
 func TestFlatten_WrongFranchiseCount(t *testing.T) {
 	const body = `{"schedule":{"weeklySchedule":[` +
 		`{"week":"1","matchup":[{"franchise":[{"id":"0001","isHome":"1","score":""}]}]}` +

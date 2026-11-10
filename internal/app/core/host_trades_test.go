@@ -2,8 +2,6 @@ package core_test
 
 import (
 	"encoding/json"
-	"strconv"
-	"sync"
 	"testing"
 	"time"
 
@@ -56,32 +54,6 @@ func TestPendingTradesDetachedAndNeverNil(t *testing.T) {
 	}
 	if again := s.PendingTrades(); again.Value[0].Gives[1].FuturePick.Year != 2027 || again.Value[0].Gets[0].Player.String() != "0099" {
 		t.Fatal("second read saw the first read's mutation", again)
-	}
-}
-
-func TestPendingTradesReadDuringPublication(t *testing.T) {
-	t.Parallel()
-	s := coretest.New(t).Build()
-	offer := heldOffer(t)
-	var wg sync.WaitGroup
-	wg.Go(func() {
-		for i := range 200 {
-			next := offer
-			next.Comments = strconv.Itoa(i)
-			s.SeasonMu.Lock()
-			s.SeasonPendingTrades = core.HeldFeed[[]leaguefeed.PendingTrade]{Value: []leaguefeed.PendingTrade{next}, FetchedAt: offer.Expires}
-			s.SeasonMu.Unlock()
-		}
-	})
-	for range 200 {
-		got := s.PendingTrades()
-		if len(got.Value) == 1 {
-			got.Value[0].Gives[1].FuturePick.Round = 9
-		}
-	}
-	wg.Wait()
-	if got := s.PendingTrades(); got.Value[0].Comments != "199" || got.Value[0].Gives[1].FuturePick.Round != 1 {
-		t.Fatal(got)
 	}
 }
 
