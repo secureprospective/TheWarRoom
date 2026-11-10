@@ -1,100 +1,103 @@
-# RESUME: TheWarRoom landing page (warroom.secureprospective.com), 2026-11-10 (second compaction)
+# RESUME: TheWarRoom landing page (warroom.secureprospective.com), 2026-11-10 (third compaction, ~11:35 CST)
 
-Written by Tom (Claude Code on the Beelink). The session continues; nothing is merged, pushed or deployed.
-On "we are back": read this, then start at NEXT ACTIONS item 1. Do not recap or re-plan.
+Written by Tom (Claude Code on the Beelink). On "we are back": read this, check the in-flight job (section 2), start at NEXT ACTIONS item 1. Do not recap or re-plan.
 
 ## 1. What we are doing
-Public landing page for TheWarRoom: a Super Bowl-ad-grade scroll story. Message: "you are playing fantasy football the
-dumbest way possible; open your own league in TheWarRoom". Landing page only; sign-up wiring and serving are a later job.
+The public landing page is finished and Christopher approved it ("absolutely fantastic"). His order: "push/merge - spin up a subagent,
+Opus 5.5 low, to build the subdomain landing page to go live so I can start sharing it with real people."
+Now: (a) get PR 224 merged, (b) make the TheWarRoom hosted server serve the page at `https://warroom.secureprospective.com/`, (c) deploy to the live lab server.
 
-- Repo `~/work/TheWarRoom`, worktree `~/work/TheWarRoom/.worktrees/website`, branch `session/website` (from origin/main 8899a8bff).
-- Never touch the main checkout (`session/league-history-pwa`) or branch `session/ui-to-mocks`.
-- Starting handoff: `~/Downloads/TheWarRoom-WEBSITE-HANDOFF.md` (its section 8 hard rules bind).
-- Christopher views `file:///home/chris/Downloads/twr-landing/index.html` (plain copy of `website/`; re-copy after every change, including `steel.js`).
+- Repo `~/work/TheWarRoom`, worktree `~/work/TheWarRoom/.worktrees/website`, branch `session/website`, pushed. PR https://github.com/secureprospective/TheWarRoom/pull/224 (base main).
+- Never touch the main checkout (`session/league-history-pwa`) or branch `session/ui-to-mocks`. Squash merges only. Never `--no-verify`.
+- Viewing copy for Christopher: `file:///home/chris/Downloads/twr-landing/index.html` (matches the committed `website/`).
 
-## 2. Agents and harnesses
-- Rendering: Claude-OS (`ssh claudeos`), headless Chromium via Playwright. Copy `website/*` to `claudeos:work/twr-site/`, then in `~/work/site-study`:
-  - `CHROME=/usr/bin/chromium node twr-shots.mjs $HOME/work/twr-site <desktop|mobile> [stops e.g. 0,6,8]` (stills, one per scene; uses `window.twrTop(scene)`).
-  - `[CLICKS=1] CHROME=/usr/bin/chromium node motion.mjs $HOME/work/twr-site <desktop|mobile> 0-1,2-3` (12 frames per flight; CLICKS=1 also clicks sound, team switch, card, image save, text copy).
-  - `node steelshots.mjs $HOME/work/twr-site` (needs `steel-test.html`, kept at `/tmp/twr-site/steel-test.html`, not in the repo).
-  - Local copies of the scripts: `/tmp/twr-site/{shots,motion,steelshots}.mjs`. Shots land in `work/twr-site/out/`; pull to `/tmp/twr-site/out2/`, contact sheets with ImageMagick `montage`.
-- Second opinion: `~/fleet/bin/launch-sol61-super.sh <brief.md>` (Sol 6.1, high). Brief `~/fleet/briefs/twr-landing-second-opinion.md`; answer `~/fleet/runs/sol61-twr-landing-second-opinion/stdout.log`.
-- 3D models: built by an Opus 5.5 low-effort subagent to my spec, corrected by me. Christopher: "have it build to your spec, you just make the corrections needed as it has a tendency to half ass the edges and corners".
-- Design hook: `impeccable` scans writes to `website/`; ignores in `.impeccable/config.json`.
-- Christopher's marked-up screenshots: `~/content/feedback/YYYY-MM-DD_HH-MM*.png`.
+## 2. In flight
+- Background shell job `bxs2154za` (started ~11:13 CST, 10 min timeout): `gh pr checks 224 --watch` then `gh pr merge 224 --squash`. It has probably timed out.
+  Check: `gh pr view 224 --json state -q .state`. If OPEN, merge by hand once checks are green (next action 1).
+- CI run 42862521418 on the first push: job "checks" FAILED. A later push (the commit carrying this file) starts a fresh CI run.
+- No subagent has been spawned yet. No deploy has been started.
 
 ## 3. Status
 | Item | State |
 |---|---|
-| 12 scenes, desktop 1920x1080 | Rendered and looked at after all changes; no console errors |
-| Phone 390x844 | Rendered and looked at; three collisions fixed. Christopher still sees spacing and readability problems in his own preview (see next actions) |
-| Roast (shatter, spreadsheet crack, 1998 page collapse), camera weave | Seen in filmed flight frames 0-1 to 3-4, 4-5, 9-10 |
-| Sound switch, team switch, card builder, image save, text copy | Clicked in a real browser, all work. The sound itself has NOT been heard by anyone |
-| Rendered steel portal + goal post (`steel.js`) | In the page, looked at from several angles |
-| Sol's verified bugs | Fixed (list in section 6b) |
-| "Open your league" buttons | Not wired, by design (later job). Sol rates it the top problem |
-| Deploy | None. Needs Christopher's approval per deploy |
+| Landing page (hero reel, trade versions A/B, league switches, 3D angled panels, phone pass) | Built; rendered at 1920x1080, 1366x768, 360x740, 390x844, 412x915; no console errors; commit 1013e2863 |
+| Reel pauses off-screen, restarts on return | Proven by script (`CHECK=1`): "reel frozen away: true, moving after return: true" |
+| Reduced motion | Rendered: static deck in finished state |
+| Flights between scenes after this pass (shatter, weave) | NOT re-filmed |
+| Sound | Never heard by anyone |
+| PR 224 | Open; CI "checks" job failed on an unrelated frontend test (section 5) |
+| Server serves the page | Not built |
+| Buttons email Christopher | Not built |
+| Live deploy | Not started |
 
 ## 4. Artifacts
-`website/`: `index.html`, `site.css`, `site.js`, `steel.js` (new), `fonts/`. Sizes and hashes: see the commit that carries this file.
-How it works: scroll drives one camera 110 yards down a field. `site.js` holds one projection shared by DOM scenes (CSS 3D, `.lens`
-perspective 1000) and a 2D canvas (floor, walls, steel, motes, confetti). Scenes are 2600 units apart; `.ly` layers carry `--x/--y/--z`
-(`--px/--py` for portrait). Per-flight scroll length is `SPAN[]` (viewport heights), scene tops `TOP[]`, `progress()` maps scroll to scene.
-`steel.js` exposes `TWRSteel.portal/goalpost/draw` (flat-shaded polygon meshes, painter sort, near-plane clip, fog by colour blend).
-A second canvas `#fx` (above the DOM) carries the shards. Scenes not in front of the camera are `inert`. The field canvas redraws only when the camera moves.
-Sound is generated with Web Audio (pink noise through band-passes): `setSound`, `cheer`, `crack`, `thud`. No audio files.
-Share card: `card()` text and `cardImage()` 1080x1350 PNG.
+- `website/`: `index.html` (328 lines), `site.css` (338), `site.js` (570), `steel.js`, `fonts/` (5 woff2 + OFL.txt). Committed in 1013e2863.
+- Share-preview image, 1200x630, hero with deck: `/tmp/twr-site/out3/og-reel-04300.png` (171,752 B). Not in the repo yet. Re-make: `VP=1200x630 T=4300 /tmp/twr-site/go.sh og`.
+- Render harness (Beelink `/tmp/twr-site/`, may vanish on reboot): `go.sh <tag>` with env `VP=WxH T=ms,ms STOPS=0,1.. CLICKS=1 CHECK=1 STILL=1` copies the site by scp to
+  `claudeos:work/twr-site/`, runs `claudeos:work/site-study/reel.mjs` (Playwright, chromium), pulls shots to `/tmp/twr-site/out3/`. `sheet.sh <tag> <cols> <resize%> <per-sheet>` makes contact sheets.
+  A hook forbids `rsync` of the work tree: use `scp`.
+- CI failure log: `/tmp/twr-site/ci-checks-224.log`.
+
+How the page works (new this pass): hero scene 0 holds three `.ly.rc` cards (classes p0/p1/p2 set position and depth; `place()`, `reel()`, `drag()`, `moves`, `rewind`, `reelSet()` in `site.js`).
+`.ly` supports `--ry` (rotateY, desktop only), `--pz` (phone depth), `--ps` (phone shout size). Trade desk: `offers[]`, `setOffer()`, `#ver`. League switches toggle `no-yrs/no-cap/no-def` on `#league`.
+Phone-only removals: franchise names (numbered tiles instead), `.more` paragraph, "Meanwhile" plate, end wordmark.
 
 ## 5. Current bug
-None open.
+PR 224 CI job "checks", step "Lint (with placement and root ratchet), bindings, frontend checks":
+`FAIL src/app/shell/leaguePicker.interaction.test.tsx > opens the Control Room on the locked mock for a picked app league` / `AssertionError: expected null not to be null` (1 failed, 754 passed).
+Hypothesis: flaky or already failing on main; PR 224 touches only `website/` and `docs/`, no frontend code. Caveat: not checked against main's latest run; confirm before blaming flakiness.
 
-## 6. Already tried, do not repeat
-- Thin line-only field; far fade to 4200 (ghost words); labels on distant portals; DOM yard signs; hazard underline under "dumbest"; kickers above headings; transparent-fill outline type (inner seams). All replaced; do not go back.
-- Drawing near portals on the front canvas to occlude the DOM: worked out on paper, not built. At the distance where it would be correct the steel is already off-screen at the edges, so it buys nothing.
-- Sleeper under "ads": false. Sleeper is ad-free; the page says it "skips the ads and still can't run a contract or a salary cap".
-
-### 6b. Sol 6.1 review (verdict: "does not meet Super Bowl ad grade")
-Fixed: trade cap sums (Reggie Wight now $10.2M), one clock for feed and field panel, share label says Sent vs Copied, no confetti under reduced motion,
-inert off-camera scenes, resize keeps story position, redraw only on movement, shorter early flights, larger phone type.
-Open, raised with Christopher: dead-end CTA buttons; panels float in front of the hall instead of sitting in it; second half does not escalate
-(suggest trade desk toggling two offers, switches changing the preview); weak copy "No cool factor / Time suck" (kept; his voice).
-Sol's ideas not built: one play travelling through the room; settings reconfiguring the hall; an "inspect this desk" close-up.
+## 6. Already tried / settled, do not repeat
+- Hero junk windows: removed from the hero on purpose (exhibits keep them).
+- Soft dark box behind centred copy looked smudgy on the lit field: centred copy uses text-shadow instead; left-aligned copy keeps a padded backing.
+- Scene on/off state must be decided before the "not near" early exit in `frame()`; otherwise a fast jump leaves a far scene on (fixed).
+- Playwright clicks move the mouse and shift the camera by parallax in later shots: an artefact, not a phone bug.
+- Design hook "cramped padding" (2 flags, attribution unknown): padded the copy backing and the roster chips; no ignores added.
+- Earlier list still stands: thin line-only field, far fade to 4200, DOM yard signs, hazard underline, kickers above headings, outline type with transparent fill, Sleeper under "ads".
 
 ## 7. Christopher's decisions
-- Site is first class, the only place people meet TheWarRoom for now; code stays in this repo. CTA "Open your league"; second door "Bring your league over".
-- Never ads, never unwanted betting odds. Punchy wording stays. Depth, layers, 3D, gets cooler as you scroll.
-- Eight rulings, all now built: quiet crowd + cheer on button press; rendered steel and goal post only; all three roast effects; name the competitors;
-  field-level subtle camera cut; better screens without crowding; share card as text and image; names rolled slightly ("Berry Rice", "Brett Favor").
-- NEW 2026-11-10 (this compaction):
-  - **Hero:** he agrees with Sol. Put real animated action in the hero, "not just 1 static look": players being dragged and dropped into lineups,
-    live Sunday scoring, trade desk activity. "Clean animations, not sloppy halfassed placeholders."
-  - **Competitor claims confirmed TRUE by him:** sportsbook odds next to the lineup on ESPN and Yahoo; Sleeper has no display ads (earns from paid
-    pick'em games and avatar sales) and no native contracts or salary cap (commissioners track them in Google Sheets); MFL is paid (about $70 to $90+
-    per league per year) with no official app (third-party clients such as MFL Mobile, MFL Platinum). These claims are settled; do not re-ask.
-  - **Phone:** he saw spacing and readability problems in his browser preview (he is not sure the preview is accurate). Removing things on phone only is fine if it reads better.
+- All earlier rulings stand (eight rulings; punchy copy; names rolled slightly; never ads or betting odds; competitor claims confirmed true).
+- 2026-11-10 ~11:10 CST, by pick-list:
+  - **Go-live:** "Same address, server serves it". The TheWarRoom server shows the landing page at warroom.secureprospective.com; join links and the app keep working. Full test gate first.
+  - **Buttons:** "Email you". "Open your league" and "Bring your league over" open the visitor's email app with a pre-filled message. Address not named by him;
+    memory says his business address is christopher@secureprospective.com. Tell him which address is on the page before it goes live.
+- He asked for the builder to be an Opus 5.5 low-effort subagent, built to my spec, corrected by me.
 
 ## 8. Ledger state
-- Commit 93e6de9fa: first cut. The commit carrying this file: everything in sections 3 and 4. Not pushed.
-- Memory `warroom-site-copy-stays-punchy` updated with the rolled-names ruling.
+- `session/website`: 93e6de9fa, 7f8860ea2, 1013e2863, then the commit carrying this file. Pushed. Nothing uncommitted.
+- Hermes task T600 rewritten to this state.
 
 ## 9. Next actions, in order
-1. Hero action (new ruling): replace the static hero dressing with a looping, authored product sequence in the War Room look, on a timeline, three beats:
-   a player block dragged from the bench into a lineup slot (slot lights, projected points tick up); a live play landing and the matchup score changing;
-   a trade block sliding across the desk with cap room updating. Keep the headline and "Snap the ball". Must pause when off-screen and stand still under
-   reduced motion. Decide what happens to the four junk windows in the hero (they currently shatter on departure; the exhibits keep that effect either way).
-2. Phone pass: render every scene at 390x844 and at a second size (e.g. 412x915 and 360x740), fix spacing and readability, and remove secondary panels
-   on phone where that reads better (candidates: the "around the league" strip, the franchise wall beyond 12 names, the second paragraph in scene 8,
-   junk windows that crowd the hero).
-3. Optional tightening now the claims are confirmed: Exhibit B could name the price ("$70 to $90 a league, every year"); Exhibit A could say Sleeper commissioners keep contracts in a Google Sheet.
-4. Re-render desktop and phone, look at each, refresh `~/Downloads/twr-landing/`, report.
-5. Still for Christopher: has he heard the sound; are these page claims true today: live play-by-play, cap and roster after a trade, up to 32 teams, bringing a whole league over with history; does he want the open Sol items done.
+1. Get PR 224 green and squash-merged: `gh pr checks 224`; if the same frontend test fails again, check whether it fails on main (`gh run list --branch main`), then `gh run rerun <id> --failed`
+   or report it. Merge with `~/.local/bin/gh pr merge 224 --squash`.
+2. Create a new worktree from merged main, never touching the main checkout: `git -C ~/work/TheWarRoom fetch origin && git -C ~/work/TheWarRoom worktree add .worktrees/landing-serve -b session/landing-serve origin/main`.
+3. In it, do the page edits myself: both CTA buttons in scene 10 become `mailto:` links with subject and body; add Open Graph and Twitter meta tags; add the share image as `og.png`.
+4. Spawn the builder (Agent tool, model opus, effort low) in that worktree with this spec:
+   - Move `website/` into a Go package that embeds it (go:embed cannot reach outside its package), e.g. `internal/serverhttp/landing/` or files beside `join_page.go`; one copy of the site, no duplicate.
+   - In `internal/serverhttp/hosted.go`: serve `GET`/`HEAD` `/` (index), `/site.css`, `/site.js`, `/steel.js`, `/og.png`, `/fonts/*.woff2` with correct content types.
+     These landing paths must be answered BEFORE the `r.URL.RawQuery != ""` refusal in `serveHTTP` (shared links get `?fbclid=` and `?utm_` added; today that returns 400), and must be in `browserRoute` (browser.go) so a same-origin Origin header is admitted.
+   - CSP for the landing page: `default-src 'none'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; base-uri 'none'; frame-ancestors 'none'; form-action 'none'`
+     (the page uses external script files and inline style attributes, so the join page's nonce CSP does not fit). Keep `X-Content-Type-Options: nosniff`.
+   - Caching: index `no-store`; css/js short max-age; fonts and og.png long max-age. Everything else on the server keeps `no-store`.
+   - Must pass through `versionGate`, `resourceLimits`, `backupAdmission` the way `/join` does (see `join_page_test.go` for the fixture `newHostedFixture`, `f.get`).
+   - Tests (each must fail without the change): `/` returns 200 HTML with the CSP; `/?fbclid=x` returns 200; each asset returns its content type; POST `/` is refused; `/join` and its strict CSP unchanged; an unknown path still 404s.
+   - No branching on league or source; no new infrastructure; keep it small. Sol/builder never runs git.
+5. Review every line, plant one mutant, run `timeout 600 nice -n 10 make verify VERSION=dev COMMIT=<x> BUILD_DATE=<x>` once at the end (toolchain env in section 10), `~/fleet/bin/heavy-ok.sh` first.
+6. Load the built server on Claude-OS or a throwaway lab CT and render the page from it (desktop and phone) before any live step; check `/join` still works.
+7. PR, squash-merge on green.
+8. Deploy to the live lab server (CT 256 on the lab VM, address warroom.secureprospective.com, holds the phone-test league with claimed franchises): signed bundle via `deploy/lab/lab-bundle.sh`,
+   then the installed `/usr/local/libexec/twr-upgrade` per `deploy/server/UPGRADE.md` and `deploy/lab/LAB.md`. Read `docs/RESUME-debloat-1109.md` lines 245-262 first (CT 256 history; tunnel init script quirk).
+   Christopher's go-live order covers this deploy; anything beyond it (DNS, tunnel changes) needs his word. Cloudflare token on stdin only.
+9. Verify live from outside: `/` shows the page on desktop and phone, `/join` works, a link with `?fbclid=test` works. Then tell Christopher, including the email address on the buttons.
 
 ## 10. Environment notes
 - Address him as Christopher; short plain replies, outcome first, Central time.
-- Git hooks toolchain: `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10`.
-- Never real league data, NFL logos or real-player photos. Made-up league names come from the mocks.
-- ssh aliases: `claudeos`, `claudebox` (CT105, root), `hermes`.
+- Toolchain: `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 GOMEMLIMIT=1500MiB GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`.
+- ssh aliases: `claudeos`, `claudebox` (CT105, root), `hermes`, `lab`. Lab scripts refuse to run anywhere but host `twr-lab`.
+- Server facts found: `/` is a 404 today; `/join` is served by `internal/serverhttp/join_page.go` (embedded HTML, nonce CSP); router is `Hosted.route` in `hosted.go`; all replies get `Cache-Control: no-store`;
+  requests with any query string or without TLS are refused in `serveHTTP`.
+- Never real league data, NFL logos or real-player photos on the page.
 
 ## 11. Honest status
-All eight rulings are built and seen rendered. Unproven: how the sound actually sounds; frame rate on a real phone (steel adds roughly 150 to 240
-polygons per visible frame, drawn only while the camera moves); phone layout on sizes other than 390x844. The hero animation and the phone pass are not started.
+The page is done and pushed; it is not merged and not live. ETA to merge: one green CI run (about 5 minutes) if the failing test is a flake. ETA to live: unknown; it needs the server change,
+the full gate, a staged check and a signed upgrade of the live lab server, none of which is started. Unproven: the sound, phone frame rate, flights after the layout pass.
