@@ -66,7 +66,7 @@ it('keeps app HQ and War Room failures inside the navigable shell', async () => 
     expect(container.querySelector('.ws')).not.toBeNull();
     await act(async () => { commands.dispatch('nav.open', { node: 'war' }); });
     expect(container.querySelector('.rail nav[aria-label="Workspaces"]')).not.toBeNull();
-    const home = [...container.querySelectorAll('.rail nav button')].find(b => b.textContent === 'Home');
+    const home = [...container.querySelectorAll('.rail nav button')].find(b => b.getAttribute('aria-label') === 'Home');
     expect(home).toBeDefined();
     await act(async () => { (home as HTMLButtonElement).click(); });
     expect(container.querySelector('.ws')?.getAttribute('aria-label')).toBe('Home');

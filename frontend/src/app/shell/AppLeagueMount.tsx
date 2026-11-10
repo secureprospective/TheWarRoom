@@ -8,6 +8,8 @@ import { commands } from '../commands/registry';
 import type { HQTab } from './HQShell';
 import type { PulseTab } from './NativeLeaguePulse';
 import type { Node } from './nodes';
+import { readRailNow, usePulseRead, type RailNow } from './pulseReads';
+import { usePulseLive } from './hqLive';
 
 const loaders = {
   hq: () => import('./NativeFranchiseHQ'), war: () => import('./WarRoomNative'),
@@ -21,7 +23,19 @@ const HomeBrief = lazy(loaders.home);
 const ControlRoom = lazy(loaders.control);
 const views = ['home', 'hq', 'pulse', 'war', 'control'] as const;
 
-export default function AppLeagueMount({ league, view, leave, footer, hqTab, pulseTab, tabs, tree }: {
+/** RailWeek reads what the rail says on every screen: the week being played, how many NFL games
+ *  are live, and where my matchup stands. It draws nothing. */
+function RailWeek({ league, mine, publish }: { league: string; mine: string;
+  publish: (rail: { now?: RailNow; live?: number }) => void }) {
+  const { reading } = usePulseRead<RailNow>(JSON.stringify(['rail', league, mine]),
+    () => readRailNow(league, mine, localWorkflow));
+  const live = usePulseLive('').view?.games.filter(g => g.status === 'in').length;
+  useEffect(() => { publish({ now: reading, live }); }, [reading, live, publish]);
+  useEffect(() => () => publish({}), [publish]);
+  return null;
+}
+
+export default function AppLeagueMount({ league, view, leave, footer, hqTab, pulseTab, tabs, tree, onRail }: {
   league: LeagueChoice;
   view: 'hq' | 'war' | 'pulse' | 'home' | 'control';
   leave: (node?: Node) => void;
@@ -29,6 +43,8 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
   hqTab?: HQTab; pulseTab?: PulseTab; tabs?: HTMLElement | null;
   /** Control Room's rail slot under its nav item. */
   tree?: HTMLElement | null;
+  /** Tells the shell rail the week, the live count and my matchup's score. */
+  onRail?: (rail: { now?: RailNow; live?: number }) => void;
 }) {
   const [people, setPeople] = useState<People>();
   const [mine, setMine] = useState('');
@@ -85,6 +101,7 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
     </select>
   </label>;
   return <>
+    {onRail && <RailWeek league={league.id} mine={mine} publish={onRail} />}
     {view !== 'control' && (footer ? createPortal(chooser, footer) : chooser)}
     {view !== 'control' && !mine &&
       <p role="status">Choose a franchise to view its roster, contracts and War Room.</p>}

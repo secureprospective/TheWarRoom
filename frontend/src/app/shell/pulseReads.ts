@@ -122,3 +122,28 @@ export async function readPulseMatchup(league: string, season: number, week: num
   });
   return out;
 }
+
+/** RailNow is what the shell rail says on every screen: the week being played and where my
+ *  matchup stands in it. Lines the league does not hold stay undefined and are left out. */
+export type RailNow = { week?: number; mine?: number; theirs?: number; decided: boolean };
+
+export async function readRailNow(league: string, mine: string, port: HostedPort = hostedWorkflow):
+  Promise<RailNow> {
+  const directory = await port({ command: 'native.directory.read', mode: 'read', arguments: { league } });
+  const held = parsePulseDirectory(directory.data, league);
+  const r = await port({ command: 'week.read', mode: 'read', arguments: { league, franchise: mine,
+    season: held.season, localZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    at: new Date().toISOString() } });
+  const read = parsePulseWeek(r.data, league, mine, held.season);
+  const week = read.week ?? read.nextWeek;
+  if (!week || !mine) return { week, decided: false };
+  const results = await readPulseWeekResults(league, held.season, week, port);
+  const game = results.games.find(g => g.home === mine || g.away === mine);
+  if (!game) return { week, decided: false };
+  const points = (franchise: string) => {
+    const score = results.scores.find(s => s.franchise === franchise);
+    return score?.points ?? score?.provisional;
+  };
+  return { week, mine: points(mine), theirs: points(game.home === mine ? game.away : game.home),
+    decided: Boolean(game.winner) };
+}

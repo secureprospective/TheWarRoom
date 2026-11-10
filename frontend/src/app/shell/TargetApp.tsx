@@ -20,6 +20,8 @@ import { connectDensity } from './density';
 import { useWorkScrollReset } from './workScroll';
 import { LeagueChoices, LeagueContext, LeaguePicker, useLeagues, type LeagueState } from './leaguePicker';
 import AppLeagueMount from './AppLeagueMount';
+import { ShellRail } from './ShellRail';
+import type { RailNow } from './pulseReads';
 
 const ReportDrawer = lazy(() => import('../registry/ReportDrawer'));
 const StatusStrip = lazy(() => import('./StatusStrip'));
@@ -79,6 +81,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   const [franchiseFooter, setFranchiseFooter] = useState<HTMLDivElement | null>(null);
   // An app league's Control Room puts its branch leaves under its rail item (control-room-mock-v1).
   const [controlTree, setControlTree] = useState<HTMLDivElement | null>(null);
+  const [rail, setRail] = useState<{ now?: RailNow; live?: number }>({});
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [error, setError] = useState<string>();
   useEffect(() => {
@@ -135,6 +138,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
     </>}
     {!mirrorWar && !mirrorHQ && <div className="twr-app target-frame" ref={root} data-inspector={s.inspector}
       data-native-workspace={Boolean(appLeagueView) || undefined}>
+      {selectedLeague?.app ? <ShellRail leagues={leagues} node={s.node} workspace={workspace.slug}
+        now={rail.now} live={rail.live} setTree={setControlTree} setFooter={setFranchiseFooter} /> :
       <aside className="rail">
         <LeaguePicker
           leagues={leagues.leagues}
@@ -159,8 +164,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
               <NavIcon node={key} />
               {nodes[key].label}
             </Act>
-          )).flatMap((item, i) => nodeKeys[i] === 'control' && appLeagueView === 'control'
-            ? [item, <div key="control-tree" className="rtree" ref={setControlTree} />] : [item])}
+          ))}
         </nav>
         <div className="rail-tools">
           <Act variant="button"
@@ -178,12 +182,11 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             Status
           </Act>
         </div>
-        {selectedLeague?.app ? <div className="me" ref={setFranchiseFooter} /> :
-          <OwnerFooter snapshot={snapshot} />}
-      </aside>
+        <OwnerFooter snapshot={snapshot} />
+      </aside>}
       <section className="ws" aria-label={node.label}>
-        <header className="ws-head">
-          <h3>{node.label}</h3>
+        <header className={`ws-head${selectedLeague?.app ? ' mock' : ''}`}>
+          {!selectedLeague?.app && <h3>{node.label}</h3>}
           <div className="wtabs" ref={appLeagueView === 'war' ? setNativeTabs : undefined}
             role={appLeagueView === 'war' ? 'tablist' : undefined}>
             {s.node !== 'home' && appLeagueView !== 'war' && appLeagueView !== 'control' &&
@@ -195,11 +198,11 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
                 variant="tab"
                 active={workspace.slug === w.slug}
               >
-                {w.label}
+                {selectedLeague?.app && s.node === 'pulse' && w.slug === 'now' ? 'Live' : w.label}
               </Act>
             ))}
           </div>
-          <div className="strip">
+          {!selectedLeague?.app && <div className="strip">
             <span className="dens" aria-label="Density">
               {DENSITIES.map((density, index) => (
                 <Act
@@ -214,7 +217,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
                 </Act>
               ))}
             </span>
-          </div>
+          </div>}
         </header>
         <div className="workspace-status" aria-label="Status strip">
           {!selectedLeague?.app && <><Suspense fallback={null}><StatusStrip /></Suspense>
@@ -227,7 +230,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             </p>
           )}
           {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
-            view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs} tree={controlTree}
+            view={appLeagueView} footer={franchiseFooter} tabs={nativeTabs} tree={controlTree} onRail={setRail}
             hqTab={s.node === 'hq' ? s.workspace.hq : undefined}
             pulseTab={s.node === 'pulse' ? s.workspace.pulse : undefined}
             leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
