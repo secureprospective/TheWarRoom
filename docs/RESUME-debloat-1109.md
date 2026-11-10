@@ -243,3 +243,17 @@ showcase are live. Worktree `.worktrees/docs-1109` (branch `session/docs-realign
 with `git worktree remove` when convenient. NEXT: merge `origin/main` into `session/debloat-1109` (conflicts
 only in README.md / CLAUDE.md; keep the debloat-branch versions, which carry the Trim section), then the
 "Then (debloat branch)" list above.
+
+## IN FLIGHT 2026-11-09 ~18:30 CST (after "we are back" #3)
+- Branch head a7111d157 (merge of main d3ddaba55 = f906a064e, then 18 tiny files folded; tiny_files baseline 24). NOT pushed.
+- `make verify` running on a7111d157 → `verify-a7111d157.log` (last line "make verify exit N"). f906a064e run FAILED only on tiny_files 42>41 (fixed).
+- Ratchet rulings (mine): comment_pct stays 6 (need ~280 lines cut; what is left is why-comments and field docs, 262 are directives);
+  native_forks stays 19 (one seam = HQ/War Room rebuild, `native` is threaded through ~70 sites; not a deletion job).
+- LAB (Christopher chose option 1: use CT 256). CT 256 was rebuilt ~13:40 CST as the phone-test league; address is now
+  https://warroom.secureprospective.com (not twr-lab-256). One franchise was already claimed there.
+  Script `/root/stress256/lab-debloat.sh` (copy in this dir): keep → onboard → run → restore.
+  `keep` DONE: league DB + binary set aside in CT at /root/pre-debloat. `run` queued (old ct-d3ddaba55 vs new ct-a7111d157);
+  done marker /root/stress256/allD.done; results parityD.txt, `python3 summ11.py d3ddaba55 a7111d157`.
+  MUST DO AFTER: `bash lab-debloat.sh restore` (puts the phone-test league and its binary back, deletes the copy and /dev/shm state).
+  Seen: CT 256 /etc/init.d/twr-tunnel still says `need net twr-server` (pre-#220), so a server stop stops the tunnel.
+- Then: make build, Claude-OS desktop check, PWA phone width, push, PR. Merge only after Christopher's live check.

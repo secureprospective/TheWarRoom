@@ -18,7 +18,7 @@
 [![Money](https://img.shields.io/badge/Money-int64%20cents%20·%20exact%20to%20the%20penny-9cf)](#-the-native-league)
 [![Speed](https://img.shields.io/badge/Screens-under%20200%20ms%20·%2032%20devices-brightgreen)](#-the-league-server)
 [![Backups](https://img.shields.io/badge/Backups-Encrypted%20·%20Off--site-gold)](#-it-cannot-lose-the-league)
-[![Leaner](https://img.shields.io/badge/The%20Trim-725k%20→%20437k%20lines-success)](#-the-trim)
+[![Leaner](https://img.shields.io/badge/The%20Trim-725k%20→%20448k%20lines-success)](#-the-trim)
 
 [![PWA](https://img.shields.io/badge/PWA-Browser%20%2B%20Phone-5A0FC8?logo=pwa&logoColor=white)](#-the-league-server)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://react.dev)
@@ -44,7 +44,7 @@
  │  LEAGUE SERVER .. BUILT      twr-server · Alpine · Cloudflare Tunnel         │
  │  BACKUPS ........ ARMED      encrypted · Cloudflare R2 · spare-host restore  │
  │  DESKTOPS ....... PACKAGED   Windows · Mac · Linux · signed self-updates     │
- │  THE TRIM ....... −40%       725k → 437k lines · every gate still green      │
+ │  THE TRIM ....... −38%       725k → 448k lines · every gate still green      │
  │  OPENING DAY .... JULY 2027  the rookie draft, run through TheWarRoom        │
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -522,7 +522,7 @@ Hundreds of AI build sessions got TheWarRoom to a working league server. They al
 
 ```
    BEFORE   725,000 tracked lines
-   AFTER    437,000 tracked lines          −40%, with more to come
+   AFTER    448,000 tracked lines          −38%, with more to come
    ─────────────────────────────────────────────────────────────────────────────
    HOW      spent tests, frozen snapshots and old mock-ups retired first; then every
             remaining Go test was measured for the production lines it exercises,
@@ -582,7 +582,7 @@ The boundaries aren't conventions; they're **enforced by the build**. A violatio
    ✅ THE TRUTH PASS ───────────────── ledger replay: 2,000 events from 135 s → 66 ms
    ✅ THE LEAGUE SERVER ─────────────── hosted season, accounts, backups, packages
    ✅ THE JOIN PAGE ─────────────────── owners pick their team from a phone
-   ✅ THE TRIM ──────────────────────── 725k → 437k lines, gates green
+   ✅ THE TRIM ──────────────────────── 725k → 448k lines, gates green
    ▶  THE WEB APP, COMPLETE ────────── every owner job from a browser or phone
    ▶  CLICKS UNDER 100 MS ──────────── the last speed budget
    ▶  THE IMPORT, EVERY LEAGUE ─────── any size, any type, lands whole
