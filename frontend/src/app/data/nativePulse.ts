@@ -43,8 +43,8 @@ function parseStarters(value: unknown): PulseStarter[] {
 }
 function parseScores(value: unknown): PulseScore[] {
   return array(value, 'Week scores', (v, p) => {
-    const s = object(v, p, ['franchise', 'name', 'status', 'points', 'provisional', 'words', 'starters',
-      'adjustment', 'changes', 'lineup', 'zeroed']);
+    const s = object(v, p, ['recordedResult', 'franchise', 'name', 'status', 'points', 'provisional',
+      'words', 'starters', 'adjustment', 'changes', 'lineup', 'zeroed']);
     const lineup = object(s.lineup, 'Lineup verdict', ['status', 'words', 'problems', 'flagged',
       'penalty']);
     if (typeof lineup.flagged !== 'boolean') throw new Error('Unreadable lineup flag');
