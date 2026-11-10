@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HQAct as PulseAct } from './HQAct';
 import { hostedWorkflow } from '../commissioner/api';
 import { myChance, percent, pointsLabel, type PulseResults } from '../data/nativePulse';
@@ -18,6 +18,13 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
   const port = scope.port ?? hostedWorkflow;
   const tab: PulseTab = scope.tab ?? 'now';
   const [chosen, chooseWeek] = useState<number>();
+  const [box, setBox] = useState(false);
+  useEffect(() => {
+    if (!box) return;
+    const close = (e: KeyboardEvent) => { if (e.key === 'Escape') setBox(false); };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [box]);
   const league = usePulseRead<NativePulse>(JSON.stringify(['pulse', scope.league, scope.mine]),
     publish => readNativePulse(scope.league, scope.mine, port, publish));
   const live = usePulseLive('');
@@ -38,8 +45,11 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
             : `Reading ${scope.league}…`} /></section>
         : tab === 'race' ? <PulseRace reading={reading} mine={scope.mine} />
         : <PulseNow reading={reading} mine={scope.mine} week={week} results={results}
-            league={scope.league} port={port} live={live} />}
+            league={scope.league} port={port} live={live} box={box} onBox={setBox} />}
         <div className="tray">
+          {reading && tab === 'now' && <div className="pulls">
+            <PulseAct className="pull" expanded={box} onAction={() => setBox(!box)}>MATCHUP BOX ▴</PulseAct>
+          </div>}
           <span className="msg">{reading?.standings?.words ?? reading?.weekNote ?? ''}</span>
           <span className="sp" />
           <span className="src">reads only · nothing here changes the league</span>
@@ -77,11 +87,12 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live }: {
       {error ? <span>{error}</span>
         : !results ? <span>{pending ? 'Reading the week…' : 'The week is not read yet'}</span>
         : !results.published ? <span>{results.words}</span>
+        : !waiting && decided ? <span>WEEK {week} · <b>FINAL</b> · all {decided} results locked</span>
+        : week === reading?.week && live.view ? <NflSlate view={live.view} />
         : <>
           <span><b>{decided}</b> with a result</span>
           <span><b>{waiting}</b> still to come</span>
-          <span className="src">{nflClockSummary(week === reading?.week ? live.view : undefined,
-            live.error)}</span>
+          <span className="src">{nflClockSummary(undefined, live.error)}</span>
         </>}
     </div>
     <div className="fresh">
@@ -97,6 +108,16 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live }: {
       <span className="t th">{theirs ? theirs.name.slice(0, 3).toUpperCase() : '—'}</span>
     </div>
   </section>;
+}
+
+/** NflSlate counts the week's NFL games the way the mock's strip does: live, final, to play. */
+function NflSlate({ view }: { view: LiveView }) {
+  const count = (status: string) => view.games.filter(g => g.status === status).length;
+  return <>
+    <span className="lv"><span className="dot blink" /><b>{count('in')}</b> NFL live</span>
+    <span><b>{count('post')}</b> final</span>
+    <span><b>{count('pre')}</b> to play</span>
+  </>;
 }
 
 export function scoreSources(results?: PulseResults): string {

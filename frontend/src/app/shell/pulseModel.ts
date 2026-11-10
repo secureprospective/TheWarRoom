@@ -83,16 +83,19 @@ export function naturalName(name: string): string {
 
 const OFFENSE = ['QB', 'RB', 'WR', 'TE', 'FLX', 'K', 'PK', 'OL'];
 const DEFENSE = ['DT', 'DE', 'DL', 'LB', 'CB', 'S', 'DB'];
+const SLOT_ORDER = [...OFFENSE, ...DEFENSE];
+/** bySlot orders positions the way a lineup reads: offense, then defense, unknown slots last. */
+export function bySlot(a: string, b: string): number {
+  const rank = (slot: string) => (SLOT_ORDER.indexOf(slot) + SLOT_ORDER.length + 1) % (SLOT_ORDER.length + 1);
+  return rank(a) - rank(b) || a.localeCompare(b);
+}
 export type StarterPair = { slot: string; left?: PulseStarterRow; right?: PulseStarterRow };
 
 /** pairStarters sets two lineups across the line like for like: offense then defense, one row per
  *  starter at each position either side fills, so a pair never sets a kicker against a running back. */
 export function pairStarters(left: PulseStarterRow[], right: PulseStarterRow[]):
   { heading: 'OFFENSE' | 'DEFENSE'; pairs: StarterPair[] }[] {
-  const order = [...OFFENSE, ...DEFENSE];
-  const rank = (slot: string) => (order.indexOf(slot) + order.length + 1) % (order.length + 1);
-  const slots = [...new Set([...left, ...right].map(r => r.slot))]
-    .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  const slots = [...new Set([...left, ...right].map(r => r.slot))].sort(bySlot);
   const groups: { heading: 'OFFENSE' | 'DEFENSE'; pairs: StarterPair[] }[] =
     [{ heading: 'OFFENSE', pairs: [] }, { heading: 'DEFENSE', pairs: [] }];
   for (const slot of slots) {

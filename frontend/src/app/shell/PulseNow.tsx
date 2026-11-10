@@ -6,7 +6,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
 import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveContract';
 import type { usePulseLive } from './hqLive';
-import { applyFilter, filterCounts, groupRows, pairStarters, pulseRows, scoreOf, starterRows,
+import { applyFilter, bySlot, filterCounts, groupRows, pairStarters, pulseRows, scoreOf, starterRows,
   PULSE_FILTERS, type PulseFilter, type PulseRow, type PulseStarterRow, type StarterPair }
   from './pulseModel';
 
@@ -17,9 +17,10 @@ export function PulseIdle({ words }: { words: string }) {
 
 type Reading<T> = { reading?: T; pending?: boolean; error?: string };
 
-export function PulseNow({ reading, mine, week, results, league, port, live }: {
+export function PulseNow({ reading, mine, week, results, league, port, live, box, onBox }: {
   reading: NativePulse; mine: string; week?: number; results: Reading<PulseResults>;
   league: string; port: HostedPort; live: ReturnType<typeof usePulseLive>;
+  box: boolean; onBox: (open: boolean) => void;
 }) {
   const [side, setSide] = useState<'mu' | 'nfl'>('mu');
   const [filter, setFilter] = useState<PulseFilter>('all');
@@ -73,7 +74,9 @@ export function PulseNow({ reading, mine, week, results, league, port, live }: {
       </>}
       <div className="spine">
         <div className="ch">
-          <b>{selected?.mine ? 'MY MATCHUP · STARTERS' : 'MATCHUP · STARTERS'}</b>
+          <b>{selected?.mine ? 'MY MATCHUP · STARTERS' : <>MATCHUP · STARTERS
+            {rows.some(r => r.mine) && <PulseAct className="mbtn back" onAction={() => pick(undefined)}>
+              MY MATCHUP ‹</PulseAct>}</>}</b>
           <span>{selected ? `${selected.game.awayName} · ${selected.game.homeName}` : ''}</span>
         </div>
         <Starters results={results.reading} row={selected} sides={sides} games={games} />
@@ -89,7 +92,41 @@ export function PulseNow({ reading, mine, week, results, league, port, live }: {
       </div>
       <Plays game={followed} />
     </div>
+    <BoxDrawer open={box} onClose={() => onBox(false)} sides={sides} week={week} />
   </section>;
+}
+
+/** BoxDrawer is the chosen matchup's fantasy box score, one side at a time. */
+function BoxDrawer({ open, onClose, sides, week }: { open: boolean; onClose: () => void;
+  sides: StarterSides; week?: number }) {
+  const [right, setRight] = useState(false);
+  const rows = [...(right ? sides.right : sides.left)].sort((a, b) => bySlot(a.slot, b.slot));
+  return <div className={`bdrawer${open ? ' open' : ''}`}>
+    <div className="bd-head">
+      <h2>Fantasy box score</h2>
+      <span className="sub">{sides.leftName} vs {sides.rightName} · week {week ?? '—'}</span>
+      <div className="dtab">
+        <PulseAct active={!right} onAction={() => setRight(false)}>
+          {sides.mine ? 'YOU' : sides.leftName.toUpperCase()}</PulseAct>
+        <PulseAct active={right} onAction={() => setRight(true)}>
+          {sides.mine ? 'THEM' : sides.rightName.toUpperCase()}</PulseAct>
+      </div>
+      <PulseAct className="x" onAction={onClose}>ESC ✕</PulseAct>
+    </div>
+    <div className="dbody">
+      {!rows.length ? <PulseIdle words="No lineup is recorded for this side this week." />
+        : <div className="scroll"><table className="ct"><thead><tr>
+          <th>SLOT</th><th>PLAYER</th><th>CLUB</th><th>STATE</th><th>PROJ</th><th>PTS</th>
+        </tr></thead><tbody>
+          {rows.map(r => <tr key={r.player} title={r.words}>
+            <td>{r.slot}</td><td>{r.name}</td><td>{r.team ?? '–'}</td>
+            <td>{r.final ? 'done' : r.points !== undefined ? 'playing' : 'to play'}</td>
+            <td>{r.projection === undefined ? '–' : r.projection.toFixed(1)}</td>
+            <td>{pointsLabel(r.points)}</td>
+          </tr>)}
+        </tbody></table></div>}
+    </div>
+  </div>;
 }
 
 function followKey(g: LiveNflGame) { return `${g.away.abbreviation}-${g.home.abbreviation}`; }

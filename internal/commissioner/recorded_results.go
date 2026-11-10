@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -79,6 +80,26 @@ func recordedWeekScore(records []Record, seat NativeDirectorySeat, season, week 
 		}
 	}
 	return out, true
+}
+
+// RecordedStarters lists, for each franchise whose week is the source's recorded result, who started and what
+// each starter scores under the league's rules. The franchise's total stays the recorded one: the starters
+// explain the week, they never re-decide it. A lineup that is not held or cannot be scored is left unlisted.
+func RecordedStarters(ctx context.Context, records []Record, src ResultSources, results *NativeResults) {
+	for i := range results.Scores {
+		score := &results.Scores[i]
+		if score.RecordedResult == "" {
+			continue
+		}
+		lineup, err := src.Lineup(ctx, records, score.Franchise, results.Week)
+		if err != nil || !lineup.Set {
+			continue
+		}
+		listed := FranchiseWeekScore{Starters: []StarterScore{}}
+		if _, _, err := listed.addStarters(ctx, records, src, lineup, results.Week); err == nil {
+			score.Starters = listed.Starters
+		}
+	}
 }
 
 func checkRecordedAppend(held RawRecordedResults, records []Record) error {

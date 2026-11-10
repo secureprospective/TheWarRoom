@@ -935,3 +935,4 @@
 .lp-v14 .fieldwrap{grid-template-columns:minmax(0,1fr)}
 .lp-v14 #ws-live .follow{min-width:0;overflow:hidden;flex-wrap:nowrap}
 .lp-v14 #ws-live .follow .fchip{flex:0 0 auto;white-space:nowrap;padding:3px 8px;gap:6px;font-size:10.5px}
+.lp-v14 .ch .mbtn.back{flex:none;margin-left:10px;padding:3px 8px}
