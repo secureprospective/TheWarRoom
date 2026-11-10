@@ -21,7 +21,7 @@
   // ---- scenes and their layers
   const scenes = [...world.querySelectorAll('.scene')].map((el, i) => {
     el.style.transform = `translate3d(0,${HY[i]}px,${-i * D}px)`;
-    const layers = [...el.querySelectorAll('.ly')].map((l) => ({ el: l, z: parseFloat(l.style.getPropertyValue('--z')) || 0, o: -1, junk: l.querySelector('.junk'), broke: false }));
+    const layers = [...el.querySelectorAll('.ly')].map((l) => ({ el: l, z: 0, z0: parseFloat(l.style.getPropertyValue('--z')) || 0, pz: parseFloat(l.style.getPropertyValue('--pz')), o: -1, junk: l.querySelector('.junk'), broke: false, deck: l.classList.contains('rc') }));
     el.inert = true;
     return { el, i, layers, near: false, seen: false, on: false, fall: el.querySelector('[data-fall]'), fell: false };
   });
@@ -39,6 +39,7 @@
     lens.style.transform = `translateY(23px) scale(${S})`;
     cv.width = fx.width = W * dpr; cv.height = fx.height = H * dpr;
     WEAVE = portrait ? 55 : 150;
+    for (const s of scenes) for (const l of s.layers) if (!l.deck) l.z = portrait && !Number.isNaN(l.pz) ? l.pz : l.z0;   // phones bring the deep layers forward so they stay readable
     $('track').style.height = `${(TOP[N - 1] + 1) * innerHeight}px`;
     if (keep) scrollTo(0, topOf(keep));
   }
@@ -200,11 +201,10 @@
     for (const s of scenes) {
       const d = s.i * D - cam;
       if (Math.abs(d) < best) { best = Math.abs(d); cur = s.i; }
-      const near = d < 3200 && d > -2400;
+      const near = d < 3200 && d > -2400, on = Math.abs(d) < 700;
+      if (on !== s.on) { s.on = on; s.el.classList.toggle('on', on); s.el.inert = !on; if (!s.i) reelSet(); }   // decided before the early exit below, so a fast jump cannot leave a far scene switched on
       if (near !== s.near) { s.near = near; s.el.classList.toggle('near', near); }
       if (!near) { if (s.seen) { s.seen = false; s.el.classList.remove('seen'); } continue; }
-      const on = Math.abs(d) < 700;
-      if (on !== s.on) { s.on = on; s.el.classList.toggle('on', on); s.el.inert = !on; }
       if (d < 750 && d > -1500 && !s.seen) {
         s.seen = true; s.el.classList.add('seen');
         if ('jolt' in s.el.dataset && !still) shake = 9;
@@ -219,7 +219,7 @@
           if (!l.broke && dl < -300 && vel > 500) { l.broke = true; shatter(l.junk); }
           else if (l.broke && dl > -240) l.broke = false;
         }
-        const farF = still ? (on ? 1 : 0) : dl <= 300 ? 1 : dl >= 1500 ? 0 : (1 - (dl - 300) / 1200) ** 2;
+        const farF = still ? (on ? 1 : 0) : l.deck || dl <= 300 ? 1 : dl >= 1500 ? 0 : (1 - (dl - 300) / 1200) ** 2;
         const nearF = dl >= -330 ? 1 : dl <= -760 ? 0 : (dl + 760) / 430;
         const o = l.broke ? 0 : Math.round(farF * nearF * 100) / 100;
         if (o !== l.o) { l.o = o; l.el.style.opacity = o; }
@@ -338,6 +338,129 @@
     hudUs.textContent = us;
   }
 
+  // ---- kickoff reel: three screens in a deck. The front one plays its move, then goes to the back.
+  const tween = (el, a, b, ms, fmt) => {
+    const k = (el._tw = (el._tw || 0) + 1), t0 = performance.now();
+    const step = (now) => { if (el._tw !== k) return; const t = Math.max(0, Math.min(1, (now - t0) / ms)); el.textContent = fmt(a + (b - a) * (1 - (1 - t) ** 3)); if (t < 1) requestAnimationFrame(step); };
+    if (still) el.textContent = fmt(b); else requestAnimationFrame(step);
+  };
+  const put = (el, text) => { el._tw = (el._tw || 0) + 1; el.textContent = text; };
+  const stamp = (el, text, cls) => { put(el, text); el.className = `stamp ${cls}`; if (cls === 'good') { void el.offsetWidth; el.classList.add('hit'); } };
+  const DECKZ = [0, -320, -640];
+  const deck = [...document.querySelectorAll('.rc')].map((ly) => {
+    const card = ly.firstElementChild, r = {};
+    card.querySelectorAll('[data-r]').forEach((e) => (r[e.dataset.r] = e));
+    return { ly, card, r, beat: ly.dataset.beat, cur: card.querySelector('.cur'), layer: scenes[0].layers.find((l) => l.el === ly) };
+  });
+  let order = [0, 1, 2], run = 0, reelOn = false;
+  const wait = (ms, id) => new Promise((res, rej) => setTimeout(() => (id === run ? res() : rej(new Error('stopped'))), ms));
+  function place() { order.forEach((n, k) => { const c = deck[n]; c.ly.classList.remove('p0', 'p1', 'p2'); c.ly.classList.add(`p${k}`); c.layer.z = DECKZ[k]; }); }
+  const liveOld = '<li><span class="n">Q4 2:48</span><span>Emmett Smyth right side for 3 yds</span><em></em></li><li class="mine"><span class="n">Q4 3:20</span><span>Reggie Wight sacks the quarterback</span><em>+2.0</em></li><li class="mine"><span class="n">Q4 3:55</span><span>Walter Peyton up the middle for 4 yds</span><em>+0.4</em></li>';
+  const liveNew = '<span class="n">Q4 2:11</span><span>Brett Favor deep left to Berry Rice, 31 yds. <b>Touchdown.</b></span><em>+9.1</em>';
+  // each screen: how it looks before its move, and the move
+  const rewind = {
+    lineup: (r) => { put(r.state, '1 slot open'); put(r.proj, '67.0'); stamp(r.stamp, 'BEHIND BY 12.5', 'bad'); },
+    live: (r) => { put(r.clk, 'Q4 2:48'); put(r.us, '98.7'); put(r.wp, '38%'); r.wp.className = 'n low'; put(r.lead, 'YOU TRAIL BY 5.6'); r.bar.style.width = '44%'; r.feed.innerHTML = liveOld; r.row.classList.remove('pop'); },
+    trade: (r) => { put(r.cap, '$10.60M'); put(r.val, 'THEM +70'); r.val.style.color = 'var(--red)'; stamp(r.stamp, 'ONE SIDE EMPTY', ''); },
+  };
+  function reset(c) {
+    c.card.querySelectorAll('.ghost').forEach((g) => g.remove());
+    if (c.cur) c.cur.getAnimations().forEach((a) => a.cancel());
+    if (c.r.slot) { c.r.slot.classList.remove('full', 'hot', 'landed'); c.r.src.classList.remove('vacant'); }
+    rewind[c.beat](c.r);
+  }
+  async function drag(c, id) {   // the pointer picks a block up, carries it to the open slot and lets go
+    const { card, r, cur } = c, at = (el) => { let x = 0, y = 0; for (let e = el; e && e !== card; e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; } return [x, y]; };
+    const [sx, sy] = at(r.src), [tx, ty] = at(r.slot), w = r.src.offsetWidth, h = r.src.offsetHeight;
+    const dx = tx - sx + (r.slot.offsetWidth - w) / 2, dy = ty - sy + (r.slot.offsetHeight - h) / 2, gx = sx + w * 0.6, gy = sy + h * 0.5;
+    const ease = 'cubic-bezier(.2,0,0,1)', carry = { duration: 880, easing: 'cubic-bezier(.5,0,.15,1)', fill: 'forwards' };
+    cur.animate([{ transform: `translate(${gx + 150}px,${gy + 110}px)`, opacity: 0 }, { transform: `translate(${gx}px,${gy}px)`, opacity: 1 }], { duration: 560, easing: ease, fill: 'forwards' });
+    await wait(660, id);
+    const g = r.src.cloneNode(true); g.removeAttribute('data-r'); g.classList.add('ghost'); g.style.cssText = `left:${sx}px;top:${sy}px;width:${w}px`;
+    card.append(g); r.src.classList.add('vacant'); void g.offsetWidth; g.classList.add('held');
+    await wait(300, id);
+    const arc = Math.min(-18, -Math.abs(dx) * 0.12);
+    g.animate([{ transform: 'translate(0,0) rotate(-2deg) scale(1.05)' }, { transform: `translate(${dx * 0.5}px,${dy * 0.5 + arc}px) rotate(-3deg) scale(1.07)` }, { transform: `translate(${dx}px,${dy}px) rotate(0deg) scale(1)` }], carry);
+    cur.animate([{ transform: `translate(${gx}px,${gy}px)` }, { transform: `translate(${gx + dx * 0.5}px,${gy + dy * 0.5 + arc}px)` }, { transform: `translate(${gx + dx}px,${gy + dy}px)` }], carry);
+    await wait(520, id); r.slot.classList.add('hot');
+    await wait(380, id);
+    g.remove(); r.slot.classList.remove('hot'); r.slot.classList.add('full', 'landed');
+    cur.animate([{ transform: `translate(${gx + dx}px,${gy + dy}px)`, opacity: 1 }, { transform: `translate(${gx + dx + 70}px,${gy + dy + 60}px)`, opacity: 0 }], { duration: 520, delay: 260, easing: ease, fill: 'forwards' });
+  }
+  const moves = {
+    async lineup(c, id) {
+      await drag(c, id); const r = c.r;
+      put(r.state, 'lineup set'); tween(r.proj, 67, 83.9, 700, (v) => v.toFixed(1));
+      await wait(760, id); stamp(r.stamp, 'AHEAD BY 4.4', 'good');
+    },
+    async live(c, id) {
+      const r = c.r; await wait(900, id);
+      const li = document.createElement('li'); li.className = 'mine td new'; li.innerHTML = liveNew;
+      r.feed.prepend(li); r.feed.lastElementChild.remove(); put(r.clk, 'Q4 2:11');
+      await wait(420, id);
+      r.row.classList.add('pop'); tween(r.us, 98.7, 107.8, 800, (v) => v.toFixed(1)); r.bar.style.width = '58%';
+      await wait(520, id);
+      r.wp.className = 'n'; tween(r.wp, 38, 81, 700, (v) => `${Math.round(v)}%`); put(r.lead, 'YOU LEAD BY 3.5');
+      await wait(700, id);
+    },
+    async trade(c, id) {
+      await drag(c, id); const r = c.r;
+      tween(r.cap, 10.6, 0.4, 800, (v) => `$${v.toFixed(2)}M`);
+      await wait(380, id); put(r.val, 'YOU +7'); r.val.style.color = 'var(--green)';
+      await wait(520, id); stamp(r.stamp, 'LEGAL', 'good');
+    },
+  };
+  async function reel(id) {
+    try {
+      await wait(900, id);
+      for (;;) {
+        const c = deck[order[0]];
+        await moves[c.beat](c, id);
+        await wait(2300, id);
+        c.ly.classList.add('out'); await wait(280, id);
+        order.push(order.shift()); place(); await wait(560, id);
+        reset(c); c.ly.classList.remove('out'); await wait(500, id);
+      }
+    } catch (e) { if (e.message !== 'stopped') throw e; }
+  }
+  function reelSet() {   // runs only while the kickoff scene is on screen and the tab is showing
+    const want = !still && scenes[0].on && !document.hidden;
+    if (want === reelOn) return;
+    reelOn = want; run++;
+    deck.forEach((c) => { c.ly.classList.remove('out'); reset(c); });
+    if (want) reel(run);
+  }
+  document.addEventListener('visibilitychange', reelSet);
+  if (still) deck.forEach((c, n) => (c.layer.z = DECKZ[n])); else { place(); deck.forEach(reset); }
+
+  // ---- trade desk: two versions of one deal; flip between them and every number follows
+  const offers = [
+    { send: [['RB', 'Berry Sanders', '$4.2M', 55], ['PK', '2027 2nd round', '', 15]], get: [['DE', 'Reggie Wight', '$10.2M', 77]], shelf: [['WR', 'Berry Rice', '', 78], ['QB', 'Joe Montano', '', 70]], val: 7, cap: 0.4, ros: 41, lu: 0.7 },
+    { send: [['WR', 'Berry Rice', '$8.2M', 78]], get: [['DE', 'Reggie Wight', '$10.2M', 77], ['LB', 'Mike Singletarry', '$1.1M', 31]], shelf: [['RB', 'Berry Sanders', '', 55], ['QB', 'Joe Montano', '', 70]], val: 30, cap: 3.3, ros: 42, lu: -1.4 },
+  ];
+  let offerN = -1, verTouched = false;
+  function block([pos, name, pay, v], k) {
+    const d = document.createElement('div'); d.className = 'blk in-k'; d.style.setProperty('--k', k);
+    d.innerHTML = '<span class="tagp"></span><span></span><span class="n"></span>';
+    d.children[0].textContent = pos; d.children[1].textContent = `${name} `; d.children[2].textContent = v;
+    if (pay) d.children[1].append(Object.assign(document.createElement('small'), { textContent: pay }));
+    return d;
+  }
+  function setOffer(n) {
+    const o = offers[n], was = offers[Math.max(0, offerN)]; offerN = n;
+    [...$('ver').querySelectorAll('.mbtn')].forEach((b, j) => b.setAttribute('aria-pressed', j === n));
+    for (const [id, list] of [['t-send', o.send], ['t-get', o.get], ['t-shelf', o.shelf]]) { const t = $(id); while (t.children.length > 1) t.lastChild.remove(); t.append(...list.map(block)); }
+    $('t-vb').style.width = `${Math.min(46, o.val * 1.3)}%`;
+    tween($('t-val'), was.val, o.val, 420, (v) => `YOU +${Math.round(v)}`);
+    tween($('t-cap'), was.cap, o.cap, 420, (v) => `$${v.toFixed(2)}M`);
+    put($('t-ros'), `${o.ros} / 44`);
+    tween($('t-lu'), was.lu, o.lu, 420, (v) => `${v < 0 ? '−' : '+'}${Math.abs(v).toFixed(1)}`);
+    $('t-lu').style.color = `var(--${o.lu < 0 ? 'red' : 'green'})`;
+  }
+  $('ver').addEventListener('click', (e) => { const b = e.target.closest('.mbtn'); if (!b) return; verTouched = true; setOffer(+(b !== $('ver').firstElementChild)); });
+  setOffer(0);
+  setInterval(() => { if (scenes[7].on && !verTouched && !still && !document.hidden) setOffer(1 - offerN); }, 5200);
+
   // ---- game day: plays keep landing while you watch
   const plays = [
     ['Montano to Berry Rice, 18 yds over the middle', '+2.8', 1, 10], ['Walter Peyton up the middle for 4 yds', '+0.4', 1, 3],
@@ -365,11 +488,12 @@
   // ---- any league: the franchise wall follows the TEAMS switch
   const names = ['Gridiron Syndicate', 'Burnt Orange Militia', 'Cascade Hammers', 'Desert Wolves', 'Lakeshore Ironworks', 'Frozen Tundra FC', 'Motor City Rust', 'North Woods Lumber', 'Brotherly Shove', 'Capital Punishment', 'Big Apple Bruisers', 'Lone Star Outlaws', 'Bayou Bandits', 'Peach State Pistons', 'Gulf Coast Gators', 'Carolina Kudzu', 'Steel Curtain Call', 'Ravens Remorse', 'Queen City Cats', 'Dawg Pound Diesel', 'Mile High Mayhem', 'Arrowhead Anvils', 'Silver & Black Ops', 'Bolt Throwers', 'Buffalo Stampede', 'Flight Risk', 'Duval Dynasty', 'Lucas Oil Slick', 'Music City Mafia', 'Patriot Missiles', 'South Beach Sharks', 'Iron Curtain'];
   const fr = $('fr');
-  names.forEach((n, j) => { const s = document.createElement('span'); s.textContent = n; s.style.setProperty('--j', j); fr.append(s); });
+  names.forEach((n, j) => { const s = document.createElement('span'); s.title = n; s.append(Object.assign(document.createElement('b'), { textContent: String(j + 1).padStart(2, '0') }), Object.assign(document.createElement('em'), { textContent: n })); s.style.setProperty('--j', j); fr.append(s); });
   function press(group, btn) { for (const b of group.children) b.setAttribute('aria-pressed', b === btn); }
   document.querySelectorAll('[data-one],[data-teams]').forEach((g) => g.addEventListener('click', (e) => {
     const b = e.target.closest('.mbtn'); if (!b) return;
     press(g, b);
+    if (g.dataset.one) $('league').classList.toggle(`no-${g.dataset.one}`, 'off' in b.dataset);   // the roster spot on the league panel follows the switch
     if ('teams' in g.dataset) {
       const n = +b.textContent;
       [...fr.children].forEach((s, j) => s.classList.toggle('off', j >= n));
