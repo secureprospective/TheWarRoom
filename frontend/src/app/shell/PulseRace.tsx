@@ -78,12 +78,13 @@ function Power({ reading, mine }: { reading: NativePulse; mine: string }) {
     : reading.errors.length ? `The power ranking is unavailable · ${reading.errors.join(' · ')}`
       : 'Reading the power ranking…'} />;
   return <>
-    <div className="scroll"><table className="ct pwr">
+    <div className="scroll"><table className="ct power">
       <thead><tr><th>PWR</th><th>FRANCHISE</th><th>W–L–T</th><th>POWER SCORE</th><th>EXP PTS</th>
         <th>ODDS</th></tr></thead>
       <tbody>{rows.map(r => <tr key={r.franchise} className={r.franchise === mine ? 'sel' : undefined}>
         <td className="sd">{r.power}</td><td><span>{r.name}</span></td><td>{r.record}</td>
-        <td>{Math.round(r.powerScore * 100)}</td><td>{r.expected.toFixed(1)}</td>
+        <td><span className="tk"><i style={{ width: percent(r.powerScore) }} /></span>
+          {Math.round(r.powerScore * 100)}</td><td>{r.expected.toFixed(1)}</td>
         <td>{percent(r.playoffOdds)}</td></tr>)}</tbody>
     </table></div>
     <div className="drawer-note">POWER = this season: {odds?.powerWords}. Lineup value is the league's own
@@ -93,7 +94,7 @@ function Power({ reading, mine }: { reading: NativePulse; mine: string }) {
 }
 
 function Divisions({ standings, mine }: { standings: PulseStandings; mine: string }) {
-  return <table className="ct stand">
+  return <div className="scroll" style={{ flex: 3 }}><table className="ct stand">
     <thead><tr><th>#</th><th>FRANCHISE</th><th>W–L–T</th><th>POINTS FOR</th></tr></thead>
     <tbody>
       {divisionGroups(standings).flatMap(group => [
@@ -110,7 +111,7 @@ function Divisions({ standings, mine }: { standings: PulseStandings; mine: strin
         </tr>),
       ])}
     </tbody>
-  </table>;
+  </table></div>;
 }
 
 function Seeds({ reading, standings, side, mine }: { reading: NativePulse;

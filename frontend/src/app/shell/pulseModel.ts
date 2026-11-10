@@ -206,7 +206,7 @@ export function divisionGroups(standings: PulseStandings): { division: string;
     division, rows: standings.rows.filter(r => r.division === division) }));
 }
 
-export type PulseTie = { teams: PulseSeedRow[]; step: string; detail: string };
+export type PulseTie = { teams: PulseSeedRow[]; step: string; detail: string; split: boolean; edge: string };
 
 /** tieGroups reads the standings' own reasons as ties: each reason two or more of these rows share,
  *  once, with the tie-breaker that split it. A reason every row shares is the table's first split by
@@ -219,9 +219,16 @@ export function tieGroups(standings: PulseStandings, rows: PulseSeedRow[]): Puls
   return [...shared].filter(([, teams]) => teams.length > 1 && teams.length < rows.length)
     .map(([detail, teams]) => {
       const put = detail.lastIndexOf(' put ');
-      return { teams, detail, step: put < 0 ? 'Franchise order'
-        : detail.slice(detail.lastIndexOf('. ', put) + 1, put).trim() };
+      return { teams, detail, split: put >= 0, edge: /\(([^)]*)\)/.exec(detail.slice(put))?.[1] ?? '',
+        step: put < 0 ? 'Franchise order' : detail.slice(detail.lastIndexOf('. ', put) + 1, put).trim() };
     });
+}
+
+/** tieStake is what a tie decides today: the bye when only some of its teams hold one, the last
+ *  playoff seat when only some are in the field. Most ties decide neither. */
+export function tieStake(tie: PulseTie): string {
+  const some = (has: (row: PulseSeedRow) => boolean) => tie.teams.some(has) && !tie.teams.every(has);
+  return some(t => t.bye) ? 'BYE ON THE LINE' : some(t => t.inField) ? 'PLAYOFF SEAT ON THE LINE' : '';
 }
 
 export type PulseBracketSide = { words: string; seed?: number };

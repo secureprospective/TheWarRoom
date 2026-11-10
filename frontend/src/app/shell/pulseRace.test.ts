@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { PulseBracket, PulseStandings } from '../data/nativePulse';
-import { bracketRounds, seedRows, tieGroups, type PulseSeedRow } from './pulseModel';
+import { bracketRounds, seedRows, tieGroups, tieStake, type PulseSeedRow } from './pulseModel';
 
 const seed = (n: number, name: string) => ({ seed: n, franchise: `f.${name}`, name, division: 'East',
   rank: n, kind: '', bye: n === 1, byHand: false });
@@ -37,8 +37,14 @@ it('reads each tie once, with the step that split it, and leaves out the whole-t
     ({ franchise: `f.${name}`, name }) as PulseSeedRow);
   expect(tieGroups(standings, side.slice(0, 3)).map(t => [t.step, t.teams.map(x => x.name)]))
     .toEqual([['Points', ['Chicago', 'Seattle']]]);
-  expect(tieGroups(standings, side).map(t => t.step))
-    .toEqual(['Win percentage', 'Points', 'Franchise order']);
+  expect(tieGroups(standings, side).map(t => [t.step, t.split, t.edge]))
+    .toEqual([['Win percentage', true, ''], ['Points', true, '955.0 points'],
+      ['Franchise order', false, '']]);
+  const [points] = tieGroups(standings, side.slice(0, 3));
+  expect(tieStake(points)).toBe('');
+  expect(tieStake({ ...points, teams: [{ ...side[1], inField: true }, side[2]] }))
+    .toBe('PLAYOFF SEAT ON THE LINE');
+  expect(tieStake({ ...points, teams: [{ ...side[1], bye: true }, side[2]] })).toBe('BYE ON THE LINE');
 });
 
 it('keeps the other side out of a side\'s bubble', () => {

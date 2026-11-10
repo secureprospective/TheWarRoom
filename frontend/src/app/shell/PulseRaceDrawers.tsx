@@ -1,9 +1,10 @@
 import type { PulseBracket, PulseStandings } from '../data/nativePulse';
 import { PulseDrawer } from './PulseDrawer';
 import { PulseIdle } from './PulseNow';
-import { bracketRounds, tieGroups, type PulseSeedRow } from './pulseModel';
+import { bracketRounds, tieGroups, tieStake, type PulseSeedRow } from './pulseModel';
 
-/** TiebreakDrawer says how each tie on this side stands today, in the standings' own words. */
+/** TiebreakDrawer says how each tie on this side stands today at a glance: who is level, who came
+ *  out ahead, the step that split them and what the tie decides. The full reason is the row's title. */
 export function TiebreakDrawer({ open, onClose, standings, rows, side }: { open: boolean;
   onClose: () => void; standings?: PulseStandings; rows: PulseSeedRow[]; side: string }) {
   const ties = standings ? tieGroups(standings, rows) : [];
@@ -11,19 +12,18 @@ export function TiebreakDrawer({ open, onClose, standings, rows, side }: { open:
     sub={`${side ? `${side} side · ` : ''}how ties resolve today`}>
     {!ties.length ? <PulseIdle words={standings ? 'No two franchises on this side are level on record.'
       : 'Reading the standings…'} />
-      : <div className="scroll"><table className="ct ties"><thead><tr>
-        <th>#</th><th>TIED TEAMS</th><th>STEP USED</th><th>DETAIL</th><th>ORDER</th>
-      </tr></thead><tbody>
-        {ties.map((tie, i) => <tr key={tie.detail}>
-          <td>{i + 1}</td>
-          <td>{tie.teams.map(t => t.name).join(' · ')} ({tie.teams[0].record})</td>
-          <td>{tie.step}</td><td>{tie.detail}</td>
-          <td>{tie.teams.map(t => t.seed ? `seed ${t.seed}` : 'out').join(' · ')}</td>
-        </tr>)}
-      </tbody></table></div>}
-    {standings && <div className="drawer-note">Order: {standings.criteria.join(' → ')}.
-      {standings.noData.length ? ` ${standings.noData.join(' ')}` : ''}
-      {' '}League setting · Control Room › League.</div>}
+      : <div className="scroll">{ties.map(tie => <div className="tie" key={tie.detail} title={tie.detail}>
+        <span className="lv">{tie.teams[0].record} · {tie.teams.length} LEVEL</span>
+        <span className="tm">{tie.teams.map((t, i) => <span key={t.franchise}>
+          {i > 0 && <i>{tie.split ? '▸' : '='}</i>}
+          {i === 0 && tie.split ? <b>{t.name}</b> : t.name}<small>{t.seed ? `#${t.seed}` : 'out'}</small>
+        </span>)}</span>
+        <span className="by">{tie.split ? `WON ON ${tie.step.toUpperCase()}` : 'STILL LEVEL'}
+          <span>{tie.split ? tie.edge : 'league order holds'}</span></span>
+        {tieStake(tie) ? <span className="stk">{tieStake(tie)}</span> : <span />}
+      </div>)}</div>}
+    {standings && <div className="drawer-note">Tie-break order: {standings.criteria.join(' → ')}.
+      {standings.noData.length ? ` ${standings.noData.join(' ')}` : ''}</div>}
   </PulseDrawer>;
 }
 
@@ -50,7 +50,7 @@ export function BracketDrawer({ open, onClose, bracket }: { open: boolean; onClo
           <span className="rh">{sides.final.heading}</span>
           <div className="bm">{sides.final.sides.map(words => <div key={words}>{words}</div>)}</div>
         </div>}
-        {sides.fields.slice(1).flatMap(field)}
+        {sides.fields.slice(1).flatMap(f => field(f).reverse())}
       </div>}
   </PulseDrawer>;
 }
