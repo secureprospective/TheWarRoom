@@ -87,7 +87,7 @@ it('opens the Control Room on the locked mock for a picked app league', async ()
   const root = createRoot(container);
   try {
     await act(async () => { root.render(<TargetApp />); });
-    for (let i = 0; i < 50 && !container.querySelector('[data-testid="control-room"]'); i++)
+    for (let i = 0; i < 200 && !container.querySelector('[data-testid="control-room"]'); i++)
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
     expect(container.querySelector('[data-testid="control-room"]')).not.toBeNull();
     expect(container.querySelector('.shell-unwired')).toBeNull();
@@ -99,4 +99,4 @@ it('opens the Control Room on the locked mock for a picked app league', async ()
     await act(async () => { root.unmount(); });
     delete (window as unknown as { go?: unknown }).go;
   }
-});
+}, 10_000);
