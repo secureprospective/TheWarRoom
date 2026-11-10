@@ -142,7 +142,8 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
           <b>{held.you.after.toFixed(1)}</b><small>was {held.you.before.toFixed(1)} · {signed(held.you.net)}
           </small></div>}
         {delta.reading && <div><span className="h">PROJ / WEEK</span>
-          <b>{delta.reading.you.unprojected.length ? '—' : signed(delta.reading.you.perWeek)}</b><small>your best lineup</small></div>}
+          <b>{delta.reading.you.unprojected.length ? '—' :
+            signed(delta.reading.you.perWeek)}</b><small>your best lineup</small></div>}
         <WarRoomDeltaSidePanel side={delta.reading?.you} name="YOUR" names={names} />
         <WarRoomDeltaSidePanel side={delta.reading?.them} name="THEIR" names={names} />
         {[...delta.reading?.notes ?? [], ...held?.notes ?? []].map(note => <div className="wide" key={note}>
