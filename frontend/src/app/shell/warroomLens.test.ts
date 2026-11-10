@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { leanWords, lensValue, lensWords, parseWarRoomLens, signed, verdictWords } from './warroomLens';
 
 const side = (franchise: string, extra: object = {}) => ({ franchise, direction: 'contend', set: false,
-  nowWeight: 0.6, before: 292.9, after: 288.4, net: -4.5, out: 9.7, in: 5.2, spare: [],
+  nowWeight: 0.65, before: 292.9, after: 288.4, net: -4.5, out: 9.7, in: 5.2, spare: [],
   needs: [{ position: 'S', state: 'hole', have: 0, starts: 1 },
     { position: 'QB', state: 'ok', have: 2, starts: 1 },
     { position: 'TE', state: 'thin', have: 1, starts: 1 }],
@@ -33,10 +33,10 @@ describe('trade lens reading', () => {
   });
   it('says whose direction it is, the real weights, and names holes before thin spots', () => {
     const lens = parseWarRoomLens(reading(side('f2')), 'native.a', 'f1');
-    expect(lensWords(lens.you)).toBe('our read · win now: 60% this season, 40% long term');
-    expect(lensWords({ ...lens.you, set: true, direction: 'rebuild', nowWeight: 0 }))
-      .toBe('rebuild: long-term value only');
-    expect(leanWords(lens.you)).toContain('(60%)');
+    expect(lensWords(lens.you)).toBe('our read · win now: 65% this season, 35% long term');
+    expect(lensWords({ ...lens.you, set: true, direction: 'rebuild', nowWeight: 0.3 }))
+      .toBe('rebuild: 30% this season, 70% long term');
+    expect(leanWords(lens.you)).toContain('(65%)');
     expect(leanWords(lens.you)).toContain('Starters at S move them most.');
     expect(signed(-0.04)).toBe('+0.0');
     expect(signed(-4.54)).toBe('−4.5');

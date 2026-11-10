@@ -23,17 +23,18 @@ const (
 // Valid reports whether d is one of the three directions.
 func (d Direction) Valid() bool { return d == Contend || d == Retool || d == Rebuild }
 
-// NowWeight is how much of a lens is this season's value; the rest is long-term value.
+// NowWeight is how much of a lens is this season's value; the rest is long-term value. The three
+// weights are the league's own ruling (2026-10-31, tested with its owners); every lens reads them here.
 func (d Direction) NowWeight() float64 {
 	switch d {
 	case Contend:
-		return 0.6
-	case Retool:
-		return 0.3
+		return 0.65
 	case Rebuild:
-		return 0
+		return 0.30
+	case Retool:
+		return 0.50
 	}
-	return 0.3
+	return 0.50
 }
 
 // even is the size under which a lens calls a trade level: values show one decimal.

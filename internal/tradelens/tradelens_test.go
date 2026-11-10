@@ -33,8 +33,9 @@ func TestTwoForOneCountsOnlyTheBestN(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// You: 20+12 becomes 20+10. They: 10+9.5 becomes 12+11. Raw sums would call it 23 for 10.
-	if !near(got.You.Net, -2) || !near(got.Them.Net, 3.5) || got.Verdict != "bad" {
+	// You: 20+12 becomes 20+10. They: 10+9 becomes 12+11; their pick is 6.65 at 70% long term and
+	// starts for nobody. Raw sums would call it 23 for 10.
+	if !near(got.You.Net, -2) || !near(got.Them.Net, 4) || got.Verdict != "bad" {
 		t.Fatalf("you %v them %v verdict %q", got.You.Net, got.Them.Net, got.Verdict)
 	}
 	if !near(got.You.Out, 12) || !near(got.You.In, 10) || !near(got.You.In-got.You.Out, got.You.Net) {
@@ -47,8 +48,8 @@ func TestShelfValuesAreWhatEachSideGainsOrLoses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string][2]float64{"a1": {9, 10.5}, "a2": {1, 2.5}, "a3": {0, 1.5}, "b1": {0, 1},
-		"b2": {0, 0}, "pick:2027:1:b": {0, 0.5}}
+	want := map[string][2]float64{"a1": {9, 11}, "a2": {1, 3}, "a3": {0, 2}, "b1": {0, 3.35},
+		"b2": {0, 2.35}, "pick:2027:1:b": {0, 0}}
 	for _, a := range got.Assets {
 		if w, ok := want[a.Token]; ok && (!near(a.You, w[0]) || !near(a.Them, w[1])) {
 			t.Errorf("%s: you %v them %v, want %v", a.Token, a.You, a.Them, w)
@@ -67,8 +68,8 @@ func TestDirectionMovesTheLens(t *testing.T) {
 	rebuild, _ := Evaluate(in)
 	in.You.Direction = Contend
 	contend, _ := Evaluate(in)
-	// Contend counts 60% now: the vet is 22 to a contender and 10 to a rebuilder, who would bench him.
-	if !near(rebuild.You.Net, 0) || !near(contend.You.Net, 10) {
+	// The vet is 23 to a contender (65% now) and 16 to a rebuilder (30% now), beside starters of 20 and 12.
+	if !near(rebuild.You.Net, 4) || !near(contend.You.Net, 11) {
 		t.Fatalf("rebuild %v contend %v", rebuild.You.Net, contend.You.Net)
 	}
 }
