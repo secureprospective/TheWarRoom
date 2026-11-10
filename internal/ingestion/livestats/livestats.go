@@ -59,8 +59,9 @@ func columns(category string) []column {
 			{"YDS", []leaguerules.StatID{"receiving_yards"}}, {"TD", []leaguerules.StatID{"receiving_td"}},
 			{"TGTS", []leaguerules.StatID{"target"}}}
 	case "defensive":
-		// TOT is total tackles; AST, when supplied, records assists separately.
-		return []column{{"TOT", []leaguerules.StatID{"tackle"}}, {"AST", []leaguerules.StatID{"assist"}}, {"SACKS", []leaguerules.StatID{"sack"}},
+		// A tackle is solo or assisted, never both: SOLO is the tackle stat, and the assists come from AST
+		// when the box has it, otherwise from what TOT holds beyond SOLO (see assists).
+		return []column{{"SOLO", []leaguerules.StatID{"tackle"}}, {"AST", []leaguerules.StatID{"assist"}}, {"SACKS", []leaguerules.StatID{"sack"}},
 			{"TFL", []leaguerules.StatID{"tackle_for_loss"}}, {"PD", []leaguerules.StatID{"pass_defensed"}},
 			{"QB HTS", []leaguerules.StatID{"qb_hit"}}, {"TD", []leaguerules.StatID{"def_tds"}}}
 	case "fumbles":
@@ -145,6 +146,9 @@ func Lines(game livegame.Game) ([]Line, error) {
 				byID[row.ID] = held
 			}
 			words, err := rowStats(held, box, cols, row)
+			if err == nil && box.Category == "defensive" {
+				err = assists(&held.Stats, box, row)
+			}
 			if err != nil {
 				return nil, fmt.Errorf("live box score for %s: %w", row.Name, err)
 			}
@@ -160,22 +164,53 @@ func Lines(game livegame.Game) ([]Line, error) {
 	return out, nil
 }
 
+// labelled is the row's cell under one of the box score's column labels.
+func labelled(box livegame.Box, row livegame.BoxRow, label string) (string, bool) {
+	index := -1
+	for i, held := range box.Labels {
+		if held == label {
+			index = i
+		}
+	}
+	if index < 0 || index >= len(row.Stats) {
+		return "", false
+	}
+	return row.Stats[index], true
+}
+
 func rowStats(held *Line, box livegame.Box, cols []column, row livegame.BoxRow) (string, error) {
 	words := []string{}
 	for _, col := range cols {
-		index := -1
-		for i, label := range box.Labels {
-			if label == col.label {
-				index = i
-			}
-		}
-		if index < 0 || index >= len(row.Stats) {
+		raw, ok := labelled(box, row, col.label)
+		if !ok {
 			continue
 		}
-		if err := cell(&held.Stats, col, row.Stats[index]); err != nil {
+		if err := cell(&held.Stats, col, raw); err != nil {
 			return "", err
 		}
-		words = append(words, col.label+" "+row.Stats[index])
+		words = append(words, col.label+" "+raw)
 	}
 	return strings.Join(words, ", "), nil
+}
+
+// assists records a defender's assisted tackles when the box score has no assist column of its own:
+// they are what the total holds beyond the solo tackles. Without both cells nothing is recorded.
+func assists(line *fantasyscore.StatLine, box livegame.Box, row livegame.BoxRow) error {
+	if _, held := line.Quantities["assist"]; held {
+		return nil
+	}
+	solo, counted := line.Quantities["tackle"]
+	raw, ok := labelled(box, row, "TOT")
+	if !counted || !ok {
+		return nil
+	}
+	total, ok, err := decimal(raw)
+	if err != nil {
+		return fmt.Errorf("TOT: %w", err)
+	}
+	if !ok || total < solo {
+		return nil
+	}
+	line.Quantities["assist"], line.Labels["assist"] = total-solo, "assist"
+	return nil
 }
