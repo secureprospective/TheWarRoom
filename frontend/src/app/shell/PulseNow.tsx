@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HQAct as PulseAct } from './HQAct';
-import { percent, pointsLabel, type PulseOdds, type PulseResults } from '../data/nativePulse';
+import { percent, pointsLabel, type PulseOdds, type PulseResults, type PulseScore }
+  from '../data/nativePulse';
 import { readPulseMatchup, usePulseRead, type NativePulse, type PulseMatchup } from './pulseReads';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
@@ -8,8 +9,9 @@ import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveCo
 import type { usePulseLive } from './hqLive';
 import { boxLine, compactLine } from './statLine';
 import { PulseDrawer } from './PulseDrawer';
-import { applyFilter, bySlot, filterCounts, groupRows, pairStarters, pulseRows, scoreOf, starterRows,
-  PULSE_FILTERS, type PulseFilter, type PulseRow, type PulseStarterRow, type StarterPair }
+import { applyFilter, bySlot, changePoints, changeVerdict, filterCounts, groupRows, pairStarters, pulseRows,
+  scoreOf, starterRows, statChanges, PULSE_FILTERS, type PulseFilter, type PulseRow, type PulseStarterRow,
+  type StarterPair, type StatChange }
   from './pulseModel';
 
 /** PulseIdle is the calm empty state: what is missing, and what will fill it. */
@@ -18,11 +20,12 @@ export function PulseIdle({ words }: { words: string }) {
 }
 
 type Reading<T> = { reading?: T; pending?: boolean; error?: string };
+export type NowDrawer = 'box' | 'corr';
 
-export function PulseNow({ reading, mine, week, results, league, port, live, box, onBox }: {
+export function PulseNow({ reading, mine, week, results, league, port, live, drawer, onClose, onChanges }: {
   reading: NativePulse; mine: string; week?: number; results: Reading<PulseResults>;
   league: string; port: HostedPort; live: ReturnType<typeof usePulseLive>;
-  box: boolean; onBox: (open: boolean) => void;
+  drawer?: NowDrawer; onClose: () => void; onChanges: (count: number) => void;
 }) {
   const [side, setSide] = useState<'mu' | 'nfl'>('mu');
   const [filter, setFilter] = useState<PulseFilter>('all');
@@ -33,6 +36,8 @@ export function PulseNow({ reading, mine, week, results, league, port, live, box
   const rows = results.reading ? pulseRows(results.reading, mine, reading.seats, current, playing) : [];
   const selected = rows.find(r => r.key === picked) ?? rows.find(r => r.mine) ?? rows[0];
   const sides = useStarterSides(reading, week, results.reading, selected, league, port, mine);
+  const changes = statChanges(sides.left, sides.right);
+  useEffect(() => onChanges(changes.length), [onChanges, changes.length]);
   const games = current ? live.view?.games ?? [] : [];
   const followed = current ? live.view?.followed ?? undefined : undefined;
   return <section className="ws cols on" id="ws-live">
@@ -94,7 +99,10 @@ export function PulseNow({ reading, mine, week, results, league, port, live, box
       </div>
       <Plays game={followed} />
     </div>
-    <BoxDrawer open={box} onClose={() => onBox(false)} sides={sides} week={week} />
+    <BoxDrawer open={drawer === 'box'} onClose={onClose} sides={sides} week={week} />
+    <StatChangesDrawer open={drawer === 'corr'} onClose={onClose} sides={sides} week={week}
+      changes={changes} left={scoreOf(results.reading, sides.leftId ?? '')}
+      right={scoreOf(results.reading, sides.rightId ?? '')} />
   </section>;
 }
 
@@ -120,6 +128,34 @@ function BoxDrawer({ open, onClose, sides, week }: { open: boolean; onClose: () 
             <td>{pointsLabel(r.points)}</td>
           </tr>)}
         </tbody></table></div>}
+  </PulseDrawer>;
+}
+
+/** StatChangesDrawer says which starters in the chosen matchup the final statistics re-scored, and
+ *  whether any of it moved the result. */
+function StatChangesDrawer({ open, onClose, sides, week, changes, left, right }: { open: boolean;
+  onClose: () => void; sides: StarterSides; week?: number; changes: StatChange[];
+  left?: PulseScore; right?: PulseScore }) {
+  const margin = left?.points !== undefined && right?.points !== undefined
+    ? left.points - right.points : undefined;
+  const names = { left: sides.leftName, right: sides.rightName, mine: sides.mine };
+  const who = (c: StatChange) => sides.mine ? (c.left ? 'YOU' : 'THEM') : c.left ? names.left : names.right;
+  return <PulseDrawer open={open} onClose={onClose} title="Stat changes"
+    sub={`last live line vs final stats · week ${week ?? '—'}`}>
+    {!changes.length
+      ? <PulseIdle words="The final stats scored every starter in this matchup the same as the last live line." />
+      : <div className="scroll"><table className="ct"><thead><tr>
+        <th>WK</th><th>PLAYER</th><th>STAT</th><th>WAS</th><th>NOW</th><th>PTS Δ</th><th>RESULT</th>
+      </tr></thead><tbody>
+        {changes.map(c => <tr key={c.player}>
+          <td>{week}</td><td>{c.name}</td><td>{c.stats}</td>
+          <td>{changePoints(c.was)}</td><td>{changePoints(c.now)}</td>
+          <td>{changePoints(c.delta, true)} {who(c)}</td>
+          <td>{changeVerdict(c, margin, Boolean(left?.recorded || right?.recorded), names)}</td>
+        </tr>)}
+      </tbody></table></div>}
+    <div className="drawer-note">Compares the last live line this app held with the final stats, for the
+      starters in this matchup. It is not the complete list of NFL stat corrections.</div>
   </PulseDrawer>;
 }
 

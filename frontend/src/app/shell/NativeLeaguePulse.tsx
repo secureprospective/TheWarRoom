@@ -5,7 +5,7 @@ import { myChance, percent, pointsLabel, type PulseResults } from '../data/nativ
 import { readNativePulse, readPulseWeekResults, usePulseRead, type NativePulse, type PulseScope }
   from './pulseReads';
 import { scoreOf } from './pulseModel';
-import { PulseIdle, PulseNow } from './PulseNow';
+import { PulseIdle, PulseNow, type NowDrawer } from './PulseNow';
 import { PulseRace, type RaceDrawer } from './PulseRace';
 import { PulseInspector } from './PulseInspector';
 import { ScheduleDrawer } from './PulseSchedule';
@@ -19,7 +19,8 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
   const port = scope.port ?? hostedWorkflow;
   const tab: PulseTab = scope.tab ?? 'now';
   const [chosen, chooseWeek] = useState<number>();
-  const [drawer, setDrawer] = useState<'box' | 'sched' | RaceDrawer>();
+  const [drawer, setDrawer] = useState<NowDrawer | 'sched' | RaceDrawer>();
+  const [changes, setChanges] = useState(0);
   const pull = (key: NonNullable<typeof drawer>) => setDrawer(drawer === key ? undefined : key);
   useEffect(() => setDrawer(undefined), [tab]);
   useEffect(() => {
@@ -49,7 +50,9 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
         : tab === 'race' ? <PulseRace reading={reading} mine={scope.mine}
             drawer={drawer === 'tb' || drawer === 'bk' ? drawer : undefined} onClose={() => setDrawer(undefined)} />
         : <PulseNow reading={reading} mine={scope.mine} week={week} results={results}
-            league={scope.league} port={port} live={live} box={drawer === 'box'} onBox={() => setDrawer(undefined)} />}
+            league={scope.league} port={port} live={live} 
+            drawer={drawer === 'box' || drawer === 'corr' ? drawer : undefined}
+            onClose={() => setDrawer(undefined)} onChanges={setChanges} />}
         {reading && tab === 'now' && <ScheduleDrawer open={drawer === 'sched'} reading={reading}
           mine={scope.mine} port={port} onClose={() => setDrawer(undefined)} />}
         <div className="tray">
@@ -58,6 +61,8 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
               MATCHUP BOX ▴</PulseAct>
             <PulseAct className="pull" expanded={drawer === 'sched'} onAction={() => pull('sched')}>
               SCHEDULE ▴</PulseAct>
+            <PulseAct className="pull" expanded={drawer === 'corr'} onAction={() => pull('corr')}>
+              STAT CHANGES{changes ? <> <b>{changes}</b></> : null} ▴</PulseAct>
           </div>}
           {reading && tab === 'race' && <div className="pulls">
             <PulseAct className="pull" expanded={drawer === 'tb'} onAction={() => pull('tb')}>

@@ -39,6 +39,8 @@ type StarterScore struct {
 	// Line is what the starter recorded this week, by statistic.
 	Line   map[leaguerules.StatID]leaguerules.Decimal `json:"line,omitempty"`
 	Points *leaguerules.Decimal                       `json:"points,omitempty"`
+	// Revision is how the final statistics moved the starter's points off the last live line held.
+	Revision *StatRevision `json:"revision,omitempty"`
 	// Provisional is what the starter has scored so far from evidence that is not final: the game
 	// is still being played, or the final feed has not landed. It is never a result.
 	Provisional *leaguerules.Decimal `json:"provisional,omitempty"`
@@ -251,7 +253,7 @@ func (out *FranchiseWeekScore) addStarters(ctx context.Context, records []Record
 			return 0, running, fmt.Errorf("score %s: %w", name, err)
 		}
 		item := StarterScore{Player: starter.Player, Name: name, Words: score.Words, Position: score.Position, Source: score.Source, FieldSources: score.FieldSources,
-			Line: score.Line}
+			Line: score.Line, Revision: score.Revision}
 		switch {
 		case score.Status == "Complete" && score.Points != nil:
 			item.Points = score.Points

@@ -18,11 +18,17 @@ export function pointsLabel(value: number | undefined): string {
 export type PulseStarter = { player: string; name: string; position?: string; words: string;
   /** What the starter recorded this week, by league stat id, in whole units. */
   line?: Record<string, number>;
+  revision?: PulseRevision;
   points?: number; provisional?: number; source?: string; fieldSources?: Record<string, string> };
+/** How the final statistics moved a starter's points off the last live line the app held. */
+export type PulseRevision = { was: number; now: number;
+  stats: { stat: string; label: string; was: number; now: number }[] };
 export type PulseScore = { franchise: string; name: string; status: string; points?: number;
   provisional?: number;
   words: string; starters: PulseStarter[]; adjustment: number; lineupStatus: string;
-  lineupWords: string; flagged: boolean; zeroed?: string };
+  lineupWords: string; flagged: boolean; zeroed?: string;
+  /** The total is the source's recorded result, not the app's own count of the starters. */
+  recorded: boolean };
 export type PulseGame = { week: number; home: string; away: string; homeName: string; awayName: string;
   status: string; homePoints?: number; awayPoints?: number; homeProvisional?: number;
   awayProvisional?: number; winner?: string; words: string;
@@ -36,13 +42,23 @@ function parseLine(value: unknown, path: string): Record<string, number> | undef
   return Object.fromEntries(Object.entries(object(value, `${path}.line`, Object.keys(Object(value))))
     .map(([stat, quantity]) => [stat, points(quantity, `${path}.line.${stat}`)]));
 }
+function parseRevision(value: unknown, path: string): PulseRevision | undefined {
+  if (value === undefined) return undefined;
+  const r = object(value, `${path}.revision`, ['stats', 'was', 'now']);
+  return { was: points(r.was, path), now: points(r.now, path),
+    stats: array(r.stats, 'Stat changes', (v, p) => {
+      const s = object(v, p, ['stat', 'label', 'was', 'now']);
+      return { stat: text(s.stat, p), label: text(s.label, p), was: points(s.was, p), now: points(s.now, p) };
+    }) };
+}
 function parseStarters(value: unknown): PulseStarter[] {
   return array(value, 'Starters', (v, p) => {
-    const s = object(v, p, ['player', 'name', 'position', 'words', 'line', 'points',
+    const s = object(v, p, ['player', 'name', 'position', 'words', 'line', 'revision', 'points',
       'provisional', 'source', 'fieldSources']);
     return { player: text(s.player, p), name: text(s.name, p),
       position: s.position === undefined ? undefined : text(s.position, p),
-      words: text(s.words, p), line: parseLine(s.line, p), points: optionalPoints(s.points, p),
+      words: text(s.words, p), line: parseLine(s.line, p), revision: parseRevision(s.revision, p),
+      points: optionalPoints(s.points, p),
       provisional: optionalPoints(s.provisional, p),
       source: s.source === undefined ? undefined : text(s.source, p),
       fieldSources: parseFieldSources(s.fieldSources) };
@@ -60,7 +76,8 @@ function parseScores(value: unknown): PulseScore[] {
       words: text(s.words, p), starters: parseStarters(s.starters),
       adjustment: points(s.adjustment, p), lineupStatus: text(lineup.status, p),
       lineupWords: text(lineup.words, p), flagged: lineup.flagged,
-      zeroed: s.zeroed === undefined ? undefined : text(s.zeroed, p) };
+      zeroed: s.zeroed === undefined ? undefined : text(s.zeroed, p),
+      recorded: s.recordedResult !== undefined };
   });
 }
 export function parsePulseResults(value: unknown, league: string, week: number): PulseResults {

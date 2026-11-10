@@ -1,5 +1,5 @@
 import type { PulseGame, PulseResults, PulseScore, PulseSeat, PulseStandings, PulseStarter,
-  PulseLineupPlayer, PulseBracket } from '../data/nativePulse';
+  PulseLineupPlayer, PulseBracket, PulseRevision } from '../data/nativePulse';
 
 export type PulseFilter = 'all' | 'mine' | 'live' | 'close';
 export const PULSE_FILTERS: readonly { key: PulseFilter; label: string }[] = [
@@ -72,6 +72,7 @@ export type PulseStarterRow = {
   slot: string; player: string; name: string; team?: string; locked?: boolean;
   points: number | undefined; projection: number | undefined; words: string;
   line?: Record<string, number>;
+  revision?: PulseRevision;
   /** The score is settled, not a running total. */
   final: boolean;
 };
@@ -119,10 +120,48 @@ export function starterRows(score: PulseScore | undefined, lineup: PulseLineupPl
     return { slot: s.position ?? '—', player: s.player, name: naturalName(s.name), team: held?.team,
       final: s.points !== undefined,
       locked: held?.locked, points: s.points ?? s.provisional, projection: projections[s.player],
-      line: s.line,
+      line: s.line, revision: s.revision,
       words: [s.words, s.source, ...Object.entries(s.fieldSources ?? {}).map(([field, owner]) =>
         `${field}: ${owner}`)].filter(Boolean).join(" · ") };
   });
+}
+
+export type StatChange = { player: string; name: string; left: boolean; stats: string;
+  was: number; now: number; delta: number };
+
+/** statChanges lists the starters whose points the final statistics moved, biggest move first. */
+export function statChanges(left: PulseStarterRow[], right: PulseStarterRow[]): StatChange[] {
+  const side = (rows: PulseStarterRow[], isLeft: boolean) => rows.flatMap(r => r.revision ? [{
+    player: r.player, name: r.name, left: isLeft, was: r.revision.was, now: r.revision.now,
+    delta: r.revision.now - r.revision.was,
+    // A scoring rule's label ends with the range it prices; the row already says the numbers.
+    stats: r.revision.stats.map(s => `${s.label.replace(/ \([^)]*\)$/, '').toLowerCase()} ${s.was} → ${s.now}`)
+      .join(' · '),
+  }] : []);
+  return [...side(left, true), ...side(right, false)]
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+}
+
+/** changePoints writes points to the cent a stat change can move, dropping a spare zero. */
+export function changePoints(value: number, signed = false): string {
+  const words = Math.abs(value).toFixed(2).replace(/0$/, '');
+  return `${value < 0 ? '−' : signed ? '+' : ''}${words}`;
+}
+
+/** changeVerdict says whether one starter's change decided the matchup. margin is the left side's
+ *  final lead; a recorded week's result is the source's and no change of ours can move it. */
+export function changeVerdict(change: StatChange, margin: number | undefined, recorded: boolean,
+  names: { left: string; right: string; mine: boolean }): string {
+  if (recorded) return 'recorded result stands';
+  if (margin === undefined) return 'week not final';
+  // Points are held to the ten-thousandth; anything finer is float noise, not a lead.
+  const lead = (m: number) => Math.sign(Math.round(m * 1e4));
+  const now = lead(margin);
+  const then = lead(margin - (change.left ? change.delta : -change.delta));
+  const call = (side: number) => names.mine ? ['L', 'T', 'W'][side + 1]
+    : side ? (side > 0 ? names.left : names.right) : 'level';
+  if (then !== now) return `changed · ${call(then)} → ${call(now)}`;
+  return `no change · ${call(now)} ${names.mine ? 'stands' : now ? 'still wins' : 'still'}`;
 }
 
 export function scoreOf(results: PulseResults | undefined, franchise: string) {

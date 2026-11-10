@@ -36,10 +36,12 @@ type NativePlayerScore struct {
 	Missing       []string                      `json:"missing"`
 	Items         []NativeScoreItem             `json:"items"`
 	// Line is every statistic recorded for the week, scored or not, so a screen can say what the player did.
-	Line      map[leaguerules.StatID]leaguerules.Decimal `json:"line,omitempty"`
-	Changes   []ScoreChange                              `json:"changes"`
-	SHA256    string                                     `json:"sha256,omitempty"`
-	FetchedAt *time.Time                                 `json:"fetchedAt,omitempty"`
+	Line map[leaguerules.StatID]leaguerules.Decimal `json:"line,omitempty"`
+	// Revision is set when the final statistics moved the points off the last live line held.
+	Revision  *StatRevision `json:"revision,omitempty"`
+	Changes   []ScoreChange `json:"changes"`
+	SHA256    string        `json:"sha256,omitempty"`
+	FetchedAt *time.Time    `json:"fetchedAt,omitempty"`
 }
 
 func NativePlayerScoreReading(league string, scope source.RawNativeScope, records []Record,
@@ -109,7 +111,11 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 		out.Status, out.Words = "Needs a ruling", "Choose this player's position for league scoring"
 		return out, nil
 	}
-	return out.count(rules.Scoring, week.Line, changes.Delta)
+	scored, err := out.count(rules.Scoring, week.Line, changes.Delta)
+	if err != nil {
+		return scored, err
+	}
+	return scored.withRevision(rules.Scoring, lastLive(evidence.Versions(), counted), week.Line, changes.Delta)
 }
 
 // foldedScoreRules is scoreRules over the ledger's fold, read once, with the player's score changes.
