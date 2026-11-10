@@ -1,7 +1,8 @@
-# TheWarRoom — Import + UI-to-mocks RESUME (compact-safe #3, 2026-11-09 ~22:30 CT)
+# TheWarRoom — Import + UI-to-mocks RESUME (compact-safe #4, 2026-11-10 ~00:50 CT)
 
 ## 0. FIRST THING AFTER COMPACT
-Christopher asked for a plan for the rest of this session. It is section 9. Start at 9.1. Nothing is running.
+Christopher's /compact-safe said "then go ahead with the Race drawers": they are ALREADY DONE (9.2). Tell him so in
+one line, then go on with 9.3 (STAT CHANGES drawer). Nothing is running.
 
 ## IN-FLIGHT
 Nothing. The test app is stopped. Xvfb :5 (PID 1178155) is left up on Claude-OS for the next launch.
@@ -42,9 +43,10 @@ remove BY NAME afterwards (a wildcard rm in /tmp is refused).
 ## 3. Gates
 | Gate | State |
 |---|---|
-| vitest src/app/shell + src/app/data | 406/406 on a8b4ab8a |
-| tsc --noEmit | clean on a8b4ab8a |
-| Targeted go tests (commissioner lineup/recorded, store/history NativeEvidence/Recorded, fantasyscore) | pass |
+| vitest src/app/shell + src/app/data | 413/413 on f17b8d4f (86b1d7f3 after it is CSS only) |
+| tsc --noEmit | clean on f17b8d4f |
+| Targeted go tests (player score Line, recorded starters, open-season projected field + row conference) | pass |
+| pre-commit golangci-lint-full | passed on df01ea41 and f17b8d4f |
 | make build | pass |
 | make verify (full) | NOT run; once before the push |
 | native_forks ratchet (19) | not lowered |
@@ -53,9 +55,11 @@ remove BY NAME afterwards (a wildcard rm in /tmp is refused).
 ## 4. Artifacts
 - Commits on session/ui-to-mocks: db668c16 Pulse slice 1; a75661a5 one rail; a9e364dc unusable stats id + recorded
   weeks parse; 05110385 pre-cutover lineups + recorded starters + slate/back button/matchup box; a8b4ab8a schedule
-  drawer; then resume commits.
+  drawer; df01ea41 starter stat lines; f17b8d4f Race drawers + projected seeds + row conference; 86b1d7f3 Race
+  standings column; plus resume commits.
 - Beelink ~/Downloads: twr-pulse-fresh-week{8,9}-1109.png, twr-pulse-fresh-week8-box-1109.png,
-  twr-pulse-schedule-{league,myteam}-1109.png, twr-rail-{pulse,hq,control}-1109.png.
+  twr-pulse-schedule-{league,myteam}-1109.png, twr-rail-{pulse,hq,control}-1109.png,
+  twr-pulse-statline-{week9,box}-1110.png, twr-pulse-race-{race,tb,bk}-1110.png.
 
 ## 5. Current bug
 None open.
@@ -79,8 +83,12 @@ None open.
   ShellRail later, lower native_forks then.
 
 ## 7. Decisions (Christopher)
+- 11-10: he gates step by step ("go ahead with the starter stat line", "Go" for Race drawers); report each step
+  with screenshots, name the next one. Code quality and precise execution restated.
 - 11-09: plan confirmed, Pulse first; clear pathway then execute; precise outputs; stay true to the mocks.
 - 11-09 night: direction is good; excellence, lean and clean code; fix the lineup backfill then keep going on Pulse.
+- My calls 11-10 (told him): tiebreak DETAIL is the engine's own long sentence (offered to cut down); crowded
+  lineups keep two-line starter cells; standings points show two decimals; bracket headings from node ids.
 - My calls (flag if he objects): >16 starters keep the single list with tight rows; recorded weeks show app-scored
   starter points beside the untouched recorded total; schedule grid shows last week through the next ones.
 
@@ -88,11 +96,18 @@ None open.
 Everything committed (+ this resume). Not pushed. Beelink repo untouched. Untracked: only .golangci-cache/.
 
 ## 9. PLAN for the rest of this session (in order)
-1. Starter stat line. Read how NativePlayerScore is built (commissioner PlayerScore source, fantasyscore StatLine
+1. DONE 11-10 (commit df01ea41, not pushed): starter stat line
+   (StarterScore.Line -> statLine.ts compactLine/boxLine; shots twr-pulse-statline-{week9,box}-1110.png). The league
+   is now in week 10, so week 9 is one prev-arrow click. NEXT IS 9.2. Original note: Read how NativePlayerScore is built (commissioner PlayerScore source, fantasyscore StatLine
    Quantities); add a short stat line per starter to StarterScore in results.read (one field, built from the
    quantities already scored, no new fetch); parse it in nativePulse.ts; show it as the mock's `.ln` under each
    starter and as LINE columns in the matchup box. Go test + vitest case. Mock lines 1236-1240 and 1323-1330.
-2. Race drawers from reads already served: BRACKET (bracket.read is parsed already) and TIEBREAKERS (check what
+2. DONE 11-10 (commits f17b8d4f + 86b1d7f3, not pushed): TIEBREAKERS + BRACKET drawers (PulseRaceDrawers.tsx,
+   shared PulseDrawer.tsx shell; pulseModel tieGroups/bracketRounds). Backend reads changed: bracket.read carries
+   `projected` fields while the season is open (Fields stays empty), standings rows carry `conference`. Race opens on
+   my own side; Race rail leaf click (55,325); pulls TIEBREAKERS (300,1062) BRACKET (425,1062). Shots
+   twr-pulse-race-{race,tb,bk}-1110.png. PRODUCTION pull deferred (9.6). NEXT IS 9.3. Original note:
+   Race drawers from reads already served: BRACKET (bracket.read is parsed already) and TIEBREAKERS (check what
    standings.read says about ties first). Pulls on the Race tab. Mock DRAWERS.race, lines 1345-1360.
 3. STAT CHANGES drawer: score changes are already in results.read (`changes`, currently dropped by the parser);
    line revisions exist in fantasyscore/source. Show first held vs latest. Mock line 1340.
@@ -105,6 +120,10 @@ Everything committed (+ this resume). Not pushed. Beelink repo untouched. Untrac
 Stop rule: if a step needs a new ledger event, a schema change or a permission change, stop and tell him first.
 
 ## 10. Findings log (evidence seen; report, do not hunt)
+- The league is in week 10 now; week 9 still reads "0 with a result, 16 still to come / WAITING" (final stats not in).
+- Pulse past-week view (week 9) drew without the right-hand inspector in one launch and with it in the next.
+- Tie reasons name teams from both conferences (the tie is league-wide); the drawer shows this side's teams only.
+- vitest prints "League Pulse read failed: TypeError ... reading 'API'" from one test; all tests pass.
 - Before any import a new user sits in the OLD plain layout, not the mock shell.
 - Import form: datetime fields pop a calendar over the field; Esc in the Control Room tray closes the whole tray.
 - Stat feed writes ledger events every launch (commish.stat.queue.approve).
@@ -118,6 +137,7 @@ Stop rule: if a step needs a new ledger event, a schema change or a permission c
 - Claude-OS /tmp has fixwalk.py and mark.py of unknown origin: left alone.
 
 ## 11. Honest status
-Rail matches the mock. Pulse is roughly half built: Live works on real data for live and past weeks with two of
-five drawers; Race has no drawers; Archive is not started; starter stat lines are missing. Nothing is pushed, the
-full suite has not run on these commits, and Christopher has only seen screenshots.
+Rail matches the mock. Pulse: Live works on real data with starter stat lines and two of five drawers (box,
+schedule); Race shows today's projected seeds with two of three drawers (tiebreakers, bracket); Archive is not
+started. Missing: STAT CHANGES, WEEK STORY, NFL BOX SCORE, PRODUCTION. Nothing is pushed, the full suite has not run
+on these commits, and Christopher has only seen screenshots.
