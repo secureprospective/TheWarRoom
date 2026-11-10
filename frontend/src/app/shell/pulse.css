@@ -935,3 +935,8 @@
 .lp-v14 #ws-live .follow{min-width:0;overflow:hidden;flex-wrap:nowrap}
 .lp-v14 #ws-live .follow .fchip{flex:0 0 auto;white-space:nowrap;padding:3px 8px;gap:6px;font-size:10.5px}
 .lp-v14 .ch .mbtn.back{flex:none;margin-left:10px;padding:3px 8px}
+/* Tiebreakers: reasons are sentences, so the cells wrap and read from the left. */
+.lp-v14 .ct.ties td{white-space:normal;vertical-align:top;text-align:left}
+.lp-v14 .ct.ties th{text-align:left}
+.lp-v14 .ct.ties td:last-child{white-space:nowrap}
+.lp-v14 .bk .rh{font:700 9px var(--mono);letter-spacing:.14em;color:var(--ink3)}

@@ -130,7 +130,7 @@ export function scoreOf(results: PulseResults | undefined, franchise: string) {
 }
 
 export type PulseSeedRow = { seed?: number; bye: boolean; kind: string; franchise: string;
-  name: string; division: string; rank: number; record: string; pointsWords: string;
+  name: string; division: string; rank: number; record: string; pointsWords: string; pointsFor?: number;
   mine: boolean; inField: boolean };
 
 /** seedRows is the Race standings read as a playoff field: the seeds the playoff read has set,
@@ -143,12 +143,14 @@ export function seedRows(standings: PulseStandings, bracket: PulseBracket | unde
     const r = row(s.franchise);
     return { seed: s.seed, bye: s.bye, kind: s.kind, franchise: s.franchise, name: s.name,
       division: s.division, rank: r?.rank ?? 0, record: r?.record ?? '', mine: s.franchise === mine,
-      pointsWords: r?.pointsWords ?? '', inField: true };
+      pointsWords: r?.pointsWords ?? '', pointsFor: r?.pointsFor, inField: true };
   });
   const inField = new Set(seeded.map(s => s.franchise));
-  const bubble = standings.rows.filter(r => !inField.has(r.franchise)).map(r => ({
+  const bubble = standings.rows.filter(r => !inField.has(r.franchise)
+    && (!field || !r.conference || r.conference === conference)).map(r => ({
     bye: false, kind: '', franchise: r.franchise, name: r.name, division: r.division, rank: r.rank,
-    record: r.record, pointsWords: r.pointsWords, mine: r.franchise === mine, inField: false }));
+    record: r.record, pointsWords: r.pointsWords, pointsFor: r.pointsFor, mine: r.franchise === mine,
+    inField: false }));
   return [...seeded, ...bubble];
 }
 
@@ -161,4 +163,47 @@ export function divisionGroups(standings: PulseStandings): { division: string;
   rows: PulseStandings['rows'] }[] {
   return [...new Set(standings.rows.map(r => r.division))].sort().map(division => ({
     division, rows: standings.rows.filter(r => r.division === division) }));
+}
+
+export type PulseTie = { teams: PulseSeedRow[]; step: string; detail: string };
+
+/** tieGroups reads the standings' own reasons as ties: each reason two or more of these rows share,
+ *  once, with the tie-breaker that split it. A reason every row shares is the table's first split by
+ *  record, not a tie, so it is left out. */
+export function tieGroups(standings: PulseStandings, rows: PulseSeedRow[]): PulseTie[] {
+  const shared = new Map<string, PulseSeedRow[]>();
+  for (const row of rows)
+    for (const line of standings.rows.find(r => r.franchise === row.franchise)?.why ?? [])
+      shared.set(line, [...(shared.get(line) ?? []), row]);
+  return [...shared].filter(([, teams]) => teams.length > 1 && teams.length < rows.length)
+    .map(([detail, teams]) => {
+      const put = detail.lastIndexOf(' put ');
+      return { teams, detail, step: put < 0 ? 'Franchise order'
+        : detail.slice(detail.lastIndexOf('. ', put) + 1, put).trim() };
+    });
+}
+
+export type PulseBracketSide = { words: string; seed?: number };
+const ROUND_NAMES: Record<string, string> = { wildcard: 'WILD CARD', division: 'DIVISIONAL',
+  conference: 'CONF FINAL', championship: 'THE FINAL' };
+
+/** bracketRounds reads the league's bracket shape a week at a time for each side, today's seeds in
+ *  their places. With more than one side, the last week is the final they share. */
+export function bracketRounds(bracket: PulseBracket) {
+  const weeks = [...new Set(bracket.shape.map(n => n.week))].sort((a, b) => a - b);
+  const shared = bracket.fields.length > 1 ? weeks.pop() : undefined;
+  const heading = (week: number) => {
+    const kind = (bracket.shape.find(n => n.week === week)?.id ?? '').split('_')[0];
+    return `${ROUND_NAMES[kind] ?? kind.toUpperCase()} · WK ${week}`;
+  };
+  const fields = bracket.fields.map(field => {
+    const side = (seed?: number, from?: string): PulseBracketSide => seed === undefined
+      ? { words: from ?? '—' }
+      : { seed, words: field.seeds.find(s => s.seed === seed)?.name ?? `seed ${seed}` };
+    return { conference: field.conference, rounds: weeks.map(week => ({ heading: heading(week),
+      games: bracket.shape.filter(n => n.week === week).map(n => ({ id: n.id,
+        home: side(n.homeSeed, n.homeFrom), away: side(n.awaySeed, n.awayFrom) })) })) };
+  });
+  return { fields, final: shared === undefined ? undefined
+    : { heading: heading(shared), sides: bracket.fields.map(f => `${f.conference} champion`) } };
 }

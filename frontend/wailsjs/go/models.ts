@@ -1950,6 +1950,7 @@ export namespace commissioner {
 	    started: boolean;
 	    startKnown: boolean;
 	    fields: competition.ConferenceField[];
+	    projected: competition.ConferenceField[];
 	    rounds: competition.BracketRound[];
 	    champion?: BracketChampion;
 	    title: BracketTitle;
@@ -1974,6 +1975,7 @@ export namespace commissioner {
 	        this.started = source["started"];
 	        this.startKnown = source["startKnown"];
 	        this.fields = this.convertValues(source["fields"], competition.ConferenceField);
+	        this.projected = this.convertValues(source["projected"], competition.ConferenceField);
 	        this.rounds = this.convertValues(source["rounds"], competition.BracketRound);
 	        this.champion = this.convertValues(source["champion"], BracketChampion);
 	        this.title = this.convertValues(source["title"], BracketTitle);
@@ -3006,6 +3008,7 @@ export namespace commissioner {
 	    franchise: string;
 	    name: string;
 	    division?: string;
+	    conference?: string;
 	    wins: number;
 	    losses: number;
 	    ties: number;
@@ -3025,6 +3028,7 @@ export namespace commissioner {
 	        this.franchise = source["franchise"];
 	        this.name = source["name"];
 	        this.division = source["division"];
+	        this.conference = source["conference"];
 	        this.wins = source["wins"];
 	        this.losses = source["losses"];
 	        this.ties = source["ties"];

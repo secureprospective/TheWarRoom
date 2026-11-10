@@ -1,3 +1,4 @@
+import { PulseDrawer } from './PulseDrawer';
 import { useState } from 'react';
 import { HQAct as PulseAct } from './HQAct';
 import { pointsLabel, type PulseGame } from '../data/nativePulse';
@@ -10,18 +11,13 @@ import { PulseIdle } from './PulseNow';
 export function ScheduleDrawer({ open, onClose, reading, mine, port }: { open: boolean;
   onClose: () => void; reading: NativePulse; mine: string; port: HostedPort }) {
   const [team, setTeam] = useState(false);
-  return <div className={`bdrawer${open ? ' open' : ''}`}>
-    <div className="bd-head">
-      <h2>Schedule</h2>
-      <span className="sub">weeks 1–{reading.lastWeek || '—'} · regular season</span>
-      <div className="dtab">
-        <PulseAct active={!team} onAction={() => setTeam(false)}>LEAGUE</PulseAct>
-        <PulseAct active={team} onAction={() => setTeam(true)}>MY TEAM</PulseAct>
-      </div>
-      <PulseAct className="x" onAction={onClose}>ESC ✕</PulseAct>
-    </div>
-    <div className="dbody">{open && <Body reading={reading} mine={mine} port={port} team={team} />}</div>
-  </div>;
+  return <PulseDrawer open={open} onClose={onClose} title="Schedule"
+    sub={`weeks 1–${reading.lastWeek || '—'} · regular season`} tabs={<>
+      <PulseAct active={!team} onAction={() => setTeam(false)}>LEAGUE</PulseAct>
+      <PulseAct active={team} onAction={() => setTeam(true)}>MY TEAM</PulseAct>
+    </>}>
+    {open && <Body reading={reading} mine={mine} port={port} team={team} />}
+  </PulseDrawer>;
 }
 
 type Cell = { opponent: string; away: boolean; result: string; score: string };

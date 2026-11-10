@@ -94,6 +94,7 @@ export function parsePulseResults(value: unknown, league: string, week: number):
 }
 
 export type PulseStandingRow = { rank: number; franchise: string; name: string; division: string;
+  conference: string;
   wins: number; losses: number; ties: number; record: string; pointsFor: number;
   pointsWords: string; why: string[] };
 export type PulseStandings = { league: string; name: string; season: number; revision: number;
@@ -106,10 +107,11 @@ export function parsePulseStandings(value: unknown, league: string, season: numb
   if (r.league !== league || r.season !== season)
     throw new Error('Standings belong to another league or season');
   const rows = (v: unknown) => array(v, 'Standings rows', (v, p) => {
-    const s = object(v, p, ['rank', 'franchise', 'name', 'division', 'wins', 'losses', 'ties',
+    const s = object(v, p, ['rank', 'franchise', 'name', 'division', 'conference', 'wins', 'losses', 'ties',
       'record', 'computedRecord', 'pointsFor', 'pointsWords', 'why']);
     return { rank: integer(s.rank, p, 1), franchise: text(s.franchise, p), name: text(s.name, p),
-      division: s.division === undefined ? '' : text(s.division, p), wins: integer(s.wins, p),
+      division: s.division === undefined ? '' : text(s.division, p),
+      conference: s.conference === undefined ? '' : text(s.conference, p), wins: integer(s.wins, p),
       losses: integer(s.losses, p), ties: integer(s.ties, p), record: text(s.record, p),
       pointsFor: points(s.pointsFor, p), pointsWords: text(s.pointsWords, p),
       why: array(s.why, 'Reasons', (v, p) => text(v, p)) };
@@ -131,15 +133,33 @@ export type PulseSeed = { seed: number; franchise: string; name: string; divisio
   rank: number; kind: string; bye: boolean; byHand: boolean };
 export type PulseBracket = { league: string; season: number; revision: number; status: string;
   words: string; startWeek: number; finalWeek: number; perConference: number; byeSeeds: number;
-  started: boolean; fields: { conference: string; seeds: PulseSeed[] }[] };
+  started: boolean; fields: { conference: string; seeds: PulseSeed[] }[];
+  /** The fields are today's standings read as seeds, not a set playoff field. */
+  projected: boolean;
+  /** The bracket each side plays: a game names a seed, or says in words who reaches it. */
+  shape: { id: string; week: number; homeSeed?: number; awaySeed?: number; homeFrom?: string;
+    awayFrom?: string }[] };
 
 export function parsePulseBracket(value: unknown, league: string, season: number): PulseBracket {
   const r = object(value, 'Playoffs', ['league', 'name', 'season', 'revision', 'status', 'words',
-    'preset', 'presets', 'rules', 'started', 'startKnown', 'fields', 'rounds', 'champion', 'title',
+    'preset', 'presets', 'rules', 'started', 'startKnown', 'fields', 'projected', 'rounds', 'champion', 'title',
     'history', 'changes']);
   if (r.league !== league || r.season !== season)
     throw new Error('Playoffs belong to another league or season');
   if (typeof r.started !== 'boolean') throw new Error('Unreadable playoff start');
+  const fields = (value: unknown) => array(value, 'Playoff fields', (v, p) => {
+    const f = object(v, p, ['conference', 'seeds']);
+    return { conference: text(f.conference, p), seeds: array(f.seeds, 'Seeds', (v, p) => {
+      const s = object(v, p, ['seed', 'franchise', 'name', 'division', 'rank', 'kind', 'bye',
+        'byHand']);
+      if (typeof s.bye !== 'boolean' || typeof s.byHand !== 'boolean')
+        throw new Error('Unreadable seed');
+      return { seed: integer(s.seed, p, 1), franchise: text(s.franchise, p), name: text(s.name, p),
+        division: text(s.division, p), rank: integer(s.rank, p, 1), kind: text(s.kind, p),
+        bye: s.bye, byHand: s.byHand };
+    }) };
+  });
+  const set = fields(r.fields);
   const rules = object(r.rules, 'Playoff rules', ['words', 'perConference', 'divisionWinners',
     'wildCards', 'byeSeeds', 'seeding', 'reseed', 'startWeek', 'finalWeek', 'homeBonus', 'shape']);
   return { league: text(r.league, 'League'), season: integer(r.season, 'Season', 1920),
@@ -148,18 +168,14 @@ export function parsePulseBracket(value: unknown, league: string, season: number
     finalWeek: integer(rules.finalWeek, 'Playoff final'),
     perConference: integer(rules.perConference, 'Playoff places'),
     byeSeeds: integer(rules.byeSeeds, 'Bye seeds'), started: r.started,
-    fields: array(r.fields, 'Playoff fields', (v, p) => {
-      const f = object(v, p, ['conference', 'seeds']);
-      return { conference: text(f.conference, p), seeds: array(f.seeds, 'Seeds', (v, p) => {
-        const s = object(v, p, ['seed', 'franchise', 'name', 'division', 'rank', 'kind', 'bye',
-          'byHand']);
-        if (typeof s.bye !== 'boolean' || typeof s.byHand !== 'boolean')
-          throw new Error('Unreadable seed');
-        return { seed: integer(s.seed, p, 1), franchise: text(s.franchise, p), name: text(s.name, p),
-          division: text(s.division, p), rank: integer(s.rank, p, 1), kind: text(s.kind, p),
-          bye: s.bye, byHand: s.byHand };
-      }) };
-    }) };
+    shape: array(rules.shape, 'Bracket shape', (v, p) => {
+      const n = object(v, p, ['id', 'week', 'homeSeed', 'awaySeed', 'homeFrom', 'awayFrom']);
+      const seed = (s: unknown) => s === undefined ? undefined : integer(s, p, 1);
+      const from = (s: unknown) => s === undefined ? undefined : text(s, p);
+      return { id: text(n.id, p), week: integer(n.week, p, 1), homeSeed: seed(n.homeSeed),
+        awaySeed: seed(n.awaySeed), homeFrom: from(n.homeFrom), awayFrom: from(n.awayFrom) };
+    }),
+    fields: set.length ? set : fields(r.projected), projected: !set.length };
 }
 
 export type PulseSchedule = { season: number;

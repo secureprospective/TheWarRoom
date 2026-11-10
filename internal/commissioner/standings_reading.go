@@ -16,6 +16,7 @@ type StandingRow struct {
 	Franchise      string              `json:"franchise"`
 	Name           string              `json:"name"`
 	Division       string              `json:"division,omitempty"`
+	Conference     string              `json:"conference,omitempty"`
 	Wins           int                 `json:"wins"`
 	Losses         int                 `json:"losses"`
 	Ties           int                 `json:"ties"`
@@ -234,7 +235,8 @@ func standingRows(r competition.Ranking, teams []competition.RankTeam, points ma
 	rows := make([]StandingRow, 0, len(r.Order))
 	for i, id := range r.Order {
 		record := r.Records[id]
-		row := StandingRow{Rank: i + 1, Franchise: id, Name: byID[id].Name, Division: byID[id].Division, Wins: record.W,
+		row := StandingRow{Rank: i + 1, Franchise: id, Name: byID[id].Name, Division: byID[id].Division,
+			Conference: byID[id].Conference, Wins: record.W,
 			Losses: record.L, Ties: record.T, Record: record.Words(), PointsFor: points[id],
 			PointsWords: scorePointsWords(points[id]) + " points scored", Why: append([]string{}, r.Why[id]...)}
 		if computed != nil && computed.Records[id] != record {

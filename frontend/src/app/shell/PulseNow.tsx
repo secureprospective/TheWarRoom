@@ -7,6 +7,7 @@ import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
 import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveContract';
 import type { usePulseLive } from './hqLive';
 import { boxLine, compactLine } from './statLine';
+import { PulseDrawer } from './PulseDrawer';
 import { applyFilter, bySlot, filterCounts, groupRows, pairStarters, pulseRows, scoreOf, starterRows,
   PULSE_FILTERS, type PulseFilter, type PulseRow, type PulseStarterRow, type StarterPair }
   from './pulseModel';
@@ -102,19 +103,13 @@ function BoxDrawer({ open, onClose, sides, week }: { open: boolean; onClose: () 
   sides: StarterSides; week?: number }) {
   const [right, setRight] = useState(false);
   const rows = [...(right ? sides.right : sides.left)].sort((a, b) => bySlot(a.slot, b.slot));
-  return <div className={`bdrawer${open ? ' open' : ''}`}>
-    <div className="bd-head">
-      <h2>Fantasy box score</h2>
-      <span className="sub">{sides.leftName} vs {sides.rightName} · week {week ?? '—'}</span>
-      <div className="dtab">
-        <PulseAct active={!right} onAction={() => setRight(false)}>
-          {sides.mine ? 'YOU' : sides.leftName.toUpperCase()}</PulseAct>
-        <PulseAct active={right} onAction={() => setRight(true)}>
-          {sides.mine ? 'THEM' : sides.rightName.toUpperCase()}</PulseAct>
-      </div>
-      <PulseAct className="x" onAction={onClose}>ESC ✕</PulseAct>
-    </div>
-    <div className="dbody">
+  return <PulseDrawer open={open} onClose={onClose} title="Fantasy box score"
+    sub={`${sides.leftName} vs ${sides.rightName} · week ${week ?? '—'}`} tabs={<>
+      <PulseAct active={!right} onAction={() => setRight(false)}>
+        {sides.mine ? 'YOU' : sides.leftName.toUpperCase()}</PulseAct>
+      <PulseAct active={right} onAction={() => setRight(true)}>
+        {sides.mine ? 'THEM' : sides.rightName.toUpperCase()}</PulseAct>
+    </>}>
       {!rows.length ? <PulseIdle words="No lineup is recorded for this side this week." />
         : <div className="scroll"><table className="ct"><thead><tr>
           <th>SLOT</th><th>PLAYER</th><th>LINE 1</th><th>LINE 2</th><th>TD / TO</th><th>STATE</th><th>PTS</th>
@@ -125,8 +120,7 @@ function BoxDrawer({ open, onClose, sides, week }: { open: boolean; onClose: () 
             <td>{pointsLabel(r.points)}</td>
           </tr>)}
         </tbody></table></div>}
-    </div>
-  </div>;
+  </PulseDrawer>;
 }
 
 function followKey(g: LiveNflGame) { return `${g.away.abbreviation}-${g.home.abbreviation}`; }
