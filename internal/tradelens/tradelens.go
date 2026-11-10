@@ -65,7 +65,15 @@ func Read(s Standing, medianAge float64) Direction {
 	return Retool
 }
 
-// Asset is one player or pick as the model values it. A pick scores nothing this season.
+// Comp is one player a league really took where a pick sits, as the model values him today.
+type Comp struct {
+	Now, Dynasty float64
+}
+
+// Asset is one player or pick as the model values it. A pick is worth what its Comps would add to
+// the roster holding it, on average, times Weight: the wait for its draft and the league's market.
+// Comps holds the players taken where it sits, then each later round's: whoever holds it could
+// always take what a later pick takes, so it is never worth less than one.
 type Asset struct {
 	Token      string
 	Franchise  string
@@ -78,6 +86,8 @@ type Asset struct {
 	Age        float64
 	AgeKnown   bool
 	SignedNext bool // under contract next season, or its contract end is not known
+	Comps      [][]Comp
+	Weight     float64
 }
 
 // Slot is one position's starter bounds in the league's lineup.
@@ -179,8 +189,29 @@ func (a Asset) lens(d Direction) float64 {
 	if !a.Valued {
 		return 0
 	}
+	return d.blend(a.Now, a.Dynasty)
+}
+
+func (d Direction) blend(now, dynasty float64) float64 {
 	w := d.NowWeight()
-	return w*a.Now + (1-w)*a.Dynasty
+	return w*now + (1-w)*dynasty
+}
+
+// worth is what a pick adds to a roster whose last counted player is worth bar: each player taken
+// where it sits counts for what he would add, so a pick is priced on its chance, not its average.
+func (a Asset) worth(d Direction, bar float64) float64 {
+	if !a.Valued {
+		return 0
+	}
+	top := 0.0
+	for _, group := range a.Comps {
+		sum := 0.0
+		for _, c := range group {
+			sum += max(0, d.blend(c.Now, c.Dynasty)-bar)
+		}
+		top = max(top, sum/float64(max(len(group), 1)))
+	}
+	return a.Weight * top
 }
 
 func (a Asset) value() AssetValue {
@@ -188,15 +219,19 @@ func (a Asset) value() AssetValue {
 		Age: a.Age, AgeKnown: a.AgeKnown}
 }
 
-// best is the total of the n largest values.
-func best(values []float64, n int) float64 {
+// best is the total of the n largest values and the smallest of them: the bar a newcomer must
+// beat. With fewer than n values every newcomer counts, so the bar is zero.
+func best(values []float64, n int) (float64, float64) {
 	sorted := slices.Clone(values)
 	sort.Sort(sort.Reverse(sort.Float64Slice(sorted)))
 	total := 0.0
 	for _, v := range sorted[:min(n, len(sorted))] {
 		total += v
 	}
-	return total
+	if len(sorted) < n || n < 1 {
+		return total, 0
+	}
+	return total, sorted[n-1]
 }
 
 type roster struct {
@@ -205,18 +240,29 @@ type roster struct {
 	assets map[string]Asset
 }
 
-// count is the roster's best N under its own lens with out removed and in added.
+// count is the roster's best N players under its own lens with out removed and in added, plus
+// what each pick it then holds is worth against that best N.
 func (r roster) count(out map[string]bool, in []Asset) float64 {
-	values := make([]float64, 0, len(r.assets)+len(in))
+	held := make([]Asset, 0, len(r.assets)+len(in))
 	for token, a := range r.assets {
 		if !out[token] {
+			held = append(held, a)
+		}
+	}
+	held = append(held, in...)
+	values := make([]float64, 0, len(held))
+	for _, a := range held {
+		if !a.Pick {
 			values = append(values, a.lens(r.side.Direction))
 		}
 	}
-	for _, a := range in {
-		values = append(values, a.lens(r.side.Direction))
+	total, bar := best(values, r.n)
+	for _, a := range held {
+		if a.Pick {
+			total += a.worth(r.side.Direction, bar)
+		}
 	}
-	return best(values, r.n)
+	return total
 }
 
 func set(tokens []string) map[string]bool {

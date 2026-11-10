@@ -47,7 +47,7 @@ func TradeLens(ctx context.Context, src TradeLensSource, scope tradelens.Scope) 
 		return out, err
 	}
 	in.Assets = lensPlayers(values, snapshot, scope.Season)
-	picks, note := lensPicks(ctx, src, scope, values, snapshot, now)
+	picks, note := lensPicks(ctx, src, scope, values, snapshot)
 	in.Assets = append(in.Assets, picks...)
 	directions, err := commissioner.Directions(records)
 	if err != nil {
@@ -133,57 +133,99 @@ func lensPlayers(values appvalue.Reading, snapshot *commissioner.RawNativeSnapsh
 	return out
 }
 
-// lensPicks values every pick still to be made with Pick Value, fitted on this league's own values
-// and rookie drafts. When it cannot be fitted the picks are listed without a value and the note says why.
-func lensPicks(ctx context.Context, src TradeLensSource, scope tradelens.Scope, values appvalue.Reading,
-	snapshot *commissioner.RawNativeSnapshot, now time.Time) ([]tradelens.Asset, string) {
-	in := NativeInput{League: scope.League, Season: scope.Season, Teams: len(snapshot.Franchises),
-		Values: map[string]float64{}}
+// pickMarket is what this league's owners have paid for a pick against what it adds: the typical
+// pick-for-player trade of 2026. It scales every pick alike and bounds none.
+const pickMarket = 1.2
+
+// takenPick is one rookie selection the league has made and what that player is worth today.
+type takenPick struct {
+	round, slot int
+	comp        tradelens.Comp
+}
+
+// takenPicks reads the league's made selections; a player the model does not value became nothing.
+func takenPicks(values appvalue.Reading, picks []commissioner.NativePick, season int) []takenPick {
+	valued := make(map[string]appvalue.Player, len(values.Players))
 	for _, p := range values.Players {
-		if p.Available {
-			in.Values[p.Player] = p.DynastyPP
+		valued[p.Player] = p
+	}
+	var out []takenPick
+	for _, p := range picks {
+		if p.Player == "" || p.Skipped || p.Season > season {
+			continue
+		}
+		t := takenPick{round: p.Round, slot: p.Slot}
+		if v := valued[p.Player]; v.Available {
+			t.comp = tradelens.Comp{Now: v.NowPPG, Dynasty: v.DynastyPP}
+		}
+		out = append(out, t)
+	}
+	return out
+}
+
+// pickComps is the players taken where a pick sits, then each later round's. Its own group is its
+// round, within a quarter of the league either side of its slot once the slot is known.
+func pickComps(taken []takenPick, round, slot, teams int) [][]tradelens.Comp {
+	groups := map[int][]tradelens.Comp{}
+	last := 0
+	for _, t := range taken {
+		if t.round < round || (t.round == round && slot > 0 && t.slot > 0 && max(t.slot-slot, slot-t.slot) > teams/4) {
+			continue
+		}
+		groups[t.round], last = append(groups[t.round], t.comp), max(last, t.round)
+	}
+	if len(groups[round]) == 0 {
+		return nil
+	}
+	out := make([][]tradelens.Comp, 0, len(groups))
+	for r := round; r <= last; r++ {
+		if len(groups[r]) > 0 {
+			out = append(out, groups[r])
 		}
 	}
-	set := src.Params()
-	seasons, err := set.GetGlobal(params.KeyDynastySeasons)
-	if err == nil {
-		in.Seasons = int(math.Round(seasons))
-		in.Discount, err = set.GetGlobal(params.KeyPickValueDiscount)
-	}
+	return out
+}
+
+// lensPicks values every pick still to be made by the players this league took where it sits. The
+// next draft counts in full and each draft after it is discounted. With no draft on record the
+// picks are listed without a value and the note says why.
+func lensPicks(ctx context.Context, src TradeLensSource, scope tradelens.Scope, values appvalue.Reading,
+	snapshot *commissioner.RawNativeSnapshot) ([]tradelens.Asset, string) {
+	discount, err := src.Params().GetGlobal(params.KeyPickValueDiscount)
 	var drafts []commissioner.NativeDraft
 	if err == nil {
 		drafts, err = src.Drafts(ctx, scope.League)
 	}
-	if err == nil {
-		in.Records, err = src.Players(ctx)
+	_, slots := NativePickHistory(drafts, scope.Season, nil)
+	taken := takenPicks(values, snapshot.Picks, scope.Season)
+	var open []commissioner.NativePick
+	next := math.MaxInt
+	for _, p := range snapshot.Picks {
+		if p.Player == "" && !p.Skipped && p.Season >= scope.Season {
+			open, next = append(open, p), min(next, p.Season)
+		}
 	}
-	if err != nil {
-		in.PickWhy = err.Error()
-	} else {
-		in.History, in.Slots = NativePickHistory(drafts, scope.Season, in.Records)
-	}
-	why := ""
-	if err == nil && len(in.History) == 0 {
-		why = "Picks have no value yet: this league has no rookie draft on record to learn from"
-	}
-	model := NewNative(in)
 	var out []tradelens.Asset
 	note := ""
-	for _, p := range snapshot.Picks {
-		if p.Player != "" || p.Skipped || p.Season < scope.Season {
-			continue
-		}
-		d := model.Pick(p.Season, p.Round, p.Original, now)
-		words := d.ClassLabel
-		if !d.Valued {
-			words, note = d.Reason, d.Reason
-			if why != "" {
-				words, note = why, why
+	for _, p := range open {
+		a := tradelens.Asset{Token: fmt.Sprintf("pick:%d:%d:%s", p.Season, p.Round, p.Original), Franchise: p.Owner,
+			Pick: true, SignedNext: true}
+		a.Comps = pickComps(taken, p.Round, slots[PickKey{Year: p.Season, Round: p.Round, Original: p.Original}],
+			len(snapshot.Franchises))
+		switch {
+		case err != nil:
+			a.Words, note = err.Error(), err.Error()
+		case len(a.Comps) == 0:
+			a.Words = "Picks have no value yet: this league has no rookie draft on record to learn from"
+			note = a.Words
+		default:
+			a.Valued, a.Weight = true, pickMarket*math.Pow(discount, float64(p.Season-next))
+			for _, c := range a.Comps[0] {
+				a.Dynasty += a.Weight * c.Dynasty / float64(len(a.Comps[0]))
 			}
+			a.Words = fmt.Sprintf("Valued from the %d players this league took in round %d", len(a.Comps[0]), p.Round)
 		}
-		out = append(out, tradelens.Asset{Token: fmt.Sprintf("pick:%d:%d:%s", p.Season, p.Round, p.Original),
-			Franchise: p.Owner, Pick: true, Dynasty: d.Discounted, Valued: d.Valued, Words: words,
-			SignedNext: true})
+		out = append(out, a)
 	}
 	return out, note
 }

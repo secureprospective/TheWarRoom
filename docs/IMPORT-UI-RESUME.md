@@ -107,3 +107,31 @@ Branch session/war-room-trade-desk on Claude-OS, tip = the resume commit after 1
 Engine math proven at the old weights; the new weights are unit-tested but not yet seen on screen. Picks are
 unvalued on his league until the pick work lands. Direction never clicked live. Hosted (phone) leagues do not
 get the lens. Full suite not run this window.
+
+## 11. PICK FINDINGS (11-10 ~16:00 CT, after GPT's reports) — proposal is WITH CHRISTOPHER, nothing built
+GPT reports: Beelink ~/work/TheWarRoom/GUIDES/pick-value-gpt-independent/ (v1 + COMPARISON-v2; gitignored, private).
+GPT table (LT PPG, unknown slot) R1-5: 11.5/6.0/4.6/4.0/2.8, all confidence LOW, wait 0.85 assumed; no table fits the trades.
+Measured by me (prototype, reverted, tree clean at bd4f6c6e):
+- Existing Pick Value v2 fed the seeded 2026 draft (snapshot.Picks with player; 159 rows) reads too flat:
+  1.01 = 6.55, 5.32 = 3.38 (round means ~6.3/5.3/4.9/4.0/3.6) vs what the picks became 9.7/6.1/5.7/5.4/4.8.
+- On the desk a pick is lens (1-w)*LT against Best 21; median 21st-best is 7.1, so a 6.0 second adds 0 on all 32
+  teams and an 11.5 first cracks 2 of 32 contenders. Any table reads ~0. This is the real problem.
+- Proposed: pick worth to a side = mean over the players really taken around that slot (now + dynasty as they
+  stand today, in the side's lens) of what each adds to the side's Best 21, x 0.75 per year out (existing
+  pickvalue.discount). Measured medians across teams: R1 3.4 (early 4.0, late 2.2; 1.7-7.5 by team), R2-R5 0.6-0.9.
+- Needs his yes on: the approach; 2027 = one year out at 0.75. No new import/ledger/schema/permission change.
+- 11-10 ~16:20 Christopher: "Human behavour is seasonal, and will hit the edges, use the human behavior as an averge
+  multiplier, not a scope." => trades give ONE average multiplier on the model's pick value; never fit/bound to trades.
+  Measured on 43 pick-for-player trades (8 reversals out; player add vs model pick add, typical team):
+  ratio of totals 1.8-1.9, per-trade median 1.15-1.2, per-trade range 0 to 11, months 0.5 to 5.5.
+  Wait counted from the NEXT draft keeps it steady by period (1.9 pre-draft / 1.7 in season); counted from the season
+  it drifts (1.9 / 2.3). So: next draft = no wait. Awaiting his pick of the multiplier (I recommend 1.2) + go.
+- 11-10 ~16:50 BUILT for his test (he: "I lean into your recommendation for this test"): tradelens Asset.Comps
+  [][]Comp + Weight, worth() = Weight x best group's mean add over the roster's N-th player; roster.count = best N
+  players + picks' worth. market/trade_lens.go: pickMarket const 1.2, takenPicks, pickComps (own round, then later
+  rounds so an earlier pick is never worth less), wait counted from the next open draft at pickvalue.discount.
+  Hand recompute MATCHED on screen: Vikings 300.8 with picks, holds 2.0/1.5/0.4/0.3/0.2/0.1, NE adds 4.3.
+  Shots with him: Beelink ~/Downloads/warroom-picks-{1,2,3,4}.png. AWAITING his human read of them.
+  If he approves: make 1.2 a league setting (pickvalue.market), drop unused TradeLensSource.Players, relabel
+  "YOUR BEST 21" (it now includes picks' worth; header 281.8 is the long-term best 21, a different read), reconcile
+  with pickvalue v2 used by power rankings (two pick valuers now).

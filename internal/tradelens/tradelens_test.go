@@ -13,7 +13,8 @@ func player(token, franchise string, now, dynasty float64) Asset {
 }
 
 func heldPick(token, franchise string, dynasty float64) Asset {
-	return Asset{Token: token, Franchise: franchise, Pick: true, Dynasty: dynasty, Valued: true, SignedNext: true}
+	return Asset{Token: token, Franchise: franchise, Pick: true, Dynasty: dynasty, Valued: true, SignedNext: true,
+		Comps: [][]Comp{{{Dynasty: dynasty}}}, Weight: 1}
 }
 
 // A league that starts two: the contender holds 20, 12, 11 and the rebuilder 10, 9, 2 plus a pick.
@@ -120,5 +121,27 @@ func TestOurRead(t *testing.T) {
 		if got := Read(c.s, 27); got != c.want {
 			t.Errorf("%+v: %s, want %s", c.s, got, c.want)
 		}
+	}
+}
+
+// A pick is priced on its chance: one of the two players taken there would start for either side.
+// The later round holds a better player but a worse chance, so the pick keeps its own round.
+func TestPickIsWorthWhatItsPlayersWouldAdd(t *testing.T) {
+	in := league()
+	in.Assets = in.Assets[:len(in.Assets)-1]
+	pick := heldPick("pick:2027:1:b", "b", 10)
+	pick.Comps, pick.Weight = [][]Comp{{{Now: 20, Dynasty: 20}, {}}, {{Now: 20, Dynasty: 20}, {}, {}, {}}}, 1
+	in.Assets = append(in.Assets, pick)
+	got, err := Evaluate(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range got.Assets {
+		if a.Token == pick.Token && (math.Abs(a.You-4) > 1e-9 || math.Abs(a.Them-5.5) > 1e-9) {
+			t.Fatalf("pick adds %v to a bar of 12 and holds %v over a bar of 9, want 4 and 5.5", a.You, a.Them)
+		}
+	}
+	if math.Abs(got.Them.Before-24.5) > 1e-9 {
+		t.Fatalf("their count is %v, want 19 in players and 5.5 in the pick", got.Them.Before)
 	}
 }
