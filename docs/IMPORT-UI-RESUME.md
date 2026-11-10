@@ -126,3 +126,31 @@ Committed through a75661a5 (+ this resume). Uncommitted: nothing. Not pushed. Be
 Rail matches the mock and is committed. Pulse is about a third of the way: centre column and franchise panel in form;
 archive, drawers and several readings missing. Whether a fresh import shows real starters and scores on Pulse weeks
 8 and 9 is NOT yet seen. Nothing is pushed; Christopher has only seen screenshots.
+
+## 12. Update 11-09 ~21:05 CT (after compact #2)
+- Starters DO land on a fresh import: week 9 at once (32), weeks 1-8 after the 5-minute delay (235 of 256).
+- Commit a9e364dc: (1) a pre-GSIS id in the gsis slot (3 players: HAR447512, JON157260, THO581952) stopped
+  results/standings/odds for the whole league; now reads as "no statistics identity" for that player (isGSIS in
+  held.go, test in native_identity_test.go). (2) nativePulse.ts parser accepts recordedResult on imported weeks
+  (nativePulse.test.ts). Running binary predates the lint-only rework of (1); same behaviour.
+- Shown: Beelink ~/Downloads/twr-pulse-fresh-week{8,9}-1109.png.
+- OPEN (evidenced): 21 played-week lineups refused: "X is not on this franchise's active roster, so cannot
+  start" - the backfill checks past starters against TODAY's roster. Week 8 lacks franchise.18, so that matchup
+  shows scores but no starters. Fix belongs in the lineup backfill (roster as of that week, or record as held).
+- OPEN: week 9 rows read IN PLAY / "0 of 16 with a result" while every starter says FINAL; week 8 header says
+  "scores: source not reported"; power/odds blank on week 8.
+
+## 13. Update 11-09 ~22:15 CT
+- Commits after a9e364dc: 05110385 (pre-cutover lineup correction skips the roster check -> 288/288 lineups;
+  RecordedStarters lists pre-cutover starters with points in results.read only, team total untouched; slate words;
+  MY MATCHUP back button; MATCHUP BOX pull + bottom drawer) and the SCHEDULE drawer commit (PulseSchedule.tsx,
+  parsePulseSchedule, readPulseSeason, schedule.read line in localWorkflow.ts).
+- Section 12 OPEN items are closed, except: week 8 starter points sum to ~135.3 vs 134.8 recorded (app rules vs
+  MFL's own scoring; the recorded total rules).
+- App-league reads route through shell/localWorkflow.ts (direct bindings) or TargetWorkflow; a read missing from
+  both says "this league action is not available here".
+- Drawer click points (1920x1080): MATCHUP BOX pull (300,1062), SCHEDULE pull (425,1062); schedule dtab MY TEAM
+  (630,436) league view / (630,581) team view.
+- Pulse still to build: WEEK STORY, STAT CHANGES, NFL BOX SCORE drawers; Race drawers (TIEBREAKERS, BRACKET,
+  PRODUCTION); ARCHIVE tab; starter stat lines; these need readings the league does not serve yet (section 9.4).
+- Shown: Beelink ~/Downloads/twr-pulse-fresh-week{8,9}-1109.png, -week8-box-, twr-pulse-schedule-{league,myteam}-1109.png
