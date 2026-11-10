@@ -236,3 +236,10 @@ Branch `session/debloat-1109`, worktree clean, 17 commits on top of main 3a2843d
 2. Coverage rule cut gates, live tests, race tests and invariants. Zero-coverage or invariant-named tests
    are not duplicates.
 3. Deleted `internal/seams` (a gate from the 11-08 binding direction) as "no binary imports it".
+
+## 2026-11-09 night — docs-only PR DONE
+PR #221 squash-merged to main as d3ddaba55 (CI green). README, North Star 2.1, CLAUDE.md, AGENTS.md and the
+showcase are live. Worktree `.worktrees/docs-1109` (branch `session/docs-realign-1109`) is spent; remove
+with `git worktree remove` when convenient. NEXT: merge `origin/main` into `session/debloat-1109` (conflicts
+only in README.md / CLAUDE.md; keep the debloat-branch versions, which carry the Trim section), then the
+"Then (debloat branch)" list above.
