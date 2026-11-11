@@ -10,6 +10,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/lineupdelta"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
@@ -109,6 +110,15 @@ func lensLeague(ctx context.Context, src TradeLensSource, scope tradelens.Scope,
 	return records, base.Assets.Snapshot, in, nil
 }
 
+// lensPosition names a valued player's position the way the lineup rules do: the model says K where
+// the rules say PK, and a kicker the lineup cannot place has no replacement level.
+func lensPosition(p string) string {
+	if p == string(domain.PosK) {
+		return string(leaguerules.PK)
+	}
+	return p
+}
+
 // lensPlayers is every rostered player with the model's two values, then every valued free agent; a
 // contract with no known end counts as signed, since nothing says he leaves.
 func lensPlayers(values appvalue.Reading, snapshot *commissioner.RawNativeSnapshot, season int) []tradelens.Asset {
@@ -126,7 +136,7 @@ func lensPlayers(values appvalue.Reading, snapshot *commissioner.RawNativeSnapsh
 		if !v.Available && words == "" {
 			words = "This player has no value in this league yet"
 		}
-		out = append(out, tradelens.Asset{Token: p.ID, Franchise: p.Franchise, Position: v.Position,
+		out = append(out, tradelens.Asset{Token: p.ID, Franchise: p.Franchise, Position: lensPosition(v.Position),
 			Now: v.NowPPG, Dynasty: v.DynastyPP, Valued: v.Available, Words: words, Age: v.Age, AgeKnown: v.AgeKnown,
 			SignedNext: p.ExpirationYear == 0 || p.ExpirationYear > season})
 		delete(valued, p.ID)
@@ -134,7 +144,7 @@ func lensPlayers(values appvalue.Reading, snapshot *commissioner.RawNativeSnapsh
 	// Free agents belong to nobody but set each position's replacement level: anyone can sign one.
 	for id, v := range valued {
 		if v.Available {
-			out = append(out, tradelens.Asset{Token: id, Position: v.Position, Now: v.NowPPG, Dynasty: v.DynastyPP,
+			out = append(out, tradelens.Asset{Token: id, Position: lensPosition(v.Position), Now: v.NowPPG, Dynasty: v.DynastyPP,
 				Valued: true})
 		}
 	}
@@ -164,7 +174,7 @@ func takenPicks(values appvalue.Reading, picks []commissioner.NativePick, season
 		}
 		t := takenPick{round: p.Round, slot: p.Slot}
 		if v := valued[p.Player]; v.Available {
-			t.comp = tradelens.Comp{Position: v.Position, Now: v.NowPPG, Dynasty: v.DynastyPP}
+			t.comp = tradelens.Comp{Position: lensPosition(v.Position), Now: v.NowPPG, Dynasty: v.DynastyPP}
 		}
 		out = append(out, t)
 	}
