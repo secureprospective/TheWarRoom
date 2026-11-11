@@ -122,7 +122,9 @@ type Input struct {
 	Assets []Asset // every rostered player and held pick in the league, then valued free agents
 	// Keep is, by position, the share of a lead over replacement that lasts into a next season; a
 	// position it does not name keeps all of it.
-	Keep      map[string]float64
+	Keep map[string]float64
+	// Drafted is every player the league has taken in its own drafts, as the model values him today.
+	Drafted   []Comp
 	You, Them Side
 	Give, Get []string
 }
@@ -235,8 +237,32 @@ func (r roster) over(position string, now, dynasty float64) float64 {
 	return keep * max(0, r.side.Direction.blend(now, dynasty)-r.floor[position])
 }
 
+// drafted is, by position, what this league's drafts hand out there: the average lead of the players
+// it has drafted at the position. A draft is a known, countable supply, so this is what a position
+// costs to restock with a pick.
+func (r roster) drafted(taken []Comp) map[string]float64 {
+	sum, n := map[string]float64{}, map[string]float64{}
+	for _, c := range taken {
+		if c.Position != "" {
+			sum[c.Position] += r.over(c.Position, c.Now, c.Dynasty)
+			n[c.Position]++
+		}
+	}
+	for position := range sum {
+		sum[position] /= n[position]
+	}
+	return sum
+}
+
+// player is what a player is worth in a trade: his lead, less what a pick spent on his position
+// delivers. A position every draft restocks is cheap to trade for; one it rarely fills is dear.
+func (r roster) player(a Asset) float64 {
+	return max(0, r.over(a.Position, a.Now, a.Dynasty)-r.draft[a.Position])
+}
+
 // worth is what a pick is worth to any roster: what the players taken where it sits are worth, on
-// average. It is an asset the whole league would take, so it is not held to what this roster starts.
+// average. It is an asset the whole league would take, so it is not held to what this roster starts,
+// and it is the draft's supply itself, so nothing is taken off for it.
 func (r roster) worth(a Asset) float64 {
 	if !a.Valued {
 		return 0
@@ -274,10 +300,11 @@ type roster struct {
 	assets map[string]Asset
 	floor  map[string]float64 // each position's replacement level under this side's lens
 	keep   map[string]float64 // Input.Keep
+	draft  map[string]float64 // what the league's drafts hand out at each position under this lens
 }
 
-// count is the roster's best N players under its own lens, each for what his lead over replacement
-// is worth, with out removed and in added, plus what each pick it then holds is worth.
+// count is the roster's best N players under its own lens, each for what he is worth in a trade,
+// with out removed and in added, plus what each pick it then holds is worth.
 func (r roster) count(out map[string]bool, in []Asset) float64 {
 	held := make([]Asset, 0, len(r.assets)+len(in))
 	for token, a := range r.assets {
@@ -289,7 +316,7 @@ func (r roster) count(out map[string]bool, in []Asset) float64 {
 	values := make([]float64, 0, len(held))
 	for _, a := range held {
 		if !a.Pick && a.Valued {
-			values = append(values, r.over(a.Position, a.Now, a.Dynasty))
+			values = append(values, r.player(a))
 		}
 	}
 	total := best(values, r.n)
@@ -350,6 +377,7 @@ func rosters(in Input) (roster, roster) {
 		keep: in.Keep}
 	them := roster{side: in.Them, n: in.N, assets: map[string]Asset{}, floor: replacement(in, in.Them.Direction),
 		keep: in.Keep}
+	you.draft, them.draft = you.drafted(in.Drafted), them.drafted(in.Drafted)
 	for _, a := range in.Assets {
 		switch {
 		case a.Franchise == in.You.Franchise:

@@ -54,6 +54,9 @@ func TradeLens(ctx context.Context, src TradeLensSource, scope tradelens.Scope) 
 	}
 	picks, note := lensPicks(ctx, src, scope, values, snapshot, standings.Computed)
 	in.Assets = append(in.Assets, picks...)
+	for _, t := range takenPicks(values, snapshot.Picks, scope.Season) {
+		in.Drafted = append(in.Drafted, t.comp)
+	}
 	directions, err := commissioner.Directions(records)
 	if err != nil {
 		return out, fmt.Errorf("owner directions: %w", err)

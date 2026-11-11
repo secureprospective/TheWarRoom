@@ -170,3 +170,28 @@ func TestScarcePositionsAreWorthMore(t *testing.T) {
 		}
 	}
 }
+
+// A position the draft restocks is cheap to trade for. This league's drafted safeties lead by 4
+// on average and its drafted quarterbacks by 1, so a 10 lead at each is worth 6 and 9; the pick
+// that could take either keeps its full 2.5.
+func TestDraftSupplyMakesAPositionCheap(t *testing.T) {
+	at := func(token, franchise, position string, v float64) Asset {
+		return Asset{Token: token, Franchise: franchise, Position: position, Now: v, Dynasty: v, Valued: true}
+	}
+	taken := []Comp{{Position: "S", Now: 9, Dynasty: 9}, {Position: "S", Now: 5, Dynasty: 5},
+		{Position: "QB", Now: 7, Dynasty: 7}, {Position: "QB", Now: 0, Dynasty: 0}, {}}
+	pick := heldPick("pick:2027:1:a", "a", 0)
+	pick.Comps = [][]Comp{taken[:4]}
+	got, err := Evaluate(Input{N: 2, Teams: 2, Slots: []Slot{{"QB", 1, 1}, {"S", 1, 1}}, Drafted: taken,
+		You: Side{Franchise: "a", Direction: Retool}, Them: Side{Franchise: "b", Direction: Retool},
+		Assets: []Asset{at("qb", "a", "QB", 15), at("s", "a", "S", 13), pick, at("b1", "b", "QB", 8),
+			at("b2", "b", "S", 7), at("f1", "", "QB", 5), at("f2", "", "S", 3)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range got.Assets {
+		if want, ok := map[string]float64{"qb": 9, "s": 6, pick.Token: 2.5}[a.Token]; ok && !near(a.You, want) {
+			t.Errorf("%s holds %v, want %v", a.Token, a.You, want)
+		}
+	}
+}
