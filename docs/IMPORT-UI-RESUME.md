@@ -1,168 +1,140 @@
-# TheWarRoom — UI-to-mocks RESUME (compact-safe #8, 2026-11-10 ~13:15 CT) — WAR ROOM TRADE DESK
+# TheWarRoom — UI-to-mocks RESUME (compact-safe #9, 2026-11-11 early CT) — TRADE DESK: PICK VALUE + SCARCITY
 
 ## 0. FIRST THING AFTER COMPACT
-Desk runs on the real league and its lens math is PROVEN (hand recompute matched to the decimal). Waiting on
-two things from Christopher: (a) GPT's answer to the pick-value brief, (b) his look on :0. Meanwhile continue
-section 9. Nothing is running.
+Do section 9 item 1: dispatch a Bee (Luna, high) positional-tier study, then code its ratio into the lens.
+Christopher ordered it in his /compact-safe message (verbatim in section 7). Nothing is running.
 
 ## IN-FLIGHT
-Nothing. Test app stopped. Xvfb :5 up on Claude-OS. Nothing on his :0.
-OUT WITH CHRISTOPHER: `/home/chris/Downloads/TheWarRoom-PICK-VALUE-BRIEF.md` on the Beelink (53,523 bytes; copy
-in the scratchpad). He gives it to GPT; the answer comes back to me as a pick value table (20 numbers: rounds
-1-5 x early/mid/late/unknown, in long-term PPG, plus a per-year-out multiplier). It holds all 123 Legacy 2026
-trades that moved a pick + what each 2026 draft slot became. REAL LEAGUE DATA: never commit it.
+Nothing. Test app stopped. Xvfb :5 up on Claude-OS. Nothing on his :0. No dispatch launched yet.
 
 ## 1. What we are doing
 Build the five screens to the locked mocks on the NATIVE league. Merged: rail, League Pulse (PR #223). Now: War
-Room trade desk, "the biggest selling point". Claude-OS (`ssh claudeos`, always `< /dev/null`): worktree
-~/work/TheWarRoom/.worktrees/ui, branch `session/war-room-trade-desk`. No git remote there: bundle -> scp via
-CT105 -> Beelink worktree ~/work/TheWarRoom/.worktrees/ui (MINE) -> push. NEVER touch .worktrees/website
-(Tom's) or the main checkout. He merges.
+Room trade desk, "the biggest selling point"; current work is making its math match human judgement.
+Claude-OS (`ssh claudeos`, always `< /dev/null`): worktree ~/work/TheWarRoom/.worktrees/ui, branch
+`session/war-room-trade-desk`. No git remote there: bundle -> scp via CT105 -> Beelink worktree
+~/work/TheWarRoom/.worktrees/ui (MINE) -> push. NEVER touch .worktrees/website (Tom's) or the main checkout
+(GUIDES/ there is gitignored; GPT's pick reports live in GUIDES/pick-value-gpt-independent/, read only). He merges.
 Env: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 GOMEMLIMIT=1500MiB
 GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" GOLANGCI_LINT_CACHE=$PWD/.golangci-cache VITEST_MAX_THREADS=2
 VITEST_MIN_THREADS=1. Commit: -c user.name=secureprospective -c user.email=secureprospective@users.noreply.github.com
 -F msgfile, trailers Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com> + Claude-Session line. Never --no-verify.
-Lint limits that bit: funlen 60, gocyclo 15, gochecknoglobals, exhaustive (switch on Direction needs all cases),
-gosec G101 on a literal in a field named Token.
+Lint limits that bit: funlen 60, gocyclo 15 (lensPicks hit 16), gochecknoglobals, exhaustive, gosec G101.
 
 ## 2. Harness
 Edits: python replace scripts in the scratchpad, scp to claudeos:/tmp/twr-*.py, run, rm by name.
-- `make build` (~20 s). `UIP=ui-profile2 sh ~/scratch/ui-desk.sh` launches on :5. Wait for the window + ~95 s.
-  One-liner used all session: until W=$(xdotool search --onlyvisible --name "The War Room"|head -1) && [ -n "$W" ];
-  do sleep 3; done; sleep 95; windowmove 0 0; windowsize 1920 1080; click War Room (86,201); sleep 16.
-  (Bare `sleep 150 &&` is blocked by the harness; the until-loop form works.) Stop: kill $(pgrep -x thewarroom).
-- Desk click points on :5: partner select (1432,285) then keys Down Down Return = New England; shelf row n
-  position tag x=261, y=355+48*(n-1); their shelf first row (1298,618) once a partner is chosen; filter chips
-  ALL (275,310) OFF (355,310) DEF (435,310) PICKS (513,310); direction buttons (958|1026|1095, 89).
-- Independent check data: ~/scratch/ui-profile2/config/TheWarRoom/prepared-values/native.mfl-14432-2026-2026.json
-  (reading.players[]: player, franchise, position, nowPPG, dynastyPPG, age, available). Vikings = franchise.24,
-  New England = franchise.02. Ledger: history.db table league_event (kind, payload); MFL exports: fetch_log join
-  raw_archive on sha256 (TYPE=transactions has all 131 season trades, FP_orig_year_round / DP_round_slot 0-based).
-- Show him: scp -i /root/.ssh/beelink to chris@192.168.1.191:~/Downloads + file:// path, or live on :0.
+- `make build` (~20 s). `UIP=ui-profile2 sh ~/scratch/ui-desk.sh` launches on :5. Then:
+  until W=$(xdotool search --onlyvisible --name "The War Room"|head -1) && [ -n "$W" ]; do sleep 3; done; sleep 95;
+  windowmove 0 0; windowsize 1920 1080; click War Room (86,201); sleep 16. Screenshot: scrot -o /tmp/twr-x.png.
+  Stop: kill $(pgrep -x thewarroom). Bare `sleep N &&` is blocked by the harness.
+- Desk clicks on :5: partner select (1432,285), then keys Down / Down / Return with 0.5 s between (= New England;
+  one more Down from there = Jets). Filter chips ALL (275,310) OFF (355,310) DEF (435,310) PICKS (513,310).
+  My shelf row n: x=261, y=355+48*(n-1). Their shelf first row y=617 (601 when their panel is shorter), 48 apart;
+  scroll it with xdotool click 5 at (1430,800). CLEAR (1484,1055). ROW ORDER MOVES WITH VALUES: always screenshot
+  and read the rows before clicking. Values can re-run mid-walk (desk shows "Not available yet"); just retake.
+- Check data: ~/scratch/ui-profile2/config/TheWarRoom/prepared-values/native.mfl-14432-2026-2026.json
+  (reading.players[]: player, franchise, position, nowPPG, dynastyPPG, age, available). history.db: league_event
+  (kind, payload; seed = kind commish.league.seed_held, has players[] and picks[]; lineup rules in
+  commish.league.create; week lineups in commish.lineup.correct), model_scores (run_id, mfl_id, now, now_ppg,
+  dynasty, dynasty_ppg, prior, past_games, season_games, z_past, z_now, on_field). Vikings = franchise.24,
+  New England = franchise.02, Jets = franchise.03.
+- Show him: scp -i /root/.ssh/beelink to chris@192.168.1.191:~/Downloads + file:// path.
+- Bee dispatch: /fleet-dispatch skill (brief is a file, sized to window, STDOUT is findings, ssh -f launch, arm a
+  done-watcher in the same step). Real league data must not leave the lab: give Bee aggregates or run it where the
+  data already is; never commit it.
 
 ## 3. Gates
 | Gate | State |
 |---|---|
-| go build, tsc, make build | pass |
-| go test tradelens, commissioner (direction test), app/market; vitest warroomLens | pass |
-| Lens math vs hand recompute on real league (shelf, 2-for-1, totals, tune) | MATCHED at 60/30/0; NOT re-walked at 65/50/30 |
-| Direction clicked live | NOT DONE: buttons are owner-only, nobody seated on the scratch copy |
-| PROJ/WEEK, cap runway, 7-1 record independently recomputed | NOT DONE |
-| make verify, wire snapshots, push, PR | not started |
+| go build, make build, go test tradelens + app/market | pass |
+| pre-commit hook (lint, secrets) on each commit | pass |
+| Pick math vs hand recompute on the real league (before scarcity) | MATCHED (Vikings 300.8, holds, NE 4.3) |
+| Scarcity + slot-by-record numbers hand recomputed | NOT DONE |
+| His read 1 (a 1st >> Brissett) | PASS |
+| His read 2 (2nd + two 3rds for a 1st ~ even) | "isnt bad"; desk says they balk -2.0 |
+| His read 3 (NE snatches 2028 1st + 2027 2nd for Downs) | FAIL, they -3.3 |
+| His read 4 (Herbert ~ two 1sts + two 2nds) | FAIL, Herbert reads 0.0 |
+| vitest, tsc after the label change; make verify; wire snapshots; push; PR | NOT RUN |
 
 ## 4. What exists (all committed on the branch, NOT pushed)
-- internal/tradelens: Direction.NowWeight = contend 0.65 / retool 0.50 / rebuild 0.30 (THE one place; frontend
-  reads nowWeight from the reading). Evaluate, rosters, needs + starterBar, tune, Read (our read).
-- internal/app/market/trade_lens.go (TradeLens, lensLeague, lensPlayers, lensPicks, ourReads; true median).
-- commish.franchise.direction.set (owner of the seat, else co-commissioner and up); tradelens.read.
-- Frontend: warroomLens.ts (+test), WarRoom.tsx, WarRoomHeader.tsx, WarRoomTrade.tsx, WarRoomInspector.tsx, css.
-- Fixed this window: shelf values/ages hidden by old css; standings reader lacked `conference` (regression from
-  PR #223, broke partner record/cap; fix is on this branch only); used picks listed on shelves (HostedRoster pick
-  now has `used`); open windows read "passed"; desk column layout (.build is a flex column, TUNE IT max 132px,
-  effect scrolls); Holes / Thin split; plain pick note; "the owner picks" when the viewer is not the owner.
+Code tip 0e134734. Chain: 7055d9c5 desk + direction; fcc8cb9d, 8c527bc6 checked vs real league; 1ec399fc weights
+65/50/30; bd4f6c6e resume 8; df4b06a7 pick value; a734abe4 scarcity; 0e134734 slots by record.
+- internal/tradelens/tradelens.go: Comp{Position, Now, Dynasty}; Asset.Comps [][]Comp + Weight; Direction.blend;
+  replacement(in, d) = per position, the first player past teams x seats, seats = Min + flex shared by room
+  (Max-Min) across slots, free agents in the pool; roster.floor, roster.over (lens value over replacement, min 0),
+  roster.worth (pick = Weight x best group's mean of what each comp adds over the roster's N-th player);
+  roster.count = best N players' over-replacement values + picks' worth. Tests cover all of it.
+- internal/app/market/trade_lens.go: pickMarket const 1.2 (league multiplier, typical 2026 pick-for-player trade),
+  takenPicks (seed's made picks -> today's values), pickComps (own round within teams/4 slots, then each later
+  round so an earlier pick is never worth less), guessSlots (no draft order -> slot = teams - standings rank + 1),
+  lensPicks (wait counted from the next open draft at params pickvalue.discount 0.75), lensPlayers adds valued
+  free agents as franchise-less assets. Standings now read before picks.
+- frontend WarRoomTrade.tsx: result panel label "YOUR EDGE ... best N over replacement, plus picks".
 
 ## 5. Open problems
-- PICKS HAVE NO VALUE on the imported league: Pick Value fits only on a native league's own rookie drafts
-  (NewNative drops the built-in sample for "native." leagues; NativePickHistory reads draft commands) and the
-  import brings none. The seed snapshot DOES hold the 2026 draft as made picks (season, round, slot, player; 160
-  rows, original ''). Plan: wait for GPT's table, then design the pick value with Christopher. Importing past
-  drafts = import change = his ruling first.
-- Lineup panels in the effect area are squeezed (they scroll inside ~85 px). Polish later.
-- trades.read logs "you may act only for your own franchise" repeatedly for a commissioner viewing a team:
-  pre-existing, not chased.
+- Reads 3 and 4 fail. Evidence: Downs S age 21, model prior .99, z_now .96 on 9 games -> S1, 5.6 over
+  replacement to NE. Herbert now pct .30 on 8 games at z_now .78 vs 45 past games -> QB30, dyn 15.95 < Cousins (38)
+  19.17. One-QB lineup at 32 teams: QB33 scores 14.7, so every QB sits near 0 (Lamar 2.0).
+- Kickers read high (NE's Patterson 4.5 vs Downs 2.4 on the Vikings' side).
+- Rounds 2-5 read 0.3 on a strong roster while a mid 1st reads 2.5: later picks look too cheap.
+- A 0-value starter can show -0.0 held: his leaving lowers the bar that picks must beat.
+- Two pick valuers now: pickvalue v2 (power rankings) and the lens comps. Reconcile when power rankings are redone.
+- TradeLensSource.Players is now unused by the lens. pickMarket should become a league setting once approved.
+- Lineup panels squeezed; repeated trades.read permission log lines (pre-existing, not chased).
 
 ## 6. Established: do not redo
-- Long-term value (dynastyPPG) = 3 seasons, this one first, each later x0.75, with age curve and contract tilt.
-  So long-term already carries ~43% this season. Christopher knows; his weights stand.
-- Best 21 (any position) is the lens count by his "value is value" ruling; PROJ/WEEK (legal lineup, existing
-  lineupdelta) sits beside it. Told him a 4th QB reads +4.9 that way; no change ordered.
-- ExpirationYear = last season under contract. Engines exist: value.read, lineupdelta, pickvalue, powerrankings.
-- useContractRead blanks on key change (desk holds last lens in a ref). parseHostedStandings is strict on keys.
+- GPT/Gemini tables: no table fits the 123 trades; all confidence low. Do not hardcode a pick table.
+- Existing pickvalue v2 fed the 2026 draft reads too flat (1.01 = 6.55 vs outcomes 11.7).
+- Any flat pick value against Best 21 reads ~0 (median 21st man 7.1): picks must be priced on their spread.
+- League multiplier measured on 43 pick-for-player trades: median 1.15-1.2, pooled 1.8-1.9, single trades 0-11,
+  months 0.5-5.5. Steady by period only when the next draft counts as no wait.
+- Seat rule checked vs week-9 real starts: within 0.3 except RB (1.59 vs 2.16) and WR (2.88 vs 3.28). A greedy
+  fill by raw points was tried and dropped (it hands all flex to S/CB).
+- Free agents in the replacement pool barely moved kickers.
+- Slot-by-record made read 3 worse for a true reason: the Vikings' picks are late ones.
+- dynastyPPG = 3 seasons, this one first, x0.75 each later, age curve, contract tilt. Header 281.2 is that
+  long-term best 21, a different read from the panel's EDGE.
 
-## 7. Decisions (Christopher, 11-10)
-- WEIGHTS: ".65 / .50 / .30 was with testing and human opinion from my league mates, go with it, however make
-  sure its uniform where ever that weight matters." DONE in code (commit 1ec399fc).
-- PICKS: "picks are essentual to dynasty football, we need to get this right"; a rough draft from a foreign model
-  (GPT) comes first, then I build it.
-- Earlier, still binding: direction ledger entry approved and public; partner without a pick shows OUR read,
-  labelled; free hand on the desk; cover the bases before presenting; mock is the gate; he merges; stop rule: any
-  other new ledger event, schema, import or permission change -> tell him first.
+## 7. Decisions (Christopher)
+- Weights .65/.50/.30, one place. DONE.
+- "Human behavour is seasonal, and will hit the edges, use the human behavior as an averge multiplier, not a scope."
+- "I lean into your recommendation for this test" (1.2, next draft = no wait, 0.75 after).
+- "scarcity has to be a factor in the actual trade calculator"; not power rankings, "other than, say, like draft
+  value". "scarcity needs to be scaled by roster requirments. We will start with 32 teams but not build the scale,
+  only log your findings for future sessions."
+- Round 1 in a 32-teamer: first 16 picks are a different tier; the second 16 "are more like premium 2nd round
+  picks"; humans guess early/late from team of origin. BUILT (guessSlots).
+- Read 4 confirmed: "correct: Herbert two 1sts 2 2nds".
+- NEXT ORDER (11-11, verbatim): "I dont think you need to really mark: QBs and safeties independantly, what you
+  need to do is spin up a Bee luna to do a quick study on player stats, have it judge tier levels of each position
+  based on stat totals, based on the number of relavent starter and backup tiers to each position create a ratio
+  that will filter the positional scarsity. If there is something im missing feel free to add somthing to that
+  equation, but i think luna is more than capiable to do that simple math for you, then you code it."
+- "We need to update how the power rankings work when we get this ironed out."
+- Standing: mock is the gate; he merges; stop rule (new ledger event, schema, import or permission change -> ask).
+- His four reads are in memory: project_warroom_trade_value_human_anchors.md. Every value change is checked
+  against them before he sees it.
 
-## 8. Ledger state
-Branch session/war-room-trade-desk on Claude-OS, tip = the resume commit after 1ec399fc (weights), fcc8cb9d /
-8c527bc6 (checked against the real league), 7055d9c5 (desk + direction). Tree clean. Not pushed. Untracked:
-.golangci-cache/.
+## 8. Scarcity-scale findings log (do NOT build; his ruling)
+Replacement level already moves with league size and lineup rules through teams x seats, but nothing scales how
+much scarcity counts. At 32 teams: one-QB lineups flatten every QB; kickers inflate because few are rostered;
+S and CB are flat (S64 = 9.3 long term, QB64 = 5.1, RB64 = 5.1). A scale probably needs roster depth (bench
+size), not only starters.
 
 ## 9. NEXT ACTIONS, in order
-1. Rebuild, launch on :5, re-walk Vikings x New England (Jeanty + London for Brissett) at 65/50/30 and recompute
-   by hand from the values file (w = .65 both sides); screenshot to his Downloads.
-2. Recompute PROJ/WEEK, cap runway and the record independently, or say plainly they are unchecked.
-3. When GPT's table arrives: check it against the 123 trades and the 2026 draft outcomes, propose the pick value
-   design to Christopher (where the numbers live, how they move by year and slot), build after his yes.
-4. Inspector polish, pocket / versions / send / negotiations.
-5. Before push: make verify on Claude-OS, wire snapshots (TWR_WRITE_WIRE=1 go test ./internal/store/history if a
-   read gained a field), 110-char check, bundle -> Beelink -> push -> PR. He merges after his look on :0.
+1. Write the Bee (Luna) brief and dispatch: per position, from player stat totals, judge tier levels (elite /
+   starter / flex / backup / replacement), count the relevant starter and backup tiers for a 32-team league with
+   this lineup (QB 1-1, RB 1-3, WR 2-5, TE 1-3, DT/DE/LB/CB/S 2-4, PK 1-1, 21 starters), and return one ratio per
+   position that filters positional scarcity, with its arithmetic. My additions to offer: year-to-year stickiness
+   of a position's top tier (why humans discount safeties) and how many seasons a position's starter lasts (why a
+   franchise QB is worth two 1sts and two 2nds). Arm a done-watcher.
+2. Check Luna's ratios against the four reads in Python on the values file before coding anything.
+3. Code the ratio into tradelens (one place, beside replacement), tests, rebuild, re-stage all four reads,
+   hand-recompute one, screenshots to his Downloads with a plain pass/fail table.
+4. Then: veteran/half-season trust (z_now) with him if reads still fail; power rankings rework after that.
+5. Before push: tsc + vitest, make verify on Claude-OS, wire snapshots if a read gained a field, 110-char check
+   (one long line in pickComps), bundle -> Beelink -> push -> PR. He merges after his look on :0.
 
 ## 10. Honest status
-Engine math proven at the old weights; the new weights are unit-tested but not yet seen on screen. Picks are
-unvalued on his league until the pick work lands. Direction never clicked live. Hosted (phone) leagues do not
-get the lens. Full suite not run this window.
-
-## 11. PICK FINDINGS (11-10 ~16:00 CT, after GPT's reports) — proposal is WITH CHRISTOPHER, nothing built
-GPT reports: Beelink ~/work/TheWarRoom/GUIDES/pick-value-gpt-independent/ (v1 + COMPARISON-v2; gitignored, private).
-GPT table (LT PPG, unknown slot) R1-5: 11.5/6.0/4.6/4.0/2.8, all confidence LOW, wait 0.85 assumed; no table fits the trades.
-Measured by me (prototype, reverted, tree clean at bd4f6c6e):
-- Existing Pick Value v2 fed the seeded 2026 draft (snapshot.Picks with player; 159 rows) reads too flat:
-  1.01 = 6.55, 5.32 = 3.38 (round means ~6.3/5.3/4.9/4.0/3.6) vs what the picks became 9.7/6.1/5.7/5.4/4.8.
-- On the desk a pick is lens (1-w)*LT against Best 21; median 21st-best is 7.1, so a 6.0 second adds 0 on all 32
-  teams and an 11.5 first cracks 2 of 32 contenders. Any table reads ~0. This is the real problem.
-- Proposed: pick worth to a side = mean over the players really taken around that slot (now + dynasty as they
-  stand today, in the side's lens) of what each adds to the side's Best 21, x 0.75 per year out (existing
-  pickvalue.discount). Measured medians across teams: R1 3.4 (early 4.0, late 2.2; 1.7-7.5 by team), R2-R5 0.6-0.9.
-- Needs his yes on: the approach; 2027 = one year out at 0.75. No new import/ledger/schema/permission change.
-- 11-10 ~16:20 Christopher: "Human behavour is seasonal, and will hit the edges, use the human behavior as an averge
-  multiplier, not a scope." => trades give ONE average multiplier on the model's pick value; never fit/bound to trades.
-  Measured on 43 pick-for-player trades (8 reversals out; player add vs model pick add, typical team):
-  ratio of totals 1.8-1.9, per-trade median 1.15-1.2, per-trade range 0 to 11, months 0.5 to 5.5.
-  Wait counted from the NEXT draft keeps it steady by period (1.9 pre-draft / 1.7 in season); counted from the season
-  it drifts (1.9 / 2.3). So: next draft = no wait. Awaiting his pick of the multiplier (I recommend 1.2) + go.
-- 11-10 ~16:50 BUILT for his test (he: "I lean into your recommendation for this test"): tradelens Asset.Comps
-  [][]Comp + Weight, worth() = Weight x best group's mean add over the roster's N-th player; roster.count = best N
-  players + picks' worth. market/trade_lens.go: pickMarket const 1.2, takenPicks, pickComps (own round, then later
-  rounds so an earlier pick is never worth less), wait counted from the next open draft at pickvalue.discount.
-  Hand recompute MATCHED on screen: Vikings 300.8 with picks, holds 2.0/1.5/0.4/0.3/0.2/0.1, NE adds 4.3.
-  Shots with him: Beelink ~/Downloads/warroom-picks-{1,2,3,4}.png. AWAITING his human read of them.
-  If he approves: make 1.2 a league setting (pickvalue.market), drop unused TradeLensSource.Players, relabel
-  "YOUR BEST 21" (it now includes picks' worth; header 281.8 is the long-term best 21, a different read), reconcile
-  with pickvalue v2 used by power rankings (two pick valuers now).
-- 11-10 ~17:15 HIS READ of the 4 shots: 1 wrong (a 1st >> Brissett, stopgap), 2 about even (OK), 3 wrong (they would
-  snatch picks for Downs; safeties plentiful), 4 wrong (franchise QB Herbert >= two 1sts + two 2nds). Power rankings
-  to be updated after this is ironed out. Anchors saved in memory project_warroom_trade_value_human_anchors.md.
-  MEASURED causes: (a) no positional scarcity: league replacement (first non-starter, retool lens) QB 14.7, S 9.1,
-  CB 7.9, DE 7.5, DT 6.3, LB 5.8, RB 5.1, K 4.6, WR 4.4, TE 3.9; (b) model_scores: Herbert now pct .30 on 8 games
-  with z_now .78 vs 45 past games -> QB30, dyn 15.95 < Cousins (38) 19.17; (c) 3-season horizon.
-  Tested over-replacement measure in Python: Brissett 0.3 vs a 1st 4.0 (read 1 passes); Downs 5.4 vs picks ~3.8-4.6
-  (read 3 closer, not passing); 2nd+3rd+3rd = 1.5 vs 1st 4.0 (read 2 BREAKS); Herbert 0.0 (read 4 fails: base model).
-  NOT built. Waiting on his rulings: scarcity in trade value; Part 7 tune of how far half a season moves a veteran.
-- 11-10 ~18:30 RULED: "scarcity has to be a factor in the actual trade calculator" (and draft value), NOT power
-  rankings; veterans "we're probably going to have to work through that" (Part 7 with him).
-  BUILT: tradelens.replacement (per position, per lens: seats = teams x (min + flex shared by room above min);
-  level = first player past the seats, free agents included), roster.over, picks' comps carry Position; panel label
-  "YOUR EDGE". Re-staged his four reads (shots warroom-scarcity-{1..4}.png in his Downloads):
-  1 PASS (1st for Brissett: you -2.4, them +4.3). 2 FAIL (2nd+3rd+3rd for 1st: them -2.0; he says even).
-  3 CLOSER, FAIL (Downs: them -1.5, was -2.9). 4 FAIL WORSE (Herbert reads 0.0; every QB is near 0 because
-  QB33 scores 14.7; model also rates him QB30).
-  Oddities seen: kickers read high (Patterson 4.2 > Downs 2.1); a 0-value starter can show -0.0 held because his
-  leaving lowers the bar picks must beat. Proportional flex rule vs week-9 real starts: within 0.3 except RB
-  (1.59 vs 2.16) and WR (2.88 vs 3.28).
-  NEXT with him: veteran/half-season weight (z_now), QB worth in a 1-QB 32-team league, later-round pick depth.
-- Shot 4 (Herbert/Jets) NOT captured: the desk read 'Not available yet' at that moment (values looked mid-refresh; cause unconfirmed). Herbert read 0.0 on the shelf just before. Removed the bad file.
-- 11-10 late RULED: scarcity "scaled by roster requirments. We will start with 32 teams but not build the scale,
-  only log your findings". FINDINGS LOG (do not build): replacement level today = first player past teams x seats;
-  seats come from the lineup rules, so league size and roster rules already move it, but nothing scales how MUCH
-  scarcity counts. Seen at 32 teams: 1-QB lineups leave every QB near 0 (QB33 = 14.7); kickers read high (thin
-  rostering); S/CB are flat (S64 9.3). A scale would likely need roster depth (bench size), not only starters.
-  His tier insight BUILT: unslotted picks sit where the original team's record points (worst first), comps within
-  8 slots. Vikings (best record) 1st now 1.0, New England's 2.5. Shots: ~/Downloads/warroom-origin-{2,3}.png.
-  Read 2 unchanged (they -2.0). Read 3 WORSE (they -3.3, Vikings' picks are late ones). Read 3 and 4 are the open
-  faults; both sit in the player model (Downs prior .99 -> S1; Herbert QB30; QBs near replacement).
+Pick value and scarcity are built and unit-tested; only the pre-scarcity pick math was hand-checked on the real
+league. Two of his four reads still fail and one is only "not bad". Proposals 1 and 4 were not re-staged after
+the slot change. Frontend checks and the full suite have not run on today's work. Nothing is pushed.
