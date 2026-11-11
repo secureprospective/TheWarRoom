@@ -195,3 +195,18 @@ func TestDraftSupplyMakesAPositionCheap(t *testing.T) {
 		}
 	}
 }
+
+// A trade nobody can improve by one change still carries a list of suggestions, an empty one.
+func TestNothingToTuneIsAnEmptyList(t *testing.T) {
+	in := Input{N: 1, Teams: 2, Slots: []Slot{{Position: "WR", Min: 1, Max: 1}},
+		You: Side{Franchise: "a", Direction: Retool}, Them: Side{Franchise: "b", Direction: Retool},
+		Assets: []Asset{player("a1", "a", 10, 10), player("b1", "b", 10, 10)},
+		Give:   []string{"a1"}, Get: []string{"b1"}}
+	got, err := Evaluate(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Tune == nil || len(got.Tune) != 0 {
+		t.Fatalf("tune is %#v, want an empty list", got.Tune)
+	}
+}

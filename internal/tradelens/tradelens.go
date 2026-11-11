@@ -471,7 +471,7 @@ func tune(you, them roster, in Input) []Suggestion {
 	}
 	mine, theirs := net(in.Give, in.Get)
 	used := set(append(slices.Clone(in.Give), in.Get...))
-	var out []Suggestion
+	out := []Suggestion{} // never nil: the desk reads it as a list
 	if len(in.Give) > 1 {
 		for i, t := range in.Give {
 			m, th := net(slices.Delete(slices.Clone(in.Give), i, i+1), in.Get)
