@@ -1,9 +1,23 @@
-# TheWarRoom — UI-to-mocks RESUME (compact-safe #10, 2026-11-10 late CT) — TRADE DESK: DRAFT SCARCITY NEXT
+# TheWarRoom — UI-to-mocks RESUME (updated 2026-11-11 03:20 CT) — TRADE DESK: DRAFT SCARCITY BUILT, READS 1-3 PASS
 
 ## 0. FIRST THING AFTER COMPACT
-Do section 9 item 1: build DRAFT SCARCITY into the trade lens. Christopher's order (verbatim, his /compact-safe
-message): "it looks like we do need to do a draft scarcity, which should be easier with it being a finiet supply,
-and I am confident thats the last need for parity." Nothing is running.
+Draft scarcity is BUILT and committed (329602e6) and a null-list desk bug fixed (e58ae54a). Next: section 9 from
+item 4 (Fit_Report keep table, parameter_words), then the push batch. Read 4 still fails: veteran/backup-QB session.
+
+## DRAFT SCARCITY (what shipped, 11-11)
+Input.Drafted = every player the league took in its own drafts (market: takenPicks comps). roster.drafted() = per
+position, mean lead (over) of those players. roster.player(a) = max(0, over - drafted[pos]) is a PLAYER's trade
+worth; count() uses it. Picks (worth) use plain over: they are the supply, nothing taken off. No constant, no fit,
+all rounds. Real league draft level (retool): CB 1.5 DE 1.6 DT .6 LB 3.0 PK 1.0 QB 2.5 RB 2.1 S 3.1 TE 1.1 WR 2.0.
+Refuted on the harness (d3/d5/d6.py): a supply multiplier on over (moves both sides, R3 stays level); taking the
+draft level off comps too (picks collapse, R2 fails). Rounds 2+ only, median, x0.5 all also pass; all-rounds mean
+chosen because it has no cut-off to defend. Players the model no longer values have no position, so they are not
+in a position's mean. Desk bug fixed: tune() returned nil -> JSON null -> frontend refused the reading on a level
+trade with no suggestions. Desk UI: click a shelf row, then ADD TO TRADE (1690,1009); CLEAR (1484,1055); PICKS
+filter (514,310). Screenshot tool on Claude-OS is scrot (no ImageMagick). Claude-OS was rebooted 11-11 ~02:55 CT.
+On screen (NE reads win-now by record): R1 -3.2/+2.6, R2 +0.0/+0.0 BOTH WIN, R3 -2.6/+0.9. Shots in Beelink
+~/Downloads/TWR-desk-read{1,2,3}-draft-scarcity.png. Go test numbers (them = retool): R1 -3.2/+2.2, R2 0.0/+0.2,
+R3 -2.6/+1.1, R4 +15.8/-16.0.
 
 ## IN-FLIGHT
 Nothing. Test app stopped. Xvfb :5 up on Claude-OS. Nothing on his :0. Both Luna dispatches finished.
@@ -51,9 +65,9 @@ anonymous ids only.
 | Real Go on real league = Python harness | MATCHED |
 | Read 1 (a 1st >> Brissett) | PASS: you -3.2, them +1.5 |
 | Read 2 (2nd + two 3rds ~ a 1st) | PASS: 0.0 / +0.2 |
-| Read 3 (NE snatches 2028 1st + 2027 2nd for Downs) | LEVEL: you -1.6, them -0.2 (was +1.8 / -3.8). Needs them >= +0.5 |
-| Read 4 (Herbert ~ two 1sts + two 2nds, QB-needy partner) | FAIL: +15.8 / -15.0 |
-| Screenshots of the four reads on the new math | NOT TAKEN |
+| Read 3 (NE snatches 2028 1st + 2027 2nd for Downs) | PASS: you -2.6, them +1.1 (329602e6) |
+| Read 4 (Herbert ~ two 1sts + two 2nds, QB-needy partner) | FAIL: +15.8 / -16.0 |
+| Screenshots of reads 1-3 on the new math | TAKEN, sent (read 4 not staged) |
 | tsc, vitest, make verify, wire snapshots, push, PR | NOT RUN |
 
 ## 4. What exists (committed on the branch, NOT pushed)
