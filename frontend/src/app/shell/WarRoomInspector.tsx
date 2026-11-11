@@ -47,7 +47,8 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const reading = useWarRoomRead<WarRoomInspectorReading | undefined>(JSON.stringify([
-    context.native?.league, context.mine, asset?.token, context.week, revision]), publish => asset && !asset.pick && /^\d+$/.test(asset.token) ?
+    context.native?.league, context.mine, asset?.token, context.week, revision]), publish => asset &&
+    !asset.pick && /^\d+$/.test(asset.token) ?
     readWarRoomInspector(context, asset.token, publish) : Promise.resolve(undefined));
   const facts = reading.reading;
   const changeNote = async (text: string, at?: string) => {

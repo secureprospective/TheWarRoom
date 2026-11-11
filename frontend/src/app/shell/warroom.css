@@ -954,7 +954,13 @@
 
 .wr-v6.embedded .desk{grid-template-columns:minmax(180px,1fr) minmax(360px,2fr) minmax(180px,1fr)}
 .wr-v6.embedded .desk>div,.wr-v6.embedded .dr5>div{min-width:0;overflow:auto}
-.wr-v6.embedded .effect{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* Four figures across as the mock draws them; each side's lineup changes take half below. */
+.wr-v6.embedded .effect{grid-template-columns:repeat(4,minmax(0,1fr))}
+.wr-v6.embedded .effect .wide.half{grid-column:1/span 2}
+.wr-v6.embedded .effect .wide.half+.wide.half{grid-column:3/span 2}
+.wr-v6 .effect .half .swap{grid-template-columns:34px minmax(0,1fr) auto}
+.wr-v6 .effect .half .swap span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-v6 .effect .half .swap span:last-child:empty{display:none}
 .wr-v6.embedded .mk3{grid-template-columns:minmax(0,1fr);overflow:auto}
 .wr-v6.embedded .mk3>div{min-height:220px;overflow:auto}
 .wr-v6 .fa-r .fa-value{overflow:visible;text-overflow:clip}
