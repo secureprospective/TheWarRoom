@@ -24,14 +24,14 @@ export function WarRoomHeader({ name, reading, windowLabel, lens, choose, pendin
       reading?.record, reading?.standing, reading?.standingsNote)}{!windowLabel ? '' :
       windowLabel === 'none open' ? ' · no window open' : ` · open now: ${windowLabel}`}</div>
     </div>
-    <div className="mini"><span className="h">DIRECTION{you && !you.set &&
-      <small>our read: {directionLabel[you.direction].toLowerCase()}{choose ? ' · pick yours' :
-        ' · the owner picks'}</small>}
+    <div className="mini"><span className="h">DIRECTION
       {problem && <small role="alert">not recorded: {problem}</small>}</span>
       <div className="post">{directions.map(d => <WarRoomAct key={d} disabled={!choose || !you || pending}
         title="Your direction is shown to the whole league. Your lens follows it."
         active={Boolean(you?.set && you.direction === d)} onAction={() => choose?.(d)}>
-        {directionLabel[d].toUpperCase()}</WarRoomAct>)}</div></div>
+        {directionLabel[d].toUpperCase()}</WarRoomAct>)}</div>
+      {you && !you.set && <small className="hint">our read: {directionLabel[you.direction].toLowerCase()}
+        {choose ? ' · pick yours' : ' · the owner picks'}</small>}</div>
     <div style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
       <div className="mini"><span className="h">{reading?.starterN === undefined ? 'BEST' :
         `Best ${reading.starterN} (any position)`}</span><div><b title={reading?.valueNote}>

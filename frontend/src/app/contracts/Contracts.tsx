@@ -55,7 +55,13 @@ export function useContractRead<T>(
       ).then(next => {
         running = false;
         if (!active) return;
-        if (again) { again = false; refresh(); return; }
+        // A change that landed mid-read asks for a fresh one, but the finished read still shows:
+        // a slow read under steady changes would otherwise never reach the screen.
+        if (again) {
+          again = false;
+          if (next.reading !== undefined) keep({ reading: next.reading, pending: true });
+          refresh(); return;
+        }
         keep(next);
       });
     };

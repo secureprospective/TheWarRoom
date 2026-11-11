@@ -960,12 +960,13 @@
 .wr-v6 .fa-r .fa-value{overflow:visible;text-overflow:clip}
 .wr-v6.embedded .fa-h,.wr-v6.embedded .fa-r{min-width:780px}
 .wr-v6.embedded .dr5{grid-template-columns:minmax(180px,1fr) minmax(300px,2fr) minmax(180px,1fr)}
-.wr-v6.embedded .franchise-context{height:auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+/* One strip, as the mock draws it: the name gives way first, then the value column. */
+.wr-v6.embedded .franchise-context{grid-template-columns:minmax(0,1fr) auto auto auto auto;gap:18px}
 .wr-v6.embedded .ch{flex-wrap:wrap;gap:4px}
 
-.wr-v6.embedded .franchise-context{overflow:visible;align-items:start}
-.wr-v6.embedded .franchise-context>div{min-width:0;overflow-wrap:break-word}
-.wr-v6.embedded .post{flex-wrap:wrap}
+.wr-v6.embedded .franchise-context>div{min-width:0}
+.wr-v6 .who b,.wr-v6 .who div{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-v6 .mini .hint{font:10px var(--mono);color:var(--amber);margin:0;white-space:nowrap}
 .wr-v6.embedded .shelf>.ch,.wr-v6.embedded .shelf>.bench,.wr-v6.embedded .shelf>.read{flex-shrink:0}
 .wr-v6.embedded .read{grid-auto-rows:max-content}
 .wr-v6.embedded .vers{flex-wrap:wrap;gap:4px}

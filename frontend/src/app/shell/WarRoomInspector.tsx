@@ -2,7 +2,8 @@ import { HQAct as WarRoomAct } from './HQAct';
 import { useState, type ReactNode } from 'react';
 import { useWarRoomRead, type WarRoomContext } from './warroomReads';
 import type { WarRoomAsset } from './warroomTradeReads';
-import { readWarRoomInspector, changeWarRoomNote } from './warroomInspectorReads';
+import { readWarRoomInspector, changeWarRoomNote,
+  type WarRoomInspectorReading } from './warroomInspectorReads';
 import { researchFact } from './hqPlayerData';
 import { money, pickPlayer, unavailable } from './hqModel';
 import { CompactAbsent, WarRoomEmpty } from './WarRoomHeader';
@@ -45,9 +46,9 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
-  const reading = useWarRoomRead(JSON.stringify([context.native?.league, context.mine, asset?.token,
-    context.week, revision]), () => asset && !asset.pick && /^\d+$/.test(asset.token) ?
-    readWarRoomInspector(context, asset.token) : Promise.resolve(undefined));
+  const reading = useWarRoomRead<WarRoomInspectorReading | undefined>(JSON.stringify([
+    context.native?.league, context.mine, asset?.token, context.week, revision]), publish => asset && !asset.pick && /^\d+$/.test(asset.token) ?
+    readWarRoomInspector(context, asset.token, publish) : Promise.resolve(undefined));
   const facts = reading.reading;
   const changeNote = async (text: string, at?: string) => {
     if (!asset || pending) return;
@@ -75,11 +76,12 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
     <span className="pg">{research?.position || asset?.position || projection?.position || '—'}</span>
     <span className="on">{asset ? 'PLAYER' : unavailable}</span></div><div className="nm">
       {research?.name ?? asset?.name ?? unavailable}</div><div className="sub">{research?.owner ??
-        unavailable} · age {age ?? unavailable} · {asset?.contract ?? unavailable}</div></div>
+        (asset?.pick ? 'Pick' : 'Player')} · age {age ?? '—'} · {asset?.contract ?? '—'}</div></div>
     {context.native && (facts?.valuesPreparing ? <p role="status">Values are being prepared</p> :
     <div className="nums"><div><b>{value?.available ? value.nowPPG.toFixed(1) :
-      unavailable}</b><span>pts / game</span></div><div><b title={value?.words}>{value?.available ?
-      value.dynastyPPG.toFixed(1) : unavailable}</b><span>dynasty value</span></div></div>)}
+      <CompactAbsent pending={reading.pending} />}</b><span>pts / game</span></div><div>
+      <b title={value?.words}>{value?.available ? value.dynastyPPG.toFixed(1) :
+        <CompactAbsent pending={reading.pending} />}</b><span>dynasty value</span></div></div>)}
     <div className="lensrow"><div><b>{lensValue(worth, 'you')}</b><span>to you</span></div>
       <div><b>{lens?.them ? lensValue(worth, 'them') : <CompactAbsent />}</b><span>to them</span></div></div>
     <div className="why" title={worth?.words}>{asset ? lensWhy(lens, asset.token, Boolean(theirs)) :
