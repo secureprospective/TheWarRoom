@@ -64,6 +64,23 @@ The scale is a within-position percentile of league fantasy points per game play
 | CB | 445/172 | 0.208 | 0.218 | fitted | 1 / 0.6 / 0.4 |
 | S | 356/134 | 0.204 | 0.206 | fitted | 1 / 0.3 / 0.2 |
 
+## Trade keep (share of a lead over replacement that lasts into the next season)
+
+Slope of next season's points per game on this season's, over players with 6+ games in both.
+
+| Pos | Keep |
+|---|---|
+| QB | 0.496 |
+| RB | 0.806 |
+| WR | 0.797 |
+| TE | 0.811 |
+| K | 0.185 |
+| DT | 0.675 |
+| DE | 0.661 |
+| LB | 0.743 |
+| CB | 0.671 |
+| S | 0.634 |
+
 ## Talent arc (fitted with the dynasty k on what the blend leaves; survivors weighted by 1/P(survive))
 
 | Pos | Exits | RMSE with arc | without | Kept | Stored step at 23 | at 27 | at 31 | Second-year jump |

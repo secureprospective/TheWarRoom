@@ -50,6 +50,7 @@ func Markdown(results []Result, checks []BoardCheck, first, holdout int, source 
 		w("| %s | %d/%d | %s | %s | %s | 1 / %.1f / %.1f |\n", r.Position, rc.Train, rc.Test, f3(rc.RMSEFitted), f3(rc.RMSEMarc),
 			kept(rc.Kept, "fitted", "Marcel"), r.Params.Recency[0], r.Params.Recency[1])
 	}
+	keepSection(w, results)
 	w("\n## Talent arc (fitted with the dynasty k on what the blend leaves; survivors weighted by 1/P(survive))\n\n")
 	w("| Pos | Exits | RMSE with arc | without | Kept | Stored step at 23 | at 27 | at 31 | Second-year jump |\n|---|---|---|---|---|---|---|---|---|\n")
 	for _, r := range results {
@@ -66,6 +67,15 @@ func Markdown(results []Result, checks []BoardCheck, first, holdout int, source 
 }
 
 // limitsSection lists what the fit cannot see.
+func keepSection(w func(string, ...any), results []Result) {
+	w("\n## Trade keep (share of a lead over replacement that lasts into the next season)\n\n")
+	w("Slope of next season's points per game on this season's, over players with 6+ games in both.\n\n")
+	w("| Pos | Keep |\n|---|---|\n")
+	for _, r := range results {
+		w("| %s | %s |\n", r.Position, f3(r.Keep))
+	}
+}
+
 func limitsSection(w func(string, ...any)) {
 	w("\n## Limits\n\n" +
 		"- IDP production is points per game. Opportunity shares from nflverse's participation data (2016–2025: pass-play and run-play snap shares, pressures per pass snap) and PFR's pass-rush and missed-tackle counts were tested on the 2023–2025 holdouts and did not predict the next season beyond this one's points (scouting research, 2026-10-04).\n" +
