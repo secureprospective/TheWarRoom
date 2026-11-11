@@ -140,6 +140,12 @@ export function when(iso: string | undefined): string {
   });
 }
 
+/** A ledger sentence with its machine timestamps said as the viewer's own date and time. */
+export function plainStamps(text: string): string {
+  const stamp = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})/g;
+  return text.replace(stamp, (iso) => when(iso));
+}
+
 /** A rule's value as the rules reading words it; settings congruence: every desk value comes from here. */
 export function ruleValue(room: Room, field: string): string {
   const row = room.state.rules?.sections.flatMap((s) => s.rows).find((r) => r.field === field);

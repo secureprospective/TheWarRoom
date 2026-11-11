@@ -116,7 +116,8 @@ export async function readRoom(league: string, port: RoomPort, signal?: AbortSig
         port.TargetLeagueCalendar({
           league,
           season,
-          franchise: '',
+          // The read needs a seat to answer for; the league clock is the same from every one.
+          franchise: out.directory?.franchises[0]?.franchise ?? '',
           action: 'trade',
           localZone: zone,
         } as commissioner.RawLeagueCalendarScope),

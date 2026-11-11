@@ -134,6 +134,8 @@
 .crx .cr-tray{flex:none;border-top:3px solid var(--black);background:var(--tile);display:flex;flex-direction:column}
 .crx .cr-ed{display:none;padding:10px 16px;gap:14px;align-items:flex-start;border-bottom:1px solid var(--rule)}
 .crx .cr-ed.open{display:flex}
+/* A long preview scrolls inside the tray: the confirm at its foot must always be reachable. */
+.crx .cr-ed.open{max-height:min(60vh,620px);overflow-y:auto}
 .crx .cr-ed .f{display:flex;flex-direction:column;gap:4px;min-width:0}
 .crx .cr-ed label{font:600 10px var(--mono);letter-spacing:.1em;color:var(--ink3)}
 .crx .cr-ed input,.crx .cr-ed select,.crx .cr-ed textarea{background:var(--sunken);border:1px solid var(--edge);color:var(--ink);font:13px var(--sans);padding:6px 8px}

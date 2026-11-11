@@ -49,6 +49,7 @@ export type HomeSource = 'pulse' | 'results' | 'calendar' | 'cap' | 'ledger' | '
 export const defaultResearch = (): ResearchReader | undefined => researchAvailable() ? researchAPI :
   undefined;
 export const OWNER_ONLY_BIDS = 'Bids are visible only to this franchise\'s owner';
+export const OWNER_ONLY_TRADES = 'Trade offers are visible only to this franchise\'s owner';
 
 /** readHomeBrief calls the reads League Pulse, Franchise HQ, the War Room and the ledger already
  *  use. It adds no rule of its own: every value comes from the league's settings through them. */
@@ -110,6 +111,8 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       out.jobs = jobs;
     }),
     apply('trades', async () => {
+      // Offers are private to the two sides; viewing another franchise must not ask for them.
+      if (!owner) throw new Error(OWNER_ONLY_TRADES);
       const r = await port({ command: 'trades.read', mode: 'read', arguments: { league, viewer: mine } });
       const trades = parseHostedTrades(r.data);
       if (trades.league !== league || trades.franchise !==

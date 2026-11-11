@@ -3,6 +3,7 @@ import { parseHostedTrades } from '../commissioner/hostedMarkets';
 import { parseBuilder } from './tradeBuilderState';
 import { targetTradeBuilderRead } from '../trades/api';
 import type { WarRoomContext } from './warroomReads';
+import { OWNER_ONLY_TRADES } from './homeReads';
 
 type Offer = ReturnType<typeof parseHostedTrades>['offers'][number];
 export type LookingBack = { offers: { id: string; partner: string; date: string; status: string }[];
@@ -35,6 +36,7 @@ export async function readLookingBack(c: WarRoomContext): Promise<LookingBack> {
     return { offers: [], partners: [], saved: r.value.plans.length,
       offersNote: 'MFL keeps only live offers; finished ones are not read here' };
   }
+  if (c.native.owner === false) throw new Error(OWNER_ONLY_TRADES);
   const { data } = await (c.native.port ?? hostedWorkflow)({ command: 'trades.read', mode: 'read',
     arguments: { league: c.native.league, viewer: c.mine } });
   const reading = parseHostedTrades(data);

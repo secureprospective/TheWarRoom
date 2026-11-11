@@ -14,3 +14,13 @@ describe('Control Room · caption alignment', () => {
     expect(css).toContain('.crx .cr-ph .ct{width:100%}');
   });
 });
+
+describe('Control Room · ledger sentences', () => {
+  it('says machine timestamps as a date and time, and leaves other words alone', async () => {
+    const { plainStamps, when } = await import('./room');
+    const iso = '2026-11-11T15:28:08Z';
+    expect(plainStamps(`Removed a player; effective ${iso}`))
+      .toBe(`Removed a player; effective ${when(iso)}`);
+    expect(plainStamps('Trade deadline: 24 Nov 2026')).toBe('Trade deadline: 24 Nov 2026');
+  });
+});
