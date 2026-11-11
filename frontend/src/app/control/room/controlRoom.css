@@ -52,6 +52,8 @@
 .crx .cr-job{display:grid;grid-template-columns:8px 1fr auto auto;gap:10px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform 70ms linear}
 .crx .cr-job:hover{background:var(--raised);transform:translateX(2px)}
 .crx .cr-job.sel{background:var(--raised);box-shadow:inset 3px 0 0 var(--edge-hi)}
+/* A row is a button: it fills the column so every count and time lines up down the list. */
+.crx .cr-job{width:100%;box-sizing:border-box;text-align:left}
 .crx .cr-job .dot{width:8px;height:8px}
 .crx .st-live{background:var(--green)}
 .crx .st-up{background:var(--blue)}

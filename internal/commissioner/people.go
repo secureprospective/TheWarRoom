@@ -13,6 +13,9 @@ const CaretakerSeat = "commish.seat.caretaker"
 
 const DeputyOrder = "commish.deputy.order"
 
+// FranchiseDirection is an owner saying where the franchise is headed: contend, retool or rebuild.
+const FranchiseDirection = "commish.franchise.direction.set"
+
 type RawPeople struct {
 	Order         []governance.Principal `json:"order,omitempty"`
 	Franchise     string                 `json:"franchise,omitempty"`
@@ -29,6 +32,7 @@ type RawPeople struct {
 	Successor     string                 `json:"successor,omitempty"`
 	Commissioner  string                 `json:"commissioner,omitempty"`
 	Choice        string                 `json:"choice,omitempty"`
+	Direction     string                 `json:"direction,omitempty"`
 	InSeasonDays  int64                  `json:"inSeasonDays,omitempty"`
 	OffseasonDays int64                  `json:"offseasonDays,omitempty"`
 	ElectionDays  int64                  `json:"electionDays,omitempty"`
@@ -43,6 +47,7 @@ func peopleDefinitions() []peopleDefinition {
 	return []peopleDefinition{
 		{CaretakerSeat, "CM-019", "G2", "Seated a caretaker for a vacant franchise"},
 		{"commish.franchise.edit", "CM-018", "G2", "Changed a franchise's name and abbreviation"},
+		{FranchiseDirection, "CM-018", "G1", "Set a franchise's direction"},
 		{"commish.seat.invite", "CM-019", "G2", "Issued an owner invitation"},
 		{"commish.seat.invite.revoke", "CM-019", "G2", "Revoked an owner invitation"},
 		{"commish.seat.invite.redeem", "CM-019", "G2", "Accepted an owner invitation"},
@@ -77,7 +82,7 @@ func (r RawPeople) Validate(command string) error {
 		return fmt.Errorf("send only the details this people change needs")
 	}
 	for _, text := range []string{r.Franchise, r.Principal, r.Name, r.Abbreviation, r.ID,
-		r.Ability, r.Report, r.Audience, string(r.Role), r.Successor, r.Commissioner, r.Choice} {
+		r.Ability, r.Report, r.Audience, string(r.Role), r.Successor, r.Commissioner, r.Choice, r.Direction} {
 		if text != strings.TrimSpace(text) {
 			return fmt.Errorf("remove surrounding spaces from the people change")
 		}
@@ -110,6 +115,8 @@ func (r RawPeople) selected(command string) (RawPeople, error) {
 	switch command {
 	case "commish.franchise.edit":
 		return RawPeople{Franchise: r.Franchise, Name: r.Name, Abbreviation: r.Abbreviation}, nil
+	case FranchiseDirection:
+		return RawPeople{Franchise: r.Franchise, Direction: r.Direction}, nil
 	case "commish.seat.invite":
 		return RawPeople{ID: r.ID, Franchise: r.Franchise, Principal: r.Principal}, nil
 	case "commish.seat.invite.revoke":
@@ -137,6 +144,8 @@ func (r RawPeople) label(command string) string {
 	switch command {
 	case "commish.franchise.edit":
 		return fmt.Sprintf("Named franchise %s “%s” (%s)", r.Franchise, r.Name, r.Abbreviation)
+	case FranchiseDirection:
+		return fmt.Sprintf("Set the direction of franchise %s to %s", r.Franchise, DirectionWords(r.Direction))
 	case DeputyOrder:
 		return fmt.Sprintf("Set co-commissioner priority to %v", r.Order)
 	case "commish.role.grant":
@@ -178,6 +187,8 @@ func (r RawPeople) event(command string) (governance.Event, error) {
 	switch command {
 	case "commish.franchise.edit":
 		return governance.FranchiseIdentitySet{Franchise: f, Name: r.Name, Abbreviation: r.Abbreviation}, nil
+	case FranchiseDirection:
+		return governance.DirectionSet{Franchise: f, Direction: r.Direction}, nil
 	case "commish.seat.invite":
 		return governance.InviteIssued{ID: r.ID, Franchise: f, Redeemer: p}, nil
 	case "commish.seat.invite.revoke":
@@ -203,4 +214,42 @@ func (r RawPeople) event(command string) (governance.Event, error) {
 	default:
 		return r.successionEvent(command, time.Time{})
 	}
+}
+
+// DirectionWords is a direction as the league reads it.
+func DirectionWords(direction string) string {
+	switch direction {
+	case "contend":
+		return "win now"
+	case "retool":
+		return "retool"
+	case "rebuild":
+		return "rebuild"
+	}
+	return "not set"
+}
+
+// Directions is the direction each franchise's owner has set; a franchise that has not set one is absent.
+func Directions(records []Record) (map[string]string, error) {
+	state, err := GovernanceState(records)
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]string{}
+	for id, direction := range state.Directions() {
+		out[string(id)] = direction
+	}
+	return out, nil
+}
+
+// authorizeDirection lets the seated owner set their own franchise's direction; the commissioner side
+// may set it for a franchise, as it may edit any other franchise fact.
+func authorizeDirection(auth GovernanceAuthorizer, raw RawCommand, principal string) (string, error) {
+	if raw.Args.People == nil {
+		return "", fmt.Errorf("send the details of this people change")
+	}
+	if auth.State.HoldsSeat(governance.FranchiseID(raw.Args.People.Franchise), governance.Principal(principal)) {
+		return "owner", nil
+	}
+	return auth.Allow(raw.League, principal, raw.Command)
 }

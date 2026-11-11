@@ -48,6 +48,9 @@ func fittedKind(key string) (lo, hi float64, meaning string) {
 		return 0.01, 10000, "Games of this season's evidence at which production and the prior weigh equally"
 	case key == "model.k_dynasty":
 		return 0.01, 10000, "Games of evidence at which production and the prior weigh equally for dynasty"
+	case key == KeyTradeKeep:
+		return 0, 1, "Share of a player's standing at the position that lasts into his next season; the trade " +
+			"desk counts a lead over replacement for this much"
 	case key == "model.board_kept":
 		return 0, 1, "1: the model values this position; 0: today's board rule does (last season's total × age pull), " +
 			"because it ranked the holdout better on talent and value"

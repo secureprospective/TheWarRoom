@@ -61,7 +61,7 @@ it('renders league Best N, dynasty age amounts and the native card, including kn
   const values = parseNativeValues(wire(), 'native.test', '', 2026);
   const header = renderToStaticMarkup(<WarRoomHeader reading={{ starterN: values.best.starterN,
     best: values.best.value.toFixed(1), rank: '2 of 32', age: values.age, errors: [] }} />);
-  for (const text of ['Best 21', '321.9', '2 of 32', '24–25', '12.3']) expect(header).toContain(text);
+  for (const text of ['Best 21', '321.9', '2 of 32', 'Age 24', '12.3']) expect(header).toContain(text);
   const html = renderToStaticMarkup(<HQInspector native snapshot={context().snapshot} mine="mine"
     id="0042" leagueValue={player()} />);
   expect(html).toContain('>0.0</b>'); expect(html).toContain('>12.3</b>');

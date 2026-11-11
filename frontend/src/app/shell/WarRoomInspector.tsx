@@ -2,10 +2,27 @@ import { HQAct as WarRoomAct } from './HQAct';
 import { useState, type ReactNode } from 'react';
 import { useWarRoomRead, type WarRoomContext } from './warroomReads';
 import type { WarRoomAsset } from './warroomTradeReads';
-import { readWarRoomInspector, changeWarRoomNote } from './warroomInspectorReads';
+import { readWarRoomInspector, changeWarRoomNote,
+  type WarRoomInspectorReading } from './warroomInspectorReads';
 import { researchFact } from './hqPlayerData';
 import { money, pickPlayer, unavailable } from './hqModel';
 import { CompactAbsent, WarRoomEmpty } from './WarRoomHeader';
+import { lensValue, type WarRoomLens } from './warroomLens';
+// What the gap between the two lenses means for this asset, in the owner's own terms.
+function lensWhy(lens: WarRoomLens | undefined, token: string, theirs: boolean): string {
+  const a = lens?.assets.get(token);
+  if (!lens || lens.preparing || !a) return unavailable;
+  if (!a.valued) return a.words || 'No value in this league yet.';
+  const n = lens.starterN;
+  if (!lens.them) return a.you < 0.05 ? `Outside your best ${n} today: depth you can move at no cost.` :
+    `Holds ${a.you.toFixed(1)} of your best ${n}. Choose a partner to see what it is worth to them.`;
+  const gap = Math.abs(a.you - a.them).toFixed(1);
+  if (a.you < 0.05 && a.them < 0.05) return `Outside both sides' best ${n} today: depth, not value.`;
+  if (theirs) return a.you > a.them ? `The gap is your edge: worth ${gap} more to you than to them. ` +
+    'Ask for this one.' : `Worth ${gap} more to them than to you. Expensive to pry loose.`;
+  return a.them > a.you ? `Worth ${gap} more to them than to you. Your best bait.` :
+    `Worth ${gap} more to you than to them. Keep it out of the deal.`;
+}
 function Drawer({ label, detail, children, initial = true }: { label: string; detail?: ReactNode;
   children: ReactNode; initial?: boolean }) {
   const [open, setOpen] = useState(initial);
@@ -14,22 +31,25 @@ function Drawer({ label, detail, children, initial = true }: { label: string; de
     <span className="c">{detail ?? unavailable}</span></WarRoomAct><div className="body" hidden={!open}>
       {children}</div></div>;
 }
-export function WarRoomInspector({ context, asset, add, watch }: { context: WarRoomContext;
-  asset?: WarRoomAsset; add?: () => void; watch?: () => Promise<void> }) {
+export function WarRoomInspector({ context, asset, add, watch, lens, theirs }: { context: WarRoomContext;
+  asset?: WarRoomAsset; add?: () => void; watch?: () => Promise<void>; lens?: WarRoomLens;
+  theirs?: boolean }) {
   if (!asset) return <aside className="insp" aria-label="Inspector"><p className="empty"
     role="status">{pickPlayer}</p></aside>;
   return <LoadedInspector key={`${context.native?.league}:${context.mine}:${asset.token}`}
-    context={context} asset={asset} add={add} watch={watch} />;
+    context={context} asset={asset} add={add} watch={watch} lens={lens} theirs={theirs} />;
 }
-function LoadedInspector({ context, asset, add, watch }: { context: WarRoomContext; asset?: WarRoomAsset;
-  add?: () => void; watch?: () => Promise<void> }) {
+function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context: WarRoomContext;
+  asset?: WarRoomAsset; add?: () => void; watch?: () => Promise<void>; lens?: WarRoomLens;
+  theirs?: boolean }) {
   const [revision, setRevision] = useState(0);
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
-  const reading = useWarRoomRead(JSON.stringify([context.native?.league, context.mine, asset?.token,
-    context.week, revision]), () => asset && !asset.pick && /^\d+$/.test(asset.token) ?
-    readWarRoomInspector(context, asset.token) : Promise.resolve(undefined));
+  const reading = useWarRoomRead<WarRoomInspectorReading | undefined>(JSON.stringify([
+    context.native?.league, context.mine, asset?.token, context.week, revision]), publish => asset &&
+    !asset.pick && /^\d+$/.test(asset.token) ?
+    readWarRoomInspector(context, asset.token, publish) : Promise.resolve(undefined));
   const facts = reading.reading;
   const changeNote = async (text: string, at?: string) => {
     if (!asset || pending) return;
@@ -48,20 +68,25 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
   const fit = facts?.fit;
   const fitNames = (ids: string[]) => ids.map(id => context.snapshot.players.value.find(p =>
     p.id === id)?.name ?? id).join(', ');
+  const worth = asset && lens && !lens.preparing ? lens.assets.get(asset.token) : undefined;
+  const position = asset?.position ?? projection?.position;
+  const need = lens && !lens.preparing ? lens.you.needs.find(x => x.position === position) : undefined;
   const changedStarters = fit?.side.changes.filter(c => c.kind === (fit.removing ? 'promoted' : 'benched'))
     .map(c => c.player);
   return <aside className="insp" aria-label="Inspector"><div className="ihead"><div className="top">
     <span className="pg">{research?.position || asset?.position || projection?.position || '—'}</span>
     <span className="on">{asset ? 'PLAYER' : unavailable}</span></div><div className="nm">
       {research?.name ?? asset?.name ?? unavailable}</div><div className="sub">{research?.owner ??
-        unavailable} · age {age ?? unavailable} · {asset?.contract ?? unavailable}</div></div>
+        (asset?.pick ? 'Pick' : 'Player')} · age {age ?? '—'} · {asset?.contract ?? '—'}</div></div>
     {context.native && (facts?.valuesPreparing ? <p role="status">Values are being prepared</p> :
     <div className="nums"><div><b>{value?.available ? value.nowPPG.toFixed(1) :
-      unavailable}</b><span>pts / game</span></div><div><b title={value?.words}>{value?.available ?
-      value.dynastyPPG.toFixed(1) : unavailable}</b><span>dynasty value</span></div></div>)}
-    <div className="lensrow"><div><b><CompactAbsent /></b><span>to you</span></div>
-      <div><b><CompactAbsent /></b><span>to them</span></div></div><div className="why"
-        title={reading.error || facts?.errors.length ? unavailable : undefined}>{unavailable}</div>
+      <CompactAbsent pending={reading.pending} />}</b><span>pts / game</span></div><div>
+      <b title={value?.words}>{value?.available ? value.dynastyPPG.toFixed(1) :
+        <CompactAbsent pending={reading.pending} />}</b><span>dynasty value</span></div></div>)}
+    <div className="lensrow"><div><b>{lensValue(worth, 'you')}</b><span>to you</span></div>
+      <div><b>{lens?.them ? lensValue(worth, 'them') : <CompactAbsent />}</b><span>to them</span></div></div>
+    <div className="why" title={worth?.words}>{asset ? lensWhy(lens, asset.token, Boolean(theirs)) :
+      unavailable}</div>
     <div className="idrawers"><Drawer label="CONTRACT" detail={nativeContract?.yearsRemaining === undefined ?
       undefined : `${nativeContract.yearsRemaining} yrs`}>
       {facts?.contract?.value?.years.length ? facts.contract.value.years.map(y => <div className="kv"
@@ -95,7 +120,10 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
         <div className="kv"><span>This week</span><span>{fit.side.unprojected.length ? unavailable :
           fit.side.thisWeek.toFixed(1)}</span></div></>}<div className="kv"><span>L5 avg</span><span>
           {researchFact(research, 'L5 avg') ?? unavailable}
-      </span></div><div className="kv"><span>Fills need</span><span>{unavailable}</span></div>
+      </span></div><div className="kv"><span>Fills need</span><span>{!need ? '—' : need.state === 'ok' ?
+        `No: ${need.position} is covered` : theirs ? `Yes: ${need.position} is a ${need.state === 'hole' ?
+          'hole' : 'thin spot'} next season` : `Trading him leaves ${need.position} ${need.state === 'hole' ?
+          'a hole' : 'thin'}`}</span></div>
       {projection && <div className="kv"><span>Floor · median · ceiling</span><span
         title={`${projection.games} games · ${projection.words}`}>{projection.available ?
           `${projection.floor.toFixed(1)} · ${projection.median.toFixed(1)} · ${

@@ -1,172 +1,175 @@
-# TheWarRoom — Import + UI-to-mocks RESUME (compact-safe #5, 2026-11-10 ~09:40 CT)
+# TheWarRoom — UI-to-mocks RESUME (compact-safe #11, 2026-11-11 ~03:35 CT) — TRADE DESK: PUSH BATCH IN PROGRESS
 
 ## 0. FIRST THING AFTER COMPACT
-Christopher's /compact-safe 11-10: "after compaction we will move to the next step of the plan". That is 9.5, the
-batch point: make verify, bundle to the Beelink, push, PR, then launch on :0 for his real-screen look. Start it when
-he says "we are back". 9.3, 9.4 and the tackle fix are DONE and reported. Still open with him: my call that the
-Stat Changes "was" = the last live line. Nothing is running.
-SEPARATE WORK, not mine: he will build the warroom.secureprospective.com website with Tom (Fable 5.2 on the
-Beelink). I wrote Tom's prompt: Beelink ~/Downloads/TheWarRoom-WEBSITE-HANDOFF.md (copy /root/TheWarRoom-WEBSITE-
-HANDOFF.md). Tom works in ~/work/TheWarRoom/.worktrees/website on session/website; when I push in 9.5 I make my own
-NEW worktree and leave his alone.
+Finish the push batch (section 9). One hand-run check job is in flight on Claude-OS (see IN-FLIGHT); read its log
+first. Christopher graded the reads: 1 "A+", 2 "A+", 3 "A-, within error", 4 "I would move on, we can figure the
+gap out later. We are hitting on what matters." Then: "work though this the best way possible, update the Go repo
+if you think that fixes future issues as well" (= do the Go 1.26.11 bump).
+
+## PUSH BATCH STATE (11-11)
+Branch tip afc79cc0 (Claude-OS only, NOT pushed). Commits since f29c09b4: 329602e6 draft scarcity; e58ae54a tune
+null-list fix; 3075f459 resume; c10fa999 Fit_Report keep table + parameter_words trade.keep; 14028654 keep.go
+folded into fit.go (bloat tiny_files ratchet); 05d8151d placement.tsv row internal/tradelens -> trades; afc79cc0
+boundary-adapters.tsv fingerprints for command_bindings.go and commissioner_host.go (straight wiring from 7055d9c5,
+reviewed, say so in the PR).
+`make verify` order: lint (ifaceguard, filelen, bloat, placement, frontend-transport, boundary, golangci) ->
+check-wails-version -> govulncheck -> bindings-fresh -> tsc -> go test -race -> pnpm test/build/budget/csp.
+All of lint passes at afc79cc0. KNOWN FAILURES still to fix:
+1. govulncheck: GO-2026-6859 (net/http, stdlib), found in go1.26.10, fixed in go1.26.11. Not from this branch;
+   CI (verify.yml uses go-version-file: go.mod, govulncheck v1.9.0) will fail on any PR. FIX = bump to 1.26.11 as
+   its own commit on this branch: go.mod line 3, deploy/server/bundle.sh:13 (GOTOOLCHAIN), CLAUDE.md lines 56-57.
+   Leave old resume/benchmark docs. Claude-OS has only /usr/local/go 1.26.10: use GOTOOLCHAIN=go1.26.11 (it
+   downloads). RISK: golangci-lint panicked on other Go versions before (lesson: precommit needs the pinned
+   toolchain); check the hook passes under 1.26.11, and update the env line in section 1 if it does. Beelink
+   needs the same toolchain for its pre-push hook.
+2. go test -race: internal/app/commissioner TestReleaseMatrixCatalogRolesAndDesktopDoors:
+   "release_roles_matrix_test.go:75: catalog mutation commish.franchise.direction.set has no release matrix
+   fixture". FIX = add a fixture row for the direction command in that matrix (owner of the franchise may; other
+   owners may not; co-commish and up may), following the neighbouring rows. Rest of the race run: see the log.
+Frontend tsc / vitest / build checks: result in the log (not seen yet when this was written).
+
+## DRAFT SCARCITY (what shipped, 11-11)
+Input.Drafted = every player the league took in its own drafts (market: takenPicks comps). roster.drafted() = per
+position, mean lead (over) of those players. roster.player(a) = max(0, over - drafted[pos]) is a PLAYER's trade
+worth; count() uses it. Picks (worth) use plain over: they are the supply, nothing taken off. No constant, no fit,
+all rounds. Real league draft level (retool): CB 1.5 DE 1.6 DT .6 LB 3.0 PK 1.0 QB 2.5 RB 2.1 S 3.1 TE 1.1 WR 2.0.
+Refuted on the harness (d3/d5/d6.py): a supply multiplier on over (moves both sides, R3 stays level); taking the
+draft level off comps too (picks collapse, R2 fails). Rounds 2+ only, median, x0.5 all also pass; all-rounds mean
+chosen because it has no cut-off to defend. Players the model no longer values have no position, so they are not
+in a position's mean. Desk bug fixed: tune() returned nil -> JSON null -> frontend refused the reading on a level
+trade with no suggestions. Desk UI: click a shelf row, then ADD TO TRADE (1690,1009); CLEAR (1484,1055); PICKS
+filter (514,310). Screenshot tool on Claude-OS is scrot (no ImageMagick). Claude-OS was rebooted 11-11 ~02:55 CT.
+On screen (NE reads win-now by record): R1 -3.2/+2.6, R2 +0.0/+0.0 BOTH WIN, R3 -2.6/+0.9. Shots in Beelink
+~/Downloads/TWR-desk-read{1,2,3}-draft-scarcity.png. Go test numbers (them = retool): R1 -3.2/+2.2, R2 0.0/+0.2,
+R3 -2.6/+1.1, R4 +15.8/-16.0.
 
 ## IN-FLIGHT
-Nothing. The test app is stopped. Xvfb :5 (PID 1178155) is left up on Claude-OS for the next launch.
+ONE job on Claude-OS, started ~03:21 CT: bindings-fresh + tsc + `go test -race -timeout 60m ./...` + frontend
+tests/build/budget/csp, by hand (the part of verify after govulncheck). Log ~/scratch/desk-verify2.log, last line
+"exit N". Alive? `ssh claudeos 'ps -eo etime,args | grep -E "[g]o test -race|[v]itest"' < /dev/null`. It dies with
+the CT105 shell if the session ends; just rerun the failed part. Result use: fix every FAIL, then one final verify.
+Earlier full-verify log: ~/scratch/desk-verify.log. Test app stopped. Nothing on his :0. Xvfb :5 up.
 
 ## 1. What we are doing
-Build the five screens to the locked mocks on the NATIVE league, League Pulse first, import read folded into each
-screen; then the lab server serves the app. Phone layout is out. Christopher 11-09: "most unique fantasy football
-experience ever; act with purpose and conviction"; "this direction is good; excellence as the standard, lean and
-clean code, precise execution with purpose".
-- Handoff digested: Beelink ~/Downloads/TheWarRoom-IMPORT-UI-HANDOFF.md. North Star 2.1 (repo North_Star.md).
-- Work on Claude-OS (`ssh claudeos`, always `< /dev/null`): worktree ~/work/TheWarRoom/.worktrees/ui, branch
-  `session/ui-to-mocks` off main 8899a8bf. Claude-OS has NO git remote. To push: bundle the branch to the Beelink,
-  fetch into a NEW worktree under ~/work/TheWarRoom/.worktrees/, push from there (pre-push runs the full suite,
-  ~10 min, GOTOOLCHAIN=go1.26.10; a fresh worktree needs frontend/dist: pnpm install + build first). Squash merge
-  only, after Christopher's live look.
-- Env: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 GOMEMLIMIT=1500MiB
-  GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" GOLANGCI_LINT_CACHE=$PWD/.golangci-cache
-  VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1. Commit: -c user.name=secureprospective
-  -c user.email=secureprospective@users.noreply.github.com, message from a file (-F), trailer
-  Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com> + Claude-Session line. The pre-commit hook runs
-  golangci-lint-full (~3-5 min); it has caught nilerr (use a bool predicate, not `x.Validate() != nil`) and
-  appendAssign (use slices.Clone before append in tests).
+Build the five screens to the locked mocks on the NATIVE league. Merged: rail, League Pulse (PR #223). Now: War
+Room trade desk, "the biggest selling point"; current work is making its math match Christopher's human reads.
+Claude-OS (`ssh claudeos`, always `< /dev/null`): worktree ~/work/TheWarRoom/.worktrees/ui, branch
+`session/war-room-trade-desk`, tip afc79cc0. No git remote there: bundle -> scp via CT105
+-> Beelink worktree ~/work/TheWarRoom/.worktrees/ui (MINE) -> push. NEVER touch .worktrees/website (Tom's) or the
+main checkout. He merges after his look on :0.
+Env: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 GOMEMLIMIT=1500MiB
+GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" GOLANGCI_LINT_CACHE=$PWD/.golangci-cache VITEST_MAX_THREADS=2
+VITEST_MIN_THREADS=1. Commit: -c user.name=secureprospective -c user.email=secureprospective@users.noreply.github.com
+-F msgfile, trailers Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com> + Claude-Session line. Never --no-verify.
+Lint limits that bit: funlen 60 lines / 40 statements, gocyclo 15, gochecknoglobals, exhaustive, gosec G101.
+Write tool on this file: Read it first or the write is refused.
 
-## 2. Harness
-I do the work myself. Edits: write files / python replace scripts in the scratchpad, scp to claudeos:/tmp, run,
-remove BY NAME afterwards (a wildcard rm in /tmp is refused).
-- `make build` (~20 s). `UIP=ui-profile2 sh ~/scratch/ui-desk.sh` launches on a profile. Wait ~140 s. Then
-  W=$(xdotool search --onlyvisible --name "The War Room"|head -1); xdotool windowmove $W 0 0 windowsize $W 1920 1080;
-  `scrot -o`. Stop: kill $(pgrep -x thewarroom). One chained ssh command does build+kill+launch+sleep+click+scrot.
-- Profiles (real league data: stay on Claude-OS, delete when the job ends): ui-profile = OLD 11-01 seed league;
-  ui-profile2 = FRESH import of MFL 14432 (the one to use). The app now opens straight on the app league, Home.
-- Click points (app league, 1920x1080): Home (86,168) War Room (86,201) Franchise HQ (86,235) League Pulse (86,268)
-  Control Room (86,302); an open node pushes later rows down ~27 px per leaf. Pulse prev-week arrow (260,75).
-  MATCHUP BOX pull (300,1062), SCHEDULE pull (425,1062); schedule MY TEAM tab (630,436) in league view. Matchup rows
-  in the left list start at y~245, ~61 px apart. Always screenshot before trusting.
-- Show Christopher: scp -i /root/.ssh/beelink to chris@192.168.1.191:~/Downloads, give file:// path.
+## 2. Harness (the fast way to test trade math — use it before touching Go)
+CT105 scratchpad /tmp/claude-0/-root/84aad0c9-c764-46a4-bdd1-488ea2f3d933/scratchpad/scar/ :
+- lens.py = Python copy of tradelens AS IT WAS BEFORE 5b21f90b (floor at teams x seats, bar on picks). x1.py `mk(floor=
+  'roster', rel=KEEP, nobar=True)` builds the engine as it is NOW. `report(E)` prints R1..R4h with PASS/FAIL.
+- lens.json = anonymous real lens input (f01 = Vikings/franchise.24, f02 = New England/.02, f03 = franchise.21, a
+  QB-needy team with early picks). Tokens: Brissett a0122, Downs a2031, Herbert a0543. Each pick has Slot + Comps.
+- reads.json = the four proposals. seasons.csv = 9,388 anonymous player-seasons 2021-26 (pid, pos, season, points,
+  games, age, draft_round, rookie_season). rel.py / rel2.py / rel3.py = keep measurements. x7.py = shipped keep values.
+- Shipped keep (in x7.py): CB .671 DE .661 DT .675 PK .185 LB .743 QB .496 RB .806 S .634 TE .811 WR .797.
+To check real Go on the real league: temp-patch market/trade_lens.go to json-dump `in` before tradelens.Evaluate to
+/tmp/twr-lens-in.json, make build, launch, open War Room, kill; a temp _test.go in internal/tradelens loads the dump
+and runs Evaluate (real ids: Vikings franchise.24, NE franchise.02, Brissett 12616, Downs 17563, Herbert 14779,
+R4 partner franchise.21). Remove patch, test file and dump after. Done once; numbers matched the harness.
+App walk: `make build` (~50 s); `UIP=ui-profile2 sh ~/scratch/ui-desk.sh` (display :5); wait for window "The War
+Room" + 95 s; windowmove 0 0, windowsize 1920 1080; click War Room (86,201); wait 16-20 s. Stop: kill $(pgrep -x
+thewarroom). Desk clicks: partner select (1432,285) then Down/Down/Return 0.5 s apart (= New England). Shelf rows
+move with values: screenshot before clicking. Show him: scp -i /root/.ssh/beelink to chris@192.168.1.191:~/Downloads.
+Bee: brief file in Beelink ~/fleet/briefs, run dir ~/fleet/runs/<name>, launch pi directly with ssh -f (model
+gpt-6-luna, --thinking high), sentinel file, done-watcher in the same step. Real league data never leaves the lab:
+anonymous ids only.
 
 ## 3. Gates
 | Gate | State |
 |---|---|
-| vitest src/app/shell + src/app/data | 417/417 on e89c664c |
-| tsc --noEmit | clean on e89c664c |
-| Targeted go tests (player score Line, recorded starters, open-season projected field + row conference) | pass |
-| pre-commit golangci-lint-full | passed on df01ea41, f17b8d4f, 9bc50015 and 599f2bad |
-| make build | pass |
-| make verify (full) | NOT run; once before the push |
-| native_forks ratchet (19) | not lowered |
-| Push / PR / Christopher's live look | not done (screenshots only) |
+| go build, make build, go test tradelens + model/fit + store/params + app/market | pass |
+| pre-commit hook on 40f40b6d and 5b21f90b | pass |
+| Real Go on real league = Python harness | MATCHED |
+| Read 1 (a 1st >> Brissett) | PASS: you -3.2, them +1.5 |
+| Read 2 (2nd + two 3rds ~ a 1st) | PASS: 0.0 / +0.2 |
+| Read 3 (NE snatches 2028 1st + 2027 2nd for Downs) | PASS: you -2.6, them +1.1 (329602e6) |
+| Read 4 (Herbert ~ two 1sts + two 2nds, QB-needy partner) | FAIL: +15.8 / -16.0 |
+| Screenshots of reads 1-3 on the new math | TAKEN, sent (read 4 not staged) |
+| tsc, vitest, make verify, wire snapshots, push, PR | NOT RUN |
 
-## 4. Artifacts
-- Commits on session/ui-to-mocks: db668c16 Pulse slice 1; a75661a5 one rail; a9e364dc unusable stats id + recorded
-  weeks parse; 05110385 pre-cutover lineups + recorded starters + slate/back button/matchup box; a8b4ab8a schedule
-  drawer; df01ea41 starter stat lines; f17b8d4f Race drawers + projected seeds + row conference; 86b1d7f3 Race
-  standings column; 9bc50015 Stat Changes drawer; ab414706 its regenerated bindings; e89c664c mock pass fixes; 599f2bad live tackles solo/assist; plus resume commits.
-- Beelink ~/Downloads: twr-pulse-fresh-week{8,9}-1109.png, twr-pulse-fresh-week8-box-1109.png,
-  twr-pulse-schedule-{league,myteam}-1109.png, twr-rail-{pulse,hq,control}-1109.png,
-  twr-pulse-statline-{week9,box}-1110.png, twr-pulse-race-{race,tb,bk}-1110.png,
-  twr-pulse-statchanges-week{9,8}-1110.png, twr-pulse-pass-{live9,sched,race,mock-race}-1110.png.
+## 4. What exists (committed on the branch, NOT pushed)
+7055d9c5 desk + direction; fcc8cb9d, 8c527bc6; 1ec399fc weights 65/50/30; df4b06a7 pick value; a734abe4 scarcity;
+0e134734 slots by record; 40f40b6d kicker fix (model says K, lineup says PK: market.lensPosition / modelPosition);
+5b21f90b:
+- tradelens.replacement: floor = league[rostered] (best player left once the league has taken as many as it rosters
+  at the position; free agents are in the pool). No seat math there any more.
+- roster.over = keep[pos] x max(0, lens value - floor); Input.Keep map (missing position = 1).
+- roster.worth(pick) = Weight x best group's mean of comps' over. NO roster bar. best() returns total only.
+- internal/model/fit/keep.go fitKeep: slope of next-season PPG on this season's, pairs with 6+ games in both, clamp
+  0..1. fit.Result.Keep. tools/fit writes key `trade.keep` per position (fittedValues helper). params.KeyTradeKeep;
+  fitted.go describes it; ONLY the trade.keep rows were merged into fitted.json (rerunning the tool drifts 189 other
+  values because the data differs from the 10-27 fit: do not regenerate the whole file).
+- market.lensLeague fills in.Keep from src.Params().GetPosition(KeyTradeKeep, modelPosition(slot)).
+- Fit data lives on the Beelink: ~/scratch/twr-research/fit.db (+ -wal) and players.json (has
+  outcome.weekly_fantasy_points 2021-25; no Claude-OS database has that measure). Copy to Claude-OS, run
+  `go run ./tools/fit -db .. -players .. -params /tmp/x.json -report /tmp/x.md`, delete the copy.
 
-## 5. Current bug
-None open.
+## 5. Open problems
+- Read 3: level, not a snatch. Next fix = draft scarcity (his order).
+- Read 4: player model, not scarcity. Backup and free-agent QBs carry points-per-game-when-playing values (best
+  free-agent QB reads 14.8; the roster-line QB reads 8-9), so the QB floor is far too high; QB keep is only .50.
+  Needs expected weekly points (ppg x chance of playing). Veteran work he said to do together. He now says draft
+  scarcity is "the last need for parity": check read 4 again after it and tell him plainly if it still fails.
+- Not done for 5b21f90b: Fit_Report.md keep table; parameter_words entry for trade.keep (settings-screen wording).
+- Two pick valuers (pickvalue v2 for power rankings vs lens comps); TradeLensSource.Players unused; pickMarket 1.2
+  should become a league setting; one >110-char line in pickComps; power rankings rework after trade value.
 
 ## 6. Established: do not redo
-- Starters DO land on a fresh import: current week at once, played weeks after a 5-minute launch delay. 288/288.
-- Fixed and committed: pre-GSIS ids in the gsis slot (isGSIS in fantasyscore/source/held.go); parser accepts
-  recordedResult; a LineupCorrect for a week before the recorded CutoverWeek skips the roster check
-  (commissioner/lineup_week.go); RecordedStarters fills pre-cutover starters in the store's results.read only
-  (not standings, not transfer), team total untouched.
-- Week 8 starter points sum ~135.3 vs 134.8 recorded: app rules vs MFL's own scoring; the recorded total rules.
-- App-league reads route through frontend shell/localWorkflow.ts (direct Wails bindings) or TargetWorkflow
-  (commandcatalog/workflow_commands.go, closed workflowOutput type list). A read in neither says "this league action
-  is not available here". Add a direct line in localWorkflow.ts for a bound read; do not widen workflowOutput.
-- Importing an existing league is a RE-SYNC; league id native.mfl-<id>-<season>. The ledger refuses deletes; use a
-  clean profile instead.
-- Mock CSS for Pulse is fully ported in pulse.css (drawers, dtab, grid-sched, story, awards, bk already there).
-  The bottom drawer is `.bdrawer` rendered inside `main.work`; pulls live in the tray (NativeLeaguePulse.tsx,
-  `drawer` state 'box'|'sched', Esc closes). Mock: docs/ui/mocks/league-pulse-mock-v14.html.
-- HQShell.tsx and WarRoom.tsx still carry their own rail copies for the non-embedded layout: collapse into
-  ShellRail later, lower native_forks then.
+- Luna round 1 (per-position multiplier QB 1.32 .. PK 0.56 from surplus per seat) and round 2 (no passing formula):
+  Beelink ~/fleet/runs/bee-twr-scarcity-1111 and -r2-1111. A 0.5-1.5 multiplier fails reads 2-4. Do not re-dispatch
+  the same question; Luna quit in 2-3 minutes both times even with a runnable harness.
+- Floor at teams x seats: every QB near 0. Floor at best free agent: QB floor 14.8 (worse). Roster line is the keeper.
+- Keep measured in percentile units, or only on the top half: S comes out .67-.77 and read 3 fails. PPG slope over
+  all regulars is what shipped. The safety figure swings .5-.65 with how games are counted; data alone will not
+  make read 3 a snatch.
+- The model's own trust (17 games vs k_dynasty: QB .86 S .61 CB .63): read 3 level, read 1 both lose. Not used.
+- Bar on picks is what collapsed rounds 2-5; removing it fixed read 2.
+- GPT/Gemini pick tables: none fits the 123 trades. Do not hardcode a pick table.
+- pickMarket 1.2 measured on 43 pick-for-player trades (median 1.15-1.2). Next draft = no wait, 0.75 per later one.
+- Slot-by-record (guessSlots) built; first 16 of round 1 vs second 16 is his ruling.
 
 ## 7. Decisions (Christopher)
-- 11-10: he gates step by step ("go ahead with the starter stat line", "Go" for Race drawers); report each step
-  with screenshots, name the next one. Code quality and precise execution restated.
-- 11-09: plan confirmed, Pulse first; clear pathway then execute; precise outputs; stay true to the mocks.
-- 11-09 night: direction is good; excellence, lean and clean code; fix the lineup backfill then keep going on Pulse.
-- My calls 11-10 (told him): tiebreak DETAIL is the engine's own long sentence (offered to cut down); crowded
-  lineups keep two-line starter cells; standings points show two decimals; bracket headings from node ids.
-- My calls (flag if he objects): >16 starters keep the single list with tight rows; recorded weeks show app-scored
-  starter points beside the untouched recorded total; schedule grid shows last week through the next ones.
+- Weights .65/.50/.30. Human behaviour = one average multiplier, never the bounds.
+- Scarcity belongs in the trade calculator and draft value, not power rankings; scaled by roster requirements; log
+  league-size findings, build no scale.
+- Do not mark QBs and safeties independently: one formula for every position.
+- Keep source: he chose "A (recommended)" = measured from history (11-10).
+- NEXT (11-10, verbatim): "it looks like we do need to do a draft scarcity, which should be easier with it being a
+  finiet supply, and I am confident thats the last need for parity."
+- His reason on read 3: "Starting safeties are plentiful in every draft into the late 2nd, sometimes late 3rd."
+- Read 4: Herbert ~ two 1sts + two 2nds, confirmed.
+- "We need to update how the power rankings work when we get this ironed out."
+- Standing: mock is the gate; he merges; stop rule (new ledger event, schema, import or permission change -> ask).
+- His four reads: memory project_warroom_trade_value_human_anchors.md.
 
-## 8. Ledger state
-Everything committed (+ this resume). Not pushed. Beelink repo untouched. Untracked: only .golangci-cache/.
+## 8. Scarcity-scale findings log (do NOT build)
+Roster-line replacement moves with league size and roster limits by itself. Keep shares are league-agnostic model
+values. At 32 teams one-QB lineups still flatten QBs because backups are overvalued by the player model.
 
-## 9. PLAN for the rest of this session (in order)
-1. DONE 11-10 (commit df01ea41, not pushed): starter stat line
-   (StarterScore.Line -> statLine.ts compactLine/boxLine; shots twr-pulse-statline-{week9,box}-1110.png). The league
-   is now in week 10, so week 9 is one prev-arrow click. NEXT IS 9.2. Original note: Read how NativePlayerScore is built (commissioner PlayerScore source, fantasyscore StatLine
-   Quantities); add a short stat line per starter to StarterScore in results.read (one field, built from the
-   quantities already scored, no new fetch); parse it in nativePulse.ts; show it as the mock's `.ln` under each
-   starter and as LINE columns in the matchup box. Go test + vitest case. Mock lines 1236-1240 and 1323-1330.
-2. DONE 11-10 (commits f17b8d4f + 86b1d7f3, not pushed): TIEBREAKERS + BRACKET drawers (PulseRaceDrawers.tsx,
-   shared PulseDrawer.tsx shell; pulseModel tieGroups/bracketRounds). Backend reads changed: bracket.read carries
-   `projected` fields while the season is open (Fields stays empty), standings rows carry `conference`. Race opens on
-   my own side; Race rail leaf click (55,325); pulls TIEBREAKERS (300,1062) BRACKET (425,1062). Shots
-   twr-pulse-race-{race,tb,bk}-1110.png. PRODUCTION pull deferred (9.6). NEXT IS 9.3. Original note:
-   Race drawers from reads already served: BRACKET (bracket.read is parsed already) and TIEBREAKERS (check what
-   standings.read says about ties first). Pulls on the Race tab. Mock DRAWERS.race, lines 1345-1360.
-3. DONE 11-10 (commit 9bc50015, not pushed): STAT CHANGES drawer. Backend: NativePlayerScore/StarterScore carry
-   `revision` {stats[{stat,label,was,now}], was, now} (commissioner/score_revision.go) when the counted line is the
-   final feed's and scores differently from the newest live (ESPN/Sleeper) line held; read only. Frontend:
-   pulseModel statChanges/changePoints/changeVerdict, StatChangesDrawer in PulseNow.tsx, pull STAT CHANGES n at
-   (545,1060) with the count; PulseScore.recorded. Results `changes` (commissioner adjustments) is still not shown:
-   it is a different thing from the mock's drawer. NEXT IS 9.4 on his word. Original note: score changes are already in results.read (`changes`, currently dropped by the parser);
-   line revisions exist in fantasyscore/source. Show first held vs latest. Mock line 1340.
-4. DONE 11-10 (commit e89c664c): screenshot pass against the mock (mock rendered with headless chromium from a
-   temp copy with a state script appended). Fixed: seg/filter buttons use `active` (CSS keys on aria-pressed);
-   Escape closes only the Pulse drawer (capture, like RowMenu; the shell's Escape = inspector.close, which was
-   hiding the inspector); MINE filter dropped; TO PLAY label. NOT built, needs data or his word (told him):
-   Race right side = mock's RUN-IN table + projected bracket + "this week moves it" + bye %/magic number (app shows
-   playoff-field cards); inspector extras (points against, all-play, streak, points by week, last 5, history);
-   WEEK STORY, NFL BOX SCORE, PRODUCTION, ARCHIVE, schedule COMPACT tab, rail "LIVE leading" line; strip source
-   line is long vs the mock's two short lines; matchup list shows a status tag where the mock shows win %.
-4b. DONE 11-10 (commit 599f2bad): live tackle fix. ESPN SOLO -> tackle, assist = TOT - SOLO (AST wins if present);
-   Sleeper live idp_tkl_solo -> tackle. Verified against the public ESPN summary and Sleeper stats feeds. Lines
-   already held keep what was recorded, so week 9's Stat Changes rows stay; new live lines are right.
-5. Batch point: make verify; bundle to the Beelink; push; PR; launch on :0 for Christopher's real-screen look
-   (his display; never claim what he sees). Merge only after he confirms.
-6. Deferred, needs his word or new backend: WEEK STORY (generated text), NFL BOX SCORE, PRODUCTION, ARCHIVE tab
-   (history/eras/trophies). List what each needs and ask him to order them.
-7. After Pulse: War Room trade desk (v6), Franchise HQ (v10), Home (v5), Control Room (v1); then Part C.
-Stop rule: if a step needs a new ledger event, a schema change or a permission change, stop and tell him first.
+## 9. NEXT ACTIONS, in order
+1. Read ~/scratch/desk-verify2.log on Claude-OS: list every FAIL (go and frontend).
+2. Add the release-matrix fixture for commish.franchise.direction.set; run that package's tests.
+3. Bump Go to 1.26.11 (three live pins, own commit); govulncheck clean; hook passes.
+4. Fix anything else the log shows (wire snapshots, vitest), then ONE full `make verify` to exit 0.
+5. Update this resume, bundle -> scp via CT105 -> Beelink worktree ~/work/TheWarRoom/.worktrees/ui (fresh worktree
+   needs frontend/dist: pnpm install + build before push; use git -C) -> push -> open PR. PR body: what the desk
+   math does, the four reads table, read 4 known fail (his ruling: move on), the two boundary fingerprints and why,
+   the Go bump and why, filelen notes if asked. He merges after his look on :0 (squash).
+6. Put the desk on his :0 for his look only when he asks or the PR is open (never claim what he sees).
+7. Later, with him: veteran / backup-QB value (read 4), then power rankings rework.
 
-## 10. Findings log (evidence seen; report, do not hunt)
-- Week 9, my matchup: the last live line counts more tackles than the final feed for 9 of 13 changed starters
-  (Chinn 10 -> 6, 24.0 -> 16.0 pts): looks like live = solo + assists, final = solo only. Told Christopher 11-10.
-- Week 9 strip still says "0 with a result, 16 still to come" though every starter reads FINAL; the week-10 strip
-  says "15 final" (ESPN's scoreboard is still last week's). The matchup box says "playing" for a 0.0 starter in a
-  finished week. The no-lineup idle text repeats the same sentence for both teams. Schedule drawer shows 20 of 32
-  rows without scrolling.
-- Week 8 (recorded week) shows no stat changes: the live and final lines held at import score the same.
-- The league is in week 10 now; week 9 still reads "0 with a result, 16 still to come / WAITING" (final stats not in).
-- Pulse past-week view (week 9) drew without the right-hand inspector in one launch and with it in the next.
-- Tie reasons name teams from both conferences (the tie is league-wide); the drawer shows this side's teams only.
-- vitest prints "League Pulse read failed: TypeError ... reading 'API'" from one test; all tests pass.
-- Before any import a new user sits in the OLD plain layout, not the mock shell.
-- Import form: datetime fields pop a calendar over the field; Esc in the Control Room tray closes the whole tray.
-- Stat feed writes ledger events every launch (commish.stat.queue.approve).
-- Launch ~110-150 s at high CPU, 1.1-2.6 GB RSS (budget is 200 ms a screen).
-- Log spam: trades.read "you may act only for your own franchise"; "the war room: body not read to the end";
-  MFL liveScoring "rate limiter wait failed" falls back to the archived copy.
-- Three directory players carry pre-GSIS ids (HAR447512, JON157260, THO581952): they read as no stats identity.
-- Schedule read includes a week 14 with no games (dropped from the drawer).
-- RailWeek and Pulse each run usePulseLive(''): two scoreboard pollers (mine; fold into one).
-- With no franchise chosen RailWeek calls week.read with an empty franchise (mine; guard it).
-- Claude-OS /tmp has fixwalk.py and mark.py of unknown origin: left alone.
-
-## 11. Honest status
-Rail matches the mock. Pulse: Live works on real data with starter stat lines and three of five drawers (box,
-schedule, stat changes); Race shows today's projected seeds with two of three drawers (tiebreakers, bracket); Archive is not
-started. Missing: WEEK STORY, NFL BOX SCORE, PRODUCTION. Nothing is pushed, the full suite has not run
-on these commits, and Christopher has only seen screenshots.
+## 10. Honest status
+Reads 1-3 pass on the real league, in the app, and he graded them A+/A+/A-. Read 4 fails; he ruled move on.
+Lint passes. The vulnerability scan and one Go test fail for the two known reasons above; frontend checks were
+still running. Nothing is pushed. ETA to an open PR once resumed: about 40 minutes if the Go bump is clean.

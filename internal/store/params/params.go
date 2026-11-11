@@ -204,6 +204,7 @@ const (
 	// KeyDynastyDiscount: each later season's weight in the dynasty measurable.
 	KeyDynastyDiscount   = "dynasty.discount"
 	KeyPickValueDiscount = "pickvalue.discount"
+	KeyTradeKeep         = "trade.keep" // fitted per position (tools/fit)
 	KeyPowerPickWeight   = "power.pick_weight"
 	// KeyDynastyContractTilt: the most a contract's price and length move a dynasty value.
 	KeyDynastyContractTilt = "dynasty.contract_tilt"

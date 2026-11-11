@@ -3,6 +3,7 @@ import type { WarRoomHeaderReading } from './warroomReads';
 import type { WarRoomEvent } from './warroomCalendar';
 import { countdown } from '../clock/urgency';
 import { absent, money, placeLine, unavailable } from './hqModel';
+import { directionLabel, directions, type Direction, type WarRoomLens } from './warroomLens';
 export function CompactAbsent({ pending }: { pending?: boolean } = {}) {
   return <span title={absent(pending)} aria-label={absent(pending)}>—</span>;
 }
@@ -10,15 +11,27 @@ export function WarRoomEmpty({ reason, pending }: { reason?: string; pending?: b
   return <p className="empty" role={pending ? 'status' : undefined}
     >{pending ? absent(true) : reason || unavailable}</p>;
 }
-export function WarRoomHeader({ name, reading, windowLabel }: { name?: string;
-  reading?: WarRoomHeaderReading; windowLabel?: string }) {
+export function WarRoomHeader({ name, reading, windowLabel, lens, choose, pending, problem }: { name?: string;
+  reading?: WarRoomHeaderReading; windowLabel?: string; lens?: WarRoomLens;
+  choose?: (d: Direction) => void; pending?: boolean; problem?: string }) {
+  const you = lens && !lens.preparing ? lens.you : undefined;
+  const ages = reading?.age ?? [];
+  const peak = Math.max(0, ...ages.map(b => b.value));
+  const band = (i: number) => ages[i].open ? `${ages[i].from}+` : i === 0 && ages.length > 1 ?
+    `≤${ages[1].from - 1}` : `${ages[i].from}`;
   return <section className="franchise-context" aria-label="Franchise context">
     <div className="who"><b>{name ?? unavailable}</b><div title={reading?.standingsNote}>{placeLine(
-      reading?.record, reading?.standing, reading?.standingsNote)} · window {windowLabel || unavailable}</div>
+      reading?.record, reading?.standing, reading?.standingsNote)}{!windowLabel ? '' :
+      windowLabel === 'none open' ? ' · no window open' : ` · open now: ${windowLabel}`}</div>
     </div>
-    <div className="mini"><span className="h">DIRECTION</span><div className="post">
-      {['Win now', 'Retool', 'Rebuild'].map(p => <WarRoomAct key={p} disabled title={unavailable}
-        active={false}>{p}</WarRoomAct>)}</div><small>Not set</small></div>
+    <div className="mini"><span className="h">DIRECTION
+      {problem && <small role="alert">not recorded: {problem}</small>}</span>
+      <div className="post">{directions.map(d => <WarRoomAct key={d} disabled={!choose || !you || pending}
+        title="Your direction is shown to the whole league. Your lens follows it."
+        active={Boolean(you?.set && you.direction === d)} onAction={() => choose?.(d)}>
+        {directionLabel[d].toUpperCase()}</WarRoomAct>)}</div>
+      {you && !you.set && <small className="hint">our read: {directionLabel[you.direction].toLowerCase()}
+        {choose ? ' · pick yours' : ' · the owner picks'}</small>}</div>
     <div style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
       <div className="mini"><span className="h">{reading?.starterN === undefined ? 'BEST' :
         `Best ${reading.starterN} (any position)`}</span><div><b title={reading?.valueNote}>
@@ -27,14 +40,19 @@ export function WarRoomHeader({ name, reading, windowLabel }: { name?: string;
         <small>{!reading?.valuesPreparing && (reading?.rank ?? <CompactAbsent />)}</small></div></div>
       <div className="mini"><span className="h">VALUE BY AGE</span>
         {reading?.valuesPreparing ? <p className="empty">Values are being prepared</p> :
-          reading?.age?.some(b => b.players > 0) ? <dl className="value-ages"
-          aria-label="Dynasty value by age">
-          {reading.age.map(b => <div key={b.from}><dt>{b.open ? `${b.from}+` : b.from === 0 ?
-            `≤${b.to}` : `${b.from}–${b.to}`}</dt><dd title={`${b.players} players`}>{b.value.toFixed(1)}</dd>
-          </div>)}</dl> : <WarRoomEmpty />}</div></div>
-    {/* Nothing computes next-season needs yet; say so rather than implying the read failed. */}
+          ages.some(b => b.players > 0) ? <div role="img" aria-label={`Long-term value by age: ${
+            ages.map((b, i) => `${band(i)} ${b.value.toFixed(1)}`).join(', ')}`}>
+          <div className="agec">{ages.map((b, i) => <i key={b.from} className={b.value >= peak * 0.8 ?
+            'peak' : ''} style={{ height: `${Math.max(4, b.value / peak * 100)}%` }}
+            title={`Age ${band(i)}: ${b.value.toFixed(1)} long-term value · ${b.players} players`} />)}</div>
+          <div className="agek">{ages.map((b, i) => <span key={b.from}>{band(i)}</span>)}</div></div> :
+          <WarRoomEmpty />}</div></div>
     <div className="mini"><span className="h">NEEDS · NEXT SEASON</span>
-      <p className="empty" title="No engine works out next-season needs yet.">Not built yet</p></div>
+      {you?.needs.length ? <div className="needs">{you.needs.map(n => <span key={n.position}
+        className={`nd ${n.state === 'ok' ? '' : 'hole'}`} title={`${n.have} starter-grade ${n.position
+        } signed for next season · the lineup starts ${n.starts}`}>{n.position}<small>{n.state}</small>
+      </span>)}</div> : <p className="empty">{lens?.preparing ? 'Values are being prepared' :
+        absent(!lens)}</p>}</div>
     <div className="mini"><span className="h">CAP RUNWAY</span><div className="runw">
       {reading?.runway?.length ? reading.runway.slice(0, 3).map(y => <div className="y fit" key={y.season}>
         <span>{y.season}</span><span className="bar">{y.max && y.room !== undefined ? <i
@@ -47,9 +65,13 @@ export function WarRoomHeader({ name, reading, windowLabel }: { name?: string;
 // kept for a calendar that could not be read, with the reason in the hover.
 export function WarRoomDates({ events, failed, reason }: { events: WarRoomEvent[]; failed?: boolean;
   reason?: string }) {
+  // A window that has opened counts down to its close; one with no close stays open.
+  const when = (d: WarRoomEvent) => d.live ? d.closes : d.at;
   return <div className="cal" aria-label="Calendar">{events.length ? events.map(d => <div className="ev"
-    key={d.id}><span className="w">{d.at ? new Date(d.at).toLocaleDateString() : unavailable}</span>
-    <b>{d.label}</b><span className="c">{countdown(d.at, Date.now())}</span></div>) :
+    key={d.id}><span className="w">{when(d) ? new Date(when(d) ?? '').toLocaleDateString() : d.live ?
+      'open now' : unavailable}</span><b>{d.label}</b><span className="c">{d.live ? d.closes ?
+      `closes ${countdown(d.closes, Date.now())}` : 'no close set' : countdown(d.at, Date.now())}</span>
+  </div>) :
     failed ? <p className="empty" title={reason}>{unavailable}</p> :
       <p className="empty">No dates yet</p>}</div>;
 }

@@ -131,6 +131,7 @@ internal/mflref/whatif	contracts
 internal/app/mflref/seed	commissioner
 internal/store/mflref/tradeplans	trades
 internal/lineupdelta	trades
+internal/tradelens	trades
 internal/projection	scoring
 internal/appvalue	scoring
 internal/app/mflref/migration	control

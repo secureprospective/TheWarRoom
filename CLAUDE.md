@@ -53,8 +53,8 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 
 1. `git branch --show-current`. Never work on main; branches are `session/<short-description>`.
 2. Read `North_Star.md`, the governing plan and the newest `docs/RESUME-*.md`.
-3. Toolchain (Go 1.26.10; the git hooks need this too):
-   `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 GOMEMLIMIT=1500MiB
+3. Toolchain (Go 1.26.11; the git hooks need this too):
+   `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.11 GOMEMLIMIT=1500MiB
    GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`.
    Always pass `VERSION=dev COMMIT=<ring> BUILD_DATE=<ring>` to make. The commit gates are
    `timeout 600 nice -n 10 make verify …` and `make build …`, both exit 0.

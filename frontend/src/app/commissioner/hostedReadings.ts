@@ -83,7 +83,7 @@ export type HostedRoster = {
   pool: { value: string; label: string }[];
   market: { id: string; name: string; position: string; string: string; points: string; age?: string; value?:
     string; minimum?: string; minimumCents?: number }[];
-  picks: { season: number; round: number; original: string; owner: string }[];
+  picks: { season: number; round: number; original: string; owner: string; used: boolean }[];
   players: {
     id: string;
     name: string;
@@ -115,8 +115,10 @@ export function parseHostedRoster(v: unknown): HostedRoster {
     'franchises',
     'players',
     'picks',
+    'pickHistory',
     'adjustments',
     'pool',
+    'sides',
   ]);
   return {
     league: text(r.league, 'League'),
@@ -150,6 +152,8 @@ export function parseHostedRoster(v: unknown): HostedRoster {
     }),
     picks: array(s.picks, 'Picks', (v) => {
       const p = object(v, 'Pick', [
+        'compensatory',
+        'correction',
         'season',
         'round',
         'slot',
@@ -163,6 +167,7 @@ export function parseHostedRoster(v: unknown): HostedRoster {
         round: integer(p.round, 'Round'),
         original: text(p.original, 'Original team'),
         owner: text(p.owner, 'Owner'),
+        used: Boolean(p.player) || p.skipped === true,
       };
     }),
     players: array(s.players, 'Roster players', (v, p) => {

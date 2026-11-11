@@ -15,11 +15,12 @@ export type WarRoomInspectorReading = { research?: PlayerReading; arc?: Arc;
   contract?: Reading<PlayerContract>; cut?: NativeCut; notes?: ReturnType<typeof parseNotes>;
   valuesPreparing?: boolean; value?: LeaguePlayerValue; fit?: InspectorFit;
   projection?: ReturnType<typeof parseWarRoomProjections>[number]; errors: string[] };
-export async function readWarRoomInspector(c: WarRoomContext, id: string):
-  Promise<WarRoomInspectorReading> {
+// Each fact lands on the card as it arrives: the lineup fit is slow and must not hold the values back.
+export async function readWarRoomInspector(c: WarRoomContext, id: string,
+  publish?: (reading: WarRoomInspectorReading) => void): Promise<WarRoomInspectorReading> {
   const result: WarRoomInspectorReading = { errors: [] };
   const apply = async (fn: () => Promise<void>) => { try { await fn(); } catch (e) {
-    result.errors.push(String(e)); } };
+    result.errors.push(String(e)); } finally { publish?.({ ...result, errors: [...result.errors] }); } };
   if (c.native) {
     const native = c.native;
     await Promise.all([

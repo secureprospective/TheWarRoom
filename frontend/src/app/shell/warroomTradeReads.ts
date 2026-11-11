@@ -61,7 +61,7 @@ export async function readWarRoomCatalog(c: WarRoomContext): Promise<WarRoomCata
       return { token: p.id, name: identity?.name ?? p.name,
         position: identity?.position,
         contract: rosterContract(contract) };
-    }), ...roster.picks.filter(p => p.owner === f.value).map(p => ({ token:
+    }), ...roster.picks.filter(p => p.owner === f.value && !p.used).map(p => ({ token:
       `pick:${p.season}:${p.round}:${p.original}`, name: `${p.season} round ${p.round}`, pick: p }))] })) };
 }
 export async function readWarRoomPreview(c: WarRoomContext, catalog: WarRoomCatalog, deal: WarRoomDeal) {

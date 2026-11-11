@@ -6,6 +6,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/tradelens"
 )
 
 func (a *API) TargetNativeCapCheck(leagueID, viewerZone string) (commissioner.NativeCapCheck, error) {
@@ -120,6 +121,12 @@ func (a *API) TargetStatQueue(league string, season int, request string) (commis
 func (a *API) TargetCancelRead(request string) error {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetCancelRead(request)
+}
+
+// TargetNativeTradeLens reads a proposed trade through each side's direction; it records nothing.
+func (a *API) TargetNativeTradeLens(raw leagueservice.RawTradeLensScope) (tradelens.Reading, error) {
+	//nolint:wrapcheck // The shared service supplies the read's context.
+	return a.reads.TargetNativeTradeLens(raw)
 }
 
 // TargetNativeValues reads this league's player values, Best N and dynasty value by age.

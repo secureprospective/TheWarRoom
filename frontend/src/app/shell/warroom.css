@@ -929,10 +929,9 @@
 .wr-v6 .ia{grid-template-columns:repeat(2,minmax(0,1fr))}
 
 /* Give shelf identities the row; secondary figures remain in the inspector. */
-.wr-v6 .shelf .blk{grid-template-columns:34px minmax(0,1fr);height:44px}
+.wr-v6 .shelf .blk{grid-template-columns:34px minmax(0,1fr) 22px 40px;height:44px}
 .wr-v6 .shelf .blk .nm{display:grid;text-align:left;line-height:1.2}
 .wr-v6 .shelf .blk .nm small{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wr-v6 .shelf .blk .ag,.wr-v6 .shelf .blk .vl{display:none}
 .wr-v6 .shelf .list{scrollbar-width:thin;scrollbar-color:var(--edge) var(--sunken)}
 .wr-v6 .shelf .list::-webkit-scrollbar-track{background:var(--sunken)}
 .wr-v6 .mini .h{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -955,18 +954,25 @@
 
 .wr-v6.embedded .desk{grid-template-columns:minmax(180px,1fr) minmax(360px,2fr) minmax(180px,1fr)}
 .wr-v6.embedded .desk>div,.wr-v6.embedded .dr5>div{min-width:0;overflow:auto}
-.wr-v6.embedded .effect{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* Four figures across as the mock draws them; each side's lineup changes take half below. */
+.wr-v6.embedded .effect{grid-template-columns:repeat(4,minmax(0,1fr))}
+.wr-v6.embedded .effect .wide.half{grid-column:1/span 2}
+.wr-v6.embedded .effect .wide.half+.wide.half{grid-column:3/span 2}
+.wr-v6 .effect .half .swap{grid-template-columns:34px minmax(0,1fr) auto}
+.wr-v6 .effect .half .swap span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-v6 .effect .half .swap span:last-child:empty{display:none}
 .wr-v6.embedded .mk3{grid-template-columns:minmax(0,1fr);overflow:auto}
 .wr-v6.embedded .mk3>div{min-height:220px;overflow:auto}
 .wr-v6 .fa-r .fa-value{overflow:visible;text-overflow:clip}
 .wr-v6.embedded .fa-h,.wr-v6.embedded .fa-r{min-width:780px}
 .wr-v6.embedded .dr5{grid-template-columns:minmax(180px,1fr) minmax(300px,2fr) minmax(180px,1fr)}
-.wr-v6.embedded .franchise-context{height:auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+/* One strip, as the mock draws it: the name gives way first, then the value column. */
+.wr-v6.embedded .franchise-context{grid-template-columns:minmax(0,1fr) auto auto auto auto;gap:18px}
 .wr-v6.embedded .ch{flex-wrap:wrap;gap:4px}
 
-.wr-v6.embedded .franchise-context{overflow:visible;align-items:start}
-.wr-v6.embedded .franchise-context>div{min-width:0;overflow-wrap:break-word}
-.wr-v6.embedded .post{flex-wrap:wrap}
+.wr-v6.embedded .franchise-context>div{min-width:0}
+.wr-v6 .who b,.wr-v6 .who div{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-v6 .mini .hint{font:10px var(--mono);color:var(--amber);margin:0;white-space:nowrap}
 .wr-v6.embedded .shelf>.ch,.wr-v6.embedded .shelf>.bench,.wr-v6.embedded .shelf>.read{flex-shrink:0}
 .wr-v6.embedded .read{grid-auto-rows:max-content}
 .wr-v6.embedded .vers{flex-wrap:wrap;gap:4px}
@@ -986,3 +992,14 @@
 .wr-v6.embedded .mk3{grid-template-columns:220px minmax(0,1fr) 300px}
 .wr-v6.embedded .mk3>div{min-height:0}
 }
+.wr-v6 .tray2 .tot b{display:grid;grid-template-columns:44px 44px;gap:8px;text-align:right;margin-right:-4px}
+.wr-v6 .tray2 .tot .y{color:var(--mine)} .wr-v6 .tray2 .tot .t{color:var(--theirs);font-weight:400}
+.wr-v6 .mini .h small{font-weight:400;letter-spacing:.02em;color:var(--amber)}
+.wr-v6 .effect .blocked{box-shadow:inset 3px 0 0 var(--red)} .wr-v6 .effect .blocked .h{color:var(--red);margin-right:10px}
+.wr-v6 .sg .quiet{color:var(--ink3)}
+.wr-v6 .blk .v2:empty::after,.wr-v6 .blk .vl:empty::after{content:"—";color:var(--ink3)}
+.wr-v6 .build{display:flex;flex-direction:column;overflow:hidden}
+.wr-v6 .build>*{flex:none} .wr-v6 .build>.effect{flex:0 1 auto;min-height:0;overflow-y:auto}
+.wr-v6 .build>.sugg{flex:0 0 auto;max-height:132px;overflow-y:auto}
+.wr-v6 .effect .wide.half{grid-column:span 1}
+.wr-v6 .read .kv span:first-child{flex:none;margin-right:12px} .wr-v6 .read .kv span:last-child{text-align:right}
