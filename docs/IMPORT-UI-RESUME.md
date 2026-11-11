@@ -138,3 +138,34 @@ size), not only starters.
 Pick value and scarcity are built and unit-tested; only the pre-scarcity pick math was hand-checked on the real
 league. Two of his four reads still fail and one is only "not bad". Proposals 1 and 4 were not re-staged after
 the slot change. Frontend checks and the full suite have not run on today's work. Nothing is pushed.
+
+## 11. UPDATE 2026-11-10 evening CT (after compact #9) — Luna study done, three reads pass on the harness
+- Luna round 1 (ratios QB 1.32 .. PK 0.56, surplus per seat) and round 2 (no passing formula) are in Beelink
+  ~/fleet/runs/bee-twr-scarcity-1111 and -r2-1111. Neither passes the reads. Do not re-dispatch the same question.
+- Harness: CT105 scratchpad scar/ (lens.py = exact Python copy of tradelens, lens.json = anonymous real lens input,
+  reads.json, x1..x5.py experiments, rel.py history measures, seasons.csv). Same files in the r2 run folder.
+- Kicker bug fixed + committed 40f40b6d (model says K, lineup says PK; kickers had no replacement level).
+- PASSES R1, R2, R3 (robust to both directions and +-20%): (1) replacement level = first player past the number
+  ROSTERED at the position (not teams x seats); (2) over = keep[pos] x max(0, value - floor), keep = share of a
+  starter's lead over replacement that carries to next season, measured from 2021-25 history: QB .66 RB .82 WR .87
+  TE .81 DT .83 DE .67 LB .66 CB .45 S .54 PK .08; (3) pick worth = Weight x best group mean of comps' over, with NO
+  roster bar. Edges: R1 -2.1/+0.4, R2 0.0/+0.1, R3 -1.9/+0.8.
+- Alternative keep = the model's own fitted trust at 17 games from k_dynasty (QB .86 RB .78 WR .75 TE .73 LB .73 CB .63
+  DT .61 S .61 DE .60 PK .11): wire-only, saner top list (QBs in top 10), but R1 them -1.0 and R3 them 0.0.
+- R4 / R4h still fail in every version (picks beat a QB10-valued Herbert by 7-10). Cause is the player model, not
+  scarcity: backup and free-agent QBs carry points-per-game-when-playing values (best free-agent QB reads 14.8,
+  QB89 reads 8-9), so the QB floor is far too high. Needs expected weekly points (ppg x chance of playing). Part 7
+  work with Christopher.
+- NOT CODED YET: waiting on his ruling on which keep source, then code 1-3 in tradelens (Input.Keep map), tests,
+  rebuild, re-stage the four reads on :5, screenshots.
+
+## 12. UPDATE 2026-11-10 late CT — option A coded (Christopher chose A), commit 5b21f90b, NOT pushed
+- Coded: replacement at the roster line; over = keep x lead; picks = mean comp worth, no roster bar; trade.keep per
+  position fitted by tools/fit (slope of next-season PPG on this season's, 6+ games both) and shipped in fitted.json
+  (only those rows merged; other fitted values untouched). Fit data: Beelink ~/scratch/twr-research/fit.db + players.json.
+- Fitted keep: QB .50 RB .81 WR .80 TE .81 LB .74 DT .68 CB .67 DE .66 S .63 PK .18. These differ from my CSV
+  measure (S .51, CB .44) because the fit data counts games differently; with the shipped values R3 is LEVEL.
+- Real league, real Go code: R1 -3.2/+1.5 pass; R2 0.0/+0.2 pass; R3 -1.6/-0.2 (was +1.8/-3.8) not a snatch;
+  R4 +15.8/-15.0 fail (player model: backup QB values).
+- Not done: screenshots of the four reads, Fit_Report.md keep table, parameter_words entry for trade.keep, tsc/vitest,
+  make verify, repo copy of this resume, push/PR.
