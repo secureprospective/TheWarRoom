@@ -47,15 +47,15 @@ func TradeLens(ctx context.Context, src TradeLensSource, scope tradelens.Scope) 
 		return out, err
 	}
 	in.Assets = lensPlayers(values, snapshot, scope.Season)
-	picks, note := lensPicks(ctx, src, scope, values, snapshot)
+	standings, err := src.Standings(ctx, scope.League, scope.Season)
+	if err != nil {
+		return out, fmt.Errorf("standings: %w", err)
+	}
+	picks, note := lensPicks(ctx, src, scope, values, snapshot, standings.Computed)
 	in.Assets = append(in.Assets, picks...)
 	directions, err := commissioner.Directions(records)
 	if err != nil {
 		return out, fmt.Errorf("owner directions: %w", err)
-	}
-	standings, err := src.Standings(ctx, scope.League, scope.Season)
-	if err != nil {
-		return out, fmt.Errorf("standings: %w", err)
 	}
 	read := ourReads(values, standings, in.N)
 	side := func(franchise string) tradelens.Side {
@@ -194,11 +194,29 @@ func pickComps(taken []takenPick, round, slot, teams int) [][]tradelens.Comp {
 	return out
 }
 
-// lensPicks values every pick still to be made by the players this league took where it sits. The
-// next draft counts in full and each draft after it is discounted. With no draft on record the
-// picks are listed without a value and the note says why.
+// guessSlots places a pick with no draft order where its original team's record points today.
+func guessSlots(standings []commissioner.StandingRow, teams int) func(commissioner.NativePick) int {
+	slots := map[string]int{}
+	for _, row := range standings {
+		if row.Rank >= 1 && row.Rank <= teams {
+			slots[row.Franchise] = teams - row.Rank + 1
+		}
+	}
+	return func(p commissioner.NativePick) int {
+		if p.Original == "" {
+			return slots[p.Owner]
+		}
+		return slots[p.Original]
+	}
+}
+
+// lensPicks values every pick still to be made by the players this league took where it sits. Until
+// a draft order is set, a pick sits where its original team's record points today: the worst
+// record picks first, as an owner would guess. The next draft counts in full and each draft after
+// it is discounted. With no draft on record the picks are listed without a value and the note says why.
 func lensPicks(ctx context.Context, src TradeLensSource, scope tradelens.Scope, values appvalue.Reading,
-	snapshot *commissioner.RawNativeSnapshot) ([]tradelens.Asset, string) {
+	snapshot *commissioner.RawNativeSnapshot, standings []commissioner.StandingRow) ([]tradelens.Asset, string) {
+	guess := guessSlots(standings, len(snapshot.Franchises))
 	discount, err := src.Params().GetGlobal(params.KeyPickValueDiscount)
 	var drafts []commissioner.NativeDraft
 	if err == nil {
@@ -218,8 +236,11 @@ func lensPicks(ctx context.Context, src TradeLensSource, scope tradelens.Scope, 
 	for _, p := range open {
 		a := tradelens.Asset{Token: fmt.Sprintf("pick:%d:%d:%s", p.Season, p.Round, p.Original), Franchise: p.Owner,
 			Pick: true, SignedNext: true}
-		a.Comps = pickComps(taken, p.Round, slots[PickKey{Year: p.Season, Round: p.Round, Original: p.Original}],
-			len(snapshot.Franchises))
+		slot, where := slots[PickKey{Year: p.Season, Round: p.Round, Original: p.Original}], ""
+		if slot == 0 {
+			slot, where = guess(p), ", where its team's record points today"
+		}
+		a.Comps = pickComps(taken, p.Round, slot, len(snapshot.Franchises))
 		switch {
 		case err != nil:
 			a.Words, note = err.Error(), err.Error()
@@ -232,6 +253,10 @@ func lensPicks(ctx context.Context, src TradeLensSource, scope tradelens.Scope, 
 				a.Dynasty += a.Weight * c.Dynasty / float64(len(a.Comps[0]))
 			}
 			a.Words = fmt.Sprintf("Valued from the %d players this league took in round %d", len(a.Comps[0]), p.Round)
+			if slot > 0 {
+				a.Words = fmt.Sprintf("Valued from the %d players this league took near pick %d.%02d%s",
+					len(a.Comps[0]), p.Round, slot, where)
+			}
 		}
 		out = append(out, a)
 	}

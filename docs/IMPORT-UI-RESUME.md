@@ -156,3 +156,13 @@ Measured by me (prototype, reverted, tree clean at bd4f6c6e):
   leaving lowers the bar picks must beat. Proportional flex rule vs week-9 real starts: within 0.3 except RB
   (1.59 vs 2.16) and WR (2.88 vs 3.28).
   NEXT with him: veteran/half-season weight (z_now), QB worth in a 1-QB 32-team league, later-round pick depth.
+- Shot 4 (Herbert/Jets) NOT captured: the desk read 'Not available yet' at that moment (values looked mid-refresh; cause unconfirmed). Herbert read 0.0 on the shelf just before. Removed the bad file.
+- 11-10 late RULED: scarcity "scaled by roster requirments. We will start with 32 teams but not build the scale,
+  only log your findings". FINDINGS LOG (do not build): replacement level today = first player past teams x seats;
+  seats come from the lineup rules, so league size and roster rules already move it, but nothing scales how MUCH
+  scarcity counts. Seen at 32 teams: 1-QB lineups leave every QB near 0 (QB33 = 14.7); kickers read high (thin
+  rostering); S/CB are flat (S64 9.3). A scale would likely need roster depth (bench size), not only starters.
+  His tier insight BUILT: unslotted picks sit where the original team's record points (worst first), comps within
+  8 slots. Vikings (best record) 1st now 1.0, New England's 2.5. Shots: ~/Downloads/warroom-origin-{2,3}.png.
+  Read 2 unchanged (they -2.0). Read 3 WORSE (they -3.3, Vikings' picks are late ones). Read 3 and 4 are the open
+  faults; both sit in the player model (Downs prior .99 -> S1; Herbert QB30; QBs near replacement).
