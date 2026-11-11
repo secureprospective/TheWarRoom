@@ -123,3 +123,19 @@ Alive check: `pgrep -fa "run_[m]asters|run_[q]ueue|make_[f]ilm|[b]lender -b"`. A
 4. Plan G: rule sheet, seven-test proof, stamp/embroidery simulation.
 5. Copy finished masters into repo `docs/brand/logo/` (vectors + platform icons only; big renders stay in out/), commit on session/twr-logo, then one review page for Christopher.
 Memory warning: the 8K steel encode peaks ~11 GB; if Claude-OS is up, free memory hits ~0.3 GB. Do not run two heavy jobs at once.
+
+## 14. State at session close (2026-11-11, paused by Christopher: "build more assets later")
+
+**All renders finished; nothing running.** Masters log: 15/15 OK (DONE 11:47Z). 3D queue: 7/7 OK (DONE 18:14Z).
+- 3D timing (movein frame 150, 128 samples, thr .03): 4K 203 s/frame, 8K 822 s/frame. Movein 283 frames = ~16 h at 4K, ~65 h at 8K. All five films at 4K ~70 h. 8K films are not realistic; decide 4K vs fewer samples vs Move-In+sting only.
+- 8K stills in `out/b3d/stills/` (png + exr): front-home 19 min, hero-home 66, hero-room 35, hero-arriving 42, low-home 57, exploded ~44, hero-home-alpha ~107.
+- Looked at: low-home (best, the hero image), hero-home, front-home, hero-room, exploded. Not yet looked at full size: hero-arriving, hero-home-alpha.
+- **Known flaw:** the "Gap back light" (900 W at (7,16,7)) throws a hard white pool on the floor at the foot of the wall (hero-home, hero-room, exploded; likely arriving and alpha). Fix: lower power / larger, softer, or aim it off the floor; tune at 1080p, then re-render the affected stills (~3.5-5 h).
+
+**Review page for Christopher (made; he has seen it):** `~/fleet/runs/twr-logo-1110/REVIEW/index.html`, small previews in `REVIEW/p/` (jpg stills, 1080p h264 videos). Three sections: flat logo, 3D pictures, flat animations. Christopher found the raw `out/` tree confusing: always hand him this page, never raw folders.
+
+**Next actions when he resumes:**
+1. Fix the gap-light floor pool; re-render affected 8K stills; refresh REVIEW previews.
+2. Decide 3D film plan (see timing); check playblasts `out/b3d/playblast/` first; render; composite the ending (dissolve to flat mark + name).
+3. Plan G: rule sheet, seven-test proof, stamp/embroidery simulation.
+4. Copy vectors + platform icons into repo `docs/brand/logo/`, commit; add new outputs to the REVIEW page.
