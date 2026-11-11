@@ -4,7 +4,7 @@ import { actsFor } from '../../commissioner/actTable';
 import { countdown, type Job, type JobState } from '../../commissioner/jobs';
 import { launch } from './guide';
 import { openStatCard } from './openers';
-import { Kv, NotYet, useDefaultInspector, useRoom, when, type Room } from './room';
+import { Kv, NotYet, useDefaultInspector, plainStamps, useRoom, when, type Room } from './room';
 import type { RoomData } from './roomReads';
 
 const STATE: Record<JobState, [string, string]> = {
@@ -152,7 +152,7 @@ export function JobsView() {
       <div className="hist">
         {recent.map((l) => (
           <div key={l.id}>
-            <b style={{ color: 'var(--ink)' }}>{l.who}</b> · {l.what}
+            <b style={{ color: 'var(--ink)' }}>{l.who}</b> · {plainStamps(l.what)}
             <br />
             <span className="mono" style={{ fontSize: 10.5 }}>
               {when(l.when)}

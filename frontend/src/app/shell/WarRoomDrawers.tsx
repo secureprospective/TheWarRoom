@@ -6,6 +6,7 @@ import { hostedWorkflow } from '../commissioner/api';
 import { parseHostedTrades } from '../commissioner/hostedMarkets';
 import { useWarRoomRead, type WarRoomContext } from './warroomReads';
 import { WarRoomEmpty } from './WarRoomHeader';
+import { OWNER_ONLY_TRADES } from './homeReads';
 export async function readWarRoomOffers(c: WarRoomContext) {
   if (!c.native) {
     const reading = parseTrades(await targetTrades(c.mine));
@@ -14,6 +15,7 @@ export async function readWarRoomOffers(c: WarRoomContext) {
       'Incoming' : 'Outgoing', details: [...o.give.map(a => `You send ${a.name}`),
         ...o.get.map(a => `You get ${a.name}`)], note: o.comments }));
   }
+  if (c.native.owner === false) throw new Error(OWNER_ONLY_TRADES);
   const { data } = await (c.native.port ?? hostedWorkflow)({ command: 'trades.read', mode: 'read',
     arguments: { league: c.native.league, viewer: c.mine } });
   const reading = parseHostedTrades(data);
