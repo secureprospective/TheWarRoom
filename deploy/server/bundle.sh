@@ -10,7 +10,7 @@ out=$(realpath -m "$1")
 mkdir -p "$PWD/.scratch"
 work=$(mktemp -d "$PWD/.scratch/server-bundle.XXXXXX")
 trap 'rm -rf "$work"' EXIT
-export GOTOOLCHAIN=go1.26.10
+export GOTOOLCHAIN=go1.26.11
 # GoReleaser OSS, not the separately licensed Pro distribution.
 curl --fail --location --silent --show-error --connect-timeout 10 --max-time 180 \
   https://github.com/goreleaser/goreleaser/releases/download/v2.19.0/goreleaser_Linux_x86_64.tar.gz \
