@@ -54,7 +54,7 @@ func TestDefinitionsShipCalibratedOnlyWhenFitted(t *testing.T) {
 		t.Fatalf("got %d defs, want %d", len(defs), len(defaultParams()))
 	}
 	for _, d := range defs {
-		if fitted := strings.HasPrefix(d.Key, "model."); d.IsCalibrated != fitted {
+		if fitted := strings.HasPrefix(d.Key, "model.") || d.Key == KeyTradeKeep; d.IsCalibrated != fitted {
 			t.Errorf("param %q@%s shipped IsCalibrated=%v, want %v", d.Key, d.Position, d.IsCalibrated, fitted)
 		}
 	}

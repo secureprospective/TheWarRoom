@@ -116,10 +116,13 @@ type Scope struct {
 
 // Input is one proposed trade and everything it is judged against.
 type Input struct {
-	N         int // the league's starter count
-	Teams     int
-	Slots     []Slot
-	Assets    []Asset // every rostered player and held pick in the league
+	N      int // the league's starter count
+	Teams  int
+	Slots  []Slot
+	Assets []Asset // every rostered player and held pick in the league, then valued free agents
+	// Keep is, by position, the share of a lead over replacement that lasts into a next season; a
+	// position it does not name keeps all of it.
+	Keep      map[string]float64
 	You, Them Side
 	Give, Get []string
 }
@@ -198,43 +201,43 @@ func (d Direction) blend(now, dynasty float64) float64 {
 	return w*now + (1-w)*dynasty
 }
 
-// replacement is each position's replacement level under a lens: the best player there who would
-// not start anywhere in the league. Every lineup seats its minimum at each position, and its
-// flexible spots are shared among positions by the room each has above its minimum. Scarcity
-// lives here: a position deep in good players has a high level, so its players are worth less.
+// replacement is each position's replacement level under a lens: the best player left there once
+// the league has taken as many as it rosters. Roster room draws the line, not the lineup, so a
+// backup the league bothers to hold is worth something and a position it stocks deep is cheap.
 func replacement(in Input, d Direction) map[string]float64 {
-	flex, room := in.N, 0
-	for _, s := range in.Slots {
-		flex, room = flex-s.Min, room+s.Max-s.Min
-	}
 	out := map[string]float64{}
 	for _, s := range in.Slots {
-		seats := float64(s.Min)
-		if room > 0 {
-			seats += float64(max(flex, 0)) * float64(s.Max-s.Min) / float64(room)
-		}
 		var league []float64
+		rostered := 0
 		for _, a := range in.Assets {
 			if a.plays(s.Position) {
 				league = append(league, a.lens(d))
 			}
+			if !a.Pick && a.Position == s.Position && a.Franchise != "" {
+				rostered++
+			}
 		}
 		sort.Sort(sort.Reverse(sort.Float64Slice(league)))
-		if bench := int(math.Round(seats * float64(in.Teams))); bench < len(league) {
-			out[s.Position] = league[bench]
+		if rostered < len(league) {
+			out[s.Position] = league[rostered]
 		}
 	}
 	return out
 }
 
-// over is a player's lens value over his position's replacement level, never below nothing.
+// over is what a player's lead over his position's replacement level is worth: the lead, never
+// below nothing, times the share of it the position keeps into a next season.
 func (r roster) over(position string, now, dynasty float64) float64 {
-	return max(0, r.side.Direction.blend(now, dynasty)-r.floor[position])
+	keep, known := r.keep[position]
+	if !known {
+		keep = 1
+	}
+	return keep * max(0, r.side.Direction.blend(now, dynasty)-r.floor[position])
 }
 
-// worth is what a pick adds to a roster whose last counted player is worth bar: each player taken
-// where it sits counts for what he would add, so a pick is priced on its chance, not its average.
-func (r roster) worth(a Asset, bar float64) float64 {
+// worth is what a pick is worth to any roster: what the players taken where it sits are worth, on
+// average. It is an asset the whole league would take, so it is not held to what this roster starts.
+func (r roster) worth(a Asset) float64 {
 	if !a.Valued {
 		return 0
 	}
@@ -242,7 +245,7 @@ func (r roster) worth(a Asset, bar float64) float64 {
 	for _, group := range a.Comps {
 		sum := 0.0
 		for _, c := range group {
-			sum += max(0, r.over(c.Position, c.Now, c.Dynasty)-bar)
+			sum += r.over(c.Position, c.Now, c.Dynasty)
 		}
 		top = max(top, sum/float64(max(len(group), 1)))
 	}
@@ -254,19 +257,15 @@ func (a Asset) value() AssetValue {
 		Age: a.Age, AgeKnown: a.AgeKnown}
 }
 
-// best is the total of the n largest values and the smallest of them: the bar a newcomer must
-// beat. With fewer than n values every newcomer counts, so the bar is zero.
-func best(values []float64, n int) (float64, float64) {
+// best is the total of the n largest values.
+func best(values []float64, n int) float64 {
 	sorted := slices.Clone(values)
 	sort.Sort(sort.Reverse(sort.Float64Slice(sorted)))
 	total := 0.0
-	for _, v := range sorted[:min(n, len(sorted))] {
+	for _, v := range sorted[:max(0, min(n, len(sorted)))] {
 		total += v
 	}
-	if len(sorted) < n || n < 1 {
-		return total, 0
-	}
-	return total, sorted[n-1]
+	return total
 }
 
 type roster struct {
@@ -274,10 +273,11 @@ type roster struct {
 	n      int
 	assets map[string]Asset
 	floor  map[string]float64 // each position's replacement level under this side's lens
+	keep   map[string]float64 // Input.Keep
 }
 
-// count is the roster's best N players under its own lens, each over his position's replacement
-// level, with out removed and in added, plus what each pick it then holds is worth against them.
+// count is the roster's best N players under its own lens, each for what his lead over replacement
+// is worth, with out removed and in added, plus what each pick it then holds is worth.
 func (r roster) count(out map[string]bool, in []Asset) float64 {
 	held := make([]Asset, 0, len(r.assets)+len(in))
 	for token, a := range r.assets {
@@ -292,10 +292,10 @@ func (r roster) count(out map[string]bool, in []Asset) float64 {
 			values = append(values, r.over(a.Position, a.Now, a.Dynasty))
 		}
 	}
-	total, bar := best(values, r.n)
+	total := best(values, r.n)
 	for _, a := range held {
 		if a.Pick {
-			total += r.worth(a, bar)
+			total += r.worth(a)
 		}
 	}
 	return total
@@ -346,8 +346,10 @@ func Evaluate(in Input) (Reading, error) {
 
 // rosters splits the league's assets into the two sides' holdings.
 func rosters(in Input) (roster, roster) {
-	you := roster{side: in.You, n: in.N, assets: map[string]Asset{}, floor: replacement(in, in.You.Direction)}
-	them := roster{side: in.Them, n: in.N, assets: map[string]Asset{}, floor: replacement(in, in.Them.Direction)}
+	you := roster{side: in.You, n: in.N, assets: map[string]Asset{}, floor: replacement(in, in.You.Direction),
+		keep: in.Keep}
+	them := roster{side: in.Them, n: in.N, assets: map[string]Asset{}, floor: replacement(in, in.Them.Direction),
+		keep: in.Keep}
 	for _, a := range in.Assets {
 		switch {
 		case a.Franchise == in.You.Franchise:

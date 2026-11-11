@@ -15,6 +15,7 @@ type Result struct {
 	Position domain.Position
 	Params   model.Params
 	Train    model.Params // the params fitted before the holdout season, which score it
+	Keep     float64      // the share of a player's standing that lasts a season (fitKeep)
 	Report   Report
 }
 
@@ -56,7 +57,7 @@ func Run(d model.Data, first, holdout int) []Result {
 }
 
 func fitPosition(sm samples, holdout int) Result {
-	r := Result{Position: sm.pos, Params: model.Params{Position: sm.pos}}
+	r := Result{Position: sm.pos, Params: model.Params{Position: sm.pos}, Keep: fitKeep(sm, holdout)}
 	r.Report.Seasons = len(sm.seasons)
 	k := fitKNow(sm, holdout, &r.Report)
 	trainPrior, prior := fitPrior(sm, holdout, &r.Report)

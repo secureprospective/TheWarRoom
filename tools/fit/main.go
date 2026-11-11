@@ -84,18 +84,8 @@ func run(ctx context.Context, path, playersPath string, first, holdout int, out,
 	checks := fit.CheckBoard(d, results, holdout, today)
 	fit.KeepBoard(results, checks)
 	fit.ApplyOwnerRules(results, fit.OwnerRules())
-	file := params.FittedFile{Fitted: time.Now().UTC().Format("2006-01-02"), First: first, Holdout: holdout}
-	for _, r := range results {
-		for key, v := range r.Params.Values() {
-			file.Params = append(file.Params, params.FittedValue{Key: key, Position: string(r.Position), Value: v})
-		}
-	}
-	slices.SortFunc(file.Params, func(a, b params.FittedValue) int {
-		if a.Position != b.Position {
-			return compare(a.Position, b.Position)
-		}
-		return compare(a.Key, b.Key)
-	})
+	file := params.FittedFile{Fitted: time.Now().UTC().Format("2006-01-02"), First: first, Holdout: holdout,
+		Params: fittedValues(results)}
 	enc, err := json.MarshalIndent(file, "", " ")
 	if err != nil {
 		return fmt.Errorf("fit: encode params: %w", err)
@@ -110,6 +100,24 @@ func run(ctx context.Context, path, playersPath string, first, holdout int, out,
 	}
 	log.Printf("fit: %d positions, %d params, report %s", len(results), len(file.Params), report)
 	return nil
+}
+
+// fittedValues is every fitted value of every position, in position then key order.
+func fittedValues(results []fit.Result) []params.FittedValue {
+	var out []params.FittedValue
+	for _, r := range results {
+		for key, v := range r.Params.Values() {
+			out = append(out, params.FittedValue{Key: key, Position: string(r.Position), Value: v})
+		}
+		out = append(out, params.FittedValue{Key: params.KeyTradeKeep, Position: string(r.Position), Value: r.Keep})
+	}
+	slices.SortFunc(out, func(a, b params.FittedValue) int {
+		if a.Position != b.Position {
+			return compare(a.Position, b.Position)
+		}
+		return compare(a.Key, b.Key)
+	})
+	return out
 }
 
 // league reads MFL's players export into the lookup the app values players with, and its sha256.

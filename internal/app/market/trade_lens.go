@@ -103,9 +103,12 @@ func lensLeague(ctx context.Context, src TradeLensSource, scope tradelens.Scope,
 	if !ok {
 		return nil, nil, in, fmt.Errorf("this league's starter count is not set, so there is no best N to count")
 	}
-	in.N, in.Teams = lineup.Total, len(base.Assets.Snapshot.Franchises)
+	in.N, in.Teams, in.Keep = lineup.Total, len(base.Assets.Snapshot.Franchises), map[string]float64{}
 	for _, slot := range lineup.Slots {
 		in.Slots = append(in.Slots, tradelens.Slot{Position: slot.Position, Min: slot.Min, Max: slot.Max})
+		if keep, err := src.Params().GetPosition(params.KeyTradeKeep, modelPosition(slot.Position)); err == nil {
+			in.Keep[slot.Position] = keep
+		}
 	}
 	return records, base.Assets.Snapshot, in, nil
 }
@@ -115,6 +118,14 @@ func lensLeague(ctx context.Context, src TradeLensSource, scope tradelens.Scope,
 func lensPosition(p string) string {
 	if p == string(domain.PosK) {
 		return string(leaguerules.PK)
+	}
+	return p
+}
+
+// modelPosition is lensPosition the other way: the name the model fits a lineup position under.
+func modelPosition(p string) string {
+	if p == string(leaguerules.PK) {
+		return string(domain.PosK)
 	}
 	return p
 }
