@@ -1,6 +1,10 @@
 package serverhttp
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/secureprospective/TheWarRoom/internal/serverhttp/landing"
+)
 
 // browserRoute names the pages served to a browser and the JSON doors those pages call. Every other
 // route keeps refusing any request that carries an Origin header.
@@ -9,7 +13,7 @@ func browserRoute(path string) bool {
 	case JoinPagePath, JoinFranchisesPath, JoinClaimPath, PasswordPagePath, PasswordChangePath:
 		return true
 	}
-	return false
+	return landing.Has(path)
 }
 
 // sameOrigin reports an absent Origin, or exactly one Origin equal to this server's own scheme and

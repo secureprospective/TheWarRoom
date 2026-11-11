@@ -145,7 +145,7 @@ func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 		}
 		return response.StatusCode, string(body)
 	}
-	for _, path := range []string{serverstatus.StatusPath, "/status", "/healthz", "/metrics", "/ready", "/"} {
+	for _, path := range []string{serverstatus.StatusPath, "/status", "/healthz", "/metrics", "/ready"} {
 		if code, body := public(http.MethodGet, path); code != http.StatusNotFound || body != "404 page not found\n" {
 			t.Errorf("public %s answered %d %q", path, code, body)
 		}
