@@ -1,8 +1,32 @@
-# TheWarRoom — UI-to-mocks RESUME (updated 2026-11-11 03:20 CT) — TRADE DESK: DRAFT SCARCITY BUILT, READS 1-3 PASS
+# TheWarRoom — UI-to-mocks RESUME (compact-safe #11, 2026-11-11 ~03:35 CT) — TRADE DESK: PUSH BATCH IN PROGRESS
 
 ## 0. FIRST THING AFTER COMPACT
-Draft scarcity is BUILT and committed (329602e6) and a null-list desk bug fixed (e58ae54a). Next: section 9 from
-item 4 (Fit_Report keep table, parameter_words), then the push batch. Read 4 still fails: veteran/backup-QB session.
+Finish the push batch (section 9). One hand-run check job is in flight on Claude-OS (see IN-FLIGHT); read its log
+first. Christopher graded the reads: 1 "A+", 2 "A+", 3 "A-, within error", 4 "I would move on, we can figure the
+gap out later. We are hitting on what matters." Then: "work though this the best way possible, update the Go repo
+if you think that fixes future issues as well" (= do the Go 1.26.11 bump).
+
+## PUSH BATCH STATE (11-11)
+Branch tip afc79cc0 (Claude-OS only, NOT pushed). Commits since f29c09b4: 329602e6 draft scarcity; e58ae54a tune
+null-list fix; 3075f459 resume; c10fa999 Fit_Report keep table + parameter_words trade.keep; 14028654 keep.go
+folded into fit.go (bloat tiny_files ratchet); 05d8151d placement.tsv row internal/tradelens -> trades; afc79cc0
+boundary-adapters.tsv fingerprints for command_bindings.go and commissioner_host.go (straight wiring from 7055d9c5,
+reviewed, say so in the PR).
+`make verify` order: lint (ifaceguard, filelen, bloat, placement, frontend-transport, boundary, golangci) ->
+check-wails-version -> govulncheck -> bindings-fresh -> tsc -> go test -race -> pnpm test/build/budget/csp.
+All of lint passes at afc79cc0. KNOWN FAILURES still to fix:
+1. govulncheck: GO-2026-6859 (net/http, stdlib), found in go1.26.10, fixed in go1.26.11. Not from this branch;
+   CI (verify.yml uses go-version-file: go.mod, govulncheck v1.9.0) will fail on any PR. FIX = bump to 1.26.11 as
+   its own commit on this branch: go.mod line 3, deploy/server/bundle.sh:13 (GOTOOLCHAIN), CLAUDE.md lines 56-57.
+   Leave old resume/benchmark docs. Claude-OS has only /usr/local/go 1.26.10: use GOTOOLCHAIN=go1.26.11 (it
+   downloads). RISK: golangci-lint panicked on other Go versions before (lesson: precommit needs the pinned
+   toolchain); check the hook passes under 1.26.11, and update the env line in section 1 if it does. Beelink
+   needs the same toolchain for its pre-push hook.
+2. go test -race: internal/app/commissioner TestReleaseMatrixCatalogRolesAndDesktopDoors:
+   "release_roles_matrix_test.go:75: catalog mutation commish.franchise.direction.set has no release matrix
+   fixture". FIX = add a fixture row for the direction command in that matrix (owner of the franchise may; other
+   owners may not; co-commish and up may), following the neighbouring rows. Rest of the race run: see the log.
+Frontend tsc / vitest / build checks: result in the log (not seen yet when this was written).
 
 ## DRAFT SCARCITY (what shipped, 11-11)
 Input.Drafted = every player the league took in its own drafts (market: takenPicks comps). roster.drafted() = per
@@ -20,13 +44,17 @@ On screen (NE reads win-now by record): R1 -3.2/+2.6, R2 +0.0/+0.0 BOTH WIN, R3 
 R3 -2.6/+1.1, R4 +15.8/-16.0.
 
 ## IN-FLIGHT
-Nothing. Test app stopped. Xvfb :5 up on Claude-OS. Nothing on his :0. Both Luna dispatches finished.
+ONE job on Claude-OS, started ~03:21 CT: bindings-fresh + tsc + `go test -race -timeout 60m ./...` + frontend
+tests/build/budget/csp, by hand (the part of verify after govulncheck). Log ~/scratch/desk-verify2.log, last line
+"exit N". Alive? `ssh claudeos 'ps -eo etime,args | grep -E "[g]o test -race|[v]itest"' < /dev/null`. It dies with
+the CT105 shell if the session ends; just rerun the failed part. Result use: fix every FAIL, then one final verify.
+Earlier full-verify log: ~/scratch/desk-verify.log. Test app stopped. Nothing on his :0. Xvfb :5 up.
 
 ## 1. What we are doing
 Build the five screens to the locked mocks on the NATIVE league. Merged: rail, League Pulse (PR #223). Now: War
 Room trade desk, "the biggest selling point"; current work is making its math match Christopher's human reads.
 Claude-OS (`ssh claudeos`, always `< /dev/null`): worktree ~/work/TheWarRoom/.worktrees/ui, branch
-`session/war-room-trade-desk`, code tip 5b21f90b (+ resume commits). No git remote there: bundle -> scp via CT105
+`session/war-room-trade-desk`, tip afc79cc0. No git remote there: bundle -> scp via CT105
 -> Beelink worktree ~/work/TheWarRoom/.worktrees/ui (MINE) -> push. NEVER touch .worktrees/website (Tom's) or the
 main checkout. He merges after his look on :0.
 Env: export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 GOMEMLIMIT=1500MiB
@@ -130,21 +158,18 @@ Roster-line replacement moves with league size and roster limits by itself. Keep
 values. At 32 teams one-QB lineups still flatten QBs because backups are overvalued by the player model.
 
 ## 9. NEXT ACTIONS, in order
-1. Design draft scarcity on the harness first (Python, seconds per try). Idea to test: a position's edge is worth
-   less the more of its starters each draft supplies cheaply. Supply is finite and countable: per position, from
-   seasons.csv (draft_round, rookie_season), the share of starter-level seasons produced by players drafted after
-   round 1 (Luna's table, share from round 1: QB .69 DE .40 WR .27 DT .26 CB .21 RB .17 LB .16 TE .14 S .11 PK 0), or
-   starters arriving per draft against starter seats (teams x lineup). One formula, all positions, constants fitted
-   by tools/fit like trade.keep. Target: R3 them >= +0.5 with R1 and R2 still passing; watch RB/TE/LB, which also
-   draft late, and the top-30 list (lens.top). Report R4 honestly.
-2. Code it beside keep (fit measure -> fitted.json rows only -> Input -> over), tests, make build.
-3. Check real Go on the real league (section 2 method), then stage the four reads on :5 and send screenshots with
-   a plain pass/fail table.
-4. Finish 5b21f90b's loose ends: Fit_Report keep table, parameter_words for trade.keep.
-5. If read 4 still fails: veteran / backup-QB value session with him. Then power rankings rework.
-6. Before push: tsc + vitest, make verify, wire snapshots, 110-char check, bundle -> Beelink -> push -> PR.
+1. Read ~/scratch/desk-verify2.log on Claude-OS: list every FAIL (go and frontend).
+2. Add the release-matrix fixture for commish.franchise.direction.set; run that package's tests.
+3. Bump Go to 1.26.11 (three live pins, own commit); govulncheck clean; hook passes.
+4. Fix anything else the log shows (wire snapshots, vitest), then ONE full `make verify` to exit 0.
+5. Update this resume, bundle -> scp via CT105 -> Beelink worktree ~/work/TheWarRoom/.worktrees/ui (fresh worktree
+   needs frontend/dist: pnpm install + build before push; use git -C) -> push -> open PR. PR body: what the desk
+   math does, the four reads table, read 4 known fail (his ruling: move on), the two boundary fingerprints and why,
+   the Go bump and why, filelen notes if asked. He merges after his look on :0 (squash).
+6. Put the desk on his :0 for his look only when he asks or the PR is open (never claim what he sees).
+7. Later, with him: veteran / backup-QB value (read 4), then power rankings rework.
 
 ## 10. Honest status
-Reads 1 and 2 pass on the real league in real code; read 3 is level; read 4 fails for a player-model reason that
-draft scarcity may not reach. No screenshots exist for the new math. Frontend checks and the full suite have not
-run since before the pick-value work. Nothing is pushed.
+Reads 1-3 pass on the real league, in the app, and he graded them A+/A+/A-. Read 4 fails; he ruled move on.
+Lint passes. The vulnerability scan and one Go test fail for the two known reasons above; frontend checks were
+still running. Nothing is pushed. ETA to an open PR once resumed: about 40 minutes if the Go bump is clean.
