@@ -70,6 +70,13 @@ func checkBatch(raws []commissioner.RawCommand, rulesOnly bool) error {
 // executeBatch is the one batch loop; gathered holds each step's append facts.
 func (s *Store) executeBatch(ctx context.Context, raws []commissioner.RawCommand, principal string,
 	auth commissioner.Authorizer, zone *time.Location, gathered []appendFacts, rulesOnly bool) ([]commissioner.Receipt, error) {
+	return identityFirst(ctx, s, func() ([]commissioner.Receipt, error) {
+		return s.executeBatchOnce(ctx, raws, principal, auth, zone, gathered, rulesOnly)
+	})
+}
+
+func (s *Store) executeBatchOnce(ctx context.Context, raws []commissioner.RawCommand, principal string,
+	auth commissioner.Authorizer, zone *time.Location, gathered []appendFacts, rulesOnly bool) ([]commissioner.Receipt, error) {
 	if err := checkBatch(raws, rulesOnly); err != nil {
 		return nil, err
 	}

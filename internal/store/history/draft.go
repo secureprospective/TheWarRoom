@@ -31,6 +31,13 @@ func (s *Store) NativeDraft(ctx context.Context, scope commissioner.RawNativeDra
 // are judged inside the same immediate transaction that appends the pick, so two picks cannot both land.
 func (s *Store) RecordDraftPick(ctx context.Context, permit commissioner.Permit, in commissioner.DraftPickInput,
 	principal string, facts nativecheck.Facts, local *time.Location) (commissioner.Receipt, error) {
+	return identityFirst(ctx, s, func() (commissioner.Receipt, error) {
+		return s.recordDraftPickOnce(ctx, permit, in, principal, facts, local)
+	})
+}
+
+func (s *Store) recordDraftPickOnce(ctx context.Context, permit commissioner.Permit, in commissioner.DraftPickInput,
+	principal string, facts nativecheck.Facts, local *time.Location) (commissioner.Receipt, error) {
 	if permit.League() != in.League || permit.Franchise() != in.Franchise || permit.Action() != "draft_pick" {
 		return commissioner.Receipt{}, fmt.Errorf("league action closed: %w",
 			commissioner.Refused(errors.New("the calendar has not opened this pick for your franchise")))

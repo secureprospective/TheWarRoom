@@ -91,22 +91,68 @@ func LinkPlayerExternalID(ctx context.Context, tx *sql.Tx, provider, value, mfl 
 	return nil
 }
 
-// RosterOwner is the stored ownership key. Empty side is the single pool; a league with a
-// player pool per side owns each player once per side. The caller names the side.
-type RosterOwner struct{ MFL, Side, Franchise string }
+// RosterOwner is the stored ownership key. Player is an already-durable canonical id. Empty side
+// is the single pool; a league with a player pool per side owns each player once per side.
+type RosterOwner struct{ Player, Side, Franchise string }
+
+// UnresolvedPlayersError names MFL players a league write needs but this file has no identity for.
+// League transactions never mint identity: the caller commits the identities on their own first
+// (EnsureMFLPlayers) and then runs the league write again.
+type UnresolvedPlayersError struct{ MFL []string }
+
+func (e *UnresolvedPlayersError) Error() string {
+	return fmt.Sprintf("%d player identities are not yet recorded", len(e.MFL))
+}
+
+// ResolveMFLPlayers reads the canonical id of every MFL value and writes nothing. Missing values are
+// returned together, in first-seen order, as *UnresolvedPlayersError.
+func ResolveMFLPlayers(ctx context.Context, tx *sql.Tx, mfl []string) (map[string]string, error) {
+	ids := make(map[string]string, len(mfl))
+	var missing []string
+	for _, value := range mfl {
+		if value == "" {
+			return nil, fmt.Errorf("empty MFL player link")
+		}
+		if _, seen := ids[value]; seen {
+			continue
+		}
+		var id string
+		err := tx.QueryRowContext(ctx, `SELECT player FROM player_external_id WHERE provider='mfl' AND value=?`, value).Scan(&id)
+		if errors.Is(err, sql.ErrNoRows) {
+			ids[value] = ""
+			missing = append(missing, value)
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("resolve MFL player: %w", err)
+		}
+		ids[value] = id
+	}
+	if len(missing) > 0 {
+		return nil, &UnresolvedPlayersError{MFL: missing}
+	}
+	return ids, nil
+}
+
+// EnsureMFLPlayers mints any missing identity. It is the reference-side pre-step and must run in its
+// own committed transaction before the league write that needs the ids.
+func EnsureMFLPlayers(ctx context.Context, tx *sql.Tx, mfl []string) error {
+	for _, value := range mfl {
+		if _, err := EnsureMFLPlayer(ctx, tx, value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 // ReplaceRosterOwnership replaces every side's ownership of the league in the caller's transaction, so
-// both sides are saved together or not at all.
+// both sides are saved together or not at all. It takes resolved ids and never inserts identity.
 func ReplaceRosterOwnership(ctx context.Context, tx *sql.Tx, league string, owners []RosterOwner) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM player_ownership WHERE league=?`, league); err != nil {
 		return fmt.Errorf("replace roster ownership: %w", err)
 	}
 	for _, owner := range owners {
-		id, err := EnsureMFLPlayer(ctx, tx, owner.MFL)
-		if err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO player_ownership(league,side,player,franchise) VALUES(?,?,?,?)`, league, owner.Side, id, owner.Franchise); err != nil {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO player_ownership(league,side,player,franchise) VALUES(?,?,?,?)`, league, owner.Side, owner.Player, owner.Franchise); err != nil {
 			return fmt.Errorf("save roster ownership: %w", err)
 		}
 	}
