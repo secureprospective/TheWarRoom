@@ -165,6 +165,9 @@ SERVICE
   rc-service twr-server stop
   sqlite3 /var/lib/twr/server.db "UPDATE server_release SET release=1;"
   chown twr:twr /var/lib/twr/server.db
+  # An older server lacks a newer tool and has an older service file: the upgrade brings both.
+  rm /usr/local/libexec/twr-move-league
+  printf "# older\n" >> /etc/init.d/twr-tunnel
   PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$DELIVERY/good/server.tar.gz" "$DELIVERY/good" > /tmp/upgrade-result
   cat /tmp/upgrade-result
   grep -F "Server upgrade ready" /tmp/upgrade-result
@@ -174,6 +177,10 @@ SERVICE
   /usr/local/bin/twr-server checkpoint -db /var/lib/twr/server.db -check "$saved"
   test "$(sqlite3 /var/lib/twr/server.db "PRAGMA user_version")" = 12
   grep -F "twr-tunnel --ifstopped start" /tmp/upgrade-tunnel-calls
+  tar -xzOf "$DELIVERY/good/server.tar.gz" ./move-league.sh | cmp - /usr/local/libexec/twr-move-league
+  tar -xzOf "$DELIVERY/good/server.tar.gz" ./cloudflared.initd | cmp - /etc/init.d/twr-tunnel
+  test "$(stat -c %a:%U:%G /usr/local/libexec/twr-move-league)" = 755:root:root
+  if ls /usr/local/libexec/*.next /etc/init.d/*.next 2>/dev/null; then exit 1; fi
   # Freeze live DB writes so unchanged-state assertions measure the wrapper only.
   rc-service twr-server stop
   cat > /tmp/upgrade-tools/rc-service <<'\''SERVICE'\''

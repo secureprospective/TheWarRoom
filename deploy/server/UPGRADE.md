@@ -25,7 +25,11 @@ is running before removing only that lock folder; retain all trusted metadata.
 
 After verification the tool freezes and rechecks the archive's fingerprint, extracts only
 the server executable, and runs its read-only league check as `twr` inside the same
-bubblewrap sandbox as the service. Candidate code never runs as root.
+bubblewrap sandbox as the service. Candidate code never runs as root. Once the upgrade has
+succeeded, it also puts the bundle's console tools (`/usr/local/libexec/twr-*`) and the two
+service files (`/etc/init.d/twr-server`, `twr-tunnel`) in place from the same verified bytes,
+by fixed name, so an upgraded server has every tool a fresh install has. None of them runs
+during the upgrade.
 The tool first reads the league file without migrating it. An unsupported newer file or
 newer server stamp is refused without changing it. It then stops the Tunnel and server,
 keeps the installed binary and private settings, and takes a SQLite snapshot of the
