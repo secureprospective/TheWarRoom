@@ -37,6 +37,13 @@ Migration and the new release stamp happen only after backup. The tool checks th
 resulting schema, both audit chains and their saved checkpoint before replacing the
 installed binary. TLS application readiness must pass before reopening the Tunnel.
 
+The upgrade that gives each league its own file (release 8) prints its proof: for every league
+and every league table, the rows and a digest of every row as `server.db` held them, beside what
+the league's own file holds. Every line must read `same`; any line that reads `DIFFERS` undoes
+the upgrade and puts the saved copy back. With the server stopped, the same proof can be printed
+again with `twr-server conversion-proof -db /var/lib/twr/server.db` (as `twr`); once the
+server has run, a league's new changes show as differing, which is expected.
+
 ## If it stops
 
 Leave the Tunnel stopped. Read the single next action in the refusal. A failed migration

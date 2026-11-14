@@ -51,7 +51,7 @@ func TestSplitMovesEachLeagueIntoItsOwnFile(t *testing.T) {
 		if err := CopyLeague(ctx, shared, target, LeagueFile{League: league, Shared: head}); err != nil {
 			t.Fatal(err)
 		}
-		if err := ProveLeague(ctx, shared, target, league); err != nil {
+		if _, err := ProveLeague(ctx, shared, target, league); err != nil {
 			t.Fatal(err)
 		}
 		files[league] = target

@@ -72,6 +72,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 // repairCommand runs the commands that bring back, reset or remove what a server holds.
 func repairCommand(ctx context.Context, name string, args []string, output io.Writer) (bool, error) {
 	switch name {
+	case "conversion-proof":
+		return true, runConversionProof(ctx, args, output)
 	case "delete-league":
 		return true, runDeleteLeague(ctx, args, output)
 	case "restore-league":
