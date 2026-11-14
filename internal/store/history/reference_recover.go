@@ -130,6 +130,20 @@ func identityState(ctx context.Context, tx *sql.Tx, identity playerid.RawIdentit
 	return false, "", nil
 }
 
+// ArchiveBody is one raw capture as the reference file keeps it (gzip), for PutArchiveBody on another
+// server; held is false when the file does not have it.
+func ArchiveBody(ctx context.Context, reference *db.Pools, key string) ([]byte, bool, error) {
+	var stored []byte
+	err := reference.Read().QueryRowContext(ctx, `SELECT body FROM raw_archive WHERE sha256 = ? AND size > 0`, key).Scan(&stored)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("history: read raw capture %s: %w", key, err)
+	}
+	return stored, true, nil
+}
+
 // PutArchiveBody adds one raw capture to the reference file from its off-site evidence object; stored
 // is the body exactly as the archive keeps it (gzip). It is refused unless it unpacks to content whose
 // sha256 is key. A key already held is left as it is.

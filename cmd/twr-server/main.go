@@ -76,6 +76,14 @@ func repairCommand(ctx context.Context, name string, args []string, output io.Wr
 		return true, runConversionProof(ctx, args, output)
 	case "delete-league":
 		return true, runDeleteLeague(ctx, args, output)
+	case "export-league":
+		return true, runExportLeague(ctx, args, output)
+	case "import-league":
+		return true, runImportLeague(ctx, args, os.Stdin, output)
+	case "finish-move":
+		return true, runFinishMove(ctx, args, output)
+	case "cancel-move":
+		return true, runCancelMove(ctx, args, output)
 	case "restore-league":
 		return true, runRestoreLeague(ctx, args, os.Stdin, output)
 	case "recover":

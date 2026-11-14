@@ -176,6 +176,10 @@ Older transfer documents remain readable with the absent optional field.
 
 ## Debt left
 
+- A moved league (`twr-server export-league` / `import-league`) carries its pinned football
+  version and its players' identities, not every football version its past events name; those
+  come back as for a one-league restore, or the league waits for them.
+
 - Each league in its own file (`leagues/<league>/league.db`, ruling 2026-11-14). A move of a
   player between servers that was in flight at the split must restart: `transfer_identity`
   is minted per file and is not copied. A league's old events stay chained under the shared

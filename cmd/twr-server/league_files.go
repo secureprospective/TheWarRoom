@@ -68,6 +68,9 @@ type leagueFiles struct {
 type leagueFile struct {
 	pools *db.Pools
 	store *history.Store
+	// moving is set while the league is on its way to another server (league_move.go): it reads, but
+	// does not change.
+	moving bool
 }
 
 // openLeagueFiles opens every league file under root. A folder that is not a valid league, or a file
@@ -123,7 +126,7 @@ func (f *leagueFiles) openFile(ctx context.Context, league, path string, create 
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("league %s: %w", league, err), pools.Close())
 	}
-	return &leagueFile{pools: pools, store: store}, nil
+	return &leagueFile{pools: pools, store: store, moving: fileExists(filepath.Join(filepath.Dir(path), movingFile))}, nil
 }
 
 func checkLeagueFile(ctx context.Context, pools *db.Pools, league string) error {

@@ -58,6 +58,8 @@ install -m 755 restore.sh /usr/local/libexec/twr-restore
 install -m 755 reset-sign-ins.sh /usr/local/libexec/twr-reset-sign-ins
 install -m 755 restore-league.sh /usr/local/libexec/twr-restore-league
 install -m 755 delete-league.sh /usr/local/libexec/twr-delete-league
+install -m 755 move-league.sh /usr/local/libexec/twr-move-league
+install -m 755 receive-league.sh /usr/local/libexec/twr-receive-league
 install -m 755 status.sh /usr/local/libexec/twr-status
 rc-update add twr-server default
 # No SSH, HTTP admin listener or public metrics service is installed. The status
