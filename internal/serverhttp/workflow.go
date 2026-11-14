@@ -44,7 +44,8 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, "league access refused; sign in and check your seat", http.StatusForbidden)
 		return
 	}
-	if raw.Mode != "read" && h.FootballDigest == "" {
+	digest := h.pin(league).Digest
+	if raw.Mode != "read" && digest == "" {
 		http.Error(w, "Ask the server operator to select football evidence before making changes", http.StatusConflict)
 		return
 	}
@@ -60,7 +61,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
 		return
 	}
-	response := WorkflowResponse{Label: location.Label, Writable: location.Writable, Football: h.FootballDigest, Data: data}
+	response := WorkflowResponse{Label: location.Label, Writable: location.Writable, Football: digest, Data: data}
 	if raw.Mode == "read" {
 		writeHostedReading(w, r, response)
 		return
@@ -74,7 +75,7 @@ func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service
 	if raw.Mode != "read" {
 		return runWorkflow(ctx, service, raw)
 	}
-	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.FootballDigest+"|"+raw.Football)
+	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.pin(league).Digest+"|"+raw.Football)
 	if err != nil {
 		return nil, err
 	}

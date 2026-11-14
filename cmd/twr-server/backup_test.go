@@ -9,6 +9,7 @@ import (
 	"filippo.io/age"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/offsite"
+	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 )
 
 // openTestServer opens a fresh two-file hosted server in dir, as a first start does.
@@ -53,7 +54,7 @@ func TestCapturedHostedSetCarriesCompatibleCheckpoint(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			return checkAnchors(t.Context(), saved, "", signInSource{path: filepath.Join(dir, signInFileName), version: 1})
+			return checkAnchors(t.Context(), saved, "", signInSource{path: filepath.Join(dir, signInFileName), version: accountstore.ServerVersion()})
 		}},
 	} {
 		t.Run(tc.kind.File, func(t *testing.T) {

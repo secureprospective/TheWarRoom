@@ -36,9 +36,11 @@ type Source struct {
 	// coverage; SignInBackup, when set, is the sign-in file's, which a hosted server keeps apart.
 	Backup       func() (offsite.Status, bool)
 	SignInBackup func() (offsite.Status, bool)
-	League       Chain
-	SignIns      SignIns
-	Now          func() time.Time
+	// ReferenceBackup, when set, is the football reference file's coverage. It pauses nothing.
+	ReferenceBackup func() (offsite.Status, bool)
+	League          Chain
+	SignIns         SignIns
+	Now             func() time.Time
 }
 
 // Checks computes the server's lines afresh on every request; nothing is cached.
@@ -46,6 +48,10 @@ func (s Source) Checks(ctx context.Context) []Check {
 	now := s.Now()
 	status, configured := s.Backup()
 	checks := []Check{backupCheck(leagueBackup, status, configured, now)}
+	if s.ReferenceBackup != nil {
+		status, configured := s.ReferenceBackup()
+		checks = append(checks, backupCheck(referenceBackup, status, configured, now))
+	}
 	if s.SignInBackup != nil {
 		status, configured := s.SignInBackup()
 		checks = append(checks, backupCheck(signInBackup, status, configured, now))
@@ -74,6 +80,8 @@ type backupPart struct{ name, paused, unconfigured string }
 var (
 	leagueBackup = backupPart{name: "Backups", paused: "League changes and sign-ins are paused",
 		unconfigured: "Off-site backups are not set up, so league changes and sign-ins are paused."}
+	referenceBackup = backupPart{name: "Football reference backups", paused: "Nothing is paused, but a restore needs a current football reference backup",
+		unconfigured: "Off-site backups are not set up for football reference data."}
 	signInBackup = backupPart{name: "Sign-in backups", paused: "Sign-ins and account changes are paused (league changes are not)",
 		unconfigured: "Off-site backups are not set up, so sign-ins and account changes are paused."}
 )
@@ -105,6 +113,13 @@ func backupCheck(part backupPart, status offsite.Status, configured bool, now ti
 		}
 		check.Action = "Check that the house internet works. Changes resume by themselves once a backup is checked. " +
 			"If it is still paused after an hour, call Christopher. Do not replace the server."
+		if part == referenceBackup {
+			check.Detail = part.paused + ": no football reference backup saved and checked in the last 14 minutes. Last good backup: " + last + "."
+			if status.Failure != "" {
+				check.Detail += " Newest error: " + status.Failure + "."
+			}
+			check.Action = "Check that the house internet works. If this line is still here after an hour, tell Christopher. Do not replace the server."
+		}
 	}
 	return check
 }

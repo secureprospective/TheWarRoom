@@ -25,6 +25,19 @@ type rawCheckpoint struct {
 	Captured time.Time     `json:"captured"`
 	Ledger   *db.AuditHead `json:"ledger,omitempty"`
 	Security *db.AuditHead `json:"security,omitempty"`
+	// Reference names a reference set's raw archive by content; it has no chain.
+	Reference *referenceAnchor `json:"reference,omitempty"`
+}
+
+// referenceAnchor is a raw archive's body count and the digest of its sorted sha256 keys.
+type referenceAnchor struct {
+	Bodies  int64  `json:"bodies"`
+	Archive string `json:"archive"`
+}
+
+func referenceSetCheckpoint(anchor history.ArchiveAnchor) ([]byte, error) {
+	return encodeCheckpoint(rawCheckpoint{Version: 1, Captured: time.Now().UTC(),
+		Reference: &referenceAnchor{Bodies: anchor.Rows, Archive: anchor.Digest}})
 }
 
 var errCheckpointMismatch = errors.New("league history on this server no longer matches the saved checkpoint")
@@ -176,7 +189,7 @@ func readCheckpoint(file string) (rawCheckpoint, error) {
 		return rawCheckpoint{}, fmt.Errorf("read saved checkpoint: %w", err)
 	}
 	var saved rawCheckpoint
-	if err := json.Unmarshal(body, &saved); err != nil || saved.Version != 1 || (saved.Ledger == nil && saved.Security == nil) {
+	if err := json.Unmarshal(body, &saved); err != nil || saved.Version != 1 || (saved.Ledger == nil && saved.Security == nil && saved.Reference == nil) {
 		return rawCheckpoint{}, fmt.Errorf("the saved checkpoint file is not one this version can read")
 	}
 	return saved, nil

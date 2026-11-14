@@ -37,7 +37,7 @@ func targetHolds(ctx context.Context, target string) (bool, error) {
 // attachSignIns puts the matching sign-in file beside a restored league file that needs one.
 func attachSignIns(ctx context.Context, sets recoverySets, identity *age.X25519Identity, dir string, captured time.Time, output io.Writer) error {
 	league := filepath.Join(dir, "server.db")
-	moved, err := leagueMoved(ctx, league)
+	moved, err := leagueHas(ctx, league, signInMoveTable)
 	if err != nil || !moved {
 		return err // a set saved before sign-ins moved carries them in its league file
 	}
@@ -133,15 +133,6 @@ func unlockSignIns(ctx context.Context, sets recoverySets, name string, identity
 	return missingAccounts(ctx, path, named)
 }
 
-func leagueMoved(ctx context.Context, league string) (bool, error) {
-	pools, err := db.OpenReadOnly(ctx, league, history.SchemaVersion())
-	if err != nil {
-		return false, fmt.Errorf("open restored database: %w", err)
-	}
-	defer func() { _ = pools.Close() }()
-	return hasTable(ctx, pools, signInMoveTable)
-}
-
 func leaguePrincipals(ctx context.Context, league string) ([]string, error) {
 	pools, err := db.OpenReadOnly(ctx, league, history.SchemaVersion())
 	if err != nil {
@@ -160,11 +151,18 @@ func missingAccounts(ctx context.Context, path string, named []string) ([]string
 	return accountstore.MissingAccounts(ctx, pools, named) //nolint:wrapcheck // the message names what was read
 }
 
-// restoredFiles are the staged league file and, for a server that moved its sign-ins, its sign-in file.
+// restoredFiles are the staged league file and, for a server that moved them out, its sign-in file and
+// its reference file (attached to the league file, as on the running server).
 type restoredFiles struct{ league, signIns *db.Pools }
 
 func openRestored(ctx context.Context, league string) (restoredFiles, error) {
-	pools, err := db.Open(ctx, league, history.SchemaVersion())
+	var pools *db.Pools
+	var err error
+	if fileExists(referencePath(league)) {
+		pools, err = db.OpenWithReference(ctx, league, history.SchemaVersion(), referencePath(league))
+	} else {
+		pools, err = db.Open(ctx, league, history.SchemaVersion())
+	}
 	if err != nil {
 		return restoredFiles{}, fmt.Errorf("open restored database: %w", err)
 	}

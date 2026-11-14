@@ -85,7 +85,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if err := selectHostedFootball(ctx, &handler, *config.football); err != nil {
+	if err := selectHostedFootball(ctx, &handler, signInStore(files), *config.football); err != nil {
 		return err
 	}
 	handler.TrustedProxy = hop
@@ -113,22 +113,28 @@ func checkHostedDatabase(path string, extraArgs int) error {
 	return nil
 }
 
-func selectHostedFootball(ctx context.Context, handler *serverhttp.Hosted, digest string) error {
-	if digest == "" {
-		return nil
+// selectHostedFootball loads the server's pin and every league's own pin from the league directory.
+func selectHostedFootball(ctx context.Context, handler *serverhttp.Hosted, signIns *accountstore.Store, digest string) error {
+	pins, ok := handler.Leagues.(*leaguePins)
+	if !ok {
+		return fmt.Errorf("select hosted football: the league resolver holds no pins")
 	}
-	evidence, err := handler.Store.LoadFootball(ctx, digest)
+	directory, err := signIns.Directory(ctx)
 	if err != nil {
 		return fmt.Errorf("select hosted football: %w", err)
 	}
-	handler.Football, handler.FootballDigest = evidence, digest
-	handler.Store.SetPinnedFootball(evidence)
+	if err := pins.selectPins(ctx, digest, directory); err != nil {
+		return err
+	}
+	handler.Football, handler.FootballDigest = pins.server.Football, pins.server.Digest
 	return nil
 }
 
-// stateFiles are the hosted server's league file and its sign-in file. openStateFiles is the one way a
-// command opens them; it moves the sign-in tables out of a one-file server first.
-type stateFiles struct{ league, signIns *db.Pools }
+// stateFiles are the hosted server's league file, its sign-in file and its reference file. The league
+// file is opened with the reference file attached, so league stores read football reference data by
+// name. openStateFiles is the one way a command opens them; it moves the sign-in tables and then the
+// reference tables out of a one-file server first.
+type stateFiles struct{ league, signIns, reference *db.Pools }
 
 func openStateFiles(ctx context.Context, path string) (stateFiles, error) {
 	if err := servePreflight(ctx, path); err != nil {
@@ -140,20 +146,37 @@ func openStateFiles(ctx context.Context, path string) (stateFiles, error) {
 // openSignInFiles is openStateFiles for the console's incident commands, which must work on a league
 // file of any release this build can open: it skips the serve preflight.
 func openSignInFiles(ctx context.Context, path string) (stateFiles, error) {
-	league, err := db.Open(ctx, path, history.SchemaVersion())
+	alone, err := db.Open(ctx, path, history.SchemaVersion())
 	if err != nil {
 		return stateFiles{}, fmt.Errorf("open server database: %w", err)
 	}
-	signIns, err := openSignIns(ctx, league, path)
+	signIns, err := openSignIns(ctx, alone, path)
 	if err != nil {
-		return stateFiles{}, errors.Join(err, league.Close())
+		return stateFiles{}, errors.Join(err, alone.Close())
 	}
-	return stateFiles{league: league, signIns: signIns}, nil
+	files := stateFiles{signIns: signIns}
+	files.reference, err = openReference(ctx, alone, path)
+	if err = errors.Join(err, alone.Close()); err != nil {
+		return stateFiles{}, errors.Join(err, files.Close())
+	}
+	if files.league, err = openLeague(ctx, path); err != nil {
+		return stateFiles{}, errors.Join(err, files.Close())
+	}
+	return files, nil
+}
+
+// openLeague opens a converted league file with its reference file attached.
+func openLeague(ctx context.Context, path string) (*db.Pools, error) {
+	league, err := db.OpenWithReference(ctx, path, history.SchemaVersion(), referencePath(path))
+	if err != nil {
+		return nil, fmt.Errorf("open server database: %w", err)
+	}
+	return league, nil
 }
 
 func (f stateFiles) Close() error {
 	var errs []error
-	for _, pools := range []*db.Pools{f.signIns, f.league} {
+	for _, pools := range []*db.Pools{f.signIns, f.league, f.reference} {
 		if pools != nil {
 			errs = append(errs, pools.Close())
 		}
@@ -267,19 +290,19 @@ func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte,
 	}
 	clock := leagueservice.NewHostClock()
 	store.SetClock(clock.Now)
-	leagues := history.NewOneFile(store)
+	leagues := newLeaguePins(store)
 	worker := leagueservice.NewDueWorker(leagues, func() nativecheck.Facts { return nil }, clock)
 	// HTTPS recovery is by printed code only; the zero digest matches no offline key, so console recovery stays offline.
 	confirmations, err := serverhttp.NewConfirmations()
 	if err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize human confirmation: %w", err)
 	}
-	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Leagues: leagues, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
+	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Passwords: passwords, Worker: worker, Registry: catalogue,
 		Join:    accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, work),
 		Replies: serverhttp.NewReplyCache(replyCacheBytes)}
-	for _, pools := range []*db.Pools{files.league, files.signIns} {
+	for _, pools := range []*db.Pools{files.league, files.signIns, files.reference} {
 		if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
 			return serverhttp.Hosted{}, fmt.Errorf("record server release: %w", err)
 		}

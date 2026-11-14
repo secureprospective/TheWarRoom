@@ -19,7 +19,7 @@ import (
 )
 
 func statusSource(signIns *db.Pools, leagues history.LeagueResolver, backups hostedBackups) serverstatus.Source {
-	return serverstatus.Source{Backup: backups.league, SignInBackup: backups.signIns, League: leagueChains{leagues},
+	return serverstatus.Source{Backup: backups.league, ReferenceBackup: backups.reference, SignInBackup: backups.signIns, League: leagueChains{leagues},
 		SignIns: accountstore.NewServerFile(signIns), Now: time.Now}
 }
 

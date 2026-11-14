@@ -47,8 +47,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runBackupCheck(args, output)
 	case "hosted":
 		return true, runHosted(ctx, args, output)
-	case "checkpoint":
-		return true, runCheckpoint(ctx, args, output)
+	case "checkpoint", "pin-football":
+		return true, outputCommand(name)(ctx, args, output)
 	case "recover":
 		return true, runRecovery(ctx, args, os.Stdin, output)
 	case "join-link":
@@ -197,4 +197,12 @@ func serveChangesWorker(ctx context.Context, listener net.Listener, certificate 
 	defer func() { cancel(); <-done }()
 	//nolint:wrapcheck // The caller adds the fixture server operation context.
 	return serverhttp.ServeFixtureChanges(ctx, listener, certificate, leagueservice.NewFixtureChangesWithWorker(store, worker))
+}
+
+// outputCommand is a console command that reads only flags and writes only output.
+func outputCommand(name string) func(context.Context, []string, io.Writer) error {
+	if name == "pin-football" {
+		return runPinFootball
+	}
+	return runCheckpoint
 }

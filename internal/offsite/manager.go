@@ -47,10 +47,16 @@ func NewKindManager(kind SetKind, r2 *R2, temp string, capture func(context.Cont
 	return &Manager{r2: r2, temp: temp, capture: capture, revision: revision, now: time.Now, kind: kind}
 }
 
+// Kind is the kind of set this manager backs up.
+func (m *Manager) Kind() SetKind { return m.kind }
+
 // CheckWrite deliberately stops new writes one minute before the 15-minute limit,
 // leaving room for already admitted bounded operations. Restart starts closed.
 func (m *Manager) CheckWrite() error {
 	if !m.Status().Writable {
+		if m.kind == ReferenceSet {
+			return fmt.Errorf("the football reference backup is not current; your commissioner needs to check backup settings and the internet connection")
+		}
 		if m.kind == SignInSet {
 			return fmt.Errorf("sign-ins and account changes are paused because the sign-in backup is not current; your commissioner needs to check backup settings and the internet connection")
 		}

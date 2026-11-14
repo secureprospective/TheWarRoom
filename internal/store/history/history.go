@@ -98,6 +98,13 @@ func New(pools *db.Pools, reg *measures.Registry) *Store {
 	return &Store{commits: make(chan string, 1), pools: pools, reg: reg, now: time.Now, lineups: ledgerLineups{}}
 }
 
+// Sibling is a new store over s's file with s's registry and clock, signalling commits on s's channel.
+// The hosted server serves leagues pinned to different football evidence from siblings: each league is
+// served by exactly one of them, so league caches never overlap.
+func (s *Store) Sibling() *Store {
+	return &Store{commits: s.commits, pools: s.pools, reg: s.reg, now: s.now, lineups: ledgerLineups{}}
+}
+
 // signalCommissionerCommit names the committed league to the due worker through the resolver.
 // Coalesced: a full channel already guarantees one wake, and every wake rereads every league.
 func (s *Store) signalCommissionerCommit(league string) {

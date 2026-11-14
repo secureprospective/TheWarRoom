@@ -44,6 +44,8 @@ var errNewerSet = errors.New("a backup in this bucket was saved by a newer leagu
 type recoverySets interface {
 	KindSets(context.Context, offsite.SetKind) ([]string, error)
 	Open(context.Context, string) (io.ReadCloser, error)
+	// OpenEvidence streams one raw capture object, named by its archive key.
+	OpenEvidence(context.Context, string) (io.ReadCloser, error)
 }
 
 // runRestore opens no listener. It leaves server.db (sign-ins already reset), the
@@ -118,6 +120,10 @@ func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X255
 		// A league set saved after sign-ins moved needs its sign-in set beside it; the pair is checked
 		// before anything is installed.
 		if err := attachSignIns(ctx, sets, identity, dir, captured, output); err != nil {
+			return err
+		}
+		// After sign-ins: a league's football pin is read from its directory row in the sign-in file.
+		if err := attachReference(ctx, sets, identity, dir, captured, output); err != nil {
 			return err
 		}
 		return activateRestore(ctx, dir, filepath.Join(stage, "ready"), name, captured, config, output)
@@ -275,12 +281,15 @@ func stageReady(dir, ready string, config offsite.RawConfig) error {
 	if err := os.Rename(filepath.Join(dir, "server.db"), filepath.Join(ready, "server.db")); err != nil {
 		return fmt.Errorf("stage restored database: %w", err)
 	}
-	if fileExists(filepath.Join(dir, signInFileName)) {
-		if info, err := os.Stat(filepath.Join(dir, signInFileName+"-wal")); err == nil && info.Size() > 0 {
-			return fmt.Errorf("restored sign-in file did not finish writing")
+	for _, name := range []string{signInFileName, referenceFileName} {
+		if !fileExists(filepath.Join(dir, name)) {
+			continue
 		}
-		if err := os.Rename(filepath.Join(dir, signInFileName), filepath.Join(ready, signInFileName)); err != nil {
-			return fmt.Errorf("stage restored sign-in file: %w", err)
+		if info, err := os.Stat(filepath.Join(dir, name+"-wal")); err == nil && info.Size() > 0 {
+			return fmt.Errorf("restored %s did not finish writing", name)
+		}
+		if err := os.Rename(filepath.Join(dir, name), filepath.Join(ready, name)); err != nil {
+			return fmt.Errorf("stage restored %s: %w", name, err)
 		}
 	}
 	key, err := readOfflineKey(filepath.Join(dir, "config", "authenticator.key"))

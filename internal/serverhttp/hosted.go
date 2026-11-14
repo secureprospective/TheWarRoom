@@ -37,8 +37,11 @@ const (
 // file; every write that withdraws a credential reserves the league writer first (the accounts store's
 // commit fence), so revocation cannot commit between transaction admission and ledger append.
 type Hosted struct {
+	// FootballDigest and Football are the server's pin (-football); Pins, when set, answers each league's
+	// own store and pin, and an unpinned league gets the server's.
 	FootballDigest string
 	Football       *history.PinnedFootball
+	Pins           func(league string) LeaguePin
 	// WriteAdmission guards league writes and SignInAdmission guards sign-in writes: each follows its
 	// own file's off-site backup, so one file falling behind pauses only its own kind of change.
 	WriteAdmission  func() error
@@ -248,13 +251,13 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		r = r.WithContext(leagueservice.WithFootballDigest(r.Context(), raw.Workflow.Football))
 	}
 	r = r.WithContext(withReplyPrincipal(r.Context(), string(principal)))
-	host := leagueservice.StoredHost{Store: h.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	host := leagueservice.StoredHost{Store: h.pin(raw.leagueName()).Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
 		h.confirm(w, r, gate, raw)
 		return
 	}
-	workflowHost, err := h.workflowHost(host, raw.Workflow != nil)
+	workflowHost, err := h.workflowHost(host, raw)
 	if err != nil {
 		http.Error(w, "football reference unavailable", http.StatusServiceUnavailable)
 		return
@@ -267,9 +270,34 @@ func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest)
 	return r.Method == http.MethodPost && decodeHosted(w, r, raw) == nil && raw.Validate() == nil && raw.matchesPath(r.URL.Path)
 }
 
-func (h Hosted) workflowHost(host leagueservice.Host, workflow bool) (leagueservice.Host, error) {
-	if workflow && h.FootballDigest != "" {
-		pinned, err := leagueservice.WithPinnedFootball(host, h.Football)
+// LeaguePin is the store a league is served from and the football evidence it is pinned to.
+type LeaguePin struct {
+	Store    *history.Store
+	Football *history.PinnedFootball
+	Digest   string
+}
+
+// pin is league's store and football pin; without Pins every league has the server's.
+func (h Hosted) pin(league string) LeaguePin {
+	if h.Pins != nil && league != "" {
+		return h.Pins(league)
+	}
+	return LeaguePin{Store: h.Store, Football: h.Football, Digest: h.FootballDigest}
+}
+
+func (r RawNativeRequest) leagueName() string {
+	if r.Workflow != nil {
+		league, _ := r.Workflow.League()
+		return league
+	}
+	return r.League
+}
+
+// workflowHost pins a workflow request to its league's football evidence.
+func (h Hosted) workflowHost(host leagueservice.Host, raw RawNativeRequest) (leagueservice.Host, error) {
+	pin := h.pin(raw.leagueName())
+	if raw.Workflow != nil && pin.Digest != "" {
+		pinned, err := leagueservice.WithPinnedFootball(host, pin.Football)
 		if err != nil {
 			return nil, fmt.Errorf("select workflow evidence: %w", err)
 		}
