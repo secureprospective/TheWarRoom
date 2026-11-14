@@ -233,7 +233,7 @@ func TestRestoreThreeFilesReportsMissingPin(t *testing.T) {
 				delete(sets.objects, names[0]) // the newest reference set is lost
 			}
 			if !tc.evidence {
-				delete(sets.objects, offsite.EvidenceName(digest))
+				delete(sets.objects, offsite.EvidenceName(recipient, digest))
 			}
 			target, _ := newHostFiles(t, bytes.Repeat([]byte{7}, 32))
 			stage := filepath.Join(t.TempDir(), "restore")

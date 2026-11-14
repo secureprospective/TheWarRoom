@@ -3,6 +3,8 @@ package offsite
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"sync"
@@ -13,14 +15,29 @@ import (
 
 // Raw captures (the raw archive's fetched bodies and the blobs a transfer brought) never ride in a
 // reference set: with them the set passed the 128 MiB object cap. Each body is uploaded once, encrypted
-// to the backup recipient, as its own object named by its sha256; a body is immutable, so an object
-// once read back never needs uploading again. Retention never prunes them: a set names its bodies.
+// to the backup recipient, as its own object named by the recipient and the body's sha256; a body is
+// immutable, so an object once read back never needs uploading again. The recipient is in the name so a
+// bucket that already holds a body sealed to another key (an earlier restore key, or another server's)
+// never stands in for this server's own copy, which this server's restore key could not open.
+// Retention never prunes them: a set names its bodies.
 
 // EvidencePrefix is where raw capture objects live in the bucket, apart from every kind of set.
 const EvidencePrefix = "evidence/"
 
-// EvidenceName is the object name of one raw capture.
-func EvidenceName(sha string) string { return EvidencePrefix + sha + ".age" }
+// EvidenceName is the object name of one raw capture sealed to recipient.
+func EvidenceName(recipient, sha string) string {
+	return EvidencePrefix + recipientTag(recipient) + "/" + sha + ".age"
+}
+
+// LegacyEvidenceName is where releases before the recipient was in the name put a raw capture;
+// restore still reads it when the recipient's own copy is not there.
+func LegacyEvidenceName(sha string) string { return EvidencePrefix + sha + ".age" }
+
+// recipientTag names a backup recipient without spelling it out: 16 hex digits of its sha256.
+func recipientTag(recipient string) string {
+	sum := sha256.Sum256([]byte(recipient))
+	return hex.EncodeToString(sum[:8])
+}
 
 // Evidence uploads raw captures once each. It remembers what this process has read back.
 type Evidence struct {
@@ -44,7 +61,7 @@ func (e *Evidence) Put(ctx context.Context, sha string, body []byte) error {
 	if known {
 		return nil
 	}
-	name := EvidenceName(sha)
+	name := EvidenceName(e.recipient, sha)
 	// Any failure to find the object uploads it again: a body is immutable, so a second copy is harmless.
 	if _, err := e.r2.client.StatObject(ctx, e.r2.bucket, name, minio.StatObjectOptions{}); err == nil {
 		e.remember(sha)
@@ -107,13 +124,22 @@ func (e *Evidence) readBack(ctx context.Context, name string, sealed []byte) err
 	return nil
 }
 
-// OpenEvidence streams one raw capture object for restore.
-func (r *R2) OpenEvidence(ctx context.Context, sha string) (io.ReadCloser, error) {
-	object, err := r.client.GetObject(ctx, r.bucket, EvidenceName(sha), minio.GetObjectOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("could not download raw capture %s from R2", sha)
+// OpenEvidence streams one raw capture object for restore: the copy sealed to recipient, or else the
+// copy an earlier release left under the body's sha256 alone.
+func (r *R2) OpenEvidence(ctx context.Context, recipient, sha string) (io.ReadCloser, error) {
+	for _, name := range []string{EvidenceName(recipient, sha), LegacyEvidenceName(sha)} {
+		object, err := r.client.GetObject(ctx, r.bucket, name, minio.GetObjectOptions{})
+		if err != nil {
+			break
+		}
+		// The first read of the object's details is the download itself: a missing object fails here.
+		if _, err := object.Stat(); err != nil {
+			_ = object.Close()
+			continue
+		}
+		return object, nil
 	}
-	return object, nil
+	return nil, fmt.Errorf("could not download raw capture %s from R2", sha)
 }
 
 // UnsealEvidence decrypts one raw capture.

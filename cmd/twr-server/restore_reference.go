@@ -269,7 +269,7 @@ func unlockReference(ctx context.Context, sets recoverySets, name string, identi
 }
 
 func openEvidence(ctx context.Context, sets recoverySets, identity *age.X25519Identity, sha string) ([]byte, error) {
-	object, err := sets.OpenEvidence(ctx, sha)
+	object, err := sets.OpenEvidence(ctx, identity.Recipient().String(), sha)
 	if err != nil {
 		return nil, err //nolint:wrapcheck // names the capture
 	}

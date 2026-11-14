@@ -98,9 +98,13 @@ reference and sign-in sets saved after a league set hold everything that league 
 
 **Raw captures never ride in a reference set.** With them a set would pass the 128 MiB cap
 (measured 176 MiB; 8.4 MiB gzipped without). Each capture is uploaded once, encrypted, as its
-own object under `evidence/`, named by its SHA-256, and read back. The reference set keeps
-only each capture's key and size, and its checkpoint names the whole archive by content.
-Capture objects are never pruned: they are immutable and sets name them.
+own object under `evidence/<key tag>/`, named by its SHA-256, and read back. The key tag is
+16 hex digits of the SHA-256 of the backup's public recipient, so a copy sealed to any other key
+(an earlier restore key, or another server sharing the bucket) is never taken for this server's
+own. Restore opens the copy for its own key, and still reads captures that earlier releases
+put straight under `evidence/`. The reference set keeps only each capture's key and size, and
+its checkpoint names the whole archive by content. Capture objects are never pruned: they are
+immutable and sets name them.
 
 When one kind falls behind:
 
