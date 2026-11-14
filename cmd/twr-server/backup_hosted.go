@@ -30,12 +30,12 @@ func startHostedBackup(ctx context.Context, files stateFiles, path, temp string)
 		guard := func() error { return fmt.Errorf("changes are paused until off-site backups are configured") }
 		for _, league := range files.leagues.leagues() {
 			if pools, ok := files.leagues.pools(league); ok {
-				pools.SetWriteGuard(guard)
+				pools.SetWriteGuard(files.leagues.guard(league, guard))
 			}
 		}
-		files.leagues.added = func(_ string, pools *db.Pools) { pools.SetWriteGuard(guard) }
+		files.leagues.added = func(league string, pools *db.Pools) { pools.SetWriteGuard(files.leagues.guard(league, guard)) }
 		files.signIns.SetWriteGuard(guard)
-		return hostedGuards{func(string) error { return guard() }, guard}, hostedBackups{league: noBackups, reference: noBackups, signIns: noBackups}, func() {}, nil
+		return hostedGuards{func(league string) error { return files.leagues.guard(league, guard)() }, guard}, hostedBackups{league: noBackups, reference: noBackups, signIns: noBackups}, func() {}, nil
 	}
 	managers, err := newBackupManagers(files, path, temp)
 	if err != nil {
@@ -59,6 +59,7 @@ func startHostedBackup(ctx context.Context, files stateFiles, path, temp string)
 // sign-in file's. Leagues created while the server runs get theirs as they are made.
 type backupManagers struct {
 	newLeague          func(league string, pools *db.Pools) *offsite.Manager
+	guard              func(league string, next func() error) func() error
 	mu                 *sync.Mutex
 	leagues            map[string]*offsite.Manager
 	reference, signIns *offsite.Manager
@@ -67,7 +68,7 @@ type backupManagers struct {
 // addLeague makes league's manager and puts its file's writes behind it.
 func (b backupManagers) addLeague(league string, pools *db.Pools) *offsite.Manager {
 	m := b.newLeague(league, pools)
-	pools.SetWriteGuard(m.CheckWrite)
+	pools.SetWriteGuard(b.guard(league, m.CheckWrite))
 	b.mu.Lock()
 	b.leagues[league] = m
 	b.mu.Unlock()
@@ -97,7 +98,7 @@ func (b backupManagers) checkLeague(league string) error {
 	if m == nil {
 		return nil
 	}
-	return m.CheckWrite() //nolint:wrapcheck // the manager's words are the owner's message
+	return b.guard(league, m.CheckWrite)()
 }
 
 // leagueStatus is the dashboard's league backup line: every league covered, or the one furthest behind.
@@ -165,7 +166,7 @@ func newBackupManagers(files stateFiles, path, temp string) (backupManagers, err
 			return offsite.CaptureSet(ctx, kind, pools, filepath.Dir(path), stage, config.Recipient, checkpoint)
 		}, pools.Revision)
 	}
-	out := backupManagers{mu: &sync.Mutex{}, leagues: map[string]*offsite.Manager{},
+	out := backupManagers{mu: &sync.Mutex{}, leagues: map[string]*offsite.Manager{}, guard: files.leagues.guard,
 		newLeague: func(league string, pools *db.Pools) *offsite.Manager {
 			return manager(offsite.LeagueFileSet(league), pools, leagueSetCheckpoint)
 		}}

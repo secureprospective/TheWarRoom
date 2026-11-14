@@ -20,7 +20,9 @@ func NewServerFile(pools *db.Pools) *Store { s := New(pools); s.server = true; r
 func ServerVersion() int { return len(serverMigrations()) }
 
 // serverMigrations is append-only.
-func serverMigrations() []db.Migration { return []db.Migration{createServerFile, addLeagueFootball} }
+func serverMigrations() []db.Migration {
+	return []db.Migration{createServerFile, addLeagueFootball, addSeatClaims}
+}
 
 // addLeagueFootball gives each league its own pinned football evidence digest; empty means the league
 // uses the server's -football pin, as every league did before.
@@ -135,7 +137,8 @@ func (s *Store) ForgetLeague(ctx context.Context, league string) error {
 		return fmt.Errorf("accounts: forget league: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	for _, query := range []string{`DELETE FROM league_directory WHERE league = ?`, `DELETE FROM league_join_links WHERE league = ?`} {
+	for _, query := range []string{`DELETE FROM league_directory WHERE league = ?`, `DELETE FROM league_join_links WHERE league = ?`,
+		`DELETE FROM league_seat_claims WHERE league = ?`} {
 		if _, err := tx.ExecContext(ctx, query, league); err != nil {
 			return fmt.Errorf("accounts: forget league: %w", err)
 		}

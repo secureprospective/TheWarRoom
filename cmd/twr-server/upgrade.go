@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/releasetrust"
@@ -50,6 +51,7 @@ func upgradeFile(ctx context.Context, path, save, backup string, output io.Write
 	if err != nil {
 		return fmt.Errorf("%w; nothing was changed", err)
 	}
+	started := time.Now()
 	if err := migrateServer(ctx, path); err != nil {
 		return putBack(path, saved, err)
 	}
@@ -57,6 +59,10 @@ func upgradeFile(ctx context.Context, path, save, backup string, output io.Write
 		return putBack(path, saved, err)
 	}
 	if err := runCheckpoint(ctx, []string{"-db", path, "-check", filepath.Join(save, "checkpoint.json")}, io.Discard); err != nil {
+		return putBack(path, saved, err)
+	}
+	// An upgrade that gave each league its own file shows its proof; a table that differs undoes it.
+	if err := conversionProof(ctx, path, started, output); err != nil {
 		return putBack(path, saved, err)
 	}
 	current := serverversion.Current()

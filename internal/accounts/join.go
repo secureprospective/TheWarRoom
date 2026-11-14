@@ -169,7 +169,14 @@ func (s *JoinService) check(ctx context.Context, raw RawJoin) (governance.Princi
 // Franchises lists league's franchises and which are taken, to a holder of the live link.
 func (s *JoinService) Franchises(ctx context.Context, raw RawJoin) ([]JoinFranchise, error) {
 	if _, err := s.check(ctx, raw); err != nil {
-		return nil, err
+		if !errors.Is(err, ErrJoinRefused) {
+			return nil, err
+		}
+		_, claim, ok, cerr := s.seatClaim(ctx, raw)
+		if cerr != nil || !ok {
+			return nil, errors.Join(err, cerr)
+		}
+		return claimFranchises(claim), nil
 	}
 	list, err := s.seats.Franchises(ctx, raw.League)
 	if err != nil {
@@ -221,6 +228,13 @@ func (s *JoinService) Claim(ctx context.Context, raw RawJoinClaim) (Account, err
 		return Account{}, err
 	}
 	issuer, err := s.check(ctx, raw.RawJoin)
+	if errors.Is(err, ErrJoinRefused) {
+		claims, claim, ok, cerr := s.seatClaim(ctx, raw.RawJoin)
+		if cerr != nil || !ok {
+			return Account{}, errors.Join(err, cerr)
+		}
+		return s.claimSeat(ctx, claims, claim, raw)
+	}
 	if err != nil {
 		return Account{}, err
 	}

@@ -26,6 +26,9 @@ type LeagueSplit struct {
 	Leagues []string
 	Shared  db.AuditHead
 	At      time.Time
+	// Proofs are each league table's rows and digest as the split copied and proved them (league →
+	// table); a server put back from backups has none.
+	Proofs map[string]map[string]db.RowProof
 }
 
 func sqlText(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }
@@ -123,39 +126,58 @@ func chainLedger(ctx context.Context, tx *sql.Tx) error {
 
 // ProveLeague checks target holds exactly league's rows of the shared file, table by table (count and
 // ordered-row digest), names its league, and has a whole audit chain over all its events.
-func ProveLeague(ctx context.Context, shared, target *db.Pools, league string) error {
+// It returns the proofs it checked, table by table.
+func ProveLeague(ctx context.Context, shared, target *db.Pools, league string) (map[string]db.RowProof, error) {
+	want, err := LeagueProofs(ctx, shared, league, true)
+	if err != nil {
+		return nil, err
+	}
+	got, err := LeagueProofs(ctx, target, league, false)
+	if err != nil {
+		return nil, err
+	}
 	for _, rows := range leagueRows(league) {
-		want, err := db.ProveRows(ctx, shared.Read(), db.MovedRows{Table: rows.Table, Where: rows.Where})
-		if err != nil {
-			return fmt.Errorf("history: %w", err)
-		}
-		got, err := db.ProveRows(ctx, target.Read(), db.MovedRows{Table: rows.Table})
-		if err != nil {
-			return fmt.Errorf("history: %w", err)
-		}
-		if got != want {
-			return fmt.Errorf("history: league %s's %s does not match the shared file (%d rows, want %d)", league, rows.Table, got.Rows, want.Rows)
+		if got[rows.Table] != want[rows.Table] {
+			return nil, fmt.Errorf("history: league %s's %s does not match the shared file (%d rows, want %d)", league, rows.Table, got[rows.Table].Rows, want[rows.Table].Rows)
 		}
 	}
 	file, err := ReadLeagueFile(ctx, target)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if file.League != league {
-		return fmt.Errorf("history: the file built for league %s names league %s", league, file.League)
+		return nil, fmt.Errorf("history: the file built for league %s names league %s", league, file.League)
 	}
 	head, err := New(target, nil).VerifyAudit(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var events int64
 	if err := target.Read().QueryRowContext(ctx, `SELECT count(*) FROM main.league_event`).Scan(&events); err != nil {
-		return fmt.Errorf("history: count league %s's events: %w", league, err)
+		return nil, fmt.Errorf("history: count league %s's events: %w", league, err)
 	}
 	if head.Size != events || head.Baseline != 0 {
-		return fmt.Errorf("history: league %s's audit chain covers %d of %d events", league, head.Size-head.Baseline, events)
+		return nil, fmt.Errorf("history: league %s's audit chain covers %d of %d events", league, head.Size-head.Baseline, events)
 	}
-	return nil
+	return got, nil
+}
+
+// LeagueProofs is each of league's tables' row count and ordered-row digest: in the shared file
+// (inShared) only league's rows, in a league file the whole table.
+func LeagueProofs(ctx context.Context, pools *db.Pools, league string, inShared bool) (map[string]db.RowProof, error) {
+	out := map[string]db.RowProof{}
+	for _, rows := range leagueRows(league) {
+		m := db.MovedRows{Table: rows.Table}
+		if inShared {
+			m.Where = rows.Where
+		}
+		proof, err := db.ProveRows(ctx, pools.Read(), m)
+		if err != nil {
+			return nil, fmt.Errorf("history: %w", err)
+		}
+		out[rows.Table] = proof
+	}
+	return out, nil
 }
 
 // splitDrops are the shared file's league tables, dropped by the split commit (views first; dropping a
@@ -189,6 +211,12 @@ func commitSplit(ctx context.Context, shared *db.Pools, split LeagueSplit, verif
 	if err != nil {
 		return fmt.Errorf("history: encode the split: %w", err)
 	}
+	proofs := []byte("{}")
+	if len(split.Proofs) > 0 {
+		if proofs, err = json.Marshal(split.Proofs); err != nil {
+			return fmt.Errorf("history: encode the split: %w", err)
+		}
+	}
 	tx, err := shared.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("history: begin the split: %w", err)
@@ -210,13 +238,14 @@ func commitSplit(ctx context.Context, shared *db.Pools, split LeagueSplit, verif
  singleton INTEGER PRIMARY KEY CHECK(singleton=1),
  leagues TEXT NOT NULL CHECK(json_valid(leagues)),
  shared TEXT NOT NULL CHECK(json_valid(shared)),
- split_at TEXT NOT NULL
+ split_at TEXT NOT NULL,
+ proofs TEXT NOT NULL CHECK(json_valid(proofs))
 ) STRICT;
 CREATE TRIGGER league_split_no_update BEFORE UPDATE ON `+LeagueSplitTable+` BEGIN SELECT RAISE(ABORT,'the split is recorded once'); END;
 CREATE TRIGGER league_split_no_delete BEFORE DELETE ON `+LeagueSplitTable+` BEGIN SELECT RAISE(ABORT,'the split is recorded once'); END;`); err != nil {
 		return fmt.Errorf("history: record the split: %w", err)
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO main.`+LeagueSplitTable+` VALUES(1,?,?,?)`, string(leagues), string(head), split.At.UTC().Format(time.RFC3339Nano)); err != nil {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO main.`+LeagueSplitTable+` VALUES(1,?,?,?,?)`, string(leagues), string(head), split.At.UTC().Format(time.RFC3339Nano), string(proofs)); err != nil {
 		return fmt.Errorf("history: record the split: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -231,8 +260,8 @@ func ReadLeagueSplit(ctx context.Context, shared *db.Pools) (LeagueSplit, bool, 
 	if err != nil || !found {
 		return LeagueSplit{}, false, err //nolint:wrapcheck // db names the file
 	}
-	var leagues, head, at string
-	if err := shared.Read().QueryRowContext(ctx, `SELECT leagues, shared, split_at FROM main.`+LeagueSplitTable+` WHERE singleton=1`).Scan(&leagues, &head, &at); err != nil {
+	var leagues, head, at, proofs string
+	if err := shared.Read().QueryRowContext(ctx, `SELECT leagues, shared, split_at, proofs FROM main.`+LeagueSplitTable+` WHERE singleton=1`).Scan(&leagues, &head, &at, &proofs); err != nil {
 		return LeagueSplit{}, true, fmt.Errorf("history: read the split: %w", err)
 	}
 	var out LeagueSplit
@@ -240,6 +269,9 @@ func ReadLeagueSplit(ctx context.Context, shared *db.Pools) (LeagueSplit, bool, 
 		return out, true, fmt.Errorf("history: read the split: %w", err)
 	}
 	if err := json.Unmarshal([]byte(head), &out.Shared); err != nil {
+		return out, true, fmt.Errorf("history: read the split: %w", err)
+	}
+	if err := json.Unmarshal([]byte(proofs), &out.Proofs); err != nil {
 		return out, true, fmt.Errorf("history: read the split: %w", err)
 	}
 	when, err := time.Parse(time.RFC3339Nano, at)

@@ -22,6 +22,12 @@ func objectTime(name string) (time.Time, error) {
 			prefix = kind.Prefix
 		}
 	}
+	// Each league's own file has its own prefix, leagues/<league>/.
+	if rest, ok := strings.CutPrefix(name, LeagueFilePrefix); ok {
+		if league, _, found := strings.Cut(rest, "/"); found && league != "" {
+			prefix = LeagueFileSet(league).Prefix
+		}
+	}
 	if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, ".tar.gz.age") {
 		return time.Time{}, fmt.Errorf("not a recovery set")
 	}

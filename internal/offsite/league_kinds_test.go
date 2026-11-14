@@ -78,3 +78,36 @@ func TestLeagueFilesKeepSeparateCoverage(t *testing.T) {
 		}
 	}
 }
+
+// A league's own sets are found, opened and kept by retention under its own prefix, as the restore of
+// one league and of a whole server list them; names that are not sets are not.
+func TestLeagueFileSetsListOpenAndPrune(t *testing.T) {
+	r2, fake := testR2(t)
+	at := time.Date(2026, 11, 14, 12, 0, 0, 0, time.UTC)
+	name := LeagueFileSet("native.alpha").Prefix + at.Format(objectFormat) + ".tar.gz.age"
+	fake.mu.Lock()
+	fake.objects[name] = []byte("set")
+	fake.objects[LeagueFilePrefix+"native.alpha/notes.txt"] = []byte("not a set")
+	fake.objects[LeagueFilePrefix+at.Format(objectFormat)+".tar.gz.age"] = []byte("no league")
+	fake.mu.Unlock()
+	if got, err := objectTime(name); err != nil || !got.Equal(at) {
+		t.Fatalf("league set time %v %v", got, err)
+	}
+	names, err := r2.KindSets(t.Context(), SetKind{Prefix: LeagueFilePrefix})
+	if err != nil || len(names) != 1 || names[0] != name {
+		t.Fatalf("league sets %v %v", names, err)
+	}
+	body, err := r2.Open(t.Context(), name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = body.Close()
+	if err := r2.prunePrefix(t.Context(), LeagueFileSet("native.alpha").Prefix, at); err != nil {
+		t.Fatal(err)
+	}
+	fake.mu.Lock()
+	defer fake.mu.Unlock()
+	if _, kept := fake.objects[name]; !kept {
+		t.Fatal("retention removed a league's newest set")
+	}
+}

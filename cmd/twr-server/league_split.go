@@ -38,13 +38,16 @@ func settleLeagueSplit(ctx context.Context, shared, reference *db.Pools, serverP
 		}
 	}
 	conversionStep("split-backup", root)
+	proofs := map[string]map[string]db.RowProof{}
 	for _, league := range leagues {
-		if err := buildLeagueFile(ctx, shared, reference, root, league, head); err != nil {
+		proof, err := buildLeagueFile(ctx, shared, reference, root, league, head)
+		if err != nil {
 			return db.AuditHead{}, errors.Join(fmt.Errorf("could not give league %s its own file (%w); nothing was changed and the server did not start", league, err), discardSplit(root, leagues))
 		}
+		proofs[league] = proof
 	}
 	conversionStep("split-proved", root)
-	if err := history.CommitLeagueSplit(ctx, shared, history.LeagueSplit{Leagues: leagues, Shared: head, At: time.Now()}); err != nil {
+	if err := history.CommitLeagueSplit(ctx, shared, history.LeagueSplit{Leagues: leagues, Shared: head, At: time.Now(), Proofs: proofs}); err != nil {
 		return db.AuditHead{}, errors.Join(fmt.Errorf("record the league split: %w; nothing was changed", err), discardSplit(root, leagues))
 	}
 	conversionStep("split-committed", root)
@@ -107,37 +110,37 @@ func refuseStrayLeagueFiles(root string) error {
 }
 
 // buildLeagueFile copies league into its pending file and proves the copy, then closes the file.
-func buildLeagueFile(ctx context.Context, shared, reference *db.Pools, root, league string, head db.AuditHead) (err error) {
+func buildLeagueFile(ctx context.Context, shared, reference *db.Pools, root, league string, head db.AuditHead) (proofs map[string]db.RowProof, err error) {
 	final, err := leagueFilePath(root, league)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	pending := pendingLeague(final)
 	if err := discardPending(pending); err != nil {
-		return err
+		return nil, err
 	}
 	if err := os.MkdirAll(filepath.Dir(final), 0o700); err != nil {
-		return fmt.Errorf("make the league folder: %w", err)
+		return nil, fmt.Errorf("make the league folder: %w", err)
 	}
 	pools, err := db.OpenWithReference(ctx, pending, history.LeagueSchemaVersion(), reference)
 	if err != nil {
-		return fmt.Errorf("create the league file: %w", err)
+		return nil, fmt.Errorf("create the league file: %w", err)
 	}
 	defer func() { err = errors.Join(err, pools.Close()) }()
 	if err := history.PrepareNewLeague(ctx, pools); err != nil {
-		return err //nolint:wrapcheck // names the file
+		return nil, err //nolint:wrapcheck // names the file
 	}
 	if err := history.CopyLeague(ctx, shared, pools, history.LeagueFile{League: league, Shared: head}); err != nil {
-		return err //nolint:wrapcheck // names the league
+		return nil, err //nolint:wrapcheck // names the league
 	}
 	conversionStep("split-copied", pending)
-	if err := history.ProveLeague(ctx, shared, pools, league); err != nil {
-		return err //nolint:wrapcheck // names the league and table
+	if proofs, err = history.ProveLeague(ctx, shared, pools, league); err != nil {
+		return nil, err //nolint:wrapcheck // names the league and table
 	}
 	if _, err := pools.Write().ExecContext(ctx, `PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
-		return fmt.Errorf("flush the league file: %w", err)
+		return nil, fmt.Errorf("flush the league file: %w", err)
 	}
-	return syncPath(pending)
+	return proofs, syncPath(pending)
 }
 
 // discardSplit removes every pending league file of a split that did not commit.
