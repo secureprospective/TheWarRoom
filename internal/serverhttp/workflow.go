@@ -33,27 +33,33 @@ func (r WorkflowResponse) Validate() error {
 }
 
 func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow) {
+	h.Requests.add(raw.Command, raw.Mode, 0, 0)
 	league, err := raw.League()
 	if err != nil {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, "invalid league action", http.StatusBadRequest)
 		return
 	}
 	//nolint:contextcheck // The service host carries this request's context and admission.
 	location, err := service.Location(league)
 	if err != nil {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, "league access refused; sign in and check your seat", http.StatusForbidden)
 		return
 	}
 	pin := h.pinFor(r.Context(), league)
 	if raw.Mode != "read" && pin.Digest == "" {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, "Ask the server operator to select football evidence before making changes", http.StatusConflict)
 		return
 	}
 	if raw.Mode != "read" && pin.Missing {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, missingFootball(pin.Digest), http.StatusConflict)
 		return
 	}
 	if raw.Mode != "read" && !location.Writable {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, location.Label, http.StatusConflict)
 		return
 	}
@@ -62,9 +68,11 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	if err != nil {
 		// The command name and mode are fixed catalogue words; arguments, bearer and proof are never logged.
 		log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
 		return
 	}
+	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
 	response := WorkflowResponse{Label: location.Label, Writable: location.Writable && !pin.Missing, Football: pin.Digest, Data: data}
 	if raw.Mode == "read" {
 		writeHostedReading(w, r, response)
@@ -83,6 +91,7 @@ func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service
 	if err != nil {
 		return nil, err
 	}
+	scope.tally, scope.command, scope.mode = h.Requests, raw.Command, raw.Mode
 	return scope.reply(func() ([]byte, error) { return runWorkflow(ctx, service, raw) })
 }
 

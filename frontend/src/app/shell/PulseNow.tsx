@@ -22,9 +22,11 @@ export function PulseIdle({ words }: { words: string }) {
 type Reading<T> = { reading?: T; pending?: boolean; error?: string };
 export type NowDrawer = 'box' | 'corr';
 
-export function PulseNow({ reading, mine, week, results, league, port, live, drawer, onClose, onChanges }: {
+export function PulseNow({ reading, mine, week, results, league, port, live, drawer,
+  onClose, onChanges, viewer }: {
   reading: NativePulse; mine: string; week?: number; results: Reading<PulseResults>;
   league: string; port: HostedPort; live: ReturnType<typeof usePulseLive>;
+  viewer?: { mine: string; commissioner: boolean };
   drawer?: NowDrawer; onClose: () => void; onChanges: (count: number) => void;
 }) {
   const [side, setSide] = useState<'mu' | 'nfl'>('mu');
@@ -35,7 +37,7 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
   const playing = Boolean(live.view?.games.some(g => g.status === 'in'));
   const rows = results.reading ? pulseRows(results.reading, mine, reading.seats, current, playing) : [];
   const selected = rows.find(r => r.key === picked) ?? rows.find(r => r.mine) ?? rows[0];
-  const sides = useStarterSides(reading, week, results.reading, selected, league, port, mine);
+  const sides = useStarterSides(reading, week, results.reading, selected, league, port, mine, viewer);
   const changes = statChanges(sides.left, sides.right);
   useEffect(() => onChanges(changes.length), [onChanges, changes.length]);
   const games = current ? live.view?.games ?? [] : [];
@@ -51,7 +53,8 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
       </div>
       {side === 'nfl'
         ? <NflList games={games} followed={followed} onFollow={live.follow}
-            words={!current ? 'NFL games are shown for the week being played.'
+            words={viewer ? 'Live NFL games are coming next.'
+              : !current ? 'NFL games are shown for the week being played.'
               : live.error ? `The NFL scoreboard is unavailable · ${live.error}`
               : !live.view ? 'Reading the NFL scoreboard…' : 'No NFL games are held for this week.'} />
         : <MatchupList rows={rows} filter={filter} onFilter={setFilter} results={results}
@@ -69,12 +72,12 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
             <span className="q">{clockWords(g)}</span>
           </PulseAct>)}
         {!games.some(g => g.status === 'in') && !followed && <span className="src">
-          {!current ? 'live games show for the week being played'
+          {viewer ? 'Live NFL games are coming next.' : !current ? 'live games show for the week being played'
             : live.error ? `NFL scoreboard unavailable · ${live.error}`
             : !live.view ? 'Reading the NFL scoreboard…' : 'no NFL game is being played right now'}
         </span>}
       </div>
-      {followed ? <FollowedGame game={followed} /> : <>
+      {viewer ? null : followed ? <FollowedGame game={followed} /> : <>
         <div className="gh"><span className="src">Follow an NFL game to see its field.</span></div>
         <div><PulseIdle words={playing ? 'Pick a live game above or under NFL GAMES.'
           : 'The field, the drive and the down show while an NFL game is being played.'} /></div>
@@ -343,16 +346,17 @@ type StarterSides = { left: PulseStarterRow[]; right: PulseStarterRow[]; private
 /** useStarterSides reads the chosen matchup's two lineups once, for the starters and for who is in
  *  the followed NFL game. */
 function useStarterSides(reading: NativePulse, week: number | undefined, results: PulseResults | undefined,
-  row: PulseRow | undefined, league: string, port: HostedPort, mine: string): StarterSides {
+  row: PulseRow | undefined, league: string, port: HostedPort, mine: string,
+  viewer?: { mine: string; commissioner: boolean }): StarterSides {
   const away = row?.game.away;
   const home = row?.game.home;
   const starters = (franchise?: string) => scoreOf(results, franchise ?? '')?.starters
     .map(s => s.player) ?? [];
   const matchup = usePulseRead<PulseMatchup>(
-    JSON.stringify(['pulse-matchup', league, week, away, home]),
+    JSON.stringify(['pulse-matchup', league, week, away, home, viewer]),
     publish => week && away && home
       ? readPulseMatchup(league, reading.season, week, [away, home],
-        { [away]: starters(away), [home]: starters(home) }, port, publish)
+        { [away]: starters(away), [home]: starters(home) }, port, publish, viewer)
       : Promise.reject(new Error('Choose a matchup to read its lineups.')));
   const projections = matchup.reading?.projections ?? {};
   const flip = home !== undefined && home === mine;

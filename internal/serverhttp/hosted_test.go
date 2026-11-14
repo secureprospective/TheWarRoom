@@ -25,6 +25,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
@@ -33,6 +34,7 @@ import (
 )
 
 type hostedFixture struct {
+	tally  *serverhttp.RequestTally
 	pools  *db.Pools
 	server *httptest.Server
 	// fresh is the same server with no reply cache, sharing every store: the cache's parity reference.
@@ -57,7 +59,15 @@ type hostedFixture struct {
 
 func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	t.Helper()
-	store, pools := fixtureStore(t, filepath.Join(t.TempDir(), "server.db"))
+	var registries []*measures.Registry
+	if len(workflows) > 1 && workflows[1] {
+		registry, err := measures.Embedded()
+		if err != nil {
+			t.Fatal(err)
+		}
+		registries = append(registries, registry)
+	}
+	store, pools := fixtureStore(t, filepath.Join(t.TempDir(), "server.db"), registries...)
 	credentials := accountstore.New(pools)
 	passwords := accounts.New(credentials)
 	principal, err := hostedfixture.Bootstrap(t.Context(), credentials, accounts.RawCredentials{Username: "commissioner", Password: "private-password"})
@@ -123,6 +133,8 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	f.fresh = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.fresh.Close)
 	handler.Replies = serverhttp.NewReplyCache(64 << 20)
+	f.tally = serverhttp.NewRequestTally()
+	handler.Requests = f.tally
 	f.server = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.server.Close)
 	return f
