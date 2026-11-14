@@ -161,9 +161,13 @@ func TestSSERejectsMissingCredentialsAndPrivileges(t *testing.T) {
 	missing := openStream(t, f, "", "", 401)
 	defer missing.Body.Close()
 	bearer := f.login(t, "commissioner", "private-password")
+	// No authenticator set up: the session alone opens the stream (ruling 2026-11-14).
+	plain := openStream(t, f, bearer, "", 200)
+	defer plain.Body.Close()
+	proof := f.privilegedProof(t)
+	// Once an authenticator is confirmed, the stream needs a recent code.
 	unprivileged := openStream(t, f, bearer, "", 403)
 	defer unprivileged.Body.Close()
-	proof := f.privilegedProof(t)
 	response := openStream(t, f, bearer, proof, 200)
 	if response.Header.Get("Content-Type") != "text/event-stream" {
 		t.Fatal("missing SSE type")

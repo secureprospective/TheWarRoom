@@ -24,6 +24,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const [signedIn, setSignedIn] = useState(Boolean(initial.message));
+  const [openAfterSignIn, setOpenAfterSignIn] = useState(false);
   const changeScreen = (next: Screen) => {
     setScreen(next); setPassword(''); setCode(''); setError('');
     setView(current => ({ ...current, seed: '', message: '' }));
@@ -38,7 +39,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       const result = await nativeAction(action, credentials ? username : '', credentials ? password : '',
         ['recover', 'enroll', 'totp-confirm', 'totp-step-up'].includes(action) ? code : '');
       setView(result);
-      if (action === 'login') setSignedIn(true);
+      if (action === 'login') { setSignedIn(true); setOpenAfterSignIn(true); }
       if (['forget', 'revoke-device', 'revoke-all'].includes(action)) setSignedIn(false);
       if (action === 'enroll' || action === 'recover') setScreen('login');
       if (action === 'recover') setSignedIn(false);
@@ -65,6 +66,15 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       if (action) return run(action);
     }
   }));
+  // Signing in goes straight on to the league, as its own recorded Open my franchise; a refusal
+  // (e.g. a fresh authenticator code is needed) shows its reason while the saved sign-in stays.
+  useEffect(() => {
+    if (!openAfterSignIn || pending) return;
+    setOpenAfterSignIn(false);
+    void commands.dispatch('commissioner.surface', {
+      screen: 'native-account', action: 'check', value: 'enter',
+    }).catch(() => undefined);
+  }, [openAfterSignIn, pending]);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     void commands.dispatch('commissioner.surface', {
@@ -125,11 +135,11 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         franchise assignment. Do not create another account.</p>
       <Act variant="button" verb="commissioner.surface" args={args('view', 'login')}
         label="Back to sign in">Back to sign in</Act>
-    </section> : <form onSubmit={submit}>
+    </section> : screen === 'login' && view.name ? null : <form onSubmit={submit}>
       <h2>{title}</h2>
-      {screen === 'authenticator' && <p>Commissioners and deputies must use an authenticator.
-        Enter your password for each step. Add the setup key as a time-based account, confirm a code,
-        then wait for a fresh code to verify access for five minutes.</p>}
+      {screen === 'authenticator' && <p>An authenticator is optional. Once it is on, commissioners and deputies
+        verify a fresh code to open the league. Enter your password for each step. Add the setup key as a
+        time-based account, confirm a code, then wait for a fresh code to verify access for five minutes.</p>}
       <label>Username<input autoComplete="username" required minLength={3} maxLength={64} value={username}
         disabled={pending} onChange={e => setUsername(e.target.value)} /></label>
       <label>Password<input type="password"

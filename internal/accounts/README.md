@@ -109,7 +109,7 @@ clock/key handling still need their planned slices. This is not evidence that
 the fixture listener or the legacy local desktop now enforces TOTP.
 
 Exercised evidence: `TestPrivilegedTOTPEnrollmentReplayAndRecentAuth` covers
-unconfigured/confirmed commissioners, replay, forged proofs, exact five-minute
+unconfigured commissioners (admitted: the authenticator is optional, ruling 2026-11-14), confirmed ones, replay, forged proofs, exact five-minute
 boundaries and redaction; `TestTOTPDeputiesAndAccountBinding` covers two deputies
 and cross-account proof denial. Concurrent-code/reopen tests observe one winner,
 persistent replay protection and fresh-code success after restart. RFC vectors,

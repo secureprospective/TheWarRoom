@@ -208,7 +208,7 @@ func desktopRefusal(path string, status int) error {
 		if status == 401 {
 			return fmt.Errorf("your session expired or was revoked. Sign in again")
 		}
-		return fmt.Errorf("league access refused. Commissioners must set up and verify their authenticator; owners should ask the commissioner to check their seat")
+		return fmt.Errorf("league access refused. If you turned on an authenticator, verify a fresh code; otherwise ask the commissioner to check your seat")
 	default:
 		return fmt.Errorf("authenticator refused. Check your password and phone clock, then use a fresh code. If the phone is lost, open account recovery")
 	}

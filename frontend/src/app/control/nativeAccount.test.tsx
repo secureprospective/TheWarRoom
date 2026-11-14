@@ -83,6 +83,28 @@ describe('native desktop account access', () => {
     expect(host.textContent).toContain('Sign in again');
   });
 
+  it('opens the league straight after signing in and hides the sign-in form while it is open', async () => {
+    rooms.length = 0;
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(reply({ ...initial, message: 'Signed in.' }))
+      .mockResolvedValueOnce(reply({ ...initial, name: 'League', role: 'Commissioner',
+        franchise: 'franchise.01', franchiseName: 'My club' }));
+    vi.stubGlobal('fetch', fetcher);
+    const host = await mount(render(NativeAccount, { initial }));
+    await type(control(host, 'Username'), 'commissioner');
+    await type(control(host, 'Password'), 'private-password');
+    await submit(host);
+    await settle();
+    expect(fetcher.mock.calls.map(call => JSON.parse(call[1].body).action)).toEqual(['login', 'enter']);
+    expect(rooms).toEqual(['open franchise.01']);
+    expect(all(host, 'form')).toHaveLength(0);
+    // A refused reread clears the league view, and the form is back to sign in again.
+    fetcher.mockResolvedValue({ ok: false, text: async () => 'Session revoked. Sign in again.' });
+    await click(button(host, 'Open my franchise')); await settle();
+    expect(all(host, 'form')).toHaveLength(1);
+    expect(host.textContent).toContain('Sign in again');
+  });
+
   it('makes expired invitations and lost factors recoverable without promising a seat reset', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false,
       text: async () => 'Code expired; ask your commissioner for a new code.' }));
