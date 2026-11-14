@@ -135,20 +135,31 @@ const DesktopWorkflowPath = "/desktop/workflow"
 // Workflow keeps the device session in Go and binds every request to this window's league.
 func (d *Desktop) Workflow(ctx context.Context, raw serverhttp.RawWorkflow) (serverhttp.WorkflowResponse, error) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
 	var result serverhttp.WorkflowResponse
 	if err := raw.Validate(); err != nil {
+		d.mu.Unlock()
 		return result, fmt.Errorf("check league action: %w", err)
 	}
 	league, err := raw.League()
 	if err != nil || league != d.league {
+		d.mu.Unlock()
 		return result, fmt.Errorf("choose this window's league")
 	}
 	d.restore()
-	if d.bearer == "" {
+	session := d.snapshotLocked()
+	d.mu.Unlock()
+	if session.bearer == "" {
 		return result, fmt.Errorf("sign in before opening your franchise")
 	}
-	body, err := postDesktop(ctx, d, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	body, unauthorized, err := postDesktopSnapshot(ctx, session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	if unauthorized {
+		d.mu.Lock()
+		if d.generation == session.generation {
+			_ = d.clearCredential()
+			d.generation++
+		}
+		d.mu.Unlock()
+	}
 	if err != nil {
 		return result, err
 	}
