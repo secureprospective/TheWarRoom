@@ -9,28 +9,27 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
 // This file is absent from release binaries. The separately built desktop click-test
 // server accepts only the launcher's private disposable layout, never R2 deployment settings.
-func configureHostedBackup(_ context.Context, _ *serverhttp.Hosted, _ *db.Pools, path, temp string, files ...string) (func(), backupStatus, error) {
+func configureHostedBackup(_ context.Context, _ *serverhttp.Hosted, _ stateFiles, path, temp string, files ...string) (func(), hostedBackups, error) {
 	if path != "" {
-		return nil, nil, fmt.Errorf("practice builds cannot run R2 deployment configuration; use the release server")
+		return nil, hostedBackups{}, fmt.Errorf("practice builds cannot run R2 deployment configuration; use the release server")
 	}
 	if err := practiceFolders(temp); err != nil {
-		return nil, nil, err
+		return nil, hostedBackups{}, err
 	}
 	if err := practiceFiles(temp, files); err != nil {
-		return nil, nil, err
+		return nil, hostedBackups{}, err
 	}
 	log.Printf("DISPOSABLE PRACTICE BUILD: no off-site protection; never use for real league state")
-	return func() {}, noBackups, nil
+	return func() {}, hostedBackups{noBackups, noBackups}, nil
 }
 
 // upgradeOffsite has no R2 in practice builds; upgrades there run without -backup-config.
-func upgradeOffsite(_ context.Context, _ *db.Pools, _, _ string) error {
+func upgradeOffsite(_ context.Context, _ stateFiles, _, _ string) error {
 	return fmt.Errorf("practice builds cannot run R2 deployment configuration; use the release server")
 }
 

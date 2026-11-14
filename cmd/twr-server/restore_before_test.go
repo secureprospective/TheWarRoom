@@ -9,6 +9,7 @@ import (
 
 	"filippo.io/age"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/offsite"
 )
 
 func TestRestoreBeforeDatePicksOlderSetWithoutOpeningNewer(t *testing.T) {
@@ -28,7 +29,7 @@ func TestRestoreBeforeDatePicksOlderSetWithoutOpeningNewer(t *testing.T) {
 	sets := &memorySets{objects: map[string][]byte{}}
 	host.capture(t, sets, key.Recipient().String())
 	host.capture(t, sets, key.Recipient().String())
-	names, err := sets.Sets(t.Context())
+	names, err := sets.KindSets(t.Context(), offsite.LeagueSet)
 	if err != nil || len(names) != 2 {
 		t.Fatalf("sets: %v %v", names, err)
 	}

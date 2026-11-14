@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -46,10 +47,13 @@ func (m RawManifest) Validate() error {
 		total += e.Size
 		seen[e.Name] = true
 	}
-	for _, name := range []string{"server.db", "checkpoint.json", "config/authenticator.key", "config/origin.key", "config/origin.pem", "config/endpoint-registry.csv", "config/backup.json"} {
+	for _, name := range []string{"checkpoint.json", "config/authenticator.key", "config/origin.key", "config/origin.pem", "config/endpoint-registry.csv", "config/backup.json"} {
 		if !seen[name] {
 			return fmt.Errorf("recovery set is missing required server settings")
 		}
+	}
+	if seen[LeagueSet.File] == seen[SignInSet.File] {
+		return fmt.Errorf("recovery set must hold exactly one database")
 	}
 	if total > MaxPlain {
 		return fmt.Errorf("incomplete or oversized recovery set")
@@ -58,7 +62,7 @@ func (m RawManifest) Validate() error {
 }
 
 func (e RawEntry) Validate() error {
-	valid := e.Name == "server.db" || e.Name == "checkpoint.json" || (strings.HasPrefix(e.Name, "config/") && filepath.Base(e.Name) == strings.TrimPrefix(e.Name, "config/") && filepath.Base(e.Name) != "." && filepath.Base(e.Name) != "..")
+	valid := e.Name == LeagueSet.File || e.Name == SignInSet.File || e.Name == "checkpoint.json" || (strings.HasPrefix(e.Name, "config/") && filepath.Base(e.Name) == strings.TrimPrefix(e.Name, "config/") && filepath.Base(e.Name) != "." && filepath.Base(e.Name) != "..")
 	digest, err := hex.DecodeString(e.SHA256)
 	if !valid || e.Size < 0 || e.Size > MaxPlain || err != nil || len(digest) != sha256.Size {
 		return fmt.Errorf("invalid recovery member")
@@ -66,17 +70,37 @@ func (e RawEntry) Validate() error {
 	return nil
 }
 
-// Capture encrypts a matched set to a public recipient. stage must be private and disposable.
+// SetKind is one kind of recovery set: the object name prefix in the bucket and the database file
+// inside it. The league file and the sign-in file are captured, uploaded and pruned as separate sets.
+type SetKind struct{ Prefix, File string }
+
+//nolint:gochecknoglobals // fixed by the code, read only
+var (
+	LeagueSet = SetKind{Prefix: "sets/", File: "server.db"}
+	SignInSet = SetKind{Prefix: "signins/", File: "accounts.db"}
+)
+
+// Holds reports whether the manifest's set carries name.
+func (m RawManifest) Holds(name string) bool {
+	return slices.ContainsFunc(m.Files, func(e RawEntry) bool { return e.Name == name })
+}
+
+// Capture encrypts a matched league set to a public recipient. stage must be private and disposable.
 // Configuration must be immutable for the running server (the installed sandbox binds it read-only).
 func Capture(ctx context.Context, pools *db.Pools, configDir, stage, recipient string, checkpoint func(context.Context, string) ([]byte, error)) (string, time.Time, error) {
+	return CaptureSet(ctx, LeagueSet, pools, configDir, stage, recipient, checkpoint)
+}
+
+// CaptureSet encrypts one database of the given kind, with the server settings and its checkpoint.
+func CaptureSet(ctx context.Context, kind SetKind, pools *db.Pools, configDir, stage, recipient string, checkpoint func(context.Context, string) ([]byte, error)) (string, time.Time, error) {
 	at := time.Now().UTC()
-	err := pools.CaptureHosted(ctx, filepath.Join(stage, "server.db"), func() error {
+	err := pools.CaptureHosted(ctx, filepath.Join(stage, kind.File), func() error {
 		return copyConfig(configDir, filepath.Join(stage, "config"))
 	})
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("capture recovery set: %w", err)
 	}
-	body, err := checkpoint(ctx, filepath.Join(stage, "server.db"))
+	body, err := checkpoint(ctx, filepath.Join(stage, kind.File))
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("verify captured history: %w", err)
 	}
@@ -137,7 +161,7 @@ func manifest(stage string, at time.Time) (RawManifest, error) {
 			return fmt.Errorf("name recovery member: %w", err)
 		}
 		// SQLite sidecars from checkpoint verification are not authoritative snapshot members.
-		if name != "server.db" && name != "checkpoint.json" && !strings.HasPrefix(name, "config"+string(filepath.Separator)) {
+		if name != LeagueSet.File && name != SignInSet.File && name != "checkpoint.json" && !strings.HasPrefix(name, "config"+string(filepath.Separator)) {
 			return nil
 		}
 		f, err := root.Open(name)

@@ -28,6 +28,7 @@ type Manager struct {
 	capture       func(context.Context, string) (string, time.Time, error)
 	revision      func(context.Context) (int64, error)
 	temp          string
+	kind          SetKind
 	// covered is when the live database was last known to match a verified set: the snapshot start,
 	// or a later due tick that read the same revision. Writability is measured from it.
 	covered     time.Time
@@ -38,13 +39,21 @@ type Manager struct {
 // NewManager takes revision as a reader of the database's commit revision (db.Pools.Revision): when it
 // is unchanged since the newest verified set began, a due tick renews coverage without a new upload.
 func NewManager(r2 *R2, temp string, capture func(context.Context, string) (string, time.Time, error), revision func(context.Context) (int64, error)) *Manager {
-	return &Manager{r2: r2, temp: temp, capture: capture, revision: revision, now: time.Now}
+	return NewKindManager(LeagueSet, r2, temp, capture, revision)
+}
+
+// NewKindManager backs up one kind of set: its own uploads, coverage, skip-when-unchanged and retention.
+func NewKindManager(kind SetKind, r2 *R2, temp string, capture func(context.Context, string) (string, time.Time, error), revision func(context.Context) (int64, error)) *Manager {
+	return &Manager{r2: r2, temp: temp, capture: capture, revision: revision, now: time.Now, kind: kind}
 }
 
 // CheckWrite deliberately stops new writes one minute before the 15-minute limit,
 // leaving room for already admitted bounded operations. Restart starts closed.
 func (m *Manager) CheckWrite() error {
 	if !m.Status().Writable {
+		if m.kind == SignInSet {
+			return fmt.Errorf("sign-ins and account changes are paused because the sign-in backup is not current; your commissioner needs to check backup settings and the internet connection")
+		}
 		return fmt.Errorf("changes are paused because the off-site backup is not current; your commissioner needs to check backup settings and the internet connection")
 	}
 	return nil
@@ -89,7 +98,7 @@ func (m *Manager) backup(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	name := "sets/" + at.UTC().Format(objectFormat) + ".tar.gz.age"
+	name := m.kind.Prefix + at.UTC().Format(objectFormat) + ".tar.gz.age"
 	if err := m.r2.upload(ctx, name, path); err != nil {
 		return err
 	}
@@ -101,7 +110,7 @@ func (m *Manager) backup(ctx context.Context) error {
 	m.coverageStart, m.covered = start, at
 	m.verifiedRev, m.hasRev = revision, revErr == nil
 	m.mu.Unlock()
-	return m.r2.prune(ctx, m.now())
+	return m.r2.prunePrefix(ctx, m.kind.Prefix, m.now())
 }
 
 func (m *Manager) readRevision(ctx context.Context) (int64, error) {
@@ -149,22 +158,33 @@ func (m *Manager) Tick(ctx context.Context) error {
 
 // Run retries every minute, capturing every five minutes while healthy and the database changed. No persisted
 // receipt is trusted on restart: a new upload must be read back before writes resume.
-func (m *Manager) Run(ctx context.Context) {
+func (m *Manager) Run(ctx context.Context) { RunInOrder(ctx, m) }
+
+// RunInOrder runs several managers on one clock, each due tick in the order given: the league set
+// before the sign-in set, so an account always commits before any seat a captured league names. Each
+// manager keeps its own failure and coverage; one failing never skips the next.
+func RunInOrder(ctx context.Context, managers ...*Manager) {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 	for {
-		m.mu.Lock()
-		start := m.coverageStart
-		m.mu.Unlock()
-		if start.IsZero() || m.now().Sub(start) >= 5*time.Minute {
-			attempt, cancel := context.WithTimeout(ctx, 2*time.Minute)
-			_ = m.Tick(attempt) // recorded in Status for the dashboard; the next tick retries
-			cancel()
+		for _, m := range managers {
+			m.runDue(ctx)
 		}
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
 		}
+	}
+}
+
+func (m *Manager) runDue(ctx context.Context) {
+	m.mu.Lock()
+	start := m.coverageStart
+	m.mu.Unlock()
+	if start.IsZero() || m.now().Sub(start) >= 5*time.Minute {
+		attempt, cancel := context.WithTimeout(ctx, 2*time.Minute)
+		_ = m.Tick(attempt) // recorded in Status for the dashboard; the next tick retries
+		cancel()
 	}
 }

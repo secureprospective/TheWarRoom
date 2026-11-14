@@ -16,11 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/offsite"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/serverstatus"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // The sentinel stands for private detail a backup error can carry, such as a bucket name.
@@ -42,12 +40,9 @@ func (d *dialLog) dial(ctx context.Context, network, address string) (net.Conn, 
 // of it, and the dashboard dials nothing outside this container.
 func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 	dir := t.TempDir()
-	pools, err := db.Open(t.Context(), filepath.Join(dir, "server.db"), history.SchemaVersion())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = pools.Close() }()
-	handler, err := hostedServices(t.Context(), pools, make([]byte, 32), "")
+	files := openTestServer(t, dir)
+	pools := files.league
+	handler, err := hostedServices(t.Context(), files, make([]byte, 32), "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,11 +56,11 @@ func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 	if _, err := pools.Write().ExecContext(t.Context(), `UPDATE audit_chain_head SET hash='changed' WHERE source='league_event'`); err != nil {
 		t.Fatal(err)
 	}
-	handler.WriteAdmission = manager.CheckWrite
+	handler.WriteAdmission, handler.SignInAdmission = manager.CheckWrite, manager.CheckWrite
 	handler.TrustedProxy = netip.MustParseAddr("127.0.0.1")
 
 	socket := filepath.Join(dir, "status.sock")
-	stopStatus, err := startStatusSocket(t.Context(), socket, statusSource(pools, handler.Store, func() (offsite.Status, bool) { return manager.Status(), true }))
+	stopStatus, err := startStatusSocket(t.Context(), socket, statusSource(files.signIns, handler.Leagues, hostedBackups{league: func() (offsite.Status, bool) { return manager.Status(), true }, signIns: func() (offsite.Status, bool) { return manager.Status(), true }}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,6 +104,7 @@ func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 	shown := dashboard()
 	for _, want := range []string{
 		"PROBLEM  Backups: League changes and sign-ins are paused", privateSentinel,
+		"PROBLEM  Sign-in backups: Sign-ins and account changes are paused (league changes are not)",
 		"PROBLEM  History: League history does not check out",
 		"PROBLEM  Tunnel: Not connected to Cloudflare",
 		"PROBLEM  Clock: Not synchronised (host clock is not NTP synchronized)",
@@ -116,7 +112,7 @@ func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 		// The test certificate lives an hour: that fault shows too, while the server answers.
 		"PROBLEM  League server: Answering, but its private certificate for the Tunnel expires",
 		"What to do: Change nothing and call Christopher today.",
-		"6 problems.",
+		"7 problems.",
 	} {
 		if !strings.Contains(shown, want) {
 			t.Errorf("dashboard lacks %q:\n%s", want, shown)

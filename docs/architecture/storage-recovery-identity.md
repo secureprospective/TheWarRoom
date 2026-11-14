@@ -16,9 +16,37 @@ oldest supported unversioned installation. Empty and every intermediate migratio
 prefix converge; a newer file is refused before opening a writer. Old state
 owner markers remain adoption evidence, not another upgrade path.
 
-Accounts still initialize their schema independently in the shared hosted file.
-Their consolidation is explicitly deferred below, not a second completed version
-plan. Existing migration backups and encrypted R2 matched sets remain unchanged.
+On the desktop, accounts share `history.db` and carry their own ordered list
+(`accounts.SchemaVersion`, v1) applied by `db.Pools.MigrateSchema`, versioned in the
+`schema_version` row named `accounts` because that file's `user_version` belongs to
+history. The hosted server keeps sign-ins in their own file, `accounts.db` beside
+`server.db` (`accounts.NewServerFile`, `cmd/twr-server/signin_file.go`); that file's
+version is its own `user_version` (`accounts.ServerVersion`, v1) and it is refused
+when newer. It holds every `account_*` table, `league_join_links`, the security audit
+chain and `league_directory` (league, state, created). The directory is a listing
+only: it is written after a league's first commit and refreshed from the league file
+on every start; the league file is the truth for whether a league exists and its
+state, and nothing reads the directory to make a league appear.
+
+Writes between the two files are ordered, never atomic: an account commits in the
+sign-in file before the league records its seat (join, first sign-in, league-load),
+so a crash between leaves an account with no seat. Every sign-in write that withdraws
+a credential first reserves the league file's writer, so it cannot commit between a
+league write's credential check and its commit.
+
+A one-file server converts on first start. Each step and why a crash is safe:
+(1) pre-change backup of `server.db`; (2) build `accounts.db.converting`, copy the
+sign-in tables and the security chain rows as stored, prove them (row count and
+ordered-row digest per table; same chain head; chain verifies), close and fsync it;
+a crash in (1)-(2) leaves `server.db` untouched and the half-built file is deleted on
+the next start. (3) One transaction in `server.db` removes the sign-in tables (with
+`secure_delete`) and writes the `signin_move` record: the only point of no return.
+(4) Rename the proven file to `accounts.db` and fsync the folder; a crash between (3)
+and (4) is finished on the next start, because the record says the move happened and
+the proven file is waiting. The security chain's own rows stay in `server.db` as
+frozen evidence: the audit tables are append-only, and they hold hashes, not secrets. v1 adopts the tables
+older builds created at runtime (idempotent DDL, rows kept); a newer accounts version
+is refused. The security audit chain is still verified on every start. Existing migration backups and encrypted R2 matched sets remain unchanged.
 
 ## History split: old jobs → current pieces
 
@@ -96,11 +124,11 @@ Older transfer documents remain readable with the absent optional field.
 
 ## Debt left
 
+- A join that stops between its two commits leaves an account with no seat; that
+  name stays taken, so the owner picks another or the commissioner releases the
+  account by hand. No automatic retry of the seat exists.
+
 - Rules/authority recovery from the standalone point: not small. Authority includes
   account principals, grants, transfer lineage and cutover settings; manufacturing
   it from rosters would be unsafe. Use complete server recovery; roster-only
   recovery deliberately stays fenced.
-- Account-schema consolidation: not small. Hosted and standalone local-seat/account
-  bootstraps currently share unversioned account initialization; safely adopting
-  credentials, auth epochs and audit chains needs its own migration and compatibility
-  tests. No credential/session schema was changed in this branch.

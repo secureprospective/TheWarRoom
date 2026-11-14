@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -75,12 +76,12 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
-	pools, err := openHostedFile(ctx, *config.path)
+	files, err := openStateFiles(ctx, *config.path)
 	if err != nil {
-		return fmt.Errorf("open server database: %w", err)
+		return err
 	}
-	defer func() { _ = pools.Close() }()
-	handler, err := hostedServices(ctx, pools, encryptionKey, string(catalogue))
+	defer func() { _ = files.Close() }()
+	handler, err := hostedServices(ctx, files, encryptionKey, string(catalogue))
 	if err != nil {
 		return err
 	}
@@ -88,12 +89,12 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 		return err
 	}
 	handler.TrustedProxy = hop
-	stopBackup, backups, err := configureHostedBackup(ctx, &handler, pools, *config.backup, filepath.Dir(*config.path), *config.totpKey, *config.cert, *config.key, *config.registry)
+	stopBackup, backups, err := configureHostedBackup(ctx, &handler, files, *config.backup, filepath.Dir(*config.path), *config.totpKey, *config.cert, *config.key, *config.registry)
 	if err != nil {
 		return err
 	}
 	defer stopBackup()
-	stopStatus, err := startStatusSocket(ctx, *config.status, statusSource(pools, handler.Store, backups))
+	stopStatus, err := startStatusSocket(ctx, *config.status, statusSource(files.signIns, handler.Leagues, backups))
 	if err != nil {
 		return err
 	}
@@ -125,15 +126,69 @@ func selectHostedFootball(ctx context.Context, handler *serverhttp.Hosted, diges
 	return nil
 }
 
-func openHostedFile(ctx context.Context, path string) (*db.Pools, error) {
+// stateFiles are the hosted server's league file and its sign-in file. openStateFiles is the one way a
+// command opens them; it moves the sign-in tables out of a one-file server first.
+type stateFiles struct{ league, signIns *db.Pools }
+
+func openStateFiles(ctx context.Context, path string) (stateFiles, error) {
 	if err := servePreflight(ctx, path); err != nil {
-		return nil, err
+		return stateFiles{}, fmt.Errorf("open server database: %w", err)
 	}
-	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	return openSignInFiles(ctx, path)
+}
+
+// openSignInFiles is openStateFiles for the console's incident commands, which must work on a league
+// file of any release this build can open: it skips the serve preflight.
+func openSignInFiles(ctx context.Context, path string) (stateFiles, error) {
+	league, err := db.Open(ctx, path, history.SchemaVersion())
 	if err != nil {
-		return nil, fmt.Errorf("open league file: %w", err)
+		return stateFiles{}, fmt.Errorf("open server database: %w", err)
 	}
-	return pools, nil
+	signIns, err := openSignIns(ctx, league, path)
+	if err != nil {
+		return stateFiles{}, errors.Join(err, league.Close())
+	}
+	return stateFiles{league: league, signIns: signIns}, nil
+}
+
+func (f stateFiles) Close() error {
+	var errs []error
+	for _, pools := range []*db.Pools{f.signIns, f.league} {
+		if pools != nil {
+			errs = append(errs, pools.Close())
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// signInStore is the sign-in store over the sign-in file, fenced by the league writer.
+func signInStore(files stateFiles) *accountstore.Store {
+	store := accountstore.NewServerFile(files.signIns)
+	store.SetCommitFence(func(ctx context.Context) (func(), error) {
+		conn, err := files.league.Write().Conn(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("reserve the league writer: %w", err)
+		}
+		return func() { _ = conn.Close() }, nil
+	})
+	return store
+}
+
+// recordDirectory copies the league file's leagues into the sign-in file's directory. It runs after the
+// league file has committed them, so a directory row never names a league that does not exist.
+func recordDirectory(ctx context.Context, ledger *history.Store, signIns *accountstore.Store) error {
+	states, err := ledger.LeagueStates(ctx)
+	if err != nil {
+		return fmt.Errorf("read the leagues on this server: %w", err)
+	}
+	entries := make([]accountstore.DirectoryEntry, len(states))
+	for i, l := range states {
+		entries[i] = accountstore.DirectoryEntry{League: l.League, State: l.State, Created: l.Created}
+	}
+	if err := signIns.RecordLeagues(ctx, entries); err != nil {
+		return fmt.Errorf("record the leagues on this server: %w", err)
+	}
+	return nil
 }
 
 // servePreflight refuses, before the file is opened for writing, a league file this release may
@@ -188,18 +243,21 @@ func startHostedDueWorker(ctx context.Context, worker *leagueservice.DueWorker) 
 	return func() { stop(); <-done }
 }
 
-func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, catalogue string) (serverhttp.Hosted, error) {
+func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte, catalogue string) (serverhttp.Hosted, error) {
 	registry, err := measures.Embedded()
 	if err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("load server measures: %w", err)
 	}
-	store := history.New(pools, registry)
+	store := history.New(files.league, registry)
 	if err := store.Initialize(ctx); err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize server history: %w", err)
 	}
-	credentials := accountstore.New(pools)
+	credentials := signInStore(files)
 	if err := credentials.Initialize(ctx); err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize server accounts: %w", err)
+	}
+	if err := recordDirectory(ctx, store, credentials); err != nil {
+		return serverhttp.Hosted{}, err
 	}
 	work := accounts.NewPasswordWork()
 	passwords := accounts.NewWithPasswordWork(credentials, work)
@@ -209,19 +267,22 @@ func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, 
 	}
 	clock := leagueservice.NewHostClock()
 	store.SetClock(clock.Now)
-	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, clock)
+	leagues := history.NewOneFile(store)
+	worker := leagueservice.NewDueWorker(leagues, func() nativecheck.Facts { return nil }, clock)
 	// HTTPS recovery is by printed code only; the zero digest matches no offline key, so console recovery stays offline.
 	confirmations, err := serverhttp.NewConfirmations()
 	if err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize human confirmation: %w", err)
 	}
-	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
+	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Leagues: leagues, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Passwords: passwords, Worker: worker, Registry: catalogue,
 		Join:    accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, work),
 		Replies: serverhttp.NewReplyCache(replyCacheBytes)}
-	if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
-		return serverhttp.Hosted{}, fmt.Errorf("record server release: %w", err)
+	for _, pools := range []*db.Pools{files.league, files.signIns} {
+		if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
+			return serverhttp.Hosted{}, fmt.Errorf("record server release: %w", err)
+		}
 	}
 	return handler, nil
 }

@@ -11,8 +11,6 @@ import (
 	"os"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
-	"github.com/secureprospective/TheWarRoom/internal/db"
-	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 )
 
 // This command never starts a listener. The key digest must come from trusted
@@ -41,12 +39,12 @@ func runRecovery(ctx context.Context, args []string, input io.Reader, output io.
 	if err != nil {
 		return err
 	}
-	pools, err := db.Open(ctx, *path)
+	files, err := openSignInFiles(ctx, *path)
 	if err != nil {
 		return fmt.Errorf("open recovery database: %w", err)
 	}
-	defer func() { _ = pools.Close() }()
-	store := accountstore.New(pools)
+	defer func() { _ = files.Close() }()
+	store := signInStore(files)
 	if err := store.Initialize(ctx); err != nil {
 		return fmt.Errorf("initialize recovery storage: %w", err)
 	}

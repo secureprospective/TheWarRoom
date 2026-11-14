@@ -35,20 +35,20 @@ func runResetPassword(ctx context.Context, args []string, input io.Reader, outpu
 	if err != nil {
 		return err
 	}
-	pools, err := openHostedFile(ctx, *path)
+	files, err := openStateFiles(ctx, *path)
 	if err != nil {
-		return fmt.Errorf("open server database: %w", err)
+		return err
 	}
-	defer func() { _ = pools.Close() }()
+	defer func() { _ = files.Close() }()
 	registry, err := measures.Embedded()
 	if err != nil {
 		return fmt.Errorf("load server measures: %w", err)
 	}
-	store := history.New(pools, registry)
+	store := history.New(files.league, registry)
 	if err := store.Initialize(ctx); err != nil {
 		return fmt.Errorf("initialize server history: %w", err)
 	}
-	account, err := commissionerSignIn(ctx, pools, raw)
+	account, err := commissionerSignIn(ctx, files, raw)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func runResetPassword(ctx context.Context, args []string, input io.Reader, outpu
 	if err != nil {
 		return fmt.Errorf("commissioner identity: %w", err)
 	}
-	service := accounts.NewJoin(accountStore(pools), leagueservice.JoinSeats{Store: store}, nil)
+	service := accounts.NewJoin(signInStore(files), leagueservice.JoinSeats{Store: store}, nil)
 	return resetPasswordAction(ctx, service, *league, *team, principal, output)
 }
 

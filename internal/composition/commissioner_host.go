@@ -171,7 +171,7 @@ func (c nativeDueClock) Now() time.Time { return c.now() }
 func (nativeDueClock) Trusted() error   { return nil }
 
 func (a *App) nativeWaiverClock(ctx context.Context) {
-	worker := leagueservice.NewDueWorker(a.core.History, a.nativeFacts, nativeDueClock{now: a.timeNow})
+	worker := leagueservice.NewDueWorker(history.NewOneFile(a.core.History), a.nativeFacts, nativeDueClock{now: a.timeNow})
 	worker.Run(ctx, func(err error) { log.Printf("the war room: process native deadlines: %v", err) })
 }
 

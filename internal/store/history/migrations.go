@@ -3,6 +3,7 @@ package history
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -187,9 +188,23 @@ func addPlayerIdentity(ctx context.Context, tx *sql.Tx) error {
 		return fmt.Errorf("close identity rosters: %w", err)
 	}
 	for _, league := range leagues {
-		if err := (&Store{}).captureRosterRestorePoint(ctx, tx, league); err != nil {
+		if err := captureMigratingRoster(ctx, tx, league); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// captureMigratingRoster is the file-wide v10 migration, not a league write: a player the
+// migration did not reach through event payloads is minted in the same migration step.
+func captureMigratingRoster(ctx context.Context, tx *sql.Tx, league string) error {
+	err := (&Store{}).captureRosterRestorePoint(ctx, tx, league)
+	var missing *db.UnresolvedPlayersError
+	if !errors.As(err, &missing) {
+		return err
+	}
+	if err := db.EnsureMFLPlayers(ctx, tx, missing.MFL); err != nil {
+		return fmt.Errorf("history: mint migrating players: %w", err)
+	}
+	return (&Store{}).captureRosterRestorePoint(ctx, tx, league)
 }

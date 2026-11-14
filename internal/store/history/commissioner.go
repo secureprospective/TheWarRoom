@@ -156,6 +156,14 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 func (s *Store) executeCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location,
 	startNative bool) (commissioner.Receipt, error) {
+	return identityFirst(ctx, s, func() (commissioner.Receipt, error) {
+		return s.executeCommissionerOnce(ctx, raw, principal, auth, facts, zone, startNative)
+	})
+}
+
+func (s *Store) executeCommissionerOnce(ctx context.Context, raw commissioner.RawCommand,
+	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location,
+	startNative bool) (commissioner.Receipt, error) {
 	raw, canonical, err := preparedCommand(raw, principal, true)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -227,7 +235,7 @@ func (s *Store) finishCommissioner(ctx context.Context, tx *sql.Tx, req appendRe
 }
 
 func (s *Store) committedReceipt(ctx context.Context, receipt commissioner.Receipt, records []commissioner.Record) commissioner.Receipt {
-	s.signalCommissionerCommit()
+	s.signalCommissionerCommit(receipt.League)
 	return viewReceipt(ctx, receipt, records)
 }
 

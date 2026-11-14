@@ -33,23 +33,29 @@ const (
 	PickPath     = "/v1/native/draft/pick"
 )
 
-// Hosted has no fixture fallback. Accounts and history must share the single writer,
-// so revocation cannot commit between transaction admission and ledger append.
+// Hosted has no fixture fallback. Accounts live in the sign-in file and history in the league
+// file; every write that withdraws a credential reserves the league writer first (the accounts store's
+// commit fence), so revocation cannot commit between transaction admission and ledger append.
 type Hosted struct {
 	FootballDigest string
 	Football       *history.PinnedFootball
-	WriteAdmission func() error
-	Tokens         *accounts.TokenService
-	Confirmations  *Confirmations
-	Store          *history.Store
-	Sessions       *accounts.SessionService
-	TOTP           *accounts.TOTPService
-	Enrollment     *accounts.EnrollmentService
-	Passwords      *accounts.Service
-	Join           *accounts.JoinService
-	Recovery       *accounts.RecoveryService
-	Worker         *leagueservice.DueWorker
-	Registry       string
+	// WriteAdmission guards league writes and SignInAdmission guards sign-in writes: each follows its
+	// own file's off-site backup, so one file falling behind pauses only its own kind of change.
+	WriteAdmission  func() error
+	SignInAdmission func() error
+	Tokens          *accounts.TokenService
+	Confirmations   *Confirmations
+	Store           *history.Store
+	// Leagues finds the store holding a league; league heads and the due worker read through it.
+	Leagues    history.LeagueResolver
+	Sessions   *accounts.SessionService
+	TOTP       *accounts.TOTPService
+	Enrollment *accounts.EnrollmentService
+	Passwords  *accounts.Service
+	Join       *accounts.JoinService
+	Recovery   *accounts.RecoveryService
+	Worker     *leagueservice.DueWorker
+	Registry   string
 	// Replies caches league-state readings per head and reading epoch; nil reads every request afresh.
 	Replies *ReplyCache
 	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
@@ -148,7 +154,7 @@ func (h Hosted) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		h.writeFailure(w, "login refused", http.StatusUnauthorized)
+		h.failure(w, h.SignInAdmission, "login refused", http.StatusUnauthorized)
 		return
 	}
 	// The bearer crosses HTTPS only here. DeviceSession itself remains redacted.
@@ -507,19 +513,41 @@ func hostedMember(policy governance.State, principal governance.Principal, recor
 
 func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.TLS != nil && originAdmissible(r) && r.URL.RawQuery == "" && h.WriteAdmission != nil {
-			if err := h.WriteAdmission(); err != nil {
-				http.Error(w, err.Error(), http.StatusServiceUnavailable)
-				return
+		if r.Method == http.MethodPost && r.TLS != nil && originAdmissible(r) && r.URL.RawQuery == "" {
+			for _, admission := range h.admissions(r.URL.Path) {
+				if admission == nil {
+					continue
+				}
+				if err := admission(); err != nil {
+					http.Error(w, err.Error(), http.StatusServiceUnavailable)
+					return
+				}
 			}
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
+// admissions are the write guards a POST to path must pass: the sign-in file's for routes that write
+// only sign-ins, both for a join claim (it commits an account, then a seat), the league file's for
+// everything else.
+func (h Hosted) admissions(path string) []func() error {
+	switch {
+	case path == JoinClaimPath:
+		return []func() error{h.SignInAdmission, h.WriteAdmission}
+	case strings.HasPrefix(path, "/v1/auth/") || path == PasswordPagePath || path == JoinPagePath:
+		return []func() error{h.SignInAdmission}
+	}
+	return []func() error{h.WriteAdmission}
+}
+
 func (h Hosted) writeFailure(w http.ResponseWriter, message string, status int) {
-	if h.WriteAdmission != nil {
-		if err := h.WriteAdmission(); err != nil {
+	h.failure(w, h.WriteAdmission, message, status)
+}
+
+func (h Hosted) failure(w http.ResponseWriter, admission func() error, message string, status int) {
+	if admission != nil {
+		if err := admission(); err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
@@ -542,4 +570,16 @@ func (h Hosted) sessionFailure(w http.ResponseWriter, err error) {
 	}
 	w.Header().Set("Retry-After", "60")
 	h.writeFailure(w, BusyMessage, http.StatusServiceUnavailable)
+}
+
+// leagueHead reads a league's committed head from the store the resolver names for it.
+func (h Hosted) leagueHead(ctx context.Context, league string) (int64, error) {
+	if h.Leagues == nil {
+		return 0, errors.New("league resolver unavailable")
+	}
+	store, err := h.Leagues.League(ctx, league)
+	if err != nil {
+		return 0, fmt.Errorf("find league store: %w", err)
+	}
+	return store.CommittedHead(ctx, league, commissioner.Stream) //nolint:wrapcheck // the store names its read
 }

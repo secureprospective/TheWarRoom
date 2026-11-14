@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
 // StandUpRosters is an offline recovery operation, not a hosted permission. The
@@ -19,21 +18,29 @@ func (s *Store) StandUpRosters(ctx context.Context, point commissioner.RawRoster
 		return "", fmt.Errorf("check roster recovery: %w", err)
 	}
 	s.wmu.Lock()
+	err := freshRecovery(ctx, s.pools.Read())
+	// Identities commit first, on their own; a crash before the league commit leaves them for the
+	// next attempt, which accepts the same immutable links.
+	if err == nil {
+		err = s.commitReference(ctx, point.Identities, nil, "install recovered")
+	}
+	s.wmu.Unlock()
+	if err != nil {
+		return "", err
+	}
+	return identityFirst(ctx, s, func() (string, error) { return s.standUpOnce(ctx, point) })
+}
+
+func (s *Store) standUpOnce(ctx context.Context, point commissioner.RawRosterRestorePoint) (string, error) {
+	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return "", fmt.Errorf("begin roster recovery: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	var occupied bool
-	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM league_event UNION ALL SELECT 1 FROM authority_policy UNION ALL SELECT 1 FROM league_import UNION ALL SELECT 1 FROM league_roster_restore)`).Scan(&occupied); err != nil {
-		return "", fmt.Errorf("check fresh recovery database: %w", err)
-	}
-	if occupied {
-		return "", fmt.Errorf("roster recovery requires a fresh database")
-	}
-	if err := db.InstallRosterIdentities(ctx, tx, point.Identities); err != nil {
-		return "", fmt.Errorf("install recovered player identities: %w", err)
+	if err := freshRecovery(ctx, tx); err != nil {
+		return "", err
 	}
 	records, err := s.standUpRecords(ctx, tx, point)
 	if err != nil {
@@ -101,4 +108,17 @@ func (s *Store) standUpRecords(ctx context.Context, tx *sql.Tx, point commission
 		}
 	}
 	return records, nil
+}
+
+func freshRecovery(ctx context.Context, q interface {
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}) error {
+	var occupied bool
+	if err := q.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM league_event UNION ALL SELECT 1 FROM authority_policy UNION ALL SELECT 1 FROM league_import UNION ALL SELECT 1 FROM league_roster_restore)`).Scan(&occupied); err != nil {
+		return fmt.Errorf("check fresh recovery database: %w", err)
+	}
+	if occupied {
+		return fmt.Errorf("roster recovery requires a fresh database")
+	}
+	return nil
 }

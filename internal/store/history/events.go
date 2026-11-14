@@ -119,6 +119,10 @@ func (s *Store) AppendEvent(ctx context.Context, e LeagueEvent, expected int64) 
 	if expected < 0 || expected == math.MaxInt64 {
 		return LeagueEvent{}, fmt.Errorf("league event: invalid expected revision")
 	}
+	return identityFirst(ctx, s, func() (LeagueEvent, error) { return s.appendEventOnce(ctx, e, expected) })
+}
+
+func (s *Store) appendEventOnce(ctx context.Context, e LeagueEvent, expected int64) (LeagueEvent, error) {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	tx, err := s.pools.BeginWrite(ctx)

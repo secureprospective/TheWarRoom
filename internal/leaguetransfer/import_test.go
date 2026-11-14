@@ -226,7 +226,9 @@ func assertImportCounts(t *testing.T, pools *db.Pools, failure string) {
 	if failure == "existing league" {
 		wantEvents = 1
 	}
-	if failure == "archive" {
+	// Reference data (blobs, identities) commits before the league transaction; a failed league
+	// write leaves it behind as unused, content-addressed rows.
+	if failure == "archive" || failure == "event" || failure == "receipt" {
 		wantArchives = 1
 	}
 	if events != wantEvents || receipts != 0 || archives != wantArchives {

@@ -65,8 +65,9 @@ func upgradeFile(ctx context.Context, path, save, backup string, output io.Write
 	return report(output, fmt.Sprintf("Upgraded the league file to version %d (release %d). The league as it was before is saved in %s.", current.Schema, current.Release, save))
 }
 
-// saveMatchedCopy writes the pre-upgrade league into save and, with backup settings, uploads and
-// reads back an off-site set of it. Neither step changes the league file.
+// saveMatchedCopy writes the pre-upgrade league file, and the sign-in file when the server has one,
+// into save and, with backup settings, uploads and reads back an off-site set of each. Nothing here
+// changes either file: a one-file server is copied as it is and converted only by the migration.
 func saveMatchedCopy(ctx context.Context, path, save, backup string) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(save), 0o700); err != nil {
 		return "", fmt.Errorf("create the upgrade folder: %w", err)
@@ -74,14 +75,19 @@ func saveMatchedCopy(ctx context.Context, path, save, backup string) (string, er
 	if err := os.Mkdir(save, 0o700); err != nil {
 		return "", fmt.Errorf("create the pre-upgrade folder (it must be new): %w", err)
 	}
-	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	files, err := openForCopy(ctx, path)
 	if err != nil {
-		return "", fmt.Errorf("open server database: %w", err)
+		return "", err
 	}
-	defer func() { _ = pools.Close() }()
+	defer func() { _ = files.Close() }()
 	saved := filepath.Join(save, "server.db")
-	if err := pools.CaptureHosted(ctx, saved, nil); err != nil {
+	if err := files.league.CaptureHosted(ctx, saved, nil); err != nil {
 		return "", fmt.Errorf("save the pre-upgrade copy: %w", err)
+	}
+	if files.signIns != nil {
+		if err := files.signIns.CaptureHosted(ctx, signInPath(saved), nil); err != nil {
+			return "", fmt.Errorf("save the pre-upgrade sign-in copy: %w", err)
+		}
 	}
 	checkpoint, err := hostedCheckpoint(ctx, saved)
 	if err != nil {
@@ -94,33 +100,61 @@ func saveMatchedCopy(ctx context.Context, path, save, backup string) (string, er
 		return "", err
 	}
 	if backup != "" {
-		if err := upgradeOffsite(ctx, pools, backup, filepath.Dir(path)); err != nil {
+		if err := upgradeOffsite(ctx, files, backup, filepath.Dir(path)); err != nil {
 			return "", fmt.Errorf("save the off-site backup before upgrading: %w", err)
 		}
 	}
 	return saved, syncPath(save)
 }
 
-// migrateServer brings history and accounts to this release and stamps it, so an older binary
-// put back over this file refuses it.
+// openForCopy opens the league file and, if the server already has one, its sign-in file, changing
+// neither. signIns is nil for a one-file server.
+func openForCopy(ctx context.Context, path string) (stateFiles, error) {
+	source, err := locateSignIns(ctx, path)
+	if err != nil {
+		return stateFiles{}, err
+	}
+	league, err := db.Open(ctx, path, history.SchemaVersion())
+	if err != nil {
+		return stateFiles{}, fmt.Errorf("open server database: %w", err)
+	}
+	files := stateFiles{league: league}
+	if source.path != signInPath(path) {
+		return files, nil
+	}
+	if files.signIns, err = db.Open(ctx, source.path, source.version); err != nil {
+		return stateFiles{}, errors.Join(fmt.Errorf("open sign-in file: %w", err), league.Close())
+	}
+	return files, nil
+}
+
+// migrateServer brings history and accounts to this release and stamps both files, so an older binary
+// put back over them refuses them. A one-file server's sign-ins move to their own file here.
 func migrateServer(ctx context.Context, path string) (err error) {
-	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	league, err := db.Open(ctx, path, history.SchemaVersion())
 	if err != nil {
 		return fmt.Errorf("open server database: %w", err)
 	}
-	defer func() { err = errors.Join(err, pools.Close()) }()
+	defer func() { err = errors.Join(err, league.Close()) }()
+	signIns, err := openSignIns(ctx, league, path)
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, signIns.Close()) }()
 	registry, err := measures.Embedded()
 	if err != nil {
 		return fmt.Errorf("load server measures: %w", err)
 	}
-	if err := history.New(pools, registry).Initialize(ctx); err != nil {
+	if err := history.New(league, registry).Initialize(ctx); err != nil {
 		return fmt.Errorf("upgrade league history: %w", err)
 	}
-	if err := accountstore.New(pools).Initialize(ctx); err != nil {
+	if err := accountstore.NewServerFile(signIns).Initialize(ctx); err != nil {
 		return fmt.Errorf("upgrade accounts: %w", err)
 	}
-	if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
-		return fmt.Errorf("record server release: %w", err)
+	for _, pools := range []*db.Pools{league, signIns} {
+		if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
+			return fmt.Errorf("record server release: %w", err)
+		}
 	}
 	return nil
 }
@@ -141,16 +175,15 @@ func upgradeReady(ctx context.Context, path string) error {
 	return nil
 }
 
-// putBack restores the pre-upgrade copy over a failed upgrade. Its sidecars belong to the failed
-// attempt and go first; the copy replaces the file in one rename.
+// putBack restores the pre-upgrade copies over a failed upgrade. Their sidecars belong to the failed
+// attempt and go first; each copy replaces its file in one rename. A server saved before it had a
+// sign-in file gets none back: the old binary reads sign-ins from the league file.
 func putBack(path, saved string, cause error) error {
-	restoring := path + ".restoring"
-	err := copyFile(saved, restoring)
-	if err == nil {
-		err = removeSidecars(path)
-	}
-	if err == nil {
-		err = os.Rename(restoring, path)
+	err := putBackFile(path, saved)
+	if err == nil && fileExists(signInPath(saved)) {
+		err = putBackFile(signInPath(path), signInPath(saved))
+	} else if err == nil {
+		err = errors.Join(removeDatabase(signInPath(path)), discardPending(pendingSignIns(path)))
 	}
 	if err == nil {
 		err = syncPath(filepath.Dir(path))
@@ -159,6 +192,21 @@ func putBack(path, saved string, cause error) error {
 		return fmt.Errorf("the upgrade failed (%w) and the pre-upgrade copy in %s could not be put back (%w); do not start the server, and follow UPGRADE.md", cause, filepath.Dir(saved), err)
 	}
 	return fmt.Errorf("the upgrade failed (%w); the league file was put back exactly as it was, so the current server can keep running", cause)
+}
+
+func putBackFile(path, saved string) error {
+	restoring := path + ".restoring"
+	err := copyFile(saved, restoring)
+	if err == nil {
+		err = removeSidecars(path)
+	}
+	if err != nil {
+		return err
+	}
+	if err := os.Rename(restoring, path); err != nil {
+		return fmt.Errorf("put back %s: %w", filepath.Base(path), err)
+	}
+	return nil
 }
 
 func removeSidecars(path string) error {

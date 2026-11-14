@@ -31,6 +31,7 @@ type fakeS3 struct {
 	mu                        sync.Mutex
 	objects                   map[string][]byte
 	corrupt, missing, failPut bool
+	failPrefix                string // uploads under this prefix fail; the others land
 }
 
 func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +44,7 @@ func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := strings.TrimPrefix(r.URL.Path, "/league/")
 	switch r.Method {
 	case http.MethodPut:
-		if f.failPut {
+		if f.failPut || (f.failPrefix != "" && strings.HasPrefix(key, f.failPrefix)) {
 			http.Error(w, "offline", http.StatusServiceUnavailable)
 			return
 		}

@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
@@ -75,7 +76,7 @@ func newReleaseHTTP(t *testing.T, f *releaseTokenFixture, actors []releaseActor)
 		t.Fatal(err)
 	}
 	enrollment := accounts.NewEnrollment(f.store, releaseEnrollment{state: state, principal: governance.Principal(f.app.session)})
-	handler := serverhttp.Hosted{Store: f.app.history, Sessions: f.sessions, Tokens: f.tokens, TOTP: totp, Confirmations: confirmations, Registry: f.app.registry, Enrollment: enrollment}
+	handler := serverhttp.Hosted{Store: f.app.history, Leagues: history.NewOneFile(f.app.history), Sessions: f.sessions, Tokens: f.tokens, TOTP: totp, Confirmations: confirmations, Registry: f.app.registry, Enrollment: enrollment}
 	if f.football != "" {
 		handler.Football, err = f.app.history.LoadFootball(t.Context(), f.football)
 		if err != nil {
@@ -83,9 +84,9 @@ func newReleaseHTTP(t *testing.T, f *releaseTokenFixture, actors []releaseActor)
 		}
 		handler.FootballDigest = f.football
 		f.app.history.SetPinnedFootball(handler.Football)
-		handler.Worker = leagueservice.NewDueWorker(f.app.history, handler.Football.PlayerFacts, releaseClock{})
+		handler.Worker = leagueservice.NewDueWorker(history.NewOneFile(f.app.history), handler.Football.PlayerFacts, releaseClock{})
 	} else {
-		handler.Worker = leagueservice.NewDueWorker(f.app.history, nil, releaseClock{})
+		handler.Worker = leagueservice.NewDueWorker(history.NewOneFile(f.app.history), nil, releaseClock{})
 	}
 	server := httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(server.Close)

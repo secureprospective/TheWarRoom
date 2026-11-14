@@ -60,6 +60,13 @@ func TestOfflineConsoleRecovery(t *testing.T) {
 	if !strings.Contains(output.String(), "Account recovered") || strings.Contains(output.String(), "new-password") {
 		t.Fatalf("unsafe or missing response: %s", output.String())
 	}
+	// The first console command moved the sign-ins to their own file; read them there.
+	files, err := openSignInFiles(t.Context(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = files.Close() }()
+	store, pools = signInStore(files), files.signIns
 	recovered, err := accounts.New(store).Authenticate(t.Context(), accounts.RawCredentials{Username: "owner", Password: "new-password"})
 	if err != nil || recovered != account {
 		t.Fatalf("recovery login/identity: %v", err)

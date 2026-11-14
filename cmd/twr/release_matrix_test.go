@@ -112,7 +112,7 @@ func newReleaseCLI(t *testing.T) *releaseCLIFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := serverhttp.Hosted{Store: ledger, Sessions: sessions, Tokens: tokens, TOTP: totp, Enrollment: accounts.NewEnrollment(credentials, releaseCLIPolicy{state, principal}), Worker: leagueservice.NewDueWorker(ledger, nil, releaseCLIClock{}), Confirmations: confirmations, Registry: "id,name,gm_question,governs\n"}
+	handler := serverhttp.Hosted{Store: ledger, Leagues: history.NewOneFile(ledger), Sessions: sessions, Tokens: tokens, TOTP: totp, Enrollment: accounts.NewEnrollment(credentials, releaseCLIPolicy{state, principal}), Worker: leagueservice.NewDueWorker(history.NewOneFile(ledger), nil, releaseCLIClock{}), Confirmations: confirmations, Registry: "id,name,gm_question,governs\n"}
 	server := httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(server.Close)
 	memory := &memoryStore{tokens: map[string]string{}}

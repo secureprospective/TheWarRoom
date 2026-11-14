@@ -70,6 +70,13 @@ func checkBatch(raws []commissioner.RawCommand, rulesOnly bool) error {
 // executeBatch is the one batch loop; gathered holds each step's append facts.
 func (s *Store) executeBatch(ctx context.Context, raws []commissioner.RawCommand, principal string,
 	auth commissioner.Authorizer, zone *time.Location, gathered []appendFacts, rulesOnly bool) ([]commissioner.Receipt, error) {
+	return identityFirst(ctx, s, func() ([]commissioner.Receipt, error) {
+		return s.executeBatchOnce(ctx, raws, principal, auth, zone, gathered, rulesOnly)
+	})
+}
+
+func (s *Store) executeBatchOnce(ctx context.Context, raws []commissioner.RawCommand, principal string,
+	auth commissioner.Authorizer, zone *time.Location, gathered []appendFacts, rulesOnly bool) ([]commissioner.Receipt, error) {
 	if err := checkBatch(raws, rulesOnly); err != nil {
 		return nil, err
 	}
@@ -112,7 +119,7 @@ func (s *Store) executeBatch(ctx context.Context, raws []commissioner.RawCommand
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("record league changes: %w", err)
 	}
-	s.signalCommissionerCommit()
+	s.signalCommissionerCommit(league)
 	for i := range receipts {
 		receipts[i] = viewReceipt(ctx, receipts[i], records)
 	}

@@ -15,6 +15,26 @@ import (
 type Store struct {
 	pools *db.Pools
 	now   func() time.Time
+	// server marks the hosted server's own sign-in file, versioned by its user_version. A shared
+	// desktop file keeps the accounts list under schema_version, because history owns user_version there.
+	server bool
+	// fence, when set, reserves the league file's writer around every write that can withdraw a
+	// credential, so no such write commits between a league write's credential recheck and its commit.
+	fence func(context.Context) (func(), error)
+}
+
+// SetCommitFence installs the league writer reservation; the desktop's shared file needs none.
+func (s *Store) SetCommitFence(fence func(context.Context) (func(), error)) { s.fence = fence }
+
+func (s *Store) fenced(ctx context.Context) (func(), error) {
+	if s.fence == nil {
+		return func() {}, nil
+	}
+	release, err := s.fence(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("accounts: wait for league writes: %w", err)
+	}
+	return release, nil
 }
 
 func New(pools *db.Pools) *Store { return &Store{pools: pools, now: time.Now} }
@@ -22,9 +42,8 @@ func New(pools *db.Pools) *Store { return &Store{pools: pools, now: time.Now} }
 // SetClock configures the server clock before serving requests.
 func (s *Store) SetClock(now func() time.Time) { s.now = now }
 
-func (s *Store) initializeSchema(ctx context.Context) error {
-	_, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
-		return tx.ExecContext(ctx, `
+func createAccounts(ctx context.Context, tx *sql.Tx) error {
+	_, err := tx.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS accounts (
  id TEXT PRIMARY KEY NOT NULL,
  username TEXT NOT NULL UNIQUE,
@@ -71,29 +90,42 @@ CREATE TABLE IF NOT EXISTS account_security_audit (
  reason TEXT NOT NULL,
  occurred_at INTEGER NOT NULL
 ) STRICT;`)
-	})
 	if err != nil {
 		return fmt.Errorf("accounts: initialize schema: %w", err)
 	}
 	return nil
 }
 
-// Initialize adds account-owned tables without changing the shared database's migration version.
+// SchemaName keys the accounts migration list in schema_version. The shared file's user_version
+// belongs to history; this list carries its own version so it can move to its own file unchanged.
+const SchemaName = "accounts"
+
+// SchemaVersion is the newest accounts migration this build can read.
+func SchemaVersion() int { return len(migrations()) }
+
+// migrations is append-only. v1 adopts the tables earlier builds created at runtime: every
+// statement is IF NOT EXISTS, so a file already holding them keeps its rows.
+func migrations() []db.Migration {
+	return []db.Migration{adoptAccounts}
+}
+
+func adoptAccounts(ctx context.Context, tx *sql.Tx) error {
+	for _, step := range []db.Migration{createAccounts, createSessions, createAliases, createTokens, createJoin} {
+		if err := step(ctx, tx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Initialize migrates the accounts schema, then verifies (or first adopts) the security audit chain.
 func (s *Store) Initialize(ctx context.Context) error {
-	if err := s.initializeSchema(ctx); err != nil {
-		return err
-	}
-	if err := s.initializeSessions(ctx); err != nil {
-		return err
-	}
-	if err := s.initializeAliases(ctx); err != nil {
-		return err
-	}
-	if err := s.initializeTokens(ctx); err != nil {
-		return err
-	}
-	if err := s.initializeJoin(ctx); err != nil {
-		return err
+	if s.server {
+		if err := PrepareServerFile(ctx, s.pools); err != nil {
+			return err
+		}
+	} else if err := s.pools.MigrateSchema(ctx, SchemaName, migrations()...); err != nil {
+		return fmt.Errorf("accounts: %w", err)
 	}
 	return s.initializeAudit(ctx)
 }

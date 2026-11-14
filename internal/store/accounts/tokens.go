@@ -11,9 +11,8 @@ import (
 	identity "github.com/secureprospective/TheWarRoom/internal/accounts"
 )
 
-func (s *Store) initializeTokens(ctx context.Context) error {
-	_, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
-		return tx.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS account_agent_tokens (
+func createTokens(ctx context.Context, tx *sql.Tx) error {
+	_, err := tx.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS account_agent_tokens (
  token_hash TEXT PRIMARY KEY CHECK(length(token_hash) = 64),
  id TEXT UNIQUE NOT NULL, account_id TEXT NOT NULL REFERENCES accounts(id),
  scope TEXT NOT NULL, generation INTEGER NOT NULL, epoch TEXT NOT NULL,
@@ -23,7 +22,6 @@ func (s *Store) initializeTokens(ctx context.Context) error {
  CREATE TRIGGER IF NOT EXISTS agent_token_ceiling_immutable
  BEFORE UPDATE OF token_hash,id,account_id,scope,generation,epoch,issued_at,expires_at ON account_agent_tokens
  BEGIN SELECT RAISE(ABORT, 'agent issuance ceiling is immutable'); END;`)
-	})
 	if err != nil {
 		return fmt.Errorf("accounts: token schema: %w", err)
 	}
@@ -98,6 +96,11 @@ func (s *Store) Token(ctx context.Context, digest string) (identity.AgentToken, 
 }
 
 func (s *Store) RevokeToken(ctx context.Context, sessionDigest, id string) error {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
 	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin token revoke: %w", err)

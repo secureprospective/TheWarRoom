@@ -187,7 +187,7 @@ func (fixtureDueClock) Now() time.Time { return time.Now() }
 func (fixtureDueClock) Trusted() error { return nil }
 
 func serveChangesWorker(ctx context.Context, listener net.Listener, certificate tls.Certificate, store *history.Store) error {
-	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, fixtureDueClock{})
+	worker := leagueservice.NewDueWorker(history.NewOneFile(store), func() nativecheck.Facts { return nil }, fixtureDueClock{})
 	ctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
