@@ -145,6 +145,32 @@ func EnsureMFLPlayers(ctx context.Context, tx *sql.Tx, mfl []string) error {
 	return nil
 }
 
+// CreateLeaguePlayers gives the league side its own player identity rows: player_ownership refers to
+// league_player, not to canonical_player. On the hosted server canonical_player lives in the reference
+// file, and SQLite keeps a foreign key inside one file, so the league file holds the ids it owns. The
+// ids are the same permanent canonical ids; links and facts stay on the reference side.
+func CreateLeaguePlayers(ctx context.Context, tx *sql.Tx) error {
+	const ddl = `CREATE TABLE league_player (
+ id TEXT PRIMARY KEY CHECK(length(id)=39 AND substr(id,1,7)='player.')
+ ) STRICT;
+ CREATE TRIGGER league_player_no_update BEFORE UPDATE ON league_player BEGIN SELECT RAISE(ABORT,'player identity is immutable'); END;
+ INSERT INTO league_player SELECT DISTINCT player FROM player_ownership;
+ CREATE TABLE player_ownership_by_league (
+ league TEXT NOT NULL CHECK(length(league)>0),
+ side TEXT NOT NULL,
+ player TEXT NOT NULL REFERENCES league_player(id),
+ franchise TEXT NOT NULL CHECK(length(franchise)>0),
+ PRIMARY KEY(league,side,player)
+ ) STRICT;
+ INSERT INTO player_ownership_by_league SELECT league,side,player,franchise FROM player_ownership;
+ DROP TABLE player_ownership;
+ ALTER TABLE player_ownership_by_league RENAME TO player_ownership;`
+	if _, err := tx.ExecContext(ctx, ddl); err != nil {
+		return fmt.Errorf("migrate league player identities: %w", err)
+	}
+	return nil
+}
+
 // ReplaceRosterOwnership replaces every side's ownership of the league in the caller's transaction, so
 // both sides are saved together or not at all. It takes resolved ids and never inserts identity.
 func ReplaceRosterOwnership(ctx context.Context, tx *sql.Tx, league string, owners []RosterOwner) error {
@@ -152,6 +178,9 @@ func ReplaceRosterOwnership(ctx context.Context, tx *sql.Tx, league string, owne
 		return fmt.Errorf("replace roster ownership: %w", err)
 	}
 	for _, owner := range owners {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO league_player(id) VALUES(?) ON CONFLICT(id) DO NOTHING`, owner.Player); err != nil {
+			return fmt.Errorf("save league player: %w", err)
+		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO player_ownership(league,side,player,franchise) VALUES(?,?,?,?)`, league, owner.Side, owner.Player, owner.Franchise); err != nil {
 			return fmt.Errorf("save roster ownership: %w", err)
 		}

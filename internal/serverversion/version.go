@@ -30,6 +30,7 @@ func releases() []Contract {
 		{Release: 4, Schema: 11, ProtocolMinor: 1, SecurityFloor: 0, Commands: 1},
 		{Release: 5, Schema: 12, ProtocolMinor: 1, SecurityFloor: 0, Commands: 1},
 		{Release: 6, Schema: 13, ProtocolMinor: 1, SecurityFloor: 0, Commands: 1},
+		{Release: 7, Schema: 14, ProtocolMinor: 1, SecurityFloor: 0, Commands: 1},
 	}
 }
 

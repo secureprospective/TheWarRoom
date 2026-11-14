@@ -103,7 +103,7 @@ func (s *Store) RosterRestorePoint(ctx context.Context, league string) (commissi
 
 func saveRosterIdentity(ctx context.Context, tx *sql.Tx, point *commissioner.RawRosterRestorePoint) error {
 	var installed bool
-	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name='canonical_player')`).Scan(&installed); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name='player_ownership')`).Scan(&installed); err != nil {
 		return fmt.Errorf("check player identity schema: %w", err)
 	}
 	if !installed {

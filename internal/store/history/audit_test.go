@@ -105,7 +105,7 @@ DROP VIEW player_ids;
 ALTER TABLE legacy_player_ids RENAME TO player_ids;
 DROP TABLE player_record;
 DROP TABLE live_board; DROP TABLE live_chronology; DROP TABLE live_evidence;
-DROP TABLE player_ownership; DROP TABLE player_external_id; DROP TABLE canonical_player;
+DROP TABLE player_ownership; DROP TABLE league_player; DROP TABLE player_external_id; DROP TABLE canonical_player;
 PRAGMA user_version=4`); err != nil {
 		t.Fatal(err)
 	}

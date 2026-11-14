@@ -214,7 +214,7 @@ func TestHistoryLiveMigrationRetriesAtomicallyAndReopens(t *testing.T) {
 	if err := s.Initialize(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	if got := historyJSON(t, pools.Read(), `SELECT json_array((SELECT user_version FROM pragma_user_version), (SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('live_evidence','live_chronology','live_board')))`); got != "[13,3]" {
+	if got := historyJSON(t, pools.Read(), `SELECT json_array((SELECT user_version FROM pragma_user_version), (SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('live_evidence','live_chronology','live_board')))`); got != "[14,3]" {
 		t.Fatalf("live migration=%s", got)
 	}
 	if _, err := pools.Write().ExecContext(t.Context(), `
@@ -234,7 +234,7 @@ INSERT INTO live_board VALUES ('0099',1)`); err != nil {
 		if err := New(pools, s.Registry()).Initialize(t.Context()); err != nil {
 			t.Fatal(err)
 		}
-		if got := historyJSON(t, pools.Read(), `SELECT json_array((SELECT user_version FROM pragma_user_version), (SELECT count(*) FROM live_evidence), (SELECT count(*) FROM live_chronology), (SELECT evidence_id FROM live_board WHERE player='0099'))`); got != "[13,1,1,1]" {
+		if got := historyJSON(t, pools.Read(), `SELECT json_array((SELECT user_version FROM pragma_user_version), (SELECT count(*) FROM live_evidence), (SELECT count(*) FROM live_chronology), (SELECT evidence_id FROM live_board WHERE player='0099'))`); got != "[14,1,1,1]" {
 			t.Fatalf("restart changed live evidence: %s", got)
 		}
 	}
