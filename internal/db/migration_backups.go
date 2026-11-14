@@ -18,6 +18,10 @@ import (
 const migrationBackupLimit = 5
 
 func (p *Pools) backupMigration(ctx context.Context, version int) (string, error) {
+	return p.backupMigrationCopy(ctx, version, false)
+}
+
+func (p *Pools) backupMigrationCopy(ctx context.Context, version int, reuse bool) (string, error) {
 	backups, err := p.migrationBackupCandidates(ctx)
 	if err != nil {
 		return "", err
@@ -26,9 +30,12 @@ func (p *Pools) backupMigration(ctx context.Context, version int) (string, error
 	if err != nil {
 		return dest, err
 	}
-	retained, err := retainMatchingMigrationBackup(ctx, dest, backups)
-	if err != nil {
-		return dest, err
+	retained := dest
+	if reuse {
+		retained, err = retainMatchingMigrationBackup(ctx, dest, backups)
+		if err != nil {
+			return dest, err
+		}
 	}
 	if err := p.pruneMigrationBackups(retained); err != nil {
 		return retained, err
@@ -217,8 +224,8 @@ func (p *Pools) pruneMigrationBackups(current string) error {
 	return nil
 }
 
-// BackupBeforeChange takes the same pre-migration backup Migrate takes, for a one-time change to the
-// file that is not a schema step (moving sign-in tables to their own file).
+// BackupBeforeChange backs up a one-time change outside schema steps (moving sign-in tables).
+// Unlike Migrate and MigrateSchema, retries reuse a verified copy matching the current source.
 func (p *Pools) BackupBeforeChange(ctx context.Context) (string, error) {
 	p.migrationMu.Lock()
 	defer p.migrationMu.Unlock()
@@ -226,5 +233,5 @@ func (p *Pools) BackupBeforeChange(ctx context.Context) (string, error) {
 	if err := p.read.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return "", fmt.Errorf("db: backup version: %w", err)
 	}
-	return p.backupMigration(ctx, version)
+	return p.backupMigrationCopy(ctx, version, true)
 }

@@ -46,6 +46,61 @@ func TestMigrationBackupRetriesReuseVerifiedCopy(t *testing.T) {
 	}
 }
 
+func TestSchemaMigrationRetriesKeepFreshCopies(t *testing.T) {
+	for _, named := range []bool{false, true} {
+		name := "Migrate"
+		if named {
+			name = "MigrateSchema"
+		}
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "server.db")
+			p, err := Open(t.Context(), path, 2)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = p.Close() }()
+			adopt := func(context.Context, *sql.Tx) error { return nil }
+			if named {
+				if err := p.MigrateSchema(t.Context(), "held", adopt); err != nil {
+					t.Fatal(err)
+				}
+			}
+			failure := errors.New("retry migration")
+			fail := func(context.Context, *sql.Tx) error { return failure }
+			seen := make(map[string]bool)
+			for i := range 7 {
+				if named {
+					err = p.MigrateSchema(t.Context(), "held", adopt, fail)
+				} else {
+					_, err = p.Migrate(t.Context(), fail)
+				}
+				if !errors.Is(err, failure) {
+					t.Fatalf("attempt %d: %v", i, err)
+				}
+				copies, err := filepath.Glob(path + ".pre-v*.bak")
+				want := min(i+1, migrationBackupLimit)
+				if err != nil || len(copies) != want {
+					t.Fatalf("attempt %d: backups=%v err=%v; want %d", i, copies, err, want)
+				}
+				var fresh int
+				for _, copy := range copies {
+					valid, err := verifyMigrationBackup(t.Context(), copy)
+					if err != nil || !valid {
+						t.Fatalf("backup verification=%v err=%v", valid, err)
+					}
+					if !seen[copy] {
+						fresh++
+						seen[copy] = true
+					}
+				}
+				if fresh != 1 {
+					t.Fatalf("attempt %d: fresh copies=%d; want one", i, fresh)
+				}
+			}
+		})
+	}
+}
+
 func fmtRetry(n int) string {
 	if n == 1 {
 		return "once"
