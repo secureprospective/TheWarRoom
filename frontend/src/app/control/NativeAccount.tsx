@@ -71,9 +71,9 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   useEffect(() => {
     if (!openAfterSignIn || pending) return;
     setOpenAfterSignIn(false);
-    void commands.dispatch('commissioner.surface', {
+    void Promise.resolve(commands.dispatch('commissioner.surface', {
       screen: 'native-account', action: 'check', value: 'enter',
-    }).catch(() => undefined);
+    })).catch(() => undefined);
   }, [openAfterSignIn, pending]);
   const submit = (event: FormEvent) => {
     event.preventDefault();
