@@ -14,7 +14,8 @@ import (
 // reference move both use these; a set is a whole table or a filtered part of one.
 
 // MovedRows is one set of rows a move copies: a table, optionally narrowed by a fixed SQL filter.
-type MovedRows struct{ Table, Where string }
+// Order, when set, fixes the order CopyRows inserts in (proofs never depend on it).
+type MovedRows struct{ Table, Where, Order string }
 
 func (m MovedRows) filter() string {
 	if m.Where == "" {
@@ -49,7 +50,11 @@ func CopyRows(ctx context.Context, source *sql.DB, tx *sql.Tx, m MovedRows) erro
 		return err
 	}
 	list := strings.Join(columns, ",")
-	rows, err := source.QueryContext(ctx, `SELECT `+list+` FROM main.`+m.Table+m.filter()) //nolint:gosec // fixed table names; columns come from the file's own schema
+	order := ""
+	if m.Order != "" {
+		order = " ORDER BY " + m.Order
+	}
+	rows, err := source.QueryContext(ctx, `SELECT `+list+` FROM main.`+m.Table+m.filter()+order) //nolint:gosec // fixed table names; columns come from the file's own schema
 	if err != nil {
 		return fmt.Errorf("db: read %s: %w", m.Table, err)
 	}

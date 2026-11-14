@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	identity "github.com/secureprospective/TheWarRoom/internal/accounts"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
 // ResetSignIns is the operator-only incident port. A new auth epoch ends every device
@@ -73,6 +74,55 @@ func (s *Store) resetAuth(ctx context.Context, reason, operation string, restore
 		return 0, fmt.Errorf("accounts: commit sign-in reset: %w", err)
 	}
 	return len(ids), nil
+}
+
+// SignOutPrincipals signs out only the named accounts (a one-league restore signs out that league's
+// owners): their sessions, helper tokens and authenticator proofs stop working; every other account is
+// untouched. Each sign-out is recorded in the sign-in history. It returns how many accounts it reached.
+func (s *Store) SignOutPrincipals(ctx context.Context, principals []string, reason string) (int, error) {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer release()
+	if reason == "" || len(reason) > 256 || strings.IndexFunc(reason, func(r rune) bool { return !unicode.IsPrint(r) }) >= 0 {
+		return 0, fmt.Errorf("accounts: a printable reason of up to 256 characters is required")
+	}
+	named := map[string]bool{}
+	for _, p := range principals {
+		named[p] = true
+	}
+	tx, err := s.pools.BeginWrite(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("accounts: begin sign-out: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	ids, err := accountIDs(ctx, tx)
+	if err != nil {
+		return 0, err
+	}
+	now := s.now().UTC().UnixNano()
+	reached := 0
+	for _, id := range ids {
+		principal, err := governance.AccountPrincipal(id)
+		if err != nil || !named[string(principal)] {
+			continue
+		}
+		for _, statement := range []string{`INSERT INTO account_auth_generation(account_id, generation) VALUES (?, 1)
+ ON CONFLICT(account_id) DO UPDATE SET generation = generation + 1`, `UPDATE account_totp SET proof_hash = '', authenticated_at = 0 WHERE account_id = ?`} {
+			if _, err := tx.ExecContext(ctx, statement, id); err != nil {
+				return 0, fmt.Errorf("accounts: sign out: %w", err)
+			}
+		}
+		if err := recoveryAudit(ctx, tx, id, "league_restored_sign_out", reason, now); err != nil {
+			return 0, err
+		}
+		reached++
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("accounts: commit sign-out: %w", err)
+	}
+	return reached, nil
 }
 
 func accountIDs(ctx context.Context, tx *sql.Tx) ([]string, error) {

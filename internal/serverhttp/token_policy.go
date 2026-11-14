@@ -14,14 +14,32 @@ import (
 )
 
 // TokenPolicy uses server-owned league history, with the transaction snapshot on append.
-type TokenPolicy struct{ Store *history.Store }
+type TokenPolicy struct {
+	Store *history.Store
+	// Leagues, when set, finds each league's own store.
+	Leagues history.LeagueResolver
+}
+
+func (p TokenPolicy) host(ctx context.Context, league string) (leagueservice.StoredHost, error) {
+	if p.Leagues == nil {
+		return leagueservice.StoredHost{Store: p.Store}, nil
+	}
+	store, err := p.Leagues.League(ctx, league)
+	if err != nil {
+		return leagueservice.StoredHost{}, fmt.Errorf("token league: %w", err)
+	}
+	return leagueservice.StoredHost{Store: store}, nil
+}
 
 func (p TokenPolicy) CheckTokenScope(ctx context.Context, account accounts.Account, scope accounts.RawTokenScope) error {
 	principal, err := account.Principal()
 	if err != nil {
 		return fmt.Errorf("token issuer: %w", err)
 	}
-	host := leagueservice.StoredHost{Store: p.Store}
+	host, err := p.host(ctx, scope.League)
+	if err != nil {
+		return err
+	}
 	records, err := host.CommissionerRecords(ctx, scope.League)
 	if err != nil {
 		return fmt.Errorf("token league: %w", err)
@@ -36,7 +54,11 @@ func (p TokenPolicy) CheckTokenAccess(ctx context.Context, account accounts.Acco
 	records := access.Records
 	if records == nil {
 		var err error
-		records, err = (leagueservice.StoredHost{Store: p.Store}).CommissionerRecords(ctx, access.League)
+		host, err := p.host(ctx, access.League)
+		if err != nil {
+			return err
+		}
+		records, err = host.CommissionerRecords(ctx, access.League)
 		if err != nil {
 			return fmt.Errorf("token current records: %w", err)
 		}
@@ -122,7 +144,12 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 		ctx = leagueservice.WithFootballDigest(ctx, raw.Workflow.Football)
 	}
 	ctx = h.withRequestPin(ctx, raw.leagueName())
-	host := leagueservice.StoredHost{Store: h.pinFor(ctx, raw.leagueName()).Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry}
+	pin := h.pinFor(ctx, raw.leagueName())
+	if pin.Err != nil {
+		http.Error(w, "league access unavailable", http.StatusForbidden)
+		return
+	}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry}
 	gate := agentAdmission{token: h.Tokens.Admission(session), confirmations: h.Confirmations, confirmation: r.Header.Get("X-TWR-Human-Confirmation"), auditID: token.ID}
 	pinned, err := h.workflowHost(ctx, host, raw)
 	if err != nil {

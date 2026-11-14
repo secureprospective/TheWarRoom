@@ -140,7 +140,7 @@ func TestUpgradeRefusesNewerSchemaAndBinaryOnlyDowngradeUntouched(t *testing.T) 
 		if err := migrateServer(t.Context(), path); err != nil {
 			t.Fatal(err)
 		}
-		pools, err := db.Open(t.Context(), path, history.SchemaVersion())
+		pools, err := db.Open(t.Context(), path, history.LeagueSchemaVersion())
 		if err != nil {
 			t.Fatal(err)
 		}

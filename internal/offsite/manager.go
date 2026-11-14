@@ -184,6 +184,23 @@ func RunInOrder(ctx context.Context, managers ...*Manager) {
 	}
 }
 
+// RunEach is RunInOrder over a list that can grow while it runs (a league created on a running server
+// gets its own manager): managers is read again every round.
+func RunEach(ctx context.Context, managers func() []*Manager) {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+	for {
+		for _, m := range managers() {
+			m.runDue(ctx)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
 func (m *Manager) runDue(ctx context.Context) {
 	m.mu.Lock()
 	start := m.coverageStart

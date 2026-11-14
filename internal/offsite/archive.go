@@ -53,7 +53,7 @@ func (m RawManifest) Validate() error {
 		}
 	}
 	databases := 0
-	for _, kind := range setKinds() {
+	for _, kind := range append(setKinds(), SetKind{File: "league.db"}) {
 		if seen[kind.File] {
 			databases++
 		}
@@ -90,8 +90,16 @@ var (
 
 func setKinds() []SetKind { return []SetKind{LeagueSet, SignInSet, ReferenceSet} }
 
+// LeagueFilePrefix holds one set kind per league: each league's own file has its own sets.
+const LeagueFilePrefix = "leagues/"
+
+// LeagueFileSet is one league's own file's set kind.
+func LeagueFileSet(league string) SetKind {
+	return SetKind{Prefix: LeagueFilePrefix + league + "/", File: "league.db"}
+}
+
 func isSetDatabase(name string) bool {
-	return slices.ContainsFunc(setKinds(), func(k SetKind) bool { return k.File == name })
+	return name == "league.db" || slices.ContainsFunc(setKinds(), func(k SetKind) bool { return k.File == name })
 }
 
 // Holds reports whether the manifest's set carries name.

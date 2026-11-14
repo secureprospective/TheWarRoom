@@ -114,7 +114,7 @@ func (s oneFile) assertConverted(t *testing.T) {
 		}
 	}
 	for _, table := range accountstore.SignInTables() {
-		if held, err := hasTable(ctx, files.league, table); err != nil || held {
+		if held, err := hasTable(ctx, files.shared, table); err != nil || held {
 			t.Errorf("league file still holds %s (%v)", table, err)
 		}
 	}
@@ -138,7 +138,7 @@ func TestFreshServerCreatesBothFilesAndEachRefusesNewer(t *testing.T) {
 			if !fileExists(filepath.Join(dir, signInFileName)) {
 				t.Fatal("no sign-in file")
 			}
-			pools := map[string]*db.Pools{"server.db": files.league, signInFileName: files.signIns}[file]
+			pools := map[string]*db.Pools{"server.db": files.shared, signInFileName: files.signIns}[file]
 			if _, err := pools.Write().ExecContext(t.Context(), `PRAGMA user_version=999`); err != nil {
 				t.Fatal(err)
 			}
@@ -230,7 +230,7 @@ func TestConversionCrashAtEachStepRecovers(t *testing.T) {
 				_, _ = openSignInFiles(t.Context(), s.path)
 			}()
 			conversionStep = func(string, string) {}
-			league, err := db.OpenReadOnly(t.Context(), s.path, history.SchemaVersion())
+			league, err := db.OpenReadOnly(t.Context(), s.path, history.LeagueSchemaVersion())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -264,11 +264,11 @@ func (f *failingSeats) Seat(ctx context.Context, league, franchise string, owner
 func TestJoinStoppedBetweenCommitsLeavesAccountWithoutSeat(t *testing.T) {
 	ctx := t.Context()
 	files := openTestServer(t, t.TempDir())
-	registry, err := measures.Embedded()
+	_, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
 	}
-	ledger := history.New(files.league, registry)
+	ledger := hostedLeague(t, files)
 	if err := ledger.Initialize(ctx); err != nil {
 		t.Fatal(err)
 	}

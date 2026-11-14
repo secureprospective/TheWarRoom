@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -24,12 +25,12 @@ import (
 // importFootball puts one football evidence body into the reference file through the league store.
 func importFootball(t *testing.T, files stateFiles, name string) (string, []byte) {
 	t.Helper()
-	registry, err := measures.Embedded()
+	_, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
 	}
 	body, digest := footballEvidence(t, name)
-	if err := history.New(files.league, registry).ImportFootball(t.Context(), body, digest); err != nil {
+	if err := hostedLeague(t, files).ImportFootball(t.Context(), body, digest); err != nil {
 		t.Fatal(err)
 	}
 	return digest, body
@@ -41,13 +42,12 @@ func TestLeaguePinsAreSeparate(t *testing.T) {
 	ctx := t.Context()
 	dir := t.TempDir()
 	files := openTestServer(t, dir)
-	registry, err := measures.Embedded()
+	_, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
 	}
-	base := history.New(files.league, registry)
-	if err := base.Initialize(ctx); err != nil {
-		t.Fatal(err)
+	for _, league := range []string{"native.a", "native.b", "native.c"} {
+		leagueOn(t, files, league)
 	}
 	server, _ := importFootball(t, files, "Server pin")
 	first, _ := importFootball(t, files, "League A pin")
@@ -68,7 +68,7 @@ func TestLeaguePinsAreSeparate(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		pins := newLeaguePins(base)
+		pins := newLeaguePins(files.leagues)
 		if err := pins.selectPins(ctx, server, directory); err != nil {
 			t.Fatal(err)
 		}
@@ -76,7 +76,7 @@ func TestLeaguePinsAreSeparate(t *testing.T) {
 	}
 	pins := read()
 	a, b, c := pins.pin(t.Context(), "native.a"), pins.pin(t.Context(), "native.b"), pins.pin(t.Context(), "native.c")
-	if a.Digest != first || b.Digest != second || c.Digest != server || a.Store == b.Store || c.Store != base {
+	if a.Digest != first || b.Digest != second || c.Digest != server || a.Store == b.Store || c.Store == nil {
 		t.Fatalf("pins: a=%s b=%s c=%s", a.Digest, b.Digest, c.Digest)
 	}
 	if store, _ := pins.League(ctx, "native.b"); store != b.Store {
@@ -105,7 +105,6 @@ func TestLeaguePinsAreSeparate(t *testing.T) {
 			t.Fatalf("re-pinning league a changed %+v to %+v", before[i], after[i])
 		}
 	}
-	base = history.New(files.league, registry)
 	pins = read()
 	if pins.pin(t.Context(), "native.b").Digest != second || pins.pin(t.Context(), "native.c").Digest != server || pins.pin(t.Context(), "native.a").Digest != second {
 		t.Fatal("re-pinning one league moved another")
@@ -213,7 +212,7 @@ func TestRestoreThreeFilesReportsMissingPin(t *testing.T) {
 				h.capture(t, sets, recipient, offsite.ReferenceSet) // older: taken before the pinned version arrived
 			}
 			digest, _ := importFootball(t, h.files, "Pinned")
-			if err := recordDirectory(ctx, history.New(h.files.league, &measures.Registry{}), signInStore(h.files)); err != nil {
+			if err := recordDirectory(ctx, hostedLeague(t, h.files), signInStore(h.files)); err != nil {
 				t.Fatal(err)
 			}
 			if err := signInStore(h.files).PinFootball(ctx, "native.hosted", digest); err != nil {
@@ -255,7 +254,7 @@ func TestRestoreThreeFilesReportsMissingPin(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer func() { _ = files.Close() }()
-			restored := history.New(files.league, &measures.Registry{})
+			restored := hostedLeague(t, files)
 			leagues, err := restored.NativeLeagues(ctx)
 			if err != nil || len(leagues) == 0 {
 				t.Fatalf("restored leagues %v, %v", leagues, err)
@@ -286,13 +285,11 @@ func TestRestoreThreeFilesReportsMissingPin(t *testing.T) {
 
 // A due round captures league first, reference next, sign-ins last.
 func TestBackupRoundOrderIsLeagueReferenceSignIns(t *testing.T) {
-	league, reference, signIns := &offsite.Manager{}, &offsite.Manager{}, &offsite.Manager{}
-	got := backupManagers{league: league, reference: reference, signIns: signIns}.inOrder()
-	if len(got) != 3 || got[0] != league || got[1] != reference || got[2] != signIns {
-		t.Fatal("capture order is not league, reference, sign-ins")
-	}
-	if one := (backupManagers{league: league}).inOrder(); len(one) != 1 || one[0] != league {
-		t.Fatal("a one-file server captures more than its league set")
+	a, b, reference, signIns := &offsite.Manager{}, &offsite.Manager{}, &offsite.Manager{}, &offsite.Manager{}
+	managers := backupManagers{mu: &sync.Mutex{}, leagues: map[string]*offsite.Manager{"native.b": b, "native.a": a}, reference: reference, signIns: signIns}
+	got := managers.inOrder()
+	if len(got) != 4 || got[0] != a || got[1] != b || got[2] != reference || got[3] != signIns {
+		t.Fatal("capture order is not every league, then reference, then sign-ins")
 	}
 }
 
@@ -310,14 +307,14 @@ func TestLedgerWritesLeaveReferenceFileAlone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	leagueRev, err := h.files.league.Revision(ctx)
+	leagueRev, err := hostedPools(t, h.files).Revision(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(h.dir, referenceFileName)
 	before := digestFile(t, path)
 	h.seatOwner(t)
-	if rev, err := h.files.league.Revision(ctx); err != nil || rev == leagueRev {
+	if rev, err := hostedPools(t, h.files).Revision(ctx); err != nil || rev == leagueRev {
 		t.Fatalf("the ledger write did not reach the league file (%v)", err)
 	}
 	if rev, err := h.files.reference.Revision(ctx); err != nil || rev != referenceRev {
@@ -326,7 +323,7 @@ func TestLedgerWritesLeaveReferenceFileAlone(t *testing.T) {
 	if digestFile(t, path) != before {
 		t.Fatal("a ledger write changed the reference file's bytes")
 	}
-	held, err := h.files.league.Write().Conn(ctx)
+	held, err := hostedPools(t, h.files).Write().Conn(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,7 +9,7 @@ import (
 )
 
 func TestHostedFilesMigrateOnlyOwnedTables(t *testing.T) {
-	leagueTables := []string{"league_event", "authority_policy", "league_season_summary", "audit_chain", "audit_chain_head", "league_import", "transfer_identity", "transfer_transition", "server_release", "league_roster_restore", "league_recovery_log", "league_player", "player_ownership"}
+	leagueTables := []string{"league_event", "authority_policy", "league_season_summary", "audit_chain", "audit_chain_head", "league_import", "transfer_identity", "transfer_transition", "server_release", "league_roster_restore", "league_recovery_log", "league_player", "player_ownership", "league_file"}
 	for _, tc := range []struct {
 		name          string
 		version, base int

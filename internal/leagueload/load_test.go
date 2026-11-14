@@ -125,7 +125,7 @@ func TestLoadMovesTheLeagueActiveOntoTheServer(t *testing.T) {
 		t.Fatal(err)
 	}
 	commish := "acct." + uuid.NewString()
-	result, err := Load(t.Context(), Request{MFLLeague: "14432", Commissioner: governancePrincipal(commish), Workspace: workspace, Server: server,
+	result, err := Load(t.Context(), Request{MFLLeague: "14432", Commissioner: governancePrincipal(commish), Workspace: workspace, Server: func(context.Context, string) (*history.Store, error) { return server, nil },
 		Source: func(leaguerules.RuleSet) (leaguemigration.Source, error) {
 			return &migrationtest.Source{Export: export}, nil
 		}, Football: legacyFootball(t), Now: now})
@@ -178,7 +178,7 @@ func TestLoadFailureLeavesTheServerEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = Load(t.Context(), Request{MFLLeague: "14432", Commissioner: governancePrincipal("acct." + uuid.NewString()), Workspace: workspace, Server: server,
+	_, err = Load(t.Context(), Request{MFLLeague: "14432", Commissioner: governancePrincipal("acct." + uuid.NewString()), Workspace: workspace, Server: func(context.Context, string) (*history.Store, error) { return server, nil },
 		Source: func(leaguerules.RuleSet) (leaguemigration.Source, error) {
 			return &migrationtest.Source{Export: export, FailAt: "rosters"}, nil
 		}, Football: legacyFootball(t), Now: now})

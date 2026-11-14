@@ -105,6 +105,12 @@ func (s *Store) Sibling() *Store {
 	return &Store{commits: s.commits, pools: s.pools, reg: s.reg, now: s.now, lineups: ledgerLineups{}}
 }
 
+// Over is a new store over another file (a hosted league's own file) in s's family: s's registry, s's
+// clock as it is set at the time of each reading, and s's commit signal.
+func (s *Store) Over(pools *db.Pools) *Store {
+	return &Store{commits: s.commits, pools: pools, reg: s.reg, now: func() time.Time { return s.now() }, lineups: ledgerLineups{}}
+}
+
 // signalCommissionerCommit names the committed league to the due worker through the resolver.
 // Coalesced: a full channel already guarantees one wake, and every wake rereads every league.
 func (s *Store) signalCommissionerCommit(league string) {

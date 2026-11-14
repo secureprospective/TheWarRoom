@@ -15,7 +15,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/offsite"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
@@ -36,14 +35,11 @@ func newTwoFileHost(t *testing.T) *twoFileHost {
 		t.Fatal(err)
 	}
 	h := &twoFileHost{dir: dir, files: openTestServer(t, dir), config: config}
-	registry, err := measures.Embedded()
+	_, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
 	}
-	ledger := history.New(h.files.league, registry)
-	if err := ledger.Initialize(ctx); err != nil {
-		t.Fatal(err)
-	}
+	ledger := hostedLeague(t, h.files)
 	store := signInStore(h.files)
 	if err := store.Initialize(ctx); err != nil {
 		t.Fatal(err)
@@ -78,9 +74,9 @@ func (h *twoFileHost) capture(t *testing.T, sets *memorySets, recipient string, 
 		captureReferenceInto(t, sets, recipient, h.files.reference, h.config)
 		return
 	}
-	pools, checkpoint := h.files.league, leagueSetCheckpoint
-	if kind == offsite.SignInSet {
-		pools, checkpoint = h.files.signIns, signInSetCheckpoint
+	pools, checkpoint := h.files.signIns, signInSetCheckpoint
+	if kind == offsite.LeagueSet {
+		kind, pools, checkpoint = offsite.LeagueFileSet(fixtureLeague), hostedPools(t, h.files), leagueSetCheckpoint
 	}
 	captureKind(t, sets, recipient, kind, pools, h.config, checkpoint)
 }
@@ -176,7 +172,7 @@ func TestRestorePairsLeagueWithItsSignIns(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer func() { _ = files.Close() }()
-			if held, err := hasTable(t.Context(), files.league, "accounts"); err != nil || held {
+			if held, err := hasTable(t.Context(), files.shared, "accounts"); err != nil || held {
 				t.Fatalf("restored league file holds accounts: %v", err)
 			}
 		})

@@ -66,6 +66,23 @@ func PrepareNewLeague(ctx context.Context, pools *db.Pools) error {
 // MigrateLeague chooses the file's own list after the reference move. Combined desktop
 // and pre-conversion files retain their original migrations until they are split.
 func MigrateLeague(ctx context.Context, pools *db.Pools) error {
+	split, err := db.HasTable(ctx, pools, LeagueSplitTable)
+	if err != nil {
+		return fmt.Errorf("history: read league layout: %w", err)
+	}
+	if split {
+		// The shared file after the split holds no league tables: it is at every league version at once.
+		var version int
+		if err := pools.Read().QueryRowContext(ctx, `PRAGMA user_version`).Scan(&version); err != nil {
+			return fmt.Errorf("history: read the split shared file's version: %w", err)
+		}
+		if version < LeagueSchemaVersion() {
+			if _, err := pools.Write().ExecContext(ctx, fmt.Sprintf(`PRAGMA user_version=%d`, LeagueSchemaVersion())); err != nil {
+				return fmt.Errorf("history: stamp the split shared file: %w", err)
+			}
+		}
+		return nil
+	}
 	moved, err := db.HasTable(ctx, pools, ReferenceMoveTable)
 	if err != nil {
 		return fmt.Errorf("history: read league layout: %w", err)

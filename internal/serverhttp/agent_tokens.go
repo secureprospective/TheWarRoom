@@ -46,21 +46,30 @@ type AgentTokenResponse struct {
 func (AgentTokenResponse) String() string     { return "[agent token response redacted]" }
 func (r AgentTokenResponse) GoString() string { return r.String() }
 
-func (h Hosted) agentToken(w http.ResponseWriter, r *http.Request) {
+// deviceSession is the request's owner session; agent tokens are never device sessions, so they cannot
+// mint or revoke credentials. !ok means the refusal was written.
+func (h Hosted) deviceSession(w http.ResponseWriter, r *http.Request) (accounts.RawSession, accounts.Account, bool) {
 	authorization := r.Header.Get("Authorization")
 	if len(r.Header.Values("Authorization")) != 1 || !strings.HasPrefix(authorization, "Bearer ") {
 		http.Error(w, "session required", http.StatusUnauthorized)
-		return
+		return accounts.RawSession{}, accounts.Account{}, false
 	}
 	session := accounts.RawSession{Bearer: strings.TrimPrefix(authorization, "Bearer ")}
 	account, err := h.Sessions.Authenticate(r.Context(), session)
 	if err != nil {
 		h.sessionFailure(w, err)
-		return
+		return session, account, false
 	}
 	if h.Tokens == nil {
-		// Agent tokens are never device sessions, so they cannot mint or revoke credentials.
 		http.Error(w, "session refused", http.StatusUnauthorized)
+		return session, account, false
+	}
+	return session, account, true
+}
+
+func (h Hosted) agentToken(w http.ResponseWriter, r *http.Request) {
+	session, account, ok := h.deviceSession(w, r)
+	if !ok {
 		return
 	}
 	var raw RawAgentTokenRequest
@@ -81,7 +90,12 @@ func (h Hosted) agentToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "session refused", http.StatusUnauthorized)
 		return
 	}
-	host := leagueservice.StoredHost{Store: h.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	pin := h.pin(r.Context(), raw.Scope.League)
+	if pin.Err != nil {
+		http.Error(w, "agent token refused", http.StatusForbidden)
+		return
+	}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(session), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if remaining, limited, err := gate.proofRemaining(r.Context(), raw.Scope.League); err != nil || !limited || remaining <= 0 {
 		http.Error(w, "confirm with your authenticator first", http.StatusForbidden)

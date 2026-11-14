@@ -103,7 +103,7 @@ func (s oneFileWithReference) assertReferenceMoved(t *testing.T) {
 	if err := history.SameReference(s.proof, got); err != nil {
 		t.Error(err)
 	}
-	alone, err := db.OpenReadOnly(ctx, s.path, history.SchemaVersion())
+	alone, err := db.OpenReadOnly(ctx, s.path, history.LeagueSchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,11 +116,11 @@ func (s oneFileWithReference) assertReferenceMoved(t *testing.T) {
 	if info, err := os.Stat(referencePath(s.path)); err != nil || info.Mode().Perm()&0o077 != 0 {
 		t.Errorf("reference file is not owner-only: %v", err)
 	}
-	registry, err := measures.Embedded()
+	_, err = measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := history.New(files.league, registry).LoadFootball(ctx, s.digests[0]); err != nil {
+	if _, err := hostedLeague(t, files).LoadFootball(ctx, s.digests[0]); err != nil {
 		t.Errorf("league store cannot read football through the reference file: %v", err)
 	}
 }
@@ -138,7 +138,7 @@ func TestFreshServerCreatesThreeFilesAndEachRefusesNewer(t *testing.T) {
 					t.Fatalf("no %s", name)
 				}
 			}
-			pools := map[string]*db.Pools{"server.db": files.league, signInFileName: files.signIns, referenceFileName: files.reference}[file]
+			pools := map[string]*db.Pools{"server.db": files.shared, signInFileName: files.signIns, referenceFileName: files.reference}[file]
 			if _, err := pools.Write().ExecContext(t.Context(), `PRAGMA main.user_version=999`); err != nil {
 				t.Fatal(err)
 			}
@@ -234,7 +234,7 @@ func TestReferenceMoveCrashAtEachStepRecovers(t *testing.T) {
 				_, _ = openSignInFiles(t.Context(), s.path)
 			}()
 			conversionStep = func(string, string) {}
-			league, err := db.OpenReadOnly(t.Context(), s.path, history.SchemaVersion())
+			league, err := db.OpenReadOnly(t.Context(), s.path, history.LeagueSchemaVersion())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -252,14 +252,15 @@ func TestReferenceMoveCrashAtEachStepRecovers(t *testing.T) {
 func TestLeagueAttachmentCannotWriteReference(t *testing.T) {
 	files := openTestServer(t, t.TempDir())
 	ctx := t.Context()
+	league := hostedPools(t, files)
 	for _, table := range history.ReferenceTables() {
 		t.Run(table, func(t *testing.T) {
-			if _, err := files.league.Write().ExecContext(ctx, `DELETE FROM reference.`+table+` WHERE 0`); err == nil || !strings.Contains(err.Error(), "readonly") {
+			if _, err := league.Write().ExecContext(ctx, `DELETE FROM reference.`+table+` WHERE 0`); err == nil || !strings.Contains(err.Error(), "readonly") {
 				t.Fatalf("reference write was not refused as read-only: %v", err)
 			}
 		})
 	}
-	tx, err := files.league.BeginWrite(ctx)
+	tx, err := hostedPools(t, files).BeginWrite(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +275,7 @@ func TestLeagueAttachmentCannotWriteReference(t *testing.T) {
 	if err := tx.Rollback(); err != nil {
 		t.Fatal(err)
 	}
-	for _, pools := range []*db.Pools{files.league, files.reference} {
+	for _, pools := range []*db.Pools{hostedPools(t, files), files.reference} {
 		table := "league_player"
 		if pools == files.reference {
 			table = "canonical_player"

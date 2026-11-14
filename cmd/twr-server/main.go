@@ -49,8 +49,6 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runHosted(ctx, args, output)
 	case "checkpoint", "pin-football":
 		return true, outputCommand(name)(ctx, args, output)
-	case "recover":
-		return true, runRecovery(ctx, args, os.Stdin, output)
 	case "join-link":
 		return true, runJoinLink(ctx, args, os.Stdin, output)
 	case "reset-password":
@@ -59,10 +57,6 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runLeagueLoad(ctx, args, os.Stdin, output)
 	case "stand-up":
 		return true, runStandUp(ctx, args, output)
-	case "restore":
-		return true, runRestore(ctx, args, os.Stdin, output)
-	case "reset-sign-ins":
-		return true, runResetSignIns(ctx, args, os.Stdin, output)
 	case "verify-release":
 		return true, runVerifyRelease(args, output)
 	case "upgrade":
@@ -71,6 +65,23 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runVersion(args, output)
 	case "status":
 		return true, runStatus(ctx, args, output)
+	}
+	return repairCommand(ctx, name, args, output)
+}
+
+// repairCommand runs the commands that bring back, reset or remove what a server holds.
+func repairCommand(ctx context.Context, name string, args []string, output io.Writer) (bool, error) {
+	switch name {
+	case "delete-league":
+		return true, runDeleteLeague(ctx, args, output)
+	case "restore-league":
+		return true, runRestoreLeague(ctx, args, os.Stdin, output)
+	case "recover":
+		return true, runRecovery(ctx, args, os.Stdin, output)
+	case "restore":
+		return true, runRestore(ctx, args, os.Stdin, output)
+	case "reset-sign-ins":
+		return true, runResetSignIns(ctx, args, os.Stdin, output)
 	}
 	return false, nil
 }

@@ -46,6 +46,9 @@ type Hosted struct {
 	// own file's off-site backup, so one file falling behind pauses only its own kind of change.
 	WriteAdmission  func() error
 	SignInAdmission func() error
+	// LeagueAdmission, when set, guards each league's own writes (one file per league): checked once a
+	// request's league is known, so one league's backup falling behind pauses only that league.
+	LeagueAdmission func(league string) error
 	Tokens          *accounts.TokenService
 	Confirmations   *Confirmations
 	Store           *history.Store
@@ -213,26 +216,11 @@ func (r RawNativeRequest) validatePick() error {
 }
 
 func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
-	rawSession := accounts.RawSession{Bearer: strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")}
-	if len(r.Header.Values("Authorization")) != 1 || !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
-		http.Error(w, "session required", http.StatusUnauthorized)
+	auth, ok := h.authenticateNative(w, r)
+	if !ok {
 		return
 	}
-	account, authenticationErr := h.Sessions.Authenticate(r.Context(), rawSession)
-	if authenticationErr != nil {
-		if !sessionRefused(authenticationErr) {
-			h.sessionFailure(w, authenticationErr)
-			return
-		}
-		if h.Tokens == nil {
-			h.sessionFailure(w, authenticationErr)
-			return
-		}
-		if _, err := h.Tokens.Authenticate(r.Context(), rawSession); err != nil {
-			h.sessionFailure(w, err)
-			return
-		}
-	}
+	rawSession, account, authenticationErr := auth.raw, auth.account, auth.agent
 	var raw RawNativeRequest
 	if !decodeNative(w, r, &raw) {
 		http.Error(w, "invalid native request", http.StatusBadRequest)
@@ -249,7 +237,11 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := h.requestContext(r.Context(), raw, string(principal))
 	r = r.WithContext(ctx)
-	host := leagueservice.StoredHost{Store: h.pinFor(ctx, raw.leagueName()).Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	pin, ok := h.admitLeague(ctx, w, raw.leagueName())
+	if !ok {
+		return
+	}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
 		h.confirm(w, r, gate, raw)
@@ -264,6 +256,37 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	h.dispatch(w, r, service, raw)
 }
 
+// nativeAuth is who a native request's bearer is: an owner session, or an agent token when agent holds
+// the reason the bearer was not a session.
+type nativeAuth struct {
+	raw     accounts.RawSession
+	account accounts.Account
+	agent   error
+}
+
+// authenticateNative reads the request's bearer as an owner session or, failing that, an agent token;
+// !ok means the refusal was written.
+func (h Hosted) authenticateNative(w http.ResponseWriter, r *http.Request) (nativeAuth, bool) {
+	rawSession := accounts.RawSession{Bearer: strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")}
+	if len(r.Header.Values("Authorization")) != 1 || !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
+		http.Error(w, "session required", http.StatusUnauthorized)
+		return nativeAuth{raw: rawSession}, false
+	}
+	account, authenticationErr := h.Sessions.Authenticate(r.Context(), rawSession)
+	if authenticationErr == nil {
+		return nativeAuth{raw: rawSession, account: account}, true
+	}
+	if !sessionRefused(authenticationErr) || h.Tokens == nil {
+		h.sessionFailure(w, authenticationErr)
+		return nativeAuth{raw: rawSession}, false
+	}
+	if _, err := h.Tokens.Authenticate(r.Context(), rawSession); err != nil {
+		h.sessionFailure(w, err)
+		return nativeAuth{raw: rawSession}, false
+	}
+	return nativeAuth{raw: rawSession, agent: authenticationErr}, true
+}
+
 // requestContext carries what the rest of the request reads: the football the workflow names, who
 // asks, and the league's pin, fixed once for the whole request.
 func (h Hosted) requestContext(ctx context.Context, raw RawNativeRequest, principal string) context.Context {
@@ -271,6 +294,23 @@ func (h Hosted) requestContext(ctx context.Context, raw RawNativeRequest, princi
 		ctx = leagueservice.WithFootballDigest(ctx, raw.Workflow.Football)
 	}
 	return h.withRequestPin(withReplyPrincipal(ctx, principal), raw.leagueName())
+}
+
+// admitLeague is the request's league pin, refused when the server does not hold the league or when
+// the league's own backup has fallen behind (LeagueAdmission).
+func (h Hosted) admitLeague(ctx context.Context, w http.ResponseWriter, league string) (LeaguePin, bool) {
+	pin := h.pinFor(ctx, league)
+	if pin.Err != nil {
+		http.Error(w, "league access unavailable", http.StatusForbidden)
+		return pin, false
+	}
+	if h.LeagueAdmission != nil {
+		if err := h.LeagueAdmission(league); err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return pin, false
+		}
+	}
+	return pin, true
 }
 
 func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest) bool {
@@ -286,6 +326,8 @@ type LeaguePin struct {
 	Football *history.PinnedFootball
 	Digest   string
 	Missing  bool
+	// Err says the server cannot serve the league at all (it does not hold it); Store is then nil.
+	Err error
 }
 
 // cacheKey tells a reading made without the league's football apart from one made with it.
@@ -326,9 +368,14 @@ func (h Hosted) pinFor(ctx context.Context, league string) LeaguePin {
 }
 
 func (r RawNativeRequest) leagueName() string {
-	if r.Workflow != nil {
+	switch {
+	case r.Workflow != nil:
 		league, _ := r.Workflow.League()
 		return league
+	case r.Command != nil:
+		return r.Command.League
+	case r.Pick != nil:
+		return r.Pick.League
 	}
 	return r.League
 }

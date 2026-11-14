@@ -37,6 +37,12 @@ mv "$stage/ready/server.db" /var/lib/twr/server.db
 rm -f /var/lib/twr/server.db-wal /var/lib/twr/server.db-shm
 if [ -e "$stage/ready/accounts.db" ]; then mv "$stage/ready/accounts.db" /var/lib/twr/accounts.db; fi
 if [ -e "$stage/ready/reference.db" ]; then mv "$stage/ready/reference.db" /var/lib/twr/reference.db; fi
+# Each league has its own file. The fresh install holds none (the restore refuses otherwise); a backup
+# saved before leagues had their own files brings none, and the server gives each its file on first start.
+if [ -d "$stage/ready/leagues" ]; then
+  if [ -e /var/lib/twr/leagues ]; then rmdir /var/lib/twr/leagues; fi
+  mv "$stage/ready/leagues" /var/lib/twr/leagues
+fi
 rc-service twr-server start
 printf '%s\n' 'Restore installed. Changes and sign-ins stay paused until the first backup of the restored' \
   'league uploads and verifies, usually within five minutes. Then every owner signs in again.'
