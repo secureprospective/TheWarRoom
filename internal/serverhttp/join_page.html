@@ -123,8 +123,8 @@
   .codes-head h2 { margin: 0; font: 600 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
   .codes-head button { font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; background: none; border: 0; color: var(--blue-base); cursor: pointer; padding: 6px 0 6px 10px; }
   .warn { margin: 0; padding: 10px 14px; font-size: 13px; color: var(--amber-loud); background: hsl(35, 60%, 58%, .07); border-bottom: 1px solid var(--hairline); }
-  .codes ol { margin: 0; padding: 14px; list-style: none; display: grid; grid-template-columns: 1fr; gap: 10px; counter-reset: c; }
-  .codes li { display: flex; gap: 8px; font: 12px/1.35 var(--mono); letter-spacing: 0; counter-increment: c; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
+  .codes ol { margin: 0; padding: 14px; list-style: none; display: grid; grid-template-columns: 1fr; gap: 10px; counter-reset: c; container-type: inline-size; }
+  .codes li { display: flex; gap: 8px; font: 12px/1.35 var(--mono); font-size: min(12px, calc((100cqi - 8px) / 27)); letter-spacing: 0; counter-increment: c; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
   .codes li::before { content: counter(c); color: var(--text-disabled); flex: none; width: 1.6ch; }
   .next { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline); }
   .next li { padding: 14px 0; border-bottom: 1px solid var(--hairline); font-size: 14px; color: var(--text-secondary); display: grid; grid-template-columns: 7ch 1fr; gap: 10px; }
@@ -272,6 +272,7 @@
     picked = t;
     $("pickAb").textContent = t.abbreviation || "";
     $("pickName").textContent = t.name;
+    $("claim").textContent = t.id === "commissioner" ? "Claim my seat" : "Claim my team";
     $("claimError").textContent = "";
     show(2);
     $("username").focus();
