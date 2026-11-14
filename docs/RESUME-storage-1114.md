@@ -1,3 +1,58 @@
+# RESUME #9 UPDATE 8 (compact-safe) — 2026-11-14 ~11:50 AM CT — read this first
+
+Christopher: push to completion, don't burn wall clock; I build critical slices MYSELF. ETAs given this
+morning (accelerated): slice 6 merged ~2 PM, slice 8 ~4 PM, final drill ~5–6 PM. We are FAR ahead.
+
+## STATE
+- Slice 5+5c: MERGED, PR #232, squash c951f65ae.
+- Slice 6: MERGED, PR #233, squash cbc219cee (make verify 124/125 + practice-sandbox fix 86e908b05; race clean; lint 0).
+- Slice 7 (conversion proof: league_split records per-table proofs; twr-upgrade prints them, DIFFERS → puts
+  saved copy back; `twr-server conversion-proof`) = commit 541a0e24f on session/storage-conversion-proof-7
+  (worktree .worktrees/storage7, stacked on OLD slice 6 head efe26dcc3).
+- Slice 8 (move league as one file: export-league/import-league/finish-move/cancel-move, seat claims in
+  accounts.db v3 `league_seat_claims`, console tools twr-move-league / twr-receive-league, RESTORE.md E)
+  = commit 9ae404b22, PLUS fix 5ea2eb5d6 ("each league's own off-site sets are found, opened and pruned":
+  offsite objectTime did not parse leagues/<id>/ names → restore found no league set, retention never
+  pruned; fake S3 now honours list prefix; test proven to fail without fix).
+  USE worktree **.worktrees/storage8b**, branch **session/storage-league-move-8b** @ 5ea2eb5d6
+  (contains 7 + 8 + fix, on old slice-6 base efe26dcc3).
+- DAMAGED worktree .worktrees/storage8 (branch session/storage-league-move-8): my `git stash`/`stash pop`
+  on a clean tree popped Sol's old stash@{0} → 3 conflicted files + 4 untracked Sol-draft files. Cleanup
+  (checkout/rm) was DENIED by the permission classifier. Leave it; tell Christopher; he can remove it.
+  stash@{0} (Sol draft) still in the stash list. LESSON: never use git stash to test-revert; use
+  `git diff > p; git apply -R p; ...; git apply p`.
+
+## FINAL DRILL (real data copy + real R2) — ~/fleet/runs/drill1114 on Beelink, binary from storage8b
+Copy of CT 256 via snapshot vzdump (CT 256 kept running; dump deleted; lab /root/drill1114* remain).
+1. Upgrade release 6 → 8: 10.5 s; league native.mfl-14432-2026 own file 20.6 MB; proof 9/9 tables "same"
+   (3370 events, 1462 players, 1462 ownerships). Leaves 4 pre-change server.db .bak (~83 MB) — known debt.
+2. Hosted start with R2 (bucket twr-lab; drill writes ONLY leagues/, signins/, reference/, evidence/; CT 256
+   uses sets/ only): all three kinds uploaded within 5 s (league 2.4 MB, sign-ins 44 KB, reference 233 KB, 1 evidence).
+3. restore-league from R2: 1.2 s, 4 owners signed out, all tables match, old file archived 30 d.
+   Whole restore onto fresh server: 2.0 s, all tables match, starts. Move: 2.4 MB file, import 0.9 s,
+   1462 players, 4 claim links (3 owners + commissioner), all tables match, finish archived.
+4. NOT RUN YET: drill4.sh (scratchpad/drill/drill4.sh, also needs scp to /tmp/5c) = claim via real HTTP
+   join door on receiver running with R2, second use refused, login. Login body {protocol,username,password,device}.
+
+## NEXT ACTIONS
+1. Run drill4 (scp scratchpad/drill/drill4.sh chris@192.168.1.191:/tmp/5c/; bash /tmp/5c/drill4.sh).
+2. Rebase storage8b onto origin/main: `git rebase --onto origin/main efe26dcc3` (main = slice6 squash +
+   practice fix; 7+8 touch other files). Check tree diff vs expectation. pnpm install in frontend first
+   (lesson: fresh worktree), make verify once, push (PATH needs ~/go/bin for wails in pre-push hook),
+   PR "storage 7+8", CI, squash --match-head-commit.
+3. Tell Christopher: drill results; the R2 drill objects to delete in twr-lab (leagues/native.mfl-14432-2026/*,
+   signins/*, reference/*, evidence/* — list them first); lab leftovers /root/drill1114, /root/drill1114-state.tgz;
+   Beelink ~/fleet/runs/drill1114 (holds decrypted league copy + drill.key — delete after); damaged
+   storage8 worktree; his live test (what to click + what passing looks like).
+4. Docs/resume commit; task list on Hermes.
+
+## ENV
+Patches: write in scratchpad, scp to Beelink /tmp/5c, run python there. NEVER put apostrophes or backticks in
+ssh single-quoted commands/heredocs (broke 2 commits) — scp message files, `git commit -F file`.
+Go env: PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin GOTOOLCHAIN=go1.26.11 GOMEMLIMIT=1500MiB
+GOLANGCI_LINT_CACHE=$HOME/.cache/golangci-<wt>. Lab: /root/bin/twr-lab <script> on CT105.
+Rulings today: transfer = owners claim seats (one-time links, new sign-in, same identity); old copy archived
+30 d (memory project_warroom_league_transfer_rulings.md).
 # RESUME #9 UPDATE 7 (compact-safe) — 2026-11-14 ~11:55 AM CT — read this first
 
 Christopher: push to completion, don't burn wall clock. **I BUILD slice 6 MYSELF** (he: "Why would you give
