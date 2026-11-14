@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"time"
 
@@ -29,12 +30,14 @@ func (d *Desktop) WatchInvalidations(ctx context.Context, reread func(context.Co
 	if reread == nil {
 		return fmt.Errorf("invalidation reread required")
 	}
+	var backoff reconnectBackoff
 	for {
+		connected := time.Now()
 		retry, err := d.watchInvalidations(ctx, reread)
 		if !retry {
 			return err
 		}
-		timer := time.NewTimer(time.Second)
+		timer := time.NewTimer(backoff.next(time.Since(connected)))
 		select {
 		case <-ctx.Done():
 			timer.Stop()
@@ -42,6 +45,29 @@ func (d *Desktop) WatchInvalidations(ctx context.Context, reread func(context.Co
 		case <-timer.C:
 		}
 	}
+}
+
+// Reconnects back off exponentially from 1 s to 30 s with full jitter, so devices dropped by one outage
+// do not return in step; a stream that stayed up for streamHealthyAfter starts again from 1 s.
+const (
+	reconnectFirst     = time.Second
+	reconnectCap       = 30 * time.Second
+	streamHealthyAfter = time.Minute
+)
+
+type reconnectBackoff struct{ attempt int }
+
+// next is the wait before the next connect, given how long the last stream stayed up.
+func (b *reconnectBackoff) next(up time.Duration) time.Duration {
+	if up >= streamHealthyAfter {
+		b.attempt = 0
+	}
+	ceiling := reconnectCap
+	if b.attempt < 5 { // 1 s << 5 = 32 s already passes the cap
+		ceiling = min(reconnectFirst<<b.attempt, reconnectCap)
+	}
+	b.attempt++
+	return rand.N(ceiling) + 1 //nolint:gosec // jitter, not a secret
 }
 
 func (d *Desktop) watchInvalidations(ctx context.Context, reread func(context.Context) error) (bool, error) {

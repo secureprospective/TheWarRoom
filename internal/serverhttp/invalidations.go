@@ -3,6 +3,7 @@ package serverhttp
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"strings"
 	"sync"
@@ -58,10 +59,13 @@ func (b *streamBudget) release(league, device string) {
 
 // FUTURE-SEAM(stream): live push for new features rides this "changed for you" signal; it never
 // carries event contents. See docs/architecture/future-seams.md.
-// Each Handler owns its connection budget. No event history, ledger cursor or bearer
-// is published. A slow consumer retains only its last observed recipient view.
+// Each Handler owns its connection budget and one head watcher per league with open streams. No event
+// history, ledger cursor or bearer is published. A slow consumer retains only its last observed view.
 func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 	budget := &streamBudget{devices: make(map[string]int), active: make(map[string]int)}
+	watch := newLeagueWatch(func(ctx context.Context, league string) (int64, error) {
+		return h.Store.CommittedHead(ctx, league, commissioner.Stream)
+	}, headPollEvery)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != InvalidationPath {
 			next.ServeHTTP(w, r)
@@ -108,7 +112,12 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			return
 		}
 		defer budget.release(league, device)
-		h.streamRecipientInvalidations(w, r, service, league, device, head, reading.Revision, proofLapse(lifetime, limited))
+		// Subscribing after the head read is safe: the watcher hands a new subscriber the newest head it
+		// has seen, and any later commit reaches it on the next poll.
+		news, unsubscribe := watch.subscribe(league) //nolint:contextcheck // the watcher outlives any one request
+
+		defer unsubscribe()
+		h.streamRecipientInvalidations(w, r, service, league, device, head, reading.Revision, news, proofLapse(lifetime, limited))
 	})
 }
 
@@ -121,18 +130,16 @@ func proofLapse(lifetime time.Duration, limited bool) <-chan time.Time {
 	return time.NewTimer(lifetime).C
 }
 
-func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, league, device string, head, revision int64, lapse <-chan time.Time) {
+func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, league, device string, head, revision int64, news <-chan headNews, lapse <-chan time.Time) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	controller := http.NewResponseController(w)
 	poll := invalidationPoll{head: head, revision: revision,
-		committedHead: func(ctx context.Context) (int64, error) {
-			return h.Store.CommittedHead(ctx, league, commissioner.Stream)
-		},
 		deadline: func(context.Context) (time.Time, time.Time, bool) {
 			//nolint:contextcheck // StoredHost owns the request context.
 			_, next, ok, err := service.ReadingEpoch(league, h.Football.Kickoffs())
 			return next, h.Store.Now(), ok && err == nil
 		},
+		now: h.Store.Now,
 		read: func(context.Context) (commissioner.Ledger, error) {
 			//nolint:contextcheck // StoredHost owns the request context.
 			return service.TargetCommissionerLedger(league)
@@ -152,7 +159,7 @@ func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Requ
 		}
 		return nil
 	}
-	streamInvalidations(r.Context(), controller, w, &poll, checkSession, lapse)
+	streamInvalidations(r.Context(), controller, w, streamWakes{news: news, lapse: lapse, session: sessionCheckEvery}, &poll, checkSession)
 }
 
 // The global head is only a work gate; the authorized recipient token alone wakes peers.
@@ -161,17 +168,14 @@ func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Requ
 // public deadlines and kickoffs wake anyone: a private entry's time never does.
 type invalidationPoll struct {
 	head, revision int64
-	committedHead  func(context.Context) (int64, error)
 	read           func(context.Context) (commissioner.Ledger, error)
 	deadline       func(context.Context) (next, now time.Time, ok bool)
+	now            func() time.Time
 	next           time.Time
 }
 
-func (p *invalidationPoll) changed(ctx context.Context) (bool, error) {
-	head, err := p.committedHead(ctx)
-	if err != nil {
-		return false, fmt.Errorf("poll committed head: %w", err)
-	}
+// changed reports whether this recipient's view moved, given the league head the watcher last saw.
+func (p *invalidationPoll) changed(ctx context.Context, head int64) (bool, error) {
 	next, epochPassed := p.next, false
 	if p.deadline != nil {
 		upcoming, now, ok := p.deadline(ctx)
@@ -196,43 +200,99 @@ func (p *invalidationPoll) changed(ctx context.Context) (bool, error) {
 	return changed, nil
 }
 
-func streamInvalidations(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, poll *invalidationPoll, checkSession func(context.Context) error, lapse <-chan time.Time) {
-	ticker := time.NewTicker(250 * time.Millisecond)
-	defer ticker.Stop()
-	session := time.NewTicker(500 * time.Millisecond)
+// untilDeadline is how long until the next public deadline; ok is false for an untimed league.
+func (p *invalidationPoll) untilDeadline() (time.Duration, bool) {
+	if p.next.IsZero() || p.now == nil {
+		return 0, false
+	}
+	return max(p.next.Sub(p.now()), 0), true
+}
+
+// arm sets timer to fire at the next public deadline, or not at all for an untimed league.
+func (p *invalidationPoll) arm(timer *time.Timer) {
+	timer.Stop()
+	if wait, ok := p.untilDeadline(); ok {
+		timer.Reset(wait)
+	}
+}
+
+// wake re-reads this recipient's view at head, emits if it moved and re-arms the deadline timer; false
+// ends the stream.
+func (p *invalidationPoll) wake(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, deadline *time.Timer, head int64) bool {
+	changed, err := p.changed(ctx, head)
+	p.arm(deadline)
+	return err == nil && (!changed || emitInvalidation(controller, w) == nil)
+}
+
+// headPollEvery is the league watcher's cadence; one read per league, whatever the device count.
+const headPollEvery = 250 * time.Millisecond
+
+// sessionCheckEvery spaces one stream's session checks 2-4 s apart, jittered so a league's devices do
+// not read in step. A revoked session therefore ends its stream within 4 s plus one check.
+func sessionCheckEvery() time.Duration { return 2*time.Second + rand.N(2*time.Second) } //nolint:gosec // jitter, not a secret
+
+// streamWakes are the per-stream signals besides the heartbeat: the league watcher's head news, the
+// recent-auth lapse and the session check cadence.
+type streamWakes struct {
+	news    <-chan headNews
+	lapse   <-chan time.Time
+	session func() time.Duration
+}
+
+func streamInvalidations(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, wakes streamWakes, poll *invalidationPoll, checkSession func(context.Context) error) {
+	session := time.NewTimer(wakes.session())
 	defer session.Stop()
+	// The heartbeat also refreshes the deadline, so a kickoff change with no commit is seen within 15 s.
 	heartbeat := time.NewTicker(15 * time.Second)
 	defer heartbeat.Stop()
+	deadline := time.NewTimer(time.Hour)
+	defer deadline.Stop()
+	poll.arm(deadline)
+	wake := func(head int64) bool { return poll.wake(ctx, controller, w, deadline, head) }
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-lapse:
+		case <-wakes.lapse:
 			return
-		case <-ticker.C:
-			changed, err := poll.changed(ctx)
-			if err != nil {
+		case news := <-wakes.news:
+			if !headWake(ctx, news, poll.head, checkSession) || !wake(news.head) {
 				return
 			}
-			if changed && emitInvalidation(controller, w) != nil {
+		case <-deadline.C:
+			if !wake(poll.head) {
 				return
 			}
 		case <-session.C:
 			if checkSession(ctx) != nil {
 				return
 			}
+			session.Reset(wakes.session())
 		case <-heartbeat.C:
-			if err := controller.SetWriteDeadline(time.Now().Add(500 * time.Millisecond)); err != nil {
-				return
-			}
-			if _, err := fmt.Fprint(w, ": keepalive\n\n"); err != nil {
-				return
-			}
-			if err := controller.Flush(); err != nil {
+			if !wake(poll.head) || keepalive(controller, w) != nil {
 				return
 			}
 		}
 	}
+}
+
+// headWake reports whether a watcher reading lets the stream go on: a read error ends it, and a moved
+// head checks the session at once.
+func headWake(ctx context.Context, news headNews, head int64, checkSession func(context.Context) error) bool {
+	return news.err == nil && (news.head == head || checkSession(ctx) == nil)
+}
+
+func keepalive(controller *http.ResponseController, w http.ResponseWriter) error {
+	if err := controller.SetWriteDeadline(time.Now().Add(500 * time.Millisecond)); err != nil {
+		return fmt.Errorf("stream deadline: %w", err)
+	}
+	if _, err := fmt.Fprint(w, ": keepalive\n\n"); err != nil {
+		return fmt.Errorf("stream keepalive: %w", err)
+	}
+	if err := controller.Flush(); err != nil {
+		return fmt.Errorf("flush keepalive: %w", err)
+	}
+	return nil
 }
 
 func emitInvalidation(controller *http.ResponseController, w http.ResponseWriter) error {

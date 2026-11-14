@@ -147,8 +147,9 @@ func TestSSECommittedVisibilityRollbackReconnectAndRevoke(t *testing.T) {
 			if ok {
 				t.Fatalf("revoke sent event %q", event)
 			}
-		case <-time.After(time.Until(start.Add(time.Second))):
-			t.Fatal("revoke did not close SSE within one second")
+		// Session checks run every 2-4 s per stream (sessionCheckEvery), plus one check's read time.
+		case <-time.After(time.Until(start.Add(5 * time.Second))):
+			t.Fatal("revoke did not close SSE within five seconds")
 		}
 	}
 	revoked := openStream(t, f, bearer, "", 401)
