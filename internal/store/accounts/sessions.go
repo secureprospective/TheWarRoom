@@ -12,13 +12,12 @@ import (
 	identity "github.com/secureprospective/TheWarRoom/internal/accounts"
 )
 
-func (s *Store) initializeSessions(ctx context.Context) error {
+func createSessions(ctx context.Context, tx *sql.Tx) error {
 	epoch, err := newAuthEpoch()
 	if err != nil {
 		return err
 	}
-	_, err = s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
-		return tx.ExecContext(ctx, `
+	_, err = tx.ExecContext(ctx, `
  CREATE TABLE IF NOT EXISTS account_auth_epoch (
  singleton INTEGER PRIMARY KEY CHECK(singleton = 1), epoch TEXT NOT NULL CHECK(length(epoch) = 64)
  ) STRICT;
@@ -29,13 +28,10 @@ func (s *Store) initializeSessions(ctx context.Context) error {
  issued_at INTEGER NOT NULL, last_used_at INTEGER NOT NULL,
  revoked INTEGER NOT NULL DEFAULT 0 CHECK(revoked IN (0,1))
  ) STRICT;`)
-	})
 	if err != nil {
 		return fmt.Errorf("accounts: session schema: %w", err)
 	}
-	if _, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
-		return tx.ExecContext(ctx, `INSERT INTO account_auth_epoch(singleton, epoch) VALUES (1, ?) ON CONFLICT(singleton) DO NOTHING`, epoch)
-	}); err != nil {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO account_auth_epoch(singleton, epoch) VALUES (1, ?) ON CONFLICT(singleton) DO NOTHING`, epoch); err != nil {
 		return fmt.Errorf("accounts: initialize auth epoch: %w", err)
 	}
 	return nil

@@ -13,15 +13,13 @@ import (
 
 // initializeJoin holds at most one live join link per league, as a digest only. Rotating replaces the
 // row; revoking deletes it, so a revoked or replaced link stops matching at once.
-func (s *Store) initializeJoin(ctx context.Context) error {
-	_, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
-		return tx.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS league_join_links (
+func createJoin(ctx context.Context, tx *sql.Tx) error {
+	_, err := tx.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS league_join_links (
  league TEXT PRIMARY KEY CHECK(length(league) BETWEEN 1 AND 128),
  code_hash TEXT NOT NULL CHECK(length(code_hash) = 64),
  issuer TEXT NOT NULL CHECK(length(issuer) > 5),
  issued_at INTEGER NOT NULL
 ) STRICT`)
-	})
 	if err != nil {
 		return fmt.Errorf("accounts: join link schema: %w", err)
 	}

@@ -16,9 +16,11 @@ oldest supported unversioned installation. Empty and every intermediate migratio
 prefix converge; a newer file is refused before opening a writer. Old state
 owner markers remain adoption evidence, not another upgrade path.
 
-Accounts still initialize their schema independently in the shared hosted file.
-Their consolidation is explicitly deferred below, not a second completed version
-plan. Existing migration backups and encrypted R2 matched sets remain unchanged.
+Accounts carry their own ordered list (`accounts.SchemaVersion`, v1) applied by
+`db.Pools.MigrateSchema`, versioned in the `schema_version` row named `accounts`
+because the shared file's `user_version` belongs to history. v1 adopts the tables
+older builds created at runtime (idempotent DDL, rows kept); a newer accounts version
+is refused. The security audit chain is still verified on every start. Existing migration backups and encrypted R2 matched sets remain unchanged.
 
 ## History split: old jobs → current pieces
 
@@ -100,7 +102,3 @@ Older transfer documents remain readable with the absent optional field.
   account principals, grants, transfer lineage and cutover settings; manufacturing
   it from rosters would be unsafe. Use complete server recovery; roster-only
   recovery deliberately stays fenced.
-- Account-schema consolidation: not small. Hosted and standalone local-seat/account
-  bootstraps currently share unversioned account initialization; safely adopting
-  credentials, auth epochs and audit chains needs its own migration and compatibility
-  tests. No credential/session schema was changed in this branch.

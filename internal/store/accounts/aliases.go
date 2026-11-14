@@ -10,9 +10,8 @@ import (
 )
 
 // Linked desktop identities are append-only: an identity belongs to one account for good.
-func (s *Store) initializeAliases(ctx context.Context) error {
-	_, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
-		return tx.ExecContext(ctx, `
+func createAliases(ctx context.Context, tx *sql.Tx) error {
+	_, err := tx.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS account_aliases (
  alias TEXT PRIMARY KEY NOT NULL CHECK(length(alias) BETWEEN 1 AND 128 AND substr(alias, 1, 5) <> 'acct.'),
  account_id TEXT NOT NULL REFERENCES accounts(id),
@@ -24,7 +23,6 @@ CREATE TRIGGER IF NOT EXISTS account_aliases_immutable
 CREATE TRIGGER IF NOT EXISTS account_aliases_no_delete
  BEFORE DELETE ON account_aliases
  BEGIN SELECT RAISE(ABORT, 'linked identities cannot be deleted'); END;`)
-	})
 	if err != nil {
 		return fmt.Errorf("accounts: initialize linked identities: %w", err)
 	}
