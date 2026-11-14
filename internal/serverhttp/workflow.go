@@ -32,6 +32,22 @@ type WorkflowResponse struct {
 	Unchanged bool            `json:"unchanged,omitempty"`
 }
 
+func (r WorkflowResponse) MarshalJSON() ([]byte, error) {
+	if r.Unchanged {
+		body, err := json.Marshal(UnchangedResponse{true, r.Tags})
+		if err != nil {
+			return nil, fmt.Errorf("encode unchanged workflow: %w", err)
+		}
+		return body, nil
+	}
+	type wire WorkflowResponse
+	body, err := json.Marshal(wire(r))
+	if err != nil {
+		return nil, fmt.Errorf("encode workflow: %w", err)
+	}
+	return body, nil
+}
+
 func (r WorkflowResponse) Validate() error {
 	if r.Tags != nil {
 		if err := r.Tags.Validate(); err != nil {
@@ -80,12 +96,12 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, "league versions unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	if raw.Mode == "read" && sameReadTags(tags, raw.Known) {
-		// TODO(request metrics): count unchanged when the Requests observer lands.
-		writeHostedReading(w, r, UnchangedResponse{true, tags})
+	if raw.Mode == "read" && raw.Command != "versions.read" && sameReadTags(tags, raw.Known) {
+		//nolint:contextcheck // The service host owns this request context.
+		writeUnchangedWorkflow(w, r, service, raw, league, tags)
 		return
 	}
-	data, err := h.workflowData(ctx, service, raw, league)
+	data, err := h.workflowReplyData(r, service, raw, league, tags)
 	if err != nil {
 		// The command name and mode are fixed catalogue words; arguments, bearer and proof are never logged.
 		log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
@@ -145,4 +161,14 @@ func workflowWriteRefusal(mode string, pin LeaguePin, label string, writable boo
 		return label
 	}
 	return ""
+}
+
+func writeUnchangedWorkflow(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow, league string, tags *ReadTags) {
+
+	if err := admitWorkflowRead(service, raw, league); err != nil {
+		http.Error(w, "league reading refused", http.StatusForbidden)
+		return
+	}
+	// TODO(request metrics): count unchanged when the Requests observer lands.
+	writeHostedReading(w, r, UnchangedResponse{true, tags})
 }

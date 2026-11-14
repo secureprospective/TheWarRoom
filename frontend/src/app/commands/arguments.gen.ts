@@ -2317,6 +2317,7 @@ string
 ];
 };
 export type WorkflowArgumentMap = {
+"versions.read": NativeArguments<"versions.read">;
 "commish.market.read": NativeArguments<"commish.market.read">;
 "commish.rules.read": NativeArguments<"commish.rules.read">;
 "commish.corrections.read": NativeArguments<"commish.corrections.read">;

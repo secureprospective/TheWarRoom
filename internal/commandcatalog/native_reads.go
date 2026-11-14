@@ -20,6 +20,7 @@ func queryShape(method, fields string) Schema {
 }
 func nativeReads() []Command {
 	rows := []struct{ id, method, fields, permission, facts string }{
+		{"versions.read", "HostedVersionsRead", "league:string", "league-view", "ledger"},
 		{"commish.actor.read", "TargetCommissionerActor", "", "session", "none"},
 		{"commish.controls.read", "TargetCommissionerControls", "", "session", "none"},
 		{"commish.digests.read", "TargetCommissionerDigests", "league:string", "league-view", "ledger"},

@@ -63,6 +63,9 @@ func workflowReads() map[string]WorkflowCommand {
 
 func pulseWorkflowReads() map[string]WorkflowCommand {
 	return map[string]WorkflowCommand{
+		"versions.read": workflowRead(func(_ *leagueservice.Service, _ RawWorkflowScope) (json.RawMessage, error) {
+			return nil, fmt.Errorf("versions require the hosted workflow")
+		}),
 		"native.directory.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeDirectory(r.League))
 		}),

@@ -218,7 +218,7 @@ func (r RawWorkflow) League() (string, error) {
 }
 
 type workflowOutput interface {
-	history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules
+	VersionsReading | history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {
