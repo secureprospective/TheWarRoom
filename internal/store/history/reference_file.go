@@ -68,6 +68,14 @@ func PrepareNewLeague(ctx context.Context, pools *db.Pools) error {
 	return nil
 }
 
+// MigrateLeague runs the league file's own migrations on the file opened alone (the upgrade step).
+func MigrateLeague(ctx context.Context, pools *db.Pools) error {
+	if _, err := pools.Migrate(ctx, historyMigrations()...); err != nil {
+		return fmt.Errorf("history: migrate the league file: %w", err)
+	}
+	return nil
+}
+
 func referenceRows() []db.MovedRows {
 	tables := ReferenceTables()
 	out := make([]db.MovedRows, 0, len(tables))

@@ -23,10 +23,17 @@ import (
 func oldUpgradeFile(t *testing.T, keepRelease bool) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "server.db")
-	if err := migrateServer(t.Context(), path); err != nil {
+	// A one-file server as an older release left it: history and accounts in the league file.
+	pools, err := db.Open(t.Context(), path, history.SchemaVersion())
+	if err != nil {
 		t.Fatal(err)
 	}
-	pools := backToOneFile(t, path)
+	if err := history.MigrateLeague(t.Context(), pools); err != nil {
+		t.Fatal(err)
+	}
+	if err := accountstore.New(pools).Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
 	registry, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)

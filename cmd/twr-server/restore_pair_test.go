@@ -21,6 +21,7 @@ import (
 
 // twoFileHost is a hosted server after the move, with a league whose commissioner is seated.
 type twoFileHost struct {
+	dir    string
 	files  stateFiles
 	config string
 	join   *accounts.JoinService
@@ -34,7 +35,7 @@ func newTwoFileHost(t *testing.T) *twoFileHost {
 	if err := os.Remove(filepath.Join(dir, "server.db")); err != nil {
 		t.Fatal(err)
 	}
-	h := &twoFileHost{files: openTestServer(t, dir), config: config}
+	h := &twoFileHost{dir: dir, files: openTestServer(t, dir), config: config}
 	registry, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
