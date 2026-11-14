@@ -51,12 +51,13 @@ func (m *memorySets) Open(_ context.Context, name string) (io.ReadCloser, error)
 	return io.NopCloser(bytes.NewReader(m.objects[name])), nil
 }
 
-func (m *memorySets) OpenEvidence(_ context.Context, sha string) (io.ReadCloser, error) {
-	body, ok := m.objects[offsite.EvidenceName(sha)]
-	if !ok {
-		return nil, fmt.Errorf("no raw capture %s", sha)
+func (m *memorySets) OpenEvidence(_ context.Context, recipient, sha string) (io.ReadCloser, error) {
+	for _, name := range []string{offsite.EvidenceName(recipient, sha), offsite.LegacyEvidenceName(sha)} {
+		if body, ok := m.objects[name]; ok {
+			return io.NopCloser(bytes.NewReader(body)), nil
+		}
 	}
-	return io.NopCloser(bytes.NewReader(body)), nil
+	return nil, fmt.Errorf("no raw capture %s", sha)
 }
 
 type leagueHost struct {

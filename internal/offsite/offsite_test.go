@@ -92,8 +92,18 @@ func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			body[len(body)/2] ^= 1
 		}
 		w.Header().Set("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
+		w.Header().Set("ETag", `"0123456789abcdef0123456789abcdef"`)
 		w.Header().Set("Content-Length", fmt.Sprint(len(body)))
 		_, _ = w.Write(body)
+	case http.MethodHead: // as R2 answers it: the object's details, or 404
+		body, ok := f.objects[key]
+		if !ok || f.missing {
+			w.WriteHeader(404)
+			return
+		}
+		w.Header().Set("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
+		w.Header().Set("ETag", `"0123456789abcdef0123456789abcdef"`)
+		w.Header().Set("Content-Length", fmt.Sprint(len(body)))
 	case http.MethodDelete:
 		delete(f.objects, key)
 		w.WriteHeader(204)

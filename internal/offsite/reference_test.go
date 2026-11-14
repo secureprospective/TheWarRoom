@@ -95,7 +95,7 @@ func TestRawCaptureUploadedOnce(t *testing.T) {
 	if err := evidence.Put(t.Context(), "abc", body); err != nil {
 		t.Fatalf("a known capture was uploaded again: %v", err)
 	}
-	object, err := r2.OpenEvidence(t.Context(), "abc")
+	object, err := r2.OpenEvidence(t.Context(), identity.Recipient().String(), "abc")
 	if err != nil {
 		t.Fatal(err)
 	}

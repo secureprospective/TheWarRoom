@@ -86,7 +86,7 @@ func captureReferenceInto(t *testing.T, sets *memorySets, recipient string, pool
 	t.Helper()
 	put := func(_ context.Context, sha string, body []byte) error {
 		sealed, err := offsite.SealEvidence(body, recipient)
-		sets.objects[offsite.EvidenceName(sha)] = sealed
+		sets.objects[offsite.EvidenceName(recipient, sha)] = sealed
 		return err
 	}
 	sealed, at, err := captureReference(t.Context(), put, pools, config, t.TempDir(), recipient)

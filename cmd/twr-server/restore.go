@@ -44,8 +44,8 @@ var errNewerSet = errors.New("a backup in this bucket was saved by a newer leagu
 type recoverySets interface {
 	KindSets(context.Context, offsite.SetKind) ([]string, error)
 	Open(context.Context, string) (io.ReadCloser, error)
-	// OpenEvidence streams one raw capture object, named by its archive key.
-	OpenEvidence(context.Context, string) (io.ReadCloser, error)
+	// OpenEvidence streams one raw capture object sealed to the recipient, named by its archive key.
+	OpenEvidence(ctx context.Context, recipient, sha string) (io.ReadCloser, error)
 }
 
 // runRestore opens no listener. It leaves server.db (sign-ins already reset), the
