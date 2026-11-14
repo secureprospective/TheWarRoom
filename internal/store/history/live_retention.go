@@ -43,7 +43,7 @@ func (s *Store) compactLiveStats(ctx context.Context, league string, records []c
 }
 
 func (s *Store) compactLivePlayer(ctx context.Context, key liveStatKey, final source.PlayerWeek) error {
-	tx, err := s.pools.BeginWrite(ctx)
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("begin live retention: %w", err)
 	}

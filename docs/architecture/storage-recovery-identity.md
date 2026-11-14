@@ -42,15 +42,16 @@ not even a destination `transfer_identity`. The hosted league has a separate lis
 continuing its version numbering at v14, and creates no reference tables. Each
 file owns its `user_version` and refuses newer versions before migrating. Combined
 desktop and pre-conversion files keep their original history list.
-The league file is opened with it attached on every connection read-only as schema `reference`
+The league file attaches it read-only on every connection as schema `reference`
 (`db.OpenWithReference`): a table the league file no longer holds resolves there by
 name, so the stores' queries are unchanged, and no code looks for a reference table in
 the league file. SQLite commits each file on its own under WAL, so no transaction
 writes both: player ids are minted and committed first (slice 2's pre-step), then the
 league write runs. Every reference mutation uses the reference file's own
 pools (`db.Pools.ReferencePools`), including identity minting, transfer blobs,
-registry mirrors and fact/score identity triggers. A crash between commits leaves
-unused immutable identities or content-addressed bodies; retries reuse them.
+registry mirrors and fact/score identity triggers. Live retention drops and
+reinstalls its append-only guard in that same reference-owned transaction. A crash
+between commits leaves unused immutable identities or content-addressed bodies; retries reuse them.
 
 What crosses between league and reference, and in what form: raw archive bodies by
 SHA-256 (transfer receipts, football evidence digests), measures by name, and player

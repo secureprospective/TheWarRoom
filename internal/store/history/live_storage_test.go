@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 )
 
 func liveRowCounts(t *testing.T, pools *db.Pools) (int, int) {
@@ -137,40 +139,47 @@ func TestDurableLiveCapturesDeduplicateButRetainReturns(t *testing.T) {
 }
 
 func TestDurableLiveCompactionKeepsReferencedAndMissingFields(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "history.db")
-	s, pools := statStore(t, path)
-	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 8}
-	setLiveStats(t, s, 2026, 8, t0(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": liveLine(10000)})
-	pinned := liveEvidence(t, s, source.NativeEvidence{}, scope).Versions()[0]
-	setLiveStats(t, s, 2026, 8, t0(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": liveLine(20000)})
-	gap := liveLine(30000)
-	gap.Line.Quantities["receiving_drop"] = 10000
-	setLiveStats(t, s, 2026, 8, t0(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": gap})
-	setLiveStats(t, s, 2026, 8, t0(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": liveLine(40000)})
-	before := liveEvidence(t, s, nflverseEvidence(500000), scope)
-	if err := s.compactLivePlayer(t.Context(), liveStatKey{"0099", 2026, 8}, *nflverseEvidence(500000).Held.Week); err != nil {
-		t.Fatal(err)
-	}
-	if n, _ := liveRowCounts(t, pools); n != 3 {
-		t.Fatalf("retention kept %d rows, want pinned + gap + latest", n)
-	}
-	tx, err := pools.BeginWrite(t.Context())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := tx.ExecContext(t.Context(), `DELETE FROM live_evidence`); err == nil {
-		t.Fatal("compaction left deletion unguarded")
-	}
-	if err := tx.Rollback(); err != nil {
-		t.Fatal(err)
-	}
-	if err := pools.Close(); err != nil {
-		t.Fatal(err)
-	}
-	restored, _ := statStore(t, path)
-	after := liveEvidence(t, restored, nflverseEvidence(500000), scope)
-	if !reflect.DeepEqual(before.Versions(), after.Versions()) || after.Versions()[pinned.Seq].Digest != pinned.Digest {
-		t.Fatal("compaction lost replayable reference")
+	for _, layout := range []struct {
+		name string
+		open func(*testing.T, string) (*Store, *db.Pools)
+	}{{"desktop", statStore}, {"hosted", hostedStatStore}} {
+		t.Run(layout.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "history.db")
+			s, pools := layout.open(t, path)
+			scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 8}
+			setLiveStats(t, s, 2026, 8, t0(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": liveLine(10000)})
+			pinned := liveEvidence(t, s, source.NativeEvidence{}, scope).Versions()[0]
+			setLiveStats(t, s, 2026, 8, t0(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": liveLine(20000)})
+			gap := liveLine(30000)
+			gap.Line.Quantities["receiving_drop"] = 10000
+			setLiveStats(t, s, 2026, 8, t0(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": gap})
+			setLiveStats(t, s, 2026, 8, t0(), source.ESPNLive, nil, map[string]source.PlayerWeek{"0099": liveLine(40000)})
+			before := liveEvidence(t, s, nflverseEvidence(500000), scope)
+			if err := s.compactLivePlayer(t.Context(), liveStatKey{"0099", 2026, 8}, *nflverseEvidence(500000).Held.Week); err != nil {
+				t.Fatal(err)
+			}
+			if n, _ := liveRowCounts(t, pools); n != 3 {
+				t.Fatalf("retention kept %d rows, want pinned + gap + latest", n)
+			}
+			tx, err := pools.ReferencePools().BeginWrite(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := tx.ExecContext(t.Context(), `DELETE FROM live_evidence`); err == nil || !strings.Contains(err.Error(), "append-only") {
+				t.Fatalf("compaction left deletion unguarded: %v", err)
+			}
+			if err := tx.Rollback(); err != nil {
+				t.Fatal(err)
+			}
+			if err := pools.Close(); err != nil {
+				t.Fatal(err)
+			}
+			restored, _ := layout.open(t, path)
+			after := liveEvidence(t, restored, nflverseEvidence(500000), scope)
+			if !reflect.DeepEqual(before.Versions(), after.Versions()) || after.Versions()[pinned.Seq].Digest != pinned.Digest {
+				t.Fatal("compaction lost replayable reference")
+			}
+		})
 	}
 }
 
@@ -252,4 +261,51 @@ func TestDurableLiveWorkerRestoresEarlierLiveOnlyWeeks(t *testing.T) {
 	if len(after) != 2 || !reflect.DeepEqual(before, after) {
 		t.Fatal("worker lost earlier live-only week on restart")
 	}
+}
+
+func hostedStatStore(t *testing.T, path string) (*Store, *db.Pools) {
+	t.Helper()
+	ctx := t.Context()
+	alone, err := db.Open(ctx, path, LeagueSchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := PrepareNewLeague(ctx, alone); err != nil {
+		t.Fatal(err)
+	}
+	reference, err := db.Open(ctx, filepath.Join(filepath.Dir(path), "reference.db"), ReferenceSchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = reference.Close() })
+	if err := PrepareReferenceFile(ctx, reference); err != nil {
+		t.Fatal(err)
+	}
+	moved, err := db.HasTable(ctx, alone, ReferenceMoveTable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !moved {
+		if err := CommitReferenceMove(ctx, alone, ReferenceMove{File: "reference.db"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := alone.Close(); err != nil {
+		t.Fatal(err)
+	}
+	pools, err := db.OpenWithReference(ctx, path, LeagueSchemaVersion(), reference)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	reg, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := New(pools, reg)
+	s.SetClock(t0)
+	if err := s.Initialize(ctx); err != nil {
+		t.Fatal(err)
+	}
+	return s, pools
 }
