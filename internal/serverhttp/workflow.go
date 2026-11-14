@@ -44,9 +44,13 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, "league access refused; sign in and check your seat", http.StatusForbidden)
 		return
 	}
-	digest := h.pin(league).Digest
-	if raw.Mode != "read" && digest == "" {
+	pin := h.pinFor(r.Context(), league)
+	if raw.Mode != "read" && pin.Digest == "" {
 		http.Error(w, "Ask the server operator to select football evidence before making changes", http.StatusConflict)
+		return
+	}
+	if raw.Mode != "read" && pin.Missing {
+		http.Error(w, missingFootball(pin.Digest), http.StatusConflict)
 		return
 	}
 	if raw.Mode != "read" && !location.Writable {
@@ -61,7 +65,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
 		return
 	}
-	response := WorkflowResponse{Label: location.Label, Writable: location.Writable, Football: digest, Data: data}
+	response := WorkflowResponse{Label: location.Label, Writable: location.Writable && !pin.Missing, Football: pin.Digest, Data: data}
 	if raw.Mode == "read" {
 		writeHostedReading(w, r, response)
 		return
@@ -75,7 +79,7 @@ func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service
 	if raw.Mode != "read" {
 		return runWorkflow(ctx, service, raw)
 	}
-	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.pin(league).Digest+"|"+raw.Football)
+	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.pinFor(ctx, league).cacheKey()+"|"+raw.Football)
 	if err != nil {
 		return nil, err
 	}
@@ -85,4 +89,12 @@ func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service
 func runWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
 	//nolint:wrapcheck // Preserve the existing workflow result and refusal text.
 	return catalog.RunWorkflow(ctx, service, raw)
+}
+
+// missingFootball is what an owner or commissioner is told when their league's football data is not
+// on this server: what still works, and that changes come back by themselves.
+func missingFootball(digest string) string {
+	return "This league's football data (version " + digest + ") is not on this server right now, " +
+		"so changes wait until it is back. Rosters, contracts and the ledger can still be viewed; " +
+		"changes open again by themselves once the football data returns."
 }

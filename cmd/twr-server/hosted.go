@@ -20,6 +20,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
+	"github.com/secureprospective/TheWarRoom/internal/serverstatus"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -81,6 +82,9 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 		return err
 	}
 	defer func() { _ = files.Close() }()
+	if err := recoverPlayers(ctx, files, output); err != nil {
+		return err
+	}
 	handler, err := hostedServices(ctx, files, encryptionKey, string(catalogue))
 	if err != nil {
 		return err
@@ -94,7 +98,11 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 		return err
 	}
 	defer stopBackup()
-	stopStatus, err := startStatusSocket(ctx, *config.status, statusSource(files.signIns, handler.Leagues, backups))
+	var routes []serverstatus.Route
+	if pins, ok := handler.Leagues.(*leaguePins); ok {
+		routes = append(routes, pinRoute(pins, signInStore(files)))
+	}
+	stopStatus, err := startStatusSocket(ctx, *config.status, statusSource(files.signIns, handler.Leagues, backups), routes...)
 	if err != nil {
 		return err
 	}
@@ -332,6 +340,31 @@ func serveHosted(ctx context.Context, address string, certificate tls.Certificat
 	}
 	if err := serverhttp.ServeHosted(ctx, listener, certificate, handler); err != nil {
 		return fmt.Errorf("serve account HTTPS: %w", err)
+	}
+	return nil
+}
+
+// recoverPlayers puts back, before anything is served, any player a league owns that the football
+// reference file lacks, from the league's own restore points. It is a no-op on a healthy server; after a
+// restore whose football reference backup was older than its league backup it keeps every owned player's
+// permanent id, so nothing later mints a second id for the same player.
+func recoverPlayers(ctx context.Context, files stateFiles, output io.Writer) error {
+	if files.reference == nil {
+		return nil
+	}
+	recovered, err := history.RecoverLeagueIdentities(ctx, files.league, files.reference)
+	if err != nil {
+		return fmt.Errorf("put back league players: %w", err)
+	}
+	if recovered.Installed > 0 {
+		if _, err := fmt.Fprintf(output, "Put back %d player(s) the football reference file lacked, from the leagues' own records.\n", recovered.Installed); err != nil {
+			return fmt.Errorf("report players: %w", err)
+		}
+	}
+	for _, conflict := range recovered.Conflicts {
+		if _, err := fmt.Fprintf(output, "Left out player %s: another player already holds that outside id. Call Christopher.\n", conflict); err != nil {
+			return fmt.Errorf("report players: %w", err)
+		}
 	}
 	return nil
 }

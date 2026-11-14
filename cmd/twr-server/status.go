@@ -19,8 +19,12 @@ import (
 )
 
 func statusSource(signIns *db.Pools, leagues history.LeagueResolver, backups hostedBackups) serverstatus.Source {
-	return serverstatus.Source{Backup: backups.league, ReferenceBackup: backups.reference, SignInBackup: backups.signIns, League: leagueChains{leagues},
+	source := serverstatus.Source{Backup: backups.league, ReferenceBackup: backups.reference, SignInBackup: backups.signIns, League: leagueChains{leagues},
 		SignIns: accountstore.NewServerFile(signIns), Now: time.Now}
+	if pins, ok := leagues.(*leaguePins); ok {
+		source.MissingFootball = pins.missingLeagues
+	}
+	return source
 }
 
 // leagueChains verifies the ledger audit chain of every file the resolver holds league history in.
@@ -47,7 +51,7 @@ func (c leagueChains) VerifyAudit(ctx context.Context) (db.AuditHead, error) {
 
 // startStatusSocket serves the private dashboard socket beside the database. It is a
 // separate listener from the public HTTPS handler, so the Tunnel can never reach it.
-func startStatusSocket(ctx context.Context, path string, source serverstatus.Source) (func(), error) {
+func startStatusSocket(ctx context.Context, path string, source serverstatus.Source, routes ...serverstatus.Route) (func(), error) {
 	if path == "" {
 		return func() {}, nil
 	}
@@ -59,7 +63,7 @@ func startStatusSocket(ctx context.Context, path string, source serverstatus.Sou
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		if err := serverstatus.Serve(ctx, listener, source); err != nil {
+		if err := serverstatus.Serve(ctx, listener, source, routes...); err != nil {
 			log.Printf("status dashboard: %v", err)
 		}
 	}()

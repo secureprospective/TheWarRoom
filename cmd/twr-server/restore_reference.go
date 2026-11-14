@@ -19,12 +19,19 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-// A league set saved after the reference move needs a reference set beside it. Restore takes the
-// reference set nearest after the league set (it is captured after the league set in every round),
-// puts each raw capture back from its own object, proves the archive against the set's checkpoint, and
-// refuses a reference set that lacks a player id the league owns or a football version a league pins.
+// A league set saved after the reference move needs a reference file beside it. Restore takes the
+// reference set nearest after the league set (it is captured after the league set in every round) that
+// holds everything the leagues need, puts each raw capture back from its own object, and proves the
+// archive against the set's checkpoint.
+//
+// Football data never holds a league back (Christopher, 2026-11-14: "league comes back, football
+// waits"). When no reference set holds everything, the nearest one that opens is used, or an empty
+// reference file when none opens; it is completed from what is still at hand: each pinned football
+// version from its own off-site evidence object, each owned player from the league's own restore
+// points. What is still missing is said in plain words, and the restore goes on. A wrong key or a set
+// from a newer release still stops it.
 
-// attachReference puts the matching reference file beside a restored league file that needs one.
+// attachReference puts the best reference file beside a restored league file that needs one.
 func attachReference(ctx context.Context, sets recoverySets, identity *age.X25519Identity, dir string, captured time.Time, output io.Writer) error {
 	league := filepath.Join(dir, "server.db")
 	moved, err := leagueHas(ctx, league, history.ReferenceMoveTable)
@@ -39,15 +46,20 @@ func attachReference(ctx context.Context, sets recoverySets, identity *age.X2551
 	if err != nil {
 		return fmt.Errorf("list football reference backups: %w", err)
 	}
+	fallback, fallbackName := "", ""
 	for i, name := range nearestAfter(names, captured)[:min(len(names), 64)] {
 		sub := filepath.Join(filepath.Dir(dir), fmt.Sprintf("%s-reference-%02d", filepath.Base(dir), i))
 		lacks, err := unlockReference(ctx, sets, name, identity, sub, need)
 		if errors.Is(err, offsite.ErrRestoreKey) || errors.Is(err, errNewerSet) {
-			return errors.Join(err, os.RemoveAll(sub))
+			return errors.Join(err, os.RemoveAll(sub), removeIf(fallback))
 		}
 		if err == nil && lacks == "" {
 			err = os.Rename(filepath.Join(sub, referenceFileName), filepath.Join(dir, referenceFileName))
-			return errors.Join(err, os.RemoveAll(sub))
+			return errors.Join(err, os.RemoveAll(sub), removeIf(fallback))
+		}
+		if err == nil && fallback == "" {
+			fallback, fallbackName = sub, name // the nearest set that opens; kept in case none is complete
+			continue
 		}
 		if err == nil {
 			err = errors.New(lacks)
@@ -59,8 +71,101 @@ func attachReference(ctx context.Context, sets recoverySets, identity *age.X2551
 			return fmt.Errorf("remove skipped backup: %w", err)
 		}
 	}
-	return fmt.Errorf("no football reference backup matches the league backup saved %s (it must hold every player the leagues own and every football version a league pins); nothing was installed",
-		captured.UTC().Format(time.RFC3339))
+	return completeReference(ctx, sets, identity, dir, fallback, fallbackName, need, output)
+}
+
+func removeIf(dir string) error {
+	if dir == "" {
+		return nil
+	}
+	return os.RemoveAll(dir) //nolint:wrapcheck // joined into the caller's error
+}
+
+// completeReference installs the nearest reference set that opened (or an empty reference file when
+// none did), completes it from what is still at hand, and reports what is still missing.
+func completeReference(ctx context.Context, sets recoverySets, identity *age.X25519Identity, dir, fallback, name string,
+	need referenceNeed, output io.Writer) error {
+	target := filepath.Join(dir, referenceFileName)
+	from := "no football reference backup could be opened, so an empty football reference file was made"
+	if fallback != "" {
+		if err := os.Rename(filepath.Join(fallback, referenceFileName), target); err != nil {
+			return errors.Join(fmt.Errorf("install football reference backup: %w", err), os.RemoveAll(fallback))
+		}
+		if err := os.RemoveAll(fallback); err != nil {
+			return fmt.Errorf("remove staged backup: %w", err)
+		}
+		from = "football reference backup " + name + " is older than this league backup"
+	}
+	recovered, err := fillReference(ctx, sets, identity, dir, need)
+	if err != nil {
+		return err
+	}
+	lacks, err := referenceLacks(ctx, target, need)
+	if err != nil {
+		return err
+	}
+	words := fmt.Sprintf("The league is restored with its rosters and contracts, but %s. Put back from what was at hand: %d player(s) from the league's own record, %d football version(s) from off-site evidence.",
+		from, recovered.players, recovered.pins)
+	if len(recovered.conflicts) > 0 {
+		words += " Left out because another player already holds the same outside id: " + strings.Join(recovered.conflicts, "; ") + "."
+	}
+	if lacks != "" {
+		words += " Still missing: " + strings.TrimPrefix(lacks, "it ") + ". Anything that needs it waits until it is back; the server says so on its status page."
+	}
+	if _, err := fmt.Fprintln(output, words); err != nil {
+		return fmt.Errorf("report restore: %w", err)
+	}
+	return nil
+}
+
+type referenceFill struct {
+	players, pins int
+	conflicts     []string
+}
+
+// fillReference completes the installed reference file: an empty one gets its schema, each pinned
+// football version it lacks comes from its own evidence object when that object exists, and each player
+// the leagues own comes from the league file's restore points.
+func fillReference(ctx context.Context, sets recoverySets, identity *age.X25519Identity, dir string, need referenceNeed) (referenceFill, error) {
+	var out referenceFill
+	reference, err := db.Open(ctx, filepath.Join(dir, referenceFileName), history.ReferenceSchemaVersion())
+	if err != nil {
+		return out, fmt.Errorf("open football reference file: %w", err)
+	}
+	defer func() { _ = reference.Close() }()
+	if err := history.PrepareReferenceFile(ctx, reference); err != nil {
+		return out, err //nolint:wrapcheck // names the file
+	}
+	digests := make([]string, 0, len(need.pins))
+	for digest := range need.pins {
+		digests = append(digests, digest)
+	}
+	slices.Sort(digests)
+	_, missing, err := history.MissingReference(ctx, reference, nil, digests)
+	if err != nil {
+		return out, err //nolint:wrapcheck // names what was read
+	}
+	for _, digest := range missing {
+		stored, err := openEvidence(ctx, sets, identity, digest)
+		if err != nil {
+			continue // not off-site either; reported as still missing
+		}
+		if err := history.PutArchiveBody(ctx, reference, digest, stored); err != nil {
+			return out, err //nolint:wrapcheck // names the capture
+		}
+		out.pins++
+	}
+	league, err := db.OpenReadOnly(ctx, filepath.Join(dir, "server.db"), history.LeagueSchemaVersion())
+	if err != nil {
+		return out, fmt.Errorf("open restored database: %w", err)
+	}
+	defer func() { _ = league.Close() }()
+	recovered, err := history.RecoverLeagueIdentities(ctx, league, reference)
+	if err != nil {
+		return out, err //nolint:wrapcheck // names what was read
+	}
+	out.players, out.conflicts = recovered.Installed, recovered.Conflicts
+	return out, nil
 }
 
 // referenceNeed is what a restored league file and its sign-in file ask of a reference file: the

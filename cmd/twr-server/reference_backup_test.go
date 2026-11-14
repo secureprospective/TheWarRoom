@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,7 +75,7 @@ func TestLeaguePinsAreSeparate(t *testing.T) {
 		return pins
 	}
 	pins := read()
-	a, b, c := pins.pin("native.a"), pins.pin("native.b"), pins.pin("native.c")
+	a, b, c := pins.pin(t.Context(), "native.a"), pins.pin(t.Context(), "native.b"), pins.pin(t.Context(), "native.c")
 	if a.Digest != first || b.Digest != second || c.Digest != server || a.Store == b.Store || c.Store != base {
 		t.Fatalf("pins: a=%s b=%s c=%s", a.Digest, b.Digest, c.Digest)
 	}
@@ -106,7 +107,7 @@ func TestLeaguePinsAreSeparate(t *testing.T) {
 	}
 	base = history.New(files.league, registry)
 	pins = read()
-	if pins.pin("native.b").Digest != second || pins.pin("native.c").Digest != server || pins.pin("native.a").Digest != second {
+	if pins.pin(t.Context(), "native.b").Digest != second || pins.pin(t.Context(), "native.c").Digest != server || pins.pin(t.Context(), "native.a").Digest != second {
 		t.Fatal("re-pinning one league moved another")
 	}
 	if err := runPinFootball(ctx, []string{"-db", filepath.Join(dir, "server.db"), "-league", "native.a", "-football", strings.Repeat("0", 64)}, &out); err == nil {
@@ -184,52 +185,69 @@ func TestReferenceSetLeavesRawCapturesOut(t *testing.T) {
 	}
 }
 
-// The three sets restore together; a league pinned to football the reference set lacks is reported
-// and nothing is installed.
+// The three sets restore together. When the football reference backup is older than the league backup,
+// the league still comes back (Christopher, 2026-11-14: "league comes back, football waits"): a pinned
+// version the reference set lacks is put back from its own evidence object when that exists, and is
+// otherwise reported as still missing; the restore never stops for it.
 func TestRestoreThreeFilesReportsMissingPin(t *testing.T) {
 	for _, tc := range []struct {
-		name    string
-		pinGone bool
-	}{{"league, reference and sign-ins restore together", false}, {"a pinned version the reference set lacks is reported", true}} {
+		name              string
+		lagging, evidence bool
+		missingWords      string
+	}{
+		{"league, reference and sign-ins restore together", false, true, ""},
+		{"a pinned version only in its evidence object comes back", true, true, ""},
+		{"a pinned version gone everywhere is reported and the league still restores", true, false, "Still missing: "},
+	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := t.Context()
 			identity, err := age.GenerateX25519Identity()
 			if err != nil {
 				t.Fatal(err)
 			}
+			recipient := identity.Recipient().String()
 			h := newTwoFileHost(t)
 			h.seatOwner(t)
-			digest, _ := importFootball(t, h.files, "Pinned")
-			if tc.pinGone {
-				digest = strings.Repeat("e", 64)
+			sets := &memorySets{objects: map[string][]byte{}}
+			if tc.lagging {
+				h.capture(t, sets, recipient, offsite.ReferenceSet) // older: taken before the pinned version arrived
 			}
+			digest, _ := importFootball(t, h.files, "Pinned")
 			if err := recordDirectory(ctx, history.New(h.files.league, &measures.Registry{}), signInStore(h.files)); err != nil {
 				t.Fatal(err)
 			}
 			if err := signInStore(h.files).PinFootball(ctx, "native.hosted", digest); err != nil {
 				t.Fatal(err)
 			}
-			sets := &memorySets{objects: map[string][]byte{}}
-			for _, kind := range []offsite.SetKind{offsite.LeagueSet, offsite.ReferenceSet, offsite.SignInSet} {
-				h.capture(t, sets, identity.Recipient().String(), kind)
-			}
+			h.capture(t, sets, recipient, offsite.LeagueSet)
+			h.capture(t, sets, recipient, offsite.ReferenceSet)
+			h.capture(t, sets, recipient, offsite.SignInSet)
 			want, err := history.ProveReference(ctx, h.files.reference)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if tc.lagging {
+				names, err := sets.KindSets(ctx, offsite.ReferenceSet)
+				if err != nil || len(names) != 2 {
+					t.Fatalf("reference sets %v, %v", names, err)
+				}
+				delete(sets.objects, names[0]) // the newest reference set is lost
+			}
+			if !tc.evidence {
+				delete(sets.objects, offsite.EvidenceName(digest))
 			}
 			target, _ := newHostFiles(t, bytes.Repeat([]byte{7}, 32))
 			stage := filepath.Join(t.TempDir(), "restore")
 			var output bytes.Buffer
 			err = restoreSpareHost(ctx, sets, identity, restoreSettings(identity), filepath.Join(target, "server.db"), stage, time.Time{}, &output)
-			if tc.pinGone {
-				if err == nil || !strings.Contains(err.Error(), "no football reference backup matches") ||
-					!strings.Contains(output.String(), "league native.hosted pins football version "+digest) {
-					t.Fatalf("missing pin not reported: %v\n%s", err, output.String())
-				}
-				return
-			}
 			if err != nil {
-				t.Fatalf("%v\n%s", err, output.String())
+				t.Fatalf("restore stopped: %v\n%s", err, output.String())
+			}
+			if tc.lagging != strings.Contains(output.String(), "The league is restored with its rosters and contracts") {
+				t.Fatalf("restore report:\n%s", output.String())
+			}
+			if tc.missingWords != "" && !strings.Contains(output.String(), tc.missingWords+"league native.hosted pins football version "+digest) {
+				t.Fatalf("missing pin not reported:\n%s", output.String())
 			}
 			ready := filepath.Join(stage, "ready", "server.db")
 			files, err := openSignInFiles(ctx, ready)
@@ -237,15 +255,30 @@ func TestRestoreThreeFilesReportsMissingPin(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer func() { _ = files.Close() }()
+			restored := history.New(files.league, &measures.Registry{})
+			leagues, err := restored.NativeLeagues(ctx)
+			if err != nil || len(leagues) == 0 {
+				t.Fatalf("restored leagues %v, %v", leagues, err)
+			}
+			_, err = restored.LoadFootball(ctx, digest)
+			if tc.missingWords != "" {
+				if !errors.Is(err, history.ErrNoBody) {
+					t.Fatalf("pinned football should still be missing: %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("restored league cannot read its pinned football: %v\n%s", err, output.String())
+			}
+			if tc.lagging {
+				return
+			}
 			got, err := history.ProveReference(ctx, files.reference)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if got.Archive != want.Archive {
 				t.Fatalf("restored raw archive %+v, want %+v", got.Archive, want.Archive)
-			}
-			if _, err := history.New(files.league, &measures.Registry{}).LoadFootball(ctx, digest); err != nil {
-				t.Fatalf("restored league cannot read its pinned football: %v", err)
 			}
 		})
 	}

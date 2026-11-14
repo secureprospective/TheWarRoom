@@ -30,8 +30,12 @@ state, and nothing reads the directory to make a league appear. Its one reader i
 football pin: `football` (v2) is the league's pinned football evidence digest, empty
 for the server's `-football` pin. Each distinct pin is served by its own
 `history.Store` over the same league file (`cmd/twr-server/football_pins.go`), so
-re-pinning one league (`twr-server pin-football`, read at the next start) never moves
-another's.
+re-pinning one league (`twr-server pin-football`; on a running server through the
+owner-only status socket, applied from the league's next request) never moves another's.
+A request reads its league's pin once (`serverhttp.Hosted.withRequestPin`), so a pin changed
+mid-request cannot give it two football selections. A pin whose evidence is missing gives
+that league a store with no football (`LeaguePin.Missing`): readings go on, workflow holds
+changes, and the evidence is looked for again at most once a minute.
 
 The hosted server keeps football reference data in a third file, `reference.db`
 (`cmd/twr-server/reference_file.go`, `history.ReferenceTables`): the raw archive,
@@ -172,15 +176,16 @@ Older transfer documents remain readable with the absent optional field.
 
 ## Debt left
 
-- Reference lag still blocks restore. A missing pinned body is read by
-  `leaguePins.selectPins` → `history.LoadFootball` → `Body`
-  (`SELECT size, body FROM raw_archive WHERE sha256 = ?`); it prevents hosted
-  startup, not just football-dependent screens. Missing identity links also make
-  `ResolveMFLPlayers` fail during roster capture; minting replacements would
-  assign new random canonical ids instead of the league's durable ids. Do not
-  bypass either by choosing different football or minting replacement identities.
-  Closing this requires explicit unavailable-football request handling and
-  recovery of authenticated identity links from the league's own restore points.
+- Reference lag no longer blocks restore or start (ruling 2026-11-14, "league comes
+  back, football waits"). Players: every league change rewrites the league's roster
+  restore point, with each owned player's permanent id and outside ids, in the same
+  transaction, so `history.RecoverLeagueIdentities` puts missing players back into the
+  reference file from the league file at restore and at every start, never minting; an
+  outside id the reference file already gives to another player is reported, not merged.
+  Football: a missing pinned version comes from its own evidence object
+  (`history.PutArchiveBody`), or the league waits for it as above. Left: a player the
+  league owned only in the past (in `league_player`, not in a restore point) whose facts
+  the reference file lost is reported as missing and does not come back.
 
 - A join that stops between its two commits leaves an account with no seat; that
   name stays taken, so the owner picks another or the commissioner releases the

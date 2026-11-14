@@ -105,8 +105,8 @@ When one kind falls behind:
   Joining a league writes both files, so it needs both current.
 - A stale football reference backup pauses **nothing**. Reference data can be fetched again,
   and pausing league changes for it would weaken nothing but availability. The dashboard
-  line says so, and a restore refuses a reference set that lacks a player a league owns
-  (see Restoring), so a long outage here is a real problem to fix within the hour.
+  line says so. A restore never stops for it (see Restoring): the league comes back and
+  only football waits, so a long outage here is still a real problem to fix within the hour.
 
 The dashboard shows three lines, **Backups** (the league file), **Football reference
 backups** and **Sign-in backups**, so you can tell which part is behind.
@@ -124,10 +124,19 @@ compacted. Each file migrates only its own tables and has its own version check;
 
 Each league can be pinned to its own football version (the evidence its lineups and bids are
 judged against). The pin is that league's row in the league list in `accounts.db`; a league
-with no pin uses the server's `-football` pin, as every league did before. To change one:
-stop the service, run `twr-server pin-football -db /var/lib/twr/server.db -league <id>
--football <digest>` (an empty `-football` returns it to the server's pin), then start it. The
-reference file must already hold that version. Only that league's row changes.
+with no pin uses the server's `-football` pin, as every league did before. To change one
+while the server runs: `twr-server pin-football -status-socket /var/lib/twr/status.sock
+-league <id> -football <digest>` (an empty `-football` returns it to the server's pin). The
+league's next request uses it; nothing restarts. The change is refused, and nothing moves,
+when the reference file does not hold that version or when sign-in backups are behind. With
+the service stopped, use `-db /var/lib/twr/server.db` instead of `-status-socket`; the pin is
+read at the next start. Only that league's row changes.
+
+If a league's pinned version is not on the server (after a restore whose football backup was
+older than its league backup), the server still starts. That league can be viewed, but its
+changes are held with a plain message, and the dashboard's **Football data** line names it.
+The server looks for the version again every minute and opens the league by itself once it
+is back.
 
 ## What is saved and when
 
@@ -196,8 +205,11 @@ Follow [RESTORE.md](RESTORE.md): install a fresh CT on the spare, then run
 then the sign-in set saved nearest after it, refusing (and naming the accounts) if
 the league seats an owner that sign-in set lacks, then the football reference set saved
 nearest after it. It puts each raw capture back from its own object, checks the archive
-against the set's checkpoint, and refuses a reference set that lacks a player the leagues
-own or a football version a league is pinned to (naming the league and the version). It unlocks
+against the set's checkpoint. If no reference set holds every player the leagues own and
+every football version a league is pinned to, the league is still restored: the nearest
+reference set that opens is used (or an empty one), each missing pinned version is put back
+from its own off-site evidence object, each owned player from the league's own record, and
+what is still missing is named in plain words. A wrong key still stops the restore. It unlocks
 it with the restore key typed at the console (held in memory, never saved),
 compares the saved checkpoint, signs every owner out and only then starts the
 service. Do not copy a decrypted `server.db`, `reference.db` or `accounts.db` into a server by hand: sessions and

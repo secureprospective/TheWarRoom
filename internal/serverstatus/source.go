@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -38,6 +39,8 @@ type Source struct {
 	SignInBackup func() (offsite.Status, bool)
 	// ReferenceBackup, when set, is the football reference file's coverage. It pauses nothing.
 	ReferenceBackup func() (offsite.Status, bool)
+	// MissingFootball, when set, names each league whose pinned football data this server lacks.
+	MissingFootball func() []string
 	League          Chain
 	SignIns         SignIns
 	Now             func() time.Time
@@ -55,6 +58,13 @@ func (s Source) Checks(ctx context.Context) []Check {
 	if s.SignInBackup != nil {
 		status, configured := s.SignInBackup()
 		checks = append(checks, backupCheck(signInBackup, status, configured, now))
+	}
+	if s.MissingFootball != nil {
+		if missing := s.MissingFootball(); len(missing) > 0 {
+			checks = append(checks, Check{Name: "Football data", State: Problem, Detail: "Not on this server: " + strings.Join(missing, "; ") +
+				". Those leagues can be viewed, but their changes wait until the data is back; the server looks for it again every minute.",
+				Action: "Restore a newer football reference backup, or pin the league to football data the server holds."})
+		}
 	}
 	checks = append(checks, s.historyCheck(ctx))
 	restore, incident, err := s.SignIns.LastResets(ctx)
@@ -166,9 +176,19 @@ func Listen(path string) (net.Listener, error) {
 	return listener, nil
 }
 
-// Serve answers StatusPath on the private socket until ctx ends.
-func Serve(ctx context.Context, listener net.Listener, source Source) error {
+// Route is one more request the private socket answers, such as a running server's own console
+// commands. The socket is owner-only, so a route is as trusted as the service account.
+type Route struct {
+	Pattern string
+	Handler http.HandlerFunc
+}
+
+// Serve answers StatusPath, and each route, on the private socket until ctx ends.
+func Serve(ctx context.Context, listener net.Listener, source Source, routes ...Route) error {
 	mux := http.NewServeMux()
+	for _, route := range routes {
+		mux.HandleFunc(route.Pattern, route.Handler)
+	}
 	mux.HandleFunc("GET "+StatusPath, func(w http.ResponseWriter, r *http.Request) {
 		body, err := json.Marshal(Report{Version: reportVersion, Checks: source.Checks(r.Context())})
 		if err != nil {
