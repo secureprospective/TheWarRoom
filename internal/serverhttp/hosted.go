@@ -42,14 +42,16 @@ type Hosted struct {
 	Tokens         *accounts.TokenService
 	Confirmations  *Confirmations
 	Store          *history.Store
-	Sessions       *accounts.SessionService
-	TOTP           *accounts.TOTPService
-	Enrollment     *accounts.EnrollmentService
-	Passwords      *accounts.Service
-	Join           *accounts.JoinService
-	Recovery       *accounts.RecoveryService
-	Worker         *leagueservice.DueWorker
-	Registry       string
+	// Leagues finds the store holding a league; league heads and the due worker read through it.
+	Leagues    history.LeagueResolver
+	Sessions   *accounts.SessionService
+	TOTP       *accounts.TOTPService
+	Enrollment *accounts.EnrollmentService
+	Passwords  *accounts.Service
+	Join       *accounts.JoinService
+	Recovery   *accounts.RecoveryService
+	Worker     *leagueservice.DueWorker
+	Registry   string
 	// Replies caches league-state readings per head and reading epoch; nil reads every request afresh.
 	Replies *ReplyCache
 	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
@@ -542,4 +544,16 @@ func (h Hosted) sessionFailure(w http.ResponseWriter, err error) {
 	}
 	w.Header().Set("Retry-After", "60")
 	h.writeFailure(w, BusyMessage, http.StatusServiceUnavailable)
+}
+
+// leagueHead reads a league's committed head from the store the resolver names for it.
+func (h Hosted) leagueHead(ctx context.Context, league string) (int64, error) {
+	if h.Leagues == nil {
+		return 0, errors.New("league resolver unavailable")
+	}
+	store, err := h.Leagues.League(ctx, league)
+	if err != nil {
+		return 0, fmt.Errorf("find league store: %w", err)
+	}
+	return store.CommittedHead(ctx, league, commissioner.Stream) //nolint:wrapcheck // the store names its read
 }

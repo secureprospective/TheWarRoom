@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 func TestDueWorkerNearestDeadlineCatchupAndRestart(t *testing.T) {
@@ -192,7 +193,7 @@ func TestDueWorkerSleepsUntilDeadlineOrCommit(t *testing.T) {
 		f := newDueFixture(t)
 		bid := f.bid(t)
 		select {
-		case <-f.store.CommissionerCommits():
+		case <-history.NewOneFile(f.store).Commits():
 		default:
 		}
 		start := time.Now()

@@ -18,8 +18,30 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-func statusSource(pools *db.Pools, league *history.Store, backups backupStatus) serverstatus.Source {
-	return serverstatus.Source{Backup: backups, League: league, SignIns: accountstore.New(pools), Now: time.Now}
+func statusSource(pools *db.Pools, leagues history.LeagueResolver, backups backupStatus) serverstatus.Source {
+	return serverstatus.Source{Backup: backups, League: leagueChains{leagues}, SignIns: accountstore.New(pools), Now: time.Now}
+}
+
+// leagueChains verifies the ledger audit chain of every file the resolver holds league history in.
+// One file today, so its head is the file's head; entries add up across files.
+type leagueChains struct{ leagues history.LeagueResolver }
+
+func (c leagueChains) VerifyAudit(ctx context.Context) (db.AuditHead, error) {
+	stores, err := c.leagues.Stores(ctx)
+	if err != nil {
+		return db.AuditHead{}, fmt.Errorf("find league files: %w", err)
+	}
+	var total db.AuditHead
+	for _, store := range stores {
+		head, err := store.VerifyAudit(ctx)
+		if err != nil {
+			return db.AuditHead{}, err //nolint:wrapcheck // the store names the chain that failed
+		}
+		size := total.Size + head.Size
+		total = head
+		total.Size = size
+	}
+	return total, nil
 }
 
 // startStatusSocket serves the private dashboard socket beside the database. It is a

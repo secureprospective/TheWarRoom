@@ -64,7 +64,7 @@ func (s *Store) ProcessStatFeed(ctx context.Context, league string, season int) 
 		return fmt.Errorf("commit feed revisions: %w", err)
 	}
 	if len(moves) != 0 {
-		s.signalCommissionerCommit()
+		s.signalCommissionerCommit(league)
 	}
 	return s.compactLiveStats(ctx, league, records, weeks, season)
 }

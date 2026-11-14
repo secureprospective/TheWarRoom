@@ -39,7 +39,7 @@ func parseTime(s string) (time.Time, error) {
 // Store is the history store. Construct with New, prepare with Initialize. Writes serialize
 // under wmu.
 type Store struct {
-	commits chan struct{}
+	commits chan string
 	pools   *db.Pools
 	reg     *measures.Registry
 	now     func() time.Time
@@ -95,15 +95,14 @@ type Store struct {
 
 // New returns an unprepared store over history.db's pools, using reg as the registry.
 func New(pools *db.Pools, reg *measures.Registry) *Store {
-	return &Store{commits: make(chan struct{}, 1), pools: pools, reg: reg, now: time.Now, lineups: ledgerLineups{}}
+	return &Store{commits: make(chan string, 1), pools: pools, reg: reg, now: time.Now, lineups: ledgerLineups{}}
 }
 
-// CommissionerCommits coalesces native ledger commits for the single due worker.
-func (s *Store) CommissionerCommits() <-chan struct{} { return s.commits }
-
-func (s *Store) signalCommissionerCommit() {
+// signalCommissionerCommit names the committed league to the due worker through the resolver.
+// Coalesced: a full channel already guarantees one wake, and every wake rereads every league.
+func (s *Store) signalCommissionerCommit(league string) {
 	select {
-	case s.commits <- struct{}{}:
+	case s.commits <- league:
 	default:
 	}
 }

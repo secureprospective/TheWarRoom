@@ -235,7 +235,7 @@ func (s *Store) finishCommissioner(ctx context.Context, tx *sql.Tx, req appendRe
 }
 
 func (s *Store) committedReceipt(ctx context.Context, receipt commissioner.Receipt, records []commissioner.Record) commissioner.Receipt {
-	s.signalCommissionerCommit()
+	s.signalCommissionerCommit(receipt.League)
 	return viewReceipt(ctx, receipt, records)
 }
 

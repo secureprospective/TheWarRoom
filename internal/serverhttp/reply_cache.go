@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
@@ -88,7 +87,7 @@ func (h Hosted) replyScope(ctx context.Context, service *leagueservice.Service, 
 	}
 	// Read the head before the epoch and the reading, so a reply is never kept under a head older than the
 	// records it was read from would allow to be served (heads only grow).
-	head, err := h.Store.CommittedHead(ctx, league, commissioner.Stream)
+	head, err := h.leagueHead(ctx, league)
 	if err != nil {
 		return replyScope{}, nil //nolint:nilerr // an unreadable head only skips the cache
 	}

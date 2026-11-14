@@ -43,16 +43,17 @@ func (c HostClock) Trusted() error {
 // DueWorker owns hosted scheduling; it never starts the desktop ticker. All effects
 // use the existing due processors and their transaction-time legality checks.
 type DueWorker struct {
-	store     *history.Store
+	leagues   history.LeagueResolver
 	facts     func() nativecheck.Facts
 	clock     DueClock
 	wake      chan struct{}
 	reconcile time.Duration
 }
 
-// NewDueWorker shares the store clock configured by its composition root.
-func NewDueWorker(store *history.Store, facts func() nativecheck.Facts, clock DueClock) *DueWorker {
-	return &DueWorker{store: store, facts: facts, clock: clock, wake: make(chan struct{}, 1), reconcile: time.Minute}
+// NewDueWorker reaches every league through leagues; each store shares the clock configured by
+// the composition root.
+func NewDueWorker(leagues history.LeagueResolver, facts func() nativecheck.Facts, clock DueClock) *DueWorker {
+	return &DueWorker{leagues: leagues, facts: facts, clock: clock, wake: make(chan struct{}, 1), reconcile: time.Minute}
 }
 
 // Host adds post-commit wakes and transaction-time clock admission to a hosted adapter.
@@ -116,7 +117,7 @@ func (w *DueWorker) Run(ctx context.Context, report func(error)) {
 		select {
 		case <-ctx.Done():
 		case <-w.wake:
-		case <-w.store.CommissionerCommits():
+		case <-w.leagues.Commits():
 		case <-timer.C:
 		}
 		timer.Stop()
@@ -127,7 +128,7 @@ func (w *DueWorker) step(ctx context.Context) (time.Time, error) {
 	if err := w.trusted(); err != nil {
 		return time.Time{}, err
 	}
-	leagues, err := w.store.NativeLeagues(ctx)
+	leagues, err := w.leagues.Leagues(ctx)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("read due leagues: %w", err)
 	}
@@ -147,12 +148,16 @@ func (w *DueWorker) step(ctx context.Context) (time.Time, error) {
 }
 
 func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time, error) {
+	store, err := w.leagues.League(ctx, league)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("find league store: %w", err)
+	}
 	ctx = commissioner.WithCredentialAdmission(ctx, dueAdmission{worker: w, system: true})
 	at := w.clock.Now()
 	facts := w.facts()
 	// Waivers clear before bids are evaluated; a draft is closed once its clock has used the last pick.
 	for _, process := range []func(context.Context, string, nativecheck.Facts) error{
-		w.store.ProcessDueReserves, w.store.ProcessDueWaivers, w.store.ProcessDueBids, w.store.ProcessDueOLines, w.store.CloseFinishedDrafts,
+		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids, store.ProcessDueOLines, store.CloseFinishedDrafts,
 	} {
 		if err := process(ctx, league, facts); err != nil {
 			return time.Time{}, fmt.Errorf("record due work: %w", err)
@@ -160,7 +165,7 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	}
 	// The held, memoised ledger the due processors just read: its fold is shared with every reader of this
 	// revision, where a fresh decode of the event log was folded again after every commit.
-	records, err := w.store.SharedCommissionerRecords(ctx, league)
+	records, err := store.SharedCommissionerRecords(ctx, league)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("read pending deadlines: %w", err)
 	}
@@ -168,7 +173,7 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	if err != nil {
 		return time.Time{}, fmt.Errorf("read next deadline: %w", err)
 	}
-	draft, err := w.store.NextDraftDeadline(ctx, league, at)
+	draft, err := store.NextDraftDeadline(ctx, league, at)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("read next draft deadline: %w", err)
 	}

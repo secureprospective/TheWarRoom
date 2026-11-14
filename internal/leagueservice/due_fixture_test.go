@@ -107,7 +107,7 @@ func (f *dueFixture) open(t *testing.T) {
 	}
 	f.store.SetClock(f.clock.Now)
 	f.store.SetBidEnvironment(dueEnvironment{})
-	f.worker = NewDueWorker(f.store, func() nativecheck.Facts { return f.facts }, f.clock)
+	f.worker = NewDueWorker(history.NewOneFile(f.store), func() nativecheck.Facts { return f.facts }, f.clock)
 }
 
 func (f *dueFixture) raw(t *testing.T, command string, args commissioner.RawArgs) commissioner.RawCommand {

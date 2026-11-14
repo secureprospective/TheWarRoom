@@ -6,11 +6,16 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // countingHeads is a fake committed-head reader that counts reads per league.
@@ -253,5 +258,73 @@ func TestStreamClosesOnRevokedSession(t *testing.T) {
 				t.Fatal("revoked stream stayed open")
 			}
 		})
+	}
+}
+
+// twoLeagueHeads is a fake resolver: one league's file is unreachable, the other's store answers.
+type twoLeagueHeads struct {
+	good    *history.Store
+	broken  string
+	askedMu sync.Mutex
+	asked   map[string]int
+}
+
+func (r *twoLeagueHeads) Leagues(context.Context) ([]commissioner.NativeLeague, error) {
+	return nil, nil
+}
+func (r *twoLeagueHeads) Stores(context.Context) ([]*history.Store, error) { return nil, nil }
+func (r *twoLeagueHeads) Commits() <-chan string                           { return nil }
+func (r *twoLeagueHeads) League(_ context.Context, league string) (*history.Store, error) {
+	r.askedMu.Lock()
+	defer r.askedMu.Unlock()
+	r.asked[league]++
+	if league == r.broken {
+		return nil, errors.New("league file unavailable")
+	}
+	return r.good, nil
+}
+
+// The watcher reads each league's head from the store the resolver names for that league; the
+// unreachable league's streams get the error while the other league's streams get its head.
+func TestLeagueWatchResolvesEachLeague(t *testing.T) {
+	pools, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "history.db"), history.SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	registry, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := history.New(pools, registry)
+	if err := store.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	resolver := &twoLeagueHeads{good: store, broken: "league.broken", asked: map[string]int{}}
+	h := Hosted{Leagues: resolver}
+	watch := newLeagueWatch(h.leagueHead, 5*time.Millisecond)
+	broken, leaveBroken := watch.subscribe("league.broken")
+	defer leaveBroken()
+	good, leaveGood := watch.subscribe("league.good")
+	defer leaveGood()
+	timeout := time.After(5 * time.Second)
+	var brokenNews, goodNews headNews
+	for got := 0; got < 2; {
+		select {
+		case brokenNews = <-broken:
+			got++
+		case goodNews = <-good:
+			got++
+		case <-timeout:
+			t.Fatal("watcher gave no reading")
+		}
+	}
+	if brokenNews.err == nil || goodNews.err != nil || goodNews.head != 0 {
+		t.Fatalf("broken=%+v good=%+v", brokenNews, goodNews)
+	}
+	resolver.askedMu.Lock()
+	defer resolver.askedMu.Unlock()
+	if resolver.asked["league.broken"] == 0 || resolver.asked["league.good"] == 0 {
+		t.Fatalf("resolver asked %v", resolver.asked)
 	}
 }

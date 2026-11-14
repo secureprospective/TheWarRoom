@@ -65,7 +65,7 @@ func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 	handler.TrustedProxy = netip.MustParseAddr("127.0.0.1")
 
 	socket := filepath.Join(dir, "status.sock")
-	stopStatus, err := startStatusSocket(t.Context(), socket, statusSource(pools, handler.Store, func() (offsite.Status, bool) { return manager.Status(), true }))
+	stopStatus, err := startStatusSocket(t.Context(), socket, statusSource(pools, handler.Leagues, func() (offsite.Status, bool) { return manager.Status(), true }))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -119,7 +119,7 @@ func (s *Store) executeBatchOnce(ctx context.Context, raws []commissioner.RawCom
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("record league changes: %w", err)
 	}
-	s.signalCommissionerCommit()
+	s.signalCommissionerCommit(league)
 	for i := range receipts {
 		receipts[i] = viewReceipt(ctx, receipts[i], records)
 	}

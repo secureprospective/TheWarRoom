@@ -63,9 +63,7 @@ func (b *streamBudget) release(league, device string) {
 // history, ledger cursor or bearer is published. A slow consumer retains only its last observed view.
 func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 	budget := &streamBudget{devices: make(map[string]int), active: make(map[string]int)}
-	watch := newLeagueWatch(func(ctx context.Context, league string) (int64, error) {
-		return h.Store.CommittedHead(ctx, league, commissioner.Stream)
-	}, headPollEvery)
+	watch := newLeagueWatch(h.leagueHead, headPollEvery)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != InvalidationPath {
 			next.ServeHTTP(w, r)
@@ -77,7 +75,7 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			http.Error(w, "invalid invalidation request", http.StatusBadRequest)
 			return
 		}
-		if h.Store == nil || h.Sessions == nil || h.TOTP == nil || h.Worker == nil {
+		if h.Store == nil || h.Leagues == nil || h.Sessions == nil || h.TOTP == nil || h.Worker == nil {
 			http.Error(w, "service unavailable", http.StatusServiceUnavailable)
 			return
 		}
@@ -86,7 +84,7 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			return
 		}
 		// Read the head before the view so a concurrent commit cannot be skipped.
-		head, err := h.Store.CommittedHead(r.Context(), league, commissioner.Stream)
+		head, err := h.leagueHead(r.Context(), league)
 		if err != nil {
 			http.Error(w, "native read unavailable", http.StatusServiceUnavailable)
 			return

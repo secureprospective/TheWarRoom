@@ -89,13 +89,13 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	credentials.SetClock(func() time.Time { return f.now })
 	f.sessions, f.totp = accounts.NewSessions(passwords, credentials), totp
 	f.enrollment = accounts.NewEnrollment(credentials, enrollmentAuthority{policy: policy, principal: principal})
-	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, nil)
+	worker := leagueservice.NewDueWorker(history.NewOneFile(store), func() nativecheck.Facts { return nil }, nil)
 	f.tokens = accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store})
 	confirmations, err := serverhttp.NewConfirmations()
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := serverhttp.Hosted{Tokens: f.tokens, Confirmations: confirmations, Store: store, Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+	handler := serverhttp.Hosted{Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}), Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, nil),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
 			"CM-018,Franchise,What is this franchise called?,\n"}
@@ -106,7 +106,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 			t.Fatal(err)
 		}
 		store.SetPinnedFootball(handler.Football)
-		handler.Worker = leagueservice.NewDueWorker(store, handler.Football.PlayerFacts, workflowClock{f.skew})
+		handler.Worker = leagueservice.NewDueWorker(history.NewOneFile(store), handler.Football.PlayerFacts, workflowClock{f.skew})
 	}
 	f.worker, f.join = handler.Worker, handler.Join
 	f.fresh = httptest.NewTLSServer(handler.Handler())
