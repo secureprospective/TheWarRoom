@@ -69,6 +69,29 @@ not that R2 connectivity or recoverability was proved. The console dashboard
 ([CHECKLIST.md](CHECKLIST.md)) shows whether a checked backup is current, when it
 was saved and the newest error; no public backup-status endpoint exists.
 
+## Two files, two kinds of set
+
+The server keeps two files in `/var/lib/twr`: `server.db` (the league file: league
+history, evidence and football reference data) and `accounts.db` (the sign-in file:
+accounts, sessions, helper tokens, aliases, join links, the security history and the
+list of leagues on this server). Each is backed up as its own kind of set: league
+sets under `sets/`, sign-in sets under `signins/`. Each kind has its own five-minute
+schedule, its own skip-when-unchanged, its own 14-minute line, its own retention and
+its own 128 MiB / 512 MiB caps. In every round the league set is saved first and the
+sign-in set last, so the sign-in set always holds every owner the league set seats.
+
+When one kind falls behind, only its own changes pause: a stale league backup pauses
+league changes (sign-ins keep working); a stale sign-in backup pauses sign-ins and
+account changes (league changes keep working). Joining a league writes both files,
+so it needs both current. The dashboard shows two lines, **Backups** (the league
+file) and **Sign-in backups**, so you can tell which part is behind.
+
+A server from before this change kept everything in `server.db`. On its first start
+the new server takes the normal pre-change backup, copies the sign-in data into
+`accounts.db`, checks the copy row by row, and only then removes the sign-in tables
+from `server.db`. If the check fails it deletes the new file, changes nothing and
+refuses to start with a plain message.
+
 ## What is saved and when
 
 Every five minutes while healthy (one-minute retries on failure), the server first
@@ -79,17 +102,17 @@ coverage is renewed and no new set is made or uploaded. Otherwise the server:
 1. Waits for SQLite's one writer, so no change is half-done, then pins a read point
    and copies the immutable `/etc/twr` configuration. The writer is held only for
    that moment; league changes carry on while the copy below runs.
-2. Copies `server.db` as of that read point with SQLite's online backup API, paced
+2. Copies the file (`server.db` or `accounts.db`) as of that read point with SQLite's online backup API, paced
    so league writes are not held up, then compacts it (in memory, about the size of
-   the database) and checks both copies. History, evidence blobs/provenance, auth
-   and the security audit share `server.db`; WAL is never copied as a live file.
+   the database) and checks both copies. History and evidence live in `server.db`;
+   sign-ins and the security audit in `accounts.db`. WAL is never copied as a live file.
    TLS key/certificate, authenticator key, preview registry and private R2 settings
    must live together in `/etc/twr`. Stop the server before changing these files.
-3. Verifies both audit chains against the captured database and includes a saved
+3. Verifies the file's audit chain (league history, or security history) against the captured copy and includes a saved
    checkpoint, a versioned manifest, member sizes and SHA-256 digests.
 4. Streams a compressed tar archive through age X25519 encryption to a private
    temporary file. No restore private key is required or accepted.
-5. Uploads one atomic object under `sets/`, downloads it over HTTPS, and compares
+5. Uploads one atomic object under `sets/` or `signins/`, downloads it over HTTPS, and compares
    its size and full ciphertext SHA-256 with the local encrypted file. An ETag,
    successful PUT or upload completion timestamp alone is not coverage.
 6. Renews coverage using the **snapshot start**, then prunes retention. The revision
@@ -109,8 +132,8 @@ state is silently accepted. The due worker uses the same DB admission gate.
 
 ## Retention and cost limits
 
-Keep the newest twelve objects, plus the newest object per UTC day for the last
-30 days. The encrypted object limit is 128 MiB; the total uncompressed member
+For each kind of set separately, keep the newest twelve objects, plus the newest
+object per UTC day for the last 30 days. The encrypted object limit is 128 MiB; the total uncompressed member
 limit is 512 MiB. At most 43 retained full sets plus the next in-flight upload
 are about 5.9 GB, below R2's current 10 GB Standard free allowance, assuming a
 dedicated bucket with no foreign/future-dated objects. Typical smaller leagues
@@ -129,10 +152,12 @@ checkpoints too; R2 read/write credentials can delete objects.
 ## Restoring
 
 Follow [RESTORE.md](RESTORE.md): install a fresh CT on the spare, then run
-`twr-restore` inside it. It downloads the newest set from R2 into the CT, unlocks
+`twr-restore` inside it. It downloads the newest league set from R2 into the CT,
+then the sign-in set saved nearest after it, refusing (and naming the accounts) if
+the league seats an owner that sign-in set lacks, unlocks
 it with the restore key typed at the console (held in memory, never saved),
 compares the saved checkpoint, signs every owner out and only then starts the
-service. Do not copy a decrypted `server.db` into a server by hand: sessions and
+service. Do not copy a decrypted `server.db` or `accounts.db` into a server by hand: sessions and
 used recovery codes from before the snapshot would come back. The fresh CT keeps
 its own TLS key and Tunnel; the old R2 token is replaced with a new one.
 
