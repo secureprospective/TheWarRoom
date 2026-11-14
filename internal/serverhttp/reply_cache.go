@@ -69,11 +69,13 @@ func withReplyPrincipal(ctx context.Context, principal string) context.Context {
 
 // replyScope is where one reading's reply is cached; the zero scope never caches.
 type replyScope struct {
-	cache  *ReplyCache
-	league string
-	head   int64
-	epoch  int
-	key    replyKey
+	tally         *RequestTally
+	command, mode string
+	cache         *ReplyCache
+	league        string
+	head          int64
+	epoch         int
+	key           replyKey
 }
 
 // scope admits the reading and names its cache place. It returns the zero scope, and no error, when the
@@ -109,6 +111,7 @@ func (h Hosted) replyScope(ctx context.Context, service *leagueservice.Service, 
 // waited on it reads for themselves.
 func (s replyScope) reply(read func() ([]byte, error)) ([]byte, error) {
 	if s.cache == nil {
+		s.tally.add(s.command, s.mode, 2, 0)
 		return read()
 	}
 	entry := s.cache.entry(s)
@@ -116,6 +119,7 @@ func (s replyScope) reply(read func() ([]byte, error)) ([]byte, error) {
 	ran := false
 	entry.once.Do(func() {
 		ran = true
+		s.tally.add(s.command, s.mode, 2, 0)
 		var body []byte
 		if body, err = read(); err == nil {
 			entry.body, entry.ok = body, true
@@ -123,12 +127,16 @@ func (s replyScope) reply(read func() ([]byte, error)) ([]byte, error) {
 		}
 	})
 	if entry.ok {
+		if !ran {
+			s.tally.add(s.command, s.mode, 3, 0)
+		}
 		return entry.body, nil
 	}
 	s.cache.forget(s, entry)
 	if ran {
 		return nil, err
 	}
+	s.tally.add(s.command, s.mode, 2, 0)
 	return read()
 }
 
