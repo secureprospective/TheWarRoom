@@ -513,24 +513,32 @@ func hostedMember(policy governance.State, principal governance.Principal, recor
 
 func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		admission := h.WriteAdmission
-		if signInPath(r.URL.Path) {
-			admission = h.SignInAdmission
-		}
-		if r.Method == http.MethodPost && r.TLS != nil && originAdmissible(r) && r.URL.RawQuery == "" && admission != nil {
-			if err := admission(); err != nil {
-				http.Error(w, err.Error(), http.StatusServiceUnavailable)
-				return
+		if r.Method == http.MethodPost && r.TLS != nil && originAdmissible(r) && r.URL.RawQuery == "" {
+			for _, admission := range h.admissions(r.URL.Path) {
+				if admission == nil {
+					continue
+				}
+				if err := admission(); err != nil {
+					http.Error(w, err.Error(), http.StatusServiceUnavailable)
+					return
+				}
 			}
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
-// signInPath names the routes whose writes go to the sign-in file. A join claim writes the account
-// there first; its seat then meets the league file's own guard.
-func signInPath(path string) bool {
-	return strings.HasPrefix(path, "/v1/auth/") || path == PasswordPagePath || path == JoinPagePath
+// admissions are the write guards a POST to path must pass: the sign-in file's for routes that write
+// only sign-ins, both for a join claim (it commits an account, then a seat), the league file's for
+// everything else.
+func (h Hosted) admissions(path string) []func() error {
+	switch {
+	case path == JoinClaimPath:
+		return []func() error{h.SignInAdmission, h.WriteAdmission}
+	case strings.HasPrefix(path, "/v1/auth/") || path == PasswordPagePath || path == JoinPagePath:
+		return []func() error{h.SignInAdmission}
+	}
+	return []func() error{h.WriteAdmission}
 }
 
 func (h Hosted) writeFailure(w http.ResponseWriter, message string, status int) {
