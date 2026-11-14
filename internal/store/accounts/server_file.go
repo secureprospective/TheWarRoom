@@ -127,6 +127,25 @@ func (s *Store) Directory(ctx context.Context) ([]DirectoryEntry, error) {
 	return out, nil
 }
 
+// ForgetLeague removes a deleted league's directory row and join link; accounts stay (they are
+// server-wide). A league already gone from the directory is not an error.
+func (s *Store) ForgetLeague(ctx context.Context, league string) error {
+	tx, err := s.pools.BeginWrite(ctx)
+	if err != nil {
+		return fmt.Errorf("accounts: forget league: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, query := range []string{`DELETE FROM league_directory WHERE league = ?`, `DELETE FROM league_join_links WHERE league = ?`} {
+		if _, err := tx.ExecContext(ctx, query, league); err != nil {
+			return fmt.Errorf("accounts: forget league: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("accounts: forget league: %w", err)
+	}
+	return nil
+}
+
 // PinFootball sets one league's pinned football evidence digest; empty returns it to the server's pin.
 // It changes that league's row only. The league must already be in the directory.
 func (s *Store) PinFootball(ctx context.Context, league, digest string) error {

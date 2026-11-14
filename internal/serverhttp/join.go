@@ -103,6 +103,13 @@ func (h Hosted) join(w http.ResponseWriter, r *http.Request) {
 		writeJoin(w, http.StatusOK, JoinFranchisesResponse{Protocol: 1, League: raw.Join.League, Franchises: list})
 		return
 	}
+	if h.LeagueAdmission != nil {
+		// A claim commits an account, then a seat in the league: refuse it before either when the league is paused.
+		if err := h.LeagueAdmission(raw.Claim.League); err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+	}
 	account, err := h.Join.Claim(r.Context(), *raw.Claim)
 	if err != nil {
 		joinFailure(w, err)

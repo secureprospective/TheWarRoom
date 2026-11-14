@@ -33,10 +33,8 @@ import (
 
 // attachReference puts the best reference file beside a restored league file that needs one.
 func attachReference(ctx context.Context, sets recoverySets, identity *age.X25519Identity, dir string, captured time.Time, output io.Writer) error {
-	league := filepath.Join(dir, "server.db")
-	moved, err := leagueHas(ctx, league, history.ReferenceMoveTable)
-	if err != nil || !moved {
-		return err // a set saved before the move carries reference data in its league file
+	if wanted, err := referenceWanted(ctx, dir); err != nil || !wanted {
+		return err
 	}
 	need, err := referenceNeeds(ctx, dir)
 	if err != nil {
@@ -72,6 +70,15 @@ func attachReference(ctx context.Context, sets recoverySets, identity *age.X2551
 		}
 	}
 	return completeReference(ctx, sets, identity, dir, fallback, fallbackName, need, output)
+}
+
+// referenceWanted says whether a staged set keeps football reference data in a file of its own: a set
+// saved before the move carries it in its league file.
+func referenceWanted(ctx context.Context, dir string) (bool, error) {
+	if stagedSplit(dir) {
+		return true, nil
+	}
+	return leagueHas(ctx, filepath.Join(dir, "server.db"), history.ReferenceMoveTable)
 }
 
 func removeIf(dir string) error {
@@ -155,16 +162,22 @@ func fillReference(ctx context.Context, sets recoverySets, identity *age.X25519I
 		}
 		out.pins++
 	}
-	league, err := db.OpenReadOnly(ctx, filepath.Join(dir, "server.db"), history.LeagueSchemaVersion())
+	files, err := stagedLeagues(dir)
 	if err != nil {
-		return out, fmt.Errorf("open restored database: %w", err)
+		return out, err
 	}
-	defer func() { _ = league.Close() }()
-	recovered, err := history.RecoverLeagueIdentities(ctx, league, reference)
-	if err != nil {
-		return out, err //nolint:wrapcheck // names what was read
+	for _, file := range files {
+		league, err := db.OpenReadOnly(ctx, file, history.LeagueSchemaVersion())
+		if err != nil {
+			return out, fmt.Errorf("open restored database: %w", err)
+		}
+		recovered, err := history.RecoverLeagueIdentities(ctx, league, reference)
+		if err = errors.Join(err, league.Close()); err != nil {
+			return out, err
+		}
+		out.players += recovered.Installed
+		out.conflicts = append(out.conflicts, recovered.Conflicts...)
 	}
-	out.players, out.conflicts = recovered.Installed, recovered.Conflicts
 	return out, nil
 }
 
@@ -177,14 +190,23 @@ type referenceNeed struct {
 
 func referenceNeeds(ctx context.Context, dir string) (referenceNeed, error) {
 	need := referenceNeed{pins: map[string][]string{}}
-	league, err := db.OpenReadOnly(ctx, filepath.Join(dir, "server.db"), history.LeagueSchemaVersion())
+	files, err := stagedLeagues(dir)
 	if err != nil {
-		return need, fmt.Errorf("open restored database: %w", err)
-	}
-	need.players, err = history.LeaguePlayers(ctx, league)
-	if err = errors.Join(err, league.Close()); err != nil {
 		return need, err
 	}
+	for _, file := range files {
+		league, err := db.OpenReadOnly(ctx, file, history.LeagueSchemaVersion())
+		if err != nil {
+			return need, fmt.Errorf("open restored database: %w", err)
+		}
+		players, err := history.LeaguePlayers(ctx, league)
+		if err = errors.Join(err, league.Close()); err != nil {
+			return need, err
+		}
+		need.players = append(need.players, players...)
+	}
+	slices.Sort(need.players)
+	need.players = slices.Compact(need.players)
 	path := filepath.Join(dir, signInFileName)
 	if !fileExists(path) {
 		return need, nil

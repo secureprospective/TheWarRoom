@@ -13,6 +13,8 @@ minutes** of changes.
 | What happened | Go to |
 |---|---|
 | The league server machine is dead, destroyed or stolen, and will not come back | [A. Replace the server](#a-replace-the-server-on-the-spare-machine) |
+| One league is damaged or was changed by mistake, and the server is fine | [C. Restore one league](#c-restore-one-league) |
+| A league should leave this server | [D. Delete a league](#d-delete-a-league) |
 | Someone may be using another person's sign-in (lost laptop, leaked password, strange changes) | [B. Sign everyone out](#b-sign-everyone-out) |
 | The internet, Cloudflare or the power is down, but the machine is fine | Wait for it to come back. Do not replace the server. |
 | The server is running but says changes are paused | Look at the dashboard and do what it says ([CHECKLIST.md](CHECKLIST.md)). Do not replace the server. |
@@ -194,7 +196,51 @@ If one person's password or authenticator is lost, use that person's printed rec
 code, or the console account recovery in
 [cmd/twr-server/README.md](../../cmd/twr-server/README.md), instead.
 
+## C. Restore one league
+
+Use this when one league needs to go back to its last backup (or an older day) and the
+server itself is fine. Only that league changes: every other league, and the sign-ins of
+everyone not in that league, stay exactly as they are.
+
+1. In the server's Proxmox web page, select the machine, then **Shell**, then type
+   `pct enter` and the league container's number.
+2. Type this and press Enter:
+
+   ```sh
+   sh /usr/local/libexec/twr-restore-league
+   ```
+
+3. Type the league's id, then the restore key from the sealed copy (it does not show as
+   you type), then press Enter for the newest backup or type a day as `YYYY-MM-DD`.
+4. It prints `League … is restored from its backup saved …` and how many owners were
+   signed out. The league is back within a minute. Tell that league's owners to sign in
+   again. The league as it was before the restore is kept for 30 days.
+
+## D. Delete a league
+
+1. Open the container's console as in C, then type:
+
+   ```sh
+   sh /usr/local/libexec/twr-delete-league
+   ```
+
+2. Type the league's id, then `DELETE` and the id again to confirm.
+3. It prints `League … is deleted from this server` and the day its file is removed. Until
+   that day (30 days) the file is kept in `/var/lib/twr/archive`; call Christopher if it
+   must come back. Other leagues are unchanged.
+
 ## What the tools do (for Christopher)
+
+`twr-restore-league` stops the service and passes the server's own bucket settings, the
+restore key and the day to `twr-server restore-league` over stdin, as the service user. It
+picks that league's newest usable set under `leagues/<league>/` (on or before the day),
+puts back any football versions or players it needs into the reference file, signs out every
+owner named in the league as restored or as it was (sign-in generation, authenticator proof
+and an audit row `league_restored_sign_out`), archives the old file for 30 days, and only then
+puts the restored file in place. `twr-delete-league` runs `twr-server delete-league`: the
+league's folder moves to `archive/<league>@<time>` and its directory row and join link go.
+The running server deletes archived leagues older than 30 days at start and daily.
+
 
 `twr-restore` stops the fresh service and passes the six answers to
 `twr-server restore` over stdin, running as the service user. That command refuses a

@@ -100,7 +100,12 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			http.Error(w, "native read refused", http.StatusForbidden)
 			return
 		}
-		seated, err := leagueservice.JoinSeats{Store: h.Store}.Seated(r.Context(), league)
+		pin := h.pin(r.Context(), league)
+		if pin.Err != nil {
+			http.Error(w, "native read refused", http.StatusForbidden)
+			return
+		}
+		seated, err := leagueservice.JoinSeats{Store: pin.Store}.Seated(r.Context(), league)
 		if err != nil {
 			http.Error(w, "native read unavailable", http.StatusServiceUnavailable)
 			return
@@ -323,7 +328,12 @@ func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request, leag
 		http.Error(w, "session refused", http.StatusUnauthorized)
 		return nil, accountAdmission{}, ""
 	}
-	host := leagueservice.StoredHost{Store: h.pin(r.Context(), league).Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	pin := h.pin(r.Context(), league)
+	if pin.Err != nil {
+		http.Error(w, "native read refused", http.StatusForbidden)
+		return nil, accountAdmission{}, ""
+	}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(session), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	service := leagueservice.NewHosted(h.Worker.Host(host), gate)
 	return service, gate, session.Bearer

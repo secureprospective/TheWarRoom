@@ -16,7 +16,7 @@ const leagueMigrationBase = 13
 func LeagueSchemaVersion() int    { return leagueMigrationBase + len(leagueMigrations()) }
 func ReferenceSchemaVersion() int { return len(referenceMigrations()) }
 
-func leagueMigrations() []db.Migration    { return []db.Migration{createLeagueFile} }
+func leagueMigrations() []db.Migration    { return []db.Migration{createLeagueFile, addLeagueIdentity} }
 func referenceMigrations() []db.Migration { return []db.Migration{createReferenceFile} }
 
 func createLeagueFile(ctx context.Context, tx *sql.Tx) error {

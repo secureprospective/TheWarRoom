@@ -13,10 +13,29 @@ import (
 // JoinSeats is the league ledger as pick-your-team sign-up uses it. Seating and releasing are the
 // existing commish.seat.replace / commish.seat.remove changes, recorded as the commissioner who
 // issued the join link, with the ledger's normal policy, fence and expected-revision checks.
-type JoinSeats struct{ Store *history.Store }
+type JoinSeats struct {
+	Store *history.Store
+	// Leagues, when set, finds each league's own store (the hosted server, one file per league).
+	Leagues history.LeagueResolver
+}
+
+func (j JoinSeats) store(ctx context.Context, league string) (*history.Store, error) {
+	if j.Leagues == nil {
+		return j.Store, nil
+	}
+	store, err := j.Leagues.League(ctx, league)
+	if err != nil {
+		return nil, accounts.ErrJoinRefused
+	}
+	return store, nil
+}
 
 func (j JoinSeats) policy(ctx context.Context, league string) ([]commissioner.Record, governance.State, error) {
-	records, err := Records(ctx, j.Store, league, "join")
+	store, err := j.store(ctx, league)
+	if err != nil {
+		return nil, governance.State{}, err
+	}
+	records, err := Records(ctx, store, league, "join")
 	if err != nil {
 		return nil, governance.State{}, err
 	}
@@ -79,7 +98,11 @@ func (j JoinSeats) IsCommissioner(ctx context.Context, league string, p governan
 func (j JoinSeats) record(ctx context.Context, league, command, request, reason string, people commissioner.RawPeople, actor governance.Principal, expected int64) error {
 	raw := commissioner.RawCommand{League: league, Command: command, Args: commissioner.RawArgs{People: &people}, Expected: expected,
 		Request: request, Reason: reason, Effective: "now", Visibility: "league"}
-	if _, err := j.Store.ExecuteCommissioner(ctx, raw, string(actor), nil); err != nil {
+	store, err := j.store(ctx, league)
+	if err != nil {
+		return err
+	}
+	if _, err := store.ExecuteCommissioner(ctx, raw, string(actor), nil); err != nil {
 		return ChangeError(err)
 	}
 	return nil

@@ -8,10 +8,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/releasetrust"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
@@ -81,7 +79,7 @@ func saveMatchedCopy(ctx context.Context, path, save, backup string) (string, er
 	}
 	defer func() { _ = files.Close() }()
 	saved := filepath.Join(save, "server.db")
-	if err := files.league.CaptureHosted(ctx, saved, nil); err != nil {
+	if err := files.shared.CaptureHosted(ctx, saved, nil); err != nil {
 		return "", fmt.Errorf("save the pre-upgrade copy: %w", err)
 	}
 	if files.signIns != nil {
@@ -93,6 +91,9 @@ func saveMatchedCopy(ctx context.Context, path, save, backup string) (string, er
 		if err := files.reference.CaptureHosted(ctx, referencePath(saved), nil); err != nil {
 			return "", fmt.Errorf("save the pre-upgrade football reference copy: %w", err)
 		}
+	}
+	if err := saveLeagueCopies(ctx, files.leagues, saved); err != nil {
+		return "", err
 	}
 	checkpoint, err := hostedCheckpoint(ctx, saved)
 	if err != nil {
@@ -123,7 +124,7 @@ func openForCopy(ctx context.Context, path string) (stateFiles, error) {
 	if err != nil {
 		return stateFiles{}, fmt.Errorf("open server database: %w", err)
 	}
-	files := stateFiles{league: league}
+	files := stateFiles{shared: league, leagues: &leagueFiles{open: map[string]*leagueFile{}}}
 	if source.path != signInPath(path) {
 		return files, nil
 	}
@@ -134,6 +135,9 @@ func openForCopy(ctx context.Context, path string) (stateFiles, error) {
 		if files.reference, err = db.Open(ctx, referencePath(path), history.ReferenceSchemaVersion()); err != nil {
 			return stateFiles{}, errors.Join(fmt.Errorf("open football reference file: %w", err), files.Close())
 		}
+	}
+	if files.leagues, err = openLeagueCopies(ctx, leaguesRoot(path)); err != nil {
+		return stateFiles{}, errors.Join(err, files.Close())
 	}
 	return files, nil
 }
@@ -157,22 +161,15 @@ func migrateServer(ctx context.Context, path string) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, files.Close()) }()
-	registry, err := measures.Embedded()
-	if err != nil {
-		return fmt.Errorf("load server measures: %w", err)
-	}
-	if err := history.New(files.league, registry).Initialize(ctx); err != nil {
-		return fmt.Errorf("upgrade league history: %w", err)
+	for _, store := range files.leagues.stores() {
+		if err := store.Initialize(ctx); err != nil {
+			return fmt.Errorf("upgrade league history: %w", err)
+		}
 	}
 	if err := accountstore.NewServerFile(files.signIns).Initialize(ctx); err != nil {
 		return fmt.Errorf("upgrade accounts: %w", err)
 	}
-	for _, pools := range []*db.Pools{files.league, files.signIns, files.reference} {
-		if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
-			return fmt.Errorf("record server release: %w", err)
-		}
-	}
-	return nil
+	return stampRelease(ctx, files)
 }
 
 // upgradeReady is the readiness check: the file now matches this release exactly and both
@@ -205,6 +202,9 @@ func putBack(path, saved string, cause error) error {
 		} else {
 			err = errors.Join(removeDatabase(move.path(path)), discardPending(move.pending(path)))
 		}
+	}
+	if err == nil {
+		err = putBackLeagues(path, saved)
 	}
 	if err == nil {
 		err = syncPath(filepath.Dir(path))

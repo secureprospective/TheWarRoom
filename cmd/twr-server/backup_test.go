@@ -46,8 +46,8 @@ func TestCapturedHostedSetCarriesCompatibleCheckpoint(t *testing.T) {
 		checkpoint func(context.Context, string) ([]byte, error)
 		verify     func(dir string) error
 	}{
-		{offsite.LeagueSet, files.league, leagueSetCheckpoint, func(dir string) error {
-			return checkCheckpoint(t.Context(), filepath.Join(dir, "checkpoint.json"), filepath.Join(dir, "server.db"), &discard{})
+		{offsite.LeagueFileSet(fixtureLeague), hostedPools(t, files), leagueSetCheckpoint, func(dir string) error {
+			return checkCheckpoint(t.Context(), filepath.Join(dir, "checkpoint.json"), filepath.Join(dir, leagueFileName), &discard{})
 		}},
 		{offsite.SignInSet, files.signIns, signInSetCheckpoint, func(dir string) error {
 			saved, err := readCheckpoint(filepath.Join(dir, "checkpoint.json"))

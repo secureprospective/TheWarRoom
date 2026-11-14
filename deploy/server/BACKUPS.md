@@ -71,10 +71,13 @@ was saved and the newest error; no public backup-status endpoint exists.
 
 ## Three files, three kinds of set
 
-The server keeps three files in `/var/lib/twr`:
+The server keeps its files in `/var/lib/twr`:
 
-- `server.db`, the league file: league history, rosters and each league's own list of
-  player ids.
+- `leagues/<league>/league.db`, one file per league (Christopher, 2026-11-14: each league
+  has its own database that never mixes with another's): that league's history, rosters,
+  contracts, recovery log, its own audit chain and its own list of player ids. The file
+  names its league and refuses any row of another league.
+- `server.db`, which now holds only the record that its leagues were given their own files.
 - `reference.db`, the football reference file: fetched pages and other raw captures,
   football statistics, model results, live lines, player identity and player records.
   Every league on the server shares it. League connections attach it read-only;
@@ -85,10 +88,11 @@ The server keeps three files in `/var/lib/twr`:
   links, the security history and the list of leagues on this server, with each league's
   pinned football version.
 
-Each is backed up as its own kind of set: league sets under `sets/`, football reference
-sets under `reference/`, sign-in sets under `signins/`. Each kind has its own five-minute
+Each is backed up as its own kind of set: each league's sets under `leagues/<league>/`,
+football reference sets under `reference/`, sign-in sets under `signins/` (`sets/` holds the
+league sets saved before leagues had their own files; restores still read them). Each kind has its own five-minute
 schedule, its own skip-when-unchanged, its own retention and its own 128 MiB / 512 MiB caps.
-In every round the league set is saved first, the reference set next and the sign-in set
+In every round every league's set is saved first, the reference set next and the sign-in set
 last. A league change records any new player ids and new accounts before it commits, so the
 reference and sign-in sets saved after a league set hold everything that league set names.
 
@@ -100,7 +104,8 @@ Capture objects are never pruned: they are immutable and sets name them.
 
 When one kind falls behind:
 
-- A stale league backup pauses league changes (sign-ins keep working).
+- A stale league backup pauses that league's changes only; other leagues and sign-ins
+  keep working.
 - A stale sign-in backup pauses sign-ins and account changes (league changes keep working).
   Joining a league writes both files, so it needs both current.
 - A stale football reference backup pauses **nothing**. Reference data can be fetched again,
@@ -108,7 +113,8 @@ When one kind falls behind:
   line says so. A restore never stops for it (see Restoring): the league comes back and
   only football waits, so a long outage here is still a real problem to fix within the hour.
 
-The dashboard shows three lines, **Backups** (the league file), **Football reference
+The dashboard shows three lines, **Backups** (every league's file: the one furthest behind,
+named, when any is), **Football reference
 backups** and **Sign-in backups**, so you can tell which part is behind.
 
 A server from before these changes kept everything in `server.db`. On its first start the
@@ -119,6 +125,17 @@ the stored bytes), and only then one transaction that removes the moved tables f
 `server.db` and records the move. If the check fails it deletes the new file, changes nothing
 and refuses to start with a plain message. After the reference move `server.db` is
 compacted. Each file migrates only its own tables and has its own version check; reference files hold no league tables.
+
+Next, the same start gives each league its own file. It takes the normal pre-change backup of
+`server.db`, copies each league into `leagues/<league>/league.db.converting` and checks that copy
+table by table (each league's rows only, by count and a digest of every row in order), then
+starts a new audit chain in each league file over that league's events, which also records where
+the shared chain stopped. Only when every league checks does one transaction remove the league
+tables from `server.db` and record the split; then each file is renamed into place and
+`server.db` is compacted. A failure deletes the new files, changes nothing and refuses to start.
+A stop at any step leaves either the old layout whole or the split recorded; the next start
+finishes. A player move between two servers that was in flight at the split must be started
+again: each league file mints its own move identity.
 
 ## Football versions per league
 

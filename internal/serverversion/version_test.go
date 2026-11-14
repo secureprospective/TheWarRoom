@@ -12,7 +12,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -135,15 +134,12 @@ func TestPreflightJudgesWithoutWriting(t *testing.T) {
 func leagueFile(ctx context.Context, t *testing.T, change func(*testing.T, *db.Pools)) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "server.db")
-	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	// A hosted league file, as the server keeps one per league.
+	pools, err := db.Open(ctx, path, history.LeagueSchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
-	registry, err := measures.Embedded()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := history.New(pools, registry).Initialize(ctx); err != nil {
+	if err := history.PrepareNewLeague(ctx, pools); err != nil {
 		t.Fatal(err)
 	}
 	if change != nil {
@@ -189,7 +185,7 @@ func snapshot(t *testing.T, path string) ([]byte, os.FileInfo) {
 func TestPreflightSeesNewerSchemaStillInWALWithoutChangingData(t *testing.T) {
 	ctx := t.Context()
 	path := leagueFile(ctx, t, nil)
-	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	pools, err := db.Open(ctx, path, history.LeagueSchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

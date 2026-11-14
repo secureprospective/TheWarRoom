@@ -25,6 +25,10 @@ type rawCheckpoint struct {
 	Captured time.Time     `json:"captured"`
 	Ledger   *db.AuditHead `json:"ledger,omitempty"`
 	Security *db.AuditHead `json:"security,omitempty"`
+	// Leagues names each league file's own chain on a server whose leagues have their own files, and
+	// Shared the head the one shared chain was closed at when they got them.
+	Leagues map[string]db.AuditHead `json:"leagues,omitempty"`
+	Shared  *db.AuditHead           `json:"shared,omitempty"`
 	// Reference names a reference set's raw archive by content; it has no chain.
 	Reference *referenceAnchor `json:"reference,omitempty"`
 }
@@ -94,11 +98,10 @@ func runCheckpoint(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
-	ledger, err := ledgerHead(ctx, *path)
-	if err != nil {
+	current := rawCheckpoint{Version: 1, Captured: time.Now().UTC()}
+	if err := serverLedgers(ctx, *path, &current); err != nil {
 		return err
 	}
-	current := rawCheckpoint{Version: 1, Captured: time.Now().UTC(), Ledger: &ledger}
 	if signIns.path != "" {
 		security, err := securityHead(ctx, signIns)
 		if err != nil {
@@ -110,6 +113,46 @@ func runCheckpoint(ctx context.Context, args []string, output io.Writer) error {
 		return fmt.Errorf("write checkpoint: %w", err)
 	}
 	return nil
+}
+
+// serverLedgers names the server's league chains: each league file's and the closed shared head once
+// its leagues have their own files, else server.db's one chain.
+func serverLedgers(ctx context.Context, path string, into *rawCheckpoint) error {
+	split, done, err := readSplit(ctx, path)
+	if err != nil {
+		return err
+	}
+	if !done {
+		ledger, err := ledgerHead(ctx, path)
+		if err != nil {
+			return err
+		}
+		into.Ledger = &ledger
+		return nil
+	}
+	into.Shared, into.Leagues = &split.Shared, map[string]db.AuditHead{}
+	leagues, err := leagueFileList(leaguesRoot(path))
+	if err != nil {
+		return err
+	}
+	for _, league := range leagues {
+		file, _ := leagueFilePath(leaguesRoot(path), league)
+		head, err := ledgerHead(ctx, file)
+		if err != nil {
+			return fmt.Errorf("league %s: %w", league, err)
+		}
+		into.Leagues[league] = head
+	}
+	return nil
+}
+
+func readSplit(ctx context.Context, path string) (history.LeagueSplit, bool, error) {
+	pools, err := db.OpenReadOnly(ctx, path, history.LeagueSchemaVersion())
+	if err != nil {
+		return history.LeagueSplit{}, false, fmt.Errorf("open server database: %w", err)
+	}
+	defer func() { _ = pools.Close() }()
+	return history.ReadLeagueSplit(ctx, pools) //nolint:wrapcheck // names the file
 }
 
 func ledgerHead(ctx context.Context, path string) (db.AuditHead, error) {
@@ -147,6 +190,22 @@ func withLedger(ctx context.Context, path string, use func(*history.Store) error
 		return fmt.Errorf("load server measures: %w", err)
 	}
 	return use(history.New(pools, registry))
+}
+
+// checkLedger checks a saved chain head against the file's chain. Once the file's leagues have their
+// own files, the one shared chain was closed: it matches only a head saved exactly where it closed.
+func checkLedger(ctx context.Context, saved db.AuditHead, path string) error {
+	split, done, err := readSplit(ctx, path)
+	if err != nil {
+		return err
+	}
+	if done {
+		if split.Shared != saved {
+			return fmt.Errorf("the shared chain was closed at entry %d when each league got its own file; the checkpoint names entry %d", split.Shared.Size, saved.Size)
+		}
+		return nil
+	}
+	return withLedger(ctx, path, func(ledger *history.Store) error { return ledger.VerifyAuditAnchor(ctx, saved) })
 }
 
 func withSecurity(ctx context.Context, source signInSource, use func(*accountstore.Store) error) error {
@@ -189,7 +248,7 @@ func readCheckpoint(file string) (rawCheckpoint, error) {
 		return rawCheckpoint{}, fmt.Errorf("read saved checkpoint: %w", err)
 	}
 	var saved rawCheckpoint
-	if err := json.Unmarshal(body, &saved); err != nil || saved.Version != 1 || (saved.Ledger == nil && saved.Security == nil && saved.Reference == nil) {
+	if err := json.Unmarshal(body, &saved); err != nil || saved.Version != 1 || (saved.Ledger == nil && saved.Leagues == nil && saved.Security == nil && saved.Reference == nil) {
 		return rawCheckpoint{}, fmt.Errorf("the saved checkpoint file is not one this version can read")
 	}
 	return saved, nil
@@ -223,9 +282,20 @@ func checkAnchors(ctx context.Context, saved rawCheckpoint, leaguePath string, s
 		if leaguePath == "" {
 			return fmt.Errorf("%w (league history, saved %s): no league file", errCheckpointMismatch, day)
 		}
-		err := withLedger(ctx, leaguePath, func(ledger *history.Store) error { return ledger.VerifyAuditAnchor(ctx, *saved.Ledger) })
-		if err != nil {
+		if err := checkLedger(ctx, *saved.Ledger, leaguePath); err != nil {
 			return fmt.Errorf("%w (league history, saved %s): %w", errCheckpointMismatch, day, err)
+		}
+	}
+	for league, head := range saved.Leagues {
+		file, err := leagueFilePath(leaguesRoot(leaguePath), league)
+		if err == nil && !fileExists(file) {
+			err = fmt.Errorf("its file is missing")
+		}
+		if err == nil {
+			err = withLedger(ctx, file, func(ledger *history.Store) error { return ledger.VerifyAuditAnchor(ctx, head) })
+		}
+		if err != nil {
+			return fmt.Errorf("%w (league %s, saved %s): %w", errCheckpointMismatch, league, day, err)
 		}
 	}
 	if saved.Security != nil {

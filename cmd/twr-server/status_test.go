@@ -41,7 +41,7 @@ func (d *dialLog) dial(ctx context.Context, network, address string) (net.Conn, 
 func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 	dir := t.TempDir()
 	files := openTestServer(t, dir)
-	pools := files.league
+	pools := hostedPools(t, files)
 	handler, err := hostedServices(t.Context(), files, make([]byte, 32), "")
 	if err != nil {
 		t.Fatal(err)

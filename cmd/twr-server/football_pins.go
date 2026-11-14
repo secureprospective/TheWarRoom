@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/serverstatus"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
@@ -24,125 +23,144 @@ import (
 )
 
 // leaguePins answers which store serves each league and which football evidence it is pinned to. Each
-// league's pin is its row in the league directory (the sign-in file); a league with none uses the
-// server's -football pin, as every league did before. Every distinct pin gets its own store over the
-// same league file, so changing one league's pin never moves another's. A store's football is set
-// before it serves anything and never changed after; a new pin is a new store, swapped in whole.
+// league has its own file (leagueFiles) and is served by its own store over it. Its pin is its row in
+// the league directory (the sign-in file); a league with none uses the server's -football pin. A
+// store's football is set before it serves anything and never changed after; a new pin is a new store
+// over the same league file, swapped in whole, so changing one league's pin never moves another's.
 //
 // A pin whose evidence this server does not hold (a restore whose football reference backup was older
 // than its league backup) does not stop the server: that league is served by a store with no football,
 // and the evidence is looked for again at most once a minute, so the league opens again by itself.
 // A running server changes a pin through pin-football on its private socket (setPin).
 type leaguePins struct {
-	base     *history.Store
-	mu       sync.RWMutex
-	server   serverhttp.LeaguePin
-	byLeague map[string]serverhttp.LeaguePin
-	tried    map[string]time.Time
-	now      func() time.Time
+	files  *leagueFiles
+	mu     sync.RWMutex
+	server string            // the server's -football digest; empty pins nothing
+	chosen map[string]string // each league's own pin from the directory
+	built  map[string]serverhttp.LeaguePin
+	tried  map[string]time.Time
+	now    func() time.Time
 }
 
 const footballRetry = time.Minute
 
-func newLeaguePins(base *history.Store) *leaguePins {
-	return &leaguePins{base: base, server: serverhttp.LeaguePin{Store: base}, byLeague: map[string]serverhttp.LeaguePin{},
+func newLeaguePins(files *leagueFiles) *leaguePins {
+	return &leaguePins{files: files, chosen: map[string]string{}, built: map[string]serverhttp.LeaguePin{},
 		tried: map[string]time.Time{}, now: time.Now}
 }
 
-// selectPins loads the server pin (digest, may be empty) and every league's own pin from directory.
+// selectPins records the server pin (digest, may be empty) and every league's own pin from directory,
+// and builds each league's store. A league whose pin cannot be read at all (damaged evidence) stops
+// the start; evidence the server does not hold only marks that league missing.
 func (p *leaguePins) selectPins(ctx context.Context, digest string, directory []accountstore.DirectoryEntry) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if digest != "" {
-		pin, err := p.loadPin(ctx, digest, p.base)
-		if err != nil {
-			return fmt.Errorf("select hosted football: %w", err)
-		}
-		p.server = pin
-	}
-	stores := map[string]serverhttp.LeaguePin{digest: p.server}
+	p.server = digest
+	p.chosen = map[string]string{}
+	p.built = map[string]serverhttp.LeaguePin{}
 	for _, entry := range directory {
-		if entry.Football == "" {
-			continue
+		if entry.Football != "" {
+			p.chosen[entry.League] = entry.Football
 		}
-		pin, ok := stores[entry.Football]
-		if !ok {
-			var err error
-			if pin, err = p.loadPin(ctx, entry.Football, p.base.Sibling()); err != nil {
-				return fmt.Errorf("select football for league %s: %w", entry.League, err)
-			}
-			stores[entry.Football] = pin
+	}
+	for _, league := range p.files.leagues() {
+		pin := p.buildLocked(ctx, league)
+		if pin.Err != nil {
+			return fmt.Errorf("select football for league %s: %w", league, pin.Err)
 		}
-		p.byLeague[entry.League] = pin
 	}
 	return nil
 }
 
-// loadPin pins store to digest's evidence. Evidence the server does not hold gives a store with no
-// football, marked missing; any other failure (damaged evidence) is an error.
-func (p *leaguePins) loadPin(ctx context.Context, digest string, store *history.Store) (serverhttp.LeaguePin, error) {
-	evidence, err := store.LoadFootball(ctx, digest)
-	if errors.Is(err, history.ErrNoBody) {
-		p.tried[digest] = p.now()
-		return serverhttp.LeaguePin{Store: p.base.Sibling(), Digest: digest, Missing: true}, nil
+func (p *leaguePins) digestLocked(league string) string {
+	if digest, ok := p.chosen[league]; ok {
+		return digest
 	}
-	if err != nil {
-		return serverhttp.LeaguePin{}, err //nolint:wrapcheck // the caller names the league
-	}
-	store.SetPinnedFootball(evidence)
-	return serverhttp.LeaguePin{Store: store, Football: evidence, Digest: digest}, nil
+	return p.server
 }
 
-// pin is league's store and football; an unpinned league gets the server's.
-func (p *leaguePins) pin(ctx context.Context, league string) serverhttp.LeaguePin {
-	p.mu.RLock()
-	pin, ok := p.byLeague[league]
+// buildLocked makes league's store for its pin and keeps it.
+func (p *leaguePins) buildLocked(ctx context.Context, league string) serverhttp.LeaguePin {
+	base, ok := p.files.store(league)
 	if !ok {
-		pin = p.server
+		return serverhttp.LeaguePin{Err: errNoLeague}
 	}
-	p.mu.RUnlock()
-	if pin.Missing {
-		return p.retry(ctx, pin)
+	pin := p.loadPin(ctx, base, p.digestLocked(league))
+	if pin.Err == nil {
+		p.built[league] = pin
 	}
 	return pin
 }
 
-// retry looks for missing evidence again, at most once a minute per version. When it is found, every
-// league pinned to it (and the server pin) gets a new store with it.
-func (p *leaguePins) retry(ctx context.Context, missing serverhttp.LeaguePin) serverhttp.LeaguePin {
+// loadPin pins a new store over base's league file to digest's evidence. Evidence the server does not
+// hold gives a store with no football, marked missing; any other failure (damaged evidence) is Err.
+func (p *leaguePins) loadPin(ctx context.Context, base *history.Store, digest string) serverhttp.LeaguePin {
+	store := base.Sibling()
+	if digest == "" {
+		return serverhttp.LeaguePin{Store: store}
+	}
+	evidence, err := store.LoadFootball(ctx, digest)
+	if errors.Is(err, history.ErrNoBody) {
+		p.tried[digest] = p.now()
+		return serverhttp.LeaguePin{Store: store, Digest: digest, Missing: true}
+	}
+	if err != nil {
+		return serverhttp.LeaguePin{Err: err}
+	}
+	store.SetPinnedFootball(evidence)
+	return serverhttp.LeaguePin{Store: store, Football: evidence, Digest: digest}
+}
+
+// pin is league's store and football; Err says the server does not hold league.
+func (p *leaguePins) pin(ctx context.Context, league string) serverhttp.LeaguePin {
+	p.mu.RLock()
+	pin, ok := p.built[league]
+	p.mu.RUnlock()
+	if ok && !pin.Missing {
+		return pin
+	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if p.now().Sub(p.tried[missing.Digest]) < footballRetry {
+	pin, ok = p.built[league]
+	switch {
+	case !ok:
+		// A league created after the start (league-load, a received move) gets its store on first use.
+		return p.buildLocked(ctx, league)
+	case pin.Missing && p.now().Sub(p.tried[pin.Digest]) >= footballRetry:
+		return p.retryLocked(ctx, league, pin)
+	}
+	return pin
+}
+
+// retryLocked looks for league's missing evidence again (at most once a minute per version). Other
+// leagues on the same version find it at their own next look.
+func (p *leaguePins) retryLocked(ctx context.Context, league string, missing serverhttp.LeaguePin) serverhttp.LeaguePin {
+	look, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	base, ok := p.files.store(league)
+	if !ok {
 		return missing
 	}
-	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
-	defer cancel()
-	found, err := p.loadPin(ctx, missing.Digest, p.base.Sibling())
-	if err != nil || found.Missing {
+	found := p.loadPin(look, base, missing.Digest)
+	if found.Err != nil || found.Missing {
 		p.tried[missing.Digest] = p.now()
 		return missing
 	}
-	delete(p.tried, missing.Digest)
-	for league, pin := range p.byLeague {
-		if pin.Digest == missing.Digest {
-			p.byLeague[league] = found
+	for other, pin := range p.built {
+		if pin.Missing && pin.Digest == missing.Digest && other != league {
+			delete(p.tried, missing.Digest) // the others look again at once
 		}
 	}
-	if p.server.Digest == missing.Digest {
-		p.server = found
-	}
+	p.built[league] = found
 	return found
 }
 
-// missingLeagues names each league (and the server pin) whose football this server does not hold.
+// missingLeagues names each league whose football this server does not hold.
 func (p *leaguePins) missingLeagues() []string {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	var out []string
-	if p.server.Missing {
-		out = append(out, "the server's football pin "+p.server.Digest)
-	}
-	for league, pin := range p.byLeague {
+	for league, pin := range p.built {
 		if pin.Missing {
 			out = append(out, league+" (football version "+pin.Digest+")")
 		}
@@ -156,15 +174,19 @@ func (p *leaguePins) missingLeagues() []string {
 // cannot yet cover is refused; only then is the league's next request served with the new pin.
 // Evidence the reference file does not hold is refused and nothing changes.
 func (p *leaguePins) setPin(ctx context.Context, signIns *accountstore.Store, league, digest string) error {
-	var next serverhttp.LeaguePin
-	if digest != "" {
-		store := p.base.Sibling()
-		evidence, err := store.LoadFootball(ctx, digest)
-		if err != nil {
-			return fmt.Errorf("the reference file cannot give that football evidence; nothing was changed: %w", err)
-		}
-		store.SetPinnedFootball(evidence)
-		next = serverhttp.LeaguePin{Store: store, Football: evidence, Digest: digest}
+	base, ok := p.files.store(league)
+	if !ok {
+		return fmt.Errorf("league %s is not on this server; nothing was changed", league)
+	}
+	p.mu.RLock()
+	effective := digest
+	if effective == "" {
+		effective = p.server
+	}
+	p.mu.RUnlock()
+	next := p.loadPin(ctx, base, effective)
+	if next.Err != nil || (digest != "" && next.Missing) {
+		return fmt.Errorf("the reference file cannot give that football evidence; nothing was changed: %w", errors.Join(next.Err, missingErr(next)))
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -172,27 +194,42 @@ func (p *leaguePins) setPin(ctx context.Context, signIns *accountstore.Store, le
 		return fmt.Errorf("pin football: %w", err)
 	}
 	if digest == "" {
-		delete(p.byLeague, league)
+		delete(p.chosen, league)
 	} else {
-		p.byLeague[league] = next
+		p.chosen[league] = digest
+	}
+	p.built[league] = next
+	return nil
+}
+
+func missingErr(pin serverhttp.LeaguePin) error {
+	if pin.Missing {
+		return history.ErrNoBody
 	}
 	return nil
 }
 
 func (p *leaguePins) Leagues(ctx context.Context) ([]commissioner.NativeLeague, error) {
-	return p.base.NativeLeagues(ctx) //nolint:wrapcheck // the resolver passes the store's words through
+	var out []commissioner.NativeLeague
+	for _, store := range p.files.stores() {
+		leagues, err := store.NativeLeagues(ctx)
+		if err != nil {
+			return nil, err //nolint:wrapcheck // the resolver passes the store's words through
+		}
+		out = append(out, leagues...)
+	}
+	return out, nil
 }
 
 func (p *leaguePins) League(ctx context.Context, league string) (*history.Store, error) {
-	return p.pin(ctx, league).Store, nil
+	pin := p.pin(ctx, league)
+	return pin.Store, pin.Err
 }
 
-// Stores is every file holding league history: one league file, whichever pins its leagues use.
-func (p *leaguePins) Stores(context.Context) ([]*history.Store, error) {
-	return []*history.Store{p.base}, nil
-}
+// Stores is every league's own file.
+func (p *leaguePins) Stores(context.Context) ([]*history.Store, error) { return p.files.stores(), nil }
 
-func (p *leaguePins) Commits() <-chan string { return history.NewOneFile(p.base).Commits() }
+func (p *leaguePins) Commits() <-chan string { return history.NewOneFile(p.files.family).Commits() }
 
 // pinFootballPath is the private-socket route a running server changes a league's pin on.
 const pinFootballPath = "/pin-football"
@@ -258,11 +295,11 @@ func runPinFootball(ctx context.Context, args []string, output io.Writer) error 
 	}
 	defer func() { _ = files.Close() }()
 	if *digest != "" {
-		registry, err := measures.Embedded()
+		store, err := leagueStore(ctx, files, *league)
 		if err != nil {
-			return fmt.Errorf("load server measures: %w", err)
+			return err
 		}
-		if _, err := history.New(files.league, registry).LoadFootball(ctx, *digest); err != nil {
+		if _, err := store.LoadFootball(ctx, *digest); err != nil {
 			return fmt.Errorf("the reference file cannot give that football evidence; nothing was changed: %w", err)
 		}
 	}

@@ -9,9 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
-	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // runJoinLink is the commissioner's local console door to the league join link: print a new link
@@ -48,13 +46,9 @@ func runJoinLink(ctx context.Context, args []string, input io.Reader, output io.
 		return err
 	}
 	defer func() { _ = files.Close() }()
-	registry, err := measures.Embedded()
+	store, err := leagueStore(ctx, files, *league)
 	if err != nil {
-		return fmt.Errorf("load server measures: %w", err)
-	}
-	store := history.New(files.league, registry)
-	if err := store.Initialize(ctx); err != nil {
-		return fmt.Errorf("initialize server history: %w", err)
+		return err
 	}
 	account, err := commissionerSignIn(ctx, files, raw)
 	if err != nil {

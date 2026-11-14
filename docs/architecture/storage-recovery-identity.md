@@ -176,6 +176,12 @@ Older transfer documents remain readable with the absent optional field.
 
 ## Debt left
 
+- Each league in its own file (`leagues/<league>/league.db`, ruling 2026-11-14). A move of a
+  player between servers that was in flight at the split must restart: `transfer_identity`
+  is minted per file and is not copied. A league's old events stay chained under the shared
+  chain head recorded in the league file and in `server.db`'s `league_split`; checkpoints
+  name each league's head and the closed shared head.
+
 - Reference lag no longer blocks restore or start (ruling 2026-11-14, "league comes
   back, football waits"). Players: every league change rewrites the league's roster
   restore point, with each owned player's permanent id and outside ids, in the same

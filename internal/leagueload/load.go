@@ -23,12 +23,13 @@ import (
 const reason = "Load the league onto its hosted server from the commissioner's held MFL copy"
 
 // Request names one league move onto a server. Workspace is a fresh, private, disposable database
-// the native league is built in before it moves; Server is the hosted league database.
+// the native league is built in before it moves; Server gives the hosted league's own database, made
+// for the league once its id is known.
 type Request struct {
 	MFLLeague    string
 	Commissioner governance.Principal
 	Workspace    *history.Store
-	Server       *history.Store
+	Server       func(ctx context.Context, league string) (*history.Store, error)
 	// Source reads the MFL league. ReplaySource is the production reader: held copies only.
 	Source func(base leaguerules.RuleSet) (leaguemigration.Source, error)
 	// Football is the season's football evidence, built from the same held copies.
@@ -91,12 +92,16 @@ func Load(ctx context.Context, r Request) (Result, error) {
 	if err != nil {
 		return Result{}, fmt.Errorf("build football evidence: %w", err)
 	}
-	for _, store := range []*history.Store{r.Workspace, r.Server} {
+	server, err := r.Server(ctx, league)
+	if err != nil {
+		return Result{}, fmt.Errorf("make the league's database: %w", err)
+	}
+	for _, store := range []*history.Store{r.Workspace, server} {
 		if err := store.ImportFootball(ctx, body, digest); err != nil {
 			return Result{}, fmt.Errorf("pin football evidence: %w", err)
 		}
 	}
-	if err := move(ctx, r, league, digest); err != nil {
+	if err := move(ctx, r, server, league, digest); err != nil {
 		return Result{}, err
 	}
 	return Result{League: league, Franchises: len(commissioner.LeagueFranchises(records)), Football: digest}, nil
@@ -117,7 +122,7 @@ func cutover(ctx context.Context, service *leaguemigration.Service, mflLeague, l
 	return nil
 }
 
-func move(ctx context.Context, r Request, league, football string) error {
+func move(ctx context.Context, r Request, server *history.Store, league, football string) error {
 	raw, err := leaguetransfer.Capture(ctx, r.Workspace, league, uuid.NewString(), football, r.Now().UTC(), nil)
 	if err != nil {
 		return fmt.Errorf("capture the league: %w", err)
@@ -130,11 +135,11 @@ func move(ctx context.Context, r Request, league, football string) error {
 	if err := leaguetransfer.Encrypt(ctx, &sealed, raw, key); err != nil {
 		return fmt.Errorf("encrypt the league: %w", err)
 	}
-	if _, err := leaguetransfer.Import(ctx, r.Server, bytes.NewReader(sealed.Bytes()), key); err != nil {
+	if _, err := leaguetransfer.Import(ctx, server, bytes.NewReader(sealed.Bytes()), key); err != nil {
 		return fmt.Errorf("import the league inactive: %w", err)
 	}
 	for _, action := range []string{"seal", "activate"} {
-		if err := leaguetransfer.Move(ctx, r.Workspace, r.Server, raw, action, string(r.Commissioner), true); err != nil {
+		if err := leaguetransfer.Move(ctx, r.Workspace, server, raw, action, string(r.Commissioner), true); err != nil {
 			return fmt.Errorf("%s the league move: %w", action, err)
 		}
 	}

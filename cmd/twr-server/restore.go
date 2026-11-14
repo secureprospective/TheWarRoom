@@ -98,6 +98,39 @@ func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X255
 	if err := os.Mkdir(stage, 0700); err != nil {
 		return fmt.Errorf("create restore folder: %w", err)
 	}
+	byLeague, err := leagueSetNames(ctx, sets, before)
+	if err != nil {
+		return err
+	}
+	if len(byLeague) > 0 {
+		dir := filepath.Join(stage, "set")
+		captured, err := restoreLeagueFiles(ctx, sets, byLeague, identity, stage, dir, output)
+		if err != nil {
+			return err
+		}
+		return completeRestore(ctx, sets, identity, dir, stage, "each league's own backup", captured, config, output)
+	}
+	return restoreSharedSet(ctx, sets, identity, config, stage, before, output)
+}
+
+// completeRestore attaches the sign-in and football files matching an unlocked set, then installs it.
+// A league set saved after sign-ins moved needs its sign-in set beside it; the pair is checked before
+// anything is installed. Football comes after sign-ins: a league's football pin is read from its
+// directory row in the sign-in file.
+func completeRestore(ctx context.Context, sets recoverySets, identity *age.X25519Identity, dir, stage, name string,
+	captured time.Time, config offsite.RawConfig, output io.Writer) error {
+	if err := attachSignIns(ctx, sets, identity, dir, captured, output); err != nil {
+		return err
+	}
+	if err := attachReference(ctx, sets, identity, dir, captured, output); err != nil {
+		return err
+	}
+	return activateRestore(ctx, dir, filepath.Join(stage, "ready"), name, captured, config, output)
+}
+
+// restoreSharedSet installs the newest usable set saved before leagues had their own files.
+func restoreSharedSet(ctx context.Context, sets recoverySets, identity *age.X25519Identity, config offsite.RawConfig,
+	stage string, before time.Time, output io.Writer) error {
 	names, err := candidateSets(ctx, sets, before)
 	if err != nil {
 		return err
@@ -117,16 +150,7 @@ func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X255
 			}
 			continue
 		}
-		// A league set saved after sign-ins moved needs its sign-in set beside it; the pair is checked
-		// before anything is installed.
-		if err := attachSignIns(ctx, sets, identity, dir, captured, output); err != nil {
-			return err
-		}
-		// After sign-ins: a league's football pin is read from its directory row in the sign-in file.
-		if err := attachReference(ctx, sets, identity, dir, captured, output); err != nil {
-			return err
-		}
-		return activateRestore(ctx, dir, filepath.Join(stage, "ready"), name, captured, config, output)
+		return completeRestore(ctx, sets, identity, dir, stage, name, captured, config, output)
 	}
 	return fmt.Errorf("no usable backup was found; nothing was installed")
 }
@@ -209,6 +233,12 @@ func holdsLeague(ctx context.Context, path string) (bool, error) {
 type restoreReport struct {
 	ledger, security db.AuditHead
 	digests          history.RecoveryDigests
+	leagues          []leagueHead
+}
+
+type leagueHead struct {
+	league string
+	head   db.AuditHead
 }
 
 func readRestoreReport(ctx context.Context, ledger *history.Store, security *accountstore.Store) (restoreReport, error) {
@@ -237,11 +267,11 @@ func activateRestore(ctx context.Context, dir, ready, name string, captured time
 	if err != nil {
 		return fmt.Errorf("load server measures: %w", err)
 	}
-	ledger, security := history.New(restored.league, registry), restored.store()
+	security := restored.store()
 	if err := security.Initialize(ctx); err != nil {
 		return fmt.Errorf("prepare restored accounts: %w", err)
 	}
-	before, err := readRestoreReport(ctx, ledger, security)
+	before, err := restoredReport(ctx, restored, registry, security)
 	if err != nil {
 		return err
 	}
@@ -249,11 +279,11 @@ func activateRestore(ctx context.Context, dir, ready, name string, captured time
 	if err != nil {
 		return fmt.Errorf("reset restored sign-ins: %w", err)
 	}
-	after, err := readRestoreReport(ctx, ledger, security)
+	after, err := restoredReport(ctx, restored, registry, security)
 	if err != nil {
 		return err
 	}
-	if after.ledger != before.ledger || !sameDigests(after.digests, before.digests) {
+	if after.ledger != before.ledger || !slices.Equal(after.leagues, before.leagues) || !sameDigests(after.digests, before.digests) {
 		return fmt.Errorf("the sign-in reset changed league history; nothing was installed")
 	}
 	if err := restored.finish(ctx); err != nil {
@@ -271,15 +301,12 @@ func sameDigests(a, b history.RecoveryDigests) bool {
 	return lerr == nil && rerr == nil && bytes.Equal(left, right)
 }
 
-func stageReady(dir, ready string, config offsite.RawConfig) error {
-	if err := os.Mkdir(ready, 0700); err != nil {
-		return fmt.Errorf("create restore output: %w", err)
-	}
-	if info, err := os.Stat(filepath.Join(dir, "server.db-wal")); err == nil && info.Size() > 0 {
-		return fmt.Errorf("restored database did not finish writing")
-	}
-	if err := os.Rename(filepath.Join(dir, "server.db"), filepath.Join(ready, "server.db")); err != nil {
-		return fmt.Errorf("stage restored database: %w", err)
+// stageCompanions moves the restored league files, sign-in file and football file beside server.db.
+func stageCompanions(dir, ready string) error {
+	if stagedSplit(dir) {
+		if err := os.Rename(filepath.Join(dir, leaguesFolder), filepath.Join(ready, leaguesFolder)); err != nil {
+			return fmt.Errorf("stage restored league files: %w", err)
+		}
 	}
 	for _, name := range []string{signInFileName, referenceFileName} {
 		if !fileExists(filepath.Join(dir, name)) {
@@ -291,6 +318,22 @@ func stageReady(dir, ready string, config offsite.RawConfig) error {
 		if err := os.Rename(filepath.Join(dir, name), filepath.Join(ready, name)); err != nil {
 			return fmt.Errorf("stage restored %s: %w", name, err)
 		}
+	}
+	return nil
+}
+
+func stageReady(dir, ready string, config offsite.RawConfig) error {
+	if err := os.Mkdir(ready, 0700); err != nil {
+		return fmt.Errorf("create restore output: %w", err)
+	}
+	if info, err := os.Stat(filepath.Join(dir, "server.db-wal")); err == nil && info.Size() > 0 {
+		return fmt.Errorf("restored database did not finish writing")
+	}
+	if err := os.Rename(filepath.Join(dir, "server.db"), filepath.Join(ready, "server.db")); err != nil {
+		return fmt.Errorf("stage restored database: %w", err)
+	}
+	if err := stageCompanions(dir, ready); err != nil {
+		return err
 	}
 	key, err := readOfflineKey(filepath.Join(dir, "config", "authenticator.key"))
 	if err != nil {
@@ -315,7 +358,12 @@ func printRestoreReport(output io.Writer, name string, captured time.Time, r res
 	var b strings.Builder
 	fmt.Fprintf(&b, "Unlocked %s, saved %s.\n", name, captured.UTC().Format("2006-01-02 15:04:05 UTC"))
 	fmt.Fprintf(&b, "League history matches the checkpoint saved with it.\n")
-	fmt.Fprintf(&b, "League history: %d entries, fingerprint %s\n", r.ledger.Size, r.ledger.Hash)
+	if len(r.leagues) == 0 {
+		fmt.Fprintf(&b, "League history: %d entries, fingerprint %s\n", r.ledger.Size, r.ledger.Hash)
+	}
+	for _, head := range r.leagues {
+		fmt.Fprintf(&b, "League file %s: %d entries, fingerprint %s\n", head.league, head.head.Size, head.head.Hash)
+	}
 	fmt.Fprintf(&b, "Sign-in history: %d entries, fingerprint %s\n", r.security.Size, r.security.Hash)
 	fmt.Fprintf(&b, "Evidence files: %d, fingerprint %s\n", r.digests.EvidenceFiles, r.digests.Evidence)
 	for _, league := range r.digests.Leagues {

@@ -109,6 +109,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	defer stopStatus()
 
 	defer startHostedDueWorker(ctx, handler.Worker)()
+	defer startArchivePurge(ctx, files.leagues.root, time.Now, func(line string) { log.Print(line) })()
 
 	return serveHosted(ctx, *config.address, certificate, handler, output)
 }
@@ -134,15 +135,19 @@ func selectHostedFootball(ctx context.Context, handler *serverhttp.Hosted, signI
 	if err := pins.selectPins(ctx, digest, directory); err != nil {
 		return err
 	}
-	handler.Football, handler.FootballDigest = pins.server.Football, pins.server.Digest
+	handler.FootballDigest = pins.server
 	return nil
 }
 
-// stateFiles are the hosted server's league file, its sign-in file and its reference file. The league
-// file is opened with the reference file attached, so league stores read football reference data by
-// name. openStateFiles is the one way a command opens them; it moves the sign-in tables and then the
-// reference tables out of a one-file server first.
-type stateFiles struct{ league, signIns, reference *db.Pools }
+// stateFiles are the hosted server's files: server.db (shared, which after the split keeps only the
+// record of it), the sign-in file, the football reference file, and one file per league (leagues).
+// Each league file is opened with the reference file attached, so league stores read football reference
+// data by name. openStateFiles is the one way a command opens them; on an older server it first moves
+// the sign-in tables, then the reference tables, then each league, out of server.db.
+type stateFiles struct {
+	shared, signIns, reference *db.Pools
+	leagues                    *leagueFiles
+}
 
 func openStateFiles(ctx context.Context, path string) (stateFiles, error) {
 	if err := servePreflight(ctx, path); err != nil {
@@ -167,7 +172,18 @@ func openSignInFiles(ctx context.Context, path string) (stateFiles, error) {
 	if err = errors.Join(err, alone.Close()); err != nil {
 		return stateFiles{}, errors.Join(err, files.Close())
 	}
-	if files.league, err = openLeague(ctx, path, files.reference); err != nil {
+	if files.shared, err = openLeague(ctx, path, files.reference); err != nil {
+		return stateFiles{}, errors.Join(err, files.Close())
+	}
+	head, err := settleLeagueSplit(ctx, files.shared, files.reference, path)
+	if err != nil {
+		return stateFiles{}, errors.Join(err, files.Close())
+	}
+	registry, err := measures.Embedded()
+	if err != nil {
+		return stateFiles{}, errors.Join(fmt.Errorf("load server measures: %w", err), files.Close())
+	}
+	if files.leagues, err = openLeagueFiles(ctx, leaguesRoot(path), files.reference, history.New(nil, registry), head); err != nil {
 		return stateFiles{}, errors.Join(err, files.Close())
 	}
 	return files, nil
@@ -184,7 +200,10 @@ func openLeague(ctx context.Context, path string, reference *db.Pools) (*db.Pool
 
 func (f stateFiles) Close() error {
 	var errs []error
-	for _, pools := range []*db.Pools{f.signIns, f.league, f.reference} {
+	if f.leagues != nil {
+		errs = append(errs, f.leagues.Close())
+	}
+	for _, pools := range []*db.Pools{f.signIns, f.shared, f.reference} {
 		if pools != nil {
 			errs = append(errs, pools.Close())
 		}
@@ -192,15 +211,14 @@ func (f stateFiles) Close() error {
 	return errors.Join(errs...)
 }
 
-// signInStore is the sign-in store over the sign-in file, fenced by the league writer.
+// signInStore is the sign-in store over the sign-in file, fenced by every league file's writer.
 func signInStore(files stateFiles) *accountstore.Store {
 	store := accountstore.NewServerFile(files.signIns)
 	store.SetCommitFence(func(ctx context.Context) (func(), error) {
-		conn, err := files.league.Write().Conn(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("reserve the league writer: %w", err)
+		if files.leagues == nil {
+			return func() {}, nil
 		}
-		return func() { _ = conn.Close() }, nil
+		return files.leagues.fence(ctx)
 	})
 	return store
 }
@@ -218,6 +236,28 @@ func recordDirectory(ctx context.Context, ledger *history.Store, signIns *accoun
 	}
 	if err := signIns.RecordLeagues(ctx, entries); err != nil {
 		return fmt.Errorf("record the leagues on this server: %w", err)
+	}
+	return nil
+}
+
+// leagueStore is league's own store, ready for a console command.
+func leagueStore(ctx context.Context, files stateFiles, league string) (*history.Store, error) {
+	store, ok := files.leagues.store(league)
+	if !ok {
+		return nil, fmt.Errorf("league %s is not on this server; nothing was changed", league)
+	}
+	if err := store.Initialize(ctx); err != nil {
+		return nil, fmt.Errorf("initialize league %s: %w", league, err)
+	}
+	return store, nil
+}
+
+// recordLeagues records every league file's leagues in the directory.
+func recordLeagues(ctx context.Context, leagues *leagueFiles, signIns *accountstore.Store) error {
+	for _, store := range leagues.stores() {
+		if err := recordDirectory(ctx, store, signIns); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -275,19 +315,17 @@ func startHostedDueWorker(ctx context.Context, worker *leagueservice.DueWorker) 
 }
 
 func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte, catalogue string) (serverhttp.Hosted, error) {
-	registry, err := measures.Embedded()
-	if err != nil {
-		return serverhttp.Hosted{}, fmt.Errorf("load server measures: %w", err)
-	}
-	store := history.New(files.league, registry)
-	if err := store.Initialize(ctx); err != nil {
-		return serverhttp.Hosted{}, fmt.Errorf("initialize server history: %w", err)
+	family := files.leagues.family
+	for _, store := range files.leagues.stores() {
+		if err := store.Initialize(ctx); err != nil {
+			return serverhttp.Hosted{}, fmt.Errorf("initialize server history: %w", err)
+		}
 	}
 	credentials := signInStore(files)
 	if err := credentials.Initialize(ctx); err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize server accounts: %w", err)
 	}
-	if err := recordDirectory(ctx, store, credentials); err != nil {
+	if err := recordLeagues(ctx, files.leagues, credentials); err != nil {
 		return serverhttp.Hosted{}, err
 	}
 	work := accounts.NewPasswordWork()
@@ -297,25 +335,40 @@ func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte,
 		return serverhttp.Hosted{}, fmt.Errorf("initialize server authenticators: %w", err)
 	}
 	clock := leagueservice.NewHostClock()
-	store.SetClock(clock.Now)
-	leagues := newLeaguePins(store)
+	family.SetClock(clock.Now)
+	leagues := newLeaguePins(files.leagues)
 	worker := leagueservice.NewDueWorker(leagues, func() nativecheck.Facts { return nil }, clock)
 	// HTTPS recovery is by printed code only; the zero digest matches no offline key, so console recovery stays offline.
 	confirmations, err := serverhttp.NewConfirmations()
 	if err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize human confirmation: %w", err)
 	}
-	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
+	// Store is the family: it gives the clock; every league's data comes from its own store (Pins).
+	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Leagues: leagues}), Confirmations: confirmations, Store: family, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Passwords: passwords, Worker: worker, Registry: catalogue,
-		Join:    accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, work),
+		Join:    accounts.NewJoin(credentials, leagueservice.JoinSeats{Leagues: leagues}, work),
 		Replies: serverhttp.NewReplyCache(replyCacheBytes)}
-	for _, pools := range []*db.Pools{files.league, files.signIns, files.reference} {
-		if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
-			return serverhttp.Hosted{}, fmt.Errorf("record server release: %w", err)
-		}
+	if err := stampRelease(ctx, files); err != nil {
+		return serverhttp.Hosted{}, err
 	}
 	return handler, nil
+}
+
+// stampRelease records this release in every file the server holds.
+func stampRelease(ctx context.Context, files stateFiles) error {
+	pools := []*db.Pools{files.shared, files.signIns, files.reference}
+	for _, league := range files.leagues.leagues() {
+		if p, ok := files.leagues.pools(league); ok {
+			pools = append(pools, p)
+		}
+	}
+	for _, p := range pools {
+		if err := p.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
+			return fmt.Errorf("record server release: %w", err)
+		}
+	}
+	return nil
 }
 
 func readPreviewRegistry(path string) ([]byte, error) {
@@ -352,18 +405,24 @@ func recoverPlayers(ctx context.Context, files stateFiles, output io.Writer) err
 	if files.reference == nil {
 		return nil
 	}
-	recovered, err := history.RecoverLeagueIdentities(ctx, files.league, files.reference)
-	if err != nil {
-		return fmt.Errorf("put back league players: %w", err)
-	}
-	if recovered.Installed > 0 {
-		if _, err := fmt.Fprintf(output, "Put back %d player(s) the football reference file lacked, from the leagues' own records.\n", recovered.Installed); err != nil {
-			return fmt.Errorf("report players: %w", err)
+	for _, league := range files.leagues.leagues() {
+		pools, ok := files.leagues.pools(league)
+		if !ok {
+			continue
 		}
-	}
-	for _, conflict := range recovered.Conflicts {
-		if _, err := fmt.Fprintf(output, "Left out player %s: another player already holds that outside id. Call Christopher.\n", conflict); err != nil {
-			return fmt.Errorf("report players: %w", err)
+		recovered, err := history.RecoverLeagueIdentities(ctx, pools, files.reference)
+		if err != nil {
+			return fmt.Errorf("put back league %s's players: %w", league, err)
+		}
+		if recovered.Installed > 0 {
+			if _, err := fmt.Fprintf(output, "Put back %d player(s) the football reference file lacked, from league %s's own records.\n", recovered.Installed, league); err != nil {
+				return fmt.Errorf("report players: %w", err)
+			}
+		}
+		for _, conflict := range recovered.Conflicts {
+			if _, err := fmt.Fprintf(output, "Left out player %s of league %s: another player already holds that outside id. Call Christopher.\n", conflict, league); err != nil {
+				return fmt.Errorf("report players: %w", err)
+			}
 		}
 	}
 	return nil

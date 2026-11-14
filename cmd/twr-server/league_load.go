@@ -62,10 +62,7 @@ func loadLeague(ctx context.Context, path, mirrorPath, mflLeague, pin string, ra
 	if err != nil {
 		return fmt.Errorf("load server measures: %w", err)
 	}
-	server := history.New(files.league, registry)
-	if err := server.Initialize(ctx); err != nil {
-		return fmt.Errorf("initialize server history: %w", err)
-	}
+	created := &createdLeague{files: files.leagues}
 	signIns := signInStore(files)
 	commissioner, err := commissionerAccount(ctx, signIns, raw)
 	if err != nil {
@@ -81,25 +78,50 @@ func loadLeague(ctx context.Context, path, mirrorPath, mflLeague, pin string, ra
 	}
 	defer cleanup()
 	mirror := leagueload.Mirror{Store: history.New(mirrorPools, registry)}
-	result, err := leagueload.Load(ctx, leagueload.Request{MFLLeague: mflLeague, Commissioner: principal, Workspace: workspace, Server: server,
+	result, err := leagueload.Load(ctx, leagueload.Request{MFLLeague: mflLeague, Commissioner: principal, Workspace: workspace, Server: created.create,
 		Source: leagueload.ReplaySource(ctx, mirror, mflLeague, time.Now),
 		Football: func(ctx context.Context, season int) ([]byte, string, error) {
 			return mirror.Football(ctx, season, time.Now())
 		}, Now: time.Now})
 	if err != nil {
-		return fmt.Errorf("load the league: %w", err)
+		// Nothing names a league whose load failed; its half-made file goes with it.
+		return errors.Join(fmt.Errorf("load the league: %w", err), files.leagues.discard(created.league))
 	}
 	// The league has committed in the league file; only now does the directory name it.
-	if err := recordDirectory(ctx, server, signIns); err != nil {
+	if err := recordDirectory(ctx, created.store, signIns); err != nil {
 		return err
 	}
+	if err := reportLoad(output, result, commissioner.Username, pin); err != nil {
+		return err
+	}
+	return nil
+}
+
+// createdLeague makes the loaded league's own file when the loader asks for it, and remembers it.
+type createdLeague struct {
+	files  *leagueFiles
+	league string
+	store  *history.Store
+}
+
+func (c *createdLeague) create(ctx context.Context, league string) (*history.Store, error) {
+	store, err := c.files.create(ctx, league)
+	if err != nil {
+		return nil, err
+	}
+	c.league, c.store = league, store
+	return store, store.Initialize(ctx) //nolint:wrapcheck // the loader names the step
+}
+
+// reportLoad writes the loaded league's football pin, when asked for, and says what was loaded.
+func reportLoad(output io.Writer, result leagueload.Result, commissioner, pin string) error {
 	if pin != "" {
 		if err := writePin(pin, result.Football); err != nil {
 			return err
 		}
 	}
-	_, err = fmt.Fprintf(output, "League %s is active on this server with %d franchises; %s is its commissioner. Football evidence %s.\n",
-		result.League, result.Franchises, commissioner.Username, result.Football)
+	_, err := fmt.Fprintf(output, "League %s is active on this server with %d franchises; %s is its commissioner. Football evidence %s.\n",
+		result.League, result.Franchises, commissioner, result.Football)
 	if err != nil {
 		return fmt.Errorf("report league load (the load has already committed): %w", err)
 	}

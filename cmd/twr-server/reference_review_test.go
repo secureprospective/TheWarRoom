@@ -30,7 +30,7 @@ func TestReferenceRestoreReportsMissingOwnedPlayer(t *testing.T) {
 // evidence is back the league gets it by itself at the next look (at most once a minute).
 func TestMissingPinnedReferenceStopsHostedSelection(t *testing.T) {
 	h := newTwoFileHost(t)
-	registry, err := measures.Embedded()
+	_, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func TestMissingPinnedReferenceStopsHostedSelection(t *testing.T) {
 		t.Fatal(err)
 	}
 	stored := packed.Bytes()
-	pins := newLeaguePins(history.New(h.files.league, registry))
+	pins := newLeaguePins(h.files.leagues)
 	now := time.Date(2026, 11, 14, 12, 0, 0, 0, time.UTC)
 	pins.now = func() time.Time { return now }
 	if err := pins.selectPins(ctx, "", []accountstore.DirectoryEntry{{League: "native.hosted", Football: digest}}); err != nil {
@@ -82,16 +82,16 @@ func TestMissingPinnedReferenceStopsHostedSelection(t *testing.T) {
 func TestPinFootballLiveThroughSocket(t *testing.T) {
 	ctx := t.Context()
 	h := newTwoFileHost(t)
-	registry, err := measures.Embedded()
+	_, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
 	}
 	digest, _ := importFootball(t, h.files, "Pinned")
 	signIns := signInStore(h.files)
-	if err := recordDirectory(ctx, history.New(h.files.league, registry), signIns); err != nil {
+	if err := recordDirectory(ctx, hostedLeague(t, h.files), signIns); err != nil {
 		t.Fatal(err)
 	}
-	pins := newLeaguePins(history.New(h.files.league, registry))
+	pins := newLeaguePins(h.files.leagues)
 	if err := pins.selectPins(ctx, "", nil); err != nil {
 		t.Fatal(err)
 	}
