@@ -67,6 +67,10 @@ func TestDesktopNativeEnrollmentAssignedFranchise(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// An unseated stream is refused, ending that session. Sign in after assignment.
+	if _, err := desktop.Act(t.Context(), request); err != nil {
+		t.Fatal(err)
+	}
 	view, err = desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
 	if err != nil || view.Franchise != "franchise.01" || view.FranchiseName != "Owner club" || view.Role != "Owner" {
 		t.Fatalf("assigned franchise: %+v %v", view, err)

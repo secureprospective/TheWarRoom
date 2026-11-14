@@ -14,3 +14,9 @@ Reuse `Desktop.generation` with L1's transport generation; this base did not con
 ## Blocked / rejected
 No guessed team scope: the existing recipient view gives only a revision; use permitted broad league invalidation.
 No Wails event path or composition lifecycle edits. No event replay log; bounded hints fall back to resync.
+
+## Evidence
+47 distinct top-level Go tests passed with `-race` (23 serverclient; 16 stream/publisher; 8 hosted desktop).
+Frontend subscription: 2 vitest tests; TypeScript and production build passed. Commit hooks passed.
+Pre-push caught the old enrollment test's assumption of credential survival after a stream 403;
+it now signs in again after seat assignment, retaining its enrollment/removal authorization assertions.
