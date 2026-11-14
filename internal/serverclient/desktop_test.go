@@ -2,10 +2,13 @@ package serverclient
 
 import (
 	"crypto/x509"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
@@ -115,5 +118,106 @@ func TestDesktopBusyServerWording(t *testing.T) {
 	}
 	if err := desktopRefusal(serverhttp.TOTPStepUpPath, 403); err == nil || !strings.Contains(err.Error(), "phone clock") {
 		t.Errorf("a refused code lost its advice: %v", err)
+	}
+}
+
+func TestWorkflowParallelRequests(t *testing.T) {
+	started := make(chan struct{}, 2)
+	release := make(chan struct{})
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		started <- struct{}{}
+		<-release
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"label":"league","data":{}}`))
+	}))
+	defer server.Close()
+	released := false
+	defer func() {
+		if !released {
+			close(release)
+		}
+	}()
+	roots := x509.NewCertPool()
+	roots.AddCert(server.Certificate())
+	d, err := NewDesktop(server.URL, "native.test", roots, &testCredentials{secret: strings.Repeat("a", 42) + "A"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer d.Close()
+	raw := serverhttp.RawWorkflow{Command: "native.assets.read", Version: "1", Mode: "read", Arguments: json.RawMessage(`{"league":"native.test"}`)}
+	results := make(chan error, 2)
+	go func() { _, err := d.Workflow(t.Context(), raw); results <- err }()
+	select {
+	case <-started:
+	case <-time.After(3 * time.Second):
+		t.Fatal("first request did not start")
+	}
+	go func() { _, err := d.Workflow(t.Context(), raw); results <- err }()
+	select {
+	case <-started:
+	case <-time.After(3 * time.Second):
+		t.Fatal("second request blocked behind first")
+	}
+	close(release)
+	released = true
+	for range 2 {
+		if err := <-results; err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestWorkflowUnauthorizedSessionGeneration(t *testing.T) {
+	for _, relogin := range []bool{false, true} {
+		t.Run(fmt.Sprintf("relogin=%t", relogin), func(t *testing.T) {
+			started, release := make(chan struct{}), make(chan struct{})
+			old := strings.Repeat("a", 42) + "A"
+			fresh := strings.Repeat("b", 42) + "A"
+			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == serverhttp.LoginPath {
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = fmt.Fprintf(w, `{"protocol":1,"bearer":%q,"session":{"account":{"id":"12345678-1234-4234-8234-123456789abc","username":"owner"},"expires_at":"2026-11-01T00:00:00Z"}}`, fresh)
+					return
+				}
+				close(started)
+				<-release
+				w.WriteHeader(http.StatusUnauthorized)
+			}))
+			defer server.Close()
+			roots := x509.NewCertPool()
+			roots.AddCert(server.Certificate())
+			store := &testCredentials{secret: old}
+			d, err := NewDesktop(server.URL, "native.test", roots, store)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer d.Close()
+			raw := serverhttp.RawWorkflow{Command: "native.assets.read", Version: "1", Mode: "read", Arguments: json.RawMessage(`{"league":"native.test"}`)}
+			done := make(chan error, 1)
+			go func() { _, err := d.Workflow(t.Context(), raw); done <- err }()
+			select {
+			case <-started:
+			case <-time.After(3 * time.Second):
+				close(release)
+				t.Fatal("workflow did not start")
+			}
+			if relogin {
+				if _, err := d.Act(t.Context(), RawDesktop{Action: "login", Username: "owner", Password: "owner-password"}); err != nil {
+					close(release)
+					t.Fatal(err)
+				}
+			}
+			close(release)
+			if err := <-done; err == nil {
+				t.Fatal("unauthorized workflow succeeded")
+			}
+			want := ""
+			if relogin {
+				want = fresh
+			}
+			if d.bearer != want || store.secret != want {
+				t.Fatal("wrong session retained after unauthorized response")
+			}
+		})
 	}
 }
