@@ -14,20 +14,7 @@ import (
 // CreatePlayerIdentity separates durable identity and ownership from fetched facts.
 // Legacy evidence keeps its original MFL strings; player_ids is a read adapter.
 func CreatePlayerIdentity(ctx context.Context, tx *sql.Tx) error {
-	const ddl = `CREATE TABLE canonical_player (
- id TEXT PRIMARY KEY CHECK(length(id)=39 AND substr(id,1,7)='player.')
- ) STRICT;
- CREATE TRIGGER canonical_player_no_update BEFORE UPDATE ON canonical_player BEGIN SELECT RAISE(ABORT,'player identity is immutable'); END;
- CREATE TRIGGER canonical_player_no_delete BEFORE DELETE ON canonical_player BEGIN SELECT RAISE(ABORT,'player identity is permanent'); END;
- CREATE TABLE player_external_id (
- provider TEXT NOT NULL CHECK(length(provider)>0),
- value TEXT NOT NULL CHECK(length(value)>0),
- player TEXT NOT NULL REFERENCES canonical_player(id),
- PRIMARY KEY(provider,value)
- ) STRICT;
- CREATE INDEX external_ids_by_player ON player_external_id(player);
- CREATE UNIQUE INDEX one_mfl_id_per_player ON player_external_id(player) WHERE provider='mfl';
- CREATE TABLE player_ownership (
+	const ddl = canonicalIdentityDDL + ` CREATE TABLE player_ownership (
  league TEXT NOT NULL CHECK(length(league)>0),
  side TEXT NOT NULL,
  player TEXT NOT NULL REFERENCES canonical_player(id),
@@ -49,14 +36,39 @@ func CreatePlayerIdentity(ctx context.Context, tx *sql.Tx) error {
  WHERE p.id_type<>'mfl';
  DROP TABLE player_ids;
  DROP TABLE migration_player_ids;
- CREATE VIEW player_ids AS SELECT e.provider AS id_type,e.value AS id_value,m.value AS player_id
- FROM player_external_id e JOIN player_external_id m ON m.player=e.player AND m.provider='mfl'
- WHERE e.provider<>'mfl';`
+` + playerIDsViewDDL
 	if _, err := tx.ExecContext(ctx, ddl); err != nil {
 		return fmt.Errorf("migrate canonical player identities: %w", err)
 	}
 	return nil
 }
+
+// CreateReferenceIdentity creates permanent identity without league ownership.
+func CreateReferenceIdentity(ctx context.Context, tx *sql.Tx) error {
+	if _, err := tx.ExecContext(ctx, canonicalIdentityDDL+playerIDsViewDDL); err != nil {
+		return fmt.Errorf("create reference identities: %w", err)
+	}
+	return nil
+}
+
+const canonicalIdentityDDL = `CREATE TABLE canonical_player (
+ id TEXT PRIMARY KEY CHECK(length(id)=39 AND substr(id,1,7)='player.')
+ ) STRICT;
+ CREATE TRIGGER canonical_player_no_update BEFORE UPDATE ON canonical_player BEGIN SELECT RAISE(ABORT,'player identity is immutable'); END;
+ CREATE TRIGGER canonical_player_no_delete BEFORE DELETE ON canonical_player BEGIN SELECT RAISE(ABORT,'player identity is permanent'); END;
+ CREATE TABLE player_external_id (
+ provider TEXT NOT NULL CHECK(length(provider)>0),
+ value TEXT NOT NULL CHECK(length(value)>0),
+ player TEXT NOT NULL REFERENCES canonical_player(id),
+ PRIMARY KEY(provider,value)
+ ) STRICT;
+ CREATE INDEX external_ids_by_player ON player_external_id(player);
+ CREATE UNIQUE INDEX one_mfl_id_per_player ON player_external_id(player) WHERE provider='mfl';
+`
+
+const playerIDsViewDDL = ` CREATE VIEW player_ids AS SELECT e.provider AS id_type,e.value AS id_value,m.value AS player_id
+ FROM player_external_id e JOIN player_external_id m ON m.player=e.player AND m.provider='mfl'
+ WHERE e.provider<>'mfl';`
 
 // EnsureMFLPlayer is the compatibility boundary: an MFL value resolves to an
 // opaque permanent identity. It never normalizes or strips provider bytes.
@@ -145,6 +157,43 @@ func EnsureMFLPlayers(ctx context.Context, tx *sql.Tx, mfl []string) error {
 	return nil
 }
 
+// CreateLeaguePlayers gives the league side its own player identity rows: player_ownership refers to
+// league_player, not to canonical_player. On the hosted server canonical_player lives in the reference
+// file, and SQLite keeps a foreign key inside one file, so the league file holds the ids it owns. The
+// ids are the same permanent canonical ids; links and facts stay on the reference side.
+func CreateLeaguePlayers(ctx context.Context, tx *sql.Tx) error {
+	const ddl = leaguePlayersDDL + `
+ INSERT INTO league_player SELECT DISTINCT player FROM player_ownership;
+ ALTER TABLE player_ownership RENAME TO legacy_player_ownership;` + leagueOwnershipDDL + `
+ INSERT INTO player_ownership SELECT * FROM legacy_player_ownership;
+ DROP TABLE legacy_player_ownership;`
+	if _, err := tx.ExecContext(ctx, ddl); err != nil {
+		return fmt.Errorf("migrate league player identities: %w", err)
+	}
+	return nil
+}
+
+// CreateLeagueOwnership creates only the league's identity and ownership tables.
+func CreateLeagueOwnership(ctx context.Context, tx *sql.Tx) error {
+	if _, err := tx.ExecContext(ctx, leaguePlayersDDL+leagueOwnershipDDL); err != nil {
+		return fmt.Errorf("create league ownership: %w", err)
+	}
+	return nil
+}
+
+const leaguePlayersDDL = `CREATE TABLE league_player (
+ id TEXT PRIMARY KEY CHECK(length(id)=39 AND substr(id,1,7)='player.')
+ ) STRICT;
+ CREATE TRIGGER league_player_no_update BEFORE UPDATE ON league_player BEGIN SELECT RAISE(ABORT,'player identity is immutable'); END;`
+
+const leagueOwnershipDDL = `CREATE TABLE player_ownership (
+ league TEXT NOT NULL CHECK(length(league)>0),
+ side TEXT NOT NULL,
+ player TEXT NOT NULL REFERENCES league_player(id),
+ franchise TEXT NOT NULL CHECK(length(franchise)>0),
+ PRIMARY KEY(league,side,player)
+ ) STRICT;`
+
 // ReplaceRosterOwnership replaces every side's ownership of the league in the caller's transaction, so
 // both sides are saved together or not at all. It takes resolved ids and never inserts identity.
 func ReplaceRosterOwnership(ctx context.Context, tx *sql.Tx, league string, owners []RosterOwner) error {
@@ -152,6 +201,9 @@ func ReplaceRosterOwnership(ctx context.Context, tx *sql.Tx, league string, owne
 		return fmt.Errorf("replace roster ownership: %w", err)
 	}
 	for _, owner := range owners {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO league_player(id) VALUES(?) ON CONFLICT(id) DO NOTHING`, owner.Player); err != nil {
+			return fmt.Errorf("save league player: %w", err)
+		}
 		if _, err := tx.ExecContext(ctx, `INSERT INTO player_ownership(league,side,player,franchise) VALUES(?,?,?,?)`, league, owner.Side, owner.Player, owner.Franchise); err != nil {
 			return fmt.Errorf("save roster ownership: %w", err)
 		}

@@ -36,23 +36,30 @@ type CheckFindings struct {
 // Findings are returned even when pre-existing foreign-key violations remain. Reinitialization
 // at the same version reuses this pool's completed checks; Check provides an explicit recheck.
 func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, error) {
+	return p.MigrateFrom(ctx, 0, steps...)
+}
+
+// MigrateFrom continues a split file's version numbering without replaying its former
+// shared migrations. An empty file starts with the first owned step at base+1.
+func (p *Pools) MigrateFrom(ctx context.Context, base int, steps ...Migration) (Findings, error) {
 	p.migrationMu.Lock()
 	defer p.migrationMu.Unlock()
 	var result Findings
+	latest := base + len(steps)
 	defer func() { p.findings = cloneFindings(result) }()
 	var version int
 	if err := p.read.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return result, fmt.Errorf("db: migration version: %w", err)
 	}
-	if err := refuseNewer(version, len(steps)); err != nil {
+	if err := migrationBounds(version, base, latest); err != nil {
 		return result, err
 	}
-	if p.migrationChecked && p.checkedVersion == version && version == len(steps) {
+	if p.migrationChecked && p.checkedVersion == version && version == latest {
 		result = cloneFindings(p.findings)
 		result.Backup = ""
 		return result, nil
 	}
-	if version == len(steps) {
+	if version == latest {
 		// Nothing to migrate: the full integrity check is the routine check that runs after
 		// launch (RoutineCheck), not a launch blocker; on a large history it took ~17 s.
 		p.migrationChecked, p.checkedVersion = true, version
@@ -63,22 +70,32 @@ func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, erro
 	if err != nil {
 		return result, err
 	}
-	if version < len(steps) && p.scratchDir == "" {
+	if version < latest && p.scratchDir == "" {
 		result.Backup, err = p.backupMigration(ctx, version)
 		if err != nil {
 			return result, err
 		}
 	}
-	for next := version + 1; next <= len(steps); next++ {
-		if err := p.migrateStep(ctx, next, steps[next-1]); err != nil {
+	for next := max(version, base) + 1; next <= latest; next++ {
+		if err := p.migrateStep(ctx, next, steps[next-base-1]); err != nil {
 			return result, err
 		}
 	}
 	result.After, err = QuickCheck(ctx, p.write)
 	if err == nil {
-		p.migrationChecked, p.checkedVersion = true, len(steps)
+		p.migrationChecked, p.checkedVersion = true, latest
 	}
 	return result, err
+}
+
+func migrationBounds(version, base, latest int) error {
+	if base < 0 {
+		return fmt.Errorf("db: negative migration base")
+	}
+	if version != 0 && version < base {
+		return fmt.Errorf("db: schema v%d predates this file's migration list", version)
+	}
+	return refuseNewer(version, latest)
 }
 
 func (p *Pools) migrateStep(ctx context.Context, version int, step Migration) error {

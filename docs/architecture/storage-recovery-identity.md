@@ -21,12 +21,49 @@ On the desktop, accounts share `history.db` and carry their own ordered list
 `schema_version` row named `accounts` because that file's `user_version` belongs to
 history. The hosted server keeps sign-ins in their own file, `accounts.db` beside
 `server.db` (`accounts.NewServerFile`, `cmd/twr-server/signin_file.go`); that file's
-version is its own `user_version` (`accounts.ServerVersion`, v1) and it is refused
+version is its own `user_version` (`accounts.ServerVersion`, v2) and it is refused
 when newer. It holds every `account_*` table, `league_join_links`, the security audit
-chain and `league_directory` (league, state, created). The directory is a listing
-only: it is written after a league's first commit and refreshed from the league file
+chain and `league_directory` (league, state, created, football). The directory is a
+listing: it is written after a league's first commit and refreshed from the league file
 on every start; the league file is the truth for whether a league exists and its
-state, and nothing reads the directory to make a league appear.
+state, and nothing reads the directory to make a league appear. Its one reader is the
+football pin: `football` (v2) is the league's pinned football evidence digest, empty
+for the server's `-football` pin. Each distinct pin is served by its own
+`history.Store` over the same league file (`cmd/twr-server/football_pins.go`), so
+re-pinning one league (`twr-server pin-football`; on a running server through the
+owner-only status socket, applied from the league's next request) never moves another's.
+A request reads its league's pin once (`serverhttp.Hosted.withRequestPin`), so a pin changed
+mid-request cannot give it two football selections. A pin whose evidence is missing gives
+that league a store with no football (`LeaguePin.Missing`): readings go on, workflow holds
+changes, and the evidence is looked for again at most once a minute.
+
+The hosted server keeps football reference data in a third file, `reference.db`
+(`cmd/twr-server/reference_file.go`, `history.ReferenceTables`): the raw archive,
+fetch log, loads and observations, scoring and model runs, compiled inputs, live
+lines, `canonical_player`, `player_external_id`, `player_record` and the measure
+mirror. Its own reference migration list starts at v1 and creates no league tables,
+not even a destination `transfer_identity`. The hosted league has a separate list,
+continuing its version numbering at v14, and creates no reference tables. Each
+file owns its `user_version` and refuses newer versions before migrating. Combined
+desktop and pre-conversion files keep their original history list.
+The league file attaches it read-only on every connection as schema `reference`
+(`db.OpenWithReference`): a table the league file no longer holds resolves there by
+name, so the stores' queries are unchanged, and no code looks for a reference table in
+the league file. SQLite commits each file on its own under WAL, so no transaction
+writes both: player ids are minted and committed first (slice 2's pre-step), then the
+league write runs. Every reference mutation uses the reference file's own
+pools (`db.Pools.ReferencePools`), including identity minting, transfer blobs,
+registry mirrors and fact/score identity triggers. Live retention drops and
+reinstalls its append-only guard in that same reference-owned transaction. A crash
+between commits leaves unused immutable identities or content-addressed bodies; retries reuse them.
+
+What crosses between league and reference, and in what form: raw archive bodies by
+SHA-256 (transfer receipts, football evidence digests), measures by name, and player
+identity by permanent canonical id. Identity is the one exception to "by content":
+the ids are random, so the league file keeps its own `league_player` rows (history
+v14) for the ids it owns, and `player_ownership` refers to them inside the league
+file. Outside links and player facts stay on the reference side. A restore therefore
+refuses a reference set lacking any `league_player` id.
 
 Writes between the two files are ordered, never atomic: an account commits in the
 sign-in file before the league records its seat (join, first sign-in, league-load),
@@ -44,7 +81,22 @@ the next start. (3) One transaction in `server.db` removes the sign-in tables (w
 (4) Rename the proven file to `accounts.db` and fsync the folder; a crash between (3)
 and (4) is finished on the next start, because the record says the move happened and
 the proven file is waiting. The security chain's own rows stay in `server.db` as
-frozen evidence: the audit tables are append-only, and they hold hashes, not secrets. v1 adopts the tables
+frozen evidence: the audit tables are append-only, and they hold hashes, not secrets.
+
+The reference move runs next, through the same steps (`cmd/twr-server/file_move.go`):
+(1) pre-change backup of `server.db`; (2) build `reference.db.converting` from the
+reference migrations, copy every reference table as stored (identity first, so the
+evidence identity triggers mint nothing), prove each table (row count and ordered-row
+digest) and the raw archive (key, size and SHA-256 of the stored bytes, in key order),
+close and fsync; a crash here leaves `server.db` untouched and the half-built file is
+deleted on the next start. (3) One transaction in `server.db` drops the reference
+views and tables and writes the `reference_move` record: the point of no return.
+(4) Rename to `reference.db`, fsync the folder, then `VACUUM` `server.db` (atomic; a
+crash during it leaves the file as before it). A crash between (3) and (4) is finished
+on the next start. Contradictory states (record and tables both present, record with
+no file, a file with no record) refuse to start with a plain message.
+
+v1 adopts the tables
 older builds created at runtime (idempotent DDL, rows kept); a newer accounts version
 is refused. The security audit chain is still verified on every start. Existing migration backups and encrypted R2 matched sets remain unchanged.
 
@@ -123,6 +175,17 @@ Older transfer documents remain readable with the absent optional field.
   without MFL; side-qualified ownership uniqueness; offline destination safety.
 
 ## Debt left
+
+- Reference lag no longer blocks restore or start (ruling 2026-11-14, "league comes
+  back, football waits"). Players: every league change rewrites the league's roster
+  restore point, with each owned player's permanent id and outside ids, in the same
+  transaction, so `history.RecoverLeagueIdentities` puts missing players back into the
+  reference file from the league file at restore and at every start, never minting; an
+  outside id the reference file already gives to another player is reported, not merged.
+  Football: a missing pinned version comes from its own evidence object
+  (`history.PutArchiveBody`), or the league waits for it as above. Left: a player the
+  league owned only in the past (in `league_player`, not in a restore point) whose facts
+  the reference file lost is reported as missing and does not come back.
 
 - A join that stops between its two commits leaves an account with no seat; that
   name stays taken, so the owner picks another or the commissioner releases the

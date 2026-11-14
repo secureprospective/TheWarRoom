@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -36,9 +37,13 @@ type Source struct {
 	// coverage; SignInBackup, when set, is the sign-in file's, which a hosted server keeps apart.
 	Backup       func() (offsite.Status, bool)
 	SignInBackup func() (offsite.Status, bool)
-	League       Chain
-	SignIns      SignIns
-	Now          func() time.Time
+	// ReferenceBackup, when set, is the football reference file's coverage. It pauses nothing.
+	ReferenceBackup func() (offsite.Status, bool)
+	// MissingFootball, when set, names each league whose pinned football data this server lacks.
+	MissingFootball func() []string
+	League          Chain
+	SignIns         SignIns
+	Now             func() time.Time
 }
 
 // Checks computes the server's lines afresh on every request; nothing is cached.
@@ -46,9 +51,20 @@ func (s Source) Checks(ctx context.Context) []Check {
 	now := s.Now()
 	status, configured := s.Backup()
 	checks := []Check{backupCheck(leagueBackup, status, configured, now)}
+	if s.ReferenceBackup != nil {
+		status, configured := s.ReferenceBackup()
+		checks = append(checks, backupCheck(referenceBackup, status, configured, now))
+	}
 	if s.SignInBackup != nil {
 		status, configured := s.SignInBackup()
 		checks = append(checks, backupCheck(signInBackup, status, configured, now))
+	}
+	if s.MissingFootball != nil {
+		if missing := s.MissingFootball(); len(missing) > 0 {
+			checks = append(checks, Check{Name: "Football data", State: Problem, Detail: "Not on this server: " + strings.Join(missing, "; ") +
+				". Those leagues can be viewed, but their changes wait until the data is back; the server looks for it again every minute.",
+				Action: "Restore a newer football reference backup, or pin the league to football data the server holds."})
+		}
 	}
 	checks = append(checks, s.historyCheck(ctx))
 	restore, incident, err := s.SignIns.LastResets(ctx)
@@ -74,6 +90,8 @@ type backupPart struct{ name, paused, unconfigured string }
 var (
 	leagueBackup = backupPart{name: "Backups", paused: "League changes and sign-ins are paused",
 		unconfigured: "Off-site backups are not set up, so league changes and sign-ins are paused."}
+	referenceBackup = backupPart{name: "Football reference backups", paused: "Nothing is paused, but a restore needs a current football reference backup",
+		unconfigured: "Off-site backups are not set up for football reference data."}
 	signInBackup = backupPart{name: "Sign-in backups", paused: "Sign-ins and account changes are paused (league changes are not)",
 		unconfigured: "Off-site backups are not set up, so sign-ins and account changes are paused."}
 )
@@ -105,6 +123,13 @@ func backupCheck(part backupPart, status offsite.Status, configured bool, now ti
 		}
 		check.Action = "Check that the house internet works. Changes resume by themselves once a backup is checked. " +
 			"If it is still paused after an hour, call Christopher. Do not replace the server."
+		if part == referenceBackup {
+			check.Detail = part.paused + ": no football reference backup saved and checked in the last 14 minutes. Last good backup: " + last + "."
+			if status.Failure != "" {
+				check.Detail += " Newest error: " + status.Failure + "."
+			}
+			check.Action = "Check that the house internet works. If this line is still here after an hour, tell Christopher. Do not replace the server."
+		}
 	}
 	return check
 }
@@ -151,9 +176,19 @@ func Listen(path string) (net.Listener, error) {
 	return listener, nil
 }
 
-// Serve answers StatusPath on the private socket until ctx ends.
-func Serve(ctx context.Context, listener net.Listener, source Source) error {
+// Route is one more request the private socket answers, such as a running server's own console
+// commands. The socket is owner-only, so a route is as trusted as the service account.
+type Route struct {
+	Pattern string
+	Handler http.HandlerFunc
+}
+
+// Serve answers StatusPath, and each route, on the private socket until ctx ends.
+func Serve(ctx context.Context, listener net.Listener, source Source, routes ...Route) error {
 	mux := http.NewServeMux()
+	for _, route := range routes {
+		mux.HandleFunc(route.Pattern, route.Handler)
+	}
 	mux.HandleFunc("GET "+StatusPath, func(w http.ResponseWriter, r *http.Request) {
 		body, err := json.Marshal(Report{Version: reportVersion, Checks: source.Checks(r.Context())})
 		if err != nil {

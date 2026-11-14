@@ -25,7 +25,7 @@ func configureHostedBackup(_ context.Context, _ *serverhttp.Hosted, _ stateFiles
 		return nil, hostedBackups{}, err
 	}
 	log.Printf("DISPOSABLE PRACTICE BUILD: no off-site protection; never use for real league state")
-	return func() {}, hostedBackups{noBackups, noBackups}, nil
+	return func() {}, hostedBackups{league: noBackups, reference: noBackups, signIns: noBackups}, nil
 }
 
 // upgradeOffsite has no R2 in practice builds; upgrades there run without -backup-config.

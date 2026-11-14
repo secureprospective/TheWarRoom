@@ -25,6 +25,19 @@ type rawCheckpoint struct {
 	Captured time.Time     `json:"captured"`
 	Ledger   *db.AuditHead `json:"ledger,omitempty"`
 	Security *db.AuditHead `json:"security,omitempty"`
+	// Reference names a reference set's raw archive by content; it has no chain.
+	Reference *referenceAnchor `json:"reference,omitempty"`
+}
+
+// referenceAnchor is a raw archive's body count and the digest of its sorted sha256 keys.
+type referenceAnchor struct {
+	Bodies  int64  `json:"bodies"`
+	Archive string `json:"archive"`
+}
+
+func referenceSetCheckpoint(anchor history.ArchiveAnchor) ([]byte, error) {
+	return encodeCheckpoint(rawCheckpoint{Version: 1, Captured: time.Now().UTC(),
+		Reference: &referenceAnchor{Bodies: anchor.Rows, Archive: anchor.Digest}})
 }
 
 var errCheckpointMismatch = errors.New("league history on this server no longer matches the saved checkpoint")
@@ -39,7 +52,7 @@ type signInSource struct {
 
 // locateSignIns only reads. Once the league file records the move, only the sign-in file is read.
 func locateSignIns(ctx context.Context, leaguePath string) (signInSource, error) {
-	pools, err := db.OpenReadOnly(ctx, leaguePath, history.SchemaVersion())
+	pools, err := db.OpenReadOnly(ctx, leaguePath, history.LeagueSchemaVersion())
 	if err != nil {
 		return signInSource{}, fmt.Errorf("open server database: %w", err)
 	}
@@ -59,7 +72,7 @@ func locateSignIns(ctx context.Context, leaguePath string) (signInSource, error)
 	if err != nil || !held {
 		return signInSource{}, err
 	}
-	return signInSource{path: leaguePath, version: history.SchemaVersion()}, nil
+	return signInSource{path: leaguePath, version: history.LeagueSchemaVersion()}, nil
 }
 
 // runCheckpoint prints a verified checkpoint of the server's two histories, or with -check compares
@@ -124,7 +137,7 @@ func securityHead(ctx context.Context, source signInSource) (db.AuditHead, error
 }
 
 func withLedger(ctx context.Context, path string, use func(*history.Store) error) error {
-	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	pools, err := db.Open(ctx, path, history.LeagueSchemaVersion())
 	if err != nil {
 		return fmt.Errorf("open server database: %w", err)
 	}
@@ -176,7 +189,7 @@ func readCheckpoint(file string) (rawCheckpoint, error) {
 		return rawCheckpoint{}, fmt.Errorf("read saved checkpoint: %w", err)
 	}
 	var saved rawCheckpoint
-	if err := json.Unmarshal(body, &saved); err != nil || saved.Version != 1 || (saved.Ledger == nil && saved.Security == nil) {
+	if err := json.Unmarshal(body, &saved); err != nil || saved.Version != 1 || (saved.Ledger == nil && saved.Security == nil && saved.Reference == nil) {
 		return rawCheckpoint{}, fmt.Errorf("the saved checkpoint file is not one this version can read")
 	}
 	return saved, nil

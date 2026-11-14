@@ -96,7 +96,7 @@ func (h Hosted) replyScope(ctx context.Context, service *leagueservice.Service, 
 		return replyScope{}, fmt.Errorf("admit cached reading: %w", err)
 	}
 	//nolint:contextcheck // The request-scoped StoredHost supplies the request context.
-	epoch, _, ok, err := service.ReadingEpoch(league, h.Football.Kickoffs())
+	epoch, _, ok, err := service.ReadingEpoch(league, h.pinFor(ctx, league).Football.Kickoffs())
 	if err != nil || !ok {
 		return replyScope{}, nil //nolint:nilerr // an untimed league only skips the cache
 	}

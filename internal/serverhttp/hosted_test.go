@@ -2,6 +2,7 @@ package serverhttp_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha1" //nolint:gosec // Independent RFC 6238 test code.
 	"crypto/sha256"
@@ -46,6 +47,9 @@ type hostedFixture struct {
 	now        time.Time
 	worker     *leagueservice.DueWorker
 	skew       *atomic.Int64
+	// footballGone makes the hosted league's pinned football missing, as after a restore whose football
+	// reference backup was older than its league backup.
+	footballGone *atomic.Bool
 	// commissioner caches one signed-in bearer and recent-auth proof (contract_parity_test.go).
 	commissioner [2]string
 	join         *accounts.JoinService
@@ -84,7 +88,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &hostedFixture{history: store, pools: pools, accounts: credentials, principal: string(principal), now: time.Now().UTC(), skew: &atomic.Int64{}}
+	f := &hostedFixture{history: store, pools: pools, accounts: credentials, principal: string(principal), now: time.Now().UTC(), skew: &atomic.Int64{}, footballGone: &atomic.Bool{}}
 	store.SetClock(func() time.Time { return time.Now().Add(time.Duration(f.skew.Load())) })
 	credentials.SetClock(func() time.Time { return f.now })
 	f.sessions, f.totp = accounts.NewSessions(passwords, credentials), totp
@@ -106,6 +110,13 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 			t.Fatal(err)
 		}
 		store.SetPinnedFootball(handler.Football)
+		pinned, bare := serverhttp.LeaguePin{Store: store, Football: handler.Football, Digest: digest}, store.Sibling()
+		handler.Pins = func(context.Context, string) serverhttp.LeaguePin {
+			if f.footballGone.Load() {
+				return serverhttp.LeaguePin{Store: bare, Digest: digest, Missing: true}
+			}
+			return pinned
+		}
 		handler.Worker = leagueservice.NewDueWorker(history.NewOneFile(store), handler.Football.PlayerFacts, workflowClock{f.skew})
 	}
 	f.worker, f.join = handler.Worker, handler.Join

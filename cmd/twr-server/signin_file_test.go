@@ -86,25 +86,6 @@ func newOneFileServer(t *testing.T) oneFile {
 	return s
 }
 
-// backToOneFile turns a freshly made two-file server back into the one-file layout an older release left.
-func backToOneFile(t *testing.T, path string) *db.Pools {
-	t.Helper()
-	if err := removeDatabase(signInPath(path)); err != nil {
-		t.Fatal(err)
-	}
-	pools, err := db.Open(t.Context(), path, history.SchemaVersion())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := pools.Write().ExecContext(t.Context(), `DROP TABLE `+signInMoveTable); err != nil {
-		t.Fatal(err)
-	}
-	if err := accountstore.New(pools).Initialize(t.Context()); err != nil {
-		t.Fatal(err)
-	}
-	return pools
-}
-
 func digestFile(t *testing.T, path string) [32]byte {
 	t.Helper()
 	body, err := os.ReadFile(path)

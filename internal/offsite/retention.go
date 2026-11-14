@@ -17,8 +17,10 @@ func SetTime(name string) (time.Time, error) { return objectTime(name) }
 
 func objectTime(name string) (time.Time, error) {
 	prefix := LeagueSet.Prefix
-	if strings.HasPrefix(name, SignInSet.Prefix) {
-		prefix = SignInSet.Prefix
+	for _, kind := range setKinds() {
+		if strings.HasPrefix(name, kind.Prefix) {
+			prefix = kind.Prefix
+		}
 	}
 	if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, ".tar.gz.age") {
 		return time.Time{}, fmt.Errorf("not a recovery set")

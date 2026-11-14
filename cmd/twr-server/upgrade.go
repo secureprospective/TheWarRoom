@@ -89,6 +89,11 @@ func saveMatchedCopy(ctx context.Context, path, save, backup string) (string, er
 			return "", fmt.Errorf("save the pre-upgrade sign-in copy: %w", err)
 		}
 	}
+	if files.reference != nil {
+		if err := files.reference.CaptureHosted(ctx, referencePath(saved), nil); err != nil {
+			return "", fmt.Errorf("save the pre-upgrade football reference copy: %w", err)
+		}
+	}
 	checkpoint, err := hostedCheckpoint(ctx, saved)
 	if err != nil {
 		return "", fmt.Errorf("verify the pre-upgrade copy: %w", err)
@@ -114,7 +119,7 @@ func openForCopy(ctx context.Context, path string) (stateFiles, error) {
 	if err != nil {
 		return stateFiles{}, err
 	}
-	league, err := db.Open(ctx, path, history.SchemaVersion())
+	league, err := db.Open(ctx, path, history.LeagueSchemaVersion())
 	if err != nil {
 		return stateFiles{}, fmt.Errorf("open server database: %w", err)
 	}
@@ -125,33 +130,44 @@ func openForCopy(ctx context.Context, path string) (stateFiles, error) {
 	if files.signIns, err = db.Open(ctx, source.path, source.version); err != nil {
 		return stateFiles{}, errors.Join(fmt.Errorf("open sign-in file: %w", err), league.Close())
 	}
+	if fileExists(referencePath(path)) {
+		if files.reference, err = db.Open(ctx, referencePath(path), history.ReferenceSchemaVersion()); err != nil {
+			return stateFiles{}, errors.Join(fmt.Errorf("open football reference file: %w", err), files.Close())
+		}
+	}
 	return files, nil
 }
 
-// migrateServer brings history and accounts to this release and stamps both files, so an older binary
-// put back over them refuses them. A one-file server's sign-ins move to their own file here.
+// migrateServer brings history and accounts to this release and stamps every file, so an older binary
+// put back over them refuses them. A one-file server's sign-ins and then its football reference data
+// move to their own files here, after the league file's own migration.
 func migrateServer(ctx context.Context, path string) (err error) {
-	league, err := db.Open(ctx, path, history.SchemaVersion())
+	alone, err := db.Open(ctx, path, history.LeagueSchemaVersion())
 	if err != nil {
 		return fmt.Errorf("open server database: %w", err)
 	}
-	defer func() { err = errors.Join(err, league.Close()) }()
-	signIns, err := openSignIns(ctx, league, path)
+	if err := history.MigrateLeague(ctx, alone); err != nil {
+		return errors.Join(fmt.Errorf("upgrade league history: %w", err), alone.Close())
+	}
+	if err := alone.Close(); err != nil {
+		return fmt.Errorf("close server database: %w", err)
+	}
+	files, err := openSignInFiles(ctx, path)
 	if err != nil {
 		return err
 	}
-	defer func() { err = errors.Join(err, signIns.Close()) }()
+	defer func() { err = errors.Join(err, files.Close()) }()
 	registry, err := measures.Embedded()
 	if err != nil {
 		return fmt.Errorf("load server measures: %w", err)
 	}
-	if err := history.New(league, registry).Initialize(ctx); err != nil {
+	if err := history.New(files.league, registry).Initialize(ctx); err != nil {
 		return fmt.Errorf("upgrade league history: %w", err)
 	}
-	if err := accountstore.NewServerFile(signIns).Initialize(ctx); err != nil {
+	if err := accountstore.NewServerFile(files.signIns).Initialize(ctx); err != nil {
 		return fmt.Errorf("upgrade accounts: %w", err)
 	}
-	for _, pools := range []*db.Pools{league, signIns} {
+	for _, pools := range []*db.Pools{files.league, files.signIns, files.reference} {
 		if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
 			return fmt.Errorf("record server release: %w", err)
 		}
@@ -177,13 +193,18 @@ func upgradeReady(ctx context.Context, path string) error {
 
 // putBack restores the pre-upgrade copies over a failed upgrade. Their sidecars belong to the failed
 // attempt and go first; each copy replaces its file in one rename. A server saved before it had a
-// sign-in file gets none back: the old binary reads sign-ins from the league file.
+// sign-in or reference file gets none back: the old binary reads them from the league file.
 func putBack(path, saved string, cause error) error {
 	err := putBackFile(path, saved)
-	if err == nil && fileExists(signInPath(saved)) {
-		err = putBackFile(signInPath(path), signInPath(saved))
-	} else if err == nil {
-		err = errors.Join(removeDatabase(signInPath(path)), discardPending(pendingSignIns(path)))
+	for _, move := range []fileMove{signInMove, referenceMove} {
+		if err != nil {
+			break
+		}
+		if fileExists(move.path(saved)) {
+			err = putBackFile(move.path(path), move.path(saved))
+		} else {
+			err = errors.Join(removeDatabase(move.path(path)), discardPending(move.pending(path)))
+		}
 	}
 	if err == nil {
 		err = syncPath(filepath.Dir(path))

@@ -3,6 +3,7 @@ package accounts
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -19,7 +20,16 @@ func NewServerFile(pools *db.Pools) *Store { s := New(pools); s.server = true; r
 func ServerVersion() int { return len(serverMigrations()) }
 
 // serverMigrations is append-only.
-func serverMigrations() []db.Migration { return []db.Migration{createServerFile} }
+func serverMigrations() []db.Migration { return []db.Migration{createServerFile, addLeagueFootball} }
+
+// addLeagueFootball gives each league its own pinned football evidence digest; empty means the league
+// uses the server's -football pin, as every league did before.
+func addLeagueFootball(ctx context.Context, tx *sql.Tx) error {
+	if _, err := tx.ExecContext(ctx, `ALTER TABLE league_directory ADD COLUMN football TEXT NOT NULL DEFAULT '' CHECK(football = '' OR length(football) = 64)`); err != nil {
+		return fmt.Errorf("accounts: league football pin: %w", err)
+	}
+	return nil
+}
 
 func createServerFile(ctx context.Context, tx *sql.Tx) error {
 	for _, step := range []db.Migration{adoptAccounts, db.CreateAuditTables, db.CreateServerRelease, createDirectory} {
@@ -58,6 +68,8 @@ type DirectoryEntry struct {
 	League  string
 	State   string
 	Created string
+	// Football is the league's pinned football evidence digest; empty uses the server's pin.
+	Football string
 }
 
 func createDirectory(ctx context.Context, tx *sql.Tx) error {
@@ -96,7 +108,7 @@ func (s *Store) RecordLeagues(ctx context.Context, leagues []DirectoryEntry) err
 
 // Directory lists the recorded leagues in league order.
 func (s *Store) Directory(ctx context.Context) ([]DirectoryEntry, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, `SELECT league, state, created FROM league_directory ORDER BY league`)
+	rows, err := s.pools.Read().QueryContext(ctx, `SELECT league, state, created, football FROM league_directory ORDER BY league`)
 	if err != nil {
 		return nil, fmt.Errorf("accounts: read league directory: %w", err)
 	}
@@ -104,7 +116,7 @@ func (s *Store) Directory(ctx context.Context) ([]DirectoryEntry, error) {
 	var out []DirectoryEntry
 	for rows.Next() {
 		var e DirectoryEntry
-		if err := rows.Scan(&e.League, &e.State, &e.Created); err != nil {
+		if err := rows.Scan(&e.League, &e.State, &e.Created, &e.Football); err != nil {
 			return nil, fmt.Errorf("accounts: read league directory: %w", err)
 		}
 		out = append(out, e)
@@ -113,4 +125,25 @@ func (s *Store) Directory(ctx context.Context) ([]DirectoryEntry, error) {
 		return nil, fmt.Errorf("accounts: read league directory: %w", err)
 	}
 	return out, nil
+}
+
+// PinFootball sets one league's pinned football evidence digest; empty returns it to the server's pin.
+// It changes that league's row only. The league must already be in the directory.
+func (s *Store) PinFootball(ctx context.Context, league, digest string) error {
+	tx, err := s.pools.BeginWrite(ctx)
+	if err != nil {
+		return fmt.Errorf("accounts: pin football: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	result, err := tx.ExecContext(ctx, `UPDATE league_directory SET football = ? WHERE league = ?`, digest, league)
+	if err != nil {
+		return fmt.Errorf("accounts: pin football: %w", err)
+	}
+	if n, err := result.RowsAffected(); err != nil || n != 1 {
+		return errors.Join(fmt.Errorf("accounts: no league %q on this server", league), err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("accounts: pin football: %w", err)
+	}
+	return nil
 }

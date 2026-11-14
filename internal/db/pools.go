@@ -29,6 +29,8 @@ type Pools struct {
 	read             *sql.DB
 	write            *sql.DB
 	path             string
+	referencePools   *Pools
+	reference        string // the attached reference file, or empty (OpenWithReference)
 	scratchDir       string // set by OpenScratch; Close deletes it
 	checkRunMu       sync.Mutex
 	checkMu          sync.Mutex
@@ -45,6 +47,10 @@ type Pools struct {
 // Open refuses newer files before opening a writer. The optional version is the file's
 // newest known migration; the default is MainVersion, so what-if and history files must pass theirs.
 func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
+	return open(ctx, path, "", versions...)
+}
+
+func open(ctx context.Context, path, reference string, versions ...int) (*Pools, error) {
 	maxVersion := MainVersion()
 	if len(versions) > 1 || (len(versions) == 1 && versions[0] < 0) {
 		return nil, fmt.Errorf("db: expected one nonnegative schema version")
@@ -64,7 +70,7 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	writeDSN := fmt.Sprintf(
 		"%s?_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_txlock=immediate",
 		fileURI(path), busyTimeoutMS,
-	) + connectionPragmas
+	) + connectionPragmas + attachParam(reference)
 	write, err := sql.Open("sqlite", writeDSN)
 	if err != nil {
 		return nil, fmt.Errorf("db: open write pool: %w", err)
@@ -89,7 +95,7 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	readDSN := fmt.Sprintf(
 		"%s?_pragma=busy_timeout(%d)&mode=ro",
 		fileURI(path), busyTimeoutMS,
-	) + connectionPragmas
+	) + connectionPragmas + attachParam(reference)
 	read, err := sql.Open("sqlite", readDSN)
 	if err != nil {
 		_ = write.Close()
@@ -104,7 +110,7 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 		return nil, fmt.Errorf("db: ping read pool: %w", err)
 	}
 
-	return &Pools{read: read, write: write, path: path}, nil
+	return &Pools{read: read, write: write, path: path, reference: reference}, nil
 }
 
 // createOwnerOnly creates a missing file empty and 0600 (an empty file is a valid empty

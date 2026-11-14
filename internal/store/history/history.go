@@ -98,6 +98,13 @@ func New(pools *db.Pools, reg *measures.Registry) *Store {
 	return &Store{commits: make(chan string, 1), pools: pools, reg: reg, now: time.Now, lineups: ledgerLineups{}}
 }
 
+// Sibling is a new store over s's file with s's registry and clock, signalling commits on s's channel.
+// The hosted server serves leagues pinned to different football evidence from siblings: each league is
+// served by exactly one of them, so league caches never overlap.
+func (s *Store) Sibling() *Store {
+	return &Store{commits: s.commits, pools: s.pools, reg: s.reg, now: s.now, lineups: ledgerLineups{}}
+}
+
 // signalCommissionerCommit names the committed league to the due worker through the resolver.
 // Coalesced: a full channel already guarantees one wake, and every wake rereads every league.
 func (s *Store) signalCommissionerCommit(league string) {
@@ -209,12 +216,6 @@ CREATE TABLE IF NOT EXISTS unresolved_observations (
 	PRIMARY KEY (source, id_type, id_value, season, week, measure, as_of)
 );
 CREATE INDEX IF NOT EXISTS unresolved_by_source ON unresolved_observations (source, season);
-CREATE TABLE IF NOT EXISTS player_ids (
-	id_type   TEXT NOT NULL,
-	id_value  TEXT NOT NULL,
-	player_id TEXT NOT NULL,
-	PRIMARY KEY (id_type, id_value)
-);
 CREATE TABLE IF NOT EXISTS param_sets (
 	param_set_id TEXT PRIMARY KEY,
 	measures     TEXT NOT NULL,
@@ -302,6 +303,14 @@ CREATE TABLE IF NOT EXISTS snapshot_checks (
 	checks      TEXT NOT NULL
 );`
 
+const legacyPlayerIDsDDL = `CREATE TABLE IF NOT EXISTS player_ids (
+	id_type   TEXT NOT NULL,
+	id_value  TEXT NOT NULL,
+	player_id TEXT NOT NULL,
+	PRIMARY KEY (id_type, id_value)
+);
+`
+
 // registryDDL creates registry mirrors; Initialize refreshes their rows without DDL.
 const registryDDL = `
 CREATE TABLE IF NOT EXISTS measures (
@@ -332,10 +341,13 @@ CREATE TABLE IF NOT EXISTS source_fields (
 func (s *Store) Initialize(ctx context.Context) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	if _, err := s.pools.Migrate(ctx, historyMigrations()...); err != nil {
+	if err := MigrateLeague(ctx, s.pools); err != nil {
 		return fmt.Errorf("history: migrate schema: %w", err)
 	}
-	tx, err := s.pools.BeginWrite(ctx)
+	if _, err := s.VerifyAudit(ctx); err != nil {
+		return fmt.Errorf("history: verify audit: %w", err)
+	}
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("history: initialize: %w", err)
 	}
@@ -343,9 +355,6 @@ func (s *Store) Initialize(ctx context.Context) error {
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM measures; DELETE FROM sources; DELETE FROM source_fields`); err != nil {
 		return fmt.Errorf("history: clear registry mirrors: %w", err)
-	}
-	if _, err := db.VerifyAudit(ctx, tx, ledgerAuditSource, ledgerAuditQuery); err != nil {
-		return fmt.Errorf("history: verify audit: %w", err)
 	}
 	if err := s.loadRegistry(ctx, tx); err != nil {
 		return err

@@ -31,9 +31,12 @@ install -m 600 -o twr -g twr "$stage/ready/backup.json" /etc/twr/backup.json
 # The fresh install's own empty sign-in file goes; a restored pair brings its own. A backup saved
 # before sign-ins moved brings none, and the server moves them out of server.db on first start.
 rm -f /var/lib/twr/accounts.db /var/lib/twr/accounts.db-wal /var/lib/twr/accounts.db-shm /var/lib/twr/accounts.db.converting*
+# The same for the football reference file: a restore after the reference move brings its own.
+rm -f /var/lib/twr/reference.db /var/lib/twr/reference.db-wal /var/lib/twr/reference.db-shm /var/lib/twr/reference.db.converting*
 mv "$stage/ready/server.db" /var/lib/twr/server.db
 rm -f /var/lib/twr/server.db-wal /var/lib/twr/server.db-shm
 if [ -e "$stage/ready/accounts.db" ]; then mv "$stage/ready/accounts.db" /var/lib/twr/accounts.db; fi
+if [ -e "$stage/ready/reference.db" ]; then mv "$stage/ready/reference.db" /var/lib/twr/reference.db; fi
 rc-service twr-server start
 printf '%s\n' 'Restore installed. Changes and sign-ins stay paused until the first backup of the restored' \
   'league uploads and verifies, usually within five minutes. Then every owner signs in again.'

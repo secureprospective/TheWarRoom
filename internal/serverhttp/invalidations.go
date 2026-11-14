@@ -79,7 +79,7 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			http.Error(w, "service unavailable", http.StatusServiceUnavailable)
 			return
 		}
-		service, gate, device := h.invalidationService(w, r)
+		service, gate, device := h.invalidationService(w, r, league)
 		if service == nil {
 			return
 		}
@@ -132,9 +132,9 @@ func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Content-Type", "text/event-stream")
 	controller := http.NewResponseController(w)
 	poll := invalidationPoll{head: head, revision: revision,
-		deadline: func(context.Context) (time.Time, time.Time, bool) {
+		deadline: func(ctx context.Context) (time.Time, time.Time, bool) {
 			//nolint:contextcheck // StoredHost owns the request context.
-			_, next, ok, err := service.ReadingEpoch(league, h.Football.Kickoffs())
+			_, next, ok, err := service.ReadingEpoch(league, h.pin(ctx, league).Football.Kickoffs())
 			return next, h.Store.Now(), ok && err == nil
 		},
 		now: h.Store.Now,
@@ -306,7 +306,7 @@ func emitInvalidation(controller *http.ResponseController, w http.ResponseWriter
 	return nil
 }
 
-func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request) (*leagueservice.Service, accountAdmission, string) {
+func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request, league string) (*leagueservice.Service, accountAdmission, string) {
 	authorization := r.Header.Get("Authorization")
 	if len(r.Header.Values("Authorization")) != 1 || !strings.HasPrefix(authorization, "Bearer ") {
 		http.Error(w, "session required", http.StatusUnauthorized)
@@ -323,7 +323,7 @@ func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request) (*le
 		http.Error(w, "session refused", http.StatusUnauthorized)
 		return nil, accountAdmission{}, ""
 	}
-	host := leagueservice.StoredHost{Store: h.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	host := leagueservice.StoredHost{Store: h.pin(r.Context(), league).Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(session), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	service := leagueservice.NewHosted(h.Worker.Host(host), gate)
 	return service, gate, session.Bearer

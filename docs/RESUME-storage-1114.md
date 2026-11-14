@@ -1,3 +1,67 @@
+# RESUME #9 UPDATE 6 (compact-safe) — 2026-11-14 ~10:10 AM CT — read this first
+
+Christopher: "push this session to completion; do not burn wall clock." I (head brain, Opus 5.5)
+build slice 5c MYSELF ("take the wheel instead of assigning it to Sol"). Tom is OUT of weekly quota.
+
+## 1. WHAT WE ARE DOING
+Storage block, one database per league. Slice 5 (football reference file) + 5c (his rulings: league
+comes back when football lags; live pin change) → one PR → merge on green. Then slices 6 (per-league
+files), 7 (conversion tool), 8 (transfer as one file) — Sol builds, I review/merge; his live test at end.
+- Beelink `chris@192.168.1.191` (key /root/.ssh/beelink), repo `~/work/TheWarRoom`.
+- Branch `session/storage-reference-file` @ 0f1dfc21e, in worktree `.worktrees/storage` (clean).
+- MY 5c WORK: scratch worktree `.worktrees/storage-5c`, DETACHED at 0f1dfc21e, 18 uncommitted
+  changes (code+tests+docs), NOT committed yet. frontend/dist copied in (ignored).
+
+## 2. AGENTS
+- Tom: no quota. Sol: `SOL_WT=<wt> SOL_BRIEF=<file in ~/fleet/briefs/purge/> SOL_THINK=medium|high nohup ~/fleet/bin/launch-sol-build.sh` via `ssh -f`; run dir ~/fleet/runs/sol-<wt>/ (completion.txt, stdout.log). Watcher loop on CT105, re-arm after compaction.
+- Unlaunched/superseded: sol-storage5c-lag-pin-1114.md (I built it instead).
+
+## 3. GATES / STATUS
+| Item | State |
+|---|---|
+| PR #229, #230, #231 (debt sweep) | MERGED; main = e34d7e24f |
+| Slice 5 head 0f1dfc21e | make verify exit 0, 125 ok (~/fleet/runs/storage5b-verify.log) |
+| 5c code | builds + vets; targeted tests PASS (below); race run IN FLIGHT |
+| 5c mutants | conflict check (history) KILLED; change gate (serverhttp) KILLED |
+| make verify on 5c | NOT RUN |
+New/rewritten tests (all PASS non-race): history TestRecoverLeagueIdentitiesFromRestorePoints (2 cases), TestPutArchiveBodyChecksItsName; cmd/twr-server TestRestoreThreeFilesReportsMissingPin (3 cases: together / pinned version only in evidence object comes back / gone everywhere → reported, league restores), TestMissingPinnedReferenceStopsHostedSelection (now: server starts, other league unmoved, dashboard names it, retry after 1 min picks evidence up), TestPinFootballLiveThroughSocket (guard holds it, unknown version refused, live apply, other league unmoved, directory row written); serverhttp TestMissingFootballHoldsChangesAndKeepsReadings (assets read OK, Writable false, bid held 409 plain words, bid runs after), TestRequestKeepsThePinItFirstRead.
+The two old tests asserting "refuse restore"/"stop server" were REWRITTEN per his ruling (justified; say so in PR).
+
+## 4. 5c CHANGES (storage-5c worktree)
+- NEW internal/store/history/reference_recover.go: RecoverLeagueIdentities(league, reference) from league_roster_restore.payload.identities (rewritten every league txn, events.go:145); conflict = outside id already another player → reported, never merged/minted. PutArchiveBody(key, stored gzip) verifies sha256.
+- cmd/twr-server/restore_reference.go: attachReference never refuses for lacks; full match wins, else nearest set that opens, else empty reference file (PrepareReferenceFile); fillReference = pinned bodies from evidence objects + identities; plain report. Wrong key/newer set still stop.
+- cmd/twr-server/hosted.go: recoverPlayers at start before serving; pinRoute on status socket.
+- cmd/twr-server/football_pins.go: rewritten — mutex, LeaguePin.Missing on ErrNoBody (store = base.Sibling(), no football), retry ≤1/min, missingLeagues(), setPin (directory row through guarded sign-in pools first, then swap), console `-status-socket` (running) XOR `-db` (stopped).
+- internal/serverhttp: LeaguePin.Missing + cacheKey; withRequestPin/pinFor (one pin per request) in hosted.go, workflow.go, reply_cache.go, token_policy.go; workflow refuses changes for Missing (missingFootball words), Writable false.
+- internal/serverstatus: Route + Serve(..., routes...); Source.MissingFootball → "Football data" Problem line. cmd/twr-server/status.go wires both.
+- Docs: deploy/server/BACKUPS.md, docs/architecture/storage-recovery-identity.md.
+- Known limit (tell him, done in last reply): while football missing, ALL that league's changes wait (roster moves/bids validate against pinned player facts). A past-only player (league_player, not in a restore point) whose facts were lost stays missing (reported).
+
+## 5. IN FLIGHT
+- Race run of history, serverstatus, serverhttp, cmd/twr-server in storage-5c (CT105 bg task; output lines "<pkg> rc= pass= fail="; JSON in Beelink /tmp/5c/*.json). Alive: `pgrep -fa "go test -race"` on Beelink.
+
+## 6. REFUTED / DO NOT RETEST
+- Deleting raw_archive rows in tests: forbidden (append-only trigger). Use never-held evidence (footballEvidence) instead.
+- `ssh -n` + heredoc → empty file. Write locally, scp, run python patch remotely.
+- Single quotes inside `ssh '...'` python blocks break quoting — scp a script file.
+- Multi-statement ExecContext binds args to first statement only (modernc) — split.
+
+## 7. DECISIONS (all in memory project_warroom_one_database_per_league.md)
+Q1–Q5 yes; slice-4 answers stand; lag → league comes back, football waits; pin change live via admin socket; R2 test bucket APPROVED for final drill (league-history copy, list for him to delete). Vocabulary: "test server" (VM 503), "league history"; never "lab data".
+
+## 8. NEXT ACTIONS
+1. Read race-run result; fix any failure at its cause.
+2. In storage-5c: `git add -A` (not frontend/dist) → commit on top of 0f1dfc21e with message + `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` + Claude-Session line; include this resume in docs/RESUME-storage-1114.md (prepend).
+3. In `.worktrees/storage`: `git merge --ff-only <5c sha>`; remove scratch worktree storage-5c.
+4. heavy-ok → `make verify` once (storage wt) → push → PR (body: slice 5 + 5b + 5c, rewritten tests named, limits) → CI → squash `--match-head-commit`.
+5. Brief slice 6 for Sol (high): per-league files, own writer/backup/restore each, Q1 sign-out only that league's owners, Q2 per-league audit chain (close shared once, head recorded), Q4 30-day archive, credential-revoking sign-in writes off the league writer, directory readers; reference file stays shared. Then 7, 8.
+6. Final drill on test server (copy of CT 256 21 MB) incl. real R2 test bucket upload timing; then his live test.
+
+## 9. ENV
+Go: `export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH GOTOOLCHAIN=go1.26.11 GOMEMLIMIT=1500MiB GOLANGCI_LINT_CACHE=$HOME/.cache/golangci-storage`. gh at ~/.local/bin. Times to him in CT.
+
+## 10. HONEST STATUS
+5c has passed only targeted tests (non-race) — no race result, no make verify, no CI, no real-server drill yet. Live pin over socket is tested in-process only.
 # TheWarRoom RESUME #9 — storage block + one database per league (2026-11-14 ~03:15 UTC / 9:15 PM CT 11-13)
 
 Supersedes RESUME #8 and its UPDATE blocks (kept below in /root/TheWarRoom-RESUME.md for history).

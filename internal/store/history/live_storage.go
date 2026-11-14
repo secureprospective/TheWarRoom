@@ -127,7 +127,7 @@ func (s *Store) storeLiveBook(ctx context.Context, book liveStatBook) error {
 	if s.pools == nil {
 		return nil
 	}
-	tx, err := s.pools.BeginWrite(ctx)
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("begin live capture: %w", err)
 	}
@@ -166,7 +166,7 @@ func (s *Store) storeLiveVersions(ctx context.Context, key liveStatKey, versions
 	if s.pools == nil || len(versions) == 0 {
 		return nil
 	}
-	tx, err := s.pools.BeginWrite(ctx)
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("begin live chronology: %w", err)
 	}

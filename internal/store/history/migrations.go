@@ -14,7 +14,7 @@ import (
 func SchemaVersion() int { return len(historyMigrations()) }
 
 func historyMigrations() []db.Migration {
-	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks, initializeLedgerAudit, addInactiveImports, addTransferAuthority, db.CreateServerRelease, addRosterRestorePoints, addPlayerIdentity, addPlayerRecord, db.AddPlayerCareer, addLiveEvidence}
+	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks, initializeLedgerAudit, addInactiveImports, addTransferAuthority, db.CreateServerRelease, addRosterRestorePoints, addPlayerIdentity, addPlayerRecord, db.AddPlayerCareer, addLiveEvidence, db.CreateLeaguePlayers}
 }
 
 func addPlayerRecord(ctx context.Context, tx *sql.Tx) error {
@@ -27,6 +27,7 @@ func addPlayerRecord(ctx context.Context, tx *sql.Tx) error {
 func adoptHistory(ctx context.Context, tx *sql.Tx) error {
 	var ddl strings.Builder
 	ddl.WriteString(historyDDL)
+	ddl.WriteString(legacyPlayerIDsDDL)
 	ddl.WriteString(eventsDDL)
 	for _, table := range appendOnly() {
 		ddl.WriteString(appendOnlyDDL(table))
@@ -146,8 +147,14 @@ func quarantineScore(ctx context.Context, tx *sql.Tx, rowID int64) error {
 }
 
 func guardHistoryJSON(ctx context.Context, tx *sql.Tx) error {
+	if err := guardLeagueJSON(ctx, tx); err != nil {
+		return err
+	}
+	return guardReferenceJSON(ctx, tx)
+}
+
+func guardReferenceJSON(ctx context.Context, tx *sql.Tx) error {
 	if err := db.GuardJSON(ctx, tx,
-		db.JSONColumn{Table: "league_event", Column: "payload", Versioned: true},
 		db.JSONColumn{Table: "param_sets", Column: "measures"},
 		db.JSONColumn{Table: "param_sets", Column: "params"},
 		db.JSONColumn{Table: "scoring_runs", Column: "missing_measures"},

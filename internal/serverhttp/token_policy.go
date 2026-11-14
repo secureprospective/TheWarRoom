@@ -121,9 +121,10 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 	if raw.Workflow != nil {
 		ctx = leagueservice.WithFootballDigest(ctx, raw.Workflow.Football)
 	}
-	host := leagueservice.StoredHost{Store: h.Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry}
+	ctx = h.withRequestPin(ctx, raw.leagueName())
+	host := leagueservice.StoredHost{Store: h.pinFor(ctx, raw.leagueName()).Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry}
 	gate := agentAdmission{token: h.Tokens.Admission(session), confirmations: h.Confirmations, confirmation: r.Header.Get("X-TWR-Human-Confirmation"), auditID: token.ID}
-	pinned, err := h.workflowHost(host, raw.Workflow != nil)
+	pinned, err := h.workflowHost(ctx, host, raw)
 	if err != nil {
 		http.Error(w, "football reference unavailable", http.StatusServiceUnavailable)
 		return

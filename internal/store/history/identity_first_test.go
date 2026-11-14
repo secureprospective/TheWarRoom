@@ -1,6 +1,7 @@
 package history
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -79,5 +80,61 @@ func TestIdentityCommitThenLeagueCrashCompletesOnRetry(t *testing.T) {
 	}
 	if again := historyJSON(t, pools.Read(), `SELECT json_group_array(id) FROM (SELECT id FROM canonical_player ORDER BY id)`); again != minted {
 		t.Fatalf("retry minted new ids: %s -> %s", minted, again)
+	}
+}
+
+func TestHostedIdentityCommitThenLeagueCrashCompletesOnRetry(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "league.db")
+	original, err := db.Open(ctx, path, SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = original.Close() }()
+	s, _, _ := reopen(t, original, registry(t, ""))
+	reference, err := db.Open(ctx, filepath.Join(t.TempDir(), "reference.db"), ReferenceSchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = reference.Close() }()
+	if err := PrepareReferenceFile(ctx, reference); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyReference(ctx, original, reference); err != nil {
+		t.Fatal(err)
+	}
+	if err := CommitReferenceMove(ctx, original, ReferenceMove{File: "reference.db"}); err != nil {
+		t.Fatal(err)
+	}
+	league, err := db.OpenWithReference(ctx, path, SchemaVersion(), reference)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = league.Close() }()
+	s = New(league, s.reg)
+	if err := s.Initialize(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := league.Write().ExecContext(ctx, `CREATE TEMP TRIGGER crash_league BEFORE INSERT ON main.league_import BEGIN SELECT RAISE(ABORT,'injected crash'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.StandUpRosters(ctx, perSidePoint()); err == nil {
+		t.Fatal("injected crash did not stop the league write")
+	}
+	if got := identityCounts(t, league); got != "[2,2,0]" {
+		t.Fatalf("after crash: %s", got)
+	}
+	minted := historyJSON(t, reference.Read(), `SELECT json_group_array(id) FROM (SELECT id FROM canonical_player ORDER BY id)`)
+	if _, err := league.Write().ExecContext(ctx, `DROP TRIGGER temp.crash_league`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.StandUpRosters(ctx, perSidePoint()); err != nil {
+		t.Fatal(err)
+	}
+	if got := identityCounts(t, league); got != "[2,2,3]" {
+		t.Fatalf("after retry: %s", got)
+	}
+	if again := historyJSON(t, reference.Read(), `SELECT json_group_array(id) FROM (SELECT id FROM canonical_player ORDER BY id)`); again != minted {
+		t.Fatal("retry replaced identities")
 	}
 }

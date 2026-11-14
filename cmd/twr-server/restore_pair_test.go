@@ -21,6 +21,7 @@ import (
 
 // twoFileHost is a hosted server after the move, with a league whose commissioner is seated.
 type twoFileHost struct {
+	dir    string
 	files  stateFiles
 	config string
 	join   *accounts.JoinService
@@ -34,7 +35,7 @@ func newTwoFileHost(t *testing.T) *twoFileHost {
 	if err := os.Remove(filepath.Join(dir, "server.db")); err != nil {
 		t.Fatal(err)
 	}
-	h := &twoFileHost{files: openTestServer(t, dir), config: config}
+	h := &twoFileHost{dir: dir, files: openTestServer(t, dir), config: config}
 	registry, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
@@ -73,11 +74,35 @@ func (h *twoFileHost) seatOwner(t *testing.T) {
 
 func (h *twoFileHost) capture(t *testing.T, sets *memorySets, recipient string, kind offsite.SetKind) {
 	t.Helper()
+	if kind == offsite.ReferenceSet {
+		captureReferenceInto(t, sets, recipient, h.files.reference, h.config)
+		return
+	}
 	pools, checkpoint := h.files.league, leagueSetCheckpoint
 	if kind == offsite.SignInSet {
 		pools, checkpoint = h.files.signIns, signInSetCheckpoint
 	}
 	captureKind(t, sets, recipient, kind, pools, h.config, checkpoint)
+}
+
+// captureReferenceInto captures a reference set into the memory bucket, its raw captures as objects.
+func captureReferenceInto(t *testing.T, sets *memorySets, recipient string, pools *db.Pools, config string) {
+	t.Helper()
+	put := func(_ context.Context, sha string, body []byte) error {
+		sealed, err := offsite.SealEvidence(body, recipient)
+		sets.objects[offsite.EvidenceName(sha)] = sealed
+		return err
+	}
+	sealed, at, err := captureReference(t.Context(), put, pools, config, t.TempDir(), recipient)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(sealed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sets.objects[offsite.ReferenceSet.Prefix+at.Format("20060102T150405.000000000Z")+".tar.gz.age"] = body
+	time.Sleep(time.Millisecond) // distinct object names
 }
 
 func captureKind(t *testing.T, sets *memorySets, recipient string, kind offsite.SetKind, pools *db.Pools, config string,
@@ -119,6 +144,7 @@ func TestRestorePairsLeagueWithItsSignIns(t *testing.T) {
 					h.seatOwner(t)
 				case "league":
 					h.capture(t, sets, identity.Recipient().String(), offsite.LeagueSet)
+					h.capture(t, sets, identity.Recipient().String(), offsite.ReferenceSet)
 				case "signins":
 					h.capture(t, sets, identity.Recipient().String(), offsite.SignInSet)
 				}
@@ -136,7 +162,7 @@ func TestRestorePairsLeagueWithItsSignIns(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%v\n%s", err, output.String())
 			}
-			for _, name := range []string{"server.db", signInFileName} {
+			for _, name := range []string{"server.db", signInFileName, referenceFileName} {
 				if !fileExists(filepath.Join(stage, "ready", name)) {
 					t.Fatalf("ready lacks %s", name)
 				}
