@@ -159,15 +159,15 @@ func openSignInFiles(ctx context.Context, path string) (stateFiles, error) {
 	if err = errors.Join(err, alone.Close()); err != nil {
 		return stateFiles{}, errors.Join(err, files.Close())
 	}
-	if files.league, err = openLeague(ctx, path); err != nil {
+	if files.league, err = openLeague(ctx, path, files.reference); err != nil {
 		return stateFiles{}, errors.Join(err, files.Close())
 	}
 	return files, nil
 }
 
 // openLeague opens a converted league file with its reference file attached.
-func openLeague(ctx context.Context, path string) (*db.Pools, error) {
-	league, err := db.OpenWithReference(ctx, path, history.SchemaVersion(), referencePath(path))
+func openLeague(ctx context.Context, path string, reference *db.Pools) (*db.Pools, error) {
+	league, err := db.OpenWithReference(ctx, path, history.SchemaVersion(), reference)
 	if err != nil {
 		return nil, fmt.Errorf("open server database: %w", err)
 	}

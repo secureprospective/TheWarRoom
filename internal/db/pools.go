@@ -29,6 +29,7 @@ type Pools struct {
 	read             *sql.DB
 	write            *sql.DB
 	path             string
+	referencePools   *Pools
 	reference        string // the attached reference file, or empty (OpenWithReference)
 	scratchDir       string // set by OpenScratch; Close deletes it
 	checkRunMu       sync.Mutex

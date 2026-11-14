@@ -342,7 +342,10 @@ func (s *Store) Initialize(ctx context.Context) error {
 	if _, err := s.pools.Migrate(ctx, historyMigrations()...); err != nil {
 		return fmt.Errorf("history: migrate schema: %w", err)
 	}
-	tx, err := s.pools.BeginWrite(ctx)
+	if _, err := s.VerifyAudit(ctx); err != nil {
+		return fmt.Errorf("history: verify audit: %w", err)
+	}
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("history: initialize: %w", err)
 	}
@@ -350,9 +353,6 @@ func (s *Store) Initialize(ctx context.Context) error {
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM measures; DELETE FROM sources; DELETE FROM source_fields`); err != nil {
 		return fmt.Errorf("history: clear registry mirrors: %w", err)
-	}
-	if _, err := db.VerifyAudit(ctx, tx, ledgerAuditSource, ledgerAuditQuery); err != nil {
-		return fmt.Errorf("history: verify audit: %w", err)
 	}
 	if err := s.loadRegistry(ctx, tx); err != nil {
 		return err

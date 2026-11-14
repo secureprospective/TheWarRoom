@@ -153,25 +153,31 @@ func missingAccounts(ctx context.Context, path string, named []string) ([]string
 
 // restoredFiles are the staged league file and, for a server that moved them out, its sign-in file and
 // its reference file (attached to the league file, as on the running server).
-type restoredFiles struct{ league, signIns *db.Pools }
+type restoredFiles struct{ league, signIns, reference *db.Pools }
 
 func openRestored(ctx context.Context, league string) (restoredFiles, error) {
-	var pools *db.Pools
+	var pools, reference *db.Pools
 	var err error
 	if fileExists(referencePath(league)) {
-		pools, err = db.OpenWithReference(ctx, league, history.SchemaVersion(), referencePath(league))
+		reference, err = db.Open(ctx, referencePath(league), history.SchemaVersion())
+		if err == nil {
+			pools, err = db.OpenWithReference(ctx, league, history.SchemaVersion(), reference)
+		}
 	} else {
 		pools, err = db.Open(ctx, league, history.SchemaVersion())
 	}
 	if err != nil {
+		if reference != nil {
+			err = errors.Join(err, reference.Close())
+		}
 		return restoredFiles{}, fmt.Errorf("open restored database: %w", err)
 	}
-	f := restoredFiles{league: pools}
+	f := restoredFiles{league: pools, reference: reference}
 	if !fileExists(signInPath(league)) {
 		return f, nil
 	}
 	if f.signIns, err = db.Open(ctx, signInPath(league), accountstore.ServerVersion()); err != nil {
-		return restoredFiles{}, errors.Join(fmt.Errorf("open restored sign-in file: %w", err), pools.Close())
+		return restoredFiles{}, errors.Join(fmt.Errorf("open restored sign-in file: %w", err), f.Close())
 	}
 	return f, nil
 }
@@ -187,7 +193,7 @@ func (f restoredFiles) store() *accountstore.Store {
 
 // finish flushes each staged file's WAL and closes it, so each is one complete file.
 func (f restoredFiles) finish(ctx context.Context) error {
-	for _, pools := range []*db.Pools{f.league, f.signIns} {
+	for _, pools := range []*db.Pools{f.league, f.signIns, f.reference} {
 		if pools == nil {
 			continue
 		}
@@ -203,7 +209,7 @@ func (f restoredFiles) finish(ctx context.Context) error {
 
 func (f restoredFiles) Close() error {
 	var errs []error
-	for _, pools := range []*db.Pools{f.signIns, f.league} {
+	for _, pools := range []*db.Pools{f.signIns, f.league, f.reference} {
 		if pools != nil {
 			errs = append(errs, pools.Close())
 		}

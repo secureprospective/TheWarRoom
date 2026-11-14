@@ -248,3 +248,40 @@ func TestReferenceMoveCrashAtEachStepRecovers(t *testing.T) {
 		})
 	}
 }
+
+func TestLeagueAttachmentCannotWriteReference(t *testing.T) {
+	files := openTestServer(t, t.TempDir())
+	ctx := t.Context()
+	for _, table := range history.ReferenceTables() {
+		t.Run(table, func(t *testing.T) {
+			if _, err := files.league.Write().ExecContext(ctx, `DELETE FROM reference.`+table+` WHERE 0`); err == nil || !strings.Contains(err.Error(), "readonly") {
+				t.Fatalf("reference write was not refused as read-only: %v", err)
+			}
+		})
+	}
+	tx, err := files.league.BeginWrite(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	id := "player." + strings.Repeat("ab", 16)
+	if _, err := tx.ExecContext(ctx, `INSERT INTO league_player VALUES(?)`, id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO reference.canonical_player VALUES(?)`, id); err == nil || !strings.Contains(err.Error(), "readonly") {
+		t.Fatalf("cross-file transaction was not refused: %v", err)
+	}
+	if err := tx.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	for _, pools := range []*db.Pools{files.league, files.reference} {
+		table := "league_player"
+		if pools == files.reference {
+			table = "canonical_player"
+		}
+		var n int
+		if err := pools.Read().QueryRowContext(ctx, `SELECT count(*) FROM `+table+` WHERE id=?`, id).Scan(&n); err != nil || n != 0 {
+			t.Fatalf("refused cross-file write left rows: %d (%v)", n, err)
+		}
+	}
+}

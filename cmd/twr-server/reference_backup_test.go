@@ -126,7 +126,7 @@ func TestReferenceSetLeavesRawCapturesOut(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(body)
-	if _, err := h.files.league.Write().ExecContext(ctx, `INSERT INTO raw_archive(sha256, size, body) VALUES (?, ?, ?)`, hex.EncodeToString(sum[:]), len(body), body); err != nil {
+	if _, err := h.files.reference.Write().ExecContext(ctx, `INSERT INTO raw_archive(sha256, size, body) VALUES (?, ?, ?)`, hex.EncodeToString(sum[:]), len(body), body); err != nil {
 		t.Fatal(err)
 	}
 	identity, err := age.GenerateX25519Identity()
@@ -270,7 +270,7 @@ func TestLedgerWritesLeaveReferenceFileAlone(t *testing.T) {
 	ctx := t.Context()
 	h := newTwoFileHost(t)
 	importFootball(t, h.files, "Before the ledger write")
-	if _, err := h.files.league.Write().ExecContext(ctx, `PRAGMA reference.wal_checkpoint(TRUNCATE)`); err != nil {
+	if _, err := h.files.reference.Write().ExecContext(ctx, `PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
 		t.Fatal(err)
 	}
 	referenceRev, err := h.files.reference.Revision(ctx)

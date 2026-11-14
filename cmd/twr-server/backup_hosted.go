@@ -31,8 +31,7 @@ func startHostedBackup(ctx context.Context, files stateFiles, path, temp string)
 	if err != nil {
 		return hostedGuards{}, hostedBackups{}, nil, err
 	}
-	// The reference file is written only through the league file's attached writer, so the league
-	// guard admits reference writes too. Reference coverage pauses nothing (BACKUPS.md).
+	// Reference writes use their own pools; reference coverage pauses nothing (BACKUPS.md).
 	files.league.SetWriteGuard(managers.league.CheckWrite)
 	files.signIns.SetWriteGuard(managers.signIns.CheckWrite)
 	work, cancel := context.WithCancel(ctx)

@@ -77,7 +77,8 @@ The server keeps three files in `/var/lib/twr`:
   player ids.
 - `reference.db`, the football reference file: fetched pages and other raw captures,
   football statistics, model results, live lines, player identity and player records.
-  Every league on the server shares it. A league points into it only by content (a
+  Every league on the server shares it. League connections attach it read-only;
+  reference writes use only its own pools, before any dependent league commit. A league points into it only by content (a
   capture's SHA-256, a football version's digest), never by a row number.
 - `accounts.db`, the sign-in file: accounts, sessions, helper tokens, aliases, join
   links, the security history and the list of leagues on this server, with each league's

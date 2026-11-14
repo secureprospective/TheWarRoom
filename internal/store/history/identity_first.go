@@ -29,7 +29,7 @@ func identityFirst[T any](ctx context.Context, s *Store, write func() (T, error)
 func (s *Store) mintPlayers(ctx context.Context, mfl []string) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.pools.BeginWrite(ctx)
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("begin player identities: %w", err)
 	}
@@ -46,7 +46,7 @@ func (s *Store) mintPlayers(ctx context.Context, mfl []string) error {
 // commitReference is a transfer's first commit: its permanent identities and content-addressed
 // evidence, before any league row.
 func (s *Store) commitReference(ctx context.Context, identities []playerid.RawIdentity, blobs map[string][]byte, wrap string) error {
-	tx, err := s.pools.BeginWrite(ctx)
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("begin %s: %w", wrap, err)
 	}

@@ -26,18 +26,31 @@ const attachKey = "twr_reference"
 var attachOnce sync.Once
 
 // OpenWithReference opens a league file with the reference file at reference attached on every
-// connection (read connections attach it read-only, as their own file is). Both files must already exist;
+// connection (all connections attach it read-only). The caller owns both pools;
 // the league file is refused when newer than version, and the reference file is checked by its own Open.
-func OpenWithReference(ctx context.Context, path string, version int, reference string) (*Pools, error) {
-	if reference == "" {
+func OpenWithReference(ctx context.Context, path string, version int, reference *Pools) (*Pools, error) {
+	if reference == nil {
 		return nil, fmt.Errorf("db: name the reference file")
 	}
 	attachOnce.Do(func() { sqlite.RegisterConnectionHook(attachReference) })
-	return open(ctx, path, reference, version)
+	league, err := open(ctx, path, reference.path, version)
+	if err != nil {
+		return nil, err
+	}
+	league.referencePools = reference
+	return league, nil
 }
 
 // Reference is the attached reference file's path, or empty for a file opened on its own.
 func (p *Pools) Reference() string { return p.reference }
+
+// ReferencePools owns reference writes. A desktop file owns both kinds of data.
+func (p *Pools) ReferencePools() *Pools {
+	if p.referencePools != nil {
+		return p.referencePools
+	}
+	return p
+}
 
 func attachParam(reference string) string {
 	if reference == "" {
@@ -60,10 +73,7 @@ func attachReference(conn sqlite.ExecQuerierContext, dsn string) error {
 	if reference == "" {
 		return nil
 	}
-	target := fileURI(reference)
-	if values.Get("mode") == "ro" {
-		target += "?mode=ro"
-	}
+	target := fileURI(reference) + "?mode=ro"
 	if _, err := conn.ExecContext(context.Background(), `ATTACH DATABASE '`+strings.ReplaceAll(target, "'", "''")+`' AS `+ReferenceSchema, nil); err != nil {
 		return fmt.Errorf("db: attach the reference file: %w", err)
 	}
