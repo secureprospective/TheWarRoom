@@ -137,9 +137,10 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         label="Back to sign in">Back to sign in</Act>
     </section> : screen === 'login' && view.name ? null : <form onSubmit={submit}>
       <h2>{title}</h2>
-      {screen === 'authenticator' && <p>An authenticator is optional. Once it is on, commissioners and
-        deputies verify a fresh code to open the league. Enter your password for each step. Add the setup key
-        as a time-based account, confirm a code, then wait for a fresh code to verify access for five minutes.</p>}
+      {screen === 'authenticator' && <p>An authenticator is optional. Once it is on,
+        commissioners and deputies verify a fresh code to open the league. Enter your password
+        for each step. Add the setup key as a time-based account, confirm a code, then wait for
+        a fresh code to verify access for five minutes.</p>}
       <label>Username<input autoComplete="username" required minLength={3} maxLength={64} value={username}
         disabled={pending} onChange={e => setUsername(e.target.value)} /></label>
       <label>Password<input type="password"
