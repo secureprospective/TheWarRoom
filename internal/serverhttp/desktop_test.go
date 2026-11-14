@@ -111,8 +111,13 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The authenticator is optional for commissioners too (ruling 2026-11-14): none set up, the session admits.
-	if view, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"}); err != nil || view.Name != "Hosted test" {
+	view, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
+	if err != nil || view.Name != "Hosted test" {
 		t.Fatalf("commissioner without authenticator: %+v %v", view, err)
+	}
+	// The commissioner's seat needs no team, and is never told to ask a commissioner.
+	if view.Franchise == "" && (!strings.Contains(view.Message, "commissioner's seat") || strings.Contains(view.Message, "Ask your commissioner")) {
+		t.Fatalf("commissioner without a team: %q", view.Message)
 	}
 	credentials.Action = "totp-begin"
 	setup, err := desktop.Act(t.Context(), credentials)
@@ -136,7 +141,7 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 	if _, err := desktop.Act(t.Context(), credentials); err != nil {
 		t.Fatal(err)
 	}
-	view, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
+	view, err = desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
 	if err != nil || view.Name != "Hosted test" {
 		t.Fatalf("privileged entry: %+v %v", view, err)
 	}

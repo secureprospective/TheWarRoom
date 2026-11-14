@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -141,7 +142,12 @@ func (d *Desktop) enter(ctx context.Context, view DesktopView) (DesktopView, err
 		d.seats = append(d.seats, DesktopSeat{Franchise: seat.Franchise, Name: seat.Name})
 	}
 	view.Seats = slices.Clone(d.seats)
-	if view.Franchise == "" {
+	switch {
+	case view.Franchise != "":
+	case view.Role == "Commissioner" || view.Role == "Co-commissioner":
+		// The commissioner's seat runs the league; it needs no team, and there is no one above it to ask.
+		view.Message = "You hold the " + strings.ToLower(view.Role) + "'s seat. No team is assigned to this account."
+	default:
 		view.Message = "No franchise is assigned to this account. Ask your commissioner to check your seat; do not create another account."
 	}
 	return view, nil
