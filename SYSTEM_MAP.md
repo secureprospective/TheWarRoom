@@ -10,6 +10,7 @@ A feature directory: find any feature in two hops. Current as of 2026-10-20 (`ma
 5. Layers, the IPC surface, data, external services and the native league are written up at length in `docs/architecture/system-narrative.md`.
 
 6. Building a new server feature? Its plug-in points are the `FUTURE-SEAM` markers listed in `docs/architecture/future-seams.md`; extend those, never build beside them.
+7. Desktop thin (hosted) mode vs legacy local mode, what each does today and what the server carries: `docs/architecture/desktop-modes.md`. Read it before planning desktop, server or phone work.
 
 Paths are relative to the repo root. `frontend/src/app/` is shortened to `app/`. A `*` is a glob. Composition test files live beside their code in `internal/composition`.
 
