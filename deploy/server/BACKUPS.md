@@ -71,14 +71,20 @@ was saved and the newest error; no public backup-status endpoint exists.
 
 ## What is saved and when
 
-Every five minutes while healthy (one-minute retries on failure), the server:
+Every five minutes while healthy (one-minute retries on failure), the server first
+reads the database's commit revision (SQLite `data_version`). If nothing has been
+committed since the newest verified set began, that set still covers the league:
+coverage is renewed and no new set is made or uploaded. Otherwise the server:
 
-1. Reserves SQLite's one writer and makes a `VACUUM INTO` snapshot through the
-   existing DB backup boundary. History, evidence blobs/provenance, auth and the
-   security audit share `server.db`; WAL is never copied as a live file.
-2. Copies immutable `/etc/twr` configuration behind that same writer barrier.
+1. Waits for SQLite's one writer, so no change is half-done, then pins a read point
+   and copies the immutable `/etc/twr` configuration. The writer is held only for
+   that moment; league changes carry on while the copy below runs.
+2. Copies `server.db` as of that read point with SQLite's online backup API, paced
+   so league writes are not held up, then compacts it (in memory, about the size of
+   the database) and checks both copies. History, evidence blobs/provenance, auth
+   and the security audit share `server.db`; WAL is never copied as a live file.
    TLS key/certificate, authenticator key, preview registry and private R2 settings
-   must live together there. Stop the server before changing these files.
+   must live together in `/etc/twr`. Stop the server before changing these files.
 3. Verifies both audit chains against the captured database and includes a saved
    checkpoint, a versioned manifest, member sizes and SHA-256 digests.
 4. Streams a compressed tar archive through age X25519 encryption to a private
@@ -86,8 +92,10 @@ Every five minutes while healthy (one-minute retries on failure), the server:
 5. Uploads one atomic object under `sets/`, downloads it over HTTPS, and compares
    its size and full ciphertext SHA-256 with the local encrypted file. An ETag,
    successful PUT or upload completion timestamp alone is not coverage.
-6. Renews coverage using the **snapshot start**, then prunes retention. Temporary
-   snapshots are removed on ordinary success/failure. Files are 0600, dirs 0700.
+6. Renews coverage using the **snapshot start**, then prunes retention. The revision
+   is read before the snapshot starts, so a change committed during a backup is
+   picked up by the next one. Temporary snapshots are removed on ordinary
+   success/failure. Files are 0600, dirs 0700.
 
 Each attempt has a two-minute deadline. New league/auth/evidence writes stop at
 **14 minutes**, before the 15-minute RPO is breached. Admission is checked again

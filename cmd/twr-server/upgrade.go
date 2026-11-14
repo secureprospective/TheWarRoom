@@ -80,7 +80,7 @@ func saveMatchedCopy(ctx context.Context, path, save, backup string) (string, er
 	}
 	defer func() { _ = pools.Close() }()
 	saved := filepath.Join(save, "server.db")
-	if err := pools.CaptureHosted(ctx, saved, func() error { return syncPath(saved) }); err != nil {
+	if err := pools.CaptureHosted(ctx, saved, nil); err != nil {
 		return "", fmt.Errorf("save the pre-upgrade copy: %w", err)
 	}
 	checkpoint, err := hostedCheckpoint(ctx, saved)

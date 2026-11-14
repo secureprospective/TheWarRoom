@@ -44,7 +44,7 @@ func newBackupManager(pools *db.Pools, path, temp string) (*offsite.Manager, err
 	}
 	return offsite.NewManager(r2, temp, func(ctx context.Context, stage string) (string, time.Time, error) {
 		return offsite.Capture(ctx, pools, filepath.Dir(path), stage, config.Recipient, hostedCheckpoint)
-	}), nil
+	}, pools.Revision), nil
 }
 
 // upgradeOffsite uploads and reads back one matched off-site set of the stopped server, so the

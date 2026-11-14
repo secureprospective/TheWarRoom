@@ -54,7 +54,7 @@ func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 	// Faults: the off-site backup fails, the league history chain no longer verifies.
 	manager := offsite.NewManager(nil, dir, func(context.Context, string) (string, time.Time, error) {
 		return "", time.Time{}, errors.New(privateSentinel)
-	})
+	}, nil)
 	if err := manager.Backup(t.Context()); err == nil {
 		t.Fatal("injected backup failure succeeded")
 	}
