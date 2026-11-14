@@ -14,6 +14,9 @@ const tabs = [
   ['login', 'Sign in'], ['join', 'Join with a code'],
   ['authenticator', 'Authenticator'], ['recovery', 'Account recovery'],
 ] as const;
+// Once the league is open, signing in, joining and recovery are done; only the league and the
+// optional authenticator stay.
+const openTabs = [['login', 'League'], ['authenticator', 'Authenticator']] as const;
 
 export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [view, setView] = useState(initial);
@@ -24,9 +27,10 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const [signedIn, setSignedIn] = useState(Boolean(initial.message));
+  const [openAfterSignIn, setOpenAfterSignIn] = useState(Boolean(initial.message));
   const changeScreen = (next: Screen) => {
     setScreen(next); setPassword(''); setCode(''); setError('');
-    setView(current => ({ ...current, seed: '', message: '' }));
+    setView(current => ({ ...current, seed: '', message: current.name ? current.message : '' }));
   };
   async function run(action: NativeAction) {
     if (pending) return;
@@ -38,7 +42,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       const result = await nativeAction(action, credentials ? username : '', credentials ? password : '',
         ['recover', 'enroll', 'totp-confirm', 'totp-step-up'].includes(action) ? code : '');
       setView(result);
-      if (action === 'login') setSignedIn(true);
+      if (action === 'login') { setSignedIn(true); setOpenAfterSignIn(true); }
       if (['forget', 'revoke-device', 'revoke-all'].includes(action)) setSignedIn(false);
       if (action === 'enroll' || action === 'recover') setScreen('login');
       if (action === 'recover') setSignedIn(false);
@@ -65,6 +69,15 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       if (action) return run(action);
     }
   }));
+  // Signing in goes straight on to the league, as its own recorded Open my franchise; a refusal
+  // (e.g. a fresh authenticator code is needed) shows its reason while the saved sign-in stays.
+  useEffect(() => {
+    if (!openAfterSignIn || pending) return;
+    setOpenAfterSignIn(false);
+    void Promise.resolve(commands.dispatch('commissioner.surface', {
+      screen: 'native-account', action: 'check', value: 'enter',
+    })).catch(() => undefined);
+  }, [openAfterSignIn, pending]);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     void commands.dispatch('commissioner.surface', {
@@ -72,20 +85,22 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     });
   };
   const title = screen === 'join' ? 'Create your account'
-    : screen === 'authenticator' ? 'Protect privileged access' : 'Sign in';
+    : screen === 'authenticator' ? 'Authenticator (optional)' : 'Sign in';
   const submitLabel = pending ? 'Please wait…' : screen === 'join' ? 'Create account'
     : screen === 'authenticator' ? 'Verify fresh code' : 'Sign in to server';
   const args = (action: 'view' | 'check', value: string) => ({ screen: 'native-account', action, value });
   return <main className="twr-app native-account" aria-busy={pending}>
     <header><h1>{view.name || 'Your league server'}</h1>
-      <p>Your league server · No MFL account or key needed</p>
+      {!view.name && <p>Your league server · No MFL account or key needed</p>}
       <p className="native-address">{initial.server}</p></header>
     <nav aria-label="Account access">
-      {tabs.map(([id, label]) => <Act key={id} variant="button" verb="commissioner.surface"
+      {(view.name ? openTabs : tabs).map(([id, label]) =>
+        <Act key={id} variant="button" verb="commissioner.surface"
         args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
     </nav>
     {error && <p role="alert">{error}</p>}
     {view.message && <p role="status">{view.message}</p>}
+    <div hidden={screen !== 'login'}>
     {view.name && <section aria-label="Your league access">
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
@@ -97,6 +112,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     {signedIn && view.name && view.seats.length > 0 &&
       <NativeHelpers server={initial.server}
       league={initial.league} seats={view.seats} franchise={view.franchise} />}
+    </div>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>
       <h3>Lost your phone or password?</h3>
@@ -125,11 +141,12 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         franchise assignment. Do not create another account.</p>
       <Act variant="button" verb="commissioner.surface" args={args('view', 'login')}
         label="Back to sign in">Back to sign in</Act>
-    </section> : <form onSubmit={submit}>
+    </section> : screen === 'login' && view.name ? null : <form onSubmit={submit}>
       <h2>{title}</h2>
-      {screen === 'authenticator' && <p>Commissioners and deputies must use an authenticator.
-        Enter your password for each step. Add the setup key as a time-based account, confirm a code,
-        then wait for a fresh code to verify access for five minutes.</p>}
+      {screen === 'authenticator' && <p>An authenticator is optional. Once it is on,
+        commissioners and deputies verify a fresh code to open the league. Enter your password
+        for each step. Add the setup key as a time-based account, confirm a code, then wait for
+        a fresh code to verify access for five minutes.</p>}
       <label>Username<input autoComplete="username" required minLength={3} maxLength={64} value={username}
         disabled={pending} onChange={e => setUsername(e.target.value)} /></label>
       <label>Password<input type="password"
@@ -169,8 +186,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-all')}
         disabled={pending} label="Revoke all devices">Revoke all devices</Act>
     </div>}
-    <footer>Device sessions use your OS keychain when available, otherwise Go memory only.
-      Revoke all devices signs you out everywhere. Authenticator verification is never saved.
-      Offline execution is unavailable.</footer>
+    <footer>This computer keeps your sign-in in its keychain when it has one, otherwise until
+      you close the app. Revoke all devices signs you out everywhere. Authenticator codes are never
+      saved. The league needs an internet connection.</footer>
   </main>;
 }

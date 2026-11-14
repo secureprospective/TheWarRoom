@@ -86,8 +86,10 @@ func TestRecoveryConcurrentUseRevokesCredentials(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.service.CheckPrivileged(t.Context(), f.policy, principal, proof); !errors.Is(err, accounts.ErrTOTPRequired) {
-		t.Fatalf("reset privileged account admitted without setup: %v", err)
+	// Recovery clears the authenticator; with none set up the commissioner is admitted like an owner
+	// (ruling 2026-11-14), while the old proof itself is gone (checked above).
+	if err := f.service.CheckPrivileged(t.Context(), f.policy, principal, accounts.RecentAuth{}); err != nil {
+		t.Fatalf("reset commissioner without authenticator: %v", err)
 	}
 	raw.Code = codes.Codes[1]
 	if err := recovery.Recover(t.Context(), raw); !errors.Is(err, accounts.ErrRecoveryRefused) {

@@ -44,8 +44,10 @@ describe('native desktop account access', () => {
     const host = await mount(render(NativeAccount, {
       initial: { ...initial, message: 'Saved device session available.' },
     }));
+    await settle();
+    expect(JSON.parse(fetcher.mock.calls[0][1].body).action).toBe('enter');
     await click(button(host, 'Revoke all devices')); await settle();
-    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
+    expect(JSON.parse(fetcher.mock.calls[fetcher.mock.calls.length - 1][1].body)).toEqual({
       action: 'revoke-all', username: '', password: '', code: '',
     });
     expect(host.textContent).toContain('All device sessions revoked.');
@@ -80,6 +82,40 @@ describe('native desktop account access', () => {
     fetcher.mockResolvedValue({ ok: false, text: async () => 'Session revoked. Sign in again.' });
     await click(button(host, 'Open my franchise')); await settle();
     expect(host.textContent).not.toContain('My club');
+    expect(host.textContent).toContain('Sign in again');
+  });
+
+  it('opens the league straight after signing in and hides the sign-in form while it is open', async () => {
+    rooms.length = 0;
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(reply({ ...initial, message: 'Signed in.' }))
+      .mockResolvedValueOnce(reply({ ...initial, name: 'League', role: 'Commissioner',
+        franchise: 'franchise.01', franchiseName: 'My club', message: 'Seat line.' }));
+    vi.stubGlobal('fetch', fetcher);
+    const host = await mount(render(NativeAccount, { initial }));
+    await type(control(host, 'Username'), 'commissioner');
+    await type(control(host, 'Password'), 'private-password');
+    await submit(host);
+    await settle();
+    expect(fetcher.mock.calls.map(call => JSON.parse(call[1].body).action)).toEqual(['login', 'enter']);
+    expect(rooms).toEqual(['open franchise.01']);
+    expect(all(host, 'form')).toHaveLength(0);
+    expect(button(host, 'League')).toBeTruthy();
+    expect(host.textContent).not.toContain('Join with a code');
+    expect(host.textContent).not.toContain('No MFL account or key needed');
+    // The Authenticator tab shows its own form; the league stays mounted but hidden, and its
+    // status line survives the switch.
+    await click(button(host, 'Authenticator'));
+    expect(all(host, 'form')).toHaveLength(1);
+    expect(all(host, 'div').some(d => d.props().hidden === true)).toBe(true);
+    expect(rooms).toEqual(['open franchise.01']);
+    expect(host.textContent).toContain('Seat line.');
+    await click(button(host, 'League'));
+    expect(all(host, 'form')).toHaveLength(0);
+    // A refused reread clears the league view, and the form is back to sign in again.
+    fetcher.mockResolvedValue({ ok: false, text: async () => 'Session revoked. Sign in again.' });
+    await click(button(host, 'Open my franchise')); await settle();
+    expect(all(host, 'form')).toHaveLength(1);
     expect(host.textContent).toContain('Sign in again');
   });
 
@@ -193,8 +229,9 @@ it.each(['enter', 'forget', 'revoke-device', 'revoke-all'] as const)(
       franchise: 'franchise.01', franchiseName: 'My club' }));
     vi.stubGlobal('fetch', fetcher);
     // Startup never carries a franchise (Go's status action only sets the message).
+    // A saved sign-in opens the league by itself at startup.
     const host = await mount(render(NativeAccount, { initial: { ...initial, message: 'Saved.' } }));
-    await click(button(host, 'Open my franchise')); await settle();
+    await settle();
     fetcher.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
     expect(rooms).toEqual(['open franchise.01']);
     const label = { enter: 'Open my franchise', forget: 'Forget saved sign-in',

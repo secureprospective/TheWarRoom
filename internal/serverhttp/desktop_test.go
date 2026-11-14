@@ -110,8 +110,14 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 	if _, err := desktop.Act(t.Context(), credentials); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"}); err == nil || !strings.Contains(err.Error(), "authenticator") {
-		t.Fatalf("missing privileged factors: %v", err)
+	// The authenticator is optional for commissioners too (ruling 2026-11-14): none set up, the session admits.
+	view, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
+	if err != nil || view.Name != "Hosted test" {
+		t.Fatalf("commissioner without authenticator: %+v %v", view, err)
+	}
+	// The commissioner's seat needs no team, and is never told to ask a commissioner.
+	if view.Franchise == "" && (!strings.Contains(view.Message, "commissioner's seat") || strings.Contains(view.Message, "Ask your commissioner")) {
+		t.Fatalf("commissioner without a team: %q", view.Message)
 	}
 	credentials.Action = "totp-begin"
 	setup, err := desktop.Act(t.Context(), credentials)
@@ -122,6 +128,10 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 	if _, err := desktop.Act(t.Context(), credentials); err != nil {
 		t.Fatal(err)
 	}
+	// Once confirmed, the authenticator is required: the session alone no longer admits.
+	if _, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"}); err == nil || !strings.Contains(err.Error(), "authenticator") {
+		t.Fatalf("confirmed authenticator without a code: %v", err)
+	}
 	credentials.Action = "totp-step-up"
 	if _, err := desktop.Act(t.Context(), credentials); err == nil || !strings.Contains(err.Error(), "fresh code") {
 		t.Fatalf("replay recovery: %v", err)
@@ -131,7 +141,7 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 	if _, err := desktop.Act(t.Context(), credentials); err != nil {
 		t.Fatal(err)
 	}
-	view, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
+	view, err = desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
 	if err != nil || view.Name != "Hosted test" {
 		t.Fatalf("privileged entry: %+v %v", view, err)
 	}
@@ -166,8 +176,8 @@ func TestDesktopDeviceRevocation(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			// A commissioner without recent TOTP gets a policy refusal, not a session refusal.
-			if _, err := second.Act(t.Context(), serverclient.RawDesktop{Action: "enter"}); err == nil || strings.Contains(err.Error(), "revoked") {
+			// A commissioner without an authenticator is admitted on the session alone until it is revoked.
+			if _, err := second.Act(t.Context(), serverclient.RawDesktop{Action: "enter"}); err != nil {
 				t.Fatalf("before revoke: %v", err)
 			}
 			if _, err := first.Act(t.Context(), serverclient.RawDesktop{Action: action}); err != nil {
@@ -176,8 +186,9 @@ func TestDesktopDeviceRevocation(t *testing.T) {
 			if _, err := first.Act(t.Context(), serverclient.RawDesktop{Action: "enter"}); err == nil {
 				t.Fatal("revoked device retained access")
 			}
+			// Revoking this device leaves the other one in; revoking all signs it out too.
 			_, err := second.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
-			if err == nil || (strings.Contains(err.Error(), "revoked") != (action == "revoke-all")) {
+			if action == "revoke-device" && err != nil || action == "revoke-all" && (err == nil || !strings.Contains(err.Error(), "revoked")) {
 				t.Fatalf("other device: %v", err)
 			}
 			f.revision(t, 1)

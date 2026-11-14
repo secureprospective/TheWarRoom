@@ -183,7 +183,7 @@ func (d *Desktop) actLocked(ctx context.Context, raw RawDesktop, view DesktopVie
 		if err := d.clearCredential(); err != nil {
 			return view, err
 		}
-		view.Message = "Signed out and removed the saved device session. Server-side device revocation is separate."
+		view.Message = "Signed out on this computer. To sign out your other devices too, sign in and choose Revoke all devices."
 	case "enter":
 		return d.enter(ctx, view)
 	case "helper-issue", "helper-revoke", "helper-check", "helper-confirm":

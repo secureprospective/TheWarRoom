@@ -90,7 +90,8 @@ func TestPrivilegedTOTPEnrollmentReplayAndRecentAuth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.service.CheckPrivileged(t.Context(), f.policy, principal, accounts.RecentAuth{}); !errors.Is(err, accounts.ErrTOTPRequired) {
+	// The authenticator is optional for commissioners (ruling 2026-11-14): none set up, no code needed.
+	if err := f.service.CheckPrivileged(t.Context(), f.policy, principal, accounts.RecentAuth{}); err != nil {
 		t.Fatalf("unconfigured commissioner: %v", err)
 	}
 	setup, err := f.service.Begin(t.Context(), f.credentials)
@@ -180,6 +181,14 @@ func TestTOTPDeputiesAndAccountBinding(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The commissioner turns on an authenticator, so a deputy proof crossing accounts would matter.
+	own, err := f.service.Begin(t.Context(), f.credentials)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.service.Confirm(t.Context(), f.credentials, authenticatorCode(t, own.Seed, f.now)); err != nil {
+		t.Fatal(err)
+	}
 	for i := range 2 {
 		credential, err := f.store.Credential(t.Context(), f.account.Username)
 		if err != nil {
@@ -198,7 +207,7 @@ func TestTOTPDeputiesAndAccountBinding(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := f.service.CheckPrivileged(t.Context(), f.policy, deputy, accounts.RecentAuth{}); !errors.Is(err, accounts.ErrTOTPRequired) {
+		if err := f.service.CheckPrivileged(t.Context(), f.policy, deputy, accounts.RecentAuth{}); err != nil {
 			t.Fatalf("unconfigured deputy: %v", err)
 		}
 		raw := f.credentials
