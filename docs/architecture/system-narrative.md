@@ -475,7 +475,7 @@ Drops still use the last held weekly roster before the move, dated by the last N
 Opening remains a desktop-only ProBoards/discovered MFL board/polls hand-off. Commands() is
 package-level metadata, not another bound method. The root reflection manifest freezes App's
 remaining 130 methods plus the three Comms methods and requires their catalog coverage.
-`internal/ingestion/comms.go` validates posts. Lazy frontend Comms/Digests use comms/api.ts as
+`internal/ingestion/shellfeeds.go` validates posts. Lazy frontend Comms/Digests use comms/api.ts as
 the only backend gateway, including events and cleanup; the frontend transport gate enforces it.
 Read/open goldens stay in testdata/wire/comms and are exercised with a fake Host; the root keeps
 the refresh composition golden. Core tests use coretest's isolated stores/fixture transport and

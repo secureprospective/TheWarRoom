@@ -171,8 +171,7 @@ func (s *snapshotPin) backupTo(ctx context.Context, copyPath string) (int64, err
 	return pages, nil
 }
 
-// stepBackup copies snapshotChunkPages at a time and fsyncs each chunk to the device (portable; the
-// 11-08 lab measured sync_file_range no better than fsync per chunk, candidates 1 vs 2), then
+// stepBackup copies snapshotChunkPages at a time and writes each chunk out to the device, then
 // rests as long as that chunk took, so the copy uses at most half the disk's time and an app write
 // queues behind at most one chunk. It stops when ctx is done.
 func stepBackup(ctx context.Context, backup *sqlite.Backup, dest *os.File) error {
@@ -182,8 +181,8 @@ func stepBackup(ctx context.Context, backup *sqlite.Backup, dest *os.File) error
 		if err != nil || !more {
 			return err //nolint:wrapcheck // wrapped by the caller
 		}
-		if err := dest.Sync(); err != nil {
-			return fmt.Errorf("write out %s: %w", dest.Name(), err)
+		if err := writeOut(dest); err != nil {
+			return err
 		}
 		select {
 		case <-ctx.Done():
