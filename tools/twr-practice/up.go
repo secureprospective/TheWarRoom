@@ -42,7 +42,7 @@ func up(ctx context.Context, dir, bin string, out io.Writer) (result error) {
 		return fmt.Errorf("create server log: %w", err)
 	}
 	defer func() { _ = log.Close() }()
-	child, err = practiceServer(dir)
+	child, err = practiceServer(ctx, dir, log)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,21 @@ func up(ctx context.Context, dir, bin string, out io.Writer) (result error) {
 	return result
 }
 
-func practiceServer(dir string) (*exec.Cmd, error) {
+// upgradeSandbox brings the seeded one-file database to this release's layout (each league in its own
+// file) with the server's own upgrade, as a real server is brought there, before the server starts.
+func upgradeSandbox(ctx context.Context, dir string, log io.Writer) error {
+	upgrade := exec.CommandContext(ctx, filepath.Join(dir, "twr-server"), "upgrade", "-db", filepath.Join(dir, "server.db"), "-save", filepath.Join(dir, "pre-upgrade")) //nolint:gosec // Fixed executable in the claimed sandbox, no shell.
+	upgrade.Stdout, upgrade.Stderr = log, log
+	if err := upgrade.Run(); err != nil {
+		return fmt.Errorf("upgrade the practice database (see server.log): %w", err)
+	}
+	return nil
+}
+
+func practiceServer(ctx context.Context, dir string, log io.Writer) (*exec.Cmd, error) {
+	if err := upgradeSandbox(ctx, dir, log); err != nil {
+		return nil, err
+	}
 	digest, err := os.ReadFile(filepath.Join(dir, "football.digest")) //nolint:gosec // Fixed file inside the claimed private sandbox.
 	if err != nil {
 		return nil, fmt.Errorf("read practice football digest: %w", err)
