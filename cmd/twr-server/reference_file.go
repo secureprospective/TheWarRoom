@@ -33,7 +33,7 @@ func openReference(ctx context.Context, league *db.Pools, leaguePath string) (*d
 	if err := referenceMove.settle(ctx, league, leaguePath); err != nil {
 		return nil, err
 	}
-	pools, err := db.Open(ctx, referencePath(leaguePath), history.SchemaVersion())
+	pools, err := db.Open(ctx, referencePath(leaguePath), history.ReferenceSchemaVersion())
 	if err != nil {
 		return nil, fmt.Errorf("open the reference file: %w", err)
 	}
@@ -44,9 +44,6 @@ func openReference(ctx context.Context, league *db.Pools, leaguePath string) (*d
 }
 
 func buildReferenceMove(ctx context.Context, league *db.Pools, pending string, held bool) (func(context.Context) error, error) {
-	if !held {
-		return nil, fmt.Errorf("the league file holds no football reference tables and no record that they moved")
-	}
 	record, err := buildReference(ctx, league, pending, held)
 	if err != nil {
 		return nil, err
@@ -59,7 +56,7 @@ func buildReferenceMove(ctx context.Context, league *db.Pools, pending string, h
 // buildReference writes and proves the new file, then closes it so nothing of it is left in a WAL.
 func buildReference(ctx context.Context, source *db.Pools, path string, held bool) (record history.ReferenceMove, err error) {
 	record.File = referenceFileName
-	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	pools, err := db.Open(ctx, path, history.ReferenceSchemaVersion())
 	if err != nil {
 		return record, fmt.Errorf("create the reference file: %w", err)
 	}

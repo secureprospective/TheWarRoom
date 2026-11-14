@@ -216,12 +216,6 @@ CREATE TABLE IF NOT EXISTS unresolved_observations (
 	PRIMARY KEY (source, id_type, id_value, season, week, measure, as_of)
 );
 CREATE INDEX IF NOT EXISTS unresolved_by_source ON unresolved_observations (source, season);
-CREATE TABLE IF NOT EXISTS player_ids (
-	id_type   TEXT NOT NULL,
-	id_value  TEXT NOT NULL,
-	player_id TEXT NOT NULL,
-	PRIMARY KEY (id_type, id_value)
-);
 CREATE TABLE IF NOT EXISTS param_sets (
 	param_set_id TEXT PRIMARY KEY,
 	measures     TEXT NOT NULL,
@@ -309,6 +303,14 @@ CREATE TABLE IF NOT EXISTS snapshot_checks (
 	checks      TEXT NOT NULL
 );`
 
+const legacyPlayerIDsDDL = `CREATE TABLE IF NOT EXISTS player_ids (
+	id_type   TEXT NOT NULL,
+	id_value  TEXT NOT NULL,
+	player_id TEXT NOT NULL,
+	PRIMARY KEY (id_type, id_value)
+);
+`
+
 // registryDDL creates registry mirrors; Initialize refreshes their rows without DDL.
 const registryDDL = `
 CREATE TABLE IF NOT EXISTS measures (
@@ -339,7 +341,7 @@ CREATE TABLE IF NOT EXISTS source_fields (
 func (s *Store) Initialize(ctx context.Context) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	if _, err := s.pools.Migrate(ctx, historyMigrations()...); err != nil {
+	if err := MigrateLeague(ctx, s.pools); err != nil {
 		return fmt.Errorf("history: migrate schema: %w", err)
 	}
 	if _, err := s.VerifyAudit(ctx); err != nil {

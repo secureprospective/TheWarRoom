@@ -146,7 +146,7 @@ func openStateFiles(ctx context.Context, path string) (stateFiles, error) {
 // openSignInFiles is openStateFiles for the console's incident commands, which must work on a league
 // file of any release this build can open: it skips the serve preflight.
 func openSignInFiles(ctx context.Context, path string) (stateFiles, error) {
-	alone, err := db.Open(ctx, path, history.SchemaVersion())
+	alone, err := db.Open(ctx, path, history.LeagueSchemaVersion())
 	if err != nil {
 		return stateFiles{}, fmt.Errorf("open server database: %w", err)
 	}
@@ -167,7 +167,7 @@ func openSignInFiles(ctx context.Context, path string) (stateFiles, error) {
 
 // openLeague opens a converted league file with its reference file attached.
 func openLeague(ctx context.Context, path string, reference *db.Pools) (*db.Pools, error) {
-	league, err := db.OpenWithReference(ctx, path, history.SchemaVersion(), reference)
+	league, err := db.OpenWithReference(ctx, path, history.LeagueSchemaVersion(), reference)
 	if err != nil {
 		return nil, fmt.Errorf("open server database: %w", err)
 	}

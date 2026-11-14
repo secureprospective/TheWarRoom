@@ -184,7 +184,7 @@ func TestReferenceMoveMismatchRefusesAndChangesNothing(t *testing.T) {
 				if at != "copied" {
 					return
 				}
-				pools, err := db.Open(t.Context(), pending, history.SchemaVersion())
+				pools, err := db.Open(t.Context(), pending, history.ReferenceSchemaVersion())
 				if err != nil {
 					t.Fatal(err)
 				}

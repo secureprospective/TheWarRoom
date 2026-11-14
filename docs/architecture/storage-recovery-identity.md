@@ -37,8 +37,11 @@ The hosted server keeps football reference data in a third file, `reference.db`
 (`cmd/twr-server/reference_file.go`, `history.ReferenceTables`): the raw archive,
 fetch log, loads and observations, scoring and model runs, compiled inputs, live
 lines, `canonical_player`, `player_external_id`, `player_record` and the measure
-mirror. It is built with the history migration list, so its version is history's
-`user_version` and a newer one is refused the same way; its league tables stay empty.
+mirror. Its own reference migration list starts at v1 and creates no league tables,
+not even a destination `transfer_identity`. The hosted league has a separate list,
+continuing its version numbering at v14, and creates no reference tables. Each
+file owns its `user_version` and refuses newer versions before migrating. Combined
+desktop and pre-conversion files keep their original history list.
 The league file is opened with it attached on every connection read-only as schema `reference`
 (`db.OpenWithReference`): a table the league file no longer holds resolves there by
 name, so the stores' queries are unchanged, and no code looks for a reference table in
@@ -77,7 +80,7 @@ frozen evidence: the audit tables are append-only, and they hold hashes, not sec
 
 The reference move runs next, through the same steps (`cmd/twr-server/file_move.go`):
 (1) pre-change backup of `server.db`; (2) build `reference.db.converting` from the
-history migrations, copy every reference table as stored (identity first, so the
+reference migrations, copy every reference table as stored (identity first, so the
 evidence identity triggers mint nothing), prove each table (row count and ordered-row
 digest) and the raw archive (key, size and SHA-256 of the stored bytes, in key order),
 close and fsync; a crash here leaves `server.db` untouched and the half-built file is
@@ -168,10 +171,6 @@ Older transfer documents remain readable with the absent optional field.
 
 ## Debt left
 
-- Future history migrations run on both the league file and the reference file. A
-  migration that changes a reference table must be written to skip the league file
-  (where the table is gone), and one that changes a league table runs harmlessly on the
-  reference file's empty copy. Splitting the migration list per file is the clean fix.
 - Reference lag still blocks restore. A missing pinned body is read by
   `leaguePins.selectPins` → `history.LoadFootball` → `Body`
   (`SELECT size, body FROM raw_archive WHERE sha256 = ?`); it prevents hosted

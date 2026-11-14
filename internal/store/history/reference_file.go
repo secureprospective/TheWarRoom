@@ -21,8 +21,7 @@ import (
 // identity: league rows hold permanent canonical ids, and the league file keeps its own copy of the
 // ids it owns (league_player) so its ownership foreign key stays inside one file.
 //
-// The reference file is built with the same history migration list as the league file, so its
-// version is history's and a newer one is refused the same way; its league tables stay empty.
+// Each hosted file has its own migration list and user_version.
 
 // ReferenceTables are the tables that move to the reference file, parents first: a move copies them
 // in this order and drops them from the league file in the reverse order.
@@ -46,14 +45,13 @@ const rawArchive = "raw_archive"
 
 // PrepareReferenceFile brings a reference file to this build's schema.
 func PrepareReferenceFile(ctx context.Context, pools *db.Pools) error {
-	if _, err := pools.Migrate(ctx, historyMigrations()...); err != nil {
+	if _, err := pools.Migrate(ctx, referenceMigrations()...); err != nil {
 		return fmt.Errorf("history: reference file: %w", err)
 	}
 	return nil
 }
 
-// PrepareNewLeague gives a brand-new, empty league file the history schema, so the reference move
-// that follows finds the reference tables to move. A file with any version is left alone.
+// PrepareNewLeague creates only league tables in a brand-new hosted file.
 func PrepareNewLeague(ctx context.Context, pools *db.Pools) error {
 	var version int
 	if err := pools.Read().QueryRowContext(ctx, `PRAGMA user_version`).Scan(&version); err != nil {
@@ -62,16 +60,28 @@ func PrepareNewLeague(ctx context.Context, pools *db.Pools) error {
 	if version != 0 {
 		return nil
 	}
+	return migrateLeagueFile(ctx, pools)
+}
+
+// MigrateLeague chooses the file's own list after the reference move. Combined desktop
+// and pre-conversion files retain their original migrations until they are split.
+func MigrateLeague(ctx context.Context, pools *db.Pools) error {
+	moved, err := db.HasTable(ctx, pools, ReferenceMoveTable)
+	if err != nil {
+		return fmt.Errorf("history: read league layout: %w", err)
+	}
+	if moved || pools.Reference() != "" {
+		return migrateLeagueFile(ctx, pools)
+	}
 	if _, err := pools.Migrate(ctx, historyMigrations()...); err != nil {
-		return fmt.Errorf("history: new league file: %w", err)
+		return fmt.Errorf("history: migrate history file: %w", err)
 	}
 	return nil
 }
 
-// MigrateLeague runs the league file's own migrations on the file opened alone (the upgrade step).
-func MigrateLeague(ctx context.Context, pools *db.Pools) error {
-	if _, err := pools.Migrate(ctx, historyMigrations()...); err != nil {
-		return fmt.Errorf("history: migrate the league file: %w", err)
+func migrateLeagueFile(ctx context.Context, pools *db.Pools) error {
+	if _, err := pools.MigrateFrom(ctx, leagueMigrationBase, leagueMigrations()...); err != nil {
+		return fmt.Errorf("history: migrate league file: %w", err)
 	}
 	return nil
 }
@@ -200,7 +210,7 @@ func CommitReferenceMove(ctx context.Context, league *db.Pools, record Reference
 	tables := slices.Clone(ReferenceTables())
 	slices.Reverse(tables)
 	for _, table := range tables {
-		if _, err := tx.ExecContext(ctx, `DROP TABLE main.`+table); err != nil {
+		if _, err := tx.ExecContext(ctx, `DROP TABLE IF EXISTS main.`+table); err != nil {
 			return fmt.Errorf("history: remove %s from the league file: %w", table, err)
 		}
 	}
@@ -281,7 +291,7 @@ func FillArchiveBodies(ctx context.Context, path string, get func(sha string) ([
 }
 
 func withStagedArchive(ctx context.Context, path string, work func(*db.Pools) (ArchiveAnchor, error)) (anchor ArchiveAnchor, err error) {
-	pools, err := db.Open(ctx, path, SchemaVersion())
+	pools, err := db.Open(ctx, path, ReferenceSchemaVersion())
 	if err != nil {
 		return anchor, fmt.Errorf("history: open the staged reference file: %w", err)
 	}

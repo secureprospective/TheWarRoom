@@ -134,7 +134,7 @@ func unlockSignIns(ctx context.Context, sets recoverySets, name string, identity
 }
 
 func leaguePrincipals(ctx context.Context, league string) ([]string, error) {
-	pools, err := db.OpenReadOnly(ctx, league, history.SchemaVersion())
+	pools, err := db.OpenReadOnly(ctx, league, history.LeagueSchemaVersion())
 	if err != nil {
 		return nil, fmt.Errorf("open restored database: %w", err)
 	}
@@ -159,12 +159,12 @@ func openRestored(ctx context.Context, league string) (restoredFiles, error) {
 	var pools, reference *db.Pools
 	var err error
 	if fileExists(referencePath(league)) {
-		reference, err = db.Open(ctx, referencePath(league), history.SchemaVersion())
+		reference, err = db.Open(ctx, referencePath(league), history.ReferenceSchemaVersion())
 		if err == nil {
-			pools, err = db.OpenWithReference(ctx, league, history.SchemaVersion(), reference)
+			pools, err = db.OpenWithReference(ctx, league, history.LeagueSchemaVersion(), reference)
 		}
 	} else {
-		pools, err = db.Open(ctx, league, history.SchemaVersion())
+		pools, err = db.Open(ctx, league, history.LeagueSchemaVersion())
 	}
 	if err != nil {
 		if reference != nil {

@@ -92,7 +92,7 @@ func TestHostedIdentityCommitThenLeagueCrashCompletesOnRetry(t *testing.T) {
 	}
 	defer func() { _ = original.Close() }()
 	s, _, _ := reopen(t, original, registry(t, ""))
-	reference, err := db.Open(ctx, filepath.Join(t.TempDir(), "reference.db"), SchemaVersion())
+	reference, err := db.Open(ctx, filepath.Join(t.TempDir(), "reference.db"), ReferenceSchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

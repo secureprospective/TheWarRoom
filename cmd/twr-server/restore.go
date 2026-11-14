@@ -183,7 +183,7 @@ func unlockSet(ctx context.Context, sets recoverySets, name string, identity *ag
 }
 
 func holdsLeague(ctx context.Context, path string) (bool, error) {
-	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	pools, err := db.Open(ctx, path, history.LeagueSchemaVersion())
 	if err != nil {
 		return false, fmt.Errorf("open server database: %w", err)
 	}

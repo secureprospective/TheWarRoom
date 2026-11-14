@@ -78,7 +78,8 @@ The server keeps three files in `/var/lib/twr`:
 - `reference.db`, the football reference file: fetched pages and other raw captures,
   football statistics, model results, live lines, player identity and player records.
   Every league on the server shares it. League connections attach it read-only;
-  reference writes use only its own pools, before any dependent league commit. A league points into it only by content (a
+  reference writes use only its own pools, before any dependent league commit. A league
+  points into it only by content (a
   capture's SHA-256, a football version's digest), never by a row number.
 - `accounts.db`, the sign-in file: accounts, sessions, helper tokens, aliases, join
   links, the security history and the list of leagues on this server, with each league's
@@ -116,7 +117,8 @@ the normal pre-change backup, a copy into the new file, a check of the copy tabl
 (row count and a digest of every row in order; raw captures by key, size and the digest of
 the stored bytes), and only then one transaction that removes the moved tables from
 `server.db` and records the move. If the check fails it deletes the new file, changes nothing
-and refuses to start with a plain message. After the reference move `server.db` is compacted.
+and refuses to start with a plain message. After the reference move `server.db` is
+compacted. Each file migrates only its own tables and has its own version check; reference files hold no league tables.
 
 ## Football versions per league
 

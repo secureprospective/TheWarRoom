@@ -167,7 +167,7 @@ func TestReferenceSetLeavesRawCapturesOut(t *testing.T) {
 	if bytes.Contains(staged, body[:min(len(body), 256)]) {
 		t.Fatal("a raw capture rode in the reference set")
 	}
-	pools, err := db.OpenReadOnly(ctx, filepath.Join(dest, referenceFileName), history.SchemaVersion())
+	pools, err := db.OpenReadOnly(ctx, filepath.Join(dest, referenceFileName), history.ReferenceSchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

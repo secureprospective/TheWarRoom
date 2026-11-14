@@ -119,7 +119,7 @@ func openForCopy(ctx context.Context, path string) (stateFiles, error) {
 	if err != nil {
 		return stateFiles{}, err
 	}
-	league, err := db.Open(ctx, path, history.SchemaVersion())
+	league, err := db.Open(ctx, path, history.LeagueSchemaVersion())
 	if err != nil {
 		return stateFiles{}, fmt.Errorf("open server database: %w", err)
 	}
@@ -131,7 +131,7 @@ func openForCopy(ctx context.Context, path string) (stateFiles, error) {
 		return stateFiles{}, errors.Join(fmt.Errorf("open sign-in file: %w", err), league.Close())
 	}
 	if fileExists(referencePath(path)) {
-		if files.reference, err = db.Open(ctx, referencePath(path), history.SchemaVersion()); err != nil {
+		if files.reference, err = db.Open(ctx, referencePath(path), history.ReferenceSchemaVersion()); err != nil {
 			return stateFiles{}, errors.Join(fmt.Errorf("open football reference file: %w", err), files.Close())
 		}
 	}
@@ -142,7 +142,7 @@ func openForCopy(ctx context.Context, path string) (stateFiles, error) {
 // put back over them refuses them. A one-file server's sign-ins and then its football reference data
 // move to their own files here, after the league file's own migration.
 func migrateServer(ctx context.Context, path string) (err error) {
-	alone, err := db.Open(ctx, path, history.SchemaVersion())
+	alone, err := db.Open(ctx, path, history.LeagueSchemaVersion())
 	if err != nil {
 		return fmt.Errorf("open server database: %w", err)
 	}

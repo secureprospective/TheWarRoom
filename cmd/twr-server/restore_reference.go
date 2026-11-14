@@ -72,7 +72,7 @@ type referenceNeed struct {
 
 func referenceNeeds(ctx context.Context, dir string) (referenceNeed, error) {
 	need := referenceNeed{pins: map[string][]string{}}
-	league, err := db.OpenReadOnly(ctx, filepath.Join(dir, "server.db"), history.SchemaVersion())
+	league, err := db.OpenReadOnly(ctx, filepath.Join(dir, "server.db"), history.LeagueSchemaVersion())
 	if err != nil {
 		return need, fmt.Errorf("open restored database: %w", err)
 	}
@@ -117,8 +117,8 @@ func unlockReference(ctx context.Context, sets recoverySets, name string, identi
 		return "", fmt.Errorf("it is not a football reference backup")
 	}
 	path := filepath.Join(dir, referenceFileName)
-	file, err := db.Inspect(ctx, path, history.SchemaVersion())
-	if file.Schema > history.SchemaVersion() || file.Release > serverversion.Current().Release {
+	file, err := db.Inspect(ctx, path, history.ReferenceSchemaVersion())
+	if file.Schema > history.ReferenceSchemaVersion() || file.Release > serverversion.Current().Release {
 		return "", errNewerSet
 	}
 	if err != nil {
@@ -151,7 +151,7 @@ func openEvidence(ctx context.Context, sets recoverySets, identity *age.X25519Id
 }
 
 func referenceLacks(ctx context.Context, path string, need referenceNeed) (string, error) {
-	pools, err := db.OpenReadOnly(ctx, path, history.SchemaVersion())
+	pools, err := db.OpenReadOnly(ctx, path, history.ReferenceSchemaVersion())
 	if err != nil {
 		return "", fmt.Errorf("open football reference file: %w", err)
 	}
@@ -176,7 +176,7 @@ func referenceLacks(ctx context.Context, path string, need referenceNeed) (strin
 }
 
 func leagueHas(ctx context.Context, league, table string) (bool, error) {
-	pools, err := db.OpenReadOnly(ctx, league, history.SchemaVersion())
+	pools, err := db.OpenReadOnly(ctx, league, history.LeagueSchemaVersion())
 	if err != nil {
 		return false, fmt.Errorf("open restored database: %w", err)
 	}
