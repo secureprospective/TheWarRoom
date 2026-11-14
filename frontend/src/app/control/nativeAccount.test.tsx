@@ -98,6 +98,8 @@ describe('native desktop account access', () => {
     expect(fetcher.mock.calls.map(call => JSON.parse(call[1].body).action)).toEqual(['login', 'enter']);
     expect(rooms).toEqual(['open franchise.01']);
     expect(all(host, 'form')).toHaveLength(0);
+    expect(button(host, 'League')).toBeTruthy();
+    expect(host.textContent).not.toContain('Join with a code');
     // A refused reread clears the league view, and the form is back to sign in again.
     fetcher.mockResolvedValue({ ok: false, text: async () => 'Session revoked. Sign in again.' });
     await click(button(host, 'Open my franchise')); await settle();

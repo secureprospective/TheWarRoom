@@ -14,6 +14,9 @@ const tabs = [
   ['login', 'Sign in'], ['join', 'Join with a code'],
   ['authenticator', 'Authenticator'], ['recovery', 'Account recovery'],
 ] as const;
+// Once the league is open, signing in, joining and recovery are done; only the league and the
+// optional authenticator stay.
+const openTabs = [['login', 'League'], ['authenticator', 'Authenticator']] as const;
 
 export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [view, setView] = useState(initial);
@@ -91,7 +94,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <p>Your league server · No MFL account or key needed</p>
       <p className="native-address">{initial.server}</p></header>
     <nav aria-label="Account access">
-      {tabs.map(([id, label]) => <Act key={id} variant="button" verb="commissioner.surface"
+      {(view.name ? openTabs : tabs).map(([id, label]) =>
+        <Act key={id} variant="button" verb="commissioner.surface"
         args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
     </nav>
     {error && <p role="alert">{error}</p>}
@@ -180,8 +184,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-all')}
         disabled={pending} label="Revoke all devices">Revoke all devices</Act>
     </div>}
-    <footer>Device sessions use your OS keychain when available, otherwise Go memory only.
-      Revoke all devices signs you out everywhere. Authenticator verification is never saved.
-      Offline execution is unavailable.</footer>
+    <footer>This computer keeps your sign-in in its keychain when it has one, otherwise until
+      you close the app. Revoke all devices signs you out everywhere. Authenticator codes are never
+      saved. The league needs an internet connection.</footer>
   </main>;
 }
