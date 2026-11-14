@@ -37,6 +37,7 @@ const (
 // file; every write that withdraws a credential reserves the league writer first (the accounts store's
 // commit fence), so revocation cannot commit between transaction admission and ledger append.
 type Hosted struct {
+	Publisher *Publisher
 	// FootballDigest and Football are the server's pin (-football); Pins, when set, answers each league's
 	// own store and pin, and an unpinned league gets the server's.
 	FootballDigest string
@@ -69,6 +70,9 @@ type Hosted struct {
 }
 
 func (h Hosted) Handler() http.Handler {
+	if h.Publisher == nil {
+		h.Publisher = NewPublisher()
+	}
 	return resourceLimits(versionGate(h.invalidationHandler(h.backupAdmission(http.HandlerFunc(h.serveHTTP)))), h.TrustedProxy)
 }
 

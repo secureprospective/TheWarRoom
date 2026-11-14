@@ -33,8 +33,9 @@ import (
 )
 
 type hostedFixture struct {
-	pools  *db.Pools
-	server *httptest.Server
+	publisher *serverhttp.Publisher
+	pools     *db.Pools
+	server    *httptest.Server
 	// fresh is the same server with no reply cache, sharing every store: the cache's parity reference.
 	fresh      *httptest.Server
 	history    *history.Store
@@ -99,7 +100,8 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := serverhttp.Hosted{Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+	f.publisher = serverhttp.NewPublisher()
+	handler := serverhttp.Hosted{Publisher: f.publisher, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}), Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, nil),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
 			"CM-018,Franchise,What is this franchise called?,\n"}

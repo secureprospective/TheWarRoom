@@ -23,15 +23,20 @@ const DesktopPath = "/desktop/native"
 // Desktop owns device credentials outside the webview. The webview receives neither the bearer nor
 // the recent-auth proof. Its origin and league are fixed before the window opens.
 type Desktop struct {
-	mu          sync.Mutex
-	client      *Client
-	league      string
-	bearer      string
-	proof       string
-	credentials CredentialStore
-	loaded      bool
-	required    serverversion.Side
-	update      func() error
+	mu            sync.Mutex
+	generation    uint64
+	watchCancel   context.CancelFunc
+	changes       DesktopChanges
+	changeHistory []DesktopChanges
+	changed       chan struct{}
+	client        *Client
+	league        string
+	bearer        string
+	proof         string
+	credentials   CredentialStore
+	loaded        bool
+	required      serverversion.Side
+	update        func() error
 	// seats are what the last "enter" read; an AI helper acts for one of them.
 	seats          []DesktopSeat
 	helperCommands []string
@@ -57,6 +62,7 @@ func NewDesktop(address, league string, roots *x509.CertPool, storage ...Credent
 func (d *Desktop) Close() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	d.stopWatchLocked()
 	d.bearer, d.proof = "", ""
 	d.client.Close()
 }
@@ -164,7 +170,11 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, re
 			return view, nil
 		}
 	}
-	return d.actLocked(ctx, raw, view)
+	view, resultErr = d.actLocked(ctx, raw, view)
+	if resultErr == nil && (raw.Action == "login" || raw.Action == "enter" || raw.Action == "totp-step-up") {
+		d.startWatchLocked() //nolint:contextcheck // The window owns the watcher; the sign-in HTTP request does not.
+	}
+	return view, resultErr
 }
 
 func (d *Desktop) actLocked(ctx context.Context, raw RawDesktop, view DesktopView) (DesktopView, error) {

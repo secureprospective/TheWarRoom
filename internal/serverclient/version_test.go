@@ -46,7 +46,10 @@ func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 			_, err = agent.Ledger(t.Context())
 			assertUpdate(t, err, side)
 			desktop.bearer = "session"
-			retry, err := desktop.watchInvalidations(t.Context(), func(_ context.Context) error { t.Fatal("refused stream reread native data"); return nil })
+			retry, err := desktop.captureInvalidations().watch(t.Context(), func(_ context.Context, _ RawInvalidation) error {
+				t.Fatal("refused stream reread native data")
+				return nil
+			})
 			assertUpdate(t, err, side)
 			request := httptest.NewRequest(http.MethodPost, DesktopPath, strings.NewReader(`{"action":"login","username":"owner","password":"private-password"}`))
 			request.Header.Set("Content-Type", "application/json")

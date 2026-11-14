@@ -15,12 +15,16 @@ import (
 func (d *Desktop) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
-		if (r.URL.Path != DesktopPath && r.URL.Path != DesktopWorkflowPath) || r.URL.RawQuery != "" {
+		if (r.URL.Path != DesktopPath && r.URL.Path != DesktopWorkflowPath && r.URL.Path != DesktopChangesPath) || r.URL.RawQuery != "" {
 			http.NotFound(w, r)
 			return
 		}
 		if !desktopOrigin(r.Header.Get("Origin")) {
 			http.Error(w, "desktop origin required", http.StatusForbidden)
+			return
+		}
+		if r.URL.Path == DesktopChangesPath {
+			d.changesHTTP(w, r)
 			return
 		}
 		if r.URL.Path == DesktopWorkflowPath {

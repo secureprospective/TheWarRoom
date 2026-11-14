@@ -19,6 +19,10 @@ sentence means.
 | Live football | None yet. The server has no live collector. | ESPN live, Sleeper fill-in, nflverse finals and MFL live, polled inside the app. |
 | Direction | Grows until it carries everything. | Kept as-is until thin mode carries everything (governing plan step 3). Do not grow it or add features to it. |
 
+Thin windows now watch negotiated topic invalidations after sign-in/enter and expose them through
+`/desktop/changes`; `nativeApi.subscribeChanged` is the webview transport. See
+[hosted change notifications](hosted-changes.md). Local mode is unchanged.
+
 ## What the server (`cmd/twr-server`) carries today
 
 - **Engines:** `engine/*` (competition, rookie draft, bids), `fantasyscore` and `fantasyscore/source` (the
