@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io"
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,16 +9,23 @@ import (
 	"filippo.io/age"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/offsite"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-func TestCapturedHostedSetCarriesCompatibleCheckpoint(t *testing.T) {
-	pools, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "server.db"), history.SchemaVersion())
+// openTestServer opens a fresh two-file hosted server in dir, as a first start does.
+func openTestServer(t *testing.T, dir string) stateFiles {
+	t.Helper()
+	files, err := openSignInFiles(t.Context(), filepath.Join(dir, "server.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = pools.Close() }()
-	if _, err := hostedServices(t.Context(), pools, make([]byte, 32), ""); err != nil {
+	t.Cleanup(func() { _ = files.Close() })
+	return files
+}
+
+// Each kind of set carries a checkpoint its own restore accepts.
+func TestCapturedHostedSetCarriesCompatibleCheckpoint(t *testing.T) {
+	files := openTestServer(t, t.TempDir())
+	if _, err := hostedServices(t.Context(), files, make([]byte, 32), ""); err != nil {
 		t.Fatal(err)
 	}
 	config := t.TempDir()
@@ -32,20 +39,48 @@ func TestCapturedHostedSetCarriesCompatibleCheckpoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sealed, _, err := offsite.Capture(t.Context(), pools, config, t.TempDir(), offline.Recipient().String(), hostedCheckpoint)
-	if err != nil {
-		t.Fatal(err)
-	}
-	f, err := os.Open(sealed)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = f.Close() }()
-	dest := filepath.Join(t.TempDir(), "restored")
-	if _, err := offsite.Restore(f, offline, dest); err != nil {
-		t.Fatal(err)
-	}
-	if err := runCheckpoint(t.Context(), []string{"-db", filepath.Join(dest, "server.db"), "-check", filepath.Join(dest, "checkpoint.json")}, io.Discard); err != nil {
-		t.Fatalf("saved snapshot/checkpoint not matched: %v", err)
+	for _, tc := range []struct {
+		kind       offsite.SetKind
+		pools      *db.Pools
+		checkpoint func(context.Context, string) ([]byte, error)
+		verify     func(dir string) error
+	}{
+		{offsite.LeagueSet, files.league, leagueSetCheckpoint, func(dir string) error {
+			return checkCheckpoint(t.Context(), filepath.Join(dir, "checkpoint.json"), filepath.Join(dir, "server.db"), &discard{})
+		}},
+		{offsite.SignInSet, files.signIns, signInSetCheckpoint, func(dir string) error {
+			saved, err := readCheckpoint(filepath.Join(dir, "checkpoint.json"))
+			if err != nil {
+				return err
+			}
+			return checkAnchors(t.Context(), saved, "", signInSource{path: filepath.Join(dir, signInFileName), version: 1})
+		}},
+	} {
+		t.Run(tc.kind.File, func(t *testing.T) {
+			sealed, _, err := offsite.CaptureSet(t.Context(), tc.kind, tc.pools, config, t.TempDir(), offline.Recipient().String(), tc.checkpoint)
+			if err != nil {
+				t.Fatal(err)
+			}
+			f, err := os.Open(sealed)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = f.Close() }()
+			dest := filepath.Join(t.TempDir(), "restored")
+			manifest, err := offsite.Restore(f, offline, dest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !manifest.Holds(tc.kind.File) {
+				t.Fatalf("set does not hold %s", tc.kind.File)
+			}
+			if err := tc.verify(dest); err != nil {
+				t.Fatalf("saved snapshot/checkpoint not matched: %v", err)
+			}
+		})
 	}
 }
+
+type discard struct{}
+
+func (*discard) Write(p []byte) (int, error) { return len(p), nil }

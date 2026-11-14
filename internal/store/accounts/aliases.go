@@ -31,6 +31,11 @@ CREATE TRIGGER IF NOT EXISTS account_aliases_no_delete
 
 // BindAlias links alias to accountID once; linking it again to the same account is a no-op.
 func (s *Store) BindAlias(ctx context.Context, accountID, alias string) error {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
 	if _, err := governance.AccountPrincipal(accountID); err != nil {
 		return fmt.Errorf("accounts: link identity: %w", err)
 	}

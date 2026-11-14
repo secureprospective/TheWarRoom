@@ -27,6 +27,11 @@ func (s *Store) ResetAfterRestore(ctx context.Context, reason string) (int, erro
 }
 
 func (s *Store) resetAuth(ctx context.Context, reason, operation string, restored bool) (int, error) {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer release()
 	if reason == "" || len(reason) > 256 || strings.IndexFunc(reason, func(r rune) bool { return !unicode.IsPrint(r) }) >= 0 {
 		return 0, fmt.Errorf("accounts: a printable reason of up to 256 characters is required")
 	}
@@ -129,6 +134,11 @@ func (s *Store) lastReset(ctx context.Context, operation string) (Reset, error) 
 // ChangePassword replaces one account's hash and moves its credential generation. Sessions,
 // helper tokens and recent-auth proofs issued before the move no longer resolve.
 func (s *Store) ChangePassword(ctx context.Context, accountID, passwordHash string) error {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
 	if _, _, err := identity.DecodePasswordHash(passwordHash); err != nil {
 		return fmt.Errorf("accounts: change password: %w", err)
 	}

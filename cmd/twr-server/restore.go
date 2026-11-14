@@ -42,7 +42,7 @@ func (r rawRestoreInput) GoString() string { return r.String() }
 var errNewerSet = errors.New("a backup in this bucket was saved by a newer league server than this one. Install the newest server bundle, then run the restore again; nothing was installed")
 
 type recoverySets interface {
-	Sets(context.Context) ([]string, error)
+	KindSets(context.Context, offsite.SetKind) ([]string, error)
 	Open(context.Context, string) (io.ReadCloser, error)
 }
 
@@ -90,7 +90,7 @@ func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X255
 	if info, err := os.Stat(target); err != nil || !info.Mode().IsRegular() {
 		return fmt.Errorf("restore needs this server's installed database")
 	}
-	if held, err := holdsLeague(ctx, target); err != nil || held {
+	if held, err := targetHolds(ctx, target); err != nil || held {
 		return errors.Join(fmt.Errorf("this server already holds a league or accounts; restore only onto a freshly installed server"), err)
 	}
 	if err := os.Mkdir(stage, 0700); err != nil {
@@ -115,6 +115,11 @@ func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X255
 			}
 			continue
 		}
+		// A league set saved after sign-ins moved needs its sign-in set beside it; the pair is checked
+		// before anything is installed.
+		if err := attachSignIns(ctx, sets, identity, dir, captured, output); err != nil {
+			return err
+		}
 		return activateRestore(ctx, dir, filepath.Join(stage, "ready"), name, captured, config, output)
 	}
 	return fmt.Errorf("no usable backup was found; nothing was installed")
@@ -122,7 +127,7 @@ func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X255
 
 // candidateSets lists sets newest first; a non-zero before drops sets saved at or after it, unopened.
 func candidateSets(ctx context.Context, sets recoverySets, before time.Time) ([]string, error) {
-	names, err := sets.Sets(ctx)
+	names, err := sets.KindSets(ctx, offsite.LeagueSet)
 	if err != nil {
 		return nil, fmt.Errorf("list backups: %w", err)
 	}
@@ -217,17 +222,16 @@ func readRestoreReport(ctx context.Context, ledger *history.Store, security *acc
 
 // activateRestore resets sign-ins inside the staged copy, before any listener can open it.
 func activateRestore(ctx context.Context, dir, ready, name string, captured time.Time, config offsite.RawConfig, output io.Writer) error {
-	snapshot := filepath.Join(dir, "server.db")
-	pools, err := db.Open(ctx, snapshot, history.SchemaVersion())
+	restored, err := openRestored(ctx, filepath.Join(dir, "server.db"))
 	if err != nil {
-		return fmt.Errorf("open restored database: %w", err)
+		return err
 	}
-	defer func() { _ = pools.Close() }()
+	defer func() { _ = restored.Close() }()
 	registry, err := measures.Embedded()
 	if err != nil {
 		return fmt.Errorf("load server measures: %w", err)
 	}
-	ledger, security := history.New(pools, registry), accountstore.New(pools)
+	ledger, security := history.New(restored.league, registry), restored.store()
 	if err := security.Initialize(ctx); err != nil {
 		return fmt.Errorf("prepare restored accounts: %w", err)
 	}
@@ -246,11 +250,8 @@ func activateRestore(ctx context.Context, dir, ready, name string, captured time
 	if after.ledger != before.ledger || !sameDigests(after.digests, before.digests) {
 		return fmt.Errorf("the sign-in reset changed league history; nothing was installed")
 	}
-	if _, err := pools.Write().ExecContext(ctx, `PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
-		return fmt.Errorf("finish restored database: %w", err)
-	}
-	if err := pools.Close(); err != nil {
-		return fmt.Errorf("close restored database: %w", err)
+	if err := restored.finish(ctx); err != nil {
+		return err
 	}
 	if err := stageReady(dir, ready, config); err != nil {
 		return err
@@ -273,6 +274,14 @@ func stageReady(dir, ready string, config offsite.RawConfig) error {
 	}
 	if err := os.Rename(filepath.Join(dir, "server.db"), filepath.Join(ready, "server.db")); err != nil {
 		return fmt.Errorf("stage restored database: %w", err)
+	}
+	if fileExists(filepath.Join(dir, signInFileName)) {
+		if info, err := os.Stat(filepath.Join(dir, signInFileName+"-wal")); err == nil && info.Size() > 0 {
+			return fmt.Errorf("restored sign-in file did not finish writing")
+		}
+		if err := os.Rename(filepath.Join(dir, signInFileName), filepath.Join(ready, signInFileName)); err != nil {
+			return fmt.Errorf("stage restored sign-in file: %w", err)
+		}
 	}
 	key, err := readOfflineKey(filepath.Join(dir, "config", "authenticator.key"))
 	if err != nil {
@@ -325,12 +334,12 @@ func runResetSignIns(ctx context.Context, args []string, input io.Reader, output
 	if err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("read reset reason: %w", err)
 	}
-	pools, err := db.Open(ctx, *path, history.SchemaVersion())
+	files, err := openSignInFiles(ctx, *path)
 	if err != nil {
 		return fmt.Errorf("open server database: %w", err)
 	}
-	defer func() { _ = pools.Close() }()
-	store := accountstore.New(pools)
+	defer func() { _ = files.Close() }()
+	store := signInStore(files)
 	if err := store.Initialize(ctx); err != nil {
 		return fmt.Errorf("initialize server accounts: %w", err)
 	}

@@ -53,20 +53,21 @@ func loadLeague(ctx context.Context, path, mirrorPath, mflLeague, pin string, ra
 		return fmt.Errorf("open the mirror read-only: %w", err)
 	}
 	defer func() { _ = mirrorPools.Close() }()
-	pools, err := openHostedFile(ctx, path)
+	files, err := openStateFiles(ctx, path)
 	if err != nil {
-		return fmt.Errorf("open server database: %w", err)
+		return err
 	}
-	defer func() { _ = pools.Close() }()
+	defer func() { _ = files.Close() }()
 	registry, err := measures.Embedded()
 	if err != nil {
 		return fmt.Errorf("load server measures: %w", err)
 	}
-	server := history.New(pools, registry)
+	server := history.New(files.league, registry)
 	if err := server.Initialize(ctx); err != nil {
 		return fmt.Errorf("initialize server history: %w", err)
 	}
-	commissioner, err := commissionerAccount(ctx, pools, raw)
+	signIns := signInStore(files)
+	commissioner, err := commissionerAccount(ctx, signIns, raw)
 	if err != nil {
 		return err
 	}
@@ -88,6 +89,10 @@ func loadLeague(ctx context.Context, path, mirrorPath, mflLeague, pin string, ra
 	if err != nil {
 		return fmt.Errorf("load the league: %w", err)
 	}
+	// The league has committed in the league file; only now does the directory name it.
+	if err := recordDirectory(ctx, server, signIns); err != nil {
+		return err
+	}
 	if pin != "" {
 		if err := writePin(pin, result.Football); err != nil {
 			return err
@@ -102,8 +107,7 @@ func loadLeague(ctx context.Context, path, mirrorPath, mflLeague, pin string, ra
 }
 
 // commissionerAccount creates the server's first account, or signs in the existing one by password.
-func commissionerAccount(ctx context.Context, pools *db.Pools, raw accounts.RawCredentials) (accounts.Account, error) {
-	store := accountstore.New(pools)
+func commissionerAccount(ctx context.Context, store *accountstore.Store, raw accounts.RawCredentials) (accounts.Account, error) {
 	if err := store.Initialize(ctx); err != nil {
 		return accounts.Account{}, fmt.Errorf("initialize server accounts: %w", err)
 	}

@@ -34,10 +34,12 @@ type memorySets struct {
 	opened  int
 }
 
-func (m *memorySets) Sets(context.Context) ([]string, error) {
+func (m *memorySets) KindSets(_ context.Context, kind offsite.SetKind) ([]string, error) {
 	var names []string
 	for name := range m.objects {
-		names = append(names, name)
+		if strings.HasPrefix(name, kind.Prefix) {
+			names = append(names, name)
+		}
 	}
 	slices.Sort(names)
 	slices.Reverse(names)

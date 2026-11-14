@@ -96,6 +96,11 @@ func (s *Store) Token(ctx context.Context, digest string) (identity.AgentToken, 
 }
 
 func (s *Store) RevokeToken(ctx context.Context, sessionDigest, id string) error {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
 	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin token revoke: %w", err)

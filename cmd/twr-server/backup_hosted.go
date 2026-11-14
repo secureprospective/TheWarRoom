@@ -14,68 +14,95 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
-func startHostedBackup(ctx context.Context, pools *db.Pools, path, temp string) (func() error, backupStatus, func(), error) {
+// hostedGuards are the two write guards: league writes follow the league file's off-site backup and
+// sign-in writes follow the sign-in file's.
+type hostedGuards struct{ league, signIns func() error }
+
+func startHostedBackup(ctx context.Context, files stateFiles, path, temp string) (hostedGuards, hostedBackups, func(), error) {
 	// Missing configuration never enables unprotected writes, including on development hosts.
 	_, configErr := os.Stat(path)
 	if path == "" || os.IsNotExist(configErr) {
 		guard := func() error { return fmt.Errorf("changes are paused until off-site backups are configured") }
-		pools.SetWriteGuard(guard)
-		return guard, noBackups, func() {}, nil
+		files.league.SetWriteGuard(guard)
+		files.signIns.SetWriteGuard(guard)
+		return hostedGuards{guard, guard}, hostedBackups{noBackups, noBackups}, func() {}, nil
 	}
-	manager, err := newBackupManager(pools, path, temp)
+	league, signIns, err := newBackupManagers(files, path, temp)
 	if err != nil {
-		return nil, nil, nil, err
+		return hostedGuards{}, hostedBackups{}, nil, err
 	}
-	pools.SetWriteGuard(manager.CheckWrite)
+	files.league.SetWriteGuard(league.CheckWrite)
+	files.signIns.SetWriteGuard(signIns.CheckWrite)
 	work, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
-	go func() { defer close(done); manager.Run(work) }()
-	return manager.CheckWrite, func() (offsite.Status, bool) { return manager.Status(), true }, func() { cancel(); <-done }, nil
+	// League set first, sign-in set last in every due round: accounts commit before seats, so every
+	// principal a captured league seats is already in the next sign-in set.
+	go func() { defer close(done); offsite.RunInOrder(work, league, signIns) }()
+	backups := hostedBackups{
+		league:  func() (offsite.Status, bool) { return league.Status(), true },
+		signIns: func() (offsite.Status, bool) { return signIns.Status(), true },
+	}
+	return hostedGuards{league.CheckWrite, signIns.CheckWrite}, backups, func() { cancel(); <-done }, nil
 }
 
-func newBackupManager(pools *db.Pools, path, temp string) (*offsite.Manager, error) {
+// newBackupManagers builds one off-site manager per file, each with its own revision reader.
+func newBackupManagers(files stateFiles, path, temp string) (*offsite.Manager, *offsite.Manager, error) {
 	config, err := offsite.ReadConfig(path)
 	if err != nil {
-		return nil, fmt.Errorf("configure off-site backup: %w", err)
+		return nil, nil, fmt.Errorf("configure off-site backup: %w", err)
 	}
 	r2, err := offsite.NewR2(config)
 	if err != nil {
-		return nil, fmt.Errorf("configure off-site backup: %w", err)
+		return nil, nil, fmt.Errorf("configure off-site backup: %w", err)
 	}
-	return offsite.NewManager(r2, temp, func(ctx context.Context, stage string) (string, time.Time, error) {
-		return offsite.Capture(ctx, pools, filepath.Dir(path), stage, config.Recipient, hostedCheckpoint)
-	}, pools.Revision), nil
+	manager := func(kind offsite.SetKind, pools *db.Pools, checkpoint func(context.Context, string) ([]byte, error)) *offsite.Manager {
+		return offsite.NewKindManager(kind, r2, temp, func(ctx context.Context, stage string) (string, time.Time, error) {
+			return offsite.CaptureSet(ctx, kind, pools, filepath.Dir(path), stage, config.Recipient, checkpoint)
+		}, pools.Revision)
+	}
+	if files.signIns == nil {
+		return manager(offsite.LeagueSet, files.league, leagueSetCheckpoint), nil, nil
+	}
+	return manager(offsite.LeagueSet, files.league, leagueSetCheckpoint), manager(offsite.SignInSet, files.signIns, signInSetCheckpoint), nil
 }
 
-// upgradeOffsite uploads and reads back one matched off-site set of the stopped server, so the
-// league as it stood before an upgrade is recoverable even if this host is lost.
-func upgradeOffsite(ctx context.Context, pools *db.Pools, path, temp string) error {
+// upgradeOffsite uploads and reads back one matched off-site set of each file of the stopped server,
+// league first, so the server as it stood before an upgrade is recoverable even if this host is lost.
+func upgradeOffsite(ctx context.Context, files stateFiles, path, temp string) error {
 	if filepath.Base(path) != "backup.json" {
 		return fmt.Errorf("private backup settings must be named backup.json")
 	}
-	manager, err := newBackupManager(pools, path, temp)
+	league, signIns, err := newBackupManagers(files, path, temp)
 	if err != nil {
 		return err
 	}
-	attempt, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	attempt, cancel := context.WithTimeout(ctx, 4*time.Minute)
 	defer cancel()
-	//nolint:wrapcheck // The upgrade names the step that failed.
-	return manager.Backup(attempt)
+	if err := league.Backup(attempt); err != nil {
+		return fmt.Errorf("league set: %w", err)
+	}
+	if signIns == nil {
+		return nil // a one-file server: its league set still carries its sign-ins
+	}
+	if err := signIns.Backup(attempt); err != nil {
+		return fmt.Errorf("sign-in set: %w", err)
+	}
+	return nil
 }
 
-func configureHostedBackup(ctx context.Context, handler *serverhttp.Hosted, pools *db.Pools, path, temp string, files ...string) (func(), backupStatus, error) {
+func configureHostedBackup(ctx context.Context, handler *serverhttp.Hosted, files stateFiles, path, temp string, extra ...string) (func(), hostedBackups, error) {
 	if path != "" {
 		if filepath.Base(path) != "backup.json" {
-			return nil, nil, fmt.Errorf("private backup settings must be named backup.json")
+			return nil, hostedBackups{}, fmt.Errorf("private backup settings must be named backup.json")
 		}
-		if err := checkBackupFiles(filepath.Dir(path), files); err != nil {
-			return nil, nil, err
+		if err := checkBackupFiles(filepath.Dir(path), extra); err != nil {
+			return nil, hostedBackups{}, err
 		}
 	}
-	admission, status, stop, err := startHostedBackup(ctx, pools, path, temp)
+	guards, status, stop, err := startHostedBackup(ctx, files, path, temp)
 	if err != nil {
-		return nil, nil, err
+		return nil, hostedBackups{}, err
 	}
-	handler.WriteAdmission = admission
+	handler.WriteAdmission, handler.SignInAdmission = guards.league, guards.signIns
 	return stop, status, nil
 }

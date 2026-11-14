@@ -33,15 +33,19 @@ const (
 	PickPath     = "/v1/native/draft/pick"
 )
 
-// Hosted has no fixture fallback. Accounts and history must share the single writer,
-// so revocation cannot commit between transaction admission and ledger append.
+// Hosted has no fixture fallback. Accounts live in the sign-in file and history in the league
+// file; every write that withdraws a credential reserves the league writer first (the accounts store's
+// commit fence), so revocation cannot commit between transaction admission and ledger append.
 type Hosted struct {
 	FootballDigest string
 	Football       *history.PinnedFootball
-	WriteAdmission func() error
-	Tokens         *accounts.TokenService
-	Confirmations  *Confirmations
-	Store          *history.Store
+	// WriteAdmission guards league writes and SignInAdmission guards sign-in writes: each follows its
+	// own file's off-site backup, so one file falling behind pauses only its own kind of change.
+	WriteAdmission  func() error
+	SignInAdmission func() error
+	Tokens          *accounts.TokenService
+	Confirmations   *Confirmations
+	Store           *history.Store
 	// Leagues finds the store holding a league; league heads and the due worker read through it.
 	Leagues    history.LeagueResolver
 	Sessions   *accounts.SessionService
@@ -150,7 +154,7 @@ func (h Hosted) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		h.writeFailure(w, "login refused", http.StatusUnauthorized)
+		h.failure(w, h.SignInAdmission, "login refused", http.StatusUnauthorized)
 		return
 	}
 	// The bearer crosses HTTPS only here. DeviceSession itself remains redacted.
@@ -509,8 +513,12 @@ func hostedMember(policy governance.State, principal governance.Principal, recor
 
 func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.TLS != nil && originAdmissible(r) && r.URL.RawQuery == "" && h.WriteAdmission != nil {
-			if err := h.WriteAdmission(); err != nil {
+		admission := h.WriteAdmission
+		if signInPath(r.URL.Path) {
+			admission = h.SignInAdmission
+		}
+		if r.Method == http.MethodPost && r.TLS != nil && originAdmissible(r) && r.URL.RawQuery == "" && admission != nil {
+			if err := admission(); err != nil {
 				http.Error(w, err.Error(), http.StatusServiceUnavailable)
 				return
 			}
@@ -519,9 +527,19 @@ func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 	})
 }
 
+// signInPath names the routes whose writes go to the sign-in file. A join claim writes the account
+// there first; its seat then meets the league file's own guard.
+func signInPath(path string) bool {
+	return strings.HasPrefix(path, "/v1/auth/") || path == PasswordPagePath || path == JoinPagePath
+}
+
 func (h Hosted) writeFailure(w http.ResponseWriter, message string, status int) {
-	if h.WriteAdmission != nil {
-		if err := h.WriteAdmission(); err != nil {
+	h.failure(w, h.WriteAdmission, message, status)
+}
+
+func (h Hosted) failure(w http.ResponseWriter, admission func() error, message string, status int) {
+	if admission != nil {
+		if err := admission(); err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}

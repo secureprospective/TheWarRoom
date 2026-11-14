@@ -83,3 +83,13 @@ func (p *Pools) pruneMigrationBackups(current string) error {
 	}
 	return nil
 }
+
+// BackupBeforeChange takes the same pre-migration backup Migrate takes, for a one-time change to the
+// file that is not a schema step (moving sign-in tables to their own file).
+func (p *Pools) BackupBeforeChange(ctx context.Context) (string, error) {
+	var version int
+	if err := p.read.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
+		return "", fmt.Errorf("db: backup version: %w", err)
+	}
+	return p.backupMigration(ctx, version)
+}

@@ -80,12 +80,12 @@ func TestResetPasswordReleasesTeamAndPrintsPageLink(t *testing.T) {
 		t.Fatalf("fragment=%q: %v", link.Fragment, err)
 	}
 
-	reopened, err := db.Open(ctx, path, history.SchemaVersion())
+	reopened, err := openSignInFiles(ctx, path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = reopened.Close() }()
-	after := accounts.NewJoin(accountstore.New(reopened), leagueservice.JoinSeats{Store: history.New(reopened, registry)}, nil)
+	after := accounts.NewJoin(signInStore(reopened), leagueservice.JoinSeats{Store: history.New(reopened.league, registry)}, nil)
 	list, err := after.Franchises(ctx, accounts.RawJoin{League: "native.hosted", Code: fragment.Get("code")})
 	if err != nil {
 		t.Fatal(err)

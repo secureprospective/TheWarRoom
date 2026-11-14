@@ -94,6 +94,15 @@ func (s *Store) StoreInitialRecoveryCodes(ctx context.Context, accountID string,
 // ResetAccount is a trusted service port. An empty digest is allowed only after
 // offline-key verification by the local console service, never by league policy.
 func (s *Store) ResetAccount(ctx context.Context, username, passwordHash, codeDigest, reason string) error {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+	return s.resetAccount(ctx, username, passwordHash, codeDigest, reason)
+}
+
+func (s *Store) resetAccount(ctx context.Context, username, passwordHash, codeDigest, reason string) error {
 	if _, _, err := identity.DecodePasswordHash(passwordHash); err != nil {
 		return fmt.Errorf("accounts: reset password: %w", err)
 	}

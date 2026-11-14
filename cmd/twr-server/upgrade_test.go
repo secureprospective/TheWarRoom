@@ -26,10 +26,7 @@ func oldUpgradeFile(t *testing.T, keepRelease bool) string {
 	if err := migrateServer(t.Context(), path); err != nil {
 		t.Fatal(err)
 	}
-	pools, err := db.Open(t.Context(), path, history.SchemaVersion())
-	if err != nil {
-		t.Fatal(err)
-	}
+	pools := backToOneFile(t, path)
 	registry, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
@@ -169,7 +166,7 @@ func TestUpgradeRefusesNewerSchemaAndBinaryOnlyDowngradeUntouched(t *testing.T) 
 				t.Fatalf("newer file upgrade = %v", err)
 			}
 		}
-		if _, err := openHostedFile(t.Context(), path); !errors.Is(err, serverversion.ErrNewerFile) {
+		if _, err := openStateFiles(t.Context(), path); !errors.Is(err, serverversion.ErrNewerFile) {
 			t.Fatalf("newer file serve = %v", err)
 		}
 		after, err := os.ReadFile(path)

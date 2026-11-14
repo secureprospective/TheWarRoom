@@ -18,8 +18,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-func statusSource(pools *db.Pools, leagues history.LeagueResolver, backups backupStatus) serverstatus.Source {
-	return serverstatus.Source{Backup: backups, League: leagueChains{leagues}, SignIns: accountstore.New(pools), Now: time.Now}
+func statusSource(signIns *db.Pools, leagues history.LeagueResolver, backups hostedBackups) serverstatus.Source {
+	return serverstatus.Source{Backup: backups.league, SignInBackup: backups.signIns, League: leagueChains{leagues},
+		SignIns: accountstore.NewServerFile(signIns), Now: time.Now}
 }
 
 // leagueChains verifies the ledger audit chain of every file the resolver holds league history in.

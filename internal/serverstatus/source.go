@@ -32,18 +32,25 @@ type SignIns interface {
 // Source is what only the running server knows: in-memory backup coverage and its own
 // view of both histories. cmd/twr-server wires it in hosted mode.
 type Source struct {
-	// Backup reports false when off-site backups are not configured.
-	Backup  func() (offsite.Status, bool)
-	League  Chain
-	SignIns SignIns
-	Now     func() time.Time
+	// Backup reports false when off-site backups are not configured. It is the league file's
+	// coverage; SignInBackup, when set, is the sign-in file's, which a hosted server keeps apart.
+	Backup       func() (offsite.Status, bool)
+	SignInBackup func() (offsite.Status, bool)
+	League       Chain
+	SignIns      SignIns
+	Now          func() time.Time
 }
 
 // Checks computes the server's lines afresh on every request; nothing is cached.
 func (s Source) Checks(ctx context.Context) []Check {
 	now := s.Now()
 	status, configured := s.Backup()
-	checks := []Check{backupCheck(status, configured, now), s.historyCheck(ctx)}
+	checks := []Check{backupCheck(leagueBackup, status, configured, now)}
+	if s.SignInBackup != nil {
+		status, configured := s.SignInBackup()
+		checks = append(checks, backupCheck(signInBackup, status, configured, now))
+	}
+	checks = append(checks, s.historyCheck(ctx))
 	restore, incident, err := s.SignIns.LastResets(ctx)
 	if err != nil {
 		return append(checks, Check{Name: "Sign-in resets", State: Problem, Detail: "Could not be read: " + err.Error() + ".",
@@ -60,24 +67,39 @@ func (s Source) Checks(ctx context.Context) []Check {
 	return checks
 }
 
-func backupCheck(status offsite.Status, configured bool, now time.Time) Check {
-	check := Check{Name: "Backups", State: Problem}
+// backupPart names one file's backup line on the dashboard and what pausing it stops.
+type backupPart struct{ name, paused, unconfigured string }
+
+//nolint:gochecknoglobals // fixed words, read only
+var (
+	leagueBackup = backupPart{name: "Backups", paused: "League changes and sign-ins are paused",
+		unconfigured: "Off-site backups are not set up, so league changes and sign-ins are paused."}
+	signInBackup = backupPart{name: "Sign-in backups", paused: "Sign-ins and account changes are paused (league changes are not)",
+		unconfigured: "Off-site backups are not set up, so sign-ins and account changes are paused."}
+)
+
+func backupCheck(part backupPart, status offsite.Status, configured bool, now time.Time) Check {
+	check := Check{Name: part.name, State: Problem}
+	what := "League changes"
+	if part == signInBackup {
+		what = "Sign-ins"
+	}
 	switch {
 	case !configured:
-		check.Detail = "Off-site backups are not set up, so league changes and sign-ins are paused."
+		check.Detail = part.unconfigured
 		check.Action = "Christopher finishes the backup setup in BACKUPS.md."
 	case status.Writable && status.Failure == "":
 		check.State = OK
 		check.Detail = "Last backup saved " + when(status.Captured, now) + " and checked in Cloudflare R2."
 	case status.Writable:
-		check.Detail = "League changes still work, but the newest backup attempt failed: " + status.Failure + ". It retries every minute."
+		check.Detail = what + " still work, but the newest backup attempt failed: " + status.Failure + ". It retries every minute."
 		check.Action = "Not urgent. Look again in an hour; if this line is still here, tell Christopher."
 	default:
 		last := "none since the server started"
 		if !status.Captured.IsZero() {
 			last = when(status.Captured, now)
 		}
-		check.Detail = "League changes and sign-ins are paused: no backup saved and checked in the last 14 minutes. Last good backup: " + last + "."
+		check.Detail = part.paused + ": no backup saved and checked in the last 14 minutes. Last good backup: " + last + "."
 		if status.Failure != "" {
 			check.Detail += " Newest error: " + status.Failure + "."
 		}

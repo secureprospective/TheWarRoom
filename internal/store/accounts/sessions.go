@@ -139,6 +139,11 @@ func (s *Store) readSession(ctx context.Context, tx *sql.Tx, digest string) (ide
 }
 
 func (s *Store) RevokeSession(ctx context.Context, digest string, allDevices bool) error {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
 	if !validSecretDigest(digest) {
 		return identity.ErrSessionRefused
 	}

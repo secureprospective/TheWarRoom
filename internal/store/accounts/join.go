@@ -28,6 +28,11 @@ func createJoin(ctx context.Context, tx *sql.Tx) error {
 
 // SetJoinLink stores league's join link digest, replacing any earlier link.
 func (s *Store) SetJoinLink(ctx context.Context, league, digest string, issuer governance.Principal) error {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
 	canonical, err := governance.AccountPrincipal(strings.TrimPrefix(string(issuer), "acct."))
 	if !validSecretDigest(digest) || league == "" || len(league) > 128 || err != nil || canonical != issuer {
 		return identity.ErrJoinRefused
@@ -46,7 +51,12 @@ func (s *Store) SetJoinLink(ctx context.Context, league, digest string, issuer g
 
 // RevokeJoinLink deletes league's join link; revoking an absent link is not an error.
 func (s *Store) RevokeJoinLink(ctx context.Context, league string) error {
-	_, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+	release, err := s.fenced(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+	_, err = s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
 		return tx.ExecContext(ctx, `DELETE FROM league_join_links WHERE league = ?`, league)
 	})
 	if err != nil {

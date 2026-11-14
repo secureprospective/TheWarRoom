@@ -7,12 +7,10 @@ import (
 	"io"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
-	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
-	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -45,20 +43,20 @@ func runJoinLink(ctx context.Context, args []string, input io.Reader, output io.
 	if err != nil {
 		return err
 	}
-	pools, err := openHostedFile(ctx, *path)
+	files, err := openStateFiles(ctx, *path)
 	if err != nil {
-		return fmt.Errorf("open server database: %w", err)
+		return err
 	}
-	defer func() { _ = pools.Close() }()
+	defer func() { _ = files.Close() }()
 	registry, err := measures.Embedded()
 	if err != nil {
 		return fmt.Errorf("load server measures: %w", err)
 	}
-	store := history.New(pools, registry)
+	store := history.New(files.league, registry)
 	if err := store.Initialize(ctx); err != nil {
 		return fmt.Errorf("initialize server history: %w", err)
 	}
-	account, err := commissionerSignIn(ctx, pools, raw)
+	account, err := commissionerSignIn(ctx, files, raw)
 	if err != nil {
 		return err
 	}
@@ -66,7 +64,7 @@ func runJoinLink(ctx context.Context, args []string, input io.Reader, output io.
 	if err != nil {
 		return fmt.Errorf("commissioner identity: %w", err)
 	}
-	service := accounts.NewJoin(accountStore(pools), leagueservice.JoinSeats{Store: store}, nil)
+	service := accounts.NewJoin(signInStore(files), leagueservice.JoinSeats{Store: store}, nil)
 	return joinAction(ctx, service, *league, *rotate, *revoke, *release, principal, output)
 }
 
@@ -100,11 +98,9 @@ func joinAction(ctx context.Context, service *accounts.JoinService, league strin
 	return nil
 }
 
-func accountStore(pools *db.Pools) *accountstore.Store { return accountstore.New(pools) }
-
 // commissionerSignIn checks an existing account's password; it never creates one.
-func commissionerSignIn(ctx context.Context, pools *db.Pools, raw accounts.RawCredentials) (accounts.Account, error) {
-	store := accountstore.New(pools)
+func commissionerSignIn(ctx context.Context, files stateFiles, raw accounts.RawCredentials) (accounts.Account, error) {
+	store := signInStore(files)
 	if err := store.Initialize(ctx); err != nil {
 		return accounts.Account{}, fmt.Errorf("initialize server accounts: %w", err)
 	}

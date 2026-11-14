@@ -386,3 +386,55 @@ func (s *Store) loadRegistry(ctx context.Context, tx execer) error {
 	}
 	return nil
 }
+
+// LeagueState is one league as its own file records it: every league with a create event, whatever
+// its transfer state, and when it was created. The server's league directory is copied from this.
+type LeagueState struct {
+	League, State, Created string
+}
+
+// LeagueStates reads every league this file holds; it is the truth the server directory follows.
+func (s *Store) LeagueStates(ctx context.Context) ([]LeagueState, error) {
+	rows, err := s.pools.Read().QueryContext(ctx, `SELECT e.league, COALESCE((SELECT state FROM transfer_current t WHERE t.league=e.league),'active'), MIN(e.recorded_at)
+ FROM league_event e WHERE e.stream=? AND e.kind=? GROUP BY e.league ORDER BY e.league`, commissioner.Stream, commissioner.Create)
+	if err != nil {
+		return nil, fmt.Errorf("read league states: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []LeagueState
+	for rows.Next() {
+		var l LeagueState
+		if err := rows.Scan(&l.League, &l.State, &l.Created); err != nil {
+			return nil, fmt.Errorf("read league state: %w", err)
+		}
+		out = append(out, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read league states: %w", err)
+	}
+	return out, nil
+}
+
+// NamedPrincipals lists every account principal pools' league file names: as the actor of an entry
+// or anywhere in an entry's payload (seats, commissioners, invitations). A restore checks each is in
+// the sign-in file restored beside it.
+func NamedPrincipals(ctx context.Context, pools *db.Pools) ([]string, error) {
+	rows, err := pools.Read().QueryContext(ctx, `SELECT actor FROM league_event WHERE actor LIKE 'acct.%'
+ UNION SELECT j.value FROM league_event e, json_tree(e.payload) j WHERE j.type='text' AND j.value LIKE 'acct.%' ORDER BY 1`)
+	if err != nil {
+		return nil, fmt.Errorf("read named principals: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []string
+	for rows.Next() {
+		var p string
+		if err := rows.Scan(&p); err != nil {
+			return nil, fmt.Errorf("read named principals: %w", err)
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read named principals: %w", err)
+	}
+	return out, nil
+}
