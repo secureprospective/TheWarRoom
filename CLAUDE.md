@@ -1,5 +1,5 @@
 # TheWarRoom — Project CLAUDE.md
-**Version:** 3.3 — 2026-11-09
+**Version:** 3.4 — 2026-11-14
 **Project path:** `~/work/TheWarRoom` on the Beelink (the only clone that builds and runs the app)
 **Pillars:** Business, Technical
 
@@ -12,9 +12,14 @@ strategic reference is `North_Star.md`; read it before deciding what earns build
 - **AI first, CLI first.** Every action is a named command in one catalogue (`internal/commandcatalog`).
   An AI agent working for a named person does everything through `cmd/twr` (CLI and MCP). Screens,
   minigames and reports are outputs laid over the same commands.
-- **PWA-centric.** The React app served by `cmd/twr-server` to a browser or phone is the main
-  interface. The desktop app (Wails) is first-class and supported; it runs the same screens. Where
-  a desktop-only path and a hosted path do the same job, protect the hosted one.
+- **PWA-centric (the target).** The React app served by `cmd/twr-server` to a browser or phone is the
+  end-state interface. The desktop app (Wails) is first-class and supported. Where a desktop-only path
+  and a hosted path do the same job, protect the hosted one.
+- **Today the desktop has two modes. Read `docs/architecture/desktop-modes.md` before planning
+  desktop, server or phone work.** Thin mode (`-native <server>`) is the product (ruling 2026-11-14):
+  server client plus window, no local engine, and so far only sign-in and the hosted league panel.
+  Local mode (no flag) is the legacy all-in-one app holding the full screens. "Desktop" means thin
+  mode unless Christopher says otherwise; if unclear, ask. Never assume.
 - **The native ledger is the record.** MFL is import and reference only. The MFL→Native import is
   the front door and must be flawless for any league size or type.
 - **Solo-owner tools.** `mflref`, `transactions` and the what-if desk let one owner use TheWarRoom on
@@ -52,7 +57,8 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 ## Session start
 
 1. `git branch --show-current`. Never work on main; branches are `session/<short-description>`.
-2. Read `North_Star.md`, the governing plan and the newest `docs/RESUME-*.md`.
+2. Read `North_Star.md`, the governing plan, `docs/architecture/desktop-modes.md` (run its checks)
+   and the newest `docs/RESUME-*.md`.
 3. Toolchain (Go 1.26.11; the git hooks need this too):
    `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.11 GOMEMLIMIT=1500MiB
    GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`.

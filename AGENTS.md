@@ -15,6 +15,7 @@
 - **`docs/agent-codex.md`** is reference only. Where it disagrees with the two above, they win.
 - **`CLAUDE.md` → Hard Constraints** — the never-route-around rules. Locked decisions are not reopened silently; flag conflicts to Christopher.
 - **`North_Star.md`** — purpose and scope: AI and CLI first, PWA-centric, one build for every league, small on purpose.
+- **`docs/architecture/desktop-modes.md`** — what the thin (hosted) desktop and the legacy local desktop each do today. Read it and run its checks before planning desktop, server or phone work; never assume which mode is meant.
 - **`docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`** — the governing plan. `docs/build-handoffs/Hardening_Plan_2026-10.md` is the earlier plan; its Method section still applies.
 - **`docs/build-handoffs/Core_Build_Plan_2026-10.md`** — the engine build plan and its rulings (R1–R12).
 
