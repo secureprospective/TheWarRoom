@@ -39,7 +39,8 @@ digest=$(printf '%s\n' "$verified" | sed -n 's/^verified release [0-9][0-9]* sha
 [ -n "$digest" ] && [ "$digest" = "$(sha256sum "$snapshot" | cut -d ' ' -f 1)" ] || {
   echo 'The bundle changed; ask your release provider for a fresh signed bundle and metadata.' >&2; exit 1;
 }
-# Extract only the executable, never archive-selected paths or deployment scripts.
+# Extract only the executable here, never archive-selected paths; the console tools follow from the
+# same frozen bytes only once the upgrade has succeeded.
 tar -xzOf "$snapshot" ./twr-server > /var/lib/twr-release/upgrade.lock/twr-server
 install -m 755 /var/lib/twr-release/upgrade.lock/twr-server /usr/local/bin/twr-server.next
 su -s /bin/sh twr -c '/usr/local/libexec/twr-sandbox /usr/local/bin/twr-server.next upgrade -db /var/lib/twr/server.db -check'
@@ -59,6 +60,31 @@ if ! su -s /bin/sh twr -c "/usr/local/libexec/twr-sandbox /usr/local/bin/twr-ser
   exit 1
 fi
 mv /usr/local/bin/twr-server.next /usr/local/bin/twr-server
+# The console tools and service files come from the same verified bundle (ruling 2026-11-14), so an
+# upgraded server has every tool a fresh install has. Fixed names only, never archive-selected paths;
+# nothing from the bundle runs here. Each lands beside its target and is renamed over it, so a tool
+# that is running, this one included, keeps reading its old copy.
+while read -r source target; do
+  tar -xzOf "$snapshot" "./$source" > "$target.next" 2>/dev/null && [ -s "$target.next" ] || {
+    rm -f "$target.next"; continue;
+  }
+  chown root:root "$target.next"
+  chmod 755 "$target.next"
+  mv "$target.next" "$target"
+done <<'TOOLS'
+backup-setup.sh /usr/local/libexec/twr-backup-setup
+upgrade.sh /usr/local/libexec/twr-upgrade
+restore.sh /usr/local/libexec/twr-restore
+reset-sign-ins.sh /usr/local/libexec/twr-reset-sign-ins
+restore-league.sh /usr/local/libexec/twr-restore-league
+delete-league.sh /usr/local/libexec/twr-delete-league
+move-league.sh /usr/local/libexec/twr-move-league
+receive-league.sh /usr/local/libexec/twr-receive-league
+status.sh /usr/local/libexec/twr-status
+twr-sandbox /usr/local/libexec/twr-sandbox
+twr-server.initd /etc/init.d/twr-server
+cloudflared.initd /etc/init.d/twr-tunnel
+TOOLS
 rc-service twr-server start
 attempt=0
 while [ "$attempt" -lt 30 ]; do

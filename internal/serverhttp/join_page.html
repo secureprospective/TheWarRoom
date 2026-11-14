@@ -123,9 +123,9 @@
   .codes-head h2 { margin: 0; font: 600 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
   .codes-head button { font: 600 11px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; background: none; border: 0; color: var(--blue-base); cursor: pointer; padding: 6px 0 6px 10px; }
   .warn { margin: 0; padding: 10px 14px; font-size: 13px; color: var(--amber-loud); background: hsl(35, 60%, 58%, .07); border-bottom: 1px solid var(--hairline); }
-  .codes ol { margin: 0; padding: 14px; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; counter-reset: c; }
-  .codes li { font: 14px/1 var(--mono); letter-spacing: .03em; counter-increment: c; font-variant-numeric: tabular-nums; }
-  .codes li::before { content: counter(c); color: var(--text-disabled); display: inline-block; width: 1.6ch; margin-right: 6px; }
+  .codes ol { margin: 0; padding: 14px; list-style: none; display: grid; grid-template-columns: 1fr; gap: 10px; counter-reset: c; }
+  .codes li { display: flex; gap: 8px; font: 12px/1.35 var(--mono); letter-spacing: 0; counter-increment: c; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; }
+  .codes li::before { content: counter(c); color: var(--text-disabled); flex: none; width: 1.6ch; }
   .next { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline); }
   .next li { padding: 14px 0; border-bottom: 1px solid var(--hairline); font-size: 14px; color: var(--text-secondary); display: grid; grid-template-columns: 7ch 1fr; gap: 10px; }
   .next b { font: 11px/1.6 var(--mono); color: var(--text-tertiary); letter-spacing: .06em; text-transform: uppercase; font-weight: 400; }
@@ -148,11 +148,11 @@
   </ol>
 
   <section class="view" id="v0">
-    <h1>Claim your team.</h1>
-    <p class="lede">The league runs on The War Room now. Pick your team, set a password, and you're in.</p>
+    <h1 id="welcomeHead">Claim your team.</h1>
+    <p class="lede" id="welcomeLede">The league runs on The War Room now. Pick your team, set a password, and you're in.</p>
     <p class="error" id="welcomeError" role="alert"></p>
     <button class="commit" id="start">Get started</button>
-    <ul class="facts"><li>About a minute</li><li>No app</li><li>No email</li></ul>
+    <ul class="facts" id="facts"><li>About a minute</li><li>No app</li><li>No email</li></ul>
   </section>
 
   <section class="view" id="v1" hidden>
@@ -188,15 +188,14 @@
 
   <section class="view" id="v3" hidden>
     <h1 class="done-h"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="square" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>You're in.</h1>
-    <p class="lede">The <b id="doneTeam"></b> are yours.</p>
+    <p class="lede" id="doneLede"></p>
     <div class="codes" id="codesWrap" hidden>
       <div class="codes-head"><h2>Recovery codes</h2><button type="button" id="copy">Copy all</button></div>
       <p class="warn">Shown once. If you forget your password, each code signs you in one time. Save them somewhere safe.</p>
       <ol id="codes"></ol>
     </div>
     <ul class="next">
-      <li><b>Sign in</b><span>with <code id="doneUser"></code> and your password, on any device.</span></li>
-      <li><b>Tip</b><span>Add this page to your home screen and it opens like an app.</span></li>
+      <li><b>Sign in</b><span>Open The War Room app on your computer and sign in as <code id="doneUser"></code> with your password.</span></li>
     </ul>
   </section>
 </main>
@@ -207,6 +206,7 @@
   var league = params.get("league") || "";
   var code = params.get("code") || "";
   var preselect = params.get("franchise") || "";
+  var seat = preselect;
   var teams = [], picked = null, side = 0;
   function $(id) { return document.getElementById(id); }
   function show(step) {
@@ -224,7 +224,11 @@
       body: JSON.stringify(body)
     }).then(function (response) {
       return response.text().then(function (text) {
-        if (!response.ok) throw new Error((text || "").trim() || "Something went wrong. Try again.");
+        if (!response.ok) {
+          var failure = new Error((text || "").trim() || "Something went wrong. Try again.");
+          failure.status = response.status;
+          throw failure;
+        }
         return text ? JSON.parse(text) : {};
       });
     }, function () {
@@ -272,6 +276,16 @@
     show(2);
     $("username").focus();
   }
+  function spent() {
+    $("welcomeHead").textContent = "This link no longer works.";
+    $("welcomeLede").textContent = "Each link works once, and your commissioner can replace it. Already claimed your seat? Open The War Room app and sign in with the name and password you chose. If not, ask your commissioner for a new link.";
+    $("welcomeError").textContent = "";
+    $("start").hidden = true;
+    $("facts").hidden = true;
+  }
+  function welcome() {
+    $("welcomeHead").textContent = seat === "commissioner" ? "Claim your commissioner seat." : "Claim your team.";
+  }
   function load() {
     if (!league || !code) {
       $("welcomeError").textContent = "This link is incomplete. Ask your commissioner for the current join link.";
@@ -288,8 +302,17 @@
         render();
         show(1);
       })
-      .catch(function (err) { $("welcomeError").textContent = err.message; })
+      .catch(function (err) {
+        if (err.status === 403) { spent(); return; }
+        $("welcomeError").textContent = err.message;
+      })
       .finally(function () { $("start").disabled = false; });
+  }
+  // Check the link as the page opens, so a used one never invites a tap.
+  function check() {
+    if (!league || !code) return;
+    api("/v1/auth/join/franchises", { protocol: 1, join: { league: league, code: code } })
+      .catch(function (err) { if (err.status === 403) spent(); });
   }
   $("start").addEventListener("click", load);
   $("cA").addEventListener("click", function () { side = 0; render(); });
@@ -317,7 +340,16 @@
       protocol: 1,
       claim: { league: league, code: code, franchise: picked.id, username: username, password: password }
     }).then(function (data) {
-      $("doneTeam").textContent = picked.name;
+      var lede = $("doneLede");
+      lede.textContent = "";
+      var name = document.createElement("b");
+      if (picked.id === "commissioner") {
+        name.textContent = "commissioner's seat";
+        lede.append("The ", name, " is yours.");
+      } else {
+        name.textContent = picked.name;
+        lede.append("The ", name, " are yours.");
+      }
       $("doneUser").textContent = username;
       var codes = data.recoveryCodes || [];
       var list = $("codes");
@@ -340,6 +372,8 @@
       .then(function () { btn.textContent = "Copied"; }, function () { btn.textContent = "Select to copy"; });
   });
   show(0);
+  welcome();
+  check();
 }());
 </script>
 </body>
