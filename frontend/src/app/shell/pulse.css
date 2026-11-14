@@ -954,3 +954,5 @@
 .lp-v14 .ct.power .tk{display:inline-block;width:160px;height:6px;margin-right:12px;vertical-align:middle;border:1px solid var(--edge);background:var(--sunken)}
 .lp-v14 .ct.power .tk i{display:block;height:100%;background:var(--edge-hi)}
 .lp-v14 .ct.power tr.sel .tk i{background:var(--mine)}
+
+.lp-v14.hosted .shell{grid-template-columns:minmax(0,1fr) 260px}

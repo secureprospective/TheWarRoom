@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { HQAct as PulseAct } from './HQAct';
 import { hostedWorkflow } from '../commissioner/api';
 import { myChance, percent, pointsLabel, type PulseResults } from '../data/nativePulse';
-import { readNativePulse, readPulseWeekResults, usePulseRead, type NativePulse, type PulseScope }
+import { readNativePulse, readPulseWeekResults, usePulseRead, PulseChanges,
+  type NativePulse, type PulseScope }
   from './pulseReads';
 import { scoreOf } from './pulseModel';
 import { PulseIdle, PulseNow, type NowDrawer } from './PulseNow';
@@ -16,6 +17,30 @@ import './pulse.css';
 export type PulseTab = 'now' | 'race';
 
 export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }) {
+  if (!scope.serverTime) return <LocalPulse {...scope} />;
+  return <HostedPulse {...scope} />;
+}
+
+function LocalPulse(scope: PulseScope & { tab?: PulseTab }) {
+  const live = usePulseLive('');
+  return <PulseBody {...scope} live={live} />;
+}
+
+function HostedPulse(scope: PulseScope & { tab?: PulseTab }) {
+  const changes = useMemo(() => {
+    const listeners = new Set<() => void>();
+    return { onChange: (load: () => void) => {
+      listeners.add(load);
+      return () => { listeners.delete(load); };
+    }, refresh: () => { for (const load of listeners) load(); } };
+  }, []);
+  return <PulseChanges.Provider value={changes}>
+    <PulseBody {...scope} refresh={changes.refresh} live={{ view: undefined, error: '', follow: () => {} }} />
+  </PulseChanges.Provider>;
+}
+
+function PulseBody(scope: PulseScope & { tab?: PulseTab; live: ReturnType<typeof usePulseLive>;
+  refresh?: () => void }) {
   const port = scope.port ?? hostedWorkflow;
   const tab: PulseTab = scope.tab ?? 'now';
   const [chosen, chooseWeek] = useState<number>();
@@ -34,20 +59,28 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
     return () => document.removeEventListener('keydown', close, { capture: true });
   }, [drawer]);
   const league = usePulseRead<NativePulse>(JSON.stringify(['pulse', scope.league, scope.mine]),
-    publish => readNativePulse(scope.league, scope.mine, port, publish));
-  const live = usePulseLive('');
+    publish => readNativePulse(scope.league, scope.mine, port, publish, scope.serverTime));
+  const live = scope.live;
   const reading = league.reading;
   const week = chosen ?? reading?.week;
   const results = usePulseRead<PulseResults>(
     JSON.stringify(['pulse-week', scope.league, reading?.season, week]),
     () => reading && week ? readPulseWeekResults(scope.league, reading.season, week, port)
       : Promise.reject(new Error('The league has not said which week it is playing.')));
-  const body = <div className={`lp-v14${scope.embedded ? ' embedded' : ''}`}>
+  const modeClass = scope.serverTime ? ' hosted' : '';
+  const body = <div className={`lp-v14${scope.embedded ? ' embedded' : ''}${modeClass}`}>
     <div className="shell">
       <main className="work">
+        {scope.serverTime && <nav className="ws-tabs" aria-label="League Pulse">
+          <PulseAct onAction={scope.back ?? (() => scope.leave())}>Back</PulseAct>
+          <PulseAct role="tab" selected={tab === 'now'} onAction={() => scope.navigate?.('now')}>
+            Now</PulseAct>
+          <PulseAct role="tab" selected={tab === 'race'} onAction={() => scope.navigate?.('race')}>
+            Race</PulseAct>
+        </nav>}
         <Strip reading={reading} results={results.reading} pending={Boolean(league.pending)}
           error={league.error ?? (week ? results.error : undefined)} mine={scope.mine}
-          week={week} onWeek={chooseWeek} live={live} />
+          week={week} onWeek={chooseWeek} live={live} hosted={scope.serverTime} />
         {!reading ? <section className="ws cols on">
           <PulseIdle words={league.error ? `League Pulse is unavailable · ${league.error}`
             : `Reading ${scope.league}…`} /></section>
@@ -55,12 +88,15 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
             drawer={drawer === 'tb' || drawer === 'bk' ? drawer : undefined}
               onClose={() => setDrawer(undefined)} />
         : <PulseNow reading={reading} mine={scope.mine} week={week} results={results}
-            league={scope.league} port={port} live={live} 
+            league={scope.league} port={port} live={live}
+            viewer={scope.serverTime
+              ? { mine: scope.mine, commissioner: scope.commissioner ?? false } : undefined}
             drawer={drawer === 'box' || drawer === 'corr' ? drawer : undefined}
             onClose={() => setDrawer(undefined)} onChanges={setChanges} />}
         {reading && tab === 'now' && <ScheduleDrawer open={drawer === 'sched'} reading={reading}
           mine={scope.mine} port={port} onClose={() => setDrawer(undefined)} />}
         <div className="tray">
+          {scope.refresh && <PulseAct onAction={scope.refresh}>Refresh</PulseAct>}
           {reading && tab === 'now' && <div className="pulls">
             <PulseAct className="pull" expanded={drawer === 'box'} onAction={() => pull('box')}>
               MATCHUP BOX ▴</PulseAct>
@@ -87,9 +123,9 @@ export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }
   return body;
 }
 
-function Strip({ reading, results, pending, error, mine, week, onWeek, live }: {
+function Strip({ reading, results, pending, error, mine, week, onWeek, live, hosted }: {
   reading?: NativePulse; results?: PulseResults; pending: boolean; error?: string; mine: string;
-  week?: number; onWeek: (week: number) => void; live: ReturnType<typeof usePulseLive>;
+  hosted?: boolean; week?: number; onWeek: (week: number) => void; live: ReturnType<typeof usePulseLive>;
 }) {
   const last = reading?.lastWeek ?? 0;
   const decided = results?.games.filter(g => g.status !== 'No result yet').length ?? 0;
@@ -117,12 +153,14 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live }: {
         : <>
           <span><b>{decided}</b> with a result</span>
           <span><b>{waiting}</b> still to come</span>
-          <span className="src">{nflClockSummary(undefined, live.error)}</span>
+          <span className="src">{hosted ? 'Live NFL games are coming next.'
+            : nflClockSummary(undefined, live.error)}</span>
         </>}
     </div>
     <div className="fresh">
       scores: <b>{scoreSources(results)}</b><br />
-      revision {reading?.revision ?? '—'} · {results?.words ?? 'no week read'}
+      {hosted ? 'Scores update when the league server publishes them'
+        : <>revision {reading?.revision ?? '—'} · {results?.words ?? 'no week read'}</>}
     </div>
     <div className="mybox">
       <span className="t me">YOU</span>
