@@ -172,9 +172,15 @@ Older transfer documents remain readable with the absent optional field.
   migration that changes a reference table must be written to skip the league file
   (where the table is gone), and one that changes a league table runs harmlessly on the
   reference file's empty copy. Splitting the migration list per file is the clean fix.
-- The reference set pauses nothing when it falls behind; a league change that minted
-  a player id during that time cannot be restored until a reference set after it is
-  verified.
+- Reference lag still blocks restore. A missing pinned body is read by
+  `leaguePins.selectPins` → `history.LoadFootball` → `Body`
+  (`SELECT size, body FROM raw_archive WHERE sha256 = ?`); it prevents hosted
+  startup, not just football-dependent screens. Missing identity links also make
+  `ResolveMFLPlayers` fail during roster capture; minting replacements would
+  assign new random canonical ids instead of the league's durable ids. Do not
+  bypass either by choosing different football or minting replacement identities.
+  Closing this requires explicit unavailable-football request handling and
+  recovery of authenticated identity links from the league's own restore points.
 
 - A join that stops between its two commits leaves an account with no seat; that
   name stays taken, so the owner picks another or the commissioner releases the
