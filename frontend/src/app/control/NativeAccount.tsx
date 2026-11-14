@@ -27,10 +27,10 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const [signedIn, setSignedIn] = useState(Boolean(initial.message));
-  const [openAfterSignIn, setOpenAfterSignIn] = useState(false);
+  const [openAfterSignIn, setOpenAfterSignIn] = useState(Boolean(initial.message));
   const changeScreen = (next: Screen) => {
     setScreen(next); setPassword(''); setCode(''); setError('');
-    setView(current => ({ ...current, seed: '', message: '' }));
+    setView(current => ({ ...current, seed: '', message: current.name ? current.message : '' }));
   };
   async function run(action: NativeAction) {
     if (pending) return;
@@ -85,13 +85,13 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     });
   };
   const title = screen === 'join' ? 'Create your account'
-    : screen === 'authenticator' ? 'Protect privileged access' : 'Sign in';
+    : screen === 'authenticator' ? 'Authenticator (optional)' : 'Sign in';
   const submitLabel = pending ? 'Please wait…' : screen === 'join' ? 'Create account'
     : screen === 'authenticator' ? 'Verify fresh code' : 'Sign in to server';
   const args = (action: 'view' | 'check', value: string) => ({ screen: 'native-account', action, value });
   return <main className="twr-app native-account" aria-busy={pending}>
     <header><h1>{view.name || 'Your league server'}</h1>
-      <p>Your league server · No MFL account or key needed</p>
+      {!view.name && <p>Your league server · No MFL account or key needed</p>}
       <p className="native-address">{initial.server}</p></header>
     <nav aria-label="Account access">
       {(view.name ? openTabs : tabs).map(([id, label]) =>
@@ -100,6 +100,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     </nav>
     {error && <p role="alert">{error}</p>}
     {view.message && <p role="status">{view.message}</p>}
+    <div hidden={screen !== 'login'}>
     {view.name && <section aria-label="Your league access">
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
@@ -111,6 +112,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     {signedIn && view.name && view.seats.length > 0 &&
       <NativeHelpers server={initial.server}
       league={initial.league} seats={view.seats} franchise={view.franchise} />}
+    </div>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>
       <h3>Lost your phone or password?</h3>
