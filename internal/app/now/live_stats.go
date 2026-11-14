@@ -32,11 +32,12 @@ const liveFinalReread = 10 * time.Minute
 // touches it.
 type LiveStatsPoller struct {
 	finals liveFinals // finished games' box scores
-	said   string     // live-stats state last logged
+	scope  [2]int
+	said   string // live-stats state last logged
 }
 
-// liveStatsHistory is the live poll's identity lookup and held-evidence store.
-type liveStatsHistory interface {
+// LiveStatsHistory is the live poll's identity lookup and held-evidence store.
+type LiveStatsHistory interface {
 	SourceIDs(context.Context, string) (map[string]string, error)
 	SetLiveStats(context.Context, int, int, time.Time, string, []string, map[string]source.PlayerWeek) error
 }
@@ -44,23 +45,30 @@ type liveStatsHistory interface {
 // LiveStatsRun is what one poll reads from the running app.
 type LiveStatsRun struct {
 	History *history.Store
-	Network http.RoundTripper // nil is http.DefaultTransport
-	Season  int
-	Week    func() int
-	Board   func(int, livegame.Held) // publishes the validated scoreboard; may be nil
-	Changed func(context.Context)    // the moves signal; may be nil
+	// Evidence lets the hosted collector reuse acquisition without writing desktop chronology.
+	Evidence        LiveStatsHistory
+	RequireComplete bool
+	Network         http.RoundTripper // nil is http.DefaultTransport
+	Season          int
+	Week            func() int
+	Board           func(int, livegame.Held) // publishes the validated scoreboard; may be nil
+	Changed         func(context.Context)    // the moves signal; may be nil
 }
 
 // Poll reads the board once, holds any live lines, and says how long to wait before the next poll.
 func (p *LiveStatsPoller) Poll(ctx context.Context, run LiveStatsRun) time.Duration {
+	if run.Evidence != nil {
+		return p.poll(ctx, run, run.Evidence)
+	}
 	if run.History == nil {
 		return liveStatsIdle
 	}
 	return p.poll(ctx, run, run.History)
 }
 
-func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveStatsHistory) time.Duration {
+func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held LiveStatsHistory) time.Duration {
 	season, week, at := run.Season, run.Week(), time.Now()
+	p.weekScope(season, week)
 	endpoints, err := LiveEndpoints()
 	if err != nil {
 		log.Printf("live stats: %v", err)
@@ -83,7 +91,7 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveS
 	if run.Board != nil {
 		run.Board(week, livegame.Held{Games: games, Source: "ESPN", At: at})
 	}
-	busy := slices.ContainsFunc(games, func(g livegame.Game) bool { return g.Status == "in" })
+	delay := LiveStatsInterval(games)
 	espn, err := held.SourceIDs(ctx, "espn")
 	if err != nil {
 		log.Printf("live stats: %v", err)
@@ -91,13 +99,11 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveS
 		return liveStatsIdle
 	}
 	lines, acquired := liveStatLines(ctx, adapter, games, invertIDs(espn), &p.finals, at)
-	// Say so when live lines first land, stop, or move to another week; not on every poll.
-	if state := fmt.Sprintf("%t/%d/%d", len(lines) > 0, season, week); state != p.said {
-		p.said = state
-		log.Printf("live stats: %d players from %d games, season %d week %d, %d ESPN ids held",
-			len(lines), len(games), season, week, len(espn))
-	}
+	p.reportLines(season, week, len(lines), len(games), len(espn))
 	sleeperAcquired := fillLiveSleeper(ctx, run, held, games, lines)
+	if run.RequireComplete && !acquired {
+		return liveStatsIdle
+	}
 	if acquired || sleeperAcquired {
 		if err := held.SetLiveStats(ctx, season, week, at, livestats.Authority,
 			livestats.Pending(), lines); err != nil {
@@ -108,10 +114,7 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held liveS
 			run.Changed(ctx)
 		}
 	}
-	if busy {
-		return liveStatsBusy
-	}
-	return liveStatsIdle
+	return delay
 }
 
 // liveFinals holds the box-score lines of finished games between re-reads, keyed by ESPN game id.
@@ -193,7 +196,7 @@ func invertIDs(byPlayer map[string]string) map[string]string {
 }
 
 // A scoreboard outage must not disable the independent weekly raw-stat feed.
-func (p *LiveStatsPoller) sleeperFallback(ctx context.Context, run LiveStatsRun, held liveStatsHistory,
+func (p *LiveStatsPoller) sleeperFallback(ctx context.Context, run LiveStatsRun, held LiveStatsHistory,
 	season, week int, at time.Time) {
 	lines := map[string]source.PlayerWeek{}
 	fillLiveSleeper(ctx, run, held, []livegame.Game{{Season: season, Week: week, SeasonType: 2, Status: "in"}}, lines)
@@ -207,4 +210,26 @@ func (p *LiveStatsPoller) sleeperFallback(ctx context.Context, run LiveStatsRun,
 	if run.Changed != nil {
 		run.Changed(ctx)
 	}
+}
+
+func (p *LiveStatsPoller) weekScope(season, week int) {
+	if p.scope != [2]int{season, week} {
+		p.finals = nil
+		p.scope = [2]int{season, week}
+	}
+}
+
+func (p *LiveStatsPoller) reportLines(season, week, players, games, ids int) {
+	if state := fmt.Sprintf("%t/%d/%d", players > 0, season, week); state != p.said {
+		p.said = state
+		log.Printf("live stats: %d players from %d games, season %d week %d, %d ESPN ids held", players, games, season, week, ids)
+	}
+}
+
+// LiveStatsInterval keeps the server and desktop on the same acquisition cadence.
+func LiveStatsInterval(games []livegame.Game) time.Duration {
+	if slices.ContainsFunc(games, func(g livegame.Game) bool { return g.Status == "in" }) {
+		return liveStatsBusy
+	}
+	return liveStatsIdle
 }

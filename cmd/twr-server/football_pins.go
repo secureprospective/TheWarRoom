@@ -33,6 +33,7 @@ import (
 // and the evidence is looked for again at most once a minute, so the league opens again by itself.
 // A running server changes a pin through pin-football on its private socket (setPin).
 type leaguePins struct {
+	live   *history.LiveOverlay
 	files  *leagueFiles
 	mu     sync.RWMutex
 	server string            // the server's -football digest; empty pins nothing
@@ -46,7 +47,7 @@ const footballRetry = time.Minute
 
 func newLeaguePins(files *leagueFiles) *leaguePins {
 	return &leaguePins{files: files, chosen: map[string]string{}, built: map[string]serverhttp.LeaguePin{},
-		tried: map[string]time.Time{}, now: time.Now}
+		tried: map[string]time.Time{}, now: time.Now, live: &history.LiveOverlay{}}
 }
 
 // selectPins records the server pin (digest, may be empty) and every league's own pin from directory,
@@ -96,6 +97,7 @@ func (p *leaguePins) buildLocked(ctx context.Context, league string) serverhttp.
 // hold gives a store with no football, marked missing; any other failure (damaged evidence) is Err.
 func (p *leaguePins) loadPin(ctx context.Context, base *history.Store, digest string) serverhttp.LeaguePin {
 	store := base.Sibling()
+	store.SetLiveOverlay(p.live)
 	if digest == "" {
 		return serverhttp.LeaguePin{Store: store}
 	}

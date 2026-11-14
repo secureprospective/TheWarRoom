@@ -25,6 +25,9 @@ func (out *NativePlayerScore) setSources(counted *source.LineRevision, base Stat
 	out.FieldSources = map[leaguerules.StatID]string{}
 	if counted != nil {
 		out.Source = scoreSourceLabel(counted.Held.Authority)
+		if counted.Merged && len(counted.Held.Missing) > 0 {
+			out.Source = "provisional · nflverse + live fill"
+		}
 		for id, owner := range source.FieldOwners(*counted) {
 			out.FieldSources[id] = scoreSourceLabel(owner)
 		}

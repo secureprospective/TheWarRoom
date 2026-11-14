@@ -73,6 +73,7 @@ type Store struct {
 	projKey  string
 	projBook projectionBook
 	// liveMu guards the live stat lines held for the NFL week being played.
+	overlay       *LiveOverlay
 	liveMu        sync.Mutex
 	live          liveStatBook
 	liveHeld      map[liveStatKey]source.HeldWeek

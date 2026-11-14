@@ -144,3 +144,18 @@ func TestFollowedCadenceAndErrorBackoff(t *testing.T) {
 		t.Fatal("summary retry missing")
 	}
 }
+
+func TestPlayEndWithoutNextPossessionKeepsUnknownTeam(t *testing.T) {
+	zero, one := 0, 1
+	state := RawState{Down: &zero, Distance: &one, YardLine: &zero, ToEndzone: &zero}
+	if err := state.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if state.state().Possession != "" {
+		t.Fatal("missing possession invented")
+	}
+	state.Down = &one
+	if err := state.Validate(); err == nil {
+		t.Fatal("active down without a team accepted")
+	}
+}
