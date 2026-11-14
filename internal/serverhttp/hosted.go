@@ -63,7 +63,8 @@ type Hosted struct {
 	Worker     *leagueservice.DueWorker
 	Registry   string
 	// Replies caches league-state readings per head and reading epoch; nil reads every request afresh.
-	Replies *ReplyCache
+	Replies  *ReplyCache
+	Versions *WorkflowVersions
 	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
 	TrustedProxy netip.Addr
 }
@@ -570,7 +571,7 @@ func writeHosted[T hostedBody](w http.ResponseWriter, body T) {
 }
 
 // writeHostedReading is writeHosted for league readings, which may be compressed (writeReading).
-func writeHostedReading[T commissioner.People | commissioner.Ledger | WorkflowResponse](w http.ResponseWriter, r *http.Request, body T) {
+func writeHostedReading[T commissioner.People | commissioner.Ledger | WorkflowResponse | UnchangedResponse](w http.ResponseWriter, r *http.Request, body T) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)

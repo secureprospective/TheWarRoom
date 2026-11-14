@@ -26,6 +26,7 @@ type RawWorkflow struct {
 	Mode      string          `json:"mode"`
 	Arguments json.RawMessage `json:"arguments"`
 	Football  string          `json:"football,omitempty"`
+	Known     *ReadTags       `json:"known,omitempty"`
 }
 
 type RawWorkflowScope struct {
@@ -155,6 +156,14 @@ func workflowPlayers(raw string) (string, error) {
 }
 
 func (r RawWorkflow) Validate() error {
+	if r.Known != nil {
+		if r.Mode != "read" {
+			return fmt.Errorf("only readings accept known tags")
+		}
+		if err := r.Known.Validate(); err != nil {
+			return err
+		}
+	}
 	if r.Version != "1" {
 		return fmt.Errorf("update the app before using this league action")
 	}
