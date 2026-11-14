@@ -46,8 +46,9 @@ func TestDesktopChangesDeliveryTimeoutAndBoundary(t *testing.T) {
 	}
 }
 
-func TestDesktopWatcherStartsAfterLoginStopsOnForget(t *testing.T) {
+func TestDesktopActLoginDeliversV2AndForgetFencesMessages(t *testing.T) {
 	opened, closed := make(chan struct{}, 2), make(chan struct{}, 2)
+	publish, late := make(chan struct{}), make(chan struct{})
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == serverhttp.LoginPath {
 			w.Header().Set("Content-Type", "application/json")
@@ -58,10 +59,21 @@ func TestDesktopWatcherStartsAfterLoginStopsOnForget(t *testing.T) {
 			t.Error("missing negotiation")
 		}
 		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = fmt.Fprint(w, "event: invalidate\ndata: {\"protocol\":2,\"serverEpoch\":\"boot\",\"league\":\"native.test\",\"topics\":[{\"kind\":\"league\",\"version\":\"1\"}]}\n\n")
 		w.(http.Flusher).Flush()
 		opened <- struct{}{}
-		<-r.Context().Done()
+		select {
+		case <-publish:
+		case <-r.Context().Done():
+			return
+		}
+		_, _ = fmt.Fprint(w, "event: invalidate\ndata: {\"protocol\":2,\"serverEpoch\":\"boot\",\"league\":\"native.test\",\"topics\":[{\"kind\":\"league\",\"version\":\"1\"}]}\n\n")
+		w.(http.Flusher).Flush()
+		select {
+		case <-late:
+			_, _ = fmt.Fprint(w, "event: invalidate\ndata: {\"protocol\":1}\n\n")
+			w.(http.Flusher).Flush()
+		case <-r.Context().Done():
+		}
 		closed <- struct{}{}
 	}))
 	defer server.Close()
@@ -80,17 +92,44 @@ func TestDesktopWatcherStartsAfterLoginStopsOnForget(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("watcher did not start")
 	}
+	d.mu.Lock()
+	generation := d.generation
+	d.mu.Unlock()
+	if generation != 1 {
+		t.Fatalf("login generation = %d, want 1", generation)
+	}
+	got := d.changesAfter(t.Context(), 0, time.Second)
+	for got.State != "connected" {
+		got = d.changesAfter(t.Context(), got.Seq, time.Second)
+		if got.State != "connected" {
+			t.Fatalf("login did not connect: %+v", got)
+		}
+	}
+	close(publish)
+	got = d.changesAfter(t.Context(), got.Seq, time.Second)
+	if got.State != "connected" || len(got.Topics) != 1 || got.Topics[0].Version != "1" || got.ServerEpoch != "boot" {
+		t.Fatalf("login lost v2 message: %+v", got)
+	}
 	if _, err := d.Act(t.Context(), RawDesktop{Action: "forget"}); err != nil {
 		t.Fatal(err)
 	}
+	close(late)
 	select {
 	case <-closed:
 	case <-time.After(time.Second):
 		t.Fatal("forget left stream alive")
 	}
-	got := d.changesAfter(t.Context(), 0, time.Millisecond)
-	if got.State != "signed-out" {
+	got = d.changesAfter(t.Context(), got.Seq, time.Millisecond)
+	if got.State != "signed-out" || len(got.Topics) != 0 {
 		t.Fatalf("forget: %+v", got)
+	}
+	if after := d.changesAfter(t.Context(), got.Seq, 20*time.Millisecond); after.Seq != got.Seq || after.State != "signed-out" || len(after.Topics) != 0 {
+		t.Fatalf("message after forget: %+v", after)
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.generation != generation+1 {
+		t.Fatalf("forget generation = %d, want %d", d.generation, generation+1)
 	}
 }
 
@@ -177,6 +216,7 @@ func TestDesktopWatcherReloginFencesOldUnauthorized(t *testing.T) {
 	}
 	d.mu.Lock()
 	d.bearer = "new"
+	d.generation++
 	d.startWatchLocked()
 	d.mu.Unlock()
 	close(releaseOld)

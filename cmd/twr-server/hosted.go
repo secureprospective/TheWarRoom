@@ -344,7 +344,7 @@ func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte,
 		return serverhttp.Hosted{}, fmt.Errorf("initialize human confirmation: %w", err)
 	}
 	// Store is the family: it gives the clock; every league's data comes from its own store (Pins).
-	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Leagues: leagues}), Confirmations: confirmations, Store: family, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
+	handler := serverhttp.Hosted{Publisher: serverhttp.NewPublisher(), Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Leagues: leagues}), Confirmations: confirmations, Store: family, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Passwords: passwords, Worker: worker, Registry: catalogue,
 		Join:    accounts.NewJoin(credentials, leagueservice.JoinSeats{Leagues: leagues}, work),

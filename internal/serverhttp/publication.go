@@ -80,12 +80,12 @@ func (p *Publisher) PublishValues(league string, season int, run string) {
 	p.publish(publicationScope{league: league, kind: "values", season: season, run: run}, "")
 }
 
-func (p *Publisher) PublishClock(league string, season, week int, nextBoundary time.Time) {
+func (p *Publisher) PublishClock(league string, nextBoundary time.Time) {
 	boundary := ""
 	if !nextBoundary.IsZero() {
 		boundary = nextBoundary.UTC().Format(time.RFC3339)
 	}
-	p.publish(publicationScope{league: league, kind: "clock", season: season, week: week}, boundary)
+	p.publish(publicationScope{league: league, kind: "clock"}, boundary)
 }
 
 // ObserveView records an already-authorized recipient revision, including before a versions read.

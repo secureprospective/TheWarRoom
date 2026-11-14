@@ -64,6 +64,7 @@ func (d *Desktop) Close() {
 	defer d.mu.Unlock()
 	d.stopWatchLocked()
 	d.bearer, d.proof = "", ""
+	d.generation++
 	d.client.Close()
 }
 
@@ -147,6 +148,18 @@ type DesktopSeat struct {
 func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, resultErr error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	bearer, proof := d.bearer, d.proof
+	defer func() { //nolint:contextcheck // The window owns the watcher, not the sign-in request.
+		if d.bearer != bearer || d.proof != proof || (resultErr == nil && changesSession(raw.Action)) {
+			d.generation++
+		}
+		if resultErr == nil {
+			switch raw.Action {
+			case "login", "enter", "totp-step-up":
+				d.startWatchLocked()
+			}
+		}
+	}()
 	view = DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
 	if err := raw.Validate(); err != nil {
 		return view, fmt.Errorf("check desktop request: %w", err)
@@ -170,11 +183,16 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, re
 			return view, nil
 		}
 	}
-	view, resultErr = d.actLocked(ctx, raw, view)
-	if resultErr == nil && (raw.Action == "login" || raw.Action == "enter" || raw.Action == "totp-step-up") {
-		d.startWatchLocked() //nolint:contextcheck // The window owns the watcher; the sign-in HTTP request does not.
+	return d.actLocked(ctx, raw, view)
+}
+
+func changesSession(action string) bool {
+	switch action {
+	case "login", "enter", "forget", "revoke-device", "revoke-all":
+		return true
+	default:
+		return false
 	}
-	return view, resultErr
 }
 
 func (d *Desktop) actLocked(ctx context.Context, raw RawDesktop, view DesktopView) (DesktopView, error) {
@@ -256,41 +274,57 @@ func (d *Desktop) printRecoveryCodes(ctx context.Context, raw RawDesktop, view D
 	return view, nil
 }
 
-// post accepts only the closed set of desktop requests. Redacting domain types
-// are intentionally not marshaled: they cannot carry passwords over HTTPS.
+type desktopSnapshot struct {
+	client                         *http.Client
+	address, league, bearer, proof string
+	generation                     uint64
+}
+
+// snapshotLocked captures the session while d.mu is held.
+func (d *Desktop) snapshotLocked() desktopSnapshot {
+	return desktopSnapshot{d.client.http, d.client.base, d.league, d.bearer, d.proof, d.generation}
+}
+
+// postDesktop is used by Act, which holds d.mu throughout its session changes.
 func postDesktop[T desktopPayload](ctx context.Context, d *Desktop, path string, payload T) ([]byte, error) {
+	body, unauthorized, err := postDesktopSnapshot(ctx, d.snapshotLocked(), path, payload)
+	if unauthorized {
+		_ = d.clearCredential()
+	}
+	return body, err
+}
+
+// postDesktopSnapshot uses only the immutable request session, never Desktop state.
+func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopSnapshot, path string, payload T) ([]byte, bool, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("encode native request: %w", err)
+		return nil, false, fmt.Errorf("encode native request: %w", err)
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, d.client.base+path, bytes.NewReader(body))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, session.address+path, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("create native request: %w", err)
+		return nil, false, fmt.Errorf("create native request: %w", err)
 	}
 	request.Header.Set("Content-Type", "application/json")
-	if d.bearer != "" {
-		request.Header.Set("Authorization", "Bearer "+d.bearer)
+	if session.bearer != "" {
+		request.Header.Set("Authorization", "Bearer "+session.bearer)
 	}
-	if d.proof != "" {
-		request.Header.Set("X-TWR-Recent-Auth", d.proof)
+	if session.proof != "" {
+		request.Header.Set("X-TWR-Recent-Auth", session.proof)
 	}
-	response, err := d.client.http.Do(request)
+	response, err := session.client.Do(request)
 	if update, ok := updateRequired(err); ok {
-		return nil, update
+		return nil, false, update
 	}
 	if err != nil {
-		return nil, fmt.Errorf("cannot reach the native server securely; check the address, certificate and connection")
+		return nil, false, fmt.Errorf("cannot reach the native server securely; check the address, certificate and connection")
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
-		if response.StatusCode == http.StatusUnauthorized {
-			_ = d.clearCredential()
-		}
-		return nil, desktopRefusal(path, response.StatusCode)
+		return nil, response.StatusCode == http.StatusUnauthorized, desktopRefusal(path, response.StatusCode)
 	}
 	body, err = io.ReadAll(io.LimitReader(response.Body, (256<<10)+1))
 	if err != nil || len(body) > 256<<10 || response.Header.Get("Content-Type") != "application/json" {
-		return nil, fmt.Errorf("native server returned an unreadable response; try again")
+		return nil, false, fmt.Errorf("native server returned an unreadable response; try again")
 	}
-	return body, nil
+	return body, false, nil
 }

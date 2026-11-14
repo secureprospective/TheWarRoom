@@ -70,6 +70,7 @@ type Hosted struct {
 }
 
 func (h Hosted) Handler() http.Handler {
+	// Tests may omit the publisher; production supplies the shared instance.
 	if h.Publisher == nil {
 		h.Publisher = NewPublisher()
 	}

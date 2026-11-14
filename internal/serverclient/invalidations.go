@@ -123,18 +123,17 @@ func (b *reconnectBackoff) next(up time.Duration) time.Duration {
 }
 
 type invalidationConnection struct {
-	client                         http.Client
-	address, league, bearer, proof string
-	state                          func(string)
+	desktopSnapshot
+	state func(string)
 }
 
 // captureInvalidations is called under the desktop lock; reconnect never recaptures credentials.
 func (d *Desktop) captureInvalidations() invalidationConnection {
-	return invalidationConnection{client: *d.client.http, address: d.client.base, league: d.league, bearer: d.bearer, proof: d.proof}
+	return invalidationConnection{desktopSnapshot: d.snapshotLocked()}
 }
 
 func (c invalidationConnection) watch(ctx context.Context, receive func(context.Context, RawInvalidation) error) (bool, error) {
-	bearer, proof, client, address, league := c.bearer, c.proof, c.client, c.address, c.league
+	bearer, proof, client, address, league := c.bearer, c.proof, *c.client, c.address, c.league
 	if bearer == "" {
 		return false, fmt.Errorf("sign in before watching native changes")
 	}

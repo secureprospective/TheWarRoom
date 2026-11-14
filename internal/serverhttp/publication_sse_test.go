@@ -92,3 +92,14 @@ func TestSSEV2LineupChangeBroadAuthorizedScope(t *testing.T) {
 		t.Fatalf("lineup broad hint: %+v", message)
 	}
 }
+
+func TestHostedPublisherFeedsV2Subscriber(t *testing.T) {
+	f := newHostedFixture(t)
+	events := openV2(t, f, streamOwner(t, f))
+	initial := nextV2(t, events)
+	f.publisher.PublishScores("native.hosted", 2026, 11)
+	got := nextV2(t, events)
+	if got.ServerEpoch != initial.ServerEpoch || len(got.Topics) != 1 || got.Topics[0].Kind != "scores" || got.Topics[0].Week != 11 || got.Topics[0].Version != "1" {
+		t.Fatalf("handler did not share publisher: %+v", got)
+	}
+}

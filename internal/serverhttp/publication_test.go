@@ -57,3 +57,14 @@ func TestPublisherClockBoundaryOnceAcrossStreams(t *testing.T) {
 		t.Fatalf("boundary: %+v", got)
 	}
 }
+
+func TestPublisherClockPublishAndPollShareCounter(t *testing.T) {
+	p := NewPublisher()
+	at := time.Now().UTC().Truncate(time.Second)
+	p.PublishClock("native.test", at)
+	p.clockBoundary("native.test", at, at.Add(time.Hour))
+	got := p.Versions("owner", "native.test")
+	if len(got.Topics) != 1 || got.Topics[0].Version != "2" || got.Topics[0].Season != 0 || got.Topics[0].Week != 0 || got.Topics[0].NextBoundary != at.Add(time.Hour).Format(time.RFC3339) {
+		t.Fatalf("clock scopes diverged: %+v", got)
+	}
+}

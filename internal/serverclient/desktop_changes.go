@@ -50,7 +50,6 @@ func (d *Desktop) changeLocked(state string, message RawInvalidation) {
 }
 
 func (d *Desktop) stopWatchLocked() {
-	d.generation++
 	if d.watchCancel != nil {
 		d.watchCancel()
 		d.watchCancel = nil
@@ -74,7 +73,7 @@ func (d *Desktop) startWatchLocked() {
 			return
 		}
 		if state == "signed-out" || state == "refused" {
-			// clearCredential cancels this generation before deleting the saved credential.
+			d.generation++
 			if err := d.clearCredential(); err != nil {
 				state = "refused"
 			}

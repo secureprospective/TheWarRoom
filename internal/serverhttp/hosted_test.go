@@ -25,6 +25,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
@@ -58,7 +59,15 @@ type hostedFixture struct {
 
 func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	t.Helper()
-	store, pools := fixtureStore(t, filepath.Join(t.TempDir(), "server.db"))
+	var registries []*measures.Registry
+	if len(workflows) > 1 && workflows[1] {
+		registry, err := measures.Embedded()
+		if err != nil {
+			t.Fatal(err)
+		}
+		registries = append(registries, registry)
+	}
+	store, pools := fixtureStore(t, filepath.Join(t.TempDir(), "server.db"), registries...)
 	credentials := accountstore.New(pools)
 	passwords := accounts.New(credentials)
 	principal, err := hostedfixture.Bootstrap(t.Context(), credentials, accounts.RawCredentials{Username: "commissioner", Password: "private-password"})
