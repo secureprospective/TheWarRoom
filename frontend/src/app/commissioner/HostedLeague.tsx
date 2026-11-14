@@ -30,21 +30,35 @@ const hostedRule = (field: string) =>
   /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(field);
 const bucketNames = { active: 'Active roster', ir: 'Injured reserve', taxi: 'Taxi squad' };
 const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
+const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
 export default function HostedLeague(props: {
   league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
 }) {
   const [showWar, setWar] = useState(false);
   const [showHQ, setHQ] = useState(props.hq ?? false);
+  const [showPulse, setPulse] = useState(false);
+  const [pulseTab, setPulseTab] = useState<'now' | 'race'>('now');
+  if (showPulse) return <Suspense fallback={<p>Opening League Pulse…</p>}>
+    <NativeLeaguePulse league={props.league} mine={props.franchise} port={props.port} serverTime
+      navigate={setPulseTab} back={() => setPulse(false)}
+      commissioner={props.role === 'Commissioner' || props.role === 'Co-commissioner'} tab={pulseTab}
+      leave={node => { setPulse(false); if (node === 'hq') { setHQ(true); setWar(false); }
+        if (node === 'war') { setHQ(false); setWar(true); } }} />
+  </Suspense>;
   if (showWar) return <Suspense fallback={<p>Opening War Room…</p>}><WarRoomNative
-    league={props.league} mine={props.franchise} port={props.port} leave={() => setWar(false)}
+    league={props.league} mine={props.franchise} port={props.port}
+    leave={node => { if (node === 'pulse') setPulse(true);
+      else { setWar(false); if (node === 'hq') setHQ(true); } }}
     /></Suspense>;
   if (showHQ) return <Suspense fallback={<p>Opening your franchise…</p>}>
     <NativeFranchiseHQ key={`${props.league}:${props.franchise}`} league={props.league}
       mine={props.franchise} name={props.name} port={props.port}
-      leave={() => setHQ(false)} />
+      leave={node => { if (node === 'pulse') setPulse(true);
+        else { setHQ(false); if (node === 'war') setWar(true); } }} />
   </Suspense>;
-  return <><WarRoomAct onAction={() => setWar(true)}>War Room</WarRoomAct><HostedWorkRoom {...props} /></>;
+  return <><WarRoomAct onAction={() => setPulse(true)}>League Pulse</WarRoomAct>
+    <WarRoomAct onAction={() => setWar(true)}>War Room</WarRoomAct><HostedWorkRoom {...props} /></>;
 }
 function HostedWorkRoom({
   league,

@@ -15,8 +15,8 @@ sentence means.
 | Start | `thewarroom -native <server-url> <league>` | `thewarroom` (no flag) |
 | Go side | `composition.runNative` builds only `serverclient.Desktop` and the window. It "constructs only the hosted client and WebView, never the local App." | `composition.runDesktop` builds the full local App: local SQLite, engines, MFL sync, live feeds, clocks, backups. |
 | Data | The league server over HTTPS (Cloudflare Tunnel). No league database on the computer. | `thewarroom.db`, `history.db`, `whatif.db` in the user's config directory. |
-| Screens | `NativeStartup.tsx` mounts `NativeAccount` (sign-in, authenticator, AI helpers), then `HostedLeague` (Set lineup, Roster and reserves, Draft room, League rules) and `HostedWorkflows` (bids, waivers, trades, results, rollover). | `TargetMount` → the full shell `TargetApp.tsx`: Home, War Room, Franchise HQ, League Pulse, Control Room, command bar. |
-| Live football | None yet. The server has no live collector. | ESPN live, Sleeper fill-in, nflverse finals and MFL live, polled inside the app. |
+| Screens | `NativeStartup.tsx` mounts `NativeAccount` (sign-in, authenticator, AI helpers), then `HostedLeague` (League Pulse Now/Race, Franchise HQ, War Room, Set lineup, Roster and reserves, Draft room, League rules) and `HostedWorkflows` (bids, waivers, trades, results, rollover). | `TargetMount` → the full shell `TargetApp.tsx`: Home, War Room, Franchise HQ, League Pulse, Control Room, command bar. |
+| Live football | Pulse reads published server scores with manual Refresh; NFL games are coming next. The server has no live collector. | ESPN live, Sleeper fill-in, nflverse finals and MFL live, polled inside the app. |
 | Direction | Grows until it carries everything. | Kept as-is until thin mode carries everything (governing plan step 3). Do not grow it or add features to it. |
 
 ## What the server (`cmd/twr-server`) carries today

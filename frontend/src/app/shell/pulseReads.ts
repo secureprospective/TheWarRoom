@@ -1,3 +1,4 @@
+import { createContext, useContext } from 'react';
 import { useContractRead } from '../contracts/Contracts';
 import { hqEvents } from './hqReads';
 import { hostedWorkflow } from '../commissioner/api';
@@ -11,6 +12,8 @@ import { parseWarRoomProjections } from '../data/nativeProjections';
 import type { Node } from './nodes';
 
 export type PulseScope = { league: string; mine: string; port?: HostedPort;
+  serverTime?: boolean; commissioner?: boolean;
+  navigate?: (tab: 'now' | 'race') => void; back?: () => void;
   leave: (node?: Node) => void; embedded?: boolean; tabs?: HTMLElement | null };
 
 /** NativePulse is every league-wide fact League Pulse reads. Each region reads one field and says
@@ -33,16 +36,19 @@ export type NativePulse = {
 export type PulseMatchup = { lineups: Record<string, PulseLineupPlayer[]>;
   projections: Record<string, number>; errors: string[] };
 
+export const PulseChanges = createContext(hqEvents);
+
 export function usePulseRead<T>(key: string, read: (publish: (value: T) => void) => Promise<T>) {
+  const changes = useContext(PulseChanges);
   return useContractRead<T>(key, async publish => {
     try { return await read(publish); } catch (error) {
       console.warn('League Pulse read failed:', error); throw error;
     }
-  }, hqEvents);
+  }, changes);
 }
 
 export async function readNativePulse(league: string, mine: string, port: HostedPort = hostedWorkflow,
-  publish?: (reading: NativePulse) => void): Promise<NativePulse> {
+  publish?: (reading: NativePulse) => void, serverTime = false): Promise<NativePulse> {
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const directory = await port({ command: 'native.directory.read', mode: 'read',
     arguments: { league } });
@@ -57,7 +63,7 @@ export async function readNativePulse(league: string, mine: string, port: Hosted
   publish?.({ ...result });
   await apply(async () => {
     const r = await port({ command: 'week.read', mode: 'read', arguments: { league, franchise: mine,
-      season: held.season, localZone: zone, at: new Date().toISOString() } });
+      season: held.season, localZone: zone, at: serverTime ? '' : new Date().toISOString() } });
     const week = parsePulseWeek(r.data, league, mine, held.season);
     result.fixtures = week.games;
     result.lastWeek = week.games.reduce((high, g) => Math.max(high, g.week), 0);
@@ -106,18 +112,20 @@ export async function readPulseSeason(league: string, season: number, through: n
 
 export async function readPulseMatchup(league: string, season: number, week: number,
   franchises: readonly string[], starters: Record<string, readonly string[]>,
-  port: HostedPort = hostedWorkflow, publish?: (reading: PulseMatchup) => void): Promise<PulseMatchup> {
+  port: HostedPort = hostedWorkflow, publish?: (reading: PulseMatchup) => void,
+  viewer?: { mine: string; commissioner: boolean }): Promise<PulseMatchup> {
   const out: PulseMatchup = { lineups: {}, projections: {}, errors: [] };
   const apply = async (read: () => Promise<void>) => {
     try { await read(); } catch (error) {
       out.errors.push(String(error)); console.warn('League Pulse matchup read failed:', error);
     }
   };
-  await Promise.all(franchises.map(franchise => apply(async () => {
-    const r = await port({ command: 'lineup.read', mode: 'read',
-      arguments: { league, franchise, week, at: '' } });
-    out.lineups[franchise] = parsePulseLineup(r.data, league, franchise, week);
-  })));
+  await Promise.all([...new Set(franchises)].filter(f => !viewer || viewer.commissioner || f === viewer.mine)
+    .map(franchise => apply(async () => {
+      const r = await port({ command: 'lineup.read', mode: 'read',
+        arguments: { league, franchise, week, at: '' } });
+      out.lineups[franchise] = parsePulseLineup(r.data, league, franchise, week);
+    })));
   // Lineups show at once; projections wait for the value engine's first run after launch.
   publish?.({ ...out, lineups: { ...out.lineups }, errors: [...out.errors] });
   const players = [...new Set(franchises.flatMap(f => [...(starters[f] ?? [])]))];
