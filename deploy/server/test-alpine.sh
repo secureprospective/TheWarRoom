@@ -18,7 +18,7 @@ docker exec -e "DELIVERY=/src/$fixtures/delivery" "$name" sh -ec '
   tar xzf /src/.scratch/server.tar.gz -C /root/twr
   cp "$DELIVERY/root.json" /root/twr/root.json
   apk add --no-cache bash shellcheck
-  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/restore.sh /src/deploy/server/upgrade.sh /src/deploy/server/reset-sign-ins.sh /src/deploy/server/status.sh /src/deploy/server/cloudflare.sh /src/deploy/server/test-alpine.sh /src/deploy/server/bundle.sh /src/deploy/server/twr-sandbox
+  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/restore.sh /src/deploy/server/upgrade.sh /src/deploy/server/reset-sign-ins.sh /src/deploy/server/restore-league.sh /src/deploy/server/delete-league.sh /src/deploy/server/status.sh /src/deploy/server/cloudflare.sh /src/deploy/server/test-alpine.sh /src/deploy/server/bundle.sh /src/deploy/server/twr-sandbox
   mkdir /tmp/host-tools
   cat > /tmp/host-tools/stub <<'\''STUB'\''
 #!/bin/sh
