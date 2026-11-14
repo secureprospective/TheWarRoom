@@ -20,7 +20,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-func fixtureStore(t *testing.T, path string) (*history.Store, *db.Pools) {
+func fixtureStore(t *testing.T, path string, registries ...*measures.Registry) (*history.Store, *db.Pools) {
 	t.Helper()
 	pools, err := db.Open(t.Context(), path, history.SchemaVersion())
 	if err != nil {
@@ -31,7 +31,11 @@ func fixtureStore(t *testing.T, path string) (*history.Store, *db.Pools) {
 			t.Error(err)
 		}
 	})
-	store := history.New(pools, &measures.Registry{})
+	registry := &measures.Registry{}
+	if len(registries) > 0 {
+		registry = registries[0]
+	}
+	store := history.New(pools, registry)
 	if err := store.Initialize(t.Context()); err != nil {
 		t.Fatal(err)
 	}
