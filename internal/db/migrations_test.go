@@ -204,9 +204,15 @@ func TestMigrationBackupsRetainNewestFiveIncludingLegacy(t *testing.T) {
 	if err := os.Symlink(foreign, link); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := p.Write().ExecContext(t.Context(), "CREATE TABLE changes (n INTEGER)"); err != nil {
+		t.Fatal(err)
+	}
 	failure := errors.New("retry migration")
 	var backups []string
 	for i := range 7 {
+		if _, err := p.Write().ExecContext(t.Context(), "INSERT INTO changes VALUES (?)", i); err != nil {
+			t.Fatal(err)
+		}
 		result, err := p.Migrate(t.Context(), func(context.Context, *sql.Tx) error { return failure })
 		if !errors.Is(err, failure) {
 			t.Fatalf("attempt %d: %v", i, err)
