@@ -54,7 +54,48 @@ func workflowRead(read func(*leagueservice.Service, RawWorkflowScope) (json.RawM
 }
 
 func workflowReads() map[string]WorkflowCommand {
+	out := pulseWorkflowReads()
+	for id, command := range otherWorkflowReads() {
+		out[id] = command
+	}
+	return out
+}
+
+func pulseWorkflowReads() map[string]WorkflowCommand {
 	return map[string]WorkflowCommand{
+		"native.directory.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeDirectory(r.League))
+		}),
+		"schedule.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetLeagueSchedule(leagueservice.RawLeagueScheduleScope{League: r.League}))
+		}),
+		"week.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			at := time.Now().UTC()
+			if r.At != "" {
+				var err error
+				at, err = time.Parse(time.RFC3339Nano, r.At)
+				if err != nil {
+					return nil, fmt.Errorf("read week time: %w", err)
+				}
+			}
+			return workflowJSON(s.TargetNativeWeek(leagueservice.RawNativeWeekScope{RawNativeScheduleScope: leagueservice.RawNativeScheduleScope{League: r.League, Franchise: r.Franchise, Season: r.Season, LocalZone: r.LocalZone}, At: at}))
+		}),
+		"projections.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			players, err := workflowPlayers(r.Players)
+			if err != nil {
+				return nil, err
+			}
+			return workflowJSON(s.TargetNativeProjections(r.League, players, r.Season, r.Week))
+		}),
+		"bracket.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeBracket(r.League, r.Season))
+		}),
+	}
+}
+
+func otherWorkflowReads() map[string]WorkflowCommand {
+	return map[string]WorkflowCommand{
+
 		"commish.market.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetCommissionerMarket(r.League, r.Command))
 		}),

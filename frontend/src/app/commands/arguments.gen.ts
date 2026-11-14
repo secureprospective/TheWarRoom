@@ -2320,11 +2320,15 @@ export type WorkflowArgumentMap = {
 "commish.market.read": NativeArguments<"commish.market.read">;
 "commish.rules.read": NativeArguments<"commish.rules.read">;
 "commish.corrections.read": NativeArguments<"commish.corrections.read">;
+"schedule.read": NativeArguments<"schedule.read">;
 "native.assets.read": NativeArguments<"native.assets.read">;
 "bids.read": NativeArguments<"bids.read">;
+"bracket.read": NativeArguments<"bracket.read">;
+"native.directory.read": NativeArguments<"native.directory.read">;
 "draft.read": NativeArguments<"draft.read">;
 "lineup.read": NativeArguments<"lineup.read">;
 "value.read": NativeArguments<"value.read">;
+"projections.read": NativeArguments<"projections.read">;
 "native.reserve.check": NativeArguments<"native.reserve.check">;
 "results.read": NativeArguments<"results.read">;
 "native.roster.check": NativeArguments<"native.roster.check">;
@@ -2333,6 +2337,7 @@ export type WorkflowArgumentMap = {
 "moves.read": NativeArguments<"moves.read">;
 "trades.read": NativeArguments<"trades.read">;
 "waivers.read": NativeArguments<"waivers.read">;
+"week.read": NativeArguments<"week.read">;
 "commish.rules.set": NativeArguments<"commish.rules.set">;
 "contract.action.set": NativeArguments<"contract.action.set">;
 "season.rollover": NativeArguments<"season.rollover">;
