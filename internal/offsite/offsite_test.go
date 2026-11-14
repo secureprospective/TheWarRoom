@@ -69,9 +69,9 @@ func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				MaxKeys     int
 				IsTruncated bool
 				Contents    []content
-			}{Name: "league", Prefix: "sets/", MaxKeys: 1000}
+			}{Name: "league", Prefix: r.URL.Query().Get("prefix"), MaxKeys: 1000}
 			for k, v := range f.objects {
-				if strings.HasPrefix(k, "sets/") {
+				if strings.HasPrefix(k, result.Prefix) {
 					result.Contents = append(result.Contents, content{k, len(v)})
 				}
 			}
