@@ -85,8 +85,8 @@ Long play bonuses are discrete events that fire per qualifying play.
 
 | Event Code | Stat | Points |
 |---|---|---|
-| FU | Fumble Lost | -2 |
-| OFC | Own Fumble Recovery for TD | 2 |
+| FU | Fumbles (ALL: lost or recovered by own team, incl. muffs; MFL allRules) | -2 |
+| OFC | Own Fumble Recoveries (ball recovered by own team; MFL allRules) | 2 |
 | FC | Opponent Fumble Recovery | 3 |
 | FCY | Fumble Recovery Return Yards | 0.1 / yard |
 | FF | Forced Fumble | 4 |
