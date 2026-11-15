@@ -103,3 +103,16 @@ func TestLivePollCaptureFailureDoesNotPublishChange(t *testing.T) {
 		t.Fatal("capture failure published or lost evidence")
 	}
 }
+
+// The hosted collector holds nothing partial, but a game whose summary fails to read is retried on the
+// next minute's poll, not after the idle interval, while games are being played.
+func TestACompletePollRetriesAFailedGameAtTheLiveCadence(t *testing.T) {
+	body := capturedLiveFeed(t, "espn-week8-live") // a summary request gets the board back: unreadable
+	h := &livePollHistory{lines: map[string]source.PlayerWeek{"0099": {Season: 2026, Week: 8}}}
+	var poll LiveStatsPoller
+	delay := poll.poll(t.Context(), LiveStatsRun{Network: livePollTransport{body: string(body)}, RequireComplete: true,
+		Season: 2026, Week: func() int { return 8 }}, h)
+	if delay != liveStatsBusy || h.writes != 0 || len(h.lines) != 1 {
+		t.Fatalf("delay %s, writes %d", delay, h.writes)
+	}
+}
