@@ -310,3 +310,30 @@ func TestDesktopRoundTripsMinimalUnchangedWorkflow(t *testing.T) {
 		t.Fatalf("desktop lost conditional envelope: %s", body)
 	}
 }
+
+func TestWorkflowPublisherScoresConditionalRead(t *testing.T) {
+	publisher := serverhttp.NewPublisher()
+	f := newVersionedHostedFixture(t, serverhttp.NewWorkflowVersions(serverhttp.PublisherVersionSource{Publisher: publisher}), true)
+	commissionerBearer, proof := f.directCommissioner(t)
+	ownerBearer := f.login(t, "owner", "private-password")
+	read := workflowRequest(t, "results.read", "read", `{"league":"native.hosted","season":2026,"week":1}`, "")
+	first := taggedWorkflow(t, f, read, ownerBearer, "", 200)
+	publisher.PublishScores("native.hosted", 2026, 1)
+	read.Known = first.Tags
+	next := taggedWorkflow(t, f, read, ownerBearer, "", 200)
+	if next.Unchanged || next.Tags.League["scores:2026:1"] != "1" {
+		t.Fatal("score publication did not invalidate read")
+	}
+	read.Known = next.Tags
+	if !taggedWorkflow(t, f, read, ownerBearer, "", 200).Unchanged {
+		t.Fatal("new tags did not reconcile")
+	}
+	for _, role := range []struct{ name, bearer, proof string }{{"owner", ownerBearer, ""}, {"commissioner", commissionerBearer, proof}} {
+		t.Run(role.name, func(t *testing.T) {
+			reply := taggedWorkflow(t, f, read, role.bearer, role.proof, 200)
+			if reply.Tags.League["scores:2026:1"] != "1" || reply.Tags.League["league"] == "" {
+				t.Fatal("missing authorized topics")
+			}
+		})
+	}
+}

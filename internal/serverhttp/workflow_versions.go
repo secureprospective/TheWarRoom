@@ -78,7 +78,7 @@ func (v *WorkflowVersions) snapshot(ctx context.Context, h Hosted, service *leag
 func (h Hosted) workflowTags(ctx context.Context, service *leagueservice.Service, raw RawWorkflow, league, football string) (*ReadTags, error) {
 	account, _ := ctx.Value(replyPrincipalKey{}).(string)
 	if h.Versions == nil || h.Versions.source == nil || account == "" {
-		return nil, nil // TODO(L5 adapter)
+		return nil, nil
 	}
 	snapshot, err := h.Versions.snapshot(ctx, h, service, account, league)
 	if err != nil {
