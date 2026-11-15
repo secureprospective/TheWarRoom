@@ -10,6 +10,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/now"
@@ -37,6 +40,7 @@ type liveCollector struct {
 	publisher  scoresPublisher
 	// games holds the latest parsed scoreboard for nfl.games.read; nil keeps it unset.
 	games       *leagueservice.LiveGames
+	client      *http.Client
 	poller      now.LiveStatsPoller
 	published   bool
 	restoring   bool
@@ -138,6 +142,8 @@ func (c *liveCollector) checkpoint() (string, error) {
 }
 
 func (c *liveCollector) poll(ctx context.Context) time.Duration {
+	defer c.logTick(time.Now(), c.notified)()
+	c.ensureClient()
 	look, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
 	c.packets.failed = nil
@@ -149,7 +155,8 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 		log.Printf("server live: %v", err)
 		return 5 * time.Minute
 	}
-	body, err := livegame.HTTPFetch(&http.Client{Timeout: 10 * time.Second, Transport: c.packets}, endpoints)(look, "espn", "")
+	c.packets.boardURL = endpoints.ESPN
+	body, err := livegame.HTTPFetch(c.client, endpoints)(look, "espn", "")
 	if err != nil {
 		log.Printf("server live scoreboard: %v", err)
 		return 5 * time.Minute
@@ -174,19 +181,43 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 		return 5 * time.Minute
 	}
 	packet := c.packets.held.Packets[endpoints.ESPN]
+	previousBoard := c.board
 	c.holdBoard(games, packet.At)
 	if c.packets.held.Season != season || c.packets.held.Week != week {
 		c.packets.held = rawLiveCheckpoint{Version: 1, Season: season, Week: week, Packets: map[string]rawLivePacket{endpoints.ESPN: packet}, IDs: map[string]map[string]string{}}
 	}
+	c.prepareSummaries(look, endpoints, games, previousBoard)
 	c.packets.prefetched = &packet
-	c.poller.Poll(look, now.LiveStatsRun{Evidence: c, RequireComplete: true, Network: c.packets, Season: season, Week: func() int { return week }})
+	c.poller.Poll(look, now.LiveStatsRun{Evidence: c, RequireComplete: true, Network: c.packets, Client: c.client, Season: season, Week: func() int { return week }})
 	c.notifyScores(season, week)
-	return hostedLiveInterval(games)
+	return c.interval(games)
+}
+
+func (c *liveCollector) ensureClient() {
+	if c.client == nil {
+		c.client = &http.Client{Timeout: 10 * time.Second, Transport: c.packets}
+	}
+}
+
+func (c *liveCollector) logTick(started time.Time, previous string) func() {
+	return func() {
+		if previous != c.notified {
+			log.Printf("server live: tick %d changed=1", time.Since(started).Milliseconds())
+		}
+	}
+}
+
+func (c *liveCollector) interval(games []livegame.Game) time.Duration {
+	delay := hostedLiveInterval(games)
+	if delay == 5*time.Second && c.packets.boardInterval > delay {
+		return c.packets.boardInterval
+	}
+	return delay
 }
 
 func hostedLiveInterval(games []livegame.Game) time.Duration {
 	if now.LiveStatsInterval(games) == time.Minute {
-		return 10 * time.Second
+		return 5 * time.Second
 	}
 	return now.LiveStatsInterval(games)
 }
@@ -249,4 +280,46 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 		}
 	}()
 	return func() { cancel(); <-done }
+}
+
+// Warm live summaries with bounded I/O; the reducer then reads these same admitted packets.
+func (c *liveCollector) prepareSummaries(ctx context.Context, endpoints livegame.Endpoints, games, previous []livegame.Game) {
+	if c.packets.replay {
+		return
+	}
+	old := make(map[string]livegame.Game, len(previous))
+	for _, game := range previous {
+		old[game.ID] = game
+	}
+	var group sync.WaitGroup
+	slots := make(chan struct{}, 4)
+	for _, game := range games {
+		if game.Status != "in" || game.SeasonType != 2 {
+			continue
+		}
+		address := strings.ReplaceAll(endpoints.Summary, "{id}", game.ID)
+		if !reflect.DeepEqual(old[game.ID], game) {
+			delete(c.packets.nextSummary, address)
+		}
+	}
+	for _, game := range games {
+		if game.Status != "in" || game.SeasonType != 2 {
+			continue
+		}
+		address := strings.ReplaceAll(endpoints.Summary, "{id}", game.ID)
+		group.Go(func() {
+			slots <- struct{}{}
+			defer func() { <-slots }()
+			request, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
+			if err != nil {
+				return
+			}
+			response, err := c.client.Do(request)
+			if err != nil {
+				return
+			}
+			_ = response.Body.Close()
+		})
+	}
+	group.Wait()
 }

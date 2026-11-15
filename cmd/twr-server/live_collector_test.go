@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -200,7 +201,7 @@ func TestLiveCollectorBusyCadenceAndFailureKeepsLastGoodPackets(t *testing.T) {
 	}
 	packet := checkpoint.Packets[endpoints.ESPN]
 	collector, publisher := replayCollector(t, checkpoint)
-	if delay := collector.poll(t.Context()); delay != 10*time.Second {
+	if delay := collector.poll(t.Context()); delay != 5*time.Second {
 		t.Fatalf("live cadence %s", delay)
 	}
 	if publisher.store.LiveEpoch() == "" {
@@ -295,7 +296,7 @@ func liveBusyCheckpoint(t *testing.T) rawLiveCheckpoint {
 }
 
 // Real acquisition (not replay) must reuse Sleeper while still reading ESPN every tick.
-func TestLiveCollectorTenSecondTicksThrottleSleeperAndPublishOnlyChanges(t *testing.T) {
+func TestLiveCollectorFiveSecondTicksThrottleSleeperAndPublishOnlyChanges(t *testing.T) {
 	checkpoint := liveBusyCheckpoint(t)
 	collector, publisher := replayCollector(t, checkpoint)
 	files := openTestServer(t, t.TempDir())
@@ -316,13 +317,17 @@ func TestLiveCollectorTenSecondTicksThrottleSleeperAndPublishOnlyChanges(t *test
 	if sleeper == "" {
 		t.Fatal("fixture has no Sleeper packet")
 	}
+	started := time.Now()
 	for tick := range 2 {
-		if delay := collector.poll(t.Context()); delay != 10*time.Second {
+		if delay := collector.poll(t.Context()); delay != 5*time.Second {
 			t.Fatalf("tick %d delay %s", tick, delay)
 		}
 	}
 	if len(publisher.observed) != 1 {
 		t.Fatalf("unchanged tick published: %v", publisher.observed)
+	}
+	if collector.packets.nextSleeper.Before(started.Add(time.Minute)) {
+		t.Fatal("Sleeper cadence fell below 60 seconds")
 	}
 	if network.calls[sleeper] != 1 || network.calls[endpoints.ESPN] != 2 {
 		t.Fatalf("wrong acquisition counts: %v", network.calls)
@@ -334,7 +339,7 @@ func TestLiveCollectorTenSecondTicksThrottleSleeperAndPublishOnlyChanges(t *test
 	for _, game := range games {
 		if game.Status == "in" {
 			address := strings.ReplaceAll(endpoints.Summary, "{id}", game.ID)
-			if network.calls[address] != 2 {
+			if network.calls[address] != 1 {
 				t.Fatalf("live summary not refreshed: %s: %d", address, network.calls[address])
 			}
 		}
@@ -343,6 +348,19 @@ func TestLiveCollectorTenSecondTicksThrottleSleeperAndPublishOnlyChanges(t *test
 	collector.poll(t.Context())
 	if network.calls[sleeper] != 2 || len(publisher.observed) != 1 {
 		t.Fatal("due Sleeper refresh changed facts or was skipped")
+	}
+	// An unchanged live summary becomes eligible again only after its eight-second window.
+	for address := range collector.packets.nextSummary {
+		collector.packets.nextSummary[address] = time.Now().Add(-time.Second)
+	}
+	collector.poll(t.Context())
+	for _, game := range games {
+		if game.Status == "in" {
+			address := strings.ReplaceAll(endpoints.Summary, "{id}", game.ID)
+			if network.calls[address] != 2 {
+				t.Fatal("due summary was not refreshed")
+			}
+		}
 	}
 	// A board-only change must notify even if player lines are unchanged.
 	packet := network.packets[endpoints.ESPN]
@@ -362,6 +380,10 @@ func TestLiveCollectorTenSecondTicksThrottleSleeperAndPublishOnlyChanges(t *test
 	collector.poll(t.Context())
 	if len(publisher.observed) != 2 {
 		t.Fatal("clock-only change did not notify")
+	}
+	address := strings.ReplaceAll(endpoints.Summary, "{id}", games[0].ID)
+	if network.calls[address] != 3 {
+		t.Fatalf("changed board did not immediately fetch summary: %d", network.calls[address])
 	}
 	restored, again := replayCollector(t, rawLiveCheckpoint{})
 	restored.path = collector.path
@@ -387,16 +409,45 @@ func TestLiveCollectorTenSecondTicksThrottleSleeperAndPublishOnlyChanges(t *test
 }
 
 type countingLiveTransport struct {
-	packets map[string]rawLivePacket
-	calls   map[string]int
+	mu           sync.Mutex
+	cacheControl string
+	packets      map[string]rawLivePacket
+	calls        map[string]int
 }
 
 func (n *countingLiveTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	n.mu.Lock()
+	defer n.mu.Unlock()
 	address := r.URL.String()
 	n.calls[address]++
 	packet, ok := n.packets[address]
 	if !ok {
 		return nil, fmt.Errorf("unexpected live URL %s", address)
 	}
-	return livePacketResponse(packet), nil
+	response := livePacketResponse(packet)
+	response.Header.Set("Cache-Control", n.cacheControl)
+	return response, nil
+}
+
+func TestLiveCollectorBoardCadenceHonorsMaxAge(t *testing.T) {
+	for _, tc := range []struct {
+		header string
+		want   time.Duration
+	}{
+		{"", 5 * time.Second}, {"max-age=2", 5 * time.Second},
+		{"public, max-age=5", 5 * time.Second}, {"max-age=8", 8 * time.Second},
+		{"max-age=60", 10 * time.Second}, {"max-age=garbage", 5 * time.Second},
+	} {
+		t.Run(tc.header, func(t *testing.T) {
+			checkpoint := liveBusyCheckpoint(t)
+			collector, _ := replayCollector(t, checkpoint)
+			files := openTestServer(t, t.TempDir())
+			collector.identities = files.leagues.family.Over(files.reference)
+			collector.packets.replay = false
+			collector.packets.network = &countingLiveTransport{packets: checkpoint.Packets, calls: map[string]int{}, cacheControl: tc.header}
+			if got := collector.poll(t.Context()); got != tc.want {
+				t.Fatalf("cadence %s, want %s", got, tc.want)
+			}
+		})
+	}
 }
