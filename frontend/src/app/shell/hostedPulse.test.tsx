@@ -113,6 +113,10 @@ it('opens hosted Now, refreshes each active read once, shows Race and returns', 
   expect(host.textContent).not.toContain('Reading the NFL scoreboard');
   expect(host.textContent).toContain('BUF');
   expect(host.textContent).toContain('KC');
+  // The thin app holds no play feed yet: games and chips are read-only, never inert buttons.
+  expect([...host.querySelectorAll('button')].some(b => /Follow/.test(b.getAttribute('aria-label') ?? '')
+    || /Follow/.test(b.title))).toBe(false);
+  expect(host.querySelector('[aria-label="BUF at KC"]')).not.toBeNull();
   await click('Race');
   expect(host.textContent).toContain('STANDINGS');
   expect(host.textContent).toContain('0–0');
