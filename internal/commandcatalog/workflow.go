@@ -171,7 +171,8 @@ func (r RawWorkflow) Validate() error {
 
 type workflowInput interface {
 	Validate() error
-	*RawWorkflowScope | *commissioner.RawCommand | *commissioner.DraftPickInput
+	*RawWorkflowScope | *commissioner.RawCommand | *commissioner.DraftPickInput |
+		*commissioner.RawNativeCapScope | *market.RawContractQuote
 }
 
 func decodeWorkflow[T workflowInput](body []byte, raw T) error {
@@ -190,30 +191,23 @@ func decodeWorkflow[T workflowInput](body []byte, raw T) error {
 	return nil
 }
 
+// League is the league a valid workflow names. Each command's own input has already been decoded
+// strictly by Validate; every input carries the league under the same key.
 func (r RawWorkflow) League() (string, error) {
-	if r.Command == commissioner.DraftPick {
-		var raw commissioner.DraftPickInput
-		if err := decodeWorkflow(r.Arguments, &raw); err != nil {
-			return "", err
-		}
-		return raw.League, nil
-	}
-	if r.Mode != "read" {
-		var raw commissioner.RawCommand
-		if err := decodeWorkflow(r.Arguments, &raw); err != nil {
-			return "", err
-		}
-		return raw.League, nil
-	}
-	var raw RawWorkflowScope
-	if err := decodeWorkflow(r.Arguments, &raw); err != nil {
+	if err := r.Validate(); err != nil {
 		return "", err
 	}
-	return raw.League, nil
+	var scope struct {
+		League string `json:"league"`
+	}
+	if err := json.Unmarshal(r.Arguments, &scope); err != nil {
+		return "", fmt.Errorf("read league action: %w", err)
+	}
+	return scope.League, nil
 }
 
 type workflowOutput interface {
-	history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules | leagueservice.NFLGames | leagueservice.NFLGame
+	history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules | leagueservice.NFLGames | leagueservice.NFLGame | commissioner.NativeCapCheck | market.ContractQuote
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {
