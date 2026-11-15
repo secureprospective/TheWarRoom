@@ -112,7 +112,7 @@ func BuildFootball(list []players.RawPlayer, weeks []leagueweek.Week, season int
 		if year, yerr := strconv.Atoi(p.DraftYear); yerr == nil && year >= 1920 && year <= season+1 && year != 1970 {
 			facts.DraftYear, facts.DraftYearHeld = year, true
 		}
-		player := history.RawFootballPlayer{Identity: "mfl." + id.String(), Facts: facts}
+		player := history.RawFootballPlayer{Identity: history.MFLIdentityPrefix + id.String(), Facts: facts}
 		if player.Validate() != nil {
 			continue
 		}

@@ -126,7 +126,8 @@ func (s *Store) overlayEvidence(evidence source.NativeEvidence, scope source.Raw
 	if pinned, yes := s.lineupEnv.(*PinnedFootball); yes {
 		player, exists := pinned.raw.Players[scope.Player]
 		identity := generation.Identities[scope.Player]
-		if !exists || (player.Identity != "" && identity.GSIS != player.Identity) || (player.Sleeper != "" && identity.Sleeper != player.Sleeper) {
+		gsis := player.nflIdentity()
+		if !exists || (gsis != "" && identity.GSIS != gsis) || (player.Sleeper != "" && identity.Sleeper != player.Sleeper) {
 			return evidence
 		}
 	}

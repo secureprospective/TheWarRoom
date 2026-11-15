@@ -43,6 +43,18 @@ type RawFootballPlayer struct {
 	NFLRosterSeasons *[]int `json:"nflRosterSeasons,omitempty"`
 }
 
+// MFLIdentityPrefix marks an Identity built from an MFL id alone (an MFL import's football): it names
+// the player but is no NFL statistics identity.
+const MFLIdentityPrefix = "mfl."
+
+// nflIdentity is the player's NFL statistics (GSIS) identity, empty when the pin holds only an MFL one.
+func (r RawFootballPlayer) nflIdentity() string {
+	if strings.HasPrefix(r.Identity, MFLIdentityPrefix) {
+		return ""
+	}
+	return r.Identity
+}
+
 // Validate checks inline evidence; evidence split into week parts validates only with them (validate).
 func (r RawFootballEvidence) Validate() error { return r.validate(nil) }
 
