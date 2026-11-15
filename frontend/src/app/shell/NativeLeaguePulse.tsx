@@ -107,6 +107,18 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab; live: ReturnType<typeof
     JSON.stringify(['pulse-week', scope.league, reading?.season, week]),
     () => reading && week ? readPulseWeekResults(scope.league, reading.season, week, port)
       : Promise.reject(new PulseWaiting('The league has not said which week it is playing.')));
+  const errored = Boolean(league.error || (week && results.error) || live.error);
+  useEffect(() => {
+    if (!scope.serverTime || !scope.refresh || !errored) return;
+    let timer: ReturnType<typeof setTimeout>;
+    let attempt = 0;
+    const retry = () => {
+      const delay = [5000, 10000, 20000, 30000][Math.min(attempt++, 3)];
+      timer = setTimeout(() => { scope.refresh?.(); retry(); }, delay);
+    };
+    retry();
+    return () => clearTimeout(timer);
+  }, [errored, scope.refresh, scope.serverTime]);
   const modeClass = scope.serverTime ? ' hosted' : '';
   const body = <div className={`lp-v14${scope.embedded ? ' embedded' : ''}${modeClass}`}>
     <div className="shell">
@@ -151,7 +163,8 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab; live: ReturnType<typeof
             <PulseAct className="pull" expanded={drawer === 'bk'} onAction={() => pull('bk')}>
               BRACKET ▴</PulseAct>
           </div>}
-          <span className="msg">{reading?.standings?.words ?? reading?.weekNote ?? ''}</span>
+          <span className="msg">{reading?.standings?.words ?? reading?.weekNote ?? ''}
+            {scope.serverTime && errored ? ' · retrying' : ''}</span>
           <span className="sp" />
           <span className="src">reads only · nothing here changes the league</span>
         </div>

@@ -165,6 +165,30 @@ it('does not call a local binding or subscribe while hosted Pulse is unavailable
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
 });
 
+it('retries a failed hosted directory read after five seconds without Refresh', async () => {
+  vi.useFakeTimers();
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const fallback = fakePort();
+  let failed = false;
+  const port = vi.fn<HostedPort>(async request => {
+    if (request.command === 'native.directory.read' && !failed) {
+      failed = true;
+      throw new Error('Server offline');
+    }
+    return fallback(request);
+  });
+  try {
+    await act(async () => root.render(<NativeLeaguePulse league="test" mine="a" serverTime
+      port={port} leave={() => {}} />));
+    expect(host.textContent).toContain('League Pulse is unavailable');
+    expect(host.textContent).toContain('retrying');
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    expect(host.textContent).not.toContain('League Pulse is unavailable');
+    expect(host.textContent).toContain('Starter 2');
+    expect(host.textContent).not.toContain('retrying');
+  } finally { vi.useRealTimers(); }
+});
+
 it('keeps opponent NFL team and lock absent while retaining public starter points', async () => {
   const port = fakePort();
   await act(async () => root.render(<NativeLeaguePulse league="test" mine="a" serverTime
