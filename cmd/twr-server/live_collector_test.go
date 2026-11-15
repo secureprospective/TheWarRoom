@@ -524,3 +524,31 @@ func TestLiveCollectorHoldsNFLGameDetails(t *testing.T) {
 	}
 	t.Fatal("fixture did not exercise a summary")
 }
+
+func TestLiveCollectorBoardAheadOfSummary(t *testing.T) {
+	at := func(status string, period int, clock string, home, away int) livegame.Game {
+		return livegame.Game{ID: "1", Status: status, Period: period, Clock: clock, Home: livegame.Team{Score: home}, Away: livegame.Team{Score: away}, Plays: []livegame.Play{{Text: "kept"}}}
+	}
+	for _, tc := range []struct {
+		name           string
+		summary, board livegame.Game
+		behind         bool
+	}{
+		{"same", at("in", 2, "0:28", 21, 3), at("in", 2, "0:28", 21, 3), false},
+		{"clock ran", at("in", 2, "0:51", 21, 3), at("in", 2, "0:32", 21, 3), true},
+		{"score on same clock", at("in", 2, "0:28", 21, 3), at("in", 2, "0:28", 21, 6), true},
+		{"next quarter", at("in", 2, "0:01", 21, 3), at("in", 3, "15:00", 21, 3), true},
+		{"final", at("in", 4, "0:00", 21, 3), at("post", 4, "0:00", 21, 3), true},
+		{"summary ahead", at("in", 2, "0:20", 21, 6), at("in", 2, "0:28", 21, 3), false},
+		{"blank board clock", at("in", 2, "0:10", 21, 3), at("in", 2, "", 21, 3), false},
+	} {
+		got, behind := boardAhead(tc.summary, tc.board)
+		want := tc.summary
+		if tc.behind {
+			want = tc.board
+		}
+		if behind != tc.behind || got.Clock != want.Clock || got.Period != want.Period || got.Status != want.Status || got.Home.Score != want.Home.Score || got.Away.Score != want.Away.Score || len(got.Plays) != 1 {
+			t.Fatalf("%s: got %+v behind=%v", tc.name, got, behind)
+		}
+	}
+}
