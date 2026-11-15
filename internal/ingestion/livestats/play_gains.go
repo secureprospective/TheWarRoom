@@ -50,11 +50,7 @@ func reconciles(line *Line, kind gainKind, held []leaguerules.Decimal) bool {
 
 // collectGains reads each counted catch and carry from the play text, by the uniquely named player.
 func collectGains(game livegame.Game, lines map[string]*Line) map[*Line]map[leaguerules.StatID][]leaguerules.Decimal {
-	receptionPlay := regexp.MustCompile(`pass (?:(?:short|deep) )?(?:(?:left|right|middle) )?to (.+?)` +
-		`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`)
-	rushPlay := regexp.MustCompile(`^(?:\([^)]*\) )?(\S+(?: \S+)??) (?:scrambles )?` +
-		`(?:up the middle|left end|right end|left tackle|right tackle|left guard|right guard|kneels)` +
-		`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`)
+	receptionPlay, rushPlay := gainPatterns()
 	gains := map[*Line]map[leaguerules.StatID][]leaguerules.Decimal{}
 	for _, play := range game.Plays {
 		text := strings.TrimSpace(play.Text)
@@ -83,6 +79,15 @@ func collectGains(game livegame.Game, lines map[string]*Line) map[*Line]map[leag
 		gains[line][event] = append(gains[line][event], leaguerules.Decimal(yards)*10000)
 	}
 	return gains
+}
+
+// gainPatterns read a catch (pass ... to NAME ... for N yards) and a carry (NAME up the middle ... for N yards).
+func gainPatterns() (reception, rush *regexp.Regexp) {
+	return regexp.MustCompile(`pass (?:(?:short|deep) )?(?:(?:left|right|middle) )?to (.+?)` +
+			`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`),
+		regexp.MustCompile(`^(?:\([^)]*\) )?(\S+(?: \S+)??) (?:scrambles )?` +
+			`(?:up the middle|left end|right end|left tackle|right tackle|left guard|right guard|kneels)` +
+			`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`)
 }
 
 func gainYards(words string) (int, bool) {

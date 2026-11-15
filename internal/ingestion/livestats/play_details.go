@@ -44,6 +44,7 @@ func attachPlayDetails(game livegame.Game, lines map[string]*Line) {
 	}
 	attachRecoveryTDs(game, lines)
 	attachLongGains(game, lines)
+	attachFumbleRecoveries(game, lines)
 }
 
 func kickBand(id leaguerules.StatID, distance leaguerules.Decimal) leaguerules.StatID {
