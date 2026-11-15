@@ -73,6 +73,12 @@ func (a *API) TargetNFLGames(league string) (leagueservice.NFLGames, error) {
 	return a.reads.TargetNFLGames(league)
 }
 
+// TargetNFLGame exposes the shared public reading; local mode has no hosted detail holder.
+func (a *API) TargetNFLGame(league, game string) (leagueservice.NFLGame, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNFLGame(league, game)
+}
+
 func (a *API) TargetNativeAssets(leagueID string) (commissioner.NativeAssets, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeAssets(leagueID)

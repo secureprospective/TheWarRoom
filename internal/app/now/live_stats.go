@@ -48,6 +48,7 @@ type LiveStatsRun struct {
 	// Evidence lets the hosted collector reuse acquisition without writing desktop chronology.
 	Evidence        LiveStatsHistory
 	RequireComplete bool
+	Client          *http.Client      // optional shared hosted client
 	Network         http.RoundTripper // nil is http.DefaultTransport
 	Season          int
 	Week            func() int
@@ -74,7 +75,7 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held LiveS
 		log.Printf("live stats: %v", err)
 		return liveStatsIdle
 	}
-	fetch := livegame.HTTPFetch(&http.Client{Timeout: 10 * time.Second, Transport: run.Network}, endpoints)
+	fetch := livegame.HTTPFetch(run.httpClient(), endpoints)
 	adapter := livegame.Adapter{Fetch: fetch}
 	body, err := fetch(ctx, "espn", "")
 	if err != nil {
@@ -232,4 +233,11 @@ func LiveStatsInterval(games []livegame.Game) time.Duration {
 		return liveStatsBusy
 	}
 	return liveStatsIdle
+}
+
+func (run LiveStatsRun) httpClient() *http.Client {
+	if run.Client != nil {
+		return run.Client
+	}
+	return &http.Client{Timeout: 10 * time.Second, Transport: run.Network}
 }

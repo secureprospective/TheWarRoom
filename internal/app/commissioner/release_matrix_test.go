@@ -92,6 +92,8 @@ func releaseReadInputs(t *testing.T, name string, typ reflect.Type, league strin
 		args[1].SetString("{}")
 	case "TargetCommissionerMarket":
 		args[1].SetString(domain.BidPlace)
+	case "TargetNFLGame":
+		args[1].SetString("401")
 	case "TargetNativeCapCheck":
 		args[1].SetString("UTC")
 	case "TargetNativePlayerScore":

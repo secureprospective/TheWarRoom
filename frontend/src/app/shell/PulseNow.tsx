@@ -26,7 +26,8 @@ export type NowDrawer = 'box' | 'corr';
 export function PulseNow({ reading, mine, week, results, league, port, live, drawer,
   onClose, onChanges, viewer }: {
   reading: NativePulse; mine: string; week?: number; results: Reading<PulseResults>;
-  league: string; port: HostedPort; live: ReturnType<typeof usePulseLive>;
+  league: string; port: HostedPort;
+  live: ReturnType<typeof usePulseLive> & { prefer?: (key: string) => void };
   viewer?: { mine: string; commissioner: boolean };
   drawer?: NowDrawer; onClose: () => void; onChanges: (count: number) => void;
 }) {
@@ -43,6 +44,13 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
   useEffect(() => onChanges(changes.length), [onChanges, changes.length]);
   const games = current ? live.view?.games ?? [] : [];
   const followed = current ? live.view?.followed ?? undefined : undefined;
+  const myStarters = sides.mine ? sides.left : [];
+  const best = games.filter(g => g.status === 'in').map(g => ({ game: g,
+    count: myStarters.filter(p => [g.home.abbreviation, g.away.abbreviation]
+      .includes(espnTeam(p.team))).length,
+  })).sort((a, b) => b.count - a.count)[0]?.game;
+  const preferred = best ? followKey(best) : '';
+  useEffect(() => { live.prefer?.(preferred); }, [live.prefer, preferred]);
   return <section className="ws cols on" id="ws-live">
     <div className="pcol">
       <div className="ch">
@@ -53,7 +61,7 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
         <span>{week ? `week ${week}` : 'no week'}</span>
       </div>
       {side === 'nfl'
-        ? <NflList games={games} followed={followed} onFollow={viewer ? undefined : live.follow}
+        ? <NflList games={games} followed={followed} onFollow={live.follow}
             words={!current ? 'NFL games are shown for the week being played.'
               : live.error ? `The NFL scoreboard is unavailable · ${live.error}`
               : !live.view ? 'Reading the NFL scoreboard…' : 'No NFL games are held for this week.'} />
@@ -69,9 +77,7 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
             {g.away.abbreviation} <b>{g.away.score}–{g.home.score}</b> {g.home.abbreviation}
             <span className="q">{clockWords(g)}</span>
           </>;
-          return viewer
-            ? <span key={g.id} className="fchip">{chip}</span>
-            : <PulseAct key={g.id} className={`fchip${g.id === followed?.id ? ' on' : ''}`}
+          return <PulseAct key={g.id} className={`fchip${g.id === followed?.id ? ' on' : ''}`}
               label={`Follow ${g.away.abbreviation} at ${g.home.abbreviation}`}
               onAction={() => live.follow(followKey(g))}>{chip}</PulseAct>;
         })}
@@ -81,7 +87,7 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
             : !live.view ? 'Reading the NFL scoreboard…' : 'no NFL game is being played right now'}
         </span>}
       </div>
-      {viewer ? null : followed ? <FollowedGame game={followed} /> : <>
+      {followed ? <FollowedGame game={followed} /> : <>
         <div className="gh"><span className="src">Follow an NFL game to see its field.</span></div>
         <div><PulseIdle words={playing ? 'Pick a live game above or under NFL GAMES.'
           : 'The field, the drive and the down show while an NFL game is being played.'} /></div>
@@ -175,8 +181,7 @@ function clockWords(g: LiveNflGame) {
   return `${g.period > 4 ? 'OT' : `Q${g.period}`} ${g.clock}`;
 }
 
-/** NflList is the week's NFL games. Without onFollow (the thin app, which holds no play feed yet) the
- *  rows are plain read-only rows, never buttons that do nothing. */
+/** NflList is the week's NFL games, optionally selectable by a read-only follower. */
 export function NflList({ games, followed, onFollow, words }: { games: LiveNflGame[];
   followed?: LiveNflGame; onFollow?: (id: string) => void; words: string }) {
   if (!games.length) return <div className="scroll"><PulseIdle words={words} /></div>;

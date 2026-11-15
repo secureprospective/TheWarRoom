@@ -30,6 +30,7 @@ type RawWorkflow struct {
 
 type RawWorkflowScope struct {
 	Command   string `json:"command,omitempty"`
+	Game      string `json:"game,omitempty"`
 	League    string `json:"league"`
 	Franchise string `json:"franchise,omitempty"`
 	Viewer    string `json:"viewer,omitempty"`
@@ -118,6 +119,9 @@ func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) 
 func (r RawWorkflowScope) pulseScope(command string) (RawWorkflowScope, bool, bool) {
 	kept := RawWorkflowScope{League: r.League}
 	switch command {
+	case "nfl.game.read":
+		kept.Game = r.Game
+		return kept, r.Game != "" && len(r.Game) <= 32 && strings.Trim(r.Game, "0123456789") == "", true
 	case "week.read":
 		kept.Franchise, kept.Season, kept.LocalZone, kept.At = r.Franchise, r.Season, r.LocalZone, r.At
 		return kept, r.Season >= 1900 && r.LocalZone != "", true
@@ -209,7 +213,7 @@ func (r RawWorkflow) League() (string, error) {
 }
 
 type workflowOutput interface {
-	history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules | leagueservice.NFLGames
+	history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules | leagueservice.NFLGames | leagueservice.NFLGame
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {

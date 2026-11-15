@@ -15,8 +15,9 @@ const liveGamesStale = 10 * time.Minute
 // LiveGames holds the server's latest validated NFL scoreboard. It is public NFL data shared by every
 // league on the server; it never carries a league's own facts.
 type LiveGames struct {
-	held atomic.Pointer[livegame.Held]
-	now  func() time.Time
+	held    atomic.Pointer[livegame.Held]
+	details atomic.Pointer[map[string]NFLGame]
+	now     func() time.Time
 }
 
 // NewLiveGames starts an empty holder; readers see no games until the collector sets a board.

@@ -16,7 +16,7 @@ sentence means.
 | Go side | `composition.runNative` builds only `serverclient.Desktop` and the window. It "constructs only the hosted client and WebView, never the local App." | `composition.runDesktop` builds the full local App: local SQLite, engines, MFL sync, live feeds, clocks, backups. |
 | Data | The league server over HTTPS (Cloudflare Tunnel). No league database on the computer. | `thewarroom.db`, `history.db`, `whatif.db` in the user's config directory. |
 | Screens | `NativeStartup.tsx` mounts `NativeAccount` (sign-in, authenticator, AI helpers), then `HostedLeague` (League Pulse Now/Race, Franchise HQ, War Room, Set lineup, Roster and reserves, Draft room, League rules) and `HostedWorkflows` (bids, waivers, trades, results, rollover). | `TargetMount` → the full shell `TargetApp.tsx`: Home, War Room, Franchise HQ, League Pulse, Control Room, command bar. |
-| Live football | The server runs a shared ESPN/Sleeper collector for the current week; scores are labelled provisional. Each new generation publishes a scores topic to open change streams; Pulse reads with manual Refresh until it subscribes (L8b). Live NFL games are coming next. | ESPN live, Sleeper fill-in, nflverse finals and MFL live, polled inside the app. |
+| Live football | The server runs a shared ESPN/Sleeper collector for the current week; scores are labelled provisional. Each new generation publishes a scores topic to open change streams. Pulse rereads the public NFL scoreboard and selected game detail (field position and plays), following the live game with the most own starters by default; owners may switch games. Manual Refresh remains available. | ESPN live, Sleeper fill-in, nflverse finals and MFL live, polled inside the app. |
 | Direction | Grows until it carries everything. | Kept as-is until thin mode carries everything (governing plan step 3). Do not grow it or add features to it. |
 
 Hosted League rules expose Change only to commissioners and co-commissioners. The shared rule input
@@ -100,3 +100,7 @@ grep -n 'func browserRoute' -A12 internal/serverhttp/browser.go     # what a bro
 ```
 
 If any of these disagree with this file, the code wins. Fix this file before planning.
+
+Hosted NFL flow: the collector validates acquired summary packets with `livegame.ParseSummary`, then atomically replaces the shared current-slate detail map. `nfl.game.read {league, game}` uses directory-read admission and returns only public NFL facts, with an acquisition timestamp/stale flag or explicit no-detail words. Hosted Pulse fences superseded requests, rereads on its topic refresh, and uses the existing field/plays components. Local polling and private lineup admission are unchanged.
+
+Registry wiring review: `commissionerWeekBindings` adds only `Bind2(api.TargetNFLGame, "league", "game")`. It forwards to the admitted shared reading; no composition policy or decision-bearing function changed. The boundary source fingerprint records this inspected additive binding.
