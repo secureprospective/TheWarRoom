@@ -250,7 +250,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
-	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
+	gate := accountAdmission{host: host, accounts: h.Sessions, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
 		h.confirm(w, r, gate, raw)
 		return
@@ -427,6 +427,11 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing preview API.
 		preview, err := service.Preview(*raw.Command)
 		if err != nil {
+			var unknown unknownRoleTarget
+			if errors.As(err, &unknown) {
+				http.Error(w, unknown.Error(), http.StatusConflict)
+				return
+			}
 			http.Error(w, "native preview refused", http.StatusForbidden)
 			return
 		}
@@ -434,6 +439,11 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 	case ExecutePath:
 		receipt, err := service.Execute(r.Context(), *raw.Command)
 		if err != nil {
+			var unknown unknownRoleTarget
+			if errors.As(err, &unknown) {
+				h.writeFailure(w, unknown.Error(), http.StatusConflict)
+				return
+			}
 			h.writeFailure(w, "native change refused; reread before retrying", http.StatusConflict)
 			return
 		}
@@ -459,6 +469,7 @@ func (h Hosted) cachedReading(w http.ResponseWriter, r *http.Request, service *l
 type accountAdmission struct {
 	host     leagueservice.StoredHost
 	sessions commissioner.CredentialAdmission
+	accounts *accounts.SessionService
 	totp     *accounts.TOTPService
 	proof    accounts.RecentAuth
 }
@@ -509,7 +520,36 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 	if err := a.totp.CheckPrivileged(ctx, policy, principal, a.proof); err != nil {
 		return fmt.Errorf("privileged authentication: %w", err)
 	}
-	return admitLeagueAccess(access, policy, principal, records)
+	if err := admitLeagueAccess(access, policy, principal, records); err != nil {
+		return err
+	}
+	if access.Raw.Command == "commish.role.grant" && access.Raw.Args.People != nil {
+		return a.checkRoleTarget(ctx, access.Raw.Args.People.Principal, policy, records)
+	}
+	return nil
+}
+
+type unknownRoleTarget struct{}
+
+func (unknownRoleTarget) Error() string { return "No league member has that account" }
+
+func (a accountAdmission) checkRoleTarget(ctx context.Context, target string, policy governance.State, records []commissioner.Record) error {
+	id := strings.TrimPrefix(target, "acct.")
+	canonical, err := governance.AccountPrincipal(id)
+	if err != nil || string(canonical) != target || !hostedMember(policy, canonical, records) {
+		return unknownRoleTarget{}
+	}
+	if a.accounts == nil {
+		return fmt.Errorf("account service unavailable")
+	}
+	exists, err := a.accounts.AccountExists(ctx, id)
+	if err != nil {
+		return fmt.Errorf("check role target: %w", err)
+	}
+	if !exists {
+		return unknownRoleTarget{}
+	}
+	return nil
 }
 
 func admitLeagueAccess(access commissioner.Access, policy governance.State, principal governance.Principal, records []commissioner.Record) error {

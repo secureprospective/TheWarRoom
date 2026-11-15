@@ -46,6 +46,7 @@ type SessionRepository interface {
 	CreateSession(ctx context.Context, credential Credential, digest, device string) (time.Time, error)
 	SessionAccount(ctx context.Context, digest string, touch bool) (Account, error)
 	RevokeSession(ctx context.Context, digest string, allDevices bool) error
+	AccountExists(ctx context.Context, id string) (bool, error)
 }
 
 type SessionService struct {
@@ -55,6 +56,15 @@ type SessionService struct {
 
 func NewSessions(passwords *Service, store SessionRepository) *SessionService {
 	return &SessionService{passwords: passwords, store: store}
+}
+
+// AccountExists checks the sign-in store, not identities merely mentioned in a league ledger.
+func (s *SessionService) AccountExists(ctx context.Context, id string) (bool, error) {
+	exists, err := s.store.AccountExists(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("check account: %w", err)
+	}
+	return exists, nil
 }
 
 // Login binds issuance to the password hash actually verified, fencing concurrent recovery.
