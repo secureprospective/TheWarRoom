@@ -116,13 +116,13 @@ func TestDesktopHostedLineupDraftReconnectAndRevocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw.Action = "totp-confirm"
-	raw.Code = testTOTP(t, setup.Seed, f.now)
+	raw.Code = testTOTP(t, setup.Seed, f.clockTime())
 	if _, err := desktop.Act(t.Context(), raw); err != nil {
 		t.Fatal(err)
 	}
-	f.now = f.now.Add(30 * time.Second)
+	f.advanceTime(30 * time.Second)
 	raw.Action = "totp-step-up"
-	raw.Code = testTOTP(t, setup.Seed, f.now)
+	raw.Code = testTOTP(t, setup.Seed, f.clockTime())
 	if _, err := desktop.Act(t.Context(), raw); err != nil {
 		t.Fatal(err)
 	}

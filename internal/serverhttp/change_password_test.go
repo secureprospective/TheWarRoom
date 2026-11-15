@@ -51,11 +51,11 @@ func TestPasswordChangeRequiresAuthenticatorCodeWhenEnrolled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.totp.Confirm(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.now)}); err != nil {
+	if err := f.totp.Confirm(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.clockTime())}); err != nil {
 		t.Fatal(err)
 	}
-	f.now = f.now.Add(30 * time.Second)
-	code := testTOTP(t, setup.Seed, f.now)
+	f.advanceTime(30 * time.Second)
+	code := testTOTP(t, setup.Seed, f.clockTime())
 	wrong := "000000"
 	if wrong == code {
 		wrong = "111111"
