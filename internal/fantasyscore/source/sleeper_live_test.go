@@ -94,3 +94,29 @@ func TestLiveSleeperCountsLongReceptions(t *testing.T) {
 		}
 	}
 }
+
+// Sleeper has no run bins, but a longest run under 20 (or 40) yards proves no R20 (or R40). A longest run of
+// 20 or more leaves the count pending: the play-by-play or the final feed must say how many.
+func TestLiveSleeperLongestRunProvesNoLongRuns(t *testing.T) {
+	for _, tc := range []struct {
+		name, body           string
+		present20, present40 bool
+	}{
+		{"short longest", `{"rush_att":12,"rush_yd":41,"rush_lng":9}`, true, true},
+		{"mid longest", `{"rush_att":12,"rush_yd":61,"rush_lng":27}`, false, true},
+		{"long longest", `{"rush_att":12,"rush_yd":91,"rush_lng":52}`, false, false},
+		{"no longest", `{"rush_att":12,"rush_yd":41}`, false, false},
+	} {
+		rows, err := source.LiveSleeperLines(source.RawSleeperWeek{Season: 2026, Week: 10, Body: `{"1":` + tc.body + `}`})
+		if err != nil {
+			t.Fatal(tc.name, err)
+		}
+		q := rows["1"].Quantities
+		if got, ok := q["long_rush_20"]; ok != tc.present20 || got != 0 {
+			t.Errorf("%s: long_rush_20 %d present %v, want 0 present %v", tc.name, got, ok, tc.present20)
+		}
+		if got, ok := q["long_rush_40"]; ok != tc.present40 || got != 0 {
+			t.Errorf("%s: long_rush_40 %d present %v, want 0 present %v", tc.name, got, ok, tc.present40)
+		}
+	}
+}

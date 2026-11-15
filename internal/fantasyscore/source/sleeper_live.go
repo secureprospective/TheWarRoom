@@ -141,8 +141,8 @@ func (r RawLiveSleeperStats) Validate() error {
 			return fmt.Errorf("sleeper live %s cannot be negative", id)
 		}
 	}
-	for _, keys := range sleeperBands() {
-		for _, key := range keys {
+	for _, band := range sleeperBands() {
+		for _, key := range band.bins {
 			number, ok := r[key]
 			if !ok {
 				continue
@@ -171,7 +171,7 @@ func (r RawLiveSleeperStats) Convert() (fantasyscore.StatLine, error) {
 		}
 	}
 	fillSleeperBands(r, &line)
-	fillSleeperLongReceptions(r, &line)
+	fillSleeperLongGains(r, &line)
 	leaguerules.DropTotals(line.Quantities)
 
 	return line, nil
@@ -202,95 +202,91 @@ func LiveSleeperLines(raw RawSleeperWeek) (map[string]fantasyscore.StatLine, err
 	return out, nil
 }
 
-func sleeperBands() map[leaguerules.StatID][]string {
-	return map[leaguerules.StatID][]string{
-		"fg_made_0_39":    {"fgm_0_19", "fgm_20_29", "fgm_30_39"},
-		"fg_missed_0_29":  {"fgmiss_0_19", "fgmiss_20_29"},
-		"fg_missed_30_99": {"fgmiss_30_39", "fgmiss_40_49", "fgmiss_50_59", "fgmiss_60p"},
+// sleeperBand is a league band Sleeper splits into finer bins, and the total those bins add up to.
+type sleeperBand struct {
+	id    leaguerules.StatID
+	total string
+	bins  []string
+}
+
+func sleeperBands() []sleeperBand {
+	return []sleeperBand{
+		{"fg_made_0_39", "fgm", []string{"fgm_0_19", "fgm_20_29", "fgm_30_39"}},
+		{"fg_missed_0_29", "fgmiss", []string{"fgmiss_0_19", "fgmiss_20_29"}},
+		{"fg_missed_30_99", "fgmiss", []string{"fgmiss_30_39", "fgmiss_40_49", "fgmiss_50_59", "fgmiss_60p"}},
 	}
 }
 
+// sleeperKickBins are every distance bin Sleeper writes under a kick total ("fgm_0_19" … "fgm_60p").
+func sleeperKickBins(total string) []string {
+	return []string{total + "_0_19", total + "_20_29", total + "_30_39", total + "_40_49", total + "_50_59", total + "_60p"}
+}
+
+// fillSleeperBands sums a band's bins. Sleeper may omit zero bins, so a band with a bin missing counts only
+// when every bin present adds up to the total, which proves the missing ones zero.
 func fillSleeperBands(r RawLiveSleeperStats, line *fantasyscore.StatLine) {
-	for id, keys := range sleeperBands() {
-		var sum leaguerules.Decimal
-		complete := true
-		for _, key := range keys {
-			number, ok := r[key]
-			if !ok {
-				complete = false
-				continue
-			}
-			value, _ := decimal(number.String())
-			sum += value
-		}
-		// Sleeper may omit zero bins. Only a reconciled total proves those missing bins zero.
-		total := "fgmiss"
-		if id == "fg_made_0_39" {
-			total = "fgm"
-		}
-		if complete || sleeperBinsReconcile(r, total) {
-			line.Quantities[id] = sum
+	for _, band := range sleeperBands() {
+		sum, complete := r.sum(band.bins)
+		if complete || r.binsReconcile(band.total, sleeperKickBins(band.total)) {
+			line.Quantities[band.id] = sum
 		}
 	}
 }
 
-func sleeperBinsReconcile(r RawLiveSleeperStats, total string) bool {
-	number, ok := r[total]
+// sum adds the named fields; complete says every one was present.
+func (r RawLiveSleeperStats) sum(keys []string) (leaguerules.Decimal, bool) {
+	var sum leaguerules.Decimal
+	complete := true
+	for _, key := range keys {
+		value, ok := r.count(key)
+		complete = complete && ok
+		sum += value
+	}
+	return sum, complete
+}
+
+// binsReconcile says whether the bins present add up to the total exactly.
+func (r RawLiveSleeperStats) binsReconcile(total string, bins []string) bool {
+	want, ok := r.count(total)
 	if !ok {
 		return false
 	}
-	want, _ := decimal(number.String())
-	var sum leaguerules.Decimal
-	prefix := total + "_"
-	for key, number := range r {
-		if !strings.HasPrefix(key, prefix) {
-			continue
-		}
-		if key != prefix+"0_19" && key != prefix+"20_29" && key != prefix+"30_39" && key != prefix+"40_49" && key != prefix+"50_59" && key != prefix+"60p" {
-			continue
-		}
-		value, err := decimal(number.String())
-		if err != nil || value < 0 {
-			return false
-		}
-		sum += value
-	}
+	sum, _ := r.sum(bins)
 	return sum == want
 }
 
-// fillSleeperLongReceptions counts the catches of 20 yards or more (MFL C20), which no field states directly.
-// Sleeper omits empty bins, so the bins count only when they add up to the receptions; a longest catch
-// under 20 (or 40) yards proves there were none that long.
-func fillSleeperLongReceptions(r RawLiveSleeperStats, line *fantasyscore.StatLine) {
-	value := func(key string) (leaguerules.Decimal, bool) {
-		number, ok := r[key]
+// count is one non-negative field, absent when missing or unreadable.
+func (r RawLiveSleeperStats) count(key string) (leaguerules.Decimal, bool) {
+	number, ok := r[key]
+	if !ok {
+		return 0, false
+	}
+	value, err := decimal(number.String())
+	return value, err == nil && value >= 0
+}
+
+// fillSleeperLongGains counts the catches and runs of 20 yards or more (MFL C20, R20), which no field
+// states directly, and proves the 40-yard ones zero when nothing was that long. Sleeper omits empty bins,
+// so catch bins count only when they add up to the receptions; a longest gain under 20 (or 40) yards
+// proves there were none that long. Sleeper has no run bins, so runs rest on the longest alone.
+func fillSleeperLongGains(r RawLiveSleeperStats, line *fantasyscore.StatLine) {
+	if long, all := r.sum([]string{"rec_20_29", "rec_30_39", "rec_40p"}); all || r.binsReconcile("rec",
+		[]string{"rec_0_4", "rec_5_9", "rec_10_19", "rec_20_29", "rec_30_39", "rec_40p"}) {
+		line.Quantities["long_reception_20"] = long
+	}
+	for _, gain := range []struct {
+		longest        string
+		over20, over40 leaguerules.StatID
+	}{{"rec_lng", "long_reception_20", "long_reception_40"}, {"rush_lng", "long_rush_20", "long_rush_40"}} {
+		longest, ok := r.count(gain.longest)
 		if !ok {
-			return 0, false
+			continue
 		}
-		v, err := decimal(number.String())
-		return v, err == nil && v >= 0
-	}
-	if receptions, ok := value("rec"); ok {
-		var all, long leaguerules.Decimal
-		// Sleeper's receptions by gain; the last three are the catches of 20 yards or more.
-		for i, key := range []string{"rec_0_4", "rec_5_9", "rec_10_19", "rec_20_29", "rec_30_39", "rec_40p"} {
-			v, _ := value(key)
-			all += v
-			if i >= 3 {
-				long += v
-			}
+		if _, held := line.Quantities[gain.over20]; !held && longest < 200000 {
+			line.Quantities[gain.over20] = 0
 		}
-		if all == receptions {
-			line.Quantities["long_reception_20"] = long
-			return
-		}
-	}
-	if longest, ok := value("rec_lng"); ok {
-		if longest < 200000 {
-			line.Quantities["long_reception_20"] = 0
-		}
-		if _, held := line.Quantities["long_reception_40"]; !held && longest < 400000 {
-			line.Quantities["long_reception_40"] = 0
+		if _, held := line.Quantities[gain.over40]; !held && longest < 400000 {
+			line.Quantities[gain.over40] = 0
 		}
 	}
 }
