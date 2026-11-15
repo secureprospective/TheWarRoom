@@ -16,7 +16,7 @@ import { parseHostedGame, parseHostedGames, type LiveView } from '../now/liveCon
 import './pulse.css';
 
 export type PulseTab = 'now' | 'race';
-export const PULSE_FOLLOW_MS = 3000;
+export const PULSE_FOLLOW_MS = 250;
 
 export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }) {
   if (!scope.serverTime) return <LocalPulse {...scope} />;

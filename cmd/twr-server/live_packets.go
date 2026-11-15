@@ -12,6 +12,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -85,16 +88,25 @@ func validateLiveIDs(kind string, ids map[string]string) error {
 
 func liveDigest(body []byte) string { sum := sha256.Sum256(body); return hex.EncodeToString(sum[:]) }
 
-// livePackets is confined to the collector goroutine. The checkpoint has one current-week slot.
+// livePackets serializes packet admission; summary requests may fetch concurrently.
 type livePackets struct {
-	network    http.RoundTripper
-	held       rawLiveCheckpoint
-	replay     bool
-	prefetched *rawLivePacket
-	failed     error
+	mu             sync.Mutex
+	boardURL       string
+	boardInterval  time.Duration
+	nextSummary    map[string]time.Time
+	summaryReduced map[string]bool
+	network        http.RoundTripper
+	held           rawLiveCheckpoint
+	replay         bool
+	prefetched     *rawLivePacket
+	nextSleeper    time.Time
+	sleeperReduced bool
+	failed         error
 }
 
 func (p *livePackets) RoundTrip(request *http.Request) (*http.Response, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	address := request.URL.String()
 	if p.prefetched != nil && p.prefetched.URL == address {
 		packet := *p.prefetched
@@ -109,7 +121,38 @@ func (p *livePackets) RoundTrip(request *http.Request) (*http.Response, error) {
 		}
 		return livePacketResponse(packet), nil
 	}
+	if deadline, ok := p.nextSummary[address]; ok && time.Now().Before(deadline) {
+		if packet, exists := p.held.Packets[address]; exists {
+			if p.summaryReduced[address] {
+				p.held.Reduced = append(p.held.Reduced, address)
+			}
+			return livePacketResponse(packet), nil
+		}
+	}
+	// Keep Sleeper's weekly gap feed on its own slower clock, including failed attempts.
+	if strings.HasPrefix(request.URL.Path, "/v1/stats/nfl/regular/") {
+		if time.Now().Before(p.nextSleeper) {
+			if packet, ok := p.held.Packets[address]; ok {
+				if p.sleeperReduced {
+					p.held.Reduced = append(p.held.Reduced, address)
+				}
+				return livePacketResponse(packet), nil
+			}
+			p.failed = fmt.Errorf("sleeper live retry not due")
+			return nil, p.failed
+		}
+		p.sleeperReduced = false
+		p.nextSleeper = time.Now().Add(time.Minute)
+	}
+	return p.fetch(request)
+}
+
+// fetch runs with mu held, releasing it only for the network request.
+func (p *livePackets) fetch(request *http.Request) (*http.Response, error) {
+	address := request.URL.String()
+	p.mu.Unlock()
 	response, err := p.network.RoundTrip(request)
+	p.mu.Lock()
 	if err != nil {
 		return p.fallback(address, fmt.Errorf("fetch live packet: %w", err))
 	}
@@ -125,12 +168,23 @@ func (p *livePackets) RoundTrip(request *http.Request) (*http.Response, error) {
 		p.failed = fmt.Errorf("live packet exceeds byte budget")
 		return nil, p.failed
 	}
+	if address == p.boardURL {
+		p.boardInterval = liveBoardMaxAge(response.Header.Get("Cache-Control"))
+	}
 	packet := rawLivePacket{URL: address, Body: body, Digest: liveDigest(body), At: time.Now().UTC()}
 	if err := p.admit(packet); err != nil {
 		p.failed = err
 		return nil, err
 	}
 	p.held.Packets[address] = packet
+	if strings.Contains(request.URL.Path, "/summary") {
+		if p.nextSummary == nil {
+			p.nextSummary = map[string]time.Time{}
+			p.summaryReduced = map[string]bool{}
+		}
+		p.nextSummary[address] = time.Now().Add(8 * time.Second)
+		p.summaryReduced[address] = false
+	}
 	return livePacketResponse(packet), nil
 }
 
@@ -151,6 +205,12 @@ func (p *livePackets) admit(packet rawLivePacket) error {
 }
 
 func (p *livePackets) fallback(address string, err error) (*http.Response, error) {
+	if strings.Contains(address, "/summary") && p.summaryReduced != nil {
+		p.summaryReduced[address] = true
+	}
+	if strings.Contains(address, "/v1/stats/nfl/regular/") {
+		p.sleeperReduced = true
+	}
 	if packet, ok := p.held.Packets[address]; ok {
 		p.held.Reduced = append(p.held.Reduced, address)
 		return livePacketResponse(packet), nil
@@ -216,4 +276,20 @@ func readLiveCheckpoint(path string) (rawLiveCheckpoint, error) {
 		return rawLiveCheckpoint{}, err
 	}
 	return raw, nil
+}
+
+// ESPN's CDN cadence bounds useful scoreboard requests, within the hosted live budget.
+func liveBoardMaxAge(header string) time.Duration {
+	delay := 5 * time.Second
+	for directive := range strings.SplitSeq(header, ",") {
+		key, value, ok := strings.Cut(strings.TrimSpace(directive), "=")
+		if !ok || !strings.EqualFold(key, "max-age") {
+			continue
+		}
+		seconds, err := strconv.Atoi(strings.Trim(value, "\" "))
+		if err == nil && seconds > 5 {
+			delay = time.Duration(min(seconds, 10)) * time.Second
+		}
+	}
+	return delay
 }

@@ -7,11 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -193,31 +195,14 @@ func TestLiveCollectorRejectedCandidateKeepsPreviousCheckpoint(t *testing.T) {
 }
 
 func TestLiveCollectorBusyCadenceAndFailureKeepsLastGoodPackets(t *testing.T) {
-	checkpoint := liveReplayCheckpoint(t)
+	checkpoint := liveBusyCheckpoint(t)
 	endpoints, err := now.LiveEndpoints()
 	if err != nil {
 		t.Fatal(err)
 	}
 	packet := checkpoint.Packets[endpoints.ESPN]
-	var board livegame.RawScoreboard
-	if err := json.Unmarshal(packet.Body, &board); err != nil {
-		t.Fatal(err)
-	}
-	state := &board.Events[0].Competitions[0].Status
-	state.Type.State = "in"
-	*state.Type.Completed = false
-	// Events may also carry the scoreboard status; keep both validated representations consistent.
-	if board.Events[0].Status != nil {
-		*board.Events[0].Status = *state
-	}
-	packet.Body, err = json.Marshal(board)
-	if err != nil {
-		t.Fatal(err)
-	}
-	packet.Digest = liveDigest(packet.Body)
-	checkpoint.Packets[endpoints.ESPN] = packet
 	collector, publisher := replayCollector(t, checkpoint)
-	if delay := collector.poll(t.Context()); delay != time.Minute {
+	if delay := collector.poll(t.Context()); delay != 5*time.Second {
 		t.Fatalf("live cadence %s", delay)
 	}
 	if publisher.store.LiveEpoch() == "" {
@@ -279,6 +264,231 @@ func TestLiveCollectorHoldsTheParsedScoreboardForNFLGames(t *testing.T) {
 	for _, game := range board.Games {
 		if game.ID == "" || game.Home.Abbreviation == "" || game.Away.Abbreviation == "" {
 			t.Fatalf("held game lacks its teams: %+v", game)
+		}
+	}
+}
+
+func liveBusyCheckpoint(t *testing.T) rawLiveCheckpoint {
+	t.Helper()
+	checkpoint := liveReplayCheckpoint(t)
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	packet := checkpoint.Packets[endpoints.ESPN]
+	var board livegame.RawScoreboard
+	if err := json.Unmarshal(packet.Body, &board); err != nil {
+		t.Fatal(err)
+	}
+	state := &board.Events[0].Competitions[0].Status
+	state.Type.State = "in"
+	*state.Type.Completed = false
+	// Events may also carry the scoreboard status; keep both validated representations consistent.
+	if board.Events[0].Status != nil {
+		*board.Events[0].Status = *state
+	}
+	packet.Body, err = json.Marshal(board)
+	if err != nil {
+		t.Fatal(err)
+	}
+	packet.Digest = liveDigest(packet.Body)
+	checkpoint.Packets[endpoints.ESPN] = packet
+	return checkpoint
+}
+
+// Real acquisition (not replay) must reuse Sleeper while still reading ESPN every tick.
+func TestLiveCollectorFiveSecondTicksThrottleSleeperAndPublishOnlyChanges(t *testing.T) {
+	checkpoint := liveBusyCheckpoint(t)
+	collector, publisher := replayCollector(t, checkpoint)
+	files := openTestServer(t, t.TempDir())
+	collector.identities = files.leagues.family.Over(files.reference)
+	collector.packets.replay = false
+	network := &countingLiveTransport{packets: maps.Clone(checkpoint.Packets), calls: map[string]int{}}
+	collector.packets.network = network
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sleeper := ""
+	for address := range checkpoint.Packets {
+		if strings.Contains(address, "/v1/stats/nfl/regular/") {
+			sleeper = address
+		}
+	}
+	if sleeper == "" {
+		t.Fatal("fixture has no Sleeper packet")
+	}
+	started := time.Now()
+	for tick := range 2 {
+		if delay := collector.poll(t.Context()); delay != 5*time.Second {
+			t.Fatalf("tick %d delay %s", tick, delay)
+		}
+	}
+	if len(publisher.observed) != 1 {
+		t.Fatalf("unchanged tick published: %v", publisher.observed)
+	}
+	if collector.packets.nextSleeper.Before(started.Add(time.Minute)) {
+		t.Fatal("Sleeper cadence fell below 60 seconds")
+	}
+	if network.calls[sleeper] != 1 || network.calls[endpoints.ESPN] != 2 {
+		t.Fatalf("wrong acquisition counts: %v", network.calls)
+	}
+	games, err := livegame.ParseScoreboard(checkpoint.Packets[endpoints.ESPN].Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, game := range games {
+		if game.Status == "in" {
+			address := strings.ReplaceAll(endpoints.Summary, "{id}", game.ID)
+			if network.calls[address] != 1 {
+				t.Fatalf("live summary not refreshed: %s: %d", address, network.calls[address])
+			}
+		}
+	}
+	collector.packets.nextSleeper = time.Now().Add(-time.Second)
+	collector.poll(t.Context())
+	if network.calls[sleeper] != 2 || len(publisher.observed) != 1 {
+		t.Fatal("due Sleeper refresh changed facts or was skipped")
+	}
+	// An unchanged live summary becomes eligible again only after its eight-second window.
+	for address := range collector.packets.nextSummary {
+		collector.packets.nextSummary[address] = time.Now().Add(-time.Second)
+	}
+	collector.poll(t.Context())
+	for _, game := range games {
+		if game.Status == "in" {
+			address := strings.ReplaceAll(endpoints.Summary, "{id}", game.ID)
+			if network.calls[address] != 2 {
+				t.Fatal("due summary was not refreshed")
+			}
+		}
+	}
+	// A board-only change must notify even if player lines are unchanged.
+	packet := network.packets[endpoints.ESPN]
+	var board livegame.RawScoreboard
+	if err := json.Unmarshal(packet.Body, &board); err != nil {
+		t.Fatal(err)
+	}
+	board.Events[0].Competitions[0].Status.DisplayClock = "2:03"
+	if board.Events[0].Status != nil {
+		board.Events[0].Status.DisplayClock = "2:03"
+	}
+	packet.Body, err = json.Marshal(board)
+	if err != nil {
+		t.Fatal(err)
+	}
+	network.packets[endpoints.ESPN] = packet
+	collector.poll(t.Context())
+	if len(publisher.observed) != 2 {
+		t.Fatal("clock-only change did not notify")
+	}
+	address := strings.ReplaceAll(endpoints.Summary, "{id}", games[0].ID)
+	if network.calls[address] != 3 {
+		t.Fatalf("changed board did not immediately fetch summary: %d", network.calls[address])
+	}
+	restored, again := replayCollector(t, rawLiveCheckpoint{})
+	restored.path = collector.path
+	if err := restored.restore(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if publisher.store.LiveEpoch() != again.store.LiveEpoch() {
+		t.Fatal("throttled checkpoint replay changed generation")
+	}
+	lines := map[string]source.PlayerWeek{"0099": {Season: 2026, Week: 9}}
+	if err := collector.SetLiveStats(t.Context(), 2026, 9, time.Now(), source.ESPNLive, livestats.Pending(), lines); err != nil {
+		t.Fatal(err)
+	}
+	if len(publisher.observed) != 3 {
+		t.Fatal("stat-only change did not notify")
+	}
+	if err := collector.SetLiveStats(t.Context(), 2026, 9, time.Now(), source.ESPNLive, livestats.Pending(), lines); err != nil {
+		t.Fatal(err)
+	}
+	if len(publisher.observed) != 3 {
+		t.Fatal("unchanged stats notified")
+	}
+}
+
+type countingLiveTransport struct {
+	mu           sync.Mutex
+	cacheControl string
+	latency      time.Duration
+	active, peak int
+	packets      map[string]rawLivePacket
+	calls        map[string]int
+}
+
+func (n *countingLiveTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	n.mu.Lock()
+	n.active++
+	n.peak = max(n.peak, n.active)
+	n.mu.Unlock()
+	if n.latency > 0 {
+		time.Sleep(n.latency)
+	}
+	n.mu.Lock()
+	defer func() { n.active--; n.mu.Unlock() }()
+	address := r.URL.String()
+	n.calls[address]++
+	packet, ok := n.packets[address]
+	if !ok {
+		return nil, fmt.Errorf("unexpected live URL %s", address)
+	}
+	response := livePacketResponse(packet)
+	response.Header.Set("Cache-Control", n.cacheControl)
+	return response, nil
+}
+
+func TestLiveCollectorBoardCadenceHonorsMaxAge(t *testing.T) {
+	for _, tc := range []struct {
+		header string
+		want   time.Duration
+	}{
+		{"", 5 * time.Second}, {"max-age=2", 5 * time.Second},
+		{"public, max-age=5", 5 * time.Second}, {"max-age=8", 8 * time.Second},
+		{"max-age=60", 10 * time.Second}, {"max-age=garbage", 5 * time.Second},
+	} {
+		t.Run(tc.header, func(t *testing.T) {
+			checkpoint := liveBusyCheckpoint(t)
+			collector, _ := replayCollector(t, checkpoint)
+			files := openTestServer(t, t.TempDir())
+			collector.identities = files.leagues.family.Over(files.reference)
+			collector.packets.replay = false
+			collector.packets.network = &countingLiveTransport{packets: maps.Clone(checkpoint.Packets), calls: map[string]int{}, cacheControl: tc.header}
+			if got := collector.poll(t.Context()); got != tc.want {
+				t.Fatalf("cadence %s, want %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestLiveCollectorSummaryConcurrencyIsBounded(t *testing.T) {
+	checkpoint := liveBusyCheckpoint(t)
+	collector, _ := replayCollector(t, checkpoint)
+	collector.packets.replay = false
+	network := &countingLiveTransport{packets: maps.Clone(checkpoint.Packets), calls: map[string]int{}, latency: 20 * time.Millisecond}
+	collector.packets.network = network
+	collector.ensureClient()
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	games, err := livegame.ParseScoreboard(checkpoint.Packets[endpoints.ESPN].Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	games = games[:8]
+	for i := range games {
+		games[i].Status = "in"
+	}
+	collector.prepareSummaries(t.Context(), endpoints, games, nil)
+	if network.peak != 4 || len(network.calls) != 8 {
+		t.Fatalf("concurrency %d; requests %d", network.peak, len(network.calls))
+	}
+	collector.prepareSummaries(t.Context(), endpoints, games, games)
+	for address, calls := range network.calls {
+		if calls != 1 {
+			t.Fatalf("unchanged summary re-fetched within 8 seconds: %s", address)
 		}
 	}
 }
