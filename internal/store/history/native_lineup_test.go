@@ -71,10 +71,7 @@ func TestLineupBelongsToItsOwnerAndTheAbilityToSetIt(t *testing.T) {
 func TestLockedPlayerCannotBeMovedInOrOutAfterKickoff(t *testing.T) {
 	t.Parallel()
 	f := lineupTest(t)
-	// The fixture is an import, which locks at the week's first kickoff (SET-1); this test is about
-	// each-player-game timing, so the commissioner sets that lock explicitly.
-	runScoreCommand(t, f.s, ruleCommand("lineup.lock", `"each_player_game"`, "now", "Lock each player at his game",
-		revision(t, f.s)), "creator")
+	// Every league, imports included, locks each player at his own game (Christopher's 11-14 ruling).
 	qb2 := f.roster[f.a][leaguerules.QB][1]
 	f.mustSet(t, f.a, f.legal(f.a))
 	swapQB := append([]string{qb2}, f.legal(f.a)[1:]...)
@@ -352,11 +349,10 @@ func TestNativeLineupReadingNamesLocksInTheOwnersTime(t *testing.T) {
 		!qb1.LocksAt.Equal(f.dallas) || qb1.LocksAt.Format("-07:00") != "-07:00" {
 		t.Fatalf("a starter's lock: %+v", qb1)
 	}
-	// The fixture is an import, so its lineup lock is the week's first kickoff: every player, teamless and
-	// bye included, locks then. Each-player-game timing is covered by the lineup.lock setting tests.
-	if qb2.Locked || qb2.LocksAt == nil || !qb2.LocksAt.Equal(f.dallas) ||
-		rb3.Locked || rb3.LocksAt == nil || !rb3.LocksAt.Equal(f.dallas) {
-		t.Fatalf("first-kickoff lock covers teamless and bye players: %+v %+v", qb2, rb3)
+	// Each player locks at his own game, so a teamless or bye-week player never locks this week.
+	never := "No NFL game this week, so this player never locks"
+	if qb2.Locked || qb2.LocksAt != nil || qb2.Words != never || rb3.Locked || rb3.LocksAt != nil || rb3.Words != never {
+		t.Fatalf("teamless and bye players must never lock: %+v %+v", qb2, rb3)
 	}
 	f.at = f.dallas
 	locked := f.reading(t, f.a)
@@ -364,9 +360,12 @@ func TestNativeLineupReadingNamesLocksInTheOwnersTime(t *testing.T) {
 	for _, p := range append(append([]commissioner.LineupPlayer{}, locked.Starters...), locked.Bench...) {
 		byName[p.Name] = p
 	}
-	if !byName["QB1 of team 01"].Locked || byName["QB1 of team 01"].Words != "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT" ||
-		!byName["DT1 of team 01"].Locked {
+	if !byName["QB1 of team 01"].Locked || byName["QB1 of team 01"].Words != "Locked at kickoff, Oct 18, 2026 at 10:00 AM PDT" {
 		t.Fatalf("lock state at kickoff: %+v", byName["QB1 of team 01"])
+	}
+	// A player whose own game starts later is still open at the first kickoff.
+	if dt := byName["DT1 of team 01"]; dt.LocksAt == nil || dt.Locked != !f.at.Before(*dt.LocksAt) {
+		t.Fatalf("DT1 locks at his own game: %+v", dt)
 	}
 	if !strings.Contains(locked.Words, "Held team 1's week 1 lineup is set. Valid lineup.") {
 		t.Fatalf("verdict words: %q", locked.Words)
@@ -376,6 +375,25 @@ func TestNativeLineupReadingNamesLocksInTheOwnersTime(t *testing.T) {
 	}
 	if !reflect.DeepEqual(locked.Rules, f.reading(t, f.a).Rules) {
 		t.Fatal("rules changed between readings")
+	}
+}
+
+// A commissioner who chooses the week's first kickoff locks every player then, teamless and bye included.
+func TestFirstKickoffLockCoversTeamlessAndByePlayers(t *testing.T) {
+	t.Parallel()
+	f := lineupTest(t)
+	runScoreCommand(t, f.s, ruleCommand("lineup.lock", `"first_kickoff"`, "now", "Lock the whole week at the first kickoff",
+		revision(t, f.s)), "creator")
+	f.mustSet(t, f.a, f.legal(f.a))
+	byName := map[string]commissioner.LineupPlayer{}
+	read := f.reading(t, f.a)
+	for _, p := range append(append([]commissioner.LineupPlayer{}, read.Starters...), read.Bench...) {
+		byName[p.Name] = p
+	}
+	for _, name := range []string{"QB2 of team 01", "RB3 of team 01"} {
+		if p := byName[name]; p.Locked || p.LocksAt == nil || !p.LocksAt.Equal(f.dallas) {
+			t.Fatalf("first-kickoff lock must cover %s: %+v", name, p)
+		}
 	}
 }
 
