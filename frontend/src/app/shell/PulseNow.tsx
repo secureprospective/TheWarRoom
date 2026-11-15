@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { HQAct as PulseAct } from './HQAct';
 import { percent, pointsLabel, type PulseOdds, type PulseResults, type PulseScore }
   from '../data/nativePulse';
-import { readPulseMatchup, usePulseRead, type NativePulse, type PulseMatchup } from './pulseReads';
+import { PulseWaiting, readPulseMatchup, usePulseRead, type NativePulse, type PulseMatchup }
+  from './pulseReads';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
 import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveContract';
@@ -356,7 +357,7 @@ function useStarterSides(reading: NativePulse, week: number | undefined, results
     publish => week && away && home
       ? readPulseMatchup(league, reading.season, week, [away, home],
         { [away]: starters(away), [home]: starters(home) }, port, publish, viewer)
-      : Promise.reject(new Error('Choose a matchup to read its lineups.')));
+      : Promise.reject(new PulseWaiting('Choose a matchup to read its lineups.')));
   const projections = matchup.reading?.projections ?? {};
   const flip = home !== undefined && home === mine;
   const [leftId, rightId] = flip ? [home, away] : [away, home];
