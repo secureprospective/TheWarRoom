@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -78,5 +81,41 @@ func TestHostedPulseReads(t *testing.T) {
 				t.Fatal("invalid input accepted")
 			}
 		})
+	}
+}
+
+func TestHostedNFLGamesReadsTheServerBoardForAMemberOnly(t *testing.T) {
+	f := newHostedFixture(t, true, true)
+	bearer, proof := f.directCommissioner(t)
+	read := func(league string) (int, leagueservice.NFLGames) {
+		t.Helper()
+		raw := workflowRequest(t, "nfl.games.read", "read", `{"league":"`+league+`"}`, "")
+		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+		if err != nil {
+			t.Fatal(err)
+		}
+		status, result := f.send(t, serverhttp.WorkflowPath, string(body), bearer, proof)
+		var games leagueservice.NFLGames
+		if status == 200 {
+			var response serverhttp.WorkflowResponse
+			if err := json.Unmarshal(result, &response); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(response.Data, &games); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return status, games
+	}
+	if status, games := read("native.hosted"); status != 200 || games.League != "native.hosted" || len(games.Board.Games) != 0 || games.Board.Games == nil {
+		t.Fatalf("empty board: status %d %+v", status, games)
+	}
+	f.games.Set([]livegame.Game{{ID: "401", Status: "in", Home: livegame.Team{ID: "12", Abbreviation: "KC", Score: 14}, Away: livegame.Team{ID: "2", Abbreviation: "BUF", Score: 10}}}, time.Now(), "ESPN")
+	status, games := read("native.hosted")
+	if status != 200 || len(games.Board.Games) != 1 || games.Board.Games[0].Home.Abbreviation != "KC" || games.Board.Source != "ESPN" || games.Board.Stale {
+		t.Fatalf("held board not read: status %d %+v", status, games)
+	}
+	if status, _ := read("native.other"); status == 200 {
+		t.Fatal("a league the account does not belong to read the board")
 	}
 }

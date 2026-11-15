@@ -68,7 +68,8 @@ export function useHostedGames(league: string, port: NonNullable<PulseScope['por
       port({ command: 'nfl.games.read', mode: 'read', arguments: { league } })
         .then(r => { if (live) setHeld({ view: parseHostedGames(r.data, league), error: '' }); })
         .catch((e: unknown) => {
-          if (live) setHeld(prior => ({ view: prior.view, error: e instanceof Error ? e.message : String(e) }));
+          const error = e instanceof Error ? e.message : String(e);
+          if (live) setHeld(prior => ({ view: prior.view, error }));
         });
     };
     load();
