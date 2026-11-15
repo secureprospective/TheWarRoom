@@ -119,3 +119,36 @@ func TestJoinLinkClaimReleaseAndRotation(t *testing.T) {
 		t.Fatalf("revoked link = %v", err)
 	}
 }
+
+// The commissioner can also own a team on the same sign-in (11-14 ruling): taking an open franchise records
+// the commissioner seating themself, the people read then names both the role and the franchise, and a
+// second team seat or a non-commissioner is refused.
+func TestCommissionerTakesAnOpenFranchise(t *testing.T) {
+	f := newHostedFixture(t, false) // the commissioner holds no team, like CT 257
+	commish := governance.Principal(f.principal)
+	if err := f.join.Take(t.Context(), "native.hosted", "franchise.02", governance.Principal("acct.00000000-0000-4000-8000-000000000000")); err == nil {
+		t.Fatal("a non-commissioner took a franchise")
+	}
+	if err := f.join.Take(t.Context(), "native.hosted", "franchise.02", commish); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.join.Take(t.Context(), "native.hosted", "franchise.01", commish); err == nil {
+		t.Fatal("the commissioner took a second team seat")
+	}
+	taken := f.lastCommissionerEvent(t)
+	if taken.Command.Command != "commish.seat.replace" || taken.Command.Args.People.Franchise != "franchise.02" ||
+		taken.Command.Args.People.Principal != f.principal || taken.Principal != f.principal {
+		t.Fatalf("take event = %s %+v by %s", taken.Command.Command, taken.Command.Args.People, taken.Principal)
+	}
+	var people struct {
+		YourRole      string `json:"yourRole"`
+		YourFranchise string `json:"yourFranchise"`
+	}
+	bearer := f.login(t, "commissioner", "private-password")
+	if err := json.Unmarshal(f.post(t, serverhttp.PeoplePath, `{"protocol":1,"league":"native.hosted"}`, bearer, "", 200), &people); err != nil {
+		t.Fatal(err)
+	}
+	if people.YourRole != "Commissioner" || people.YourFranchise != "franchise.02" {
+		t.Fatalf("people = %+v, want the commissioner holding franchise.02", people)
+	}
+}

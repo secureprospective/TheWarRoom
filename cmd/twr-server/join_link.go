@@ -22,17 +22,18 @@ func runJoinLink(ctx context.Context, args []string, input io.Reader, output io.
 	rotate := flags.Bool("rotate", false, "print a new join link; the previous link stops working")
 	revoke := flags.Bool("revoke", false, "stop the join link from working")
 	release := flags.String("release", "", "franchise ID whose owner is removed so it can be claimed again")
+	take := flags.String("take", "", "open franchise ID the signed-in commissioner also owns")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("parse join link flags: %w", err)
 	}
 	chosen := 0
-	for _, on := range []bool{*rotate, *revoke, *release != ""} {
+	for _, on := range []bool{*rotate, *revoke, *release != "", *take != ""} {
 		if on {
 			chosen++
 		}
 	}
 	if flags.NArg() != 0 || chosen != 1 || *league == "" {
-		return fmt.Errorf("join-link needs -db, -league and exactly one of -rotate, -revoke or -release FRANCHISE")
+		return fmt.Errorf("join-link needs -db, -league and exactly one of -rotate, -revoke, -release FRANCHISE or -take FRANCHISE")
 	}
 	if err := checkHostedDatabase(*path, 0); err != nil {
 		return err
@@ -59,11 +60,25 @@ func runJoinLink(ctx context.Context, args []string, input io.Reader, output io.
 		return fmt.Errorf("commissioner identity: %w", err)
 	}
 	service := accounts.NewJoin(signInStore(files), leagueservice.JoinSeats{Store: store}, nil)
-	return joinAction(ctx, service, *league, *rotate, *revoke, *release, principal, output)
+	return joinAction(ctx, service, *league, joinChoice{rotate: *rotate, revoke: *revoke, release: *release, take: *take}, principal, output)
 }
 
-func joinAction(ctx context.Context, service *accounts.JoinService, league string, rotate, revoke bool, release string, principal governance.Principal, output io.Writer) error {
+// joinChoice is the one console action asked for.
+type joinChoice struct {
+	rotate, revoke bool
+	release, take  string
+}
+
+func joinAction(ctx context.Context, service *accounts.JoinService, league string, choice joinChoice, principal governance.Principal, output io.Writer) error {
+	rotate, revoke, release := choice.rotate, choice.revoke, choice.release
 	switch {
+	case choice.take != "":
+		if err := service.Take(ctx, league, choice.take, principal); err != nil {
+			return err //nolint:wrapcheck // Take words its own failure
+		}
+		if _, err := fmt.Fprintf(output, "You own franchise %s now as well as holding the commissioner's seat; sign in again to open it.\n", choice.take); err != nil {
+			return fmt.Errorf("report take (the seat is already recorded): %w", err)
+		}
 	case rotate:
 		code, err := service.Rotate(ctx, league, principal)
 		if err != nil {
