@@ -150,11 +150,15 @@ func fixtureRead(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// maxHeaderBytes keeps the RB5 16 KiB header cap. net/http reads past the setting: about
+// 4 KiB on a new connection and 8 KiB on a reused one (measured, Drill 51).
+const maxHeaderBytes = 8 << 10
+
 func boundedServer(handler http.Handler, certificate tls.Certificate) *http.Server {
 	return &http.Server{
 		Handler: handler, ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout: 10 * time.Second, WriteTimeout: 5 * time.Second, IdleTimeout: 30 * time.Second,
-		MaxHeaderBytes: 16 << 10,
+		MaxHeaderBytes: maxHeaderBytes,
 		TLSConfig:      &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}},
 	}
 }
