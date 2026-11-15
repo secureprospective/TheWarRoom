@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -252,6 +253,9 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 		if err != nil {
 			return out, fmt.Errorf("read pinned native evidence: %w", err)
 		}
+		if out, err = s.withDirectoryIdentity(ctx, out, pinned, scope.Player); err != nil {
+			return out, err
+		}
 		return s.readingLiveStats(ctx, s.withScoringPosition(out, scope.Player, stats), scope, stats)
 	}
 	if s.evidence != nil {
@@ -270,6 +274,22 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 		return out, fmt.Errorf("read held native evidence: %w", err)
 	}
 	return s.readingLiveStats(ctx, s.withScoringPosition(out, scope.Player, stats), scope, stats)
+}
+
+// withDirectoryIdentity names the NFL identity of a player an MFL import pinned by MFL id alone: the pin holds
+// none, so the player directory (the same links the live collector matches by) says it. Without it a player
+// whose game has not started reads as having no NFL statistics identity.
+func (s *Store) withDirectoryIdentity(ctx context.Context, evidence source.NativeEvidence, pinned *PinnedFootball,
+	player string) (source.NativeEvidence, error) {
+	if evidence.GSIS != "" || !strings.HasPrefix(pinned.raw.Players[player].Identity, MFLIdentityPrefix) {
+		return evidence, nil
+	}
+	gsis, err := s.SourceID(ctx, player, "gsis")
+	if err != nil {
+		return evidence, fmt.Errorf("match the imported player to NFL statistics: %w", err)
+	}
+	evidence.GSIS = gsis
+	return evidence, nil
 }
 
 func (s *Store) withScoringPosition(evidence source.NativeEvidence, player string, stats source.StatPort) source.NativeEvidence {
