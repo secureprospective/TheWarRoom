@@ -19,6 +19,15 @@ sentence means.
 | Live football | The server runs a shared ESPN/Sleeper collector for the current week; scores are labelled provisional. Each new generation publishes a scores topic to open change streams; Pulse reads with manual Refresh until it subscribes (L8b). Live NFL games are coming next. | ESPN live, Sleeper fill-in, nflverse finals and MFL live, polled inside the app. |
 | Direction | Grows until it carries everything. | Kept as-is until thin mode carries everything (governing plan step 3). Do not grow it or add features to it. |
 
+Hosted League rules expose Change only to commissioners and co-commissioners. The shared rule input
+builds a typed value; the hosted room owns preview → explicit confirm → execute → reread, using the
+rules revision and request key. The server authorizes and records the change; no local proxy is used.
+A commissioner without a franchise opens league-wide Pulse and rule tools, not franchise tasks.
+Their room reads only rules; Pulse independently reads the directory, schedule, results and standings
+(and optional bracket/odds/football views), preserving the rest when an optional read is refused.
+Because `week.read` requires a franchise, their Pulse starts at the first scheduled week with explicit
+week navigation, never a fabricated current week or an empty-franchise request.
+
 Thin windows now watch negotiated topic invalidations after sign-in/enter and expose them through
 `/desktop/changes`; `nativeApi.subscribeChanged` is the webview transport. The thin-only
 `data/hostedReads.ts` owns its one subscriber and identity fence: sign-out and known identity

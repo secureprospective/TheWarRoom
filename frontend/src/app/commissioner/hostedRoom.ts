@@ -41,8 +41,9 @@ type Review = {
   preview: Preview | null;
   summary: string;
 };
-type State = {
-  reading?: HostedReading;
+export type HostedLeagueReading = Pick<HostedReading, 'rules' | 'label' | 'writable' | 'football' | 'readAt'>;
+type State<R> = {
+  reading?: R;
   stale: boolean;
   pending: boolean;
   error: string;
@@ -58,8 +59,24 @@ export function createHostedRoom(
   franchise: string,
   port: HostedPort = hostedWorkflow,
 ) {
+  return createRoom(league, franchise, port, week => readBundle(league, franchise, port, week));
+}
+
+export function createHostedLeagueRoom(league: string, port: HostedPort = hostedWorkflow) {
+  return createRoom(league, '', port, async () => {
+    const response = await port({ command: 'commish.rules.read', mode: 'read', arguments: { league } });
+    const rules = parseRules(response.data);
+    if (rules.league !== league) throw new Error('Wrong league rules');
+    return { rules, label: response.label, writable: response.writable,
+      football: response.football, readAt: Date.now() };
+  });
+}
+
+function createRoom<R extends HostedLeagueReading>(
+  league: string, franchise: string, port: HostedPort, readBundle: (week: number) => Promise<R>,
+) {
   const query = createReadQuery('commissioner.TargetNativeLineup', {
-    initial: (): State => ({ stale: true, pending: false, error: '', message: '' }),
+    initial: (): State<R> => ({ stale: true, pending: false, error: '', message: '' }),
     retainErrorWhilePending: true,
     read: (_league: string, _franchise: string, week: number, _at: string) => readBundle(week),
     accept: reading => ({ reading, stale: false }),
@@ -79,122 +96,6 @@ export function createHostedRoom(
     query.invalidate();
     store.setState({ review: undefined, market: undefined });
     await query.load([league, franchise, week, '']);
-  }
-  async function readBundle(week: number) {
-    const assets = await port({
-      command: 'native.assets.read',
-      mode: 'read',
-      arguments: { league },
-    });
-    const roster = parseHostedRoster(assets.data);
-    const season = roster.season;
-    const requests: NativeRequest[] = [
-      {
-        command: 'lineup.read',
-        mode: 'read',
-        arguments: { league, franchise, week, at: '' },
-      },
-      {
-        command: 'native.reserve.check',
-        mode: 'read',
-        arguments: { league },
-      },
-      {
-        command: 'draft.read',
-        mode: 'read',
-        arguments: {
-          league,
-          franchise,
-          season: 0,
-          at: '0001-01-01T00:00:00Z',
-        },
-      },
-      { command: 'commish.rules.read', mode: 'read', arguments: { league } },
-      {
-        command: 'bids.read',
-        mode: 'read',
-        arguments: { league, franchise },
-      },
-      {
-        command: 'waivers.read',
-        mode: 'read',
-        arguments: { league, franchise, at: new Date().toISOString() },
-      },
-      {
-        command: 'trades.read',
-        mode: 'read',
-        arguments: { league, viewer: franchise },
-      },
-      {
-        command: 'results.read',
-        mode: 'read',
-        arguments: { league, season, week },
-      },
-      {
-        command: 'standings.read',
-        mode: 'read',
-        arguments: { league, season },
-      },
-    ];
-    const results = await Promise.all(
-      requests.map((request) =>
-        request.command === 'lineup.read'
-          ? port(request).catch(() => ({ ...assets, data: null }))
-          : port(request),
-      ),
-    );
-    const [lineup, reserves, draft, rules, bids, waivers, trades, games, standings] = results;
-    const reading: HostedReading = {
-      markets: {
-        bids: parseHostedBids(bids.data),
-        waivers: parseHostedWaivers(waivers.data),
-        trades: parseHostedTrades(trades.data),
-        results: parseHostedResults(games.data),
-        standings: parseHostedStandings(standings.data),
-      },
-      lineup:
-        lineup.data === null
-          ? {
-              available: false,
-              league,
-              franchise,
-              season,
-              week,
-              revision: roster.revision,
-              words:
-                'The lineup could not be read. Ask the server operator to check football evidence ' +
-              'for this season, then refresh.',
-              verdict: 'Lineup changes are unavailable.',
-              starters: [],
-              bench: [],
-            }
-          : parseHostedLineup(lineup.data),
-      roster,
-      reserves: parseHostedReserves(reserves.data),
-      draft: parseDraft(draft.data),
-      rules: parseRules(rules.data),
-      label: lineup.label,
-      writable: results.every((r) => r.writable),
-      football: lineup.football,
-      readAt: Date.now(),
-    };
-    if (
-      reading.lineup.league !== league ||
-      reading.lineup.franchise !== franchise ||
-      reading.draft.league !== league ||
-      reading.rules.league !== league ||
-      reading.roster.league !== league ||
-      [reading.lineup, reading.draft, reading.rules, ...Object.values(reading.markets)].some(
-        (r) => r.revision !== roster.revision,
-      ) ||
-      Object.values(reading.markets).some((r) => r.league !== league) ||
-      [reading.markets.bids, reading.markets.waivers, reading.markets.trades].some(
-        (r) => r.franchise !== franchise,
-      ) ||
-      results.some((r) => r.football !== reading.football)
-    )
-      throw new Error('League readings changed. Refresh again.');
-    return reading;
   }
   const canChange = () => {
     const s = store.getState();
@@ -243,7 +144,7 @@ export function createHostedRoom(
       if (turn !== generation) return;
       if (
         market.league !== league ||
-        market.revision !== store.getState().reading?.roster.revision ||
+        market.revision !== store.getState().reading?.rules.revision ||
         response.football !== store.getState().reading?.football ||
         !response.writable
       )
@@ -313,3 +214,122 @@ export function createHostedRoom(
   };
 }
 export type HostedRoom = ReturnType<typeof createHostedRoom>;
+
+async function readBundle(league: string, franchise: string, port: HostedPort, week: number) {
+  const assets = await port({
+    command: 'native.assets.read',
+    mode: 'read',
+    arguments: { league },
+  });
+  const roster = parseHostedRoster(assets.data);
+  const season = roster.season;
+  const requests: NativeRequest[] = [
+    {
+      command: 'lineup.read',
+      mode: 'read',
+      arguments: { league, franchise, week, at: '' },
+    },
+    {
+      command: 'native.reserve.check',
+      mode: 'read',
+      arguments: { league },
+    },
+    {
+      command: 'draft.read',
+      mode: 'read',
+      arguments: {
+        league,
+        franchise,
+        season: 0,
+        at: '0001-01-01T00:00:00Z',
+      },
+    },
+    { command: 'commish.rules.read', mode: 'read', arguments: { league } },
+    {
+      command: 'bids.read',
+      mode: 'read',
+      arguments: { league, franchise },
+    },
+    {
+      command: 'waivers.read',
+      mode: 'read',
+      arguments: { league, franchise, at: new Date().toISOString() },
+    },
+    {
+      command: 'trades.read',
+      mode: 'read',
+      arguments: { league, viewer: franchise },
+    },
+    {
+      command: 'results.read',
+      mode: 'read',
+      arguments: { league, season, week },
+    },
+    {
+      command: 'standings.read',
+      mode: 'read',
+      arguments: { league, season },
+    },
+  ];
+  const results = await Promise.all(
+    requests.map((request) =>
+      request.command === 'lineup.read'
+        ? port(request).catch(() => ({ ...assets, data: null }))
+        : port(request),
+    ),
+  );
+  const [lineup, reserves, draft, rules, bids, waivers, trades, games, standings] = results;
+  const reading: HostedReading = {
+    markets: {
+      bids: parseHostedBids(bids.data),
+      waivers: parseHostedWaivers(waivers.data),
+      trades: parseHostedTrades(trades.data),
+      results: parseHostedResults(games.data),
+      standings: parseHostedStandings(standings.data),
+    },
+    lineup:
+      lineup.data === null
+        ? {
+            available: false,
+            league,
+            franchise,
+            season,
+            week,
+            revision: roster.revision,
+            words:
+              'The lineup could not be read. Ask the server operator to check football evidence ' +
+            'for this season, then refresh.',
+            verdict: 'Lineup changes are unavailable.',
+            starters: [],
+            bench: [],
+          }
+        : parseHostedLineup(lineup.data),
+    roster,
+    reserves: parseHostedReserves(reserves.data),
+    draft: parseDraft(draft.data),
+    rules: parseRules(rules.data),
+    label: lineup.label,
+    writable: results.every((r) => r.writable),
+    football: lineup.football,
+    readAt: Date.now(),
+  };
+  if (
+    reading.lineup.league !== league ||
+    reading.lineup.franchise !== franchise ||
+    reading.draft.league !== league ||
+    reading.rules.league !== league ||
+    reading.roster.league !== league ||
+    [reading.lineup, reading.draft, reading.rules, ...Object.values(reading.markets)].some(
+      (r) => r.revision !== roster.revision,
+    ) ||
+    Object.values(reading.markets).some((r) => r.league !== league) ||
+    [reading.markets.bids, reading.markets.waivers, reading.markets.trades].some(
+      (r) => r.franchise !== franchise,
+    ) ||
+    results.some((r) => r.football !== reading.football)
+  )
+    throw new Error('League readings changed. Refresh again.');
+  return reading;
+}
+
+export type HostedLeagueRoom = ReturnType<typeof createHostedLeagueRoom>;

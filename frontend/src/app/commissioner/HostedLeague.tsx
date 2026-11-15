@@ -3,12 +3,11 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Act } from '../commands/Act';
 import { surfaceActions } from './surfaceActions';
 import { newKey } from './forms';
-import { HoldToFire } from './HoldToFire';
-import { GovernedGlyph } from '../governed/GovernedGlyph';
+import { Review } from './HostedReview';
+import { HostedRules } from './HostedRules';
+import { HostedCommissionerLeague } from './HostedCommissionerLeague';
 import { localTime } from '../clock/localTime';
-import { hostedWords } from './hostedWords';
-import { createHostedRoom, type HostedRoom, type HostedPort } from './hostedRoom';
-import { previewChange } from './preview';
+import { createHostedRoom, type HostedPort } from './hostedRoom';
 import type { NativeArguments, NativeRequest } from '../commands/native';
 import type { HostedResponse } from './api';
 import './hostedLeague.css';
@@ -26,13 +25,18 @@ const labels: Record<Tab, string> = {
   results: 'Results and standings',
   rollover: 'Next season',
 };
-const hostedRule = (field: string) =>
-  /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(field);
 const bucketNames = { active: 'Active roster', ir: 'Injured reserve', taxi: 'Taxi squad' };
 const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
 const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
 export default function HostedLeague(props: {
+  league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
+}) {
+  if (!props.franchise && (props.role === 'Commissioner' || props.role === 'Co-commissioner'))
+    return <HostedCommissionerLeague league={props.league} port={props.port} />;
+  return <HostedFranchise {...props} />;
+}
+function HostedFranchise(props: {
   league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
 }) {
   const [showWar, setWar] = useState(false);
@@ -469,74 +473,9 @@ function HostedWorkRoom({
           commissioner={commissioner}
         />
       )}
-      {reading && tab === 'rules' && (
-        <>
-          <h3>Rules in force</h3>
-          <p>
-            Your commissioner controls these rules. Ask them for a ruling if a value is missing.
-          </p>
-          {reading.rules.sections
-            .filter((s) => s.rows.some((r) => hostedRule(r.field)))
-            .map((s) => (
-              <section key={s.label}>
-                <h4>{s.label}</h4>
-                <dl>
-                  {s.rows
-                    .filter((r) => hostedRule(r.field))
-                    .map((r) => (
-                      <div key={r.field}>
-                        <dt>
-                          {r.label}
-                          {r.governed && <GovernedGlyph governed={r.governed} subject={r.label} />}
-                        </dt>
-                        <dd>{r.value}</dd>
-                      </div>
-                    ))}
-                </dl>
-              </section>
-            ))}
-        </>
-      )}
+      {reading && tab === 'rules' &&
+        <HostedRules rules={reading.rules} commissioner={commissioner} room={room} />}
       {state.review && <Review room={room} />}
-    </section>
-  );
-}
-
-function Review({ room }: { room: HostedRoom }) {
-  const { review, pending, reading } = room.use();
-  const words = (value: string) => hostedWords(reading, value);
-  if (!review) return null;
-  return (
-    <section aria-label="Confirm league change" className="hosted-review">
-      <h3>{review.summary}</h3>
-      <p>This changes your league server, not MFL or a local plan. Nothing is queued while offline.</p>
-      {review.preview?.fields.map((field, i) => (
-        <p key={i}>
-          <strong>{words(field.label)}</strong>: {words(previewChange(field))}
-        </p>
-      ))}
-      {review.preview?.blockers.map((b, i) => (
-        <p role="alert" key={i}>
-          {words(b)}
-        </p>
-      ))}
-      {!review.preview?.blockers.length && (
-        <HoldToFire
-          label="Confirm league change"
-          body={JSON.stringify(review.request)}
-          disabled={pending || !room.canChange()}
-          onConfirm={() => void room.confirm()}
-        />
-      )}
-      <Act
-        variant="button"
-        verb="commissioner.surface"
-        args={{ screen: 'hosted-league', action: 'check', value: 'cancel' }}
-        label="Cancel change"
-        disabled={pending}
-      >
-        Cancel change
-      </Act>
     </section>
   );
 }
