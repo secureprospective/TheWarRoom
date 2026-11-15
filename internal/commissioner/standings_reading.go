@@ -55,8 +55,8 @@ type NativeStandings struct {
 	Changes  []ScoreChange          `json:"changes"`
 	// level and overrideLevel are the teams left level by the computed ranking and by the ranking under the
 	// commissioner's records; the draft's first round reads them to apply its own tie rule.
-	level, overrideLevel [][]string
-	regularWeeks         int
+	level, overrideLevel         [][]string
+	regularWeeks, scheduledWeeks int
 	// counted, teams and criteria are what the ranking read; the odds reading plays the open games on them.
 	counted  seasonGames
 	teams    []competition.RankTeam
@@ -70,6 +70,7 @@ type seasonGames struct {
 	points  map[string]leaguerules.Decimal
 	decided int
 	pending int
+	through int
 	// open is every counted week's game that has no result yet, in week order.
 	open []OpenGame
 }
@@ -128,8 +129,8 @@ func NativeStandingsReading(ctx context.Context, league string, records []Record
 		return out, err
 	}
 	out.regularWeeks = rules.Schedule.RegularWeeks.Value
-	out.Through = min(rules.Schedule.RegularWeeks.Value, len(published))
-	counted, err := countSeason(ctx, league, records, src, rules.Lineup, directory, published[:out.Through], season)
+	out.scheduledWeeks = min(rules.Schedule.RegularWeeks.Value, len(published))
+	counted, err := countSeason(ctx, league, records, src, rules.Lineup, directory, published[:out.scheduledWeeks], season)
 	if err != nil {
 		return out, err
 	}
@@ -145,6 +146,7 @@ func countSeason(ctx context.Context, league string, records []Record, src Resul
 		if err != nil {
 			return out, err
 		}
+		pendingBefore := out.pending
 		for _, g := range results.Games {
 			if g.Status == GameNoResult {
 				out.pending++
@@ -153,6 +155,9 @@ func countSeason(ctx context.Context, league string, records []Record, src Resul
 			}
 			out.decided++
 			out.games = append(out.games, rankingGame(g))
+		}
+		if week.Week == out.through+1 && len(results.Games) > 0 && out.pending == pendingBefore {
+			out.through = week.Week
 		}
 		for _, score := range results.Scores {
 			if score.Points != nil {
@@ -200,11 +205,16 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 	out.Computed, out.level = standingRows(computed, teams, counted.points, nil), computed.Level
 	out.NoData = computed.Skipped
 	out.counted, out.teams, out.criteria = counted, teams, rules.Standings.Criteria.Value
-	out.Decided, out.Pending, out.Status = counted.decided, counted.pending, "Ranked"
-	out.Words = fmt.Sprintf("Standings through week %d: %d games have a result, %d do not yet", out.Through,
+	out.Decided, out.Pending, out.Through, out.Status = counted.decided, counted.pending, counted.through, "Ranked"
+	if out.Through == 0 {
+		out.Words = "Standings: no week is complete"
+	} else {
+		out.Words = fmt.Sprintf("Standings through week %d", out.Through)
+	}
+	out.Words += fmt.Sprintf(": %d regular-season games have a result, %d remain without a result",
 		counted.decided, counted.pending)
-	if out.Through < rules.Schedule.RegularWeeks.Value {
-		out.Words += fmt.Sprintf("; the published schedule covers only %d of %d weeks", out.Through,
+	if out.scheduledWeeks < rules.Schedule.RegularWeeks.Value {
+		out.Words += fmt.Sprintf("; the published schedule covers only %d of %d weeks", out.scheduledWeeks,
 			rules.Schedule.RegularWeeks.Value)
 	}
 	if len(adjustments.Records) == 0 && adjustments.Order == nil {

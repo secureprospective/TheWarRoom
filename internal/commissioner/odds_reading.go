@@ -148,9 +148,9 @@ func oddsWaiting(s NativeStandings, rules leaguerules.RuleSet, bracket *NativeBr
 	switch {
 	case bracket.Status != bracketUnavailable:
 		return "Playoff odds need the playoff rules: " + bracket.Words
-	case s.Through < rules.Schedule.RegularWeeks.Value:
+	case s.scheduledWeeks < rules.Schedule.RegularWeeks.Value:
 		return fmt.Sprintf("Playoff odds need the whole regular season: the schedule covers only %d of %d weeks",
-			s.Through, rules.Schedule.RegularWeeks.Value)
+			s.scheduledWeeks, rules.Schedule.RegularWeeks.Value)
 	case s.Override != nil:
 		return "The commissioner set the standings by hand, so the season is not played out from the results"
 	}
