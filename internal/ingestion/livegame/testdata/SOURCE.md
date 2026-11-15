@@ -19,3 +19,8 @@ The IPC wire fixtures in `frontend/src/app/now/live*.testdata.json` are generate
   Parser-field-only trim: 93,497 B, SHA256
   `258c67430291a7ac4667e752351de65bd7c144e44876cd53525b7d3a02b24f38`.
   Retains the actual numeric header week and season object, player boxes and drive plays.
+
+- `espn-summary-401873061-kickoff.json`: captured 2026-11-15 21:06:02 UTC by the game-day feed recorder from ESPN's
+  site summary endpoint (`event=401873061`, LAR at ARI, Q1 14:56, before the first play: no drives yet); original
+  SHA256 `c81c14b70eee59d817fab8f8b0e35d9f18f3b0febdcbd30f7c1cae803c0579e3`. Trim keeps `header` and
+  `boxscore.players`: 20,332 B, SHA256 `48012035c044c07b836ba2009c0856609a2363c4d8392299d78d1005910a68d1`.
