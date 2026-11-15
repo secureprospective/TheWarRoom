@@ -94,6 +94,10 @@ export function TargetLeagueSchedule(arg1) {
   return window['go']['commissioner']['API']['TargetLeagueSchedule'](arg1);
 }
 
+export function TargetNFLGame(arg1, arg2) {
+  return window['go']['commissioner']['API']['TargetNFLGame'](arg1, arg2);
+}
+
 export function TargetNFLGames(arg1) {
   return window['go']['commissioner']['API']['TargetNFLGames'](arg1);
 }
