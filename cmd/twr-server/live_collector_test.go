@@ -19,6 +19,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livestats"
+	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -248,4 +249,20 @@ type offlineLiveTransport struct{}
 
 func (offlineLiveTransport) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, fmt.Errorf("offline")
+}
+
+// The hosted server's own Publisher is what the collector is handed: a replayed live generation must move
+// that league's scores topic for the replayed week, so open change streams hear about it.
+func TestLiveCollectorMovesTheHostedScoresTopic(t *testing.T) {
+	collector, _ := replayCollector(t, liveReplayCheckpoint(t))
+	shared := serverhttp.NewPublisher()
+	collector.publisher = shared
+	collector.poll(t.Context())
+	if !collector.published {
+		t.Fatal("validated live evidence not published")
+	}
+	topics := shared.Versions("", "native.test").Topics
+	if len(topics) != 1 || topics[0].Kind != "scores" || topics[0].Season != 2026 || topics[0].Week != 9 || topics[0].Version == "0" {
+		t.Fatalf("scores topic not published: %+v", topics)
+	}
 }
