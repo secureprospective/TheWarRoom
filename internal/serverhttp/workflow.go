@@ -93,6 +93,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	if raw.Mode == "read" {
 		//nolint:contextcheck // The service host owns this request context.
 		if err := admitWorkflowRead(service, raw, league); err != nil {
+			h.Requests.add(raw.Command, raw.Mode, 1, 0)
 			http.Error(w, workflowRefusalMessage, http.StatusConflict)
 			return
 		}
@@ -103,8 +104,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	if raw.Mode == "read" && raw.Command != "versions.read" && sameReadTags(tags, raw.Known) {
-		//nolint:contextcheck // The service host owns this request context.
-		h.writeUnchangedWorkflow(w, r, service, raw, league, tags)
+		h.writeUnchangedWorkflow(w, r, raw, tags)
 		return
 	}
 	data, err := h.workflowReplyData(r, service, raw, league, tags)
@@ -117,8 +117,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	}
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
 	response := WorkflowResponse{Label: location.Label, Writable: location.Writable && !pin.Missing, Football: pin.Digest, Data: data, Tags: tags}
-	//nolint:contextcheck // The service host owns this request context.
-	h.writeWorkflowResponse(w, r, service, raw, league, response)
+	h.writeWorkflowResponse(w, r, raw, response)
 }
 
 // workflowData runs a workflow, answering a league-state reading from the reply cache when it holds one.
@@ -164,26 +163,31 @@ func workflowWriteRefusal(mode string, pin LeaguePin, label string, writable boo
 	return ""
 }
 
-func (h Hosted) writeUnchangedWorkflow(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow, league string, tags *ReadTags) {
-
-	if err := admitWorkflowRead(service, raw, league); err != nil {
-		http.Error(w, "league reading refused", http.StatusForbidden)
+func (h Hosted) writeUnchangedWorkflow(w http.ResponseWriter, r *http.Request, raw RawWorkflow, tags *ReadTags) {
+	if !h.workflowSessionCurrent(w, r, raw) {
 		return
 	}
 	h.Requests.Unchanged(raw.Command, raw.Mode)
 	writeHostedReading(w, r, UnchangedResponse{true, tags})
 }
 
-func (h Hosted) writeWorkflowResponse(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow, league string, response WorkflowResponse) {
+func (h Hosted) writeWorkflowResponse(w http.ResponseWriter, r *http.Request, raw RawWorkflow, response WorkflowResponse) {
 	if raw.Mode != "read" {
 		writeHosted(w, response)
 		return
 	}
-
-	if err := admitWorkflowRead(service, raw, league); err != nil {
-		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, "league reading refused", http.StatusForbidden)
+	if !h.workflowSessionCurrent(w, r, raw) {
 		return
 	}
 	writeHostedReading(w, r, response)
+}
+
+// A credential revoked during computation must not receive a private reply. This does not
+// repeat command admission or read league records.
+func (h Hosted) workflowSessionCurrent(w http.ResponseWriter, r *http.Request, raw RawWorkflow) bool {
+	_, ok := h.authenticateNative(w, r)
+	if !ok {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
+	}
+	return ok
 }

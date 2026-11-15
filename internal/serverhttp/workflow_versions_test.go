@@ -236,7 +236,7 @@ func TestWorkflowRevocationDuringConditionalSnapshotRefuses(t *testing.T) {
 		t.Fatal(err)
 	}
 	close(release)
-	if status := <-done; status != http.StatusForbidden {
+	if status := <-done; status != http.StatusUnauthorized {
 		t.Fatalf("revoked request answered %d", status)
 	}
 }
