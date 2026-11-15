@@ -380,6 +380,27 @@ func TestLiveOverlayKeepsFootballDigestAndChecksPinnedIdentity(t *testing.T) {
 	}
 }
 
+// An MFL import's football names players by MFL id alone ("mfl.<id>"), which is no NFL identity: the
+// live line's own GSIS must not be compared against it (CT 257, 11-15: every live line was dropped).
+func TestLiveOverlayScoresMFLImportPins(t *testing.T) {
+	s := New(nil, nil)
+	pin := &PinnedFootball{digest: strings.Repeat("a", 64), raw: RawFootballEvidence{Players: map[string]RawFootballPlayer{
+		"17269": {Identity: MFLIdentityPrefix + "17269"}}}}
+	s.SetPinnedFootball(pin)
+	overlay := &LiveOverlay{}
+	s.SetLiveOverlay(overlay)
+	generation := overlayTestGeneration("first", 10000)
+	generation.Lines = map[string]source.PlayerWeek{"17269": generation.Lines["0099"]}
+	generation.Identities = map[string]LiveIdentity{"17269": {GSIS: "00-0040563"}}
+	if err := overlay.Publish(generation); err != nil {
+		t.Fatal(err)
+	}
+	scope := source.RawNativeScope{Player: "17269", Season: 2026, Week: 1}
+	if held := s.overlayEvidence(source.NativeEvidence{}, scope, s.liveSnapshot()); len(held.Versions()) != 1 {
+		t.Fatal("an MFL import pin dropped its player's live line")
+	}
+}
+
 type overlayReplayLineups map[string][]commissioner.Starter
 
 func (l overlayReplayLineups) WeekLineup(_ context.Context, _ []commissioner.Record, _, franchise string, _, _ int) (commissioner.WeekLineup, error) {
