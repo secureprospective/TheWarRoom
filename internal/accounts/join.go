@@ -188,6 +188,10 @@ func (s *JoinService) Franchises(ctx context.Context, raw RawJoin) ([]JoinFranch
 			continue
 		}
 		name, err := s.store.SignInName(ctx, id)
+		if errors.Is(err, ErrNotFound) {
+			// The seat's account is gone from this server (sign-ins reset or moved): still taken, no name.
+			continue
+		}
 		if err != nil {
 			return nil, fmt.Errorf("read claimant sign-in name: %w", err)
 		}
