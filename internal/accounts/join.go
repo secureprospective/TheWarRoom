@@ -128,6 +128,19 @@ func (s *JoinService) Release(ctx context.Context, league, franchise string, com
 	return nil
 }
 
+// Take seats the commissioner on an open franchise as its owner too, so one sign-in holds both seats.
+func (s *JoinService) Take(ctx context.Context, league, franchise string, commissioner governance.Principal) error {
+	if err := s.requireCommissioner(ctx, league, commissioner); err != nil {
+		return err
+	}
+	s.claims.Lock()
+	defer s.claims.Unlock()
+	if err := s.seats.Seat(ctx, league, franchise, commissioner, commissioner); err != nil {
+		return fmt.Errorf("take franchise: %w", err)
+	}
+	return nil
+}
+
 // RawJoin is a join link presented by its holder.
 type RawJoin struct {
 	League string `json:"league"`

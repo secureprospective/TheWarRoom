@@ -377,6 +377,7 @@ export async function readNativeHQ(
         'computed',
         'override',
         'changes',
+        'evidence',
       ]);
       sameRevision(r.data);
       if (raw.league !== league || raw.season !== season)

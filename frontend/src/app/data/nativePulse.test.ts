@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
-import { parsePulseResults } from './nativePulse';
+import { parsePulseOdds, parsePulseResults, parsePulseStandings } from './nativePulse';
+import { scoreSources } from '../shell/NativeLeaguePulse';
 
 // A week imported with its final team results carries the recorded verdict on each score.
 it('reads a week whose scores carry a recorded result', () => {
@@ -39,4 +40,27 @@ it('reads how the final stats moved a starter, and which totals are recorded one
     stats: [{ stat: 'rushing_yards', label: 'Rushing yards', was: 88, now: 94 }] });
   expect(score({}).recorded).toBe(false);
   expect(score({ recordedResult: 'W' }).recorded).toBe(true);
+});
+
+// The server labels live scores with the evidence it consulted (#246); Pulse reads it, never refuses it.
+it('reads the live-score evidence on results, standings and odds', () => {
+  const evidence = { reduced: false, stale: false, live: 'g12', season: 2026, week: 10,
+    asOf: '2026-11-15T18:00:00Z', source: 'ESPN', provisional: true,
+    sources: { espn: '2026-11-15T18:00:00Z' } };
+  const results = parsePulseResults({ league: 'native.x', season: 2026, week: 10, revision: 1,
+    published: true, words: '', games: [], missed: [], scores: [], evidence }, 'native.x', 10);
+  expect(results.evidence?.source).toBe('ESPN');
+  expect(scoreSources(results)).toBe('ESPN · provisional');
+  expect(scoreSources({ ...results, evidence: { ...results.evidence!, stale: true } }))
+    .toBe('ESPN · held · provisional');
+  expect(() => parsePulseResults({ league: 'native.x', season: 2026, week: 10, revision: 1,
+    published: true, words: '', games: [], missed: [], scores: [], evidence: { ...evidence, stale: 'no' } },
+  'native.x', 10)).toThrow('expected true or false');
+  expect(parsePulseStandings({ league: 'native.x', name: 'L', season: 2026, revision: 1, status: '',
+    words: '', through: 9, decided: 0, pending: 0, criteria: [], noData: [], computed: [], evidence },
+    'native.x', 2026).season).toBe(2026);
+  expect(parsePulseOdds({ league: 'native.x', name: 'L', season: 2026, revision: 1, status: '', words: '',
+    powerWords: '', gameWords: '', oddsWords: '', week: 10, runs: 0, seed: 0, rows: [], games: [],
+    evidence },
+  'native.x', 2026).week).toBe(10);
 });

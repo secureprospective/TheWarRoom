@@ -1,8 +1,8 @@
-import type { HostedReading } from './hostedRoom';
+import type { HostedReading, HostedLeagueReading } from './hostedRoom';
 
 // Preview targets are ledger identifiers; owners read the names from their held league view.
-export function hostedWords(reading: HostedReading | undefined, words: string): string {
-  if (!reading) return words;
+export function hostedWords(reading: HostedReading | HostedLeagueReading | undefined, words: string): string {
+  if (!reading || !('roster' in reading)) return words;
   const names = new Map<string, string>([
     ...reading.roster.franchises.map((f) => [f.value, f.label] as [string, string]),
     ...reading.roster.players.map((p) => [p.id, p.name] as [string, string]),
