@@ -146,7 +146,7 @@ func TestAgentScopeFamiliesAndExpiredRetry(t *testing.T) {
 	raw := commissioner.RawCommand{League: "native.hosted", Command: commissioner.NotePost, Args: commissioner.RawArgs{Note: &commissioner.RawNote{Text: "Expires later"}}, Request: "expiry", Expected: f.agentRevision(t, token), Effective: "now", Visibility: "league"}
 	f.postConsent(t, f.tokenWorkflow(t, token, raw, "execute"), token.Bearer, "", 200)
 	body := f.tokenWorkflow(t, token, raw, "execute")
-	f.now = f.now.Add(accounts.TokenExecuteLifetime)
+	f.advanceTime(accounts.TokenExecuteLifetime)
 	f.postConsent(t, body, token.Bearer, "", 401)
 	f.revision(t, base+1)
 }

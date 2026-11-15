@@ -67,6 +67,10 @@ func TestDesktopNativeEnrollmentAssignedFranchise(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// An unseated stream is refused, ending that session. Sign in after assignment.
+	if _, err := desktop.Act(t.Context(), request); err != nil {
+		t.Fatal(err)
+	}
 	view, err = desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
 	if err != nil || view.Franchise != "franchise.01" || view.FranchiseName != "Owner club" || view.Role != "Owner" {
 		t.Fatalf("assigned franchise: %+v %v", view, err)
@@ -102,7 +106,7 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.now = f.now.Add(accounts.EnrollmentLifetime)
+	f.advanceTime(accounts.EnrollmentLifetime)
 	if _, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enroll", Username: "late.owner", Password: "owner-password", Code: code.Code}); err == nil || !strings.Contains(err.Error(), "personally handed") {
 		t.Fatalf("expired invite: %v", err)
 	}
@@ -124,7 +128,7 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 	if err != nil || setup.Seed == "" {
 		t.Fatalf("setup: %v", err)
 	}
-	credentials.Action, credentials.Code = "totp-confirm", testTOTP(t, setup.Seed, f.now)
+	credentials.Action, credentials.Code = "totp-confirm", testTOTP(t, setup.Seed, f.clockTime())
 	if _, err := desktop.Act(t.Context(), credentials); err != nil {
 		t.Fatal(err)
 	}
@@ -136,8 +140,8 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 	if _, err := desktop.Act(t.Context(), credentials); err == nil || !strings.Contains(err.Error(), "fresh code") {
 		t.Fatalf("replay recovery: %v", err)
 	}
-	f.now = f.now.Add(30 * time.Second)
-	credentials.Code = testTOTP(t, setup.Seed, f.now)
+	f.advanceTime(30 * time.Second)
+	credentials.Code = testTOTP(t, setup.Seed, f.clockTime())
 	if _, err := desktop.Act(t.Context(), credentials); err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +149,7 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 	if err != nil || view.Name != "Hosted test" {
 		t.Fatalf("privileged entry: %+v %v", view, err)
 	}
-	f.now = f.now.Add(accounts.RecentAuthLifetime)
+	f.advanceTime(accounts.RecentAuthLifetime)
 	if _, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "enter"}); err == nil {
 		t.Fatal("expired recent auth admitted")
 	}

@@ -31,8 +31,22 @@ type NativeGame struct {
 	Why             []string             `json:"why"`
 }
 
+// ScoreEvidence describes the live generation consulted, not certification of a complete result.
+type ScoreEvidence struct {
+	Sources     map[string]time.Time `json:"sources,omitempty"`
+	Reduced     bool                 `json:"reduced"`
+	Stale       bool                 `json:"stale"`
+	Live        string               `json:"live"`
+	Season      int                  `json:"season"`
+	Week        int                  `json:"week"`
+	AsOf        time.Time            `json:"asOf"`
+	Source      string               `json:"source"`
+	Provisional bool                 `json:"provisional"`
+}
+
 // NativeResults is one week of the published schedule scored under the league's own rules.
 type NativeResults struct {
+	Evidence  *ScoreEvidence       `json:"evidence,omitempty"`
 	League    string               `json:"league"`
 	Season    int                  `json:"season"`
 	Week      int                  `json:"week"`

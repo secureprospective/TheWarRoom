@@ -125,3 +125,67 @@ Promise<HostedResponse | TaggedReply<unknown>> {
     football: text(r.football, 'Football evidence'), data: r.data, ...(tags ? { tags } : {}),
   };
 }
+
+export type ChangeTopic = {
+  kind: 'league' | 'team' | 'scores' | 'values' | 'clock'; version: string;
+  franchise?: string; season?: number; week?: number; run?: string; nextBoundary?: string;
+};
+export type NativeChanges = {
+  seq: number; topics: ChangeTopic[]; state: 'connected' | 'reconnecting' | 'signed-out' | 'refused';
+  serverEpoch?: string; league?: string;
+};
+function parseChanges(raw: unknown): NativeChanges {
+  const r = object(raw, 'Desktop changes', ['seq', 'topics', 'state', 'serverEpoch', 'league']);
+  if (!Number.isSafeInteger(r.seq) || Number(r.seq) < 0 || !Array.isArray(r.topics)
+    || !['connected', 'reconnecting', 'signed-out', 'refused'].includes(String(r.state)))
+    throw new Error('Unreadable desktop changes.');
+  for (const topic of r.topics) {
+    const t = object(topic, 'Change topic',
+      ['kind', 'version', 'franchise', 'season', 'week', 'run', 'nextBoundary']);
+    if (!['league', 'team', 'scores', 'values', 'clock'].includes(String(t.kind))
+      || typeof t.version !== 'string' || !/^\d+$/.test(t.version))
+      throw new Error('Unreadable change topic.');
+    for (const key of ['franchise', 'run', 'nextBoundary']) {
+      if (key in t && typeof t[key] !== 'string') throw new Error('Unreadable topic scope.');
+    }
+    for (const key of ['season', 'week']) {
+      if (key in t && (!Number.isSafeInteger(t[key]) || Number(t[key]) < 1))
+        throw new Error('Unreadable topic scope.');
+    }
+    if ((t.kind === 'team' && !t.franchise)
+      || (t.kind === 'scores' && (!t.season || !t.week))
+      || (t.kind === 'values' && (!t.season || !t.run))) throw new Error('Missing topic scope.');
+  }
+  for (const key of ['serverEpoch', 'league']) {
+    if (key in r && typeof r[key] !== 'string') throw new Error('Unreadable change identity.');
+  }
+  return r as NativeChanges;
+}
+
+// The read owner subscribes once, invalidates first, then notifies its screen listeners.
+export function subscribeChanged(listener: (change: NativeChanges) => void): () => void {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let after = 0;
+  let backoff = 250;
+  async function poll(): Promise<void> {
+    try {
+      const response = await fetch('/desktop/changes', {
+        method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ after }), signal: controller.signal,
+      });
+      if (!response.ok) throw new Error('Desktop changes unavailable.');
+      const change = parseChanges(await response.json());
+      if (controller.signal.aborted) return;
+      if (change.seq > after) { after = change.seq; listener(change); }
+      backoff = 250;
+      timer = setTimeout(() => { void poll(); }, 0);
+    } catch {
+      if (controller.signal.aborted) return;
+      timer = setTimeout(() => { void poll(); }, backoff);
+      backoff = Math.min(backoff * 2, 30_000);
+    }
+  }
+  void poll();
+  return () => { controller.abort(); clearTimeout(timer); };
+}

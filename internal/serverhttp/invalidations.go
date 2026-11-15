@@ -2,9 +2,11 @@ package serverhttp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand/v2"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -120,7 +122,7 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 		news, unsubscribe := watch.subscribe(league) //nolint:contextcheck // the watcher outlives any one request
 
 		defer unsubscribe()
-		h.streamRecipientInvalidations(w, r, service, league, device, head, reading.Revision, news, proofLapse(lifetime, limited))
+		h.streamRecipientInvalidations(w, r, service, league, device, head, reading.Revision, news, proofLapse(lifetime, limited), gate.host.Principal)
 	})
 }
 
@@ -133,8 +135,10 @@ func proofLapse(lifetime time.Duration, limited bool) <-chan time.Time {
 	return time.NewTimer(lifetime).C
 }
 
-func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, league, device string, head, revision int64, news <-chan headNews, lapse <-chan time.Time) {
+func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, league, device string, head, revision int64, news <-chan headNews, lapse <-chan time.Time, account string) {
 	w.Header().Set("Content-Type", "text/event-stream")
+	public, unsubscribe := h.Publisher.subscribe(league)
+	defer unsubscribe()
 	controller := http.NewResponseController(w)
 	poll := invalidationPoll{head: head, revision: revision,
 		deadline: func(ctx context.Context) (time.Time, time.Time, bool) {
@@ -148,11 +152,24 @@ func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Requ
 			return service.TargetCommissionerLedger(league)
 		},
 	}
+	var previous []TopicVersion
+	poll.emit = func() error {
+		h.Publisher.ObserveView(account, league, poll.revision)
+		if r.Header.Get("X-TWR-Invalidation") != "2" {
+			return emitInvalidation(controller, w)
+		}
+		message := h.Publisher.Versions(account, league)
+		current := message.Topics
+		message.Topics = changedTopics(previous, current)
+		previous = current
+		return emitTopicInvalidation(controller, w, message)
+	}
+	poll.clock = func(passed, next time.Time) { h.Publisher.clockBoundary(league, passed, next) }
 	// The deadline is taken before the first wake, so a deadline right after it still wakes the device.
 	if next, _, ok := poll.deadline(r.Context()); ok {
 		poll.next = next
 	}
-	if emitInvalidation(controller, w) != nil {
+	if poll.emit() != nil {
 		return
 	}
 	checkSession := func(ctx context.Context) error {
@@ -162,7 +179,7 @@ func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Requ
 		}
 		return nil
 	}
-	streamInvalidations(r.Context(), controller, w, streamWakes{news: news, lapse: lapse, session: sessionCheckEvery}, &poll, checkSession)
+	streamInvalidations(r.Context(), controller, w, streamWakes{news: news, public: public, lapse: lapse, session: sessionCheckEvery}, &poll, checkSession)
 }
 
 // The global head is only a work gate; the authorized recipient token alone wakes peers.
@@ -171,6 +188,8 @@ func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Requ
 // public deadlines and kickoffs wake anyone: a private entry's time never does.
 type invalidationPoll struct {
 	head, revision int64
+	emit           func() error
+	clock          func(time.Time, time.Time)
 	read           func(context.Context) (commissioner.Ledger, error)
 	deadline       func(context.Context) (next, now time.Time, ok bool)
 	now            func() time.Time
@@ -190,6 +209,9 @@ func (p *invalidationPoll) changed(ctx context.Context, head int64) (bool, error
 		}
 	}
 	if head == p.head {
+		if epochPassed && p.clock != nil {
+			p.clock(p.next, next)
+		}
 		p.next = next
 		return epochPassed, nil
 	}
@@ -198,6 +220,9 @@ func (p *invalidationPoll) changed(ctx context.Context, head int64) (bool, error
 		return false, fmt.Errorf("poll recipient view: %w", err)
 	}
 	changed := reading.Revision != p.revision || epochPassed
+	if epochPassed && p.clock != nil {
+		p.clock(p.next, next)
+	}
 	p.head, p.revision = head, reading.Revision
 	p.next = next
 	return changed, nil
@@ -224,7 +249,13 @@ func (p *invalidationPoll) arm(timer *time.Timer) {
 func (p *invalidationPoll) wake(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, deadline *time.Timer, head int64) bool {
 	changed, err := p.changed(ctx, head)
 	p.arm(deadline)
-	return err == nil && (!changed || emitInvalidation(controller, w) == nil)
+	if err != nil || !changed {
+		return err == nil
+	}
+	if p.emit != nil {
+		return p.emit() == nil
+	}
+	return emitInvalidation(controller, w) == nil
 }
 
 // headPollEvery is the league watcher's cadence; one read per league, whatever the device count.
@@ -238,6 +269,7 @@ func sessionCheckEvery() time.Duration { return 2*time.Second + rand.N(2*time.Se
 // recent-auth lapse and the session check cadence.
 type streamWakes struct {
 	news    <-chan headNews
+	public  <-chan struct{}
 	lapse   <-chan time.Time
 	session func() time.Duration
 }
@@ -262,6 +294,10 @@ func streamInvalidations(ctx context.Context, controller *http.ResponseControlle
 			if !headWake(ctx, news, poll.head, checkSession) || !wake(news.head) {
 				return
 			}
+		case <-wakes.public:
+			if !poll.publicWake(ctx, checkSession) {
+				return
+			}
 		case <-deadline.C:
 			if !wake(poll.head) {
 				return
@@ -272,7 +308,7 @@ func streamInvalidations(ctx context.Context, controller *http.ResponseControlle
 			}
 			session.Reset(wakes.session())
 		case <-heartbeat.C:
-			if !wake(poll.head) || keepalive(controller, w) != nil {
+			if !poll.heartbeat(ctx, controller, w, deadline) {
 				return
 			}
 		}
@@ -341,5 +377,58 @@ func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request, leag
 
 func validInvalidationRequest(r *http.Request) bool {
 	raw := RawNativeRequest{Protocol: 1, League: r.Header.Get("X-TWR-League")}
-	return r.TLS != nil && r.Method == http.MethodGet && r.ContentLength == 0 && r.Header.Get("Origin") == "" && r.URL.RawQuery == "" && raw.Validate() == nil
+	version := r.Header.Get("X-TWR-Invalidation")
+	return (version == "" || version == "2") && len(r.Header.Values("X-TWR-Invalidation")) <= 1 && r.TLS != nil && r.Method == http.MethodGet && r.ContentLength == 0 && r.Header.Get("Origin") == "" && r.URL.RawQuery == "" && raw.Validate() == nil
+}
+
+func emitTopicInvalidation(controller *http.ResponseController, w http.ResponseWriter, message Invalidation) error {
+	body, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("encode invalidation: %w", err)
+	}
+	// Preserve the existing client scanner bound. Empty topics request a full authorized resync.
+	if len(body) > 4000 {
+		message.Topics = []TopicVersion{}
+		body, err = json.Marshal(message)
+		if err != nil {
+			return fmt.Errorf("encode broad invalidation: %w", err)
+		}
+	}
+	if err := controller.SetWriteDeadline(time.Now().Add(500 * time.Millisecond)); err != nil {
+		return fmt.Errorf("stream deadline: %w", err)
+	}
+	if _, err := fmt.Fprintf(w, "event: invalidate\ndata: %s\n\n", body); err != nil {
+		return fmt.Errorf("stream invalidation: %w", err)
+	}
+	if err := controller.Flush(); err != nil {
+		return fmt.Errorf("flush invalidation: %w", err)
+	}
+	return nil
+}
+
+func changedTopics(previous, current []TopicVersion) []TopicVersion {
+	changed := []TopicVersion{}
+	for _, topic := range current {
+		if !slices.Contains(previous, topic) {
+			changed = append(changed, topic)
+		}
+	}
+	return changed
+}
+
+func (p *invalidationPoll) publicWake(ctx context.Context, checkSession func(context.Context) error) bool {
+	if checkSession(ctx) != nil {
+		return false
+	}
+	// Read admission again: a public publication cannot grant private access.
+	reading, err := p.read(ctx)
+	if err != nil {
+		return false
+	}
+	p.revision = reading.Revision
+	return p.emit == nil || p.emit() == nil
+}
+
+func (p *invalidationPoll) heartbeat(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, deadline *time.Timer) bool {
+	return p.wake(ctx, controller, w, deadline, p.head) && keepalive(controller, w) == nil
 }

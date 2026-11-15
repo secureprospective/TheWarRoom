@@ -63,20 +63,21 @@ type OddsGame struct {
 // NativeOdds is win chance, power and playoff odds from the league's own results, schedule, rosters and
 // values. Each part says in its words why it is missing; one missing part never blanks the others.
 type NativeOdds struct {
-	League     string     `json:"league"`
-	Name       string     `json:"name"`
-	Season     int        `json:"season"`
-	Revision   int64      `json:"revision"`
-	Status     string     `json:"status"`
-	Words      string     `json:"words"`
-	PowerWords string     `json:"powerWords"`
-	GameWords  string     `json:"gameWords"`
-	OddsWords  string     `json:"oddsWords"`
-	Week       int        `json:"week"`
-	Runs       int        `json:"runs"`
-	Seed       uint64     `json:"seed"` // every simulated score and coin flip is drawn from this recorded seed
-	Rows       []OddsRow  `json:"rows"`
-	Games      []OddsGame `json:"games"`
+	Evidence   *ScoreEvidence `json:"evidence,omitempty"`
+	League     string         `json:"league"`
+	Name       string         `json:"name"`
+	Season     int            `json:"season"`
+	Revision   int64          `json:"revision"`
+	Status     string         `json:"status"`
+	Words      string         `json:"words"`
+	PowerWords string         `json:"powerWords"`
+	GameWords  string         `json:"gameWords"`
+	OddsWords  string         `json:"oddsWords"`
+	Week       int            `json:"week"`
+	Runs       int            `json:"runs"`
+	Seed       uint64         `json:"seed"` // every simulated score and coin flip is drawn from this recorded seed
+	Rows       []OddsRow      `json:"rows"`
+	Games      []OddsGame     `json:"games"`
 }
 
 // NativeOddsReading reads the standings and the playoff rules the bracket uses, then wires the existing power

@@ -284,7 +284,7 @@ func TestSSEHiddenBidHasNoActivityCursor(t *testing.T) {
 func TestSSEPrivilegedStreamClosesWhenProofLapses(t *testing.T) {
 	f := newHostedFixture(t)
 	bearer, proof := f.directCommissioner(t)
-	f.now = f.now.Add(accounts.RecentAuthLifetime - 300*time.Millisecond)
+	f.advanceTime(accounts.RecentAuthLifetime - 300*time.Millisecond)
 	response := openStream(t, f, bearer, proof, 200)
 	defer response.Body.Close()
 	events := streamEvents(response)

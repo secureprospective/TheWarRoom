@@ -64,7 +64,7 @@ func (r RawState) Validate() error {
 		if _, err := referenceID(r.Team.Ref, "teams"); err != nil {
 			return err
 		}
-	case r.Team.ID == "" && *r.Down == 0 && *r.Distance == 0 && *r.YardLine == 0 && *r.ToEndzone == 0:
+	case r.Team.ID == "" && *r.Down == 0:
 		return nil
 	case !digits(r.Team.ID):
 		return fmt.Errorf("team.id: invalid")

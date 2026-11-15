@@ -303,3 +303,32 @@ twr-server reset-password -db … -league LEAGUE -team franchise.07   < commissi
 The password page `/password` changes a password with the current one at
 `/v1/auth/password/change`; every device session issued before the change stops working.
 Tests: `go test ./internal/serverhttp -run 'TestJoin|TestPassword'`, `go test ./cmd/twr-server -run TestResetPassword`.
+
+### Provisional live scores
+
+Hosted startup owns one serial ESPN/Sleeper collector, sharing `now.LiveStatsPoller` with the legacy
+collector without constructing the local App. It polls the current regular-season scoreboard every minute
+while a game is live, otherwise every five minutes, with ten-second requests and a ninety-second poll
+budget. Finished summaries retain the existing ten-minute reread policy. Identity matching uses the
+shared directory and verifies the league's pinned GSIS/Sleeper identities; unknown identities stay missing.
+
+The current-week overlay is detached and atomically published after a durable checkpoint. Results,
+standings and odds capture its identity before single-flight selection and score against that same view.
+Score-bearing replies include `evidence.live`, `asOf`, source packet timestamps, and provisional/reduced/stale
+labels. Existing `NativeGame` provisional totals are not final results. NFLverse fields already in a pin
+win per field; a live fill remains provisional. A score tick never changes the football pin digest.
+
+`live-scores/checkpoint.json` beside the server file retains raw packets, SHA-256 digests, source instants
+and the identity mapping used. Restart verifies these and repeats normal parsing/merging without network
+or rewriting the checkpoint. One checkpoint plus its replacement is retained, not historical chronology.
+Limits: 20 packets, 4 MiB each, 64 MiB raw total, 96 MiB encoded checkpoint; 6,000 decoded player lines,
+16 MiB encoded overlay, 300 fields per kind and 1,000 events per field. An oversized or invalid candidate
+keeps the previous readable generation/checkpoint. Feed outages can retain prior packets with their
+original timestamps and mark the snapshot reduced; unrecoverable acquisition or durability failure leaves
+the last good generation readable. Decoded legacy chronology is neither populated nor rewritten by this path.
+
+**Not deployment-complete:** `scoresPublisher.PublishScores` is the L5 integration seam, currently passed
+as nil at hosted startup (logged explicitly). No second topic owner exists here. Connect the actual L5
+publisher before claiming client invalidation support. Official nflverse finals acquisition is later;
+ESPN final-whistle packets still produce provisional scores. C5 should use the returned reading's
+`evidence.live`, not sample `Store.LiveEpoch()` after scoring.
