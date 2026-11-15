@@ -48,12 +48,12 @@ func TestDesktopConnectsConfirmsAndRevokesAnAIHelper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	credentials.Action, credentials.Code = "totp-confirm", testTOTP(t, setup.Seed, f.now)
+	credentials.Action, credentials.Code = "totp-confirm", testTOTP(t, setup.Seed, f.clockTime())
 	if _, err := desktop.Act(t.Context(), credentials); err != nil {
 		t.Fatal(err)
 	}
-	f.now = f.now.Add(30 * time.Second)
-	credentials.Action, credentials.Code = "totp-step-up", testTOTP(t, setup.Seed, f.now)
+	f.advanceTime(30 * time.Second)
+	credentials.Action, credentials.Code = "totp-step-up", testTOTP(t, setup.Seed, f.clockTime())
 	if _, err := desktop.Act(t.Context(), credentials); err != nil {
 		t.Fatal(err)
 	}

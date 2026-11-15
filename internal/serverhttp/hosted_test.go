@@ -35,6 +35,7 @@ import (
 
 type hostedFixture struct {
 	publisher *serverhttp.Publisher
+	tally     *serverhttp.RequestTally
 	pools     *db.Pools
 	server    *httptest.Server
 	// fresh is the same server with no reply cache, sharing every store: the cache's parity reference.
@@ -46,7 +47,7 @@ type hostedFixture struct {
 	tokens     *accounts.TokenService
 	totp       *accounts.TOTPService
 	principal  string
-	now        time.Time
+	now        *atomic.Int64
 	worker     *leagueservice.DueWorker
 	skew       *atomic.Int64
 	// footballGone makes the hosted league's pinned football missing, as after a restore whose football
@@ -55,6 +56,14 @@ type hostedFixture struct {
 	// commissioner caches one signed-in bearer and recent-auth proof (contract_parity_test.go).
 	commissioner [2]string
 	join         *accounts.JoinService
+}
+
+func (f *hostedFixture) clockTime() time.Time {
+	return time.Unix(0, f.now.Load()).UTC()
+}
+
+func (f *hostedFixture) advanceTime(delta time.Duration) {
+	f.now.Add(int64(delta))
 }
 
 func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
@@ -98,9 +107,10 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &hostedFixture{history: store, pools: pools, accounts: credentials, principal: string(principal), now: time.Now().UTC(), skew: &atomic.Int64{}, footballGone: &atomic.Bool{}}
+	f := &hostedFixture{history: store, pools: pools, accounts: credentials, principal: string(principal), now: &atomic.Int64{}, skew: &atomic.Int64{}, footballGone: &atomic.Bool{}}
+	f.now.Store(time.Now().UTC().UnixNano())
 	store.SetClock(func() time.Time { return time.Now().Add(time.Duration(f.skew.Load())) })
-	credentials.SetClock(func() time.Time { return f.now })
+	credentials.SetClock(func() time.Time { return f.clockTime() })
 	f.sessions, f.totp = accounts.NewSessions(passwords, credentials), totp
 	f.enrollment = accounts.NewEnrollment(credentials, enrollmentAuthority{policy: policy, principal: principal})
 	worker := leagueservice.NewDueWorker(history.NewOneFile(store), func() nativecheck.Facts { return nil }, nil)
@@ -134,6 +144,8 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	f.fresh = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.fresh.Close)
 	handler.Replies = serverhttp.NewReplyCache(64 << 20)
+	f.tally = serverhttp.NewRequestTally()
+	handler.Requests = f.tally
 	f.server = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.server.Close)
 	return f
@@ -200,11 +212,11 @@ func (f *hostedFixture) directCommissioner(t *testing.T) (bearer, proof string) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.totp.Confirm(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.now)}); err != nil {
+	if err := f.totp.Confirm(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.clockTime())}); err != nil {
 		t.Fatal(err)
 	}
-	f.now = f.now.Add(30 * time.Second)
-	recent, err := f.totp.StepUp(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.now)})
+	f.advanceTime(30 * time.Second)
+	recent, err := f.totp.StepUp(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.clockTime())})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,11 +263,11 @@ func (f *hostedFixture) privilegedProof(t *testing.T) string {
 		t.Fatal(err)
 	}
 	withCode := func() string {
-		return strings.TrimSuffix(body, "}") + `,"code":"` + testTOTP(t, setup.Seed, f.now) + `"}`
+		return strings.TrimSuffix(body, "}") + `,"code":"` + testTOTP(t, setup.Seed, f.clockTime()) + `"}`
 	}
 	f.post(t, serverhttp.TOTPConfirmPath, withCode(), "", "", 200)
 	f.post(t, serverhttp.TOTPStepUpPath, withCode(), "", "", 403)
-	f.now = f.now.Add(30 * time.Second)
+	f.advanceTime(30 * time.Second)
 	proofBody := f.post(t, serverhttp.TOTPStepUpPath, withCode(), "", "", 200)
 	var proof serverhttp.AuthenticatorResponse
 	if err := json.Unmarshal(proofBody, &proof); err != nil || proof.RecentAuth == "" {
@@ -284,7 +296,7 @@ func TestHostedHTTPSQueuedRevocation(t *testing.T) {
 	bearer, proof := f.directCommissioner(t)
 	// Activity refreshes at most once a minute, so move the stored last_used past that guard:
 	// the request's authenticated read is what this test waits on before revoking.
-	f.now = f.now.Add(2 * time.Minute)
+	f.advanceTime(2 * time.Minute)
 	digest := sha256.Sum256([]byte(bearer))
 	tokenHash := hex.EncodeToString(digest[:])
 	reader, writer := io.Pipe()
@@ -313,7 +325,7 @@ func TestHostedHTTPSQueuedRevocation(t *testing.T) {
 	waitFor(t, func() bool {
 		var used int64
 		err := f.pools.Read().QueryRowContext(t.Context(), `SELECT last_used_at FROM account_sessions WHERE token_hash = ?`, tokenHash).Scan(&used)
-		return err == nil && used == f.now.UnixNano()
+		return err == nil && used == f.clockTime().UnixNano()
 	})
 	tx, err := f.pools.Write().BeginTx(t.Context(), nil)
 	if err != nil {

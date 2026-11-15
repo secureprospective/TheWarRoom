@@ -20,7 +20,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
-	"github.com/secureprospective/TheWarRoom/internal/serverstatus"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -98,7 +97,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 		return err
 	}
 	defer stopBackup()
-	var routes []serverstatus.Route
+	routes := requestRoutes(handler.Requests)
 	if pins, ok := handler.Leagues.(*leaguePins); ok {
 		routes = append(routes, pinRoute(pins, signInStore(files)))
 	}
@@ -347,8 +346,8 @@ func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte,
 	handler := serverhttp.Hosted{Publisher: serverhttp.NewPublisher(), Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Leagues: leagues}), Confirmations: confirmations, Store: family, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Passwords: passwords, Worker: worker, Registry: catalogue,
-		Join:    accounts.NewJoin(credentials, leagueservice.JoinSeats{Leagues: leagues}, work),
-		Replies: serverhttp.NewReplyCache(replyCacheBytes)}
+		Join:     accounts.NewJoin(credentials, leagueservice.JoinSeats{Leagues: leagues}, work),
+		Requests: serverhttp.NewRequestTally(), Replies: serverhttp.NewReplyCache(replyCacheBytes)}
 	if err := stampRelease(ctx, files); err != nil {
 		return serverhttp.Hosted{}, err
 	}
