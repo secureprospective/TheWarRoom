@@ -171,6 +171,7 @@ func (r RawLiveSleeperStats) Convert() (fantasyscore.StatLine, error) {
 		}
 	}
 	fillSleeperBands(r, &line)
+	fillSleeperLongReceptions(r, &line)
 	leaguerules.DropTotals(line.Quantities)
 
 	return line, nil
@@ -255,4 +256,41 @@ func sleeperBinsReconcile(r RawLiveSleeperStats, total string) bool {
 		sum += value
 	}
 	return sum == want
+}
+
+// fillSleeperLongReceptions counts the catches of 20 yards or more (MFL C20), which no field states directly.
+// Sleeper omits empty bins, so the bins count only when they add up to the receptions; a longest catch
+// under 20 (or 40) yards proves there were none that long.
+func fillSleeperLongReceptions(r RawLiveSleeperStats, line *fantasyscore.StatLine) {
+	value := func(key string) (leaguerules.Decimal, bool) {
+		number, ok := r[key]
+		if !ok {
+			return 0, false
+		}
+		v, err := decimal(number.String())
+		return v, err == nil && v >= 0
+	}
+	if receptions, ok := value("rec"); ok {
+		var all, long leaguerules.Decimal
+		// Sleeper's receptions by gain; the last three are the catches of 20 yards or more.
+		for i, key := range []string{"rec_0_4", "rec_5_9", "rec_10_19", "rec_20_29", "rec_30_39", "rec_40p"} {
+			v, _ := value(key)
+			all += v
+			if i >= 3 {
+				long += v
+			}
+		}
+		if all == receptions {
+			line.Quantities["long_reception_20"] = long
+			return
+		}
+	}
+	if longest, ok := value("rec_lng"); ok {
+		if longest < 200000 {
+			line.Quantities["long_reception_20"] = 0
+		}
+		if _, held := line.Quantities["long_reception_40"]; !held && longest < 400000 {
+			line.Quantities["long_reception_40"] = 0
+		}
+	}
 }

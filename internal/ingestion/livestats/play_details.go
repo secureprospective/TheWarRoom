@@ -2,6 +2,7 @@ package livestats
 
 import (
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -26,7 +27,12 @@ func attachPlayDetails(game livegame.Game, lines map[string]*Line) {
 			leaguerules.Decimal(len(events["fg_made_distance"])+len(events["fg_missed_distance"]))*10000 != attempts {
 			continue
 		}
-		line.Stats.Events = events
+		if line.Stats.Events == nil {
+			line.Stats.Events = map[leaguerules.StatID][]leaguerules.Decimal{}
+		}
+		for id, distances := range events {
+			line.Stats.Events[id] = distances
+		}
 		for _, id := range []leaguerules.StatID{"fg_made_0_39", "fg_made_40_49", "fg_made_50_59", "fg_made_60_99", "fg_missed_0_29", "fg_missed_30_99"} {
 			line.Stats.Quantities[id] = 0
 		}
@@ -37,6 +43,8 @@ func attachPlayDetails(game livegame.Game, lines map[string]*Line) {
 		}
 	}
 	attachRecoveryTDs(game, lines)
+	attachLongGains(game, lines)
+	attachFumbleRecoveries(game, lines)
 }
 
 func kickBand(id leaguerules.StatID, distance leaguerules.Decimal) leaguerules.StatID {
@@ -62,6 +70,9 @@ func uniquePlayName(lines map[string]*Line, name, team string) *Line {
 	var found *Line
 	for _, line := range lines {
 		parts := strings.Fields(line.Name)
+		parts = slices.DeleteFunc(parts, func(part string) bool {
+			return slices.Contains([]string{"Jr.", "Sr.", "II", "III", "IV", "V"}, part)
+		})
 		if len(parts) < 2 || (team != "" && line.Team != team) {
 			continue
 		}

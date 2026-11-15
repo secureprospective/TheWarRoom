@@ -67,3 +67,30 @@ func TestLiveSleeperAllowsNegativeYardageAverages(t *testing.T) {
 		t.Fatal("negative count accepted")
 	}
 }
+
+// Isaiah Likely, week 10 2026: nine catches, one of 66 yards. MFL scored C20 and C40; the live line had only C40.
+func TestLiveSleeperCountsLongReceptions(t *testing.T) {
+	for _, tc := range []struct {
+		name, body string
+		want20     leaguerules.Decimal
+		present20  bool
+		want40     leaguerules.Decimal
+	}{
+		{"reconciled bins", `{"rec":9,"rec_5_9":6,"rec_10_19":2,"rec_40p":1,"rec_lng":66}`, 10000, true, 10000},
+		{"two long catches", `{"rec":3,"rec_0_4":1,"rec_20_29":1,"rec_30_39":1,"rec_lng":31}`, 20000, true, 0},
+		{"no bins, short longest", `{"rec":4,"rec_lng":13}`, 0, true, 0},
+		{"no bins, long longest", `{"rec":4,"rec_lng":25}`, 0, false, 0},
+	} {
+		rows, err := source.LiveSleeperLines(source.RawSleeperWeek{Season: 2026, Week: 10, Body: `{"1":` + tc.body + `}`})
+		if err != nil {
+			t.Fatal(tc.name, err)
+		}
+		q := rows["1"].Quantities
+		if got, ok := q["long_reception_20"]; ok != tc.present20 || got != tc.want20 {
+			t.Errorf("%s: long_reception_20 %d present %v, want %d present %v", tc.name, got, ok, tc.want20, tc.present20)
+		}
+		if got := q["long_reception_40"]; got != tc.want40 {
+			t.Errorf("%s: long_reception_40 %d, want %d", tc.name, got, tc.want40)
+		}
+	}
+}
