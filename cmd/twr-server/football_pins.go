@@ -176,6 +176,15 @@ func (p *leaguePins) missingLeagues() []string {
 // cannot yet cover is refused; only then is the league's next request served with the new pin.
 // Evidence the reference file does not hold is refused and nothing changes.
 func (p *leaguePins) setPin(ctx context.Context, signIns *accountstore.Store, league, digest string) error {
+	return p.swapPin(ctx, signIns, league, digest, nil)
+}
+
+// advancePin is setPin only while league is still pinned to from: a pin someone chose meanwhile wins.
+func (p *leaguePins) advancePin(ctx context.Context, signIns *accountstore.Store, league, from, digest string) error {
+	return p.swapPin(ctx, signIns, league, digest, &from)
+}
+
+func (p *leaguePins) swapPin(ctx context.Context, signIns *accountstore.Store, league, digest string, from *string) error {
 	base, ok := p.files.store(league)
 	if !ok {
 		return fmt.Errorf("league %s is not on this server; nothing was changed", league)
@@ -192,6 +201,9 @@ func (p *leaguePins) setPin(ctx context.Context, signIns *accountstore.Store, le
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if from != nil && p.digestLocked(league) != *from {
+		return fmt.Errorf("league %s was pinned to other football evidence meanwhile; nothing was changed", league)
+	}
 	if err := signIns.PinFootball(ctx, league, digest); err != nil {
 		return fmt.Errorf("pin football: %w", err)
 	}

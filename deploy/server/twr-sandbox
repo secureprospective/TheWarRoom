@@ -11,6 +11,10 @@ if [ "$#" = 0 ]; then
   if [ -s /etc/twr/football.sha256 ]; then
     set -- "$@" -football "$(head -c 64 /etc/twr/football.sha256)"
   fi
+  # The operator turns on official statistics (twr-server README, "Official statistics") with this file.
+  if [ -e /etc/twr/official-stats ]; then
+    set -- "$@" -official-stats
+  fi
 fi
 exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop ALL \
   --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind /bin /bin \

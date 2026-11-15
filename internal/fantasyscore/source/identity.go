@@ -85,7 +85,7 @@ func ReadNativeEvidence(ctx context.Context, identity IdentityPort, stats StatPo
 	} else {
 		// The directory holds a few pre-GSIS ids (e.g. THO581952) in the gsis slot. No statistics file
 		// can match one, so it reads as no identity: one bad link must not stop the whole league's week.
-		if !isGSIS(gsis) {
+		if !IsGSIS(gsis) {
 			out.Missing = append(out.Missing, "This player has no matching NFL statistics identity")
 			return out, nil
 		}

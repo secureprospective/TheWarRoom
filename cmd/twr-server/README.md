@@ -334,13 +334,38 @@ same acquisition, only once every game on it is final, into `live-scores/finishe
 publishes it beside the current week (`LiveOverlay.PublishClosed`). It is read when missing and reread
 every 6 hours until the current week's first kickoff (stat corrections), never more often than every
 5 minutes. Restart replays every `finished-*.json` without the network. A finished week's scores stay
-provisional (not official nflverse finals) but never read stale. Each week's cached scores are keyed to
+provisional until official statistics hold it (below) but never read stale. Each week's cached scores are keyed to
 that week's own generation, so a current-week tick no longer clears finished weeks' cached scores. A
 server started mid-season holds only the week before the current one; earlier weeks need their own read.
 
 **Score notifications:** hosted startup passes the server's one shared `serverhttp.Publisher` to the
 collector. After each new live generation is readable, `PublishScores` bumps that week's `scores` topic
 for every league, so open change streams hear about it. No second topic owner exists here.
-Official nflverse finals acquisition is later;
-ESPN final-whistle packets still produce provisional scores. C5 should use the returned reading's
-`evidence.live`, not sample `Store.LiveEpoch()` after scoring.
+ESPN final-whistle packets produce provisional scores; a week gets results from official statistics
+(below). C5 should use the returned reading's `evidence.live`, not sample `Store.LiveEpoch()` after scoring.
+
+### Official statistics
+
+Live scores never become results, so a week played after a league moved to the server gets its results
+only from official statistics. With `-official-stats` (the launcher adds it when `/etc/twr/official-stats`
+exists) the server reads nflverse's `stats_player_week_SEASON.csv.gz`, `play_by_play_SEASON.csv.gz` and
+`players.csv` two minutes after start and then every three hours. For each league pinned to that season it
+builds new football evidence (`history.PinOfficialStats`) and pins the league to it (`advancePin`: only while
+the league is still on the pin it read, so a pin chosen meanwhile wins). The log says
+`server official stats LEAGUE: pinned DIGEST with official weeks [...]` and why any week is not yet official.
+
+- A regular-season week is official once every game the pin's schedule lists has an `END GAME` play, every
+  such game appears in the weekly statistics, and six hours have passed since its last kickoff. A
+  postponed or cancelled game keeps its week provisional.
+- Each re-pin adds one statistic revision holding only the week parts that are new or changed (a stat
+  correction) and keeps every earlier revision, so a version the commissioner approved stays held. Week parts
+  dedupe by digest; nothing changes when there is no new week, correction or identity.
+- In an official week an identified player the statistics do not list has a final line of no statistics
+  (he recorded nothing); a player with no NFL identity stays unscored. The live overlay is not applied to an
+  official week.
+- A player the MFL import names by MFL id alone takes the directory's GSIS id; when the directory has none or
+  only an old pre-GSIS id, the one player in `players.csv` with his name, a matching position group and a
+  season in the last two takes it. Two candidates, or an id another player holds, give nobody it.
+
+Without the flag nothing is fetched and pins change only through `pin-football`.
+Tests: `go test ./internal/store/history -run 'TestOfficial|TestUnfinished|TestRoster'`.

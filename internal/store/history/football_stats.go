@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // RawFootballStats embeds the exact source bodies, newest revision first. Keeping
@@ -70,8 +72,8 @@ func (r RawFootballEvidence) scoringFiles(parts partSource) ([]heldFile, error) 
 	}
 	if len(files) != 0 {
 		for _, player := range r.Players {
-			if player.Identity == "" && player.Sleeper != "" {
-				continue
+			if (player.Identity == "" && player.Sleeper != "") || strings.HasPrefix(player.Identity, MFLIdentityPrefix) {
+				continue // bridged by Sleeper alone, or held by MFL id alone: no NFL statistics identity
 			}
 			if err := (source.RawStatScope{GSIS: player.Identity, Season: r.Season, Week: 1}).Validate(); err != nil {
 				return nil, fmt.Errorf("pinned statistics require GSIS identities: %w", err)
@@ -117,7 +119,14 @@ func (r RawFootballEvidence) scoringFile(raw RawFootballStats, parts partSource)
 	if err != nil {
 		return heldFile{}, err
 	}
-	return heldFile{sha: sha, at: raw.AsOf,
+	var official map[int]bool
+	if len(raw.Parts) != 0 {
+		official = make(map[int]bool, len(bodies))
+		for _, body := range bodies {
+			official[body.Week] = true
+		}
+	}
+	return heldFile{sha: sha, at: raw.AsOf, official: official,
 		weeks: weeks, canonical: canonical, unknownSleeper: unknown, index: source.IndexHeldWeeks(weeks), lineSHA: lineSHA, lines: lines}, nil
 }
 
@@ -149,7 +158,7 @@ func (p *PinnedFootball) SourceID(ctx context.Context, player, kind string) (str
 	if len(p.stats) == 0 {
 		return "", nil
 	}
-	return p.raw.Players[player].Identity, nil
+	return p.raw.Players[player].nflIdentity(), nil
 }
 
 func (p *PinnedFootball) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) ([]source.HeldWeek, error) {
@@ -166,6 +175,9 @@ func (p *PinnedFootball) PlayerWeekStats(ctx context.Context, scope source.RawSt
 	for i := range weeks {
 		// Every imported line passed AttachPlays coverage validation.
 		weeks[i].Missing = weeks[i].Missing[1:]
+		if weeks[i].Week == nil && p.stats[i].official[scope.Week] {
+			weeks[i] = officialZero(weeks[i], scope.GSIS, scope.Season, scope.Week)
+		}
 	}
 	return weeks, nil
 }
@@ -206,10 +218,33 @@ func (p *PinnedFootball) CanonicalPlayerWeekStats(ctx context.Context, scope sou
 				held.Authority = copied.Provenance
 			}
 			held.Review, held.Evidence = copied.Review, copied.Evidence
+		} else if gsis := p.raw.Players[scope.Player].nflIdentity(); gsis != "" && file.official[scope.Week] {
+			held = officialZero(held, gsis, scope.Season, scope.Week)
 		} else {
 			held.Missing = []string{"This held file does not report the player's regular-season week"}
 		}
 		out = append(out, held)
 	}
 	return out, nil
+}
+
+// officialZero is the week of an identified player an official week's statistics do not list: he recorded
+// nothing that week, so he has a final line of no statistics. Only a week whose every game had ended, and
+// was reported, is held as official (PinOfficialStats); in any other file absence stays unknown.
+func officialZero(held source.HeldWeek, gsis string, season, week int) source.HeldWeek {
+	held.Week = &source.PlayerWeek{GSIS: gsis, Season: season, Week: week, SeasonType: "REG",
+		Evidence: "Not listed in the official statistics for a finished week: no statistics recorded",
+		Line:     fantasyscore.StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{}}}
+	held.Missing = nil
+	return held
+}
+
+// officialWeek says whether the pin holds official statistics for the week.
+func (p *PinnedFootball) officialWeek(week int) bool {
+	for _, file := range p.stats {
+		if file.official[week] {
+			return true
+		}
+	}
+	return false
 }

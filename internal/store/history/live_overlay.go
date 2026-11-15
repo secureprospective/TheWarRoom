@@ -202,6 +202,9 @@ func (s *Store) overlayEvidence(evidence source.NativeEvidence, scope source.Raw
 		return evidence
 	}
 	if pinned, yes := s.lineupEnv.(*PinnedFootball); yes {
+		if pinned.officialWeek(scope.Week) {
+			return evidence // official statistics are final; a live line would only reopen them
+		}
 		player, exists := pinned.raw.Players[scope.Player]
 		identity := generation.Identities[scope.Player]
 		gsis := player.nflIdentity()

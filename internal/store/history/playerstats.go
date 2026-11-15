@@ -81,6 +81,7 @@ func (s *Store) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) 
 type heldFile struct {
 	sha            string
 	complete       bool
+	official       map[int]bool // weeks a split revision holds as finished (PinOfficialStats)
 	at             time.Time
 	weeks          []source.PlayerWeek
 	canonical      map[canonicalWeek]source.PlayerWeek

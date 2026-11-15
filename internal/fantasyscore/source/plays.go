@@ -7,9 +7,15 @@ import (
 	"io"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
+
+// WeeklyURL names nflverse's compressed weekly player statistics for a season.
+func WeeklyURL(season int) string {
+	return fmt.Sprintf("https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_%d.csv.gz", season)
+}
 
 // PlaysURL names the compressed nflverse season release used for final scoring.
 func PlaysURL(season int) string {
@@ -399,4 +405,19 @@ func credit(weeks []PlayerWeek, index map[string]int, play RawPlay, season, week
 	if exists && weeks[i].GameID == play.GameID && weeks[i].SeasonType == play.SeasonType {
 		weeks[i].Line.Quantities[stat] += 10000
 	}
+}
+
+// PlayColumn says whether ReadPlays reads a play-by-play column, so a copy can keep only those: every
+// column a play or its credits are built from. nflverse publishes about 370; scoring reads under 80.
+func PlayColumn(name string) bool {
+	if strings.HasSuffix(name, "player_id") || slices.Contains(creditColumns(), name) {
+		return true
+	}
+	return slices.Contains([]string{"game_id", "play_id", "season", "week", "season_type", "passing_yards",
+		"receiving_yards", "rushing_yards", "touchdown", "td_team", "return_team", "interception", "punt_attempt",
+		"kickoff_attempt", "play_deleted", "two_point_attempt", "play_type", "sack", "posteam", "punt_blocked",
+		"field_goal_attempt", "field_goal_result", "third_down_converted", "fourth_down_converted", "rush_attempt",
+		"pass_attempt", "complete_pass", "yardline_100", "tackled_for_loss", "safety", "fumble_lost", "desc",
+		"game_seconds_remaining", "game_half", "qb_kneel", "lateral_rushing_yards", "rush_touchdown", "down",
+		"ydstogo"}, name)
 }
