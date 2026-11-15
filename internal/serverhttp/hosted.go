@@ -65,6 +65,7 @@ type Hosted struct {
 	// Replies caches league-state readings per head and reading epoch; nil reads every request afresh.
 	Replies  *ReplyCache
 	Versions *WorkflowVersions
+	Requests *RequestTally
 	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
 	TrustedProxy netip.Addr
 }

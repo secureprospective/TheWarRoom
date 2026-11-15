@@ -34,6 +34,7 @@ import (
 )
 
 type hostedFixture struct {
+	tally  *serverhttp.RequestTally
 	pools  *db.Pools
 	server *httptest.Server
 	// fresh is the same server with no reply cache, sharing every store: the cache's parity reference.
@@ -137,6 +138,8 @@ func newVersionedHostedFixture(t *testing.T, versions *serverhttp.WorkflowVersio
 	f.fresh = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.fresh.Close)
 	handler.Replies = serverhttp.NewReplyCache(64 << 20)
+	f.tally = serverhttp.NewRequestTally()
+	handler.Requests = f.tally
 	f.server = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.server.Close)
 	return f

@@ -69,19 +69,23 @@ func (r WorkflowResponse) Validate() error {
 }
 
 func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow) {
+	h.Requests.add(raw.Command, raw.Mode, 0, 0)
 	league, err := raw.League()
 	if err != nil {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, "invalid league action", http.StatusBadRequest)
 		return
 	}
 	//nolint:contextcheck // The service host carries this request's context and admission.
 	location, err := service.Location(league)
 	if err != nil {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, "league access refused; sign in and check your seat", http.StatusForbidden)
 		return
 	}
 	pin := h.pinFor(r.Context(), league)
 	if refusal := workflowWriteRefusal(raw.Mode, pin, location.Label, location.Writable); refusal != "" {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, refusal, http.StatusConflict)
 		return
 	}
@@ -100,27 +104,21 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	}
 	if raw.Mode == "read" && raw.Command != "versions.read" && sameReadTags(tags, raw.Known) {
 		//nolint:contextcheck // The service host owns this request context.
-		writeUnchangedWorkflow(w, r, service, raw, league, tags)
+		h.writeUnchangedWorkflow(w, r, service, raw, league, tags)
 		return
 	}
 	data, err := h.workflowReplyData(r, service, raw, league, tags)
 	if err != nil {
 		// The command name and mode are fixed catalogue words; arguments, bearer and proof are never logged.
 		log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, workflowRefusalMessage, http.StatusConflict)
 		return
 	}
+	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
 	response := WorkflowResponse{Label: location.Label, Writable: location.Writable && !pin.Missing, Football: pin.Digest, Data: data, Tags: tags}
-	if raw.Mode == "read" {
-		//nolint:contextcheck // The service host owns this request context.
-		if err := admitWorkflowRead(service, raw, league); err != nil {
-			http.Error(w, "league reading refused", http.StatusForbidden)
-			return
-		}
-		writeHostedReading(w, r, response)
-		return
-	}
-	writeHosted(w, response)
+	//nolint:contextcheck // The service host owns this request context.
+	h.writeWorkflowResponse(w, r, service, raw, league, response)
 }
 
 // workflowData runs a workflow, answering a league-state reading from the reply cache when it holds one.
@@ -133,6 +131,7 @@ func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service
 	if err != nil {
 		return nil, err
 	}
+	scope.tally, scope.command, scope.mode = h.Requests, raw.Command, raw.Mode
 	return scope.reply(func() ([]byte, error) { return runWorkflow(ctx, service, raw) })
 }
 
@@ -165,12 +164,26 @@ func workflowWriteRefusal(mode string, pin LeaguePin, label string, writable boo
 	return ""
 }
 
-func writeUnchangedWorkflow(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow, league string, tags *ReadTags) {
+func (h Hosted) writeUnchangedWorkflow(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow, league string, tags *ReadTags) {
 
 	if err := admitWorkflowRead(service, raw, league); err != nil {
 		http.Error(w, "league reading refused", http.StatusForbidden)
 		return
 	}
-	// TODO(request metrics): count unchanged when the Requests observer lands.
+	h.Requests.Unchanged(raw.Command, raw.Mode)
 	writeHostedReading(w, r, UnchangedResponse{true, tags})
+}
+
+func (h Hosted) writeWorkflowResponse(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow, league string, response WorkflowResponse) {
+	if raw.Mode != "read" {
+		writeHosted(w, response)
+		return
+	}
+
+	if err := admitWorkflowRead(service, raw, league); err != nil {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
+		http.Error(w, "league reading refused", http.StatusForbidden)
+		return
+	}
+	writeHostedReading(w, r, response)
 }

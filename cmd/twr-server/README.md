@@ -199,6 +199,9 @@ Steps for the commissioner and deputy: [RESTORE.md](../../deploy/server/RESTORE.
 
 `twr-server hosted … -status-socket /var/lib/twr/status.sock` also serves an owner-only
 Unix socket, a separate listener from HTTPS, so the Tunnel can never reach it.
+Run `twr-server requests -status-socket /var/lib/twr/status.sock` as the socket owner to see workflow counts and server memory.
+Add `-reset` to start a new measurement interval. The counts never include league IDs or arguments. KB is workflow data, not compressed wire traffic.
+
 `twr-server status -socket … -origin 127.0.0.1:8443 -origin-cert … -tunnel 127.0.0.1:20241
 -state /var/lib/twr` prints the plain-English dashboard; it refuses any non-loopback
 address and sends nothing anywhere. The CT script `twr-status` runs it as the service
