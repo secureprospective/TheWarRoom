@@ -2317,7 +2317,6 @@ string
 ];
 };
 export type WorkflowArgumentMap = {
-"versions.read": NativeArguments<"versions.read">;
 "commish.market.read": NativeArguments<"commish.market.read">;
 "commish.rules.read": NativeArguments<"commish.rules.read">;
 "commish.corrections.read": NativeArguments<"commish.corrections.read">;
@@ -2339,6 +2338,7 @@ export type WorkflowArgumentMap = {
 "trades.read": NativeArguments<"trades.read">;
 "waivers.read": NativeArguments<"waivers.read">;
 "week.read": NativeArguments<"week.read">;
+"versions.read": NativeArguments<"versions.read">;
 "commish.rules.set": NativeArguments<"commish.rules.set">;
 "contract.action.set": NativeArguments<"contract.action.set">;
 "season.rollover": NativeArguments<"season.rollover">;
