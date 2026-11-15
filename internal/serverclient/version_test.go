@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
@@ -17,9 +18,9 @@ import (
 func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 	for _, side := range []serverversion.Side{serverversion.App, serverversion.Server} {
 		t.Run(string(side), func(t *testing.T) {
-			calls := 0
+			var calls atomic.Int32
 			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				calls++
+				calls.Add(1)
 				if r.Header.Get(serverhttp.ProtocolHeader) != serverversion.ClientProtocol() || r.Header.Get(serverhttp.CommandsHeader) != serverversion.ClientCommands() {
 					t.Error("client omitted its versions")
 				}
@@ -62,8 +63,8 @@ func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 			if side == serverversion.App {
 				expectedCalls = 3
 			} // Once refused, native actions stay blocked locally.
-			if retry || calls != expectedCalls {
-				t.Fatalf("update refusal retried or missing requests: retry %v, calls %d", retry, calls)
+			if retry || int(calls.Load()) != expectedCalls {
+				t.Fatalf("update refusal retried or missing requests: retry %v, calls %d", retry, calls.Load())
 			}
 		})
 	}
