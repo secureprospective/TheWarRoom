@@ -301,3 +301,15 @@ func TestSummaryAdmitsAndChecksScoringCategories(t *testing.T) {
 		})
 	}
 }
+
+// ESPN marks a game in progress a minute before its first play: box score present, no drives yet.
+// That summary is the kickoff, not bad data.
+func TestSummaryAtKickoffBeforeTheFirstPlay(t *testing.T) {
+	g, err := ParseSummary(fixture(t, "espn-summary-401873061-kickoff"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Status != "in" || g.Period != 1 || g.Home.Score != 0 || g.Away.Score != 0 || len(g.Plays) != 0 {
+		t.Fatalf("kickoff %+v", g)
+	}
+}

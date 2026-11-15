@@ -91,11 +91,14 @@ func (r RawSummary) Validate() error {
 	if err := r.Header.Validate(); err != nil {
 		return fmt.Errorf("header: %w", err)
 	}
-	if r.Header.game().Status != "pre" {
+	if g := r.Header.game(); g.Status != "pre" {
 		if len(r.Boxscore.Players) == 0 {
 			return fmt.Errorf("boxscore.players: missing")
 		}
-		if len(r.rawPlays()) == 0 {
+		// ESPN marks a game in progress about a minute before it sends the first play; until then
+		// a scoreless first quarter with no drives is the kickoff, not a broken summary.
+		kickoff := g.Status == "in" && g.Period == 1 && g.Home.Score == 0 && g.Away.Score == 0
+		if len(r.rawPlays()) == 0 && !kickoff {
 			return fmt.Errorf("drives.plays: missing")
 		}
 	}
