@@ -3,13 +3,15 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import HostedLeague from '../commissioner/HostedLeague';
-import NativeLeaguePulse from './NativeLeaguePulse';
+import NativeLeaguePulse, { PULSE_FOLLOW_MS } from './NativeLeaguePulse';
 import { readNativePulse, readPulseMatchup } from './pulseReads';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import * as nfl from '../now/api';
 import * as hq from '../commissioner/hqReading';
 import { heldSnapshot } from '../data/lineupTestData';
 import { hqEvents } from './hqReads';
+import * as hostedReads from '../data/hostedReads';
+import type { ReadTopic } from '../data/session';
 
 const common = { league: 'test', season: 2026, revision: 1, name: 'Test League', words: 'Published' };
 const teams = [{ franchise: 'a', name: 'Alpha', abbreviation: 'ALP' },
@@ -90,7 +92,7 @@ it('opens hosted Now, refreshes each active read once, shows Race and returns', 
   expect(host.textContent).toContain('Starter 2');
   expect(host.textContent).toContain('20.0');
   expect(host.textContent).toContain('Live NFL games are coming next.');
-  expect(host.textContent).toContain('Scores update when the league server publishes them');
+  expect(host.textContent).toContain('Scores follow the league server as it publishes them');
   expect(host.textContent).not.toContain('unavailable');
   expect(count(port, 'lineup.read')).toBe(1);
   const commands = ['native.directory.read', 'week.read', 'standings.read', 'bracket.read',
@@ -205,4 +207,31 @@ it('retains local NFL polling, local change subscriptions and client-time week r
   const week = port.mock.calls.map(([r]) => r).find(r => r.command === 'week.read');
   expect(week?.arguments).toMatchObject({ at: expect.stringMatching(/^\d{4}-\d\d-\d\dT.*Z$/) });
   expect(host.textContent).not.toContain('Live NFL games are coming next.');
+});
+
+it('rereads open hosted Pulse once per burst of its league topics and ignores other leagues', async () => {
+  let hear: ((topics: ReadTopic[]) => void) | undefined;
+  const off = vi.fn();
+  vi.spyOn(hostedReads, 'onHostedTopics').mockImplementation(listener => { hear = listener; return off; });
+  const port = fakePort();
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} />));
+  await click('League Pulse');
+  expect(hear).toBeDefined();
+  const before = count(port, 'results.read');
+  const scores: ReadTopic = { kind: 'scores', league: 'test', season: 2026, week: 1, version: '2' };
+  vi.useFakeTimers();
+  act(() => { hear!([{ ...scores, league: 'other' }]); });
+  await act(async () => { vi.advanceTimersByTime(PULSE_FOLLOW_MS * 2); });
+  expect(count(port, 'results.read')).toBe(before);
+  act(() => { for (let i = 0; i < 5; i++) hear!([{ ...scores, version: String(3 + i) }]); });
+  await act(async () => { vi.advanceTimersByTime(PULSE_FOLLOW_MS - 1); });
+  expect(count(port, 'results.read')).toBe(before);
+  await act(async () => { vi.advanceTimersByTime(1); });
+  vi.useRealTimers();
+  await settle();
+  expect(count(port, 'results.read')).toBe(before + 1);
+  await click('Back');
+  expect(off).toHaveBeenCalled();
+  expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
 });
