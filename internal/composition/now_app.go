@@ -13,7 +13,6 @@ import (
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
-	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
@@ -296,4 +295,4 @@ func liveWeekUnplayed(l heldSeasonFeed[leaguefeed.Lineups], s map[int]heldSeason
 	}
 	return nowapp.LiveWeekUnplayed(nowFeed(l), schedules, at)
 }
-func possessive(s string) string { return commissioner.Possessive(s) }
+func possessive(s string) string { return nowapp.Possessive(s) }

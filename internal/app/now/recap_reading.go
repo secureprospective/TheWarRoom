@@ -277,3 +277,6 @@ func signedText(p leaguefeed.Points) string {
 	}
 	return scoreText(p)
 }
+
+// Possessive is a franchise name's possessive; the league's own words own the rule.
+func Possessive(name string) string { return commissioner.Possessive(name) }
