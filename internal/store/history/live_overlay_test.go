@@ -54,14 +54,14 @@ func TestLiveOverlayCapturesDetachedGenerationAndRejectsOversize(t *testing.T) {
 	for i := 0; i < 6001; i++ {
 		big.Lines[fmt.Sprint(i)] = big.Lines["0099"]
 	}
-	if err := overlay.Publish(big); err == nil || s.liveSnapshot().ID != "second" {
+	if err := overlay.Publish(big); err == nil || s.liveSnapshot().Current.ID != "second" {
 		t.Fatal("oversize replaced last good generation")
 	}
 	big = overlayTestGeneration("oversize-bytes", 30000)
 	line := big.Lines["0099"]
 	line.Line.Labels = map[leaguerules.StatID]string{"tackle": strings.Repeat("x", 16<<20)}
 	big.Lines["0099"] = line
-	if err := overlay.Publish(big); err == nil || s.liveSnapshot().ID != "second" {
+	if err := overlay.Publish(big); err == nil || s.liveSnapshot().Current.ID != "second" {
 		t.Fatal("byte overflow replaced last good generation")
 	}
 	for i := 0; i < 100; i++ {
@@ -69,7 +69,7 @@ func TestLiveOverlayCapturesDetachedGenerationAndRejectsOversize(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if len(s.liveSnapshot().Lines) != 1 || len(s.liveHeld) != 0 || len(s.liveRevisions) != 0 {
+	if len(s.liveSnapshot().Current.Lines) != 1 || len(s.liveHeld) != 0 || len(s.liveRevisions) != 0 {
 		t.Fatal("overlay entered unbounded desktop chronology")
 	}
 }
@@ -335,7 +335,7 @@ func TestLiveOverlayWeekScoreCacheUsesCapturedGeneration(t *testing.T) {
 		n.revision = &scoreRevisionKey{ledger: records, ledgerLen: len(records), key: "ledger", ok: true, boundaries: map[int]int{2026: 0}}
 		calculate := func() (commissioner.FranchiseWeekScore, error) {
 			calls++
-			v := n.overlay.Lines["0099"].Line.Quantities["tackle"]
+			v := n.overlay.Current.Lines["0099"].Line.Quantities["tackle"]
 			return commissioner.FranchiseWeekScore{Provisional: &v}, nil
 		}
 		for range 2 {
@@ -362,7 +362,7 @@ func TestLiveOverlayKeepsFootballDigestAndChecksPinnedIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 1}
-	held := s.overlayEvidence(source.NativeEvidence{}, scope, s.liveSnapshot())
+	held := s.overlayEvidence(source.NativeEvidence{}, scope, s.liveSnapshot().Current)
 	if len(held.Versions()) != 1 {
 		t.Fatal("matching pinned identity did not score")
 	}
@@ -374,7 +374,7 @@ func TestLiveOverlayKeepsFootballDigestAndChecksPinnedIdentity(t *testing.T) {
 	if err := pin.CheckDigest(strings.Repeat("a", 64)); err != nil {
 		t.Fatal("score tick invalidated action digest", err)
 	}
-	held = s.overlayEvidence(source.NativeEvidence{}, scope, s.liveSnapshot())
+	held = s.overlayEvidence(source.NativeEvidence{}, scope, s.liveSnapshot().Current)
 	if len(held.Versions()) != 0 {
 		t.Fatal("another pin's identity was substituted")
 	}
@@ -396,7 +396,7 @@ func TestLiveOverlayScoresMFLImportPins(t *testing.T) {
 		t.Fatal(err)
 	}
 	scope := source.RawNativeScope{Player: "17269", Season: 2026, Week: 1}
-	if held := s.overlayEvidence(source.NativeEvidence{}, scope, s.liveSnapshot()); len(held.Versions()) != 1 {
+	if held := s.overlayEvidence(source.NativeEvidence{}, scope, s.liveSnapshot().Current); len(held.Versions()) != 1 {
 		t.Fatal("an MFL import pin dropped its player's live line")
 	}
 }

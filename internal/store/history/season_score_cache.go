@@ -101,7 +101,7 @@ func (n *nativeSources) MemoWeekScore(ctx context.Context, records []commissione
 		return score()
 	}
 	key := weekScoreKey{seat: string(seatKey), lineup: string(lineupKey), season: season, week: week,
-		live: n.store.liveWeekGeneration(season, week), overlay: n.liveKey()}
+		live: n.store.liveWeekGeneration(season, week), overlay: n.weekKey(season, week)}
 	key.boundary = n.recordedBoundary(records, season)
 	c := &n.store.scores
 	for {

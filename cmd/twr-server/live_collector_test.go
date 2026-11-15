@@ -578,3 +578,49 @@ func TestHostedLiveIntervalWaitsNoLongerThanTheNextKickoff(t *testing.T) {
 		}
 	}
 }
+
+// The pinned football evidence holds no statistics, so before this a week's results went back to
+// "No result yet" the moment ESPN's board moved to the next week. Week 9's real final packets stand
+// in for the sources: the board is on week 10, before kickoff.
+func TestLiveCollectorHoldsLastWeekAfterTheBoardMovesOn(t *testing.T) {
+	week9 := liveReplayCheckpoint(t)
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	board := week9.Packets[endpoints.ESPN]
+	delete(week9.Packets, endpoints.ESPN)
+	board.URL = finishedBoard(endpoints.ESPN, 2026, 9)
+	week9.Packets[board.URL] = board
+
+	current, publisher := replayCollector(t, rawLiveCheckpoint{Version: 1, Season: 2026, Week: 10})
+	dir := t.TempDir()
+	finished := map[[2]int]*liveCollector{}
+	last := current.finishedCollector(dir, 2026, 9)
+	// The sources answer from week 9's real final packets.
+	last.packets = &livePackets{held: week9, replay: true}
+	finished[[2]int{2026, 9}] = last
+	current.keepLastWeek(t.Context(), dir, finished)
+
+	view := current.pins.live.View()
+	held := view.Week(2026, 9)
+	if held == nil || len(held.Lines) == 0 || view.Current != nil {
+		t.Fatalf("week 9 not held as a finished week beside an empty current week (current set: %t)", view.Current != nil)
+	}
+	if len(publisher.observed) != 1 || !strings.HasPrefix(publisher.observed[0], "native.test/2026/9/") {
+		t.Fatalf("finished week did not move the week 9 scores topic: %v", publisher.observed)
+	}
+	read := last.fetched
+	current.keepLastWeek(t.Context(), dir, finished)
+	if read.IsZero() || last.fetched != read {
+		t.Fatal("a held finished week was reread inside the refresh window")
+	}
+
+	restarted, _ := replayCollector(t, rawLiveCheckpoint{})
+	if got := restoreFinished(t.Context(), restarted, dir); len(got) != 1 {
+		t.Fatalf("restart restored %d finished weeks", len(got))
+	}
+	if after := restarted.pins.live.View().Week(2026, 9); after == nil || after.ID != held.ID {
+		t.Fatal("restart did not rebuild the identical finished week from its checkpoint")
+	}
+}

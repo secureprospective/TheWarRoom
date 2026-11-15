@@ -156,7 +156,7 @@ func (out *FranchiseWeekScore) incomplete(seat NativeDirectorySeat, running runn
 	delta leaguerules.Decimal) error {
 	out.Lineup = nativecheck.LineupVerdict{Status: nativecheck.LineupUnjudged, Problems: []nativecheck.LineupProblem{},
 		Words: "The lineup is judged once every starter's score is complete"}
-	out.Words = fmt.Sprintf("%s's score is incomplete: %s", seat.Name, strings.Join(running.missing, "; "))
+	out.Words = fmt.Sprintf("%s score is incomplete: %s", Possessive(seat.Name), strings.Join(running.missing, "; "))
 	if !running.counted {
 		return nil
 	}
