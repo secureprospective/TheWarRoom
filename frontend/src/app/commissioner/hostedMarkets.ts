@@ -209,6 +209,7 @@ export function parseHostedResults(v: unknown) {
     'byeName',
     'scores',
     'missed',
+    'evidence',
   ]);
   return {
     league: text(r.league, 'League'),
@@ -224,6 +225,8 @@ export function parseHostedResults(v: unknown) {
         'status',
         'homePoints',
         'awayPoints',
+        'homeProvisional',
+        'awayProvisional',
         'winner',
         'words',
         'why',
@@ -252,6 +255,7 @@ export function parseHostedStandings(v: unknown) {
     'computed',
     'override',
     'changes',
+    'evidence',
   ]);
   const rows = (v: unknown) =>
     array(v, 'Standings rows', (v) => {
