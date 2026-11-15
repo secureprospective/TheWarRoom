@@ -274,3 +274,34 @@ it('never logs a read that is only waiting for its week or matchup as a failure'
   expect(host.textContent).toContain('Starter 2');
   expect(warn.mock.calls.filter(([words]) => String(words).includes('League Pulse read failed'))).toEqual([]);
 });
+
+it.each(['Commissioner', 'Co-commissioner'])(
+  'opens a teamless %s Pulse on league week 10, not the first scheduled week', async role => {
+    const fallback = fakePort();
+    const port = vi.fn<HostedPort>(async request => {
+      if (request.command === 'commish.rules.read') throw new Error('Rules unavailable');
+      if (request.command === 'week.read') return { data: {
+        schedule: { league: 'test', franchise: '', season: 2026, revision: 1,
+          games: Array.from({ length: 11 }, (_, i) => ({ week: i + 1, venue: '' })) },
+        current: { week: 10, venue: '', kickoff: '2026-11-15T18:00:00Z' }, nextWeek: 11,
+      }, football: '', writable: false, label: 'Server' };
+      if (request.command === 'results.read') return { data: {
+        league: 'test', season: 2026, revision: 1, words: 'Published', week: request.arguments.week,
+        published: true, games: [{ ...game, week: request.arguments.week }], missed: [], scores: [],
+      }, football: '', writable: false, label: 'Server' };
+      return fallback(request);
+    });
+    await act(async () => root.render(<HostedLeague league="test" franchise="" name="" role={role}
+      port={port} />));
+    await settle();
+    expect(host.textContent).toContain('current league week');
+    expect(host.textContent).not.toContain('first scheduled week');
+    const reads = port.mock.calls.map(([r]) => r);
+    expect(reads.find(r => r.command === 'week.read')?.arguments).toMatchObject({
+      franchise: '', season: 2026, at: '',
+    });
+    expect(reads.flatMap(r => r.command === 'results.read' ? [r.arguments.week] : [])).toEqual([10]);
+    expect(host.textContent).toContain('WEEK 10');
+    expect(reads.some(r => r.command === 'lineup.read')).toBe(false);
+    expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
+  });

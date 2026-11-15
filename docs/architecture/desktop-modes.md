@@ -25,8 +25,9 @@ rules revision and request key. The server authorizes and records the change; no
 A commissioner without a franchise opens league-wide Pulse and rule tools, not franchise tasks.
 Their room reads only rules; Pulse independently reads the directory, schedule, results and standings
 (and optional bracket/odds/football views), preserving the rest when an optional read is refused.
-Because `week.read` requires a franchise, their Pulse starts at the first scheduled week with explicit
-week navigation, never a fabricated current week or an empty-franchise request.
+`week.read` accepts an empty franchise for admitted league members and returns only published week
+numbers and kickoff timing, without a selected matchup or private team data. Their Pulse opens on
+the server-selected current week with explicit week navigation.
 
 Thin windows now watch negotiated topic invalidations after sign-in/enter and expose them through
 `/desktop/changes`; `nativeApi.subscribeChanged` is the webview transport. The thin-only

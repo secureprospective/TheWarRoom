@@ -2,9 +2,13 @@ package serverhttp_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -117,5 +121,63 @@ func TestHostedNFLGamesReadsTheServerBoardForAMemberOnly(t *testing.T) {
 	}
 	if status, _ := read("native.other"); status == 200 {
 		t.Fatal("a league the account does not belong to read the board")
+	}
+}
+
+func TestHostedLeagueWeekAdmission(t *testing.T) {
+	f := newHostedFixture(t, true, true)
+	bearer, proof := f.directCommissioner(t)
+	code, err := f.enrollment.Issue(t.Context(), "native.hosted", "outsider")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.enrollment.Redeem(t.Context(), accounts.RawEnrollment{Code: code.Code, Username: "outsider", Password: "private-password"}); err != nil {
+		t.Fatal(err)
+	}
+	outsider := f.login(t, "outsider", "private-password")
+	owner := f.login(t, "owner", "private-password")
+	for _, tc := range []struct {
+		name, bearer, proof, franchise string
+		status                         int
+	}{
+		{"commissioner league-only", bearer, proof, "", 200},
+		{"owner league-only", owner, "", "", 200},
+		{"owner franchise", owner, "", "franchise.02", 200},
+		{"signed in without league role", outsider, "", "", 403},
+		{"anonymous", "", "", "", 401},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			args := fmt.Sprintf(`{"league":"native.hosted","franchise":%q,"season":2026,"localZone":"UTC"}`, tc.franchise)
+			raw := workflowRequest(t, "week.read", "read", args, "")
+			body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+			if err != nil {
+				t.Fatal(err)
+			}
+			status, result := f.send(t, serverhttp.WorkflowPath, string(body), tc.bearer, tc.proof)
+			if status != tc.status {
+				t.Fatalf("status %d, want %d: %s", status, tc.status, result)
+			}
+			if status != 200 {
+				return
+			}
+			var response serverhttp.WorkflowResponse
+			if err := json.Unmarshal(result, &response); err != nil {
+				t.Fatal(err)
+			}
+			var got commissioner.NativeWeek
+			if err := json.Unmarshal(response.Data, &got); err != nil {
+				t.Fatal(err)
+			}
+			if got.Current == nil || got.Current.Week != 1 || got.Schedule.Franchise != tc.franchise {
+				t.Fatalf("wrong current week: %s", response.Data)
+			}
+			if tc.franchise == "" {
+				for _, game := range append(got.Schedule.Games, *got.Current) {
+					if game.Game != "" || game.Opponent != "" || game.Venue != "" || game.Kickoff == nil {
+						t.Fatalf("private or missing timing: %+v", game)
+					}
+				}
+			}
+		})
 	}
 }

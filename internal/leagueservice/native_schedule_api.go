@@ -17,10 +17,14 @@ type RawNativeScheduleScope struct {
 }
 
 func (r RawNativeScheduleScope) Validate() error {
+	return r.validate(false)
+}
+
+func (r RawNativeScheduleScope) validate(leagueWide bool) error {
 	if err := (RawLeagueScheduleScope{League: r.League}).Validate(); err != nil {
 		return err
 	}
-	if strings.TrimSpace(r.Franchise) == "" || strings.TrimSpace(r.Franchise) != r.Franchise ||
+	if (!leagueWide && r.Franchise == "") || strings.TrimSpace(r.Franchise) != r.Franchise ||
 		r.Season < 1900 || r.Season > 9999 {
 		return fmt.Errorf("choose a franchise and season")
 	}
@@ -39,7 +43,7 @@ type RawNativeWeekScope struct {
 }
 
 func (r RawNativeWeekScope) Validate() error {
-	if err := r.RawNativeScheduleScope.Validate(); err != nil {
+	if err := r.validate(true); err != nil {
 		return err
 	}
 	if r.At.IsZero() {
@@ -71,7 +75,7 @@ func (a *Service) TargetNativeWeek(raw RawNativeWeekScope) (commissioner.NativeW
 
 func (a *Service) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time, operation string) (
 	commissioner.FranchiseSchedule, []leagueweek.Week, error) {
-	if err := raw.Validate(); err != nil {
+	if err := raw.validate(operation == "week.read"); err != nil {
 		return commissioner.FranchiseSchedule{}, nil, err
 	}
 	if err := a.admitRead(raw.League, operation, raw.Franchise); err != nil {
