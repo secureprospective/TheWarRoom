@@ -55,6 +55,8 @@ export function TargetLeagueCalendar(arg1:commissioner.RawLeagueCalendarScope):P
 
 export function TargetLeagueSchedule(arg1:commissioner.RawLeagueScheduleScope):Promise<commissioner.Schedule>;
 
+export function TargetNFLGames(arg1:string):Promise<leagueservice.NFLGames>;
+
 export function TargetNativeAssets(arg1:string):Promise<commissioner.NativeAssets>;
 
 export function TargetNativeBidAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;

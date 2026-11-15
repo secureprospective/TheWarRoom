@@ -38,6 +38,8 @@ const (
 // commit fence), so revocation cannot commit between transaction admission and ledger append.
 type Hosted struct {
 	Publisher *Publisher
+	// LiveGames is the server's shared NFL scoreboard (public data) behind nfl.games.read; nil reads empty.
+	LiveGames *leagueservice.LiveGames
 	// FootballDigest and Football are the server's pin (-football); Pins, when set, answers each league's
 	// own store and pin, and an unpinned league gets the server's.
 	FootballDigest string
@@ -258,7 +260,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "football reference unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate)
+	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).WithLiveGames(h.LiveGames)
 	h.dispatch(w, r, service, raw)
 }
 

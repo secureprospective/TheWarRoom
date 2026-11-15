@@ -51,6 +51,7 @@ func officeMethods() []struct{ method, role, gravity string } {
 // nativeMethods is the native league bindings, in the same form.
 func nativeMethods() []struct{ method, role, gravity string } {
 	return []struct{ method, role, gravity string }{
+		{"TargetNFLGames", "gm,commish,admin", "G0"},
 		{"TargetNativeAssets", "gm,commish", "G0"},
 		{"TargetNativeBidAction", "gm,commish", "G3"},
 		{"TargetNativeBids", "gm,commish", "G0"},

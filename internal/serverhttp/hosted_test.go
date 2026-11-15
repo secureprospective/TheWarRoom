@@ -35,6 +35,7 @@ import (
 
 type hostedFixture struct {
 	publisher *serverhttp.Publisher
+	games     *leagueservice.LiveGames
 	tally     *serverhttp.RequestTally
 	pools     *db.Pools
 	server    *httptest.Server
@@ -120,7 +121,8 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 		t.Fatal(err)
 	}
 	f.publisher = serverhttp.NewPublisher()
-	handler := serverhttp.Hosted{Publisher: f.publisher, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+	f.games = leagueservice.NewLiveGames()
+	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}), Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, nil),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
 			"CM-018,Franchise,What is this franchise called?,\n"}

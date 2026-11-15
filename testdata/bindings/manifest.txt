@@ -21,6 +21,7 @@ commissioner.API.TargetCommissionerSeatSignIn
 commissioner.API.TargetCorrections
 commissioner.API.TargetLeagueCalendar
 commissioner.API.TargetLeagueSchedule
+commissioner.API.TargetNFLGames
 commissioner.API.TargetNativeAssets
 commissioner.API.TargetNativeBidAction
 commissioner.API.TargetNativeBids

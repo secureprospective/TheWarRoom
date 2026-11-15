@@ -2,6 +2,7 @@ package composition
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 
 	commissionerapi "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
@@ -21,7 +22,7 @@ import (
 )
 
 func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Binding {
-	return map[string]catalog.Binding{
+	bindings := map[string]catalog.Binding{
 		"TargetNativeCapCheck":             catalog.Bind2(api.TargetNativeCapCheck, "leagueID", "viewerZone"),
 		"TargetNativeRosterCheck":          catalog.Bind1(api.TargetNativeRosterCheck, "leagueID"),
 		"TargetNativeReserveCheck":         catalog.Bind1(api.TargetNativeReserveCheck, "leagueID"),
@@ -76,10 +77,19 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetWorkflow":                   catalog.Bind1(api.TargetWorkflow, "body"),
 		"TargetBackupNow":                  catalog.Bind0(api.TargetBackupNow),
 		"TargetCommissionerPreview":        catalog.Bind1(api.TargetCommissionerPreview, "body"),
-		"TargetLeagueCalendar":             catalog.Bind1(api.TargetLeagueCalendar, "raw"),
-		"TargetLeagueSchedule":             catalog.Bind1(api.TargetLeagueSchedule, "raw"),
-		"TargetNativeFranchiseSchedule":    catalog.Bind1(api.TargetNativeFranchiseSchedule, "raw"),
-		"TargetNativeWeek":                 catalog.Bind1(api.TargetNativeWeek, "raw"),
+	}
+	maps.Copy(bindings, commissionerWeekBindings(api))
+	return bindings
+}
+
+// commissionerWeekBindings are the calendar, the week and the NFL games around it.
+func commissionerWeekBindings(api *commissionerapi.API) map[string]catalog.Binding {
+	return map[string]catalog.Binding{
+		"TargetLeagueCalendar":          catalog.Bind1(api.TargetLeagueCalendar, "raw"),
+		"TargetLeagueSchedule":          catalog.Bind1(api.TargetLeagueSchedule, "raw"),
+		"TargetNativeFranchiseSchedule": catalog.Bind1(api.TargetNativeFranchiseSchedule, "raw"),
+		"TargetNativeWeek":              catalog.Bind1(api.TargetNativeWeek, "raw"),
+		"TargetNFLGames":                catalog.Bind1(api.TargetNFLGames, "league"),
 	}
 }
 func contractsCommandBindings(api *contractsapi.API) map[string]catalog.Binding {

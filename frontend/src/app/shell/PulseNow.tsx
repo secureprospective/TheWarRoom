@@ -53,8 +53,7 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
       </div>
       {side === 'nfl'
         ? <NflList games={games} followed={followed} onFollow={live.follow}
-            words={viewer ? 'Live NFL games are coming next.'
-              : !current ? 'NFL games are shown for the week being played.'
+            words={!current ? 'NFL games are shown for the week being played.'
               : live.error ? `The NFL scoreboard is unavailable · ${live.error}`
               : !live.view ? 'Reading the NFL scoreboard…' : 'No NFL games are held for this week.'} />
         : <MatchupList rows={rows} filter={filter} onFilter={setFilter} results={results}
@@ -72,7 +71,7 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
             <span className="q">{clockWords(g)}</span>
           </PulseAct>)}
         {!games.some(g => g.status === 'in') && !followed && <span className="src">
-          {viewer ? 'Live NFL games are coming next.' : !current ? 'live games show for the week being played'
+          {!current ? 'live games show for the week being played'
             : live.error ? `NFL scoreboard unavailable · ${live.error}`
             : !live.view ? 'Reading the NFL scoreboard…' : 'no NFL game is being played right now'}
         </span>}
