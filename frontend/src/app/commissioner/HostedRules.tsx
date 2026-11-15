@@ -39,7 +39,8 @@ export function HostedRules({ rules, commissioner, room }: {
             <dt>{r.label}{r.governed && <GovernedGlyph governed={r.governed} subject={r.label} />}</dt>
             <dd>{r.value}{commissioner && <HQAct disabled={!room.canChange()}
               onAction={() => {
-                room.cancel(); setSelection({ field: r.field, opener: document.activeElement as HTMLElement });
+                room.cancel();
+                setSelection({ field: r.field, opener: document.activeElement as HTMLElement });
               }}>Change {r.label}</HQAct>}</dd>
           </div>)}</dl>
         </section>)}
