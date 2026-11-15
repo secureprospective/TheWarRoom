@@ -820,6 +820,45 @@ export const readCommands = {
     "Items": null
   }
 },
+"commissioner.TargetNFLGame": {
+  "command": "nfl.game.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "league",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "game",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "commissioner.TargetNFLGames": {
   "command": "nfl.games.read",
   "arguments": {

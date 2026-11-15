@@ -42,6 +42,7 @@ func nativeReads() []Command {
 		{"native.cap.check", "TargetNativeCapCheck", "league:string viewerZone:string", "league-view", "ledger"},
 		{"contract.quote", "TargetNativeContractQuote", "", "league-view", "ledger,player-facts"},
 		{"native.directory.read", "TargetNativeDirectory", "league:string", "league-view", "ledger"},
+		{"nfl.game.read", "TargetNFLGame", "league:string game:string", "league-view", "stat-evidence"},
 		{"nfl.games.read", "TargetNFLGames", "league:string", "league-view", "stat-evidence"},
 		{"draft.read", "TargetNativeDraft", "", "league-view", "ledger,player-facts"},
 		{"schedule.franchise.read", "TargetNativeFranchiseSchedule", "", "league-view", "ledger,schedule"},

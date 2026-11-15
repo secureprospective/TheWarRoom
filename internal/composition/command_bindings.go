@@ -89,6 +89,7 @@ func commissionerWeekBindings(api *commissionerapi.API) map[string]catalog.Bindi
 		"TargetLeagueSchedule":          catalog.Bind1(api.TargetLeagueSchedule, "raw"),
 		"TargetNativeFranchiseSchedule": catalog.Bind1(api.TargetNativeFranchiseSchedule, "raw"),
 		"TargetNativeWeek":              catalog.Bind1(api.TargetNativeWeek, "raw"),
+		"TargetNFLGame":                 catalog.Bind2(api.TargetNFLGame, "league", "game"),
 		"TargetNFLGames":                catalog.Bind1(api.TargetNFLGames, "league"),
 	}
 }

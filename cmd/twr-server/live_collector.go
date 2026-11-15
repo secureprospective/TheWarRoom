@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/now"
@@ -153,6 +154,7 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 	}
 	c.packets.prefetched = &packet
 	c.poller.Poll(look, now.LiveStatsRun{Evidence: c, RequireComplete: true, Network: c.packets, Season: season, Week: func() int { return week }})
+	c.holdDetails(games, endpoints.Summary)
 	return now.LiveStatsInterval(games)
 }
 
@@ -213,4 +215,25 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 		}
 	}()
 	return func() { cancel(); <-done }
+}
+
+// holdDetails reuses acquired summary packets; no extra requests or cadence changes.
+func (c *liveCollector) holdDetails(games []livegame.Game, endpoint string) {
+	details := make(map[string]leagueservice.NFLGame)
+	for _, board := range games {
+		packet, ok := c.packets.held.Packets[strings.ReplaceAll(endpoint, "{id}", board.ID)]
+		if !ok {
+			continue
+		}
+		game, err := livegame.ParseSummary(packet.Body)
+		if err != nil {
+			log.Printf("server live detail: %v", err)
+			continue
+		}
+		if game.ID != board.ID || game.Season != board.Season || game.Week != board.Week {
+			continue
+		}
+		details[game.ID] = leagueservice.NFLGame{Game: &game, At: packet.At}
+	}
+	c.games.SetDetails(details)
 }

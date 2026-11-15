@@ -212,6 +212,10 @@ string
 "commissioner.TargetNativeDirectory": [
 string
 ];
+"commissioner.TargetNFLGame": [
+string,
+string
+];
 "commissioner.TargetNFLGames": [
 string
 ];
@@ -2328,6 +2332,7 @@ export type WorkflowArgumentMap = {
 "bids.read": NativeArguments<"bids.read">;
 "bracket.read": NativeArguments<"bracket.read">;
 "native.directory.read": NativeArguments<"native.directory.read">;
+"nfl.game.read": NativeArguments<"nfl.game.read">;
 "nfl.games.read": NativeArguments<"nfl.games.read">;
 "draft.read": NativeArguments<"draft.read">;
 "lineup.read": NativeArguments<"lineup.read">;

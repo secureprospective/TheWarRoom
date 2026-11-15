@@ -12,7 +12,7 @@ import { PulseRace, type RaceDrawer } from './PulseRace';
 import { PulseInspector } from './PulseInspector';
 import { ScheduleDrawer } from './PulseSchedule';
 import { usePulseLive } from './hqLive';
-import { parseHostedGames, type LiveView } from '../now/liveContract';
+import { parseHostedGame, parseHostedGames, type LiveView } from '../now/liveContract';
 import './pulse.css';
 
 export type PulseTab = 'now' | 'race';
@@ -47,7 +47,7 @@ function HostedPulse(scope: PulseScope & { tab?: PulseTab }) {
     return () => { off(); clearTimeout(timer); };
   }, [changes, scope.league]);
   return <PulseChanges.Provider value={changes}>
-    <HostedBody scope={scope} changes={changes} />
+    <HostedBody key={`${scope.league}:${scope.mine}`} scope={scope} changes={changes} />
   </PulseChanges.Provider>;
 }
 
@@ -60,26 +60,42 @@ function HostedBody({ scope, changes }: { scope: PulseScope & { tab?: PulseTab }
 }
 
 export function useHostedGames(league: string, port: NonNullable<PulseScope['port']>,
-  onChange: (load: () => void) => () => void): ReturnType<typeof usePulseLive> {
+  onChange: (load: () => void) => () => void): ReturnType<typeof usePulseLive> & { prefer: (key: string) => void } {
   const [held, setHeld] = useState<{ view?: LiveView; error: string }>({ error: '' });
+  const [chosen, choose] = useState('');
+  const [preferred, prefer] = useState('');
   useEffect(() => {
     let live = true;
-    const load = () => {
-      port({ command: 'nfl.games.read', mode: 'read', arguments: { league } })
-        .then(r => { if (live) setHeld({ view: parseHostedGames(r.data, league), error: '' }); })
-        .catch((e: unknown) => {
-          const error = e instanceof Error ? e.message : String(e);
-          if (live) setHeld(prior => ({ view: prior.view, error }));
-        });
+    let generation = 0;
+    const load = async () => {
+      const request = ++generation;
+      const current = () => live && request === generation;
+      try {
+        const reply = await port({ command: 'nfl.games.read', mode: 'read', arguments: { league } });
+        const view = parseHostedGames(reply.data, league);
+        const key = chosen || preferred;
+        const selected = view.games.find(g => `${g.away.abbreviation}-${g.home.abbreviation}` === key)
+          ?? view.games.find(g => g.status === 'in');
+        if (current()) setHeld(prior => ({ view: { ...view,
+          followed: prior.view?.followed?.id === selected?.id ? prior.view?.followed ?? null : null }, error: '' }));
+        if (!selected) return;
+        const detail = await port({ command: 'nfl.game.read', mode: 'read',
+          arguments: { league, game: selected.id } });
+        view.followed = parseHostedGame(detail.data, league, selected.id);
+        if (current()) setHeld({ view, error: '' });
+      } catch (e: unknown) {
+        const error = e instanceof Error ? e.message : String(e);
+        if (current()) setHeld(prior => ({ view: prior.view, error }));
+      }
     };
-    load();
-    const off = onChange(load);
+    void load();
+    const off = onChange(() => { void load(); });
     return () => { live = false; off(); };
-  }, [league, port, onChange]);
-  return { view: held.view, error: held.error, follow: () => {} };
+  }, [league, port, onChange, chosen, preferred]);
+  return { view: held.view, error: held.error, follow: choose, prefer };
 }
 
-function PulseBody(scope: PulseScope & { tab?: PulseTab; live: ReturnType<typeof usePulseLive>;
+function PulseBody(scope: PulseScope & { tab?: PulseTab; live: ReturnType<typeof usePulseLive> & { prefer?: (key: string) => void };
   refresh?: () => void }) {
   const port = scope.port ?? hostedWorkflow;
   const tab: PulseTab = scope.tab ?? 'now';

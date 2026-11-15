@@ -92,7 +92,7 @@ export function parseLive(v: unknown): LiveView {
 }
 
 /** parseHostedGames reads nfl.games.read: the league server's held NFL scoreboard (public, provisional).
- *  It answers a LiveView with the games alone; play-by-play and the followed game stay desktop-only. */
+ *  Detail is read separately for the selected game. */
 export function parseHostedGames(v: unknown, league: string): LiveView {
   const p = 'NFL games';
   const r = object(v, p, ['league', 'board']);
@@ -111,4 +111,15 @@ export function parseHostedGames(v: unknown, league: string): LiveView {
     box: { id: 'nfl-games', title: 'NFL box score', note: '', status: 'empty', source, asOf, how: '',
       columns: [], rows: [], summary: [], link: null },
     active: false };
+}
+
+/** Public NFL detail is scoped to the requested league and game before it enters the view. */
+export function parseHostedGame(v: unknown, league: string, expected: string): Game | null {
+  const p = 'NFL game';
+  const r = object(v, p, ['league', 'game', 'at', 'stale', 'words']);
+  if (requiredText(r.league, p) !== league) throw new Error(`${p}: reading is for another league`);
+  timestamp(r.at, p); bool(r.stale, p); text(r.words, p);
+  const detail = r.game === null ? null : game(r.game, p);
+  if (detail && detail.id !== expected) throw new Error(`${p}: reading is for another game`);
+  return detail;
 }

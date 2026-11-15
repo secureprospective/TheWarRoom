@@ -63,6 +63,7 @@ function fakePort() {
         data = { ...common, franchise: 'franchise' in args ? args.franchise : '', week: 1,
           starters: [{ player: '0001', team: 'DAL', locked: true }] }; break;
       case 'nfl.games.read': data = board(); break;
+      case 'nfl.game.read': data = { league: 'test', game: nflGame, at: '2026-11-15T18:00:00Z', stale: false, words: '' }; break;
       case 'projections.read': data = { league: 'test', season: 2026, week: 1, players: [] }; break;
       default: throw new Error(`Unexpected read ${request.command}`);
     }
@@ -104,7 +105,7 @@ it('opens hosted Now, refreshes each active read once, shows Race and returns', 
   expect(host.textContent).not.toContain('unavailable');
   expect(count(port, 'lineup.read')).toBe(1);
   const commands = ['native.directory.read', 'week.read', 'standings.read', 'bracket.read',
-    'odds.read', 'results.read', 'lineup.read', 'projections.read', 'nfl.games.read'];
+    'odds.read', 'results.read', 'lineup.read', 'projections.read', 'nfl.games.read', 'nfl.game.read'];
   const before = commands.map(c => count(port, c));
   await click('Refresh');
   expect(commands.map(c => count(port, c))).toEqual(before.map(n => n + 1));
@@ -113,10 +114,8 @@ it('opens hosted Now, refreshes each active read once, shows Race and returns', 
   expect(host.textContent).not.toContain('Reading the NFL scoreboard');
   expect(host.textContent).toContain('BUF');
   expect(host.textContent).toContain('KC');
-  // The thin app holds no play feed yet: games and chips are read-only, never inert buttons.
-  expect([...host.querySelectorAll('button')].some(b => /Follow/.test(b.getAttribute('aria-label') ?? '')
-    || /Follow/.test(b.title))).toBe(false);
-  expect(host.querySelector('[aria-label="BUF at KC"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Follow BUF at KC"]')).not.toBeNull();
+  expect(host.querySelector('.field')).not.toBeNull();
   await click('Race');
   expect(host.textContent).toContain('STANDINGS');
   expect(host.textContent).toContain('0–0');
@@ -329,3 +328,47 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(reads.some(r => r.command === 'lineup.read')).toBe(false);
     expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
   });
+
+it('follows hosted live field and plays, switches chips and rereads detail on scores', async () => {
+  let hear: ((topics: ReadTopic[]) => void) | undefined;
+  vi.spyOn(hostedReads, 'onHostedTopics').mockImplementation(listener => { hear = listener; return () => {}; });
+  const fallback = fakePort();
+  const state = { possession: '12', down: 2, distance: 7, yardLine: 60, toEndzone: 40 };
+  const play = { id: 'p1', sequence: 1, text: 'First live pass', clock: '5:12', period: 2,
+    at: '2026-11-15T18:00:00Z', homeScore: 14, awayScore: 10, start: state, end: state, participants: [] };
+  const first = { ...nflGame, state, plays: [play], last: play };
+  const second = { ...first, id: '402', away: { id: '6', abbreviation: 'DAL', score: 3 },
+    home: { id: '12', abbreviation: 'NYG', score: 7 },
+    plays: [{ ...play, text: 'Second live rush' }], last: { ...play, text: 'Second live rush' } };
+  let refreshed = false;
+  const port = vi.fn<HostedPort>(async request => {
+    if (request.command === 'nfl.games.read') return { data: { ...board(),
+      board: { ...board().board, games: [first, second] } }, football: '', writable: false, label: 'Server' };
+    if (request.command === 'nfl.game.read') return { data: { league: 'test',
+      game: request.arguments.game === '401' ? first : { ...second,
+        plays: [{ ...play, text: refreshed ? 'Updated live rush' : 'Second live rush' }] },
+      at: '2026-11-15T18:00:00Z', stale: false, words: '' }, football: '', writable: false, label: 'Server' };
+    return fallback(request);
+  });
+  await act(async () => root.render(<NativeLeaguePulse league="test" mine="a" serverTime
+    port={port} leave={() => {}} />));
+  await settle();
+  // The owner's DAL starter makes the second game the default, not the first scoreboard row.
+  expect(host.querySelector('.field')?.getAttribute('aria-label')).toBe('NYG ball, 40 yards to the end zone');
+  expect(host.querySelector('.sp-row')?.textContent).toContain('Second live rush');
+  const chip = host.querySelector<HTMLButtonElement>('.fchip[aria-label="Follow BUF at KC"]');
+  expect(chip).not.toBeNull();
+  await act(async () => chip!.click()); await settle();
+  expect(host.querySelector('.field')?.getAttribute('aria-label')).toBe('KC ball, 40 yards to the end zone');
+  expect(host.querySelector('.sp-row')?.textContent).toContain('First live pass');
+  const secondChip = host.querySelector<HTMLButtonElement>('.fchip[aria-label="Follow DAL at NYG"]');
+  await act(async () => secondChip!.click()); await settle();
+  refreshed = true;
+  vi.useFakeTimers();
+  try {
+    act(() => hear!([{ kind: 'scores', league: 'test', season: 2026, week: 1, version: '2' }]));
+    await act(async () => { await vi.advanceTimersByTimeAsync(PULSE_FOLLOW_MS); });
+    expect(host.querySelector('.sp-row')?.textContent).toContain('Updated live rush');
+  } finally { vi.useRealTimers(); }
+  expect(local).not.toHaveBeenCalled();
+});

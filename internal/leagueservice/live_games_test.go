@@ -41,3 +41,34 @@ func TestNFLGamesNeedsALeague(t *testing.T) {
 		t.Fatal("empty league accepted")
 	}
 }
+
+func TestNFLGameDetailsAreDetachedAndReplacedWithTheSlate(t *testing.T) {
+	at := time.Date(2026, 11, 15, 18, 0, 0, 0, time.UTC)
+	holder := &LiveGames{now: func() time.Time { return at.Add(liveGamesStale + time.Second) }}
+	service := New(nil).WithLiveGames(holder)
+	state := &livegame.State{Down: 2}
+	game := livegame.Game{ID: "401", State: state, Plays: []livegame.Play{{ID: "1", End: state, Participants: []string{"1"}}}}
+	holder.SetDetails(map[string]NFLGame{"401": {Game: &game, At: at}})
+	game.State.Down = 4
+	game.Plays[0].Participants[0] = "9"
+	detail, err := service.TargetNFLGame("native.test", "401")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !detail.Stale || detail.Game.State.Down != 2 || detail.Game.Plays[0].Participants[0] != "1" {
+		t.Fatalf("mutated detail: %+v", detail)
+	}
+	detail.Game.Plays[0].End.Down = 3
+	reread, err := service.TargetNFLGame("native.test", "401")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reread.Game.Plays[0].End.Down != 2 {
+		t.Fatal("reader changed held detail")
+	}
+	holder.SetDetails(map[string]NFLGame{})
+	empty, err := service.TargetNFLGame("native.test", "401")
+	if err != nil || empty.Game != nil || empty.Words == "" {
+		t.Fatalf("old slate retained: %+v, %v", empty, err)
+	}
+}

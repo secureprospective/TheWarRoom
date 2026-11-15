@@ -181,3 +181,50 @@ func TestHostedLeagueWeekAdmission(t *testing.T) {
 		})
 	}
 }
+
+func TestHostedNFLGameRead(t *testing.T) {
+	f := newHostedFixture(t, true, true)
+	bearer := f.login(t, "owner", "private-password")
+	game := livegame.Game{ID: "401", Status: "in", State: &livegame.State{Possession: "12", Down: 2, Distance: 7, ToEndzone: 40}, Plays: []livegame.Play{{ID: "1", Text: "Live pass"}}}
+	f.games.SetDetails(map[string]leagueservice.NFLGame{"401": {Game: &game, At: time.Now()}})
+	for _, tc := range []struct {
+		league, game string
+		found        bool
+		status       int
+	}{
+		{"native.hosted", "401", true, 200}, {"native.hosted", "999", false, 200}, {"native.other", "401", false, 403},
+	} {
+		t.Run(tc.league+tc.game, func(t *testing.T) {
+			raw := workflowRequest(t, "nfl.game.read", "read", fmt.Sprintf(`{"league":%q,"game":%q}`, tc.league, tc.game), "")
+			body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+			if err != nil {
+				t.Fatal(err)
+			}
+			status, result := f.send(t, serverhttp.WorkflowPath, string(body), bearer, "")
+			if status != tc.status {
+				t.Fatalf("status %d: %s", status, result)
+			}
+			if status != 200 {
+				return
+			}
+			var response serverhttp.WorkflowResponse
+			if err := json.Unmarshal(result, &response); err != nil {
+				t.Fatal(err)
+			}
+			var detail leagueservice.NFLGame
+			if err := json.Unmarshal(response.Data, &detail); err != nil {
+				t.Fatal(err)
+			}
+			if detail.League != tc.league || (detail.Game != nil) != tc.found {
+				t.Fatalf("wrong detail: %+v", detail)
+			}
+			if tc.found {
+				if detail.Game.State.Down != 2 || len(detail.Game.Plays) != 1 || detail.Stale {
+					t.Fatalf("missing live detail: %+v", detail)
+				}
+			} else if !strings.Contains(detail.Words, "No live detail") {
+				t.Fatalf("missing empty words: %+v", detail)
+			}
+		})
+	}
+}

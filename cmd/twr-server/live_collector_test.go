@@ -282,3 +282,35 @@ func TestLiveCollectorHoldsTheParsedScoreboardForNFLGames(t *testing.T) {
 		}
 	}
 }
+
+func TestLiveCollectorHoldsNFLGameDetails(t *testing.T) {
+	checkpoint := liveReplayCheckpoint(t)
+	collector, _ := replayCollector(t, checkpoint)
+	collector.games = leagueservice.NewLiveGames()
+	collector.poll(t.Context())
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, board := range collector.games.Board().Games {
+		packet, ok := checkpoint.Packets[strings.ReplaceAll(endpoints.Summary, "{id}", board.ID)]
+		if !ok {
+			continue
+		}
+		expected, err := livegame.ParseSummary(packet.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Read through the admitted service so the collector-to-command contract is exercised.
+		service := leagueservice.New(nil).WithLiveGames(collector.games)
+		detail, err := service.TargetNFLGame("native.test", board.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if detail.Game == nil || len(detail.Game.Plays) != len(expected.Plays) || detail.Game.State == nil || detail.Game.Last.Text != expected.Last.Text || !detail.At.Equal(packet.At) {
+			t.Fatalf("summary not held: %+v", detail)
+		}
+		return
+	}
+	t.Fatal("fixture did not exercise a summary")
+}
