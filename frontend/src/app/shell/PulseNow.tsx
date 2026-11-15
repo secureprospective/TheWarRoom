@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { HQAct as PulseAct } from './HQAct';
 import { percent, pointsLabel, type PulseOdds, type PulseResults, type PulseScore }
   from '../data/nativePulse';
-import { PulseWaiting, readPulseMatchup, usePulseRead, type NativePulse, type PulseMatchup } from './pulseReads';
+import { PulseWaiting, readPulseMatchup, usePulseRead, type NativePulse, type PulseMatchup }
+  from './pulseReads';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
 import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveContract';
