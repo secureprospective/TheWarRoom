@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -304,9 +305,51 @@ func (c *liveCollector) holdDetails(games []livegame.Game, endpoint string) {
 		if game.ID != board.ID || game.Season != board.Season || game.Week != board.Week {
 			continue
 		}
+		var behind bool
+		if game, behind = boardAhead(game, board); behind {
+			// Refetch next tick instead of reusing a summary the board has already passed.
+			address := strings.ReplaceAll(endpoint, "{id}", board.ID)
+			c.packets.mu.Lock()
+			delete(c.packets.nextSummary, address)
+			c.packets.mu.Unlock()
+		}
 		details[game.ID] = leagueservice.NFLGame{Game: &game, At: packet.At}
 	}
 	c.games.SetDetails(details)
+}
+
+// ESPN's summary trails its scoreboard by a few seconds. When the board is further along, show the
+// board's score and clock on the followed game so the field never lags the game list.
+func boardAhead(summary, board livegame.Game) (livegame.Game, bool) {
+	if gameProgress(board) <= gameProgress(summary) {
+		return summary, false
+	}
+	summary.Home.Score, summary.Away.Score = board.Home.Score, board.Away.Score
+	summary.Status, summary.Clock, summary.Period = board.Status, board.Clock, board.Period
+	return summary, true
+}
+
+// gameProgress orders snapshots of one game: final last, then period, game clock (counts down), points.
+func gameProgress(game livegame.Game) int {
+	final := 0
+	if game.Status == "post" {
+		final = 1
+	}
+	return final<<30 + game.Period<<22 + (4095-clockSeconds(game.Clock))<<10 + min(game.Home.Score+game.Away.Score, 1023)
+}
+
+// clockSeconds reads "m:ss"; anything else counts as a full clock so it never looks further along.
+func clockSeconds(clock string) int {
+	minutes, seconds, ok := strings.Cut(clock, ":")
+	if !ok {
+		return 4095
+	}
+	m, err1 := strconv.Atoi(minutes)
+	s, err2 := strconv.Atoi(seconds)
+	if err1 != nil || err2 != nil || m < 0 || s < 0 {
+		return 4095
+	}
+	return min(m*60+s, 4095)
 }
 
 // Warm live summaries with bounded I/O; the reducer then reads these same admitted packets.
