@@ -235,3 +235,14 @@ it('rereads open hosted Pulse once per burst of its league topics and ignores ot
   expect(off).toHaveBeenCalled();
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
 });
+
+it('never logs a read that is only waiting for its week or matchup as a failure', async () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const port = fakePort();
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} />));
+  await click('League Pulse');
+  await click('Refresh');
+  expect(host.textContent).toContain('Starter 2');
+  expect(warn.mock.calls.filter(([words]) => String(words).includes('League Pulse read failed'))).toEqual([]);
+});

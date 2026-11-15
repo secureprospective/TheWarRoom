@@ -38,11 +38,16 @@ export type PulseMatchup = { lineups: Record<string, PulseLineupPlayer[]>;
 
 export const PulseChanges = createContext(hqEvents);
 
+/** PulseWaiting says a read has nothing to ask yet (no week, no matchup chosen). The screen shows
+ *  its words like any other unread state, but it is not a failure and is never logged as one. */
+export class PulseWaiting extends Error {}
+
 export function usePulseRead<T>(key: string, read: (publish: (value: T) => void) => Promise<T>) {
   const changes = useContext(PulseChanges);
   return useContractRead<T>(key, async publish => {
     try { return await read(publish); } catch (error) {
-      console.warn('League Pulse read failed:', error); throw error;
+      if (!(error instanceof PulseWaiting)) console.warn('League Pulse read failed:', error);
+      throw error;
     }
   }, changes);
 }

@@ -3,7 +3,7 @@ import { onHostedTopics } from '../data/hostedReads';
 import { HQAct as PulseAct } from './HQAct';
 import { hostedWorkflow } from '../commissioner/api';
 import { myChance, percent, pointsLabel, type PulseResults } from '../data/nativePulse';
-import { readNativePulse, readPulseWeekResults, usePulseRead, PulseChanges,
+import { readNativePulse, readPulseWeekResults, usePulseRead, PulseChanges, PulseWaiting,
   type NativePulse, type PulseScope }
   from './pulseReads';
 import { scoreOf } from './pulseModel';
@@ -78,7 +78,7 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab; live: ReturnType<typeof
   const results = usePulseRead<PulseResults>(
     JSON.stringify(['pulse-week', scope.league, reading?.season, week]),
     () => reading && week ? readPulseWeekResults(scope.league, reading.season, week, port)
-      : Promise.reject(new Error('The league has not said which week it is playing.')));
+      : Promise.reject(new PulseWaiting('The league has not said which week it is playing.')));
   const modeClass = scope.serverTime ? ' hosted' : '';
   const body = <div className={`lp-v14${scope.embedded ? ' embedded' : ''}${modeClass}`}>
     <div className="shell">
