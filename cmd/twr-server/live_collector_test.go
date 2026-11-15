@@ -345,6 +345,10 @@ func TestLiveCollectorFiveSecondTicksThrottleSleeperAndPublishOnlyChanges(t *tes
 			}
 		}
 	}
+	// Hold the summary window shut so a slow run cannot let it lapse before the Sleeper-only poll.
+	for address := range collector.packets.nextSummary {
+		collector.packets.nextSummary[address] = time.Now().Add(time.Hour)
+	}
 	collector.packets.nextSleeper = time.Now().Add(-time.Second)
 	collector.poll(t.Context())
 	if network.calls[sleeper] != 2 || len(publisher.observed) != 1 {
