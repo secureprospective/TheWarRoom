@@ -1,4 +1,5 @@
 // Native-only desktop transport. Go owns HTTPS and all bearer/recent-auth secrets.
+import { observeView, prepareHostedAction } from '../data/hostedReads';
 import type { NativeRequest } from '../commands/native';
 import { object, text } from '../data/parseValues';
 export type NativeAction = 'update' | 'retry' | 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
@@ -8,7 +9,7 @@ export type NativeSeat = { franchise: string; name: string };
 export type NativeView = {
   helperPreview?: string;
   update?: 'app' | 'server';
-  server: string; league: string; message: string; name: string; role: string;
+  authGeneration: string; server: string; league: string; message: string; name: string; role: string;
   franchise: string; franchiseName: string; seed: string;
   // A helper's connection line is shown once; a confirmation code covers one change.
   connection: string; helperId: string; confirmation: string; seats: NativeSeat[];
@@ -20,7 +21,8 @@ export function subscribeNativeUpdate(listener: (view: NativeView) => void): () 
   updateListeners.add(listener);
   return () => { updateListeners.delete(listener); };
 }
-const textKeys = ['server', 'league', 'message', 'name', 'role', 'franchise', 'franchiseName', 'seed',
+const textKeys = ['authGeneration', 'server', 'league', 'message', 'name', 'role',
+  'franchise', 'franchiseName', 'seed',
   'connection', 'helperId', 'confirmation'];
 const isSeat = (seat: unknown) => Boolean(seat) && typeof seat === 'object'
   && Object.keys(seat as object).length === 2
@@ -35,6 +37,7 @@ export function parseNativeView(raw: unknown): NativeView {
     || ('recoveryCodes' in value && (!Array.isArray(value.recoveryCodes) || value.recoveryCodes.length !== 8
       || !value.recoveryCodes.every(c => typeof c === 'string' && c.length === 43)))
     || textKeys.some(key => typeof value[key] !== 'string')
+    || !/^\d+$/.test(String(value.authGeneration))
     || !Array.isArray(value.seats) || !value.seats.every(isSeat)
     || !String(value.server).startsWith('https://') || !String(value.league).startsWith('native.'))
     throw new Error('Unreadable desktop response.');
@@ -46,21 +49,27 @@ export async function nativeStartup(): Promise<NativeView | null> {
   if (!response.ok) throw new Error('Desktop startup unavailable.');
   // Vite's local development fallback serves index.html for unknown routes.
   if (response.headers.get('Content-Type')?.startsWith('text/html')) return null;
-  return parseNativeView(await response.json());
+  const view = parseNativeView(await response.json());
+  observeView(view);
+  return view;
 }
 async function post(body: Record<string, string>): Promise<NativeView> {
+  prepareHostedAction(body.action);
   const response = await fetch('/desktop/native', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
     body: JSON.stringify(body),
   });
   if (response.status === 426) {
     const view = parseNativeView(await response.json());
+    observeView(view);
     if (!view.update) throw new Error('The update request could not be read. Close and reopen the app.');
     updateListeners.forEach(listener => listener(view));
     return view;
   }
   if (!response.ok) throw new Error(await response.text());
-  return parseNativeView(await response.json());
+  const view = parseNativeView(await response.json());
+  observeView(view);
+  return view;
 }
 export function nativeAction(
   action: NativeAction, username = '', password = '', code = '',
@@ -106,12 +115,15 @@ export type ChangeTopic = {
   franchise?: string; season?: number; week?: number; run?: string; nextBoundary?: string;
 };
 export type NativeChanges = {
-  seq: number; topics: ChangeTopic[]; state: 'connected' | 'reconnecting' | 'signed-out' | 'refused';
+  authGeneration: string; seq: number; topics: ChangeTopic[];
+  state: 'connected' | 'reconnecting' | 'signed-out' | 'refused';
   serverEpoch?: string; league?: string;
 };
 function parseChanges(raw: unknown): NativeChanges {
-  const r = object(raw, 'Desktop changes', ['seq', 'topics', 'state', 'serverEpoch', 'league']);
-  if (!Number.isSafeInteger(r.seq) || Number(r.seq) < 0 || !Array.isArray(r.topics)
+  const r = object(raw, 'Desktop changes',
+    ['authGeneration', 'seq', 'topics', 'state', 'serverEpoch', 'league']);
+  if (typeof r.authGeneration !== 'string' || !/^\d+$/.test(r.authGeneration)
+    || !Number.isSafeInteger(r.seq) || Number(r.seq) < 0 || !Array.isArray(r.topics)
     || !['connected', 'reconnecting', 'signed-out', 'refused'].includes(String(r.state)))
     throw new Error('Unreadable desktop changes.');
   for (const topic of r.topics) {

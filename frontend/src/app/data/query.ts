@@ -168,7 +168,8 @@ export function createReadQuery<T, S extends object, A extends unknown[]>(comman
         lastInput = args;
         lastKey = cacheKey;
         unwatch?.();
-        unwatch = hosted.session.watch(cacheKey, () => {
+        unwatch = hosted.session.watch(cacheKey, ended => {
+          if (ended) { if (hosted.public) fence(); else reset(); return; }
           if (active && lastInput) void load(lastInput, { overlap: 'after' });
           else fence();
         });

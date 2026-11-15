@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +27,7 @@ const DesktopPath = "/desktop/native"
 type Desktop struct {
 	mu            sync.Mutex
 	generation    uint64
+	admission     DesktopView
 	watchCancel   context.CancelFunc
 	changes       DesktopChanges
 	changeHistory []DesktopChanges
@@ -120,15 +123,16 @@ func (r RawDesktop) Validate() error {
 
 // DesktopView contains only presentation data, never server credentials or cursors.
 type DesktopView struct {
-	Server        string `json:"server"`
-	League        string `json:"league"`
-	Message       string `json:"message"`
-	Update        string `json:"update,omitempty"`
-	Name          string `json:"name"`
-	Role          string `json:"role"`
-	Franchise     string `json:"franchise"`
-	FranchiseName string `json:"franchiseName"`
-	Seed          string `json:"seed"`
+	AuthGeneration string `json:"authGeneration"`
+	Server         string `json:"server"`
+	League         string `json:"league"`
+	Message        string `json:"message"`
+	Update         string `json:"update,omitempty"`
+	Name           string `json:"name"`
+	Role           string `json:"role"`
+	Franchise      string `json:"franchise"`
+	FranchiseName  string `json:"franchiseName"`
+	Seed           string `json:"seed"`
 	// Connection is shown once, right after a helper is connected; Confirmation is one change's code.
 	Connection    string        `json:"connection"`
 	HelperID      string        `json:"helperId"`
@@ -153,6 +157,7 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, re
 		if d.bearer != bearer || d.proof != proof || (resultErr == nil && changesSession(raw.Action)) {
 			d.generation++
 		}
+		view.AuthGeneration = strconv.FormatUint(d.generation, 10)
 		if resultErr == nil {
 			switch raw.Action {
 			case "login", "enter", "totp-step-up":
@@ -160,7 +165,7 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, re
 			}
 		}
 	}()
-	view = DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
+	view = d.initialView(raw.Action)
 	if err := raw.Validate(); err != nil {
 		return view, fmt.Errorf("check desktop request: %w", err)
 	}
@@ -186,6 +191,30 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, re
 	return d.actLocked(ctx, raw, view)
 }
 
+func (d *Desktop) initialView(action string) DesktopView {
+	view := DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
+	switch action {
+	case "login", "forget", "revoke-device", "revoke-all", "recover":
+		return view
+	}
+	view.Name, view.Role = d.admission.Name, d.admission.Role
+	view.Franchise, view.FranchiseName = d.admission.Franchise, d.admission.FranchiseName
+	if len(d.seats) > 0 {
+		view.Seats = slices.Clone(d.seats)
+	}
+	return view
+}
+
+func (d *Desktop) status(ctx context.Context, view DesktopView) (DesktopView, error) {
+	if d.bearer != "" && d.admission.Name != "" {
+		return d.enter(ctx, view)
+	}
+	if d.bearer != "" {
+		view.Message = "Saved device session available. Open your franchise to check access."
+	}
+	return view, nil
+}
+
 func changesSession(action string) bool {
 	switch action {
 	case "login", "enter", "forget", "revoke-device", "revoke-all":
@@ -201,10 +230,7 @@ func (d *Desktop) actLocked(ctx context.Context, raw RawDesktop, view DesktopVie
 	case "update", "retry":
 		return view, fmt.Errorf("no desktop update is required")
 	case "status":
-		if d.bearer != "" {
-			view.Message = "Saved device session available. Open your franchise to check access."
-		}
-		return view, nil
+		return d.status(ctx, view)
 	case "revoke-device", "revoke-all":
 		return d.revoke(ctx, view, raw.Action == "revoke-all")
 	case "forget":
@@ -320,7 +346,8 @@ func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopS
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
-		return nil, response.StatusCode == http.StatusUnauthorized, desktopRefusal(path, response.StatusCode)
+		unauthorized := response.StatusCode == http.StatusUnauthorized
+		return nil, unauthorized, desktopRefusal(path, response.StatusCode)
 	}
 	body, err = io.ReadAll(io.LimitReader(response.Body, (256<<10)+1))
 	if err != nil || len(body) > 256<<10 || response.Header.Get("Content-Type") != "application/json" {

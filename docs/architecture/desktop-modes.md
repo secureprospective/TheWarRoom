@@ -20,7 +20,11 @@ sentence means.
 | Direction | Grows until it carries everything. | Kept as-is until thin mode carries everything (governing plan step 3). Do not grow it or add features to it. |
 
 Thin windows now watch negotiated topic invalidations after sign-in/enter and expose them through
-`/desktop/changes`; `nativeApi.subscribeChanged` is the webview transport. See
+`/desktop/changes`; `nativeApi.subscribeChanged` is the webview transport. The thin-only
+`data/hostedReads.ts` owns its one subscriber and identity fence: sign-out and known identity
+changes clear private reads/rendered state. Admission hints recheck status without hiding the
+screen; a changed role or franchise resets private state before the new view renders. Views and changes carry a decimal
+auth generation; no credential crosses into the webview. See
 [hosted change notifications](hosted-changes.md). Local mode is unchanged.
 
 ## What the server (`cmd/twr-server`) carries today

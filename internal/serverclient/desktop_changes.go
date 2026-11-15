@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
@@ -14,11 +15,12 @@ import (
 const DesktopChangesPath = "/desktop/changes"
 
 type DesktopChanges struct {
-	Seq         uint64                    `json:"seq"`
-	Topics      []serverhttp.TopicVersion `json:"topics"`
-	State       string                    `json:"state"`
-	ServerEpoch string                    `json:"serverEpoch,omitempty"`
-	League      string                    `json:"league,omitempty"`
+	AuthGeneration string                    `json:"authGeneration"`
+	Seq            uint64                    `json:"seq"`
+	Topics         []serverhttp.TopicVersion `json:"topics"`
+	State          string                    `json:"state"`
+	ServerEpoch    string                    `json:"serverEpoch,omitempty"`
+	League         string                    `json:"league,omitempty"`
 }
 
 type RawChanges struct {
@@ -37,6 +39,7 @@ func (d *Desktop) changeLocked(state string, message RawInvalidation) {
 	if d.changed == nil {
 		d.changed = make(chan struct{})
 	}
+	d.changes.AuthGeneration = strconv.FormatUint(d.generation, 10)
 	d.changes.Seq++
 	d.changes.State = state
 	d.changes.ServerEpoch, d.changes.League = message.ServerEpoch, message.League
@@ -110,6 +113,7 @@ func (d *Desktop) changesAfter(ctx context.Context, after uint64, wait time.Dura
 			d.changed = make(chan struct{})
 		}
 		result := d.changes
+		result.AuthGeneration = strconv.FormatUint(d.generation, 10)
 		result.Topics = append([]serverhttp.TopicVersion{}, result.Topics...)
 		if result.State == "" {
 			result.State = "signed-out"

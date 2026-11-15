@@ -12,6 +12,35 @@ The hosted desktop uses no local App or Wails event bus. Local mode is unchanged
 | Webview seam | Same-origin/no-store POST `/desktop/changes` accepts `{after: seq}` and waits up to 25 seconds. It returns seq, topics and state, plus epoch/league when available. A bounded 64-notification hint history coalesces crossing topics; overflow, v1 or connection/session transitions require a full authorized-scope reconciliation (empty topics). Timeout returns the current seq and an empty array. |
 | Frontend transport | Only `nativeApi.subscribeChanged` calls the long-poll endpoint. It advances the cursor after a validated reply, backs off on failure, and aborts/stops on unsubscribe. The shared read owner must consume hints before notifying screens and perform the separately owned version reconciliation on connect/reconnect. |
 
-L1's transport generation was not present at this branch's base. The minimal `Desktop.generation`
-field fences watcher lifetimes here; integration should reuse the transport/session generation rather
-than introduce a second session identity. No changes to `internal/composition/run.go` are needed.
+## Thin identity fence
+
+`DesktopView.authGeneration` and `DesktopChanges.authGeneration` expose only the decimal session
+counter, never credential material. Desktop does not retain the account ID from the login reply;
+`hostedReads.ts` uses that generation for the account key too. Status rechecks the admitted seat
+through People without incrementing the generation. Other account/helper views retain that admission.
+
+Validated startup/action/helper replies → `observeView` → `hostedReads.setIdentity` → query reset
+and late-reply rejection → new identity snapshot → thin screen render. `NativeAccount` keys its
+hosted subtree by that snapshot, not by its locally queued presentation state. Identity-changing
+actions hide private state before transport; failures leave it hidden.
+
+The module lazily starts exactly one `subscribeChanged` after an admitted view. It consumes topics
+before `onHostedChange` listeners. League/team hints invalidate reads and coalesce status rechecks
+into one in flight and one trailing, without hiding or remounting the league. A changed admission
+in the reply resets private state before publishing the new screen key. Ordinary status failures
+leave the screen intact. A changed auth generation or known non-empty epoch suspends private
+publication and rendering; failed status checks then remain closed. The first stream epoch is
+recorded. Empty-topic reconnect hints do not hide the screen or trigger status reads; version
+reconciliation (`versions.read`) remains the separately owned C5 seam. Signed-out/refused purges
+and installs an empty view; old generations are ignored. A workflow/People 403 refuses only that
+read; only a 401 clears its saved credential. Stream-level 401/403 still ends the session.
+
+Public entries survive same-server/league account or role switches, including their persisted old
+keys. Session reads reuse only public values whose server, epoch, league, season, command/schema
+and normalized arguments match. A server/league/epoch switch removes held public entries and disk
+copies; pending persistence is removed if its lifetime changes while writing. Local mode never
+observes a native view, so it starts no subscription.
+
+Consumer exports: `hostedReads`, `observeView`, `onHostedChange`. Evidence:
+`hostedReads.test.ts`, `nativeAccount.test.tsx`, `desktop_identity_test.go`, and the existing workflow
+401 generation regression.
