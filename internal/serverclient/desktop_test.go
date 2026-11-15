@@ -71,7 +71,7 @@ func TestDesktopBoundaryAndTLS(t *testing.T) {
 }
 
 func TestDesktopRejectsMalformedSuccessfulRepliesAndRedirects(t *testing.T) {
-	for _, body := range []string{`{}`, `{"protocol":2}`, `{"protocol":1,"bearer":"invalid"}`, strings.Repeat("x", (256<<10)+1)} {
+	for _, body := range []string{`{}`, `{"protocol":2}`, `{"protocol":1,"bearer":"invalid"}`, strings.Repeat("x", desktopReplyLimit+1)} {
 		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			if _, err := w.Write([]byte(body)); err != nil {
@@ -265,5 +265,22 @@ func TestWorkflowForbiddenPreservesSession(t *testing.T) {
 	}
 	if after.AuthGeneration != before.AuthGeneration || d.bearer != bearer || store.secret != bearer {
 		t.Fatal("refused read changed the session or saved credential")
+	}
+}
+
+// A real league's league-wide read is near 2 MB; the desktop must accept it, not call it unreadable.
+func TestDesktopAcceptsALeagueSizedReply(t *testing.T) {
+	reply := `{"pad":"` + strings.Repeat("x", 2<<20) + `"}`
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := w.Write([]byte(reply)); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer server.Close()
+	session := desktopSnapshot{client: server.Client(), address: server.URL, league: "native.test"}
+	body, _, err := postDesktopSnapshot(t.Context(), session, DesktopPath, serverhttp.RawNativeRequest{Protocol: 1})
+	if err != nil || len(body) != len(reply) {
+		t.Fatalf("league-sized reply: %d bytes, %v", len(body), err)
 	}
 }
