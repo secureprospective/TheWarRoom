@@ -92,7 +92,7 @@ func TestHostedRoleGrantRequiresKnownAccountAndOldGrantReplays(t *testing.T) {
 		t.Fatal(err)
 	}
 	result := c.f.post(t, serverhttp.ExecutePath, string(request(raw)), c.bearer, c.proof, 409)
-	if !strings.Contains(string(result), "No league member has that account") {
+	if !strings.Contains(string(result), "No account on this server matches that person") {
 		t.Fatalf("wrong refusal: %s", result)
 	}
 	after, err := c.f.history.SharedCommissionerRecords(t.Context(), raw.League)
@@ -102,7 +102,7 @@ func TestHostedRoleGrantRequiresKnownAccountAndOldGrantReplays(t *testing.T) {
 	// A well-formed account ID absent from the sign-in store is refused too.
 	raw.Args.People.Principal = "acct.11111111-1111-4111-8111-111111111111"
 	result = c.f.post(t, serverhttp.ExecutePath, string(request(raw)), c.bearer, c.proof, 409)
-	if !strings.Contains(string(result), "No league member has that account") {
+	if !strings.Contains(string(result), "No account on this server matches that person") {
 		t.Fatalf("wrong refusal: %s", result)
 	}
 	raw.Args.People.Principal = string(person)
@@ -136,7 +136,7 @@ func TestHostedRoleGrantRequiresKnownAccountAndOldGrantReplays(t *testing.T) {
 	raw.Expected = int64(len(records))
 	raw.Request = "phantom.role"
 	result = c.f.post(t, serverhttp.ExecutePath, string(request(raw)), c.bearer, c.proof, 409)
-	if !strings.Contains(string(result), "No league member has that account") {
+	if !strings.Contains(string(result), "No account on this server matches that person") {
 		t.Fatalf("phantom account accepted: %s", result)
 	}
 }

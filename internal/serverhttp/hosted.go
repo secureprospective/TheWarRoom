@@ -531,7 +531,7 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 
 type unknownRoleTarget struct{}
 
-func (unknownRoleTarget) Error() string { return "No league member has that account" }
+func (unknownRoleTarget) Error() string { return "No account on this server matches that person" }
 
 func (a accountAdmission) checkRoleTarget(ctx context.Context, target string) error {
 	id := strings.TrimPrefix(target, "acct.")
