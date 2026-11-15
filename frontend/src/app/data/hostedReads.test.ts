@@ -132,6 +132,15 @@ it('preserves public persisted readings on account switch but drops them on leag
   await shared.load([]);
   expect(shared.peek().value).toBe('new directory');
 });
+it('drops persisted rows outside the scope even when this session never hydrated them', async () => {
+  const storage = (await import('./clientCache')).createPublicReadStorage();
+  const foreign = JSON.stringify(['https://other.example', '', '1', '1', 'native.old', '', null,
+    'schedule.read@1', []]);
+  await storage.put(foreign, JSON.stringify({ schema: 1, tags: reply('').tags, data: 'old schedule' }));
+  expect(await storage.get(foreign)).toContain('old schedule');
+  await signIn();
+  expect(await storage.get(foreign)).toBeUndefined();
+});
 it('coalesces five team hints into one in-flight plus one trailing status read', async () => {
   await signIn();
   for (let index = 0; index < 5; index++) await change('connected', '1', true);

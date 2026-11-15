@@ -19,6 +19,7 @@ export type PublicStorage = {
   get: (key: string) => Promise<string | undefined>;
   put: (key: string, value: string) => Promise<void>;
   remove: (key: string) => Promise<void>;
+  retainScope?: (serverId: string, league: string) => Promise<void>;
 };
 type ReadSpec<T> = Retention & {
   dependencies: Dependency[];
@@ -137,6 +138,7 @@ export function createReadSession(options: {
         if (entry.public && (scope.serverId !== next.serverId || scope.league !== next.league
           || scope.serverEpoch !== next.serverEpoch)) remove(entry);
       }
+      void options.storage?.retainScope?.(next.serverId, next.league).catch(ignore);
       endSession('identity changed');
       identity = { ...next };
     },

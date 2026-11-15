@@ -40,7 +40,8 @@ describe('native desktop account access', () => {
     const fetcher = vi.fn().mockResolvedValue(reply({
       ...initial, message: 'All device sessions revoked.',
     }));
-    vi.stubGlobal('fetch', fetcher);
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => url === '/desktop/changes'
+      ? new Promise(() => {}) : fetcher(url, init));
     const host = await mount(render(NativeAccount, {
       initial: { ...initial, message: 'Saved device session available.' },
     }));
@@ -56,7 +57,8 @@ describe('native desktop account access', () => {
 
   it('joins without MFL, signs in and opens only the server-assigned franchise', async () => {
     const fetcher = vi.fn().mockResolvedValue(reply(initial));
-    vi.stubGlobal('fetch', fetcher);
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => url === '/desktop/changes'
+      ? new Promise(() => {}) : fetcher(url, init));
     const host = await mount(render(NativeAccount, { initial }));
     expect(host.textContent).toContain('No MFL account or key needed');
     await click(button(host, 'Join with a code'));
@@ -91,7 +93,8 @@ describe('native desktop account access', () => {
       .mockResolvedValueOnce(reply({ ...initial, message: 'Signed in.' }))
       .mockResolvedValueOnce(reply({ ...initial, name: 'League', role: 'Commissioner',
         franchise: 'franchise.01', franchiseName: 'My club', message: 'Seat line.' }));
-    vi.stubGlobal('fetch', fetcher);
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => url === '/desktop/changes'
+      ? new Promise(() => {}) : fetcher(url, init));
     const host = await mount(render(NativeAccount, { initial }));
     await type(control(host, 'Username'), 'commissioner');
     await type(control(host, 'Password'), 'private-password');
@@ -143,7 +146,8 @@ describe('native desktop account access', () => {
   it('resets with a printed code, clears secrets and returns to sign-in', async () => {
     const fetcher = vi.fn().mockResolvedValue(
       reply({ ...initial, message: 'Password reset. Sign in next.' }));
-    vi.stubGlobal('fetch', fetcher);
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => url === '/desktop/changes'
+      ? new Promise(() => {}) : fetcher(url, init));
     const host = await mount(render(NativeAccount, { initial }));
     await click(button(host, 'Account recovery'));
     await type(control(host, 'Username'), 'owner');
@@ -159,7 +163,8 @@ describe('native desktop account access', () => {
 
   it('shows the private setup key but never requests bearer or proof from JavaScript', async () => {
     const fetcher = vi.fn().mockResolvedValue(reply({ ...initial, seed: 'PRIVATESETUPKEY' }));
-    vi.stubGlobal('fetch', fetcher);
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => url === '/desktop/changes'
+      ? new Promise(() => {}) : fetcher(url, init));
     const host = await mount(render(NativeAccount, { initial }));
     await click(button(host, 'Authenticator'));
     await type(control(host, 'Username'), 'commissioner');
@@ -175,7 +180,8 @@ describe('native desktop account access', () => {
 
   it('validates the local transport and distinguishes local startup without fetching a server', async () => {
     const fetcher = vi.fn().mockResolvedValue(reply(initial));
-    vi.stubGlobal('fetch', fetcher);
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => url === '/desktop/changes'
+      ? new Promise(() => {}) : fetcher(url, init));
     await expect(nativeStartup()).resolves.toEqual(initial);
     expect(fetcher.mock.calls[0][0]).toBe('/desktop/native');
     fetcher.mockResolvedValue({ ok: true, headers: new Headers({ 'Content-Type': 'text/html' }) });
@@ -227,7 +233,8 @@ it.each(['enter', 'forget', 'revoke-device', 'revoke-all'] as const)(
     let answer: (value: unknown) => void = () => undefined;
     const fetcher = vi.fn().mockResolvedValueOnce(reply({ ...initial, name: 'League', role: 'Owner',
       franchise: 'franchise.01', franchiseName: 'My club' }));
-    vi.stubGlobal('fetch', fetcher);
+    vi.stubGlobal('fetch', (url: string, init?: RequestInit) => url === '/desktop/changes'
+      ? new Promise(() => {}) : fetcher(url, init));
     // Startup never carries a franchise (Go's status action only sets the message).
     // A saved sign-in opens the league by itself at startup.
     const host = await mount(render(NativeAccount, { initial: { ...initial, message: 'Saved.' } }));
