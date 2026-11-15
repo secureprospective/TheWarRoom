@@ -1143,6 +1143,7 @@ export namespace commissioner {
 	    fieldSources?: Record<string, string>;
 	    player: string;
 	    name: string;
+	    team?: string;
 	    position?: string;
 	    words: string;
 	    line?: Record<string, number>;
@@ -1160,6 +1161,7 @@ export namespace commissioner {
 	        this.fieldSources = source["fieldSources"];
 	        this.player = source["player"];
 	        this.name = source["name"];
+	        this.team = source["team"];
 	        this.position = source["position"];
 	        this.words = source["words"];
 	        this.line = source["line"];

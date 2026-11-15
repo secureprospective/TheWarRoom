@@ -10,7 +10,8 @@ import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveCo
 import type { usePulseLive } from './hqLive';
 import { boxLine, compactLine } from './statLine';
 import { PulseDrawer } from './PulseDrawer';
-import { applyFilter, bySlot, espnTeam, playWords, changePoints, changeVerdict, filterCounts, groupRows, pairStarters, pulseRows,
+import { applyFilter, bySlot, espnTeam, playWords,
+  changePoints, changeVerdict, filterCounts, groupRows, pairStarters, pulseRows,
   scoreOf, starterRows, statChanges, PULSE_FILTERS, type PulseFilter, type PulseRow, type PulseStarterRow,
   type StarterPair, type StatChange }
   from './pulseModel';
@@ -89,7 +90,8 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
       </div>
       {followed ? <FollowedGame game={followed} /> : <>
         <div className="gh"><span className="src">Follow an NFL game to see its field.</span></div>
-        <div><PulseIdle words={games.some(g => g.status === 'in') ? 'Pick a live game above or under NFL GAMES.'
+        <div><PulseIdle words={games.some(g => g.status === 'in')
+          ? 'Pick a live game above or under NFL GAMES.'
           : 'The field, the drive and the down show while an NFL game is being played.'} /></div>
       </>}
       <div className="spine">

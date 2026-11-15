@@ -32,7 +32,8 @@ export type MatchupPlay = { on: number; left: number };
 
 /** matchupPlay is undefined while the board is not held or any unsettled starter's club is unknown:
  *  the badge then never claims more than the scores show. */
-export function matchupPlay(results: PulseResults, game: PulseGame, board: LiveNflGame[]): MatchupPlay | undefined {
+export function matchupPlay(results: PulseResults, game: PulseGame,
+  board: LiveNflGame[]): MatchupPlay | undefined {
   if (!board.length) return undefined;
   const play = { on: 0, left: 0 };
   for (const franchise of [game.home, game.away]) {
