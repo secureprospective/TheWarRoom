@@ -33,7 +33,7 @@ func (r rawSleeperEndpoint) Validate() error {
 }
 
 // fillLiveSleeper is optional acquisition: a failed gap source never discards ESPN evidence.
-func fillLiveSleeper(ctx context.Context, run LiveStatsRun, held liveStatsHistory, games []livegame.Game, lines map[string]source.PlayerWeek) bool {
+func fillLiveSleeper(ctx context.Context, run LiveStatsRun, held LiveStatsHistory, games []livegame.Game, lines map[string]source.PlayerWeek) bool {
 	scopes := map[[2]int]bool{}
 	for _, game := range games {
 		if game.SeasonType == 2 && game.Season > 0 && game.Week > 0 && game.Status != "pre" {

@@ -38,6 +38,7 @@ type StandingsOverrideView struct {
 // NativeStandings ranks a season's decided regular-season games under the league's own tie-breakers.
 // Computed is always present; an override never replaces it.
 type NativeStandings struct {
+	Evidence *ScoreEvidence         `json:"evidence,omitempty"`
 	League   string                 `json:"league"`
 	Name     string                 `json:"name"`
 	Season   int                    `json:"season"`

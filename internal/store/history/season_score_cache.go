@@ -53,6 +53,7 @@ type weekScoreKey struct {
 	season, week int
 	boundary     int
 	live         liveWeekGen
+	overlay      string
 }
 
 // canonEntries is a league's durable ledger as last read: every entry it holds. A ledger whose entries are
@@ -100,7 +101,7 @@ func (n *nativeSources) MemoWeekScore(ctx context.Context, records []commissione
 		return score()
 	}
 	key := weekScoreKey{seat: string(seatKey), lineup: string(lineupKey), season: season, week: week,
-		live: n.store.liveWeekGeneration(season, week)}
+		live: n.store.liveWeekGeneration(season, week), overlay: n.liveKey()}
 	key.boundary = n.recordedBoundary(records, season)
 	c := &n.store.scores
 	for {
@@ -188,7 +189,7 @@ func (c *seasonScoreCache) put(revision string, key weekScoreKey, score commissi
 	// Older live generations of this week can never be read again.
 	for old := range r.scores {
 		if old.week == key.week && old.season == key.season && old.seat == key.seat && old.lineup == key.lineup &&
-			old.live != key.live {
+			(old.live != key.live || old.overlay != key.overlay) {
 			delete(r.scores, old)
 		}
 	}
@@ -257,8 +258,10 @@ func (s *Store) scoreRevisionFor(ctx context.Context, n *nativeSources, records 
 	if !ok {
 		return "", false
 	}
-	if err := s.RestoreLiveStats(ctx); err != nil {
-		return "", false
+	if s.overlay == nil {
+		if err := s.RestoreLiveStats(ctx); err != nil {
+			return "", false
+		}
 	}
 	held, _, err := s.heldSeasonKey(ctx, n.season)
 	if err != nil {

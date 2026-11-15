@@ -107,6 +107,9 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	}
 	defer stopStatus()
 
+	if pins, ok := handler.Leagues.(*leaguePins); ok {
+		defer startHostedLive(ctx, pins, filepath.Dir(*config.path), nil)()
+	}
 	defer startHostedDueWorker(ctx, handler.Worker)()
 	defer startArchivePurge(ctx, files.leagues.root, time.Now, func(line string) { log.Print(line) })()
 
