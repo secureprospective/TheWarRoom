@@ -14,6 +14,26 @@ import package
 
 
 class DesktopTests(unittest.TestCase):
+    def test_dmg_creation_retries_a_busy_hdiutil_then_gives_up(self):
+        calls, waits = [], []
+
+        def flaky(failures):
+            def run(command, check):
+                calls.append(command)
+                if len(calls) <= failures:
+                    raise package.subprocess.CalledProcessError(1, command)
+            return run
+
+        package.create_dmg(Path("stage"), Path("out.dmg"), run=flaky(2), sleep=waits.append)
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(waits, [5, 10])
+        self.assertEqual(calls[0][:2], ["hdiutil", "create"])
+        calls.clear(); waits.clear()
+        with self.assertRaises(package.subprocess.CalledProcessError):
+            package.create_dmg(Path("stage"), Path("out.dmg"), run=flaky(9), sleep=waits.append)
+        self.assertEqual(len(calls), 4)
+        self.assertEqual(waits, [5, 10, 15])
+
     def test_release_target_names(self):
         self.assertEqual(package.artifact_name("windows-amd64"), "warroom-windows-amd64.exe")
         self.assertEqual(package.artifact_name("darwin-arm64"), "warroom-darwin-arm64.dmg")
