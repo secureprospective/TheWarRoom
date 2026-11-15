@@ -5,10 +5,64 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
+
+func TestHostedRoleGrantToAccountWithoutSeatOrRole(t *testing.T) {
+	c := workflowClient(t)
+	code, err := c.f.enrollment.Issue(t.Context(), "native.hosted", "unseated")
+	if err != nil {
+		t.Fatal(err)
+	}
+	account, err := c.f.enrollment.Redeem(t.Context(), accounts.RawEnrollment{
+		Code: code.Code, Username: "unseated", Password: "private-password",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	person, err := account.Principal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := c.f.history.SharedCommissionerRecords(t.Context(), "native.hosted")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err := commissioner.GovernanceState(records)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, franchise := range []governance.FranchiseID{"franchise.01", "franchise.02", "franchise.03"} {
+		if state.HoldsSeat(franchise, person) {
+			t.Fatal("new account already holds a seat")
+		}
+	}
+	for _, role := range []governance.Role{governance.Commissioner, governance.CoCommissioner, governance.DOT} {
+		if state.HasRole(person, role) {
+			t.Fatal("new account already holds a role")
+		}
+	}
+	raw := c.command("commish.role.grant", commissioner.RawArgs{People: &commissioner.RawPeople{
+		Principal: string(person), Role: governance.CoCommissioner,
+	}}, "unseated.role")
+	raw.Visibility = "private"
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Command: &raw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.f.post(t, serverhttp.ExecutePath, string(body), c.bearer, c.proof, 200)
+	records, err = c.f.history.SharedCommissionerRecords(t.Context(), raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err = commissioner.GovernanceState(records)
+	if err != nil || !state.HasRole(person, governance.CoCommissioner) {
+		t.Fatalf("unseated account grant missing: %v", err)
+	}
+}
 
 func TestHostedRoleGrantRequiresKnownAccountAndOldGrantReplays(t *testing.T) {
 	c := workflowClient(t)
@@ -45,7 +99,7 @@ func TestHostedRoleGrantRequiresKnownAccountAndOldGrantReplays(t *testing.T) {
 	if err != nil || len(after) != len(before) {
 		t.Fatalf("rejected grant changed ledger: %d -> %d, %v", len(before), len(after), err)
 	}
-	// A well-formed account ID that is not a league member is refused too.
+	// A well-formed account ID absent from the sign-in store is refused too.
 	raw.Args.People.Principal = "acct.11111111-1111-4111-8111-111111111111"
 	result = c.f.post(t, serverhttp.ExecutePath, string(request(raw)), c.bearer, c.proof, 409)
 	if !strings.Contains(string(result), "No league member has that account") {

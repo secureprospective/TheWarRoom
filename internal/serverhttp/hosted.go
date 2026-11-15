@@ -524,7 +524,7 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 		return err
 	}
 	if access.Raw.Command == "commish.role.grant" && access.Raw.Args.People != nil {
-		return a.checkRoleTarget(ctx, access.Raw.Args.People.Principal, policy, records)
+		return a.checkRoleTarget(ctx, access.Raw.Args.People.Principal)
 	}
 	return nil
 }
@@ -533,10 +533,10 @@ type unknownRoleTarget struct{}
 
 func (unknownRoleTarget) Error() string { return "No league member has that account" }
 
-func (a accountAdmission) checkRoleTarget(ctx context.Context, target string, policy governance.State, records []commissioner.Record) error {
+func (a accountAdmission) checkRoleTarget(ctx context.Context, target string) error {
 	id := strings.TrimPrefix(target, "acct.")
 	canonical, err := governance.AccountPrincipal(id)
-	if err != nil || string(canonical) != target || !hostedMember(policy, canonical, records) {
+	if err != nil || string(canonical) != target {
 		return unknownRoleTarget{}
 	}
 	if a.accounts == nil {
