@@ -45,3 +45,12 @@ func TestPartialLineupPermissionDoesNotInheritTopStarterPenalty(t *testing.T) {
 		t.Fatal("unsupported permission silently accepted")
 	}
 }
+
+// An imported league locks each player when his own game kicks off, never the whole week at the first kickoff.
+func TestImportLocksEachPlayerAtHisOwnGame(t *testing.T) {
+	t.Parallel()
+	r, _, _ := Settings(league.RawConfig{}, leaguerules.LegacyNFL(), "")
+	if r.Lineup.Lock.Value != leaguerules.EachPlayerGame || r.Lineup.Lock.State != leaguerules.IsKnown {
+		t.Fatalf("imported lineup lock: %+v", r.Lineup.Lock)
+	}
+}
