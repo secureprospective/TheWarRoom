@@ -50,14 +50,11 @@ func reconciles(line *Line, kind gainKind, held []leaguerules.Decimal) bool {
 
 // collectGains reads each counted catch and carry from the play text, by the uniquely named player.
 func collectGains(game livegame.Game, lines map[string]*Line) map[*Line]map[leaguerules.StatID][]leaguerules.Decimal {
-	receptionPlay, rushPlay := gainPatterns()
 	gains := map[*Line]map[leaguerules.StatID][]leaguerules.Decimal{}
 	for _, play := range game.Plays {
 		text := strings.TrimSpace(play.Text)
 		lower := strings.ToLower(text)
-		if strings.Contains(lower, "no play") || strings.Contains(lower, "nullified") ||
-			strings.Contains(lower, "incomplete") || strings.Contains(lower, "intercepted") ||
-			strings.Contains(lower, "offsetting") {
+		if voided(lower) || strings.Contains(lower, "incomplete") || strings.Contains(lower, "intercepted") {
 			continue
 		}
 		event, m := leaguerules.StatID("long_reception"), receptionPlay.FindStringSubmatch(text)
@@ -82,17 +79,17 @@ func collectGains(game livegame.Game, lines map[string]*Line) map[*Line]map[leag
 	return gains
 }
 
-// gainPatterns read a catch (pass ... to NAME ... for N yards) and a carry (NAME up the middle ... for N yards).
-func gainPatterns() (reception, rush *regexp.Regexp) {
-	return regexp.MustCompile(`pass (?:(?:short|deep) )?(?:(?:left|right|middle) )?to (.+?)` +
-			`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`),
-		// A carry may follow bracketed notes ("(1:43) (No Huddle, Shotgun)") and announcement sentences
-		// ("C.Lomu reported in as eligible.", "Direct snap to A.Beck.") before the runner's name.
-		regexp.MustCompile(`^(?:\([^)]*\) )*(?:\S+ reported in as eligible\.\s+|Direct snap to \S+\.\s+)*` +
-			`(?:\([^)]*\) )*(\S+(?: \S+)??) (?:scrambles )?` +
-			`(?:up the middle|left end|right end|left tackle|right tackle|left guard|right guard|kneels)` +
-			`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`)
-}
+// A catch (pass ... to NAME ... for N yards) and a carry (NAME up the middle ... for N yards).
+var (
+	receptionPlay = regexp.MustCompile(`pass (?:(?:short|deep) )?(?:(?:left|right|middle) )?to (.+?)` +
+		`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`)
+	// A carry may follow bracketed notes ("(1:43) (No Huddle, Shotgun)") and announcement sentences
+	// ("C.Lomu reported in as eligible.", "Direct snap to A.Beck.") before the runner's name.
+	rushPlay = regexp.MustCompile(`^(?:\([^)]*\) )*(?:\S+ reported in as eligible\.\s+|Direct snap to \S+\.\s+)*` +
+		`(?:\([^)]*\) )*(\S+(?: \S+)??) (?:scrambles )?` +
+		`(?:up the middle|left end|right end|left tackle|right tackle|left guard|right guard|kneels)` +
+		`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`)
+)
 
 func gainYards(words string) (int, bool) {
 	n, err := strconv.Atoi(strings.Fields(words)[0])

@@ -13,27 +13,35 @@ import (
 // attachPlayDetails adds what the box leaves out but the play-by-play states: kick distances, PAT misses,
 // fumble-recovery touchdowns, long gains and the own/opponent split of fumble recoveries.
 func attachPlayDetails(game livegame.Game, lines map[string]*Line) {
-	kicks := regexp.MustCompile(`^(\S+) (\d+) yard field goal is (GOOD|No Good)[,.]`)
 	for _, line := range lines {
 		attachPATMisses(line)
-		attachKickDistances(game, lines, line, kicks)
 	}
+	attachKickDistances(game, lines)
 	attachRecoveryTDs(game, lines)
 	attachLongGains(game, lines)
 	attachFumbleRecoveries(game, lines)
 }
 
+// The play text's field goals, recovery touchdowns, catches and carries. Compiled once: the collector
+// reads every live game on each poll.
+var (
+	kickPlay       = regexp.MustCompile(`^(\S+) (\d+) yard field goal is (GOOD|No Good)[,.]`)
+	recoveryTDPlay = regexp.MustCompile(`(?i)recovered by ([A-Z]+)-(.+?) at [A-Z]+ 0[,.] TOUCHDOWN`)
+)
+
 // attachKickDistances records each field goal's distance and its band. ESPN's box only totals kicks, so a
 // distance is kept only when the uniquely named kicker's parsed attempts reconcile with his box line.
-func attachKickDistances(game livegame.Game, lines map[string]*Line, line *Line, kicks *regexp.Regexp) {
+func attachKickDistances(game livegame.Game, lines map[string]*Line) {
+	for line, events := range collectKicks(game, lines) {
+		attachKicks(line, events)
+	}
+}
+
+func attachKicks(line *Line, events map[leaguerules.StatID][]leaguerules.Decimal) {
 	attempts, hasAttempts := line.Stats.Quantities["fg_attempt"]
 	made, hasMade := line.Stats.Quantities["fg_made"]
-	if !hasAttempts || !hasMade {
-		return
-	}
-	events := map[leaguerules.StatID][]leaguerules.Decimal{"fg_made_distance": {}, "fg_missed_distance": {}}
-	collectKicks(game, lines, line, kicks, events)
-	if leaguerules.Decimal(len(events["fg_made_distance"]))*10000 != made ||
+	if !hasAttempts || !hasMade ||
+		leaguerules.Decimal(len(events["fg_made_distance"]))*10000 != made ||
 		leaguerules.Decimal(len(events["fg_made_distance"])+len(events["fg_missed_distance"]))*10000 != attempts {
 		return
 	}
@@ -105,13 +113,12 @@ func playName(full string) string {
 // attachRecoveryTDs credits a fumble returned for a touchdown: to the offense's own recoverer (MFL's own
 // fumble recovery TD) or to the defender who took it away. Kicks and punts are left out, as for recoveries.
 func attachRecoveryTDs(game livegame.Game, lines map[string]*Line) {
-	recovery := regexp.MustCompile(`(?i)recovered by ([A-Z]+)-(.+?) at [A-Z]+ 0[,.] TOUCHDOWN`)
 	for _, play := range game.Plays {
 		text := strings.ToLower(play.Text)
 		if !strings.Contains(text, "touchdown") || voided(text) || strings.Contains(text, "punts") || strings.Contains(text, "kicks") {
 			continue
 		}
-		m := recovery.FindStringSubmatch(play.Text)
+		m := recoveryTDPlay.FindStringSubmatch(play.Text)
 		if m == nil {
 			continue
 		}
@@ -129,9 +136,10 @@ func attachRecoveryTDs(game livegame.Game, lines map[string]*Line) {
 	}
 }
 
-// voided says a play did not stand: it was wiped out (no play) or its score was nullified by a penalty.
+// voided says a play did not stand: it was wiped out (no play), its score was nullified by a penalty, or
+// offsetting penalties replayed the down.
 func voided(lower string) bool {
-	return strings.Contains(lower, "no play") || strings.Contains(lower, "nullified")
+	return strings.Contains(lower, "no play") || strings.Contains(lower, "nullified") || strings.Contains(lower, "offsetting")
 }
 
 // offense is the abbreviation of the team that had the ball when the play started.
@@ -148,23 +156,30 @@ func offense(game livegame.Game, play livegame.Play) (string, bool) {
 	return "", false
 }
 
-func collectKicks(game livegame.Game, lines map[string]*Line, line *Line, kicks *regexp.Regexp,
-	events map[leaguerules.StatID][]leaguerules.Decimal) {
+// collectKicks reads each standing field goal's distance by its uniquely named kicker.
+func collectKicks(game livegame.Game, lines map[string]*Line) map[*Line]map[leaguerules.StatID][]leaguerules.Decimal {
+	kicks := map[*Line]map[leaguerules.StatID][]leaguerules.Decimal{}
 	for _, play := range game.Plays {
-		m := kicks.FindStringSubmatch(strings.TrimSpace(play.Text))
-		if len(m) == 0 || uniquePlayName(lines, m[1], "") != line {
+		text := strings.TrimSpace(play.Text)
+		m := kickPlay.FindStringSubmatch(text)
+		if m == nil || voided(strings.ToLower(text)) {
 			continue
 		}
+		line := uniquePlayName(lines, m[1], "")
 		distance, err := strconv.Atoi(m[2])
-		if err != nil || distance < 1 || distance > 99 {
+		if line == nil || err != nil || distance < 1 || distance > 99 {
 			continue
 		}
 		id := leaguerules.StatID("fg_missed_distance")
 		if m[3] == "GOOD" {
 			id = "fg_made_distance"
 		}
-		events[id] = append(events[id], leaguerules.Decimal(distance)*10000)
+		if kicks[line] == nil {
+			kicks[line] = map[leaguerules.StatID][]leaguerules.Decimal{"fg_made_distance": {}, "fg_missed_distance": {}}
+		}
+		kicks[line][id] = append(kicks[line][id], leaguerules.Decimal(distance)*10000)
 	}
+	return kicks
 }
 
 func attachPATMisses(line *Line) {
