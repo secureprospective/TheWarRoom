@@ -52,7 +52,7 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
         <span>{week ? `week ${week}` : 'no week'}</span>
       </div>
       {side === 'nfl'
-        ? <NflList games={games} followed={followed} onFollow={live.follow}
+        ? <NflList games={games} followed={followed} onFollow={viewer ? undefined : live.follow}
             words={!current ? 'NFL games are shown for the week being played.'
               : live.error ? `The NFL scoreboard is unavailable · ${live.error}`
               : !live.view ? 'Reading the NFL scoreboard…' : 'No NFL games are held for this week.'} />
@@ -63,13 +63,17 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
     <div className="pcol fieldwrap">
       <div className="follow">
         <span className="h">FOLLOWING</span>
-        {games.filter(g => g.status === 'in' || g.id === followed?.id).slice(0, 3).map(g =>
-          <PulseAct key={g.id} className={`fchip${g.id === followed?.id ? ' on' : ''}`}
-            label={`Follow ${g.away.abbreviation} at ${g.home.abbreviation}`}
-            onAction={() => live.follow(followKey(g))}>
+        {games.filter(g => g.status === 'in' || g.id === followed?.id).slice(0, 3).map(g => {
+          const chip = <>
             {g.away.abbreviation} <b>{g.away.score}–{g.home.score}</b> {g.home.abbreviation}
             <span className="q">{clockWords(g)}</span>
-          </PulseAct>)}
+          </>;
+          return viewer
+            ? <span key={g.id} className="fchip">{chip}</span>
+            : <PulseAct key={g.id} className={`fchip${g.id === followed?.id ? ' on' : ''}`}
+              label={`Follow ${g.away.abbreviation} at ${g.home.abbreviation}`}
+              onAction={() => live.follow(followKey(g))}>{chip}</PulseAct>;
+        })}
         {!games.some(g => g.status === 'in') && !followed && <span className="src">
           {!current ? 'live games show for the week being played'
             : live.error ? `NFL scoreboard unavailable · ${live.error}`
@@ -170,16 +174,17 @@ function clockWords(g: LiveNflGame) {
   return `${g.period > 4 ? 'OT' : `Q${g.period}`} ${g.clock}`;
 }
 
+/** NflList is the week's NFL games. Without onFollow (the thin app, which holds no play feed yet) the
+ *  rows are plain read-only rows, never buttons that do nothing. */
 export function NflList({ games, followed, onFollow, words }: { games: LiveNflGame[];
-  followed?: LiveNflGame; onFollow: (id: string) => void; words: string }) {
+  followed?: LiveNflGame; onFollow?: (id: string) => void; words: string }) {
   if (!games.length) return <div className="scroll"><PulseIdle words={words} /></div>;
   const order = { in: 0, pre: 1, post: 2 } as const;
   return <div className="scroll">
     {[...games].sort((a, b) => order[a.status] - order[b.status]).map(g => {
       const has = (t: LiveNflGame['home']) => g.status === 'in' && g.state?.possession === t.id;
-      return <PulseAct key={g.id} className={`nfl${g.id === followed?.id ? ' sel' : ''}`
-        + `${g.status === 'post' ? ' dim' : ''}`} label={`Follow ${g.away.abbreviation} at `
-        + g.home.abbreviation} onAction={() => onFollow(followKey(g))}>
+      const className = `nfl${g.id === followed?.id ? ' sel' : ''}${g.status === 'post' ? ' dim' : ''}`;
+      const body = <>
         {[g.away, g.home].map(t => <div className="r" key={t.id}>
           <span className={`pos${has(t) ? '' : ' no'}`} />{t.abbreviation}
           <b>{g.status === 'pre' ? '' : t.score}</b></div>)}
@@ -188,7 +193,12 @@ export function NflList({ games, followed, onFollow, words }: { games: LiveNflGa
             {g.status === 'in' ? 'LIVE' : g.status === 'post' ? 'FINAL' : 'TO PLAY'}</span>
           <span>{gameTime(g)}</span>
         </div>
-      </PulseAct>;
+      </>;
+      return onFollow
+        ? <PulseAct key={g.id} className={className} label={`Follow ${g.away.abbreviation} at `
+          + g.home.abbreviation} onAction={() => onFollow(followKey(g))}>{body}</PulseAct>
+        : <div key={g.id} className={className} role="group"
+          aria-label={`${g.away.abbreviation} at ${g.home.abbreviation}`}>{body}</div>;
     })}
   </div>;
 }
