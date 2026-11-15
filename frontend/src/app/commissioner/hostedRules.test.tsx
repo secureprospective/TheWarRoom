@@ -114,6 +114,62 @@ it('the tray Close cancels the review and restores focus', async () => {
   expect(host.querySelector('[aria-label="Confirm league change"]')).toBeNull();
   expect(document.activeElement).toBe(buttons('Change Lineup lock')[0]);
 });
+it('closing a loading preview discards its late reply', async () => {
+  const serve = service();
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const port: HostedPort = async request => {
+    if (request.mode === 'preview') await gate;
+    return serve(request);
+  };
+  const room = createHostedLeagueRoom(league, port);
+  await act(async () => { await room.refresh(); });
+  await act(async () => root.render(<HostedRules rules={parseRules(rules())} commissioner room={room} />));
+  await click('Change Lineup lock'); await preview();
+  expect(room.peek().pending).toBe(true);
+  await click('Close rule editor');
+  expect(room.peek().pending).toBe(false);
+  expect(room.peek().review).toBeUndefined();
+  await click('Change Lineup lock');
+  await act(async () => { release(); await gate; });
+  expect(room.peek().pending).toBe(false);
+  expect(room.peek().review).toBeUndefined();
+  expect(host.querySelector('[aria-label="Confirm league change"]')).toBeNull();
+});
+it('cancel leaves an in-flight refresh pending and accepts its result', async () => {
+  const serve = service();
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const room = createHostedLeagueRoom(league, async request => { await gate; return serve(request); });
+  const loading = room.refresh();
+  room.cancel();
+  expect(room.peek().pending).toBe(true);
+  release(); await loading;
+  expect(room.peek().pending).toBe(false);
+  expect(room.peek().reading?.rules.league).toBe(league);
+  expect(room.peek().stale).toBe(false);
+});
+it('closing during a submitted change still records and refreshes it', async () => {
+  const serve = service();
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const port: HostedPort = async request => {
+    if (request.mode === 'execute') await gate;
+    return serve(request);
+  };
+  const room = createHostedLeagueRoom(league, port);
+  await act(async () => { await room.refresh(); });
+  await act(async () => root.render(<HostedRules rules={parseRules(rules())} commissioner room={room} />));
+  await click('Change Lineup lock'); await preview();
+  let confirming!: Promise<void>;
+  await act(async () => { confirming = room.confirm(); });
+  await click('Close rule editor');
+  expect(room.peek().pending).toBe(true);
+  await act(async () => { release(); await confirming; });
+  expect(room.peek().pending).toBe(false);
+  expect(room.peek().reading?.rules.revision).toBe(8);
+  expect(room.peek().message).toContain('server recorded your change');
+});
 it('commissioner previews and confirms a rule through the hosted port, then rereads the value', async () => {
   const port = service(); await openRules(port); await preview();
   const request = port.mock.calls.find(([r]) => r.mode === 'preview')![0];

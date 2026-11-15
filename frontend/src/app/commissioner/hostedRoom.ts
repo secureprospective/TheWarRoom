@@ -88,6 +88,7 @@ function createRoom<R extends HostedLeagueReading>(
   });
   const store = query.store;
   let generation = 0;
+  let reviewing = false;
   let activeWeek = 1;
   async function refresh(week = activeWeek) {
     if (store.getState().pending) return;
@@ -105,6 +106,7 @@ function createRoom<R extends HostedLeagueReading>(
     if (!canChange()) return;
     if (request.mode !== 'preview' && request.command !== 'draft.pick') return;
     const turn = generation;
+    reviewing = true;
     store.setState({
       pending: true,
       error: '',
@@ -127,7 +129,10 @@ function createRoom<R extends HostedLeagueReading>(
           'Could not check this change. Nothing is queued. Refresh your league before trying again.',
       });
     } finally {
-      if (turn === generation) store.setState({ pending: false });
+      if (turn === generation) {
+        reviewing = false;
+        store.setState({ pending: false });
+      }
     }
   }
   async function market(command: string) {
@@ -189,9 +194,19 @@ function createRoom<R extends HostedLeagueReading>(
     }
     await refresh();
   }
-  const cancel = () => store.setState({ review: undefined });
+  const cancel = () => {
+    // A refresh, market read or submitted change must finish even if the editor closes.
+    if (store.getState().pending && !reviewing) {
+      store.setState({ review: undefined });
+      return;
+    }
+    generation++;
+    reviewing = false;
+    store.setState({ pending: false, review: undefined });
+  };
   const dispose = () => {
     generation++;
+    reviewing = false;
     query.invalidate();
     store.setState({
       reading: undefined,
