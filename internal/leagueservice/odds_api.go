@@ -64,3 +64,23 @@ func OddsValuesOf(reading appvalue.Reading, err error) commissioner.OddsValues {
 	}
 	return out
 }
+
+func readHostOdds(ctx context.Context, host Host, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	reader, ok := host.(oddsHost)
+	if !ok {
+		return commissioner.NativeOdds{}, fmt.Errorf("league results are not available on this host")
+	}
+	reading, err := reader.NativeOdds(ctx, league, season, values)
+	if err != nil {
+		return commissioner.NativeOdds{}, fmt.Errorf("host odds: %w", err)
+	}
+	return reading, nil
+}
+
+func (h footballHost) NativeOdds(ctx context.Context, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	return readHostOdds(ctx, h.Host, league, season, values)
+}
+
+func (h dueHost) NativeOdds(ctx context.Context, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	return readHostOdds(ctx, h.Host, league, season, values)
+}

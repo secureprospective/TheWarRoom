@@ -26,6 +26,7 @@ type RawWorkflow struct {
 	Mode      string          `json:"mode"`
 	Arguments json.RawMessage `json:"arguments"`
 	Football  string          `json:"football,omitempty"`
+	Known     *ReadTags       `json:"known,omitempty"`
 }
 
 type RawWorkflowScope struct {
@@ -155,6 +156,14 @@ func workflowPlayers(raw string) (string, error) {
 }
 
 func (r RawWorkflow) Validate() error {
+	if r.Known != nil {
+		if r.Mode != "read" {
+			return fmt.Errorf("only readings accept known tags")
+		}
+		if err := r.Known.Validate(); err != nil {
+			return err
+		}
+	}
 	if r.Version != "1" {
 		return fmt.Errorf("update the app before using this league action")
 	}
@@ -209,7 +218,7 @@ func (r RawWorkflow) League() (string, error) {
 }
 
 type workflowOutput interface {
-	history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules
+	VersionsReading | history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {

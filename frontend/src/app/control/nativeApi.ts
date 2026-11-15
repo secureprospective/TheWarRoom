@@ -1,4 +1,5 @@
 // Native-only desktop transport. Go owns HTTPS and all bearer/recent-auth secrets.
+import type { ReadTags, TaggedReply } from '../data/session';
 import { observeView, prepareHostedAction } from '../data/hostedReads';
 import type { NativeRequest } from '../commands/native';
 import { object, text } from '../data/parseValues';
@@ -91,22 +92,46 @@ export function readConfirmRequest(text: string): boolean {
     return typeof request.tokenId === 'string' && typeof request.change?.command === 'string';
   } catch { return false; }
 }
-export type HostedResponse = { label: string; writable: boolean; football: string; data: unknown };
-export async function hostedWorkflow(request: NativeRequest, football = ''): Promise<HostedResponse> {
+export type HostedResponse = {
+  label: string; writable: boolean; football: string; data: unknown; tags?: ReadTags;
+};
+export function parseReadTags(value: unknown): ReadTags {
+  const row = object(value, 'Read tags', ['serverEpoch', 'league', 'football', 'live', 'values']);
+  const league = object(row.league, 'Topic versions', Object.keys(row.league ?? {}));
+  if (Object.values(league).some(version => typeof version !== 'string' || !/^\d+$/.test(version)))
+    throw new Error('Unreadable topic version.');
+  return { serverEpoch: text(row.serverEpoch, 'Server epoch'), league: league as Record<string, string>,
+    football: text(row.football, 'Football evidence'), live: text(row.live, 'Live epoch'),
+    values: text(row.values, 'Values run') };
+}
+export function hostedWorkflow(request: NativeRequest, football?: string): Promise<HostedResponse>;
+export function hostedWorkflow(request: NativeRequest, football: string,
+  known: ReadTags): Promise<TaggedReply<unknown>>;
+export async function hostedWorkflow(request: NativeRequest, football = '', known?: ReadTags):
+Promise<HostedResponse | TaggedReply<unknown>> {
   const { nativeEnvelope } = await import('../commands/native');
   const response = await fetch('/desktop/workflow', {
     method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...nativeEnvelope(request), football }),
+    body: JSON.stringify({ ...nativeEnvelope(request), football, known }),
   });
   if (!response.ok) {
     throw new Error('The league could not accept this action. '
       + 'Refresh before retrying; check your connection, seat and authenticator.');
   }
-  const r = object(await response.json(), 'Hosted league', ['label', 'writable', 'football', 'data']);
+  const r = object(await response.json(), 'Hosted league',
+    ['label', 'writable', 'football', 'data', 'tags', 'unchanged']);
+  const tags = r.tags === undefined ? undefined : parseReadTags(r.tags);
+  if (r.unchanged === true) {
+    if (!known || !tags || Object.keys(r).some(key => !['unchanged', 'tags'].includes(key)))
+      throw new Error('Unreadable unchanged response.');
+    return { unchanged: true, tags };
+  }
+  if (r.unchanged !== undefined && r.unchanged !== false) throw new Error('Unreadable response.');
+  if (known && !tags) throw new Error('Missing reading tags.');
   if (typeof r.writable !== 'boolean') throw new Error('Unreadable league authority. Refresh to try again.');
   return {
     label: text(r.label, 'League location'), writable: r.writable,
-    football: text(r.football, 'Football evidence'), data: r.data,
+    football: text(r.football, 'Football evidence'), data: r.data, ...(tags ? { tags } : {}),
   };
 }
 

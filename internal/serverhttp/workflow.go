@@ -14,18 +14,54 @@ import (
 
 const WorkflowPath = "/v1/native/workflow"
 
+const workflowRefusalMessage = "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator."
+
 type RawWorkflow = catalog.RawWorkflow
 type RawWorkflowScope = catalog.RawWorkflowScope
 
+type UnchangedResponse struct {
+	Unchanged bool      `json:"unchanged"`
+	Tags      *ReadTags `json:"tags"`
+}
+
 // WorkflowResponse carries the authority's own wording; a cached writable bit is never a grant.
 type WorkflowResponse struct {
-	Label    string          `json:"label"`
-	Writable bool            `json:"writable"`
-	Football string          `json:"football"`
-	Data     json.RawMessage `json:"data"`
+	Label     string          `json:"label"`
+	Writable  bool            `json:"writable"`
+	Football  string          `json:"football"`
+	Data      json.RawMessage `json:"data,omitempty"`
+	Tags      *ReadTags       `json:"tags,omitempty"`
+	Unchanged bool            `json:"unchanged,omitempty"`
+}
+
+func (r WorkflowResponse) MarshalJSON() ([]byte, error) {
+	if r.Unchanged {
+		body, err := json.Marshal(UnchangedResponse{true, r.Tags})
+		if err != nil {
+			return nil, fmt.Errorf("encode unchanged workflow: %w", err)
+		}
+		return body, nil
+	}
+	type wire WorkflowResponse
+	body, err := json.Marshal(wire(r))
+	if err != nil {
+		return nil, fmt.Errorf("encode workflow: %w", err)
+	}
+	return body, nil
 }
 
 func (r WorkflowResponse) Validate() error {
+	if r.Tags != nil {
+		if err := r.Tags.Validate(); err != nil {
+			return fmt.Errorf("read response tags: %w", err)
+		}
+	}
+	if r.Unchanged {
+		if r.Tags == nil || len(r.Data) != 0 {
+			return fmt.Errorf("unreadable unchanged response")
+		}
+		return nil
+	}
 	if r.Label == "" || !json.Valid(r.Data) {
 		return fmt.Errorf("unreadable league response")
 	}
@@ -48,37 +84,42 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	pin := h.pinFor(r.Context(), league)
-	if raw.Mode != "read" && pin.Digest == "" {
+	if refusal := workflowWriteRefusal(raw.Mode, pin, location.Label, location.Writable); refusal != "" {
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, "Ask the server operator to select football evidence before making changes", http.StatusConflict)
-		return
-	}
-	if raw.Mode != "read" && pin.Missing {
-		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, missingFootball(pin.Digest), http.StatusConflict)
-		return
-	}
-	if raw.Mode != "read" && !location.Writable {
-		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, location.Label, http.StatusConflict)
+		http.Error(w, refusal, http.StatusConflict)
 		return
 	}
 	ctx := leagueservice.WithFootballDigest(r.Context(), raw.Football)
-	data, err := h.workflowData(ctx, service, raw, league)
+	if raw.Mode == "read" {
+		//nolint:contextcheck // The service host owns this request context.
+		if err := admitWorkflowRead(service, raw, league); err != nil {
+			h.Requests.add(raw.Command, raw.Mode, 1, 0)
+			http.Error(w, workflowRefusalMessage, http.StatusConflict)
+			return
+		}
+	}
+	tags, err := h.workflowTags(ctx, service, raw, league, pin.Digest)
+	if err != nil {
+		http.Error(w, "league versions unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	// Lineup privacy also depends on the recorded week (including public corrections).
+	// Its domain reader must run even when publication tags match.
+	if raw.Mode == "read" && raw.Command != "versions.read" && raw.Command != "lineup.read" && sameReadTags(tags, raw.Known) {
+		h.writeUnchangedWorkflow(w, r, raw, tags)
+		return
+	}
+	data, err := h.workflowReplyData(r, service, raw, league, tags)
 	if err != nil {
 		// The command name and mode are fixed catalogue words; arguments, bearer and proof are never logged.
 		log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
+		http.Error(w, workflowRefusalMessage, http.StatusConflict)
 		return
 	}
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
-	response := WorkflowResponse{Label: location.Label, Writable: location.Writable && !pin.Missing, Football: pin.Digest, Data: data}
-	if raw.Mode == "read" {
-		writeHostedReading(w, r, response)
-		return
-	}
-	writeHosted(w, response)
+	response := WorkflowResponse{Label: location.Label, Writable: location.Writable && !pin.Missing, Football: pin.Digest, Data: data, Tags: tags}
+	h.writeWorkflowResponse(w, r, raw, response)
 }
 
 // workflowData runs a workflow, answering a league-state reading from the reply cache when it holds one.
@@ -106,4 +147,49 @@ func missingFootball(digest string) string {
 	return "This league's football data (version " + digest + ") is not on this server right now, " +
 		"so changes wait until it is back. Rosters, contracts and the ledger can still be viewed; " +
 		"changes open again by themselves once the football data returns."
+}
+
+func workflowWriteRefusal(mode string, pin LeaguePin, label string, writable bool) string {
+	if mode == "read" {
+		return ""
+	}
+	if pin.Digest == "" {
+		return "Ask the server operator to select football evidence before making changes"
+	}
+	if pin.Missing {
+		return missingFootball(pin.Digest)
+	}
+	if !writable {
+		return label
+	}
+	return ""
+}
+
+func (h Hosted) writeUnchangedWorkflow(w http.ResponseWriter, r *http.Request, raw RawWorkflow, tags *ReadTags) {
+	if !h.workflowSessionCurrent(w, r, raw) {
+		return
+	}
+	h.Requests.Unchanged(raw.Command, raw.Mode)
+	writeHostedReading(w, r, UnchangedResponse{true, tags})
+}
+
+func (h Hosted) writeWorkflowResponse(w http.ResponseWriter, r *http.Request, raw RawWorkflow, response WorkflowResponse) {
+	if raw.Mode != "read" {
+		writeHosted(w, response)
+		return
+	}
+	if !h.workflowSessionCurrent(w, r, raw) {
+		return
+	}
+	writeHostedReading(w, r, response)
+}
+
+// A credential revoked during computation must not receive a private reply. This does not
+// repeat command admission or read league records.
+func (h Hosted) workflowSessionCurrent(w http.ResponseWriter, r *http.Request, raw RawWorkflow) bool {
+	_, ok := h.authenticateNative(w, r)
+	if !ok {
+		h.Requests.add(raw.Command, raw.Mode, 1, 0)
+	}
+	return ok
 }

@@ -15,6 +15,10 @@ func nativeHandlers(c Command, in RegistryInputs) (map[Mode]Handler, error) {
 	out := map[Mode]Handler{}
 	for _, mode := range c.Modes {
 		switch {
+		case mode == Read && c.ID == "versions.read":
+			out[mode] = func(_ context.Context, _ json.RawMessage) (json.RawMessage, error) {
+				return nil, fmt.Errorf("versions require the hosted workflow")
+			}
 		case mode == Read:
 			b, ok := in.Desktop["commissioner"][c.Method]
 			if !ok || b.Handler == nil {

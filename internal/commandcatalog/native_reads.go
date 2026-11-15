@@ -62,6 +62,7 @@ func nativeReads() []Command {
 		{"waivers.read", "TargetNativeWaivers", "league:string franchise:string at:string", "franchise-view", "ledger,player-facts"},
 		{"week.read", "TargetNativeWeek", "", "league-view", "ledger,schedule"},
 		{"stats.queue.read", "TargetStatQueue", "league:string season:integer request:string", "statistics.manage", "ledger,stat-evidence"},
+		{"versions.read", "HostedVersionsRead", "league:string", "league-view", "ledger"},
 	}
 	out := make([]Command, 0, len(rows))
 	for _, row := range rows {
