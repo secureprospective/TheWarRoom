@@ -60,7 +60,8 @@ function HostedBody({ scope, changes }: { scope: PulseScope & { tab?: PulseTab }
 }
 
 export function useHostedGames(league: string, port: NonNullable<PulseScope['port']>,
-  onChange: (load: () => void) => () => void): ReturnType<typeof usePulseLive> & { prefer: (key: string) => void } {
+  onChange: (load: () => void) => () => void):
+  ReturnType<typeof usePulseLive> & { prefer: (key: string) => void } {
   const [held, setHeld] = useState<{ view?: LiveView; error: string }>({ error: '' });
   const [chosen, choose] = useState('');
   const [preferred, prefer] = useState('');
@@ -77,7 +78,8 @@ export function useHostedGames(league: string, port: NonNullable<PulseScope['por
         const selected = view.games.find(g => `${g.away.abbreviation}-${g.home.abbreviation}` === key)
           ?? view.games.find(g => g.status === 'in');
         if (current()) setHeld(prior => ({ view: { ...view,
-          followed: prior.view?.followed?.id === selected?.id ? prior.view?.followed ?? null : null }, error: '' }));
+          followed: prior.view?.followed?.id === selected?.id ? prior.view?.followed ?? null : null },
+          error: '' }));
         if (!selected) return;
         const detail = await port({ command: 'nfl.game.read', mode: 'read',
           arguments: { league, game: selected.id } });
@@ -95,7 +97,8 @@ export function useHostedGames(league: string, port: NonNullable<PulseScope['por
   return { view: held.view, error: held.error, follow: choose, prefer };
 }
 
-function PulseBody(scope: PulseScope & { tab?: PulseTab; live: ReturnType<typeof usePulseLive> & { prefer?: (key: string) => void };
+function PulseBody(scope: PulseScope & { tab?: PulseTab;
+  live: ReturnType<typeof usePulseLive> & { prefer?: (key: string) => void };
   refresh?: () => void }) {
   const port = scope.port ?? hostedWorkflow;
   const tab: PulseTab = scope.tab ?? 'now';

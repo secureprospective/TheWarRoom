@@ -63,7 +63,8 @@ function fakePort() {
         data = { ...common, franchise: 'franchise' in args ? args.franchise : '', week: 1,
           starters: [{ player: '0001', team: 'DAL', locked: true }] }; break;
       case 'nfl.games.read': data = board(); break;
-      case 'nfl.game.read': data = { league: 'test', game: nflGame, at: '2026-11-15T18:00:00Z', stale: false, words: '' }; break;
+      case 'nfl.game.read': data = { league: 'test', game: nflGame,
+        at: '2026-11-15T18:00:00Z', stale: false, words: '' }; break;
       case 'projections.read': data = { league: 'test', season: 2026, week: 1, players: [] }; break;
       default: throw new Error(`Unexpected read ${request.command}`);
     }
@@ -331,7 +332,9 @@ it.each(['Commissioner', 'Co-commissioner'])(
 
 it('follows hosted live field and plays, switches chips and rereads detail on scores', async () => {
   let hear: ((topics: ReadTopic[]) => void) | undefined;
-  vi.spyOn(hostedReads, 'onHostedTopics').mockImplementation(listener => { hear = listener; return () => {}; });
+  vi.spyOn(hostedReads, 'onHostedTopics').mockImplementation(listener => {
+    hear = listener; return () => {};
+  });
   const fallback = fakePort();
   const state = { possession: '12', down: 2, distance: 7, yardLine: 60, toEndzone: 40 };
   const play = { id: 'p1', sequence: 1, text: 'First live pass', clock: '5:12', period: 2,

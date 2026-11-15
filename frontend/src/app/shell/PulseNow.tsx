@@ -26,7 +26,8 @@ export type NowDrawer = 'box' | 'corr';
 export function PulseNow({ reading, mine, week, results, league, port, live, drawer,
   onClose, onChanges, viewer }: {
   reading: NativePulse; mine: string; week?: number; results: Reading<PulseResults>;
-  league: string; port: HostedPort; live: ReturnType<typeof usePulseLive> & { prefer?: (key: string) => void };
+  league: string; port: HostedPort;
+  live: ReturnType<typeof usePulseLive> & { prefer?: (key: string) => void };
   viewer?: { mine: string; commissioner: boolean };
   drawer?: NowDrawer; onClose: () => void; onChanges: (count: number) => void;
 }) {
@@ -45,7 +46,8 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
   const followed = current ? live.view?.followed ?? undefined : undefined;
   const myStarters = sides.mine ? sides.left : [];
   const best = games.filter(g => g.status === 'in').map(g => ({ game: g,
-    count: myStarters.filter(p => [g.home.abbreviation, g.away.abbreviation].includes(espnTeam(p.team))).length,
+    count: myStarters.filter(p => [g.home.abbreviation, g.away.abbreviation]
+      .includes(espnTeam(p.team))).length,
   })).sort((a, b) => b.count - a.count)[0]?.game;
   const preferred = best ? followKey(best) : '';
   useEffect(() => { live.prefer?.(preferred); }, [live.prefer, preferred]);
