@@ -73,7 +73,7 @@ const buttons = (text: string) => [...host.querySelectorAll('button')]
   .filter(b => b.textContent === text || b.getAttribute('aria-label') === text);
 async function click(text: string) {
   expect(buttons(text), text).toHaveLength(1);
-  await act(async () => buttons(text)[0].click()); await settle();
+  await act(async () => { buttons(text)[0].focus(); buttons(text)[0].click(); }); await settle();
 }
 async function input(selector: string, value: string) {
   const element = host.querySelector(selector)! as HTMLInputElement;
@@ -94,6 +94,26 @@ async function preview() {
   await input('textarea', 'League approved this change');
   await click('Preview rule change');
 }
+it('opens a named tray and Escape closes it, returning focus to the rule button', async () => {
+  const port = service(); await openRules(port);
+  const opener = buttons('Change Lineup lock')[0];
+  const dialog = host.querySelector<HTMLElement>('[role="dialog"]')!;
+  expect(dialog).not.toBeNull();
+  expect(document.getElementById(dialog.getAttribute('aria-labelledby')!)?.textContent)
+    .toBe('Change Lineup lock');
+  expect(opener.closest('[inert]')).not.toBeNull();
+  await act(async () => dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+  expect(host.querySelector('[role="dialog"]')).toBeNull();
+  expect(opener.closest('[inert]')).toBeNull();
+  expect(document.activeElement).toBe(opener);
+});
+it('the tray Close cancels the review and restores focus', async () => {
+  const port = service(); await openRules(port); await preview();
+  await click('Close rule editor');
+  expect(host.querySelector('[role="dialog"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Confirm league change"]')).toBeNull();
+  expect(document.activeElement).toBe(buttons('Change Lineup lock')[0]);
+});
 it('commissioner previews and confirms a rule through the hosted port, then rereads the value', async () => {
   const port = service(); await openRules(port); await preview();
   const request = port.mock.calls.find(([r]) => r.mode === 'preview')![0];
@@ -101,7 +121,12 @@ it('commissioner previews and confirms a rule through the hosted port, then rere
     league, command: 'commish.rules.set', args: { field: 'lineup.lock', value: 'first_kickoff' },
     expected: 7, effective: 'next_rollover', reason: 'League approved this change', visibility: 'league',
   } });
+  const dialog = host.querySelector('[role=dialog]')!;
   const confirm = buttons('Confirm league change')[0];
+  expect(dialog.contains(confirm)).toBe(true);
+  expect(confirm.closest('[inert]')).toBeNull();
+  await act(async () => confirm.focus());
+  expect(document.activeElement).toBe(confirm);
   await act(async () => confirm.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 650)); });
   await settle();
@@ -165,6 +190,14 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(port.mock.calls.some(([r]) => r.command === 'standings.read')).toBe(true);
     await click('League rules');
     expect(buttons('Change Lineup lock')).toHaveLength(1);
+    await click('Change Lineup lock'); await preview();
+    const dialog = host.querySelector('[role=dialog]')!;
+    const confirm = buttons('Confirm league change')[0];
+    expect(dialog.contains(confirm)).toBe(true);
+    expect(confirm.closest('[inert]')).toBeNull();
+    await act(async () => confirm.focus());
+    expect(document.activeElement).toBe(confirm);
+    await click('Cancel change'); await click('Close rule editor');
     for (const [r] of port.mock.calls) {
       expect(['lineup.read', 'native.assets.read', 'native.reserve.check', 'draft.read',
         'bids.read', 'waivers.read', 'trades.read', 'week.read']).not.toContain(r.command);

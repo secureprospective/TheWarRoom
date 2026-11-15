@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { GovernedGlyph } from '../governed/GovernedGlyph';
 import type { NativeRequest } from '../commands/native';
@@ -8,6 +8,10 @@ import { RuleInput } from './RuleInput';
 import { draftFrom, editDraft, toNatural } from './ruleDraft';
 import type { RuleRow, Rules } from './rules';
 import type { HostedLeagueRoom } from './hostedRoom';
+import { surfaceActions } from './surfaceActions';
+import { Review } from './HostedReview';
+import SideTray from './SideTray';
+import './commissioner.css';
 
 const hostedRule = (field: string) =>
   /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(field);
@@ -15,29 +19,43 @@ const hostedRule = (field: string) =>
 export function HostedRules({ rules, commissioner, room }: {
   rules: Rules; commissioner: boolean; room: HostedLeagueRoom;
 }) {
-  const [field, setField] = useState('');
+  const [selection, setSelection] = useState<{ field: string; opener: HTMLElement }>();
+  const screen = useId();
+  const background = useRef<HTMLDivElement>(null);
+  const close = () => { room.cancel(); setSelection(undefined); };
+  useEffect(() => surfaceActions.register(screen, args => {
+    if (args.action === 'close') close();
+  }), [screen, room]);
   const state = room.use();
-  const row = rules.sections.flatMap(s => s.rows).find(r => r.field === field);
+  const row = rules.sections.flatMap(s => s.rows).find(r => r.field === selection?.field);
   return <>
-    <h3>Rules in force</h3>
-    <p>Your commissioner controls these rules. Ask them for a ruling if a value is missing.</p>
-    {rules.sections.filter(s => s.rows.some(r => hostedRule(r.field))).map(s =>
-      <section key={s.label}>
-        <h4>{s.label}</h4>
-        <dl>{s.rows.filter(r => hostedRule(r.field)).map(r => <div key={r.field}>
-          <dt>{r.label}{r.governed && <GovernedGlyph governed={r.governed} subject={r.label} />}</dt>
-          <dd>{r.value}{commissioner && <HQAct disabled={!room.canChange()}
-            onAction={() => { room.cancel(); setField(r.field); }}>Change {r.label}</HQAct>}</dd>
-        </div>)}</dl>
-      </section>)}
-    {commissioner && row && <RuleEditor key={`${row.field}:${rules.revision}`} row={row}
-      rules={rules} room={room} disabled={!room.canChange() || Boolean(state.review)}
-      close={() => { room.cancel(); setField(''); }} />}
+    <div ref={background}>
+      <h3>Rules in force</h3>
+      <p>Your commissioner controls these rules. Ask them for a ruling if a value is missing.</p>
+      {rules.sections.filter(s => s.rows.some(r => hostedRule(r.field))).map(s =>
+        <section key={s.label}>
+          <h4>{s.label}</h4>
+          <dl>{s.rows.filter(r => hostedRule(r.field)).map(r => <div key={r.field}>
+            <dt>{r.label}{r.governed && <GovernedGlyph governed={r.governed} subject={r.label} />}</dt>
+            <dd>{r.value}{commissioner && <HQAct disabled={!room.canChange()}
+              onAction={() => {
+                room.cancel(); setSelection({ field: r.field, opener: document.activeElement as HTMLElement });
+              }}>Change {r.label}</HQAct>}</dd>
+          </div>)}</dl>
+        </section>)}
+    </div>
+    {commissioner && row && selection && <SideTray title={`Change ${row.label}`} screen={screen}
+      opener={selection.opener} background={background.current} onClose={close}
+      closeLabel="Close rule editor">
+      <RuleEditor key={`${row.field}:${rules.revision}`} row={row}
+        rules={rules} room={room} disabled={!room.canChange() || Boolean(state.review)} />
+      {state.review && <Review room={room} />}
+    </SideTray>}
   </>;
 }
 
-function RuleEditor({ row, rules, room, disabled, close }: {
-  row: RuleRow; rules: Rules; room: HostedLeagueRoom; disabled: boolean; close: () => void;
+function RuleEditor({ row, rules, room, disabled }: {
+  row: RuleRow; rules: Rules; room: HostedLeagueRoom; disabled: boolean;
 }) {
   const percent = row.unit === 'percent';
   const [draft, setDraft] = useState(() => draftFrom(row.schema, row.current, percent));
@@ -72,6 +90,5 @@ function RuleEditor({ row, rules, room, disabled, close }: {
     </fieldset>
     {!typed.ok && <p role="alert">{typed.error}</p>}
     <HQAct disabled={disabled || !typed.ok || !reason.trim()} onAction={preview}>Preview rule change</HQAct>
-    <HQAct disabled={room.peek().pending} onAction={close}>Close rule editor</HQAct>
   </section>;
 }

@@ -31,6 +31,6 @@ export function HostedCommissionerLeague({ league, port }: { league: string; por
     </Suspense>}
     {tab === 'rules' && state.reading &&
       <HostedRules rules={state.reading.rules} commissioner room={room} />}
-    {state.review && <Review room={room} />}
+    {state.review && tab !== 'rules' && <Review room={room} />}
   </section>;
 }

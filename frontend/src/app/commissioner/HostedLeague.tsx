@@ -475,7 +475,7 @@ function HostedWorkRoom({
       )}
       {reading && tab === 'rules' &&
         <HostedRules rules={reading.rules} commissioner={commissioner} room={room} />}
-      {state.review && <Review room={room} />}
+      {state.review && tab !== 'rules' && <Review room={room} />}
     </section>
   );
 }
