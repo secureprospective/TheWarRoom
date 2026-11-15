@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -302,7 +303,7 @@ func TestLiveCollectorFiveSecondTicksThrottleSleeperAndPublishOnlyChanges(t *tes
 	files := openTestServer(t, t.TempDir())
 	collector.identities = files.leagues.family.Over(files.reference)
 	collector.packets.replay = false
-	network := &countingLiveTransport{packets: checkpoint.Packets, calls: map[string]int{}}
+	network := &countingLiveTransport{packets: maps.Clone(checkpoint.Packets), calls: map[string]int{}}
 	collector.packets.network = network
 	endpoints, err := now.LiveEndpoints()
 	if err != nil {
@@ -411,13 +412,22 @@ func TestLiveCollectorFiveSecondTicksThrottleSleeperAndPublishOnlyChanges(t *tes
 type countingLiveTransport struct {
 	mu           sync.Mutex
 	cacheControl string
+	latency      time.Duration
+	active, peak int
 	packets      map[string]rawLivePacket
 	calls        map[string]int
 }
 
 func (n *countingLiveTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	n.mu.Lock()
-	defer n.mu.Unlock()
+	n.active++
+	n.peak = max(n.peak, n.active)
+	n.mu.Unlock()
+	if n.latency > 0 {
+		time.Sleep(n.latency)
+	}
+	n.mu.Lock()
+	defer func() { n.active--; n.mu.Unlock() }()
 	address := r.URL.String()
 	n.calls[address]++
 	packet, ok := n.packets[address]
@@ -444,10 +454,41 @@ func TestLiveCollectorBoardCadenceHonorsMaxAge(t *testing.T) {
 			files := openTestServer(t, t.TempDir())
 			collector.identities = files.leagues.family.Over(files.reference)
 			collector.packets.replay = false
-			collector.packets.network = &countingLiveTransport{packets: checkpoint.Packets, calls: map[string]int{}, cacheControl: tc.header}
+			collector.packets.network = &countingLiveTransport{packets: maps.Clone(checkpoint.Packets), calls: map[string]int{}, cacheControl: tc.header}
 			if got := collector.poll(t.Context()); got != tc.want {
 				t.Fatalf("cadence %s, want %s", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestLiveCollectorSummaryConcurrencyIsBounded(t *testing.T) {
+	checkpoint := liveBusyCheckpoint(t)
+	collector, _ := replayCollector(t, checkpoint)
+	collector.packets.replay = false
+	network := &countingLiveTransport{packets: maps.Clone(checkpoint.Packets), calls: map[string]int{}, latency: 20 * time.Millisecond}
+	collector.packets.network = network
+	collector.ensureClient()
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	games, err := livegame.ParseScoreboard(checkpoint.Packets[endpoints.ESPN].Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	games = games[:8]
+	for i := range games {
+		games[i].Status = "in"
+	}
+	collector.prepareSummaries(t.Context(), endpoints, games, nil)
+	if network.peak != 4 || len(network.calls) != 8 {
+		t.Fatalf("concurrency %d; requests %d", network.peak, len(network.calls))
+	}
+	collector.prepareSummaries(t.Context(), endpoints, games, games)
+	for address, calls := range network.calls {
+		if calls != 1 {
+			t.Fatalf("unchanged summary re-fetched within 8 seconds: %s", address)
+		}
 	}
 }
