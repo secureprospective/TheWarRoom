@@ -67,6 +67,8 @@ func TestLiveKickingDistancesReconcileWithBox(t *testing.T) {
 		present        bool
 	}{
 		{"complete", "2/3", []string{"J.Bates 39 yard field goal is GOOD, Center-X.", "J.Bates 60 yard field goal is GOOD, Center-X.", "J.Bates 29 yard field goal is No Good, Wide Left."}, true},
+		// A kick wiped out by a penalty is retried; only the retry counts.
+		{"wiped out", "2/3", []string{"J.Bates 44 yard field goal is GOOD, Center-X. PENALTY on DET-X, Offside, 5 yards, enforced at DET 34 - No Play.", "J.Bates 39 yard field goal is GOOD, Center-X.", "J.Bates 60 yard field goal is GOOD, Center-X.", "J.Bates 29 yard field goal is No Good, Wide Left."}, true},
 		{"missing play", "2/3", []string{"J.Bates 39 yard field goal is GOOD, Center-X."}, false},
 		{"unknown name", "1/1", []string{"C.Ryland 53 yard field goal is GOOD, Center-X."}, false},
 	} {

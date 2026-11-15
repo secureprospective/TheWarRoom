@@ -2,6 +2,7 @@ package livestats
 
 import (
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -32,13 +33,8 @@ func attachFumbleRecoveries(game livegame.Game, lines map[string]*Line) {
 func boxRecoveries(game livegame.Game, lines map[string]*Line) map[*Line]int {
 	held := map[*Line]int{}
 	for _, box := range game.Box {
-		column := -1
-		for i, label := range box.Labels {
-			if box.Category == "fumbles" && label == "REC" {
-				column = i
-			}
-		}
-		if column < 0 {
+		column := slices.Index(box.Labels, "REC")
+		if box.Category != "fumbles" || column < 0 {
 			continue
 		}
 		for _, row := range box.Rows {
@@ -54,9 +50,9 @@ func boxRecoveries(game livegame.Game, lines map[string]*Line) map[*Line]int {
 	return held
 }
 
+var recoveredPlay = regexp.MustCompile(`(?i)FUMBLES \([^)]*\)[^.]*?,? recovered by ([A-Z]{2,3})-(.+?) at `)
+
 func collectRecoveries(game livegame.Game, lines map[string]*Line) (own, opponent map[*Line]int) {
-	recovered := regexp.MustCompile(`(?i)FUMBLES \([^)]*\)[^.]*?,? recovered by ([A-Z]{2,3})-(.+?) at `)
-	reception, rush := gainPatterns()
 	own, opponent = map[*Line]int{}, map[*Line]int{}
 	for _, play := range game.Plays {
 		text := strings.TrimSpace(play.Text)
@@ -64,7 +60,7 @@ func collectRecoveries(game livegame.Game, lines map[string]*Line) (own, opponen
 		if !ok {
 			continue
 		}
-		if m := recovered.FindStringSubmatch(text); m != nil {
+		if m := recoveredPlay.FindStringSubmatch(text); m != nil {
 			team := playTeam(m[1])
 			if line := uniquePlayName(lines, m[2], team); line != nil && team == possession {
 				own[line]++
@@ -77,9 +73,9 @@ func collectRecoveries(game livegame.Game, lines map[string]*Line) (own, opponen
 			continue
 		}
 		// The ball carrier fell on his own fumble.
-		m := reception.FindStringSubmatch(text)
+		m := receptionPlay.FindStringSubmatch(text)
 		if m == nil {
-			m = rush.FindStringSubmatch(text)
+			m = rushPlay.FindStringSubmatch(text)
 		}
 		if m == nil {
 			continue
