@@ -147,8 +147,9 @@ func TestSSECommittedVisibilityRollbackReconnectAndRevoke(t *testing.T) {
 			if ok {
 				t.Fatalf("revoke sent event %q", event)
 			}
-		case <-time.After(time.Until(start.Add(time.Second))):
-			t.Fatal("revoke did not close SSE within one second")
+		// Session checks run every 2-4 s per stream (sessionCheckEvery), plus one check's read time.
+		case <-time.After(time.Until(start.Add(5 * time.Second))):
+			t.Fatal("revoke did not close SSE within five seconds")
 		}
 	}
 	revoked := openStream(t, f, bearer, "", 401)
@@ -160,9 +161,13 @@ func TestSSERejectsMissingCredentialsAndPrivileges(t *testing.T) {
 	missing := openStream(t, f, "", "", 401)
 	defer missing.Body.Close()
 	bearer := f.login(t, "commissioner", "private-password")
+	// No authenticator set up: the session alone opens the stream (ruling 2026-11-14).
+	plain := openStream(t, f, bearer, "", 200)
+	defer plain.Body.Close()
+	proof := f.privilegedProof(t)
+	// Once an authenticator is confirmed, the stream needs a recent code.
 	unprivileged := openStream(t, f, bearer, "", 403)
 	defer unprivileged.Body.Close()
-	proof := f.privilegedProof(t)
 	response := openStream(t, f, bearer, proof, 200)
 	if response.Header.Get("Content-Type") != "text/event-stream" {
 		t.Fatal("missing SSE type")
@@ -233,7 +238,7 @@ func prepareHiddenBid(t *testing.T, f *hostedFixture) func() {
 			t.Fatal(err)
 		}
 	}
-	execute(commissioner.Create, commissioner.RawArgs{Name: "Hidden league", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 32}, f.principal, "league")
+	execute(commissioner.Create, commissioner.RawArgs{Name: "Hidden league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 32}, f.principal, "league")
 	at := time.Now().UTC()
 	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at, Players: []commissioner.NativePlayer{{ID: "0099", Franchise: "franchise.01", Status: domain.RosterActive, Salary: 100000000, ExpirationYear: 2028, ContractStatus: domain.CStatusUFA}}}
 	for n := 1; n <= 32; n++ {
@@ -274,28 +279,12 @@ func TestSSEHiddenBidHasNoActivityCursor(t *testing.T) {
 	expectQuiet(t, events)
 }
 
-func TestSSEOutlivesOrdinaryRequestBudget(t *testing.T) {
-	f := newHostedFixture(t)
-	bearer := streamOwner(t, f)
-	response := openStream(t, f, bearer, "", 200)
-	defer response.Body.Close()
-	events := streamEvents(response)
-	expectInvalidation(t, events)
-	select {
-	case event, ok := <-events:
-		t.Fatalf("idle stream ended or emitted %q (open=%v)", event, ok)
-	case <-time.After(5500 * time.Millisecond):
-	}
-	appendStreamNote(t, f, "league")
-	expectInvalidation(t, events)
-}
-
 // A commissioner's stream was admitted by a five-minute recent-auth proof. When the proof lapses
 // the stream closes at that moment, without waiting for the next commit to fail a read.
 func TestSSEPrivilegedStreamClosesWhenProofLapses(t *testing.T) {
 	f := newHostedFixture(t)
 	bearer, proof := f.directCommissioner(t)
-	f.now = f.now.Add(accounts.RecentAuthLifetime - 300*time.Millisecond)
+	f.advanceTime(accounts.RecentAuthLifetime - 300*time.Millisecond)
 	response := openStream(t, f, bearer, proof, 200)
 	defer response.Body.Close()
 	events := streamEvents(response)

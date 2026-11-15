@@ -8,10 +8,42 @@ umask 077
 [ "$ID" = alpine ] && [ -f /etc/init.d/twr-server ] && [ -d /etc/twr ] || {
   echo 'Run this inside the installed league CT, not on the Proxmox host.' >&2; exit 1;
 }
-[ "$#" = 1 ] && [ -f "$1" ] || { echo 'Give the path to the new bundle twr-server binary.' >&2; exit 1; }
-# The installed service executable is not replaced until backup, migration and verification pass.
-install -m 755 "$1" /usr/local/bin/twr-server.next
-su -s /bin/sh twr -c '/usr/local/bin/twr-server.next upgrade -db /var/lib/twr/server.db -check'
+[ "$#" = 2 ] && [ -f "$1" ] && [ -d "$2" ] || {
+  echo 'Give the signed server bundle and its metadata folder.' >&2; exit 1;
+}
+[ -f /etc/twr-release/root.json ] || {
+  echo 'No pinned release root; reinstall from a verified bundle.' >&2; exit 1;
+}
+# Only the installed executable supplies the release floor and verifies delivery bytes.
+release=$(/usr/local/bin/twr-server version | sed -n 's/^League server release \([0-9][0-9]*\):.*/\1/p')
+case "$release" in ''|*[!0-9]*) echo 'Repair the installed server from a verified bundle.' >&2; exit 1;; esac
+# The verifier and snapshot share one private cache; serialize concurrent console upgrades.
+[ "$(stat -c %a:%u:%g /var/lib/twr-release)" = 700:0:0 ] || {
+  echo 'Repair the release cache ownership and private permissions.' >&2; exit 1;
+}
+mkdir /var/lib/twr-release/upgrade.lock 2>/dev/null || {
+  echo 'Wait for the other upgrade to finish before trying again.' >&2; exit 1;
+}
+trap '
+  rm -f /var/lib/twr-release/upgrade.lock/bundle.tar.gz /var/lib/twr-release/upgrade.lock/twr-server
+  rmdir /var/lib/twr-release/upgrade.lock
+' EXIT
+trap 'exit 1' HUP INT TERM
+verified=$(/usr/local/bin/twr-server verify-release -installed-release "$release" \
+  -bundle "$1" -metadata "$2") || exit 1
+# Freeze the authenticated bytes, then recheck the digest before unpacking anything.
+# This closes replacement of the delivery file between verification and extraction.
+snapshot=/var/lib/twr-release/upgrade.lock/bundle.tar.gz
+cp "$1" "$snapshot"
+digest=$(printf '%s\n' "$verified" | sed -n 's/^verified release [0-9][0-9]* sha256 \([0-9a-f]*\)$/\1/p')
+[ -n "$digest" ] && [ "$digest" = "$(sha256sum "$snapshot" | cut -d ' ' -f 1)" ] || {
+  echo 'The bundle changed; ask your release provider for a fresh signed bundle and metadata.' >&2; exit 1;
+}
+# Extract only the executable here, never archive-selected paths; the console tools follow from the
+# same frozen bytes only once the upgrade has succeeded.
+tar -xzOf "$snapshot" ./twr-server > /var/lib/twr-release/upgrade.lock/twr-server
+install -m 755 /var/lib/twr-release/upgrade.lock/twr-server /usr/local/bin/twr-server.next
+su -s /bin/sh twr -c '/usr/local/libexec/twr-sandbox /usr/local/bin/twr-server.next upgrade -db /var/lib/twr/server.db -check'
 rc-service twr-tunnel --ifstarted stop
 rc-service twr-server --ifstarted stop
 # No automatic restart after a failure: a failed restore must never serve partial state.
@@ -23,11 +55,36 @@ cp -Rp /etc/twr "$save/config"
 chmod -R go-rwx "$save"
 backup=''
 if [ -f /etc/twr/backup.json ]; then backup='-backup-config /etc/twr/backup.json'; fi
-if ! su -s /bin/sh twr -c "/usr/local/bin/twr-server.next upgrade -db /var/lib/twr/server.db -save $save/league $backup"; then
+if ! su -s /bin/sh twr -c "/usr/local/libexec/twr-sandbox /usr/local/bin/twr-server.next upgrade -db /var/lib/twr/server.db -save $save/league $backup"; then
   echo "Upgrade stopped. The server and Tunnel remain stopped. Follow UPGRADE.md; the saved set is $save." >&2
   exit 1
 fi
 mv /usr/local/bin/twr-server.next /usr/local/bin/twr-server
+# The console tools and service files come from the same verified bundle (ruling 2026-11-14), so an
+# upgraded server has every tool a fresh install has. Fixed names only, never archive-selected paths;
+# nothing from the bundle runs here. Each lands beside its target and is renamed over it, so a tool
+# that is running, this one included, keeps reading its old copy.
+while read -r source target; do
+  tar -xzOf "$snapshot" "./$source" > "$target.next" 2>/dev/null && [ -s "$target.next" ] || {
+    rm -f "$target.next"; continue;
+  }
+  chown root:root "$target.next"
+  chmod 755 "$target.next"
+  mv "$target.next" "$target"
+done <<'TOOLS'
+backup-setup.sh /usr/local/libexec/twr-backup-setup
+upgrade.sh /usr/local/libexec/twr-upgrade
+restore.sh /usr/local/libexec/twr-restore
+reset-sign-ins.sh /usr/local/libexec/twr-reset-sign-ins
+restore-league.sh /usr/local/libexec/twr-restore-league
+delete-league.sh /usr/local/libexec/twr-delete-league
+move-league.sh /usr/local/libexec/twr-move-league
+receive-league.sh /usr/local/libexec/twr-receive-league
+status.sh /usr/local/libexec/twr-status
+twr-sandbox /usr/local/libexec/twr-sandbox
+twr-server.initd /etc/init.d/twr-server
+cloudflared.initd /etc/init.d/twr-tunnel
+TOOLS
 rc-service twr-server start
 attempt=0
 while [ "$attempt" -lt 30 ]; do

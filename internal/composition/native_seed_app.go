@@ -1,9 +1,6 @@
 package composition
 
 import (
-	"context"
-
-	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/seed"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -12,11 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
-
-func (a *App) nativeSeedCommand(ctx context.Context,
-	input RawNativeSeedRequest) (commissioner.RawCommand, error) {
-	return commissionerapp.BuildLeagueSeedCommand(ctx, input, a.leagueRecords, a.timeNow, a.heldNativeSnapshot) //nolint:wrapcheck // Preserve the seed request refusal.
-}
 
 func (a *App) heldNativeSnapshot() (commissioner.RawNativeSnapshot, error) {
 	a.core.RefreshMu.Lock()

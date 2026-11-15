@@ -3,7 +3,6 @@ import fixture from '../data/fixtures/snapshot.json';
 import { parseSnapshot } from '../data/parse';
 import { CONTRACT_STATUSES, FRESHNESS_STATES, ROSTER_STATUSES } from '../data/contract';
 import { playerCardModel, provenanceSlot, freshnessSignals } from './playerModel';
-import { specimenPlayers } from '../specimen/selection';
 
 function input() {
   const snapshot = parseSnapshot(structuredClone(fixture));
@@ -66,6 +65,12 @@ describe('player-card view model', () => {
       '1 year',
     );
   });
+  it.each([null, 0])('does not turn missing salary %s into a zero contract', salary => {
+    const { snapshot, roster, contract, player } = input();
+    contract.salary = salary;
+    const model = playerCardModel(snapshot, roster.franchiseId, player.id, asOf);
+    expect(model.salary).toBe(salary === null ? 'Unavailable' : '$0.0M');
+  });
   it('shows the weakest section on the one provenance dot, with every section in the detail', () => {
     const { snapshot, roster, player } = input();
     snapshot.players.provenance.freshness.state = 'fail';
@@ -99,28 +104,6 @@ describe('player-card view model', () => {
     expect(() => playerCardModel(snapshot, roster.franchiseId, 'absent', asOf)).toThrow(
       'missing player or roster contract',
     );
-  });
-  it('chooses the real fixture spread without coercing leading-zero IDs', () => {
-    const snapshot = parseSnapshot(fixture);
-    const choices = specimenPlayers(snapshot);
-    expect(choices.map((choice) => choice.reason)).toEqual([
-      'Quarterback',
-      'IDP on IR',
-      'Taxi rookie',
-      'Leading-zero ID',
-      'Birthdate absent',
-    ]);
-    for (const choice of choices) {
-      const model = playerCardModel(snapshot, choice.franchiseId, choice.playerId, asOf);
-      expect(model.id).toBe(choice.playerId);
-      if (choice.reason === 'Leading-zero ID') expect(model.id).toMatch(/^0/);
-      if (choice.reason === 'Birthdate absent') expect(model.age).toBeUndefined();
-      if (choice.reason === 'Quarterback') expect(model.position).toBe('QB');
-      if (choice.reason === 'Taxi rookie')
-        expect(model.status.map((chip) => chip.label)).toEqual(['Taxi', 'Rookie']);
-      if (choice.reason === 'IDP on IR')
-        expect(model.status).toContainEqual({ signal: 'red', label: 'IR' });
-    }
   });
 });
 

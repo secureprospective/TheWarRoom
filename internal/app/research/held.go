@@ -1,6 +1,7 @@
 package research
 
 import (
+	"context"
 	"maps"
 	"slices"
 	"sync"
@@ -12,8 +13,32 @@ import (
 // Held owns private caches; composition retains the outer season lock for joint captures.
 // It is never embedded or bound to a transport.
 type Held struct {
-	mu    sync.Mutex
-	value Values
+	mu        sync.Mutex
+	value     Values
+	depthDone chan struct{}
+}
+
+// PrepareDepth joins overlapping player reads to one season-wide refresh. Waiters may
+// abandon their own read without cancelling the producer or starting another decode.
+func (h *Held) PrepareDepth(ctx context.Context, refresh func()) {
+	h.mu.Lock()
+	if done := h.depthDone; done != nil {
+		h.mu.Unlock()
+		select {
+		case <-done:
+		case <-ctx.Done():
+		}
+		return
+	}
+	h.depthDone = make(chan struct{})
+	h.mu.Unlock()
+	defer func() {
+		h.mu.Lock()
+		close(h.depthDone)
+		h.depthDone = nil
+		h.mu.Unlock()
+	}()
+	refresh()
 }
 
 func (h *Held) Publish(value Values) {

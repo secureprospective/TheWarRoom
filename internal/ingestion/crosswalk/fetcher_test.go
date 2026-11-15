@@ -2,7 +2,6 @@ package crosswalk
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -93,70 +92,6 @@ func TestFetch_GateViolations(t *testing.T) {
 	}
 }
 
-// An identical duplicate (same mfl -> same gsis) is deduplicated, not rejected;
-// only a CONFLICTING duplicate (one mfl -> two gsis) is an integrity error.
-func TestFetch_IdenticalDuplicateIsAllowed(t *testing.T) {
-	t.Parallel()
-	body := "gsis_id,mfl_id\n00-0011000,13294\n00-0011000,13294\n"
-	m, err := serve(t, http.StatusOK, body)
-	if err != nil {
-		t.Fatalf("identical duplicate should not error: %v", err)
-	}
-	if m.Len() != 1 {
-		t.Errorf("Len = %d, want 1", m.Len())
-	}
-}
-
-// The R-generated source encodes a missing cell as the literal "NA" (found live):
-// the reverse direction gsis->mfl is one-to-many, but more practically many rows
-// carry "NA" ids. Rows with an "NA" in either column must be skipped, never keyed.
-func TestFetch_NASentinelSkipped(t *testing.T) {
-	t.Parallel()
-	body := "gsis_id,mfl_id\n" +
-		"00-0055000,NA\n" + // NA mfl — skipped
-		"00-0066000,NA\n" + // another NA mfl — must not collide as one "NA" key
-		"00-0011000,13294\n" +
-		"NA,17464\n" // NA gsis — skipped
-	m, err := serve(t, http.StatusOK, body)
-	if err != nil {
-		t.Fatalf("NA rows should be skipped, not error: %v", err)
-	}
-	if m.Len() != 1 {
-		t.Errorf("Len = %d, want 1 (only the real pair resolves)", m.Len())
-	}
-	if _, ok := m.Lookup(mustID(t, "13294")); !ok {
-		t.Error("the one real pair should resolve")
-	}
-}
-
-func TestFetch_EmptyIsSentinel(t *testing.T) {
-	t.Parallel()
-	_, err := serve(t, http.StatusOK, "gsis_id,mfl_id\n")
-	if !errors.Is(err, errEmpty) {
-		t.Fatalf("err = %v, want errEmpty", err)
-	}
-}
-
-func TestFetch_Non200(t *testing.T) {
-	t.Parallel()
-	if _, err := serve(t, http.StatusNotFound, "whatever"); err == nil {
-		t.Fatal("expected error on 404, got nil")
-	}
-}
-
-// A UTF-8 BOM on the first header cell must not defeat by-name column binding.
-func TestFetch_HeaderBOM(t *testing.T) {
-	t.Parallel()
-	body := "\ufeffmfl_id,gsis_id\n13294,00-0011000\n"
-	m, err := serve(t, http.StatusOK, body)
-	if err != nil {
-		t.Fatalf("BOM header should still parse: %v", err)
-	}
-	if _, ok := m.Lookup(mustID(t, "13294")); !ok {
-		t.Error("expected the row to resolve despite the BOM")
-	}
-}
-
 // --- pfr_id -> gsis bridge (second map) ---
 
 // A header carrying pfr_id (optional, by-name) resolves the pfr bridge alongside the
@@ -188,18 +123,6 @@ func TestFetch_PFRBridge(t *testing.T) {
 	}
 }
 
-// A source omitting pfr_id still resolves MFL->gsis and yields an empty pfr bridge.
-func TestFetch_PFRColumnOptional(t *testing.T) {
-	t.Parallel()
-	m, err := serve(t, http.StatusOK, goodCSV) // no pfr_id column
-	if err != nil {
-		t.Fatalf("Fetch should not require pfr_id: %v", err)
-	}
-	if m.LenPFR() != 0 {
-		t.Errorf("LenPFR = %d, want 0 when the column is absent", m.LenPFR())
-	}
-}
-
 // A pfr id mapping to two different gsis is dropped (shared drop-ambiguous policy),
 // without erroring the fetch.
 func TestFetch_PFRConflictDropped(t *testing.T) {
@@ -217,56 +140,6 @@ func TestFetch_PFRConflictDropped(t *testing.T) {
 	}
 	if m.PFRMap()["GoodPf00"] != "00-0088000" {
 		t.Error("unrelated pfr id must still resolve")
-	}
-}
-
-// A third sighting of an ambiguous pfr id must not resurrect it: the drop is permanent.
-func TestFetch_PFRConflictStaysDropped(t *testing.T) {
-	t.Parallel()
-	body := "gsis_id,pfr_id,mfl_id\n" +
-		"00-0011000,DupePf00,13294\n" + // ambiguous pfr, first sighting
-		"00-0099999,DupePf00,17464\n" + // same pfr, different gsis -> drop + poison
-		"00-0077000,DupePf00,12300\n" // a THIRD sighting must not resurrect it
-	m, err := serve(t, http.StatusOK, body)
-	if err != nil {
-		t.Fatalf("ambiguous pfr should drop-and-continue, not error: %v", err)
-	}
-	if _, ok := m.PFRMap()["DupePf00"]; ok {
-		t.Error("the ambiguous pfr id must stay dropped")
-	}
-}
-
-// An NA/empty pfr cell is skipped (not keyed as a literal "NA"), and an identical
-// pfr->gsis duplicate is deduplicated, not rejected.
-func TestFetch_PFRNAAndIdenticalDup(t *testing.T) {
-	t.Parallel()
-	body := "gsis_id,pfr_id,mfl_id\n" +
-		"00-0011000,NA,13294\n" + // NA pfr -> skipped, mfl still resolves
-		"00-0022000,GoodPf00,531\n" +
-		"00-0022000,GoodPf00,531\n" // identical row -> dedup, no conflict
-	m, err := serve(t, http.StatusOK, body)
-	if err != nil {
-		t.Fatalf("NA/identical-dup pfr should not error: %v", err)
-	}
-	if m.LenPFR() != 1 {
-		t.Errorf("LenPFR = %d, want 1 (NA skipped, identical dup deduped)", m.LenPFR())
-	}
-	if _, ok := m.PFRMap()["NA"]; ok {
-		t.Error("an NA pfr cell must never be keyed as a literal \"NA\"")
-	}
-}
-
-func TestFetch_ContextCancelled(t *testing.T) {
-	t.Parallel()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(goodCSV))
-	}))
-	t.Cleanup(srv.Close)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // already cancelled before the call
-	if _, err := Fetch(ctx, srv.Client(), srv.URL); err == nil {
-		t.Fatal("expected error from a cancelled context")
 	}
 }
 

@@ -83,28 +83,3 @@ func TestLiveOrArchive(t *testing.T) {
 		t.Fatalf("empty-fallback log = %v, want one line naming the feed and the error", lines)
 	}
 }
-
-// TestLiveOrArchiveLeaguelessFallback proves the league-less archived matcher the injuries
-// feed needs: a copy fetched without L (the api-host request) matches, and another league's
-// league-scoped copy still does not.
-func TestLiveOrArchiveLeaguelessFallback(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	down := errors.New("mfl down")
-	const bare = "https://api.myfantasyleague.com/2026/export?TYPE=injuries&JSON=1"
-	const other = "https://api.myfantasyleague.com/2026/export?TYPE=injuries&L=99999&JSON=1"
-	at := time.Unix(1_700_000_000, 0)
-	feed := report.ArchivedFeed[string]{
-		Export:     "injuries",
-		Leagueless: true,
-		Fetch:      func(context.Context) ([]string, error) { return nil, down },
-		Parse:      func(b []byte) ([]string, error) { return strings.Split(string(b), ","), nil },
-		Bodies: archiveOf(
-			archived{other, "other,league", at.Add(time.Minute)},
-			archived{bare, "api,copy", at}),
-	}
-	rows, fresh, err := report.LiveOrArchive(ctx, ctx, 2026, feed, func(string) {})
-	if err != nil || strings.Join(rows, ",") != "api,copy" || fresh.State != domain.FreshStale {
-		t.Fatalf("leagueless fallback: %v %+v %v", rows, fresh, err)
-	}
-}

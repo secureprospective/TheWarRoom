@@ -78,6 +78,12 @@ func defaultFranchiseName(id string) (string, string) {
 	return fmt.Sprintf("Franchise %d", n), fmt.Sprintf("F%d", n)
 }
 
+// IsDefaultFranchiseName reports whether name is still the name creation gives the franchise at this
+// 0-based position in the league list.
+func IsDefaultFranchiseName(position int, name string) bool {
+	return name == fmt.Sprintf("Franchise %d", position+1)
+}
+
 // franchiseNumber is a franchise's seat number from its id, 0 for an id the app did not number.
 func franchiseNumber(id string) int {
 	n, err := strconv.Atoi(strings.TrimPrefix(id, "franchise."))
@@ -176,9 +182,6 @@ func checkShapeChange(raw RawCommand, records []Record, at time.Time) error {
 	label := "Teams"
 	if raw.Args.Field == divisionsField {
 		label = "Divisions"
-	}
-	if LeagueSource(records) != SourceNative {
-		return Refused(fmt.Errorf("rule change refused: %s follows the league's MFL franchises in an imported league", label))
 	}
 	if raw.Effective != "now" {
 		return Refused(fmt.Errorf("rule change refused: a %s change takes effect now; choose now", label))

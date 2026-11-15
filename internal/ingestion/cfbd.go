@@ -2,11 +2,9 @@ package ingestion
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 )
 
 // Shared CollegeFootballData (CFBD) plumbing. CFBD is a bearer-authed JSON API, so it shares
@@ -15,18 +13,6 @@ import (
 
 // DefaultMaxCFBDBytes caps a CFBD response. The largest in use is about 3.5 MiB.
 const DefaultMaxCFBDBytes = 32 << 20
-
-// NewCFBDClient returns a client with HTTP/2 disabled: api.collegefootballdata.com answers
-// h2 with PROTOCOL_ERROR from CT105 (verified 2026-06-21), and an empty TLSNextProto map forces
-// HTTP/1.1.
-func NewCFBDClient(timeout time.Duration) *http.Client {
-	return &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
-			TLSNextProto: map[string]func(string, *tls.Conn) http.RoundTripper{},
-		},
-	}
-}
 
 // GetCFBD performs a bearer-authed GET, checks the status and fails rather than truncate a
 // body over maxBytes. apiKey must be trimmed: CT105's CFBD_API_KEY carries a trailing newline

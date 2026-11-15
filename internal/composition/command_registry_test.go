@@ -108,29 +108,3 @@ func TestTypedBindingPreservesErrorsAndRejectsTrailingJSON(t *testing.T) {
 		t.Fatal("binding lost validation owner")
 	}
 }
-
-func TestResearchBindingsStayRetired(t *testing.T) {
-	app := NewApp()
-	registry, err := catalog.NewRegistry(newCommandAPIs(app).registryInputs(app))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, id := range []string{
-		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam",
-		"offers.TargetOffers", "draft.TargetDraftLab", "market.TargetMarket",
-		"market.TargetAssetProfile", "market.TargetPickClock", "archive.TargetArchive",
-	} {
-		t.Run(id, func(t *testing.T) {
-			for _, entry := range registry.Entries() {
-				for _, door := range entry.Desktop {
-					if door.Feature+"."+door.Command.Method == id {
-						t.Fatal("retired research method remains registered")
-					}
-				}
-			}
-			if _, err := registry.Invoke(t.Context(), catalog.WailsDoor, id, "", json.RawMessage(`[]`)); err == nil {
-				t.Fatal("retired research binding remains executable")
-			}
-		})
-	}
-}

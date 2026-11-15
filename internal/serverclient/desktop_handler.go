@@ -15,12 +15,16 @@ import (
 func (d *Desktop) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
-		if (r.URL.Path != DesktopPath && r.URL.Path != DesktopWorkflowPath) || r.URL.RawQuery != "" {
+		if (r.URL.Path != DesktopPath && r.URL.Path != DesktopWorkflowPath && r.URL.Path != DesktopChangesPath) || r.URL.RawQuery != "" {
 			http.NotFound(w, r)
 			return
 		}
 		if !desktopOrigin(r.Header.Get("Origin")) {
 			http.Error(w, "desktop origin required", http.StatusForbidden)
+			return
+		}
+		if r.URL.Path == DesktopChangesPath {
+			d.changesHTTP(w, r)
 			return
 		}
 		if r.URL.Path == DesktopWorkflowPath {
@@ -135,20 +139,31 @@ const DesktopWorkflowPath = "/desktop/workflow"
 // Workflow keeps the device session in Go and binds every request to this window's league.
 func (d *Desktop) Workflow(ctx context.Context, raw serverhttp.RawWorkflow) (serverhttp.WorkflowResponse, error) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
 	var result serverhttp.WorkflowResponse
 	if err := raw.Validate(); err != nil {
+		d.mu.Unlock()
 		return result, fmt.Errorf("check league action: %w", err)
 	}
 	league, err := raw.League()
 	if err != nil || league != d.league {
+		d.mu.Unlock()
 		return result, fmt.Errorf("choose this window's league")
 	}
 	d.restore()
-	if d.bearer == "" {
+	session := d.snapshotLocked()
+	d.mu.Unlock()
+	if session.bearer == "" {
 		return result, fmt.Errorf("sign in before opening your franchise")
 	}
-	body, err := postDesktop(ctx, d, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	body, unauthorized, err := postDesktopSnapshot(ctx, session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	if unauthorized {
+		d.mu.Lock()
+		if d.generation == session.generation {
+			d.generation++
+			_ = d.clearCredential()
+		}
+		d.mu.Unlock()
+	}
 	if err != nil {
 		return result, err
 	}

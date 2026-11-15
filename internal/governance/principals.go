@@ -3,6 +3,7 @@ package governance
 import (
 	"encoding/hex"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -50,6 +51,19 @@ func NewPrincipals(league string, aliases []VerifiedAlias) (*Principals, error) 
 }
 
 func (p *Principals) League() string { return p.league }
+
+// Key is the identity map's content, so two reads of the same aliases compare equal.
+func (p *Principals) Key() string {
+	if p == nil {
+		return ""
+	}
+	pairs := make([]string, 0, len(p.accounts))
+	for alias, account := range p.accounts {
+		pairs = append(pairs, string(alias)+"="+string(account))
+	}
+	sort.Strings(pairs)
+	return p.league + "\x00" + strings.Join(pairs, "\x00")
+}
 func (p *Principals) Resolve(principal Principal) Principal {
 	if p != nil {
 		if account, ok := p.accounts[principal]; ok {

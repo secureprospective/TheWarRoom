@@ -16,10 +16,22 @@ const objectFormat = "20060102T150405.000000000Z"
 func SetTime(name string) (time.Time, error) { return objectTime(name) }
 
 func objectTime(name string) (time.Time, error) {
-	if !strings.HasPrefix(name, "sets/") || !strings.HasSuffix(name, ".tar.gz.age") {
+	prefix := LeagueSet.Prefix
+	for _, kind := range setKinds() {
+		if strings.HasPrefix(name, kind.Prefix) {
+			prefix = kind.Prefix
+		}
+	}
+	// Each league's own file has its own prefix, leagues/<league>/.
+	if rest, ok := strings.CutPrefix(name, LeagueFilePrefix); ok {
+		if league, _, found := strings.Cut(rest, "/"); found && league != "" {
+			prefix = LeagueFileSet(league).Prefix
+		}
+	}
+	if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, ".tar.gz.age") {
 		return time.Time{}, fmt.Errorf("not a recovery set")
 	}
-	at, err := time.Parse(objectFormat, strings.TrimSuffix(strings.TrimPrefix(name, "sets/"), ".tar.gz.age"))
+	at, err := time.Parse(objectFormat, strings.TrimSuffix(strings.TrimPrefix(name, prefix), ".tar.gz.age"))
 	if err != nil {
 		return time.Time{}, fmt.Errorf("invalid recovery set name: %w", err)
 	}

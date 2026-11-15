@@ -49,10 +49,11 @@ func probeVersion(ctx context.Context, path, options string) (int, error) {
 	return version, nil
 }
 
-// Capture reserves the single writer connection in main, history, what-if order;
-// reservations are the write locks shared by every store, released in reverse order.
-// No VACUUM starts until every writer is stopped. Callers must not hold a writer. A daily set
-// is taken once a UTC day and returns "" when one exists; a manual set is taken on every call.
+// Capture reserves the single writer connection in main, history, what-if order (the write locks
+// shared by every store), pins a snapshot read point on each, then releases the writers in reverse
+// order: the three files belong to one moment, and writes resume before any copying starts. Callers
+// must not hold a writer. A daily set is taken once a UTC day and returns "" when one exists; a
+// manual set is taken on every call.
 func (b *Backups) Capture(ctx context.Context, pools [3]*Pools, kind string, now time.Time) (string, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -64,6 +65,35 @@ func (b *Backups) Capture(ctx context.Context, pools [3]*Pools, kind string, now
 			return "", err
 		}
 	}
+	for i, p := range pools {
+		if p == nil || filepath.Clean(p.path) != filepath.Join(b.dir, b.files[i].Name) {
+			return "", fmt.Errorf("db: backup pool does not match %s", b.files[i].Name)
+		}
+	}
+	pins, err := pinAll(ctx, pools)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		for _, pin := range pins {
+			if pin != nil {
+				pin.release(ctx)
+			}
+		}
+	}()
+	return b.capture(ctx, kind, now, func(ctx context.Context, i int, dest string) error {
+		pin := pins[i]
+		pins[i] = nil // copyTo releases it
+		copyPath := dest + ".copy"
+		if _, err := pin.copyTo(ctx, copyPath, dest); err != nil {
+			return fmt.Errorf("db: capture %s: %w", b.files[i].Name, err)
+		}
+		return removeSnapshot(copyPath)
+	})
+}
+
+// pinAll holds every writer while it pins a read point on each pool, then releases the writers.
+func pinAll(ctx context.Context, pools [3]*Pools) (pins [3]*snapshotPin, err error) {
 	var conns [3]*sql.Conn
 	defer func() {
 		for i := 2; i >= 0; i-- {
@@ -71,23 +101,26 @@ func (b *Backups) Capture(ctx context.Context, pools [3]*Pools, kind string, now
 				_ = conns[i].Close()
 			}
 		}
+		if err != nil {
+			for _, pin := range pins {
+				if pin != nil {
+					pin.release(ctx)
+				}
+			}
+			pins = [3]*snapshotPin{}
+		}
 	}()
 	for i, p := range pools {
-		if p == nil || filepath.Clean(p.path) != filepath.Join(b.dir, b.files[i].Name) {
-			return "", fmt.Errorf("db: backup pool does not match %s", b.files[i].Name)
+		if conns[i], err = p.write.Conn(ctx); err != nil {
+			return pins, fmt.Errorf("db: acquire backup writer: %w", err)
 		}
-		conn, err := p.write.Conn(ctx)
-		if err != nil {
-			return "", fmt.Errorf("db: acquire backup writer: %w", err)
-		}
-		conns[i] = conn
 	}
-	return b.capture(ctx, kind, now, func(ctx context.Context, i int, dest string) error {
-		if _, err := conns[i].ExecContext(ctx, "VACUUM INTO ?", dest); err != nil {
-			return fmt.Errorf("db: capture %s: %w", b.files[i].Name, err)
+	for i, p := range pools {
+		if pins[i], err = p.pinSnapshot(ctx); err != nil {
+			return pins, err
 		}
-		return nil
-	})
+	}
+	return pins, nil
 }
 
 // BeforeMigrations runs before any application pool opens; a new empty home has no
@@ -125,6 +158,9 @@ func (b *Backups) BeforeMigrations(ctx context.Context, now time.Time) (string, 
 			return fmt.Errorf("db: open startup snapshot: %w", err)
 		}
 		defer func() { _ = p.Close() }()
+		if err := createOwnerOnly(dest); err != nil {
+			return err
+		}
 		if _, err := p.ExecContext(ctx, "VACUUM INTO ?", dest); err != nil {
 			return fmt.Errorf("db: startup snapshot: %w", err)
 		}
@@ -145,9 +181,6 @@ func (b *Backups) capture(ctx context.Context, kind string, now time.Time, vacuu
 	m := RawBackupManifest{ManifestVersion: 1, AppBuild: b.build, CapturedAt: now.UTC(), Kind: kind}
 	for i, file := range b.files {
 		path := filepath.Join(stage, file.Name)
-		if err := createOwnerOnly(path); err != nil {
-			return "", err
-		}
 		if err := vacuum(ctx, i, path); err != nil {
 			return "", err
 		}

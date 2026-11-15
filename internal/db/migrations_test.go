@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -290,4 +291,36 @@ func TestFailedMigrationBackupLeavesPriorCopiesAndSchema(t *testing.T) {
 		t.Fatalf("prior backup changed: %v", err)
 	}
 	assertVersion(t, p, 0)
+}
+
+func TestSplitMigrationVersionBase(t *testing.T) {
+	for _, base := range []int{0, 13} {
+		t.Run(fmt.Sprintf("base=%d", base), func(t *testing.T) {
+			pools, err := Open(t.Context(), filepath.Join(t.TempDir(), "split.db"), base+2)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = pools.Close() }()
+			steps := []Migration{
+				func(ctx context.Context, tx *sql.Tx) error {
+					_, err := tx.ExecContext(ctx, `CREATE TABLE owned(value TEXT)`)
+					return err
+				},
+				func(ctx context.Context, tx *sql.Tx) error {
+					_, err := tx.ExecContext(ctx, `INSERT INTO owned VALUES('kept')`)
+					return err
+				},
+			}
+			for _, prefix := range []int{1, 2, 2} {
+				if _, err := pools.MigrateFrom(t.Context(), base, steps[:prefix]...); err != nil {
+					t.Fatal(err)
+				}
+				assertVersion(t, pools, base+prefix)
+			}
+			var n int
+			if err := pools.Read().QueryRowContext(t.Context(), `SELECT count(*) FROM owned`).Scan(&n); err != nil || n != 1 {
+				t.Fatalf("replayed migration: count=%d err=%v", n, err)
+			}
+		})
+	}
 }

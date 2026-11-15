@@ -46,17 +46,20 @@ type BoxRow struct {
 	Stats []string `json:"stats"`
 }
 type Game struct {
-	ID      string    `json:"id"`
-	Kickoff time.Time `json:"kickoff" ts_type:"string"`
-	Home    Team      `json:"home"`
-	Away    Team      `json:"away"`
-	Status  string    `json:"status"`
-	Clock   string    `json:"clock"`
-	Period  int       `json:"period"`
-	State   *State    `json:"state"`
-	Last    *Play     `json:"last"`
-	Box     []Box     `json:"box"`
-	Plays   []Play    `json:"plays"`
+	Season     int       `json:"season,omitempty"`
+	Week       int       `json:"week,omitempty"`
+	SeasonType int       `json:"seasonType,omitempty"`
+	ID         string    `json:"id"`
+	Kickoff    time.Time `json:"kickoff" ts_type:"string"`
+	Home       Team      `json:"home"`
+	Away       Team      `json:"away"`
+	Status     string    `json:"status"`
+	Clock      string    `json:"clock"`
+	Period     int       `json:"period"`
+	State      *State    `json:"state"`
+	Last       *Play     `json:"last"`
+	Box        []Box     `json:"box"`
+	Plays      []Play    `json:"plays"`
 }
 
 func digits(s string) bool {

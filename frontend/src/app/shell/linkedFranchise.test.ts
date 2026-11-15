@@ -8,10 +8,6 @@ import { createCommands } from '../commands/registry';
 import * as registry from '../commands/registry';
 import { FRANCHISE_KEY } from './franchise';
 import { OwnerFooter } from './TargetApp';
-import TradeBuilder from './TradeBuilder';
-import { parseBuilder, useBuilder } from './tradeBuilderState';
-import * as builderState from './tradeBuilderState';
-import tradeWire from './trade-wire.testdata.json';
 
 const snapshot = parseSnapshot(fixture);
 const arizona = snapshot.franchises.value.find(f => f.name === 'Arizona Cardinals')!;
@@ -25,7 +21,7 @@ function storage() {
 }
 afterEach(() => vi.restoreAllMocks());
 
-it('replaces the remembered team when identity arrives and renders the owner and 31 partners', async () => {
+it('replaces the remembered team when identity arrives and renders the owner', async () => {
   const saved = storage();
   const provider = new LiveProvider();
   let finish!: (status: typeof connected) => void;
@@ -39,14 +35,6 @@ it('replaces the remembered team when identity arrives and renders the owner and
   vi.spyOn(registry.commands, 'use').mockImplementation(c.read);
   vi.spyOn(registry.commands, 'useMFLKey').mockImplementation(c.readMFLKey);
   expect(renderToStaticMarkup(createElement(OwnerFooter, { snapshot }))).toContain('Arizona Cardinals');
-  const reading = parseBuilder(tradeWire);
-  reading.value!.teams = snapshot.franchises.value.map(f => ({ id: f.id, name: f.name ?? f.id, assets: [] }));
-  useBuilder.setState({ reading, other: '', give: [], get: [], busy: false, error: '' });
-  vi.spyOn(builderState, 'useBuilder').mockImplementation(useBuilder.getState);
-  const html = renderToStaticMarkup(createElement(TradeBuilder, { mine: c.read().franchiseId! }));
-  expect((html.match(/<option /g) ?? [])).toHaveLength(32);
-  expect(html).toContain('Buffalo Bills');
-  expect(html).not.toContain(`<option value="${arizona.id}">`);
   c.dispatch('franchise.set', { franchiseId: buffalo.id });
   expect(renderToStaticMarkup(createElement(OwnerFooter, { snapshot }))).toContain('Arizona Cardinals');
 });

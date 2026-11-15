@@ -28,7 +28,7 @@ it('dispatches the verb each phase registry row promises, using one table', asyn
       args: { id: player, entity: 'player', action: 'remove' } } },
     { row: 'M-118', invocation: { verb: 'note.add',
       args: { id: player, entity: 'player', action: 'add', text: 'My note' } } },
-    ...(['M-096', 'M-149', 'M-103', 'M-101', 'M-154', 'M-087',
+    ...(['M-096', 'M-101', 'M-154',
       'M-151', 'M-159', 'M-167', 'M-169'] as const).map(id => ({ row: id,
       invocation: { verb: 'endpoint.open', args: { id } } as Invocation })),
   ];
@@ -47,7 +47,7 @@ it('dispatches the verb each phase registry row promises, using one table', asyn
     if (invocation.verb === 'commandbar.open') expect(c.read().commandbar).toBe(true);
     if (invocation.verb === 'inspector.pin') expect(c.read().subject?.id).toBe(player);
     if (invocation.verb === 'phase.goto' || invocation.verb === 'preset.apply')
-      expect(c.read()).toMatchObject({ node: 'trade', workspace: { trade: 'draft-room' } });
+      expect(c.read()).toMatchObject({ node: 'war', workspace: { war: 'draft-room' } });
     if (row === 'S-12') expect(c.read().endpointSurface).toBe('Status strip');
     if (row === 'M-151') expect(c.read().endpointIds).toEqual(['M-011', 'M-012']);
   }

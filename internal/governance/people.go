@@ -109,6 +109,29 @@ func (e FranchiseIdentitySet) apply(s *State) error {
 	return nil
 }
 
+// DirectionSet records where an owner is taking a franchise. The whole league may read it.
+type DirectionSet struct {
+	Franchise FranchiseID
+	Direction string
+}
+
+// ValidDirection reports whether d is a direction an owner may set.
+func ValidDirection(d string) bool { return d == "contend" || d == "retool" || d == "rebuild" }
+
+func (DirectionSet) Private() bool { return false }
+func (e DirectionSet) apply(s *State) error {
+	f, ok := s.franchises[e.Franchise]
+	if !ok || !ValidDirection(e.Direction) {
+		return fmt.Errorf("choose a franchise and one of contend, retool or rebuild")
+	}
+	if f.Direction == e.Direction {
+		return fmt.Errorf("that is already this franchise's direction")
+	}
+	f.Direction = e.Direction
+	s.franchises[e.Franchise] = f
+	return nil
+}
+
 type RoleGranted struct {
 	Principal Principal
 	Role      Role

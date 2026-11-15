@@ -23,13 +23,16 @@ type Frame struct {
 	Zone    *time.Location
 }
 
-// NewFrame folds only the ledger. Callers authorize before construction and load
-// rules and governance at their operation's original stage. correctionAt, when
-// present, dates correction readings rather than using the last record's time.
+// NewFrame folds the ledger as of the operation time. Callers authorize before
+// construction and load rules and governance at their operation's original stage.
 func NewFrame(league string, records []Record, at time.Time, facts nativecheck.Facts, zone *time.Location, correctionAt ...time.Time) (Frame, error) {
 	f := Frame{League: league, Records: records, At: at, Facts: facts, Zone: zone}
 	var err error
-	f.Assets, f.Book, err = nativeAssetsState(league, records, correctionAt...)
+	projectionAt := at
+	if len(correctionAt) != 0 {
+		projectionAt = correctionAt[0]
+	}
+	f.Assets, f.Book, err = nativeAssetsState(league, records, projectionAt)
 	return f, err
 }
 

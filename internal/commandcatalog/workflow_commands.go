@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
@@ -15,18 +16,16 @@ type WorkflowCommand struct {
 	Run      func(context.Context, *leagueservice.Service, RawWorkflow) (json.RawMessage, error)
 }
 
-// Membership is executable: the same entry validates and runs a workflow. This bounded
-// transport does not expose the other native commands supported by generic dispatch.
+// Membership is executable: the same entry validates and runs a workflow. The changes are exactly
+// what an agent token can carry (accounts.DelegableCommand) less the desktop-only held-data seed; the service keeps each command's gates.
+// FUTURE-SEAM(commands): new actions (moments, invites, chat) arrive as commissioner definitions and
+// appear here by derivation; never hand-list one. See docs/architecture/future-seams.md.
 func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
-	for _, id := range []string{
-		commissioner.LineupSet, commissioner.RosterReserve, commissioner.DraftTimer, commissioner.DraftSkip,
-		commissioner.BidPlace, commissioner.BidRaise, commissioner.BidWithdraw, commissioner.BidsProcess, commissioner.BidsOverride,
-		commissioner.RosterCut, commissioner.WaiverClaim, commissioner.WaiverProcess, commissioner.WaiverOrderSet, commissioner.WaiverOrderAuto, commissioner.WaiverOverride,
-		commissioner.TradeOffer, commissioner.TradeAccept, commissioner.TradeDecline, commissioner.TradeWithdraw, commissioner.TradeReview, commissioner.TradeRecuse, commissioner.TradeAppeal, commissioner.TradeAppealRule, commissioner.TradeOverride,
-		commissioner.SeasonRollover, commissioner.ScoreFranchise, commissioner.StandingsRecordAdjust, commissioner.StandingsOverrideClear,
-	} {
-		out[id] = WorkflowCommand{Validate: validateWorkflowChange, Run: runWorkflowChange}
+	for _, row := range nativeMutations() {
+		if accounts.DelegableCommand(row.id) && row.id != commissioner.NativeSeed {
+			out[row.id] = WorkflowCommand{Validate: validateWorkflowChange, Run: runWorkflowChange}
+		}
 	}
 	out[commissioner.DraftPick] = WorkflowCommand{Validate: validateWorkflowPick, Run: runWorkflowPick}
 	return out
@@ -55,7 +54,51 @@ func workflowRead(read func(*leagueservice.Service, RawWorkflowScope) (json.RawM
 }
 
 func workflowReads() map[string]WorkflowCommand {
+	out := pulseWorkflowReads()
+	for id, command := range otherWorkflowReads() {
+		out[id] = command
+	}
+	return out
+}
+
+func pulseWorkflowReads() map[string]WorkflowCommand {
 	return map[string]WorkflowCommand{
+		"native.directory.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeDirectory(r.League))
+		}),
+		"nfl.games.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNFLGames(r.League))
+		}),
+		"schedule.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetLeagueSchedule(leagueservice.RawLeagueScheduleScope{League: r.League}))
+		}),
+		"week.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			at := time.Now().UTC()
+			if r.At != "" {
+				var err error
+				at, err = time.Parse(time.RFC3339Nano, r.At)
+				if err != nil {
+					return nil, fmt.Errorf("read week time: %w", err)
+				}
+			}
+			return workflowJSON(s.TargetNativeWeek(leagueservice.RawNativeWeekScope{RawNativeScheduleScope: leagueservice.RawNativeScheduleScope{League: r.League, Franchise: r.Franchise, Season: r.Season, LocalZone: r.LocalZone}, At: at}))
+		}),
+		"projections.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			players, err := workflowPlayers(r.Players)
+			if err != nil {
+				return nil, err
+			}
+			return workflowJSON(s.TargetNativeProjections(r.League, players, r.Season, r.Week))
+		}),
+		"bracket.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeBracket(r.League, r.Season))
+		}),
+	}
+}
+
+func otherWorkflowReads() map[string]WorkflowCommand {
+	return map[string]WorkflowCommand{
+
 		"commish.market.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetCommissionerMarket(r.League, r.Command))
 		}),
@@ -65,11 +108,20 @@ func workflowReads() map[string]WorkflowCommand {
 		"waivers.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeWaivers(r.League, r.Franchise, time.Now().UTC()))
 		}),
+		"moves.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeMoves(r.League, r.Franchise))
+		}),
 		"trades.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeTrades(r.League, r.Viewer))
 		}),
 		"results.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeResults(r.League, r.Season, r.Week))
+		}),
+		"value.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeValues(leagueservice.RawValueScope{League: r.League, Franchise: r.Franchise, Season: r.Season}))
+		}),
+		"odds.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeOdds(r.League, r.Season))
 		}),
 		"standings.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeStandings(r.League, r.Season))

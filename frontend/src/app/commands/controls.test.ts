@@ -18,6 +18,8 @@ const keyHandlerAllowlist = {
     'Search input needs arrows, Enter and Escape; execution remains dispatch.',
   'commissioner/SideTray.tsx':
     'The tray dialog traps Tab focus and closes on Escape; its Close control is an Act.',
+  'shell/WarRoomMarket.tsx':
+    'Enter in a bid salary box only blurs it; the blur commits the typed salary, as tabbing away does.',
   'commissioner/HoldToFire.tsx':
     'Hold-to-fire times a held Space or Enter; the held button then dispatches commissioner.execute.',
 } as const;
@@ -50,6 +52,7 @@ describe('Controls are verbs (§M2/§M3)', () => {
       'shell/MFLConnection.tsx',
       'commands/CommandBar.tsx',
       'commissioner/SideTray.tsx',
+      'shell/WarRoomMarket.tsx',
       'commissioner/HoldToFire.tsx',
     ]);
     expect(keyHandlerAllowlist['commands/CommandBar.tsx']).toContain('dispatch');
@@ -169,10 +172,19 @@ it('replacement command buttons never carry native titles, even shortened or dis
   }
 });
 
-it.each(['war', 'hq', 'trade'] as const)('F: rail %s keeps its name without a native tooltip', node => {
+it.each(['war', 'hq', 'pulse'] as const)('F: rail %s keeps its name without a native tooltip', node => {
   const html = renderToStaticMarkup(createElement(Act, {
     verb: 'nav.open', args: { node }, variant: 'rail', children: node,
   }));
   expect(html).toContain('aria-label="Open workspace"');
   expect(html).not.toContain('title=');
+});
+
+it('preserves a surface control’s page navigation semantics', () => {
+  const html = renderToStaticMarkup(createElement(Act, {
+    verb: 'commissioner.surface', args: { screen: 'control-room', action: 'view', value: 'people' },
+    variant: 'surface', current: 'page', label: 'People', children: 'People',
+  }));
+  expect(html).toContain('aria-current="page"');
+  expect(html).toContain('act-surface');
 });

@@ -58,7 +58,7 @@ func (s *State) ReadDraftPlayers(ctx context.Context, parse func([]byte) ([]play
 }
 
 func (s *State) RefreshDraftResults(ctx context.Context) {
-	results, rf, re := LiveOrArchive(ctx, s.CommsContext(), s.Season, ArchivedFeed[draftreports.Pick]{
+	results, rf, re := LiveOrArchive(ctx, s.FeedContext(), s.Season, ArchivedFeed[draftreports.Pick]{
 		Export: draftreports.ResultsExport,
 		Fetch: func(ctx context.Context) ([]draftreports.Pick, error) {
 			return draftreports.FetchResults(ctx, s.MFLClient, strconv.Itoa(s.Season), ingestion.LeagueID)
@@ -69,7 +69,7 @@ func (s *State) RefreshDraftResults(ctx context.Context) {
 	s.SeasonMu.Unlock()
 }
 func (s *State) RefreshFuturePicks(ctx context.Context) {
-	future, ff, fe := LiveOrArchive(ctx, s.CommsContext(), s.Season, ArchivedFeed[draftreports.FuturePick]{
+	future, ff, fe := LiveOrArchive(ctx, s.FeedContext(), s.Season, ArchivedFeed[draftreports.FuturePick]{
 		Export: draftreports.FutureExport,
 		Fetch: func(ctx context.Context) ([]draftreports.FuturePick, error) {
 			return draftreports.FetchFuture(ctx, s.MFLClient, strconv.Itoa(s.Season), ingestion.LeagueID)

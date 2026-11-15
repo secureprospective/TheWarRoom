@@ -109,7 +109,7 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		if len(r.Header.Values("Origin")) != 0 {
+		if !originAdmissible(r) {
 			http.Error(w, "browser requests refused", http.StatusBadRequest)
 			return
 		}

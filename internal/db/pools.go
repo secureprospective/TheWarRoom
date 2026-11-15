@@ -29,6 +29,8 @@ type Pools struct {
 	read             *sql.DB
 	write            *sql.DB
 	path             string
+	referencePools   *Pools
+	reference        string // the attached reference file, or empty (OpenWithReference)
 	scratchDir       string // set by OpenScratch; Close deletes it
 	checkRunMu       sync.Mutex
 	checkMu          sync.Mutex
@@ -37,11 +39,18 @@ type Pools struct {
 	findings         Findings
 	checkedVersion   int
 	migrationChecked bool
+	revisionMu       sync.Mutex
+	revisionConn     *sql.Conn
+	revisionClosed   bool
 }
 
 // Open refuses newer files before opening a writer. The optional version is the file's
 // newest known migration; the default is MainVersion, so what-if and history files must pass theirs.
 func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
+	return open(ctx, path, "", versions...)
+}
+
+func open(ctx context.Context, path, reference string, versions ...int) (*Pools, error) {
 	maxVersion := MainVersion()
 	if len(versions) > 1 || (len(versions) == 1 && versions[0] < 0) {
 		return nil, fmt.Errorf("db: expected one nonnegative schema version")
@@ -61,7 +70,7 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	writeDSN := fmt.Sprintf(
 		"%s?_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_txlock=immediate",
 		fileURI(path), busyTimeoutMS,
-	) + connectionPragmas
+	) + connectionPragmas + attachParam(reference)
 	write, err := sql.Open("sqlite", writeDSN)
 	if err != nil {
 		return nil, fmt.Errorf("db: open write pool: %w", err)
@@ -86,7 +95,7 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	readDSN := fmt.Sprintf(
 		"%s?_pragma=busy_timeout(%d)&mode=ro",
 		fileURI(path), busyTimeoutMS,
-	) + connectionPragmas
+	) + connectionPragmas + attachParam(reference)
 	read, err := sql.Open("sqlite", readDSN)
 	if err != nil {
 		_ = write.Close()
@@ -101,7 +110,7 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 		return nil, fmt.Errorf("db: ping read pool: %w", err)
 	}
 
-	return &Pools{read: read, write: write, path: path}, nil
+	return &Pools{read: read, write: write, path: path, reference: reference}, nil
 }
 
 // createOwnerOnly creates a missing file empty and 0600 (an empty file is a valid empty
@@ -198,9 +207,40 @@ func (p *Pools) Read() *sql.DB { return p.read }
 // Write returns the single-connection write pool, for the stores' write paths.
 func (p *Pools) Write() *sql.DB { return p.write }
 
+// Revision changes after any commit on another connection, including this pool's writer.
+// SQLite's data_version is connection-local, so this observer stays pinned until Close.
+func (p *Pools) Revision(ctx context.Context) (int64, error) {
+	p.revisionMu.Lock()
+	defer p.revisionMu.Unlock()
+	if p.revisionClosed {
+		return 0, fmt.Errorf("db: revision observer is closed")
+	}
+	if p.revisionConn == nil {
+		conn, err := p.read.Conn(ctx)
+		if err != nil {
+			return 0, fmt.Errorf("db: open revision observer: %w", err)
+		}
+		p.revisionConn = conn
+	}
+	var revision int64
+	if err := p.revisionConn.QueryRowContext(ctx, "PRAGMA data_version").Scan(&revision); err != nil {
+		return 0, fmt.Errorf("db: read revision: %w", err)
+	}
+	return revision, nil
+}
+
 // Close releases both pools. Safe to call on a partially-open Pools.
 func (p *Pools) Close() error {
 	var errs []error
+	p.revisionMu.Lock()
+	p.revisionClosed = true
+	if p.revisionConn != nil {
+		if err := p.revisionConn.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("db: close revision observer: %w", err))
+		}
+		p.revisionConn = nil
+	}
+	p.revisionMu.Unlock()
 	if p.read != nil {
 		if err := p.read.Close(); err != nil {
 			errs = append(errs, fmt.Errorf("db: close read pool: %w", err))
@@ -251,4 +291,20 @@ func OpenScratch(ctx context.Context) (*Pools, error) {
 	}
 	pools.scratchDir = dir
 	return pools, nil
+}
+
+// OpenReadOnly opens an existing database without creating or migrating it.
+func OpenReadOnly(ctx context.Context, path string, maxVersion int) (*Pools, error) {
+	if err := checkUserVersion(ctx, path, maxVersion); err != nil {
+		return nil, err
+	}
+	read, err := sql.Open("sqlite", fileURI(path)+"?mode=ro&_pragma=busy_timeout(5000)")
+	if err != nil {
+		return nil, fmt.Errorf("db: open read-only pool: %w", err)
+	}
+	if err := read.PingContext(ctx); err != nil {
+		_ = read.Close()
+		return nil, fmt.Errorf("db: read-only database: %w", err)
+	}
+	return &Pools{read: read, path: path}, nil
 }

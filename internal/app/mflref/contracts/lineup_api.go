@@ -53,7 +53,7 @@ func (a *API) TargetLineup(franchiseID string) (LineupReading, error) {
 		return LineupReading{}, fmt.Errorf("target lineup: unknown franchise %q", franchiseID)
 	}
 	cfg := a.stores().Rulebook.ActiveConfig()
-	rules, rulesErr := lineup.ParseRules(cfg.Starters)
+	rules, rulesErr := lineup.ParseRules(cfg)
 	r := LineupReading{
 		Franchise: franchiseID, Week: lineups.Value.Week, StarterCount: rules.StarterCount,
 		Starters: []LineupPlayer{}, Bench: []LineupPlayer{}, Provenance: lineups.Provenance,
@@ -119,17 +119,11 @@ func (a *API) TargetCheckLineup(franchiseID string, starters []string) (lineup.R
 	if err != nil {
 		return lineup.Result{}, fmt.Errorf("target check lineup: %w", err)
 	}
-	rules, err := lineup.ParseRules(a.stores().Rulebook.ActiveConfig().Starters)
+	rules, err := lineup.ParseRules(a.stores().Rulebook.ActiveConfig())
 	if err != nil {
 		return UnreadableRules(err), nil
 	}
 	return lineup.Check(rules, envelope.LineupPositions(ids, snap)), nil
-}
-
-// LineupPlan is the request and check a lineup draft builds for franchiseID now. It is a package
-// function, never bound; root cross-feature scenarios use it to stage a competing plan.
-func LineupPlan(a *API, franchiseID string, ids []playerid.PlayerID, now time.Time) (envelope.LineupRequest, envelope.LineupCheck) {
-	return a.lineupRequest(franchiseID, ids, now)
 }
 
 func (a *API) lineupRequest(
@@ -149,7 +143,7 @@ func (a *API) lineupRequest(
 			}
 		}
 	}
-	rules, err := lineup.ParseRules(a.stores().Rulebook.ActiveConfig().Starters)
+	rules, err := lineup.ParseRules(a.stores().Rulebook.ActiveConfig())
 	if err != nil {
 		c.Blocks = append(c.Blocks, UnreadableRules(err).Problems[0].Message)
 	}
@@ -264,7 +258,7 @@ func (a *API) TargetRosterReports(mine string) ([]report.Report, error) {
 	defer cancel()
 	lastWeek := a.host.ContractsWeek().Number - 1
 	season, week, byes := a.host.RosterFeeds(ctx, lastWeek)
-	rules, err := lineup.ParseRules(a.stores().Rulebook.ActiveConfig().Starters)
+	rules, err := lineup.ParseRules(a.stores().Rulebook.ActiveConfig())
 	stats, bye := RosterReports(snap, mine, season, week, byes, rules, time.Local)
 	if err != nil {
 		bye.Note += " Starter bounds unavailable: " + err.Error()

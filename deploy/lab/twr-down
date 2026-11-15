@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Lab only: delete CT <ctid>'s own recorded Tunnel + DNS record (cloudflare.sh --rollback), then remove the CT.
+# Usage: twr-down <ctid> < tokenfile
+set -euo pipefail
+[[ $(hostname) == twr-lab ]] || { echo 'lab only' >&2; exit 97; }
+[[ $# == 1 && $1 =~ ^2[0-9]{2}$ ]] || { echo 'usage: twr-down <200-299> < tokenfile' >&2; exit 2; }
+ctid=$1
+[[ -e /etc/pve/lxc/$ctid.conf ]] || { echo "CT $ctid does not exist" >&2; exit 1; }
+IFS= read -r token || [[ -n $token ]] || { echo 'no token on stdin' >&2; exit 2; }
+pct status "$ctid" | grep -q running || pct start "$ctid"
+# shellcheck disable=SC2016 # expands inside the CT
+# Only the identifiers this CT recorded in /etc/twr-cloudflare.ids are deleted; the input lives in tmpfs.
+printf '%s\n' "$token" | pct exec "$ctid" -- sh -euc '
+  [ -e /etc/twr-cloudflare.ids ] || { echo "no Cloudflare ids recorded"; exit 0; }
+  host=$(jq -r ".ingress[0].hostname" /etc/cloudflared/config.yml)
+  in=$(mktemp /dev/shm/cf.XXXXXX)
+  trap "rm -f $in" EXIT
+  jq -Rc --arg h "$host" "{zone:(\$h|sub(\"^[^.]+[.]\";\"\")),hostname:\$h,api_token:.}" > "$in"
+  rc-service twr-tunnel --ifstarted stop
+  for i in 1 2 3 4 5 6; do sh /root/twr/cloudflare.sh --rollback "$in" && exit 0; sleep 5; done
+  exit 1'
+unset token
+pct stop "$ctid"
+pct destroy "$ctid" --purge
+rm -f "/etc/pve/firewall/$ctid.fw"
+echo "twr-down $ctid: removed"

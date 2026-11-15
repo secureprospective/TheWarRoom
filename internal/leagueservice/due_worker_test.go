@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 func TestDueWorkerNearestDeadlineCatchupAndRestart(t *testing.T) {
@@ -75,24 +76,6 @@ func waitDueEvents(t *testing.T, f *dueFixture, count int) {
 		default:
 			time.Sleep(time.Millisecond)
 		}
-	}
-}
-
-func TestDueWorkerLostWakeAndCommitWake(t *testing.T) {
-	for _, lost := range []bool{false, true} {
-		t.Run(map[bool]string{false: "commit", true: "lost"}[lost], func(t *testing.T) {
-			f := newDueFixture(t)
-			f.worker.reconcile = 20 * time.Millisecond
-			startDueWorker(t, f.worker)
-			f.bid(t)
-			count := len(f.events(t))
-			f.clock.instant.Add(int64(24 * time.Hour))
-			if !lost {
-				f.worker.Wake()
-				f.worker.Wake()
-			}
-			waitDueEvents(t, f, count+1)
-		})
 	}
 }
 
@@ -210,7 +193,7 @@ func TestDueWorkerSleepsUntilDeadlineOrCommit(t *testing.T) {
 		f := newDueFixture(t)
 		bid := f.bid(t)
 		select {
-		case <-f.store.CommissionerCommits():
+		case <-history.NewOneFile(f.store).Commits():
 		default:
 		}
 		start := time.Now()

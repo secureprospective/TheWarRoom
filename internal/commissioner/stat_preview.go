@@ -29,7 +29,7 @@ func StatChangePreview(ctx context.Context, league string, records []Record, src
 		return ScorePreview{}, err
 	}
 	b := queueBuilder{league: league, season: change.key().season, records: records, feed: feed, src: src,
-		rules: rules, effects: effects, now: now}
+		rules: rules, effects: effects, now: now, memo: NewRulesMemo()}
 	var out ScorePreview
 	switch raw.Command {
 	case StatApprove:

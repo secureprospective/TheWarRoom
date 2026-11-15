@@ -20,18 +20,6 @@ func TestRuleNamesARestructuredContract(t *testing.T) {
 	}
 }
 
-func TestChangeIsSignedAndEmptyAtZero(t *testing.T) {
-	t.Parallel()
-	for _, delta := range []struct {
-		cents domain.Money
-		want  string
-	}{{0, ""}, {-3_000_000, "−$30,000"}, {3_000_000, "+$30,000"}} {
-		if got := Change(delta.cents); got != delta.want {
-			t.Fatalf("change %d: %s", delta.cents, got)
-		}
-	}
-}
-
 func TestRosterMissingPointsSayNoScore(t *testing.T) {
 	t.Parallel()
 	if got := scoreText(map[string]string{}, "0042"); got != "No score" {

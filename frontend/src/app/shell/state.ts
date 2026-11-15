@@ -13,6 +13,7 @@ export type EntitySubject =
 
 export type LineupDraft = { franchiseId: string; week: number; starters: string[] };
 export type ShellState = {
+  warTrade: { mine: string; player: string; league?: string } | null;
   lineupDraft: LineupDraft | null;
   lineupReceiptId: string | null;
   node: Node;
@@ -25,7 +26,6 @@ export type ShellState = {
   franchiseId: string | null;
   commandbar: boolean;
   summoned: 'calendar' | null;
-  comms: boolean;
   notice: string | null;
   endpointIds: readonly EndpointId[];
   endpointSurface: Surface | null;
@@ -33,6 +33,7 @@ export type ShellState = {
 };
 function initialShellState(): ShellState {
   return {
+    warTrade: null,
     lineupDraft: null,
     lineupReceiptId: null,
     node: 'home',
@@ -47,7 +48,6 @@ function initialShellState(): ShellState {
     franchiseId: null,
     commandbar: false,
     summoned: null,
-    comms: false,
     notice: null,
     endpointIds: [],
     endpointSurface: null,

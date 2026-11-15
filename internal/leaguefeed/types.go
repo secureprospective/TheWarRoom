@@ -90,10 +90,13 @@ type Lineups struct {
 // vocabulary (IR, IR-R, IR-PUP, IR-NFI, Out, Questionable, Suspended, Holdout, RETIRED);
 // the eligibility rules classify it, so an unknown new status stays data, never an error.
 type Injury struct {
-	ID        playerid.PlayerID `json:"id" ts_type:"string"`
-	Status    string            `json:"status"`
-	Details   string            `json:"details,omitempty"`
-	ExpReturn string            `json:"expReturn,omitempty"`
+	ID           playerid.PlayerID `json:"id" ts_type:"string"`
+	Status       string            `json:"status"`
+	Details      string            `json:"details,omitempty"`
+	ExpReturn    string            `json:"expReturn,omitempty"`
+	ReturnSeason int               `json:"returnSeason,omitempty"`
+	ReturnWeek   int               `json:"returnWeek,omitempty"`
+	ReturnReason string            `json:"returnReason,omitempty"`
 }
 
 // PendingTrade is from the offering team's side: Gives is what Offering gives up.

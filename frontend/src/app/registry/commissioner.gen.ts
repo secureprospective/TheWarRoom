@@ -59,19 +59,15 @@ export type CommissionerId =
   | "CM-056"
 ;
 export type Placement =
-  | "Home › Seasonal card"
-  | "Home › Alert tray"
-  | "Home › Digests"
+  | "Home › Overview"
   | "War Room › Market"
   | "War Room › Valuations and pool"
-  | "War Room › Research"
+  | "War Room › Trade desk"
+  | "War Room › Draft room"
+  | "War Room › Plans"
   | "Franchise HQ › Lineup and roster"
   | "Franchise HQ › Contracts and cap"
   | "Franchise HQ › My moves"
-  | "Trade Floor › Trade desk"
-  | "Trade Floor › Offers history"
-  | "Trade Floor › Counterparties"
-  | "Trade Floor › Draft room"
   | "League Pulse › Now"
   | "League Pulse › Race"
   | "League Pulse › Archive"
@@ -79,26 +75,21 @@ export type Placement =
   | "Control Room › Data and sources"
   | "Control Room › League"
   | "Inspector"
-  | "Comms"
   | "Calendar"
   | "Command bar"
   | "Status strip"
   | "Report drawer"
 ;
 const places = [
-  "Home › Seasonal card",
-  "Home › Alert tray",
-  "Home › Digests",
+  "Home › Overview",
   "War Room › Market",
   "War Room › Valuations and pool",
-  "War Room › Research",
+  "War Room › Trade desk",
+  "War Room › Draft room",
+  "War Room › Plans",
   "Franchise HQ › Lineup and roster",
   "Franchise HQ › Contracts and cap",
   "Franchise HQ › My moves",
-  "Trade Floor › Trade desk",
-  "Trade Floor › Offers history",
-  "Trade Floor › Counterparties",
-  "Trade Floor › Draft room",
   "League Pulse › Now",
   "League Pulse › Race",
   "League Pulse › Archive",
@@ -106,7 +97,6 @@ const places = [
   "Control Room › Data and sources",
   "Control Room › League",
   "Inspector",
-  "Comms",
   "Calendar",
   "Command bar",
   "Status strip",
@@ -139,7 +129,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "are first rosters built?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.league.teams commish.league.conferences commish.league.div" +
       "isions commish.league.format commish.league.initial_rosters",
     disposition: "kept",
@@ -166,7 +156,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which team sits in which division?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.league.alignment",
     disposition: "kept",
     ring: 4,
@@ -190,7 +180,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "How small and how large may a roster be? Any position minimums?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.roster.limits commish.roster.position_bounds",
     disposition: "kept",
     ring: 4,
@@ -214,7 +204,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "How many start, and at which positions?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.lineup.bounds commish.lineup.group_bounds commish.lineup.i" +
       "nvalid_penalty commish.lineup.missed_flag",
     disposition: "kept",
@@ -242,7 +232,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Do rosters carry year to year, and who carries?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.league.dynasty commish.league.carry",
     disposition: "kept",
     ring: 4,
@@ -265,7 +255,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What is each stat worth?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.scoring.set commish.scoring.unset commish.scoring.bonus co" +
       "mmish.scoring.preset.apply",
     disposition: "kept",
@@ -296,7 +286,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "How are teams ranked and ties broken?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.standings.criteria",
     disposition: "kept",
     ring: 4,
@@ -322,7 +312,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What is the cap, and is going over blocked or flagged?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.cap.set commish.cap.enforcement commish.cap.reserve_counts",
     disposition: "kept",
     ring: 4,
@@ -348,7 +338,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which contract actions exist, and at what numbers?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.contract.action.set",
     disposition: "kept",
     ring: 4,
@@ -379,7 +369,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "How many IR spots, and who qualifies?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.ir.slots commish.ir.eligible commish.ir.must_leave_when_he" +
       "althy",
     disposition: "kept",
@@ -404,7 +394,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "How many taxi spots, and who qualifies?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.taxi.slots commish.taxi.eligible",
     disposition: "kept",
     ring: 4,
@@ -428,7 +418,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "y?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.waivers.trigger commish.waivers.duration commish.waivers.m" +
       "ethod",
     disposition: "kept",
@@ -456,7 +446,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "How do UFA and RFA bids work?",
     gravity: "G2",
     clock: "window",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.bids.mode commish.bids.formula commish.bids.limits commish" +
       ".bids.increment commish.bids.phase_rules",
     disposition: "kept",
@@ -484,7 +474,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Who reviews trades, what can be traded, and when do offers lapse?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.trade.review commish.trade.dot commish.trade.future commis" +
       "h.trade.roster_gate commish.trade.offer_expiry commish.trade.parti" +
       "es",
@@ -514,7 +504,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Who plays whom, each week?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.schedule.generate commish.schedule.edit commish.schedule.p" +
       "ublish",
     disposition: "kept",
@@ -541,7 +531,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Who qualifies, how are they seeded, which weeks?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.playoffs.preset commish.playoffs.graph commish.playoffs.se" +
       "eding commish.playoffs.weeks commish.playoffs.home_bonus",
     disposition: "kept",
@@ -566,7 +556,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What else does the league rule that the settings don't cover?",
     gravity: "G1",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.rules.text.add commish.rules.text.remove",
     disposition: "kept",
     ring: 4,
@@ -587,7 +577,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What is each franchise called?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.franchise.edit",
     disposition: "kept",
     ring: 4,
@@ -611,7 +601,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Who holds each franchise, and how do owners join or leave?",
     gravity: "G3",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.seat.invite commish.seat.invite.revoke commish.seat.remove" +
       " commish.seat.replace",
     disposition: "kept",
@@ -635,7 +625,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What may each owner do, and who can read what?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.abilities.set commish.visibility.set",
     disposition: "kept",
     ring: 4,
@@ -660,7 +650,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Who is commissioner, co-commissioner, or on the DOT?",
     gravity: "G3",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.role.grant commish.role.revoke commish.deputy.order",
     disposition: "kept",
     ring: 4,
@@ -684,7 +674,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "e league's confidence?",
     gravity: "G3",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.succession.stepdown commish.succession.takeover commish.su" +
       "ccession.inactivity commish.succession.voteout.open commish.succes" +
       "sion.election.open commish.vote.cast",
@@ -710,7 +700,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "When does each window open and close, and what does it open?",
     gravity: "G2",
     clock: "window",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.calendar.window.set commish.calendar.window.move commish.c" +
       "alendar.window.remove",
     disposition: "kept",
@@ -739,7 +729,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "?",
     gravity: "G2",
     clock: "window",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.calendar.timezone commish.calendar.boundary",
     disposition: "kept",
     ring: 4,
@@ -762,7 +752,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "When do trades stop?",
     gravity: "G2",
     clock: "window",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.calendar.trade_deadline",
     disposition: "kept",
     ring: 4,
@@ -785,7 +775,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "May this one action happen outside its window?",
     gravity: "G3",
     clock: "window",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.calendar.exception",
     disposition: "kept",
     ring: 4,
@@ -807,7 +797,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Can I move the league forward a year safely?",
     gravity: "G3",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.season.rollover",
     disposition: "kept",
     ring: 4,
@@ -845,7 +835,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "?",
     gravity: "G3",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.correct.roster commish.correct.transaction commish.correct" +
       ".provenance commish.correct.pick",
     disposition: "kept",
@@ -872,7 +862,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which lineup should count, despite the lock?",
     gravity: "G3",
     clock: "weekly",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.lineup.correct",
     disposition: "kept",
     ring: 4,
@@ -895,7 +885,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "The feed has the wrong position; what is right?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.player.position commish.player.position.clear",
     disposition: "kept",
     ring: 4,
@@ -921,7 +911,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "The NFL changed a stat; do we accept it?",
     gravity: "G2",
     clock: "weekly",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.stat.queue.approve commish.stat.queue.reject commish.stat." +
       "correct",
     disposition: "kept",
@@ -947,7 +937,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which player or team score is wrong?",
     gravity: "G3",
     clock: "weekly",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.score.player commish.score.franchise",
     disposition: "kept",
     ring: 4,
@@ -974,7 +964,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What record or full order must stand?",
     gravity: "G3",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.standings.record.adjust commish.standings.override commish" +
       ".standings.override.clear",
     disposition: "kept",
@@ -998,7 +988,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which contract, salary or cap hit is wrong, or earns relief?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.contract.edit commish.cap.adjust commish.cap.relief",
     disposition: "kept",
     ring: 4,
@@ -1022,7 +1012,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Run the wire now, set the order by hand, or fix one award?",
     gravity: "G2",
     clock: "window",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.waivers.process commish.waivers.order.set commish.waivers." +
       "order.auto commish.waivers.award.override",
     disposition: "kept",
@@ -1049,7 +1039,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Award cleared players' bids now, or fix one award?",
     gravity: "G2",
     clock: "window",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.bids.process commish.bids.award.override",
     disposition: "kept",
     ring: 4,
@@ -1072,7 +1062,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Does this trade stand?",
     gravity: "G3",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.trade.review commish.trade.recuse commish.trade.appeal com" +
       "mish.trade.appeal.rule commish.trade.override",
     disposition: "kept",
@@ -1100,7 +1090,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Should this player go on IR or taxi despite failing the rule?",
     gravity: "G3",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.reserve.exception",
     disposition: "kept",
     ring: 4,
@@ -1122,7 +1112,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Override one automated decision here, or undo one recorded change?",
     gravity: "G3",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.rule.exception commish.correction.revert",
     disposition: "kept",
     ring: 4,
@@ -1143,7 +1133,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "How is the draft run, how many rounds, and what do picks cost?",
     gravity: "G2",
     clock: "draft",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.draft.mode commish.draft.clock commish.draft.on_expire com" +
       "mish.draft.timeouts commish.draft.rounds commish.draft.max_picks c" +
       "ommish.draft.pricing",
@@ -1173,7 +1163,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Who picks where, each round?",
     gravity: "G2",
     clock: "draft",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.draft.order.auto commish.draft.order.set commish.draft.ord" +
       "er.pattern commish.draft.order.tiebreak",
     disposition: "kept",
@@ -1199,7 +1189,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "When does the draft begin?",
     gravity: "G1",
     clock: "draft",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.draft.start",
     disposition: "kept",
     ring: 4,
@@ -1224,7 +1214,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Skip, assign, insert, change a pick, or work the clock?",
     gravity: "G3",
     clock: "draft",
-    placement: places[12],
+    placement: places[4],
     verb: "commish.draft.skip commish.draft.assign commish.draft.insert commi" +
       "sh.draft.change commish.draft.timer",
     disposition: "kept",
@@ -1251,7 +1241,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which draft checkpoint must we restore?",
     gravity: "G3",
     clock: "draft",
-    placement: places[12],
+    placement: places[4],
     verb: "commish.draft.revert",
     disposition: "kept",
     ring: 4,
@@ -1275,7 +1265,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Is the draft done? Seal it and issue new picks.",
     gravity: "G2",
     clock: "draft",
-    placement: places[12],
+    placement: places[4],
     verb: "commish.draft.archive",
     disposition: "kept",
     ring: 4,
@@ -1301,7 +1291,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Build the brackets; seed a slot by hand?",
     gravity: "G2",
     clock: "weekly",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.bracket.build commish.bracket.edit commish.bracket.seed co" +
       "mmish.bracket.preset.save",
     disposition: "kept",
@@ -1327,7 +1317,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which team should advance despite the computed result?",
     gravity: "G3",
     clock: "weekly",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.bracket.advance",
     disposition: "kept",
     ring: 6,
@@ -1348,7 +1338,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What season does the title name?",
     gravity: "G1",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.title.set",
     disposition: "kept",
     ring: 6,
@@ -1370,7 +1360,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which historical franchise does this record belong to?",
     gravity: "G2",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.history.link",
     disposition: "kept",
     ring: 6,
@@ -1393,7 +1383,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Which awards exist, and who wins them?",
     gravity: "G1",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.awards.define commish.awards.grant",
     disposition: "kept",
     ring: 6,
@@ -1419,7 +1409,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
       "?",
     gravity: "G1",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.notify.set commish.notify.route",
     disposition: "kept",
     ring: 4,
@@ -1444,7 +1434,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What official notice or newsletter should owners see?",
     gravity: "G1",
     clock: "weekly",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.notice.publish commish.newsletter.publish",
     disposition: "kept",
     ring: 4,
@@ -1467,7 +1457,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What changed in the app or the league?",
     gravity: "G1",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.whatsnew.post",
     disposition: "kept",
     ring: 4,
@@ -1489,7 +1479,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Pull fresh data now, or clear a stale cache?",
     gravity: "G1",
     clock: "sync",
-    placement: places[17],
+    placement: places[13],
     verb: "commish.data.refresh commish.cache.clear",
     disposition: "kept",
     ring: 4,
@@ -1513,7 +1503,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "Tune the valuation and market engine?",
     gravity: "G2",
     clock: "none",
-    placement: places[17],
+    placement: places[13],
     verb: "commish.engine.set commish.engine.revert",
     disposition: "kept",
     ring: 6,
@@ -1539,7 +1529,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gm_question: "What changed, who did it, and why?",
     gravity: "G0",
     clock: "none",
-    placement: places[18],
+    placement: places[14],
     verb: "commish.ledger.read",
     disposition: "kept",
     ring: 4,

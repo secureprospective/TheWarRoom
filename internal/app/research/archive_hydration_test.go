@@ -69,22 +69,6 @@ func TestHydrateArchiveReadOrderMissingInputsAndRetries(t *testing.T) {
 	}
 }
 
-func TestHydrateDepthPreservesLiveFailure(t *testing.T) {
-	t.Parallel()
-	for _, note := range []string{"", "live depth failed"} {
-		depth := Feed[[]researchfeeds.RawDepth]{RefreshError: note}
-		var logs []string
-		HydrateDepth(t.Context(), 2026, noNewsArchive, &depth, func(line string) { logs = append(logs, line) })
-		if note == "" {
-			if depth.RefreshError != "No archived copy held" || len(logs) != 1 {
-				t.Fatalf("missing: %+v %v", depth, logs)
-			}
-		} else if depth.RefreshError != note || len(logs) != 0 {
-			t.Fatalf("overwrote live error: %+v %v", depth, logs)
-		}
-	}
-}
-
 func TestArchiveLinksRefreshOnlyWhenMissingOrVersionChanged(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {

@@ -89,28 +89,6 @@ func service(t *testing.T, h *hosts, ids map[string][2]string) *Service {
 	return s
 }
 
-func TestPhotoTriesESPNThenSleeperThenNone(t *testing.T) {
-	espnPNG, sleeperJPG := tiny(t, "png", 10), tiny(t, "jpg", 200)
-	h := &hosts{
-		espn:    map[string]reply{"100": {200, espnPNG}},
-		sleeper: map[string]reply{"7": {200, sleeperJPG}, "8": {200, sleeperJPG}},
-	}
-	s := service(t, h, map[string][2]string{"0501": {"100", "7"}, "0502": {"999", "8"}, "0503": {"", ""}})
-	ctx := context.Background()
-
-	b, kind, err := s.Photo(ctx, "0501")
-	if err != nil || kind != "image/png" || !bytes.Equal(b, espnPNG) {
-		t.Fatalf("ESPN first: kind %q err %v", kind, err)
-	}
-	b, kind, err = s.Photo(ctx, "0502")
-	if err != nil || kind != "image/jpeg" || !bytes.Equal(b, sleeperJPG) {
-		t.Fatalf("Sleeper when ESPN has none: kind %q err %v", kind, err)
-	}
-	if _, _, err := s.Photo(ctx, "0503"); !errors.Is(err, ErrNoPhoto) {
-		t.Fatalf("no ids: err %v, want ErrNoPhoto", err)
-	}
-}
-
 func TestSilhouetteAndHTMLAreNoPhoto(t *testing.T) {
 	silhouette, sleeperJPG := tiny(t, "png", 99), tiny(t, "jpg", 40)
 	html := []byte("<!doctype html><html><body>" + strings.Repeat("error ", 100) + "</body></html>")

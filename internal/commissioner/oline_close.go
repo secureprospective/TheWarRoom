@@ -152,16 +152,10 @@ func olineRoom(seed *RawNativeSnapshot, rules leaguerules.RuleSet, incoming Nati
 			charges = append(charges, c.Amount)
 		}
 	}
-	capState, err := nativecheck.CheckCap(rules.Cap, players, charges, time.UTC)
-	if err != nil {
-		return fmt.Errorf("check assigned O-Line salary: %w", err)
+	if err := olineSalaryRoom(seed, rules, incoming.Franchise, players, charges); err != nil {
+		return err
 	}
-	if capState.RoomCents == nil {
-		return fmt.Errorf("the salary cap needs a ruling")
-	}
-	if *capState.RoomCents < 0 {
-		return fmt.Errorf("the minimum contract would exceed the salary cap")
-	}
+
 	if rules.Roster.Limits.State != leaguerules.IsKnown || rules.Roster.Limits.Value.Max.State != leaguerules.IsKnown {
 		return fmt.Errorf("the roster maximum needs a ruling")
 	}
@@ -267,4 +261,21 @@ func olineLabel(outcome *OLineOutcome) string {
 		return "Close O-Line auction"
 	}
 	return "Closed the O-Line auction. " + strings.Join(outcome.Words, ". ")
+}
+
+func olineSalaryRoom(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchise string, players []nativecheck.CapPlayer, charges []domain.Money) error {
+	if err := seed.CheckContracts(franchise); err != nil {
+		return fmt.Errorf("judge assigned O-Line salary: %w", err)
+	}
+	capState, err := nativecheck.CheckCap(rules.Cap, players, charges, time.UTC)
+	if err != nil {
+		return fmt.Errorf("check assigned O-Line salary: %w", err)
+	}
+	if capState.RoomCents == nil {
+		return fmt.Errorf("the salary cap needs a ruling")
+	}
+	if *capState.RoomCents < 0 {
+		return fmt.Errorf("the minimum contract would exceed the salary cap")
+	}
+	return nil
 }

@@ -49,6 +49,10 @@ type ResultsHost interface {
 	NativePlayerScore(ctx context.Context, league string,
 		scope source.RawNativeScope) (commissioner.NativePlayerScore, error)
 	NativeResults(ctx context.Context, league string, season, week int) (commissioner.NativeResults, error)
+	NativeProjections(ctx context.Context, league string, season, week int,
+		players []string) (history.NativeProjections, error)
+	NativeLineupDelta(ctx context.Context, league string, season, week int,
+		trade history.TradeSides) (history.NativeLineupDelta, error)
 	NativeStandings(ctx context.Context, league string, season int) (commissioner.NativeStandings, error)
 	NativeScorePreview(ctx context.Context, raw commissioner.RawCommand) (commissioner.ScorePreview, error)
 	NativeBracket(ctx context.Context, league string, season int) (commissioner.NativeBracket, error)
@@ -99,6 +103,8 @@ type Service struct {
 	host      Host
 	admission commissioner.CredentialAdmission
 	hosted    bool
+	cancels   readCancels
+	games     *LiveGames
 }
 
 func New(host Host) *Service { return &Service{host: host} }
@@ -151,4 +157,25 @@ func (a *Service) Location(league string) (history.TransferStatus, error) {
 		return history.TransferStatus{}, fmt.Errorf("read league location: %w", err)
 	}
 	return status, nil
+}
+
+// AdmitRead runs the admission a league reading of operation makes, without reading. A server that
+// answers a reading from its reply cache calls it first, so a cached answer is never an extra grant.
+func (a *Service) AdmitRead(league, operation, franchise string) error {
+	if err := a.host.Ready(); err != nil {
+		return fmt.Errorf("league reading startup: %w", err)
+	}
+	return a.admitRead(league, operation, franchise)
+}
+
+// ReadingEpoch is the league's reading epoch at this host's clock (commissioner.ReadingEpoch) and when
+// it ends; evidence is the football kickoffs the host reads against. ok is false when the league's
+// readings cannot be shared.
+func (a *Service) ReadingEpoch(league string, evidence []time.Time) (epoch int, next time.Time, ok bool, err error) {
+	records, err := a.host.CommissionerRecords(a.requestContext(a.host.CommissionerContext()), league)
+	if err != nil {
+		return 0, time.Time{}, false, fmt.Errorf("reading epoch: %w", err)
+	}
+	epoch, next, ok = commissioner.ReadingEpoch(records, a.host.CommissionerNow(), evidence)
+	return epoch, next, ok, nil
 }

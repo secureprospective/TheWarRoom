@@ -13,6 +13,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // migrationLedger is the store as the move uses it.
@@ -112,6 +113,16 @@ func assertNativeEqualsMFL(t *testing.T, s *Store, svc *leaguemigration.Service,
 	if err != nil {
 		t.Fatal(err)
 	}
+	// A cutover moves the league off MFL, so it clears schedule following atomically; the native league
+	// must not keep following MFL's schedule. Only this one setting is folded to cleared on the MFL side;
+	// every other field still compares exactly.
+	if plan.Rules.Schedule.Follow.Value == (leaguerules.ScheduleFollow{}) {
+		t.Fatal("the MFL plan must follow MFL's schedule")
+	}
+	if app.Rules.Schedule.Follow.Value != (leaguerules.ScheduleFollow{}) {
+		t.Errorf("after the cutover the league still follows %+v", app.Rules.Schedule.Follow.Value)
+	}
+	plan.Rules.Schedule.Follow.Value = leaguerules.ScheduleFollow{}
 	for _, d := range leaguemigration.Compare(plan, app) {
 		t.Errorf("lossy field %s %s: MFL %s, app %s", d.Franchise, d.Field, d.MFL, d.App)
 	}
@@ -145,7 +156,7 @@ func TestMigrationLeavesNothingOnAFailedStep(t *testing.T) {
 	t.Parallel()
 	export := migrationtest.Synthetic("Fault league", migrationtest.Specs()["8 teams"])
 	league := leaguemigration.AppLeagueID(export.LeagueID, export.Season)
-	steps := []string{"read:league", "read:rosters", "read:adjustments", "read:draft", "read:players",
+	steps := []string{"read:league", "read:rosters", "read:adjustments", "read:draft", "read:players", "read:schedule",
 		"record:0", "record:1"}
 	for _, step := range steps {
 		t.Run(step, func(t *testing.T) {
@@ -304,7 +315,7 @@ func TestCutoverIsOnceOnlyAndPermanent(t *testing.T) {
 	}
 	if _, err := s.ExecuteCommissioner(ctx, commissioner.RawCommand{League: "native.test", Command: commissioner.Cutover,
 		Expected: 1, Request: "native", Reason: "Ready", Effective: "now", Visibility: "league"}, "creator", nil); err == nil ||
-		!strings.Contains(err.Error(), "only a league imported from MFL") {
+		!strings.Contains(err.Error(), "only a league with held starting assets can be moved over") {
 		t.Fatalf("an app league was cut over: %v", err)
 	}
 }

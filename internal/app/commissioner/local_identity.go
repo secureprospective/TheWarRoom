@@ -40,6 +40,15 @@ type LocalSeat struct {
 	Context   func() context.Context
 	Status    func(context.Context, string) (accounts.SeatStatus, error)
 	SignIn    func(context.Context, accounts.RawCredentials, string) (accounts.Account, error)
+	Facts     func(context.Context) ([]accounts.SignInFact, error)
+}
+
+// SignInFacts reads every local identity's authenticator and last activity.
+func (s LocalSeat) SignInFacts() ([]accounts.SignInFact, error) {
+	if err := s.Ready(); err != nil {
+		return nil, err
+	}
+	return s.Facts(s.Context())
 }
 
 func (s LocalSeat) Read() (accounts.SeatStatus, error) {

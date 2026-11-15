@@ -91,10 +91,14 @@ func (b Bootstrap) Validate() error {
 	if err := b.Config.Validate(); err != nil {
 		return err
 	}
-	if len(b.Root) == 0 || len(b.Root) > 512000 {
+	return validateRoot(b.Root)
+}
+
+func validateRoot(data []byte) error {
+	if len(data) == 0 || len(data) > 512000 {
 		return fmt.Errorf("update trust root is missing or too large")
 	}
-	root, err := metadata.Root().FromBytes(b.Root)
+	root, err := metadata.Root().FromBytes(data)
 	if err != nil {
 		return fmt.Errorf("read update trust root: %w", err)
 	}

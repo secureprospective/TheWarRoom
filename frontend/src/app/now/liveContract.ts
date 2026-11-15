@@ -56,7 +56,8 @@ function box(v: unknown, p: string): Box {
   return { team: text(r.team, p), category: text(r.category, p), labels, rows };
 }
 function game(v: unknown, p: string): Game {
-  const r = object(v, p, ['id', 'kickoff', 'home', 'away', 'status', 'clock', 'period', 'state', 'last',
+  const r = object(v, p, ['id', 'season', 'week', 'seasonType', 'kickoff', 'home', 'away', 'status', 'clock',
+    'period', 'state', 'last',
     'box', 'plays']);
   return { id: requiredText(r.id, p), kickoff: timestamp(r.kickoff, p), home: team(r.home, p),
     away: team(r.away, p),
@@ -88,4 +89,26 @@ export function parseLive(v: unknown): LiveView {
     weekSpine: array(r.weekSpine, p, spine), weekHeld: integer(r.weekHeld, p),
     weekGames: integer(r.weekGames, p),
     box: report(r.box, p), active: bool(r.active, p) };
+}
+
+/** parseHostedGames reads nfl.games.read: the league server's held NFL scoreboard (public, provisional).
+ *  It answers a LiveView with the games alone; play-by-play and the followed game stay desktop-only. */
+export function parseHostedGames(v: unknown, league: string): LiveView {
+  const p = 'NFL games';
+  const r = object(v, p, ['league', 'board']);
+  if (requiredText(r.league, p) !== league) throw new Error(`${p}: reading is for another league`);
+  const b = object(r.board, p, ['stale', 'games', 'source', 'at', 'failure']);
+  const source = text(b.source, p);
+  const at = text(b.at, p);
+  const held = at && !at.startsWith('0001-') ? new Date(timestamp(at, p)) : undefined;
+  const asOf = held ? held.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+  const games = array(b.games, p, game);
+  return { games, followed: null,
+    source: !source ? 'The league server has not read the NFL scoreboard yet'
+      : `${bool(b.stale, p) ? 'Held ' : ''}${source} · provisional`,
+    asOf, failure: text(b.failure, p), detailAsOf: '', detailFailure: '', scoring: [], spine: [],
+    unmatched: 0, weekSpine: [], weekHeld: 0, weekGames: games.length,
+    box: { id: 'nfl-games', title: 'NFL box score', note: '', status: 'empty', source, asOf, how: '',
+      columns: [], rows: [], summary: [], link: null },
+    active: false };
 }

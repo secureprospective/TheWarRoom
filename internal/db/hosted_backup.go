@@ -48,19 +48,44 @@ func (p *Pools) ExecWrite(ctx context.Context, execute func(*sql.Tx) (sql.Result
 	return result, nil
 }
 
-// CaptureHosted reserves the same writer as history, evidence and accounts. The caller
-// copies immutable server configuration while this barrier is held. Never copy a live WAL file.
+// CaptureHosted writes a compacted, verified snapshot of the database to dest (which must not
+// exist). It reserves the same writer as history, evidence and accounts only long enough to pin the
+// snapshot's read point and run config, so config and database belong to one point; the copy itself
+// runs after the writer is released, and writes commit while it runs. A nil config is allowed. Never
+// copy a live WAL file. The intermediate full copy is dest+".copy", removed before returning.
 func (p *Pools) CaptureHosted(ctx context.Context, dest string, config func() error) error {
-	conn, err := p.write.Conn(ctx)
+	pin, err := p.pinUnderWriter(ctx, config)
 	if err != nil {
-		return fmt.Errorf("reserve backup writer: %w", err)
-	}
-	defer func() { _ = conn.Close() }()
-	if err := createOwnerOnly(dest); err != nil {
 		return err
 	}
-	if _, err := conn.ExecContext(ctx, "VACUUM INTO ?", dest); err != nil {
+	copyPath := dest + ".copy"
+	_, err = pin.copyTo(ctx, copyPath, dest)
+	if err == nil {
+		err = removeSnapshot(copyPath)
+	}
+	if err != nil {
 		return fmt.Errorf("snapshot hosted database: %w", err)
 	}
-	return config()
+	return nil
+}
+
+// pinUnderWriter waits for the writer (so no write transaction is open), pins a snapshot read point,
+// runs barrier while the writer is still held, then releases the writer.
+func (p *Pools) pinUnderWriter(ctx context.Context, barrier func() error) (*snapshotPin, error) {
+	conn, err := p.write.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("reserve backup writer: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	pin, err := p.pinSnapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if barrier != nil {
+		if err := barrier(); err != nil {
+			pin.release(ctx)
+			return nil, err
+		}
+	}
+	return pin, nil
 }

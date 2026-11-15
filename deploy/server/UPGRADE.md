@@ -3,14 +3,33 @@
 Use the CT console. These steps never run on or change the Proxmox host.
 Keep desktop apps closed until the server is ready. Do not run the installer again.
 
-1. Download and verify the new server bundle using the release instructions in README.md.
-   Unpack it in a new folder inside the CT. Keep the previous bundle.
-2. From that folder run `sh upgrade.sh /root/twr-new/twr-server`, replacing the path with
-   the new binary's actual path. Do not replace the installed binary by hand.
+1. Obtain the signed server bundle and its TUF metadata folder from your release provider.
+   Keep the archive intact; do not unpack it or run any program from it. Keep the previous bundle.
+2. Run the **installed** upgrade tool, giving the archive and metadata folder:
+   `sh /usr/local/libexec/twr-upgrade /root/twr-new/server.tar.gz /root/twr-new/metadata`.
+   Use the bundle's original target basename (not its hash-prefixed download name).
+   Do not replace the installed binary or run the new bundle's scripts by hand.
 3. Wait for **Server upgrade ready**. Update desktop apps next, then open the league.
    Confirm that its latest ledger entry is still present. Changes stay paused until
    the first fresh off-site backup uploads and verifies.
 
+The installed server first authenticates the archive using the public root pinned at
+`/etc/twr-release/root.json`, fresh signed metadata and the persistent private trust cache
+at `/var/lib/twr-release`. It rejects damaged bytes, expired or rolled-back metadata and
+releases older than the installed server. Never delete the cache to retry a refusal.
+No pinned root means **reinstall from a verified bundle**; a downloaded root is not a repair.
+Verification refusal leaves services and installed league data untouched. Ask your release
+provider for a fresh signed bundle and metadata. Run only one console upgrade at a time.
+If an interrupted upgrade leaves `upgrade.lock` in the cache, confirm no upgrade or verifier
+is running before removing only that lock folder; retain all trusted metadata.
+
+After verification the tool freezes and rechecks the archive's fingerprint, extracts only
+the server executable, and runs its read-only league check as `twr` inside the same
+bubblewrap sandbox as the service. Candidate code never runs as root. Once the upgrade has
+succeeded, it also puts the bundle's console tools (`/usr/local/libexec/twr-*`) and the two
+service files (`/etc/init.d/twr-server`, `twr-tunnel`) in place from the same verified bytes,
+by fixed name, so an upgraded server has every tool a fresh install has. None of them runs
+during the upgrade.
 The tool first reads the league file without migrating it. An unsupported newer file or
 newer server stamp is refused without changing it. It then stops the Tunnel and server,
 keeps the installed binary and private settings, and takes a SQLite snapshot of the
@@ -21,6 +40,13 @@ for native changes as before; local migration still needs its verified snapshot.
 Migration and the new release stamp happen only after backup. The tool checks the
 resulting schema, both audit chains and their saved checkpoint before replacing the
 installed binary. TLS application readiness must pass before reopening the Tunnel.
+
+The upgrade that gives each league its own file (release 8) prints its proof: for every league
+and every league table, the rows and a digest of every row as `server.db` held them, beside what
+the league's own file holds. Every line must read `same`; any line that reads `DIFFERS` undoes
+the upgrade and puts the saved copy back. With the server stopped, the same proof can be printed
+again with `twr-server conversion-proof -db /var/lib/twr/server.db` (as `twr`); once the
+server has run, a league's new changes show as differing, which is expected.
 
 ## If it stops
 
@@ -55,7 +81,8 @@ gated before accounts, native data, backups or SSE. No SSE connection is needed 
 that an update is required. Desktop/agent Go transports attach versions to every request;
 `serverclient.ErrUpdateRequired` and `*serverclient.UpdateRequired` are slice 44's signal.
 
-File flow: `serverversion.Preflight` → `db.Inspect` (read-only; no migration) → stopped-service
+File flow: installed `verify-release` → frozen archive fingerprint check → sandboxed
+`serverversion.Preflight` → `db.Inspect` (read-only; no migration) → stopped-service
 snapshot and verified off-site set → history/accounts migration → monotonic release stamp
 → schema, audit and checkpoint verification → binary replacement → TLS readiness.
 Migration failure restores the snapshot, not an attempted reverse SQL migration. The

@@ -97,7 +97,6 @@ func TestHostedBidsWaiversTradeCorrectionAndRollover(t *testing.T) {
 	c := workflowClient(t)
 	bid := c.run(c.command(commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "6001", Franchise: "franchise.01", Salary: 500000000, Years: 1}}, "bid.once"))
 	bid = c.run(c.command(commissioner.BidRaise, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Bid: bid.Entry, Franchise: "franchise.01", Salary: 600000000, Years: 1}}, "raise.once"))
-	c.run(c.command(commissioner.BidWithdraw, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Bid: bid.Entry, Franchise: "franchise.01"}}, "withdraw.once"))
 	other := c
 	other.bearer, other.proof = c.f.login(t, "owner", "private-password"), ""
 	cut := other.run(other.command(commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: "0102", Franchise: "franchise.02"}}, "cut.once"))

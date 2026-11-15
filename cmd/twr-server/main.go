@@ -17,6 +17,11 @@ import (
 	"syscall"
 	"time"
 
+	// The hosted server runs on a minimal Alpine container inside a sandbox with no zoneinfo, yet
+	// league rules name time zones (calendar.timezone). Embedding Go's time zone database makes every
+	// owner action that reads the league calendar work there, instead of failing "unknown time zone".
+	_ "time/tzdata"
+
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -42,22 +47,53 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runBackupCheck(args, output)
 	case "hosted":
 		return true, runHosted(ctx, args, output)
-	case "checkpoint":
-		return true, runCheckpoint(ctx, args, output)
-	case "recover":
-		return true, runRecovery(ctx, args, os.Stdin, output)
+	case "checkpoint", "pin-football":
+		return true, outputCommand(name)(ctx, args, output)
+	case "join-link":
+		return true, runJoinLink(ctx, args, os.Stdin, output)
+	case "reset-password":
+		return true, runResetPassword(ctx, args, os.Stdin, output)
+	case "league-load":
+		return true, runLeagueLoad(ctx, args, os.Stdin, output)
 	case "stand-up":
 		return true, runStandUp(ctx, args, output)
-	case "restore":
-		return true, runRestore(ctx, args, os.Stdin, output)
-	case "reset-sign-ins":
-		return true, runResetSignIns(ctx, args, os.Stdin, output)
+	case "verify-release":
+		return true, runVerifyRelease(args, output)
 	case "upgrade":
 		return true, runUpgrade(ctx, args, output)
 	case "version":
 		return true, runVersion(args, output)
+	case "requests":
+		return true, runRequests(ctx, args, output)
 	case "status":
 		return true, runStatus(ctx, args, output)
+	}
+	return repairCommand(ctx, name, args, output)
+}
+
+// repairCommand runs the commands that bring back, reset or remove what a server holds.
+func repairCommand(ctx context.Context, name string, args []string, output io.Writer) (bool, error) {
+	switch name {
+	case "conversion-proof":
+		return true, runConversionProof(ctx, args, output)
+	case "delete-league":
+		return true, runDeleteLeague(ctx, args, output)
+	case "export-league":
+		return true, runExportLeague(ctx, args, output)
+	case "import-league":
+		return true, runImportLeague(ctx, args, os.Stdin, output)
+	case "finish-move":
+		return true, runFinishMove(ctx, args, output)
+	case "cancel-move":
+		return true, runCancelMove(ctx, args, output)
+	case "restore-league":
+		return true, runRestoreLeague(ctx, args, os.Stdin, output)
+	case "recover":
+		return true, runRecovery(ctx, args, os.Stdin, output)
+	case "restore":
+		return true, runRestore(ctx, args, os.Stdin, output)
+	case "reset-sign-ins":
+		return true, runResetSignIns(ctx, args, os.Stdin, output)
 	}
 	return false, nil
 }
@@ -174,7 +210,7 @@ func (fixtureDueClock) Now() time.Time { return time.Now() }
 func (fixtureDueClock) Trusted() error { return nil }
 
 func serveChangesWorker(ctx context.Context, listener net.Listener, certificate tls.Certificate, store *history.Store) error {
-	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, fixtureDueClock{})
+	worker := leagueservice.NewDueWorker(history.NewOneFile(store), func() nativecheck.Facts { return nil }, fixtureDueClock{})
 	ctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
@@ -184,4 +220,12 @@ func serveChangesWorker(ctx context.Context, listener net.Listener, certificate 
 	defer func() { cancel(); <-done }()
 	//nolint:wrapcheck // The caller adds the fixture server operation context.
 	return serverhttp.ServeFixtureChanges(ctx, listener, certificate, leagueservice.NewFixtureChangesWithWorker(store, worker))
+}
+
+// outputCommand is a console command that reads only flags and writes only output.
+func outputCommand(name string) func(context.Context, []string, io.Writer) error {
+	if name == "pin-football" {
+		return runPinFootball
+	}
+	return runCheckpoint
 }

@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 )
@@ -17,6 +16,7 @@ type fakeHost struct {
 	readyErr     error
 	host, opened string
 	refresh      func(bool) error
+	usage        UsageSource
 }
 
 func (h *fakeHost) Ready() error { h.calls = append(h.calls, "ready"); return h.readyErr }
@@ -43,6 +43,10 @@ func (h *fakeHost) ResearchDestination() (string, int) {
 	return h.host, 2026
 }
 func (h *fakeHost) OpenBrowser(target string) { h.opened = target; h.calls = append(h.calls, "open") }
+func (h *fakeHost) UsageSource() UsageSource {
+	h.calls = append(h.calls, "usage")
+	return h.usage
+}
 
 func TestAPIValidationAndReadOrder(t *testing.T) {
 	h := &fakeHost{in: realResearch(t), names: map[string]string{"0001": "Mine"}}
@@ -108,27 +112,17 @@ func TestAPIArticleAndRefreshPorts(t *testing.T) {
 	}
 }
 
-func TestAPIStatusReadCompletesDuringBlockedRefresh(t *testing.T) {
-	entered, release := make(chan struct{}), make(chan struct{})
-	h := &fakeHost{refresh: func(bool) error { close(entered); <-release; return nil }}
-	held := &Held{}
-	held.PublishStatus("waiting")
-	a := New(h, held)
-	done := make(chan error, 1)
-	go func() { done <- a.TargetResearchRefresh(false) }()
-	<-entered
-	read := make(chan string, 1)
-	go func() { read <- a.TargetResearchStatus() }()
-	select {
-	case got := <-read:
-		if got != "waiting" {
-			t.Error(got)
-		}
-	case <-time.After(5 * time.Second):
-		t.Error("status blocked behind refresh")
+func TestAPIPlayerUsageValidationAndReadOrder(t *testing.T) {
+	t.Parallel()
+	h := &fakeHost{in: realResearch(t), usage: UsageSource{Season: usageSeason, Rows: func() ([]UsageFeature, error) { return nil, nil }}}
+	a := New(h, &Held{})
+	if _, err := a.TargetPlayerUsage("bad"); err == nil || len(h.calls) != 0 {
+		t.Fatal(err, h.calls)
 	}
-	close(release)
-	if err := <-done; err != nil {
+	if _, err := a.TargetPlayerUsage("16162"); err != nil {
 		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(h.calls, []string{"ready", "snapshot", "usage"}) {
+		t.Fatal(h.calls)
 	}
 }

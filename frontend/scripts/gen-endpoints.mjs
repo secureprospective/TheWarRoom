@@ -39,16 +39,15 @@ export function parseCSV(source) {
 }
 
 const workspaces = {
-  Home: ['Seasonal card', 'Alert tray', 'Digests'],
-  'War Room': ['Market', 'Valuations and pool', 'Research'],
+  Home: ['Overview'],
+  'War Room': ['Market', 'Valuations and pool', 'Trade desk', 'Draft room', 'Plans'],
   'Franchise HQ': ['Lineup and roster', 'Contracts and cap', 'My moves'],
-  'Trade Floor': ['Trade desk', 'Offers history', 'Counterparties', 'Draft room'],
   'League Pulse': ['Now', 'Race', 'Archive'],
   'Control Room': ['App', 'Data and sources', 'League'],
 };
 const placements = [
   ...Object.entries(workspaces).flatMap(([node, names]) => names.map((name) => `${node} › ${name}`)),
-  'Inspector', 'Comms', 'Calendar', 'Command bar', 'Status strip', 'Report drawer',
+  'Inspector', 'Calendar', 'Command bar', 'Status strip', 'Report drawer',
 ];
 const fields = [
   'id', 'source', 'name', 'kind', 'gm_question', 'when', 'gravity', 'clock', 'data', 'placement',

@@ -2,7 +2,6 @@ package sources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -10,8 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/college"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
-	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -21,61 +18,6 @@ type DataScope struct {
 	Note     string `json:"note"`
 	Action   string `json:"action"`
 	Progress string `json:"progress"`
-}
-
-func (a Service) FactsInput(ctx context.Context) (FactsInput, error) {
-	in := FactsInput{Zone: a.zone()}
-	data, err := a.LabData()
-	if err != nil {
-		return in, fmt.Errorf("app: lab data: %w", err)
-	}
-	in.LabBuilt, in.LabThrough = data.Built, data.ArchiveThrough
-	if in.Gaps, err = lab.FrozenGaps(); err != nil {
-		return in, fmt.Errorf("app: frozen input gaps: %w", err)
-	}
-	rec, ok, err := a.Facts.LatestManifest(ctx, LabFrozenInputs)
-	if err != nil || !ok {
-		return in, err //nolint:wrapcheck // the store names the manifest
-	}
-	if in.Manifest, err = manifest.Decode(rec.Name, rec.SHA256, rec.Entries); err != nil {
-		return in, err //nolint:wrapcheck // names the manifest
-	}
-	in.Published, in.PublishedAt = true, rec.PublishedAt
-	shas := make([]string, len(in.Manifest.Entries))
-	for i, e := range in.Manifest.Entries {
-		shas[i] = e.SHA256
-	}
-	if in.Held, err = a.Facts.HeldBodies(ctx, shas); err != nil {
-		return in, fmt.Errorf("app: checked facts: %w", err)
-	}
-	attempts, err := a.Facts.Snapshots(ctx, LabFrozenInputs)
-	if err != nil {
-		return in, fmt.Errorf("app: checked facts: %w", err)
-	}
-	in.Status = manifest.StatusOf(SnapshotAttempts(attempts), manifest.Want{ManifestSHA: rec.SHA256,
-		Compiler: FactsCompiler, RulesHash: lab.CheckExceptions().SHA256})
-	if len(attempts) > 0 {
-		in.Latest = &attempts[0]
-		if in.Latest.Checks != "" {
-			if err := json.Unmarshal([]byte(in.Latest.Checks), &in.Results); err != nil {
-				return in, fmt.Errorf("app: checked facts: stored check results: %w", err)
-			}
-		}
-	}
-	return in, nil
-}
-
-func SnapshotAttempts(rs []history.SnapshotRecord) []manifest.Attempt {
-	out := make([]manifest.Attempt, len(rs))
-	for i, r := range rs {
-		out[i] = manifest.Attempt{ManifestSHA: r.ManifestSHA, Compiler: r.Compiler, RulesHash: r.RulesHash,
-			ResultSHA: r.ResultSHA, Error: r.Error, BuiltAt: r.BuiltAt}
-	}
-	return out
-}
-
-func HistoryManifest(m manifest.Manifest, entries []byte) history.ManifestRecord {
-	return history.ManifestRecord{SHA256: m.SHA256, Name: m.Name, Entries: entries}
 }
 
 func SignalsSummary(r SignalsReport) string {
@@ -156,8 +98,6 @@ func Thousands(n int) string {
 type View struct {
 	Health  report.Report
 	Signals report.Report
-	Facts   report.Report
-	Checks  report.Report
 	Scopes  []DataScope
 	Words   map[string]string
 }
@@ -168,14 +108,10 @@ func (a Service) Read(ctx context.Context, photos *PhotoHealth, positions func()
 	if err != nil {
 		return View{}, err
 	}
-	facts, err := a.FactsInput(ctx)
-	if err != nil {
-		return View{}, err
-	}
 	signals, err := a.SignalsView(ctx, positions())
 	if err != nil {
 		return View{}, err
 	}
 	held := last()
-	return View{Health: HealthReport(health), Signals: SignalFilesReport(signals, held, a.zone()), Facts: FactsReport(facts), Checks: ChecksReport(facts), Scopes: DataScopes(), Words: DataWords()}, nil
+	return View{Health: HealthReport(health), Signals: SignalFilesReport(signals, held, a.zone()), Scopes: DataScopes(), Words: DataWords()}, nil
 }

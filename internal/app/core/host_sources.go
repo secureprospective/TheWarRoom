@@ -7,15 +7,14 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 func (s *State) SourcesContext() context.Context { return s.Ctx }
 
-func (s *State) SourcesInputs() (*history.Store, int, http.RoundTripper, func() (*lab.Data, error)) {
-	return s.History, s.Season, s.Fetches, s.LabData
+func (s *State) SourcesInputs() (*history.Store, int, http.RoundTripper) {
+	return s.History, s.Season, s.Fetches
 }
 
 func (s *State) SourcesSettings() (string, bool, error) { return s.ReadSourcesSettings() }

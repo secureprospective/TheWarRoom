@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -141,7 +142,13 @@ func (d *Desktop) enter(ctx context.Context, view DesktopView) (DesktopView, err
 		d.seats = append(d.seats, DesktopSeat{Franchise: seat.Franchise, Name: seat.Name})
 	}
 	view.Seats = slices.Clone(d.seats)
-	if view.Franchise == "" {
+	d.admission = DesktopView{Name: view.Name, Role: view.Role, Franchise: view.Franchise, FranchiseName: view.FranchiseName}
+	switch {
+	case view.Franchise != "":
+	case view.Role == "Commissioner" || view.Role == "Co-commissioner":
+		// The commissioner's seat runs the league; it needs no team, and there is no one above it to ask.
+		view.Message = "You hold the " + strings.ToLower(view.Role) + "'s seat. No team is assigned to this account."
+	default:
 		view.Message = "No franchise is assigned to this account. Ask your commissioner to check your seat; do not create another account."
 	}
 	return view, nil
@@ -208,7 +215,7 @@ func desktopRefusal(path string, status int) error {
 		if status == 401 {
 			return fmt.Errorf("your session expired or was revoked. Sign in again")
 		}
-		return fmt.Errorf("league access refused. Commissioners must set up and verify their authenticator; owners should ask the commissioner to check their seat")
+		return fmt.Errorf("league access refused. If you turned on an authenticator, verify a fresh code; otherwise ask the commissioner to check your seat")
 	default:
 		return fmt.Errorf("authenticator refused. Check your password and phone clock, then use a fresh code. If the phone is lost, open account recovery")
 	}

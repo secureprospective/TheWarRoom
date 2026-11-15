@@ -1,6 +1,7 @@
 package composition
 
 import (
+	"fmt"
 	"time"
 
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
@@ -9,6 +10,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -24,16 +26,6 @@ type researchInput struct {
 	now       time.Time
 }
 type researchView struct{ researchInput }
-
-func (v researchView) feed(kind, week string) heldSeasonFeed[[]researchfeeds.Feed] {
-	return v.held.feeds[researchKey(kind, week)]
-}
-func researchRows(feed heldSeasonFeed[[]researchfeeds.Feed]) []researchfeeds.Entry {
-	return researchapp.Rows(feed)
-}
-func (v researchView) player(id string) researchapp.ResearchPlayer {
-	return researchapp.ResearchPlayer(researchapp.Player(v.lookup, v.mirror, v.config, id))
-}
 
 // snapshot detaches mutable indexes. Feed payloads, directory lookups, roster views and
 // rulebook configs are published values: refresh replaces them rather than mutating them.
@@ -64,6 +56,21 @@ func (h researchHost) ResearchNews(id string) researchapp.Feed[[]researchfeeds.N
 }
 func (h researchHost) ResearchDestination() (string, int) { return h.app.core.ResearchDestination() }
 func (h researchHost) OpenBrowser(target string)          { h.app.core.OpenBrowser(target) }
+func (h researchHost) UsageSource() researchapp.UsageSource {
+	return researchapp.UsageSource{Season: h.app.core.Season, Rows: func() ([]researchapp.UsageFeature, error) {
+		features, err := h.app.core.History.Features(h.app.core.ResearchContext(), history.FeatureQuery{
+			AsOf: time.Now(), Season: h.app.core.Season, Measures: researchapp.UsageMeasures()})
+		if err != nil {
+			return nil, fmt.Errorf("player usage: read weekly history: %w", err)
+		}
+		rows := make([]researchapp.UsageFeature, len(features))
+		for i, feature := range features {
+			rows[i] = researchapp.UsageFeature{Player: feature.PlayerID, Season: feature.Season, Week: feature.Week,
+				Measure: feature.Measure, Value: feature.Value, Text: feature.Text}
+		}
+		return rows, nil
+	}}
+}
 
 // snapshotResearch and publishResearch require SeasonMu: the same lock also guards
 // injuries and Now's schedules. The detached compatibility value is still read by Market.

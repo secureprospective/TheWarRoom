@@ -5,6 +5,12 @@
     "effective": "now",
     "admittedRoles": ["commissioner"]
   },
+  "commish.franchise.direction.set": {
+    "args": {"people": {"franchise": "franchise.02", "direction": "rebuild"}},
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": ["commissioner", "deputy", "second-deputy", "owner"]
+  },
   "commish.league.create": {
     "args": {
       "name": "Matrix league",

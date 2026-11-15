@@ -18,3 +18,11 @@
 .twr-app .league-pick-setting p { margin: 0; }
 .twr-app .league-pick-setting input { max-width: 10ch; }
 .twr-app .league-pick-setting button { justify-self: start; }
+
+.twr-app .move-mfl { border-block: 1px solid var(--surface-line); padding-block: 12px; }
+.twr-app .move-mfl > summary { cursor: pointer; font-weight: 600; }
+.twr-app .move-mfl .league-form { max-width: 76ch; padding-block: 12px; }
+.twr-app .move-mfl fieldset { display: grid; gap: 12px; min-width: 0; }
+.twr-app .move-mfl label { display: grid; gap: 4px; }
+.twr-app .move-mfl input, .twr-app .move-mfl select, .twr-app .move-mfl textarea { max-width: 100%; min-width: 0; }
+.twr-app .move-mfl button { justify-self: start; }

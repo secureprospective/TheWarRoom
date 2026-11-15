@@ -234,7 +234,7 @@ func TestCredentialAdmissionRechecksBeforeAppend(t *testing.T) {
 
 func TestCredentialAdmissionDraftPickBeforeRetry(t *testing.T) {
 	s, _, _ := newStore(t)
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	runScoreCommand(t, s, ruleCommand("calendar.boundary", `"start_of_day"`, "now", "Open windows at the start of the shared date", 1), "creator")

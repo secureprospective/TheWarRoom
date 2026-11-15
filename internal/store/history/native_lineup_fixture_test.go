@@ -79,7 +79,7 @@ func lineupTest(t *testing.T) *lineupFixture {
 		ownerOfA: "owner-a", ownerOfB: "owner-b", cc: "deputy", creatorID: "creator"}
 	f.at = time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC)
 	f.a, f.b = "franchise.01", "franchise.32"
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	runScoreCommand(t, s, f.rosterSeed(t), "creator")
 	runScoreCommand(t, s, ruleCommand("schedule.regularWeeks", "3", "now", "Choose the season length", 2), "creator")
 	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.ScheduleGenerate,

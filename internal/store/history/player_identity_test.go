@@ -42,6 +42,9 @@ func TestPlayerIdentityMigrationAndSinglePoolOwnership(t *testing.T) {
 	if err := p.Read().QueryRowContext(t.Context(), `SELECT player FROM player_external_id WHERE provider='mfl' AND value='0099'`).Scan(&id); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := p.Write().ExecContext(t.Context(), `INSERT INTO league_player VALUES(?)`, id); err != nil {
+		t.Fatal(err)
+	}
 	for _, side := range []string{"", "AFC", "NFC"} {
 		if _, err := p.Write().ExecContext(t.Context(), `INSERT INTO player_ownership VALUES('native.test',?,?,'franchise.01')`, side, id); err != nil {
 			t.Fatal(err)

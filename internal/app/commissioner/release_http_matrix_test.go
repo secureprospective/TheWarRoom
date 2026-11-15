@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
@@ -75,7 +76,7 @@ func newReleaseHTTP(t *testing.T, f *releaseTokenFixture, actors []releaseActor)
 		t.Fatal(err)
 	}
 	enrollment := accounts.NewEnrollment(f.store, releaseEnrollment{state: state, principal: governance.Principal(f.app.session)})
-	handler := serverhttp.Hosted{Store: f.app.history, Sessions: f.sessions, Tokens: f.tokens, TOTP: totp, Confirmations: confirmations, Registry: f.app.registry, Enrollment: enrollment}
+	handler := serverhttp.Hosted{Store: f.app.history, Leagues: history.NewOneFile(f.app.history), Sessions: f.sessions, Tokens: f.tokens, TOTP: totp, Confirmations: confirmations, Registry: f.app.registry, Enrollment: enrollment}
 	if f.football != "" {
 		handler.Football, err = f.app.history.LoadFootball(t.Context(), f.football)
 		if err != nil {
@@ -83,9 +84,9 @@ func newReleaseHTTP(t *testing.T, f *releaseTokenFixture, actors []releaseActor)
 		}
 		handler.FootballDigest = f.football
 		f.app.history.SetPinnedFootball(handler.Football)
-		handler.Worker = leagueservice.NewDueWorker(f.app.history, handler.Football.PlayerFacts, releaseClock{})
+		handler.Worker = leagueservice.NewDueWorker(history.NewOneFile(f.app.history), handler.Football.PlayerFacts, releaseClock{})
 	} else {
-		handler.Worker = leagueservice.NewDueWorker(f.app.history, nil, releaseClock{})
+		handler.Worker = leagueservice.NewDueWorker(history.NewOneFile(f.app.history), nil, releaseClock{})
 	}
 	server := httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(server.Close)
@@ -155,18 +156,14 @@ func (h *releaseHTTP) humanCell(t *testing.T, actor releaseActor, raw domain.Raw
 	if !denied {
 		return
 	}
-	for _, path := range []string{serverhttp.ExecutePath, serverhttp.DispatchPath} {
-		request.Mode = ""
-		if path == serverhttp.DispatchPath {
-			request.Mode = "execute"
-		}
-		status, body = h.post(t, path, actor.session.Bearer, h.proofs[actor.name], request)
-		if status != http.StatusConflict || string(body) != "native change refused; reread before retrying\n" {
-			t.Fatalf("%s: denial transcript differs: status=%d body=%s", path, status, body)
-		}
+	status, body = h.post(t, serverhttp.ExecutePath, actor.session.Bearer, h.proofs[actor.name], request)
+	if status != http.StatusConflict || string(body) != "native change refused; reread before retrying\n" {
+		t.Fatalf("execute: denial transcript differs: status=%d body=%s", status, body)
+	}
+	if status, body = h.post(t, serverhttp.DispatchPath, actor.session.Bearer, h.proofs[actor.name], request); status != http.StatusUpgradeRequired {
+		t.Fatalf("old dispatch door: status=%d body=%s", status, body)
 	}
 	if raw.Command == domain.LineupSet {
-		request.Mode = ""
 		status, body = h.post(t, serverhttp.LineupPath, actor.session.Bearer, h.proofs[actor.name], request)
 		if status != http.StatusConflict {
 			t.Fatalf("HTTP owner lineup admitted: %d %s", status, body)

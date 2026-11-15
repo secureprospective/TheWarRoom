@@ -259,6 +259,10 @@ func TradeDigest(t TradeState) string {
 
 func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 	args, result := r.Command.Args.Waiver, r.Command.Args.WaiverOutcome
+	effective, err := r.Command.EffectiveTime(r.Receipt.RecordedAt)
+	if err != nil {
+		return err
+	}
 	if args == nil {
 		return fmt.Errorf("a waiver change has no details")
 	}
@@ -280,7 +284,7 @@ func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 		seed.Adjustments = append(seed.Adjustments, NativeCharge{ID: r.Receipt.Entry, Franchise: args.Franchise,
 			Amount: result.Dead, Season: result.Season, Description: "Dead money for released player " + cmp.Or(result.Player.Name, args.Player)})
 		state.Windows = append(state.Windows, WaiverWindow{ID: r.Receipt.Entry, Side: seed.SideOf(args.Franchise), Player: *result.Player,
-			CutAt: r.Receipt.RecordedAt, Season: result.Season, Dead: result.Dead, Claims: []WaiverBookClaim{}})
+			CutAt: effective, Season: result.Season, Dead: result.Dead, Claims: []WaiverBookClaim{}})
 	case WaiverClaim:
 		w, err := state.Window(args.Window)
 		if err != nil {

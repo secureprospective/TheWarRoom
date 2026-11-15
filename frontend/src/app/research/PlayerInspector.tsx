@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { type PlayerReading } from './contract';
-import { NewsList } from './Research';
+import { Act } from '../commands/Act';
+import { ReportView } from '../reports/ReportView';
+import { researchState } from './state';
+import type { Research as ResearchBoard } from './contract';
 import './research.css';
 import { researchAPI, researchAvailable, subscribeResearchPlayer } from './api';
 
@@ -50,4 +53,22 @@ export function PlayerResearchView({ player, identity }: { player: PlayerReading
       articles={player.articles} howLabel={player.howLabel} />}
 
   </div>;
+}
+
+export function NewsList({ report, articles, howLabel, pageKey = report.id }: {
+  report: ResearchBoard['news']; articles: ResearchBoard['articles']; howLabel: string; pageKey?: string;
+}) {
+  const limit = researchState.use().pages[pageKey] ?? 25;
+  const visible = { ...report, rows: report.rows.slice(0, limit) };
+  const headline = report.columns.indexOf('Headline');
+  return <>
+    <ReportView report={visible} howLabel={howLabel} heading="h4"
+      renderCell={(cell, row, column) => column === headline && articles[row] ?
+        <Act variant="text" verb="research.read" args={{ action: 'open',
+          value: `${articles[row].id}:${articles[row].article}` }}
+          label={`Open article on MFL · ${cell}`}>{cell}</Act> : cell} />
+    {report.rows.length > limit && <Act variant="button" verb="research.read"
+      args={{ action: 'more', value: pageKey }}
+      label="Show 25 more">Show 25 more</Act>}
+  </>;
 }

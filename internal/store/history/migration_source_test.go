@@ -29,9 +29,14 @@ func assertAppHoldsSource(t *testing.T, export mflsource.Export, app leaguemigra
 		seat[2] = f.Division
 		seats[f.ID] = seat
 	}
+	divisions := map[string]string{"": ""}
+	for _, d := range export.Config.Divisions {
+		divisions[d.ID] = d.Name
+	}
 	for _, f := range export.Config.Franchises {
-		if got := seats[held[f.ID]]; got != [3]string{f.Name, f.Abbrev, f.Division} {
-			t.Errorf("franchise %s name/abbreviation/division: MFL %q %q %q, app %q", f.ID, f.Name, f.Abbrev, f.Division, got)
+		division := divisions[f.Division]
+		if got := seats[held[f.ID]]; got != [3]string{f.Name, f.Abbrev, division} {
+			t.Errorf("franchise %s name/abbreviation/division: MFL %q %q %q, app %q", f.ID, f.Name, f.Abbrev, division, got)
 		}
 	}
 	players := map[string]int{}

@@ -1,6 +1,8 @@
 package source
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"slices"
@@ -9,8 +11,37 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
+// PlaysURL names the compressed nflverse season release used for final scoring.
+func PlaysURL(season int) string {
+	return fmt.Sprintf("https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_%d.csv.gz", season)
+}
+
+// ReadCompressedPlays bounds the expanded release before parsing its validated rows.
+func ReadCompressedPlays(body []byte) ([]RawPlay, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("open compressed plays: %w", err)
+	}
+	defer func() { _ = reader.Close() }()
+	const limit = 256 << 20
+	plain, err := io.ReadAll(io.LimitReader(reader, limit+1))
+	if err != nil {
+		return nil, fmt.Errorf("expand plays: %w", err)
+	}
+	if len(plain) > limit {
+		return nil, fmt.Errorf("expanded plays exceed 256 MiB")
+	}
+	return ReadPlays(bytes.NewReader(plain))
+}
+
 // RawPlay retains the source's player credits and distances, not parsed descriptions.
 type RawPlay struct {
+	Credits      RawPlayerCredits
+	EndGame      string
+	GameSeconds  string
+	GameHalf     string
+	Safety       string
+	FumbleLost   string
 	GameID       string
 	PlayID       string
 	Season       string
@@ -43,6 +74,9 @@ type RawPlay struct {
 }
 
 func (r RawPlay) Validate() error {
+	if err := r.validateGameClock(); err != nil {
+		return err
+	}
 	if r.GameID == "" {
 		return fmt.Errorf("play needs its NFL game")
 	}
@@ -55,20 +89,40 @@ func (r RawPlay) Validate() error {
 	if r.SeasonType != "REG" && r.SeasonType != "POST" {
 		return fmt.Errorf("play needs a season type")
 	}
-	for _, raw := range []string{r.Touchdown, r.Interception, r.Punt, r.Kickoff, r.Deleted, r.TwoPoint, r.PuntBlocked, r.FieldGoal, r.Sack} {
+	for _, raw := range []string{r.Touchdown, r.Interception, r.Punt, r.Kickoff, r.Deleted, r.TwoPoint, r.PuntBlocked, r.FieldGoal, r.Sack, r.Safety, r.FumbleLost} {
 		if !slices.Contains([]string{"0", "1", "NA", ""}, raw) {
 			return fmt.Errorf("play flag must be 0, 1 or absent")
 		}
 	}
+	if err := r.Credits.Validate(); err != nil {
+		return err
+	}
 	if err := r.validateEdge(); err != nil {
 		return err
 	}
+	return r.validateDistances()
+}
+
+func (r RawPlay) validateDistances() error {
 	for _, raw := range []string{r.Passing, r.Receiving, r.Rushing} {
 		if raw != "NA" && raw != "" {
 			if _, err := decimal(raw); err != nil {
 				return fmt.Errorf("play distance: %w", err)
 			}
 		}
+	}
+	return nil
+}
+
+func (r RawPlay) validateGameClock() error {
+	if r.GameSeconds != "" && r.GameSeconds != "NA" {
+		seconds, err := strconv.Atoi(r.GameSeconds)
+		if err != nil || seconds < 0 || seconds > 3600 {
+			return fmt.Errorf("invalid game clock")
+		}
+	}
+	if !slices.Contains([]string{"", "NA", "Half1", "Half2", "Overtime"}, r.GameHalf) {
+		return fmt.Errorf("invalid game half")
 	}
 	return nil
 }
@@ -130,7 +184,7 @@ func ReadPlays(input io.Reader) ([]RawPlay, error) {
 }
 
 func rawPlay(f map[string]string) RawPlay {
-	return RawPlay{GameID: f["game_id"], PlayID: f["play_id"],
+	return RawPlay{Safety: f["safety"], FumbleLost: f["fumble_lost"], EndGame: f["desc"], GameSeconds: f["game_seconds_remaining"], GameHalf: f["game_half"], Credits: rawCredits(f), GameID: f["game_id"], PlayID: f["play_id"],
 		Season: f["season"], Week: f["week"], SeasonType: f["season_type"],
 		Passer: f["passer_player_id"], Receiver: f["receiver_player_id"], Rusher: f["rusher_player_id"],
 		Passing: f["passing_yards"], Receiving: f["receiving_yards"], Rushing: f["rushing_yards"],
@@ -143,6 +197,41 @@ func rawPlay(f map[string]string) RawPlay {
 		ThirdConversion: f["third_down_converted"], FourthConversion: f["fourth_down_converted"],
 		RushAttempt: f["rush_attempt"], PassAttempt: f["pass_attempt"], CompletePass: f["complete_pass"],
 		Yardline: f["yardline_100"], TackledForLoss: f["tackled_for_loss"]}
+}
+
+// HeldPlayWeeks splits the weekly lines into those whose game has held play-by-play and the keys of
+// those whose game does not. A week without its source cannot be completed, so it stays pending
+// (R11) while every other week scores; it is never a zero.
+func HeldPlayWeeks(weeks []PlayerWeek, plays []RawPlay) ([]PlayerWeek, map[string]bool) {
+	games := make(map[string]bool)
+	for _, play := range plays {
+		games[play.GameID+"/"+play.SeasonType+"/"+play.Season+"/"+play.Week] = true
+	}
+	held := make([]PlayerWeek, 0, len(weeks))
+	withheld := make(map[string]bool)
+	for _, week := range weeks {
+		if games[fmt.Sprintf("%s/%s/%d/%d", week.GameID, week.SeasonType, week.Season, week.Week)] {
+			held = append(held, week)
+		} else {
+			withheld[playKey(week.GSIS, week.Season, week.Week)] = true
+		}
+	}
+	return held, withheld
+}
+
+// WithoutWithheld drops any line for a player week whose source was withheld, so no later step
+// turns a week with an unread stat row into a recorded zero.
+func WithoutWithheld(weeks []PlayerWeek, withheld map[string]bool) []PlayerWeek {
+	if len(withheld) == 0 {
+		return weeks
+	}
+	out := weeks[:0:0]
+	for _, week := range weeks {
+		if !withheld[playKey(week.GSIS, week.Season, week.Week)] {
+			out = append(out, week)
+		}
+	}
+	return out
 }
 
 // AttachPlays completes the week lines in place using held play-by-play.
@@ -192,7 +281,12 @@ func validateCoverage(weeks []PlayerWeek, plays []RawPlay) error {
 	games := make(map[string]bool)
 	seen := make(map[string]bool)
 	capabilities := make(map[string]bool)
+	credits := make(map[string]bool)
 	for _, play := range plays {
+		if capable, ok := credits[play.GameID]; ok && capable != play.Credits.complete() {
+			return fmt.Errorf("mixed player-credit capability for %s", play.GameID)
+		}
+		credits[play.GameID] = play.Credits.complete()
 		if err := play.Validate(); err != nil {
 			return fmt.Errorf("attach play: %w", err)
 		}

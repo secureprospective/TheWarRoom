@@ -5,10 +5,7 @@ import (
 	"testing"
 	"time"
 
-	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
-
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -19,69 +16,37 @@ func bidFacts(t *testing.T) BidFacts {
 	return BidFacts{Player: mustTestID(t), Salary: 500_000_000, Years: 3, Points: 7000}
 }
 
-func passingBid() bidrules.Input {
-	return bidrules.Input{Salary: 500_000_000, Years: 3, Minimum: bid.MinimumSalary(3),
-		Experience: bid.Experience{Years: 3, Known: true}, WeekKnown: true}
-}
-
-func draftedBid(t *testing.T, input bidrules.Input) Envelope {
+func draftedBid(t *testing.T) Envelope {
 	t.Helper()
 	e, err := DraftBid(bidAt(), BidRequest{LeagueID: "1", FranchiseID: "0001", Facts: bidFacts(t)},
-		BidCheck{Input: input}, func() string { return "bid-1" })
+		func() string { return "bid-1" })
 	if err != nil {
 		t.Fatal(err)
 	}
 	return e
 }
 
-func TestDraftBidReadyAndBlocked(t *testing.T) {
-	e := draftedBid(t, passingBid())
-	r := e.Receipt()
+func TestDraftBidIsReadyAtOnce(t *testing.T) {
+	r := draftedBid(t).Receipt()
 	if r.State != Ready || r.Spec.Intent != BidIntent || r.Spec.Gravity != G3 || r.Spec.Undo != Irreversible ||
 		r.Spec.Target.Kind != Manual || r.Spec.Target.URL != "" ||
 		r.Spec.Expected.Player != bidFacts(t).Player || r.Spec.Expected.RosterStatus != domain.RosterActive {
 		t.Fatalf("ready bid: %+v", r)
 	}
-	if !strings.Contains(r.Audit[0].Note, "ready to hand off") {
+	if !strings.Contains(r.Audit[0].Note, "the league judges the bid") {
 		t.Errorf("note = %q", r.Audit[0].Note)
 	}
-	over := passingBid()
-	over.Years = 5
-	blocked := draftedBid(t, over)
-	if blocked.State() != Blocked || !strings.Contains(blocked.Receipt().Audit[0].Note, "A bid runs 1 to 4 years, not 5") {
-		t.Errorf("blocked bid: %+v", blocked.Receipt())
+	if got := (BidCheck{}).Evaluate(Spec{Intent: "ir.move"}, snapshot.Snapshot{}); !got.Blocked {
+		t.Error("the bid check passed another intent")
 	}
 }
 
-func TestBidRunsTheLifecycleThroughPostedToLanded(t *testing.T) {
-	e := draftedBid(t, passingBid())
-	handed, err := e.HandOffManual(bidAt().Add(time.Minute), "post text copied; nothing posted")
-	if err != nil || handed.State() != HandedOff {
-		t.Fatal(handed.State(), err)
-	}
-	pending, err := handed.Await(bidAt().Add(2*time.Minute), AwaitBid)
-	if err != nil || pending.State() != BidPending ||
-		!strings.Contains(pending.Receipt().Audit[2].Note, "owner reports the bid is posted") {
-		t.Fatal(pending.Receipt(), err)
-	}
-	obs := bidObservation(t, "0001", 500_000_000, 3, bidAt().Add(time.Hour))
-	landed, err := pending.Observe(bidAt().Add(2*time.Hour), obs, BidPredicate{Facts: bidFacts(t)})
-	if err != nil || landed.State() != Landed {
-		t.Fatal(landed.Receipt(), err)
-	}
-}
-
-func TestBidCannotLeaveBlockedOrUseAnMFLHandOff(t *testing.T) {
-	over := passingBid()
-	over.Years = 5
-	if _, err := draftedBid(t, over).HandOffManual(bidAt().Add(time.Second), "x"); err == nil {
-		t.Error("a blocked bid was handed off")
-	}
+func TestBidTakesOnlyAManualHandOff(t *testing.T) {
 	ir, at, _ := testEnvelope(t)
 	if _, err := ir.HandOffManual(at, "x"); err == nil {
 		t.Error("a mapped MFL plan took a manual hand-off")
 	}
-	if _, err := draftedBid(t, passingBid()).HandOff(bidAt().Add(time.Second)); err != nil {
+	if _, err := draftedBid(t).HandOff(bidAt().Add(time.Second)); err != nil {
 		t.Errorf("a manual plan could not take the shared hand-off: %v", err)
 	}
 }
@@ -127,7 +92,7 @@ func TestBidPredicateReadsTheRosters(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			facts := bidFacts(t)
 			facts.Closes = tc.closes
-			e := draftedBid(t, passingBid())
+			e := draftedBid(t)
 			v := BidPredicate{Facts: facts}.Evaluate(e.Receipt().Spec, tc.obs)
 			if v.Event != tc.want || !strings.Contains(v.Note, tc.note) {
 				t.Errorf("verdict = %+v, want %s %q", v, tc.want, tc.note)
@@ -138,7 +103,7 @@ func TestBidPredicateReadsTheRosters(t *testing.T) {
 
 func TestBidPredicateUnverifiableCases(t *testing.T) {
 	facts := bidFacts(t)
-	spec := draftedBid(t, passingBid()).Receipt().Spec
+	spec := draftedBid(t).Receipt().Spec
 	later := bidAt().Add(time.Hour)
 	failed := bidObservation(t, "0001", 500_000_000, 3, later)
 	failed.Rosters.Provenance.Freshness.State = domain.FreshFail
@@ -159,29 +124,8 @@ func TestBidPredicateUnverifiableCases(t *testing.T) {
 	}
 }
 
-func TestBidAwardedOffAppIsTerminalAndNotAFailure(t *testing.T) {
-	e := draftedBid(t, passingBid())
-	handed, err := e.HandOffManual(bidAt().Add(time.Minute), "copied")
-	if err != nil {
-		t.Fatal(err)
-	}
-	obs := bidObservation(t, "0002", 500_000_000, 3, bidAt().Add(time.Hour))
-	gone, err := handed.Observe(bidAt().Add(2*time.Hour), obs, BidPredicate{Facts: bidFacts(t)})
-	if err != nil || gone.State() != AwardedOffApp {
-		t.Fatal(gone.Receipt(), err)
-	}
-	for _, event := range []Event{Match, Partial, NoChange, Contradiction, Invalidate, Rebase, HandOff, AwaitBid} {
-		if _, err := gone.move(bidAt().Add(3*time.Hour), event, "x"); err == nil {
-			t.Errorf("%s left the terminal state", event)
-		}
-	}
-	if gone.State() == Failed {
-		t.Error("awarded off-app is not a failure")
-	}
-}
-
 func TestBidMismatchCanStillLandWhenTheContractMatches(t *testing.T) {
-	handed, err := draftedBid(t, passingBid()).HandOffManual(bidAt().Add(time.Minute), "copied")
+	handed, err := draftedBid(t).HandOffManual(bidAt().Add(time.Minute), "copied")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +141,7 @@ func TestBidMismatchCanStillLandWhenTheContractMatches(t *testing.T) {
 }
 
 func TestWithdrawBidEndsALocalPlanEvenAfterPosting(t *testing.T) {
-	ready := draftedBid(t, passingBid())
+	ready := draftedBid(t)
 	gone, err := ready.WithdrawBid(bidAt().Add(time.Minute), "not wanted")
 	if err != nil || gone.State() != Withdrawn || gone.Receipt().Audit[1].Event != Withdraw {
 		t.Fatal(gone.Receipt(), err)

@@ -139,6 +139,30 @@ func (s *TOTPService) verify(ctx context.Context, credentials RawCredentials, ra
 	if err != nil {
 		return RecentAuth{}, err
 	}
+	return s.verifyAccount(ctx, account, raw, confirming)
+}
+
+// VerifyPasswordChange checks code only when account has a confirmed authenticator; an account
+// without one needs no code, as before. It shares StepUp's code check and consumes the code.
+func (s *TOTPService) VerifyPasswordChange(ctx context.Context, account Account, code string) error {
+	state, err := s.store.TOTP(ctx, account.ID)
+	if errors.Is(err, ErrTOTPRequired) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("read authenticator: %w", err)
+	}
+	if !state.Confirmed {
+		return nil
+	}
+	_, err = s.verifyAccount(ctx, account, RawTOTP{Code: code}, false)
+	return err
+}
+
+func (s *TOTPService) verifyAccount(ctx context.Context, account Account, raw RawTOTP, confirming bool) (RecentAuth, error) {
+	if err := raw.Validate(); err != nil {
+		return RecentAuth{}, err
+	}
 	state, err := s.store.TOTP(ctx, account.ID)
 	if err != nil {
 		return RecentAuth{}, fmt.Errorf("read authenticator: %w", err)
@@ -192,7 +216,8 @@ func (s *TOTPService) CheckPrivileged(ctx context.Context, policy governance.Sta
 }
 
 // PrivilegedRemaining checks like CheckPrivileged and says how long the proof has left. limited is
-// false for ordinary accounts, whose access never depended on a proof.
+// false for ordinary accounts and for commissioners without a confirmed authenticator, whose
+// access never depended on a proof.
 func (s *TOTPService) PrivilegedRemaining(ctx context.Context, policy governance.State, principal governance.Principal,
 	proof RecentAuth) (remaining time.Duration, limited bool, err error) {
 	if !policy.HasRole(principal, governance.Commissioner) && !policy.HasRole(principal, governance.CoCommissioner) {
@@ -200,7 +225,19 @@ func (s *TOTPService) PrivilegedRemaining(ctx context.Context, policy governance
 	}
 	id := strings.TrimPrefix(string(principal), "acct.")
 	canonical, err := governance.AccountPrincipal(id)
-	if err != nil || canonical != principal || len(proof.Token) != 43 {
+	if err != nil || canonical != principal {
+		return 0, true, ErrTOTPRequired
+	}
+	// The authenticator is optional for every account, commissioners included (ruling 2026-11-14):
+	// a commissioner without a confirmed one is admitted on the session alone, like an owner.
+	state, err := s.store.TOTP(ctx, id)
+	if errors.Is(err, ErrTOTPRequired) || (err == nil && !state.Confirmed) {
+		return 0, false, nil
+	}
+	if err != nil {
+		return 0, true, fmt.Errorf("read authenticator: %w", err)
+	}
+	if len(proof.Token) != 43 {
 		return 0, true, ErrTOTPRequired
 	}
 	remaining, err = s.store.RecentAuthRemaining(ctx, id, enrollmentDigest(proof.Token))

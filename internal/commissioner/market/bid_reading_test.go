@@ -50,7 +50,7 @@ func TestExperienceNeedsARealDraftYear(t *testing.T) {
 		{held(2020), 6}, {held(2026), 0}, {held(2027), 0}, {held(1970), 0},
 		{nativecheck.PlayerFacts{DraftYear: 2020}, 0},
 	} {
-		if got := experienceYears(2026, c.facts); got != c.want {
+		if got := nativecheck.ExperienceYears(2026, c.facts); got != c.want {
 			t.Errorf("%+v: %d years, want %d", c.facts, got, c.want)
 		}
 	}

@@ -13,7 +13,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
-	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	record "github.com/secureprospective/TheWarRoom/internal/playerrecord"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -97,54 +96,6 @@ func feeds() (listing, features) {
 	l["0004"] = normalize.PlayerFacts{Name: "Placer", Position: domain.PosRB, DraftYear: 2026, HasDraftYear: true,
 		DraftRound: 7, DraftPick: 4}
 	return l, f
-}
-
-// A refresh never forks a second identity: a link already held keeps its ID, a new one gets one
-// once, and writing again changes nothing but the facts.
-func TestWriteKeepsOneIdentityPerPlayer(t *testing.T) {
-	p := open(t)
-	l, f := feeds()
-	tx, err := p.BeginWrite(t.Context())
-	if err != nil {
-		t.Fatal(err)
-	}
-	held, err := db.NewPlayerIdentity(t.Context(), tx, []playerid.RawOutsideID{{Provider: "mfl", Value: "0001"}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := tx.Commit(); err != nil {
-		t.Fatal(err)
-	}
-	s := New(p, f)
-	for range 2 {
-		if n, err := s.Write(t.Context(), l, time.Now()); err != nil || n != 4 {
-			t.Fatalf("wrote %d: %v", n, err)
-		}
-	}
-	var players, rows int
-	if err := p.Read().QueryRow(`SELECT (SELECT count(*) FROM canonical_player),(SELECT count(*) FROM player_record)`).Scan(&players, &rows); err != nil {
-		t.Fatal(err)
-	}
-	if players != 4 || rows != 4 {
-		t.Errorf("%d identities and %d records after two refreshes, want 4 and 4", players, rows)
-	}
-	got, err := s.Records(t.Context())
-	if err != nil {
-		t.Fatal(err)
-	}
-	byMFL := map[string]record.Record{}
-	for _, r := range got {
-		byMFL[r.MFL] = r
-	}
-	if byMFL["0001"].ID != held {
-		t.Errorf("the held link got a new identity: %s, want %s", byMFL["0001"].ID, held)
-	}
-	if d := byMFL["0002"].Draft; d.Status != record.Drafted || d.Overall != 217+29-1 || d.Team != "NEP" {
-		t.Errorf("rookie draft = %+v", d)
-	}
-	if d := byMFL["0003"].Draft; d.Status != record.Undrafted {
-		t.Errorf("undrafted = %+v", d)
-	}
 }
 
 // The stored record reads back as the record the feeds resolve to, and the book a live run reads

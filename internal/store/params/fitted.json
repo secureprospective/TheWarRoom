@@ -244,6 +244,11 @@
    "value": 0
   },
   {
+   "key": "trade.keep",
+   "position": "CB",
+   "value": 0.671335175802686
+  },
+  {
    "key": "model.arc.age",
    "position": "DE",
    "value": -0.01
@@ -502,6 +507,11 @@
    "key": "model.z_exponential",
    "position": "DE",
    "value": 0
+  },
+  {
+   "key": "trade.keep",
+   "position": "DE",
+   "value": 0.6611075396123142
   },
   {
    "key": "model.arc.age",
@@ -794,6 +804,11 @@
    "value": 1
   },
   {
+   "key": "trade.keep",
+   "position": "DT",
+   "value": 0.6752247397963389
+  },
+  {
    "key": "model.arc.age",
    "position": "K",
    "value": 0
@@ -1012,6 +1027,11 @@
    "key": "model.z_exponential",
    "position": "K",
    "value": 1
+  },
+  {
+   "key": "trade.keep",
+   "position": "K",
+   "value": 0.18478940212107128
   },
   {
    "key": "model.arc.age",
@@ -1254,6 +1274,11 @@
    "value": 0
   },
   {
+   "key": "trade.keep",
+   "position": "LB",
+   "value": 0.7426245933415692
+  },
+  {
    "key": "model.arc.age",
    "position": "QB",
    "value": 0
@@ -1474,6 +1499,11 @@
    "value": 0
   },
   {
+   "key": "trade.keep",
+   "position": "QB",
+   "value": 0.495510533896511
+  },
+  {
    "key": "model.arc.age",
    "position": "RB",
    "value": -0.006124008495056665
@@ -1692,6 +1722,11 @@
    "key": "model.z_exponential",
    "position": "RB",
    "value": 1
+  },
+  {
+   "key": "trade.keep",
+   "position": "RB",
+   "value": 0.8063782113482841
   },
   {
    "key": "model.arc.age",
@@ -1934,6 +1969,11 @@
    "value": 1
   },
   {
+   "key": "trade.keep",
+   "position": "S",
+   "value": 0.6335190109313128
+  },
+  {
    "key": "model.arc.age",
    "position": "TE",
    "value": -0.030839881706593027
@@ -2154,6 +2194,11 @@
    "value": 0
   },
   {
+   "key": "trade.keep",
+   "position": "TE",
+   "value": 0.8110768453069508
+  },
+  {
    "key": "model.arc.age",
    "position": "WR",
    "value": -0.037037636073773375
@@ -2372,6 +2417,11 @@
    "key": "model.z_exponential",
    "position": "WR",
    "value": 0
+  },
+  {
+   "key": "trade.keep",
+   "position": "WR",
+   "value": 0.7970131514247012
   }
  ]
 }

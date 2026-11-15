@@ -16,12 +16,19 @@ type NativeCapCharge struct {
 	AmountCents *domain.Money `json:"amountCents"`
 }
 
+type NativeContractYears struct {
+	Player string                     `json:"player"`
+	Years  []nativecheck.SeasonAmount `json:"years"`
+}
+
 type NativeCapFranchise struct {
 	nativecheck.CapState
-	Franchise    string            `json:"franchise"`
-	Name         string            `json:"name"`
-	Abbreviation string            `json:"abbreviation"`
-	Charges      []NativeCapCharge `json:"charges"`
+	Franchise    string                `json:"franchise"`
+	Name         string                `json:"name"`
+	Abbreviation string                `json:"abbreviation"`
+	Charges      []NativeCapCharge     `json:"charges"`
+	Runway       []NativeCapYear       `json:"runway"`
+	Contracts    []NativeContractYears `json:"contracts,omitempty"`
 }
 
 type NativeCapCheck struct {
@@ -99,7 +106,7 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 		details[c.Franchise] = append(details[c.Franchise], c)
 	}
 	for _, seat := range base.Directory.Franchises {
-		state, err := nativecheck.CheckCap(base.Rules.Cap, players[seat.Franchise], charges[seat.Franchise], zone, ScopedDecisionExceptions(records, ExceptionScope{Franchise: seat.Franchise}, now)...)
+		state, err := recordedCapState(base, seat.Franchise, players[seat.Franchise], charges[seat.Franchise], zone)
 		if err != nil {
 			return NativeCapCheck{}, fmt.Errorf("judge salary cap for %s: %w", seat.Name, err)
 		}
@@ -107,8 +114,12 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 		if err != nil {
 			return NativeCapCheck{}, err
 		}
+		runway, err := NativeCapRunway(base, seat.Franchise)
+		if err != nil {
+			return NativeCapCheck{}, err
+		}
 		out.Franchises = append(out.Franchises, NativeCapFranchise{CapState: state, Franchise: seat.Franchise,
-			Name: seat.Name, Abbreviation: seat.Abbreviation, Charges: list})
+			Name: seat.Name, Abbreviation: seat.Abbreviation, Charges: list, Runway: runway, Contracts: nativeContractYears(base, seat.Franchise)})
 	}
 	return out, nil
 }
@@ -136,4 +147,31 @@ func nativeCapCharges(charges []NativeCharge, quantum *domain.Money) ([]NativeCa
 		out = append(out, row)
 	}
 	return out, nil
+}
+
+func nativeContractYears(base NativeBase, franchise string) []NativeContractYears {
+	out := []NativeContractYears{}
+	for _, p := range base.Assets.Snapshot.Players {
+		if p.Franchise != franchise {
+			continue
+		}
+		if p.ContractMissing {
+			out = append(out, NativeContractYears{Player: p.ID, Years: []nativecheck.SeasonAmount{}})
+			continue
+		}
+		out = append(out, NativeContractYears{Player: p.ID, Years: nativecheck.ExistingContractSchedule(
+			base.Rules.Season, nativecheck.Contract{Salary: p.Salary, Expiration: p.ExpirationYear})})
+	}
+	return out
+}
+
+func recordedCapState(base NativeBase, franchise string, players []nativecheck.CapPlayer, charges []domain.Money, zone *time.Location) (nativecheck.CapState, error) {
+	if words := base.Assets.Snapshot.missingContractWords(franchise); words != "" {
+		return nativecheck.CapState{Words: words, Enforcement: words}, nil
+	}
+	state, err := nativecheck.CheckCap(base.Rules.Cap, players, charges, zone, ScopedDecisionExceptions(base.Records, ExceptionScope{Franchise: franchise}, base.Now)...)
+	if err != nil {
+		return nativecheck.CapState{}, fmt.Errorf("count recorded salary: %w", err)
+	}
+	return state, nil
 }

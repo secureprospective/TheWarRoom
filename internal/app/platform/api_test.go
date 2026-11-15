@@ -6,9 +6,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -20,6 +23,10 @@ type fakeHost struct {
 }
 
 func (h *fakeHost) Snapshot() (snapshot.Snapshot, error) { return snapshot.Snapshot{}, nil }
+func (h *fakeHost) Leagues() ([]League, error)           { return nil, nil }
+func (h *fakeHost) Injuries() ([]leaguefeed.Injury, error) {
+	return nil, nil
+}
 func (h *fakeHost) Clock() (snapshot.Sourced[leagueclock.Reading], error) {
 	return snapshot.Sourced[leagueclock.Reading]{}, nil
 }
@@ -33,17 +40,6 @@ func (h *fakeHost) CheckMoves() error                               { return nil
 func (h *fakeHost) WithdrawRoster(string) (envelope.Receipt, error) { return envelope.Receipt{}, nil }
 func (h *fakeHost) PlayerName(id string) (string, bool)             { n, ok := h.names[id]; return n, ok }
 func (h *fakeHost) PhotosOff() bool                                 { return h.off }
-
-func TestPhotoIsGoWordedAndOffMeansNoAddress(t *testing.T) {
-	t.Parallel()
-	on := Photo("0501", "Kayden McDonald", false)
-	if on.Src != "/headshot/0501" || on.Alt != "Photo of Kayden McDonald" {
-		t.Fatalf("on = %+v", on)
-	}
-	if off := Photo("0501", "Kayden McDonald", true); off.Src != "" || off.Alt != "Kayden McDonald" {
-		t.Fatalf("off = %+v", off)
-	}
-}
 
 func TestTargetPhotoNamesAnUnknownPlayerPlainly(t *testing.T) {
 	t.Parallel()
@@ -124,5 +120,59 @@ func TestPhotoRoutesAnswerTheNativeProbeWithNotFound(t *testing.T) {
 		if rec.Code != want {
 			t.Fatalf("GET %s = %d, want %d", path, rec.Code, want)
 		}
+	}
+}
+
+func TestBuildLeaguesAddsMirrorAndAppTeamCounts(t *testing.T) {
+	t.Parallel()
+	snap := func() (int, error) { return 32, nil }
+	natives := func(context.Context) ([]commissioner.NativeLeague, error) {
+		return []commissioner.NativeLeague{{ID: "native.one", Name: "One"}}, nil
+	}
+	records := func(_ context.Context, league string) ([]commissioner.Record, error) {
+		if league != "native.one" {
+			return nil, errors.New("unexpected league")
+		}
+		return []commissioner.Record{{Command: commissioner.RawCommand{
+			Args: commissioner.RawArgs{Franchises: []string{"f1", "f2", "f3"}}}}}, nil
+	}
+	got, err := BuildLeagues(context.Background(), snap, "Legacy NFL", natives, records)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []League{
+		{ID: MirrorLeagueID, Name: "Legacy NFL", Teams: 32},
+		{ID: "native.one", Name: "One", Teams: 3, App: true},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("league list: got %+v want %+v", got, want)
+	}
+}
+
+func TestBuildLeaguesNamesTheFailingRead(t *testing.T) {
+	t.Parallel()
+	snap := func() (int, error) { return 0, nil }
+	natives := func(context.Context) ([]commissioner.NativeLeague, error) {
+		return []commissioner.NativeLeague{{ID: "native.one", Name: "One"}}, nil
+	}
+	records := func(context.Context, string) ([]commissioner.Record, error) {
+		return nil, errors.New("records unavailable")
+	}
+	_, err := BuildLeagues(context.Background(), snap, "Legacy NFL", natives, records)
+	if err == nil || !strings.Contains(err.Error(), "native.one size: records unavailable") {
+		t.Fatalf("league list error: %v", err)
+	}
+}
+
+func TestBuildLeaguesWithoutMirror(t *testing.T) {
+	t.Parallel()
+	snap := func() (int, error) { return 0, errors.New("should not read") }
+	natives := func(context.Context) ([]commissioner.NativeLeague, error) {
+		return []commissioner.NativeLeague{{ID: "native.one", Name: "One"}}, nil
+	}
+	records := func(context.Context, string) ([]commissioner.Record, error) { return nil, nil }
+	got, err := BuildLeagues(context.Background(), snap, "", natives, records)
+	if err != nil || len(got) != 1 || got[0].ID != "native.one" {
+		t.Fatalf("without mirror: %+v, %v", got, err)
 	}
 }

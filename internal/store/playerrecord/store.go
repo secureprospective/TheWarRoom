@@ -50,7 +50,7 @@ func (s *Store) Write(ctx context.Context, listing record.Listing, asOf time.Tim
 		return 0, err
 	}
 	known := model.Build(obs, nil).Players
-	tx, err := s.pools.BeginWrite(ctx)
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("playerrecord: begin: %w", err)
 	}

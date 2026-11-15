@@ -24,6 +24,65 @@ func tempPools(t *testing.T) *Pools {
 	return pools
 }
 
+func TestRevisionObservesOwnAndExternalCommitsButNotRollback(t *testing.T) {
+	t.Parallel()
+	pools := tempPools(t)
+	ctx := t.Context()
+	first, err := pools.Revision(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pools.Write().ExecContext(ctx, `CREATE TABLE revision_test (n INTEGER)`); err != nil {
+		t.Fatal(err)
+	}
+	second, err := pools.Revision(ctx)
+	if err != nil || second == first {
+		t.Fatalf("own commit: %d -> %d, %v", first, second, err)
+	}
+	tx, err := pools.Write().BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO revision_test VALUES (1)`); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	unchanged, err := pools.Revision(ctx)
+	if err != nil || unchanged != second {
+		t.Fatalf("rollback changed revision: %d, %v", unchanged, err)
+	}
+	external, err := Open(ctx, pools.path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := external.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	if _, err := external.Write().ExecContext(ctx, `INSERT INTO revision_test VALUES (2)`); err != nil {
+		t.Fatal(err)
+	}
+	third, err := pools.Revision(ctx)
+	if err != nil || third == second {
+		t.Fatalf("external commit: %d -> %d, %v", second, third, err)
+	}
+	for range 20 {
+		got, err := pools.Revision(ctx)
+		if err != nil || got != third {
+			t.Fatalf("unstable observer: %d, %v", got, err)
+		}
+	}
+	if err := pools.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pools.Revision(ctx); err == nil {
+		t.Fatal("closed observer reopened")
+	}
+}
+
 func TestOpenEnablesWAL(t *testing.T) {
 	t.Parallel()
 	pools := tempPools(t)

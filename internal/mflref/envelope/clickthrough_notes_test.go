@@ -1,7 +1,6 @@
 package envelope
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -17,14 +16,5 @@ func TestBlockedContractNoteIsOnlyFirstBlockingSentence(t *testing.T) {
 		if !got.Blocked || got.Note != reason {
 			t.Fatalf("%+v", got)
 		}
-	}
-}
-func TestReasonNotesNeverJoinFullStopToSemicolon(t *testing.T) {
-	if got := reasonNote([]string{"First.", "Second.", "", "Third"}); got != "First. Second. Third" {
-		t.Fatal(got)
-	}
-	got := (ReleaseCheck{Offseason: false}).Evaluate(Spec{Intent: BuyoutIntent}, snapshot.Snapshot{})
-	if strings.Contains(got.Note, ".;") {
-		t.Fatal(got)
 	}
 }

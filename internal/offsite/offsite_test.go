@@ -31,6 +31,7 @@ type fakeS3 struct {
 	mu                        sync.Mutex
 	objects                   map[string][]byte
 	corrupt, missing, failPut bool
+	failPrefix                string // uploads under this prefix fail; the others land
 }
 
 func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +44,7 @@ func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := strings.TrimPrefix(r.URL.Path, "/league/")
 	switch r.Method {
 	case http.MethodPut:
-		if f.failPut {
+		if f.failPut || (f.failPrefix != "" && strings.HasPrefix(key, f.failPrefix)) {
 			http.Error(w, "offline", http.StatusServiceUnavailable)
 			return
 		}
@@ -68,9 +69,9 @@ func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				MaxKeys     int
 				IsTruncated bool
 				Contents    []content
-			}{Name: "league", Prefix: "sets/", MaxKeys: 1000}
+			}{Name: "league", Prefix: r.URL.Query().Get("prefix"), MaxKeys: 1000}
 			for k, v := range f.objects {
-				if strings.HasPrefix(k, "sets/") {
+				if strings.HasPrefix(k, result.Prefix) {
 					result.Contents = append(result.Contents, content{k, len(v)})
 				}
 			}
@@ -91,8 +92,18 @@ func (f *fakeS3) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			body[len(body)/2] ^= 1
 		}
 		w.Header().Set("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
+		w.Header().Set("ETag", `"0123456789abcdef0123456789abcdef"`)
 		w.Header().Set("Content-Length", fmt.Sprint(len(body)))
 		_, _ = w.Write(body)
+	case http.MethodHead: // as R2 answers it: the object's details, or 404
+		body, ok := f.objects[key]
+		if !ok || f.missing {
+			w.WriteHeader(404)
+			return
+		}
+		w.Header().Set("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
+		w.Header().Set("ETag", `"0123456789abcdef0123456789abcdef"`)
+		w.Header().Set("Content-Length", fmt.Sprint(len(body)))
 	case http.MethodDelete:
 		delete(f.objects, key)
 		w.WriteHeader(204)
@@ -261,7 +272,7 @@ func TestMissingTamperedAndFailedUploadNeverRenewCoverage(t *testing.T) {
 		path := filepath.Join(stage, "set.age")
 		return path, clock, os.WriteFile(path, []byte("encrypted fixture"), 0600)
 	}
-	manager := NewManager(r2, t.TempDir(), capture)
+	manager := NewManager(r2, t.TempDir(), capture, nil)
 	manager.now = func() time.Time { return clock }
 	if manager.CheckWrite() == nil {
 		t.Fatal("new process trusted coverage")
@@ -307,7 +318,7 @@ func TestMissingTamperedAndFailedUploadNeverRenewCoverage(t *testing.T) {
 	if manager.CheckWrite() == nil {
 		t.Fatal("backward clock admitted")
 	}
-	restarted := NewManager(r2, t.TempDir(), capture)
+	restarted := NewManager(r2, t.TempDir(), capture, nil)
 	if restarted.CheckWrite() == nil {
 		t.Fatal("restart trusted old disk receipt")
 	}
@@ -316,6 +327,111 @@ func TestMissingTamperedAndFailedUploadNeverRenewCoverage(t *testing.T) {
 	fake.mu.Unlock()
 	if err := manager.Backup(t.Context()); err != nil || manager.Status().Failure != "" {
 		t.Fatalf("verified upload left a stale failure on the dashboard: %v %+v", err, manager.Status())
+	}
+}
+
+// TestUnchangedDatabaseRenewsWithoutUpload drives due ticks with a fake clock, fake R2 and a fake
+// revision reader: no commit renews coverage with no new object, and every other case keeps the
+// capture-and-upload behaviour and its 14-minute cutoff.
+func TestUnchangedDatabaseRenewsWithoutUpload(t *testing.T) {
+	type step struct {
+		advance  time.Duration
+		commit   bool // a commit lands before this tick
+		during   bool // a commit lands while this tick's capture runs
+		revErr   bool
+		failPut  bool
+		restart  bool
+		captures int  // total captures after this tick
+		writable bool // after this tick
+	}
+	tests := []struct {
+		name  string
+		steps []step
+	}{
+		{"unchanged never uploads and stays writable past 14 minutes", []step{
+			{captures: 1, writable: true},
+			{advance: 5 * time.Minute, captures: 1, writable: true},
+			{advance: 5 * time.Minute, captures: 1, writable: true},
+			{advance: 5 * time.Minute, captures: 1, writable: true},
+			{advance: 5 * time.Minute, captures: 1, writable: true},
+		}},
+		{"a commit uploads again", []step{
+			{captures: 1, writable: true},
+			{advance: 5 * time.Minute, commit: true, captures: 2, writable: true},
+		}},
+		{"changed with failing uploads still pauses at 14 minutes", []step{
+			{captures: 1, writable: true},
+			{advance: 5 * time.Minute, commit: true, failPut: true, captures: 2, writable: true},
+			{advance: 5 * time.Minute, failPut: true, captures: 3, writable: true},
+			{advance: 4 * time.Minute, failPut: true, captures: 4, writable: false},
+		}},
+		{"a revision read error counts as changed", []step{
+			{captures: 1, writable: true},
+			{advance: 5 * time.Minute, revErr: true, captures: 2, writable: true},
+		}},
+		{"restart pauses until a fresh verified set", []step{
+			{captures: 1, writable: true},
+			{restart: true, failPut: true, captures: 2, writable: false},
+			{advance: time.Minute, captures: 3, writable: true},
+		}},
+		{"a commit during the upload makes the next tick capture", []step{
+			{during: true, captures: 1, writable: true},
+			{advance: 5 * time.Minute, captures: 2, writable: true},
+			{advance: 5 * time.Minute, captures: 2, writable: true},
+		}},
+		{"a backward clock never renews", []step{
+			{captures: 1, writable: true},
+			{advance: -time.Minute, failPut: true, captures: 2, writable: false},
+		}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r2, fake := testR2(t)
+			clock := time.Date(2026, 11, 14, 12, 0, 0, 0, time.UTC)
+			var revision int64 = 7
+			var revErr bool
+			captures := 0
+			var during bool
+			capture := func(_ context.Context, stage string) (string, time.Time, error) {
+				captures++
+				if during {
+					revision++
+				}
+				path := filepath.Join(stage, "set.age")
+				return path, clock, os.WriteFile(path, []byte(fmt.Sprintf("set %d", captures)), 0600)
+			}
+			read := func(context.Context) (int64, error) {
+				if revErr {
+					return 0, errors.New("revision unavailable")
+				}
+				return revision, nil
+			}
+			newManager := func() *Manager {
+				m := NewManager(r2, t.TempDir(), capture, read)
+				m.now = func() time.Time { return clock }
+				return m
+			}
+			manager := newManager()
+			for i, s := range tc.steps {
+				clock = clock.Add(s.advance)
+				if s.commit {
+					revision++
+				}
+				if s.restart {
+					manager = newManager()
+				}
+				revErr, during = s.revErr, s.during
+				fake.mu.Lock()
+				fake.failPut = s.failPut
+				fake.mu.Unlock()
+				ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+				_ = manager.Tick(ctx)
+				cancel()
+				if captures != s.captures || (manager.CheckWrite() == nil) != s.writable {
+					t.Fatalf("step %d: %d captures (want %d), writable %v (want %v)", i, captures, s.captures, manager.CheckWrite() == nil, s.writable)
+				}
+			}
+		})
 	}
 }
 

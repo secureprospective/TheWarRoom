@@ -33,22 +33,3 @@ func TestTradeRequestMapsOnlyAKnownHost(t *testing.T) {
 		t.Fatal(req.Target)
 	}
 }
-
-func TestTradeRequestKeepsLazyHostAdmissionAndURLSampling(t *testing.T) {
-	reads := 0
-	req := Request("0001", leaguefeed.PendingTrade{}, func() string {
-		reads++
-		if reads == 1 {
-			return "first.example"
-		}
-		return "second.example"
-	}, 2026)
-	if reads != 2 || req.Target.URL != "https://second.example/2026/options?L=14432&O=05" {
-		t.Fatal(reads, req.Target)
-	}
-	reads = 0
-	req = Request("0001", leaguefeed.PendingTrade{}, func() string { reads++; return "" }, 2026)
-	if reads != 1 || req.Target.Kind != envelope.Unmapped {
-		t.Fatal(reads, req.Target)
-	}
-}

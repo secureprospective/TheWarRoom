@@ -15,6 +15,9 @@ import (
 
 func rosterCapAllows(seed *commissioner.RawNativeSnapshot, rules leaguerules.RuleSet, franchise string,
 	facts nativecheck.Facts, zone *time.Location, exceptions ...nativecheck.DecisionException) error {
+	if err := seed.CheckContracts(franchise); err != nil {
+		return fmt.Errorf("judge roster cap: %w", err)
+	}
 	roster := []nativecheck.RosterPlayer{}
 	for _, p := range seed.Players {
 		if p.Franchise == franchise {
@@ -69,6 +72,9 @@ func waiverClaimAllows(seed *commissioner.RawNativeSnapshot, rules leaguerules.R
 
 // Dead money counts each remaining flat paid season after the cut season.
 func waiverDeadMoney(player commissioner.NativePlayer, rules leaguerules.RuleSet) (domain.Money, error) {
+	if player.ContractMissing {
+		return 0, fmt.Errorf("record this player's missing contract before cutting him")
+	}
 	rate := rules.Contracts.DeadCap
 	if player.Restructured {
 		rate = rules.Contracts.RestructuredDeadCap

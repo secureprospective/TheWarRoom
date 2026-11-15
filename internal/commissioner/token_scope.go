@@ -79,6 +79,13 @@ func tokenPlayers(a RawArgs) ([]string, error) {
 			}
 			players = append(players, id.Player)
 		}
+		for _, item := range a.Stat.Items {
+			id, err := ParseStatItemID(item)
+			if err != nil {
+				return nil, err
+			}
+			players = append(players, id.Player)
+		}
 	}
 	if a.Correction != nil {
 		players = append(players, a.Correction.Player)

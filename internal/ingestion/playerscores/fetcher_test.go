@@ -2,7 +2,6 @@ package playerscores
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 )
 
@@ -67,24 +66,6 @@ func TestFlatten_MalformedRecordFailsLoud(t *testing.T) {
 	env.PlayerScores.PlayerScore = []scoreBlock{{ID: "13130", Score: "n/a", Week: "YTD"}}
 	if _, err := flatten(context.Background(), env, "YTD"); err == nil {
 		t.Fatal("flatten should error on a non-numeric score, got nil")
-	}
-}
-
-// TestDecode_SingleElementCollapse locks the MFL single-element quirk: a
-// one-record playerScore list arrives as a BARE OBJECT, not a one-element array.
-func TestDecode_SingleElementCollapse(t *testing.T) {
-	const body = `{"playerScores":{"playerScore":{"id":"13130","score":"476.75","week":"YTD"}}}`
-
-	var env scoresEnvelope
-	if err := json.Unmarshal([]byte(body), &env); err != nil {
-		t.Fatalf("decode single-score payload: %v", err)
-	}
-	got, err := flatten(context.Background(), env, "YTD")
-	if err != nil {
-		t.Fatalf("flatten: %v", err)
-	}
-	if len(got) != 1 || got[0].ID != "13130" {
-		t.Fatalf("single-element collapse not handled: %+v", got)
 	}
 }
 

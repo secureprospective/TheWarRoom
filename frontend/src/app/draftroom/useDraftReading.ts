@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { draftRoom } from './state';
+import { poll } from '../data/query';
 
 // The room looks at the draft again this often, to see other franchises' picks; the clock running out
 // makes it look at once.
@@ -25,9 +26,7 @@ export function useDraftReading(league: string, franchise: string, due: string, 
   const looked = useRef('');
   useEffect(() => {
     if (!league || !franchise) return undefined;
-    void draftRoom.read(league, franchise);
-    const timer = setInterval(() => void draftRoom.read(league, franchise), lookEveryMs);
-    return () => clearInterval(timer);
+    return poll(() => draftRoom.read(league, franchise), lookEveryMs);
   }, [league, franchise, reread, startup]);
   useEffect(() => {
     if (!due || !league || now < Date.parse(due) || looked.current === due) return;

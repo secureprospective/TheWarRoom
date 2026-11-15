@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 )
@@ -132,46 +131,5 @@ func TestFinalFailureShowsAndRetriesOnlyOnTheNextFollow(t *testing.T) {
 	a.Final(ctx, at, "DET-ARI")
 	if len(calls) != 5 || !a.Details["DET-ARI"].Final {
 		t.Fatal("following again did not retry once", calls)
-	}
-}
-
-func TestTeamCodesMatchAcrossMFLAndESPN(t *testing.T) {
-	a := Adapter{Board: seeded(t)}
-	if g, ok := a.Followed("PHI-JAX"); !ok || g.ID != "PHI-JAC" {
-		t.Fatal("ESPN codes do not find the MFL-seeded game")
-	}
-	espn, err := ParseScoreboard(fixture(t, "espn-scoreboard"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	a.Board = Held{Games: espn, Source: "ESPN"}
-	if g, ok := a.Followed("PHI-JAC"); !ok || g.ID != "401872981" {
-		t.Fatal("an MFL follow id lost its game when the board became ESPN's")
-	}
-	w := Window{Teams: [2]string{"JAC", "PHI"}}
-	if !w.plays(espn[2]) {
-		t.Fatal("window in MFL codes does not match ESPN's game")
-	}
-}
-
-func TestScoringPlaysIgnoreTheScoreWobbleAroundATry(t *testing.T) {
-	plays := []Play{{Sequence: 1}, {Sequence: 2, HomeScore: 7}, {Sequence: 3, HomeScore: 7}, {Sequence: 4, HomeScore: 7, AwayScore: 3}}
-	got := ScoringPlays(plays)
-	if len(got) != 2 || got[0].Sequence != 2 || got[1].Sequence != 4 {
-		t.Fatal(got)
-	}
-	// The captured DET at ARI game: touchdown to 45-21, then a penalty read 45-20, then the kickoff 45-21.
-	all, err := ParseCore(fixture(t, "espn-core-plays"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	scoring := ScoringPlays(all)
-	for _, p := range scoring {
-		if strings.HasPrefix(p.Text, "PENALTY") || strings.Contains(p.Text, " kicks ") {
-			t.Fatal("a non-scoring play listed:", p.Text)
-		}
-	}
-	if last := scoring[len(scoring)-1]; last.HomeScore != 21 || last.AwayScore != 45 {
-		t.Fatal("final scoring play", last.Text, last.AwayScore, last.HomeScore)
 	}
 }

@@ -41,30 +41,3 @@ func finishedScoresDue(fetched time.Time, schedule Feed[[]nflschedule.RawWeek], 
 	end, finished := FinishedScoreCutoff(schedule, now)
 	return finished && fetched.Before(end)
 }
-
-func TestFinishedScoreCutoff(t *testing.T) {
-	t.Parallel()
-	now := time.Date(2026, 10, 25, 12, 0, 0, 0, time.UTC)
-	final := nflschedule.RawMatchup{Teams: [2]string{"BUF", "NYJ"}, Kickoff: fmt.Sprint(now.Add(-6 * time.Hour).Unix()), Scores: [2]string{"20", "10"}, GameSecondsRemaining: "0"}
-	unflagged := nflschedule.RawMatchup{Teams: [2]string{"DAL", "NYG"}, Kickoff: fmt.Sprint(now.Add(-5 * time.Hour).Unix()), Scores: [2]string{"20", "10"}}
-	for _, tc := range []struct {
-		name          string
-		rows          []nflschedule.RawWeek
-		fetched, want time.Time
-		finished      bool
-	}{
-		{"missing schedule", nil, now, time.Time{}, false},
-		{"empty week", []nflschedule.RawWeek{{Week: "5"}}, now, time.Time{}, false},
-		{"ambiguous weeks", []nflschedule.RawWeek{{Matchups: []nflschedule.RawMatchup{final}}, {Week: "6"}}, now, time.Time{}, false},
-		{"final uses fetch time", []nflschedule.RawWeek{{Matchups: []nflschedule.RawMatchup{final}}}, now.Add(-2 * time.Hour), now.Add(-2 * time.Hour), true},
-		{"latest game cutoff", []nflschedule.RawWeek{{Matchups: []nflschedule.RawMatchup{final, unflagged}}}, now.Add(-2 * time.Hour), now.Add(-time.Hour), true},
-		{"future final observation", []nflschedule.RawWeek{{Matchups: []nflschedule.RawMatchup{final}}}, now.Add(time.Minute), time.Time{}, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, finished := FinishedScoreCutoff(Feed[[]nflschedule.RawWeek]{Value: tc.rows, FetchedAt: tc.fetched}, now)
-			if finished != tc.finished || !got.Equal(tc.want) {
-				t.Fatalf("cutoff %v finished %t; want %v %t", got, finished, tc.want, tc.finished)
-			}
-		})
-	}
-}

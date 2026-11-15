@@ -32,7 +32,7 @@ type RawSummary struct {
 }
 
 func boxCategory(s string) bool {
-	return slices.Contains([]string{"passing", "rushing", "receiving", "defensive"}, s)
+	return slices.Contains([]string{"passing", "rushing", "receiving", "defensive", "fumbles", "interceptions", "kickReturns", "puntReturns", "kicking", "punting"}, s)
 }
 func (r RawBox) Validate() error {
 	if err := r.Team.Validate(); err != nil {

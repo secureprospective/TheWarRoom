@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
+	"path/filepath"
 	"time"
+
+	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
@@ -14,22 +17,20 @@ import (
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/tradelens"
 )
-
-type localCommissionerSession struct{ installation string }
-
-func (s localCommissionerSession) Principal() (string, error) {
-	return commissionerapp.LocalPrincipal(s.installation, os.Getuid()) //nolint:wrapcheck // Preserve missing local identity refusal.
-}
 
 func (a *App) commissionerPrincipal() (string, error) {
 	return commissionerapp.ResolvePrincipal(a.core.CommissionerSession, func() (string, error) { //nolint:wrapcheck // Preserve local identity errors.
-		return (localCommissionerSession{installation: a.core.Paths.DataDir}).Principal()
+		return persistedIdentity(a.core.Paths.DataDir)
 	})
 }
 func (a *App) localSeat() commissionerapp.LocalSeat {
@@ -37,7 +38,8 @@ func (a *App) localSeat() commissionerapp.LocalSeat {
 		Status: func(ctx context.Context, local string) (accounts.SeatStatus, error) { return a.seat.Status(ctx, local) },
 		SignIn: func(ctx context.Context, raw accounts.RawCredentials, local string) (accounts.Account, error) {
 			return a.seat.SignIn(ctx, raw, local)
-		}}
+		},
+		Facts: func(ctx context.Context) ([]accounts.SignInFact, error) { return a.seat.SignInFacts(ctx) }}
 }
 func (a *App) commissionerSeat() (accounts.SeatStatus, error) {
 	return a.localSeat().Read() //nolint:wrapcheck // Preserve seat errors.
@@ -55,6 +57,17 @@ func (a *App) leagueRecords(parent context.Context, league string) ([]commission
 	defer cancel()
 	//nolint:wrapcheck // the service's errors already name the league calendar
 	return commissionerapp.Records(ctx, a.core.History, league, "calendar")
+}
+
+// sharedLeagueRecords is the read-only ledger for pollers: the held revision snapshot, not a deep copy.
+func (a *App) sharedLeagueRecords(parent context.Context, league string) ([]commissioner.Record, error) {
+	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
+	defer cancel()
+	records, err := a.core.History.SharedCommissionerRecords(ctx, league)
+	if err != nil {
+		return nil, fmt.Errorf("read league calendar ledger: %w", err)
+	}
+	return records, nil
 }
 
 // nativeFacts reads the football facts the app already holds, with no network: positions and draft years
@@ -110,6 +123,9 @@ func (h commissionerHost) CaptureNativeSeed() (commissioner.RawNativeSnapshot, e
 func (h commissionerHost) CommissionerSeat() (accounts.SeatStatus, error) {
 	return h.app.commissionerSeat()
 }
+func (h commissionerHost) CommissionerSignInFacts() ([]accounts.SignInFact, error) {
+	return h.app.localSeat().SignInFacts() //nolint:wrapcheck // Preserve seat errors.
+}
 func (h commissionerHost) CommissionerSeatSignIn(raw accounts.RawCredentials) (accounts.SeatStatus, error) {
 	return h.app.commissionerSeatSignIn(raw)
 }
@@ -131,7 +147,13 @@ func (a *App) nativeScheduleDates(parent context.Context, season int, at time.Ti
 	error) {
 	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 	defer cancel()
-	return nativeapp.ScheduleDates(ctx, a.core.History.ReferenceBodies, season, at) //nolint:wrapcheck // Preserve the held NFL week dates refusal.
+	//nolint:wrapcheck // Preserve the held NFL week dates refusal.
+	return a.scheduleCache.Dates(ctx, a.heldArchiveMark, a.core.History.ReferenceBodies, season, at)
+}
+
+func (a *App) heldArchiveMark(ctx context.Context, part string) (nativeapp.ArchiveMark, error) {
+	count, newest, err := a.core.History.ArchiveMark(ctx, part)
+	return nativeapp.ArchiveMark{Count: count, Newest: newest}, err //nolint:wrapcheck // The store names its failure.
 }
 
 type appBidEnv struct{ app *App }
@@ -149,6 +171,96 @@ func (c nativeDueClock) Now() time.Time { return c.now() }
 func (nativeDueClock) Trusted() error   { return nil }
 
 func (a *App) nativeWaiverClock(ctx context.Context) {
-	worker := leagueservice.NewDueWorker(a.core.History, a.nativeFacts, nativeDueClock{now: a.timeNow})
+	worker := leagueservice.NewDueWorker(history.NewOneFile(a.core.History), a.nativeFacts, nativeDueClock{now: a.timeNow})
 	worker.Run(ctx, func(err error) { log.Printf("the war room: process native deadlines: %v", err) })
+}
+
+func (h commissionerHost) NativeValues(ctx context.Context, league, franchise string, season int) (appvalue.Reading, error) {
+	return h.app.valuePreparation.Read(ctx, h.app.valueSource(), league, franchise, season) //nolint:wrapcheck // The adapter names its failures.
+}
+
+// NativeTradeLens reads a proposed trade through both sides' directions from held values and the ledger.
+func (h commissionerHost) NativeTradeLens(ctx context.Context, scope tradelens.Scope) (tradelens.Reading, error) {
+	a := h.app
+	//nolint:wrapcheck // The adapter names its failures.
+	return marketapp.TradeLens(ctx, marketapp.TradeLensSource{
+		Values: func(ctx context.Context, league string, season int) (appvalue.Reading, error) {
+			return a.valuePreparation.Read(ctx, a.valueSource(), league, "", season) //nolint:wrapcheck // As NativeValues.
+		},
+		Records: a.sharedLeagueRecords, Standings: h.NativeStandings, Drafts: a.core.History.PickValueDrafts,
+		Players: a.recordStore().Records, Params: a.core.Params.Snapshot, Now: a.timeNow,
+	}, scope)
+}
+
+func (h commissionerHost) MirrorLineupDelta(ctx context.Context, season, week int, trade history.TradeSides) (history.NativeLineupDelta, error) {
+	return tradesapp.ReadLineupDelta(ctx, h.Rulebook.ActiveConfig(), h.League.Reader(), season, week, trade, h.History.LineupDelta) //nolint:wrapcheck // The adapter supplies fit context.
+}
+
+func (a *App) valueSource() appvalue.Source {
+	src := appvalue.Source{Facts: a.recordStore(), Held: a.core.History, Records: a.sharedLeagueRecords,
+		Params: a.core.Params.Snapshot, Now: a.timeNow, Revision: a.core.HistPools.Revision,
+		NextFeatureAt: a.core.History.NextFeatureAt, Evidence: a.core.History.ValueEvidence,
+	}
+	if a.core.Paths.DataDir != "" { // no profile directory, nothing to keep across launches
+		src.Saved = appvalue.SavedFiles{Dir: filepath.Join(a.core.Paths.DataDir, "prepared-values")}
+	}
+	return src
+}
+
+func (a *App) startValuePreparation() {
+	ctx := a.core.WorkCtx
+	if ctx == nil || a.core.History == nil { // a host without history has no values to prepare
+		return
+	}
+	a.startWorker(func() {
+		src := a.valueSource()
+		a.valuePreparation.Run(ctx, src,
+			func(ctx context.Context) ([]appvalue.Scope, error) {
+				return src.Scopes(ctx, a.core.History.NativeLeagues)
+			},
+			func() { a.core.SeasonChanged(ctx) },
+			func(err error) {
+				if ctx.Err() == nil {
+					log.Printf("the war room: prepare values: %v", err)
+				}
+			})
+	})
+}
+
+func (h commissionerHost) NativeAssets(ctx context.Context, league string) (commissioner.NativeAssets, error) {
+	if h.app.researchHeld == nil {
+		out, err := h.State.NativeAssets(ctx, league)
+		if err != nil {
+			return out, fmt.Errorf("read Market assets: %w", err)
+		}
+		return out, nil
+	}
+	host := offersHost(h)
+	out, err := h.State.NativeAssets(ctx, league)
+	if err != nil {
+		return out, fmt.Errorf("read Market assets: %w", err)
+	}
+	// The directory only adds age, status and value to pool rows; offline, serve the league's own data.
+	lk, dirErr := host.OffersDirectory(ctx)
+	if dirErr != nil {
+		log.Printf("the war room: Market pool served without directory details: %v", dirErr)
+		return out, nil
+	}
+	ids := make([]playerid.PlayerID, 0, len(out.Pool))
+	for _, p := range out.Pool {
+		id, err := playerid.New(p.Player)
+		if err != nil {
+			return out, fmt.Errorf("read Market player: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	engine, _ := host.OffersEngineValues(ctx)
+	assets, _ := host.OffersAssetValues(ctx, ids, h.app.timeNow())
+	for i, id := range ids {
+		if f, ok := lk.Facts(id.String()); ok {
+			row := offersapp.PoolPlayer(id, f, out.Snapshot.Season, h.app.timeNow(), engine, assets)
+			out.Pool[i].Age, out.Pool[i].String, out.Pool[i].Value = row.Age, row.String, row.EngineText
+		}
+	}
+	return out, nil
 }

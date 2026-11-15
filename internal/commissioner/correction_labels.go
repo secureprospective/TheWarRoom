@@ -3,14 +3,15 @@ package commissioner
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-func correctionDescription(records []Record, r Record) string {
+func correctionDescription(names *assetNames, r Record) string {
 	c := r.Command.Args.Correction
-	team := func(id string) string { return correctionAssetName(records, id, false) }
-	player := func(id string) string { return correctionAssetName(records, id, true) }
+	team := func(id string) string { return names.name(id, false) }
+	player := func(id string) string { return names.name(id, true) }
 	switch r.Command.Command {
 	case CorrectRoster:
 		if c.Action == "add" {
@@ -18,7 +19,7 @@ func correctionDescription(records []Record, r Record) string {
 		}
 		return fmt.Sprintf("Removed %s from %s to correct the roster", player(c.Player), team(c.Franchise))
 	case CorrectTransaction:
-		for _, original := range records {
+		for _, original := range names.records {
 			if original.Receipt.Entry != c.Entry {
 				continue
 			}
@@ -55,27 +56,65 @@ func correctionDescription(records []Record, r Record) string {
 	return correctionLabel(r)
 }
 
-func correctionAssetName(records []Record, id string, player bool) string {
+// assetNames resolves player and franchise names from the first native snapshot in record order that
+// names them. The index is built once per held revision and shared by every reading and owner on it
+// (namesFor); a per-entry rebuild was ~65% of server CPU under load (CT 256 profile, 11-09).
+type assetNames struct {
+	records        []Record
+	players, teams map[string]string
+}
+
+func newAssetNames(records []Record) *assetNames {
+	n := &assetNames{records: records}
+	n.players, n.teams = nameIndex(records)
+	return n
+}
+
+// namesFor returns the shared index when records are exactly a held revision (memoFor checks every
+// payload), and builds one otherwise. The maps are read-only once built.
+func namesFor(records []Record) *assetNames {
+	memo := memoFor(records)
+	if memo == nil {
+		return newAssetNames(records)
+	}
+	memo.names.once.Do(func() { memo.names.players, memo.names.teams = nameIndex(records) })
+	return &assetNames{records: records, players: memo.names.players, teams: memo.names.teams}
+}
+
+type namesCache struct {
+	once           sync.Once
+	players, teams map[string]string
+}
+
+func nameIndex(records []Record) (players, teams map[string]string) {
+	players, teams = map[string]string{}, map[string]string{}
 	for _, r := range records {
 		if r.Command.Args.Native == nil {
 			continue
 		}
-		if player {
-			for _, p := range r.Command.Args.Native.Players {
-				if p.ID == id && p.Name != "" {
-					return p.Name
-				}
+		for _, p := range r.Command.Args.Native.Players {
+			if _, seen := players[p.ID]; !seen && p.Name != "" {
+				players[p.ID] = p.Name
 			}
-		} else {
-			for _, f := range r.Command.Args.Native.Franchises {
-				if f.ID == id {
-					return f.Name
-				}
+		}
+		for _, f := range r.Command.Args.Native.Franchises {
+			if _, seen := teams[f.ID]; !seen {
+				teams[f.ID] = f.Name
 			}
 		}
 	}
+	return players, teams
+}
+
+func (n *assetNames) name(id string, player bool) string {
 	if player {
+		if name, ok := n.players[id]; ok {
+			return name
+		}
 		return "Player " + id
+	}
+	if name, ok := n.teams[id]; ok {
+		return name
 	}
 	return "Franchise " + strings.TrimPrefix(id, "franchise.")
 }

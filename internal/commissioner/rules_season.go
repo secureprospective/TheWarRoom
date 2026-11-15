@@ -5,7 +5,9 @@ package commissioner
 import (
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -166,10 +168,10 @@ func countedShape(rules *leaguerules.RuleSet, records []Record) {
 	countSides(rules)
 }
 
-// RulesInForce is the one place a native league's rules are resolved. It returns the rules a season
+// rulesInForce is the one place a native league's rules are resolved. It returns the rules a season
 // held at an instant: a change counts from the moment it starts (a next-rollover change from the
 // rollover after it was recorded), and a season that has ended keeps the rules it ended with.
-func RulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
+func rulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
 	if len(records) == 0 {
 		return leaguerules.RuleSet{}, fmt.Errorf("this app league has not been created")
 	}
@@ -206,8 +208,13 @@ func RulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleS
 	return rules, nil
 }
 
-// recordsThrough prevents later corrections from rewriting an earlier season or instant.
+// recordsThrough prevents later corrections from rewriting an earlier season or instant. A ledger wholly
+// at or before the instant is returned as is, capacity clipped so an append never writes into it: callers
+// only read the result, and the held ledger keeps its replay memo instead of being copied on every read.
 func RecordsThrough(records []Record, at time.Time) []Record {
+	if !slices.ContainsFunc(records, func(r Record) bool { return r.Receipt.RecordedAt.After(at) }) {
+		return records[:len(records):len(records)]
+	}
 	out := make([]Record, 0, len(records))
 	for _, r := range records {
 		if !r.Receipt.RecordedAt.After(at) {
@@ -277,8 +284,8 @@ func (f *seasonFold) addChange(r Record) error {
 		for _, c := range seeded {
 			f.timed = append(f.timed, startedChange{c, c.RecordedAt})
 		}
-	case NativeSeed:
-		f.addCarried(r)
+	case NativeSeed, Cutover:
+		f.addInitialSettings(r)
 	case WindowSet, WindowMove, WindowRemove:
 		if !f.active[r.Receipt.Entry] {
 			return nil
@@ -308,8 +315,15 @@ func (f *seasonFold) addChange(r Record) error {
 	return nil
 }
 
-// addCarried adds the divisions and conferences the starting snapshot carries into the rules.
-func (f *seasonFold) addCarried(r Record) {
+// addInitialSettings folds starting assets and the cutover's reference-feed clear into rules.
+func (f *seasonFold) addInitialSettings(r Record) {
+	if r.Command.Command == Cutover {
+		c := leaguerules.Change{LeagueID: r.Command.League, Field: "schedule.follow",
+			New: leaguerules.Known(leaguerules.ScheduleFollow{}), Season: f.season,
+			Effective: leaguerules.Effective{Kind: leaguerules.Now}, RecordedAt: r.Receipt.RecordedAt}
+		f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+		return
+	}
 	if c, ok := carriedAlignment(r, f.alignmentSet); ok {
 		f.timed = append(f.timed, startedChange{c, c.RecordedAt})
 	}
@@ -411,7 +425,27 @@ type rulesEntry struct {
 type RulesMemo struct {
 	entries  map[rulesKey]rulesEntry
 	folds    map[ledgerKey]ledgerFold
+	helds    map[*replayMemo][]Record
 	resolved int
+
+	// bases are the non-proposal ledgers this memo folded, so a proposal over one of them extends its
+	// fold instead of folding the whole ledger again. trial keeps only the latest proposal fold: one
+	// result-flip check scores every starter against it, and the next proposal replaces it.
+	bases     []heldFold
+	trial     ledgerKey
+	trialFold ledgerFold
+	trialLast Record
+	// lastPrefix is the held prefix heldFold last answered.
+	lastPrefix     ledgerKey
+	lastPrefixFold ledgerFold
+	lastTrial      ledgerKey
+	lastHeld       []Record
+	full           int
+}
+
+type heldFold struct {
+	records []Record
+	fold    ledgerFold
 }
 
 // ledgerKey is one ledger: the same entries, not merely the same length.
@@ -426,14 +460,18 @@ type ledgerFold struct {
 	position map[string]int
 	effects  statEffects
 	err      error
+	latest   time.Time
+	scores   *scoreIndex
 }
 
 func NewRulesMemo() *RulesMemo {
-	return &RulesMemo{entries: map[rulesKey]rulesEntry{}, folds: map[ledgerKey]ledgerFold{}}
+	return &RulesMemo{entries: map[rulesKey]rulesEntry{}, folds: map[ledgerKey]ledgerFold{},
+		helds: map[*replayMemo][]Record{}}
 }
 
 func foldLedger(records []Record) ledgerFold {
-	f := ledgerFold{active: Replay(records).Active, position: make(map[string]int, len(records))}
+	f := ledgerFold{active: Replay(records).Active, position: make(map[string]int, len(records)),
+		latest: latestRecorded(records), scores: newScoreIndex(records)}
 	for i, r := range records {
 		f.position[r.Receipt.Entry] = i
 	}
@@ -441,7 +479,8 @@ func foldLedger(records []Record) ledgerFold {
 	return f
 }
 
-// fold is foldLedger, answered from memory when this ledger was already folded.
+// fold is foldLedger, answered from memory when this ledger was already folded. A proposed statistics
+// decision appended to a folded ledger extends that fold (TestTrialFoldMatchesFullFold).
 func (m *RulesMemo) fold(records []Record) ledgerFold {
 	if len(records) == 0 {
 		return foldLedger(records)
@@ -450,24 +489,190 @@ func (m *RulesMemo) fold(records []Record) ledgerFold {
 	if hit, ok := m.folds[key]; ok {
 		return hit
 	}
+	if proposedStatDecision(records) {
+		n := len(records)
+		if m.trial == key && sameProposal(m.trialLast, records[n-1]) {
+			return m.trialFold
+		}
+		f := m.heldFold(records[: n-1 : n-1]).withProposal(records)
+		m.trial, m.trialFold, m.trialLast = key, f, records[n-1]
+		return f
+	}
+	m.full++
 	f := foldLedger(records)
 	m.folds[key] = f
+	m.bases = append(m.bases, heldFold{records: records, fold: f})
 	return f
 }
+
+// sameProposal says whether two trial entries propose the same command: a trial ledger shared between
+// proposals keeps its address and length, so the address alone does not name the trial.
+func sameProposal(a, b Record) bool {
+	return a.Receipt.Entry == b.Receipt.Entry && reflect.DeepEqual(a.Command, b.Command)
+}
+
+// heldFold is the fold of a ledger equal, entry for entry, to one already folded, or a new fold.
+// A shared trial ledger (trialLedger) asks with the same held prefix for every proposal, so the last
+// answer is kept by the prefix's address and length, as folds is.
+func (m *RulesMemo) heldFold(held []Record) ledgerFold {
+	if len(held) != 0 && m.lastPrefix == (ledgerKey{ledger: &held[0], length: len(held)}) {
+		return m.lastPrefixFold
+	}
+	f, found := ledgerFold{}, false
+	for _, base := range m.bases {
+		if sameLedger(base.records, held) {
+			f, found = base.fold, true
+			break
+		}
+	}
+	if !found {
+		f = m.fold(held)
+	}
+	if len(held) != 0 {
+		m.lastPrefix, m.lastPrefixFold = ledgerKey{ledger: &held[0], length: len(held)}, f
+	}
+	return f
+}
+
+// sameLedger compares what a fold reads. Canonical is the recorded request, so it covers every argument;
+// copies of one ledger share their strings, so the comparison is cheap.
+func sameLedger(a, b []Record) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	if len(a) == 0 || &a[0] == &b[0] {
+		return true
+	}
+	for i := range a {
+		x, y := &a[i], &b[i]
+		if x.Receipt.Entry != y.Receipt.Entry || x.Principal != y.Principal || x.Command.Command != y.Command.Command ||
+			x.Canonical != y.Canonical || x.Command.Reason != y.Command.Reason {
+			return false
+		}
+	}
+	return true
+}
+
+// proposedStatDecision reports a trial ledger: a held ledger with one proposed approve or reject appended.
+func proposedStatDecision(records []Record) bool {
+	n := len(records)
+	if n < 2 {
+		return false
+	}
+	last := records[n-1]
+	return (last.Command.Command == StatApprove || last.Command.Command == StatReject) &&
+		strings.HasPrefix(last.Receipt.Entry, "proposed.")
+}
+
+// withProposal is foldLedger of the held ledger plus its last record. A trailing stat decision is active,
+// reverses nothing and restores no draft, so replay adds exactly that entry; the stat fold reads the
+// held entries first, then the proposal. f is shared and is not written: changed maps are copies.
+func (f ledgerFold) withProposal(records []Record) ledgerFold {
+	n := len(records)
+	r := records[n-1]
+	out := ledgerFold{active: maps.Clone(f.active), position: maps.Clone(f.position), latest: f.latest, scores: f.scores}
+	if r.Receipt.RecordedAt.After(out.latest) {
+		out.latest = r.Receipt.RecordedAt
+	}
+	if out.active == nil {
+		out.active = map[string]bool{}
+	}
+	if out.position == nil {
+		out.position = map[string]int{}
+	}
+	out.active[r.Receipt.Entry] = true
+	out.position[r.Receipt.Entry] = n - 1
+	if f.err != nil {
+		out.err = f.err
+		return out
+	}
+	change, err := DecodeStatChange(r.Command.Args, r.Command.Command)
+	if err != nil {
+		out.err = err
+		return out
+	}
+	e := statEffects{baselines: maps.Clone(f.effects.baselines), rejected: maps.Clone(f.effects.rejected),
+		corrections: maps.Clone(f.effects.corrections), changes: maps.Clone(f.effects.changes)}
+	for _, line := range change.Lines() {
+		key := line.key()
+		if c, ok := e.corrections[key]; ok {
+			e.corrections[key] = maps.Clone(c)
+		}
+		if c, ok := e.changes[key]; ok {
+			e.changes[key] = slices.Clip(c)
+		}
+		if err := e.record(r.Command.Command, line, r, true); err != nil {
+			out.err = err
+			return out
+		}
+	}
+	out.effects = e
+	return out
+}
+
+// FullFolds counts whole-ledger folds, which pricing proposals must not multiply.
+func (m *RulesMemo) FullFolds() int { return m.full }
 
 // InForce is RulesInForce, answered from memory when this ledger, season and instant were already resolved.
 func (m *RulesMemo) InForce(records []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
 	if len(records) == 0 {
 		return RulesInForce(records, season, at)
 	}
-	key := rulesKey{ledger: &records[0], length: len(records), season: season, at: at.Round(0).UTC()}
+	ledger := m.ruleLedger(records)
+	key := rulesKey{ledger: &ledger[0], length: len(ledger), season: season, at: at.Round(0).UTC()}
 	if hit, ok := m.entries[key]; ok {
 		return hit.rules, hit.err
 	}
 	m.resolved++
-	rules, err := RulesInForce(records, season, at)
+	rules, err := RulesInForce(ledger, season, at)
 	m.entries[key] = rulesEntry{rules, err}
 	return rules, err
+}
+
+// ruleLedger answers a proposed statistics decision with the held ledger it was proposed against.
+// A stat decision is never a rule record and deactivates none, so both ledgers resolve the same rules;
+// the held ledger's replay is cached and is shared by every proposal the reading prices.
+func (m *RulesMemo) ruleLedger(records []Record) []Record {
+	n := len(records)
+	if n < 2 || records[0].replay == nil || len(records[0].replay.keys) != n-1 {
+		return records
+	}
+	last := records[n-1].Command.Command
+	if (last != StatApprove && last != StatReject) || !strings.HasPrefix(records[n-1].Receipt.Entry, "proposed.") {
+		return records
+	}
+	// Each trial is a fresh copy, so only the latest trial's answer is kept: holding every trial kept each
+	// priced proposal's whole ledger alive for the reading (gigabytes on a live queue). A result-flip check
+	// scores every starter against one trial, so the latest is the one asked again.
+	key := ledgerKey{ledger: &records[0], length: n}
+	if m.lastTrial == key {
+		return m.lastHeld
+	}
+	held := records
+	if heldReplays(records[:n-1]) {
+		held = records[:n-1]
+		if base, ok := m.helds[records[0].replay]; ok {
+			held = base
+		} else {
+			m.helds[records[0].replay] = held
+		}
+	}
+	m.lastTrial, m.lastHeld = key, held
+	return held
+}
+
+// heldReplays is cachedReplay's validity check without copying the projection.
+func heldReplays(records []Record) bool {
+	memo := records[0].replay
+	if memo == nil || len(records) != len(memo.keys) {
+		return false
+	}
+	for i := range records {
+		if replayKeyFor(records[i]) != memo.keys[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // Resolved counts the times the ledger was actually read, which is what the memo exists to keep small.

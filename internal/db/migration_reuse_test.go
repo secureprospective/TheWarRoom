@@ -46,3 +46,35 @@ func TestMigrationFindingsOwnTheirSlices(t *testing.T) {
 		t.Fatalf("caller mutated held findings: %s", got)
 	}
 }
+
+// A relaunch with nothing to migrate must not run the full integrity check (seconds on a large
+// history); the routine check after launch still reads the file.
+func TestUpToDateRelaunchLeavesIntegrityToRoutineCheck(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "main.db")
+	pools, err := Open(t.Context(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := pools.InitializeMain(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if len(pools.MigrationFindings().After.Integrity) != 1 {
+		t.Fatal("a migrating launch must still check before and after")
+	}
+	_ = pools.Close()
+	pools, err = Open(t.Context(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = pools.Close() }()
+	if err := pools.InitializeMain(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if got := pools.MigrationFindings(); len(got.Before.Integrity)+len(got.After.Integrity) != 0 {
+		t.Fatalf("up-to-date relaunch ran the full check: %+v", got)
+	}
+	pools.CheckDue(t.Context(), time.Now())
+	if got := pools.LastCheck().Findings.Integrity; len(got) != 1 || got[0] != "ok" {
+		t.Fatalf("routine check did not read the file: %v", got)
+	}
+}

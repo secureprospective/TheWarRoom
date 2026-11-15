@@ -38,6 +38,7 @@ func TestParameterWords(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct{ key, description, label, group string }{
 		{"model.k_now", "unused", "Games until production and scouting weigh equally", "Production blend · this season"},
+		{"trade.keep", "unused", "Share of a lead over replacement that lasts a season", "Trade value"},
 		{"model.recency.2", "unused", "Weight of season 2 years back", "Production history"},
 		{"model.prior.age.weight", "unused", "Age effect · weight", "Scouting prior"},
 		{"unknown", "Unknown setting", "Unknown setting", "Other settings"},

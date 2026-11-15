@@ -8,35 +8,12 @@ import (
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/offline"
 )
 
-// Canonical returns a team code in ESPN's form, whichever source supplied it. The week strip is
-// seeded from MFL's schedule and the live board comes from ESPN, so one game must be the same
-// game under either source's codes.
-func Canonical(team string) string {
-	switch team {
-	case "GBP":
-		return "GB"
-	case "KCC":
-		return "KC"
-	case "LVR":
-		return "LV"
-	case "NEP":
-		return "NE"
-	case "NOS":
-		return "NO"
-	case "SFO":
-		return "SF"
-	case "TBB":
-		return "TB"
-	case "JAC":
-		return "JAX"
-	case "WAS":
-		return "WSH"
-	}
-	return team
-}
+// Canonical returns the shared team code used by held schedule and stat facts.
+func Canonical(team string) string { return source.CanonicalTeam(team) }
 
 // sameGame reports whether two games are the same fixture: the same two teams (in either source's
 // codes) kicking off within twelve hours of each other.

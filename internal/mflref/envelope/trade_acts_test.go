@@ -1,17 +1,12 @@
 package envelope
 
 import (
-	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/pendingtrades"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
-	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 func TestProposeExactMatchNearMatchAndDOTWindow(t *testing.T) {
@@ -139,62 +134,6 @@ func TestRejectAndRevokeNeverClaimRejectedOrLanded(t *testing.T) {
 		if got := (TradeActPredicate{}).Evaluate(e.spec, obs); got.Event != Partial || !strings.Contains(got.Note, "key missing") {
 			t.Fatal(got)
 		}
-	}
-}
-func TestTradeActOnRealTransactionsAndDecodedPendingFixture(t *testing.T) {
-	body, err := os.ReadFile("../../ingestion/transactions/testdata/transactions.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	raw, err := transactions.Parse(body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rows, err := transactions.ToTransactions(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var row leaguefeed.Transaction
-	for _, r := range rows {
-		if r.Kind == "TRADE" && r.Trade != nil && len(r.Trade.Gave) > 0 && len(r.Trade.CounterpartyGave) > 0 {
-			row = r
-			break
-		}
-	}
-	at := row.Time.Add(-time.Minute)
-	req := TradeRequest{LeagueID: "14432", FranchiseID: row.Franchise, Target: Target{Kind: Mapped, URL: "https://fixture.myfantasyleague.com/2026/options?L=14432&O=05"}, Trade: ExpectedTrade{
-		TradeID: "fixture", Offering: row.Franchise, Accepting: row.Trade.Counterparty,
-		OfferingGives: leaguefeed.AssetTokens(row.Trade.Gave), AcceptingGives: leaguefeed.AssetTokens(row.Trade.CounterpartyGave)}}
-	e, err := DraftTradeAct(at, "trade.propose", req, nil, func() string { return "fixture" })
-	if err != nil {
-		t.Fatal(err)
-	}
-	obs := Observation{LeagueID: req.LeagueID, HandedOffAt: at, Transactions: snapshot.Sourced[[]leaguefeed.Transaction]{Value: rows}}
-	if got := (TradeActPredicate{}).Evaluate(e.spec, obs); got.Event != Match {
-		t.Fatal(got)
-	}
-	// Encode the documented owner export shape using the fixture's real trade assets.
-	pending := map[string]map[string]string{"pendingTrade": {
-		"trade_id": "99", "offeringteam": row.Franchise, "offeredto": row.Trade.Counterparty,
-		"will_give_up": strings.Join(req.Trade.OfferingGives, ","), "will_receive": strings.Join(req.Trade.AcceptingGives, ","),
-		"timestamp": "1791375600", "expires": "1791980400"}}
-	wire, err := json.Marshal(map[string]map[string]map[string]string{"pendingTrades": pending})
-	if err != nil {
-		t.Fatal(err)
-	}
-	decoded, err := pendingtrades.Parse(wire)
-	if err != nil {
-		t.Fatal(err)
-	}
-	offers, err := pendingtrades.ToPendingTrades(decoded)
-	if err != nil || len(offers) != 1 {
-		t.Fatal(offers, err)
-	}
-	obs.Transactions.Value = nil
-	obs.HandedOffAt = offers[0].Proposed.Add(-time.Second)
-	obs.PendingTrades.Value = offers
-	if got := (TradeActPredicate{}).Evaluate(e.spec, obs); got.Note != "Proposed on MFL" {
-		t.Fatal(got)
 	}
 }
 

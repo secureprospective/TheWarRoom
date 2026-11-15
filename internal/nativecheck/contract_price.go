@@ -118,6 +118,15 @@ func (x *pricer) remainingCells() []domain.Money {
 	return cells
 }
 
+// ExistingContractSchedule reads the same annual salaries the contract pricer uses, without pricing a move.
+func ExistingContractSchedule(season int, contract Contract) []SeasonAmount {
+	if contract.Salary <= 0 || contract.Expiration < season || season <= 0 {
+		return []SeasonAmount{}
+	}
+	x := pricer{in: Input{Contract: contract}, season: season, rem: contract.Expiration - season}
+	return x.contractSchedule()
+}
+
 // contractSchedule is the salary for every season from this one through the last, as it stands now.
 func (x *pricer) contractSchedule() []SeasonAmount {
 	out := make([]SeasonAmount, 0, x.rem+1)

@@ -79,7 +79,11 @@ func loadClosedBooks(ctx context.Context, tx *sql.Tx, league string, records []c
 }
 
 func (s *Store) eventsInTransaction(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
-	rows, err := tx.QueryContext(ctx, eventsQuery, league, commissioner.Stream, 0)
+	return s.eventsAfterInTransaction(ctx, tx, league, 0)
+}
+
+func (s *Store) eventsAfterInTransaction(ctx context.Context, tx *sql.Tx, league string, after int64) ([]commissioner.Record, error) {
+	rows, err := tx.QueryContext(ctx, eventsQuery, league, commissioner.Stream, after)
 	if err != nil {
 		return nil, fmt.Errorf("read closing league records: %w", err)
 	}

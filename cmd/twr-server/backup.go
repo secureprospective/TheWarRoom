@@ -16,6 +16,9 @@ type backupStatus = func() (offsite.Status, bool)
 
 func noBackups() (offsite.Status, bool) { return offsite.Status{}, false }
 
+// hostedBackups reports each file's off-site coverage separately: the league, reference and sign-in sets.
+type hostedBackups struct{ league, reference, signIns backupStatus }
+
 func runBackupCheck(args []string, output io.Writer) error {
 	flags := flag.NewFlagSet("backup-check", flag.ContinueOnError)
 	path := flags.String("config", "", "private R2 backup settings")

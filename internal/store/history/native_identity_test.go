@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func TestNativeEvidenceUsesDirectoryAndNewestHeldRevision(t *testing.T) {
@@ -47,6 +49,23 @@ func TestNativeEvidenceMissingIdentityIsNotAZeroWeek(t *testing.T) {
 	}
 }
 
+func TestNativeEvidenceUnusableIdentityIsMissingNotAnError(t *testing.T) {
+	t.Parallel()
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "unusable.db"))
+	if _, err := s.LinkPlayerIDs(t.Context(), "dynastyprocess", []PlayerIDLink{
+		{IDType: "gsis", IDValue: "THO581952", PlayerID: "0099"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	putStatBody(t, s, statBody(t, "245", true), "", t0())
+	evidence, err := source.ReadNativeEvidence(t.Context(), s, s,
+		source.RawNativeScope{Player: "0099", Season: 2025, Week: 1})
+	if err != nil || evidence.Held != nil || len(evidence.Missing) != 1 ||
+		evidence.Missing[0] != "This player has no matching NFL statistics identity" {
+		t.Fatalf("unusable directory id stopped the read: %+v %v", evidence, err)
+	}
+}
+
 func TestNativeEvidenceScopeAndUnloadedSeason(t *testing.T) {
 	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "scope.db"))
@@ -66,5 +85,18 @@ func TestNativeEvidenceScopeAndUnloadedSeason(t *testing.T) {
 	if err != nil || evidence.Held != nil || len(evidence.Missing) != 1 ||
 		!strings.Contains(evidence.Missing[0], "No NFL statistics") {
 		t.Fatalf("no held files became evidence: %+v %v", evidence, err)
+	}
+}
+
+func TestNativeEvidenceCarriesPlayerRecordScoringPosition(t *testing.T) {
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "position.db"))
+	if _, err := s.LinkPlayerIDs(t.Context(), "dynastyprocess", []PlayerIDLink{{IDType: "gsis", IDValue: "00-0023459", PlayerID: "0099"}}); err != nil {
+		t.Fatal(err)
+	}
+	putStatBody(t, s, statBody(t, "244", true), "", t0())
+	s.SetLineupEnvironment(&lineupEnvFake{facts: nativecheck.Facts{"0099": {Position: leaguerules.QB}}})
+	evidence, err := s.nativeEvidence(t.Context(), s, source.RawNativeScope{Player: "0099", Season: 2025, Week: 1})
+	if err != nil || evidence.ListedPosition != "QB" {
+		t.Fatalf("existing record not supplied: %+v %v", evidence, err)
 	}
 }

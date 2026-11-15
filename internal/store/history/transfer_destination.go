@@ -6,37 +6,69 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 // DecideDestination is only called while the source's durable sealed decision is locked.
 // It is deliberately not a transport endpoint or a portable activation-token consumer.
+// Activation commits the move's reference data (identities, blobs) first, after the same refusals
+// are read, then runs the league transaction with every player id already durable.
 func (s *Store) DecideDestination(ctx context.Context, f TransferFence, activate bool, events []RawTransferEvent, blobs map[string][]byte, identities []playerid.RawIdentity) error {
+	if activate {
+		if done, err := s.destinationPrecheck(ctx, f); done || err != nil {
+			return err
+		}
+		if err := s.commitReference(ctx, identities, blobs, "receive"); err != nil {
+			return err
+		}
+	}
+	_, err := identityFirst(ctx, s, func() (struct{}, error) {
+		return struct{}{}, s.decideDestinationOnce(ctx, f, activate, events)
+	})
+	return err
+}
+
+func (s *Store) destinationPrecheck(ctx context.Context, f TransferFence) (bool, error) {
+	tx, err := s.pools.Read().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return true, fmt.Errorf("begin destination decision: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	_, done, err := destinationChecks(ctx, tx, f, true)
+	return done || err != nil, err
+}
+
+// destinationChecks are the decision's refusals. done reports a move already active here.
+func destinationChecks(ctx context.Context, tx *sql.Tx, f TransferFence, activate bool) (TransferFence, bool, error) {
+	var id string
+	if err := tx.QueryRowContext(ctx, `SELECT id FROM transfer_identity`).Scan(&id); err != nil {
+		return TransferFence{}, true, fmt.Errorf("check move destination: %w", err)
+	}
+	if id != f.Peer {
+		return TransferFence{}, true, fmt.Errorf("this is not the confirmed destination")
+	}
+	held, err := transferCurrent(ctx, tx, f.League)
+	if err != nil {
+		return TransferFence{}, true, err
+	}
+	if err := checkDestinationDecision(ctx, tx, f, held, activate); err != nil {
+		return TransferFence{}, true, err
+	}
+	return held, held.Move == f.Move && held.State == "active", nil
+}
+
+func (s *Store) decideDestinationOnce(ctx context.Context, f TransferFence, activate bool, events []RawTransferEvent) error {
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin destination decision: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	var id string
-	if err := tx.QueryRowContext(ctx, `SELECT id FROM transfer_identity`).Scan(&id); err != nil {
-		return fmt.Errorf("check move destination: %w", err)
-	}
-	if id != f.Peer {
-		return fmt.Errorf("this is not the confirmed destination")
-	}
-	held, err := transferCurrent(ctx, tx, f.League)
-	if err != nil {
+	held, done, err := destinationChecks(ctx, tx, f, activate)
+	if done || err != nil {
 		return err
-	}
-	if err := checkDestinationDecision(ctx, tx, f, held, activate); err != nil {
-		return err
-	}
-	if held.Move == f.Move && held.State == "active" {
-		return nil
 	}
 	if activate {
-		if err := s.receiveTransfer(ctx, tx, f, held, events, blobs, identities); err != nil {
+		if err := s.receiveTransfer(ctx, tx, f, held, events); err != nil {
 			return err
 		}
 		f.State = "active"
@@ -91,11 +123,7 @@ func checkInactiveDestination(ctx context.Context, tx *sql.Tx, f, held TransferF
 	return nil
 }
 
-func (s *Store) receiveTransfer(ctx context.Context, tx *sql.Tx, f, held TransferFence, events []RawTransferEvent, blobs map[string][]byte, identities []playerid.RawIdentity) error {
-	if err := db.MergePlayerIdentities(ctx, tx, identities); err != nil {
-		return fmt.Errorf("receive permanent player identities: %w", err)
-	}
-
+func (s *Store) receiveTransfer(ctx context.Context, tx *sql.Tx, f, held TransferFence, events []RawTransferEvent) error {
 	rows, err := transferEvents(ctx, tx, f.League)
 	if err != nil {
 		return err
@@ -119,11 +147,6 @@ func (s *Store) receiveTransfer(ctx context.Context, tx *sql.Tx, f, held Transfe
 	f.State = "receiving"
 	if err := transferTransition(ctx, tx, f); err != nil {
 		return err
-	}
-	for key, body := range blobs {
-		if err := stageArchive(ctx, tx, key, body); err != nil {
-			return err
-		}
 	}
 	for _, e := range events {
 		if _, ok := wanted[e.ID]; ok {

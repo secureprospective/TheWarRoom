@@ -78,7 +78,7 @@ func NativeLineupCheckReading(in RawNativeLineup, records []Record, now time.Tim
 	out := NativeLineupCheck{League: in.League, Name: Replay(records).Name, Revision: int64(len(records)),
 		RosterSeason: base.Assets.Snapshot.Season, RulesSeason: base.Rules.Season, Franchise: in.Franchise,
 		FranchiseName: seat.Name, Source: base.source(), Starters: []NativeStarter{},
-		Rules: RuleLines(base.Rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag")}
+		Rules: RuleLines(base.Rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag", "lineup.lock")}
 	for _, id := range in.Starters {
 		if !active[id] {
 			return NativeLineupCheck{}, fmt.Errorf("a starter must be on this franchise's active roster")

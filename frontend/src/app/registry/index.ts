@@ -3,7 +3,7 @@ import { nodeKeys, nodes, routeFor, type Route } from '../shell/nodes';
 export type { Endpoint, EndpointId, Placement } from './endpoints.gen';
 
 export const surfacePlaces = [
-  'Inspector', 'Comms', 'Calendar', 'Command bar', 'Status strip', 'Report drawer',
+  'Inspector', 'Calendar', 'Command bar', 'Status strip', 'Report drawer',
 ] as const;
 export type Surface = (typeof surfacePlaces)[number];
 export function isSurface(place: string): place is Surface {

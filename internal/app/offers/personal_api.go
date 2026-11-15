@@ -11,7 +11,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
@@ -45,6 +44,28 @@ func (a *API) TargetPersonal(mine string) (PersonalReading, error) {
 	board.Rows = append(board.Rows, personalapp.BaitRows(feed.Value, names, franchises)...)
 
 	return PersonalReading{Entries: entries, Players: a.personalPlayers(entries), Bait: board}, nil
+}
+
+// TargetPersonalNotes reads one player's dated notes for the owning franchise only.
+func (a *API) TargetPersonalNotes(mine, playerID string) (PersonalNotes, error) {
+	if err := a.host.Ready(); err != nil {
+		return PersonalNotes{}, fmt.Errorf("personal: startup: %w", err)
+	}
+	snap, err := a.personalSnapshot(mine)
+	if err != nil {
+		return PersonalNotes{}, err
+	}
+	names, _ := snapshotNames(snap)
+	if names[playerID] == "" {
+		return PersonalNotes{}, fmt.Errorf("personal: unknown player")
+	}
+	ctx, cancel := context.WithTimeout(a.host.OffersContext(), readTimeout)
+	defer cancel()
+	thread, err := personal.New(a.host.OffersPools()).PlayerNotes(ctx, mine, playerID)
+	if err != nil {
+		return PersonalNotes{}, fmt.Errorf("personal: notes: %w", err)
+	}
+	return PersonalNotes{Player: playerID, Notes: thread.Notes, Count: thread.Count}, nil
 }
 
 func (a *API) TargetPersonalChange(raw personal.RawChange) error {
@@ -93,6 +114,12 @@ type PersonalPlayer struct {
 	Market []string `json:"market"`
 }
 
+type PersonalNotes struct {
+	Player string           `json:"player"`
+	Notes  []personal.Entry `json:"notes"`
+	Count  int              `json:"count"`
+}
+
 func (a *API) personalPlayers(entries []personal.Entry) []PersonalPlayer {
 	provenance, statuses := a.host.OffersInjuries()
 	facts := a.host.OffersMarketFacts()
@@ -128,22 +155,6 @@ func PersonalSnapshot(snap snapshot.Snapshot, loaded bool, mine string) (snapsho
 		return snap, fmt.Errorf("personal: unknown franchise")
 	}
 	return snap, nil
-}
-
-// RecordOffers keeps a history-save failure separate from a failed pending-offer read.
-func RecordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error, available bool,
-	owner func() (string, error), save func(context.Context, string, []leaguefeed.PendingTrade, time.Time) error) error {
-	if readErr != nil || !available {
-		return readErr
-	}
-	mine, err := owner()
-	if err != nil {
-		return fmt.Errorf("offers: archive owner: %w", err)
-	}
-	if err := save(ctx, mine, pending, at); err != nil {
-		return fmt.Errorf("offers: save live read: %w", err)
-	}
-	return nil
 }
 
 func CapRoom(raw string, usedFor func() (domain.Money, bool)) *domain.Money {

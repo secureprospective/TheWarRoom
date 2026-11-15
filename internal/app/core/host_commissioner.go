@@ -23,6 +23,12 @@ func (s *State) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.ExecuteCommissionerWithFacts(ctx, raw, principal, auth, facts, zone)
 }
+func (s *State) ExecuteRulesBatchWithFacts(ctx context.Context, raws []commissioner.RawCommand,
+	principal string, auth commissioner.Authorizer, facts nativecheck.Facts,
+	zone *time.Location) ([]commissioner.Receipt, error) {
+	//nolint:wrapcheck // Preserve the original store error for the API wording.
+	return s.History.ExecuteRulesBatchWithFacts(ctx, raws, principal, auth, facts, zone)
+}
 func (s *State) PreviewCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, catalogue commissioner.PreviewCatalogue,
 	playerFacts nativecheck.Facts, zone *time.Location) (commissioner.Preview, error) {
@@ -84,6 +90,17 @@ func (s *State) NativePlayerScore(ctx context.Context, league string,
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.NativePlayerScore(ctx, league, scope)
 }
+func (s *State) NativeProjections(ctx context.Context, league string, season, week int,
+	players []string) (history.NativeProjections, error) {
+	//nolint:wrapcheck // Preserve the original store error for the API wording.
+	return s.History.NativeProjections(ctx, league, season, week, players)
+}
+
+func (s *State) NativeLineupDelta(ctx context.Context, league string, season, week int,
+	trade history.TradeSides) (history.NativeLineupDelta, error) {
+	//nolint:wrapcheck // Preserve the original store error for the API wording.
+	return s.History.NativeLineupDelta(ctx, league, season, week, trade)
+}
 func (s *State) NativeResults(ctx context.Context, league string, season,
 	week int) (commissioner.NativeResults, error) {
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
@@ -93,6 +110,11 @@ func (s *State) NativeStandings(ctx context.Context, league string,
 	season int) (commissioner.NativeStandings, error) {
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.NativeStandings(ctx, league, season)
+}
+func (s *State) NativeOdds(ctx context.Context, league string, season int,
+	values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	//nolint:wrapcheck // Preserve the original store error for the API wording.
+	return s.History.NativeOdds(ctx, league, season, values)
 }
 func (s *State) NativeScorePreview(ctx context.Context,
 	raw commissioner.RawCommand) (commissioner.ScorePreview, error) {

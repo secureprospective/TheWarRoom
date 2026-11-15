@@ -127,7 +127,13 @@ R=scripts/release/release.py
   --artifact "$PUBLIC/warroom-linux-amd64.deb" --version 1 --out "$STAGE"
 # Repeat --artifact for warroom-windows-amd64.exe and warroom-darwin-arm64.dmg.
 # These are the exact desktop-packages.yml outputs; approve the owner inventory first.
-# Basenames must be unique.
+# Basenames must be unique. For server delivery, add --server-bundle <archive>
+# (or use it instead of --artifact). Its signed custom.twr_server_release comes
+# from internal/serverversion, not by running the candidate. Build the archive
+# with deploy/server/bundle.sh <archive> <authenticated-public-root.json>.
+# Deliver the original-basename server archive plus the finalized metadata folder.
+# The installed CT tool authenticates them before unpacking or running anything;
+# deploy/server/UPGRADE.md documents that flow and the persistent trust cache.
 "$P" "$R" sign "$STAGE/metadata/targets.json" --key "$KEYS/targets.pem"
 "$P" "$R" snapshot --root "$PUBLIC/1.root.json" --repo "$STAGE"
 "$P" "$R" sign "$STAGE/metadata/snapshot.json" --key "$KEYS/snapshot.pem"

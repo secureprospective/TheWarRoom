@@ -22,13 +22,31 @@ type NativeGame struct {
 	Status     string               `json:"status"`
 	HomePoints *leaguerules.Decimal `json:"homePoints,omitempty"`
 	AwayPoints *leaguerules.Decimal `json:"awayPoints,omitempty"`
-	Winner     string               `json:"winner,omitempty"`
-	Words      string               `json:"words"`
-	Why        []string             `json:"why"`
+	// HomeProvisional and AwayProvisional are the running scores while the game has no result:
+	// each side's points so far from evidence that is not final. They are never a result.
+	HomeProvisional *leaguerules.Decimal `json:"homeProvisional,omitempty"`
+	AwayProvisional *leaguerules.Decimal `json:"awayProvisional,omitempty"`
+	Winner          string               `json:"winner,omitempty"`
+	Words           string               `json:"words"`
+	Why             []string             `json:"why"`
+}
+
+// ScoreEvidence describes the live generation consulted, not certification of a complete result.
+type ScoreEvidence struct {
+	Sources     map[string]time.Time `json:"sources,omitempty"`
+	Reduced     bool                 `json:"reduced"`
+	Stale       bool                 `json:"stale"`
+	Live        string               `json:"live"`
+	Season      int                  `json:"season"`
+	Week        int                  `json:"week"`
+	AsOf        time.Time            `json:"asOf"`
+	Source      string               `json:"source"`
+	Provisional bool                 `json:"provisional"`
 }
 
 // NativeResults is one week of the published schedule scored under the league's own rules.
 type NativeResults struct {
+	Evidence  *ScoreEvidence       `json:"evidence,omitempty"`
 	League    string               `json:"league"`
 	Season    int                  `json:"season"`
 	Week      int                  `json:"week"`
@@ -138,10 +156,14 @@ func gameResult(week int, home, away NativeDirectorySeat, hs, as FranchiseWeekSc
 		}
 	}
 	if len(game.Why) != 0 {
+		game.HomeProvisional, game.AwayProvisional = hs.provisional(), as.provisional()
 		game.Words = "No result yet: " + strings.Join(game.Why, " ")
 		return game
 	}
 	game.HomePoints, game.AwayPoints = hs.Points, as.Points
+	if applyRecordedVerdict(&game, hs.RecordedResult, as.RecordedResult) {
+		return game
+	}
 	switch {
 	case *hs.Points == *as.Points:
 		game.Status = GameTie

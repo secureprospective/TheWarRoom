@@ -76,6 +76,10 @@ func (s *Store) weekFacts(ctx context.Context, season, week int) (commissioner.L
 // NativeLineup reads the lineup standing for a franchise's week at an instant, with locks in the owner's zone.
 func (s *Store) NativeLineup(ctx context.Context, league, franchise, principal string, week int,
 	at time.Time) (commissioner.NativeLineup, error) {
+	ctx, err := s.linkedIdentities(ctx, league)
+	if err != nil {
+		return commissioner.NativeLineup{}, err
+	}
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeLineup{}, err
@@ -88,7 +92,7 @@ func (s *Store) NativeLineup(ctx context.Context, league, franchise, principal s
 	if err != nil {
 		return commissioner.NativeLineup{}, err
 	}
-	out, err := commissioner.NativeLineupReading(league, franchise, principal, week, records, at, env)
+	out, err := s.lineupLedgerFor(league, records).Read(ctx, league, franchise, principal, week, at, env)
 	if err != nil {
 		return commissioner.NativeLineup{}, fmt.Errorf("read native lineup: %w", err)
 	}
@@ -112,4 +116,16 @@ func (s *Store) lineupCorrectionPreview(ctx context.Context, records []commissio
 		return commissioner.ScorePreview{}, fmt.Errorf("preview lineup correction: %w", err)
 	}
 	return out, nil
+}
+
+// lineupLedgerFor shares only immutable revision inputs; output locks and facts are read anew.
+func (s *Store) lineupLedgerFor(league string, records []commissioner.Record) *commissioner.LineupLedger {
+	s.recordsMu.Lock()
+	defer s.recordsMu.Unlock()
+	hit := s.records[league]
+	if len(records) > 0 && len(hit.records) == len(records) && hit.lineups != nil &&
+		hit.records[len(records)-1].Receipt.Entry == records[len(records)-1].Receipt.Entry {
+		return hit.lineups
+	}
+	return commissioner.NewLineupLedger(records)
 }

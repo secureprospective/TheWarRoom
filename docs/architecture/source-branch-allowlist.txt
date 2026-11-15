@@ -1,0 +1,19 @@
+# Files allowed to read where a league came from: they only record origin or choose initial data at creation.
+# Adding a file here needs a reason in the commit; behaviour must come from settings (Christopher, 10-31).
+
+# One-time ordinary-command backfill for imports predating schedule.follow; never read during following.
+internal/app/commissioner/native_seed_api.go
+internal/commissioner/command.go
+internal/commissioner/creation.go
+internal/commissioner/jobs_league.go
+internal/commissioner/migration.go
+internal/commissioner/native_seed.go
+internal/commissioner/native_start.go
+internal/commissioner/presets.go
+internal/commissioner/principals.go
+internal/commissioner/roster_restore.go
+internal/commissioner/starting_settings.go
+internal/leaguemigration/mflsource/prepare.go
+internal/leaguemigration/settings.go
+internal/store/history/native_assets.go
+internal/store/history/stand_up.go

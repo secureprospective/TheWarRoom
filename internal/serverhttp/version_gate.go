@@ -47,21 +47,26 @@ func versionGate(next http.Handler) http.Handler {
 		case !okProtocol || !okCommands || errors.Is(err, serverversion.ErrMalformed):
 			http.Error(w, "invalid version header", http.StatusBadRequest)
 		case errors.As(err, &update):
-			body, err := json.Marshal(RawUpdateRequiredResponse{Protocol: 1, Update: string(update.Update), Message: update.Message})
-			if err != nil {
-				http.Error(w, "response unavailable", http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set(UpdateHeader, string(update.Update))
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUpgradeRequired)
-			_, _ = w.Write(body)
+			writeUpdateRequired(w, update.Update, update.Message)
 		case err != nil:
 			http.Error(w, "invalid version header", http.StatusBadRequest)
 		default:
 			next.ServeHTTP(w, r)
 		}
 	})
+}
+
+// writeUpdateRequired sends the stable 426 envelope every client version already turns into an update message.
+func writeUpdateRequired(w http.ResponseWriter, side serverversion.Side, message string) {
+	body, err := json.Marshal(RawUpdateRequiredResponse{Protocol: 1, Update: string(side), Message: message})
+	if err != nil {
+		http.Error(w, "response unavailable", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(UpdateHeader, string(side))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUpgradeRequired)
+	_, _ = w.Write(body)
 }
 
 // oneHeader returns a header sent at most once; present means nonempty.

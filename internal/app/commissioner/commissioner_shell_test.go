@@ -37,48 +37,6 @@ func shellLedgerApp(t *testing.T) (*ledgerFixture, string) {
 	return app, raw.League
 }
 
-func TestCommissionerLedgerFiltersWire(t *testing.T) {
-	t.Parallel()
-	app, league := shellLedgerApp(t)
-	views := make(map[string]commissioner.Ledger)
-	for _, test := range []struct {
-		name, body string
-		count      int
-	}{
-		{"all", `{}`, 4},
-		{"rules", `{"kind":"rules"}`, 1},
-		{"setup", `{"kind":"setup"}`, 1},
-		{"corrections", `{"kind":"corrections"}`, 1},
-		{"people", `{"kind":"people"}`, 1},
-		{"person", `{"person":" CrEaToR "}`, 4},
-		{"absent", `{"person":"nobody"}`, 0},
-		{"dates", `{"from":"2026-10-13T09:00:00-04:00","before":"2026-10-13T10:00:00-04:00"}`, 1},
-		{"combined",
-			`{"kind":"rules","person":"creator","from":"2026-10-13T13:00:00Z","before":"2026-10-13T15:00:00Z"}`, 1},
-	} {
-		reading, err := app.TargetCommissionerLedgerFiltered(league, test.body)
-		if err != nil || len(reading.Entries) != test.count || reading.Revision != 4 {
-			t.Fatalf("%s: %+v %v", test.name, reading, err)
-		}
-		views[test.name] = reading
-	}
-	app.session = "owner"
-	owner, err := app.TargetCommissionerLedgerFiltered(league, `{"kind":"people"}`)
-	if err != nil || len(owner.Entries) != 0 || owner.Revision != 4 {
-		t.Fatalf("owner received private role rows: %+v %v", owner, err)
-	}
-	views["owner"] = owner
-	body, err := json.MarshalIndent(views, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkWire(t, "frontend/src/app/commissioner/ledger-filters.wire.testdata.json", body, "ledger filters")
-	all, err := app.TargetCommissionerLedger(league)
-	if err != nil || all.Revision != 4 || len(all.Entries) != 3 {
-		t.Fatalf("filtering changed the ledger or leaked its private row: %+v %v", all, err)
-	}
-}
-
 func TestCommissionerLedgerFiltersRejectBadInput(t *testing.T) {
 	t.Parallel()
 	app, league := shellLedgerApp(t)

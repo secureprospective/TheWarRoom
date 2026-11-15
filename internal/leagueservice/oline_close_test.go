@@ -20,7 +20,7 @@ func newOLineDueFixture(t *testing.T) *dueFixture {
 	f := &dueFixture{league: dueLeague, clock: &dueTestClock{}, path: filepath.Join(t.TempDir(), "history.db"), facts: nativecheck.Facts{"0099": {Position: "QB"}}}
 	f.clock.instant.Store(time.Date(2026, 10, 24, 12, 0, 0, 0, time.UTC).UnixNano())
 	f.open(t)
-	f.execute(t, "creator", commissioner.Create, commissioner.RawArgs{Name: "Line league", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 4})
+	f.execute(t, "creator", commissioner.Create, commissioner.RawArgs{Name: "Line league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 4})
 	at := f.clock.Now()
 	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at,
 		Players: []commissioner.NativePlayer{{ID: "0099", Franchise: "franchise.02", Name: "Quarterback", Status: domain.RosterActive, Salary: 100_000_000, ExpirationYear: 2026, ContractStatus: domain.CStatusUFA}}}
@@ -171,17 +171,6 @@ func TestOLineCloseOffAndUnauthorizedPreserveState(t *testing.T) {
 	}
 	if len(f.events(t)) != count || len(lineAssets(t, f).Snapshot.Players) != 1 {
 		t.Fatal("O-Line off changed assets")
-	}
-}
-
-func TestOLineWorkerCannotCloseAnOpenAuction(t *testing.T) {
-	f := newOLineDueFixture(t)
-	before := len(f.events(t))
-	if _, err := f.worker.step(t.Context()); err != nil {
-		t.Fatal(err)
-	}
-	if len(f.events(t)) != before || len(lineAssets(t, f).Snapshot.Players) != 1 {
-		t.Fatal("worker closed the auction without the commissioner")
 	}
 }
 

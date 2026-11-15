@@ -139,3 +139,17 @@ describe('Hold presentation and lifetime', () => {
     expect(said(host)).toBe('');
   });
 });
+
+it('keeps the HQ hold face and uses its existing local-plan callback, not commissioner execution',
+  async () => {
+  const confirm = vi.fn();
+  const host = await mount(render(HoldToFire, { label: 'HOLD TO RELEASE', body: 'local-plan',
+    appearance: 'hq', onConfirm: confirm }));
+  const handle = all(host, 'span')[0];
+  await fire(handle, 'onPointerDown'); await wait(400); await fire(handle, 'onPointerUp');
+  await wait(1000); expect(confirm).not.toHaveBeenCalled();
+  await fire(handle, 'onPointerDown'); await wait(600); await flush();
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(fired()).toEqual([]);
+  expect(all(host, 'button')[0].getAttribute('class')).toContain('hold');
+});

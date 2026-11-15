@@ -3,8 +3,11 @@ package commissioner
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -74,19 +77,62 @@ func ScoreChangePreview(ctx context.Context, league string, records []Record, sr
 // known, with the reason.
 func ResultFlipCheck(ctx context.Context, league string, records []Record, src ResultSources, raw RawCommand, season, week int,
 	now time.Time) (ResultFlip, error) {
-	directory, err := NativeDirectoryReading(league, records, now)
+	base, err := readFlipBase(league, records, src, season, now)
 	if err != nil {
 		return ResultFlip{}, err
+	}
+	return base.check(ctx, league, records, src, raw, season, week)
+}
+
+// flipBase is what every result-flip check of one reading reads from the held ledger, whatever change it
+// prices: the directory, the published schedule, the rules and each week's results before the change.
+// A reading that prices many proposals reads it once (StatQueueReading). It is read-only once built.
+type flipBase struct {
+	directory NativeDirectory
+	published []ScheduleWeek
+	rules     leaguerules.RuleSet
+	before    map[int]flipWeek
+}
+
+type flipWeek struct {
+	results NativeResults
+	err     error
+}
+
+func readFlipBase(league string, records []Record, src ResultSources, season int, now time.Time) (*flipBase, error) {
+	directory, err := NativeDirectoryReading(league, records, now)
+	if err != nil {
+		return nil, err
 	}
 	published, err := resultSchedule(records, season, now)
 	if err != nil {
-		return ResultFlip{}, err
+		return nil, err
 	}
-	rules, err := RulesInForce(records, season, ReadingInstant(records, now))
+	resolve := RulesInForce
+	if memo, ok := src.(interface{ RulesInForce() RulesFunc }); ok {
+		resolve = memo.RulesInForce()
+	}
+	rules, err := resolve(records, season, ReadingInstant(records, now))
+	if err != nil {
+		return nil, err
+	}
+	return &flipBase{directory: directory, published: published, rules: rules, before: map[int]flipWeek{}}, nil
+}
+
+// check is ResultFlipCheck against the held ledger this base was read from.
+func (b *flipBase) check(ctx context.Context, league string, records []Record, src ResultSources, raw RawCommand,
+	season, week int) (ResultFlip, error) {
+	return b.checkTrial(ctx, league, records, nil, src, raw, season, week)
+}
+
+// checkTrial is check with the proposal's trial ledger already built; nil builds it.
+func (b *flipBase) checkTrial(ctx context.Context, league string, records, trial []Record, src ResultSources,
+	raw RawCommand, season, week int) (ResultFlip, error) {
+	held, err := b.beforeWeek(ctx, league, records, src, season, week)
 	if err != nil {
 		return ResultFlip{}, err
 	}
-	before, err := weekResults(ctx, league, records, src, rules.Lineup, directory, published, season, week)
+	before, err := held.results, held.err
 	if err != nil {
 		return ResultFlip{}, err
 	}
@@ -96,12 +142,64 @@ func ResultFlipCheck(ctx context.Context, league string, records []Record, src R
 	}
 	after := before
 	if touched := franchisesTouched(raw, before); len(touched) != 0 {
-		after, err = weekResults(ctx, league, scoreTrial(raw, records), src, rules.Lineup, directory, published, season, week)
+		if trial == nil {
+			trial = scoreTrial(raw, records)
+		}
+		if isStatCommand(raw.Command) {
+			after, err = b.rescored(ctx, trial, src, before, touched, season, week)
+		} else {
+			after, err = weekResults(ctx, league, trial, src, b.rules.Lineup, b.directory, b.published, season, week)
+		}
 		if err != nil {
 			return ResultFlip{}, err
 		}
 	}
 	return compareWeeks(before, after, franchisesTouched(raw, before, after)), nil
+}
+
+// beforeWeek is the week's results on the held ledger, read once per base. A cancelled reading is not kept.
+func (b *flipBase) beforeWeek(ctx context.Context, league string, records []Record, src ResultSources,
+	season, week int) (flipWeek, error) {
+	if held, ok := b.before[week]; ok {
+		return held, nil
+	}
+	var held flipWeek
+	held.results, held.err = weekResults(ctx, league, records, src, b.rules.Lineup, b.directory, b.published, season, week)
+	if err := ctx.Err(); err != nil {
+		return flipWeek{}, fmt.Errorf("read week %d results: %w", week, err)
+	}
+	b.before[week] = held
+	return held, nil
+}
+
+// rescored is the week after a statistics decision. That decision moves only the one player's score, so
+// only the franchises that start him are scored again; every other franchise keeps its score, and the
+// games between them their result. compareWeeks reads only games with a touched side
+// (TestRescoredFlipMatchesFullWeek).
+func (b *flipBase) rescored(ctx context.Context, trial []Record, src ResultSources,
+	before NativeResults, touched map[string]bool, season, week int) (NativeResults, error) {
+	names := b.directory.Seats()
+	after := before
+	after.Revision = int64(len(trial))
+	after.Scores = slices.Clone(before.Scores)
+	after.Games = slices.Clone(before.Games)
+	scored := map[string]FranchiseWeekScore{}
+	for i, s := range after.Scores {
+		if touched[s.Franchise] {
+			score, err := franchiseWeekScore(ctx, trial, src, b.rules.Lineup, names.Of(s.Franchise), season, week)
+			if err != nil {
+				return NativeResults{}, err
+			}
+			after.Scores[i] = score
+		}
+		scored[s.Franchise] = after.Scores[i]
+	}
+	for i, g := range after.Games {
+		if touched[g.Home] || touched[g.Away] {
+			after.Games[i] = gameResult(week, names.Of(g.Home), names.Of(g.Away), scored[g.Home], scored[g.Away])
+		}
+	}
+	return after, nil
 }
 
 // franchisesTouched names the franchises a proposed change can move: the one it names, or for a player's

@@ -29,7 +29,7 @@ func (s *Store) Record(ctx context.Context, f archive.Fetch) error {
 
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.pools.BeginWrite(ctx)
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("history: record fetch: %w", err)
 	}
@@ -108,6 +108,18 @@ func (s *Store) ReferenceBodies(ctx context.Context, part string,
 func (s *Store) ExactArchivedBodies(ctx context.Context, wanted string,
 	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool) (bool, error) {
 	return s.archivedBodies(ctx, wanted, accept, false, true)
+}
+
+// ArchiveMark counts the held copies whose URL contains part and names the newest, so a reader can
+// tell whether its parsed copies are still the held ones without reading any body.
+func (s *Store) ArchiveMark(ctx context.Context, part string) (count, newest int64, err error) {
+	err = s.pools.Read().QueryRowContext(ctx,
+		`SELECT count(*), coalesce(max(fetch_id), 0) FROM fetch_log WHERE status = 200 AND instr(url, ?) > 0`,
+		part).Scan(&count, &newest)
+	if err != nil {
+		return 0, 0, fmt.Errorf("history: archive mark: %w", err)
+	}
+	return count, newest, nil
 }
 
 const archiveContainsQuery = `

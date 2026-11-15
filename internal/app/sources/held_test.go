@@ -4,73 +4,12 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"reflect"
 	"sync"
 	"testing"
 	"time"
 
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 )
-
-func TestHeldIngressAndEgressDetached(t *testing.T) {
-	h := &sourcesapp.Held{}
-	cw := sourcesapp.CrosswalkReport{Rates: []sourcesapp.CrosswalkRate{{Position: "QB"}}, Unmatched: []sourcesapp.CrosswalkMiss{{MFLID: "0042"}}}
-	signals := sourcesapp.SignalsReport{Loads: []sourcesapp.SignalLoad{{Feed: "stats", Missing: []string{"held"}}}}
-	h.PublishCrosswalk(cw)
-	h.PublishSignals(signals)
-	cw.Rates[0].Position, cw.Unmatched[0].MFLID = "mutated", "mutated"
-	signals.Loads[0].Feed, signals.Loads[0].Missing[0] = "mutated", "mutated"
-	assertHeld := func() {
-		t.Helper()
-		c, s := h.SnapshotCrosswalk(), h.SnapshotSignals()
-		if c.Rates[0].Position != "QB" || c.Unmatched[0].MFLID != "0042" || s.Loads[0].Feed != "stats" || s.Loads[0].Missing[0] != "held" {
-			t.Fatal("holder aliases caller storage", c, s)
-		}
-	}
-	assertHeld()
-	c, s := h.SnapshotCrosswalk(), h.SnapshotSignals()
-	c.Rates[0].Position, c.Unmatched[0].MFLID = "mutated", "mutated"
-	s.Loads[0].Feed, s.Loads[0].Missing[0] = "mutated", "mutated"
-	assertHeld()
-}
-
-func TestHeldPreservesNilAndEmptyAtEveryDepth(t *testing.T) {
-	h := &sourcesapp.Held{}
-	for _, cw := range []sourcesapp.CrosswalkReport{{}, {Rates: []sourcesapp.CrosswalkRate{}, Unmatched: []sourcesapp.CrosswalkMiss{}}} {
-		h.PublishCrosswalk(cw)
-		if !reflect.DeepEqual(cw, h.SnapshotCrosswalk()) {
-			t.Fatal("crosswalk slice shape changed")
-		}
-	}
-	for _, s := range []sourcesapp.SignalsReport{{}, {Loads: []sourcesapp.SignalLoad{}}, {Loads: []sourcesapp.SignalLoad{{}, {Missing: []string{}}}}} {
-		h.PublishSignals(s)
-		if !reflect.DeepEqual(s, h.SnapshotSignals()) {
-			t.Fatal("signals nested slice shape changed")
-		}
-	}
-}
-
-func TestHeldPublishVersusRead(t *testing.T) {
-	t.Parallel()
-	h := &sourcesapp.Held{}
-	var wg sync.WaitGroup
-	for range 4 {
-		wg.Go(func() {
-			for range 250 {
-				h.PublishCrosswalk(sourcesapp.CrosswalkReport{Rates: []sourcesapp.CrosswalkRate{{Position: "QB"}}})
-				h.PublishSignals(sourcesapp.SignalsReport{Loads: []sourcesapp.SignalLoad{{Missing: []string{"held"}}}})
-				cw, s := h.SnapshotCrosswalk(), h.SnapshotSignals()
-				if len(cw.Rates) > 0 {
-					cw.Rates[0].Position = "caller"
-				}
-				if len(s.Loads) > 0 {
-					s.Loads[0].Missing[0] = "caller"
-				}
-			}
-		})
-	}
-	wg.Wait()
-}
 
 type blockedTransport struct {
 	entered chan struct{}

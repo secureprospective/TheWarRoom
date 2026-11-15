@@ -7,13 +7,13 @@ import (
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/model"
-	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
 // Listing is MFL's players database as the record reads it. normalize.Lookup satisfies it.
 type Listing interface {
-	Facts(mflID string) (normalize.PlayerFacts, bool)
+	Facts(mflID string) (domain.PlayerFacts, bool)
 	IDs() []string
 }
 
@@ -62,7 +62,7 @@ func Assemble(listing Listing, history map[string]*model.Player, ids func(mfl st
 	return out, nil
 }
 
-func resolve(id, mfl string, f normalize.PlayerFacts, listed bool, h *model.Player) Record {
+func resolve(id, mfl string, f domain.PlayerFacts, listed bool, h *model.Player) Record {
 	r := Record{ID: id, MFL: mfl, Listed: listed, Sources: map[string]string{}}
 	if listed && h != nil && f.HasDraftYear && h.Rookie != 0 && abs(h.Rookie-f.DraftYear) > identitySlack {
 		r.Mislinked, h = true, nil
@@ -83,7 +83,7 @@ func resolve(id, mfl string, f normalize.PlayerFacts, listed bool, h *model.Play
 }
 
 // resolveAge sets birth and rookie season: nflverse's, else MFL's birth date and draft year.
-func (r *Record) resolveAge(year int, f normalize.PlayerFacts, listed bool, h *model.Player) {
+func (r *Record) resolveAge(year int, f domain.PlayerFacts, listed bool, h *model.Player) {
 	switch {
 	case h != nil && !h.Birth.IsZero():
 		r.Birth, r.Sources[FieldBirth] = h.Birth, SourceNFLverse
@@ -100,7 +100,7 @@ func (r *Record) resolveAge(year int, f normalize.PlayerFacts, listed bool, h *m
 
 // resolveDraft sets the draft capital: MFL's selection, nflverse's overall pick, and undrafted
 // when MFL has a year he entered the league with no selection.
-func (r *Record) resolveDraft(year int, f normalize.PlayerFacts, listed bool, h *model.Player) {
+func (r *Record) resolveDraft(year int, f domain.PlayerFacts, listed bool, h *model.Player) {
 	r.Draft = Draft{Status: DraftUnknown, Year: year}
 	if listed && f.DraftRound > 0 {
 		r.Draft.Round, r.Draft.Pick, r.Draft.Team = f.DraftRound, f.DraftPick, f.DraftTeam

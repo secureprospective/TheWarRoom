@@ -4,6 +4,7 @@ package mflsource
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -11,9 +12,14 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/salaryadjustments"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
@@ -24,6 +30,8 @@ type Source struct {
 	ID     string
 	Now    func() time.Time
 	Held   func() map[string]string
+	// Base is how the league runs where MFL holds no setting (see Export.Base).
+	Base   leaguerules.RuleSet
 	season int
 }
 
@@ -100,6 +108,38 @@ func (s *Source) Draft(ctx context.Context) ([]draftreports.Pick, []draftreports
 	return results, future, nil
 }
 
+// DraftType reads the kind of order MFL's rookie draft keeps from round to round.
+func (s *Source) DraftType(ctx context.Context) (string, error) {
+	type results struct {
+		DraftResults struct {
+			DraftUnit json.RawMessage `json:"draftUnit"`
+		} `json:"draftResults"`
+	}
+	env, err := ingestion.FetchLeagueExport[results](ctx, s.Client, "draftResults", s.year(), s.ID, nil)
+	if err != nil {
+		return "", fmt.Errorf("read the draft order kind: %w", err)
+	}
+	var units []struct {
+		DraftType string `json:"draftType"`
+	}
+	raw := env.DraftResults.DraftUnit
+	if len(raw) > 0 && raw[0] != '[' {
+		raw = append(append([]byte{'['}, raw...), ']')
+	}
+	if len(raw) == 0 {
+		return "", nil
+	}
+	if err := json.Unmarshal(raw, &units); err != nil {
+		return "", fmt.Errorf("read the draft order kind: %w", err)
+	}
+	for _, u := range units {
+		if u.DraftType != "" {
+			return u.DraftType, nil
+		}
+	}
+	return "", nil
+}
+
 func (s *Source) Players(context.Context) (map[string]string, error) {
 	players := s.Held()
 	if len(players) == 0 {
@@ -111,20 +151,57 @@ func (s *Source) Players(context.Context) (map[string]string, error) {
 // Read reads every source part before preparing a native plan. A malformed plan
 // retains its metadata and owners so preparation and invitation wording stay intact.
 func (s *Source) Read(ctx context.Context, now time.Time) (leaguemigration.Candidate, error) {
-	return ReadCandidate(ctx, s, now)
+	return readCandidate(ctx, s, now, s.Base, true)
 }
 
-// ReadCandidate adapts a raw read-only source to the native migration port.
-func ReadCandidate(ctx context.Context, src Reader, now time.Time) (leaguemigration.Candidate, error) {
+// ReadCandidate adapts a raw read-only source to the native migration port; base fills what MFL does not hold.
+func ReadCandidate(ctx context.Context, src Reader, now time.Time, base leaguerules.RuleSet) (leaguemigration.Candidate, error) {
+	return readCandidate(ctx, src, now, base, false)
+}
+
+func readCandidate(ctx context.Context, src Reader, now time.Time, base leaguerules.RuleSet, suggest bool) (leaguemigration.Candidate, error) {
 	export, err := Read(ctx, src, now)
 	if err != nil {
 		return leaguemigration.Candidate{}, err
 	}
+
+	if suggest && base.League.Teams.State == leaguerules.NeedsRuling {
+		base, err = leaguemigration.Base(leaguemigration.DefaultPreset(len(export.Config.Franchises)))
+		if err != nil {
+			return leaguemigration.Candidate{}, fmt.Errorf("choose starting settings: %w", err)
+		}
+	}
+	export.Base = base
 	plan, err := Prepare(export)
 	problems, ok := leaguemigration.AsProblems(err)
 	if err != nil && !ok {
 		return leaguemigration.Candidate{}, err
 	}
 	return leaguemigration.Candidate{Name: export.Name, Season: export.Season,
-		Owners: export.Owners, Plan: plan, Problems: problems}, nil
+		Owners: export.Owners, Plan: plan, Problems: problems,
+		Franchises: len(export.Config.Franchises), Players: len(export.Rosters), Picks: len(export.Draft) + len(export.Future)}, nil
+}
+
+func (s *Source) Schedule(ctx context.Context) ([]leagueschedule.RawScheduleWeek, error) {
+	weeks, err := leagueschedule.Fetch(ctx, s.Client, s.year(), s.ID)
+	if err != nil {
+		return nil, fmt.Errorf("read weekly schedule: %w", err)
+	}
+	return weeks, nil
+}
+
+func (s *Source) Transactions(ctx context.Context) (transactions.RawTransactions, error) {
+	raw, err := transactions.Fetch(ctx, s.Client, s.year(), s.ID)
+	if err != nil {
+		return transactions.RawTransactions{}, fmt.Errorf("read transactions: %w", err)
+	}
+	return raw, nil
+}
+
+func (s *Source) Results(ctx context.Context) ([]leaguefeed.WeekResult, error) {
+	weeks, err := weeklyresults.Fetch(ctx, s.Client, s.year(), s.ID)
+	if err != nil {
+		return nil, fmt.Errorf("read recorded weekly results: %w", err)
+	}
+	return weeks, nil
 }

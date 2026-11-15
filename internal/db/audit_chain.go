@@ -229,3 +229,11 @@ func CheckAuditAnchor(ctx context.Context, tx *sql.Tx, current, anchor AuditHead
 	}
 	return nil
 }
+
+// CreateAuditTables creates the audit chain tables in a file being built, before rows are copied in.
+func CreateAuditTables(ctx context.Context, tx *sql.Tx) error {
+	if _, err := tx.ExecContext(ctx, auditDDL); err != nil {
+		return fmt.Errorf("audit schema: %w", err)
+	}
+	return nil
+}

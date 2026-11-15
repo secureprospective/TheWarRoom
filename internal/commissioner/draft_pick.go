@@ -51,21 +51,19 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 	if err != nil {
 		return RawCommand{}, err
 	}
-	if basis.words != "" {
-		return RawCommand{}, Refused(fmt.Errorf("the draft is not ready: %s", strings.TrimSuffix(basis.words, ".")))
+	if err := draftPickReady(basis); err != nil {
+		return RawCommand{}, err
 	}
-	if basis.closed != nil {
-		return RawCommand{}, Refused(fmt.Errorf("the %s is closed", key.noun()))
-	}
-	if basis.draft.OnClock != nil && basis.draft.OnClock.Paused {
-		return RawCommand{}, Refused(fmt.Errorf("the draft clock is paused; wait for the commissioner to resume it"))
-	}
+
 	if _, held := facts[in.Player]; in.Startup && !held {
 		return RawCommand{}, Refused(fmt.Errorf("choose a player from this draft's pool"))
 	}
 	assets, err := NativeAssetsReading(in.League, RecordsThrough(records, at))
 	if err != nil {
 		return RawCommand{}, err
+	}
+	if err := assets.CheckContracts(in.Franchise); err != nil {
+		return RawCommand{}, Refused(err)
 	}
 	preview, err := rookiedraft.PreviewSelection(basis.rules, basis.draft, in.Franchise, candidateFrom(facts, in),
 		pickBasis(assets, basis, in, facts, local, records, at))
@@ -131,4 +129,17 @@ func RetriedDraftPick(in DraftPickInput, principal string, records []Record) (Re
 		return r.Receipt, true, nil
 	}
 	return Receipt{}, false, nil
+}
+
+func draftPickReady(basis draftBasis) error {
+	if basis.words != "" {
+		return Refused(fmt.Errorf("the draft is not ready: %s", strings.TrimSuffix(basis.words, ".")))
+	}
+	if basis.closed != nil {
+		return Refused(fmt.Errorf("the %s is closed", basis.key.noun()))
+	}
+	if basis.draft.OnClock != nil && basis.draft.OnClock.Paused {
+		return Refused(fmt.Errorf("the draft clock is paused; wait for the commissioner to resume it"))
+	}
+	return nil
 }

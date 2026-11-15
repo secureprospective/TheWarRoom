@@ -2,13 +2,17 @@ package composition
 
 import (
 	"context"
+	"maps"
 	"net/http"
 	"path/filepath"
 	"time"
 
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -21,6 +25,33 @@ type platformHost struct{ app *App }
 func (a *App) platformAPI() *platformapp.API { return platformapp.New(platformHost{app: a}) }
 
 func (h platformHost) Snapshot() (snapshot.Snapshot, error) { return h.app.takeSnapshot() }
+
+func (h platformHost) Leagues() ([]platformapp.League, error) {
+	// The shell asks for the list at first paint, before startup has opened the stores.
+	if err := h.app.ready(); err != nil {
+		return nil, err
+	}
+
+	// The mirror's team count comes from the held stores, not a snapshot: a snapshot waits on
+	// the launch refresh's live MFL fetch, which held the league list ~9 s at first paint.
+	mirrorTeams := func() (int, error) {
+		return snapshot.FranchiseCount(snapshot.NewSource(h.app.core.League, h.app.core.Rulebook))
+	}
+	//nolint:wrapcheck // BuildLeagues already names the failing league read.
+	return platformapp.BuildLeagues(h.app.core.Ctx, mirrorTeams,
+		h.app.core.Rulebook.ActiveConfig().Name, h.app.core.NativeLeagues, h.app.leagueRecords)
+}
+
+func (h platformHost) Injuries() ([]leaguefeed.Injury, error) { return h.app.injuryReturns(), nil }
+
+func (a *App) injuryReturns() []leaguefeed.Injury {
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	weeks := controlapp.FlattenScheduleWeeks(maps.Values(a.now.schedules), func(feed heldSeasonFeed[[]nflschedule.RawWeek]) []nflschedule.RawWeek {
+		return feed.Value
+	})
+	return controlapp.InjuryReturns(a.core.SeasonInjuries.Value, weeks)
+}
 
 func (h platformHost) Clock() (snapshot.Sourced[leagueclock.Reading], error) {
 	return h.app.targetClock(h.app.core.Ctx)

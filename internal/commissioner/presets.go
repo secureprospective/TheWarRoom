@@ -8,9 +8,10 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-// The preset catalog is the only place a preset is named. A preset is a named bundle of setting values
-// applied when a league is created; the commissioner can reach the same league by setting each value by
-// hand, so nothing outside this file asks which preset a league started from.
+// The preset catalog is the only place a preset is named. A preset is a named bundle of setting values: a
+// league may start from one, and an existing league may be compared with one and take some or all of its
+// values as ordinary rules changes (preset_compare.go). The commissioner can reach the same league by
+// setting each value by hand, so nothing outside this file asks which preset a league started from.
 const (
 	PresetLegacy = "legacy_nfl"
 	PresetEmpty  = "empty"
@@ -39,7 +40,7 @@ type presetEntry struct {
 
 	native       bool   // offered for a new app league; otherwise only an MFL import or a recovery uses it
 	imported     bool   // the values are the MFL league's own, read by Go at import; rules is nil
-	source       string // where a league from this preset comes from when the caller does not say
+	source       string // catalog metadata for the preset
 	defaultTeams int    // the size a create without one takes; zero asks the caller
 	choice       string // how a refusal names it among the choices
 	history      string // the ledger's "Created league … with …"
@@ -72,9 +73,9 @@ func presetCatalog() []presetEntry {
 			history: "the 16-Team Mirror rules", preview: "16-Team Mirror rules", citation: "16-Team Mirror rules",
 			rules: leaguerules.Mirror16ForTeams},
 		{StartingPreset: StartingPreset{ID: PresetLegacy, Label: "Legacy NFL",
-			Description:    "The Legacy NFL's rules, as imported from MFL.",
+			Description:    "The Legacy NFL's rules, as its league runs them. Every value can be changed afterwards.",
 			SuggestedTeams: legacyTeams},
-			source: SourceMFLImport, defaultTeams: legacyTeams, choice: "the Legacy NFL preset",
+			native: true, source: SourceNative, defaultTeams: legacyTeams, choice: "the Legacy NFL preset",
 			history: "the Legacy NFL rules", preview: "Legacy NFL rules", citation: "Legacy NFL rules",
 			bracket: "the Legacy NFL bracket", bracketShape: "the Legacy NFL playoff shape",
 			rules: leaguerules.LegacyNFLForTeams},
@@ -112,8 +113,7 @@ func presetByID(id string) (presetEntry, bool) {
 
 // MFLImportPreset is the preset an imported or recovered league starts from when its record names none.
 func MFLImportPreset() string {
-	i := slices.IndexFunc(presetCatalog(), func(p presetEntry) bool { return p.source == SourceMFLImport })
-	return presetCatalog()[i].ID
+	return PresetLegacy
 }
 
 // storedPreset reads a preset id from a record; an id the catalog does not hold reads as unnamed. A
@@ -176,4 +176,18 @@ func builtInBracketByID(id string) (builtInBracket, bool) {
 		return builtInBracket{}, false
 	}
 	return builtInBrackets()[i], true
+}
+
+// importedSource is the league's source as its creation recorded it, before any cutover.
+func importedSource(records []Record) string {
+	if len(records) != 0 && records[0].Command.Command == Create {
+		args := records[0].Command.Args
+		if args.Source != "" {
+			return args.Source
+		}
+		if args.Preset == PresetLegacy || args.Preset == PresetMFLLeague {
+			return SourceMFLImport
+		}
+	}
+	return SourceNative
 }

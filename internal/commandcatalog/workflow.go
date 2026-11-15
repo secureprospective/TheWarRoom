@@ -6,13 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // RawWorkflow is the catalog-generated client envelope. Publication here is deliberately bounded.
@@ -32,6 +36,8 @@ type RawWorkflowScope struct {
 	Week      int    `json:"week,omitempty"`
 	Season    int    `json:"season,omitempty"`
 	At        string `json:"at,omitempty"`
+	LocalZone string `json:"localZone,omitempty"`
+	Players   string `json:"players,omitempty"`
 }
 
 func (r RawWorkflowScope) Validate() error {
@@ -46,15 +52,35 @@ func (r RawWorkflowScope) validateCommand(command string) error {
 	if r != kept || !complete {
 		return fmt.Errorf("choose only the details of this league reading")
 	}
+	if r.LocalZone != "" {
+		if r.LocalZone == "Local" {
+			return fmt.Errorf("choose an IANA time zone")
+		}
+		if _, err := time.LoadLocation(r.LocalZone); err != nil {
+			return fmt.Errorf("choose an IANA time zone: %w", err)
+		}
+	}
+	if command == "projections.read" {
+		if _, err := workflowPlayers(r.Players); err != nil {
+			return err
+		}
+	}
 	if r.At != "" {
-		if _, err := time.Parse(time.RFC3339Nano, r.At); err != nil {
+		at, err := time.Parse(time.RFC3339Nano, r.At)
+		if err != nil {
 			return fmt.Errorf("choose when to read the league: %w", err)
+		}
+		if command == "week.read" && at.After(time.Now()) {
+			return fmt.Errorf("choose a past time to read the week")
 		}
 	}
 	return nil
 }
 
 func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) {
+	if kept, complete, matched := r.pulseScope(command); matched {
+		return kept, complete
+	}
 	kept := RawWorkflowScope{League: r.League}
 	switch command {
 	case "commish.market.read":
@@ -66,7 +92,7 @@ func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) 
 	case "draft.read":
 		kept.Franchise, kept.Season, kept.At = r.Franchise, r.Season, r.At
 		return kept, r.Franchise != ""
-	case "bids.read":
+	case "bids.read", "moves.read":
 		kept.Franchise = r.Franchise
 		return kept, r.Franchise != ""
 	case "waivers.read":
@@ -78,12 +104,54 @@ func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) 
 	case "results.read":
 		kept.Season, kept.Week = r.Season, r.Week
 		return kept, r.Season >= 1920 && r.Week > 0
-	case "standings.read":
+	case "value.read":
+		kept.Franchise, kept.Season = r.Franchise, r.Season
+		return kept, r.Season >= 1920
+	case "standings.read", "odds.read":
 		kept.Season = r.Season
 		return kept, r.Season >= 1920
 	default:
 		return kept, true
 	}
+}
+
+func (r RawWorkflowScope) pulseScope(command string) (RawWorkflowScope, bool, bool) {
+	kept := RawWorkflowScope{League: r.League}
+	switch command {
+	case "week.read":
+		kept.Franchise, kept.Season, kept.LocalZone, kept.At = r.Franchise, r.Season, r.LocalZone, r.At
+		return kept, r.Season >= 1900 && r.LocalZone != "", true
+	case "projections.read":
+		kept.Players, kept.Season, kept.Week = r.Players, r.Season, r.Week
+		return kept, r.Players != "" && r.Season >= 1920 && r.Week > 0, true
+	case "bracket.read":
+		kept.Season = r.Season
+		return kept, r.Season >= 1920, true
+	default:
+		return kept, false, false
+	}
+}
+
+func workflowPlayers(raw string) (string, error) {
+	parts := strings.Split(raw, ",")
+	if len(parts) > 120 {
+		return "", fmt.Errorf("choose 1 to 120 players")
+	}
+	seen := make(map[string]bool, len(parts))
+	ids := make([]string, 0, len(parts))
+	for _, part := range parts {
+		id := strings.TrimSpace(part)
+		parsed, err := playerid.New(id)
+		if err != nil || parsed.String() != id {
+			return "", fmt.Errorf("use full league player ids")
+		}
+		if !seen[id] {
+			ids = append(ids, id)
+			seen[id] = true
+		}
+	}
+	sort.Strings(ids)
+	return strings.Join(ids, ","), nil
 }
 
 func (r RawWorkflow) Validate() error {
@@ -141,7 +209,7 @@ func (r RawWorkflow) League() (string, error) {
 }
 
 type workflowOutput interface {
-	market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules
+	history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules | leagueservice.NFLGames
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {

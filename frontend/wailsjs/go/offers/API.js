@@ -42,6 +42,10 @@ export function TargetPersonalHandOff(arg1) {
   return window['go']['offers']['API']['TargetPersonalHandOff'](arg1);
 }
 
+export function TargetPersonalNotes(arg1, arg2) {
+  return window['go']['offers']['API']['TargetPersonalNotes'](arg1, arg2);
+}
+
 export function TargetPool(arg1) {
   return window['go']['offers']['API']['TargetPool'](arg1);
 }

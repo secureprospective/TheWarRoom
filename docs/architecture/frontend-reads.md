@@ -298,3 +298,45 @@ shortened (a test title and a comment, no logic change); that gate plus the two 
 Not targets: contracts/commissioner action and option-read modules, moves journal, MFL key status,
 navigation/sort/presentation stores (inventory table).
 
+
+## Hosted tagged reads (Pulse cache seam)
+
+Hosted adapters use the same `createReadQuery` with a `hosted` option. The existing local overloads,
+registry argument validation, refresh ordering and default revalidation remain unchanged.
+
+Flow: parsed hosted reader → session-owned keyed entry → query revision fence → existing Zustand view.
+`query.ts` still owns publication; `session.ts` owns the hosted entry map, version fences and lifetime;
+`clientCache.ts` is only the optional IndexedDB adapter. There is no transport or event listener here.
+
+- Construct one `createReadSession({identity, storage?})` beside the hosted provider. Identity contains
+  server ID/epoch, account/auth generation, league, franchise/role view, optional season. Keys also
+  contain command/schema version and normalized arguments. Do not add local time to current-week keys.
+- Supply `hosted: {session, schemaVersion, policy, public?, dependencies, decode?}` and
+  `read(args, known?) → {data,tags} | {unchanged:true,tags}`. The reader remains responsible for
+  registry request validation and response parsing. Public persisted bodies require a validating
+  `decode(unknown)` for hydration; no request, credential or raw response body enters storage.
+- Policies/dependencies follow C2: public directory/schedule persist on league; bracket depends on
+  league/scores(season)/clock; results on scores(season,week)/league; standings on scores(season)/league;
+  odds additionally on values; lineup on team(franchise)/league/clock; projections on values and
+  scores(season,week); week on clock/league. All except explicitly classified public entries remain
+  memory-only. Results never infer certification or become permanently final from client time.
+- `use()` counts mounted consumers as active. Non-hook consumers use `activate()` and its returned
+  cleanup. Hosts must call `dispose()` when discarding a query instance. Merely holding or loading an
+  entry does not make it active. Identical session reads share a flight across query instances.
+- Pass authorized, parsed changes to `session.applyTopics()` before notifying other screen listeners.
+  It marks all matching entries stale before callbacks, removes their persisted copies and rereads
+  active queries with at most one queued trailing read. Inactive views retain last-good data; a late
+  response cannot publish. Topic versions compare as decimal integers, never floating point.
+- Topic scope keys use `kind[:franchise|season[:week]|run]`; omitted dependency scopes are wildcards.
+  The surrounding message league must be copied onto each `ReadTopic`. Crossed older versions cannot
+  lower the fence. Accepted response tags also fence older concurrent replies.
+- `setIdentity(next)` ends the previous lifetime before installing the new identity. `endSession(reason)`
+  clears private entries/rendered state and fences all pending reads. Reads need a new identity after
+  end. Shared public views may remain visible. Reconnect reconciliation and epoch/auth changes must be
+  wired by the subscription owner before reusing hits; this module does not initiate `versions.read`.
+- Memory/disk default to 32 entries / 4 MiB. LRU eviction, invalid JSON/schema/body, blocked/unavailable
+  IndexedDB and quota failures do not block online reads. Storage operations have a one-second limit.
+
+Evidence: `hostedQuery.test.ts` exercises policy/dependency scope, sharing/trailing reads, session/topic
+rejection, known/unchanged, memory/disk bounds and public-only fake IndexedDB restart/failure paths.
+Pulse/subscription integration and real desktop navigation remain the wiring lane's acceptance gates.

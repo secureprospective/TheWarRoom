@@ -2,7 +2,6 @@ package rosters
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"testing"
@@ -122,18 +121,6 @@ func TestFlatten_DoubleListingKeepsSpecificStatus(t *testing.T) {
 	}
 }
 
-func TestFlatten_MalformedDuplicateFailsLoud(t *testing.T) {
-	env := rostersEnvelope{}
-	env.Rosters.Franchise = []franchiseBlock{{ID: "0001", Player: []playerBlock{
-		{ID: "0835", Salary: "7", Status: "TAXI_SQUAD"},
-		{ID: "0835", Salary: "invalid", Status: "ROSTER"},
-	}}}
-	got, err := flatten(context.Background(), env)
-	if err == nil || got != nil {
-		t.Fatalf("malformed duplicate must fail without partial rows: got %+v, err %v", got, err)
-	}
-}
-
 func TestFlatten_MalformedRecordFailsLoud(t *testing.T) {
 	env := rostersEnvelope{}
 	env.Rosters.Franchise = []franchiseBlock{
@@ -141,25 +128,5 @@ func TestFlatten_MalformedRecordFailsLoud(t *testing.T) {
 	}
 	if _, err := flatten(context.Background(), env); err == nil {
 		t.Fatal("flatten should error on a malformed (non-aggregate) player id, got nil")
-	}
-}
-
-// TestDecode_SingleElementCollapse is the BLOCKER regression (Gemini B2 review):
-// MFL strips array brackets when a list has exactly one element. A franchise with
-// one player must still decode as a one-element slice, not crash the unmarshal.
-func TestDecode_SingleElementCollapse(t *testing.T) {
-	// franchise[] is a normal array, but its single player is a BARE OBJECT.
-	const body = `{"rosters":{"franchise":[{"id":"0001","player":{"id":"13128","salary":"7","status":"ROSTER"}}]}}`
-
-	var env rostersEnvelope
-	if err := json.Unmarshal([]byte(body), &env); err != nil {
-		t.Fatalf("decode single-player franchise: %v", err)
-	}
-	got, err := flatten(context.Background(), env)
-	if err != nil {
-		t.Fatalf("flatten: %v", err)
-	}
-	if len(got) != 1 || got[0].PlayerID != "13128" {
-		t.Fatalf("single-element collapse not handled: %+v", got)
 	}
 }

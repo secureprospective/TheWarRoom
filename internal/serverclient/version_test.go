@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
@@ -17,9 +18,9 @@ import (
 func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 	for _, side := range []serverversion.Side{serverversion.App, serverversion.Server} {
 		t.Run(string(side), func(t *testing.T) {
-			calls := 0
+			var calls atomic.Int32
 			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				calls++
+				calls.Add(1)
 				if r.Header.Get(serverhttp.ProtocolHeader) != serverversion.ClientProtocol() || r.Header.Get(serverhttp.CommandsHeader) != serverversion.ClientCommands() {
 					t.Error("client omitted its versions")
 				}
@@ -46,7 +47,10 @@ func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 			_, err = agent.Ledger(t.Context())
 			assertUpdate(t, err, side)
 			desktop.bearer = "session"
-			retry, err := desktop.watchInvalidations(t.Context(), func(_ context.Context) error { t.Fatal("refused stream reread native data"); return nil })
+			retry, err := desktop.captureInvalidations().watch(t.Context(), func(_ context.Context, _ RawInvalidation) error {
+				t.Fatal("refused stream reread native data")
+				return nil
+			})
 			assertUpdate(t, err, side)
 			request := httptest.NewRequest(http.MethodPost, DesktopPath, strings.NewReader(`{"action":"login","username":"owner","password":"private-password"}`))
 			request.Header.Set("Content-Type", "application/json")
@@ -59,8 +63,8 @@ func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 			if side == serverversion.App {
 				expectedCalls = 3
 			} // Once refused, native actions stay blocked locally.
-			if retry || calls != expectedCalls {
-				t.Fatalf("update refusal retried or missing requests: retry %v, calls %d", retry, calls)
+			if retry || int(calls.Load()) != expectedCalls {
+				t.Fatalf("update refusal retried or missing requests: retry %v, calls %d", retry, calls.Load())
 			}
 		})
 	}

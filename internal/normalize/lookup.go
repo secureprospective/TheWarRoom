@@ -99,23 +99,8 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 	return Lookup{byID: byID}, nil
 }
 
-// PlayerFacts is the players-DB fact set the M1 runner reads per rostered id. It carries no
-// contract fields: contract state lives in the state store and must not be copied from a
-// static feed.
-type PlayerFacts struct {
-	Name         string
-	Team         string
-	Position     domain.Position
-	IsRookie     bool
-	Birthdate    int64  // epoch seconds
-	HasBirthdate bool   // commissioner-created players lack one
-	DraftYear    int    // the §6 experience source
-	HasDraftYear bool   // false for undrafted ("0")
-	DraftRound   int    // NFL draft round; 0 when MFL lists no selection
-	DraftPick    int    // the pick within that round; 0 when MFL lists no selection
-	DraftTeam    string // the NFL team that drafted him, when MFL lists a selection
-	College      string // raw; the SchoolTier source
-}
+// PlayerFacts is the shared resolved player fact set.
+type PlayerFacts = domain.PlayerFacts
 
 // Facts resolves a canonical id. ok is false for an unknown id or a team aggregate, which
 // callers treat the same.

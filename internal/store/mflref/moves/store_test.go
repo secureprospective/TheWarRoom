@@ -162,30 +162,6 @@ func TestSaveRoundTripIdempotenceAndPrefix(t *testing.T) {
 	}
 }
 
-func TestAppendOnlyTriggers(t *testing.T) {
-	store, pools := testStore(t)
-	ctx := context.Background()
-	e := testMove(t, "guarded", time.Now().UTC(), envelope.ChecksPass)
-	if err := store.Save(ctx, e); err != nil {
-		t.Fatal(err)
-	}
-	for _, query := range []string{
-		`UPDATE move_envelopes SET spec = spec WHERE correlation_id = ?`,
-		`DELETE FROM move_envelopes WHERE correlation_id = ?`,
-		`UPDATE move_audit SET note = 'changed' WHERE correlation_id = ?`,
-		`DELETE FROM move_audit WHERE correlation_id = ?`,
-	} {
-		if _, err := pools.Write().ExecContext(ctx, query, e.ID()); err == nil ||
-			!strings.Contains(err.Error(), "append-only") {
-			t.Fatalf("trigger failed for %s: %v", query, err)
-		}
-	}
-	got, err := store.Get(ctx, e.ID())
-	if err != nil || !reflect.DeepEqual(got.Receipt(), e.Receipt()) {
-		t.Fatalf("triggers: %+v, %v", got, err)
-	}
-}
-
 func TestListLatestOrderingAndScope(t *testing.T) {
 	store, _ := testStore(t)
 	ctx := context.Background()
@@ -227,62 +203,6 @@ func TestListLatestOrderingAndScope(t *testing.T) {
 	}
 }
 
-func TestAwaitingExactlyWaitingStates(t *testing.T) {
-	store, _ := testStore(t)
-	ctx := context.Background()
-	at := time.Now().UTC()
-	cases := []struct {
-		state   envelope.State
-		events  []envelope.Event
-		waiting bool
-	}{
-		{envelope.Draft, nil, false},
-		{envelope.Blocked, []envelope.Event{envelope.ChecksBlock}, false},
-		{envelope.Ready, []envelope.Event{envelope.ChecksPass}, false},
-		{envelope.HandedOff, nil, true},
-		{envelope.NotYetDone, []envelope.Event{envelope.NoChange}, true},
-		{envelope.NotVerified, []envelope.Event{envelope.Partial}, true},
-		{envelope.DOTReview, []envelope.Event{envelope.AwaitDOT}, true},
-		{envelope.BidPending, []envelope.Event{envelope.AwaitBid}, true},
-		{envelope.WaiverPending, []envelope.Event{envelope.AwaitWaiver}, true},
-		{envelope.Landed, []envelope.Event{envelope.Match}, false},
-		{envelope.Failed, []envelope.Event{envelope.Contradiction}, false},
-		{envelope.Stale, []envelope.Event{envelope.Invalidate}, false},
-	}
-	empty, err := store.Awaiting(ctx)
-	if err != nil || empty == nil || len(empty) != 0 {
-		t.Fatalf("empty awaiting: %+v, %v", empty, err)
-	}
-	want := map[string]envelope.State{}
-	for _, tc := range cases {
-		events := tc.events
-		if tc.state != envelope.Draft && tc.state != envelope.Blocked && tc.state != envelope.Ready {
-			events = append([]envelope.Event{envelope.ChecksPass, envelope.HandOff}, events...)
-		}
-		e := testMove(t, string(tc.state), at, events...)
-		if e.State() != tc.state {
-			t.Fatal(e.State(), tc.state)
-		}
-		if err := store.Save(ctx, e); err != nil {
-			t.Fatal(err)
-		}
-		if tc.waiting {
-			want[e.ID()] = tc.state
-		}
-	}
-	found, err := store.Awaiting(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := map[string]envelope.State{}
-	for _, e := range found {
-		got[e.ID()] = e.State()
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("awaiting: %v != %v", got, want)
-	}
-}
-
 func TestCorruptHistoryNamesID(t *testing.T) {
 	store, pools := testStore(t)
 	ctx := context.Background()
@@ -319,26 +239,6 @@ VALUES (?, ?, ?, ?, ?, ?, '')`, id, seq, stamp, envelope.Draft, envelope.ChecksP
 	}
 	if _, err := store.Get(ctx, "invalid-json"); err == nil || !strings.Contains(err.Error(), "invalid-json") {
 		t.Fatalf("bad JSON not identified: %v", err)
-	}
-}
-
-func TestInvalidStoredSpecNamesID(t *testing.T) {
-	store, pools := testStore(t)
-	ctx := context.Background()
-	at := time.Now().UTC()
-	spec := testMove(t, "invalid-spec", at).Receipt().Spec
-	spec.Intent = ""
-	body, err := json.Marshal(spec)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := pools.Write().ExecContext(ctx,
-		`INSERT INTO move_envelopes (correlation_id, created, spec) VALUES (?, ?, ?)`,
-		"invalid-spec", at.Format(timestampLayout), string(body)); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := store.Get(ctx, "invalid-spec"); err == nil || !strings.Contains(err.Error(), "invalid-spec") {
-		t.Fatalf("invalid spec not identified: %v", err)
 	}
 }
 

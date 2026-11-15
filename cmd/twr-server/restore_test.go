@@ -34,10 +34,12 @@ type memorySets struct {
 	opened  int
 }
 
-func (m *memorySets) Sets(context.Context) ([]string, error) {
+func (m *memorySets) KindSets(_ context.Context, kind offsite.SetKind) ([]string, error) {
 	var names []string
 	for name := range m.objects {
-		names = append(names, name)
+		if strings.HasPrefix(name, kind.Prefix) {
+			names = append(names, name)
+		}
 	}
 	slices.Sort(names)
 	slices.Reverse(names)
@@ -47,6 +49,15 @@ func (m *memorySets) Sets(context.Context) ([]string, error) {
 func (m *memorySets) Open(_ context.Context, name string) (io.ReadCloser, error) {
 	m.opened++
 	return io.NopCloser(bytes.NewReader(m.objects[name])), nil
+}
+
+func (m *memorySets) OpenEvidence(_ context.Context, recipient, sha string) (io.ReadCloser, error) {
+	for _, name := range []string{offsite.EvidenceName(recipient, sha), offsite.LegacyEvidenceName(sha)} {
+		if body, ok := m.objects[name]; ok {
+			return io.NopCloser(bytes.NewReader(body)), nil
+		}
+	}
+	return nil, fmt.Errorf("no raw capture %s", sha)
 }
 
 type leagueHost struct {

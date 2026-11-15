@@ -19,7 +19,7 @@ func TestAppCreationStartsBySource(t *testing.T) {
 		{"empty", commissioner.PresetEmpty, commissioner.SourceNative, 12, 0, true},
 		{"native Legacy rules", commissioner.PresetLegacy, commissioner.SourceNative, 12, 0, true},
 		{"import Default32 rules", commissioner.PresetDefault32, commissioner.SourceMFLImport, 32, 0, false},
-		{"Legacy compatibility", commissioner.PresetLegacy, "", 32, 0, false},
+		{"Legacy default source", commissioner.PresetLegacy, "", 32, 0, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			app := commissionerTestApp(t)

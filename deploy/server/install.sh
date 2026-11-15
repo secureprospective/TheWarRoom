@@ -8,6 +8,13 @@ cd /root/twr
 . /etc/os-release
 [ "$ID" = alpine ] && [ "${VERSION_ID%%.*}" = 3 ]
 [ ! -e /etc/twr ] || { echo 'An installation already exists; refusing to replace keys or state.' >&2; exit 1; }
+[ ! -e /etc/twr-release/root.json ] && [ ! -L /etc/twr-release/root.json ] || {
+  echo 'A release root is already pinned; refusing to replace it.' >&2; exit 1;
+}
+[ -f root.json ] || { echo 'Reinstall from a verified bundle containing root.json.' >&2; exit 1; }
+install -d -m 755 -o root -g root /etc/twr-release
+install -m 644 -o root -g root root.json /etc/twr-release/root.json
+install -d -m 700 -o root -g root /var/lib/twr-release
 apk add --no-cache openrc bubblewrap openssl ca-certificates curl jq logrotate busybox-openrc
 # Proxmox templates may already have SSH enabled. Console is the only admin door.
 if apk info -e openssh-server >/dev/null; then
@@ -49,6 +56,10 @@ install -m 755 backup-setup.sh /usr/local/libexec/twr-backup-setup
 install -m 755 upgrade.sh /usr/local/libexec/twr-upgrade
 install -m 755 restore.sh /usr/local/libexec/twr-restore
 install -m 755 reset-sign-ins.sh /usr/local/libexec/twr-reset-sign-ins
+install -m 755 restore-league.sh /usr/local/libexec/twr-restore-league
+install -m 755 delete-league.sh /usr/local/libexec/twr-delete-league
+install -m 755 move-league.sh /usr/local/libexec/twr-move-league
+install -m 755 receive-league.sh /usr/local/libexec/twr-receive-league
 install -m 755 status.sh /usr/local/libexec/twr-status
 rc-update add twr-server default
 # No SSH, HTTP admin listener or public metrics service is installed. The status

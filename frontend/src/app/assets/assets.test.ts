@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseAssetBoard } from './contract';
 import { createAssetState } from './state';
 
@@ -94,10 +94,14 @@ it('fences overlapping board reads and keeps failed cell wording during retry', 
   const old = state.load();
   const latest = state.load();
   const board = parseAssetBoard(wire);
-  waiting[1](board);
-  await latest;
+  // A load during a read waits for it and reads again, so the older answer lands first and the
+  // newer one wins.
+  expect(waiting).toHaveLength(1);
   waiting[0]({ ...board, values: [] });
   await old;
+  await vi.waitFor(() => expect(waiting).toHaveLength(2));
+  waiting[1](board);
+  await latest;
   expect(state.peek().board).toBe(board);
   fail = true;
   await state.load();

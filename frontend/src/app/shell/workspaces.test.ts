@@ -83,7 +83,8 @@ describe('Fixture roster', () => {
       for (let i = 1; i < group.players.length; i++) {
         const previous = group.players[i - 1];
         const current = group.players[i];
-        expect(previous.salary).toBeGreaterThanOrEqual(current.salary);
+        expect(current.salary).not.toBeNull();
+        expect(previous.salary).toBeGreaterThanOrEqual(current.salary!);
         if (previous.salary === current.salary) {
           ties++;
           expect(
@@ -140,7 +141,6 @@ it('presets reference real workspaces, apply all four fields, and deny Admin for
       workspace: { [p.route.node]: p.route.workspace },
       density: p.density,
       inspector: p.inspector,
-      comms: p.comms,
     });
   }
 });
@@ -172,5 +172,4 @@ it('opens with / and Ctrl+K but never intercepts typing', () => {
 
 it('leaves space for the trade desk when applying Trade Season', () => {
   expect(presets.trade.inspector).toBe('closed');
-  expect(presets.trade.comms).toBe(false);
 });

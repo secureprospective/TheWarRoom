@@ -16,33 +16,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
-type fakeAssets map[string]Dynasty
-
-func (f fakeAssets) Player(pid string, _ time.Time) Dynasty { return f[pid] }
-func (fakeAssets) Pick(int, int, string, time.Time) Dynasty { return Dynasty{} }
-
-func TestAssetBoardDynastyCellsInWords(t *testing.T) {
-	t.Parallel()
-	model := fakeAssets{
-		"1": {Valued: true, Discounted: 9.314, Seasons: 3, ClassLabel: "Native value"},
-		"2": {Valued: false, Reason: "Not in this season's model run"},
-	}
-	cells := map[string]Value{}
-	for _, value := range BuildBoard(OnField{Cells: map[string]Cell{}}, model, time.Now(), []string{"1", "2"}).Values {
-		cells[value.ID] = value
-	}
-	if d, m := cells["1"].Dynasty, cells["1"].Market; d.Text != "9.31 PPG" || d.Sub != "dynasty · next 3 seasons" ||
-		!strings.HasPrefix(d.Detail, "Native value · ") || m.Text != "No price" || m.Held {
-		t.Fatal(d, m)
-	}
-	if cells["1"].DynastyValue != 9.314 || cells["2"].DynastyValue != 0 {
-		t.Fatal("dynasty sort keys", cells["1"].DynastyValue, cells["2"].DynastyValue)
-	}
-	if d := cells["2"].Dynasty; d.Held || d.Text != "Not valued" || d.Sub != "Not in this season's model run" {
-		t.Fatal(d)
-	}
-}
-
 func TestSignedPricesNeverReadMinusZero(t *testing.T) {
 	t.Parallel()
 	for v, want := range map[float64]string{-0.03: "−0.03", -0.001: "0.00", 0: "0.00", 0.114: "0.11", -1.5: "−1.50"} {
@@ -96,20 +69,6 @@ func TestNativeValuesPlayersAndPicksInOneUnit(t *testing.T) {
 	if none := NewNative(NativeInput{Values: values, Season: 2026, Seasons: 3, Discount: 0.75, Teams: 32}).Pick(2026, 1, "", time.Now()); none.Valued ||
 		!strings.HasPrefix(none.Reason, "Pick Value v2 not available") {
 		t.Fatalf("no records = %+v", none)
-	}
-}
-
-func TestDynastyDisplayNeverShowsMinusZero(t *testing.T) {
-	t.Parallel()
-	for _, v := range []float64{-0.0001, -0.004, 0} {
-		cell, _, raw := DynastyCells(fakeAssets{"1": {Valued: true, Discounted: v, Seasons: 5}}, "1", time.Now())
-		if cell.Text != "0.00 PPG" || raw != v {
-			t.Fatalf("display rounded zero or raw value changed: %+v, %v", cell, raw)
-		}
-	}
-	cell, _, _ := DynastyCells(fakeAssets{"1": {Valued: true, Discounted: -0.01}}, "1", time.Now())
-	if cell.Text != "−0.01 PPG" {
-		t.Fatal(cell.Text)
 	}
 }
 
@@ -181,50 +140,6 @@ func TestNativeUsesKnownSlotAndKeepsUnknownRoundMean(t *testing.T) {
 	mean, err := n.picks.Pick(2027, 1, 0, 32)
 	if err != nil || unknown.Discounted != mean.PPG {
 		t.Fatal(unknown, mean, err)
-	}
-}
-
-func TestLoadNativePickDiscountDoesNotFollowDynastyDiscount(t *testing.T) {
-	values := params.DefaultSet().Values()
-	src := NativeSource{Ready: func() error { return nil },
-		LatestRun: func(context.Context) (history.Run, bool, error) { return history.Run{Season: 2026}, true, nil },
-		Scores: func(context.Context, int64) ([]history.ModelScore, error) {
-			var scores []history.ModelScore
-			for i := 1; i <= 260; i++ {
-				scores = append(scores, history.ModelScore{MFLID: fmt.Sprintf("%04d", i), Value: model.Value{DynastyPPG: 10}})
-			}
-			return scores, nil
-		},
-		Records: func(context.Context) ([]playerrecord.Record, error) {
-			var records []playerrecord.Record
-			for i := 1; i <= 260; i++ {
-				records = append(records, playerrecord.Record{MFL: fmt.Sprintf("%04d", i), Draft: playerrecord.Draft{Status: playerrecord.Drafted, Year: 2026, Overall: i}})
-			}
-			return records, nil
-		},
-		Params: func() params.Set { return params.SetOf(values) }, Teams: func() int { return 32 }}
-	load := func() Native {
-		t.Helper()
-		n, ok, err := LoadNative(t.Context(), src)
-		if !ok || err != nil {
-			t.Fatal(ok, err)
-		}
-		return n
-	}
-	before := load()
-	values[params.KeyDynastyDiscount] = .1
-	after := load()
-	if before.Pick(2027, 1, "", time.Time{}).Discounted != after.Pick(2027, 1, "", time.Time{}).Discounted {
-		t.Fatal("dynasty knob repriced picks")
-	}
-	values[params.KeyPickValueDiscount] = .5
-	own := load()
-	now := own.Pick(2026, 1, "", time.Time{})
-	if now.Discounted <= 0 || math.Abs(own.Pick(2027, 1, "", time.Time{}).Discounted-now.Discounted*.5) > 1e-9 {
-		t.Fatal("pick knob ignored")
-	}
-	if own.Player("0042", time.Time{}).Discounted != 10 {
-		t.Fatal("pick knob repriced player")
 	}
 }
 

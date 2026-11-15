@@ -53,11 +53,3 @@ func TestDraftLandingCompletionAndClock(t *testing.T) {
 		t.Fatal(got)
 	}
 }
-
-func TestDraftLandingEngineLabel(t *testing.T) {
-	t.Parallel()
-	r := reportByID(t, testBoard(t), "M-065")
-	if r.Columns[2] != "Engine points per game" || !strings.Contains(r.Note, "Engine run: October 11, 2026") {
-		t.Fatal(r)
-	}
-}

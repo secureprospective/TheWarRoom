@@ -6,7 +6,7 @@ import type { ActReadings } from './actReadings';
 export type ActValues = Record<string, string | boolean | string[]>;
 function converted(field: Field, raw: ActValues[string]): unknown {
   if (field.kind === 'boolean') return raw === true;
-  if (field.kind === 'order' || field.kind === 'starters') return raw;
+  if (field.kind === 'order' || field.kind === 'deputies' || field.kind === 'starters') return raw;
   const value = String(raw ?? '').trim();
   if (['pick', 'scope', 'shape', 'scheduleGame'].includes(field.kind))
     return JSON.parse(value) as object;

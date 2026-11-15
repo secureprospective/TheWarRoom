@@ -622,6 +622,25 @@ func TestEngineRefreshRecordsFreshnessEvenWhenValuesMatch(t *testing.T) {
 	}
 }
 
+func TestNextFeatureAtExpiresAtFutureObservation(t *testing.T) {
+	t.Parallel()
+	s, clock, _ := newStore(t)
+	start := clock.now
+	if next, err := s.NextFeatureAt(t.Context(), start); err != nil || !next.IsZero() {
+		t.Fatalf("empty history: %v, %v", next, err)
+	}
+	clock.now = start.Add(time.Hour)
+	if _, err := s.Ingest(t.Context(), solo("alpha", "Solo", "13604", "41")); err != nil {
+		t.Fatal(err)
+	}
+	if next, err := s.NextFeatureAt(t.Context(), start); err != nil || !next.Equal(clock.now) {
+		t.Fatalf("future observation: %v, %v", next, err)
+	}
+	if next, err := s.NextFeatureAt(t.Context(), clock.now); err != nil || !next.IsZero() {
+		t.Fatalf("already visible observation: %v, %v", next, err)
+	}
+}
+
 func TestModelInputsChangedOnlyForNewValues(t *testing.T) {
 	t.Parallel()
 	s, clock, _ := newStore(t)

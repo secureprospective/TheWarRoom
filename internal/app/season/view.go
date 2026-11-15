@@ -358,3 +358,23 @@ func (v View) StandingsOrder() []string {
 	}
 	return out
 }
+
+// Feed is a published payload and its read metadata. Callers must not mutate payloads.
+type Feed[T any] struct {
+	Value        T
+	FetchedAt    time.Time
+	RefreshError string
+	ReadPending  bool
+}
+
+// Held contains detached indexes of immutable published feed payloads.
+type Held struct {
+	Weeks     Feed[[]leaguefeed.WeekResult]
+	Brackets  Feed[[]leaguefeed.Bracket]
+	Standings Feed[[]leaguestandings.RawStanding]
+	Power     map[string]PowerRankingsResult
+}
+
+func shell[T any](id, title, how string, f Feed[[]T], zone *time.Location, columns ...string) report.Report {
+	return report.Shell(id, title, how, report.Feed{FetchedAt: f.FetchedAt, RefreshError: f.RefreshError, ReadPending: f.ReadPending}, len(f.Value), zone, columns...)
+}

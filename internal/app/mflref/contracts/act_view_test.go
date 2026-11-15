@@ -8,24 +8,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/contractacts"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
-	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
-
-func TestEveryPlanOffersAnExit(t *testing.T) {
-	t.Parallel()
-	for _, state := range []envelope.State{envelope.Draft, envelope.Blocked, envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified, envelope.Stale, envelope.BidPending} {
-		if !DescribeAct(envelope.Receipt{State: state}, envelope.ContractFacts{}).CanWithdraw {
-			t.Fatal("contract", state)
-		}
-		if state != envelope.BidPending {
-			for _, cut := range []bool{false, true} {
-				if withdrawLabel(state, cut) == "" {
-					t.Fatal("release", cut, state)
-				}
-			}
-		}
-	}
-}
 
 func TestSubjectNamesTheHeldContract(t *testing.T) {
 	t.Parallel()
@@ -45,19 +28,6 @@ func TestContractFigureWordsPerAct(t *testing.T) {
 		}
 		if got := figureSentence(f, "$1,000,000"); got != want {
 			t.Fatal(intent, got)
-		}
-	}
-}
-
-func TestTenderPostUsesLeagueRoundAtEveryLevel(t *testing.T) {
-	t.Parallel()
-	for i, level := range contractacts.TenderLevels() {
-		facts := envelope.ContractFacts{Intent: "rfa.tender", Level: i + 1, Season: 2026,
-			Terms: contractacts.Flat(2027, 1, level.Price, "")}
-		got := DescribeAct(envelope.Receipt{}, facts).Post
-		want := level.Round + "-round RFA tender for 2027: " + snapshot.ContractAmountOf(level.Price).Text
-		if !strings.Contains(got, want) || strings.Contains(got, "Tender level") {
-			t.Fatal(got, want)
 		}
 	}
 }

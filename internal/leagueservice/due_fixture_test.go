@@ -63,7 +63,7 @@ func newDueFixture(t *testing.T) *dueFixture {
 
 func (f *dueFixture) seed(t *testing.T) {
 	t.Helper()
-	f.execute(t, "creator", commissioner.Create, commissioner.RawArgs{Name: "Worker league", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 32})
+	f.execute(t, "creator", commissioner.Create, commissioner.RawArgs{Name: "Worker league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 32})
 	at := f.clock.Now()
 	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at,
 
@@ -107,7 +107,7 @@ func (f *dueFixture) open(t *testing.T) {
 	}
 	f.store.SetClock(f.clock.Now)
 	f.store.SetBidEnvironment(dueEnvironment{})
-	f.worker = NewDueWorker(f.store, func() nativecheck.Facts { return f.facts }, f.clock)
+	f.worker = NewDueWorker(history.NewOneFile(f.store), func() nativecheck.Facts { return f.facts }, f.clock)
 }
 
 func (f *dueFixture) raw(t *testing.T, command string, args commissioner.RawArgs) commissioner.RawCommand {

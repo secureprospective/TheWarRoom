@@ -19,11 +19,11 @@ import (
 )
 
 type SeasonRefresh struct {
-	Changed                                                                                        func(context.Context)
-	Transactions, Comms, Shell, Lineups, Trades, Injuries, Draft, Market, Race, Firsts, Revalidate func(context.Context)
-	Pause                                                                                          func() func(context.Context, time.Duration) error
-	Week                                                                                           func() int
-	Schedule                                                                                       func(context.Context, int)
+	Changed                                                                                 func(context.Context)
+	Transactions, Shell, Lineups, Trades, Injuries, Draft, Market, Race, Firsts, Revalidate func(context.Context)
+	Pause                                                                                   func() func(context.Context, time.Duration) error
+	Week                                                                                    func() int
+	Schedule                                                                                func(context.Context, int)
 }
 
 func (s SeasonRefresh) Run(ctx context.Context) {
@@ -32,7 +32,6 @@ func (s SeasonRefresh) Run(ctx context.Context) {
 	}
 	defer s.Changed(ctx)
 	s.Transactions(ctx)
-	s.Comms(ctx)
 	s.Shell(ctx)
 	pause := s.Pause()
 	if err := pause(ctx, time.Second); err != nil {
@@ -165,19 +164,14 @@ func CurrentPending(generation, current uint64, publish func()) {
 }
 
 // PublishPending runs under both key and season locks.
-func PublishPending(ctx context.Context, held *report.HeldFeed[[]leaguefeed.PendingTrade], value []leaguefeed.PendingTrade, err error, now func() time.Time,
-	record func(context.Context, []leaguefeed.PendingTrade, time.Time, error) error, log func(string)) {
+func PublishPending(held *report.HeldFeed[[]leaguefeed.PendingTrade], value []leaguefeed.PendingTrade, err error, now func() time.Time) {
 	switch {
 	case errors.Is(err, mflkey.ErrNoKey):
 		ClearPending(held)
 	case errors.Is(err, mflkey.ErrUnavailable), errors.Is(err, mflkey.ErrTimeout):
 		held.RefreshError = "MFL keyring is locked or unavailable"
 	default:
-		at := now()
-		if rerr := record(ctx, value, at, err); rerr != nil && err == nil {
-			log(rerr.Error())
-		}
-		report.HoldFeed(held, value, report.LiveFreshness(at), err)
+		report.HoldFeed(held, value, report.LiveFreshness(now()), err)
 	}
 }
 

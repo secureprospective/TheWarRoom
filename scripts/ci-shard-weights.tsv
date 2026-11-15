@@ -40,7 +40,6 @@ github.com/secureprospective/TheWarRoom/internal/engine/race	1.025
 github.com/secureprospective/TheWarRoom/internal/engine/rookiedraft	1.055
 github.com/secureprospective/TheWarRoom/internal/engine/competition	0.100
 github.com/secureprospective/TheWarRoom/internal/envelope	1.321
-github.com/secureprospective/TheWarRoom/internal/facts	119.179
 github.com/secureprospective/TheWarRoom/internal/fantasyscore	1.055
 github.com/secureprospective/TheWarRoom/internal/fantasyscore/source	5.536
 github.com/secureprospective/TheWarRoom/internal/governance	1.125
@@ -71,8 +70,6 @@ github.com/secureprospective/TheWarRoom/internal/ingestion/salaryadjustments	1.0
 github.com/secureprospective/TheWarRoom/internal/ingestion/sitenews	1.186
 github.com/secureprospective/TheWarRoom/internal/ingestion/transactions	1.074
 github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults	3.483
-github.com/secureprospective/TheWarRoom/internal/lab	117.133
-github.com/secureprospective/TheWarRoom/internal/labcompile	230.443
 github.com/secureprospective/TheWarRoom/internal/leagueclock	1.013
 github.com/secureprospective/TheWarRoom/internal/leaguefeed	1.022
 github.com/secureprospective/TheWarRoom/internal/leaguerecovery	3.928
@@ -82,7 +79,6 @@ github.com/secureprospective/TheWarRoom/internal/leaguetransfer	733.912
 github.com/secureprospective/TheWarRoom/internal/leagueweek	1.021
 github.com/secureprospective/TheWarRoom/internal/lineup	1.044
 github.com/secureprospective/TheWarRoom/internal/m2service	1.012
-github.com/secureprospective/TheWarRoom/internal/manifest	1.027
 github.com/secureprospective/TheWarRoom/internal/measures	1.064
 github.com/secureprospective/TheWarRoom/internal/mfl	9.534
 github.com/secureprospective/TheWarRoom/internal/mflkey	1.043

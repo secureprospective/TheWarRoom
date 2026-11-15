@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
@@ -264,7 +265,7 @@ func testBooksDecisions(t *testing.T, s *Store, g *bigLeagueBuilder, folded, ful
 					Plan   *commissioner.RolloverPlan
 				}
 				sameBooksProbe(t, readingProbe(func(r []commissioner.Record) (trialResult, error) {
-					raw := deepClone(prepared)
+					raw := deepclone.Of(prepared)
 					before, plan, err := s.prepareCommissionerTrial(t.Context(), &raw, principal, r, g.now, g.facts, time.UTC, appendFacts{players: g.facts})
 					return trialResult{before, plan}, err
 				}), folded, full)

@@ -84,7 +84,6 @@ func browserWorkCommands() []BrowserCommand {
 		{ID: "surface.close", Arguments: browserType("Record<string, never>"), Label: "Close endpoint surface"},
 		{ID: "report.sort", Arguments: browserType("{ id: string; column: number }"), Label: "Sort report", Args: strings.Fields("id column")},
 		{ID: "market.reports", Arguments: browserType("{ action: 'refresh' }"), Label: "Player market reports", Args: strings.Fields("action")},
-		{ID: "comms.read", Arguments: browserType("{ action: 'refresh' | 'team' | 'kind' | 'more' | 'open'; value: string }"), Label: "League communications", Args: strings.Fields("action value")},
 		{ID: "backup.now", Arguments: browserType("Record<string, never>"), Label: "Back up now", Aliases: []string{"backup", "save a backup"}, Gravity: "G1"},
 		{ID: "commissioner.surface", Arguments: browserType("import('../commissioner/surfaceActions').SurfaceAction"), Label: "Change the league view", Args: strings.Fields("screen action value")},
 		{ID: "commissioner.read", Arguments: browserType("{ league: string }"), Label: "Read the league ledger", Args: strings.Fields("league")},
@@ -113,7 +112,6 @@ func browserShellCommands() []BrowserCommand {
 		{ID: "inspector.toggle", Arguments: browserType("Record<string, never>"), Label: "Toggle inspector", Aliases: []string{"inspect"}, Keys: []BrowserKey{{Key: "I", Args: map[string]string{}}}},
 		{ID: "inspector.close", Arguments: browserType("Record<string, never>"), Label: "Close inspector", Aliases: []string{"close inspector"}},
 		{ID: "calendar.summon", Arguments: browserType("Record<string, never>"), Label: "Summon calendar", Aliases: []string{"calendar"}},
-		{ID: "comms.toggle", Arguments: browserType("Record<string, never>"), Label: "Toggle comms", Aliases: []string{"comms", "chat"}},
 		{ID: "overlays.close", Arguments: browserType("Record<string, never>"), Label: "Close overlays", Aliases: []string{"escape"}, Keys: []BrowserKey{{Key: "Escape", Args: map[string]string{}}}},
 		{ID: "commandbar.open", Arguments: browserType("Record<string, never>"), Label: "Type a command", Aliases: []string{"command", "/"}, Keys: []BrowserKey{{Key: "/", Args: map[string]string{}}, {Key: "Ctrl+K", Args: map[string]string{}}}},
 	}

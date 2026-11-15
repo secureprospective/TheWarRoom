@@ -103,15 +103,23 @@ func (s *Store) RosterRestorePoint(ctx context.Context, league string) (commissi
 
 func saveRosterIdentity(ctx context.Context, tx *sql.Tx, point *commissioner.RawRosterRestorePoint) error {
 	var installed bool
-	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name='canonical_player')`).Scan(&installed); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name='player_ownership')`).Scan(&installed); err != nil {
 		return fmt.Errorf("check player identity schema: %w", err)
 	}
 	if !installed {
 		return nil
 	}
+	mfl := make([]string, 0, len(point.Snapshot.Players))
+	for _, player := range point.Snapshot.Players {
+		mfl = append(mfl, player.ID)
+	}
+	ids, err := db.ResolveMFLPlayers(ctx, tx, mfl)
+	if err != nil {
+		return fmt.Errorf("save league ownership: %w", err)
+	}
 	owners := make([]db.RosterOwner, 0, len(point.Snapshot.Players))
 	for _, player := range point.Snapshot.Players {
-		owners = append(owners, db.RosterOwner{MFL: player.ID, Side: point.Snapshot.SideOf(player.Franchise),
+		owners = append(owners, db.RosterOwner{Player: ids[player.ID], Side: point.Snapshot.SideOf(player.Franchise),
 			Franchise: player.Franchise})
 	}
 	if err := db.ReplaceRosterOwnership(ctx, tx, point.League, owners); err != nil {

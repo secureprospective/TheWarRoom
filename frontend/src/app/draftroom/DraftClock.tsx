@@ -8,7 +8,7 @@ import { trayValue, type TrayAction } from './trayAction';
 export function DraftLauncher({ action, text, label = text }:
   { action: TrayAction; text: string; label?: string }) {
   return (
-    <Act verb="commissioner.surface" variant="button" label={label}
+    <Act verb="commissioner.surface" variant="button" className="btn" label={label}
       args={{ screen: 'draftroom', action: 'tray', value: trayValue(action) }}>{text}</Act>
   );
 }

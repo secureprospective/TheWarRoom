@@ -11,6 +11,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
 )
 
 // NFLGame is one NFL game of the chosen week, away team first.
@@ -322,8 +323,17 @@ func (v nowView) previews() report.Report {
 		return sum, len(starters) > 0
 	}
 	for _, g := range v.mineFirst(v.shown.Games) {
+		before := missing
 		away, awaySet := total(g.Away)
 		home, homeSet := total(g.Home)
+		if v.isMine(g) && awaySet && homeSet && missing == before {
+			mine, other := away, home
+			if g.Home.Franchise == v.in.Mine {
+				mine, other = home, away
+			}
+			r.Summary = append(r.Summary, report.Row{Cells: []string{"My win probability",
+				fmt.Sprintf("%.1f%%", 100*powerrankings.WinProbability(float64(mine)/100, float64(other)/100))}})
+		}
 		row := v.row("", v.name(g.Away.Franchise), projText(away, awaySet), v.name(g.Home.Franchise),
 			projText(home, homeSet), v.favored(g, away, home, awaySet && homeSet))
 		row.Mine = v.isMine(g)

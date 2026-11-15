@@ -20,8 +20,6 @@ type MarketFact struct {
 	Range  *MarketRange `json:"range"`
 }
 
-func marketKinds() []string { return marketapp.Kinds() }
-
 func (a *App) heldMarket() map[string]heldSeasonFeed[[]marketfeeds.Feed] {
 	return a.heldMarketForWeek(a.marketWeek())
 }
@@ -62,11 +60,6 @@ func (a *App) refreshMarketFeed(ctx context.Context, kind string, week int) {
 
 }
 
-// buildMarketReports builds the board in the feature service and converts it to its wire type.
-func buildMarketReports(held map[string]heldSeasonFeed[[]marketfeeds.Feed], names map[string]string, week int, zone *time.Location) ReportBoard {
-	return wireBoard(marketapp.Reports(marketHeld(held), names, week, zone))
-}
-
 func marketFacts(held map[string]heldSeasonFeed[[]marketfeeds.Feed]) map[string][]MarketFact {
 	return marketFactsAt(held, time.Local)
 }
@@ -87,8 +80,6 @@ func marketFactsAt(held map[string]heldSeasonFeed[[]marketfeeds.Feed], zone *tim
 func wireFact(f marketapp.Fact) MarketFact {
 	return MarketFact{value: f.Value, Label: f.Label, Text: f.Text, Reason: f.Reason, Range: wireRange(f.Range)}
 }
-
-func marketWeekText(week int) string { return marketapp.WeekText(week) }
 
 func marketHeld(held map[string]heldSeasonFeed[[]marketfeeds.Feed]) map[string]marketapp.HeldFeed {
 	out := make(map[string]marketapp.HeldFeed, len(held))

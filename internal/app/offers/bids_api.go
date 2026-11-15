@@ -9,8 +9,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
-
 	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/bids"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
@@ -48,7 +46,8 @@ func (r RawBidInput) entry() (bidEntry, error) {
 }
 func closesNote(closes string) string { return bidsapp.ClosesNote(closes) }
 
-// BidPreview is the form's live answer: the figures as Go reads them and every rule's verdict.
+// BidPreview is the form's live answer: the figures as Go reads them and the post to copy. The app checks
+// no bid rules on an MFL league: the owner places the bid by hand where the league takes bids.
 // Problem is set instead when the typed figures cannot be read at all.
 type BidPreview struct {
 	ConditionalDrops []BidDropOption         `json:"conditionalDrops"`
@@ -57,42 +56,35 @@ type BidPreview struct {
 	Salary           snapshot.ContractAmount `json:"salary"`
 	Snapped          string                  `json:"snapped"`
 	Points           string                  `json:"points"`
-	Rules            []bidrules.Result       `json:"rules"`
-	Blocked          bool                    `json:"blocked"`
-	Note             string                  `json:"note"`
 	Post             string                  `json:"post"`
-	// RuleSummary is Go's line for the rules that pass; ClosesNote says what the app does with
-	// the closing time, set or not.
-	RuleSummary string `json:"ruleSummary"`
-	ClosesNote  string `json:"closesNote"`
+	// ClosesNote says what the app does with the closing time, set or not.
+	ClosesNote string `json:"closesNote"`
 }
 
 func amountOf(m domain.Money) snapshot.ContractAmount {
 	return snapshot.ContractAmount{Cents: m, Text: bid.MoneyText(m)}
 }
 
-// TargetBidPreview checks typed figures against the bid rules without saving anything.
+// TargetBidPreview reads typed figures without saving anything.
 func (a *API) TargetBidPreview(raw RawBidInput) BidPreview {
 	if err := a.host.Ready(); err != nil {
-		return BidPreview{Problem: sentence(err), Rules: []bidrules.Result{}}
+		return BidPreview{Problem: sentence(err)}
 	}
 	entry, err := raw.entry()
 	if err != nil {
-		return BidPreview{Problem: sentence(err), Rules: []bidrules.Result{}}
+		return BidPreview{Problem: sentence(err)}
 	}
 	ctx, cancel := context.WithTimeout(a.host.OffersContext(), readTimeout)
 	defer cancel()
-	in, line, err := a.bidInput(ctx, entry, "")
+	line, err := a.bidPlayer(ctx, entry)
 	if err != nil {
-		return BidPreview{Problem: sentence(err), Rules: []bidrules.Result{}}
+		return BidPreview{Problem: sentence(err)}
 	}
-	rules := bidrules.Check(in)
 	options := a.bidDropOptions(entry.franchise, entry.facts.Salary)
 	entry.facts = withConditionalName(entry.facts, options)
 	p := BidPreview{ConditionalDrops: options, Player: line, Salary: amountOf(entry.facts.Salary),
-		Points: pointsText(entry.facts.Salary, entry.facts.Years), Rules: rules,
-		Blocked: bidrules.Blocked(rules), Note: bidrules.Note(rules), Post: postText(line, entry.facts),
-		RuleSummary: bidrules.Summary(rules), ClosesNote: closesNote(entry.facts.Closes)}
+		Points: pointsText(entry.facts.Salary, entry.facts.Years), Post: postText(line, entry.facts),
+		ClosesNote: closesNote(entry.facts.Closes)}
 	if entry.entered != entry.facts.Salary {
 		p.Snapped = fmt.Sprintf("Entered %s; the league snaps salaries to $10,000, so %s",
 			bid.MoneyText(entry.entered), bid.MoneyText(entry.facts.Salary))
@@ -107,50 +99,24 @@ func sentence(err error) string {
 	return strings.ToUpper(string(r)) + text[size:]
 }
 
-// bidInput gathers what the rules read about one plan. exclude is the plan's own id, so a plan
-// already saved is not counted among the owner's other active bids.
-func (a *API) bidInput(ctx context.Context, e bidEntry, exclude string) (bidrules.Input, string, error) {
+// bidPlayer names the plan's player from the directory and refuses a conditional drop the owner
+// cannot make.
+func (a *API) bidPlayer(ctx context.Context, e bidEntry) (string, error) {
 	lk, err := a.host.OffersDirectory(ctx)
 	if err != nil {
-		return bidrules.Input{}, "", fmt.Errorf("player names unavailable: %w", err)
+		return "", fmt.Errorf("player names unavailable: %w", err)
 	}
 	facts, ok := lk.Facts(e.facts.Player.String())
 	if !ok {
-		return bidrules.Input{}, "", fmt.Errorf("this player is not in the players directory; refresh the player names")
+		return "", fmt.Errorf("this player is not in the players directory; refresh the player names")
 	}
-	active, err := a.activeBids(ctx, e.franchise, exclude)
-	if err != nil {
-		return bidrules.Input{}, "", err
+	if err := a.checkConditional(e.franchise, e.facts); err != nil {
+		return "", err
 	}
-	conditional, err := a.bidConditional(e.franchise, e.facts)
-	if err != nil {
-		return bidrules.Input{}, "", err
-	}
-	exp := bid.ExperienceFrom(a.host.OffersSeason(), facts.DraftYear, facts.HasDraftYear)
-	week, weekKnown := a.host.OffersWeek()
-	return bidrules.Input{Salary: e.facts.Salary, Years: e.facts.Years, Minimum: bid.MinimumSalary(exp.Years),
-		Conditional: conditional, Experience: exp, Snipe: e.facts.Snipe, Beat: e.facts.Beat, Active: active, Room: a.host.OffersCapRoom(e.franchise),
-		Week: week, WeekKnown: weekKnown}, fmt.Sprintf("%s (%s, %s)", facts.Name, facts.Position, facts.Team), nil
+	return fmt.Sprintf("%s (%s, %s)", facts.Name, facts.Position, facts.Team), nil
 }
 
-func (a *API) activeBids(ctx context.Context, franchise, exclude string) (int, error) {
-	receipts, err := a.host.OffersMoves().List(ctx, ingestion.LeagueID, franchise)
-	if err != nil {
-		return 0, fmt.Errorf("bid plans: list: %w", err)
-	}
-	n := 0
-	for _, r := range receipts {
-		if r.Spec.Intent == envelope.BidIntent && r.CorrelationID != exclude && bidActive(r.State) {
-			n++
-		}
-	}
-	return n, nil
-}
-
-// bidActive: plans that count toward the 30-bid limit are those the owner has checked or posted
-// and that are not over. A Draft, Blocked or Stale plan is not on the board.
-
-// TargetBidDraft saves a new bid plan with its facts, checked against the bid rules at once.
+// TargetBidDraft saves a new bid plan with its facts, ready to copy at once.
 func (a *API) TargetBidDraft(raw RawBidInput) (BidPlan, error) {
 	if err := a.host.Ready(); err != nil {
 		return BidPlan{}, fmt.Errorf("bid draft: startup: %w", err)
@@ -162,7 +128,7 @@ func (a *API) TargetBidDraft(raw RawBidInput) (BidPlan, error) {
 	ctx, cancel := context.WithTimeout(a.host.OffersContext(), readTimeout)
 	defer cancel()
 	return a.serializedMove(func() (BidPlan, error) {
-		in, line, err := a.bidInput(ctx, entry, "")
+		line, err := a.bidPlayer(ctx, entry)
 		if err != nil {
 			return BidPlan{}, fmt.Errorf("bid draft: %w", err)
 		}
@@ -178,7 +144,7 @@ func (a *API) TargetBidDraft(raw RawBidInput) (BidPlan, error) {
 		id := "bid-" + hex.EncodeToString(random[:])
 		e, err := envelope.DraftBid(a.host.OffersNow().UTC(), envelope.BidRequest{
 			LeagueID: ingestion.LeagueID, FranchiseID: entry.franchise, Facts: entry.facts,
-		}, envelope.BidCheck{Input: in}, func() string { return id })
+		}, func() string { return id })
 		if err != nil {
 			return BidPlan{}, fmt.Errorf("bid draft: %w", err)
 		}
@@ -193,7 +159,6 @@ func (a *API) TargetBidDraft(raw RawBidInput) (BidPlan, error) {
 
 func pointsText(salary domain.Money, years int) string { return bidsapp.PointsText(salary, years) }
 func postText(line string, f envelope.BidFacts) string { return bidsapp.PostText(line, f) }
-func bidActive(s envelope.State) bool                  { return bidsapp.Active(s) }
 
 type BidDropOption struct {
 	ID        string       `json:"id"`
@@ -250,20 +215,20 @@ func (a *API) bidDropOptions(mine string, salary domain.Money) []BidDropOption {
 	return out
 }
 
-func (a *API) bidConditional(mine string, f envelope.BidFacts) (*bidrules.ConditionalDrop, error) {
+func (a *API) checkConditional(mine string, f envelope.BidFacts) error {
 	if f.ConditionalDrop.String() == "" {
-		return nil, nil
+		return nil
 	}
 	for _, option := range a.bidDropOptions(mine, f.Salary) {
 		if option.ID != f.ConditionalDrop.String() {
 			continue
 		}
 		if !option.Available {
-			return nil, fmt.Errorf("conditional drop: contract length is not held")
+			return fmt.Errorf("conditional drop: contract length is not held")
 		}
-		return &bidrules.ConditionalDrop{Name: option.Name, Salary: option.Salary, DeadCap: option.DeadCap}, nil
+		return nil
 	}
-	return nil, fmt.Errorf("conditional drop must be on your own roster; choose another player or clear it")
+	return fmt.Errorf("conditional drop must be on your own roster; choose another player or clear it")
 }
 
 func withConditionalName(f envelope.BidFacts, options []BidDropOption) envelope.BidFacts {

@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,18 +22,28 @@ import (
 
 const DesktopPath = "/desktop/native"
 
+// desktopReplyLimit bounds one league-server reply held in memory. A real 32-team league's
+// league-wide reads (players, rosters) run near 2 MB; 16 MiB leaves room and still stops a runaway reply.
+const desktopReplyLimit = 16 << 20
+
 // Desktop owns device credentials outside the webview. The webview receives neither the bearer nor
 // the recent-auth proof. Its origin and league are fixed before the window opens.
 type Desktop struct {
-	mu          sync.Mutex
-	client      *Client
-	league      string
-	bearer      string
-	proof       string
-	credentials CredentialStore
-	loaded      bool
-	required    serverversion.Side
-	update      func() error
+	mu            sync.Mutex
+	generation    uint64
+	admission     DesktopView
+	watchCancel   context.CancelFunc
+	changes       DesktopChanges
+	changeHistory []DesktopChanges
+	changed       chan struct{}
+	client        *Client
+	league        string
+	bearer        string
+	proof         string
+	credentials   CredentialStore
+	loaded        bool
+	required      serverversion.Side
+	update        func() error
 	// seats are what the last "enter" read; an AI helper acts for one of them.
 	seats          []DesktopSeat
 	helperCommands []string
@@ -57,7 +69,9 @@ func NewDesktop(address, league string, roots *x509.CertPool, storage ...Credent
 func (d *Desktop) Close() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	d.stopWatchLocked()
 	d.bearer, d.proof = "", ""
+	d.generation++
 	d.client.Close()
 }
 
@@ -113,15 +127,16 @@ func (r RawDesktop) Validate() error {
 
 // DesktopView contains only presentation data, never server credentials or cursors.
 type DesktopView struct {
-	Server        string `json:"server"`
-	League        string `json:"league"`
-	Message       string `json:"message"`
-	Update        string `json:"update,omitempty"`
-	Name          string `json:"name"`
-	Role          string `json:"role"`
-	Franchise     string `json:"franchise"`
-	FranchiseName string `json:"franchiseName"`
-	Seed          string `json:"seed"`
+	AuthGeneration string `json:"authGeneration"`
+	Server         string `json:"server"`
+	League         string `json:"league"`
+	Message        string `json:"message"`
+	Update         string `json:"update,omitempty"`
+	Name           string `json:"name"`
+	Role           string `json:"role"`
+	Franchise      string `json:"franchise"`
+	FranchiseName  string `json:"franchiseName"`
+	Seed           string `json:"seed"`
 	// Connection is shown once, right after a helper is connected; Confirmation is one change's code.
 	Connection    string        `json:"connection"`
 	HelperID      string        `json:"helperId"`
@@ -137,11 +152,33 @@ type DesktopSeat struct {
 	Name      string `json:"name"`
 }
 
+// watchAfterLocked opens the change stream after a sign-in. An app that must update first stays off it:
+// nothing it could read is trusted.
+func (d *Desktop) watchAfterLocked(action string) {
+	if d.required == serverversion.App {
+		return
+	}
+	switch action {
+	case "login", "enter", "totp-step-up":
+		d.startWatchLocked()
+	}
+}
+
 // Act serializes login/forget/read so a delayed response cannot revive a forgotten session.
 func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, resultErr error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	view = DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
+	bearer, proof := d.bearer, d.proof
+	defer func() { //nolint:contextcheck // The window owns the watcher, not the sign-in request.
+		if d.bearer != bearer || d.proof != proof || (resultErr == nil && changesSession(raw.Action)) {
+			d.generation++
+		}
+		view.AuthGeneration = strconv.FormatUint(d.generation, 10)
+		if resultErr == nil {
+			d.watchAfterLocked(raw.Action)
+		}
+	}()
+	view = d.initialView(raw.Action)
 	if err := raw.Validate(); err != nil {
 		return view, fmt.Errorf("check desktop request: %w", err)
 	}
@@ -167,23 +204,53 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, re
 	return d.actLocked(ctx, raw, view)
 }
 
+func (d *Desktop) initialView(action string) DesktopView {
+	view := DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
+	switch action {
+	case "login", "forget", "revoke-device", "revoke-all", "recover":
+		return view
+	}
+	view.Name, view.Role = d.admission.Name, d.admission.Role
+	view.Franchise, view.FranchiseName = d.admission.Franchise, d.admission.FranchiseName
+	if len(d.seats) > 0 {
+		view.Seats = slices.Clone(d.seats)
+	}
+	return view
+}
+
+func (d *Desktop) status(ctx context.Context, view DesktopView) (DesktopView, error) {
+	if d.bearer != "" && d.admission.Name != "" {
+		return d.enter(ctx, view)
+	}
+	if d.bearer != "" {
+		view.Message = "Saved device session available. Open your franchise to check access."
+	}
+	return view, nil
+}
+
+func changesSession(action string) bool {
+	switch action {
+	case "login", "enter", "forget", "revoke-device", "revoke-all":
+		return true
+	default:
+		return false
+	}
+}
+
 func (d *Desktop) actLocked(ctx context.Context, raw RawDesktop, view DesktopView) (DesktopView, error) {
 	d.restore()
 	switch raw.Action {
 	case "update", "retry":
 		return view, fmt.Errorf("no desktop update is required")
 	case "status":
-		if d.bearer != "" {
-			view.Message = "Saved device session available. Open your franchise to check access."
-		}
-		return view, nil
+		return d.status(ctx, view)
 	case "revoke-device", "revoke-all":
 		return d.revoke(ctx, view, raw.Action == "revoke-all")
 	case "forget":
 		if err := d.clearCredential(); err != nil {
 			return view, err
 		}
-		view.Message = "Signed out and removed the saved device session. Server-side device revocation is separate."
+		view.Message = "Signed out on this computer. To sign out your other devices too, sign in and choose Revoke all devices."
 	case "enter":
 		return d.enter(ctx, view)
 	case "helper-issue", "helper-revoke", "helper-check", "helper-confirm":
@@ -246,41 +313,58 @@ func (d *Desktop) printRecoveryCodes(ctx context.Context, raw RawDesktop, view D
 	return view, nil
 }
 
-// post accepts only the closed set of desktop requests. Redacting domain types
-// are intentionally not marshaled: they cannot carry passwords over HTTPS.
+type desktopSnapshot struct {
+	client                         *http.Client
+	address, league, bearer, proof string
+	generation                     uint64
+}
+
+// snapshotLocked captures the session while d.mu is held.
+func (d *Desktop) snapshotLocked() desktopSnapshot {
+	return desktopSnapshot{d.client.http, d.client.base, d.league, d.bearer, d.proof, d.generation}
+}
+
+// postDesktop is used by Act, which holds d.mu throughout its session changes.
 func postDesktop[T desktopPayload](ctx context.Context, d *Desktop, path string, payload T) ([]byte, error) {
+	body, unauthorized, err := postDesktopSnapshot(ctx, d.snapshotLocked(), path, payload)
+	if unauthorized {
+		_ = d.clearCredential()
+	}
+	return body, err
+}
+
+// postDesktopSnapshot uses only the immutable request session, never Desktop state.
+func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopSnapshot, path string, payload T) ([]byte, bool, error) {
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("encode native request: %w", err)
+		return nil, false, fmt.Errorf("encode native request: %w", err)
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, d.client.base+path, bytes.NewReader(body))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, session.address+path, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("create native request: %w", err)
+		return nil, false, fmt.Errorf("create native request: %w", err)
 	}
 	request.Header.Set("Content-Type", "application/json")
-	if d.bearer != "" {
-		request.Header.Set("Authorization", "Bearer "+d.bearer)
+	if session.bearer != "" {
+		request.Header.Set("Authorization", "Bearer "+session.bearer)
 	}
-	if d.proof != "" {
-		request.Header.Set("X-TWR-Recent-Auth", d.proof)
+	if session.proof != "" {
+		request.Header.Set("X-TWR-Recent-Auth", session.proof)
 	}
-	response, err := d.client.http.Do(request)
+	response, err := session.client.Do(request)
 	if update, ok := updateRequired(err); ok {
-		return nil, update
+		return nil, false, update
 	}
 	if err != nil {
-		return nil, fmt.Errorf("cannot reach the native server securely; check the address, certificate and connection")
+		return nil, false, fmt.Errorf("cannot reach the native server securely; check the address, certificate and connection")
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
-		if response.StatusCode == http.StatusUnauthorized {
-			_ = d.clearCredential()
-		}
-		return nil, desktopRefusal(path, response.StatusCode)
+		unauthorized := response.StatusCode == http.StatusUnauthorized
+		return nil, unauthorized, desktopRefusal(path, response.StatusCode)
 	}
-	body, err = io.ReadAll(io.LimitReader(response.Body, (256<<10)+1))
-	if err != nil || len(body) > 256<<10 || response.Header.Get("Content-Type") != "application/json" {
-		return nil, fmt.Errorf("native server returned an unreadable response; try again")
+	body, err = io.ReadAll(io.LimitReader(response.Body, desktopReplyLimit+1))
+	if err != nil || len(body) > desktopReplyLimit || response.Header.Get("Content-Type") != "application/json" {
+		return nil, false, fmt.Errorf("native server returned an unreadable response; try again")
 	}
-	return body, nil
+	return body, false, nil
 }

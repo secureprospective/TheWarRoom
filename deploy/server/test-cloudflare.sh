@@ -75,10 +75,10 @@ chmod 755 /tmp/fake-api/curl
 printf '%s\n' '{"zone":"example.org","hostname":"league.example.org","api_token":"test-only"}' > /tmp/cloudflare-input
 PATH=/tmp/fake-api:$PATH sh /root/twr/cloudflare.sh /tmp/cloudflare-input
 /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate
-for path in /v1/native/ledger /v1/auth/login /v1/native/invalidations; do
+for path in /v1/native/ledger /v1/auth/login /v1/native/invalidations /join / /site.css /og.png /fonts/inter-latin-700-normal.woff2; do
   /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress rule "https://league.example.org$path" | grep -q 'Matched rule #0'
 done
-for url in https://league.example.org/admin https://league.example.org/metrics https://other.example.org/v1/native/ledger; do
+for url in https://league.example.org/admin https://league.example.org/metrics https://league.example.org/index.html https://league.example.org/fonts/OFL.txt https://other.example.org/v1/native/ledger; do
   /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress rule "$url" | grep -q 'Matched rule #1'
 done
 jq -e '.ingress[0].originRequest | .caPool == "/etc/cloudflared/origin.pem" and .originServerName == "localhost" and (.noTLSVerify != true)' /etc/cloudflared/config.yml

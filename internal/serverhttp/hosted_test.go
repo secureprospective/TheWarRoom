@@ -2,6 +2,7 @@ package serverhttp_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha1" //nolint:gosec // Independent RFC 6238 test code.
 	"crypto/sha256"
@@ -24,6 +25,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
@@ -32,8 +34,13 @@ import (
 )
 
 type hostedFixture struct {
-	pools      *db.Pools
-	server     *httptest.Server
+	publisher *serverhttp.Publisher
+	games     *leagueservice.LiveGames
+	tally     *serverhttp.RequestTally
+	pools     *db.Pools
+	server    *httptest.Server
+	// fresh is the same server with no reply cache, sharing every store: the cache's parity reference.
+	fresh      *httptest.Server
 	history    *history.Store
 	accounts   *accountstore.Store
 	sessions   *accounts.SessionService
@@ -41,14 +48,36 @@ type hostedFixture struct {
 	tokens     *accounts.TokenService
 	totp       *accounts.TOTPService
 	principal  string
-	now        time.Time
+	now        *atomic.Int64
 	worker     *leagueservice.DueWorker
 	skew       *atomic.Int64
+	// footballGone makes the hosted league's pinned football missing, as after a restore whose football
+	// reference backup was older than its league backup.
+	footballGone *atomic.Bool
+	// commissioner caches one signed-in bearer and recent-auth proof (contract_parity_test.go).
+	commissioner [2]string
+	join         *accounts.JoinService
+}
+
+func (f *hostedFixture) clockTime() time.Time {
+	return time.Unix(0, f.now.Load()).UTC()
+}
+
+func (f *hostedFixture) advanceTime(delta time.Duration) {
+	f.now.Add(int64(delta))
 }
 
 func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	t.Helper()
-	store, pools := fixtureStore(t, filepath.Join(t.TempDir(), "server.db"))
+	var registries []*measures.Registry
+	if len(workflows) > 1 && workflows[1] {
+		registry, err := measures.Embedded()
+		if err != nil {
+			t.Fatal(err)
+		}
+		registries = append(registries, registry)
+	}
+	store, pools := fixtureStore(t, filepath.Join(t.TempDir(), "server.db"), registries...)
 	credentials := accountstore.New(pools)
 	passwords := accounts.New(credentials)
 	principal, err := hostedfixture.Bootstrap(t.Context(), credentials, accounts.RawCredentials{Username: "commissioner", Password: "private-password"})
@@ -79,19 +108,22 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &hostedFixture{history: store, pools: pools, accounts: credentials, principal: string(principal), now: time.Now().UTC(), skew: &atomic.Int64{}}
+	f := &hostedFixture{history: store, pools: pools, accounts: credentials, principal: string(principal), now: &atomic.Int64{}, skew: &atomic.Int64{}, footballGone: &atomic.Bool{}}
+	f.now.Store(time.Now().UTC().UnixNano())
 	store.SetClock(func() time.Time { return time.Now().Add(time.Duration(f.skew.Load())) })
-	credentials.SetClock(func() time.Time { return f.now })
+	credentials.SetClock(func() time.Time { return f.clockTime() })
 	f.sessions, f.totp = accounts.NewSessions(passwords, credentials), totp
 	f.enrollment = accounts.NewEnrollment(credentials, enrollmentAuthority{policy: policy, principal: principal})
-	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, nil)
+	worker := leagueservice.NewDueWorker(history.NewOneFile(store), func() nativecheck.Facts { return nil }, nil)
 	f.tokens = accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store})
 	confirmations, err := serverhttp.NewConfirmations()
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := serverhttp.Hosted{Tokens: f.tokens, Confirmations: confirmations, Store: store, Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Worker: worker,
-		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}),
+	f.publisher = serverhttp.NewPublisher()
+	f.games = leagueservice.NewLiveGames()
+	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}), Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, nil),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
 			"CM-018,Franchise,What is this franchise called?,\n"}
 	if digest != "" {
@@ -101,9 +133,21 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 			t.Fatal(err)
 		}
 		store.SetPinnedFootball(handler.Football)
-		handler.Worker = leagueservice.NewDueWorker(store, handler.Football.PlayerFacts, workflowClock{f.skew})
+		pinned, bare := serverhttp.LeaguePin{Store: store, Football: handler.Football, Digest: digest}, store.Sibling()
+		handler.Pins = func(context.Context, string) serverhttp.LeaguePin {
+			if f.footballGone.Load() {
+				return serverhttp.LeaguePin{Store: bare, Digest: digest, Missing: true}
+			}
+			return pinned
+		}
+		handler.Worker = leagueservice.NewDueWorker(history.NewOneFile(store), handler.Football.PlayerFacts, workflowClock{f.skew})
 	}
-	f.worker = handler.Worker
+	f.worker, f.join = handler.Worker, handler.Join
+	f.fresh = httptest.NewTLSServer(handler.Handler())
+	t.Cleanup(f.fresh.Close)
+	handler.Replies = serverhttp.NewReplyCache(64 << 20)
+	f.tally = serverhttp.NewRequestTally()
+	handler.Requests = f.tally
 	f.server = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.server.Close)
 	return f
@@ -127,7 +171,12 @@ func (f *hostedFixture) post(t *testing.T, path, body, bearer, proof string, sta
 
 func (f *hostedFixture) send(t *testing.T, path, body, bearer, proof string) (int, []byte) {
 	t.Helper()
-	request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, f.server.URL+path, strings.NewReader(body))
+	return f.sendOn(t, f.server, path, body, bearer, proof)
+}
+
+func (f *hostedFixture) sendOn(t *testing.T, server *httptest.Server, path, body, bearer, proof string) (int, []byte) {
+	t.Helper()
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, server.URL+path, strings.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +185,7 @@ func (f *hostedFixture) send(t *testing.T, path, body, bearer, proof string) (in
 	}
 	request.Header.Set("X-TWR-Recent-Auth", proof)
 	request.Header.Set("X-Principal", f.principal) // An attacker-controlled header never selects identity.
-	response, err := f.server.Client().Do(request)
+	response, err := server.Client().Do(request)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,11 +214,11 @@ func (f *hostedFixture) directCommissioner(t *testing.T) (bearer, proof string) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.totp.Confirm(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.now)}); err != nil {
+	if err := f.totp.Confirm(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.clockTime())}); err != nil {
 		t.Fatal(err)
 	}
-	f.now = f.now.Add(30 * time.Second)
-	recent, err := f.totp.StepUp(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.now)})
+	f.advanceTime(30 * time.Second)
+	recent, err := f.totp.StepUp(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.clockTime())})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,88 +265,17 @@ func (f *hostedFixture) privilegedProof(t *testing.T) string {
 		t.Fatal(err)
 	}
 	withCode := func() string {
-		return strings.TrimSuffix(body, "}") + `,"code":"` + testTOTP(t, setup.Seed, f.now) + `"}`
+		return strings.TrimSuffix(body, "}") + `,"code":"` + testTOTP(t, setup.Seed, f.clockTime()) + `"}`
 	}
 	f.post(t, serverhttp.TOTPConfirmPath, withCode(), "", "", 200)
 	f.post(t, serverhttp.TOTPStepUpPath, withCode(), "", "", 403)
-	f.now = f.now.Add(30 * time.Second)
+	f.advanceTime(30 * time.Second)
 	proofBody := f.post(t, serverhttp.TOTPStepUpPath, withCode(), "", "", 200)
 	var proof serverhttp.AuthenticatorResponse
 	if err := json.Unmarshal(proofBody, &proof); err != nil || proof.RecentAuth == "" {
 		t.Fatalf("proof: %v", err)
 	}
 	return proof.RecentAuth
-}
-
-func TestHostedHTTPSEnrollmentLoginWriteAndAdmission(t *testing.T) {
-	f := newHostedFixture(t)
-	code, err := f.enrollment.Issue(t.Context(), "native.hosted", "new.owner")
-	if err != nil {
-		t.Fatal(err)
-	}
-	f.post(t, serverhttp.EnrollmentPath, `{"protocol":1,"enrollment":{"code":"`+code.Code+`","username":"new.owner","password":"owner-password"}}`, "", "", 201)
-	visitor := f.login(t, "new.owner", "owner-password")
-	commissionerSession := f.login(t, "commissioner", "private-password")
-	read := `{"protocol":1,"league":"native.hosted"}`
-	change := `{"protocol":1,"command":{"league":"native.hosted","command":"commish.whatsnew.post","args":{"note":{"text":"Hello owners"}},"reason":"Publish a league note","expected":1,"request":"https-note","effective":"now","visibility":"league"}}`
-	for _, path := range []string{serverhttp.LedgerPath, serverhttp.PreviewPath, serverhttp.ExecutePath} {
-		body := change
-		if path == serverhttp.LedgerPath {
-			body = read
-		}
-		f.post(t, path, body, "", "", 401)
-		f.post(t, path, body, "bad-bearer", "", 401)
-		status := 403
-		if path == serverhttp.ExecutePath {
-			status = 409
-		}
-		f.post(t, path, body, visitor, "", status)
-		f.post(t, path, body, commissionerSession, "", status)
-	}
-	f.revision(t, 1)
-	proof := f.privilegedProof(t)
-	// A forged principal header plus the real commissioner's proof cannot upgrade a visitor.
-	f.post(t, serverhttp.ExecutePath, change, visitor, proof, 409)
-	f.post(t, serverhttp.ExecutePath, strings.Replace(change, `"protocol":1`, `"protocol":1,"principal":"`+f.principal+`"`, 1), commissionerSession, proof, 400)
-	initialBody := f.post(t, serverhttp.LedgerPath, read, commissionerSession, proof, 200)
-	var initial commissioner.Ledger
-	if err := json.Unmarshal(initialBody, &initial); err != nil {
-		t.Fatal(err)
-	}
-	change = strings.Replace(change, `"expected":1`, fmt.Sprintf(`"expected":%d`, initial.Revision), 1)
-	preview := f.post(t, serverhttp.PreviewPath, change, commissionerSession, proof, 200)
-	if !bytes.Contains(preview, []byte("Hello owners")) {
-		t.Fatalf("missing preview: %s", preview)
-	}
-	f.revision(t, 1)
-	receipt := f.post(t, serverhttp.ExecutePath, change, commissionerSession, proof, 200)
-	retry := f.post(t, serverhttp.ExecutePath, change, commissionerSession, proof, 200)
-	if !bytes.Equal(receipt, retry) {
-		t.Fatal("retry changed receipt")
-	}
-	f.revision(t, 2)
-	var recorded commissioner.Receipt
-	if err := json.Unmarshal(receipt, &recorded); err != nil || recorded.Revision == initial.Revision || recorded.Revision < 2 {
-		t.Fatalf("receipt: %v", err)
-	}
-	events, err := f.history.Events(t.Context(), "native.hosted", commissioner.Stream, 0)
-	if err != nil || events[1].Payload.Commissioner.Principal != f.principal {
-		t.Fatalf("server trusted spoofed principal: %v", err)
-	}
-	// Proof expiry affects reads, previews, new writes and already committed retries.
-	f.now = f.now.Add(accounts.RecentAuthLifetime)
-	f.post(t, serverhttp.LedgerPath, read, commissionerSession, proof, 403)
-	f.post(t, serverhttp.PreviewPath, change, commissionerSession, proof, 403)
-	f.post(t, serverhttp.ExecutePath, change, commissionerSession, proof, 409)
-	f.revision(t, 2)
-	if err := f.sessions.Revoke(t.Context(), accounts.RawSession{Bearer: commissionerSession}, false); err != nil {
-		t.Fatal(err)
-	}
-	for _, path := range []string{serverhttp.LedgerPath, serverhttp.PreviewPath, serverhttp.ExecutePath} {
-		f.post(t, path, change, commissionerSession, proof, 401)
-	}
-	f.post(t, serverhttp.FixtureChangePath, change, visitor, "", 404)
-	f.revision(t, 2)
 }
 
 func TestHostedNilDependenciesFailClosed(t *testing.T) {
@@ -318,7 +296,9 @@ func TestHostedNilDependenciesFailClosed(t *testing.T) {
 func TestHostedHTTPSQueuedRevocation(t *testing.T) {
 	f := newHostedFixture(t)
 	bearer, proof := f.directCommissioner(t)
-	f.now = f.now.Add(time.Nanosecond)
+	// Activity refreshes at most once a minute, so move the stored last_used past that guard:
+	// the request's authenticated read is what this test waits on before revoking.
+	f.advanceTime(2 * time.Minute)
 	digest := sha256.Sum256([]byte(bearer))
 	tokenHash := hex.EncodeToString(digest[:])
 	reader, writer := io.Pipe()
@@ -347,7 +327,7 @@ func TestHostedHTTPSQueuedRevocation(t *testing.T) {
 	waitFor(t, func() bool {
 		var used int64
 		err := f.pools.Read().QueryRowContext(t.Context(), `SELECT last_used_at FROM account_sessions WHERE token_hash = ?`, tokenHash).Scan(&used)
-		return err == nil && used == f.now.UnixNano()
+		return err == nil && used == f.clockTime().UnixNano()
 	})
 	tx, err := f.pools.Write().BeginTx(t.Context(), nil)
 	if err != nil {

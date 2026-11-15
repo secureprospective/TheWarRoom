@@ -41,6 +41,8 @@ func (a *App) checkEngine(ctx context.Context) {
 			return a.runModelLocked(ctx, a.core.Params.Snapshot())
 		},
 		Finished: a.engineFinished, Log: func(message string) { log.Print(message) },
+		// An idle refresh says once per last run that the engine is not due.
+		NotDueLogged: func(run int64) bool { return a.engineNotDue.Swap(run) != run },
 	})
 }
 

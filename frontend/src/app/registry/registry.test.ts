@@ -76,7 +76,8 @@ describe('Endpoint map', () => {
     for (const node of nodeKeys) {
       for (const w of nodes[node].workspaces) {
         const place = `${nodes[node].label} › ${w.label}`;
-        expect(placementRoute(place)).toEqual({ node, workspace: w.slug });
+        expect(placementRoute(place)).toEqual({ node,
+          workspace: w.slug });
       }
     }
   });
@@ -209,7 +210,7 @@ describe('Endpoint map', () => {
       }
       expect(() => assertEndpointRoutes(endpoints, searchCandidates(executor))).not.toThrow();
       commands.dispatch('overlays.close', {});
-      commands.dispatch('nav.open', { node: 'home', workspace: 'seasonal-card' });
+      commands.dispatch('nav.open', { node: 'home', workspace: 'overview' });
     } finally {
       projection.mockRestore();
     }
@@ -249,11 +250,9 @@ describe('Endpoint verbs and search', () => {
     for (const id of ['S-14', 'C-06.1'])
       expect(offered.some(r =>
         r.invocation.verb === 'endpoint.open' && r.invocation.args.id === id)).toBe(false);
-    const result = offered.find(r =>
-      r.invocation.verb === 'endpoint.open' && r.invocation.args.id === 'M-054')!;
-    expect(result.label).not.toContain('O=');
-    runResult(executor, result);
-    expect(executor.read().endpointIds).toEqual(['M-054']);
+    for (const id of ['M-048', 'M-058', 'M-059'])
+      expect(offered.some(r => r.invocation.verb === 'endpoint.open' &&
+        r.invocation.args.id === id)).toBe(false);
   });
   it('ranks endpoints after equally matching places and before players', () => {
     const result = rankResults('same', [
@@ -298,7 +297,6 @@ describe('Endpoint verbs and search', () => {
       } else {
         expect(c.read().endpointSurface).toBe(row.placement);
         if (row.placement === 'Inspector') expect(c.read().inspector).toBe('rest');
-        if (row.placement === 'Comms') expect(c.read().comms).toBe(true);
         if (row.placement === 'Calendar') expect(c.read().summoned).toBe('calendar');
       }
       expect(c.read().commandbar).toBe(row.placement === 'Command bar');
@@ -391,7 +389,7 @@ it('reveals a lazily mounted endpoint once and stops watching after it arrives',
   try {
     await act(async () => { commands.dispatch('endpoint.open', {id: 'M-064'}); });
     await act(async () => {
-      root.render(createElement(EndpointIndex, {placement: 'Trade Floor › Draft room'}));
+      root.render(createElement(EndpointIndex, {placement: 'War Room › Draft room'}));
     });
     expect(arrival).toBeTypeOf('function');
     surfaces.push({ dataset: {endpoint: 'M-064'}, focus: vi.fn(), closest: (s: string) =>
@@ -409,7 +407,7 @@ it('reveals a lazily mounted endpoint once and stops watching after it arrives',
   }
 });
 
-it.each(['L-17', 'L-18', 'L-21', 'M-039', 'M-154'] as const)
+it.each(['M-039', 'M-154'] as const)
 ('opening %s reveals its disclosure, scrolls the work column and focuses the section', async id => {
   const { revealEndpoint } = await import('./EndpointIndex');
   commands.dispatch('endpoint.open', { id });
@@ -498,4 +496,15 @@ it('keeps commissioner rows out of owner indexes, lookups, counts and command se
     }
   }
   expect(Object.isFrozen(commissionerControls)).toBe(true);
+});
+
+it('parks unhomed trade reports with no command route', () => {
+  for (const id of ['M-065', 'M-066', 'M-068', 'M-087', 'M-103', 'M-179', 'M-199',
+    'L-15', 'L-16', 'L-17', 'L-18', 'L-19', 'L-20', 'L-21', 'L-22'] as const) {
+    expect(endpointById(id)).toMatchObject({ disposition: 'retired', placement: '' });
+    expect(endpointById(id).disposition_note).toContain('PARKED 11-05 trade');
+    expect(() => createCommands().dispatch('endpoint.open', { id })).toThrow('retired');
+  }
+  expect(placementRoute('Trade Floor › Trade desk')).toBeUndefined();
+  expect(placementRoute('Trade Floor › Draft room')).toBeUndefined();
 });

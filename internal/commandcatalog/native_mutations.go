@@ -116,6 +116,7 @@ func nativePeopleMutations() []struct{ id, args string } {
 	return []struct{ id, args string }{
 		{commissioner.CaretakerSeat, "people"},
 		{"commish.franchise.edit", "people"},
+		{commissioner.FranchiseDirection, "people"},
 		{"commish.seat.invite", "people"},
 		{"commish.seat.invite.revoke", "people"},
 		{"commish.seat.invite.redeem", "people"},

@@ -66,11 +66,6 @@ func FetchCSV(ctx context.Context, client *http.Client, url string, maxBytes int
 	return fetchCSV(ctx, client, url, maxBytes, false)
 }
 
-// FetchCSVGz is FetchCSV for a gzipped source; maxBytes caps the decompressed bytes.
-func FetchCSVGz(ctx context.Context, client *http.Client, url string, maxBytes int64) ([][]string, error) {
-	return fetchCSV(ctx, client, url, maxBytes, true)
-}
-
 func fetchCSV(ctx context.Context, client *http.Client, url string, maxBytes int64, gz bool) ([][]string, error) {
 	r, lr, cleanup, err := openCappedCSV(ctx, client, url, maxBytes, gz)
 	if err != nil {

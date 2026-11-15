@@ -101,6 +101,9 @@ func TestRejectInvalidChanges(t *testing.T) {
 		func(r *RawChange) { r.Action = "up" },
 		func(r *RawChange) { r.Kind = "note"; r.Text = " " },
 		func(r *RawChange) { r.Kind = "note"; r.Text = "A\x00B" },
+		func(r *RawChange) { r.Kind = "note"; r.Action = "remove" },
+		func(r *RawChange) { r.Kind = "note"; r.Action = "remove"; r.At = "not-a-time" },
+		func(r *RawChange) { r.At = "2026-10-11T12:00:00Z" },
 	} {
 		r := base
 		mutate(&r)

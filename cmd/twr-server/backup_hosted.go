@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -14,68 +16,215 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
-func startHostedBackup(ctx context.Context, pools *db.Pools, path, temp string) (func() error, backupStatus, func(), error) {
+// hostedGuards are the write guards: each league's writes follow its own file's off-site backup, so a
+// league whose backup is behind pauses only itself; sign-in writes follow the sign-in file's.
+type hostedGuards struct {
+	league  func(league string) error
+	signIns func() error
+}
+
+func startHostedBackup(ctx context.Context, files stateFiles, path, temp string) (hostedGuards, hostedBackups, func(), error) {
 	// Missing configuration never enables unprotected writes, including on development hosts.
 	_, configErr := os.Stat(path)
 	if path == "" || os.IsNotExist(configErr) {
 		guard := func() error { return fmt.Errorf("changes are paused until off-site backups are configured") }
-		pools.SetWriteGuard(guard)
-		return guard, noBackups, func() {}, nil
+		for _, league := range files.leagues.leagues() {
+			if pools, ok := files.leagues.pools(league); ok {
+				pools.SetWriteGuard(files.leagues.guard(league, guard))
+			}
+		}
+		files.leagues.added = func(league string, pools *db.Pools) { pools.SetWriteGuard(files.leagues.guard(league, guard)) }
+		files.signIns.SetWriteGuard(guard)
+		return hostedGuards{func(league string) error { return files.leagues.guard(league, guard)() }, guard}, hostedBackups{league: noBackups, reference: noBackups, signIns: noBackups}, func() {}, nil
 	}
-	manager, err := newBackupManager(pools, path, temp)
+	managers, err := newBackupManagers(files, path, temp)
 	if err != nil {
-		return nil, nil, nil, err
+		return hostedGuards{}, hostedBackups{}, nil, err
 	}
-	pools.SetWriteGuard(manager.CheckWrite)
+	// Reference writes use their own pools; reference coverage pauses nothing (BACKUPS.md).
+	files.leagues.added = func(league string, pools *db.Pools) { managers.addLeague(league, pools) }
+	files.signIns.SetWriteGuard(managers.signIns.CheckWrite)
 	work, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
-	go func() { defer close(done); manager.Run(work) }()
-	return manager.CheckWrite, func() (offsite.Status, bool) { return manager.Status(), true }, func() { cancel(); <-done }, nil
+	go func() { defer close(done); offsite.RunEach(work, managers.inOrder) }()
+	backups := hostedBackups{
+		league:    managers.leagueStatus,
+		reference: func() (offsite.Status, bool) { return managers.reference.Status(), true },
+		signIns:   func() (offsite.Status, bool) { return managers.signIns.Status(), true },
+	}
+	return hostedGuards{managers.checkLeague, managers.signIns.CheckWrite}, backups, func() { cancel(); <-done }, nil
 }
 
-func newBackupManager(pools *db.Pools, path, temp string) (*offsite.Manager, error) {
+// backupManagers is one off-site manager per file: one per league, the reference file's and the
+// sign-in file's. Leagues created while the server runs get theirs as they are made.
+type backupManagers struct {
+	newLeague          func(league string, pools *db.Pools) *offsite.Manager
+	guard              func(league string, next func() error) func() error
+	mu                 *sync.Mutex
+	leagues            map[string]*offsite.Manager
+	reference, signIns *offsite.Manager
+}
+
+// addLeague makes league's manager and puts its file's writes behind it.
+func (b backupManagers) addLeague(league string, pools *db.Pools) *offsite.Manager {
+	m := b.newLeague(league, pools)
+	pools.SetWriteGuard(b.guard(league, m.CheckWrite))
+	b.mu.Lock()
+	b.leagues[league] = m
+	b.mu.Unlock()
+	return m
+}
+
+func (b backupManagers) leagueManagers() []*offsite.Manager {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	names := make([]string, 0, len(b.leagues))
+	for league := range b.leagues {
+		names = append(names, league)
+	}
+	slices.Sort(names)
+	out := make([]*offsite.Manager, len(names))
+	for i, league := range names {
+		out[i] = b.leagues[league]
+	}
+	return out
+}
+
+// checkLeague is league's write guard; a league the server does not hold has nothing to pause.
+func (b backupManagers) checkLeague(league string) error {
+	b.mu.Lock()
+	m := b.leagues[league]
+	b.mu.Unlock()
+	if m == nil {
+		return nil
+	}
+	return b.guard(league, m.CheckWrite)()
+}
+
+// leagueStatus is the dashboard's league backup line: every league covered, or the one furthest behind.
+func (b backupManagers) leagueStatus() (offsite.Status, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	var worst offsite.Status
+	first := true
+	names := make([]string, 0, len(b.leagues))
+	for league := range b.leagues {
+		names = append(names, league)
+	}
+	slices.Sort(names)
+	for _, league := range names {
+		s := b.leagues[league].Status()
+		if s.Failure != "" {
+			s.Failure = "league " + league + ": " + s.Failure
+		}
+		if first || worse(s, worst) {
+			worst, first = s, false
+		}
+	}
+	if first {
+		now := time.Now()
+		return offsite.Status{Captured: now, Verified: now, Writable: true}, true // no leagues: nothing to cover
+	}
+	return worst, true
+}
+
+func worse(a, b offsite.Status) bool {
+	switch {
+	case a.Writable != b.Writable:
+		return !a.Writable
+	case (a.Failure != "") != (b.Failure != ""):
+		return a.Failure != ""
+	}
+	return a.Verified.Before(b.Verified)
+}
+
+// inOrder is the capture order of a due round: every league first, then reference, then sign-ins
+// last. A league write commits its new player ids (reference) and its accounts (sign-in) before its own
+// commit, so every id and account a captured league names is in the next reference and sign-in sets.
+func (b backupManagers) inOrder() []*offsite.Manager {
+	out := b.leagueManagers()
+	for _, m := range []*offsite.Manager{b.reference, b.signIns} {
+		if m != nil {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// newBackupManagers builds one off-site manager per file, each with its own revision reader.
+func newBackupManagers(files stateFiles, path, temp string) (backupManagers, error) {
 	config, err := offsite.ReadConfig(path)
 	if err != nil {
-		return nil, fmt.Errorf("configure off-site backup: %w", err)
+		return backupManagers{}, fmt.Errorf("configure off-site backup: %w", err)
 	}
 	r2, err := offsite.NewR2(config)
 	if err != nil {
-		return nil, fmt.Errorf("configure off-site backup: %w", err)
+		return backupManagers{}, fmt.Errorf("configure off-site backup: %w", err)
 	}
-	return offsite.NewManager(r2, temp, func(ctx context.Context, stage string) (string, time.Time, error) {
-		return offsite.Capture(ctx, pools, filepath.Dir(path), stage, config.Recipient, hostedCheckpoint)
-	}), nil
+	manager := func(kind offsite.SetKind, pools *db.Pools, checkpoint func(context.Context, string) ([]byte, error)) *offsite.Manager {
+		return offsite.NewKindManager(kind, r2, temp, func(ctx context.Context, stage string) (string, time.Time, error) {
+			return offsite.CaptureSet(ctx, kind, pools, filepath.Dir(path), stage, config.Recipient, checkpoint)
+		}, pools.Revision)
+	}
+	out := backupManagers{mu: &sync.Mutex{}, leagues: map[string]*offsite.Manager{}, guard: files.leagues.guard,
+		newLeague: func(league string, pools *db.Pools) *offsite.Manager {
+			return manager(offsite.LeagueFileSet(league), pools, leagueSetCheckpoint)
+		}}
+	for _, league := range files.leagues.leagues() {
+		if pools, ok := files.leagues.pools(league); ok {
+			out.addLeague(league, pools)
+		}
+	}
+	if files.signIns != nil {
+		out.signIns = manager(offsite.SignInSet, files.signIns, signInSetCheckpoint)
+	}
+	if files.reference != nil {
+		out.reference = referenceManager(r2, files.reference, filepath.Dir(path), temp, config.Recipient)
+	}
+	return out, nil
 }
 
-// upgradeOffsite uploads and reads back one matched off-site set of the stopped server, so the
-// league as it stood before an upgrade is recoverable even if this host is lost.
-func upgradeOffsite(ctx context.Context, pools *db.Pools, path, temp string) error {
+// referenceManager backs up the reference file without its raw captures (captureReference).
+func referenceManager(r2 *offsite.R2, pools *db.Pools, configDir, temp, recipient string) *offsite.Manager {
+	evidence := offsite.NewEvidence(r2, recipient)
+	return offsite.NewKindManager(offsite.ReferenceSet, r2, temp, func(ctx context.Context, stage string) (string, time.Time, error) {
+		return captureReference(ctx, evidence.Put, pools, configDir, stage, recipient)
+	}, pools.Revision)
+}
+
+// upgradeOffsite uploads and reads back one matched off-site set of each file of the stopped server,
+// every league first, so the server as it stood before an upgrade is recoverable even if this host is lost.
+func upgradeOffsite(ctx context.Context, files stateFiles, path, temp string) error {
 	if filepath.Base(path) != "backup.json" {
 		return fmt.Errorf("private backup settings must be named backup.json")
 	}
-	manager, err := newBackupManager(pools, path, temp)
+	managers, err := newBackupManagers(files, path, temp)
 	if err != nil {
 		return err
 	}
-	attempt, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	attempt, cancel := context.WithTimeout(ctx, 4*time.Minute)
 	defer cancel()
-	//nolint:wrapcheck // The upgrade names the step that failed.
-	return manager.Backup(attempt)
+	for _, m := range managers.inOrder() {
+		if err := m.Backup(attempt); err != nil {
+			return fmt.Errorf("%s set: %w", m.Kind().Prefix, err)
+		}
+	}
+	return nil
 }
 
-func configureHostedBackup(ctx context.Context, handler *serverhttp.Hosted, pools *db.Pools, path, temp string, files ...string) (func(), backupStatus, error) {
+func configureHostedBackup(ctx context.Context, handler *serverhttp.Hosted, files stateFiles, path, temp string, extra ...string) (func(), hostedBackups, error) {
 	if path != "" {
 		if filepath.Base(path) != "backup.json" {
-			return nil, nil, fmt.Errorf("private backup settings must be named backup.json")
+			return nil, hostedBackups{}, fmt.Errorf("private backup settings must be named backup.json")
 		}
-		if err := checkBackupFiles(filepath.Dir(path), files); err != nil {
-			return nil, nil, err
+		if err := checkBackupFiles(filepath.Dir(path), extra); err != nil {
+			return nil, hostedBackups{}, err
 		}
 	}
-	admission, status, stop, err := startHostedBackup(ctx, pools, path, temp)
+	guards, status, stop, err := startHostedBackup(ctx, files, path, temp)
 	if err != nil {
-		return nil, nil, err
+		return nil, hostedBackups{}, err
 	}
-	handler.WriteAdmission = admission
+	handler.LeagueAdmission, handler.SignInAdmission = guards.league, guards.signIns
 	return stop, status, nil
 }

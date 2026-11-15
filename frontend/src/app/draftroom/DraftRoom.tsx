@@ -41,7 +41,7 @@ function Rules({ draft }: { draft: Draft }) {
 
 // DraftRoom is the rookie draft: the clock, your own pick, the board and, for a commissioner, the tray.
 // Go replays the ledger into the draft and decides every refusal; this presents it.
-export default function DraftRoom() {
+export default function DraftRoom({ league }: { league?: string } = {}) {
   const { choices, selected, people, outcome, error: leagueError, pending } = leagueState.use();
   const room = draftRoom.use();
   const [viewing, setViewing] = useState('');
@@ -58,7 +58,7 @@ export default function DraftRoom() {
   const landed = outcome.status === 'done' && outcome.form.startsWith('draft.')
     ? outcome.receipt : undefined;
   useDraftReading(selected, franchise, due, now, landed?.entry ?? '', room.startup);
-  useEffect(() => { void leagueState.choose(); }, []);
+  useEffect(() => { void leagueState.choose(league); }, [league]);
   useEffect(() => { if (landed) setTray(undefined); }, [landed?.entry]);
   useEffect(() => surfaceActions.register('draftroom', args => {
     if (args.action === 'close') setTray(undefined);

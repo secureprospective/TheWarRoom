@@ -29,11 +29,18 @@ func PlayerScoreChanges(records []Record, player string, season, week int) (Scor
 
 func playerScoreChanges(records []Record, active map[string]bool, player string,
 	season, week int) (ScoreChanges, error) {
-	id, err := playerid.New(player)
-	if err != nil || id.String() != player || season < 1920 || season > 9999 || week < 1 || week > 22 {
-		return ScoreChanges{}, fmt.Errorf("choose a player, season and week")
+	if err := checkScoreScope(player, season, week); err != nil {
+		return ScoreChanges{}, err
 	}
 	return scoreChangesFrom(records, active, player, "", season, week)
+}
+
+func checkScoreScope(player string, season, week int) error {
+	id, err := playerid.New(player)
+	if err != nil || id.String() != player || season < 1920 || season > 9999 || week < 1 || week > 22 {
+		return fmt.Errorf("choose a player, season and week")
+	}
+	return nil
 }
 
 func FranchiseScoreChanges(records []Record, franchise string, season, week int) (ScoreChanges, error) {
@@ -110,7 +117,12 @@ func checkScoreAppend(raw RawCommand, records []Record) error {
 func scoreTrial(raw RawCommand, records []Record) []Record {
 	trial := make([]Record, len(records), len(records)+1)
 	copy(trial, records)
-	return append(trial, Record{Command: raw, Receipt: Receipt{Entry: "proposed." + raw.Request}})
+	return append(trial, proposalRecord(raw))
+}
+
+// proposalRecord is a proposed command as a trial ledger's last entry.
+func proposalRecord(raw RawCommand) Record {
+	return Record{Command: raw, Receipt: Receipt{Entry: "proposed." + raw.Request}}
 }
 
 func checkScoreCompensation(raw RawCommand, records []Record) error {

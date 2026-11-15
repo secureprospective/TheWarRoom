@@ -167,7 +167,7 @@ func TestStartingRuleSourcesArePlainWords(t *testing.T) {
 func TestCreationRecordsSource(t *testing.T) {
 	for _, tc := range []struct{ preset, source, want string }{
 		{PresetEmpty, "", SourceNative}, {PresetDefault32, "", SourceNative},
-		{PresetLegacy, "", SourceMFLImport}, {PresetLegacy, SourceNative, SourceNative},
+		{PresetLegacy, "", SourceNative}, {PresetLegacy, SourceNative, SourceNative},
 		{PresetEmpty, "unknown", ""},
 	} {
 		t.Run(tc.preset+"/"+tc.source, func(t *testing.T) {

@@ -9,7 +9,9 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
+import sys
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -58,6 +60,23 @@ def linux_package(source, output, guide):
                        check=True)
 
 
+def create_dmg(stage, output, attempts=4, wait=5, run=subprocess.run, sleep=time.sleep):
+    """hdiutil on hosted macOS runners sometimes fails with "Resource busy" while another
+    process still holds the scratch image; the same command succeeds moments later."""
+    command = ["hdiutil", "create", "-volname", "The War Room", "-srcfolder",
+               str(stage), "-ov", "-format", "UDZO", str(output)]
+    for attempt in range(1, attempts + 1):
+        try:
+            run(command, check=True)
+            return
+        except subprocess.CalledProcessError:
+            if attempt == attempts:
+                raise
+            print(f"hdiutil create failed (attempt {attempt} of {attempts}); retrying in "
+                  f"{wait * attempt} s", file=sys.stderr, flush=True)
+            sleep(wait * attempt)
+
+
 def package(source, destination, name):
     destination.mkdir(parents=True, exist_ok=True)
     output = (destination / artifact_name(name)).resolve()
@@ -70,8 +89,7 @@ def package(source, destination, name):
             shutil.copytree(source, stage / source.name, symlinks=True)
             shutil.copy2(guide, stage / "INSTALL.md")
             (stage / "Applications").symlink_to("/Applications", target_is_directory=True)
-            subprocess.run(["hdiutil", "create", "-volname", "The War Room", "-srcfolder",
-                            str(stage), "-ov", "-format", "UDZO", str(output)], check=True)
+            create_dmg(stage, output)
     else:
         bootstrapper = ROOT / ".tmp/desktop/MicrosoftEdgeWebview2Setup.exe"
         if not bootstrapper.is_file():

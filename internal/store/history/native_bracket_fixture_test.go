@@ -8,13 +8,11 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
-	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -54,7 +52,7 @@ func bracketTest(t *testing.T) *bracketFixture {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "bracket.db")
 	s, pools := statStore(t, path)
-	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
+	runScoreCommand(t, s, importedLegacy(0), "creator")
 	runScoreCommand(t, s, bracketSeedCommand(t), "creator")
 	runScoreCommand(t, s, ruleCommand("schedule.regularWeeks", "1", "now", "Choose the season length", 2), "creator")
 	runScoreCommand(t, s, ruleCommand("lineup.invalidPenalty", `"none"`, "now", "Score one-player lineups as they are", 3), "creator")
@@ -96,12 +94,6 @@ func (f *bracketFixture) reopen(t *testing.T) {
 	}
 	f.s, f.pools = statStore(t, f.path)
 	f.install()
-}
-
-// kickoff holds the NFL calendar: the first playoff week's games start at the given time.
-func (f *bracketFixture) kickoff(at time.Time) {
-	f.env = &lineupEnvFake{locks: map[int]map[string]time.Time{14: {"KC": at, "BUF": at.Add(3 * time.Hour)}}}
-	f.s.SetLineupEnvironment(f.env)
 }
 
 func (f *bracketFixture) bracket(t *testing.T) commissioner.NativeBracket {
@@ -154,13 +146,6 @@ func (f *bracketFixture) refused(t *testing.T, raw commissioner.RawCommand, prin
 		t.Fatalf("a refused %s was recorded", raw.Command)
 	}
 	return err.Error()
-}
-
-// grantCoCommissioner gives a principal the co-commissioner role through the real command.
-func (f *bracketFixture) grantCoCommissioner(t *testing.T, principal string) {
-	t.Helper()
-	executePeople(t, f.s, "creator", "commish.role.grant",
-		commissioner.RawPeople{Principal: principal, Role: governance.CoCommissioner}, f.rev(t))
 }
 
 func gameIn(b commissioner.NativeBracket, id string) commissioner.BracketGame {

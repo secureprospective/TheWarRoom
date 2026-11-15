@@ -199,6 +199,9 @@ Steps for the commissioner and deputy: [RESTORE.md](../../deploy/server/RESTORE.
 
 `twr-server hosted … -status-socket /var/lib/twr/status.sock` also serves an owner-only
 Unix socket, a separate listener from HTTPS, so the Tunnel can never reach it.
+Run `twr-server requests -status-socket /var/lib/twr/status.sock` as the socket owner to see workflow counts and server memory.
+Add `-reset` to start a new measurement interval. The counts never include league IDs or arguments. KB is workflow data, not compressed wire traffic.
+
 `twr-server status -socket … -origin 127.0.0.1:8443 -origin-cert … -tunnel 127.0.0.1:20241
 -state /var/lib/twr` prints the plain-English dashboard; it refuses any non-loopback
 address and sends nothing anywhere. The CT script `twr-status` runs it as the service
@@ -250,3 +253,83 @@ working-server restore. `league.stand_up` has catalog metadata plus a typed hand
 and explicit `operator-console` exposure; it is deliberately absent from hosted
 command publication. Its wiring is isolated in `stand_up.go` for command-spine
 integration.
+
+## Load a league held as an MFL mirror (local console, service stopped)
+
+```
+rc-service twr-server stop
+twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db \
+  -mfl-league 14432 -football-pin /etc/twr/football.sha256 < commissioner.json
+chown twr:twr /var/lib/twr/server.db*; rc-service twr-server start
+```
+
+`commissioner.json` is `{"username":…,"password":…}` (owner-only tmpfs file; never an argument).
+On an empty server it becomes the first account; otherwise that account's password must check.
+The mirror (a *copy* of the desktop `history.db`) is opened read-only. The native league is built
+from held MFL reads only (`archive.Replay`: no connection is ever opened, so MFL cannot be reached),
+the commissioner's cutover is recorded, football evidence (held player directory + NFL kickoffs, no
+statistics) is pinned, then the existing Capture → encrypted export → inactive import → seal →
+activate path moves it. The server's copy is the only writable one. `twr-sandbox` passes
+`-football` from the pin file when it exists. Test: `go test ./internal/leagueload`.
+
+## Join link: owners pick their own team
+
+```
+twr-server join-link -db /var/lib/twr/server.db -league LEAGUE -rotate  < commissioner.json
+twr-server join-link -db … -league LEAGUE -revoke                       < commissioner.json
+twr-server join-link -db … -league LEAGUE -release franchise.07         < commissioner.json
+```
+
+`-rotate` prints a new code and a same-origin page link (the old code stops working). The link keeps
+the league and code in the URL fragment, so the server never sees them in a path or log. Holders can
+open `/join#league=…&code=…` on a phone, or POST `{"protocol":1,"join":{"league":…,"code":…}}` to
+`/v1/auth/join/franchises` (names + taken flags), then
+`{"protocol":1,"claim":{"league":…,"code":…,"franchise":…,"username":…,"password":…}}` to
+`/v1/auth/join/claim` (201 with eight one-time recovery codes, or 409 taken / username taken, 403 bad
+link), then sign in at `/v1/auth/login`. The first claim binds; the seat is `commish.seat.replace`
+recorded by the issuing commissioner, and `-release` is `commish.seat.remove` (also available to the
+commissioner in the app through the catalog). Both doors share login's per-client limit (10 a
+minute) and the backup write gate. Only these page routes and their two JSON doors accept a
+same-origin browser `Origin`; every other account route still refuses browser requests.
+
+`reset-password` is the lost-owner door. It rotates the league link, releases the team, and prints
+a page link opened on that team; the old account keeps its password but no longer owns the team, and
+the released team can be claimed once with a new sign-in. The previous league link stops working.
+
+```
+twr-server reset-password -db … -league LEAGUE -team franchise.07   < commissioner.json
+```
+
+The password page `/password` changes a password with the current one at
+`/v1/auth/password/change`; every device session issued before the change stops working.
+Tests: `go test ./internal/serverhttp -run 'TestJoin|TestPassword'`, `go test ./cmd/twr-server -run TestResetPassword`.
+
+### Provisional live scores
+
+Hosted startup owns one serial ESPN/Sleeper collector, sharing `now.LiveStatsPoller` with the legacy
+collector without constructing the local App. It polls the current regular-season scoreboard every minute
+while a game is live, otherwise every five minutes, with ten-second requests and a ninety-second poll
+budget. Finished summaries retain the existing ten-minute reread policy. Identity matching uses the
+shared directory and verifies the league's pinned GSIS/Sleeper identities; unknown identities stay missing.
+
+The current-week overlay is detached and atomically published after a durable checkpoint. Results,
+standings and odds capture its identity before single-flight selection and score against that same view.
+Score-bearing replies include `evidence.live`, `asOf`, source packet timestamps, and provisional/reduced/stale
+labels. Existing `NativeGame` provisional totals are not final results. NFLverse fields already in a pin
+win per field; a live fill remains provisional. A score tick never changes the football pin digest.
+
+`live-scores/checkpoint.json` beside the server file retains raw packets, SHA-256 digests, source instants
+and the identity mapping used. Restart verifies these and repeats normal parsing/merging without network
+or rewriting the checkpoint. One checkpoint plus its replacement is retained, not historical chronology.
+Limits: 20 packets, 4 MiB each, 64 MiB raw total, 96 MiB encoded checkpoint; 6,000 decoded player lines,
+16 MiB encoded overlay, 300 fields per kind and 1,000 events per field. An oversized or invalid candidate
+keeps the previous readable generation/checkpoint. Feed outages can retain prior packets with their
+original timestamps and mark the snapshot reduced; unrecoverable acquisition or durability failure leaves
+the last good generation readable. Decoded legacy chronology is neither populated nor rewritten by this path.
+
+**Score notifications:** hosted startup passes the server's one shared `serverhttp.Publisher` to the
+collector. After each new live generation is readable, `PublishScores` bumps that week's `scores` topic
+for every league, so open change streams hear about it. No second topic owner exists here.
+Official nflverse finals acquisition is later;
+ESPN final-whistle packets still produce provisional scores. C5 should use the returned reading's
+`evidence.live`, not sample `Store.LiveEpoch()` after scoring.

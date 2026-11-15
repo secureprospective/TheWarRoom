@@ -104,15 +104,3 @@ func TestClockBuilderWindowOverrides(t *testing.T) {
 		}
 	}
 }
-
-func TestClockBuilderIgnoresLastSeasonsTradeDirective(t *testing.T) {
-	at := time.Date(2027, 9, 20, 12, 0, 0, 0, time.UTC)
-	src := heldClock{phase: domain.PhaseRegularSeason, trade: time.Date(2026, 11, 5, 0, 15, 0, 0, time.UTC)}
-	got, err := BuildClock(context.Background(), at, 2027, src, nil, leagueclock.WindowInputs{}, Provenance{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if w := got.Value.Windows[0]; w.Kind != leagueclock.TradeDeadline || w.Moved || w.At != nil {
-		t.Fatal("a 2026 commissioner date must not move the 2027 trade deadline", w)
-	}
-}

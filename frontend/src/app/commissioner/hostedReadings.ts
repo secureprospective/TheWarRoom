@@ -1,4 +1,5 @@
 import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
+import { POSITIONS, type Position } from '../data/contract';
 
 const flag = (v: unknown): boolean => {
   if (typeof v !== 'boolean') throw new Error('Unreadable league status.');
@@ -74,12 +75,15 @@ export function parseHostedLineup(v: unknown): HostedLineup {
   };
 }
 export type HostedRoster = {
+  identities: { player: string; franchise: string; side: string; name: string; position?: Position }[];
   league: string;
   revision: number;
   season: number;
   franchises: { value: string; label: string }[];
   pool: { value: string; label: string }[];
-  picks: { season: number; round: number; original: string; owner: string }[];
+  market: { id: string; name: string; position: string; string: string; points: string; age?: string; value?:
+    string; minimum?: string; minimumCents?: number }[];
+  picks: { season: number; round: number; original: string; owner: string; used: boolean }[];
   players: {
     id: string;
     name: string;
@@ -89,6 +93,7 @@ export type HostedRoster = {
 };
 export function parseHostedRoster(v: unknown): HostedRoster {
   const r = object(v, 'Roster', [
+    'pool', 'identities', 'poolPointsNote',
     'corrections',
     'league',
     'revision',
@@ -110,12 +115,32 @@ export function parseHostedRoster(v: unknown): HostedRoster {
     'franchises',
     'players',
     'picks',
+    'pickHistory',
     'adjustments',
     'pool',
+    'sides',
   ]);
   return {
     league: text(r.league, 'League'),
+    market: array(r.pool ?? [], 'Market pool', (v, p) => {
+      const row = object(v, p, ['player', 'name', 'position', 'string', 'points', 'age', 'value', 'minimum']);
+      return { id: text(row.player, p), name: text(row.name, p), position: text(row.position, p),
+        string: text(row.string, p), points: text(row.points, p),
+        age: row.age === undefined ? undefined : text(row.age, p),
+        value: row.value === undefined ? undefined : text(row.value, p),
+        ...(row.minimum === undefined ? {} : (() => {
+          const m = object(row.minimum, p, ['cents', 'text']);
+          return { minimum: text(m.text, p), minimumCents: integer(m.cents, p) };
+        })()) };
+    }),
     revision: integer(r.revision, 'Roster version'),
+    identities: array(r.identities ?? [], 'Player identities', (v, p) => {
+      const i = object(v, p, ['player', 'franchise', 'side', 'name', 'position']);
+      const position = choice(i.position, p, [...POSITIONS, 'PK', 'OL', ''] as const);
+      return { player: text(i.player, p), franchise: text(i.franchise, p),
+        side: i.side === undefined ? '' : text(i.side, p), name: text(i.name, p),
+        position: position === 'PK' ? 'K' : position === '' || position === 'OL' ? undefined : position };
+    }),
     season: integer(s.season, 'Roster season'),
     franchises: array(s.franchises, 'Franchises', (v) => {
       const f = object(v, 'Franchise', ['id', 'heldId', 'name', 'abbreviation', 'division']);
@@ -127,6 +152,8 @@ export function parseHostedRoster(v: unknown): HostedRoster {
     }),
     picks: array(s.picks, 'Picks', (v) => {
       const p = object(v, 'Pick', [
+        'compensatory',
+        'correction',
         'season',
         'round',
         'slot',
@@ -140,10 +167,12 @@ export function parseHostedRoster(v: unknown): HostedRoster {
         round: integer(p.round, 'Round'),
         original: text(p.original, 'Original team'),
         owner: text(p.owner, 'Owner'),
+        used: Boolean(p.player) || p.skipped === true,
       };
     }),
     players: array(s.players, 'Roster players', (v, p) => {
       const r = object(v, p, [
+        'contractMissing',
         'acquiredVia',
         'correction',
         'name',
@@ -157,7 +186,13 @@ export function parseHostedRoster(v: unknown): HostedRoster {
         'expirationYear',
         'contractStatus',
         'contractInfo',
+        'heldContractStatus',
       ]);
+      if (r.contractMissing !== undefined && typeof r.contractMissing !== 'boolean')
+        throw new Error(`${p}: unreadable missing-contract state`);
+      if (r.contractMissing === true && (r.salaryCents !== null || r.expirationYear !== null) ||
+          r.contractMissing !== true && (r.salaryCents === null || r.expirationYear === null))
+        throw new Error(`${p}: missing-contract state disagrees with its terms`);
       const status = choice(r.status, p, ['ROSTER', 'IR', 'TAXI_SQUAD'] as const);
       return {
         id: text(r.id, p),

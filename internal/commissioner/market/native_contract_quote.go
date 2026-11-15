@@ -172,7 +172,8 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 	if window, gated := windowAction(action); gated {
 		gate, err = commissioner.NativeActionGate(raw.League, records, player.Franchise, window, now, local)
 		if err != nil {
-			return ContractQuote{}, fmt.Errorf("ask the league calendar: %w", err)
+			// A calendar refusal blocks acting, not reading a contract's known price.
+			gate = commissioner.Gate{Sentence: fmt.Sprintf("Cannot date this action: %v", err)}
 		}
 	}
 	in := contractCheck{raw: raw, action: action, base: base, player: player, gate: gate, facts: facts,
@@ -210,6 +211,9 @@ type contractCheck struct {
 // checkContract prices the action and then lets the calendar and the cap have their say. It is a pure
 // reading: nothing is recorded.
 func checkContract(in contractCheck) (ContractQuote, error) {
+	if err := in.base.Assets.Snapshot.CheckContracts(""); err != nil {
+		return ContractQuote{}, fmt.Errorf("quote contract: %w", commissioner.Refused(err))
+	}
 	fact := in.facts[in.player.ID]
 	name := fact.Name
 	if name == "" {

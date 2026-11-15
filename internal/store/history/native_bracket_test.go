@@ -1,11 +1,13 @@
 package history
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
 
 type change = commissioner.RawBracketChange
@@ -305,5 +307,39 @@ func TestTheTitleCM048IsStampedWithTheSeasonAndReopens(t *testing.T) {
 	f.run(t, title(""))
 	if b := f.bracket(t); !b.Title.Default || b.Champion.Label != "2026 League Champion" {
 		t.Fatalf("an empty label puts the default back: %+v", b.Title)
+	}
+}
+
+func TestAnOpenSeasonProjectsTheFieldWithoutSettingIt(t *testing.T) {
+	t.Parallel()
+	f := bracketTest(t)
+	held := f.s.evidence
+	f.s.evidence = func(ctx context.Context, scope source.RawNativeScope) (source.NativeEvidence, error) {
+		if scope.Player == "1001" {
+			return source.NativeEvidence{GSIS: "held-1001"}, nil
+		}
+		return held(ctx, scope)
+	}
+	open := f.bracket(t)
+	if open.Status != "Waiting for the regular season" || len(open.Fields) != 0 || len(open.Projected) != 2 {
+		t.Fatalf("open season: %s %q, %d set, %d projected", open.Status, open.Words, len(open.Fields), len(open.Projected))
+	}
+	for _, field := range open.Projected {
+		if len(field.Seeds) != 7 || !field.Seeds[0].Bye {
+			t.Fatalf("%s projects %+v", field.Conference, field.Seeds)
+		}
+	}
+	standings, err := f.s.NativeStandings(t.Context(), bracketLeague, 2026)
+	if err != nil || len(standings.Computed) != 32 {
+		t.Fatalf("standings: %d rows, %v", len(standings.Computed), err)
+	}
+	for _, row := range standings.Computed {
+		if row.Conference != "AFC" && row.Conference != "NFC" {
+			t.Fatalf("%s is in no conference: %+v", row.Name, row)
+		}
+	}
+	f.s.evidence = held
+	if final := f.bracket(t); len(final.Fields) != 2 || len(final.Projected) != 0 {
+		t.Fatalf("final standings: %d set, %d projected", len(final.Fields), len(final.Projected))
 	}
 }

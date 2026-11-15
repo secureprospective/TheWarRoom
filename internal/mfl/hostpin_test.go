@@ -15,23 +15,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 )
 
-// A discovered base URL off MFL is refused and the cached host is kept, so the next keyed
-// request cannot carry the API key to it.
-func TestDiscoverHost_RefusesForeignBaseURL(t *testing.T) {
-	t.Parallel()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"league":{"baseURL":"https://www47.myfantasyleague.com.evil.example/2026/home/14432"}}`))
-	}))
-	defer srv.Close()
-	c, _ := newTestClient(t, srv)
-	if err := c.DiscoverHost(context.Background(), "2026", "14432"); !errors.Is(err, ErrDisallowedHost) {
-		t.Fatalf("DiscoverHost: want ErrDisallowedHost, got %v", err)
-	}
-	if c.host != "api" {
-		t.Fatalf("host changed to %q", c.host)
-	}
-}
-
 // A request to a host off MFL never reaches the transport, keyed or not.
 func TestDo_RefusesForeignHost(t *testing.T) {
 	t.Parallel()

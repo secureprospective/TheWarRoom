@@ -1,6 +1,7 @@
 package control
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"slices"
@@ -336,3 +337,16 @@ func (a *API) TargetSetWindow(kind, at string) error {
 // dates copy the desktop window.set command's roles and gravity; the alert tray, season feeds and
 // status strip have no registry verb.
 func Commands() []catalog.Command { return catalog.DesktopCommands("control", nil) }
+
+type migrationHost interface {
+	Migrate(command, body string) (json.RawMessage, error)
+}
+
+// TargetMFLMigration exposes the existing read-only-MFL migration commands on desktop only.
+func (a *API) TargetMFLMigration(command, body string) (json.RawMessage, error) {
+	host, ok := a.host.(migrationHost)
+	if !ok {
+		return nil, fmt.Errorf("moving an MFL league requires the desktop app")
+	}
+	return host.Migrate(command, body) //nolint:wrapcheck // Preserve the migration refusal.
+}

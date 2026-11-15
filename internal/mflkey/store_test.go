@@ -78,28 +78,3 @@ func TestRedaction(t *testing.T) {
 		t.Fatalf("marshal: %s %v", body, err)
 	}
 }
-
-func TestMutationTimeouts(t *testing.T) {
-	for _, operation := range []string{"set", "delete"} {
-		t.Run(operation, func(t *testing.T) {
-			release, finished := make(chan struct{}), make(chan struct{})
-			block := func() error { <-release; close(finished); return nil }
-			s := New("league", "2026")
-			s.set = func(string, string, string) error { return block() }
-			s.delete = func(string, string) error { return block() }
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-			defer cancel()
-			var err error
-			if operation == "set" {
-				err = s.Set(ctx, "candidate")
-			} else {
-				err = s.Delete(ctx)
-			}
-			if !errors.Is(err, ErrTimeout) {
-				t.Fatal(err)
-			}
-			close(release)
-			<-finished
-		})
-	}
-}

@@ -36,7 +36,7 @@ func heldSeedCommand(t *testing.T) commissioner.RawCommand {
 func TestNativeSeedAtomicConcurrentAndReplay(t *testing.T) {
 	t.Parallel()
 	s, _, p := newStore(t)
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	command := heldSeedCommand(t)
@@ -86,7 +86,7 @@ func TestNativeSeedSurvivesDatabaseCloseAndReopen(t *testing.T) {
 		t.Fatal(err)
 	}
 	s, _, _ := reopen(t, p, registry(t, ""))
-	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+	if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	command := heldSeedCommand(t)
@@ -133,7 +133,7 @@ func TestNativeSeedValidationLeavesNoPartialAct(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			s, _, _ := newStore(t)
-			if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+			if _, err := s.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 				t.Fatal(err)
 			}
 			command := heldSeedCommand(t)
@@ -153,11 +153,13 @@ func TestEmptySeedAdmissionBySource(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct{ preset, source, want string }{
 		{commissioner.PresetEmpty, commissioner.SourceNative, ""},
-		{commissioner.PresetLegacy, commissioner.SourceMFLImport, "hold the Legacy NFL rosters, franchises and both draft reports before seeding"},
+		{commissioner.PresetLegacy, commissioner.SourceMFLImport, "hold the rosters, franchises and both draft reports before seeding"},
 	} {
 		t.Run(tc.preset, func(t *testing.T) {
 			s, _, _ := newStore(t)
-			if _, err := s.ExecuteCommissioner(t.Context(), createWith(tc.preset, 12), "creator", nil); err != nil {
+			create := createWith(tc.preset, 12)
+			create.Args.Source = tc.source
+			if _, err := s.ExecuteCommissioner(t.Context(), create, "creator", nil); err != nil {
 				t.Fatal(err)
 			}
 			records, err := s.nativeRecords(t.Context(), "native.test")

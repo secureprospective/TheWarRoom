@@ -13,6 +13,9 @@ minutes** of changes.
 | What happened | Go to |
 |---|---|
 | The league server machine is dead, destroyed or stolen, and will not come back | [A. Replace the server](#a-replace-the-server-on-the-spare-machine) |
+| One league is damaged or was changed by mistake, and the server is fine | [C. Restore one league](#c-restore-one-league) |
+| A league should leave this server | [D. Delete a league](#d-delete-a-league) |
+| A league should move to another TheWarRoom server | [E. Move a league to another server](#e-move-a-league-to-another-server) |
 | Someone may be using another person's sign-in (lost laptop, leaked password, strange changes) | [B. Sign everyone out](#b-sign-everyone-out) |
 | The internet, Cloudflare or the power is down, but the machine is fine | Wait for it to come back. Do not replace the server. |
 | The server is running but says changes are paused | Look at the dashboard and do what it says ([CHECKLIST.md](CHECKLIST.md)). Do not replace the server. |
@@ -194,7 +197,91 @@ If one person's password or authenticator is lost, use that person's printed rec
 code, or the console account recovery in
 [cmd/twr-server/README.md](../../cmd/twr-server/README.md), instead.
 
+## C. Restore one league
+
+Use this when one league needs to go back to its last backup (or an older day) and the
+server itself is fine. Only that league changes: every other league, and the sign-ins of
+everyone not in that league, stay exactly as they are.
+
+1. In the server's Proxmox web page, select the machine, then **Shell**, then type
+   `pct enter` and the league container's number.
+2. Type this and press Enter:
+
+   ```sh
+   sh /usr/local/libexec/twr-restore-league
+   ```
+
+3. Type the league's id, then the restore key from the sealed copy (it does not show as
+   you type), then press Enter for the newest backup or type a day as `YYYY-MM-DD`.
+4. It prints `League … is restored from its backup saved …` and how many owners were
+   signed out. The league is back within a minute. Tell that league's owners to sign in
+   again. The league as it was before the restore is kept for 30 days.
+
+## D. Delete a league
+
+1. Open the container's console as in C, then type:
+
+   ```sh
+   sh /usr/local/libexec/twr-delete-league
+   ```
+
+2. Type the league's id, then `DELETE` and the id again to confirm.
+3. It prints `League … is deleted from this server` and the day its file is removed. Until
+   that day (30 days) the file is kept in `/var/lib/twr/archive`; call Christopher if it
+   must come back. Other leagues are unchanged.
+
+## E. Move a league to another server
+
+The league travels as its own file. Sign-ins stay on each server, so on the new server every
+owner, and the commissioner, makes a new sign-in from their own one-time claim link; their
+franchise, roster, contracts and history are exactly as they were.
+
+1. **Old server:** open its container's console as in C, then type
+   `sh /usr/local/libexec/twr-move-league`, the league's id, and `1` to start the move.
+   It prints the **move file** and the **move code**. From now on the league can be looked
+   at on the old server but not changed.
+2. **Copy the move file** to the new server's container. On the Proxmox host's **Shell**:
+   `pct pull <old container> <move file> /root/league.twrleague`, then
+   `pct push <new container> /root/league.twrleague /root/league.twrleague`, then
+   `rm /root/league.twrleague`. (If the new server is on another machine, copy the file
+   there first, the same way you copy any file.)
+3. **New server:** in its container's console type
+   `sh /usr/local/libexec/twr-receive-league`, then `/root/league.twrleague`, then the move
+   code (it does not show as you type). It prints one claim link per person. Send each
+   person only their own link; each link works once.
+4. **Old server:** run `sh /usr/local/libexec/twr-move-league` again, the league's id, and
+   `2` to finish. The league leaves the old server; its file is kept 30 days in
+   `/var/lib/twr/archive`, then the server deletes it. Delete the move file from
+   `/var/lib/twr/outgoing` and from the new container's `/root`.
+
+Changed your mind before step 4? Choose `3` instead: the league can change on the old server
+again. Do not then use that move file on any server.
+
 ## What the tools do (for Christopher)
+
+`twr-move-league` runs `twr-server export-league`, `finish-move` or `cancel-move` with the
+service stopped. Export writes `leagues/<league>/moving.json` and a move file: a tar of the
+league file (`VACUUM INTO`), its pinned football version and a manifest, gzipped and sealed with
+age to a one-time X25519 key that is printed as the move code and kept nowhere. While
+`moving.json` exists every write guard of that league refuses. `twr-receive-league` runs
+`twr-server import-league`: it opens the file only with the code, accepts only those three kinds
+of entry, checks the league file names its league and its audit chain verifies, puts its football
+version and players into the reference file, installs the league file and issues one seat claim
+per seated person and per commissioner without a franchise (`league_seat_claims` in
+`accounts.db`, digests only). A claim, through the normal join page, makes a new account under
+the identity the league already names and spends the claim in the same transaction.
+
+
+`twr-restore-league` stops the service and passes the server's own bucket settings, the
+restore key and the day to `twr-server restore-league` over stdin, as the service user. It
+picks that league's newest usable set under `leagues/<league>/` (on or before the day),
+puts back any football versions or players it needs into the reference file, signs out every
+owner named in the league as restored or as it was (sign-in generation, authenticator proof
+and an audit row `league_restored_sign_out`), archives the old file for 30 days, and only then
+puts the restored file in place. `twr-delete-league` runs `twr-server delete-league`: the
+league's folder moves to `archive/<league>@<time>` and its directory row and join link go.
+The running server deletes archived leagues older than 30 days at start and daily.
+
 
 `twr-restore` stops the fresh service and passes the six answers to
 `twr-server restore` over stdin, running as the service user. That command refuses a

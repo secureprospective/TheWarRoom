@@ -105,6 +105,8 @@ type EngineCheckSource struct {
 	Run           func(context.Context, normalize.Lookup) (modelrun.Report, error)
 	Finished      func(context.Context, time.Time, modelrun.Report)
 	Log           func(string)
+	// NotDueLogged reports whether this run should be logged as not due; nil logs every time.
+	NotDueLogged func(run int64) bool
 }
 
 // CheckEngine consumes the dirty flag immediately before running, restoring it on failure.
@@ -120,6 +122,10 @@ func CheckEngine(ctx context.Context, source EngineCheckSource) {
 		return
 	}
 	if !EngineDue(source.Now(), last, exists, changed || source.DirtyLoad()) {
+		if source.NotDueLogged == nil || source.NotDueLogged(last.ID) {
+			source.Log(fmt.Sprintf("engine: not due, last run %s (no new inputs since; next by age at %s)",
+				last.AsOf.Local().Format(time.RFC3339), last.AsOf.Add(24*time.Hour).Local().Format(time.RFC3339)))
+		}
 		return
 	}
 	lk, err := source.Directory(ctx)

@@ -69,25 +69,126 @@ not that R2 connectivity or recoverability was proved. The console dashboard
 ([CHECKLIST.md](CHECKLIST.md)) shows whether a checked backup is current, when it
 was saved and the newest error; no public backup-status endpoint exists.
 
+## Three files, three kinds of set
+
+The server keeps its files in `/var/lib/twr`:
+
+- `leagues/<league>/league.db`, one file per league (Christopher, 2026-11-14: each league
+  has its own database that never mixes with another's): that league's history, rosters,
+  contracts, recovery log, its own audit chain and its own list of player ids. The file
+  names its league and refuses any row of another league.
+- `server.db`, which now holds only the record that its leagues were given their own files.
+- `reference.db`, the football reference file: fetched pages and other raw captures,
+  football statistics, model results, live lines, player identity and player records.
+  Every league on the server shares it. League connections attach it read-only;
+  reference writes use only its own pools, before any dependent league commit. A league
+  points into it only by content (a
+  capture's SHA-256, a football version's digest), never by a row number.
+- `accounts.db`, the sign-in file: accounts, sessions, helper tokens, aliases, join
+  links, the security history and the list of leagues on this server, with each league's
+  pinned football version.
+
+Each is backed up as its own kind of set: each league's sets under `leagues/<league>/`,
+football reference sets under `reference/`, sign-in sets under `signins/` (`sets/` holds the
+league sets saved before leagues had their own files; restores still read them). Each kind has its own five-minute
+schedule, its own skip-when-unchanged, its own retention and its own 128 MiB / 512 MiB caps.
+In every round every league's set is saved first, the reference set next and the sign-in set
+last. A league change records any new player ids and new accounts before it commits, so the
+reference and sign-in sets saved after a league set hold everything that league set names.
+
+**Raw captures never ride in a reference set.** With them a set would pass the 128 MiB cap
+(measured 176 MiB; 8.4 MiB gzipped without). Each capture is uploaded once, encrypted, as its
+own object under `evidence/<key tag>/`, named by its SHA-256, and read back. The key tag is
+16 hex digits of the SHA-256 of the backup's public recipient, so a copy sealed to any other key
+(an earlier restore key, or another server sharing the bucket) is never taken for this server's
+own. Restore opens the copy for its own key, and still reads captures that earlier releases
+put straight under `evidence/`. The reference set keeps only each capture's key and size, and
+its checkpoint names the whole archive by content. Capture objects are never pruned: they are
+immutable and sets name them.
+
+When one kind falls behind:
+
+- A stale league backup pauses that league's changes only; other leagues and sign-ins
+  keep working.
+- A stale sign-in backup pauses sign-ins and account changes (league changes keep working).
+  Joining a league writes both files, so it needs both current.
+- A stale football reference backup pauses **nothing**. Reference data can be fetched again,
+  and pausing league changes for it would weaken nothing but availability. The dashboard
+  line says so. A restore never stops for it (see Restoring): the league comes back and
+  only football waits, so a long outage here is still a real problem to fix within the hour.
+
+The dashboard shows three lines, **Backups** (every league's file: the one furthest behind,
+named, when any is), **Football reference
+backups** and **Sign-in backups**, so you can tell which part is behind.
+
+A server from before these changes kept everything in `server.db`. On its first start the
+new server moves the sign-in data out, then the football reference data, each the same way:
+the normal pre-change backup, a copy into the new file, a check of the copy table by table
+(row count and a digest of every row in order; raw captures by key, size and the digest of
+the stored bytes), and only then one transaction that removes the moved tables from
+`server.db` and records the move. If the check fails it deletes the new file, changes nothing
+and refuses to start with a plain message. After the reference move `server.db` is
+compacted. Each file migrates only its own tables and has its own version check; reference files hold no league tables.
+
+Next, the same start gives each league its own file. It takes the normal pre-change backup of
+`server.db`, copies each league into `leagues/<league>/league.db.converting` and checks that copy
+table by table (each league's rows only, by count and a digest of every row in order), then
+starts a new audit chain in each league file over that league's events, which also records where
+the shared chain stopped. Only when every league checks does one transaction remove the league
+tables from `server.db` and record the split; then each file is renamed into place and
+`server.db` is compacted. A failure deletes the new files, changes nothing and refuses to start.
+A stop at any step leaves either the old layout whole or the split recorded; the next start
+finishes. A player move between two servers that was in flight at the split must be started
+again: each league file mints its own move identity.
+
+## Football versions per league
+
+Each league can be pinned to its own football version (the evidence its lineups and bids are
+judged against). The pin is that league's row in the league list in `accounts.db`; a league
+with no pin uses the server's `-football` pin, as every league did before. To change one
+while the server runs: `twr-server pin-football -status-socket /var/lib/twr/status.sock
+-league <id> -football <digest>` (an empty `-football` returns it to the server's pin). The
+league's next request uses it; nothing restarts. The change is refused, and nothing moves,
+when the reference file does not hold that version or when sign-in backups are behind. With
+the service stopped, use `-db /var/lib/twr/server.db` instead of `-status-socket`; the pin is
+read at the next start. Only that league's row changes.
+
+If a league's pinned version is not on the server (after a restore whose football backup was
+older than its league backup), the server still starts. That league can be viewed, but its
+changes are held with a plain message, and the dashboard's **Football data** line names it.
+The server looks for the version again every minute and opens the league by itself once it
+is back.
+
 ## What is saved and when
 
-Every five minutes while healthy (one-minute retries on failure), the server:
+Every five minutes while healthy (one-minute retries on failure), the server first
+reads the database's commit revision (SQLite `data_version`). If nothing has been
+committed since the newest verified set began, that set still covers the league:
+coverage is renewed and no new set is made or uploaded. Otherwise the server:
 
-1. Reserves SQLite's one writer and makes a `VACUUM INTO` snapshot through the
-   existing DB backup boundary. History, evidence blobs/provenance, auth and the
-   security audit share `server.db`; WAL is never copied as a live file.
-2. Copies immutable `/etc/twr` configuration behind that same writer barrier.
+1. Waits for SQLite's one writer, so no change is half-done, then pins a read point
+   and copies the immutable `/etc/twr` configuration. The writer is held only for
+   that moment; league changes carry on while the copy below runs.
+2. Copies the file (`server.db`, `reference.db` or `accounts.db`) as of that read point with SQLite's online backup API, paced
+   so league writes are not held up, then compacts it (in memory, about the size of
+   the database) and checks both copies. League history lives in `server.db`, football
+   reference data in `reference.db` (its raw captures emptied in the copy after their
+   own upload), sign-ins and the security audit in `accounts.db`. WAL is never copied as
+   a live file.
    TLS key/certificate, authenticator key, preview registry and private R2 settings
-   must live together there. Stop the server before changing these files.
-3. Verifies both audit chains against the captured database and includes a saved
+   must live together in `/etc/twr`. Stop the server before changing these files.
+3. Verifies the file's audit chain (league history, or security history) against the captured copy, or for the
+   reference file names its raw archive by content, and includes a saved
    checkpoint, a versioned manifest, member sizes and SHA-256 digests.
 4. Streams a compressed tar archive through age X25519 encryption to a private
    temporary file. No restore private key is required or accepted.
-5. Uploads one atomic object under `sets/`, downloads it over HTTPS, and compares
+5. Uploads one atomic object under `sets/`, `reference/` or `signins/`, downloads it over HTTPS, and compares
    its size and full ciphertext SHA-256 with the local encrypted file. An ETag,
    successful PUT or upload completion timestamp alone is not coverage.
-6. Renews coverage using the **snapshot start**, then prunes retention. Temporary
-   snapshots are removed on ordinary success/failure. Files are 0600, dirs 0700.
+6. Renews coverage using the **snapshot start**, then prunes retention. The revision
+   is read before the snapshot starts, so a change committed during a backup is
+   picked up by the next one. Temporary snapshots are removed on ordinary
+   success/failure. Files are 0600, dirs 0700.
 
 Each attempt has a two-minute deadline. New league/auth/evidence writes stop at
 **14 minutes**, before the 15-minute RPO is breached. Admission is checked again
@@ -101,8 +202,8 @@ state is silently accepted. The due worker uses the same DB admission gate.
 
 ## Retention and cost limits
 
-Keep the newest twelve objects, plus the newest object per UTC day for the last
-30 days. The encrypted object limit is 128 MiB; the total uncompressed member
+For each kind of set separately, keep the newest twelve objects, plus the newest
+object per UTC day for the last 30 days. The encrypted object limit is 128 MiB; the total uncompressed member
 limit is 512 MiB. At most 43 retained full sets plus the next in-flight upload
 are about 5.9 GB, below R2's current 10 GB Standard free allowance, assuming a
 dedicated bucket with no foreign/future-dated objects. Typical smaller leagues
@@ -121,10 +222,18 @@ checkpoints too; R2 read/write credentials can delete objects.
 ## Restoring
 
 Follow [RESTORE.md](RESTORE.md): install a fresh CT on the spare, then run
-`twr-restore` inside it. It downloads the newest set from R2 into the CT, unlocks
+`twr-restore` inside it. It downloads the newest league set from R2 into the CT,
+then the sign-in set saved nearest after it, refusing (and naming the accounts) if
+the league seats an owner that sign-in set lacks, then the football reference set saved
+nearest after it. It puts each raw capture back from its own object, checks the archive
+against the set's checkpoint. If no reference set holds every player the leagues own and
+every football version a league is pinned to, the league is still restored: the nearest
+reference set that opens is used (or an empty one), each missing pinned version is put back
+from its own off-site evidence object, each owned player from the league's own record, and
+what is still missing is named in plain words. A wrong key still stops the restore. It unlocks
 it with the restore key typed at the console (held in memory, never saved),
 compares the saved checkpoint, signs every owner out and only then starts the
-service. Do not copy a decrypted `server.db` into a server by hand: sessions and
+service. Do not copy a decrypted `server.db`, `reference.db` or `accounts.db` into a server by hand: sessions and
 used recovery codes from before the snapshot would come back. The fresh CT keeps
 its own TLS key and Tunnel; the old R2 token is replaced with a new one.
 

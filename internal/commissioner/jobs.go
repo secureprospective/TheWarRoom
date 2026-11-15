@@ -109,7 +109,7 @@ func setupJob(rules leaguerules.RuleSet) (job Job, open bool) {
 	fields, values := leaguerules.Catalogue(), leaguerules.ReadSettings(rules)
 	var missing []leaguerules.FieldPath
 	for i, f := range fields {
-		if values[i].State == "Needs a ruling" {
+		if values[i].State == "Needs a ruling" && !leaguerules.Unused(rules, f.Path) {
 			missing = append(missing, f.Path)
 		}
 	}

@@ -49,7 +49,7 @@ func TestStandUpCommandLocalDoorAndResult(t *testing.T) {
 		t.Fatal("missing held snapshot")
 	}
 	commands := []commissioner.RawCommand{
-		{League: "native.cli", Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Recovery command proof", Preset: commissioner.PresetLegacy, Season: held.Snapshot.Season}, Request: "create", Reason: "Recovery proof", Effective: "now", Visibility: "league"},
+		{League: "native.cli", Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Recovery command proof", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: held.Snapshot.Season}, Request: "create", Reason: "Recovery proof", Effective: "now", Visibility: "league"},
 		{League: "native.cli", Command: commissioner.NativeSeed, Args: commissioner.RawArgs{Native: held.Snapshot}, Expected: 1, Request: "seed", Reason: "Recovery proof", Effective: "now", Visibility: "league"},
 	}
 	for _, command := range commands {

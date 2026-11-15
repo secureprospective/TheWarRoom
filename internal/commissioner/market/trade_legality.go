@@ -57,6 +57,9 @@ func (x tradeExecution) legal(t commissioner.TradeState) error {
 }
 
 func nativeFranchiseCap(seed *commissioner.RawNativeSnapshot, rules leaguerules.RuleSet, id string, zone *time.Location) (nativecheck.CapState, error) {
+	if err := seed.CheckContracts(id); err != nil {
+		return nativecheck.CapState{}, fmt.Errorf("judge trade cap: %w", err)
+	}
 	players, charges := franchiseCapInputs(seed, id, rules.Season)
 	result, err := nativecheck.CheckCap(rules.Cap, players, charges, zone)
 	if err != nil {

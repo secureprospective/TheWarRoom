@@ -85,7 +85,8 @@ function parseClosed(value: unknown): Closed | null {
 
 export function parseDraft(value: unknown): Draft {
   const r = object(value, 'Rookie draft', ['league', 'season', 'startup', 'side', 'revision', 'rules',
-    'owners', 'order', 'words', 'draft', 'nextOwnedPick', 'closed', 'players', 'available', 'checkpoints']);
+    'owners', 'order', 'words', 'draft', 'nextOwnedPick', 'closed', 'players', 'available', 'checkpoints',
+    'corrections']);
   const d = object(r.draft, 'Draft', ['start', 'started', 'exhausted', 'picks', 'onClock']);
   const players = object(r.players, 'Players', Object.keys(Object(r.players) as object));
   return {

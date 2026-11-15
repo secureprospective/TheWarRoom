@@ -81,6 +81,35 @@ func TestKNowRecoversNoiseOverSpread(t *testing.T) {
 	}
 }
 
+// Keep is the share of a scoring edge that lasts: players whose level holds from one season to the
+// next keep nearly all of it, and players redrawn each season keep none.
+func TestKeepIsTheEdgeThatLasts(t *testing.T) {
+	r := rand.New(rand.NewPCG(7, 8)) //nolint:gosec // a fixed test sample
+	build := func(steady bool) samples {
+		d := model.Data{Players: map[string]*model.Player{}, Seasons: map[string]map[int]*model.Season{}}
+		for i := range 400 {
+			id := string(rune('a'+i%26)) + string(rune('A'+i/26))
+			d.Players[id] = &model.Player{ID: id, Position: domain.PosS}
+			d.Seasons[id] = map[int]*model.Season{}
+			level := 10 + 3*r.NormFloat64()
+			for _, year := range []int{2023, 2024} {
+				if !steady {
+					level = 10 + 3*r.NormFloat64()
+				}
+				s := &model.Season{Player: id, Year: year, Points: map[int]float64{}}
+				for w := 1; w <= 16; w++ {
+					s.Points[w] = level
+				}
+				d.Seasons[id][year] = s
+			}
+		}
+		return collect(d, d.Scales(), domain.PosS, 2023, 2024)
+	}
+	if steady, redrawn := fitKeep(build(true), 2024), fitKeep(build(false), 2024); steady < 0.99 || redrawn > 0.15 {
+		t.Errorf("keep = %v steady and %v redrawn, want about 1 and about 0", steady, redrawn)
+	}
+}
+
 // The fit is reproducible: the same data gives the same params on every run, whatever order Go
 // walks its maps in.
 func TestRunIsDeterministic(t *testing.T) {

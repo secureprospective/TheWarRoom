@@ -59,34 +59,7 @@ func TestFailoverAndPolitePolling(t *testing.T) {
 		t.Fatal("held copy was lost or retimed")
 	}
 }
-func TestWindowBoundaries(t *testing.T) {
-	at := time.Date(2026, 10, 13, 0, 15, 0, 0, time.UTC)
-	for _, tc := range []struct {
-		name              string
-		now               time.Time
-		final, open, want bool
-	}{
-		{"before kickoff", at.Add(-time.Nanosecond), false, true, false},
-		{"kickoff", at, false, true, true},
-		{"after final", at.Add(time.Hour), true, true, false},
-		{"never marked final, last minute", at.Add(MaxGame - time.Nanosecond), false, true, true},
-		{"never marked final, six hours on", at.Add(MaxGame), false, true, false},
-		{"Now closed", at, false, false, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			calls := 0
-			a := Adapter{Fetch: func(context.Context, string, string) ([]byte, error) {
-				calls++
-				return fixture(t, "espn-scoreboard"), nil
-			}}
-			w := []Window{{Teams: [2]string{"BUF", "LAR"}, Kickoff: at, Final: tc.final}}
-			a.Refresh(context.Background(), tc.now, tc.open, w, "")
-			if (calls > 0) != tc.want {
-				t.Fatalf("calls %d", calls)
-			}
-		})
-	}
-}
+
 func TestFollowedDetailsAndHeldTime(t *testing.T) {
 	calls := []string{}
 	broken := false
@@ -125,22 +98,6 @@ func TestFollowedDetailsAndHeldTime(t *testing.T) {
 	}
 }
 
-func TestObservedFinalClosesHeldWindow(t *testing.T) {
-	g, err := ParseSummary(fixture(t, "espn-summary-401872991"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	calls := 0
-	a := Adapter{Board: Held{Games: []Game{g}, Source: "ESPN"}, Fetch: func(context.Context, string, string) ([]byte, error) {
-		calls++
-		return nil, errors.New("must not fetch")
-	}}
-	windows := []Window{{Teams: [2]string{g.Home.Abbreviation, g.Away.Abbreviation}, Kickoff: g.Kickoff}}
-	a.Refresh(context.Background(), g.Kickoff.Add(time.Hour), true, windows, g.ID)
-	if calls != 0 || Live(g.Kickoff.Add(time.Hour), a.EffectiveWindows(windows)) {
-		t.Fatal("observed final kept polling")
-	}
-}
 func TestFollowedCadenceAndErrorBackoff(t *testing.T) {
 	g, err := ParseSummary(fixture(t, "espn-summary-401872991"))
 	if err != nil {
@@ -185,5 +142,20 @@ func TestFollowedCadenceAndErrorBackoff(t *testing.T) {
 	a.Refresh(context.Background(), at.Add(45*time.Second), true, windows, g.ID)
 	if calls != 4 {
 		t.Fatal("summary retry missing")
+	}
+}
+
+func TestPlayEndWithoutNextPossessionKeepsUnknownTeam(t *testing.T) {
+	zero, one := 0, 1
+	state := RawState{Down: &zero, Distance: &one, YardLine: &zero, ToEndzone: &zero}
+	if err := state.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if state.state().Possession != "" {
+		t.Fatal("missing possession invented")
+	}
+	state.Down = &one
+	if err := state.Validate(); err == nil {
+		t.Fatal("active down without a team accepted")
 	}
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 )
 
@@ -38,7 +39,7 @@ func parseTime(s string) (time.Time, error) {
 // Store is the history store. Construct with New, prepare with Initialize. Writes serialize
 // under wmu.
 type Store struct {
-	commits chan struct{}
+	commits chan string
 	pools   *db.Pools
 	reg     *measures.Registry
 	now     func() time.Time
@@ -59,27 +60,94 @@ type Store struct {
 	leagues   nativeLeagueRevision
 	recordsMu sync.Mutex
 	records   map[string]recordRevision
+	eventsMu  sync.Mutex
+	events    map[eventStreamKey]eventRevision
 	weeklyMu  sync.Mutex
 	weekly    map[string]weeklyFile
-	wmu       sync.Mutex
+	// seasons holds the latest built held season per season, keyed on its archive and identity revision.
+	seasons heldSeasonCache
+	// flights joins concurrent identical readings; it holds nothing once a reading completes.
+	flights readingFlights
+	// projMu guards the one scored projections book, keyed by league, rules digest and files.
+	projMu   sync.Mutex
+	projKey  string
+	projBook projectionBook
+	// liveMu guards the live stat lines held for the NFL week being played.
+	overlay       *LiveOverlay
+	liveMu        sync.Mutex
+	live          liveStatBook
+	liveHeld      map[liveStatKey]source.HeldWeek
+	liveRevisions map[liveStatKey]*liveRevisionState
+	// liveEpoch and liveWeeks name the live lines as held, so a score read from them is reused only while
+	// they stand: liveEpoch moves when the book is restored, liveWeeks when one week's lines change.
+	liveEpoch uint64
+	liveWeeks map[[2]int]uint64
+	// scores is the season score cache: each franchise-week scored once per revision.
+	scores seasonScoreCache
+	// statPrices keeps statistics queue prices across readings (commissioner.StatPriceCache).
+	poolMu     sync.Mutex
+	poolKey    string
+	poolPoints map[string]leaguerules.Decimal
+	statPrices statPrices
+	wmu        sync.Mutex
 	// batchFault, set only by tests, fails a batch after the given step to prove nothing is kept.
 	batchFault func(step int) error
 }
 
 // New returns an unprepared store over history.db's pools, using reg as the registry.
 func New(pools *db.Pools, reg *measures.Registry) *Store {
-	return &Store{commits: make(chan struct{}, 1), pools: pools, reg: reg, now: time.Now, lineups: ledgerLineups{}}
+	return &Store{commits: make(chan string, 1), pools: pools, reg: reg, now: time.Now, lineups: ledgerLineups{}}
 }
 
-// CommissionerCommits coalesces native ledger commits for the single due worker.
-func (s *Store) CommissionerCommits() <-chan struct{} { return s.commits }
+// Sibling is a new store over s's file with s's registry and clock, signalling commits on s's channel.
+// The hosted server serves leagues pinned to different football evidence from siblings: each league is
+// served by exactly one of them, so league caches never overlap.
+func (s *Store) Sibling() *Store {
+	return &Store{commits: s.commits, pools: s.pools, reg: s.reg, now: s.now, lineups: ledgerLineups{}}
+}
 
-func (s *Store) signalCommissionerCommit() {
+// Over is a new store over another file (a hosted league's own file) in s's family: s's registry, s's
+// clock as it is set at the time of each reading, and s's commit signal.
+func (s *Store) Over(pools *db.Pools) *Store {
+	return &Store{commits: s.commits, pools: pools, reg: s.reg, now: func() time.Time { return s.now() }, lineups: ledgerLineups{}}
+}
+
+// signalCommissionerCommit names the committed league to the due worker through the resolver.
+// Coalesced: a full channel already guarantees one wake, and every wake rereads every league.
+func (s *Store) signalCommissionerCommit(league string) {
 	select {
-	case s.commits <- struct{}{}:
+	case s.commits <- league:
 	default:
 	}
 }
+
+// LeagueResolver finds the store holding a league. Leagues is the directory of native leagues;
+// Stores is every file holding league history (each verifies its own audit chain); Commits names the
+// league of each native ledger commit, coalesced. Per-league files arrive behind this seam.
+type LeagueResolver interface {
+	Leagues(ctx context.Context) ([]commissioner.NativeLeague, error)
+	League(ctx context.Context, league string) (*Store, error)
+	Stores(ctx context.Context) ([]*Store, error)
+	Commits() <-chan string
+}
+
+// OneFile resolves every league to the single file both the hosted server and the desktop open today.
+type OneFile struct{ store *Store }
+
+func NewOneFile(store *Store) OneFile { return OneFile{store: store} }
+
+func (o OneFile) Leagues(ctx context.Context) ([]commissioner.NativeLeague, error) {
+	return o.store.NativeLeagues(ctx)
+}
+
+func (o OneFile) League(context.Context, string) (*Store, error) { return o.store, nil }
+
+func (o OneFile) Stores(context.Context) ([]*Store, error) { return []*Store{o.store}, nil }
+
+func (o OneFile) Commits() <-chan string { return o.store.commits }
+
+// Now returns the same clock used to record ledger acts.
+func (s *Store) Now() time.Time { return s.now() }
 
 // SetClock replaces the store's clock. Tests use it to write corrections at known times.
 func (s *Store) SetClock(now func() time.Time) { s.now = now }
@@ -155,12 +223,6 @@ CREATE TABLE IF NOT EXISTS unresolved_observations (
 	PRIMARY KEY (source, id_type, id_value, season, week, measure, as_of)
 );
 CREATE INDEX IF NOT EXISTS unresolved_by_source ON unresolved_observations (source, season);
-CREATE TABLE IF NOT EXISTS player_ids (
-	id_type   TEXT NOT NULL,
-	id_value  TEXT NOT NULL,
-	player_id TEXT NOT NULL,
-	PRIMARY KEY (id_type, id_value)
-);
 CREATE TABLE IF NOT EXISTS param_sets (
 	param_set_id TEXT PRIMARY KEY,
 	measures     TEXT NOT NULL,
@@ -248,6 +310,14 @@ CREATE TABLE IF NOT EXISTS snapshot_checks (
 	checks      TEXT NOT NULL
 );`
 
+const legacyPlayerIDsDDL = `CREATE TABLE IF NOT EXISTS player_ids (
+	id_type   TEXT NOT NULL,
+	id_value  TEXT NOT NULL,
+	player_id TEXT NOT NULL,
+	PRIMARY KEY (id_type, id_value)
+);
+`
+
 // registryDDL creates registry mirrors; Initialize refreshes their rows without DDL.
 const registryDDL = `
 CREATE TABLE IF NOT EXISTS measures (
@@ -278,10 +348,13 @@ CREATE TABLE IF NOT EXISTS source_fields (
 func (s *Store) Initialize(ctx context.Context) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	if _, err := s.pools.Migrate(ctx, historyMigrations()...); err != nil {
+	if err := MigrateLeague(ctx, s.pools); err != nil {
 		return fmt.Errorf("history: migrate schema: %w", err)
 	}
-	tx, err := s.pools.BeginWrite(ctx)
+	if _, err := s.VerifyAudit(ctx); err != nil {
+		return fmt.Errorf("history: verify audit: %w", err)
+	}
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("history: initialize: %w", err)
 	}
@@ -289,9 +362,6 @@ func (s *Store) Initialize(ctx context.Context) error {
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM measures; DELETE FROM sources; DELETE FROM source_fields`); err != nil {
 		return fmt.Errorf("history: clear registry mirrors: %w", err)
-	}
-	if _, err := db.VerifyAudit(ctx, tx, ledgerAuditSource, ledgerAuditQuery); err != nil {
-		return fmt.Errorf("history: verify audit: %w", err)
 	}
 	if err := s.loadRegistry(ctx, tx); err != nil {
 		return err
@@ -331,4 +401,56 @@ func (s *Store) loadRegistry(ctx context.Context, tx execer) error {
 		}
 	}
 	return nil
+}
+
+// LeagueState is one league as its own file records it: every league with a create event, whatever
+// its transfer state, and when it was created. The server's league directory is copied from this.
+type LeagueState struct {
+	League, State, Created string
+}
+
+// LeagueStates reads every league this file holds; it is the truth the server directory follows.
+func (s *Store) LeagueStates(ctx context.Context) ([]LeagueState, error) {
+	rows, err := s.pools.Read().QueryContext(ctx, `SELECT e.league, COALESCE((SELECT state FROM transfer_current t WHERE t.league=e.league),'active'), MIN(e.recorded_at)
+ FROM league_event e WHERE e.stream=? AND e.kind=? GROUP BY e.league ORDER BY e.league`, commissioner.Stream, commissioner.Create)
+	if err != nil {
+		return nil, fmt.Errorf("read league states: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []LeagueState
+	for rows.Next() {
+		var l LeagueState
+		if err := rows.Scan(&l.League, &l.State, &l.Created); err != nil {
+			return nil, fmt.Errorf("read league state: %w", err)
+		}
+		out = append(out, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read league states: %w", err)
+	}
+	return out, nil
+}
+
+// NamedPrincipals lists every account principal pools' league file names: as the actor of an entry
+// or anywhere in an entry's payload (seats, commissioners, invitations). A restore checks each is in
+// the sign-in file restored beside it.
+func NamedPrincipals(ctx context.Context, pools *db.Pools) ([]string, error) {
+	rows, err := pools.Read().QueryContext(ctx, `SELECT actor FROM league_event WHERE actor LIKE 'acct.%'
+ UNION SELECT j.value FROM league_event e, json_tree(e.payload) j WHERE j.type='text' AND j.value LIKE 'acct.%' ORDER BY 1`)
+	if err != nil {
+		return nil, fmt.Errorf("read named principals: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []string
+	for rows.Next() {
+		var p string
+		if err := rows.Scan(&p); err != nil {
+			return nil, fmt.Errorf("read named principals: %w", err)
+		}
+		out = append(out, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read named principals: %w", err)
+	}
+	return out, nil
 }

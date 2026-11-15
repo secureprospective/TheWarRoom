@@ -39,9 +39,9 @@ func lineupFixture(t *testing.T) (LineupRequest, snapshot.Snapshot, LineupCheck)
 		t.Fatal(err)
 	}
 	rs := raw.League.Starters
-	rules, err := lineup.ParseRules(league.Starters{
+	rules, err := lineup.ParseRules(league.RawConfig{Starters: league.Starters{
 		Count: rs.Count, IOPStarters: rs.IOP, IDPStarters: rs.IDP, Positions: rs.Positions,
-	})
+	}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ func TestLineupChecksAndDraft(t *testing.T) {
 						break
 					}
 				}
-				want, note = Blocked, "at most"
+				want, note = Blocked, "needs exactly 8"
 			case "partial":
 				req.Starters = req.Starters[:1]
 				note = "legal, partial;"

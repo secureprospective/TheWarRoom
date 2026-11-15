@@ -13,7 +13,7 @@
   width: 100%;
   height: 100vh;
   display: grid;
-  grid-template-columns: 192px minmax(0, 1fr) 320px 48px;
+  grid-template-columns: 192px minmax(0, 1fr) 320px;
   background: var(--surface-0);
   border: 1px solid var(--surface-line);
   overflow: hidden;
@@ -38,6 +38,39 @@
   }
 .twr-app .league b { display: block; font-size: 13px; }
 .twr-app .league small { color: var(--surface-tx3); font-size: 11px; }
+
+.twr-app .league .pick {
+  width: 100%;
+  margin-top: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--surface-line);
+  border-radius: 2px;
+  background: var(--surface-2);
+  color: var(--surface-tx2);
+  font: inherit;
+  font-size: 11px;
+}
+.twr-app .league .pick:focus-visible { outline: 1px solid var(--surface-line-hi); }
+.twr-app .league-choices {
+  border: 1px solid var(--surface-line);
+  background: var(--surface-2);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.twr-app .league-choices button, .twr-app .league li button {
+  width: 100%;
+  padding: 5px 6px;
+  border: 1px solid var(--surface-line);
+  border-radius: 2px;
+  background: var(--surface-3);
+  color: var(--surface-tx1);
+  font: inherit;
+}
+.twr-app .league-choices ul, .twr-app .league ul { list-style: none; margin: 8px 0 0; padding: 0; }
+.twr-app .league-choices li + li, .twr-app .league li + li { margin-top: 4px; }
+.twr-app .league-choices small, .twr-app .league li small {
+  display: block; color: var(--surface-tx3); font-size: 11px;
+}
 .twr-app .act-command {
   margin: 10px 12px;
   padding: 7px 9px;
@@ -147,7 +180,7 @@
   gap: 14px;
   align-content: start;
   }
-.twr-app .insp {
+.twr-app > .insp {
   background: var(--surface-1);
   border-left: 1px solid var(--surface-line);
   display: flex;
@@ -184,26 +217,6 @@
   }
 .twr-app .kv dt { color: var(--surface-tx3); }
 .twr-app .kv dd { font-family: var(--surface-mono); text-align: right; margin: 0; }
-.twr-app .comms {
-  background: var(--surface-1);
-  border-left: 1px solid var(--surface-line);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 12px 0;
-  gap: 14px;
-  grid-column: 4;
-  grid-row: 1;
-  }
-.twr-app .comms .vt {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font: 600 10px var(--surface-sans);
-  letter-spacing: .14em;
-  color: var(--surface-tx3);
-  text-transform: uppercase;
-  margin-top: 6px;
-  }
 .twr-app .act:hover { color: var(--surface-tx1); background: var(--surface-3); }
 .twr-app .strip .channel-chip { flex: none; font: 11px var(--surface-mono); }
 .twr-app .strip > span:not(.channel-chip) { flex: none; }
@@ -222,21 +235,12 @@
   font-size: 11px;
   color: var(--surface-tx3);
   }
-.twr-app .insp, .twr-app .inspector-closed { grid-column: 3; grid-row: 1; }
-.twr-app .inspector-closed {
+.twr-app > .insp, .twr-app > .inspector-closed { grid-column: 3; grid-row: 1; }
+.twr-app > .inspector-closed {
   padding: 14px;
   border-left: 1px solid var(--surface-line);
   font-size: 11px;
   color: var(--surface-tx3);
-  }
-.twr-app .comms .act-icon {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--surface-line-hi);
-  display: grid;
-  place-items: center;
-  font: 600 11px var(--surface-mono);
-  color: var(--surface-tx2);
   }
 .twr-app .shell-overlay {
   position: absolute;
@@ -255,8 +259,7 @@
   margin-bottom: 14px;
   font: 600 11px var(--surface-sans);
   }
-.twr-app .comms-panel { right: 48px; width: 280px; }
-.twr-app .calendar-panel { right: 368px; width: 480px; }
+.twr-app .calendar-panel { right: 320px; width: 480px; }
 .twr-app .roster-cap {
   display: flex;
   flex-wrap: wrap;
@@ -335,7 +338,7 @@
 .twr-app .app-settings .act:disabled:hover { background: transparent; }
 /* The shell is exactly one viewport tall; the workspace body and inspector are the scrollers. */
 .twr-app.target-frame { grid-template-rows: minmax(0, 1fr); }
-.twr-app .ws, .twr-app .insp { min-height: 0; }
+.twr-app .ws, .twr-app > .insp { min-height: 0; }
 /* Narrow screens: title, tabs and density never shrink; the status strip gives way first. */
 .twr-app .ws-head h3, .twr-app .wtabs, .twr-app .dens { flex: none; }
 .twr-app .strip { flex: 1 1 0; justify-content: flex-end; overflow: hidden; }
@@ -351,8 +354,8 @@
 .twr-app[data-density="matrix"] .act-density[data-d="matrix"] {
   background: var(--surface-4); color: var(--surface-tx1);
 }
-.twr-app .insp {
-  position: absolute; right: 48px; top: 0; bottom: 0; width: 320px; z-index: 10;
+.twr-app > .insp {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 320px; z-index: 10;
   grid-column: auto; grid-row: auto;
   transition: width 120ms ease-out, transform 120ms ease-out, opacity 120ms ease-out, visibility 120ms;
 }
@@ -367,16 +370,16 @@
 .twr-app .shell-overlay[data-open="true"] {
   transform: translateX(0); opacity: 1; visibility: visible;
 }
-.twr-app .insp .player-identity {
+.twr-app > .insp .player-identity {
   display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 4px 8px; align-items: center;
 }
-.twr-app .insp .player-identity .player-photo { grid-row: 1 / span 2; }
-.twr-app .insp .player-identity .card-title { white-space: normal; overflow-wrap: anywhere; }
-.twr-app .insp .player-context { grid-column: 2 / span 2; }
-.twr-app .insp .card-header { display: block; }
-.twr-app .insp .card-provenance { display: block; margin: 8px 0 0; }
+.twr-app > .insp .player-identity .player-photo { grid-row: 1 / span 2; }
+.twr-app > .insp .player-identity .card-title { white-space: normal; overflow-wrap: anywhere; }
+.twr-app > .insp .player-context { grid-column: 2 / span 2; }
+.twr-app > .insp .card-header { display: block; }
+.twr-app > .insp .card-provenance { display: block; margin: 8px 0 0; }
 .twr-app .two-numbers small { white-space: nowrap; }
-.twr-app .insp .two-numbers > div { padding: 6px; }
+.twr-app > .insp .two-numbers > div { padding: 6px; }
 .twr-app .two-numbers > div { min-width: 0; }
 .twr-app .command-bar input { text-transform: none; }
 .twr-app[data-density="tactical"] .roster-cards {
@@ -436,17 +439,17 @@
 .twr-app .two-numbers b { white-space: nowrap; }
 .twr-app .roster-cards .two-numbers > div { flex-wrap: wrap; gap: 4px; }
 @media (prefers-reduced-motion: reduce) {
-  .twr-app .insp, .twr-app .shell-overlay, .twr-app .command-bar { transition: none; }
+  .twr-app > .insp, .twr-app .shell-overlay, .twr-app .command-bar { transition: none; }
 }
 
-.twr-app.target-frame[data-inspector="closed"] { grid-template-columns: 192px minmax(0, 1fr) 40px 48px; }
-.twr-app .inspector-closed {
+.twr-app.target-frame[data-inspector="closed"] { grid-template-columns: 192px minmax(0, 1fr) 40px; }
+.twr-app > .inspector-closed {
   padding: 12px 0;
   display: flex;
   justify-content: center;
   background: var(--surface-1);
   }
-.twr-app .inspector-closed .act { writing-mode: vertical-rl; padding: 8px; align-self: flex-start; }
+.twr-app > .inspector-closed .act { writing-mode: vertical-rl; padding: 8px; align-self: flex-start; }
 .twr-app[data-inspector="closed"] .command-bar { right: 104px; }
 .twr-app select {
   appearance: none;
@@ -494,7 +497,7 @@
 
 /* Reserve the Inspector's actual width in the frame; it must never overlay the workspace. */
 .twr-app.target-frame[data-inspector="expanded"] {
-  grid-template-columns: 192px minmax(0, 1fr) 480px 48px;
+  grid-template-columns: 192px minmax(0, 1fr) 480px;
 }
 .twr-app .insp-body, .twr-app .wbody { min-height: 0; min-width: 0; }
 .twr-app .strip { flex: 0 0 auto; overflow: visible; margin-left: auto; }
@@ -508,19 +511,14 @@
 .twr-app .report-table th:first-child { width: 22%; }
 .twr-app .act-text { padding: 0; }
 
-/* Comms owns a track beside the Inspector, even when that Inspector is closed. */
-.twr-app.target-frame[data-comms="true"] {
-  grid-template-columns: 192px minmax(0, 1fr) 600px 48px;
-}
-.twr-app.target-frame[data-inspector="expanded"][data-comms="true"] {
-  grid-template-columns: 192px minmax(0, 1fr) 760px 48px;
-}
-.twr-app.target-frame[data-inspector="closed"][data-comms="true"] {
-  grid-template-columns: 192px minmax(0, 1fr) 320px 48px;
-}
-.twr-app[data-comms="true"] .insp { right: 328px; }
-.twr-app .inspector-closed { width: 40px; box-sizing: border-box; }
-.twr-app .comms-panel { box-sizing: border-box; }
+/* The closed Inspector keeps a 40px track. */
+.twr-app > .inspector-closed { width: 40px; box-sizing: border-box; }
 .twr-app .insp .draft-report th, .twr-app .insp .draft-report th .act-button {
   overflow-wrap: normal; word-break: normal;
 }
+
+.twr-app .rail .me label{display:grid;gap:6px}
+.twr-app .rail .me select{width:100%;min-width:0}
+
+.twr-app[data-native-workspace="true"] > .ws { grid-column: 2 / 4; }
+.twr-app[data-native-workspace="true"] .wbody { display: block; padding: 0; }

@@ -7,11 +7,18 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // Export is an MFL league as one read of it found it, every value as MFL states it.
 type Export struct {
+	Transactions *transactions.RawTransactions
+	// Base is how the league runs where MFL holds no setting: a bundle of setting values.
+	Base        leaguerules.RuleSet
 	LeagueID    string
 	Name        string
 	Season      int
@@ -24,6 +31,10 @@ type Export struct {
 	// Players names each player MFL's player list holds, by MFL id.
 	Players   map[string]string
 	Champions []Champion
+	// DraftType is MFL's rookie draft order kind ("SAME" every round alike, "SNAKE"); empty when MFL states none.
+	DraftType string
+	Results   []leaguefeed.WeekResult
+	Schedule  []leagueschedule.RawScheduleWeek
 	ReadAt    time.Time
 }
 
@@ -48,6 +59,23 @@ type Reader interface {
 	Adjustments(ctx context.Context) ([]Adjustment, error)
 	Draft(ctx context.Context) ([]draftreports.Pick, []draftreports.FuturePick, error)
 	Players(ctx context.Context) (map[string]string, error)
+}
+
+type TransactionReader interface {
+	Transactions(context.Context) (transactions.RawTransactions, error)
+}
+
+type ResultsReader interface {
+	Results(context.Context) ([]leaguefeed.WeekResult, error)
+}
+
+type ScheduleReader interface {
+	Schedule(context.Context) ([]leagueschedule.RawScheduleWeek, error)
+}
+
+// DraftTyper is a Reader that also reads the kind of order MFL's rookie draft keeps from round to round.
+type DraftTyper interface {
+	DraftType(ctx context.Context) (string, error)
 }
 
 // LeagueRead is MFL's league export: its settings, franchises, owners and past champions.
@@ -85,6 +113,34 @@ func Read(ctx context.Context, src Reader, now time.Time) (Export, error) {
 		if err := ctx.Err(); err != nil {
 			return Export{}, &leaguemigration.ReadError{Part: step.part, Err: err}
 		}
+	}
+	if d, ok := src.(DraftTyper); ok {
+		kind, err := d.DraftType(ctx)
+		if err != nil {
+			return Export{}, &leaguemigration.ReadError{Part: "draft order kind", Err: err}
+		}
+		out.DraftType = kind
+	}
+	if reader, ok := src.(ScheduleReader); ok {
+		var err error
+		out.Schedule, err = reader.Schedule(ctx)
+		if err != nil {
+			return Export{}, &leaguemigration.ReadError{Part: "weekly schedule", Err: err}
+		}
+	}
+	if reader, ok := src.(ResultsReader); ok {
+		var err error
+		out.Results, err = reader.Results(ctx)
+		if err != nil {
+			return Export{}, &leaguemigration.ReadError{Part: "recorded results", Err: err}
+		}
+	}
+	if reader, ok := src.(TransactionReader); ok {
+		raw, err := reader.Transactions(ctx)
+		if err != nil {
+			return Export{}, &leaguemigration.ReadError{Part: "transactions", Err: err}
+		}
+		out.Transactions = &raw
 	}
 	out.ReadAt = now.UTC()
 	return out, nil

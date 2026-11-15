@@ -22,11 +22,13 @@ Launching without arguments retains the existing local/reference app.
    a seat. Only the current server-authorized assignment determines your franchise.
    Ask the commissioner to check the assignment if access is refused; do not make
    another account. Commissioners without a franchise can still enter league access.
-3. Commissioners and deputies must first choose **Authenticator**. Enter username
-   and password, get the private setup key, and add it to a time-based authenticator.
-   Enter your password again and confirm a six-digit code. Wait for the next code,
-   enter password again, and choose **Verify fresh code**. Open the franchise.
-   Verification lasts five minutes; a reused code cannot verify access.
+3. The authenticator is optional for everyone, commissioners and deputies included
+   (ruling 2026-11-14). To turn it on, choose **Authenticator**, enter username and
+   password, get the private setup key, and add it to a time-based authenticator.
+   Enter your password again and confirm a six-digit code. From then on, a
+   commissioner or deputy waits for the next code, enters the password again, and
+   chooses **Verify fresh code** before opening the franchise. Verification lasts
+   five minutes; a reused code cannot verify access.
 
 **Account recovery** is always reachable, even without a session. It explains
 expired codes, missing seats and lost passwords/phones. This build has no remote

@@ -15,8 +15,12 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -169,5 +173,23 @@ func pid(raw string) *playerid.PlayerID {
 }
 
 func (s *Source) Read(ctx context.Context, now time.Time) (leaguemigration.Candidate, error) {
-	return mflsource.ReadCandidate(ctx, s, now) //nolint:wrapcheck // Fixtures preserve production source refusals.
+	return mflsource.ReadCandidate(ctx, s, now, leaguerules.RuleSet{}) //nolint:wrapcheck // Fixtures preserve production source refusals.
+}
+
+func (s *Source) Schedule(context.Context) ([]leagueschedule.RawScheduleWeek, error) {
+	return s.Export.Schedule, s.fail("schedule")
+}
+
+func (s *Source) Transactions(context.Context) (transactions.RawTransactions, error) {
+	if err := s.fail("transactions"); err != nil {
+		return transactions.RawTransactions{}, err
+	}
+	if s.Export.Transactions == nil {
+		return transactions.RawTransactions{}, nil
+	}
+	return *s.Export.Transactions, nil
+}
+
+func (s *Source) Results(context.Context) ([]leaguefeed.WeekResult, error) {
+	return s.Export.Results, s.fail("results")
 }

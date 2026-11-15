@@ -44,10 +44,12 @@ func (r RawNativeScope) Validate() error {
 // not it reports the player; Lines are the versions of the player's week the files reported, oldest first.
 // Which version counts is the league's decision, never the feed's.
 type NativeEvidence struct {
-	GSIS    string
-	Held    *HeldWeek
-	Lines   []LineRevision
-	Missing []string
+	// ListedPosition is the existing player record's specific position, used only when the stat feed is ambiguous.
+	ListedPosition string
+	GSIS           string
+	Held           *HeldWeek
+	Lines          []LineRevision
+	Missing        []string
 	// OLine is the season's held O-Line games, read only for an O-Line card; nil when none are held.
 	OLine *HeldLineGames
 }
@@ -81,15 +83,13 @@ func ReadNativeEvidence(ctx context.Context, identity IdentityPort, stats StatPo
 	if canonical, ok := stats.(CanonicalStatPort); ok {
 		revisions, err = canonical.CanonicalPlayerWeekStats(ctx, raw)
 	} else {
-		if gsis == "" {
+		// The directory holds a few pre-GSIS ids (e.g. THO581952) in the gsis slot. No statistics file
+		// can match one, so it reads as no identity: one bad link must not stop the whole league's week.
+		if !isGSIS(gsis) {
 			out.Missing = append(out.Missing, "This player has no matching NFL statistics identity")
 			return out, nil
 		}
-		scope := RawStatScope{GSIS: gsis, Season: raw.Season, Week: raw.Week}
-		if err := scope.Validate(); err != nil {
-			return NativeEvidence{}, fmt.Errorf("read matched NFL identity: %w", err)
-		}
-		revisions, err = stats.PlayerWeekStats(ctx, scope)
+		revisions, err = stats.PlayerWeekStats(ctx, RawStatScope{GSIS: gsis, Season: raw.Season, Week: raw.Week})
 	}
 	if err != nil {
 		return NativeEvidence{}, fmt.Errorf("read the player's held statistics: %w", err)
@@ -105,4 +105,31 @@ func ReadNativeEvidence(ctx context.Context, identity IdentityPort, stats StatPo
 	}
 	out.Missing = append(out.Missing, reporting.Missing...)
 	return out, nil
+}
+
+// Canonical returns a team code in ESPN's form, whichever source supplied it. The week strip is
+// seeded from MFL's schedule and the live board comes from ESPN, so one game must be the same
+// game under either source's codes.
+func CanonicalTeam(team string) string {
+	switch team {
+	case "GBP":
+		return "GB"
+	case "KCC":
+		return "KC"
+	case "LVR":
+		return "LV"
+	case "NEP":
+		return "NE"
+	case "NOS":
+		return "NO"
+	case "SFO":
+		return "SF"
+	case "TBB":
+		return "TB"
+	case "JAC":
+		return "JAX"
+	case "WAS":
+		return "WSH"
+	}
+	return team
 }

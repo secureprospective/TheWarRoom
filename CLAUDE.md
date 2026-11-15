@@ -1,39 +1,66 @@
 # TheWarRoom — Project CLAUDE.md
-**Version:** 3.2 — 2026-10-11
+**Version:** 3.4 — 2026-11-14
 **Project path:** `~/work/TheWarRoom` on the Beelink (the only clone that builds and runs the app)
 **Pillars:** Business, Technical
 
 ## What this project is
 
-A ranking engine and desktop app for the Legacy NFL, Christopher's 32-team dynasty IDP salary-cap
-league on MFL (league 14432). Go scoring engine, Wails v2 shell, React + Tailwind + Zustand
-frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
+TheWarRoom houses a dynasty fantasy football league: its rules, its ledger and everything people do
+in it. Every rule is a setting, any league can be built, and any MFL league can be imported. The
+strategic reference is `North_Star.md`; read it before deciding what earns build time.
+
+- **AI first, CLI first.** Every action is a named command in one catalogue (`internal/commandcatalog`).
+  An AI agent working for a named person does everything through `cmd/twr` (CLI and MCP). Screens,
+  minigames and reports are outputs laid over the same commands.
+- **PWA-centric (the target).** The React app served by `cmd/twr-server` to a browser or phone is the
+  end-state interface. The desktop app (Wails) is first-class and supported. Where a desktop-only path
+  and a hosted path do the same job, protect the hosted one.
+- **Today the desktop has two modes. Read `docs/architecture/desktop-modes.md` before planning
+  desktop, server or phone work.** Thin mode (`-native <server>`) is the product (ruling 2026-11-14):
+  server client plus window, no local engine, and so far only sign-in and the hosted league panel.
+  Local mode (no flag) is the legacy all-in-one app holding the full screens. "Desktop" means thin
+  mode unless Christopher says otherwise; if unclear, ask. Never assume.
+- **The native ledger is the record.** MFL is import and reference only. The MFL→Native import is
+  the front door and must be flawless for any league size or type.
+- **Solo-owner tools.** `mflref`, `transactions` and the what-if desk let one owner use TheWarRoom on
+  a league that still lives on MFL. Keep this framework simple: trim it, never grow it, never delete it.
+- **The engines are the value.** The fitted model (`internal/model`, `model/fit`, `modelrun`,
+  `appvalue`, `powerrankings`, `m2service`, `measures`, `projection`, `pickvalue`, `store/params`),
+  the signal pipelines that feed it and the league mechanics under `internal/engine/*`. Do not break them.
+- **Small on purpose.** One build serves every league type and rule set. Never add infrastructure
+  per league type. Less code is a feature.
+
+Stack: Go 1.26, SQLite (WAL), React + Tailwind + Zustand, Wails v2. The first league is the Legacy
+NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 
 ## Where the work stands
 
-- **Current plan:** `docs/build-handoffs/Hardening_Plan_2026-10.md`, with its Method section.
-- **Engine plan:** `docs/build-handoffs/Core_Build_Plan_2026-10.md`: stages 0–8, each with a gate, and
-  the binding rulings R1–R12. The reasoning behind it: `Core_Build_Reasoning_2026-10.md`.
-- **Latest state:** `HANDOFF.md`.
+- **Governing plan:** `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` (one always-on server, the same
+  React app as PWA and desktop, CLI/MCP) with its rulings in `docs/audit/`.
+- **Direction after that:** `docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md` and the seam
+  registry `docs/architecture/future-seams.md`.
+- **Latest state:** the newest `docs/RESUME-*.md`. The 2026-11-09 debloat (what was cut, what was
+  kept and why) is `docs/RESUME-debloat-1109.md`; words that still disagree across documents are
+  listed in `docs/DEBLOAT-semantic-pot-1109.md`.
+- **Engine plan and rulings R1–R12:** `docs/build-handoffs/Core_Build_Plan_2026-10.md`; the reasoning
+  is `Core_Build_Reasoning_2026-10.md`. Where a later ruling disagrees (R2 is superseded: the native
+  ledger wins), the later ruling governs.
+- **Earlier plans, reference only:** `docs/build-handoffs/Hardening_Plan_2026-10.md` (its Method
+  section still describes how work is briefed and reviewed) and `UI_Target_Roadmap_2026-10.md`.
 - **What exists:** `SYSTEM_MAP.md`, a feature directory; the long narrative is
   `docs/architecture/system-narrative.md`. CI's `scripts/check-root-ratchet.sh` caps root Go
   files at **1** (`docs/architecture/root-go-baseline.txt`); feature code goes in `internal/app/`.
-- **UI target track:** built in rings (`docs/build-handoffs/UI_Target_Roadmap_2026-10.md`), each
-  ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 4 on 2026-10-13).
-  Every endpoint is a row in `docs/ui/endpoint-registry.csv`; `frontend/scripts/gen-endpoints.mjs`
-  generates `registry/endpoints.gen.ts` from it (never hand-edit the generated file).
-  Ring 1 merged 2026-10-10 (PR #15). Ring 2, the decision layer, merged 2026-10-11 (PR #17,
-  `main` b4b3418): contract Acts, the Lab screens, the free-agent bid pool, held IR/taxi
-  eligibility, exact-cents money. Ring 3, breadth and depth, merged 2026-10-13; ring 4, the
-  commissioner side, merged 2026-10-19 (PR #38, PR #39 `main` 5739c5c9). `docs/architecture/system-narrative.md`
-  § Built but not wired lists what is tested but not yet reachable from a screen.
+- **UI:** the target spec is `docs/ui/Target_UI_Spec_2026-10.md`. Every endpoint is a row in
+  `docs/ui/endpoint-registry.csv`; `frontend/scripts/gen-endpoints.mjs` generates
+  `frontend/src/app/registry/endpoints.gen.ts` from it (never hand-edit the generated file).
 
 ## Session start
 
 1. `git branch --show-current`. Never work on main; branches are `session/<short-description>`.
-2. Read the plan's current stage and `HANDOFF.md`.
-3. Toolchain (Go 1.26.10; the git hooks need this too):
-   `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 GOMEMLIMIT=1500MiB
+2. Read `North_Star.md`, the governing plan, `docs/architecture/desktop-modes.md` (run its checks)
+   and the newest `docs/RESUME-*.md`.
+3. Toolchain (Go 1.26.11; the git hooks need this too):
+   `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.11 GOMEMLIMIT=1500MiB
    GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`.
    Always pass `VERSION=dev COMMIT=<ring> BUILD_DATE=<ring>` to make. The commit gates are
    `timeout 600 nice -n 10 make verify …` and `make build …`, both exit 0.
@@ -104,8 +131,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   links only; click nothing on owner pages, and keep owner-only captures out of git.
 - **MFL player IDs are strings.** IDs under 1000 keep their leading zeros. `playerid.New` is
   the only constructor; all SQLite id columns are TEXT.
-- **MFL wins (R2).** A refresh overwrites the app's league and ledger state. Moves made in the
-  app are what-if plans until made on MFL.
+- **Native ledger wins (2026-11-05 client/server ruling 5a; supersedes core-plan R2).** MFL is
+  import/reference only; solo owners and commissioners get a review banner for MFL changes.
 - **Confidence scores are internal engine flags.** Never surface them in the UI.
 - **No scoring leak into the scouting prior.** The prior (draft capital, combine, college,
   film, RAS, breakout) must not reference fantasy points, projected volume, MFL scoring config
@@ -124,6 +151,10 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   and no code asks which preset a league came from. Each setting stands alone; changing one never forces
   another. Every setting changes through the one rule-change flow. The only refusals are what the
   engine truly cannot run, said in plain words. Be accommodating, not restrictive.
+  **An MFL import is just settings in the same app (10-31):** where a league came from is not a kind of
+  league. No code branches on a league's source or on one league's ID, and nothing is locked because it
+  came from MFL. Frontend = how a human works the backend; backend = engines (the math) + stores. Test:
+  could a human reach this league by changing settings by hand, and change it back? If not, it is slop.
 - **Do not reopen locked decisions** or add features the documents don't call for. If a locked
   decision creates a constraint that feels wrong, flag it to Christopher.
 
@@ -133,10 +164,14 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 |---|---|
 | How code is written and judged: load before any build or review | `docs/standards/quality-contract.md`, `docs/standards/architecture-review.md` |
 | Older build doctrine (reference only) | `docs/agent-codex.md` |
-| The current plan and method | `docs/build-handoffs/Hardening_Plan_2026-10.md` |
+| Purpose, scope and what earns build time | `North_Star.md` |
+| The governing plan (client/server, PWA) and its rulings | `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`, `docs/audit/` |
+| Earlier plan; its Method section is still how work is briefed | `docs/build-handoffs/Hardening_Plan_2026-10.md` |
 | The engine plan and rulings | `docs/build-handoffs/Core_Build_Plan_2026-10.md` |
 | Why the plan is shaped this way | `docs/build-handoffs/Core_Build_Reasoning_2026-10.md` |
 | Where each feature lives (two hops), and where new code goes | `SYSTEM_MAP.md` |
+| Future direction: AI-first seams, social moments, tiny models (11-08) | `docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md` |
+| **Before any new server feature** (moments, shares, invites, chat, new AI powers): where it plugs in | `docs/architecture/future-seams.md` (`grep -rn "FUTURE-SEAM(" internal`) |
 | What exists at length, and the import rules | `docs/architecture/system-narrative.md` |
 | Which feature owns a root file or package | `docs/architecture/placement.tsv` |
 | Engine architecture | `docs/scoring-engine/Engine_Specification.md` |
@@ -144,7 +179,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 | MFL API and scoring | `docs/data-layer/MFL_API_Specification.md`, `MFL_Scoring_Rules_Decode.md` |
 | Approved data sources | `docs/sources/Approved_Sources.md` |
 | UI direction | `docs/ui/UI_Direction_Document.md` |
-| UI build order (rings) | `docs/build-handoffs/UI_Target_Roadmap_2026-10.md` |
+| UI build order (rings, reference) | `docs/build-handoffs/UI_Target_Roadmap_2026-10.md` |
 | UI target spec and its rulings | `docs/ui/Target_UI_Spec_2026-10.md` |
 | Every endpoint and its status | `docs/ui/endpoint-registry.csv` |
 | Commissioner surface: MFL map, cut, K1–K7 process, rulings | `docs/commissioner/README.md` |

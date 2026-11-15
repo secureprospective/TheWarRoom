@@ -40,6 +40,9 @@ export async function readActData(league: string, kinds: readonly FieldKind[], s
     entry: (ledger?.league === league ? ledger.entries : []).map(e => ({ value: e.id,
       label: `${e.what} — ${new Date(e.when).toLocaleString()}` })),
   };
+  // The deputy order lists every current co-commissioner once; the people reading holds who they are.
+  options.deputies = (people?.league === league ? people.roles : [])
+    .filter(r => r.role === 'co-commissioner').map(r => ({ value: r.person, label: r.person }));
   options.franchiseOrAll = [{ value: '*', label: 'All franchises' }, ...(options.franchise ?? [])];
   options.scope = [
     ...(options.franchise ?? []).map(o => ({ value: JSON.stringify({ franchise: o.value }),
@@ -80,7 +83,7 @@ export async function readActData(league: string, kinds: readonly FieldKind[], s
       label: `${options.player?.find(p => p.value === c.player)?.label ?? 'Player'} — ${c.status}` }));
   }
   if (kinds.includes('item')) {
-    const queue = await app.TargetStatQueue(league, year);
+    const queue = await app.TargetStatQueue(league, year, '');
     options.item = queue.open.map(i => ({ value: i.id, label: `${i.name}, week ${i.week}: ${i.words}` }));
   }
   await readCompetitionOptions(app, league, kinds, year, assets.revision, options);

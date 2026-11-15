@@ -28,7 +28,19 @@ const (
 type LineupProblem struct {
 	Subject string `json:"subject"`
 	Words   string `json:"words"`
+	// Kind is which way the limit is broken; it stays in Go, so the stored verdict's shape is unchanged.
+	Kind ProblemKind `json:"-"`
 }
+
+// ProblemKind is which way a lineup breaks a limit: too few starters, too many, or a starter at a
+// position the limits do not name.
+type ProblemKind string
+
+const (
+	ProblemShort   ProblemKind = "short"
+	ProblemOver    ProblemKind = "over"
+	ProblemUnknown ProblemKind = "unknown"
+)
 
 // LineupVerdict is the plain-words result of judging one lineup.
 type LineupVerdict struct {
@@ -122,7 +134,7 @@ func positionProblems(limits map[leaguerules.Position]leaguerules.Bounds, counts
 		if position == "" {
 			words = fmt.Sprintf("Position unknown: %d starting", counts[position])
 		}
-		problems = append(problems, LineupProblem{Subject: string(position), Words: words})
+		problems = append(problems, LineupProblem{Subject: string(position), Words: words, Kind: ProblemUnknown})
 	}
 	return problems
 }
@@ -146,17 +158,18 @@ func appendBound(problems []LineupProblem, name string, n int, b leaguerules.Bou
 	low, high := b.Min, b.Max
 	exact := low.State == leaguerules.IsKnown && high.State == leaguerules.IsKnown && low.Value == high.Value
 	var words string
+	kind := ProblemShort
 	switch {
 	case low.State == leaguerules.IsKnown && n < low.Value && exact:
 		words = fmt.Sprintf("%s: %d starting, needs exactly %d", name, n, low.Value)
 	case low.State == leaguerules.IsKnown && n < low.Value:
 		words = fmt.Sprintf("%s: %d starting, needs at least %d", name, n, low.Value)
 	case high.State == leaguerules.IsKnown && n > high.Value && exact:
-		words = fmt.Sprintf("%s: %d starting, needs exactly %d", name, n, high.Value)
+		words, kind = fmt.Sprintf("%s: %d starting, needs exactly %d", name, n, high.Value), ProblemOver
 	case high.State == leaguerules.IsKnown && n > high.Value:
-		words = fmt.Sprintf("%s: %d starting, at most %d", name, n, high.Value)
+		words, kind = fmt.Sprintf("%s: %d starting, at most %d", name, n, high.Value), ProblemOver
 	default:
 		return problems
 	}
-	return append(problems, LineupProblem{Subject: name, Words: words})
+	return append(problems, LineupProblem{Subject: name, Words: words, Kind: kind})
 }

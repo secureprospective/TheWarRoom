@@ -114,6 +114,7 @@ type BackgroundRefresh struct {
 	Start                       func(func())
 	Due                         func() bool
 	Clock, Watch, Launch, Weeks func(context.Context)
+	Sync                        func(context.Context)
 }
 
 func (s BackgroundRefresh) StartWorkers(ctx context.Context) {
@@ -133,6 +134,8 @@ func (s BackgroundRefresh) StartWorkers(ctx context.Context) {
 		}
 		if s.Due() {
 			s.Launch(ctx)
+		} else if s.Sync != nil {
+			s.Sync(ctx)
 		}
 		s.Weeks(ctx)
 	})

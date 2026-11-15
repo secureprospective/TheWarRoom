@@ -71,3 +71,41 @@ func TestPersonalAPIReadsOwnListsAndKeepsHandOffReadOnly(t *testing.T) {
 		t.Fatal("non-hand-off accepted")
 	}
 }
+
+func TestPersonalNotesThreadIsPerPlayerAndFranchise(t *testing.T) {
+	base := bidTestApp(t)
+	id, err := playerid.New("13593")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := &personalHost{fakeHost: base.core, player: snapshot.Player{ID: id, Name: "Smith"}}
+	a := New(h)
+	store := personal.New(h.Pools)
+	if err := store.Initialize(h.Ctx); err != nil {
+		t.Fatal(err)
+	}
+	t0 := time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
+	for i, text := range []string{"older", "newer"} {
+		change := personal.RawChange{Mine: "0001", Kind: "note", Entity: "player", ID: id.String(), Action: "add", Text: text}
+		if err := store.Change(h.Ctx, change, t0.Add(time.Duration(i)*time.Minute)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	thread, err := a.TargetPersonalNotes("0001", id.String())
+	if err != nil || thread.Count != 2 || len(thread.Notes) != 2 ||
+		thread.Notes[0].Text != "newer" || thread.Notes[1].Text != "older" {
+		t.Fatalf("own thread: %+v %v", thread, err)
+	}
+	if _, err := a.TargetPersonalNotes("0002", id.String()); err == nil {
+		t.Fatal("another franchise read the thread")
+	}
+	change := personal.RawChange{Mine: "0001", Kind: "note", Entity: "player", ID: id.String(),
+		Action: "remove", At: t0.Format(time.RFC3339Nano)}
+	if err := a.TargetPersonalChange(change); err != nil {
+		t.Fatal(err)
+	}
+	thread, err = a.TargetPersonalNotes("0001", id.String())
+	if err != nil || thread.Count != 1 || thread.Notes[0].Text != "newer" {
+		t.Fatalf("delete one note: %+v %v", thread, err)
+	}
+}

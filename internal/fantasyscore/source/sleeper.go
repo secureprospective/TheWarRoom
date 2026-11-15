@@ -67,16 +67,15 @@ func (r RawSleeperStats) fields() map[leaguerules.StatID]json.Number {
 		"offensive_snap": r.OffensiveSnaps, "defensive_snap": r.DefensiveSnaps,
 		"special_teams_snap": r.SpecialTeamsSnaps,
 	}
-	for id, value := range fields {
-		if value == "" {
-			fields[id] = "0"
-		}
-	}
+
 	return fields
 }
 
 func (r RawSleeperStats) Validate() error {
 	for id, number := range r.fields() {
+		if number == "" {
+			number = "0"
+		}
 		value, err := decimal(number.String())
 		if err != nil {
 			return fmt.Errorf("sleeper %s: %w", id, err)
@@ -96,6 +95,9 @@ func (r RawSleeperStats) Convert() (fantasyscore.StatLine, error) {
 	}
 	quantities := make(map[leaguerules.StatID]leaguerules.Decimal, 13)
 	for id, number := range r.fields() {
+		if number == "" {
+			number = "0"
+		}
 		quantities[id], _ = decimal(number.String())
 	}
 	return fantasyscore.StatLine{Quantities: quantities}, nil

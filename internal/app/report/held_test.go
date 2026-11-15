@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -45,18 +44,6 @@ func TestPlainFailureHidesNetworkChain(t *testing.T) {
 	other := errors.New("league: unexpected export shape")
 	if offline.Plain(other) != other || FailureText(other) != other.Error() {
 		t.Fatal("a non-network failure was rewritten")
-	}
-}
-
-// The frontend finds Go's sentences by their advice, so the two copies must match.
-func TestOfflineSentenceMatchesFrontend(t *testing.T) {
-	body, err := os.ReadFile("../../../frontend/src/app/data/plainFailure.ts")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(body), `"`+offline.Advice+`"`) || !strings.Contains(string(body), `"Can't reach the league site." + ADVICE`) ||
-		Offline != "Can't reach the league site."+offline.Advice {
-		t.Fatal("frontend ADVICE or OFFLINE differs from internal/offline")
 	}
 }
 

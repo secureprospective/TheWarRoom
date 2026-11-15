@@ -9,9 +9,26 @@ import (
 	"time"
 )
 
+// PreviewTrial is the private trial ledger a preview reads: the held ledger and the proposed entry, never
+// recorded. It carries the replay memo, so the preview's readings share its folds instead of each folding
+// it again. The store builds it once per preview; a nil trial makes operationPreview build its own.
+func PreviewTrial(raw RawCommand, records []Record, now time.Time) ([]Record, error) {
+	trial := append(slices.Clone(records), Record{Command: raw,
+		Principal: previewPrincipal(raw, records), Receipt: Receipt{Entry: "proposed." + raw.Request,
+			Revision: raw.Expected + 1, RecordedAt: now}})
+	if raw.Command == ScheduleGenerate {
+		weeks, err := FreezeSchedule(raw, records)
+		if err != nil {
+			return nil, err
+		}
+		trial[len(trial)-1].GeneratedSchedule = weeks
+	}
+	return WithReplayCache(trial), nil
+}
+
 // operationPreview projects a private trial ledger through the same native readings owners use.
 // Preparation and refusals belong to the store; no trial entry is ever recorded here.
-func operationPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, now time.Time) (Preview, error) {
+func operationPreview(raw RawCommand, records, trial []Record, catalogue PreviewCatalogue, now time.Time) (Preview, error) {
 	if len(records) == 0 {
 		return Preview{}, fmt.Errorf("create this app league before changing it")
 	}
@@ -19,15 +36,10 @@ func operationPreview(raw RawCommand, records []Record, catalogue PreviewCatalog
 	if err != nil {
 		return Preview{}, err
 	}
-	trial := append(slices.Clone(records), Record{Command: raw,
-		Principal: previewPrincipal(raw, records), Receipt: Receipt{Entry: "proposed." + raw.Request,
-			Revision: raw.Expected + 1, RecordedAt: now}})
-	if raw.Command == ScheduleGenerate {
-		weeks, err := FreezeSchedule(raw, records)
-		if err != nil {
+	if trial == nil {
+		if trial, err = PreviewTrial(raw, records, now); err != nil {
 			return Preview{}, err
 		}
-		trial[len(trial)-1].GeneratedSchedule = weeks
 	}
 	label, err := entryLabel(trial, len(trial)-1)
 	if err != nil {

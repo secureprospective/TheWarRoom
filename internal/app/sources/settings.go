@@ -53,7 +53,6 @@ type CacheRefreshers struct {
 	Pool     func(bool) error
 	Research func(bool) error
 	Race     func(bool) error
-	Comms    func(bool) error
 	Draft    func(bool) error
 }
 
@@ -65,8 +64,6 @@ func CacheScopes(refresh CacheRefreshers) []CacheScope {
 			Action: "Read player research again", Progress: "Reading…"}, refresh.Research},
 		{DataScope{ID: "race", Label: "League race", Note: "The standings and the race for the playoffs.",
 			Action: "Read the league race again", Progress: "Reading…"}, refresh.Race},
-		{DataScope{ID: "comms", Label: "League board", Note: "The league's message board posts.",
-			Action: "Read the league board again", Progress: "Reading…"}, refresh.Comms},
 		{DataScope{ID: "draft", Label: "Draft reports", Note: "The draft boards and reports.",
 			Action: "Read draft reports again", Progress: "Reading…"}, refresh.Draft},
 	}

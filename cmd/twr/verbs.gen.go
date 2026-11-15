@@ -82,6 +82,7 @@ func generatedVerbs() []commandVerb {
 		{ID: "bids.award.override", Label: "override bids award", Modes: []string{"preview", "execute"}},
 		{ID: "commish.seat.caretaker", Label: "caretaker league seat", Modes: []string{"preview", "execute"}},
 		{ID: "commish.franchise.edit", Label: "edit league franchise", Modes: []string{"preview", "execute"}},
+		{ID: "commish.franchise.direction.set", Label: "set league franchise direction", Modes: []string{"preview", "execute"}},
 		{ID: "commish.seat.invite", Label: "invite league seat", Modes: []string{"preview", "execute"}},
 		{ID: "commish.seat.invite.revoke", Label: "revoke league seat invite", Modes: []string{"preview", "execute"}},
 		{ID: "commish.seat.invite.redeem", Label: "redeem league seat invite", Modes: []string{"preview", "execute"}},

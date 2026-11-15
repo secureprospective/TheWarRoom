@@ -112,25 +112,3 @@ func TestPerformanceTotalsUseExactlyDisplayedWeeks(t *testing.T) {
 		})
 	}
 }
-
-func TestPerformanceTotalsIncludeCurrentWeekAtDisplayPrecision(t *testing.T) {
-	in := realResearch(t)
-	id, err := playerid.New("13589")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for w, value := range []float64{1.004, -1.004, 0, 0, 2.004} {
-		in.Held.Feeds[Key("playerScores", strconv.Itoa(w+1))] = Feed[[]researchfeeds.Feed]{Value: []researchfeeds.Feed{{Players: []researchfeeds.Entry{{ID: id, Value: value}}}}, FetchedAt: in.Now}
-	}
-	delete(in.Held.Feeds, Key("playerScores", "4"))
-	r := reportByID(t, Build(in, Scope{Group: "QB"}).Board, "M-040")
-	if len(r.Rows) != 1 {
-		t.Fatal(r.Rows)
-	}
-	want := []string{"2.00", "1.00", "-1.00", "0.00", "—", "2.00"}
-	for i, text := range want {
-		if r.Rows[0].Cells[i+3] != text {
-			t.Fatalf("season/weeks = %v, want %v", r.Rows[0].Cells[3:], want)
-		}
-	}
-}

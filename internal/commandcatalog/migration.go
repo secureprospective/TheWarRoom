@@ -16,6 +16,7 @@ const AssistDoor Door = "assist"
 type MigrationInputs struct {
 	Service   *leaguemigration.Service
 	Principal func() (string, error)
+	SaveKey   func(context.Context, string, string) error
 }
 
 type migrationCommand struct {
@@ -28,11 +29,11 @@ func migrationCommands() []migrationCommand {
 	return []migrationCommand{
 		{leaguemigration.CommandPrepare, "Read an MFL league and say what moving it would land", "G0", Read,
 			func(ctx context.Context, s *leaguemigration.Service, r leaguemigration.RawStep, _ string) (any, error) {
-				return s.Prepare(ctx, r.MFLLeague)
+				return s.Prepare(ctx, r.MFLLeague, r.Preset)
 			}},
 		{leaguemigration.CommandImport, "Import an MFL league into the app", "G3", Execute,
 			func(ctx context.Context, s *leaguemigration.Service, r leaguemigration.RawStep, who string) (any, error) {
-				return s.Import(ctx, r.MFLLeague, r.Reason, who)
+				return s.ImportWithOptions(ctx, r.MFLLeague, r.Reason, who, leaguemigration.ImportOptions{Preset: r.Preset, Answers: r.Answers})
 			}},
 		{leaguemigration.CommandReview, "Compare the imported league with MFL", "G0", Read,
 			func(ctx context.Context, s *leaguemigration.Service, r leaguemigration.RawStep, _ string) (any, error) {
@@ -63,7 +64,7 @@ func MigrationEntries(in MigrationInputs) []Entry {
 	for _, c := range migrationCommands() {
 		definition := Command{ID: c.id, Method: c.id, Version: "1", Role: "commish", Gravity: c.gravity,
 			Availability: "desktop", Permission: "command:" + c.id, Modes: []Mode{c.mode},
-			Arguments: Shape(reflect.TypeFor[leaguemigration.RawStep](), "leaguemigration.RawStep.Validate"),
+			Arguments: Shape(reflect.TypeFor[RawMigrationStep](), "RawMigrationStep.Validate"),
 			Undo:      "none; MFL is never changed, so a move given up is imported again",
 			Facts:     "mfl-read-only,ledger", Safeguards: "typed reason; digest of the review or list read"}
 		out = append(out, Entry{ID: c.id, Label: c.label, Definition: definition,
@@ -74,7 +75,7 @@ func MigrationEntries(in MigrationInputs) []Entry {
 
 func migrationHandler(c migrationCommand, in MigrationInputs) Handler {
 	return func(ctx context.Context, body json.RawMessage) (json.RawMessage, error) {
-		var raw leaguemigration.RawStep
+		var raw RawMigrationStep
 		if err := decodeJSON(body, &raw); err != nil {
 			return nil, err
 		}
@@ -85,6 +86,40 @@ func migrationHandler(c migrationCommand, in MigrationInputs) Handler {
 		if err != nil {
 			return nil, fmt.Errorf("the commissioner is not signed in: %w", err)
 		}
-		return result(c.run(ctx, in.Service, raw, who))
+		if raw.APIKey != "" {
+			if c.id != leaguemigration.CommandPrepare || in.SaveKey == nil {
+				return nil, fmt.Errorf("save the MFL key when preparing the league")
+			}
+			if err := in.SaveKey(ctx, raw.MFLLeague, raw.APIKey); err != nil {
+				return nil, fmt.Errorf("save this league's MFL key: %w", err)
+			}
+		}
+		return result(c.run(ctx, in.Service, raw.RawStep, who))
 	}
+}
+
+// RunMigration is the desktop adapter to the same validated migration command handlers.
+func RunMigration(ctx context.Context, in MigrationInputs, command string, body json.RawMessage) (json.RawMessage, error) {
+	for _, c := range migrationCommands() {
+		if c.id == command {
+			return migrationHandler(c, in)(ctx, body)
+		}
+	}
+	return nil, fmt.Errorf("choose a league move command")
+}
+
+// RawMigrationStep keeps an optional write-only credential out of the assistant's persisted step.
+type RawMigrationStep struct {
+	leaguemigration.RawStep
+	APIKey string `json:"apiKey,omitempty"`
+}
+
+func (r RawMigrationStep) Validate() error {
+	if err := r.RawStep.Validate(); err != nil {
+		return fmt.Errorf("check the move: %w", err)
+	}
+	if r.APIKey != "" && (len(r.APIKey) < 16 || len(r.APIKey) > 256) {
+		return fmt.Errorf("the MFL key must contain 16 to 256 bytes")
+	}
+	return nil
 }

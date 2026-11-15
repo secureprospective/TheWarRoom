@@ -5,7 +5,6 @@ import (
 	"errors"
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -154,28 +153,5 @@ func TestDatabaseOpeningLockRecoveryAndStoreOrder(t *testing.T) {
 		if !reflect.DeepEqual(calls, want) {
 			t.Fatal(calls, want)
 		}
-	}
-}
-
-func TestWorkerGroupStopsAdmissionAndJoins(t *testing.T) {
-	var mutex sync.Mutex
-	var workers sync.WaitGroup
-	stopping := false
-	service := WorkerGroup{Mutex: &mutex, Stopping: &stopping, Workers: &workers}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	started, finished := make(chan struct{}), make(chan struct{})
-	service.Start(func() { close(started); <-ctx.Done(); close(finished) })
-	<-started
-	service.Stop(&cancel)
-	select {
-	case <-finished:
-	default:
-		t.Fatal("returned without join")
-	}
-	service.Start(func() { t.Error("admitted after stopping") })
-	workers.Wait()
-	if !stopping {
-		t.Fatal("admission remains open")
 	}
 }

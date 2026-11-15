@@ -23,11 +23,24 @@ import (
 func Prepare(export Export) (leaguemigration.Plan, error) {
 	p := preparation{export: export}
 	plan := leaguemigration.Plan{}
-	rules, problems, notes := Settings(export.Config)
+	rules, problems, notes := Settings(export.Config, export.Base, export.DraftType)
+	rules.Schedule.Follow = leaguerules.Known(leaguerules.ScheduleFollow{Source: "mfl", League: export.LeagueID, Season: export.Season})
 	p.problems = append(p.problems, problems...)
 	plan.Rules, plan.Notes = rules, notes
+	plan.Waiting = waitingSettings(rules)
 	plan.Seed, plan.Mapping = p.snapshot()
 	plan.Owners = p.owners(plan.Mapping)
+	var err error
+	plan.Schedule, err = Schedule(export.Schedule, plan.Mapping)
+	if err != nil {
+		p.problem("the weekly schedule could not be kept: %v", err)
+	}
+	if export.Results != nil {
+		plan.Recorded, err = RecordedResults(export.Results, export.Season, 0, plan.Mapping)
+		if err != nil {
+			p.problem("the recorded results could not be kept: %v", err)
+		}
+	}
 	plan.Create = p.create(rules)
 	if len(export.Rosters) == 0 {
 		p.problem("MFL holds no rostered players for this league, so there is nothing to move; " +
@@ -48,7 +61,7 @@ func Prepare(export Export) (leaguemigration.Plan, error) {
 		return leaguemigration.Plan{}, &leaguemigration.Problems{List: []string{"the league's settings do not hold together: " + err.Error()}}
 	}
 	plan.Create = create.Args
-	return plan, nil
+	return prepareTransactionPlan(export, plan), nil
 }
 
 type preparation struct {
@@ -106,10 +119,7 @@ func (p *preparation) franchises() []commissioner.NativeFranchise {
 	if len(held) < 2 || len(held) > 32 {
 		p.problem("MFL lists %d franchises; a league needs between 2 and 32", len(held))
 	}
-	divisions := map[string]bool{}
-	for _, d := range p.export.Config.Divisions {
-		divisions[d.ID] = true
-	}
+	divisions := divisionNames(p.export.Config)
 	out := make([]commissioner.NativeFranchise, 0, len(held))
 	seen := map[string]bool{}
 	for i, f := range held {
@@ -118,12 +128,31 @@ func (p *preparation) franchises() []commissioner.NativeFranchise {
 			p.problem("MFL lists franchise %q more than once or without an id", f.ID)
 		case strings.TrimSpace(f.Name) == "":
 			p.problem("franchise %s has no name on MFL; name it there, then import again", f.ID)
-		case f.Division != "" && !divisions[f.Division]:
+		case f.Division != "" && divisions[f.Division] == "":
 			p.problem("franchise %s sits in division %q, which MFL does not list", f.ID, f.Division)
 		}
 		seen[f.ID] = true
 		out = append(out, commissioner.NativeFranchise{ID: fmt.Sprintf("franchise.%02d", i+1), HeldID: f.ID,
-			Name: f.Name, Abbreviation: f.Abbrev, Division: f.Division})
+			Name: f.Name, Abbreviation: f.Abbrev, Division: divisions[f.Division]})
+	}
+	return out
+}
+
+// divisionNames is what each MFL division is called in the league: its own name, so owners read
+// "AFC East" and not MFL's "00". When any name is blank or two divisions share one, names cannot
+// tell the divisions apart, so every division keeps its MFL id.
+func divisionNames(config league.RawConfig) map[string]string {
+	out, seen, named := map[string]string{}, map[string]bool{}, true
+	for _, d := range config.Divisions {
+		name := strings.TrimSpace(d.Name)
+		named = named && name != "" && !seen[name]
+		seen[name] = true
+		out[d.ID] = name
+	}
+	if !named {
+		for _, d := range config.Divisions {
+			out[d.ID] = d.ID
+		}
 	}
 	return out
 }
@@ -134,10 +163,11 @@ func conferences(config league.RawConfig) map[string]string {
 	for _, c := range config.Conferences {
 		names[c.ID] = cmp.Or(strings.TrimSpace(c.Name), c.ID)
 	}
+	divisions := divisionNames(config)
 	out := map[string]string{}
 	for _, d := range config.Divisions {
 		if conference := cmp.Or(names[d.Conference], d.Conference); conference != "" {
-			out[d.ID] = conference
+			out[divisions[d.ID]] = conference
 		}
 	}
 	if len(out) == 0 {
@@ -202,13 +232,17 @@ func (p *preparation) players(seed *commissioner.RawNativeSnapshot, mapping map[
 			continue
 		}
 		player := commissioner.NativePlayer{Name: p.export.Players[id], ID: id,
-			Franchise: franchise, Status: status, Salary: salary, ExpirationYear: year,
+			ContractMissing: strings.TrimSpace(r.Salary) == "" || strings.TrimSpace(r.ContractYear) == "" || strings.TrimSpace(r.ContractStatus) == "",
+			Franchise:       franchise, Status: status, Salary: salary, ExpirationYear: year,
 			ContractStatus: record.ContractStatus, ContractInfo: r.ContractInfo}
 		switch {
 		case strings.TrimSpace(r.ContractStatus) == "":
 			player.ContractStatus = "" // MFL holds no contract status; none is invented
 		case r.ContractStatus != string(record.ContractStatus):
 			player.HeldContractStatus = r.ContractStatus
+		}
+		if player.ContractMissing {
+			player.Salary, player.ExpirationYear, player.ContractStatus = 0, 0, ""
 		}
 		seed.Players = append(seed.Players, player)
 	}
@@ -314,4 +348,21 @@ func (p *preparation) owners(mapping map[string]string) []leaguemigration.Owner 
 	}
 	slices.SortFunc(out, func(a, b leaguemigration.Owner) int { return strings.Compare(a.Franchise, b.Franchise) })
 	return out
+}
+
+func prepareTransactionPlan(export Export, plan leaguemigration.Plan) leaguemigration.Plan {
+	if export.Transactions == nil {
+		return plan
+	}
+	plan.Transactions = func(league, reason string, seed commissioner.RawNativeSnapshot) ([][]commissioner.RawCommand, error) {
+		players, mapping := map[string]string{}, map[string]string{}
+		for id := range export.Players {
+			players[id] = id
+		}
+		for _, f := range seed.Franchises {
+			mapping[f.HeldID] = f.ID
+		}
+		return TransactionReplayCommands(*export.Transactions, league, reason, seed, mapping, players, export.Draft)
+	}
+	return plan
 }

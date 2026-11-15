@@ -30,43 +30,6 @@ func TestMoveURLSecondLock(t *testing.T) {
 	}
 }
 
-func TestTaxiPredicateRegistered(t *testing.T) {
-	t.Parallel()
-	predicate := MovePredicate("roster.taxi")
-	if _, ok := predicate.(envelope.TaxiPredicate); !ok {
-		t.Fatalf("taxi registry: %T", predicate)
-	}
-}
-
-func TestMovePolicies(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		intent string
-		want   envelope.Predicate
-	}{
-		{"roster.ir", envelope.IRPredicate{}}, {"roster.taxi", envelope.TaxiPredicate{}},
-		{"mfl.lineup.set", envelope.LineupPredicate{}}, {"mfl.trade.accept", envelope.TradePredicate{}},
-		{"trade.propose", envelope.TradeActPredicate{}}, {"trade.reject", envelope.TradeActPredicate{}},
-		{"trade.revoke", envelope.TradeActPredicate{}}, {"bid.submit", envelope.BidPredicate{}},
-		{envelope.CutIntent, envelope.ReleasePredicate{}}, {envelope.BuyoutIntent, envelope.ReleasePredicate{}},
-		{"rfa.tender", envelope.ContractPredicate{}}, {"fa.resign", envelope.ContractPredicate{}},
-		{"contract.tag", envelope.ContractPredicate{}}, {"contract.extend", envelope.ContractPredicate{}},
-		{"contract.restructure", envelope.ContractPredicate{}}, {"unknown", nil},
-	} {
-		if got := MovePredicate(tc.intent); reflect.TypeOf(got) != reflect.TypeOf(tc.want) {
-			t.Errorf("%s: %T, want %T", tc.intent, got, tc.want)
-		}
-	}
-	sources := map[envelope.Source]bool{envelope.Rosters: true, envelope.Contracts: true}
-	if !SkipMoveRefresh(envelope.Contracts, sources) || SkipMoveRefresh(envelope.Rosters, sources) || !SkipMoveRefresh(envelope.Lineups, sources) {
-		t.Fatal("roster refresh must cover contracts, not missing sources")
-	}
-	delete(sources, envelope.Rosters)
-	if SkipMoveRefresh(envelope.Contracts, sources) {
-		t.Fatal("contracts must refresh without rosters")
-	}
-}
-
 func TestRosterMoveTarget(t *testing.T) {
 	t.Parallel()
 	missing, blocks := RosterMoveTarget("", 2026, "league", "18")

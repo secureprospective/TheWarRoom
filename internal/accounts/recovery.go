@@ -61,6 +61,7 @@ func (r RawConsoleRecovery) Validate() error {
 
 type RecoveryRepository interface {
 	ReplaceRecoveryCodes(ctx context.Context, accountID, proofDigest string, digests [RecoveryCodeCount]string) error
+	StoreInitialRecoveryCodes(ctx context.Context, accountID string, digests [RecoveryCodeCount]string) error
 	ResetAccount(ctx context.Context, username, passwordHash, codeDigest, reason string) error
 }
 
@@ -84,20 +85,41 @@ func (s *RecoveryService) PrintCodes(ctx context.Context, credentials RawCredent
 	if len(proof.Token) != 43 {
 		return RecoveryCodes{}, ErrRecoveryRefused
 	}
-	var codes RecoveryCodes
-	var digests [RecoveryCodeCount]string
-	for i := range codes.Codes {
-		var secret [32]byte
-		if _, err := rand.Read(secret[:]); err != nil {
-			return RecoveryCodes{}, fmt.Errorf("generate recovery code: %w", err)
-		}
-		codes.Codes[i] = base64.RawURLEncoding.EncodeToString(secret[:])
-		digests[i] = enrollmentDigest(codes.Codes[i])
+	codes, digests, err := newRecoveryCodes()
+	if err != nil {
+		return RecoveryCodes{}, err
 	}
 	if err := s.store.ReplaceRecoveryCodes(ctx, account.ID, enrollmentDigest(proof.Token), digests); err != nil {
 		return RecoveryCodes{}, fmt.Errorf("print recovery codes: %w", err)
 	}
 	return codes, nil
+}
+
+// IssueCodes mints the first set for an account created moments ago, before it has a factor to
+// prove; the successful claim is the proof of possession. Later sets still require recent auth.
+func (s *RecoveryService) IssueCodes(ctx context.Context, account Account) (RecoveryCodes, error) {
+	codes, digests, err := newRecoveryCodes()
+	if err != nil {
+		return RecoveryCodes{}, err
+	}
+	if err := s.store.StoreInitialRecoveryCodes(ctx, account.ID, digests); err != nil {
+		return RecoveryCodes{}, fmt.Errorf("issue recovery codes: %w", err)
+	}
+	return codes, nil
+}
+
+func newRecoveryCodes() (RecoveryCodes, [RecoveryCodeCount]string, error) {
+	var codes RecoveryCodes
+	var digests [RecoveryCodeCount]string
+	for i := range codes.Codes {
+		var secret [32]byte
+		if _, err := rand.Read(secret[:]); err != nil {
+			return RecoveryCodes{}, digests, fmt.Errorf("generate recovery code: %w", err)
+		}
+		codes.Codes[i] = base64.RawURLEncoding.EncodeToString(secret[:])
+		digests[i] = enrollmentDigest(codes.Codes[i])
+	}
+	return codes, digests, nil
 }
 
 // Recover replaces a forgotten password and removes lost factors. A recovery code

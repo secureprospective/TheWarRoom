@@ -6,6 +6,10 @@ export function TargetOpenResearchArticle(arg1, arg2) {
   return window['go']['research']['API']['TargetOpenResearchArticle'](arg1, arg2);
 }
 
+export function TargetPlayerUsage(arg1) {
+  return window['go']['research']['API']['TargetPlayerUsage'](arg1);
+}
+
 export function TargetResearch(arg1) {
   return window['go']['research']['API']['TargetResearch'](arg1);
 }

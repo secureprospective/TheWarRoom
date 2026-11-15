@@ -29,6 +29,8 @@ type Franchise struct {
 	Seat               Principal
 	Caretaker          Principal
 	Abilities          map[string]bool
+	// Direction is where the owner is taking the franchise: contend, retool or rebuild. Empty until set.
+	Direction string `json:",omitempty"`
 }
 type Invite struct {
 	ID                string
@@ -112,6 +114,17 @@ func (s State) Franchise(id FranchiseID) (Franchise, bool) {
 	f, ok := s.franchises[id]
 	f.Abilities = maps.Clone(f.Abilities)
 	return f, ok
+}
+
+// Directions is the direction each franchise's owner has set; a franchise without one is absent.
+func (s State) Directions() map[FranchiseID]string {
+	out := map[FranchiseID]string{}
+	for id, f := range s.franchises {
+		if f.Direction != "" {
+			out[id] = f.Direction
+		}
+	}
+	return out
 }
 func (s State) Invite(id string) (Invite, bool) { i, ok := s.invites[id]; return i, ok }
 func (s State) Audience(report string) string   { return s.visibility[report] }

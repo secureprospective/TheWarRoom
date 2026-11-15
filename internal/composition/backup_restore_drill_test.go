@@ -154,7 +154,7 @@ func TestMatchedRestoreSameHomeKeepsCommissionerAndNativeRoster(t *testing.T) {
 	dir := t.TempDir()
 	a := restoreDrillApp(t, dir)
 	raw := commissioner.RawCommand{League: "native.restore", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Restore drill", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 32},
+		Args:   commissioner.RawArgs{Name: "Restore drill", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 32},
 		Reason: "Start the restore drill", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, a, raw)
 	body, err := os.ReadFile("internal/commissioner/testdata/native-assets.wire.json")

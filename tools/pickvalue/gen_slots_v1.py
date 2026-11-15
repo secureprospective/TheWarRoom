@@ -2,7 +2,7 @@
 """Regenerate internal/pickvalue/slots_v1.csv: Pick Value v1's league draft history.
 
 Each row is one Legacy NFL rookie-draft selection (2017-2026, from the frozen Lab facts in
-internal/lab/testdata/lab.json.gz) with the NFL draft capital of the player taken: his overall
+LeagueLab: internal/lab/testdata/lab.json.gz) with the NFL draft capital of the player taken: his overall
 NFL pick, or 0 when he went undrafted. The overall pick is nflverse's where the held features
 know it; otherwise it is derived from MFL's round and pick by that round's first overall pick
 (the most common start among the players nflverse does know), exactly as the player record does.

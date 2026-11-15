@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
-
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -37,9 +35,9 @@ type BidRequest struct {
 	Facts       BidFacts
 }
 
-// DraftBid builds a bid plan and runs the bid rules on it, so it is Ready or Blocked at once.
-// The target is manual: the owner posts the bid on ProBoards by hand.
-func DraftBid(at time.Time, req BidRequest, check BidCheck, generate func() string) (Envelope, error) {
+// DraftBid builds a bid plan, Ready at once. The target is manual: the owner posts the bid on
+// ProBoards by hand, and the league's own process judges it, so the app checks no bid rules.
+func DraftBid(at time.Time, req BidRequest, generate func() string) (Envelope, error) {
 	player := req.Facts.Player
 	spec := Spec{
 		Intent: BidIntent, LeagueID: req.LeagueID, FranchiseID: req.FranchiseID,
@@ -51,23 +49,21 @@ func DraftBid(at time.Time, req BidRequest, check BidCheck, generate func() stri
 	if err != nil {
 		return Envelope{}, fmt.Errorf("draft bid: %w", err)
 	}
-	checked, err := e.Check(at, snapshot.Snapshot{}, check)
+	checked, err := e.Check(at, snapshot.Snapshot{}, BidCheck{})
 	if err != nil {
 		return Envelope{}, fmt.Errorf("draft bid: check: %w", err)
 	}
 	return checked, nil
 }
 
-// BidCheck runs the §6 bid rules on a prepared Input; they read no roster, so the snapshot
-// is unused.
-type BidCheck struct{ Input bidrules.Input }
+// BidCheck passes every bid plan: an MFL league's bids are judged where they are placed, by hand.
+type BidCheck struct{}
 
-func (c BidCheck) Evaluate(s Spec, _ snapshot.Snapshot) CheckResult {
+func (BidCheck) Evaluate(s Spec, _ snapshot.Snapshot) CheckResult {
 	if s.Intent != BidIntent {
 		return CheckResult{Blocked: true, Note: "bid check does not cover this intent"}
 	}
-	results := bidrules.Check(c.Input)
-	return CheckResult{Blocked: bidrules.Blocked(results), Note: bidrules.Note(results)}
+	return CheckResult{Note: "Ready to copy; the league judges the bid where it is placed"}
 }
 
 // BidPredicate lands a bid by the rosters export: on the owner's roster with the planned

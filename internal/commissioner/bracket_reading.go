@@ -68,11 +68,14 @@ type NativeBracket struct {
 	Started    bool              `json:"started"`
 	StartKnown bool              `json:"startKnown"`
 	Fields     []ConferenceField `json:"fields"`
-	Rounds     []BracketRound    `json:"rounds"`
-	Champion   *BracketChampion  `json:"champion,omitempty"`
-	Title      BracketTitle      `json:"title"`
-	History    []HistoryRecord   `json:"history"`
-	Changes    []ScoreChange     `json:"changes"`
+	// Projected is the field as the standings have it today, while the regular season is still being played.
+	// It sets nothing: Fields stays empty until the standings are final.
+	Projected []ConferenceField `json:"projected"`
+	Rounds    []BracketRound    `json:"rounds"`
+	Champion  *BracketChampion  `json:"champion,omitempty"`
+	Title     BracketTitle      `json:"title"`
+	History   []HistoryRecord   `json:"history"`
+	Changes   []ScoreChange     `json:"changes"`
 }
 
 func rulesView(r PlayoffRules) PlayoffRulesView {
@@ -94,7 +97,7 @@ func NativeBracketReading(ctx context.Context, league string, records []Record, 
 		return NativeBracket{}, fmt.Errorf("choose a season")
 	}
 	out := NativeBracket{League: league, Season: season, Revision: int64(len(records)), Status: bracketUnavailable,
-		Presets: []string{}, Fields: []ConferenceField{}, Rounds: []BracketRound{}, History: []HistoryRecord{},
+		Presets: []string{}, Fields: []ConferenceField{}, Projected: []ConferenceField{}, Rounds: []BracketRound{}, History: []HistoryRecord{},
 		Changes: []ScoreChange{}, Rules: PlayoffRulesView{Shape: []BracketNodeSpec{}}}
 	if len(records) == 0 {
 		return out, fmt.Errorf("this app league has not been created")

@@ -2,14 +2,20 @@ package composition
 
 import (
 	"context"
+	"errors"
 	"log"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	recordstore "github.com/secureprospective/TheWarRoom/internal/store/playerrecord"
 )
 
@@ -21,19 +27,6 @@ type (
 	AssetCell  = marketapp.AssetCell
 )
 
-// dynastyValue and assetModel are the service's native value and value model; the App holds the
-// model (assetModel) once a model run is read. Neither is on the wire.
-type (
-	dynastyValue = marketapp.Dynasty
-	assetModel   = marketapp.Model
-)
-
-// buildAssetBoard words C-01 in the service for every player with a held score this season, and
-// every id in also, and converts it to its wire type.
-func buildAssetBoard(v researchView, model assetModel, at time.Time, also []string) AssetBoard {
-	return marketapp.WireAssetBoard(marketapp.BuildBoard(v.onField(), model, at, also))
-}
-
 // onField is each scored player's points per game and rank at his position, in the service.
 func (v researchView) onField() marketapp.OnField {
 	finished := researchapp.FinishedScores(v.scoreInput())
@@ -42,16 +35,6 @@ func (v researchView) onField() marketapp.OnField {
 		scored = append(scored, marketapp.Scored{ID: id, Position: r.Position, Sum: r.Sum, Games: r.Games})
 	}
 	return marketapp.OnFieldNow(scored, finished.Held, finished.Weeks, finished.Latest, v.zone)
-}
-
-// onFieldNow is onField as wire cells.
-func (v researchView) onFieldNow() (map[string]AssetCell, map[string]float64, string) {
-	now := v.onField()
-	cells := make(map[string]AssetCell, len(now.Cells))
-	for id, c := range now.Cells {
-		cells[id] = AssetCell(c)
-	}
-	return cells, now.PPG, now.Source
 }
 
 // marketHost composes Market's Host: shared state from core, and the Research scores and the
@@ -114,4 +97,29 @@ func (h marketHost) RefreshMarket(force bool) error {
 		defer h.RefreshMu.Unlock()
 		h.RefreshMarketFeeds(ctx, force)
 	})
+}
+
+func (h marketHost) AgeArcSource() marketapp.AgeArcSource {
+	src := h.app.nativeValueSource()
+	return marketapp.AgeArcSource{Book: recordstore.New(h.app.core.HistPools, h.app.core.History).Book,
+		LatestRun: src.LatestRun, Scores: src.Scores, Params: src.Params, RunParams: h.ageArcRunParams,
+		Games: h.app.nflGamesPerSeason, Season: h.app.core.Season}
+}
+
+// nflGamesPerSeason reads the season's games from the held NFL schedule, with the league's last
+// scoring week as the explicit fallback when the whole schedule is not held.
+func (a *App) nflGamesPerSeason(_ context.Context, _ int) (int, error) {
+	a.core.SeasonMu.Lock()
+	held := slices.Collect(maps.Values(a.now.schedules))
+	fallback := a.core.Rulebook.ActiveConfig().EndWeek
+	a.core.SeasonMu.Unlock()
+	games, err := nowapp.GamesPerSeason(slices.Values(held),
+		func(f heldSeasonFeed[[]nflschedule.RawWeek]) []nflschedule.RawWeek { return f.Value }, fallback)
+	return games, errors.Join(err)
+}
+
+// ageArcRunParams reads the parameter set a model run scored with, in the form the arc reads.
+func (h marketHost) ageArcRunParams(ctx context.Context, paramSetID string) (params.Set, bool, error) {
+	set, ok, err := marketapp.StoredParams(ctx, h.app.core.History.RunParams, paramSetID)
+	return set, ok, errors.Join(err)
 }

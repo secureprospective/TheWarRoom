@@ -119,9 +119,6 @@ func marketBodiesLedger(t *testing.T) *marketFixture {
 	f.act(t, commissioner.WaiverOrderSet, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Order: order}}, "creator")
 	bid := f.act(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5001", Franchise: "franchise.01", Salary: 500000000, Years: 2}}, "owner.one")
 	raised := f.act(t, commissioner.BidRaise, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Bid: bid, Franchise: "franchise.01", Salary: 600000000, Years: 2}}, "owner.one")
-	beforeWithdraw := len(f.b.records)
-	f.act(t, commissioner.BidWithdraw, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Bid: raised, Franchise: "franchise.01"}}, "owner.one")
-	f.b.records = f.b.records[:beforeWithdraw]
 	f.setup = true
 	f.act(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5001", Franchise: "franchise.02", Salary: 700000000, Years: 2}}, "owner.two")
 	f.setup = false

@@ -84,6 +84,11 @@ func seedUpgrades() []seedUpgrade {
 				return !anyRecorded(recorded, []FieldPath{"draft.startupRookies"})
 			},
 			values: legacyValues},
+		{version: 9, fields: []FieldPath{"schedule.follow"},
+			applies: func(recorded map[FieldPath]Setting) bool {
+				return !anyRecorded(recorded, []FieldPath{"schedule.follow"})
+			},
+			values: legacyValues},
 	}
 }
 

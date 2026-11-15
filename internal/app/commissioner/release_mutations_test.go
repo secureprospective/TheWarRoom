@@ -81,13 +81,6 @@ func (r releaseMutation) raw(t *testing.T, command, league, principal string, re
 	return raw
 }
 
-func TestReleaseMatrixMutationFixtures(t *testing.T) {
-	t.Parallel()
-	for command, row := range releaseMutationRows(t) {
-		t.Run(command, func(t *testing.T) { row.raw(t, command, "native.matrix", "creator", 1) })
-	}
-}
-
 func releaseWorkflowLeague(t *testing.T, store *history.Store, principal governance.Principal) string {
 	t.Helper()
 	revision := int64(0)
@@ -100,7 +93,7 @@ func releaseWorkflowLeague(t *testing.T, store *history.Store, principal governa
 		}
 		revision = receipt.Revision
 	}
-	record(domain.Create, domain.RawArgs{Name: "Matrix league", Preset: domain.PresetLegacy, Season: 2026, FranchiseCount: 32})
+	record(domain.Create, domain.RawArgs{Name: "Matrix league", Preset: domain.PresetLegacy, Source: domain.SourceMFLImport, Season: 2026, FranchiseCount: 32})
 	seed := releaseMutationRows(t)[domain.NativeSeed].Args.Native
 	record(domain.NativeSeed, domain.RawArgs{Native: seed})
 	for _, rule := range []struct{ field, value string }{

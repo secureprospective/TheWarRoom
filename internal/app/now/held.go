@@ -59,6 +59,23 @@ func (h *Held) PublishLive(l LiveGame) {
 	h.live = cloneLive(l)
 }
 
+// PublishScoreboard shares the stats worker's validated board without losing followed details.
+// The host serializes this with live-game refreshes under its live-game lock.
+func (h *Held) PublishScoreboard(week int, board livegame.Held) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if !board.At.After(h.live.Adapter.Board.At) {
+		return
+	}
+	if h.live.Week != week {
+		fetch, finals := h.live.Adapter.Fetch, h.live.Adapter.Finals
+		h.live = LiveGame{Week: week, Adapter: livegame.Adapter{Fetch: fetch, Finals: finals}}
+	}
+	board.Games = cloneGames(board.Games)
+	h.live.Adapter.Board = board
+	h.live.Adapter.NextBoard = board.At.Add(30 * time.Second)
+}
+
 func (h *Held) SnapshotLive() LiveGame {
 	h.mu.Lock()
 	defer h.mu.Unlock()

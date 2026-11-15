@@ -129,6 +129,29 @@ func provenance(asOf, note string, present bool) Provenance {
 	return Provenance{Source: "mfl-mirror", Freshness: f, Kind: "live"}
 }
 
+// franchiseIDs is every franchise the mirror holds a roster for or the rules name.
+func franchiseIDs(src Source, meta Metadata) []string {
+	ids := src.Franchises()
+	for id := range meta.Names {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	return slices.Compact(ids)
+}
+
+// FranchiseCount is Build's league franchise count without the player directory or injuries,
+// so a league list need not wait for a refresh. Zero before the mirror holds a season.
+func FranchiseCount(src Source) (int, error) {
+	meta, err := src.Metadata()
+	if err != nil {
+		return 0, fmt.Errorf("snapshot: metadata: %w", err)
+	}
+	if meta.Season <= 0 {
+		return 0, nil
+	}
+	return len(franchiseIDs(src, meta)), nil
+}
+
 func Build(ctx context.Context, src Source, dir Directory, inj Injuries) (Snapshot, error) {
 	if err := ctx.Err(); err != nil {
 		return Snapshot{}, fmt.Errorf("snapshot: build: %w", err)
@@ -137,12 +160,7 @@ func Build(ctx context.Context, src Source, dir Directory, inj Injuries) (Snapsh
 	if err != nil {
 		return Snapshot{}, fmt.Errorf("snapshot: metadata: %w", err)
 	}
-	ids := src.Franchises()
-	for id := range meta.Names {
-		ids = append(ids, id)
-	}
-	slices.Sort(ids)
-	ids = slices.Compact(ids)
+	ids := franchiseIDs(src, meta)
 	out := emptySnapshot(meta, dir)
 	if meta.Season > 0 {
 		out.League.Value = League{Season: meta.Season, FranchiseCount: len(ids), SalaryCap: meta.SalaryCap}

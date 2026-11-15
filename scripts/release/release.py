@@ -100,7 +100,16 @@ def verify_root(root, previous=None):
         previous.signed.verify_delegate("root", root.signed_bytes, root.signatures)
 
 
-def prepare_targets(root, config_path, artifacts, version, previous=None):
+def server_release():
+    """Read the append-only server contract, never execute an artifact to identify it."""
+    source = Path(__file__).resolve().parents[2] / "internal/serverversion/version.go"
+    rows = [int(value) for value in re.findall(r"\{Release: (\d+),", source.read_text())]
+    if not rows or rows != list(range(1, len(rows) + 1)):
+        raise ValueError("server release rows must be consecutive positive integers")
+    return rows[-1]
+
+
+def prepare_targets(root, config_path, artifacts, version, previous=None, server_bundles=()):
     verify_root(root)
     if version < 1 or (previous is None and version != 1):
         raise ValueError("initial targets version must be one")
@@ -111,7 +120,7 @@ def prepare_targets(root, config_path, artifacts, version, previous=None):
     config = config_path.read_bytes()
     validate_config(config)
     payloads = {"client-config.json": config}
-    for path in artifacts:
+    for path in [*artifacts, *server_bundles]:
         name = path.name
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,159}", name) or name in payloads:
             raise ValueError("artifact names must be unique safe basenames")
@@ -123,6 +132,9 @@ def prepare_targets(root, config_path, artifacts, version, previous=None):
     targets = Targets(version=version, expires=future(30))
     for name, data in payloads.items():
         targets.targets[name] = TargetFile.from_data(name, data, ["sha256"])
+    for path in server_bundles:
+        targets.targets[path.name].unrecognized_fields["custom"] = {
+            "twr_server_release": server_release()}
     return Metadata(targets), payloads
 
 
@@ -201,7 +213,8 @@ def main():
     targets = commands.add_parser("targets")
     targets.add_argument("--root", type=Path, required=True)
     targets.add_argument("--config", type=Path, required=True)
-    targets.add_argument("--artifact", type=Path, action="append", required=True)
+    targets.add_argument("--artifact", type=Path, action="append", default=[])
+    targets.add_argument("--server-bundle", type=Path, action="append", default=[])
     targets.add_argument("--version", type=int, required=True)
     targets.add_argument("--previous", type=Path)
     targets.add_argument("--out", type=Path, required=True)
@@ -227,7 +240,7 @@ def main():
             verify_root(root, previous)
         elif args.command == "targets":
             metadata, payloads = prepare_targets(root, args.config, args.artifact,
-                                                args.version, previous)
+                                                args.version, previous, args.server_bundle)
             write_targets(args.out, metadata, payloads)
         elif args.command == "finalize":
             finalize(root, args.repo)

@@ -23,11 +23,15 @@ import (
 func oldUpgradeFile(t *testing.T, keepRelease bool) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "server.db")
-	if err := migrateServer(t.Context(), path); err != nil {
-		t.Fatal(err)
-	}
+	// A one-file server as an older release left it: history and accounts in the league file.
 	pools, err := db.Open(t.Context(), path, history.SchemaVersion())
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := history.MigrateLeague(t.Context(), pools); err != nil {
+		t.Fatal(err)
+	}
+	if err := accountstore.New(pools).Initialize(t.Context()); err != nil {
 		t.Fatal(err)
 	}
 	registry, err := measures.Embedded()
@@ -56,8 +60,8 @@ func oldUpgradeFile(t *testing.T, keepRelease bool) string {
 DROP TRIGGER observations_player_identity; DROP TRIGGER run_scores_player_identity; DROP TRIGGER model_scores_player_identity;
 CREATE TABLE legacy_player_ids AS SELECT * FROM player_ids;
 DROP VIEW player_ids; ALTER TABLE legacy_player_ids RENAME TO player_ids;
-DROP TABLE player_record;
-DROP TABLE player_ownership; DROP TABLE player_external_id; DROP TABLE canonical_player;
+DROP TABLE player_record; DROP TABLE live_board; DROP TABLE live_chronology; DROP TABLE live_evidence;
+DROP TABLE player_ownership; DROP TABLE league_player; DROP TABLE player_external_id; DROP TABLE canonical_player;
 PRAGMA user_version=7`); err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +140,7 @@ func TestUpgradeRefusesNewerSchemaAndBinaryOnlyDowngradeUntouched(t *testing.T) 
 		if err := migrateServer(t.Context(), path); err != nil {
 			t.Fatal(err)
 		}
-		pools, err := db.Open(t.Context(), path, history.SchemaVersion())
+		pools, err := db.Open(t.Context(), path, history.LeagueSchemaVersion())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -169,7 +173,7 @@ func TestUpgradeRefusesNewerSchemaAndBinaryOnlyDowngradeUntouched(t *testing.T) 
 				t.Fatalf("newer file upgrade = %v", err)
 			}
 		}
-		if _, err := openHostedFile(t.Context(), path); !errors.Is(err, serverversion.ErrNewerFile) {
+		if _, err := openStateFiles(t.Context(), path); !errors.Is(err, serverversion.ErrNewerFile) {
 			t.Fatalf("newer file serve = %v", err)
 		}
 		after, err := os.ReadFile(path)

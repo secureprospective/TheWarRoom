@@ -40,36 +40,6 @@ func observeTradeWindow(t *testing.T, e Envelope, obs Observation, at time.Time)
 	return next
 }
 
-func TestTradeReviewWindow(t *testing.T) {
-	for _, tc := range []struct {
-		name    string
-		elapsed time.Duration
-		want    State
-	}{
-		{"before", 6*24*time.Hour + 23*time.Hour, DOTReview},
-		{"equal", 7 * 24 * time.Hour, DOTReview},
-		{"after", 7*24*time.Hour + time.Second, NotVerified},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			e, obs, entered := tradeInReview(t)
-			// A repeated DOT no_change must not reset the entry time.
-			e = observeTradeWindow(t, e, obs, entered.Add(time.Hour))
-			next := observeTradeWindow(t, e, obs, entered.Add(tc.elapsed))
-			if next.State() != tc.want {
-				t.Fatalf("state %s, want %s", next.State(), tc.want)
-			}
-			if tc.want == NotVerified {
-				last := next.audit[len(next.audit)-1]
-				want := "Not verified: no executed trade 7 days after acceptance " +
-					"(declined, vetoed or still in review on MFL)"
-				if last.Event != Partial || last.Note != want {
-					t.Fatal(last)
-				}
-			}
-		})
-	}
-}
-
 func TestTradeReviewUnchangedThenLands(t *testing.T) {
 	e, obs, entered := tradeInReview(t)
 	at := entered.Add(7*24*time.Hour + time.Second)
@@ -84,34 +54,6 @@ func TestTradeReviewUnchangedThenLands(t *testing.T) {
 	next = observeTradeWindow(t, next, obs, at.Add(2*time.Hour))
 	if next.State() != Landed {
 		t.Fatal("later TRADE did not land", next.Receipt())
-	}
-}
-
-// Inside the window a stale-read Not verified returns to DOTReview, and the window stays anchored
-// at the first entry; past it, the plan stays Not verified with no new audit row.
-func TestTradeNotVerifiedInsideWindowReentersReview(t *testing.T) {
-	e, obs, entered := tradeInReview(t)
-	e, err := e.move(entered.Add(time.Hour), Partial, "old partial evidence")
-	if err != nil {
-		t.Fatal(err)
-	}
-	back := observeTradeWindow(t, e, obs, entered.Add(2*time.Hour))
-	if back.State() != DOTReview {
-		t.Fatal("absent offer inside the window did not re-enter DOTReview", back.Receipt())
-	}
-	expired := observeTradeWindow(t, back, obs, entered.Add(7*24*time.Hour+time.Second))
-	if expired.State() != NotVerified {
-		t.Fatal("re-entry restarted the window", expired.Receipt())
-	}
-	next := observeTradeWindow(t, expired, obs, entered.Add(8*24*time.Hour))
-	if !reflect.DeepEqual(next, expired) {
-		t.Fatal("absent offer bounced out of NotVerified after the window", next.Receipt())
-	}
-	_, _, check, _ := tradeFixture(t)
-	obs.PendingTrades.Value = check.PendingTrades.Value
-	next = observeTradeWindow(t, e, obs, entered.Add(3*time.Hour))
-	if next.State() != NotYetDone || next.audit[len(next.audit)-1].Event != NoChange {
-		t.Fatal("pending offer did not preserve NoChange behavior", next.Receipt())
 	}
 }
 

@@ -4,7 +4,7 @@ import { heldLineup } from '../data/lineupTestData';
 import type { LineupReading } from '../data/contract';
 import { createLineups } from './lineups';
 
-it('ignores the first slow response after the second fast response', async () => {
+it('reads a change after the slow read in flight, never beside it, and shows the newer reading', async () => {
   let resolve!: (r: LineupReading) => void;
   const slow = new Promise<LineupReading>((done) => { resolve = done; });
   const provider = new FixtureProvider();
@@ -15,9 +15,12 @@ it('ignores the first slow response after the second fast response', async () =>
   const changed = vi.fn();
   const stop = cache.subscribe(changed);
   const first = cache.refresh('0025');
-  await cache.refresh('0025');
-  expect(cache.peek('0025').reading?.week).toBe(6);
+  const second = cache.refresh('0025');
+  expect(read).toHaveBeenCalledTimes(1);
   resolve(r);
+  await second;
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(cache.peek('0025').reading?.week).toBe(6);
   await first;
   expect(cache.peek('0025').reading?.week).toBe(6);
   expect(changed).toHaveBeenCalledTimes(1);

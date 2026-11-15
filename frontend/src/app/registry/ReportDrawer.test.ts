@@ -38,8 +38,9 @@ it('lists every kept, placed read in nav order, including hybrids and unlanded r
   expect(rows.some(row => row.kind === 'Decide/Read')).toBe(true);
   expect(rows.some(row => row.kind === 'Read (gated)')).toBe(true);
   expect(rows.every(row => row.status === 'landed')).toBe(true);
-  expect(reportGroups('Position leaders').flatMap(group => group.rows).map(row => row.id)).toContain('M-040');
-  expect(reportGroups('Top Passers')).toEqual([]);
+  expect(reportGroups('NFL depth charts').flatMap(group => group.rows).map(row => row.id))
+    .not.toContain('M-048');
+  expect(reportGroups('Fantasy Depth Charts')).toEqual([]);
   const places = [...nodeKeys.flatMap(node => nodes[node].workspaces
     .map(w => `${nodes[node].label} › ${w.label}`)), ...surfacePlaces];
   expect(groups.map(group => group.place)).toEqual(places.filter(place =>

@@ -192,7 +192,7 @@ func TestByeInputsAndRoster(t *testing.T) {
 func TestByeAlertsHorizonAndFailurePrecedence(t *testing.T) {
 	t.Parallel()
 	now := time.Unix(1800000000, 0)
-	in := ByeAlertInput{Snapshot: alertRoster(t), Franchise: "0001", Byes: report.HeldFeed[[]nflschedule.RawBye]{Value: []nflschedule.RawBye{{Team: "DET", Week: "6"}}, FetchedAt: now}, Starters: league.Starters{Count: "1", IOPStarters: "1", IDPStarters: "0", Positions: []league.PositionLimit{{Name: "PK", Limit: "1"}}}, RulesFreshness: func() domain.Freshness { return domain.Freshness{State: domain.FreshLive} }, Now: now}
+	in := ByeAlertInput{Snapshot: alertRoster(t), Franchise: "0001", Byes: report.HeldFeed[[]nflschedule.RawBye]{Value: []nflschedule.RawBye{{Team: "DET", Week: "6"}}, FetchedAt: now}, Config: league.RawConfig{Starters: league.Starters{Count: "1", IOPStarters: "1", IDPStarters: "0", Positions: []league.PositionLimit{{Name: "PK", Limit: "1"}}}}, RulesFreshness: func() domain.Freshness { return domain.Freshness{State: domain.FreshLive} }, Now: now}
 	for _, week := range []int{4, 5, 6, 7} {
 		in.Week.Number = week
 		r := AlertReading{}
@@ -207,7 +207,7 @@ func TestByeAlertsHorizonAndFailurePrecedence(t *testing.T) {
 		}
 	}
 	in.Byes = report.HeldFeed[[]nflschedule.RawBye]{}
-	in.Starters = league.Starters{}
+	in.Config = league.RawConfig{}
 	in.RulesFreshness = func() domain.Freshness { t.Fatal("invalid rules must not read freshness"); return domain.Freshness{} }
 	in.WeekFailure = "offline"
 	r := AlertReading{}

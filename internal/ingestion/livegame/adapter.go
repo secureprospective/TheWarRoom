@@ -72,15 +72,16 @@ func (a *Adapter) EffectiveWindows(windows []Window) []Window {
 	if a.Board.Source != "ESPN" && a.Board.Source != "Yahoo failover" {
 		return out
 	}
-	for i, w := range out {
-		for _, g := range a.Board.Games {
-			if !w.Kickoff.Equal(g.Kickoff) || !w.plays(g) {
-				continue
-			}
-			d := a.Details[g.ID]
-			if g.Status == "post" || (!d.At.IsZero() && d.Game.Status == "post") {
-				out[i].Final = true
-			}
+	for _, g := range a.Board.Games {
+		final := g.Status == "post"
+		if d := a.Details[g.ID]; !d.At.IsZero() && d.Game.Status == "post" {
+			final = true
+		}
+		i := slices.IndexFunc(out, func(w Window) bool { return w.Kickoff.Equal(g.Kickoff) && w.plays(g) })
+		if i < 0 {
+			out = append(out, Window{Teams: [2]string{g.Away.Abbreviation, g.Home.Abbreviation}, Kickoff: g.Kickoff, Final: final})
+		} else if final {
+			out[i].Final = true
 		}
 	}
 	return out

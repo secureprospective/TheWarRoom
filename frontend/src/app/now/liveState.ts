@@ -3,6 +3,7 @@ import { useStore } from 'zustand';
 import { nowState } from './state';
 import { parseLive, type LiveView } from './liveContract';
 import { targetLiveGame } from './api';
+import { poll } from '../data/query';
 
 type LiveReader = (open: boolean, follow: string, mine: string) => Promise<LiveView>;
 export function createLiveState(reader: LiveReader) {
@@ -31,17 +32,21 @@ export const liveState = createLiveState(async (open, follow, mine) =>
 export function startLivePolling(mine: string,
   load = liveState.load, update = () => nowState.load(false)) {
   let disposed = false;
-  async function poll() {
-    if (document.hidden || disposed) return;
-    await load(true, mine);
-    if (!disposed) await update();
+  let running: Promise<void> | undefined;
+  // One look at a time: a visibility change while a look runs joins it rather than starting another.
+  function look() {
+    if (document.hidden || disposed) return running ?? Promise.resolve();
+    running ??= (async () => {
+      try { await load(true, mine); if (!disposed) await update(); } finally { running = undefined; }
+    })();
+    return running;
   }
-  void poll();
-  const timer = setInterval(() => { void poll(); }, 15000);
-  document.addEventListener('visibilitychange', poll);
+  const stop = poll(look, 15000);
+  const visible = () => look();
+  document.addEventListener('visibilitychange', visible);
   return () => {
     disposed = true;
-    clearInterval(timer);
-    document.removeEventListener('visibilitychange', poll);
+    stop();
+    document.removeEventListener('visibilitychange', visible);
   };
 }

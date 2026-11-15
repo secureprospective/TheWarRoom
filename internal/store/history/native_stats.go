@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sync"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // seasonStatFeed is the held weekly files of one season, read for every league player the directory can
@@ -19,19 +21,36 @@ type seasonStatFeed struct {
 
 // Weeks reads each held file once and keeps, per player's week, only the versions that differ.
 func (f seasonStatFeed) Weeks(ctx context.Context) ([]commissioner.StatWeek, error) {
+	var weeks []commissioner.StatWeek
+	var err error
 	if pinned, ok := f.store.lineupEnv.(*PinnedFootball); ok {
-		return pinned.statWeeks(ctx, f.season)
-	}
-	if f.store.statWeeks != nil {
-		return f.store.statWeeks(ctx, f.season)
-	}
-	book := source.NewLineBook(f.season)
-	err := f.store.heldWeeklyFiles(ctx, f.season, book.Add)
-	if errors.Is(err, source.ErrSeasonNotLoaded) {
-		return []commissioner.StatWeek{}, nil
+		weeks, err = pinned.statWeeks(ctx, f.season)
+	} else if f.store.statWeeks != nil {
+		weeks, err = f.store.statWeeks(ctx, f.season)
+	} else {
+		weeks, err = f.archivedWeeks(ctx)
 	}
 	if err != nil {
 		return nil, err
+	}
+	return f.store.withLiveStatWeeks(ctx, weeks, f.season)
+}
+
+func (f seasonStatFeed) archivedWeeks(ctx context.Context) ([]commissioner.StatWeek, error) {
+	book := source.NewLineBook(f.season)
+	files, err := f.store.heldSeason(ctx, f.season)
+	if errors.Is(err, source.ErrSeasonNotLoaded) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range files {
+		if file.complete {
+			book.AddFile(file.sha, file.at, file.weeks, nil)
+		} else {
+			book.Add(file.sha, file.at, file.weeks)
+		}
 	}
 	gsis, err := f.store.SourceIDs(ctx, "gsis")
 	if err != nil {
@@ -58,12 +77,6 @@ func (f seasonStatFeed) Weeks(ctx context.Context) ([]commissioner.StatWeek, err
 		out = append(out, commissioner.StatWeek{Player: player, Week: key.Week, Evidence: source.NativeEvidence{
 			GSIS: key.GSIS, Held: &newest, Lines: versions, Missing: slices.Clone(newest.Missing)}})
 	}
-	slices.SortFunc(out, func(a, b commissioner.StatWeek) int {
-		if a.Player != b.Player {
-			return compareText(a.Player, b.Player)
-		}
-		return a.Week - b.Week
-	})
 	return out, nil
 }
 
@@ -87,6 +100,18 @@ func (f seasonStatFeed) Name(player string) string {
 
 // StatQueue lists the NFL's changes to statistics the league has counted, and what was decided about them.
 func (s *Store) StatQueue(ctx context.Context, league string, season int) (commissioner.StatQueue, error) {
+	mark, err := s.recordsMarkFor(ctx, league)
+	if err != nil {
+		return commissioner.StatQueue{}, err
+	}
+	args := mark + "|" + fmt.Sprintf("%s|%d", league, season)
+	return shareReading(ctx, &s.flights, "StatQueue", args,
+		func(ctx context.Context) (commissioner.StatQueue, error) {
+			return s.readStatQueue(ctx, league, season)
+		})
+}
+
+func (s *Store) readStatQueue(ctx context.Context, league string, season int) (commissioner.StatQueue, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.StatQueue{}, err
@@ -100,7 +125,8 @@ func (s *Store) StatQueue(ctx context.Context, league string, season int) (commi
 	for _, week := range weeks {
 		sources.held[source.RawNativeScope{Player: week.Player, Season: season, Week: week.Week}] = week.Evidence
 	}
-	out, err := commissioner.StatQueueReading(ctx, league, records, held{weeks, feed}, sources, season, sources.now)
+	out, err := commissioner.StatQueueReadingWith(ctx, league, records, held{weeks, feed, sources.playerFacts()}, sources, season, sources.now,
+		s.statPrices.get())
 	if err != nil {
 		return commissioner.StatQueue{}, fmt.Errorf("read statistics queue: %w", err)
 	}
@@ -108,10 +134,19 @@ func (s *Store) StatQueue(ctx context.Context, league string, season int) (commi
 	return out, nil
 }
 
-// held is a feed whose weeks were already read, so one reading scans the files once.
+// held is a feed whose weeks were already read, so one reading scans the files once. Its names come from
+// the player facts as read once for the reading, not rebuilt for every item.
 type held struct {
 	weeks []commissioner.StatWeek
 	seasonStatFeed
+	facts nativecheck.Facts
+}
+
+func (h held) Name(player string) string {
+	if h.facts == nil {
+		return h.seasonStatFeed.Name(player)
+	}
+	return h.facts[player].Name
 }
 
 func (h held) Weeks(context.Context) ([]commissioner.StatWeek, error) { return h.weeks, nil }
@@ -121,6 +156,9 @@ func (s *Store) statWeekFor(ctx context.Context, raw commissioner.RawCommand) (c
 	change, err := commissioner.DecodeStatChange(raw.Args, raw.Command)
 	if err != nil {
 		return commissioner.StatWeek{}, fmt.Errorf("read the statistic change: %w", commissioner.Refused(err))
+	}
+	if change.IsBatch() {
+		return commissioner.StatWeek{}, fmt.Errorf("read the statistic change: %w", commissioner.Refused(errors.New("approve one change at a time")))
 	}
 	player, season, week := change.Scope()
 	evidence, err := s.nativeEvidence(ctx, s, source.RawNativeScope{Player: player, Season: season, Week: week})
@@ -152,4 +190,15 @@ func (s *Store) statChangePreview(ctx context.Context, records []commissioner.Re
 		return commissioner.ScorePreview{}, fmt.Errorf("preview statistic change: %w", err)
 	}
 	return out, nil
+}
+
+// statPrices is the store's statistics price cache, made on first use.
+type statPrices struct {
+	once  sync.Once
+	cache *commissioner.StatPriceCache
+}
+
+func (p *statPrices) get() *commissioner.StatPriceCache {
+	p.once.Do(func() { p.cache = commissioner.NewStatPriceCache() })
+	return p.cache
 }

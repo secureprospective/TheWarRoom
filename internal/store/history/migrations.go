@@ -3,6 +3,7 @@ package history
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,7 +14,7 @@ import (
 func SchemaVersion() int { return len(historyMigrations()) }
 
 func historyMigrations() []db.Migration {
-	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks, initializeLedgerAudit, addInactiveImports, addTransferAuthority, db.CreateServerRelease, addRosterRestorePoints, addPlayerIdentity, addPlayerRecord, db.AddPlayerCareer}
+	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks, initializeLedgerAudit, addInactiveImports, addTransferAuthority, db.CreateServerRelease, addRosterRestorePoints, addPlayerIdentity, addPlayerRecord, db.AddPlayerCareer, addLiveEvidence, db.CreateLeaguePlayers}
 }
 
 func addPlayerRecord(ctx context.Context, tx *sql.Tx) error {
@@ -26,6 +27,7 @@ func addPlayerRecord(ctx context.Context, tx *sql.Tx) error {
 func adoptHistory(ctx context.Context, tx *sql.Tx) error {
 	var ddl strings.Builder
 	ddl.WriteString(historyDDL)
+	ddl.WriteString(legacyPlayerIDsDDL)
 	ddl.WriteString(eventsDDL)
 	for _, table := range appendOnly() {
 		ddl.WriteString(appendOnlyDDL(table))
@@ -145,8 +147,14 @@ func quarantineScore(ctx context.Context, tx *sql.Tx, rowID int64) error {
 }
 
 func guardHistoryJSON(ctx context.Context, tx *sql.Tx) error {
+	if err := guardLeagueJSON(ctx, tx); err != nil {
+		return err
+	}
+	return guardReferenceJSON(ctx, tx)
+}
+
+func guardReferenceJSON(ctx context.Context, tx *sql.Tx) error {
 	if err := db.GuardJSON(ctx, tx,
-		db.JSONColumn{Table: "league_event", Column: "payload", Versioned: true},
 		db.JSONColumn{Table: "param_sets", Column: "measures"},
 		db.JSONColumn{Table: "param_sets", Column: "params"},
 		db.JSONColumn{Table: "scoring_runs", Column: "missing_measures"},
@@ -187,9 +195,23 @@ func addPlayerIdentity(ctx context.Context, tx *sql.Tx) error {
 		return fmt.Errorf("close identity rosters: %w", err)
 	}
 	for _, league := range leagues {
-		if err := (&Store{}).captureRosterRestorePoint(ctx, tx, league); err != nil {
+		if err := captureMigratingRoster(ctx, tx, league); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// captureMigratingRoster is the file-wide v10 migration, not a league write: a player the
+// migration did not reach through event payloads is minted in the same migration step.
+func captureMigratingRoster(ctx context.Context, tx *sql.Tx, league string) error {
+	err := (&Store{}).captureRosterRestorePoint(ctx, tx, league)
+	var missing *db.UnresolvedPlayersError
+	if !errors.As(err, &missing) {
+		return err
+	}
+	if err := db.EnsureMFLPlayers(ctx, tx, missing.MFL); err != nil {
+		return fmt.Errorf("history: mint migrating players: %w", err)
+	}
+	return (&Store{}).captureRosterRestorePoint(ctx, tx, league)
 }

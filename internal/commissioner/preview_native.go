@@ -124,6 +124,9 @@ func seedPreviewValues(seed *RawNativeSnapshot, names map[string]string, out map
 		if players > 0 {
 			roster = fmt.Sprintf("%d players: %s; %s salary", players, strings.Join(parts, ", "), salary)
 		}
+		if seed.CheckContracts(f.ID) != nil {
+			roster = fmt.Sprintf("%d players: %s; salary unknown — contracts need recording", players, strings.Join(parts, ", "))
+		}
 		out[names[f.ID]+" starting roster"] = roster
 		out[names[f.ID]+" draft picks"] = seedPickWords(seed.Picks, f.ID)
 		out[names[f.ID]+" cap charges"] = seedChargeWords(seed.Adjustments, f.ID)
@@ -183,6 +186,9 @@ func snapshotPreviewValues(seed *RawNativeSnapshot, names map[string]string, out
 		players[p.ID] = name
 		out[name+" roster"] = names[p.Franchise] + ", " + rosterStatusWords(p.Status)
 		contract := fmt.Sprintf("%s salary; contract ends in %d", p.Salary, p.ExpirationYear)
+		if p.ContractMissing {
+			contract = "No contract recorded"
+		}
 		if info := strings.TrimSpace(p.ContractInfo); info != "" {
 			contract += "; " + info
 		}

@@ -69,11 +69,6 @@ func (a *App) backupWorkflow() platformapp.BackupWorkflow {
 	}
 }
 
-func (a *App) databaseChecksReport() *Report {
-	r := wireReport(*a.databaseChecksReading())
-	return &r
-}
-
 func (a *App) databaseChecksReading() *report.Report {
 	checks := []platformapp.DatabaseCheck{}
 	for _, file := range a.databaseFiles() {

@@ -9,8 +9,19 @@ import (
 // Check returns the actual integrity and foreign-key check rows. A reported violation is
 // evidence for the caller, not an error that hides the other findings.
 func Check(ctx context.Context, pool *sql.DB) (CheckFindings, error) {
+	return check(ctx, pool, "PRAGMA integrity_check")
+}
+
+// QuickCheck is the migration gate: SQLite's quick_check proves page and b-tree structure without
+// cross-checking every index row, about 10x faster on a large history (4.4 s vs 41.7 s, F8 11-04).
+// The full Check still runs as the routine check after launch (CheckDue).
+func QuickCheck(ctx context.Context, pool *sql.DB) (CheckFindings, error) {
+	return check(ctx, pool, "PRAGMA quick_check")
+}
+
+func check(ctx context.Context, pool *sql.DB, pragma string) (CheckFindings, error) {
 	var result CheckFindings
-	rows, err := pool.QueryContext(ctx, "PRAGMA integrity_check")
+	rows, err := pool.QueryContext(ctx, pragma)
 	if err != nil {
 		return result, fmt.Errorf("db: integrity check: %w", err)
 	}

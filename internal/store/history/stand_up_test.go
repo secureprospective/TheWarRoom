@@ -18,7 +18,7 @@ func TestRosterRecoveryRoundTrip(t *testing.T) {
 			t.Run(string(status)+map[bool]string{false: "/point", true: "/R2-snapshot"}[backup], func(t *testing.T) {
 				t.Parallel()
 				source, _, _ := newStore(t)
-				if _, err := source.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+				if _, err := source.ExecuteCommissioner(t.Context(), importedLegacy(0), "creator", nil); err != nil {
 					t.Fatal(err)
 				}
 				seed := heldSeedCommand(t)

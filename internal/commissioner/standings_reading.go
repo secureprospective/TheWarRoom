@@ -16,6 +16,7 @@ type StandingRow struct {
 	Franchise      string              `json:"franchise"`
 	Name           string              `json:"name"`
 	Division       string              `json:"division,omitempty"`
+	Conference     string              `json:"conference,omitempty"`
 	Wins           int                 `json:"wins"`
 	Losses         int                 `json:"losses"`
 	Ties           int                 `json:"ties"`
@@ -37,6 +38,7 @@ type StandingsOverrideView struct {
 // NativeStandings ranks a season's decided regular-season games under the league's own tie-breakers.
 // Computed is always present; an override never replaces it.
 type NativeStandings struct {
+	Evidence *ScoreEvidence         `json:"evidence,omitempty"`
 	League   string                 `json:"league"`
 	Name     string                 `json:"name"`
 	Season   int                    `json:"season"`
@@ -53,8 +55,12 @@ type NativeStandings struct {
 	Changes  []ScoreChange          `json:"changes"`
 	// level and overrideLevel are the teams left level by the computed ranking and by the ranking under the
 	// commissioner's records; the draft's first round reads them to apply its own tie rule.
-	level, overrideLevel [][]string
-	regularWeeks         int
+	level, overrideLevel         [][]string
+	regularWeeks, scheduledWeeks int
+	// counted, teams and criteria are what the ranking read; the odds reading plays the open games on them.
+	counted  seasonGames
+	teams    []competition.RankTeam
+	criteria []leaguerules.Criterion
 }
 
 // seasonGames is every decided game and complete score of the counted weeks.
@@ -64,6 +70,15 @@ type seasonGames struct {
 	points  map[string]leaguerules.Decimal
 	decided int
 	pending int
+	through int
+	// open is every counted week's game that has no result yet, in week order.
+	open []OpenGame
+}
+
+// OpenGame is a regular-season game still to be decided.
+type OpenGame struct {
+	Week       int
+	Home, Away string
 }
 
 // NativeStandingsReading counts games through the last regular-season week and no later.
@@ -114,8 +129,8 @@ func NativeStandingsReading(ctx context.Context, league string, records []Record
 		return out, err
 	}
 	out.regularWeeks = rules.Schedule.RegularWeeks.Value
-	out.Through = min(rules.Schedule.RegularWeeks.Value, len(published))
-	counted, err := countSeason(ctx, league, records, src, rules.Lineup, directory, published[:out.Through], season)
+	out.scheduledWeeks = min(rules.Schedule.RegularWeeks.Value, len(published))
+	counted, err := countSeason(ctx, league, records, src, rules.Lineup, directory, published[:out.scheduledWeeks], season)
 	if err != nil {
 		return out, err
 	}
@@ -131,13 +146,18 @@ func countSeason(ctx context.Context, league string, records []Record, src Resul
 		if err != nil {
 			return out, err
 		}
+		pendingBefore := out.pending
 		for _, g := range results.Games {
 			if g.Status == GameNoResult {
 				out.pending++
+				out.open = append(out.open, OpenGame{Week: week.Week, Home: g.Home, Away: g.Away})
 				continue
 			}
 			out.decided++
-			out.games = append(out.games, competition.RankGame{Home: g.Home, Away: g.Away, HomePoints: *g.HomePoints, AwayPoints: *g.AwayPoints})
+			out.games = append(out.games, rankingGame(g))
+		}
+		if week.Week == out.through+1 && len(results.Games) > 0 && out.pending == pendingBefore {
+			out.through = week.Week
 		}
 		for _, score := range results.Scores {
 			if score.Points != nil {
@@ -184,11 +204,17 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 	computed := competition.RankStandings(input)
 	out.Computed, out.level = standingRows(computed, teams, counted.points, nil), computed.Level
 	out.NoData = computed.Skipped
-	out.Decided, out.Pending, out.Status = counted.decided, counted.pending, "Ranked"
-	out.Words = fmt.Sprintf("Standings through week %d: %d games have a result, %d do not yet", out.Through,
+	out.counted, out.teams, out.criteria = counted, teams, rules.Standings.Criteria.Value
+	out.Decided, out.Pending, out.Through, out.Status = counted.decided, counted.pending, counted.through, "Ranked"
+	if out.Through == 0 {
+		out.Words = "Standings: no week is complete"
+	} else {
+		out.Words = fmt.Sprintf("Standings through week %d", out.Through)
+	}
+	out.Words += fmt.Sprintf(": %d regular-season games have a result, %d remain without a result",
 		counted.decided, counted.pending)
-	if out.Through < rules.Schedule.RegularWeeks.Value {
-		out.Words += fmt.Sprintf("; the published schedule covers only %d of %d weeks", out.Through,
+	if out.scheduledWeeks < rules.Schedule.RegularWeeks.Value {
+		out.Words += fmt.Sprintf("; the published schedule covers only %d of %d weeks", out.scheduledWeeks,
 			rules.Schedule.RegularWeeks.Value)
 	}
 	if len(adjustments.Records) == 0 && adjustments.Order == nil {
@@ -220,7 +246,8 @@ func standingRows(r competition.Ranking, teams []competition.RankTeam, points ma
 	rows := make([]StandingRow, 0, len(r.Order))
 	for i, id := range r.Order {
 		record := r.Records[id]
-		row := StandingRow{Rank: i + 1, Franchise: id, Name: byID[id].Name, Division: byID[id].Division, Wins: record.W,
+		row := StandingRow{Rank: i + 1, Franchise: id, Name: byID[id].Name, Division: byID[id].Division,
+			Conference: byID[id].Conference, Wins: record.W,
 			Losses: record.L, Ties: record.T, Record: record.Words(), PointsFor: points[id],
 			PointsWords: scorePointsWords(points[id]) + " points scored", Why: append([]string{}, r.Why[id]...)}
 		if computed != nil && computed.Records[id] != record {
@@ -253,4 +280,19 @@ func directoryIDs(d NativeDirectory) []string {
 		ids[i] = seat.Franchise
 	}
 	return ids
+}
+
+// RankGame consumes only score ordering for W/L/T, including head-to-head and
+// division records. Points-for is supplied separately with the untouched totals.
+func rankingGame(game NativeGame) competition.RankGame {
+	out := competition.RankGame{Home: game.Home, Away: game.Away, HomePoints: *game.HomePoints, AwayPoints: *game.AwayPoints}
+	switch {
+	case game.Status == GameTie:
+		out.HomePoints, out.AwayPoints = 0, 0
+	case game.Winner == game.Home && out.HomePoints <= out.AwayPoints:
+		out.HomePoints, out.AwayPoints = 1, 0
+	case game.Winner == game.Away && out.AwayPoints <= out.HomePoints:
+		out.HomePoints, out.AwayPoints = 0, 1
+	}
+	return out
 }

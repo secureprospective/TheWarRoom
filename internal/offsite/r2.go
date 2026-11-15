@@ -77,8 +77,13 @@ func (r *R2) verify(ctx context.Context, name, path string) error {
 // prune keeps the newest twelve sets plus one per UTC day for thirty days. A set is
 // one atomic encrypted object; foreign keys and failed verification never trigger deletion.
 func (r *R2) prune(ctx context.Context, now time.Time) error {
+	return r.prunePrefix(ctx, LeagueSet.Prefix, now)
+}
+
+// prunePrefix applies retention to one kind of set only, so each kind keeps its own twelve and dailies.
+func (r *R2) prunePrefix(ctx context.Context, prefix string, now time.Time) error {
 	var names []minio.ObjectInfo
-	for object := range r.client.ListObjects(ctx, r.bucket, minio.ListObjectsOptions{Prefix: "sets/", Recursive: true}) {
+	for object := range r.client.ListObjects(ctx, r.bucket, minio.ListObjectsOptions{Prefix: prefix, Recursive: true}) {
 		if object.Err != nil {
 			return fmt.Errorf("R2 retention could not list backups")
 		}
@@ -90,9 +95,12 @@ func (r *R2) prune(ctx context.Context, now time.Time) error {
 }
 
 // Sets lists recovery set names, newest first. Foreign objects are ignored.
-func (r *R2) Sets(ctx context.Context) ([]string, error) {
+func (r *R2) Sets(ctx context.Context) ([]string, error) { return r.KindSets(ctx, LeagueSet) }
+
+// KindSets lists one kind's recovery set names, newest first.
+func (r *R2) KindSets(ctx context.Context, kind SetKind) ([]string, error) {
 	var names []string
-	for object := range r.client.ListObjects(ctx, r.bucket, minio.ListObjectsOptions{Prefix: "sets/", Recursive: true}) {
+	for object := range r.client.ListObjects(ctx, r.bucket, minio.ListObjectsOptions{Prefix: kind.Prefix, Recursive: true}) {
 		if object.Err != nil {
 			return nil, fmt.Errorf("could not list backups in R2; check the bucket and token")
 		}

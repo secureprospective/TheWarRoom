@@ -363,6 +363,12 @@ func publicNowRule(command string) string {
 }
 
 func (r RawCommand) validatePlacement() error {
+	if RosterTimed(r.Command) {
+		if r.Command == CorrectRoster && strings.TrimSpace(r.Reason) == "" {
+			return fmt.Errorf("give a reason for this roster correction")
+		}
+		return r.validateRosterPlacement()
+	}
 	if special, err := r.nativePlacement(); special {
 		return err
 	}
@@ -466,6 +472,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
+	r = r.defaultRosterTime()
 	r.Args.OLineOutcome = nil
 	r.Args.WaiverOutcome, r.Args.BidOutcome, r.Args.TradeOutcome, r.Args.DraftOutcome = nil, nil, nil, nil
 	definition, err := r.EffectiveDefinition()
