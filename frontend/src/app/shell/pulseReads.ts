@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { useContractRead } from '../contracts/Contracts';
 import { hqEvents } from './hqReads';
 import { hostedWorkflow } from '../commissioner/api';
@@ -42,14 +42,20 @@ export const PulseChanges = createContext(hqEvents);
  *  its words like any other unread state, but it is not a failure and is never logged as one. */
 export class PulseWaiting extends Error {}
 
-export function usePulseRead<T>(key: string, read: (publish: (value: T) => void) => Promise<T>) {
-  const changes = useContext(PulseChanges);
+/** A 'league' read (directory, week, standings, bracket, odds) skips live score changes where the host
+ *  can tell them apart; every other read follows each change. */
+export function usePulseRead<T>(key: string, read: (publish: (value: T) => void) => Promise<T>,
+  follows: 'scores' | 'league' = 'scores') {
+  const changes: { onChange: (load: () => void) => () => void;
+    onLeagueChange?: (load: () => void) => () => void } = useContext(PulseChanges);
+  const provider = useMemo(() => ({ onChange: follows === 'league' && changes.onLeagueChange
+    ? changes.onLeagueChange : changes.onChange }), [changes, follows]);
   return useContractRead<T>(key, async publish => {
     try { return await read(publish); } catch (error) {
       if (!(error instanceof PulseWaiting)) console.warn('League Pulse read failed:', error);
       throw error;
     }
-  }, changes);
+  }, provider);
 }
 
 export async function readNativePulse(league: string, mine: string, port: HostedPort = hostedWorkflow,

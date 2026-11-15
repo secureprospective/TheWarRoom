@@ -30,19 +30,35 @@ function LocalPulse(scope: PulseScope & { tab?: PulseTab }) {
 
 function HostedPulse(scope: PulseScope & { tab?: PulseTab }) {
   const changes = useMemo(() => {
-    const listeners = new Set<() => void>();
-    return { onChange: (load: () => void) => {
-      listeners.add(load);
-      return () => { listeners.delete(load); };
-    }, refresh: () => { for (const load of listeners) load(); } };
+    const scores = new Set<() => void>();
+    const league = new Set<() => void>();
+    const listen = (set: Set<() => void>) => (load: () => void) => {
+      set.add(load);
+      return () => { set.delete(load); };
+    };
+    const refresh = (onlyScores = false) => {
+      for (const load of [...scores, ...(onlyScores ? [] : league)]) load();
+    };
+    return { onChange: listen(scores), onLeagueChange: listen(league), refresh: () => refresh(),
+      refreshScores: () => refresh(true) };
   }, []);
-  // A published change for this league (scores, lineups, the ledger, the clock, values) rereads the open
-  // Pulse once, PULSE_FOLLOW_MS after the first topic of a burst; Refresh stays for an impatient owner.
+  // A published change for this league rereads the open Pulse once, PULSE_FOLLOW_MS after the first topic
+  // of a burst. A burst of only scores topics (every few seconds while games are on) rereads the scores,
+  // matchups and games, not the directory, week, standings, bracket and odds, which scores never change.
+  // Refresh stays for an impatient owner and rereads everything.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let onlyScores = true;
     const off = onHostedTopics(topics => {
-      if (timer || !topics.some(topic => topic.league === scope.league)) return;
-      timer = setTimeout(() => { timer = undefined; changes.refresh(); }, PULSE_FOLLOW_MS);
+      const mine = topics.filter(topic => topic.league === scope.league);
+      if (mine.length === 0) return;
+      onlyScores &&= mine.every(topic => topic.kind === 'scores');
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = undefined;
+        if (onlyScores) changes.refreshScores(); else changes.refresh();
+        onlyScores = true;
+      }, PULSE_FOLLOW_MS);
     });
     return () => { off(); clearTimeout(timer); };
   }, [changes, scope.league]);
@@ -118,7 +134,7 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
     return () => document.removeEventListener('keydown', close, { capture: true });
   }, [drawer]);
   const league = usePulseRead<NativePulse>(JSON.stringify(['pulse', scope.league, scope.mine]),
-    publish => readNativePulse(scope.league, scope.mine, port, publish, scope.serverTime));
+    publish => readNativePulse(scope.league, scope.mine, port, publish, scope.serverTime), 'league');
   const live = scope.live;
   const reading = league.reading;
   const week = chosen ?? reading?.week;

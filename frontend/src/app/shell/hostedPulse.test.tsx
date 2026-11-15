@@ -289,6 +289,32 @@ it('rereads open hosted Pulse once per burst of its league topics and ignores ot
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
 });
 
+it('rereads the league-wide Pulse reads for league changes, not for each live score', async () => {
+  let hear: ((topics: ReadTopic[]) => void) | undefined;
+  vi.spyOn(hostedReads, 'onHostedTopics')
+    .mockImplementation(listener => { hear = listener; return vi.fn(); });
+  const port = fakePort();
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} />));
+  await click('League Pulse');
+  const results = count(port, 'results.read'), odds = count(port, 'odds.read');
+  const burst = async (kind: ReadTopic['kind']) => {
+    vi.useFakeTimers();
+    const topic: ReadTopic = { kind, league: 'test', season: 2026, week: 1, version: String(Math.random()) };
+    act(() => { hear!([topic]); });
+    await act(async () => { vi.advanceTimersByTime(PULSE_FOLLOW_MS); });
+    vi.useRealTimers();
+    await settle();
+  };
+  await burst('scores');
+  expect(count(port, 'results.read')).toBe(results + 1);
+  expect(count(port, 'odds.read')).toBe(odds);
+  await burst('league');
+  expect(count(port, 'odds.read')).toBe(odds + 1);
+  await click('Refresh');
+  expect(count(port, 'odds.read')).toBe(odds + 2);
+});
+
 it('never logs a read that is only waiting for its week or matchup as a failure', async () => {
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
   const port = fakePort();
