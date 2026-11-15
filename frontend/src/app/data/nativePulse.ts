@@ -35,7 +35,25 @@ export type PulseGame = { week: number; home: string; away: string; homeName: st
   why: string[] };
 export type PulseResults = { league: string; season: number; week: number; revision: number;
   published: boolean; words: string; games: PulseGame[]; bye?: string; byeName?: string;
-  scores: PulseScore[]; missed: { franchise: string; name: string; flagged: boolean }[] };
+  scores: PulseScore[]; missed: { franchise: string; name: string; flagged: boolean }[];
+  evidence?: PulseEvidence };
+/** The live scores a reading consulted (server ScoreEvidence): where from, and how settled. */
+export type PulseEvidence = { source: string; live: string; provisional: boolean; stale: boolean;
+  reduced: boolean; season: number; week: number; asOf: string; sources?: Record<string, string> };
+export function parseEvidence(value: unknown, path: string): PulseEvidence | undefined {
+  if (value === undefined || value === null) return undefined;
+  const e = object(value, `${path}.evidence`, ['sources', 'reduced', 'stale', 'live', 'season', 'week',
+    'asOf', 'source', 'provisional']);
+  for (const flag of ['reduced', 'stale', 'provisional'])
+    if (typeof e[flag] !== 'boolean') throw new Error(`${path}.evidence.${flag}: expected true or false`);
+  return { source: text(e.source, `${path}.evidence`), live: text(e.live, `${path}.evidence`),
+    provisional: e.provisional as boolean, stale: e.stale as boolean, reduced: e.reduced as boolean,
+    season: integer(e.season, `${path}.evidence`), week: integer(e.week, `${path}.evidence`),
+    asOf: text(e.asOf, `${path}.evidence`),
+    sources: e.sources === undefined ? undefined : Object.fromEntries(Object.entries(
+      object(e.sources, `${path}.evidence.sources`, Object.keys(Object(e.sources))))
+      .map(([k, v]) => [k, text(v, `${path}.evidence.sources`)])) };
+}
 
 function parseLine(value: unknown, path: string): Record<string, number> | undefined {
   if (value === undefined) return undefined;
@@ -82,7 +100,7 @@ function parseScores(value: unknown): PulseScore[] {
 }
 export function parsePulseResults(value: unknown, league: string, week: number): PulseResults {
   const r = object(value, 'Week results', ['league', 'season', 'week', 'revision', 'published',
-    'words', 'games', 'bye', 'byeName', 'scores', 'missed']);
+    'words', 'games', 'bye', 'byeName', 'scores', 'missed', 'evidence']);
   if (typeof r.published !== 'boolean') throw new Error('Unreadable schedule publication');
   if (r.league !== league || r.week !== week)
     throw new Error('Results belong to another league or week');
@@ -107,7 +125,8 @@ export function parsePulseResults(value: unknown, league: string, week: number):
       const m = object(v, p, ['franchise', 'name', 'flagged']);
       if (typeof m.flagged !== 'boolean') throw new Error('Unreadable missed-lineup flag');
       return { franchise: text(m.franchise, p), name: text(m.name, p), flagged: m.flagged };
-    }) };
+    }),
+    evidence: parseEvidence(r.evidence, 'Week results') };
 }
 
 export type PulseStandingRow = { rank: number; franchise: string; name: string; division: string;
@@ -120,7 +139,8 @@ export type PulseStandings = { league: string; name: string; season: number; rev
 
 export function parsePulseStandings(value: unknown, league: string, season: number): PulseStandings {
   const r = object(value, 'Standings', ['league', 'name', 'season', 'revision', 'status', 'words',
-    'through', 'decided', 'pending', 'criteria', 'noData', 'computed', 'override', 'changes']);
+    'through', 'decided', 'pending', 'criteria', 'noData', 'computed', 'override', 'changes', 'evidence']);
+  parseEvidence(r.evidence, 'Standings');
   if (r.league !== league || r.season !== season)
     throw new Error('Standings belong to another league or season');
   const rows = (v: unknown) => array(v, 'Standings rows', (v, p) => {
@@ -300,7 +320,8 @@ function finite(value: unknown, path: string): number {
 
 export function parsePulseOdds(value: unknown, league: string, season: number): PulseOdds {
   const r = object(value, 'Odds', ['league', 'name', 'season', 'revision', 'status', 'words', 'powerWords',
-    'gameWords', 'oddsWords', 'week', 'runs', 'seed', 'rows', 'games']);
+    'gameWords', 'oddsWords', 'week', 'runs', 'seed', 'rows', 'games', 'evidence']);
+  parseEvidence(r.evidence, 'Odds');
   if (r.league !== league || r.season !== season) throw new Error('Odds belong to another league or season');
   return { league: text(r.league, 'League'), season: integer(r.season, 'Season', 1920),
     revision: integer(r.revision, 'Revision'), status: text(r.status, 'Status'), words: text(r.words, 'Odds'),

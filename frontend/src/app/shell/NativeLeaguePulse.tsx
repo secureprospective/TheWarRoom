@@ -229,7 +229,11 @@ export function scoreSources(results?: PulseResults): string {
     if (starter.source) sources.add(starter.source);
     for (const owner of Object.values(starter.fieldSources ?? {})) sources.add(owner);
   }
-  return [...sources].sort().join(' · ') || 'source not reported';
+  const evidence = results?.evidence;
+  if (!sources.size && evidence?.source) sources.add(evidence.source);
+  const label = [...sources].sort().join(' · ');
+  if (!label) return 'source not reported';
+  return label + (evidence?.stale ? ' · held' : '') + (evidence?.provisional ? ' · provisional' : '');
 }
 
 export function nflClockSummary(view?: LiveView, error = ''): string {
