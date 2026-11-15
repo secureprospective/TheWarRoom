@@ -133,7 +133,7 @@ func admitWorkflowRead(service *leagueservice.Service, raw RawWorkflow, league s
 		operation = scope.Command
 	}
 	if raw.Command == "versions.read" {
-		operation = "commish.ledger.read"
+		operation = "native.directory.read"
 	}
 
 	if err := service.AdmitRead(league, operation, franchise); err != nil {

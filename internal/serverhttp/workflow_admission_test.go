@@ -8,10 +8,12 @@ import (
 
 func TestHostedWorkflowAdmissionParity(t *testing.T) {
 	publisher := serverhttp.NewPublisher()
+	publisher.PublishScores("native.hosted", 2026, 1)
 	f := newVersionedHostedFixture(t, serverhttp.NewWorkflowVersions(serverhttp.PublisherVersionSource{Publisher: publisher}), true, true)
 	commissionerBearer, proof := f.directCommissioner(t)
 	ownerBearer := f.login(t, "owner", "private-password")
 	reads := []struct{ name, command, arguments string }{
+		{"versions", "versions.read", `{"league":"native.hosted"}`},
 		{"directory", "native.directory.read", `{"league":"native.hosted"}`},
 		{"week", "week.read", `{"league":"native.hosted","franchise":"franchise.02","season":2026,"localZone":"UTC","at":""}`},
 		{"schedule", "schedule.read", `{"league":"native.hosted"}`},
@@ -34,6 +36,9 @@ func TestHostedWorkflowAdmissionParity(t *testing.T) {
 				reply := taggedWorkflow(t, f, raw, role.bearer, role.proof, status)
 				if status == 200 && (reply.Tags == nil || len(reply.Data) == 0) {
 					t.Fatal("reading lost tags or data")
+				}
+				if read.command == "versions.read" && (reply.Tags.League["league"] == "" || reply.Tags.League["scores:2026:1"] != "1") {
+					t.Fatal("reconciliation lost authorized topics")
 				}
 			})
 		}
