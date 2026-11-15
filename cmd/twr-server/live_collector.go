@@ -259,7 +259,11 @@ func (c *liveCollector) restore(ctx context.Context) error {
 
 func startHostedLive(ctx context.Context, pins *leaguePins, root string, publisher scoresPublisher, games *leagueservice.LiveGames) func() {
 	scope, cancel := context.WithCancel(ctx)
-	done := make(chan struct{})
+	done, linked := make(chan struct{}), make(chan struct{})
+	go func() {
+		defer close(linked)
+		keepLiveIdentities(scope, pins.files.family.Over(pins.files.reference))
+	}()
 	go func() {
 		defer close(done)
 		directory := filepath.Join(root, "live-scores")
@@ -286,7 +290,7 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 			}
 		}
 	}()
-	return func() { cancel(); <-done }
+	return func() { cancel(); <-done; <-linked }
 }
 
 // holdDetails reuses acquired summary packets; no extra requests or cadence changes.
