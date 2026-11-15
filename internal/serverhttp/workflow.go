@@ -14,15 +14,17 @@ import (
 
 const WorkflowPath = "/v1/native/workflow"
 
+const workflowRefusalMessage = "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator."
+
 type RawWorkflow = catalog.RawWorkflow
 type RawWorkflowScope = catalog.RawWorkflowScope
 
-// WorkflowResponse carries the authority's own wording; a cached writable bit is never a grant.
 type UnchangedResponse struct {
 	Unchanged bool      `json:"unchanged"`
 	Tags      *ReadTags `json:"tags"`
 }
 
+// WorkflowResponse carries the authority's own wording; a cached writable bit is never a grant.
 type WorkflowResponse struct {
 	Label     string          `json:"label"`
 	Writable  bool            `json:"writable"`
@@ -87,7 +89,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	if raw.Mode == "read" {
 		//nolint:contextcheck // The service host owns this request context.
 		if err := admitWorkflowRead(service, raw, league); err != nil {
-			http.Error(w, "league reading refused", http.StatusForbidden)
+			http.Error(w, workflowRefusalMessage, http.StatusConflict)
 			return
 		}
 	}
@@ -105,7 +107,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	if err != nil {
 		// The command name and mode are fixed catalogue words; arguments, bearer and proof are never logged.
 		log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
-		http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
+		http.Error(w, workflowRefusalMessage, http.StatusConflict)
 		return
 	}
 	response := WorkflowResponse{Label: location.Label, Writable: location.Writable && !pin.Missing, Football: pin.Digest, Data: data, Tags: tags}

@@ -10,6 +10,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -251,5 +252,57 @@ func TestWorkflowModelPublicationDoesNotMoveScores(t *testing.T) {
 	second := taggedWorkflow(t, f, read, bearer, proof, 200)
 	if first.Tags.Values == second.Tags.Values || first.Tags.League["scores:2026:1"] != second.Tags.League["scores:2026:1"] || first.Tags.League["league"] != second.Tags.League["league"] {
 		t.Fatal("model publication changed unrelated evidence")
+	}
+}
+
+func TestWorkflowPrivateChangeDoesNotMoveAnotherRecipientsTags(t *testing.T) {
+	source := newFakeVersionSource()
+	f := newVersionedHostedFixture(t, serverhttp.NewWorkflowVersions(source), true)
+	bearer, proof := f.directCommissioner(t)
+	ownerBearer := f.login(t, "owner", "private-password")
+	partnerBearer := f.login(t, "partner", "private-password")
+	read := workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")
+	commissionerReply := taggedWorkflow(t, f, read, bearer, proof, 200)
+	ownerBefore := taggedWorkflow(t, f, read, ownerBearer, "", 200)
+	partnerBefore := taggedWorkflow(t, f, read, partnerBearer, "", 200)
+	owner := hostedWorkflowClient{t: t, f: f, bearer: ownerBearer, football: commissionerReply.Football, previews: map[string][]commissioner.PreviewField{}}
+	owner.run(owner.command(commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "6001", Franchise: "franchise.02", Salary: 500000000, Years: 1}}, "tags.private.bid"))
+	ownerRead := read
+	ownerRead.Known = ownerBefore.Tags
+	afterOwner := taggedWorkflow(t, f, ownerRead, ownerBearer, "", 200)
+	read.Known = partnerBefore.Tags
+	afterPartner := taggedWorkflow(t, f, read, partnerBearer, "", 200)
+	if afterOwner.Unchanged || !afterPartner.Unchanged {
+		t.Fatalf("private bump escaped recipient: owner %v partner %v", afterOwner.Unchanged, afterPartner.Unchanged)
+	}
+}
+
+func TestDesktopRoundTripsMinimalUnchangedWorkflow(t *testing.T) {
+	source := newFakeVersionSource()
+	f := newVersionedHostedFixture(t, serverhttp.NewWorkflowVersions(source), true)
+	desktop := desktopFor(t, f)
+	if _, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "login", Username: "owner", Password: "private-password"}); err != nil {
+		t.Fatal(err)
+	}
+	read := workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")
+	first, err := desktop.Workflow(t.Context(), read)
+	if err != nil {
+		t.Fatal(err)
+	}
+	read.Known = first.Tags
+	same, err := desktop.Workflow(t.Context(), read)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := json.Marshal(same)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(body, &fields); err != nil {
+		t.Fatal(err)
+	}
+	if !same.Unchanged || len(fields) != 2 || same.Tags.League["league"] != "1" {
+		t.Fatalf("desktop lost conditional envelope: %s", body)
 	}
 }
