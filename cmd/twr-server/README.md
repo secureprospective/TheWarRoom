@@ -327,8 +327,9 @@ keeps the previous readable generation/checkpoint. Feed outages can retain prior
 original timestamps and mark the snapshot reduced; unrecoverable acquisition or durability failure leaves
 the last good generation readable. Decoded legacy chronology is neither populated nor rewritten by this path.
 
-**Not deployment-complete:** `scoresPublisher.PublishScores` is the L5 integration seam, currently passed
-as nil at hosted startup (logged explicitly). No second topic owner exists here. Connect the actual L5
-publisher before claiming client invalidation support. Official nflverse finals acquisition is later;
+**Score notifications:** hosted startup passes the server's one shared `serverhttp.Publisher` to the
+collector. After each new live generation is readable, `PublishScores` bumps that week's `scores` topic
+for every league, so open change streams hear about it. No second topic owner exists here.
+Official nflverse finals acquisition is later;
 ESPN final-whistle packets still produce provisional scores. C5 should use the returned reading's
 `evidence.live`, not sample `Store.LiveEpoch()` after scoring.

@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
+	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -22,6 +23,10 @@ import (
 type scoresPublisher interface {
 	PublishScores(league string, season, week int)
 }
+
+// The hosted server hands its one shared Publisher to the collector, so a new live generation
+// reaches every open change stream as a scores topic.
+var _ scoresPublisher = (*serverhttp.Publisher)(nil)
 
 type liveCollector struct {
 	pins       *leaguePins
@@ -179,7 +184,7 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 		c := &liveCollector{pins: pins, identities: pins.files.family.Over(pins.files.reference), path: filepath.Join(directory, "checkpoint.json"), publisher: publisher,
 			packets: &livePackets{network: http.DefaultTransport, held: rawLiveCheckpoint{Version: 1, Packets: map[string]rawLivePacket{}, IDs: map[string]map[string]string{}}}}
 		if publisher == nil {
-			log.Print("server live: L5 scores publisher not connected; notifications unavailable")
+			log.Print("server live: no scores publisher; change streams will not hear about live scores")
 		}
 		if err := c.restore(scope); err != nil {
 			log.Printf("server live restart: %v", err)
