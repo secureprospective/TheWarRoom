@@ -103,7 +103,9 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, "league versions unavailable", http.StatusServiceUnavailable)
 		return
 	}
-	if raw.Mode == "read" && raw.Command != "versions.read" && sameReadTags(tags, raw.Known) {
+	// Lineup privacy also depends on the recorded week (including public corrections).
+	// Its domain reader must run even when publication tags match.
+	if raw.Mode == "read" && raw.Command != "versions.read" && raw.Command != "lineup.read" && sameReadTags(tags, raw.Known) {
 		h.writeUnchangedWorkflow(w, r, raw, tags)
 		return
 	}

@@ -43,8 +43,15 @@ func TestHostedWorkflowAdmissionParity(t *testing.T) {
 			})
 		}
 	}
+	t.Run("owner/conditional-other-lineup", func(t *testing.T) {
+		own := workflowRequest(t, "lineup.read", "read", `{"league":"native.hosted","franchise":"franchise.02","week":1,"at":""}`, "")
+		first := taggedWorkflow(t, f, own, ownerBearer, "", 200)
+		own.Arguments = []byte(`{"league":"native.hosted","franchise":"franchise.01","week":1,"at":""}`)
+		own.Known = first.Tags
+		taggedWorkflow(t, f, own, ownerBearer, "", 409)
+	})
 	_, counts := f.tally.Snapshot()
-	if got := counts["lineup.read read"]; got.Calls != 4 || got.Refused != 1 {
+	if got := counts["lineup.read read"]; got.Calls != 6 || got.Refused != 2 {
 		t.Fatalf("refusals not counted exactly once: %+v", got)
 	}
 }
