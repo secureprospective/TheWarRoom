@@ -1,0 +1,188 @@
+// @vitest-environment jsdom
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import HostedLeague from './HostedLeague';
+import { HostedRules } from './HostedRules';
+import { createHostedLeagueRoom, type HostedPort } from './hostedRoom';
+import { parseRules } from './rules';
+import { nativeEnvelope, type NativeRequest } from '../commands/native';
+import NativeAccount from '../control/NativeAccount';
+import type { NativeView } from '../control/nativeApi';
+
+const league = 'native.test';
+function rules(revision = 7, current = 'individual', nowOnly = false) {
+  return { league, name: 'Test League', revision, rollover: 'At the next season rollover', sections: [
+    { label: 'Lineup', rows: [{ field: 'lineup.lock', label: 'Lineup lock', value: current,
+      current, schema: { kind: 'string', choices: [
+        { value: 'individual', label: 'Individual kickoff' },
+        { value: 'first_kickoff', label: 'First kickoff' },
+      ], fields: [] }, state: 'Set', citation: '', changedAt: '', governed: null,
+      competitive: true, nowOnly, pending: [], unit: '', safeguards: { nextRollover: 'confirm', now: 'hold' },
+    }] },
+  ] };
+}
+function service(blockers: string[] = [], nowOnly = false) {
+  let revision = 7;
+  let current = 'individual';
+  const port = vi.fn<HostedPort>(async request => {
+    nativeEnvelope(request);
+    let data: unknown;
+    switch (request.command) {
+      case 'commish.rules.read': data = rules(revision, current, nowOnly); break;
+      case 'commish.rules.set':
+        if (request.mode === 'preview') data = { question: 'Change the lock?',
+          target: { league, name: 'Test League', version: revision }, fields: [
+            { label: 'Lineup lock', before: current, after: 'first_kickoff', beforeSource: '',
+              afterSource: '', when: 'Now' },
+          ], affects: { readings: [], count: 0, words: '' }, blockers, safeguard: 'hold' };
+        else {
+          revision++; current = 'first_kickoff';
+          data = { entry: 'entry.8', league, revision, recordedAt: '2026-11-15T18:00:00Z',
+            message: 'Recorded' };
+        }
+        break;
+      case 'native.directory.read': data = { league, name: 'Test League', revision, rosterSeason: 2026,
+        franchises: [{ franchise: 'a', name: 'Alpha', abbreviation: 'ALP' },
+          { franchise: 'b', name: 'Beta', abbreviation: 'BET' }] }; break;
+      case 'schedule.read': data = { league, season: 2026, revision,
+        weeks: [{ week: 1, games: [{ home: 'a', away: 'b' }] }] }; break;
+      case 'results.read': data = { league, season: 2026, week: 1, revision,
+        published: false, words: 'No results yet', games: [], scores: [], missed: [] }; break;
+      case 'standings.read': data = { league, season: 2026, revision, name: 'Test League',
+        status: 'Ready', words: 'Standings available', through: 0, decided: 0, pending: 0,
+        criteria: [], noData: [], computed: [] }; break;
+      default: throw new Error(`Read refused: ${request.command}`);
+    }
+    return { data, label: 'Server', writable: true, football: 'pin' };
+  });
+  return port;
+}
+let host: HTMLDivElement;
+let root: Root;
+beforeEach(() => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+});
+afterEach(async () => {
+  await act(async () => root.unmount()); host.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals();
+});
+const settle = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 40)); });
+const buttons = (text: string) => [...host.querySelectorAll('button')]
+  .filter(b => b.textContent === text || b.getAttribute('aria-label') === text);
+async function click(text: string) {
+  expect(buttons(text), text).toHaveLength(1);
+  await act(async () => buttons(text)[0].click()); await settle();
+}
+async function input(selector: string, value: string) {
+  const element = host.querySelector(selector)! as HTMLInputElement;
+  const prototype = element.tagName === 'SELECT'
+    ? HTMLSelectElement.prototype : HTMLTextAreaElement.prototype;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(prototype, 'value')!.set!.call(element, value);
+    element.dispatchEvent(new Event(element.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
+  });
+}
+async function openRules(port: HostedPort, role = 'Commissioner') {
+  await act(async () => root.render(<HostedLeague league={league} franchise="" name=""
+    role={role} port={port} />));
+  await settle(); await click('League rules'); await click('Change Lineup lock');
+}
+async function preview() {
+  await input('select[aria-label="New value for Lineup lock"]', 'first_kickoff');
+  await input('textarea', 'League approved this change');
+  await click('Preview rule change');
+}
+it('commissioner previews and confirms a rule through the hosted port, then rereads the value', async () => {
+  const port = service(); await openRules(port); await preview();
+  const request = port.mock.calls.find(([r]) => r.mode === 'preview')![0];
+  expect(request).toMatchObject({ command: 'commish.rules.set', mode: 'preview', arguments: {
+    league, command: 'commish.rules.set', args: { field: 'lineup.lock', value: 'first_kickoff' },
+    expected: 7, effective: 'next_rollover', reason: 'League approved this change', visibility: 'league',
+  } });
+  const confirm = buttons('Confirm league change')[0];
+  await act(async () => confirm.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 650)); });
+  await settle();
+  expect(port.mock.calls.find(([r]) => r.mode === 'execute')![0]).toEqual({ ...request, mode: 'execute' });
+  expect(host.querySelector('dd')?.textContent).toContain('first_kickoff');
+  expect(port.mock.calls.filter(([r]) => r.command === 'commish.rules.read')).toHaveLength(2);
+});
+it('a blocked preview shows the blocker and offers no confirmation or execute', async () => {
+  const port = service(['Lineups are already locked']); await openRules(port); await preview();
+  expect(host.textContent).toContain('Lineups are already locked');
+  expect(buttons('Confirm league change')).toHaveLength(0);
+  expect(port.mock.calls.some(([r]) => r.mode === 'execute')).toBe(false);
+  await click('Cancel change');
+  expect(host.querySelector('[aria-label="Confirm league change"]')).toBeNull();
+});
+it('owners see rule values but no Change controls', async () => {
+  const room = createHostedLeagueRoom(league, service());
+  await act(async () => root.render(
+    <HostedRules rules={parseRules(rules())} commissioner={false} room={room} />));
+  expect(host.textContent).toContain('individual');
+  expect(buttons('Change Lineup lock')).toHaveLength(0);
+  expect(host.querySelector('textarea')).toBeNull();
+});
+it('now-only rules offer only Now and submit that timing', async () => {
+  const port = service([], true); await openRules(port);
+  const selects = host.querySelectorAll('select');
+  expect([...selects[1].options].map(o => o.value)).toEqual(['now']);
+  await preview();
+  const request = port.mock.calls.find(([r]) => r.mode === 'preview')![0];
+  expect(request.arguments).toMatchObject({ effective: 'now' });
+});
+it('a refused rules refresh disables editing and never previews', async () => {
+  const port = service(); await openRules(port);
+  port.mockRejectedValue(new Error('Disconnected'));
+  await click('Refresh league server');
+  expect(buttons('Change Lineup lock')[0].disabled).toBe(true);
+  expect(host.textContent).toContain('read-only');
+  expect(port.mock.calls.some(([r]) => r.mode === 'preview')).toBe(false);
+});
+it.each(['Commissioner', 'Co-commissioner'])(
+  'NativeAccount admits a teamless %s to Pulse and rules without franchise reads', async role => {
+    const port = service();
+    const admission: NativeView = { server: 'https://league.example', league, name: 'Test League', role,
+      franchise: '', franchiseName: '', message: 'Connected', seed: '', connection: '', helperId: '',
+      confirmation: '', authGeneration: '1', seats: [] };
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === '/desktop/changes') return new Promise(() => {});
+      if (url === '/desktop/workflow') {
+        const request = JSON.parse(String(init?.body)) as NativeRequest;
+        return { ok: true, json: async () => await port(request) };
+      }
+      return { ok: true, headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: async () => admission };
+    }));
+    await act(async () => root.render(<NativeAccount initial={admission} />));
+    await settle(); await settle();
+    expect(host.textContent).toContain('League Pulse');
+    expect(host.textContent).not.toContain('MY MATCHUP');
+    expect(host.querySelector('.mybox')).toBeNull();
+    expect(port.mock.calls.some(([r]) => r.command === 'native.directory.read')).toBe(true);
+    expect(port.mock.calls.some(([r]) => r.command === 'standings.read')).toBe(true);
+    await click('League rules');
+    expect(buttons('Change Lineup lock')).toHaveLength(1);
+    for (const [r] of port.mock.calls) {
+      expect(['lineup.read', 'native.assets.read', 'native.reserve.check', 'draft.read',
+        'bids.read', 'waivers.read', 'trades.read', 'week.read']).not.toContain(r.command);
+      expect(r.arguments).not.toHaveProperty('franchise');
+    }
+    expect(buttons('Set lineup')).toHaveLength(0);
+    expect(buttons('Roster and reserves')).toHaveLength(0);
+    expect(buttons('Draft room')).toHaveLength(0);
+  });
+it('a refused rules read leaves league-wide Pulse available', async () => {
+  const port = service();
+  const serve = port.getMockImplementation()!;
+  port.mockImplementation(request => request.command === 'commish.rules.read'
+    ? Promise.reject(new Error('Rules refused')) : serve(request));
+  await act(async () => root.render(<HostedLeague league={league} franchise="" name=""
+    role="Commissioner" port={port} />));
+  await settle(); await settle();
+  expect(host.textContent).toContain('Could not refresh your league');
+  expect(host.textContent).toContain('Standings available');
+  expect(port.mock.calls.some(([r]) => r.command === 'results.read')).toBe(true);
+});

@@ -156,7 +156,8 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab; live: ReturnType<typeof
           <span className="src">reads only · nothing here changes the league</span>
         </div>
       </main>
-      {reading && <PulseInspector reading={reading} results={results.reading} franchise={scope.mine}
+      {reading && scope.mine && <PulseInspector reading={reading} results={results.reading}
+        franchise={scope.mine}
         mine={scope.mine} week={week} leave={scope.leave} />}
     </div>
   </div>;
@@ -201,7 +202,7 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live, hos
       {hosted ? 'Scores follow the league server as it publishes them'
         : <>revision {reading?.revision ?? '—'} · {results?.words ?? 'no week read'}</>}
     </div>
-    <div className="mybox">
+    {mine && <div className="mybox">
       <span className="t me">YOU</span>
       <span className="s">{pointsLabel(mineScore?.points ?? mineScore?.provisional)}</span>
       <span className="wpm" title={win === undefined ? 'win probability shows while the game is open'
@@ -209,7 +210,7 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live, hos
           {win !== undefined && <i style={{ width: percent(win) }} />}</span>
       <span className="s">{pointsLabel(theirs?.points ?? theirs?.provisional)}</span>
       <span className="t th">{theirs ? theirs.name.slice(0, 3).toUpperCase() : '—'}</span>
-    </div>
+    </div>}
   </section>;
 }
 

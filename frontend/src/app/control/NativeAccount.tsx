@@ -112,7 +112,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
-    {observed && !fence.blocked && signedIn && admission?.franchise &&
+    {observed && !fence.blocked && signedIn && admission &&
+      (admission.franchise || admission.role === 'Commissioner' || admission.role === 'Co-commissioner') &&
       <Suspense fallback={<p>Opening your franchise…</p>}>
       <HostedLeague key={fence.key} league={admission.league} franchise={admission.franchise}
         name={admission.franchiseName} role={admission.role} hq />
