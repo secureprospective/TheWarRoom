@@ -56,7 +56,8 @@ func collectGains(game livegame.Game, lines map[string]*Line) map[*Line]map[leag
 		text := strings.TrimSpace(play.Text)
 		lower := strings.ToLower(text)
 		if strings.Contains(lower, "no play") || strings.Contains(lower, "nullified") ||
-			strings.Contains(lower, "incomplete") || strings.Contains(lower, "intercepted") {
+			strings.Contains(lower, "incomplete") || strings.Contains(lower, "intercepted") ||
+			strings.Contains(lower, "offsetting") {
 			continue
 		}
 		event, m := leaguerules.StatID("long_reception"), receptionPlay.FindStringSubmatch(text)
@@ -85,7 +86,10 @@ func collectGains(game livegame.Game, lines map[string]*Line) map[*Line]map[leag
 func gainPatterns() (reception, rush *regexp.Regexp) {
 	return regexp.MustCompile(`pass (?:(?:short|deep) )?(?:(?:left|right|middle) )?to (.+?)` +
 			`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`),
-		regexp.MustCompile(`^(?:\([^)]*\) )?(\S+(?: \S+)??) (?:scrambles )?` +
+		// A carry may follow bracketed notes ("(1:43) (No Huddle, Shotgun)") and announcement sentences
+		// ("C.Lomu reported in as eligible.", "Direct snap to A.Beck.") before the runner's name.
+		regexp.MustCompile(`^(?:\([^)]*\) )*(?:\S+ reported in as eligible\.\s+|Direct snap to \S+\.\s+)*` +
+			`(?:\([^)]*\) )*(\S+(?: \S+)??) (?:scrambles )?` +
 			`(?:up the middle|left end|right end|left tackle|right tackle|left guard|right guard|kneels)` +
 			`(?: (?:to|ran ob at|pushed ob at) (?:[A-Z]{2,3} )?\d+)?\.? for (-?\d+ yards?|no gain)`)
 }
