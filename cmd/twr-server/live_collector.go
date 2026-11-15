@@ -36,10 +36,13 @@ type liveCollector struct {
 	path       string
 	publisher  scoresPublisher
 	// games holds the latest parsed scoreboard for nfl.games.read; nil keeps it unset.
-	games     *leagueservice.LiveGames
-	poller    now.LiveStatsPoller
-	published bool
-	restoring bool
+	games       *leagueservice.LiveGames
+	poller      now.LiveStatsPoller
+	published   bool
+	restoring   bool
+	board       []livegame.Game
+	scoreDigest string
+	notified    string
 }
 
 func (c *liveCollector) SourceIDs(ctx context.Context, kind string) (map[string]string, error) {
@@ -91,12 +94,36 @@ func (c *liveCollector) SetLiveStats(ctx context.Context, season, week int, _ ti
 		return fmt.Errorf("publish live overlay: %w", err)
 	}
 	c.published = true
+	// Acquisition timestamps and packet digests change even when football facts do not.
+	candidate.ID, candidate.At, candidate.Sources = "", time.Time{}, nil
+	body, err := json.Marshal(candidate)
+	if err != nil {
+		return fmt.Errorf("fingerprint live scores: %w", err)
+	}
+	c.scoreDigest = liveDigest(body)
+	c.notifyScores(season, week)
+	return nil
+}
+
+func (c *liveCollector) notifyScores(season, week int) {
+	body, err := json.Marshal(struct {
+		Games  []livegame.Game
+		Scores string
+	}{c.board, c.scoreDigest})
+	if err != nil {
+		log.Printf("server live notification: %v", err)
+		return
+	}
+	digest := liveDigest(body)
+	if digest == c.notified {
+		return
+	}
+	c.notified = digest
 	if c.publisher != nil {
 		for _, league := range c.pins.files.leagues() {
 			c.publisher.PublishScores(league, season, week)
 		}
 	}
-	return nil
 }
 
 func (c *liveCollector) checkpoint() (string, error) {
@@ -153,6 +180,14 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 	}
 	c.packets.prefetched = &packet
 	c.poller.Poll(look, now.LiveStatsRun{Evidence: c, RequireComplete: true, Network: c.packets, Season: season, Week: func() int { return week }})
+	c.notifyScores(season, week)
+	return hostedLiveInterval(games)
+}
+
+func hostedLiveInterval(games []livegame.Game) time.Duration {
+	if now.LiveStatsInterval(games) == time.Minute {
+		return 10 * time.Second
+	}
 	return now.LiveStatsInterval(games)
 }
 
@@ -161,6 +196,7 @@ func (c *liveCollector) holdBoard(games []livegame.Game, at time.Time) {
 	if at.IsZero() {
 		at = time.Now()
 	}
+	c.board = games
 	c.games.Set(games, at, "ESPN")
 }
 

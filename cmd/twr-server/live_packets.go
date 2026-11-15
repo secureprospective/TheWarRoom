@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -87,11 +88,13 @@ func liveDigest(body []byte) string { sum := sha256.Sum256(body); return hex.Enc
 
 // livePackets is confined to the collector goroutine. The checkpoint has one current-week slot.
 type livePackets struct {
-	network    http.RoundTripper
-	held       rawLiveCheckpoint
-	replay     bool
-	prefetched *rawLivePacket
-	failed     error
+	network        http.RoundTripper
+	held           rawLiveCheckpoint
+	replay         bool
+	prefetched     *rawLivePacket
+	nextSleeper    time.Time
+	sleeperReduced bool
+	failed         error
 }
 
 func (p *livePackets) RoundTrip(request *http.Request) (*http.Response, error) {
@@ -108,6 +111,21 @@ func (p *livePackets) RoundTrip(request *http.Request) (*http.Response, error) {
 			return nil, p.failed
 		}
 		return livePacketResponse(packet), nil
+	}
+	// Keep Sleeper's weekly gap feed on its own slower clock, including failed attempts.
+	if strings.HasPrefix(request.URL.Path, "/v1/stats/nfl/regular/") {
+		if time.Now().Before(p.nextSleeper) {
+			if packet, ok := p.held.Packets[address]; ok {
+				if p.sleeperReduced {
+					p.held.Reduced = append(p.held.Reduced, address)
+				}
+				return livePacketResponse(packet), nil
+			}
+			p.failed = fmt.Errorf("sleeper live retry not due")
+			return nil, p.failed
+		}
+		p.sleeperReduced = false
+		p.nextSleeper = time.Now().Add(time.Minute)
 	}
 	response, err := p.network.RoundTrip(request)
 	if err != nil {
@@ -151,6 +169,9 @@ func (p *livePackets) admit(packet rawLivePacket) error {
 }
 
 func (p *livePackets) fallback(address string, err error) (*http.Response, error) {
+	if strings.Contains(address, "/v1/stats/nfl/regular/") {
+		p.sleeperReduced = true
+	}
 	if packet, ok := p.held.Packets[address]; ok {
 		p.held.Reduced = append(p.held.Reduced, address)
 		return livePacketResponse(packet), nil
