@@ -10,9 +10,10 @@ import (
 
 // startingDefaults preserves recorded values and supplies only settings absent from older starts.
 func startingDefaults(seed []SeedValue, source string) ([]SeedValue, error) {
+	// Every league, imported or new, locks each player at his own game; only the commissioner chooses otherwise.
 	lock, assets := leaguerules.EachPlayerGame, leaguerules.EmptyAssets
 	if source == SourceMFLImport {
-		lock, assets = leaguerules.FirstKickoff, leaguerules.HeldAssets
+		assets = leaguerules.HeldAssets
 	}
 	defaults := []struct {
 		path  string

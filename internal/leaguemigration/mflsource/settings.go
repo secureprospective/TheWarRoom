@@ -18,13 +18,18 @@ const citation = "Your MFL league"
 // notHeld is the citation of a setting MFL does not hold: it waits for the commissioner's ruling.
 const notHeld = "Your MFL league does not hold this setting"
 
+// eachPlayerCitation is why an imported league locks each player at his own game: the commissioner's standing rule.
+const eachPlayerCitation = "Each player locks when his own game kicks off"
+
 // Settings carries an MFL league's settings into the app value for value. What MFL holds is set as MFL
 // holds it; what it does not hold is taken from base, how the league runs on MFL; anything left after
 // that waits for a ruling and is listed; what MFL holds but the app cannot read is a problem, never a guess.
 func Settings(config league.RawConfig, base leaguerules.RuleSet, draftType string) (leaguerules.RuleSet, []string, []string) {
 	t := translation{}
 	r := leaguerules.RuleSet{}
-	r.Lineup.Lock = known(leaguerules.FirstKickoff)
+	// Each player locks at his own game's kickoff, so an owner can still pivot off a player hurt in warmups.
+	r.Lineup.Lock = leaguerules.Value[leaguerules.LineupLock]{State: leaguerules.IsKnown,
+		Value: leaguerules.EachPlayerGame, Citation: eachPlayerCitation}
 	r.League.StartingAssets = known(leaguerules.HeldAssets)
 	r.Schedule.Follow = leaguerules.Known(leaguerules.ScheduleFollow{})
 	r.Transactions.Follow = known(true)
