@@ -11,6 +11,7 @@ import {
   rmSync,
 } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const keyHandlerAllowlist = {
   'shell/MFLConnection.tsx': 'Password field Enter dispatches Connect without copying the key.',
@@ -61,7 +62,7 @@ describe('Controls are verbs (§M2/§M3)', () => {
     expect(scan(resolve('src/app'))).toEqual([]);
   });
   it('allows only key handling, never raw controls, in the command bar', () => {
-    const dir = mkdtempSync(resolve('src/app/commands/.allowlist-proof-'));
+    const dir = mkdtempSync(join(tmpdir(), 'allowlist-proof-'));
     try {
       const commandsDir = join(dir, 'commands');
       mkdirSync(commandsDir);
@@ -75,7 +76,7 @@ describe('Controls are verbs (§M2/§M3)', () => {
     }
   });
   it('detects each deliberate violation in a temporary file', () => {
-    const dir = mkdtempSync(resolve('src/app/commands/.control-proof-'));
+    const dir = mkdtempSync(join(tmpdir(), 'control-proof-'));
     try {
       const file = join(dir, 'Violation.tsx');
       for (const violation of [
@@ -110,7 +111,7 @@ describe('Readable app source (§M2/§M3)', () => {
     expect(longLines(resolve('src/app'))).toEqual([]);
   });
   it('rejects a deliberate long line', () => {
-    const dir = mkdtempSync(resolve('src/app/commands/.length-proof-'));
+    const dir = mkdtempSync(join(tmpdir(), 'length-proof-'));
     try {
       const file = join(dir, 'Violation.ts');
       writeFileSync(file, '// ' + 'x'.repeat(110));
