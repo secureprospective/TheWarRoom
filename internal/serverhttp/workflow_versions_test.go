@@ -178,18 +178,18 @@ func TestVersionsReadReconcilesSessionAndAuthorizedTopics(t *testing.T) {
 	read := workflowRequest(t, "versions.read", "read", `{"league":"native.hosted"}`, "")
 	first := taggedWorkflow(t, f, read, bearer, proof, 200)
 	var reading struct {
-		AuthGeneration string            `json:"authGeneration"`
-		Season         int               `json:"season"`
-		Topics         map[string]string `json:"topics"`
-		ServerTime     string            `json:"serverTime"`
+		Access     string            `json:"access"`
+		Season     int               `json:"season"`
+		Topics     map[string]string `json:"topics"`
+		ServerTime string            `json:"serverTime"`
 	}
 	if err := json.Unmarshal(first.Data, &reading); err != nil {
 		t.Fatal(err)
 	}
-	if len(reading.AuthGeneration) != 64 || reading.Season != 2026 || reading.Topics["scores:2026:1"] != "8" || reading.ServerTime == "" {
+	if len(reading.Access) != 64 || reading.Season != 2026 || reading.Topics["scores:2026:1"] != "8" || reading.ServerTime == "" {
 		t.Fatalf("incomplete reconciliation: %+v", reading)
 	}
-	generation := reading.AuthGeneration
+	generation := reading.Access
 	read.Known = first.Tags
 	again := taggedWorkflow(t, f, read, bearer, proof, 200)
 	if again.Unchanged {
@@ -198,7 +198,7 @@ func TestVersionsReadReconcilesSessionAndAuthorizedTopics(t *testing.T) {
 	if err := json.Unmarshal(again.Data, &reading); err != nil {
 		t.Fatal(err)
 	}
-	if generation != reading.AuthGeneration {
+	if generation != reading.Access {
 		t.Fatal("unchanged login moved authentication generation")
 	}
 	session, err := f.sessions.Login(t.Context(), accounts.RawCredentials{Username: "commissioner", Password: "private-password"}, "new desktop")
@@ -209,7 +209,7 @@ func TestVersionsReadReconcilesSessionAndAuthorizedTopics(t *testing.T) {
 	if err := json.Unmarshal(relogged.Data, &reading); err != nil {
 		t.Fatal(err)
 	}
-	if generation == reading.AuthGeneration {
+	if generation == reading.Access {
 		t.Fatal("new login kept old authentication generation")
 	}
 }

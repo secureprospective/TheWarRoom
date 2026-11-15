@@ -28,7 +28,7 @@ func (h Hosted) versionsReading(r *http.Request, service *leagueservice.Service,
 	if err != nil {
 		return nil, fmt.Errorf("versions league: %w", err)
 	}
-	generation, err := h.workflowAuthGeneration(r, league)
+	generation, err := h.workflowAccess(r, league)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (h Hosted) versionsReading(r *http.Request, service *leagueservice.Service,
 	if ok && !next.IsZero() {
 		boundary = next.UTC().Format(time.RFC3339Nano)
 	}
-	reading := catalog.VersionsReading{AuthGeneration: generation, League: league, Season: directory.RosterSeason,
+	reading := catalog.VersionsReading{Access: generation, League: league, Season: directory.RosterSeason,
 		Topics: map[string]string{}, Football: pin.Digest, ServerTime: h.Store.Now().UTC().Format(time.RFC3339Nano), NextBoundary: boundary}
 	if tags != nil {
 		reading.ServerEpoch, reading.Topics = tags.ServerEpoch, tags.League
@@ -55,7 +55,7 @@ func (h Hosted) versionsReading(r *http.Request, service *leagueservice.Service,
 	return body, nil
 }
 
-func (h Hosted) workflowAuthGeneration(r *http.Request, league string) (string, error) {
+func (h Hosted) workflowAccess(r *http.Request, league string) (string, error) {
 	account, _ := r.Context().Value(replyPrincipalKey{}).(string)
 	host := leagueservice.StoredHost{Store: h.pinFor(r.Context(), league).Store}
 	records, err := host.CommissionerRecords(r.Context(), league)
