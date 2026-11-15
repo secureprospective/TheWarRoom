@@ -25,11 +25,15 @@ hosted subtree by that snapshot, not by its locally queued presentation state. I
 actions hide private state before transport; failures leave it hidden.
 
 The module lazily starts exactly one `subscribeChanged` after an admitted view. It consumes topics
-before `onHostedChange` listeners. League/team hints immediately suspend private publication and
-rendering, then coalesce status rechecks into one in flight and one trailing. A changed epoch or
-empty resync hint takes the same conservative path. Status failures remain closed; a later hint or
-explicit admission can retry. Signed-out/refused purges and installs an empty view; old generations
-are ignored. Version reconciliation (`versions.read`) remains the separately owned C5 seam.
+before `onHostedChange` listeners. League/team hints invalidate reads and coalesce status rechecks
+into one in flight and one trailing, without hiding or remounting the league. A changed admission
+in the reply resets private state before publishing the new screen key. Ordinary status failures
+leave the screen intact. A changed auth generation or known non-empty epoch suspends private
+publication and rendering; failed status checks then remain closed. The first stream epoch is
+recorded. Empty-topic reconnect hints do not hide the screen or trigger status reads; version
+reconciliation (`versions.read`) remains the separately owned C5 seam. Signed-out/refused purges
+and installs an empty view; old generations are ignored. A workflow/People 403 refuses only that
+read; only a 401 clears its saved credential. Stream-level 401/403 still ends the session.
 
 Public entries survive same-server/league account or role switches, including their persisted old
 keys. Session reads reuse only public values whose server, epoch, league, season, command/schema

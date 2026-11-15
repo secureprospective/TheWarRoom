@@ -133,6 +133,17 @@ export function createReadSession(options: {
     end: endSession, endSession,
     setIdentity(next: ReadIdentity) {
       if (JSON.stringify(normalized(identity)) === JSON.stringify(normalized(next))) return;
+      // Learning the first epoch establishes provenance, not a different signed-in identity.
+      if (identity?.serverEpoch === '' && next.serverEpoch
+        && JSON.stringify(normalized({ ...identity, serverEpoch: next.serverEpoch }))
+          === JSON.stringify(normalized(next))) {
+        identity = { ...next };
+        for (const entry of entries.values()) {
+          entry.context = JSON.stringify(normalized(identity));
+          markStale(entry);
+        }
+        return;
+      }
       for (const entry of entries.values()) {
         const scope = JSON.parse(entry.context) as ReadIdentity;
         if (entry.public && (scope.serverId !== next.serverId || scope.league !== next.league

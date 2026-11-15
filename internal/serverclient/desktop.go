@@ -346,8 +346,7 @@ func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopS
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
-		unauthorized := response.StatusCode == http.StatusUnauthorized ||
-			(response.StatusCode == http.StatusForbidden && (path == serverhttp.WorkflowPath || path == serverhttp.PeoplePath))
+		unauthorized := response.StatusCode == http.StatusUnauthorized
 		return nil, unauthorized, desktopRefusal(path, response.StatusCode)
 	}
 	body, err = io.ReadAll(io.LimitReader(response.Body, (256<<10)+1))

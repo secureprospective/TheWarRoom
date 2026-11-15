@@ -101,17 +101,24 @@ it.each(['refused', 'signed-out'])('%s purges held and in-flight private values'
   await loading;
   expect(pending.peek().value).toBeUndefined();
 });
-it('hides an old role before the shared admission re-read lands', async () => {
+it('purges the old role and fences its replies when the shared admission re-read lands', async () => {
   await signIn();
   const held = query();
   await held.load([]);
+  const flight = deferred<TaggedReply<string>>();
+  const pending = query(() => flight.promise);
+  const loading = pending.load(['private']);
   await change('connected', '1', true);
-  expect(held.peek().value).toBeUndefined();
-  expect(owner.hostedSnapshot().blocked).toBe(true);
+  expect(held.peek().value).toBe('A');
+  expect(owner.hostedSnapshot().blocked).toBe(false);
   status.resolve(response({ ...view(), role: 'Observer', franchise: '' }));
   await vi.advanceTimersByTimeAsync(0);
   expect(owner.hostedSnapshot().view?.franchise).toBe('');
   expect(owner.hostedSnapshot().key).toContain('Observer/');
+  expect(held.peek().value).toBeUndefined();
+  flight.resolve(reply('old role secret'));
+  await loading;
+  expect(pending.peek().value).toBeUndefined();
 });
 it('preserves public persisted readings on account switch but drops them on league change', async () => {
   await signIn();
@@ -150,7 +157,7 @@ it('coalesces five team hints into one in-flight plus one trailing status read',
   first.resolve(response(view()));
   await vi.advanceTimersByTimeAsync(0);
   expect(statuses).toBe(2);
-  expect(owner.hostedSnapshot().blocked).toBe(true);
+  expect(owner.hostedSnapshot().blocked).toBe(false);
   status.resolve(response(view()));
   await vi.advanceTimersByTimeAsync(0);
   expect(statuses).toBe(2);

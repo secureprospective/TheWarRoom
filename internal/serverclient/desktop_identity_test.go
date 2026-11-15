@@ -94,6 +94,14 @@ func TestDesktopStatusRechecksSeatWithoutChangingGeneration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer d.Close()
+	for range 2 {
+		request := httptest.NewRequest(http.MethodGet, DesktopPath, nil)
+		recorder := httptest.NewRecorder()
+		d.Handler().ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusOK || reads.Load() != 0 {
+			t.Fatalf("startup probe: status=%d server reads=%d", recorder.Code, reads.Load())
+		}
+	}
 	admitted, err := d.Act(t.Context(), RawDesktop{Action: "enter"})
 	if err != nil {
 		t.Fatal(err)

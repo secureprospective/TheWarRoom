@@ -236,3 +236,34 @@ func TestWorkflowUnauthorizedSessionGeneration(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkflowForbiddenPreservesSession(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer server.Close()
+	roots := x509.NewCertPool()
+	roots.AddCert(server.Certificate())
+	store := &testCredentials{secret: strings.Repeat("a", 42) + "A"}
+	d, err := NewDesktop(server.URL, "native.test", roots, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer d.Close()
+	before, err := d.Act(t.Context(), RawDesktop{Action: "status"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bearer := d.bearer
+	raw := serverhttp.RawWorkflow{Command: "native.assets.read", Version: "1", Mode: "read", Arguments: json.RawMessage(`{"league":"native.test"}`)}
+	if _, err := d.Workflow(t.Context(), raw); err == nil {
+		t.Fatal("forbidden workflow succeeded")
+	}
+	after, err := d.Act(t.Context(), RawDesktop{Action: "status"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.AuthGeneration != before.AuthGeneration || d.bearer != bearer || store.secret != bearer {
+		t.Fatal("refused read changed the session or saved credential")
+	}
+}

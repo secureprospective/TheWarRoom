@@ -21,8 +21,9 @@ sentence means.
 
 Thin windows now watch negotiated topic invalidations after sign-in/enter and expose them through
 `/desktop/changes`; `nativeApi.subscribeChanged` is the webview transport. The thin-only
-`data/hostedReads.ts` owns its one subscriber and identity fence: sign-out, switches and admission
-hints clear private reads/rendered state before fresh admission. Views and changes carry a decimal
+`data/hostedReads.ts` owns its one subscriber and identity fence: sign-out and known identity
+changes clear private reads/rendered state. Admission hints recheck status without hiding the
+screen; a changed role or franchise resets private state before the new view renders. Views and changes carry a decimal
 auth generation; no credential crosses into the webview. See
 [hosted change notifications](hosted-changes.md). Local mode is unchanged.
 

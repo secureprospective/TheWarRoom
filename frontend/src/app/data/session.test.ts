@@ -58,3 +58,30 @@ it('leaves a query that left, or joined while ending, to its own lifetime', asyn
   session.end();
   expect(later.peek().value).toBeUndefined();
 });
+
+it('learns the first epoch without a private reset and rejects replies with unknown provenance', async () => {
+  const identity = { serverId: 'server', serverEpoch: '', accountId: 'account',
+    authGeneration: '1', league: 'league', view: 'Owner/one' };
+  const session = createReadSession({ identity });
+  const reset = vi.fn();
+  session.join({ reset, invalidate: () => undefined }, 'private');
+  const flight = deferred<{ data: string; tags: { serverEpoch: string; league: Record<string, string>;
+    football: string; live: string; values: string } }>();
+  const key = session.key('lineup.read', '1', []);
+  const loading = session.read(key, { policy: 'memory', dependencies: [{ kind: 'league' }],
+    read: () => flight.promise });
+  const rejected = expect(loading).rejects.toThrow('Read superseded');
+  session.setIdentity({ ...identity, serverEpoch: 'first' });
+  expect(reset).not.toHaveBeenCalled();
+  flight.resolve({ data: 'unknown epoch', tags: { serverEpoch: '', league: {},
+    football: '', live: '', values: '' } });
+  await rejected;
+  const fresh = await session.read(session.key('lineup.read', '1', []), {
+    policy: 'memory', dependencies: [{ kind: 'league' }],
+    read: async () => ({ data: 'current', tags: { serverEpoch: 'first', league: {},
+      football: '', live: '', values: '' } }),
+  });
+  expect(fresh).toBe('current');
+  session.setIdentity({ ...identity, serverEpoch: 'second' });
+  expect(reset).toHaveBeenCalledOnce();
+});
