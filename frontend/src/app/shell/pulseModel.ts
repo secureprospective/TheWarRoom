@@ -1,3 +1,4 @@
+import type { Game as LiveNflGame } from '../now/liveContract';
 import type { PulseGame, PulseResults, PulseScore, PulseSeat, PulseStandings, PulseStarter,
   PulseLineupPlayer, PulseBracket, PulseRevision } from '../data/nativePulse';
 
@@ -13,32 +14,73 @@ export type PulseRow = {
   key: string; game: PulseGame; mine: boolean; division: string;
   home: number | undefined; away: number | undefined;
   decided: boolean; margin: number | undefined; status: string;
+  /** Where the matchup's starters stand on the NFL board this week, when every one of them is known. */
+  play?: MatchupPlay;
 };
 
 export function gameKey(game: PulseGame): string { return `${game.away}-${game.home}`; }
 
+/** League team codes and ESPN's differ for a few clubs; both name the same NFL team. */
+const ESPN_TEAM: Record<string, string> = { JAC: 'JAX', WAS: 'WSH', GBP: 'GB', KCC: 'KC', NEP: 'NE',
+  NOS: 'NO', SFO: 'SF', TBB: 'TB', LVR: 'LV', OAK: 'LV', SDC: 'LAC', STL: 'LAR' };
+export function espnTeam(team?: string) { return team ? ESPN_TEAM[team] ?? team : ''; }
+
+/** MatchupPlay counts a matchup's unsettled starters against the NFL board: on the field now (their
+ *  club's game is being played) and still to play (it has not kicked off). A club with no game this
+ *  week (a bye) or a game already over counts in neither. */
+export type MatchupPlay = { on: number; left: number };
+
+/** matchupPlay is undefined while the board is not held or any unsettled starter's club is unknown:
+ *  the badge then never claims more than the scores show. */
+export function matchupPlay(results: PulseResults, game: PulseGame, board: LiveNflGame[]): MatchupPlay | undefined {
+  if (!board.length) return undefined;
+  const play = { on: 0, left: 0 };
+  for (const franchise of [game.home, game.away]) {
+    for (const starter of results.scores.find(s => s.franchise === franchise)?.starters ?? []) {
+      if (starter.points !== undefined) continue;
+      if (!starter.team) return undefined;
+      const club = espnTeam(starter.team);
+      const nfl = board.find(g => g.home.abbreviation === club || g.away.abbreviation === club);
+      if (nfl?.status === 'in') play.on++;
+      else if (nfl?.status === 'pre') play.left++;
+    }
+  }
+  return play;
+}
+
 /** statusLabel says where a game stands in the league's own words: a result, or still to come.
- *  Only the week the league is playing now can be live; an earlier week is simply waiting, and a
- *  game neither side has scored in has yet to be played. */
-export function statusLabel(game: PulseGame, current: boolean, playing = true): string {
+ *  Only the week the league is playing now can be live, and only while one of the matchup's starters
+ *  is on the field; otherwise it says how many starters are left, or that every one is done. Without
+ *  the board it falls back to whether anyone has scored yet. */
+export function statusLabel(game: PulseGame, current: boolean, play?: MatchupPlay): string {
   if (game.status === 'Tie') return 'TIED';
   if (game.status !== 'No result yet') return 'FINAL';
   if (!current) return 'WAITING';
-  if (playing) return 'LIVE';
+  if (play) return play.on ? 'LIVE' : play.left ? `${play.left} LEFT` : 'DONE';
   return game.homeProvisional === undefined && game.awayProvisional === undefined ? 'TO PLAY' : 'IN PLAY';
 }
 
+/** playWords is the badge's plain explanation, for its tooltip. */
+export function playWords(row: PulseRow): string {
+  if (!row.play) return '';
+  const { on, left } = row.play;
+  if (!on && !left) return 'Every starter is done; the result is official when the week closes';
+  return [on ? `${on} starter${on > 1 ? 's' : ''} on the field now` : 'nobody playing right now',
+    left ? `${left} still to play` : ''].filter(Boolean).join(', ');
+}
+
 export function pulseRows(results: PulseResults, mine: string, seats: PulseSeat[],
-  current: boolean, playing = true): PulseRow[] {
+  current: boolean, board: LiveNflGame[] = []): PulseRow[] {
   const divisionOf = (franchise: string) =>
     seats.find(s => s.franchise === franchise)?.division ?? '';
   return results.games.map(game => {
     const decided = game.homePoints !== undefined && game.awayPoints !== undefined;
+    const play = current ? matchupPlay(results, game, board) : undefined;
     return { key: gameKey(game), game, mine: game.home === mine || game.away === mine,
       division: divisionOf(game.home), home: game.homePoints ?? game.homeProvisional,
       away: game.awayPoints ?? game.awayProvisional, decided,
       margin: decided ? Math.abs(game.homePoints! - game.awayPoints!) : undefined,
-      status: statusLabel(game, current, playing) };
+      status: statusLabel(game, current, play), play };
   });
 }
 

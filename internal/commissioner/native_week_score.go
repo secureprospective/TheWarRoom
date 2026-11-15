@@ -13,6 +13,8 @@ import (
 type Starter struct {
 	Player string `json:"player"`
 	Name   string `json:"name"`
+	// Team is the starter's NFL club as the league's player facts hold it; empty when unknown.
+	Team string `json:"team,omitempty"`
 }
 
 // WeekLineup is the lineup that counts for one franchise in one week. Set is false until a lineup exists.
@@ -34,8 +36,10 @@ type StarterScore struct {
 	FieldSources map[leaguerules.StatID]string `json:"fieldSources,omitempty"`
 	Player       string                        `json:"player"`
 	Name         string                        `json:"name"`
-	Position     leaguerules.Position          `json:"position,omitempty"`
-	Words        string                        `json:"words"`
+	// Team is the starter's NFL club (a public player fact), so a reader can tell whose game is on now.
+	Team     string               `json:"team,omitempty"`
+	Position leaguerules.Position `json:"position,omitempty"`
+	Words    string               `json:"words"`
 	// Line is what the starter recorded this week, by statistic.
 	Line   map[leaguerules.StatID]leaguerules.Decimal `json:"line,omitempty"`
 	Points *leaguerules.Decimal                       `json:"points,omitempty"`
@@ -252,7 +256,7 @@ func (out *FranchiseWeekScore) addStarters(ctx context.Context, records []Record
 		if err != nil {
 			return 0, running, fmt.Errorf("score %s: %w", name, err)
 		}
-		item := StarterScore{Player: starter.Player, Name: name, Words: score.Words, Position: score.Position, Source: score.Source, FieldSources: score.FieldSources,
+		item := StarterScore{Player: starter.Player, Name: name, Team: starter.Team, Words: score.Words, Position: score.Position, Source: score.Source, FieldSources: score.FieldSources,
 			Line: score.Line, Revision: score.Revision}
 		switch {
 		case score.Status == "Complete" && score.Points != nil:
