@@ -107,3 +107,18 @@ it('keeps a known epoch change hidden when its admission refresh fails', async (
   expect(owner.hostedSnapshot().blocked).toBe(true);
   expect(host.textContent).toBe('');
 });
+it('returns the owner to the same screen after a server restart remounts HostedLeague', async () => {
+  await change('connected', false, 'first');
+  await change('connected', false, 'second');
+  expect(host.textContent).toBe('');
+  await answer(response(view));
+  expect(owner.hostedSnapshot().blocked).toBe(false);
+  expect(endSession).toHaveBeenCalled();
+  expect(dom.button(host, 'Roster and reserves').getAttribute('aria-current')).toBe('true');
+});
+it('forgets the remembered screen when someone signs in or out at the window', () => {
+  owner.hostedScreens.remember('native.test:one:Owner:pulse', true);
+  expect(owner.hostedScreens.recall('native.test:one:Owner:pulse', false)).toBe(true);
+  owner.prepareHostedAction('forget');
+  expect(owner.hostedScreens.recall('native.test:one:Owner:pulse', false)).toBe(false);
+});

@@ -54,8 +54,17 @@ export function observeView(view: NativeView) {
   }
   notify();
 }
+// Which screen the owner is on survives a server restart's remount (the fence key changes) but not a
+// sign-in, sign-out or device change: those are a new person at the window as far as the app knows.
+const screens = new Map<string, unknown>();
+export const hostedScreens = {
+  recall: <T,>(key: string, initial: T): T => (screens.has(key) ? screens.get(key) as T : initial),
+  remember: (key: string, value: unknown) => { screens.set(key, value); },
+  forget: () => { screens.clear(); },
+};
 export function prepareHostedAction(action: string) {
   if (['login', 'enter', 'forget', 'revoke-device', 'revoke-all', 'recover'].includes(action)) {
+    screens.clear();
     suspend();
     notify();
   }

@@ -11,6 +11,7 @@ import { createHostedRoom, type HostedPort } from './hostedRoom';
 import type { NativeArguments, NativeRequest } from '../commands/native';
 import type { HostedResponse } from './api';
 import './hostedLeague.css';
+import { hostedScreens } from '../data/hostedReads';
 import { HostedWorkflows, type HostedTask } from './HostedWorkflows';
 
 type Tab = 'lineup' | 'roster' | 'draft' | 'rules' | HostedTask;
@@ -29,6 +30,12 @@ const bucketNames = { active: 'Active roster', ir: 'Injured reserve', taxi: 'Tax
 const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
 const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
+// A server restart remounts this tree behind the identity fence; the owner comes back to the same screen.
+// A changed role or franchise is a different view and starts fresh.
+function useRemembered<T>(key: string, initial: T): [T, (value: T) => void] {
+  const [value, set] = useState<T>(() => hostedScreens.recall(key, initial));
+  return [value, (next: T) => { hostedScreens.remember(key, next); set(next); }];
+}
 export default function HostedLeague(props: {
   league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
 }) {
@@ -39,10 +46,11 @@ export default function HostedLeague(props: {
 function HostedFranchise(props: {
   league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
 }) {
-  const [showWar, setWar] = useState(false);
-  const [showHQ, setHQ] = useState(props.hq ?? false);
-  const [showPulse, setPulse] = useState(false);
-  const [pulseTab, setPulseTab] = useState<'now' | 'race'>('now');
+  const place = `${props.league}:${props.franchise}:${props.role}`;
+  const [showWar, setWar] = useRemembered(`${place}:war`, false);
+  const [showHQ, setHQ] = useRemembered(`${place}:hq`, props.hq ?? false);
+  const [showPulse, setPulse] = useRemembered(`${place}:pulse`, false);
+  const [pulseTab, setPulseTab] = useRemembered<'now' | 'race'>(`${place}:pulseTab`, 'now');
   if (showPulse) return <Suspense fallback={<p>Opening League Pulse…</p>}>
     <NativeLeaguePulse league={props.league} mine={props.franchise} port={props.port} serverTime
       navigate={setPulseTab} back={() => setPulse(false)}
@@ -79,7 +87,7 @@ function HostedWorkRoom({
 }) {
   const room = useMemo(() => createHostedRoom(league, franchise, port), [league, franchise, port]);
   const state = room.use();
-  const [tab, setTab] = useState<Tab>('lineup');
+  const [tab, setTab] = useRemembered<Tab>(`${league}:${franchise}:${role}:tab`, 'lineup');
   const [week, setWeek] = useState(1);
   const [starters, setStarters] = useState<string[]>([]);
   const [player, setPlayer] = useState('');
