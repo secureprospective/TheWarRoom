@@ -35,7 +35,7 @@ type NativeWeek struct {
 // fantasy matchup or an inferred weekly Thursday.
 func FranchiseScheduleReading(league, franchise string, season int, records []Record,
 	weeks []leagueweek.Week, local *time.Location, at time.Time) (FranchiseSchedule, error) {
-	if len(records) == 0 || !leagueFranchise(records, franchise) {
+	if len(records) == 0 || (franchise != "" && !leagueFranchise(records, franchise)) {
 		return FranchiseSchedule{}, fmt.Errorf("choose a franchise in this app league")
 	}
 	if season < 1900 || season > 9999 || local == nil {
@@ -59,20 +59,28 @@ func FranchiseScheduleReading(league, franchise string, season int, records []Re
 		if err != nil {
 			return FranchiseSchedule{}, err
 		}
-		for _, nfl := range weeks {
-			if nfl.Number == week.Week && len(nfl.Games) != 0 {
-				kickoff := leagueweek.FirstLock(nfl).In(local)
-				game.Kickoff = &kickoff
-				break
-			}
-		}
+		game.Kickoff = scheduleWeekKickoff(week.Week, weeks, local)
 		reading.Games = append(reading.Games, game)
 	}
 	return reading, nil
 }
 
+func scheduleWeekKickoff(number int, weeks []leagueweek.Week, local *time.Location) *time.Time {
+	for _, week := range weeks {
+		if week.Number == number && len(week.Games) != 0 {
+			kickoff := leagueweek.FirstLock(week).In(local)
+			return &kickoff
+		}
+	}
+	return nil
+}
+
 func franchiseScheduleGame(week ScheduleWeek, franchise string) (FranchiseGame, error) {
 	game := FranchiseGame{Week: week.Week}
+	// League-only weeks carry dates, never a selected franchise or matchup.
+	if franchise == "" {
+		return game, nil
+	}
 	if week.Bye == franchise {
 		game.Venue = "Bye"
 		return game, nil

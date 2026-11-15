@@ -120,7 +120,7 @@ func (r RawWorkflowScope) pulseScope(command string) (RawWorkflowScope, bool, bo
 	switch command {
 	case "week.read":
 		kept.Franchise, kept.Season, kept.LocalZone, kept.At = r.Franchise, r.Season, r.LocalZone, r.At
-		return kept, r.Franchise != "" && r.Season >= 1900 && r.LocalZone != "", true
+		return kept, r.Season >= 1900 && r.LocalZone != "", true
 	case "projections.read":
 		kept.Players, kept.Season, kept.Week = r.Players, r.Season, r.Week
 		return kept, r.Players != "" && r.Season >= 1920 && r.Week > 0, true

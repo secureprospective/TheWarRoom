@@ -66,14 +66,7 @@ export async function readNativePulse(league: string, mine: string, port: Hosted
     } finally { publish?.({ ...result, errors: [...result.errors] }); }
   };
   publish?.({ ...result });
-  if (!mine && serverTime) await apply(async () => {
-    const r = await port({ command: 'schedule.read', mode: 'read', arguments: { league } });
-    const schedule = parsePulseSchedule(r.data, league);
-    result.lastWeek = schedule.weeks.reduce((high, w) => Math.max(high, w.week), 0);
-    result.week = schedule.weeks[0]?.week;
-    result.weekNote = 'League-wide view. Choose a week to read its results.';
-  });
-  else await apply(async () => {
+  await apply(async () => {
     const r = await port({ command: 'week.read', mode: 'read', arguments: { league, franchise: mine,
       season: held.season, localZone: zone, at: serverTime ? '' : new Date().toISOString() } });
     const week = parsePulseWeek(r.data, league, mine, held.season);

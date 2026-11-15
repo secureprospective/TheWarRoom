@@ -23,7 +23,7 @@ export function HostedCommissionerLeague({ league, port }: { league: string; por
     {state.error && <p role="alert">{state.error}</p>}
     {state.stale && <p role="status">Rules are read-only until refreshed from the league server.</p>}
     {state.message && <p role="status">{state.message}</p>}
-    {tab === 'pulse' && <p>League-wide results start with the first scheduled week. Use the week controls
+    {tab === 'pulse' && <p>League-wide results open on the current league week. Use the week controls
       to choose another week; no team is selected.</p>}
     {tab === 'pulse' && <Suspense fallback={<p>Opening League Pulse…</p>}>
       <NativeLeaguePulse league={league} mine="" port={port} serverTime tab={pulseTab}

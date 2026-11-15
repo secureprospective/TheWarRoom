@@ -45,6 +45,8 @@ function service(blockers: string[] = [], nowOnly = false) {
       case 'native.directory.read': data = { league, name: 'Test League', revision, rosterSeason: 2026,
         franchises: [{ franchise: 'a', name: 'Alpha', abbreviation: 'ALP' },
           { franchise: 'b', name: 'Beta', abbreviation: 'BET' }] }; break;
+      case 'week.read': data = { schedule: { league, franchise: '', season: 2026, revision,
+        games: [{ week: 1, venue: '' }] }, current: { week: 1, venue: '' } }; break;
       case 'schedule.read': data = { league, season: 2026, revision,
         weeks: [{ week: 1, games: [{ home: 'a', away: 'b' }] }] }; break;
       case 'results.read': data = { league, season: 2026, week: 1, revision,
@@ -258,8 +260,9 @@ it.each(['Commissioner', 'Co-commissioner'])(
     await click('Cancel change'); await click('Close rule editor');
     for (const [r] of port.mock.calls) {
       expect(['lineup.read', 'native.assets.read', 'native.reserve.check', 'draft.read',
-        'bids.read', 'waivers.read', 'trades.read', 'week.read']).not.toContain(r.command);
-      expect(r.arguments).not.toHaveProperty('franchise');
+        'bids.read', 'waivers.read', 'trades.read']).not.toContain(r.command);
+      if (r.command === 'week.read') expect(r.arguments).toMatchObject({ franchise: '', at: '' });
+      else expect(r.arguments).not.toHaveProperty('franchise');
     }
     expect(buttons('Set lineup')).toHaveLength(0);
     expect(buttons('Roster and reserves')).toHaveLength(0);
