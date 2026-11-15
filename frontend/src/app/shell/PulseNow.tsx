@@ -10,7 +10,8 @@ import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveCo
 import type { usePulseLive } from './hqLive';
 import { boxLine, compactLine } from './statLine';
 import { PulseDrawer } from './PulseDrawer';
-import { applyFilter, bySlot, changePoints, changeVerdict, filterCounts, groupRows, pairStarters, pulseRows,
+import { applyFilter, bySlot, espnTeam, playWords,
+  changePoints, changeVerdict, filterCounts, groupRows, pairStarters, pulseRows,
   scoreOf, starterRows, statChanges, PULSE_FILTERS, type PulseFilter, type PulseRow, type PulseStarterRow,
   type StarterPair, type StatChange }
   from './pulseModel';
@@ -35,9 +36,9 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
   const [filter, setFilter] = useState<PulseFilter>('all');
   const [picked, pick] = useState<string>();
   const current = week === reading.week;
-  // Only the week being played can be live, and only while an NFL game is actually under way.
-  const playing = Boolean(live.view?.games.some(g => g.status === 'in'));
-  const rows = results.reading ? pulseRows(results.reading, mine, reading.seats, current, playing) : [];
+  // Only the week being played can be live: a matchup is LIVE while one of its starters is on the field.
+  const rows = results.reading
+    ? pulseRows(results.reading, mine, reading.seats, current, live.view?.games ?? []) : [];
   const selected = rows.find(r => r.key === picked) ?? rows.find(r => r.mine) ?? rows[0];
   const sides = useStarterSides(reading, week, results.reading, selected, league, port, mine, viewer);
   const changes = statChanges(sides.left, sides.right);
@@ -89,7 +90,8 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
       </div>
       {followed ? <FollowedGame game={followed} /> : <>
         <div className="gh"><span className="src">Follow an NFL game to see its field.</span></div>
-        <div><PulseIdle words={playing ? 'Pick a live game above or under NFL GAMES.'
+        <div><PulseIdle words={games.some(g => g.status === 'in')
+          ? 'Pick a live game above or under NFL GAMES.'
           : 'The field, the drive and the down show while an NFL game is being played.'} /></div>
       </>}
       <div className="spine">
@@ -251,10 +253,6 @@ export function FollowedGame({ game }: { game: LiveNflGame }) {
 }
 function ordinal(n: number) { return `${n}${['th', 'st', 'nd', 'rd'][n] ?? 'th'}`; }
 
-/** League team codes and ESPN's differ for a few clubs; both name the same NFL team. */
-const ESPN_TEAM: Record<string, string> = { JAC: 'JAX', WAS: 'WSH', GBP: 'GB', KCC: 'KC', NEP: 'NE',
-  NOS: 'NO', SFO: 'SF', TBB: 'TB', LVR: 'LV', OAK: 'LV', SDC: 'LAC', STL: 'LAR' };
-export function espnTeam(team?: string) { return team ? ESPN_TEAM[team] ?? team : ''; }
 
 export function InThisGame({ followed, sides, row }: { followed?: LiveNflGame; sides: StarterSides;
   row?: PulseRow }) {
@@ -343,8 +341,8 @@ function GameRow({ row, selected, onPick, homeWin }: { row: PulseRow; selected: 
       <span>{row.game.homeName}</span><b>{pointsLabel(row.home)}</b>
     </div>
     <div className="side">
-      <span className={`st${row.status === 'LIVE' ? ' live' : row.status === 'FINAL' ? ' fin' : ''}`}>
-        {row.status}</span>
+      <span className={`st${row.status === 'LIVE' ? ' live' : row.status === 'FINAL' || row.status === 'DONE'
+        ? ' fin' : ''}`} title={playWords(row)}>{row.status}</span>
       <span className="src">{chance !== undefined ? percent(chance)
         : row.margin === undefined ? '' : `by ${row.margin.toFixed(1)}`}</span>
     </div>

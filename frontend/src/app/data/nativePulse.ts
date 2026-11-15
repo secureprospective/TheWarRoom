@@ -16,6 +16,8 @@ export function pointsLabel(value: number | undefined): string {
 }
 
 export type PulseStarter = { player: string; name: string; position?: string; words: string;
+  /** The starter's NFL club (league code), so the matchup badge can tell whose game is on. */
+  team?: string;
   /** What the starter recorded this week, by league stat id, in whole units. */
   line?: Record<string, number>;
   revision?: PulseRevision;
@@ -71,9 +73,10 @@ function parseRevision(value: unknown, path: string): PulseRevision | undefined 
 }
 function parseStarters(value: unknown): PulseStarter[] {
   return array(value, 'Starters', (v, p) => {
-    const s = object(v, p, ['player', 'name', 'position', 'words', 'line', 'revision', 'points',
+    const s = object(v, p, ['player', 'name', 'team', 'position', 'words', 'line', 'revision', 'points',
       'provisional', 'source', 'fieldSources']);
     return { player: text(s.player, p), name: text(s.name, p),
+      team: s.team === undefined ? undefined : text(s.team, p),
       position: s.position === undefined ? undefined : text(s.position, p),
       words: text(s.words, p), line: parseLine(s.line, p), revision: parseRevision(s.revision, p),
       points: optionalPoints(s.points, p),

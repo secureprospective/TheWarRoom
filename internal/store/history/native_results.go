@@ -77,6 +77,9 @@ func (n *nativeSources) Lineup(ctx context.Context, records []commissioner.Recor
 		if starter.Name == "" {
 			lineup.Starters[i].Name = n.facts[starter.Player].Name
 		}
+		if starter.Team == "" {
+			lineup.Starters[i].Team = n.facts[starter.Player].Team
+		}
 	}
 	return lineup, nil
 }

@@ -571,3 +571,21 @@ func TestVacantCaretakerSetsLineupButCannotProxyAnOwner(t *testing.T) {
 		t.Fatal("refused caretaker changed ledger")
 	}
 }
+
+// Each starter in a week score names its NFL club (a public player fact), so a reader can tell whose game is
+// on now: League Pulse's matchup badge is LIVE only while a starter is on the field.
+func TestWeekScoreStartersNameTheirNFLClub(t *testing.T) {
+	t.Parallel()
+	f := lineupTest(t)
+	f.mustSet(t, f.a, f.legal(f.a))
+	records := mustRecords(t, f.s)
+	lineup, err := f.s.nativeSources("native.test", 2026).Lineup(t.Context(), records, f.a, 1)
+	if err != nil || len(lineup.Starters) != 21 {
+		t.Fatalf("lineup: %v, %d starters", err, len(lineup.Starters))
+	}
+	for _, starter := range lineup.Starters {
+		if want := f.env.facts[starter.Player].Team; starter.Team != want || want == "" {
+			t.Fatalf("starter %s names club %q, the facts hold %q", starter.Player, starter.Team, want)
+		}
+	}
+}
