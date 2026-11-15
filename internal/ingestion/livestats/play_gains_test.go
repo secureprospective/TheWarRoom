@@ -41,3 +41,25 @@ func TestLongGainsReconcileWithTheBox(t *testing.T) {
 		t.Fatal("unreconciled catches became distances")
 	}
 }
+
+// Week 10 2026 play text: carries after eligibility and direct-snap sentences or two bracketed notes are
+// still carries, and a play wiped out by offsetting penalties is not a catch (the box leaves it out).
+func TestLongGainsReadAnnouncedCarriesAndSkipOffsettingPlays(t *testing.T) {
+	kiner := gainLine("Corey Kiner", "NE", map[leaguerules.StatID]leaguerules.Decimal{"rushing_attempt": 30000, "rushing_yards": 90000})
+	williams := gainLine("Isaiah Williams", "NYJ", map[leaguerules.StatID]leaguerules.Decimal{"reception": 10000, "receiving_yards": 130000})
+	lines := map[string]*Line{"1": kiner, "2": williams}
+	game := livegame.Game{Plays: []livegame.Play{
+		{Text: "C.Lomu reported in as eligible.  C.Kiner right tackle to NE 49 for 4 yards (M.Rodriguez; B.Branch)."},
+		{Text: "Direct snap to C.Kiner.  C.Kiner up the middle to NE 38 for 2 yards (D.Williams)."},
+		{Text: "(1:43) (No Huddle, Shotgun) C.Kiner left end to NE 41 for 3 yards (A.Hooker)."},
+		{Text: "(1:43) (No Huddle, Shotgun) G.Smith pass short right to I.Williams to BUF 24 for 45 yards (A.Hooker).\nPenalty on NYJ-M.Taylor, Offensive Pass Interference, offsetting, enforced at NYJ 31."},
+		{Text: "(Shotgun) G.Smith pass short left to I.Williams to NYJ 44 for 13 yards (C.Bishop)."},
+	}}
+	attachLongGains(game, lines)
+	if got := kiner.Stats.Events["long_rush"]; !slices.Equal(got, []leaguerules.Decimal{40000, 20000, 30000}) {
+		t.Fatalf("announced carries: %v", got)
+	}
+	if got := williams.Stats.Events["long_reception"]; !slices.Equal(got, []leaguerules.Decimal{130000}) {
+		t.Fatalf("offsetting catch: %v", got)
+	}
+}
