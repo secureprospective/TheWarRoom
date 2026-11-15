@@ -47,8 +47,8 @@ func regularSeasonOpen(s NativeStandings, rules leaguerules.RuleSet) string {
 	switch {
 	case s.Status != "Ranked":
 		return "The playoffs can't be set yet: " + s.Words
-	case s.Through < rules.Schedule.RegularWeeks.Value:
-		return fmt.Sprintf("The regular season isn't over: the schedule covers only %d of %d weeks", s.Through,
+	case s.scheduledWeeks < rules.Schedule.RegularWeeks.Value:
+		return fmt.Sprintf("The regular season isn't over: the schedule covers only %d of %d weeks", s.scheduledWeeks,
 			rules.Schedule.RegularWeeks.Value)
 	case s.Pending > 0:
 		return fmt.Sprintf("The regular season isn't over: %d of its games still have no result", s.Pending)

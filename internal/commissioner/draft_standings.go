@@ -112,9 +112,9 @@ func standingsWaiting(s NativeStandings) string {
 	case s.Pending > 0:
 		return fmt.Sprintf("The draft order needs the final standings of season %d, but %d of its games "+
 			"still have no result.", s.Season, s.Pending)
-	case s.regularWeeks > 0 && s.Through < s.regularWeeks:
+	case s.regularWeeks > 0 && s.scheduledWeeks < s.regularWeeks:
 		return fmt.Sprintf("The draft order needs the final standings of season %d, but its schedule covers "+
-			"only %d of %d regular-season weeks.", s.Season, s.Through, s.regularWeeks)
+			"only %d of %d regular-season weeks.", s.Season, s.scheduledWeeks, s.regularWeeks)
 	}
 	return ""
 }
