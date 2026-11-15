@@ -101,10 +101,12 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held LiveS
 	}
 	lines, acquired := liveStatLines(ctx, adapter, games, invertIDs(espn), &p.finals, at)
 	p.reportLines(season, week, len(lines), len(games), len(espn))
-	sleeperAcquired := fillLiveSleeper(ctx, run, held, games, lines)
 	if run.RequireComplete && !acquired {
-		return liveStatsIdle
+		// Nothing partial is held, and a game that failed to read is retried at the board's own
+		// cadence: one bad summary must not hold every game's scores back for the idle interval.
+		return delay
 	}
+	sleeperAcquired := fillLiveSleeper(ctx, run, held, games, lines)
 	if acquired || sleeperAcquired {
 		if err := held.SetLiveStats(ctx, season, week, at, livestats.Authority,
 			livestats.Pending(), lines); err != nil {
