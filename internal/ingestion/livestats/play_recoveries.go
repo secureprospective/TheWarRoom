@@ -95,17 +95,10 @@ func collectRecoveries(game livegame.Game, lines map[string]*Line) (own, opponen
 // punts are left out: the start's possession is the kicking team, not the one that lost the ball.
 func scrimmageFumble(game livegame.Game, play livegame.Play, text string) (string, bool) {
 	lower := strings.ToLower(text)
-	if !strings.Contains(lower, "fumbles") || strings.Contains(lower, "no play") || strings.Contains(lower, "nullified") ||
-		strings.Contains(lower, "punts") || strings.Contains(lower, "kicks") || play.Start == nil {
+	if !strings.Contains(lower, "fumbles") || voided(lower) || strings.Contains(lower, "punts") || strings.Contains(lower, "kicks") {
 		return "", false
 	}
-	switch play.Start.Possession {
-	case game.Home.ID:
-		return game.Home.Abbreviation, true
-	case game.Away.ID:
-		return game.Away.Abbreviation, true
-	}
-	return "", false
+	return offense(game, play)
 }
 
 // playTeam turns the NFL's play-text team codes into ESPN's abbreviations; the rest already agree.

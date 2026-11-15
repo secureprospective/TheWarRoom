@@ -92,17 +92,20 @@ func TestLiveKickingDistancesReconcileWithBox(t *testing.T) {
 
 func TestLiveReturnAndRecoveryTouchdownsStayDistinct(t *testing.T) {
 	for _, tc := range []struct {
-		category, text, possession string
-		stat                       leaguerules.StatID
+		team, category, text, possession string
+		stat                             leaguerules.StatID
 	}{
-		{"kickReturns", "", "", "kickoff_return_td"},
-		{"puntReturns", "", "", "punt_return_td"},
-		{"interceptions", "", "", "interception_return_td"},
-		{"rushing", "FUMBLES, RECOVERED by DET-J.Gibbs at ARZ 0. TOUCHDOWN.", "1", "offensive_fumble_recovery_td"},
-		{"defensive", "FUMBLES, RECOVERED by DET-J.Gibbs at ARZ 0. TOUCHDOWN.", "2", "fumble_recovery_tds"},
+		{"DET", "kickReturns", "", "", "kickoff_return_td"},
+		{"DET", "puntReturns", "", "", "punt_return_td"},
+		{"DET", "interceptions", "", "", "interception_return_td"},
+		{"DET", "rushing", "FUMBLES, RECOVERED by DET-J.Gibbs at ARZ 0. TOUCHDOWN.", "1", "offensive_fumble_recovery_td"},
+		{"DET", "defensive", "FUMBLES, RECOVERED by DET-J.Gibbs at ARZ 0. TOUCHDOWN.", "2", "fumble_recovery_tds"},
+		// Play text writes some teams with the NFL's own codes; the box uses ESPN's (ARZ is ARI).
+		{"ARI", "defensive", "FUMBLES, RECOVERED by ARZ-J.Gibbs at DET 0. TOUCHDOWN.", "1", "fumble_recovery_tds"},
+		{"ARI", "rushing", "FUMBLES, RECOVERED by ARZ-J.Gibbs at DET 0. TOUCHDOWN.", "2", "offensive_fumble_recovery_td"},
 	} {
-		t.Run(string(tc.stat), func(t *testing.T) {
-			game := livegame.Game{Home: livegame.Team{ID: "1", Abbreviation: "DET"}, Away: livegame.Team{ID: "2", Abbreviation: "ARZ"}, Box: []livegame.Box{{Team: "DET", Category: tc.category, Labels: []string{"TD"}, Rows: []livegame.BoxRow{{ID: "1", Name: "Jahmyr Gibbs", Stats: []string{"1"}}}}}}
+		t.Run(tc.team+" "+string(tc.stat), func(t *testing.T) {
+			game := livegame.Game{Home: livegame.Team{ID: "1", Abbreviation: "DET"}, Away: livegame.Team{ID: "2", Abbreviation: "ARI"}, Box: []livegame.Box{{Team: tc.team, Category: tc.category, Labels: []string{"TD"}, Rows: []livegame.BoxRow{{ID: "1", Name: "Jahmyr Gibbs", Stats: []string{"1"}}}}}}
 			if tc.text != "" {
 				game.Plays = []livegame.Play{{Text: tc.text, Start: &livegame.State{Possession: tc.possession}}}
 			}
