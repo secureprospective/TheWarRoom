@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
@@ -123,7 +124,7 @@ func (v nowView) recap(g leaguefeed.Game) string {
 	for _, s := range []leaguefeed.Side{win, lose} {
 		if p, ok := v.topStarter(s); ok {
 			name, pos := v.player(p.ID)
-			parts = append(parts, fmt.Sprintf("%s top starter was %s (%s) with %s.", Possessive(v.name(s.Franchise)), name, pos,
+			parts = append(parts, fmt.Sprintf("%s top starter was %s (%s) with %s.", commissioner.Possessive(v.name(s.Franchise)), name, pos,
 				scoreText(p.Points)))
 		}
 	}
@@ -277,10 +278,5 @@ func signedText(p leaguefeed.Points) string {
 	return scoreText(p)
 }
 
-// Possessive is a franchise name's Possessive: "Buffalo Bills'", "Miami Heat's".
-func Possessive(name string) string {
-	if strings.HasSuffix(name, "s") {
-		return name + "'"
-	}
-	return name + "'s"
-}
+// Possessive is a franchise name's possessive; the league's own words own the rule.
+func Possessive(name string) string { return commissioner.Possessive(name) }

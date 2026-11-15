@@ -171,7 +171,7 @@ func lineupWords(l NativeLineup, franchise string) string {
 	case l.Corrected:
 		return fmt.Sprintf("A commissioner set %s's week %d lineup (%s). %s.", franchise, l.Week, l.Reason, l.Verdict.Words)
 	}
-	return fmt.Sprintf("%s's week %d lineup is set. %s.", franchise, l.Week, l.Verdict.Words)
+	return fmt.Sprintf("%s week %d lineup is set. %s.", Possessive(franchise), l.Week, l.Verdict.Words)
 }
 
 func authorizeLineupReading(league, principal, owner string, corrected bool, records []Record) error {

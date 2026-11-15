@@ -44,7 +44,7 @@ func (s *Store) SetNativeLineups(lineups LineupSource) {
 // proposed change in it is a different ledger and resolves for itself. The season's held weekly files are
 // read once for the reading, not once per starter.
 type nativeSources struct {
-	overlay *LiveGeneration
+	overlay LiveView
 	store   *Store
 	league  string
 	season  int
@@ -158,7 +158,7 @@ func (s *Store) readNativeResults(ctx context.Context, league string, season, we
 		return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
 	}
 	commissioner.RecordedStarters(ctx, records, src, &out)
-	out.Evidence = src.scoreEvidence()
+	out.Evidence = src.scoreEvidence(season, week)
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }
@@ -186,7 +186,7 @@ func (s *Store) readNativeStandings(ctx context.Context, league string, season i
 	if err != nil {
 		return commissioner.NativeStandings{}, fmt.Errorf("read native standings: %w", err)
 	}
-	out.Evidence = src.scoreEvidence()
+	out.Evidence = src.scoreEvidence(season, 0)
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }
@@ -303,7 +303,7 @@ func (s *Store) readNativeOdds(ctx context.Context, league string, season int, v
 	if err != nil {
 		return commissioner.NativeOdds{}, fmt.Errorf("read native odds: %w", err)
 	}
-	out.Evidence = src.scoreEvidence()
+	out.Evidence = src.scoreEvidence(season, 0)
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }

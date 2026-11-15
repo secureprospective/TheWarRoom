@@ -52,8 +52,10 @@ type LiveStatsRun struct {
 	Network         http.RoundTripper // nil is http.DefaultTransport
 	Season          int
 	Week            func() int
-	Board           func(int, livegame.Held) // publishes the validated scoreboard; may be nil
-	Changed         func(context.Context)    // the moves signal; may be nil
+	// Scoreboard reads one named week's board instead of the current one (a finished week); empty is current.
+	Scoreboard string
+	Board      func(int, livegame.Held) // publishes the validated scoreboard; may be nil
+	Changed    func(context.Context)    // the moves signal; may be nil
 }
 
 // Poll reads the board once, holds any live lines, and says how long to wait before the next poll.
@@ -74,6 +76,9 @@ func (p *LiveStatsPoller) poll(ctx context.Context, run LiveStatsRun, held LiveS
 	if err != nil {
 		log.Printf("live stats: %v", err)
 		return liveStatsIdle
+	}
+	if run.Scoreboard != "" {
+		endpoints.ESPN = run.Scoreboard
 	}
 	fetch := livegame.HTTPFetch(run.httpClient(), endpoints)
 	adapter := livegame.Adapter{Fetch: fetch}

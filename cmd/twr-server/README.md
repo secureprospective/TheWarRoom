@@ -327,6 +327,17 @@ keeps the previous readable generation/checkpoint. Feed outages can retain prior
 original timestamps and mark the snapshot reduced; unrecoverable acquisition or durability failure leaves
 the last good generation readable. Decoded legacy chronology is neither populated nor rewritten by this path.
 
+**Finished weeks:** the pinned football evidence carries no statistics, so a week's results exist only
+while live scores hold that week. The collector therefore also holds the week before the board's week:
+it reads that week's ESPN board (`?seasontype=2&week=N&dates=S`), summaries and Sleeper week through the
+same acquisition, only once every game on it is final, into `live-scores/finished-SSSS-WW.json`, and
+publishes it beside the current week (`LiveOverlay.PublishClosed`). It is read when missing and reread
+every 6 hours until the current week's first kickoff (stat corrections), never more often than every
+5 minutes. Restart replays every `finished-*.json` without the network. A finished week's scores stay
+provisional (not official nflverse finals) but never read stale. Each week's cached scores are keyed to
+that week's own generation, so a current-week tick no longer clears finished weeks' cached scores. A
+server started mid-season holds only the week before the current one; earlier weeks need their own read.
+
 **Score notifications:** hosted startup passes the server's one shared `serverhttp.Publisher` to the
 collector. After each new live generation is readable, `PublishScores` bumps that week's `scores` topic
 for every league, so open change streams hear about it. No second topic owner exists here.
