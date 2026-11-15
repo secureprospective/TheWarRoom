@@ -556,3 +556,25 @@ func TestLiveCollectorBoardAheadOfSummary(t *testing.T) {
 		}
 	}
 }
+
+// Noon 2026-11-15: no game was "in" at 12:02, so a five-minute idle wait left kickoff unseen until 12:07.
+func TestHostedLiveIntervalWaitsNoLongerThanTheNextKickoff(t *testing.T) {
+	noon := time.Date(2026, 11, 15, 18, 0, 0, 0, time.UTC)
+	pre := func(kickoff time.Time) livegame.Game { return livegame.Game{Status: "pre", Kickoff: kickoff} }
+	for _, tc := range []struct {
+		name  string
+		at    time.Time
+		games []livegame.Game
+		want  time.Duration
+	}{
+		{"far from kickoff", noon.Add(-time.Hour), []livegame.Game{pre(noon)}, 5 * time.Minute},
+		{"kickoff in two minutes", noon.Add(-2 * time.Minute), []livegame.Game{pre(noon)}, 2 * time.Minute},
+		{"past kickoff, not started", noon.Add(2 * time.Minute), []livegame.Game{pre(noon)}, 5 * time.Second},
+		{"game on", noon, []livegame.Game{{Status: "in"}, pre(noon.Add(3 * time.Hour))}, 5 * time.Second},
+		{"all final", noon, []livegame.Game{{Status: "post", Kickoff: noon.Add(-3 * time.Hour)}}, 5 * time.Minute},
+	} {
+		if got := hostedLiveInterval(tc.games, tc.at); got != tc.want {
+			t.Errorf("%s: %s, want %s", tc.name, got, tc.want)
+		}
+	}
+}

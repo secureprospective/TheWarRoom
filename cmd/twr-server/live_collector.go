@@ -215,18 +215,29 @@ func (c *liveCollector) logTick(started time.Time, previous string) func() {
 }
 
 func (c *liveCollector) interval(games []livegame.Game) time.Duration {
-	delay := hostedLiveInterval(games)
+	delay := hostedLiveInterval(games, time.Now())
 	if delay == 5*time.Second && c.packets.boardInterval > delay {
 		return c.packets.boardInterval
 	}
 	return delay
 }
 
-func hostedLiveInterval(games []livegame.Game) time.Duration {
+// hostedLiveInterval polls every five seconds while a game is on. An idle board waits no longer than the next
+// kickoff, and a game past its kickoff but not yet started on ESPN is polled as live, so the first snap is
+// never up to an idle wait late.
+func hostedLiveInterval(games []livegame.Game, at time.Time) time.Duration {
+	const busy = 5 * time.Second
 	if now.LiveStatsInterval(games) == time.Minute {
-		return 5 * time.Second
+		return busy
 	}
-	return now.LiveStatsInterval(games)
+	delay := now.LiveStatsInterval(games)
+	for _, game := range games {
+		if game.Status != "pre" || game.Kickoff.IsZero() {
+			continue
+		}
+		delay = min(delay, max(game.Kickoff.Sub(at), busy))
+	}
+	return delay
 }
 
 // holdBoard keeps the parsed scoreboard for nfl.games.read, stamped with the packet's read time.
