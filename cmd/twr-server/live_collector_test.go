@@ -19,6 +19,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livestats"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -264,5 +265,20 @@ func TestLiveCollectorMovesTheHostedScoresTopic(t *testing.T) {
 	topics := shared.Versions("", "native.test").Topics
 	if len(topics) != 1 || topics[0].Kind != "scores" || topics[0].Season != 2026 || topics[0].Week != 9 || topics[0].Version == "0" {
 		t.Fatalf("scores topic not published: %+v", topics)
+	}
+}
+
+func TestLiveCollectorHoldsTheParsedScoreboardForNFLGames(t *testing.T) {
+	collector, _ := replayCollector(t, liveReplayCheckpoint(t))
+	collector.games = leagueservice.NewLiveGames()
+	collector.poll(t.Context())
+	board := collector.games.Board()
+	if len(board.Games) == 0 || board.Source != "ESPN" || board.At.IsZero() {
+		t.Fatalf("scoreboard not held: %d games, source %q, at %v", len(board.Games), board.Source, board.At)
+	}
+	for _, game := range board.Games {
+		if game.ID == "" || game.Home.Abbreviation == "" || game.Away.Abbreviation == "" {
+			t.Fatalf("held game lacks its teams: %+v", game)
+		}
 	}
 }

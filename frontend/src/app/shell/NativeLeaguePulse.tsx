@@ -12,7 +12,7 @@ import { PulseRace, type RaceDrawer } from './PulseRace';
 import { PulseInspector } from './PulseInspector';
 import { ScheduleDrawer } from './PulseSchedule';
 import { usePulseLive } from './hqLive';
-import type { LiveView } from '../now/liveContract';
+import { parseHostedGames, type LiveView } from '../now/liveContract';
 import './pulse.css';
 
 export type PulseTab = 'now' | 'race';
@@ -47,8 +47,35 @@ function HostedPulse(scope: PulseScope & { tab?: PulseTab }) {
     return () => { off(); clearTimeout(timer); };
   }, [changes, scope.league]);
   return <PulseChanges.Provider value={changes}>
-    <PulseBody {...scope} refresh={changes.refresh} live={{ view: undefined, error: '', follow: () => {} }} />
+    <HostedBody scope={scope} changes={changes} />
   </PulseChanges.Provider>;
+}
+
+/** HostedBody reads the server's NFL scoreboard alongside the league reads and rereads it on every
+ *  Pulse refresh, so a scores topic moves the games list with the matchups. */
+function HostedBody({ scope, changes }: { scope: PulseScope & { tab?: PulseTab };
+  changes: { onChange: (load: () => void) => () => void; refresh: () => void } }) {
+  const live = useHostedGames(scope.league, scope.port ?? hostedWorkflow, changes.onChange);
+  return <PulseBody {...scope} refresh={changes.refresh} live={live} />;
+}
+
+export function useHostedGames(league: string, port: NonNullable<PulseScope['port']>,
+  onChange: (load: () => void) => () => void): ReturnType<typeof usePulseLive> {
+  const [held, setHeld] = useState<{ view?: LiveView; error: string }>({ error: '' });
+  useEffect(() => {
+    let live = true;
+    const load = () => {
+      port({ command: 'nfl.games.read', mode: 'read', arguments: { league } })
+        .then(r => { if (live) setHeld({ view: parseHostedGames(r.data, league), error: '' }); })
+        .catch((e: unknown) => {
+          if (live) setHeld(prior => ({ view: prior.view, error: e instanceof Error ? e.message : String(e) }));
+        });
+    };
+    load();
+    const off = onChange(load);
+    return () => { live = false; off(); };
+  }, [league, port, onChange]);
+  return { view: held.view, error: held.error, follow: () => {} };
 }
 
 function PulseBody(scope: PulseScope & { tab?: PulseTab; live: ReturnType<typeof usePulseLive>;
@@ -165,8 +192,7 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live, hos
         : <>
           <span><b>{decided}</b> with a result</span>
           <span><b>{waiting}</b> still to come</span>
-          <span className="src">{hosted ? 'Live NFL games are coming next.'
-            : nflClockSummary(undefined, live.error)}</span>
+          <span className="src">{nflClockSummary(live.view, live.error)}</span>
         </>}
     </div>
     <div className="fresh">

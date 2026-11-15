@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -34,9 +35,11 @@ type liveCollector struct {
 	packets    *livePackets
 	path       string
 	publisher  scoresPublisher
-	poller     now.LiveStatsPoller
-	published  bool
-	restoring  bool
+	// games holds the latest parsed scoreboard for nfl.games.read; nil keeps it unset.
+	games     *leagueservice.LiveGames
+	poller    now.LiveStatsPoller
+	published bool
+	restoring bool
 }
 
 func (c *liveCollector) SourceIDs(ctx context.Context, kind string) (map[string]string, error) {
@@ -144,12 +147,21 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 		return 5 * time.Minute
 	}
 	packet := c.packets.held.Packets[endpoints.ESPN]
+	c.holdBoard(games, packet.At)
 	if c.packets.held.Season != season || c.packets.held.Week != week {
 		c.packets.held = rawLiveCheckpoint{Version: 1, Season: season, Week: week, Packets: map[string]rawLivePacket{endpoints.ESPN: packet}, IDs: map[string]map[string]string{}}
 	}
 	c.packets.prefetched = &packet
 	c.poller.Poll(look, now.LiveStatsRun{Evidence: c, RequireComplete: true, Network: c.packets, Season: season, Week: func() int { return week }})
 	return now.LiveStatsInterval(games)
+}
+
+// holdBoard keeps the parsed scoreboard for nfl.games.read, stamped with the packet's read time.
+func (c *liveCollector) holdBoard(games []livegame.Game, at time.Time) {
+	if at.IsZero() {
+		at = time.Now()
+	}
+	c.games.Set(games, at, "ESPN")
 }
 
 func (c *liveCollector) restore(ctx context.Context) error {
@@ -171,7 +183,7 @@ func (c *liveCollector) restore(ctx context.Context) error {
 	return nil
 }
 
-func startHostedLive(ctx context.Context, pins *leaguePins, root string, publisher scoresPublisher) func() {
+func startHostedLive(ctx context.Context, pins *leaguePins, root string, publisher scoresPublisher, games *leagueservice.LiveGames) func() {
 	scope, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
@@ -181,7 +193,7 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 			log.Printf("server live: %v", err)
 			return
 		}
-		c := &liveCollector{pins: pins, identities: pins.files.family.Over(pins.files.reference), path: filepath.Join(directory, "checkpoint.json"), publisher: publisher,
+		c := &liveCollector{pins: pins, identities: pins.files.family.Over(pins.files.reference), path: filepath.Join(directory, "checkpoint.json"), publisher: publisher, games: games,
 			packets: &livePackets{network: http.DefaultTransport, held: rawLiveCheckpoint{Version: 1, Packets: map[string]rawLivePacket{}, IDs: map[string]map[string]string{}}}}
 		if publisher == nil {
 			log.Print("server live: no scores publisher; change streams will not hear about live scores")

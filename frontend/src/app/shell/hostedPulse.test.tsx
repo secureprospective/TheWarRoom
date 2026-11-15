@@ -12,12 +12,18 @@ import { heldSnapshot } from '../data/lineupTestData';
 import { hqEvents } from './hqReads';
 import * as hostedReads from '../data/hostedReads';
 import type { ReadTopic } from '../data/session';
+import { parseHostedGames } from '../now/liveContract';
 
 const common = { league: 'test', season: 2026, revision: 1, name: 'Test League', words: 'Published' };
 const teams = [{ franchise: 'a', name: 'Alpha', abbreviation: 'ALP' },
   { franchise: 'b', name: 'Beta', abbreviation: 'BET' }];
 const game = { week: 1, home: 'a', away: 'b', homeName: 'Alpha', awayName: 'Beta',
   status: 'No result yet', words: 'Alpha vs Beta', why: [] };
+const nflGame = { season: 2026, week: 1, seasonType: 2, id: '401', kickoff: '2026-11-15T18:00:00Z',
+  home: { id: '12', abbreviation: 'KC', score: 14 }, away: { id: '2', abbreviation: 'BUF', score: 10 },
+  status: 'in', clock: '5:12', period: 2, state: null, last: null, box: [], plays: [] };
+const board = (stale = false) => ({ league: 'test', board: { stale, source: 'ESPN',
+  at: '2026-11-15T18:00:00Z', failure: '', games: [nflGame] } });
 function fakePort() {
   return vi.fn<HostedPort>(async request => {
     const args = request.arguments;
@@ -56,6 +62,7 @@ function fakePort() {
       case 'lineup.read':
         data = { ...common, franchise: 'franchise' in args ? args.franchise : '', week: 1,
           starters: [{ player: '0001', team: 'DAL', locked: true }] }; break;
+      case 'nfl.games.read': data = board(); break;
       case 'projections.read': data = { league: 'test', season: 2026, week: 1, players: [] }; break;
       default: throw new Error(`Unexpected read ${request.command}`);
     }
@@ -91,18 +98,21 @@ it('opens hosted Now, refreshes each active read once, shows Race and returns', 
   await click('League Pulse');
   expect(host.textContent).toContain('Starter 2');
   expect(host.textContent).toContain('20.0');
-  expect(host.textContent).toContain('Live NFL games are coming next.');
+  expect(host.textContent).not.toContain('coming next');
+  expect(host.textContent).toContain('NFL live');
   expect(host.textContent).toContain('Scores follow the league server as it publishes them');
   expect(host.textContent).not.toContain('unavailable');
   expect(count(port, 'lineup.read')).toBe(1);
   const commands = ['native.directory.read', 'week.read', 'standings.read', 'bracket.read',
-    'odds.read', 'results.read', 'lineup.read', 'projections.read'];
+    'odds.read', 'results.read', 'lineup.read', 'projections.read', 'nfl.games.read'];
   const before = commands.map(c => count(port, c));
   await click('Refresh');
   expect(commands.map(c => count(port, c))).toEqual(before.map(n => n + 1));
   for (const [r] of port.mock.calls) if (r.command === 'week.read') expect(r.arguments.at).toBe('');
   await click('NFL GAMES');
   expect(host.textContent).not.toContain('Reading the NFL scoreboard');
+  expect(host.textContent).toContain('BUF');
+  expect(host.textContent).toContain('KC');
   await click('Race');
   expect(host.textContent).toContain('STANDINGS');
   expect(host.textContent).toContain('0–0');
@@ -207,6 +217,20 @@ it('retains local NFL polling, local change subscriptions and client-time week r
   const week = port.mock.calls.map(([r]) => r).find(r => r.command === 'week.read');
   expect(week?.arguments).toMatchObject({ at: expect.stringMatching(/^\d{4}-\d\d-\d\dT.*Z$/) });
   expect(host.textContent).not.toContain('Live NFL games are coming next.');
+  expect(count(port, 'nfl.games.read')).toBe(0);
+});
+
+it('reads the hosted NFL board for its own league only and labels held boards', () => {
+  const view = parseHostedGames(board(), 'test');
+  expect(view.games.map(g => g.id)).toEqual(['401']);
+  expect(view.followed).toBeNull();
+  expect(view.source).toBe('ESPN · provisional');
+  expect(parseHostedGames(board(true), 'test').source).toBe('Held ESPN · provisional');
+  expect(() => parseHostedGames(board(), 'other')).toThrow(/another league/);
+  const empty = parseHostedGames({ league: 'test', board: { stale: false, source: '',
+    at: '0001-01-01T00:00:00Z', failure: '', games: [] } }, 'test');
+  expect(empty.games).toEqual([]);
+  expect(empty.source).toMatch(/not read the NFL scoreboard yet/);
 });
 
 it('rereads open hosted Pulse once per burst of its league topics and ignores other leagues', async () => {
