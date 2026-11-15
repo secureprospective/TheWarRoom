@@ -22,6 +22,10 @@ import (
 
 const DesktopPath = "/desktop/native"
 
+// desktopReplyLimit bounds one league-server reply held in memory. A real 32-team league's
+// league-wide reads (players, rosters) run near 2 MB; 16 MiB leaves room and still stops a runaway reply.
+const desktopReplyLimit = 16 << 20
+
 // Desktop owns device credentials outside the webview. The webview receives neither the bearer nor
 // the recent-auth proof. Its origin and league are fixed before the window opens.
 type Desktop struct {
@@ -349,8 +353,8 @@ func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopS
 		unauthorized := response.StatusCode == http.StatusUnauthorized
 		return nil, unauthorized, desktopRefusal(path, response.StatusCode)
 	}
-	body, err = io.ReadAll(io.LimitReader(response.Body, (256<<10)+1))
-	if err != nil || len(body) > 256<<10 || response.Header.Get("Content-Type") != "application/json" {
+	body, err = io.ReadAll(io.LimitReader(response.Body, desktopReplyLimit+1))
+	if err != nil || len(body) > desktopReplyLimit || response.Header.Get("Content-Type") != "application/json" {
 		return nil, false, fmt.Errorf("native server returned an unreadable response; try again")
 	}
 	return body, false, nil
