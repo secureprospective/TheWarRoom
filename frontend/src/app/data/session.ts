@@ -19,6 +19,7 @@ export type PublicStorage = {
   get: (key: string) => Promise<string | undefined>;
   put: (key: string, value: string) => Promise<void>;
   remove: (key: string) => Promise<void>;
+  retainScope?: (serverId: string, league: string) => Promise<void>;
 };
 type ReadSpec<T> = Retention & {
   dependencies: Dependency[];
@@ -66,7 +67,7 @@ export function createReadSession(options: {
 } = {}) {
   const members = new Map<Member, SessionEnd>();
   const entries = new Map<string, Entry>();
-  const watchers = new Map<string, Set<() => void>>();
+  const watchers = new Map<string, Set<(ended?: boolean) => void>>();
   const versions = new Map<string, ReadTopic>();
   let identity = options.identity ? { ...options.identity } : undefined;
   let generation = 0;
@@ -118,6 +119,7 @@ export function createReadSession(options: {
       entry.serial++;
       if (!entry.public) remove(entry);
     }
+    for (const listeners of watchers.values()) for (const notify of [...listeners]) notify(true);
     for (const [query, end] of [...members]) {
       if (end === 'private') query.reset();
       else query.invalidate();
@@ -131,6 +133,23 @@ export function createReadSession(options: {
     end: endSession, endSession,
     setIdentity(next: ReadIdentity) {
       if (JSON.stringify(normalized(identity)) === JSON.stringify(normalized(next))) return;
+      // Learning the first epoch establishes provenance, not a different signed-in identity.
+      if (identity?.serverEpoch === '' && next.serverEpoch
+        && JSON.stringify(normalized({ ...identity, serverEpoch: next.serverEpoch }))
+          === JSON.stringify(normalized(next))) {
+        identity = { ...next };
+        for (const entry of entries.values()) {
+          entry.context = JSON.stringify(normalized(identity));
+          markStale(entry);
+        }
+        return;
+      }
+      for (const entry of entries.values()) {
+        const scope = JSON.parse(entry.context) as ReadIdentity;
+        if (entry.public && (scope.serverId !== next.serverId || scope.league !== next.league
+          || scope.serverEpoch !== next.serverEpoch)) remove(entry);
+      }
+      void options.storage?.retainScope?.(next.serverId, next.league).catch(ignore);
       endSession('identity changed');
       identity = { ...next };
     },
@@ -140,7 +159,7 @@ export function createReadSession(options: {
       return JSON.stringify([id.serverId, id.serverEpoch, id.accountId, id.authGeneration,
         id.league, id.view, id.season ?? null, `${command}@${schemaVersion}`, normalized(args)]);
     },
-    watch(key: string, notify: () => void) {
+    watch(key: string, notify: (ended?: boolean) => void) {
       let held = watchers.get(key);
       if (!held) { held = new Set(); watchers.set(key, held); }
       held.add(notify);
@@ -174,6 +193,17 @@ export function createReadSession(options: {
           stale: true, serial: 0, bytes: 0, hasValue: false };
         entries.set(key, entry);
         trim();
+      }
+      if (spec.public && !entry.hasValue) {
+        const requested = JSON.parse(key) as unknown[];
+        const reusable = [...entries.values()].find(other => {
+          if (!other.public || other.stale || !other.hasValue) return false;
+          const previous = JSON.parse(other.key) as unknown[];
+          return [0, 1, 4, 6, 7, 8].every(index =>
+            JSON.stringify(previous[index]) === JSON.stringify(requested[index]));
+        });
+        if (reusable) Object.assign(entry, { value: reusable.value, tags: reusable.tags,
+          hasValue: true, stale: false, bytes: reusable.bytes });
       }
       const held = entry;
       entries.delete(key);
@@ -218,6 +248,7 @@ export function createReadSession(options: {
         trim();
         if (allowed() && entries.get(key) === held && held.policy === 'persist' && held.public) {
           await options.storage?.put(key, saved).catch(ignore);
+          if (!allowed()) await options.storage?.remove(key).catch(ignore);
         }
         if (!allowed() || !current(held, reply.tags)) throw new RejectedRead();
         return value;

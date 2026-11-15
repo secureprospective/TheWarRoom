@@ -142,6 +142,7 @@ func (d *Desktop) enter(ctx context.Context, view DesktopView) (DesktopView, err
 		d.seats = append(d.seats, DesktopSeat{Franchise: seat.Franchise, Name: seat.Name})
 	}
 	view.Seats = slices.Clone(d.seats)
+	d.admission = DesktopView{Name: view.Name, Role: view.Role, Franchise: view.Franchise, FranchiseName: view.FranchiseName}
 	switch {
 	case view.Franchise != "":
 	case view.Role == "Commissioner" || view.Role == "Co-commissioner":

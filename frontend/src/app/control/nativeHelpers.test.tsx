@@ -10,7 +10,7 @@ vi.mock('./api', () => ({ copyHelperConnection: vi.fn() }));
 
 const view: NativeView = { server: 'https://league.example', league: 'native.test', message: '',
   name: '', role: '', franchise: '', franchiseName: '', seed: '', connection: '', helperId: '',
-  confirmation: '', seats: [] };
+  confirmation: '', authGeneration: '0', seats: [] };
 const reply = (value: Partial<NativeView>) => ({ ok: true,
   headers: new Headers({ 'Content-Type': 'application/json' }), json: async () => ({ ...view, ...value }) });
 const id = 'A'.repeat(43);

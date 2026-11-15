@@ -159,8 +159,8 @@ func (d *Desktop) Workflow(ctx context.Context, raw serverhttp.RawWorkflow) (ser
 	if unauthorized {
 		d.mu.Lock()
 		if d.generation == session.generation {
-			_ = d.clearCredential()
 			d.generation++
+			_ = d.clearCredential()
 		}
 		d.mu.Unlock()
 	}

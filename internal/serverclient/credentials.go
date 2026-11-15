@@ -59,6 +59,7 @@ func (d *Desktop) restore() {
 }
 
 func (d *Desktop) clearCredential() error {
+	d.admission = DesktopView{}
 	d.stopWatchLocked()
 	d.bearer, d.proof, d.seats = "", "", nil
 	if err := d.credentials.Delete(); err != nil {

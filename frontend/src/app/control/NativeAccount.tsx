@@ -1,8 +1,9 @@
-import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore, type FormEvent } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { nativeAction, type NativeAction, type NativeView } from './nativeApi';
+import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads';
 import NativeHelpers from './NativeHelpers';
 import '../look/look.css';
 import './nativeAccount.css';
@@ -20,14 +21,22 @@ const openTabs = [['login', 'League'], ['authenticator', 'Authenticator']] as co
 
 export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [view, setView] = useState(initial);
+  const [observed, setObserved] = useState(false);
+  useEffect(() => { observeView(initial); setObserved(true); }, [initial]);
+  const fence = useSyncExternalStore(onHostedChange, hostedSnapshot);
+  const admission = fence.view;
+  useEffect(() => onHostedChange(() => {
+    const latest = hostedSnapshot().view;
+    if (latest) setView(latest);
+  }), []);
   const [screen, setScreen] = useState<Screen>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
-  const [signedIn, setSignedIn] = useState(Boolean(initial.message));
-  const [openAfterSignIn, setOpenAfterSignIn] = useState(Boolean(initial.message));
+  const [signedIn, setSignedIn] = useState(Boolean(initial.message || initial.name));
+  const [openAfterSignIn, setOpenAfterSignIn] = useState(Boolean(initial.message || initial.name));
   const changeScreen = (next: Screen) => {
     setScreen(next); setPassword(''); setCode(''); setError('');
     setView(current => ({ ...current, seed: '', message: current.name ? current.message : '' }));
@@ -35,8 +44,6 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   async function run(action: NativeAction) {
     if (pending) return;
     setPending(true); setError('');
-    // Remove the old private reading before fresh admission.
-    setView(current => ({ ...initial, seed: current.seed }));
     try {
       const credentials = !['enter', 'forget', 'revoke-device', 'revoke-all'].includes(action);
       const result = await nativeAction(action, credentials ? username : '', credentials ? password : '',
@@ -105,13 +112,14 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
-    {signedIn && view.franchise && <Suspense fallback={<p>Opening your franchise…</p>}>
-      <HostedLeague league={initial.league} franchise={view.franchise}
-        name={view.franchiseName} role={view.role} hq />
+    {observed && !fence.blocked && signedIn && admission?.franchise &&
+      <Suspense fallback={<p>Opening your franchise…</p>}>
+      <HostedLeague key={fence.key} league={admission.league} franchise={admission.franchise}
+        name={admission.franchiseName} role={admission.role} hq />
     </Suspense>}
-    {signedIn && view.name && view.seats.length > 0 &&
+    {observed && !fence.blocked && signedIn && admission && admission.seats.length > 0 &&
       <NativeHelpers server={initial.server}
-      league={initial.league} seats={view.seats} franchise={view.franchise} />}
+      league={admission.league} seats={admission.seats} franchise={admission.franchise} />}
     </div>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>

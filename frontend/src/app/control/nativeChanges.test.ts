@@ -3,7 +3,8 @@ import { subscribeChanged } from './nativeApi';
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 it('delivers topics, advances the cursor and cancels on unsubscribe', async () => {
   vi.useFakeTimers();
-  const change = { seq: 2, state: 'connected', serverEpoch: 'boot', league: 'native.test',
+  const change = { authGeneration: '1', seq: 2, state: 'connected',
+    serverEpoch: 'boot', league: 'native.test',
     topics: [{ kind: 'scores', version: '1', season: 2026, week: 10 }] };
   const fetcher = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => change })
     .mockImplementation(() => new Promise(() => {}));

@@ -93,5 +93,16 @@ export function createPublicReadStorage(options: {
       };
     }),
     remove: key => transaction(undefined, store => { store.delete(key); }),
+    retainScope: (serverId, league) => transaction(undefined, store => {
+      const request = store.getAll();
+      request.onsuccess = () => {
+        for (const row of request.result as RecordValue[]) {
+          try {
+            const key: unknown = JSON.parse(row.key);
+            if (!Array.isArray(key) || key[0] !== serverId || key[4] !== league) store.delete(row.key);
+          } catch { store.delete(row.key); }
+        }
+      };
+    }),
   };
 }
