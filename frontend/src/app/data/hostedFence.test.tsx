@@ -116,3 +116,9 @@ it('returns the owner to the same screen after a server restart remounts HostedL
   expect(endSession).toHaveBeenCalled();
   expect(dom.button(host, 'Roster and reserves').getAttribute('aria-current')).toBe('true');
 });
+it('forgets the remembered screen when someone signs in or out at the window', () => {
+  owner.hostedScreens.remember('native.test:one:Owner:pulse', true);
+  expect(owner.hostedScreens.recall('native.test:one:Owner:pulse', false)).toBe(true);
+  owner.prepareHostedAction('forget');
+  expect(owner.hostedScreens.recall('native.test:one:Owner:pulse', false)).toBe(false);
+});

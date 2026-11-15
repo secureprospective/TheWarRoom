@@ -83,6 +83,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
   await act(async () => root.unmount()); host.remove(); vi.restoreAllMocks();
+  hostedReads.hostedScreens.forget();
 });
 const settle = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
 async function click(label: string) {

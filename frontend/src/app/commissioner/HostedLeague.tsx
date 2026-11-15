@@ -11,6 +11,7 @@ import { createHostedRoom, type HostedPort } from './hostedRoom';
 import type { NativeArguments, NativeRequest } from '../commands/native';
 import type { HostedResponse } from './api';
 import './hostedLeague.css';
+import { hostedScreens } from '../data/hostedReads';
 import { HostedWorkflows, type HostedTask } from './HostedWorkflows';
 
 type Tab = 'lineup' | 'roster' | 'draft' | 'rules' | HostedTask;
@@ -29,13 +30,11 @@ const bucketNames = { active: 'Active roster', ir: 'Injured reserve', taxi: 'Tax
 const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
 const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
-// Which screen an owner is on is not private league data: a server restart remounts this tree behind
-// the identity fence (hostedReads), and the owner must come back to the screen they were reading. A
-// changed role or franchise is a different view and starts fresh.
-const remembered = new Map<string, unknown>();
+// A server restart remounts this tree behind the identity fence; the owner comes back to the same screen.
+// A changed role or franchise is a different view and starts fresh.
 function useRemembered<T>(key: string, initial: T): [T, (value: T) => void] {
-  const [value, set] = useState<T>(() => (remembered.has(key) ? remembered.get(key) as T : initial));
-  return [value, (next: T) => { remembered.set(key, next); set(next); }];
+  const [value, set] = useState<T>(() => hostedScreens.recall(key, initial));
+  return [value, (next: T) => { hostedScreens.remember(key, next); set(next); }];
 }
 export default function HostedLeague(props: {
   league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
