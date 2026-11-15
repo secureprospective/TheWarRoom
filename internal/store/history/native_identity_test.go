@@ -100,3 +100,25 @@ func TestNativeEvidenceCarriesPlayerRecordScoringPosition(t *testing.T) {
 		t.Fatalf("existing record not supplied: %+v %v", evidence, err)
 	}
 }
+
+// An MFL import pins players by MFL id alone; before kickoff a linked player must still read as identified.
+func TestNativeEvidenceMFLImportPinReadsDirectoryIdentity(t *testing.T) {
+	t.Parallel()
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "mfl-pin.db"))
+	if _, err := s.LinkPlayerIDs(t.Context(), "dynastyprocess", []PlayerIDLink{
+		{IDType: "gsis", IDValue: "00-0040563", PlayerID: "17269"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	s.SetPinnedFootball(&PinnedFootball{digest: strings.Repeat("a", 64), raw: RawFootballEvidence{Season: 2026,
+		Players: map[string]RawFootballPlayer{"17269": {Identity: MFLIdentityPrefix + "17269"}, "17270": {Identity: MFLIdentityPrefix + "17270"}}}})
+	scope := source.RawNativeScope{Player: "17269", Season: 2026, Week: 10}
+	evidence, err := s.nativeEvidence(t.Context(), s, scope)
+	if err != nil || evidence.GSIS != "00-0040563" {
+		t.Fatalf("linked MFL import player read as unidentified: %+v %v", evidence, err)
+	}
+	scope.Player = "17270"
+	if evidence, err = s.nativeEvidence(t.Context(), s, scope); err != nil || evidence.GSIS != "" {
+		t.Fatalf("unlinked MFL import player gained an identity: %+v %v", evidence, err)
+	}
+}
