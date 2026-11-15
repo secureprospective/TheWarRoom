@@ -25,6 +25,8 @@ func (s sessionStoreStub) SessionAccount(context.Context, string, bool) (account
 
 func (s sessionStoreStub) RevokeSession(context.Context, string, bool) error { return s.err }
 
+func (s sessionStoreStub) AccountExists(context.Context, string) (bool, error) { return false, s.err }
+
 // A busy store is the server being busy, not a refused owner: only an unknown, expired or
 // revoked session is 401.
 func TestSessionAuthenticationMapsServerTroubleToBusy(t *testing.T) {

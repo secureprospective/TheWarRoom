@@ -39,6 +39,15 @@ func (s *Store) fenced(ctx context.Context) (func(), error) {
 
 func New(pools *db.Pools) *Store { return &Store{pools: pools, now: time.Now} }
 
+// AccountExists reports whether the immutable account identity is in the sign-in store.
+func (s *Store) AccountExists(ctx context.Context, id string) (bool, error) {
+	var exists bool
+	if err := s.pools.Read().QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM accounts WHERE id = ?)`, id).Scan(&exists); err != nil {
+		return false, fmt.Errorf("accounts: check identity: %w", err)
+	}
+	return exists, nil
+}
+
 // SetClock configures the server clock before serving requests.
 func (s *Store) SetClock(now func() time.Time) { s.now = now }
 
