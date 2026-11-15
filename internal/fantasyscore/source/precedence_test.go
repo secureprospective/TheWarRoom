@@ -79,3 +79,24 @@ func TestLiveSleeperRejectsInvalidCore(t *testing.T) {
 		}
 	}
 }
+
+// Week 10 live: ESPN holds every run's length (one of 25 yards) while Sleeper, a play behind, still says the
+// longest run was 9 yards and so no R20. The exact count from ESPN's lengths stands.
+func TestPlayLengthsOutrankALaterSourcesStatedCount(t *testing.T) {
+	espn := fantasyscore.StatLine{Events: map[leaguerules.StatID][]leaguerules.Decimal{"long_rush": {90000, 250000}}}
+	sleeper := fantasyscore.StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"long_rush_20": 0, "long_rush_40": 0, "rushing_first_down": 10000}}
+	line, owners := source.MergeStatSources(map[string]fantasyscore.StatLine{source.ESPNLive: espn, source.Sleeper: sleeper})
+	for _, id := range []leaguerules.StatID{"long_rush_20", "long_rush_40"} {
+		if v, held := line.Quantities[id]; held {
+			t.Fatalf("%s from Sleeper (%d) replaced the count from ESPN's run lengths", id, v)
+		}
+	}
+	if line.Quantities["rushing_first_down"] != 10000 || owners["rushing_first_down"] != source.Sleeper {
+		t.Fatalf("Sleeper no longer fills a real gap: %v %v", line.Quantities, owners)
+	}
+	// Without ESPN's lengths, Sleeper's stated count is the best evidence and fills the gap.
+	line, _ = source.MergeStatSources(map[string]fantasyscore.StatLine{source.Sleeper: sleeper})
+	if v, held := line.Quantities["long_rush_20"]; !held || v != 0 {
+		t.Fatalf("Sleeper's count dropped with nothing better held: %v", line.Quantities)
+	}
+}

@@ -24,7 +24,7 @@ func MergeStatSources(lines map[string]fantasyscore.StatLine) (fantasyscore.Stat
 	for _, authority := range []string{NFLVerse, ESPNLive, Sleeper} {
 		line := lines[authority]
 		for id, value := range line.Quantities {
-			if _, exists := owners[id]; exists {
+			if _, exists := owners[id]; exists || countedFromPlays(id, owners, authority) {
 				continue
 			}
 			out.Quantities[id], owners[id], out.Labels[id] = value, authority, line.Labels[id]
@@ -37,6 +37,22 @@ func MergeStatSources(lines map[string]fantasyscore.StatLine) (fantasyscore.Stat
 		}
 	}
 	return out, owners
+}
+
+// countedFromPlays says an earlier source already holds the play distances this count is worked out from
+// (R20 from each run's length), so a later source's stated count, which can trail a play behind, must not
+// replace the exact one.
+func countedFromPlays(id leaguerules.StatID, owners map[leaguerules.StatID]string, authority string) bool {
+	def, ok := leaguerules.StatByID(id)
+	if !ok {
+		return false
+	}
+	for _, play := range def.Plays {
+		if owner, held := owners[play]; held && owner != authority {
+			return true
+		}
+	}
+	return false
 }
 
 // LiveAuthority names only contributors, not merely feeds that were fetched.
