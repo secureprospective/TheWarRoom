@@ -228,3 +228,48 @@ func TestHostedNFLGameRead(t *testing.T) {
 		})
 	}
 }
+
+// Franchise HQ's money (cap strip, contract schedules, cut costs) comes from these two reads; the
+// hosted app could not reach either, so every figure said "Not available yet".
+func TestHostedFranchiseHQMoneyReads(t *testing.T) {
+	f := newHostedFixture(t, true, true)
+	bearer, proof := f.directCommissioner(t)
+	raw := workflowRequest(t, "native.cap.check", "read", `{"league":"native.hosted","viewerZone":"UTC"}`, "")
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, result := f.send(t, serverhttp.WorkflowPath, string(body), bearer, proof)
+	if status != 200 {
+		t.Fatalf("cap check status %d: %s", status, result)
+	}
+	var response serverhttp.WorkflowResponse
+	if err := json.Unmarshal(result, &response); err != nil {
+		t.Fatal(err)
+	}
+	var reading struct {
+		League     string            `json:"league"`
+		Franchises []json.RawMessage `json:"franchises"`
+	}
+	if err := json.Unmarshal(response.Data, &reading); err != nil || reading.League != "native.hosted" || len(reading.Franchises) == 0 {
+		t.Fatalf("cap check reading %s (%v)", response.Data, err)
+	}
+	quote := workflowRequest(t, "contract.quote", "read", `{"league":"native.hosted","franchise":"franchise.01",`+
+		`"player":"0100","action":"cut","viewerZone":"UTC","years":0,"level":0,"moveCents":0,"amountCents":0,"reason":""}`, "")
+	if league, err := quote.League(); err != nil || league != "native.hosted" {
+		t.Fatalf("contract quote not routed: %q %v", league, err)
+	}
+	for _, bad := range []struct{ command, args string }{
+		{"native.cap.check", `{"league":"native.hosted","viewerZone":"Local"}`},
+		{"native.cap.check", `{"league":"native.hosted","viewerZone":"UTC","extra":1}`},
+		{"contract.quote", `{"league":"native.hosted","player":"0100","action":"cut","viewerZone":"Local"}`},
+	} {
+		raw := workflowRequest(t, bad.command, "read", bad.args, "")
+		if err := raw.Validate(); err == nil {
+			t.Fatalf("invalid %s accepted: %s", bad.command, bad.args)
+		}
+		if _, err := raw.League(); err == nil {
+			t.Fatalf("invalid %s routed: %s", bad.command, bad.args)
+		}
+	}
+}
