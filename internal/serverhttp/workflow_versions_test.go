@@ -94,6 +94,10 @@ func TestWorkflowTagsObserveDisconnectedCorrection(t *testing.T) {
 	if !same.Unchanged || len(same.Data) != 0 {
 		t.Fatal("same snapshot not unchanged")
 	}
+	_, counts := f.tally.Snapshot()
+	if got := counts["native.assets.read read"]; got.Computed != 1 || got.Cached != 0 || got.Unchanged != 1 {
+		t.Fatalf("conditional read ran an engine or reply cache: %+v", got)
+	}
 	var assets commissioner.NativeAssets
 	if err := json.Unmarshal(first.Data, &assets); err != nil {
 		t.Fatal(err)
