@@ -46,9 +46,14 @@ type scoreFlightKey struct {
 
 type scoreRevision struct {
 	scores map[weekScoreKey]commissioner.FranchiseWeekScore
+	// base names everything in the revision except the ledger; entries is the ledger's entry set. Together
+	// they let a later revision that only adds lineups start from this one (carryLineups).
+	base    string
+	entries map[string]bool
 }
 
 type weekScoreKey struct {
+	franchise    string
 	seat, lineup string
 	season, week int
 	boundary     int
@@ -100,7 +105,7 @@ func (n *nativeSources) MemoWeekScore(ctx context.Context, records []commissione
 	if err != nil {
 		return score()
 	}
-	key := weekScoreKey{seat: string(seatKey), lineup: string(lineupKey), season: season, week: week,
+	key := weekScoreKey{franchise: seat.Franchise, seat: string(seatKey), lineup: string(lineupKey), season: season, week: week,
 		live: n.store.liveWeekGeneration(season, week), overlay: n.weekKey(season, week)}
 	key.boundary = n.recordedBoundary(records, season)
 	c := &n.store.scores
@@ -273,12 +278,87 @@ func (s *Store) scoreRevisionFor(ctx context.Context, n *nativeSources, records 
 		return "", false
 	}
 	h := sha256.New()
-	_, _ = fmt.Fprintf(h, "%s\x00%d\x00%s\x00%d:%d:%x\x00%s\x00%v\x00", n.league, n.season, ledger,
+	_, _ = fmt.Fprintf(h, "%s\x00%d\x00%d:%d:%x\x00%s\x00%v\x00", n.league, n.season,
 		held.fetches, held.newest, held.identity, rulesBody, err)
 	if s.lineupEnv != nil {
 		_, _ = fmt.Fprintf(h, "%T:%s", s.lineupEnv, factsDigest(s.lineupEnv, n.playerFacts()))
 	}
-	return hex.EncodeToString(h.Sum(nil)), true
+	base := hex.EncodeToString(h.Sum(nil))
+	sum := sha256.Sum256([]byte(base + "\x00" + ledger))
+	revision := hex.EncodeToString(sum[:])
+	s.scores.carryLineups(revision, base, records)
+	return revision, true
+}
+
+// lineupScope is the one franchise-week a lineup counts for.
+type lineupScope struct {
+	franchise    string
+	season, week int
+}
+
+// carryLineups starts a new revision from the newest held revision with the same base (league, season, held
+// archive, rules in force, player facts) when every entry the new ledger adds is a lineup and none is removed.
+// A lineup counts for exactly its own franchise and week (commissioner.LedgerWeekLineup: nothing carries
+// between weeks), so every other franchise-week scores the same and is carried; the touched ones are rescored.
+// Any other change starts the revision empty, as before: an owner setting next week's lineup no longer makes
+// the next standings reading rescore the whole season.
+func (c *seasonScoreCache) carryLineups(revision, base string, records []commissioner.Record) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.revisions[revision] != nil || c.off {
+		return
+	}
+	if c.revisions == nil {
+		c.revisions = map[string]*scoreRevision{}
+	}
+	next := &scoreRevision{scores: map[weekScoreKey]commissioner.FranchiseWeekScore{}, base: base,
+		entries: make(map[string]bool, len(records))}
+	for _, r := range records {
+		next.entries[r.Receipt.Entry] = true
+	}
+	for i := len(c.order) - 1; i >= 0; i-- {
+		prev := c.revisions[c.order[i]]
+		if prev == nil || prev.base != base {
+			continue
+		}
+		touched, ok := lineupDelta(prev.entries, records)
+		if !ok {
+			continue
+		}
+		for k, score := range prev.scores {
+			if !touched[lineupScope{k.franchise, k.season, k.week}] {
+				next.scores[k] = score
+			}
+		}
+		break
+	}
+	c.revisions[revision] = next
+	c.touch(revision)
+	for len(c.order) > keepScoreRevisions {
+		delete(c.revisions, c.order[0])
+		c.order = c.order[1:]
+	}
+}
+
+// lineupDelta is the franchise-weeks the entries added to held touch, when every added entry is an owner's or
+// commissioner's lineup (not the sync source's, which reaches other franchises) and every held entry is still
+// there; ok is false otherwise.
+func lineupDelta(held map[string]bool, records []commissioner.Record) (map[lineupScope]bool, bool) {
+	touched := map[lineupScope]bool{}
+	kept := 0
+	for _, r := range records {
+		if held[r.Receipt.Entry] {
+			kept++
+			continue
+		}
+		change := r.Command.Args.Lineup
+		if (r.Command.Command != commissioner.LineupSet && r.Command.Command != commissioner.LineupCorrect) ||
+			change == nil || commissioner.LineupFromSync(r) {
+			return nil, false
+		}
+		touched[lineupScope{change.Franchise, change.Season, change.Week}] = true
+	}
+	return touched, kept == len(held)
 }
 
 // factsDigest covers what scoring reads from the player facts: a starter's name and the position it is

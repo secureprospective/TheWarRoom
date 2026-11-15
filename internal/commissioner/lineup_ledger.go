@@ -106,6 +106,10 @@ const lineupSyncRequest = "lineup.sync."
 // reached this week yet. A franchise is not a late franchise while the app has not yet read the
 // week it is playing, so a missed lineup is not flagged to the commissioner until the sync has
 // recorded at least one lineup for that week.
+// LineupFromSync reports a lineup recorded by the lineup sync source. It reaches past its own franchise-week:
+// once the sync has reached a week, every franchise without a lineup that week is flagged (LineupSyncPending).
+func LineupFromSync(r Record) bool { return strings.HasPrefix(r.Command.Request, lineupSyncRequest) }
+
 func LineupSyncPending(records []Record, season, week int) bool {
 	on, reached := false, false
 	var active map[string]bool
