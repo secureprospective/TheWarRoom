@@ -152,6 +152,18 @@ type DesktopSeat struct {
 	Name      string `json:"name"`
 }
 
+// watchAfterLocked opens the change stream after a sign-in. An app that must update first stays off it:
+// nothing it could read is trusted.
+func (d *Desktop) watchAfterLocked(action string) {
+	if d.required == serverversion.App {
+		return
+	}
+	switch action {
+	case "login", "enter", "totp-step-up":
+		d.startWatchLocked()
+	}
+}
+
 // Act serializes login/forget/read so a delayed response cannot revive a forgotten session.
 func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, resultErr error) {
 	d.mu.Lock()
@@ -163,10 +175,7 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, re
 		}
 		view.AuthGeneration = strconv.FormatUint(d.generation, 10)
 		if resultErr == nil {
-			switch raw.Action {
-			case "login", "enter", "totp-step-up":
-				d.startWatchLocked()
-			}
+			d.watchAfterLocked(raw.Action)
 		}
 	}()
 	view = d.initialView(raw.Action)
