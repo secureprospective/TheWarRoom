@@ -101,6 +101,8 @@ it('opens a named tray and Escape closes it, returning focus to the rule button'
   expect(dialog).not.toBeNull();
   expect(document.getElementById(dialog.getAttribute('aria-labelledby')!)?.textContent)
     .toBe('Change Lineup lock');
+  expect([...dialog.querySelectorAll('h1, h2, h3, h4, h5, h6')]
+    .filter(heading => heading.textContent === 'Change Lineup lock')).toHaveLength(1);
   expect(opener.closest('[inert]')).not.toBeNull();
   await act(async () => dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
   expect(host.querySelector('[role="dialog"]')).toBeNull();

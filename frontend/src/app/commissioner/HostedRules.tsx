@@ -75,7 +75,6 @@ function RuleEditor({ row, rules, room, disabled }: {
     } } as NativeRequest, `Change ${row.label}`);
   };
   return <section className="league-form" aria-label={`Change ${row.label}`}>
-    <h4>Change {row.label}</h4>
     <p>In force now: {row.value}</p>
     <fieldset disabled={disabled}>
       <RuleInput schema={row.schema} draft={draft} onChange={setDraft}

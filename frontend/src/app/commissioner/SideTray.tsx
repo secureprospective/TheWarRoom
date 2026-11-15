@@ -14,6 +14,8 @@ export default function SideTray({
 }) {
   const id = useId();
   const panel = useRef<HTMLElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     background?.setAttribute('inert', '');
     const first = () => panel.current?.querySelector<HTMLElement>(focusable)?.focus();
@@ -21,9 +23,17 @@ export default function SideTray({
     const keepInside = (event: FocusEvent) => {
       if (panel.current && !panel.current.contains(event.target as Node)) first();
     };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
+      event.stopPropagation();
+      close.current();
+    };
     document.addEventListener('focusin', keepInside);
+    document.addEventListener('keydown', escape);
     return () => {
       document.removeEventListener('focusin', keepInside);
+      document.removeEventListener('keydown', escape);
       background?.removeAttribute('inert');
       opener.focus();
     };
