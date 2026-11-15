@@ -163,6 +163,18 @@ it('coalesces five team hints into one in-flight plus one trailing status read',
   expect(statuses).toBe(2);
   expect(owner.hostedSnapshot().blocked).toBe(false);
 });
+it('tells screens each signed-in topic batch, never empty resync hints or a signed-out stream', async () => {
+  const heard: string[][] = [];
+  owner.onHostedTopics(topics => heard.push(topics.map(t => `${t.kind}:${t.league}:${t.version}`)));
+  await signIn();
+  await change('connected');
+  expect(heard).toEqual([]);
+  await change('connected', '1', true);
+  expect(heard).toEqual([[`team:native.test:${seq}`]]);
+  await change('signed-out');
+  await change('connected', '1', true);
+  expect(heard).toHaveLength(1);
+});
 it('does not subscribe in local mode', async () => {
   vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 404 } as Response);
   expect(await api.nativeStartup()).toBeNull();

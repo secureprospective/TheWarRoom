@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { onHostedTopics } from '../data/hostedReads';
 import { HQAct as PulseAct } from './HQAct';
 import { hostedWorkflow } from '../commissioner/api';
 import { myChance, percent, pointsLabel, type PulseResults } from '../data/nativePulse';
@@ -15,6 +16,7 @@ import type { LiveView } from '../now/liveContract';
 import './pulse.css';
 
 export type PulseTab = 'now' | 'race';
+export const PULSE_FOLLOW_MS = 3000;
 
 export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }) {
   if (!scope.serverTime) return <LocalPulse {...scope} />;
@@ -34,6 +36,16 @@ function HostedPulse(scope: PulseScope & { tab?: PulseTab }) {
       return () => { listeners.delete(load); };
     }, refresh: () => { for (const load of listeners) load(); } };
   }, []);
+  // A published change for this league (scores, lineups, the ledger, the clock, values) rereads the open
+  // Pulse once, PULSE_FOLLOW_MS after the first topic of a burst; Refresh stays for an impatient owner.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const off = onHostedTopics(topics => {
+      if (timer || !topics.some(topic => topic.league === scope.league)) return;
+      timer = setTimeout(() => { timer = undefined; changes.refresh(); }, PULSE_FOLLOW_MS);
+    });
+    return () => { off(); clearTimeout(timer); };
+  }, [changes, scope.league]);
   return <PulseChanges.Provider value={changes}>
     <PulseBody {...scope} refresh={changes.refresh} live={{ view: undefined, error: '', follow: () => {} }} />
   </PulseChanges.Provider>;
@@ -159,7 +171,7 @@ function Strip({ reading, results, pending, error, mine, week, onWeek, live, hos
     </div>
     <div className="fresh">
       scores: <b>{scoreSources(results)}</b><br />
-      {hosted ? 'Scores update when the league server publishes them'
+      {hosted ? 'Scores follow the league server as it publishes them'
         : <>revision {reading?.revision ?? '—'} · {results?.words ?? 'no week read'}</>}
     </div>
     <div className="mybox">

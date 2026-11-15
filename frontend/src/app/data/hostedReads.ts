@@ -21,6 +21,13 @@ export function onHostedChange(listener: () => void): () => void {
   return () => { listeners.delete(listener); };
 }
 function notify() { for (const listener of [...listeners]) listener(); }
+const topicListeners = new Set<(topics: ReadTopic[]) => void>();
+/** onHostedTopics hears each change's topics after the read owner has applied them (C3 order). It is
+ *  silent while the identity is suspended and for empty resync hints. */
+export function onHostedTopics(listener: (topics: ReadTopic[]) => void): () => void {
+  topicListeners.add(listener);
+  return () => { topicListeners.delete(listener); };
+}
 function identity(view: NativeView): ReadIdentity {
   return { serverId: view.server, serverEpoch: epoch, accountId: view.authGeneration,
     authGeneration: view.authGeneration, league: view.league, view: `${view.role}/${view.franchise}` };
@@ -98,6 +105,7 @@ function consume(change: NativeChanges) {
     const topics = change.topics.map(topic => ({ ...topic, league: change.league ?? current!.league }));
     if (snapshot.blocked) pendingTopics.push(...topics);
     else hostedReads.applyTopics(topics);
+    if (!snapshot.blocked && topics.length > 0) for (const listener of [...topicListeners]) listener(topics);
     if (snapshot.blocked || admission) void refreshView();
   }
   notify();
