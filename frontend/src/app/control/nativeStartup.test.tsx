@@ -14,7 +14,8 @@ it('mounts hosted account access without mounting any local shell or MFL setup',
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true,
     headers: new Headers({ 'Content-Type': 'application/json' }), json: async () => ({
     server: 'https://league.example', league: 'native.test', message: '', name: '', role: '',
-    franchise: '', franchiseName: '', seed: '', connection: '', helperId: '', confirmation: '', seats: [],
+    franchise: '', franchiseName: '', seed: '', connection: '', helperId: '', confirmation: '',
+    authGeneration: '0', seats: [],
   }) }));
   const host = await mount(render(NativeStartup));
   await vi.waitFor(async () => {
@@ -39,7 +40,7 @@ it('fails closed on malformed native status instead of starting the local shell'
 it('replaces account access with the update screen after a live server refusal', async () => {
   const initial = { server: 'https://league.example', league: 'native.test', message: '', name: '',
     role: '', franchise: '', franchiseName: '', seed: '', connection: '', helperId: '',
-    confirmation: '', seats: [] };
+    confirmation: '', authGeneration: '0', seats: [] };
   const fetcher = vi.fn().mockResolvedValue({ ok: true,
     headers: new Headers({ 'Content-Type': 'application/json' }), json: async () => initial });
   vi.stubGlobal('fetch', fetcher);

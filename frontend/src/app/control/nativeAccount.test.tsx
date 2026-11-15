@@ -22,7 +22,7 @@ vi.mock('../commissioner/HostedLeague', async () => {
 
 const initial: NativeView = { server: 'https://league.example', league: 'native.test', message: '',
   name: '', role: '', franchise: '', franchiseName: '', seed: '', connection: '', helperId: '',
-  confirmation: '', seats: [] };
+  confirmation: '', authGeneration: '0', seats: [] };
 function reply(value: NativeView) {
   return { ok: true, headers: new Headers({ 'Content-Type': 'application/json' }), json: async () => value };
 }
@@ -225,7 +225,7 @@ it.each(['enter', 'forget', 'revoke-device', 'revoke-all'] as const)(
   'ends the open franchise room before %s is admitted, then rereads only an assigned one', async action => {
     rooms.length = 0;
     let answer: (value: unknown) => void = () => undefined;
-    const fetcher = vi.fn().mockResolvedValueOnce(reply({ ...initial, name: 'League',
+    const fetcher = vi.fn().mockResolvedValueOnce(reply({ ...initial, name: 'League', role: 'Owner',
       franchise: 'franchise.01', franchiseName: 'My club' }));
     vi.stubGlobal('fetch', fetcher);
     // Startup never carries a franchise (Go's status action only sets the message).
@@ -238,7 +238,7 @@ it.each(['enter', 'forget', 'revoke-device', 'revoke-all'] as const)(
       'revoke-device': 'Revoke this device', 'revoke-all': 'Revoke all devices' }[action];
     await click(button(host, label)); await settle();
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01']);
-    await act(async () => { answer(reply({ ...initial, name: 'League', message: 'Done.',
+    await act(async () => { answer(reply({ ...initial, name: 'League', role: 'Owner', message: 'Done.',
       franchise: action === 'enter' ? 'franchise.02' : '' })); });
     await settle();
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01',

@@ -5,7 +5,7 @@ import { nativeAction, parseNativeView, subscribeNativeUpdate, type NativeView }
 
 const initial: NativeView = { server: 'https://league.example', league: 'native.test', message: '',
   update: 'app', name: '', role: '', franchise: '', franchiseName: '', seed: '', connection: '',
-  helperId: '', confirmation: '', seats: [] };
+  helperId: '', confirmation: '', authGeneration: '0', seats: [] };
 afterEach(async () => { await unmount(); vi.unstubAllGlobals(); });
 
 it('offers one action, explains league safety, and permits retry after failure', async () => {
