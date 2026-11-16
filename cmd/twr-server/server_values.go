@@ -12,6 +12,8 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/appvalue"
+	"github.com/secureprospective/TheWarRoom/internal/archive"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -193,13 +195,17 @@ func (k *signalsKeeper) pass(ctx context.Context) {
 	}
 	ref := k.values.reference
 	service := sources.Service{Zone: time.UTC, Health: ref, Archive: ref, Crosswalk: ref, Signals: ref,
-		Season: season, Transport: k.client.Transport}
+		Season: season, Transport: k.signalTransport()}
 	report := service.LoadSignals(ctx, func(ctx context.Context) error {
 		_, err := linkLiveIdentities(ctx, k.client, crosswalk.SourceURL, ref)
 		return err
 	})
 	k.logf("server values: inputs for %d: %s", season, signalsSummary(report))
 	k.writeRecords(ctx)
+}
+
+func (k *signalsKeeper) signalTransport() http.RoundTripper {
+	return &archive.Transport{Base: k.client.Transport, Sink: k.values.reference}
 }
 
 // writeRecords writes the player record from the facts the load holds. The server holds no MFL players

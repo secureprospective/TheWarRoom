@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -73,5 +76,31 @@ func TestValuesWaitForPlayerRecords(t *testing.T) {
 	v.markRecorded()
 	if !v.waitForRecords(t.Context()) {
 		t.Fatal("the producer did not start once the input load wrote records")
+	}
+}
+
+func TestSignalTransportArchivesBodies(t *testing.T) {
+	files, err := openSignInFiles(t.Context(), newTwoLeagueServer(t).path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = files.Close() })
+	v := newServerValues(newLeaguePins(files.leagues), t.TempDir())
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("weekly statistics")) }))
+	defer ts.Close()
+	k := &signalsKeeper{values: v, client: ts.Client()}
+	client := &http.Client{Transport: k.signalTransport()}
+	resp, err := client.Get(ts.URL + "/weekly.csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if err != nil || string(body) != "weekly statistics" {
+		t.Fatalf("read: %q %v", body, err)
+	}
+	found, err := v.reference.ExactArchivedBodies(t.Context(), ts.URL+"/weekly.csv", func(_ string, b []byte, _ time.Time) bool { return string(b) == "weekly statistics" })
+	if err != nil || !found {
+		t.Fatalf("archive: found=%v err=%v", found, err)
 	}
 }
