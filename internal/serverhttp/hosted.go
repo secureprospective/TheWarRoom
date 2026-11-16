@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/netip"
@@ -444,6 +445,12 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 				h.writeFailure(w, unknown.Error(), http.StatusConflict)
 				return
 			}
+			var refusal *commissioner.Refusal
+			if errors.As(err, &refusal) {
+				h.writeFailure(w, refusal.Reason(), http.StatusConflict)
+				return
+			}
+			log.Printf("native execute failed unexpectedly (%T)", err)
 			h.writeFailure(w, "native change refused; reread before retrying", http.StatusConflict)
 			return
 		}

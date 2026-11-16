@@ -154,13 +154,15 @@ func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env Line
 		change.Week < held.CutoverWeek {
 		return nil
 	}
+	lockedRoster := false
 	if lock, held := firstKickoff(env); held && !now.Before(lock) {
 		base.Assets, err = NativeAssetsAsOf(raw.League, records, lock)
 		if err != nil {
 			return Refused(err)
 		}
+		lockedRoster = true
 	}
-	if err := checkLineupRoster(base, change, env); err != nil {
+	if err := checkLineupRoster(base, change, env, lockedRoster); err != nil {
 		return Refused(err)
 	}
 	if raw.Command == LineupCorrect {
@@ -200,7 +202,7 @@ func checkOwnerLineup(records []Record, now time.Time, env LineupFacts, change R
 
 // checkLineupRoster requires every starter to be on the franchise's active roster: IR and taxi players
 // cannot start.
-func checkLineupRoster(base NativeBase, change RawLineupChange, env LineupFacts) error {
+func checkLineupRoster(base NativeBase, change RawLineupChange, env LineupFacts, rosterAtKickoff bool) error {
 	active := map[string]bool{}
 	for _, p := range base.Assets.Snapshot.Players {
 		if p.Franchise == change.Franchise {
@@ -209,6 +211,9 @@ func checkLineupRoster(base NativeBase, change RawLineupChange, env LineupFacts)
 	}
 	for _, id := range change.Starters {
 		if !active[id] {
+			if rosterAtKickoff {
+				return fmt.Errorf("%s is not on this franchise's active roster at kickoff, so cannot start", env.nameOf(id))
+			}
 			return fmt.Errorf("%s is not on this franchise's active roster, so cannot start", env.nameOf(id))
 		}
 	}

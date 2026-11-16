@@ -60,7 +60,7 @@ func (a *Service) Execute(ctx context.Context, raw commissioner.RawCommand) (com
 func ChangeError(err error) error {
 	var refused *commissioner.Refusal
 	if errors.As(err, &refused) {
-		return errors.New(refused.Reason())
+		return refused
 	}
 	if err != nil {
 		return fmt.Errorf("league change: %w", err)

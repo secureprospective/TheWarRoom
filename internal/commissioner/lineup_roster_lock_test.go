@@ -88,6 +88,7 @@ func TestLineupMembershipIgnoresEligibilityExceptions(t *testing.T) {
 		want     string
 	}{
 		{"active", []NativePlayer{{ID: "0001", Franchise: "home", Status: domain.RosterActive}}, []string{"0001"}, ""},
+		{"absent at kickoff", nil, []string{"0001"}, "Held name is not on this franchise's active roster at kickoff, so cannot start"},
 		{"IR", []NativePlayer{{ID: "0001", Franchise: "home", Status: domain.RosterIR}}, []string{"0001"}, "Held name"},
 		{"taxi", []NativePlayer{{ID: "0001", Franchise: "home", Status: domain.RosterTaxi}}, []string{"0001"}, "Held name"},
 		{"other franchise", []NativePlayer{{ID: "0001", Franchise: "away", Status: domain.RosterActive}}, []string{"0001"}, "Held name"},
@@ -114,9 +115,10 @@ func TestLineupMembershipIgnoresEligibilityExceptions(t *testing.T) {
 			before := fmt.Sprintf("%+v", base.Assets.Snapshot.Players)
 			change := RawLineupChange{Franchise: "home", Starters: tc.starters}
 			env := LineupFacts{Facts: nativecheck.Facts{"0001": {Name: "Held name"}}}
-			err := checkLineupRoster(base, change, env)
+			atKickoff := tc.name == "absent at kickoff"
+			err := checkLineupRoster(base, change, env, atKickoff)
 			want := tc.want
-			if want != "" {
+			if want != "" && !atKickoff {
 				want += " is not on this franchise's active roster, so cannot start"
 			}
 			got := ""
@@ -142,7 +144,7 @@ func BenchmarkLineupRosterMembership(b *testing.B) {
 			change := RawLineupChange{Franchise: "home", Starters: []string{"0"}}
 			b.ResetTimer()
 			for b.Loop() {
-				if err := checkLineupRoster(base, change, LineupFacts{}); err != nil {
+				if err := checkLineupRoster(base, change, LineupFacts{}, false); err != nil {
 					b.Fatal(err)
 				}
 			}
