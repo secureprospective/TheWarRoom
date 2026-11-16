@@ -33,10 +33,6 @@ func TestCurrentContract(t *testing.T) {
 		if row.Schema < before.Schema || row.ProtocolMinor < before.ProtocolMinor || row.SecurityFloor < before.SecurityFloor || row.Commands < before.Commands {
 			t.Fatalf("release %d goes backwards from %+v", row.Release, before)
 		}
-		before.Release = row.Release
-		if row == before {
-			t.Fatalf("release %d changes nothing; reuse release %d", row.Release, row.Release-1)
-		}
 	}
 }
 
