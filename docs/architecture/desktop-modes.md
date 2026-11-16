@@ -52,12 +52,12 @@ auth generation; no credential crosses into the webview. See
 ## What the server does NOT carry today
 
 - **Official live finals:** the hosted collector shares `internal/app/now.LiveStatsPoller` without constructing
-  the local App. ESPN/Sleeper generations remain provisional; nflverse acquisition is deferred. Raw current-week
+  the local App. ESPN/Sleeper generations remain provisional; with `-official-stats` the server reads nflverse's official statistics and gives finished weeks results, and with `-signals` it collects player-value inputs daily (twr-server README, "Official statistics", "Player values"). Raw current-week
   packets and identities are checkpointed under `live-scores/` beside the server file; restart validates digests
   and rebuilds through the same parsers. The L5 `PublishScores` interface is not yet connected.
 - **Fresh football facts:** each league is pinned to the football evidence it was loaded with
   (`cmd/twr-server/football_pins.go`). A running server can swap a pin through `pin-football` on its
-  private status socket, but nothing produces new pins. Live scoring is a separate immutable current-week overlay;
+  private status socket, and with `-official-stats` it re-pins each league to official statistics as weeks finish. Live scoring is a separate immutable current-week overlay;
   ticks leave action-relevant pin digests unchanged. Historical weeks still use the selected pin.
 - **MFL calls:** `twr-server league-load` is a one-time console load from a desktop MFL copy. There is no
   ongoing MFL sync.
