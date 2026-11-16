@@ -180,10 +180,16 @@ func (s *seasonGames) addAllPlay(scores []FranchiseWeekScore) {
 		}
 	}
 	for _, mine := range scores {
+		tally := s.allPlay[mine.Franchise]
+		compared := false
 		for _, theirs := range scores {
 			if mine.Franchise != theirs.Franchise {
-				s.allPlay[mine.Franchise] = competition.ResultOf(*mine.Points, *theirs.Points).Add(s.allPlay[mine.Franchise])
+				tally = competition.ResultOf(*mine.Points, *theirs.Points).Add(tally)
+				compared = true
 			}
+		}
+		if compared {
+			s.allPlay[mine.Franchise] = tally
 		}
 	}
 }
