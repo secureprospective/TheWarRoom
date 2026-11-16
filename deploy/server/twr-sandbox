@@ -15,6 +15,10 @@ if [ "$#" = 0 ]; then
   if [ -e /etc/twr/official-stats ]; then
     set -- "$@" -official-stats
   fi
+  # The operator turns on player values (twr-server README, "Player values") with this file.
+  if [ -e /etc/twr/signals ]; then
+    set -- "$@" -signals
+  fi
 fi
 exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop ALL \
   --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind /bin /bin \

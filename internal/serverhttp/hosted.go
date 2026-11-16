@@ -40,6 +40,8 @@ type Hosted struct {
 	Publisher *Publisher
 	// LiveGames is the server's shared NFL scoreboard (public data) behind nfl.games.read; nil reads empty.
 	LiveGames *leagueservice.LiveGames
+	// Values reads the player values the server prepares; nil while it does not collect their inputs.
+	Values leagueservice.ValueReader
 	// FootballDigest and Football are the server's pin (-football); Pins, when set, answers each league's
 	// own store and pin, and an unpinned league gets the server's.
 	FootballDigest string
@@ -249,7 +251,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry, Values: h.Values}
 	gate := accountAdmission{host: host, accounts: h.Sessions, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
 		h.confirm(w, r, gate, raw)

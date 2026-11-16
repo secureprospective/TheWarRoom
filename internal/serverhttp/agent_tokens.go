@@ -95,7 +95,7 @@ func (h Hosted) agentToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "agent token refused", http.StatusForbidden)
 		return
 	}
-	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry, Values: h.Values}
 	gate := accountAdmission{host: host, accounts: h.Sessions, sessions: h.Sessions.Admission(session), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if remaining, limited, err := gate.proofRemaining(r.Context(), raw.Scope.League); err != nil || !limited || remaining <= 0 {
 		http.Error(w, "confirm with your authenticator first", http.StatusForbidden)

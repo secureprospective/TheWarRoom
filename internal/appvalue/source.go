@@ -21,17 +21,20 @@ type Held interface {
 
 // Source gathers one league's inputs and reads its values. Everything it reads is a read.
 type Source struct {
-	Facts         Facts
-	Held          Held
-	Records       func(ctx context.Context, league string) ([]commissioner.Record, error)
-	Params        func() params.Set
-	Now           func() time.Time
-	Cache         *Cache
-	Revision      func(context.Context) (int64, error)
-	NextFeatureAt func(context.Context, time.Time) (time.Time, error)
-	Evidence      func(context.Context) (string, error) // relaunch-stable fingerprint of history evidence
-	Saved         Saved                                 // completed passes kept across launches
-	PreparedOnly  bool                                  // A screen may read a completed pass, never compute one.
+	Facts    Facts
+	Held     Held
+	Records  func(ctx context.Context, league string) ([]commissioner.Record, error)
+	Params   func() params.Set
+	Now      func() time.Time
+	Cache    *Cache
+	Revision func(context.Context) (int64, error)
+	// LeagueRevision, when set, replaces Revision with a revision of what one league's pass reads, so
+	// another league's commit leaves its pass in force; league "" spans every league (discovery).
+	LeagueRevision func(ctx context.Context, league string) (int64, error)
+	NextFeatureAt  func(context.Context, time.Time) (time.Time, error)
+	Evidence       func(context.Context) (string, error) // relaunch-stable fingerprint of history evidence
+	Saved          Saved                                 // completed passes kept across launches
+	PreparedOnly   bool                                  // A screen may read a completed pass, never compute one.
 }
 
 // seasonsRead is how many seasons of league points the pass reads: the valued season and the
@@ -46,7 +49,7 @@ func (src Source) Read(ctx context.Context, league, franchise string, season int
 		return Reading{}, fmt.Errorf("league values: the read is not wired")
 	}
 	now := src.Now()
-	revision, err := src.revision(ctx)
+	revision, err := src.revision(ctx, league)
 	if err != nil {
 		return Reading{}, err
 	}
@@ -65,7 +68,7 @@ func (src Source) Read(ctx context.Context, league, franchise string, season int
 	}
 
 	set := src.Params()
-	if src.Cache != nil && src.Revision != nil && src.NextFeatureAt != nil {
+	if src.cachesPasses() {
 		return src.readCached(ctx, revision, set, franchise, in)
 	}
 	if src.PreparedOnly {
@@ -79,7 +82,7 @@ func (src Source) readCached(ctx context.Context, revision int64, set params.Set
 	if err != nil || !src.PreparedOnly {
 		return out, err
 	}
-	after, err := src.revision(ctx)
+	after, err := src.revision(ctx, in.League)
 	if err != nil {
 		return Reading{}, err
 	}
@@ -89,11 +92,20 @@ func (src Source) readCached(ctx context.Context, revision int64, set params.Set
 	return out, nil
 }
 
-func (src Source) revision(ctx context.Context) (int64, error) {
-	if src.Revision == nil {
+// cachesPasses reports a source wired to keep completed passes: a cache, a revision and an expiry.
+func (src Source) cachesPasses() bool {
+	return src.Cache != nil && (src.Revision != nil || src.LeagueRevision != nil) && src.NextFeatureAt != nil
+}
+
+func (src Source) revision(ctx context.Context, league string) (int64, error) {
+	read := src.Revision
+	if src.LeagueRevision != nil {
+		read = func(ctx context.Context) (int64, error) { return src.LeagueRevision(ctx, league) }
+	}
+	if read == nil {
 		return 0, nil
 	}
-	revision, err := src.Revision(ctx)
+	revision, err := read(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("league values revision: %w", err)
 	}

@@ -369,7 +369,7 @@ func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request, leag
 		http.Error(w, "native read refused", http.StatusForbidden)
 		return nil, accountAdmission{}, ""
 	}
-	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry, Values: h.Values}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(session), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	service := leagueservice.NewHosted(h.Worker.Host(host), gate)
 	return service, gate, session.Bearer

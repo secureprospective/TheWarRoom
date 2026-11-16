@@ -113,6 +113,36 @@ func checkPreparation(t *testing.T, src Source, league string, want Reading) {
 	}
 	t.Run("inflight", func(t *testing.T) { checkInflightPreparation(t, src, league) })
 	t.Run("startup", func(t *testing.T) { checkStartupPreparation(t, src, league) })
+	t.Run("other league", func(t *testing.T) { checkOtherLeagueCommit(t, src, league) })
+}
+
+// checkOtherLeagueCommit: a commit in another league's file leaves this league's pass in force, so a
+// live Sunday's commits elsewhere neither send its readers back to "preparing" nor cost a new pass.
+func checkOtherLeagueCommit(t *testing.T, src Source, league string) {
+	t.Helper()
+	var other atomic.Int64
+	// The whole-file revision moves with every league's commit; the league's own revision must win.
+	src.Revision = func(context.Context) (int64, error) { return other.Load(), nil }
+	src.LeagueRevision = func(_ context.Context, l string) (int64, error) {
+		if l == league {
+			return 1, nil
+		}
+		return other.Load(), nil
+	}
+	prep := &Preparation{}
+	prep.cache(Scope{league, season})
+	changes := 0
+	prepare := func() { prep.sweep(t.Context(), src, func() { changes++ }, func(err error) { t.Error(err) }) }
+	prepare()
+	other.Add(1)
+	out, err := prep.Read(t.Context(), src, league, "", season)
+	if err != nil || out.Preparing || len(out.Players) == 0 {
+		t.Fatalf("another league's commit unsettled this league's pass: %+v %v", out.Preparing, err)
+	}
+	prepare()
+	if changes != 1 {
+		t.Fatalf("another league's commit cost a new pass: %d passes", changes)
+	}
 }
 
 type gatedFacts struct {

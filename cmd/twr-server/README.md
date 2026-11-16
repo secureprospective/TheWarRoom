@@ -369,3 +369,30 @@ the league is still on the pin it read, so a pin chosen meanwhile wins). The log
 
 Without the flag nothing is fetched and pins change only through `pin-football`.
 Tests: `go test ./internal/store/history -run 'TestOfficial|TestUnfinished|TestRoster'`.
+
+### Player values
+
+With `-signals` (the launcher adds it when `/etc/twr/signals` exists) the server collects the inputs the
+values engine reads and answers `value.read` for its leagues; playoff odds then use player values instead of
+results alone. Without it, `value.read` refuses and odds read "Reduced: player values are not on this server yet".
+
+- Five minutes after start and then once a day, `sources.Service.LoadSignals` loads the nflverse feeds (weekly
+  player statistics, snaps, injuries, players, draft picks, combine, contracts) for the newest season any league
+  is pinned to into the reference file, then writes the player record from those facts
+  (`playerrecord.Assemble`'s unlisted path). There is no MFL call and nothing league-specific. College measures
+  need a CollegeFootballData key the server does not hold; the model reads without them (R11).
+- A background `appvalue.Preparation` prepares every seeded league's values and saves each completed pass under
+  `prepared-values/`; a request only reads a completed pass. Until the first load writes player records nothing is
+  prepared and reads say values are being prepared. A league's pass is keyed on the reference file and that
+  league's own file, so another league's commit leaves it in force. A repeated failure is logged once.
+- Odds never go blank for want of values: no values, a pass still preparing, or a failed pass each give
+  results-only odds that say why.
+- The log says `server values: inputs for SEASON: N files loaded, … failed; N facts added` and
+  `server values: player record written for N players`.
+- **Not yet usable (2026-11-16).** A dry run on a copy of the lab server's data held to its limits (1 GiB, no
+  swap, 2 CPUs, `GOMEMLIMIT=768MiB`) loaded 23 files (0 failed, about one minute, 974,223 facts), wrote 9,758
+  records and prepared a pass in about 8 s, peaking at 660 MiB anonymous memory with no OOM, but the pass held no
+  values: every rostered player read "not in the players database". Two gaps remain: the load's client does not
+  archive the bodies it fetches (the desktop wraps it in `archive.Transport`; `HeldWeeks` reads only archived
+  weekly files), and the model values only listed records (`modelrun` `rec.Listed`), which need MFL's players
+  listing. Do not turn on `/etc/twr/signals` until both are closed.

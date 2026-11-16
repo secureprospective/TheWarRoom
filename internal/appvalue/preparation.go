@@ -46,8 +46,9 @@ func (m sweepMark) unchanged(next sweepMark) bool {
 		!next.at.Before(m.at)
 }
 
-func (src Source) mark(ctx context.Context) sweepMark {
-	revision, err := src.revision(ctx)
+// mark is league's freshness now; league "" spans every league (discovery).
+func (src Source) mark(ctx context.Context, league string) sweepMark {
+	revision, err := src.revision(ctx, league)
 	if err != nil {
 		return sweepMark{}
 	}
@@ -79,7 +80,7 @@ func (p *Preparation) Run(ctx context.Context, src Source, discover func(context
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
-		if mark := src.mark(ctx); !p.discovered.unchanged(mark) {
+		if mark := src.mark(ctx, ""); !p.discovered.unchanged(mark) {
 			scopes, err := discover(ctx)
 			if err != nil {
 				report(err)
@@ -114,7 +115,7 @@ func (p *Preparation) sweep(ctx context.Context, src Source, changed func(), rep
 		if ctx.Err() != nil {
 			return
 		}
-		mark := src.mark(ctx)
+		mark := src.mark(ctx, scope.League)
 		if p.swept[scope].unchanged(mark) && cache.current(mark.at) {
 			continue
 		}

@@ -38,6 +38,7 @@ type hostedFlags struct {
 	trusted  *string
 	status   *string
 	official *bool
+	signals  *bool
 }
 
 // replyCacheBytes bounds the league-state replies the server keeps in memory (serverhttp.ReplyCache).
@@ -56,10 +57,11 @@ func parseHostedFlags(args []string) (hostedFlags, error) {
 	trusted := flags.String("trusted-proxy", "", "loopback IP of a cloudflared hop whose CF-Connecting-IP names each client; empty trusts no proxy")
 	status := flags.String("status-socket", "", "owner-only Unix socket for the console status dashboard; empty serves none")
 	official := flags.Bool("official-stats", false, "re-pin each league to nflverse's official statistics as its weeks finish")
+	signals := flags.Bool("signals", false, "collect player-value inputs daily and prepare every league's player values")
 	if err := flags.Parse(args); err != nil {
 		return hostedFlags{}, fmt.Errorf("parse hosted flags: %w", err)
 	}
-	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, status: status, official: official}, nil
+	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, status: status, official: official, signals: signals}, nil
 }
 
 func runHosted(ctx context.Context, args []string, output io.Writer) error {
@@ -114,13 +116,23 @@ func startHosted(ctx context.Context, args []string, output io.Writer) error {
 	}
 	defer stopStatus()
 
-	if pins, ok := handler.Leagues.(*leaguePins); ok {
-		defer startHostedScores(ctx, pins, files, config, handler)()
-	}
+	defer startLeagueJobs(ctx, files, config, &handler)()
 	defer startHostedDueWorker(ctx, handler.Worker)()
 	defer startArchivePurge(ctx, files.leagues.root, time.Now, func(line string) { log.Print(line) })()
 
 	return serveHosted(ctx, *config.address, certificate, handler, output)
+}
+
+// startLeagueJobs starts live scoring and, with -signals, player values on a server holding league
+// files; it stops them in reverse.
+func startLeagueJobs(ctx context.Context, files stateFiles, config hostedFlags, handler *serverhttp.Hosted) func() {
+	pins, ok := handler.Leagues.(*leaguePins)
+	if !ok {
+		return func() {}
+	}
+	stopScores := startHostedScores(ctx, pins, files, config, *handler)
+	stopValues := startServerValues(ctx, pins, config, handler)
+	return func() { stopValues(); stopScores() }
 }
 
 // startHostedScores starts live scores and, when the operator asked for them, official statistics.
