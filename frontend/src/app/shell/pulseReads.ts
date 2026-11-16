@@ -42,14 +42,16 @@ export const PulseChanges = createContext(hqEvents);
  *  its words like any other unread state, but it is not a failure and is never logged as one. */
 export class PulseWaiting extends Error {}
 
-/** A 'league' read (directory, week, standings, bracket, odds) skips live score changes where the host
- *  can tell them apart; every other read follows each change. */
+/** League reads skip score ticks; odds also skip manual retries and unrelated hosted topics.
+ *  Local hosts without topic separation keep their existing change subscription. */
 export function usePulseRead<T>(key: string, read: (publish: (value: T) => void) => Promise<T>,
-  follows: 'scores' | 'league' = 'scores') {
+  follows: 'scores' | 'league' | 'odds' = 'scores') {
   const changes: { onChange: (load: () => void) => () => void;
-    onLeagueChange?: (load: () => void) => () => void } = useContext(PulseChanges);
-  const provider = useMemo(() => ({ onChange: follows === 'league' && changes.onLeagueChange
-    ? changes.onLeagueChange : changes.onChange }), [changes, follows]);
+    onLeagueChange?: (load: () => void) => () => void;
+    onOddsChange?: (load: () => void) => () => void } = useContext(PulseChanges);
+  const provider = useMemo(() => ({ onChange: follows === 'odds' && changes.onOddsChange
+    ? changes.onOddsChange : follows === 'league' && changes.onLeagueChange
+      ? changes.onLeagueChange : changes.onChange }), [changes, follows]);
   return useContractRead<T>(key, async publish => {
     try { return await read(publish); } catch (error) {
       if (!(error instanceof PulseWaiting)) console.warn('League Pulse read failed:', error);
@@ -59,7 +61,7 @@ export function usePulseRead<T>(key: string, read: (publish: (value: T) => void)
 }
 
 export async function readNativePulse(league: string, mine: string, port: HostedPort = hostedWorkflow,
-  publish?: (reading: NativePulse) => void, serverTime = false): Promise<NativePulse> {
+  publish?: (reading: NativePulse) => void, serverTime = false, includeOdds = true): Promise<NativePulse> {
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const directory = await port({ command: 'native.directory.read', mode: 'read',
     arguments: { league } });
@@ -92,13 +94,17 @@ export async function readNativePulse(league: string, mine: string, port: Hosted
         arguments: { league, season: held.season } });
       result.bracket = parsePulseBracket(r.data, league, held.season);
     }),
-    apply(async () => {
-      const r = await port({ command: 'odds.read', mode: 'read',
-        arguments: { league, season: held.season } });
-      result.odds = parsePulseOdds(r.data, league, held.season);
-    }),
+    ...(includeOdds ? [apply(async () => {
+      result.odds = await readPulseOdds(league, held.season, port);
+    })] : []),
   ]);
   return result;
+}
+
+export async function readPulseOdds(league: string, season: number,
+  port: HostedPort = hostedWorkflow): Promise<PulseOdds> {
+  const r = await port({ command: 'odds.read', mode: 'read', arguments: { league, season } });
+  return parsePulseOdds(r.data, league, season);
 }
 
 /** readPulseWeekResults scores one week. It is its own read so moving between weeks never reloads

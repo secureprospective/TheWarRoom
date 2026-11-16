@@ -3,7 +3,7 @@ import { onHostedTopics } from '../data/hostedReads';
 import { HQAct as PulseAct } from './HQAct';
 import { hostedWorkflow } from '../commissioner/api';
 import { myChance, percent, pointsLabel, type PulseResults } from '../data/nativePulse';
-import { readNativePulse, readPulseWeekResults, usePulseRead, PulseChanges, PulseWaiting,
+import { readNativePulse, readPulseOdds, readPulseWeekResults, usePulseRead, PulseChanges, PulseWaiting,
   type NativePulse, type PulseScope }
   from './pulseReads';
 import { scoreOf } from './pulseModel';
@@ -32,6 +32,7 @@ function HostedPulse(scope: PulseScope & { tab?: PulseTab }) {
   const changes = useMemo(() => {
     const scores = new Set<() => void>();
     const league = new Set<() => void>();
+    const odds = new Set<() => void>();
     const listen = (set: Set<() => void>) => (load: () => void) => {
       set.add(load);
       return () => { set.delete(load); };
@@ -39,25 +40,30 @@ function HostedPulse(scope: PulseScope & { tab?: PulseTab }) {
     const refresh = (onlyScores = false) => {
       for (const load of [...scores, ...(onlyScores ? [] : league)]) load();
     };
-    return { onChange: listen(scores), onLeagueChange: listen(league), refresh: () => refresh(),
-      refreshScores: () => refresh(true) };
+    return { onChange: listen(scores), onLeagueChange: listen(league), onOddsChange: listen(odds),
+      refresh: () => refresh(), refreshScores: () => refresh(true),
+      refreshOdds: () => { for (const load of odds) load(); } };
   }, []);
   // A published change for this league rereads the open Pulse once, PULSE_FOLLOW_MS after the first topic
   // of a burst. A burst of only scores topics (every few seconds while games are on) rereads the scores,
-  // matchups and games, not the directory, week, standings, bracket and odds, which scores never change.
-  // Refresh stays for an impatient owner and rereads everything.
+  // matchups and games, not the directory, week, standings or bracket. Odds follow only league topics:
+  // neither live ticks, unrelated topics nor manual/error refreshes can change a result.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let onlyScores = true;
+    let oddsChanged = false;
     const off = onHostedTopics(topics => {
       const mine = topics.filter(topic => topic.league === scope.league);
       if (mine.length === 0) return;
       onlyScores &&= mine.every(topic => topic.kind === 'scores');
+      oddsChanged ||= mine.some(topic => topic.kind === 'league');
       if (timer) return;
       timer = setTimeout(() => {
         timer = undefined;
         if (onlyScores) changes.refreshScores(); else changes.refresh();
+        if (oddsChanged) changes.refreshOdds();
         onlyScores = true;
+        oddsChanged = false;
       }, PULSE_FOLLOW_MS);
     });
     return () => { off(); clearTimeout(timer); };
@@ -134,9 +140,14 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
     return () => document.removeEventListener('keydown', close, { capture: true });
   }, [drawer]);
   const league = usePulseRead<NativePulse>(JSON.stringify(['pulse', scope.league, scope.mine]),
-    publish => readNativePulse(scope.league, scope.mine, port, publish, scope.serverTime), 'league');
+    publish => readNativePulse(scope.league, scope.mine, port, publish, scope.serverTime, false), 'league');
+  const season = league.reading?.season;
+  const odds = usePulseRead(JSON.stringify(['pulse-odds', scope.league, season]),
+    () => season ? readPulseOdds(scope.league, season, port)
+      : Promise.reject(new PulseWaiting('The league has not said which season it is playing.')), 'odds');
   const live = scope.live;
-  const reading = league.reading;
+  const reading = league.reading && { ...league.reading, odds: odds.reading,
+    errors: [...league.reading.errors, ...(odds.error ? [odds.error] : [])] };
   const week = chosen ?? reading?.week;
   const results = usePulseRead<PulseResults>(
     JSON.stringify(['pulse-week', scope.league, reading?.season, week]),
@@ -199,6 +210,7 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
               BRACKET ▴</PulseAct>
           </div>}
           <span className="msg">{reading?.standings?.words ?? reading?.weekNote ?? ''}
+            {odds.error ? ' · Playoff odds: unavailable.' : ''}
             {scope.serverTime && errored ? ' · retrying' : ''}</span>
           <span className="sp" />
           <span className="src">reads only · nothing here changes the league</span>
