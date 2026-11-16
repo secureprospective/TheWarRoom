@@ -62,8 +62,8 @@ func decodeJoin(w http.ResponseWriter, r *http.Request) (RawJoinRequest, bool) {
 	return raw, true
 }
 
-func joinFailure(w http.ResponseWriter, err error) {
-	if passwordBusy(w, err) {
+func joinFailure(w http.ResponseWriter, r *http.Request, err error) {
+	if passwordBusy(w, r, err) {
 		return
 	}
 	switch {
@@ -97,7 +97,7 @@ func (h Hosted) join(w http.ResponseWriter, r *http.Request) {
 	if raw.Join != nil {
 		list, err := h.Join.Franchises(r.Context(), *raw.Join)
 		if err != nil {
-			joinFailure(w, err)
+			joinFailure(w, r, err)
 			return
 		}
 		writeJoin(w, http.StatusOK, JoinFranchisesResponse{Protocol: 1, League: raw.Join.League, Franchises: list})
@@ -112,7 +112,7 @@ func (h Hosted) join(w http.ResponseWriter, r *http.Request) {
 	}
 	account, err := h.Join.Claim(r.Context(), *raw.Claim)
 	if err != nil {
-		joinFailure(w, err)
+		joinFailure(w, r, err)
 		return
 	}
 	response := JoinClaimResponse{Protocol: 1, Account: account, Franchise: raw.Claim.Franchise}

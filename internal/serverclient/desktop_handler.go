@@ -3,9 +3,11 @@ package serverclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
@@ -156,6 +158,21 @@ func (d *Desktop) Workflow(ctx context.Context, raw serverhttp.RawWorkflow) (ser
 		return result, fmt.Errorf("sign in before opening your franchise")
 	}
 	body, unauthorized, err := postDesktopSnapshot(ctx, session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	if err != nil && raw.Mode == "read" {
+		var refusal *retryAfterRefusal
+		if errors.As(err, &refusal) {
+			if delay, ok := retryDelay(refusal.after); ok {
+				timer := time.NewTimer(delay)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					return result, fmt.Errorf("wait for hosted read retry: %w", ctx.Err())
+				case <-timer.C:
+				}
+				body, unauthorized, err = postDesktopSnapshot(ctx, session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+			}
+		}
+	}
 	if unauthorized {
 		d.mu.Lock()
 		if d.generation == session.generation {

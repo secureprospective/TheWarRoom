@@ -70,7 +70,7 @@ func (h Hosted) printRecoveryCodes(w http.ResponseWriter, r *http.Request) {
 	}
 	codes, err := h.Recovery.PrintCodes(r.Context(), accounts.RawCredentials{Username: raw.Username, Password: raw.Password},
 		accounts.RecentAuth{Token: proof[0]})
-	if passwordBusy(w, err) {
+	if passwordBusy(w, r, err) {
 		return
 	}
 	if err != nil {

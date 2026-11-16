@@ -55,7 +55,7 @@ func (h Hosted) changePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	err := h.Passwords.ChangePassword(r.Context(), accounts.RawPasswordChange{
 		Username: raw.Username, OldPassword: raw.OldPassword, NewPassword: raw.NewPassword, Code: raw.Code}, authenticator)
-	if passwordBusy(w, err) {
+	if passwordBusy(w, r, err) {
 		return
 	}
 	if errors.Is(err, accounts.ErrInvalidCredentials) {
