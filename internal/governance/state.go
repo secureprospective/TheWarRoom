@@ -101,11 +101,16 @@ func Apply(s State, e Event) (State, error) {
 func Replay(events []Event) (State, error) {
 	s := emptyState()
 	for i, e := range events {
-		n, err := Apply(s, e)
-		if err != nil {
-			return State{}, fmt.Errorf("change %d: %w", i+1, err)
+		if e == nil {
+			return State{}, fmt.Errorf("change %d: no league change was supplied", i+1)
 		}
-		s = n
+		if !s.created {
+			s = emptyState()
+		}
+		// Replay owns its state until it succeeds; Apply must clone an externally held state.
+		if err := e.apply(&s); err != nil {
+			return State{}, fmt.Errorf("change %d: league change refused: %w", i+1, err)
+		}
 	}
 	return s, nil
 }

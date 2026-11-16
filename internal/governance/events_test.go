@@ -59,6 +59,21 @@ func TestInvitesSeatsReplay(t *testing.T) {
 		t.Fatal("invite binding lost")
 	}
 }
+func TestReplayRejectsInvalidChangesLikeApply(t *testing.T) {
+	created := LeagueCreated{Creator: "creator", Franchises: []FranchiseID{"f00"}}
+	for _, event := range []Event{nil, SeatReplaced{Franchise: "missing", Principal: "owner"}} {
+		held, err := Apply(State{}, created)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, want := Apply(held, event)
+		got, err := Replay([]Event{created, event})
+		if want == nil || err == nil || err.Error() != "change 2: "+want.Error() || !reflect.DeepEqual(got, State{}) {
+			t.Fatalf("Replay failure = %v, state %#v; Apply failure = %v", err, got, want)
+		}
+	}
+}
+
 func votingLeague(t *testing.T) State {
 	t.Helper()
 	s := league(t, 32)
