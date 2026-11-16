@@ -27,7 +27,10 @@ Their room reads only rules; Pulse independently reads the directory, schedule, 
 (and optional bracket/odds/football views), preserving the rest when an optional read is refused.
 `week.read` accepts an empty franchise for admitted league members and returns only published week
 numbers and kickoff timing, without a selected matchup or private team data. Their Pulse opens on
-the server-selected current week with explicit week navigation.
+the server-selected current week with explicit week navigation. Hosted odds read once per season on opening,
+then only on a league topic (the standings/results invalidation), not scores, team, values or clock topics,
+manual Refresh or automatic retries of other reads. A refused odds read shows “Playoff odds: unavailable.”
+The current stored host has no odds reader; the screen preserves its other readings.
 
 Thin windows now watch negotiated topic invalidations after sign-in/enter and expose them through
 `/desktop/changes`; `nativeApi.subscribeChanged` is the webview transport. The thin-only

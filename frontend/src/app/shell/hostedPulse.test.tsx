@@ -94,7 +94,7 @@ async function click(label: string) {
 const count = (port: ReturnType<typeof fakePort>, command: string) =>
   port.mock.calls.filter(([r]) => r.command === command).length;
 
-it('opens hosted Now, refreshes each active read once, shows Race and returns', async () => {
+it('opens hosted Now, refreshes active reads except odds, shows Race and returns', async () => {
   const port = fakePort();
   await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
     role="Owner" port={port} />));
@@ -110,7 +110,7 @@ it('opens hosted Now, refreshes each active read once, shows Race and returns', 
     'odds.read', 'results.read', 'lineup.read', 'projections.read', 'nfl.games.read', 'nfl.game.read'];
   const before = commands.map(c => count(port, c));
   await click('Refresh');
-  expect(commands.map(c => count(port, c))).toEqual(before.map(n => n + 1));
+  expect(commands.map(c => count(port, c))).toEqual(before.map((n, i) => n + (commands[i] === 'odds.read' ? 0 : 1)));
   for (const [r] of port.mock.calls) if (r.command === 'week.read') expect(r.arguments.at).toBe('');
   await click('NFL GAMES');
   expect(host.textContent).not.toContain('Reading the NFL scoreboard');
@@ -312,7 +312,7 @@ it('rereads the league-wide Pulse reads for league changes, not for each live sc
   await burst('league');
   expect(count(port, 'odds.read')).toBe(odds + 1);
   await click('Refresh');
-  expect(count(port, 'odds.read')).toBe(odds + 2);
+  expect(count(port, 'odds.read')).toBe(odds + 1);
 });
 
 it('never logs a read that is only waiting for its week or matchup as a failure', async () => {
@@ -401,4 +401,48 @@ it('follows hosted live field and plays, switches chips and rereads detail on sc
     expect(host.querySelector('.sp-row')?.textContent).toContain('Updated live rush');
   } finally { vi.useRealTimers(); }
   expect(local).not.toHaveBeenCalled();
+});
+
+it.each(['now', 'race'] as const)('keeps refused odds unavailable in %s until a league change', async tab => {
+  vi.useFakeTimers();
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  let hear: ((topics: ReadTopic[]) => void) | undefined;
+  vi.spyOn(hostedReads, 'onHostedTopics').mockImplementation(listener => {
+    hear = listener; return () => {};
+  });
+  const fallback = fakePort();
+  const port = vi.fn<HostedPort>(async request => {
+    if (request.command === 'odds.read') throw new Error('native odds: league results are not available on this host');
+    return fallback(request);
+  });
+  try {
+    await act(async () => root.render(<NativeLeaguePulse league="test" mine="a" serverTime
+      tab={tab} port={port} leave={() => {}} />));
+    const oddsCount = () => port.mock.calls.filter(([r]) => r.command === 'odds.read').length;
+    expect(oddsCount()).toBe(1);
+    const unavailable = () => {
+      expect(host.textContent).toContain('Playoff odds: unavailable.');
+      expect(host.textContent).not.toContain('Reading the playoff');
+      expect(host.textContent).not.toContain('retrying');
+    };
+    unavailable();
+    for (const kind of ['scores', 'team', 'values', 'clock'] as const) {
+      act(() => hear!([{ kind, league: 'test', season: 2026, week: 1, version: '2' }]));
+      await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+      expect(oddsCount()).toBe(1);
+      unavailable();
+    }
+    const refresh = [...host.querySelectorAll('button')].find(b => b.textContent === 'Refresh');
+    await act(async () => refresh!.click());
+    await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
+    expect(oddsCount()).toBe(1);
+    unavailable();
+    act(() => hear!([{ kind: 'league', league: 'other', version: '3' }]));
+    await act(async () => { await vi.advanceTimersByTimeAsync(PULSE_FOLLOW_MS); });
+    expect(oddsCount()).toBe(1);
+    act(() => hear!([{ kind: 'league', league: 'test', version: '3' }]));
+    await act(async () => { await vi.advanceTimersByTimeAsync(PULSE_FOLLOW_MS); });
+    expect(oddsCount()).toBe(2);
+    unavailable();
+  } finally { vi.useRealTimers(); }
 });
