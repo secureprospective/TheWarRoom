@@ -30,7 +30,7 @@ func checkSourceCache(t *testing.T, src Source, league string, want Reading) {
 	src.Cache = &Cache{}
 	src.Facts = countedFacts{src.Facts, &reads}
 	src.Now = func() time.Time { return now }
-	src.Revision = func(context.Context) (int64, error) { return revision, nil }
+	src.Revision = func(context.Context, string) (int64, error) { return revision, nil }
 	src.NextFeatureAt = func(context.Context, time.Time) (time.Time, error) { return at.Add(time.Hour), nil }
 	read := func(franchise string) Reading {
 		t.Helper()
@@ -97,7 +97,7 @@ func checkSourceCache(t *testing.T, src Source, league string, want Reading) {
 		t.Fatalf("cancellation lost: %v", err)
 	}
 	failure := errors.New("revision unavailable")
-	src.Revision = func(context.Context) (int64, error) { return 0, failure }
+	src.Revision = func(context.Context, string) (int64, error) { return 0, failure }
 	if _, err := src.Read(t.Context(), league, "", season); !errors.Is(err, failure) {
 		t.Fatalf("revision failure hidden: %v", err)
 	}
@@ -122,7 +122,7 @@ func checkSavedPass(t *testing.T, src Source, league string, want Reading) {
 	saved := memSaved{}
 	src.Facts = countedFacts{src.Facts, &reads}
 	src.Now = func() time.Time { return now }
-	src.Revision = func(context.Context) (int64, error) { return 1, nil }
+	src.Revision = func(context.Context, string) (int64, error) { return 1, nil }
 	src.NextFeatureAt = func(context.Context, time.Time) (time.Time, error) { return at.Add(time.Hour), nil }
 	src.Evidence = func(context.Context) (string, error) { return evidence, nil }
 	src.Saved = saved

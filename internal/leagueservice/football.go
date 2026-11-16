@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -119,4 +121,9 @@ func WithPinnedFootball(host Host, evidence *history.PinnedFootball) (Host, erro
 // NativeOdds passes the odds read through to the host that holds the league's results.
 func (h footballHost) NativeOdds(ctx context.Context, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
 	return nativeOdds(ctx, h.Host, league, season, values)
+}
+
+// NativeValues passes the value read through to the host that holds the league's player values.
+func (h footballHost) NativeValues(ctx context.Context, league, franchise string, season int) (appvalue.Reading, error) {
+	return nativeValues(ctx, h.Host, league, franchise, season)
 }

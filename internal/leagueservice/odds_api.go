@@ -41,12 +41,17 @@ func (a *Service) TargetNativeOdds(league string, season int) (commissioner.Nati
 }
 
 // oddsValues is the league's value read, every franchise's players, in the form the odds reading counts.
+// A host without values, or values still being prepared, gives odds from results alone, labelled so.
 func (a *Service) oddsValues(ctx context.Context, league string, season int) commissioner.OddsValues {
-	host, ok := a.host.(valueHost)
-	if !ok {
+	reading, err := nativeValues(ctx, a.host, league, "", season)
+	switch {
+	case errors.Is(err, errNoValues):
 		return commissioner.OddsValues{Reduced: "player values are not on this server yet, so the odds come from results alone"}
+	case err != nil:
+		return commissioner.OddsValues{Reduced: "player values could not be read (" + err.Error() + "), so the odds come from results alone"}
+	case reading.Preparing:
+		return commissioner.OddsValues{Reduced: "player values are still being prepared, so the odds come from results alone"}
 	}
-	reading, err := host.NativeValues(ctx, league, "", season)
 	return OddsValuesOf(reading, err)
 }
 

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -18,6 +20,8 @@ type StoredHost struct {
 	Context   func() context.Context
 	Principal string
 	Registry  string
+	// Values reads player values prepared by the server; nil when the server does not collect them.
+	Values ValueReader
 }
 
 func (h StoredHost) Ready() error {
@@ -52,4 +56,12 @@ func (h StoredHost) CommissionerRecords(ctx context.Context, league string) ([]c
 }
 func (StoredHost) NativeScheduleDates(context.Context, int, time.Time) ([]leagueweek.Week, error) {
 	return nil, fmt.Errorf("use the server-held league schedule")
+}
+
+// NativeValues reads the server's prepared player values, or refuses when the server holds none.
+func (h StoredHost) NativeValues(ctx context.Context, league, franchise string, season int) (appvalue.Reading, error) {
+	if h.Values == nil {
+		return appvalue.Reading{}, errNoValues
+	}
+	return h.Values.NativeValues(ctx, league, franchise, season) //nolint:wrapcheck // the service wraps it once
 }

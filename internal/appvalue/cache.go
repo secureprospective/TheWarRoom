@@ -71,7 +71,7 @@ func (src Source) cached(ctx context.Context, revision int64, set params.Set, fr
 		return Reading{}, fmt.Errorf("league values expiry: %w", err)
 	}
 	out, valueErr := src.value(ctx, set, "", in)
-	after, err := src.revision(ctx)
+	after, err := src.revision(ctx, in.League)
 	if err != nil {
 		return Reading{}, err
 	}
@@ -96,7 +96,12 @@ func (c *Cache) publish(key [sha256.Size]byte, from, until time.Time, out Readin
 }
 
 func preparing(in Inputs, franchise string) Reading {
-	return Reading{League: in.League, Season: in.Season, Franchise: franchise, Preparing: true,
+	return Preparing(in.League, in.Season, franchise)
+}
+
+// Preparing is the reading a screen gets while no completed pass is in force.
+func Preparing(league string, season int, franchise string) Reading {
+	return Reading{League: league, Season: season, Franchise: franchise, Preparing: true,
 		Players: []Player{}, Age: []Band{}, Notes: []string{},
 		Best: Best{Franchise: franchise, Words: "Values are being prepared"}}
 }

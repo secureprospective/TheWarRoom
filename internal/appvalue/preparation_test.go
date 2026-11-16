@@ -16,7 +16,7 @@ import (
 
 func checkPreparation(t *testing.T, src Source, league string, want Reading) {
 	t.Helper()
-	src.Revision = func(context.Context) (int64, error) { return 1, nil }
+	src.Revision = func(context.Context, string) (int64, error) { return 1, nil }
 	src.NextFeatureAt = func(context.Context, time.Time) (time.Time, error) { return time.Time{}, nil }
 	prep := &Preparation{}
 	read := func() Reading {
@@ -50,7 +50,7 @@ func checkPreparation(t *testing.T, src Source, league string, want Reading) {
 			// A ledger change is a commit, so the store revision moves with the records.
 			revision++
 			next := revision
-			src.Revision = func(context.Context) (int64, error) { return next, nil }
+			src.Revision = func(context.Context, string) (int64, error) { return next, nil }
 			src.Records = func(ctx context.Context, l string) ([]commissioner.Record, error) {
 				records, err := original(ctx, l)
 				if err != nil {
@@ -113,6 +113,34 @@ func checkPreparation(t *testing.T, src Source, league string, want Reading) {
 	}
 	t.Run("inflight", func(t *testing.T) { checkInflightPreparation(t, src, league) })
 	t.Run("startup", func(t *testing.T) { checkStartupPreparation(t, src, league) })
+	t.Run("other league", func(t *testing.T) { checkOtherLeagueCommit(t, src, league) })
+}
+
+// checkOtherLeagueCommit: a commit in another league's file leaves this league's pass in force, so a
+// live Sunday's commits elsewhere neither send its readers back to "preparing" nor cost a new pass.
+func checkOtherLeagueCommit(t *testing.T, src Source, league string) {
+	t.Helper()
+	var other atomic.Int64
+	src.Revision = func(_ context.Context, l string) (int64, error) {
+		if l == league {
+			return 1, nil
+		}
+		return other.Load(), nil
+	}
+	prep := &Preparation{}
+	prep.cache(Scope{league, season})
+	changes := 0
+	prepare := func() { prep.sweep(t.Context(), src, func() { changes++ }, func(err error) { t.Error(err) }) }
+	prepare()
+	other.Add(1)
+	out, err := prep.Read(t.Context(), src, league, "", season)
+	if err != nil || out.Preparing || len(out.Players) == 0 {
+		t.Fatalf("another league's commit unsettled this league's pass: %+v %v", out.Preparing, err)
+	}
+	prepare()
+	if changes != 1 {
+		t.Fatalf("another league's commit cost a new pass: %d passes", changes)
+	}
 }
 
 type gatedFacts struct {
@@ -140,7 +168,7 @@ func (f gatedFacts) Book(ctx context.Context, q playerrecord.Query) (playerrecor
 func checkInflightPreparation(t *testing.T, src Source, league string) {
 	t.Helper()
 	var revision, calls atomic.Int64
-	src.Revision = func(context.Context) (int64, error) { return revision.Load(), nil }
+	src.Revision = func(context.Context, string) (int64, error) { return revision.Load(), nil }
 	entered, release := make(chan struct{}), make(chan struct{})
 	src.Facts = gatedFacts{Facts: src.Facts, entered: entered, release: release, calls: &calls}
 	prep := &Preparation{}

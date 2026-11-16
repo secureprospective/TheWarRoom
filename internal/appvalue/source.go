@@ -27,7 +27,7 @@ type Source struct {
 	Params        func() params.Set
 	Now           func() time.Time
 	Cache         *Cache
-	Revision      func(context.Context) (int64, error)
+	Revision      func(ctx context.Context, league string) (int64, error) // league "" spans every league
 	NextFeatureAt func(context.Context, time.Time) (time.Time, error)
 	Evidence      func(context.Context) (string, error) // relaunch-stable fingerprint of history evidence
 	Saved         Saved                                 // completed passes kept across launches
@@ -46,7 +46,7 @@ func (src Source) Read(ctx context.Context, league, franchise string, season int
 		return Reading{}, fmt.Errorf("league values: the read is not wired")
 	}
 	now := src.Now()
-	revision, err := src.revision(ctx)
+	revision, err := src.revision(ctx, league)
 	if err != nil {
 		return Reading{}, err
 	}
@@ -79,7 +79,7 @@ func (src Source) readCached(ctx context.Context, revision int64, set params.Set
 	if err != nil || !src.PreparedOnly {
 		return out, err
 	}
-	after, err := src.revision(ctx)
+	after, err := src.revision(ctx, in.League)
 	if err != nil {
 		return Reading{}, err
 	}
@@ -89,11 +89,11 @@ func (src Source) readCached(ctx context.Context, revision int64, set params.Set
 	return out, nil
 }
 
-func (src Source) revision(ctx context.Context) (int64, error) {
+func (src Source) revision(ctx context.Context, league string) (int64, error) {
 	if src.Revision == nil {
 		return 0, nil
 	}
-	revision, err := src.Revision(ctx)
+	revision, err := src.Revision(ctx, league)
 	if err != nil {
 		return 0, fmt.Errorf("league values revision: %w", err)
 	}

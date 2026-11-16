@@ -2,6 +2,7 @@ package leagueservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -22,8 +23,24 @@ func (r RawValueScope) Validate() error {
 	return nil
 }
 
-type valueHost interface {
+// ValueReader reads a league's player values: league, franchise (empty for every franchise), season.
+type ValueReader interface {
 	NativeValues(context.Context, string, string, int) (appvalue.Reading, error)
+}
+
+type valueHost = ValueReader
+
+// errNoValues is the refusal of a host that holds no player values: the desktop before its history
+// opens, or a server that does not collect value inputs.
+var errNoValues = errors.New("player records and fitted parameters are not available on this host")
+
+// nativeValues is a wrapping host's value read: the wrapped host's, or errNoValues.
+func nativeValues(ctx context.Context, inner Host, league, franchise string, season int) (appvalue.Reading, error) {
+	host, ok := inner.(valueHost)
+	if !ok {
+		return appvalue.Reading{}, errNoValues
+	}
+	return host.NativeValues(ctx, league, franchise, season) //nolint:wrapcheck // the service wraps it once
 }
 
 // TargetNativeValues is a held, read-only evaluation under this league's own settings.
@@ -37,13 +54,9 @@ func (a *Service) TargetNativeValues(raw RawValueScope) (appvalue.Reading, error
 	if err := a.host.Ready(); err != nil {
 		return appvalue.Reading{}, fmt.Errorf("values startup: %w", err)
 	}
-	host, ok := a.host.(valueHost)
-	if !ok {
-		return appvalue.Reading{}, fmt.Errorf("league values: player records and fitted parameters are not available on this host")
-	}
 	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
-	reading, err := host.NativeValues(ctx, raw.League, raw.Franchise, raw.Season)
+	reading, err := nativeValues(ctx, a.host, raw.League, raw.Franchise, raw.Season)
 	if err != nil {
 		return appvalue.Reading{}, fmt.Errorf("league values: %w", err)
 	}
