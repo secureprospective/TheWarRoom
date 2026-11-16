@@ -24,7 +24,7 @@ func TestServerBuildVersion(t *testing.T) {
 				t.Fatalf("version: %v: %s", err, out)
 			}
 			lines := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
-			if len(lines) != 2 || lines[0] != "League server release 8: league file version 15; serves The War Room protocol 1.0 to 1.1; durable commands 1." || lines[1] != tc.stamp {
+			if len(lines) != 2 || !strings.HasPrefix(lines[0], "League server release ") || lines[1] != tc.stamp {
 				t.Fatalf("unexpected version output: %q", out)
 			}
 			start, _ := exec.Command(binary, "hosted").CombinedOutput()

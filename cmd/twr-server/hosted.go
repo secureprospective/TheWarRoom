@@ -44,7 +44,6 @@ type hostedFlags struct {
 const replyCacheBytes = 256 << 20
 
 func parseHostedFlags(args []string) (hostedFlags, error) {
-	log.Print(buildStamp())
 	flags := flag.NewFlagSet("twr-server hosted", flag.ContinueOnError)
 	path := flags.String("db", "", "existing server-owned history and accounts database")
 	address := flags.String("listen", "127.0.0.1:0", "literal loopback IP:port; proxy deployment is separate")
@@ -64,6 +63,11 @@ func parseHostedFlags(args []string) (hostedFlags, error) {
 }
 
 func runHosted(ctx context.Context, args []string, output io.Writer) error {
+	log.Print(buildStamp())
+	return startHosted(ctx, args, output)
+}
+
+func startHosted(ctx context.Context, args []string, output io.Writer) error {
 	config, err := parseHostedFlags(args)
 	if err != nil {
 		return err
