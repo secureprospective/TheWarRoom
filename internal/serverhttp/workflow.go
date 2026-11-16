@@ -3,6 +3,7 @@ package serverhttp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"log"
@@ -44,7 +45,11 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	location, err := service.Location(league)
 	if err != nil {
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, "league access refused; sign in and check your seat", http.StatusForbidden)
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			workflowRefusal(w, err)
+		} else {
+			http.Error(w, "league access refused; sign in and check your seat", http.StatusForbidden)
+		}
 		return
 	}
 	pin := h.pinFor(r.Context(), league)
@@ -69,7 +74,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		// The command name and mode are fixed catalogue words; arguments, bearer and proof are never logged.
 		log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
+		workflowRefusal(w, err)
 		return
 	}
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
@@ -79,6 +84,15 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	writeHosted(w, response)
+}
+
+func workflowRefusal(w http.ResponseWriter, err error) {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		w.Header().Set("Retry-After", "5")
+		http.Error(w, "The league server is busy. Try again in a few seconds.", http.StatusServiceUnavailable)
+		return
+	}
+	http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
 }
 
 // workflowData runs a workflow, answering a league-state reading from the reply cache when it holds one.

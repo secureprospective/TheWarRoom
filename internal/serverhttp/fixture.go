@@ -157,7 +157,7 @@ const maxHeaderBytes = 8 << 10
 func boundedServer(handler http.Handler, certificate tls.Certificate) *http.Server {
 	return &http.Server{
 		Handler: handler, ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout: 10 * time.Second, WriteTimeout: 5 * time.Second, IdleTimeout: 30 * time.Second,
+		ReadTimeout: 10 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 30 * time.Second,
 		MaxHeaderBytes: maxHeaderBytes,
 		TLSConfig:      &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}},
 	}
