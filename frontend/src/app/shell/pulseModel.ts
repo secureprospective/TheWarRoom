@@ -27,17 +27,20 @@ export function espnTeam(team?: string) { return team ? ESPN_TEAM[team] ?? team 
 
 /** MatchupPlay counts a matchup's unsettled starters against the NFL board: on the field now (their
  *  club's game is being played) and still to play (it has not kicked off). A club with no game this
- *  week (a bye) or a game already over counts in neither. */
-export type MatchupPlay = { on: number; left: number };
+ *  week (a bye) or a game already over counts in neither. unset counts the sides with no lineup at
+ *  all, so a matchup nobody set is never called done. */
+export type MatchupPlay = { on: number; left: number; unset: number };
 
 /** matchupPlay is undefined while the board is not held or any unsettled starter's club is unknown:
  *  the badge then never claims more than the scores show. */
 export function matchupPlay(results: PulseResults, game: PulseGame,
   board: LiveNflGame[]): MatchupPlay | undefined {
   if (!board.length) return undefined;
-  const play = { on: 0, left: 0 };
+  const play = { on: 0, left: 0, unset: 0 };
   for (const franchise of [game.home, game.away]) {
-    for (const starter of results.scores.find(s => s.franchise === franchise)?.starters ?? []) {
+    const starters = results.scores.find(s => s.franchise === franchise)?.starters ?? [];
+    if (!starters.length) play.unset++;
+    for (const starter of starters) {
       if (starter.points !== undefined) continue;
       if (!starter.team) return undefined;
       const club = espnTeam(starter.team);
@@ -57,6 +60,7 @@ export function statusLabel(game: PulseGame, current: boolean, play?: MatchupPla
   if (game.status === 'Tie') return 'TIED';
   if (game.status !== 'No result yet') return 'FINAL';
   if (!current) return 'WAITING';
+  if (play?.unset === 2) return 'NO LINEUPS';
   if (play) return play.on ? 'LIVE' : play.left ? `${play.left} LEFT` : 'DONE';
   return game.homeProvisional === undefined && game.awayProvisional === undefined ? 'TO PLAY' : 'IN PLAY';
 }
@@ -64,10 +68,13 @@ export function statusLabel(game: PulseGame, current: boolean, play?: MatchupPla
 /** playWords is the badge's plain explanation, for its tooltip. */
 export function playWords(row: PulseRow): string {
   if (!row.play) return '';
-  const { on, left } = row.play;
-  if (!on && !left) return 'Every starter is done; the result is official when the week closes';
+  const { on, left, unset } = row.play;
+  if (unset === 2) return 'Neither side has set a lineup for this week, so neither scores';
+  const unsetWords = unset ? 'one side has set no lineup' : '';
+  if (!on && !left) return ['Every starter is done; the result is official when the week closes', unsetWords]
+    .filter(Boolean).join('; ');
   return [on ? `${on} starter${on > 1 ? 's' : ''} on the field now` : 'nobody playing right now',
-    left ? `${left} still to play` : ''].filter(Boolean).join(', ');
+    left ? `${left} still to play` : '', unsetWords].filter(Boolean).join(', ');
 }
 
 export function pulseRows(results: PulseResults, mine: string, seats: PulseSeat[],

@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import type { PulseGame, PulseResults, PulseStarter } from '../data/nativePulse';
 import type { Game as LiveNflGame } from '../now/liveContract';
-import { matchupPlay, pulseRows, statusLabel } from './pulseModel';
+import { matchupPlay, playWords, pulseRows, statusLabel } from './pulseModel';
 
 const game = (extra: Partial<PulseGame>): PulseGame => ({ week: 10, home: '0001', away: '0002', homeName: 'A',
   awayName: 'B', status: 'No result yet', words: '', why: [], ...extra });
@@ -11,9 +11,9 @@ it('says where an undecided game stands', () => {
   expect(statusLabel(game({}), true)).toBe('TO PLAY');
   expect(statusLabel(game({ awayProvisional: 12.5 }), true)).toBe('IN PLAY');
   expect(statusLabel(game({ status: 'Final', winner: '0001' }), true)).toBe('FINAL');
-  expect(statusLabel(game({}), true, { on: 2, left: 3 })).toBe('LIVE');
-  expect(statusLabel(game({}), true, { on: 0, left: 4 })).toBe('4 LEFT');
-  expect(statusLabel(game({}), true, { on: 0, left: 0 })).toBe('DONE');
+  expect(statusLabel(game({}), true, { on: 2, left: 3, unset: 0 })).toBe('LIVE');
+  expect(statusLabel(game({}), true, { on: 0, left: 4, unset: 0 })).toBe('4 LEFT');
+  expect(statusLabel(game({}), true, { on: 0, left: 0, unset: 0 })).toBe('DONE');
 });
 
 const nfl = (away: string, home: string, status: 'pre' | 'in' | 'post') =>
@@ -33,7 +33,7 @@ const results = (home: PulseStarter[], away: PulseStarter[]): PulseResults => ({
 it('is LIVE only while a starter is on the field', () => {
   const board = [nfl('SEA', 'LV', 'in'), nfl('PIT', 'CIN', 'pre'), nfl('NYG', 'DAL', 'post')];
   const on = results([starter('SEA'), starter('PIT')], [starter('NYG', 12)]);
-  expect(matchupPlay(on, on.games[0], board)).toEqual({ on: 1, left: 1 });
+  expect(matchupPlay(on, on.games[0], board)).toEqual({ on: 1, left: 1, unset: 0 });
   expect(pulseRows(on, '0001', [], true, board)[0].status).toBe('LIVE');
   const waiting = results([starter('PIT')], [starter('CIN'), starter('DAL')]);
   expect(pulseRows(waiting, '0001', [], true, board)[0].status).toBe('2 LEFT');
@@ -44,4 +44,17 @@ it('is LIVE only while a starter is on the field', () => {
   expect(pulseRows(results([starter(undefined)], []), '0001', [], true, board)[0].status).toBe('TO PLAY');
   expect(pulseRows(on, '0001', [], true, [])[0].status).toBe('TO PLAY');
   expect(pulseRows(on, '0001', [], false, board)[0].status).toBe('WAITING');
+});
+
+// The lab league, Sunday night of week 10: most franchises set no lineup. A matchup with no starters
+// on either side has nothing to wait for, but it is not done either: it says nobody set a lineup.
+it('never calls a matchup nobody set done', () => {
+  const board = [nfl('SEA', 'LV', 'post')];
+  const nobody = results([], []);
+  expect(pulseRows(nobody, '0001', [], true, board)[0].status).toBe('NO LINEUPS');
+  const oneSide = results([starter('SEA')], []);
+  const row = pulseRows(oneSide, '0001', [], true, board)[0];
+  expect(row.status).toBe('DONE');
+  expect(playWords(row))
+    .toBe('Every starter is done; the result is official when the week closes; one side has set no lineup');
 });
