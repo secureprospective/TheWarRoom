@@ -9,6 +9,7 @@
   stress.py hammer  BASE STATE SCREEN SECS  one device, back-to-back reads of one screen (for a profile)
   stress.py digest  BASE STATE OUTFILE    sha256 + size of every screen for owners 1 and 2 (lab parity diff;
                                           waivers at a fixed instant); bodies are never written
+  stress.py storm BASE STATE --out DIR    lab-only ramp, hold and recovery; storm --help for timing flags
   stress.py reconcile OUTDIR CHECKFILE    every confirmed action is in the ledger once, at its receipt's
                                           revision; CHECKFILE is stresscheck's output
 
@@ -58,6 +59,9 @@ class Client:
     def __init__(self, base):
         u = urllib.parse.urlsplit(base)
         self.host, self.conn, self.wire = u.hostname, None, 0
+        self.port = u.port
+        self.retry = True
+        self.error = None
 
     def post(self, path, body, bearer=None, timeout=30):
         h = dict(HDR)
@@ -66,10 +70,13 @@ class Client:
         if os.environ.get("STRESS_GZIP") == "1":
             h["Accept-Encoding"] = "gzip"
         data = json.dumps(body).encode()
-        for attempt in (0, 1):
+        self.error = None
+        attempts = 2 if self.retry else 1
+        for attempt in range(attempts):
+            t = time.perf_counter()
             try:
                 if self.conn is None:
-                    self.conn = http.client.HTTPSConnection(self.host, timeout=timeout, context=ssl.create_default_context())
+                    self.conn = http.client.HTTPSConnection(self.host, port=self.port, timeout=timeout, context=ssl.create_default_context())
                 t = time.perf_counter()
                 self.conn.request("POST", path, body=data, headers=h)
                 r = self.conn.getresponse()
@@ -77,11 +84,13 @@ class Client:
                 self.wire = len(out)
                 if r.getheader("Content-Encoding") == "gzip":
                     out = gzip.decompress(out)
+                self.error = None
                 return r.status, out, (time.perf_counter() - t) * 1000, r.getheader("Retry-After")
             except (OSError, http.client.HTTPException) as e:
                 self.close()
-                if attempt == 1:
-                    return 0, str(type(e).__name__).encode(), 0.0, None
+                self.error = type(e).__name__
+                if attempt == attempts - 1:
+                    return 0, self.error.encode(), (time.perf_counter() - t) * 1000, None
         return 0, b"", 0.0, None
 
     def close(self):
@@ -489,5 +498,8 @@ if __name__ == "__main__":
         reconcile(sys.argv[2], sys.argv[3])
     elif cmd == "run":
         Run(sys.argv[2], json.load(open(sys.argv[3])), sys.argv[4], skip_reads).go()
+    elif cmd == "storm":
+        from stress_storm import main
+        main(sys.argv[2:])
     else:
         sys.exit(__doc__)
