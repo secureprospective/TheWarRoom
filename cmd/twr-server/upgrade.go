@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -284,8 +285,11 @@ func runVersion(args []string, output io.Writer) error {
 	}
 	current := serverversion.Current()
 	oldest := max(current.ProtocolMinor-1, current.SecurityFloor)
-	return report(output, fmt.Sprintf("League server release %d: league file version %d; serves The War Room protocol %d.%d to %d.%d; durable commands %d.",
-		current.Release, current.Schema, serverversion.ProtocolMajor, oldest, serverversion.ProtocolMajor, current.ProtocolMinor, current.Commands))
+	if err := report(output, fmt.Sprintf("League server release %d: league file version %d; serves The War Room protocol %d.%d to %d.%d; durable commands %d.",
+		current.Release, current.Schema, serverversion.ProtocolMajor, oldest, serverversion.ProtocolMajor, current.ProtocolMinor, current.Commands)); err != nil {
+		return err
+	}
+	return report(output, buildStamp())
 }
 
 func report(output io.Writer, line string) error {
@@ -322,4 +326,15 @@ func runVerifyRelease(args []string, output io.Writer) error {
 		return fmt.Errorf("report verified release: %w", err)
 	}
 	return nil
+}
+
+//nolint:gochecknoglobals // Linker build stamps require package-level string variables.
+var (
+	version   = "dev"
+	commit    = ""
+	buildDate = ""
+)
+
+func buildStamp() string {
+	return fmt.Sprintf("Server build %s (commit: %s, date: %s)", strings.TrimPrefix(version, "v"), commit, buildDate)
 }

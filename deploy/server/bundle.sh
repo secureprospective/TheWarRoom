@@ -11,6 +11,9 @@ mkdir -p "$PWD/.scratch"
 work=$(mktemp -d "$PWD/.scratch/server-bundle.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 export GOTOOLCHAIN=go1.26.11
+export TWR_BUILD_VERSION=$(git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo dev)
+export TWR_BUILD_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || true)
+export TWR_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 # GoReleaser OSS, not the separately licensed Pro distribution.
 curl --fail --location --silent --show-error --connect-timeout 10 --max-time 180 \
   https://github.com/goreleaser/goreleaser/releases/download/v2.19.0/goreleaser_Linux_x86_64.tar.gz \
