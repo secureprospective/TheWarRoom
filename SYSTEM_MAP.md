@@ -54,7 +54,7 @@ Evidence, responsibility split and justified debt:
 
 The Lab (lab, facts, labcompile, manifest, labparity) moved out to its own LeagueLab repo on 2026-11-04.
 
-Tooling outside the features: `scripts/value_board.py` (offline current-engine valuation triage; tagged harness in `internal/modelrun/value_board_test.go`, method in `docs/architecture/valuation-review.md`), `tools/fit` (writes the fitted params), `tools/fixtures`, `tools/twr-practice` (development-only hosted click-test launcher; `tools/twr-practice/README.md`), `tools/ifaceguard`, `tools/boundarycheck` (function/source boundary ratchet), `scripts/`.
+Tooling outside the features: `scripts/value_board.py` (offline current-engine valuation triage; tagged harness in `internal/modelrun/value_board_test.go`, method in `docs/architecture/valuation-review.md`), `tools/fit` (writes the fitted params), `tools/fixtures`, `tools/stresscheck` (lab-only read-only integrity and ledger reader), `tools/twr-practice` (development-only hosted click-test launcher; `tools/twr-practice/README.md`), `tools/ifaceguard`, `tools/boundarycheck` (function/source boundary ratchet), `scripts/`.
 
 Current boundary-extraction inventory and resume point: `docs/architecture/app-boundary.md`.
 Finished-score finality is in `internal/app/now/nfl_reading.go`; local database-check report

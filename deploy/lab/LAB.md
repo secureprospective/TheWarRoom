@@ -81,3 +81,8 @@ Cloudflare: the zone is production. Lab names are `twr-lab-<ctid>` only; tunnels
 | 10 | A failed CT stays behind, stopped | Installer keeps failed CTs for diagnosis | Use a new CT number; remove the old one with `twr-down` | By design |
 | 11 | Logins and changes answer 503 on a fresh server | Changes pause until off-site (R2) backups verify | Expected on a lab server without R2 | By design |
 | 12 | Agent session cannot remove CTs | Beelink hook blocks any `pct destroy` by an agent | Christopher runs `twr-down` / `golden-smoke.sh` | Operator |
+
+`stresscheck` reads SQLite integrity, ledger heads and request IDs, including split league files.
+Build: `CGO_ENABLED=0 go build -o .scratch/stresscheck ./tools/stresscheck`.
+Copy to the lab, then `pct push 258 stresscheck /usr/local/bin/stresscheck --perms 0755`.
+Lab-only: `su -s /bin/sh twr -c "stresscheck -db /var/lib/twr/server.db"`; never migrates or writes data.

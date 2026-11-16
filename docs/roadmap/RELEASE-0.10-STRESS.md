@@ -5,7 +5,7 @@ improves as the project goes on and does not hold up 0.10.
 ## Setup
 - A throwaway container on the test-server VM, sized like the real one: 1 GiB memory, 2 cores, no swap.
 - The 0.10 server bundle (`twr-server version` says 0.10.0), a 32-franchise league, backups switched on.
-- 32 owners on 2 devices each (64 devices), driven by `deploy/lab/stress.py`.
+- 32 owners, 80 devices (the tool's built-in spread: 3 devices for 16 owners, 2 for the other 16), driven by `deploy/lab/stress.py`.
 - The run is `deploy/lab/stress-schedule.sh`: steady load, burst, steady, with 15 forced kill / container-stop /
   service-restart cycles mixed in. About 3 hours. `stress-sample.sh` records memory, disk and CPU every 10 seconds.
 
