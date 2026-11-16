@@ -378,9 +378,17 @@ results alone. Without it, `value.read` refuses and odds read "Reduced: player v
 
 - Five minutes after start and then once a day, `sources.Service.LoadSignals` loads the nflverse feeds (weekly
   player statistics, snaps, injuries, players, draft picks, combine, contracts) for the newest season any league
-  is pinned to into the reference file, then writes the player record from those facts
-  (`playerrecord.Assemble`'s unlisted path). There is no MFL call and nothing league-specific. College measures
-  need a CollegeFootballData key the server does not hold; the model reads without them (R11).
+  is pinned to into the reference file, archiving every fetched body. It then reads each seeded league's
+  MFL players listing through the desktop's discovered-host client and normalizer and writes the shared
+  player records from those listings and held facts. MFL scope comes from the recorded reference identity,
+  not the native league ID. Listings are combined so one league cannot unlist another's custom players;
+  the first league in native-ID order supplies facts for a shared player. College measures need a
+  CollegeFootballData key the server does not hold; the model reads without them (R11).
+- A valid archived players body younger than 24 hours is reused without contacting MFL, including after
+  restart. A failed read keeps the last valid listing and logs once for that attempt. The daily keeper
+  retries on its next pass; archived attempt times also prevent an earlier retry within one hour after a
+  restart. HTTP 429 is left to that durable schedule, not the client's short automatic retries. A league
+  with no reference identity makes no MFL call; if no listing is usable, held player records stay unchanged.
 - A background `appvalue.Preparation` prepares every seeded league's values and saves each completed pass under
   `prepared-values/`; a request only reads a completed pass. Until the first load writes player records nothing is
   prepared and reads say values are being prepared. A league's pass is keyed on the reference file and that
@@ -389,10 +397,7 @@ results alone. Without it, `value.read` refuses and odds read "Reduced: player v
   results-only odds that say why.
 - The log says `server values: inputs for SEASON: N files loaded, … failed; N facts added` and
   `server values: player record written for N players`.
-- **Not yet usable (2026-11-16).** A dry run on a copy of the lab server's data held to its limits (1 GiB, no
-  swap, 2 CPUs, `GOMEMLIMIT=768MiB`) loaded 23 files (0 failed, about one minute, 974,223 facts), wrote 9,758
-  records and prepared a pass in about 8 s, peaking at 660 MiB anonymous memory with no OOM, but the pass held no
-  values: every rostered player read "not in the players database". Two gaps remain: the load's client does not
-  archive the bodies it fetches (the desktop wraps it in `archive.Transport`; `HeldWeeks` reads only archived
-  weekly files), and the model values only listed records (`modelrun` `rec.Listed`), which need MFL's players
-  listing. Do not turn on `/etc/twr/signals` until both are closed.
+- **Live acceptance still required.** The earlier unlisted dry run peaked at 660 MiB anonymous memory
+  within a 1 GiB limit but produced no values. Archiving and MFL listing acquisition now close its two
+  identified input gaps; fake-HTTP tests establish listed records and restart-safe reuse. They do not
+  establish a nonempty real values pass or its memory headroom. Verify those before enabling `/etc/twr/signals`.

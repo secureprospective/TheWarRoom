@@ -59,8 +59,10 @@ auth generation; no credential crosses into the webview. See
   (`cmd/twr-server/football_pins.go`). A running server can swap a pin through `pin-football` on its
   private status socket, and with `-official-stats` it re-pins each league to official statistics as weeks finish. Live scoring is a separate immutable current-week overlay;
   ticks leave action-relevant pin digests unchanged. Historical weeks still use the selected pin.
-- **MFL calls:** `twr-server league-load` is a one-time console load from a desktop MFL copy. There is no
-  ongoing MFL sync.
+- **MFL calls:** `twr-server league-load` is a one-time console load from a desktop MFL copy. With
+  `-signals`, the server also reads each seeded league's MFL players listing once a day for player values,
+  reusing valid archived bodies under 24 hours old across restarts and keeping the last listing on failure.
+  This does not sync league authority or change native rosters.
 - **Browser access to the league:** `internal/serverhttp/browser.go` (`browserRoute`) lets a browser reach
   only the public pages (promo, join, set password) and their JSON doors. Every other route refuses a
   request with an `Origin` header.

@@ -60,6 +60,11 @@ func WithTransport(rt http.RoundTripper) Option {
 	return func(c *Client) { c.http.Transport = rt }
 }
 
+// WithoutRetries leaves retry scheduling to a durable caller instead of retrying 429 responses.
+func WithoutRetries() Option {
+	return func(c *Client) { c.backoffs = nil }
+}
+
 // New creates a Client at rps requests per second. An empty host means the canonical api
 // host until DiscoverHost sets the league's.
 func New(host string, rps float64, opts ...Option) (*Client, error) {

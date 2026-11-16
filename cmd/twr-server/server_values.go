@@ -16,8 +16,8 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
+	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
@@ -142,11 +142,12 @@ func (v *serverValues) run(ctx context.Context, logf func(string, ...any)) {
 
 // signalsKeeper loads the value inputs into the reference file once a day.
 type signalsKeeper struct {
-	values *serverValues
-	client *http.Client
-	now    func() time.Time
-	logf   func(string, ...any)
-	mu     sync.Mutex // one load at a time
+	values  *serverValues
+	client  *http.Client
+	now     func() time.Time
+	logf    func(string, ...any)
+	listing *mfl.Client
+	mu      sync.Mutex // one load at a time
 }
 
 // startServerValues, with -signals, starts the daily input load and the background preparation and
@@ -208,11 +209,13 @@ func (k *signalsKeeper) signalTransport() http.RoundTripper {
 	return &archive.Transport{Base: k.client.Transport, Sink: k.values.reference}
 }
 
-// writeRecords writes the player record from the facts the load holds. The server holds no MFL players
-// listing, so each record takes its position, age and draft from nflverse (playerrecord.Assemble's
-// unlisted path); names come from the league's own roster.
+// writeRecords combines league listings before updating the shared player records.
 func (k *signalsKeeper) writeRecords(ctx context.Context) {
-	n, err := k.values.records().Write(ctx, noListing{}, k.now())
+	listing := k.playerListings(ctx)
+	if len(listing) == 0 {
+		return // Keep the last records when no league has a usable listing.
+	}
+	n, err := k.values.records().Write(ctx, listing, k.now())
 	if err != nil {
 		k.logf("server values: player record: %v", err)
 		return
@@ -222,12 +225,6 @@ func (k *signalsKeeper) writeRecords(ctx context.Context) {
 		k.values.markRecorded()
 	}
 }
-
-// noListing lists nobody: every record resolves from the held facts alone.
-type noListing struct{}
-
-func (noListing) Facts(string) (domain.PlayerFacts, bool) { return domain.PlayerFacts{}, false }
-func (noListing) IDs() []string                           { return nil }
 
 // leagueSeason is the newest NFL season any league is pinned to.
 func (k *signalsKeeper) leagueSeason(ctx context.Context) int {
