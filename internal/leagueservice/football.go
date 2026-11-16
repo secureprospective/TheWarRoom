@@ -115,3 +115,8 @@ func WithPinnedFootball(host Host, evidence *history.PinnedFootball) (Host, erro
 	}
 	return footballHost{Host: host, evidence: evidence}, nil
 }
+
+// NativeOdds passes the odds read through to the host that holds the league's results.
+func (h footballHost) NativeOdds(ctx context.Context, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	return nativeOdds(ctx, h.Host, league, season, values)
+}

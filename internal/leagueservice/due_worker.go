@@ -182,3 +182,8 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	}
 	return next, nil
 }
+
+// NativeOdds passes the odds read through to the host that holds the league's results.
+func (h dueHost) NativeOdds(ctx context.Context, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	return nativeOdds(ctx, h.Host, league, season, values)
+}

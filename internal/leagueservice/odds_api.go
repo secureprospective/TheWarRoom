@@ -2,6 +2,7 @@ package leagueservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/appvalue"
@@ -28,7 +29,7 @@ func (a *Service) TargetNativeOdds(league string, season int) (commissioner.Nati
 	}
 	host, ok := a.host.(oddsHost)
 	if !ok {
-		return commissioner.NativeOdds{}, fmt.Errorf("native odds: league results are not available on this host")
+		return commissioner.NativeOdds{}, fmt.Errorf("native odds: %w", errNoOdds)
 	}
 	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
@@ -43,7 +44,7 @@ func (a *Service) TargetNativeOdds(league string, season int) (commissioner.Nati
 func (a *Service) oddsValues(ctx context.Context, league string, season int) commissioner.OddsValues {
 	host, ok := a.host.(valueHost)
 	if !ok {
-		return commissioner.OddsValues{Words: "Player values are not available on this host"}
+		return commissioner.OddsValues{Reduced: "player values are not on this server yet, so the odds come from results alone"}
 	}
 	reading, err := host.NativeValues(ctx, league, "", season)
 	return OddsValuesOf(reading, err)
@@ -64,3 +65,14 @@ func OddsValuesOf(reading appvalue.Reading, err error) commissioner.OddsValues {
 	}
 	return out
 }
+
+// nativeOdds is a wrapping host's odds read: the wrapped host's, or the refusal the service gives.
+func nativeOdds(ctx context.Context, inner Host, league string, season int, values commissioner.OddsValues) (commissioner.NativeOdds, error) {
+	host, ok := inner.(oddsHost)
+	if !ok {
+		return commissioner.NativeOdds{}, errNoOdds
+	}
+	return host.NativeOdds(ctx, league, season, values) //nolint:wrapcheck // the service wraps it once
+}
+
+var errNoOdds = errors.New("league results are not available on this host")

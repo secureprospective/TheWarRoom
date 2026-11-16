@@ -30,14 +30,14 @@ func (r RawStatScope) Validate() error {
 	if r.Season < 1920 || r.Season > 9999 || r.Week < 1 || r.Week > 22 {
 		return fmt.Errorf("choose an NFL season and week")
 	}
-	if !isGSIS(r.GSIS) {
+	if !IsGSIS(r.GSIS) {
 		return fmt.Errorf("choose a GSIS player id")
 	}
 	return nil
 }
 
-// isGSIS reports whether id has the shape every statistics file keys players by: 00- and seven digits.
-func isGSIS(id string) bool {
+// IsGSIS reports whether id has the shape every statistics file keys players by: 00- and seven digits.
+func IsGSIS(id string) bool {
 	if len(id) != 10 || id[:3] != "00-" {
 		return false
 	}

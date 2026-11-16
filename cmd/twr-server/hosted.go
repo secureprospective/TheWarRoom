@@ -37,6 +37,7 @@ type hostedFlags struct {
 	backup   *string
 	trusted  *string
 	status   *string
+	official *bool
 }
 
 // replyCacheBytes bounds the league-state replies the server keeps in memory (serverhttp.ReplyCache).
@@ -54,10 +55,11 @@ func parseHostedFlags(args []string) (hostedFlags, error) {
 	backup := flags.String("backup-config", "", "private R2 backup settings; required for hosted writes")
 	trusted := flags.String("trusted-proxy", "", "loopback IP of a cloudflared hop whose CF-Connecting-IP names each client; empty trusts no proxy")
 	status := flags.String("status-socket", "", "owner-only Unix socket for the console status dashboard; empty serves none")
+	official := flags.Bool("official-stats", false, "re-pin each league to nflverse's official statistics as its weeks finish")
 	if err := flags.Parse(args); err != nil {
 		return hostedFlags{}, fmt.Errorf("parse hosted flags: %w", err)
 	}
-	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, status: status}, nil
+	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, status: status, official: official}, nil
 }
 
 func runHosted(ctx context.Context, args []string, output io.Writer) error {
@@ -108,12 +110,22 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	defer stopStatus()
 
 	if pins, ok := handler.Leagues.(*leaguePins); ok {
-		defer startHostedLive(ctx, pins, filepath.Dir(*config.path), handler.Publisher, handler.LiveGames)()
+		defer startHostedScores(ctx, pins, files, config, handler)()
 	}
 	defer startHostedDueWorker(ctx, handler.Worker)()
 	defer startArchivePurge(ctx, files.leagues.root, time.Now, func(line string) { log.Print(line) })()
 
 	return serveHosted(ctx, *config.address, certificate, handler, output)
+}
+
+// startHostedScores starts live scores and, when the operator asked for them, official statistics.
+func startHostedScores(ctx context.Context, pins *leaguePins, files stateFiles, config hostedFlags, handler serverhttp.Hosted) func() {
+	stopLive := startHostedLive(ctx, pins, filepath.Dir(*config.path), handler.Publisher, handler.LiveGames)
+	if !*config.official {
+		return stopLive
+	}
+	stopOfficial := startOfficialStats(ctx, pins, signInStore(files))
+	return func() { stopOfficial(); stopLive() }
 }
 
 func checkHostedDatabase(path string, extraArgs int) error {
