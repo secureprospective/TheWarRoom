@@ -14,10 +14,12 @@
 
 STATE (0600, keep in /dev/shm) holds usernames, passwords and bearers. Logs hold ids, statuses,
 counts and timings only; never codes, bearers, passwords, names or row contents.
+--skip-reads NAME[,NAME...] excludes named reads in probe/run/hammer and reports each skip.
+STRESS_SKIP_READS supplies the same option to the schedule/cycle scripts (default: no skips).
 STRESS_GZIP=1 asks for gzip, as the Go desktop client always does; bodies are decoded before use, and
 Client.wire is the size as sent.
 """
-import gzip, hashlib, http.client, json, os, random, re, secrets, ssl, sys, threading, time, urllib.parse
+import argparse, gzip, hashlib, http.client, json, os, random, re, secrets, ssl, sys, threading, time, urllib.parse
 
 HDR = {"Content-Type": "application/json", "X-TWR-Protocol": "1.1", "X-TWR-Commands": "1", "User-Agent": "twr-lab-stress"}
 SCREENS = [  # every owner read the hosted server serves (WorkflowCommands + /v1/native/ledger); f = franchise, s = season
@@ -38,6 +40,16 @@ SCREENS = [  # every owner read the hosted server serves (WorkflowCommands + /v1
     ("commish.rules.read", lambda L, f, s: {"league": L}),
     ("commish.corrections.read", lambda L, f, s: {"league": L}),
 ]
+
+
+def selected_screens(skip_reads=()):
+    unknown = set(skip_reads) - {name for name, _ in SCREENS}
+    if unknown:
+        raise ValueError("unknown skipped reads: " + ", ".join(sorted(unknown)))
+    for name, _ in SCREENS:
+        if name in skip_reads:
+            print(f"{name:24s} SKIPPED (not in this release)", flush=True)
+    return [(name, args) for name, args in SCREENS if name not in skip_reads]
 
 
 class Client:
@@ -164,12 +176,13 @@ def season_of(c, bearer, league):
     return resp["data"]["snapshot"]["season"], resp
 
 
-def probe(base, statefile):
+def probe(base, statefile, skip_reads=()):
+    screens = selected_screens(skip_reads)
     state = json.load(open(statefile))
     league, o = state["league"], state["owners"][0]
     c, bearer = Client(base), o["bearers"][0]
     season, _ = season_of(c, bearer, league)
-    for name, args in SCREENS:
+    for name, args in screens:
         if args is None:
             s, b, ms, _ = c.post("/v1/native/ledger", {"protocol": 1, "league": league}, bearer)
         else:
@@ -184,12 +197,15 @@ def read_screen(c, bearer, league, fid, season, name, args):
     return wf(c, bearer, name, "read", args(league, fid, season))
 
 
-def hammer(base, statefile, screen, secs):
+def hammer(base, statefile, screen, secs, skip_reads=()):
+    screens = dict(selected_screens(skip_reads))
+    if screen in skip_reads:
+        return
     state = json.load(open(statefile))
     league, o = state["league"], state["owners"][0]
     c, bearer = Client(base), o["bearers"][0]
     season, _ = season_of(c, bearer, league)
-    args = dict(SCREENS)[screen]
+    args = screens[screen]
     lat, size, codes, end = [], 0, {}, time.time() + secs
     while time.time() < end:
         s, b, ms, _ = read_screen(c, bearer, league, o["franchise"], season, screen, args)
@@ -219,14 +235,18 @@ def digest(base, statefile, outfile):
 
 
 class Run:
-    def __init__(self, base, state, outdir):
+    def __init__(self, base, state, outdir, skip_reads=()):
+        screens = selected_screens(skip_reads)
+        screens = [s for s in screens if s[0] in set(state.get("screens", [n for n, _ in SCREENS]))]
+        if not screens:
+            raise ValueError("run requires at least one screen read")
         self.base, self.state, self.outdir = base, state, outdir
         self.league = state["league"]
         self.lock = threading.Lock()
         self.lat = open(os.path.join(outdir, "latency.jsonl"), "a", buffering=1)
         self.confirmed = open(os.path.join(outdir, "confirmed.jsonl"), "a", buffering=1)
         self.events = open(os.path.join(outdir, "events.jsonl"), "a", buffering=1)
-        self.screens = [s for s in SCREENS if s[0] in set(state.get("screens", [n for n, _ in SCREENS]))]
+        self.screens = screens
         self.seq = 0
 
     def phase(self):
@@ -448,17 +468,26 @@ def reconcile(outdir, checkfile):
 
 if __name__ == "__main__":
     cmd = sys.argv[1]
+    skip_reads = ()
+    if cmd in ("probe", "run", "hammer"):
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument("--skip-reads", default=os.environ.get("STRESS_SKIP_READS", ""))
+        options, positional = parser.parse_known_args(sys.argv[2:])
+        skip_reads = tuple(name.strip() for name in options.skip_reads.split(",") if name.strip())
+        if set(skip_reads) - {name for name, _ in SCREENS}:
+            parser.error("unknown name in --skip-reads")
+        sys.argv = sys.argv[:2] + positional
     if cmd == "onboard":
         onboard(sys.argv[2], sys.argv[3], sys.argv[4])
     elif cmd == "probe":
-        probe(sys.argv[2], sys.argv[3])
+        probe(sys.argv[2], sys.argv[3], skip_reads)
     elif cmd == "hammer":
-        hammer(sys.argv[2], sys.argv[3], sys.argv[4], float(sys.argv[5]))
+        hammer(sys.argv[2], sys.argv[3], sys.argv[4], float(sys.argv[5]), skip_reads)
     elif cmd == "digest":
         digest(sys.argv[2], sys.argv[3], sys.argv[4])
     elif cmd == "reconcile":
         reconcile(sys.argv[2], sys.argv[3])
     elif cmd == "run":
-        Run(sys.argv[2], json.load(open(sys.argv[3])), sys.argv[4]).go()
+        Run(sys.argv[2], json.load(open(sys.argv[3])), sys.argv[4], skip_reads).go()
     else:
         sys.exit(__doc__)

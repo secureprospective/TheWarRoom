@@ -53,6 +53,16 @@ Cloudflare Tunnel Edit for the account, plus DNS Edit and Zone Read for that zon
 The installer creates the Tunnel, TLS material, DNS record and services itself;
 there is no dashboard ingress editing, certificate copying or manual init setup.
 Complete the documented R2 setup inside the CT before moving an active league.
+
+**First league load:** `league-load` requires the service stopped and a destination
+whose reference database does not already contain conflicting player identities.
+Stopping the service alone is not sufficient: the installer starts the server, which
+can populate identities before the load. On a disposable lab installation, preserve
+the failed data and load into fresh empty hosted storage before starting the service;
+then configure backups and check `twr-status`. Do not empty or replace a server with
+real data to work around this conflict. The installer does not yet provide a safe
+first-load-before-start sequence for a new installation.
+
 It does not change the host's management network, firewall policy or storage
 security. A pre-existing VLAN/DHCP network, firewall-enabled Proxmox node, template
 storage and synchronized host clock are infrastructure prerequisites, not claims

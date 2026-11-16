@@ -5,6 +5,8 @@
 # (integrity, head, confirmed-action reconcile), brings it back and waits until it answers.
 set -euo pipefail
 [[ $(hostname) == twr-lab ]] || { echo 'lab only' >&2; exit 97; }
+# Inherited by stress.py; exclusions are printed by each read client.
+export STRESS_SKIP_READS=${STRESS_SKIP_READS:-}
 ct=$1 kind=$2 out=$3
 x() { pct exec "$ct" -- env PATH=/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin "$@"; }
 n=$(( $(find "$out" -maxdepth 1 -name "check-*.txt" | wc -l) + 1 ))
