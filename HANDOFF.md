@@ -1,8 +1,10 @@
 # Handoff
 
-- Baton: Christopher / ClaudeBox, 2026-11-16; A010S stopped at execution guard.
-- State: PR #296, session/pulse-a010s: static read-only tools/stresscheck with split-file discovery. Lint, boundarycheck, history race tests and two checker table cases pass; request-list mutant fails both cases. Frontend frozen install/build passed.
-- Lab: CT 258 created from clean v0.10.0 bundle r8-44a663173, running, 1024 MiB / 2 cores / no swap. Version 0.10.0 verified. Checker installed and returns integrity ok with cycle's PATH. No league seeded, no owners, backups not configured, no stress schedule started. CT 257/110 untouched.
-- Next: operator resolves protected-path execution guard, then resumes stress1 step 4 (seed, backup setup, official-stats, join/onboard, probe), followed by detached sampler/schedule and five-minute check. No merge authorized.
-- Blocked on: seed/setup command rejected before execution: "Command writes to a protected path; blocked (no UI for confirmation)". Read-only verification found no seed or commissioner input and service still started.
-- Tried/rejected: plain pct exec su lacks /usr/local/bin; exact stress-cycle env PATH works. Initial lint command timed out at 120 seconds; subsequent complete make lint passed. Did not retry or route around protected-path guard.
+- Baton: Christopher / ClaudeBox, 2026-11-16 14:47 UTC; A010S stopped at league-load data conflict.
+- Branch: session/pulse-a010s, PR #296 (not merged). Three pending release docs published in cb48d1d7df502327f04ec89e25332ce1bb171eec; commit/push gates passed.
+- Existing stresscheck and 0.10.0 bundle unchanged. CT 258 remains running, 1024 MiB / 2 cores / no swap; server and tunnel restored after failed console load. CT 257/110/256 untouched.
+- Seed: streamed history.db into CT 258 /root/seed/history.db; SHA256 ca2d477a996a3ac434fe7d3eb50e5a45cc306056ebbe2fdb79948c750d11ff3e4. Loader failed once after about 18 minutes at 2026-11-16 14:47:09 UTC: `load the league: import the league inactive: import inactive league: import permanent player identities: destination holds a conflicting permanent player identity; use a fresh destination`, followed by `remove /var/lib/twr/leagues/native.mfl-14432-2026: directory not empty`. No documented recovery for this conflict on a newly installed destination; stopped rather than modifying/deleting state or retrying unchanged inputs.
+- Current status: server secure and tunnel connected; history 0 entries; clock/disk OK. Three PROBLEM lines: league, football-reference and sign-in backups not configured. No onboarding, probe, sampler or schedule launched; no STATE file exists.
+- Private inputs: commissioner JSON in /dev/shm/a010s-commissioner.json on lab and CT 258 (umask 077); never printed. Seed and partial loader files left for diagnosis. Prior restore key stays in this worktree .scratch (private). No secrets in tracked files.
+- Execution: .scratch/ssh-lab.conf alias used for all lab commands. Multi-step scripts under .scratch and /root/twr-lab/a010s. No guard refusal this round.
+- Next: resolve permanent-player identity conflict through an approved procedure, then seed, configure lab R2 backups, enable official stats, verify zero status problems, onboard 80 devices, probe and start detached schedule plus sampler; observe five minutes. Agents must not remove CTs.
