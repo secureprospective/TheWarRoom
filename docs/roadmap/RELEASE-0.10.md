@@ -51,6 +51,9 @@ Every piece of work names the release it targets.
     clients during a live-game window, no crash or out-of-memory kill, live scores never older than two poll
     intervals, backups keep running, and the server recovers by itself from a forced kill.
 
+**Security sweep** (ruled 2026-11-16: required before the server is a permanent fixture on the host)
+15. Every line of `RELEASE-0.10-SECURITY.md` passes against an installed 0.10.0 server.
+
 Lines 6, 7 and 8–11 are only done when Christopher has seen them himself.
 
 ## Not in 0.10

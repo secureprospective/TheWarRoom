@@ -3,6 +3,8 @@
 # (5 each of kill9, pctstop, restart, interleaved, under load) -> steady -> stop. Status every 10 min.
 # Usage: stress-schedule.sh <ctid> STATE OUTDIR   (detach it; it runs for hours)
 set -uo pipefail
+# Inherited by stress.py; exclusions are printed by each read client.
+export STRESS_SKIP_READS=${STRESS_SKIP_READS:-}
 ct=$1 state=$2 out=$3 dir=$(cd "$(dirname "$0")" && pwd)
 base=https://twr-lab-$ct.secureprospective.com
 mark() { echo "$(date +%s) $*" >> "$out/timeline.txt"; }

@@ -5,7 +5,8 @@ improves as the project goes on and does not hold up 0.10.
 ## Setup
 - A throwaway container on the test-server VM, sized like the real one: 1 GiB memory, 2 cores, no swap.
 - The 0.10 server bundle (`twr-server version` says 0.10.0), a 32-franchise league, backups switched on.
-- 32 owners on 2 devices each (64 devices), driven by `deploy/lab/stress.py`.
+- 32 owners, 80 devices (the tool's built-in spread: 3 devices for 16 owners, 2 for the other 16), driven by
+  `deploy/lab/stress.py`.
 - The run is `deploy/lab/stress-schedule.sh`: steady load, burst, steady, with 15 forced kill / container-stop /
   service-restart cycles mixed in. About 3 hours. `stress-sample.sh` records memory, disk and CPU every 10 seconds.
 
@@ -19,7 +20,16 @@ improves as the project goes on and does not hold up 0.10.
 7. Live scores are never older than two poll intervals while a game window is being replayed or is live.
 8. Memory does not climb steadily across the run (end-of-run resting memory within 10% of the first steady phase).
 
+## Request storm — runs after the schedule, on the same server
+Ruled 2026-11-16: find out how well it fills requests when flooded. From outside, through the public address,
+ramp read requests well past a full league (step up the number of parallel clients until the server starts
+refusing), hold the flood for 10 minutes, then stop.
+9. During the storm the server refuses the excess cleanly (429 or 503), never crashes and is never killed for memory.
+10. A signed-in owner can still open League Pulse during the storm, even if slowly.
+11. Within 2 minutes of the storm ending, normal screens answer as they did before it, with no restart.
+
 ## Measured and recorded, not a gate
+- From the storm: the most requests per second served before refusals begin, and the refusal rate at each step.
 - Screen-open and confirmed-click times at 8, 32 and 64 devices: p50, p95, p99 and worst.
   The standing budget is 200 ms screen / 100 ms click. Any miss is listed as named work for a later release.
 - Peak memory, peak CPU, database and log growth.
