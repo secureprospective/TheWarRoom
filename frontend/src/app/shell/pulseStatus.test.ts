@@ -55,5 +55,6 @@ it('never calls a matchup nobody set done', () => {
   const oneSide = results([starter('SEA')], []);
   const row = pulseRows(oneSide, '0001', [], true, board)[0];
   expect(row.status).toBe('DONE');
-  expect(playWords(row)).toBe('Every starter is done; the result is official when the week closes; one side has set no lineup');
+  expect(playWords(row))
+    .toBe('Every starter is done; the result is official when the week closes; one side has set no lineup');
 });
