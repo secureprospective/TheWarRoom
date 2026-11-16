@@ -66,7 +66,7 @@ func (v *serverValues) records() *recordstore.Store { return recordstore.New(v.p
 
 func (v *serverValues) source() appvalue.Source {
 	return appvalue.Source{Facts: v.records(), Held: v.reference, Records: v.leagueRecords,
-		Params: params.DefaultSet, Now: time.Now, Revision: v.revision,
+		Params: params.DefaultSet, Now: time.Now, LeagueRevision: v.revision,
 		NextFeatureAt: v.reference.NextFeatureAt, Evidence: v.reference.ValueEvidence,
 		Saved: appvalue.SavedFiles{Dir: v.dir}}
 }

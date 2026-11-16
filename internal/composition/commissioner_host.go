@@ -198,21 +198,13 @@ func (h commissionerHost) MirrorLineupDelta(ctx context.Context, season, week in
 
 func (a *App) valueSource() appvalue.Source {
 	src := appvalue.Source{Facts: a.recordStore(), Held: a.core.History, Records: a.sharedLeagueRecords,
-		Params: a.core.Params.Snapshot, Now: a.timeNow, Revision: deskRevision(a.core.HistPools),
+		Params: a.core.Params.Snapshot, Now: a.timeNow, Revision: a.core.HistPools.Revision,
 		NextFeatureAt: a.core.History.NextFeatureAt, Evidence: a.core.History.ValueEvidence,
 	}
 	if a.core.Paths.DataDir != "" { // no profile directory, nothing to keep across launches
 		src.Saved = appvalue.SavedFiles{Dir: filepath.Join(a.core.Paths.DataDir, "prepared-values")}
 	}
 	return src
-}
-
-// deskRevision is the desktop's value revision: every league and the history share one file, so
-// a commit anywhere in it is a commit for every league.
-func deskRevision(pools interface {
-	Revision(context.Context) (int64, error)
-}) func(context.Context, string) (int64, error) {
-	return func(ctx context.Context, _ string) (int64, error) { return pools.Revision(ctx) }
 }
 
 func (a *App) startValuePreparation() {

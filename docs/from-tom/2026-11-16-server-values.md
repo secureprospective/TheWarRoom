@@ -12,10 +12,11 @@ empty for two causes found and documented below. Do not create `/etc/twr/signals
   passes under `prepared-values/`. Requests read only completed passes.
 - **Values reach the server's services:** `StoredHost.Values` (`leagueservice.ValueReader`) plus `NativeValues`
   pass-throughs on `dueHost`/`footballHost`; `serverhttp.Hosted.Values` set at the four `StoredHost` builders.
-- **Per-league value revision** (panel mechanic F2): `appvalue.Source.Revision` now takes the league. The server
-  hashes the reference file plus that league's own file, so another league's commit no longer sends every league
-  back to "preparing". `""` means every league (discovery). The desktop ignores the league (`deskRevision`, one
-  shared file).
+- **Per-league value revision** (panel mechanic F2): `appvalue.Source` gains an optional `LeagueRevision(ctx,
+  league)` that, when set, replaces `Revision`. The server hashes the reference file plus that league's own file,
+  so another league's commit no longer sends every league back to "preparing". `""` means every league
+  (discovery). The desktop is unchanged: its `valueSource` is frozen by `tools/boundarycheck`, and the first
+  attempt, which edited it, was refused at pre-push.
 - **Odds never go blank** (panel engineer F6): `Service.oddsValues` gives labelled results-only odds when the host
   has no values, a pass is preparing, or a pass failed ("player values could not be read (…), so the odds come
   from results alone").
