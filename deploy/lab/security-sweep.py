@@ -312,8 +312,8 @@ def main(argv):
         if socket.gethostname() != "twr-lab":
             raise ValueError("refused: run only on lab host twr-lab")
         conf = run(["pct", "config", args.ct])
-        if conf.returncode or not re.search(r"(?m)^hostname:\s*twr-lab-" + args.ct + r"\s*$", conf.stdout):
-            raise ValueError("refused: CT hostname must be twr-lab-<ctid>")
+        if conf.returncode or not re.search(r"(?m)^hostname:\s*twr-(?:lab-)?" + args.ct + r"\s*$", conf.stdout):
+            raise ValueError("refused: CT hostname must be twr-<ctid> (installer) or twr-lab-<ctid>")
         state = {}
         if args.state:
             with open(args.state) as f:
