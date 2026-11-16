@@ -110,7 +110,8 @@ it('opens hosted Now, refreshes active reads except odds, shows Race and returns
     'odds.read', 'results.read', 'lineup.read', 'projections.read', 'nfl.games.read', 'nfl.game.read'];
   const before = commands.map(c => count(port, c));
   await click('Refresh');
-  expect(commands.map(c => count(port, c))).toEqual(before.map((n, i) => n + (commands[i] === 'odds.read' ? 0 : 1)));
+  expect(commands.map(c => count(port, c)))
+    .toEqual(before.map((n, i) => n + (commands[i] === 'odds.read' ? 0 : 1)));
   for (const [r] of port.mock.calls) if (r.command === 'week.read') expect(r.arguments.at).toBe('');
   await click('NFL GAMES');
   expect(host.textContent).not.toContain('Reading the NFL scoreboard');
@@ -412,7 +413,9 @@ it.each(['now', 'race'] as const)('keeps refused odds unavailable in %s until a 
   });
   const fallback = fakePort();
   const port = vi.fn<HostedPort>(async request => {
-    if (request.command === 'odds.read') throw new Error('native odds: league results are not available on this host');
+    if (request.command === 'odds.read') {
+      throw new Error('native odds: league results are not available on this host');
+    }
     return fallback(request);
   });
   try {
