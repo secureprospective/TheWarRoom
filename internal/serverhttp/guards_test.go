@@ -20,7 +20,7 @@ func TestBoundedServerSlowBodyAndHeaders(t *testing.T) {
 	}), netip.Addr{})
 	server := httptest.NewUnstartedServer(handler)
 	server.Config = boundedServer(handler, tls.Certificate{})
-	if server.Config.ReadHeaderTimeout != 5*time.Second || server.Config.ReadTimeout != 10*time.Second || server.Config.WriteTimeout != 5*time.Second || server.Config.MaxHeaderBytes != 8<<10 {
+	if server.Config.ReadHeaderTimeout != 5*time.Second || server.Config.ReadTimeout != 10*time.Second || server.Config.WriteTimeout != 30*time.Second || server.Config.MaxHeaderBytes != 8<<10 {
 		t.Fatal("server resource defaults changed")
 	}
 
