@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -32,9 +33,13 @@ type OddsPlayer struct {
 }
 
 // OddsValues is the league's value read as the odds reading needs it. Words says why there are none.
+// Reduced says why this host has no value read at all: the odds then run on results alone (no lineup
+// weight), every line saying so (ruling R11: a lost source runs reduced; Christopher approved this
+// rebalance for the hosted server, 2026-11-15).
 type OddsValues struct {
 	Players []OddsPlayer
 	Words   string
+	Reduced string
 }
 
 // OddsRow is one franchise's power, expected score and playoff chance.
@@ -116,6 +121,7 @@ func NativeOddsReading(ctx context.Context, league string, records []Record, src
 		return out, err
 	}
 	out.games(standings, expected)
+	out.reduced(values.Reduced)
 	b := bracketReader{league: league, records: records, src: src, season: season, now: now,
 		out: &NativeBracket{Status: bracketUnavailable}}
 	if err := b.prepare(LineupFacts{}); err != nil {
@@ -123,24 +129,30 @@ func NativeOddsReading(ctx context.Context, league string, records []Record, src
 	}
 	// The seed is the league's record count and the season, both held non-negative by the standings read.
 	out.Seed = uint64(len(records))<<16 | uint64(season) //nolint:gosec // Checked above: 1920 <= season <= 9999.
-	if out.OddsWords = oddsWaiting(standings, rules, b.out); out.OddsWords != "" {
+	if waiting := oddsWaiting(standings, rules, b.out); waiting != "" {
+		out.OddsWords = out.reducedNote(values.Reduced) + waiting
 		return out, nil
 	}
+	out.playOut(standings, expected, b, values.Reduced)
+	return out, nil
+}
+
+// playOut plays the open games out OddsRuns times and gives each franchise its share of playoff fields.
+func (out *NativeOdds) playOut(standings NativeStandings, expected map[string]float64, b bracketReader, reduced string) {
 	field, _, _ := b.fieldInput(standings.Computed)
 	field.Hand = b.state.handFields(b.layout)
 	made, words := playOutChunks(standings, expected, field, out.Seed)
 	if words != "" {
-		out.OddsWords = words
-		return out, nil
+		out.OddsWords = out.reducedNote(reduced) + words
+		return
 	}
 	out.Runs = OddsRuns
 	for i := range out.Rows {
 		odds := float64(made[out.Rows[i].Franchise]) / OddsRuns
 		out.Rows[i].PlayoffOdds = &odds
 	}
-	out.OddsWords = fmt.Sprintf("%d open games played out %d times under the league's tie-breakers and playoff rules",
+	out.OddsWords = out.reducedNote(reduced) + fmt.Sprintf("%d open games played out %d times under the league's tie-breakers and playoff rules",
 		len(standings.counted.open), OddsRuns)
-	return out, nil
 }
 
 // oddsWaiting says why the playoff odds cannot be read, or nothing when they can.
@@ -162,6 +174,9 @@ func oddsWaiting(s NativeStandings, rules leaguerules.RuleSet, bracket *NativeBr
 func expectedPoints(s NativeStandings, lineup leaguerules.LineupRules, values OddsValues) (map[string]float64, string) {
 	if values.Words != "" {
 		return nil, values.Words
+	}
+	if values.Reduced != "" {
+		return resultsOnly(s, values.Reduced)
 	}
 	rules, ok := lineupdelta.Rules(lineup)
 	if !ok {
@@ -218,7 +233,11 @@ func (out *NativeOdds) power(s NativeStandings, lineup leaguerules.LineupRules, 
 		}
 		inputs = append(inputs, in)
 	}
-	blended, err := powerrankings.Blend(inputs, powerrankings.Weights{Roster: powerrankings.AutoRosterWeight(played)})
+	weights := powerrankings.Weights{Roster: powerrankings.AutoRosterWeight(played)}
+	if values.Reduced != "" {
+		weights.Roster = 0
+	}
+	blended, err := powerrankings.Blend(inputs, weights)
 	if err != nil {
 		return fmt.Errorf("power ranking: %w", err)
 	}
@@ -349,4 +368,34 @@ func coinFlips(r competition.Ranking, rng *rand.Rand) []string {
 // newOddsRand is the reproducible stream a recorded seed names.
 func newOddsRand(seed uint64) *rand.Rand {
 	return rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)) //nolint:gosec // A recorded, reproducible draw, not a secret.
+}
+
+// resultsOnly is each franchise's expected score from its points per game alone, for a host with no
+// value read; a franchise that has played no game has none, and the reading says why.
+func resultsOnly(s NativeStandings, reason string) (map[string]float64, string) {
+	out := map[string]float64{}
+	for _, row := range s.Computed {
+		games := row.Wins + row.Losses + row.Ties
+		if games == 0 {
+			return nil, "Reduced odds need a game played: " + reason
+		}
+		out[row.Franchise] = float64(row.PointsFor) / 10000 / float64(games) // points are held in ten-thousandths
+	}
+	return out, ""
+}
+
+// reduced rewords the power and game lines of a results-only reading: what they come from, and why.
+func (out *NativeOdds) reduced(reason string) {
+	if reason == "" {
+		return
+	}
+	out.PowerWords = out.reducedNote(reason) + strings.Replace(out.PowerWords, "Lineup value blended with results", "Ranked on results", 1)
+	out.GameWords = out.reducedNote(reason) + strings.Replace(out.GameWords, "from its lineup and its points so far", "from its points per game so far", 1)
+}
+
+func (*NativeOdds) reducedNote(reason string) string {
+	if reason == "" {
+		return ""
+	}
+	return "Reduced: " + reason + ". "
 }
