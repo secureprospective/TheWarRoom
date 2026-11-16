@@ -57,6 +57,9 @@ Every piece of work names the release it targets.
 Lines 6, 7 and 8–11 are only done when Christopher has seen them himself.
 
 ## Not in 0.10
+- Windows and macOS (ruled 2026-11-16). Linux is the only desktop target until there are users; Windows and
+  macOS come back when it makes sense to support them. CI builds the Linux package only. The PWA (web app,
+  including mobile) is the focus and is release 0.11 (see `RELEASE-0.11.md`).
 - Player values on the server (F51, branch `session/server-values`).
 - The formal Update button in the commissioner console, with a version display (ruled 2026-11-16: required;
   headline of 0.11). Until then, 0.10.x patches install through `twr-upgrade` on the console.
