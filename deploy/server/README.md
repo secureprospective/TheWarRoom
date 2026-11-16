@@ -170,3 +170,6 @@ Update the server before desktop apps. Use [UPGRADE.md](UPGRADE.md) and the inst
 `/usr/local/libexec/twr-upgrade` with the intact bundle and metadata folder; never rerun the installer or replace only the binary over newer data.
 
 Lab drills (nested Proxmox, real installer and Tunnel): [../lab/LAB.md](../lab/LAB.md).
+
+`twr-server version` and `twr-status` show the installed binary build stamp; hosted startup logs it.
+The bundle script stamps the git description, commit and UTC build date.

@@ -14,4 +14,4 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - -s -w
+      - -s -w -X main.version={{ .Env.TWR_BUILD_VERSION }} -X main.commit={{ .Env.TWR_BUILD_COMMIT }} -X main.buildDate={{ .Env.TWR_BUILD_DATE }}
