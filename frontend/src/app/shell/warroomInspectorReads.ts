@@ -4,6 +4,7 @@ import type { PlayerReading } from '../research/contract';
 import type { Reading, PlayerContract } from '../contracts/contract';
 import { contractsProvider } from '../contracts/provider';
 import { readPlayerUsage, researchAPI } from '../research/api';
+import { hostedPlayerReadingUnavailable } from '../control/nativeApi';
 import { readAgeArc } from '../market/api';
 import { readPersonalNotes, personalWire } from '../offers/api';
 import { readNativeCut, type NativeCut } from '../commissioner/hqReading';
@@ -32,10 +33,10 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string,
         result.valuesPreparing = values.preparing;
         result.value = values.players.find(p => p.player === id); }),
       apply(async () => { result.fit = await readInspectorFit(c, id); }),
-      apply(async () => { try { result.arc = parseArc(await readAgeArc(id, native.league)); }
-        catch (e) { if (!hostedFactUnavailable(e)) throw e; } }),
-      apply(async () => { try { result.usage = parseUsage(await readPlayerUsage(id, native.league)); }
-        catch (e) { if (!hostedFactUnavailable(e)) throw e; } }),
+      apply(async () => { const reading = await readAgeArc(id, native.league);
+        if (!hostedPlayerReadingUnavailable(reading)) result.arc = parseArc(reading); }),
+      apply(async () => { const reading = await readPlayerUsage(id, native.league);
+        if (!hostedPlayerReadingUnavailable(reading)) result.usage = parseUsage(reading); }),
       apply(async () => {
         if (native.owner === false || !native.mine) return;
         result.notes = await readHostedPlayerNotes(native.league, id, native.port);
@@ -73,9 +74,6 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string,
       result.notes = notes; }),
   ]);
   return result;
-}
-function hostedFactUnavailable(error: unknown): boolean {
-  return String(error).includes('hosted player reading is unavailable');
 }
 export async function changeWarRoomNote(c: WarRoomContext, id: string, text: string, at?: string) {
   if (c.native) {
