@@ -88,6 +88,8 @@ func releaseReadInputs(t *testing.T, name string, typ reflect.Type, league strin
 		args[0].SetString(league)
 	}
 	switch name {
+	case "TargetNativePlayerUsage", "TargetNativePlayerAgeArc":
+		args[0].FieldByName("Player").SetString("0099")
 	case "TargetCommissionerLedgerFiltered":
 		args[1].SetString("{}")
 	case "TargetCommissionerMarket":

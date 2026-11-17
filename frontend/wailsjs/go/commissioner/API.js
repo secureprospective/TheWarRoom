@@ -170,8 +170,16 @@ export function TargetNativeOdds(arg1, arg2) {
   return window['go']['commissioner']['API']['TargetNativeOdds'](arg1, arg2);
 }
 
+export function TargetNativePlayerAgeArc(arg1) {
+  return window['go']['commissioner']['API']['TargetNativePlayerAgeArc'](arg1);
+}
+
 export function TargetNativePlayerScore(arg1, arg2, arg3, arg4) {
   return window['go']['commissioner']['API']['TargetNativePlayerScore'](arg1, arg2, arg3, arg4);
+}
+
+export function TargetNativePlayerUsage(arg1) {
+  return window['go']['commissioner']['API']['TargetNativePlayerUsage'](arg1);
 }
 
 export function TargetNativeProjections(arg1, arg2, arg3, arg4) {

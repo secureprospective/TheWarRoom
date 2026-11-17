@@ -5,6 +5,7 @@ import {market} from '../models';
 import {accounts} from '../models';
 import {leagueservice} from '../models';
 import {history} from '../models';
+import {json} from '../models';
 import {tradelens} from '../models';
 import {appvalue} from '../models';
 import {time} from '../models';
@@ -93,7 +94,11 @@ export function TargetNativeMoves(arg1:string,arg2:string):Promise<market.Native
 
 export function TargetNativeOdds(arg1:string,arg2:number):Promise<commissioner.NativeOdds>;
 
+export function TargetNativePlayerAgeArc(arg1:leagueservice.RawPlayerReadScope):Promise<json.RawMessage>;
+
 export function TargetNativePlayerScore(arg1:string,arg2:string,arg3:number,arg4:number):Promise<commissioner.NativePlayerScore>;
+
+export function TargetNativePlayerUsage(arg1:leagueservice.RawPlayerReadScope):Promise<json.RawMessage>;
 
 export function TargetNativeProjections(arg1:string,arg2:string,arg3:number,arg4:number):Promise<history.NativeProjections>;
 

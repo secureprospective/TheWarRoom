@@ -1,6 +1,8 @@
 package commissioner
 
 import (
+	"encoding/json"
+
 	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
@@ -42,6 +44,16 @@ func (a *API) TargetNativeProjections(league, players string, season,
 	week int) (history.NativeProjections, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeProjections(league, players, season, week)
+}
+
+func (a *API) TargetNativePlayerUsage(raw leagueservice.RawPlayerReadScope) (json.RawMessage, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativePlayerUsage(raw)
+}
+
+func (a *API) TargetNativePlayerAgeArc(raw leagueservice.RawPlayerReadScope) (json.RawMessage, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativePlayerAgeArc(raw)
 }
 
 // TargetNativeLineupDelta reads what a proposed trade does to both parties' best lineups (D33).

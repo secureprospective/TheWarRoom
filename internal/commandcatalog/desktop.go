@@ -68,6 +68,8 @@ func nativeMethods() []struct{ method, role, gravity string } {
 		{"TargetNativeLineupCheck", "gm,commish,admin", "G0"},
 		{"TargetNativeLineupSet", "gm,commish", "G2"},
 		{"TargetNativePlayerScore", "gm,commish,admin", "G0"},
+		{"TargetNativePlayerUsage", "gm,commish,admin", "G0"},
+		{"TargetNativePlayerAgeArc", "gm,commish,admin", "G0"},
 		{"TargetNativeValues", "gm,commish,admin", "G0"},
 		{"TargetNativeTradeLens", "gm,commish,admin", "G0"},
 		{"TargetNativeProjections", "gm,commish,admin", "G0"},

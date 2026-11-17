@@ -39,6 +39,7 @@ type RawWorkflowScope struct {
 	At        string `json:"at,omitempty"`
 	LocalZone string `json:"localZone,omitempty"`
 	Players   string `json:"players,omitempty"`
+	Player    string `json:"player,omitempty"`
 }
 
 func (r RawWorkflowScope) Validate() error {
@@ -65,6 +66,9 @@ func (r RawWorkflowScope) validateCommand(command string) error {
 		if _, err := workflowPlayers(r.Players); err != nil {
 			return err
 		}
+	}
+	if err := validateWorkflowPlayer(command, r.Player); err != nil {
+		return err
 	}
 	if r.At != "" {
 		at, err := time.Parse(time.RFC3339Nano, r.At)
@@ -128,6 +132,9 @@ func (r RawWorkflowScope) pulseScope(command string) (RawWorkflowScope, bool, bo
 	case "projections.read":
 		kept.Players, kept.Season, kept.Week = r.Players, r.Season, r.Week
 		return kept, r.Players != "" && r.Season >= 1920 && r.Week > 0, true
+	case "player.usage.read", "player.agearc.read":
+		kept.Player = r.Player
+		return kept, r.Player != "", true
 	case "bracket.read":
 		kept.Season = r.Season
 		return kept, r.Season >= 1920, true
@@ -226,4 +233,15 @@ func RunWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWor
 		return nil, err
 	}
 	return WorkflowCommands()[raw.Command].Run(ctx, service, raw)
+}
+
+func validateWorkflowPlayer(command, player string) error {
+	switch command {
+	case "player.usage.read", "player.agearc.read":
+		id, err := playerid.New(player)
+		if err != nil || id.String() != player {
+			return fmt.Errorf("use a full league player id")
+		}
+	}
+	return nil
 }
