@@ -25,7 +25,7 @@ Tonight's stream: MET (live ticks every 10 s, 0 errors; #309 #310 #311 merged).
 | Lane cpu7 (Luna): contracts cache, `rememberNativeContracts` | 8:13 PM | `pulse-cpu7/` | review equality test + before/after table → merge |
 | Lane hqreads (Luna): hosted `player.usage.read` + `player.agearc.read` + shared adapters | 8:44 PM | `pulse-hqreads/` | review → merge; then write step-4 brief |
 | Lane hqnotes (Luna): hosted private notes read/change, PRIV privacy tests | 8:44 PM | `pulse-hqnotes/` | review privacy tests carefully → merge |
-| Watcher bp8qgrkev: `/root/.claude/scripts/twr-lane-wait.sh lword cpu7 hqreads hqnotes` | 8:46 PM | prints first lane done/dead, exits (seen list `/tmp/claude-0/twr-lanes-seen`) | handle, re-arm with remaining lanes |
+| Watcher b9evudbwl: `twr-lane-wait.sh lword hqreads hqnotes` (cpu7 FINISHED 8:50 PM: review its PR first!) | 8:46 PM | prints first lane done/dead, exits (seen list `/tmp/claude-0/twr-lanes-seen`) | handle, re-arm with remaining lanes |
 | Timer b60mlntfd: 10:15 PM | — | — | confirm game final, then section 10 item 2 |
 Lane transcripts: `~/fleet/runs/pulse-<lane>/sessions/`, session id in `session-id.txt`. Launch: `ssh -f ... 'nohup setsid ~/fleet/bin/launch-pulse-lane.sh luna <lane> ~/fleet/briefs/alpha010/<lane>.md high >/dev/null 2>&1 &'`.
 
