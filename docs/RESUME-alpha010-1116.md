@@ -12,7 +12,7 @@ when patched). Build plan: SKIP 0.10.2; one build from main after #333/#334 land
 script for CT 260 (he runs it; RESULT.md at ~/fleet/runs/pulse-lab1/ is notes, not a command). "Ahead of schedule."
 **Merged 11-17:** #322 #324 #325 #326 #327 #329 #330 #331 #332 #335 (+ overnight #312 #314-#319 #321). HQ steps 1-6 done.
 War Room hosted: trade Send, Market bids, Market pool, player panel reads, plans-tab empty state.
-**In flight:** merge chain (Beelink) `~/fleet/bin/twr-merge-pr.sh pnotes 334; ~/fleet/bin/twr-merge-pr.sh dqueue 333`
+**In flight:** #334 MERGED 1:10 PM. #333 conflicted in 9 files (duplicate private-table plumbing) -> Luna xhigh lane dqueue Part 3 (1:20 PM, brief ~/fleet/briefs/alpha010/dqueue.md) rebuilds on #334's plumbing. On done: review (token files too), then ~/fleet/bin/twr-merge-pr.sh dqueue 333.
 (Claudebox bg task bulbfy2qc). Check: `gh pr view 334/333 --json state`. If not MERGED: rerun the helper (it syncs main,
 HANDOFF.md takes main's, waits all checks, squash-merges; exit 2 = real conflict → resolve by hand). No Luna lanes running.
 **Merge helper:** `~/fleet/bin/twr-merge-pr.sh <lane|worktree-dir> <pr>`. War Room plan: `~/fleet/runs/pulse-wrplan/REPORT.md`.
