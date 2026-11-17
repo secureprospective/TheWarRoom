@@ -1,9 +1,33 @@
 # RESUME — TheWarRoom alpha 0.10 + Franchise HQ + OVERNIGHT RUN (Claudebox head brain), Mon 2026-11-16 night
-Updated 8:50 PM CT (sixth compaction today). On "we are back": do his instruction first, else section 10 item 1.
+Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else section 10 item 1.
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. STATE AT 7:35 AM CST TUE 11-17 (supersedes sections 3, 10, 11 below)
+## 0. STATE AT 1:15 PM CST TUE 11-17 (supersedes the 7:35 AM block and sections 3, 10, 11 below)
+**Rulings today:** Luna ONLY (high/xhigh/max). Full send gated by launcher room() (>=4 GB, load <12). Windows 3 h (max 4 h).
+50-min checks (`/root/.claude/scripts/twr-lane-check.sh 50`, re-arm). DAY MERGE AUTHORITY: yes, after my review + green CI.
+Private-entries table APPROVED; Release 9 / schema 16 APPROVED. API tokens MAY reach notes/watch/draft queue for the
+issuing owner's own team only (same rule as bids). Picomatch advisory GHSA-fc5q-39xc-vjpf ignored (#335; Hermes T649 = remove
+when patched). Build plan: SKIP 0.10.2; one build from main after #333/#334 land, then a reviewed one-run league-import
+script for CT 260 (he runs it; RESULT.md at ~/fleet/runs/pulse-lab1/ is notes, not a command). "Ahead of schedule."
+**Merged 11-17:** #322 #324 #325 #326 #327 #329 #330 #331 #332 #335 (+ overnight #312 #314-#319 #321). HQ steps 1-6 done.
+War Room hosted: trade Send, Market bids, Market pool, player panel reads, plans-tab empty state.
+**In flight:** merge chain (Beelink) `~/fleet/bin/twr-merge-pr.sh pnotes 334; ~/fleet/bin/twr-merge-pr.sh dqueue 333`
+(Claudebox bg task bulbfy2qc). Check: `gh pr view 334/333 --json state`. If not MERGED: rerun the helper (it syncs main,
+HANDOFF.md takes main's, waits all checks, squash-merges; exit 2 = real conflict → resolve by hand). No Luna lanes running.
+**Merge helper:** `~/fleet/bin/twr-merge-pr.sh <lane|worktree-dir> <pr>`. War Room plan: `~/fleet/runs/pulse-wrplan/REPORT.md`.
+**NEXT (he said: continue on the next set of work after compaction):**
+1. Confirm #334 + #333 MERGED; close #313, #323, #328 if still open (link #334/#333).
+2. Launch Luna xhigh: War Room Market target lists on the watch kind (WR job 3 rest) — brief like wr3.md, reuse player.watch.*.
+3. Check if saved trade drafts (WR job 6) fit private_entries (kind 'offer'?) without a migration; if yes launch Luna xhigh, else ask him.
+4. Build from main for install (lab build path in ~/fleet/runs/pulse-lab1/RESULT.md line 3 uses LAB-ONLY root fleet/lab-release-ct258 + twr-up); then write the one-run CT 260 league-import script (lines 17-19 + docs/lab/STRESS-READY.md) for him to read and run.
+5. Later: WR plans (job 7, may need table), PAIR threads (job 8, privacy ruling), recent wins (job 9), hosted injury feed.
+**Needs him:** #320 stress line-14 measurement; F51 #304/#307 GOMEMLIMIT; rotate CT 257 keys; run the import script (after step 4).
+**Lessons today:** pgrep -f over ssh matched my own shell and cut it (find exact PID first). Merge helper needed: wait for all checks
+(not --watch), treat not-MERGEABLE as needs-sync, accept non-pulse worktree dirs. Luna lanes over-extend scope into token policy;
+review internal/accounts + token_policy diffs every time.
+
+## 0b. (older) STATE AT 7:35 AM CST TUE 11-17 (supersedes sections 3, 10, 11 below)
 **Rulings today:** Luna ONLY (high/xhigh/max by difficulty; restart same brief before rescoping). Full send: no lane cap,
 launcher `room()` gates on >=4 GB RAM + load <12. Windows 3 h (max 4 h). Check lanes every 50 min
 (`/root/.claude/scripts/twr-lane-check.sh 50` background, re-arm each time). DAY MERGE AUTHORITY: yes, all day, after my
