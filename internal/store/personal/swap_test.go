@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 func TestWatchSwap(t *testing.T) {
@@ -77,5 +78,57 @@ func TestWatchSwap(t *testing.T) {
 				t.Fatalf("draft list changed: %v", got)
 			}
 		})
+	}
+}
+
+func TestHostedEntriesAreScopedToAuthenticatedFranchise(t *testing.T) {
+	ctx := t.Context()
+	pools, err := db.Open(ctx, filepath.Join(t.TempDir(), "league.db"), history.LeagueSchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = pools.Close() }()
+	if err := history.CreateLeagueFile(ctx, pools, history.LeagueFile{League: "native.test"}); err != nil {
+		t.Fatal(err)
+	}
+	if found, err := db.HasTable(ctx, pools, "personal_entries"); err != nil || found {
+		t.Fatalf("league file has desktop personal_entries = %v, %v", found, err)
+	}
+	store := NewLeague(pools)
+	if err := store.Initialize(ctx); err == nil {
+		t.Fatal("hosted store tried to initialize the desktop schema")
+	}
+	addHostedEntry(ctx, t, store, "franchise.01", RawChange{Mine: "franchise.02", Kind: "watch", Entity: "player", ID: "0816", Action: "add"})
+	addHostedEntry(ctx, t, store, "franchise.01", RawChange{Mine: "franchise.02", Kind: "note", Entity: "player", ID: "0816", Text: "private", Action: "add"})
+	assertHostedEntryCount(ctx, t, store, "franchise.01", 2)
+	assertHostedEntryCount(ctx, t, store, "franchise.02", 0)
+	notesA, err := store.PlayerNotesForFranchise(ctx, "franchise.01", "0816")
+	if err != nil || notesA.Count != 1 || notesA.Notes[0].Text != "private" {
+		t.Fatalf("franchise A notes = %+v, %v", notesA, err)
+	}
+	notesB, err := store.PlayerNotesForFranchise(ctx, "franchise.02", "0816")
+	if err != nil || notesB.Count != 0 {
+		t.Fatalf("franchise B read A's notes: %+v, %v", notesB, err)
+	}
+	addHostedEntry(ctx, t, store, "franchise.02", RawChange{Mine: "franchise.01", Kind: "watch", Entity: "player", ID: "0816", Action: "remove"})
+	assertHostedEntryCount(ctx, t, store, "franchise.01", 2)
+	addHostedEntry(ctx, t, store, "franchise.02", RawChange{Mine: "franchise.01", Kind: "watch", Entity: "player", ID: "0816", Action: "add"})
+	assertHostedEntryCount(ctx, t, store, "franchise.02", 1)
+	assertHostedEntryCount(ctx, t, store, "franchise.01", 2)
+}
+
+func addHostedEntry(ctx context.Context, t *testing.T, store *Store, franchiseID string, change RawChange) {
+	t.Helper()
+	at := time.Date(2026, 11, 17, 15, 0, 0, 0, time.UTC)
+	if err := store.ChangeForFranchise(ctx, franchiseID, change, at); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func assertHostedEntryCount(ctx context.Context, t *testing.T, store *Store, franchiseID string, want int) {
+	t.Helper()
+	entries, err := store.ReadFranchise(ctx, franchiseID)
+	if err != nil || len(entries) != want {
+		t.Fatalf("franchise %s has %+v, %v; want %d entries", franchiseID, entries, err, want)
 	}
 }

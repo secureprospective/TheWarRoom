@@ -97,7 +97,8 @@ func (r RawFootballEvidence) attachSleeper(weeks []source.PlayerWeek, bodies []R
 		if mfl, ok := gsis[week.GSIS]; ok && week.SeasonType == "REG" {
 			key := canonicalWeek{mfl, week.Week}
 			if _, exists := canonical[key]; !exists {
-				canonical[key] = clonePlayerWeek(week)
+				// Canonical weeks are read-only; merges replace line maps and outward reads copy them.
+				canonical[key] = week
 			}
 		}
 	}

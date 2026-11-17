@@ -47,6 +47,10 @@ func (r RawChange) Validate() error {
 	if r.Mine == "" || strings.IndexFunc(r.Mine, func(c rune) bool { return c < '0' || c > '9' }) >= 0 {
 		return fmt.Errorf("personal: invalid franchise")
 	}
+	return r.validateFields()
+}
+
+func (r RawChange) validateFields() error {
 	if !slices.Contains([]string{"watch", "bait", "note", "draft"}, r.Kind) {
 		return fmt.Errorf("personal: invalid list")
 	}
@@ -119,11 +123,21 @@ func (r RawChange) validateEntity() error {
 	return nil
 }
 
-type Store struct{ pools *db.Pools }
+type Store struct {
+	pools  *db.Pools
+	league bool
+}
 
 func New(pools *db.Pools) *Store { return &Store{pools: pools} }
 
+// NewLeague uses the hosted league's private_entries table. Its caller must supply the
+// authenticated franchise ID to every franchise-scoped method.
+func NewLeague(pools *db.Pools) *Store { return &Store{pools: pools, league: true} }
+
 func (s *Store) Initialize(ctx context.Context) error {
+	if s.league {
+		return fmt.Errorf("personal: hosted schema is owned by history.MigrateLeague")
+	}
 	if err := s.pools.InitializeMain(ctx); err != nil {
 		return fmt.Errorf("personal: initialize schema: %w", err)
 	}
@@ -131,8 +145,30 @@ func (s *Store) Initialize(ctx context.Context) error {
 }
 
 func (s *Store) Read(ctx context.Context, mine string) ([]Entry, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, `SELECT kind,entity,entity_id,text,at,ordinal
- FROM personal_entries WHERE mine=? ORDER BY kind,ordinal,at,entity_id`, mine)
+	if s.league {
+		return nil, fmt.Errorf("personal: use ReadFranchise for hosted entries")
+	}
+	return s.read(ctx, mine)
+}
+
+// ReadFranchise reads private entries for the authenticated caller's franchise only.
+func (s *Store) ReadFranchise(ctx context.Context, franchiseID string) ([]Entry, error) {
+	if !s.league {
+		return nil, fmt.Errorf("personal: franchise reads require a league store")
+	}
+	if err := validateFranchiseScope(franchiseID); err != nil {
+		return nil, err
+	}
+	return s.read(ctx, franchiseID)
+}
+
+func (s *Store) read(ctx context.Context, owner string) ([]Entry, error) {
+	query := `SELECT kind,entity,entity_id,text,at,ordinal FROM personal_entries WHERE mine=? ORDER BY kind,ordinal,at,entity_id`
+	args := s.scopeArgs(owner)
+	if s.league {
+		query = `SELECT kind,entity,entity_id,text,at,ordinal FROM private_entries WHERE franchise_id=? AND mine=? ORDER BY kind,ordinal,at,entity_id`
+	}
+	rows, err := s.pools.Read().QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("personal: read: %w", err)
 	}
@@ -153,9 +189,30 @@ func (s *Store) Read(ctx context.Context, mine string) ([]Entry, error) {
 
 // PlayerNotes returns one franchise's notes for a player, newest first.
 func (s *Store) PlayerNotes(ctx context.Context, mine, playerID string) (Thread, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, `SELECT kind,entity,entity_id,text,at,ordinal
- FROM personal_entries WHERE mine=? AND kind='note' AND entity='player' AND entity_id=?
- ORDER BY at DESC,ordinal DESC`, mine, playerID)
+	if s.league {
+		return Thread{}, fmt.Errorf("personal: use PlayerNotesForFranchise for hosted entries")
+	}
+	return s.playerNotes(ctx, mine, playerID)
+}
+
+// PlayerNotesForFranchise reads a private player-note thread for the caller's authenticated franchise.
+func (s *Store) PlayerNotesForFranchise(ctx context.Context, franchiseID, playerID string) (Thread, error) {
+	if !s.league {
+		return Thread{}, fmt.Errorf("personal: franchise reads require a league store")
+	}
+	if err := validateFranchiseScope(franchiseID); err != nil {
+		return Thread{}, err
+	}
+	return s.playerNotes(ctx, franchiseID, playerID)
+}
+
+func (s *Store) playerNotes(ctx context.Context, owner, playerID string) (Thread, error) {
+	query := `SELECT kind,entity,entity_id,text,at,ordinal FROM personal_entries WHERE mine=? AND kind='note' AND entity='player' AND entity_id=? ORDER BY at DESC,ordinal DESC`
+	args := s.scopeArgs(owner, playerID)
+	if s.league {
+		query = `SELECT kind,entity,entity_id,text,at,ordinal FROM private_entries WHERE franchise_id=? AND mine=? AND kind='note' AND entity='player' AND entity_id=? ORDER BY at DESC,ordinal DESC`
+	}
+	rows, err := s.pools.Read().QueryContext(ctx, query, args...)
 	if err != nil {
 		return Thread{}, fmt.Errorf("personal: player notes: %w", err)
 	}
@@ -175,9 +232,48 @@ func (s *Store) PlayerNotes(ctx context.Context, mine, playerID string) (Thread,
 }
 
 func (s *Store) Change(ctx context.Context, r RawChange, at time.Time) error {
+	if s.league {
+		return fmt.Errorf("personal: use ChangeForFranchise for hosted entries")
+	}
 	if err := r.Validate(); err != nil {
 		return err
 	}
+	return s.change(ctx, r, at)
+}
+
+// ChangeForFranchise scopes writes to the caller's authenticated franchise. RawChange.Mine is
+// deliberately overwritten; request data cannot select another franchise's entries.
+func (s *Store) ChangeForFranchise(ctx context.Context, franchiseID string, r RawChange, at time.Time) error {
+	if !s.league {
+		return fmt.Errorf("personal: franchise writes require a league store")
+	}
+	if err := validateFranchiseScope(franchiseID); err != nil {
+		return err
+	}
+	r.Mine = franchiseID
+	if err := r.validateFields(); err != nil {
+		return err
+	}
+	return s.change(ctx, r, at)
+}
+
+func validateFranchiseScope(franchiseID string) error {
+	if franchiseID == "" || strings.TrimSpace(franchiseID) != franchiseID || len(franchiseID) > 128 || strings.IndexByte(franchiseID, 0) >= 0 {
+		return fmt.Errorf("personal: invalid franchise")
+	}
+	return nil
+}
+
+func (s *Store) scopeArgs(owner string, extra ...any) []any {
+	args := make([]any, 0, 2+len(extra))
+	args = append(args, owner)
+	if s.league {
+		args = append(args, owner)
+	}
+	return append(args, extra...)
+}
+
+func (s *Store) change(ctx context.Context, r RawChange, at time.Time) error {
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("personal: begin: %w", err)
@@ -185,22 +281,13 @@ func (s *Store) Change(ctx context.Context, r RawChange, at time.Time) error {
 	defer func() { _ = tx.Rollback() }()
 	switch r.Action {
 	case "add":
-		_, err = tx.ExecContext(ctx, `INSERT INTO personal_entries(mine,kind,entity,entity_id,text,at,ordinal)
-  SELECT ?,?,?,?,?,?,COALESCE(MAX(ordinal),0)+1 FROM personal_entries WHERE mine=? AND kind=?
-  ON CONFLICT DO NOTHING`, r.Mine, r.Kind, r.Entity, r.ID, r.Text, at.UTC().Format(time.RFC3339Nano), r.Mine, r.Kind)
+		err = s.add(ctx, tx, r, at.UTC().Format(time.RFC3339Nano))
 	case "remove":
-		if r.Kind == "note" {
-			_, err = tx.ExecContext(ctx, `DELETE FROM personal_entries
- WHERE mine=? AND kind='note' AND entity=? AND entity_id=? AND at=?`,
-				r.Mine, r.Entity, r.ID, r.At)
-		} else {
-			_, err = tx.ExecContext(ctx, `DELETE FROM personal_entries WHERE mine=? AND kind=? AND entity=? AND entity_id=?`,
-				r.Mine, r.Kind, r.Entity, r.ID)
-		}
+		err = s.remove(ctx, tx, r)
 	case "swap":
-		err = swapWatch(ctx, tx, r)
+		err = s.swapWatch(ctx, tx, r)
 	default:
-		err = reorder(ctx, tx, r)
+		err = s.reorder(ctx, tx, r)
 	}
 	if err != nil {
 		return fmt.Errorf("personal: %s: %w", r.Action, err)
@@ -211,12 +298,53 @@ func (s *Store) Change(ctx context.Context, r RawChange, at time.Time) error {
 	return nil
 }
 
+func (s *Store) add(ctx context.Context, tx *sql.Tx, r RawChange, at string) error {
+	args := []any{r.Mine, r.Kind, r.Entity, r.ID, r.Text, at, r.Mine, r.Kind}
+	query := `INSERT INTO personal_entries(mine,kind,entity,entity_id,text,at,ordinal)
+SELECT ?,?,?,?,?,?,COALESCE(MAX(ordinal),0)+1 FROM personal_entries WHERE mine=? AND kind=?
+ON CONFLICT DO NOTHING`
+	if s.league {
+		query = `INSERT INTO private_entries(franchise_id,mine,kind,entity,entity_id,text,at,ordinal)
+SELECT ?,?,?,?,?,?,?,COALESCE(MAX(ordinal),0)+1 FROM private_entries WHERE franchise_id=? AND mine=? AND kind=?
+ON CONFLICT DO NOTHING`
+		args = []any{r.Mine, r.Mine, r.Kind, r.Entity, r.ID, r.Text, at, r.Mine, r.Mine, r.Kind}
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("personal: add: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) remove(ctx context.Context, tx *sql.Tx, r RawChange) error {
+	args := s.scopeArgs(r.Mine, r.Entity, r.ID, r.At)
+	query := `DELETE FROM personal_entries WHERE mine=? AND kind='note' AND entity=? AND entity_id=? AND at=?`
+	if r.Kind != "note" {
+		args = s.scopeArgs(r.Mine, r.Kind, r.Entity, r.ID)
+		query = `DELETE FROM personal_entries WHERE mine=? AND kind=? AND entity=? AND entity_id=?`
+	}
+	if s.league {
+		args = s.scopeArgs(r.Mine, r.Entity, r.ID, r.At)
+		query = `DELETE FROM private_entries WHERE franchise_id=? AND mine=? AND kind='note' AND entity=? AND entity_id=? AND at=?`
+		if r.Kind != "note" {
+			args = s.scopeArgs(r.Mine, r.Kind, r.Entity, r.ID)
+			query = `DELETE FROM private_entries WHERE franchise_id=? AND mine=? AND kind=? AND entity=? AND entity_id=?`
+		}
+	}
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("personal: remove: %w", err)
+	}
+	return nil
+}
+
 // swapWatch trades the ranks of two watched players; both must be on the owner's list.
-func swapWatch(ctx context.Context, tx *sql.Tx, r RawChange) error {
+func (s *Store) swapWatch(ctx context.Context, tx *sql.Tx, r RawChange) error {
 	ordinal := func(id string) (int, error) {
 		var n int
-		err := tx.QueryRowContext(ctx, `SELECT ordinal FROM personal_entries
- WHERE mine=? AND kind='watch' AND entity='player' AND entity_id=?`, r.Mine, id).Scan(&n)
+		query := `SELECT ordinal FROM personal_entries WHERE mine=? AND kind='watch' AND entity='player' AND entity_id=?`
+		if s.league {
+			query = `SELECT ordinal FROM private_entries WHERE franchise_id=? AND mine=? AND kind='watch' AND entity='player' AND entity_id=?`
+		}
+		err := tx.QueryRowContext(ctx, query, s.scopeArgs(r.Mine, id)...).Scan(&n)
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, fmt.Errorf("personal: watched player is not listed")
 		}
@@ -234,17 +362,24 @@ func swapWatch(ctx context.Context, tx *sql.Tx, r RawChange) error {
 		return err
 	}
 	for id, n := range map[string]int{r.ID: b, r.With: a} {
-		if _, err := tx.ExecContext(ctx, `UPDATE personal_entries SET ordinal=?
- WHERE mine=? AND kind='watch' AND entity='player' AND entity_id=?`, n, r.Mine, id); err != nil {
+		query := `UPDATE personal_entries SET ordinal=? WHERE mine=? AND kind='watch' AND entity='player' AND entity_id=?`
+		if s.league {
+			query = `UPDATE private_entries SET ordinal=? WHERE franchise_id=? AND mine=? AND kind='watch' AND entity='player' AND entity_id=?`
+		}
+		args := append([]any{n}, s.scopeArgs(r.Mine, id)...)
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return fmt.Errorf("personal: swap: %w", err)
 		}
 	}
 	return nil
 }
 
-func reorder(ctx context.Context, tx *sql.Tx, r RawChange) error {
-	rows, err := tx.QueryContext(ctx, `SELECT entity_id FROM personal_entries WHERE mine=? AND kind='draft'
- ORDER BY ordinal,at,entity_id`, r.Mine)
+func (s *Store) reorder(ctx context.Context, tx *sql.Tx, r RawChange) error {
+	query := `SELECT entity_id FROM personal_entries WHERE mine=? AND kind='draft' ORDER BY ordinal,at,entity_id`
+	if s.league {
+		query = `SELECT entity_id FROM private_entries WHERE franchise_id=? AND mine=? AND kind='draft' ORDER BY ordinal,at,entity_id`
+	}
+	rows, err := tx.QueryContext(ctx, query, s.scopeArgs(r.Mine)...)
 	if err != nil {
 		return fmt.Errorf("personal: order: %w", err)
 	}
@@ -278,8 +413,12 @@ func reorder(ctx context.Context, tx *sql.Tx, r RawChange) error {
 	}
 	ids[index], ids[next] = ids[next], ids[index]
 	for i, id := range ids {
-		if _, err := tx.ExecContext(ctx, `UPDATE personal_entries SET ordinal=? WHERE mine=? AND kind='draft' AND entity_id=?`,
-			i+1, r.Mine, id); err != nil {
+		query := `UPDATE personal_entries SET ordinal=? WHERE mine=? AND kind='draft' AND entity_id=?`
+		if s.league {
+			query = `UPDATE private_entries SET ordinal=? WHERE franchise_id=? AND mine=? AND kind='draft' AND entity_id=?`
+		}
+		args := append([]any{i + 1}, s.scopeArgs(r.Mine, id)...)
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return fmt.Errorf("personal: reorder: %w", err)
 		}
 	}

@@ -50,6 +50,59 @@ func TestSharedRecordsCallerCannotChangeAnother(t *testing.T) {
 	}
 }
 
+// A caller writing its slice during concurrent reads must not change the cached revision or race readers.
+func TestSharedRecordsConcurrentReadersAndWriterAreIsolated(t *testing.T) {
+	t.Parallel()
+	f := heldSeasonLeague(t)
+	baseline, err := f.s.nativeRecords(t.Context(), bracketLeague)
+	if err != nil || len(baseline) < 2 {
+		t.Fatalf("records: %d, %v", len(baseline), err)
+	}
+	want := ledgerViews(baseline)
+	const readers, iterations = 4, 12
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for range readers {
+		wg.Go(func() {
+			<-start
+			for range iterations {
+				records, err := f.s.nativeRecords(t.Context(), bracketLeague)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if !reflect.DeepEqual(ledgerViews(records), want) {
+					t.Error("concurrent caller saw another caller's slice write")
+					return
+				}
+			}
+		})
+	}
+	wg.Go(func() {
+		<-start
+		for range iterations {
+			records, err := f.s.nativeRecords(t.Context(), bracketLeague)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			records[0] = commissioner.Record{}
+			records[1].Principal = "changed"
+			slices.Reverse(records)
+			_ = append(records[:1], commissioner.Record{})
+		}
+	})
+	close(start)
+	wg.Wait()
+	got, err := f.s.nativeRecords(t.Context(), bracketLeague)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(ledgerViews(got), want) {
+		t.Fatal("concurrent caller changed the cached ledger revision")
+	}
+}
+
 // The shared snapshot is read-only by contract: every scoring reading must leave it exactly as it was.
 func TestSharedRecordsStayUnchangedByReadings(t *testing.T) {
 	t.Parallel()

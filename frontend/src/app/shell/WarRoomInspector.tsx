@@ -101,6 +101,14 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
       <span>{context.native ? money(facts?.cut?.deadNow) :
         researchFact(research, 'Dead cap if cut today') ?? unavailable}</span>
       </div>
+    </Drawer><Drawer label="USAGE" detail={facts?.usage?.label}>
+      {facts?.usage ? <><div className="kv"><span>Snap · targets · carries</span><span>{[
+        facts.usage.snapShare, facts.usage.targetShare, facts.usage.carryShare].map(x => x === undefined ?
+          unavailable : `${Math.round(x * 100)}%`).join(' · ')}</span></div>
+      <div className="kv"><span>Weeks used</span>
+        <span>{facts.usage.weeksUsed}</span></div><div className="kv"><span>Matchup</span><span
+          title={facts.usage.reason}>{facts.usage.opponent || unavailable}</span></div></> :
+        <WarRoomEmpty pending={reading.pending} />}
     </Drawer><Drawer label="VALUE ARC" detail={arc?.points.length ? `age ${Math.floor(arc.points[0].age)} → ${
       Math.floor(arc.points[arc.points.length - 1].age)}` : undefined}>
       {arc?.points.length ? <div className="arc" title={arc.reason ? unavailable : undefined}>
@@ -109,7 +117,7 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
         className={p.season === context.snapshot.league.value.season ? 'now' : ''}
         style={{ height: `${Math.max(0, p.level / maxArc * 100)}%` }}
         title={`${p.season} · age ${p.age.toFixed(1)} · ${p.level.toFixed(1)}`} />)}</div> :
-          <WarRoomEmpty />}</Drawer>
+          <WarRoomEmpty pending={reading.pending} />}</Drawer>
     <Drawer label="IN YOUR LINEUP"><div className="kv"><span>
       {fit?.removing ? 'Promotes' : 'Replaces'}</span><span>{fit ?
       fitNames(changedStarters ?? []) || 'No starter change' : unavailable}</span>

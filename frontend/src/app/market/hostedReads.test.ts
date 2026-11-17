@@ -25,6 +25,21 @@ describe('player hosted read adapters', () => {
       arguments: { league: 'native.hosted', player: '0099' } });
   });
 
+  it('does not invoke Wails when hosted facts are unavailable', async () => {
+    const ageArc = vi.fn();
+    const usage = vi.fn();
+    vi.stubGlobal('window', { go: { market: { API: { TargetAgeArc: ageArc } },
+      research: { API: { TargetPlayerUsage: usage } } } });
+    vi.mocked(hostedWorkflow).mockRejectedValue(new Error(
+      'player age arc: hosted player reading is unavailable'));
+    await expect(readAgeArc('0099', 'native.hosted')).rejects.toThrow(
+      'hosted player reading is unavailable');
+    await expect(readPlayerUsage('0099', 'native.hosted')).rejects.toThrow(
+      'hosted player reading is unavailable');
+    expect(ageArc).not.toHaveBeenCalled();
+    expect(usage).not.toHaveBeenCalled();
+  });
+
   it('keeps local reads on their Wails bindings without hosted league context', async () => {
     const ageArc = vi.fn(async () => ({ source: 'desktop-arc' }));
     const usage = vi.fn(async () => ({ source: 'desktop-usage' }));

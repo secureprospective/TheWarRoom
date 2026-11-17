@@ -19,6 +19,9 @@ import (
 // open a file, or serve a client, it does not understand.
 func TestCurrentContract(t *testing.T) {
 	current := Current()
+	if current.Release != 9 || current.Schema != 16 {
+		t.Fatalf("current server contract = %+v, want release 9 / schema 16", current)
+	}
 	if current.Schema != history.LeagueSchemaVersion() || current.Commands != commissioner.DurableCommandVersion {
 		t.Fatalf("add a release row: contract %+v, history schema %d, commands %d", current, history.LeagueSchemaVersion(), commissioner.DurableCommandVersion)
 	}

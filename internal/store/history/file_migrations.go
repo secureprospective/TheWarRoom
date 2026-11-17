@@ -16,7 +16,9 @@ const leagueMigrationBase = 13
 func LeagueSchemaVersion() int    { return leagueMigrationBase + len(leagueMigrations()) }
 func ReferenceSchemaVersion() int { return len(referenceMigrations()) }
 
-func leagueMigrations() []db.Migration    { return []db.Migration{createLeagueFile, addLeagueIdentity} }
+func leagueMigrations() []db.Migration {
+	return []db.Migration{createLeagueFile, addLeagueIdentity, createPrivateEntries}
+}
 func referenceMigrations() []db.Migration { return []db.Migration{createReferenceFile} }
 
 func createLeagueFile(ctx context.Context, tx *sql.Tx) error {
@@ -28,6 +30,19 @@ func createLeagueFile(ctx context.Context, tx *sql.Tx) error {
 		if err := step(ctx, tx); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func createPrivateEntries(ctx context.Context, tx *sql.Tx) error {
+	if _, err := tx.ExecContext(ctx, `CREATE TABLE private_entries (
+ franchise_id TEXT NOT NULL, mine TEXT NOT NULL, kind TEXT NOT NULL, entity TEXT NOT NULL,
+ entity_id TEXT NOT NULL, text TEXT NOT NULL, at TEXT NOT NULL, ordinal INTEGER NOT NULL,
+ PRIMARY KEY (franchise_id, mine, kind, entity, entity_id, at), CHECK (franchise_id = mine));
+ CREATE INDEX private_entries_franchise_kind ON private_entries(franchise_id, kind);
+ CREATE UNIQUE INDEX private_entries_marker ON private_entries(franchise_id, mine, kind, entity, entity_id)
+ WHERE kind != 'note';`); err != nil {
+		return fmt.Errorf("create private entries: %w", err)
 	}
 	return nil
 }

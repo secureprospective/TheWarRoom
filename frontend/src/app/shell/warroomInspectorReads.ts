@@ -31,8 +31,10 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string,
         result.valuesPreparing = values.preparing;
         result.value = values.players.find(p => p.player === id); }),
       apply(async () => { result.fit = await readInspectorFit(c, id); }),
-      apply(async () => { result.arc = parseArc(await readAgeArc(id, native.league)); }),
-      apply(async () => { result.usage = parseUsage(await readPlayerUsage(id, native.league)); }),
+      apply(async () => { try { result.arc = parseArc(await readAgeArc(id, native.league)); }
+        catch (e) { if (!hostedFactUnavailable(e)) throw e; } }),
+      apply(async () => { try { result.usage = parseUsage(await readPlayerUsage(id, native.league)); }
+        catch (e) { if (!hostedFactUnavailable(e)) throw e; } }),
       apply(async () => {
         const owners = c.snapshot.rosters.value.filter(r => r.players.some(p => p.id === id));
         const owner = owners.find(r => r.franchiseId === c.mine) ??
@@ -66,6 +68,9 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string,
       result.notes = notes; }),
   ]);
   return result;
+}
+function hostedFactUnavailable(error: unknown): boolean {
+  return String(error).includes('hosted player reading is unavailable');
 }
 export async function changeWarRoomNote(c: WarRoomContext, id: string, text: string, at?: string) {
   if (c.native) throw new Error('Hosted private notes are not available yet');
