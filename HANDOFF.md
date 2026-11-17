@@ -1,7 +1,7 @@
 # Handoff
 
-- Baton: Bee, 2026-11-17.
-- State: Hosted pool rows now use `native.assets.read` facts and `value.read` dynasty values/known ages; missing fields render “Not available yet.” Affordable uses cap room; My needs reuses the header's non-preparing trade-lens needs. Fake-port and filter tests pass; frontend suite passes (119 files / 899 tests); production build passes.
-- Next: Review, commit and push this slice; open a PR and verify CI. Local provider path and target/watch behavior remain unchanged.
-- Blocked on: No live hosted click-through available here.
+- Baton: Christopher, 2026-11-17.
+- State: Market pool now maps held assets, value and age; absent facts render “Not available yet.” Affordable uses server cap room, and My needs reuses ready header trade-lens needs. Local path is unchanged. PR #331 is open: https://github.com/secureprospective/TheWarRoom/pull/331.
+- Next: Review PR #331; merge only with Christopher's go-ahead. No live hosted click-through was performed.
+- Blocked on: None for the code slice. A live hosted click-through remains unverified.
 - Tried/rejected: No new endpoint, desktop read, valuation logic, target/watch support or server change; these exceed scope or lack the required held/private source.
