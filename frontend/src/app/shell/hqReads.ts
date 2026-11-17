@@ -18,9 +18,8 @@ export function useHQRead<K extends ReadCommandId, T>(command: K, args: ReadArgu
     if (!enabled) return;
     const load = () => { void query.load(args); };
     void query.load(args, { overlap: 'join' });
-    const season = selectProvider().onSeasonChange(load);
-    const moves = commands.onMovesChange(load);
-    return () => { query.fence(); season(); moves(); };
+    const unsubscribe = hqEvents.onChange(load);
+    return () => { query.fence(); unsubscribe(); };
     // The canonical binding arguments, not the array's render identity, own the request lifetime.
   }, [query, key, enabled]);
   const state = query.use();
@@ -32,9 +31,8 @@ export const readHQRace = (week: number, team: string, mine: string, mode: strin
   raceAPI.read(week, team, mine, mode);
 
 export const hqEvents = { onChange: (load: () => void) => {
-  const season = selectProvider().onSeasonChange(load);
-  const moves = commands.onMovesChange(load);
-  return () => { season(); moves(); };
+  const stop = [selectProvider().onSeasonChange(load), commands.onMovesChange(load)];
+  return () => stop.forEach(unsubscribe => unsubscribe());
 } };
 
 export async function addHQTrade(mine: string, player: string, snapshot: import('../data/contract').Snapshot,
