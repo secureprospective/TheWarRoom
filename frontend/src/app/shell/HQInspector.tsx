@@ -6,6 +6,7 @@ import { useCallback, useState, type ReactNode } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { readAgeArc } from '../market/api';
+import { hostedPlayerReadingUnavailable } from '../control/nativeApi';
 import { readPlayerUsage } from '../research/api';
 import { readPersonalNotes, personalWire } from '../offers/api';
 import { marketAPI } from '../market/api';
@@ -86,9 +87,14 @@ export function HQInspector({ snapshot, mine, id, facts, projection, native = fa
 }
 function useHQInspectorData(native: boolean, league: string | undefined, mine: string, id: string,
   revision: number) {
-  const readArc = useCallback(async (player: string) => parseArc(await readAgeArc(player, league)), [league]);
-  const readUsage = useCallback(async (player: string) => parseUsage(await readPlayerUsage(player, league)),
-    [league]);
+  const readArc = useCallback(async (player: string) => {
+    const reading = await readAgeArc(player, league);
+    return hostedPlayerReadingUnavailable(reading) ? undefined : parseArc(reading);
+  }, [league]);
+  const readUsage = useCallback(async (player: string) => {
+    const reading = await readPlayerUsage(player, league);
+    return hostedPlayerReadingUnavailable(reading) ? undefined : parseUsage(reading);
+  }, [league]);
   const arc = useHQRead('market.TargetAgeArc', [id], readArc, !native || !!league);
   const usage = useHQRead('research.TargetPlayerUsage', [id], readUsage, !native || !!league);
   const notes = useContractRead(JSON.stringify([mine, id, revision]), () => native ? Promise.reject(new

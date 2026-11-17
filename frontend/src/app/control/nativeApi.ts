@@ -92,6 +92,13 @@ export function readConfirmRequest(text: string): boolean {
   } catch { return false; }
 }
 export type HostedResponse = { label: string; writable: boolean; football: string; data: unknown };
+export type HostedPlayerReadingUnavailable = { unavailable: true; reason: 'input-not-held' };
+export function hostedPlayerReadingUnavailable(data: unknown): HostedPlayerReadingUnavailable | undefined {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return undefined;
+  const value = data as Record<string, unknown>;
+  return Object.keys(value).length === 2 && value.unavailable === true
+    && value.reason === 'input-not-held' ? value as HostedPlayerReadingUnavailable : undefined;
+}
 export async function hostedWorkflow(request: NativeRequest, football = ''): Promise<HostedResponse> {
   const { nativeEnvelope } = await import('../commands/native');
   const response = await fetch('/desktop/workflow', {
