@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -33,8 +32,8 @@ func TestPlayerReadingsValidateAdmitAndReportUnavailable(t *testing.T) {
 				}
 			}
 			scope := RawPlayerReadScope{League: "native.test", Player: "0099"}
-			if data, err := read.call(service, scope); err == nil || !strings.Contains(err.Error(), "hosted player reading is unavailable") || data != nil || calls != 1 {
-				t.Fatalf("missing inputs must not become data: %s %v calls=%d", data, err, calls)
+			if data, err := read.call(service, scope); err != nil || string(data) != `{"unavailable":true,"reason":"input-not-held"}` || calls != 1 {
+				t.Fatalf("missing inputs must return typed unavailable data: %s %v calls=%d", data, err, calls)
 			}
 			denied := errors.New("outsider refused")
 			outsider := NewHosted(admissionHost{}, admissionFunc(func(context.Context, commissioner.Access) error { return denied }))

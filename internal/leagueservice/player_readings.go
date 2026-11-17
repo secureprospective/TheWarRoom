@@ -52,7 +52,7 @@ func (a *Service) readPlayer(scope RawPlayerReadScope, operation, label string,
 	}
 	host, ok := a.host.(playerReadHost)
 	if !ok {
-		return nil, fmt.Errorf("%s: hosted player reading is unavailable", label)
+		return json.RawMessage(`{"unavailable":true,"reason":"input-not-held"}`), nil
 	}
 	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
