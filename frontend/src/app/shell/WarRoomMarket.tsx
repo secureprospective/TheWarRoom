@@ -190,7 +190,7 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
   const players = value?.players?.filter(p => (filter !== 'Targets' || targets.has(p.id)) &&
     (filter !== 'My needs' || needPositions.has(p.position)) && (filter !== 'Affordable' ||
       capRoom !== undefined && p.minimumCents !== undefined && p.minimumCents <= capRoom));
-  const canFilter = (name: string) => name === 'My needs' ? needs === undefined :
+  const filterUnavailable = (name: string) => name === 'My needs' ? needs === undefined :
     name === 'Affordable' ? !context.native || capRoom === undefined : false;
   const canManageBids = context.native && context.native.owner !== false && !fresh?.error;
   const canManageTargets = !context.native || context.native.owner !== false;
@@ -212,7 +212,7 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
     <div><div className="ch"><b>FREE AGENT POOL</b><span>in-season · drag a row to a target lane or to BIDS
     </span></div><div className="bench"><div className="filters">{['All', 'My needs', 'Targets',
       'Affordable'].map(f => <WarRoomAct key={f} className="chip" active={filter === f}
-        disabled={canFilter(f)} title={canFilter(f) ? unavailable : undefined}
+        disabled={filterUnavailable(f)} title={filterUnavailable(f) ? unavailable : undefined}
         onAction={() => setFilter(f)}>{f}</WarRoomAct>)}</div></div>
       <div className="fa-h">{['☆', 'POS', 'PLAYER', 'AGE', 'STRING', 'PTS', 'VALUE', 'MIN BID'].map((h, i) =>
         <span key={i}>{h}</span>)}</div><div className="fa-list">
