@@ -20,6 +20,7 @@ import { selectProvider } from '../data/provider';
 import { ordinal } from '../shell/hqPlayerData';
 import { parseNativeValues, type LeagueValues } from '../data/nativeValues';
 import { parseWarRoomProjections } from '../data/nativeProjections';
+import { deadlineLabel } from '../clock/labels';
 
 export function nativeHQStanding(
   rules: Rules | undefined,
@@ -243,6 +244,7 @@ export type NativeHQ = {
   week?: number;
   weekNote?: string;
   values?: LeagueValues;
+  decisions?: { label: string; at?: string; live: boolean }[];
   projections?: Map<string, number>;
   thisWeek?: PulseResults;
   errors: string[];
@@ -525,6 +527,26 @@ export async function readNativeHQ(
       result.projections = values;
     });
   await Promise.all([regions, values, thisWeek]);
+  await apply(async () => {
+    const r = await port({ command: 'calendar.read', mode: 'read', arguments: {
+      league, season, franchise: mine, action: 'lineup',
+      localZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    } });
+    const calendar = object(r.data, 'Calendar', ['league', 'revision', 'clock', 'decision']);
+    if (calendar.league !== league) throw new Error('Calendar belongs to another league');
+    const clock = object(calendar.clock, 'Action calendar', ['windows', 'exceptions', 'tradeDeadline',
+      'secondsToTradeDeadline']);
+    result.decisions = array(clock.windows, 'Calendar windows', (v, p) => {
+      const actionWindow = object(v, p, ['id', 'opens', 'start', 'close', 'live', 'secondsToClose']);
+      if (typeof actionWindow.live !== 'boolean') throw new Error('Unreadable calendar window state');
+      return { label: array(actionWindow.opens, p, text).map(deadlineLabel).join(' · '),
+        at: timestamp(actionWindow.start, p),
+        live: actionWindow.live };
+    }).sort((a, b) => (a.at ?? '').localeCompare(b.at ?? ''));
+    if (clock.tradeDeadline != null) result.decisions.push({ label: 'Trade deadline',
+      at: timestamp(clock.tradeDeadline, 'Trade deadline'), live: false });
+    result.decisions.sort((a, b) => (a.at ?? '').localeCompare(b.at ?? ''));
+  });
   result.standing = nativeHQStanding(leagueRules, standingRows, mine);
   publish?.({ ...result, errors: [...result.errors] });
   return result;
