@@ -1,7 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Current main merged; frontend frozen install/build passed. PR #312 has three sequential 180s origin/main runs and three branch runs from the same local harness. CPU decreased 6.6%; read errors were 0 in both sets. PR body has the table and is ready; no merge.
-- Next: push this sync commit, verify CI/PR; do not merge.
-- Blocked on: tidy-check flags six dangling Chromium symlinks in external scratch folders; left untouched because they are outside this worktree and authorized output paths.
-- Tried/rejected: Earlier single-run evidence was not used for the final table; the six fresh run data sets were used. The untracked `cmd/twr-server/zz_pulse_repro_test.go` was preserved and not staged.
+- State: Job 5 is blocked before implementation. `store/personal` reads `personal_entries`, but that table exists only in `internal/db/main_schema.go`; hosted startup opens/migrates `server.db` with `history.LeagueSchemaVersion()` and does not initialize the main schema. `history`'s shared file is server-global, while `personal_entries` keys only by `mine`, so reusing it there also collides across leagues.
+- Next: Christopher must approve per-league private persistence and its schema migration. The task forbids a new table/migration, so no feature code was kept; a draft PR will document this blocker.
+- Blocked on: storage design / migration approval.
+- Tried and rejected: attaching `personal.New(files.shared)` without a schema change (fresh hosted DB has no table; server-global franchise IDs are not league-scoped). Calling `Store.Initialize` is not viable: it applies the main schema to a hosted database using a different schema version.
