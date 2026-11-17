@@ -179,6 +179,7 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 | MFL API and scoring | `docs/data-layer/MFL_API_Specification.md`, `MFL_Scoring_Rules_Decode.md` |
 | Approved data sources | `docs/sources/Approved_Sources.md` |
 | UI direction | `docs/ui/UI_Direction_Document.md` |
+| Building anything from desktop mock v3 (`~/Downloads/TheWarRoom-mock-v3-FINAL.html`): which real file owns each piece, button and screen, and the anti-slop rules | `docs/ui/v3/V3-STUB-PLAN.md` (+ `V3-STUB-INVENTORY.md`, `UIUX-INVENTORY-2026-11-17.md`) |
 | UI build order (rings, reference) | `docs/build-handoffs/UI_Target_Roadmap_2026-10.md` |
 | UI target spec and its rulings | `docs/ui/Target_UI_Spec_2026-10.md` |
 | Every endpoint and its status | `docs/ui/endpoint-registry.csv` |
