@@ -153,7 +153,7 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 	gate := agentAdmission{token: h.Tokens.Admission(session), confirmations: h.Confirmations, confirmation: r.Header.Get("X-TWR-Human-Confirmation"), auditID: token.ID}
 	pinned, err := h.workflowHost(ctx, host, raw)
 	if err != nil {
-		http.Error(w, "football reference unavailable", http.StatusServiceUnavailable)
+		writeUnavailable(w, "football reference unavailable")
 		return
 	}
 	service := leagueservice.NewHosted(h.Worker.Host(pinned), gate)

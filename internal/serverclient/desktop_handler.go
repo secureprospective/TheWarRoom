@@ -2,10 +2,12 @@ package serverclient
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"time"
 
@@ -138,6 +140,48 @@ func (d *Desktop) workflowHTTP(w http.ResponseWriter, r *http.Request) {
 
 const DesktopWorkflowPath = "/desktop/workflow"
 
+func hostedReadRetryDelay(attempt int) (time.Duration, error) {
+	jitter, err := rand.Int(rand.Reader, big.NewInt(100))
+	if err != nil {
+		return 0, fmt.Errorf("choose hosted read retry jitter: %w", err)
+	}
+	base := 200 * time.Millisecond * time.Duration(1<<attempt)
+	return base + time.Duration(jitter.Int64())*time.Millisecond, nil
+}
+
+func retryHostedRead(ctx context.Context, session desktopSnapshot, raw serverhttp.RawWorkflow,
+	body []byte, unauthorized bool, err error,
+) ([]byte, bool, error) {
+	for attempt := 0; err != nil; attempt++ {
+		var refusal *retryAfterRefusal
+		if !errors.As(err, &refusal) {
+			break
+		}
+		delay, retry := retryDelay(refusal.after)
+		maxRetries := 3
+		if refusal.after != "" {
+			maxRetries = 1
+		} else {
+			delay, err = hostedReadRetryDelay(attempt)
+			if err != nil {
+				return nil, unauthorized, err
+			}
+		}
+		if (!retry && refusal.after != "") || attempt >= maxRetries {
+			break
+		}
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, unauthorized, fmt.Errorf("wait for hosted read retry: %w", ctx.Err())
+		case <-timer.C:
+		}
+		body, unauthorized, err = postDesktopSnapshot(ctx, session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	}
+	return body, unauthorized, err
+}
+
 // Workflow keeps the device session in Go and binds every request to this window's league.
 func (d *Desktop) Workflow(ctx context.Context, raw serverhttp.RawWorkflow) (serverhttp.WorkflowResponse, error) {
 	d.mu.Lock()
@@ -158,20 +202,8 @@ func (d *Desktop) Workflow(ctx context.Context, raw serverhttp.RawWorkflow) (ser
 		return result, fmt.Errorf("sign in before opening your franchise")
 	}
 	body, unauthorized, err := postDesktopSnapshot(ctx, session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
-	if err != nil && raw.Mode == "read" {
-		var refusal *retryAfterRefusal
-		if errors.As(err, &refusal) {
-			if delay, ok := retryDelay(refusal.after); ok {
-				timer := time.NewTimer(delay)
-				select {
-				case <-ctx.Done():
-					timer.Stop()
-					return result, fmt.Errorf("wait for hosted read retry: %w", ctx.Err())
-				case <-timer.C:
-				}
-				body, unauthorized, err = postDesktopSnapshot(ctx, session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
-			}
-		}
+	if raw.Mode == "read" {
+		body, unauthorized, err = retryHostedRead(ctx, session, raw, body, unauthorized, err)
 	}
 	if unauthorized {
 		d.mu.Lock()

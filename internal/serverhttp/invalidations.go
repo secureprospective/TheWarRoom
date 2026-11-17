@@ -78,7 +78,7 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			return
 		}
 		if h.Store == nil || h.Leagues == nil || h.Sessions == nil || h.TOTP == nil || h.Worker == nil {
-			http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+			writeUnavailable(w, "service unavailable")
 			return
 		}
 		service, gate, device := h.invalidationService(w, r, league)
@@ -88,7 +88,7 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 		// Read the head before the view so a concurrent commit cannot be skipped.
 		head, err := h.leagueHead(r.Context(), league)
 		if err != nil {
-			http.Error(w, "native read unavailable", http.StatusServiceUnavailable)
+			writeUnavailable(w, "native read unavailable")
 			return
 		}
 		//nolint:contextcheck // StoredHost owns the request context used by the reading API.
@@ -109,7 +109,7 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 		}
 		seated, err := leagueservice.JoinSeats{Store: pin.Store}.Seated(r.Context(), league)
 		if err != nil {
-			http.Error(w, "native read unavailable", http.StatusServiceUnavailable)
+			writeUnavailable(w, "native read unavailable")
 			return
 		}
 		if !budget.acquire(league, device, seated) {
