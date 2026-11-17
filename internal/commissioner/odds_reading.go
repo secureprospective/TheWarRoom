@@ -2,6 +2,9 @@ package commissioner
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"math"
@@ -21,9 +24,39 @@ import (
 // 1.1 points. The runs are split into oddsChunks fixed streams, each seeded from the recorded seed and its
 // index, so the result is the same on any machine however many cores run it.
 const (
-	OddsRuns   = 2000
-	oddsChunks = 8
+	OddsRuns         = 2000
+	oddsChunks       = 8
+	oddsCacheEntries = 16
 )
+
+// OddsCache retains bounded simulation results by their complete simulation inputs.
+type OddsCache struct {
+	mu     sync.Mutex
+	values map[[32]byte]map[string]int
+}
+
+func (c *OddsCache) result(key [32]byte, run func() (map[string]int, string)) (map[string]int, string) {
+	c.mu.Lock()
+	if made, ok := c.values[key]; ok {
+		c.mu.Unlock()
+		return maps.Clone(made), ""
+	}
+	c.mu.Unlock()
+	made, words := run()
+	if words != "" {
+		return nil, words
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.values == nil {
+		c.values = map[[32]byte]map[string]int{}
+	}
+	if len(c.values) >= oddsCacheEntries {
+		clear(c.values)
+	}
+	c.values[key] = maps.Clone(made)
+	return made, ""
+}
 
 // OddsPlayer is one rostered player's on-field-now value, from the league's own value read.
 type OddsPlayer struct {
@@ -92,6 +125,12 @@ type NativeOdds struct {
 // drawn from the recorded seed, and seed it with the bracket's own field rules (competition.SeedField).
 func NativeOddsReading(ctx context.Context, league string, records []Record, src ResultSources, season int,
 	now time.Time, values OddsValues) (NativeOdds, error) {
+	return NativeOddsReadingCached(ctx, league, records, src, season, now, values, nil)
+}
+
+// NativeOddsReadingCached reuses only playoff simulation counts; revision-specific reading metadata is rebuilt.
+func NativeOddsReadingCached(ctx context.Context, league string, records []Record, src ResultSources, season int,
+	now time.Time, values OddsValues, cache *OddsCache) (NativeOdds, error) {
 	out := NativeOdds{League: league, Season: season, Revision: int64(len(records)), Status: "Unavailable",
 		Rows: []OddsRow{}, Games: []OddsGame{}}
 	standings, err := NativeStandingsReading(ctx, league, records, src, season, now)
@@ -127,21 +166,56 @@ func NativeOddsReading(ctx context.Context, league string, records []Record, src
 	if err := b.prepare(LineupFacts{}); err != nil {
 		return out, err
 	}
-	// The seed is the league's record count and the season, both held non-negative by the standings read.
-	out.Seed = uint64(len(records))<<16 | uint64(season) //nolint:gosec // Checked above: 1920 <= season <= 9999.
+	field, _, _ := b.fieldInput(standings.Computed)
+	field.Hand = b.state.handFields(b.layout)
+	out.Seed = oddsInputSeed(standings, expected, field)
 	if waiting := oddsWaiting(standings, rules, b.out); waiting != "" {
 		out.OddsWords = out.reducedNote(values.Reduced) + waiting
 		return out, nil
 	}
-	out.playOut(standings, expected, b, values.Reduced)
+	out.playOut(standings, expected, field, values.Reduced, cache)
 	return out, nil
 }
 
+// oddsInputKey names every input that can affect one simulated season.
+func oddsInputKey(s NativeStandings, expected map[string]float64, field competition.FieldInput) [32]byte {
+	input := struct {
+		Season, Through int
+		Teams           []competition.RankTeam
+		Criteria        []leaguerules.Criterion
+		Games           []competition.RankGame
+		AllPlay         map[string]competition.Tally
+		Points          map[string]leaguerules.Decimal
+		Open            []OpenGame
+		Expected        map[string]float64
+		Field           competition.FieldInput
+	}{s.Season, s.counted.through, s.teams, s.criteria, s.counted.games, s.counted.allPlay,
+		s.counted.points, s.counted.open, expected, field}
+	body, err := json.Marshal(input)
+	if err != nil {
+		return sha256.Sum256([]byte(fmt.Sprintf("invalid odds inputs: %v", err)))
+	}
+	return sha256.Sum256(body)
+}
+
+// oddsInputSeed makes the simulation repeatable for unchanged results, schedule and standings rules.
+func oddsInputSeed(s NativeStandings, expected map[string]float64, field competition.FieldInput) uint64 {
+	key := oddsInputKey(s, expected, field)
+	return binary.LittleEndian.Uint64(key[:8])
+}
+
 // playOut plays the open games out OddsRuns times and gives each franchise its share of playoff fields.
-func (out *NativeOdds) playOut(standings NativeStandings, expected map[string]float64, b bracketReader, reduced string) {
-	field, _, _ := b.fieldInput(standings.Computed)
-	field.Hand = b.state.handFields(b.layout)
-	made, words := playOutChunks(standings, expected, field, out.Seed)
+func (out *NativeOdds) playOut(standings NativeStandings, expected map[string]float64, field competition.FieldInput,
+	reduced string, cache *OddsCache) {
+	run := func() (map[string]int, string) { return playOutChunks(standings, expected, field, out.Seed) }
+	var made map[string]int
+	var words string
+	if cache == nil {
+		made, words = run()
+	} else {
+		key := oddsInputKey(standings, expected, field)
+		made, words = cache.result(key, run)
+	}
 	if words != "" {
 		out.OddsWords = out.reducedNote(reduced) + words
 		return

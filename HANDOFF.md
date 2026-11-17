@@ -1,8 +1,7 @@
 # Handoff
 
-- Baton: Bee, 2026-11-17; branch `session/pulse-busy`.
-- State: PR #310 open, unmerged. Round-2 CI feedback fixed: write-backup pauses return their original 503 body, not overload `BusyMessage`; actual overload/deadline refusals still return 503 + `Retry-After: 2`.
-- Verification: `go test -race -timeout 20m ./cmd/twr-server ./internal/serverhttp/... ./internal/serverclient/...` passed; focused regression tests passed after final signature cleanup. The initial run showed a mismatched pause-admission assertion and serverhttp's 10-minute test timeout; rerun with 20m passed. Previous CI's verify failure came from the same pause-dashboard test failing in shard 2; verify aggregator failed as a result. Commit `6f531e5f9` pushed; pre-push changed-package verify passed.
-- Next: monitor CI for PR #310. No merge. No live-host tests.
-- Blocked on: tidy-check reports four dangling Chromium symlinks under other scratch folders; left untouched.
-- Tried/rejected: Do not attach overload headers/body to backup pause refusals; a paused write is an operational fault, not capacity pressure.
+- Baton: Bee, 2026-11-16.
+- State: Stable odds seed and bounded simulation cache implemented. Commissioner and history race tests pass. Real-data pulse run verified identical seed and all 32 odds rows before/after lineup writes and on repeated reads. Three baseline/after load runs plus one parity run are in `.scratch/`.
+- Next: Project hooks block commit/PR. Restore the required frontend toolchain/build output through the project owner, then rerun hooks, commit, push and open a PR against main. Do not merge.
+- Blocked on: `make lint` and commit hooks fail because `frontend/dist` is absent (`main.go:12:12: pattern all:frontend/dist: no matching files found`). `pnpm --dir frontend build` also fails: global tsc rejects existing `esModuleInterop=false` and `moduleResolution=node10`; local `node_modules` is absent. Do not edit `frontend/dist` or install dependencies without authorization. Tidy reports known dangling scratch symlinks and another agent's scratch folder.
+- Tried/rejected: The records-length seed changed odds after lineup-only writes. Replaced it with a hash of simulation inputs; no contracts-cache change.

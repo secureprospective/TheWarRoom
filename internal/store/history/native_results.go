@@ -302,7 +302,7 @@ func (s *Store) readNativeOdds(ctx context.Context, league string, season int, v
 	if err != nil {
 		return commissioner.NativeOdds{}, err
 	}
-	out, err := commissioner.NativeOddsReading(ctx, league, records, src, season, src.now, values)
+	out, err := commissioner.NativeOddsReadingCached(ctx, league, records, src, season, src.now, values, &s.oddsCache)
 	if err != nil {
 		return commissioner.NativeOdds{}, fmt.Errorf("read native odds: %w", err)
 	}
