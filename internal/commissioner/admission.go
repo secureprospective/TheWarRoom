@@ -47,10 +47,10 @@ func AdmitCredential(ctx context.Context, access Access) error {
 		return nil
 	}
 	if held.admission == nil || access.Principal == "" {
-		return Refused(fmt.Errorf("your session is unavailable"))
+		return Denied(fmt.Errorf("your session is unavailable"))
 	}
 	if err := held.admission.Admit(ctx, access); err != nil {
-		return fmt.Errorf("credential admission: %w", Refused(err))
+		return fmt.Errorf("credential admission: %w", Denied(err))
 	}
 	return nil
 }

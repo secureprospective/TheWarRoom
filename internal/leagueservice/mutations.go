@@ -60,13 +60,21 @@ func (a *Service) Execute(ctx context.Context, raw commissioner.RawCommand) (com
 func ChangeError(err error) error {
 	var refused *commissioner.Refusal
 	if errors.As(err, &refused) {
-		return errors.New(refused.Reason())
+		return changeRefusal{cause: err, reason: refused.Reason()}
 	}
 	if err != nil {
 		return fmt.Errorf("league change: %w", err)
 	}
 	return nil
 }
+
+type changeRefusal struct {
+	cause  error
+	reason string
+}
+
+func (e changeRefusal) Error() string { return e.reason }
+func (e changeRefusal) Unwrap() error { return e.cause }
 
 // MigrationLedger is the league store as the move from MFL uses it: the same replay, checks and atomic
 // appends every other league change goes through.

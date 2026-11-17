@@ -2,6 +2,7 @@ package serverhttp_test
 
 import (
 	"encoding/json"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -10,6 +11,31 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
+
+func TestHostedRoleNoOpReturnsPreviewReason(t *testing.T) {
+	c := workflowClient(t)
+	raw := c.command("commish.role.grant", commissioner.RawArgs{People: &commissioner.RawPeople{
+		Principal: c.f.principal, Role: governance.Commissioner,
+	}}, "role.noop")
+	raw.Visibility = "private"
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Command: &raw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := c.f.post(t, serverhttp.PreviewPath, string(body), c.bearer, c.proof, http.StatusOK)
+	var preview commissioner.Preview
+	if err := json.Unmarshal(result, &preview); err != nil {
+		t.Fatal(err)
+	}
+	want := "This person already holds that role. Nothing would change"
+	if len(preview.Blockers) != 1 || preview.Blockers[0] != want {
+		t.Fatalf("preview blockers=%q, want %q", preview.Blockers, want)
+	}
+	result = c.f.post(t, serverhttp.ExecutePath, string(body), c.bearer, c.proof, http.StatusConflict)
+	if got := strings.TrimSpace(string(result)); got != want {
+		t.Fatalf("execute refusal=%q, want %q", got, want)
+	}
+}
 
 func TestHostedRoleGrantToAccountWithoutSeatOrRole(t *testing.T) {
 	c := workflowClient(t)
