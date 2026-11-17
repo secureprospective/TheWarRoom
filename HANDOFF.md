@@ -1,9 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- Previous: merged origin/main (#334 Personal plumbing; #335 audit fix) into PR #333.
-- State: PR #333 is open, mergeable, and CI-green; #323 is closed with a link to #333. Queue reads/writes reuse `LeaguePin.Personal`/`StoredHost.Personal`; tokens stay limited to the issuer's seated franchise. No schema/cache change; embedded DraftRoom unchanged; ADP/tier unavailable.
-- Tests: Go race tests pass for cmd/twr-server, accounts, app/commissioner, commandcatalog, leagueservice, serverhttp, and store/personal. Frontend: 122 files / 905 tests; typecheck and native generators pass.
-- Next: Christopher/ClaudeBox review and merge decision.
-- Blocked: tidy check flags a scratch folder outside this task's authorized write paths; left untouched.
-- Tried/rejected: duplicate private-store wiring; request-selected franchise; local DraftRoom changes.
+- State: pulse ADP/tier job stopped at its source gate. Server-held football facts and `draft.read` expose player identity/position/team/draft year and draft state, not ADP or tiers. `marketfeeds` ADP is local-app feed state; hosted league load transfers native events plus selected pinned-football evidence, not the mirror's market-feed archive.
+- Next: before implementation, provide an approved hosted ADP feed/import and a held tier source or approved tier derivation. Then extend the existing `draft.read` path and board; no schema change made here.
+- Blocked: Step 1 found no hosted ADP/tier data; brief forbids adding a feed or calling outside services. Feature tests not run; PR: N/A (stopped before implementation).
+- Tried/rejected: inferring tiers or routing local `marketfeeds` data into hosted UI; neither is server-held evidence.
