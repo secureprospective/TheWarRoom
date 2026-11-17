@@ -39,7 +39,7 @@ func releaseMutationRows(t *testing.T) map[string]releaseMutation {
 	}
 	ids := []string{}
 	for _, command := range NativeCommands() {
-		if slices.Contains(command.Modes, catalog.Execute) {
+		if slices.Contains(command.Modes, catalog.Execute) && command.Availability != "server" {
 			ids = append(ids, command.ID)
 			row, ok := rows[command.ID]
 			if !ok {

@@ -9,6 +9,7 @@ import { readAgeArc } from '../market/api';
 import { hostedPlayerReadingUnavailable } from '../control/nativeApi';
 import { readPlayerUsage } from '../research/api';
 import { readPersonalNotes, personalWire } from '../offers/api';
+import type { HostedPort } from '../commissioner/hostedRoom';
 import { marketAPI } from '../market/api';
 import { parseAssetBoard } from '../assets/contract';
 import { contractsProvider } from '../contracts/provider';
@@ -18,8 +19,16 @@ import { parseArc, parseUsage, parseNotes, researchFact, type Arc, type Usage, t
   './hqPlayerData';
 import type { RosterFacts } from './hqRosterFacts';
 import { money, pickPlayer, unavailable } from './hqModel';
+import { readHostedPlayerNotes, setHostedPlayerNote, setHostedPlayerWatch } from './playerPersonal';
 
-const notesRead = async (mine: string, id: string) => parseNotes(await readPersonalNotes(mine, id));
+const notesRead = async (mine: string, id: string, native: boolean, league?: string,
+  port?: HostedPort) => {
+  if (native) {
+    if (!league) throw new Error(unavailable);
+    return readHostedPlayerNotes(league, id, port);
+  }
+  return parseNotes(await readPersonalNotes(mine, id));
+};
 const assetsRead = async () => parseAssetBoard(await marketAPI.assetBoard());
 function Drawer({ title, detail, mine, children }: { title: string; detail?: ReactNode; mine?: boolean;
   children: ReactNode }) {
@@ -72,21 +81,25 @@ export function NotesThread({ notes, count, pending, error, add, remove }: { not
   </Drawer>;
 }
 export function HQInspector({ snapshot, mine, id, facts, projection, native = false, bench, position, cut,
-  toIR, annual, leagueValue, valuesPreparing, league }: {
-  league?: string;
+  toIR, annual, leagueValue, valuesPreparing, league, port }: {
+  league?: string; port?: HostedPort;
   valuesPreparing?: boolean; leagueValue?: LeaguePlayerValue;
   snapshot: Snapshot; mine: string; id?: string; facts?: RosterFacts;
     projection?: number; native?: boolean;
   bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut; annual?: {
     season: number; cents: number }[];
 }) {
-  return id ? <LoadedInspector key={`${native}:${mine}:${id}`} {...{ snapshot, mine, id, facts, projection,
-    native, bench, position, cut, toIR, annual, leagueValue, valuesPreparing, league }} />
-    : <aside className="insp" aria-label="Inspector"><p className="empty"
-      role="status">{pickPlayer}</p></aside>;
+  return id ? (
+    <LoadedInspector
+      key={`${native}:${league}:${mine}:${id}`}
+      {...{ snapshot, mine, id, facts, projection, native, bench, position, cut, toIR, annual,
+        leagueValue, valuesPreparing, league, port }}
+    />
+  ) : <aside className="insp" aria-label="Inspector"><p className="empty"
+    role="status">{pickPlayer}</p></aside>;
 }
 function useHQInspectorData(native: boolean, league: string | undefined, mine: string, id: string,
-  revision: number) {
+  revision: number, port?: HostedPort) {
   const readArc = useCallback(async (player: string) => {
     const reading = await readAgeArc(player, league);
     return hostedPlayerReadingUnavailable(reading) ? undefined : parseArc(reading);
@@ -97,17 +110,17 @@ function useHQInspectorData(native: boolean, league: string | undefined, mine: s
   }, [league]);
   const arc = useHQRead('market.TargetAgeArc', [id], readArc, !native || !!league);
   const usage = useHQRead('research.TargetPlayerUsage', [id], readUsage, !native || !!league);
-  const notes = useContractRead(JSON.stringify([mine, id, revision]), () => native ? Promise.reject(new
-    Error(unavailable)) : notesRead(mine, id), hqEvents);
+  const notes = useContractRead(JSON.stringify([native, league, mine, id, revision]), () =>
+    notesRead(mine, id, native, league, port), hqEvents);
   const assets = useHQRead('market.TargetAssetBoard', [], assetsRead, !native);
   const years = useContractRead(`${native}:${id}`, () => native ? Promise.reject(new Error(unavailable)) :
     contractsProvider().player(id), hqEvents);
   return { arc, usage, notes, assets, years };
 }
 function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench, position:
-  selectedPosition, cut, toIR, annual, leagueValue, valuesPreparing, league
+  selectedPosition, cut, toIR, annual, leagueValue, valuesPreparing, league, port
   }: {
-  league?: string; valuesPreparing?: boolean; leagueValue?: LeaguePlayerValue;
+  league?: string; port?: HostedPort; valuesPreparing?: boolean; leagueValue?: LeaguePlayerValue;
   snapshot: Snapshot; mine: string; id: string; facts?: RosterFacts;
     projection?: number; native: boolean;
     bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut; annual?:
@@ -119,18 +132,20 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
   const contract = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players.find(p => p.id === id);
   const [revision, setRevision] = useState(0);
   const { arc, usage, notes: readNotes, assets, years } = useHQInspectorData(native, league, mine, id,
-    revision);
+    revision, port);
   const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   const change = async (action: 'add' | 'remove', text = '', at = '') => {
-    if (busy || native) return;
+    if (busy || (native && !league)) return;
     setBusy(true); setError('');
-    try { await personalWire.change(mine, 'note', { id, entity: 'player', action, text, at });
-      setRevision(n => n + 1); }
-    catch (e) { setError(String(e)); throw e; }
+    try {
+      if (native) await setHostedPlayerNote(league!, id, text, port, at || undefined);
+      else await personalWire.change(mine, 'note', { id, entity: 'player', action, text, at });
+      setRevision(n => n + 1);
+    } catch (e) { setError(String(e)); throw e; }
     finally { setBusy(false); }
   };
-  const noteData = !native && !readNotes.error && readNotes.reading?.player === id ? readNotes.reading :
-    undefined;
+  const noteData = !readNotes.error && readNotes.reading?.player === id &&
+    (!native || readNotes.reading.league === league) ? readNotes.reading : undefined;
   const research = facts?.get(id)?.research;
   const ppg = leagueValue ? (leagueValue.available ? leagueValue.nowPPG.toFixed(1) : undefined) :
     researchFact(research, 'Points per game')?.split(' · ')[0];
@@ -164,8 +179,8 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
       <Drawer title="AGE ARC" mine detail={arc.value?.age.toFixed(1) ?? unavailable}><AgeArc
         arc={arc.value} season={snapshot.league.value.season} /></Drawer>
       <NotesThread notes={noteData?.notes} count={noteData?.count} pending={busy} error={error}
-        add={!native && noteData ? text => change('add', text) : undefined} remove={!native && noteData ?
-          note => change('remove', '', note.at).catch(() => {}) : undefined} />
+        add={noteData ? text => change('add', text) : undefined} remove={noteData ?
+          note => change('remove', note.text, note.at).catch(() => {}) : undefined} />
     </div>
     <div className="iact"><span className="h">ACT ON THIS PLAYER</span><div className="ia">
       <HQAct className="btn" disabled={!bench} onAction={() => bench?.(id)}>BENCH</HQAct>
@@ -174,8 +189,17 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
           disabled={status?.verdict !== 'eligible'} label={status?.reason}>TO IR</Act>}
       <HQAct className="btn" disabled={!mine || (!native && Boolean(teamReason))} title={teamReason}
         onAction={() => addHQTrade(mine, id, snapshot, league)}>ADD TO TRADE</HQAct>
-      <Act variant="button" className="btn" verb="watch.add"
-        args={{ id, entity: 'player', action: 'add' }} disabled={native}>WATCH</Act>
+      {native ? <HQAct className="btn" disabled={!league || !noteData || busy}
+        onAction={() => { if (!league || !noteData || busy) return; setBusy(true); setError('');
+          void setHostedPlayerWatch(league, id, !noteData.watched, port).then(() => setRevision(n => n + 1))
+            .catch(e => setError(String(e))).finally(() => setBusy(false)); }}>
+        {noteData?.watched ? 'WATCHED' : 'WATCH'}
+      </HQAct> : (
+        <Act variant="button" className="btn" verb="watch.add"
+          args={{ id, entity: 'player', action: 'add' }}>
+          WATCH
+        </Act>
+      )}
     </div></div><div className="ifoot"><span>{native ? 'League ledger' :
       snapshot.rosters.provenance.source}</span><HQAct disabled title={unavailable}>+ ADD DRAWER</HQAct></div>
   </aside>;

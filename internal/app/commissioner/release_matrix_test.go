@@ -36,7 +36,7 @@ func TestReleaseMatrixCatalogReadAdmission(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, command := range NativeCommands() {
-		if !slices.Contains(command.Modes, catalog.Read) {
+		if command.Availability == "server" || !slices.Contains(command.Modes, catalog.Read) {
 			continue
 		}
 		t.Run(command.ID, func(t *testing.T) {
@@ -88,7 +88,7 @@ func releaseReadInputs(t *testing.T, name string, typ reflect.Type, league strin
 		args[0].SetString(league)
 	}
 	switch name {
-	case "TargetNativePlayerUsage", "TargetNativePlayerAgeArc":
+	case "TargetNativePlayerUsage", "TargetNativePlayerAgeArc", "TargetPlayerNotes":
 		args[0].FieldByName("Player").SetString("0099")
 	case "TargetCommissionerLedgerFiltered":
 		args[1].SetString("{}")

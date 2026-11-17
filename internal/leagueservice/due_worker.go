@@ -11,6 +11,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 // DueClock must report untrusted wall time until the host has established clock health.
@@ -64,6 +65,8 @@ type dueHost struct {
 	Host
 	worker *DueWorker
 }
+
+func (h dueHost) PrivateEntries() *personal.Store { return privateEntriesFor(h.Host) }
 
 func (h dueHost) ExecuteCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location) (commissioner.Receipt, error) {

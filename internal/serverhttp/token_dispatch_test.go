@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -65,6 +66,38 @@ func (f *hostedFixture) agentRevision(t *testing.T, token accounts.AgentToken) i
 		t.Fatal(err)
 	}
 	return ledger.Revision
+}
+
+func TestAgentPrivatePlayerCommandsUseOnlyIssuerSeat(t *testing.T) {
+	f := newHostedFixture(t, true)
+	human, _ := f.directCommissioner(t)
+	commands := []string{leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchSet}
+	token := f.agentToken(t, human, commands, "read", "execute")
+	invoke := func(command, mode, arguments string) serverhttp.WorkflowResponse {
+		t.Helper()
+		workflow := workflowRequest(t, command, mode, arguments, "")
+		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &workflow})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var response serverhttp.WorkflowResponse
+		if err := json.Unmarshal(f.post(t, serverhttp.WorkflowPath, string(body), token.Bearer, "", 200), &response); err != nil {
+			t.Fatal(err)
+		}
+		return response
+	}
+	invoke(leagueservice.PlayerNoteSet, "execute", `{"league":"native.hosted","player":"0101","text":"agent private note"}`)
+	invoke(leagueservice.PlayerWatchSet, "execute", `{"league":"native.hosted","player":"0101","watched":true}`)
+	response := invoke(leagueservice.PlayerNoteRead, "read", `{"league":"native.hosted","player":"0101"}`)
+	var notes leagueservice.PlayerNotes
+	if err := json.Unmarshal(response.Data, &notes); err != nil || notes.Count != 1 || notes.Notes[0].Text != "agent private note" || !notes.Watched {
+		t.Fatalf("agent private reading = %+v, %v", notes, err)
+	}
+	if _, err := f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: human}, accounts.RawTokenScope{
+		League: "native.hosted", Franchise: "franchise.02", Commands: commands, Modes: []string{"read", "execute"},
+	}); err == nil {
+		t.Fatal("commissioner delegated private player data for another franchise")
+	}
 }
 
 func TestAgentG2G3RequireExactHumanConsent(t *testing.T) {

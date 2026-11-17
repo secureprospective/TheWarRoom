@@ -21,6 +21,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp/landing"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 const (
@@ -250,7 +251,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry, Personal: pin.Personal}
 	gate := accountAdmission{host: host, accounts: h.Sessions, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
 		h.confirm(w, r, gate, raw)
@@ -332,6 +333,7 @@ func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest)
 // all, so readings that need football say so, and changes wait until the evidence is back.
 type LeaguePin struct {
 	Store    *history.Store
+	Personal *personal.Store
 	Football *history.PinnedFootball
 	Digest   string
 	Missing  bool
@@ -563,6 +565,13 @@ func (a accountAdmission) checkRoleTarget(ctx context.Context, target string) er
 }
 
 func admitLeagueAccess(access commissioner.Access, policy governance.State, principal governance.Principal, records []commissioner.Record) error {
+	if privatePlayerOperation(access.Operation) {
+		seat, ok := policy.Franchise(governance.FranchiseID(access.Franchise))
+		if !ok || seat.Seat != principal {
+			return fmt.Errorf("private player data requires its seated franchise owner")
+		}
+		return nil
+	}
 	if access.Mode == "read" {
 		if !hostedMember(policy, principal, records) {
 			return fmt.Errorf("league membership required")
@@ -641,6 +650,15 @@ func writeHostedReading[T commissioner.People | commissioner.Ledger | WorkflowRe
 // Exposure remains loopback-only until the deployment boundary is established.
 func ServeHosted(ctx context.Context, listener net.Listener, certificate tls.Certificate, hosted Hosted) error {
 	return serveFixture(ctx, listener, certificate, hosted.Handler())
+}
+
+func privatePlayerOperation(operation string) bool {
+	switch operation {
+	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchSet:
+		return true
+	default:
+		return false
+	}
 }
 
 func hostedOwner(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {

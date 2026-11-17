@@ -9,12 +9,15 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerecovery"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
 func nativeHandlers(c Command, in RegistryInputs) (map[Mode]Handler, error) {
 	out := map[Mode]Handler{}
 	for _, mode := range c.Modes {
 		switch {
+		case c.ID == leagueservice.PlayerNoteRead || c.ID == leagueservice.PlayerNoteSet || c.ID == leagueservice.PlayerWatchSet:
+			out[mode] = nativePlayerPrivateHandler(c.ID, in.Service)
 		case mode == Read:
 			b, ok := in.Desktop["commissioner"][c.Method]
 			if !ok || b.Handler == nil {
@@ -36,6 +39,33 @@ func nativeHandlers(c Command, in RegistryInputs) (map[Mode]Handler, error) {
 		}
 	}
 	return out, nil
+}
+
+func nativePlayerPrivateHandler(id string, service *leagueservice.Service) Handler {
+	return func(ctx context.Context, body json.RawMessage) (json.RawMessage, error) {
+		switch id {
+		case leagueservice.PlayerNoteRead:
+			var input leagueservice.RawPlayerNotesScope
+			if err := decodeJSON(body, &input); err != nil {
+				return nil, err
+			}
+			return result(service.TargetPlayerNotesContext(ctx, input))
+		case leagueservice.PlayerNoteSet:
+			var input leagueservice.RawPlayerNoteSet
+			if err := decodeJSON(body, &input); err != nil {
+				return nil, err
+			}
+			return result(service.SetPlayerNoteContext(ctx, input))
+		case leagueservice.PlayerWatchSet:
+			var input leagueservice.RawPlayerWatchSet
+			if err := decodeJSON(body, &input); err != nil {
+				return nil, err
+			}
+			return result(service.SetPlayerWatchContext(ctx, input))
+		default:
+			return nil, fmt.Errorf("unknown private player command")
+		}
+	}
 }
 
 func nativeChangeHandler(id string, mode Mode, in RegistryInputs) Handler {

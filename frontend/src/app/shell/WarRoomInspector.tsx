@@ -32,7 +32,7 @@ function Drawer({ label, detail, children, initial = true }: { label: string; de
       {children}</div></div>;
 }
 export function WarRoomInspector({ context, asset, add, watch, lens, theirs }: { context: WarRoomContext;
-  asset?: WarRoomAsset; add?: () => void; watch?: () => Promise<void>; lens?: WarRoomLens;
+  asset?: WarRoomAsset; add?: () => void; watch?: (watched: boolean) => Promise<void>; lens?: WarRoomLens;
   theirs?: boolean }) {
   if (!asset) return <aside className="insp" aria-label="Inspector"><p className="empty"
     role="status">{pickPlayer}</p></aside>;
@@ -40,7 +40,7 @@ export function WarRoomInspector({ context, asset, add, watch, lens, theirs }: {
     context={context} asset={asset} add={add} watch={watch} lens={lens} theirs={theirs} />;
 }
 function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context: WarRoomContext;
-  asset?: WarRoomAsset; add?: () => void; watch?: () => Promise<void>; lens?: WarRoomLens;
+  asset?: WarRoomAsset; add?: () => void; watch?: (watched: boolean) => Promise<void>; lens?: WarRoomLens;
   theirs?: boolean }) {
   const [revision, setRevision] = useState(0);
   const [note, setNote] = useState('');
@@ -73,6 +73,7 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
   const need = lens && !lens.preparing ? lens.you.needs.find(x => x.position === position) : undefined;
   const changedStarters = fit?.side.changes.filter(c => c.kind === (fit.removing ? 'promoted' : 'benched'))
     .map(c => c.player);
+  const watched = Boolean(context.native && facts?.notes?.watched);
   return <aside className="insp" aria-label="Inspector"><div className="ihead"><div className="top">
     <span className="pg">{research?.position || asset?.position || projection?.position || '—'}</span>
     <span className="on">{asset ? 'PLAYER' : unavailable}</span></div><div className="nm">
@@ -142,15 +143,15 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
         onAction={() => { void changeNote(n.text, n.at); }}>REMOVE</WarRoomAct></div>) : <WarRoomEmpty />}
       <form onSubmit={e => { e.preventDefault(); if (note.trim()) void changeNote(note); }}>
         <textarea aria-label="Private player note" maxLength={8000} value={note}
-          disabled={!!context.native || !facts?.notes || pending} onChange={e => setNote(e.target.value)}
-          /><WarRoomAct className="btn" submit disabled={!!context.native || !facts?.notes || pending ||
-            !note.trim()}>SAVE NOTE</WarRoomAct></form>{error && <p role="alert">{error}</p>}</Drawer></div>
+          disabled={!facts?.notes || pending} onChange={e => setNote(e.target.value)}
+          /><WarRoomAct className="btn" submit disabled={!facts?.notes || pending || !note.trim()}>
+            SAVE NOTE</WarRoomAct></form>{error && <p role="alert">{error}</p>}</Drawer></div>
     <div className="iact"><span className="h">MOVE</span><div className="ia"><WarRoomAct className="btn"
       disabled={!add} onAction={add}>ADD TO TRADE</WarRoomAct>
-      <WarRoomAct className="btn" disabled={!watch || pending}
+      <WarRoomAct className="btn" active={watched} disabled={!watch || !facts?.notes || pending}
       onAction={() => { if (watch) { setPending(true); setError('');
-        void watch().catch(() => setError(unavailable))
-        .finally(() => setPending(false)); } }}>WATCH</WarRoomAct></div></div>
+        void watch(watched).then(() => setRevision(n => n + 1)).catch(() => setError(unavailable))
+        .finally(() => setPending(false)); } }}>{watched ? 'WATCHED' : 'WATCH'}</WarRoomAct></div></div>
     <div className="ifoot">
       <WarRoomAct disabled title={unavailable}>
       + DRAWER</WarRoomAct></div>
