@@ -46,21 +46,6 @@ func (a *API) TargetNativeProjections(league, players string, season,
 	return a.reads.TargetNativeProjections(league, players, season, week)
 }
 
-func (a *API) TargetPlayerNotes(scope leagueservice.RawPlayerNotesScope) (leagueservice.PlayerNotes, error) {
-	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
-	return a.reads.TargetPlayerNotes(scope)
-}
-
-func (a *API) SetPlayerNote(input leagueservice.RawPlayerNoteSet) (leagueservice.PlayerPrivateChange, error) {
-	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
-	return a.reads.SetPlayerNote(input)
-}
-
-func (a *API) SetPlayerWatch(input leagueservice.RawPlayerWatchSet) (leagueservice.PlayerPrivateChange, error) {
-	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
-	return a.reads.SetPlayerWatch(input)
-}
-
 func (a *API) TargetNativePlayerUsage(raw leagueservice.RawPlayerReadScope) (json.RawMessage, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativePlayerUsage(raw)

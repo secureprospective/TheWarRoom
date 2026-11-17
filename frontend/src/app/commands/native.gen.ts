@@ -5232,7 +5232,7 @@ export const nativeCommands = {
     "Version": "1",
     "Role": "domain",
     "Gravity": "G0",
-    "Availability": "both",
+    "Availability": "server",
     "Permission": "franchise-owner",
     "Modes": [
       "read"
@@ -7615,7 +7615,7 @@ export const nativeCommands = {
     "Version": "1",
     "Role": "domain",
     "Gravity": "G0",
-    "Availability": "both",
+    "Availability": "server",
     "Permission": "franchise-owner",
     "Modes": [
       "execute"
@@ -7634,7 +7634,7 @@ export const nativeCommands = {
     "Version": "1",
     "Role": "domain",
     "Gravity": "G0",
-    "Availability": "both",
+    "Availability": "server",
     "Permission": "franchise-owner",
     "Modes": [
       "execute"

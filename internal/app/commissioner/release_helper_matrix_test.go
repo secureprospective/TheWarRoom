@@ -26,7 +26,7 @@ func releaseHelperMatrix(t *testing.T, f *releaseTokenFixture, h *releaseHTTP) {
 	revisions := map[string]int64{"native.hosted": domain.RecipientRevision(before, f.app.session, host.CommissionerNow()), "native.other": domain.RecipientRevision(otherBefore, f.app.session, host.CommissionerNow())}
 	rows := releaseMutationRows(t)
 	for _, command := range NativeCommands() {
-		if !slices.Contains(command.Modes, catalog.Execute) || command.Facts == "private-player-data" {
+		if command.Availability == "server" || !slices.Contains(command.Modes, catalog.Execute) {
 			continue
 		}
 		t.Run(command.ID, func(t *testing.T) {

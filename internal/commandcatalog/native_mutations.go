@@ -146,11 +146,11 @@ func nativePeopleMutations() []struct{ id, args string } {
 
 func playerPersonalNativeMutations() []Command {
 	return []Command{
-		{ID: leagueservice.PlayerNoteSet, Method: "SetPlayerNote", Version: "1", Role: "domain", Gravity: "G0", Availability: "both",
+		{ID: leagueservice.PlayerNoteSet, Method: "SetPlayerNote", Version: "1", Role: "domain", Gravity: "G0", Availability: "server",
 			Arguments:  Shape(reflect.TypeFor[leagueservice.RawPlayerNoteSet](), "RawPlayerNoteSet.Validate"),
 			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-player-data",
 			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
-		{ID: leagueservice.PlayerWatchSet, Method: "SetPlayerWatch", Version: "1", Role: "domain", Gravity: "G0", Availability: "both",
+		{ID: leagueservice.PlayerWatchSet, Method: "SetPlayerWatch", Version: "1", Role: "domain", Gravity: "G0", Availability: "server",
 			Arguments:  Shape(reflect.TypeFor[leagueservice.RawPlayerWatchSet](), "RawPlayerWatchSet.Validate"),
 			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-player-data",
 			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},

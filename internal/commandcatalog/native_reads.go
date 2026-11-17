@@ -18,6 +18,13 @@ func queryShape(method, fields string) Schema {
 	}
 	return schema
 }
+func nativeReadAvailability(facts string) string {
+	if facts == "private-player-data" {
+		return "server"
+	}
+	return "both"
+}
+
 func nativeReads() []Command {
 	rows := []struct{ id, method, fields, permission, facts string }{
 		{"commish.actor.read", "TargetCommissionerActor", "", "session", "none"},
@@ -72,7 +79,7 @@ func nativeReads() []Command {
 	out := make([]Command, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, Command{ID: row.id, Method: row.method, Version: "1", Role: "domain",
-			Gravity: "G0", Availability: "both", Arguments: NativeReadShape(row.method, row.fields),
+			Gravity: "G0", Availability: nativeReadAvailability(row.facts), Arguments: NativeReadShape(row.method, row.fields),
 			Permission: row.permission, Modes: []Mode{Read}, Undo: "none", Facts: row.facts, Safeguards: "none"})
 	}
 	return out

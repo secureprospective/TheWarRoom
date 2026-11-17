@@ -19,7 +19,7 @@ func TestHostedPersonalPlayerCommandsAreStrictAndUncachedWorkflows(t *testing.T)
 	}
 	for id, args := range arguments {
 		command, ok := commands[id]
-		if !ok || command.Availability != "both" || command.Gravity != "G0" || command.Permission != "franchise-owner" {
+		if !ok || command.Availability != "server" || command.Gravity != "G0" || command.Permission != "franchise-owner" {
 			t.Fatalf("private command metadata missing or broad: %+v", command)
 		}
 		mode := Execute

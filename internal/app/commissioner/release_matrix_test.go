@@ -36,7 +36,7 @@ func TestReleaseMatrixCatalogReadAdmission(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, command := range NativeCommands() {
-		if !slices.Contains(command.Modes, catalog.Read) || command.Facts == "private-player-data" {
+		if command.Availability == "server" || !slices.Contains(command.Modes, catalog.Read) {
 			continue
 		}
 		t.Run(command.ID, func(t *testing.T) {

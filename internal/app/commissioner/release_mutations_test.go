@@ -39,10 +39,7 @@ func releaseMutationRows(t *testing.T) map[string]releaseMutation {
 	}
 	ids := []string{}
 	for _, command := range NativeCommands() {
-		if slices.Contains(command.Modes, catalog.Execute) {
-			if command.Facts == "private-player-data" {
-				continue // Private-entry workflows are covered by their franchise-isolation tests, not the ledger matrix.
-			}
+		if slices.Contains(command.Modes, catalog.Execute) && command.Availability != "server" {
 			ids = append(ids, command.ID)
 			row, ok := rows[command.ID]
 			if !ok {
