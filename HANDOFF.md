@@ -1,6 +1,9 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: PR #330 open: https://github.com/secureprospective/TheWarRoom/pull/330. Hosted Inspector uses the existing mode-aware age arc/usage adapters; Usage drawer added. The catalog's explicit missing-input refusal displays as unavailable. CI is green after the frontend-transport test fix; local frontend suite (115 files / 887 tests), typecheck, build, and push-hook verification passed. No live hosted click-through.
-- Blocked: tidy-check reports six dangling Chromium symlinks under external `~/scratch/bee-resume-v14-{browser,render2}`; left untouched as outside task authorization.
-- Next: Review PR #330.
+- Previous: current main includes PRs #330 and #331 hosted player-usage facts.
+- State: PR #325 supplies `private_entries`; hosted `draft.queue.read` / `draft.queue.set` now store the authenticated seated franchise's ordered queue. Session and delegated-token paths share per-league `personal.NewLeague`; no franchise is accepted from the request, and queue reads bypass reply cache. Embedded DraftRoom is unchanged; ADP/tier stay unavailable.
+- Tests: `TestHostedDraftQueueIsSeatedPrivateAndReplacedAsAWhole`, `TestHostedDraftQueueReplaceIsOrderedAtomicAndPrivate`, server-pin tests, leagueservice/account/commandcatalog race tests, War Room Draft frontend tests/typecheck, and `make lint` passed.
+- Next: run push-hook verification, push/open PR, wait for green CI, and close PR #323 with the new link.
+- Blocked: none.
+- Tried/rejected: no schema change, shared league cache, commissioner-wide view, or local queue route.

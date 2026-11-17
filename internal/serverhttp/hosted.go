@@ -21,6 +21,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp/landing"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 const (
@@ -56,6 +57,8 @@ type Hosted struct {
 	Tokens          *accounts.TokenService
 	Confirmations   *Confirmations
 	Store           *history.Store
+	// PrivateEntries is for a single-file host; multi-league servers use the store on each LeaguePin.
+	PrivateEntries *personal.Store
 	// Leagues finds the store holding a league; league heads and the due worker read through it.
 	Leagues    history.LeagueResolver
 	Sessions   *accounts.SessionService
@@ -261,7 +264,12 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		writeUnavailable(w, "football reference unavailable")
 		return
 	}
-	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).WithLiveGames(h.LiveGames)
+	privateEntries := pin.PrivateEntries
+	if privateEntries == nil && h.Pins == nil {
+		privateEntries = h.PrivateEntries
+	}
+	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).WithLiveGames(h.LiveGames).
+		WithPrivateEntries(privateEntries)
 	h.dispatch(w, r, service, raw)
 }
 
@@ -331,10 +339,12 @@ func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest)
 // football reference backup was older than its league backup): the store then has no football at
 // all, so readings that need football say so, and changes wait until the evidence is back.
 type LeaguePin struct {
-	Store    *history.Store
-	Football *history.PinnedFootball
-	Digest   string
-	Missing  bool
+	Store *history.Store
+	// PrivateEntries uses this league's pools, never a shared server-wide private store.
+	PrivateEntries *personal.Store
+	Football       *history.PinnedFootball
+	Digest         string
+	Missing        bool
 	// Err says the server cannot serve the league at all (it does not hold it); Store is then nil.
 	Err error
 }
@@ -578,6 +588,12 @@ func admitLeagueAccess(access commissioner.Access, policy governance.State, prin
 	if access.Raw.Command == commissioner.DraftPick && access.Raw.Args.Draft != nil && access.Raw.Args.Draft.Pick != nil {
 		if !policy.HoldsSeat(governance.FranchiseID(access.Raw.Args.Draft.Pick.Franchise), principal) {
 			return fmt.Errorf("only a seated owner or caretaker may pick")
+		}
+		return nil
+	}
+	if access.Operation == "draft.queue.set" {
+		if access.Mode != "execute" || !policy.HoldsSeat(governance.FranchiseID(access.Franchise), principal) {
+			return fmt.Errorf("only a seated owner may replace a private draft queue")
 		}
 		return nil
 	}

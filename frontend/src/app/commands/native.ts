@@ -16,7 +16,7 @@ export type NativeRequest = { [K in NativeCommandId]: {
 export function nativeEnvelope(request: NativeRequest) {
   const definition = nativeCommands[request.command]?.definition;
   if (!definition || !(definition.Modes as readonly string[]).includes(request.mode)
-    || definition.Availability !== 'both') throw new Error('This league action is not available here.');
+    || definition.Availability === 'desktop') throw new Error('This league action is not available here.');
   validateShape(request.arguments, definition.Arguments, 'League action');
   return { ...request, version: definition.Version };
 }

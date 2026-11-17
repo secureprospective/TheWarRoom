@@ -4577,6 +4577,29 @@ const schema322 = {
   ],
   Items:null,
 } as const;
+const schema323 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawDraftQueueScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema324 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawDraftQueueSet.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"players",Optional:false,Schema:schema33}
+  ],
+  Items:null,
+} as const;
 export const nativeCommands = {
 "commish.actor.read": {
   definition: {
@@ -7549,5 +7572,43 @@ export const nativeCommands = {
     "Arguments": schema322
   },
   phrase: "tiebreak league vote",
+},
+"draft.queue.read": {
+  definition: {
+    "ID": "draft.queue.read",
+    "Method": "TargetDraftQueue",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "franchise-view",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "private-entries",
+    "Safeguards": "authenticated-franchise",
+    "Arguments": schema323
+  },
+  phrase: "read draft queue",
+},
+"draft.queue.set": {
+  definition: {
+    "ID": "draft.queue.set",
+    "Method": "SetDraftQueue",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "replace-own-private-queue",
+    "Facts": "private-entries",
+    "Safeguards": "authenticated-franchise",
+    "Arguments": schema324
+  },
+  phrase: "set draft queue",
 },
 } as const;

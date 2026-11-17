@@ -85,8 +85,8 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 	}
 	for id, w := range WorkflowCommands() {
 		entry := r.find(id)
-		if entry == nil || entry.Native == nil {
-			return nil, fmt.Errorf("workflow %s has no native entry", id)
+		if entry == nil || (entry.Native == nil && entry.Definition.Availability != "server") {
+			return nil, fmt.Errorf("workflow %s has no executable entry", id)
 		}
 		entry.Workflow = &w
 	}

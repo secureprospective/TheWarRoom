@@ -20,6 +20,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverstatus"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 // leaguePins answers which store serves each league and which football evidence it is pinned to. Each
@@ -86,7 +87,7 @@ func (p *leaguePins) buildLocked(ctx context.Context, league string) serverhttp.
 	if !ok {
 		return serverhttp.LeaguePin{Err: errNoLeague}
 	}
-	pin := p.loadPin(ctx, base, p.digestLocked(league))
+	pin := p.loadPin(ctx, league, base, p.digestLocked(league))
 	if pin.Err == nil {
 		p.built[league] = pin
 	}
@@ -95,22 +96,27 @@ func (p *leaguePins) buildLocked(ctx context.Context, league string) serverhttp.
 
 // loadPin pins a new store over base's league file to digest's evidence. Evidence the server does not
 // hold gives a store with no football, marked missing; any other failure (damaged evidence) is Err.
-func (p *leaguePins) loadPin(ctx context.Context, base *history.Store, digest string) serverhttp.LeaguePin {
+func (p *leaguePins) loadPin(ctx context.Context, league string, base *history.Store, digest string) serverhttp.LeaguePin {
+	pools, ok := p.files.pools(league)
+	if !ok {
+		return serverhttp.LeaguePin{Err: errNoLeague}
+	}
+	privateEntries := personal.NewLeague(pools)
 	store := base.Sibling()
 	store.SetLiveOverlay(p.live)
 	if digest == "" {
-		return serverhttp.LeaguePin{Store: store}
+		return serverhttp.LeaguePin{Store: store, PrivateEntries: privateEntries}
 	}
 	evidence, err := store.LoadFootball(ctx, digest)
 	if errors.Is(err, history.ErrNoBody) {
 		p.tried[digest] = p.now()
-		return serverhttp.LeaguePin{Store: store, Digest: digest, Missing: true}
+		return serverhttp.LeaguePin{Store: store, PrivateEntries: privateEntries, Digest: digest, Missing: true}
 	}
 	if err != nil {
 		return serverhttp.LeaguePin{Err: err}
 	}
 	store.SetPinnedFootball(evidence)
-	return serverhttp.LeaguePin{Store: store, Football: evidence, Digest: digest}
+	return serverhttp.LeaguePin{Store: store, PrivateEntries: privateEntries, Football: evidence, Digest: digest}
 }
 
 // pin is league's store and football; Err says the server does not hold league.
@@ -143,7 +149,7 @@ func (p *leaguePins) retryLocked(ctx context.Context, league string, missing ser
 	if !ok {
 		return missing
 	}
-	found := p.loadPin(look, base, missing.Digest)
+	found := p.loadPin(look, league, base, missing.Digest)
 	if found.Err != nil || found.Missing {
 		p.tried[missing.Digest] = p.now()
 		return missing
@@ -195,7 +201,7 @@ func (p *leaguePins) swapPin(ctx context.Context, signIns *accountstore.Store, l
 		effective = p.server
 	}
 	p.mu.RUnlock()
-	next := p.loadPin(ctx, base, effective)
+	next := p.loadPin(ctx, league, base, effective)
 	if next.Err != nil || (digest != "" && next.Missing) {
 		return fmt.Errorf("the reference file cannot give that football evidence; nothing was changed: %w", errors.Join(next.Err, missingErr(next)))
 	}

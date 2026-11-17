@@ -587,6 +587,8 @@
 .wr-v6 .qz.over{outline:2px solid var(--edge-hi);outline-offset:-4px;background:var(--raised)}
 .wr-v6 .qi{margin:5px 10px;padding:7px 10px;border:1px solid var(--edge);border-left:4px solid var(--edge-hi);display:grid;grid-template-columns:20px 30px 1fr auto;gap:8px;align-items:center;font-size:12px;cursor:grab;touch-action:none}
 .wr-v6 .qi .n{font:700 11px var(--mono);color:var(--ink3)} .wr-v6 .qi .ps{font:700 9px var(--mono);text-align:center;border:1px solid var(--ink3)} .wr-v6 .qi small{font:10px var(--mono);color:var(--ink3)}
+.wr-v6 .q-actions{display:flex;gap:3px}.wr-v6 .q-actions button{min-width:24px;padding:1px 4px;border:1px solid var(--edge);font:700 11px var(--mono)}
+.wr-v6 .queue-add{display:flex;gap:6px;margin:6px 10px}.wr-v6 .queue-add select{flex:1;min-width:0;background:var(--sunken);border:1px solid var(--edge);color:var(--ink);font:11px var(--sans);padding:4px}
 .wr-v6 .legend2{padding:8px 14px;border-top:1px solid var(--edge);font:10px var(--mono);color:var(--ink3);display:flex;gap:14px}
 .wr-v6 .due-h{margin:12px 8px 0;padding-top:6px;border-top:1px solid var(--edge);font:700 9px var(--mono);letter-spacing:.12em;color:var(--amber)}
 .wr-v6 .ud{margin:6px 8px;padding:6px 8px;border:1px dashed var(--edge);display:grid;gap:2px;font-size:12px;color:var(--ink2);cursor:pointer;transition:transform 70ms linear}

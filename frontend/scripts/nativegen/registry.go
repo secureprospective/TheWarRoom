@@ -14,7 +14,9 @@ func registryCommands(door catalog.Door) ([]catalog.Command, error) {
 	}
 	var commands []catalog.Command
 	for _, entry := range registry.Entries() {
-		if door == catalog.NativeDoor && entry.Native != nil || door == catalog.MFLDoor && entry.MFL != nil {
+		native := door == catalog.NativeDoor && (entry.Native != nil || entry.Workflow != nil && entry.Definition.Availability == "server")
+		mfl := door == catalog.MFLDoor && entry.MFL != nil
+		if native || mfl {
 			commands = append(commands, entry.Definition)
 		}
 	}

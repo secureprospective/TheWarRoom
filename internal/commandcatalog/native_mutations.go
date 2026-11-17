@@ -16,7 +16,7 @@ func NativeCommands(seed Schema) []Command {
 	for _, row := range nativeMutations() {
 		out = append(out, nativeMutation(row.id, row.args, seed))
 	}
-	return out
+	return append(out, nativeDraftQueueCommands()...)
 }
 
 func nativeMutations() []struct{ id, args string } {

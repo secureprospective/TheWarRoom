@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 type SessionHost interface {
@@ -100,11 +101,12 @@ type Host interface {
 
 // Service composes native readings, previews and mutations over the shared transactional store.
 type Service struct {
-	host      Host
-	admission commissioner.CredentialAdmission
-	hosted    bool
-	cancels   readCancels
-	games     *LiveGames
+	host           Host
+	admission      commissioner.CredentialAdmission
+	hosted         bool
+	cancels        readCancels
+	games          *LiveGames
+	privateEntries *personal.Store
 }
 
 func New(host Host) *Service { return &Service{host: host} }

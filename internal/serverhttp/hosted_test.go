@@ -30,6 +30,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
@@ -122,7 +123,8 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	}
 	f.publisher = serverhttp.NewPublisher()
 	f.games = leagueservice.NewLiveGames()
-	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+	privateEntries := personal.NewLeague(pools)
+	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, PrivateEntries: privateEntries, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}), Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, nil),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
 			"CM-018,Franchise,What is this franchise called?,\n"}
@@ -133,10 +135,10 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 			t.Fatal(err)
 		}
 		store.SetPinnedFootball(handler.Football)
-		pinned, bare := serverhttp.LeaguePin{Store: store, Football: handler.Football, Digest: digest}, store.Sibling()
+		pinned, bare := serverhttp.LeaguePin{Store: store, PrivateEntries: privateEntries, Football: handler.Football, Digest: digest}, store.Sibling()
 		handler.Pins = func(context.Context, string) serverhttp.LeaguePin {
 			if f.footballGone.Load() {
-				return serverhttp.LeaguePin{Store: bare, Digest: digest, Missing: true}
+				return serverhttp.LeaguePin{Store: bare, PrivateEntries: privateEntries, Digest: digest, Missing: true}
 			}
 			return pinned
 		}

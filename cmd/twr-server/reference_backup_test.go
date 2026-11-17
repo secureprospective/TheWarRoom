@@ -76,7 +76,8 @@ func TestLeaguePinsAreSeparate(t *testing.T) {
 	}
 	pins := read()
 	a, b, c := pins.pin(t.Context(), "native.a"), pins.pin(t.Context(), "native.b"), pins.pin(t.Context(), "native.c")
-	if a.Digest != first || b.Digest != second || c.Digest != server || a.Store == b.Store || c.Store == nil {
+	if a.Digest != first || b.Digest != second || c.Digest != server || a.Store == b.Store || c.Store == nil ||
+		a.PrivateEntries == nil || b.PrivateEntries == nil || c.PrivateEntries == nil || a.PrivateEntries == b.PrivateEntries {
 		t.Fatalf("pins: a=%s b=%s c=%s", a.Digest, b.Digest, c.Digest)
 	}
 	if store, _ := pins.League(ctx, "native.b"); store != b.Store {

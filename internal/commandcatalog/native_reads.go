@@ -76,6 +76,17 @@ func nativeReads() []Command {
 	}
 	return out
 }
+func nativeDraftQueueCommands() []Command {
+	return []Command{
+		{ID: "draft.queue.read", Method: "TargetDraftQueue", Version: "1", Role: "domain", Gravity: "G0",
+			Availability: "server", Arguments: Shape(reflect.TypeFor[leagueservice.RawDraftQueueScope](), "RawDraftQueueScope.Validate"),
+			Permission: "franchise-view", Modes: []Mode{Read}, Undo: "none", Facts: "private-entries", Safeguards: "authenticated-franchise"},
+		{ID: "draft.queue.set", Method: "SetDraftQueue", Version: "1", Role: "domain", Gravity: "G1",
+			Availability: "server", Arguments: Shape(reflect.TypeFor[leagueservice.RawDraftQueueSet](), "RawDraftQueueSet.Validate"),
+			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "replace-own-private-queue", Facts: "private-entries", Safeguards: "authenticated-franchise"},
+	}
+}
+
 func NativeReadShape(method, fields string) Schema {
 	switch method {
 	case "TargetLeagueCalendar":

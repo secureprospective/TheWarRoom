@@ -2449,6 +2449,8 @@ export type WorkflowArgumentMap = {
 "bids.award.override": NativeArguments<"bids.award.override">;
 "commish.franchise.edit": NativeArguments<"commish.franchise.edit">;
 "commish.franchise.direction.set": NativeArguments<"commish.franchise.direction.set">;
+"draft.queue.read": NativeArguments<"draft.queue.read">;
+"draft.queue.set": NativeArguments<"draft.queue.set">;
 };
 export type CommandArgumentMap = {
  native: { [K in NativeCommandId]: NativeArguments<K> };

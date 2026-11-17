@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -91,6 +92,72 @@ func (c hostedWorkflowClient) run(raw commissioner.RawCommand) commissioner.Rece
 		c.t.Fatal(err)
 	}
 	return receipt
+}
+
+func TestHostedDraftQueueIsSeatedPrivateAndReplacedAsAWhole(t *testing.T) {
+	commissionerClient := workflowClient(t)
+	owner := commissionerClient
+	owner.bearer = owner.f.login(t, "owner", "private-password")
+	owner.proof = ""
+	if _, err := owner.f.pools.Write().ExecContext(t.Context(), `CREATE TABLE private_entries (
+ franchise_id TEXT NOT NULL, mine TEXT NOT NULL, kind TEXT NOT NULL, entity TEXT NOT NULL,
+ entity_id TEXT NOT NULL, text TEXT NOT NULL, at TEXT NOT NULL, ordinal INTEGER NOT NULL,
+ PRIMARY KEY (franchise_id, mine, kind, entity, entity_id, at), CHECK (franchise_id = mine));
+ CREATE INDEX private_entries_franchise_kind ON private_entries(franchise_id, kind);
+ CREATE UNIQUE INDEX private_entries_marker ON private_entries(franchise_id, mine, kind, entity, entity_id)
+ WHERE kind != 'note';`); err != nil {
+		t.Fatal(err)
+	}
+	owner.f.footballGone.Store(true)
+	token, err := owner.f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: commissionerClient.bearer}, accounts.RawTokenScope{
+		League: "native.hosted", Franchise: "franchise.01", Commands: []string{"native.directory.read", "draft.queue.read", "draft.queue.set"},
+		Modes: []string{"read", "execute"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	agent := commissionerClient
+	agent.bearer, agent.proof = token.Bearer, ""
+	agent.invoke("draft.queue.set", "execute", []byte(`{"league":"native.hosted","players":["0101"]}`), 200)
+	agentRead := agent.invoke("draft.queue.read", "read", []byte(`{"league":"native.hosted"}`), 200)
+	var agentQueue struct {
+		Players []string `json:"players"`
+	}
+	if err := json.Unmarshal(agentRead.Data, &agentQueue); err != nil || !slices.Equal(agentQueue.Players, []string{"0101"}) {
+		t.Fatalf("agent private queue = %+v, %v", agentQueue, err)
+	}
+	set := owner.invoke("draft.queue.set", "execute", []byte(`{"league":"native.hosted","players":["0099","0100"]}`), 200)
+	var saved struct {
+		Players []string `json:"players"`
+	}
+	if err := json.Unmarshal(set.Data, &saved); err != nil || !slices.Equal(saved.Players, []string{"0099", "0100"}) {
+		t.Fatalf("saved queue = %+v, %v", saved, err)
+	}
+
+	commissionerRead := commissionerClient.invoke("draft.queue.read", "read", []byte(`{"league":"native.hosted"}`), 200)
+	var hidden struct {
+		Players []string `json:"players"`
+	}
+	if err := json.Unmarshal(commissionerRead.Data, &hidden); err != nil || !slices.Equal(hidden.Players, []string{"0101"}) {
+		t.Fatalf("commissioner queue escaped its own seated franchise: %+v, %v", hidden, err)
+	}
+	other := owner
+	other.bearer = owner.f.login(t, "partner", "private-password")
+	other.proof = ""
+	otherRead := other.invoke("draft.queue.read", "read", []byte(`{"league":"native.hosted"}`), 200)
+	if err := json.Unmarshal(otherRead.Data, &hidden); err != nil || len(hidden.Players) != 0 {
+		t.Fatalf("another franchise read the queue: %+v, %v", hidden, err)
+	}
+	other.invoke("draft.queue.set", "execute",
+		[]byte(`{"league":"native.hosted","franchise":"franchise.02","players":["0101"]}`), 400)
+	ownerRead := owner.invoke("draft.queue.read", "read", []byte(`{"league":"native.hosted"}`), 200)
+	if err := json.Unmarshal(ownerRead.Data, &saved); err != nil || !slices.Equal(saved.Players, []string{"0099", "0100"}) {
+		t.Fatalf("rejected cross-franchise request changed owner's queue: %+v, %v", saved, err)
+	}
+	set = owner.invoke("draft.queue.set", "execute", []byte(`{"league":"native.hosted","players":["0100","0099"]}`), 200)
+	if err := json.Unmarshal(set.Data, &saved); err != nil || !slices.Equal(saved.Players, []string{"0100", "0099"}) {
+		t.Fatalf("reordered queue = %+v, %v", saved, err)
+	}
 }
 
 func TestHostedBidsWaiversTradeCorrectionAndRollover(t *testing.T) {
