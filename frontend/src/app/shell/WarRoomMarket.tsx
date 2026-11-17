@@ -11,6 +11,7 @@ import { WarRoomEmpty } from './WarRoomHeader';
 import { money, unavailable } from './hqModel';
 import { copyText, planForm } from '../pool/state';
 import type { Plan } from '../pool/contract';
+import type { LensNeed } from './warroomLens';
 import { useWarRoomDrag } from './warroomDrag';
 export const ownBid = (p: Plan): WarRoomOwnBid => ({ player: p.playerId, name: p.player,
   contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post, plan: p });
@@ -56,8 +57,8 @@ type BidEditor = { type: 'place'; player: WarRoomMarketPlayer; salary: string; y
   { type: 'raise'; bid: WarRoomOwnBid; salary: string; years: number };
 type BidReview = Extract<WarRoomMarketActionResult, { kind: 'review' }>;
 type RefreshedBids = { bids?: WarRoomOwnBid[]; revision?: number; capRoom?: number; error?: string };
-export function WarRoomMarket({ context, room, select }: { context: WarRoomContext; room?: number;
-  select: (p: WarRoomMarketPlayer) => void }) {
+export function WarRoomMarket({ context, room, needs, select }: { context: WarRoomContext; room?: number;
+  needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void }) {
   const [refresh, setRefresh] = useState(0);
   const [filter, setFilter] = useState('All');
   const [pending, setPending] = useState(false);
@@ -184,7 +185,13 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
     const lane = over.closest<HTMLElement>('.lane2');
     if (lane && lane.dataset.lane === p.position && !targets.has(id)) void change(id);
   });
-  const players = value?.players?.filter(p => filter !== 'Targets' || targets.has(p.id));
+  const needPositions = new Set((needs ?? []).filter(n => n.state !== 'ok').map(n =>
+    n.position === 'PK' ? 'K' : n.position));
+  const players = value?.players?.filter(p => (filter !== 'Targets' || targets.has(p.id)) &&
+    (filter !== 'My needs' || needPositions.has(p.position)) && (filter !== 'Affordable' ||
+      capRoom !== undefined && p.minimumCents !== undefined && p.minimumCents <= capRoom));
+  const canFilter = (name: string) => name === 'My needs' ? needs === undefined :
+    name === 'Affordable' ? !context.native || capRoom === undefined : false;
   const canManageBids = context.native && context.native.owner !== false && !fresh?.error;
   return <section className="mk3 ws on" aria-label="Market"><div className="tg"><div className="ch">
     <b>MY TARGETS</b><span>ranked per need</span></div><div className="tg-l">
@@ -203,8 +210,8 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
     <div><div className="ch"><b>FREE AGENT POOL</b><span>in-season · drag a row to a target lane or to BIDS
     </span></div><div className="bench"><div className="filters">{['All', 'My needs', 'Targets',
       'Affordable'].map(f => <WarRoomAct key={f} className="chip" active={filter === f}
-        disabled={f === 'My needs' || f === 'Affordable'} title={f === 'My needs' || f === 'Affordable' ?
-          unavailable : undefined} onAction={() => setFilter(f)}>{f}</WarRoomAct>)}</div></div>
+        disabled={canFilter(f)} title={canFilter(f) ? unavailable : undefined}
+        onAction={() => setFilter(f)}>{f}</WarRoomAct>)}</div></div>
       <div className="fa-h">{['☆', 'POS', 'PLAYER', 'AGE', 'STRING', 'PTS', 'VALUE', 'MIN BID'].map((h, i) =>
         <span key={i}>{h}</span>)}</div><div className="fa-list">
       {players?.length ? players.map(p =>
