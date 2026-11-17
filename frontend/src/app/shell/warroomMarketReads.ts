@@ -2,7 +2,7 @@ import { controlAPI } from '../control/api';
 import { report } from '../reports/contract';
 import { parseRules } from '../commissioner/rules';
 import { nativeHQCap, nativeHQSettings } from '../commissioner/hqReading';
-import { array, integer, object, requiredText, text } from '../data/parseValues';
+import { array, id, integer, object, requiredText, text } from '../data/parseValues';
 import { personalWire, swapPersonalTargets } from '../offers/api';
 import { parsePersonal, type Entry } from '../personal/contract';
 import { poolProvider } from '../pool/provider';
@@ -26,6 +26,11 @@ export type WarRoomOwnBid = { player: string; name: string; contract: string; st
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
   bidRevision?: number; capRoom?: number; writable?: boolean; football?: string;
   targets?: Entry[]; maxYears?: number; errors: string[] };
+export function parseWarRoomWatchList(value: unknown, league: string): string[] {
+  const r = object(value, 'Watched players', ['league', 'players']);
+  if (r.league !== league) throw new Error('Watched players belong to another league');
+  return array(r.players, 'Watched players', (v, p) => id(v, p, true));
+}
 function marketFact(value?: string): string {
   const fact = value?.trim();
   return !fact || fact === '—' ? unavailable : fact;
@@ -97,6 +102,12 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       apply(async () => { if (native.owner === false) return;
         const bids = await readWarRoomBids(c);
         result.bids = bids.bids; result.bidRevision = bids.revision; }),
+      apply(async () => { if (native.owner === false) return;
+        const { data } = await port({ command: 'player.watch.read', mode: 'read',
+          arguments: { league: native.league } });
+        result.targets = parseWarRoomWatchList(data, native.league).map((id, index) => ({
+          kind: 'watch', entity: 'player', id, text: '', at: '', order: index + 1,
+        })); }),
       apply(async () => { result.capRoom = native.reading?.runway?.[0]?.room ?? await readWarRoomCap(c); }),
     ]);
     if (native.owner !== false) await apply(async () => {
@@ -239,7 +250,16 @@ export async function warRoomMarketAction(c: WarRoomContext, action: WarRoomMark
 }
 export async function changeWarRoomTarget(c: WarRoomContext, id: string, watched: boolean,
   withPlayer?: string) {
-  if (c.native) throw new Error('Hosted private targets are not available yet');
+  if (c.native) {
+    const port = c.native.port ?? hostedWorkflow;
+    if (withPlayer) await port({ command: 'player.watch.order', mode: 'execute', arguments: {
+      league: c.native.league, player: id, with: withPlayer,
+    } });
+    else await port({ command: 'player.watch.set', mode: 'execute', arguments: {
+      league: c.native.league, player: id, watched: !watched,
+    } });
+    return;
+  }
   if (withPlayer) await swapPersonalTargets(c.mine, id, withPlayer);
   else await personalWire.change(c.mine, 'watch', { id, entity: 'player', action: watched ? 'remove' :
     'add' });

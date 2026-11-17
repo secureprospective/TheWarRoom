@@ -9,9 +9,11 @@ import (
 
 func TestHostedPersonalPlayerCommandsAreStrictAndUncachedWorkflows(t *testing.T) {
 	arguments := map[string]json.RawMessage{
-		leagueservice.PlayerNoteRead: json.RawMessage(`{"league":"native.test","player":"0101"}`),
-		leagueservice.PlayerNoteSet:  json.RawMessage(`{"league":"native.test","player":"0101","text":"private"}`),
-		leagueservice.PlayerWatchSet: json.RawMessage(`{"league":"native.test","player":"0101","watched":true}`),
+		leagueservice.PlayerNoteRead:   json.RawMessage(`{"league":"native.test","player":"0101"}`),
+		leagueservice.PlayerNoteSet:    json.RawMessage(`{"league":"native.test","player":"0101","text":"private"}`),
+		leagueservice.PlayerWatchRead:  json.RawMessage(`{"league":"native.test"}`),
+		leagueservice.PlayerWatchSet:   json.RawMessage(`{"league":"native.test","player":"0101","watched":true}`),
+		leagueservice.PlayerWatchOrder: json.RawMessage(`{"league":"native.test","player":"0101","with":"0102"}`),
 	}
 	commands := map[string]Command{}
 	for _, command := range NativeCommands(Schema{}) {
@@ -23,7 +25,7 @@ func TestHostedPersonalPlayerCommandsAreStrictAndUncachedWorkflows(t *testing.T)
 			t.Fatalf("private command metadata missing or broad: %+v", command)
 		}
 		mode := Execute
-		if id == leagueservice.PlayerNoteRead {
+		if id == leagueservice.PlayerNoteRead || id == leagueservice.PlayerWatchRead {
 			mode = Read
 		}
 		if len(command.Modes) != 1 || command.Modes[0] != mode {

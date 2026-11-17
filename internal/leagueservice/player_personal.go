@@ -12,9 +12,11 @@ import (
 )
 
 const (
-	PlayerNoteRead = "player.note.read"
-	PlayerNoteSet  = "player.note.set"
-	PlayerWatchSet = "player.watch.set"
+	PlayerNoteRead   = "player.note.read"
+	PlayerNoteSet    = "player.note.set"
+	PlayerWatchRead  = "player.watch.read"
+	PlayerWatchSet   = "player.watch.set"
+	PlayerWatchOrder = "player.watch.order"
 )
 
 type RawPlayerNotesScope struct {
@@ -54,6 +56,17 @@ func (r RawPlayerNoteSet) Validate() error {
 	return nil
 }
 
+type RawPlayerWatchReadScope struct {
+	League string `json:"league"`
+}
+
+func (r RawPlayerWatchReadScope) Validate() error {
+	if !validPersonalLeague(r.League) {
+		return fmt.Errorf("choose an app league")
+	}
+	return nil
+}
+
 type RawPlayerWatchSet struct {
 	League  string `json:"league"`
 	Player  string `json:"player"`
@@ -75,12 +88,34 @@ func (r RawPlayerWatchSet) Validate() error {
 	return nil
 }
 
+type RawPlayerWatchOrder struct {
+	League string `json:"league"`
+	Player string `json:"player"`
+	With   string `json:"with"`
+}
+
+func (r RawPlayerWatchOrder) Validate() error {
+	if err := (RawPlayerNotesScope{League: r.League, Player: r.Player}).Validate(); err != nil {
+		return err
+	}
+	if err := (personal.RawChange{Kind: "watch", Entity: "player", ID: r.Player,
+		With: r.With, Action: "swap"}).ValidateFields(); err != nil {
+		return fmt.Errorf("validate watch order: %w", err)
+	}
+	return nil
+}
+
 type PlayerNotes struct {
 	League  string           `json:"league"`
 	Player  string           `json:"player"`
 	Notes   []personal.Entry `json:"notes"`
 	Count   int              `json:"count"`
 	Watched bool             `json:"watched"`
+}
+
+type PlayerWatchList struct {
+	League  string   `json:"league"`
+	Players []string `json:"players"`
 }
 
 type PlayerPrivateChange struct {
@@ -146,6 +181,26 @@ func (a *Service) SetPlayerNoteContext(ctx context.Context, input RawPlayerNoteS
 	return PlayerPrivateChange{League: input.League, Player: input.Player}, nil
 }
 
+func (a *Service) TargetPlayerWatches(scope RawPlayerWatchReadScope) (PlayerWatchList, error) {
+	return a.TargetPlayerWatchesContext(a.host.CommissionerContext(), scope)
+}
+
+func (a *Service) TargetPlayerWatchesContext(ctx context.Context, scope RawPlayerWatchReadScope) (PlayerWatchList, error) {
+	if err := scope.Validate(); err != nil {
+		return PlayerWatchList{}, fmt.Errorf("player watch input: %w", err)
+	}
+	ctx, franchise, entries, cancel, err := a.playerPrivateAccess(ctx, scope.League, PlayerWatchRead, "read")
+	if err != nil {
+		return PlayerWatchList{}, err
+	}
+	defer cancel()
+	players, err := entries.WatchedPlayersForFranchise(ctx, franchise)
+	if err != nil {
+		return PlayerWatchList{}, fmt.Errorf("read player watches: %w", err)
+	}
+	return PlayerWatchList{League: scope.League, Players: players}, nil
+}
+
 func (a *Service) SetPlayerWatch(input RawPlayerWatchSet) (PlayerPrivateChange, error) {
 	return a.SetPlayerWatchContext(a.host.CommissionerContext(), input)
 }
@@ -166,6 +221,27 @@ func (a *Service) SetPlayerWatchContext(ctx context.Context, input RawPlayerWatc
 	change := personal.RawChange{Kind: "watch", Entity: "player", ID: input.Player, Action: action}
 	if err := entries.ChangeForFranchise(ctx, franchise, change, a.host.CommissionerNow()); err != nil {
 		return PlayerPrivateChange{}, fmt.Errorf("save player watch: %w", err)
+	}
+	return PlayerPrivateChange{League: input.League, Player: input.Player}, nil
+}
+
+func (a *Service) SetPlayerWatchOrder(input RawPlayerWatchOrder) (PlayerPrivateChange, error) {
+	return a.SetPlayerWatchOrderContext(a.host.CommissionerContext(), input)
+}
+
+func (a *Service) SetPlayerWatchOrderContext(ctx context.Context, input RawPlayerWatchOrder) (PlayerPrivateChange, error) {
+	if err := input.Validate(); err != nil {
+		return PlayerPrivateChange{}, fmt.Errorf("player watch order input: %w", err)
+	}
+	ctx, franchise, entries, cancel, err := a.playerPrivateAccess(ctx, input.League, PlayerWatchOrder, "execute")
+	if err != nil {
+		return PlayerPrivateChange{}, err
+	}
+	defer cancel()
+	change := personal.RawChange{Kind: "watch", Entity: "player", ID: input.Player,
+		With: input.With, Action: "swap"}
+	if err := entries.ChangeForFranchise(ctx, franchise, change, a.host.CommissionerNow()); err != nil {
+		return PlayerPrivateChange{}, fmt.Errorf("save player watch order: %w", err)
 	}
 	return PlayerPrivateChange{League: input.League, Player: input.Player}, nil
 }

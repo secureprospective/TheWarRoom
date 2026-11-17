@@ -71,7 +71,8 @@ func (f *hostedFixture) agentRevision(t *testing.T, token accounts.AgentToken) i
 func TestAgentPrivatePlayerCommandsUseOnlyIssuerSeat(t *testing.T) {
 	f := newHostedFixture(t, true)
 	human, _ := f.directCommissioner(t)
-	commands := []string{leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchSet}
+	commands := []string{leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchRead,
+		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder}
 	token := f.agentToken(t, human, commands, "read", "execute")
 	invoke := func(command, mode, arguments string) serverhttp.WorkflowResponse {
 		t.Helper()
@@ -88,11 +89,27 @@ func TestAgentPrivatePlayerCommandsUseOnlyIssuerSeat(t *testing.T) {
 	}
 	invoke(leagueservice.PlayerNoteSet, "execute", `{"league":"native.hosted","player":"0101","text":"agent private note"}`)
 	invoke(leagueservice.PlayerWatchSet, "execute", `{"league":"native.hosted","player":"0101","watched":true}`)
+	invoke(leagueservice.PlayerWatchSet, "execute", `{"league":"native.hosted","player":"0102","watched":true}`)
+	invoke(leagueservice.PlayerWatchOrder, "execute", `{"league":"native.hosted","player":"0102","with":"0101"}`)
 	response := invoke(leagueservice.PlayerNoteRead, "read", `{"league":"native.hosted","player":"0101"}`)
 	var notes leagueservice.PlayerNotes
 	if err := json.Unmarshal(response.Data, &notes); err != nil || notes.Count != 1 || notes.Notes[0].Text != "agent private note" || !notes.Watched {
 		t.Fatalf("agent private reading = %+v, %v", notes, err)
 	}
+	response = invoke(leagueservice.PlayerWatchRead, "read", `{"league":"native.hosted"}`)
+	var watches leagueservice.PlayerWatchList
+	if err := json.Unmarshal(response.Data, &watches); err != nil || len(watches.Players) != 2 ||
+		watches.Players[0] != "0102" || watches.Players[1] != "0101" {
+		t.Fatalf("agent watch reading = %+v, %v", watches, err)
+	}
+	other := hostedWorkflowClient{t: t, f: f, bearer: f.login(t, "owner", "private-password")}
+	other.invoke(leagueservice.PlayerWatchSet, "execute", []byte(`{"league":"native.hosted","player":"0202","watched":true}`), 200)
+	invoke(leagueservice.PlayerWatchSet, "execute", `{"league":"native.hosted","player":"0202","watched":false}`)
+	response = other.invoke(leagueservice.PlayerWatchRead, "read", []byte(`{"league":"native.hosted"}`), 200)
+	if err := json.Unmarshal(response.Data, &watches); err != nil || len(watches.Players) != 1 || watches.Players[0] != "0202" {
+		t.Fatalf("team A token changed team B's targets: %+v, %v", watches, err)
+	}
+
 	if _, err := f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: human}, accounts.RawTokenScope{
 		League: "native.hosted", Franchise: "franchise.02", Commands: commands, Modes: []string{"read", "execute"},
 	}); err == nil {
