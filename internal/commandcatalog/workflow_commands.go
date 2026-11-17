@@ -91,13 +91,13 @@ func workflowInputCommand[T any, P interface {
 func playerPersonalWorkflows() map[string]WorkflowCommand {
 	return map[string]WorkflowCommand{
 		leagueservice.PlayerNoteRead: workflowInputCommand[leagueservice.RawPlayerNotesScope, *leagueservice.RawPlayerNotesScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawPlayerNotesScope) (json.RawMessage, error) {
-			return workflowJSON(s.TargetPlayerNotes(ctx, input))
+			return workflowJSON(s.TargetPlayerNotesContext(ctx, input))
 		}),
 		leagueservice.PlayerNoteSet: workflowInputCommand[leagueservice.RawPlayerNoteSet, *leagueservice.RawPlayerNoteSet]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawPlayerNoteSet) (json.RawMessage, error) {
-			return workflowJSON(s.SetPlayerNote(ctx, input))
+			return workflowJSON(s.SetPlayerNoteContext(ctx, input))
 		}),
 		leagueservice.PlayerWatchSet: workflowInputCommand[leagueservice.RawPlayerWatchSet, *leagueservice.RawPlayerWatchSet]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawPlayerWatchSet) (json.RawMessage, error) {
-			return workflowJSON(s.SetPlayerWatch(ctx, input))
+			return workflowJSON(s.SetPlayerWatchContext(ctx, input))
 		}),
 	}
 }

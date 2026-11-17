@@ -98,7 +98,11 @@ func validPersonalPlayer(value string) bool {
 	return err == nil && parsed.String() == value
 }
 
-func (a *Service) TargetPlayerNotes(ctx context.Context, scope RawPlayerNotesScope) (PlayerNotes, error) {
+func (a *Service) TargetPlayerNotes(scope RawPlayerNotesScope) (PlayerNotes, error) {
+	return a.TargetPlayerNotesContext(a.host.CommissionerContext(), scope)
+}
+
+func (a *Service) TargetPlayerNotesContext(ctx context.Context, scope RawPlayerNotesScope) (PlayerNotes, error) {
 	if err := scope.Validate(); err != nil {
 		return PlayerNotes{}, fmt.Errorf("player notes input: %w", err)
 	}
@@ -118,7 +122,11 @@ func (a *Service) TargetPlayerNotes(ctx context.Context, scope RawPlayerNotesSco
 	return PlayerNotes{League: scope.League, Player: scope.Player, Notes: thread.Notes, Count: thread.Count, Watched: watched}, nil
 }
 
-func (a *Service) SetPlayerNote(ctx context.Context, input RawPlayerNoteSet) (PlayerPrivateChange, error) {
+func (a *Service) SetPlayerNote(input RawPlayerNoteSet) (PlayerPrivateChange, error) {
+	return a.SetPlayerNoteContext(a.host.CommissionerContext(), input)
+}
+
+func (a *Service) SetPlayerNoteContext(ctx context.Context, input RawPlayerNoteSet) (PlayerPrivateChange, error) {
 	if err := input.Validate(); err != nil {
 		return PlayerPrivateChange{}, fmt.Errorf("player note input: %w", err)
 	}
@@ -138,7 +146,11 @@ func (a *Service) SetPlayerNote(ctx context.Context, input RawPlayerNoteSet) (Pl
 	return PlayerPrivateChange{League: input.League, Player: input.Player}, nil
 }
 
-func (a *Service) SetPlayerWatch(ctx context.Context, input RawPlayerWatchSet) (PlayerPrivateChange, error) {
+func (a *Service) SetPlayerWatch(input RawPlayerWatchSet) (PlayerPrivateChange, error) {
+	return a.SetPlayerWatchContext(a.host.CommissionerContext(), input)
+}
+
+func (a *Service) SetPlayerWatchContext(ctx context.Context, input RawPlayerWatchSet) (PlayerPrivateChange, error) {
 	if err := input.Validate(); err != nil {
 		return PlayerPrivateChange{}, fmt.Errorf("player watch input: %w", err)
 	}

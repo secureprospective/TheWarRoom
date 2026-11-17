@@ -49,19 +49,19 @@ func nativePlayerPrivateHandler(id string, service *leagueservice.Service) Handl
 			if err := decodeJSON(body, &input); err != nil {
 				return nil, err
 			}
-			return result(service.TargetPlayerNotes(ctx, input))
+			return result(service.TargetPlayerNotesContext(ctx, input))
 		case leagueservice.PlayerNoteSet:
 			var input leagueservice.RawPlayerNoteSet
 			if err := decodeJSON(body, &input); err != nil {
 				return nil, err
 			}
-			return result(service.SetPlayerNote(ctx, input))
+			return result(service.SetPlayerNoteContext(ctx, input))
 		case leagueservice.PlayerWatchSet:
 			var input leagueservice.RawPlayerWatchSet
 			if err := decodeJSON(body, &input); err != nil {
 				return nil, err
 			}
-			return result(service.SetPlayerWatch(ctx, input))
+			return result(service.SetPlayerWatchContext(ctx, input))
 		default:
 			return nil, fmt.Errorf("unknown private player command")
 		}

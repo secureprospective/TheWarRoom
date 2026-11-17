@@ -1,8 +1,8 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: PR #334 (https://github.com/secureprospective/TheWarRoom/pull/334) open. Hosted player notes/watch use #325's private store; authenticated seated franchise is derived server-side; HQ and War Room inspector use hosted actions; local desktop unchanged; private reads uncached; agent tokens are issuer-seat-only.
-- Verified: Pre-push `verify (changed packages; full suite in CI)` passed. `make lint`, nativegen checks, TypeScript check, and four focused Vitest files (24 tests) pass. Go race tests pass for leagueservice, cmd/twr-server, commandcatalog, serverhttp, and personal-store privacy.
-- Next: Wait for green PR CI, then close #313 and #328 with PR #334's link.
-- Blocked on: No feature blocker. `tidy-check` found headless Brave sessions for Tom's separate live/mobile job (`~/scratch/twr-live-anim-1116`, `~/scratch/twr-mobile-1117`); both have KEEP files and were left untouched.
-- Tried/rejected: No private-read cache, commissioner view, schema migration, request-selected franchise, or change to local desktop notes/watch.
+- State: PR #334 (https://github.com/secureprospective/TheWarRoom/pull/334) open. Hosted notes/watch use #325's private store; seated franchise is derived server-side; HQ and War Room inspector use hosted actions; local desktop UI stays on its existing route; private reads are uncached; agent tokens are issuer-seat-only. Desktop service adapters and release-matrix exclusions now account for these private workflows.
+- Verified: Focused race tests pass for Wails parity, release admission, private owner/privacy/cache/token behavior, plus the affected leagueservice/commandcatalog/serverhttp packages. `make lint`, nativegen checks, frontend typecheck and four Vitest files (24 tests) pass. First full CI found catalog-matrix fixtures; updated locally and verified.
+- Next: Commit/push current fixes, check CI again; close #313/#328 only after green CI.
+- Blocked on: CI dev-toolchain audit flags GHSA-fc5q-39xc-vjpf (`picomatch <=4.0.7`; npm reports no patched version, and 4.0.7 is current). Upstream fix PR `micromatch/picomatch#194` is still open. Do not suppress audit or mislabel a patched version; escalate the dependency decision to ClaudeBox.
+- Tried/rejected: No private-read cache, commissioner view, schema migration, request-selected franchise, local desktop route change, or dependency-audit bypass.
