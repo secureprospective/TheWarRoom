@@ -55,14 +55,15 @@ func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league strin
 	return s.resolveRecords(ctx, league, deepclone.Of(records))
 }
 
-// sharedTransactionRecords is the read path: it returns the cached snapshot directly unless identity
-// resolution needs a private view. Callers must not mutate any part of the returned records.
+// sharedTransactionRecords is the read path: every reading of one revision shares the cached snapshot.
+// The caller owns only the outer slice; nested args, seeds and maps are read-only by contract
+// (TestSharedRecordsStayUnchangedByReadings guards it). Copying the ledger per reading dominated CPU.
 func (s *Store) sharedTransactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
 	records, err := s.cachedTransactionRecords(ctx, tx, league)
 	if err != nil {
 		return nil, err
 	}
-	return s.resolveRecords(ctx, league, records)
+	return s.resolveRecords(ctx, league, slices.Clone(records))
 }
 
 func (s *Store) resolveRecords(ctx context.Context, league string, records []commissioner.Record) ([]commissioner.Record, error) {
@@ -614,10 +615,10 @@ func (s *Store) HeldCommissionerRecords(ctx context.Context, league string) ([]c
 	return s.leagueRecords(ctx, league)
 }
 
-// SharedCommissionerRecords returns the cached read-only snapshot for a revision without copying its
-// records. Callers must not mutate the slice or its contents; use HeldCommissionerRecords when an owned
-// copy is needed. Identity-resolved requests receive a private view. Pollers and readings use this method
-// to avoid allocating a full ledger copy for each request.
+// SharedCommissionerRecords returns a shallow slice copy of the cached snapshot; its nested args, seeds
+// and maps remain shared and read-only by contract. Use HeldCommissionerRecords when an owned deep copy is
+// needed. Identity-resolved requests receive a private view. Pollers and readings use this method to avoid
+// allocating a full ledger copy for each request.
 func (s *Store) SharedCommissionerRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
 	ctx, err := s.linkedIdentities(ctx, league)
 	if err != nil {
