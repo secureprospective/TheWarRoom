@@ -276,6 +276,7 @@ export function parseHostedStandings(v: unknown) {
       ]);
       return {
         rank: integer(s.rank, 'Place'),
+        franchise: text(s.franchise, 'Franchise'),
         name: text(s.name, 'Team'),
         record: text(s.record, 'Record'),
         points: text(s.pointsWords, 'Points'),

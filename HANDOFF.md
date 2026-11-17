@@ -1,7 +1,8 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Current main merged; frontend frozen install/build passed. PR #312 has three sequential 180s origin/main runs and three branch runs from the same local harness. CPU decreased 6.6%; read errors were 0 in both sets. PR body has the table and is ready; no merge.
-- Next: push this sync commit, verify CI/PR; do not merge.
-- Blocked on: tidy-check flags six dangling Chromium symlinks in external scratch folders; left untouched because they are outside this worktree and authorized output paths.
-- Tried/rejected: Earlier single-run evidence was not used for the final table; the six fresh run data sets were used. The untracked `cmd/twr-server/zz_pulse_repro_test.go` was preserved and not staged.
+- State: Job 1 implemented: hosted SEND requires a clear preview and confirmation, executes `trade.offer` with revision/request key, parses receipt, then confirms it via franchise-scoped `trades.read`. Local SEND remains disabled; SAVE TO POCKET says unavailable. Partner standings use parser-validated franchise rows. No schema changes.
+- Tests: frontend 887/887 and TypeScript pass; production build passes. `make verify` ran all Go race packages successfully but its frontend suite caught a >110-char line; fixed, then all frontend tests passed. Need push-hook verify on final tree.
+- Next: commit/push, open PR, verify CI; do not merge.
+- Blocked on: tidy-check reports six dangling Chromium symlinks in external scratch directories; left untouched (outside authorized write scope). No other blocker.
+- Tried/rejected: none.

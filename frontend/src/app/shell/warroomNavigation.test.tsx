@@ -17,6 +17,17 @@ vi.mock('./WarRoomDrawers', () => ({ WarRoomDrawers: ({ openOffer }: {
 vi.mock('./EntityInspector', () => ({ default: ({ entity }: { entity: { id: string } }) =>
   <p>Offer inspector {entity.id}</p> }));
 afterEach(async () => { await unmount(); vi.restoreAllMocks(); });
+it('keeps the local-mode SEND action disabled', async () => {
+  const snapshot = await new FixtureProvider().snapshot();
+  act(() => {
+    commands.loadSnapshot(snapshot);
+    commands.dispatch('franchise.set', { franchiseId: snapshot.franchises.value[0].id });
+  });
+  const host = await mount(<WarRoom snapshot={snapshot} />); await flush();
+  const send = button(host, 'SEND');
+  expect(send.disabled).toBe(true);
+});
+
 it('opens the requested draft tab and switches back to the desk', async () => {
   act(() => { commands.dispatch('nav.open', { node: 'war', workspace: 'draft-room' }); });
   const host = await mount(<WarRoom snapshot={heldSnapshot()} native={{ league: 'local',
