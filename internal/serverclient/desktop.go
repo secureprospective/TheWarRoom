@@ -333,6 +333,22 @@ func postDesktop[T desktopPayload](ctx context.Context, d *Desktop, path string,
 	return body, err
 }
 
+type retryAfterRefusal struct {
+	after string
+	err   error
+}
+
+func (e *retryAfterRefusal) Error() string { return e.err.Error() }
+func (e *retryAfterRefusal) Unwrap() error { return e.err }
+
+func retryDelay(value string) (time.Duration, bool) {
+	seconds, err := strconv.Atoi(value)
+	if err != nil || seconds < 0 || seconds > 30 {
+		return 0, false
+	}
+	return time.Duration(seconds) * time.Second, true
+}
+
 // postDesktopSnapshot uses only the immutable request session, never Desktop state.
 func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopSnapshot, path string, payload T) ([]byte, bool, error) {
 	body, err := json.Marshal(payload)
@@ -360,7 +376,11 @@ func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopS
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
 		unauthorized := response.StatusCode == http.StatusUnauthorized
-		return nil, unauthorized, desktopRefusal(path, response.StatusCode)
+		refusal := desktopRefusal(path, response.StatusCode)
+		if response.StatusCode == http.StatusServiceUnavailable && response.Header.Get("Retry-After") != "" {
+			refusal = &retryAfterRefusal{after: response.Header.Get("Retry-After"), err: refusal}
+		}
+		return nil, unauthorized, refusal
 	}
 	body, err = io.ReadAll(io.LimitReader(response.Body, desktopReplyLimit+1))
 	if err != nil || len(body) > desktopReplyLimit || response.Header.Get("Content-Type") != "application/json" {

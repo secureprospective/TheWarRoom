@@ -44,7 +44,7 @@ func (h Hosted) recoverAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := h.Recovery.Recover(r.Context(), accounts.RawRecovery{Username: raw.Username, Code: raw.Code, Password: raw.Password})
-	if passwordBusy(w, err) {
+	if passwordBusy(w, r, err) {
 		return
 	}
 	if err != nil {

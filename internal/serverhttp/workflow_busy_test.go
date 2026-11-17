@@ -21,12 +21,12 @@ func TestWorkflowRefusalMapping(t *testing.T) {
 		status int
 		retry  string
 	}{
-		{fmt.Errorf("credential admission: %w", commissioner.Refused(context.DeadlineExceeded)), 503, "5"},
-		{fmt.Errorf("cancelled: %w", context.Canceled), 503, "5"},
+		{fmt.Errorf("credential admission: %w", commissioner.Refused(context.DeadlineExceeded)), 503, "2"},
+		{fmt.Errorf("cancelled: %w", context.Canceled), 503, "2"},
 		{errors.New("rules refusal"), 409, ""},
 	} {
 		w := httptest.NewRecorder()
-		workflowRefusal(w, tc.err)
+		workflowRefusal(w, httptest.NewRequest(http.MethodPost, WorkflowPath, nil), tc.err)
 		if w.Code != tc.status || w.Header().Get("Retry-After") != tc.retry {
 			t.Fatalf("%v: status %d retry %q", tc.err, w.Code, w.Header().Get("Retry-After"))
 		}
@@ -39,7 +39,7 @@ func TestWorkflowRefusalMapping(t *testing.T) {
 func TestWorkflowDeadlineReplyReachesTLSClient(t *testing.T) {
 	handler := resourceLimits(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		<-r.Context().Done()
-		workflowRefusal(w, fmt.Errorf("credential admission: %w", r.Context().Err()))
+		workflowRefusal(w, r, fmt.Errorf("credential admission: %w", r.Context().Err()))
 	}), netip.Addr{})
 	server := httptest.NewUnstartedServer(handler)
 	server.Config = boundedServer(handler, tls.Certificate{})
@@ -60,7 +60,7 @@ func TestWorkflowDeadlineReplyReachesTLSClient(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if response.StatusCode != 503 || response.Header.Get("Retry-After") != "5" || strings.TrimSpace(string(body)) != "The league server is busy. Try again in a few seconds." {
+	if response.StatusCode != 503 || response.Header.Get("Retry-After") != "2" || strings.TrimSpace(string(body)) != "The league server is busy. Try again in a few seconds." {
 		t.Fatalf("status=%d retry=%q body=%q", response.StatusCode, response.Header.Get("Retry-After"), body)
 	}
 }

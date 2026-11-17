@@ -66,7 +66,7 @@ func EnrollmentHandler(service *accounts.EnrollmentService) http.Handler {
 			return
 		}
 		account, err := service.Redeem(r.Context(), raw.Enrollment)
-		if passwordBusy(w, err) {
+		if passwordBusy(w, r, err) {
 			return
 		}
 		if err != nil {

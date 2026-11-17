@@ -3,6 +3,7 @@ package serverhttp
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 	"net/netip"
 	"strings"
@@ -87,16 +88,49 @@ func clientAddress(r *http.Request, hop netip.Addr) (netip.Addr, bool) {
 // resourceLimits bounds every hosted request. hop is the loopback cloudflared address whose
 // CF-Connecting-IP is trusted; the zero address trusts no proxy.
 // BusyMessage is what a person reads when the server, not their password or code, is the problem.
-const BusyMessage = "The server is busy; try again in a minute"
+const BusyMessage = "The server is busy; try again in a few seconds"
+
+const busyRetryAfter = "2"
+
+type busyLogState struct {
+	started time.Time
+	logger  *busyLogger
+}
+
+type busyLogKey struct{}
+
+type busyLogger struct {
+	mu   sync.Mutex
+	last map[string]time.Time
+}
+
+func (l *busyLogger) refusal(class string, elapsed time.Duration) {
+	now := time.Now()
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if last := l.last[class]; now.Sub(last) < time.Minute {
+		return
+	}
+	l.last[class] = now
+	log.Printf("hosted refusal class=%s elapsed_ms=%d", class, elapsed.Milliseconds())
+}
+
+func logBusyRefusal(ctx context.Context, class string) {
+	state, ok := ctx.Value(busyLogKey{}).(busyLogState)
+	if ok && state.logger != nil {
+		state.logger.refusal(class, time.Since(state.started))
+	}
+}
 
 // passwordBusy answers a full password budget, or password work that ran out of request time while
 // queued, as the server being busy. Reporting it as a wrong password or phone clock sends people
 // hunting for a mistake they did not make.
-func passwordBusy(w http.ResponseWriter, err error) bool {
+func passwordBusy(w http.ResponseWriter, r *http.Request, err error) bool {
 	if !errors.Is(err, accounts.ErrPasswordBusy) && !errors.Is(err, context.DeadlineExceeded) {
 		return false
 	}
-	w.Header().Set("Retry-After", "60")
+	logBusyRefusal(r.Context(), "password-limit")
+	w.Header().Set("Retry-After", busyRetryAfter)
 	http.Error(w, BusyMessage, http.StatusServiceUnavailable)
 	return true
 }
@@ -105,7 +139,11 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 	throttle := &authThrottle{peers: make(map[string]authWindow)}
 	inFlight := make(chan struct{}, 64)
 	authInFlight := make(chan struct{}, 6)
+	logger := &busyLogger{last: make(map[string]time.Time)}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		started := time.Now()
+		requestContext := context.WithValue(r.Context(), busyLogKey{}, busyLogState{started: started, logger: logger})
+		r = r.WithContext(requestContext)
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -129,7 +167,8 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 			case authInFlight <- struct{}{}:
 				defer func() { <-authInFlight }()
 			default:
-				w.Header().Set("Retry-After", "60")
+				logBusyRefusal(requestContext, "auth-limit")
+				w.Header().Set("Retry-After", busyRetryAfter)
 				http.Error(w, BusyMessage, http.StatusServiceUnavailable)
 				return
 			}
@@ -138,7 +177,9 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 		case inFlight <- struct{}{}:
 			defer func() { <-inFlight }()
 		default:
-			http.Error(w, "service busy", http.StatusServiceUnavailable)
+			logBusyRefusal(requestContext, "request-limit")
+			w.Header().Set("Retry-After", busyRetryAfter)
+			http.Error(w, BusyMessage, http.StatusServiceUnavailable)
 			return
 		}
 		budget := 5 * time.Second
@@ -150,7 +191,7 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 				return
 			}
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), budget)
+		ctx, cancel := context.WithTimeout(requestContext, budget)
 		defer cancel()
 		r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 		next.ServeHTTP(w, r.WithContext(ctx))
