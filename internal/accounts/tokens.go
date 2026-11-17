@@ -82,7 +82,7 @@ func DelegableCommand(command string) bool {
 		return false
 	}
 	if strings.HasSuffix(command, ".read") || command == "player.note.set" || command == "player.watch.set" ||
-		command == "draft.queue.set" || command == "trade.draft.save" || command == "trade.draft.delete" ||
+		command == "player.watch.order" || command == "draft.queue.set" || command == "trade.draft.save" || command == "trade.draft.delete" ||
 		command == "contract.quote" || command == commissioner.RulesSet {
 		return true
 	}

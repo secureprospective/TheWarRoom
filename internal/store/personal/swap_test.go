@@ -99,9 +99,23 @@ func TestHostedEntriesAreScopedToAuthenticatedFranchise(t *testing.T) {
 		t.Fatal("hosted store tried to initialize the desktop schema")
 	}
 	addHostedEntry(ctx, t, store, "franchise.01", RawChange{Mine: "franchise.02", Kind: "watch", Entity: "player", ID: "0816", Action: "add"})
+	addHostedEntry(ctx, t, store, "franchise.01", RawChange{Mine: "franchise.02", Kind: "watch", Entity: "player", ID: "12626", Action: "add"})
 	addHostedEntry(ctx, t, store, "franchise.01", RawChange{Mine: "franchise.02", Kind: "note", Entity: "player", ID: "0816", Text: "private", Action: "add"})
-	assertHostedEntryCount(ctx, t, store, "franchise.01", 2)
+	assertHostedEntryCount(ctx, t, store, "franchise.01", 3)
 	assertHostedEntryCount(ctx, t, store, "franchise.02", 0)
+	if got, err := store.WatchedPlayersForFranchise(ctx, "franchise.01"); err != nil || !slices.Equal(got, []string{"0816", "12626"}) {
+		t.Fatalf("franchise A watch order = %v, %v", got, err)
+	}
+	if got, err := store.WatchedPlayersForFranchise(ctx, "franchise.02"); err != nil || len(got) != 0 {
+		t.Fatalf("franchise B watch list = %v, %v", got, err)
+	}
+	if err := store.ChangeForFranchise(ctx, "franchise.01", RawChange{Kind: "watch", Entity: "player",
+		ID: "12626", With: "0816", Action: "swap"}, time.Date(2026, 11, 17, 15, 0, 0, 0, time.UTC)); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := store.WatchedPlayersForFranchise(ctx, "franchise.01"); err != nil || !slices.Equal(got, []string{"12626", "0816"}) {
+		t.Fatalf("reordered franchise A watch list = %v, %v", got, err)
+	}
 	notesA, err := store.PlayerNotesForFranchise(ctx, "franchise.01", "0816")
 	if err != nil || notesA.Count != 1 || notesA.Notes[0].Text != "private" {
 		t.Fatalf("franchise A notes = %+v, %v", notesA, err)
@@ -119,10 +133,10 @@ func TestHostedEntriesAreScopedToAuthenticatedFranchise(t *testing.T) {
 		t.Fatalf("franchise B watch = %v, %v", watchedB, err)
 	}
 	addHostedEntry(ctx, t, store, "franchise.02", RawChange{Mine: "franchise.01", Kind: "watch", Entity: "player", ID: "0816", Action: "remove"})
-	assertHostedEntryCount(ctx, t, store, "franchise.01", 2)
+	assertHostedEntryCount(ctx, t, store, "franchise.01", 3)
 	addHostedEntry(ctx, t, store, "franchise.02", RawChange{Mine: "franchise.01", Kind: "watch", Entity: "player", ID: "0816", Action: "add"})
 	assertHostedEntryCount(ctx, t, store, "franchise.02", 1)
-	assertHostedEntryCount(ctx, t, store, "franchise.01", 2)
+	assertHostedEntryCount(ctx, t, store, "franchise.01", 3)
 	watchedA, err = store.PlayerWatchedForFranchise(ctx, "franchise.01", "0816")
 	if err != nil || !watchedA {
 		t.Fatalf("franchise B changed A's watch: %v, %v", watchedA, err)

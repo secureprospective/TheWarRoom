@@ -670,7 +670,8 @@ func privateOwnerPersonalOperation(operation string) bool {
 		return true
 	}
 	switch operation {
-	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchSet:
+	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchRead,
+		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder:
 		return true
 	default:
 		return false

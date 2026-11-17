@@ -2452,6 +2452,8 @@ export type WorkflowArgumentMap = {
 "commish.franchise.direction.set": NativeArguments<"commish.franchise.direction.set">;
 "player.note.set": NativeArguments<"player.note.set">;
 "player.watch.set": NativeArguments<"player.watch.set">;
+"player.watch.order": NativeArguments<"player.watch.order">;
+"player.watch.read": NativeArguments<"player.watch.read">;
 "draft.queue.read": NativeArguments<"draft.queue.read">;
 "draft.queue.set": NativeArguments<"draft.queue.set">;
 "trade.draft.read": NativeArguments<"trade.draft.read">;
