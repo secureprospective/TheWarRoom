@@ -356,7 +356,7 @@ func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request, leag
 	session := accounts.RawSession{Bearer: strings.TrimPrefix(authorization, "Bearer ")}
 	account, err := h.Sessions.Authenticate(r.Context(), session)
 	if err != nil {
-		h.sessionFailure(w, err)
+		h.sessionFailure(w, r, err)
 		return nil, accountAdmission{}, ""
 	}
 	principal, err := account.Principal()

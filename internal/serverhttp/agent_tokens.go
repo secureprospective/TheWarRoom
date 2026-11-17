@@ -57,7 +57,7 @@ func (h Hosted) deviceSession(w http.ResponseWriter, r *http.Request) (accounts.
 	session := accounts.RawSession{Bearer: strings.TrimPrefix(authorization, "Bearer ")}
 	account, err := h.Sessions.Authenticate(r.Context(), session)
 	if err != nil {
-		h.sessionFailure(w, err)
+		h.sessionFailure(w, r, err)
 		return session, account, false
 	}
 	if h.Tokens == nil {

@@ -131,7 +131,7 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 	}
 	token, err := h.Tokens.Authenticate(r.Context(), session)
 	if err != nil {
-		h.sessionFailure(w, err)
+		h.sessionFailure(w, r, err)
 		return
 	}
 	principal, err := token.Account.Principal()

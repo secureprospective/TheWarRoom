@@ -164,7 +164,7 @@ func (h Hosted) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	session, err := h.Sessions.Login(r.Context(), accounts.RawCredentials{Username: raw.Username, Password: raw.Password}, raw.Device)
-	if passwordBusy(w, err) {
+	if passwordBusy(w, r, err) {
 		return
 	}
 	if err != nil {
@@ -240,7 +240,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	principal, err := account.Principal()
 	if err != nil {
-		h.writeFailure(w, "session refused", http.StatusUnauthorized)
+		h.writeFailure(w, r, "session refused", http.StatusUnauthorized)
 		return
 	}
 	ctx := h.requestContext(r.Context(), raw, string(principal))
@@ -285,11 +285,11 @@ func (h Hosted) authenticateNative(w http.ResponseWriter, r *http.Request) (nati
 		return nativeAuth{raw: rawSession, account: account}, true
 	}
 	if !sessionRefused(authenticationErr) || h.Tokens == nil {
-		h.sessionFailure(w, authenticationErr)
+		h.sessionFailure(w, r, authenticationErr)
 		return nativeAuth{raw: rawSession}, false
 	}
 	if _, err := h.Tokens.Authenticate(r.Context(), rawSession); err != nil {
-		h.sessionFailure(w, err)
+		h.sessionFailure(w, r, err)
 		return nativeAuth{raw: rawSession}, false
 	}
 	return nativeAuth{raw: rawSession, agent: authenticationErr}, true
@@ -441,10 +441,10 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 		if err != nil {
 			var unknown unknownRoleTarget
 			if errors.As(err, &unknown) {
-				h.writeFailure(w, unknown.Error(), http.StatusConflict)
+				h.writeFailure(w, r, unknown.Error(), http.StatusConflict)
 				return
 			}
-			h.writeFailure(w, "native change refused; reread before retrying", http.StatusConflict)
+			h.writeFailure(w, r, "native change refused; reread before retrying", http.StatusConflict)
 			return
 		}
 		writeHosted(w, receipt)
@@ -665,7 +665,7 @@ func (h Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *l
 		receipt, err = service.SetLineup(r.Context(), *raw.Command)
 	}
 	if err != nil {
-		h.writeFailure(w, "owner action refused", http.StatusConflict)
+		h.writeFailure(w, r, "owner action refused", http.StatusConflict)
 		return
 	}
 	writeHosted(w, receipt)
@@ -706,7 +706,7 @@ func (h Hosted) admissions(path string) []func() error {
 	return []func() error{h.WriteAdmission}
 }
 
-func (h Hosted) writeFailure(w http.ResponseWriter, message string, status int) {
+func (h Hosted) writeFailure(w http.ResponseWriter, _ *http.Request, message string, status int) {
 	h.failure(w, h.WriteAdmission, message, status)
 }
 
@@ -728,13 +728,14 @@ func sessionRefused(err error) bool {
 
 // sessionFailure answers an authentication error: a refusal is 401, anything else (store busy,
 // timeout, context deadline) is the server being busy, so a valid owner is not told to sign in.
-func (h Hosted) sessionFailure(w http.ResponseWriter, err error) {
+func (h Hosted) sessionFailure(w http.ResponseWriter, r *http.Request, err error) {
 	if sessionRefused(err) {
-		h.writeFailure(w, "session refused", http.StatusUnauthorized)
+		h.writeFailure(w, r, "session refused", http.StatusUnauthorized)
 		return
 	}
-	w.Header().Set("Retry-After", "60")
-	h.writeFailure(w, BusyMessage, http.StatusServiceUnavailable)
+	logBusyRefusal(r.Context(), "session-busy")
+	w.Header().Set("Retry-After", busyRetryAfter)
+	h.writeFailure(w, r, BusyMessage, http.StatusServiceUnavailable)
 }
 
 // leagueHead reads a league's committed head from the store the resolver names for it.

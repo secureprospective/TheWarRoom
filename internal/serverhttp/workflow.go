@@ -46,7 +46,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	if err != nil {
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-			workflowRefusal(w, err)
+			workflowRefusal(w, r, err)
 		} else {
 			http.Error(w, "league access refused; sign in and check your seat", http.StatusForbidden)
 		}
@@ -71,10 +71,9 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	ctx := leagueservice.WithFootballDigest(r.Context(), raw.Football)
 	data, err := h.workflowData(ctx, service, raw, league)
 	if err != nil {
-		// The command name and mode are fixed catalogue words; arguments, bearer and proof are never logged.
-		log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
+		logWorkflowFailure(raw, err)
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		workflowRefusal(w, err)
+		workflowRefusal(w, r, err)
 		return
 	}
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
@@ -86,9 +85,18 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	writeHosted(w, response)
 }
 
-func workflowRefusal(w http.ResponseWriter, err error) {
+func logWorkflowFailure(raw RawWorkflow, err error) {
+	// Busy failures use the bounded refusal log below; other refusals retain command context.
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-		w.Header().Set("Retry-After", "5")
+		return
+	}
+	log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
+}
+
+func workflowRefusal(w http.ResponseWriter, r *http.Request, err error) {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		logBusyRefusal(r.Context(), "request-deadline")
+		w.Header().Set("Retry-After", busyRetryAfter)
 		http.Error(w, "The league server is busy. Try again in a few seconds.", http.StatusServiceUnavailable)
 		return
 	}
