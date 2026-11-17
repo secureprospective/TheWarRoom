@@ -1,7 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Current main merged; frontend frozen install/build passed. PR #312 has three sequential 180s origin/main runs and three branch runs from the same local harness. CPU decreased 6.6%; read errors were 0 in both sets. PR body has the table and is ready; no merge.
-- Next: push this sync commit, verify CI/PR; do not merge.
-- Blocked on: tidy-check flags six dangling Chromium symlinks in external scratch folders; left untouched because they are outside this worktree and authorized output paths.
-- Tried/rejected: Earlier single-run evidence was not used for the final table; the six fresh run data sets were used. The untracked `cmd/twr-server/zz_pulse_repro_test.go` was preserved and not staged.
+- State: Reviewed the approved private-entry task and PRs #323/#313. Hosted league schema is 15; `history.leagueMigrations()` is versioned and `serverversion.releases()` is append-only. Adding the requested migration makes schema 16 and requires the next contract row, Release 9. No product code or tests changed.
+- Next: Open a draft PR that names the required server Release 9 / schema 16 contract change; stop for authorization to make that release-number change.
+- Blocked on: The task's explicit fallback is triggered: `TestCurrentContract` requires the current schema to match a new sequential release row, and shipped release rows must not be edited.
+- Tried/rejected: Reusing Release 8 would change an immutable historical row and violate the contract test; no migration or local desktop schema was touched.
