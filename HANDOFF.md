@@ -1,7 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Added the schema-16 `private_entries` migration and Release 9 contract row. `personal.NewLeague` shares the existing store logic, scopes every query by the explicit franchise ID, and overrides `RawChange.Mine`; local desktop schema and API are unchanged. No hosted command or UI was added. `go test -race ./internal/store/history ./internal/store/personal ./internal/serverversion` and `make lint` passed after final edits.
-- Next: Commit and push (pre-push still runs bindings, lint, build, and changed-package tests), update PR #325, and mark ready only after CI is green.
-- Blocked on: None. Recheck PR #325 checks after the implementation push.
-- Tried/rejected: Reusing Release 8 would edit an immutable historical row and violate `TestCurrentContract`; the approved next row is Release 9 / schema 16.
+- State: PR #325 is open and ready on `session/pulse-privtable`. Commit `c8741ff0f` adds the schema-16 `private_entries` migration, Release 9 contract and franchise-scoped `personal.NewLeague` methods; local desktop schema/API and hosted commands/UI are unchanged. Tests, lint, pre-push and CI passed on that commit. `tidy-check.sh` is clean.
+- Next: Await review; merge only on Christopher's go-ahead. Future hosted callers must pass the franchise ID from authenticated identity, never request data.
+- Blocked on: Reviewer/merge decision only.
+- Tried/rejected: Reusing Release 8 edits an immutable shipped contract and violates `TestCurrentContract`; added Release 9 / schema 16 as approved.
