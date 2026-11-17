@@ -21,6 +21,8 @@ import { setHostedPlayerWatch } from './playerPersonal';
 import { WarRoomMarket } from './WarRoomMarket';
 import { WarRoomDraft } from './WarRoomDraft';
 import { WarRoomTrade } from './WarRoomTrade';
+import { WarRoomPocketSave } from './WarRoomPocketSave';
+import type { WarRoomSavedDraft } from './warroomDrafts';
 import { readWarRoomCatalog, type WarRoomDeal, type WarRoomAsset } from './warroomTradeReads';
 import { readWarRoomLens, setWarRoomDirection, type Direction, type WarRoomLens } from './warroomLens';
 import './warroom.css';
@@ -125,7 +127,8 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
         reading={headerReading} windowLabel={windowLabel} lens={lensReading} choose={choose}
         pending={directing.pending} problem={directing.error} />
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
-        change={changeDeal} select={select} lens={lensReading} lensPending={lens.pending} /> :
+        change={changeDeal} select={select} lens={lensReading} lensPending={lens.pending}
+        previewNonce={recorded} /> :
         tab === 'market' ? <WarRoomMarket context={context}
           room={headerReading?.runway?.[0]?.room}
           needs={lensReading && !lensReading.preparing ? lensReading.you.needs : undefined}
@@ -140,12 +143,17 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}
       </div><WarRoomTrayMessage problems={[header.error ?? '', calendar.error ?? '', lens.error ?? '',
         directing.error ?? '', ...headerReading?.errors ?? []]} />
-      <WarRoomAct className="btn sp" disabled title="Not available yet">SAVE TO POCKET</WarRoomAct>
+      <WarRoomPocketSave context={context} deal={deal} onSaved={() => {
+        setRecorded(n => n + 1); setDrawer('pocket');
+      }} />
       <WarRoomAct className="btn" onAction={() =>
           changeDeal({ ...deal, give: [], get: [] })}>
         CLEAR</WarRoomAct>{!native && <WarRoomAct className="btn solid g2" disabled>SEND</WarRoomAct>}</div>
       {drawer && <WarRoomDrawers context={context} drawer={drawer} close={() => setDrawer(undefined)}
-        openOffer={id => { setOffer(id); setDrawer(undefined); }} />}
+        refreshKey={recorded} onOpenDraft={(draft: WarRoomSavedDraft) => {
+          changeDeal({ partner: draft.partner, give: [...draft.give], get: [...draft.get] });
+          setTab('desk'); setDrawer(undefined); setRecorded(n => n + 1);
+        }} openOffer={id => { setOffer(id); setDrawer(undefined); }} />}
     </main>{offer && !native ? <aside className="insp" aria-label="Inspector">
       <WarRoomAct onAction={() => setOffer(undefined)}>Close offer</WarRoomAct>
       <EntityInspector entity={{ kind: 'offer', id: offer, franchiseId: mine }} snapshot={snapshot} />

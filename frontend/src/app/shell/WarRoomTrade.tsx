@@ -61,16 +61,17 @@ function Lens({ label, side, ends }: { label: string; side?: LensSide; ends: [st
     <span className="ends"><span>{ends[0]}</span><span>{ends[1]}</span></span></div>
     <span className="n">{side ? signed(side.net) : <CompactAbsent />}</span></div>;
 }
-export function WarRoomTrade({ context, catalog, deal, change, select, lens, lensPending }: {
+export function WarRoomTrade({ context, catalog, deal, change, select, lens, lensPending, previewNonce }: {
   context: WarRoomContext; catalog?: WarRoomCatalog; deal: WarRoomDeal; change: (d: WarRoomDeal) => void;
-  select: (a: WarRoomAsset) => void; lens?: WarRoomLens; lensPending?: boolean }) {
+  select: (a: WarRoomAsset) => void; lens?: WarRoomLens; lensPending?: boolean; previewNonce?: number }) {
   const [filter, setFilter] = useState<typeof filters[number]>('ALL');
   const [send, setSend] = useState<{ pending: boolean; confirm: boolean; request?: string;
     fingerprint?: string; error?: string; done?: string }>({ pending: false, confirm: false });
   const fingerprint = JSON.stringify([context.native?.league, context.mine, catalog?.revision, deal]);
   const mine = catalog?.teams.find(t => t.id === context.mine);
   const theirs = catalog?.teams.find(t => t.id === deal.partner);
-  const key = JSON.stringify([context.native?.league, context.mine, context.week, catalog?.revision, deal]);
+  const key = JSON.stringify([context.native?.league, context.mine, context.week, catalog?.revision, deal,
+    previewNonce ?? 0]);
   const partner = useWarRoomRead(JSON.stringify([context.native?.league, deal.partner, context.week]),
     () => readWarRoomPartner(context, deal.partner));
   const preview = useWarRoomRead(key, async () => catalog && deal.partner &&
@@ -123,9 +124,16 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
         }}><div className="ch"><b>{side === 'give' ? 'YOU SEND' : 'YOU GET'}</b><span>{deal[side].length ?
           `${deal[side].length} object${deal[side].length === 1 ? '' : 's'}` : ''}</span></div>
           <div className="tcols"><span /><span /><span>AGE</span><span className="y">YOU</span>
-            <span className="t">THEM</span></div><div className="zone">{deal[side].length ? team?.assets
-              .filter(a => deal[side].includes(a.token)).map(a => block(a, side, true)) :
-              <div className="hint">Drag {side === 'give' ? 'your' : 'their'} players or picks here</div>}
+            <span className="t">THEM</span></div>
+          <div className="zone">{deal[side].length ? deal[side].map(token => {
+            const asset = team?.assets.find(a => a.token === token);
+            return asset ? block(asset, side, true) : <div className="blk trow stale-asset" key={token}
+              role="group" aria-label="Asset no longer available"><span className="ps">!</span>
+              <span className="nm">{token}<small>No longer available</small><WarRoomAct
+                label={`Remove unavailable asset ${token}`} onAction={() => toggle(side, token)}>
+                REMOVE</WarRoomAct></span><span className="ag">—</span><span className="v2">—</span>
+              <span className="v3">—</span></div>;
+          }) : <div className="hint">Drag {side === 'give' ? 'your' : 'their'} players or picks here</div>}
           </div><div className="tot" title={n ? `What these take from or add to each side's best ${n}, ` +
             'counted together. One row alone can read differently.' : undefined}>
             <span>{side === 'give' ? 'total sent' : 'total received'}</span>
@@ -193,6 +201,7 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
     <div className="shelf"><div className="read"><div className="partner"><select
       aria-label="Trade partner" value={deal.partner} onChange={e => change({ ...deal,
         partner: e.target.value, get: [] })}><option value="">Choose partner</option>
+      {deal.partner && !theirs && <option value={deal.partner}>{deal.partner} · no longer available</option>}
       {catalog?.teams.filter(t => t.id !== context.mine).map(t => <option key={t.id} value={t.id}>
         {t.name}</option>)}</select>{held?.them && <span className="dir" title={held.them.set ?
           'Their owner set this direction' :

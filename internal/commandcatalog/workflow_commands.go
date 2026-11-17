@@ -25,7 +25,7 @@ func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
 	out["draft.queue.read"] = workflowDraftQueueRead()
 	out["draft.queue.set"] = workflowDraftQueueSet()
-	for id, command := range playerPersonalWorkflows() {
+	for id, command := range privatePersonalWorkflows() {
 		out[id] = command
 	}
 	for _, row := range nativeMutations() {
@@ -136,7 +136,7 @@ func workflowInputCommand[T any, P interface {
 	}
 }
 
-func playerPersonalWorkflows() map[string]WorkflowCommand {
+func privatePersonalWorkflows() map[string]WorkflowCommand {
 	return map[string]WorkflowCommand{
 		leagueservice.PlayerNoteRead: workflowInputCommand[leagueservice.RawPlayerNotesScope, *leagueservice.RawPlayerNotesScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawPlayerNotesScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetPlayerNotesContext(ctx, input))
@@ -146,6 +146,15 @@ func playerPersonalWorkflows() map[string]WorkflowCommand {
 		}),
 		leagueservice.PlayerWatchSet: workflowInputCommand[leagueservice.RawPlayerWatchSet, *leagueservice.RawPlayerWatchSet]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawPlayerWatchSet) (json.RawMessage, error) {
 			return workflowJSON(s.SetPlayerWatchContext(ctx, input))
+		}),
+		leagueservice.TradeDraftRead: workflowInputCommand[leagueservice.RawTradeDraftScope, *leagueservice.RawTradeDraftScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawTradeDraftScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetTradeDrafts(ctx, input))
+		}),
+		leagueservice.TradeDraftSave: workflowInputCommand[leagueservice.RawTradeDraftSave, *leagueservice.RawTradeDraftSave]("execute", "save this proposal", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawTradeDraftSave) (json.RawMessage, error) {
+			return workflowJSON(s.SaveTradeDraft(ctx, input))
+		}),
+		leagueservice.TradeDraftDelete: workflowInputCommand[leagueservice.RawTradeDraftDelete, *leagueservice.RawTradeDraftDelete]("execute", "delete this saved proposal", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawTradeDraftDelete) (json.RawMessage, error) {
+			return workflowJSON(s.DeleteTradeDraft(ctx, input))
 		}),
 	}
 }

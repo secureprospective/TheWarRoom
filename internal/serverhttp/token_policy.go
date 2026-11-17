@@ -74,8 +74,8 @@ func (p TokenPolicy) CheckTokenAccess(ctx context.Context, account accounts.Acco
 	if err := commissioner.CheckTokenFranchise(access, franchise); err != nil {
 		return fmt.Errorf("token franchise: %w", err)
 	}
-	if privatePlayerOperation(access.Operation) {
-		return privatePlayerTokenSeat(records, string(principal), franchise)
+	if privateOwnerPersonalOperation(access.Operation) {
+		return privateOwnerTokenSeat(records, string(principal), franchise)
 	}
 	if access.Mode == "read" {
 		return nil
@@ -122,7 +122,7 @@ func (a agentAdmission) Admit(ctx context.Context, access commissioner.Access) e
 	if err := a.token.Admit(ctx, access); err != nil {
 		return fmt.Errorf("agent admission: %w", err)
 	}
-	if access.Mode != "execute" || access.Operation == commissioner.DraftPick || access.Operation == "draft.queue.set" || privatePlayerOperation(access.Operation) {
+	if access.Mode != "execute" || access.Operation == commissioner.DraftPick || access.Operation == "draft.queue.set" || privateOwnerPersonalOperation(access.Operation) {
 		return nil
 	}
 	definition, err := access.Raw.EffectiveDefinition()
@@ -178,7 +178,7 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 	h.dispatch(w, r.WithContext(ctx), service, raw)
 }
 
-func privatePlayerTokenSeat(records []commissioner.Record, principal, franchise string) error {
+func privateOwnerTokenSeat(records []commissioner.Record, principal, franchise string) error {
 	state, err := commissioner.GovernanceState(records)
 	if err != nil {
 		return fmt.Errorf("token seats: %w", err)
@@ -186,7 +186,7 @@ func privatePlayerTokenSeat(records []commissioner.Record, principal, franchise 
 	owner := governance.Principal(commissioner.PrincipalFor(records, principal))
 	seat, ok := state.Franchise(governance.FranchiseID(franchise))
 	if !ok || seat.Seat != owner {
-		return fmt.Errorf("delegate private player data only for your own franchise")
+		return fmt.Errorf("delegate private owner data only for your own franchise")
 	}
 	return nil
 }
@@ -203,7 +203,7 @@ func tokenSeatScope(records []commissioner.Record, principal string, scope accou
 			return fmt.Errorf("take a vacant franchise's caretaker seat before delegating lineups or picks")
 		}
 		if (commissioner.OwnerBidAction(command) != "" || commissioner.OwnerWaiverAction(command) != "" ||
-			commissioner.OwnerTradeAction(command) != "" || privatePlayerOperation(command) ||
+			commissioner.OwnerTradeAction(command) != "" || privateOwnerPersonalOperation(command) ||
 			command == "draft.queue.read" || command == "draft.queue.set") && seat.Seat != p {
 			return fmt.Errorf("delegate owner actions only for your own franchise")
 		}

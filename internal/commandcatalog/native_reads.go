@@ -95,6 +95,20 @@ func nativeDraftQueueCommands() []Command {
 	}
 }
 
+func tradeDraftCommands() []Command {
+	return []Command{
+		{ID: leagueservice.TradeDraftRead, Method: "TargetTradeDrafts", Version: "1", Role: "domain", Gravity: "G0",
+			Availability: "server", Arguments: Shape(reflect.TypeFor[leagueservice.RawTradeDraftScope](), "RawTradeDraftScope.Validate"),
+			Permission: "franchise-owner", Modes: []Mode{Read}, Undo: "none", Facts: "private-entries", Safeguards: "authenticated-franchise"},
+		{ID: leagueservice.TradeDraftSave, Method: "SaveTradeDraft", Version: "1", Role: "domain", Gravity: "G1",
+			Availability: "server", Arguments: Shape(reflect.TypeFor[leagueservice.RawTradeDraftSave](), "RawTradeDraftSave.Validate"),
+			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "delete-own-private-proposal", Facts: "private-entries", Safeguards: "authenticated-franchise"},
+		{ID: leagueservice.TradeDraftDelete, Method: "DeleteTradeDraft", Version: "1", Role: "domain", Gravity: "G1",
+			Availability: "server", Arguments: Shape(reflect.TypeFor[leagueservice.RawTradeDraftDelete](), "RawTradeDraftDelete.Validate"),
+			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-entries", Safeguards: "authenticated-franchise"},
+	}
+}
+
 func NativeReadShape(method, fields string) Schema {
 	switch method {
 	case "TargetLeagueCalendar":

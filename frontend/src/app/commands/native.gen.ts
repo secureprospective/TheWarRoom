@@ -4639,6 +4639,44 @@ const schema327 = {
   ],
   Items:null,
 } as const;
+const schema328 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawTradeDraftScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema329 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawTradeDraftSave.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"partner",Optional:false,Schema:schema2},
+    {Name:"give",Optional:false,Schema:schema33},
+    {Name:"get",Optional:false,Schema:schema33},
+    {Name:"label",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema330 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawTradeDraftDelete.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"id",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
 export const nativeCommands = {
 "commish.actor.read": {
   definition: {
@@ -7708,5 +7746,62 @@ export const serverCommands = {
     "Arguments": schema327
   },
   phrase: "set draft queue",
+},
+"trade.draft.read": {
+  definition: {
+    "ID": "trade.draft.read",
+    "Method": "TargetTradeDrafts",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "private-entries",
+    "Safeguards": "authenticated-franchise",
+    "Arguments": schema328
+  },
+  phrase: "read trade draft",
+},
+"trade.draft.save": {
+  definition: {
+    "ID": "trade.draft.save",
+    "Method": "SaveTradeDraft",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "delete-own-private-proposal",
+    "Facts": "private-entries",
+    "Safeguards": "authenticated-franchise",
+    "Arguments": schema329
+  },
+  phrase: "save trade draft",
+},
+"trade.draft.delete": {
+  definition: {
+    "ID": "trade.draft.delete",
+    "Method": "DeleteTradeDraft",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "none",
+    "Facts": "private-entries",
+    "Safeguards": "authenticated-franchise",
+    "Arguments": schema330
+  },
+  phrase: "delete trade draft",
 },
 } as const;

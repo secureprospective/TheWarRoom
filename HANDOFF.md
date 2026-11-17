@@ -1,9 +1,8 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- Previous: merged origin/main (#334 Personal plumbing; #335 audit fix) into PR #333.
-- State: PR #333 is open, mergeable, and CI-green; #323 is closed with a link to #333. Queue reads/writes reuse `LeaguePin.Personal`/`StoredHost.Personal`; tokens stay limited to the issuer's seated franchise. No schema/cache change; embedded DraftRoom unchanged; ADP/tier unavailable.
-- Tests: Go race tests pass for cmd/twr-server, accounts, app/commissioner, commandcatalog, leagueservice, serverhttp, and store/personal. Frontend: 122 files / 905 tests; typecheck and native generators pass.
-- Next: Christopher/ClaudeBox review and merge decision.
-- Blocked: tidy check flags a scratch folder outside this task's authorized write paths; left untouched.
-- Tried/rejected: duplicate private-store wiring; request-selected franchise; local DraftRoom changes.
+- State: Hosted proposal pocket implemented on `private_entries`; owner identity is auth-derived. UI saves/lists/reopens/deletes without creating an offer; stale assets remain visible. No schema or migration.
+- Verified: touched-package Go race tests, hosted token/privacy test, 907 frontend tests + TypeScript, nativegen freshness and `make lint` pass.
+- Next: commit, push, open a PR, and verify its CI status.
+- Blocked: none.
+- Tried/rejected: schema change, league cache/commissioner view, partner access, local desktop edits, and treating a saved proposal as an offer (contrary to the brief).

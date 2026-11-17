@@ -148,6 +148,13 @@ history writes. Native owner/commissioner doors, principal checks and overrides 
 The single frontend adapter `app/offers/api.ts` owns transport and event subscriptions for
 Offers, Personal and Pool. No API opens a database or starts a worker.
 
+The hosted War Room proposal pocket uses `trade.draft.read`, `trade.draft.save` and `trade.draft.delete`
+through `internal/leagueservice` and the existing `private_entries` store. The authenticated seated
+franchise owns each `proposal`/`trade` row; the JSON payload stores partner, give/get asset IDs and an
+optional label, capped at 50 rows and under 16 KB per proposal. This is not a trade offer or a schema
+migration. Reopening keeps every saved asset ID and runs the existing `trade.offer` preview, so stale
+assets remain visible as unavailable rather than disappearing.
+
 ## IPC surface
 
 | File | Methods |
