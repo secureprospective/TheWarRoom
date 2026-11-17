@@ -99,9 +99,6 @@ func (a *Service) draftQueueAccess(ctx context.Context, league, operation, mode 
 	if err := a.host.Ready(); err != nil {
 		return nil, nil, "", fmt.Errorf("draft queue startup: %w", err)
 	}
-	if a.privateEntries == nil {
-		return nil, nil, "", fmt.Errorf("private draft queue storage is unavailable")
-	}
 	principal, err := a.host.CommissionerPrincipal()
 	if err != nil {
 		return nil, nil, "", fmt.Errorf("draft queue identity: %w", err)
@@ -118,6 +115,9 @@ func (a *Service) draftQueueAccess(ctx context.Context, league, operation, mode 
 	access := commissioner.Access{Principal: principal, League: league, Operation: operation, Mode: mode, Franchise: franchise}
 	if err := commissioner.AdmitCredential(ctx, access); err != nil {
 		return nil, nil, "", fmt.Errorf("admit draft queue: %w", err)
+	}
+	if a.privateEntries == nil {
+		return nil, nil, "", fmt.Errorf("private draft queue storage is unavailable")
 	}
 	return ctx, a.privateEntries, franchise, nil
 }

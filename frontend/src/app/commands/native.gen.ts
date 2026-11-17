@@ -7573,6 +7573,8 @@ export const nativeCommands = {
   },
   phrase: "tiebreak league vote",
 },
+} as const;
+export const serverCommands = {
 "draft.queue.read": {
   definition: {
     "ID": "draft.queue.read",

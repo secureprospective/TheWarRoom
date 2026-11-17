@@ -72,6 +72,7 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 		}
 		r.entries = append(r.entries, Entry{ID: c.ID, Label: commandLabel(c.ID), Definition: c, CLI: strings.HasPrefix(c.Arguments.Validator, "RawCommand.Validate/ValidatePreview:"), Native: handlers})
 	}
+	r.entries = append(r.entries, serverWorkflowEntries()...)
 	for _, c := range mfl {
 		feature := mflFeature(c)
 		b, ok := in.Desktop[feature][c.Method]
@@ -100,6 +101,15 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 		return nil, err
 	}
 	return r, nil
+}
+
+func serverWorkflowEntries() []Entry {
+	commands := nativeDraftQueueCommands()
+	entries := make([]Entry, 0, len(commands))
+	for _, command := range commands {
+		entries = append(entries, Entry{ID: command.ID, Label: commandLabel(command.ID), Definition: command})
+	}
+	return entries
 }
 
 func (r *Registry) addDesktop(bindings map[string]map[string]Binding, native, mfl []Command) error {
