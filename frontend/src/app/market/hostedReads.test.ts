@@ -3,7 +3,8 @@ import { readAgeArc } from './api';
 import { readPlayerUsage } from '../research/api';
 import { hostedWorkflow } from '../control/nativeApi';
 
-vi.mock('../control/nativeApi', () => ({
+vi.mock('../control/nativeApi', async importOriginal => ({
+  ...await importOriginal<typeof import('../control/nativeApi')>(),
   hostedWorkflow: vi.fn(async () => ({ data: { source: 'hosted' } })),
 }));
 
@@ -25,19 +26,14 @@ describe('player hosted read adapters', () => {
       arguments: { league: 'native.hosted', player: '0099' } });
   });
 
-  it('does not invoke Wails when hosted facts are unavailable', async () => {
-    const ageArc = vi.fn();
-    const usage = vi.fn();
-    vi.stubGlobal('window', { go: { market: { API: { TargetAgeArc: ageArc } },
-      research: { API: { TargetPlayerUsage: usage } } } });
-    vi.mocked(hostedWorkflow).mockRejectedValue(new Error(
-      'player age arc: hosted player reading is unavailable'));
-    await expect(readAgeArc('0099', 'native.hosted')).rejects.toThrow(
-      'hosted player reading is unavailable');
-    await expect(readPlayerUsage('0099', 'native.hosted')).rejects.toThrow(
-      'hosted player reading is unavailable');
-    expect(ageArc).not.toHaveBeenCalled();
-    expect(usage).not.toHaveBeenCalled();
+  it('returns a typed unavailable result for hosted facts the server does not hold', async () => {
+    vi.stubGlobal('window', {});
+    vi.mocked(hostedWorkflow).mockResolvedValue({ data: { unavailable: true, reason: 'input-not-held' },
+      label: 'Hosted', writable: false, football: '' });
+    expect(await readAgeArc('0099', 'native.hosted')).toEqual({ unavailable: true,
+      reason: 'input-not-held' });
+    expect(await readPlayerUsage('0099', 'native.hosted')).toEqual({ unavailable: true,
+      reason: 'input-not-held' });
   });
 
   it('keeps local reads on their Wails bindings without hosted league context', async () => {
