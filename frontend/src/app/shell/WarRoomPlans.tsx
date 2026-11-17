@@ -9,7 +9,7 @@ export function WarRoomPlans({ context, openPocket }: { context: WarRoomContext;
   const b = back.reading;
   return <section id="ws-plans" className="three ws on" aria-label="Plans">
     <div><div className="ch"><b>PLANS</b></div>
-      <p className="empty">Plans are not available yet</p></div>
+      <p className="empty">Plans aren't available yet</p></div>
     <div className="sum3"><div className="ch" style={{ borderTop: '2px solid var(--black)' }}>
         <b>LOOKING BACK</b>
         <span>how past talks ended</span></div>

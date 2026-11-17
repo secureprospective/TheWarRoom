@@ -111,6 +111,30 @@ func nativeServerReads() []Command {
 		Safeguards: "none"}}
 }
 
+func tradeDraftCommands() []Command {
+	return []Command{
+		ownerPrivateCommand(leagueservice.TradeDraftRead, "TargetTradeDrafts", reflect.TypeFor[leagueservice.RawTradeDraftScope](), Read, "G0", "none", privateEntries()),
+		ownerPrivateCommand(leagueservice.TradeDraftSave, "SaveTradeDraft", reflect.TypeFor[leagueservice.RawTradeDraftSave](), Execute, "G1", "delete-own-private-proposal", privateEntries()),
+		ownerPrivateCommand(leagueservice.TradeDraftDelete, "DeleteTradeDraft", reflect.TypeFor[leagueservice.RawTradeDraftDelete](), Execute, "G1", "none", privateEntries()),
+	}
+}
+
+// privateFacts names a franchise-owner command's facts and the safeguards that keep them to that owner.
+type privateFacts struct{ facts, safeguards string }
+
+func privateEntries() privateFacts { return privateFacts{"private-entries", "authenticated-franchise"} }
+
+func privatePlayerData() privateFacts {
+	return privateFacts{"private-player-data", "authenticated seated franchise; no request franchise; uncached private entries"}
+}
+
+// ownerPrivateCommand is a server-only command on the caller's own franchise private entries.
+func ownerPrivateCommand(id, method string, args reflect.Type, mode Mode, gravity, undo string, p privateFacts) Command {
+	return Command{ID: id, Method: method, Version: "1", Role: "domain", Gravity: gravity, Availability: "server",
+		Arguments: Shape(args, strings.TrimPrefix(args.String(), "leagueservice.")+".Validate"), Permission: "franchise-owner",
+		Modes: []Mode{mode}, Undo: undo, Facts: p.facts, Safeguards: p.safeguards}
+}
+
 func NativeReadShape(method, fields string) Schema {
 	switch method {
 	case "TargetLeagueCalendar":

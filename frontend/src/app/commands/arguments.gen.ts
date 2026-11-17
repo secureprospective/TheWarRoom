@@ -2457,6 +2457,9 @@ export type WorkflowArgumentMap = {
 "market.wins.read": NativeArguments<"market.wins.read">;
 "draft.queue.read": NativeArguments<"draft.queue.read">;
 "draft.queue.set": NativeArguments<"draft.queue.set">;
+"trade.draft.read": NativeArguments<"trade.draft.read">;
+"trade.draft.save": NativeArguments<"trade.draft.save">;
+"trade.draft.delete": NativeArguments<"trade.draft.delete">;
 };
 export type CommandArgumentMap = {
  native: { [K in NativeCommandId]: NativeArguments<K> };

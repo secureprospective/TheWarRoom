@@ -2,23 +2,23 @@
 
 # 🏈 TheWarRoom
 
-### Bring your league. Any size, any rules. Run it from a phone, a desktop, a terminal or an AI.
+### The fantasy football app we always wanted. So we built it. And it's almost here.
 
-**TheWarRoom houses your dynasty league: every roster, every contract, every cap dollar and every rule, in one ledger that is exact to the penny. It values every player on your league's own scoring. And everything in it, every single move, is a command that a person or an AI can run.**
+**Your league, every roster, every contract, every cap dollar, every rule, in one ledger exact to the penny. A phone app built to make every other fantasy app feel like a toy. A command center on the desktop. And every single move is a command a person or an AI can run.**
 
 <br/>
 
-[![Import](https://img.shields.io/badge/BRING_YOUR_LEAGUE-MFL_→_NATIVE_IMPORT-DC143C?style=for-the-badge&labelColor=0d1117)](#-bring-your-league)
-[![AI First](https://img.shields.io/badge/AI_FIRST-EVERY_ACTION_IS_A_COMMAND-D97757?style=for-the-badge&labelColor=0d1117)](#-ai-first-cli-first)
-[![Opening Day](https://img.shields.io/badge/OPENING_DAY-THE_JULY_2027_ROOKIE_DRAFT-1F6FEB?style=for-the-badge&labelColor=0d1117)](#-the-road-to-the-draft)
+[![Phone mock v1](https://img.shields.io/badge/⬇_PHONE_MOCK_V1-tap_through_it_now-DC143C?style=for-the-badge&labelColor=0d1117)](docs/ui/showcase/v1/TheWarRoom-mobile-mock-v1.zip?raw=true)
+[![Desktop mock v3](https://img.shields.io/badge/⬇_DESKTOP_MOCK_V3-the_command_center-1F6FEB?style=for-the-badge&labelColor=0d1117)](docs/ui/showcase/v1/TheWarRoom-desktop-mock-v3.zip?raw=true)
+[![Opening Day](https://img.shields.io/badge/OPENING_DAY-THE_JULY_2027_ROOKIE_DRAFT-D97757?style=for-the-badge&labelColor=0d1117)](#-the-road-to-the-draft)
 
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![Phone first](https://img.shields.io/badge/Phone-first%20·%20one--hand%20·%20no%20ads-DC143C)](#-the-phone-where-the-league-lives)
 [![Fitted Model](https://img.shields.io/badge/Model-Fitted%202021–2025%20·%20Holdout%20Checked-8A2BE2)](#-two-numbers-per-player)
 [![Native League](https://img.shields.io/badge/Native%20League-Draft%20·%20Bids%20·%20Waivers%20·%20Trades%20·%20Rollover-orange)](#-the-native-league)
 [![Money](https://img.shields.io/badge/Money-int64%20cents%20·%20exact%20to%20the%20penny-9cf)](#-the-native-league)
 [![Speed](https://img.shields.io/badge/Screens-under%20200%20ms%20·%2032%20devices-brightgreen)](#-the-league-server)
 [![Backups](https://img.shields.io/badge/Backups-Encrypted%20·%20Off--site-gold)](#-it-cannot-lose-the-league)
-[![Leaner](https://img.shields.io/badge/The%20Trim-725k%20→%20448k%20lines-success)](#-the-trim)
 
 [![PWA](https://img.shields.io/badge/PWA-Browser%20%2B%20Phone-5A0FC8?logo=pwa&logoColor=white)](#-the-league-server)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://react.dev)
@@ -32,8 +32,11 @@
 
 ```
  ┌──────────────────────────────────────────────────────────────────────────────┐
- │  THEWARROOM // SYSTEM READOUT                                     2026-11-09 │
+ │  THEWARROOM // SYSTEM READOUT                                     2026-11-17 │
  │                                                                              │
+ │  PHONE MOCK ..... V1 LOCKED  5 tabs · 8 sheets · live field · big plays · TD │
+ │  DESKTOP MOCK ... V3 FINAL   6 rooms · trade desk · pulse · control room     │
+ │  CLICK TESTS .... GREEN      9 suites × 2 phone widths · 113-click sweep     │
  │  IMPORT ......... OPEN       MFL → native · rosters · contracts · picks      │
  │  AI + CLI ....... FIRST      137 commands · twr CLI + MCP · human confirms   │
  │  WEB APP ........ LIVE       phone + browser · join page tested on a phone   │
@@ -43,23 +46,19 @@
  │  NATIVE LEAGUE .. HOSTED     draft · lineups · bids · waivers · trades · ✔   │
  │  LEAGUE SERVER .. BUILT      twr-server · Alpine · Cloudflare Tunnel         │
  │  BACKUPS ........ ARMED      encrypted · Cloudflare R2 · spare-host restore  │
- │  DESKTOPS ....... PACKAGED   Windows · Mac · Linux · signed self-updates     │
- │  THE TRIM ....... −38%       725k → 448k lines · every gate still green      │
  │  OPENING DAY .... JULY 2027  the rookie draft, run through TheWarRoom        │
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 <div align="center">
 
-[![Download the interactive preview](https://img.shields.io/badge/⬇_DOWNLOAD_THE_INTERACTIVE_PREVIEW-one_file_·_opens_in_any_browser_·_no_install-DC143C?style=for-the-badge&labelColor=0d1117)](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)
+<img src="docs/ui/showcase/v1/phone-bigplay-td.gif" width="390" alt="The phone's live field: a 36-yard touchdown run. The camera pushes downfield, the yard lines fire in the club's colour, blast doors slam shut on +36, the TOUCHDOWN plate drops, and your fantasy matchup swings from 45% to 73% to win"/>
 
-**[Click to download](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)**, unzip, and open `TheWarRoom-preview.html`. Five screens to explore, nothing to install, and it works offline.
+**☝️ That's a real recording of the phone mock. Not a render. Not a video edit.**
+
+A 36-yard touchdown run: the camera pushes downfield, the yard lines fire in the club's colours, steel blast doors slam shut on **+36**, the touchdown plate drops, and your matchup swings from **45% to 73%** before you've set the phone down.
 
 </div>
-
-![League Pulse on a Sunday: your matchup starter by starter, the live NFL game on a field, every league matchup down the side and a play-by-play feed of your players](docs/ui/showcase/screen-pulse.png)
-
-<sub>🏟️ **This is Sunday in TheWarRoom.** Your matchup, the real game on a real field, every other matchup in the league and every play that touches your roster. One screen. No ads. No hunting. Player names are real; teams, scores and values in the preview are sample data.</sub>
 
 ---
 
@@ -67,89 +66,96 @@
 
 | | | |
 |:--|:--|:--|
-| 🎬 [See It Move](#-see-it-move) | ⚡ [The Hook](#-the-hook) | 🤖 [AI First, CLI First](#-ai-first-cli-first) |
+| ⬇️ [Get the Mocks](#️-get-the-mocks) | 📱 [The Phone](#-the-phone-where-the-league-lives) | 🖥️ [The Desktop](#️-the-desktop-the-command-center) |
+| 🧠 [Smarter Than Projections](#-smarter-than-projections) | ⚡ [The Hook](#-the-hook) | 🤖 [AI First, CLI First](#-ai-first-cli-first) |
 | 🚪 [Bring Your League](#-bring-your-league) | 🧩 [Any League You Can Imagine](#-any-league-you-can-imagine) | 🧠 [Two Numbers Per Player](#-two-numbers-per-player) |
 | 🏟️ [The League Server](#-the-league-server) | 🏈 [The Native League](#-the-native-league) | 🔥 [The 32-Team Default](#-the-32-team-default-built-from-the-data) |
-| 🛡️ [The Vault Door](#-the-vault-door) | 💾 [It Cannot Lose the League](#-it-cannot-lose-the-league) | 🎛️ [The Console](#-the-console) |
-| ✂️ [The Trim](#-the-trim) | 🏛️ [Architecture](#-the-architecture) | 🗺️ [The Road to the Draft](#-the-road-to-the-draft) |
-| 🤝 [How It Gets Built](#-how-it-gets-built) | 🛠️ [Running It](#-running-it) |  |
+| 🛡️ [The Vault Door](#-the-vault-door) | 💾 [It Cannot Lose the League](#-it-cannot-lose-the-league) | 🎛️ [The Look](#️-the-look-grip) |
+| 🏛️ [Architecture](#-the-architecture) | 🗺️ [The Road to the Draft](#-the-road-to-the-draft) | 🤝 [How It Gets Built](#-how-it-gets-built) |
 
 ---
 
-## 🎬 See It Move
+## ⬇️ Get the Mocks
 
-> **You already know what's wrong with fantasy apps.**
-> The ad between you and your lineup. The trade screen that is two lists and a shrug. The "live" score that is four minutes old. The betting odds you never asked for. Six taps to find out who is on bye.
->
-> **We got tired of it too. So we built the one we wanted.**
+**Two files. No install. No account. No network. Open them in any browser and play.**
 
-Everything below is one file you can **[download](docs/ui/showcase/TheWarRoom-preview.zip?raw=true)** and open right now. Five rooms. Go and poke at it.
+| | What you get | Download |
+|:--|:--|:--|
+| 📱 **Phone mock v1** | All five tabs and every sheet: Today, Live (with the animated field), Team, Moves, League, the Control Room. Hit **MOCK** in the corner to run plays, drives, big plays and touchdowns | **[TheWarRoom-mobile-mock-v1.zip](docs/ui/showcase/v1/TheWarRoom-mobile-mock-v1.zip?raw=true)** · 85 KB |
+| 🖥️ **Desktop mock v3** | The full command center: Home, League Pulse, War Room trade desk, Franchise HQ, Control Room, every board and drawer | **[TheWarRoom-desktop-mock-v3.zip](docs/ui/showcase/v1/TheWarRoom-desktop-mock-v3.zip?raw=true)** · 160 KB |
 
-### 🏟️ Sunday is the crown jewel
+> 📱 **For the phone mock on a computer:** open it, press `F12`, turn on device mode and pick a phone 390–430 wide. Or just send the file to your phone and open it there.
 
-Other apps give you a list of names with numbers that tick up. **League Pulse gives you the game.**
+<sub>Real NFL cities and club colours. Made-up players, made-up fantasy teams, no logos. The desktop mock uses real NFL player names on sample rosters with illustrative values.</sub>
 
-<p align="center">
-<img src="docs/ui/showcase/detail-pulse-game.png" width="66%" alt="The live game on a field with the ball spotted, above your matchup starter by starter"/> <img src="docs/ui/showcase/detail-pulse-plays.png" width="32.8%" alt="Your players in this game and the play-by-play feed"/>
-</p>
+---
 
-- 🏈 **The real game, on a field.** Who has the ball, where it is spotted, the down and distance, and the last play in plain words.
-- ⚔️ **Your matchup, head to head, position by position.** Your quarterback beside theirs. A football marks every player who is **on the field right now**.
-- 📡 **Only the plays that matter to you.** The feed shows every snap involving your starters and what it was worth: *"Puka Nacua 18-yd catch over the middle · your starter · +2.8 pts"*.
-- 🧩 **Who owns everyone in this game.** Every rostered player in the game you are watching, whose team he is on, and who is still a free agent.
-- 👀 **The whole league at a glance.** All sixteen matchups down the side with live win odds, so you can watch your rival lose in real time.
-- 🕐 **It says how fresh it is.** "ESPN live · 4s ago", stamped right on the screen. No guessing whether the score is stale.
+## 📱 The Phone: Where the League Lives
 
-### 🤝 A trade desk that tells you the truth
+> **Most of your league will live in TheWarRoom on a phone. So the phone isn't the cut-down version. It's the main event.**
 
-Every other app hands you two lists and wishes you luck. Then you send the offer, wait three days, and get declined with no idea why.
+![The phone mock's five tabs: Today, Live, Team, Moves and League](docs/ui/showcase/v1/phone-tabs.png)
 
-![The trade desk: what you send and get, valued through your lens and theirs, with the cap, roster and lineup effects and the smallest changes that keep the deal acceptable](docs/ui/showcase/detail-trade-lens.png)
+**Five tabs. Zero dead space. Every pixel earns its place.**
 
-- 🔍 **Two lenses, one deal.** The same trade is valued the way *you* see it (contending, now beats later) and the way *they* see it (rebuilding, youth and picks). When both bars point right, it says so: **BOTH WIN**.
-- 💸 **The consequences, before you send.** Cap room after, roster count, whether it is legal, who drops out of your lineup and what that costs you per week.
-- 🎚️ **"Tune it."** The desk suggests the smallest change that keeps the deal acceptable: take that pick out, or ask for one more. One click to apply.
-- 🗂️ **Versions A, B and C.** Build three offers side by side. Nobody sees them until you send.
-- 🕵️ **It scouts the other owner for you.** Their record, their cap room, what they need and what they have to spare.
+- 📅 **Today: what needs you, across every league.** One line per job, one action key, one clock key to push it to tomorrow. Urgent jobs carry an amber rail. Then every live matchup you're in, then your own boards, synced with the desktop.
+- 🏟️ **Live: the game on a real field.** The down box and line-to-gain stick in hi-vis orange, pylons in the corners, the ball spotted where it actually is, and a football icon on whoever has it. Your matchup sits on top in one-line player badges, with a football lit on every player whose game is on the field right now. Big plays fire the blast doors; touchdowns drop the plate.
+- 📋 **Team: your lineup, read at a glance.** Points, plus a **range from his own last six games** with a meter showing where this week sits inside it. Locked players show a padlock, not a dead button. One tap to move anyone who isn't locked.
+- 🔄 **Moves: find them before the points do.** Free agents and waivers with **three weeks of usage** (carries, targets, attempts) and a **▲ RISING** filter that surfaces the climbers. Add or claim in one tap. Trades as two pans of a scale.
+- 🏆 **League: table, scores, schedule, activity, and the Control Room.** The commissioner's whole job, on a phone: jobs waiting, situations, rules, season, fixes, people, picks, server.
 
-And along the bottom, your whole year on one rail, so you never trade past a deadline you forgot:
+![Phone sheets: the player card with his range and status, trade offers, and every matchup of the week](docs/ui/showcase/v1/phone-sheets.png)
 
-![The year rail: today, the trade deadline, playoffs, contract decisions, tags, free agency, the rookie draft and cutdown day](docs/ui/showcase/detail-trade-year.png)
+**Built to a standard, not a vibe:**
 
-![The War Room trade desk in full](docs/ui/showcase/screen-warroom.png)
+| The rule | What it means on screen |
+|:--|:--|
+| 🎨 **Colour has a job, or it isn't there** | Amber = needs you now. Red = danger. Green = done. Blue = live or yours. Club colours appear in the animations, never as decoration |
+| 🪨 **Depth instead of boxes** | Raised keys with a lit edge, sunken wells for inputs, slabs instead of outlines. No glow, no soft gradients, nothing to squint past |
+| 📏 **One line per fact** | Badges, jobs, status, matchups: one line each, two across where it fits. Phones are small; we stopped wasting them |
+| 😌 **Easy on the eyes at 1 AM** | No pure black, no pure white, softened contrast, and a quiet neutral flash when a number changes |
+| 🧾 **Nothing we can't source** | Every number comes from our own ledger or a feed we actually have. No borrowed projections, no written "news" from nowhere |
+| ✅ **Tested like it matters** | 9 test suites at two phone widths, a tap-size and theme check, a 56-row reach map, and a 113-click sweep with zero errors and zero network calls |
 
-### 📋 Lineup control nobody else has
+---
 
-Setting a lineup in most apps is a drop-down and a prayer. Here the page does the worrying for you.
+## 🖥️ The Desktop: The Command Center
 
-![The lineup check: cap committed, dead money and room, and a warning that one slot is empty, one starter is on bye and two are questionable](docs/ui/showcase/detail-lineup-check.png)
+> **When you sit down to work your franchise, you get the whole war room.**
 
-- 🚨 **It checks your lineup before the lock does.** *"1 empty · 1 on bye · 2 questionable · locks in 2d 05h."* You will never again find out on Monday that you started a player on bye.
-- 📊 **Every starter shows his recent games** as a row of bars, next to his average, his matchup and his projection.
-- 💰 **The cap is always in view.** Committed, dead and room, on one bar, on the same page as the lineup it pays for.
-- 🧾 **Click any player** and his contract by year, his dead cap if you cut him today, his age arc and **your private notes** open beside the roster.
+![League Pulse on a Sunday: every matchup in the league, the live game on a field, your matchup starter by starter, everyone in this game and the play tracker](docs/ui/showcase/v1/desktop-pulse.png)
 
-And then it tells you exactly what your mistakes are costing you, slot by slot:
+<sub>🏟️ **League Pulse, Sunday 3:42 PM.** Every matchup in the league down the left. The real game on a field. Your matchup starter by starter, offense and defense. Everyone you care about in this game, and every play that touched them.</sub>
 
-![An empty lineup slot flagged in hazard stripes, and this week's matchup broken down position by position with the points gained or lost at each](docs/ui/showcase/detail-lineup-gap.png)
+![The War Room trade desk: your shelf and theirs, what you send and get, both teams' lenses, cap room after, roster, best 16 and lineup changes](docs/ui/showcase/v1/desktop-trade.png)
 
-That empty slot is costing 7.2 points. It is striped like a hazard so you cannot miss it.
+<sub>🤝 **The trade desk tells you the truth.** Your shelf, their shelf, the deal valued through **your lens and theirs**, cap room after, roster count, best-16 rank, what happens to your lineup, and the smallest change that would make it acceptable. Hold to send.</sub>
 
-![Franchise HQ in full: nineteen starters, the bench and the player inspector](docs/ui/showcase/screen-hq.png)
+<table>
+<tr>
+<td width="50%"><img src="docs/ui/showcase/v1/desktop-hq.png" alt="Franchise HQ: the lineup with contracts, cap and the player inspector"/><br/><sub>📋 <b>Franchise HQ.</b> Every starter, every contract, every cap dollar, and the inspector on whoever you click.</sub></td>
+<td width="50%"><img src="docs/ui/showcase/v1/desktop-control.png" alt="The Control Room: the commissioner's jobs, situations and tools"/><br/><sub>🎛️ <b>The Control Room.</b> The commissioner's job, organised: what's waiting, what happened, and the tool for each.</sub></td>
+</tr>
+</table>
 
-### 🏠 Home answers one question: what needs me?
+<sub>🔧 The desktop mock was finished before the phone's "nothing we can't source" rule, so it still shows projections in places. It gets the phone's range, usage and status treatment next.</sub>
 
-Open the app and you know where you stand in about three seconds. Your matchup live. A trade offer with its clock running. League news tagged *your flex*, *your opponent's quarterback* or *on the wire*. The playoff race. Every move in the league. And your shortcuts, each one key away.
+---
 
-![Home: the live matchup, the alert bar, the playoff race, tagged league news, the transaction ledger and keyboard shortcuts](docs/ui/showcase/screen-home.png)
+## 🧠 Smarter Than Projections
 
-### 🎛️ And for the commissioner: the job, finally organised
+> **Every other app hands you somebody else's projection and calls it insight. We threw them out.**
 
-Running a league is unpaid work. The Control Room treats it that way. What needs a ruling comes to you, sorted by what is due first. Every change shows who it affects before it lands, goes on a ledger the owners can read, and can be undone. Along the bottom is the idea the whole product is built on: **every screen action is also a command.**
+Projections are one number from someone else's model, and that number hides the only thing you actually need to know on a Sunday: **how risky is he?** So TheWarRoom shows what our own data can prove:
 
-![The Control Room: the commissioner's jobs, quick actions, the week at a glance and the command line](docs/ui/showcase/screen-control.png)
+| Instead of… | TheWarRoom shows | Why it's better |
+|:--|:--|:--|
+| 🔮 *"Proj 14.2"* | 📊 **Range `8–21`:** his low and high over his last six games, with a meter showing where this week sits | Start/sit is a risk decision. A range shows boom-or-bust; a single number hides it |
+| 📈 *"72% rostered"* | 🔥 **Usage `TGT 4 6 8 ▲`:** carries, targets or attempts over the last three weeks, and a **RISING** filter | Opportunity comes before points. You see the breakout before the box score does |
+| 🎲 *Win % from a stranger's projections* | ⏱️ **Pace + win %:** from the live score and each roster's scoring pace over the game time left | It's ours, it's live, and it moves with every play |
+| 📰 *A paragraph of "news"* | 🩺 **Status facts:** `Out · hamstring`, `Practice: Full · Wed Thu Fri`, `Depth chart WR2 → WR1` | One fact per line, from the feed, no filler |
 
-<sub>The preview is a design mock with sample data, built in the same look the app ships in. It makes no network calls.</sub>
+**TheWarRoom is different because it's smarter, and it shows its work.**
 
 ---
 
@@ -280,10 +286,6 @@ The model is fitted on the league's own scoring history, 2021–2025. Every opti
 
 **No hiding the misses.** The kicker result sits in the [fit report](docs/fit/Fit_Report.md) right next to the wins.
 
-![The target Franchise HQ: the roster with both numbers beside every contract](docs/ui/showcase/target-2-hq.png)
-
-<sub>🎯 **The target, Franchise HQ:** both numbers on every row, next to what the player costs and for how long. Values are illustrative.</sub>
-
 ---
 
 ## 🏟️ The League Server
@@ -348,10 +350,6 @@ The native league is the real thing: a league whose **record of truth is TheWarR
 **Money is exact.** Every contract is a row of per-year cells in `int64` cents. The cap is *derived* from those cells, never stored as a competing number. Priced moves **quote before they commit**, so you see "this will commit" or the exact reason it won't before anything is written. **Irreversible moves are a hold-to-confirm gesture, never a click.**
 
 **Commissioners stay in charge.** The commissioner and every co-commissioner, in a set order of succession, have the full toolkit: corrections recorded as corrections, overrides with a reason, and a **"needs a ruling"** state for when the rulebook runs out. The human decides; the ledger remembers.
-
-![The target Trade Floor: an incoming offer as a move envelope](docs/ui/showcase/target-3-trade.png)
-
-<sub>🎯 **The target, Trade Floor:** an incoming offer with its checks, the league's comparable trades, and the hold-to-accept gate. Real rosters and salaries; values are illustrative.</sub>
 
 ---
 
@@ -492,46 +490,18 @@ Security here is **proportionate**: this is a recreational league, so TheWarRoom
 
 ---
 
-## 🎛️ The Console
+## 🎛️ The Look: Grip
 
 The bar is **Anduril, not SaaS**: dark, precise, data-dense, with no wasted pixel. Every control actuates something real. **Plain words for every owner; full depth for every expert.**
 
-![The visual system: colour, frame, countdown and glyph](docs/ui/showcase/target-0-system.png)
-
-**Four jobs, four channels.** Colour says what something *is*. The frame says how much is at stake. The countdown says how soon. A glyph says what kind of thing it is. No channel does two jobs, so a card's gravity reads before a single word does.
-
-**Six places**: Home, War Room, Franchise HQ, Trade Floor, League Pulse and Control Room, with the inspector, command bar, comms, calendar and status strip always present.
-
-![The map of everything: six nodes, their workspaces and the always-present surfaces](docs/ui/showcase/target-6-map.png)
+The phone's material is called **Grip**: charcoal, pebbled, matte, with a hard lit edge, like the rubberised hardware on a field radio. Raised means you can press it. Sunken means you can type in it or open it. A rail means it needs you. That's the whole vocabulary, and it saves a border on every row.
 
 - **⚡ Snappy is law.** Every control acknowledges in under 100 ms. Skeletons over spinners.
 - **🪜 Three altitudes.** *Glance* reads the league from colour alone, *Operate* is the working tier, and *Interrogate* puts every number on screen. Depth is **discovered, never demanded**.
-- **🏟️ Game Day.** The real NFL games run along the top, and the centre spine shows every play that moves *your* matchup, from any game.
-
-![The target League Pulse: the matchup, live games and the scoring-play spine](docs/ui/showcase/target-5-pulse.png)
+- **🏟️ Game Day is the crown jewel.** The real NFL game on a real field, and every play that moves *your* matchup, from any game.
+- **🖥️ Six rooms on the desktop:** Home, War Room, Franchise HQ, Trade Floor, League Pulse and Control Room, with the inspector, command bar, comms, calendar and status strip always present.
 
 📐 The spec: [`docs/ui/Target_UI_Spec_2026-10.md`](docs/ui/Target_UI_Spec_2026-10.md)
-
----
-
-## ✂️ The Trim
-
-> We sprinted to a working platform. **Then we cut it to the bone, and it still stands.**
-
-Hundreds of AI build sessions got TheWarRoom to a working league server. They also left a lot behind: tests that had done their job, frozen snapshots, old mock-ups, spent plans. In November 2026 we went back through all of it with one rule: **keep what is good and working, delete the rest, and prove nothing broke.**
-
-```
-   BEFORE   725,000 tracked lines
-   AFTER    448,000 tracked lines          −38%, with more to come
-   ─────────────────────────────────────────────────────────────────────────────
-   HOW      spent tests, frozen snapshots and old mock-ups retired first; then every
-            remaining Go test was measured for the production lines it exercises,
-            and only true duplicates were cut
-   KEPT     ledger replay · privacy · durability · contracts · sign-in · the import · the engines
-   PROOF    lint, the race-detector suite, the vulnerability scan and the frontend build, all green
-```
-
-**Why it matters to you:** less code is a faster app, fewer places for a bug to hide, and a codebase an AI can change safely. The laws don't change: every button is a command, one build serves every league, and **non-technical owners come first without ever limiting the experts.**
 
 ---
 
@@ -583,6 +553,9 @@ The boundaries aren't conventions; they're **enforced by the build**. A violatio
    ✅ THE LEAGUE SERVER ─────────────── hosted season, accounts, backups, packages
    ✅ THE JOIN PAGE ─────────────────── owners pick their team from a phone
    ✅ THE TRIM ──────────────────────── 725k → 448k lines, gates green
+   ✅ THE PHONE MOCK V1 ─────────────── 5 tabs · live field · big plays · every gate green
+   ✅ THE DESKTOP MOCK V3 ───────────── the command center, final
+   ▶  MOCKS → THE REAL APP ─────────── the phone and desktop designs land in the web app
    ▶  THE WEB APP, COMPLETE ────────── every owner job from a browser or phone
    ▶  CLICKS UNDER 100 MS ──────────── the last speed budget
    ▶  THE IMPORT, EVERY LEAGUE ─────── any size, any type, lands whole
@@ -681,8 +654,8 @@ make verify    # lint, tests and the frontend build
 
 *Built by Christopher Campbell with Claude (Anthropic), Sol (OpenAI) and Tom (Claude).*
 
-**Yesterday, MFL gave us a league and TheWarRoom helped us win it.**
+**The phone is designed. The command center is designed. The server is built. The ledger is exact.**
 
-**This July, the league runs on our own server, every owner walks into the War Room, and yours is welcome to follow.**
+**This July, the league runs on our own server, every owner walks into the War Room, and yours is welcome to follow. 🏈**
 
 </div>

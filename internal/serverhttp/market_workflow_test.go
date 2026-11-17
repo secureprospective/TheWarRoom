@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -154,6 +155,82 @@ func TestHostedDraftQueueIsSeatedPrivateAndReplacedAsAWhole(t *testing.T) {
 	set = owner.invoke("draft.queue.set", "execute", []byte(`{"league":"native.hosted","players":["0100","0099"]}`), 200)
 	if err := json.Unmarshal(set.Data, &saved); err != nil || !slices.Equal(saved.Players, []string{"0100", "0099"}) {
 		t.Fatalf("reordered queue = %+v, %v", saved, err)
+	}
+}
+
+func TestHostedTradeDraftPocketIsPrivateAndTokenScoped(t *testing.T) {
+	commissionerClient := workflowClient(t)
+	teamA := commissionerClient
+	teamB := commissionerClient
+	teamB.bearer = teamB.f.login(t, "owner", "private-password")
+	teamB.proof = ""
+
+	first := teamA.invoke(leagueservice.TradeDraftSave, "execute", []byte(`{"league":"native.hosted","partner":"franchise.02","give":["0100"],"get":["pick:2027:1:franchise.02"],"label":"Window deal"}`), 200)
+	var saved leagueservice.SavedTradeDraft
+	if err := json.Unmarshal(first.Data, &saved); err != nil || len(saved.ID) != 32 || saved.Partner != "franchise.02" || saved.Label != "Window deal" || saved.At == "" {
+		t.Fatalf("saved proposal = %+v, %v", saved, err)
+	}
+	partnerResult := teamB.invoke(leagueservice.TradeDraftSave, "execute", []byte(`{"league":"native.hosted","partner":"franchise.01","give":["0101"],"get":[],"label":"Partner proposal"}`), 200)
+	var partnerDraft leagueservice.SavedTradeDraft
+	if err := json.Unmarshal(partnerResult.Data, &partnerDraft); err != nil || partnerDraft.ID == "" {
+		t.Fatalf("partner proposal = %+v, %v", partnerDraft, err)
+	}
+	read := func(client hostedWorkflowClient, want int) []leagueservice.SavedTradeDraft {
+		t.Helper()
+		response := client.invoke(leagueservice.TradeDraftRead, "read", []byte(`{"league":"native.hosted"}`), 200)
+		var drafts leagueservice.TradeDraftList
+		if err := json.Unmarshal(response.Data, &drafts); err != nil || len(drafts.Drafts) != want {
+			t.Fatalf("saved proposals = %+v, %v; wanted %d", drafts, err, want)
+		}
+		return drafts.Drafts
+	}
+	if drafts := read(teamA, 1); drafts[0].ID != saved.ID || drafts[0].Give[0] != "0100" || drafts[0].Get[0] != "pick:2027:1:franchise.02" {
+		t.Fatalf("owner proposal was not reopened intact: %+v", drafts)
+	}
+	if drafts := read(teamB, 1); drafts[0].Label != "Partner proposal" || drafts[0].ID == saved.ID {
+		t.Fatalf("partner cannot read its own proposal: %+v", drafts)
+	}
+	deleteArgs := func(id string) []byte {
+		t.Helper()
+		body, err := json.Marshal(leagueservice.RawTradeDraftDelete{League: "native.hosted", ID: id})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return body
+	}
+	teamB.invoke(leagueservice.TradeDraftDelete, "execute", deleteArgs(saved.ID), 409)
+	if drafts := read(teamA, 1); drafts[0].ID != saved.ID {
+		t.Fatalf("partner deleted owner's proposal: %+v", drafts)
+	}
+
+	token, err := teamA.f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: teamA.bearer}, accounts.RawTokenScope{
+		League: "native.hosted", Franchise: "franchise.01",
+		Commands: []string{"native.directory.read", leagueservice.TradeDraftRead, leagueservice.TradeDraftSave, leagueservice.TradeDraftDelete},
+		Modes:    []string{"read", "execute"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	agent := commissionerClient
+	agent.bearer, agent.proof = token.Bearer, ""
+	if drafts := read(agent, 1); drafts[0].ID != saved.ID {
+		t.Fatalf("owner-scoped token read another team's proposal: %+v", drafts)
+	}
+	agent.invoke(leagueservice.TradeDraftRead, "read", []byte(`{"league":"native.hosted","franchise":"franchise.02"}`), 400)
+	agent.invoke(leagueservice.TradeDraftDelete, "execute", deleteArgs(partnerDraft.ID), 409)
+	if drafts := read(teamB, 1); drafts[0].ID != partnerDraft.ID {
+		t.Fatalf("team A token deleted team B proposal: %+v", drafts)
+	}
+	if drafts := read(teamA, 1); drafts[0].ID != saved.ID {
+		t.Fatalf("spoofed franchise read changed the owner's proposal: %+v", drafts)
+	}
+	deleted := teamA.invoke(leagueservice.TradeDraftDelete, "execute", deleteArgs(saved.ID), 200)
+	var receipt leagueservice.TradeDraftDeleted
+	if err := json.Unmarshal(deleted.Data, &receipt); err != nil || receipt.ID != saved.ID {
+		t.Fatalf("owner deletion = %+v, %v", receipt, err)
+	}
+	if drafts := read(teamA, 0); len(drafts) != 0 {
+		t.Fatalf("owner deletion did not remove the proposal: %+v", drafts)
 	}
 }
 

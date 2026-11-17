@@ -1,11 +1,9 @@
 # Handoff
 
-- Baton: Bee, 2026-11-17; War Room recent auction wins.
-- State: source confirms `MarketBook.Bids.Auctions` retains decided winner ID, salary/years, and `DecidedAt`; replay folds these from the native ledger. Added server-only league-view `market.wins.read` and hosted rendering. No schema change; local desktop UI unchanged.
-- Privacy: projection includes player/name, winning team, salary cents, years, and decision time only. Open/sealed bids, counts, points, and losing amounts are excluded.
-- Tests: `go test -race ./internal/commissioner/market ./internal/leagueservice ./internal/serverhttp ./internal/commandcatalog`; frontend Vitest (122 files, 907 tests); `pnpm tsc --noEmit`; `make lint` all pass.
-- PR #340 is open; CI checks passed. The pre-push `verify` hook passed.
-- Rebase preserved #336 hosted target reads/writes; wins are a separate league-public fact.
-- Next: review/merge PR #340.
+- Baton: Bee, 2026-11-17.
+- State: frontend-only slop task complete. Partner reads use parser-checked standings rows; Plans has one unavailable state with history; hosted bids use hosted commands and local mode retains `poolProvider`.
+- Changes: renamed `canFilter` to `filterUnavailable`, matched Plans copy, added partner standings/cap scope regression coverage. No Go, schema, or tdrafts-owned files changed.
+- Tests: `WarRoomPlans.test.tsx` (single unavailable state + history); `WarRoomMarket.test.tsx` (unavailable filter controls); `warroomMarketReads.test.ts` (hosted bid commands/local provider); `warroomTradeReads.test.ts` (checked partner row/cap scope). Frontend: 122 files / 906 tests; tsc, build, lint, tidy, pre-push verify passed. Build emitted existing bundle warnings; lint listed existing oversized untouched Go files.
+- PR: #337 open, CI green at `2d02147a1`: https://github.com/secureprospective/TheWarRoom/pull/337
+- Next: Christopher/ClaudeBox review and merge decision.
 - Blocked: none.
-- Tried/rejected: extending `bids.read` would mix owner-only and open-auction data; dedicated allowlisted read keeps bid details out.
