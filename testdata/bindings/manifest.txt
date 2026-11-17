@@ -40,7 +40,9 @@ commissioner.API.TargetNativeLineupDelta
 commissioner.API.TargetNativeLineupSet
 commissioner.API.TargetNativeMoves
 commissioner.API.TargetNativeOdds
+commissioner.API.TargetNativePlayerAgeArc
 commissioner.API.TargetNativePlayerScore
+commissioner.API.TargetNativePlayerUsage
 commissioner.API.TargetNativeProjections
 commissioner.API.TargetNativeReserveCheck
 commissioner.API.TargetNativeResults
