@@ -105,12 +105,25 @@ def package(source, destination, name):
     return output
 
 
+def build_version(tag, commit):
+    if tag:
+        return tag.removeprefix("v")
+    return f"dev-{commit[:7]}"
+
+
 def build():
     name = target()
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    try:
+        tag = subprocess.check_output(
+            ["git", "describe", "--exact-match", "--tags", "--match", "v[0-9]*", "HEAD"],
+            cwd=ROOT, text=True, stderr=subprocess.DEVNULL).strip()
+    except subprocess.CalledProcessError:
+        tag = ""
+    version = build_version(tag, commit)
     pkg = "github.com/secureprospective/TheWarRoom/internal/composition"
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    flags = f"-X {pkg}.version=cs45-candidate -X {pkg}.commit={commit} -X {pkg}.buildDate={stamp}"
+    flags = f"-X {pkg}.version={version} -X {pkg}.commit={commit} -X {pkg}.buildDate={stamp}"
     command = ["wails", "build", "-m", "-nosyncgomod", "-skipbindings", "-s",
                "-trimpath", "-ldflags", flags]
     if name.startswith("linux-"):

@@ -39,10 +39,22 @@ creates CT 9001, checks network, no sshd/host keys, packages, nothing upgradable
 bash deploy/lab/lab-bundle.sh   # → .scratch/lab/twr-server-LAB-ONLY-r<release>-<sha>.tar.gz
 ```
 
-A throwaway **LAB-ONLY** TUF root (3 root keys at 2-of-3, one per other role, same shape as the real
-ceremony) is made once in `~/fleet/lab-release/` (0700) and reused; never the real root. The venv lives
-in `.scratch/lab-release-venv` from the hash-locked `scripts/release/requirements.txt`. Copy the bundle
-to `/root/bundles/` and `deploy/lab/twr-*` to `/root/twr-lab/` on the lab.
+Each lab server pins the **LAB-ONLY** TUF root from its installation bundle; lab servers do not
+necessarily share a root. To identify a server's pin, run `sha256sum /etc/twr-release/root.json`
+inside that server and compare it with the known root hashes below. Use the matching lab root and
+signing keys for that server's bundles; never replace its pin or use the real release root.
+
+| Root SHA-256 prefix | Root and signing keys on the Beelink |
+|---|---|
+| `60f07a4ee7d76195` | `~/fleet/lab-release/` (the bundle script's default) |
+| `8c91770c25883a4a` | `~/work/TheWarRoom/.worktrees/pulse-a010s/.scratch/lab-release/` (CT 258) |
+
+The root file in each directory is `LAB-ONLY-root.json`. Set `TWR_LAB_RELEASE` to the matching
+directory before running the bundle script; it creates a new root if that directory has none, so
+verify the root hash first. The script's throwaway roots have 3 root keys at 2-of-3 and one key per
+other role, the same shape as the real ceremony. The venv lives in `.scratch/lab-release-venv` from
+the hash-locked `scripts/release/requirements.txt`. Copy the bundle to `/root/bundles/` and
+`deploy/lab/twr-*` to `/root/twr-lab/` on the lab.
 
 ## Up, list, down (on the lab, as root)
 

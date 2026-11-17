@@ -14,6 +14,10 @@ import package
 
 
 class DesktopTests(unittest.TestCase):
+    def test_build_version_uses_release_tag_or_development_commit(self):
+        self.assertEqual(package.build_version("v0.10.1", "0123456789abcdef"), "0.10.1")
+        self.assertEqual(package.build_version("", "0123456789abcdef"), "dev-0123456")
+
     def test_dmg_creation_retries_a_busy_hdiutil_then_gives_up(self):
         calls, waits = [], []
 
