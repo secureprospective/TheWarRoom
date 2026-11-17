@@ -1,8 +1,8 @@
 # Handoff
 
-- Baton: ClaudeBox review, 2026-11-16; branch `session/pulse-busy`.
-- State: PR #310 open, unmerged. Admission and deadline refusals return 503 + `Retry-After: 2`; rate-limited class/elapsed logs. Hosted desktop retries reads once after the server delay; mutations are not retried. Server write timeout is already 30s versus a 5s request budget.
-- Next: Review PR #310; no live-host tests were run.
-- Blocked on: `tidy-check.sh` reports four dangling Chromium symlinks in other scratch directories; left untouched.
-- Verification: serverhttp/serverclient race tests and push hook passed. Mutants caught missing Retry-After, a 4s write timeout cutting the TLS response, and disabled client retry.
-- Tried/rejected: No concurrency or deadline increase; the existing 30s bounded write timeout already gives the request timeout response room to reach clients.
+- Baton: Bee, 2026-11-17; branch `session/pulse-busy`.
+- State: PR #310 open, unmerged. Round-2 CI feedback fixed: write-backup pauses return their original 503 body, not overload `BusyMessage`; actual overload/deadline refusals still return 503 + `Retry-After: 2`.
+- Verification: `go test -race -timeout 20m ./cmd/twr-server ./internal/serverhttp/... ./internal/serverclient/...` passed. The initial run identified pause/admission test expectations and hit serverhttp's 10-minute default timeout; rerun with 20m passed. CI's verify failure was the race-test shard failing on the same dashboard expectation; verify aggregator failed as a result.
+- Next: commit and push fix; check PR #310 CI status. No merge. No live-host tests.
+- Blocked on: tidy-check reports four dangling Chromium symlinks under other scratch folders; left untouched.
+- Tried/rejected: Do not attach overload headers/body to backup pause refusals; a paused write is an operational fault, not capacity pressure.

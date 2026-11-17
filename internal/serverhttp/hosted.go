@@ -168,7 +168,7 @@ func (h Hosted) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		h.failure(w, r, h.SignInAdmission, "login refused", http.StatusUnauthorized)
+		h.failure(w, h.SignInAdmission, "login refused", http.StatusUnauthorized)
 		return
 	}
 	// The bearer crosses HTTPS only here. DeviceSession itself remains redacted.
@@ -684,9 +684,7 @@ func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 					continue
 				}
 				if err := admission(); err != nil {
-					logBusyRefusal(r.Context(), "write-admission")
-					w.Header().Set("Retry-After", busyRetryAfter)
-					http.Error(w, BusyMessage, http.StatusServiceUnavailable)
+					http.Error(w, err.Error(), http.StatusServiceUnavailable)
 					return
 				}
 			}
@@ -708,16 +706,14 @@ func (h Hosted) admissions(path string) []func() error {
 	return []func() error{h.WriteAdmission}
 }
 
-func (h Hosted) writeFailure(w http.ResponseWriter, r *http.Request, message string, status int) {
-	h.failure(w, r, h.WriteAdmission, message, status)
+func (h Hosted) writeFailure(w http.ResponseWriter, _ *http.Request, message string, status int) {
+	h.failure(w, h.WriteAdmission, message, status)
 }
 
-func (h Hosted) failure(w http.ResponseWriter, r *http.Request, admission func() error, message string, status int) {
+func (h Hosted) failure(w http.ResponseWriter, admission func() error, message string, status int) {
 	if admission != nil {
 		if err := admission(); err != nil {
-			logBusyRefusal(r.Context(), "write-admission")
-			w.Header().Set("Retry-After", busyRetryAfter)
-			http.Error(w, BusyMessage, http.StatusServiceUnavailable)
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
 	}

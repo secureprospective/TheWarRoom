@@ -33,7 +33,7 @@ func TestBackupAdmissionIsolatesTheTwoFiles(t *testing.T) {
 		r.TLS = &tls.ConnectionState{}
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, r)
-		if reached != tc.admitted || (!tc.admitted && (w.Code != http.StatusServiceUnavailable || w.Header().Get("Retry-After") != busyRetryAfter)) {
+		if reached != tc.admitted || (!tc.admitted && w.Code != http.StatusServiceUnavailable) {
 			t.Errorf("%s league=%v signIns=%v: reached=%v code=%d", tc.path, tc.league() == nil, tc.signIns() == nil, reached, w.Code)
 		}
 	}
