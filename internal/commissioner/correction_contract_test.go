@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -27,6 +28,48 @@ func TestRosterCorrectionRetainsTheLastRecordedContract(t *testing.T) {
 		if p.ContractMissing || p.Salary != salary || p.ExpirationYear != 2028 {
 			t.Fatalf("latest contract lost: %+v", p)
 		}
+	}
+}
+
+func TestTargetedContractTrailMatchesFullRosterReplay(t *testing.T) {
+	initial := &RawNativeSnapshot{
+		Franchises: []NativeFranchise{{ID: "east"}, {ID: "west"}},
+		Sides:      map[string]string{"east": "E", "west": "W"},
+		Players: []NativePlayer{
+			{ID: "0003", Franchise: "east", Salary: 700, ExpirationYear: 2028},
+			{ID: "0004", Franchise: "west", Salary: 900, ExpirationYear: 2029},
+		},
+	}
+	stream := []RawCorrection{
+		{Player: "0003", Franchise: "east", Action: "remove"},
+		{Player: "0003", Franchise: "west", Action: "add"},
+		{Player: "0004", Franchise: "west", Action: "remove"},
+		{Player: "0004", Franchise: "east", Action: "add"},
+	}
+	project := func(targeted bool) []NativePlayer {
+		assets := NativeAssets{Seeded: true, Snapshot: &RawNativeSnapshot{
+			Franchises: append([]NativeFranchise(nil), initial.Franchises...),
+			Sides:      map[string]string{"east": "E", "west": "W"},
+			Players:    append([]NativePlayer(nil), initial.Players...),
+		}}
+		contracts := map[string]NativePlayer{}
+		wanted := map[string]bool{"0003": true, "0004": true}
+		for i, correction := range stream {
+			target := (*RawCorrection)(nil)
+			if targeted {
+				target = &correction
+			}
+			rememberNativeContracts(&assets, contracts, target, wanted)
+			record := Record{Command: RawCommand{Command: CorrectRoster, Reason: "parity fixture", Args: RawArgs{Correction: &correction}}}
+			if err := applyAssetCorrection(assets.Snapshot, contracts, record); err != nil {
+				t.Fatalf("event %d: %v", i, err)
+			}
+		}
+		return assets.Snapshot.Players
+	}
+	full, targeted := project(false), project(true)
+	if !reflect.DeepEqual(targeted, full) {
+		t.Fatalf("targeted projection differs from full-roster replay: targeted=%+v full=%+v", targeted, full)
 	}
 }
 

@@ -1,7 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-16.
-- State: Stable odds seed and bounded simulation cache implemented. Commissioner and history race tests pass. Real-data pulse run verified identical seed and all 32 odds rows before/after lineup writes and on repeated reads. Three baseline/after load runs plus one parity run are in `.scratch/`.
-- Next: Project hooks block commit/PR. Restore the required frontend toolchain/build output through the project owner, then rerun hooks, commit, push and open a PR against main. Do not merge.
-- Blocked on: `make lint` and commit hooks fail because `frontend/dist` is absent (`main.go:12:12: pattern all:frontend/dist: no matching files found`). `pnpm --dir frontend build` also fails: global tsc rejects existing `esModuleInterop=false` and `moduleResolution=node10`; local `node_modules` is absent. Do not edit `frontend/dist` or install dependencies without authorization. Tidy reports known dangling scratch symlinks and another agent's scratch folder.
-- Tried/rejected: The records-length seed changed odds after lineup-only writes. Replaced it with a hash of simulation inputs; no contracts-cache change.
+- State: Target-player contract cache path is implemented; generated roster-correction parity test passes without race. `make lint` passes. Existing private baseline/after run data shows 503s (baseline 6, after 9); run logs include request-deadline refusals under synthetic load. Three paired runs and clean causal attribution are still missing.
+- Next: Finish `go test -race ./internal/commissioner/...` after the unrelated full `make verify` already running on this host completes; collect three paired runs if feasible; commit, push and open a DRAFT PR with honest data. Do not merge.
+- Blocked on: One full `go test -race -timeout 60m ./...` is already running (PID 113166); heavy-ok prohibits starting another full suite. Do not stop it.
+- Tried/rejected: Existing before/after logs are only one run each; they do not support mean/spread. No further benchmark run was started while another full suite owns the machine.
