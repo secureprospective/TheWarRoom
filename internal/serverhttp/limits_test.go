@@ -107,8 +107,8 @@ func TestHTTPInFlightAndCommandDeadline(t *testing.T) {
 	for range 64 {
 		<-done
 	}
-	if w.Code != 503 {
-		t.Fatalf("request cap: %d", w.Code)
+	if w.Code != 503 || w.Header().Get("Retry-After") != busyRetryAfter {
+		t.Fatalf("request cap: status=%d retry=%q", w.Code, w.Header().Get("Retry-After"))
 	}
 }
 
@@ -140,8 +140,8 @@ func TestHTTPAuthFloodReservesCommandSlots(t *testing.T) {
 	for range 6 {
 		<-done
 	}
-	if login.Code != 503 || command.Code != 204 {
-		t.Fatalf("auth=%d command=%d", login.Code, command.Code)
+	if login.Code != 503 || login.Header().Get("Retry-After") != busyRetryAfter || command.Code != 204 {
+		t.Fatalf("auth=%d retry=%q command=%d", login.Code, login.Header().Get("Retry-After"), command.Code)
 	}
 }
 

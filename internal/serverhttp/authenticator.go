@@ -71,7 +71,7 @@ func (h Hosted) authenticator(w http.ResponseWriter, r *http.Request) {
 		proof, err = h.TOTP.StepUp(r.Context(), credentials, accounts.RawTOTP{Code: raw.Code})
 		response.RecentAuth = proof.Token
 	}
-	if passwordBusy(w, err) {
+	if passwordBusy(w, r, err) {
 		return
 	}
 	if err != nil {
