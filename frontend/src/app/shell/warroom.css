@@ -599,6 +599,10 @@
 .wr-v6 .recent{border-top:2px solid var(--black)}
 .wr-v6 .recent .r{display:grid;grid-template-columns:34px 1fr 60px 60px;gap:8px;padding:0 14px;height:26px;align-items:center;border-bottom:1px solid var(--rule);font:11px var(--mono);color:var(--ink2)}
 .wr-v6 .recent .r b{color:var(--ink);text-align:right} .wr-v6 .recent .r span:nth-child(3){text-align:right}
+.wr-v6 .recent .win{grid-template-columns:minmax(0,1fr) auto;height:auto;min-height:38px;padding:5px 10px}
+.wr-v6 .recent .win .player,.wr-v6 .recent .win .terms{display:grid;gap:2px;min-width:0}
+.wr-v6 .recent .win .player b{text-align:left}.wr-v6 .recent .win .terms{text-align:right}
+.wr-v6 .recent .win small{font:9px var(--mono);color:var(--ink3)}
 /* ---------- v3: negotiation ---------- */
 .wr-v6 .scale .gh{position:absolute;top:-5px;bottom:-5px;width:0;border-left:2px dashed var(--ink2);transition:left 90ms linear}
 .wr-v6 .scale .gh.off{display:none}

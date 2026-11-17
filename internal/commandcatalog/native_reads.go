@@ -104,6 +104,13 @@ func nativeDraftQueueCommands() []Command {
 	}
 }
 
+func nativeServerReads() []Command {
+	return []Command{{ID: "market.wins.read", Method: "TargetNativeBidWins", Version: "1", Role: "domain",
+		Gravity: "G0", Availability: "server", Arguments: NativeReadShape("TargetNativeBidWins", "league:string"),
+		Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "ledger,player-facts",
+		Safeguards: "none"}}
+}
+
 func NativeReadShape(method, fields string) Schema {
 	switch method {
 	case "TargetLeagueCalendar":

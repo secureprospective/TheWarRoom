@@ -4644,7 +4644,7 @@ const schema328 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawDraftQueueScope.Validate",
+  Validator:"TargetNativeBidWins",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2}
@@ -4652,6 +4652,17 @@ const schema328 = {
   Items:null,
 } as const;
 const schema329 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawDraftQueueScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema330 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -7733,6 +7744,25 @@ export const serverCommands = {
   },
   phrase: "read player watch",
 },
+"market.wins.read": {
+  definition: {
+    "ID": "market.wins.read",
+    "Method": "TargetNativeBidWins",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "league-view",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "ledger,player-facts",
+    "Safeguards": "none",
+    "Arguments": schema328
+  },
+  phrase: "read market wins",
+},
 "draft.queue.read": {
   definition: {
     "ID": "draft.queue.read",
@@ -7748,7 +7778,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema328
+    "Arguments": schema329
   },
   phrase: "read draft queue",
 },
@@ -7767,7 +7797,7 @@ export const serverCommands = {
     "Undo": "replace-own-private-queue",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema329
+    "Arguments": schema330
   },
   phrase: "set draft queue",
 },

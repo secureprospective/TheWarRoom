@@ -19,6 +19,7 @@ func NativeCommands(seed Schema) []Command {
 	}
 	out = append(out, playerPersonalNativeMutations()...)
 	out = append(out, playerPersonalNativeReads()...)
+	out = append(out, nativeServerReads()...)
 	return out
 }
 
