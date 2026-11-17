@@ -89,11 +89,24 @@ export function projections(snapshot: Snapshot, board?: Board, week?: number): M
   if (!projection || !week || !new RegExp(`week ${week}(?:\\D|$)`, 'i').test(projection.title)
     || !['ok', 'stale'].includes(projection.status)) return result;
   // This report exposes names, not IDs. Only unique exact identities are safe to join.
+  const playersByName = new Map<string, typeof snapshot.players.value>();
+  const rowsByName = new Map<string, typeof projection.rows>();
   for (const player of snapshot.players.value) {
-    if (!player.name || snapshot.players.value.filter(p => p.name === player.name).length !== 1) continue;
-    const rows = projection.rows.filter(r => r.cells[0] === player.name);
-    if (rows.length === 1 && /^-?\d+(?:\.\d+)?$/.test(rows[0].cells[1])) result.set(player.id,
-      Number(rows[0].cells[1]));
+    if (!player.name) continue;
+    const named = playersByName.get(player.name) ?? [];
+    named.push(player);
+    playersByName.set(player.name, named);
+  }
+  for (const row of projection.rows) {
+    const named = rowsByName.get(row.cells[0]) ?? [];
+    named.push(row);
+    rowsByName.set(row.cells[0], named);
+  }
+  for (const player of snapshot.players.value) {
+    if (!player.name || playersByName.get(player.name)?.length !== 1) continue;
+    const matches = rowsByName.get(player.name) ?? [];
+    if (matches.length === 1 && /^-?\d+(?:\.\d+)?$/.test(matches[0].cells[1])) result.set(player.id,
+      Number(matches[0].cells[1]));
   }
   return result;
 }
@@ -118,10 +131,24 @@ export function standingFromReport(report?: Report): { record?: string; standing
 export function byeWeeks(snapshot: Snapshot, reports?: Report[]): Map<string, number> {
   const rows = reports?.find(r => r.id === 'M-154' && ['ok', 'stale'].includes(r.status))?.rows ?? [];
   const result = new Map<string, number>();
+  const playersByName = new Map<string, typeof snapshot.players.value>();
+  const rowsByName = new Map<string, typeof rows>();
   for (const player of snapshot.players.value) {
-    if (!player.name || snapshot.players.value.filter(p => p.name === player.name).length !== 1) continue;
-    const row = rows.find(r => r.cells[0] === player.name);
-    if (row && /^\d+$/.test(row.cells[3])) result.set(player.id, Number(row.cells[3]));
+    if (!player.name) continue;
+    const named = playersByName.get(player.name) ?? [];
+    named.push(player);
+    playersByName.set(player.name, named);
+  }
+  for (const row of rows) {
+    const named = rowsByName.get(row.cells[0]) ?? [];
+    named.push(row);
+    rowsByName.set(row.cells[0], named);
+  }
+  for (const player of snapshot.players.value) {
+    if (!player.name || playersByName.get(player.name)?.length !== 1) continue;
+    const matches = rowsByName.get(player.name) ?? [];
+    if (matches.length === 1 && /^\d+$/.test(matches[0].cells[3])) result.set(player.id,
+      Number(matches[0].cells[3]));
   }
   return result;
 }
