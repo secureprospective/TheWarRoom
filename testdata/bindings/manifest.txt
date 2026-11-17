@@ -19,6 +19,7 @@ commissioner.API.TargetCommissionerSchedule
 commissioner.API.TargetCommissionerSeat
 commissioner.API.TargetCommissionerSeatSignIn
 commissioner.API.TargetCorrections
+commissioner.API.TargetFranchiseMovesHistory
 commissioner.API.TargetLeagueCalendar
 commissioner.API.TargetLeagueSchedule
 commissioner.API.TargetNFLGame

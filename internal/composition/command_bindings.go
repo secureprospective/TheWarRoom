@@ -43,13 +43,6 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetNativeBracket":              catalog.Bind2(api.TargetNativeBracket, "league", "season"),
 		"TargetStatQueue":                  catalog.Bind3(api.TargetStatQueue, "league", "season", "request"),
 		"TargetCancelRead":                 catalog.Bind1Error(api.TargetCancelRead, "request"),
-		"TargetNativeTradeAction":          catalog.Bind1(api.TargetNativeTradeAction, "raw"),
-		"TargetNativeMoves":                catalog.Bind2(api.TargetNativeMoves, "league", "franchise"),
-		"TargetNativeTrades":               catalog.Bind2(api.TargetNativeTrades, "league", "viewer"),
-		"TargetNativeWaiverAction":         catalog.Bind1(api.TargetNativeWaiverAction, "raw"),
-		"TargetNativeWaivers":              catalog.Bind3(api.TargetNativeWaivers, "league", "franchise", "at"),
-		"TargetNativeBidAction":            catalog.Bind1(api.TargetNativeBidAction, "raw"),
-		"TargetNativeBids":                 catalog.Bind2(api.TargetNativeBids, "league", "franchise"),
 		"TargetNativeDraftPick":            catalog.Bind1(api.TargetNativeDraftPick, "input"),
 		"TargetNativeDraft":                catalog.Bind1(api.TargetNativeDraft, "scope"),
 		"TargetNativeLineupSet":            catalog.Bind1(api.TargetNativeLineupSet, "body"),
@@ -81,7 +74,21 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetCommissionerPreview":        catalog.Bind1(api.TargetCommissionerPreview, "body"),
 	}
 	maps.Copy(bindings, commissionerWeekBindings(api))
+	maps.Copy(bindings, commissionerOwnerBindings(api))
 	return bindings
+}
+
+func commissionerOwnerBindings(api *commissionerapi.API) map[string]catalog.Binding {
+	return map[string]catalog.Binding{
+		"TargetNativeTradeAction":     catalog.Bind1(api.TargetNativeTradeAction, "raw"),
+		"TargetFranchiseMovesHistory": catalog.Bind1(api.TargetFranchiseMovesHistory, "scope"),
+		"TargetNativeMoves":           catalog.Bind2(api.TargetNativeMoves, "league", "franchise"),
+		"TargetNativeTrades":          catalog.Bind2(api.TargetNativeTrades, "league", "viewer"),
+		"TargetNativeWaiverAction":    catalog.Bind1(api.TargetNativeWaiverAction, "raw"),
+		"TargetNativeWaivers":         catalog.Bind3(api.TargetNativeWaivers, "league", "franchise", "at"),
+		"TargetNativeBidAction":       catalog.Bind1(api.TargetNativeBidAction, "raw"),
+		"TargetNativeBids":            catalog.Bind2(api.TargetNativeBids, "league", "franchise"),
+	}
 }
 
 // commissionerWeekBindings are the calendar, the week and the NFL games around it.

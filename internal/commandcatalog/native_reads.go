@@ -61,6 +61,7 @@ func nativeReads() []Command {
 		{"native.roster.check", "TargetNativeRosterCheck", "league:string", "league-view", "ledger,player-facts"},
 		{"odds.read", "TargetNativeOdds", "league:string season:integer", "league-view", "ledger,stat-evidence,player-record,fitted-params"},
 		{"standings.read", "TargetNativeStandings", "league:string season:integer", "league-view", "ledger,stat-evidence"},
+		{"franchise.moves.history.read", "TargetFranchiseMovesHistory", "", "league-view", "ledger"},
 		{"moves.read", "TargetNativeMoves", "league:string franchise:string", "franchise-view", "ledger,player-facts"},
 		{"trades.read", "TargetNativeTrades", "league:string viewer:string", "franchise-view", "ledger"},
 		{"waivers.read", "TargetNativeWaivers", "league:string franchise:string at:string", "franchise-view", "ledger,player-facts"},
@@ -97,6 +98,8 @@ func NativeReadShape(method, fields string) Schema {
 		return Shape(reflect.TypeFor[leagueservice.RawPlayerReadScope](), "RawPlayerReadScope.Validate")
 	case "TargetNativeLineupCheck":
 		return Shape(reflect.TypeFor[commissioner.RawNativeLineup](), "RawNativeLineup.Validate")
+	case "TargetFranchiseMovesHistory":
+		return Shape(reflect.TypeFor[commissioner.RawFranchiseMovesHistory](), "RawFranchiseMovesHistory.Validate")
 	case "TargetNativeWeek":
 		return Shape(reflect.TypeFor[leagueservice.RawNativeWeekScope](), "RawNativeWeekScope.Validate")
 	case "TargetCommissionerLedgerFiltered":

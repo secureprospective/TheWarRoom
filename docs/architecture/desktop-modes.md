@@ -114,3 +114,9 @@ Both currently refuse with “hosted player reading is unavailable”: the leagu
 player directory facts and NFL weeks, not the weekly usage observations/points-allowed research
 feed or the birth-dated player book, model scores and fitted run parameters. Reference-file table
 existence is not evidence those inputs were acquired. No new ingest or schema is included here.
+
+Hosted HQ My moves now adds `franchise.moves.history.read`: a season page over the server-native
+append-only ledger, using the existing audience-filtered descriptions. Members can read public
+franchise history; sealed/private rows keep their existing Audience policy. Corrections remain
+new rows. `moves.read` stays owner-only lifecycle data, and local desktop envelope audits are unchanged.
+Source and evidence: [HQ native history](../build-handoffs/HQ-MOVES-SOURCE-2026-11-17.md).

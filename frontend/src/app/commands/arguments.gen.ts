@@ -324,6 +324,13 @@ number
 string,
 number
 ];
+"commissioner.TargetFranchiseMovesHistory": [
+{
+"league": string;
+"franchise": string;
+"season": number
+}
+];
 "commissioner.TargetNativeMoves": [
 string,
 string
@@ -2359,6 +2366,7 @@ export type WorkflowArgumentMap = {
 "native.roster.check": NativeArguments<"native.roster.check">;
 "odds.read": NativeArguments<"odds.read">;
 "standings.read": NativeArguments<"standings.read">;
+"franchise.moves.history.read": NativeArguments<"franchise.moves.history.read">;
 "moves.read": NativeArguments<"moves.read">;
 "trades.read": NativeArguments<"trades.read">;
 "waivers.read": NativeArguments<"waivers.read">;

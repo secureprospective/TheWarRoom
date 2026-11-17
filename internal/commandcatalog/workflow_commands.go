@@ -150,6 +150,9 @@ func otherWorkflowReads() map[string]WorkflowCommand {
 		"waivers.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeWaivers(r.League, r.Franchise, time.Now().UTC()))
 		}),
+		"franchise.moves.history.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetFranchiseMovesHistory(commissioner.RawFranchiseMovesHistory{League: r.League, Franchise: r.Franchise, Season: r.Season}))
+		}),
 		"moves.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeMoves(r.League, r.Franchise))
 		}),

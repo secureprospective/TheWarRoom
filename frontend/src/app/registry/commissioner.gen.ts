@@ -1530,7 +1530,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gravity: "G0",
     clock: "none",
     placement: places[14],
-    verb: "commish.ledger.read",
+    verb: "commish.ledger.read franchise.moves.history.read",
     disposition: "kept",
     ring: 4,
     status: "landed",

@@ -19,5 +19,6 @@ it('reads standings that carry score evidence', () => {
     words: 'Through week 9', through: 9, decided: 144, pending: 0, criteria: [], noData: [], evidence,
     computed: [{ rank: 1, franchise: 'a', name: 'A', wins: 9, losses: 0, ties: 0, record: '9-0',
       pointsFor: 1000, pointsWords: '1000.0', why: [] }] });
-  expect(read.computed).toEqual([{ rank: 1, name: 'A', record: '9-0', points: '1000.0', why: [] }]);
+  expect(read.computed).toEqual([{ rank: 1, franchise: 'a', name: 'A', record: '9-0',
+    points: '1000.0', why: [] }]);
 });

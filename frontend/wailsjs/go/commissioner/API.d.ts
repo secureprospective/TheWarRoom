@@ -52,6 +52,8 @@ export function TargetCommissionerSeatSignIn(arg1:string,arg2:string):Promise<ac
 
 export function TargetCorrections(arg1:string):Promise<commissioner.Corrections>;
 
+export function TargetFranchiseMovesHistory(arg1:commissioner.RawFranchiseMovesHistory):Promise<commissioner.Ledger>;
+
 export function TargetLeagueCalendar(arg1:commissioner.RawLeagueCalendarScope):Promise<commissioner.Calendar>;
 
 export function TargetLeagueSchedule(arg1:commissioner.RawLeagueScheduleScope):Promise<commissioner.Schedule>;

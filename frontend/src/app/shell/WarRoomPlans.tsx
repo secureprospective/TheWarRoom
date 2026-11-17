@@ -7,21 +7,11 @@ export function WarRoomPlans({ context, openPocket }: { context: WarRoomContext;
   const back = useWarRoomRead(JSON.stringify(['plans-back', context.native?.league, context.mine]), () =>
     readLookingBack(context));
   const b = back.reading;
-  return <section id="ws-plans" className="three ws on" aria-label="Plans"><div><div className="ch">
-    <b>PLANS</b><span>only you see these</span></div><WarRoomEmpty /><WarRoomAct className="pl" disabled>
-      <b>+ New plan</b>
-      <small>Not available yet</small>
-      </WarRoomAct>
-      <div className="pneeds">
-      <div className="ch">
-        <b>MY NEEDS</b><span>ranked</span></div><WarRoomEmpty /></div></div>
-    <div><div className="ch"><b>PLANS</b><span>check steps off as you think them through · drag between events
-      </span></div><div className="cols"><WarRoomEmpty /></div></div>
-    <div className="sum3"><div className="ch"><b>WHERE THINGS STAND</b><span>live from the other tabs</span>
-      </div>{['TRADE THREADS', 'POCKET', 'MARKET', 'DRAFT', 'CAP IF THIS WORKS'].map(label => <div
-        className="sblk" key={label}><div className="sh">{label}</div><WarRoomEmpty /></div>)}
-      <div className="ch"><b>CONFLICTS</b></div><WarRoomEmpty />
-      <div className="ch" style={{ borderTop: '2px solid var(--black)' }}><b>LOOKING BACK</b>
+  return <section id="ws-plans" className="three ws on" aria-label="Plans">
+    <div><div className="ch"><b>PLANS</b></div>
+      <p className="empty">Plans are not available yet</p></div>
+    <div className="sum3"><div className="ch" style={{ borderTop: '2px solid var(--black)' }}>
+        <b>LOOKING BACK</b>
         <span>how past talks ended</span></div>
       <div className="sblk" aria-label="Past offers"><div className="sh">PAST OFFERS</div>
         {b?.offers.length ? b.offers.map(o =>
@@ -36,7 +26,8 @@ export function WarRoomPlans({ context, openPocket }: { context: WarRoomContext;
           </div>) : <WarRoomEmpty pending={back.pending} reason={back.error ?? b?.offersNote ??
             'No trade talks yet'} />}</div>
       <div className="sblk" aria-label="Saved proposals"><div className="sh">SAVED PROPOSALS
-        <WarRoomAct onAction={openPocket}>POCKET ▸</WarRoomAct></div>
+        <WarRoomAct onAction={openPocket}>POCKET ▸</WarRoomAct>
+        </div>
         {b?.saved !== undefined ? <div className="srow"><span>{b.saved} built, not sent</span>
           <small className="s-t">{b.saved}</small></div>
           : <WarRoomEmpty pending={back.pending} reason={back.error ?? b?.savedNote} />}</div>

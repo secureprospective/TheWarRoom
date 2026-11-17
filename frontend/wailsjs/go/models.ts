@@ -4898,6 +4898,22 @@ export namespace commissioner {
 	
 	
 	
+	export class RawFranchiseMovesHistory {
+	    league: string;
+	    franchise: string;
+	    season: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawFranchiseMovesHistory(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.season = source["season"];
+	    }
+	}
 	
 	export class RawLeagueCalendarScope {
 	    league: string;
@@ -13207,6 +13223,8 @@ export namespace nativecheck {
 		}
 	}
 	export class ReserveVerdict {
+	    experienceYears?: number;
+	    taxiYearsLeft?: number;
 	    player: string;
 	    name: string;
 	    squad: string;
@@ -13219,6 +13237,8 @@ export namespace nativecheck {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.experienceYears = source["experienceYears"];
+	        this.taxiYearsLeft = source["taxiYearsLeft"];
 	        this.player = source["player"];
 	        this.name = source["name"];
 	        this.squad = source["squad"];

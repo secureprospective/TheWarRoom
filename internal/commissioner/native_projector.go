@@ -250,11 +250,19 @@ func rememberNativeContracts(assets *NativeAssets, contracts map[string]NativePl
 	if !assets.Seeded {
 		return
 	}
-	for _, p := range assets.Snapshot.Players {
-		if !wanted[p.ID] {
-			continue
+	players := assets.Snapshot.Players
+	if target != nil && target.Player != "" {
+		targetSide := assets.Snapshot.SideOf(target.Franchise)
+		for _, p := range players {
+			if p.ID == target.Player && wanted[p.ID] && assets.Snapshot.SideOf(p.Franchise) == targetSide {
+				contracts[targetSide+"/"+p.ID] = p
+				return
+			}
 		}
-		if target == nil || target.Player == "" || (p.ID == target.Player && assets.Snapshot.SideOf(p.Franchise) == assets.Snapshot.SideOf(target.Franchise)) {
+		return
+	}
+	for _, p := range players {
+		if wanted[p.ID] {
 			contracts[assets.Snapshot.SideOf(p.Franchise)+"/"+p.ID] = p
 		}
 	}
