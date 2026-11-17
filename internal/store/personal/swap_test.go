@@ -110,11 +110,23 @@ func TestHostedEntriesAreScopedToAuthenticatedFranchise(t *testing.T) {
 	if err != nil || notesB.Count != 0 {
 		t.Fatalf("franchise B read A's notes: %+v, %v", notesB, err)
 	}
+	watchedA, err := store.PlayerWatchedForFranchise(ctx, "franchise.01", "0816")
+	if err != nil || !watchedA {
+		t.Fatalf("franchise A watch = %v, %v", watchedA, err)
+	}
+	watchedB, err := store.PlayerWatchedForFranchise(ctx, "franchise.02", "0816")
+	if err != nil || watchedB {
+		t.Fatalf("franchise B watch = %v, %v", watchedB, err)
+	}
 	addHostedEntry(ctx, t, store, "franchise.02", RawChange{Mine: "franchise.01", Kind: "watch", Entity: "player", ID: "0816", Action: "remove"})
 	assertHostedEntryCount(ctx, t, store, "franchise.01", 2)
 	addHostedEntry(ctx, t, store, "franchise.02", RawChange{Mine: "franchise.01", Kind: "watch", Entity: "player", ID: "0816", Action: "add"})
 	assertHostedEntryCount(ctx, t, store, "franchise.02", 1)
 	assertHostedEntryCount(ctx, t, store, "franchise.01", 2)
+	watchedA, err = store.PlayerWatchedForFranchise(ctx, "franchise.01", "0816")
+	if err != nil || !watchedA {
+		t.Fatalf("franchise B changed A's watch: %v, %v", watchedA, err)
+	}
 }
 
 func addHostedEntry(ctx context.Context, t *testing.T, store *Store, franchiseID string, change RawChange) {

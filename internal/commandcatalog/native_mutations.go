@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
 // NativeCommands lists logical reads and individual mutations, not generic desktop dispatch doors.
@@ -16,6 +17,7 @@ func NativeCommands(seed Schema) []Command {
 	for _, row := range nativeMutations() {
 		out = append(out, nativeMutation(row.id, row.args, seed))
 	}
+	out = append(out, playerPersonalNativeMutations()...)
 	return out
 }
 
@@ -139,6 +141,19 @@ func nativePeopleMutations() []struct{ id, args string } {
 		{"commish.vote.cast", "people"},
 		{"commish.vote.close", "people"},
 		{"commish.vote.tiebreak", "people"},
+	}
+}
+
+func playerPersonalNativeMutations() []Command {
+	return []Command{
+		{ID: leagueservice.PlayerNoteSet, Method: "SetPlayerNote", Version: "1", Role: "domain", Gravity: "G0", Availability: "both",
+			Arguments:  Shape(reflect.TypeFor[leagueservice.RawPlayerNoteSet](), "RawPlayerNoteSet.Validate"),
+			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-player-data",
+			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
+		{ID: leagueservice.PlayerWatchSet, Method: "SetPlayerWatch", Version: "1", Role: "domain", Gravity: "G0", Availability: "both",
+			Arguments:  Shape(reflect.TypeFor[leagueservice.RawPlayerWatchSet](), "RawPlayerWatchSet.Validate"),
+			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-player-data",
+			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
 	}
 }
 

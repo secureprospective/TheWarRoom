@@ -130,12 +130,19 @@ func (a *Service) admitReading(access commissioner.Access) error {
 	if !a.hosted {
 		return nil
 	}
+	return a.admitReadingContext(a.host.CommissionerContext(), access)
+}
+
+func (a *Service) admitReadingContext(ctx context.Context, access commissioner.Access) error {
+	if !a.hosted {
+		return nil
+	}
 	principal, err := a.host.CommissionerPrincipal()
 	if err != nil {
 		return fmt.Errorf("read identity: %w", err)
 	}
 	access.Principal = principal
-	if err := commissioner.AdmitCredential(a.requestContext(a.host.CommissionerContext()), access); err != nil {
+	if err := commissioner.AdmitCredential(a.requestContext(ctx), access); err != nil {
 		return fmt.Errorf("admit league reading: %w", err)
 	}
 	return nil

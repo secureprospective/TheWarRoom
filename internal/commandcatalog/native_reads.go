@@ -52,6 +52,7 @@ func nativeReads() []Command {
 		{"lineupdelta.read", "TargetNativeLineupDelta", "", "franchise-view", "ledger,stat-evidence,player-facts"},
 		{"player.usage.read", "TargetNativePlayerUsage", "league:string player:string", "league-view", "stat-evidence,player-record"},
 		{"player.agearc.read", "TargetNativePlayerAgeArc", "league:string player:string", "league-view", "stat-evidence,player-record,fitted-params"},
+		{leagueservice.PlayerNoteRead, "TargetPlayerNotes", "league:string player:string", "franchise-owner", "private-player-data"},
 		{"value.read", "TargetNativeValues", "", "league-view", "ledger,stat-evidence,player-record,fitted-params"},
 		{"tradelens.read", "TargetNativeTradeLens", "", "franchise-view", "ledger,stat-evidence,player-record,fitted-params"},
 		{"projections.read", "TargetNativeProjections", "league:string players:string season:integer week:integer", "league-view", "ledger,stat-evidence"},
@@ -96,6 +97,8 @@ func NativeReadShape(method, fields string) Schema {
 		return Shape(reflect.TypeFor[leagueservice.RawLineupDeltaScope](), "RawLineupDeltaScope.Validate")
 	case "TargetNativePlayerUsage", "TargetNativePlayerAgeArc":
 		return Shape(reflect.TypeFor[leagueservice.RawPlayerReadScope](), "RawPlayerReadScope.Validate")
+	case "TargetPlayerNotes":
+		return Shape(reflect.TypeFor[leagueservice.RawPlayerNotesScope](), "RawPlayerNotesScope.Validate")
 	case "TargetNativeLineupCheck":
 		return Shape(reflect.TypeFor[commissioner.RawNativeLineup](), "RawNativeLineup.Validate")
 	case "TargetFranchiseMovesHistory":

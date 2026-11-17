@@ -23,6 +23,9 @@ type WorkflowCommand struct {
 // appear here by derivation; never hand-list one. See docs/architecture/future-seams.md.
 func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
+	for id, command := range playerPersonalWorkflows() {
+		out[id] = command
+	}
 	for _, row := range nativeMutations() {
 		if accounts.DelegableCommand(row.id) && row.id != commissioner.NativeSeed {
 			out[row.id] = WorkflowCommand{Validate: validateWorkflowChange, Run: runWorkflowChange}
@@ -54,20 +57,19 @@ func workflowRead(read func(*leagueservice.Service, RawWorkflowScope) (json.RawM
 	}
 }
 
-// workflowInputRead is a reading whose input is its own Raw type rather than the shared scope.
-func workflowInputRead[T any, P interface {
+func workflowInputCommand[T any, P interface {
 	*T
 	workflowInput
-}](read func(*leagueservice.Service, T) (json.RawMessage, error)) WorkflowCommand {
+}](mode, refusal string, run func(context.Context, *leagueservice.Service, T) (json.RawMessage, error)) WorkflowCommand {
 	decode := func(raw RawWorkflow) (T, error) {
 		var input T
-		if raw.Mode != "read" {
-			return input, fmt.Errorf("this is a reading only")
+		if raw.Mode != mode {
+			return input, fmt.Errorf("%s", refusal)
 		}
 		// P is *T by its constraint; the union of vetted inputs hides that from a plain conversion.
 		pointer, ok := any(&input).(P)
 		if !ok {
-			return input, fmt.Errorf("read league action: unexpected input type")
+			return input, fmt.Errorf("league action: unexpected input type")
 		}
 		return input, decodeWorkflow(raw.Arguments, pointer)
 	}
@@ -76,13 +78,27 @@ func workflowInputRead[T any, P interface {
 			_, err := decode(raw)
 			return err
 		},
-		Run: func(_ context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
+		Run: func(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
 			input, err := decode(raw)
 			if err != nil {
 				return nil, err
 			}
-			return read(service, input)
+			return run(ctx, service, input)
 		},
+	}
+}
+
+func playerPersonalWorkflows() map[string]WorkflowCommand {
+	return map[string]WorkflowCommand{
+		leagueservice.PlayerNoteRead: workflowInputCommand[leagueservice.RawPlayerNotesScope, *leagueservice.RawPlayerNotesScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawPlayerNotesScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetPlayerNotes(ctx, input))
+		}),
+		leagueservice.PlayerNoteSet: workflowInputCommand[leagueservice.RawPlayerNoteSet, *leagueservice.RawPlayerNoteSet]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawPlayerNoteSet) (json.RawMessage, error) {
+			return workflowJSON(s.SetPlayerNote(ctx, input))
+		}),
+		leagueservice.PlayerWatchSet: workflowInputCommand[leagueservice.RawPlayerWatchSet, *leagueservice.RawPlayerWatchSet]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawPlayerWatchSet) (json.RawMessage, error) {
+			return workflowJSON(s.SetPlayerWatch(ctx, input))
+		}),
 	}
 }
 
@@ -189,11 +205,11 @@ func otherWorkflowReads() map[string]WorkflowCommand {
 		"lineup.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeLineup(r.League, r.Franchise, r.Week, r.At))
 		}),
-		"native.cap.check": workflowInputRead[commissioner.RawNativeCapScope, *commissioner.RawNativeCapScope](func(s *leagueservice.Service, r commissioner.RawNativeCapScope) (json.RawMessage, error) {
-			return workflowJSON(s.TargetNativeCapCheck(r.League, r.ViewerZone))
+		"native.cap.check": workflowInputCommand[commissioner.RawNativeCapScope, *commissioner.RawNativeCapScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, r commissioner.RawNativeCapScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeCapCheckContext(ctx, r.League, r.ViewerZone))
 		}),
-		"contract.quote": workflowInputRead[market.RawContractQuote, *market.RawContractQuote](func(s *leagueservice.Service, r market.RawContractQuote) (json.RawMessage, error) {
-			return workflowJSON(s.TargetNativeContractQuote(r))
+		"contract.quote": workflowInputCommand[market.RawContractQuote, *market.RawContractQuote]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, r market.RawContractQuote) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeContractQuoteContext(ctx, r))
 		}),
 		"draft.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeDraft(commissioner.RawNativeDraftScope{League: r.League, Franchise: r.Franchise, Season: r.Season}))

@@ -17,6 +17,7 @@ import { WarRoomPlans } from './WarRoomPlans';
 import { WarRoomDrawers } from './WarRoomDrawers';
 import { readWarRoomCalendar, type WarRoomEvent } from './warroomCalendar';
 import { changeWarRoomTarget } from './warroomMarketReads';
+import { setHostedPlayerWatch } from './playerPersonal';
 import { WarRoomMarket } from './WarRoomMarket';
 import { WarRoomDraft } from './WarRoomDraft';
 import { WarRoomTrade } from './WarRoomTrade';
@@ -157,8 +158,15 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
           === mine ? 'give' : 'get';
         if (!deal[side].includes(selected.token)) changeDeal({ ...deal, [side]: [...deal[side],
           selected.token] }); setTab('desk');
-      } : undefined} watch={!native && selected && !selected.pick ? () =>
-        changeWarRoomTarget(context, selected.token, false) : undefined} />}
+      } : undefined}
+      watch={
+        selected && !selected.pick && (!native || (Boolean(mine) && native.owner !== false))
+          ? watched => {
+            if (native) return setHostedPlayerWatch(native.league, selected.token, !watched, native.port);
+            return changeWarRoomTarget(context, selected.token, watched);
+          }
+          : undefined
+      } />}
   </div>{prospect && <WarRoomScouting context={context} prospect={prospect}
     close={() => setProspect(undefined)} />}</div>;
 }

@@ -55,8 +55,9 @@ export function parseInjuries(value: unknown): Injury[] {
   });
 }
 export type Note = { text: string; at: string; order: number };
-export function parseNotes(value: unknown): { player: string; notes: Note[]; count: number } {
-  const r = object(value, 'My notes', ['player', 'notes', 'count']);
+export function parseNotes(value: unknown): { league?: string; player: string; notes: Note[]; count: number;
+  watched: boolean } {
+  const r = object(value, 'My notes', ['league', 'player', 'notes', 'count', 'watched']);
   const player = text(r.player, 'Notes player');
   const notes = array(r.notes, 'Notes', (v, p) => {
     const row = object(v, p, ['kind', 'entity', 'id', 'text', 'at', 'order']);
@@ -66,7 +67,9 @@ export function parseNotes(value: unknown): { player: string; notes: Note[]; cou
   });
   const count = integer(r.count, 'Note count');
   if (count !== notes.length) throw new Error('Note count mismatch');
-  return { player, notes, count };
+  if (r.watched !== undefined && typeof r.watched !== 'boolean') throw new Error('Invalid watch state');
+  return { league: r.league === undefined ? undefined : text(r.league, 'Notes league'), player, notes, count,
+    watched: r.watched === true };
 }
 export function researchFact(reading: PlayerReading | undefined, label: string): string | undefined {
   const fact = reading?.report.rows.find(r => r.cells[0] === label)?.cells[1];

@@ -8,6 +8,7 @@ import { readAgeArc } from '../market/api';
 import { readPersonalNotes, personalWire } from '../offers/api';
 import { readNativeCut, type NativeCut } from '../commissioner/hqReading';
 import { hostedWorkflow } from '../commissioner/api';
+import { readHostedPlayerNotes, setHostedPlayerNote } from './playerPersonal';
 import { parseArc, parseNotes, parseUsage, type Arc, type Usage } from './hqPlayerData';
 import { parseWarRoomProjections } from './warroomMarketReads';
 import type { WarRoomContext } from './warroomReads';
@@ -35,6 +36,10 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string,
         catch (e) { if (!hostedFactUnavailable(e)) throw e; } }),
       apply(async () => { try { result.usage = parseUsage(await readPlayerUsage(id, native.league)); }
         catch (e) { if (!hostedFactUnavailable(e)) throw e; } }),
+      apply(async () => {
+        if (native.owner === false || !native.mine) return;
+        result.notes = await readHostedPlayerNotes(native.league, id, native.port);
+      }),
       apply(async () => {
         const owners = c.snapshot.rosters.value.filter(r => r.players.some(p => p.id === id));
         const owner = owners.find(r => r.franchiseId === c.mine) ??
@@ -73,7 +78,11 @@ function hostedFactUnavailable(error: unknown): boolean {
   return String(error).includes('hosted player reading is unavailable');
 }
 export async function changeWarRoomNote(c: WarRoomContext, id: string, text: string, at?: string) {
-  if (c.native) throw new Error('Hosted private notes are not available yet');
+  if (c.native) {
+    if (c.native.owner === false || !c.native.mine) throw new Error('A seated franchise is required');
+    await setHostedPlayerNote(c.native.league, id, text, c.native.port, at);
+    return;
+  }
   await personalWire.change(c.mine, 'note', { id, entity: 'player', action: at ? 'remove' : 'add', text,
     ...(at ? { at } : {}) });
 }
