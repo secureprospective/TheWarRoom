@@ -5,6 +5,7 @@ import type { BidFormState, Plan } from '../pool/contract';
 import type { WarRoomContext } from './warroomReads';
 import {
   parseWarRoomBidReading,
+  readWarRoomMarket,
   warRoomMarketAction,
 } from './warroomMarketReads';
 
@@ -42,8 +43,83 @@ const context = (port?: HostedPort, owner = true): WarRoomContext => ({ mine,
 const marketPlayer = { id: '0001', name: 'Player One', position: 'WR' };
 const placed = { player: '0001', name: 'Player One', contract: '$2.00M · 2 years',
   state: 'PLACED · PRIVATE', kind: 'placed' as const, bidId: 'bid-1' };
+const marketAssets = () => ({ league, revision: 4, seeded: true, entry: 'entry-1', source: 'held',
+  pool: [
+    { player: '0001', name: 'Held player', position: 'WR', string: 'FA', points: '14.2', age: '—',
+      value: 'must not use', minimum: { cents: 8500000000, text: '$85.00M' } },
+    { player: '0002', name: 'Facts missing', position: '—', string: '—', points: '—' },
+  ], identities: [], corrections: [], snapshot: { season: 2026, franchises: [{ id: mine, heldId: mine,
+    name: 'Mine', abbreviation: 'M', division: 'East' }], players: [], picks: [] } });
+const marketValues = () => ({ league, season: 2026, franchise: '', preparing: false,
+  players: [
+    { player: '0001', franchise: '', position: 'WR', nowPPG: 4.2, dynastyPPG: 12.36, age: 25.5,
+      ageKnown: true, available: true, words: 'Held value' },
+    { player: '0002', franchise: '', position: 'RB', nowPPG: 0, dynastyPPG: 0, age: 0,
+      ageKnown: false, available: false, words: 'No held value' },
+  ], best: { franchise: '', starterN: 0, value: 0, age: 0, ageKnown: false, rank: 0, of: 0,
+    available: false, words: '' }, age: [], notes: [] });
 
 afterEach(() => vi.restoreAllMocks());
+
+describe('War Room hosted market readings', () => {
+  it('maps only held pool facts and server values, with missing facts unavailable', async () => {
+    const port = vi.fn<HostedPort>(async request => {
+      switch (request.command) {
+        case 'commish.rules.read': return { label: '', writable: true, football: 'pin', data: {
+          league, name: 'Test league', revision: 4, rollover: '', sections: [],
+        } };
+        case 'native.assets.read': return { label: '', writable: true, football: 'pin',
+          data: marketAssets() };
+        case 'value.read': return { label: '', writable: true, football: 'pin', data: marketValues() };
+        case 'bids.read': return { label: '', writable: true, football: 'pin', data: bidReading() };
+        case 'native.cap.check': return { label: '', writable: true, football: 'pin', data: capReading() };
+        case 'waivers.read': return { label: '', writable: true, football: 'pin', data: { league,
+          franchise: mine, revision: 4, season: 2026, players: [], claims: [], order: [],
+          orderSource: '', method: '' } };
+        default: throw new Error(`Unexpected ${request.command}`);
+      }
+    });
+
+    const reading = await readWarRoomMarket(context(port));
+
+    expect(reading.players).toEqual([
+      { id: '0001', name: 'Held player', position: 'WR', age: '25.5', string: 'FA', points: '14.2',
+        value: '12.4', minimum: '$85.00M', minimumCents: 8500000000 },
+      { id: '0002', name: 'Facts missing', position: 'Not available yet', age: 'Not available yet',
+        string: 'Not available yet', points: 'Not available yet', value: 'Not available yet',
+        minimum: 'Not available yet' },
+    ]);
+    expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'value.read', mode: 'read',
+      arguments: { league, franchise: '', season: 2026 } }));
+    expect(reading.capRoom).toBe(8500000000);
+    expect(reading.errors).toEqual([]);
+  });
+
+  it('keeps held pool rows when value.read is unavailable and does not invent value or age', async () => {
+    const port = vi.fn<HostedPort>(async request => {
+      if (request.command === 'native.assets.read') return { label: '', writable: true, football: 'pin',
+        data: marketAssets() };
+      if (request.command === 'commish.rules.read') return { label: '', writable: true, football: 'pin',
+        data: { league, name: 'Test league', revision: 4, rollover: '', sections: [] } };
+      if (request.command === 'value.read') throw new Error('Values unavailable');
+      if (request.command === 'bids.read') return { label: '', writable: true, football: 'pin',
+        data: bidReading() };
+      if (request.command === 'native.cap.check') return { label: '', writable: true, football: 'pin',
+        data: capReading() };
+      if (request.command === 'waivers.read') return { label: '', writable: true, football: 'pin', data: {
+        league, franchise: mine, revision: 4, season: 2026, players: [], claims: [], order: [],
+        orderSource: '', method: '' } };
+      throw new Error(`Unexpected ${request.command}`);
+    });
+
+    const reading = await readWarRoomMarket(context(port));
+
+    expect(reading.players?.[0]).toMatchObject({ name: 'Held player', points: '14.2',
+      age: 'Not available yet', value: 'Not available yet', minimum: '$85.00M' });
+    expect(reading.errors).toContain('Error: Values unavailable');
+    expect(port.mock.calls.map(([request]) => request.command)).toContain('value.read');
+  });
+});
 
 describe('War Room hosted market bid workflow', () => {
   it('keeps own bids sealed and omits rival bids and counts from the parsed view', () => {

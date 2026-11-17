@@ -13,6 +13,7 @@ import { parseReceipt } from '../commissioner/proxy';
 import { parsePreview, type Preview } from '../commissioner/preview';
 import type { NativeRequest } from '../commands/native';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
+import { parseNativeValues, type LeaguePlayerValue } from '../data/nativeValues';
 import type { WarRoomContext } from './warroomReads';
 import type { BidFormState, Plan } from '../pool/contract';
 import { planForm } from '../pool/state';
@@ -25,6 +26,18 @@ export type WarRoomOwnBid = { player: string; name: string; contract: string; st
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
   bidRevision?: number; capRoom?: number; writable?: boolean; football?: string;
   targets?: Entry[]; maxYears?: number; errors: string[] };
+function marketFact(value?: string): string {
+  const fact = value?.trim();
+  return !fact || fact === '—' ? unavailable : fact;
+}
+function hostedMarketPlayer(player: WarRoomMarketPlayer, value?: LeaguePlayerValue): WarRoomMarketPlayer {
+  const heldAge = marketFact(player.age);
+  return { ...player, name: marketFact(player.name), position: marketFact(player.position),
+    age: heldAge !== unavailable ? heldAge : value?.ageKnown ? value.age.toFixed(1) : unavailable,
+    string: marketFact(player.string), points: marketFact(player.points),
+    value: value?.available ? value.dynastyPPG.toFixed(1) : unavailable,
+    minimum: player.minimumCents === undefined ? unavailable : marketFact(player.minimum) };
+}
 export type WarRoomBidReading = { bids: WarRoomOwnBid[]; revision: number };
 export function parseWarRoomBidReading(value: unknown, league: string, mine: string): WarRoomBidReading {
   const r = object(value, 'Bids', ['league', 'franchise', 'revision', 'season', 'mode', 'activeBids',
@@ -64,6 +77,7 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
   if (c.native) {
     const native = c.native;
     const port = native.port ?? hostedWorkflow;
+    let season: number | undefined;
     await Promise.all([
       apply(async () => {
         if (native.reading) { result.maxYears = native.reading.settings.maxYears; return; }
@@ -77,6 +91,7 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
         league: native.league } });
         const roster = parseHostedRoster(r.data);
         if (roster.league !== native.league) throw new Error('Pool belongs to another league');
+        season = roster.season;
         result.players = roster.market; result.writable = r.writable; result.football = r.football;
       }),
       apply(async () => { if (native.owner === false) return;
@@ -93,6 +108,16 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       for (const p of waivers.players) if (!result.players?.some(player => player.id === p.player))
         (result.players ??= []).push({ id: p.player, name: p.name, position: unavailable });
     });
+    let playerValues: Map<string, LeaguePlayerValue> | undefined;
+    await apply(async () => {
+      if (!season || !result.players?.length) return;
+      const { data } = await port({ command: 'value.read', mode: 'read', arguments: {
+        league: native.league, franchise: '', season } });
+      const values = parseNativeValues(data, native.league, '', season);
+      playerValues = new Map(values.players.map(value => [value.player, value]));
+    });
+    if (result.players) result.players = result.players.map(player =>
+      hostedMarketPlayer(player, playerValues?.get(player.id)));
     return result;
   }
   await Promise.all([

@@ -126,7 +126,9 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
         change={changeDeal} select={select} lens={lensReading} lensPending={lens.pending} /> :
         tab === 'market' ? <WarRoomMarket context={context}
-          room={headerReading?.runway?.[0]?.room} select={p => select({ token: p.id, name: p.name })} /> :
+          room={headerReading?.runway?.[0]?.room}
+          needs={lensReading && !lensReading.preparing ? lensReading.you.needs : undefined}
+          select={p => select({ token: p.id, name: p.name })} /> :
           tab === 'draft' ? <WarRoomDraft context={context} select={(id, name, position) =>
             setProspect({ id, name, position })}
             /> : <WarRoomPlans context={context} openPocket={() => setDrawer('pocket')} />}
