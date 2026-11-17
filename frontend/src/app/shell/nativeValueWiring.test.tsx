@@ -122,7 +122,14 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
   const port = vi.fn<HostedPort>(async request => {
     const data: Record<string, unknown> = {
       'native.assets.read': assets, 'value.read': values, 'native.cap.check': cap,
-      'native.reserve.check': {}, 'commish.rules.read': {}, 'moves.read': {}, 'standings.read': {},
+      'native.reserve.check': { league: 'native.test', name: 'Test', revision: 4, rosterSeason: 2026,
+        rulesSeason: 2026, seeded: true, source: 'Held player facts', rules: [], corrections: [],
+        franchises: [{ franchise: 'mine', name: 'Mine', abbreviation: 'M',
+          ir: { used: 0, slots: 4, judged: true, words: 'IR 0 of 4' },
+          taxi: { used: 1, slots: 4, judged: true, words: 'Taxi 1 of 4' }, players: [{ player: 'taxi1',
+            name: 'Taxi receiver', squad: 'Taxi', standing: 'stays', words: 'May stay',
+            experienceYears: 2, taxiYearsLeft: 1 }] }] },
+      'commish.rules.read': {}, 'moves.read': {}, 'standings.read': {},
       'week.read': { schedule: { league: 'native.test', franchise: 'mine', season: 2026, revision: 4,
         message: '', games: [] }, current: null, nextWeek: null, message: '' },
       'calendar.read': { league: 'native.test', revision: 4, clock: { windows: [{ id: 'lineup',
@@ -152,8 +159,11 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
     'DEAD CAP TOTAL · $3.00M'])
     expect(contracts).toContain(visible);
   const taxi = renderToStaticMarkup(<HQReserves native kind="taxi" snapshot={reading.snapshot}
-    mine="mine" settings={{ positions: [], taxi: 4 }} values={reading.values} close={() => {}} />);
+    mine="mine" settings={{ positions: [], taxi: 4 }} values={reading.values}
+    reserveExperience={reading.reserveExperience} close={() => {}} />);
   expect(taxi).toContain('7.6');
+  expect(taxi).toContain('NFL YR'); expect(taxi).toContain('TAXI LEFT');
+  expect(taxi).toContain('<td>2</td>'); expect(taxi).toContain('<td>1</td>');
   for (const command of ['value.read', 'native.cap.check', 'calendar.read', 'contract.quote'])
     expect(port).toHaveBeenCalledWith(expect.objectContaining({ command }));
 });
