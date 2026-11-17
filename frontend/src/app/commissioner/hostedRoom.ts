@@ -180,11 +180,11 @@ function createRoom<R extends HostedLeagueReading>(
       store.setState({
         message: 'The server recorded your change. Refreshing the league.',
       });
-    } catch {
+    } catch (cause) {
       if (turn !== generation) return;
       store.setState({
         stale: true,
-        error:
+        error: cause instanceof Error ? cause.message :
           'The change was not confirmed. It may have reached the server. ' +
           'Refresh before trying again; nothing will be sent automatically.',
       });
