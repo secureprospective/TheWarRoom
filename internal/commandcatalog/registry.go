@@ -104,7 +104,7 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 }
 
 func serverWorkflowEntries() []Entry {
-	commands := nativeDraftQueueCommands()
+	commands := append(nativeDraftQueueCommands(), tradeDraftCommands()...)
 	entries := make([]Entry, 0, len(commands))
 	for _, command := range commands {
 		entries = append(entries, Entry{ID: command.ID, Label: commandLabel(command.ID), Definition: command})

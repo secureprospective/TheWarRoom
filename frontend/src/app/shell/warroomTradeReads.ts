@@ -73,11 +73,8 @@ export async function readWarRoomPreview(c: WarRoomContext, catalog: WarRoomCata
     return { reasons: r.value.preview.reasons, teams: r.value.preview.teams };
   }
   const native = c.native;
-  const assets = (tokens: string[], from: string, to: string) => tokens.map(token => {
-    const a = catalog.teams.find(t => t.id === from)?.assets.find(a => a.token === token);
-    if (!a) throw new Error('This asset is no longer on the selected shelf');
-    return a.pick ? { from, to, ...a.pick } : { from, to, player: token };
-  });
+  const assets = (tokens: string[], from: string, to: string) => tokens.map(token =>
+    savedTradeAsset(token, from, to));
   const response = await (native.port ?? hostedWorkflow)({ command: 'trade.offer', mode: 'preview',
     arguments: { league: native.league, command: 'trade.offer', expected: catalog.revision ?? 0,
       request: newKey(), reason: '', effective: 'now', visibility: 'private', args: { trade: {
@@ -128,6 +125,16 @@ export async function readWarRoomPartner(c: WarRoomContext, partner: string) {
   const rows = checked.override?.rows ?? checked.computed;
   const row = rows.find(r => r.franchise === partner);
   return { record: row?.record, room: nativeHQCap(cap.data, native.league, partner)[0]?.room };
+}
+
+function savedTradeAsset(token: string, from: string, to: string) {
+  if (!token.startsWith('pick:')) return { from, to, player: token };
+  const [, season, round, original, ...extra] = token.split(':');
+  const parsedSeason = Number(season), parsedRound = Number(round);
+  if (extra.length || !Number.isInteger(parsedSeason) || !Number.isInteger(parsedRound) ||
+    !original || parsedSeason < 1 || parsedRound < 1)
+    throw new Error('This saved asset is no longer available');
+  return { from, to, season: parsedSeason, round: parsedRound, original };
 }
 
 export async function executeWarRoomOffer(c: WarRoomContext, catalog: WarRoomCatalog,

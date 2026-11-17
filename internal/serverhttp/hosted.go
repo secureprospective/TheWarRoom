@@ -565,10 +565,10 @@ func (a accountAdmission) checkRoleTarget(ctx context.Context, target string) er
 }
 
 func admitLeagueAccess(access commissioner.Access, policy governance.State, principal governance.Principal, records []commissioner.Record) error {
-	if privatePlayerOperation(access.Operation) {
+	if privateOwnerPersonalOperation(access.Operation) {
 		seat, ok := policy.Franchise(governance.FranchiseID(access.Franchise))
 		if !ok || seat.Seat != principal {
-			return fmt.Errorf("private player data requires its seated franchise owner")
+			return fmt.Errorf("private owner data requires its seated franchise owner")
 		}
 		return nil
 	}
@@ -665,10 +665,22 @@ func ServeHosted(ctx context.Context, listener net.Listener, certificate tls.Cer
 	return serveFixture(ctx, listener, certificate, hosted.Handler())
 }
 
-func privatePlayerOperation(operation string) bool {
+func privateOwnerPersonalOperation(operation string) bool {
+	if privateTradeDraftOperation(operation) {
+		return true
+	}
 	switch operation {
 	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchRead,
 		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder:
+		return true
+	default:
+		return false
+	}
+}
+
+func privateTradeDraftOperation(operation string) bool {
+	switch operation {
+	case leagueservice.TradeDraftRead, leagueservice.TradeDraftSave, leagueservice.TradeDraftDelete:
 		return true
 	default:
 		return false

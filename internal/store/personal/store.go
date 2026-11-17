@@ -56,8 +56,12 @@ func (r RawChange) Validate() error {
 func (r RawChange) ValidateFields() error { return r.validateFields() }
 
 func (r RawChange) validateFields() error {
-	if !slices.Contains([]string{"watch", "bait", "note", "draft"}, r.Kind) {
+	if !slices.Contains([]string{"watch", "bait", "note", "draft", "proposal"}, r.Kind) {
 		return fmt.Errorf("personal: invalid list")
+	}
+	// Proposal writes couple a generated ID, JSON bound and team cap in one store operation.
+	if r.Kind == "proposal" {
+		return fmt.Errorf("personal: trade proposals require proposal operations")
 	}
 	if err := r.validateEntity(); err != nil {
 		return err

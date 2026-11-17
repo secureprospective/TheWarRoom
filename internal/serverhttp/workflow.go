@@ -54,6 +54,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	}
 	pin := h.pinFor(r.Context(), league)
 	privateQueueSet := raw.Command == "draft.queue.set"
+	privateDraftChange := raw.Command == leagueservice.TradeDraftSave || raw.Command == leagueservice.TradeDraftDelete
 	if message := workflowFootballRefusal(raw, pin); message != "" {
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, message, http.StatusConflict)
@@ -73,7 +74,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
-	writable := location.Writable && (!pin.Missing || privateQueueSet)
+	writable := location.Writable && (!pin.Missing || privateQueueSet || privateDraftChange)
 	response := WorkflowResponse{Label: location.Label, Writable: writable, Football: pin.Digest, Data: data}
 	if raw.Mode == "read" {
 		writeHostedReading(w, r, response)
@@ -100,7 +101,7 @@ func workflowRefusal(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func workflowFootballRefusal(raw RawWorkflow, pin LeaguePin) string {
-	if raw.Mode == "read" || raw.Command == "draft.queue.set" {
+	if raw.Mode == "read" || raw.Command == "draft.queue.set" || privateTradeDraftOperation(raw.Command) {
 		return ""
 	}
 	if pin.Digest == "" {
@@ -115,7 +116,7 @@ func workflowFootballRefusal(raw RawWorkflow, pin LeaguePin) string {
 // workflowData runs a workflow, answering a league-state reading from the reply cache when it holds one.
 // The envelope (label, writable) is never cached: it is read for every request.
 func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service, raw RawWorkflow, league string) (json.RawMessage, error) {
-	if raw.Mode != "read" || raw.Command == "draft.queue.read" {
+	if raw.Mode != "read" || raw.Command == "draft.queue.read" || raw.Command == leagueservice.TradeDraftRead {
 		return runWorkflow(ctx, service, raw)
 	}
 	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.pinFor(ctx, league).cacheKey()+"|"+raw.Football)
