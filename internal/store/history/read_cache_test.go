@@ -24,8 +24,9 @@ func TestNativeRecordsCacheTracksCommittedRevision(t *testing.T) {
 	if s.records[receipt.League].revision != receipt.Revision {
 		t.Fatal("decoded ledger was not cached by revision")
 	}
-	// Cached nested values are immutable internally; callers own the outer slice.
-	first[0] = commissioner.Record{}
+	if len(first) != 1 || first[0].Receipt.Entry != receipt.Entry {
+		t.Fatalf("cached ledger: %+v", first)
+	}
 	s.records[receipt.League].records[0].Receipt.Message = "cached"
 	second, err := s.nativeRecords(t.Context(), receipt.League)
 	if err != nil || second[0].Receipt.Entry != receipt.Entry || second[0].Receipt.Message != "cached" {

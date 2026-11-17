@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/deepclone"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -63,6 +64,67 @@ func (p pinnedResultLineups) WeekLineup(_ context.Context, _ []commissioner.Reco
 		player = "0099"
 	}
 	return commissioner.WeekLineup{Set: true, Starters: []commissioner.Starter{{Player: player}}}, nil
+}
+
+func TestCanonicalSleeperViewsShareImmutableWeeklyLines(t *testing.T) {
+	raw := scoringImport(t)
+	qb := raw.Players["0099"]
+	qb.Sleeper = "123"
+	raw.Players["0099"] = qb
+	weeks, err := source.ReadWeeks(strings.NewReader(raw.Stats[0].Weekly))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantWeeks := deepclone.Of(weeks)
+	body := source.RawSleeperWeek{Season: 2026, Week: 1, Body: `{"123":{"rush_yac":5}}`}
+	canonical, _, err := raw.attachSleeper(weeks, []RawFootballWeek{{Sleeper: []source.RawSleeperWeek{body}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(weeks, wantWeeks) {
+		t.Fatal("building the canonical Sleeper view changed weekly source lines")
+	}
+	merged, ok := canonical[canonicalWeek{"0099", 1}]
+	if !ok || merged.Line.Quantities["rushing_yards_after_contact"] == 0 {
+		t.Fatalf("Sleeper gap was not merged: %+v", merged.Line.Quantities)
+	}
+	var unmergedPlayer string
+	for player, sourcePlayer := range raw.Players {
+		if sourcePlayer.Sleeper == "" {
+			for _, week := range weeks {
+				if week.GSIS == sourcePlayer.Identity {
+					unmergedPlayer = player
+					break
+				}
+			}
+		}
+		if unmergedPlayer != "" {
+			break
+		}
+	}
+	if unmergedPlayer == "" {
+		t.Fatal("fixture has no unmerged canonical week")
+	}
+	pinned := PinnedFootball{raw: raw, stats: []heldFile{{canonical: canonical}}}
+	scope := source.RawNativeScope{Player: unmergedPlayer, Season: 2026, Week: 1}
+	first, err := pinned.CanonicalPlayerWeekStats(t.Context(), scope)
+	if err != nil || len(first) != 1 || first[0].Week == nil {
+		t.Fatalf("read canonical week: %+v %v", first, err)
+	}
+	var stat leaguerules.StatID
+	for id := range first[0].Week.Line.Quantities {
+		stat = id
+		break
+	}
+	want := first[0].Week.Line.Quantities[stat]
+	first[0].Week.Line.Quantities[stat] = want + 1
+	second, err := pinned.CanonicalPlayerWeekStats(t.Context(), scope)
+	if err != nil || second[0].Week.Line.Quantities[stat] != want {
+		t.Fatalf("caller changed the canonical view: %+v %v", second, err)
+	}
+	if !reflect.DeepEqual(weeks, wantWeeks) {
+		t.Fatal("a canonical reader changed weekly source lines")
+	}
 }
 
 func TestPinnedScoringResultsSurviveSourceLossAndReopen(t *testing.T) {
