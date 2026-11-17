@@ -72,6 +72,8 @@ describe('War Room hosted market readings', () => {
           data: marketAssets() };
         case 'value.read': return { label: '', writable: true, football: 'pin', data: marketValues() };
         case 'bids.read': return { label: '', writable: true, football: 'pin', data: bidReading() };
+        case 'player.watch.read': return { label: '', writable: true, football: 'pin', data: {
+          league, players: [], } };
         case 'native.cap.check': return { label: '', writable: true, football: 'pin', data: capReading() };
         case 'waivers.read': return { label: '', writable: true, football: 'pin', data: { league,
           franchise: mine, revision: 4, season: 2026, players: [], claims: [], order: [],
@@ -92,6 +94,9 @@ describe('War Room hosted market readings', () => {
     expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'value.read', mode: 'read',
       arguments: { league, franchise: '', season: 2026 } }));
     expect(reading.capRoom).toBe(8500000000);
+    expect(reading.targets).toEqual([]);
+    expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'player.watch.read', mode: 'read',
+      arguments: { league } }));
     expect(reading.errors).toEqual([]);
   });
 
@@ -104,6 +109,8 @@ describe('War Room hosted market readings', () => {
       if (request.command === 'value.read') throw new Error('Values unavailable');
       if (request.command === 'bids.read') return { label: '', writable: true, football: 'pin',
         data: bidReading() };
+      if (request.command === 'player.watch.read') return { label: '', writable: true, football: 'pin',
+        data: { league, players: [] } };
       if (request.command === 'native.cap.check') return { label: '', writable: true, football: 'pin',
         data: capReading() };
       if (request.command === 'waivers.read') return { label: '', writable: true, football: 'pin', data: {

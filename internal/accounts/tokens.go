@@ -81,7 +81,8 @@ func DelegableCommand(command string) bool {
 	if command == commissioner.Revert || command == commissioner.Create {
 		return false
 	}
-	if strings.HasSuffix(command, ".read") || command == "player.note.set" || command == "player.watch.set" || command == "contract.quote" || command == commissioner.RulesSet {
+	if strings.HasSuffix(command, ".read") || command == "player.note.set" || command == "player.watch.set" ||
+		command == "player.watch.order" || command == "contract.quote" || command == commissioner.RulesSet {
 		return true
 	}
 	_, err := commissioner.DefinitionFor(command)

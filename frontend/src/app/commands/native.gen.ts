@@ -4616,6 +4616,30 @@ const schema325 = {
   ],
   Items:null,
 } as const;
+const schema326 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawPlayerWatchOrder.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"player",Optional:false,Schema:schema2},
+    {Name:"with",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema327 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawPlayerWatchReadScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
 export const nativeCommands = {
 "commish.actor.read": {
   definition: {
@@ -7645,5 +7669,43 @@ export const nativeCommands = {
     "Arguments": schema325
   },
   phrase: "set player watch",
+},
+"player.watch.order": {
+  definition: {
+    "ID": "player.watch.order",
+    "Method": "SetPlayerWatchOrder",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "none",
+    "Facts": "private-player-data",
+    "Safeguards": "authenticated seated franchise; no request franchise; uncached private entries",
+    "Arguments": schema326
+  },
+  phrase: "order player watch",
+},
+"player.watch.read": {
+  definition: {
+    "ID": "player.watch.read",
+    "Method": "TargetPlayerWatches",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "private-player-data",
+    "Safeguards": "authenticated seated franchise; no request franchise; uncached private entries",
+    "Arguments": schema327
+  },
+  phrase: "read player watch",
 },
 } as const;

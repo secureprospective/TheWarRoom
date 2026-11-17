@@ -84,6 +84,15 @@ func nativeReads() []Command {
 	}
 	return out
 }
+func playerPersonalNativeReads() []Command {
+	return []Command{{ID: leagueservice.PlayerWatchRead, Method: "TargetPlayerWatches", Version: "1",
+		Role: "domain", Gravity: "G0", Availability: "server",
+		Arguments: Shape(reflect.TypeFor[leagueservice.RawPlayerWatchReadScope](),
+			"RawPlayerWatchReadScope.Validate"), Permission: "franchise-owner",
+		Modes: []Mode{Read}, Undo: "none", Facts: "private-player-data",
+		Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"}}
+}
+
 func NativeReadShape(method, fields string) Schema {
 	switch method {
 	case "TargetLeagueCalendar":

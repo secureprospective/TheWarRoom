@@ -654,7 +654,8 @@ func ServeHosted(ctx context.Context, listener net.Listener, certificate tls.Cer
 
 func privatePlayerOperation(operation string) bool {
 	switch operation {
-	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchSet:
+	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchRead,
+		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder:
 		return true
 	default:
 		return false
