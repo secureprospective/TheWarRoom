@@ -107,10 +107,12 @@ export function HQContracts({ snapshot, mine, contracts, runway, facts, select, 
   </div></section>;
 }
 export function HQReserves({ kind, snapshot, mine, settings, injuries, close, native = false, week,
-  countedIRPay, assets, values, reserveNotes, activate }: {
+  countedIRPay, assets, values, reserveNotes, reserveExperience, activate }: {
   kind: 'ir' | 'taxi'; snapshot: Snapshot; mine: string; settings: HQSettings; injuries?: Injury[]; close:
     () => void; native?: boolean; week?: number; countedIRPay?: number; assets?: AssetBoard;
-      values?: LeagueValues; reserveNotes?: Map<string, string>; activate?: (id: string) => void;
+      values?: LeagueValues; reserveNotes?: Map<string, string>;
+      reserveExperience?: Map<string, { experienceYears?: number; taxiYearsLeft?: number }>;
+      activate?: (id: string) => void;
 }) {
   const roster = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players ?? [];
   const players = roster.filter(p => p.rosterStatus === (kind === 'ir' ? 'IR' : 'TAXI_SQUAD'));
@@ -124,6 +126,10 @@ export function HQReserves({ kind, snapshot, mine, settings, injuries, close, na
     return injury?.returnWeek && injury.returnSeason === snapshot.league.value.season ? [{ ...injury, name:
       snapshot.players.value.find(v => v.id === p.id)?.name ?? p.id }] : [];
   }).sort((a, b) => a.returnWeek! - b.returnWeek!);
+  const hasTaxiExperience = native && kind === 'taxi' && players.some(p => {
+    const held = reserveExperience?.get(p.id);
+    return held?.experienceYears !== undefined || held?.taxiYearsLeft !== undefined;
+  });
 
   return <section className="bdrawer open" aria-label="Roster drawer"><div className="bd-head"><h2>{kind
     === 'ir' ? 'Injured reserve' : 'Taxi squad'}</h2>
@@ -131,7 +137,8 @@ export function HQReserves({ kind, snapshot, mine, settings, injuries, close, na
       onAction={close}>ESC</HQAct></div>
     <div className="bd-body"><div className="bd-main"><table className="ct bt"><thead><tr>{(kind === 'ir'
       ? ['POS', 'PLAYER', 'INJURY', 'BACK', 'IN', 'SALARY', 'NOTE', ''] : ['POS', 'PLAYER',
-        'SALARY', 'VALUE', 'NOTE', '']).map((label, i) => <th key={i}>{label}</th>)}</tr></thead>
+        ...(hasTaxiExperience ? ['NFL YR', 'TAXI LEFT'] : []), 'SALARY', 'VALUE', 'NOTE', ''])
+        .map((label, i) => <th key={i}>{label}</th>)}</tr></thead>
       <tbody>{players.map(p => { const player = snapshot.players.value.find(v => v.id === p.id); const
         injury = injuries?.find(i => i.id === p.id);
         const hostedValue = values?.players.find(v => v.player === p.id);
@@ -147,7 +154,9 @@ export function HQReserves({ kind, snapshot, mine, settings, injuries, close, na
               unavailable}</td><td>{money(p.salary)}</td><td>{injury?.returnReason ||
                 reserveNotes?.get(p.id) ||
             unavailable}</td></>
-            : <><td>{money(p.salary)}</td><td>{value?.held ? value.text : unavailable}</td>
+            : <>{hasTaxiExperience && <><td>{reserveExperience?.get(p.id)?.experienceYears ??
+                unavailable}</td><td>{reserveExperience?.get(p.id)?.taxiYearsLeft ?? unavailable}</td></>}
+              <td>{money(p.salary)}</td><td>{value?.held ? value.text : unavailable}</td>
               <td>{reserveNotes?.get(p.id) ??
                 snapshot.eligibility.players[p.id]?.taxi.reason ?? unavailable}</td></>}
           <td>{native ? <HQAct className="btn" disabled={!activate}

@@ -110,22 +110,26 @@ func taxiVerdict(rules leaguerules.TaxiRules, f PlayerFacts) ReserveVerdict {
 func TestTaxiExperienceByCalendarYears(t *testing.T) {
 	for _, c := range []struct {
 		draft int
+		years int
+		left  int
 		stand Standing
 		words string
 	}{
-		{2026, Stays, "May stay on the taxi squad: in his 1st NFL season; the limit is 3"},
-		{2024, Stays, "May stay on the taxi squad: in his 3rd NFL season; the limit is 3"},
-		{2023, MustLeave, "Must come off the taxi squad: in his 4th NFL season; the limit is 3"},
+		{2026, 1, 2, Stays, "May stay on the taxi squad: in his 1st NFL season; the limit is 3"},
+		{2024, 3, 0, Stays, "May stay on the taxi squad: in his 3rd NFL season; the limit is 3"},
+		{2023, 4, 0, MustLeave, "Must come off the taxi squad: in his 4th NFL season; the limit is 3"},
 	} {
 		// Career games are deliberately the opposite of what the calendar says: the rule is calendar years.
 		got := taxiVerdict(legacyTaxi(), PlayerFacts{DraftYear: c.draft, DraftYearHeld: true,
 			CareerGames: 200 * boolInt(c.stand == Stays), CareerGamesHeld: true})
-		if got.Standing != c.stand || got.Words != c.words {
+		if got.Standing != c.stand || got.Words != c.words || got.ExperienceYears == nil ||
+			*got.ExperienceYears != c.years || got.TaxiYearsLeft == nil || *got.TaxiYearsLeft != c.left {
 			t.Errorf("drafted %d: %+v", c.draft, got)
 		}
 	}
 	if got := taxiVerdict(legacyTaxi(), PlayerFacts{CareerGamesHeld: true}); got.Standing != Unclear ||
-		got.Words != "Can't tell: his draft year is not held" {
+		got.Words != "Can't tell: his draft year is not held" || got.ExperienceYears != nil ||
+		got.TaxiYearsLeft != nil {
 		t.Fatalf("%+v", got)
 	}
 }

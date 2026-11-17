@@ -19,11 +19,13 @@ const (
 
 // ReserveVerdict is one IR or taxi player's plain verdict.
 type ReserveVerdict struct {
-	Player   string   `json:"player"`
-	Name     string   `json:"name"`
-	Squad    string   `json:"squad"`
-	Standing Standing `json:"standing"`
-	Words    string   `json:"words"`
+	ExperienceYears *int     `json:"experienceYears,omitempty"`
+	TaxiYearsLeft   *int     `json:"taxiYearsLeft,omitempty"`
+	Player          string   `json:"player"`
+	Name            string   `json:"name"`
+	Squad           string   `json:"squad"`
+	Standing        Standing `json:"standing"`
+	Words           string   `json:"words"`
 }
 
 // SquadUse is how full one reserve squad is.
