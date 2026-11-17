@@ -123,7 +123,7 @@ func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 	// itself in fixed words. None of the injected detail crosses the Tunnel.
 	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}}}
 	defer client.CloseIdleConnections()
-	public := func(method, path string) (int, string) {
+	public := func(method, path string) (int, string, http.Header) {
 		t.Helper()
 		request, err := http.NewRequestWithContext(t.Context(), method, "https://"+listener.Addr().String()+path, strings.NewReader("{}"))
 		if err != nil {
@@ -139,16 +139,17 @@ func TestFaultsShowOnPrivateDashboardOnly(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return response.StatusCode, string(body)
+		return response.StatusCode, string(body), response.Header.Clone()
 	}
 	for _, path := range []string{serverstatus.StatusPath, "/status", "/healthz", "/metrics", "/ready", requestsPath} {
-		if code, body := public(http.MethodGet, path); code != http.StatusNotFound || body != "404 page not found\n" {
+		if code, body, _ := public(http.MethodGet, path); code != http.StatusNotFound || body != "404 page not found\n" {
 			t.Errorf("public %s answered %d %q", path, code, body)
 		}
 	}
-	if code, body := public(http.MethodPost, serverhttp.LoginPath); code != http.StatusServiceUnavailable || body != manager.CheckWrite().Error()+"\n" ||
+	if code, body, headers := public(http.MethodPost, serverhttp.LoginPath); code != http.StatusServiceUnavailable ||
+		headers.Get("Retry-After") != "2" || body != manager.CheckWrite().Error()+"\n" ||
 		strings.Contains(body, "SENTINEL") || strings.Contains(body, "history") || strings.Contains(body, "clock") {
-		t.Errorf("paused write leaked or changed: %d %q", code, body)
+		t.Errorf("paused write leaked or changed: %d retry=%q %q", code, headers.Get("Retry-After"), body)
 	}
 
 	// The league server stops: the dashboard says so instead of going blank.

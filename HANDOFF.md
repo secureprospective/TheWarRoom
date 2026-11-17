@@ -1,7 +1,7 @@
 # Handoff
 
-- Baton: Christopher, 2026-11-17.
-- State: PR #318 is open against `main`, not draft, not merged. Hosted HQ reads wired; player value/contract/cap/taxi/decision fields render from existing hosted payloads. Inspector local reads are mode-gated; player-name joins are indexed; unsupported taxi columns removed. `pnpm test` (881), `pnpm build`, `make lint`, and pre-push verification pass. CI/review pending.
-- Next: review PR #318/CI; do not merge.
-- Blocked on: `tidy-check.sh` reports six dangling Chromium symlinks under `~/scratch/bee-resume-v14-{browser,render2}` outside this worktree; left untouched due scope.
-- Follow-ups: existing HQ what-if drawer duplication and `hqReads.ts` subscriptions remain unchanged.
+- Baton: Bee, 2026-11-18.
+- State: Read-only review of the 0.10.1 stress evidence confirms 2,482 public-path 502s (1,282 HTTP requests + 1,200 SSE opens), all during the 15 scripted server/container stops; none outside. The sampled origin was build `c4d38df6c`. The Go server cannot return a response while killed/stopped; the OpenRC Tunnel intentionally remains connected and forwards to the stopped origin. Current main already contains #316, which routes server-generated 503 refusals through `writeUnavailable` (`Retry-After: 2`); the stress run predates that change.
+- Next: record source attribution and a proposed gate measurement in `docs/roadmap/RELEASE-0.10-STRESS-RESULT.md` without silently changing Christopher's gate; strengthen the real hosted-handler test for app-generated 503 + Retry-After; run lint and race tests, then open a PR without merging.
+- Blocked: 503 cannot be emitted by the origin while its process/container is down. Eliminating that edge response would require a separately surviving proxy/edge fallback; the smallest honest change is to report planned-stop errors separately and judge gateway errors only while the origin is ready.
+- Tried and rejected: changing the Cloudflare Tunnel dependency to stop with the server would remove the connector but cannot make the edge return the app's 503; graceful shutdown cannot cover SIGKILL or a stopped CT. No live service was restarted.

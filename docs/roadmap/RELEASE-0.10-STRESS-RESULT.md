@@ -41,3 +41,35 @@ Not measured at 8, 32 or 64 devices: the tool is fixed at 80.
 5. Every refusal is the same generic 409 text; the reason is only in the server log.
 6. The memory sampler dies at the first container stop (lab tool).
 7. Request storm (gates 9–11) not run: the server already refuses at 80 devices. Run it after the speed fix.
+
+## Follow-up: 0.10.1 scripted-stop 502 attribution (2026-11-17)
+
+**Run:** server build `0.10.1-11-gc4d38df6c` (`c4d38df6c`), 32 owners / 80 devices, 15 scripted `kill9`,
+container-stop and service-restart cycles. Evidence: `~/fleet/runs/pulse-lab2/RESULT.md`; lab OUTDIR
+`/root/stress-main-1116` (read-only review).
+
+- The public-path observers recorded 1,282 HTTP request 502s plus 1,200 SSE-open 502s (2,482 total),
+  all inside the broad scripted-cycle markers and none outside. One HTTP 520 was also inside. The 502 body
+  was `error code: 502`. The run's 15 recoveries took 11.16–24.62 seconds and reached the public endpoint.
+- These 502s came from the Cloudflare Tunnel/edge proxy path when its configured origin was unavailable,
+  not from a running `twr-server`. The lab client used the public hostname; the cycle script explicitly
+  SIGKILLs the server, stops the whole container, or stops the service. During a SIGKILL or container stop
+  there is no Go process capable of writing an HTTP response. For service stops, `main` cancels the hosted
+  context and `ServeHosted` closes the HTTP server. `cloudflared.initd` intentionally leaves the Tunnel
+  running across a server restart, and the installed ingress forwards directly to `https://127.0.0.1:8443`.
+  The captured report has no Cloudflare-Ray or connector request log, so it identifies the Tunnel boundary,
+  not which Cloudflare-side component synthesized each error body.
+- The same run recorded 19,192 request 503s. The broader header observer saw 20,569 503s: 19,284 carried
+  `Retry-After: 2`; 1,285 did not. The missing-header responses included the server's backup-paused message
+  and clustered around restarts. The run predates main commit `4f76130f7` (#316), which routes the server's
+  503 refusal paths through `writeUnavailable`. Current source and `TestWriteUnavailableSetsRetryAfter`
+  cover that application response, but the new public behavior has not been stress-tested on that commit.
+
+**Disposition — proposal pending Christopher's approval; the existing gate is unchanged here.** An absent
+origin cannot return `503` or `Retry-After`; achieving that would require a separately surviving proxy or an
+edge fallback, not a Go shutdown handler or an origin setting. For line 14, separate planned-stop availability
+from the “no gateway errors while up” gate: keep the 20-second pre-stop burst in the up-server measurement;
+start the excluded interval at the actual stop command and end it only after a known origin-ready response;
+record 502/520s inside that interval separately and judge them against the existing recovery-time gate. Once
+ready, any 502/520 remains a failure. Count origin-generated 503s separately and require every one to carry
+`Retry-After`; rerun this check on a build containing #316 before claiming that header gate passes.
