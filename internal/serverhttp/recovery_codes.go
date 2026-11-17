@@ -55,7 +55,7 @@ func (r RecoveryCodesResponse) GoString() string { return r.String() }
 // printRecoveryCodes replaces every unused code. It needs the password and a fresh authenticator proof.
 func (h Hosted) printRecoveryCodes(w http.ResponseWriter, r *http.Request) {
 	if h.Recovery == nil {
-		http.Error(w, "recovery unavailable", http.StatusServiceUnavailable)
+		writeUnavailable(w, "recovery unavailable")
 		return
 	}
 	var raw RawRecoveryCodesRequest

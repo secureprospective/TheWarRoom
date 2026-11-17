@@ -84,7 +84,7 @@ func (h Hosted) Handler() http.Handler {
 func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	if h.Store == nil || h.Sessions == nil || h.TOTP == nil || h.Enrollment == nil || h.Worker == nil {
-		http.Error(w, "account service unavailable", http.StatusServiceUnavailable)
+		writeUnavailable(w, "account service unavailable")
 		return
 	}
 	if r.TLS == nil || !originAdmissible(r) {
@@ -258,7 +258,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowHost, err := h.workflowHost(ctx, host, raw)
 	if err != nil {
-		http.Error(w, "football reference unavailable", http.StatusServiceUnavailable)
+		writeUnavailable(w, "football reference unavailable")
 		return
 	}
 	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).WithLiveGames(h.LiveGames)
@@ -315,7 +315,7 @@ func (h Hosted) admitLeague(ctx context.Context, w http.ResponseWriter, league s
 	}
 	if h.LeagueAdmission != nil {
 		if err := h.LeagueAdmission(league); err != nil {
-			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			writeUnavailable(w, err.Error())
 			return pin, false
 		}
 	}
@@ -694,7 +694,7 @@ func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 					continue
 				}
 				if err := admission(); err != nil {
-					http.Error(w, err.Error(), http.StatusServiceUnavailable)
+					writeUnavailable(w, err.Error())
 					return
 				}
 			}
@@ -723,9 +723,13 @@ func (h Hosted) writeFailure(w http.ResponseWriter, _ *http.Request, message str
 func (h Hosted) failure(w http.ResponseWriter, admission func() error, message string, status int) {
 	if admission != nil {
 		if err := admission(); err != nil {
-			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			writeUnavailable(w, err.Error())
 			return
 		}
+	}
+	if status == http.StatusServiceUnavailable {
+		writeUnavailable(w, message)
+		return
 	}
 	http.Error(w, message, status)
 }
@@ -744,7 +748,6 @@ func (h Hosted) sessionFailure(w http.ResponseWriter, r *http.Request, err error
 		return
 	}
 	logBusyRefusal(r.Context(), "session-busy")
-	w.Header().Set("Retry-After", busyRetryAfter)
 	h.writeFailure(w, r, BusyMessage, http.StatusServiceUnavailable)
 }
 

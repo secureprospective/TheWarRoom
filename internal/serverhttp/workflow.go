@@ -96,8 +96,7 @@ func logWorkflowFailure(raw RawWorkflow, err error) {
 func workflowRefusal(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 		logBusyRefusal(r.Context(), "request-deadline")
-		w.Header().Set("Retry-After", busyRetryAfter)
-		http.Error(w, "The league server is busy. Try again in a few seconds.", http.StatusServiceUnavailable)
+		writeUnavailable(w, "The league server is busy. Try again in a few seconds.")
 		return
 	}
 	http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)

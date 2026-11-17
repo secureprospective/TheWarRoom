@@ -395,7 +395,7 @@ func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopS
 		unauthorized := response.StatusCode == http.StatusUnauthorized
 		refusal := desktopRefusal(path, response.StatusCode)
 		refusal = desktopWorkflowRefusal(response, path, refusal)
-		if response.StatusCode == http.StatusServiceUnavailable && response.Header.Get("Retry-After") != "" {
+		if response.StatusCode == http.StatusServiceUnavailable {
 			refusal = &retryAfterRefusal{after: response.Header.Get("Retry-After"), err: refusal}
 		}
 		return nil, unauthorized, refusal

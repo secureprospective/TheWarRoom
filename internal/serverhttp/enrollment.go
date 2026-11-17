@@ -32,7 +32,7 @@ func EnrollmentHandler(service *accounts.EnrollmentService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		if service == nil {
-			http.Error(w, "enrollment unavailable", http.StatusServiceUnavailable)
+			writeUnavailable(w, "enrollment unavailable")
 			return
 		}
 		if r.TLS == nil || r.Header.Get("Origin") != "" || r.URL.RawQuery != "" {

@@ -76,13 +76,13 @@ func joinFailure(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, accounts.ErrJoinCredentials):
 		http.Error(w, accounts.ErrJoinCredentials.Error(), http.StatusBadRequest)
 	default:
-		http.Error(w, "join unavailable; try again", http.StatusServiceUnavailable)
+		writeUnavailable(w, "join unavailable; try again")
 	}
 }
 
 func (h Hosted) join(w http.ResponseWriter, r *http.Request) {
 	if h.Join == nil {
-		http.Error(w, "join links are not enabled on this server", http.StatusServiceUnavailable)
+		writeUnavailable(w, "join links are not enabled on this server")
 		return
 	}
 	if r.Method != http.MethodPost {
@@ -106,7 +106,7 @@ func (h Hosted) join(w http.ResponseWriter, r *http.Request) {
 	if h.LeagueAdmission != nil {
 		// A claim commits an account, then a seat in the league: refuse it before either when the league is paused.
 		if err := h.LeagueAdmission(raw.Claim.League); err != nil {
-			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			writeUnavailable(w, err.Error())
 			return
 		}
 	}
@@ -119,7 +119,7 @@ func (h Hosted) join(w http.ResponseWriter, r *http.Request) {
 	if h.Recovery != nil {
 		codes, err := h.Recovery.IssueCodes(r.Context(), account)
 		if err != nil {
-			http.Error(w, "your account was created, but recovery codes could not be issued; sign in and print a new set", http.StatusServiceUnavailable)
+			writeUnavailable(w, "your account was created, but recovery codes could not be issued; sign in and print a new set")
 			return
 		}
 		response.RecoveryCodes = codes.Codes[:]
