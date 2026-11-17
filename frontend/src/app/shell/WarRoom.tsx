@@ -137,10 +137,10 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}
       </div><WarRoomTrayMessage problems={[header.error ?? '', calendar.error ?? '', lens.error ?? '',
         directing.error ?? '', ...headerReading?.errors ?? []]} />
-      <WarRoomAct className="btn sp" disabled>SAVE TO POCKET</WarRoomAct>
+      <WarRoomAct className="btn sp" disabled title="Not available yet">SAVE TO POCKET</WarRoomAct>
       <WarRoomAct className="btn" onAction={() =>
           changeDeal({ ...deal, give: [], get: [] })}>
-        CLEAR</WarRoomAct><WarRoomAct className="btn solid g2" disabled>SEND</WarRoomAct></div>
+        CLEAR</WarRoomAct>{!native && <WarRoomAct className="btn solid g2" disabled>SEND</WarRoomAct>}</div>
       {drawer && <WarRoomDrawers context={context} drawer={drawer} close={() => setDrawer(undefined)}
         openOffer={id => { setOffer(id); setDrawer(undefined); }} />}
     </main>{offer && !native ? <aside className="insp" aria-label="Inspector">

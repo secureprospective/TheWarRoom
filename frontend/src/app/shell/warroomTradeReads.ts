@@ -8,6 +8,7 @@ import { parseHostedRoster } from '../commissioner/hostedReadings';
 import { nativeHQAssets } from '../commissioner/hqReading';
 import { parsePreview } from '../commissioner/preview';
 import { newKey } from '../commissioner/forms';
+import { parseReceipt } from '../commissioner/proxy';
 import type { WarRoomContext } from './warroomReads';
 import { finite } from './hqPlayerData';
 import { money, rosterContract } from './hqModel';
@@ -124,10 +125,35 @@ export async function readWarRoomPartner(c: WarRoomContext, partner: string) {
   const { nativeHQCap } = await import('../commissioner/hqReading');
   const checked = parseHostedStandings(standings.data);
   if (checked.league !== native.league) throw new Error('Partner standings belong to another league');
-  const raw = standings.data as { computed: { franchise: string; record: string }[];
-    override?: { rows: { franchise: string; record: string }[] } };
-  const rows = raw.override?.rows ?? raw.computed;
-  const row = rows.find(r => text(r.franchise, 'Standing franchise') === partner);
-  return { record: row && text(row.record, 'Partner record'),
-    room: nativeHQCap(cap.data, native.league, partner)[0]?.room };
+  const rows = checked.override?.rows ?? checked.computed;
+  const row = rows.find(r => r.franchise === partner);
+  return { record: row?.record, room: nativeHQCap(cap.data, native.league, partner)[0]?.room };
+}
+
+export async function executeWarRoomOffer(c: WarRoomContext, catalog: WarRoomCatalog,
+  deal: WarRoomDeal, request = newKey()) {
+  if (!c.native || c.native.owner === false || !deal.partner ||
+    (!deal.give.length && !deal.get.length))
+    throw new Error('Choose a partner and at least one asset');
+  const team = (id: string) => catalog.teams.find(t => t.id === id);
+  const transfer = (tokens: string[], from: string, to: string) => tokens.map(token => {
+    const asset = team(from)?.assets.find(a => a.token === token);
+    if (!asset) throw new Error('This asset is no longer on the selected shelf');
+    return asset.pick ? { from, to, ...asset.pick } : { from, to, player: token };
+  });
+  const { data } = await (c.native.port ?? hostedWorkflow)({ command: 'trade.offer', mode: 'execute',
+    arguments: { league: c.native.league, command: 'trade.offer', expected: catalog.revision ?? 0,
+      request, reason: '', effective: 'now', visibility: 'league', args: { trade: {
+        franchise: c.mine, parties: [c.mine, deal.partner], assets: [...transfer(deal.give, c.mine,
+          deal.partner), ...transfer(deal.get, deal.partner, c.mine)] } } } });
+  const receipt = parseReceipt(data);
+  if (receipt.league !== c.native.league) throw new Error('Trade receipt belongs to another league');
+  const result = await (c.native.port ?? hostedWorkflow)({ command: 'trades.read', mode: 'read',
+    arguments: { league: c.native.league, viewer: c.mine } });
+  const trades = (await import('../commissioner/hostedMarkets')).parseHostedTrades(result.data);
+  if (trades.league !== c.native.league || trades.franchise !== c.mine)
+    throw new Error('Trade offers belong to another viewer');
+  if (!trades.offers.some(offer => offer.id === receipt.entry))
+    throw new Error('The offer was recorded, but is not present in the refreshed trade reading');
+  return receipt;
 }

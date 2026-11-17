@@ -3,10 +3,11 @@ import { useState } from 'react';
 import type { WarRoomContext } from './warroomReads';
 import { useWarRoomRead } from './warroomReads';
 import { readWarRoomDelta, readWarRoomPreview, readWarRoomPartner, type WarRoomAsset, type WarRoomCatalog,
-  type WarRoomDeal, type WarRoomDeltaSide } from './warroomTradeReads';
+  executeWarRoomOffer, type WarRoomDeal, type WarRoomDeltaSide } from './warroomTradeReads';
 import { directionLabel, leanWords, lensValue, lensWords, signed, verdictWords, type LensAsset,
   type LensSide, type WarRoomLens } from './warroomLens';
 import { CompactAbsent, WarRoomEmpty } from './WarRoomHeader';
+import { newKey } from '../commissioner/forms';
 import { absent, money, unavailable } from './hqModel';
 const offence = ['QB', 'RB', 'WR', 'TE'];
 const needWords = {
@@ -64,6 +65,9 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
   context: WarRoomContext; catalog?: WarRoomCatalog; deal: WarRoomDeal; change: (d: WarRoomDeal) => void;
   select: (a: WarRoomAsset) => void; lens?: WarRoomLens; lensPending?: boolean }) {
   const [filter, setFilter] = useState<typeof filters[number]>('ALL');
+  const [send, setSend] = useState<{ pending: boolean; confirm: boolean; request?: string;
+    fingerprint?: string; error?: string; done?: string }>({ pending: false, confirm: false });
+  const fingerprint = JSON.stringify([context.native?.league, context.mine, catalog?.revision, deal]);
   const mine = catalog?.teams.find(t => t.id === context.mine);
   const theirs = catalog?.teams.find(t => t.id === deal.partner);
   const key = JSON.stringify([context.native?.league, context.mine, context.week, catalog?.revision, deal]);
@@ -148,7 +152,33 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
         <WarRoomDeltaSidePanel side={delta.reading?.them} name="THEIR" names={names} />
         {[...delta.reading?.notes ?? [], ...held?.notes ?? []].map(note => <div className="wide" key={note}>
           <small>{note}</small></div>)}
-      </div><div className="sugg"><div className="ch"><b>TUNE IT</b>
+      </div>
+      {context.native && <div className="wide" aria-live="polite">
+        {!send.confirm ? <WarRoomAct className="btn solid" disabled={send.pending || preview.pending ||
+          !catalog || context.native.owner === false || !deal.partner ||
+          (!deal.give.length && !deal.get.length) ||
+          Boolean(preview.error) || !preview.reading || Boolean(preview.reading.reasons.length)}
+          onAction={() => setSend({ pending: false, confirm: true, request: newKey(),
+            fingerprint })}>SEND</WarRoomAct> : <>
+          <span>{send.fingerprint === fingerprint ?
+            `Confirm offer to ${teamName(deal.partner)}? The preview has no blockers.` :
+            'The deal changed; cancel and review the new preview.'}</span>
+          <WarRoomAct className="btn" disabled={send.pending} onAction={() => setSend({ pending: false,
+            confirm: false })}>CANCEL</WarRoomAct>
+          <WarRoomAct className="btn solid" disabled={send.pending || send.fingerprint !== fingerprint}
+            onAction={() => {
+            if (!catalog || !send.request) return;
+            setSend({ ...send, pending: true });
+            void executeWarRoomOffer(context, catalog, deal, send.request).then(receipt => {
+              setSend({ pending: false, confirm: false,
+                done: `Offer ${receipt.entry} recorded and read back.` });
+            }, cause => setSend(current => ({ ...current, pending: false, confirm: true,
+              error: String(cause) })));
+          }}>{send.pending ? 'SENDING…' : 'CONFIRM SEND'}</WarRoomAct>
+        </>}
+        {send.error && <p role="alert">{send.error}</p>}{send.done && <p role="status">{send.done}</p>}
+      </div>}
+      <div className="sugg"><div className="ch"><b>TUNE IT</b>
         <span>smallest changes that keep it acceptable</span></div>
         {held?.tune.length ? held.tune.map(s => <div className="sg" key={`${s.kind}:${s.token}`}>
           <span className={`k ${s.kind === 'trim' ? 'trim' : ''}`}>{s.kind.toUpperCase()}</span>
