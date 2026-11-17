@@ -196,3 +196,31 @@ func (a *Service) TargetNativeMoves(league, franchise string) (market.NativeMove
 	}
 	return reading, nil
 }
+
+func (a *Service) TargetFranchiseMovesHistory(scope commissioner.RawFranchiseMovesHistory) (commissioner.Ledger, error) {
+	if err := scope.Validate(); err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("franchise history scope: %w", err)
+	}
+	if err := a.admitRead(scope.League, "franchise.moves.history.read", scope.Franchise); err != nil {
+		return commissioner.Ledger{}, err
+	}
+	if err := a.host.Ready(); err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("franchise history startup: %w", err)
+	}
+	principal, err := a.host.CommissionerPrincipal()
+	if err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("franchise history identity: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
+	defer cancel()
+	records, err := a.host.CommissionerRecords(ctx, scope.League)
+	if err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("franchise history records: %w", err)
+	}
+	reading, err := commissioner.FranchiseMovesHistoryReading(scope, principal, records, a.host.CommissionerAuthorization())
+	if err != nil {
+		return commissioner.Ledger{}, fmt.Errorf("franchise history: %w", err)
+	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
+	return reading, nil
+}

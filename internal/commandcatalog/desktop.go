@@ -82,6 +82,7 @@ func nativeMethods() []struct{ method, role, gravity string } {
 		{"TargetNativeStandings", "gm,commish,admin", "G0"},
 		{"TargetNativeOdds", "gm,commish,admin", "G0"},
 		{"TargetNativeTradeAction", "gm,commish", "G3"},
+		{"TargetFranchiseMovesHistory", "gm,commish", "G0"},
 		{"TargetNativeMoves", "gm,commish", "G0"},
 		{"TargetNativeTrades", "gm,commish", "G0"},
 		{"TargetNativeWaiverAction", "gm,commish", "G3"},

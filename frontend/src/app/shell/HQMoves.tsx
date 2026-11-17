@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { nativeCommands } from '../commands/native.gen';
 import type { NativeCommandId } from '../commands/native';
 import { HQAct } from './HQAct';
@@ -21,9 +22,10 @@ export function HQQueue({ moves, available }: { moves: HQMove[]; available: bool
     <span className="qn">{moves.filter(m => moveLane(m.state) === 1).length} WAITING</span>
     <span className="qn dim">{moves.filter(m => moveLane(m.state) === 2).length} LANDED</span></>;
 }
-export function HQMoves({ moves, snapshot, available = true, reason, native = moves.some(m => m.native) }:
+export function HQMoves({ moves, snapshot, available = true, reason, history,
+  native = moves.some(m => m.native) }:
   { moves: HQMove[]; snapshot:
-  Snapshot; available?: boolean; reason?: string; native?: boolean }) {
+  Snapshot; available?: boolean; reason?: string; history?: ReactNode; native?: boolean }) {
   return <section className="ws movews on" id="ws-moves">
     {['PLANNED', 'HANDED OFF', 'LANDED', 'NEEDS YOU'].map((label, lane) => {
       const items = moves.filter(m => moveLane(m.state) === lane);
@@ -44,11 +46,11 @@ export function HQMoves({ moves, snapshot, available = true, reason, native = mo
               onAction={m.handoff}>OPEN MFL ↗</HQAct>}</div>
         </article>)}{!items.length && <p className="empty" title={reason}>{unavailable}</p>}</div></div>;
     })}
-    <div className="mlog"><div
+    {history ?? <div className="mlog"><div
       className="ch"><b>SEASON LEDGER</b><span>every move you made, as recorded</span></div>
       <div className="ct-wrap"><table className="ct"><thead><tr>{['KIND', 'WHEN', 'MOVE', 'CAP',
         'RESULT'].map(h => <th key={h}>{h}</th>)}</tr></thead>
         <tbody /></table><p className="empty"
-          title="The move reads do not provide a complete season-scoped ledger">{unavailable}</p></div></div>
+          title="The move reads do not provide a complete season-scoped ledger">{unavailable}</p></div></div>}
   </section>;
 }

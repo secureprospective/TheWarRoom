@@ -4898,6 +4898,22 @@ export namespace commissioner {
 	
 	
 	
+	export class RawFranchiseMovesHistory {
+	    league: string;
+	    franchise: string;
+	    season: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawFranchiseMovesHistory(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.season = source["season"];
+	    }
+	}
 	
 	export class RawLeagueCalendarScope {
 	    league: string;

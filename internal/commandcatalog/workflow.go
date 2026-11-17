@@ -97,6 +97,9 @@ func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) 
 	case "draft.read":
 		kept.Franchise, kept.Season, kept.At = r.Franchise, r.Season, r.At
 		return kept, r.Franchise != ""
+	case "franchise.moves.history.read":
+		kept.Franchise, kept.Season = r.Franchise, r.Season
+		return kept, (commissioner.RawFranchiseMovesHistory{League: r.League, Franchise: r.Franchise, Season: r.Season}).Validate() == nil
 	case "bids.read", "moves.read":
 		kept.Franchise = r.Franchise
 		return kept, r.Franchise != ""
@@ -214,7 +217,7 @@ func (r RawWorkflow) League() (string, error) {
 }
 
 type workflowOutput interface {
-	history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules | leagueservice.NFLGames | leagueservice.NFLGame | commissioner.NativeCapCheck | market.ContractQuote
+	commissioner.Ledger | history.NativeProjections | commissioner.NativeDirectory | commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules | leagueservice.NFLGames | leagueservice.NFLGame | commissioner.NativeCapCheck | market.ContractQuote
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {
