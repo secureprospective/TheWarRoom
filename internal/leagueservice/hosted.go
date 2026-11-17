@@ -9,6 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 // StoredHost binds a request's trusted identity and lifetime to server-owned history.
@@ -18,6 +19,7 @@ type StoredHost struct {
 	Context   func() context.Context
 	Principal string
 	Registry  string
+	Personal  *personal.Store
 }
 
 func (h StoredHost) Ready() error {
@@ -38,6 +40,7 @@ func (h StoredHost) CommissionerNow() time.Time                       { return h
 func (StoredHost) CommissionerZone() *time.Location                   { return time.UTC }
 func (h StoredHost) CommissionerPreviewRegistry() string              { return h.Registry }
 func (StoredHost) NativeFacts() nativecheck.Facts                     { return nil }
+func (h StoredHost) PrivateEntries() *personal.Store                  { return h.Personal }
 
 // CommissionerRecords serves the store's revision-keyed shared snapshot, which carries the replay and
 // people-state memos; rebuilding records from a deep-cloned event list on every request defeated both and

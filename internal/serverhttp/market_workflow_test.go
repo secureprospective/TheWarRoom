@@ -99,15 +99,6 @@ func TestHostedDraftQueueIsSeatedPrivateAndReplacedAsAWhole(t *testing.T) {
 	owner := commissionerClient
 	owner.bearer = owner.f.login(t, "owner", "private-password")
 	owner.proof = ""
-	if _, err := owner.f.pools.Write().ExecContext(t.Context(), `CREATE TABLE private_entries (
- franchise_id TEXT NOT NULL, mine TEXT NOT NULL, kind TEXT NOT NULL, entity TEXT NOT NULL,
- entity_id TEXT NOT NULL, text TEXT NOT NULL, at TEXT NOT NULL, ordinal INTEGER NOT NULL,
- PRIMARY KEY (franchise_id, mine, kind, entity, entity_id, at), CHECK (franchise_id = mine));
- CREATE INDEX private_entries_franchise_kind ON private_entries(franchise_id, kind);
- CREATE UNIQUE INDEX private_entries_marker ON private_entries(franchise_id, mine, kind, entity, entity_id)
- WHERE kind != 'note';`); err != nil {
-		t.Fatal(err)
-	}
 	owner.f.footballGone.Store(true)
 	token, err := owner.f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: commissionerClient.bearer}, accounts.RawTokenScope{
 		League: "native.hosted", Franchise: "franchise.01", Commands: []string{"native.directory.read", "draft.queue.read", "draft.queue.set"},
@@ -144,6 +135,12 @@ func TestHostedDraftQueueIsSeatedPrivateAndReplacedAsAWhole(t *testing.T) {
 	other := owner
 	other.bearer = owner.f.login(t, "partner", "private-password")
 	other.proof = ""
+	if _, err := owner.f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: other.bearer}, accounts.RawTokenScope{
+		League: "native.hosted", Franchise: "franchise.01",
+		Commands: []string{"draft.queue.read", "draft.queue.set"}, Modes: []string{"read", "execute"},
+	}); err == nil {
+		t.Fatal("another franchise delegated access to the owner's draft queue")
+	}
 	otherRead := other.invoke("draft.queue.read", "read", []byte(`{"league":"native.hosted"}`), 200)
 	if err := json.Unmarshal(otherRead.Data, &hidden); err != nil || len(hidden.Players) != 0 {
 		t.Fatalf("another franchise read the queue: %+v, %v", hidden, err)

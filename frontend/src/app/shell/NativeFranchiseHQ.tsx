@@ -70,7 +70,14 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     navigateNode={node => { if (node !== 'hq') leave(node); }} lock={reading.lock ? { at: reading.lock } :
       undefined}
     queue={<HQQueue moves={moves} available={reading.moves !== undefined} />}
-    inspector={<HQInspector native league={league} snapshot={snapshot} mine={mine} id={chosen} cut={cut}
+    inspector={<HQInspector
+      native
+      league={league}
+      port={port}
+      snapshot={snapshot}
+      mine={mine}
+      id={chosen}
+      cut={cut}
       valuesPreparing={reading.values?.preparing}
       leagueValue={reading.values?.players.find(p => p.player === chosen)}
       projection={reading.projections?.get(chosen ?? '')}

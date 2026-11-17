@@ -57,8 +57,6 @@ type Hosted struct {
 	Tokens          *accounts.TokenService
 	Confirmations   *Confirmations
 	Store           *history.Store
-	// PrivateEntries is for a single-file host; multi-league servers use the store on each LeaguePin.
-	PrivateEntries *personal.Store
 	// Leagues finds the store holding a league; league heads and the due worker read through it.
 	Leagues    history.LeagueResolver
 	Sessions   *accounts.SessionService
@@ -253,7 +251,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry, Personal: pin.Personal}
 	gate := accountAdmission{host: host, accounts: h.Sessions, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
 		h.confirm(w, r, gate, raw)
@@ -264,12 +262,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		writeUnavailable(w, "football reference unavailable")
 		return
 	}
-	privateEntries := pin.PrivateEntries
-	if privateEntries == nil && h.Pins == nil {
-		privateEntries = h.PrivateEntries
-	}
-	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).WithLiveGames(h.LiveGames).
-		WithPrivateEntries(privateEntries)
+	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).WithLiveGames(h.LiveGames)
 	h.dispatch(w, r, service, raw)
 }
 
@@ -339,12 +332,11 @@ func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest)
 // football reference backup was older than its league backup): the store then has no football at
 // all, so readings that need football say so, and changes wait until the evidence is back.
 type LeaguePin struct {
-	Store *history.Store
-	// PrivateEntries uses this league's pools, never a shared server-wide private store.
-	PrivateEntries *personal.Store
-	Football       *history.PinnedFootball
-	Digest         string
-	Missing        bool
+	Store    *history.Store
+	Personal *personal.Store
+	Football *history.PinnedFootball
+	Digest   string
+	Missing  bool
 	// Err says the server cannot serve the league at all (it does not hold it); Store is then nil.
 	Err error
 }
@@ -573,6 +565,13 @@ func (a accountAdmission) checkRoleTarget(ctx context.Context, target string) er
 }
 
 func admitLeagueAccess(access commissioner.Access, policy governance.State, principal governance.Principal, records []commissioner.Record) error {
+	if privatePlayerOperation(access.Operation) {
+		seat, ok := policy.Franchise(governance.FranchiseID(access.Franchise))
+		if !ok || seat.Seat != principal {
+			return fmt.Errorf("private player data requires its seated franchise owner")
+		}
+		return nil
+	}
 	if access.Mode == "read" {
 		if !hostedMember(policy, principal, records) {
 			return fmt.Errorf("league membership required")
@@ -591,16 +590,23 @@ func admitLeagueAccess(access commissioner.Access, policy governance.State, prin
 		}
 		return nil
 	}
-	if access.Operation == "draft.queue.set" {
-		if access.Mode != "execute" || !policy.HoldsSeat(governance.FranchiseID(access.Franchise), principal) {
-			return fmt.Errorf("only a seated owner may replace a private draft queue")
-		}
-		return nil
+	if handled, err := admitDraftQueueSet(access, policy, principal); handled {
+		return err
 	}
 	if _, err := commissioner.AuthorizeRecords(access.Raw, access.Principal, records); err != nil {
 		return fmt.Errorf("current league permission: %w", err)
 	}
 	return nil
+}
+
+func admitDraftQueueSet(access commissioner.Access, policy governance.State, principal governance.Principal) (bool, error) {
+	if access.Operation != "draft.queue.set" {
+		return false, nil
+	}
+	if access.Mode != "execute" || !policy.HoldsSeat(governance.FranchiseID(access.Franchise), principal) {
+		return true, fmt.Errorf("only a seated owner may replace a private draft queue")
+	}
+	return true, nil
 }
 
 func decodeHosted[T RawRecoveryRequest | RawRecoveryCodesRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator | RawAgentTokenRequest | RawPasswordChangeRequest](w http.ResponseWriter, r *http.Request, raw *T) error {
@@ -657,6 +663,15 @@ func writeHostedReading[T commissioner.People | commissioner.Ledger | WorkflowRe
 // Exposure remains loopback-only until the deployment boundary is established.
 func ServeHosted(ctx context.Context, listener net.Listener, certificate tls.Certificate, hosted Hosted) error {
 	return serveFixture(ctx, listener, certificate, hosted.Handler())
+}
+
+func privatePlayerOperation(operation string) bool {
+	switch operation {
+	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchSet:
+		return true
+	default:
+		return false
+	}
 }
 
 func hostedOwner(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {

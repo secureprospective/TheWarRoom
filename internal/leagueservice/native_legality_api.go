@@ -31,17 +31,21 @@ func (r RawNativeResultsScope) Validate() error {
 }
 
 func (a *Service) TargetNativeCapCheck(leagueID, viewerZone string) (commissioner.NativeCapCheck, error) {
+	return a.TargetNativeCapCheckContext(a.host.CommissionerContext(), leagueID, viewerZone)
+}
+
+func (a *Service) TargetNativeCapCheckContext(requestCtx context.Context, leagueID, viewerZone string) (commissioner.NativeCapCheck, error) {
 	scope := commissioner.RawNativeCapScope{League: leagueID, ViewerZone: viewerZone}
 	if err := scope.Validate(); err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap input: %w", err)
 	}
-	if err := a.admitRead(leagueID, "native.cap.check", ""); err != nil {
+	if err := a.admitReadingContext(requestCtx, commissioner.Access{League: leagueID, Operation: "native.cap.check", Mode: "read"}); err != nil {
 		return commissioner.NativeCapCheck{}, err
 	}
 	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap check startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(requestCtx), refreshTimeout)
 	defer cancel()
 	reading, err := a.host.NativeCapCheck(ctx, scope)
 	if err != nil {
@@ -187,12 +191,15 @@ func projectionPlayers(raw string) ([]string, error) {
 	return ids, nil
 }
 
-func (a *Service) TargetNativeContractQuote(raw market.RawContractQuote) (market.ContractQuote,
-	error) {
+func (a *Service) TargetNativeContractQuote(raw market.RawContractQuote) (market.ContractQuote, error) {
+	return a.TargetNativeContractQuoteContext(a.host.CommissionerContext(), raw)
+}
+
+func (a *Service) TargetNativeContractQuoteContext(requestCtx context.Context, raw market.RawContractQuote) (market.ContractQuote, error) {
 	if err := raw.Validate(); err != nil {
 		return market.ContractQuote{}, fmt.Errorf("native contract quote input: %w", err)
 	}
-	if err := a.admitReading(commissioner.Access{League: raw.League, Operation: "contract.quote", Mode: "read", Player: raw.Player, SubjectCommand: raw.Action}); err != nil {
+	if err := a.admitReadingContext(requestCtx, commissioner.Access{League: raw.League, Operation: "contract.quote", Mode: "read", Player: raw.Player, SubjectCommand: raw.Action}); err != nil {
 		return market.ContractQuote{}, err
 	}
 	if err := a.host.Ready(); err != nil {
@@ -202,7 +209,8 @@ func (a *Service) TargetNativeContractQuote(raw market.RawContractQuote) (market
 	if err != nil {
 		return market.ContractQuote{}, fmt.Errorf("read viewer timezone: %w", err)
 	}
-	records, err := a.host.CommissionerRecords(a.viewContext(a.host.CommissionerContext()), raw.League)
+	viewCtx := a.viewContext(requestCtx)
+	records, err := a.host.CommissionerRecords(viewCtx, raw.League)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return market.ContractQuote{}, err
@@ -211,7 +219,7 @@ func (a *Service) TargetNativeContractQuote(raw market.RawContractQuote) (market
 	if err != nil {
 		return market.ContractQuote{}, fmt.Errorf("native contract quote: %w", err)
 	}
-	quote.Revision = commissioner.ViewRevision(a.viewContext(a.host.CommissionerContext()), records, quote.Revision)
+	quote.Revision = commissioner.ViewRevision(viewCtx, records, quote.Revision)
 	return quote, nil
 }
 

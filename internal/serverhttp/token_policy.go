@@ -74,6 +74,9 @@ func (p TokenPolicy) CheckTokenAccess(ctx context.Context, account accounts.Acco
 	if err := commissioner.CheckTokenFranchise(access, franchise); err != nil {
 		return fmt.Errorf("token franchise: %w", err)
 	}
+	if privatePlayerOperation(access.Operation) {
+		return privatePlayerTokenSeat(records, string(principal), franchise)
+	}
 	if access.Mode == "read" {
 		return nil
 	}
@@ -119,7 +122,7 @@ func (a agentAdmission) Admit(ctx context.Context, access commissioner.Access) e
 	if err := a.token.Admit(ctx, access); err != nil {
 		return fmt.Errorf("agent admission: %w", err)
 	}
-	if access.Mode != "execute" || access.Operation == commissioner.DraftPick || access.Operation == "draft.queue.set" {
+	if access.Mode != "execute" || access.Operation == commissioner.DraftPick || access.Operation == "draft.queue.set" || privatePlayerOperation(access.Operation) {
 		return nil
 	}
 	definition, err := access.Raw.EffectiveDefinition()
@@ -164,19 +167,28 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 		http.Error(w, "league access unavailable", http.StatusForbidden)
 		return
 	}
-	host := leagueservice.StoredHost{Store: pin.Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry, Personal: pin.Personal}
 	gate := agentAdmission{token: h.Tokens.Admission(session), confirmations: h.Confirmations, confirmation: r.Header.Get("X-TWR-Human-Confirmation"), auditID: token.ID}
 	pinned, err := h.workflowHost(ctx, host, raw)
 	if err != nil {
 		writeUnavailable(w, "football reference unavailable")
 		return
 	}
-	privateEntries := pin.PrivateEntries
-	if privateEntries == nil && h.Pins == nil {
-		privateEntries = h.PrivateEntries
-	}
-	service := leagueservice.NewHosted(h.Worker.Host(pinned), gate).WithPrivateEntries(privateEntries)
+	service := leagueservice.NewHosted(h.Worker.Host(pinned), gate)
 	h.dispatch(w, r.WithContext(ctx), service, raw)
+}
+
+func privatePlayerTokenSeat(records []commissioner.Record, principal, franchise string) error {
+	state, err := commissioner.GovernanceState(records)
+	if err != nil {
+		return fmt.Errorf("token seats: %w", err)
+	}
+	owner := governance.Principal(commissioner.PrincipalFor(records, principal))
+	seat, ok := state.Franchise(governance.FranchiseID(franchise))
+	if !ok || seat.Seat != owner {
+		return fmt.Errorf("delegate private player data only for your own franchise")
+	}
+	return nil
 }
 
 func tokenSeatScope(records []commissioner.Record, principal string, scope accounts.RawTokenScope) error {
@@ -190,10 +202,9 @@ func tokenSeatScope(records []commissioner.Record, principal string, scope accou
 		if (command == commissioner.LineupSet || command == commissioner.DraftPick) && !state.HoldsSeat(governance.FranchiseID(scope.Franchise), p) {
 			return fmt.Errorf("take a vacant franchise's caretaker seat before delegating lineups or picks")
 		}
-		if (command == "draft.queue.read" || command == "draft.queue.set") && seat.Seat != p {
-			return fmt.Errorf("delegate draft queues only for your own franchise")
-		}
-		if (commissioner.OwnerBidAction(command) != "" || commissioner.OwnerWaiverAction(command) != "" || commissioner.OwnerTradeAction(command) != "") && seat.Seat != p {
+		if (commissioner.OwnerBidAction(command) != "" || commissioner.OwnerWaiverAction(command) != "" ||
+			commissioner.OwnerTradeAction(command) != "" || privatePlayerOperation(command) ||
+			command == "draft.queue.read" || command == "draft.queue.set") && seat.Seat != p {
 			return fmt.Errorf("delegate owner actions only for your own franchise")
 		}
 	}

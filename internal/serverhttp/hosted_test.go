@@ -60,6 +60,20 @@ type hostedFixture struct {
 	join         *accounts.JoinService
 }
 
+func initializePrivateEntriesFixture(t *testing.T, pools *db.Pools) {
+	t.Helper()
+	_, err := pools.Write().ExecContext(t.Context(), `CREATE TABLE private_entries (
+ franchise_id TEXT NOT NULL, mine TEXT NOT NULL, kind TEXT NOT NULL, entity TEXT NOT NULL,
+ entity_id TEXT NOT NULL, text TEXT NOT NULL, at TEXT NOT NULL, ordinal INTEGER NOT NULL,
+ PRIMARY KEY (franchise_id, mine, kind, entity, entity_id, at), CHECK (franchise_id = mine));
+ CREATE INDEX private_entries_franchise_kind ON private_entries(franchise_id, kind);
+ CREATE UNIQUE INDEX private_entries_marker ON private_entries(franchise_id, mine, kind, entity, entity_id)
+ WHERE kind != 'note';`)
+	if err != nil {
+		t.Fatalf("create hosted private-entry fixture: %v", err)
+	}
+}
+
 func (f *hostedFixture) clockTime() time.Time {
 	return time.Unix(0, f.now.Load()).UTC()
 }
@@ -79,6 +93,9 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 		registries = append(registries, registry)
 	}
 	store, pools := fixtureStore(t, filepath.Join(t.TempDir(), "server.db"), registries...)
+	if len(workflows) > 0 && workflows[0] {
+		initializePrivateEntriesFixture(t, pools)
+	}
 	credentials := accountstore.New(pools)
 	passwords := accounts.New(credentials)
 	principal, err := hostedfixture.Bootstrap(t.Context(), credentials, accounts.RawCredentials{Username: "commissioner", Password: "private-password"})
@@ -123,8 +140,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	}
 	f.publisher = serverhttp.NewPublisher()
 	f.games = leagueservice.NewLiveGames()
-	privateEntries := personal.NewLeague(pools)
-	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, PrivateEntries: privateEntries, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}), Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, nil),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
 			"CM-018,Franchise,What is this franchise called?,\n"}
@@ -135,10 +151,11 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 			t.Fatal(err)
 		}
 		store.SetPinnedFootball(handler.Football)
-		pinned, bare := serverhttp.LeaguePin{Store: store, PrivateEntries: privateEntries, Football: handler.Football, Digest: digest}, store.Sibling()
+		entries := personal.NewLeague(pools)
+		pinned, bare := serverhttp.LeaguePin{Store: store, Personal: entries, Football: handler.Football, Digest: digest}, store.Sibling()
 		handler.Pins = func(context.Context, string) serverhttp.LeaguePin {
 			if f.footballGone.Load() {
-				return serverhttp.LeaguePin{Store: bare, PrivateEntries: privateEntries, Digest: digest, Missing: true}
+				return serverhttp.LeaguePin{Store: bare, Personal: entries, Digest: digest, Missing: true}
 			}
 			return pinned
 		}

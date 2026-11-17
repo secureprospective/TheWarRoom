@@ -44,12 +44,6 @@ type DraftQueue struct {
 	Players []string `json:"players"`
 }
 
-// WithPrivateEntries supplies the hosted league file's private entry store.
-func (a *Service) WithPrivateEntries(store *personal.Store) *Service {
-	a.privateEntries = store
-	return a
-}
-
 func validDraftQueueLeague(league string) bool {
 	return strings.HasPrefix(league, "native.") && league != "native." && strings.TrimSpace(league) == league && len(league) <= 128
 }
@@ -116,10 +110,11 @@ func (a *Service) draftQueueAccess(ctx context.Context, league, operation, mode 
 	if err := commissioner.AdmitCredential(ctx, access); err != nil {
 		return nil, nil, "", fmt.Errorf("admit draft queue: %w", err)
 	}
-	if a.privateEntries == nil {
+	store := privateEntriesFor(a.host)
+	if store == nil {
 		return nil, nil, "", fmt.Errorf("private draft queue storage is unavailable")
 	}
-	return ctx, a.privateEntries, franchise, nil
+	return ctx, store, franchise, nil
 }
 
 func seatedFranchise(records []commissioner.Record, principal string) (string, error) {

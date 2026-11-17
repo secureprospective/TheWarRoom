@@ -2359,6 +2359,7 @@ export type WorkflowArgumentMap = {
 "lineup.read": NativeArguments<"lineup.read">;
 "player.usage.read": NativeArguments<"player.usage.read">;
 "player.agearc.read": NativeArguments<"player.agearc.read">;
+"player.note.read": NativeArguments<"player.note.read">;
 "value.read": NativeArguments<"value.read">;
 "projections.read": NativeArguments<"projections.read">;
 "native.reserve.check": NativeArguments<"native.reserve.check">;
@@ -2449,6 +2450,8 @@ export type WorkflowArgumentMap = {
 "bids.award.override": NativeArguments<"bids.award.override">;
 "commish.franchise.edit": NativeArguments<"commish.franchise.edit">;
 "commish.franchise.direction.set": NativeArguments<"commish.franchise.direction.set">;
+"player.note.set": NativeArguments<"player.note.set">;
+"player.watch.set": NativeArguments<"player.watch.set">;
 "draft.queue.read": NativeArguments<"draft.queue.read">;
 "draft.queue.set": NativeArguments<"draft.queue.set">;
 };

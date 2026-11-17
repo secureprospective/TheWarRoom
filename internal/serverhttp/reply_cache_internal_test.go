@@ -7,6 +7,12 @@ import (
 	"testing"
 )
 
+func TestPrivatePlayerReadingDoesNotEnterLeagueReplyCache(t *testing.T) {
+	if operation, cacheable := cachedReadingOperation("player.note.read"); cacheable {
+		t.Fatalf("private player reading was made cacheable as %q", operation)
+	}
+}
+
 func testScope(c *ReplyCache, head int64, epoch int, principal string) replyScope {
 	return replyScope{cache: c, league: "native.l", head: head, epoch: epoch, key: replyKey{principal: principal, reading: "native.assets.read"}}
 }

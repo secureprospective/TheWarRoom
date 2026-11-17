@@ -101,22 +101,22 @@ func (p *leaguePins) loadPin(ctx context.Context, league string, base *history.S
 	if !ok {
 		return serverhttp.LeaguePin{Err: errNoLeague}
 	}
-	privateEntries := personal.NewLeague(pools)
+	entries := personal.NewLeague(pools)
 	store := base.Sibling()
 	store.SetLiveOverlay(p.live)
 	if digest == "" {
-		return serverhttp.LeaguePin{Store: store, PrivateEntries: privateEntries}
+		return serverhttp.LeaguePin{Store: store, Personal: entries}
 	}
 	evidence, err := store.LoadFootball(ctx, digest)
 	if errors.Is(err, history.ErrNoBody) {
 		p.tried[digest] = p.now()
-		return serverhttp.LeaguePin{Store: store, PrivateEntries: privateEntries, Digest: digest, Missing: true}
+		return serverhttp.LeaguePin{Store: store, Personal: entries, Digest: digest, Missing: true}
 	}
 	if err != nil {
 		return serverhttp.LeaguePin{Err: err}
 	}
 	store.SetPinnedFootball(evidence)
-	return serverhttp.LeaguePin{Store: store, PrivateEntries: privateEntries, Football: evidence, Digest: digest}
+	return serverhttp.LeaguePin{Store: store, Personal: entries, Football: evidence, Digest: digest}
 }
 
 // pin is league's store and football; Err says the server does not hold league.

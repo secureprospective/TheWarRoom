@@ -9,6 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 type footballDigestKey struct{}
@@ -34,7 +35,8 @@ type footballHost struct {
 	evidence *history.PinnedFootball
 }
 
-func (h footballHost) NativeFacts() nativecheck.Facts { return h.evidence.PlayerFacts() }
+func (h footballHost) NativeFacts() nativecheck.Facts  { return h.evidence.PlayerFacts() }
+func (h footballHost) PrivateEntries() *personal.Store { return privateEntriesFor(h.Host) }
 
 func (h footballHost) NativeScheduleDates(ctx context.Context, season int, _ time.Time) ([]leagueweek.Week, error) {
 	weeks, err := h.evidence.ScheduleDates(ctx, season)

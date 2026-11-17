@@ -52,6 +52,9 @@ func (r RawChange) Validate() error {
 	return r.validateFields()
 }
 
+// ValidateFields checks a change after its trusted owner has been assigned.
+func (r RawChange) ValidateFields() error { return r.validateFields() }
+
 func (r RawChange) validateFields() error {
 	if !slices.Contains([]string{"watch", "bait", "note", "draft"}, r.Kind) {
 		return fmt.Errorf("personal: invalid list")
@@ -206,6 +209,28 @@ func (s *Store) PlayerNotesForFranchise(ctx context.Context, franchiseID, player
 		return Thread{}, err
 	}
 	return s.playerNotes(ctx, franchiseID, playerID)
+}
+
+// PlayerWatchedForFranchise reports whether this franchise watches one player.
+func (s *Store) PlayerWatchedForFranchise(ctx context.Context, franchiseID, playerID string) (bool, error) {
+	if !s.league {
+		return false, fmt.Errorf("personal: franchise reads require a league store")
+	}
+	if err := validateFranchiseScope(franchiseID); err != nil {
+		return false, err
+	}
+	parsed, err := playerid.New(playerID)
+	if err != nil || parsed.String() != playerID {
+		return false, fmt.Errorf("personal: player id must be canonical")
+	}
+	var watched bool
+	err = s.pools.Read().QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM private_entries
+WHERE franchise_id=? AND mine=? AND kind='watch' AND entity='player' AND entity_id=?)`,
+		franchiseID, franchiseID, playerID).Scan(&watched)
+	if err != nil {
+		return false, fmt.Errorf("personal: player watch: %w", err)
+	}
+	return watched, nil
 }
 
 func (s *Store) playerNotes(ctx context.Context, owner, playerID string) (Thread, error) {

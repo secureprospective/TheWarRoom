@@ -4581,6 +4581,45 @@ const schema323 = {
   Type:"object",
   Enum:null,
   Format:"",
+  Validator:"RawPlayerNotesScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"player",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema324 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawPlayerNoteSet.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"player",Optional:false,Schema:schema2},
+    {Name:"text",Optional:false,Schema:schema2},
+    {Name:"at",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema325 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawPlayerWatchSet.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"player",Optional:false,Schema:schema2},
+    {Name:"watched",Optional:false,Schema:schema28}
+  ],
+  Items:null,
+} as const;
+const schema326 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
   Validator:"RawDraftQueueScope.Validate",
   Nullable:false,
   Fields:[
@@ -4588,7 +4627,7 @@ const schema323 = {
   ],
   Items:null,
 } as const;
-const schema324 = {
+const schema327 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -7575,6 +7614,63 @@ export const nativeCommands = {
 },
 } as const;
 export const serverCommands = {
+"player.note.read": {
+  definition: {
+    "ID": "player.note.read",
+    "Method": "TargetPlayerNotes",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "private-player-data",
+    "Safeguards": "none",
+    "Arguments": schema323
+  },
+  phrase: "read player note",
+},
+"player.note.set": {
+  definition: {
+    "ID": "player.note.set",
+    "Method": "SetPlayerNote",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "none",
+    "Facts": "private-player-data",
+    "Safeguards": "authenticated seated franchise; no request franchise; uncached private entries",
+    "Arguments": schema324
+  },
+  phrase: "set player note",
+},
+"player.watch.set": {
+  definition: {
+    "ID": "player.watch.set",
+    "Method": "SetPlayerWatch",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "none",
+    "Facts": "private-player-data",
+    "Safeguards": "authenticated seated franchise; no request franchise; uncached private entries",
+    "Arguments": schema325
+  },
+  phrase: "set player watch",
+},
 "draft.queue.read": {
   definition: {
     "ID": "draft.queue.read",
@@ -7590,7 +7686,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema323
+    "Arguments": schema326
   },
   phrase: "read draft queue",
 },
@@ -7609,7 +7705,7 @@ export const serverCommands = {
     "Undo": "replace-own-private-queue",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema324
+    "Arguments": schema327
   },
   phrase: "set draft queue",
 },

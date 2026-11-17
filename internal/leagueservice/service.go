@@ -12,7 +12,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
-	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 type SessionHost interface {
@@ -101,12 +100,11 @@ type Host interface {
 
 // Service composes native readings, previews and mutations over the shared transactional store.
 type Service struct {
-	host           Host
-	admission      commissioner.CredentialAdmission
-	hosted         bool
-	cancels        readCancels
-	games          *LiveGames
-	privateEntries *personal.Store
+	host      Host
+	admission commissioner.CredentialAdmission
+	hosted    bool
+	cancels   readCancels
+	games     *LiveGames
 }
 
 func New(host Host) *Service { return &Service{host: host} }
@@ -132,12 +130,19 @@ func (a *Service) admitReading(access commissioner.Access) error {
 	if !a.hosted {
 		return nil
 	}
+	return a.admitReadingContext(a.host.CommissionerContext(), access)
+}
+
+func (a *Service) admitReadingContext(ctx context.Context, access commissioner.Access) error {
+	if !a.hosted {
+		return nil
+	}
 	principal, err := a.host.CommissionerPrincipal()
 	if err != nil {
 		return fmt.Errorf("read identity: %w", err)
 	}
 	access.Principal = principal
-	if err := commissioner.AdmitCredential(a.requestContext(a.host.CommissionerContext()), access); err != nil {
+	if err := commissioner.AdmitCredential(a.requestContext(ctx), access); err != nil {
 		return fmt.Errorf("admit league reading: %w", err)
 	}
 	return nil
