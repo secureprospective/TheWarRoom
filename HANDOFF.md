@@ -1,7 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-16.
-- State: #309 refusal text now surfaces in the desktop and hosted frontend; Go and Vitest reason/generic cases pass. `make lint`, frontend build/typecheck, and targeted tests pass. Full `make verify` hit a transient SQLite busy failure in `internal/leaguetransfer`; that package passed on retry. Tidy only reports known browser Singleton symlinks under `~/scratch/bee-resume-v14-*`.
-- Next: Commit, push, open PR against main, then monitor CI. Do not merge.
-- Blocked on: CI result.
+- State: PR #314 is open against main. Desktop and hosted frontend surface execute refusal text, including the generic privacy-preserving response. Targeted Go/Vitest, frontend build, lint and pre-push checks pass. Full CI passed after rerunning one shard with an unrelated race in `TestUnavailableKeychainLoginIsMemoryOnly`. No merge.
+- Next: Await review; do not merge.
+- Blocked on: Review.
 - Tried and rejected: None.
