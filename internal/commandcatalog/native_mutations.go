@@ -147,18 +147,9 @@ func nativePeopleMutations() []struct{ id, args string } {
 
 func playerPersonalNativeMutations() []Command {
 	return []Command{
-		{ID: leagueservice.PlayerNoteSet, Method: "SetPlayerNote", Version: "1", Role: "domain", Gravity: "G0", Availability: "server",
-			Arguments:  Shape(reflect.TypeFor[leagueservice.RawPlayerNoteSet](), "RawPlayerNoteSet.Validate"),
-			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-player-data",
-			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
-		{ID: leagueservice.PlayerWatchSet, Method: "SetPlayerWatch", Version: "1", Role: "domain", Gravity: "G0", Availability: "server",
-			Arguments:  Shape(reflect.TypeFor[leagueservice.RawPlayerWatchSet](), "RawPlayerWatchSet.Validate"),
-			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-player-data",
-			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
-		{ID: leagueservice.PlayerWatchOrder, Method: "SetPlayerWatchOrder", Version: "1", Role: "domain", Gravity: "G0", Availability: "server",
-			Arguments:  Shape(reflect.TypeFor[leagueservice.RawPlayerWatchOrder](), "RawPlayerWatchOrder.Validate"),
-			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-player-data",
-			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
+		ownerPrivateCommand(leagueservice.PlayerNoteSet, "SetPlayerNote", reflect.TypeFor[leagueservice.RawPlayerNoteSet](), Execute, "G0", "none", privatePlayerData()),
+		ownerPrivateCommand(leagueservice.PlayerWatchSet, "SetPlayerWatch", reflect.TypeFor[leagueservice.RawPlayerWatchSet](), Execute, "G0", "none", privatePlayerData()),
+		ownerPrivateCommand(leagueservice.PlayerWatchOrder, "SetPlayerWatchOrder", reflect.TypeFor[leagueservice.RawPlayerWatchOrder](), Execute, "G0", "none", privatePlayerData()),
 	}
 }
 
