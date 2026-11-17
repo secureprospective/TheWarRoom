@@ -194,6 +194,22 @@ it('commissioner previews and confirms a rule through the hosted port, then rere
   expect(host.querySelector('dd')?.textContent).toContain('first_kickoff');
   expect(port.mock.calls.filter(([r]) => r.command === 'commish.rules.read')).toHaveLength(2);
 });
+it.each([
+  'A starter was not active on the roster at kickoff',
+  'native change refused; reread before retrying',
+])('shows the server refusal verbatim: %s', async reason => {
+  const serve = service();
+  const port: HostedPort = async request => {
+    if (request.mode === 'execute') throw new Error(reason);
+    return serve(request);
+  };
+  await openRules(port); await preview();
+  const confirm = buttons('Confirm league change')[0];
+  await act(async () => confirm.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 650)); });
+  expect(host.textContent).toContain(reason);
+  expect(host.textContent).not.toContain('The change was not confirmed');
+});
 it('a blocked preview shows the blocker and offers no confirmation or execute', async () => {
   const port = service(['Lineups are already locked']); await openRules(port); await preview();
   expect(host.textContent).toContain('Lineups are already locked');

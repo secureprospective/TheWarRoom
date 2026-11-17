@@ -202,6 +202,39 @@ func TestWorkflowReadHonorsRetryAfterOnce(t *testing.T) {
 	}
 }
 
+func TestWorkflowReadWithoutRetryAfterBacksOff(t *testing.T) {
+	var calls atomic.Int32
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == serverhttp.InvalidationPath {
+			<-r.Context().Done()
+			return
+		}
+		if calls.Add(1) <= 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"label":"league","data":{}}`))
+	}))
+	defer server.Close()
+	roots := x509.NewCertPool()
+	roots.AddCert(server.Certificate())
+	d, err := NewDesktop(server.URL, "native.test", roots,
+		&testCredentials{secret: strings.Repeat("a", 42) + "A"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer d.Close()
+	raw := serverhttp.RawWorkflow{Command: "native.assets.read", Version: "1", Mode: "read", Arguments: json.RawMessage(`{"league":"native.test"}`)}
+	started := time.Now()
+	if _, err := d.Workflow(t.Context(), raw); err != nil {
+		t.Fatal(err)
+	}
+	if calls.Load() != 4 || time.Since(started) < 1350*time.Millisecond {
+		t.Fatalf("calls=%d elapsed=%s; want three delayed retries", calls.Load(), time.Since(started))
+	}
+}
+
 func TestWorkflowUnauthorizedSessionGeneration(t *testing.T) {
 	for _, relogin := range []bool{false, true} {
 		t.Run(fmt.Sprintf("relogin=%t", relogin), func(t *testing.T) {
@@ -300,6 +333,27 @@ func TestWorkflowForbiddenPreservesSession(t *testing.T) {
 	}
 	if after.AuthGeneration != before.AuthGeneration || d.bearer != bearer || store.secret != bearer {
 		t.Fatal("refused read changed the session or saved credential")
+	}
+}
+
+func TestDesktopWorkflowSurfacesServerRefusal(t *testing.T) {
+	for _, reason := range []string{
+		"A starter was not active on the roster at kickoff",
+		"native change refused; reread before retrying",
+	} {
+		t.Run(reason, func(t *testing.T) {
+			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+				w.WriteHeader(http.StatusConflict)
+				_, _ = fmt.Fprintln(w, reason)
+			}))
+			defer server.Close()
+			session := desktopSnapshot{client: server.Client(), address: server.URL, league: "native.test"}
+			_, _, err := postDesktopSnapshot(t.Context(), session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1})
+			if err == nil || err.Error() != reason {
+				t.Fatalf("workflow refusal = %v, want %q", err, reason)
+			}
+		})
 	}
 }
 

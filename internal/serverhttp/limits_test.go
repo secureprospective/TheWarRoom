@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+func TestWriteUnavailableSetsRetryAfter(t *testing.T) {
+	w := httptest.NewRecorder()
+	writeUnavailable(w, "temporarily unavailable")
+	if w.Code != http.StatusServiceUnavailable || w.Header().Get("Retry-After") != busyRetryAfter ||
+		strings.TrimSpace(w.Body.String()) != "temporarily unavailable" {
+		t.Fatalf("status=%d retry=%q body=%q", w.Code, w.Header().Get("Retry-After"), w.Body.String())
+	}
+}
+
 func TestProxySpoofingAndAuthThrottle(t *testing.T) {
 	calls := 0
 	handler := resourceLimits(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
