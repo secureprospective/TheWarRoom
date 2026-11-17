@@ -1,7 +1,6 @@
 # Handoff
 
 - Baton: Christopher, 2026-11-17.
-- State: PR #318 is open against `main`, not draft, not merged. Hosted HQ reads wired; player value/contract/cap/taxi/decision fields render from existing hosted payloads. Inspector local reads are mode-gated; player-name joins are indexed; unsupported taxi columns removed. `pnpm test` (881), `pnpm build`, `make lint`, and pre-push verification pass. CI/review pending.
-- Next: review PR #318/CI; do not merge.
-- Blocked on: `tidy-check.sh` reports six dangling Chromium symlinks under `~/scratch/bee-resume-v14-{browser,render2}` outside this worktree; left untouched due scope.
-- Follow-ups: existing HQ what-if drawer duplication and `hqReads.ts` subscriptions remain unchanged.
+- State: PR #321 is open against `main`, not draft or merged. Shared what-if drawer/ports and shared season+move invalidation utility are pushed. Caller inventory is in the PR body. `pnpm test` (881), `pnpm build`, `make lint`, and pre-push `verify` pass.
+- Next: address the PR's disclosed line-count miss (full affected production files: 289 → 294, +5), then review CI; do not merge.
+- Blocked on: total-line-count-decrease criterion remains unmet. `tidy-check.sh` reports six dangling Chromium symlinks in existing scratch locations outside this worktree; left untouched due write scope.

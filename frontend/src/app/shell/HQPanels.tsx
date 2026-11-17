@@ -15,6 +15,7 @@ import { useContractRead } from '../contracts/Contracts';
 import { whatIfProvider } from '../contracts/whatif';
 import { contractsProvider } from '../contracts/provider';
 import { hqEvents } from './hqReads';
+import { HQWhatIfDrawer } from './HQWhatIfDrawer';
 
 export function CapRunway({ years }: { years?: HQCap[] }) {
   return <div className="run">{years?.length ? years.map(year => <div className={`y ${(year.room ?? 0) < 0
@@ -186,29 +187,28 @@ export function HQWhatIf({ mine, close }: { mine: string; close: () => void }) {
   const provider = useMemo(whatIfProvider, []);
   const { reading, error } = useContractRead(mine, () => provider.query(mine), provider);
   const value = reading?.value;
-  return <section className="bdrawer open" aria-label="Roster drawer"><div
-    className="bd-head"><h2>What-if</h2><span
-    className="sub">Tick moves to stack them. Nothing is saved or sent.</span><HQAct className="x"
-    onAction={close}>ESC</HQAct></div>
-    <div className="bd-body"><div className="bd-main">{value?.choices.map(choice => {
-      const move = value.moves.find(m => m.player === choice.player);
-      return <HQAct key={choice.player} className={`wi ${move ? 'on' : ''}`} disabled={value.stale}
-        onAction={() => { void commands.dispatch('contracts.set', { field: 'whatif', value: move ? { mine,
-        action: 'undo', move: move.id } : { mine, action: 'cut', player: choice.player } }); }}>
-        <span className="box" /><span className="k">CUT</span><span>{choice.cutLabel}</span><span
-          className="d">{move?.charge.text ?? ''}</span></HQAct>;
-    })}{(!value || !value.choices.length) && <p className="empty" title={error}>{unavailable}</p>}</div>
-      <div className="bd-side"><div className="sum">{value?.figures.map(figure => <div
-        key={figure.label}><b>{figure.after}</b><span>{figure.label}</span><span
-        className="delta">BEFORE {figure.before} ┆ AFTER {figure.after}</span></div>)}</div>
-        <div className="tray" style={{ background: 'none', marginTop: 'auto' }}><span
-          className="msg">{value?.notice || `${value?.moves.length ?? 0} stacked`}</span>
-          <HQAct className="btn sp" disabled={!value?.moves.length} onAction={() => { void
-            commands.dispatch('contracts.set', { field: 'whatif', value: { mine, action: 'reset' } });
-            }}>CLEAR</HQAct>
-          <HQAct className="btn g2" disabled={!value?.moves.length || value.stale} onAction={() => { for
-            (const move of value?.moves.filter(m => !m.plan) ?? []) void commands.dispatch('contracts.set',
-            { field: 'release', value: { mine, action: 'draft', move: move.id } });
-            }}>SEND TO MY MOVES</HQAct>
-        </div></div></div></section>;
+  const input = value?.choices.map(choice => {
+    const move = value.moves.find(m => m.player === choice.player);
+    return <HQAct key={choice.player} className={`wi ${move ? 'on' : ''}`} disabled={value.stale}
+      onAction={() => void commands.dispatch('contracts.set', { field: 'whatif', value: move
+        ? { mine, action: 'undo', move: move.id } : { mine, action: 'cut', player: choice.player } })}>
+      <span className="box" /><span className="k">CUT</span><span>{choice.cutLabel}</span>
+      <span className="d">{move?.charge.text ?? ''}</span></HQAct>;
+  });
+  const preview = <><div className="sum">{value?.figures.map(figure => <div key={figure.label}>
+    <b>{figure.after}</b><span>{figure.label}</span>
+    <span className="delta">{`BEFORE ${figure.before} ┆ AFTER ${figure.after}`}</span></div>)}</div>
+    <div className="tray" style={{ background: 'none', marginTop: 'auto' }}>
+      <span className="msg">{value?.notice || `${value?.moves.length ?? 0} stacked`}</span>
+      <HQAct className="btn sp" disabled={!value?.moves.length}
+        onAction={() => void commands.dispatch('contracts.set', {
+          field: 'whatif', value: { mine, action: 'reset' } })}>CLEAR</HQAct>
+      <HQAct className="btn g2" disabled={!value?.moves.length || value.stale}
+        onAction={() => value?.moves.filter(m => !m.plan).forEach(move => { void commands.dispatch(
+          'contracts.set', { field: 'release', value: { mine, action: 'draft', move: move.id } });
+        })}>SEND TO MY MOVES</HQAct>
+    </div></>;
+  return <HQWhatIfDrawer close={close} detail="Tick moves to stack them. Nothing is saved or sent."
+    port={{ input: <>{input}{(!value || !value.choices.length) &&
+      <p className="empty" title={error}>{unavailable}</p>}</>, preview }} />;
 }
