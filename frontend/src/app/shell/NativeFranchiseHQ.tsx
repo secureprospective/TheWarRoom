@@ -13,6 +13,7 @@ import { HQShell, type HQTab } from './HQShell';
 import { HQHeader } from './HQHeader';
 import { HQBoard } from './HQBoard';
 import { HQContracts, HQReserves } from './HQPanels';
+import { HQMoveHistory } from './HQMoveHistory';
 import { HQMoves, HQQueue } from './HQMoves';
 import { HQRelease } from './HQRelease';
 import { HQInspector } from './HQInspector';
@@ -98,7 +99,9 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
         cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player, cut.deadNow]])}
         select={id => { select(id); setRelease(id); }} />
         : <HQMoves native snapshot={snapshot} moves={moves} available={reading.moves !== undefined}
-          reason={reading.moveReason} />}
+          reason={reading.moveReason} history={<HQMoveHistory
+            key={JSON.stringify([league, mine, snapshot.league.value.season])}
+            league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} />}
     <div className="tray"><div className="pulls" style={{ visibility: tab === 'lineup-and-roster' ?
       'visible' : 'hidden' }}>
       {(['taxi', 'ir'] as const).map(kind => <HQAct key={kind} className="pull" expanded={drawer === kind}

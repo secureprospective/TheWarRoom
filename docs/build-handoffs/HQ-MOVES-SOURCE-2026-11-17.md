@@ -1,61 +1,79 @@
-# HQ My moves — source mismatch (2026-11-17)
+# HQ My moves — native history read (2026-11-17)
 
-Status: blocked source trace, not an implemented hosted history feature. No runtime server inspection.
+The approved hosted source is the server's native append-only command ledger. Desktop envelope
+audits remain the local source; they are not imported or relabelled as native history.
 
-## What exists
+## Sources and access
 
-| Responsibility | Source-traced path / contract |
+- Desktop: `frontend/src/app/shell/MyMoves.tsx:26` → `sessionMoves.ts:19` →
+  `frontend/src/app/data/provider.ts:256` → `TargetMoves`; storage is
+  `internal/store/mflref/moves/store.go:78` (`move_audit`) / `:110` (envelope receipts),
+  with append-only triggers in `internal/db/main_schema.go:70-96`.
+- Hosted: `internal/commissioner/ledger.go:158` (`Reading`) already owns safe descriptions,
+  actor/AI stamps and audience filtering; the existing store read composes it at
+  `internal/store/history/commissioner.go:472-492`. The new read uses the same native records,
+  never desktop envelopes or raw command payloads.
+- `docs/ui/data-catalog/DATA_FLOW_MAP.md:17`: **LEDGER** is “every member (filtered by Audience)”.
+  “Append-only. Actor + ‘via AI’ stamped. Commish corrections are new rows, never edits.”
+  Thus another admitted owner can see public franchise history, but not another owner's sealed
+  bids/private rows. An outsider receives the standard league-membership refusal. `moves.read`
+  remains owner-scoped and unchanged.
+
+## Implemented flow
+
+| Responsibility | Contract / effects / failure boundary |
 | --- | --- |
-| Legacy My moves | `frontend/src/app/shell/MyMoves.tsx:26` loads receipts through `executor.loadMoves`; `frontend/src/app/commands/sessionMoves.ts:19` calls `provider.moves(franchiseId)`; `frontend/src/app/data/provider.ts:256` reaches the desktop `TargetMoves` binding. These are envelopes, including private plans and lifecycle audits, not a public season ledger. |
-| Desktop binding | `internal/app/mflref/planwatch/move_actions.go:229` (`TargetMoves`) → `internal/composition/platform_host.go:64` → `internal/composition/snapshot_app.go:102` (`listMoves`) → local moves store. |
-| Append-only source actually used | `internal/store/mflref/moves/store.go:20` places the store in `thewarroom.db`; `:78` reads `move_audit`, `:110` lists envelope receipts. `internal/db/main_schema.go:70-96` defines `move_envelopes` / `move_audit` and their append-only triggers. |
-| HQ season ledger | `frontend/src/app/shell/HQMoves.tsx:47-52` renders an empty body and explicitly says the reads do not provide a complete season-scoped ledger. There is no existing populated desktop season-ledger implementation here to expose unchanged. |
-| Hosted lifecycle | `internal/leagueservice/native_owner_api.go:172` (`TargetNativeMoves`) reads native commissioner records and calls `market.NativeMovesReading`. It is not a reader over the desktop envelope audit tables. `internal/commissioner/market/moves_landed.go:32` projects selected active landed operations, not the append-only full history. |
-| Server load | `cmd/twr-server/league_load.go:31` accepts a desktop **history.db** mirror. `:76-79` supplies `leagueload.Mirror` / `ReplaySource`; `internal/leagueload/load.go:49` reconstructs native state through held MFL responses. This path does not load the separate desktop **thewarroom.db** envelope/audit store. |
+| Catalog `franchise.moves.history.read` | Read-only `{league, franchise, season}`; hand-written Raw validation; existing hosted member admission and scoped AI credential admission. |
+| `leagueservice.TargetFranchiseMovesHistory` | One captured native record slice from the existing host; derives the recipient revision using the existing request context; errors retain context. No writes, tables, migrations or acquisition. |
+| `commissioner.FranchiseMovesHistoryReading` | First uses `Reading`'s audience policy; retains only franchise-relevant entries in one league-clock season, newest first. Governance authorizer derived from those records when the host supplies none, matching the existing store ledger convention. |
+| Franchise association | Reuses preview target selection; follows transaction/reversal/bid/claim links, trade parties, outcomes and draft recipients. Pick ownership corrections include both previous and new owners. Unscoped league changes affect every franchise. |
+| Season page | Uses `firstSeason` and `RolloverInstants`, not calendar year or a traded pick's future year. Originals and corrections remain separate entries; nothing is folded away. |
+| `HQMoveHistory` | Mounted only by hosted HQ's My moves tab; calls `hostedWorkflow`, validates with `parseLedger`, previous/next season and explicit retry. Existing read hook fences superseded scope replies; hosted league/team topics refresh the page. Local HQ keeps its existing renderer. |
 
-## Important distinction
+Boundary wiring review: `commissionerOwnerBindings` groups the existing seven owner-market handlers
+unchanged plus the new typed `Bind1`. No policy, branch, argument rename or authority change in the
+composition map. Updated only its source fingerprint after reviewing this additive grouping.
 
-The server **does hold a native append-only command ledger**. `internal/commissioner/ledger.go:158`
-(`Reading`) already produces audience-filtered safe descriptions; hosted ledger service methods
-exist in `internal/leagueservice/commissioner_api.go:23-57`. It would be incorrect to report that
-all hosted history is missing. `FranchiseHistoryReading` in
-`internal/commissioner/history_link.go:127` instead returns history-link records/titles, not moves.
+## Desktop fields not available in the native history reading
 
-What is missing from the source-traced hosted loading path is the desktop My moves envelope audit
-history. Also missing is the assumed existing complete season-ledger reader used by desktop HQ.
-No live database was accessed, so this establishes the supported loading contract, not a count of
-rows on a particular deployment. Neither local/private audits nor native pending move payloads may
-be relabelled as a public completed-moves ledger.
+- Envelope correlation ID and planned/ready/handed-off/MFL-observed lifecycle states.
+- Per-transition from/event/to/note timestamps and MFL handoff target/link.
+- Expected off-app change, check verdicts, bid/contract plan terms and handoff deadline.
+- Structured subject/player/pick and retained trade-asset labels (native history supplies safe prose).
+- Per-move cap delta/result columns (the former HQ season table never populated them).
 
-## Access rule and next move
+## Slop touched and preservation
 
-`docs/ui/data-catalog/DATA_FLOW_MAP.md:17`:
+Replaced hosted HQ's always-empty season-ledger promise with actual safe rows and honest empty/error
+states. Reused existing parsing, authorization, clocks and read-lifetime machinery. No parallel history
+store or lifecycle policy. The near-limit composition map is grouped by owner-market responsibility,
+not split into extra files. Tiny adapters are kept in existing owner API/service files.
 
-> **LEDGER** public record | every member (filtered by Audience) | commands only, via ledger | Append-only. Actor + "via AI" stamped. Commish corrections are new rows, never edits.
+Four lint file-length reports concern untouched files: `leaguerules/catalogue.go`,
+`store/history/commissioner.go`, `serverhttp/hosted.go`, `commissioner/rules_season.go`.
+Their responsibility boundaries are unchanged; no size-only split was made.
 
-D22 at `:95` names `store/history` as the franchise-history owner. Therefore a future native
-history read should compose the existing audience-filtered ledger, preserve corrections and actor
-stamps, and season-page franchise-relevant rows. Another admitted owner is **not automatically an
-outsider** under this rule; tests must follow Audience, not invent owner-only LEDGER privacy.
-`moves.read` remains owner-scoped and unchanged.
+## Evidence and limits
 
-First resolve the brief's source mismatch: confirm that “full history” means native committed
-franchise ledger rows rather than preservation of desktop envelope lifecycle audits. If native
-history is intended, use the existing server ledger; specify franchise association and season
-semantics (including transfers, corrections and rollovers), then implement one catalogued read and
-hosted HQ rendering. If desktop audit parity is required, its validated acquisition/identity mapping
-is missing from the server loading contract and needs a separate approved scope. No tables,
-migrations, import changes, commands or UI changes are introduced by this draft.
+- Initial frozen frontend install/build passed before implementation; final build passed.
+- Race tests passed for commissioner (+ market), leagueservice, commandcatalog,
+  app/commissioner (+ native), composition and serverhttp; commissioner race batch rerun after
+  the final pick-correction association fix.
+- TLS hosted test proves owner history, another member's public reading, sealed-bid exclusion,
+  outsider refusal, empty season page and unchanged owner-only `moves.read` refusal.
+- Domain tests prove rollover paging, original/correction coexistence, actor/AI stamp,
+  unknown/invalid scope, and pick correction association with both owners.
+- Frontend: 115 files / 885 tests passed, including hosted HQ history, season navigation,
+  refusal/retry, delayed-season/franchise fencing and unchanged legacy renderer. `make lint`:
+  0 issues; Impeccable detector: no findings. Build retains existing chunk/dynamic-import warnings.
+- No browser/device visual inspection, live server/database inspection or deployment. Manual check:
+  open hosted HQ → My moves; expect dated native rows, actor/reason, separate corrections and
+  working season navigation; verify another member cannot see sealed bids.
+- Tidy check reports pre-existing Chromium symlinks and an unrelated active fleet launcher outside
+  the permitted write scope. Left untouched. No session servers/watchers were started.
 
-## Slop and verification
-
-Found, not changed: HQ's season-ledger heading promises every move while its body is always empty;
-the inventory's `moves.read` row is not proof of a complete desktop season-history implementation.
-Production footprint delta: 0 lines / 0 characters. Only documentation changes.
-
-Initial `pnpm install --frozen-lockfile && pnpm build` passed. Vite reported existing ineffective
-dynamic-import and >500 kB chunk warnings. No changed Go packages or functional changes require
-new race/authorization/paging/render tests; those outcomes remain unimplemented, not verified.
-`pnpm test` passed (114 files, 881 tests); `make lint VERSION=dev COMMIT=pulse-hqmoves
-BUILD_DATE=pulse-hqmoves` passed (0 issues). The four existing >600-line Go file reports concern
-untouched files and are not reasons to split responsibilities in this documentation-only change.
+Footprint against the branch's `origin/main` merge base (`a480ceecd`), counting the complete
+changed handwritten production file set: 1,706 → 1,986 physical lines; 88,739 → 100,085 Unicode
+code points including LF (+280 / +11,346). This is a new read/projection/UI, not a debloat claim.
+Generated output separately: 30,826 → 30,954 lines; 861,917 → 865,283 code points. Tests/docs
+are excluded from production totals. No guarantees or tests were removed to manufacture savings.

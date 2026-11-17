@@ -86,6 +86,10 @@ export function TargetCorrections(arg1) {
   return window['go']['commissioner']['API']['TargetCorrections'](arg1);
 }
 
+export function TargetFranchiseMovesHistory(arg1) {
+  return window['go']['commissioner']['API']['TargetFranchiseMovesHistory'](arg1);
+}
+
 export function TargetLeagueCalendar(arg1) {
   return window['go']['commissioner']['API']['TargetLeagueCalendar'](arg1);
 }

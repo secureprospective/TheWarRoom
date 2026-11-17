@@ -115,3 +115,8 @@ func (a *API) TargetNativeLineup(league, franchise string, week int,
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeLineup(league, franchise, week, at)
 }
+
+func (a *API) TargetFranchiseMovesHistory(scope commissioner.RawFranchiseMovesHistory) (commissioner.Ledger, error) {
+	//nolint:wrapcheck // The shared service supplies the user-facing context.
+	return a.reads.TargetFranchiseMovesHistory(scope)
+}
