@@ -53,14 +53,10 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	pin := h.pinFor(r.Context(), league)
-	if raw.Mode != "read" && pin.Digest == "" {
+	privateQueueSet := raw.Command == "draft.queue.set"
+	if message := workflowFootballRefusal(raw, pin); message != "" {
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, "Ask the server operator to select football evidence before making changes", http.StatusConflict)
-		return
-	}
-	if raw.Mode != "read" && pin.Missing {
-		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, missingFootball(pin.Digest), http.StatusConflict)
+		http.Error(w, message, http.StatusConflict)
 		return
 	}
 	if raw.Mode != "read" && !location.Writable {
@@ -77,7 +73,8 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
-	response := WorkflowResponse{Label: location.Label, Writable: location.Writable && !pin.Missing, Football: pin.Digest, Data: data}
+	writable := location.Writable && (!pin.Missing || privateQueueSet)
+	response := WorkflowResponse{Label: location.Label, Writable: writable, Football: pin.Digest, Data: data}
 	if raw.Mode == "read" {
 		writeHostedReading(w, r, response)
 		return
@@ -102,10 +99,23 @@ func workflowRefusal(w http.ResponseWriter, r *http.Request, err error) {
 	http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
 }
 
+func workflowFootballRefusal(raw RawWorkflow, pin LeaguePin) string {
+	if raw.Mode == "read" || raw.Command == "draft.queue.set" {
+		return ""
+	}
+	if pin.Digest == "" {
+		return "Ask the server operator to select football evidence before making changes"
+	}
+	if pin.Missing {
+		return missingFootball(pin.Digest)
+	}
+	return ""
+}
+
 // workflowData runs a workflow, answering a league-state reading from the reply cache when it holds one.
 // The envelope (label, writable) is never cached: it is read for every request.
 func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service, raw RawWorkflow, league string) (json.RawMessage, error) {
-	if raw.Mode != "read" {
+	if raw.Mode != "read" || raw.Command == "draft.queue.read" {
 		return runWorkflow(ctx, service, raw)
 	}
 	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.pinFor(ctx, league).cacheKey()+"|"+raw.Football)

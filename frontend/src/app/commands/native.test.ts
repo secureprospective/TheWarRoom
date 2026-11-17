@@ -1,6 +1,6 @@
 import type { CommandArguments } from './arguments.gen';
 import { describe, expect, it } from 'vitest';
-import { nativeCommands } from './native.gen';
+import { nativeCommands, serverCommands } from './native.gen';
 import { nativeEnvelope, type NativeArguments, type NativeRequest } from './native';
 
 const read: NativeRequest = {
@@ -29,6 +29,13 @@ function typeChecks() {
 void typeChecks;
 
 describe('catalog-generated native envelope', () => {
+  it('keeps hosted-only workflows off the local native door', () => {
+    expect(nativeCommands).not.toHaveProperty('draft.queue.read');
+    expect(serverCommands['draft.queue.read'].definition.Availability).toBe('server');
+    const queue: NativeRequest = { command: 'draft.queue.read', mode: 'read',
+      arguments: { league: 'native.test' } };
+    expect(nativeEnvelope(queue)).toEqual({ ...queue, version: '1' });
+  });
   it('preserves command, version, mode and all supplied fields for the live hosted path', () => {
     expect(nativeEnvelope(read)).toEqual({ ...read, version: '1' });
     const args: NativeArguments<'commish.league.create'> = {

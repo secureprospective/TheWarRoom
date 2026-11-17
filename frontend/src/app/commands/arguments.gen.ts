@@ -2452,6 +2452,8 @@ export type WorkflowArgumentMap = {
 "commish.franchise.direction.set": NativeArguments<"commish.franchise.direction.set">;
 "player.note.set": NativeArguments<"player.note.set">;
 "player.watch.set": NativeArguments<"player.watch.set">;
+"draft.queue.read": NativeArguments<"draft.queue.read">;
+"draft.queue.set": NativeArguments<"draft.queue.set">;
 };
 export type CommandArgumentMap = {
  native: { [K in NativeCommandId]: NativeArguments<K> };

@@ -29,6 +29,8 @@ type Thread struct {
 	Count int     `json:"count"`
 }
 
+const MaxDraftQueueEntries = 500
+
 type RawChange struct {
 	Mine   string `json:"mine"`
 	Kind   string `json:"kind"`
@@ -280,6 +282,58 @@ func (s *Store) ChangeForFranchise(ctx context.Context, franchiseID string, r Ra
 		return err
 	}
 	return s.change(ctx, r, at)
+}
+
+// ValidateDraftQueue checks the complete ordered replacement before it reaches storage.
+func ValidateDraftQueue(players []string) error {
+	if len(players) > MaxDraftQueueEntries {
+		return fmt.Errorf("personal: draft queue exceeds %d players", MaxDraftQueueEntries)
+	}
+	seen := make(map[string]bool, len(players))
+	for _, raw := range players {
+		id, err := playerid.New(raw)
+		if err != nil || id.String() != raw {
+			return fmt.Errorf("personal: draft queue requires canonical player ids")
+		}
+		if seen[raw] {
+			return fmt.Errorf("personal: draft queue contains a duplicate player")
+		}
+		seen[raw] = true
+	}
+	return nil
+}
+
+// ReplaceDraftQueue atomically replaces one authenticated franchise's complete ordered queue.
+func (s *Store) ReplaceDraftQueue(ctx context.Context, franchiseID string, players []string, at time.Time) error {
+	if !s.league {
+		return fmt.Errorf("personal: draft queues require a league store")
+	}
+	if err := validateFranchiseScope(franchiseID); err != nil {
+		return err
+	}
+	if err := ValidateDraftQueue(players); err != nil {
+		return err
+	}
+	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("personal: begin draft queue replacement: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.ExecContext(ctx, `DELETE FROM private_entries WHERE franchise_id=? AND mine=? AND kind='draft'`,
+		franchiseID, franchiseID); err != nil {
+		return fmt.Errorf("personal: clear draft queue: %w", err)
+	}
+	stamp := at.UTC().Format(time.RFC3339Nano)
+	for ordinal, id := range players {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO private_entries(franchise_id,mine,kind,entity,entity_id,text,at,ordinal)
+VALUES(?,?,'draft','player',?,'',?,?)`, franchiseID, franchiseID, id, stamp, ordinal+1); err != nil {
+			return fmt.Errorf("personal: write draft queue: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("personal: commit draft queue replacement: %w", err)
+	}
+	return nil
 }
 
 func validateFranchiseScope(franchiseID string) error {

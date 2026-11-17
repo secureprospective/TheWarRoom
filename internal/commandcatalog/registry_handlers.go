@@ -13,6 +13,10 @@ import (
 )
 
 func nativeHandlers(c Command, in RegistryInputs) (map[Mode]Handler, error) {
+	// Server-only workflow commands do not create a NativeDoor or local desktop route.
+	if c.Availability == "server" {
+		return nil, nil
+	}
 	out := map[Mode]Handler{}
 	for _, mode := range c.Modes {
 		switch {

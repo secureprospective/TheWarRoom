@@ -129,6 +129,58 @@ func TestHostedEntriesAreScopedToAuthenticatedFranchise(t *testing.T) {
 	}
 }
 
+func TestHostedDraftQueueReplaceIsOrderedAtomicAndPrivate(t *testing.T) {
+	ctx := t.Context()
+	pools, err := db.Open(ctx, filepath.Join(t.TempDir(), "league.db"), history.LeagueSchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = pools.Close() }()
+	if err := history.CreateLeagueFile(ctx, pools, history.LeagueFile{League: "native.test"}); err != nil {
+		t.Fatal(err)
+	}
+	store := NewLeague(pools)
+	at := time.Date(2026, 11, 17, 15, 0, 0, 0, time.UTC)
+	for _, players := range [][]string{{"0099", "0100", "0101"}, {"0101", "0099", "0100"}} {
+		if err := store.ReplaceDraftQueue(ctx, "franchise.01", players, at); err != nil {
+			t.Fatal(err)
+		}
+	}
+	read := func(franchise string) []string {
+		t.Helper()
+		entries, err := store.ReadFranchise(ctx, franchise)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var ids []string
+		for _, entry := range entries {
+			if entry.Kind == "draft" {
+				ids = append(ids, entry.ID)
+			}
+		}
+		return ids
+	}
+	want := []string{"0101", "0099", "0100"}
+	if got := read("franchise.01"); !slices.Equal(got, want) {
+		t.Fatalf("replaced draft queue = %v, want %v", got, want)
+	}
+	if got := read("franchise.02"); len(got) != 0 {
+		t.Fatalf("another franchise read the queue: %v", got)
+	}
+	if err := store.ReplaceDraftQueue(ctx, "franchise.01", []string{"0101", "0101"}, at); err == nil {
+		t.Fatal("duplicate player queue was accepted")
+	}
+	if got := read("franchise.01"); !slices.Equal(got, want) {
+		t.Fatalf("invalid replacement changed queue = %v, want %v", got, want)
+	}
+	if err := store.ReplaceDraftQueue(ctx, "franchise.01", nil, at); err != nil {
+		t.Fatal(err)
+	}
+	if got := read("franchise.01"); len(got) != 0 {
+		t.Fatalf("empty replacement did not clear queue: %v", got)
+	}
+}
+
 func addHostedEntry(ctx context.Context, t *testing.T, store *Store, franchiseID string, change RawChange) {
 	t.Helper()
 	at := time.Date(2026, 11, 17, 15, 0, 0, 0, time.UTC)

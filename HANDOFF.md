@@ -1,6 +1,9 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: PR #332 open: https://github.com/secureprospective/TheWarRoom/pull/332. Stable typed `input-not-held` results replace text-based detection for hosted player usage/age-arc reads; War Room and HQ treat these as absent data. CI green after updating server HTTP expectations. Frontend: 118 files / 896 tests, typecheck and lint pass; Go leagueservice and serverhttp race tests pass.
-- Next: Review PR #332.
-- Blocked: none.
+- Previous: merged origin/main (#334 Personal plumbing; #335 audit fix) into PR #333.
+- State: PR #333 is open, mergeable, and CI-green; #323 is closed with a link to #333. Queue reads/writes reuse `LeaguePin.Personal`/`StoredHost.Personal`; tokens stay limited to the issuer's seated franchise. No schema/cache change; embedded DraftRoom unchanged; ADP/tier unavailable.
+- Tests: Go race tests pass for cmd/twr-server, accounts, app/commissioner, commandcatalog, leagueservice, serverhttp, and store/personal. Frontend: 122 files / 905 tests; typecheck and native generators pass.
+- Next: Christopher/ClaudeBox review and merge decision.
+- Blocked: tidy check flags a scratch folder outside this task's authorized write paths; left untouched.
+- Tried/rejected: duplicate private-store wiring; request-selected franchise; local DraftRoom changes.
