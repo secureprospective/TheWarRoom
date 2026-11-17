@@ -50,7 +50,7 @@ func boxRecoveries(game livegame.Game, lines map[string]*Line) map[*Line]int {
 	return held
 }
 
-var recoveredPlay = regexp.MustCompile(`(?i)FUMBLES \([^)]*\)[^.]*?,? recovered by ([A-Z]{2,3})-(.+?) at `)
+var recoveredPlay = regexp.MustCompile(`(?i)(?:FUMBLES(?: \([^)]*\))?)[^.]*?,? recovered by ([A-Z]{2,3})-(.+?) at `)
 
 func collectRecoveries(game livegame.Game, lines map[string]*Line) (own, opponent map[*Line]int) {
 	own, opponent = map[*Line]int{}, map[*Line]int{}
@@ -58,6 +58,12 @@ func collectRecoveries(game livegame.Game, lines map[string]*Line) (own, opponen
 		text := strings.TrimSpace(play.Text)
 		possession, ok := scrimmageFumble(game, play, text)
 		if !ok {
+			continue
+		}
+		if m := muffRecovery.FindStringSubmatch(text); m != nil {
+			if line := uniquePlayName(lines, m[1], ""); line != nil {
+				own[line]++
+			}
 			continue
 		}
 		if m := recoveredPlay.FindStringSubmatch(text); m != nil {
@@ -69,14 +75,19 @@ func collectRecoveries(game livegame.Game, lines map[string]*Line) (own, opponen
 			}
 			continue
 		}
-		if !strings.Contains(text, "), and recovers at ") {
+		if strings.Contains(text, "), and recovers at ") {
+			m := receptionPlay.FindStringSubmatch(text)
+			if m == nil {
+				m = rushPlay.FindStringSubmatch(text)
+			}
+			if m != nil {
+				if line := uniquePlayName(lines, m[1], possession); line != nil {
+					own[line]++
+				}
+			}
 			continue
 		}
-		// The ball carrier fell on his own fumble.
-		m := receptionPlay.FindStringSubmatch(text)
-		if m == nil {
-			m = rushPlay.FindStringSubmatch(text)
-		}
+		m := ownRecovery.FindStringSubmatch(text)
 		if m == nil {
 			continue
 		}
@@ -87,11 +98,22 @@ func collectRecoveries(game livegame.Game, lines map[string]*Line) (own, opponen
 	return own, opponent
 }
 
-// scrimmageFumble names the team that had the ball on a counted scrimmage play with a fumble. Kicks and
-// punts are left out: the start's possession is the kicking team, not the one that lost the ball.
+var (
+	muffRecovery = regexp.MustCompile(`(?i)\b([A-Z]\.\S+) MUFFS catch, and recovers at `)
+	ownRecovery  = regexp.MustCompile(`(?i)(?:^|[. ]+)([A-Z]\.\S+(?: \S+)?)(?: FUMBLES(?: \([^)]*\))?(?: at [^.]+)?|\) and recovers at)`)
+)
+
+// scrimmageFumble names the team that had the ball on a counted scrimmage play with a fumble. A punt
+// muff is the exception: its catcher recovers his own muff even though the kicking team had possession.
 func scrimmageFumble(game livegame.Game, play livegame.Play, text string) (string, bool) {
 	lower := strings.ToLower(text)
-	if !strings.Contains(lower, "fumbles") || voided(lower) || strings.Contains(lower, "punts") || strings.Contains(lower, "kicks") {
+	if voided(lower) {
+		return "", false
+	}
+	if strings.Contains(lower, "muffs catch") {
+		return "", true
+	}
+	if !strings.Contains(lower, "fumbles") || strings.Contains(lower, "punts") || strings.Contains(lower, "kicks") {
 		return "", false
 	}
 	return offense(game, play)
