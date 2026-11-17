@@ -211,6 +211,39 @@ func (s *Store) PlayerNotesForFranchise(ctx context.Context, franchiseID, player
 	return s.playerNotes(ctx, franchiseID, playerID)
 }
 
+// WatchedPlayersForFranchise returns this franchise's player watch list in saved order.
+func (s *Store) WatchedPlayersForFranchise(ctx context.Context, franchiseID string) ([]string, error) {
+	if !s.league {
+		return nil, fmt.Errorf("personal: franchise reads require a league store")
+	}
+	if err := validateFranchiseScope(franchiseID); err != nil {
+		return nil, err
+	}
+	rows, err := s.pools.Read().QueryContext(ctx, `SELECT entity_id FROM private_entries
+WHERE franchise_id=? AND mine=? AND kind='watch' AND entity='player' ORDER BY ordinal,at,entity_id`,
+		franchiseID, franchiseID)
+	if err != nil {
+		return nil, fmt.Errorf("personal: player watches: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	players := []string{}
+	for rows.Next() {
+		var player string
+		if err := rows.Scan(&player); err != nil {
+			return nil, fmt.Errorf("personal: player watch scan: %w", err)
+		}
+		parsed, err := playerid.New(player)
+		if err != nil || parsed.String() != player {
+			return nil, fmt.Errorf("personal: stored watch has invalid player id")
+		}
+		players = append(players, player)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("personal: player watch rows: %w", err)
+	}
+	return players, nil
+}
+
 // PlayerWatchedForFranchise reports whether this franchise watches one player.
 func (s *Store) PlayerWatchedForFranchise(ctx context.Context, franchiseID, playerID string) (bool, error) {
 	if !s.league {

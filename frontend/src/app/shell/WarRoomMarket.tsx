@@ -193,6 +193,7 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
   const canFilter = (name: string) => name === 'My needs' ? needs === undefined :
     name === 'Affordable' ? !context.native || capRoom === undefined : false;
   const canManageBids = context.native && context.native.owner !== false && !fresh?.error;
+  const canManageTargets = !context.native || context.native.owner !== false;
   return <section className="mk3 ws on" aria-label="Market"><div className="tg"><div className="ch">
     <b>MY TARGETS</b><span>ranked per need</span></div><div className="tg-l">
     {value?.targets?.length ? [...warRoomTargetLanes(context, value)].map(([position, lane]) => <div
@@ -205,7 +206,8 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
               onAction={() => { void change(entry.id, lane[i - 1].entry.id); }}>↑</WarRoomAct>
           <WarRoomAct disabled={pending || i === lane.length - 1} label={`Move ${player.name} down`}
             onAction={() => { void change(entry.id, lane[i + 1].entry.id); }}>↓</WarRoomAct></div></div>)}
-    </div>) : <WarRoomEmpty reason={context.native ? 'Private targets are not available for this league' :
+    </div>) : <WarRoomEmpty pending={!value && !reading.error} reason={context.native &&
+      value?.targets === undefined ? 'Private targets are not available for this league' :
       'Star a player to add a target'} />}</div></div>
     <div><div className="ch"><b>FREE AGENT POOL</b><span>in-season · drag a row to a target lane or to BIDS
     </span></div><div className="bench"><div className="filters">{['All', 'My needs', 'Targets',
@@ -218,7 +220,7 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
         <div className={`fa-r${bids?.some(b => b.player === p.id) ? ' bid' : ''}`}
         key={p.id} onPointerDown={e => drag(e, p.id)}><WarRoomAct className="st"
           label={`${targets.has(p.id) ? 'Unwatch' : 'Watch'} ${p.name}`} active={targets.has(p.id)}
-          disabled={pending || !!context.native || !value?.targets} onAction={() => { void change(p.id); }}>
+          disabled={pending || !canManageTargets || !value?.targets} onAction={() => { void change(p.id); }}>
           {targets.has(p.id) ? '★' : '☆'}</WarRoomAct><span className="ps">{p.position}</span>
         <WarRoomAct className="nm" onAction={() => select(p)}>{p.name}</WarRoomAct>
       <span>{p.age ?? "—"}</span>

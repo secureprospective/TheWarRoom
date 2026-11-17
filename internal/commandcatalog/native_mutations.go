@@ -18,6 +18,7 @@ func NativeCommands(seed Schema) []Command {
 		out = append(out, nativeMutation(row.id, row.args, seed))
 	}
 	out = append(out, playerPersonalNativeMutations()...)
+	out = append(out, playerPersonalNativeReads()...)
 	return out
 }
 
@@ -152,6 +153,10 @@ func playerPersonalNativeMutations() []Command {
 			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
 		{ID: leagueservice.PlayerWatchSet, Method: "SetPlayerWatch", Version: "1", Role: "domain", Gravity: "G0", Availability: "server",
 			Arguments:  Shape(reflect.TypeFor[leagueservice.RawPlayerWatchSet](), "RawPlayerWatchSet.Validate"),
+			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-player-data",
+			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
+		{ID: leagueservice.PlayerWatchOrder, Method: "SetPlayerWatchOrder", Version: "1", Role: "domain", Gravity: "G0", Availability: "server",
+			Arguments:  Shape(reflect.TypeFor[leagueservice.RawPlayerWatchOrder](), "RawPlayerWatchOrder.Validate"),
 			Permission: "franchise-owner", Modes: []Mode{Execute}, Undo: "none", Facts: "private-player-data",
 			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
 	}
