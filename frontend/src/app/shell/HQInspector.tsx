@@ -89,8 +89,8 @@ function useHQInspectorData(native: boolean, league: string | undefined, mine: s
   const readArc = useCallback(async (player: string) => parseArc(await readAgeArc(player, league)), [league]);
   const readUsage = useCallback(async (player: string) => parseUsage(await readPlayerUsage(player, league)),
     [league]);
-  const arc = useHQRead('market.TargetAgeArc', [id], readArc, !native);
-  const usage = useHQRead('research.TargetPlayerUsage', [id], readUsage, !native);
+  const arc = useHQRead('market.TargetAgeArc', [id], readArc, !native || !!league);
+  const usage = useHQRead('research.TargetPlayerUsage', [id], readUsage, !native || !!league);
   const notes = useContractRead(JSON.stringify([mine, id, revision]), () => native ? Promise.reject(new
     Error(unavailable)) : notesRead(mine, id), hqEvents);
   const assets = useHQRead('market.TargetAssetBoard', [], assetsRead, !native);
