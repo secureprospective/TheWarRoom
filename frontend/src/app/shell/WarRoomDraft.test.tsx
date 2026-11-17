@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 
 const testState = vi.hoisted(() => ({
+  actions: new Map<string, () => void | Promise<void>>(),
   read: vi.fn(),
   save: vi.fn(async (_native: unknown, players: string[]) => players),
   reading: {
@@ -30,13 +31,15 @@ vi.mock('./warroomDraftReads', () => ({
 }));
 vi.mock('../draftroom/DraftRoom', () => ({ default: () => <div>Embedded DraftRoom</div> }));
 vi.mock('./HQAct', () => ({ HQAct: ({ onAction, children, label, disabled }: {
-  onAction?: () => void; children?: ReactNode; label?: string; disabled?: boolean;
-}) => <button aria-label={label ?? (typeof children === 'string' ? children : undefined)}
-  disabled={disabled} onClick={() => onAction?.()}>{children}</button> }));
+  onAction?: () => void | Promise<void>; children?: ReactNode; label?: string; disabled?: boolean;
+}) => {
+  if (!disabled && label && onAction) testState.actions.set(label, onAction);
+  return <span data-action={label}>{children}</span>;
+} }));
 
 import { WarRoomDraft } from './WarRoomDraft';
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => { vi.clearAllMocks(); testState.actions.clear(); });
 
 it('shows the hosted queue and saves a reorder as one ordered replacement', async () => {
   const container = document.createElement('div');
@@ -49,10 +52,10 @@ it('shows the hosted queue and saves a reorder as one ordered replacement', asyn
     });
     expect(container.textContent).toContain('Player A');
     expect(container.textContent).toContain('Player B');
-    const moveUp = container.querySelector('[aria-label="Move Player B up"]');
-    expect(moveUp).not.toBeNull();
+    const moveUp = testState.actions.get('Move Player B up');
+    expect(moveUp).toBeDefined();
     await act(async () => {
-      (moveUp as HTMLButtonElement).click();
+      await moveUp?.();
       await new Promise(resolve => setTimeout(resolve, 0));
     });
     expect(testState.save).toHaveBeenCalledWith(native, ['0100', '0099']);
