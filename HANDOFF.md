@@ -1,8 +1,7 @@
 # Handoff
 
-- Baton: ClaudeBox review, 2026-11-17; branch session/pulse-lsave, PR #309. Do not merge.
-- State: Hosted execute shows rule refusals but keeps credential, role and governance-admission denials generic. Shared service keeps capitalized preview wording and the original error chain. Removed the uncommitted message-substring filter.
-- Next: Check PR CI and review; live click-through not attempted. Preview blockers render in frontend/src/app/commissioner/HostedReview.tsx. Hosted workflow/client execute errors still use generic wording; no claim of an end-to-end visible execute reason.
-- Blocked on: No backend blocker. Forbidden lab hosts were not contacted. The prior run's stdout.log was empty.
-- Evidence: CGO_ENABLED=1 race tests pass for serverhttp, leagueservice, commissioner, app/commissioner (including the unchanged release permission matrix and same-words tests), and store/history. Preview bypass, execute generic-response, permission-disclosure and same-words mutants all failed their intended tests, then were restored. Added shared-error identity and hosted role-no-op regressions.
-- Tried/rejected: Filtering kickoff errors by message text hides other authorized rule refusals and cannot express the permission contract.
+- Baton: Bee, 2026-11-16.
+- State: Stable odds seed and bounded simulation cache implemented. Commissioner and history race tests pass. Real-data pulse run verified identical seed and all 32 odds rows before/after lineup writes and on repeated reads. Three baseline/after load runs plus one parity run are in `.scratch/`.
+- Next: Project hooks block commit/PR. Restore the required frontend toolchain/build output through the project owner, then rerun hooks, commit, push and open a PR against main. Do not merge.
+- Blocked on: `make lint` and commit hooks fail because `frontend/dist` is absent (`main.go:12:12: pattern all:frontend/dist: no matching files found`). `pnpm --dir frontend build` also fails: global tsc rejects existing `esModuleInterop=false` and `moduleResolution=node10`; local `node_modules` is absent. Do not edit `frontend/dist` or install dependencies without authorization. Tidy reports known dangling scratch symlinks and another agent's scratch folder.
+- Tried/rejected: The records-length seed changed odds after lineup-only writes. Replaced it with a hash of simulation inputs; no contracts-cache change.
