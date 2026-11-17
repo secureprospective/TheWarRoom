@@ -1,7 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Current main merged; frontend frozen install/build passed. PR #312 has three sequential 180s origin/main runs and three branch runs from the same local harness. CPU decreased 6.6%; read errors were 0 in both sets. PR body has the table and is ready; no merge.
-- Next: push this sync commit, verify CI/PR; do not merge.
-- Blocked on: tidy-check flags six dangling Chromium symlinks in external scratch folders; left untouched because they are outside this worktree and authorized output paths.
-- Tried/rejected: Earlier single-run evidence was not used for the final table; the six fresh run data sets were used. The untracked `cmd/twr-server/zz_pulse_repro_test.go` was preserved and not staged.
+- State: Plans tab now has one explicit empty state; existing “looking back” renderer/read is retained. Frontend tests passed (116 files, 886 tests) and `pnpm exec tsc --noEmit` passed.
+- Next: Commit, push, open PR; check CI and report status.
+- Blocked on: `tidy-check.sh` reports six dangling Chromium symlinks in external scratch folders `~/scratch/bee-resume-v14-browser/` and `~/scratch/bee-resume-v14-render2/`; left untouched because they are outside this worktree and authorized output paths.
+- Tried/rejected: No additional reads or backend changes; plans data has no source per task brief.
