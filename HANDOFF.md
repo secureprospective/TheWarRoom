@@ -1,7 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Hosted bid place/raise/withdraw use private preview → hold-to-confirm → receipt, then reread owner bids and cap. Authority/football evidence is checked; own bids stay SEALED. Local draft/revise remain on `poolProvider`. PR #329 is open; all CI checks pass. Commit: `276e4fac5`.
-- Next: Christopher review and merge decision; do not merge without approval.
-- Blocked on: `tidy-check.sh` flags six dangling Chromium symlinks in `~/scratch/bee-resume-v14-{browser,render2}`. They are outside the authorized write paths and untouched. No live league click-through was performed.
-- Tried/rejected: No new persistence, no local-provider route in hosted mode, no rival bid values/counts in War Room view.
+- State: Commit `92be27e40` pushed. Draft PR #327 is open and unmerged: https://github.com/secureprospective/TheWarRoom/pull/327. Existing `native.reserve.check` now returns optional taxi experience/years remaining from its validated rule calculation; hosted HQ shows those columns only for held values. Desktop taxi UI is unchanged. IR remains unavailable because the hosted server holds no current injury/return feed. Race test for `internal/nativecheck`, all frontend tests (115 files / 886 tests), frontend typecheck, `make lint`, binding generation, and push-hook changed-package verification passed. No live server click-through was performed.
+- Next: Review PR #327; decide how to provide current hosted injury/return facts. The nearest existing parser is MFL `TYPE=injuries`, but the governing plan has no ongoing MFL sync.
+- Blocked on: `tidy-check` names six dangling Chromium symlinks in external `~/scratch/bee-resume-v14-{browser,render2}` folders. Left untouched because writes are outside this task's authorization.
+- Tried/rejected: Do not infer injury/back from NFL injury eligibility, game state, or historical weekly practice/report statuses. nflverse has weekly status only, ESPN parser has game/lineup status, and hosted league-load does not ingest the MFL injuries export.

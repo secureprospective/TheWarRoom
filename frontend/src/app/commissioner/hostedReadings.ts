@@ -206,7 +206,7 @@ export function parseHostedRoster(v: unknown): HostedRoster {
 export type HostedReserves = {
   franchise: string;
   words: string[];
-  players: { player: string; words: string }[];
+  players: { player: string; words: string; experienceYears?: number; taxiYearsLeft?: number }[];
 }[];
 export function parseHostedReserves(v: unknown): HostedReserves {
   const r = object(v, 'Reserves', [
@@ -231,8 +231,11 @@ export function parseHostedReserves(v: unknown): HostedReserves {
       franchise: text(r.franchise, p),
       words,
       players: array(r.players, p, (v, p) => {
-        const r = object(v, p, ['player', 'name', 'squad', 'standing', 'words']);
-        return { player: text(r.player, p), words: text(r.words, p) };
+        const r = object(v, p, ['player', 'name', 'squad', 'standing', 'words', 'experienceYears',
+          'taxiYearsLeft']);
+        return { player: text(r.player, p), words: text(r.words, p),
+          ...(r.experienceYears === undefined ? {} : { experienceYears: integer(r.experienceYears, p) }),
+          ...(r.taxiYearsLeft === undefined ? {} : { taxiYearsLeft: integer(r.taxiYearsLeft, p) }) };
       }),
     };
   });

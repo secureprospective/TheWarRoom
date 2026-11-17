@@ -238,6 +238,7 @@ export type NativeHQ = {
   moves?: HQMove[];
   moveReason?: string;
   reserveNotes?: Map<string, string>;
+  reserveExperience?: Map<string, { experienceYears?: number; taxiYearsLeft?: number }>;
   record?: string;
   standing?: string;
   standingsNote?: string;
@@ -346,6 +347,9 @@ export async function readNativeHQ(
       if ((r.data as { league: unknown }).league !== league) throw new Error('Reserve scope changed');
       const reserves = parseHostedReserves(r.data).find((r) => r.franchise === mine);
       result.reserveNotes = new Map(reserves?.players.map((p) => [p.player, p.words]));
+      result.reserveExperience = new Map(reserves?.players.map((p) => [p.player, {
+        experienceYears: p.experienceYears, taxiYearsLeft: p.taxiYearsLeft,
+      }]));
     }),
     apply(async () => {
       // Moves are owner-only on the server; viewing another franchise must not ask for them.
