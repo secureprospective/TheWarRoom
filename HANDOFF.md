@@ -1,7 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Current main merged; frontend frozen install/build passed. PR #312 has three sequential 180s origin/main runs and three branch runs from the same local harness. CPU decreased 6.6%; read errors were 0 in both sets. PR body has the table and is ready; no merge.
-- Next: push this sync commit, verify CI/PR; do not merge.
-- Blocked on: tidy-check flags six dangling Chromium symlinks in external scratch folders; left untouched because they are outside this worktree and authorized output paths.
-- Tried/rejected: Earlier single-run evidence was not used for the final table; the six fresh run data sets were used. The untracked `cmd/twr-server/zz_pulse_repro_test.go` was preserved and not staged.
+- State: Job 4 stopped before implementation. Hosted league DBs are separately migrated by `history.MigrateLeague`; they do not include `mainPersonalDDL` / `personal_entries`. The existing personal store initializes that table only in `MainSchema` for the local desktop DB. No hosted franchise-private persistence exists to reuse.
+- Next: Christopher decides the required server persistence/schema migration. Keep queue and ADP/tier unavailable until then; hosted `marketfeeds` ADP is not populated (only local app/core captures those feeds).
+- Blocked on: task forbids new DB tables/migrations and directs a DRAFT PR if one is needed. A private queue cannot safely use league cache or silently add storage.
+- Tried and rejected: none; no code or tests changed. Source-traced `personal_entries` DDL, hosted league migrations, and server `history.Store` routing; desktop-modes checks passed.
