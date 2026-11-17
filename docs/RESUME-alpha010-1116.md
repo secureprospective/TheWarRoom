@@ -3,6 +3,15 @@ Updated 8:50 PM CT (sixth compaction today). On "we are back": do his instructio
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
+## 0. STATE AT 4:30 AM CST TUE 11-17 (supersedes sections 3, 10 below)
+- Overnight report: Beelink `~/fleet/runs/overnight-twr-1116/REPORT.md` (Needs Christopher first). Tracker updated 4:20 AM. Hermes tasks T637-T640 added.
+- Merged overnight: #314 refusal reason, #315 HQ shared reads, #316 Retry-After, #317 Week 10 scoring fixes, #318 HQ step 4.
+- Drafts: #312 cpu7 (timing runs owed), #313 notes (needs DB decision), #319 HQ My moves (source decided: server native ledger; not built).
+- GPT quota ran out 4:26 AM: hqmoves part 2 and cpu7 part 3 died at start. Nothing running. No watchers.
+- Next when quota resets: relaunch `launch-pulse-lane.sh sol hqmoves ~/fleet/briefs/alpha010/hqmoves.md medium` and `luna cpu7 ~/fleet/briefs/alpha010/cpu7c.md high` (move old completion.txt aside first).
+- Lab: CT 260 (fresh install, running), CT 258 (upgraded to main, running). CT 257 untouched (read-only copies, deleted).
+- Clock: Claudebox now on America/Chicago (he ran timedatectl 9:42 PM).
+
 ## 1. WHAT WE ARE DOING
 (a) Alpha 0.10: prove the 15 lines of `docs/roadmap/RELEASE-0.10.md` (lab jobs tonight after the game).
 (b) NEXT SCREEN = FRANCHISE HQ on real server data (his "hard focus"). Plan on the tracker, 6 steps.
