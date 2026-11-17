@@ -10,9 +10,9 @@ import (
 )
 
 // The box states a player's catches and carries but not how long each was, and the league scores the
-// long ones (C20, C40, R20, R40). The play text names each gain; a player's gains are kept only when
-// their count and yards reconcile with that player's box line, so a missed or misread play never
-// becomes a made-up distance. Distances are events, from which the dictionary counts each threshold.
+// long ones (C20, C40, R20, R40). Parsed plays are retained when their count fits the box line, even if
+// a live feed omits other plays. An omitted or misread play never becomes a made-up distance. Distances are
+// events, from which the dictionary counts each threshold.
 
 type gainKind struct {
 	event, count, yards leaguerules.StatID
@@ -23,7 +23,7 @@ func attachLongGains(game livegame.Game, lines map[string]*Line) {
 	for _, line := range lines {
 		for _, kind := range []gainKind{{"long_reception", "reception", "receiving_yards"}, {"long_rush", "rushing_attempt", "rushing_yards"}} {
 			held := gains[line][kind.event]
-			if !reconciles(line, kind, held) {
+			if !fitsBox(line, kind, held) {
 				continue
 			}
 			if line.Stats.Events == nil {
@@ -34,18 +34,11 @@ func attachLongGains(game livegame.Game, lines map[string]*Line) {
 	}
 }
 
-// reconciles says whether the parsed gains are exactly the box line's count and yards.
-func reconciles(line *Line, kind gainKind, held []leaguerules.Decimal) bool {
+// fitsBox keeps individually parsed plays when an incomplete play feed reports fewer gains than the box.
+func fitsBox(line *Line, kind gainKind, held []leaguerules.Decimal) bool {
 	count, hasCount := line.Stats.Quantities[kind.count]
-	yards, hasYards := line.Stats.Quantities[kind.yards]
-	if !hasCount || !hasYards {
-		return false
-	}
-	var total leaguerules.Decimal
-	for _, gain := range held {
-		total += gain
-	}
-	return leaguerules.Decimal(len(held))*10000 == count && total == yards
+	_, hasYards := line.Stats.Quantities[kind.yards]
+	return hasCount && hasYards && len(held) > 0 && leaguerules.Decimal(len(held))*10000 <= count
 }
 
 // collectGains reads each counted catch and carry from the play text, by the uniquely named player.

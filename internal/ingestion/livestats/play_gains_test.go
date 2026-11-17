@@ -36,9 +36,9 @@ func TestLongGainsReconcileWithTheBox(t *testing.T) {
 	if got := etienne.Stats.Events["long_rush"]; !slices.Equal(got, []leaguerules.Decimal{210000, 0, 20000}) {
 		t.Fatalf("suffixed rusher: %v", got)
 	}
-	// Two catches in the box, one in the plays: no distance is invented for the missing one.
-	if _, ok := short.Stats.Events["long_reception"]; ok {
-		t.Fatal("unreconciled catches became distances")
+	// The parsed 15-yard catch is known even though one of the box's two catches is absent from the feed.
+	if got := short.Stats.Events["long_reception"]; !slices.Equal(got, []leaguerules.Decimal{150000}) {
+		t.Fatalf("partial catch evidence: %v", got)
 	}
 }
 
