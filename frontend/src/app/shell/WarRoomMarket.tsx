@@ -1,22 +1,23 @@
 import { HQAct as WarRoomAct } from './HQAct';
 import { useState } from 'react';
+import { HoldToFire } from '../commissioner/HoldToFire';
+import { previewChange } from '../commissioner/preview';
 import type { WarRoomContext } from './warroomReads';
-import type { WarRoomOwnBid } from './warroomMarketReads';
+import type { WarRoomOwnBid, WarRoomMarketActionResult } from './warroomMarketReads';
 import { useWarRoomRead } from './warroomReads';
-import { readWarRoomMarket, changeWarRoomTarget, warRoomTargetLanes, type WarRoomMarketReading,
-  type WarRoomMarketPlayer } from './warroomMarketReads';
+import { readWarRoomMarket, changeWarRoomTarget, warRoomMarketAction, warRoomTargetLanes,
+  type WarRoomMarketReading, type WarRoomMarketPlayer } from './warroomMarketReads';
 import { WarRoomEmpty } from './WarRoomHeader';
 import { money, unavailable } from './hqModel';
-import { poolProvider } from '../pool/provider';
 import { copyText, planForm } from '../pool/state';
 import type { Plan } from '../pool/contract';
 import { useWarRoomDrag } from './warroomDrag';
 export const ownBid = (p: Plan): WarRoomOwnBid => ({ player: p.playerId, name: p.player,
   contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post, plan: p });
 const STEP = 0.1;
-export function WarRoomOwnBids({ reading, kind, revise }: { reading?: WarRoomMarketReading;
+export function WarRoomOwnBids({ reading, kind, revise, withdraw }: { reading?: WarRoomMarketReading;
   kind?: 'plan' | 'placed'; revise?: (b: WarRoomOwnBid, change: { salary?: string; years?: number }) =>
-    void }) {
+    void; withdraw?: (b: WarRoomOwnBid) => void }) {
   const bids = reading?.bids?.filter(b => !kind || b.kind === kind);
   const [copied, setCopied] = useState('');
   const copy = async (b: WarRoomOwnBid) => {
@@ -41,62 +42,141 @@ export function WarRoomOwnBids({ reading, kind, revise }: { reading?: WarRoomMar
         {Array.from({ length: reading?.maxYears ?? 0 }, (_, i) => i + 1).map(year =>
           <option key={year} value={year}>{year}</option>)}
       </select>{!reading?.maxYears && <small>Contract length setting unavailable</small>}</label>}
+      {revise && b.bidId && <WarRoomAct label={`Revise ${b.name} bid`}
+        onAction={() => revise(b, {})}>REVISE</WarRoomAct>}
+      {withdraw && b.bidId && <WarRoomAct label={`Withdraw ${b.name} bid`}
+        onAction={() => withdraw(b)}>WITHDRAW</WarRoomAct>}
       <span className="chip2">{b.state}</span>{b.post && <WarRoomAct className="chip"
         label={`Copy ProBoards post for ${b.name}`} onAction={() => { void copy(b); }}>
         {copied === b.player ? 'COPIED' : 'COPY PROBOARDS POST'}</WarRoomAct>}</div>) :
     kind === 'plan' ? null : <WarRoomEmpty reason="No own bids recorded" /> : <WarRoomEmpty />}
     {kind === 'plan' && <div className="add">Drag a player here to bid. Order = priority.</div>}</>;
 }
+type BidEditor = { type: 'place'; player: WarRoomMarketPlayer; salary: string; years: number } |
+  { type: 'raise'; bid: WarRoomOwnBid; salary: string; years: number };
+type BidReview = Extract<WarRoomMarketActionResult, { kind: 'review' }>;
+type RefreshedBids = { bids?: WarRoomOwnBid[]; revision?: number; capRoom?: number; error?: string };
 export function WarRoomMarket({ context, room, select }: { context: WarRoomContext; room?: number;
   select: (p: WarRoomMarketPlayer) => void }) {
   const [refresh, setRefresh] = useState(0);
   const [filter, setFilter] = useState('All');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [editor, setEditor] = useState<BidEditor>();
+  const [review, setReview] = useState<BidReview>();
+  const [fresh, setFresh] = useState<RefreshedBids>();
+  const [own, setOwn] = useState<Record<string, WarRoomOwnBid>>({});
   const reading = useWarRoomRead(JSON.stringify([context.native?.league, context.mine, refresh]), () =>
     readWarRoomMarket(context));
   const value = reading.reading;
   const targets = new Set(value?.targets?.map(t => t.id));
+  const capRoom = fresh ? fresh.capRoom : value?.capRoom ?? room;
+  const bidRevision = fresh?.revision ?? value?.bidRevision;
+  const sourceBids = fresh?.bids ?? value?.bids;
+  const bids = value && [...(sourceBids ?? []).filter(b => !own[b.player]), ...Object.values(own)];
+  const shown = value && { ...value, bids };
   const change = async (id: string, withPlayer?: string) => {
     if (pending) return;
-    setPending(true); setError('');
+    setPending(true); setError(''); setNotice(''); setFresh(undefined);
     try { await changeWarRoomTarget(context, id, targets.has(id), withPlayer); setRefresh(n => n + 1); }
     catch { setError(unavailable); } finally { setPending(false); }
   };
   const bid = async (p: WarRoomMarketPlayer) => {
-    if (pending || value?.bids?.some(b => b.player === p.id) || own[p.id]) return;
+    if (pending || fresh?.error || bids?.some(b => b.player === p.id)) return;
+    if (context.native) {
+      if (!value?.writable || !value.football) {
+        setError('This league is read-only or football evidence is unavailable; refresh before bidding');
+        return;
+      }
+      if (bidRevision === undefined) {
+        setError('Your bid version is unavailable; refresh before continuing');
+        return;
+      }
+      setEditor({ type: 'place', player: p, salary: '', years: 0 }); return;
+    }
     setPending(true); setError('');
     try {
-      const plan = await poolProvider.draft(context.mine, { planId: '', playerId: p.id, playerName: p.name,
-        salary: String((p.minimumCents ?? 0) / 1e8), years: 1, snipe: false, beat: '', evidence: '',
-        closesOpen: false, closesDate: '', closesTime: '', conditionalDrop: '', conditionalOpen: false });
-      setOwn(o => ({ ...o, [plan.playerId]: ownBid(plan) }));
+      const result = await warRoomMarketAction(context, { type: 'draft', form: {
+        planId: '', playerId: p.id, playerName: p.name, salary: String((p.minimumCents ?? 0) / 1e8),
+        years: 1, snipe: false, beat: '', evidence: '', closesOpen: false, closesDate: '',
+        closesTime: '', conditionalDrop: '', conditionalOpen: false } });
+      if (result.kind === 'plan') setOwn(o => ({ ...o, [result.plan.playerId]: ownBid(result.plan) }));
     } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
     finally { setPending(false); }
   };
-  // A saved or revised plan updates its own card; the pool is not read again.
-  const [own, setOwn] = useState<Record<string, WarRoomOwnBid>>({});
   const revise = async (b: WarRoomOwnBid, change: { salary?: string; years?: number }) => {
-    if (pending || !b.plan) return;
+    if (pending || fresh?.error) return;
+    if (context.native) {
+      if (!value?.writable || !value.football) {
+        setError('This league is read-only or football evidence is unavailable; refresh before bidding');
+        return;
+      }
+      setEditor({ type: 'raise', bid: b, salary: '', years: 0 }); return;
+    }
+    if (!b.plan) return;
     if (change.years !== undefined && (!value?.maxYears || !Number.isSafeInteger(change.years) ||
       change.years < 1 || change.years > value.maxYears)) {
         setError('Choose a contract length within the league limit'); return; }
     if (change.salary !== undefined) {
       const salary = Number(change.salary);
       if (!Number.isFinite(salary) || salary <= 0) { setError('Enter a bid greater than zero'); return; }
-      if (room === undefined) { setError('Cap room is unavailable; bid was not changed'); return; }
-      if (Math.round(salary * 1e8) > room) { setError('Bid exceeds your cap room'); return; }
+      if (capRoom === undefined) { setError('Cap room is unavailable; bid was not changed'); return; }
+      if (Math.round(salary * 1e8) > capRoom) { setError('Bid exceeds your cap room'); return; }
     }
     setPending(true); setError('');
     try {
-      const plan = await poolProvider.revise(b.plan.id, context.mine,
-        { ...planForm(b.plan), ...change });
-      setOwn(o => ({ ...o, [plan.playerId]: ownBid(plan) }));
+      const result = await warRoomMarketAction(context, { type: 'revise', bid: b,
+        form: { ...planForm(b.plan), ...change } });
+      if (result.kind === 'plan') setOwn(o => ({ ...o, [result.plan.playerId]: ownBid(result.plan) }));
     } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
     finally { setPending(false); }
   };
-  const bids = value && [...(value.bids ?? []).filter(b => !own[b.player]), ...Object.values(own)];
-  const shown = value && { ...value, bids };
+  const reviewBid = async () => {
+    if (!editor || pending || fresh?.error) return;
+    if (bidRevision === undefined) {
+      setError('Your bid version is unavailable; refresh before continuing');
+      return;
+    }
+    setPending(true); setError(''); setNotice('');
+    try {
+      const salary = Number(editor.salary);
+      const details = { salaryCents: Math.round(salary * 1e8), years: editor.years,
+        revision: bidRevision, maxYears: value?.maxYears ?? 0, capRoom,
+        writable: value?.writable === true, football: value?.football ?? '' };
+      const result = editor.type === 'place' ? await warRoomMarketAction(context, {
+        type: 'place', player: editor.player, ...details }) : await warRoomMarketAction(context, {
+        type: 'raise', bid: editor.bid, ...details });
+      if (result.kind === 'review') { setReview(result); setEditor(undefined); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    finally { setPending(false); }
+  };
+  const withdraw = async (b: WarRoomOwnBid) => {
+    if (pending || fresh?.error || bidRevision === undefined) return;
+    setPending(true); setError(''); setNotice('');
+    try {
+      const result = await warRoomMarketAction(context, { type: 'withdraw', bid: b,
+        revision: bidRevision, writable: value?.writable === true, football: value?.football ?? '' });
+      if (result.kind === 'review') setReview(result);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    finally { setPending(false); }
+  };
+  const confirmBid = async () => {
+    if (!review || pending) return;
+    setPending(true); setError(''); setNotice('');
+    try {
+      const result = await warRoomMarketAction(context, { type: 'confirm', request: review.request,
+        football: review.football });
+      if (result.kind === 'recorded') {
+        setFresh({ bids: result.bids?.bids, revision: result.bids?.revision,
+          capRoom: result.capRoom, error: result.refreshError });
+        setNotice(result.receipt.message);
+        setError(result.refreshError ?? '');
+        setReview(undefined);
+      }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    finally { setPending(false); }
+  };
   const drag = useWarRoomDrag((id, over) => {
     const p = value?.players?.find(x => x.id === id);
     if (!p) return;
@@ -105,6 +185,7 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
     if (lane && lane.dataset.lane === p.position && !targets.has(id)) void change(id);
   });
   const players = value?.players?.filter(p => filter !== 'Targets' || targets.has(p.id));
+  const canManageBids = context.native && context.native.owner !== false && !fresh?.error;
   return <section className="mk3 ws on" aria-label="Market"><div className="tg"><div className="ch">
     <b>MY TARGETS</b><span>ranked per need</span></div><div className="tg-l">
     {value?.targets?.length ? [...warRoomTargetLanes(context, value)].map(([position, lane]) => <div
@@ -140,14 +221,46 @@ export function WarRoomMarket({ context, room, select }: { context: WarRoomConte
           undefined ? value?.errors.join(' · ') ||
           'Pool could not be read' : 'No free agents match this view')} />}</div>
         {error && <p className="empty" role="alert">{error}</p>}</div>
-    <div className="bcol"><div className="budget"><div className="t"><span>CAP ROOM</span><b>{money(room)}
+    <div className="bcol"><div className="budget"><div className="t"><span>CAP ROOM</span><b>{money(capRoom)}
       </b><span className="lim">HARD LIMIT</span></div><div className="bar" /><div className="t">
         <span>committed {unavailable}</span><span>free {unavailable}</span></div></div>
       <div className="ch"><b>MY BIDS</b><span>{unavailable}</span></div><div className="bids">
         <div className="ch"><b>READY</b></div><WarRoomOwnBids reading={shown} kind="plan"
           revise={(b, change) => { void revise(b, change); }} />
         <div className="ch"><b>PLACED</b></div>
-        <WarRoomOwnBids reading={value} kind="placed" /></div><div className="nested" />
+        <WarRoomOwnBids reading={shown} kind="placed"
+          revise={canManageBids ? revise : undefined}
+          withdraw={canManageBids ? withdraw : undefined} />
+        {editor && <div className="bidb" aria-label={editor.type === 'place' ? 'New bid' :
+          `Revise ${editor.bid.name} bid`}>
+          <b>{editor.type === 'place' ? `Bid on ${editor.player.name}` : `Revise ${editor.bid.name}`}</b>
+          <label>Annual salary ($M) <input type="number" step="any" value={editor.salary}
+            disabled={pending} onChange={e => setEditor({ ...editor, salary: e.target.value })} /></label>
+          <label>Years <select value={editor.years} disabled={pending || !value?.maxYears}
+            onChange={e => setEditor({ ...editor, years: Number(e.target.value) })}>
+            <option value={0}>Choose years</option>
+            {Array.from({ length: value?.maxYears ?? 0 }, (_, i) => i + 1).map(year =>
+              <option key={year} value={year}>{year}</option>)}
+          </select>{!value?.maxYears && <small>Contract length setting unavailable</small>}</label>
+          <WarRoomAct disabled={pending || !value?.maxYears || !editor.salary || !editor.years ||
+            fresh?.error !== undefined} onAction={() => { void reviewBid(); }}>REVIEW BID</WarRoomAct>
+          <WarRoomAct disabled={pending} onAction={() => setEditor(undefined)}>CANCEL</WarRoomAct>
+        </div>}
+        {review && <div className="bidb" aria-label="Review bid">
+          <b>{review.preview.question}</b>
+          {review.preview.fields.map((field, i) => <p key={i}><strong>{field.label}</strong>:
+            {' '}{previewChange(field)}</p>)}
+          {review.preview.blockers.map((blocker, i) => <p key={i} role="alert">{blocker}</p>)}
+          <HoldToFire label="Confirm private bid" body={JSON.stringify(review.request)}
+            disabled={pending || review.preview.blockers.length > 0}
+            onConfirm={() => { void confirmBid(); }} />
+          <WarRoomAct disabled={pending} onAction={() => setReview(undefined)}>CANCEL</WarRoomAct>
+        </div>}
+        {fresh?.error && <WarRoomAct disabled={pending} onAction={() => {
+          setFresh(undefined); setRefresh(n => n + 1);
+        }}>REFRESH BIDS AND CAP</WarRoomAct>}
+        {notice && <p role="status">{notice}</p>}
+      </div><div className="nested" />
       <div className="recent"><div className="ch"><b>RECENT WINS</b></div><WarRoomEmpty /></div></div>
   </section>;
 }

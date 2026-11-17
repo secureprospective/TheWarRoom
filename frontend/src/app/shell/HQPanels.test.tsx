@@ -55,6 +55,12 @@ describe('HQ reserves and runway', () => {
     const snapshot = heldSnapshot(); const view = (taxi: number) => renderToStaticMarkup(<HQReserves
       kind="taxi" snapshot={snapshot} mine="0025" settings={{ positions: [], taxi }} close={() => {}} />);
     expect(view(8)).toContain('6 / 8'); expect(view(10)).toContain('6 / 10');
+    expect(view(8)).not.toContain('NFL YR'); expect(view(8)).not.toContain('TAXI LEFT');
+  });
+  it('keeps hosted injury and return cells unavailable without held injury data', () => {
+    const snapshot = heldSnapshot(); const html = renderToStaticMarkup(<HQReserves native kind="ir"
+      snapshot={snapshot} mine="0025" settings={{ positions: [], ir: 12 }} close={() => {}} />);
+    expect(html).toContain('INJURY'); expect(html).toContain('BACK'); expect(html).toContain(unavailable);
   });
   it('renders each runway year, cap split and room from the read; absence stays unknown', () => {
     const html = renderToStaticMarkup(<CapRunway years={[{ season: 2028, committed: 6_000_000_000, dead:

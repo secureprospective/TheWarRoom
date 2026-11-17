@@ -12,11 +12,12 @@ const gamesPerSeason = 17
 
 // experience is how long a player has been in the NFL by the league's own measure, and how to say it.
 type experience struct {
-	years  int
-	words  string
-	limit  string
-	known  bool
-	reason string
+	years     int
+	yearsHeld bool
+	words     string
+	limit     string
+	known     bool
+	reason    string
 }
 
 // taxiExperience measures a player by the rule's basis: calendar years counts the season he was drafted
@@ -37,6 +38,7 @@ func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int, exce
 			return e
 		}
 		e.years = season - f.DraftYear + 1
+		e.yearsHeld = true
 		e.words = fmt.Sprintf("in his %s NFL season", ordinal(e.years))
 	case leaguerules.CareerGames:
 		if !f.CareerGamesHeld || f.CareerGames < 0 {
@@ -44,6 +46,7 @@ func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int, exce
 			return e
 		}
 		e.years = (f.CareerGames + gamesPerSeason - 1) / gamesPerSeason
+		e.yearsHeld = true
 		e.words = fmt.Sprintf("with %d career games, which is %d seasons of %d games", f.CareerGames, e.years, gamesPerSeason)
 	case leaguerules.NFLSeasons:
 		if !f.NFLSeasonsHeld || f.NFLSeasons < 0 {
@@ -51,6 +54,7 @@ func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int, exce
 			return e
 		}
 		e.years = f.NFLSeasons
+		e.yearsHeld = true
 		e.words = fmt.Sprintf("with %d NFL roster seasons", e.years)
 	}
 	e.known = true
@@ -60,6 +64,14 @@ func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int, exce
 func taxiStanding(rules leaguerules.TaxiRules, season int, id string, f PlayerFacts, exceptions ...DecisionException) ReserveVerdict {
 	v := ReserveVerdict{Player: id, Name: f.Name, Squad: "Taxi"}
 	e := taxiExperience(rules, f, season, exceptions...)
+	if e.yearsHeld {
+		years := e.years
+		left := rules.MaximumYears.Value - e.years
+		if left < 0 {
+			left = 0
+		}
+		v.ExperienceYears, v.TaxiYearsLeft = &years, &left
+	}
 	switch {
 	case !e.known:
 		v.Standing, v.Words = Unclear, "Can't tell: "+e.reason
