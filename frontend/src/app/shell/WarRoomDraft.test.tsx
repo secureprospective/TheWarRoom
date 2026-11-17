@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 
 const testState = vi.hoisted(() => ({
+  read: vi.fn(),
   save: vi.fn(async (_native: unknown, players: string[]) => players),
   reading: {
     draft: {
@@ -25,8 +26,9 @@ const testState = vi.hoisted(() => ({
 
 vi.mock('./warroomReads', () => ({ useWarRoomRead: () => ({ reading: testState.reading }) }));
 vi.mock('./warroomDraftReads', () => ({
-  readWarRoomDraft: vi.fn(), saveWarRoomDraftQueue: testState.save,
+  readWarRoomDraft: testState.read, saveWarRoomDraftQueue: testState.save,
 }));
+vi.mock('../draftroom/DraftRoom', () => ({ default: () => <div>Embedded DraftRoom</div> }));
 vi.mock('./HQAct', () => ({ HQAct: ({ onAction, children, label, disabled }: {
   onAction?: () => void; children?: ReactNode; label?: string; disabled?: boolean;
 }) => <button aria-label={label ?? (typeof children === 'string' ? children : undefined)}
@@ -57,6 +59,24 @@ it('shows the hosted queue and saves a reorder as one ordered replacement', asyn
     const queuedNames = [...container.querySelectorAll('.qi > span:nth-child(3)')]
       .map(node => node.textContent);
     expect(queuedNames).toEqual(['Player B', 'Player A']);
+  } finally {
+    await act(async () => { root.unmount(); });
+  }
+});
+
+it('keeps the embedded DraftRoom on its existing path without hosted queue calls', async () => {
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const native = { league: 'native.test', mine: 'franchise.02', embedded: true, leave: () => {} };
+  try {
+    await act(async () => {
+      root.render(<WarRoomDraft context={{ native, mine: 'franchise.02', week: 1,
+        snapshot: { franchises: { value: [] } } } as never} select={() => {}} />);
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(container.textContent).toContain('Embedded DraftRoom');
+    expect(testState.read).not.toHaveBeenCalled();
+    expect(testState.save).not.toHaveBeenCalled();
   } finally {
     await act(async () => { root.unmount(); });
   }
