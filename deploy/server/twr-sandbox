@@ -26,5 +26,5 @@ exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop 
   --tmpfs /tmp --tmpfs /run --bind /var/lib/twr /var/lib/twr \
   --chdir /var/lib/twr --clearenv --setenv PATH /usr/bin:/bin \
   --setenv HOME /var/lib/twr --setenv TMPDIR /var/lib/twr \
-  --setenv GOMEMLIMIT 768MiB --setenv GOMAXPROCS 2 \
+  --setenv GOMEMLIMIT 700MiB --setenv GOMAXPROCS 2 \
   "$@"

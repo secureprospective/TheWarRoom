@@ -46,6 +46,7 @@ STUB
   mkdir -p /etc/periodic/hourly
   ln -s /etc/periodic/daily/logrotate /etc/periodic/hourly/twr-logrotate
   sh /root/twr/install.sh
+  grep -F -- "--setenv GOMEMLIMIT 700MiB" /usr/local/libexec/twr-sandbox
   sed -n "/^ln -s/p" /root/twr/install.sh > /tmp/schedule-rotation
   sh /tmp/schedule-rotation
   sh /tmp/schedule-rotation
