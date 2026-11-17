@@ -34,8 +34,8 @@ func TestWailsServiceReadParity(t *testing.T) {
 			// Exercise every adapter's empty-input refusal as well as a real league read. Named
 			// desktop Raw types deliberately retain their binding identity across the boundary.
 			for _, populated := range []bool{false, true} {
-				local := left.Call(parityInputs(t, left.Type(), populated))
-				shared := right.Call(parityInputs(t, right.Type(), populated))
+				local := left.Call(parityReadInputs(t, command.Method, left.Type(), populated))
+				shared := right.Call(parityReadInputs(t, command.Method, right.Type(), populated))
 				if command.Method == "TargetCommissionerControls" {
 					// Hosted metadata can refuse a credential; the offline desktop signature stays fixed.
 					if len(shared) != 2 || !shared[1].IsNil() {
@@ -47,6 +47,14 @@ func TestWailsServiceReadParity(t *testing.T) {
 			}
 		})
 	}
+}
+
+func parityReadInputs(t *testing.T, name string, method reflect.Type, populated bool) []reflect.Value {
+	args := parityInputs(t, method, populated)
+	if populated && (name == "TargetNativePlayerUsage" || name == "TargetNativePlayerAgeArc") {
+		args[0].FieldByName("Player").SetString("0099")
+	}
+	return args
 }
 
 func parityInputs(t *testing.T, method reflect.Type, populated bool) []reflect.Value {

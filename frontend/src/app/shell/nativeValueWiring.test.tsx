@@ -4,8 +4,10 @@ import { heldSnapshot } from '../data/lineupTestData';
 import { parseNativeValues } from '../data/nativeValues';
 import { mount, render, flush, unmount } from '../commissioner/commissionerDom';
 import type { HostedPort } from '../commissioner/hostedRoom';
+import { readNativeHQ, readNativeCut } from '../commissioner/hqReading';
 import { WarRoomHeader } from './WarRoomHeader';
 import { HQInspector } from './HQInspector';
+import { HQContracts, HQReserves } from './HQPanels';
 import { WarRoomInspector } from './WarRoomInspector';
 import { readInspectorFit } from './inspectorFit';
 import { readWarRoomHeader, type WarRoomContext } from './warroomReads';
@@ -68,6 +70,92 @@ it('renders league Best N, dynasty age amounts and the native card, including kn
   const absent = renderToStaticMarkup(<HQInspector native snapshot={context().snapshot} mine="mine"
     id="0042" leagueValue={{ ...player(), available: false }} />);
   expect(absent).not.toContain('>0.0</b>'); expect(absent).not.toContain('>12.3</b>');
+});
+it('renders native values, annual contracts, selected quote, calendar decisions and taxi value', () => {
+  const snapshot = context().snapshot;
+  const rosterPlayer = snapshot.rosters.value.find(r => r.franchiseId === 'mine')!.players[0];
+  const base = wire();
+  const values = parseNativeValues({ ...base, franchise: 'mine', best: { ...base.best, franchise: 'mine' },
+    players: [{ ...player(), player: rosterPlayer.id, franchise: 'mine' }] }, 'native.test', 'mine', 2026);
+  const contracts = renderToStaticMarkup(<HQContracts native snapshot={snapshot} mine="mine"
+    values={values} annual={new Map([[rosterPlayer.id, [{ season: 2026, cents: 850000000 }]]])}
+    cutCosts={new Map([[rosterPlayer.id, 120000000]])} runway={[{ season: 2026, dead: 250000000,
+      committed: 850000000, max: 900000000, room: -200000000 }]}
+    decisions={[{ label: 'lineup', at: '2026-11-20T18:00:00Z', live: true }]}
+    select={() => {}} />);
+  for (const fact of ['$8.50M', '$1.20M', '12.3', '0.0', 'lineup', 'DEAD CAP TOTAL · $2.50M'])
+    expect(contracts).toContain(fact);
+  const taxiSnapshot = heldSnapshot();
+  const taxiPlayer = taxiSnapshot.rosters.value[0].players.find(p => p.rosterStatus === 'TAXI_SQUAD')!;
+  const taxiValues = parseNativeValues({ ...base, franchise: '0025',
+    best: { ...base.best, franchise: '0025' },
+    players: [{ ...player(), player: taxiPlayer.id, franchise: '0025' }] }, 'native.test', '0025', 2026);
+  const taxi = renderToStaticMarkup(<HQReserves native kind="taxi" snapshot={taxiSnapshot} mine="0025"
+    settings={{ positions: [], taxi: 12 }} values={taxiValues} close={() => {}} />);
+  expect(taxi).toContain('12.3');
+  expect(taxi).not.toContain('NFL YR'); expect(taxi).not.toContain('TAXI LEFT');
+});
+it('renders hosted HQ readings from one fake workflow without desktop data', async () => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const assets = { league: 'native.test', revision: 4, seeded: true, identities: [
+    { player: '0042', franchise: 'mine', side: 'mine', name: 'Hosted receiver', position: 'WR' },
+    { player: 'taxi1', franchise: 'mine', side: 'mine', name: 'Taxi receiver', position: 'WR' },
+  ], pool: [], snapshot: { season: 2026, franchises: [{ id: 'mine', name: 'My team' }],
+    players: [{ id: '0042', franchise: 'mine', name: 'Hosted receiver', status: 'ROSTER',
+      salaryCents: 500000000, expirationYear: 2027, contractStatus: 'UFA' },
+      { id: 'taxi1', franchise: 'mine', name: 'Taxi receiver', status: 'TAXI_SQUAD',
+        salaryCents: 100000000, expirationYear: 2027, contractStatus: 'RFA' }], picks: [], pool: [] } };
+  const values = { ...wire('mine'), league: 'native.test', season: 2026, franchise: 'mine',
+    best: { ...wire('mine').best, franchise: 'mine' }, players: [
+      { ...player(), player: '0042', franchise: 'mine', nowPPG: 8.7, dynastyPPG: 18.4 },
+      { ...player(), player: 'taxi1', franchise: 'mine', nowPPG: 4.2, dynastyPPG: 7.6 },
+    ] };
+  const cap = { league: 'native.test', revision: 4, corrections: [], name: 'Test', rosterSeason: 2026,
+    rulesSeason: 2026, seeded: true, source: '', counting: {}, rules: {}, franchises: [{ franchise: 'mine',
+      exception: '', capCents: 10000000000, salaryCents: 0, activeCents: 0, irCents: 0, taxiCents: 0,
+      adjustmentCents: 0, committedCents: 500000000, roomCents: 9000000000, quantumCents: 1, mode: '',
+      deadline: '', words: '', enforcement: '', name: 'Mine', abbreviation: 'M', charges: [],
+      runway: [{ season: 2026, committedCents: 500000000, deadCents: 300000000,
+        capCents: 10000000000, roomCents: 9000000000 }],
+      contracts: [{ player: '0042', years: [{ season: 2026, cents: 500000000 }] },
+        { player: 'taxi1', years: [{ season: 2026, cents: 100000000 }] }] }] };
+  const port = vi.fn<HostedPort>(async request => {
+    const data: Record<string, unknown> = {
+      'native.assets.read': assets, 'value.read': values, 'native.cap.check': cap,
+      'native.reserve.check': {}, 'commish.rules.read': {}, 'moves.read': {}, 'standings.read': {},
+      'week.read': { schedule: { league: 'native.test', franchise: 'mine', season: 2026, revision: 4,
+        message: '', games: [] }, current: null, nextWeek: null, message: '' },
+      'calendar.read': { league: 'native.test', revision: 4, clock: { windows: [{ id: 'lineup',
+        opens: ['lineup'], start: '2026-11-20T18:00:00Z', close: null, live: true,
+        secondsToClose: null }], exceptions: [], tradeDeadline: null, secondsToTradeDeadline: null },
+        decision: { open: true, reason: '', window: 'lineup', next: null } },
+      'contract.quote': { league: 'native.test', revision: 4, season: 2026, player: '0042', name: '',
+        franchise: 'mine', action: 'cut', actionName: '', allowed: true, reason: '', needs: [], years: 0,
+        salaryCents: 0, salaries: [], deadMoney: [{ season: 2026, cents: 120000000 }], reliefCents: 0,
+        cap: { beforeCents: 9000000000, afterCents: 9120000000, changeCents: 120000000,
+          roomAfterCents: 9120000000, words: '' }, basis: '', notes: [], source: '' },
+    };
+    if (!data[request.command]) throw new Error('Unexpected workflow command ' + request.command);
+    return { label: 'Fake hosted workflow', writable: false, football: '', data: data[request.command] };
+  });
+  const reading = await readNativeHQ('native.test', 'mine', port);
+  const cut = await readNativeCut('native.test', 'mine', '0042', port);
+  const inspector = renderToStaticMarkup(<HQInspector native league="native.test" snapshot={reading.snapshot}
+    mine="mine" id="0042" leagueValue={reading.values?.players.find(p => p.player === '0042')}
+    annual={reading.contracts?.get('0042')} cut={cut} />);
+  expect(inspector).toContain('8.7'); expect(inspector).toContain('18.4');
+  expect(inspector).toContain('$5.00M'); expect(inspector).toContain('$1.20M');
+  const contracts = renderToStaticMarkup(<HQContracts native snapshot={reading.snapshot} mine="mine"
+    runway={reading.runway} annual={reading.contracts} values={reading.values}
+    decisions={reading.decisions} cutCosts={new Map([['0042', cut.deadNow!]])} select={() => {}} />);
+  for (const visible of ['$5.00M', '$90.00M', '18.4', '0.3', 'Lineup',
+    'DEAD CAP TOTAL · $3.00M'])
+    expect(contracts).toContain(visible);
+  const taxi = renderToStaticMarkup(<HQReserves native kind="taxi" snapshot={reading.snapshot}
+    mine="mine" settings={{ positions: [], taxi: 4 }} values={reading.values} close={() => {}} />);
+  expect(taxi).toContain('7.6');
+  for (const command of ['value.read', 'native.cap.check', 'calendar.read', 'contract.quote'])
+    expect(port).toHaveBeenCalledWith(expect.objectContaining({ command }));
 });
 it('shares the app/mirror lineup read, fences scope and renders the inspector fit', async () => {
   const port = vi.fn<HostedPort>(async r => {

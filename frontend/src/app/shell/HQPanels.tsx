@@ -8,6 +8,7 @@ import { capFromReads, capacity, money, unavailable } from './hqModel';
 import type { Injury } from './hqPlayerData';
 import type { Readings } from '../contracts/contract';
 import type { RosterFacts } from './hqRosterFacts';
+import type { LeagueValues } from '../data/nativeValues';
 import { researchFact } from './hqPlayerData';
 import { commands } from '../commands/registry';
 import { useContractRead } from '../contracts/Contracts';
@@ -53,10 +54,11 @@ function ContractRow({ row, season, mine, years, facts, select, assets }: { asse
   </tr>;
 }
 export function HQContracts({ snapshot, mine, contracts, runway, facts, select, native = false, assets,
-  positions, cutCosts, annual }: {
+  positions, cutCosts, annual, values, decisions }: {
   snapshot: Snapshot; mine: string; contracts?: Readings; runway?: HQCap[]; facts?: RosterFacts; select:
     (id: string) => void; native?: boolean; assets?: AssetBoard; positions?: Map<string, string>;
       cutCosts?: Map<string, number>; annual?: Map<string, { season: number; cents: number }[]>;
+      values?: LeagueValues; decisions?: { label: string; at?: string; live: boolean }[];
 }) {
   const season = snapshot.league.value.season;
   const roster = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players ?? [];
@@ -75,28 +77,39 @@ export function HQContracts({ snapshot, mine, contracts, runway, facts, select, 
       />RFA · team can match<i className="key-cap ufa" />UFA · walks free</span></div>
     <div className="ct-wrap"><table className="ct"><thead><tr><th>POS</th><th>PLAYER</th>{years.map(y =>
       <th key={y}>{y}</th>)}<th>DEAD IF CUT</th><th>VALUE</th><th>$ / VALUE</th></tr></thead>
-      <tbody>{rows.map(row => native ? <tr key={row.id}>
-        <td><span className="pg">{row.position}</span></td><td><HQAct className="contract-row-act"
-          onAction={() => select(row.id)}>{row.name}</HQAct></td>{years.map(y => <td className="yr"
-          key={y}>{money(annual?.get(row.id)?.find(v => v.season === y)?.cents ??
-            (y === season ? row.salary : undefined))}</td>)}<td>{money(cutCosts?.get(row.id))}</td>
-          <td>{unavailable}</td><td>{unavailable}</td>
-      </tr> : <ContractRow key={row.id} {...{ row, season, mine, years, facts, select, assets }}
-        />)}</tbody></table>
+      <tbody>{rows.map(row => {
+        if (!native) return <ContractRow key={row.id} {...{ row, season, mine, years, facts,
+          select, assets }} />;
+        const value = values?.players.find(v => v.player === row.id);
+        const valued = value?.available ? value.dynastyPPG : undefined;
+        const ratio = row.salary !== null && valued !== undefined && valued > 0
+          ? row.salary / 100_000_000 / valued : undefined;
+        return <tr key={row.id}><td><span className="pg">{row.position}</span></td>
+          <td><HQAct className="contract-row-act" onAction={() => select(row.id)}>{row.name}</HQAct></td>
+          {years.map(y => <td className="yr" key={y}>{money(annual?.get(row.id)?.find(v =>
+            v.season === y)?.cents ?? (y === season ? row.salary : undefined))}</td>)}
+          <td>{money(cutCosts?.get(row.id))}</td><td title={value?.words}>
+            {valued?.toFixed(1) ?? unavailable}</td>
+          <td className={ratio !== undefined && ratio < 2.2 ? 'ok' : ratio !== undefined && ratio > 5.5 ?
+            'warn' : ''}>{ratio?.toFixed(1) ?? unavailable}</td></tr>;
+      })}</tbody></table>
       {!rows.length && <p className="empty">{unavailable}</p>}</div>
   </div><div className="cside"><div
     className="ch"><b>CAP RUNWAY</b><span>committed · dead · room</span></div><CapRunway years={capYears} />
     <div className="ch"><b>DECISIONS DUE</b><span>soonest first</span></div><div className="dec" style={{
-      flex: 'none' }}><p className="empty">{unavailable}</p></div>
+      flex: 'none' }}>{decisions?.length ? decisions.map((decision, i) => <p className="empty"
+        key={`${decision.label}-${i}`} title={decision.at}>{decision.label}{decision.live ? ' · open' : ''}
+        {decision.at ? ` · ${new Date(decision.at).toLocaleDateString()}` : ''}</p>) :
+          <p className="empty">{unavailable}</p>}</div>
     <div className="ch" style={{ borderTop: '2px solid var(--black)'
-      }}><b>DEAD CAP · {money(capYears[0]?.dead)}</b><span>money on players you no longer have</span></div>
-    <div className="dec"><p className="empty">{unavailable}</p></div></div></section>;
+      }}><b>DEAD CAP TOTAL · {money(capYears[0]?.dead)}</b><span>dead money included in runway</span></div>
+  </div></section>;
 }
 export function HQReserves({ kind, snapshot, mine, settings, injuries, close, native = false, week,
-  countedIRPay, assets, reserveNotes, activate }: {
+  countedIRPay, assets, values, reserveNotes, activate }: {
   kind: 'ir' | 'taxi'; snapshot: Snapshot; mine: string; settings: HQSettings; injuries?: Injury[]; close:
-    () => void; native?: boolean; week?: number; countedIRPay?: number; assets?: AssetBoard; reserveNotes?:
-      Map<string, string>; activate?: (id: string) => void;
+    () => void; native?: boolean; week?: number; countedIRPay?: number; assets?: AssetBoard;
+      values?: LeagueValues; reserveNotes?: Map<string, string>; activate?: (id: string) => void;
 }) {
   const roster = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players ?? [];
   const players = roster.filter(p => p.rosterStatus === (kind === 'ir' ? 'IR' : 'TAXI_SQUAD'));
@@ -116,11 +129,13 @@ export function HQReserves({ kind, snapshot, mine, settings, injuries, close, na
     <span className="sub">{capacity(players.length, limit)}</span><HQAct className="x"
       onAction={close}>ESC</HQAct></div>
     <div className="bd-body"><div className="bd-main"><table className="ct bt"><thead><tr>{(kind === 'ir'
-      ? ['POS', 'PLAYER', 'INJURY', 'BACK', 'IN', 'SALARY', 'NOTE', ''] : ['POS', 'PLAYER', 'NFL YR',
-        'TAXI LEFT', 'SALARY', 'VALUE', 'NOTE', '']).map((label, i) => <th key={i}>{label}</th>)}</tr></thead>
+      ? ['POS', 'PLAYER', 'INJURY', 'BACK', 'IN', 'SALARY', 'NOTE', ''] : ['POS', 'PLAYER',
+        'SALARY', 'VALUE', 'NOTE', '']).map((label, i) => <th key={i}>{label}</th>)}</tr></thead>
       <tbody>{players.map(p => { const player = snapshot.players.value.find(v => v.id === p.id); const
         injury = injuries?.find(i => i.id === p.id);
-        const value = assets?.values.find(v => v.id === p.id)?.dynasty;
+        const hostedValue = values?.players.find(v => v.player === p.id);
+        const value = native ? { held: !!hostedValue?.available, text: hostedValue?.dynastyPPG.toFixed(1) } :
+          assets?.values.find(v => v.id === p.id)?.dynasty;
         return <tr key={p.id}><td><span className="pg">{player?.position ??
           '—'}</span></td><td>{player?.name ?? p.id}<small>{player?.team}</small></td>
           {kind === 'ir' ? <><td>{injury?.details || unavailable}</td><td
@@ -131,9 +146,9 @@ export function HQReserves({ kind, snapshot, mine, settings, injuries, close, na
               unavailable}</td><td>{money(p.salary)}</td><td>{injury?.returnReason ||
                 reserveNotes?.get(p.id) ||
             unavailable}</td></>
-            : <><td>{unavailable}</td><td>{unavailable}</td><td>{money(p.salary)}</td>
-              <td>{value?.held ? value.text : unavailable}</td><td>{reserveNotes?.get(p.id)
-              ?? snapshot.eligibility.players[p.id]?.taxi.reason ?? unavailable}</td></>}
+            : <><td>{money(p.salary)}</td><td>{value?.held ? value.text : unavailable}</td>
+              <td>{reserveNotes?.get(p.id) ??
+                snapshot.eligibility.players[p.id]?.taxi.reason ?? unavailable}</td></>}
           <td>{native ? <HQAct className="btn" disabled={!activate}
             onAction={() => activate?.(p.id)}>{kind === 'ir' ? 'ACTIVATE' : 'PROMOTE'}</HQAct> :
             <Act variant="button" className="btn" verb={kind === 'ir' ? 'roster.ir' : 'roster.taxi'}

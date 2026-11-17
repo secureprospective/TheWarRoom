@@ -35,7 +35,7 @@ type RecoveryResponse struct {
 // Recovery is authenticated by the one-use code, not by a lost device session.
 func (h Hosted) recoverAccount(w http.ResponseWriter, r *http.Request) {
 	if h.Recovery == nil {
-		http.Error(w, "recovery unavailable", http.StatusServiceUnavailable)
+		writeUnavailable(w, "recovery unavailable")
 		return
 	}
 	var raw RawRecoveryRequest

@@ -2,7 +2,7 @@ import type { LeaguePlayerValue } from '../data/nativeValues';
 import { Act } from '../commands/Act';
 import type { NativeCut } from '../commissioner/hqReading';
 import { HQAct } from './HQAct';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { readAgeArc } from '../market/api';
@@ -18,8 +18,6 @@ import { parseArc, parseUsage, parseNotes, researchFact, type Arc, type Usage, t
 import type { RosterFacts } from './hqRosterFacts';
 import { money, pickPlayer, unavailable } from './hqModel';
 
-const arcRead = async (id: string) => parseArc(await readAgeArc(id));
-const usageRead = async (id: string) => parseUsage(await readPlayerUsage(id));
 const notesRead = async (mine: string, id: string) => parseNotes(await readPersonalNotes(mine, id));
 const assetsRead = async () => parseAssetBoard(await marketAPI.assetBoard());
 function Drawer({ title, detail, mine, children }: { title: string; detail?: ReactNode; mine?: boolean;
@@ -86,6 +84,20 @@ export function HQInspector({ snapshot, mine, id, facts, projection, native = fa
     : <aside className="insp" aria-label="Inspector"><p className="empty"
       role="status">{pickPlayer}</p></aside>;
 }
+function useHQInspectorData(native: boolean, league: string | undefined, mine: string, id: string,
+  revision: number) {
+  const readArc = useCallback(async (player: string) => parseArc(await readAgeArc(player, league)), [league]);
+  const readUsage = useCallback(async (player: string) => parseUsage(await readPlayerUsage(player, league)),
+    [league]);
+  const arc = useHQRead('market.TargetAgeArc', [id], readArc, !native || !!league);
+  const usage = useHQRead('research.TargetPlayerUsage', [id], readUsage, !native || !!league);
+  const notes = useContractRead(JSON.stringify([mine, id, revision]), () => native ? Promise.reject(new
+    Error(unavailable)) : notesRead(mine, id), hqEvents);
+  const assets = useHQRead('market.TargetAssetBoard', [], assetsRead, !native);
+  const years = useContractRead(`${native}:${id}`, () => native ? Promise.reject(new Error(unavailable)) :
+    contractsProvider().player(id), hqEvents);
+  return { arc, usage, notes, assets, years };
+}
 function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench, position:
   selectedPosition, cut, toIR, annual, leagueValue, valuesPreparing, league
   }: {
@@ -99,14 +111,9 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
   const player = snapshot.players.value.find(p => p.id === id);
   const position = selectedPosition ?? player?.position;
   const contract = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players.find(p => p.id === id);
-  const arc = useHQRead('market.TargetAgeArc', [id], arcRead);
-  const usage = useHQRead('research.TargetPlayerUsage', [id], usageRead, !native);
   const [revision, setRevision] = useState(0);
-  const readNotes = useContractRead(JSON.stringify([mine, id, revision]), () => native ? Promise.reject(new
-    Error(unavailable)) : notesRead(mine, id), hqEvents);
-  const assets = useHQRead('market.TargetAssetBoard', [], assetsRead, !native);
-  const years = useContractRead(`${native}:${id}`, () => native ? Promise.reject(new Error(unavailable)) :
-    contractsProvider().player(id), hqEvents);
+  const { arc, usage, notes: readNotes, assets, years } = useHQInspectorData(native, league, mine, id,
+    revision);
   const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   const change = async (action: 'add' | 'remove', text = '', at = '') => {
     if (busy || native) return;

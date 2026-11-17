@@ -98,12 +98,18 @@ it('fences slow reads and never paints another selected player’s data', async 
   await act(async () => { resolve('First player'); });
   expect(host.textContent).toBe('Second player');
 });
-it('never calls local private-list reads for a native franchise', async () => {
-  const notes = vi.fn();
+it('makes no desktop data-binding calls for a hosted franchise', async () => {
+  const notes = vi.fn(), age = vi.fn(), usage = vi.fn(), assets = vi.fn(), contracts = vi.fn();
   const snapshot = heldSnapshot();
   await mount(render(HQInspector, { native: true, snapshot, mine: 'franchise.01',
-    id: snapshot.players.value[0].id }), {}, { offers: { API: { TargetPersonalNotes: notes } } });
-  await flush(); expect(notes).not.toHaveBeenCalled();
+    id: snapshot.players.value[0].id }), {}, {
+    offers: { API: { TargetPersonalNotes: notes } },
+    market: { API: { TargetAgeArc: age, TargetAssetBoard: assets } },
+    research: { API: { TargetPlayerUsage: usage } },
+    contracts: { API: { TargetPlayerContract: contracts } },
+  });
+  await flush();
+  for (const binding of [notes, age, usage, assets, contracts]) expect(binding).not.toHaveBeenCalled();
 });
 it('promotes a native reserve through its hosted review callback', async () => {
   const { HQReserves } = await import('./HQPanels');

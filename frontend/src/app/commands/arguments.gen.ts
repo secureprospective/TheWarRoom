@@ -264,6 +264,18 @@ string
 "week": number
 }
 ];
+"commissioner.TargetNativePlayerUsage": [
+{
+"league": string;
+"player": string
+}
+];
+"commissioner.TargetNativePlayerAgeArc": [
+{
+"league": string;
+"player": string
+}
+];
 "commissioner.TargetNativeValues": [
 {
 "league": string;
@@ -2338,6 +2350,8 @@ export type WorkflowArgumentMap = {
 "nfl.games.read": NativeArguments<"nfl.games.read">;
 "draft.read": NativeArguments<"draft.read">;
 "lineup.read": NativeArguments<"lineup.read">;
+"player.usage.read": NativeArguments<"player.usage.read">;
+"player.agearc.read": NativeArguments<"player.agearc.read">;
 "value.read": NativeArguments<"value.read">;
 "projections.read": NativeArguments<"projections.read">;
 "native.reserve.check": NativeArguments<"native.reserve.check">;

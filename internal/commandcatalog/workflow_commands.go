@@ -126,6 +126,12 @@ func pulseWorkflowReads() map[string]WorkflowCommand {
 			}
 			return workflowJSON(s.TargetNativeProjections(r.League, players, r.Season, r.Week))
 		}),
+		"player.usage.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return s.TargetNativePlayerUsage(leagueservice.RawPlayerReadScope{League: r.League, Player: r.Player})
+		}),
+		"player.agearc.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return s.TargetNativePlayerAgeArc(leagueservice.RawPlayerReadScope{League: r.League, Player: r.Player})
+		}),
 		"bracket.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeBracket(r.League, r.Season))
 		}),

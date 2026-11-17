@@ -1,4 +1,5 @@
 import type * as Bindings from '../../../wailsjs/go/market/API';
+import { hostedWorkflow } from '../control/nativeApi';
 
 // The one place that touches Market's Go bindings: the historical Market surfaces, the asset
 // board and the player market reports. Callers parse what these return.
@@ -32,4 +33,9 @@ export function subscribeSeason(changed: () => void): () => void {
   return () => { disposed = true; stop?.(); };
 }
 
-export const readAgeArc = async (id: string): Promise<unknown> => bindings(values).TargetAgeArc(id);
+export const readAgeArc = async (id: string, league?: string): Promise<unknown> => {
+  if (!league) return bindings(values).TargetAgeArc(id);
+  const { data } = await hostedWorkflow({ command: 'player.agearc.read', mode: 'read',
+    arguments: { league, player: id } });
+  return data;
+};

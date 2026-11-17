@@ -107,3 +107,10 @@ If any of these disagree with this file, the code wins. Fix this file before pla
 Hosted NFL flow: the collector validates acquired summary packets with `livegame.ParseSummary`, then atomically replaces the shared current-slate detail map. `nfl.game.read {league, game}` uses directory-read admission and returns only public NFL facts, with an acquisition timestamp/stale flag or explicit no-detail words. Hosted Pulse fences superseded requests, rereads on its topic refresh, and uses the existing field/plays components. Local polling and private lineup admission are unchanged.
 
 Registry wiring review: `commissionerWeekBindings` adds only `Bind2(api.TargetNFLGame, "league", "game")`. It forwards to the admitted shared reading; no composition policy or decision-bearing function changed. The boundary source fingerprint records this inspected additive binding.
+
+Hosted player inspector reads `player.usage.read` and `player.agearc.read` are catalogued and
+member-admitted; HQ and War Room use shared mode-aware API adapters rather than local Wails calls.
+Both currently refuse with “hosted player reading is unavailable”: the league-load path supplies
+player directory facts and NFL weeks, not the weekly usage observations/points-allowed research
+feed or the birth-dated player book, model scores and fitted run parameters. Reference-file table
+existence is not evidence those inputs were acquired. No new ingest or schema is included here.

@@ -11797,6 +11797,20 @@ export namespace leagueservice {
 	        this.week = source["week"];
 	    }
 	}
+	export class RawPlayerReadScope {
+	    league: string;
+	    player: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawPlayerReadScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.player = source["player"];
+	    }
+	}
 	export class RawTradeLensScope {
 	    league: string;
 	    franchise: string;

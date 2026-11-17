@@ -99,8 +99,14 @@ export async function hostedWorkflow(request: NativeRequest, football = ''): Pro
     body: JSON.stringify({ ...nativeEnvelope(request), football }),
   });
   if (!response.ok) {
-    throw new Error('The league could not accept this action. '
-      + 'Refresh before retrying; check your connection, seat and authenticator.');
+    const fallback = 'The league could not accept this action. '
+      + 'Refresh before retrying; check your connection, seat and authenticator.';
+    if (request.mode === 'execute' && response.status === 409
+      && response.headers.get('Content-Type') === 'text/plain; charset=utf-8') {
+      const message = (await response.text()).trim();
+      if (message.length > 0 && message.length <= 4096) throw new Error(message);
+    }
+    throw new Error(fallback);
   }
   const r = object(await response.json(), 'Hosted league', ['label', 'writable', 'football', 'data']);
   if (typeof r.writable !== 'boolean') throw new Error('Unreadable league authority. Refresh to try again.');

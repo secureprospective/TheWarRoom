@@ -94,9 +94,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       settings={settings} values={reading.projections ?? new Map()} select={select} canEdit={editor.canEdit}
       changed={editor.changed} assign={editor.assign} />
       : tab === 'contracts-and-cap' ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway}
-        positions={positions} annual={reading.contracts} cutCosts={cut?.deadNow === undefined ? undefined :
-          new Map([[cut.player,
-          cut.deadNow]])}
+        positions={positions} annual={reading.contracts} values={reading.values} decisions={reading.decisions}
+        cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player, cut.deadNow]])}
         select={id => { select(id); setRelease(id); }} />
         : <HQMoves native snapshot={snapshot} moves={moves} available={reading.moves !== undefined}
           reason={reading.moveReason} />}
@@ -120,7 +119,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       select={select} cut={cut} beforeRoom={runway?.[0]?.room} close={() => setDrawer(undefined)} />}
     {(drawer === 'ir' || drawer === 'taxi') && <HQReserves native kind={drawer} snapshot={snapshot}
       mine={mine} settings={settings}
-      countedIRPay={runway?.[0]?.ir} reserveNotes={reading.reserveNotes}
+      countedIRPay={runway?.[0]?.ir} values={reading.values} reserveNotes={reading.reserveNotes}
       activate={editor.canEdit ? id => { setDrawer(undefined); void editor.reserve(id, 'active'); } :
         undefined}
       week={reading.week} close={() => setDrawer(undefined)} />}

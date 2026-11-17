@@ -26,7 +26,7 @@ func attachPlayDetails(game livegame.Game, lines map[string]*Line) {
 // reads every live game on each poll.
 var (
 	kickPlay       = regexp.MustCompile(`^(\S+) (\d+) yard field goal is (GOOD|No Good)[,.]`)
-	recoveryTDPlay = regexp.MustCompile(`(?i)recovered by ([A-Z]+)-(.+?) at [A-Z]+ 0[,.] TOUCHDOWN`)
+	recoveryTDPlay = regexp.MustCompile(`(?i)recovered by ([A-Z]+)-(.+?) at [A-Z]+ -?\d+[,.] TOUCHDOWN`)
 )
 
 // attachKickDistances records each field goal's distance and its band. ESPN's box only totals kicks, so a

@@ -41,7 +41,7 @@ type PasswordChangeResponse struct {
 
 func (h Hosted) changePassword(w http.ResponseWriter, r *http.Request) {
 	if h.Passwords == nil {
-		http.Error(w, "password change unavailable", http.StatusServiceUnavailable)
+		writeUnavailable(w, "password change unavailable")
 		return
 	}
 	var raw RawPasswordChangeRequest
@@ -67,7 +67,7 @@ func (h Hosted) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		http.Error(w, "password change refused; try again", http.StatusServiceUnavailable)
+		writeUnavailable(w, "password change refused; try again")
 		return
 	}
 	writeHosted(w, PasswordChangeResponse{Protocol: 1})

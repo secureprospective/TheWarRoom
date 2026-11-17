@@ -92,6 +92,11 @@ const BusyMessage = "The server is busy; try again in a few seconds"
 
 const busyRetryAfter = "2"
 
+func writeUnavailable(w http.ResponseWriter, message string) {
+	w.Header().Set("Retry-After", busyRetryAfter)
+	http.Error(w, message, http.StatusServiceUnavailable)
+}
+
 type busyLogState struct {
 	started time.Time
 	logger  *busyLogger
@@ -130,8 +135,7 @@ func passwordBusy(w http.ResponseWriter, r *http.Request, err error) bool {
 		return false
 	}
 	logBusyRefusal(r.Context(), "password-limit")
-	w.Header().Set("Retry-After", busyRetryAfter)
-	http.Error(w, BusyMessage, http.StatusServiceUnavailable)
+	writeUnavailable(w, BusyMessage)
 	return true
 }
 
@@ -168,8 +172,7 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 				defer func() { <-authInFlight }()
 			default:
 				logBusyRefusal(requestContext, "auth-limit")
-				w.Header().Set("Retry-After", busyRetryAfter)
-				http.Error(w, BusyMessage, http.StatusServiceUnavailable)
+				writeUnavailable(w, BusyMessage)
 				return
 			}
 		}
@@ -178,8 +181,7 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 			defer func() { <-inFlight }()
 		default:
 			logBusyRefusal(requestContext, "request-limit")
-			w.Header().Set("Retry-After", busyRetryAfter)
-			http.Error(w, BusyMessage, http.StatusServiceUnavailable)
+			writeUnavailable(w, BusyMessage)
 			return
 		}
 		budget := 5 * time.Second

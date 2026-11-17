@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -349,6 +350,22 @@ func retryDelay(value string) (time.Duration, bool) {
 	return time.Duration(seconds) * time.Second, true
 }
 
+func desktopWorkflowRefusal(response *http.Response, path string, refusal error) error {
+	if path != serverhttp.WorkflowPath || response.StatusCode != http.StatusConflict ||
+		response.Header.Get("Content-Type") != "text/plain; charset=utf-8" {
+		return refusal
+	}
+	body, err := io.ReadAll(io.LimitReader(response.Body, 4097))
+	if err != nil || len(body) == 0 || len(body) > 4096 {
+		return refusal
+	}
+	message := strings.TrimSpace(string(body))
+	if message == "" {
+		return refusal
+	}
+	return errors.New(message)
+}
+
 // postDesktopSnapshot uses only the immutable request session, never Desktop state.
 func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopSnapshot, path string, payload T) ([]byte, bool, error) {
 	body, err := json.Marshal(payload)
@@ -377,7 +394,8 @@ func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopS
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
 		unauthorized := response.StatusCode == http.StatusUnauthorized
 		refusal := desktopRefusal(path, response.StatusCode)
-		if response.StatusCode == http.StatusServiceUnavailable && response.Header.Get("Retry-After") != "" {
+		refusal = desktopWorkflowRefusal(response, path, refusal)
+		if response.StatusCode == http.StatusServiceUnavailable {
 			refusal = &retryAfterRefusal{after: response.Header.Get("Retry-After"), err: refusal}
 		}
 		return nil, unauthorized, refusal
