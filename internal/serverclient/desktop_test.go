@@ -303,6 +303,27 @@ func TestWorkflowForbiddenPreservesSession(t *testing.T) {
 	}
 }
 
+func TestDesktopWorkflowSurfacesServerRefusal(t *testing.T) {
+	for _, reason := range []string{
+		"A starter was not active on the roster at kickoff",
+		"native change refused; reread before retrying",
+	} {
+		t.Run(reason, func(t *testing.T) {
+			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+				w.WriteHeader(http.StatusConflict)
+				_, _ = fmt.Fprintln(w, reason)
+			}))
+			defer server.Close()
+			session := desktopSnapshot{client: server.Client(), address: server.URL, league: "native.test"}
+			_, _, err := postDesktopSnapshot(t.Context(), session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1})
+			if err == nil || err.Error() != reason {
+				t.Fatalf("workflow refusal = %v, want %q", err, reason)
+			}
+		})
+	}
+}
+
 // A real league's league-wide read is near 2 MB; the desktop must accept it, not call it unreadable.
 func TestDesktopAcceptsALeagueSizedReply(t *testing.T) {
 	reply := `{"pad":"` + strings.Repeat("x", 2<<20) + `"}`
