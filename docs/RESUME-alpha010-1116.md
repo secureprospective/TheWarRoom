@@ -3,14 +3,23 @@ Updated 8:50 PM CT (sixth compaction today). On "we are back": do his instructio
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. STATE AT 4:30 AM CST TUE 11-17 (supersedes sections 3, 10 below)
-- Overnight report: Beelink `~/fleet/runs/overnight-twr-1116/REPORT.md` (Needs Christopher first). Tracker updated 4:20 AM. Hermes tasks T637-T640 added.
-- Merged overnight: #314 refusal reason, #315 HQ shared reads, #316 Retry-After, #317 Week 10 scoring fixes, #318 HQ step 4.
-- Drafts: #312 cpu7 (timing runs owed), #313 notes (needs DB decision), #319 HQ My moves (source decided: server native ledger; not built).
-- GPT quota ran out 4:26 AM: hqmoves part 2 and cpu7 part 3 died at start. Nothing running. No watchers.
-- Next when quota resets: relaunch `launch-pulse-lane.sh sol hqmoves ~/fleet/briefs/alpha010/hqmoves.md medium` and `luna cpu7 ~/fleet/briefs/alpha010/cpu7c.md high` (move old completion.txt aside first).
-- Lab: CT 260 (fresh install, running), CT 258 (upgraded to main, running). CT 257 untouched (read-only copies, deleted).
-- Clock: Claudebox now on America/Chicago (he ran timedatectl 9:42 PM).
+## 0. STATE AT 7:35 AM CST TUE 11-17 (supersedes sections 3, 10, 11 below)
+**Rulings today:** Luna ONLY (high/xhigh/max by difficulty; restart same brief before rescoping). Full send: no lane cap,
+launcher `room()` gates on >=4 GB RAM + load <12. Windows 3 h (max 4 h). Check lanes every 50 min
+(`/root/.claude/scripts/twr-lane-check.sh 50` background, re-arm each time). DAY MERGE AUTHORITY: yes, all day, after my
+review + green CI (decisions #313, #320, F51 still his). Phone/audio = paragraphs. Never edit a running bash script in place.
+**Merged today/overnight:** #312 #314 #315 #316 #317 #318 #319 #321. HQ steps 1,2,4,5 + slop cleanup on main.
+**In flight (Beelink lanes, `~/fleet/runs/pulse-<lane>/`):**
+- smem part 2 (Luna xhigh, 7:22 AM): PR #322 memory -21.9% but removed shared-ledger clone + its test; must restore
+  `TestSharedRecordsCallerCannotChangeAnother`, audit callers, race test. Merge only if those hold.
+- hqreserve (Luna xhigh, ~7:30 AM): HQ step 6 IR injury/return + taxi experience. Review, merge.
+- wrplan (Luna high, ~7:30 AM): War Room read-only plan -> `~/fleet/runs/pulse-wrplan/REPORT.md`. Then launch its jobs.
+- Watchers: done `twr-lane-wait.sh smem hqreserve wrplan`; 50-min checker. If lost after compaction, re-arm both.
+**Needs Christopher:** lab1 league import CT 260 (`~/fleet/runs/pulse-lab1/RESULT.md`); notes storage #313; stress line-14
+measurement #320; F51 #304/#307 (memory limit now set); rotate CT 257 keys; install 0.10.2.
+**Overnight skill v2** written (Claudebox, Tom ~/.claude, pi ~/.pi/agent/skills, Hermes ~/.hermes/skills); Beelink copies of
+the watcher scripts in `~/fleet/bin/`. Launcher backup `~/fleet/bin/launch-pulse-lane.sh.bak-1117`.
+**Next:** handle pings; after wrplan, launch War Room jobs (Luna); keep Beelink full; tracker + report current.
 
 ## 1. WHAT WE ARE DOING
 (a) Alpha 0.10: prove the 15 lines of `docs/roadmap/RELEASE-0.10.md` (lab jobs tonight after the game).
