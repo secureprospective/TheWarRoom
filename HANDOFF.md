@@ -1,7 +1,7 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Current main merged; frontend frozen install/build passed. PR #312 has three sequential 180s origin/main runs and three branch runs from the same local harness. CPU decreased 6.6%; read errors were 0 in both sets. PR body has the table and is ready; no merge.
-- Next: push this sync commit, verify CI/PR; do not merge.
-- Blocked on: tidy-check flags six dangling Chromium symlinks in external scratch folders; left untouched because they are outside this worktree and authorized output paths.
-- Tried/rejected: Earlier single-run evidence was not used for the final table; the six fresh run data sets were used. The untracked `cmd/twr-server/zz_pulse_repro_test.go` was preserved and not staged.
+- State: Hosted bid place/raise/withdraw use private preview → hold-to-confirm → receipt, then reread owner bids and cap. Authority/football evidence is checked; own bids stay SEALED. Local draft/revise remain on `poolProvider`. Frontend: 116 test files / 891 tests, production build and bundle budget pass; targeted adapter tests (6) and `tsc` pass.
+- Next: Commit/push, open PR, verify CI green.
+- Blocked on: `tidy-check.sh` flags six dangling Chromium symlinks in `~/scratch/bee-resume-v14-{browser,render2}`. They are outside the authorized write paths and untouched.
+- Tried/rejected: No new persistence, no local-provider route in hosted mode, no rival bid values/counts in War Room view.

@@ -1,29 +1,36 @@
 import { controlAPI } from '../control/api';
 import { report } from '../reports/contract';
 import { parseRules } from '../commissioner/rules';
-import { nativeHQSettings } from '../commissioner/hqReading';
-import { array, object, text } from '../data/parseValues';
+import { nativeHQCap, nativeHQSettings } from '../commissioner/hqReading';
+import { array, integer, object, requiredText, text } from '../data/parseValues';
 import { personalWire, swapPersonalTargets } from '../offers/api';
 import { parsePersonal, type Entry } from '../personal/contract';
 import { poolProvider } from '../pool/provider';
 import { parseHostedWaivers } from '../commissioner/hostedMarkets';
 import { hostedWorkflow } from '../commissioner/api';
+import { newKey } from '../commissioner/forms';
+import { parseReceipt } from '../commissioner/proxy';
+import { parsePreview, type Preview } from '../commissioner/preview';
+import type { NativeRequest } from '../commands/native';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
 import type { WarRoomContext } from './warroomReads';
-import type { Plan } from '../pool/contract';
+import type { BidFormState, Plan } from '../pool/contract';
+import { planForm } from '../pool/state';
 import { unavailable } from './hqModel';
 export type WarRoomMarketPlayer = { id: string; name: string; position: string; age?: string; string?:
   string; points?: string;
   minimum?: string; minimumCents?: number; value?: string };
 export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string;
-  kind?: 'plan' | 'placed'; id?: string; post?: string; plan?: Plan };
+  kind?: 'plan' | 'placed'; id?: string; bidId?: string; post?: string; plan?: Plan };
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
+  bidRevision?: number; capRoom?: number; writable?: boolean; football?: string;
   targets?: Entry[]; maxYears?: number; errors: string[] };
-export function parseWarRoomOwnBids(value: unknown, league: string, mine: string): WarRoomOwnBid[] {
+export type WarRoomBidReading = { bids: WarRoomOwnBid[]; revision: number };
+export function parseWarRoomBidReading(value: unknown, league: string, mine: string): WarRoomBidReading {
   const r = object(value, 'Bids', ['league', 'franchise', 'revision', 'season', 'mode', 'activeBids',
     'activeLimit', 'players', 'awards', 'notes']);
   if (r.league !== league || r.franchise !== mine) throw new Error('Bids belong to another franchise');
-  return array(r.players, 'Bid players', (v, p): WarRoomOwnBid | undefined => {
+  const bids = array(r.players, 'Bid players', (v, p): WarRoomOwnBid | undefined => {
     const row = object(v, p, ['player', 'name', 'mode', 'modeWords', 'leader', 'bids', 'yourBid', 'youLead',
       'lateAt', 'lateWords', 'lateNow', 'closesAt', 'closes']);
     if (!row.yourBid) return undefined;
@@ -32,9 +39,23 @@ export function parseWarRoomOwnBids(value: unknown, league: string, mine: string
     if (bid.franchise !== mine) throw new Error('Private bid scope changed');
     if (typeof row.youLead !== 'boolean') throw new Error('Unreadable own bid state');
     return { player: text(row.player, p), name: text(row.name, p), contract: text(bid.contract, p),
-      state: row.mode === 'blind' ? 'PLACED · PRIVATE' : row.youLead ? 'HIGH BID' : 'OUTBID',
-      kind: 'placed' as const };
+      state: 'PLACED · PRIVATE', bidId: requiredText(bid.id, 'Your bid ID'), kind: 'placed' as const };
   }).filter((b): b is WarRoomOwnBid => b !== undefined);
+  return { bids, revision: integer(r.revision, 'Bid version') };
+}
+export async function readWarRoomBids(c: WarRoomContext): Promise<WarRoomBidReading> {
+  if (!c.native || c.native.owner === false) throw new Error('Owner bids are unavailable');
+  const native = c.native;
+  const { data } = await (native.port ?? hostedWorkflow)({ command: 'bids.read', mode: 'read',
+    arguments: { league: native.league, franchise: c.mine } });
+  return parseWarRoomBidReading(data, native.league, c.mine);
+}
+export async function readWarRoomCap(c: WarRoomContext): Promise<number | undefined> {
+  if (!c.native || c.native.owner === false) return undefined;
+  const native = c.native;
+  const { data } = await (native.port ?? hostedWorkflow)({ command: 'native.cap.check', mode: 'read',
+    arguments: { league: native.league, viewerZone: Intl.DateTimeFormat().resolvedOptions().timeZone } });
+  return nativeHQCap(data, native.league, c.mine)[0]?.room;
 }
 export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarketReading> {
   const result: WarRoomMarketReading = { errors: [] };
@@ -56,14 +77,12 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
         league: native.league } });
         const roster = parseHostedRoster(r.data);
         if (roster.league !== native.league) throw new Error('Pool belongs to another league');
-        result.players = roster.market;
-
+        result.players = roster.market; result.writable = r.writable; result.football = r.football;
       }),
       apply(async () => { if (native.owner === false) return;
-        const r = await port({ command: 'bids.read', mode: 'read', arguments: {
-        league: native.league, franchise: c.mine } });
-        result.bids = parseWarRoomOwnBids(r.data, native.league,
-          c.mine); }),
+        const bids = await readWarRoomBids(c);
+        result.bids = bids.bids; result.bidRevision = bids.revision; }),
+      apply(async () => { result.capRoom = native.reading?.runway?.[0]?.room ?? await readWarRoomCap(c); }),
     ]);
     if (native.owner !== false) await apply(async () => {
       const { data } = await port({ command: 'waivers.read', mode: 'read', arguments: {
@@ -104,6 +123,94 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
     }),
   ]);
   return result;
+}
+export type WarRoomMarketAction =
+  | { type: 'draft'; form: BidFormState }
+  | { type: 'revise'; bid: WarRoomOwnBid; form: BidFormState }
+  | { type: 'place'; player: WarRoomMarketPlayer; salaryCents: number; years: number;
+      revision: number; maxYears: number; capRoom?: number; writable: boolean; football: string }
+  | { type: 'raise'; bid: WarRoomOwnBid; salaryCents: number; years: number;
+      revision: number; maxYears: number; capRoom?: number; writable: boolean; football: string }
+  | { type: 'withdraw'; bid: WarRoomOwnBid; revision: number; writable: boolean; football: string }
+  | { type: 'confirm'; request: NativeRequest; football: string };
+export type WarRoomMarketActionResult =
+  | { kind: 'plan'; plan: Plan }
+  | { kind: 'review'; request: NativeRequest; preview: Preview; football: string }
+  | { kind: 'recorded'; receipt: ReturnType<typeof parseReceipt>; bids?: WarRoomBidReading;
+      capRoom?: number; refreshError?: string };
+function validatePrivateBidPreview(request: NativeRequest, league: string) {
+  const args = request.arguments as unknown as { league?: unknown; command?: unknown; visibility?: unknown };
+  if (request.mode !== 'preview' || !(['bid.place', 'bid.raise', 'bid.withdraw'] as string[])
+    .includes(request.command) || args.league !== league || args.command !== request.command ||
+    args.visibility !== 'private') throw new Error('Only a reviewed private bid can be confirmed');
+}
+function validateHostedContract(salaryCents: number, years: number, maxYears: number,
+  capRoom?: number) {
+  if (!Number.isSafeInteger(salaryCents) || salaryCents <= 0)
+    throw new Error('Enter a bid greater than zero');
+  if (!Number.isSafeInteger(years) || years < 1 || years > maxYears)
+    throw new Error('Choose a contract length within the league limit');
+  if (capRoom === undefined) throw new Error('Cap room is unavailable; bid was not changed');
+  if (salaryCents > capRoom) throw new Error('Bid exceeds your cap room');
+}
+export async function warRoomMarketAction(c: WarRoomContext, action: WarRoomMarketAction):
+  Promise<WarRoomMarketActionResult> {
+  if (!c.native) {
+    if (action.type === 'draft') return { kind: 'plan', plan: await poolProvider.draft(c.mine, action.form) };
+    if (action.type === 'revise' && action.bid.plan) return { kind: 'plan', plan:
+      await poolProvider.revise(action.bid.plan.id, c.mine, action.form) };
+    throw new Error('This bid action is not available in local mode');
+  }
+  const native = c.native;
+  const port = native.port ?? hostedWorkflow;
+  if (native.owner === false) throw new Error('Bid actions require your franchise owner seat');
+  if (action.type === 'confirm') {
+    validatePrivateBidPreview(action.request, native.league);
+    if (!action.football) throw new Error('Football evidence is unavailable; refresh before confirming');
+    const request = { ...action.request, mode: 'execute' } as NativeRequest;
+    const response = await port(request, action.football);
+    const receipt = parseReceipt(response.data);
+    if (receipt.league !== native.league) throw new Error('Bid receipt belongs to another league');
+    const [bids, cap] = await Promise.allSettled([readWarRoomBids(c), readWarRoomCap(c)]);
+    const refreshError = bids.status === 'rejected' || cap.status === 'rejected' ?
+      'Your bid was recorded, but its current status or cap room could not be refreshed. ' +
+        'Refresh before trying again.' : undefined;
+    return { kind: 'recorded', receipt,
+      ...(bids.status === 'fulfilled' ? { bids: bids.value } : {}),
+      ...(cap.status === 'fulfilled' ? { capRoom: cap.value } : {}),
+      ...(refreshError ? { refreshError } : {}) };
+  }
+  let command: 'bid.place' | 'bid.raise' | 'bid.withdraw';
+  let bid: Record<string, unknown>;
+  if (action.type === 'place') {
+    validateHostedContract(action.salaryCents, action.years, action.maxYears, action.capRoom);
+    command = 'bid.place';
+    bid = { player: action.player.id, franchise: c.mine,
+      salaryCents: action.salaryCents, years: action.years };
+  } else if (action.type === 'raise') {
+    validateHostedContract(action.salaryCents, action.years, action.maxYears, action.capRoom);
+    if (!action.bid.bidId) throw new Error('Your recorded bid is unavailable; refresh before revising');
+    command = 'bid.raise';
+    bid = { bid: action.bid.bidId, franchise: c.mine, salaryCents: action.salaryCents, years: action.years };
+  } else if (action.type === 'withdraw') {
+    if (!action.bid.bidId) throw new Error('Your recorded bid is unavailable; refresh before withdrawing');
+    command = 'bid.withdraw';
+    bid = { bid: action.bid.bidId, franchise: c.mine };
+  } else {
+    throw new Error('A hosted bid command is required');
+  }
+  if (!action.writable || !action.football)
+    throw new Error('This league is read-only or football evidence is unavailable; refresh before bidding');
+  const request = { command, mode: 'preview', arguments: { league: native.league, command,
+    args: { bid }, reason: '', expected: action.revision, request: newKey(), effective: 'now',
+    visibility: 'private' } } as NativeRequest;
+  const response = await port(request, action.football);
+  if (!response.writable || response.football !== action.football)
+    throw new Error('League authority changed; refresh before confirming');
+  const preview = parsePreview(response.data);
+  if (preview.target.league !== native.league || preview.target.version !== action.revision)
+    throw new Error('Bid preview is for a different league version; refresh before confirming');
+  return { kind: 'review', request, preview, football: action.football };
 }
 export async function changeWarRoomTarget(c: WarRoomContext, id: string, watched: boolean,
   withPlayer?: string) {
