@@ -208,7 +208,7 @@ export function HQWhatIf({ mine, close }: { mine: string; close: () => void }) {
           'contracts.set', { field: 'release', value: { mine, action: 'draft', move: move.id } });
         })}>SEND TO MY MOVES</HQAct>
     </div></>;
-  return <HQWhatIfDrawer close={close} detail="Tick moves to stack them. Nothing is saved and sent."
+  return <HQWhatIfDrawer close={close} detail="Tick moves to stack them. Nothing is saved or sent."
     port={{ input: <>{input}{(!value || !value.choices.length) &&
       <p className="empty" title={error}>{unavailable}</p>}</>, preview }} />;
 }
