@@ -1,8 +1,9 @@
 # Handoff
 
-- Baton: ClaudeBox, 2026-11-17.
-- State: Hosted proposal pocket implemented on `private_entries`; auth-derived owner scope. UI saves/lists/reopens/deletes without creating an offer; stale assets remain visible. No schema or migration. PR #338 is open; all CI checks pass.
-- Verified: touched-package Go race tests, hosted token/privacy test, 907 frontend tests + TypeScript, nativegen freshness and `make lint` pass; push hook and PR CI pass.
-- Next: review PR #338; no further implementation work is queued.
+- Baton: Bee, 2026-11-17.
+- State: frontend-only slop task complete. Partner reads use parser-checked standings rows; Plans has one unavailable state with history; hosted bids use hosted commands and local mode retains `poolProvider`.
+- Changes: renamed `canFilter` to `filterUnavailable`, matched Plans copy, added partner standings/cap scope regression coverage. No Go, schema, or tdrafts-owned files changed.
+- Tests: `WarRoomPlans.test.tsx` (single unavailable state + history); `WarRoomMarket.test.tsx` (unavailable filter controls); `warroomMarketReads.test.ts` (hosted bid commands/local provider); `warroomTradeReads.test.ts` (checked partner row/cap scope). Frontend: 122 files / 906 tests; tsc, build, lint, tidy, pre-push verify passed. Build emitted existing bundle warnings; lint listed existing oversized untouched Go files.
+- PR: #337 open, CI green at `2d02147a1`: https://github.com/secureprospective/TheWarRoom/pull/337
+- Next: Christopher/ClaudeBox review and merge decision.
 - Blocked: none.
-- Tried/rejected: schema change, league cache/commissioner view, partner access, local desktop edits, and treating a saved proposal as an offer (contrary to the brief).
