@@ -148,7 +148,8 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
   const contracts = renderToStaticMarkup(<HQContracts native snapshot={reading.snapshot} mine="mine"
     runway={reading.runway} annual={reading.contracts} values={reading.values}
     decisions={reading.decisions} cutCosts={new Map([['0042', cut.deadNow!]])} select={() => {}} />);
-  for (const visible of ['18.4', '0.3', 'Lineup', 'DEAD CAP TOTAL · $3.00M'])
+  for (const visible of ['$5.00M', '$90.00M', '18.4', '0.3', 'Lineup',
+    'DEAD CAP TOTAL · $3.00M'])
     expect(contracts).toContain(visible);
   const taxi = renderToStaticMarkup(<HQReserves native kind="taxi" snapshot={reading.snapshot}
     mine="mine" settings={{ positions: [], taxi: 4 }} values={reading.values} close={() => {}} />);
