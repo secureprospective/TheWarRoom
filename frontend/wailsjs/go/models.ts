@@ -13223,6 +13223,8 @@ export namespace nativecheck {
 		}
 	}
 	export class ReserveVerdict {
+	    experienceYears?: number;
+	    taxiYearsLeft?: number;
 	    player: string;
 	    name: string;
 	    squad: string;
@@ -13235,6 +13237,8 @@ export namespace nativecheck {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.experienceYears = source["experienceYears"];
+	        this.taxiYearsLeft = source["taxiYearsLeft"];
 	        this.player = source["player"];
 	        this.name = source["name"];
 	        this.squad = source["squad"];

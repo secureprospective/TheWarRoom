@@ -123,6 +123,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     {(drawer === 'ir' || drawer === 'taxi') && <HQReserves native kind={drawer} snapshot={snapshot}
       mine={mine} settings={settings}
       countedIRPay={runway?.[0]?.ir} values={reading.values} reserveNotes={reading.reserveNotes}
+      reserveExperience={reading.reserveExperience}
       activate={editor.canEdit ? id => { setDrawer(undefined); void editor.reserve(id, 'active'); } :
         undefined}
       week={reading.week} close={() => setDrawer(undefined)} />}
