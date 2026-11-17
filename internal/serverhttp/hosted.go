@@ -447,10 +447,13 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 			}
 			var refusal *commissioner.Refusal
 			if errors.As(err, &refusal) {
-				h.writeFailure(w, refusal.Reason(), http.StatusConflict)
-				return
+				if !refusal.PermissionDenied() {
+					h.writeFailure(w, refusal.Reason(), http.StatusConflict)
+					return
+				}
+			} else {
+				log.Printf("native execute failed unexpectedly (%T)", err)
 			}
-			log.Printf("native execute failed unexpectedly (%T)", err)
 			h.writeFailure(w, "native change refused; reread before retrying", http.StatusConflict)
 			return
 		}

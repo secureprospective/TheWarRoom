@@ -246,7 +246,7 @@ func (s *Store) checkCommissionerCommand(ctx context.Context, raw commissioner.R
 	facts appendFacts, now time.Time) (string, *commissioner.Receipt, error) {
 	role, err := timedCommandRole(raw, principal, auth, records, now)
 	if err != nil {
-		return "", nil, err
+		return "", nil, fmt.Errorf("authorize league change: %w", commissioner.Denied(err))
 	}
 	prior, retried, err := retriedReceipt(ctx, raw, principal, records)
 	if err != nil {

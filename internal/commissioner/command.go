@@ -25,7 +25,10 @@ const (
 
 // Refusal marks a league change the league's own rules turned down, as distinct from a failure to read
 // or record it. Each layer wraps the cause with its own context for the log; the owner reads Reason.
-type Refusal struct{ err error }
+type Refusal struct {
+	err        error
+	permission bool
+}
 
 // Refused marks err as a refusal. A nil err stays nil, and an error already marked is returned as is.
 func Refused(err error) error {
@@ -35,6 +38,16 @@ func Refused(err error) error {
 	}
 	return &Refusal{err: err}
 }
+
+// Denied marks a permission or credential refusal whose details must not be disclosed by hosted execute.
+func Denied(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &Refusal{err: err, permission: true}
+}
+
+func (r *Refusal) PermissionDenied() bool { return r.permission }
 
 func (r *Refusal) Error() string { return r.err.Error() }
 func (r *Refusal) Unwrap() error { return r.err }
