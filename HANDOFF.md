@@ -1,9 +1,8 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- Previous: merged origin/main (#334 Personal plumbing; #335 audit fix) into PR #333.
-- State: PR #333 is open, mergeable, and CI-green; #323 is closed with a link to #333. Queue reads/writes reuse `LeaguePin.Personal`/`StoredHost.Personal`; tokens stay limited to the issuer's seated franchise. No schema/cache change; embedded DraftRoom unchanged; ADP/tier unavailable.
-- Tests: Go race tests pass for cmd/twr-server, accounts, app/commissioner, commandcatalog, leagueservice, serverhttp, and store/personal. Frontend: 122 files / 905 tests; typecheck and native generators pass.
-- Next: Christopher/ClaudeBox review and merge decision.
-- Blocked: tidy check flags a scratch folder outside this task's authorized write paths; left untouched.
-- Tried/rejected: duplicate private-store wiring; request-selected franchise; local DraftRoom changes.
+- State: frontend-only slop task. Trade partner reads already use parser-checked standings rows; Plans already had one honest unavailable state/history; hosted bids already use hosted commands while local retains `poolProvider`.
+- Changes: named the inverted filter helper `filterUnavailable`; used the requested Plans copy; added partner-read coverage for checked standings and separate cap scope. No Go, schema, or tdrafts-owned files changed.
+- Evidence: frontend tests 122 files / 906 tests pass; `pnpm exec tsc --noEmit`, `pnpm build`, `make lint`, `tidy-check.sh` pass. Build emitted existing chunk warnings; lint reports existing oversized Go files, untouched.
+- Next: commit, open PR, check final-head CI, record PR and CI state.
+- Blocked: none. PR: none yet.
