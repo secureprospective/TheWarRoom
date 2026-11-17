@@ -14,7 +14,23 @@ func registryCommands(door catalog.Door) ([]catalog.Command, error) {
 	}
 	var commands []catalog.Command
 	for _, entry := range registry.Entries() {
-		if door == catalog.NativeDoor && entry.Native != nil || door == catalog.MFLDoor && entry.MFL != nil {
+		native := door == catalog.NativeDoor && entry.Native != nil
+		mfl := door == catalog.MFLDoor && entry.MFL != nil
+		if native || mfl {
+			commands = append(commands, entry.Definition)
+		}
+	}
+	return commands, nil
+}
+
+func registryServerWorkflowCommands() ([]catalog.Command, error) {
+	registry, err := composition.CommandRegistry()
+	if err != nil {
+		return nil, fmt.Errorf("bind server workflow registry: %w", err)
+	}
+	var commands []catalog.Command
+	for _, entry := range registry.Entries() {
+		if entry.Workflow != nil && entry.Definition.Availability == "server" {
 			commands = append(commands, entry.Definition)
 		}
 	}

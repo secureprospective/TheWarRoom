@@ -23,6 +23,8 @@ type WorkflowCommand struct {
 // appear here by derivation; never hand-list one. See docs/architecture/future-seams.md.
 func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
+	out["draft.queue.read"] = workflowDraftQueueRead()
+	out["draft.queue.set"] = workflowDraftQueueSet()
 	for id, command := range playerPersonalWorkflows() {
 		out[id] = command
 	}
@@ -33,6 +35,52 @@ func WorkflowCommands() map[string]WorkflowCommand {
 	}
 	out[commissioner.DraftPick] = WorkflowCommand{Validate: validateWorkflowPick, Run: runWorkflowPick}
 	return out
+}
+
+func workflowDraftQueueRead() WorkflowCommand {
+	decode := func(raw RawWorkflow) (leagueservice.RawDraftQueueScope, error) {
+		var input leagueservice.RawDraftQueueScope
+		if raw.Mode != "read" {
+			return input, fmt.Errorf("this is a reading only")
+		}
+		return input, decodeWorkflow(raw.Arguments, &input)
+	}
+	return WorkflowCommand{
+		Validate: func(raw RawWorkflow) error {
+			_, err := decode(raw)
+			return err
+		},
+		Run: func(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
+			input, err := decode(raw)
+			if err != nil {
+				return nil, err
+			}
+			return workflowJSON(service.TargetDraftQueue(ctx, input))
+		},
+	}
+}
+
+func workflowDraftQueueSet() WorkflowCommand {
+	decode := func(raw RawWorkflow) (leagueservice.RawDraftQueueSet, error) {
+		var input leagueservice.RawDraftQueueSet
+		if raw.Mode != "execute" {
+			return input, fmt.Errorf("replace the draft queue")
+		}
+		return input, decodeWorkflow(raw.Arguments, &input)
+	}
+	return WorkflowCommand{
+		Validate: func(raw RawWorkflow) error {
+			_, err := decode(raw)
+			return err
+		},
+		Run: func(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
+			input, err := decode(raw)
+			if err != nil {
+				return nil, err
+			}
+			return workflowJSON(service.SetDraftQueue(ctx, input))
+		},
+	}
 }
 
 func workflowRead(read func(*leagueservice.Service, RawWorkflowScope) (json.RawMessage, error)) WorkflowCommand {

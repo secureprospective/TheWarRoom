@@ -1,6 +1,6 @@
-import { readWarRoomDraft } from './warroomDraftReads';
+import { readWarRoomDraft, saveWarRoomDraftQueue } from './warroomDraftReads';
 import { HQAct as WarRoomAct } from './HQAct';
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import type { WarRoomContext } from './warroomReads';
 import { useWarRoomRead } from './warroomReads';
 import { WarRoomEmpty } from './WarRoomHeader';
@@ -25,6 +25,39 @@ function DraftReading({ context, select }: { context: WarRoomContext;
   const results = mirror?.reports.find(r => r.id === 'M-183') ??
     mirror?.reports.find(r => r.id === 'M-063');
   const resultsRows = results && ['ok', 'stale'].includes(results.status) ? results.rows : [];
+  const native = context.native;
+  const queueKey = JSON.stringify([native?.league, native?.mine ?? context.mine]);
+  const [queueState, setQueueState] = useState<{ key: string; players: string[] }>();
+  const [queuePlayer, setQueuePlayer] = useState('');
+  const [queueSaving, setQueueSaving] = useState(false);
+  const [queueError, setQueueError] = useState('');
+  useEffect(() => {
+    setQueueState(undefined); setQueuePlayer(''); setQueueError('');
+  }, [queueKey]);
+  const heldQueue = queueState?.key === queueKey ? queueState.players : reading.reading?.queue;
+  const queue = heldQueue ?? [];
+  const queueReady = heldQueue !== undefined;
+  const queueCandidates = draft?.available.filter(player => !queue.includes(player.id)) ?? [];
+  const selectedQueuePlayer = queueCandidates.some(player => player.id === queuePlayer)
+    ? queuePlayer : queueCandidates[0]?.id ?? '';
+  const persistQueue = async (players: string[]) => {
+    if (!native || !queueReady || queueSaving) return;
+    setQueueSaving(true); setQueueError('');
+    try {
+      const saved = await saveWarRoomDraftQueue(native, players);
+      setQueueState({ key: queueKey, players: saved });
+    } catch {
+      setQueueError('Queue save failed. Try again.');
+    } finally {
+      setQueueSaving(false);
+    }
+  };
+  const moveQueue = (index: number, delta: number) => {
+    const next = [...queue];
+    const [player] = next.splice(index, 1);
+    next.splice(index + delta, 0, player);
+    void persistQueue(next);
+  };
   const teamName = context.snapshot.franchises.value.find(f => f.id === context.mine)?.name;
   const draftWords = draft?.words ?? mirror?.reports.find(r => r.id === 'M-176')?.rows
     .map(r => r.cells.join(' · ')).join(' · ');
@@ -77,7 +110,31 @@ function DraftReading({ context, select }: { context: WarRoomContext;
           <span className="nm">{p.name}</span><span className="adp">{unavailable}</span></WarRoomAct>)}</div>
       </div> : <WarRoomEmpty />}
       </div></div><div className="dq"><div className="ch"><b>MY QUEUE</b>
-        <span>auto-pick follows this order</span></div><div className="qz"><WarRoomEmpty /></div>
+        <span>auto-pick follows this order</span></div><div className="qz">
+        {native && queueReady ? <>
+          {queue.length ? queue.map((id, index) => {
+            const player = draft?.players[id];
+            return <div className="qi" key={id}><span className="n">{index + 1}</span>
+              <span className="ps">{player?.position ?? '—'}</span>
+              <span>{player?.name ?? id}</span><span className="q-actions">
+                <WarRoomAct label={`Move ${player?.name ?? id} up`} disabled={queueSaving || index === 0}
+                  onAction={() => moveQueue(index, -1)}>↑</WarRoomAct>
+                <WarRoomAct label={`Move ${player?.name ?? id} down`}
+                  disabled={queueSaving || index === queue.length - 1}
+                  onAction={() => moveQueue(index, 1)}>↓</WarRoomAct>
+                <WarRoomAct label={`Remove ${player?.name ?? id} from queue`} disabled={queueSaving}
+                  onAction={() => void persistQueue(queue.filter(item => item !== id))}>×</WarRoomAct>
+              </span></div>;
+          }) : <WarRoomEmpty />}
+          <div className="queue-add"><select aria-label="Player to add to queue" value={selectedQueuePlayer}
+            disabled={queueSaving || queueCandidates.length === 0}
+            onChange={event => setQueuePlayer(event.target.value)}>
+            {queueCandidates.map(player => <option key={player.id} value={player.id}>
+              {player.name} · {player.position}</option>)}
+          </select><WarRoomAct disabled={queueSaving || !selectedQueuePlayer}
+            onAction={() => void persistQueue([...queue, selectedQueuePlayer])}>ADD</WarRoomAct></div>
+        </> : <WarRoomEmpty reason={reading.reading?.queueError} />}
+        {queueError && <p role="status">{queueError}</p>}</div>
         <div className="legend2"><span>POS need</span><span>N my notes</span><span>click = report</span>
         </div></div>
   </section>;

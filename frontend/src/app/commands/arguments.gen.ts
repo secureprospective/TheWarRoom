@@ -2454,6 +2454,8 @@ export type WorkflowArgumentMap = {
 "player.watch.set": NativeArguments<"player.watch.set">;
 "player.watch.order": NativeArguments<"player.watch.order">;
 "player.watch.read": NativeArguments<"player.watch.read">;
+"draft.queue.read": NativeArguments<"draft.queue.read">;
+"draft.queue.set": NativeArguments<"draft.queue.set">;
 };
 export type CommandArgumentMap = {
  native: { [K in NativeCommandId]: NativeArguments<K> };
