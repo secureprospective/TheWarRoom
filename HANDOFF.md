@@ -1,7 +1,7 @@
 # Handoff
 
-- Baton: Bee, 2026-11-16.
-- State: Stable odds seed and bounded simulation cache implemented. Commissioner and history race tests pass. Real-data pulse run verified identical seed and all 32 odds rows before/after lineup writes and on repeated reads. Three baseline/after load runs plus one parity run are in `.scratch/`.
-- Next: Project hooks block commit/PR. Restore the required frontend toolchain/build output through the project owner, then rerun hooks, commit, push and open a PR against main. Do not merge.
-- Blocked on: `make lint` and commit hooks fail because `frontend/dist` is absent (`main.go:12:12: pattern all:frontend/dist: no matching files found`). `pnpm --dir frontend build` also fails: global tsc rejects existing `esModuleInterop=false` and `moduleResolution=node10`; local `node_modules` is absent. Do not edit `frontend/dist` or install dependencies without authorization. Tidy reports known dangling scratch symlinks and another agent's scratch folder.
-- Tried/rejected: The records-length seed changed odds after lineup-only writes. Replaced it with a hash of simulation inputs; no contracts-cache change.
+- Baton: Christopher / ClaudeBox decision, 2026-11-16.
+- State: Hosted private-notes part 2 is blocked on the versioned storage contract. Reviewable change is documentation only; no functional code or release metadata changed.
+- Next: Decide whether to authorize the personal table's league-schema migration and matching release row, then implement and verify the owner-only catalog path.
+- Blocked on: `docs/plans/HOSTED-PRIVATE-NOTES-STORAGE-QUESTION.md` records the question and twice-reproduced initializer failure (hosted schema 15, desktop notes initializer supports 2).
+- Tried/rejected: Existing personal initializer on a disposable hosted file refuses the schema. Unversioned DDL, historical migration edits and shared-evidence storage would bypass the contract; not attempted. Local resumable candidate is in `.scratch/part2-candidate.patch` and `.scratch/part2-personal-notes.go`, unverified.
