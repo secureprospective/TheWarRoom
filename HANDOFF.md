@@ -1,5 +1,6 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Job 5a implementing hosted Inspector age arc/usage display. Existing mode-aware API adapters route hosted IDs to catalog commands and local IDs to Wails. Added normalization for the server's explicit unavailable-input refusal and a Usage drawer; hosted adapter regression test extended.
-- Next: Run targeted frontend tests/typecheck, inspect diff, commit/push, open a new PR (not #328), and report CI status.
+- State: PR #330 open: https://github.com/secureprospective/TheWarRoom/pull/330. Hosted Inspector now uses existing mode-aware age arc/usage adapters; Usage drawer added. Explicit server missing-input errors are treated as unavailable facts. Full frontend suite/typecheck/build pass locally.
+- Blocked: First CI run found the test accessed `window.go` outside the adapter (frontend-transport gate). Changed test to assert adapter-owned Wails spies instead; pushed fix, awaiting CI rerun.
+- Next: Confirm CI green, tidy-check, report.
