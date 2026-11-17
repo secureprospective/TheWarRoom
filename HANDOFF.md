@@ -1,7 +1,6 @@
 # Handoff
 
-- Baton: Christopher, 2026-11-17.
-- State: PR #318 is open against `main`, not draft, not merged. Hosted HQ reads wired; player value/contract/cap/taxi/decision fields render from existing hosted payloads. Inspector local reads are mode-gated; player-name joins are indexed; unsupported taxi columns removed. `pnpm test` (881), `pnpm build`, `make lint`, and pre-push verification pass. CI/review pending.
-- Next: review PR #318/CI; do not merge.
-- Blocked on: `tidy-check.sh` reports six dangling Chromium symlinks under `~/scratch/bee-resume-v14-{browser,render2}` outside this worktree; left untouched due scope.
-- Follow-ups: existing HQ what-if drawer duplication and `hqReads.ts` subscriptions remain unchanged.
+- Baton: Bee, 2026-11-17.
+- State: hqslop implementation is in `frontend/src/app/shell`: shared what-if drawer/ports and one season+move subscription utility. Caller inventory complete. `pnpm test` (881), `pnpm build`, and `make lint` pass. Full affected production source count is 289 → 294 lines (+5); existing files shrink 289 → 283, while the new shared shell adds 11 lines. This misses the brief's total-line-count-decrease criterion; disclose in PR body.
+- Next: commit, push, and open the requested non-draft PR; do not merge.
+- Blocked on: no technical blocker. `make lint` needed a 120-second retry because another golangci-lint run was active. Verify `tidy-check.sh` at close.
