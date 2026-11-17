@@ -1,9 +1,6 @@
 # Handoff
 
-- Baton: ClaudeBox / Christopher, 2026-11-17, session/pulse-hqmoves, PR #319. Do not merge.
-- State: hosted My moves reads the native append-only ledger via catalogued `franchise.moves.history.read`, one league-clock season per page. Existing Audience filtering and actor/AI stamps retained; originals and corrections remain separate rows. Desktop envelope audits and owner-only `moves.read` unchanged. No schema/import/deployment changes. PR #319 is open, ready, and all checks are green.
-- Next: manual hosted HQ → My moves check: dated native rows/reasons/actors, previous/next seasons and distinct corrections; another member sees public rows but not sealed bids. No live UI/device verification performed here.
-- Evidence: frozen install/build first; race batch passed commissioner (+market), leagueservice, commandcatalog, app/commissioner (+native), composition, serverhttp. Commissioner race rerun after final pick-owner association fix. Frontend 115 files / 885 tests and final build passed. `make lint`: 0 issues. Details/source trace/desktop field gaps in `docs/build-handoffs/HQ-MOVES-SOURCE-2026-11-17.md`.
-- Access: LEDGER “every member (filtered by Audience)”; another admitted owner is not an outsider. TLS tests prove own history, other-member public read, sealed privacy, outsider 403, paging and unchanged `moves.read` cross-owner refusal.
-- Tried/rejected: desktop audit import; lifecycle-as-season-history; owner-only LEDGER policy. Fixed nil host authorizer by deriving governance from the same records, matching existing ledger convention. Grouped typed owner bindings by responsibility to retain function gates; no new permission policy in composition.
-- Hygiene: tidy-check still reports six pre-existing Chromium symlinks and an unrelated active fleet launcher outside allowed writes. Left untouched. No session services/watchers started; no retained temp/test logs.
+- Baton: Christopher, 2026-11-17.
+- State: PR #321 is open against `main`, not draft or merged. Shared what-if drawer/ports and shared season+move invalidation utility are pushed. Caller inventory is in the PR body. `pnpm test` (881), `pnpm build`, `make lint`, and pre-push `verify` pass.
+- Next: address the PR's disclosed line-count miss (full affected production files: 289 → 294, +5), then review CI; do not merge.
+- Blocked on: total-line-count-decrease criterion remains unmet. `tidy-check.sh` reports six dangling Chromium symlinks in existing scratch locations outside this worktree; left untouched due write scope.
