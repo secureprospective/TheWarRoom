@@ -1,6 +1,7 @@
 # Handoff
 
-- Baton: Christopher, 2026-11-17.
-- State: PR #321 is open against `main`, not draft or merged. Shared what-if drawer/ports and shared season+move invalidation utility are pushed. Caller inventory is in the PR body. `pnpm test` (881), `pnpm build`, `make lint`, and pre-push `verify` pass.
-- Next: address the PR's disclosed line-count miss (full affected production files: 289 → 294, +5), then review CI; do not merge.
-- Blocked on: total-line-count-decrease criterion remains unmet. `tidy-check.sh` reports six dangling Chromium symlinks in existing scratch locations outside this worktree; left untouched due write scope.
+- Baton: Bee, 2026-11-17.
+- State: Memory fix and regression test are committed on top of current `main` (#321). Four same-harness local 180s runs: before VmHWM 719,892 / 855,268 kB; after 608,376 / 622,140 kB; means 787,580 → 615,258 kB (21.9%). Local process RSS, not lab cgroup RSS. `go test -race ./internal/store/history/...` and `make lint` pass. Baseline pprof `alloc_space` attributed 24.67 GiB to the removed read copy; this line is absent after.
+- Next: push and open a non-draft PR; include peak pprof top 5, benchmark table and RSS limitation in PR body. Do not merge.
+- Blocked on: none.
+- Tried and rejected: None.

@@ -3,7 +3,6 @@ package history
 import (
 	"context"
 	"reflect"
-	"slices"
 	"sync"
 	"testing"
 
@@ -27,26 +26,26 @@ func ledgerViews(records []commissioner.Record) []ledgerView {
 	return out
 }
 
-// Readings share one snapshot per revision. A caller that rewrites, appends to or reorders its slice
-// must not change what the next caller reads.
-func TestSharedRecordsCallerCannotChangeAnother(t *testing.T) {
+// Read-only access returns the revision's cached backing slice instead of copying the ledger per request.
+func TestSharedRecordsReuseCachedSnapshot(t *testing.T) {
 	t.Parallel()
 	f := heldSeasonLeague(t)
 	first, err := f.s.nativeRecords(t.Context(), bracketLeague)
-	if err != nil || len(first) < 2 {
+	if err != nil || len(first) == 0 {
 		t.Fatalf("records: %d, %v", len(first), err)
 	}
-	want := ledgerViews(first)
-	first[0] = commissioner.Record{}
-	first[1].Principal = "changed"
-	slices.Reverse(first)
-	_ = append(first[:1], commissioner.Record{})
+	f.s.recordsMu.Lock()
+	held := f.s.records[bracketLeague].records
+	f.s.recordsMu.Unlock()
+	if len(held) == 0 || &first[0] != &held[0] {
+		t.Fatal("read copied the shared ledger snapshot")
+	}
 	second, err := f.s.nativeRecords(t.Context(), bracketLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(ledgerViews(second), want) {
-		t.Fatal("one caller changed the records another caller read")
+	if &second[0] != &held[0] {
+		t.Fatal("a later read copied the shared ledger snapshot")
 	}
 }
 
