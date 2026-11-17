@@ -1,8 +1,8 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: Rebased on current `origin/main` (#330/#331). Hosted `player.note.read`, `player.note.set`, and `player.watch.set` use #325's league-private store; service derives the seated franchise from authenticated identity. HQ and War Room inspector use hosted actions; local desktop path is unchanged; private reads bypass shared reply cache. Agent-token reads/writes are restricted to the issuer's own franchise.
-- Verified: `go test -race ./internal/leagueservice/... ./cmd/twr-server/...` passes; focused commandcatalog/serverhttp race tests pass (privacy, no-cache, and issuer-seat cases). Frontend typecheck + 4 Vitest files pass (24 tests); nativegen checks and `make lint` pass. Pre-push runs exposed a local-host nil-context regression and then an app line-length gate; both fixed, focused checks pass, full verify pending retry.
-- Next: Retry push with the pre-push `make verify`, open PR, wait for green CI, close #313/#328 with its link.
-- Blocked on: No feature blocker. `tidy-check` found headless Brave sessions using profiles in `~/scratch/twr-live-anim-1116` while working from `~/scratch/twr-mobile-1117`; both `KEEP.md` files identify Tom's separate in-flight mobile/live task, so Bee left them untouched.
+- State: PR #334 (https://github.com/secureprospective/TheWarRoom/pull/334) open. Hosted player notes/watch use #325's private store; authenticated seated franchise is derived server-side; HQ and War Room inspector use hosted actions; local desktop unchanged; private reads uncached; agent tokens are issuer-seat-only.
+- Verified: Pre-push `verify (changed packages; full suite in CI)` passed. `make lint`, nativegen checks, TypeScript check, and four focused Vitest files (24 tests) pass. Go race tests pass for leagueservice, cmd/twr-server, commandcatalog, serverhttp, and personal-store privacy.
+- Next: Wait for green PR CI, then close #313 and #328 with PR #334's link.
+- Blocked on: No feature blocker. `tidy-check` found headless Brave sessions for Tom's separate live/mobile job (`~/scratch/twr-live-anim-1116`, `~/scratch/twr-mobile-1117`); both have KEEP files and were left untouched.
 - Tried/rejected: No private-read cache, commissioner view, schema migration, request-selected franchise, or change to local desktop notes/watch.
