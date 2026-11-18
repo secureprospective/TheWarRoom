@@ -13,7 +13,9 @@ const reading = vi.hoisted(() => ({
       age: '26', points: '4', value: '3' },
     { id: '0004', name: 'Kicker need', position: 'K', minimum: '$1M', minimumCents: 100000000,
       age: '23', points: '2', value: '2' },
-  ], capRoom: 8500000000 as number | undefined, targets: [], errors: [], integrate: false,
+  ], capRoom: 8500000000 as number | undefined, targets: [], wins: [] as {
+    player: string; name: string; team: string; salaryCents: number; years: number; decidedAt: string;
+  }[], errors: [], integrate: false,
 }));
 vi.mock('./warroomReads', async () => {
   const React = await import('react');
@@ -70,6 +72,47 @@ it('filters hosted players by the header needs and server cap room', async () =>
   expect(host.textContent).not.toContain('Need but costly');
 });
 
+it('renders recent wins and the empty state from the hosted wins read', async () => {
+  reading.integrate = true;
+  const port = vi.fn<HostedPort>(async request => {
+    if (request.command === 'native.assets.read') return { label: '', writable: true, football: 'pin',
+      data: { league: 'native.test', revision: 4, seeded: true, entry: 'entry.1', source: 'held',
+        pool: [], identities: [], corrections: [], snapshot: { season: 2026, franchises: [],
+          players: [], picks: [] } } };
+    if (request.command === 'market.wins.read') return { label: '', writable: true, football: 'pin',
+      data: { league: 'native.test', wins: [{ player: '0001', name: 'Player One', team: 'Team 2',
+        salaryCents: 1234000000, years: 3, decidedAt: '2026-11-17T12:00:00Z' }] } };
+    throw new Error(`Unexpected ${request.command}`);
+  });
+  const hosted: WarRoomContext = { ...context, native: { league: 'native.test', mine: 'franchise.mine',
+    leave: () => {}, port, owner: false,
+    reading: { settings: { maxYears: 4 }, runway: [{ room: 8500000000 }] } as
+      NonNullable<WarRoomContext['native']>['reading'] } };
+  const host = await mount(<WarRoomMarket context={hosted} select={() => {}} />);
+  await flush();
+  expect(host.textContent).toContain('Player One');
+  expect(host.textContent).toContain('Team 2');
+  expect(host.textContent).toContain('$12.34M');
+  expect(host.textContent).toContain('3 years');
+  expect(host.textContent).toContain(new Date('2026-11-17T12:00:00Z').toLocaleDateString());
+  expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'market.wins.read', mode: 'read',
+    arguments: { league: 'native.test' } }));
+
+  await unmount();
+  port.mockImplementation(async request => {
+    if (request.command === 'native.assets.read') return { label: '', writable: true, football: 'pin',
+      data: { league: 'native.test', revision: 4, seeded: true, entry: 'entry.1', source: 'held',
+        pool: [], identities: [], corrections: [], snapshot: { season: 2026, franchises: [],
+          players: [], picks: [] } } };
+    if (request.command === 'market.wins.read') return { label: '', writable: true, football: 'pin',
+      data: { league: 'native.test', wins: [] } };
+    throw new Error(`Unexpected ${request.command}`);
+  });
+  const empty = await mount(<WarRoomMarket context={hosted} select={() => {}} />);
+  await flush();
+  expect(empty.textContent).toContain('No completed auction wins yet');
+});
+
 it('leaves My needs and Affordable disabled when their held inputs are unavailable', async () => {
   reading.capRoom = undefined;
   const host = await mount(<WarRoomMarket context={context} select={() => {}} />);
@@ -103,6 +146,7 @@ it('renders hosted watch order and rereads after starring, unstarring and moving
       case 'value.read': return response({ league: 'native.test', season: 2026, franchise: '',
         preparing: false, players: [], best: { franchise: '', starterN: 0, value: 0, age: 0,
           ageKnown: false, rank: 0, of: 0, available: false, words: '' }, age: [], notes: [] });
+      case 'market.wins.read': return response({ league: 'native.test', wins: [] });
       case 'player.watch.read': watchReads++; return response({ league: 'native.test', players: [...ids] });
       case 'player.watch.set': {
         const player = String(args.player);
