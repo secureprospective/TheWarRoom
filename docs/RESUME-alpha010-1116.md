@@ -3,7 +3,59 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. STATE AT 7:00 PM CST TUE 11-17 (supersedes 0a/0b and sections 3, 10, 11 below)
+## 0. STATE AT 7:55 PM CST TUE 11-17 (supersedes every older 0 block and sections 3, 10, 11)
+
+**New rulings since 7:00 PM (memories: feedback_luna_exclusive_scale_thinking, project_twr_alpha_cuts_1118)**
+- **Thinking level is routing.** Pick it for wall clock and to keep the session alive on OpenAI's servers, not for output quality. Use high for short lanes, xhigh for long ones, and max only when a long run already got cut off.
+- **Alpha is now after Bundles 1 to 5 plus the release checks.** Bundle 6 is removed.
+  - Cut from alpha (moved to the tracker's "later" list): usage/age arc, the D58 layout store and arrangeable boards (Home becomes a fixed v3 look), the alert band, the status bar, team/league search, stat changes, the Archive tab, points per play, and board sync.
+  - Kept: stacked what-if, the Picks tab, and player search.
+- **#320 counts as a pass for release check line 14.**
+- **#304/#307 are parked until after alpha.**
+- **Head brain owns the testing:** the lab server (CT 260 on lab host 192.168.1.182) and the client on Claude-OS.
+- **Tom (Opus low) may be used as GPT fallback.** Launcher: `TOM_WT=<worktree> TOM_BRIEF=../alpha010/<brief> TOM_SCOPE=... launch-tom-build.sh`. Run dir: `~/fleet/runs/tom-<wt>/`. At most 2 at once.
+- **Goal:** testers are waiting. Get to alpha fast, then learn from their feedback.
+
+**Head-brain rulings given to lanes**
+- **b5perm:** `commish.vote.close` and `commish.vote.tiebreak` stay commissioner-only.
+- **b1pulse:** removing a duplicate read in shared local/hosted code is slop and is allowed.
+- **b0load:** league-load prepares an empty state dir, plus an installer `TWR_FIRST_LOAD=1` mode.
+
+**Merged:** #344 (offers drawer) into bundle/b1 at 7:53 PM. My fix in it: offer cards name the partner team.
+
+**In flight (all on Beelink; watchers on Claudebox)**
+| Job | What | Check | On result |
+|---|---|---|---|
+| b92bz4ed9 | merge #345 (b1pulse, reviewed twice, green) into bundle/b1 | `gh pr view 345` | update tracker |
+| b9b9f6how | merge #346 (b0load fresh-server first load, reviewed) to MAIN | `gh pr view 346` | lab4 relaunches |
+| b0oklgyc1 | after #346 MERGED and 02:54Z, relaunch lab4 (Luna max, brief lab4.md with a RE-RUN section) | `~/fleet/runs/pulse-lab4/` | review RESULT.md; file bugs as lanes |
+| b8qoa197a | at 02:52Z relaunch b1whatif, b5frame, b5jobs, b5perm on Luna xhigh (stopped on GPT quota at 7:38 PM) | run dirs `~/fleet/runs/pulse-<lane>/` | arm `twr-lane-wait.sh` on them |
+| bpvirqlew | Tom on b1hqdec (contract decisions), continuing from its HANDOFF | `~/fleet/runs/tom-pulse-b1hqdec/completion.txt` | review its PR into bundle/b1 |
+| b1cleanup | Luna xhigh, still running at 7:50 PM | lane-check | review its PR into bundle/b1 |
+| b4q3ixdx4 | 50-min lane check | — | re-arm |
+
+**CT 260 state**
+- Server stopped and `/var/lib/twr` empty.
+- Empty first-start data archived at `/root/first-start-data.tar.gz`.
+- Seed league at `/root/seed/history.db` (sha256 ca2d477a…ff3e, matches the original).
+- Lab ssh: `ssh -F ~/work/TheWarRoom/.worktrees/pulse-a010s/.scratch/ssh-lab.conf lab`.
+
+**Refuted / traps this window**
+- The guard hook blocks any command text containing a container power word (it blocked a brief that mentioned one). It also blocks recursive chown/chmod. Use the documented non-recursive `chown twr:twr /var/lib/twr/server.db*`.
+- Pushing from a worktree needs the build env (PATH with Go and wails, plus GOTOOLCHAIN). Without it, verify fails with "wails: not found".
+- Heredocs over ssh break on apostrophes. Write the file locally and scp it.
+- The storm harness only accepts the lab URL on 443, not a LAN IP. The Cloudflare route is accepted.
+
+**Next actions**
+1. As each lane finishes, review its diff myself, fix small slop directly, and merge into its bundle branch.
+2. When B1 is complete: merge main into bundle/b1, run the full suite, then open and merge the bundle PR.
+3. After B5's frame lands, launch the B5 tabs: Rules, Season, Picks and Server on high; Fix, League and People on xhigh.
+4. Review lab4's RESULT and turn every bug into a fix lane.
+5. Write the tester-ready checklist: installer, an outside-reachable server, and a feedback channel. Then queue Bundles 2 to 4 (reduced) and 8 to 9.
+
+**Needs Christopher:** rotate the CT 257 keys (whenever he's at a keyboard). Also his choice of how testers reach a server (outward-facing).
+
+## 0-prev. (older) STATE AT 7:00 PM CST TUE 11-17 (supersedes 0a/0b and sections 3, 10, 11 below)
 
 **Goal (Christopher 11-17, latest):** build the full v3 desktop app in bundles, push day and night, and get Bundles 8 and 9 (the phone app) done before **Sunday 11-22 kickoff**. Official alpha comes after Bundle 6 (his call). Tracker: `~/Downloads/twr-usable-week-plan.html`. The page has been rebuilt (template `~/fleet/runs/twr-tracker-template.html`, backups `.bak-1117`, `.bak-1117b`). Its data keys: `plan` (bundles B0–B8 + ALPHA, each with items in state done/building/todo/waiting), `lanes` (cards with `day` 11-17, `at`, `pr`, `ord`), `needsYou`, `later`, `slop`, `log`, `today`.
 
