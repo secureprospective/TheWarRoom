@@ -1,11 +1,7 @@
 # Handoff
 
-- Baton: ClaudeBox for review; Bee completed lane `pulse-b7door`, 2026-11-18, branch `session/pulse-b7door`, base `bundle/b7` (`b597b6122`).
-- State: commit `84f79ddab` pushed to ready PR #372; CI green. Browser door implemented without schema migration or league-recency state. `POST /app/session` returns 409 with the desktop-app message for accounts admitted to multiple leagues. `make verify` passed, including race tests, frontend build, lint and staged embedded-bundle test; staging cleaned.
-- Flow: exact configured HTTPS Origin and Host → `/app/session` creates/revokes the existing owner session in `__Host-twr_session`; GET/POST return only the one admitted league. Native command routes accept that cookie only from the configured origin and retain current authorization/TOTP checks. `/app/` embeds the built web app with locked headers.
-- Security: browser never receives owner bearer or recent-auth proof; reject Authorization+cookie and agent tokens with Origin or as cookie; changes feed, enrollment and account-administration routes stay outside the cookie exception. No league list or `commish.leagues.read`.
-- Deployment: `-public-host` is sourced from `/etc/twr/public-host`; Cloudflare routes `/app`, and upgrade recovers the hostname from existing tunnel config. Static staging is cleaned after verify/release build.
-- Next: ClaudeBox review/merge PR #372. Alpine deployment integration was not run; changed shell scripts passed syntax checks.
-- Tidy: `tidy-check.sh` found unrelated active alpha010 lanes `fixcr`, `fixhome`, and `fixsearch` launched from the main checkout. Left their processes/files untouched; their owners need to file KEEP records. Flag this to ClaudeBox.
-- Blocked on: none for this lane. The unrelated active lanes still need their owners to file KEEP records.
-- Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.
+- Baton: Bee completed `pulse-b8plan`, 2026-11-18; planning-only, branch `session/pulse-b8plan`, base `bundle/b7`.
+- State: Bundle 8 plan has 6 lanes; Bundle 9 has 7. No application code changed. Desktop-mode checks passed; heavy guard saw another full `go test -race ./...` running, so no suite/build was started. Tidy check is clean.
+- Next: Christopher reviews the recommendations for league activity visibility, board sync, and Ask scope; then ClaudeBox can turn accepted lanes into PR briefs.
+- Blocked on: privacy contract for member-visible league activity; whether board preferences sync across desktop/PWA; whether Ask means bounded read-only answers or a general assistant.
+- Tried and rejected: using commissioner ledger as member activity, exposing the browser league list, claiming localStorage boards sync, or inventing missing player-status/NFL box-score facts.
