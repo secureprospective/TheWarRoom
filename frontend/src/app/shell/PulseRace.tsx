@@ -3,6 +3,7 @@ import { HQAct as PulseAct } from './HQAct';
 import type { NativePulse } from './pulseReads';
 import { conferencesOf, divisionGroups, seedRows, type PulseSeedRow } from './pulseModel';
 import { PulseIdle } from './PulseNow';
+import { RecentForm } from './RecentForm';
 import { BracketDrawer, TiebreakDrawer } from './PulseRaceDrawers';
 import { percent, type PulseFixture, type PulseOdds, type PulseStandings } from '../data/nativePulse';
 
@@ -142,33 +143,47 @@ function Seeds({ reading, standings, side, mine }: { reading: NativePulse;
 function Road({ reading, mine }: { reading: NativePulse; mine: string }) {
   const name = (franchise: string) =>
     reading.seats.find(s => s.franchise === franchise)?.name ?? franchise;
-  const record = (franchise: string) =>
-    reading.standings?.rows.find(r => r.franchise === franchise)?.record ?? '';
+  const record = (franchise: string) => reading.standings?.rows.find(r => r.franchise === franchise)?.record
+    ?? (reading.standingsError ? `Unavailable · ${reading.standingsError}`
+      : reading.standings?.words || 'The standings are unavailable');
   const ahead = reading.fixtures.filter(g => !reading.week || g.week >= reading.week);
   const shown: PulseFixture[] = ahead.slice(0, 6);
+  const form = reading.forms[mine] ?? [];
+  const hasForm = Object.prototype.hasOwnProperty.call(reading.forms, mine);
+  if (!mine && !reading.fixtures.length && !reading.scheduleNote) return null;
   return <>
     <div className="ch"><b>MY ROAD{shown.length
       ? ` · WKS ${shown[0].week}–${shown[shown.length - 1].week}` : ''}</b>
       <span>opponent record</span></div>
-    {!shown.length
-      ? <PulseIdle words={reading.fixtures.length
-        ? 'Every week on this franchise’s schedule has been played.'
-        : reading.weekNote || 'No schedule is published for this franchise yet.'} />
-      : <>
-        {shown.map(game => <div className="rem" key={game.week}>
-          <span className="w">WK {game.week}</span>
-          <span><span>{game.opponent ? name(game.opponent) : 'Bye'}</span>
-            {game.week === reading.week && <span className="tag2">NOW</span>}
-            <span className="src" style={{ marginLeft: '6px' }}>{game.venue.toLowerCase()}</span>
-          </span>
-          <span className="r">{game.opponent ? record(game.opponent) : ''}</span>
-        </div>)}
-        <div className="drawer-note" style={{ marginTop: 'auto' }}>
-          Opponent strength is an all-play measure this league does not hold yet.
-          {reading.bracket
-            ? ` Playoffs run weeks ${reading.bracket.startWeek}–${reading.bracket.finalWeek}.` : ''}
-        </div>
-      </>}
+    {(reading.formPending || reading.formError || hasForm) && <div className="road-form"
+      aria-label="Recent form">
+      <span>FORM</span>
+      {reading.formPending ? <span>Reading results…</span>
+        : reading.formError ? <span>{`The form is unavailable · ${reading.formError}`}</span>
+          : form.length ? <RecentForm form={form} className="road-form-marks" />
+            : <span title={reading.formNote}>{reading.formNote || reading.standings?.words || ''}</span>}
+    </div>}
+    {reading.scheduleError
+      ? <PulseIdle words={`The schedule is unavailable · ${reading.scheduleError}`} />
+      : !shown.length
+        ? <PulseIdle words={reading.fixtures.length
+          ? 'Every week on this franchise’s schedule has been played.'
+          : reading.scheduleNote || reading.weekNote || 'No schedule is published for this franchise yet.'} />
+        : <>
+          {shown.map(game => <div className="rem" key={game.week}>
+            <span className="w">WK {game.week}</span>
+            <span><span>{game.opponent ? name(game.opponent) : 'Bye'}</span>
+              {game.week === reading.week && <span className="tag2">NOW</span>}
+              <span className="src" style={{ marginLeft: '6px' }}>{game.venue.toLowerCase()}</span>
+            </span>
+            <span className="r">{game.opponent ? record(game.opponent) : ''}</span>
+          </div>)}
+          <div className="drawer-note" style={{ marginTop: 'auto' }}>
+            Opponent strength is an all-play measure this league does not hold yet.
+            {reading.bracket
+              ? ` Playoffs run weeks ${reading.bracket.startWeek}–${reading.bracket.finalWeek}.` : ''}
+          </div>
+        </>}
   </>;
 }
 

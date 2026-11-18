@@ -306,6 +306,7 @@ func TestHostedBlindBidIsInvisibleEvenToCommissioner(t *testing.T) {
 	other.bearer, other.proof = c.f.login(t, "owner", "private-password"), ""
 	reads := []struct{ command, args string }{
 		{"bids.read", `{"league":"native.hosted","franchise":"franchise.01"}`},
+		{"market.wins.read", `{"league":"native.hosted"}`},
 		{"commish.market.read", `{"league":"native.hosted","command":"bids.process"}`},
 		{"commish.market.read", `{"league":"native.hosted","command":"bids.award.override"}`},
 		{"native.assets.read", `{"league":"native.hosted"}`},

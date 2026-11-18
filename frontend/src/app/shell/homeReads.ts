@@ -4,7 +4,6 @@ import { nativeHQAssets, nativeHQCap } from '../commissioner/hqReading';
 import { parseJobs, type Jobs } from '../commissioner/jobs';
 import { researchAPI, researchAvailable, type ResearchReader } from '../research/api';
 import type { Research } from '../research/contract';
-import { formPoints } from './hqPlayerData';
 import { parseLedger, type Ledger } from '../commissioner/proxy';
 import type { Snapshot } from '../data/contract';
 import type { PulseResults } from '../data/nativePulse';
@@ -37,14 +36,12 @@ export type HomeBrief = {
   trades?: ReturnType<typeof parseHostedTrades>;
   /** Player research (NFL news, depth charts): the same read the Research screen calls. */
   research?: Research;
-  /** Each of my starters' last five finished weeks, from the research player read HQ's form chart uses. */
-  form?: { player: string; name: string; position: string; weeks: { week: number; points: number }[] }[];
   /** When each source last answered (ISO); a tile's footer shows the oldest of its sources. */
   at: Partial<Record<HomeSource, string>>;
   errors: Partial<Record<HomeSource, string>>;
 };
 export type HomeSource = 'pulse' | 'results' | 'calendar' | 'cap' | 'ledger' | 'bids' | 'draft'
-  | 'matchup' | 'assets' | 'jobs' | 'trades' | 'research' | 'form';
+  | 'matchup' | 'assets' | 'jobs' | 'trades' | 'research';
 
 export const defaultResearch = (): ResearchReader | undefined => researchAvailable() ? researchAPI :
   undefined;
@@ -75,7 +72,7 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       out.at.pulse = new Date().toISOString();
       send();
       if (reading.week !== undefined) ready();
-    });
+    }, true);
   }).finally(ready);
   await Promise.all([
     pulse,
@@ -93,12 +90,6 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       out.matchup = await readPulseMatchup(league, season, week, [g.home, g.away],
         { [g.home]: starters(g.home), [g.away]: starters(g.away) }, port);
       if (out.matchup.errors.length) throw new Error(out.matchup.errors[0]);
-    })).then(() => apply('form', async () => {
-      if (!research?.player) throw new Error(noResearch);
-      const mineStarters = out.results?.scores.find(s => s.franchise === mine)?.starters ?? [];
-      if (!mineStarters.length) throw new Error('No starters this week to read form for');
-      out.form = await Promise.all(mineStarters.map(async s => ({ player: s.player, name: s.name,
-        position: s.position ?? '', weeks: formPoints(await research.player!(s.player)).slice(-5) })));
     })),
     apply('assets', async () => {
       const r = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });

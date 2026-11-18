@@ -4614,7 +4614,7 @@ const schema326 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawDraftQueueScope.Validate",
+  Validator:"TargetNativeBidWins",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2}
@@ -4622,6 +4622,17 @@ const schema326 = {
   Items:null,
 } as const;
 const schema327 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawDraftQueueScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema328 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4633,7 +4644,7 @@ const schema327 = {
   ],
   Items:null,
 } as const;
-const schema328 = {
+const schema329 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4644,7 +4655,7 @@ const schema328 = {
   ],
   Items:null,
 } as const;
-const schema329 = {
+const schema330 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4659,7 +4670,7 @@ const schema329 = {
   ],
   Items:null,
 } as const;
-const schema330 = {
+const schema331 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -7721,6 +7732,25 @@ export const serverCommands = {
   },
   phrase: "read player watch",
 },
+"market.wins.read": {
+  definition: {
+    "ID": "market.wins.read",
+    "Method": "TargetNativeBidWins",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "league-view",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "ledger,player-facts",
+    "Safeguards": "none",
+    "Arguments": schema326
+  },
+  phrase: "read market wins",
+},
 "draft.queue.read": {
   definition: {
     "ID": "draft.queue.read",
@@ -7736,7 +7766,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema326
+    "Arguments": schema327
   },
   phrase: "read draft queue",
 },
@@ -7755,7 +7785,7 @@ export const serverCommands = {
     "Undo": "replace-own-private-queue",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema327
+    "Arguments": schema328
   },
   phrase: "set draft queue",
 },
@@ -7774,7 +7804,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema328
+    "Arguments": schema329
   },
   phrase: "read trade draft",
 },
@@ -7793,7 +7823,7 @@ export const serverCommands = {
     "Undo": "delete-own-private-proposal",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema329
+    "Arguments": schema330
   },
   phrase: "save trade draft",
 },
@@ -7812,7 +7842,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema330
+    "Arguments": schema331
   },
   phrase: "delete trade draft",
 },

@@ -2,7 +2,7 @@ import { controlAPI } from '../control/api';
 import { report } from '../reports/contract';
 import { parseRules } from '../commissioner/rules';
 import { nativeHQCap, nativeHQSettings } from '../commissioner/hqReading';
-import { array, id, integer, object, requiredText, text } from '../data/parseValues';
+import { array, id, integer, object, requiredText, text, timestamp } from '../data/parseValues';
 import { personalWire, swapPersonalTargets } from '../offers/api';
 import { parsePersonal, type Entry } from '../personal/contract';
 import { poolProvider } from '../pool/provider';
@@ -23,8 +23,10 @@ export type WarRoomMarketPlayer = { id: string; name: string; position: string; 
   minimum?: string; minimumCents?: number; value?: string };
 export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string;
   kind?: 'plan' | 'placed'; id?: string; bidId?: string; post?: string; plan?: Plan };
+export type WarRoomMarketWin = { player: string; name: string; team: string; salaryCents: number;
+  years: number; decidedAt: string };
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
-  bidRevision?: number; capRoom?: number; writable?: boolean; football?: string;
+  wins?: WarRoomMarketWin[]; bidRevision?: number; capRoom?: number; writable?: boolean; football?: string;
   targets?: Entry[]; maxYears?: number; errors: string[] };
 export function parseWarRoomWatchList(value: unknown, league: string): string[] {
   const r = object(value, 'Watched players', ['league', 'players']);
@@ -68,6 +70,18 @@ export async function readWarRoomBids(c: WarRoomContext): Promise<WarRoomBidRead
     arguments: { league: native.league, franchise: c.mine } });
   return parseWarRoomBidReading(data, native.league, c.mine);
 }
+export function parseWarRoomMarketWins(value: unknown, league: string): WarRoomMarketWin[] {
+  const r = object(value, 'Market wins', ['league', 'wins']);
+  if (r.league !== league) throw new Error('Market wins belong to another league');
+  return array(r.wins, 'Market wins', (value, path) => {
+    const win = object(value, path, ['player', 'name', 'team', 'salaryCents', 'years', 'decidedAt']);
+    const decidedAt = timestamp(win.decidedAt, path);
+    if (!decidedAt) throw new Error(`${path}: missing auction decision date`);
+    return { player: requiredText(win.player, path), name: marketFact(text(win.name, path)),
+      team: marketFact(text(win.team, path)), salaryCents: integer(win.salaryCents, path, 1),
+      years: integer(win.years, path, 1), decidedAt };
+  });
+}
 export async function readWarRoomCap(c: WarRoomContext): Promise<number | undefined> {
   if (!c.native || c.native.owner === false) return undefined;
   const native = c.native;
@@ -108,6 +122,9 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
         result.targets = parseWarRoomWatchList(data, native.league).map((id, index) => ({
           kind: 'watch', entity: 'player', id, text: '', at: '', order: index + 1,
         })); }),
+      apply(async () => { const { data } = await port({ command: 'market.wins.read', mode: 'read',
+        arguments: { league: native.league } });
+        result.wins = parseWarRoomMarketWins(data, native.league); }),
       apply(async () => { result.capRoom = native.reading?.runway?.[0]?.room ?? await readWarRoomCap(c); }),
     ]);
     if (native.owner !== false) await apply(async () => {

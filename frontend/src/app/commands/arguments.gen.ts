@@ -2453,6 +2453,7 @@ export type WorkflowArgumentMap = {
 "player.watch.set": NativeArguments<"player.watch.set">;
 "player.watch.order": NativeArguments<"player.watch.order">;
 "player.watch.read": NativeArguments<"player.watch.read">;
+"market.wins.read": NativeArguments<"market.wins.read">;
 "draft.queue.read": NativeArguments<"draft.queue.read">;
 "draft.queue.set": NativeArguments<"draft.queue.set">;
 "trade.draft.read": NativeArguments<"trade.draft.read">;
