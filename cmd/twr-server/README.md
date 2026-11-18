@@ -263,6 +263,17 @@ twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db 
 chown twr:twr /var/lib/twr/server.db*; rc-service twr-server start
 ```
 
+**Brand-new server (first load before the service ever starts).** Install with `TWR_FIRST_LOAD=1`
+(`deploy/server/README.md`): `twr-server` stays stopped and `/var/lib/twr` stays empty. When `-db` is
+absent and its directory is empty, `league-load` creates the empty server database itself (no network,
+no identity population), then loads. An absent `-db` beside other files is refused; an existing
+database is used as before, and a league already on the server is never replaced. Then:
+
+```
+chown twr:twr /var/lib/twr/server.db*     # non-recursive
+rc-update add twr-server default; rc-service twr-server start
+```
+
 `commissioner.json` is `{"username":…,"password":…}` (owner-only tmpfs file; never an argument).
 On an empty server it becomes the first account; otherwise that account's password must check.
 The mirror (a *copy* of the desktop `history.db`) is opened read-only. The native league is built
