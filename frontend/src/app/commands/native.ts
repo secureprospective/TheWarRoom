@@ -17,6 +17,13 @@ export type NativeRequest = { [K in NativeRequestCommandId]: {
   command: K; mode: NativeMode<K>; arguments: NativeArguments<K>;
 } }[NativeRequestCommandId];
 
+export function hostedCommandAvailable(command: string, mode: 'preview' | 'read' = 'preview'): boolean {
+  type CatalogRow = { definition: { Availability: string; Modes: readonly string[] } };
+  const definition = (serverCommands as unknown as Record<string, CatalogRow>)[command]?.definition
+    ?? (nativeCommands as unknown as Record<string, CatalogRow>)[command]?.definition;
+  return Boolean(definition && definition.Availability !== 'desktop' && definition.Modes.includes(mode));
+}
+
 // Hosted forms validate the generated wire contract without inventing capability grants.
 // The server admits the real account and current arguments on every request.
 export function nativeEnvelope(request: NativeRequest) {

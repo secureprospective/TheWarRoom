@@ -6,6 +6,7 @@ import { newKey } from './forms';
 import { Review } from './HostedReview';
 import { HostedRules } from './HostedRules';
 import { HostedCommissionerLeague } from './HostedCommissionerLeague';
+import { HostedControlRoom } from './HostedControlRoom';
 import { localTime } from '../clock/localTime';
 import { createHostedRoom, type HostedPort } from './hostedRoom';
 import type { NativeArguments, NativeRequest } from '../commands/native';
@@ -50,7 +51,13 @@ function HostedFranchise(props: {
   const [showWar, setWar] = useRemembered(`${place}:war`, false);
   const [showHQ, setHQ] = useRemembered(`${place}:hq`, props.hq ?? false);
   const [showPulse, setPulse] = useRemembered(`${place}:pulse`, false);
+  const [showControl, setControl] = useRemembered(`${place}:control`, false);
   const [pulseTab, setPulseTab] = useRemembered<'now' | 'race'>(`${place}:pulseTab`, 'now');
+  const commissioner = props.role === 'Commissioner' || props.role === 'Co-commissioner';
+  if (showControl) return <section className="hosted-league" aria-label="Commissioner Control Room">
+    <WarRoomAct onAction={() => setControl(false)}>Back to your league</WarRoomAct>
+    <HostedControlRoom league={props.league} port={props.port} />
+  </section>;
   if (showPulse) return <Suspense fallback={<p>Opening League Pulse…</p>}>
     <NativeLeaguePulse league={props.league} mine={props.franchise} port={props.port} serverTime
       navigate={setPulseTab} back={() => setPulse(false)}
@@ -70,7 +77,9 @@ function HostedFranchise(props: {
         else { setHQ(false); if (node === 'war') setWar(true); } }} />
   </Suspense>;
   return <><WarRoomAct onAction={() => setPulse(true)}>League Pulse</WarRoomAct>
-    <WarRoomAct onAction={() => setWar(true)}>War Room</WarRoomAct><HostedWorkRoom {...props} /></>;
+    <WarRoomAct onAction={() => setWar(true)}>War Room</WarRoomAct>
+    {commissioner && <WarRoomAct onAction={() => setControl(true)}>Control Room</WarRoomAct>}
+    <HostedWorkRoom {...props} /></>;
 }
 function HostedWorkRoom({
   league,
@@ -246,7 +255,8 @@ function HostedWorkRoom({
       <h2>{name || 'Your franchise'}</h2>
       <p>Your league server</p>
       <p>
-        MFL is reference only. Refreshing MFL cannot replace this league’s roster, rules or recorded changes.
+        MFL is reference only. Refreshing MFL cannot replace this league’s roster, rules
+        or recorded changes.
       </p>
       <p>{reading?.label || 'Checking where your league is managed…'}</p>
       <p role="status">
