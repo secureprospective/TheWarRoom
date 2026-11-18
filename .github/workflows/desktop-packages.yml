@@ -2,6 +2,11 @@ name: desktop packages
 
 on:
   push:
+    # Lane and batch branches are checked by verify.yml only. The desktop package and install
+    # proof runs on bundle branches and main, so every landing on main is still packaged.
+    branches-ignore:
+      - 'session/**'
+      - 'batch/**'
   workflow_dispatch:
 
 permissions:
