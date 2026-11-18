@@ -16,14 +16,16 @@ import './commissioner.css';
 const hostedRule = (field: string) =>
   /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(field);
 
-const RULE_BOARDS: [string, (section: string, field: string) => boolean][] = [
-  ['Structure', (section, field) => /league|team|schedule|playoff/i.test(section + field)],
-  ['Rosters', (section, field) => /roster|lineup|taxi|ir/i.test(section + field)],
-  ['Scoring', (section, field) => /scoring|standings/i.test(section + field)],
-  ['Money', (section, field) => /cap|contract|salary/i.test(section + field)],
-  ['Moves', (section, field) => /waiver|bid|trade|move/i.test(section + field)],
-  ['Draft', (section, field) => /draft/i.test(section + field)],
-];
+const SECTION_BOARD: Record<string, string> = {
+  'League shape': 'Structure', 'Player pools': 'Structure',
+  Roster: 'Rosters', Lineup: 'Rosters', IR: 'Rosters', 'Taxi squad': 'Rosters',
+  Scoring: 'Scoring', Standings: 'Scoring',
+  'Salary cap': 'Money', Contracts: 'Money',
+  Waivers: 'Moves', 'Free-agent bids': 'Moves', Trades: 'Moves',
+  Schedule: 'Structure', Playoffs: 'Structure', Calendar: 'Structure',
+  Draft: 'Draft',
+};
+const RULE_BOARDS = ['Structure', 'Rosters', 'Scoring', 'Money', 'Moves', 'Draft', 'Other'] as const;
 
 function ruleSource(row: RuleRow) {
   if (row.governed) return row.governed.who === 'commissioner' ? 'YOU' : row.governed.who;
@@ -47,9 +49,10 @@ export function HostedRules({ rules, commissioner, room }: {
     <div ref={background}>
       <h3>League rules</h3>
       <p>Settings come from the league server. Sources and timing come from recorded rule data.</p>
-      {RULE_BOARDS.map(([board, matches]) => {
+      {!commissioner && <p>Your commissioner controls these rules. Ask them for a ruling if a value is missing.</p>}
+      {RULE_BOARDS.map(board => {
         const rows = rules.sections.flatMap(section => section.rows
-          .filter(row => matches(section.label, row.field))
+          .filter(() => (SECTION_BOARD[section.label] ?? 'Other') === board)
           .map(row => ({ row, section: section.label })));
         if (!rows.length) return null;
         return <section key={board} aria-label={`${board} rules`}>
