@@ -34,22 +34,63 @@ func authorizeTrade(raw RawCommand, principal string, records []Record) (string,
 		return "owner", nil
 	}
 	if raw.Command == TradeOverride {
-		if !state.HasRole(governance.Principal(principal), governance.Commissioner) {
-			return "", fmt.Errorf("only the commissioner may override a trade")
-		}
-		return "commissioner", nil
+		return authorizeTradeOverride(raw, principal, records, state)
 	}
+	return authorizeTradeReviewer(raw, principal, records, state)
+}
+
+func authorizeTradeOverride(raw RawCommand, principal string, records []Record, state governance.State) (string, error) {
+	person := governance.Principal(principal)
+	switch {
+	case state.HasRole(person, governance.Commissioner):
+		return "commissioner", nil
+	case state.HasRole(person, governance.Deputy):
+		if err := authorizeDeputyTradeRuling(raw, principal, records, state); err != nil {
+			return "", err
+		}
+		return "deputy", nil
+	default:
+		return "", fmt.Errorf("only the commissioner may override a trade")
+	}
+}
+
+func authorizeTradeReviewer(raw RawCommand, principal string, records []Record, state governance.State) (string, error) {
+	person := governance.Principal(principal)
 	// Eligibility and the review route are judged again under the append lock.
-	if state.HasRole(governance.Principal(principal), governance.DOT) {
+	if state.HasRole(person, governance.Deputy) {
+		if err := authorizeDeputyTradeRuling(raw, principal, records, state); err != nil {
+			return "", err
+		}
+		return "deputy", nil
+	}
+	if state.HasRole(person, governance.DOT) {
 		return "DOT", nil
 	}
-	if state.HasRole(governance.Principal(principal), governance.Commissioner) {
+	if state.HasRole(person, governance.Commissioner) {
 		return "commissioner", nil
 	}
-	if state.HasRole(governance.Principal(principal), governance.CoCommissioner) {
+	if state.HasRole(person, governance.CoCommissioner) {
 		return "cocommissioner", nil
 	}
 	return "", fmt.Errorf("only an eligible trade reviewer may decide this trade")
+}
+
+func authorizeDeputyTradeRuling(raw RawCommand, principal string, records []Record, state governance.State) error {
+	_, book, err := nativeAssetsState(raw.League, records)
+	if err != nil {
+		return fmt.Errorf("check deputy trade eligibility: %w", err)
+	}
+	trade, err := TradeByID(book.Trades, raw.Args.Trade.ID)
+	if err != nil {
+		return fmt.Errorf("check deputy trade eligibility: %w", err)
+	}
+	for _, party := range trade.Parties {
+		franchise, ok := state.Franchise(governance.FranchiseID(party))
+		if ok && franchise.Seat == governance.Principal(principal) {
+			return fmt.Errorf("a deputy may not rule on a trade involving their own franchise")
+		}
+	}
+	return nil
 }
 
 func AuthorizeFranchiseOwner(records []Record, principal, franchise string) error {

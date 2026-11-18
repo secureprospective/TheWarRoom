@@ -1,6 +1,8 @@
 package commissioner
 
 import (
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -22,18 +24,23 @@ func permissionTestLedger(t *testing.T) []Record {
 	}
 	b.add(RawCommand{League: "native.test", Command: DeputyPermissionsSet,
 		Args: RawArgs{People: &RawPeople{Principal: "full-deputy", Permissions: governance.AllDeputyPermissions()}}}, seasonMoment(3))
+	b.add(RawCommand{League: "native.test", Command: "commish.seat.replace",
+		Args: RawArgs{People: &RawPeople{Franchise: "franchise.01", Principal: "full-deputy"}}}, seasonMoment(4))
 	return b.records
 }
 
 func permissionTestCommand(command string) RawCommand {
 	raw := RawCommand{League: "native.test", Command: command}
-	if command == RulesSet {
+	switch command {
+	case RulesSet:
 		raw.Args.Field = "roster.limits"
+	case LineupSet, LineupCorrect:
+		raw.Args.Lineup = &RawLineupChange{Season: 2026, Franchise: "franchise.01", Week: 1, Starters: []string{"1001"}}
 	}
 	return raw
 }
 
-func TestMayRunEveryDelegatedCatalogCommandByPermission(t *testing.T) {
+func TestDeputyPermissionGatesNonTradeCatalogCommands(t *testing.T) {
 	records := permissionTestLedger(t)
 	groups := make(map[governance.DeputyPermission]bool)
 	for _, rule := range DeputyCommandRules() {
@@ -42,6 +49,9 @@ func TestMayRunEveryDelegatedCatalogCommandByPermission(t *testing.T) {
 		}
 		groups[rule.Permission] = true
 		raw := permissionTestCommand(rule.Command)
+		if TradeCommand(rule.Command) {
+			continue // Trade-review authorization needs a real recorded trade; covered separately.
+		}
 		if role, err := AuthorizeRecords(raw, "full-deputy", records); err != nil || role != "deputy" {
 			t.Errorf("ticked deputy could not run %s: role=%q err=%v", rule.Command, role, err)
 		}
@@ -58,13 +68,28 @@ func TestMayRunEveryDelegatedCatalogCommandByPermission(t *testing.T) {
 
 func TestCoCommissionerHasAllSixPermissionGroups(t *testing.T) {
 	records := permissionTestLedger(t)
-	for _, rule := range DeputyCommandRules() {
-		if rule.Class != DeputyDelegable {
-			continue
-		}
-		if role, err := AuthorizeRecords(permissionTestCommand(rule.Command), "co-commissioner", records); err != nil || role != "cocommissioner" {
-			t.Errorf("co-commissioner could not run %s: role=%q err=%v", rule.Command, role, err)
-		}
+	state, err := GovernanceState(records)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := effectiveDeputyPermissions(state, "co-commissioner"); !slices.Equal(got, governance.AllDeputyPermissions()) {
+		t.Fatalf("co-commissioner's effective permissions = %v", got)
+	}
+}
+
+func TestDeputyEditLineupsKeepsExistingLineupConstraints(t *testing.T) {
+	records := permissionTestLedger(t)
+	set := permissionTestCommand(LineupSet)
+	set.Args.Lineup.Franchise = "franchise.02"
+	if _, err := AuthorizeRecords(set, "full-deputy", records); err == nil || err.Error() != "you may set a lineup only for your own franchise" {
+		t.Fatalf("deputy set another franchise's lineup: %v", err)
+	}
+	off := append(append([]Record(nil), records...), Record{Receipt: Receipt{Entry: "lineups-off"}, Principal: "commissioner",
+		Command: RawCommand{League: "native.test", Command: "commish.abilities.set",
+			Args: RawArgs{People: &RawPeople{Franchise: "franchise.01", Ability: "lineups"}}}})
+	if _, err := AuthorizeRecords(permissionTestCommand(LineupSet), "full-deputy", off); err == nil ||
+		!strings.Contains(err.Error(), "turned off lineup changes") {
+		t.Fatalf("deputy bypassed the franchise's lineup setting: %v", err)
 	}
 }
 
@@ -97,6 +122,14 @@ func TestDeputyWithEveryTickCannotRunCommissionerOnlyCatalogCommands(t *testing.
 		if _, err := AuthorizeRecords(permissionTestCommand(rule.Command), "full-deputy", records); err == nil {
 			t.Errorf("deputy with all six permissions ran commissioner-only %s", rule.Command)
 		}
+	}
+}
+
+func TestCoCommissionerTradeOverrideRemainsCommissionerOnly(t *testing.T) {
+	records := permissionTestLedger(t)
+	raw := permissionTestCommand(TradeOverride)
+	if _, err := AuthorizeRecords(raw, "co-commissioner", records); err == nil || err.Error() != "only the commissioner may override a trade" {
+		t.Fatalf("co-commissioner override refusal = %v", err)
 	}
 }
 

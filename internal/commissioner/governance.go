@@ -191,18 +191,10 @@ func mayRun(raw RawCommand, principal string, records []Record, state governance
 }
 
 func mayRunCommissioner(raw RawCommand, principal string, records []Record) (string, error) {
-	rule, known := DeputyCommandRuleFor(raw.Command)
-	if known && rule.Class == DeputyDelegable && raw.Command != RulesSet {
-		return "commissioner", nil
-	}
 	return authorizeRecords(raw, principal, records)
 }
 
 func mayRunCoCommissioner(raw RawCommand, principal string, records []Record) (string, error) {
-	rule, known := DeputyCommandRuleFor(raw.Command)
-	if known && rule.Class == DeputyDelegable && raw.Command != RulesSet {
-		return "cocommissioner", nil
-	}
 	if commissionerOnlyForAll(raw.Command) {
 		return "", fmt.Errorf("only this league's commissioner may make this change")
 	}
@@ -220,6 +212,14 @@ func mayRunDeputy(raw RawCommand, principal string, records []Record, state gove
 		}
 		if raw.Command == RulesSet {
 			if err := checkDeputyRulePermission(raw); err != nil {
+				return "", err
+			}
+		}
+		if TradeCommand(raw.Command) {
+			return authorizeTrade(raw, principal, records)
+		}
+		if raw.Command == LineupSet {
+			if _, err := authorizeLineupSet(state, raw, principal); err != nil {
 				return "", err
 			}
 		}
