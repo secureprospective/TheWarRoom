@@ -77,6 +77,12 @@ async function click(text: string) {
   expect(buttons(text), text).toHaveLength(1);
   await act(async () => { buttons(text)[0].focus(); buttons(text)[0].click(); }); await settle();
 }
+async function clickNode(text: string) {
+  const button = [...host.querySelectorAll('.thin-league-shell .node>.nb')]
+    .find(node => node.textContent?.includes(text));
+  expect(button, text).toBeDefined();
+  await act(async () => { (button as HTMLButtonElement).click(); }); await settle();
+}
 async function input(selector: string, value: string) {
   const element = host.querySelector(selector)! as HTMLInputElement;
   const prototype = element.tagName === 'SELECT'
@@ -89,7 +95,7 @@ async function input(selector: string, value: string) {
 async function openRules(port: HostedPort, role = 'Commissioner') {
   await act(async () => root.render(<HostedLeague league={league} franchise="" name=""
     role={role} port={port} />));
-  await settle(); await click('League rules'); await click('Change Lineup lock');
+  await settle(); await clickNode('Control Room'); await click('Change Lineup lock');
 }
 async function preview() {
   await input('select[aria-label="New value for Lineup lock"]', 'first_kickoff');
@@ -264,7 +270,7 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(host.querySelector('.mybox')).toBeNull();
     expect(port.mock.calls.some(([r]) => r.command === 'native.directory.read')).toBe(true);
     expect(port.mock.calls.some(([r]) => r.command === 'standings.read')).toBe(true);
-    await click('League rules');
+    await clickNode('Control Room');
     expect(buttons('Change Lineup lock')).toHaveLength(1);
     await click('Change Lineup lock'); await preview();
     const dialog = host.querySelector('[role=dialog]')!;

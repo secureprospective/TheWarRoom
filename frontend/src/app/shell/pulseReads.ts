@@ -10,11 +10,14 @@ import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseOdd
   '../data/nativePulse';
 import { parseWarRoomProjections } from '../data/nativeProjections';
 import type { Node } from './nodes';
+import type { PlayerCandidate } from './ThinPlayerSearch';
 
 export type PulseScope = { league: string; mine: string; port?: HostedPort;
   serverTime?: boolean; commissioner?: boolean;
   navigate?: (tab: 'now' | 'race') => void; back?: () => void;
-  leave: (node?: Node) => void; embedded?: boolean; tabs?: HTMLElement | null };
+  leave: (node?: Node) => void; embedded?: boolean; tabs?: HTMLElement | null;
+  onPlayer?: (player: PlayerCandidate) => void;
+  onPlayers?: (players: PlayerCandidate[]) => void };
 
 /** NativePulse is every league-wide fact League Pulse reads. Each region reads one field and says
  *  plainly when the read it needs has not arrived. */

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import { RailLeaguePicker } from './leaguePicker';
 import { createPortal } from 'react-dom';
@@ -9,6 +10,9 @@ export default function WarRoomNative(native: NativeScope) {
   const port = native.port ?? hostedWorkflow;
   const reading = useWarRoomRead<NativeHQ>(JSON.stringify([native.league, native.mine, native.owner]),
     publish => readNativeHQ(native.league, native.mine, port, publish, native.owner ?? true));
+  useEffect(() => {
+    if (reading.reading) native.onPlayers?.(reading.reading.searchPlayers);
+  }, [native.onPlayers, reading.reading]);
   if (!reading.reading) return <div className={`wr-v6${native.embedded ? ' embedded' : ''}`}>
     {!native.embedded && <RailLeaguePicker />}
     <WarRoomEmpty reason={reading.error} pending={reading.pending} /></div>;

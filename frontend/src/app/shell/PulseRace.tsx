@@ -8,8 +8,8 @@ import { percent, type PulseFixture, type PulseOdds, type PulseStandings } from 
 
 export type RaceDrawer = 'tb' | 'bk';
 
-export function PulseRace({ reading, mine, drawer, onClose }: { reading: NativePulse; mine: string;
-  drawer?: RaceDrawer; onClose: () => void }) {
+export function PulseRace({ reading, mine, drawer, onClose, onFranchise }: { reading: NativePulse;
+  mine: string; drawer?: RaceDrawer; onClose: () => void; onFranchise?: (id: string) => void }) {
   const conferences = conferencesOf(reading.bracket);
   const [conference, setConference] = useState<string>();
   const [view, setView] = useState<'seed' | 'div'>('seed');
@@ -36,11 +36,12 @@ export function PulseRace({ reading, mine, drawer, onClose }: { reading: NativeP
         ? <PulseIdle words={reading.errors.length
           ? `The standings are unavailable · ${reading.errors.join(' · ')}`
           : 'Reading the standings…'} />
-        : view === 'div' ? <Divisions standings={standings} mine={mine} />
-        : <Seeds reading={reading} standings={standings} side={side} mine={mine} />}
+        : view === 'div' ? <Divisions standings={standings} mine={mine} onFranchise={onFranchise} />
+        : <Seeds reading={reading} standings={standings} side={side} mine={mine}
+          onFranchise={onFranchise} />}
       <div id="road" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
         borderTop: '2px solid var(--black)' }}>
-        <Road reading={reading} mine={mine} />
+        <Road reading={reading} mine={mine} onFranchise={onFranchise} />
       </div>
     </div>
     <div className="pcol" id="racec" style={{ minHeight: 0, display: 'flex',
@@ -57,8 +58,8 @@ export function PulseRace({ reading, mine, drawer, onClose }: { reading: NativeP
         <span className="mode">{reading.bracket?.words || ''}</span>
       </div>
       {mode === 'power'
-        ? <Power reading={reading} mine={mine} />
-        : <Path reading={reading} side={side} mine={mine} />}
+        ? <Power reading={reading} mine={mine} onFranchise={onFranchise} />
+        : <Path reading={reading} side={side} mine={mine} onFranchise={onFranchise} />}
     </div>
   </section>
     <TiebreakDrawer open={drawer === 'tb'} onClose={onClose} standings={standings} side={side}
@@ -71,7 +72,14 @@ export function PulseRace({ reading, mine, drawer, onClose }: { reading: NativeP
 const oddsOf = (odds: PulseOdds | undefined, franchise: string) =>
   odds?.rows.find(r => r.franchise === franchise);
 
-function Power({ reading, mine }: { reading: NativePulse; mine: string }) {
+function FranchiseName({ id, name, open }: { id: string; name: string;
+  open?: (franchise: string) => void }) {
+  return open ? <PulseAct className="franchise-name" label={`Open ${name} franchise card`}
+    onAction={() => open(id)}>{name}</PulseAct> : <span>{name}</span>;
+}
+
+function Power({ reading, mine, onFranchise }: { reading: NativePulse; mine: string;
+  onFranchise?: (id: string) => void }) {
   const odds = reading.odds;
   const rows = (odds?.rows ?? []).filter(r => r.power).sort((x, y) => (x.power ?? 0) - (y.power ?? 0));
   if (!rows.length) return <PulseIdle words={odds ? `The power ranking is unavailable · ${odds.powerWords}`
@@ -82,7 +90,8 @@ function Power({ reading, mine }: { reading: NativePulse; mine: string }) {
       <thead><tr><th>PWR</th><th>FRANCHISE</th><th>W–L–T</th><th>POWER SCORE</th><th>EXP PTS</th>
         <th>ODDS</th></tr></thead>
       <tbody>{rows.map(r => <tr key={r.franchise} className={r.franchise === mine ? 'sel' : undefined}>
-        <td className="sd">{r.power}</td><td><span>{r.name}</span></td><td>{r.record}</td>
+        <td className="sd">{r.power}</td><td><FranchiseName id={r.franchise} name={r.name}
+          open={onFranchise} /></td><td>{r.record}</td>
         <td><span className="tk"><i style={{ width: percent(r.powerScore) }} /></span>
           {Math.round(r.powerScore * 100)}</td><td>{r.expected.toFixed(1)}</td>
         <td>{percent(r.playoffOdds)}</td></tr>)}</tbody>
@@ -93,7 +102,8 @@ function Power({ reading, mine }: { reading: NativePulse; mine: string }) {
   </>;
 }
 
-function Divisions({ standings, mine }: { standings: PulseStandings; mine: string }) {
+function Divisions({ standings, mine, onFranchise }: { standings: PulseStandings; mine: string;
+  onFranchise?: (id: string) => void }) {
   return <div className="scroll" style={{ flex: 3 }}><table className="ct stand">
     <thead><tr><th>#</th><th>FRANCHISE</th><th>W–L–T</th><th>POINTS FOR</th></tr></thead>
     <tbody>
@@ -105,7 +115,7 @@ function Divisions({ standings, mine }: { standings: PulseStandings; mine: strin
         ...group.rows.map(row => <tr key={row.franchise}
           className={row.franchise === mine ? 'me' : undefined}>
           <td className="sd">{row.rank}</td>
-          <td><span>{row.name}</span></td>
+          <td><FranchiseName id={row.franchise} name={row.name} open={onFranchise} /></td>
           <td>{row.record}</td>
           <td title={row.pointsWords}>{row.pointsFor.toFixed(2)}</td>
         </tr>),
@@ -114,8 +124,8 @@ function Divisions({ standings, mine }: { standings: PulseStandings; mine: strin
   </table></div>;
 }
 
-function Seeds({ reading, standings, side, mine }: { reading: NativePulse;
-  standings: PulseStandings; side: string; mine: string }) {
+function Seeds({ reading, standings, side, mine, onFranchise }: { reading: NativePulse;
+  standings: PulseStandings; side: string; mine: string; onFranchise?: (id: string) => void }) {
   const rows = seedRows(standings, reading.bracket, side, mine);
   const places = reading.bracket?.perConference ?? 0;
   if (!rows.length) return <PulseIdle words={standings.words} />;
@@ -127,7 +137,7 @@ function Seeds({ reading, standings, side, mine }: { reading: NativePulse;
         className={`${row.mine ? 'me' : ''} ${index === places - 1 ? 'cut' : ''}`.trim()
           || undefined}>
         <td className="sd">{row.seed ?? '—'}</td>
-        <td><span>{row.name}</span>
+        <td><FranchiseName id={row.franchise} name={row.name} open={onFranchise} />
           <span className="div">{row.division.toUpperCase().replace(`${side.toUpperCase()} `, '')}
             {row.bye ? ' ★ BYE' : ''}</span></td>
         <td>{row.record}</td>
@@ -139,7 +149,8 @@ function Seeds({ reading, standings, side, mine }: { reading: NativePulse;
   </table>;
 }
 
-function Road({ reading, mine }: { reading: NativePulse; mine: string }) {
+function Road({ reading, mine, onFranchise }: { reading: NativePulse; mine: string;
+  onFranchise?: (id: string) => void }) {
   const name = (franchise: string) =>
     reading.seats.find(s => s.franchise === franchise)?.name ?? franchise;
   const record = (franchise: string) =>
@@ -157,7 +168,8 @@ function Road({ reading, mine }: { reading: NativePulse; mine: string }) {
       : <>
         {shown.map(game => <div className="rem" key={game.week}>
           <span className="w">WK {game.week}</span>
-          <span><span>{game.opponent ? name(game.opponent) : 'Bye'}</span>
+          <span><FranchiseName id={game.opponent ?? ''} name={game.opponent ? name(game.opponent) : 'Bye'}
+            open={game.opponent ? onFranchise : undefined} />
             {game.week === reading.week && <span className="tag2">NOW</span>}
             <span className="src" style={{ marginLeft: '6px' }}>{game.venue.toLowerCase()}</span>
           </span>
@@ -172,7 +184,8 @@ function Road({ reading, mine }: { reading: NativePulse; mine: string }) {
   </>;
 }
 
-function Path({ reading, side, mine }: { reading: NativePulse; side: string; mine: string }) {
+function Path({ reading, side, mine, onFranchise }: { reading: NativePulse; side: string; mine: string;
+  onFranchise?: (id: string) => void }) {
   const bracket = reading.bracket;
   if (!bracket) return <PulseIdle words={reading.errors.length
     ? `The playoff field is unavailable · ${reading.errors.join(' · ')}` : 'Reading the playoffs…'} />;
@@ -199,7 +212,8 @@ function Path({ reading, side, mine }: { reading: NativePulse; side: string; min
           return <div key={row.franchise} title={row.kind || undefined}
             className={`orow ${row.mine ? 'me' : ''} ${row.inField ? '' : 'out'}`.trim()}>
             <span className="sn">{row.seed ? `SEED ${row.seed}${row.bye ? ' · BYE' : ''}` : 'OUT'}</span>
-            <span className="tn">{row.name}</span>
+            <span className="tn"><FranchiseName id={row.franchise} name={row.name}
+              open={onFranchise} /></span>
             <span className="rc">{row.record}</span>
             <span className="ob">
               <i style={{ width: chance === undefined ? 0 : `${Math.round(chance * 100)}%` }} />

@@ -1,5 +1,6 @@
 import { HQAct as WarRoomAct } from './HQAct';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { PlayerCandidate } from './ThinPlayerSearch';
 import { HoldToFire } from '../commissioner/HoldToFire';
 import { previewChange } from '../commissioner/preview';
 import type { WarRoomContext } from './warroomReads';
@@ -57,8 +58,9 @@ type BidEditor = { type: 'place'; player: WarRoomMarketPlayer; salary: string; y
   { type: 'raise'; bid: WarRoomOwnBid; salary: string; years: number };
 type BidReview = Extract<WarRoomMarketActionResult, { kind: 'review' }>;
 type RefreshedBids = { bids?: WarRoomOwnBid[]; revision?: number; capRoom?: number; error?: string };
-export function WarRoomMarket({ context, room, needs, select }: { context: WarRoomContext; room?: number;
-  needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void }) {
+export function WarRoomMarket({ context, room, needs, select, onPlayers }: { context: WarRoomContext;
+  room?: number; needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void;
+  onPlayers?: (players: PlayerCandidate[]) => void }) {
   const [refresh, setRefresh] = useState(0);
   const [filter, setFilter] = useState('All');
   const [pending, setPending] = useState(false);
@@ -71,6 +73,10 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
   const reading = useWarRoomRead(JSON.stringify([context.native?.league, context.mine, refresh]), () =>
     readWarRoomMarket(context));
   const value = reading.reading;
+  useEffect(() => {
+    if (value?.players) onPlayers?.(value.players.map(player => ({ id: player.id,
+      name: player.name, position: player.position })));
+  }, [onPlayers, value]);
   const targets = new Set(value?.targets?.map(t => t.id));
   const capRoom = fresh ? fresh.capRoom : value?.capRoom ?? room;
   const bidRevision = fresh?.revision ?? value?.bidRevision;
