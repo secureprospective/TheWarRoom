@@ -18,8 +18,8 @@
 - Next: ClaudeBox review/merge. Blocked on review.
 
 ## Bee — B8-5 War Room phone market (2026-11-18)
-- Baton: Bee, `session/pulse-b8bids`, based on `bundle/b8` / PR #380.
+- Baton: ClaudeBox review; PR #385 from `session/pulse-b8bids` into `bundle/b8` (implementation `e8bbf05d6`).
 - State: market/bid UI has a <=699px single-column, scrollable phone layout, touch-sized filters and bid controls; desktop rules untouched. Existing held market/bid reads and preview/confirm/reread flow unchanged. No server/auth/session/service-worker edits.
-- Checks: focused tests 58/58, full Vitest 990/990, TypeScript passed. One initial full-suite failure was a long test line (fixed) plus a hostedPulse navigation failure (focused rerun passed). Full Go race suite is still active elsewhere, so heavy-work/pre-push verification is waiting; browser 390px inspection not run.
-- Next: wait for shared suite to finish, complete verification, push and open PR into `bundle/b8`. Reuse WarRoomMarket and its private bid flow rather than duplicate workflow commands.
-- Blocked on: another active Go race suite. `tidy-check.sh` reports unrelated active lane `b8trade` (pid 1599696) launched by another agent; left it untouched.
+- Checks: focused tests 58/58, full Vitest 990/990, TypeScript and push verification passed. PR CI is pending. One initial full-suite failure was a long test line (fixed) plus a hostedPulse navigation failure (focused rerun passed). Browser 390px inspection not run.
+- Next: review PR CI and request ClaudeBox review. Reuse WarRoomMarket and its private bid flow rather than duplicate workflow commands.
+- Blocked on: none for code. `tidy-check.sh` reports unrelated active lane `b8trade` (pid 1599696) launched by another agent; left it untouched.
