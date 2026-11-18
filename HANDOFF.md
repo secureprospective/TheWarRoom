@@ -6,5 +6,6 @@
 - Slop fixed: none inherited in this lane; all new reads use the hosted session/query path and existing server parsers, and writes reuse `HostedLeagueRoom`/`HostedReview`.
 - Next: ClaudeBox reviews and merges PR #356 after CI passes.
 - Blocked: none. No Go files changed; no new server read/command or rule key added.
+- Machine state: tidy-check named other agents' active lane launchers (b5people, b5picks, b5perm, b0load2, b3home); left them running.
 - Open decisions deliberately untouched: snooze per person/league; deputy job visibility; written-request visibility; division naming.
 - Tried/rejected: none.
