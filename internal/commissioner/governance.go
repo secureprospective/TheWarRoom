@@ -36,6 +36,19 @@ func GovernanceState(records []Record) (governance.State, error) {
 	return cachedGovernance(records, governanceFold)
 }
 
+// RequireCommissionerOrCo uses the current league roles for actions reserved to its commissioner seats.
+func RequireCommissionerOrCo(records []Record, principal string) error {
+	state, err := GovernanceState(records)
+	if err != nil {
+		return fmt.Errorf("read commissioner permissions: %w", err)
+	}
+	current := governance.Principal(PrincipalFor(records, principal))
+	if !state.HasRole(current, governance.Commissioner) && !state.HasRole(current, governance.CoCommissioner) {
+		return fmt.Errorf("this action is limited to the commissioner and co-commissioner")
+	}
+	return nil
+}
+
 func governanceFold(records []Record) (governance.State, error) {
 	records = policyRecords(records)
 	projection := Replay(records)

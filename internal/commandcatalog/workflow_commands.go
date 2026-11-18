@@ -23,6 +23,7 @@ type WorkflowCommand struct {
 // appear here by derivation; never hand-list one. See docs/architecture/future-seams.md.
 func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
+	out[leagueservice.BackupNowCommand] = backupNowWorkflow()
 	out["draft.queue.read"] = workflowDraftQueueRead()
 	out["draft.queue.set"] = workflowDraftQueueSet()
 	for id, command := range privatePersonalWorkflows() {
@@ -132,6 +133,35 @@ func workflowInputCommand[T any, P interface {
 				return nil, err
 			}
 			return run(ctx, service, input)
+		},
+	}
+}
+
+func backupNowWorkflow() WorkflowCommand {
+	decode := func(raw RawWorkflow) (leagueservice.RawBackupNow, error) {
+		var input leagueservice.RawBackupNow
+		if raw.Mode != string(Preview) && raw.Mode != string(Execute) {
+			return input, fmt.Errorf("preview or confirm the league backup")
+		}
+		if err := decodeWorkflow(raw.Arguments, &input); err != nil {
+			return input, err
+		}
+		return input, input.Validate()
+	}
+	return WorkflowCommand{
+		Validate: func(raw RawWorkflow) error {
+			_, err := decode(raw)
+			return err
+		},
+		Run: func(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
+			input, err := decode(raw)
+			if err != nil {
+				return nil, err
+			}
+			if raw.Mode == string(Preview) {
+				return workflowJSON(service.PreviewBackupNow(ctx, input))
+			}
+			return workflowJSON(service.BackupNow(ctx, input))
 		},
 	}
 }

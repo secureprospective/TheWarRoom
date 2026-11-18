@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	Create = "commish.league.create"
-	Revert = "commish.correction.revert"
-	Stream = "commissioner"
+	Create           = "commish.league.create"
+	Revert           = "commish.correction.revert"
+	BackupNowCommand = "backup.now"
+	Stream           = "commissioner"
 
 	SourceNative    = "native"
 	SourceMFLImport = "mfl_import"

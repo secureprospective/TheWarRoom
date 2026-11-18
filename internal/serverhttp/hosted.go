@@ -51,9 +51,10 @@ type Hosted struct {
 	// own file's off-site backup, so one file falling behind pauses only its own kind of change.
 	WriteAdmission  func() error
 	SignInAdmission func() error
-	// LeagueAdmission, when set, guards each league's own writes (one file per league): checked once a
-	// request's league is known, so one league's backup falling behind pauses only that league.
+	// LeagueAdmission, when set, guards each league's own reads and writes (one file per league).
+	// BackupLeague is the manual recovery action and deliberately runs despite a stale backup guard.
 	LeagueAdmission func(league string) error
+	BackupLeague    leagueservice.BackupRunner
 	Tokens          *accounts.TokenService
 	Confirmations   *Confirmations
 	Store           *history.Store
@@ -247,7 +248,8 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := h.requestContext(r.Context(), raw, string(principal))
 	r = r.WithContext(ctx)
-	pin, ok := h.admitLeague(ctx, w, raw.leagueName())
+	backupNow := raw.Workflow != nil && raw.Workflow.Command == leagueservice.BackupNowCommand
+	pin, ok := h.admitLeague(ctx, w, raw.leagueName(), backupNow)
 	if !ok {
 		return
 	}
@@ -262,7 +264,8 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		writeUnavailable(w, "football reference unavailable")
 		return
 	}
-	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).WithLiveGames(h.LiveGames)
+	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).
+		WithLiveGames(h.LiveGames).WithBackupRunner(h.BackupLeague)
 	h.dispatch(w, r, service, raw)
 }
 
@@ -308,13 +311,14 @@ func (h Hosted) requestContext(ctx context.Context, raw RawNativeRequest, princi
 
 // admitLeague is the request's league pin, refused when the server does not hold the league or when
 // the league's own backup has fallen behind (LeagueAdmission).
-func (h Hosted) admitLeague(ctx context.Context, w http.ResponseWriter, league string) (LeaguePin, bool) {
+func (h Hosted) admitLeague(ctx context.Context, w http.ResponseWriter, league string,
+	allowBackup bool) (LeaguePin, bool) {
 	pin := h.pinFor(ctx, league)
 	if pin.Err != nil {
 		http.Error(w, "league access unavailable", http.StatusForbidden)
 		return pin, false
 	}
-	if h.LeagueAdmission != nil {
+	if h.LeagueAdmission != nil && !allowBackup {
 		if err := h.LeagueAdmission(league); err != nil {
 			writeUnavailable(w, err.Error())
 			return pin, false
@@ -564,6 +568,13 @@ func (a accountAdmission) checkRoleTarget(ctx context.Context, target string) er
 	return nil
 }
 
+func backupAccess(records []commissioner.Record, principal governance.Principal) error {
+	if err := commissioner.RequireCommissionerOrCo(records, string(principal)); err != nil {
+		return fmt.Errorf("backup permission: %w", err)
+	}
+	return nil
+}
+
 func admitLeagueAccess(access commissioner.Access, policy governance.State, principal governance.Principal, records []commissioner.Record) error {
 	if privateOwnerPersonalOperation(access.Operation) {
 		seat, ok := policy.Franchise(governance.FranchiseID(access.Franchise))
@@ -577,6 +588,9 @@ func admitLeagueAccess(access commissioner.Access, policy governance.State, prin
 			return fmt.Errorf("league membership required")
 		}
 		return nil
+	}
+	if access.Operation == leagueservice.BackupNowCommand {
+		return backupAccess(records, principal)
 	}
 	if access.DraftPick != nil {
 		if !policy.HoldsSeat(governance.FranchiseID(access.DraftPick.Franchise), principal) {

@@ -8,7 +8,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
 // viewContext keeps recipient concurrency metadata request-local, never in the replay cache.
@@ -164,13 +163,8 @@ func (a *Service) TargetCommissionerJobs(league string) (commissioner.Jobs, erro
 
 // Deputies stay out until their job-visibility scope is defined.
 func commissionerJobsReader(records []commissioner.Record, principal string) error {
-	state, err := commissioner.GovernanceState(records)
-	if err != nil {
+	if err := commissioner.RequireCommissionerOrCo(records, principal); err != nil {
 		return fmt.Errorf("league job permissions: %w", err)
-	}
-	current := governance.Principal(commissioner.PrincipalFor(records, principal))
-	if !state.HasRole(current, governance.Commissioner) && !state.HasRole(current, governance.CoCommissioner) {
-		return fmt.Errorf("commissioner job feed is limited to the commissioner and co-commissioner")
 	}
 	return nil
 }

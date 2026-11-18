@@ -28,6 +28,13 @@ function jobs(count: number) {
     controls: i === 0 ? ['CM-027'] : [],
   })) };
 }
+const backupPreview = { question: 'Save and verify a league backup now?',
+  target: { league, name: 'Test League', version: 7 }, fields: [{ label: 'Off-site league backup',
+    before: 'No manual backup started', beforeSource: 'Hosted server',
+    after: 'Save and check the league backup in Cloudflare R2',
+    afterSource: 'Hosted server backup service', when: 'now' }],
+  affects: { readings: [], count: null, words: 'No league settings or records change' },
+  blockers: [], safeguard: 'confirm' };
 function ledger() {
   return { league, name: 'Test League', revision: 7,
     entries: Array.from({ length: 32 }, (_, i) => ({
@@ -41,6 +48,10 @@ function port(count: number): HostedPort & ReturnType<typeof vi.fn> {
     if (request.command === 'commish.rules.read') data = ruleReading;
     else if (request.command === 'commish.jobs.read') data = jobs(count);
     else if (request.command === 'commish.ledger.read') data = ledger();
+    else if (request.command === 'backup.now' && request.mode === 'preview') data = backupPreview;
+    else if (request.command === 'backup.now') data = { league, captured: '2026-11-18T12:00:00Z',
+      verified: '2026-11-18T12:00:01Z', where: 'Cloudflare R2', checked: true,
+      message: 'League backup saved 2026-11-18 12:00 UTC and checked in Cloudflare R2.' };
     else throw new Error(`Unexpected hosted request: ${request.command}`);
     return { data, label: 'League server', writable: true, football: 'held-pin' };
   }) as HostedPort & ReturnType<typeof vi.fn>;
@@ -223,6 +234,22 @@ it('shows the hosted server ledger at 32 entries and leaves operator actions una
   expect(read.mock.calls.some(([request]) => request.command === 'commish.ledger.read')).toBe(true);
   expect(host.textContent).toContain('operator-only');
   expect(host.querySelectorAll('[aria-label="Server status"] ol li')).toHaveLength(32);
+  const previewBackup = [...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(button => button.textContent === 'Preview backup now')!;
+  await act(async () => previewBackup.click());
+  await vi.waitFor(() => expect(host.textContent).toContain('Save and verify a league backup now?'));
+  expect(read.mock.calls.filter(([request]) => request.command === 'backup.now')
+    .map(([request]) => request.mode)).toEqual(['preview']);
+  const confirm = [...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(button => button.textContent?.includes('Confirm back up now'))!;
+  await act(async () => {
+    confirm.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 650));
+    confirm.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+  });
+  await vi.waitFor(() => expect(host.textContent).toContain('checked in Cloudflare R2'));
+  expect(read.mock.calls.filter(([request]) => request.command === 'backup.now')
+    .map(([request]) => request.mode)).toEqual(['preview', 'execute']);
 });
 
 it('opens the server-backed Rules board and renders all 32 settings with their recorded source', async () => {

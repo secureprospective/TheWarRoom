@@ -152,6 +152,10 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 		h.sessionFailure(w, r, err)
 		return
 	}
+	if raw.Workflow != nil && raw.Workflow.Command == leagueservice.BackupNowCommand {
+		http.Error(w, "agent tokens cannot run backups", http.StatusForbidden)
+		return
+	}
 	principal, err := token.Account.Principal()
 	if err != nil {
 		http.Error(w, "session refused", http.StatusUnauthorized)

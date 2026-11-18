@@ -60,7 +60,8 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, message, http.StatusConflict)
 		return
 	}
-	if raw.Mode != "read" && !location.Writable {
+	backupNow := raw.Command == leagueservice.BackupNowCommand
+	if raw.Mode != "read" && !location.Writable && !backupNow {
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, location.Label, http.StatusConflict)
 		return
@@ -70,7 +71,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	if err != nil {
 		logWorkflowFailure(raw, err)
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		workflowRefusal(w, r, err)
+		workflowActionRefusal(w, r, raw, err)
 		return
 	}
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
@@ -91,6 +92,15 @@ func logWorkflowFailure(raw RawWorkflow, err error) {
 	log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
 }
 
+func workflowActionRefusal(w http.ResponseWriter, r *http.Request, raw RawWorkflow, err error) {
+	if raw.Command == leagueservice.BackupNowCommand && raw.Mode == "execute" &&
+		errors.Is(err, leagueservice.ErrBackupInProgress) {
+		http.Error(w, leagueservice.BackupInProgressMessage, http.StatusConflict)
+		return
+	}
+	workflowRefusal(w, r, err)
+}
+
 func workflowRefusal(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 		logBusyRefusal(r.Context(), "request-deadline")
@@ -101,7 +111,8 @@ func workflowRefusal(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func workflowFootballRefusal(raw RawWorkflow, pin LeaguePin) string {
-	if raw.Mode == "read" || raw.Command == "draft.queue.set" || privateTradeDraftOperation(raw.Command) {
+	if raw.Mode == "read" || raw.Command == leagueservice.BackupNowCommand ||
+		raw.Command == "draft.queue.set" || privateTradeDraftOperation(raw.Command) {
 		return ""
 	}
 	if pin.Digest == "" {

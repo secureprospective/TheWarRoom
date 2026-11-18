@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createReadQuery } from '../data/query';
 import { parsePulseBracket, parsePulseDirectory } from '../data/nativePulse';
 import { array, integer, object, text } from '../data/parseValues';
 import { hostedCommandAvailable } from '../commands/native';
 import { HQAct } from '../shell/HQAct';
+import { HostedBackupNow } from './HostedBackupNow';
 import type { HostedPort } from './hostedRoom';
 import { hostedWorkflow } from './api';
 import { actTable, type ActDefinition } from './actTable';
@@ -77,6 +78,7 @@ export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool 
 }) {
   const query = useMemo(() => createSeasonQuery(league, port), [league, port]);
   const state = query.use();
+  const [backingUpForRollover, setBackingUpForRollover] = useState(false);
   useEffect(() => {
     void query.load([league]);
     return () => query.dispose();
@@ -110,13 +112,23 @@ export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool 
       <section className="cr-panel" aria-label="Playoffs and rollover">
         <h3>Playoffs & rollover</h3>
         <p>{state.bracket?.words}</p>
-        <div>{available.filter(([command]) => command.startsWith('bracket.') || command === 'title.set'
-          || command === 'season.rollover').map(([command, label]) =>
-          <HQAct key={command} onAction={() => open(command)}>{label}</HQAct>)}</div>
+        <div>{available.filter(([command]) => command.startsWith('bracket.') || command === 'title.set')
+          .map(([command, label]) => (
+            <HQAct key={command} onAction={() => open(command)}>{label}</HQAct>
+          ))}</div>
       </section>
       <section className="cr-panel" aria-label="Season rollover">
         <h3>Rollover</h3>
-        <p>Rollover is not available in the server app: the required backup.now command is not hosted.</p>
+        <p>Rollover starts with a fresh verified backup. After it finishes, review the rollover plan
+          and confirm that change separately.</p>
+        {hostedCommandAvailable('season.rollover') && <HQAct disabled={backingUpForRollover}
+          onAction={() => setBackingUpForRollover(true)}>Roll over season</HQAct>}
+        {backingUpForRollover && <>
+          <HQAct onAction={() => setBackingUpForRollover(false)}>Cancel rollover</HQAct>
+          <HostedBackupNow league={league} port={port} autoPreview onDone={() => {
+            setBackingUpForRollover(false); open('season.rollover');
+          }} />
+        </>}
       </section>
       <section className="cr-panel" aria-label="Divisions">
         <h3>Divisions</h3>

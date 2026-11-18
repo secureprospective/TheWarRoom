@@ -66,6 +66,7 @@ func commissionerOnlyLeagueRules() []DeputyCommandRule {
 	return []DeputyCommandRule{
 		{Create, DeputyCommissionerOnly, ""},
 		{Revert, DeputyCommissionerOnly, ""},
+		{BackupNowCommand, DeputyCommissionerOnly, ""},
 		{ContractActionSet, DeputyCommissionerOnly, ""},
 		{NativeSeed, DeputyCommissionerOnly, ""},
 		{CorrectRoster, DeputyCommissionerOnly, ""},

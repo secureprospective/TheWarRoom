@@ -4743,6 +4743,17 @@ const schema335 = {
   ],
   Items:null,
 } as const;
+const schema336 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawBackupNow.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
 export const nativeCommands = {
 "commish.actor.read": {
   definition: {
@@ -7946,5 +7957,25 @@ export const serverCommands = {
     "Arguments": schema335
   },
   phrase: "delete trade draft",
+},
+"backup.now": {
+  definition: {
+    "ID": "backup.now",
+    "Method": "TargetBackupNow",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "server",
+    "Permission": "commissioner-or-co-commissioner",
+    "Modes": [
+      "preview",
+      "execute"
+    ],
+    "Undo": "none",
+    "Facts": "server-held league database and R2 settings",
+    "Safeguards": "current commissioner seat; per-league backup manager; refuse concurrent backup",
+    "Arguments": schema336
+  },
+  phrase: "now backup",
 },
 } as const;
