@@ -72,6 +72,7 @@ type ContractQuote struct {
 	Action     string                     `json:"action"`
 	ActionName string                     `json:"actionName"`
 	Allowed    bool                       `json:"allowed"`
+	Priceable  bool                       `json:"priceable"`
 	Reason     string                     `json:"reason"`
 	Needs      []string                   `json:"needs"`
 	Years      int                        `json:"years"`
@@ -167,6 +168,15 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return ContractQuote{}, commissioner.Refused(fmt.Errorf("choose a player on this app league's recorded roster"))
 	}
+	if before, found := commissioner.ContractDecisionBaseline(records, player.Franchise, player.ID, base.Rules.Season); found {
+		player = before
+		copyOf := *seed
+		copyOf.Players = append([]commissioner.NativePlayer(nil), seed.Players...)
+		if index := copyOf.PlayerOf(player.Franchise, player.ID); index >= 0 {
+			copyOf.Players[index] = player
+		}
+		base.Assets.Snapshot = &copyOf
+	}
 	action := nativecheck.ContractAction(raw.Action)
 	gate := commissioner.Gate{Open: true}
 	if window, gated := windowAction(action); gated {
@@ -177,6 +187,7 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 		}
 	}
 	in := contractCheck{raw: raw, action: action, base: base, player: player, gate: gate, facts: facts,
+		trail:    contractDecisionTrail(records, player.Franchise, player.ID, base.Rules.Season),
 		revision: int64(len(records)), zone: local}
 	return checkContract(in)
 }
@@ -204,8 +215,76 @@ type contractCheck struct {
 	player   commissioner.NativePlayer
 	gate     commissioner.Gate
 	facts    nativecheck.Facts
+	trail    nativecheck.Trail
 	revision int64
 	zone     *time.Location
+}
+
+type decisionKey struct {
+	franchise, player string
+	season            int
+}
+
+// latestContractDecisions keeps the latest active owner choice for each franchise, player and season.
+func latestContractDecisions(records []commissioner.Record) map[decisionKey]commissioner.Record {
+	active := commissioner.Replay(records).Active
+	latest := map[decisionKey]commissioner.Record{}
+	for _, record := range records {
+		decision := record.Command.Args.ContractDecision
+		outcome := record.Command.Args.ContractDecisionOutcome
+		if record.Command.Command == commissioner.ContractDecisionSet && decision != nil && outcome != nil &&
+			active[record.Receipt.Entry] {
+			latest[decisionKey{decision.Franchise, decision.Player, outcome.Season}] = record
+		}
+	}
+	return latest
+}
+
+// contractDecisionTrail counts only the latest active owner choice for each player and season. The
+// target's current choice is excluded so a replacement is priced against its original contract. Owner
+// decisions are extensions, tags, tenders and re-signs (OwnerContractDecisionActions); restructures are
+// never owner decisions, so they never enter this trail.
+func contractDecisionTrail(records []commissioner.Record, franchise, player string, season int) nativecheck.Trail {
+	trail := nativecheck.Trail{Used: map[nativecheck.ContractAction]int{}}
+	tags := map[int]nativecheck.Pricing{}
+	for id, record := range latestContractDecisions(records) {
+		action := nativecheck.ContractAction(record.Command.Args.ContractDecision.Action)
+		if id.franchise != franchise {
+			continue
+		}
+		if id.season == season {
+			if id.player != player {
+				trail.Used[action]++
+			}
+			continue
+		}
+		if id.player != player {
+			continue
+		}
+		if action == nativecheck.ActionExtension {
+			trail.Extensions++
+		}
+		if action == nativecheck.ActionTag {
+			tags[id.season] = record.Command.Args.ContractDecisionOutcome.Pricing
+		}
+	}
+	trail.ConsecutiveTags, trail.FirstTag = consecutiveTags(tags, season, trail.FirstTag)
+	return trail
+}
+
+func consecutiveTags(tags map[int]nativecheck.Pricing, season int, first domain.Money) (int, domain.Money) {
+	count := 0
+	for year := season - 1; year > 0; year-- {
+		price, tagged := tags[year]
+		if !tagged {
+			break
+		}
+		count++
+		if price.Salary != nil {
+			first = *price.Salary
+		}
+	}
+	return count, first
 }
 
 // checkContract prices the action and then lets the calendar and the cap have their say. It is a pure
@@ -219,12 +298,10 @@ func checkContract(in contractCheck) (ContractQuote, error) {
 	if name == "" {
 		name = "Player " + in.player.ID
 	}
-	// No owner contract action is recorded in the ledger yet, so nothing has been used and no contract has
-	// been restructured, extended or tagged in the app league. The recording step fills this in.
-	priced, err := nativecheck.PriceContract(nativecheck.Input{Rules: in.base.Rules,
+	priced, err := nativecheck.PriceContract(nativecheck.Input{Rules: in.base.Rules, Trail: in.trail,
 		Contract: nativecheck.Contract{Player: in.player.ID, Name: name, Position: fact.Position,
 			PositionHeld: fact.Position != "", Salary: in.player.Salary, Expiration: in.player.ExpirationYear,
-			Status: in.player.ContractStatus},
+			Status: in.player.ContractStatus, Schedule: in.player.ContractSchedule},
 		Ask: nativecheck.Ask{Years: in.raw.Years, Level: in.raw.Level, Move: in.raw.MoveCents,
 			Amount: in.raw.AmountCents, Reason: in.raw.Reason},
 		Market: positionSalaries(in.base.Assets.Snapshot, in.facts, fact.Position)}, in.action)
@@ -238,6 +315,7 @@ func checkContract(in contractCheck) (ContractQuote, error) {
 			return ContractQuote{}, err
 		}
 	}
+	q.Priceable = priced.Refusal == "" && len(priced.Needs) == 0 && len(q.Needs) == 0 && !capRefused
 	in.decide(&q, priced.Refusal, capRefused)
 	return q, nil
 }

@@ -92,6 +92,7 @@ func nativeLeagueMutations() []struct{ id, args string } {
 func nativeMarketMutations() []struct{ id, args string } {
 	return []struct{ id, args string }{
 		{commissioner.TradeOffer, "trade"},
+		{commissioner.ContractDecisionSet, "contractDecision"},
 		{commissioner.TradeAccept, "trade"},
 		{commissioner.TradeDecline, "trade"},
 		{commissioner.TradeWithdraw, "trade"},

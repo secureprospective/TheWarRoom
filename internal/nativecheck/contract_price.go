@@ -113,7 +113,7 @@ func (x *pricer) used(action ContractAction, limit leaguerules.Value[int], one, 
 func (x *pricer) remainingCells() []domain.Money {
 	cells := make([]domain.Money, x.rem)
 	for i := range cells {
-		cells[i] = x.in.Contract.Salary
+		cells[i] = x.salaryIn(x.season + i + 1)
 	}
 	return cells
 }
@@ -123,17 +123,44 @@ func ExistingContractSchedule(season int, contract Contract) []SeasonAmount {
 	if contract.Salary <= 0 || contract.Expiration < season || season <= 0 {
 		return []SeasonAmount{}
 	}
+	if len(contract.Schedule) > 0 {
+		out := make([]SeasonAmount, 0, len(contract.Schedule))
+		for _, year := range contract.Schedule {
+			if year.Season >= season {
+				out = append(out, year)
+			}
+		}
+		return out
+	}
 	x := pricer{in: Input{Contract: contract}, season: season, rem: contract.Expiration - season}
 	return x.contractSchedule()
 }
 
 // contractSchedule is the salary for every season from this one through the last, as it stands now.
 func (x *pricer) contractSchedule() []SeasonAmount {
+	if len(x.in.Contract.Schedule) > 0 {
+		out := make([]SeasonAmount, 0, len(x.in.Contract.Schedule))
+		for _, year := range x.in.Contract.Schedule {
+			if year.Season >= x.season {
+				out = append(out, year)
+			}
+		}
+		return out
+	}
 	out := make([]SeasonAmount, 0, x.rem+1)
 	for season := x.season; season <= x.in.Contract.Expiration; season++ {
 		out = append(out, SeasonAmount{Season: season, Cents: x.in.Contract.Salary})
 	}
 	return out
+}
+
+func (x *pricer) salaryIn(season int) domain.Money {
+	for _, year := range x.in.Contract.Schedule {
+		if year.Season == season {
+			return year.Cents
+		}
+	}
+	return x.in.Contract.Salary
 }
 
 func (x *pricer) scale(amount domain.Money, rate leaguerules.Decimal) (domain.Money, error) {

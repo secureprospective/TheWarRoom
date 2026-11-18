@@ -265,7 +265,23 @@
 .hq-v10 .run .y .bar span{height:100%;border-right:2px solid var(--black)}
 .hq-v10 .run .y b{text-align:right;font-weight:600}
 .hq-v10 .run .y.tight b{color:var(--amber)}
-.hq-v10 .dec{flex:1;min-height:0;overflow:hidden}
+.hq-v10 .dec{flex:none;max-height:72px;min-height:0;overflow:auto}
+.hq-v10 .contract-decision-list{flex:1;min-height:0;overflow:auto}
+.hq-v10 .contract-decision{display:grid;gap:8px;padding:10px 14px;border-bottom:2px solid var(--black)}
+.hq-v10 .decision-player{display:grid;grid-template-columns:1fr auto;gap:3px 8px;align-items:center}
+.hq-v10 .decision-player b{font-size:13px}
+.hq-v10 .decision-player>span{font:10px var(--mono);color:var(--ink2)}
+.hq-v10 .decision-player .decision-saved{grid-column:1/-1;color:var(--green)}
+.hq-v10 .contract-decision-option{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 8px;padding:8px;background:var(--sunken);border-left:2px solid var(--edge)}
+.hq-v10 .decision-option-head{grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;align-items:center;font:600 10px var(--mono);letter-spacing:.08em}
+.hq-v10 .contract-decision-option time{grid-column:1/-1;font:10px var(--mono);color:var(--ink2)}
+.hq-v10 .decision-choice{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px;font:10px var(--mono);color:var(--ink2)}
+.hq-v10 .decision-choice select,.hq-v10 .decision-reason input{min-width:0;padding:5px 7px;border:1px solid var(--edge);background:var(--tile);color:var(--ink);font:11px var(--mono)}
+.hq-v10 .contract-decision-option small{grid-column:1/-1;font:10px var(--mono);color:var(--ink2)}
+.hq-v10 .contract-decision-option .btn{justify-self:end;align-self:center;padding:4px 8px;font-size:10px}
+.hq-v10 .decision-reason{display:grid;gap:4px;font:10px var(--mono);color:var(--ink2)}
+.hq-v10 .decision-reason input{width:100%}
+.hq-v10 .decision-reason small{font:10px var(--mono);color:var(--ink3)}
 .hq-v10 .drow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--rule)}
 .hq-v10 .drow .nm{font-weight:600}
 .hq-v10 .drow .why{grid-column:2/4;font:11px var(--mono);color:var(--ink2);margin-top:-4px}

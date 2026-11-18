@@ -7,12 +7,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { readNativeHQ, readNativeCut, type NativeHQ } from '../commissioner/hqReading';
 import type { HostedPort } from '../commissioner/hostedRoom';
+import { contractDecisionRequest } from './hqContractDecisions';
 import { useContractRead } from '../contracts/Contracts';
 import { hqEvents } from './hqReads';
 import { HQShell, type HQTab } from './HQShell';
 import { HQHeader } from './HQHeader';
 import { HQBoard } from './HQBoard';
 import { HQContracts, HQReserves } from './HQPanels';
+import type { ContractDecisionSubmit } from './hqContractDecisions';
 import { HQMoveHistory } from './HQMoveHistory';
 import { HQMoves, HQQueue } from './HQMoves';
 import { HQRelease } from './HQRelease';
@@ -39,7 +41,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), [port]);
   const { reading, error, pending } = useContractRead<NativeHQ>(
     JSON.stringify([league, mine, revision, canManage]),
-    publish => readNativeHQ(league, mine, port, publish, canManage), provider);
+    publish => readNativeHQ(league, mine, port, publish, canManage, true), provider);
   const editor = useNativeLineup(league, mine, reading?.lineup, port, canManage);
   const chosen = selected ?? reading?.lineup?.starters[0]?.id;
   const quote = useContractRead(JSON.stringify([league, mine, chosen]), () => chosen
@@ -64,6 +66,19 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   if (settings.reserveExcluded === false && settings.active !== undefined)
     settings.active -= roster.filter(p => p.rosterStatus !== 'ROSTER').length;
   const cut = quote.reading?.revision === reading.revision ? quote.reading : undefined;
+  const reviewDecision = (selection: ContractDecisionSubmit) => {
+    const hosted = editor.state.reading;
+    const decisions = reading.contractDecisions;
+    if (!canManage || !hosted || !decisions || !editor.room.canChange() ||
+      hosted.rules.revision !== reading.revision || decisions.revision !== reading.revision) {
+      void editor.room.refresh(reading.week ?? 1);
+      refresh(n => n + 1);
+      return;
+    }
+    const request = contractDecisionRequest(league, mine, decisions.revision, selection);
+    const playerName = decisions.players.find(p => p.player === selection.player)?.name ?? selection.player;
+    void editor.room.review(request, `Record ${selection.action.replace('_', ' ')} for ${playerName}`);
+  };
   const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab} navigate={setTab}
     week={reading.week}
     leagueName={reading.leagueName}
@@ -105,6 +120,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       changed={editor.changed} assign={editor.assign} />
       : tab === 'contracts-and-cap' ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway}
         positions={positions} annual={reading.contracts} values={reading.values} decisions={reading.decisions}
+        contractDecisions={reading.contractDecisions} decisionReady={editor.canEdit} decide={reviewDecision}
         cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player, cut.deadNow]])}
         select={id => { select(id); setRelease(id); }} />
         : <HQMoves native snapshot={snapshot} moves={moves} available={reading.moves !== undefined}

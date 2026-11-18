@@ -12,6 +12,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func rolloverInputs() (RolloverState, leaguerules.RuleSet) {
@@ -73,6 +74,20 @@ func waitingRolloverRule(rules leaguerules.RuleSet, value leaguerules.Money, day
 	return leaguerules.Change{LeagueID: rules.LeagueID, Season: rules.Season, Field: "cap.amount",
 		New: leaguerules.Known(value), Effective: leaguerules.Effective{Kind: leaguerules.NextRollover},
 		RecordedAt: time.Date(2026, 10, day, 12, 0, 0, 0, time.UTC)}
+}
+
+func TestRolloverUsesTheRecordedContractDecisionSchedule(t *testing.T) {
+	state, rules := rolloverInputs()
+	state.Assets.Players[0].ExpirationYear = 2027
+	state.Assets.Players[0].ContractSchedule = []nativecheck.SeasonAmount{
+		{Season: 2026, Cents: 100}, {Season: 2027, Cents: 1200},
+	}
+	plan := requireRollover(t, state, rules)
+	player := plan.After.Players[0]
+	if plan.Blocked || player.Salary != 1200 || len(player.ContractSchedule) != 1 ||
+		player.ContractSchedule[0] != (nativecheck.SeasonAmount{Season: 2027, Cents: 1200}) || player.Pending {
+		t.Fatalf("rollover lost the owner-selected salary schedule: %+v", player)
+	}
 }
 
 func TestRolloverOnlyNewestWaitingRuleApplies(t *testing.T) {
