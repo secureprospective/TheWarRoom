@@ -2,7 +2,8 @@
 
 - Baton: Bee, 2026-11-18. Lane `pulse-fixsearch`, branch `session/pulse-fixsearch`.
 - State: regression test added and observed failing before the fix; player search now matches case-insensitive name tokens in either order, including `Last, First` against `First Last`. Targeted test, TypeScript, full Vitest (138 files/978 tests), and `make verify` pass. `make verify` needed retries for concurrent `golangci-lint`/full-race jobs; final run passed including Go race tests, frontend build, budget, CSP and browser CSP checks. `tidy-check.sh` is clean.
-- Next: commit, push, open one PR into `main`, then report CI/PR status.
+- PR #374 is open into `main`: https://github.com/secureprospective/TheWarRoom/pull/374. CI checks, four test shards, verify, package and install all passed. PR body records root cause and test failure-before/fix-passes evidence.
+- Next: ClaudeBox/Christopher review; do not merge from this lane.
 - Blocked on: none.
 
 - Baton: Bee, 2026-11-18. Lane `pulse-b5sync`, branch `session/pulse-b5sync`; merging `origin/main` (347388a19) into Bundle 5.
