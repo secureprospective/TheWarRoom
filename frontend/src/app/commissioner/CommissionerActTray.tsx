@@ -141,23 +141,23 @@ export function CommissionerActForm({
     </section>
   );
 }
-export function HostedCommissionerActTray({ definition, league, room, port }: {
-  definition: ActDefinition; league: string; room: HostedLeagueRoom; port?: HostedPort;
+export function HostedCommissionerActTray({ definition, league, room, port, initial }: {
+  definition: ActDefinition; league: string; room: HostedLeagueRoom; port?: HostedPort; initial?: ActValues;
 }) {
   const state = room.use();
   return <section aria-label={definition.label} className="hosted-act-tray">
     <h3>{definition.label}</h3>
     <HostedCommissionerActForm key={`${league}:${definition.command}`} definition={definition}
-      league={league} room={room} port={port} />
+      league={league} room={room} port={port} initial={initial} />
     {state.review && <Review room={room} />}
   </section>;
 }
 
-function HostedCommissionerActForm({ definition, league, room, port }: {
-  definition: ActDefinition; league: string; room: HostedLeagueRoom; port?: HostedPort;
+function HostedCommissionerActForm({ definition, league, room, port, initial }: {
+  definition: ActDefinition; league: string; room: HostedLeagueRoom; port?: HostedPort; initial?: ActValues;
 }) {
   const state = room.use();
-  const [values, setValues] = useState<ActValues>({});
+  const [values, setValues] = useState<ActValues>(initial ?? {});
   const [reason, setReason] = useState('');
   const [held, setHeld] = useState<HostedActReadings>();
   const [error, setError] = useState('');

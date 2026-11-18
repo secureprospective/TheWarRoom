@@ -258,6 +258,10 @@
 .crx .hosted-situation-steps li{display:grid;grid-template-columns:minmax(130px,1fr) minmax(120px,1fr) auto auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--rule)}
 .crx .hosted-situation-steps code{font:11px var(--mono);color:var(--ink2);overflow-wrap:anywhere}
 .crx .hosted-act-tray{flex:none;padding:10px 12px;background:var(--tile);border:1px solid var(--edge);max-height:44vh;overflow:auto}
+.crx .hosted-fix{flex:1;overflow:auto}
+.crx .hosted-fix-tables{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;min-height:0;flex:1}
+.crx .hosted-fix-tables .cr-pb{overflow:auto}
+.crx .hosted-fix .hosted-act-tray{flex:none}
 .crx .hosted-unported{align-self:flex-start;max-width:680px}
 .crx.hosted-control-room .insp .big{font:600 18px var(--mono);padding:10px;background:var(--sunken);border:1px solid var(--edge)}
 @media(max-width:1000px){
@@ -267,4 +271,5 @@
   .crx.hosted-control-room .hosted-control-content{min-height:400px;overflow:visible}
   .crx.hosted-control-room .insp{display:none}
   .crx .hosted-situation-steps li{grid-template-columns:1fr auto}
+  .crx .hosted-fix-tables{grid-template-columns:minmax(0,1fr)}
 }
