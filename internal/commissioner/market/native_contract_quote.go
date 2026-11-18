@@ -138,19 +138,31 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return ContractQuote{}, err
 	}
+	if base.Assets.Seeded {
+		if player, ok := contractQuotePlayer(base.Assets.Snapshot, raw); ok {
+			if before, found := commissioner.ContractDecisionBaseline(records, player.Franchise,
+				player.ID, base.Rules.Season); found {
+				player = before
+				base = nativeBaseWithContractPlayer(base, player)
+			}
+			trail := contractDecisionTrail(records, player.Franchise, player.ID, base.Rules.Season)
+			return quoteContractOnBase(raw, records, now, local, facts, base, trail, player.ContractSchedule)
+		}
+	}
+	return quoteContractOnBase(raw, records, now, local, facts, base, nativecheck.Trail{}, nil)
+}
+
+// quoteContractOnBase shares the real quote checks with stacked scenarios without replacing an
+// already-recorded owner decision. The caller supplies the simulated trail and contract schedule.
+func quoteContractOnBase(raw RawContractQuote, records []commissioner.Record, now time.Time,
+	local *time.Location, facts nativecheck.Facts, base commissioner.NativeBase, trail nativecheck.Trail,
+	schedule []nativecheck.SeasonAmount) (ContractQuote, error) {
 	if !base.Assets.Seeded {
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return ContractQuote{}, commissioner.Refused(fmt.Errorf("this app league has no recorded rosters to quote"))
 	}
 	seed := base.Assets.Snapshot
-	player, ok := recordedPlayer(seed, raw.Player)
-	if raw.Franchise != "" {
-		index := seed.PlayerOf(raw.Franchise, raw.Player)
-		ok = index >= 0
-		if ok {
-			player = seed.Players[index]
-		}
-	}
+	player, ok := contractQuotePlayer(seed, raw)
 	if !ok {
 		if raw.Franchise == "" {
 			var franchises []string
@@ -168,17 +180,9 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return ContractQuote{}, commissioner.Refused(fmt.Errorf("choose a player on this app league's recorded roster"))
 	}
-	if before, found := commissioner.ContractDecisionBaseline(records, player.Franchise, player.ID, base.Rules.Season); found {
-		player = before
-		copyOf := *seed
-		copyOf.Players = append([]commissioner.NativePlayer(nil), seed.Players...)
-		if index := copyOf.PlayerOf(player.Franchise, player.ID); index >= 0 {
-			copyOf.Players[index] = player
-		}
-		base.Assets.Snapshot = &copyOf
-	}
 	action := nativecheck.ContractAction(raw.Action)
 	gate := commissioner.Gate{Open: true}
+	var err error
 	if window, gated := windowAction(action); gated {
 		gate, err = commissioner.NativeActionGate(raw.League, records, player.Franchise, window, now, local)
 		if err != nil {
@@ -187,9 +191,32 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 		}
 	}
 	in := contractCheck{raw: raw, action: action, base: base, player: player, gate: gate, facts: facts,
-		trail:    contractDecisionTrail(records, player.Franchise, player.ID, base.Rules.Season),
-		revision: int64(len(records)), zone: local}
+		trail: trail, revision: int64(len(records)), zone: local, schedule: schedule}
 	return checkContract(in)
+}
+
+func contractQuotePlayer(seed *commissioner.RawNativeSnapshot, raw RawContractQuote) (commissioner.NativePlayer, bool) {
+	player, ok := recordedPlayer(seed, raw.Player)
+	if raw.Franchise == "" {
+		return player, ok
+	}
+	index := seed.PlayerOf(raw.Franchise, raw.Player)
+	if index < 0 {
+		return commissioner.NativePlayer{}, false
+	}
+	return seed.Players[index], true
+}
+
+func nativeBaseWithContractPlayer(base commissioner.NativeBase, player commissioner.NativePlayer) commissioner.NativeBase {
+	seed := *base.Assets.Snapshot
+	seed.Players = append([]commissioner.NativePlayer(nil), seed.Players...)
+	if index := seed.PlayerOf(player.Franchise, player.ID); index >= 0 {
+		seed.Players[index] = player
+	}
+	assets := base.Assets
+	assets.Snapshot = &seed
+	base.Assets = assets
+	return base
 }
 
 // recordedPlayer is the player's one recorded copy. With a pool per side a quote by player alone could
@@ -218,6 +245,7 @@ type contractCheck struct {
 	trail    nativecheck.Trail
 	revision int64
 	zone     *time.Location
+	schedule []nativecheck.SeasonAmount
 }
 
 type decisionKey struct {
@@ -298,10 +326,14 @@ func checkContract(in contractCheck) (ContractQuote, error) {
 	if name == "" {
 		name = "Player " + in.player.ID
 	}
+	schedule := in.schedule
+	if schedule == nil {
+		schedule = in.player.ContractSchedule
+	}
 	priced, err := nativecheck.PriceContract(nativecheck.Input{Rules: in.base.Rules, Trail: in.trail,
 		Contract: nativecheck.Contract{Player: in.player.ID, Name: name, Position: fact.Position,
 			PositionHeld: fact.Position != "", Salary: in.player.Salary, Expiration: in.player.ExpirationYear,
-			Status: in.player.ContractStatus, Schedule: in.player.ContractSchedule},
+			Status: in.player.ContractStatus, Schedule: schedule},
 		Ask: nativecheck.Ask{Years: in.raw.Years, Level: in.raw.Level, Move: in.raw.MoveCents,
 			Amount: in.raw.AmountCents, Reason: in.raw.Reason},
 		Market: positionSalaries(in.base.Assets.Snapshot, in.facts, fact.Position)}, in.action)

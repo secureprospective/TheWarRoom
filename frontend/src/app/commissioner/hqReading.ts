@@ -684,3 +684,100 @@ export async function readNativeCut(
   });
   return parseNativeCut(response.data, league, player);
 }
+
+export type NativeWhatIfMove = {
+  player: string; action: string; years: number; level: number;
+  moveCents: number; amountCents: number; reason: string;
+};
+export type NativeWhatIfYear = {
+  season: number; committedCents?: number; deadCents?: number; capCents?: number; roomCents?: number;
+};
+export type NativeWhatIfQuote = {
+  player: string; name: string; action: string; actionName: string;
+  allowed: boolean; priceable: boolean; reason: string;
+  deadMoney: { season: number; cents: number }[]; salaries: { season: number; cents: number }[];
+};
+export type NativeWhatIfStack = {
+  league: string; revision: number; season: number; before: NativeWhatIfYear[]; after: NativeWhatIfYear[];
+  moves: NativeWhatIfQuote[];
+};
+
+function whatIfMoney(value: unknown, path: string): number | undefined {
+  return value == null ? undefined : integer(value, path, Number.MIN_SAFE_INTEGER);
+}
+function whatIfAmounts(value: unknown, path: string) {
+  return array(value, path, (item, at) => {
+    const row = object(item, at, ['season', 'cents']);
+    return { season: integer(row.season, `${at}.season`),
+      cents: integer(row.cents, `${at}.cents`, Number.MIN_SAFE_INTEGER) };
+  });
+}
+function whatIfYears(value: unknown): NativeWhatIfYear[] {
+  return array(value, 'Cap runway', (item, path) => {
+    const row = object(item, path, ['season', 'committedCents', 'deadCents', 'capCents', 'roomCents']);
+    return { season: integer(row.season, `${path}.season`),
+      committedCents: whatIfMoney(row.committedCents, `${path}.committedCents`),
+      deadCents: whatIfMoney(row.deadCents, `${path}.deadCents`),
+      capCents: whatIfMoney(row.capCents, `${path}.capCents`),
+      roomCents: whatIfMoney(row.roomCents, `${path}.roomCents`) };
+  });
+}
+function whatIfQuote(value: unknown, move: NativeWhatIfMove, league: string): NativeWhatIfQuote {
+  const row = object(value, 'What-if move', [
+    'league', 'revision', 'season', 'player', 'name', 'franchise', 'action', 'actionName', 'allowed',
+    'reason', 'needs', 'years', 'salaryCents', 'salaries', 'deadMoney', 'reliefCents', 'cap', 'basis',
+    'priceable',
+    'notes', 'source',
+  ]);
+  if (row.league !== league || row.player !== move.player || row.action !== move.action
+    || typeof row.allowed !== 'boolean' || typeof row.priceable !== 'boolean')
+    throw new Error('What-if quote scope changed');
+  const name = text(row.name, 'What-if player');
+  text(row.franchise, 'What-if franchise');
+  const actionName = text(row.actionName, 'What-if action');
+  const reason = text(row.reason, 'What-if reason');
+  text(row.source, 'What-if source');
+  integer(row.revision, 'What-if revision');
+  integer(row.season, 'What-if season');
+  integer(row.years, 'What-if years');
+  whatIfMoney(row.salaryCents, 'What-if salary');
+  whatIfMoney(row.reliefCents, 'What-if relief');
+  array(row.needs, 'What-if needs', text);
+  array(row.basis, 'What-if basis', text);
+  array(row.notes, 'What-if notes', text);
+  const salaries = whatIfAmounts(row.salaries, 'What-if salaries');
+  const deadMoney = whatIfAmounts(row.deadMoney, 'What-if dead money');
+  if (row.cap != null) {
+    const cap = object(row.cap, 'What-if cap', [
+      'beforeCents', 'afterCents', 'changeCents', 'roomAfterCents', 'words',
+    ]);
+    whatIfMoney(cap.beforeCents, 'Cap before');
+    whatIfMoney(cap.afterCents, 'Cap after');
+    whatIfMoney(cap.changeCents, 'Cap change');
+    whatIfMoney(cap.roomAfterCents, 'Cap room');
+    text(cap.words, 'Cap words');
+  }
+  return {
+    player: move.player, name, action: move.action, actionName, allowed: row.allowed,
+    priceable: row.priceable, reason,
+    deadMoney, salaries,
+  };
+}
+export function parseNativeWhatIfStack(
+  value: unknown, league: string, moves: NativeWhatIfMove[],
+): NativeWhatIfStack {
+  const row = object(value, 'What-if stack', ['league', 'revision', 'season', 'before', 'after', 'moves']);
+  if (row.league !== league) throw new Error('What-if stack belongs to another league');
+  let index = 0;
+  const quotes = array(row.moves, 'What-if moves', item => {
+    const move = moves[index++];
+    if (!move) throw new Error('What-if move count changed');
+    return whatIfQuote(item, move, league);
+  });
+  if (quotes.length !== moves.length) throw new Error('What-if move count changed');
+  return {
+    league, revision: integer(row.revision, 'What-if revision'),
+    season: integer(row.season, 'What-if season'), before: whatIfYears(row.before),
+    after: whatIfYears(row.after), moves: quotes,
+  };
+}

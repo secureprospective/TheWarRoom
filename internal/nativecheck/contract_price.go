@@ -149,7 +149,7 @@ func (x *pricer) contractSchedule() []SeasonAmount {
 	}
 	out := make([]SeasonAmount, 0, x.rem+1)
 	for season := x.season; season <= x.in.Contract.Expiration; season++ {
-		out = append(out, SeasonAmount{Season: season, Cents: x.in.Contract.Salary})
+		out = append(out, SeasonAmount{Season: season, Cents: x.salaryIn(season)})
 	}
 	return out
 }

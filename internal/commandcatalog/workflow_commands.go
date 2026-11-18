@@ -138,6 +138,9 @@ func workflowInputCommand[T any, P interface {
 
 func privatePersonalWorkflows() map[string]WorkflowCommand {
 	return map[string]WorkflowCommand{
+		leagueservice.WhatIfStackRead: workflowInputCommand[market.RawWhatIfStack, *market.RawWhatIfStack]("read", "this is a private owner reading only", func(ctx context.Context, s *leagueservice.Service, r market.RawWhatIfStack) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeWhatIfStackContext(ctx, r))
+		}),
 		leagueservice.ContractDecisionsRead: workflowInputCommand[market.RawContractDecisionsScope, *market.RawContractDecisionsScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input market.RawContractDecisionsScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeContractDecisionsContext(ctx, input))
 		}),

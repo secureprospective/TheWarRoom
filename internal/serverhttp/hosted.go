@@ -658,8 +658,8 @@ func privateOwnerPersonalOperation(operation string) bool {
 	}
 	switch operation {
 	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchRead,
-		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder, leagueservice.ContractDecisionsRead,
-		"draft.queue.read", "draft.queue.set":
+		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder, leagueservice.WhatIfStackRead,
+		leagueservice.ContractDecisionsRead, "draft.queue.read", "draft.queue.set":
 		return true
 	default:
 		return false

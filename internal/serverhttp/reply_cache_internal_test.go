@@ -5,11 +5,30 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
-func TestPrivatePlayerReadingDoesNotEnterLeagueReplyCache(t *testing.T) {
-	if operation, cacheable := cachedReadingOperation("player.note.read"); cacheable {
-		t.Fatalf("private player reading was made cacheable as %q", operation)
+func TestPrivateOwnerReadingsDoNotEnterLeagueReplyCache(t *testing.T) {
+	for _, reading := range []string{"player.note.read", leagueservice.WhatIfStackRead} {
+		if operation, cacheable := cachedReadingOperation(reading); cacheable {
+			t.Fatalf("private reading %q was made cacheable as %q", reading, operation)
+		}
+	}
+}
+
+func TestPrivateWorkflowTagsCarryViewerScopedFreshness(t *testing.T) {
+	publisher := NewPublisher()
+	publisher.ObserveView("owner.one", "native.test", 1)
+	publisher.ObserveView("owner.two", "native.test", 1)
+	publisher.ObserveView("owner.two", "native.test", 2)
+	hosted := Hosted{Publisher: publisher}
+	tags := hosted.workflowTags(withReplyPrincipal(t.Context(), "owner.one"), "native.test", "pin")
+	if tags == nil || tags.ServerEpoch == "" || tags.Football != "pin" || tags.League["league"] != "1" {
+		t.Fatalf("missing private freshness: %+v", tags)
+	}
+	if len(tags.League) != 1 {
+		t.Fatalf("another owner's versions leaked into private tags: %+v", tags.League)
 	}
 }
 
