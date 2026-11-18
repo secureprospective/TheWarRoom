@@ -4,6 +4,7 @@
 - State: D65 is implemented on `session/pulse-b5perm`. The updated base has the hosted Rules board and Control Room frame/Jobs/Situations lanes.
 - Flow: native catalog → `history.Store` transaction → `timedCommandRole` → `AuthorizeRecords` / `mayRun` → ledger append → governance replay; `commish.people.read` exposes effective permissions. Grants are private ledger events; no table/migration.
 - D65: six permission groups; whole-mutation-catalog classification; preview/execute permission command; replay/revocation; co-commissioners get six; vote close/tiebreak stay commissioner-only.
+- Filelen: `internal/store/history/commissioner.go` is 769 lines (base 727); transaction-time deputy authorization stays beside the existing serialized append check so all writes share one gate.
 - Verified D65: touched Go race packages; frontend 123 files/910 tests; TypeScript; generator freshness; `make lint`; `make bloat`.
 - Slop fixed in PR #350: removed name-substring rule-board classification and restored owner guidance. D65: no unrelated slop found in scope.
 - Tried/rejected: letting Change rules bypass field-level C-only checks; existing `TestCommissionerRulesPermissions` rejects co-commissioner edits to C-only `league.teams`, so deputies retain that restriction.
