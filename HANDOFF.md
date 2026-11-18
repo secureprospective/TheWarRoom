@@ -1,9 +1,9 @@
 # Handoff
 
-- Baton: Bee, 2026-11-17.
-- State: Server tab in `HostedControlRoom.tsx` now reads `commish.ledger.read`, renders every visible row, and clearly identifies restore/feed/upgrade as operator-only. Backup-now is left unavailable: its catalog entry is desktop-only, not a hosted server command.
-- Tests added: hosted ledger at 32 rows and operator-only seam.
-- Next: run hosted Control Room frontend tests and TypeScript, then required lint/bloat; commit and open PR against `bundle/b5`.
-- Blocked: `heavy-ok.sh` currently refuses because another full `-race` suite is running. Retry before tests/heavy checks.
-- Slop fixed: none identified outside this tab.
-- Open decisions deliberately untouched: snooze scope; deputy job visibility; written-request visibility; division naming.
+- Baton: Bee, 2026-11-17; PR #351 open against `bundle/b5`.
+- State: Server tab reads `commish.ledger.read`, renders every visible row, and identifies restore/feed/upgrade as operator-only. `backup.now` catalog entry is desktop-only, so hosted backup is missing; no new read/command invented.
+- Verified: `HostedControlRoom.test.tsx` and `pnpm exec tsc --noEmit` pass; `make bloat` passes. Full frontend: 918/920 passed; isolated rerun of the two failures passed (40 tests). `make lint` blocked by another `golangci-lint` run.
+- Next: retry `make lint` when the other process exits; watch PR checks.
+- Slop fixed: none.
+- Blocked: hosted `backup.now` command path missing.
+- Open decisions untouched: snooze scope; deputy job visibility; written-request visibility; division naming.
