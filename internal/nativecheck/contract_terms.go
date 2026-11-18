@@ -209,7 +209,7 @@ func lowestTier(r leaguerules.RestructureRules) domain.Money {
 func (x *pricer) spread(move domain.Money) []SeasonAmount {
 	steps := move / x.quantum / domain.Money(x.rem)
 	share := steps * x.quantum
-	out := []SeasonAmount{{Season: x.season, Cents: x.in.Contract.Salary - move}}
+	out := []SeasonAmount{{Season: x.season, Cents: x.salaryIn(x.season) - move}}
 	given := domain.Money(0)
 	for i := 1; i <= x.rem; i++ {
 		part := share
@@ -217,7 +217,7 @@ func (x *pricer) spread(move domain.Money) []SeasonAmount {
 			part = move - given
 		}
 		given += part
-		out = append(out, SeasonAmount{Season: x.season + i, Cents: x.in.Contract.Salary + part})
+		out = append(out, SeasonAmount{Season: x.season + i, Cents: x.salaryIn(x.season+i) + part})
 	}
 	return out
 }

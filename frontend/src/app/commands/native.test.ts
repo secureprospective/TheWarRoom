@@ -31,6 +31,8 @@ void typeChecks;
 describe('catalog-generated native envelope', () => {
   it('keeps hosted-only workflows off the local native door', () => {
     expect(nativeCommands).not.toHaveProperty('draft.queue.read');
+    expect(nativeCommands).not.toHaveProperty('bid.withdraw');
+    expect(serverCommands).not.toHaveProperty('bid.withdraw');
     expect(serverCommands['draft.queue.read'].definition.Availability).toBe('server');
     const queue: NativeRequest = { command: 'draft.queue.read', mode: 'read',
       arguments: { league: 'native.test' } };

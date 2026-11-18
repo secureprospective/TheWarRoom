@@ -96,12 +96,18 @@ func tokenPlayers(a RawArgs) ([]string, error) {
 	if a.Lineup != nil {
 		players = append(players, a.Lineup.Starters...)
 	}
+	if a.ContractDecision != nil {
+		players = append(players, a.ContractDecision.Player)
+	}
 	return players, nil
 }
 
 func tokenMarketTargets(raw RawCommand, records []Record) ([]string, error) {
 	a := raw.Args
 	targets := []string{}
+	if a.ContractDecision != nil {
+		targets = append(targets, a.ContractDecision.Franchise)
+	}
 	if a.Bid != nil {
 		targets = append(targets, a.Bid.Franchise)
 		if a.Bid.Bid != "" {

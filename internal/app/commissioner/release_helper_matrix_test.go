@@ -34,7 +34,7 @@ func releaseHelperMatrix(t *testing.T, f *releaseTokenFixture, h *releaseHTTP) {
 				for _, mode := range command.Modes {
 					scope := accounts.RawTokenScope{League: "native.hosted", Franchise: seat, Commands: []string{command.ID}, Modes: []string{string(mode)}}
 					token, err := f.tokens.Issue(t.Context(), f.creator.RawSession, scope)
-					ownerAction := domain.OwnerBidAction(command.ID) != "" || domain.OwnerWaiverAction(command.ID) != "" || domain.OwnerTradeAction(command.ID) != ""
+					ownerAction := domain.OwnerBidAction(command.ID) != "" || domain.OwnerWaiverAction(command.ID) != "" || domain.OwnerTradeAction(command.ID) != "" || command.ID == domain.ContractDecisionSet
 					ungrantable := !accounts.DelegableCommand(command.ID) || seat == "franchise.03" && ownerAction
 					if ungrantable {
 						if err == nil {

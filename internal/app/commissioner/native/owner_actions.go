@@ -69,7 +69,7 @@ func WaiverFamily() OwnerFamily {
 }
 
 func BidFamily() OwnerFamily {
-	return OwnerFamily{choose: "to place, raise or withdraw a bid", label: "native bid action",
+	return OwnerFamily{choose: "to place or raise a bid", label: "native bid action",
 		seat: func(raw commissioner.RawCommand) (string, leaguerules.Action, bool) {
 			if raw.Args.Bid == nil {
 				return "", "", false
@@ -139,26 +139,35 @@ type ContractOwnerAction struct {
 
 func ContractOwnerActions() []ContractOwnerAction {
 	var out []ContractOwnerAction
-	for _, action := range nativecheck.ContractActions() {
+	for _, action := range market.OwnerContractDecisionActions() {
 		window, gated := market.OwnerContractWindow(action)
-		if !gated {
-			continue
+		if gated {
+			out = append(out, ContractOwnerAction{Name: "contract." + string(action), Opens: window, Action: action})
 		}
-		out = append(out, ContractOwnerAction{Name: "contract." + string(action), Opens: window, Action: action})
 	}
 	return out
 }
 
-func StartContractAction(ctx context.Context, permit commissioner.Permit, action nativecheck.ContractAction,
-	recordsFor func(context.Context, string) ([]commissioner.Record, error), now func() time.Time) error {
-	records, err := recordsFor(ctx, permit.League())
-	if err != nil {
-		return err
+// MapContractOwnerActions builds one registry entry per gated owner contract action.
+func MapContractOwnerActions[T any](build func(ContractOwnerAction) T) []T {
+	actions := ContractOwnerActions()
+	out := make([]T, 0, len(actions))
+	for _, action := range actions {
+		out = append(out, build(action))
 	}
-	if err := market.ContractActionOn(records, now(), action); err != nil {
-		return fmt.Errorf("start %s: %w", action.Name(), err)
-	}
-	return nil
+	return out
+}
+
+func ContractFamily(action nativecheck.ContractAction) OwnerFamily {
+	return OwnerFamily{choose: "a rule-priced expiring-contract decision", label: "owner contract decision",
+		seat: func(raw commissioner.RawCommand) (string, leaguerules.Action, bool) {
+			choice := raw.Args.ContractDecision
+			if raw.Command != commissioner.ContractDecisionSet || choice == nil || choice.Action != string(action) ||
+				!slices.Contains(market.OwnerContractDecisionActions(), action) {
+				return "", "", false
+			}
+			return choice.Franchise, leaguerules.Action(action), true
+		}}
 }
 
 type OwnerGate struct {

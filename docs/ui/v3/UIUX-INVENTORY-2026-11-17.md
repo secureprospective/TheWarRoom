@@ -89,7 +89,7 @@ Full table with the files that call each: `~/fleet/runs/twr-v3-stubs-1117/data/c
 | D06 playoff odds | NEW | `odds.read` on the server (read once a season + on league topic) |
 | D11 projections | PARTIAL | Native range engine (`internal/projection`: floor/median/ceiling from the player's own weeks) |
 
-## 8. Work in flight on 11-17 (tracker, 4:54 PM CT)
+## 8. Work in flight on 11-17 (tracker, 4:54 PM CT) — snapshot, not live state
 Claudebox (head brain) with Luna lanes: #338 saved trade drafts merging; `wins` lane (recent winning bids, job 9); `wrslop` (War Room front-end slop); F51 player values on the server (#304/#307, draft); F65 contracts not recomputed per lineup save (#312); F69 HQ My moves (#319); F73 server memory. Later list includes: hosted injury feed, ADP feed (Christopher's call), playoff odds/values on the server, commissioner sees all open claims, phone sign-in. **Do not start a v3 stub that overlaps a running lane; check the tracker (`~/Downloads/twr-usable-week-plan.html`) first.**
 
 ## 9. Known slop on `main` (do not copy its pattern)

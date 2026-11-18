@@ -1,6 +1,6 @@
 import { Act } from '../commands/Act';
 import { HQAct } from './HQAct';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { AssetBoard } from '../assets/contract';
 import type { Snapshot } from '../data/contract';
 import type { HQCap, HQSettings } from './hqModel';
@@ -16,6 +16,91 @@ import { whatIfProvider } from '../contracts/whatif';
 import { contractsProvider } from '../contracts/provider';
 import { hqEvents } from './hqReads';
 import { HQWhatIfDrawer } from './HQWhatIfDrawer';
+import type { ContractDecisionChoice, ContractDecisionOption, ContractDecisionPlayer,
+  ContractDecisionSubmit, ContractDecisions } from './hqContractDecisions';
+
+function decisionLabel(action: ContractDecisionOption['action']): string {
+  switch (action) {
+    case 'extension': return 'Extension';
+    case 'tag': return 'Franchise tag';
+    case 'rfa_tender': return 'RFA tender';
+    case 'resign': return 'Re-sign';
+  }
+}
+function decisionTerms(choice: ContractDecisionChoice): string {
+  const term = [choice.years ? `${choice.years} ${choice.years === 1 ? 'year' : 'years'}` : '',
+    choice.level ? `Level ${choice.level}` : ''].filter(Boolean).join(' · ');
+  const schedule = choice.quote.salaries.map(year => `${year.season} ${money(year.cents)}`).join(' · ');
+  return [term, schedule].filter(Boolean).join(' · ');
+}
+function decisionDate(value: string): string {
+  return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(new Date(value));
+}
+function ContractDecisionList({ reading, canDecide, decide }: { reading?: ContractDecisions;
+  canDecide: boolean; decide?: (selection: ContractDecisionSubmit) => void }) {
+  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  if (!reading) return <p className="empty">{unavailable}</p>;
+  if (!reading.players.length) return <p className="empty">{reading.words}</p>;
+  return <div className="contract-decision-list">
+    {reading.players.map(player => <ContractDecisionCard key={player.player} player={player}
+      canDecide={canDecide} choose={(selection) => decide?.(selection)}
+      selected={selected} onSelect={(key, value) => setSelected(current => ({ ...current, [key]: value }))}
+      reason={reasons[player.player] ?? ''} onReason={value => setReasons(current => ({ ...current,
+        [player.player]: value }))} />)}
+  </div>;
+}
+function ContractDecisionCard({ player, canDecide, choose, selected, onSelect, reason, onReason }: {
+  player: ContractDecisionPlayer; canDecide: boolean; choose: (selection: ContractDecisionSubmit) => void;
+  selected: Record<string, string>; onSelect: (key: string, value: string) => void; reason: string;
+  onReason: (value: string) => void }) {
+  return <article className="contract-decision">
+    <div className="decision-player"><b>{player.name}</b><span>Expires {player.expiration}</span>
+      {player.decision && <span className="decision-saved">Recorded: {decisionLabel(player.decision.action)}
+        {player.decision.years ? ` · ${player.decision.years}y` : ''}
+        {player.decision.level ? ` · Level ${player.decision.level}` : ''}</span>}</div>
+    {player.options.some(option => option.open && !option.pastDeadline) && <label className="decision-reason">
+      Reason for this choice <input required aria-label={`Reason for ${player.name}'s contract choice`}
+        value={reason} onChange={event => onReason(event.target.value)} maxLength={200} />
+      <small>Required before preview.</small>
+    </label>}
+    {player.options.map(option => {
+      const key = `${player.player}:${option.action}`;
+      const defaultChoice = option.choices.find(choice => player.decision?.action === option.action &&
+        choice.years === player.decision.years && choice.level === player.decision.level)
+        ?? option.choices[0];
+      const chosenKey = selected[key] ?? `${defaultChoice.years}:${defaultChoice.level}`;
+      const choice = option.choices.find(candidate => `${candidate.years}:${candidate.level}` === chosenKey)
+        ?? defaultChoice;
+      const current = player.decision?.action === option.action && player.decision.years === choice.years &&
+        player.decision.level === choice.level;
+      const closed = !option.open || option.pastDeadline;
+      return <div className="contract-decision-option" key={option.action} role="group"
+        aria-label={`${decisionLabel(option.action)} for ${player.name}`}>
+        <div className="decision-option-head"><b>{decisionLabel(option.action)}</b>
+          <span className={closed ? 'clock cold' : 'clock'}>{option.pastDeadline ? 'PAST DEADLINE' :
+            option.open ? 'OPEN' : 'NOT OPEN'}</span></div>
+        <time dateTime={option.deadline}>Deadline · {decisionDate(option.deadline)}</time>
+        <label className="decision-choice">Terms
+          <select aria-label={`${player.name} ${decisionLabel(option.action)} terms`}
+            value={chosenKey} disabled={closed || !canDecide} onChange={event =>
+              onSelect(key, event.target.value)}>
+            {option.choices.map(candidate => <option key={`${candidate.years}:${candidate.level}`}
+              value={`${candidate.years}:${candidate.level}`}>{decisionTerms(candidate)}</option>)}
+          </select>
+        </label>
+        {choice.quote.cap && <small title={choice.quote.cap.words}>{choice.quote.cap.words}</small>}
+        <HQAct className="btn" label={`${current ? 'Current choice' : player.decision ? 'Change choice' :
+          'Review choice'} · ${decisionLabel(option.action)} · ${player.name}`}
+          disabled={closed || !canDecide || current || !reason.trim()}
+          onAction={() => choose({ player: player.player, action: option.action, years: choice.years,
+            level: choice.level, reason: reason.trim() })}>
+          {current ? 'CURRENT CHOICE' : player.decision ? 'CHANGE CHOICE' : 'REVIEW CHOICE'}</HQAct>
+      </div>;
+    })}
+  </article>;
+}
 
 export function CapRunway({ years }: { years?: HQCap[] }) {
   return <div className="run">{years?.length ? years.map(year => <div className={`y ${(year.room ?? 0) < 0
@@ -55,11 +140,13 @@ function ContractRow({ row, season, mine, years, facts, select, assets }: { asse
   </tr>;
 }
 export function HQContracts({ snapshot, mine, contracts, runway, facts, select, native = false, assets,
-  positions, cutCosts, annual, values, decisions }: {
+  positions, cutCosts, annual, values, decisions, contractDecisions, decisionReady, decide }: {
   snapshot: Snapshot; mine: string; contracts?: Readings; runway?: HQCap[]; facts?: RosterFacts; select:
     (id: string) => void; native?: boolean; assets?: AssetBoard; positions?: Map<string, string>;
       cutCosts?: Map<string, number>; annual?: Map<string, { season: number; cents: number }[]>;
       values?: LeagueValues; decisions?: { label: string; at?: string; live: boolean }[];
+  contractDecisions?: ContractDecisions; decisionReady?: boolean;
+  decide?: (selection: ContractDecisionSubmit) => void;
 }) {
   const season = snapshot.league.value.season;
   const roster = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players ?? [];
@@ -97,11 +184,16 @@ export function HQContracts({ snapshot, mine, contracts, runway, facts, select, 
       {!rows.length && <p className="empty">{unavailable}</p>}</div>
   </div><div className="cside"><div
     className="ch"><b>CAP RUNWAY</b><span>committed · dead · room</span></div><CapRunway years={capYears} />
-    <div className="ch"><b>DECISIONS DUE</b><span>soonest first</span></div><div className="dec" style={{
-      flex: 'none' }}>{decisions?.length ? decisions.map((decision, i) => <p className="empty"
-        key={`${decision.label}-${i}`} title={decision.at}>{decision.label}{decision.live ? ' · open' : ''}
+    {native && <><div className="ch"><b>DECISIONS DUE</b><span>priced by league rules · season {
+      contractDecisions?.season ?? season}</span></div><ContractDecisionList reading={contractDecisions}
+        canDecide={decisionReady ?? false} decide={decide} /></>}
+    <div className="ch"><b>DEADLINES</b>
+      <span>from the league calendar</span></div>
+    <div className="dec">{decisions?.length ? decisions.map((decision, i) =>
+      <p className="empty" key={`${decision.label}-${i}`} title={decision.at}>{decision.label}
+        {decision.live ? ' · open' : ''}
         {decision.at ? ` · ${new Date(decision.at).toLocaleDateString()}` : ''}</p>) :
-          <p className="empty">{unavailable}</p>}</div>
+      <p className="empty">{unavailable}</p>}</div>
     <div className="ch" style={{ borderTop: '2px solid var(--black)'
       }}><b>DEAD CAP TOTAL · {money(capYears[0]?.dead)}</b><span>dead money included in runway</span></div>
   </div></section>;

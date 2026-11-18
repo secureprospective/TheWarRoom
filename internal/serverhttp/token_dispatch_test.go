@@ -117,6 +117,51 @@ func TestAgentPrivatePlayerCommandsUseOnlyIssuerSeat(t *testing.T) {
 	}
 }
 
+func TestContractDecisionTokenReadAndWriteStayOnItsFranchise(t *testing.T) {
+	f := newHostedFixture(t, true)
+	human, _ := f.directCommissioner(t)
+	commands := []string{leagueservice.ContractDecisionsRead, commissioner.ContractDecisionSet,
+		"native.assets.read", "native.directory.read"}
+	token, err := f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: human}, accounts.RawTokenScope{
+		League: "native.hosted", Franchise: "franchise.01", Commands: commands,
+		Modes: []string{"read", "preview", "execute"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	read := workflowRequest(t, leagueservice.ContractDecisionsRead, "read",
+		`{"league":"native.hosted","viewerZone":"UTC"}`, "")
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &read})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var response serverhttp.WorkflowResponse
+	if err := json.Unmarshal(f.post(t, serverhttp.WorkflowPath, string(body), token.Bearer, "", 200), &response); err != nil {
+		t.Fatal(err)
+	}
+	var reading struct {
+		Franchise string `json:"franchise"`
+	}
+	if err := json.Unmarshal(response.Data, &reading); err != nil || reading.Franchise != "franchise.01" {
+		t.Fatalf("private decision read used the wrong seat: %+v %v", reading, err)
+	}
+
+	before := f.events(t)
+	raw, err := (commissioner.RawCommand{League: "native.hosted", Command: commissioner.ContractDecisionSet,
+		Args: commissioner.RawArgs{ContractDecision: &commissioner.RawContractDecision{Franchise: "franchise.02",
+			Player: "0102", Action: "rfa_tender", Level: 1}},
+		Expected: int64(before), Request: "cross-team-contract-decision", Reason: "Try another team",
+		Effective: "now", Visibility: "private"}).Prepared()
+	if err != nil {
+		t.Fatal(err)
+	}
+	body = []byte(f.tokenWorkflow(t, token, raw, "preview"))
+	f.post(t, serverhttp.WorkflowPath, string(body), token.Bearer, "", 409)
+	if got := f.events(t); got != before {
+		t.Fatalf("cross-team decision wrote %d events", got-before)
+	}
+}
+
 func TestAgentG2G3RequireExactHumanConsent(t *testing.T) {
 	f := newHostedFixture(t, true)
 	human, proof := f.directCommissioner(t)

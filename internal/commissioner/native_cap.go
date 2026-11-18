@@ -160,7 +160,8 @@ func nativeContractYears(base NativeBase, franchise string) []NativeContractYear
 			continue
 		}
 		out = append(out, NativeContractYears{Player: p.ID, Years: nativecheck.ExistingContractSchedule(
-			base.Rules.Season, nativecheck.Contract{Salary: p.Salary, Expiration: p.ExpirationYear})})
+			base.Rules.Season, nativecheck.Contract{Salary: p.Salary, Expiration: p.ExpirationYear,
+				Schedule: p.ContractSchedule})})
 	}
 	return out
 }

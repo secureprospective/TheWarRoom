@@ -76,6 +76,8 @@ func nativePreviewTargets(raw RawCommand, records []Record, now time.Time, targe
 func previewTargets(raw RawCommand) []string {
 	a := raw.Args
 	switch {
+	case a.ContractDecision != nil:
+		return []string{a.ContractDecision.Franchise}
 	case a.People != nil:
 		return []string{a.People.Franchise}
 	case a.Override != nil:

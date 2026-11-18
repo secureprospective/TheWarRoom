@@ -8,6 +8,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -61,15 +62,16 @@ type NativePlayer struct {
 	// RookieRound is the draft round of the player's rookie contract, where it is recorded; 0 is unknown.
 	RookieRound int `json:"rookieRound,omitempty"`
 	// Pending marks a player whose contract has ended and whose decision is still to be made.
-	Pending        bool                  `json:"pending,omitempty"`
-	Restructured   bool                  `json:"restructured,omitempty"`
-	ID             string                `json:"id"`
-	Franchise      string                `json:"franchise"`
-	Status         domain.RosterStatus   `json:"status"`
-	Salary         domain.Money          `json:"salaryCents" ts_type:"number | null"`
-	ExpirationYear int                   `json:"expirationYear" ts_type:"number | null"`
-	ContractStatus domain.ContractStatus `json:"contractStatus"`
-	ContractInfo   string                `json:"contractInfo"`
+	Pending          bool                       `json:"pending,omitempty"`
+	Restructured     bool                       `json:"restructured,omitempty"`
+	ID               string                     `json:"id"`
+	Franchise        string                     `json:"franchise"`
+	Status           domain.RosterStatus        `json:"status"`
+	Salary           domain.Money               `json:"salaryCents" ts_type:"number | null"`
+	ExpirationYear   int                        `json:"expirationYear" ts_type:"number | null"`
+	ContractStatus   domain.ContractStatus      `json:"contractStatus"`
+	ContractInfo     string                     `json:"contractInfo"`
+	ContractSchedule []nativecheck.SeasonAmount `json:"contractSchedule,omitempty"`
 	// HeldContractStatus is the contract status exactly as MFL wrote it ("EXT (2024)"), kept by an MFL
 	// import wherever the app's reading of it (ContractStatus) is not the same text.
 	HeldContractStatus string `json:"heldContractStatus,omitempty"`
