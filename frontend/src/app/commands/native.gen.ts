@@ -4859,7 +4859,7 @@ const schema344 = {
   ],
   Items:null,
 } as const;
-const schema343 = {
+const schema345 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4871,7 +4871,7 @@ const schema343 = {
   ],
   Items:null,
 } as const;
-const schema344 = {
+const schema346 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -8158,7 +8158,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-account-data",
     "Safeguards": "session account scope; no request account ID; agents denied; uncached",
-    "Arguments": schema342
+    "Arguments": schema344
   },
   phrase: "read home layout",
 },
@@ -8177,7 +8177,7 @@ export const serverCommands = {
     "Undo": "replace-own-account-preference",
     "Facts": "private-account-data",
     "Safeguards": "session account scope; no request account ID; agent denied; revision checked",
-    "Arguments": schema343
+    "Arguments": schema345
   },
   phrase: "set home layout",
 },
@@ -8197,7 +8197,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "server-held league database and R2 settings",
     "Safeguards": "current commissioner seat; per-league backup manager; refuse concurrent backup",
-    "Arguments": schema344
+    "Arguments": schema346
   },
   phrase: "now backup",
 },
