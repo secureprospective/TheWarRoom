@@ -21,6 +21,8 @@ func TestBackupAdmissionIsolatesTheTwoFiles(t *testing.T) {
 		{"/v1/native/draft/pick", fresh, stale, true},
 		{LoginPath, stale, fresh, true},
 		{LoginPath, fresh, stale, false},
+		{AccountPreferencePath, stale, fresh, true},
+		{AccountPreferencePath, fresh, stale, false},
 		{PasswordChangePath, stale, fresh, true},
 		{JoinClaimPath, fresh, stale, false},
 		{JoinClaimPath, stale, fresh, false},

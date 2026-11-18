@@ -13,8 +13,9 @@ import (
 )
 
 type WorkflowCommand struct {
-	Validate func(RawWorkflow) error
-	Run      func(context.Context, *leagueservice.Service, RawWorkflow) (json.RawMessage, error)
+	Validate   func(RawWorkflow) error
+	Run        func(context.Context, *leagueservice.Service, RawWorkflow) (json.RawMessage, error)
+	RunAccount func(context.Context, accounts.HomeLayoutRepository, string, RawWorkflow) (json.RawMessage, error)
 }
 
 // Membership is executable: the same entry validates and runs a workflow. The changes are exactly
@@ -26,6 +27,9 @@ func WorkflowCommands() map[string]WorkflowCommand {
 	out[leagueservice.BackupNowCommand] = backupNowWorkflow()
 	out["draft.queue.read"] = workflowDraftQueueRead()
 	out["draft.queue.set"] = workflowDraftQueueSet()
+	for id, command := range accountPreferenceWorkflows() {
+		out[id] = command
+	}
 	for id, command := range privatePersonalWorkflows() {
 		out[id] = command
 	}

@@ -10,10 +10,11 @@
 - Blocked on: none for this lane. The unrelated active lanes still need their owners to file KEEP records.
 - Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.
 
-## Bee — pulse-b9feed
-- Baton: ClaudeBox for review; Bee completed lane 2026-11-18, branch `session/pulse-b9feed`, target `bundle/b9`.
-- State: Commit `732bf2bfa` pushed; PR #387 open and CI green. Implemented the member-safe read, strict filters and hosted workflow/catalog route; generated native client metadata. Allow-list: notices; approved trade transitions; completed roster drops, waiver awards and free-agent additions, with bid details omitted. Unknown commands, notes, private events and reasons are hidden.
-- Evidence: race tests passed for commissioner, leagueservice and commandcatalog; hosted member/commissioner and agent-scope integration passed. Catalog generation checks, `make lint`, full `make verify`, pre-push verify and PR CI passed. One hostedPulse UI test flaked once, then passed alone and in the successful full rerun.
-- Next: ClaudeBox review/merge PR #387.
-- Blocked on: none for this lane. Final `tidy-check.sh` reported unrelated active alpha010 lanes `b7lab2`, `b9fa`, and `perf`; left them untouched due worktree-only scope; owners need to file KEEP records. No task-owned scratch or staged webapp remains.
-- Tried and rejected: Do not reuse `commish.ledger.filtered.read`; it carries reasons and broader commissioner-visible entries. Reuse existing append-only records and an independent allow-list projection.
+## pulse-b9boards lane (Bee, 2026-11-18)
+- Baton: ClaudeBox review; implementation ready on `session/pulse-b9boards`, base `bundle/b9`, PR #388.
+- State: server preference store/table implemented; schema migration is sign-in file v4. Layout writes are bounded/validated and revision-checked. The account-only workflow uses `/v1/account/preferences` so the existing sign-in backup admission guards writes without pausing league writes. Thin Wails forwards the account command there; browser cookie calls require exact same-origin. Both agent token scope and access refuse it. Sign-in conversion copies/drops the new table when present and safely skips it for older one-file sources.
+- Flow: typed Raw read/set → catalog validation → session-authenticated account ID → account-store CAS. Conflicts return the current server copy; no league/franchise argument and no private reply caching. Hosted HomeBrief reads server-first, caches only as an offline fallback, and keeps local mode on localStorage.
+- Evidence: focused race tests pass in all changed Go packages, including existing/absent layout sign-in conversion; `make lint`, nativegen freshness, frontend TypeScript and layout/transport tests pass. Frontend fresh-store test proves a second device reads the server copy. CI passed on `007cb5dd1`: all four race shards, lint/checks, release-tools, package and install. The first shard attempt stopped without a reported test failure; the retry passed.
+- Next: ClaudeBox review/merge PR #388.
+- Blocked on: none. `tidy-check.sh` reports unrelated active lanes/hosted test server; left untouched for their owners.
+- Tried and rejected: reusing a per-franchise league store (wrong owner boundary and not cross-league); no settings/preferences table exists in the hosted account store.

@@ -95,6 +95,20 @@ it('sends the generated workflow on the Go client route and wire envelope', asyn
   expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
 });
 
+it('routes account layout workflows through the account preference endpoint', async () => {
+  const fetcher = vi.fn().mockResolvedValue(jsonResponse({ protocol: 1 }));
+  vi.stubGlobal('fetch', fetcher);
+  const request = { command: 'home.layout.set', mode: 'execute', arguments: {
+    layout: { mode: 'default', tiles: [], over: [], pins: {} }, expectedRevision: 3,
+  } } as NativeRequest;
+  await webTransport.workflow(request, '');
+  const [path, init] = fetcher.mock.calls[0];
+  expect(path).toBe('/v1/account/preferences');
+  expect(JSON.parse(init.body)).toEqual({ protocol: 1, workflow: {
+    command: 'home.layout.set', version: '1', mode: 'execute', arguments: request.arguments, football: '',
+  } });
+});
+
 it('does not open the desktop bearer-only invalidation stream for browser sessions', () => {
   const eventSource = vi.fn();
   vi.stubGlobal('EventSource', eventSource);
@@ -130,6 +144,7 @@ it('service worker handles only the precached shell and leaves JSON API routes o
   expect(fetchHandler).toBeDefined();
   for (const request of [
     { url: 'https://league.example/v1/native/workflow', method: 'POST', mode: 'cors' },
+    { url: 'https://league.example/v1/account/preferences', method: 'POST', mode: 'cors' },
     { url: 'https://league.example/api/league.json', method: 'GET', mode: 'cors' },
   ]) {
     const respondWith = vi.fn();

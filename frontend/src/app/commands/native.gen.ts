@@ -4852,6 +4852,29 @@ const schema344 = {
   Type:"object",
   Enum:null,
   Format:"",
+  Validator:"RawHomeLayoutRead.Validate",
+  Nullable:false,
+  Fields:[
+
+  ],
+  Items:null,
+} as const;
+const schema345 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawHomeLayoutSet.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"layout",Optional:false,Schema:schema59},
+    {Name:"expectedRevision",Optional:false,Schema:schema7}
+  ],
+  Items:null,
+} as const;
+const schema346 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
   Validator:"RawBackupNow.Validate",
   Nullable:false,
   Fields:[
@@ -8120,6 +8143,44 @@ export const serverCommands = {
   },
   phrase: "delete trade draft",
 },
+"home.layout.read": {
+  definition: {
+    "ID": "home.layout.read",
+    "Method": "ReadHomeLayout",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "account-owner",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "private-account-data",
+    "Safeguards": "session account scope; no request account ID; agents denied; uncached",
+    "Arguments": schema344
+  },
+  phrase: "read home layout",
+},
+"home.layout.set": {
+  definition: {
+    "ID": "home.layout.set",
+    "Method": "SetHomeLayout",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "account-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "replace-own-account-preference",
+    "Facts": "private-account-data",
+    "Safeguards": "session account scope; no request account ID; agent denied; revision checked",
+    "Arguments": schema345
+  },
+  phrase: "set home layout",
+},
 "backup.now": {
   definition: {
     "ID": "backup.now",
@@ -8136,7 +8197,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "server-held league database and R2 settings",
     "Safeguards": "current commissioner seat; per-league backup manager; refuse concurrent backup",
-    "Arguments": schema344
+    "Arguments": schema346
   },
   phrase: "now backup",
 },

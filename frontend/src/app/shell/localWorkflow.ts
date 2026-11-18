@@ -47,8 +47,10 @@ const runLocalWorkflow: HostedPort = async (request: NativeRequest, football = '
   else if (request.command === 'projections.read')
     direct = () => api.TargetNativeProjections(request.arguments.league, request.arguments.players,
       request.arguments.season, request.arguments.week);
+  const league = 'league' in request.arguments && typeof request.arguments.league === 'string'
+    ? request.arguments.league : '';
   const authority = direct ? { command: 'native.assets.read', version: '1', mode: 'read',
-    arguments: { league: request.arguments.league } } : envelope;
+    arguments: { league } } : envelope;
   const raw = await api.TargetWorkflow(JSON.stringify({ ...authority, football }));
   const r = object(raw, 'Local league', ['label', 'writable', 'football', 'data']);
   if (typeof r.writable !== 'boolean') throw new Error('Unreadable league authority. Refresh to try again.');
