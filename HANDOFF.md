@@ -1,10 +1,9 @@
 # Handoff
 
-- Baton: ClaudeBox, 2026-11-18 (PR #350 open against `bundle/b5`; latest CI pending).
-- State: Hosted Rules board is server-backed; rule rows route by explicit section-label table, unknown sections go to Other. Owners see the commissioner ruling guidance. Preset comparison, house rules and written requests remain unavailable without hosted reads.
-- Verified: full frontend suite (921/921), frontend typecheck, targeted Rules/Control Room tests (21), `make lint`, `make bloat`, tidy-check; changed-package pre-push checks passed.
-- Slop fixed: removed name-substring rule-board classification, which could duplicate/misclassify rows; added explicit fallback and test. Restored required owner guidance. PR body lists both fixes.
-- Next: ClaudeBox reviews PR #350 and checks CI.
-- Blocked: preset comparison read is available in desktop bindings but not hosted room reads; no side-door read added. House rules/written requests have no hosted reads.
+- Baton: Bee, 2026-11-17 (Picks lane; based on latest `bundle/b5`).
+- State: Hosted Picks tab reads all `native.assets.read` picks, filters year/round/traded/team, and states condition/action gaps honestly. Owner corrections use existing `correct.pick`; hosted pick choices include slot for exact addressing. No rookie-draft command is repurposed for future ownership.
+- Verified: `pnpm test` 921/921; `pnpm exec tsc --noEmit`; `make lint` (0 golangci issues); `make bloat`; targeted preview/review/execute test.
+- Next: push and open PR against `bundle/b5`; ClaudeBox reviews after CI is green.
+- Blocked: `tidy-check` reports unrelated active lanes `b5server` (PID 3560779) and `b2docket` (PID 3627613); left untouched.
+- Slop fixed: hosted pick parsing preserves slot/status metadata; hosted correction choices carry slot so `correct.pick` can identify the exact pick.
 - Open decisions deliberately untouched: snooze per person/league; deputy job visibility; written-request visibility; division naming.
-- Tried/rejected: none.
