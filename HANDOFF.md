@@ -1,5 +1,12 @@
 # Handoff
 
+- Baton: Bee, 2026-11-18; lane `pulse-fixrace`, branch `session/pulse-fixrace`.
+- State: stabilized `TestUnavailableKeychainLoginIsMemoryOnly`: the test server keeps the invalidation stream open instead of racing the test's credential assertions against the watcher's asynchronous 401 sign-out; test snapshots are taken under `Desktop.mu`. Production state transitions are serialized there.
+- Evidence: historical failed-shard trace for PR #376 is unavailable; the branch's current CI shards are green. `go test -race -count=200 -run TestUnavailableKeychainLoginIsMemoryOnly ./internal/serverclient/`, package race tests, and `make verify` pass.
+- Next: commit/push and open PR into `main`; be explicit that the failed trace could not be retrieved and describe the source-traced competing accesses without claiming captured stack lines. Leave PR for review; do not merge.
+- Tidy-check reports unrelated active lane launcher PID 1361666; left it untouched.
+- Blocked on: historical CI trace unavailable.
+
 - Baton: Bee, 2026-11-18; lane `pulse-fixcr`, branch `session/pulse-fixcr`, based on `origin/main` at `0c185549e` (#374).
 - State: added hosted workflow routes for Jobs, People, managed Schedule, Ledger/filtered Ledger, Notices and Calendar, reusing existing service authorization and Raw validators. Season now supplies a server-held franchise to Calendar.
 - Root cause: the commands were absent from `commandcatalog.WorkflowCommands`; `RawWorkflow.Validate` rejected them before auth/admission (HTTP 400), hidden behind the UI's generic failure. Calendar also received an empty franchise. No permissions were weakened.
