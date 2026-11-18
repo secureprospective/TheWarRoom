@@ -93,6 +93,7 @@ func generatedVerbs() []commandVerb {
 		{ID: "commish.role.grant", Label: "grant league role", Modes: []string{"preview", "execute"}},
 		{ID: "commish.role.revoke", Label: "revoke league role", Modes: []string{"preview", "execute"}},
 		{ID: "commish.deputy.order", Label: "order league deputy", Modes: []string{"preview", "execute"}},
+		{ID: "commish.deputy.permissions.set", Label: "set league deputy permissions", Modes: []string{"preview", "execute"}},
 		{ID: "commish.succession.stepdown", Label: "stepdown league succession", Modes: []string{"preview", "execute"}},
 		{ID: "commish.succession.accept", Label: "accept league succession", Modes: []string{"preview", "execute"}},
 		{ID: "commish.succession.decline", Label: "decline league succession", Modes: []string{"preview", "execute"}},

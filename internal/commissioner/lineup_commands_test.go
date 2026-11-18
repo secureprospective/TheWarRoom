@@ -96,7 +96,7 @@ func lineupGovernance() []Record {
 	return []Record{create, seat("seat1", "franchise.01", "owner-1"), seat("seat2", "franchise.02", "owner-2"), grant}
 }
 
-func TestOnlyTheSeatedOwnerSetsALineupAndOnlyACommissionerCorrectsOne(t *testing.T) {
+func TestLineupSetRemainsSeatBoundAndCommissionersCanCorrect(t *testing.T) {
 	records := lineupGovernance()
 	set := lineupRecord("x", LineupSet, 1, "1001").Command
 	set.League = "native.test"

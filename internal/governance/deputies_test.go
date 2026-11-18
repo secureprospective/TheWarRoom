@@ -15,6 +15,37 @@ func deputyEvents() []Event {
 	}
 }
 
+func TestDeputyPermissionEventReplaysAndCheckpointsPrivately(t *testing.T) {
+	events := []Event{
+		LeagueCreated{Creator: "commissioner", Franchises: []FranchiseID{"one"}},
+		RoleGranted{Principal: "deputy", Role: Deputy},
+		DeputyPermissionsSet{Principal: "deputy", Permissions: []DeputyPermission{ApproveStatFixes, ChangeRules}},
+	}
+	state, err := Replay(events)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !state.HasDeputyPermission("deputy", ApproveStatFixes) || !state.HasDeputyPermission("deputy", ChangeRules) ||
+		state.HasDeputyPermission("deputy", RunRollover) {
+		t.Fatal("permission ticks did not replay from their event")
+	}
+	resumed, err := Resume(state.Checkpoint(), nil, len(events))
+	if err != nil || !resumed.HasDeputyPermission("deputy", ChangeRules) {
+		t.Fatalf("checkpoint lost deputy permissions: %v", err)
+	}
+	if !(DeputyPermissionsSet{Principal: "deputy", Permissions: []DeputyPermission{}}).Private() {
+		t.Fatal("deputy permission grants must remain private")
+	}
+	withoutTicks, err := Apply(state, DeputyPermissionsSet{Principal: "deputy", Permissions: []DeputyPermission{}})
+	if err != nil || len(withoutTicks.DeputyPermissions("deputy")) != 0 {
+		t.Fatalf("replaced permission ticks remained active: %v", err)
+	}
+	withoutRole, err := Apply(state, RoleRevoked{Principal: "deputy", Role: Deputy})
+	if err != nil || len(withoutRole.DeputyPermissions("deputy")) != 0 {
+		t.Fatalf("revoked deputy retained permissions: %v", err)
+	}
+}
+
 func TestOrderedDeputiesReplayAndRemoval(t *testing.T) {
 	events := deputyEvents()
 	s, err := Replay(events)

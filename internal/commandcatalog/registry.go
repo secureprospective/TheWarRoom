@@ -65,21 +65,12 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 	r := &Registry{entries: operatorEntries(), service: in.Service}
 	native := NativeCommands(in.Seed)
 	mfl := append(MFLCommands(in.MFL), MFLPlanCommands()...)
-	for _, c := range native {
-		handlers, err := nativeHandlers(c, in)
-		if err != nil {
-			return nil, err
-		}
-		r.entries = append(r.entries, Entry{ID: c.ID, Label: commandLabel(c.ID), Definition: c, CLI: strings.HasPrefix(c.Arguments.Validator, "RawCommand.Validate/ValidatePreview:"), Native: handlers})
+	if err := r.addNativeCommands(in, native); err != nil {
+		return nil, err
 	}
 	r.entries = append(r.entries, serverWorkflowEntries()...)
-	for _, c := range mfl {
-		feature := mflFeature(c)
-		b, ok := in.Desktop[feature][c.Method]
-		if !ok || b.Handler == nil {
-			return nil, fmt.Errorf("MFL command %s has no handler", c.ID)
-		}
-		r.entries = append(r.entries, Entry{ID: c.ID, Label: commandLabel(c.ID), Definition: c, MFL: map[Mode]Handler{c.Modes[0]: mflHandler(c, b)}})
+	if err := r.addMFLCommands(in, mfl); err != nil {
+		return nil, err
 	}
 	if err := r.addDesktop(in.Desktop, native, mfl); err != nil {
 		return nil, err
@@ -95,7 +86,9 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 		r.entries = append(r.entries, MigrationEntries(*in.Migration)...)
 	}
 	for _, c := range BrowserCommands() {
-		r.entries = append(r.entries, Entry{ID: c.ID, Label: c.Label, Browser: &c})
+		if err := r.addBrowser(c); err != nil {
+			return nil, err
+		}
 	}
 	if err := r.Validate(); err != nil {
 		return nil, err
@@ -103,8 +96,48 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 	return r, nil
 }
 
+func (r *Registry) addNativeCommands(in RegistryInputs, commands []Command) error {
+	for _, command := range commands {
+		handlers, err := nativeHandlers(command, in)
+		if err != nil {
+			return err
+		}
+		r.entries = append(r.entries, Entry{ID: command.ID, Label: commandLabel(command.ID), Definition: command,
+			CLI: strings.HasPrefix(command.Arguments.Validator, "RawCommand.Validate/ValidatePreview:"), Native: handlers})
+	}
+	return nil
+}
+
+func (r *Registry) addMFLCommands(in RegistryInputs, commands []Command) error {
+	for _, command := range commands {
+		feature := mflFeature(command)
+		binding, ok := in.Desktop[feature][command.Method]
+		if !ok || binding.Handler == nil {
+			return fmt.Errorf("MFL command %s has no handler", command.ID)
+		}
+		r.entries = append(r.entries, Entry{ID: command.ID, Label: commandLabel(command.ID), Definition: command,
+			MFL: map[Mode]Handler{command.Modes[0]: mflHandler(command, binding)}})
+	}
+	return nil
+}
+
+func (r *Registry) addBrowser(command BrowserCommand) error {
+	entry := r.find(command.ID)
+	if entry == nil {
+		r.entries = append(r.entries, Entry{ID: command.ID, Label: command.Label, Browser: &command})
+		return nil
+	}
+	// backup.now shares its identity across the local browser action and hosted workflow transport.
+	if command.ID != leagueservice.BackupNowCommand || entry.Workflow == nil {
+		return fmt.Errorf("browser command %s duplicates a registered operation", command.ID)
+	}
+	entry.Browser = &command
+	return nil
+}
+
 func serverWorkflowEntries() []Entry {
 	commands := append(nativeDraftQueueCommands(), tradeDraftCommands()...)
+	commands = append(commands, serverBackupCommands()...)
 	entries := make([]Entry, 0, len(commands))
 	for _, command := range commands {
 		entries = append(entries, Entry{ID: command.ID, Label: commandLabel(command.ID), Definition: command})

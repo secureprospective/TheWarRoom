@@ -129,11 +129,44 @@ func (a *Service) TargetCommissionerJobs(league string) (commissioner.Jobs, erro
 	}
 	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
-	reading, err := a.host.CommissionerJobs(ctx, league)
+	principal, err := a.host.CommissionerPrincipal()
+	if err != nil {
+		//nolint:wrapcheck // Preserve the host's existing refusal text.
+		return commissioner.Jobs{}, err
+	}
+	now := a.host.CommissionerNow()
+	records, err := a.host.CommissionerRecords(ctx, league)
+	if err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("league job records: %w", err)
+	}
+	if err := commissionerJobsReader(records, principal); err != nil {
+		return commissioner.Jobs{}, err
+	}
+	season, err := commissioner.SeasonAt(records, now)
+	if err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("league job season: %w", err)
+	}
+	facts := a.host.NativeFacts()
+	inputs := commissioner.JobInputs{Facts: facts}
+	weeks, err := a.host.NativeScheduleDates(ctx, season, now)
+	if err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("league job schedule: %w", err)
+	} // Without held schedule evidence, omit week-locked jobs rather than invent a due time.
+	inputs.Weeks = weeks
+	reading, err := commissioner.JobsReadingWithInputs(league, records, now, inputs)
 	if err != nil {
 		return commissioner.Jobs{}, fmt.Errorf("league jobs: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
+}
+
+// Deputies stay out until their job-visibility scope is defined.
+func commissionerJobsReader(records []commissioner.Record, principal string) error {
+	if err := commissioner.RequireCommissionerOrCo(records, principal); err != nil {
+		return fmt.Errorf("league job permissions: %w", err)
+	}
+	return nil
 }
 
 func (a *Service) TargetCommissionerControls() (commissioner.Controls, error) {

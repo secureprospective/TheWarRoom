@@ -95,7 +95,8 @@ async function input(selector: string, value: string) {
 async function openRules(port: HostedPort, role = 'Commissioner') {
   await act(async () => root.render(<HostedLeague league={league} franchise="" name=""
     role={role} port={port} />));
-  await settle(); await clickNode('Control Room'); await click('Change Lineup lock');
+  await settle(); await clickNode('Control Room'); await click('Rules');
+  await click('Change Lineup lock');
 }
 async function preview() {
   await input('select[aria-label="New value for Lineup lock"]', 'first_kickoff');
@@ -224,10 +225,29 @@ it('a blocked preview shows the blocker and offers no confirmation or execute', 
   await click('Cancel change');
   expect(host.querySelector('[aria-label="Confirm league change"]')).toBeNull();
 });
-it('owners see rule values but no Change controls', async () => {
+it('assigns each row once by its exact section and puts unknown sections in Other', async () => {
+  const wire = rules();
+  const source = wire.sections[0]!.rows[0]!;
+  wire.sections = [
+    { label: 'League shape', rows: [{ ...source, field: 'roster.draft.first.third',
+      label: 'Cross-match row' }] },
+    { label: 'Unlisted section', rows: [{ ...source, field: 'draft.first.third',
+      label: 'Unknown-section row' }] },
+  ];
+  const room = createHostedLeagueRoom(league, service());
+  await act(async () => root.render(
+    <HostedRules rules={parseRules(wire)} commissioner={false} room={room} />));
+  expect(host.querySelectorAll('[aria-label="Structure rules"] dt')).toHaveLength(1);
+  expect(host.querySelectorAll('[aria-label="Other rules"] dt')).toHaveLength(1);
+  expect(host.querySelectorAll('dt')).toHaveLength(2);
+  expect(host.querySelector('[aria-label="Draft rules"]')).toBeNull();
+});
+it('owners see the ruling guidance, rule values, but no Change controls', async () => {
   const room = createHostedLeagueRoom(league, service());
   await act(async () => root.render(
     <HostedRules rules={parseRules(rules())} commissioner={false} room={room} />));
+  expect(host.textContent).toContain(
+    'Your commissioner controls these rules. Ask them for a ruling if a value is missing.');
   expect(host.textContent).toContain('individual');
   expect(buttons('Change Lineup lock')).toHaveLength(0);
   expect(host.querySelector('textarea')).toBeNull();
@@ -273,7 +293,7 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(host.querySelector('.mybox')).toBeNull();
     expect(port.mock.calls.some(([r]) => r.command === 'native.directory.read')).toBe(true);
     expect(port.mock.calls.some(([r]) => r.command === 'standings.read')).toBe(true);
-    await clickNode('Control Room');
+    await clickNode('Control Room'); await click('Rules');
     expect(buttons('Change Lineup lock')).toHaveLength(1);
     await click('Change Lineup lock'); await preview();
     const dialog = host.querySelector('[role=dialog]')!;
@@ -295,7 +315,7 @@ it.each(['Commissioner', 'Co-commissioner'])(
     await click('← Home');
     await vi.waitFor(() => expect(buttons('Open Control Room for Test League')).toHaveLength(1),
       { timeout: 10_000 });
-    await click('Open Control Room for Test League');
+    await click('Open Control Room for Test League'); await click('Rules');
     expect(buttons('Change Lineup lock')).toHaveLength(1);
   }, 15_000);
 it('a refused rules read leaves league-wide Pulse available', async () => {

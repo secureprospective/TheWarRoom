@@ -13,6 +13,7 @@ type RawCheckpoint struct {
 	Invites             map[string]Invite
 	Visibility          map[string]string
 	Activity            map[Principal]time.Time
+	DeputyPermissions   map[Principal][]DeputyPermission
 	InSeason, Offseason time.Duration
 	Votes               map[string]Vote
 	Pending, Outgoing   Principal
@@ -71,13 +72,34 @@ func (r RawCheckpoint) validateEvidence() error {
 			return fmt.Errorf("invalid checkpoint activity")
 		}
 	}
+	return r.validateDeputyPermissionEvidence()
+}
+
+func (r RawCheckpoint) validateDeputyPermissionEvidence() error {
+	for principal, permissions := range r.DeputyPermissions {
+		if principal == "" || !r.Roles[principal][Deputy] {
+			return fmt.Errorf("invalid checkpoint deputy permissions")
+		}
+		seen := make(map[DeputyPermission]bool, len(permissions))
+		for _, permission := range permissions {
+			if !ValidDeputyPermission(permission) || seen[permission] {
+				return fmt.Errorf("invalid checkpoint deputy permission")
+			}
+			seen[permission] = true
+		}
+	}
 	return nil
 }
 
 func (s State) Checkpoint() RawCheckpoint {
 	n := s.clone()
+	permissions := make(map[Principal][]DeputyPermission, len(n.deputyPermissions))
+	for principal := range n.deputyPermissions {
+		permissions[principal] = n.DeputyPermissions(principal)
+	}
 	return RawCheckpoint{Created: n.created, Franchises: n.franchises, Roles: n.roles, Invites: n.invites,
-		Visibility: n.visibility, Activity: n.activity, InSeason: n.inSeason, Offseason: n.offseason, Votes: n.votes,
+		Visibility: n.visibility, Activity: n.activity, DeputyPermissions: permissions,
+		InSeason: n.inSeason, Offseason: n.offseason, Votes: n.votes,
 		Pending: n.pending, Outgoing: n.outgoing, CoCommissioners: n.coCommissioners, ElectionPeriod: n.electionPeriod, RunoffPeriod: n.runoffPeriod}
 }
 
@@ -87,8 +109,16 @@ func Resume(raw RawCheckpoint, events []Event, offset int) (State, error) {
 		return State{}, err
 	}
 	s := State{created: raw.Created, franchises: raw.Franchises, roles: raw.Roles, invites: raw.Invites,
-		visibility: raw.Visibility, activity: raw.Activity, inSeason: raw.InSeason, offseason: raw.Offseason, votes: raw.Votes,
+		visibility: raw.Visibility, activity: raw.Activity, deputyPermissions: make(map[Principal]map[DeputyPermission]bool),
+		inSeason: raw.InSeason, offseason: raw.Offseason, votes: raw.Votes,
 		pending: raw.Pending, outgoing: raw.Outgoing, coCommissioners: raw.deputyOrder(), electionPeriod: raw.ElectionPeriod, runoffPeriod: raw.RunoffPeriod}
+	for principal, permissions := range raw.DeputyPermissions {
+		set := make(map[DeputyPermission]bool, len(permissions))
+		for _, permission := range permissions {
+			set[permission] = true
+		}
+		s.deputyPermissions[principal] = set
+	}
 	s = s.clone()
 	for i, e := range events {
 		n, err := Apply(s, e)

@@ -1727,11 +1727,7 @@
     },
     "visibility": "league",
     "effective": "now",
-    "admittedRoles": [
-      "deputy",
-      "second-deputy",
-      "DOT"
-    ]
+    "admittedRoles": ["commissioner"]
   },
   "commish.vote.tiebreak": {
     "args": {
@@ -1743,13 +1739,17 @@
     },
     "visibility": "league",
     "effective": "now",
-    "admittedRoles": [
-      "commissioner",
-      "deputy",
-      "second-deputy",
-      "DOT",
-      "owner",
-      "outsider"
-    ]
+    "admittedRoles": ["commissioner"]
+  },
+  "commish.deputy.permissions.set": {
+    "args": {
+      "people": {
+        "principal": "$actor",
+        "permissions": ["rule-on-trades"]
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": ["commissioner"]
   }
 }

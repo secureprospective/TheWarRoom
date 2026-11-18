@@ -13,30 +13,33 @@ const CaretakerSeat = "commish.seat.caretaker"
 
 const DeputyOrder = "commish.deputy.order"
 
+const DeputyPermissionsSet = "commish.deputy.permissions.set"
+
 // FranchiseDirection is an owner saying where the franchise is headed: contend, retool or rebuild.
 const FranchiseDirection = "commish.franchise.direction.set"
 
 type RawPeople struct {
-	Order         []governance.Principal `json:"order,omitempty"`
-	Franchise     string                 `json:"franchise,omitempty"`
-	Principal     string                 `json:"principal,omitempty"`
-	Name          string                 `json:"name,omitempty"`
-	Abbreviation  string                 `json:"abbreviation,omitempty"`
-	ID            string                 `json:"id,omitempty"`
-	Role          governance.Role        `json:"role,omitempty"`
-	Ability       string                 `json:"ability,omitempty"`
-	On            bool                   `json:"on,omitempty"`
-	All           bool                   `json:"all,omitempty"`
-	Report        string                 `json:"report,omitempty"`
-	Audience      string                 `json:"audience,omitempty"`
-	Successor     string                 `json:"successor,omitempty"`
-	Commissioner  string                 `json:"commissioner,omitempty"`
-	Choice        string                 `json:"choice,omitempty"`
-	Direction     string                 `json:"direction,omitempty"`
-	InSeasonDays  int64                  `json:"inSeasonDays,omitempty"`
-	OffseasonDays int64                  `json:"offseasonDays,omitempty"`
-	ElectionDays  int64                  `json:"electionDays,omitempty"`
-	RunoffDays    int64                  `json:"runoffDays,omitempty"`
+	Order         []governance.Principal        `json:"order,omitempty"`
+	Permissions   []governance.DeputyPermission `json:"permissions,omitempty"`
+	Franchise     string                        `json:"franchise,omitempty"`
+	Principal     string                        `json:"principal,omitempty"`
+	Name          string                        `json:"name,omitempty"`
+	Abbreviation  string                        `json:"abbreviation,omitempty"`
+	ID            string                        `json:"id,omitempty"`
+	Role          governance.Role               `json:"role,omitempty"`
+	Ability       string                        `json:"ability,omitempty"`
+	On            bool                          `json:"on,omitempty"`
+	All           bool                          `json:"all,omitempty"`
+	Report        string                        `json:"report,omitempty"`
+	Audience      string                        `json:"audience,omitempty"`
+	Successor     string                        `json:"successor,omitempty"`
+	Commissioner  string                        `json:"commissioner,omitempty"`
+	Choice        string                        `json:"choice,omitempty"`
+	Direction     string                        `json:"direction,omitempty"`
+	InSeasonDays  int64                         `json:"inSeasonDays,omitempty"`
+	OffseasonDays int64                         `json:"offseasonDays,omitempty"`
+	ElectionDays  int64                         `json:"electionDays,omitempty"`
+	RunoffDays    int64                         `json:"runoffDays,omitempty"`
 }
 
 type peopleDefinition struct {
@@ -58,6 +61,7 @@ func peopleDefinitions() []peopleDefinition {
 		{"commish.role.grant", "CM-021", "G3", "Granted a league role"},
 		{"commish.role.revoke", "CM-021", "G3", "Revoked a league role"},
 		{DeputyOrder, "CM-021", "G3", "Changed the co-commissioner order"},
+		{DeputyPermissionsSet, "CM-021", "G3", "Changed a deputy's permissions"},
 	}
 }
 
@@ -95,7 +99,24 @@ func (r RawPeople) Validate(command string) error {
 	if command == "commish.abilities.set" {
 		return r.validateAbility()
 	}
+	if command == DeputyPermissionsSet {
+		return r.validateDeputyPermissions()
+	}
 	return r.validateSuccession(command)
+}
+
+func (r RawPeople) validateDeputyPermissions() error {
+	if r.Principal == "" {
+		return fmt.Errorf("choose a deputy")
+	}
+	seen := make(map[governance.DeputyPermission]bool, len(r.Permissions))
+	for _, permission := range r.Permissions {
+		if !governance.ValidDeputyPermission(permission) || seen[permission] {
+			return fmt.Errorf("choose each supported deputy permission once")
+		}
+		seen[permission] = true
+	}
+	return nil
 }
 
 func (r RawPeople) validateAbility() error {
@@ -135,6 +156,8 @@ func (r RawPeople) selected(command string) (RawPeople, error) {
 		return RawPeople{Order: r.Order}, nil
 	case "commish.role.grant", "commish.role.revoke":
 		return RawPeople{Principal: r.Principal, Role: r.Role}, nil
+	case DeputyPermissionsSet:
+		return RawPeople{Principal: r.Principal, Permissions: r.Permissions}, nil
 	default:
 		return r.selectedSuccession(command)
 	}
@@ -152,6 +175,8 @@ func (r RawPeople) label(command string) string {
 		return fmt.Sprintf("Granted %s to %s", roleLabel(r.Role), r.Principal)
 	case "commish.role.revoke":
 		return fmt.Sprintf("Revoked %s from %s", roleLabel(r.Role), r.Principal)
+	case DeputyPermissionsSet:
+		return fmt.Sprintf("Set deputy permissions for %s: %v", r.Principal, r.Permissions)
 	case CaretakerSeat:
 		return fmt.Sprintf("Seated %s as caretaker for vacant franchise %s", r.Principal, r.Franchise)
 	case "commish.seat.replace":
@@ -183,6 +208,14 @@ func (r RawPeople) event(command string) (governance.Event, error) {
 	if err := r.Validate(command); err != nil {
 		return nil, err
 	}
+	if command == DeputyPermissionsSet {
+		return governance.DeputyPermissionsSet{Principal: governance.Principal(r.Principal),
+			Permissions: append([]governance.DeputyPermission(nil), r.Permissions...)}, nil
+	}
+	return r.eventForPeopleCommand(command)
+}
+
+func (r RawPeople) eventForPeopleCommand(command string) (governance.Event, error) {
 	f, p := governance.FranchiseID(r.Franchise), governance.Principal(r.Principal)
 	switch command {
 	case "commish.franchise.edit":

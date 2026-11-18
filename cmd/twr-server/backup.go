@@ -8,6 +8,7 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/offsite"
 )
 
@@ -16,8 +17,11 @@ type backupStatus = func() (offsite.Status, bool)
 
 func noBackups() (offsite.Status, bool) { return offsite.Status{}, false }
 
-// hostedBackups reports each file's off-site coverage separately: the league, reference and sign-in sets.
-type hostedBackups struct{ league, reference, signIns backupStatus }
+// hostedBackups reports each file's off-site coverage separately and runs the manual league backup.
+type hostedBackups struct {
+	league, reference, signIns backupStatus
+	backupLeague               leagueservice.BackupRunner
+}
 
 func runBackupCheck(args []string, output io.Writer) error {
 	flags := flag.NewFlagSet("backup-check", flag.ContinueOnError)

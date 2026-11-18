@@ -1456,6 +1456,24 @@ export namespace commissioner {
 	        this.text = source["text"];
 	    }
 	}
+	export class JobIdentity {
+	    league: string;
+	    season: number;
+	    week: number;
+	    matter: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new JobIdentity(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.week = source["week"];
+	        this.matter = source["matter"];
+	    }
+	}
 	export class Job {
 	    id: string;
 	    name: string;
@@ -1464,6 +1482,8 @@ export namespace commissioner {
 	    opens: string;
 	    closes: string;
 	    controls: string[];
+	    identity: JobIdentity;
+	    settles: string[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Job(source);
@@ -1478,8 +1498,29 @@ export namespace commissioner {
 	        this.opens = source["opens"];
 	        this.closes = source["closes"];
 	        this.controls = source["controls"];
+	        this.identity = this.convertValues(source["identity"], JobIdentity);
+	        this.settles = source["settles"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
+	
 	export class Jobs {
 	    league: string;
 	    name: string;
@@ -3372,6 +3413,20 @@ export namespace commissioner {
 	        this.route = source["route"];
 	    }
 	}
+	export class PeopleActorPermissions {
+	    person: string;
+	    effectivePermissions: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PeopleActorPermissions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.person = source["person"];
+	        this.effectivePermissions = source["effectivePermissions"];
+	    }
+	}
 	export class PeopleVoteCount {
 	    choice: string;
 	    ballots: number;
@@ -3497,6 +3552,8 @@ export namespace commissioner {
 	    dotStatus: string;
 	    votes: PeopleVote[];
 	    succession: string;
+	    actors: PeopleActorPermissions[];
+	    yourPermissions: string[];
 	    yourRole: string;
 	    yourFranchise: string;
 	    mayChangeRules: boolean;
@@ -3519,6 +3576,8 @@ export namespace commissioner {
 	        this.dotStatus = source["dotStatus"];
 	        this.votes = this.convertValues(source["votes"], PeopleVote);
 	        this.succession = source["succession"];
+	        this.actors = this.convertValues(source["actors"], PeopleActorPermissions);
+	        this.yourPermissions = source["yourPermissions"];
 	        this.yourRole = source["yourRole"];
 	        this.yourFranchise = source["yourFranchise"];
 	        this.mayChangeRules = source["mayChangeRules"];
@@ -3544,6 +3603,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	
@@ -4090,6 +4150,7 @@ export namespace commissioner {
 	}
 	export class RawPeople {
 	    order?: string[];
+	    permissions?: string[];
 	    franchise?: string;
 	    principal?: string;
 	    name?: string;
@@ -4117,6 +4178,7 @@ export namespace commissioner {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.order = source["order"];
+	        this.permissions = source["permissions"];
 	        this.franchise = source["franchise"];
 	        this.principal = source["principal"];
 	        this.name = source["name"];

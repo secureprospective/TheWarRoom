@@ -19,9 +19,34 @@ type Role string
 const (
 	Commissioner   Role = "commissioner"
 	CoCommissioner Role = "co-commissioner"
+	Deputy         Role = "deputy"
 	DOT            Role = "DOT"
 	Owner          Role = "owner"
 )
+
+type DeputyPermission string
+
+const (
+	ApproveStatFixes DeputyPermission = "approve-stat-fixes"
+	RuleOnTrades     DeputyPermission = "rule-on-trades"
+	EditLineups      DeputyPermission = "edit-lineups"
+	MovePicks        DeputyPermission = "move-picks"
+	ChangeRules      DeputyPermission = "change-rules"
+	RunRollover      DeputyPermission = "run-rollover"
+)
+
+func AllDeputyPermissions() []DeputyPermission {
+	return []DeputyPermission{ApproveStatFixes, RuleOnTrades, EditLineups, MovePicks, ChangeRules, RunRollover}
+}
+
+func ValidDeputyPermission(permission DeputyPermission) bool {
+	for _, allowed := range AllDeputyPermissions() {
+		if permission == allowed {
+			return true
+		}
+	}
+	return false
+}
 
 type Franchise struct {
 	ID                 FranchiseID
@@ -50,6 +75,7 @@ type State struct {
 	pending                      Principal
 	outgoing                     Principal
 	coCommissioners              []Principal
+	deputyPermissions            map[Principal]map[DeputyPermission]bool
 	electionPeriod, runoffPeriod time.Duration
 }
 type Event interface {
@@ -60,7 +86,8 @@ type Event interface {
 func emptyState() State {
 	return State{franchises: make(map[FranchiseID]Franchise), roles: make(map[Principal]map[Role]bool),
 		invites: make(map[string]Invite), visibility: make(map[string]string), activity: make(map[Principal]time.Time),
-		inSeason: 14 * 24 * time.Hour, offseason: 30 * 24 * time.Hour, electionPeriod: 7 * 24 * time.Hour,
+		deputyPermissions: make(map[Principal]map[DeputyPermission]bool),
+		inSeason:          14 * 24 * time.Hour, offseason: 30 * 24 * time.Hour, electionPeriod: 7 * 24 * time.Hour,
 		runoffPeriod: 7 * 24 * time.Hour, votes: make(map[string]Vote)}
 }
 func (s State) clone() State {
@@ -78,6 +105,10 @@ func (s State) clone() State {
 	n.invites = maps.Clone(s.invites)
 	n.visibility = maps.Clone(s.visibility)
 	n.activity = maps.Clone(s.activity)
+	n.deputyPermissions = maps.Clone(s.deputyPermissions)
+	for p, permissions := range n.deputyPermissions {
+		n.deputyPermissions[p] = maps.Clone(permissions)
+	}
 	n.votes = maps.Clone(s.votes)
 	for id, v := range n.votes {
 		v = v.clone()
@@ -115,6 +146,20 @@ func Replay(events []Event) (State, error) {
 	return s, nil
 }
 func (s State) HasRole(p Principal, r Role) bool { return s.roles[p][r] }
+
+func (s State) HasDeputyPermission(p Principal, permission DeputyPermission) bool {
+	return s.HasRole(p, Deputy) && s.deputyPermissions[p][permission]
+}
+
+func (s State) DeputyPermissions(p Principal) []DeputyPermission {
+	permissions := []DeputyPermission{}
+	for _, permission := range AllDeputyPermissions() {
+		if s.HasDeputyPermission(p, permission) {
+			permissions = append(permissions, permission)
+		}
+	}
+	return permissions
+}
 func (s State) Franchise(id FranchiseID) (Franchise, bool) {
 	f, ok := s.franchises[id]
 	f.Abilities = maps.Clone(f.Abilities)
@@ -157,7 +202,9 @@ func (s *State) grant(p Principal, r Role) {
 	}
 	s.roles[p][r] = true
 }
-func validRole(r Role) bool { return r == Commissioner || r == CoCommissioner || r == DOT }
+func validRole(r Role) bool {
+	return r == Commissioner || r == CoCommissioner || r == Deputy || r == DOT
+}
 func (s State) requireCreated() error {
 	if !s.created {
 		return fmt.Errorf("create the league first")

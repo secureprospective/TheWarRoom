@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // The four states a job can be in, in the order the landing lists them.
@@ -22,15 +24,25 @@ const (
 )
 
 // Job is one thing the commissioner works through. Opens and Closes are RFC 3339 instants, empty when
-// the state has none; Controls are the census rows the job opens.
+// the state has none; Controls are the census rows the job opens. Settles lists the commands that can
+// close the matter; Identity gives it its league, season, week and matter key.
+type JobIdentity struct {
+	League string `json:"league"`
+	Season int    `json:"season"`
+	Week   int    `json:"week"`
+	Matter string `json:"matter"`
+}
+
 type Job struct {
-	ID       string   `json:"id"`
-	Name     string   `json:"name"`
-	State    string   `json:"state"`
-	Words    string   `json:"words"`
-	Opens    string   `json:"opens"`
-	Closes   string   `json:"closes"`
-	Controls []string `json:"controls"`
+	ID       string      `json:"id"`
+	Name     string      `json:"name"`
+	State    string      `json:"state"`
+	Words    string      `json:"words"`
+	Opens    string      `json:"opens"`
+	Closes   string      `json:"closes"`
+	Controls []string    `json:"controls"`
+	Identity JobIdentity `json:"identity"`
+	Settles  []string    `json:"settles"`
 }
 type Jobs struct {
 	League   string `json:"league"`
@@ -51,8 +63,17 @@ func unbuilt(id, name string, controls ...string) Job {
 	return Job{ID: id, Name: name, State: JobUnbuilt, Words: unbuiltWords, Controls: controls}
 }
 
-// JobsReading is public like the rules: every owner may read what the commissioner is working on.
+// JobsReading builds commissioner work items from the ledger and supplied server-held inputs.
+type JobInputs struct {
+	Facts nativecheck.Facts
+	Weeks []leagueweek.Week
+}
+
 func JobsReading(league string, records []Record, at time.Time) (Jobs, error) {
+	return JobsReadingWithInputs(league, records, at, JobInputs{})
+}
+
+func JobsReadingWithInputs(league string, records []Record, at time.Time, inputs JobInputs) (Jobs, error) {
 	if len(records) == 0 {
 		return Jobs{}, fmt.Errorf("this app league has not been created")
 	}
@@ -61,13 +82,38 @@ func JobsReading(league string, records []Record, at time.Time) (Jobs, error) {
 		return Jobs{}, err
 	}
 	jobs := jobsFor(rules, ruleCalendar{rules: rules.Calendar, records: records}, at)
-	recorded, err := ledgerJobs(league, records, rules, at)
+	recorded, err := ledgerJobs(league, records, rules, at, inputs)
 	if err != nil {
 		return Jobs{}, err
 	}
 	jobs = append(jobs, recorded...)
+	season, err := SeasonAt(records, at)
+	if err != nil {
+		return Jobs{}, fmt.Errorf("read job season: %w", err)
+	}
+	identifyJobs(league, season, jobs)
 	sortJobs(jobs)
 	return Jobs{League: league, Name: Replay(records).Name, Revision: int64(len(records)), Jobs: jobs}, nil
+}
+
+func identifyJobs(league string, season int, jobs []Job) {
+	for i := range jobs {
+		job := &jobs[i]
+		matter, identitySeason := job.ID, job.Identity.Season
+		if identitySeason == 0 {
+			identitySeason = season
+		}
+		job.Identity = JobIdentity{League: league, Season: identitySeason, Week: job.Identity.Week, Matter: matter}
+		if len(job.Settles) == 0 {
+			job.Settles = settlingCommands(job.ID)
+		}
+		if job.Controls == nil {
+			job.Controls = []string{}
+		}
+		if job.Settles == nil {
+			job.Settles = []string{}
+		}
+	}
 }
 
 // jobsFor works every job out from the rules and the calendar, then puts them in the order the

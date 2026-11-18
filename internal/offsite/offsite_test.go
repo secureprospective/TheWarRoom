@@ -265,6 +265,31 @@ func TestEncryptUploadVerifyRestoreAfterHostLoss(t *testing.T) {
 	}
 }
 
+func TestManualBackupRefusesWhileTheLeagueBackupIsRunning(t *testing.T) {
+	r2, _ := testR2(t)
+	started, release := make(chan struct{}), make(chan struct{})
+	capture := func(_ context.Context, stage string) (string, time.Time, error) {
+		close(started)
+		<-release
+		path := filepath.Join(stage, "set.age")
+		return path, time.Now().UTC(), os.WriteFile(path, []byte("encrypted fixture"), 0600)
+	}
+	manager := NewManager(r2, t.TempDir(), capture, nil)
+	finished := make(chan error, 1)
+	go func() {
+		_, err := manager.BackupNow(t.Context())
+		finished <- err
+	}()
+	<-started
+	if _, err := manager.BackupNow(t.Context()); !errors.Is(err, ErrBackupInProgress) {
+		t.Fatalf("second backup refusal = %v", err)
+	}
+	close(release)
+	if err := <-finished; err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestMissingTamperedAndFailedUploadNeverRenewCoverage(t *testing.T) {
 	r2, fake := testR2(t)
 	clock := time.Now().UTC()

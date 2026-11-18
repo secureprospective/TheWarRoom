@@ -155,6 +155,27 @@ func (e RoleGranted) apply(s *State) error {
 	return nil
 }
 
+type DeputyPermissionsSet struct {
+	Principal   Principal
+	Permissions []DeputyPermission
+}
+
+func (DeputyPermissionsSet) Private() bool { return true }
+func (e DeputyPermissionsSet) apply(s *State) error {
+	if !s.HasRole(e.Principal, Deputy) {
+		return fmt.Errorf("choose a current deputy")
+	}
+	permissions := make(map[DeputyPermission]bool, len(e.Permissions))
+	for _, permission := range e.Permissions {
+		if !ValidDeputyPermission(permission) || permissions[permission] {
+			return fmt.Errorf("choose each supported deputy permission once")
+		}
+		permissions[permission] = true
+	}
+	s.deputyPermissions[e.Principal] = permissions
+	return nil
+}
+
 type RoleRevoked struct {
 	Principal Principal
 	Role      Role
@@ -169,6 +190,9 @@ func (e RoleRevoked) apply(s *State) error {
 		return fmt.Errorf("the last commissioner cannot be removed; choose a successor first")
 	}
 	delete(s.roles[e.Principal], e.Role)
+	if e.Role == Deputy {
+		delete(s.deputyPermissions, e.Principal)
+	}
 	if e.Role == CoCommissioner {
 		if s.pending == e.Principal {
 			delete(s.roles[e.Principal], Commissioner)

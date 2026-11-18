@@ -152,8 +152,11 @@ describe('War Room hosted market bid workflow', () => {
       const calls: string[] = [];
       const port = vi.fn<HostedPort>(async request => {
         calls.push(`${request.command}:${request.mode}`);
-        if (request.mode === 'preview') return { label: '', writable: true, football: 'pin',
-          data: preview(request.arguments.expected) };
+        if (request.mode === 'preview') {
+          if (!('expected' in request.arguments) || typeof request.arguments.expected !== 'number')
+            throw new Error('Expected a commissioner preview version.');
+          return { label: '', writable: true, football: 'pin', data: preview(request.arguments.expected) };
+        }
         if (request.mode === 'execute') return { label: '', writable: true, football: 'pin', data: receipt };
         if (request.command === 'bids.read') return { label: '', writable: true, football: 'pin',
           data: bidReading(8) };
