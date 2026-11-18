@@ -1,8 +1,8 @@
 # Handoff
 
 - Baton: Bee, 2026-11-18.
-- State: Pulse B1 implementation complete on `session/pulse-b1pulse`, based on `bundle/b1`; not yet committed or pushed.
-- Changes: Pulse Race reads `schedule.franchise.read` for My Road. One tested results-based `recentForm` helper feeds hosted HQ, Home Matchup/form, and Pulse; removed Home's separate research-points form read.
-- Verification: frontend 125 files / 918 tests; `pnpm exec tsc --noEmit`, `make lint`, `make bloat`, `tidy-check.sh` pass. No Go files changed.
-- Next: commit, push, open PR against `bundle/b1`, then wait for CI.
-- Blocked: none identified.
+- State: implementation committed as `6d0ddc29a` and pushed to `session/pulse-b1pulse`, based on `bundle/b1`; PR not opened.
+- Changes: Pulse Race uses `schedule.franchise.read` for My Road. Shared results-derived `recentForm` feeds HQ, Home Matchup/form, and Pulse. Home's per-player research form read was removed.
+- Verification: frontend 125 files / 918 tests; `pnpm exec tsc --noEmit`, `make lint`, `make bloat`, `tidy-check.sh`, and pre-push `make verify` pass. No Go files changed.
+- Blocked: HomeBrief is mounted only by `AppLeagueMount`/local `TargetApp`, while the task asks to change Home and Bundle rules freeze local mode. `readNativeHQ` is also shared by both modes. Need Christopher to confirm whether these requested changes are an exception before opening the PR.
+- Next: resolve the mode-scope conflict; if authorized, open PR against `bundle/b1` and wait for CI.
