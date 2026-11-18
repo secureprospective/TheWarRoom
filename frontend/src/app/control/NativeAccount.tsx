@@ -7,6 +7,7 @@ import { nativeAction, type NativeAction, type NativeView } from './nativeApi';
 import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads';
 import NativeHelpers from './NativeHelpers';
 import { HQAct } from '../shell/HQAct';
+import type { ThinHomeEntry } from '../shell/ThinHome';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import '../look/look.css';
 import './nativeAccount.css';
@@ -42,6 +43,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [signedIn, setSignedIn] = useState(Boolean(initial.message || initial.name));
   const [openAfterSignIn, setOpenAfterSignIn] = useState(Boolean(initial.message || initial.name));
   const [activeLeagueId, setActiveLeagueId] = useState<string>();
+  const [activeEntry, setActiveEntry] = useState<ThinHomeEntry>('hq');
   const automaticEntry = useRef(false);
   const admittedLeagues = useMemo<LeagueChoice[]>(() => admission ? [{
     id: admission.league, name: admission.name, app: true, franchise: admission.franchise,
@@ -139,14 +141,16 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
     {showThinHome && <Suspense fallback={<p role="status">Opening Home…</p>}>
-      <ThinHome leagues={admittedLeagues} onOpen={league => setActiveLeagueId(league.id)} />
+      <ThinHome leagues={admittedLeagues} onOpen={(league, entry) => {
+        setActiveEntry(entry); setActiveLeagueId(league.id);
+      }} />
     </Suspense>}
     {homeReady && activeLeague && <section className="native-hosted-league" aria-label="League view">
       <HQAct className="native-home-return" onAction={() => setActiveLeagueId(undefined)}>← Home</HQAct>
       <Suspense fallback={<p>Opening your league…</p>}>
         <HostedLeague key={`${fence.key}:${activeLeague.id}`} league={activeLeague.id}
           franchise={activeLeague.franchise ?? ''} name={activeLeague.franchiseName ?? ''}
-          role={activeLeague.role ?? ''} hq />
+          role={activeLeague.role ?? ''} entry={activeEntry} hq />
       </Suspense>
     </section>}
     {homeReady && activeLeague && admission && admission.seats.length > 0 &&

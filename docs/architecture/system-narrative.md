@@ -1054,8 +1054,11 @@ live beside the service. See `feature-extraction.md`'s stateful-features recipe.
 ### Hosted franchise workflows
 
 After account/seat admission, `NativeAccount` mounts fixed `shell/ThinHome.tsx` using only the
-admitted league; a card or shortcut opens `commissioner/HostedLeague.tsx` with its existing `hq` prop.
-`ThinHome` reuses `homeNeedsYou.ts` and `homeReads.ts`; it never enumerates the server-wide league list.
+admitted league; a card opens `commissioner/HostedLeague.tsx` at HQ, while shortcuts and actionable
+Needs-you items pass their matching hosted entry. `ThinHome` reuses `homeNeedsYou.ts` and
+`homeReads.ts`; it derives people scope from admission rather than local bindings and never enumerates
+the server-wide league list. Franchise members use hosted `readHomeBrief` reads without local research;
+an unassigned commissioner reads only league Pulse and jobs (the calendar read requires a franchise).
 `hostedRoom.ts` holds only the current in-memory reading and explicit confirmation; it
 never writes local league data or queues mutations. The catalog-generated `nativeEnvelope`
 feeds `/desktop/workflow`; `serverclient.Desktop.Workflow` retains bearer/authenticator

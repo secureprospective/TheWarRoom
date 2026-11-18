@@ -3,7 +3,7 @@ import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { unavailable } from './hqModel';
 import { gatherNeedsYou, type NeedsYouItem } from './homeNeedsYou';
-import { readHomeBrief, type HomeBrief } from './homeReads';
+import { readThinHomeBrief, type HomeBrief } from './homeReads';
 import { shortTime } from './homeTiles';
 import { homeRoute, type Route } from './nodes';
 import { HQAct } from './HQAct';
@@ -13,25 +13,34 @@ import './thinHome.css';
 export const thinHomeRoute: Route = homeRoute;
 type BriefReader = (league: string, mine: string, port: HostedPort, owner: boolean) =>
   Promise<HomeBrief>;
+export type ThinHomeEntry = 'hq' | 'war' | 'pulse' | 'control' | 'lineup' | 'bids' | 'trades';
 type ThinHomeProps = {
   leagues: LeagueChoice[];
-  onOpen: (league: LeagueChoice) => void;
+  onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void;
   port?: HostedPort;
   readBrief?: BriefReader;
   now?: number;
 };
-type OpenShortcut = { label: string; commissionerOnly?: boolean };
+type OpenShortcut = { label: string; entry: ThinHomeEntry; commissionerOnly?: boolean };
 const shortcuts: OpenShortcut[] = [
-  { label: 'Franchise HQ' }, { label: 'War Room' }, { label: 'Pulse' },
-  { label: 'Control Room', commissionerOnly: true },
+  { label: 'Franchise HQ', entry: 'hq' }, { label: 'War Room', entry: 'war' },
+  { label: 'Pulse', entry: 'pulse' }, { label: 'Control Room', entry: 'control', commissionerOnly: true },
 ];
 const commissioner = (role?: string) => role === 'Commissioner' || role === 'Co-commissioner';
-const readHostedBrief: BriefReader = (league, mine, port, owner) =>
-  readHomeBrief(league, mine, port, undefined, null, owner);
-
-export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief = readHostedBrief,
-  now }: ThinHomeProps) {
+function needsYouEntry(screen: NeedsYouItem['screen']): ThinHomeEntry | undefined {
+  if (screen.node === 'home') return undefined;
+  if (screen.node === 'hq') return screen.workspace === 'lineup-and-roster' ? 'lineup' : 'hq';
+  if (screen.node === 'war') return screen.workspace === 'trade-desk' ? 'trades'
+    : screen.workspace === 'valuations-and-pool' ? 'bids' : 'war';
+  if (screen.node === 'pulse') return 'pulse';
+  return 'control';
+}
+export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, now }: ThinHomeProps) {
   const appLeagues = useMemo(() => leagues.filter(league => league.app), [leagues]);
+  const briefReader = useMemo<BriefReader>(() => readBrief ?? ((id, mine, hosted) =>
+    readThinHomeBrief(id, mine, hosted, undefined,
+      commissioner(appLeagues.find(league => league.id === id)?.role))),
+  [appLeagues, readBrief]);
   const readingTime = useMemo(() => now ?? Date.now(), [now]);
   const [briefs, setBriefs] = useState<Record<string, HomeBrief>>({});
   const [failures, setFailures] = useState<Record<string, string>>({});
@@ -54,7 +63,7 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief = r
       },
       readBrief: async (id, mine, hosted, owner) => {
         try {
-          const brief = await readBrief(id, mine, hosted, owner);
+          const brief = await briefReader(id, mine, hosted, owner);
           if (active) setBriefs(current => ({ ...current, [id]: brief }));
           return brief;
         } catch (cause) {
@@ -67,17 +76,19 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief = r
       .catch(cause => { if (active) setFailures({ '*': String(cause) }); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [appLeagues, port, readBrief, readingTime]);
+  }, [appLeagues, briefReader, port, readingTime]);
 
   const openFrom = (item: NeedsYouItem) => {
     const league = appLeagues.find(choice => choice.id === item.leagueId);
-    if (league) onOpen(league);
+    const entry = needsYouEntry(item.screen);
+    if (league && entry) onOpen(league, entry);
   };
   return <section className="thin-home" aria-label="Home" data-testid="thin-home">
     <header className="thin-home__header">
       <div><span className="thin-home__eyebrow">THE WAR ROOM · THIN MODE</span>
         <h1>Home</h1></div>
-      <span className="thin-home__count">{appLeagues.length} {appLeagues.length === 1 ? 'LEAGUE' : 'LEAGUES'}</span>
+      <span className="thin-home__count">{appLeagues.length}{' '}
+        {appLeagues.length === 1 ? 'LEAGUE' : 'LEAGUES'}</span>
     </header>
     <div className="thin-home__content">
       <section className="thin-home__needs" aria-labelledby="thin-home-needs-title">
@@ -85,11 +96,13 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief = r
           <span>{loading ? 'READING' : `${needsYou.length} ITEMS`}</span></div>
         {failures['*'] && <p role="alert">{unavailable} · {failures['*']}</p>}
         {loading && <p role="status">Reading your league…</p>}
-        {!loading && needsYou.length === 0 && <p className="thin-home__empty">Nothing needs you right now.</p>}
+        {!loading && needsYou.length === 0 &&
+          <p className="thin-home__empty">Nothing needs you right now.</p>}
         <ol className="thin-home__items" aria-label="Needs-you items">
           {needsYou.map(item => <li key={item.id}>
             <HQAct className={`thin-home__need${item.kind === 'unavailable' ? ' is-unavailable' : ''}`}
-              label={`Open ${item.words} in ${item.leagueName}`} onAction={() => openFrom(item)}>
+              disabled={!needsYouEntry(item.screen)} label={`Open ${item.words} in ${item.leagueName}`}
+              onAction={() => openFrom(item)}>
               <span className="thin-home__need-league">{item.leagueName}</span>
               <span className="thin-home__need-words">{item.kind === 'unavailable'
                 ? `${unavailable} · ${item.words}` : item.words}</span>
@@ -112,7 +125,7 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief = r
 }
 
 function LeagueCard({ league, brief, failure, now, onOpen }: { league: LeagueChoice; brief?: HomeBrief;
-  failure?: string; now: number; onOpen: (league: LeagueChoice) => void }) {
+  failure?: string; now: number; onOpen: ThinHomeProps['onOpen'] }) {
   const record = brief?.pulse?.standings?.rows.find(row => row.franchise === league.franchise)?.record;
   const week = brief?.pulse?.week;
   const pulseFailure = brief?.errors.pulse || brief?.pulse?.errors[0];
@@ -125,9 +138,11 @@ function LeagueCard({ league, brief, failure, now, onOpen }: { league: LeagueCho
   const actions = shortcuts.filter(shortcut => !shortcut.commissionerOnly || showControl);
   return <article className="thin-home__card">
     <div className="thin-home__card-head">
-      <HQAct className="thin-home__league-open" label={`Open ${league.name}`} onAction={() => onOpen(league)}>
+      <HQAct className="thin-home__league-open" label={`Open ${league.name}`}
+        onAction={() => onOpen(league, 'hq')}>
         <span className="thin-home__crest" aria-hidden="true">{leagueInitials(league.name)}</span>
-        <span className="thin-home__league-name">{league.name}</span><span className="thin-home__open-mark">OPEN ›</span>
+        <span className="thin-home__league-name">{league.name}</span>
+        <span className="thin-home__open-mark">OPEN ›</span>
       </HQAct>
     </div>
     <div className="thin-home__facts">
@@ -148,7 +163,8 @@ function LeagueCard({ league, brief, failure, now, onOpen }: { league: LeagueCho
     </div>
     <nav className="thin-home__shortcuts" aria-label={`${league.name} shortcuts`}>
       {actions.map(shortcut => <HQAct key={shortcut.label} className="thin-home__shortcut"
-        label={`Open ${shortcut.label} for ${league.name}`} onAction={() => onOpen(league)}>
+        label={`Open ${shortcut.label} for ${league.name}`}
+        onAction={() => onOpen(league, shortcut.entry)}>
         {shortcut.label}<span aria-hidden="true">›</span>
       </HQAct>)}
     </nav>

@@ -165,6 +165,31 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
   return out;
 }
 
+/** Thin Home's unassigned commissioner view reads league-wide pulse and commissioner jobs only. */
+export async function readThinHomeBrief(league: string, mine: string, port: HostedPort,
+  publish?: (brief: HomeBrief) => void, commissioner = false): Promise<HomeBrief> {
+  if (mine) return readHomeBrief(league, mine, port, publish, null, true);
+  const out: HomeBrief = { at: {}, errors: {} };
+  const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
+  const apply = async (source: HomeSource, read: () => Promise<void>) => {
+    try { await read(); out.at[source] = new Date().toISOString(); delete out.errors[source]; }
+    catch (error) { out.errors[source] = error instanceof Error ? error.message : String(error); }
+    finally { send(); }
+  };
+  const pulse = apply('pulse', async () => {
+    out.pulse = await readNativePulse(league, '', port, reading => { out.pulse = reading; send(); }, true);
+    if (out.pulse.errors.length) throw new Error(out.pulse.errors[0]);
+  });
+  const jobs = commissioner ? apply('jobs', async () => {
+    const r = await port({ command: 'commish.jobs.read', mode: 'read', arguments: { league } });
+    const reading = parseJobs(r.data);
+    if (reading.league !== league) throw new Error('Jobs belong to another league');
+    out.jobs = reading;
+  }) : Promise.resolve();
+  await Promise.all([pulse, jobs]);
+  return out;
+}
+
 /** A read that failed because the desktop was still starting (a timed-out or not-yet-ready store)
  *  will answer once startup work lands; Home re-reads for these instead of keeping the error. */
 const TRANSIENT = /deadline exceeded|timed out|timeout|startup|not ready|not open yet/i;

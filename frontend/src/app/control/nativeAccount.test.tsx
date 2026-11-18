@@ -27,6 +27,15 @@ function reply(value: NativeView) {
   return { ok: true, headers: new Headers({ 'Content-Type': 'application/json' }), json: async () => value };
 }
 afterEach(async () => { await unmount(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+const clickWhenReady = async (host: Awaited<ReturnType<typeof mount>>, label: string) => {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const found = all(host, 'button').find(b =>
+      b.textContent === label || b.getAttribute('aria-label') === label);
+    if (found) { await click(found); await settle(); return; }
+    await settle();
+  }
+  await click(button(host, label));
+};
 const submit = async (host: Awaited<ReturnType<typeof mount>>) => {
   await act(async () => {
     const form = all(host, 'form')[0];
@@ -106,7 +115,7 @@ describe('native desktop account access', () => {
     expect(all(host, 'form')).toHaveLength(0);
     expect(button(host, 'League')).toBeTruthy();
     expect(host.textContent).toContain('Home');
-    await click(button(host, 'Open League')); await settle();
+    await clickWhenReady(host, 'Open League');
     expect(rooms).toEqual(['open franchise.01']);
     expect(host.textContent).toContain('Hosted My club');
     await click(button(host, '← Home')); await settle();
@@ -250,7 +259,7 @@ it.each(['enter', 'forget', 'revoke-device', 'revoke-all'] as const)(
     const host = await mount(render(NativeAccount, { initial: { ...initial, message: 'Saved.' } }));
     await settle(); await flush(); await settle();
     expect(rooms).toEqual([]);
-    await click(button(host, 'Open League')); await settle();
+    await clickWhenReady(host, 'Open League');
     expect(rooms).toEqual(['open franchise.01']);
     fetcher.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
     const label = { enter: 'Open my franchise', forget: 'Forget saved sign-in',

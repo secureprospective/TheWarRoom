@@ -20,7 +20,7 @@ sentence means.
 | Live football | The server runs a shared ESPN/Sleeper collector for the current week; scores are labelled provisional. Each new generation publishes a scores topic to open change streams. Pulse rereads the public NFL scoreboard and selected game detail (field position and plays), following the live game with the most own starters by default; owners may switch games. Manual Refresh remains available. | ESPN live, Sleeper fill-in, nflverse finals and MFL live, polled inside the app. |
 | Direction | Grows until it carries everything. | Kept as-is until thin mode carries everything (governing plan step 3). Do not grow it or add features to it. |
 
-`ThinHome` exports `thinHomeRoute` for the planned thin rail; it does not build the rail. Its league card and shortcuts open the existing `HostedLeague` view with the current `hq` prop.
+`ThinHome` exports `thinHomeRoute` for the planned thin rail; it does not build the rail. Its league card opens existing `HostedLeague` at HQ; shortcuts and actionable Needs-you items pass their matching hosted entry, with Control Room opening the hosted rules surface.
 
 Hosted League rules expose Change only to commissioners and co-commissioners. The shared rule input
 builds a typed value; the hosted room owns preview → explicit confirm → execute → reread, using the

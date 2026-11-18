@@ -1,9 +1,9 @@
 # Handoff
 
 - Baton: Bee, 2026-11-18.
-- State: Fixed thin `ThinHome` is mounted first after sign-in; the card/shortcut opens existing `HostedLeague`, with a Home return. It takes `LeagueChoice[]`; alpha builds one choice from the admitted league only. No `commish.leagues.read`, cross-league probes, or local people/research reads.
-- Source trace: thin entry is `NativeStartup` → `NativeAccount`; `ThinHome` reuses `gatherNeedsYou`, `readHomeBrief`, and existing Home helpers. `thinHomeRoute` exports `homeRoute`. Local `HomeBrief`/`AppLeagueMount` remain untouched.
-- Checks: targeted Vitest 34/34 passed; `pnpm exec tsc --noEmit`, `make lint`, and `make bloat` passed.
-- Next: commit, push, open PR into `bundle/b3`, and check CI.
-- Blocked on: none. `tidy-check.sh` reported unrelated live `pulse-b5jobs` launcher PID 4038372; left it running. Its scratch/KEEP is outside the authorized write paths.
+- State: Fixed thin `ThinHome` mounts after admission; alpha exposes only the admitted league. Cards open hosted HQ, shortcuts and actionable Needs-you items pass their hosted entry, and Control Room opens hosted rules. Local mode remains untouched.
+- Reads: Home derives people scope from admission, not local bindings. Franchise members reuse hosted `readHomeBrief` without local research; unassigned commissioners read league Pulse and jobs only (calendar requires a franchise). No `commish.leagues.read` or cross-league probes.
+- Checks: targeted Vitest 51/51; `pnpm exec tsc --noEmit`, `make lint`, and `make bloat` pass. First pre-push attempt found the full frontend suite's old route assumptions and line-length issues; fixed, targeted tests now pass.
+- Next: commit the route/read follow-up, push, open one PR into `bundle/b3`, and check CI.
+- Blocked on: no project blocker. `tidy-check.sh` reported the unrelated live `pulse-b5league` launcher (PID 4122593); left it running and outside this worktree untouched.
 - Tried/rejected: no local `TargetApp`/`AppLeagueMount` port; no server-wide league enumeration or cross-league read probing (privacy ruling).

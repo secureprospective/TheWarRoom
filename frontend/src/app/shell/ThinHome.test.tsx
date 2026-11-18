@@ -53,10 +53,22 @@ describe('ThinHome', () => {
     expect(button(host, 'Open Control Room for Beta League')).toBeTruthy();
 
     await click(button(host, 'Open Beta League'));
-    expect(onOpen).toHaveBeenCalledWith(leagues[1]);
+    expect(onOpen).toHaveBeenCalledWith(leagues[1], 'hq');
     onOpen.mockClear();
     await click(button(host, 'Open Trade window · League deadline this week in Alpha League'));
-    expect(onOpen).toHaveBeenCalledWith(leagues[0]);
+    expect(onOpen).toHaveBeenCalledWith(leagues[0], 'trades');
+    onOpen.mockClear();
+    await click(button(host, 'Open Franchise HQ for Alpha League'));
+    expect(onOpen).toHaveBeenCalledWith(leagues[0], 'hq');
+    onOpen.mockClear();
+    await click(button(host, 'Open War Room for Alpha League'));
+    expect(onOpen).toHaveBeenCalledWith(leagues[0], 'war');
+    onOpen.mockClear();
+    await click(button(host, 'Open Pulse for Beta League'));
+    expect(onOpen).toHaveBeenCalledWith(leagues[1], 'pulse');
+    onOpen.mockClear();
+    await click(button(host, 'Open Control Room for Beta League'));
+    expect(onOpen).toHaveBeenCalledWith(leagues[1], 'control');
   });
 
   it('keeps a failed league unavailable without hiding the other league', async () => {
