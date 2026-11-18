@@ -11,7 +11,7 @@ export type Job = {
   opens: string; closes: string;
   // The census rows the job opens. They find the job's group; they are never shown.
   controls: string[];
-  // Server reads require both; parseJobs rejects either field when absent.
+  // Current server reads carry both. Older servers can omit them until their bundle is updated.
   identity?: JobIdentity;
   settles?: string[];
 };
@@ -29,18 +29,19 @@ export function parseJobs(v: unknown): Jobs {
     jobs: array(r.jobs, 'Jobs', (j, p) => {
       const o = object(j, p,
         ['id', 'name', 'state', 'words', 'opens', 'closes', 'controls', 'identity', 'settles']);
-      const identity = object(o.identity, `${p}.identity`, ['league', 'season', 'week', 'matter']);
+      const identity = o.identity === undefined ? undefined
+        : object(o.identity, `${p}.identity`, ['league', 'season', 'week', 'matter']);
       return {
         id: text(o.id, p), name: text(o.name, p), state: choice(o.state, `${p}.state`, jobStates),
         words: text(o.words, p), opens: timestamp(o.opens, `${p}.opens`),
         closes: timestamp(o.closes, `${p}.closes`), controls: array(o.controls, `${p}.controls`, text),
-        identity: {
+        ...(identity ? { identity: {
           league: text(identity.league, `${p}.identity.league`),
           season: integer(identity.season, `${p}.identity.season`),
           week: integer(identity.week, `${p}.identity.week`),
           matter: text(identity.matter, `${p}.identity.matter`),
-        },
-        settles: array(o.settles, `${p}.settles`, text),
+        } } : {}),
+        ...(o.settles === undefined ? {} : { settles: array(o.settles, `${p}.settles`, text) }),
       };
     }),
   };

@@ -18,11 +18,12 @@ describe('commissioner jobs', () => {
     expect(result.jobs[0].settles).toEqual(['commish.lineup.set', 'commish.lineup.correct']);
   });
 
-  it('refuses a job without its matter identity', () => {
-    expect(() => parseJobs({
+  it('keeps older server rows readable without fabricating a matter identity', () => {
+    const result = parseJobs({
       league: 'native.test', name: 'League', revision: 4,
-      jobs: [{ id: 'setup', name: 'Setup', state: 'live', words: '', opens: '', closes: '',
-        controls: [], settles: [] }],
-    })).toThrow('identity');
+      jobs: [{ id: 'setup', name: 'Setup', state: 'live', words: '', opens: '', closes: '', controls: [] }],
+    });
+    expect(result.jobs[0]?.identity).toBeUndefined();
+    expect(result.jobs[0]?.settles).toBeUndefined();
   });
 });

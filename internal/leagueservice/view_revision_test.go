@@ -14,15 +14,16 @@ import (
 
 type viewTestHost struct {
 	StoredHost
-	clock *dueTestClock
-	facts nativecheck.Facts
-	weeks []leagueweek.Week
+	clock       *dueTestClock
+	facts       nativecheck.Facts
+	weeks       []leagueweek.Week
+	scheduleErr error
 }
 
 func (h viewTestHost) CommissionerNow() time.Time     { return h.clock.Now() }
 func (h viewTestHost) NativeFacts() nativecheck.Facts { return h.facts }
 func (h viewTestHost) NativeScheduleDates(context.Context, int, time.Time) ([]leagueweek.Week, error) {
-	return h.weeks, nil
+	return h.weeks, h.scheduleErr
 }
 
 func viewService(t *testing.T, f *dueFixture, principal string) *Service {
@@ -35,9 +36,15 @@ func viewServiceWithSchedule(t *testing.T, f *dueFixture, principal string, week
 
 func viewServiceWithFacts(t *testing.T, f *dueFixture, principal string, facts nativecheck.Facts,
 	weeks []leagueweek.Week) *Service {
+	return viewServiceWithScheduleError(t, f, principal, facts, weeks, nil)
+}
+
+func viewServiceWithScheduleError(t *testing.T, f *dueFixture, principal string, facts nativecheck.Facts,
+	weeks []leagueweek.Week, scheduleErr error) *Service {
 	t.Helper()
 	return NewHosted(viewTestHost{StoredHost: StoredHost{Store: f.store, Context: func() context.Context { return t.Context() },
-		Principal: principal, Registry: "id,name,gm_question,governs\n"}, clock: f.clock, facts: facts, weeks: weeks},
+		Principal: principal, Registry: "id,name,gm_question,governs\n"}, clock: f.clock, facts: facts,
+		weeks: weeks, scheduleErr: scheduleErr},
 		admissionFunc(func(context.Context, commissioner.Access) error { return nil }))
 }
 

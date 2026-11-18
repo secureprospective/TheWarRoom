@@ -1,6 +1,7 @@
 package leagueservice
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -41,6 +42,15 @@ func TestTargetCommissionerJobsUsesHeldScheduleWithoutPlayerFacts(t *testing.T) 
 	job, found := jobForLeagueService(jobs.Jobs, "vacant.franchise.03")
 	if !found || job.Identity.Week != 5 || job.Closes != kickoff.UTC().Format(time.RFC3339) {
 		t.Fatalf("job builder did not use the server-held schedule: %+v", job)
+	}
+}
+
+func TestTargetCommissionerJobsReturnsScheduleReadFailure(t *testing.T) {
+	fixture := newDueFixture(t)
+	failure := errors.New("held schedule read failed")
+	service := viewServiceWithScheduleError(t, fixture, "creator", nil, nil, failure)
+	if _, err := service.TargetCommissionerJobs(dueLeague); !errors.Is(err, failure) {
+		t.Fatalf("schedule failure was hidden: %v", err)
 	}
 }
 

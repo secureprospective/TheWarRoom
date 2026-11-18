@@ -171,13 +171,18 @@ func TestTaxiThirdYearJobNeedsHeldExperience(t *testing.T) {
 		t.Fatal("taxi job guessed a player's experience")
 	}
 	facts := nativecheck.Facts{"0099": {Name: "Taxi Player", DraftYear: 2024, DraftYearHeld: true}}
-	withFacts, err := JobsReadingWithInputs("native.test", b.records, seasonMoment(5), JobInputs{Facts: facts})
+	kickoff := time.Date(2026, 10, 11, 17, 0, 0, 0, time.UTC)
+	weeks := []leagueweek.Week{{Number: 7,
+		Games: []leagueweek.Game{{Teams: [2]string{"KC", "BUF"}, Kickoff: kickoff}}}}
+	withFacts, err := JobsReadingWithInputs("native.test", b.records, seasonMoment(5),
+		JobInputs{Facts: facts, Weeks: weeks})
 	if err != nil {
 		t.Fatal(err)
 	}
 	job, found := jobFor(withFacts.Jobs, "taxi.franchise.01.0099")
-	if !found || !slices.Contains(job.Settles, ReserveException) {
-		t.Fatalf("third-year taxi player job missing its ruling: %+v", job)
+	if !found || job.Closes != kickoff.Format(time.RFC3339) || job.Identity.Week != 7 ||
+		!slices.Contains(job.Settles, ReserveException) {
+		t.Fatalf("third-year taxi player job missing its deadline or ruling: %+v", job)
 	}
 	withinLimit := jobLedger(t, 32, []NativePlayer{player})
 	withinLimit.set("taxi.maximumYears", `3`, "now", seasonMoment(3))

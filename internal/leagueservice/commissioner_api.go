@@ -149,12 +149,11 @@ func (a *Service) TargetCommissionerJobs(league string) (commissioner.Jobs, erro
 	}
 	facts := a.host.NativeFacts()
 	inputs := commissioner.JobInputs{Facts: facts}
-	weeks, scheduleErr := a.host.NativeScheduleDates(ctx, season, now)
-	if scheduleErr == nil {
-		inputs.Weeks = weeks
-	} else if ctx.Err() != nil {
-		return commissioner.Jobs{}, fmt.Errorf("league job schedule: %w", scheduleErr)
+	weeks, err := a.host.NativeScheduleDates(ctx, season, now)
+	if err != nil {
+		return commissioner.Jobs{}, fmt.Errorf("league job schedule: %w", err)
 	} // Without held schedule evidence, omit week-locked jobs rather than invent a due time.
+	inputs.Weeks = weeks
 	reading, err := commissioner.JobsReadingWithInputs(league, records, now, inputs)
 	if err != nil {
 		return commissioner.Jobs{}, fmt.Errorf("league jobs: %w", err)
