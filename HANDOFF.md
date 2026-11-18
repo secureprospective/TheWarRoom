@@ -17,3 +17,11 @@
 - Next: ClaudeBox review/merge PR #387.
 - Blocked on: none for this lane. Final `tidy-check.sh` reported unrelated active alpha010 lanes `b7lab2`, `b9fa`, and `perf`; left them untouched due worktree-only scope; owners need to file KEEP records. No task-owned scratch or staged webapp remains.
 - Tried and rejected: Do not reuse `commish.ledger.filtered.read`; it carries reasons and broader commissioner-visible entries. Reuse existing append-only records and an independent allow-list projection.
+
+## Bee — B9-1 `roster.add` (2026-11-18)
+- State: implementation/test changes are on top of `bundle/b9` after B9-2 PR #387 merged; no PR opened yet.
+- Flow: typed add uses preview/execute and one receipt; owner/session or scoped token seat check, commissioner reason, `ufa_bid` calendar gate (plus `cut` when dropping), transaction-time eligibility and existing roster/cap validators. Optional release, waiver record and signing replay atomically.
+- Contract choice: with no salary/term input, one year at the league minimum for the player's NFL experience; reuses the existing UFA floor and cap rules.
+- Evidence: hosted owner session, commissioner-with-reason, other-owner denial, waivers/rostered/closed-window refusals, full-roster denial and atomic add/drop tests. Full `make verify` passed before the B9-2 base fast-forward; rerun pre-push verification on the merged base.
+- Next: regenerate outputs against the updated base, commit, push one PR into `bundle/b9`, then record PR/CI result.
+- Blocked on: none. No migration.

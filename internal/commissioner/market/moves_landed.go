@@ -42,6 +42,17 @@ func (out *NativeMoves) appendLanded(records []commissioner.Record, book commiss
 				out.landedPlayer(r, r.Receipt.Entry, commissioner.RosterCut, w.Player.ID,
 					fmt.Sprintf("Released %s · dead cap %s", w.Player.Name, w.Dead))
 			}
+		case commissioner.RosterAdd:
+			w := r.Command.Args.WaiverOutcome
+			if w != nil && w.Player != nil && w.Player.Franchise == out.Franchise {
+				words := "Signed " + w.Player.Name + " for " + nativecheck.ContractWords(w.Player.Salary, 1)
+				if w.DropPlayer != nil {
+					words += fmt.Sprintf(" · released %s · dead cap %s", w.DropPlayer.Name, w.Dead)
+					out.landedPlayer(r, r.Receipt.Entry, commissioner.RosterAdd, w.Player.ID, words, w.DropPlayer.ID)
+				} else {
+					out.landedPlayer(r, r.Receipt.Entry, commissioner.RosterAdd, w.Player.ID, words)
+				}
+			}
 		case commissioner.BidsProcess, commissioner.BidsOverride:
 			out.landBid(r, &book.Bids)
 		case commissioner.WaiverProcess, commissioner.WaiverOverride:
@@ -50,9 +61,10 @@ func (out *NativeMoves) appendLanded(records []commissioner.Record, book commiss
 	}
 }
 
-func (out *NativeMoves) landedPlayer(r commissioner.Record, id, intent, player, words string) {
+func (out *NativeMoves) landedPlayer(r commissioner.Record, id, intent, player, words string, additional ...string) {
 	m := nativeMove(out.League, out.Franchise, id, intent, "landed", words+" · Committed in league ledger: "+r.Receipt.Entry, r.Receipt.RecordedAt)
 	m.Spec.Subject.Players = append(m.Spec.Subject.Players, player)
+	m.Spec.Subject.Players = append(m.Spec.Subject.Players, additional...)
 	for i := range out.Moves {
 		if out.Moves[i].CorrelationID == id {
 			out.Moves[i] = m

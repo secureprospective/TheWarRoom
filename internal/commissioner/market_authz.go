@@ -96,6 +96,24 @@ func authorizeDeputyTradeRuling(raw RawCommand, principal string, records []Reco
 	return nil
 }
 
+func authorizeRosterAdd(records []Record, principal, franchise string) (string, error) {
+	if !leagueFranchise(records, franchise) {
+		return "", fmt.Errorf("choose a franchise in this league")
+	}
+	ownerErr := AuthorizeFranchiseOwner(records, principal, franchise)
+	if ownerErr == nil {
+		return "owner", nil
+	}
+	state, err := GovernanceState(records)
+	if err != nil {
+		return "", err
+	}
+	if state.HasRole(governance.Principal(principal), governance.Commissioner) {
+		return "commissioner", nil
+	}
+	return "", ownerErr
+}
+
 func AuthorizeFranchiseOwner(records []Record, principal, franchise string) error {
 	state, err := GovernanceState(records)
 	if err != nil {

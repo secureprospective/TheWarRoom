@@ -249,6 +249,16 @@ func deputyOwnerAction(raw RawCommand, principal string, records []Record) (stri
 	return "", fmt.Errorf("this commissioner action is not delegated")
 }
 
+func authorizeMarketOwner(raw RawCommand, principal string, records []Record, franchise string) (string, error) {
+	if raw.Command == RosterAdd {
+		return authorizeRosterAdd(records, principal, franchise)
+	}
+	if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
+		return "", err
+	}
+	return "owner", nil
+}
+
 func authorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {
 	raw = policyCommand(raw, records)
 	principal = PrincipalFor(records, principal)
@@ -259,10 +269,7 @@ func authorizeRecords(raw RawCommand, principal string, records []Record) (strin
 		return "commissioner", nil
 	}
 	if franchise := marketOwnerFranchise(raw); franchise != "" {
-		if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
-			return "", err
-		}
-		return "owner", nil
+		return authorizeMarketOwner(raw, principal, records, franchise)
 	}
 	state, err := GovernanceState(records)
 	if err != nil {

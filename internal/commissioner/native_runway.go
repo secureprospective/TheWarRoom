@@ -37,7 +37,8 @@ func NativeCapRunwayProjected(base NativeBase, franchise string, projection Nati
 	seed, rules := base.Assets.Snapshot, base.Rules
 	cuts := map[string]bool{}
 	for _, record := range base.Records {
-		cuts[record.Receipt.Entry] = record.Command.Command == RosterCut
+		cuts[record.Receipt.Entry] = record.Command.Command == RosterCut || (record.Command.Command == RosterAdd &&
+			record.Command.Args.Waiver != nil && record.Command.Args.Waiver.Drop != "")
 	}
 	horizon := runwayHorizon(seed.Players, franchise, rules.Season, rules.Contracts.MaximumYears.Value)
 	for _, schedule := range projection.Salaries {

@@ -112,7 +112,7 @@ func importPracticeFootball(ctx context.Context, store *history.Store, at time.T
 	for _, p := range []struct {
 		id, name string
 		position leaguerules.Position
-	}{{"0099", "Practice quarterback", leaguerules.QB}, {"0100", "Injured prospect", leaguerules.WR}, {"0101", "Young receiver", leaguerules.WR}, {"5001", "Practice rookie", leaguerules.RB}, {"6001", "Practice free agent", leaguerules.WR}, {"0102", "Other team receiver", leaguerules.WR}} {
+	}{{"0099", "Practice quarterback", leaguerules.QB}, {"0100", "Injured prospect", leaguerules.WR}, {"0101", "Young receiver", leaguerules.WR}, {"5001", "Practice rookie", leaguerules.RB}, {"6001", "Practice free agent", leaguerules.WR}, {"6002", "Second practice free agent", leaguerules.WR}, {"6003", "Third practice free agent", leaguerules.WR}, {"6004", "Fourth practice free agent", leaguerules.WR}, {"0102", "Other team receiver", leaguerules.WR}} {
 		facts := nativecheck.PlayerFacts{Name: p.name, Position: p.position, Team: "DAL", DesignationHeld: true, DraftYear: 2026, DraftYearHeld: true}
 		if p.id == "5001" {
 			facts.DraftYear = 2027

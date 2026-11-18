@@ -5,7 +5,9 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
@@ -69,6 +71,24 @@ func (c hostedWorkflowClient) command(command string, args commissioner.RawArgs,
 	}
 	return commissioner.RawCommand{League: "native.hosted", Command: command, Args: args, Expected: assets.Revision, Request: key, Reason: "Disposable workflow test ruling", Effective: "now", Visibility: visibility}
 }
+func (c hostedWorkflowClient) refuse(raw commissioner.RawCommand, want string) []byte {
+	c.t.Helper()
+	body, err := json.Marshal(raw)
+	if err != nil {
+		c.t.Fatal(err)
+	}
+	workflow := workflowRequest(c.t, raw.Command, "execute", string(body), c.football)
+	request, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &workflow})
+	if err != nil {
+		c.t.Fatal(err)
+	}
+	response := c.f.post(c.t, serverhttp.WorkflowPath, string(request), c.bearer, c.proof, 409)
+	if want != "" && !strings.Contains(string(response), want) {
+		c.t.Fatalf("%s refusal = %q, want %q", raw.Command, response, want)
+	}
+	return response
+}
+
 func (c hostedWorkflowClient) run(raw commissioner.RawCommand) commissioner.Receipt {
 	c.t.Helper()
 	body, err := json.Marshal(raw)
@@ -231,6 +251,147 @@ func TestHostedTradeDraftPocketIsPrivateAndTokenScoped(t *testing.T) {
 	}
 	if drafts := read(teamA, 0); len(drafts) != 0 {
 		t.Fatalf("owner deletion did not remove the proposal: %+v", drafts)
+	}
+}
+
+func TestHostedRosterAddIsSeatedPreviewedAndReceipted(t *testing.T) {
+	commissionerClient := workflowClient(t)
+	owner := commissionerClient
+	owner.bearer, owner.proof = owner.f.login(t, "owner", "private-password"), ""
+	before := owner.command(commissioner.RosterAdd, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+		Player: "6001", Franchise: "franchise.02"}}, "owner.add").Expected
+	receipt := owner.run(owner.command(commissioner.RosterAdd, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+		Player: "6001", Franchise: "franchise.02"}}, "owner.add"))
+	if receipt.Entry == "" || receipt.Revision == 0 || receipt.Revision == before {
+		t.Fatalf("free-agent add receipt = %+v, before revision %d", receipt, before)
+	}
+	var assets commissioner.NativeAssets
+	if err := json.Unmarshal(owner.invoke("native.assets.read", "read", []byte(`{"league":"native.hosted"}`), 200).Data, &assets); err != nil {
+		t.Fatal(err)
+	}
+	if assets.Revision != receipt.Revision {
+		t.Fatalf("receipt revision %d does not match landed assets %d", receipt.Revision, assets.Revision)
+	}
+	if index := assets.Snapshot.PlayerOf("franchise.02", "6001"); index < 0 || assets.Snapshot.Players[index].Salary <= 0 {
+		t.Fatalf("owner add did not land a contracted player: %+v", assets.Snapshot.Players)
+	}
+	commissionerClient.run(commissionerClient.command(commissioner.RosterAdd,
+		commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: "6002", Franchise: "franchise.02"}}, "commissioner.add.with.reason"))
+	if err := json.Unmarshal(owner.invoke("native.assets.read", "read", []byte(`{"league":"native.hosted"}`), 200).Data, &assets); err != nil {
+		t.Fatal(err)
+	}
+	if assets.Snapshot.PlayerOf("franchise.02", "6002") < 0 {
+		t.Fatal("commissioner could not add for another franchise with a reason")
+	}
+	beforeOther := assets.Revision
+	beforeOtherSnapshot, err := json.Marshal(assets.Snapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	other := commissionerClient
+	other.bearer, other.proof = other.f.login(t, "partner", "private-password"), ""
+	refused := other.command(commissioner.RosterAdd, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+		Player: "6003", Franchise: "franchise.02"}}, "other.owner.add")
+	other.refuse(refused, "")
+	if err := json.Unmarshal(owner.invoke("native.assets.read", "read", []byte(`{"league":"native.hosted"}`), 200).Data, &assets); err != nil {
+		t.Fatal(err)
+	}
+	afterOtherSnapshot, err := json.Marshal(assets.Snapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if assets.Revision != beforeOther || string(beforeOtherSnapshot) != string(afterOtherSnapshot) ||
+		assets.Snapshot.PlayerOf("franchise.02", "6003") >= 0 {
+		t.Fatalf("another owner's refused add changed league state: revision %d -> %d", beforeOther, assets.Revision)
+	}
+}
+
+func TestHostedRosterAddRefusesWaiversRosteredPlayersAndClosedWindow(t *testing.T) {
+	commissionerClient := workflowClient(t)
+	owner := commissionerClient
+	owner.bearer, owner.proof = owner.f.login(t, "owner", "private-password"), ""
+	owner.run(owner.command(commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+		Player: "0102", Franchise: "franchise.02"}}, "add.test.cut"))
+	waived := owner.command(commissioner.RosterAdd, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+		Player: "0102", Franchise: "franchise.02"}}, "add.on.waivers")
+	owner.refuse(waived, "")
+	rostered := owner.command(commissioner.RosterAdd, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+		Player: "0099", Franchise: "franchise.02"}}, "add.rostered")
+	owner.refuse(rostered, "")
+
+	future := time.Now().UTC().AddDate(0, 0, 2)
+	closedRules, err := json.Marshal(map[string]any{"future": map[string]any{
+		"start": map[string]int{"month": int(future.Month()), "day": future.Day()}, "opens": []string{"ufa_bid"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	commissionerClient.run(commissionerClient.command(commissioner.RulesSet, commissioner.RawArgs{
+		Field: "calendar.windows", Value: closedRules,
+	}, "add.closed.window"))
+	closed := owner.command(commissioner.RosterAdd, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+		Player: "6001", Franchise: "franchise.02"}}, "add.closed")
+	owner.refuse(closed, "")
+}
+
+func TestHostedRosterAddRequiresRoomOrAtomicDrop(t *testing.T) {
+	commissionerClient := workflowClient(t)
+	commissionerClient.run(commissionerClient.command(commissioner.RulesSet, commissioner.RawArgs{
+		Field: "roster.limits", Value: json.RawMessage(`{"min":0,"max":3}`),
+	}, "add.max.three"))
+	owner := commissionerClient
+	owner.bearer, owner.proof = owner.f.login(t, "owner", "private-password"), ""
+	for _, player := range []string{"6002", "6003"} {
+		owner.run(owner.command(commissioner.RosterAdd, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+			Player: player, Franchise: "franchise.02"}}, "fill."+player))
+	}
+	full := owner.command(commissioner.RosterAdd, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+		Player: "6004", Franchise: "franchise.02"}}, "add.full")
+	owner.refuse(full, "")
+	var before commissioner.NativeAssets
+	if err := json.Unmarshal(owner.invoke("native.assets.read", "read", []byte(`{"league":"native.hosted"}`), 200).Data, &before); err != nil {
+		t.Fatal(err)
+	}
+	if before.Snapshot.PlayerOf("franchise.02", "6004") >= 0 {
+		t.Fatal("full-roster refusal appended the free agent")
+	}
+	add := owner.command(commissioner.RosterAdd, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+		Player: "6004", Franchise: "franchise.02", Drop: "0102"}}, "add.with.drop")
+	receipt := owner.run(add)
+	var after commissioner.NativeAssets
+	if err := json.Unmarshal(owner.invoke("native.assets.read", "read", []byte(`{"league":"native.hosted"}`), 200).Data, &after); err != nil {
+		t.Fatal(err)
+	}
+	if receipt.Revision == before.Revision || after.Revision != receipt.Revision ||
+		after.Snapshot.PlayerOf("franchise.02", "6004") < 0 || after.Snapshot.PlayerOf("franchise.02", "0102") >= 0 {
+		t.Fatalf("combined add/drop was not one landed transaction: receipt=%+v before=%+v after=%+v", receipt, before, after)
+	}
+	var waivers market.NativeWaivers
+	waiverArgs, err := json.Marshal(map[string]string{"league": "native.hosted", "franchise": "franchise.02", "at": time.Now().UTC().Format(time.RFC3339Nano)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(owner.invoke("waivers.read", "read", waiverArgs, 200).Data, &waivers); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.ContainsFunc(waivers.Players, func(player market.NativeWaiverPlayer) bool {
+		return player.Player == "0102" && player.Window == receipt.Entry
+	}) {
+		t.Fatalf("atomic drop did not create its waiver window: %+v", waivers.Players)
+	}
+	moveArgs, err := json.Marshal(map[string]string{"league": "native.hosted", "franchise": "franchise.02"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var moves market.NativeMoves
+	if err := json.Unmarshal(owner.invoke("moves.read", "read", moveArgs, 200).Data, &moves); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.ContainsFunc(moves.Moves, func(move market.NativeMove) bool {
+		return move.CorrelationID == receipt.Entry && slices.Equal(move.Spec.Subject.Players, []string{"6004", "0102"})
+	}) {
+		t.Fatalf("combined add/drop was not reported as one move: %+v", moves.Moves)
 	}
 }
 
