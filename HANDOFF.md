@@ -1,11 +1,9 @@
 # Handoff
 
-- Baton: Christopher, 2026-11-18 (PR review; Bee did not merge).
-- State: PR #361 against `main`, commit `c76fdab32`, open; all GitHub checks pass. No release/deploy performed.
-- Implementation: updater opt-in requires empty state and stopped/unscheduled service, verifies and installs the signed bundle, skips DB preflight/snapshot/server start, and prints the next load/start steps. `league-load` individually chowns only paths newly added in the fixed state layout to the state directory uid/gid; symlinks are not followed. Installer, Proxmox, server and upgrade docs no longer prescribe partial chown.
-- Evidence: `go test -race ./cmd/twr-server/...` passed (349.043s); `make lint`, `make bloat`, `git diff --check`, shell syntax checks, pre-push changed-package verification, and PR CI passed. Root-only UID/GID test skips on Bee (uid 1000); helper test ran.
-- Not run: `deploy/server/test-alpine.sh`/ShellCheck; required `.scratch/server.tar.gz` is absent. Added the signed-updater integration case to that harness; host shell syntax passes.
-- Tidy: last `tidy-check.sh` found foreign PIDs 90442 (`luna b5backup`), 3945562 (`luna b3home`), and 4122593 (`luna b5league`); left untouched, not started by this lane. Do not edit their run files to add KEEP markers.
-- Next: Christopher reviews PR #361 and decides merge; do not merge without approval.
-- Blocked on: none for the PR. The Alpine container integration remains unverified locally.
-- Tried/rejected: no implementation fallback needed; the installed updater is a signed bundle tool and reuses the existing TUF verification path.
+- Baton: Christopher, 2026-11-18; PR #363 is open into `bundle/b3`.
+- State: Fixed thin `ThinHome` mounts after admission; alpha exposes only the admitted league. Cards open hosted HQ, shortcuts and actionable Needs-you items pass their hosted entry, and Control Room opens hosted rules. Local mode remains untouched.
+- Reads: Home derives people scope from admission, not local bindings. Franchise members reuse hosted `readHomeBrief` without local research; unassigned commissioners read league Pulse and jobs only (calendar requires a franchise). No `commish.leagues.read` or cross-league probes.
+- Checks: targeted Vitest 51/51; `pnpm exec tsc --noEmit`, `make lint`, and `make bloat` pass. Pre-push verify passed; PR checks are green at `b7a157029`.
+- Next: review PR #363 and manually inspect thin Home plus its HQ/War Room/Pulse/Control Room and Needs-you entry routes before merge.
+- Blocked on: `tidy-check.sh` reported unrelated live `pulse-b5backup` (PID 90442), `pulse-b4sync` (PID 128631), and `pulse-b5league` (PID 4122593) launchers. Left them running; their workdirs/KEEP paths are outside this authorized worktree.
+- Tried/rejected: no local `TargetApp`/`AppLeagueMount` port; no server-wide league enumeration or cross-league read probing (privacy ruling).

@@ -1,4 +1,4 @@
-import { array, id, integer, object, text } from '../data/parseValues';
+import { array, id, integer, object, text, timestamp } from '../data/parseValues';
 
 const strings = (v: unknown) => array(v, 'Explanations', text);
 export function parseHostedBids(v: unknown) {
@@ -57,6 +57,7 @@ export function parseHostedBids(v: unknown) {
         name: text(p.name, 'Name'),
         words: text(p.modeWords, 'Privacy'),
         closes: text(p.closes, 'Closes'),
+        closesAt: p.closesAt == null ? undefined : timestamp(p.closesAt, 'Bid close'),
         own: bid(p.yourBid),
         leader: bid(p.leader),
       };

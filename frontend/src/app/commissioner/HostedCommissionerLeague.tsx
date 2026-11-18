@@ -3,13 +3,16 @@ import { HQAct } from '../shell/HQAct';
 import { createHostedLeagueRoom, type HostedPort } from './hostedRoom';
 import { HostedRules } from './HostedRules';
 import { Review } from './HostedReview';
+import type { HostedEntry } from './HostedLeague';
 
 const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 
-export function HostedCommissionerLeague({ league, port }: { league: string; port?: HostedPort }) {
+export function HostedCommissionerLeague({ league, port, entry }: {
+  league: string; port?: HostedPort; entry?: HostedEntry;
+}) {
   const room = useMemo(() => createHostedLeagueRoom(league, port), [league, port]);
   const state = room.use();
-  const [tab, setTab] = useState<'pulse' | 'rules'>('pulse');
+  const [tab, setTab] = useState<'pulse' | 'rules'>(entry === 'control' ? 'rules' : 'pulse');
   const [pulseTab, setPulseTab] = useState<'now' | 'race'>('now');
   useEffect(() => { void room.refresh(); return room.dispose; }, [room]);
   return <section className="hosted-league" aria-label="Hosted league">
