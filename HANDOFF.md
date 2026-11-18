@@ -16,3 +16,10 @@
 - Checks: focused frontend tests 58/58, full Vitest 989/989, `pnpm tsc --noEmit`, pre-push verification passed; PR CI green on `bb5df4b68` (all checks passed). No server, auth, session or service-worker changes.
 - Tidy: `tidy-check.sh` found unrelated active `b9feed` and `b9boards` lanes in the main checkout. Left their processes/files untouched; their owners need to file KEEP records.
 - Next: ClaudeBox review/merge. Blocked on review.
+
+## Bee — B8-4 Live / Pulse (2026-11-18)
+- Baton: Bee, `session/pulse-b8live`, Bundle 8.
+- State: phone-only Pulse rules are added at <=699px; hosted data/reconnect labels remain unchanged. Added `pulsePhone.test.ts`; named Pulse tests pass (34), full Vitest passes (990/990), and `tsc --noEmit` passes. Desktop rules >=700px are untouched.
+- Next: commit and push to trigger pre-push verification, then open PR into `bundle/b8` and report CI/phone check status.
+- Tidy: `tidy-check.sh` found unrelated active `b8bids` (PID 1597602) and `b8trade` (PID 1599696) lanes; left them untouched. Their owners need to add scratch KEEP records.
+- Blocked on: none for this lane.
