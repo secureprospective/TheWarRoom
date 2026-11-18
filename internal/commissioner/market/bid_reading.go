@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -66,6 +67,62 @@ type NativeBids struct {
 	Players     []NativeBidPlayer `json:"players"`
 	Awards      []NativeBidAward  `json:"awards"`
 	Notes       []string          `json:"notes"`
+}
+
+// NativeBidWin is a public completed auction outcome, with no information about other bids.
+type NativeBidWin struct {
+	Player    string       `json:"player"`
+	Name      string       `json:"name"`
+	Team      string       `json:"team"`
+	Salary    domain.Money `json:"salaryCents"`
+	Years     int          `json:"years"`
+	DecidedAt time.Time    `json:"decidedAt"`
+}
+
+type NativeBidWins struct {
+	League string         `json:"league"`
+	Wins   []NativeBidWin `json:"wins"`
+}
+
+// NativeBidWinsReading projects only completed awards from the replayed native ledger.
+func NativeBidWinsReading(league string, records []commissioner.Record, at time.Time,
+	zone *time.Location, facts nativecheck.Facts) (NativeBidWins, error) {
+	out := NativeBidWins{League: league, Wins: []NativeBidWin{}}
+	frame, err := commissioner.NewFrame(league, records, at, facts, zone)
+	if err != nil {
+		return NativeBidWins{}, fmt.Errorf("bid wins frame: %w", err)
+	}
+	directory, err := commissioner.NativeDirectoryReading(league, records, at)
+	if err != nil {
+		return NativeBidWins{}, fmt.Errorf("bid wins teams: %w", err)
+	}
+	teams := directory.Seats()
+	for _, auction := range frame.Book.Bids.Auctions {
+		if !auction.Decided || auction.Winner == "" {
+			continue
+		}
+		index := slices.IndexFunc(auction.Bids, func(b commissioner.BidRecord) bool {
+			return b.ID == auction.WinningBid && b.Franchise == auction.Winner
+		})
+		if index < 0 {
+			return NativeBidWins{}, fmt.Errorf("bid win for player %s has no recorded winning bid", auction.Player)
+		}
+		bid := auction.Bids[index]
+		name := strings.TrimSpace(facts[auction.Player].Name)
+		out.Wins = append(out.Wins, NativeBidWin{Player: auction.Player, Name: name,
+			Team: teams.Of(auction.Winner).Name, Salary: bid.Salary, Years: bid.Years,
+			DecidedAt: auction.DecidedAt})
+	}
+	slices.SortFunc(out.Wins, func(a, b NativeBidWin) int {
+		if a.DecidedAt.After(b.DecidedAt) {
+			return -1
+		}
+		if a.DecidedAt.Before(b.DecidedAt) {
+			return 1
+		}
+		return strings.Compare(a.Player, b.Player)
+	})
+	return out, nil
 }
 
 func bidStandFor(rules leaguerules.RuleSet) leaguerules.Value[time.Duration] {

@@ -81,6 +81,27 @@ func (a *Service) TargetNativeBids(league, franchise string) (market.NativeBids,
 	return reading, nil
 }
 
+func (a *Service) TargetNativeBidWins(league string) (market.NativeBidWins, error) {
+	if err := a.admitRead(league, "market.wins.read", ""); err != nil {
+		return market.NativeBidWins{}, err
+	}
+	if err := a.host.Ready(); err != nil {
+		return market.NativeBidWins{}, fmt.Errorf("bid wins startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
+	defer cancel()
+	records, err := a.host.CommissionerRecords(ctx, league)
+	if err != nil {
+		return market.NativeBidWins{}, fmt.Errorf("bid wins records: %w", err)
+	}
+	reading, err := market.NativeBidWinsReading(league, records, a.host.CommissionerNow(),
+		a.host.CommissionerZone(), a.host.NativeFacts())
+	if err != nil {
+		return market.NativeBidWins{}, fmt.Errorf("native bid wins: %w", err)
+	}
+	return reading, nil
+}
+
 func (a *Service) TargetNativeDraft(scope commissioner.RawNativeDraftScope) (commissioner.NativeDraft, error) {
 	if scope.At.IsZero() {
 		scope.At = a.host.CommissionerNow()
