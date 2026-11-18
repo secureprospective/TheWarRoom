@@ -6,3 +6,24 @@
 - Next: Christopher review the reported findings and choose any follow-up fix lane. This test lane is otherwise complete.
 - Blocked on: #381 recovery was not independently demonstrated because the host and `/app/` route were already correct before upgrade. The run-scoped browser profile remains after the command guard blocked recursive deletion; its browser process is closed and the final session was revoked. Earlier test sessions may remain until idle expiry; I did not revoke all devices because that could interrupt another test client. The pre-existing isolated browser profile was left untouched because it was live and held unrelated pages. Final tidy check also found foreign active lane `b9fa` (Luna); left it running and did not edit its scratch. Its owner needs the required `KEEP.md`.
 - Tried and rejected: release metadata v3 was refused by CT's cached trust state; rebuilt with metadata v5 and the established LAB-only signing path. No manual host/tunnel repair was attempted.
+
+## Bee — pulse-b7fix2 (2026-11-18)
+- Baton: Bee, working the three b7lab2 browser read findings and #381 recovery proof.
+- State: Pulled `bundle/b7`; no initial worktree changes. Heavy-work guard passed. Source evidence and governing contracts are being reviewed before changes.
+- Next: Verify each finding against the catalog, implementation and lab evidence; fix only proven code defects, run targeted tests, then do the lab-only recovery check and prepare PR/report.
+- Blocked on: none yet.
+- Tried and rejected: none.
+
+### Bee progress — evidence triage
+- People: browser `commish.people.read` is HTTP 200; the typed server record includes `actors` and `yourPermissions`, which the strict frontend parser omits. The client contract is stale; preserve strict unknown-field rejection and parse the catalog's full reading.
+- Owner Home: DevTools shows `schedule.franchise.read` HTTP 400 because its arguments are absent from `RawWorkflowScope.commandScope`; the app asks for a league/franchise/season/zone already permitted by the catalog. Separately, Home attempts commissioner-only `commish.jobs.read` (HTTP 409); gate that read on commissioner authority rather than widening permission.
+- Pulse: both roles' `week.read` is HTTP 200 with 13 published league schedule rows, no current/next week, and `The NFL week dates are not held yet.` Nine scheduled rows lack NFL kickoff dates (weeks 1–5, 10–12; five have dates). Commissioner Pulse currently hides that server message behind the generic wait state; correct the display and point to the server operator, not league schedule edits.
+- Lab: CT 260 is running, host `twr-lab-260.secureprospective.com`; pinned LAB root hash matches the CT 258 signing directory. `public-host` and tunnel config are currently live, so recovery drill will back up both before deliberately removing the required state.
+- Correction to the preceding Pulse bullet: eight rows lack NFL kickoff dates (weeks 1–5 and 10–12); five of the 13 rows have dates.
+
+### Bee progress — fixes in review
+- Added the strict `People.actors` / `yourPermissions` parser contract and tests; unknown top-level and nested fields still fail.
+- Added `schedule.franchise.read` to the hosted workflow read map and validated its existing catalog scope; owner read succeeds in tests, outsiders remain denied. The separate Home jobs read now requires Commissioner/Co-commissioner role (not a deputy's change-rules flag).
+- Pulse wait-state keys now follow the server's note; the server gives the commissioner an operator-directed action when held NFL dates are missing, without implying league schedule edits can fix it.
+- `make lint` passes. Targeted Go and frontend tests pass; full `internal/serverhttp` race suite exceeded its 10-minute test timeout during the first broad run, so endpoint tests were rerun narrowly. TypeScript check remains to rerun after the latest role-gating edit.
+- Next: finish targeted verification, commit/push, open the PR, build a LAB-only bundle, then perform CT 260 recovery drill and browser retest.

@@ -115,7 +115,8 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
             canManage={people?.yourFranchise === mine} tab={hqTab}
             navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
           screen === 'home' ? <HomeBrief league={league.id} mine={mine}
-            port={localWorkflow} owner={people?.yourFranchise === mine} /> :
+            port={localWorkflow} owner={people?.yourFranchise === mine}
+            commissioner={people?.yourRole === 'Commissioner' || people?.yourRole === 'Co-commissioner'} /> :
           screen === 'pulse' ? <NativeLeaguePulse embedded league={league.id}
             mine={mine} port={localWorkflow} leave={leave} tab={pulseTab} /> :
           <WarRoomNative embedded league={league.id} mine={mine}

@@ -25,7 +25,7 @@ const nflGame = { season: 2026, week: 1, seasonType: 2, id: '401', kickoff: '202
 const board = (stale = false) => ({ league: 'test', board: { stale, source: 'ESPN',
   at: '2026-11-15T18:00:00Z', failure: '', games: [nflGame] } });
 function fakePort(scheduleMode: 'default' | 'empty' | 'unavailable' = 'default',
-  weekMode: 'default' | 'no-current' = 'default') {
+  weekMode: 'default' | 'no-current' | 'no-dates' = 'default') {
   return vi.fn<HostedPort>(async request => {
     const args = request.arguments;
     let data: unknown;
@@ -40,9 +40,15 @@ function fakePort(scheduleMode: 'default' | 'empty' | 'unavailable' = 'default',
               + 'then Publish schedule, in Control Room > Season.', games: [] }, current: null,
             message: 'The schedule is not published yet. A commissioner must choose Generate schedule, '
               + 'then Publish schedule, in Control Room > Season.' }
-          : { schedule: { league: 'test', season: 2026, revision: 1, franchise: 'a',
-            games: [{ week: 1, venue: 'home' }] },
-            current: { week: 1 }, message: '' };
+          : weekMode === 'no-dates'
+            ? { schedule: { league: 'test', season: 2026, revision: 1, franchise: 'a', games: [] },
+              current: null,
+              message: 'The current NFL week cannot be identified from this server\'s held schedule data. '
+                + 'Ask the server operator to update the NFL schedule; changing the league matchup schedule '
+                + 'will not fix Pulse.' }
+            : { schedule: { league: 'test', season: 2026, revision: 1, franchise: 'a',
+              games: [{ week: 1, venue: 'home' }] },
+              current: { week: 1 }, message: '' };
         break;
       case 'standings.read':
         data = { ...common, status: 'Ready', through: 0, decided: 0, pending: 1, criteria: [], noData: [],
@@ -171,6 +177,20 @@ it('shows the commissioner action when Pulse has no published schedule week', as
   await openNode('League Pulse');
   const action = 'A commissioner must choose Generate schedule, then Publish schedule, '
     + 'in Control Room > Season.';
+  expect(host.textContent).toContain(action);
+  expect(host.textContent).not.toContain('The league has not said which week it is playing.');
+  expect(count(port, 'results.read')).toBe(0);
+});
+
+it('shows the server-operator action when held NFL dates cannot identify Pulse week', async () => {
+  const port = fakePort('default', 'no-dates');
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} />));
+  await openNode('League Pulse');
+  const action = 'The current NFL week cannot be identified from this server\'s held schedule data. '
+    + 'Ask the server operator to update the NFL schedule; changing the league matchup schedule '
+    + 'will not fix Pulse.';
   expect(host.textContent).toContain(action);
   expect(host.textContent).not.toContain('The league has not said which week it is playing.');
   expect(count(port, 'results.read')).toBe(0);
