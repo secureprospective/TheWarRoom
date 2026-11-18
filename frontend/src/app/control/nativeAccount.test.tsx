@@ -30,13 +30,8 @@ function reply(value: NativeView) {
 }
 afterEach(async () => { await unmount(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const clickWhenReady = async (host: Awaited<ReturnType<typeof mount>>, label: string) => {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const found = all(host, 'button').find(b =>
-      b.textContent === label || b.getAttribute('aria-label') === label);
-    if (found) { await click(found); await settle(); return; }
-    await settle();
-  }
-  await click(button(host, label));
+  const found = await vi.waitFor(() => button(host, label), { timeout: 5_000 });
+  await click(found); await settle();
 };
 const submit = async (host: Awaited<ReturnType<typeof mount>>) => {
   await act(async () => {
@@ -98,7 +93,8 @@ describe('native desktop account access', () => {
     expect(host.textContent).toContain('Sign in again');
   });
 
-  it('opens the league straight after signing in and hides the sign-in form while it is open', async () => {
+  // Lazy Home/league modules can resolve slowly when the full Vitest pool is under load.
+  it('sign-in shows Home before the league and hides the form while open', async () => {
     rooms.length = 0;
     const fetcher = vi.fn()
       .mockResolvedValueOnce(reply({ ...initial, message: 'Signed in.' }))
@@ -110,7 +106,7 @@ describe('native desktop account access', () => {
     await type(control(host, 'Username'), 'commissioner');
     await type(control(host, 'Password'), 'private-password');
     await submit(host);
-    await settle(); await flush(); await settle();
+    await vi.waitFor(() => expect(button(host, 'Open League')).toBeTruthy(), { timeout: 10_000 });
     expect(fetcher.mock.calls.filter(call => call[0] === '/desktop/native')
       .map(call => JSON.parse(call[1].body).action)).toEqual(['login', 'enter']);
     expect(rooms).toEqual([]);
@@ -119,7 +115,7 @@ describe('native desktop account access', () => {
     expect(host.textContent).toContain('Home');
     await clickWhenReady(host, 'Open League');
     expect(rooms).toEqual(['open franchise.01']);
-    expect(host.textContent).toContain('Hosted My club');
+    await vi.waitFor(() => expect(host.textContent).toContain('Hosted My club'), { timeout: 10_000 });
     await click(button(host, 'Home')); await settle();
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01']);
     expect(host.textContent).toContain('YOUR LEAGUES');
@@ -141,7 +137,7 @@ describe('native desktop account access', () => {
     await click(button(host, 'Open my franchise')); await settle();
     expect(all(host, 'form')).toHaveLength(1);
     expect(host.textContent).toContain('Sign in again');
-  });
+  }, 15_000);
 
   it('makes expired invitations and lost factors recoverable without promising a seat reset', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false,

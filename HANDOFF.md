@@ -1,11 +1,7 @@
 # Handoff
 
-- Baton: Bee, 2026-11-18.
-- State: Merge commit `02d883dd5` is pushed; PR #364 into `bundle/b4` is open. CI passed on branch head `a087a605e` (handoff-only follow-up).
-- Resolved: `hqReading.ts` retains player-search data while adding Bundle 1 form/contract-decision reads; `NativeFranchiseHQ.tsx` enables contract decisions and publishes search data; `HQBoard.test.tsx` keeps both interaction and form tests; `PulseRace.tsx` keeps clickable franchise names, recent form, and schedule failure states. `hostedPulse.test.tsx` uses thin-rail node/leaf helpers for its schedule cases. `HQPanels.tsx` keeps the decision panel and shared “DEADLINES” label, preserving Bundle 4's source-branch ratchet. HANDOFF kept from this branch.
-- Next: confirm checks on the current PR head, then Christopher reviews/merges PR #364 into `bundle/b4`.
-- Checks: TypeScript, all 936 Vitest tests, production build, `make verify`, push hook, and CI at `a087a605e` pass; full Go race suite and frontend security/bundle checks passed. The 600-second wrapper timed out during Go tests; rerunning with Make's 60-minute test timeout completed successfully. Recheck CI after any further push.
-- Previous b4 work: thin Home-first rail and held-read player search; HQ roster, War Room and Pulse player names open existing inspectors; Pulse Race franchise names open the franchise inspector. Local mode remains frozen.
-- Previous checks: TypeScript, full Vitest (124 files/915 tests), lint, pre-push verify, and PR CI passed before this merge.
-- Prior b0load work: `league-load` fresh-server initialization and opt-in `TWR_FIRST_LOAD=1`; installer first-load path remains untested (requires Alpine CT; no containers in that lane).
-- Merge-in-progress (2026-11-18): merging `origin/main` `06529b7d5` into `bundle/b4` per `pulse-b4sync2`. Kept this branch's handoff. Resolved conflicts in `HANDOFF.md`, `HostedLeague.tsx`, `HostedCommissionerLeague.tsx`, `hostedMarkets.ts`, `hqReading.ts`, `HQPanels.tsx`, `NativeFranchiseHQ.tsx`, `PulseRace.tsx`, `HQBoard.test.tsx`, and `hostedPulse.test.tsx`; regenerated native bindings. Main's `ThinHome` remains the one Home: the B4 rail calls NativeAccount's back-to-Home callback, covered through the real rail and account tests. TypeScript, all 946 Vitest tests, frontend build, and `make verify` pass. Next: commit merge, push a PR branch against `bundle/b4`, and check CI.
+- Baton: Bee, 2026-11-18; PR #368 remains open into `main`.
+- State: Merged `origin/main` (Bundle 4, #369) in `55635362c`; kept Bundle 4 Home navigation assertions and this lane's lazy-content wait. Both targeted tests passed 20/20 alone; full Vitest passed twice simultaneously (946 tests); TypeScript passed.
+- Next: Push this merge to PR #368 and confirm CI. Do not merge it.
+- Root causes: Native sign-in test could inspect before lazy ThinHome/HostedLeague rendered; hosted teamless test depended on fixed 40ms settling before lazy content appeared.
+- No product changes from this lane; Bundle 4's main-branch changes are included by merge.
