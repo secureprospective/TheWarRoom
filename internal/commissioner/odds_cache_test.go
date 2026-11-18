@@ -1,7 +1,9 @@
 package commissioner
 
 import (
+	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
@@ -26,6 +28,16 @@ func TestOddsInputSeedIgnoresLedgerRevisionButTracksSimulationInputs(t *testing.
 	standings.counted.games[0].HomePoints++
 	if got := oddsInputSeed(standings, expected, field); got == seed {
 		t.Fatal("changed result retained simulation seed")
+	}
+}
+
+func TestNativeOddsSeedIsSerializedAsDecimalString(t *testing.T) {
+	body, err := json.Marshal(NativeOdds{Seed: ^uint64(0)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), `"seed":"18446744073709551615"`) {
+		t.Fatalf("seed must cross JSON as an exact decimal string: %s", body)
 	}
 }
 

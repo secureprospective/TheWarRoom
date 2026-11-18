@@ -373,7 +373,7 @@ export type PulseOddsRow = { franchise: string; name: string; rank: number; reco
 export type PulseOddsGame = { week: number; home: string; away: string; homeName: string; awayName: string;
   homeWin: number };
 export type PulseOdds = { league: string; season: number; revision: number; status: string; words: string;
-  powerWords: string; gameWords: string; oddsWords: string; week: number; runs: number; seed: number;
+  powerWords: string; gameWords: string; oddsWords: string; week: number; runs: number; seed: string;
   rows: PulseOddsRow[]; games: PulseOddsGame[] };
 
 function share(value: unknown, path: string): number {
@@ -384,6 +384,11 @@ function share(value: unknown, path: string): number {
 function finite(value: unknown, path: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${path}: expected a number`);
   return value;
+}
+function oddsSeed(value: unknown): string {
+  if (typeof value === 'string' && /^(0|[1-9]\d*)$/.test(value)) return value;
+  if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) return String(value);
+  throw new Error('Seed: expected an unsigned decimal string');
 }
 
 export function parsePulseOdds(value: unknown, league: string, season: number): PulseOdds {
@@ -396,7 +401,7 @@ export function parsePulseOdds(value: unknown, league: string, season: number): 
     powerWords: text(r.powerWords, 'Power'), gameWords: text(r.gameWords, 'Win chance'),
     oddsWords: text(r.oddsWords, 'Playoff odds'), week: integer(r.week, 'Week'),
     runs: integer(r.runs, 'Runs'),
-    seed: integer(r.seed, 'Seed'),
+    seed: oddsSeed(r.seed),
     rows: array(r.rows, 'Odds rows', (v, p) => {
       const s = object(v, p, ['franchise', 'name', 'rank', 'record', 'power', 'powerScore', 'expected',
         'playoffOdds']);
