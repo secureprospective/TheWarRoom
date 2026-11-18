@@ -12,11 +12,12 @@ import (
 )
 
 const (
-	PlayerNoteRead   = "player.note.read"
-	PlayerNoteSet    = "player.note.set"
-	PlayerWatchRead  = "player.watch.read"
-	PlayerWatchSet   = "player.watch.set"
-	PlayerWatchOrder = "player.watch.order"
+	PlayerNoteRead        = "player.note.read"
+	PlayerNoteSet         = "player.note.set"
+	PlayerWatchRead       = "player.watch.read"
+	PlayerWatchSet        = "player.watch.set"
+	PlayerWatchOrder      = "player.watch.order"
+	ContractDecisionsRead = "contract.decisions.read"
 )
 
 type RawPlayerNotesScope struct {

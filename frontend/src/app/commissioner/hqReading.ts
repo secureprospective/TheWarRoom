@@ -23,6 +23,7 @@ import { parseNativeValues, type LeagueValues } from '../data/nativeValues';
 import { parseWarRoomProjections } from '../data/nativeProjections';
 import { deadlineLabel } from '../clock/labels';
 import { readRecentResults } from '../shell/pulseReads';
+import { parseContractDecisions, type ContractDecisions } from '../shell/hqContractDecisions';
 
 export function nativeHQStanding(
   rules: Rules | undefined,
@@ -248,6 +249,7 @@ export type NativeHQ = {
   weekNote?: string;
   values?: LeagueValues;
   decisions?: { label: string; at?: string; live: boolean }[];
+  contractDecisions?: ContractDecisions;
   projections?: Map<string, number>;
   thisWeek?: PulseResults;
   playerForm?: Record<string, PulsePlayerFormPoint[]>;
@@ -263,6 +265,7 @@ export async function readNativeHQ(
   port: HostedPort = hostedWorkflow,
   publish?: (reading: NativeHQ) => void,
   owner = true,
+  includeContractDecisions = false,
 ): Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
   const snapshot = nativeHQAssets(assets.data, league);
@@ -345,6 +348,13 @@ export async function readNativeHQ(
           ] as const;
         }),
       );
+    }),
+    apply(async () => {
+      if (!owner || !includeContractDecisions || !mine) return;
+      const r = await port({ command: 'contract.decisions.read', mode: 'read',
+        arguments: { league, viewerZone: zone } });
+      sameRevision(r.data);
+      result.contractDecisions = parseContractDecisions(r.data, league, mine, revision);
     }),
     apply(async () => {
       const r = await port({

@@ -142,6 +142,8 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
       'standings.read': { league: 'native.test', name: 'Test', season: 2026, revision: 4, status: 'Ready',
         words: 'Two weeks have results', through: 2, decided: 2, pending: 0, criteria: [], noData: [],
         computed: [] },
+      'contract.decisions.read': { league: 'native.test', franchise: 'mine', revision: 4, season: 2026,
+        words: 'No priceable owner contract decisions are due.', players: [] },
       'week.read': { schedule: { league: 'native.test', franchise: 'mine', season: 2026, revision: 4,
         message: '', games: [{ week: 1, venue: 'Home', opponent: 'other' },
           { week: 2, venue: 'Away', opponent: 'other' }] }, current: null, nextWeek: null, message: '' },
@@ -158,7 +160,7 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
     if (!data[request.command]) throw new Error('Unexpected workflow command ' + request.command);
     return { label: 'Fake hosted workflow', writable: false, football: '', data: data[request.command] };
   });
-  const reading = await readNativeHQ('native.test', 'mine', port);
+  const reading = await readNativeHQ('native.test', 'mine', port, undefined, true, true);
   expect(reading.playerForm?.['0042']).toEqual([]);
   expect(port.mock.calls.flatMap(([r]) => r.command === 'results.read' ? [r.arguments.week] : []))
     .toEqual([1, 2]);
@@ -170,9 +172,10 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
   expect(inspector).toContain('$5.00M'); expect(inspector).toContain('$1.20M');
   const contracts = renderToStaticMarkup(<HQContracts native snapshot={reading.snapshot} mine="mine"
     runway={reading.runway} annual={reading.contracts} values={reading.values}
-    decisions={reading.decisions} cutCosts={new Map([['0042', cut.deadNow!]])} select={() => {}} />);
-  for (const visible of ['$5.00M', '$90.00M', '18.4', '0.3', 'Lineup',
-    'DEAD CAP TOTAL · $3.00M'])
+    decisions={reading.decisions} contractDecisions={reading.contractDecisions}
+    cutCosts={new Map([['0042', cut.deadNow!]])} select={() => {}} />);
+  for (const visible of ['$5.00M', '$90.00M', '18.4', '0.3', 'No priceable owner contract decisions',
+    'Lineup', 'DEAD CAP TOTAL · $3.00M'])
     expect(contracts).toContain(visible);
   const taxi = renderToStaticMarkup(<HQReserves native kind="taxi" snapshot={reading.snapshot}
     mine="mine" settings={{ positions: [], taxi: 4 }} values={reading.values}
@@ -180,7 +183,15 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
   expect(taxi).toContain('7.6');
   expect(taxi).toContain('NFL YR'); expect(taxi).toContain('TAXI LEFT');
   expect(taxi).toContain('<td>2</td>'); expect(taxi).toContain('<td>1</td>');
-  for (const command of ['value.read', 'native.cap.check', 'calendar.read', 'contract.quote'])
+  expect(reading.contractDecisions).toMatchObject({ franchise: 'mine', revision: 4, season: 2026,
+    words: 'No priceable owner contract decisions are due.' });
+  const viewerStart = port.mock.calls.length;
+  const viewer = await readNativeHQ('native.test', 'mine', port, undefined, false, true);
+  expect(viewer.contractDecisions).toBeUndefined();
+  expect(port.mock.calls.slice(viewerStart).some(([request]) =>
+    request.command === 'contract.decisions.read')).toBe(false);
+  for (const command of ['value.read', 'native.cap.check', 'calendar.read', 'contract.quote',
+    'contract.decisions.read'])
     expect(port).toHaveBeenCalledWith(expect.objectContaining({ command }));
 });
 it('shares the app/mirror lineup read, fences scope and renders the inspector fit', async () => {

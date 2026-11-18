@@ -668,6 +668,9 @@ func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records
 	if err := commissioner.PrepareOLineClose(raw, records, now); err != nil {
 		return fmt.Errorf("close O-Line auction: %w", commissioner.Refused(err))
 	}
+	if err := market.PrepareContractDecisionAppend(raw, records, now, facts, zone); err != nil {
+		return fmt.Errorf("check contract decision: %w", commissioner.Refused(err))
+	}
 	if err := market.PrepareWaiverAppend(raw, records, now, facts, zone); err != nil {
 		return fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
 	}

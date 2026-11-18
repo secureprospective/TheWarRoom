@@ -1,4 +1,10 @@
 {
+  "contract.decision.set": {
+    "args": {"contractDecision": {"franchise": "franchise.02", "player": "0099", "action": "tag"}},
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": ["owner"]
+  },
   "oline.auction.close": {
     "args": {},
     "visibility": "league",

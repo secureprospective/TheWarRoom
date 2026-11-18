@@ -132,6 +132,7 @@ type Contract struct {
 	Salary       domain.Money
 	Expiration   int
 	Status       domain.ContractStatus
+	Schedule     []SeasonAmount
 }
 
 // Trail is what this franchise and this contract have already been through. It counts only what the app

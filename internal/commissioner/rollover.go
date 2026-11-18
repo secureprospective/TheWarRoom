@@ -10,6 +10,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // RolloverState contains only recorded inputs; At is supplied by the caller's clock.
@@ -104,6 +105,9 @@ func cloneRolloverAssets(seed RawNativeSnapshot) RawNativeSnapshot {
 	seed.Champions = slices.Clone(seed.Champions)
 	seed.Franchises = slices.Clone(seed.Franchises)
 	seed.Players = slices.Clone(seed.Players)
+	for i := range seed.Players {
+		seed.Players[i].ContractSchedule = slices.Clone(seed.Players[i].ContractSchedule)
+	}
 	seed.Picks = slices.Clone(seed.Picks)
 	seed.Adjustments = slices.Clone(seed.Adjustments)
 	seed.Pool = slices.Clone(seed.Pool)
@@ -114,6 +118,17 @@ func (p *RolloverPlan) agePlayers(names map[string]string) {
 	for i := range p.After.Players {
 		player := &p.After.Players[i]
 		name := rolloverPlayerName(*player, names)
+		if len(player.ContractSchedule) > 0 {
+			player.ContractSchedule = slices.DeleteFunc(player.ContractSchedule, func(year nativecheck.SeasonAmount) bool {
+				return year.Season < p.To
+			})
+			for _, year := range player.ContractSchedule {
+				if year.Season == p.To {
+					player.Salary = year.Cents
+					break
+				}
+			}
+		}
 		if player.Status != domain.RosterActive {
 			p.Lines = append(p.Lines, fmt.Sprintf("%s returns from %s to the active roster.",
 				name, rolloverSquad(player.Status)))

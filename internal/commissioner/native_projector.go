@@ -53,23 +53,27 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 	return nil
 }
 
-// projectNativeEntry applies one active ledger entry to the native assets.
-func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *MarketBook, contracts map[string]NativePlayer) error {
-	record := records[i]
-	if TradeCommand(record.Command.Command) {
-		return projectNativeTrade(assets, waivers, record)
-	}
+func projectSeededMarket(assets *NativeAssets, waivers *MarketBook, record Record) error {
 	if WaiverCommand(record.Command.Command) {
 		if !assets.Seeded {
 			return fmt.Errorf("record starting assets before waiver actions")
 		}
 		return projectWaiver(assets.Snapshot, waivers, record)
 	}
-	if BidCommand(record.Command.Command) {
-		if !assets.Seeded {
-			return fmt.Errorf("record starting assets before bid actions")
-		}
-		return projectBid(assets.Snapshot, waivers, record)
+	if !assets.Seeded {
+		return fmt.Errorf("record starting assets before bid actions")
+	}
+	return projectBid(assets.Snapshot, waivers, record)
+}
+
+// projectNativeEntry applies one active ledger entry to the native assets.
+func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *MarketBook, contracts map[string]NativePlayer) error {
+	record := records[i]
+	if TradeCommand(record.Command.Command) {
+		return projectNativeTrade(assets, waivers, record)
+	}
+	if WaiverCommand(record.Command.Command) || BidCommand(record.Command.Command) {
+		return projectSeededMarket(assets, waivers, record)
 	}
 	switch record.Command.Command {
 	case OLineAuctionClose:
@@ -80,6 +84,8 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		return applyAssetCorrection(assets.Snapshot, contracts, record)
 	case SeasonRollover:
 		return applyNativeRollover(assets, record)
+	case ContractDecisionSet:
+		return applyContractDecision(assets.Snapshot, records, i)
 	case DraftPick, DraftAssign, DraftInsert, DraftChange, DraftArchive:
 		projectDraftEntry(assets.Snapshot, record)
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
@@ -100,6 +106,30 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 }
 
 // projectDraftEntry applies a live draft entry: a pick, a commissioner's tray move or the draft's close.
+func applyContractDecision(seed *RawNativeSnapshot, records []Record, index int) error {
+	record := records[index]
+	choice := record.Command.Args.ContractDecision
+	outcome := record.Command.Args.ContractDecisionOutcome
+	if seed == nil || choice == nil || outcome == nil {
+		return fmt.Errorf("the contract decision has no recorded result")
+	}
+	latest, ok := LatestContractDecision(records, choice.Franchise, choice.Player, outcome.Season)
+	if !ok || latest.Receipt.Entry != record.Receipt.Entry {
+		return nil
+	}
+	playerIndex := seed.PlayerOf(choice.Franchise, choice.Player)
+	if playerIndex < 0 {
+		return fmt.Errorf("the contract decision player is not on its recorded franchise")
+	}
+	current := seed.Players[playerIndex]
+	if current.Salary != outcome.Before.Salary || current.ExpirationYear != outcome.Before.ExpirationYear ||
+		current.ContractStatus != outcome.Before.ContractStatus || !slices.Equal(current.ContractSchedule, outcome.Before.ContractSchedule) {
+		return fmt.Errorf("the contract decision does not follow its recorded contract")
+	}
+	seed.Players[playerIndex] = outcome.After
+	return nil
+}
+
 func projectDraftEntry(seed *RawNativeSnapshot, record Record) {
 	switch record.Command.Command {
 	case DraftPick:

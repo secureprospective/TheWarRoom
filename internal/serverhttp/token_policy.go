@@ -203,7 +203,8 @@ func tokenSeatScope(records []commissioner.Record, principal string, scope accou
 			return fmt.Errorf("take a vacant franchise's caretaker seat before delegating lineups or picks")
 		}
 		if (commissioner.OwnerBidAction(command) != "" || commissioner.OwnerWaiverAction(command) != "" ||
-			commissioner.OwnerTradeAction(command) != "" || privateOwnerPersonalOperation(command) ||
+			commissioner.OwnerTradeAction(command) != "" || command == commissioner.ContractDecisionSet ||
+			privateOwnerPersonalOperation(command) ||
 			command == "draft.queue.read" || command == "draft.queue.set") && seat.Seat != p {
 			return fmt.Errorf("delegate owner actions only for your own franchise")
 		}
