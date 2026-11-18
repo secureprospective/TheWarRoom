@@ -1,9 +1,8 @@
 # Handoff
 
-- Baton: Bee, 2026-11-17.
-- State: B1 bid/privacy cleanup complete. PR #343 targets `bundle/b1`: https://github.com/secureprospective/TheWarRoom/pull/343
-- Changes: placed-bid withdrawal removed from HostedWorkflows, War Room Market, native/workflow catalogs and generated doors; server refusal retained. Draft.queue.* uses the shared owner-private admission check. V3 bid ruling rows and snapshot heading corrected.
-- Tests: frontend 123 files / 912 tests; TypeScript, nativegen, `make lint`, `make bloat`, and race tests for market, commandcatalog, serverhttp and app/commissioner pass. PR checks were green at the previous head; this update only records handoff state.
-- Slop fixed: duplicate draft-queue seat checks; impossible bid-withdraw exposure and stale wording.
-- Next: head brain review and merge into `bundle/b1`.
-- Blocked: none.
+- Baton: Bee, 2026-11-18.
+- State: stacked HQ What-if server read and single hosted drawer are implemented; unsaved owner stacks quote sequentially through the contract and cap engines.
+- Validation: touched Go packages pass `go test -race`; frontend 125 files / 929 tests and `pnpm exec tsc --noEmit` pass; `make lint`, `make bloat`, and nativegen checks pass.
+- Next: push `session/pulse-b1whatif`, open PR against `bundle/b1`, then await CI/review.
+- Blocked: none. No migration or release change.
+- Slop fixed: reused private owner-seat admission, sequential contract quote and projected runway; removed the single-cut-only What-if stub without duplicating its drawer; kept private results uncached and cap math server-side.
