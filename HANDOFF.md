@@ -1,13 +1,12 @@
 # Handoff
 
-- Baton: ClaudeBox review, 2026-11-18; Bee finished this rerun.
-- State: CT 260 is unchanged (release 8 / `c4d38df6c`, server stopped, data empty). Current main `cfb7d5d34` includes #346; a matching LAB-only bundle was built but not transferred.
-- Job 1 NOT MET: no documented way found to install current main on this existing CT while keeping the server stopped. Existing `twr-upgrade` starts it; fresh `TWR_FIRST_LOAD=1` install refuses existing `/etc/twr` and CT 260. No credential staged or import attempted.
-- Jobs 2–3 NOT MET: league absent, so no post-import upgrade/persistence proof or stress traffic.
-- Job 4 NOT MET: Claude-OS had an active `seat0` session and `thewarroom-main` PID 182698; left untouched.
-- Job 5 MET: report and evidence are in `../../../../fleet/runs/pulse-lab4/RESULT.md` and `../../../../fleet/runs/pulse-lab4/evidence/`.
-- Tried/rejected: bundle from stale lane checkout `554b03f2f` omitted #346; not used. Correct bundle from `cfb7d5d34` built with the matching CT root, but not deployed.
-- Next: approve a supported no-start update path for CT 260; release Claude-OS for testing; then resume jobs 1–4.
-- Cleanup `rm -rf .scratch deploy/lab/__pycache__` was blocked (`Command recursively deletes; blocked (no UI for confirmation)`); no retry. `.scratch/KEEP.md` records our retained artifacts.
-- `tidy-check.sh` found foreign active lanes PID 3148274 (`b1whatif`), 3148435 (`b5frame`), 3148600 (`b5jobs`), 3148836 (`b5perm`). Their scratch/KEEP files belong to those owners; not stopped or edited. See `../../../../fleet/runs/pulse-lab4/evidence/cleanup-blocker.txt`.
-- No remote state/service changes, stress traffic, secrets, repo source changes, PR, or container power action.
+- Baton: Bee, 2026-11-18; jobs 1–3 MET, job 4 NOT MET; report is `../../../../fleet/runs/pulse-lab4/RESULT.md`.
+- CT 260 runs release 9 / `cfb7d5d34`. Final `/usr/local/libexec/twr-status` after revoking the join link was clean (`Everything is working. Nothing to do.`); history: 3399 league entries, 32 sign-in entries, backups checked in R2. No container power action.
+- Job 1 imported MFL 14432 from `/root/seed/history.db` into `native.mfl-14432-2026`. Job 2 verified current-main bundle SHA-256 `8286dc34ba056ac3d58d545b5843843236996daae907a318f6341c117b4cc012`, clean status after update and after the required server restart, with history preserved.
+- Job 3 ran current-main #320 harness against the lab URL: 79,795 total requests; 0 HTTP 502; 5,407 HTTP 503 overload refusals; 24 transport exceptions, details in `../../../../fleet/runs/pulse-lab4/RESULT.md` and `../../../../fleet/runs/pulse-lab4/evidence/storm.json`. Server remained healthy.
+- Job 4: after more than 60 minutes elapsed, Claude-OS still had an active unlocked `seat0`, an existing app process for CT257 and an unrelated private work page open. No app install, launch, interaction, or screenshots. Needs a safe idle/released desktop or an approved isolated GUI session.
+- Test owner credentials: `../../../../fleet/runs/pulse-lab4/private/stress-owners.json` (0600); commissioner credential: `../../../../fleet/runs/pulse-lab4/private/commissioner.json` (0600). 32 test owners remain in the lab league. The join link was revoked; owner-only STATE and join-code files were removed from lab-host `/dev/shm`.
+- Bugs to fix: (1) no no-start upgrade mode for a fresh empty state; direct update refuses missing `server.db`. A pre-existing empty-install archive was used only to permit the documented upgrade; upgrade-created state was archived and individually removed before import. (2) documented chown of only `server.db*` leaves `accounts.db`, `reference.db`, and league files root-owned; targeted non-recursive ownership correction was required.
+- Blocked hook: exact read-only command `grep -R -n 'func openStateFiles\|func openSignInFiles\|chown\|Chown' .scratch/pulse-lab4-main/cmd/twr-server .scratch/pulse-lab4-main/internal/db .scratch/pulse-lab4-main/internal/store | head -120; grep -R -n 'server.db\*' .scratch/pulse-lab4-main/deploy/server` was refused as `Command recursively changes permissions; blocked (no UI for confirmation)`; not retried.
+- `tidy-check.sh` found foreign active lane PIDs 3395023, 3395272, 3395834, 3398444, 3435475, 3560779 and 3627613. Left them untouched per the task's ruling; none belongs to this run. Pre-existing untracked `deploy/lab/__pycache__/` remains untouched. `.scratch/KEEP.md` records retained build artifacts.
+- No source changes or PR. The current-main build checkout and signed bundle remain in `.scratch/` for audit/resume; temporary signing metadata and remote staging were removed.
