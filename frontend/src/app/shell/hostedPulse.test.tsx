@@ -155,6 +155,16 @@ it('opens hosted Now, refreshes active reads except odds, shows Race and returns
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
 });
 
+it('opens the League phone entry on the standings table', async () => {
+  const port = fakePort();
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} entry="league" />));
+  await settle();
+  expect(host.textContent).toContain('STANDINGS');
+  expect(host.textContent).toContain('MY ROAD · WKS 1–2');
+  expect(host.querySelector('.lp-v14')).not.toBeNull();
+});
+
 it('routes the rail Home item to its parent instead of rendering a second league Home', async () => {
   const port = fakePort();
   const onHome = vi.fn();

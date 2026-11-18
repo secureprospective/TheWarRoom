@@ -42,6 +42,29 @@ func TestExecutableRegistryRejectsBrokenDeclarations(t *testing.T) {
 	}
 }
 
+func TestLeagueActivityIsAHostedLeagueViewRead(t *testing.T) {
+	var found bool
+	for _, command := range NativeCommands(Schema{}) {
+		if command.ID != "league.activity.read" {
+			continue
+		}
+		found = true
+		if command.Method != "TargetLeagueActivity" || command.Availability != "server" ||
+			command.Permission != "league-view" || len(command.Modes) != 1 || command.Modes[0] != Read {
+			t.Fatalf("activity catalog entry = %+v", command)
+		}
+	}
+	if !found {
+		t.Fatal("member-safe activity read missing from catalog")
+	}
+	if _, ok := WorkflowCommands()["league.activity.read"]; !ok {
+		t.Fatal("activity read missing from hosted workflow")
+	}
+	if _, ok := WorkflowCommands()["commish.ledger.filtered.read"]; ok {
+		t.Fatal("commissioner ledger filter entered the workflow as an activity shortcut")
+	}
+}
+
 func TestBidWithdrawalIsNotPublishedThroughCommandDoors(t *testing.T) {
 	for _, command := range NativeCommands(Schema{}) {
 		if command.ID == "bid.withdraw" {

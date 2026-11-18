@@ -210,6 +210,11 @@ func workflowReads() map[string]WorkflowCommand {
 	for id, command := range otherWorkflowReads() {
 		out[id] = command
 	}
+	out["league.activity.read"] = workflowInputCommand[commissioner.RawLeagueActivityScope, *commissioner.RawLeagueActivityScope](
+		"read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service,
+			input commissioner.RawLeagueActivityScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetLeagueActivity(ctx, input))
+		})
 	return out
 }
 
@@ -262,7 +267,6 @@ func pulseWorkflowReads() map[string]WorkflowCommand {
 
 func otherWorkflowReads() map[string]WorkflowCommand {
 	return map[string]WorkflowCommand{
-
 		"commish.market.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetCommissionerMarket(r.League, r.Command))
 		}),
