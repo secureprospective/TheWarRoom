@@ -1,11 +1,11 @@
 # Handoff
 
-- Baton: ClaudeBox, 2026-11-18 (PR #357; based on bundle/b5 including PR #350).
-- State: Hosted People reads `commish.people.read` and renders all seats with search/vacancy filter; seat tools, roles, deputy order and succession use the shared hosted act form. Quiet/Staff and D65 permission sets stay explicitly unavailable.
-- Findings: b5perm is paused on a D65 authority conflict; no permission-set read/commands are merged. `commish.people.read` lacks last-seen and staff fields (D69 partial). No server read, command, table or migration added.
-- Changed: People tab owner/query with identity reset; one frame registration; role grant/revoke actTable rows; 32-seat, preview→review→execute, and server-denial tests.
-- Verified: `HostedControlRoomPeople.test.tsx` and full frontend suite (925/925); `pnpm exec tsc --noEmit`; `make lint`; `make bloat`; production build and bundle budget pass. PR #357 CI is green (checks, verify, test shards, package, install, release-tools). No Go files changed; Go race test not applicable. Desktop-mode checks pass.
-- Tidy: `tidy-check.sh` flagged detached b5picks, b5perm, b0load2 and b3home launchers (PPID 1, other lanes); left them running and did not touch their files or scratch.
-- Next: ClaudeBox reviews and merges PR #357; D65 authority remains the only functional boundary, outside this PR.
-- Blocked: D65 authority decision remains with b5perm/Christopher; no code depends on it.
-- Open decisions untouched: snooze scope; deputy job visibility; written-request visibility; division naming.
+- Baton: Bee, 2026-11-18 (Bundle 5 lane b5fix; PR #358 open against `bundle/b5`).
+- State: Hosted Fix wires the nine actTable forms, reversible ledger entries and correction/calendar exceptions. Reversal uses `commish.correction.revert`; no new server read/command. 32-team and preview → review → execute behavior is tested.
+- Scope: thin hosted Fix tab only; local mode unchanged.
+- Verified locally: frontend typecheck; frontend suite (127 files, 923 tests); `make lint` (0 golangci-lint issues); `make bloat`; targeted Fix tests; pre-push verify.
+- CI: latest full run 44245483826 passed all four race-test shards and verify; package/install run 44245483883 passed. Earlier run 44241548732 caught an intermittent race in `internal/serverclient.TestUnavailableKeychainLoginIsMemoryOnly` (test read at `credentials_test.go:119`, concurrent `Desktop.clearCredential` write at `credentials.go:64`); a later full run passed unchanged. No Go files changed in this lane. Flagged for ClaudeBox; latest checks are green, but the earlier race should be reviewed before merge.
+- Next: ClaudeBox reviews PR #358 and decides whether to triage the intermittent `serverclient` race before merge into `bundle/b5`.
+- Other work in flight: tidy-check reports launchers for b5perm, b0load2, b3home and b5league. This lane did not start them; their scratch and KEEP files are untouched under the requested write boundary.
+- Open decisions deliberately untouched: snooze per person/league; deputy job visibility; written-request visibility; division naming.
+- Slop fixed: revert choices filter on server-provided undo eligibility/replacement state; calendar exceptions use the existing calendar read.

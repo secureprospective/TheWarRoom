@@ -256,7 +256,10 @@ export async function readHostedActData(league: string, revision: number, kinds:
     const ledger = parseLedger(await hostedRead(port, 'commish.ledger.read', { league }));
     if (ledger.league !== league || ledger.revision !== revision)
       throw new Error('The league changed while reading the ledger. Reopen the change.');
-    options.entry = ledger.entries.map(entry => ({ value: entry.id, label: entry.what }));
+    const entries = command === 'commish.correction.revert'
+      ? ledger.entries.filter(entry => entry.undo !== '' && !entry.replacedAt)
+      : ledger.entries;
+    options.entry = entries.map(entry => ({ value: entry.id, label: entry.what }));
     options.scope = [...(options.scope ?? []), ...options.entry.map(entry => ({
       value: JSON.stringify({ transaction: entry.value }), label: `Transaction: ${entry.label}`,
     }))];
