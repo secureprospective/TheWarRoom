@@ -9,6 +9,9 @@ import { createHostedJobsQuery, hostedControlTabs, type HostedControlTab } from 
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
 import type { Job } from './jobs';
 import type { ActDefinition } from './actTable';
+import { parseLedger } from './proxy';
+import { hostedWorkflow } from '../control/nativeApi';
+import type { NativeRequest } from '../commands/native';
 import './commissioner.css';
 import '../control/room/controlRoom.css';
 
@@ -95,7 +98,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {tab === 'rules' && roomState.reading
           ? <HostedRules rules={roomState.reading.rules} commissioner room={room} />
           : tab === 'rules' && <p role="status">{roomState.error || 'Reading league rules…'}</p>}
-        {!['jobs', 'situations', 'rules'].includes(tab)
+        {tab === 'server' && <HostedServerTab league={league} port={port} />}
+        {!['jobs', 'situations', 'rules', 'server'].includes(tab)
           && <p className="cr-note hosted-unported">{notOnServer}</p>}
       </section>
     </main>
@@ -112,4 +116,38 @@ export function HostedControlRoom({ league, port, heldRoom }: {
       </div>
     </aside>
   </section>;
+}
+
+function HostedServerTab({ league, port = hostedWorkflow }: { league: string; port?: HostedPort }) {
+  const [ledger, setLedger] = useState<ReturnType<typeof parseLedger>>();
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let active = true;
+    setLedger(undefined);
+    setError('');
+    void port({ command: 'commish.ledger.read', mode: 'read', arguments: { league } } as NativeRequest)
+      .then(response => {
+        const reading = parseLedger(response.data);
+        if (reading.league !== league) throw new Error('Ledger belongs to another league.');
+        if (active) setLedger(reading);
+      })
+      .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : String(cause)); });
+    return () => { active = false; };
+  }, [league, port]);
+  return <div className="cr-note" aria-label="Server status">
+    <h3>Server</h3>
+    <p>Commissioner view is read-only. Restore, feed controls and upgrades are operator-only.</p>
+    <h4>Backups</h4>
+    <p>Back up now is not available through the hosted server command path.</p>
+    <p>Restore is operator-only and unavailable here.</p>
+    <h4>Feeds and upgrades</h4>
+    <p>Feed controls and upgrades are operator-only and unavailable here.</p>
+    <h4>Ledger</h4>
+    {error && <p role="alert">{error}</p>}
+    {!ledger && !error && <p role="status">Reading server ledger…</p>}
+    {ledger && (ledger.entries.length ? <ol>{ledger.entries.map(entry => <li key={entry.id}>
+      <strong>{entry.what}</strong><p>By {entry.who} · {new Date(entry.when).toLocaleString()}</p>
+      <p>Reason: {entry.why || 'No reason recorded'}</p><p>Safeguard: {entry.gravity}</p>
+    </li>)}</ol> : <p>No changes are visible to you in this league yet.</p>)}
+  </div>;
 }

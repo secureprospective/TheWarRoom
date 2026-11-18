@@ -1,11 +1,9 @@
 # Handoff
 
-- Baton: ClaudeBox, 2026-11-17 (PR #347 open; review pending).
-- State: Hosted Control Room frame, Jobs and Situations are implemented in `frontend/src/app/commissioner/`. Jobs and League Health share the `commish.jobs.read` count; commissioner forms stay on `hostedRoom`.
-- Scope: thin hosted mode only; local mode unchanged. Snooze/settlement remain out of scope.
-- Verified: frontend 127 files/919 tests; `pnpm exec tsc --noEmit`; path-casing check; `make lint`; `make bloat`; PR CI green.
-- Slop fixed: shared jobs read/count; reused act-table form and hosted command path; renamed helper module to avoid case-insensitive collision with `HostedControlRoom.tsx`.
-- Next: ClaudeBox review and merge PR #347 into `bundle/b5`.
-- Blocked: none. Deputy visibility comes from the server read; permission checks stay on the hosted command path.
-- Open decisions deliberately untouched: snooze per person/league; deputy job visibility; written-request visibility; division naming.
-- Tried/rejected: none.
+- Baton: Bee, 2026-11-17.
+- State: Server tab in `HostedControlRoom.tsx` now reads `commish.ledger.read`, renders every visible row, and clearly identifies restore/feed/upgrade as operator-only. Backup-now is left unavailable: its catalog entry is desktop-only, not a hosted server command.
+- Tests added: hosted ledger at 32 rows and operator-only seam.
+- Next: run hosted Control Room frontend tests and TypeScript, then required lint/bloat; commit and open PR against `bundle/b5`.
+- Blocked: `heavy-ok.sh` currently refuses because another full `-race` suite is running. Retry before tests/heavy checks.
+- Slop fixed: none identified outside this tab.
+- Open decisions deliberately untouched: snooze scope; deputy job visibility; written-request visibility; division naming.
