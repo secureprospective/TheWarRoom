@@ -18,7 +18,8 @@
 - Next: ClaudeBox review/merge. Blocked on review.
 
 ## Bee — B8-6 trade phone (2026-11-18)
-- Baton: Bee implementing B8-6 in `session/pulse-b8trade`; code and focused tests in progress.
-- State: responsive phone CSS added to embedded War Room trade desk; hosted offer execution now requests private visibility (matching preview and private-party scope). Existing preview/confirm/read-back path retained.
-- Next: run type check and pre-push verification; open PR to `bundle/b8`.
-- Blocked on: none.
+- Baton: ClaudeBox review; PR #386 from `session/pulse-b8trade`, commit `259949be8` into `bundle/b8`.
+- State: responsive phone CSS for embedded War Room trade desk; hosted execution uses private visibility matching preview and party-scoped reads. Existing preview/confirm/receipt/read-back path retained.
+- Checks: focused 16/16, full Vitest 990/990, tsc and pre-push verification passed; PR CI pending. Responsive CSS contract test added; no authenticated live-phone session was available.
+- Next: ClaudeBox review; verify PR CI goes green. Tidy clean.
+- Blocked on: CI and review.
