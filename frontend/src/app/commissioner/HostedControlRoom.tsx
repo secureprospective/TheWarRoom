@@ -4,6 +4,7 @@ import { onHostedTopics } from '../data/hostedReads';
 import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
+import { HostedControlRoomPicks } from './HostedControlRoomPicks';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
 import { HostedControlRoomSeason } from './HostedControlRoomSeason';
 import { createHostedJobsQuery, createHostedLedgerQuery, hostedControlTabs,
@@ -109,7 +110,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
             room={room} port={port} />}
         </div>}
         {tab === 'server' && <HostedServerTab league={league} port={port} />}
-        {!['jobs', 'situations', 'rules', 'season', 'server'].includes(tab)
+        {tab === 'picks' && <HostedControlRoomPicks league={league} room={room} port={port} />}
+        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks'].includes(tab)
           && <p className="cr-note hosted-unported">{notOnServer}</p>}
       </section>
     </main>
