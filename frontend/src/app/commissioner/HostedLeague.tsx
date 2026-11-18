@@ -14,12 +14,14 @@ import './hostedLeague.css';
 import { hostedScreens } from '../data/hostedReads';
 import { HostedWorkflows, type HostedTask } from './HostedWorkflows';
 import { ThinLeagueShell } from '../shell/ThinLeagueShell';
+import type { PhoneTab } from '../shell/PhoneShell';
 import type { PlayerCandidate, ThinScreenRoute } from '../shell/ThinPlayerSearch';
 import type { HQTab } from '../shell/HQShell';
 import type { Node } from '../shell/nodes';
 
 type Tab = 'lineup' | 'roster' | 'draft' | 'rules' | HostedTask;
-export type HostedEntry = 'hq' | 'war' | 'pulse' | 'control' | 'lineup' | 'bids' | 'trades';
+export type HostedEntry = 'home' | 'hq' | 'war' | 'pulse' | 'league' | 'control'
+  | 'lineup' | 'bids' | 'trades';
 const entryTab = (entry?: HostedEntry): Tab => entry === 'control' ? 'rules'
   : entry === 'bids' || entry === 'trades' || entry === 'lineup' ? entry : 'lineup';
 const labels: Record<Tab, string> = {
@@ -45,6 +47,8 @@ function useRemembered<T>(key: string, initial: T, forceInitial = false): [T, (v
 }
 function entryRoute(entry: HostedEntry | undefined, hq: boolean | undefined,
   commissioner: boolean): ThinScreenRoute {
+  if (entry === 'home') return { node: 'home', workspace: 'overview' };
+  if (entry === 'league') return { node: 'pulse', workspace: 'race' };
   if (entry === 'hq') return { node: 'hq', workspace: 'lineup-and-roster' };
   if (entry === 'war') return { node: 'war', workspace: 'trade-desk' };
   if (entry === 'pulse') return { node: 'pulse', workspace: 'now' };
@@ -56,7 +60,9 @@ function entryRoute(entry: HostedEntry | undefined, hq: boolean | undefined,
 }
 export default function HostedLeague(props: {
   league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
-  entry?: HostedEntry; onHome?: () => void;
+  entry?: HostedEntry; onHome?: () => void; phoneShell?: boolean;
+  phoneLeagueName?: string; phoneTab?: PhoneTab; onPhoneTab?: (tab: PhoneTab) => void;
+  onPhoneControlRoom?: () => void;
 }) {
   const commissioner = props.role === 'Commissioner' || props.role === 'Co-commissioner';
   const place = `${props.league}:${props.franchise}:${props.role}`;
@@ -118,9 +124,10 @@ export default function HostedLeague(props: {
       </Suspense>
     : <HostedWorkRoom {...props} onPlayers={publishHomePlayers} onPlayer={openPlayer} />;
   return <ThinLeagueShell leagueName={props.name} route={route} commissioner={commissioner}
-    players={players} navigate={navigate} openPlayer={openPlayer} onHome={props.onHome}>
-    {page}
-  </ThinLeagueShell>;
+    players={players} navigate={navigate} openPlayer={openPlayer} onHome={props.onHome}
+    phoneShell={props.phoneShell} phoneLeagueName={props.phoneLeagueName}
+    phoneTab={props.phoneTab} onPhoneTab={props.onPhoneTab}
+    onPhoneControlRoom={props.onPhoneControlRoom}>{page}</ThinLeagueShell>;
 }
 function HostedWorkRoom({
   league,

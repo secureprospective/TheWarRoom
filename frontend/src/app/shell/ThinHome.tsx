@@ -13,7 +13,8 @@ import './thinHome.css';
 export const thinHomeRoute: Route = homeRoute;
 type BriefReader = (league: string, mine: string, port: HostedPort, owner: boolean) =>
   Promise<HomeBrief>;
-export type ThinHomeEntry = 'hq' | 'war' | 'pulse' | 'control' | 'lineup' | 'bids' | 'trades';
+export type ThinHomeEntry = 'home' | 'hq' | 'war' | 'pulse' | 'league' | 'control'
+  | 'lineup' | 'bids' | 'trades';
 type ThinHomeProps = {
   leagues: LeagueChoice[];
   onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void;

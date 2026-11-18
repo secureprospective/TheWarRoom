@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { HostedPort } from '../commissioner/hostedRoom';
-import { all, button, click, mount, render, settle, unmount } from '../commissioner/commissionerDom';
+import { all, button, click, disabled, mount, render, settle, unmount }
+  from '../commissioner/commissionerDom';
 import type { HomeBrief } from './homeReads';
 import { ThinHome } from './ThinHome';
 import type { LeagueChoice } from './leaguePicker';
@@ -83,6 +84,22 @@ describe('ThinHome', () => {
     expect(host.textContent).toContain('Beta League');
     expect(host.textContent).toContain('3-2');
     expect(all(host, 'article')).toHaveLength(2);
+  });
+
+  it('keeps Needs-you actions and failed reads usable at the 390px phone breakpoint', async () => {
+    const phoneWidth = 390;
+    expect(phoneWidth).toBeLessThan(700);
+    const readBrief = vi.fn(async () => { throw new Error('Calendar read refused'); });
+    const host = await mount(render(ThinHome, { leagues: [leagues[0]], onOpen: vi.fn(),
+      readBrief, now }));
+    await settle();
+
+    expect(all(host, 'h2').some(heading => heading.textContent === 'NEEDS YOU')).toBe(true);
+    expect(host.textContent).toContain('Not available yet · Calendar read refused');
+    const unavailableItem = all(host, 'button').find(item => item.textContent
+      .includes('Calendar read refused'));
+    expect(unavailableItem).toBeTruthy();
+    expect(disabled(unavailableItem!)).toBe(true);
   });
 
   it('uses only the admitted league and never requests the server-wide league list', async () => {
