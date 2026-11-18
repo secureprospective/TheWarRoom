@@ -2444,7 +2444,6 @@ export type WorkflowArgumentMap = {
 "waivers.award.override": NativeArguments<"waivers.award.override">;
 "bid.place": NativeArguments<"bid.place">;
 "bid.raise": NativeArguments<"bid.raise">;
-"bid.withdraw": NativeArguments<"bid.withdraw">;
 "oline.auction.close": NativeArguments<"oline.auction.close">;
 "bids.process": NativeArguments<"bids.process">;
 "bids.award.override": NativeArguments<"bids.award.override">;

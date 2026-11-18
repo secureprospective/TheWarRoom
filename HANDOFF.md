@@ -1,8 +1,9 @@
 # Handoff
 
-- Baton: Bee, 2026-11-18.
-- State: Pulse implementation and head-brain review fixes are committed on `session/pulse-b1pulse`, PR #345 against `bundle/b1`.
-- Changes: My Road uses `schedule.franchise.read`; team W/L form shares `recentForm` across Pulse and Home. HQ now charts each player's `results.read` starter points with a separate player-bars renderer. Removed 22-week magic cap; final games without a winner count as ties; removed stray PulseRace blank line and dead research-form calculation.
-- Verification: frontend 125 files / 919 tests; `pnpm exec tsc --noEmit`, `make lint`, `make bloat`, `tidy-check.sh` pass. No Go files changed.
-- Next: PR #345 CI is green; await head-brain review and merge into `bundle/b1`.
-- Slop fixed: removed duplicate Home research-form read; replaced shared-franchise marks on every HQ player row with per-player result points; removed stale research-based form calculation.
+- Baton: Bee, 2026-11-17.
+- State: B1 bid/privacy cleanup complete. PR #343 targets `bundle/b1`: https://github.com/secureprospective/TheWarRoom/pull/343
+- Changes: placed-bid withdrawal removed from HostedWorkflows, War Room Market, native/workflow catalogs and generated doors; server refusal retained. Draft.queue.* uses the shared owner-private admission check. V3 bid ruling rows and snapshot heading corrected.
+- Tests: frontend 123 files / 912 tests; TypeScript, nativegen, `make lint`, `make bloat`, and race tests for market, commandcatalog, serverhttp and app/commissioner pass. PR checks were green at the previous head; this update only records handoff state.
+- Slop fixed: duplicate draft-queue seat checks; impossible bid-withdraw exposure and stale wording.
+- Next: head brain review and merge into `bundle/b1`.
+- Blocked: none.

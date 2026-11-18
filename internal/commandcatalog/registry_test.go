@@ -39,6 +39,17 @@ func TestExecutableRegistryRejectsBrokenDeclarations(t *testing.T) {
 	}
 }
 
+func TestBidWithdrawalIsNotPublishedThroughCommandDoors(t *testing.T) {
+	for _, command := range NativeCommands(Schema{}) {
+		if command.ID == "bid.withdraw" {
+			t.Fatal("bid withdrawal is still published in the native command catalog")
+		}
+	}
+	if _, ok := WorkflowCommands()["bid.withdraw"]; ok {
+		t.Fatal("bid withdrawal is still exposed as a workflow command")
+	}
+}
+
 func TestCommandLabelsDoNotExposeMachineSyntax(t *testing.T) {
 	for id, want := range map[string]string{"mfl.bid.revise": "revise local MFL bid", "commish.rules.set": "set league rules", "TargetMFLKeyStatus": "MFL Key Status", "GetParams": "Get Params"} {
 		if got := commandLabel(id); got != want || strings.Contains(got, ".") {
