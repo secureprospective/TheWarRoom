@@ -1,12 +1,20 @@
 # Handoff
 
-- Recent main handoff: PR #374 (player-search name matching) merged into `main` on 2026-11-18.
-- Baton: Bee, 2026-11-18; lane `pulse-fixhome`, branch `session/pulse-fixhome`, based on `origin/main` `0c185549e`.
-- State: Commissioner Home odds seeds cross JSON as exact decimal strings; frontend accepts decimal strings or legacy safe nonnegative integers. Current-week selection uses the date-covered schedule prefix, so absent later NFL dates no longer suppress an already-determined week; if current dates are missing, it still refuses to guess. An unpublished schedule gives the commissioner the action: Generate schedule, then Publish schedule, in Control Room > Season.
-- Regressions failed before fixes and pass now: `TestNativeOddsSeedIsSerializedAsDecimalString`, `TestNativeWeekReadsCurrentBeforeMissingFutureDates`, `TestNativeWeekExplainsHowCommissionerPublishesMissingSchedule`; frontend covers exact-seed parsing and Pulse's action message.
-- Verification: `make verify` passes on the final base (full Go race suite, TypeScript, 138 files/980 tests, frontend build, bundle budget, CSP); `make build` passes. Targeted Go race tests and Vitest pass. The initial 600s outer timeout ended before Go tests; rerun with sufficient duration passed.
-- PR #376 is open into `main`; CI checks, all four test shards, package, install and verify passed. Body has two-line root cause and red/green test names.
-- Lab inspection was read-only; `/var/log/twr-server.log` absent and checked `/var/log/messages` tail had no relevant diagnostics. No service/data writes or restarts; no permission checks changed.
-- `git diff --check` passes. The latest `tidy-check.sh` found unrelated foreign-lane activity and scratch `~/scratch/resume-v15-rollout-1118` without `KEEP.md`; left them untouched because they are outside this lane. This lane created no scratch files.
-- Next: ClaudeBox/Christopher review PR #376; do not merge without Christopher's go-ahead.
-- Blocked on: none. Rejected: two initial Vitest commands omitted `cd frontend` and ran no tests; corrected. Fixed two long frontend lines found by the first full Vitest.
+- Baton: Bee, 2026-11-18; lane `pulse-fixrace`, branch `session/pulse-fixrace`.
+- State: stabilized `TestUnavailableKeychainLoginIsMemoryOnly`: the test server keeps the invalidation stream open instead of racing the test's credential assertions against the watcher's asynchronous 401 sign-out; test snapshots are taken under `Desktop.mu`. Production state transitions are serialized there.
+- Evidence: historical failed-shard trace for PR #376 was unavailable; current PR #376 checks were green. `go test -race -count=200 -run TestUnavailableKeychainLoginIsMemoryOnly ./internal/serverclient/`, `go test -race ./internal/serverclient/...`, `make verify`, pre-push, and all PR #379 checks pass. PR body marks source locations explicitly as not recovered race-detector frames.
+- PR #379 is open into `main`: https://github.com/secureprospective/TheWarRoom/pull/379. All test shards, checks, package/install and release-tools pass.
+- Next: leave PR for review; do not merge.
+- Tidy-check reports unrelated active lane launcher PID 1361666; left it untouched.
+- Blocked on: original failed-shard trace was unavailable.
+
+- Baton: Bee, 2026-11-18; lane `pulse-fixcr`, branch `session/pulse-fixcr`, based on `origin/main` at `0c185549e` (#374).
+- State: added hosted workflow routes for Jobs, People, managed Schedule, Ledger/filtered Ledger, Notices and Calendar, reusing existing service authorization and Raw validators. Season now supplies a server-held franchise to Calendar.
+- Root cause: the commands were absent from `commandcatalog.WorkflowCommands`; `RawWorkflow.Validate` rejected them before auth/admission (HTTP 400), hidden behind the UI's generic failure. Calendar also received an empty franchise. No permissions were weakened.
+- Regression: `TestHostedCommissionerControlRoomReads` failed before fix (HTTP 400), now passes; exercises an unseated commissioner, owner denial for Jobs/Schedule, and ledger preservation.
+- Verified: focused + package race tests; nativegen freshness; Season Vitest; `pnpm exec tsc --noEmit`; full Vitest (138 files/977 tests); `make lint`; final `make verify` pass (race suite, frontend tests/build, bundle and CSP checks).
+- Lab logs: correct path `/var/lib/twr/server.log` per `deploy/server/twr-server.initd`; requested `/var/log/twr-server.log` absent. No matching Control Room log entries because validation failed before workflow logging.
+- Tidy-check reports foreign `b7lab` launcher (PID 1140150) and `claudeos` SSH tunnel (PID 1170685); left untouched. Their lane owner should handle its scratch `KEEP.md`; this lane cannot write another lane's files.
+- PR #377 is open into `main`: https://github.com/secureprospective/TheWarRoom/pull/377. CI is running; release-tools passed, package/tests/checks are pending.
+- Next: wait for all PR checks green, then leave the branch for review; do not merge from this lane.
+- Blocked on: CI completion.
