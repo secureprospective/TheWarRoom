@@ -19,7 +19,7 @@
 
 ## Bee — B8-4 Live / Pulse (2026-11-18)
 - Baton: Bee, `session/pulse-b8live`, Bundle 8.
-- State: phone-only Pulse rules are added at <=699px; hosted data/reconnect labels remain unchanged. Added `pulsePhone.test.ts`; named Pulse tests pass (34), full Vitest passes (990/990), and `tsc --noEmit` passes. Desktop rules >=700px are untouched.
-- Next: commit and push to trigger pre-push verification, then open PR into `bundle/b8` and report CI/phone check status.
+- State: phone-only Pulse rules are added at <=699px; hosted data/reconnect labels remain unchanged. Added `pulsePhone.test.ts`; named Pulse tests pass (34), full Vitest passes (990/990), and `tsc --noEmit` passes. Desktop rules >=700px are untouched. Commit `cafcba0c2` pushed; PR #383 into `bundle/b8`, all CI checks green.
+- Next: ClaudeBox review. Brave 390x844 visual check remains manual; the automated 390px layout contract passed.
 - Tidy: `tidy-check.sh` found unrelated active `b8bids` (PID 1597602) and `b8trade` (PID 1599696) lanes; left them untouched. Their owners need to add scratch KEEP records.
 - Blocked on: none for this lane.
