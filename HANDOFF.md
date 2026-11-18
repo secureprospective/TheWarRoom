@@ -1,8 +1,8 @@
 # Handoff
 
 - Baton: Bee, 2026-11-18.
-- State: implementation committed as `6d0ddc29a` and pushed to `session/pulse-b1pulse`, based on `bundle/b1`; PR not opened.
-- Changes: Pulse Race uses `schedule.franchise.read` for My Road. Shared results-derived `recentForm` feeds HQ, Home Matchup/form, and Pulse. Home's per-player research form read was removed.
-- Verification: frontend 125 files / 918 tests; `pnpm exec tsc --noEmit`, `make lint`, `make bloat`, `tidy-check.sh`, and pre-push `make verify` pass. No Go files changed.
-- Blocked: HomeBrief is mounted only by `AppLeagueMount`/local `TargetApp`, while the task asks to change Home and Bundle rules freeze local mode. `readNativeHQ` is also shared by both modes. Need Christopher to confirm whether these requested changes are an exception before opening the PR.
-- Next: resolve the mode-scope conflict; if authorized, open PR against `bundle/b1` and wait for CI.
+- State: Pulse implementation and head-brain review fixes are committed on `session/pulse-b1pulse`, PR #345 against `bundle/b1`.
+- Changes: My Road uses `schedule.franchise.read`; team W/L form shares `recentForm` across Pulse and Home. HQ now charts each player's `results.read` starter points with a separate player-bars renderer. Removed 22-week magic cap; final games without a winner count as ties; removed stray PulseRace blank line and dead research-form calculation.
+- Verification: frontend 125 files / 919 tests; `pnpm exec tsc --noEmit`, `make lint`, `make bloat`, `tidy-check.sh` pass. No Go files changed.
+- Next: CI on PR #345 was still running when this handoff was written; monitor checks and request head-brain review/merge once green.
+- Slop fixed: removed duplicate Home research-form read; replaced shared-franchise marks on every HQ player row with per-player result points; removed stale research-based form calculation.

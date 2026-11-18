@@ -133,6 +133,7 @@ export function parsePulseResults(value: unknown, league: string, week: number):
 }
 
 export type PulseFormResult = { week: number; result: 'W' | 'L' | 'T' | 'B' };
+export type PulsePlayerFormPoint = { week: number; points: number };
 
 /** recentForm derives a franchise's last completed head-to-head outcomes from published results only. */
 export function recentForm(results: readonly PulseResults[], franchise: string, season: number,
@@ -142,11 +143,13 @@ export function recentForm(results: readonly PulseResults[], franchise: string, 
   for (const reading of results) {
     if (!reading.published || reading.season !== season) continue;
     const game = reading.games.find(g => g.home === franchise || g.away === franchise);
-    const outcome = game?.status === 'Final' && (game.winner === game.home || game.winner === game.away)
-      ? game.winner === franchise ? 'W' : 'L'
+    const outcome = game?.status === 'Final'
+      ? game.winner === game.home || game.winner === game.away
+        ? game.winner === franchise ? 'W' : 'L'
+        : game.winner === undefined || game.winner === '' ? 'T' : undefined
       : game?.status === 'Tie' ? 'T'
         : !game && reading.bye === franchise ? 'B' : undefined;
-    if (outcome && reading.week > 0 && reading.week <= 22) {
+    if (outcome && reading.week > 0) {
       const held = byWeek.get(reading.week);
       if (!held || reading.revision >= held.revision)
         byWeek.set(reading.week, { revision: reading.revision, result: outcome });
@@ -154,6 +157,25 @@ export function recentForm(results: readonly PulseResults[], franchise: string, 
   }
   return [...byWeek].sort(([a], [b]) => a - b).slice(-limit)
     .map(([week, row]) => ({ week, result: row.result }));
+}
+
+/** recentPlayerForm derives a player's last started-week points from published score history. */
+export function recentPlayerForm(results: readonly PulseResults[], player: string,
+  limit = 5): PulsePlayerFormPoint[] {
+  if (!player || !Number.isInteger(limit) || limit < 1) return [];
+  const byWeek = new Map<number, { revision: number; points: number }>();
+  for (const reading of results) {
+    if (!reading.published || reading.week < 1) continue;
+    const points = reading.scores.flatMap(score => score.starters
+      .filter(starter => starter.player === player && starter.points !== undefined)
+      .map(starter => starter.points!))[0];
+    if (points === undefined) continue;
+    const held = byWeek.get(reading.week);
+    if (!held || reading.revision >= held.revision)
+      byWeek.set(reading.week, { revision: reading.revision, points });
+  }
+  return [...byWeek].sort(([a], [b]) => a - b).slice(-limit)
+    .map(([week, row]) => ({ week, points: row.points }));
 }
 
 export type PulseStandingRow = { rank: number; franchise: string; name: string; division: string;

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { parsePulseResults, recentForm, type PulseResults } from './nativePulse';
+import { parsePulseResults, recentForm, recentPlayerForm, type PulseResults } from './nativePulse';
 
 function week(week: number, status: string, winner?: string, options: {
   season?: number; published?: boolean; revision?: number; bye?: string;
@@ -22,10 +22,24 @@ it('derives the last five published wins, losses, ties and byes in week order', 
   ]);
 });
 
-it('omits unresolved or unrecognized results and rejects an empty scope or limit', () => {
+it('counts a final without a winner as a tie; omits unresolved results and rejects empty scope', () => {
   const results = [week(1, 'Final', 'unknown'), week(2, 'No result yet', 'mine'),
-    week(3, 'Final', 'mine')];
-  expect(recentForm(results, 'mine', 2026)).toEqual([{ week: 3, result: 'W' }]);
+    week(3, 'Final', 'mine'), week(4, 'Final')];
+  expect(recentForm(results, 'mine', 2026)).toEqual([{ week: 3, result: 'W' }, { week: 4, result: 'T' }]);
   expect(recentForm(results, '', 2026)).toEqual([]);
   expect(recentForm(results, 'mine', 2026, 0)).toEqual([]);
+});
+
+it('derives player points only for started weeks and uses the highest published revision', () => {
+  const withStarter = (weekNum: number, revision: number, points: number): PulseResults => ({
+    ...week(weekNum, 'Final', 'mine', { revision }),
+    scores: [{ franchise: 'mine', name: 'Mine', status: 'Final', points: 0, words: '',
+      starters: [{ player: 'player-1', name: 'Player', words: '', points }], adjustment: 0,
+      lineupStatus: '', lineupWords: '', flagged: false, recorded: true }],
+  });
+  const notStarted = { ...week(4, 'Final'), scores: [{ franchise: 'mine', name: 'Mine', status: 'Final',
+    words: '', starters: [], adjustment: 0, lineupStatus: '', lineupWords: '', flagged: false,
+    recorded: true }] };
+  expect(recentPlayerForm([withStarter(1, 1, 5), withStarter(1, 2, 8), notStarted,
+    withStarter(3, 1, 0)], 'player-1')).toEqual([{ week: 1, points: 8 }, { week: 3, points: 0 }]);
 });

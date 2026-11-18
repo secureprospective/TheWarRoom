@@ -187,7 +187,6 @@ function Road({ reading, mine }: { reading: NativePulse; mine: string }) {
   </>;
 }
 
-
 function Path({ reading, side, mine }: { reading: NativePulse; side: string; mine: string }) {
   const bracket = reading.bracket;
   if (!bracket) return <PulseIdle words={reading.errors.length

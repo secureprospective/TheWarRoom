@@ -159,7 +159,7 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
     return { label: 'Fake hosted workflow', writable: false, football: '', data: data[request.command] };
   });
   const reading = await readNativeHQ('native.test', 'mine', port);
-  expect(reading.recentForm).toEqual([{ week: 1, result: 'W' }, { week: 2, result: 'L' }]);
+  expect(reading.playerForm?.['0042']).toEqual([]);
   expect(port.mock.calls.flatMap(([r]) => r.command === 'results.read' ? [r.arguments.week] : []))
     .toEqual([1, 2]);
   const cut = await readNativeCut('native.test', 'mine', '0042', port);

@@ -98,7 +98,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
         reading.lock, text: countdown(reading.lock, Date.now()) } : undefined} /></div>
     {tab === 'lineup-and-roster' ? <HQBoard showContracts snapshot={snapshot} mine={mine} key={editor.version}
       reading={editor.edited} matchup={<NativeHQMatchup results={reading.thisWeek} mine={mine} />}
-      recentForm={reading.recentForm ?? []} formPending={reading.formPending} formError={reading.formError}
+      playerForm={reading.playerForm} formPending={reading.formPending} formError={reading.formError}
       formNote={reading.formNote}
       error={reading.errors.join(' · ')}
       settings={settings} values={reading.projections ?? new Map()} select={select} canEdit={editor.canEdit}

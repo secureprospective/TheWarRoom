@@ -4,10 +4,10 @@ import { HQAct } from './HQAct';
 import { fitsSlot, placePlayer } from './hqPlacement';
 import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import type { LineupReading, Snapshot } from '../data/contract';
-import type { PulseFormResult } from '../data/nativePulse';
+import type { PulsePlayerFormPoint } from '../data/nativePulse';
 import type { HQSettings } from './hqModel';
 import { rosterContract, unavailable } from './hqModel';
-import { formPoints, totalProjection } from './hqPlayerData';
+import { totalProjection } from './hqPlayerData';
 import type { Injury } from './hqPlayerData';
 import type { Now } from '../now/contract';
 import type { RosterFacts } from './hqRosterFacts';
@@ -19,7 +19,8 @@ export type HQBoardProps = { snapshot: Snapshot; mine: string; reading?: HQLineu
     number>;
   facts?: RosterFacts;
   byes?: Map<string, number>; injuries?: Injury[]; now?: Now; live?: LiveView; changed?: string[];
-  recentForm?: PulseFormResult[]; formPending?: boolean; formError?: string; formNote?: string;
+  playerForm?: Record<string, PulsePlayerFormPoint[]>; formPending?: boolean; formError?: string;
+  formNote?: string;
   canEdit?: boolean; select: (id: string) => void;
   place?: (id: string, out?: string) => void; bench?: (id: string) => void;
   assign?: (ids: string[]) => void };
@@ -49,41 +50,25 @@ export function boardSlots(reading: HQLineup | undefined, settings: HQSettings):
   while (slots.length < reading.starterCount) slots.push({ code: '—', side: 'off' });
   return slots;
 }
-export function FormChart({ id, facts, projection, week, bye, recentForm, formPending, formError,
-  formNote }: { id: string; facts?: RosterFacts; projection?: number; week?: number; bye?: number;
-  recentForm?: PulseFormResult[]; formPending?: boolean; formError?: string; formNote?: string }) {
-  if (recentForm !== undefined) {
-    if (formPending) return <span className="form"><em>Reading recent form…</em></span>;
-    if (formError) return <span className="form" title={formError}><em>{formError}</em></span>;
-    if (!recentForm.length) return <span className="form" title={formNote || unavailable}>
-      <em>{formNote || unavailable}</em></span>;
-    return <span className="form" aria-label={`Recent form: ${recentForm.map(r => r.result).join(', ')}`}
-      title={recentForm.map(r => `Wk ${r.week}: ${r.result}`).join(' · ')}>
-      {recentForm.map(r => <i key={r.week} className={`result-${({ W: 'win', L: 'loss', T: 'tie',
-        B: 'bye' } as const)[r.result]}`} title={`Wk ${r.week} · ${r.result}`} />)}
-    </span>;
-  }
-  const points = formPoints(facts?.get(id)?.research);
-  if (!points.length && !week) return <span className="form"><em>{unavailable}</em></span>;
-  const max = Math.max(1, projection ?? 0, ...points.map(p => Math.abs(p.points))) * 1.08;
-  const weeks = week ? Array.from({ length: Math.min(5, Math.max(0, week - 1)) },
-    (_, i) => Math.max(1, week - 5) + i) : points.map(p => p.week);
-  const real = points.filter(p => p.week !== bye);
-  return <span className="form" title={`${points.length} held finished weeks · last 5 vs projection`}>
-    {weeks.map(w => { const p = points.find(p => p.week === w);
-      if (w === bye) return <i key={w} className="bye" title={`Wk ${w} · bye`} />;
-      if (!p) return <i key={w} className="missing" title={`Wk ${w} · ${unavailable}`} />;
-      return <i key={p.week} className={projection !== undefined && p.points >= projection ? 'up' :
-      ''}
+export function PlayerFormBars({ points, projection, pending, error, note }: {
+  points?: PulsePlayerFormPoint[]; projection?: number; pending?: boolean; error?: string; note?: string }) {
+  if (pending) return <span className="form"><em>Reading recent form…</em></span>;
+  if (error) return <span className="form" title={error}><em>{error}</em></span>;
+  if (!points?.length) return <span className="form" title={note || unavailable}>
+    <em>{note || unavailable}</em></span>;
+  const shown = points.slice(-5);
+  const max = Math.max(1, projection ?? 0, ...shown.map(p => Math.abs(p.points))) * 1.08;
+  return <span className="form" title={`${shown.length} started weeks · last 5 vs projection`}>
+    {shown.map(p => <i key={p.week} className={projection !== undefined && p.points >= projection ? 'up' : ''}
       style={{ height: `${Math.max(6, Math.abs(p.points) / max * 100)}%` }}
-        title={`Wk ${p.week} · ${p.points.toFixed(1)}`} />; })}
+      title={`Wk ${p.week} · ${p.points.toFixed(1)}`} />)}
     {projection !== undefined && <span className="pj" style={{ bottom: `${Math.max(0, projection) / max *
       20}px` }} />}
-    <b>avg {real.length ? (real.reduce((n, p) => n + p.points, 0) / real.length).toFixed(1) : '—'}</b>
+    <b>avg {(shown.reduce((n, p) => n + p.points, 0) / shown.length).toFixed(1)}</b>
   </span>;
 }
 export function HQBoard({ snapshot, mine, reading, settings, values, facts, changed = [], canEdit, byes,
-  injuries, now, live, error, showContracts, matchup, recentForm, formPending, formError, formNote,
+  injuries, now, live, error, showContracts, matchup, playerForm, formPending, formError, formNote,
   select, place, bench, assign }: HQBoardProps) {
   const [filter, setFilter] = useState('ALL');
   const [picked, setPicked] = useState<string>();
@@ -135,8 +120,7 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
     const player = directory.get(id);
     const usage = facts?.get(id)?.usage;
     const injury = snapshot.eligibility.players[id]?.ir;
-    const hasForm = recentForm !== undefined ? recentForm.length > 0 || formPending || Boolean(formError)
-      || Boolean(formNote) : formPoints(facts?.get(id)?.research).length > 0;
+    const hasForm = playerForm?.[id]?.length || formPending || Boolean(formError) || Boolean(formNote);
     const noContext = !hasForm && !usage?.opponent && byes?.get(id) !== reading?.week;
     const injuryText = facts?.get(id)?.research?.report.rows.find(r => r.cells[0] === 'Injury')?.cells[1]
       ?? '';
@@ -163,9 +147,8 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
         style={{ gridColumn: slot ? '4 / 6' : '3 / 5' }}>{rosterContract(contracts.get(id))}</span> :
         noContext ? <span className="form" style={{ gridColumn: slot ? '4 / 6' : '3 / 5' }}>
         <em>{unavailable}</em></span> : <>
-        <FormChart id={id} facts={facts} projection={values.get(id)} week={reading?.week}
-          bye={byes?.get(id)} recentForm={recentForm} formPending={formPending} formError={formError}
-          formNote={formNote} />
+        <PlayerFormBars points={playerForm?.[id]} projection={values.get(id)} pending={formPending}
+          error={formError} note={formNote} />
         <span className="elig" title={usage?.reason || unavailable}>{bye ? 'BYE' : usage?.opponent ||
           '—'}</span>
       </>}

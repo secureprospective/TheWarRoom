@@ -9,7 +9,8 @@ import {
 } from '../data/contract';
 import { parseRules, type Rules } from './rules';
 import { parseHostedLineup, parseHostedRoster, parseHostedReserves } from './hostedReadings';
-import { parsePulseResults, recentForm, type PulseFormResult, type PulseResults } from '../data/nativePulse';
+import { parsePulseResults, recentPlayerForm, type PulsePlayerFormPoint, type PulseResults } from
+  '../data/nativePulse';
 import { parseNativeMoves } from '../data/nativeMoves';
 import type { HQMove } from '../shell/HQMoves';
 import type { HQCap, HQSettings } from '../shell/hqModel';
@@ -249,7 +250,7 @@ export type NativeHQ = {
   decisions?: { label: string; at?: string; live: boolean }[];
   projections?: Map<string, number>;
   thisWeek?: PulseResults;
-  recentForm?: PulseFormResult[];
+  playerForm?: Record<string, PulsePlayerFormPoint[]>;
   formPending?: boolean;
   formError?: string;
   formNote?: string;
@@ -551,7 +552,9 @@ export async function readNativeHQ(
     const history = await readRecentResults(league, season, scheduleWeeks, through, port);
     if (history.some(reading => reading.revision !== revision))
       throw new Error('League changed during the read; refresh before using this region');
-    result.recentForm = recentForm(history, mine, season);
+    const players = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players.map(p => p.id) ?? [];
+    result.playerForm = Object.fromEntries(players.map(player => [player,
+      recentPlayerForm(history, player)]));
     result.formNote = history.map(reading => reading.words).filter(Boolean).join(' · ');
   }, words => { result.formError = words; });
   result.formNote ||= result.standingsNote;
