@@ -3,7 +3,75 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. STATE AT 11:10 AM CST WED 11-18 (supersedes every older 0 block and sections 3, 10, 11)
+## 0. HANDOFF TO TOM — STATE AT 3:45 PM CST WED 11-18 (supersedes every older 0 block)
+
+**Head brain moves to Tom (Beelink) now: ClaudeBox is out of weekly tokens.** Christopher's order, 11-18 ~3:45 PM.
+Tom: you run everything below from the Beelink; your tools are under `~/fleet/bin/` (same scripts ClaudeBox used over ssh).
+
+### A. Goal and dates
+- Desktop browser app (PWA, **Bundle 7**) on main **before Thu 11-19**. Phone app (**Bundles 8-9**) on main **before Sun 11-22 kickoff**.
+- Merge authority (Christopher, "same as day"): head brain merges lane PRs into bundles AND lands bundles on main **after own review + green CI**. Squash only.
+- Tracker for Christopher: `~/Downloads/twr-usable-week-plan.html`, written ONLY via `~/fleet/bin/twr-tracker.py` (lane/addlane/log/needs/ahead/touch). Keep it current; he reads it.
+- Night report: `~/fleet/runs/overnight-alpha-1118/REPORT.md` (one `- <time> CST <lane>: <result>` line per event).
+
+### B. Rulings (do not reopen)
+- B7 browser door APPROVED "locked down" (6:45 AM): `__Host-twr_session` HttpOnly/Secure/Strict; Origin must equal `https://`+`/etc/twr/public-host`; GET/HEAD without Origin allowed (#378) unless `Sec-Fetch-Site: cross-site`; POST/changes need exact Origin; agent token+Origin 403, token-as-cookie 401, Authorization+cookie 403; multi-league account 409 "use desktop". One admitted league, no switcher.
+- Phone (12:45 PM): phone = B7 PWA with viewport layout (<700px), no app store, no new auth. **Activity feed = public events only** (notices, completed trades, completed roster moves; never bids/notes/pending offers/commissioner ledger). **Today boards SYNC across devices** (server preference; a migration for this ONE preference is approved). **Ask = read-only from on-screen data.**
+- **Luna NEVER at max** (3:10 PM; it overthinks). Levels: `high` plain, `xhigh` choices/design. Tom on Opus low only if GPT is down.
+- Never: print `/etc/twr/*`, secrets, STATE; touch CT 110/256 (CT 257 read-only); `pkill -f` over ssh; edit a running bash script; `--no-verify`; reboots/power changes; Proxmox host 192.168.1.200.
+- Claude-OS is released to us. **Never touch the Paylocity Brave tab**; lanes use a separate Brave profile (`--user-data-dir=$HOME/.cache/<lane>-profile`). b7lab may have sent that tab one browser-menu keystroke (no clicks/typing) — told Christopher.
+
+### C. Branches (heads at 3:45 PM)
+| Branch | Head | Contains |
+|---|---|---|
+| main | 28cd636a0 | Bundles 1-5 + #374 #375 search, #376 Home seed/Pulse week, #377 Control Room reads, #379 race-test fix |
+| bundle/b7 | dd6f5c615 | #373 browser client/PWA, #372 server door, #378 Origin fix, #381 upgrade adds /app + recovers public-host. b7lab2 is merging main into it (Step 0 of its brief) |
+| bundle/b8 | e4ce1db55+ | cut from b7; #380 phone shell, #382 Today, #384 lineup merged; #385 bids merging; #383 Live/Pulse and #386 trades queued (all reviewed, CI green) |
+| bundle/b9 | e4637ebfa | cut from b8 early (shell only). Needs `bundle/b8` merged in before the B9 UI lanes start |
+
+### D. In flight (each has a run dir `~/fleet/runs/pulse-<lane>/`: task.md, stdout.log, completion.txt, sessions/)
+Alive check: `pgrep -f "luna <lane> "`. Report: `tail -c 2500 ~/fleet/runs/pulse-<lane>/stdout.log`. Watch: `~/fleet/bin/twr-lane-wait.sh <lanes>` (background), 50-min checker `~/fleet/bin/twr-lane-check.sh 50`.
+| Lane | Base | Started | What / what to do with result |
+|---|---|---|---|
+| b7lab2 (xhigh) | bundle/b7 | 2:37 PM | Merge main into b7 (push merge commit direct), lab-only release, upgrade CT 260 WITHOUT hand fixes (proves #381), curl security checks, Brave walk on Claude-OS desktop + 390x844. Result → `RESULT.md`. Fix any bugs via small lanes into bundle/b7, then **land B7 on main** (`~/fleet/bin/twr-bundle-land.sh bundle/b7 "<title>" <body.md>`) |
+| b9feed (xhigh) | bundle/b9 | 12:57 PM | PR **#387** open: `league.activity.read`, allow-list of public kinds. Review: allow-list only, no bids/notes/pending/ledger; then merge into b9 |
+| b9boards (xhigh) | bundle/b9 | 12:58 PM | PR **#388** open: `home.layout.read/set` sync. Review: owner-only, agent refused, validation, migration correct (fresh+upgrade test) |
+| b9fa (xhigh) | bundle/b9 | 2:42 PM | New `roster.add` free-agent command (refuse on-waivers, roster/cap checks, optional drop atomic). Review authorization carefully |
+| perf (xhigh) | main | 2:43 PM | Capacity regression (lab5 refuses at 128 clients, lab4 held 256). Local repro only; cause not a limit bump. PR into main |
+| bundle merge | — | 3:40 PM | Beelink bg loop: merging #385 then #383, #386 into bundle/b8 via `twr-bundle-merge.sh`. Check: `pgrep -af twr-bundle-merge`; PR states via `gh pr view N` |
+Windows: 3 h per lane; exit=124 = timeout. A timed-out lane that already opened a PR is fine (fixcr/fixhome did that). Otherwise relaunch the same brief (resumes from HANDOFF.md).
+
+### E. Next actions, in order
+1. When bundle/b8 has #383 #385 #386: merge `origin/bundle/b8` into bundle/b9 (merge commit, push direct as fast-forward — NOT a squashed PR).
+2. Launch the B9 UI lanes (briefs written, in `~/fleet/briefs/alpha010/`): `b9card` (player card/picks), `b9cr1` (Control Room jobs), `b9cr2` (rules/season/league), `b9cr3` (people/picks/server), all `BASE=bundle/b9 ... high`. Then B9-1 Moves UI (after b9fa merges), B9-2 League activity UI (after #387), B9-4 boards/Ask UI (after #388) — write those three briefs from `~/fleet/runs/pulse-b8plan/RESULT.md` §3 + §5, using the b9card.md template.
+3. b7lab2 result → fix → land B7 on main (target Wed night / Thu AM). Then merge main into bundle/b8 and b9.
+4. Phone walk at 390x844 on Claude-OS of every B8 screen (lanes could not emulate; all B8 tests are CSS-contract tests only). Then land B8 on main, then B9 (target Sat).
+5. Review/merge #387, #388, b9fa, perf as they finish.
+6. When no lanes are running: edit `~/fleet/bin/launch-pulse-lane.sh` to (a) refuse `max`, (b) add standard rule "Do not rewrite HANDOFF.md; append only your own section" — every main PR today conflicted on HANDOFF.md (fix: in the lane worktree `git merge origin/main`, `git checkout --ours HANDOFF.md`, commit, push with build env).
+7. Keep tracker + REPORT.md current; 50-min checks.
+
+### F. Launch / build recipes
+- Launch: `cd ~/work/TheWarRoom && BASE=<branch> nohup setsid ~/fleet/bin/launch-pulse-lane.sh luna <lane> ~/fleet/briefs/alpha010/<brief>.md <high|xhigh> >/dev/null 2>&1 </dev/null &`. Stagger multiple launches ≥45 s (two at once killed one).
+- Build env for pushes: `export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH GOTOOLCHAIN=go1.26.11 CGO_ENABLED=1 GOLANGCI_LINT_CACHE=$PWD/.scratch/lintcache`.
+- Merge into bundle: `~/fleet/bin/twr-bundle-merge.sh <lane> <pr>` (updates branch, waits CI, squashes). Land: `twr-bundle-land.sh`.
+- Brief corrections: append "Part N" to the brief file, relaunch.
+- Lab: CT 260 only, `ssh -F ~/work/TheWarRoom/.worktrees/pulse-a010s/.scratch/ssh-lab.conf lab`; creds in `~/fleet/runs/pulse-lab4/private/` (never print).
+
+### G. Refuted / learned today
+- Random CI failure `TestUnavailableKeychainLoginIsMemoryOnly` was a test race → fixed #379; if it recurs it is new.
+- Lab "4 bugs" root causes: CR reads missing from hosted workflow catalog (400); odds seed uint64 > JS safe int; Pulse week blocked by missing future NFL dates; search name order + whole-league.
+- B7 lab: Brave sends no Origin on same-origin GET → fixed #378. Old updater can't install new helpers → #381 reuses `twr-status` start hooks.
+- #386 found trade offers were sent `visibility: league`; now `private`.
+
+### H. Needs Christopher
+- Rotate the CT 257 keys (his hands).
+- Pick how testers reach a server before Sunday.
+- Glance at the Paylocity tab on Claude-OS.
+
+### I. Honest status
+B7 on main by Thu morning: likely (≈70%) if b7lab2 finds nothing new. B8 screens are built but never seen at phone size — expect layout fixes. B9 by Saturday is tight: 7 UI lanes + 3 server PRs to review. Perf cause unknown.
+
+## 0-prev4. (older) STATE AT 11:10 AM CST WED 11-18 (supersedes every older 0 block and sections 3, 10, 11)
 
 **Targets (Christopher 11-18 6:40 AM):** desktop browser app (PWA, Bundle 7) before Thursday 11-19; phone app (Bundles 8-9) before Sunday 11-22 kickoff. He APPROVED the Bundle 7 browser door at 6:45 AM, "locked down": exact own origin only, same checks, no agent tokens from browsers (memory `project_twr_b7_browser_door_approved`). Claude-OS is released to us (leave the Paylocity Brave tab alone). Stale branch deleted by him.
 
