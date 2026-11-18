@@ -1,5 +1,7 @@
+import { hostedReads } from '../data/hostedReads';
 import { createReadQuery } from '../data/query';
 import { array, integer, object, text, timestamp } from '../data/parseValues';
+import type { TaggedReply } from '../data/session';
 import { hostedWorkflow, type HostedResponse } from '../control/nativeApi';
 import { hostedCommandAvailable, type NativeRequest } from '../commands/native';
 import { parsePulseDirectory } from '../data/nativePulse';
@@ -30,17 +32,32 @@ export function createHostedJobsQuery(league: string, port: HostedPort = hostedW
 }
 
 export function createHostedLedgerQuery(league: string, port: HostedPort = hostedWorkflow) {
-  return createReadQuery('commissioner.TargetCommissionerLedger', {
-    initial: (): { ledger?: Ledger } => ({}),
-    read: async (scope: string): Promise<Ledger> => {
-      const response: HostedResponse = await port({ command: 'commish.ledger.read', mode: 'read',
-        arguments: { league: scope } } as NativeRequest);
-      const ledger = parseLedger(response.data);
-      if (ledger.league !== league || scope !== league)
-        throw new Error('Ledger belongs to another league.');
-      return ledger;
+  const readLedger = async (scope: string, filter: string) => {
+    const response: HostedResponse = await port({ command: filter
+      ? 'commish.ledger.filtered.read' : 'commish.ledger.read', mode: 'read',
+    arguments: filter ? { league: scope, filter: { person: '', kind: filter, from: '', before: '' } }
+      : { league: scope } } as NativeRequest);
+    const ledger = parseLedger(response.data);
+    if (ledger.league !== league || scope !== league)
+      throw new Error('Ledger belongs to another league.');
+    return { ledger, football: response.football };
+  };
+  return createReadQuery<Ledger, { ledger?: Ledger }, [string, string]>(
+    'commissioner.TargetCommissionerLedger', {
+    initial: () => ({}),
+    hosted: { session: hostedReads, schemaVersion: '1', dependencies: [{ kind: 'league' }],
+      policy: 'memory' },
+    read: async ([scope, filter]): Promise<TaggedReply<Ledger>> => {
+      const result = await readLedger(scope, filter);
+      const key = JSON.parse(hostedReads.key('commissioner.TargetCommissionerLedger', '1',
+        [scope, filter])) as unknown;
+      if (!Array.isArray(key) || typeof key[1] !== 'string')
+        throw new Error('The hosted league identity is unavailable. Refresh before reading the ledger.');
+      return { data: result.ledger, tags: { serverEpoch: key[1],
+        league: { league: String(result.ledger.revision) }, football: result.football,
+        live: '', values: '' } };
     },
-    accept: (ledger: Ledger) => ({ ledger }),
+    accept: ledger => ({ ledger }),
   });
 }
 

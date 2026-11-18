@@ -8,6 +8,7 @@ import { HostedControlRoomPicks } from './HostedControlRoomPicks';
 import { HostedControlRoomPeople } from './HostedControlRoomPeople';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
 import { HostedControlRoomFix } from './HostedControlRoomFix';
+import { HostedControlRoomLeague } from './HostedControlRoomLeague';
 import { HostedControlRoomSeason } from './HostedControlRoomSeason';
 import { createHostedFixQuery, createHostedJobsQuery, createHostedLedgerQuery, hostedControlRoomNotOnServer,
   hostedControlTabs, type HostedControlTab } from './hostedControlRoomData';
@@ -125,6 +126,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {tab === 'rules' && roomState.reading
           ? <HostedRules rules={roomState.reading.rules} commissioner room={room} />
           : tab === 'rules' && <p role="status">{roomState.error || 'Reading league rules…'}</p>}
+        {tab === 'league' && <HostedControlRoomLeague key={league} league={league}
+          room={room} port={port} />}
         {tab === 'season' && <div className="hosted-jobs-column">
           <HostedControlRoomSeason league={league} port={port} onTool={openSeasonTool} />
           {definition && <HostedCommissionerActTray definition={definition} league={league}
@@ -137,7 +140,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
           readings={fixState.fixes} pending={fixState.pending} error={fixState.error}
           definition={openedTab === 'fix' ? definition : undefined} initial={initialValues}
           onOpen={(next, initial) => openTool(next, undefined, 'fix', initial)} />}
-        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'fix'].includes(tab)
+        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'fix', 'league']
+          .includes(tab)
           && <p className="cr-note hosted-unported">{hostedControlRoomNotOnServer}</p>}
       </section>
     </main>
@@ -160,7 +164,7 @@ function HostedServerTab({ league, port = hostedWorkflow }: { league: string; po
   const ledgerQuery = useMemo(() => createHostedLedgerQuery(league, port), [league, port]);
   const ledgerState = ledgerQuery.use();
   useEffect(() => {
-    void ledgerQuery.load([league]);
+    void ledgerQuery.load([league, '']);
     return () => ledgerQuery.dispose();
   }, [league, ledgerQuery]);
   const ledger = ledgerState.ledger;

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import HostedLeague from './HostedLeague';
 import type { HostedPort } from './hostedRoom';
 import type { NativeRequest } from '../commands/native';
+import { hostedReads, observeView } from '../data/hostedReads';
 
 const league = 'native.test';
 const ruleReading = {
@@ -46,11 +47,20 @@ function port(count: number): HostedPort & ReturnType<typeof vi.fn> {
 }
 let host: HTMLDivElement;
 let root: Root;
+let authGeneration = 0;
 beforeEach(() => {
+  hostedReads.endSession();
+  authGeneration++;
+  observeView({ authGeneration: String(authGeneration), server: 'https://league.test', league,
+    message: '', name: 'Commissioner', role: 'Commissioner', franchise: '', franchiseName: '',
+    seed: '', connection: '', helperId: '', confirmation: '', seats: [] });
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
 });
-afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.restoreAllMocks(); });
+afterEach(async () => {
+  await act(async () => root.unmount());
+  hostedReads.endSession(); host.remove(); vi.restoreAllMocks();
+});
 async function settle() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); }); }
 
 const teams = Array.from({ length: 32 }, (_, index) => ({ franchise: `franchise.${index + 1}`,
