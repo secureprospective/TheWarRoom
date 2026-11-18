@@ -214,6 +214,9 @@ func pulseWorkflowReads() map[string]WorkflowCommand {
 		"bracket.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeBracket(r.League, r.Season))
 		}),
+		"market.wins.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeBidWins(r.League))
+		}),
 	}
 }
 

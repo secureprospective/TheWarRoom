@@ -104,6 +104,13 @@ func nativeDraftQueueCommands() []Command {
 	}
 }
 
+func nativeServerReads() []Command {
+	return []Command{{ID: "market.wins.read", Method: "TargetNativeBidWins", Version: "1", Role: "domain",
+		Gravity: "G0", Availability: "server", Arguments: NativeReadShape("TargetNativeBidWins", "league:string"),
+		Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "ledger,player-facts",
+		Safeguards: "none"}}
+}
+
 func tradeDraftCommands() []Command {
 	return []Command{
 		ownerPrivateCommand(leagueservice.TradeDraftRead, "TargetTradeDrafts", reflect.TypeFor[leagueservice.RawTradeDraftScope](), Read, "G0", "none", privateEntries()),

@@ -106,6 +106,58 @@ func (f *marketFixture) act(t *testing.T, command string, args commissioner.RawA
 	return entry
 }
 
+func TestNativeBidWinsAreNewestFirstAndExcludeUnrevealedBids(t *testing.T) {
+	f := newMarketFixture(t)
+	f.facts["5002"] = nativecheck.PlayerFacts{Name: "Second winner"}
+	f.facts["5003"] = nativecheck.PlayerFacts{Name: "Still sealed"}
+	f.b.set("bids.ufa", `"blind"`, "now", seasonMoment(5))
+	f.setup = true
+	f.act(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5001",
+		Franchise: "franchise.01", Salary: 600000000, Years: 2}}, "owner.one")
+	f.act(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5001",
+		Franchise: "franchise.02", Salary: 400000000, Years: 2}}, "owner.two")
+	f.now = f.now.Add(2 * time.Hour)
+	f.act(t, commissioner.BidsProcess, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5001"}}, "creator")
+	firstDecided := f.now
+
+	f.now = f.now.Add(time.Hour)
+	f.act(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5002",
+		Franchise: "franchise.03", Salary: 700000000, Years: 3}}, "owner.three")
+	f.now = f.now.Add(2 * time.Hour)
+	f.act(t, commissioner.BidsProcess, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5002"}}, "creator")
+	secondDecided := f.now
+
+	f.act(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5003",
+		Franchise: "franchise.04", Salary: 1111000000, Years: 1}}, "owner.four")
+	f.act(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5003",
+		Franchise: "franchise.05", Salary: 1100000000, Years: 1}}, "owner.five")
+
+	wins, err := NativeBidWinsReading(rolloverLeague, f.b.records, f.now, time.UTC, f.facts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(wins.Wins) != 2 || wins.Wins[0].Player != "5002" || wins.Wins[1].Player != "5001" {
+		t.Fatalf("wins are not newest first: %+v", wins.Wins)
+	}
+	if got := wins.Wins[0]; got.Name != "Second winner" || got.Team != "Team 3" || got.Salary != 700000000 ||
+		got.Years != 3 || !got.DecidedAt.Equal(secondDecided) {
+		t.Fatalf("newest award facts: %+v", got)
+	}
+	if got := wins.Wins[1]; got.Name != "Free Agent" || got.Team != "Team 1" || got.Salary != 600000000 ||
+		got.Years != 2 || !got.DecidedAt.Equal(firstDecided) {
+		t.Fatalf("earlier award facts: %+v", got)
+	}
+	payload, err := json.Marshal(wins)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, secret := range []string{"400000000", "1111000000", "1100000000", "Still sealed", "bids", "points"} {
+		if bytes.Contains(payload, []byte(secret)) {
+			t.Fatalf("wins payload exposes sealed or losing bid detail %q: %s", secret, payload)
+		}
+	}
+}
+
 func TestMarketBodies(t *testing.T) { marketBodiesLedger(t) }
 
 // marketBodiesLedger plays every market command once, checking each appended body against its golden.
