@@ -10,7 +10,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 )
 
-func TestCommissionerJobsReaderLeavesDeputyScopeClosed(t *testing.T) {
+func TestCommissionerJobsReaderAdmitsCoCommissionerAndLeavesDeputyScopeClosed(t *testing.T) {
 	fixture := newDueFixture(t)
 	if err := commissionerJobsReader(recordsFromDueFixture(t, fixture), "creator"); err != nil {
 		t.Fatalf("commissioner could not read jobs: %v", err)
@@ -25,8 +25,11 @@ func TestCommissionerJobsReaderLeavesDeputyScopeClosed(t *testing.T) {
 	if _, err := fixture.store.ExecuteCommissionerWithFacts(t.Context(), raw, "creator", nil, fixture.facts, time.UTC); err != nil {
 		t.Fatal(err)
 	}
-	if err := commissionerJobsReader(recordsFromDueFixture(t, fixture), "deputy.one"); err == nil {
-		t.Fatal("deputy read all jobs before its visibility policy is set")
+	if err := commissionerJobsReader(recordsFromDueFixture(t, fixture), "deputy.one"); err != nil {
+		t.Fatalf("co-commissioner could not read jobs: %v", err)
+	}
+	if err := commissionerJobsReader(recordsFromDueFixture(t, fixture), "owner.one"); err == nil {
+		t.Fatal("plain owner read commissioner jobs")
 	}
 }
 

@@ -162,15 +162,15 @@ func (a *Service) TargetCommissionerJobs(league string) (commissioner.Jobs, erro
 	return reading, nil
 }
 
-// Deputies stay out until their job-visibility scope is defined; the read is commissioner-only meanwhile.
+// Deputies stay out until their job-visibility scope is defined.
 func commissionerJobsReader(records []commissioner.Record, principal string) error {
 	state, err := commissioner.GovernanceState(records)
 	if err != nil {
 		return fmt.Errorf("league job permissions: %w", err)
 	}
 	current := governance.Principal(commissioner.PrincipalFor(records, principal))
-	if !state.HasRole(current, governance.Commissioner) {
-		return fmt.Errorf("commissioner job feed is limited to the league commissioner")
+	if !state.HasRole(current, governance.Commissioner) && !state.HasRole(current, governance.CoCommissioner) {
+		return fmt.Errorf("commissioner job feed is limited to the commissioner and co-commissioner")
 	}
 	return nil
 }
