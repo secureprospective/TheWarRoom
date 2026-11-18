@@ -4,6 +4,7 @@ import { onHostedTopics } from '../data/hostedReads';
 import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
+import { HostedControlRoomPeople } from './HostedControlRoomPeople';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
 import { createHostedJobsQuery, hostedControlTabs, type HostedControlTab } from './hostedControlRoomData';
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
@@ -95,8 +96,9 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {tab === 'rules' && roomState.reading
           ? <HostedRules rules={roomState.reading.rules} commissioner room={room} />
           : tab === 'rules' && <p role="status">{roomState.error || 'Reading league rules…'}</p>}
-        {!['jobs', 'situations', 'rules'].includes(tab)
-          && <p className="cr-note hosted-unported">{notOnServer}</p>}
+        {tab === 'people' ? <HostedControlRoomPeople league={league} room={room} port={port} />
+          : !['jobs', 'situations', 'rules'].includes(tab)
+            && <p className="cr-note hosted-unported">{notOnServer}</p>}
       </section>
     </main>
     <aside className="insp" aria-label="League health">
