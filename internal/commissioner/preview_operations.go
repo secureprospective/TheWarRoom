@@ -162,9 +162,24 @@ func operationReadings(control string) []string {
 	}
 }
 
+func windowPreviewValues(raw RawCommand, records []Record, now time.Time, out map[string]string) error {
+	rules, err := RulesReading(raw.League, records, now)
+	if err != nil {
+		return err
+	}
+	for _, section := range rules.Sections {
+		for _, row := range section.Rows {
+			out[row.Label] = row.Value
+		}
+	}
+	return nil
+}
+
 func operationValues(raw RawCommand, records []Record, now time.Time) (map[string]string, error) {
 	out := map[string]string{}
 	switch {
+	case raw.Args.ContractDecision != nil:
+		return contractDecisionPreviewValues(raw, records, now)
 	case raw.Args.Bracket != nil:
 		return bracketPreviewValues(raw, records, now)
 	case raw.Args.People != nil:
@@ -181,14 +196,8 @@ func operationValues(raw RawCommand, records []Record, now time.Time) (map[strin
 	case raw.Args.Schedule != nil:
 		return schedulePreviewValues(records)
 	case raw.Args.Window != nil:
-		rules, err := RulesReading(raw.League, records, now)
-		if err != nil {
+		if err := windowPreviewValues(raw, records, now, out); err != nil {
 			return nil, err
-		}
-		for _, section := range rules.Sections {
-			for _, row := range section.Rows {
-				out[row.Label] = row.Value
-			}
 		}
 	case raw.Args.Exception != nil:
 		return calendarPreviewValues(raw, records, now)
@@ -212,6 +221,46 @@ func RolloverPreviewFields(before *RolloverBefore, plan *RolloverPlan) []Preview
 			BeforeSource: "Current app league readings", After: line, AfterSource: "Season rollover plan", When: "now"})
 	}
 	return fields
+}
+
+func contractDecisionPreviewValues(raw RawCommand, records []Record, now time.Time) (map[string]string, error) {
+	choice := raw.Args.ContractDecision
+	assets, err := NativeAssetsReading(raw.League, records, now)
+	if err != nil {
+		return nil, fmt.Errorf("read contract decision preview: %w", err)
+	}
+	if assets.Snapshot == nil {
+		return nil, fmt.Errorf("record starting rosters before previewing a contract decision")
+	}
+	index := assets.Snapshot.PlayerOf(choice.Franchise, choice.Player)
+	if index < 0 {
+		return nil, fmt.Errorf("the decision player is not on the chosen franchise")
+	}
+	player := assets.Snapshot.Players[index]
+	words := "No owner decision recorded"
+	deadline := "No decision deadline recorded"
+	if record, ok := LatestContractDecision(records, choice.Franchise, choice.Player, assets.Snapshot.Season); ok {
+		decision := record.Command.Args.ContractDecision
+		outcome := record.Command.Args.ContractDecisionOutcome
+		words = fmt.Sprintf("%s: %s", decision.Action, contractScheduleWords(outcome.After))
+		deadline = outcome.Deadline.Format(time.RFC3339)
+	}
+	return map[string]string{
+		"Player contract":   contractScheduleWords(player),
+		"Owner decision":    words,
+		"Decision deadline": deadline,
+	}, nil
+}
+
+func contractScheduleWords(player NativePlayer) string {
+	if len(player.ContractSchedule) == 0 {
+		return fmt.Sprintf("%s through season %d", player.Salary, player.ExpirationYear)
+	}
+	terms := make([]string, 0, len(player.ContractSchedule))
+	for _, year := range player.ContractSchedule {
+		terms = append(terms, fmt.Sprintf("%d: %s", year.Season, year.Cents))
+	}
+	return strings.Join(terms, ", ")
 }
 
 func nativePreviewCommand(raw RawCommand) bool {

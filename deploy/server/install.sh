@@ -72,7 +72,7 @@ Load the league before anything starts the server (copy the desktop history.db a
 file into owner-only /root/seed first):
   twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db \
     -mfl-league <MFL league number> -football-pin /etc/twr/football.sha256 < /root/seed/commissioner.json
-  chown twr:twr /var/lib/twr/server.db*
+  # league-load assigns ownership to each path it creates; no chown is needed.
   rc-update add twr-server default
   rc-service twr-server start
 Then complete the R2 backup setup in BACKUPS.md and check twr-status.

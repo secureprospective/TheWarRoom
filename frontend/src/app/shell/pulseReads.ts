@@ -4,8 +4,8 @@ import { hqEvents } from './hqReads';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseOdds,
-  parsePulseResults, parsePulseSchedule, type PulseSchedule,
-  parsePulseStandings, parsePulseWeek, type PulseBracket, type PulseFixture,
+  parsePulseResults, parsePulseSchedule, parsePulseFranchiseSchedule, recentForm, type PulseFormResult,
+  type PulseSchedule, parsePulseStandings, parsePulseWeek, type PulseBracket, type PulseFixture,
   type PulseLineupPlayer, type PulseOdds, type PulseResults, type PulseSeat, type PulseStandings } from
   '../data/nativePulse';
 import { parseWarRoomProjections } from '../data/nativeProjections';
@@ -23,8 +23,15 @@ export type NativePulse = {
   seats: PulseSeat[];
   week?: number; weekNote: string; lastWeek: number;
   fixtures: PulseFixture[];
+  scheduleNote: string;
+  scheduleError?: string;
+  forms: Record<string, PulseFormResult[]>;
+  formPending: boolean;
+  formError?: string;
+  formNote?: string;
   results?: PulseResults;
   standings?: PulseStandings;
+  standingsError?: string;
   bracket?: PulseBracket;
   /** Win chance, power and playoff odds from the league's own results, schedule and values. */
   odds?: PulseOdds;
@@ -67,10 +74,13 @@ export async function readNativePulse(league: string, mine: string, port: Hosted
     arguments: { league } });
   const held = parsePulseDirectory(directory.data, league);
   const result: NativePulse = { league, name: held.name, season: held.season,
-    revision: held.revision, seats: held.seats, weekNote: '', lastWeek: 0, fixtures: [], errors: [] };
-  const apply = async (read: () => Promise<void>) => {
+    revision: held.revision, seats: held.seats, weekNote: '', lastWeek: 0, fixtures: [], scheduleNote: '',
+    forms: {}, formPending: Boolean(serverTime && mine), errors: [] };
+  const apply = async (read: () => Promise<void>, failed?: (words: string) => void) => {
     try { await read(); } catch (error) {
-      result.errors.push(String(error)); console.warn('League Pulse read failed:', error);
+      const words = error instanceof Error ? error.message : String(error);
+      result.errors.push(words); failed?.(words);
+      console.warn('League Pulse read failed:', error);
     } finally { publish?.({ ...result, errors: [...result.errors] }); }
   };
   publish?.({ ...result });
@@ -78,17 +88,25 @@ export async function readNativePulse(league: string, mine: string, port: Hosted
     const r = await port({ command: 'week.read', mode: 'read', arguments: { league, franchise: mine,
       season: held.season, localZone: zone, at: serverTime ? '' : new Date().toISOString() } });
     const week = parsePulseWeek(r.data, league, mine, held.season);
-    result.fixtures = week.games;
+    if (!serverTime) result.fixtures = week.games;
     result.lastWeek = week.games.reduce((high, g) => Math.max(high, g.week), 0);
     result.week = week.week ?? week.nextWeek;
     result.weekNote = week.note || week.message;
   });
+  const franchiseSchedule = serverTime && mine ? apply(async () => {
+    const r = await port({ command: 'schedule.franchise.read', mode: 'read',
+      arguments: { league, franchise: mine, season: held.season, localZone: zone } });
+    const schedule = parsePulseFranchiseSchedule(r.data, league, mine, held.season);
+    result.fixtures = schedule.games;
+    result.scheduleNote = schedule.message;
+  }, words => { result.scheduleError = words; }) : Promise.resolve();
   await Promise.all([
+    franchiseSchedule,
     apply(async () => {
       const r = await port({ command: 'standings.read', mode: 'read',
         arguments: { league, season: held.season } });
       result.standings = parsePulseStandings(r.data, league, held.season);
-    }),
+    }, words => { result.standingsError = words; }),
     apply(async () => {
       const r = await port({ command: 'bracket.read', mode: 'read',
         arguments: { league, season: held.season } });
@@ -98,6 +116,18 @@ export async function readNativePulse(league: string, mine: string, port: Hosted
       result.odds = await readPulseOdds(league, held.season, port);
     })] : []),
   ]);
+  const through = Math.max(result.standings?.through ?? 0, (result.week ?? 1) - 1);
+  if (serverTime && mine && through > 0 && result.fixtures.length) await apply(async () => {
+    const history = await readRecentResults(league, held.season,
+      result.fixtures.map(game => game.week), through, port);
+    const franchises = new Set([mine, ...(result.standings?.rows.map(row => row.franchise) ?? [])]);
+    result.forms = Object.fromEntries([...franchises].map(franchise => [franchise,
+      recentForm(history, franchise, held.season)]));
+    result.formNote = history.map(reading => reading.words).filter(Boolean).join(' · ');
+  }, words => { result.formError = words; });
+  if (serverTime && mine) result.forms[mine] ??= [];
+  result.formPending = false;
+  result.formNote ||= result.standings?.words || result.scheduleNote || result.weekNote;
   return result;
 }
 
@@ -113,7 +143,17 @@ export async function readPulseWeekResults(league: string, season: number, week:
   port: HostedPort = hostedWorkflow): Promise<PulseResults> {
   const r = await port({ command: 'results.read', mode: 'read',
     arguments: { league, season, week } });
-  return parsePulseResults(r.data, league, week);
+  const results = parsePulseResults(r.data, league, week);
+  if (results.season !== season) throw new Error('Results belong to another season');
+  return results;
+}
+
+/** readRecentResults limits form inputs to the last scheduled weeks with a standings result. */
+export async function readRecentResults(league: string, season: number, weeks: readonly number[],
+  through: number, port: HostedPort = hostedWorkflow): Promise<PulseResults[]> {
+  const recent = [...new Set(weeks.filter(week => Number.isInteger(week) && week > 0 && week <= through))]
+    .sort((a, b) => a - b).slice(-5);
+  return Promise.all(recent.map(week => readPulseWeekResults(league, season, week, port)));
 }
 
 /** PulseSeason is the published schedule and the result of every week played so far. */

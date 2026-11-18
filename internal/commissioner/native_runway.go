@@ -23,31 +23,31 @@ type NativeCapYear struct {
 // using today's cap rules, without assuming renewals, future moves or cap growth. The horizon is the
 // longer of the league's maximum contract years and this franchise's last player expiration. Standing
 // charges persist; a contract without an end year stays unchanged, as it does at rollover.
+type NativeCapProjection struct {
+	Salaries map[string][]nativecheck.SeasonAmount
+	Removed  map[string]bool
+	Charges  []NativeCharge
+}
+
 func NativeCapRunway(base NativeBase, franchise string) ([]NativeCapYear, error) {
+	return NativeCapRunwayProjected(base, franchise, NativeCapProjection{})
+}
+
+func NativeCapRunwayProjected(base NativeBase, franchise string, projection NativeCapProjection) ([]NativeCapYear, error) {
 	seed, rules := base.Assets.Snapshot, base.Rules
 	cuts := map[string]bool{}
 	for _, record := range base.Records {
 		cuts[record.Receipt.Entry] = record.Command.Command == RosterCut
 	}
 	horizon := runwayHorizon(seed.Players, franchise, rules.Season, rules.Contracts.MaximumYears.Value)
+	for _, schedule := range projection.Salaries {
+		horizon = max(horizon, lastScheduleSeason(schedule)-rules.Season+1)
+	}
+	projectedCharges := append(slices.Clone(seed.Adjustments), projection.Charges...)
 	out := make([]NativeCapYear, 0, horizon)
 	for season := rules.Season; season < rules.Season+horizon; season++ {
-		players := []nativecheck.CapPlayer{}
-		charges, liveCharges := []domain.Money{}, []domain.Money{}
-		for _, p := range seed.Players {
-			if p.Franchise == franchise && cmp.Or(p.ExpirationYear, season) >= season {
-				players = append(players, nativecheck.CapPlayer{Salary: p.Salary, Status: p.Status})
-			}
-		}
-		for _, c := range seed.Adjustments {
-			if c.Franchise != franchise || !slices.Contains([]int{0, season}, c.Season) {
-				continue
-			}
-			charges = append(charges, c.Amount)
-			if c.Kind != deadMoney && !cuts[c.ID] {
-				liveCharges = append(liveCharges, c.Amount)
-			}
-		}
+		players := runwayPlayers(seed, franchise, projection, season)
+		charges, liveCharges := runwayCharges(projectedCharges, cuts, franchise, season)
 		total, err := nativecheck.CheckCap(rules.Cap, players, charges, time.UTC)
 		if err != nil {
 			return nil, fmt.Errorf("count cap runway for %s in %d: %w", franchise, season, err)
@@ -64,6 +64,55 @@ func NativeCapRunway(base NativeBase, franchise string) ([]NativeCapYear, error)
 		out = append(out, row)
 	}
 	return out, nil
+}
+
+func runwayPlayers(seed *RawNativeSnapshot, franchise string, projection NativeCapProjection,
+	season int) []nativecheck.CapPlayer {
+	players := []nativecheck.CapPlayer{}
+	for _, player := range seed.Players {
+		schedule := projection.Salaries[player.ID]
+		if len(schedule) == 0 {
+			schedule = player.ContractSchedule
+		}
+		lastSeason := max(player.ExpirationYear, lastScheduleSeason(schedule))
+		if player.Franchise == franchise && !projection.Removed[player.ID] && cmp.Or(lastSeason, season) >= season {
+			players = append(players, nativecheck.CapPlayer{Salary: projectedSalary(schedule, season, player.Salary),
+				Status: player.Status})
+		}
+	}
+	return players
+}
+
+func runwayCharges(projected []NativeCharge, cuts map[string]bool, franchise string, season int) (
+	[]domain.Money, []domain.Money) {
+	charges, live := []domain.Money{}, []domain.Money{}
+	for _, charge := range projected {
+		if charge.Franchise != franchise || charge.Season != 0 && charge.Season != season {
+			continue
+		}
+		charges = append(charges, charge.Amount)
+		if charge.Kind != deadMoney && !cuts[charge.ID] {
+			live = append(live, charge.Amount)
+		}
+	}
+	return charges, live
+}
+
+func lastScheduleSeason(schedule []nativecheck.SeasonAmount) int {
+	last := 0
+	for _, cell := range schedule {
+		last = max(last, cell.Season)
+	}
+	return last
+}
+
+func projectedSalary(schedule []nativecheck.SeasonAmount, season int, fallback domain.Money) domain.Money {
+	for _, cell := range schedule {
+		if cell.Season == season {
+			return cell.Cents
+		}
+	}
+	return fallback
 }
 
 func runwayHorizon(players []NativePlayer, franchise string, firstSeason, maxYears int) int {

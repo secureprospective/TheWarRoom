@@ -67,8 +67,18 @@ func missingContractJobs(assets NativeAssets) []Job {
 }
 
 func (p NativePlayer) validateContract() error {
-	if p.ContractMissing && (p.Salary != 0 || p.ExpirationYear != 0 || p.ContractStatus != "") {
+	if p.ContractMissing && (p.Salary != 0 || p.ExpirationYear != 0 || p.ContractStatus != "" || len(p.ContractSchedule) != 0) {
 		return fmt.Errorf("a missing contract cannot carry invented terms")
+	}
+	previous := 0
+	for _, year := range p.ContractSchedule {
+		if year.Season <= previous || year.Season > lastSeason || year.Cents < 0 {
+			return fmt.Errorf("a recorded contract schedule must have ordered, nonnegative years")
+		}
+		previous = year.Season
+	}
+	if len(p.ContractSchedule) > 0 && p.ContractSchedule[len(p.ContractSchedule)-1].Season != p.ExpirationYear {
+		return fmt.Errorf("a recorded contract schedule must end with its contract")
 	}
 	return nil
 }

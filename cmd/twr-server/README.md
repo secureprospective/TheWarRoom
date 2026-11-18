@@ -260,17 +260,18 @@ integration.
 rc-service twr-server stop
 twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db \
   -mfl-league 14432 -football-pin /etc/twr/football.sha256 < commissioner.json
-chown twr:twr /var/lib/twr/server.db*; rc-service twr-server start
+rc-service twr-server start
 ```
 
 **Brand-new server (first load before the service ever starts).** Install with `TWR_FIRST_LOAD=1`
 (`deploy/server/README.md`): `twr-server` stays stopped and `/var/lib/twr` stays empty. When `-db` is
 absent and its directory is empty, `league-load` creates the empty server database itself (no network,
 no identity population), then loads. An absent `-db` beside other files is refused; an existing
-database is used as before, and a league already on the server is never replaced. Then:
+database is used as before, and a league already on the server is never replaced. `league-load`
+assigns every file and directory it creates the state directory's uid/gid, one path at a time;
+no manual or recursive `chown` is needed. Then:
 
 ```
-chown twr:twr /var/lib/twr/server.db*     # non-recursive
 rc-update add twr-server default; rc-service twr-server start
 ```
 

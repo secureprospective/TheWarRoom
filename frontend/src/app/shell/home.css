@@ -237,6 +237,15 @@
 .hb .mx .sd.rt{text-align:right}
 .hb .mx .sc{font:700 30px var(--mono)} .hb .mx .vs{font:11px var(--mono);color:var(--ink3);padding-bottom:8px}
 .hb .mx .me .sc{color:var(--mine)} .hb .mx .op .sc{color:var(--theirs)}
+.hb .recent-form-marks{display:inline-flex;gap:3px;align-items:center}
+.hb .home-match-form i{font:700 9px var(--mono);font-style:normal;padding:1px 3px;border:1px solid var(--edge)}
+.hb .recent-form-marks i.win{background:var(--mine);color:var(--black)}
+.hb .recent-form-marks i.loss{background:var(--sunken);color:var(--ink2)}
+.hb .recent-form-marks i.tie{background:var(--edge-hi);color:var(--black)}
+.hb .recent-form-marks i.bye{background:repeating-linear-gradient(-45deg,var(--edge) 0 2px,transparent 2px 5px)}
+.hb .form-tile-label{padding:8px 12px 3px;font:700 10px var(--mono);color:var(--ink3)}
+.hb .home-tile-form{margin:4px 12px 10px;min-height:25px}
+.hb .home-tile-form i{display:grid;place-items:center;width:28px;height:25px;font:700 11px var(--mono);font-style:normal;border:1px solid var(--edge)}
 .hb .wpl{display:flex;justify-content:space-between;padding:0 14px;font:700 13px var(--mono)}
 .hb .wpl .g{color:var(--live)} .hb .wpl .a{color:var(--amber)}
 .hb .prog{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--edge);border-bottom:1px solid var(--edge)}

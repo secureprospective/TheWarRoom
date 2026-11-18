@@ -9,7 +9,8 @@ import {
 } from '../data/contract';
 import { parseRules, type Rules } from './rules';
 import { parseHostedLineup, parseHostedRoster, parseHostedReserves } from './hostedReadings';
-import { parsePulseResults, type PulseResults } from '../data/nativePulse';
+import { parsePulseResults, recentPlayerForm, type PulsePlayerFormPoint, type PulseResults } from
+  '../data/nativePulse';
 import { parseNativeMoves } from '../data/nativeMoves';
 import type { HQMove } from '../shell/HQMoves';
 import type { HQCap, HQSettings } from '../shell/hqModel';
@@ -21,6 +22,8 @@ import { ordinal } from '../shell/hqPlayerData';
 import { parseNativeValues, type LeagueValues } from '../data/nativeValues';
 import { parseWarRoomProjections } from '../data/nativeProjections';
 import { deadlineLabel } from '../clock/labels';
+import { readRecentResults } from '../shell/pulseReads';
+import { parseContractDecisions, type ContractDecisions } from '../shell/hqContractDecisions';
 
 export function nativeHQStanding(
   rules: Rules | undefined,
@@ -246,8 +249,13 @@ export type NativeHQ = {
   weekNote?: string;
   values?: LeagueValues;
   decisions?: { label: string; at?: string; live: boolean }[];
+  contractDecisions?: ContractDecisions;
   projections?: Map<string, number>;
   thisWeek?: PulseResults;
+  playerForm?: Record<string, PulsePlayerFormPoint[]>;
+  formPending?: boolean;
+  formError?: string;
+  formNote?: string;
   errors: string[];
 };
 export const OWNER_ONLY_MOVES = 'Pending moves are visible only to this franchise\'s owner';
@@ -257,6 +265,7 @@ export async function readNativeHQ(
   port: HostedPort = hostedWorkflow,
   publish?: (reading: NativeHQ) => void,
   owner = true,
+  includeContractDecisions = false,
 ): Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
   const snapshot = nativeHQAssets(assets.data, league);
@@ -268,13 +277,18 @@ export async function readNativeHQ(
   };
   let leagueRules: Rules | undefined;
   let standingRows: { franchise: string; division: string }[] = [];
-  const result: NativeHQ = { revision, snapshot, settings: { positions: [] }, errors: [] };
+  let standingsThrough: number | undefined;
+  let scheduleWeeks: number[] = [];
+  const result: NativeHQ = { revision, snapshot, settings: { positions: [] },
+    formPending: Boolean(mine), errors: [] };
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const apply = async (read: () => Promise<void>) => {
+  const apply = async (read: () => Promise<void>, failed?: (words: string) => void) => {
     try {
       await read();
     } catch (e) {
-      result.errors.push(String(e));
+      const words = e instanceof Error ? e.message : String(e);
+      result.errors.push(words);
+      failed?.(words);
       console.warn('Franchise HQ read failed:', e);
     } finally {
       publish?.({ ...result, errors: [...result.errors] });
@@ -334,6 +348,13 @@ export async function readNativeHQ(
           ] as const;
         }),
       );
+    }),
+    apply(async () => {
+      if (!owner || !includeContractDecisions || !mine) return;
+      const r = await port({ command: 'contract.decisions.read', mode: 'read',
+        arguments: { league, viewerZone: zone } });
+      sameRevision(r.data);
+      result.contractDecisions = parseContractDecisions(r.data, league, mine, revision);
     }),
     apply(async () => {
       const r = await port({
@@ -402,6 +423,7 @@ export async function readNativeHQ(
         };
       });
       standingRows = rows;
+      standingsThrough = integer(raw.through, 'Standings through');
       result.record = rows.find((r) => r.franchise === mine)?.record;
       result.standingsNote = raw.words === undefined ? undefined : text(raw.words, 'Standings words');
     }),
@@ -424,6 +446,10 @@ export async function readNativeHQ(
       ]);
       if (schedule.league !== league || schedule.franchise !== mine || schedule.season !== season)
         throw new Error('Week belongs to another franchise');
+      scheduleWeeks = array(schedule.games, 'Schedule games', (v, p) => {
+        const game = object(v, p, ['week', 'game', 'opponent', 'venue', 'kickoff']);
+        return integer(game.week, p, 1);
+      });
       const current =
         raw.current == null
           ? undefined
@@ -531,6 +557,18 @@ export async function readNativeHQ(
       result.projections = values;
     });
   await Promise.all([regions, values, thisWeek]);
+  if (mine && scheduleWeeks.length) await apply(async () => {
+    const through = Math.max(standingsThrough ?? 0, (result.week ?? 1) - 1);
+    const history = await readRecentResults(league, season, scheduleWeeks, through, port);
+    if (history.some(reading => reading.revision !== revision))
+      throw new Error('League changed during the read; refresh before using this region');
+    const players = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players.map(p => p.id) ?? [];
+    result.playerForm = Object.fromEntries(players.map(player => [player,
+      recentPlayerForm(history, player)]));
+    result.formNote = history.map(reading => reading.words).filter(Boolean).join(' · ');
+  }, words => { result.formError = words; });
+  result.formNote ||= result.standingsNote;
+  result.formPending = false;
   await apply(async () => {
     const r = await port({ command: 'calendar.read', mode: 'read', arguments: {
       league, season, franchise: mine, action: 'lineup',
@@ -645,4 +683,101 @@ export async function readNativeCut(
     },
   });
   return parseNativeCut(response.data, league, player);
+}
+
+export type NativeWhatIfMove = {
+  player: string; action: string; years: number; level: number;
+  moveCents: number; amountCents: number; reason: string;
+};
+export type NativeWhatIfYear = {
+  season: number; committedCents?: number; deadCents?: number; capCents?: number; roomCents?: number;
+};
+export type NativeWhatIfQuote = {
+  player: string; name: string; action: string; actionName: string;
+  allowed: boolean; priceable: boolean; reason: string;
+  deadMoney: { season: number; cents: number }[]; salaries: { season: number; cents: number }[];
+};
+export type NativeWhatIfStack = {
+  league: string; revision: number; season: number; before: NativeWhatIfYear[]; after: NativeWhatIfYear[];
+  moves: NativeWhatIfQuote[];
+};
+
+function whatIfMoney(value: unknown, path: string): number | undefined {
+  return value == null ? undefined : integer(value, path, Number.MIN_SAFE_INTEGER);
+}
+function whatIfAmounts(value: unknown, path: string) {
+  return array(value, path, (item, at) => {
+    const row = object(item, at, ['season', 'cents']);
+    return { season: integer(row.season, `${at}.season`),
+      cents: integer(row.cents, `${at}.cents`, Number.MIN_SAFE_INTEGER) };
+  });
+}
+function whatIfYears(value: unknown): NativeWhatIfYear[] {
+  return array(value, 'Cap runway', (item, path) => {
+    const row = object(item, path, ['season', 'committedCents', 'deadCents', 'capCents', 'roomCents']);
+    return { season: integer(row.season, `${path}.season`),
+      committedCents: whatIfMoney(row.committedCents, `${path}.committedCents`),
+      deadCents: whatIfMoney(row.deadCents, `${path}.deadCents`),
+      capCents: whatIfMoney(row.capCents, `${path}.capCents`),
+      roomCents: whatIfMoney(row.roomCents, `${path}.roomCents`) };
+  });
+}
+function whatIfQuote(value: unknown, move: NativeWhatIfMove, league: string): NativeWhatIfQuote {
+  const row = object(value, 'What-if move', [
+    'league', 'revision', 'season', 'player', 'name', 'franchise', 'action', 'actionName', 'allowed',
+    'reason', 'needs', 'years', 'salaryCents', 'salaries', 'deadMoney', 'reliefCents', 'cap', 'basis',
+    'priceable',
+    'notes', 'source',
+  ]);
+  if (row.league !== league || row.player !== move.player || row.action !== move.action
+    || typeof row.allowed !== 'boolean' || typeof row.priceable !== 'boolean')
+    throw new Error('What-if quote scope changed');
+  const name = text(row.name, 'What-if player');
+  text(row.franchise, 'What-if franchise');
+  const actionName = text(row.actionName, 'What-if action');
+  const reason = text(row.reason, 'What-if reason');
+  text(row.source, 'What-if source');
+  integer(row.revision, 'What-if revision');
+  integer(row.season, 'What-if season');
+  integer(row.years, 'What-if years');
+  whatIfMoney(row.salaryCents, 'What-if salary');
+  whatIfMoney(row.reliefCents, 'What-if relief');
+  array(row.needs, 'What-if needs', text);
+  array(row.basis, 'What-if basis', text);
+  array(row.notes, 'What-if notes', text);
+  const salaries = whatIfAmounts(row.salaries, 'What-if salaries');
+  const deadMoney = whatIfAmounts(row.deadMoney, 'What-if dead money');
+  if (row.cap != null) {
+    const cap = object(row.cap, 'What-if cap', [
+      'beforeCents', 'afterCents', 'changeCents', 'roomAfterCents', 'words',
+    ]);
+    whatIfMoney(cap.beforeCents, 'Cap before');
+    whatIfMoney(cap.afterCents, 'Cap after');
+    whatIfMoney(cap.changeCents, 'Cap change');
+    whatIfMoney(cap.roomAfterCents, 'Cap room');
+    text(cap.words, 'Cap words');
+  }
+  return {
+    player: move.player, name, action: move.action, actionName, allowed: row.allowed,
+    priceable: row.priceable, reason,
+    deadMoney, salaries,
+  };
+}
+export function parseNativeWhatIfStack(
+  value: unknown, league: string, moves: NativeWhatIfMove[],
+): NativeWhatIfStack {
+  const row = object(value, 'What-if stack', ['league', 'revision', 'season', 'before', 'after', 'moves']);
+  if (row.league !== league) throw new Error('What-if stack belongs to another league');
+  let index = 0;
+  const quotes = array(row.moves, 'What-if moves', item => {
+    const move = moves[index++];
+    if (!move) throw new Error('What-if move count changed');
+    return whatIfQuote(item, move, league);
+  });
+  if (quotes.length !== moves.length) throw new Error('What-if move count changed');
+  return {
+    league, revision: integer(row.revision, 'What-if revision'),
+    season: integer(row.season, 'What-if season'), before: whatIfYears(row.before),
+    after: whatIfYears(row.after), moves: quotes,
+  };
 }

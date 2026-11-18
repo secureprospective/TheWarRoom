@@ -590,23 +590,10 @@ func admitLeagueAccess(access commissioner.Access, policy governance.State, prin
 		}
 		return nil
 	}
-	if handled, err := admitDraftQueueSet(access, policy, principal); handled {
-		return err
-	}
 	if _, err := commissioner.AuthorizeRecords(access.Raw, access.Principal, records); err != nil {
 		return fmt.Errorf("current league permission: %w", err)
 	}
 	return nil
-}
-
-func admitDraftQueueSet(access commissioner.Access, policy governance.State, principal governance.Principal) (bool, error) {
-	if access.Operation != "draft.queue.set" {
-		return false, nil
-	}
-	if access.Mode != "execute" || !policy.HoldsSeat(governance.FranchiseID(access.Franchise), principal) {
-		return true, fmt.Errorf("only a seated owner may replace a private draft queue")
-	}
-	return true, nil
 }
 
 func decodeHosted[T RawRecoveryRequest | RawRecoveryCodesRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator | RawAgentTokenRequest | RawPasswordChangeRequest](w http.ResponseWriter, r *http.Request, raw *T) error {
@@ -671,7 +658,8 @@ func privateOwnerPersonalOperation(operation string) bool {
 	}
 	switch operation {
 	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchRead,
-		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder:
+		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder, leagueservice.WhatIfStackRead,
+		leagueservice.ContractDecisionsRead, "draft.queue.read", "draft.queue.set":
 		return true
 	default:
 		return false

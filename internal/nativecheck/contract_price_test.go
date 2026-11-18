@@ -105,6 +105,16 @@ func TestBuyoutRateFollowsYearsLeftAndTheLimit(t *testing.T) {
 	wantRefusal(t, price(t, in, nativecheck.ActionBuyout), "already used its 2 buyouts this season")
 }
 
+func TestBuyoutUsesAnExistingAnnualSalarySchedule(t *testing.T) {
+	in := priceInput()
+	in.Contract.Schedule = []nativecheck.SeasonAmount{{Season: 2026, Cents: 10 * million},
+		{Season: 2027, Cents: 4 * million}, {Season: 2028, Cents: 8 * million}}
+	got := price(t, in, nativecheck.ActionBuyout)
+	if got.Refusal != "" || len(got.Dead) != 1 || got.Dead[0].Cents != 3_600_00000 {
+		t.Fatalf("buyout ignored the applied salary schedule: %+v", got)
+	}
+}
+
 func TestBuyoutAveragesUnevenSalariesBeforeRounding(t *testing.T) {
 	// Three remaining salaries of $10,000,000.01 each: 75% of the exact mean is 750,000,000.75 cents,
 	// which is 750,000,001 cents before the snap and $7,500,000 after it.

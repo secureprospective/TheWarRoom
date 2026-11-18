@@ -4,7 +4,9 @@ import (
 	"context"
 	"io"
 	"os"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -69,6 +71,74 @@ func TestFirstLoadPreparesAnEmptyStateDirectory(t *testing.T) {
 	}
 	if err := loadHeld(t.Context(), path, heldLegacy(t), "", raw, io.Discard); err == nil || !strings.Contains(err.Error(), "already on this server") {
 		t.Fatalf("second load = %v, want the existing league kept", err)
+	}
+}
+
+func TestStateDirectoryOwnerUsesDirectoryMetadata(t *testing.T) {
+	dir := t.TempDir()
+	owner, err := stateDirectoryOwner(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	current, err := user.Current()
+	if err != nil {
+		t.Fatal(err)
+	}
+	uid, err := strconv.Atoi(current.Uid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gid, err := strconv.Atoi(current.Gid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if owner != (stateFileOwner{uid: uid, gid: gid}) {
+		t.Fatalf("owner = %+v, want current directory owner %d:%d", owner, uid, gid)
+	}
+}
+
+func TestFirstLoadStatePathsUseStateDirectoryOwner(t *testing.T) {
+	if os.Geteuid() != 0 {
+		t.Skip("changing a temporary state directory owner requires root")
+	}
+	dir := t.TempDir()
+	const uid, gid = 12345, 12346
+	if err := os.Chown(dir, uid, gid); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "server.db")
+	raw := accounts.RawCredentials{Username: "christopher", Password: "a-long-private-password"}
+	var out strings.Builder
+	err := withStateDirectoryOwnership(dir, func() error {
+		if err := prepareFirstLoad(path); err != nil {
+			return err
+		}
+		if err := checkHostedDatabase(path, 0); err != nil {
+			return err
+		}
+		return loadHeld(t.Context(), path, heldLegacy(t), "", raw, &out)
+	})
+	if err != nil {
+		t.Fatalf("first load: %v", err)
+	}
+	if err := filepath.WalkDir(dir, func(path string, _ os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		info, err := os.Lstat(path)
+		if err != nil {
+			return err
+		}
+		actual, err := stateOwnerFromFileInfo(info)
+		if err != nil {
+			return err
+		}
+		if actual != (stateFileOwner{uid: uid, gid: gid}) {
+			t.Errorf("created path %s owner = %+v, want %d:%d", path, actual, uid, gid)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
 	}
 }
 
