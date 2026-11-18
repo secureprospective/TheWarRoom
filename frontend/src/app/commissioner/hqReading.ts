@@ -23,6 +23,7 @@ import { parseNativeValues, type LeagueValues } from '../data/nativeValues';
 import { parseWarRoomProjections } from '../data/nativeProjections';
 import { deadlineLabel } from '../clock/labels';
 import { readRecentResults } from '../shell/pulseReads';
+import { parseContractDecisions, type ContractDecisions } from '../shell/hqContractDecisions';
 
 export function nativeHQStanding(
   rules: Rules | undefined,
@@ -248,6 +249,7 @@ export type NativeHQ = {
   weekNote?: string;
   values?: LeagueValues;
   decisions?: { label: string; at?: string; live: boolean }[];
+  contractDecisions?: ContractDecisions;
   projections?: Map<string, number>;
   thisWeek?: PulseResults;
   playerForm?: Record<string, PulsePlayerFormPoint[]>;
@@ -263,6 +265,7 @@ export async function readNativeHQ(
   port: HostedPort = hostedWorkflow,
   publish?: (reading: NativeHQ) => void,
   owner = true,
+  includeContractDecisions = false,
 ): Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
   const snapshot = nativeHQAssets(assets.data, league);
@@ -345,6 +348,13 @@ export async function readNativeHQ(
           ] as const;
         }),
       );
+    }),
+    apply(async () => {
+      if (!owner || !includeContractDecisions || !mine) return;
+      const r = await port({ command: 'contract.decisions.read', mode: 'read',
+        arguments: { league, viewerZone: zone } });
+      sameRevision(r.data);
+      result.contractDecisions = parseContractDecisions(r.data, league, mine, revision);
     }),
     apply(async () => {
       const r = await port({
@@ -683,7 +693,8 @@ export type NativeWhatIfYear = {
   season: number; committedCents?: number; deadCents?: number; capCents?: number; roomCents?: number;
 };
 export type NativeWhatIfQuote = {
-  player: string; name: string; action: string; actionName: string; allowed: boolean; reason: string;
+  player: string; name: string; action: string; actionName: string;
+  allowed: boolean; priceable: boolean; reason: string;
   deadMoney: { season: number; cents: number }[]; salaries: { season: number; cents: number }[];
 };
 export type NativeWhatIfStack = {
@@ -715,10 +726,12 @@ function whatIfQuote(value: unknown, move: NativeWhatIfMove, league: string): Na
   const row = object(value, 'What-if move', [
     'league', 'revision', 'season', 'player', 'name', 'franchise', 'action', 'actionName', 'allowed',
     'reason', 'needs', 'years', 'salaryCents', 'salaries', 'deadMoney', 'reliefCents', 'cap', 'basis',
+    'priceable',
     'notes', 'source',
   ]);
   if (row.league !== league || row.player !== move.player || row.action !== move.action
-    || typeof row.allowed !== 'boolean') throw new Error('What-if quote scope changed');
+    || typeof row.allowed !== 'boolean' || typeof row.priceable !== 'boolean')
+    throw new Error('What-if quote scope changed');
   const name = text(row.name, 'What-if player');
   text(row.franchise, 'What-if franchise');
   const actionName = text(row.actionName, 'What-if action');
@@ -745,7 +758,8 @@ function whatIfQuote(value: unknown, move: NativeWhatIfMove, league: string): Na
     text(cap.words, 'Cap words');
   }
   return {
-    player: move.player, name, action: move.action, actionName, allowed: row.allowed, reason,
+    player: move.player, name, action: move.action, actionName, allowed: row.allowed,
+    priceable: row.priceable, reason,
     deadMoney, salaries,
   };
 }

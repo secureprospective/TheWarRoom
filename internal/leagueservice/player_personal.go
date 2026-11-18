@@ -14,12 +14,13 @@ import (
 )
 
 const (
-	PlayerNoteRead   = "player.note.read"
-	PlayerNoteSet    = "player.note.set"
-	PlayerWatchRead  = "player.watch.read"
-	PlayerWatchSet   = "player.watch.set"
-	PlayerWatchOrder = "player.watch.order"
-	WhatIfStackRead  = "whatif.stack.read"
+	PlayerNoteRead        = "player.note.read"
+	PlayerNoteSet         = "player.note.set"
+	PlayerWatchRead       = "player.watch.read"
+	PlayerWatchSet        = "player.watch.set"
+	PlayerWatchOrder      = "player.watch.order"
+	WhatIfStackRead       = "whatif.stack.read"
+	ContractDecisionsRead = "contract.decisions.read"
 )
 
 type RawPlayerNotesScope struct {

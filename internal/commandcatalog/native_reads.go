@@ -93,12 +93,19 @@ func nativeReads() []Command {
 	return out
 }
 func playerPersonalNativeReads() []Command {
-	return []Command{{ID: leagueservice.PlayerWatchRead, Method: "TargetPlayerWatches", Version: "1",
-		Role: "domain", Gravity: "G0", Availability: "server",
-		Arguments: Shape(reflect.TypeFor[leagueservice.RawPlayerWatchReadScope](),
-			"RawPlayerWatchReadScope.Validate"), Permission: "franchise-owner",
-		Modes: []Mode{Read}, Undo: "none", Facts: "private-player-data",
-		Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"}}
+	return []Command{
+		{ID: leagueservice.PlayerWatchRead, Method: "TargetPlayerWatches", Version: "1",
+			Role: "domain", Gravity: "G0", Availability: "server",
+			Arguments: Shape(reflect.TypeFor[leagueservice.RawPlayerWatchReadScope](),
+				"RawPlayerWatchReadScope.Validate"), Permission: "franchise-owner",
+			Modes: []Mode{Read}, Undo: "none", Facts: "private-player-data",
+			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
+		{ID: leagueservice.ContractDecisionsRead, Method: "TargetNativeContractDecisions", Version: "1",
+			Role: "domain", Gravity: "G0", Availability: "server",
+			Arguments:  Shape(reflect.TypeFor[market.RawContractDecisionsScope](), "RawContractDecisionsScope.Validate"),
+			Permission: "franchise-owner", Modes: []Mode{Read}, Undo: "none", Facts: "private-player-data",
+			Safeguards: "authenticated seated owner; server derives franchise; no request franchise; uncached"},
+	}
 }
 
 func nativeDraftQueueCommands() []Command {

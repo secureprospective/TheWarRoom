@@ -59,6 +59,7 @@ func generatedVerbs() []commandVerb {
 		{ID: "commish.notice.publish", Label: "publish league notice", Modes: []string{"preview", "execute"}},
 		{ID: "commish.whatsnew.post", Label: "post league whatsnew", Modes: []string{"preview", "execute"}},
 		{ID: "trade.offer", Label: "offer trade", Modes: []string{"preview", "execute"}},
+		{ID: "contract.decision.set", Label: "set contract decision", Modes: []string{"preview", "execute"}},
 		{ID: "trade.accept", Label: "accept trade", Modes: []string{"preview", "execute"}},
 		{ID: "trade.decline", Label: "decline trade", Modes: []string{"preview", "execute"}},
 		{ID: "trade.withdraw", Label: "withdraw trade", Modes: []string{"preview", "execute"}},

@@ -87,7 +87,8 @@ func QuoteWhatIfStack(raw RawWhatIfStack, records []commissioner.Record, now tim
 	original := *base.Assets.Snapshot
 	state := whatIfState{base: base, schedules: make(map[string][]nativecheck.SeasonAmount),
 		removed: make(map[string]bool), statuses: make(map[string]domain.ContractStatus),
-		trails: make(map[string]nativecheck.Trail), used: make(map[nativecheck.ContractAction]int),
+		trails: make(map[string]nativecheck.Trail),
+		used:   contractDecisionTrail(records, franchise, "", base.Rules.Season).Used,
 		quotes: make([]ContractQuote, 0, len(raw.Moves))}
 	out := WhatIfStack{League: raw.League, Revision: int64(len(records)), Season: base.Rules.Season, Before: before}
 	if err := state.quoteMoves(raw, records, zone, facts, franchise, original); err != nil {
@@ -121,8 +122,12 @@ func (s *whatIfState) quoteMoves(raw RawWhatIfStack, records []commissioner.Reco
 		input := RawContractQuote{League: raw.League, Player: move.Player, Franchise: franchise,
 			Action: move.Action, ViewerZone: raw.ViewerZone, Years: move.Years, Level: move.Level,
 			MoveCents: move.MoveCents, AmountCents: move.AmountCents, Reason: move.Reason}
-		trail := s.trails[move.Player]
+		trail, ok := s.trails[move.Player]
+		if !ok {
+			trail = whatIfDecisionTrail(records, franchise, move.Player, s.base.Rules.Season)
+		}
 		trail.Used = s.used
+		s.trails[move.Player] = trail
 		quote, err := quoteContractOnBase(input, records, s.base.Now, zone, facts, s.base,
 			trail, s.schedules[move.Player])
 		if err != nil {
@@ -148,6 +153,17 @@ type whatIfState struct {
 	trails    map[string]nativecheck.Trail
 	used      map[nativecheck.ContractAction]int
 	charges   []commissioner.NativeCharge
+}
+
+func whatIfDecisionTrail(records []commissioner.Record, franchise, player string, season int) nativecheck.Trail {
+	trail := contractDecisionTrail(records, franchise, player, season)
+	for key, record := range latestContractDecisions(records) {
+		if key.franchise == franchise && key.player == player && key.season == season &&
+			nativecheck.ContractAction(record.Command.Args.ContractDecision.Action) == nativecheck.ActionExtension {
+			trail.Extensions++
+		}
+	}
+	return trail
 }
 
 func (s *whatIfState) apply(move RawWhatIfMove, quote ContractQuote, franchise string) {
@@ -197,6 +213,7 @@ func (s whatIfState) readingBase(original commissioner.RawNativeSnapshot, season
 			continue
 		}
 		if schedule, ok := s.schedules[player.ID]; ok {
+			player.ContractSchedule = slices.Clone(schedule)
 			player.Salary = scheduleAmount(schedule, season, player.Salary)
 			for _, cell := range schedule {
 				player.ExpirationYear = max(player.ExpirationYear, cell.Season)

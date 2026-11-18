@@ -103,6 +103,24 @@ func TestWhatIfStackCarriesRestructureScheduleIntoLaterCut(t *testing.T) {
 	}
 }
 
+func TestWhatIfStackStartsFromRecordedOwnerDecision(t *testing.T) {
+	b := contractDecisionLedger(t)
+	now := seasonMoment(13)
+	decision := prepareContractDecision(t, b, contractDecisionRaw(b, "rfa_tender", 1, 0), now)
+	b.add(decision, now)
+
+	raw := RawWhatIfStack{League: rolloverLeague, ViewerZone: "UTC", Moves: []RawWhatIfMove{
+		{Player: "0001", Action: "rfa_tender", Level: 1},
+	}}
+	got, err := QuoteWhatIfStack(raw, b.records, now.Add(time.Minute), time.UTC, nil, "franchise.02")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Moves) != 1 || got.Moves[0].Allowed {
+		t.Fatalf("stack replaced an already-recorded extension decision: %+v", got.Moves)
+	}
+}
+
 func TestWhatIfStackRejectsAnotherFranchisePlayer(t *testing.T) {
 	b := rolloverLedger(t)
 	raw := RawWhatIfStack{League: rolloverLeague, ViewerZone: "UTC", Moves: []RawWhatIfMove{{Player: "0002", Action: "cut"}}}

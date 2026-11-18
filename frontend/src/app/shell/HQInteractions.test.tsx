@@ -138,7 +138,8 @@ it('adds, removes and resets stacked moves, rereading each ordered stack', async
     const quote = (move: { player: string; action: string }) => ({
       league: args.league, revision: 1, season: 2026, player: move.player,
       name: `Player ${move.player}`, franchise: 'franchise.01', action: move.action,
-      actionName: 'Release', allowed: true, reason: '', needs: [], years: 0, salaryCents: null,
+      actionName: 'Release', allowed: true, priceable: true, reason: '', needs: [],
+      years: 0, salaryCents: null,
       salaries: [], deadMoney: [{ season: 2026, cents: 100000000 }], reliefCents: 0,
       cap: null, basis: [], notes: [], source: 'server',
     });

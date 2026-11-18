@@ -70,10 +70,14 @@ func runwayPlayers(seed *RawNativeSnapshot, franchise string, projection NativeC
 	season int) []nativecheck.CapPlayer {
 	players := []nativecheck.CapPlayer{}
 	for _, player := range seed.Players {
-		lastSeason := max(player.ExpirationYear, lastScheduleSeason(projection.Salaries[player.ID]))
+		schedule := projection.Salaries[player.ID]
+		if len(schedule) == 0 {
+			schedule = player.ContractSchedule
+		}
+		lastSeason := max(player.ExpirationYear, lastScheduleSeason(schedule))
 		if player.Franchise == franchise && !projection.Removed[player.ID] && cmp.Or(lastSeason, season) >= season {
-			players = append(players, nativecheck.CapPlayer{Salary: projectedSalary(
-				projection.Salaries[player.ID], season, player.Salary), Status: player.Status})
+			players = append(players, nativecheck.CapPlayer{Salary: projectedSalary(schedule, season, player.Salary),
+				Status: player.Status})
 		}
 	}
 	return players
