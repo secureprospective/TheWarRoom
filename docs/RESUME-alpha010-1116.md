@@ -3,7 +3,56 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. STATE AT 7:55 PM CST TUE 11-17 (supersedes every older 0 block and sections 3, 10, 11)
+## 0. STATE AT 2:55 AM CST WED 11-18 (overnight run; supersedes every older 0 block and sections 3, 10, 11)
+
+**Overnight run:** `~/fleet/runs/overnight-alpha-1118/` on the Beelink (`PLAN.md`, `REPORT.md` with "Needs Christopher" at the top). Merge authority is the same as daytime (his answer 11-17 ~8 PM): merge after my own review and green CI, into bundles and main. The repo allows SQUASH merges only (`--merge` is refused).
+
+**On main now:** #346 (fresh-server first load), #362 (Bundle 1: HQ, War Room, Pulse), #361 (install fixes: league-load owns what it creates; updater `TWR_FIRST_LOAD=1`), #365 (Bundles 2-3: Needs-you list and the fixed thin Home). Main HEAD is `06529b7d5`.
+
+**Bundle 5 (`bundle/b5`), all reviewed and merged:** #347 frame + Jobs + Situations, #350 Rules, #352 Season, #351 Server, #354 job producers (co-commissioner can read), #359 Picks, #357 People, #358 Fix, #356 League, #355 deputy permissions (SECURITY fix: no commissioner/co-commissioner shortcut; deputies go through authorizeTrade/authorizeLineupSet; trade parties refused). Waiting only on b5backup, then land with `twr-bundle-land.sh bundle/b5 ...`.
+
+**Bundle 4 (`bundle/b4`):** #360 shell (thin rail, player search, cards) and #364 (sync with Bundle 1) are merged. Landing on main hit 9 conflicts against main (Bundles 1-3). Lane **b4sync2** (Luna xhigh) is merging; the real join is `HostedLeague.tsx` (the rail's Home must return to the Bundle 3 thin Home; there must be one Home). Then land it with `twr-bundle-land.sh bundle/b4 "Bundle 4: ..." ~/fleet/runs/overnight-alpha-1118/b4pr.md`.
+
+**In flight (watchers on Claudebox)**
+| Lane | What | Check | On result |
+|---|---|---|---|
+| b4sync2 | merge main into bundle/b4 | `~/fleet/runs/pulse-b4sync2/` (completion.txt, `tail -c 1500 stdout.log`) | review the PR (HostedLeague Home join), merge with `twr-bundle-merge.sh b4sync2 <pr>`, then land B4 |
+| b5backup | hosted `backup.now` for commissioner/co-commissioner; unblocks Rollover and Server > Back up now | `~/fleet/runs/pulse-b5backup/`; its 3 h window ends ~3:20 AM | review authz (owner/deputy/token refused, one at a time), merge, then land B5. If it timed out, relaunch the same brief (it resumes from HANDOFF.md) |
+| 50-min checker | `twr-lane-check.sh 50` | — | re-arm |
+
+**New fleet tools (Beelink `~/fleet/bin/`, written tonight)**
+- `twr-bundle-merge.sh <lane> <pr>`: syncs the PR base into the lane branch (HANDOFF keeps the lane's copy; any other conflict stops), tsc + tests, push with lint-lock retries, waits for CI, squash-merges.
+- `twr-tab-merge.sh <lane> <pr> [wait-pr]`: the same, plus auto-resolving the Control Room tab conflict with `twr-tabs-resolve.py` (handles only single-line tab entries; ternary or multi-line entries needed hand resolution: #357, #358, #356).
+- `twr-bundle-land.sh <bundle> <title> <body>`: merges main into the bundle in `.worktrees/land-<bundle>`, regenerates gen files, full vitest (one retry for load flakes), frontend build, `make verify`, push, PR to main, CI, squash-merge.
+
+**Traps found tonight (do not re-learn)**
+- A fresh worktree needs `cd frontend && pnpm run build` before `make verify` or a push: the Go embed (`all:frontend/dist`) and `make bindings` fail without it.
+- `golangci-lint` is a single lock across lanes. Commits and pushes fail with "parallel golangci-lint is running": retry every 60 s.
+- The guard reads `ssh -f` or `--fail-fast` in the same command as `git push` as a force push. Keep pushes in their own command.
+- A blocked command also drops the heredoc file write inside it. After any guard block, check the brief exists (`wc -c`) before launching (b4shell launched with an empty brief once).
+- Full-suite vitest under fleet load flakes on timing tests (nativeAccount "opens the league straight after signing in", hostedRules "teamless Commissioner"); both pass alone.
+- Landing bundles late compounds conflicts: land each bundle the moment it is done.
+
+**Rulings I made tonight (head brain; record them, do not relitigate)**
+- Thin mode is the product. Bundle 4 was built in thin mode; local mode stays frozen (shared presentational `RailNodes` is fine).
+- Home privacy: a thin sign-in is bound to one league, so Home lists only the admitted league and never calls `commish.leagues.read`. It is built as a `LeagueChoice[]` list for a later account-scoped read.
+- lab4: upgrade-then-archive-then-remove-one-by-one was the accepted workaround; the fix is on main (#361).
+
+**Lab:** CT 260 runs release 9 with MFL 14432 imported (3,399 history), backups checked in R2. Stress: 79,795 requests; 5,407 HTTP 503 from our server's overload refusal at 256 clients; 0 HTTP 502; recovery 0.7 s. Evidence: `~/fleet/runs/pulse-lab4/RESULT.md`. Client pass on Claude-OS NOT done (a private page was open; left alone).
+
+**Next actions**
+1. On b4sync2 done: review, merge, land Bundle 4.
+2. On b5backup done: review, merge, then land Bundle 5 (needs a body file like b4pr.md).
+3. Then alpha bundle list is complete: update the tracker (`twr-tracker.py`), write the morning REPORT summary, run the Claude-OS client pass if the desktop is idle, and re-run the lab on the new main.
+4. Bundles 8-9 (phone) are NOT started: blocked on the Bundle 7 security call.
+
+**Needs Christopher (also at the top of REPORT.md)**
+- Bundle 7 browser door (security loosening): approve it, or keep the phone for after alpha. This blocks Bundles 8-9.
+- Delete the stale branch: `git push origin --delete session/pulse-b1hqdec`
+- Tell me when Claude-OS is free for the client pass.
+- Rotate the CT 257 keys; choose how testers reach a server.
+
+## 0-prev2. (older) STATE AT 7:55 PM CST TUE 11-17 (supersedes every older 0 block and sections 3, 10, 11)
 
 **New rulings since 7:00 PM (memories: feedback_luna_exclusive_scale_thinking, project_twr_alpha_cuts_1118)**
 - **Thinking level is routing.** Pick it for wall clock and to keep the session alive on OpenAI's servers, not for output quality. Use high for short lanes, xhigh for long ones, and max only when a long run already got cut off.
