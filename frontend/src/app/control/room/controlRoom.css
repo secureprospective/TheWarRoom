@@ -233,3 +233,38 @@
 .crx-tree .leaf.sel{color:var(--ink);font-weight:600}
 .crx-tree .leaf.sel .tr::after{content:"▮";color:var(--edge-hi)}
 .crx-who{font:11px var(--mono);color:var(--ink3)}
+
+/* Thin hosted Control Room frame; unported lanes remain an explicit server-app seam. */
+.crx.hosted-control-room{height:min(76vh,920px);min-height:540px;margin:18px 0;border:1px solid var(--edge)}
+.crx.hosted-control-room .hosted-control-content{overflow:auto;align-items:stretch}
+.crx.hosted-control-room .hosted-control-refresh{margin-left:auto;border-left:1px solid var(--black);font-size:11px}
+.crx.hosted-control-room .hosted-jobs-column,.crx.hosted-jobs{flex:1;min-width:0;min-height:0}
+.crx.hosted-control-room .hosted-jobs-column{display:flex;flex-direction:column;gap:10px}
+.crx.hosted-job-controls{flex:none;overflow:visible}
+.crx.hosted-job-controls label{display:flex;align-items:center;gap:8px;color:var(--ink2);font-size:12px}
+.crx.hosted-job-controls select{background:var(--sunken);border:1px solid var(--edge);color:var(--ink);padding:5px 8px}
+.crx.hosted-job-lanes{flex:1;overflow:auto}
+.crx.hosted-job-lanes section{margin-bottom:12px}
+.crx.hosted-job-lanes h3{font:600 10px var(--mono);letter-spacing:.13em;color:var(--ink3);padding:8px 0 4px}
+.crx.hosted-job-lanes h3.hosted-job-urgent{color:var(--amber)}
+.crx.hosted-control-room .st-now{background:var(--amber)}
+.crx.hosted-control-room .st-neutral{background:var(--ink3)}
+.crx .hosted-job-empty,.crx .hosted-job-source{color:var(--ink3);font-size:11px;padding:4px 0}
+.crx .hosted-situations{flex:1;overflow:auto}
+.crx .hosted-situation-list{max-height:38%;overflow:auto;align-content:start}
+.crx .hosted-situation-detail{flex:1;min-height:0}
+.crx .hosted-situation-detail .cr-pb{overflow:auto}
+.crx .hosted-situation-steps{list-style:none;padding:0}
+.crx .hosted-situation-steps li{display:grid;grid-template-columns:minmax(130px,1fr) minmax(120px,1fr) auto auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--rule)}
+.crx .hosted-situation-steps code{font:11px var(--mono);color:var(--ink2);overflow-wrap:anywhere}
+.crx .hosted-act-tray{flex:none;padding:10px 12px;background:var(--tile);border:1px solid var(--edge);max-height:44vh;overflow:auto}
+.crx .hosted-unported{align-self:flex-start;max-width:680px}
+.crx.hosted-control-room .insp .big{font:600 18px var(--mono);padding:10px;background:var(--sunken);border:1px solid var(--edge)}
+@media(max-width:1000px){
+  .crx.hosted-control-room{height:auto;min-height:0;display:block;overflow:visible}
+  .crx.hosted-control-room .work{overflow:visible;min-height:560px}
+  .crx.hosted-control-room .ws-tabs{overflow-x:auto}
+  .crx.hosted-control-room .hosted-control-content{min-height:400px;overflow:visible}
+  .crx.hosted-control-room .insp{display:none}
+  .crx .hosted-situation-steps li{grid-template-columns:1fr auto}
+}

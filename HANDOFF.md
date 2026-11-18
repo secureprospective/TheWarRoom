@@ -1,9 +1,11 @@
 # Handoff
 
-- Baton: Bee, 2026-11-17.
-- State: frontend-only slop task complete. Partner reads use parser-checked standings rows; Plans has one unavailable state with history; hosted bids use hosted commands and local mode retains `poolProvider`.
-- Changes: renamed `canFilter` to `filterUnavailable`, matched Plans copy, added partner standings/cap scope regression coverage. No Go, schema, or tdrafts-owned files changed.
-- Tests: `WarRoomPlans.test.tsx` (single unavailable state + history); `WarRoomMarket.test.tsx` (unavailable filter controls); `warroomMarketReads.test.ts` (hosted bid commands/local provider); `warroomTradeReads.test.ts` (checked partner row/cap scope). Frontend: 122 files / 906 tests; tsc, build, lint, tidy, pre-push verify passed. Build emitted existing bundle warnings; lint listed existing oversized untouched Go files.
-- PR: #337 open, CI green at `2d02147a1`: https://github.com/secureprospective/TheWarRoom/pull/337
-- Next: Christopher/ClaudeBox review and merge decision.
-- Blocked: none.
+- Baton: ClaudeBox, 2026-11-17 (PR #347 open; review pending).
+- State: Hosted Control Room frame, Jobs and Situations are implemented in `frontend/src/app/commissioner/`. Jobs and League Health share the `commish.jobs.read` count; commissioner forms stay on `hostedRoom`.
+- Scope: thin hosted mode only; local mode unchanged. Snooze/settlement remain out of scope.
+- Verified: frontend 127 files/919 tests; `pnpm exec tsc --noEmit`; path-casing check; `make lint`; `make bloat`; PR CI green.
+- Slop fixed: shared jobs read/count; reused act-table form and hosted command path; renamed helper module to avoid case-insensitive collision with `HostedControlRoom.tsx`.
+- Next: ClaudeBox review and merge PR #347 into `bundle/b5`.
+- Blocked: none. Deputy visibility comes from the server read; permission checks stay on the hosted command path.
+- Open decisions deliberately untouched: snooze per person/league; deputy job visibility; written-request visibility; division naming.
+- Tried/rejected: none.
