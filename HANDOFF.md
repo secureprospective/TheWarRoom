@@ -1,9 +1,11 @@
 # Handoff
 
-- Baton: Bee, 2026-11-18; lane `pulse-b7door`, base `bundle/b7`.
-- State: implementation stopped at the brief's migration fallback. No server routes or behavior changed. Blocker recorded in `docs/build-handoffs/BROWSER-DOOR-MIGRATION-BLOCKER-2026-11-18.md`.
-- Evidence: `account_sessions` has no league field; `league_directory` has no per-account recency; desktop device label is fixed and not a league. A memory-only selector loses its choice on restart, and ledger mutation history misses read-only league use.
-- Next: review the draft PR and decide whether to add persistent per-account or per-session last-used league state to the server account database. Resume browser session routes only after that migration decision.
-- Blocked on: migration approval and recency ownership choice.
-- Tried and rejected: in-memory last-league map (not durable); inferring use from league events (misses reads); reusing the device label (changes its existing meaning).
-- Hygiene: `tidy-check.sh` found the parallel `b7web` launcher (pid 797562); left its run and scratch untouched because they are not this lane's.
+- Baton: Bee, 2026-11-18; lane `pulse-b7door`, branch `session/pulse-b7door`, base `bundle/b7` (`b597b6122`).
+- State: browser door implemented; no schema migration or league-recency state. `POST /app/session` returns 409 with the desktop-app message for accounts admitted to multiple leagues. `make verify` passed, including race tests, frontend build, lint and staged embedded-bundle test; staging cleaned.
+- Flow: exact configured HTTPS Origin and Host → `/app/session` creates/revokes the existing owner session in `__Host-twr_session`; GET/POST return only the one admitted league. Native command routes accept that cookie only from the configured origin and retain current authorization/TOTP checks. `/app/` embeds the built web app with locked headers.
+- Security: browser never receives owner bearer or recent-auth proof; reject Authorization+cookie and agent tokens with Origin or as cookie; changes feed, enrollment and account-administration routes stay outside the cookie exception. No league list or `commish.leagues.read`.
+- Deployment: `-public-host` is sourced from `/etc/twr/public-host`; Cloudflare routes `/app`, and upgrade recovers the hostname from existing tunnel config. Static staging is cleaned after verify/release build.
+- Next: commit/push and mark draft PR #372 ready with the required Security section. Alpine deployment integration was not run; changed shell scripts passed syntax checks.
+- Tidy: `tidy-check.sh` found unrelated active alpha010 lanes `fixcr`, `fixhome`, and `fixsearch` launched from the main checkout. Left their processes/files untouched; their owners need to file KEEP records. Flag this to ClaudeBox.
+- Blocked on: those unrelated fleet-run KEEP records; this lane's build/test staging is clean.
+- Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.

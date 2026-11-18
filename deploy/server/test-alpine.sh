@@ -166,11 +166,18 @@ SERVICE
   sqlite3 /var/lib/twr/server.db "UPDATE server_release SET release=1;"
   chown twr:twr /var/lib/twr/server.db
   # An older server lacks a newer tool and has an older service file: the upgrade brings both.
+  # A pre-browser Tunnel config must recover the exact public hostname for the new server binary.
+  mkdir -p /etc/cloudflared
+  jq -n '{ingress:[{hostname:"league.example.org",path:"^/(v1/.*|app(/.*)?|join|password)?$",service:"https://127.0.0.1:8443"},{service:"http_status:404"}]}' > /etc/cloudflared/config.yml
+  chown root:twr-tunnel /etc/cloudflared/config.yml
+  chmod 640 /etc/cloudflared/config.yml
   rm /usr/local/libexec/twr-move-league
   printf "# older\n" >> /etc/init.d/twr-tunnel
   PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$DELIVERY/good/server.tar.gz" "$DELIVERY/good" > /tmp/upgrade-result
   cat /tmp/upgrade-result
   grep -F "Server upgrade ready" /tmp/upgrade-result
+  test "$(cat /etc/twr/public-host)" = league.example.org
+  test "$(stat -c %a:%U:%G /etc/twr/public-host)" = 640:root:twr
   rc-service twr-server status
   saved=$(find /var/lib/twr/upgrades -name checkpoint.json)
   test -n "$saved"

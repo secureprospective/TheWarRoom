@@ -38,8 +38,19 @@ if [[ ! $vlan =~ ^[0-9]{1,4}$ ]] || (( 10#$vlan < 1 || 10#$vlan > 4094 )); then
 fi
 [[ $bridge =~ ^[a-zA-Z0-9_-]+$ && -d /sys/class/net/$bridge ]] || stop "Network bridge $bridge was not found on this host."
 [[ $storage =~ ^[a-zA-Z0-9_-]+$ && $templates =~ ^[a-zA-Z0-9_-]+$ ]] || stop 'Storage names may only use letters, numbers, - and _.'
-[[ $zone =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ ]] || stop 'The Cloudflare zone should look like example.org.'
-[[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $hostname == *."$zone" ]] || stop "The hostname should end in .$zone, like league.$zone."
+valid_dns_name() {
+  local value=$1 label
+  [[ ${#value} -le 253 && $value == *.* ]] || return 1
+  local IFS=.
+  local -a labels=()
+  read -r -a labels <<< "$value"
+  (( ${#labels[@]} >= 2 )) || return 1
+  for label in "${labels[@]}"; do
+    [[ ${#label} -le 63 && $label =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]] || return 1
+  done
+}
+valid_dns_name "$zone" && [[ $zone =~ \.[a-z]{2,}$ ]] || stop 'The Cloudflare zone should look like example.org.'
+valid_dns_name "$hostname" && [[ $hostname == *."$zone" ]] || stop "The hostname should end in .$zone, like league.$zone."
 [[ $replace == yes || $replace == no ]] || stop 'Answer yes or no to replacing a lost server.'
 if [[ $replace == yes ]]; then replace=true; else replace=false; fi
 # Terminal paste can wrap the hidden input in bracketed-paste markers or spaces.

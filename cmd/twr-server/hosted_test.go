@@ -19,6 +19,16 @@ func TestTrustedProxyFlagAcceptsOnlyLoopback(t *testing.T) {
 	}
 }
 
+func TestHostedPublicHostFlagRequiresOneBareDNSName(t *testing.T) {
+	config, err := parseHostedFlags([]string{"-public-host", "league.example.org"})
+	if err != nil || config.publicHost == nil || *config.publicHost != "league.example.org" {
+		t.Fatalf("valid public host config=%+v err=%v", config, err)
+	}
+	if _, err := parseHostedFlags([]string{"-public-host", "https://league.example.org"}); err == nil {
+		t.Fatal("origin accepted as public host")
+	}
+}
+
 func TestHostedBackupRequiresActualRuntimeSettings(t *testing.T) {
 	dir := t.TempDir()
 	files := []string{filepath.Join(dir, "authenticator.key"), filepath.Join(dir, "origin.pem"), filepath.Join(dir, "origin.key"), filepath.Join(dir, "endpoint-registry.csv")}

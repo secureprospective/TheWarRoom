@@ -1,6 +1,8 @@
 build/bin
 node_modules
 frontend/dist
+internal/serverhttp/webassets/*
+!internal/serverhttp/webassets/.keep
 coverage.out
 
 # Scratch / nested repos (added by Bee 2026-08-21)

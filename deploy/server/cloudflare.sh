@@ -7,6 +7,27 @@ if [ "$1" = --rollback ]; then mode=rollback; shift; fi
 input=$1
 zone=$(jq -er '.zone' "$input")
 hostname=$(jq -er '.hostname' "$input")
+valid_public_host() {
+  case "$1" in '' | .* | *. | *..* | *[!a-z0-9.-]*) return 1 ;; esac
+  [ "${#1}" -le 253 ] || return 1
+  printf '%s\n' "$1" | awk -F. '
+    NF < 2 { exit 1 }
+    {
+      for (i = 1; i <= NF; i++) {
+        if (length($i) == 0 || length($i) > 63 || substr($i, 1, 1) == "-" || substr($i, length($i), 1) == "-") exit 1
+      }
+    }
+    NF == 4 {
+      ip = 1
+      for (i = 1; i <= NF; i++) if ($i !~ /^[0-9]+$/ || $i + 0 > 255) ip = 0
+      if (ip) exit 1
+    }
+  '
+}
+valid_public_host "$zone" && valid_public_host "$hostname" || {
+  echo 'The zone and public hostname must be bare lowercase DNS names.' >&2; exit 1;
+}
+case "$hostname" in *."$zone") ;; *) echo 'The public hostname must be inside the configured zone.' >&2; exit 1 ;; esac
 header=$(mktemp)
 reply=$(mktemp)
 payload=$(mktemp)
@@ -52,7 +73,7 @@ rollback() {
     else failed=1; fi
   fi
   if [ "$failed" = 0 ]; then
-    rm -f "$ids" /etc/cloudflared/credentials.json /etc/cloudflared/config.yml
+    rm -f "$ids" /etc/cloudflared/credentials.json /etc/cloudflared/config.yml /etc/twr/public-host
   else
     echo 'Cloudflare cleanup could not finish; retained resource identifiers for recovery.' >&2
   fi
@@ -94,7 +115,7 @@ printf '%s\n' "$secret" | jq -Rn --arg account "$account" --arg tunnel "$tunnel"
 jq -n --arg tunnel "$tunnel" --arg hostname "$hostname" \
   '{tunnel:$tunnel,"credentials-file":"/etc/cloudflared/credentials.json",
     "metrics":"127.0.0.1:20241","no-autoupdate":true,
-    ingress:[{hostname:$hostname,path:"^/(v1/.*|join|password|site\\.css|site\\.js|steel\\.js|og\\.png|fonts/[a-z0-9-]+\\.woff2)?$",service:"https://127.0.0.1:8443",
+    ingress:[{hostname:$hostname,path:"^/(v1/.*|app(/.*)?|join|password|site\\.css|site\\.js|steel\\.js|og\\.png|fonts/[a-z0-9-]+\\.woff2)?$",service:"https://127.0.0.1:8443",
       originRequest:{caPool:"/etc/cloudflared/origin.pem",originServerName:"localhost"}},
       {service:"http_status:404"}]}' > /etc/cloudflared/config.yml
 jq -nc --arg name "$hostname" --arg target "$tunnel.cfargotunnel.com" \
@@ -116,3 +137,6 @@ fi
 chown -R root:twr-tunnel /etc/cloudflared
 chmod 750 /etc/cloudflared
 chmod 640 /etc/cloudflared/*
+printf '%s\n' "$hostname" > /etc/twr/public-host
+chown root:twr /etc/twr/public-host
+chmod 640 /etc/twr/public-host

@@ -1,9 +1,8 @@
 # The desktop app has two modes. Read this before planning desktop, server or phone work.
 
-Checked against the code at `main` 3f8149a27 on 2026-11-14; thin Home updated against the b3home
-candidate on 2026-11-18. Christopher's ruling that day: **the usable product is the desktop app in thin
-mode.** The phone/browser is a placeholder (registration, sign-in, and Live Pulse for the signed-in team
-only) until he reopens mobile.
+Checked against the thin Home and Bundle 7 browser-door code on 2026-11-18. Christopher's ruling is:
+**the usable product is the desktop app in thin mode.** Bundle 7 opens the browser door at `/app/` using
+the same hosted client and command routes; mobile-specific screens and polish remain out of scope.
 
 A session on 2026-11-14 treated "the desktop app" as one all-in-one engine and nearly planned work on the
 wrong side of the client/server split. Both modes exist in one binary today. Never assume which one a
@@ -16,7 +15,7 @@ sentence means.
 | Start | `thewarroom -native <server-url> <league>` | `thewarroom` (no flag) |
 | Go side | `composition.runNative` builds only `serverclient.Desktop` and the window. It "constructs only the hosted client and WebView, never the local App." | `composition.runDesktop` builds the full local App: local SQLite, engines, MFL sync, live feeds, clocks, backups. |
 | Data | The league server over HTTPS (Cloudflare Tunnel). No league database on the computer. | `thewarroom.db`, `history.db`, `whatif.db` in the user's config directory. |
-| Screens | `NativeStartup.tsx` mounts `NativeAccount` (sign-in, authenticator, AI helpers) and, after admission, the fixed app-level `ThinHome` (Needs-you, the admitted league card and shortcuts). Opening a card/shortcut mounts `HostedLeague` (League Pulse Now/Race, Franchise HQ, War Room, Set lineup, Roster and reserves, Draft room, League rules) and `HostedWorkflows` (bids, waivers, trades, results, rollover). Alpha Home uses only `NativeView.league`; it does not enumerate the server-wide league list. | `TargetMount` → the full shell `TargetApp.tsx`: Home, War Room, Franchise HQ, League Pulse, Control Room, command bar. |
+| Screens | `NativeStartup.tsx` mounts `NativeAccount` (sign-in, authenticator, AI helpers) and, after admission, the fixed app-level `ThinHome` (Needs-you, the admitted league card and shortcuts). Opening a card/shortcut mounts `HostedLeague` (League Pulse Now/Race, Franchise HQ, War Room, Set lineup, Roster and reserves, Draft room, League rules) and `HostedWorkflows` (bids, waivers, trades, results, rollover). Alpha Home uses only `NativeView.league`; it does not enumerate the server-wide league list. The browser build is served at `/app/` and resolves its single admission through `/app/session`. | `TargetMount` → the full shell `TargetApp.tsx`: Home, War Room, Franchise HQ, League Pulse, Control Room, command bar. |
 | Live football | The server runs a shared ESPN/Sleeper collector for the current week; scores are labelled provisional. Each new generation publishes a scores topic to open change streams. Pulse rereads the public NFL scoreboard and selected game detail (field position and plays), following the live game with the most own starters by default; owners may switch games. Manual Refresh remains available. | ESPN live, Sleeper fill-in, nflverse finals and MFL live, polled inside the app. |
 | Direction | Grows until it carries everything. | Kept as-is until thin mode carries everything (governing plan step 3). Do not grow it or add features to it. |
 
@@ -67,9 +66,7 @@ auth generation; no credential crosses into the webview. See
   ticks leave action-relevant pin digests unchanged. Historical weeks still use the selected pin.
 - **MFL calls:** `twr-server league-load` is a one-time console load from a desktop MFL copy. There is no
   ongoing MFL sync.
-- **Browser access to the league:** `internal/serverhttp/browser.go` (`browserRoute`) lets a browser reach
-  only the public pages (promo, join, set password) and their JSON doors. Every other route refuses a
-  request with an `Origin` header.
+- **Browser access to the league:** `internal/serverhttp/browser.go` admits `/app/` and its hosted JSON command routes only when Origin is exactly `https://` plus the configured public host. `/app/session` issues the revocable owner session in the `__Host-twr_session` cookie and returns only one admitted league; a multi-league account gets HTTP 409 and uses desktop alpha. The browser never receives the owner bearer. Agent-token requests with Origin, mixed Authorization+cookie requests, enrollment and the changes feed remain refused. Static app responses use the required CSP, `nosniff`, same-origin referrer policy and no-cache service worker.
 
 ## So "finish the desktop" means
 
@@ -95,6 +92,8 @@ auth generation; no credential crosses into the webview. See
    **target**, not today's code. This file describes today's code.
 4. A PR that changes any fact in this file updates this file in the same PR.
 
+The server embeds the build at `frontend/dist-web` when available, otherwise `frontend/dist`, and serves it under `/app/`. The server-side session route scans current league state for the signed-in account; it does not call `commish.leagues.read` or return other leagues.
+
 ## Check it yourself (about two minutes)
 
 ```sh
@@ -102,7 +101,8 @@ sed -n '/^func runNative/,/^}/p' internal/composition/run.go        # thin mode:
 cat frontend/src/app/control/NativeStartup.tsx                      # which screens a hosted window mounts
 go list -deps ./cmd/twr-server | grep -E 'internal/(app/now|ingestion/livegame)$'  # now includes the shared poller and parser
 grep -n 'pin-football' cmd/twr-server/football_pins.go              # frozen football pin
-grep -n 'func browserRoute' -A12 internal/serverhttp/browser.go     # what a browser may reach
+grep -n 'func (h Hosted) originAdmissible' -A12 internal/serverhttp/browser.go # exact browser Origin allowlist
+rg -n 'appSession|authenticateNative' internal/serverhttp/browser_session.go internal/serverhttp/hosted.go
 ```
 
 If any of these disagree with this file, the code wins. Fix this file before planning.

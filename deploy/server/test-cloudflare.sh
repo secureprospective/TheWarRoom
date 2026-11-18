@@ -75,17 +75,26 @@ chmod 755 /tmp/fake-api/curl
 printf '%s\n' '{"zone":"example.org","hostname":"league.example.org","api_token":"test-only"}' > /tmp/cloudflare-input
 PATH=/tmp/fake-api:$PATH sh /root/twr/cloudflare.sh /tmp/cloudflare-input
 /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate
-for path in /v1/native/ledger /v1/auth/login /v1/native/invalidations /join / /site.css /og.png /fonts/inter-latin-700-normal.woff2; do
+printf '%s\n' '{"zone":"example.org","hostname":"*.example.org","api_token":"test-only"}' > /tmp/invalid-host
+: > /tmp/fake-api/calls
+if PATH=/tmp/fake-api:$PATH sh /root/twr/cloudflare.sh /tmp/invalid-host; then exit 1; fi
+[ ! -s /tmp/fake-api/calls ]
+[ "$(cat /etc/twr/public-host)" = league.example.org ]
+rm /tmp/invalid-host
+for path in /v1/native/ledger /v1/auth/login /v1/native/invalidations /app /app/ /app/assets/main.js /app/manifest.webmanifest /app/sw.js /app/session /join / /site.css /og.png /fonts/inter-latin-700-normal.woff2; do
   /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress rule "https://league.example.org$path" | grep -q 'Matched rule #0'
 done
 for url in https://league.example.org/admin https://league.example.org/metrics https://league.example.org/index.html https://league.example.org/fonts/OFL.txt https://other.example.org/v1/native/ledger; do
   /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress rule "$url" | grep -q 'Matched rule #1'
 done
 jq -e '.ingress[0].originRequest | .caPool == "/etc/cloudflared/origin.pem" and .originServerName == "localhost" and (.noTLSVerify != true)' /etc/cloudflared/config.yml
+[ "$(cat /etc/twr/public-host)" = league.example.org ]
+[ "$(stat -c %a:%U:%G /etc/twr/public-host)" = 640:root:twr ]
 # Existing DNS is never silently replaced; credentials/config stay unchanged.
 [ "$(stat -c %a /etc/cloudflared/credentials.json)" = 640 ]
 if su -s /bin/sh twr -c 'cat /etc/cloudflared/credentials.json'; then exit 1; fi
 PATH=/tmp/fake-api:$PATH sh /root/twr/cloudflare.sh --rollback /tmp/cloudflare-input
+[ ! -e /etc/twr/public-host ]
 before=$(sha256sum /etc/cloudflared/*)
 touch /tmp/fake-api/occupied
 if PATH=/tmp/fake-api:$PATH sh /root/twr/cloudflare.sh /tmp/cloudflare-input; then exit 1; fi

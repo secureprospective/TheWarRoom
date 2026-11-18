@@ -73,6 +73,9 @@ type Hosted struct {
 	Requests *RequestTally
 	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
 	TrustedProxy netip.Addr
+	// PublicHost is the one configured external HTTPS hostname allowed to use the browser app.
+	PublicHost string
+	appAuth    *browserSessionAuth
 }
 
 func (h Hosted) Handler() http.Handler {
@@ -80,7 +83,11 @@ func (h Hosted) Handler() http.Handler {
 	if h.Publisher == nil {
 		h.Publisher = NewPublisher()
 	}
-	return resourceLimits(versionGate(h.invalidationHandler(h.backupAdmission(http.HandlerFunc(h.serveHTTP)))), h.TrustedProxy)
+	if h.appAuth == nil {
+		h.appAuth = newBrowserSessionAuth()
+	}
+	return resourceLimitsWithOrigin(versionGate(h.invalidationHandler(h.backupAdmission(http.HandlerFunc(h.serveHTTP)))), h.TrustedProxy,
+		h.originAdmissible, h.sessionOriginRequired)
 }
 
 func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -89,8 +96,16 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		writeUnavailable(w, "account service unavailable")
 		return
 	}
-	if r.TLS == nil || !originAdmissible(r) {
+	if r.TLS == nil {
 		http.Error(w, "request refused", http.StatusBadRequest)
+		return
+	}
+	if !h.originAdmissible(r) {
+		status := http.StatusBadRequest
+		if h.sessionOriginRequired(r) {
+			status = http.StatusForbidden
+		}
+		http.Error(w, "request refused", status)
 		return
 	}
 	// The landing page ignores its query: shared links arrive with tracking parameters.
@@ -100,6 +115,18 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.URL.RawQuery != "" {
 		http.Error(w, "request refused", http.StatusBadRequest)
+		return
+	}
+	if appRoute(r.URL.Path) {
+		if !validPublicHost(h.PublicHost) || r.Host != h.PublicHost {
+			http.NotFound(w, r)
+			return
+		}
+		if r.URL.Path == AppSessionPath {
+			h.appSession(w, r)
+			return
+		}
+		webAppHandler().ServeHTTP(w, r)
 		return
 	}
 	h.route(w, r)
@@ -280,8 +307,32 @@ type nativeAuth struct {
 // authenticateNative reads the request's bearer as an owner session or, failing that, an agent token;
 // !ok means the refusal was written.
 func (h Hosted) authenticateNative(w http.ResponseWriter, r *http.Request) (nativeAuth, bool) {
+	authorization := r.Header.Values("Authorization")
+	cookieValue, hasCookie, validCookie := browserSessionCookie(r)
+	if hasCookie {
+		if !h.ownBrowserOrigin(r) || !validCookie || len(authorization) != 0 {
+			http.Error(w, "browser session refused", http.StatusForbidden)
+			return nativeAuth{}, false
+		}
+		rawSession := accounts.RawSession{Bearer: cookieValue}
+		account, err := h.Sessions.Authenticate(r.Context(), rawSession)
+		if err != nil {
+			h.sessionFailure(w, r, err)
+			return nativeAuth{raw: rawSession}, false
+		}
+		if proof := h.appAuth.recent(rawSession.Bearer); proof != "" {
+			r.Header.Set("X-TWR-Recent-Auth", proof)
+		} else {
+			r.Header.Del("X-TWR-Recent-Auth")
+		}
+		return nativeAuth{raw: rawSession, account: account}, true
+	}
+	if len(r.Header.Values("Origin")) != 0 {
+		http.Error(w, "browser session required", http.StatusForbidden)
+		return nativeAuth{}, false
+	}
 	rawSession := accounts.RawSession{Bearer: strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")}
-	if len(r.Header.Values("Authorization")) != 1 || !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
+	if len(authorization) != 1 || !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
 		http.Error(w, "session required", http.StatusUnauthorized)
 		return nativeAuth{raw: rawSession}, false
 	}
@@ -610,7 +661,7 @@ func admitLeagueAccess(access commissioner.Access, policy governance.State, prin
 	return nil
 }
 
-func decodeHosted[T RawRecoveryRequest | RawRecoveryCodesRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator | RawAgentTokenRequest | RawPasswordChangeRequest](w http.ResponseWriter, r *http.Request, raw *T) error {
+func decodeHosted[T RawRecoveryRequest | RawRecoveryCodesRequest | RawRevoke | RawLogin | RawBrowserLogin | RawNativeRequest | RawAuthenticator | RawAgentTokenRequest | RawPasswordChangeRequest](w http.ResponseWriter, r *http.Request, raw *T) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -635,7 +686,7 @@ func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
 type hostedBody interface {
-	RecoveryResponse | RecoveryCodesResponse | PasswordChangeResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse | WorkflowResponse
+	RecoveryResponse | RecoveryCodesResponse | PasswordChangeResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | BrowserSessionResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse | WorkflowResponse
 }
 
 func writeHosted[T hostedBody](w http.ResponseWriter, body T) {
@@ -734,7 +785,7 @@ func hostedMember(policy governance.State, principal governance.Principal, recor
 
 func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost && r.TLS != nil && originAdmissible(r) && r.URL.RawQuery == "" {
+		if r.Method == http.MethodPost && r.TLS != nil && h.originAdmissible(r) && r.URL.RawQuery == "" {
 			for _, admission := range h.admissions(r.URL.Path) {
 				if admission == nil {
 					continue
@@ -756,7 +807,7 @@ func (h Hosted) admissions(path string) []func() error {
 	switch {
 	case path == JoinClaimPath:
 		return []func() error{h.SignInAdmission, h.WriteAdmission}
-	case strings.HasPrefix(path, "/v1/auth/") || path == PasswordPagePath || path == JoinPagePath:
+	case path == AppSessionPath || strings.HasPrefix(path, "/v1/auth/") || path == PasswordPagePath || path == JoinPagePath:
 		return []func() error{h.SignInAdmission}
 	}
 	return []func() error{h.WriteAdmission}
