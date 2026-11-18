@@ -1,6 +1,7 @@
 build/bin
 node_modules
 frontend/dist
+frontend/dist-web
 coverage.out
 
 # Scratch / nested repos (added by Bee 2026-08-21)

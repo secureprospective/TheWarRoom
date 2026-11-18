@@ -4,6 +4,7 @@ import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { nativeAction, type NativeAction, type NativeView } from './nativeApi';
+import { isWebTransport } from './transport';
 import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads';
 import NativeHelpers from './NativeHelpers';
 import { HQAct } from '../shell/HQAct';
@@ -25,6 +26,7 @@ const tabs = [
 const openTabs = [['login', 'League'], ['authenticator', 'Authenticator']] as const;
 
 export default function NativeAccount({ initial }: { initial: NativeView }) {
+  const browser = isWebTransport();
   const [view, setView] = useState(initial);
   const [observed, setObserved] = useState(false);
   useEffect(() => { observeView(initial); setObserved(true); }, [initial]);
@@ -67,12 +69,14 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     try {
       const credentials = !['enter', 'forget', 'revoke-device', 'revoke-all'].includes(action);
       const result = await nativeAction(action, credentials ? username : '', credentials ? password : '',
-        ['recover', 'enroll', 'totp-confirm', 'totp-step-up'].includes(action) ? code : '');
+        ['recover', 'enroll', 'totp-confirm', 'totp-step-up'].includes(action)
+          || (browser && action === 'login') ? code : '');
       setView(result);
       if (action === 'login') { setSignedIn(true); setOpenAfterSignIn(true); }
       if (action === 'enter') {
-        setSignedIn(true);
+        setSignedIn(browser ? Boolean(result.name) : true);
         if (!automaticEntry.current) setActiveLeagueId(result.league);
+        if (browser && !result.name) setActiveLeagueId(undefined);
         automaticEntry.current = false;
       }
       if (['forget', 'revoke-device', 'revoke-all'].includes(action)) {
@@ -81,7 +85,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       if (action === 'enroll' || action === 'recover') setScreen('login');
       if (action === 'recover') setSignedIn(false);
     } catch (e) {
-      setView(initial);
+      setView(browser ? (hostedSnapshot().view ?? initial) : initial);
       const reason = e instanceof Error ? e.message : 'Could not reach your league. Try again.';
       setError(reason);
       throw new Error(reason);
@@ -91,7 +95,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   useEffect(() => surfaceActions.register('native-account', args => {
     if (pending) return;
     if (args.action === 'view') {
-      const tab = tabs.find(([id]) => id === args.value);
+      const tab = tabs.find(([id]) => id === args.value && (!browser || id === 'login'));
       if (tab) changeScreen(tab[0]);
     } else if (args.action === 'check') {
       if (args.value === 'submit') return run(screen === 'recovery' ? 'recover'
@@ -120,16 +124,19 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   };
   const title = screen === 'join' ? 'Create your account'
     : screen === 'authenticator' ? 'Authenticator (optional)' : 'Sign in';
+  const visibleTabs = browser
+    ? view.name ? [['login', 'League']] as const : [['login', 'Sign in']] as const
+    : view.name ? openTabs : tabs;
   const submitLabel = pending ? 'Please wait…' : screen === 'join' ? 'Create account'
-    : screen === 'authenticator' ? 'Verify fresh code' : 'Sign in to server';
+    : screen === 'authenticator' ? 'Verify fresh code' : browser ? 'Sign in' : 'Sign in to server';
   const args = (action: 'view' | 'check', value: string) => ({ screen: 'native-account', action, value });
   return <main className={`twr-app native-account${showThinHome ? ' has-thin-home' : ''}`}
     aria-busy={pending}>
     <header><h1>{view.name || 'Your league server'}</h1>
       {!view.name && <p>Your league server · No MFL account or key needed</p>}
-      <p className="native-address">{initial.server}</p></header>
+      {!browser && <p className="native-address">{initial.server}</p>}</header>
     <nav aria-label="Account access">
-      {(view.name ? openTabs : tabs).map(([id, label]) =>
+      {visibleTabs.map(([id, label]) =>
         <Act key={id} variant="button" verb="commissioner.surface"
         args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
     </nav>
@@ -154,7 +161,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           onHome={() => setActiveLeagueId(undefined)} />
       </Suspense>
     </section>}
-    {homeReady && activeLeague && admission && admission.seats.length > 0 &&
+    {!browser && homeReady && activeLeague && admission && admission.seats.length > 0 &&
       <NativeHelpers server={initial.server} league={admission.league} seats={admission.seats}
         franchise={admission.franchise} />}
     </div>
@@ -198,11 +205,11 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         autoComplete={screen === 'join' ? 'new-password' : 'current-password'}
         required maxLength={1024} value={password} disabled={pending}
         onChange={e => setPassword(e.target.value)} /></label>
-      {screen !== 'login' && <label>
+      {(screen !== 'login' || browser) && <label>
         {screen === 'join' ? 'Personally handed enrollment code' : 'Six-digit authenticator code'}
         <input autoComplete={screen === 'join' ? 'off' : 'one-time-code'} value={code} disabled={pending}
           required={screen === 'join'} maxLength={screen === 'join' ? 43 : 6}
-          inputMode={screen === 'authenticator' ? 'numeric' : 'text'}
+          inputMode={screen === 'authenticator' || (browser && screen === 'login') ? 'numeric' : 'text'}
           onChange={e => setCode(e.target.value)} /></label>}
       {view.seed && <p className="native-seed">Private setup key: <code>{view.seed}</code></p>}
       {view.recoveryCodes && <ol className="native-seed" aria-label="New recovery codes">
@@ -213,9 +220,10 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
             disabled={pending || !username || !password} label="Get setup key">Get setup key</Act>
           <Act variant="button" verb="commissioner.surface" args={args('check', 'totp-confirm')}
             disabled={pending || code.length !== 6 || !password} label="Confirm setup">Confirm setup</Act>
-          <Act variant="button" verb="commissioner.surface" args={args('check', 'recovery-codes')}
+          {!browser && <Act variant="button" verb="commissioner.surface"
+            args={args('check', 'recovery-codes')}
             disabled={pending || !username || !password} label="Print new recovery codes">
-            Print new recovery codes</Act>
+            Print new recovery codes</Act>}
         </>}
         <Act variant="button" verb="commissioner.surface" args={args('check', 'submit')}
           submit disabled={pending} label={submitLabel}>{submitLabel}</Act>
@@ -225,14 +233,19 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <Act variant="button" verb="commissioner.surface" args={args('check', 'enter')}
         disabled={pending} label="Open my franchise">Open my franchise</Act>
       <Act variant="button" verb="commissioner.surface" args={args('check', 'forget')}
-        disabled={pending} label="Forget saved sign-in">Forget saved sign-in</Act>
-      <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-device')}
-        disabled={pending} label="Revoke this device">Revoke this device</Act>
-      <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-all')}
-        disabled={pending} label="Revoke all devices">Revoke all devices</Act>
+        disabled={pending} label={browser ? 'Sign out' : 'Forget saved sign-in'}>
+        {browser ? 'Sign out' : 'Forget saved sign-in'}</Act>
+      {!browser && <>
+        <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-device')}
+          disabled={pending} label="Revoke this device">Revoke this device</Act>
+        <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-all')}
+          disabled={pending} label="Revoke all devices">Revoke all devices</Act>
+      </>}
     </div>}
-    <footer>This computer keeps your sign-in in its keychain when it has one, otherwise until
-      you close the app. Revoke all devices signs you out everywhere. Authenticator codes are never
-      saved. The league needs an internet connection.</footer>
+    <footer>{browser
+      ? 'Your sign-in stays in this browser as an HttpOnly cookie. The league needs an internet connection.'
+      : 'This computer keeps your sign-in in its keychain when it has one, '
+        + 'otherwise until you close the app. Revoke all devices signs you out everywhere. '
+        + 'Authenticator codes are never saved. The league needs an internet connection.'}</footer>
   </main>;
 }
