@@ -242,6 +242,7 @@ it('a refused rules refresh disables editing and never previews', async () => {
   expect(host.textContent).toContain('read-only');
   expect(port.mock.calls.some(([r]) => r.mode === 'preview')).toBe(false);
 });
+// Lazy Home and HostedLeague content can take longer to resolve during the full parallel suite.
 it.each(['Commissioner', 'Co-commissioner'])(
   'NativeAccount admits a teamless %s to Pulse and rules without franchise reads', async role => {
     const port = service();
@@ -258,9 +259,10 @@ it.each(['Commissioner', 'Co-commissioner'])(
         json: async () => admission };
     }));
     await act(async () => root.render(<NativeAccount initial={admission} />));
-    await settle(); await settle();
+    await vi.waitFor(() => expect(buttons('Open Pulse for Test League')).toHaveLength(1),
+      { timeout: 10_000 });
     await click('Open Pulse for Test League');
-    expect(host.textContent).toContain('League Pulse');
+    await vi.waitFor(() => expect(host.textContent).toContain('League Pulse'), { timeout: 10_000 });
     expect(host.textContent).not.toContain('MY MATCHUP');
     expect(host.querySelector('.mybox')).toBeNull();
     expect(port.mock.calls.some(([r]) => r.command === 'native.directory.read')).toBe(true);
@@ -285,9 +287,11 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(buttons('Roster and reserves')).toHaveLength(0);
     expect(buttons('Draft room')).toHaveLength(0);
     await click('← Home');
+    await vi.waitFor(() => expect(buttons('Open Control Room for Test League')).toHaveLength(1),
+      { timeout: 10_000 });
     await click('Open Control Room for Test League');
     expect(buttons('Change Lineup lock')).toHaveLength(1);
-  });
+  }, 15_000);
 it('a refused rules read leaves league-wide Pulse available', async () => {
   const port = service();
   const serve = port.getMockImplementation()!;
