@@ -31,3 +31,18 @@ func TestRosterAddUsesTypedOwnerCommandPolicy(t *testing.T) {
 		t.Fatal("roster.cut accepted an add-only drop field")
 	}
 }
+
+func TestRosterAddIsOwnerOnlyEvenForCommissioners(t *testing.T) {
+	records := contractDecisionSeats(t)
+	command := RawCommand{League: "native.test", Command: RosterAdd,
+		Args: RawArgs{Waiver: &RawWaiverArgs{Player: "6001", Franchise: "franchise.01"}}}
+	role, err := AuthorizeRecords(command, "owner.one", records)
+	if err != nil || role != "owner" {
+		t.Fatalf("owner cannot add to own franchise: %q %v", role, err)
+	}
+	for _, principal := range []string{"owner.two", "commissioner"} {
+		if _, err := AuthorizeRecords(command, principal, records); err == nil {
+			t.Fatalf("%s added a free agent to another owner's franchise", principal)
+		}
+	}
+}

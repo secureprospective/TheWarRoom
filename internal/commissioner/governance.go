@@ -249,10 +249,9 @@ func deputyOwnerAction(raw RawCommand, principal string, records []Record) (stri
 	return "", fmt.Errorf("this commissioner action is not delegated")
 }
 
-func authorizeMarketOwner(raw RawCommand, principal string, records []Record, franchise string) (string, error) {
-	if raw.Command == RosterAdd {
-		return authorizeRosterAdd(records, principal, franchise)
-	}
+// authorizeMarketOwner admits only the seated owner for every owner market command, roster.add included.
+// A commissioner changes another team's roster through the correction commands, which need a visible reason.
+func authorizeMarketOwner(principal string, records []Record, franchise string) (string, error) {
 	if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
 		return "", err
 	}
@@ -269,7 +268,7 @@ func authorizeRecords(raw RawCommand, principal string, records []Record) (strin
 		return "commissioner", nil
 	}
 	if franchise := marketOwnerFranchise(raw); franchise != "" {
-		return authorizeMarketOwner(raw, principal, records, franchise)
+		return authorizeMarketOwner(principal, records, franchise)
 	}
 	state, err := GovernanceState(records)
 	if err != nil {
