@@ -17,3 +17,10 @@
 - Next: ClaudeBox review/merge PR #387.
 - Blocked on: none for this lane. Final `tidy-check.sh` reported unrelated active alpha010 lanes `b7lab2`, `b9fa`, and `perf`; left them untouched due worktree-only scope; owners need to file KEEP records. No task-owned scratch or staged webapp remains.
 - Tried and rejected: Do not reuse `commish.ledger.filtered.read`; it carries reasons and broader commissioner-visible entries. Reuse existing append-only records and an independent allow-list projection.
+
+## Bee — pulse-b9cr2
+- Baton: Bee, B9-6 Control Room rules/season/league phone layout, 2026-11-18.
+- State: Added a <=699px hosted Control Room layout and a focused phone CSS contract test. Existing desktop rules remain unmodified; action flows are unchanged.
+- Next: Run focused tests, full Vitest, frontend typecheck and pre-push/PR workflow; perform 390x844 and 1280px browser checks if available.
+- Blocked on: none.
+- Tried and rejected: no new workflow or data source; layout-only change reuses hosted reads and guarded actions.
