@@ -18,3 +18,9 @@
 - PR #377 is open into `main`: https://github.com/secureprospective/TheWarRoom/pull/377. CI is running; release-tools passed, package/tests/checks are pending.
 - Next: wait for all PR checks green, then leave the branch for review; do not merge from this lane.
 - Blocked on: CI completion.
+
+- Baton: Bee, 2026-11-18; lane `pulse-perf`, branch `session/pulse-perf` at `28cd636a0`.
+- State: local 128/256-client floods and CPU/mutex/block profiles complete. Lab5's ramp refusal spike did not persist in its 128-client hold; served throughput matches lab4's 256-client hold. The 64-request admission gate is unchanged; no safe code regression fix identified, no source changed.
+- Evidence: local pprof hot path is session/league SQL; mutex wait is the cold reply-cache `sync.Once` fill. Lab4→lab5 diff leaves limits, reply cache and session query unchanged.
+- Next: review the investigation result; rerun lab ramp only if a matched warmup/host comparison is needed.
+- Blocked on: none.
