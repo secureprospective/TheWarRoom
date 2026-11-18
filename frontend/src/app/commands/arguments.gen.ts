@@ -471,6 +471,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 })[];
 "pending": ({
@@ -488,6 +492,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 })[];
 "words": (string)[]
@@ -662,6 +670,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 }) | null;
 "deadCents"?: number;
@@ -793,6 +805,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 })[];
 "picks": ({
@@ -959,6 +975,79 @@ string
 "action": string;
 "on": (boolean) | null;
 "params": unknown
+}) | null;
+"contractDecision"?: ({
+"franchise": string;
+"player": string;
+"action": string;
+"years"?: number;
+"level"?: number;
+"moveCents"?: number;
+"amountCents"?: number
+}) | null;
+"contractDecisionOutcome"?: ({
+"before": {
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+};
+"after": {
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+};
+"pricing": {
+"Refusal": string;
+"Needs": (string)[];
+"Years": number;
+"Salary": (number) | null;
+"Schedule": ({
+"season": number;
+"cents": number
+})[];
+"Dead": ({
+"season": number;
+"cents": number
+})[];
+"Removed": boolean;
+"Relief": number;
+"Basis": (string)[];
+"Notes": (string)[]
+};
+"season": number;
+"deadline": string
 }) | null
 };
 "reason": string;
@@ -1015,6 +1104,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 })[];
 "pending": ({
@@ -1032,6 +1125,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 })[];
 "words": (string)[]
@@ -1206,6 +1303,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 }) | null;
 "deadCents"?: number;
@@ -1337,6 +1438,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 })[];
 "picks": ({
@@ -1503,6 +1608,79 @@ string
 "action": string;
 "on": (boolean) | null;
 "params": unknown
+}) | null;
+"contractDecision"?: ({
+"franchise": string;
+"player": string;
+"action": string;
+"years"?: number;
+"level"?: number;
+"moveCents"?: number;
+"amountCents"?: number
+}) | null;
+"contractDecisionOutcome"?: ({
+"before": {
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+};
+"after": {
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+};
+"pricing": {
+"Refusal": string;
+"Needs": (string)[];
+"Years": number;
+"Salary": (number) | null;
+"Schedule": ({
+"season": number;
+"cents": number
+})[];
+"Dead": ({
+"season": number;
+"cents": number
+})[];
+"Removed": boolean;
+"Relief": number;
+"Basis": (string)[];
+"Notes": (string)[]
+};
+"season": number;
+"deadline": string
 }) | null
 };
 "reason": string;
@@ -1534,6 +1712,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 })[];
 "pending": ({
@@ -1551,6 +1733,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 })[];
 "words": (string)[]
@@ -1725,6 +1911,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 }) | null;
 "deadCents"?: number;
@@ -1856,6 +2046,10 @@ string
 "expirationYear": number;
 "contractStatus": string;
 "contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
 "heldContractStatus"?: string
 })[];
 "picks": ({
@@ -2022,6 +2216,79 @@ string
 "action": string;
 "on": (boolean) | null;
 "params": unknown
+}) | null;
+"contractDecision"?: ({
+"franchise": string;
+"player": string;
+"action": string;
+"years"?: number;
+"level"?: number;
+"moveCents"?: number;
+"amountCents"?: number
+}) | null;
+"contractDecisionOutcome"?: ({
+"before": {
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+};
+"after": {
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+};
+"pricing": {
+"Refusal": string;
+"Needs": (string)[];
+"Years": number;
+"Salary": (number) | null;
+"Schedule": ({
+"season": number;
+"cents": number
+})[];
+"Dead": ({
+"season": number;
+"cents": number
+})[];
+"Removed": boolean;
+"Relief": number;
+"Basis": (string)[];
+"Notes": (string)[]
+};
+"season": number;
+"deadline": string
 }) | null
 };
 "reason": string;
@@ -2355,6 +2622,7 @@ export type WorkflowArgumentMap = {
 "bracket.read": NativeArguments<"bracket.read">;
 "native.cap.check": NativeArguments<"native.cap.check">;
 "contract.quote": NativeArguments<"contract.quote">;
+"whatif.stack.read": NativeArguments<"whatif.stack.read">;
 "native.directory.read": NativeArguments<"native.directory.read">;
 "nfl.game.read": NativeArguments<"nfl.game.read">;
 "nfl.games.read": NativeArguments<"nfl.games.read">;
@@ -2430,6 +2698,7 @@ export type WorkflowArgumentMap = {
 "commish.notice.publish": NativeArguments<"commish.notice.publish">;
 "commish.whatsnew.post": NativeArguments<"commish.whatsnew.post">;
 "trade.offer": NativeArguments<"trade.offer">;
+"contract.decision.set": NativeArguments<"contract.decision.set">;
 "trade.accept": NativeArguments<"trade.accept">;
 "trade.decline": NativeArguments<"trade.decline">;
 "trade.withdraw": NativeArguments<"trade.withdraw">;
@@ -2447,7 +2716,6 @@ export type WorkflowArgumentMap = {
 "waivers.award.override": NativeArguments<"waivers.award.override">;
 "bid.place": NativeArguments<"bid.place">;
 "bid.raise": NativeArguments<"bid.raise">;
-"bid.withdraw": NativeArguments<"bid.withdraw">;
 "oline.auction.close": NativeArguments<"oline.auction.close">;
 "bids.process": NativeArguments<"bids.process">;
 "bids.award.override": NativeArguments<"bids.award.override">;
@@ -2457,6 +2725,7 @@ export type WorkflowArgumentMap = {
 "player.watch.set": NativeArguments<"player.watch.set">;
 "player.watch.order": NativeArguments<"player.watch.order">;
 "player.watch.read": NativeArguments<"player.watch.read">;
+"contract.decisions.read": NativeArguments<"contract.decisions.read">;
 "market.wins.read": NativeArguments<"market.wins.read">;
 "draft.queue.read": NativeArguments<"draft.queue.read">;
 "draft.queue.set": NativeArguments<"draft.queue.set">;

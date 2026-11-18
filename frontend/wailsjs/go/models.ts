@@ -353,6 +353,104 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class NativePlayer {
+	    contractMissing?: boolean;
+	    acquiredVia?: string;
+	    correction?: string;
+	    name?: string;
+	    rookieRound?: number;
+	    pending?: boolean;
+	    restructured?: boolean;
+	    id: string;
+	    franchise: string;
+	    status: string;
+	    salaryCents: number | null;
+	    expirationYear: number | null;
+	    contractStatus: string;
+	    contractInfo: string;
+	    contractSchedule?: nativecheck.SeasonAmount[];
+	    heldContractStatus?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativePlayer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.contractMissing = source["contractMissing"];
+	        this.acquiredVia = source["acquiredVia"];
+	        this.correction = source["correction"];
+	        this.name = source["name"];
+	        this.rookieRound = source["rookieRound"];
+	        this.pending = source["pending"];
+	        this.restructured = source["restructured"];
+	        this.id = source["id"];
+	        this.franchise = source["franchise"];
+	        this.status = source["status"];
+	        this.salaryCents = source["salaryCents"];
+	        this.expirationYear = source["expirationYear"];
+	        this.contractStatus = source["contractStatus"];
+	        this.contractInfo = source["contractInfo"];
+	        this.contractSchedule = this.convertValues(source["contractSchedule"], nativecheck.SeasonAmount);
+	        this.heldContractStatus = source["heldContractStatus"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class ContractDecisionOutcome {
+	    before: NativePlayer;
+	    after: NativePlayer;
+	    pricing: nativecheck.Pricing;
+	    season: number;
+	    deadline: time.Time;
+	
+	    static createFrom(source: any = {}) {
+	        return new ContractDecisionOutcome(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.before = this.convertValues(source["before"], NativePlayer);
+	        this.after = this.convertValues(source["after"], NativePlayer);
+	        this.pricing = this.convertValues(source["pricing"], nativecheck.Pricing);
+	        this.season = source["season"];
+	        this.deadline = this.convertValues(source["deadline"], time.Time);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class ControlField {
 	    field: string;
 	    label: string;
@@ -1762,46 +1860,6 @@ export namespace commissioner {
 	        this.franchise = source["franchise"];
 	        this.amountCents = source["amountCents"];
 	        this.description = source["description"];
-	    }
-	}
-	export class NativePlayer {
-	    contractMissing?: boolean;
-	    acquiredVia?: string;
-	    correction?: string;
-	    name?: string;
-	    rookieRound?: number;
-	    pending?: boolean;
-	    restructured?: boolean;
-	    id: string;
-	    franchise: string;
-	    status: string;
-	    salaryCents: number | null;
-	    expirationYear: number | null;
-	    contractStatus: string;
-	    contractInfo: string;
-	    heldContractStatus?: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new NativePlayer(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.contractMissing = source["contractMissing"];
-	        this.acquiredVia = source["acquiredVia"];
-	        this.correction = source["correction"];
-	        this.name = source["name"];
-	        this.rookieRound = source["rookieRound"];
-	        this.pending = source["pending"];
-	        this.restructured = source["restructured"];
-	        this.id = source["id"];
-	        this.franchise = source["franchise"];
-	        this.status = source["status"];
-	        this.salaryCents = source["salaryCents"];
-	        this.expirationYear = source["expirationYear"];
-	        this.contractStatus = source["contractStatus"];
-	        this.contractInfo = source["contractInfo"];
-	        this.heldContractStatus = source["heldContractStatus"];
 	    }
 	}
 	export class NativeFranchise {
@@ -3642,6 +3700,30 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class RawContractDecision {
+	    franchise: string;
+	    player: string;
+	    action: string;
+	    years?: number;
+	    level?: number;
+	    moveCents?: number;
+	    amountCents?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawContractDecision(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.player = source["player"];
+	        this.action = source["action"];
+	        this.years = source["years"];
+	        this.level = source["level"];
+	        this.moveCents = source["moveCents"];
+	        this.amountCents = source["amountCents"];
+	    }
+	}
 	export class RawContractAction {
 	    action: string;
 	    on?: boolean;
@@ -4645,6 +4727,8 @@ export namespace commissioner {
 	    link?: RawHistoryLink;
 	    season?: number;
 	    contractAction?: RawContractAction;
+	    contractDecision?: RawContractDecision;
+	    contractDecisionOutcome?: ContractDecisionOutcome;
 	
 	    static createFrom(source: any = {}) {
 	        return new RawArgs(source);
@@ -4688,6 +4772,8 @@ export namespace commissioner {
 	        this.link = this.convertValues(source["link"], RawHistoryLink);
 	        this.season = source["season"];
 	        this.contractAction = this.convertValues(source["contractAction"], RawContractAction);
+	        this.contractDecision = this.convertValues(source["contractDecision"], RawContractDecision);
+	        this.contractDecisionOutcome = this.convertValues(source["contractDecisionOutcome"], ContractDecisionOutcome);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -4947,6 +5033,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	
@@ -12503,6 +12590,7 @@ export namespace market {
 	    action: string;
 	    actionName: string;
 	    allowed: boolean;
+	    priceable: boolean;
 	    reason: string;
 	    needs: string[];
 	    years: number;
@@ -12530,6 +12618,7 @@ export namespace market {
 	        this.action = source["action"];
 	        this.actionName = source["actionName"];
 	        this.allowed = source["allowed"];
+	        this.priceable = source["priceable"];
 	        this.reason = source["reason"];
 	        this.needs = source["needs"];
 	        this.years = source["years"];
@@ -13284,6 +13373,68 @@ export namespace nativecheck {
 		    return a;
 		}
 	}
+	export class SeasonAmount {
+	    season: number;
+	    cents: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new SeasonAmount(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.cents = source["cents"];
+	    }
+	}
+	export class Pricing {
+	    Refusal: string;
+	    Needs: string[];
+	    Years: number;
+	    Salary?: number;
+	    Schedule: SeasonAmount[];
+	    Dead: SeasonAmount[];
+	    Removed: boolean;
+	    Relief: number;
+	    Basis: string[];
+	    Notes: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Pricing(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Refusal = source["Refusal"];
+	        this.Needs = source["Needs"];
+	        this.Years = source["Years"];
+	        this.Salary = source["Salary"];
+	        this.Schedule = this.convertValues(source["Schedule"], SeasonAmount);
+	        this.Dead = this.convertValues(source["Dead"], SeasonAmount);
+	        this.Removed = source["Removed"];
+	        this.Relief = source["Relief"];
+	        this.Basis = source["Basis"];
+	        this.Notes = source["Notes"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class ReserveVerdict {
 	    experienceYears?: number;
 	    taxiYearsLeft?: number;
@@ -13308,20 +13459,7 @@ export namespace nativecheck {
 	        this.words = source["words"];
 	    }
 	}
-	export class SeasonAmount {
-	    season: number;
-	    cents: number;
 	
-	    static createFrom(source: any = {}) {
-	        return new SeasonAmount(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.season = source["season"];
-	        this.cents = source["cents"];
-	    }
-	}
 	export class SquadUse {
 	    used: number;
 	    slots: number;

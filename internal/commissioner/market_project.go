@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"slices"
 	"time"
 
@@ -277,7 +278,7 @@ func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 			return fmt.Errorf("a cut has no recorded contract")
 		}
 		index := seed.PlayerOf(args.Franchise, args.Player)
-		if index < 0 || seed.Players[index] != *result.Player {
+		if index < 0 || !reflect.DeepEqual(seed.Players[index], *result.Player) {
 			return fmt.Errorf("a later cut depends on the earlier roster change; reverse it first")
 		}
 		seed.Players = slices.Delete(seed.Players, index, index+1)
@@ -439,7 +440,7 @@ func projectReserve(seed *RawNativeSnapshot, args *RawWaiverArgs, result *Waiver
 	if i < 0 {
 		return fmt.Errorf("the reserve player is no longer on this roster")
 	}
-	if seed.Players[i] != *result.Player || seed.Players[i].Franchise != args.Franchise {
+	if !reflect.DeepEqual(seed.Players[i], *result.Player) || seed.Players[i].Franchise != args.Franchise {
 		return fmt.Errorf("reverse the later roster changes first")
 	}
 	seed.Players[i].Status = ReserveStatus(args.Bucket)

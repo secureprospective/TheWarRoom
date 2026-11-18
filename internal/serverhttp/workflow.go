@@ -24,6 +24,15 @@ type WorkflowResponse struct {
 	Writable bool            `json:"writable"`
 	Football string          `json:"football"`
 	Data     json.RawMessage `json:"data"`
+	Tags     *WorkflowTags   `json:"tags,omitempty"`
+}
+
+type WorkflowTags struct {
+	ServerEpoch string            `json:"serverEpoch"`
+	League      map[string]string `json:"league"`
+	Football    string            `json:"football"`
+	Live        string            `json:"live"`
+	Values      string            `json:"values"`
 }
 
 func (r WorkflowResponse) Validate() error {
@@ -60,8 +69,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, message, http.StatusConflict)
 		return
 	}
-	backupNow := raw.Command == leagueservice.BackupNowCommand
-	if raw.Mode != "read" && !location.Writable && !backupNow {
+	if !workflowLocationWritable(location.Writable, raw) {
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, location.Label, http.StatusConflict)
 		return
@@ -77,11 +85,54 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
 	writable := location.Writable && (!pin.Missing || privateQueueSet || privateDraftChange)
 	response := WorkflowResponse{Label: location.Label, Writable: writable, Football: pin.Digest, Data: data}
+	if !h.attachPrivateWorkflowTags(r.Context(), raw.Command, league, pin.Digest, &response) {
+		http.Error(w, "private reading tags unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	if raw.Mode == "read" {
 		writeHostedReading(w, r, response)
 		return
 	}
 	writeHosted(w, response)
+}
+
+func workflowLocationWritable(writable bool, raw RawWorkflow) bool {
+	return raw.Mode == "read" || writable || raw.Command == leagueservice.BackupNowCommand
+}
+
+func (h Hosted) attachPrivateWorkflowTags(ctx context.Context, command, league, football string,
+	response *WorkflowResponse) bool {
+	if command != leagueservice.WhatIfStackRead {
+		return true
+	}
+	response.Tags = h.workflowTags(ctx, league, football)
+	return response.Tags != nil
+}
+
+func (h Hosted) workflowTags(ctx context.Context, league, football string) *WorkflowTags {
+	principal, ok := ctx.Value(replyPrincipalKey{}).(string)
+	if !ok || principal == "" || h.Publisher == nil {
+		return nil
+	}
+	versions := h.Publisher.Versions(principal, league)
+	leagueTags := make(map[string]string, len(versions.Topics))
+	for _, topic := range versions.Topics {
+		key := topic.Kind
+		switch topic.Kind {
+		case "team":
+			key += ":" + topic.Franchise
+		case "scores":
+			key += fmt.Sprintf(":%d:%d", topic.Season, topic.Week)
+		case "values":
+			key += fmt.Sprintf(":%d:%s", topic.Season, topic.Run)
+		case "league":
+			if topic.Season != 0 {
+				key += fmt.Sprintf(":%d", topic.Season)
+			}
+		}
+		leagueTags[key] = topic.Version
+	}
+	return &WorkflowTags{ServerEpoch: versions.ServerEpoch, League: leagueTags, Football: football}
 }
 
 func logWorkflowFailure(raw RawWorkflow, err error) {

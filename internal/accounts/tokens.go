@@ -28,8 +28,11 @@ type RawTokenScope struct {
 	Modes     []string `json:"modes"`
 }
 
+// MaxTokenCommands bounds one token scope; the whole delegable catalog must fit inside it.
+const MaxTokenCommands = 256
+
 func (r RawTokenScope) Validate() error {
-	if !tokenName(r.League) || !tokenName(r.Franchise) || len(r.Commands) == 0 || len(r.Commands) > 128 || len(r.Modes) == 0 || len(r.Modes) > 3 {
+	if !tokenName(r.League) || !tokenName(r.Franchise) || len(r.Commands) == 0 || len(r.Commands) > MaxTokenCommands || len(r.Modes) == 0 || len(r.Modes) > 3 {
 		return ErrTokenRefused
 	}
 	seen := map[string]bool{}

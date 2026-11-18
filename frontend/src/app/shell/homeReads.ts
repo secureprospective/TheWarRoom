@@ -4,7 +4,6 @@ import { nativeHQAssets, nativeHQCap } from '../commissioner/hqReading';
 import { parseJobs, type Jobs } from '../commissioner/jobs';
 import { researchAPI, researchAvailable, type ResearchReader } from '../research/api';
 import type { Research } from '../research/contract';
-import { formPoints } from './hqPlayerData';
 import { parseLedger, type Ledger } from '../commissioner/proxy';
 import type { Snapshot } from '../data/contract';
 import type { PulseResults } from '../data/nativePulse';
@@ -37,14 +36,12 @@ export type HomeBrief = {
   trades?: ReturnType<typeof parseHostedTrades>;
   /** Player research (NFL news, depth charts): the same read the Research screen calls. */
   research?: Research;
-  /** Each of my starters' last five finished weeks, from the research player read HQ's form chart uses. */
-  form?: { player: string; name: string; position: string; weeks: { week: number; points: number }[] }[];
   /** When each source last answered (ISO); a tile's footer shows the oldest of its sources. */
   at: Partial<Record<HomeSource, string>>;
   errors: Partial<Record<HomeSource, string>>;
 };
 export type HomeSource = 'pulse' | 'results' | 'calendar' | 'cap' | 'ledger' | 'bids' | 'draft'
-  | 'matchup' | 'assets' | 'jobs' | 'trades' | 'research' | 'form';
+  | 'matchup' | 'assets' | 'jobs' | 'trades' | 'research';
 
 export const defaultResearch = (): ResearchReader | undefined => researchAvailable() ? researchAPI :
   undefined;
@@ -55,7 +52,7 @@ export const OWNER_ONLY_TRADES = 'Trade offers are visible only to this franchis
  *  use. It adds no rule of its own: every value comes from the league's settings through them. */
 export async function readHomeBrief(league: string, mine: string, port: HostedPort,
   publish?: (brief: HomeBrief) => void,
-  research: ResearchReader | undefined = defaultResearch(), owner = true): Promise<HomeBrief> {
+  research: ResearchReader | null | undefined = defaultResearch(), owner = true): Promise<HomeBrief> {
   const out: HomeBrief = { at: {}, errors: {} };
   const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
   const apply = async (source: HomeSource, read: () => Promise<void>) => {
@@ -75,7 +72,7 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       out.at.pulse = new Date().toISOString();
       send();
       if (reading.week !== undefined) ready();
-    });
+    }, true);
   }).finally(ready);
   await Promise.all([
     pulse,
@@ -93,12 +90,6 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       out.matchup = await readPulseMatchup(league, season, week, [g.home, g.away],
         { [g.home]: starters(g.home), [g.away]: starters(g.away) }, port);
       if (out.matchup.errors.length) throw new Error(out.matchup.errors[0]);
-    })).then(() => apply('form', async () => {
-      if (!research?.player) throw new Error(noResearch);
-      const mineStarters = out.results?.scores.find(s => s.franchise === mine)?.starters ?? [];
-      if (!mineStarters.length) throw new Error('No starters this week to read form for');
-      out.form = await Promise.all(mineStarters.map(async s => ({ player: s.player, name: s.name,
-        position: s.position ?? '', weeks: formPoints(await research.player!(s.player)).slice(-5) })));
     })),
     apply('assets', async () => {
       const r = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
@@ -162,6 +153,31 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       out.draft = draft;
     }),
   ]);
+  return out;
+}
+
+/** Thin Home's unassigned commissioner view reads league-wide pulse and commissioner jobs only. */
+export async function readThinHomeBrief(league: string, mine: string, port: HostedPort,
+  publish?: (brief: HomeBrief) => void, commissioner = false): Promise<HomeBrief> {
+  if (mine) return readHomeBrief(league, mine, port, publish, null, true);
+  const out: HomeBrief = { at: {}, errors: {} };
+  const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
+  const apply = async (source: HomeSource, read: () => Promise<void>) => {
+    try { await read(); out.at[source] = new Date().toISOString(); delete out.errors[source]; }
+    catch (error) { out.errors[source] = error instanceof Error ? error.message : String(error); }
+    finally { send(); }
+  };
+  const pulse = apply('pulse', async () => {
+    out.pulse = await readNativePulse(league, '', port, reading => { out.pulse = reading; send(); }, true);
+    if (out.pulse.errors.length) throw new Error(out.pulse.errors[0]);
+  });
+  const jobs = commissioner ? apply('jobs', async () => {
+    const r = await port({ command: 'commish.jobs.read', mode: 'read', arguments: { league } });
+    const reading = parseJobs(r.data);
+    if (reading.league !== league) throw new Error('Jobs belong to another league');
+    out.jobs = reading;
+  }) : Promise.resolve();
+  await Promise.all([pulse, jobs]);
   return out;
 }
 

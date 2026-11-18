@@ -73,6 +73,10 @@ afterEach(async () => {
   hostedReads.endSession(); host.remove(); vi.restoreAllMocks();
 });
 async function settle() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); }); }
+function controlRoomButton() {
+  return host.querySelector<HTMLButtonElement>(
+    '.thin-league-shell .node>.nb[aria-label="Control Room"]');
+}
 
 const teams = Array.from({ length: 32 }, (_, index) => ({ franchise: `franchise.${index + 1}`,
   name: `Team ${index + 1}`, abbreviation: `T${index + 1}`, owner: `owner.${index + 1}`,
@@ -145,15 +149,31 @@ const fixCommands = ['commish.stat.correct', 'commish.score.player', 'commish.sc
 async function openControlRoom(read: HostedPort, role = 'Commissioner') {
   await act(async () => root.render(<HostedLeague league={league} franchise="" name="Test League"
     role={role} port={read} />));
-  const controlRoom = [...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(button => button.textContent === 'Control Room');
-  expect(controlRoom).toBeDefined();
+  expect(host.querySelector('.thin-league-shell')).not.toBeNull();
+  const controlRoom = controlRoomButton();
+  expect(controlRoom).not.toBeNull();
   await act(async () => controlRoom!.click());
   await vi.waitFor(async () => {
     await settle();
     expect(host.querySelector('[data-testid="hosted-control-room"]')).not.toBeNull();
   });
 }
+it.each(['Commissioner', 'Co-commissioner'])(
+  'opens the hosted Control Room from the Bundle 4 shell for %s', async role => {
+    const read = port(0);
+    await act(async () => root.render(<HostedLeague league={league} franchise=""
+      name="Test League" role={role} port={read} />));
+    expect(host.querySelector('.thin-league-shell')).not.toBeNull();
+    const controlRoom = controlRoomButton();
+    expect(controlRoom).not.toBeNull();
+    await act(async () => controlRoom!.click());
+    await vi.waitFor(async () => {
+      await settle();
+      expect(host.querySelector('[data-testid="hosted-control-room"]')).not.toBeNull();
+    });
+    expect(host.querySelector('[role="tab"][aria-label="Jobs"]')).not.toBeNull();
+  });
+
 async function openFixTab() {
   const tab = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
     .find(button => button.textContent?.includes('Fix'));
@@ -191,9 +211,9 @@ it.each(['Commissioner', 'Co-commissioner'])(
   const read = port(32);
   await act(async () => root.render(<HostedLeague league={league} franchise="" name="Test League"
     role={role} port={read} />));
-  const controlRoom = [...host.querySelectorAll('button')]
-    .find(button => button.textContent === 'Control Room');
-  expect(controlRoom).toBeDefined();
+  expect(host.querySelector('.thin-league-shell')).not.toBeNull();
+  const controlRoom = controlRoomButton();
+  expect(controlRoom).not.toBeNull();
   await act(async () => controlRoom!.click());
   await vi.waitFor(async () => {
     await settle();
@@ -220,8 +240,7 @@ it('shows the hosted server ledger at 32 entries and leaves operator actions una
   const read = port(32);
   await act(async () => root.render(<HostedLeague league={league} franchise=""
     name="Test League" role="Commissioner" port={read} />));
-  const controlRoom = [...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(button => button.textContent === 'Control Room');
+  const controlRoom = controlRoomButton();
   await act(async () => controlRoom!.click());
   await settle();
   const serverTab = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
@@ -257,8 +276,7 @@ it('opens the server-backed Rules board and renders all 32 settings with their r
   await act(async () => root.render(<HostedLeague league={league} franchise="" name="Test League"
     role="Commissioner" port={read} />));
   await settle();
-  await act(async () => [...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(button => button.textContent === 'Control Room')!.click());
+  await act(async () => controlRoomButton()!.click());
   await settle();
   await act(async () => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
     .find(button => button.textContent?.includes('Rules'))!.click());
@@ -273,9 +291,8 @@ it('opens the hosted frame for an assigned commissioner too', async () => {
   const read = port(0);
   await act(async () => root.render(<HostedLeague league={league} franchise="franchise.01"
     name="Franchise One" role="Commissioner" port={read} />));
-  const controlRoom = [...host.querySelectorAll('button')]
-    .find(button => button.textContent === 'Control Room');
-  expect(controlRoom).toBeDefined();
+  const controlRoom = controlRoomButton();
+  expect(controlRoom).not.toBeNull();
   await act(async () => controlRoom!.click());
   await vi.waitFor(async () => {
     await settle();

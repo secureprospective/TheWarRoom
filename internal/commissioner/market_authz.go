@@ -14,6 +14,9 @@ func marketOwnerFranchise(raw RawCommand) string {
 	if OwnerBidAction(raw.Command) != "" {
 		return raw.Args.Bid.Franchise
 	}
+	if raw.Command == ContractDecisionSet && raw.Args.ContractDecision != nil {
+		return raw.Args.ContractDecision.Franchise
+	}
 	return ""
 }
 

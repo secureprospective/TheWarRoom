@@ -29,6 +29,9 @@ read -rp 'New public hostname (league.example.org): ' hostname
 read -rp 'Replacing a lost league server at that hostname? (yes/no) [no]: ' replace; replace=${replace:-no}
 read -rsp 'Cloudflare API token (Tunnel Edit, DNS Edit, Zone Read): ' token; echo
 stop() { echo "$1 Nothing was changed." >&2; exit 1; }
+# TWR_FIRST_LOAD=1: install with twr-server stopped and empty, for a league load before first start.
+first_load=${TWR_FIRST_LOAD:-0}
+[[ $first_load == 0 || $first_load == 1 ]] || stop 'TWR_FIRST_LOAD must be 0 or 1.'
 [[ $ctid =~ ^[1-9][0-9]{2,8}$ ]] || stop 'The container number must be 100 or higher.'
 if [[ ! $vlan =~ ^[0-9]{1,4}$ ]] || (( 10#$vlan < 1 || 10#$vlan > 4094 )); then
   stop 'The VLAN number must be between 1 and 4094.'
@@ -125,12 +128,13 @@ printf '{"zone":"%s","hostname":"%s","api_token":"%s","replace":%s}\n' \
   "$zone" "$hostname" "$token" "$replace" > "$work/input.json"
 unset token
 pct push "$ctid" "$work/input.json" /root/twr-input.json --perms 0600
-pct exec "$ctid" -- sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'
+pct exec "$ctid" -- env TWR_FIRST_LOAD="$first_load" sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'
 # A real reboot, not merely writing an init file.
 pct reboot "$ctid"
 ready=0
 for ((attempt=0; attempt<60; attempt++)); do
-  if pct exec "$ctid" -- sh -ec 'rc-service twr-server status; rc-service twr-tunnel status; curl --fail --silent --max-time 2 http://127.0.0.1:20241/ready' >/dev/null 2>&1; then
+  # A first-load install keeps twr-server stopped until the league is loaded; only the Tunnel must be up.
+  if pct exec "$ctid" -- env TWR_FIRST_LOAD="$first_load" sh -ec '[ "$TWR_FIRST_LOAD" = 1 ] || rc-service twr-server status; rc-service twr-tunnel status; curl --fail --silent --max-time 2 http://127.0.0.1:20241/ready' >/dev/null 2>&1; then
     ready=1
     break
   fi
@@ -141,3 +145,9 @@ pct exec "$ctid" -- rm -f /root/twr-input.json
 pct set "$ctid" --onboot 1
 complete=1
 printf 'Installed: https://%s. Administration is Proxmox console only (pct enter %s).\n' "$hostname" "$ctid"
+if (( first_load )); then
+  printf 'twr-server is stopped with an empty /var/lib/twr. Inside the CT run, in order:\n'
+  printf '  twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db -mfl-league <number> -football-pin /etc/twr/football.sha256 < /root/seed/commissioner.json\n'
+  printf 'league-load sets the state owner on each path it creates; no chown step is needed.\n'
+  printf '  rc-update add twr-server default\n  rc-service twr-server start\n'
+fi

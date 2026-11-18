@@ -54,14 +54,43 @@ The installer creates the Tunnel, TLS material, DNS record and services itself;
 there is no dashboard ingress editing, certificate copying or manual init setup.
 Complete the documented R2 setup inside the CT before moving an active league.
 
-**First league load:** `league-load` requires the service stopped and a destination
-whose reference database does not already contain conflicting player identities.
-Stopping the service alone is not sufficient: the installer starts the server, which
-can populate identities before the load. On a disposable lab installation, preserve
-the failed data and load into fresh empty hosted storage before starting the service;
-then configure backups and check `twr-status`. Do not empty or replace a server with
-real data to work around this conflict. The installer does not yet provide a safe
-first-load-before-start sequence for a new installation.
+**First league load on a new server.** The default install starts the server, which can
+fill in player identities that then conflict with a league load. For a new server whose
+first league comes from a desktop MFL mirror, install in first-load mode instead:
+
+```sh
+TWR_FIRST_LOAD=1 bash deploy/server/proxmox.sh ./twr-server-alpine-amd64.tar.gz
+```
+
+Everything is installed and the Tunnel runs, but `twr-server` is left stopped, not
+scheduled at boot, and `/var/lib/twr` is empty. The installer prints these next steps;
+run them inside the CT (`pct enter <ct>`), with a copy of the desktop `history.db` and
+the owner-only `commissioner.json` in `/root/seed`:
+
+```sh
+twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db \
+  -mfl-league <MFL league number> -football-pin /etc/twr/football.sha256 < /root/seed/commissioner.json
+rc-update add twr-server default
+rc-service twr-server start
+```
+
+`league-load` creates the empty server database itself because it is absent and its
+directory is empty; no network is used and no identity is filled in. It assigns every
+new file and directory the state directory's owner, individually; no manual or recursive
+`chown` is needed. Then complete the R2 setup and check `twr-status`. On an existing
+server keep the normal sequence (`cmd/twr-server/README.md`): stop the service, load,
+start. Do not empty or replace a server with real data to make a load fit.
+
+If this installed first-load server needs an update before the league is loaded, use the
+verified updater in first-load mode:
+
+```sh
+TWR_FIRST_LOAD=1 sh /usr/local/libexec/twr-upgrade /root/twr-new/server.tar.gz /root/twr-new/metadata
+```
+
+It requires `/var/lib/twr` to be empty, `twr-server` stopped and unscheduled, installs the verified
+server/tools without a database check or state snapshot, leaves the server stopped, and prints the
+same `league-load` and start commands. See [UPGRADE.md](UPGRADE.md).
 
 It does not change the host's management network, firewall policy or storage
 security. A pre-existing VLAN/DHCP network, firewall-enabled Proxmox node, template

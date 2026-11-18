@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/app/offers"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
@@ -106,5 +107,13 @@ func TestTypedBindingPreservesErrorsAndRejectsTrailingJSON(t *testing.T) {
 	}
 	if !strings.Contains(binding.Arguments.Validator, "Raw validation") {
 		t.Fatal("binding lost validation owner")
+	}
+}
+
+// An AI helper is issued every delegable command at once, so the catalog must fit one token scope.
+func TestHelperCommandsFitOneTokenScope(t *testing.T) {
+	t.Parallel()
+	if n := len(helperCommands()); n == 0 || n > accounts.MaxTokenCommands {
+		t.Fatalf("helper commands = %d, token scope holds %d", n, accounts.MaxTokenCommands)
 	}
 }

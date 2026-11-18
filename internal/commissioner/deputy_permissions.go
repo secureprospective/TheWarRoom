@@ -152,7 +152,7 @@ func memberActionCommandRules() []DeputyCommandRule {
 		{WaiverClaim, DeputyMemberAction, ""},
 		{BidPlace, DeputyMemberAction, ""},
 		{BidRaise, DeputyMemberAction, ""},
-		{BidWithdraw, DeputyMemberAction, ""},
+		{ContractDecisionSet, DeputyMemberAction, ""},
 		{DraftPick, DeputyMemberAction, ""},
 		{"commish.seat.invite.redeem", DeputyMemberAction, ""},
 		{"commish.vote.cast", DeputyMemberAction, ""},

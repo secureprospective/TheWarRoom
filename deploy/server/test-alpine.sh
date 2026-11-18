@@ -230,5 +230,42 @@ SERVICE
   rc-service twr-server start
   sleep 2
   sh /src/deploy/server/test-cloudflare.sh
+  # First-load updater mode refuses non-empty state without changing the installed release.
+  rc-service twr-server stop
+  before=$(sha256sum /usr/local/bin/twr-server /var/lib/twr/server.db)
+  if TWR_FIRST_LOAD=1 PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$DELIVERY/good/server.tar.gz" "$DELIVERY/good" > /tmp/first-load-refusal 2>&1; then exit 1; fi
+  grep -F "requires an empty /var/lib/twr" /tmp/first-load-refusal
+  test "$before" = "$(sha256sum /usr/local/bin/twr-server /var/lib/twr/server.db)"
+  # Recreate first-load state in this disposable CT, including its unscheduled service.
+  rc-update del twr-server default
+  for path in /var/lib/twr/* /var/lib/twr/.[!.]* /var/lib/twr/..?*; do
+    [ -e "$path" ] || [ -L "$path" ] || continue
+    rm -rf -- "$path"
+  done
+  test "$(stat -c %a:%U:%G /var/lib/twr)" = 700:twr:twr
+  test -z "$(find /var/lib/twr -mindepth 1 -maxdepth 1 -print -quit)"
+  cat > /tmp/upgrade-tools/rc-service <<'\''SERVICE'\''
+#!/bin/sh
+printf "%s\n" "$*" >> /tmp/first-load-service-calls
+if [ "$1" = twr-tunnel ]; then exit 0; fi
+exec /sbin/rc-service "$@"
+SERVICE
+  chmod 755 /tmp/upgrade-tools/rc-service
+  : > /tmp/first-load-service-calls
+  TWR_FIRST_LOAD=1 PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$DELIVERY/good/server.tar.gz" "$DELIVERY/good" > /tmp/first-load-result
+  cat /tmp/first-load-result
+  grep -F "First-load server update ready" /tmp/first-load-result
+  grep -F "twr-server league-load -db /var/lib/twr/server.db" /tmp/first-load-result
+  grep -F "rc-update add twr-server default" /tmp/first-load-result
+  grep -F "rc-service twr-server start" /tmp/first-load-result
+  grep -F "league-load sets ownership" /tmp/first-load-result
+  ! grep -F "chown twr:twr /var/lib/twr/server.db" /tmp/first-load-result
+  grep -F "twr-tunnel --ifstarted stop" /tmp/first-load-service-calls
+  grep -F "twr-tunnel --ifstopped start" /tmp/first-load-service-calls
+  ! grep -F "twr-server start" /tmp/first-load-service-calls
+  test -z "$(find /var/lib/twr -mindepth 1 -maxdepth 1 -print -quit)"
+  ! rc-service twr-server status >/dev/null 2>&1
+  ! rc-update show default | grep -q twr-server
+  echo "Updater first-load empty-state/no-start: PASS"
 '
-echo 'Alpine install, signed upgrade/refusals, OpenRC, TLS, sandbox and dashboard: PASS'
+echo 'Alpine install, signed upgrade/refusals, first-load update, OpenRC, TLS, sandbox and dashboard: PASS'

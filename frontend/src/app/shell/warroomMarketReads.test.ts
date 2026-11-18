@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { poolProvider } from '../pool/provider';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { BidFormState, Plan } from '../pool/contract';
+import type { NativeRequest } from '../commands/native';
 import type { WarRoomContext } from './warroomReads';
 import {
   parseWarRoomBidReading,
@@ -146,7 +147,7 @@ describe('War Room hosted market bid workflow', () => {
     expect(() => parseWarRoomBidReading(wrongOwner, league, mine)).toThrow('scope changed');
   });
 
-  it('previews place, raise and withdraw privately, then executes with receipt and rereads bids and cap',
+  it('previews place and raise privately, then executes with receipt and rereads bids and cap',
     async () => {
       const calls: string[] = [];
       const port = vi.fn<HostedPort>(async request => {
@@ -169,28 +170,31 @@ describe('War Room hosted market bid workflow', () => {
           revision: 7, maxYears: 4, capRoom: 9000000000, writable: true, football: 'pin' },
         { type: 'raise' as const, bid: placed, salaryCents: 250000000, years: 3,
           revision: 7, maxYears: 4, capRoom: 9000000000, writable: true, football: 'pin' },
-        { type: 'withdraw' as const, bid: placed, revision: 7, writable: true, football: 'pin' },
       ];
       const reviews = await Promise.all(actions.map(action => warRoomMarketAction(c, action)));
-      expect(reviews.map(result => result.kind)).toEqual(['review', 'review', 'review']);
-      const requests = port.mock.calls.slice(0, 3).map(([request]) => request) as unknown as
+      expect(reviews.map(result => result.kind)).toEqual(['review', 'review']);
+      const requests = port.mock.calls.slice(0, 2).map(([request]) => request) as unknown as
         { command: string; mode: string; arguments: { visibility?: string; args?: { bid?: unknown } } }[];
-      expect(requests.map(request => request.command)).toEqual(['bid.place', 'bid.raise', 'bid.withdraw']);
+      expect(requests.map(request => request.command)).toEqual(['bid.place', 'bid.raise']);
       expect(requests.every(request => request.mode === 'preview' &&
         request.arguments.visibility === 'private')).toBe(true);
       expect(requests[0].arguments.args?.bid).toEqual({ player: '0001', franchise: mine,
         salaryCents: 200000000, years: 2 });
       expect(requests[1].arguments.args?.bid).toEqual({ bid: 'bid-1', franchise: mine,
         salaryCents: 250000000, years: 3 });
-      expect(requests[2].arguments.args?.bid).toEqual({ bid: 'bid-1', franchise: mine });
 
-      const review = reviews[0];
-      if (review.kind !== 'review') throw new Error('Expected preview');
-      const recorded = await warRoomMarketAction(c, { type: 'confirm', request: review.request,
-        football: review.football });
-      expect(recorded).toMatchObject({ kind: 'recorded', receipt, capRoom: 8500000000,
+      const placeReview = reviews[0];
+      if (placeReview.kind !== 'review') throw new Error('Expected place preview');
+      const placedResult = await warRoomMarketAction(c, { type: 'confirm', request: placeReview.request,
+        football: placeReview.football });
+      expect(placedResult).toMatchObject({ kind: 'recorded', receipt, capRoom: 8500000000,
         bids: { revision: 8, bids: [placed] } });
+      const raiseReview = reviews[1];
+      if (raiseReview.kind !== 'review') throw new Error('Expected raise preview');
+      await warRoomMarketAction(c, { type: 'confirm', request: raiseReview.request,
+        football: raiseReview.football });
       expect(calls).toContain('bid.place:execute');
+      expect(calls).toContain('bid.raise:execute');
       expect(calls).toContain('bids.read:read');
       expect(calls).toContain('native.cap.check:read');
     });
@@ -230,8 +234,8 @@ describe('War Room hosted market bid workflow', () => {
       throw new Error(`Unexpected ${request.command}`);
     });
     const c = context(port);
-    const review = await warRoomMarketAction(c, { type: 'withdraw', bid: placed, revision: 7,
-      writable: true, football: 'pin' });
+    const review = await warRoomMarketAction(c, { type: 'raise', bid: placed, salaryCents: 250000000,
+      years: 3, revision: 7, maxYears: 4, capRoom: 9000000000, writable: true, football: 'pin' });
     if (review.kind !== 'review') throw new Error('Expected preview');
     const recorded = await warRoomMarketAction(c, { type: 'confirm', request: review.request,
       football: review.football });
@@ -239,6 +243,15 @@ describe('War Room hosted market bid workflow', () => {
       refreshError: 'Your bid was recorded, but its current status or cap room could not be refreshed. ' +
         'Refresh before trying again.' });
     expect(port.mock.calls.filter(([request]) => request.mode === 'execute')).toHaveLength(1);
+  });
+
+  it('rejects a forged withdrawal preview instead of confirming it', async () => {
+    const port = vi.fn<HostedPort>();
+    const request = { command: 'bid.withdraw', mode: 'preview', arguments: { league,
+      command: 'bid.withdraw', visibility: 'private' } } as unknown as NativeRequest;
+    await expect(warRoomMarketAction(context(port), { type: 'confirm', request,
+      football: 'pin' })).rejects.toThrow('Only a reviewed private bid can be confirmed');
+    expect(port).not.toHaveBeenCalled();
   });
 
   it('keeps local draft and revise on the existing pool provider', async () => {
@@ -259,8 +272,9 @@ describe('War Room hosted market bid workflow', () => {
 
   it('does not make hosted owner actions for a non-owner view', async () => {
     const port = vi.fn<HostedPort>();
-    await expect(warRoomMarketAction(context(port, false), { type: 'withdraw', bid: placed,
-      revision: 7, writable: true, football: 'pin' })).rejects.toThrow('owner seat');
+    await expect(warRoomMarketAction(context(port, false), { type: 'raise', bid: placed,
+      salaryCents: 250000000, years: 3, revision: 7, maxYears: 4, capRoom: 9000000000,
+      writable: true, football: 'pin' })).rejects.toThrow('owner seat');
     expect(port).not.toHaveBeenCalled();
   });
 });

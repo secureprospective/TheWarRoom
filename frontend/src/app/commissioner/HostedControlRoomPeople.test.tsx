@@ -78,7 +78,8 @@ async function setValue(element: HTMLInputElement | HTMLSelectElement, value: st
 }
 function button(text: string) {
   return [...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(candidate => candidate.textContent?.trim() === text);
+    .find(candidate => candidate.textContent?.trim() === text ||
+      candidate.getAttribute('aria-label') === text);
 }
 async function openPeople(port: HostedPort) {
   await act(async () => root.render(<HostedLeague league={league} franchise="" name="People Test"

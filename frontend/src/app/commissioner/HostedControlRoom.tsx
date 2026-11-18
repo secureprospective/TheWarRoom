@@ -124,6 +124,10 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         </div>}
         {tab === 'situations' && <HostedControlRoomSituations
           onTab={navigateTo} onTool={next => openTool(next)} onUnavailable={showRoute} />}
+        {tab === 'rules' && roomState.error && <p role="alert">{roomState.error}</p>}
+        {tab === 'rules' && roomState.stale &&
+          <p role="status">Rules are read-only until refreshed from the league server.</p>}
+        {tab === 'rules' && roomState.message && <p role="status">{roomState.message}</p>}
         {tab === 'rules' && roomState.reading
           ? <HostedRules rules={roomState.reading.rules} commissioner room={room} />
           : tab === 'rules' && <p role="status">{roomState.error || 'Reading league rules…'}</p>}

@@ -1,6 +1,12 @@
 # Handoff
 
-- Baton: ClaudeBox review of PR #355; Bee implementation complete, 2026-11-18. Base `bundle/b5`.
+- Baton: Bee, 2026-11-18. Lane `pulse-b5sync`, branch `session/pulse-b5sync`; merging `origin/main` (347388a19) into Bundle 5.
+- State: merge commit created from `4a764caa2` (Bundle 5) and `347388a19` (main); conflict resolutions and generated outputs are committed. Bundle 4 rail/Home routing stays; its Control Room rail route opens Bundle 5's full hosted Control Room; Rules remains in the Control Room Rules tab. Workflow output union retains BackupResult, WhatIfStack, and ContractDecisions.
+- Verified: `pnpm exec tsc --noEmit`; full Vitest (138 files/977 tests); `pnpm run build`; targeted commissioner Control Room/rules tests (30); `make verify` passes, including lint, Wails binding freshness, all Go race tests, frontend tests/build, bundle budget and CSP checks. Bundle budget is 161,967 eager bytes vs 321,818 cap. Contract-decision is classified as member-action/owner-seat; bid.withdraw remains unpublished. Workflow helper preserves the backup stale-write exception.
+- Next: push, open PR into `bundle/b5`, and confirm CI. Do not merge.
+- Blocked on: none.
+
+- Prior Baton: ClaudeBox review of PR #355; Bee implementation complete, 2026-11-18. Base `bundle/b5`.
 - State: D65, security fixes and CI follow-up are pushed on `session/pulse-b5perm`; PR #355 open against `bundle/b5`, current CI green.
 - D65: six permission groups; whole-mutation-catalog classification; preview/execute permission command; replay/revocation; co-commissioners expose all six; vote close/tiebreak stay commissioner-only.
 - Security: commissioner/co-commissioner shortcuts removed; permitted deputy trade rulings use reviewer eligibility and bar the deputy's own franchise; lineup.set retains seat/ability checks.

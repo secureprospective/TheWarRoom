@@ -1,5 +1,6 @@
 import { HQAct as WarRoomAct } from './HQAct';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { PlayerCandidate } from './ThinPlayerSearch';
 import { HoldToFire } from '../commissioner/HoldToFire';
 import { previewChange } from '../commissioner/preview';
 import type { WarRoomContext } from './warroomReads';
@@ -16,9 +17,9 @@ import { useWarRoomDrag } from './warroomDrag';
 export const ownBid = (p: Plan): WarRoomOwnBid => ({ player: p.playerId, name: p.player,
   contract: p.contract, state: p.status || p.state, kind: 'plan', id: p.id, post: p.post, plan: p });
 const STEP = 0.1;
-export function WarRoomOwnBids({ reading, kind, revise, withdraw }: { reading?: WarRoomMarketReading;
-  kind?: 'plan' | 'placed'; revise?: (b: WarRoomOwnBid, change: { salary?: string; years?: number }) =>
-    void; withdraw?: (b: WarRoomOwnBid) => void }) {
+export function WarRoomOwnBids({ reading, kind, revise }: { reading?: WarRoomMarketReading;
+  kind?: 'plan' | 'placed';
+  revise?: (b: WarRoomOwnBid, change: { salary?: string; years?: number }) => void }) {
   const bids = reading?.bids?.filter(b => !kind || b.kind === kind);
   const [copied, setCopied] = useState('');
   const copy = async (b: WarRoomOwnBid) => {
@@ -45,8 +46,6 @@ export function WarRoomOwnBids({ reading, kind, revise, withdraw }: { reading?: 
       </select>{!reading?.maxYears && <small>Contract length setting unavailable</small>}</label>}
       {revise && b.bidId && <WarRoomAct label={`Revise ${b.name} bid`}
         onAction={() => revise(b, {})}>REVISE</WarRoomAct>}
-      {withdraw && b.bidId && <WarRoomAct label={`Withdraw ${b.name} bid`}
-        onAction={() => withdraw(b)}>WITHDRAW</WarRoomAct>}
       <span className="chip2">{b.state}</span>{b.post && <WarRoomAct className="chip"
         label={`Copy ProBoards post for ${b.name}`} onAction={() => { void copy(b); }}>
         {copied === b.player ? 'COPIED' : 'COPY PROBOARDS POST'}</WarRoomAct>}</div>) :
@@ -57,8 +56,9 @@ type BidEditor = { type: 'place'; player: WarRoomMarketPlayer; salary: string; y
   { type: 'raise'; bid: WarRoomOwnBid; salary: string; years: number };
 type BidReview = Extract<WarRoomMarketActionResult, { kind: 'review' }>;
 type RefreshedBids = { bids?: WarRoomOwnBid[]; revision?: number; capRoom?: number; error?: string };
-export function WarRoomMarket({ context, room, needs, select }: { context: WarRoomContext; room?: number;
-  needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void }) {
+export function WarRoomMarket({ context, room, needs, select, onPlayers }: { context: WarRoomContext;
+  room?: number; needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void;
+  onPlayers?: (players: PlayerCandidate[]) => void }) {
   const [refresh, setRefresh] = useState(0);
   const [filter, setFilter] = useState('All');
   const [pending, setPending] = useState(false);
@@ -71,6 +71,10 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
   const reading = useWarRoomRead(JSON.stringify([context.native?.league, context.mine, refresh]), () =>
     readWarRoomMarket(context));
   const value = reading.reading;
+  useEffect(() => {
+    if (value?.players) onPlayers?.(value.players.map(player => ({ id: player.id,
+      name: player.name, position: player.position })));
+  }, [onPlayers, value]);
   const targets = new Set(value?.targets?.map(t => t.id));
   const capRoom = fresh ? fresh.capRoom : value?.capRoom ?? room;
   const bidRevision = fresh?.revision ?? value?.bidRevision;
@@ -152,16 +156,6 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
     } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
     finally { setPending(false); }
   };
-  const withdraw = async (b: WarRoomOwnBid) => {
-    if (pending || fresh?.error || bidRevision === undefined) return;
-    setPending(true); setError(''); setNotice('');
-    try {
-      const result = await warRoomMarketAction(context, { type: 'withdraw', bid: b,
-        revision: bidRevision, writable: value?.writable === true, football: value?.football ?? '' });
-      if (result.kind === 'review') setReview(result);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
-    finally { setPending(false); }
-  };
   const confirmBid = async () => {
     if (!review || pending) return;
     setPending(true); setError(''); setNotice('');
@@ -238,8 +232,7 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
           revise={(b, change) => { void revise(b, change); }} />
         <div className="ch"><b>PLACED</b></div>
         <WarRoomOwnBids reading={shown} kind="placed"
-          revise={canManageBids ? revise : undefined}
-          withdraw={canManageBids ? withdraw : undefined} />
+          revise={canManageBids ? revise : undefined} />
         {editor && <div className="bidb" aria-label={editor.type === 'place' ? 'New bid' :
           `Revise ${editor.bid.name} bid`}>
           <b>{editor.type === 'place' ? `Bid on ${editor.player.name}` : `Revise ${editor.bid.name}`}</b>

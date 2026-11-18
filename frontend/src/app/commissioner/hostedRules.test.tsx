@@ -77,6 +77,12 @@ async function click(text: string) {
   expect(buttons(text), text).toHaveLength(1);
   await act(async () => { buttons(text)[0].focus(); buttons(text)[0].click(); }); await settle();
 }
+async function clickNode(text: string) {
+  const button = [...host.querySelectorAll('.thin-league-shell .node>.nb')]
+    .find(node => node.textContent?.includes(text));
+  expect(button, text).toBeDefined();
+  await act(async () => { (button as HTMLButtonElement).click(); }); await settle();
+}
 async function input(selector: string, value: string) {
   const element = host.querySelector(selector)! as HTMLInputElement;
   const prototype = element.tagName === 'SELECT'
@@ -89,7 +95,8 @@ async function input(selector: string, value: string) {
 async function openRules(port: HostedPort, role = 'Commissioner') {
   await act(async () => root.render(<HostedLeague league={league} franchise="" name=""
     role={role} port={port} />));
-  await settle(); await click('League rules'); await click('Change Lineup lock');
+  await settle(); await clickNode('Control Room'); await click('Rules');
+  await click('Change Lineup lock');
 }
 async function preview() {
   await input('select[aria-label="New value for Lineup lock"]', 'first_kickoff');
@@ -261,6 +268,7 @@ it('a refused rules refresh disables editing and never previews', async () => {
   expect(host.textContent).toContain('read-only');
   expect(port.mock.calls.some(([r]) => r.mode === 'preview')).toBe(false);
 });
+// Lazy Home and HostedLeague content can take longer to resolve during the full parallel suite.
 it.each(['Commissioner', 'Co-commissioner'])(
   'NativeAccount admits a teamless %s to Pulse and rules without franchise reads', async role => {
     const port = service();
@@ -277,13 +285,15 @@ it.each(['Commissioner', 'Co-commissioner'])(
         json: async () => admission };
     }));
     await act(async () => root.render(<NativeAccount initial={admission} />));
-    await settle(); await settle();
-    expect(host.textContent).toContain('League Pulse');
+    await vi.waitFor(() => expect(buttons('Open Pulse for Test League')).toHaveLength(1),
+      { timeout: 10_000 });
+    await click('Open Pulse for Test League');
+    await vi.waitFor(() => expect(host.textContent).toContain('League Pulse'), { timeout: 10_000 });
     expect(host.textContent).not.toContain('MY MATCHUP');
     expect(host.querySelector('.mybox')).toBeNull();
     expect(port.mock.calls.some(([r]) => r.command === 'native.directory.read')).toBe(true);
     expect(port.mock.calls.some(([r]) => r.command === 'standings.read')).toBe(true);
-    await click('League rules');
+    await clickNode('Control Room'); await click('Rules');
     expect(buttons('Change Lineup lock')).toHaveLength(1);
     await click('Change Lineup lock'); await preview();
     const dialog = host.querySelector('[role=dialog]')!;
@@ -302,7 +312,12 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(buttons('Set lineup')).toHaveLength(0);
     expect(buttons('Roster and reserves')).toHaveLength(0);
     expect(buttons('Draft room')).toHaveLength(0);
-  });
+    await click('← Home');
+    await vi.waitFor(() => expect(buttons('Open Control Room for Test League')).toHaveLength(1),
+      { timeout: 10_000 });
+    await click('Open Control Room for Test League'); await click('Rules');
+    expect(buttons('Change Lineup lock')).toHaveLength(1);
+  }, 15_000);
 it('a refused rules read leaves league-wide Pulse available', async () => {
   const port = service();
   const serve = port.getMockImplementation()!;

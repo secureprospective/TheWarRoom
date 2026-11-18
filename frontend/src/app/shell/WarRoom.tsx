@@ -41,10 +41,18 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   const clock = useLeagueClock(root);
   const state = commands.use();
   const workspace = state.workspace.war;
-  const routeTab = workspace === 'draft-room' ? 'draft' : workspace === 'trade-desk' ? 'desk' : undefined;
+  const thinTab: Partial<Record<string, WarRoomTab>> = { 'trade-desk': 'desk',
+    'valuations-and-pool': 'market', 'draft-room': 'draft', plans: 'plans' };
+  const routeTab = native?.workspace ? thinTab[native.workspace] :
+    workspace === 'draft-room' ? 'draft' : workspace === 'trade-desk' ? 'desk' : undefined;
   const [localTab, setLocalTab] = useState<WarRoomTab>('desk');
   const tab = routeTab ?? localTab;
   const setTab = (tab: WarRoomTab) => {
+    if (native?.navigateWorkspace) {
+      native.navigateWorkspace(tab === 'draft' ? 'draft-room' : tab === 'desk' ? 'trade-desk' :
+        tab === 'market' ? 'valuations-and-pool' : 'plans');
+      return;
+    }
     setLocalTab(tab);
     void commands.dispatch('nav.open', { node: 'war', workspace: tab === 'draft' ? 'draft-room' :
       tab === 'desk' ? 'trade-desk' : 'valuations-and-pool' });
@@ -58,7 +66,12 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     if (input && input.mine === mine && input.league === native?.league)
       changeDeal(d => d.give.includes(input.player) ? d : { ...d, give: [...d.give, input.player] });
   }, [input, mine, native?.league]);
-  const [selected, select] = useState<WarRoomAsset>();
+  const [selected, select] = useState<WarRoomAsset | undefined>(() => native?.inspectPlayer ? {
+    token: native.inspectPlayer.id, name: native.inspectPlayer.name,
+  } : undefined);
+  useEffect(() => {
+    if (native?.inspectPlayer) select({ token: native.inspectPlayer.id, name: native.inspectPlayer.name });
+  }, [native?.inspectPlayer?.id, native?.inspectPlayer?.name, native?.inspectPlayer?.position]);
   const [prospect, setProspect] = useState<WarRoomProspect>();
   const context = { snapshot, mine, week, native };
   const [recorded, setRecorded] = useState(0);
@@ -129,7 +142,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
         change={changeDeal} select={select} lens={lensReading} lensPending={lens.pending}
         previewNonce={recorded} /> :
-        tab === 'market' ? <WarRoomMarket context={context}
+        tab === 'market' ? <WarRoomMarket context={context} onPlayers={native?.onPlayers}
           room={headerReading?.runway?.[0]?.room}
           needs={lensReading && !lensReading.preparing ? lensReading.you.needs : undefined}
           select={p => select({ token: p.id, name: p.name })} /> :
@@ -153,6 +166,8 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
         refreshKey={recorded} onOpenDraft={(draft: WarRoomSavedDraft) => {
           changeDeal({ partner: draft.partner, give: [...draft.give], get: [...draft.get] });
           setTab('desk'); setDrawer(undefined); setRecorded(n => n + 1);
+        }} onLoadOffer={deal => {
+          changeDeal(deal); setTab('desk'); setDrawer(undefined); setRecorded(n => n + 1);
         }} openOffer={id => { setOffer(id); setDrawer(undefined); }} />}
     </main>{offer && !native ? <aside className="insp" aria-label="Inspector">
       <WarRoomAct onAction={() => setOffer(undefined)}>Close offer</WarRoomAct>

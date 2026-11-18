@@ -1,12 +1,11 @@
 import { HQAct as WarRoomAct } from '../shell/HQAct';
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Act } from '../commands/Act';
 import { surfaceActions } from './surfaceActions';
 import { newKey } from './forms';
 import { Review } from './HostedReview';
 import { HostedRules } from './HostedRules';
 import { HostedCommissionerLeague } from './HostedCommissionerLeague';
-import { HostedControlRoom } from './HostedControlRoom';
 import { localTime } from '../clock/localTime';
 import { createHostedRoom, type HostedPort } from './hostedRoom';
 import type { NativeArguments, NativeRequest } from '../commands/native';
@@ -14,8 +13,15 @@ import type { HostedResponse } from './api';
 import './hostedLeague.css';
 import { hostedScreens } from '../data/hostedReads';
 import { HostedWorkflows, type HostedTask } from './HostedWorkflows';
+import { ThinLeagueShell } from '../shell/ThinLeagueShell';
+import type { PlayerCandidate, ThinScreenRoute } from '../shell/ThinPlayerSearch';
+import type { HQTab } from '../shell/HQShell';
+import type { Node } from '../shell/nodes';
 
 type Tab = 'lineup' | 'roster' | 'draft' | 'rules' | HostedTask;
+export type HostedEntry = 'hq' | 'war' | 'pulse' | 'control' | 'lineup' | 'bids' | 'trades';
+const entryTab = (entry?: HostedEntry): Tab => entry === 'control' ? 'rules'
+  : entry === 'bids' || entry === 'trades' || entry === 'lineup' ? entry : 'lineup';
 const labels: Record<Tab, string> = {
   lineup: 'Set lineup',
   roster: 'Roster and reserves',
@@ -33,53 +39,88 @@ const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
 // A server restart remounts this tree behind the identity fence; the owner comes back to the same screen.
 // A changed role or franchise is a different view and starts fresh.
-function useRemembered<T>(key: string, initial: T): [T, (value: T) => void] {
-  const [value, set] = useState<T>(() => hostedScreens.recall(key, initial));
+function useRemembered<T>(key: string, initial: T, forceInitial = false): [T, (value: T) => void] {
+  const [value, set] = useState<T>(() => forceInitial ? initial : hostedScreens.recall(key, initial));
   return [value, (next: T) => { hostedScreens.remember(key, next); set(next); }];
+}
+function entryRoute(entry: HostedEntry | undefined, hq: boolean | undefined,
+  commissioner: boolean): ThinScreenRoute {
+  if (entry === 'hq') return { node: 'hq', workspace: 'lineup-and-roster' };
+  if (entry === 'war') return { node: 'war', workspace: 'trade-desk' };
+  if (entry === 'pulse') return { node: 'pulse', workspace: 'now' };
+  if (entry === 'control') return { node: 'control', workspace: 'league' };
+  if (entry) return { node: 'home', workspace: 'overview' };
+  return commissioner ? { node: 'home', workspace: 'overview' }
+    : hq ? { node: 'hq', workspace: 'lineup-and-roster' }
+      : { node: 'home', workspace: 'overview' };
 }
 export default function HostedLeague(props: {
   league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
+  entry?: HostedEntry; onHome?: () => void;
 }) {
-  if (!props.franchise && (props.role === 'Commissioner' || props.role === 'Co-commissioner'))
-    return <HostedCommissionerLeague league={props.league} port={props.port} />;
-  return <HostedFranchise {...props} />;
-}
-function HostedFranchise(props: {
-  league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
-}) {
-  const place = `${props.league}:${props.franchise}:${props.role}`;
-  const [showWar, setWar] = useRemembered(`${place}:war`, false);
-  const [showHQ, setHQ] = useRemembered(`${place}:hq`, props.hq ?? false);
-  const [showPulse, setPulse] = useRemembered(`${place}:pulse`, false);
-  const [showControl, setControl] = useRemembered(`${place}:control`, false);
-  const [pulseTab, setPulseTab] = useRemembered<'now' | 'race'>(`${place}:pulseTab`, 'now');
   const commissioner = props.role === 'Commissioner' || props.role === 'Co-commissioner';
-  if (showControl) return <section className="hosted-league" aria-label="Commissioner Control Room">
-    <WarRoomAct onAction={() => setControl(false)}>Back to your league</WarRoomAct>
-    <HostedControlRoom league={props.league} port={props.port} />
-  </section>;
-  if (showPulse) return <Suspense fallback={<p>Opening League Pulse…</p>}>
-    <NativeLeaguePulse league={props.league} mine={props.franchise} port={props.port} serverTime
-      navigate={setPulseTab} back={() => setPulse(false)}
-      commissioner={props.role === 'Commissioner' || props.role === 'Co-commissioner'} tab={pulseTab}
-      leave={node => { setPulse(false); if (node === 'hq') { setHQ(true); setWar(false); }
-        if (node === 'war') { setHQ(false); setWar(true); } }} />
-  </Suspense>;
-  if (showWar) return <Suspense fallback={<p>Opening War Room…</p>}><WarRoomNative
-    league={props.league} mine={props.franchise} port={props.port}
-    leave={node => { if (node === 'pulse') setPulse(true);
-      else { setWar(false); if (node === 'hq') setHQ(true); } }}
-    /></Suspense>;
-  if (showHQ) return <Suspense fallback={<p>Opening your franchise…</p>}>
-    <NativeFranchiseHQ key={`${props.league}:${props.franchise}`} league={props.league}
-      mine={props.franchise} name={props.name} port={props.port}
-      leave={node => { if (node === 'pulse') setPulse(true);
-        else { setHQ(false); if (node === 'war') setWar(true); } }} />
-  </Suspense>;
-  return <><WarRoomAct onAction={() => setPulse(true)}>League Pulse</WarRoomAct>
-    <WarRoomAct onAction={() => setWar(true)}>War Room</WarRoomAct>
-    {commissioner && <WarRoomAct onAction={() => setControl(true)}>Control Room</WarRoomAct>}
-    <HostedWorkRoom {...props} /></>;
+  const place = `${props.league}:${props.franchise}:${props.role}`;
+  const initialRoute: ThinScreenRoute = entryRoute(props.entry, props.hq,
+    !props.franchise && commissioner);
+  const [route, setRoute] = useRemembered<ThinScreenRoute>(`${place}:thinRoute`, initialRoute,
+    props.entry !== undefined);
+  const [playerSources, setPlayerSources] = useState<Record<string, PlayerCandidate[]>>({});
+  const [inspectPlayer, setInspectPlayer] = useState<PlayerCandidate>();
+  const publishPlayers = useCallback((source: string, players: PlayerCandidate[]) => {
+    setPlayerSources(previous => ({ ...previous, [source]: players }));
+  }, []);
+  const players = useMemo(() => {
+    const byId = new Map<string, PlayerCandidate>();
+    Object.values(playerSources).flat().forEach(player => byId.set(player.id, player));
+    return [...byId.values()];
+  }, [playerSources]);
+  const navigate = (next: ThinScreenRoute) => { setRoute(next); setInspectPlayer(undefined); };
+  const openPlayer = (player: PlayerCandidate) => {
+    setInspectPlayer(player);
+    setRoute({ node: 'war', workspace: 'valuations-and-pool' });
+  };
+  const publishHomePlayers = useCallback((found: PlayerCandidate[]) => publishPlayers('home', found),
+    [publishPlayers]);
+  const publishHQPlayers = useCallback((found: PlayerCandidate[]) => publishPlayers('hq', found),
+    [publishPlayers]);
+  const publishWarPlayers = useCallback((found: PlayerCandidate[]) => publishPlayers('war', found),
+    [publishPlayers]);
+  const publishPulsePlayers = useCallback((found: PlayerCandidate[]) => publishPlayers('pulse', found),
+    [publishPlayers]);
+  const openNode = (node?: Node) => navigate({ node: node ?? 'home',
+    workspace: node === 'hq' ? 'lineup-and-roster' : node === 'war' ? 'trade-desk' :
+      node === 'pulse' ? 'now' : node === 'control' ? 'league' : 'overview' });
+  const screen = !props.franchise && commissioner && route.node !== 'war' ? 'commissioner'
+    : route.node === 'control' && !commissioner ? 'home' : route.node;
+  const page = screen === 'commissioner' || screen === 'control'
+    ? <HostedCommissionerLeague league={props.league} port={props.port} embedded
+        view={route.node === 'control' ? 'control' : 'home'}
+        pulseTab={route.node === 'pulse' ? route.workspace as 'now' | 'race' : 'now'}
+        navigatePulse={workspace => setRoute({ node: 'pulse', workspace })}
+        leave={openNode} onPlayer={openPlayer} onPlayers={publishPulsePlayers} />
+    : screen === 'hq' ? <Suspense fallback={<p>Opening your franchise…</p>}>
+        <NativeFranchiseHQ key={`${props.league}:${props.franchise}`} league={props.league}
+          mine={props.franchise} name={props.name} port={props.port} embedded
+          tab={route.workspace as HQTab} navigate={workspace => setRoute({ node: 'hq', workspace })}
+          leave={openNode} onPlayers={publishHQPlayers} />
+      </Suspense>
+    : screen === 'war' ? <Suspense fallback={<p>Opening War Room…</p>}>
+        <WarRoomNative league={props.league} mine={props.franchise} port={props.port} embedded
+          owner={Boolean(props.franchise)} workspace={route.workspace}
+          navigateWorkspace={workspace => setRoute({ node: 'war', workspace })}
+          inspectPlayer={inspectPlayer} onPlayers={publishWarPlayers} leave={openNode} />
+      </Suspense>
+    : screen === 'pulse' ? <Suspense fallback={<p>Opening League Pulse…</p>}>
+        <NativeLeaguePulse league={props.league} mine={props.franchise} port={props.port} serverTime
+          embedded tab={route.workspace === 'race' ? 'race' : 'now'}
+          navigate={workspace => setRoute({ node: 'pulse', workspace })} leave={openNode}
+          commissioner={commissioner} onPlayer={openPlayer} onPlayers={publishPulsePlayers} />
+      </Suspense>
+    : <HostedWorkRoom {...props} onPlayers={publishHomePlayers} onPlayer={openPlayer} />;
+  return <ThinLeagueShell leagueName={props.name} route={route} commissioner={commissioner}
+    players={players} navigate={navigate} openPlayer={openPlayer} onHome={props.onHome}>
+    {page}
+  </ThinLeagueShell>;
 }
 function HostedWorkRoom({
   league,
@@ -87,16 +128,23 @@ function HostedWorkRoom({
   name,
   role,
   port,
+  onPlayers,
+  onPlayer,
+  entry,
 }: {
   league: string;
   franchise: string;
   name: string;
   role: string;
   port?: (request: NativeRequest, football?: string) => Promise<HostedResponse>;
+  onPlayers?: (players: PlayerCandidate[]) => void;
+  onPlayer?: (player: PlayerCandidate) => void;
+  entry?: HostedEntry;
 }) {
   const room = useMemo(() => createHostedRoom(league, franchise, port), [league, franchise, port]);
   const state = room.use();
-  const [tab, setTab] = useRemembered<Tab>(`${league}:${franchise}:${role}:tab`, 'lineup');
+  const [tab, setTab] = useRemembered<Tab>(`${league}:${franchise}:${role}:tab`, entryTab(entry),
+    entry !== undefined);
   const [week, setWeek] = useState(1);
   const [starters, setStarters] = useState<string[]>([]);
   const [player, setPlayer] = useState('');
@@ -111,6 +159,14 @@ function HostedWorkRoom({
     setStarters(state.reading?.lineup.starters.map((p) => p.player) || []);
   }, [state.reading]);
   const reading = state.reading;
+  useEffect(() => {
+    if (!reading) return;
+    onPlayers?.([
+      ...reading.roster.players.map(player => ({ id: player.id, name: player.name })),
+      ...reading.roster.market.map(player => ({ id: player.id, name: player.name,
+        position: player.position })),
+    ]);
+  }, [onPlayers, reading]);
   const disabled = !room.canChange();
   const command = (
     id: 'commish.lineup.set' | 'roster.reserve' | 'draft.timer' | 'draft.skip',
@@ -255,8 +311,7 @@ function HostedWorkRoom({
       <h2>{name || 'Your franchise'}</h2>
       <p>Your league server</p>
       <p>
-        MFL is reference only. Refreshing MFL cannot replace this league’s roster, rules
-        or recorded changes.
+        MFL is reference only. Refreshing MFL cannot replace this league’s roster, rules or recorded changes.
       </p>
       <p>{reading?.label || 'Checking where your league is managed…'}</p>
       <p role="status">
@@ -357,7 +412,9 @@ function HostedWorkRoom({
           <ul>
             {own.map((p) => (
               <li key={p.id}>
-                <strong>{p.name}</strong> · {bucketNames[p.bucket]}
+                <WarRoomAct className="hosted-player-name" onAction={() => onPlayer?.({
+                  id: p.id, name: p.name,
+                })}>{p.name}</WarRoomAct> · {bucketNames[p.bucket]}
                 <small>{reserves?.players.find((v) => v.player === p.id)?.words}</small>
               </li>
             ))}

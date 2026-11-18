@@ -1,7 +1,7 @@
 import { commands } from '../commands/registry';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
-import { all, button, click, control, mount, render, settle, type, unmount }
+import { all, button, click, control, flush, mount, render, settle, type, unmount }
   from '../commissioner/commissionerDom';
 import NativeAccount from './NativeAccount';
 import { nativeAction, nativeStartup, parseNativeView, type NativeView } from './nativeApi';
@@ -11,12 +11,14 @@ import { nativeAction, nativeStartup, parseNativeView, type NativeView } from '.
 const rooms = vi.hoisted(() => [] as string[]);
 vi.mock('../commissioner/HostedLeague', async () => {
   const { useEffect } = await import('react');
-  return { default: ({ franchise }: { franchise: string }) => {
+  const { HQAct } = await import('../shell/HQAct');
+  return { default: ({ franchise, name, onHome }: { franchise: string; name: string;
+    onHome?: () => void }) => {
     useEffect(() => {
       rooms.push(`open ${franchise}`);
       return () => { rooms.push(`close ${franchise}`); };
     }, [franchise]);
-    return null;
+    return <><HQAct onAction={onHome}>Home</HQAct><p>Hosted {name}</p></>;
   } };
 });
 
@@ -27,6 +29,10 @@ function reply(value: NativeView) {
   return { ok: true, headers: new Headers({ 'Content-Type': 'application/json' }), json: async () => value };
 }
 afterEach(async () => { await unmount(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+const clickWhenReady = async (host: Awaited<ReturnType<typeof mount>>, label: string) => {
+  const found = await vi.waitFor(() => button(host, label), { timeout: 5_000 });
+  await click(found); await settle();
+};
 const submit = async (host: Awaited<ReturnType<typeof mount>>) => {
   await act(async () => {
     const form = all(host, 'form')[0];
@@ -87,7 +93,8 @@ describe('native desktop account access', () => {
     expect(host.textContent).toContain('Sign in again');
   });
 
-  it('opens the league straight after signing in and hides the sign-in form while it is open', async () => {
+  // Lazy Home/league modules can resolve slowly when the full Vitest pool is under load.
+  it('sign-in shows Home before the league and hides the form while open', async () => {
     rooms.length = 0;
     const fetcher = vi.fn()
       .mockResolvedValueOnce(reply({ ...initial, message: 'Signed in.' }))
@@ -99,11 +106,21 @@ describe('native desktop account access', () => {
     await type(control(host, 'Username'), 'commissioner');
     await type(control(host, 'Password'), 'private-password');
     await submit(host);
-    await settle();
-    expect(fetcher.mock.calls.map(call => JSON.parse(call[1].body).action)).toEqual(['login', 'enter']);
-    expect(rooms).toEqual(['open franchise.01']);
+    await vi.waitFor(() => expect(button(host, 'Open League')).toBeTruthy(), { timeout: 10_000 });
+    expect(fetcher.mock.calls.filter(call => call[0] === '/desktop/native')
+      .map(call => JSON.parse(call[1].body).action)).toEqual(['login', 'enter']);
+    expect(rooms).toEqual([]);
     expect(all(host, 'form')).toHaveLength(0);
     expect(button(host, 'League')).toBeTruthy();
+    expect(host.textContent).toContain('Home');
+    await clickWhenReady(host, 'Open League');
+    expect(rooms).toEqual(['open franchise.01']);
+    await vi.waitFor(() => expect(host.textContent).toContain('Hosted My club'), { timeout: 10_000 });
+    await click(button(host, 'Home')); await settle();
+    expect(rooms).toEqual(['open franchise.01', 'close franchise.01']);
+    expect(host.textContent).toContain('YOUR LEAGUES');
+    await clickWhenReady(host, 'Open League'); await settle();
+    expect(rooms).toEqual(['open franchise.01', 'close franchise.01', 'open franchise.01']);
     expect(host.textContent).not.toContain('Join with a code');
     expect(host.textContent).not.toContain('No MFL account or key needed');
     // The Authenticator tab shows its own form; the league stays mounted but hidden, and its
@@ -111,7 +128,7 @@ describe('native desktop account access', () => {
     await click(button(host, 'Authenticator'));
     expect(all(host, 'form')).toHaveLength(1);
     expect(all(host, 'div').some(d => d.props().hidden === true)).toBe(true);
-    expect(rooms).toEqual(['open franchise.01']);
+    expect(rooms).toEqual(['open franchise.01', 'close franchise.01', 'open franchise.01']);
     expect(host.textContent).toContain('Seat line.');
     await click(button(host, 'League'));
     expect(all(host, 'form')).toHaveLength(0);
@@ -120,7 +137,7 @@ describe('native desktop account access', () => {
     await click(button(host, 'Open my franchise')); await settle();
     expect(all(host, 'form')).toHaveLength(1);
     expect(host.textContent).toContain('Sign in again');
-  });
+  }, 15_000);
 
   it('makes expired invitations and lost factors recoverable without promising a seat reset', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false,
@@ -236,11 +253,13 @@ it.each(['enter', 'forget', 'revoke-device', 'revoke-all'] as const)(
     vi.stubGlobal('fetch', (url: string, init?: RequestInit) => url === '/desktop/changes'
       ? new Promise(() => {}) : fetcher(url, init));
     // Startup never carries a franchise (Go's status action only sets the message).
-    // A saved sign-in opens the league by itself at startup.
+    // A saved sign-in is admitted first, then lands on Home until a league is opened.
     const host = await mount(render(NativeAccount, { initial: { ...initial, message: 'Saved.' } }));
-    await settle();
-    fetcher.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+    await settle(); await flush(); await settle();
+    expect(rooms).toEqual([]);
+    await clickWhenReady(host, 'Open League');
     expect(rooms).toEqual(['open franchise.01']);
+    fetcher.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
     const label = { enter: 'Open my franchise', forget: 'Forget saved sign-in',
       'revoke-device': 'Revoke this device', 'revoke-all': 'Revoke all devices' }[action];
     await click(button(host, label)); await settle();

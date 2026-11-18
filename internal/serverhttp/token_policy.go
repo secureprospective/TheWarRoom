@@ -90,23 +90,8 @@ func (p TokenPolicy) CheckTokenAccess(ctx context.Context, account accounts.Acco
 		}
 		return nil
 	}
-	if access.Operation == "draft.queue.set" {
-		return checkDraftQueueTokenSeat(records, string(principal), franchise)
-	}
 	if _, err := commissioner.AuthorizeRecords(access.Raw, string(principal), records); err != nil {
 		return fmt.Errorf("token command permission: %w", err)
-	}
-	return nil
-}
-
-func checkDraftQueueTokenSeat(records []commissioner.Record, principal, franchise string) error {
-	state, err := commissioner.GovernanceState(records)
-	if err != nil {
-		return fmt.Errorf("token seats: %w", err)
-	}
-	seat, ok := state.Franchise(governance.FranchiseID(franchise))
-	if !ok || seat.Seat != governance.Principal(commissioner.PrincipalFor(records, principal)) {
-		return fmt.Errorf("agent draft queues are limited to the issuer's own franchise")
 	}
 	return nil
 }
@@ -122,7 +107,7 @@ func (a agentAdmission) Admit(ctx context.Context, access commissioner.Access) e
 	if err := a.token.Admit(ctx, access); err != nil {
 		return fmt.Errorf("agent admission: %w", err)
 	}
-	if access.Mode != "execute" || access.Operation == commissioner.DraftPick || access.Operation == "draft.queue.set" || privateOwnerPersonalOperation(access.Operation) {
+	if access.Mode != "execute" || access.Operation == commissioner.DraftPick || privateOwnerPersonalOperation(access.Operation) {
 		return nil
 	}
 	definition, err := access.Raw.EffectiveDefinition()
@@ -207,8 +192,8 @@ func tokenSeatScope(records []commissioner.Record, principal string, scope accou
 			return fmt.Errorf("take a vacant franchise's caretaker seat before delegating lineups or picks")
 		}
 		if (commissioner.OwnerBidAction(command) != "" || commissioner.OwnerWaiverAction(command) != "" ||
-			commissioner.OwnerTradeAction(command) != "" || privateOwnerPersonalOperation(command) ||
-			command == "draft.queue.read" || command == "draft.queue.set") && seat.Seat != p {
+			commissioner.OwnerTradeAction(command) != "" || command == commissioner.ContractDecisionSet ||
+			privateOwnerPersonalOperation(command)) && seat.Seat != p {
 			return fmt.Errorf("delegate owner actions only for your own franchise")
 		}
 	}

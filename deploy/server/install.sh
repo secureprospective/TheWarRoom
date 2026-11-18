@@ -11,6 +11,10 @@ cd /root/twr
 [ ! -e /etc/twr-release/root.json ] && [ ! -L /etc/twr-release/root.json ] || {
   echo 'A release root is already pinned; refusing to replace it.' >&2; exit 1;
 }
+# TWR_FIRST_LOAD=1 installs everything but leaves twr-server stopped, unscheduled and with an empty
+# state directory, so the first league load runs before the server ever starts (README.md).
+first_load=${TWR_FIRST_LOAD:-0}
+case $first_load in 0 | 1) ;; *) echo 'TWR_FIRST_LOAD must be 0 or 1.' >&2; exit 1 ;; esac
 [ -f root.json ] || { echo 'Reinstall from a verified bundle containing root.json.' >&2; exit 1; }
 install -d -m 755 -o root -g root /etc/twr-release
 install -m 644 -o root -g root root.json /etc/twr-release/root.json
@@ -49,7 +53,7 @@ chmod 600 /etc/twr/origin.key /etc/twr/authenticator.key
 chgrp twr /etc/twr/origin.pem
 chmod 640 /etc/twr/origin.pem
 install -m 640 -o root -g twr-tunnel /etc/twr/origin.pem /etc/cloudflared/origin.pem
-install -m 600 -o twr -g twr /dev/null /var/lib/twr/server.db
+[ "$first_load" = 1 ] || install -m 600 -o twr -g twr /dev/null /var/lib/twr/server.db
 # An unprivileged CT shares the host's clock. Never run a fake NTP client with -x:
 # it cannot synchronize the kernel state that hosted admission checks.
 install -m 755 backup-setup.sh /usr/local/libexec/twr-backup-setup
@@ -61,6 +65,20 @@ install -m 755 delete-league.sh /usr/local/libexec/twr-delete-league
 install -m 755 move-league.sh /usr/local/libexec/twr-move-league
 install -m 755 receive-league.sh /usr/local/libexec/twr-receive-league
 install -m 755 status.sh /usr/local/libexec/twr-status
+if [ "$first_load" = 1 ]; then
+  cat <<'NEXT'
+First-load install: twr-server is installed but stopped and not scheduled; /var/lib/twr is empty.
+Load the league before anything starts the server (copy the desktop history.db and the commissioner
+file into owner-only /root/seed first):
+  twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db \
+    -mfl-league <MFL league number> -football-pin /etc/twr/football.sha256 < /root/seed/commissioner.json
+  # league-load assigns ownership to each path it creates; no chown is needed.
+  rc-update add twr-server default
+  rc-service twr-server start
+Then complete the R2 backup setup in BACKUPS.md and check twr-status.
+NEXT
+  exit 0
+fi
 rc-update add twr-server default
 # No SSH, HTTP admin listener or public metrics service is installed. The status
 # dashboard is a console command reading an owner-only socket (CHECKLIST.md).

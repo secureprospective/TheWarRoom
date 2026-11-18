@@ -1,4 +1,4 @@
-import { array, integer, object, text } from '../data/parseValues';
+import { array, id, integer, object, text, timestamp } from '../data/parseValues';
 
 const strings = (v: unknown) => array(v, 'Explanations', text);
 export function parseHostedBids(v: unknown) {
@@ -57,6 +57,7 @@ export function parseHostedBids(v: unknown) {
         name: text(p.name, 'Name'),
         words: text(p.modeWords, 'Privacy'),
         closes: text(p.closes, 'Closes'),
+        closesAt: p.closesAt == null ? undefined : timestamp(p.closesAt, 'Bid close'),
         own: bid(p.yourBid),
         leader: bid(p.leader),
       };
@@ -153,6 +154,34 @@ export function parseHostedTrades(v: unknown) {
         'overrides',
         'expires',
       ]);
+      const assets = array(t.assets, 'Trade assets', (v) => {
+        const a = object(v, 'Asset', ['from', 'to', 'player', 'season', 'round', 'original']);
+        const from = text(a.from, 'From');
+        const to = text(a.to, 'To');
+        const player = a.player === undefined ? '' : id(a.player, 'Player', true);
+        if (player) {
+          if (a.season !== undefined || a.round !== undefined || a.original !== undefined)
+            throw new Error('Trade asset mixes a player and a pick');
+          return { from, to, token: player };
+        }
+        return { from, to, token: `pick:${integer(a.season, 'Pick season', 1)}:${
+          integer(a.round, 'Pick round', 1)}:${text(a.original, 'Pick origin')}` };
+      });
+      const details = array(t.assetDetails, 'Offered assets', (v) => {
+        const a = object(v, 'Asset', [
+          'fromTeam',
+          'toTeam',
+          'label',
+          'contract',
+          'yearlySalaryCents',
+          'contractEndsInSeason',
+        ]);
+        const contract = a.contract ? ` · ${text(a.contract, 'Contract')}` : '';
+        return { from: text(a.fromTeam, 'From'), to: text(a.toTeam, 'To'),
+          words: `${text(a.label, 'Asset')}: ${text(a.fromTeam, 'From')} → ${
+            text(a.toTeam, 'To')}${contract}` };
+      });
+      if (assets.length !== details.length) throw new Error('Trade assets and descriptions do not match');
       return {
         id: text(t.id, 'Trade'),
         status: text(t.status, 'Trade status'),
@@ -161,31 +190,12 @@ export function parseHostedTrades(v: unknown) {
         accepted: strings(t.accepted),
         offeredAt: text(t.offeredAt, 'Offered'),
         expiresAt: text(t.expiresAt, 'Expires'),
-        teams: array(t.assets, 'Trade assets', (v) => {
-          const a = object(v, 'Asset', ['from', 'to', 'player', 'season', 'round', 'original']);
-          return [text(a.from, 'From'), text(a.to, 'To')];
-        }).flatMap(([from, to], i) => {
-          const d = object(array(t.assetDetails, 'Offered assets', (v) => v)[i], 'Asset', [
-            'fromTeam', 'toTeam', 'label', 'contract', 'yearlySalaryCents', 'contractEndsInSeason']);
-          return [[from, text(d.fromTeam, 'From')], [to, text(d.toTeam, 'To')]] as [string, string][];
-        }),
+        assets,
+        teams: assets.flatMap((asset, i) => [[asset.from, details[i].from],
+          [asset.to, details[i].to]] as [string, string][]),
         words: text(t.words, 'Trade status'),
         expires: text(t.expires, 'Expiry'),
-        details: array(t.assetDetails, 'Offered assets', (v) => {
-          const a = object(v, 'Asset', [
-            'fromTeam',
-            'toTeam',
-            'label',
-            'contract',
-            'yearlySalaryCents',
-            'contractEndsInSeason',
-          ]);
-          const contract = a.contract ? ` · ${text(a.contract, 'Contract')}` : '';
-          return (
-            `${text(a.label, 'Asset')}: ${text(a.fromTeam, 'From')} → ` +
-            `${text(a.toTeam, 'To')}${contract}`
-          );
-        }),
+        details: details.map(asset => asset.words),
         reasons: ['votes', 'recusals', 'appeals', 'overrides'].flatMap((key) =>
           array(t[key] ?? [], key, (v) => {
             const a = object(v, 'Decision', ['who', 'decision', 'at', 'reason']);

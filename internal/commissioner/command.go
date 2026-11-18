@@ -82,6 +82,8 @@ func DefinitionFor(command string) (Definition, error) {
 	switch command {
 	case TradeOffer, TradeAccept, TradeDecline, TradeWithdraw, TradeRecuse, DraftStart, DraftPick, TitleSet:
 		return Definition{Gravity: "G1"}, nil
+	case ContractDecisionSet:
+		return Definition{Gravity: "G3"}, nil
 	case DraftSkip, DraftAssign, DraftInsert, DraftChange, DraftTimer, DraftRevert,
 		DraftStartupOpen, ReserveException, Create, Revert, NativeSeed, Cutover, SeasonRollover, CalendarException,
 		ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear,
@@ -109,42 +111,44 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
-	OLineOutcome   *OLineOutcome       `json:"olineOutcome,omitempty"`
-	Correction     *RawCorrection      `json:"correction,omitempty"`
-	Trade          *RawTradeArgs       `json:"trade,omitempty"`
-	TradeOutcome   *TradeState         `json:"tradeOutcome,omitempty"`
-	Draft          *RawDraftArgs       `json:"draft,omitempty"`
-	Waiver         *RawWaiverArgs      `json:"waiver,omitempty"`
-	WaiverOutcome  *WaiverOutcome      `json:"waiverOutcome,omitempty"`
-	Bid            *RawBidArgs         `json:"bid,omitempty"`
-	BidOutcome     *BidOutcome         `json:"bidOutcome,omitempty"`
-	DraftOutcome   *DraftOutcome       `json:"draftOutcome,omitempty"`
-	Name           string              `json:"name,omitempty"`
-	Entry          string              `json:"entry,omitempty"`
-	Franchises     []string            `json:"franchises,omitempty"`
-	People         *RawPeople          `json:"people,omitempty"`
-	Note           *RawNote            `json:"note,omitempty"`
-	Field          string              `json:"field,omitempty"`
-	Value          json.RawMessage     `json:"value,omitempty"`
-	Source         string              `json:"source,omitempty"`
-	Preset         string              `json:"preset,omitempty"`
-	FranchiseCount int                 `json:"franchiseCount,omitempty"`
-	Seed           []SeedValue         `json:"seed,omitempty"`
-	Native         *RawNativeSnapshot  `json:"native,omitempty"`
-	Exception      *RawWindowException `json:"exception,omitempty"`
-	Schedule       *RawScheduleArgs    `json:"schedule,omitempty"`
-	Window         *RawWindowArgs      `json:"window,omitempty"`
-	Override       *RawNativeOverride  `json:"override,omitempty"`
-	Score          *RawScoreChange     `json:"score,omitempty"`
-	Standings      *RawStandingsChange `json:"standings,omitempty"`
-	Stat           *RawStatChange      `json:"stat,omitempty"`
-	Lineup         *RawLineupChange    `json:"lineup,omitempty"`
-	Rollover       *RawRolloverArgs    `json:"rollover,omitempty"`
-	Bracket        *RawBracketChange   `json:"bracket,omitempty"`
-	Title          *RawTitleChange     `json:"title,omitempty"`
-	Link           *RawHistoryLink     `json:"link,omitempty"`
-	Season         int                 `json:"season,omitempty"`
-	ContractAction *RawContractAction  `json:"contractAction,omitempty"`
+	OLineOutcome            *OLineOutcome            `json:"olineOutcome,omitempty"`
+	Correction              *RawCorrection           `json:"correction,omitempty"`
+	Trade                   *RawTradeArgs            `json:"trade,omitempty"`
+	TradeOutcome            *TradeState              `json:"tradeOutcome,omitempty"`
+	Draft                   *RawDraftArgs            `json:"draft,omitempty"`
+	Waiver                  *RawWaiverArgs           `json:"waiver,omitempty"`
+	WaiverOutcome           *WaiverOutcome           `json:"waiverOutcome,omitempty"`
+	Bid                     *RawBidArgs              `json:"bid,omitempty"`
+	BidOutcome              *BidOutcome              `json:"bidOutcome,omitempty"`
+	DraftOutcome            *DraftOutcome            `json:"draftOutcome,omitempty"`
+	Name                    string                   `json:"name,omitempty"`
+	Entry                   string                   `json:"entry,omitempty"`
+	Franchises              []string                 `json:"franchises,omitempty"`
+	People                  *RawPeople               `json:"people,omitempty"`
+	Note                    *RawNote                 `json:"note,omitempty"`
+	Field                   string                   `json:"field,omitempty"`
+	Value                   json.RawMessage          `json:"value,omitempty"`
+	Source                  string                   `json:"source,omitempty"`
+	Preset                  string                   `json:"preset,omitempty"`
+	FranchiseCount          int                      `json:"franchiseCount,omitempty"`
+	Seed                    []SeedValue              `json:"seed,omitempty"`
+	Native                  *RawNativeSnapshot       `json:"native,omitempty"`
+	Exception               *RawWindowException      `json:"exception,omitempty"`
+	Schedule                *RawScheduleArgs         `json:"schedule,omitempty"`
+	Window                  *RawWindowArgs           `json:"window,omitempty"`
+	Override                *RawNativeOverride       `json:"override,omitempty"`
+	Score                   *RawScoreChange          `json:"score,omitempty"`
+	Standings               *RawStandingsChange      `json:"standings,omitempty"`
+	Stat                    *RawStatChange           `json:"stat,omitempty"`
+	Lineup                  *RawLineupChange         `json:"lineup,omitempty"`
+	Rollover                *RawRolloverArgs         `json:"rollover,omitempty"`
+	Bracket                 *RawBracketChange        `json:"bracket,omitempty"`
+	Title                   *RawTitleChange          `json:"title,omitempty"`
+	Link                    *RawHistoryLink          `json:"link,omitempty"`
+	Season                  int                      `json:"season,omitempty"`
+	ContractAction          *RawContractAction       `json:"contractAction,omitempty"`
+	ContractDecision        *RawContractDecision     `json:"contractDecision,omitempty"`
+	ContractDecisionOutcome *ContractDecisionOutcome `json:"contractDecisionOutcome,omitempty"`
 }
 
 // validateDetails refuses arguments that belong to another command.
@@ -158,7 +162,8 @@ func (a RawArgs) validateDetails(command string) error {
 // decodedDetails says whether any argument that only a typed decoder may read is present here.
 func (a RawArgs) decodedDetails() bool {
 	return a.Correction != nil || a.scoringDetails() || a.marketDetails() || a.Schedule != nil || a.Window != nil || a.Override != nil ||
-		a.Draft != nil || a.DraftOutcome != nil || a.ContractAction != nil
+		a.Draft != nil || a.DraftOutcome != nil || a.ContractAction != nil || a.ContractDecision != nil ||
+		a.ContractDecisionOutcome != nil
 }
 
 // scoringDetails covers the arguments of the score, standings, statistics, lineup and playoff commands.
@@ -169,7 +174,8 @@ func (a RawArgs) scoringDetails() bool {
 
 // HasMarketDecision identifies app-owned decisions that no request may supply.
 func (a RawArgs) HasMarketDecision() bool {
-	return a.OLineOutcome != nil || a.WaiverOutcome != nil || a.BidOutcome != nil || a.TradeOutcome != nil
+	return a.OLineOutcome != nil || a.WaiverOutcome != nil || a.BidOutcome != nil || a.TradeOutcome != nil ||
+		a.ContractDecisionOutcome != nil
 }
 
 // marketDetails covers the arguments of the waiver and bid commands, including the decisions the app writes.
@@ -209,6 +215,8 @@ func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
 		err = a.validateBid(command)
 	case command == ContractActionSet:
 		err = a.validateContractAction()
+	case command == ContractDecisionSet:
+		err = a.validateContractDecision()
 	case playoffCommand(command):
 		err = a.validatePlayoff(command)
 	default:
@@ -425,6 +433,8 @@ func (r RawCommand) ownPlacement() (func() error, bool) {
 		return r.validateLineupPlacement, true
 	case ruleCommand(r.Command):
 		return r.validateRulePlacement, true
+	case r.Command == ContractDecisionSet:
+		return r.validateContractDecisionPlacement, true
 	}
 	return nil, false
 }
@@ -470,7 +480,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 		return raw, fmt.Errorf("send exactly one commissioner command")
 	}
 	if raw.Args.HasMarketDecision() {
-		return raw, fmt.Errorf("waiver and bid decisions are made by the app")
+		return raw, fmt.Errorf("waiver, bid, trade and contract decisions are made by the app")
 	}
 	if raw.Args.DraftOutcome != nil {
 		return raw, fmt.Errorf("draft contracts and releases are fixed by the app")
@@ -489,6 +499,7 @@ func (r RawCommand) Canonical(principal string) (string, error) {
 	r = r.defaultRosterTime()
 	r.Args.OLineOutcome = nil
 	r.Args.WaiverOutcome, r.Args.BidOutcome, r.Args.TradeOutcome, r.Args.DraftOutcome = nil, nil, nil, nil
+	r.Args.ContractDecisionOutcome = nil
 	definition, err := r.EffectiveDefinition()
 	if err != nil {
 		return "", err
