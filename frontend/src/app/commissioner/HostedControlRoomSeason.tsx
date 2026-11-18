@@ -32,7 +32,8 @@ function createSeasonQuery(league: string, port: HostedPort) {
           league: scope, season: directory.season,
         } }),
         port({ command: 'calendar.read', mode: 'read', arguments: { league: scope, season: directory.season,
-          franchise: '', action: 'lineup', localZone: Intl.DateTimeFormat().resolvedOptions().timeZone } }),
+          franchise: directory.seats[0]?.franchise ?? '', action: 'lineup',
+          localZone: Intl.DateTimeFormat().resolvedOptions().timeZone } }),
       ]);
       const schedule = object(scheduleResponse.data, 'Schedule',
         ['league', 'revision', 'draft', 'published']);
