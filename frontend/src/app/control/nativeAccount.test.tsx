@@ -11,12 +11,14 @@ import { nativeAction, nativeStartup, parseNativeView, type NativeView } from '.
 const rooms = vi.hoisted(() => [] as string[]);
 vi.mock('../commissioner/HostedLeague', async () => {
   const { useEffect } = await import('react');
-  return { default: ({ franchise, name }: { franchise: string; name: string }) => {
+  const { HQAct } = await import('../shell/HQAct');
+  return { default: ({ franchise, name, onHome }: { franchise: string; name: string;
+    onHome?: () => void }) => {
     useEffect(() => {
       rooms.push(`open ${franchise}`);
       return () => { rooms.push(`close ${franchise}`); };
     }, [franchise]);
-    return <p>Hosted {name}</p>;
+    return <><HQAct onAction={onHome}>Home</HQAct><p>Hosted {name}</p></>;
   } };
 });
 
@@ -114,10 +116,10 @@ describe('native desktop account access', () => {
     await clickWhenReady(host, 'Open League');
     expect(rooms).toEqual(['open franchise.01']);
     await vi.waitFor(() => expect(host.textContent).toContain('Hosted My club'), { timeout: 10_000 });
-    await click(button(host, '← Home')); await settle();
+    await click(button(host, 'Home')); await settle();
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01']);
-    expect(host.textContent).toContain('Home');
-    await clickWhenReady(host, 'Open League');
+    expect(host.textContent).toContain('YOUR LEAGUES');
+    await clickWhenReady(host, 'Open League'); await settle();
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01', 'open franchise.01']);
     expect(host.textContent).not.toContain('Join with a code');
     expect(host.textContent).not.toContain('No MFL account or key needed');

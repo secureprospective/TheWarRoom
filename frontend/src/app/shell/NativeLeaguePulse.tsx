@@ -125,6 +125,7 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
   const port = scope.port ?? hostedWorkflow;
   const tab: PulseTab = scope.tab ?? 'now';
   const [chosen, chooseWeek] = useState<number>();
+  const [inspectedFranchise, inspectFranchise] = useState(scope.mine);
   const [drawer, setDrawer] = useState<NowDrawer | 'sched' | RaceDrawer>();
   const [changes, setChanges] = useState(0);
   const pull = (key: NonNullable<typeof drawer>) => setDrawer(drawer === key ? undefined : key);
@@ -169,7 +170,7 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
   const body = <div className={`lp-v14${scope.embedded ? ' embedded' : ''}${modeClass}`}>
     <div className="shell">
       <main className="work">
-        {scope.serverTime && <nav className="ws-tabs" aria-label="League Pulse">
+        {scope.serverTime && !scope.embedded && <nav className="ws-tabs" aria-label="League Pulse">
           <PulseAct onAction={scope.back ?? (() => scope.leave())}>Back</PulseAct>
           <PulseAct role="tab" selected={tab === 'now'} onAction={() => scope.navigate?.('now')}>
             Now</PulseAct>
@@ -183,14 +184,16 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
           <PulseIdle words={league.error ? `League Pulse is unavailable · ${league.error}`
             : `Reading ${scope.league}…`} /></section>
         : tab === 'race' ? <PulseRace reading={reading} mine={scope.mine}
+            onFranchise={scope.serverTime ? inspectFranchise : undefined}
             drawer={drawer === 'tb' || drawer === 'bk' ? drawer : undefined}
-              onClose={() => setDrawer(undefined)} />
+            onClose={() => setDrawer(undefined)} />
         : <PulseNow reading={reading} mine={scope.mine} week={week} results={results}
             league={scope.league} port={port} live={live}
             viewer={scope.serverTime
               ? { mine: scope.mine, commissioner: scope.commissioner ?? false } : undefined}
             drawer={drawer === 'box' || drawer === 'corr' ? drawer : undefined}
-            onClose={() => setDrawer(undefined)} onChanges={setChanges} />}
+            onClose={() => setDrawer(undefined)} onChanges={setChanges} onPlayer={scope.onPlayer}
+            onPlayers={scope.onPlayers} />}
         {reading && tab === 'now' && <ScheduleDrawer open={drawer === 'sched'} reading={reading}
           mine={scope.mine} port={port} onClose={() => setDrawer(undefined)} />}
         <div className="tray">
@@ -216,9 +219,10 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
           <span className="src">reads only · nothing here changes the league</span>
         </div>
       </main>
-      {reading && scope.mine && <PulseInspector reading={reading} results={results.reading}
-        franchise={scope.mine}
-        mine={scope.mine} week={week} leave={scope.leave} />}
+      {reading && (scope.serverTime ? inspectedFranchise || scope.mine : scope.mine) &&
+        <PulseInspector reading={reading} results={results.reading}
+          franchise={scope.serverTime ? inspectedFranchise || scope.mine : scope.mine}
+          mine={scope.mine} week={week} leave={scope.leave} />}
     </div>
   </div>;
   return body;
