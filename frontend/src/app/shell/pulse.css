@@ -968,3 +968,70 @@
 .lp-v14 .ct.power tr.sel .tk i{background:var(--mine)}
 
 .lp-v14.hosted .shell{grid-template-columns:minmax(0,1fr) 260px}
+
+/* Phone Pulse is a narrow presentation of the same hosted reads. Desktop rules above stay intact. */
+@media (max-width: 699px) {
+  .lp-v14.embedded {
+    width: 100%; min-width: 0; min-height: 0; height: auto; overflow: visible;
+  }
+  .lp-v14.embedded .shell,
+  .lp-v14.hosted .shell { display: block; min-width: 0; height: auto; }
+  .lp-v14.embedded .work {
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto; min-width: 0; overflow: visible;
+  }
+  .lp-v14.embedded .ws-tabs { min-width: 0; }
+  .lp-v14.embedded .ws-tabs button { min-width: 44px; min-height: 44px; padding: 8px 12px; }
+  .lp-v14.embedded .sline {
+    grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 12px;
+  }
+  .lp-v14.embedded .wk { width: 100%; }
+  .lp-v14.embedded .wk button { min-width: 44px; min-height: 44px; }
+  .lp-v14.embedded .wk b { flex: 1; }
+  .lp-v14.embedded .slate { flex-wrap: wrap; gap: 6px 12px; min-width: 0; }
+  .lp-v14.embedded .fresh { text-align: left; overflow-wrap: anywhere; }
+  .lp-v14.embedded .mybox { justify-self: stretch; justify-content: space-between; gap: 6px; min-width: 0; }
+  .lp-v14.embedded .mybox .wpm { width: min(18vw, 70px); }
+  .lp-v14.embedded .ws.on,
+  .lp-v14.embedded .ws.cols.on { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: visible; }
+  .lp-v14.embedded .ws.cols > .pcol {
+    min-width: 0; min-height: auto; overflow: visible; border-right: 0; border-bottom: 2px solid var(--black);
+  }
+  .lp-v14.embedded #ws-live,
+  .lp-v14.embedded #ws-race { grid-template-columns: minmax(0, 1fr); }
+  .lp-v14.embedded #ws-live .pcol,
+  .lp-v14.embedded #ws-race .pcol { width: 100%; }
+  .lp-v14.embedded #ws-live .follow { overflow-x: auto; min-height: 48px; }
+  .lp-v14.embedded #ws-live .gh { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); padding: 10px 12px; }
+  .lp-v14.embedded #ws-live .gh .t { gap: 5px; font-size: 12px; }
+  .lp-v14.embedded #ws-live .gh .t b { font-size: 22px; }
+  .lp-v14.embedded #ws-live .gh .clk { padding: 0 6px; font-size: 11px; }
+  .lp-v14.embedded #ws-live .field { margin: 10px 12px 6px; }
+  .lp-v14.embedded #ws-live .dd { gap: 8px; padding: 6px 12px 10px; flex-wrap: wrap; }
+  .lp-v14.embedded #ws-live .dd .lp { flex: 1 1 100%; max-width: none; margin-left: 0; text-align: left; }
+  .lp-v14.embedded #ws-live .mr { grid-template-columns: minmax(0, 1fr) 38px 20px 38px minmax(0, 1fr); }
+  .lp-v14.embedded #ws-live .mr .chipc { display: none; }
+  .lp-v14.embedded #ws-live .mr .s { padding: 0 4px; font-size: 13px; }
+  .lp-v14.embedded #ws-live .mr .p { padding: 0 8px; }
+  .lp-v14.embedded #ws-live .mym .mh { grid-template-columns: minmax(0, 1fr) 38px 20px 38px minmax(0, 1fr); }
+  .lp-v14.embedded #ws-live .sp-row { grid-template-columns: 38px 3px 30px minmax(0, 1fr) 48px; gap: 6px; padding-right: 8px; }
+  .lp-v14.embedded .tray { flex-wrap: wrap; white-space: normal; gap: 8px; padding: 10px 12px; }
+  .lp-v14.embedded .tray .pulls { display: flex; flex-wrap: wrap; gap: 8px; }
+  .lp-v14.embedded .tray button { min-width: 44px; min-height: 44px; }
+  .lp-v14.embedded .tray .msg { flex: 1 1 100%; min-width: 0; margin-left: 0; white-space: normal; }
+  .lp-v14.embedded #ws-race .ch { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .lp-v14.embedded #ws-race .ch > div { flex-wrap: wrap; }
+  .lp-v14.embedded #ws-race .seg button { min-height: 44px; padding: 8px; }
+  .lp-v14.embedded #ws-race .stand { table-layout: fixed; font-size: 11px; }
+  .lp-v14.embedded #ws-race .stand th,
+  .lp-v14.embedded #ws-race .stand td { padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; }
+  .lp-v14.embedded #ws-race .stand th:nth-child(5),
+  .lp-v14.embedded #ws-race .stand td:nth-child(5),
+  .lp-v14.embedded #ws-race .stand th:nth-child(6),
+  .lp-v14.embedded #ws-race .stand td:nth-child(6) { display: none; }
+  .lp-v14.embedded #ws-race .tie { grid-template-columns: 1fr; gap: 4px; height: auto; padding: 10px 12px; }
+  .lp-v14.embedded #ws-race .tie .stk { justify-self: start; }
+  .lp-v14.embedded .grid-sched { min-width: max-content; }
+  .lp-v14.embedded .grid-sched div { min-width: 70px; }
+  .lp-v14.embedded .scroll { max-width: 100%; overflow-x: auto; }
+}
