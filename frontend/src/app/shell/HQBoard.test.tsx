@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { HQBoard, boardSlots, FormChart } from './HQBoard';
+import { HQBoard, boardSlots, PlayerFormBars } from './HQBoard';
 import { heldLineup, heldSnapshot } from '../data/lineupTestData';
-import { projections, totalProjection, formPoints, byeWeeks } from './hqPlayerData';
+import { projections, totalProjection, byeWeeks } from './hqPlayerData';
 import { unavailable } from './hqModel';
 import type { Board, Report } from '../reports/contract';
-import type { PlayerReading } from '../research/contract';
 
 function report(id: string): Report { return { id, title: 'Projected points · NFL week 5', status: 'ok',
   source: '', asOf: '', how: '', note: '', columns: ['Player', 'Points'], summary: [], link: null, rows: []
@@ -37,6 +36,16 @@ describe('HQ starter and bench board', () => {
       await click(row!);
       expect(selected).toHaveBeenCalledWith(id);
     } finally { await unmount(); }
+  });
+  it('renders per-player started-week points, never team outcomes, as HQ form bars', () => {
+    const html = renderToStaticMarkup(<PlayerFormBars points={[{ week: 4, points: 10 },
+      { week: 6, points: 0 }, { week: 7, points: -2.25 }]} />);
+    expect(html).toContain('Wk 4 · 10.0'); expect(html).toContain('Wk 6 · 0.0');
+    expect(html).toContain('Wk 7 · -2.3'); expect(html).toContain('avg 2.6');
+    expect(html).not.toContain('result-win');
+    const unavailableForm = renderToStaticMarkup(<PlayerFormBars points={[]}
+      error="results read offline" />);
+    expect(unavailableForm).toContain('results read offline');
   });
   it('renders saved starter and bench names, actual projections, and honest missing form/opponents', () => {
     const snapshot = heldSnapshot(); const reading = heldLineup(); const id = reading.starters[0].id;
@@ -72,15 +81,12 @@ describe('HQ starter and bench board', () => {
       settings={settings} values={new Map()} select={() => {}} />);
     expect(html).toContain('OFFENCE · 9'); expect(html).toContain('DEFENCE · 12');
   });
-  it('charts only held finished scores, retaining real zero and negative weeks', () => {
-    const research = { report: { rows: [{ cells: ['Form', 'W2: 0.00, W3: -2.25, W4: 15.50 · 4.42 PPG'] }] }
-      } as PlayerReading;
-    expect(formPoints(research)).toEqual([{ week: 2, points: 0 }, { week: 3, points: -2.25 }, { week: 4,
-      points: 15.5 }]);
-    const html = renderToStaticMarkup(<FormChart id="1" projection={10} facts={new Map([['1', { research,
-      error: '' }]])} />);
-    expect(html).toContain('Wk 3 · -2.3'); expect(html).toContain('3 held finished weeks');
-    expect(renderToStaticMarkup(<FormChart id="none" />)).toContain(unavailable);
+  it('charts only started weeks and compares them with the projection', () => {
+    const html = renderToStaticMarkup(<PlayerFormBars projection={10} points={[
+      { week: 2, points: 0 }, { week: 3, points: -2.25 }, { week: 4, points: 15.5 }]} />);
+    expect(html).toContain('Wk 3 · -2.3'); expect(html).toContain('3 started weeks');
+    expect(html).toContain('class="pj"');
+    expect(renderToStaticMarkup(<PlayerFormBars />)).toContain(unavailable);
   });
   it('maps bye week from the held roster report, not a team-name assumption', () => {
     const snapshot = heldSnapshot(); const player = snapshot.players.value[0]; const r = report('M-154');
@@ -132,15 +138,12 @@ it('renders inline taxi and IR from roster reads and reacts to capacity changes'
   expect(render(9)).toContain('1 of 9'); expect(render(9)).not.toContain('1 of 8');
 });
 
-it('renders five weekly bars, hatched bye, projection and average from the extended held read', () => {
-  const research = { report: { rows: Array.from({ length: 5 }, (_, i) => ({
-    cells: [`Form · Wk ${i + 4}`, i === 2 ? 'not held' : String(i * 2)],
-  })) } } as PlayerReading;
-  const html = renderToStaticMarkup(<FormChart id="0042" week={9} bye={6} projection={9}
-    facts={new Map([['0042', { research, error: '' }]])} />);
+it('renders the last five available started-week bars with projection and average', () => {
+  const points = Array.from({ length: 6 }, (_, i) => ({ week: i + 1, points: i * 2 }));
+  const html = renderToStaticMarkup(<PlayerFormBars points={points} projection={9} />);
   expect((html.match(/<i /g) ?? []).length).toBe(5);
-  expect(html).toContain('class="bye"'); expect(html).toContain('Wk 6 · bye');
-  expect(html).toContain('avg 4.0'); expect(html).toContain('class="pj"');
+  expect(html).not.toContain('Wk 1 ·'); expect(html).toContain('Wk 6 · 10.0');
+  expect(html).toContain('avg 6.0'); expect(html).toContain('class="pj"');
 });
 
 it('shows held roster salary and years instead of missing form in the app league contract column', () => {

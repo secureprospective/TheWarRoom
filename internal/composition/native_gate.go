@@ -24,31 +24,18 @@ type NativeOwnerAction struct {
 }
 
 // nativeOwnerActions is the registry. Each chunk that adds an owner action to the app-owned league adds
-// it here; native_gate_test.go holds every entry to the gate. The contract actions an owner takes under a
-// window are registered from the shared list of priced actions, so a new one cannot be priced without being
-// gated.
+// it here; native_gate_test.go holds every entry to the gate. Owner contract decisions use the same list as
+// the private HQ decision read, so each offered choice crosses this gate before execution.
 func nativeOwnerActions() []NativeOwnerAction {
 	registry := []NativeOwnerAction{lineupSetAction(), draftPickAction(), waiverAction(commissioner.RosterCut),
 		waiverAction(commissioner.WaiverClaim), bidAction(commissioner.BidPlace), bidAction(commissioner.BidRaise),
 		bidAction(commissioner.BidWithdraw), tradeAction(commissioner.TradeOffer), tradeAction(commissioner.TradeAccept),
 		tradeAction(commissioner.TradeDecline), tradeAction(commissioner.TradeWithdraw)}
-	for _, contract := range nativeapp.ContractOwnerActions() {
-		registry = append(registry, NativeOwnerAction{Name: contract.Name, Opens: contract.Opens,
-			Run: func(ctx context.Context, a *App, permit commissioner.Permit, _ json.RawMessage) (commissioner.Receipt, error) {
-				return commissioner.Receipt{}, a.startContractAction(ctx, permit, contract.Action)
-			}})
-	}
-
-	return registry
+	return append(registry, nativeapp.MapContractOwnerActions(contractAction)...)
 }
 
-// startContractAction is the first thing an owner's contract action does once the gate has said yes:
-// confirm the league has that action on. Choosing the contract and paying its price follow it, through the
-// same QuoteContract check the preview reads; until that is built the action records nothing.
-func (a *App) startContractAction(ctx context.Context, permit commissioner.Permit,
-	action nativecheck.ContractAction) error {
-	return nativeapp.StartContractAction(ctx, permit, action, a.leagueRecords, a.timeNow) //nolint:wrapcheck // Preserve the contract refusal.
-
+func contractAction(contract nativeapp.ContractOwnerAction) NativeOwnerAction {
+	return NativeOwnerAction{Name: contract.Name, Opens: contract.Opens, Run: recordOwnerAction(nativeapp.ContractFamily(contract.Action))}
 }
 
 // ownerZone is where the owner reads times: the desktop's own zone unless a test pins another.

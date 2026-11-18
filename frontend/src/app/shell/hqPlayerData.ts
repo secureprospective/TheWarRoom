@@ -75,17 +75,6 @@ export function researchFact(reading: PlayerReading | undefined, label: string):
   const fact = reading?.report.rows.find(r => r.cells[0] === label)?.cells[1];
   return !fact || /^(?:not held|None of|Cannot price)/i.test(fact) ? undefined : fact;
 }
-export function formPoints(reading?: PlayerReading): { week: number; points: number }[] {
-  const weekly = reading?.report.rows.flatMap(r => {
-    const match = /^Form · Wk (\d+)$/.exec(r.cells[0]);
-    return match && /^-?\d+(?:\.\d+)?$/.test(r.cells[1])
-      ? [{ week: Number(match[1]), points: Number(r.cells[1]) }] : [];
-  }) ?? [];
-  if (weekly.length) return weekly;
-  const fact = researchFact(reading, 'Form') ?? '';
-  return Array.from(fact.matchAll(/W(\d+): (-?\d+(?:\.\d+)?)/g), m => ({ week: Number(m[1]), points:
-    Number(m[2]) }));
-}
 export function projections(snapshot: Snapshot, board?: Board, week?: number): Map<string, number> {
   const result = new Map<string, number>();
   const projection = board?.reports.find(r => r.id === 'M-046');

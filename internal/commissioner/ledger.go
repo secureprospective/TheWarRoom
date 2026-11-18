@@ -240,6 +240,8 @@ func entryLabelTarget(records []Record, i int, target Record, names *assetNames)
 	switch r.Command.Command {
 	case RulesSet, ContractActionSet:
 		return ruleLabel(r, records[:i])
+	case ContractDecisionSet:
+		return "Recorded a private owner contract decision", nil
 	case DraftRevert:
 		return draftRestoreLabel(records, i), nil
 	case Revert:
@@ -294,6 +296,8 @@ func recordLabel(r Record) string {
 		return label
 	}
 	switch r.Command.Command {
+	case ContractDecisionSet:
+		return "Recorded a private owner contract decision"
 	case ContractEdit, CapAdjust, CapRelief, ReserveException:
 		return overrideLabel(r)
 	case SeasonRollover:

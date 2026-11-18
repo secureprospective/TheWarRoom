@@ -39,7 +39,8 @@ func ViewRevision(ctx context.Context, records []Record, local int64) int64 {
 
 // RecipientRevision is an opaque, JavaScript-safe equality token, not an event count.
 // Readings share a recipient's visible-ledger scope so any of them can supply Expected.
-// Only visible entry identities enter the digest: canonical bodies contain global revisions.
+// Visible entry identities and private entries with public projections enter the digest; canonical
+// bodies contain global revisions.
 func RecipientRevision(records []Record, principal string, at time.Time) int64 {
 	if len(records) == 0 {
 		return 0
@@ -55,7 +56,10 @@ func RecipientRevision(records []Record, principal string, at time.Time) int64 {
 	for _, r := range records {
 		target := records[roots[r.Receipt.Entry]]
 		own := SamePrincipal(records, target.Principal, principal) || SamePrincipal(records, r.Principal, principal)
-		if own || ledgerEntryVisible(r, target, records, principal, privileged) ||
+		// Private contract decisions immediately change the public contract projection. Keep their opaque
+		// identities in every recipient's concurrency token without making the private ledger body visible.
+		publicContractEffect := target.Command.Command == ContractDecisionSet
+		if own || ledgerEntryVisible(r, target, records, principal, privileged) || publicContractEffect ||
 			(open && privateBidRecord(r, records)) {
 			ids = append(ids, r.Receipt.Entry)
 		}

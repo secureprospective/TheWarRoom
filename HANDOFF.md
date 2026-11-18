@@ -1,13 +1,10 @@
 # Handoff
 
 - Baton: Bee, 2026-11-18.
-- State: Complete — PR #360 (`bundle/b4`) is open and CI is green. Thin Home-first rail and held-read player search are in place; HQ roster, War Room, and Pulse player names open existing inspectors. Pulse Race franchise names use the existing franchise inspector. Local mode remains frozen.
-- Source trace: thin entry is `NativeStartup` → `NativeAccount` → hosted league views. HQ/War Room already have their inspectors; Pulse is thin. Existing `ShellRail` dispatches local commands, so a shared presentational rail extraction must preserve local behavior.
-- Next: review and merge PR #360. League-name search is skipped for alpha.
-- Waiting: no feature blocker. `tidy-check.sh` found detached fleet lanes `pulse-b5fix`, `pulse-b5league`, `pulse-b5people`, `pulse-b5picks`, `pulse-b5server`, and `pulse-b2docket`; they are unrelated/in flight and were left running.
-- Checks: `pnpm exec tsc --noEmit`, full `npx vitest run` (124 files/915 tests), and `make lint` pass. First push gate caught long-line limits and an async HQ assertion; fixed. Pre-push verify and all PR CI checks pass. Tidy only named unrelated live lanes above.
-- Previous state: b0load built per head-brain ruling 11-18. `league-load` creates an empty `server.db` when `-db` is absent and its directory is empty (`prepareFirstLoad`); otherwise existing checks. `install.sh`/`proxmox.sh` take opt-in `TWR_FIRST_LOAD=1`: server installed, stopped, unscheduled, empty `/var/lib/twr`; next commands printed; proxmox readiness skips twr-server status in that mode. Default install unchanged.
-- Refactor: `loadLeague` split into mirror wiring + `loadHeld(heldLeague)` so the cmd test loads the Legacy test export without a mirror file.
-- Tests: `cmd/twr-server/league_first_load_test.go` (fresh dir → prepare → load 32 franchises; second load refused "already on this server"; non-empty dir refused, nothing created).
-- Not executed: installer first-load path (needs an Alpine CT; `test-alpine.sh` not run — no containers in this lane). `sh -n`/`bash -n` pass; shellcheck not installed on Bee.
-- Docs: deploy/server/README.md (new sequence, "does not yet provide" removed), cmd/twr-server/README.md.
+- State: Merge commit `02d883dd5` is pushed; PR #364 into `bundle/b4` is open. CI passed on branch head `a087a605e` (handoff-only follow-up).
+- Resolved: `hqReading.ts` retains player-search data while adding Bundle 1 form/contract-decision reads; `NativeFranchiseHQ.tsx` enables contract decisions and publishes search data; `HQBoard.test.tsx` keeps both interaction and form tests; `PulseRace.tsx` keeps clickable franchise names, recent form, and schedule failure states. `hostedPulse.test.tsx` uses thin-rail node/leaf helpers for its schedule cases. `HQPanels.tsx` keeps the decision panel and shared “DEADLINES” label, preserving Bundle 4's source-branch ratchet. HANDOFF kept from this branch.
+- Next: confirm checks on the current PR head, then Christopher reviews/merges PR #364 into `bundle/b4`.
+- Checks: TypeScript, all 936 Vitest tests, production build, `make verify`, push hook, and CI at `a087a605e` pass; full Go race suite and frontend security/bundle checks passed. The 600-second wrapper timed out during Go tests; rerunning with Make's 60-minute test timeout completed successfully. Recheck CI after any further push.
+- Previous b4 work: thin Home-first rail and held-read player search; HQ roster, War Room and Pulse player names open existing inspectors; Pulse Race franchise names open the franchise inspector. Local mode remains frozen.
+- Previous checks: TypeScript, full Vitest (124 files/915 tests), lint, pre-push verify, and PR CI passed before this merge.
+- Prior b0load work: `league-load` fresh-server initialization and opt-in `TWR_FIRST_LOAD=1`; installer first-load path remains untested (requires Alpine CT; no containers in that lane).

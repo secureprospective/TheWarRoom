@@ -14,6 +14,7 @@ func TestHostedPersonalPlayerCommandsAreStrictAndUncachedWorkflows(t *testing.T)
 		leagueservice.PlayerWatchRead:  json.RawMessage(`{"league":"native.test"}`),
 		leagueservice.PlayerWatchSet:   json.RawMessage(`{"league":"native.test","player":"0101","watched":true}`),
 		leagueservice.PlayerWatchOrder: json.RawMessage(`{"league":"native.test","player":"0101","with":"0102"}`),
+		leagueservice.WhatIfStackRead:  json.RawMessage(`{"league":"native.test","viewerZone":"UTC","moves":[]}`),
 	}
 	commands := map[string]Command{}
 	for _, command := range NativeCommands(Schema{}) {
@@ -25,11 +26,15 @@ func TestHostedPersonalPlayerCommandsAreStrictAndUncachedWorkflows(t *testing.T)
 			t.Fatalf("private command metadata missing or broad: %+v", command)
 		}
 		mode := Execute
-		if id == leagueservice.PlayerNoteRead || id == leagueservice.PlayerWatchRead {
+		if id == leagueservice.PlayerNoteRead || id == leagueservice.PlayerWatchRead || id == leagueservice.WhatIfStackRead {
 			mode = Read
 		}
 		if len(command.Modes) != 1 || command.Modes[0] != mode {
 			t.Fatalf("%s modes = %v", id, command.Modes)
+		}
+		if id == leagueservice.WhatIfStackRead &&
+			(command.Facts != "private-player-data" || command.Safeguards != "authenticated seated franchise; no request franchise; uncached private result") {
+			t.Fatalf("private what-if metadata is weak: %+v", command)
 		}
 		request := RawWorkflow{Version: "1", Command: id, Mode: string(mode), Arguments: args}
 		if err := request.Validate(); err != nil {

@@ -1,8 +1,18 @@
 import { useState } from 'react';
 import { heldSnapshot } from '../data/lineupTestData';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { all, button, click, flush, mount, unmount } from '../commissioner/commissionerDom';
-import type { HostedPort } from '../commissioner/hostedRoom';
+import {
+  all,
+  button,
+  click,
+  control,
+  flush,
+  mount,
+  type as setField,
+  unmount,
+} from '../commissioner/commissionerDom';
+import { HostedWorkflows } from '../commissioner/HostedWorkflows';
+import type { HostedPort, HostedReading, HostedRoom } from '../commissioner/hostedRoom';
 import type { WarRoomContext } from './warroomReads';
 
 const reading = vi.hoisted(() => ({
@@ -15,9 +25,12 @@ const reading = vi.hoisted(() => ({
       age: '26', points: '4', value: '3' },
     { id: '0004', name: 'Kicker need', position: 'K', minimum: '$1M', minimumCents: 100000000,
       age: '23', points: '2', value: '2' },
-  ], capRoom: 8500000000 as number | undefined, targets: [], wins: [] as {
+  ], capRoom: 8500000000 as number | undefined, targets: [], bids: [] as {
+    player: string; name: string; contract: string; state: string; kind: 'placed'; bidId: string;
+  }[], bidRevision: 4, wins: [] as {
     player: string; name: string; team: string; salaryCents: number; years: number; decidedAt: string;
-  }[], errors: [], integrate: false,
+  }[],
+  maxYears: 4, writable: true, football: 'pin', errors: [], integrate: false,
 }));
 vi.mock('./warroomReads', async () => {
   const React = await import('react');
@@ -44,7 +57,8 @@ vi.mock('./warroomReads', async () => {
 import { WarRoomMarket } from './WarRoomMarket';
 import { WarRoomInspector } from './WarRoomInspector';
 
-beforeEach(() => { reading.capRoom = 8500000000; reading.integrate = false; });
+beforeEach(() => { reading.capRoom = 8500000000; reading.integrate = false; reading.bids = [];
+  reading.bidRevision = 4; reading.maxYears = 4; reading.writable = true; reading.football = 'pin'; });
 afterEach(async () => { reading.integrate = false; await unmount(); vi.restoreAllMocks(); });
 
 const context = { mine: 'franchise.mine', snapshot: {} as WarRoomContext['snapshot'], week: 1,
@@ -86,6 +100,52 @@ it('filters hosted players by the header needs and server cap room', async () =>
   expect(host.textContent).toContain('Affordable only');
   expect(host.textContent).toContain('Kicker need');
   expect(host.textContent).not.toContain('Need but costly');
+});
+
+it('offers a raise, but no lower or withdrawal control, for a placed bid', async () => {
+  reading.bids = [{ player: '0001', name: 'Alpha', contract: '$2.00M · 2 years',
+    state: 'PLACED · PRIVATE', kind: 'placed', bidId: 'bid-1' }];
+  const preview = { question: 'Raise a private bid', target: { league: 'native.test',
+    name: 'Test league', version: 4 }, fields: [], affects: { readings: [], count: null,
+    words: 'Not known yet' }, blockers: [], safeguard: 'confirm' };
+  const port = vi.fn<HostedPort>(async () => ({ label: '', writable: true, football: 'pin',
+    data: preview }));
+  const hostedContext = { ...context, native: { ...context.native!, port } };
+  const host = await mount(<WarRoomMarket context={hostedContext} select={() => {}} />);
+  await flush();
+  expect(() => button(host, 'Withdraw Alpha bid')).toThrow('No button');
+  expect(() => button(host, 'Lower Alpha bid')).toThrow('No button');
+
+  await click(button(host, 'Revise Alpha bid'));
+  await setField(control(host, 'Annual salary'), '2.5');
+  await setField(control(host, 'Years'), '2');
+  await click(button(host, 'REVIEW BID'));
+  await flush();
+  const [request, football] = port.mock.calls[0];
+  expect(request).toMatchObject({ command: 'bid.raise', mode: 'preview', arguments: {
+    command: 'bid.raise', args: { bid: { bid: 'bid-1', franchise: 'franchise.mine',
+      salaryCents: 250000000, years: 2 } } } });
+  expect(football).toBe('pin');
+  expect(port.mock.calls.some(([request]) => String(request.command) === 'bid.withdraw')).toBe(false);
+});
+
+it('keeps raise in HostedWorkflows without offering withdrawal', async () => {
+  const room = { use: () => ({ pending: false, stale: false, error: '', message: '' }),
+    canChange: () => true, cancel: () => {}, market: async () => {}, review: async () => {},
+    peek: () => ({ error: '' }) } as unknown as HostedRoom;
+  const hostedReading = { lineup: { league: 'native.test', week: 1 },
+    markets: { bids: { revision: 4, limit: '3', notes: [], awards: [], players: [
+      { player: '0001', name: 'Alpha', words: 'Private', closes: 'Closes',
+        own: { id: 'bid-1', words: 'Mine' } },
+    ] }, waivers: { players: [], claims: [], method: '', words: '' },
+    trades: { offers: [], notes: [] } },
+    roster: { players: [], franchises: [], picks: [], revision: 4, season: 2026 },
+    rules: { rollover: '' } } as unknown as HostedReading;
+  const host = await mount(<HostedWorkflows task="bids" room={room} reading={hostedReading}
+    franchise="franchise.mine" commissioner={false} />);
+  const actions = all(host, 'option').map(option => option.textContent);
+  expect(actions).toContain('Raise your bid');
+  expect(actions).not.toContain('Withdraw your bid');
 });
 
 it('renders recent wins and the empty state from the hosted wins read', async () => {
