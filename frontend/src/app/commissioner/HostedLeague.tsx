@@ -19,6 +19,9 @@ import type { HQTab } from '../shell/HQShell';
 import type { Node } from '../shell/nodes';
 
 type Tab = 'lineup' | 'roster' | 'draft' | 'rules' | HostedTask;
+export type HostedEntry = 'hq' | 'war' | 'pulse' | 'control' | 'lineup' | 'bids' | 'trades';
+const entryTab = (entry?: HostedEntry): Tab => entry === 'control' ? 'rules'
+  : entry === 'bids' || entry === 'trades' || entry === 'lineup' ? entry : 'lineup';
 const labels: Record<Tab, string> = {
   lineup: 'Set lineup',
   roster: 'Roster and reserves',
@@ -34,21 +37,33 @@ const bucketNames = { active: 'Active roster', ir: 'Injured reserve', taxi: 'Tax
 const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
 const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
-// A server restart remounts this tree behind the identity fence; a changed role or franchise starts fresh.
-function useRemembered<T>(key: string, initial: T): [T, (value: T) => void] {
-  const [value, set] = useState<T>(() => hostedScreens.recall(key, initial));
+// A server restart remounts this tree behind the identity fence; the owner comes back to the same screen.
+// A changed role or franchise is a different view and starts fresh.
+function useRemembered<T>(key: string, initial: T, forceInitial = false): [T, (value: T) => void] {
+  const [value, set] = useState<T>(() => forceInitial ? initial : hostedScreens.recall(key, initial));
   return [value, (next: T) => { hostedScreens.remember(key, next); set(next); }];
+}
+function entryRoute(entry: HostedEntry | undefined, hq: boolean | undefined,
+  commissioner: boolean): ThinScreenRoute {
+  if (entry === 'hq') return { node: 'hq', workspace: 'lineup-and-roster' };
+  if (entry === 'war') return { node: 'war', workspace: 'trade-desk' };
+  if (entry === 'pulse') return { node: 'pulse', workspace: 'now' };
+  if (entry === 'control') return { node: 'control', workspace: 'league' };
+  if (entry) return { node: 'home', workspace: 'overview' };
+  return commissioner ? { node: 'home', workspace: 'overview' }
+    : hq ? { node: 'hq', workspace: 'lineup-and-roster' }
+      : { node: 'home', workspace: 'overview' };
 }
 export default function HostedLeague(props: {
   league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
+  entry?: HostedEntry; onHome?: () => void;
 }) {
   const commissioner = props.role === 'Commissioner' || props.role === 'Co-commissioner';
   const place = `${props.league}:${props.franchise}:${props.role}`;
-  const initialRoute: ThinScreenRoute = !props.franchise && commissioner
-    ? { node: 'home', workspace: 'overview' }
-    : props.hq ? { node: 'hq', workspace: 'lineup-and-roster' }
-      : { node: 'home', workspace: 'overview' };
-  const [route, setRoute] = useRemembered<ThinScreenRoute>(`${place}:thinRoute`, initialRoute);
+  const initialRoute: ThinScreenRoute = entryRoute(props.entry, props.hq,
+    !props.franchise && commissioner);
+  const [route, setRoute] = useRemembered<ThinScreenRoute>(`${place}:thinRoute`, initialRoute,
+    props.entry !== undefined);
   const [playerSources, setPlayerSources] = useState<Record<string, PlayerCandidate[]>>({});
   const [inspectPlayer, setInspectPlayer] = useState<PlayerCandidate>();
   const publishPlayers = useCallback((source: string, players: PlayerCandidate[]) => {
@@ -103,7 +118,9 @@ export default function HostedLeague(props: {
       </Suspense>
     : <HostedWorkRoom {...props} onPlayers={publishHomePlayers} onPlayer={openPlayer} />;
   return <ThinLeagueShell leagueName={props.name} route={route} commissioner={commissioner}
-    players={players} navigate={navigate} openPlayer={openPlayer}>{page}</ThinLeagueShell>;
+    players={players} navigate={navigate} openPlayer={openPlayer} onHome={props.onHome}>
+    {page}
+  </ThinLeagueShell>;
 }
 function HostedWorkRoom({
   league,
@@ -113,6 +130,7 @@ function HostedWorkRoom({
   port,
   onPlayers,
   onPlayer,
+  entry,
 }: {
   league: string;
   franchise: string;
@@ -121,10 +139,12 @@ function HostedWorkRoom({
   port?: (request: NativeRequest, football?: string) => Promise<HostedResponse>;
   onPlayers?: (players: PlayerCandidate[]) => void;
   onPlayer?: (player: PlayerCandidate) => void;
+  entry?: HostedEntry;
 }) {
   const room = useMemo(() => createHostedRoom(league, franchise, port), [league, franchise, port]);
   const state = room.use();
-  const [tab, setTab] = useRemembered<Tab>(`${league}:${franchise}:${role}:tab`, 'lineup');
+  const [tab, setTab] = useRemembered<Tab>(`${league}:${franchise}:${role}:tab`, entryTab(entry),
+    entry !== undefined);
   const [week, setWeek] = useState(1);
   const [starters, setStarters] = useState<string[]>([]);
   const [player, setPlayer] = useState('');

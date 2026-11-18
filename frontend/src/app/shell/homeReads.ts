@@ -52,7 +52,7 @@ export const OWNER_ONLY_TRADES = 'Trade offers are visible only to this franchis
  *  use. It adds no rule of its own: every value comes from the league's settings through them. */
 export async function readHomeBrief(league: string, mine: string, port: HostedPort,
   publish?: (brief: HomeBrief) => void,
-  research: ResearchReader | undefined = defaultResearch(), owner = true): Promise<HomeBrief> {
+  research: ResearchReader | null | undefined = defaultResearch(), owner = true): Promise<HomeBrief> {
   const out: HomeBrief = { at: {}, errors: {} };
   const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
   const apply = async (source: HomeSource, read: () => Promise<void>) => {
@@ -153,6 +153,31 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       out.draft = draft;
     }),
   ]);
+  return out;
+}
+
+/** Thin Home's unassigned commissioner view reads league-wide pulse and commissioner jobs only. */
+export async function readThinHomeBrief(league: string, mine: string, port: HostedPort,
+  publish?: (brief: HomeBrief) => void, commissioner = false): Promise<HomeBrief> {
+  if (mine) return readHomeBrief(league, mine, port, publish, null, true);
+  const out: HomeBrief = { at: {}, errors: {} };
+  const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
+  const apply = async (source: HomeSource, read: () => Promise<void>) => {
+    try { await read(); out.at[source] = new Date().toISOString(); delete out.errors[source]; }
+    catch (error) { out.errors[source] = error instanceof Error ? error.message : String(error); }
+    finally { send(); }
+  };
+  const pulse = apply('pulse', async () => {
+    out.pulse = await readNativePulse(league, '', port, reading => { out.pulse = reading; send(); }, true);
+    if (out.pulse.errors.length) throw new Error(out.pulse.errors[0]);
+  });
+  const jobs = commissioner ? apply('jobs', async () => {
+    const r = await port({ command: 'commish.jobs.read', mode: 'read', arguments: { league } });
+    const reading = parseJobs(r.data);
+    if (reading.league !== league) throw new Error('Jobs belong to another league');
+    out.jobs = reading;
+  }) : Promise.resolve();
+  await Promise.all([pulse, jobs]);
   return out;
 }
 

@@ -155,6 +155,17 @@ it('opens hosted Now, refreshes active reads except odds, shows Race and returns
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
 });
 
+it('routes the rail Home item to its parent instead of rendering a second league Home', async () => {
+  const port = fakePort();
+  const onHome = vi.fn();
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} onHome={onHome} />));
+  await openNode('League Pulse');
+  await openNode('Home');
+  expect(onHome).toHaveBeenCalledOnce();
+  expect(host.querySelector('.node.open .nb')?.textContent).toContain('League Pulse');
+});
+
 it.each(['Commissioner', 'Co-commissioner'])('reads both lineups for %s', async role => {
   const port = fakePort();
   await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"

@@ -1,8 +1,9 @@
 # The desktop app has two modes. Read this before planning desktop, server or phone work.
 
-Checked against the code at `main` 3f8149a27 on 2026-11-14. Christopher's ruling that day: **the usable
-product is the desktop app in thin mode.** The phone/browser is a placeholder (registration, sign-in, and
-Live Pulse for the signed-in team only) until he reopens mobile.
+Checked against the code at `main` 3f8149a27 on 2026-11-14; thin Home updated against the b3home
+candidate on 2026-11-18. Christopher's ruling that day: **the usable product is the desktop app in thin
+mode.** The phone/browser is a placeholder (registration, sign-in, and Live Pulse for the signed-in team
+only) until he reopens mobile.
 
 A session on 2026-11-14 treated "the desktop app" as one all-in-one engine and nearly planned work on the
 wrong side of the client/server split. Both modes exist in one binary today. Never assume which one a
@@ -15,9 +16,11 @@ sentence means.
 | Start | `thewarroom -native <server-url> <league>` | `thewarroom` (no flag) |
 | Go side | `composition.runNative` builds only `serverclient.Desktop` and the window. It "constructs only the hosted client and WebView, never the local App." | `composition.runDesktop` builds the full local App: local SQLite, engines, MFL sync, live feeds, clocks, backups. |
 | Data | The league server over HTTPS (Cloudflare Tunnel). No league database on the computer. | `thewarroom.db`, `history.db`, `whatif.db` in the user's config directory. |
-| Screens | `NativeStartup.tsx` mounts `NativeAccount` (sign-in, authenticator, AI helpers), then `HostedLeague` (League Pulse Now/Race, Franchise HQ, War Room, Set lineup, Roster and reserves, Draft room, League rules) and `HostedWorkflows` (bids, waivers, trades, results, rollover). | `TargetMount` → the full shell `TargetApp.tsx`: Home, War Room, Franchise HQ, League Pulse, Control Room, command bar. |
+| Screens | `NativeStartup.tsx` mounts `NativeAccount` (sign-in, authenticator, AI helpers) and, after admission, the fixed app-level `ThinHome` (Needs-you, the admitted league card and shortcuts). Opening a card/shortcut mounts `HostedLeague` (League Pulse Now/Race, Franchise HQ, War Room, Set lineup, Roster and reserves, Draft room, League rules) and `HostedWorkflows` (bids, waivers, trades, results, rollover). Alpha Home uses only `NativeView.league`; it does not enumerate the server-wide league list. | `TargetMount` → the full shell `TargetApp.tsx`: Home, War Room, Franchise HQ, League Pulse, Control Room, command bar. |
 | Live football | The server runs a shared ESPN/Sleeper collector for the current week; scores are labelled provisional. Each new generation publishes a scores topic to open change streams. Pulse rereads the public NFL scoreboard and selected game detail (field position and plays), following the live game with the most own starters by default; owners may switch games. Manual Refresh remains available. | ESPN live, Sleeper fill-in, nflverse finals and MFL live, polled inside the app. |
 | Direction | Grows until it carries everything. | Kept as-is until thin mode carries everything (governing plan step 3). Do not grow it or add features to it. |
+
+`ThinHome` exports `thinHomeRoute` for the planned thin rail; it does not build the rail. Its league card opens existing `HostedLeague` at HQ; shortcuts and actionable Needs-you items pass their matching hosted entry, with Control Room opening the hosted rules surface.
 
 Hosted League rules expose Change only to commissioners and co-commissioners. The shared rule input
 builds a typed value; the hosted room owns preview → explicit confirm → execute → reread, using the

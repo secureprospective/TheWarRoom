@@ -7,7 +7,8 @@ import { browserStorage, type SettingsStorage } from './franchise';
 export const LEAGUE_KEY = 'thewarroom.target.selected-league';
 export const MIRROR_LEAGUE_ID = 'mirror';
 
-export type LeagueChoice = { id: string; name: string; teams: number; app: boolean };
+export type LeagueChoice = { id: string; name: string; teams?: number; app: boolean;
+  franchise?: string; franchiseName?: string; role?: string };
 
 export function parseLeagues(value: unknown): LeagueChoice[] {
   const leagues = array(value, 'Leagues', (entry, path) => {
