@@ -33,14 +33,13 @@ const isExpectedEmpty = (source: string, words: string) =>
   (source === 'results' && words === 'No league week is open') ||
   (source === 'calendar' && words === 'The league season is not known');
 
-function failedSource(brief: HomeBrief, mine: string, commissioner: boolean): string | undefined {
+function failedSources(brief: HomeBrief, mine: string, commissioner: boolean): string[] {
   const sources = [...(mine ? ['trades', 'bids'] : []), 'results', 'calendar',
     ...(commissioner ? ['jobs'] : [])];
-  for (const source of sources) {
+  return sources.flatMap(source => {
     const words = brief.errors[source as keyof HomeBrief['errors']];
-    if (words && !isExpectedEmpty(source, words)) return words;
-  }
-  return undefined;
+    return words && !isExpectedEmpty(source, words) ? [words] : [];
+  });
 }
 
 function item(league: LeagueChoice, kind: NeedsYouKind, id: string, words: string,
@@ -126,9 +125,10 @@ export async function gatherNeedsYou(leagues: readonly LeagueChoice[], port: Hos
       const mine = people.yourFranchise;
       const commissioner = people.mayChangeRules;
       const brief = await readBrief(league.id, mine, port, Boolean(mine));
-      const failure = failedSource(brief, mine, commissioner);
-      if (failure) return [item(league, 'unavailable', league.id, failure, { node: 'home' })];
-      return needsYouFor(league, mine, commissioner, brief, now);
+      const items = needsYouFor(league, mine, commissioner, brief, now);
+      for (const failure of failedSources(brief, mine, commissioner))
+        items.push(item(league, 'unavailable', failure, failure, { node: 'home' }));
+      return items;
     } catch (error) {
       const words = error instanceof Error ? error.message : String(error);
       return [item(league, 'unavailable', league.id, words || 'League unavailable', { node: 'home' })];

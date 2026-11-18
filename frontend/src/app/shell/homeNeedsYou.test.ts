@@ -87,6 +87,25 @@ describe('gatherNeedsYou', () => {
     expect(readBrief).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps working trade items when the bids source fails', async () => {
+    const words = 'Bids source refused: owner scope unavailable';
+    const got = await gatherNeedsYou([leagues[0]], port, {
+      readPeople: async () => person('a', 'a-owner', false),
+      readBrief: async () => brief({
+        trades: { league: 'a', franchise: 'a-owner', offers: [
+          waitingTrade('a-trade', 'a-owner', at(9)),
+        ] } as never,
+        errors: { bids: words },
+      }),
+      now: Date.parse(at(6)),
+    });
+
+    expect(got).toMatchObject([
+      { kind: 'trade', leagueId: 'a', id: 'a:trade:a-trade' },
+      { kind: 'unavailable', leagueId: 'a', words },
+    ]);
+  });
+
   it('includes commissioner work only when the account has commissioner authority', async () => {
     const readBrief = vi.fn(async (league: string) => brief({
       jobs: { league, jobs: [{ id: 'job', name: 'Review the season', state: 'blocked',
