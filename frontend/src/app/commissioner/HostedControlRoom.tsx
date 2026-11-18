@@ -6,10 +6,13 @@ import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
 import { HostedControlRoomLeague } from './HostedControlRoomLeague';
-import { createHostedJobsQuery, hostedControlTabs, type HostedControlTab } from './hostedControlRoomData';
+import { HostedControlRoomSeason } from './HostedControlRoomSeason';
+import { createHostedJobsQuery, createHostedLedgerQuery, hostedControlTabs,
+  type HostedControlTab } from './hostedControlRoomData';
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
 import type { Job } from './jobs';
 import type { ActDefinition } from './actTable';
+import { hostedWorkflow } from '../control/nativeApi';
 import './commissioner.css';
 import '../control/room/controlRoom.css';
 
@@ -53,6 +56,11 @@ export function HostedControlRoom({ league, port, heldRoom }: {
     setJob(source);
     setRouteWords('');
     setTab('jobs');
+  };
+  const openSeasonTool = (next: ActDefinition) => {
+    setDefinition(next);
+    setJob(undefined);
+    setRouteWords('');
   };
   const showRoute = (words: string) => {
     setDefinition(undefined);
@@ -98,7 +106,14 @@ export function HostedControlRoom({ league, port, heldRoom }: {
           : tab === 'rules' && <p role="status">{roomState.error || 'Reading league rules…'}</p>}
         {tab === 'league' && <HostedControlRoomLeague key={league} league={league}
           room={room} port={port} />}
-        {!['jobs', 'situations', 'rules', 'league'].includes(tab)
+        {tab === 'season' && <div className="hosted-jobs-column">
+          <HostedControlRoomSeason league={league} port={port} onTool={openSeasonTool} />
+          {definition && <HostedCommissionerActTray definition={definition} league={league}
+            room={room} port={port} />}
+        </div>}
+        {tab === 'server' && <HostedServerTab league={league} port={port} />}
+        {!['jobs', 'situations', 'rules', 'league', 'season', 'server'].includes(tab)
+
           && <p className="cr-note hosted-unported">{notOnServer}</p>}
       </section>
     </main>
@@ -115,4 +130,31 @@ export function HostedControlRoom({ league, port, heldRoom }: {
       </div>
     </aside>
   </section>;
+}
+
+function HostedServerTab({ league, port = hostedWorkflow }: { league: string; port?: HostedPort }) {
+  const ledgerQuery = useMemo(() => createHostedLedgerQuery(league, port), [league, port]);
+  const ledgerState = ledgerQuery.use();
+  useEffect(() => {
+    void ledgerQuery.load([league, '']);
+    return () => ledgerQuery.dispose();
+  }, [league, ledgerQuery]);
+  const ledger = ledgerState.ledger;
+  const error = ledgerState.error;
+  return <div className="cr-note" aria-label="Server status">
+    <h3>Server</h3>
+    <p>Commissioner view is read-only. Restore, feed controls and upgrades are operator-only.</p>
+    <h4>Backups</h4>
+    <p>Back up now is not available through the hosted server command path.</p>
+    <p>Restore is operator-only and unavailable here.</p>
+    <h4>Feeds and upgrades</h4>
+    <p>Feed controls and upgrades are operator-only and unavailable here.</p>
+    <h4>Ledger</h4>
+    {error && <p role="alert">{error}</p>}
+    {!ledger && !error && <p role="status">Reading server ledger…</p>}
+    {ledger && (ledger.entries.length ? <ol>{ledger.entries.map(entry => <li key={entry.id}>
+      <strong>{entry.what}</strong><p>By {entry.who} · {new Date(entry.when).toLocaleString()}</p>
+      <p>Reason: {entry.why || 'No reason recorded'}</p><p>Safeguard: {entry.gravity}</p>
+    </li>)}</ol> : <p>No changes are visible to you in this league yet.</p>)}
+  </div>;
 }

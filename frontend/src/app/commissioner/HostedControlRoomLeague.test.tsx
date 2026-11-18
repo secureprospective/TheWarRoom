@@ -118,12 +118,19 @@ it('filters the ledger and rereads after a newer hosted league topic', async () 
     <HostedControlRoomLeague league={league} room={room} port={fixture.port} />));
   await settle();
   await click('RULES');
-  expect(fixture.port.mock.calls.filter(([request]) =>
-    request.command === 'commish.ledger.filtered.read')).toHaveLength(1);
+  const filteredReads = () => fixture.port.mock.calls
+    .filter(([request]) => request.command === 'commish.ledger.filtered.read')
+    .map(([request]) => request);
+  expect(filteredReads()).toHaveLength(1);
+  expect(filteredReads()[0]).toMatchObject({ arguments: {
+    league, filter: { person: '', kind: 'rules', from: '', before: '' },
+  } });
   fixture.advance();
   await act(async () => hostedReads.applyTopics([{ kind: 'league', league, version: '8' }]));
-  await vi.waitFor(() => expect(fixture.port.mock.calls.filter(([request]) =>
-    request.command === 'commish.ledger.filtered.read')).toHaveLength(2));
+  await vi.waitFor(() => expect(filteredReads()).toHaveLength(2));
+  expect(filteredReads()[1]).toMatchObject({ arguments: {
+    league, filter: { person: '', kind: 'rules', from: '', before: '' },
+  } });
   expect(host.textContent).toContain('League change 32');
   room.dispose();
 });
