@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { situations } from '../control/room/guide';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
-import { resolveSituationStep, hostedControlTabs } from './hostedControlRoom';
+import { resolveSituationStep, hostedControlTabs } from './hostedControlRoomData';
 import { hostedCommandAvailable } from '../commands/native';
 import { actTable } from './actTable';
 

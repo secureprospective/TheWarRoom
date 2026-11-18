@@ -5,7 +5,7 @@ import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
-import { createHostedJobsQuery, hostedControlTabs, type HostedControlTab } from './hostedControlRoom';
+import { createHostedJobsQuery, hostedControlTabs, type HostedControlTab } from './hostedControlRoomData';
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
 import type { Job } from './jobs';
 import type { ActDefinition } from './actTable';

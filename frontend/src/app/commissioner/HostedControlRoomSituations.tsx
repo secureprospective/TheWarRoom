@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { situations } from '../control/room/guide';
-import { resolveSituationStep, type HostedControlTab, type SituationRoute } from './hostedControlRoom';
+import { resolveSituationStep, type HostedControlTab, type SituationRoute } from './hostedControlRoomData';
 import type { ActDefinition } from './actTable';
 
 export function HostedControlRoomSituations({ onTab, onTool, onUnavailable }: {
