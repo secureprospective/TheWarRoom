@@ -8,22 +8,43 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 type viewTestHost struct {
 	StoredHost
-	clock *dueTestClock
-	facts nativecheck.Facts
+	clock       *dueTestClock
+	facts       nativecheck.Facts
+	weeks       []leagueweek.Week
+	scheduleErr error
 }
 
 func (h viewTestHost) CommissionerNow() time.Time     { return h.clock.Now() }
 func (h viewTestHost) NativeFacts() nativecheck.Facts { return h.facts }
+func (h viewTestHost) NativeScheduleDates(context.Context, int, time.Time) ([]leagueweek.Week, error) {
+	return h.weeks, h.scheduleErr
+}
 
 func viewService(t *testing.T, f *dueFixture, principal string) *Service {
+	return viewServiceWithSchedule(t, f, principal, nil)
+}
+
+func viewServiceWithSchedule(t *testing.T, f *dueFixture, principal string, weeks []leagueweek.Week) *Service {
+	return viewServiceWithFacts(t, f, principal, f.facts, weeks)
+}
+
+func viewServiceWithFacts(t *testing.T, f *dueFixture, principal string, facts nativecheck.Facts,
+	weeks []leagueweek.Week) *Service {
+	return viewServiceWithScheduleError(t, f, principal, facts, weeks, nil)
+}
+
+func viewServiceWithScheduleError(t *testing.T, f *dueFixture, principal string, facts nativecheck.Facts,
+	weeks []leagueweek.Week, scheduleErr error) *Service {
 	t.Helper()
 	return NewHosted(viewTestHost{StoredHost: StoredHost{Store: f.store, Context: func() context.Context { return t.Context() },
-		Principal: principal, Registry: "id,name,gm_question,governs\n"}, clock: f.clock, facts: f.facts},
+		Principal: principal, Registry: "id,name,gm_question,governs\n"}, clock: f.clock, facts: facts,
+		weeks: weeks, scheduleErr: scheduleErr},
 		admissionFunc(func(context.Context, commissioner.Access) error { return nil }))
 }
 
@@ -59,7 +80,9 @@ func viewTranscript(t *testing.T, service *Service) []string {
 		result := reflect.ValueOf(service).MethodByName(tc.name).Call(args)
 		if !result[1].IsNil() {
 			principal, err := service.host.CommissionerPrincipal()
-			if err != nil || principal != "creator" || (tc.name != "TargetNativeBids" && tc.name != "TargetNativeWaivers" && tc.name != "TargetNativeTrades") {
+			jobsRefused := tc.name == "TargetCommissionerJobs" && principal != "creator"
+			if err != nil || (!jobsRefused && principal != "creator") ||
+				(!jobsRefused && tc.name != "TargetNativeBids" && tc.name != "TargetNativeWaivers" && tc.name != "TargetNativeTrades") {
 				t.Fatalf("%s: %v", tc.name, result[1].Interface())
 			}
 			out = append(out, tc.name+": "+result[1].Interface().(error).Error())

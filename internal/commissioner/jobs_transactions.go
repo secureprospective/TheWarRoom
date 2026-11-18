@@ -8,7 +8,7 @@ import (
 )
 
 // transactionJobs reports the native queues, not an imported league's pending moves.
-func transactionJobs(assets NativeAssets, state MarketBook, rules leaguerules.RuleSet, at time.Time) []Job {
+func transactionJobs(assets NativeAssets, state MarketBook, rules leaguerules.RuleSet, at time.Time, week int) []Job {
 	waivers := Job{ID: "waivers", Name: "Waiver processing", State: JobLive, Controls: []string{"CM-035"}}
 	bids := Job{ID: "bids", Name: "Bid processing", State: JobLive, Controls: []string{"CM-036"}}
 	if !assets.Seeded {
@@ -18,7 +18,30 @@ func transactionJobs(assets NativeAssets, state MarketBook, rules leaguerules.Ru
 	}
 	fillWaiverJob(&waivers, state.Windows, rules.Waivers, at)
 	fillBidJob(&bids, state.Bids, rules.Bids, at)
-	return []Job{waivers, bids}
+	waivers.Identity.Week, bids.Identity.Week = week, week
+	return append([]Job{waivers, bids}, bidTieJobs(state.Bids, rules.Season, week)...)
+}
+
+func bidTieJobs(book BidBook, season, week int) []Job {
+	jobs := []Job{}
+	for _, auction := range book.Auctions {
+		if !auction.Decided || len(auction.Tied) == 0 {
+			continue
+		}
+		side := auction.Side
+		if side == "" {
+			side = "one-pool"
+		}
+		id := fmt.Sprintf("bid_tie.%d.%s.%s", auction.Season, side, auction.Player)
+		matterWeek := 0
+		if auction.Season == season {
+			matterWeek = week
+		}
+		jobs = append(jobs, Job{ID: id, Name: "Unresolved bid award tie", State: JobLive,
+			Controls: []string{"CM-036"}, Words: "Tied eligible bids need a commissioner award override.",
+			Identity: JobIdentity{Season: auction.Season, Week: matterWeek}, Settles: []string{BidsOverride}})
+	}
+	return jobs
 }
 
 func fillWaiverJob(job *Job, windows []WaiverWindow, rules leaguerules.WaiversRules, at time.Time) {

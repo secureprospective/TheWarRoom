@@ -10,12 +10,13 @@ import (
 const startingAssetsWords = "Record starting assets first."
 
 // ledgerJobs are the jobs whose state comes from the league's recorded changes, not only its rules.
-func ledgerJobs(league string, records []Record, rules leaguerules.RuleSet, at time.Time) ([]Job, error) {
+func ledgerJobs(league string, records []Record, rules leaguerules.RuleSet, at time.Time, inputs JobInputs) ([]Job, error) {
 	assets, state, err := nativeAssetsState(league, records)
 	if err != nil {
 		return nil, err
 	}
-	jobs := transactionJobs(assets, state, rules, at)
+	week, _, _ := nextLineupLock(at, inputs.Weeks)
+	jobs := transactionJobs(assets, state, rules, at, week.Number)
 	jobs = append(jobs, missingContractJobs(assets)...)
 	jobs = append(jobs, historicalPickJobs(assets)...)
 	if leaguerules.OLineOn(rules) {
@@ -33,7 +34,7 @@ func ledgerJobs(league string, records []Record, rules leaguerules.RuleSet, at t
 	if job, ok := startupDraftJob(RecordsThrough(records, at), rules); ok {
 		jobs = append(jobs, job)
 	}
-	return append(jobs,
+	jobs = append(jobs,
 		draftJob(assets, RecordsThrough(records, at), at),
 		seededJob(assets, Job{ID: "stat_queue", Name: "Stat approval queue", Controls: []string{"CM-031", "CM-032"},
 			Words: "Statistic changes from the held files wait in the queue for approval."}),
@@ -43,7 +44,14 @@ func ledgerJobs(league string, records []Record, rules leaguerules.RuleSet, at t
 			Controls: []string{"CM-028", "CM-029", "CM-030", "CM-033", "CM-034", "CM-038", "CM-039"},
 			Words:    "Corrections, overrides and exceptions are open when needed; each needs a recorded reason."}),
 		Job{ID: "communications", Name: "League notices and news", State: JobLive, Controls: []string{"CM-052", "CM-053"},
-			Words: "Official notices and What's New posts go to the league from here."}), nil
+			Words: "Official notices and What's New posts go to the league from here."})
+	jobs = append(jobs, offseasonWindowJobs(records, rules, at)...)
+	produced, err := d60LedgerJobs(league, records, rules, at, inputs, assets)
+	if err != nil {
+		return nil, err
+	}
+	jobs = append(jobs, produced...)
+	return jobs, nil
 }
 
 // seededJob is live once the league's starting assets are recorded; until then it waits for them.
