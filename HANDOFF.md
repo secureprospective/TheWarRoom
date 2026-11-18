@@ -25,3 +25,9 @@
 - Checks: focused frontend tests 58/58, full Vitest 989/989, `pnpm tsc --noEmit`, pre-push verification passed; PR CI green on `bb5df4b68` (all checks passed). No server, auth, session or service-worker changes.
 - Tidy: `tidy-check.sh` found unrelated active `b9feed` and `b9boards` lanes in the main checkout. Left their processes/files untouched; their owners need to file KEEP records.
 - Next: ClaudeBox review/merge. Blocked on review.
+
+## Bee — B8-3 Team / lineup (2026-11-18)
+- Baton: Bee implementation; mobile-only HQ layout work in progress on `session/pulse-b8team`.
+- State: starting from PR #380 base; adding <=699px embedded lineup layout, with desktop CSS untouched. Existing revision/preview/confirm/receipt path remains in `hqNativeLineup.tsx`.
+- Next: add/verify focused tests, run full frontend checks and pre-push, push and open PR into `bundle/b8`.
+- Blocked on: none.
