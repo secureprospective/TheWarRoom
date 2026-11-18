@@ -71,6 +71,8 @@ it('renders hosted schedule and playoffs at 32 teams and routes writes to the sh
   expect(read.mock.calls.map(([request]) => request.command)).toEqual([
     'native.directory.read', 'commish.schedule.read', 'bracket.read', 'calendar.read',
   ]);
+  expect(read.mock.calls.find(([request]) => request.command === 'calendar.read')?.[0].arguments)
+    .toMatchObject({ franchise: 'team-1' });
   onTool.mockClear();
   const rollover = [...host.querySelectorAll<HTMLButtonElement>('button')]
     .find(button => button.textContent === 'Roll over season')!;

@@ -18,6 +18,12 @@ type testCredentials struct {
 	unavailable bool
 }
 
+func credentialSnapshot(d *Desktop, store *testCredentials) (string, string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.bearer, store.secret
+}
+
 func (s *testCredentials) Get() (string, error) {
 	if s.unavailable {
 		return "", errors.New("secret-provider-sentinel")
@@ -97,6 +103,13 @@ func TestCredentialRestoreCloseAndForget(t *testing.T) {
 func TestUnavailableKeychainLoginIsMemoryOnly(t *testing.T) {
 	secret := strings.Repeat("a", 42) + "A"
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == serverhttp.InvalidationPath {
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.WriteHeader(http.StatusOK)
+			w.(http.Flusher).Flush()
+			<-r.Context().Done()
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Path == serverhttp.LoginPath {
 			if _, err := fmt.Fprintf(w, `{"protocol":1,"bearer":%q,"session":{"account":{"id":"12345678-1234-4234-8234-123456789abc","username":"owner"},"expires_at":"2026-11-01T00:00:00Z"}}`, secret); err != nil {
@@ -116,14 +129,20 @@ func TestUnavailableKeychainLoginIsMemoryOnly(t *testing.T) {
 	}
 	defer d.Close()
 	view, err := d.Act(t.Context(), RawDesktop{Action: "login", Username: "owner", Password: "private-password"})
-	if err != nil || !strings.Contains(view.Message, "window only") || d.bearer != secret || store.secret != "" {
+	bearer, saved := credentialSnapshot(d, store)
+	if err != nil || !strings.Contains(view.Message, "window only") || bearer != secret || saved != "" {
 		t.Fatalf("memory fallback: %+v %v", view, err)
 	}
-	if _, err := d.Act(t.Context(), RawDesktop{Action: "enter"}); err == nil || d.bearer != "" {
+	if _, err := d.Act(t.Context(), RawDesktop{Action: "enter"}); err == nil {
+		t.Fatal("revoked credential survived")
+	}
+	bearer, _ = credentialSnapshot(d, store)
+	if bearer != "" {
 		t.Fatal("revoked credential survived")
 	}
 	d.Close()
-	if store.secret != "" {
+	_, saved = credentialSnapshot(d, store)
+	if saved != "" {
 		t.Fatal("fallback persisted secret")
 	}
 }

@@ -153,7 +153,8 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
   const results = usePulseRead<PulseResults>(
     JSON.stringify(['pulse-week', scope.league, reading?.season, week]),
     () => reading && week ? readPulseWeekResults(scope.league, reading.season, week, port)
-      : Promise.reject(new PulseWaiting('The league has not said which week it is playing.')));
+      : Promise.reject(new PulseWaiting(reading?.weekNote ||
+        'The league has not said which week it is playing.')));
   const errored = Boolean(league.error || (week && results.error) || live.error);
   useEffect(() => {
     if (!scope.serverTime || !scope.refresh || !errored) return;
