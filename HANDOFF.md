@@ -1,9 +1,9 @@
 # Handoff
 
 - Baton: Bee, 2026-11-17.
-- State: frontend-only slop task complete. Partner reads use parser-checked standings rows; Plans has one unavailable state with history; hosted bids use hosted commands and local mode retains `poolProvider`.
-- Changes: renamed `canFilter` to `filterUnavailable`, matched Plans copy, added partner standings/cap scope regression coverage. No Go, schema, or tdrafts-owned files changed.
-- Tests: `WarRoomPlans.test.tsx` (single unavailable state + history); `WarRoomMarket.test.tsx` (unavailable filter controls); `warroomMarketReads.test.ts` (hosted bid commands/local provider); `warroomTradeReads.test.ts` (checked partner row/cap scope). Frontend: 122 files / 906 tests; tsc, build, lint, tidy, pre-push verify passed. Build emitted existing bundle warnings; lint listed existing oversized untouched Go files.
-- PR: #337 open, CI green at `2d02147a1`: https://github.com/secureprospective/TheWarRoom/pull/337
-- Next: Christopher/ClaudeBox review and merge decision.
-- Blocked: none.
+- State: hosted Control Room frame, Jobs/Situations and shared hosted act form are implemented on `session/pulse-b5frame`; PR pending.
+- Scope: b5frame only. Local Control Room behavior is unchanged. Snooze/settlement and open decisions remain untouched.
+- Verified: full frontend suite 127 files/918 tests; final focused suite 43 tests; `pnpm exec tsc --noEmit`; `make lint`; `make bloat`.
+- Next: commit, push and open PR against `bundle/b5`; report PR number and leave review baton to ClaudeBox.
+- Machine note: `tidy-check` sees unrelated active lanes `b5perm`, `lab4`, `b1pulse` in the main repo. Left those agents and their run files untouched; this lane created no scratch directory.
+- Blocked: none. Deputy job visibility is passed through from the server read; permission checks stay on the hosted command path.
