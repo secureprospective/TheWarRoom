@@ -1,7 +1,9 @@
 # Handoff
 
-- Baton: Bee, 2026-11-17.
-- State: B5 deputy-permission work stopped at D65 discovery; no source changes.
-- Findings: `AuthorizeRecords` is the current server-side authorization entry point, with special trade, succession, owner, and rules paths plus generic `GovernanceAuthorizer.Allow`; no single `mayRun` gate exists. `commish.abilities.set` stores existing owner ability flags (13 named abilities) in governance ledger state, not deputy grants. D65 specifies a single gate, private grants, and locked commands, but not the delegation catalog. The Terra permission-hierarchy document proposes command-level sets and six starter examples, explicitly as proposals needing approval.
-- Next: get an approved command-level permission/delegability ruling, then implement and test the gate and effective-abilities read.
-- Blocked: permission definitions and delegation boundaries are not approved. No tests run; no code changed.
+- Baton: Christopher, 2026-11-18.
+- State: D65 implementation paused before source changes on a security/authority conflict.
+- Finding: the brief maps `commish.vote.close` and `commish.vote.tiebreak` to Rule on trades, but these are commissioner-succession election writes (`internal/commissioner/succession.go`). Closing a vote can start succession or transfer the commissioner's seat (`internal/governance/votes.go`, `elections.go`); tie-break writes a runoff decision. Delegating them through the trade tick would grant succession authority, conflicting with the commissioner-only boundary. No trade-vote commands with these IDs exist.
+- Recommendation: keep both commissioner-only; do not invent replacement commands. Confirm this mapping before proceeding.
+- Next: get the ruling, then implement and test the D65 catalog, gate, ledger event and effective-permissions read.
+- Blocked: which authority rule governs `commish.vote.close` and `commish.vote.tiebreak`.
+- No source changes or tests. Branch `session/pulse-b5perm` is based directly on `origin/bundle/b5` (`f90df1262`).
