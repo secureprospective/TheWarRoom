@@ -1053,7 +1053,9 @@ live beside the service. See `feature-extraction.md`'s stateful-features recipe.
 
 ### Hosted franchise workflows
 
-`NativeAccount` mounts `commissioner/HostedLeague.tsx` after account/seat admission.
+After account/seat admission, `NativeAccount` mounts fixed `shell/ThinHome.tsx` using only the
+admitted league; a card or shortcut opens `commissioner/HostedLeague.tsx` with its existing `hq` prop.
+`ThinHome` reuses `homeNeedsYou.ts` and `homeReads.ts`; it never enumerates the server-wide league list.
 `hostedRoom.ts` holds only the current in-memory reading and explicit confirmation; it
 never writes local league data or queues mutations. The catalog-generated `nativeEnvelope`
 feeds `/desktop/workflow`; `serverclient.Desktop.Workflow` retains bearer/authenticator
@@ -1080,7 +1082,8 @@ parsing, disconnected views, reconnect without replay). Graphical acceptance is 
 `control/NativeStartup.tsx` probes only the desktop startup route. A missing route (404)
 or the local development HTML fallback opens the local shell; other HTTP failures or
 malformed hosted status stop startup rather than falling back to MFL. Hosted windows mount
-`NativeAccount` and `HostedLeague`, never `TargetApp` or its local refresh/binding hooks.
+`NativeAccount` and `ThinHome` after admission, then `HostedLeague` when opened, never `TargetApp`
+or its local refresh/binding hooks.
 The local shell, MFL offer history, league settings and refresh help identify MFL as reference
 only. Other source refresh scopes retain their existing meaning.
 

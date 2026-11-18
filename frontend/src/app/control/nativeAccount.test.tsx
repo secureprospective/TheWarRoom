@@ -1,7 +1,7 @@
 import { commands } from '../commands/registry';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
-import { all, button, click, control, mount, render, settle, type, unmount }
+import { all, button, click, control, flush, mount, render, settle, type, unmount }
   from '../commissioner/commissionerDom';
 import NativeAccount from './NativeAccount';
 import { nativeAction, nativeStartup, parseNativeView, type NativeView } from './nativeApi';
@@ -11,12 +11,12 @@ import { nativeAction, nativeStartup, parseNativeView, type NativeView } from '.
 const rooms = vi.hoisted(() => [] as string[]);
 vi.mock('../commissioner/HostedLeague', async () => {
   const { useEffect } = await import('react');
-  return { default: ({ franchise }: { franchise: string }) => {
+  return { default: ({ franchise, name }: { franchise: string; name: string }) => {
     useEffect(() => {
       rooms.push(`open ${franchise}`);
       return () => { rooms.push(`close ${franchise}`); };
     }, [franchise]);
-    return null;
+    return <p>Hosted {name}</p>;
   } };
 });
 
@@ -99,11 +99,21 @@ describe('native desktop account access', () => {
     await type(control(host, 'Username'), 'commissioner');
     await type(control(host, 'Password'), 'private-password');
     await submit(host);
-    await settle();
-    expect(fetcher.mock.calls.map(call => JSON.parse(call[1].body).action)).toEqual(['login', 'enter']);
-    expect(rooms).toEqual(['open franchise.01']);
+    await settle(); await flush(); await settle();
+    expect(fetcher.mock.calls.filter(call => call[0] === '/desktop/native')
+      .map(call => JSON.parse(call[1].body).action)).toEqual(['login', 'enter']);
+    expect(rooms).toEqual([]);
     expect(all(host, 'form')).toHaveLength(0);
     expect(button(host, 'League')).toBeTruthy();
+    expect(host.textContent).toContain('Home');
+    await click(button(host, 'Open League')); await settle();
+    expect(rooms).toEqual(['open franchise.01']);
+    expect(host.textContent).toContain('Hosted My club');
+    await click(button(host, '← Home')); await settle();
+    expect(rooms).toEqual(['open franchise.01', 'close franchise.01']);
+    expect(host.textContent).toContain('Home');
+    await click(button(host, 'Open League')); await settle();
+    expect(rooms).toEqual(['open franchise.01', 'close franchise.01', 'open franchise.01']);
     expect(host.textContent).not.toContain('Join with a code');
     expect(host.textContent).not.toContain('No MFL account or key needed');
     // The Authenticator tab shows its own form; the league stays mounted but hidden, and its
@@ -111,7 +121,7 @@ describe('native desktop account access', () => {
     await click(button(host, 'Authenticator'));
     expect(all(host, 'form')).toHaveLength(1);
     expect(all(host, 'div').some(d => d.props().hidden === true)).toBe(true);
-    expect(rooms).toEqual(['open franchise.01']);
+    expect(rooms).toEqual(['open franchise.01', 'close franchise.01', 'open franchise.01']);
     expect(host.textContent).toContain('Seat line.');
     await click(button(host, 'League'));
     expect(all(host, 'form')).toHaveLength(0);
@@ -236,11 +246,13 @@ it.each(['enter', 'forget', 'revoke-device', 'revoke-all'] as const)(
     vi.stubGlobal('fetch', (url: string, init?: RequestInit) => url === '/desktop/changes'
       ? new Promise(() => {}) : fetcher(url, init));
     // Startup never carries a franchise (Go's status action only sets the message).
-    // A saved sign-in opens the league by itself at startup.
+    // A saved sign-in is admitted first, then lands on Home until a league is opened.
     const host = await mount(render(NativeAccount, { initial: { ...initial, message: 'Saved.' } }));
-    await settle();
-    fetcher.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+    await settle(); await flush(); await settle();
+    expect(rooms).toEqual([]);
+    await click(button(host, 'Open League')); await settle();
     expect(rooms).toEqual(['open franchise.01']);
+    fetcher.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
     const label = { enter: 'Open my franchise', forget: 'Forget saved sign-in',
       'revoke-device': 'Revoke this device', 'revoke-all': 'Revoke all devices' }[action];
     await click(button(host, label)); await settle();
