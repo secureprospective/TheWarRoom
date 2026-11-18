@@ -13,6 +13,20 @@ Keep desktop apps closed until the server is ready. Do not run the installer aga
    Confirm that its latest ledger entry is still present. Changes stay paused until
    the first fresh off-site backup uploads and verifies.
 
+**Before the first league load on a `TWR_FIRST_LOAD=1` install:** run the same installed
+updater with `TWR_FIRST_LOAD=1` before loading the league:
+
+```sh
+TWR_FIRST_LOAD=1 sh /usr/local/libexec/twr-upgrade /root/twr-new/server.tar.gz /root/twr-new/metadata
+```
+
+This mode is accepted only when `/var/lib/twr` is empty and `twr-server` is stopped and
+unscheduled. The signed bundle is still verified and its tools are installed, but the updater
+skips the league-file check, state snapshot and server start; `/var/lib/twr` remains empty and
+the service remains stopped and unscheduled. It prints the next `league-load` and start commands.
+`league-load` assigns the state directory owner to every path it creates, individually;
+there is no `chown` step. Do not use this mode once any state exists.
+
 The installed server first authenticates the archive using the public root pinned at
 `/etc/twr-release/root.json`, fresh signed metadata and the persistent private trust cache
 at `/var/lib/twr-release`. It rejects damaged bytes, expired or rolled-back metadata and
@@ -23,14 +37,14 @@ provider for a fresh signed bundle and metadata. Run only one console upgrade at
 If an interrupted upgrade leaves `upgrade.lock` in the cache, confirm no upgrade or verifier
 is running before removing only that lock folder; retain all trusted metadata.
 
-After verification the tool freezes and rechecks the archive's fingerprint, extracts only
+In normal mode, after verification the tool freezes and rechecks the archive's fingerprint, extracts only
 the server executable, and runs its read-only league check as `twr` inside the same
 bubblewrap sandbox as the service. Candidate code never runs as root. Once the upgrade has
 succeeded, it also puts the bundle's console tools (`/usr/local/libexec/twr-*`) and the two
 service files (`/etc/init.d/twr-server`, `twr-tunnel`) in place from the same verified bytes,
 by fixed name, so an upgraded server has every tool a fresh install has. None of them runs
 during the upgrade.
-The tool first reads the league file without migrating it. An unsupported newer file or
+In normal mode, the tool first reads the league file without migrating it. An unsupported newer file or
 newer server stamp is refused without changing it. It then stops the Tunnel and server,
 keeps the installed binary and private settings, and takes a SQLite snapshot of the
 whole league, accounts, audit chains, and transfer fences. It verifies and saves their
@@ -81,10 +95,13 @@ gated before accounts, native data, backups or SSE. No SSE connection is needed 
 that an update is required. Desktop/agent Go transports attach versions to every request;
 `serverclient.ErrUpdateRequired` and `*serverclient.UpdateRequired` are slice 44's signal.
 
-File flow: installed `verify-release` → frozen archive fingerprint check → sandboxed
+Normal file flow: installed `verify-release` → frozen archive fingerprint check → sandboxed
 `serverversion.Preflight` → `db.Inspect` (read-only; no migration) → stopped-service
 snapshot and verified off-site set → history/accounts migration → monotonic release stamp
-→ schema, audit and checkpoint verification → binary replacement → TLS readiness.
+→ schema, audit and checkpoint verification → binary replacement → TLS readiness. The
+first-load branch skips the database preflight/snapshot/migration/readiness path; it replaces
+the signed server/tools and starts only the Tunnel, leaving `/var/lib/twr` empty and the
+server stopped for `league-load`.
 Migration failure restores the snapshot, not an attempted reverse SQL migration. The
 service's startup preflight refuses older files requiring this tool, newer schemas, and
 newer release stamps before opening a database writer. Deployment owns service exclusion:
