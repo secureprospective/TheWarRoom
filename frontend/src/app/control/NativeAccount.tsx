@@ -9,6 +9,7 @@ import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads
 import NativeHelpers from './NativeHelpers';
 import { HQAct } from '../shell/HQAct';
 import type { ThinHomeEntry } from '../shell/ThinHome';
+import { PhoneShell, phoneTabEntry, type PhoneTab } from '../shell/PhoneShell';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import '../look/look.css';
 import './nativeAccount.css';
@@ -46,6 +47,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [openAfterSignIn, setOpenAfterSignIn] = useState(Boolean(initial.message || initial.name));
   const [activeLeagueId, setActiveLeagueId] = useState<string>();
   const [activeEntry, setActiveEntry] = useState<ThinHomeEntry>('hq');
+  const [phoneTab, setPhoneTab] = useState<PhoneTab>('today');
   const automaticEntry = useRef(false);
   const admittedLeagues = useMemo<LeagueChoice[]>(() => admission ? [{
     id: admission.league, name: admission.name, app: true, franchise: admission.franchise,
@@ -54,8 +56,22 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const homeReady = observed && !fence.blocked && signedIn && Boolean(admission)
     && Boolean(admission?.franchise || admission?.role === 'Commissioner'
       || admission?.role === 'Co-commissioner');
+  const selectPhoneTab = (tab: PhoneTab) => {
+    setPhoneTab(tab);
+    const entry = phoneTabEntry(tab);
+    if (entry === 'home') { setActiveLeagueId(undefined); return; }
+    setActiveEntry(entry);
+    if (admission) setActiveLeagueId(admission.league);
+  };
+  const openPhoneControlRoom = () => {
+    setPhoneTab('league'); setActiveEntry('control');
+    if (admission) setActiveLeagueId(admission.league);
+  };
+  const tabForEntry = (entry: ThinHomeEntry): PhoneTab => entry === 'pulse' ? 'live'
+    : entry === 'hq' || entry === 'lineup' ? 'team'
+      : entry === 'war' || entry === 'bids' || entry === 'trades' ? 'moves' : 'league';
   useEffect(() => {
-    if (fence.blocked || !signedIn) setActiveLeagueId(undefined);
+    if (fence.blocked || !signedIn) { setActiveLeagueId(undefined); setPhoneTab('today'); }
   }, [fence.blocked, signedIn]);
   const activeLeague = admittedLeagues.find(league => league.id === activeLeagueId);
   const showThinHome = homeReady && screen === 'login' && !activeLeague;
@@ -130,8 +146,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const submitLabel = pending ? 'Please wait…' : screen === 'join' ? 'Create account'
     : screen === 'authenticator' ? 'Verify fresh code' : browser ? 'Sign in' : 'Sign in to server';
   const args = (action: 'view' | 'check', value: string) => ({ screen: 'native-account', action, value });
-  return <main className={`twr-app native-account${showThinHome ? ' has-thin-home' : ''}`}
-    aria-busy={pending}>
+  return <main className={`twr-app native-account${showThinHome ? ' has-thin-home' : ''}`
+    + `${browser && showThinHome ? ' phone-home' : ''}`} aria-busy={pending}>
     <header><h1>{view.name || 'Your league server'}</h1>
       {!view.name && <p>Your league server · No MFL account or key needed</p>}
       {!browser && <p className="native-address">{initial.server}</p>}</header>
@@ -148,16 +164,22 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
     {showThinHome && <Suspense fallback={<p role="status">Opening Home…</p>}>
-      <ThinHome leagues={admittedLeagues} onOpen={(league, entry) => {
-        setActiveEntry(entry); setActiveLeagueId(league.id);
-      }} />
+      <PhoneShell enabled={browser} leagueName={admission?.name ?? ''} activeTab={phoneTab}
+        commissioner={admission?.role === 'Commissioner' || admission?.role === 'Co-commissioner'}
+        onSelect={selectPhoneTab} onControlRoom={openPhoneControlRoom}>
+        <ThinHome leagues={admittedLeagues} onOpen={(league, entry) => {
+          setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
+        }} />
+      </PhoneShell>
     </Suspense>}
     {homeReady && activeLeague && <section className="native-hosted-league" aria-label="League view">
       <HQAct className="native-home-return" onAction={() => setActiveLeagueId(undefined)}>← Home</HQAct>
       <Suspense fallback={<p>Opening your league…</p>}>
         <HostedLeague key={`${fence.key}:${activeLeague.id}`} league={activeLeague.id}
           franchise={activeLeague.franchise ?? ''} name={activeLeague.franchiseName ?? ''}
-          role={activeLeague.role ?? ''} entry={activeEntry} hq
+          role={activeLeague.role ?? ''} entry={activeEntry} hq phoneShell={browser}
+          phoneLeagueName={admission?.name ?? ''} phoneTab={phoneTab}
+          onPhoneTab={selectPhoneTab} onPhoneControlRoom={openPhoneControlRoom}
           onHome={() => setActiveLeagueId(undefined)} />
       </Suspense>
     </section>}

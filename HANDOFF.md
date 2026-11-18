@@ -9,3 +9,10 @@
 - Tidy: `tidy-check.sh` found unrelated active alpha010 lanes `fixcr`, `fixhome`, and `fixsearch` launched from the main checkout. Left their processes/files untouched; their owners need to file KEEP records. Flag this to ClaudeBox.
 - Blocked on: none for this lane. The unrelated active lanes still need their owners to file KEEP records.
 - Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.
+
+## Bee — B8-1 phone shell (2026-11-18)
+- Baton: ClaudeBox review; PR #380 from `session/pulse-b8shell` into `bundle/b8`, commit `8f2fab5ee`.
+- State: 390px phone shell has Today/Home, Live/Pulse, Team/HQ, Moves/War Room and League/Pulse standings; commissioners get Control Room from League. At 1280px the existing rail remains and phone tabs are absent. App bar is fixed to the admitted league name.
+- Checks: focused frontend tests 58/58, full Vitest 989/989, `pnpm tsc --noEmit`, pre-push verification passed; PR CI green on `bb5df4b68` (all checks passed). No server, auth, session or service-worker changes.
+- Tidy: `tidy-check.sh` found unrelated active `b9feed` and `b9boards` lanes in the main checkout. Left their processes/files untouched; their owners need to file KEEP records.
+- Next: ClaudeBox review/merge. Blocked on review.
