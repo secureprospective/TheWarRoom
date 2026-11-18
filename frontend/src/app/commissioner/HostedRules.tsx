@@ -49,7 +49,8 @@ export function HostedRules({ rules, commissioner, room }: {
     <div ref={background}>
       <h3>League rules</h3>
       <p>Settings come from the league server. Sources and timing come from recorded rule data.</p>
-      {!commissioner && <p>Your commissioner controls these rules. Ask them for a ruling if a value is missing.</p>}
+      {!commissioner && <p>Your commissioner controls these rules. Ask them for a ruling if a value is
+        missing.</p>}
       {RULE_BOARDS.map(board => {
         const rows = rules.sections.flatMap(section => section.rows
           .filter(() => (SECTION_BOARD[section.label] ?? 'Other') === board)

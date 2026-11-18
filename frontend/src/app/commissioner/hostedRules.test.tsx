@@ -222,8 +222,10 @@ it('assigns each row once by its exact section and puts unknown sections in Othe
   const wire = rules();
   const source = wire.sections[0]!.rows[0]!;
   wire.sections = [
-    { label: 'League shape', rows: [{ ...source, field: 'roster.draft.first.third', label: 'Cross-match row' }] },
-    { label: 'Unlisted section', rows: [{ ...source, field: 'draft.first.third', label: 'Unknown-section row' }] },
+    { label: 'League shape', rows: [{ ...source, field: 'roster.draft.first.third',
+      label: 'Cross-match row' }] },
+    { label: 'Unlisted section', rows: [{ ...source, field: 'draft.first.third',
+      label: 'Unknown-section row' }] },
   ];
   const room = createHostedLeagueRoom(league, service());
   await act(async () => root.render(
@@ -237,7 +239,8 @@ it('owners see the ruling guidance, rule values, but no Change controls', async 
   const room = createHostedLeagueRoom(league, service());
   await act(async () => root.render(
     <HostedRules rules={parseRules(rules())} commissioner={false} room={room} />));
-  expect(host.textContent).toContain('Your commissioner controls these rules. Ask them for a ruling if a value is missing.');
+  expect(host.textContent).toContain(
+    'Your commissioner controls these rules. Ask them for a ruling if a value is missing.');
   expect(host.textContent).toContain('individual');
   expect(buttons('Change Lineup lock')).toHaveLength(0);
   expect(host.querySelector('textarea')).toBeNull();
