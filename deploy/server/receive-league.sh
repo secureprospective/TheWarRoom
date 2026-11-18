@@ -6,6 +6,8 @@ umask 077
 [ "$(id -u)" = 0 ] || { echo 'Run this as root in the CT console.' >&2; exit 1; }
 incoming=/var/lib/twr/incoming
 stage=/var/lib/twr/receive-league
+# cleanup is called by the EXIT trap below; ShellCheck does not follow that reference.
+# shellcheck disable=SC2329
 cleanup() { stty echo 2>/dev/null || true; rm -rf "$stage" "$incoming"; rc-service twr-server --ifstopped start || true; }
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM

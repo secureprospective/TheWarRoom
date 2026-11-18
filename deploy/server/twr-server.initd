@@ -18,4 +18,5 @@ depend() {
 start_pre() {
 	checkpath --directory --mode 0700 --owner twr:twr /var/lib/twr
 	checkpath --file --mode 0600 --owner twr:twr /var/lib/twr/server.log
+	/usr/local/libexec/twr-status --prepare-browser
 }
