@@ -17,3 +17,9 @@
 - Next: ClaudeBox review/merge PR #387.
 - Blocked on: none for this lane. Final `tidy-check.sh` reported unrelated active alpha010 lanes `b7lab2`, `b9fa`, and `perf`; left them untouched due worktree-only scope; owners need to file KEEP records. No task-owned scratch or staged webapp remains.
 - Tried and rejected: Do not reuse `commish.ledger.filtered.read`; it carries reasons and broader commissioner-visible entries. Reuse existing append-only records and an independent allow-list projection.
+
+## Bee — pulse-b9card
+- Baton: Bee implementing B9-3 Player card / picks, 2026-11-18, branch `session/pulse-b9card`, base `bundle/b9`.
+- State: Added phone-only player card/picks CSS stacking and a focused viewport-rule test; existing hosted scoped notes and draft queue paths remain unchanged. No player-status or NFL-stat feed added.
+- Next: Run focused tests, full Vitest/typecheck and pre-push; create PR into `bundle/b9`.
+- Blocked on: Heavy-work guard reports a full race suite is running; wait before starting gates.
