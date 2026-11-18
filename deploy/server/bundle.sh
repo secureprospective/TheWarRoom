@@ -13,9 +13,10 @@ trap 'scripts/stage-webapp.sh --clean; rm -rf "$work"' EXIT
 export GOTOOLCHAIN=go1.26.11
 (cd frontend && pnpm install --frozen-lockfile && pnpm build)
 scripts/stage-webapp.sh
-export TWR_BUILD_VERSION=$(git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo dev)
-export TWR_BUILD_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || true)
-export TWR_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+TWR_BUILD_VERSION=$(git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo dev)
+TWR_BUILD_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || true)
+TWR_BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+export TWR_BUILD_VERSION TWR_BUILD_COMMIT TWR_BUILD_DATE
 # GoReleaser OSS, not the separately licensed Pro distribution.
 curl --fail --location --silent --show-error --connect-timeout 10 --max-time 180 \
   https://github.com/goreleaser/goreleaser/releases/download/v2.19.0/goreleaser_Linux_x86_64.tar.gz \

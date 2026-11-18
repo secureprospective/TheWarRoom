@@ -10,6 +10,10 @@ respawn_max=5
 respawn_period=60
 umask=0077
 
+start_pre() {
+	/usr/local/libexec/twr-status --prepare-ingress
+}
+
 depend() {
 	# Start after the server, but never stop with it: a server restart must not leave the Tunnel down.
 	need net

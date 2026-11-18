@@ -1,13 +1,9 @@
 # Handoff
 
-- Baton: Bee, lane `pulse-b7fix`, 2026-11-18, branch `session/pulse-b7fix`, base `bundle/b7`.
-- State: commit `c35dfdb45` pushed; PR #378 targets `bundle/b7`. `ownBrowserOrigin` permits Origin-absent GET/HEAD unless Sec-Fetch-Site is cross-site; other requests still require exact Origin. Focused race tests and `make verify` passed. All PR CI checks, including all four race shards, passed.
-- Tidy: `tidy-check.sh` found unrelated active runs `b7upd` and `fixrace` running from the main checkout; left their processes and scratch untouched. Owners must file KEEP records.
-- Next: ClaudeBox review/merge PR #378. `POST /app/session` returns 409 with the desktop-app message for accounts admitted to multiple leagues. `make verify` passed, including race tests, frontend build, lint and staged embedded-bundle test; staging cleaned.
-- Flow: exact configured HTTPS Origin and Host → `/app/session` creates/revokes the existing owner session in `__Host-twr_session`; GET/POST return only the one admitted league. Native command routes accept that cookie only from the configured origin and retain current authorization/TOTP checks. `/app/` embeds the built web app with locked headers.
-- Security: browser never receives owner bearer or recent-auth proof; reject Authorization+cookie and agent tokens with Origin or as cookie; changes feed, enrollment and account-administration routes stay outside the cookie exception. No league list or `commish.leagues.read`.
-- Deployment: `-public-host` is sourced from `/etc/twr/public-host`; Cloudflare routes `/app`, and upgrade recovers the hostname from existing tunnel config. Static staging is cleaned after verify/release build.
-- Next: ClaudeBox review/merge PR #372. Alpine deployment integration was not run; changed shell scripts passed syntax checks.
-- Tidy: `tidy-check.sh` found unrelated active alpha010 lanes `fixcr`, `fixhome`, and `fixsearch` launched from the main checkout. Left their processes/files untouched; their owners need to file KEEP records. Flag this to ClaudeBox.
-- Blocked on: none for this lane. The unrelated active lanes still need their owners to file KEEP records.
-- Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.
+- Baton: ClaudeBox for review; Bee completed lane `pulse-b7upd`, 2026-11-18, branch `session/pulse-b7upd`, PR #381 to `bundle/b7`.
+- State: server and Tunnel start hooks idempotently add `/app`; server start recovers a missing public hostname from Tunnel config without logging it. Recovery is root:root 0644; failure is nonfatal and `twr-status` explains the disabled browser door. Fresh install restarts the server after Tunnel provisioning.
+- Verification: `make verify` passed after rebase; pinned-Alpine signed install/upgrade/refusal/first-load integration, release tests, ShellCheck, shell syntax, and isolated reconciliation tests passed. Alpine run preceded the unrelated #378 browser-Origin base update; deployment scripts were unchanged by rebase.
+- Next: ClaudeBox reviews PR #381; merge after all PR checks pass.
+- Blocked on: PR CI is pending.
+- Tidy-check flagged unrelated active lanes `pulse-fixrace`, `b8shell`, `b9feed`, and `b9boards`; left their processes and files untouched. Never touch CT 260.
+- Tried and rejected: a new helper would be absent during the first upgrade because the old updater installs only a fixed allowlist; reused the already-deployed `twr-status` instead.

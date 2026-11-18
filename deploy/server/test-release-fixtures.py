@@ -22,12 +22,12 @@ def fixtures(source, destination):
         root.sign(key, append=True)
     (destination / "root.json").write_bytes(root.to_bytes())
     data = source.read_bytes()
-    for case in ("good", "byte-flipped", "truncated", "script", "expired", "rollback", "lower-release", "sandbox", "newer-file"):
+    for case in ("good", "byte-flipped", "truncated", "script", "expired", "rollback", "lower-release", "sandbox", "newer-file", "first-load"):
         directory = destination / case
         directory.mkdir()
         version = {"good": 2, "byte-flipped": 3, "truncated": 4, "script": 5,
                    "expired": 6, "rollback": 1, "lower-release": 6, "sandbox": 7,
-                   "newer-file": 8}[case]
+                   "newer-file": 8, "first-load": 9}[case]
         payload = data
         if case == "sandbox":
             script = b'#!/bin/sh\n[ "$(id -u)" != 0 ] || exit 91\n[ ! -e /root/twr ] || exit 92\n[ ! -w /usr ] || exit 93\necho sandbox-ok > /var/lib/twr/candidate-marker\nexit 1\n'
@@ -39,7 +39,7 @@ def fixtures(source, destination):
             payload = stream.getvalue()
         target = TargetFile.from_data("server.tar.gz", payload, ["sha256"])
         target.unrecognized_fields["custom"] = {"twr_server_release":
-            release.server_release() - (case == "lower-release")}
+            release.server_release() - (case == "lower-release") + (case == "first-load")}
         targets = Metadata(Targets(version=version, expires=release.future(1),
                                    targets={"server.tar.gz": target}))
         targets.sign(keys["targets"][0])
