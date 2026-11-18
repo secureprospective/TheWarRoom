@@ -1035,3 +1035,32 @@
 .wr-v6 .build>.sugg{flex:0 0 auto;max-height:132px;overflow-y:auto}
 .wr-v6 .effect .wide.half{grid-column:span 1}
 .wr-v6 .read .kv span:first-child{flex:none;margin-right:12px} .wr-v6 .read .kv span:last-child{text-align:right}
+
+/* Phone trade desk: keep the private inbox and builder inside the viewport. */
+@media (max-width: 699px) {
+  .wr-v6.embedded { width: 100%; min-width: 0; min-height: 0; height: auto; }
+  .wr-v6.embedded .shell { display: block; min-width: 0; }
+  .wr-v6.embedded .work { display: block; width: 100%; min-width: 0; overflow: visible; }
+  .wr-v6.embedded .work > * { min-width: 0; }
+  .wr-v6.embedded .desk { display: flex; flex-direction: column; min-width: 0; overflow: visible; }
+  .wr-v6.embedded .desk > .shelf,
+  .wr-v6.embedded .desk > .build { width: 100%; min-width: 0; max-height: none; overflow: visible; }
+  .wr-v6.embedded .desk > .build { order: 1; }
+  .wr-v6.embedded .desk > .shelf:first-child { order: 0; }
+  .wr-v6.embedded .desk > .shelf:last-child { order: 2; }
+  .wr-v6.embedded .desk .trays { grid-template-columns: minmax(0,1fr); }
+  .wr-v6.embedded .desk .tray2 { min-height: 0; }
+  .wr-v6.embedded .desk .blk.trow { grid-template-columns: 30px minmax(0,1fr) 22px 36px 36px; height: auto; min-height: 44px; }
+  .wr-v6.embedded .desk .tcols { grid-template-columns: 30px minmax(0,1fr) 22px 36px 36px; padding-inline: 10px; }
+  .wr-v6.embedded .desk .lenses { padding: 12px; }
+  .wr-v6.embedded .desk [aria-live="polite"] { position: sticky; bottom: 0; z-index: 5; padding: 8px; background: var(--canvas); border-top: 1px solid var(--edge); }
+  .wr-v6.embedded .desk .effect { grid-template-columns: minmax(0,1fr); }
+  .wr-v6.embedded .desk .effect .wide.half,
+  .wr-v6.embedded .desk .effect .wide.half + .wide.half { grid-column: auto; }
+  .wr-v6.embedded .desk .shelf .list { max-height: 240px; overflow-y: auto; }
+  .wr-v6.embedded .partner select,
+  .wr-v6.embedded .desk .btn,
+  .wr-v6.embedded .desk button { min-height: 44px; }
+  .wr-v6.embedded .bdrawer { position: relative; inset: auto; width: 100%; max-height: 65vh; }
+  .wr-v6.embedded .bd-body { max-height: 52vh; overflow-y: auto; }
+}
