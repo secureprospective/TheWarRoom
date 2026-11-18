@@ -89,3 +89,24 @@
   .thin-home__needs { border-right: 0; border-bottom: 2px solid #000; }
   .thin-home__cards { grid-template-columns: minmax(0, 1fr); }
 }
+
+@media (max-width: 699px) {
+  .native-account.has-thin-home { padding: 8px 8px 12px; }
+  .native-account .thin-home { overflow-y: auto; }
+  .thin-home__header { align-items: flex-start; gap: 8px; padding: 12px; }
+  .thin-home__header h1 { font-size: 20px; }
+  .thin-home__content { display: flex; flex-direction: column; overflow: visible; }
+  .thin-home__needs, .thin-home__leagues { flex: none; width: 100%; overflow: visible; }
+  .thin-home__needs { border-bottom: 2px solid #000; }
+  .thin-home__section-head { padding: 12px; }
+  .thin-home__items { padding: 0 8px 12px; }
+  .thin-home .thin-home__need.act { min-height: 62px; padding: 10px 8px; gap: 5px 8px; }
+  .thin-home .thin-home__need time { align-self: center; }
+  .thin-home__cards { gap: 10px; padding: 10px 8px 12px; }
+  .thin-home__card { min-height: 0; }
+  .thin-home .thin-home__league-open.act { min-height: 48px; padding: 8px; }
+  .thin-home__crest { width: 36px; height: 36px; }
+  .thin-home__facts { padding-inline: 10px; }
+  .thin-home .thin-home__shortcuts { gap: 6px; padding: 8px; }
+  .thin-home .thin-home__shortcut.act { min-height: 44px; padding-inline: 10px; }
+}

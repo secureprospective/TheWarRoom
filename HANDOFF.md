@@ -10,6 +10,15 @@
 - Blocked on: none for this lane. The unrelated active lanes still need their owners to file KEEP records.
 - Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.
 
+## Bee — B8-2 Today / Needs you (2026-11-18)
+- Baton: Bee, branch `session/pulse-b8today`, base `bundle/b8` with PR #380.
+- State: added <=699px Today layout styling in `frontend/src/app/shell/thinHome.css`; increased phone action targets and stacked content. Added 390px-viewport regression to `ThinHome.test.tsx`; existing hosted reads and unavailable states retained.
+- Checks: focused Vitest 22/22; full Vitest 990/990; `pnpm tsc --noEmit`; `git diff --check`; `tidy-check.sh` clean. One initial full-suite run had a transient unrelated `hostedPulse.test.tsx` failure and a test line-length finding; split the import and reran, all tests passed.
+- State: commit `23e2d01ac` pushed; PR #382 into `bundle/b8`; CI all green.
+- Checks: focused Vitest 22/22; full Vitest 990/990; `pnpm tsc --noEmit`; pre-push verification passed. `tidy-check.sh` initially clean; final check found unrelated active `b8team`, `b8live`, and `b8bids` lanes in other run dirs. Left their processes/files untouched; owners need KEEP records.
+- Next: ClaudeBox review; do the Brave 390x844 visual/no-overflow check and 1280px desktop comparison. Automated 390px test verifies content and unavailable state but does not emulate layout.
+- Blocked on: visual checks/review.
+
 ## Bee — B8-1 phone shell (2026-11-18)
 - Baton: ClaudeBox review; PR #380 from `session/pulse-b8shell` into `bundle/b8`, commit `8f2fab5ee`.
 - State: 390px phone shell has Today/Home, Live/Pulse, Team/HQ, Moves/War Room and League/Pulse standings; commissioners get Control Room from League. At 1280px the existing rail remains and phone tabs are absent. App bar is fixed to the admitted league name.
