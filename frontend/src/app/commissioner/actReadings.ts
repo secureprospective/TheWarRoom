@@ -243,8 +243,9 @@ export async function readHostedActData(league: string, revision: number, kinds:
       const original = options.franchise?.find(team => team.value === pick.original)?.label
         ?? 'Original franchise';
       return {
-        value: JSON.stringify({ season: pick.season, round: pick.round, original: pick.original }),
-        label: `${pick.season}, round ${pick.round}: ${original}`,
+        value: JSON.stringify({ season: pick.season, round: pick.round, original: pick.original,
+          slot: pick.slot }),
+        label: `${pick.season}, round ${pick.round}, slot ${pick.slot}: ${original}`,
       };
     });
     options.scope = [...(options.scope ?? []), ...players.map(player => ({

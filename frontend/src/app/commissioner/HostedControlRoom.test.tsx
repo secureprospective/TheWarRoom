@@ -27,11 +27,19 @@ function jobs(count: number) {
     controls: i === 0 ? ['CM-027'] : [],
   })) };
 }
+function ledger() {
+  return { league, name: 'Test League', revision: 7,
+    entries: Array.from({ length: 32 }, (_, i) => ({
+      id: `entry-${i}`, who: 'Commissioner', what: `Change ${i + 1}`, why: 'Test reason',
+      when: '2026-11-17T12:00:00Z', gravity: 'G1', undo: '',
+    })) };
+}
 function port(count: number): HostedPort & ReturnType<typeof vi.fn> {
   return vi.fn(async (request: NativeRequest) => {
     let data: unknown;
     if (request.command === 'commish.rules.read') data = ruleReading;
     else if (request.command === 'commish.jobs.read') data = jobs(count);
+    else if (request.command === 'commish.ledger.read') data = ledger();
     else throw new Error(`Unexpected hosted request: ${request.command}`);
     return { data, label: 'League server', writable: true, football: 'held-pin' };
   }) as HostedPort & ReturnType<typeof vi.fn>;
@@ -74,6 +82,26 @@ it.each(['Commissioner', 'Co-commissioner'])(
   expect(host.textContent).toContain('Preview move to the next season');
   },
 );
+
+it('shows the hosted server ledger at 32 entries and leaves operator actions unavailable', async () => {
+  const read = port(32);
+  await act(async () => root.render(<HostedLeague league={league} franchise=""
+    name="Test League" role="Commissioner" port={read} />));
+  const controlRoom = [...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(button => button.textContent === 'Control Room');
+  await act(async () => controlRoom!.click());
+  await settle();
+  const serverTab = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+    .find(button => button.textContent?.includes('Server'));
+  await act(async () => serverTab!.click());
+  await vi.waitFor(async () => {
+    await settle();
+    expect(host.textContent).toContain('Change 32');
+  });
+  expect(read.mock.calls.some(([request]) => request.command === 'commish.ledger.read')).toBe(true);
+  expect(host.textContent).toContain('operator-only');
+  expect(host.querySelectorAll('[aria-label="Server status"] ol li')).toHaveLength(32);
+});
 
 it('opens the server-backed Rules board and renders all 32 settings with their recorded source', async () => {
   const read = port(0);

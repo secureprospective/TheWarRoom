@@ -53,6 +53,8 @@ func (h StoredHost) CommissionerRecords(ctx context.Context, league string) ([]c
 	}
 	return records, nil
 }
+
+// StoredHost holds no football schedule; an empty result leaves week-locked jobs unproduced.
 func (StoredHost) NativeScheduleDates(context.Context, int, time.Time) ([]leagueweek.Week, error) {
-	return nil, fmt.Errorf("use the server-held league schedule")
+	return nil, nil
 }
