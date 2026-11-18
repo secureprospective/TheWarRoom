@@ -108,6 +108,26 @@ func (f *marketFixture) act(t *testing.T, command string, args commissioner.RawA
 
 func TestMarketBodies(t *testing.T) { marketBodiesLedger(t) }
 
+func TestBidWithdrawIsAlwaysRefused(t *testing.T) {
+	f := newMarketFixture(t)
+	f.setup = true
+	bid := f.act(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{
+		Player: "5001", Franchise: "franchise.01", Salary: 500000000, Years: 2,
+	}}, "owner.one")
+	records := len(f.b.records)
+	raw := commissioner.RawCommand{League: rolloverLeague, Command: commissioner.BidWithdraw,
+		Args:       commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Bid: bid, Franchise: "franchise.01"}},
+		Visibility: "private"}
+	err := PrepareBidAppend(&raw, f.b.records, f.now, f.facts, time.UTC,
+		BidEnvironment{Season: nativecheck.BidSeason{Week: 5, WeekKnown: true}})
+	if err == nil || err.Error() != "a bid is binding: it ends only when it is outbid or wins" {
+		t.Fatalf("bid withdrawal refusal = %v", err)
+	}
+	if len(f.b.records) != records {
+		t.Fatalf("refused withdrawal changed ledger from %d records to %d", records, len(f.b.records))
+	}
+}
+
 // marketBodiesLedger plays every market command once, checking each appended body against its golden.
 func marketBodiesLedger(t *testing.T) *marketFixture {
 	t.Helper()

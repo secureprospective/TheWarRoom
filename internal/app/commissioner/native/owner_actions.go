@@ -69,7 +69,7 @@ func WaiverFamily() OwnerFamily {
 }
 
 func BidFamily() OwnerFamily {
-	return OwnerFamily{choose: "to place, raise or withdraw a bid", label: "native bid action",
+	return OwnerFamily{choose: "to place or raise a bid", label: "native bid action",
 		seat: func(raw commissioner.RawCommand) (string, leaguerules.Action, bool) {
 			if raw.Args.Bid == nil {
 				return "", "", false

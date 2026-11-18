@@ -52,7 +52,6 @@ const ownerActs = [
     ],
     true,
   ),
-  owner('bid.withdraw', 'Withdraw your bid', 'bid', [field('bid', 'Your bid', 'bid')], true),
   owner('roster.cut', 'Release a player to waivers', 'waiver', [
     field('player', 'Your player', 'player'),
   ]),

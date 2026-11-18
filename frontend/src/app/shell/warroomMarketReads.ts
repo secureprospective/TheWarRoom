@@ -167,7 +167,6 @@ export type WarRoomMarketAction =
       revision: number; maxYears: number; capRoom?: number; writable: boolean; football: string }
   | { type: 'raise'; bid: WarRoomOwnBid; salaryCents: number; years: number;
       revision: number; maxYears: number; capRoom?: number; writable: boolean; football: string }
-  | { type: 'withdraw'; bid: WarRoomOwnBid; revision: number; writable: boolean; football: string }
   | { type: 'confirm'; request: NativeRequest; football: string };
 export type WarRoomMarketActionResult =
   | { kind: 'plan'; plan: Plan }
@@ -176,7 +175,7 @@ export type WarRoomMarketActionResult =
       capRoom?: number; refreshError?: string };
 function validatePrivateBidPreview(request: NativeRequest, league: string) {
   const args = request.arguments as unknown as { league?: unknown; command?: unknown; visibility?: unknown };
-  if (request.mode !== 'preview' || !(['bid.place', 'bid.raise', 'bid.withdraw'] as string[])
+  if (request.mode !== 'preview' || !(['bid.place', 'bid.raise'] as string[])
     .includes(request.command) || args.league !== league || args.command !== request.command ||
     args.visibility !== 'private') throw new Error('Only a reviewed private bid can be confirmed');
 }
@@ -216,7 +215,7 @@ export async function warRoomMarketAction(c: WarRoomContext, action: WarRoomMark
       ...(cap.status === 'fulfilled' ? { capRoom: cap.value } : {}),
       ...(refreshError ? { refreshError } : {}) };
   }
-  let command: 'bid.place' | 'bid.raise' | 'bid.withdraw';
+  let command: 'bid.place' | 'bid.raise';
   let bid: Record<string, unknown>;
   if (action.type === 'place') {
     validateHostedContract(action.salaryCents, action.years, action.maxYears, action.capRoom);
@@ -228,10 +227,6 @@ export async function warRoomMarketAction(c: WarRoomContext, action: WarRoomMark
     if (!action.bid.bidId) throw new Error('Your recorded bid is unavailable; refresh before revising');
     command = 'bid.raise';
     bid = { bid: action.bid.bidId, franchise: c.mine, salaryCents: action.salaryCents, years: action.years };
-  } else if (action.type === 'withdraw') {
-    if (!action.bid.bidId) throw new Error('Your recorded bid is unavailable; refresh before withdrawing');
-    command = 'bid.withdraw';
-    bid = { bid: action.bid.bidId, franchise: c.mine };
   } else {
     throw new Error('A hosted bid command is required');
   }
