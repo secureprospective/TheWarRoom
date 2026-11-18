@@ -1,11 +1,10 @@
 # Handoff
 
-- Baton: ClaudeBox, 2026-11-17 (PR #347 open; review pending).
-- State: Hosted Control Room frame, Jobs and Situations are implemented in `frontend/src/app/commissioner/`. Jobs and League Health share the `commish.jobs.read` count; commissioner forms stay on `hostedRoom`.
-- Scope: thin hosted mode only; local mode unchanged. Snooze/settlement remain out of scope.
-- Verified: frontend 127 files/919 tests; `pnpm exec tsc --noEmit`; path-casing check; `make lint`; `make bloat`; PR CI green.
-- Slop fixed: shared jobs read/count; reused act-table form and hosted command path; renamed helper module to avoid case-insensitive collision with `HostedControlRoom.tsx`.
-- Next: ClaudeBox review and merge PR #347 into `bundle/b5`.
-- Blocked: none. Deputy visibility comes from the server read; permission checks stay on the hosted command path.
+- Baton: ClaudeBox, 2026-11-18 (PR #350 open against `bundle/b5`; latest CI pending).
+- State: Hosted Rules board is server-backed; rule rows route by explicit section-label table, unknown sections go to Other. Owners see the commissioner ruling guidance. Preset comparison, house rules and written requests remain unavailable without hosted reads.
+- Verified: full frontend suite (921/921), frontend typecheck, targeted Rules/Control Room tests (21), `make lint`, `make bloat`, tidy-check; changed-package pre-push checks passed.
+- Slop fixed: removed name-substring rule-board classification, which could duplicate/misclassify rows; added explicit fallback and test. Restored required owner guidance. PR body lists both fixes.
+- Next: ClaudeBox reviews PR #350 and checks CI.
+- Blocked: preset comparison read is available in desktop bindings but not hosted room reads; no side-door read added. House rules/written requests have no hosted reads.
 - Open decisions deliberately untouched: snooze per person/league; deputy job visibility; written-request visibility; division naming.
 - Tried/rejected: none.
