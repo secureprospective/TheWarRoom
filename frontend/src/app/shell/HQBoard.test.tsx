@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { HQBoard, boardSlots, PlayerFormBars } from './HQBoard';
 import { heldLineup, heldSnapshot } from '../data/lineupTestData';
@@ -21,6 +21,21 @@ describe('HQ starter and bench board', () => {
     expect(projections(snap, board(r), 5).size).toBe(0);
     expect(totalProjection(['missing'], new Map())).toBe(unavailable);
     expect(totalProjection(['one', 'two'], new Map([['one', 1], ['two', 2.5]]))).toBe('3.5');
+  });
+  it('selects the existing HQ player card when a roster name is clicked', async () => {
+    const { all, click, flush, mount, unmount } = await import('../commissioner/commissionerDom');
+    const snapshot = heldSnapshot(), reading = heldLineup(), selected = vi.fn();
+    const id = reading.starters[0].id;
+    const name = snapshot.players.value.find(player => player.id === id)!.name!;
+    try {
+      const host = await mount(<HQBoard snapshot={snapshot} mine="0025" reading={reading}
+        settings={{ positions: [], starters: reading.starterCount }} values={new Map()} select={selected} />);
+      await flush();
+      const row = all(host, 'button').find(button => button.textContent.includes(name));
+      expect(row).toBeDefined();
+      await click(row!);
+      expect(selected).toHaveBeenCalledWith(id);
+    } finally { await unmount(); }
   });
   it('renders per-player started-week points, never team outcomes, as HQ form bars', () => {
     const html = renderToStaticMarkup(<PlayerFormBars points={[{ week: 4, points: 10 },

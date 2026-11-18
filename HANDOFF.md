@@ -1,9 +1,11 @@
 # Handoff
 
-- Baton: Christopher, 2026-11-18; PR #363 is open into `bundle/b3`.
-- State: Fixed thin `ThinHome` mounts after admission; alpha exposes only the admitted league. Cards open hosted HQ, shortcuts and actionable Needs-you items pass their hosted entry, and Control Room opens hosted rules. Local mode remains untouched.
-- Reads: Home derives people scope from admission, not local bindings. Franchise members reuse hosted `readHomeBrief` without local research; unassigned commissioners read league Pulse and jobs only (calendar requires a franchise). No `commish.leagues.read` or cross-league probes.
-- Checks: targeted Vitest 51/51; `pnpm exec tsc --noEmit`, `make lint`, and `make bloat` pass. Pre-push verify passed; PR checks are green at `b7a157029`.
-- Next: review PR #363 and manually inspect thin Home plus its HQ/War Room/Pulse/Control Room and Needs-you entry routes before merge.
-- Blocked on: `tidy-check.sh` reported unrelated live `pulse-b5backup` (PID 90442), `pulse-b4sync` (PID 128631), and `pulse-b5league` (PID 4122593) launchers. Left them running; their workdirs/KEEP paths are outside this authorized worktree.
-- Tried/rejected: no local `TargetApp`/`AppLeagueMount` port; no server-wide league enumeration or cross-league read probing (privacy ruling).
+- Baton: Bee, 2026-11-18.
+- State: Merge commit `02d883dd5` is pushed; PR #364 into `bundle/b4` is open. CI passed on branch head `a087a605e` (handoff-only follow-up).
+- Resolved: `hqReading.ts` retains player-search data while adding Bundle 1 form/contract-decision reads; `NativeFranchiseHQ.tsx` enables contract decisions and publishes search data; `HQBoard.test.tsx` keeps both interaction and form tests; `PulseRace.tsx` keeps clickable franchise names, recent form, and schedule failure states. `hostedPulse.test.tsx` uses thin-rail node/leaf helpers for its schedule cases. `HQPanels.tsx` keeps the decision panel and shared “DEADLINES” label, preserving Bundle 4's source-branch ratchet. HANDOFF kept from this branch.
+- Next: confirm checks on the current PR head, then Christopher reviews/merges PR #364 into `bundle/b4`.
+- Checks: TypeScript, all 936 Vitest tests, production build, `make verify`, push hook, and CI at `a087a605e` pass; full Go race suite and frontend security/bundle checks passed. The 600-second wrapper timed out during Go tests; rerunning with Make's 60-minute test timeout completed successfully. Recheck CI after any further push.
+- Previous b4 work: thin Home-first rail and held-read player search; HQ roster, War Room and Pulse player names open existing inspectors; Pulse Race franchise names open the franchise inspector. Local mode remains frozen.
+- Previous checks: TypeScript, full Vitest (124 files/915 tests), lint, pre-push verify, and PR CI passed before this merge.
+- Prior b0load work: `league-load` fresh-server initialization and opt-in `TWR_FIRST_LOAD=1`; installer first-load path remains untested (requires Alpine CT; no containers in that lane).
+- Merge-in-progress (2026-11-18): merging `origin/main` `06529b7d5` into `bundle/b4` per `pulse-b4sync2`. Kept this branch's handoff. Resolved conflicts in `HANDOFF.md`, `HostedLeague.tsx`, `HostedCommissionerLeague.tsx`, `hostedMarkets.ts`, `hqReading.ts`, `HQPanels.tsx`, `NativeFranchiseHQ.tsx`, `PulseRace.tsx`, `HQBoard.test.tsx`, and `hostedPulse.test.tsx`; regenerated native bindings. Main's `ThinHome` remains the one Home: the B4 rail calls NativeAccount's back-to-Home callback, covered through the real rail and account tests. TypeScript, all 946 Vitest tests, frontend build, and `make verify` pass. Next: commit merge, push a PR branch against `bundle/b4`, and check CI.

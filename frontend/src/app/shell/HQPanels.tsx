@@ -187,7 +187,7 @@ export function HQContracts({ snapshot, mine, contracts, runway, facts, select, 
     {native && <><div className="ch"><b>DECISIONS DUE</b><span>priced by league rules · season {
       contractDecisions?.season ?? season}</span></div><ContractDecisionList reading={contractDecisions}
         canDecide={decisionReady ?? false} decide={decide} /></>}
-    <div className="ch"><b>{native ? 'LEAGUE WINDOWS' : 'DEADLINES'}</b>
+    <div className="ch"><b>DEADLINES</b>
       <span>from the league calendar</span></div>
     <div className="dec">{decisions?.length ? decisions.map((decision, i) =>
       <p className="empty" key={`${decision.label}-${i}`} title={decision.at}>{decision.label}

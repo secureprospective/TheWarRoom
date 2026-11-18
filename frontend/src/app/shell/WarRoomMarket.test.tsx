@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { heldSnapshot } from '../data/lineupTestData';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {
   all,
@@ -53,6 +55,7 @@ vi.mock('./warroomReads', async () => {
   } };
 });
 import { WarRoomMarket } from './WarRoomMarket';
+import { WarRoomInspector } from './WarRoomInspector';
 
 beforeEach(() => { reading.capRoom = 8500000000; reading.integrate = false; reading.bids = [];
   reading.bidRevision = 4; reading.maxYears = 4; reading.writable = true; reading.football = 'pin'; });
@@ -60,6 +63,19 @@ afterEach(async () => { reading.integrate = false; await unmount(); vi.restoreAl
 
 const context = { mine: 'franchise.mine', snapshot: {} as WarRoomContext['snapshot'], week: 1,
   native: { league: 'native.test', mine: 'franchise.mine', owner: true, leave: () => {} } } as WarRoomContext;
+
+it('opens the existing War Room card when a market player name is selected', async () => {
+  function Probe() {
+    const [asset, setAsset] = useState<{ token: string; name: string }>();
+    const cardContext = { ...context, snapshot: heldSnapshot() };
+    return <><WarRoomMarket context={cardContext} select={player => setAsset({ token: player.id,
+      name: player.name })} /><WarRoomInspector context={cardContext} asset={asset} /></>;
+  }
+  const host = await mount(<Probe />);
+  await flush(); await click(button(host, 'Need and affordable')); await flush();
+  const inspector = all(host, 'aside').find(node => node.attributes.get('aria-label') === 'Inspector');
+  expect(inspector?.textContent).toContain('Need and affordable');
+});
 
 it('filters hosted players by the header needs and server cap room', async () => {
   const host = await mount(<WarRoomMarket context={context} needs={[

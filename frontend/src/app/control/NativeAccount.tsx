@@ -150,7 +150,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <Suspense fallback={<p>Opening your league…</p>}>
         <HostedLeague key={`${fence.key}:${activeLeague.id}`} league={activeLeague.id}
           franchise={activeLeague.franchise ?? ''} name={activeLeague.franchiseName ?? ''}
-          role={activeLeague.role ?? ''} entry={activeEntry} hq />
+          role={activeLeague.role ?? ''} entry={activeEntry} hq
+          onHome={() => setActiveLeagueId(undefined)} />
       </Suspense>
     </section>}
     {homeReady && activeLeague && admission && admission.seats.length > 0 &&

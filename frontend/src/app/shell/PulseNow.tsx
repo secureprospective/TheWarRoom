@@ -9,6 +9,7 @@ import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
 import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveContract';
 import type { usePulseLive } from './hqLive';
 import { boxLine, compactLine } from './statLine';
+import type { PlayerCandidate } from './ThinPlayerSearch';
 import { PulseDrawer } from './PulseDrawer';
 import { applyFilter, bySlot, espnTeam, playWords,
   changePoints, changeVerdict, filterCounts, groupRows, pairStarters, pulseRows,
@@ -25,12 +26,14 @@ type Reading<T> = { reading?: T; pending?: boolean; error?: string };
 export type NowDrawer = 'box' | 'corr';
 
 export function PulseNow({ reading, mine, week, results, league, port, live, drawer,
-  onClose, onChanges, viewer }: {
+  onClose, onChanges, onPlayer, onPlayers, viewer }: {
   reading: NativePulse; mine: string; week?: number; results: Reading<PulseResults>;
   league: string; port: HostedPort;
   live: ReturnType<typeof usePulseLive> & { prefer?: (key: string) => void };
   viewer?: { mine: string; commissioner: boolean };
   drawer?: NowDrawer; onClose: () => void; onChanges: (count: number) => void;
+  onPlayer?: (player: PlayerCandidate) => void;
+  onPlayers?: (players: PlayerCandidate[]) => void;
 }) {
   const [side, setSide] = useState<'mu' | 'nfl'>('mu');
   const [filter, setFilter] = useState<PulseFilter>('all');
@@ -43,6 +46,11 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
   const sides = useStarterSides(reading, week, results.reading, selected, league, port, mine, viewer);
   const changes = statChanges(sides.left, sides.right);
   useEffect(() => onChanges(changes.length), [onChanges, changes.length]);
+  useEffect(() => {
+    if (results.reading) onPlayers?.(results.reading.scores.flatMap(score => score.starters.map(player => ({
+      id: player.player, name: player.name, position: player.position,
+    }))));
+  }, [onPlayers, results.reading]);
   const games = current ? live.view?.games ?? [] : [];
   const followed = current ? live.view?.followed ?? undefined : undefined;
   const myStarters = sides.mine ? sides.left : [];
@@ -101,14 +109,15 @@ export function PulseNow({ reading, mine, week, results, league, port, live, dra
               MY MATCHUP ‹</PulseAct>}</>}</b>
           <span>{selected ? `${selected.game.awayName} · ${selected.game.homeName}` : ''}</span>
         </div>
-        <Starters results={results.reading} row={selected} sides={sides} games={games} />
+        <Starters results={results.reading} row={selected} sides={sides} games={games}
+          onPlayer={onPlayer} />
       </div>
     </div>
     <div className="pcol">
       <div className="ch"><b>IN THIS GAME</b>
         <span className="src">{followed ? `${followed.away.abbreviation} at ${followed.home.abbreviation}`
           : 'follow a game'}</span></div>
-      <InThisGame followed={followed} sides={sides} row={selected} />
+      <InThisGame followed={followed} sides={sides} row={selected} onPlayer={onPlayer} />
       <div className="ch" style={{ borderTop: '2px solid var(--black)' }}>
         <b>PLAY-BY-PLAY</b><span className="src">{followed ? `${followed.plays.length} plays` : ''}</span>
       </div>
@@ -254,8 +263,8 @@ export function FollowedGame({ game }: { game: LiveNflGame }) {
 function ordinal(n: number) { return `${n}${['th', 'st', 'nd', 'rd'][n] ?? 'th'}`; }
 
 
-export function InThisGame({ followed, sides, row }: { followed?: LiveNflGame; sides: StarterSides;
-  row?: PulseRow }) {
+export function InThisGame({ followed, sides, row, onPlayer }: { followed?: LiveNflGame;
+  sides: StarterSides; row?: PulseRow; onPlayer?: (player: PlayerCandidate) => void }) {
   if (!followed) return <PulseIdle words="Follow an NFL game to see who in this matchup is playing in it." />;
   const teams = [followed.away.abbreviation, followed.home.abbreviation];
   const inGame = (rows: PulseStarterRow[], mine: boolean) => rows
@@ -268,8 +277,11 @@ export function InThisGame({ followed, sides, row }: { followed?: LiveNflGame; s
   return <div className="scroll">{players.map(p =>
     <div key={p.player} className={`onf ${p.mine ? 'me' : 'th'}`} title={p.words}>
       <span className="rib" />
-      <span className="nm">{p.name}
-        <small>{p.slot} · {p.team} · {p.mine ? sides.leftName : sides.rightName}</small></span>
+      {onPlayer ? <PulseAct className="nm" label={`Open ${p.name} player card`}
+        onAction={() => onPlayer({ id: p.player, name: p.name, position: p.slot })}>{p.name}
+        <small>{p.slot} · {p.team} · {p.mine ? sides.leftName : sides.rightName}</small></PulseAct>
+        : <span className="nm">{p.name}
+          <small>{p.slot} · {p.team} · {p.mine ? sides.leftName : sides.rightName}</small></span>}
       <b>{pointsLabel(p.points)}</b>
     </div>)}</div>;
 }
@@ -386,8 +398,8 @@ function useStarterSides(reading: NativePulse, week: number | undefined, results
   };
 }
 
-function Starters({ results, row, sides, games }: { results?: PulseResults; row?: PulseRow;
-  sides: StarterSides; games: LiveNflGame[] }) {
+function Starters({ results, row, sides, games, onPlayer }: { results?: PulseResults; row?: PulseRow;
+  sides: StarterSides; games: LiveNflGame[]; onPlayer?: (player: PlayerCandidate) => void }) {
   if (!row) return <PulseIdle words="No game is read for this week yet." />;
   const leftScore = scoreOf(results, sides.leftId ?? '');
   const rightScore = scoreOf(results, sides.rightId ?? '');
@@ -411,7 +423,7 @@ function Starters({ results, row, sides, games }: { results?: PulseResults; row?
     </div>
     {groups.flatMap(g => [<div className="mgrp" key={g.heading}>{g.heading}</div>,
       ...g.pairs.map((pair, i) => <StarterRow key={`${g.heading}-${pair.slot}-${i}`} pair={pair}
-        games={games} defense={g.heading === 'DEFENSE'} />)])}
+        games={games} defense={g.heading === 'DEFENSE'} onPlayer={onPlayer} />)])}
   </div>;
 }
 
@@ -433,8 +445,8 @@ function gameOf(p: PulseStarterRow | undefined, games: LiveNflGame[]) {
   return club ? games.find(g => g.away.abbreviation === club || g.home.abbreviation === club) : undefined;
 }
 
-function StarterRow({ pair, games, defense }: { pair: StarterPair; games: LiveNflGame[];
-  defense: boolean }) {
+function StarterRow({ pair, games, defense, onPlayer }: { pair: StarterPair; games: LiveNflGame[];
+  defense: boolean; onPlayer?: (player: PlayerCandidate) => void }) {
   const { left, right } = pair;
   const chip = (p?: PulseStarterRow, r = false) => {
     const g = gameOf(p, games);
@@ -451,7 +463,10 @@ function StarterRow({ pair, games, defense }: { pair: StarterPair; games: LiveNf
       title="on the field" />;
   };
   const cell = (p?: PulseStarterRow, r = false) => <div className={r ? 'p r' : 'p'} title={p?.words}>
-    <div className="nm">{r && p?.team && <small>{p.team}</small>}<span>{p?.name ?? ''}</span>
+    <div className="nm">{r && p?.team && <small>{p.team}</small>}
+      {p && onPlayer ? <PulseAct className="player-name" label={`Open ${p.name} player card`}
+        onAction={() => onPlayer({ id: p.player, name: p.name, position: p.slot })}>{p.name}</PulseAct>
+        : <span>{p?.name ?? ''}</span>}
       {!r && p?.team && <small>{p.team}</small>}</div>
     {p && <Line p={p} />}
   </div>;
