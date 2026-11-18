@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp/landing"
@@ -75,9 +76,17 @@ func validPublicHostLabel(label string) bool {
 }
 
 func (h Hosted) ownBrowserOrigin(r *http.Request) bool {
+	if r.TLS == nil || !validPublicHost(h.PublicHost) || r.Host != h.PublicHost {
+		return false
+	}
+	if slices.Contains(r.Header.Values("Sec-Fetch-Site"), "cross-site") {
+		return false
+	}
 	origins := r.Header.Values("Origin")
-	return r.TLS != nil && validPublicHost(h.PublicHost) && len(origins) == 1 &&
-		origins[0] == "https://"+h.PublicHost && r.Host == h.PublicHost
+	if len(origins) == 0 {
+		return r.Method == http.MethodGet || r.Method == http.MethodHead
+	}
+	return len(origins) == 1 && origins[0] == "https://"+h.PublicHost
 }
 
 func (h Hosted) originAdmissible(r *http.Request) bool {

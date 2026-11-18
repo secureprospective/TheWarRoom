@@ -134,6 +134,52 @@ func TestBrowserSessionCookieLifecycleAndNativeRoute(t *testing.T) {
 	}
 }
 
+func TestBrowserSessionGETAllowsMissingOriginButRejectsCrossSite(t *testing.T) {
+	f := newHostedFixture(t)
+	_, cookie := appLogin(t, f, "commissioner", "private-password", "")
+
+	response, body := browserRequest(t, f, http.MethodGet, serverhttp.AppSessionPath, "", cookie.Value, "")
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("GET without Origin: status=%d body=%s", response.StatusCode, body)
+	}
+
+	for _, tc := range []struct {
+		name   string
+		origin string
+		fetch  string
+		method string
+		want   int
+	}{
+		{name: "cross-site fetch", fetch: "cross-site", method: http.MethodGet, want: http.StatusForbidden},
+		{name: "wrong origin", origin: "https://elsewhere.example", method: http.MethodGet, want: http.StatusForbidden},
+		{name: "login without origin", method: http.MethodPost, want: http.StatusForbidden},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request, err := http.NewRequestWithContext(t.Context(), tc.method, f.server.URL+serverhttp.AppSessionPath, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			request.Host = "league.example.test"
+			if tc.origin != "" {
+				request.Header.Set("Origin", tc.origin)
+			}
+			if tc.fetch != "" {
+				request.Header.Set("Sec-Fetch-Site", tc.fetch)
+			}
+			request.AddCookie(&http.Cookie{Name: "__Host-twr_session", Value: cookie.Value, Path: "/",
+				Secure: true, HttpOnly: true, SameSite: http.SameSiteStrictMode})
+			result, err := f.server.Client().Do(request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_ = result.Body.Close()
+			if result.StatusCode != tc.want {
+				t.Fatalf("status=%d, want %d", result.StatusCode, tc.want)
+			}
+		})
+	}
+}
+
 func TestBrowserCookieOriginAndCredentialAmbiguityRefused(t *testing.T) {
 	f := newHostedFixture(t)
 	_, cookie := appLogin(t, f, "commissioner", "private-password", "")
@@ -266,7 +312,7 @@ func TestBrowserSessionNeedsExactOriginAndCookie(t *testing.T) {
 		cookie string
 		status int
 	}{
-		{name: "missing origin", cookie: "some-token", status: http.StatusForbidden},
+		{name: "missing origin with invalid cookie", cookie: "some-token", status: http.StatusUnauthorized},
 		{name: "other origin", origin: "https://evil.example", status: http.StatusForbidden},
 		{name: "http origin", origin: "http://league.example.test", status: http.StatusForbidden},
 		{name: "null origin", origin: "null", status: http.StatusForbidden},
