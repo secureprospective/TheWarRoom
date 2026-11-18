@@ -71,7 +71,7 @@ func newOneFileServer(t *testing.T) oneFile {
 	if s.proofs, err = accountstore.MoveProofs(ctx, pools); err != nil {
 		t.Fatal(err)
 	}
-	if len(s.proofs) != len(accountstore.SignInTables())+2 || s.proofs["accounts"].Rows != 2 || s.proofs["league_join_links"].Rows != 1 {
+	if len(s.proofs) != len(accountstore.SignInTables())+1 || s.proofs["accounts"].Rows != 2 || s.proofs["league_join_links"].Rows != 1 {
 		t.Fatalf("fixture too thin: %+v", s.proofs)
 	}
 	if s.security, err = store.VerifyAudit(ctx); err != nil || s.security.Size == 0 {
@@ -169,6 +169,7 @@ func TestConversionMismatchRefusesAndChangesNothing(t *testing.T) {
 		`UPDATE accounts SET password_hash = password_hash || 'x' WHERE username = 'owner'`,
 		`DELETE FROM league_join_links`,
 		`UPDATE account_auth_epoch SET epoch = CASE WHEN substr(epoch, 1, 1) = 'a' THEN 'b' ELSE 'a' END || substr(epoch, 2)`,
+		`INSERT INTO account_home_layouts(account_id, layout, revision) SELECT id, '{"mode":"default","tiles":[],"over":[],"pins":{}}', 1 FROM accounts WHERE username='owner'`,
 		`INSERT INTO audit_chain VALUES ('account_security_audit', 999999, 'forged', 'd', 'p', 'h')`,
 	} {
 		t.Run(tamper, func(t *testing.T) {
@@ -329,4 +330,37 @@ func franchiseTaken(t *testing.T, join *accounts.JoinService, code string) bool 
 	}
 	t.Fatal(fmt.Sprint("no franchise.01 in ", list))
 	return false
+}
+
+func TestConversionMovesExistingAccountHomeLayouts(t *testing.T) {
+	s := newOneFileServer(t)
+	pools, err := db.Open(t.Context(), s.path, history.SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pools.Write().ExecContext(t.Context(), `CREATE TABLE account_home_layouts (
+ account_id TEXT PRIMARY KEY NOT NULL REFERENCES accounts(id),
+ layout TEXT NOT NULL CHECK(length(CAST(layout AS BLOB)) <= 8192),
+ revision INTEGER NOT NULL CHECK(revision > 0)
+) STRICT`); err != nil {
+		t.Fatal(err)
+	}
+	var accountID string
+	if err := pools.Read().QueryRowContext(t.Context(), `SELECT id FROM accounts WHERE username='owner'`).Scan(&accountID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pools.Write().ExecContext(t.Context(), `INSERT INTO account_home_layouts(account_id, layout, revision)
+VALUES (?, ?, 2)`, accountID, `{"mode":"default","tiles":[],"over":[],"pins":{}}`); err != nil {
+		t.Fatal(err)
+	}
+	if s.proofs, err = accountstore.MoveProofs(t.Context(), pools); err != nil {
+		t.Fatal(err)
+	}
+	if err := pools.Close(); err != nil {
+		t.Fatal(err)
+	}
+	s.assertConverted(t)
+	if s.proofs["account_home_layouts"].Rows != 1 {
+		t.Fatalf("home layout was not included in sign-in conversion: %+v", s.proofs)
+	}
 }

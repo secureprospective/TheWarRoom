@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -140,6 +141,13 @@ func (d *Desktop) workflowHTTP(w http.ResponseWriter, r *http.Request) {
 
 const DesktopWorkflowPath = "/desktop/workflow"
 
+func workflowEndpoint(raw serverhttp.RawWorkflow) string {
+	if catalog.IsAccountWorkflow(raw.Command) {
+		return serverhttp.AccountPreferencePath
+	}
+	return serverhttp.WorkflowPath
+}
+
 func hostedReadRetryDelay(attempt int) (time.Duration, error) {
 	jitter, err := rand.Int(rand.Reader, big.NewInt(100))
 	if err != nil {
@@ -177,7 +185,7 @@ func retryHostedRead(ctx context.Context, session desktopSnapshot, raw serverhtt
 			return nil, unauthorized, fmt.Errorf("wait for hosted read retry: %w", ctx.Err())
 		case <-timer.C:
 		}
-		body, unauthorized, err = postDesktopSnapshot(ctx, session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+		body, unauthorized, err = postDesktopSnapshot(ctx, session, workflowEndpoint(raw), serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
 	}
 	return body, unauthorized, err
 }
@@ -191,7 +199,8 @@ func (d *Desktop) Workflow(ctx context.Context, raw serverhttp.RawWorkflow) (ser
 		return result, fmt.Errorf("check league action: %w", err)
 	}
 	league, err := raw.League()
-	if err != nil || league != d.league {
+	accountPreference := catalog.IsAccountWorkflow(raw.Command)
+	if err != nil || (!accountPreference && league != d.league) || (accountPreference && league != "") {
 		d.mu.Unlock()
 		return result, fmt.Errorf("choose this window's league")
 	}
@@ -201,7 +210,7 @@ func (d *Desktop) Workflow(ctx context.Context, raw serverhttp.RawWorkflow) (ser
 	if session.bearer == "" {
 		return result, fmt.Errorf("sign in before opening your franchise")
 	}
-	body, unauthorized, err := postDesktopSnapshot(ctx, session, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	body, unauthorized, err := postDesktopSnapshot(ctx, session, workflowEndpoint(raw), serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
 	if raw.Mode == "read" {
 		body, unauthorized, err = retryHostedRead(ctx, session, raw, body, unauthorized, err)
 	}

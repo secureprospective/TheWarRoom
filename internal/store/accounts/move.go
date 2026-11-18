@@ -23,6 +23,25 @@ func signInRows() []db.MovedRows {
 	return append(out, db.MovedRows{Table: "audit_chain_head", Where: where}, db.MovedRows{Table: "audit_chain", Where: where})
 }
 
+func signInRowsHeld(ctx context.Context, pools *db.Pools) ([]db.MovedRows, error) {
+	sets := signInRows()
+	held := make([]db.MovedRows, 0, len(sets))
+	for _, set := range sets {
+		present, err := db.HasTable(ctx, pools, set.Table)
+		if err != nil {
+			return nil, fmt.Errorf("inspect %s: %w", set.Table, err)
+		}
+		if !present && set.Table == "account_home_layouts" {
+			continue // This preference was added after one-file servers began moving sign-ins.
+		}
+		if !present {
+			return nil, fmt.Errorf("sign-in file is missing %s", set.Table)
+		}
+		held = append(held, set)
+	}
+	return held, nil
+}
+
 // CopySignIns copies every moved row from the league file into the new sign-in file, in one
 // transaction. The new file's own first auth epoch is replaced by the league file's, so existing
 // sign-ins keep working.
@@ -36,7 +55,11 @@ func CopySignIns(ctx context.Context, from, target *db.Pools) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM account_auth_epoch`); err != nil {
 		return fmt.Errorf("accounts: clear the new auth epoch: %w", err)
 	}
-	for _, rows := range signInRows() {
+	sets, err := signInRowsHeld(ctx, from)
+	if err != nil {
+		return fmt.Errorf("accounts: inspect sign-in tables: %w", err)
+	}
+	for _, rows := range sets {
 		if err := db.CopyRows(ctx, source, tx, rows); err != nil {
 			return fmt.Errorf("accounts: %w", err)
 		}
@@ -49,10 +72,32 @@ func CopySignIns(ctx context.Context, from, target *db.Pools) error {
 
 // ProveSignIns compares every moved set, source against target: same count, same ordered-row digest.
 func ProveSignIns(ctx context.Context, source, target *db.Pools) error {
-	if err := db.ProveMoved(ctx, source, target, signInRows()); err != nil {
+	sets, err := signInRowsHeld(ctx, source)
+	if err != nil {
+		return fmt.Errorf("accounts: inspect sign-in tables: %w", err)
+	}
+	if err := db.ProveMoved(ctx, source, target, sets); err != nil {
 		return fmt.Errorf("accounts: %w", err)
 	}
+	if !hasMovedSet(sets, "account_home_layouts") {
+		proof, err := db.ProveRows(ctx, target.Read(), db.MovedRows{Table: "account_home_layouts"})
+		if err != nil {
+			return fmt.Errorf("accounts: prove empty home layout table: %w", err)
+		}
+		if proof.Rows != 0 {
+			return fmt.Errorf("accounts: home layout rows appeared during sign-in conversion")
+		}
+	}
 	return nil
+}
+
+func hasMovedSet(sets []db.MovedRows, table string) bool {
+	for _, set := range sets {
+		if set.Table == table {
+			return true
+		}
+	}
+	return false
 }
 
 // MoveProof is one moved set's row count and ordered-row digest.
@@ -61,7 +106,11 @@ type MoveProof = db.RowProof
 // MoveProofs reads the proof of every moved set in pools, keyed by table and filter.
 func MoveProofs(ctx context.Context, pools *db.Pools) (map[string]MoveProof, error) {
 	out := map[string]MoveProof{}
-	for _, m := range signInRows() {
+	sets, err := signInRowsHeld(ctx, pools)
+	if err != nil {
+		return nil, fmt.Errorf("accounts: inspect sign-in tables: %w", err)
+	}
+	for _, m := range sets {
 		p, err := db.ProveRows(ctx, pools.Read(), m)
 		if err != nil {
 			return nil, fmt.Errorf("accounts: %w", err)
@@ -128,9 +177,23 @@ func CommitMove(ctx context.Context, league *db.Pools, held bool, record MoveRec
 	defer func() { _ = tx.Rollback() }()
 	if held {
 		tables := SignInTables()
-		for i := len(tables) - 1; i >= 0; i-- {
-			if _, err := tx.ExecContext(ctx, `DROP TABLE `+tables[i]); err != nil {
-				return fmt.Errorf("accounts: remove %s from the league file: %w", tables[i], err)
+		present := make([]string, 0, len(tables))
+		for _, table := range tables {
+			exists, err := db.HasTable(ctx, league, table)
+			if err != nil {
+				return fmt.Errorf("accounts: inspect %s before move: %w", table, err)
+			}
+			if !exists && table == "account_home_layouts" {
+				continue
+			}
+			if !exists {
+				return fmt.Errorf("accounts: sign-in file is missing %s before move", table)
+			}
+			present = append(present, table)
+		}
+		for i := len(present) - 1; i >= 0; i-- {
+			if _, err := tx.ExecContext(ctx, `DROP TABLE `+present[i]); err != nil {
+				return fmt.Errorf("accounts: remove %s from the league file: %w", present[i], err)
 			}
 		}
 	}

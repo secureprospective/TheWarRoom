@@ -9,3 +9,12 @@
 - Tidy: `tidy-check.sh` found unrelated active alpha010 lanes `fixcr`, `fixhome`, and `fixsearch` launched from the main checkout. Left their processes/files untouched; their owners need to file KEEP records. Flag this to ClaudeBox.
 - Blocked on: none for this lane. The unrelated active lanes still need their owners to file KEEP records.
 - Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.
+
+## pulse-b9boards lane (Bee, 2026-11-18)
+- Baton: Bee; implementation ready on `session/pulse-b9boards`, base `bundle/b9`.
+- State: server preference store/table implemented; schema migration is sign-in file v4. Layout writes are bounded/validated and revision-checked. The account-only workflow uses `/v1/account/preferences` so the existing sign-in backup admission guards writes without pausing league writes. Thin Wails forwards the account command there; browser cookie calls require exact same-origin. Both agent token scope and access refuse it. Sign-in conversion copies/drops the new table when present and safely skips it for older one-file sources.
+- Flow: typed Raw read/set → catalog validation → session-authenticated account ID → account-store CAS. Conflicts return the current server copy; no league/franchise argument and no private reply caching. Hosted HomeBrief reads server-first, caches only as an offline fallback, and keeps local mode on localStorage.
+- Evidence: focused race tests pass in all changed Go packages, including existing/absent layout sign-in conversion; `make lint`, generated-catalog freshness, frontend TypeScript and layout/transport tests pass. Frontend fresh-store test proves a second device reads the server copy.
+- Next: commit and push once; pre-push `make verify`, open one PR into `bundle/b9`, wait for green CI, then report PR and migration.
+- Blocked on: none.
+- Tried and rejected: reusing a per-franchise league store (wrong owner boundary and not cross-league); no settings/preferences table exists in the hosted account store.
