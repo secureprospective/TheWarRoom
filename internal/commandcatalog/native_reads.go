@@ -120,10 +120,17 @@ func nativeDraftQueueCommands() []Command {
 }
 
 func nativeServerReads() []Command {
-	return []Command{{ID: "market.wins.read", Method: "TargetNativeBidWins", Version: "1", Role: "domain",
-		Gravity: "G0", Availability: "server", Arguments: NativeReadShape("TargetNativeBidWins", "league:string"),
-		Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "ledger,player-facts",
-		Safeguards: "none"}}
+	return []Command{
+		{ID: "market.wins.read", Method: "TargetNativeBidWins", Version: "1", Role: "domain",
+			Gravity: "G0", Availability: "server", Arguments: NativeReadShape("TargetNativeBidWins", "league:string"),
+			Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "ledger,player-facts",
+			Safeguards: "none"},
+		{ID: "league.activity.read", Method: "TargetLeagueActivity", Version: "1", Role: "domain",
+			Gravity: "G0", Availability: "server",
+			Arguments:  Shape(reflect.TypeFor[commissioner.RawLeagueActivityScope](), "RawLeagueActivityScope.Validate"),
+			Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "ledger",
+			Safeguards: "allow-listed public events only; private bids and commissioner details excluded"},
+	}
 }
 
 func serverBackupCommands() []Command {

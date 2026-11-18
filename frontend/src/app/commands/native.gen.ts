@@ -4765,6 +4765,32 @@ const schema337 = {
   Type:"object",
   Enum:null,
   Format:"",
+  Validator:"",
+  Nullable:true,
+  Fields:[
+    {Name:"kind",Optional:true,Schema:schema2},
+    {Name:"franchise",Optional:true,Schema:schema2},
+    {Name:"before",Optional:true,Schema:schema2},
+    {Name:"limit",Optional:true,Schema:schema7}
+  ],
+  Items:null,
+} as const;
+const schema338 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawLeagueActivityScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"filter",Optional:true,Schema:schema337}
+  ],
+  Items:null,
+} as const;
+const schema339 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
   Validator:"RawDraftQueueScope.Validate",
   Nullable:false,
   Fields:[
@@ -4772,7 +4798,7 @@ const schema337 = {
   ],
   Items:null,
 } as const;
-const schema338 = {
+const schema340 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4784,7 +4810,7 @@ const schema338 = {
   ],
   Items:null,
 } as const;
-const schema339 = {
+const schema341 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4795,7 +4821,7 @@ const schema339 = {
   ],
   Items:null,
 } as const;
-const schema340 = {
+const schema342 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4810,7 +4836,7 @@ const schema340 = {
   ],
   Items:null,
 } as const;
-const schema341 = {
+const schema343 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4822,7 +4848,7 @@ const schema341 = {
   ],
   Items:null,
 } as const;
-const schema342 = {
+const schema344 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -7980,6 +8006,25 @@ export const serverCommands = {
   },
   phrase: "read market wins",
 },
+"league.activity.read": {
+  definition: {
+    "ID": "league.activity.read",
+    "Method": "TargetLeagueActivity",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "league-view",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "ledger",
+    "Safeguards": "allow-listed public events only; private bids and commissioner details excluded",
+    "Arguments": schema338
+  },
+  phrase: "read league activity",
+},
 "draft.queue.read": {
   definition: {
     "ID": "draft.queue.read",
@@ -7995,7 +8040,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema337
+    "Arguments": schema339
   },
   phrase: "read draft queue",
 },
@@ -8014,7 +8059,7 @@ export const serverCommands = {
     "Undo": "replace-own-private-queue",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema338
+    "Arguments": schema340
   },
   phrase: "set draft queue",
 },
@@ -8033,7 +8078,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema339
+    "Arguments": schema341
   },
   phrase: "read trade draft",
 },
@@ -8052,7 +8097,7 @@ export const serverCommands = {
     "Undo": "delete-own-private-proposal",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema340
+    "Arguments": schema342
   },
   phrase: "save trade draft",
 },
@@ -8071,7 +8116,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema341
+    "Arguments": schema343
   },
   phrase: "delete trade draft",
 },
@@ -8091,7 +8136,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "server-held league database and R2 settings",
     "Safeguards": "current commissioner seat; per-league backup manager; refuse concurrent backup",
-    "Arguments": schema342
+    "Arguments": schema344
   },
   phrase: "now backup",
 },

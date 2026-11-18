@@ -218,6 +218,29 @@ func (a *Service) TargetNativeMoves(league, franchise string) (market.NativeMove
 	return reading, nil
 }
 
+func (a *Service) TargetLeagueActivity(ctx context.Context, scope commissioner.RawLeagueActivityScope) (commissioner.LeagueActivity, error) {
+	if err := scope.Validate(); err != nil {
+		return commissioner.LeagueActivity{}, fmt.Errorf("league activity scope: %w", err)
+	}
+	if err := a.admitReadingContext(ctx, commissioner.Access{League: scope.League, Operation: "league.activity.read", Mode: "read"}); err != nil {
+		return commissioner.LeagueActivity{}, err
+	}
+	if err := a.host.Ready(); err != nil {
+		return commissioner.LeagueActivity{}, fmt.Errorf("league activity startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.viewContext(ctx), refreshTimeout)
+	defer cancel()
+	records, err := a.host.CommissionerRecords(ctx, scope.League)
+	if err != nil {
+		return commissioner.LeagueActivity{}, fmt.Errorf("league activity records: %w", err)
+	}
+	reading, err := commissioner.LeagueActivityReading(scope, records)
+	if err != nil {
+		return commissioner.LeagueActivity{}, fmt.Errorf("league activity: %w", err)
+	}
+	return reading, nil
+}
+
 func (a *Service) TargetFranchiseMovesHistory(scope commissioner.RawFranchiseMovesHistory) (commissioner.Ledger, error) {
 	if err := scope.Validate(); err != nil {
 		return commissioner.Ledger{}, fmt.Errorf("franchise history scope: %w", err)
