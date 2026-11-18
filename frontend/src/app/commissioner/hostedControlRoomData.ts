@@ -29,6 +29,21 @@ export function createHostedJobsQuery(league: string, port: HostedPort = hostedW
   });
 }
 
+export function createHostedLedgerQuery(league: string, port: HostedPort = hostedWorkflow) {
+  return createReadQuery('commissioner.TargetCommissionerLedger', {
+    initial: (): { ledger?: Ledger } => ({}),
+    read: async (scope: string): Promise<Ledger> => {
+      const response: HostedResponse = await port({ command: 'commish.ledger.read', mode: 'read',
+        arguments: { league: scope } } as NativeRequest);
+      const ledger = parseLedger(response.data);
+      if (ledger.league !== league || scope !== league)
+        throw new Error('Ledger belongs to another league.');
+      return ledger;
+    },
+    accept: (ledger: Ledger) => ({ ledger }),
+  });
+}
+
 export function firstHostedJobTool(job: Job): ActDefinition | undefined {
   for (const control of job.controls) {
     const definition = actsFor(control).find(candidate => hostedCommandAvailable(candidate.command));

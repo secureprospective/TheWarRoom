@@ -5,6 +5,10 @@ const flag = (v: unknown): boolean => {
   if (typeof v !== 'boolean') throw new Error('Unreadable league status.');
   return v;
 };
+const pickFlag = (v: unknown, path: string): boolean => {
+  if (typeof v !== 'boolean') throw new Error(`${path}: unreadable pick status`);
+  return v;
+};
 export type HostedPlayer = {
   player: string;
   name: string;
@@ -83,7 +87,10 @@ export type HostedRoster = {
   pool: { value: string; label: string }[];
   market: { id: string; name: string; position: string; string: string; points: string; age?: string; value?:
     string; minimum?: string; minimumCents?: number }[];
-  picks: { season: number; round: number; original: string; owner: string; used: boolean }[];
+  picks: {
+    season: number; round: number; slot: number; original: string; owner: string;
+    compensatory: boolean; correction: string; player: string; skipped: boolean; used: boolean;
+  }[];
   players: {
     id: string;
     name: string;
@@ -150,8 +157,8 @@ export function parseHostedRoster(v: unknown): HostedRoster {
       const p = object(v, 'Free agent', ['player', 'name', 'season']);
       return { value: text(p.player, 'Player'), label: text(p.name, 'Name') };
     }),
-    picks: array(s.picks, 'Picks', (v) => {
-      const p = object(v, 'Pick', [
+    picks: array(s.picks, 'Picks', (v, path) => {
+      const p = object(v, path, [
         'compensatory',
         'correction',
         'season',
@@ -162,12 +169,20 @@ export function parseHostedRoster(v: unknown): HostedRoster {
         'player',
         'skipped',
       ]);
+      const player = text(p.player, `${path}.player`);
+      const skipped = pickFlag(p.skipped, `${path}.skipped`);
       return {
-        season: integer(p.season, 'Season'),
-        round: integer(p.round, 'Round'),
-        original: text(p.original, 'Original team'),
-        owner: text(p.owner, 'Owner'),
-        used: Boolean(p.player) || p.skipped === true,
+        season: integer(p.season, `${path}.season`),
+        round: integer(p.round, `${path}.round`),
+        slot: integer(p.slot, `${path}.slot`),
+        original: text(p.original, `${path}.original`),
+        owner: text(p.owner, `${path}.owner`),
+        compensatory: p.compensatory === undefined ? false
+          : pickFlag(p.compensatory, `${path}.compensatory`),
+        correction: p.correction === undefined ? '' : text(p.correction, `${path}.correction`),
+        player,
+        skipped,
+        used: Boolean(player) || skipped,
       };
     }),
     players: array(s.players, 'Roster players', (v, p) => {

@@ -55,8 +55,10 @@ func (f *ledgerFixture) CommissionerNow() time.Time                    { return 
 func (f *ledgerFixture) CommissionerZone() *time.Location              { return time.Local }
 func (f *ledgerFixture) CommissionerPreviewRegistry() string           { return f.registry }
 func (f *ledgerFixture) NativeFacts() nativecheck.Facts                { return nil }
+
+// The fixture has no held NFL schedule, so week-locked jobs are omitted.
 func (f *ledgerFixture) NativeScheduleDates(context.Context, int, time.Time) ([]leagueweek.Week, error) {
-	panic("unexpected held NFL read")
+	return nil, nil
 }
 func (f *ledgerFixture) CommissionerRecords(ctx context.Context, league string) ([]commish.Record, error) {
 	return Records(ctx, f.history, league, "calendar")
