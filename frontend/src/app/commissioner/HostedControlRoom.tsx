@@ -140,7 +140,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
           readings={fixState.fixes} pending={fixState.pending} error={fixState.error}
           definition={openedTab === 'fix' ? definition : undefined} initial={initialValues}
           onOpen={(next, initial) => openTool(next, undefined, 'fix', initial)} />}
-        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'fix', 'league'].includes(tab)
+        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'fix', 'league']
+          .includes(tab)
           && <p className="cr-note hosted-unported">{hostedControlRoomNotOnServer}</p>}
       </section>
     </main>
