@@ -2,6 +2,8 @@
 import type { NativeArguments, NativeCommandId } from './native';
 import type { MFLArguments, MFLCommandId } from './mfl';
 export type BrowserArgumentMap = {
+"backup.now":
+ Record<string, never>;
 "watch.add":
  import('../personal/contract').ListChange;
 "bait.set":
@@ -68,8 +70,6 @@ export type BrowserArgumentMap = {
  { id: string; column: number };
 "market.reports":
  { action: 'refresh' };
-"backup.now":
- Record<string, never>;
 "commissioner.surface":
  import('../commissioner/surfaceActions').SurfaceAction;
 "commissioner.read":
@@ -2463,6 +2463,7 @@ export type WorkflowArgumentMap = {
 "trade.draft.read": NativeArguments<"trade.draft.read">;
 "trade.draft.save": NativeArguments<"trade.draft.save">;
 "trade.draft.delete": NativeArguments<"trade.draft.delete">;
+"backup.now": NativeArguments<"backup.now">;
 };
 export type CommandArgumentMap = {
  native: { [K in NativeCommandId]: NativeArguments<K> };
