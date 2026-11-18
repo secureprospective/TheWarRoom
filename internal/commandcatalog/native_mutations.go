@@ -110,7 +110,6 @@ func nativeMarketMutations() []struct{ id, args string } {
 		{commissioner.WaiverOverride, "waiver"},
 		{commissioner.BidPlace, "bid"},
 		{commissioner.BidRaise, "bid"},
-		{commissioner.BidWithdraw, "bid"},
 		{commissioner.OLineAuctionClose, ""},
 		{commissioner.BidsProcess, "bid"},
 		{commissioner.BidsOverride, "bid"},

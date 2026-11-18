@@ -1366,19 +1366,6 @@
       "owner"
     ]
   },
-  "bid.withdraw": {
-    "args": {
-      "bid": {
-        "bid": "reference.bid",
-        "franchise": "franchise.02"
-      }
-    },
-    "visibility": "private",
-    "effective": "now",
-    "admittedRoles": [
-      "owner"
-    ]
-  },
   "bids.process": {
     "args": {
       "bid": {
