@@ -2732,6 +2732,8 @@ export type WorkflowArgumentMap = {
 "trade.draft.read": NativeArguments<"trade.draft.read">;
 "trade.draft.save": NativeArguments<"trade.draft.save">;
 "trade.draft.delete": NativeArguments<"trade.draft.delete">;
+"home.layout.read": NativeArguments<"home.layout.read">;
+"home.layout.set": NativeArguments<"home.layout.set">;
 "backup.now": NativeArguments<"backup.now">;
 };
 export type CommandArgumentMap = {
