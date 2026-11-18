@@ -10,15 +10,6 @@
 - Blocked on: none for this lane. The unrelated active lanes still need their owners to file KEEP records.
 - Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.
 
-## Bee — B8-2 Today / Needs you (2026-11-18)
-- Baton: Bee, branch `session/pulse-b8today`, base `bundle/b8` with PR #380.
-- State: added <=699px Today layout styling in `frontend/src/app/shell/thinHome.css`; increased phone action targets and stacked content. Added 390px-viewport regression to `ThinHome.test.tsx`; existing hosted reads and unavailable states retained.
-- Checks: focused Vitest 22/22; full Vitest 990/990; `pnpm tsc --noEmit`; `git diff --check`; `tidy-check.sh` clean. One initial full-suite run had a transient unrelated `hostedPulse.test.tsx` failure and a test line-length finding; split the import and reran, all tests passed.
-- State: commit `23e2d01ac` pushed; PR #382 into `bundle/b8`; CI all green.
-- Checks: focused Vitest 22/22; full Vitest 990/990; `pnpm tsc --noEmit`; pre-push verification passed. `tidy-check.sh` initially clean; final check found unrelated active `b8team`, `b8live`, and `b8bids` lanes in other run dirs. Left their processes/files untouched; owners need KEEP records.
-- Next: ClaudeBox review; do the Brave 390x844 visual/no-overflow check and 1280px desktop comparison. Automated 390px test verifies content and unavailable state but does not emulate layout.
-- Blocked on: visual checks/review.
-
 ## Bee — B8-1 phone shell (2026-11-18)
 - Baton: ClaudeBox review; PR #380 from `session/pulse-b8shell` into `bundle/b8`, commit `8f2fab5ee`.
 - State: 390px phone shell has Today/Home, Live/Pulse, Team/HQ, Moves/War Room and League/Pulse standings; commissioners get Control Room from League. At 1280px the existing rail remains and phone tabs are absent. App bar is fixed to the admitted league name.
@@ -26,8 +17,9 @@
 - Tidy: `tidy-check.sh` found unrelated active `b9feed` and `b9boards` lanes in the main checkout. Left their processes/files untouched; their owners need to file KEEP records.
 - Next: ClaudeBox review/merge. Blocked on review.
 
-## Bee — B8-3 Team / lineup (2026-11-18)
-- Baton: Bee implementation; mobile-only HQ layout work in progress on `session/pulse-b8team`.
-- State: starting from PR #380 base; adding <=699px embedded lineup layout, with desktop CSS untouched. Existing revision/preview/confirm/receipt path remains in `hqNativeLineup.tsx`.
-- Next: add/verify focused tests, run full frontend checks and pre-push, push and open PR into `bundle/b8`.
-- Blocked on: none.
+## Bee — B8-5 War Room phone market (2026-11-18)
+- Baton: ClaudeBox review; PR #385 from `session/pulse-b8bids` into `bundle/b8` (implementation `e8bbf05d6`).
+- State: market/bid UI has a <=699px single-column, scrollable phone layout, touch-sized filters and bid controls; desktop rules untouched. Existing held market/bid reads and preview/confirm/reread flow unchanged. No server/auth/session/service-worker edits.
+- Checks: focused tests 58/58, full Vitest 990/990, TypeScript and push verification passed. PR CI is pending. One initial full-suite failure was a long test line (fixed) plus a hostedPulse navigation failure (focused rerun passed). Browser 390px inspection not run.
+- Next: review PR CI and request ClaudeBox review. Reuse WarRoomMarket and its private bid flow rather than duplicate workflow commands.
+- Blocked on: none for code. `tidy-check.sh` reports unrelated active lane `b8trade` (pid 1599696) launched by another agent; left it untouched.
