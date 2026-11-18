@@ -1,5 +1,10 @@
 # Handoff
 
+- Baton: Bee, 2026-11-18. Lane `pulse-fixsearch`, branch `session/pulse-fixsearch`.
+- State: regression test added and observed failing before the fix; player search now matches case-insensitive name tokens in either order, including `Last, First` against `First Last`. Targeted test, TypeScript, full Vitest (138 files/978 tests), and `make verify` pass. `make verify` needed retries for concurrent `golangci-lint`/full-race jobs; final run passed including Go race tests, frontend build, budget, CSP and browser CSP checks. `tidy-check.sh` is clean.
+- Next: commit, push, open one PR into `main`, then report CI/PR status.
+- Blocked on: none.
+
 - Baton: Bee, 2026-11-18. Lane `pulse-b5sync`, branch `session/pulse-b5sync`; merging `origin/main` (347388a19) into Bundle 5.
 - State: merge commit `b418b1b3` has parents `4a764caa2` (Bundle 5) and `347388a19` (main); preserved on pushed branch `session/pulse-b5sync`. PR #370 is open into `bundle/b5`; all local gates and GitHub checks pass. Bundle 4 rail/Home routing stays; its Control Room rail route opens Bundle 5's hosted Control Room, with Rules in the Rules tab. Workflow output union retains BackupResult, WhatIfStack, and ContractDecisions.
 - Verified: `pnpm exec tsc --noEmit`; full Vitest (138 files/977 tests); `pnpm run build`; targeted commissioner Control Room/rules tests (30); `make verify` passes, including lint, Wails freshness, full Go race tests, bundle budget and CSP. Contract-decision has member-action/owner-seat classification; bid.withdraw remains unpublished; backup stale-write behavior is unchanged.

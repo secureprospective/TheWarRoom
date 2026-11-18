@@ -5,12 +5,17 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { heldSnapshot } from '../data/lineupTestData';
 import { WarRoomInspector } from './WarRoomInspector';
 import { ThinLeagueShell } from './ThinLeagueShell';
-import type { PlayerCandidate, ThinScreenRoute } from './ThinPlayerSearch';
+import { findPlayers, type PlayerCandidate, type ThinScreenRoute } from './ThinPlayerSearch';
 
 vi.mock('./warroomReads', async importOriginal => ({
   ...await importOriginal<typeof import('./warroomReads')>(),
   useWarRoomRead: () => ({}),
 }));
+
+it('matches Last, First queries against First Last player names', () => {
+  expect(findPlayers([{ id: 'pearson', name: 'Jachour Pearson' }], 'Pearson, Jachour'))
+    .toEqual([{ id: 'pearson', name: 'Jachour Pearson' }]);
+});
 
 let root: Root | undefined;
 let host: HTMLDivElement | undefined;

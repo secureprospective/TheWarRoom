@@ -6,12 +6,14 @@ type Leaf = { slug: string; label: string };
 export type PlayerCandidate = { id: string; name: string; position?: string };
 
 export function findPlayers(players: readonly PlayerCandidate[], query: string): PlayerCandidate[] {
-  const needle = query.trim().toLocaleLowerCase();
-  if (!needle) return [];
+  const needles = query.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  if (!needles.length) return [];
   const byId = new Map(players.filter(player => player.id && player.name.trim())
     .map(player => [player.id, player]));
-  return [...byId.values()].filter(player => player.name.toLocaleLowerCase().includes(needle))
-    .sort((a, b) => a.name.localeCompare(b.name)).slice(0, 8);
+  return [...byId.values()].filter(player => {
+    const nameParts = player.name.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+    return needles.every(needle => nameParts.some(part => part.includes(needle)));
+  }).sort((a, b) => a.name.localeCompare(b.name)).slice(0, 8);
 }
 
 export function ThinPlayerSearch({ players, onOpen }: {
