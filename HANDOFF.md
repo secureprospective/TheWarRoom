@@ -25,3 +25,11 @@
 - Evidence: hosted owner session, commissioner-with-reason, other-owner denial, waivers/rostered/closed-window refusals, full-roster denial and atomic add/drop tests. Full `make verify` passed before the B9-2 base fast-forward; rerun pre-push verification on the merged base.
 - Next: regenerate outputs against the updated base, commit, push one PR into `bundle/b9`, then record PR/CI result.
 - Blocked on: none. No migration.
+
+## Bee — B9-1 PR status (2026-11-18)
+- State: PR #389 targets `bundle/b9`; pre-push, full PR CI, and desktop package/install checks passed.
+- Next: ClaudeBox review/merge PR #389.
+- Blocked on: none.
+
+## Bee — tidy note (2026-11-18)
+- `tidy-check.sh` flagged an unrelated `pulse-b7lab2` scratch workbench without `KEEP.md`; left untouched under the file-ownership rule. Its owner needs to clean or file it.
