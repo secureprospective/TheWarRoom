@@ -37,8 +37,8 @@ afterEach(async () => { await unmount(); vi.restoreAllMocks(); });
 it('reuses the mounted native header and cap runway without a second read', async () => {
   const port = vi.fn<HostedPort>(async () => { throw new Error('Must not read twice'); });
   const c = context(port);
-  c.native!.reading = { revision: 7, snapshot: c.snapshot, settings: { positions: [], starters: 21 },
-    values: parseNativeValues(wire(), 'native.test', '', 2026), errors: [],
+  c.native!.reading = { revision: 7, snapshot: c.snapshot, searchPlayers: [],
+    settings: { positions: [], starters: 21 }, values: parseNativeValues(wire(), 'native.test', '', 2026), errors: [],
     runway: [{ season: 2026, max: 12500000000, room: 108000000 },
       { season: 2027, max: 12500000000, room: 4558000000 },
       { season: 2028, max: 12500000000, room: 6994000000 }] };

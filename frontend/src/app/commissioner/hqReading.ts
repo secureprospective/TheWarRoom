@@ -89,8 +89,7 @@ export function nativeHQSettings(rules: Rules): HQSettings {
     }),
   };
 }
-export function nativeHQAssets(value: unknown, league: string): Snapshot {
-  const held = parseHostedRoster(value);
+export function nativeHQAssets(value: unknown, league: string, held = parseHostedRoster(value)): Snapshot {
   if (held.league !== league) throw new Error('Roster belongs to another league');
   const raw = value as { snapshot: { players: unknown[] } };
   const players = array(raw.snapshot.players, 'Roster contracts', (v, p) => {
@@ -228,6 +227,7 @@ export function nativeHQMoves(
 export type NativeHQ = {
   revision: number;
   snapshot: Snapshot;
+  searchPlayers: { id: string; name: string; position?: Position }[];
   settings: HQSettings;
   leagueName?: string;
   lineup?: HQLineup;
@@ -259,7 +259,8 @@ export async function readNativeHQ(
   owner = true,
 ): Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
-  const snapshot = nativeHQAssets(assets.data, league);
+  const held = parseHostedRoster(assets.data);
+  const snapshot = nativeHQAssets(assets.data, league, held);
   const season = snapshot.league.value.season;
   const revision = integer((assets.data as { revision: unknown }).revision, 'Roster revision');
   const sameRevision = (value: unknown) => {
@@ -268,7 +269,10 @@ export async function readNativeHQ(
   };
   let leagueRules: Rules | undefined;
   let standingRows: { franchise: string; division: string }[] = [];
-  const result: NativeHQ = { revision, snapshot, settings: { positions: [] }, errors: [] };
+  const result: NativeHQ = { revision, snapshot, searchPlayers: [
+    ...held.players.map(player => ({ id: player.id, name: player.name })),
+    ...held.market.map(player => ({ id: player.id, name: player.name, position: player.position })),
+  ], settings: { positions: [] }, errors: [] };
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const apply = async (read: () => Promise<void>) => {
     try {

@@ -91,6 +91,18 @@ async function click(label: string) {
   expect(button, label).toBeDefined();
   await act(async () => button!.click()); await settle();
 }
+async function openNode(label: string) {
+  const button = [...document.querySelectorAll('.thin-league-shell .node>.nb')]
+    .find(node => node.textContent?.includes(label));
+  expect(button, label).toBeDefined();
+  await act(async () => (button as HTMLButtonElement).click()); await settle();
+}
+async function openLeaf(label: string) {
+  const button = [...document.querySelectorAll('.thin-league-shell .node.open>.leaf')]
+    .find(node => node.textContent?.includes(label));
+  expect(button, label).toBeDefined();
+  await act(async () => (button as HTMLButtonElement).click()); await settle();
+}
 const count = (port: ReturnType<typeof fakePort>, command: string) =>
   port.mock.calls.filter(([r]) => r.command === command).length;
 
@@ -98,7 +110,7 @@ it('opens hosted Now, refreshes active reads except odds, shows Race and returns
   const port = fakePort();
   await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
     role="Owner" port={port} />));
-  await click('League Pulse');
+  await openNode('League Pulse');
   expect(host.textContent).toContain('Starter 2');
   expect(host.textContent).toContain('20.0');
   expect(host.textContent).not.toContain('coming next');
@@ -119,10 +131,14 @@ it('opens hosted Now, refreshes active reads except odds, shows Race and returns
   expect(host.textContent).toContain('KC');
   expect(host.querySelector('[aria-label="Follow BUF at KC"]')).not.toBeNull();
   expect(host.querySelector('.field')).not.toBeNull();
-  await click('Race');
+  await openLeaf('Race');
   expect(host.textContent).toContain('STANDINGS');
   expect(host.textContent).toContain('0–0');
-  await click('Back');
+  const team = host.querySelector('button[aria-label="Open Beta franchise card"]');
+  expect(team).not.toBeNull();
+  await act(async () => { (team as HTMLButtonElement).click(); });
+  expect(host.querySelector('.insp[aria-label="Franchise"] .nm')?.textContent).toBe('Beta');
+  await openNode('Home');
   expect(host.textContent).toContain('League Pulse');
   expect(host.querySelector('.lp-v14')).toBeNull();
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
@@ -132,7 +148,7 @@ it.each(['Commissioner', 'Co-commissioner'])('reads both lineups for %s', async 
   const port = fakePort();
   await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
     role={role} port={port} />));
-  await click('League Pulse');
+  await openNode('League Pulse');
   expect(count(port, 'lineup.read')).toBe(2);
   expect(host.textContent).toContain('Starter 2');
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
@@ -206,24 +222,33 @@ it('keeps opponent NFL team and lock absent while retaining public starter point
 });
 
 
-it('opens from the HQ rail and Back returns to HQ', async () => {
+it('uses the thin rail to move from HQ to Pulse and back', async () => {
   const port = fakePort();
   vi.spyOn(hq, 'readNativeHQ').mockResolvedValue({ revision: 1, snapshot: heldSnapshot(),
-    settings: { positions: [] }, errors: [] });
+    searchPlayers: [], settings: { positions: [] }, errors: [] });
   vi.spyOn(hqEvents, 'onChange').mockImplementation(() => () => {});
   await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
     role="Owner" port={port} hq />));
   await settle();
-  for (let i = 0; i < 20 && !document.querySelector('.hq-v10 .rail'); i++) await settle();
-  const pulse = [...document.querySelectorAll('button')].find(b => b.textContent?.includes('League Pulse'));
-  expect(pulse, document.body.textContent ?? '').toBeDefined();
-  await act(async () => pulse!.click()); await settle();
+  for (let i = 0; i < 20 && !document.querySelector('.thin-league-shell .rail.mock'); i++) await settle();
+  await openNode('League Pulse');
   expect(host.textContent).toContain('Starter 2');
-  await click('Back');
+  await openNode('Franchise HQ');
   expect(document.querySelector('.hq-v10')).not.toBeNull();
   expect(host.querySelector('.lp-v14')).toBeNull();
 });
 
+
+it('opens the existing player inspector from a hosted Pulse starter name', async () => {
+  const port = fakePort(), onPlayer = vi.fn();
+  await act(async () => root.render(<NativeLeaguePulse league="test" mine="a" serverTime
+    port={port} leave={() => {}} onPlayer={onPlayer} />));
+  await settle();
+  const player = host.querySelector('button[aria-label="Open Starter 1 player card"]');
+  expect(player).not.toBeNull();
+  await act(async () => { (player as HTMLButtonElement).click(); });
+  expect(onPlayer).toHaveBeenCalledWith({ id: '0001', name: 'Starter 1', position: 'QB' });
+});
 
 it('refreshes the open schedule through the same hosted change source', async () => {
   const port = fakePort();
@@ -270,7 +295,7 @@ it('rereads open hosted Pulse once per burst of its league topics and ignores ot
   const port = fakePort();
   await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
     role="Owner" port={port} />));
-  await click('League Pulse');
+  await openNode('League Pulse');
   expect(hear).toBeDefined();
   const before = count(port, 'results.read');
   const scores: ReadTopic = { kind: 'scores', league: 'test', season: 2026, week: 1, version: '2' };
@@ -285,7 +310,7 @@ it('rereads open hosted Pulse once per burst of its league topics and ignores ot
   vi.useRealTimers();
   await settle();
   expect(count(port, 'results.read')).toBe(before + 1);
-  await click('Back');
+  await openNode('Home');
   expect(off).toHaveBeenCalled();
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
 });
@@ -297,7 +322,7 @@ it('rereads the league-wide Pulse reads for league changes, not for each live sc
   const port = fakePort();
   await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
     role="Owner" port={port} />));
-  await click('League Pulse');
+  await openNode('League Pulse');
   const results = count(port, 'results.read'), odds = count(port, 'odds.read');
   const burst = async (kind: ReadTopic['kind']) => {
     vi.useFakeTimers();
@@ -321,7 +346,7 @@ it('never logs a read that is only waiting for its week or matchup as a failure'
   const port = fakePort();
   await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
     role="Owner" port={port} />));
-  await click('League Pulse');
+  await openNode('League Pulse');
   await click('Refresh');
   expect(host.textContent).toContain('Starter 2');
   expect(warn.mock.calls.filter(([words]) => String(words).includes('League Pulse read failed'))).toEqual([]);

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { commands } from '../commands/registry';
 import { HQAct } from './HQAct';
-import { nodes, nodeKeys, type Node } from './nodes';
+import { nodes, type Node } from './nodes';
+import { RailNodes } from './RailNodes';
 import type { LeagueState } from './leaguePicker';
 import type { RailNow } from './pulseReads';
 import './rail.css';
@@ -55,24 +56,12 @@ export function ShellRail({ leagues, node, workspace, now, live, setTree, setFoo
       <div className="gl">MY SHORTCUTS</div>
       <HQAct className="leaf" label="Shortcut · Lineup and roster"
         onAction={() => go('hq', 'lineup-and-roster')}><span className="tr">·</span>Lineup and roster</HQAct>
-      <div className="gl">LEAGUE</div>
-      {nodeKeys.map((key, index) => {
-        const open = node === key;
-        const leaves = LEAVES[key] ?? [];
-        return <div className={`node${open ? ' open' : ''}`} key={key}>
-          <HQAct className="nb" label={nodes[key].label} active={open} onAction={() => go(key)}>
-            <span className="k">{index + 1}</span>{nodes[key].label}
-            {key === 'pulse' && Boolean(live) && <span className="mark" />}
-            <span className="car">›</span></HQAct>
-          {open && key === 'pulse' && words && <HQAct className="leaf now" label={`My matchup · ${words}`}
-            onAction={() => go('pulse', 'now')}><span className="tag">{now?.decided ? 'FINAL' : 'LIVE'}</span>
-            {words}</HQAct>}
-          {open && leaves.map((leaf, i) => <HQAct key={leaf.slug} label={leaf.label}
-            className={`leaf${workspace === leaf.slug ? ' sel' : ''}`} onAction={() => go(key, leaf.slug)}>
-            <span className="tr">{i === leaves.length - 1 ? '└' : '├'}</span>{leaf.label}</HQAct>)}
-          {open && key === 'control' && <div className="rtree" ref={setTree} />}
-        </div>;
-      })}
+      <RailNodes container={false} node={node} workspace={workspace} leaves={LEAVES} open={go}
+        mark={key => key === 'pulse' && Boolean(live) ? <span className="mark" /> : undefined}
+        beforeLeaves={key => key === 'pulse' && words ? <HQAct className="leaf now"
+          label={`My matchup · ${words}`} onAction={() => go('pulse', 'now')}>
+          <span className="tag">{now?.decided ? 'FINAL' : 'LIVE'}</span>{words}</HQAct> : undefined}
+        afterLeaves={key => key === 'control' ? <div className="rtree" ref={setTree} /> : undefined} />
     </nav>
     <div className="me" ref={setFooter} />
     <div className="rail-foot">

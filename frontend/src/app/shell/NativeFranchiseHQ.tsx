@@ -3,6 +3,7 @@ import { RailLeaguePicker } from './leaguePicker';
 import type { Node } from './nodes';
 import { useNativeLineup, NativeLineupReview } from './hqNativeLineup';
 import { HQAct } from './HQAct';
+import type { PlayerCandidate } from './ThinPlayerSearch';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { readNativeHQ, readNativeCut, type NativeHQ } from '../commissioner/hqReading';
@@ -24,9 +25,10 @@ import { connectClock } from '../clock/ticker';
 import './hq.css';
 
 export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded,
-  tab: activeTab, navigate, canManage = true }: {
+  tab: activeTab, navigate, canManage = true, onPlayers }: {
   league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void;
   embedded?: boolean; canManage?: boolean; tab?: HQTab; navigate?: (tab: HQTab) => void;
+  onPlayers?: (players: PlayerCandidate[]) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [localTab, setLocalTab] = useState<HQTab>('lineup-and-roster');
@@ -40,6 +42,9 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   const { reading, error, pending } = useContractRead<NativeHQ>(
     JSON.stringify([league, mine, revision, canManage]),
     publish => readNativeHQ(league, mine, port, publish, canManage), provider);
+  useEffect(() => {
+    if (reading) onPlayers?.(reading.searchPlayers);
+  }, [onPlayers, reading]);
   const editor = useNativeLineup(league, mine, reading?.lineup, port, canManage);
   const chosen = selected ?? reading?.lineup?.starters[0]?.id;
   const quote = useContractRead(JSON.stringify([league, mine, chosen]), () => chosen
