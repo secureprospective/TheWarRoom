@@ -3,7 +3,74 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. STATE AT 1:15 PM CST TUE 11-17 (supersedes the 7:35 AM block and sections 3, 10, 11 below)
+## 0. STATE AT 7:00 PM CST TUE 11-17 (supersedes 0a/0b and sections 3, 10, 11 below)
+
+**Goal (Christopher 11-17, latest):** build the full v3 desktop app in bundles, push day and night, and get Bundles 8 and 9 (the phone app) done before **Sunday 11-22 kickoff**. Official alpha comes after Bundle 6 (his call). Tracker: `~/Downloads/twr-usable-week-plan.html`. The page has been rebuilt (template `~/fleet/runs/twr-tracker-template.html`, backups `.bak-1117`, `.bak-1117b`). Its data keys: `plan` (bundles B0–B8 + ALPHA, each with items in state done/building/todo/waiting), `lanes` (cards with `day` 11-17, `at`, `pr`, `ord`), `needsYou`, `later`, `slop`, `log`, `today`.
+
+**Bundle method (his order 11-17):** each bundle gets one shared branch, `bundle/bN`. Lanes are launched with `BASE=bundle/bN ~/fleet/bin/launch-pulse-lane.sh luna <lane> <brief> <level>`; BASE support was added today (backup at `launch-pulse-lane.sh.bak-1117`). Each lane opens its PR with `--base bundle/bN`. I review each PR and merge it into the bundle. Then the full suite and CI run once, and the bundle goes to main as one merge. CI runs on every push to any branch. Bundle 1's shared brief rules are in `~/fleet/briefs/alpha010/b1-*.md`, Bundle 5's in `b5-*.md`. Slop gets fixed first, inside each lane.
+
+**Plan order:** B0 (tonight) → B1 Finish HQ + War Room → B5 Control Room on the server app → B2 Home server side → B3 Home screen → B4 Shell → B6 Pulse extras → B7 browser door + PWA → ALPHA → B8–9 phone app built from `~/Downloads/TheWarRoom-mobile-mock-v1.html`. That mock is complete: 55 of 56 desktop jobs reachable in 3 taps or fewer, per `~/fleet/runs/twr-v3-1117/MOBILE-V1-PARITY.md`. It was missed by me earlier; it is not a draft.
+
+**Merged to main today (11-17):** #312 #315–#319 #321 #322 #324–#327 #329–#341 (#339 is the README; #341 is the v3 stub plan, merged 5:45 PM). The last code merge was #340 (recent winning bids) at 6:02 PM. #338 merged after I removed duplicate code: one `ownerPrivateCommand` helper in `internal/commandcatalog/native_reads.go`.
+
+**In flight (Luna, all running at 6:45 PM):**
+| Lane | Branch base | Level | Brief |
+|---|---|---|---|
+| b1hqdec (owner contract decisions: new owner command, approved) | bundle/b1 | max | b1-hqdec2.md |
+| b1whatif (stacked what-if server read) | bundle/b1 | xhigh | b1-whatif.md |
+| b1offers (War Room offers drawer) | bundle/b1 | xhigh | b1-offers.md |
+| b1pulse (My Road + shared form helper) | bundle/b1 | xhigh | b1-pulse.md |
+| b1cleanup (remove withdraw on placed bids, S10 fold, v3 doc fix) | bundle/b1 | xhigh | b1-cleanup.md |
+| b5frame (thin Control Room frame + Jobs + Situations) | bundle/b5 | xhigh | b5-frame.md |
+| b5jobs (missing job producers, server) | bundle/b5 | xhigh | b5-jobs.md |
+| b5perm (deputy six-tick gate, ruled) | bundle/b5 | max | b5-perm2.md |
+
+- **Alive check:** `/root/.claude/scripts/twr-lane-check.sh 50` (armed), or the newest file time in `~/fleet/runs/pulse-<lane>/sessions/`.
+- **Watcher:** `twr-lane-wait.sh` for all 8 (armed).
+- **When a lane is done:** read `stdout.log`; review the diff, especially policy, token and store files; merge its PR into `bundle/bN`; resolve clashes as a union of both sides and regenerate generated files with `go run ./frontend/scripts/nativegen` and `-surface doors` from the repo root; run `make bloat`.
+- **GPT quota:** he said to tell stalled lanes to continue. Relaunch the same lane: the worktree and HANDOFF.md resume it.
+
+**Rulings today (don't reopen):**
+- Release 9 / schema 16 private table approved.
+- Ignore picomatch advisory GHSA-fc5q-39xc-vjpf until patched (T649).
+- API tokens may reach private notes, watch, draft queue and trade drafts for the owner's own team only.
+- One sign-in = one server; a server holds many leagues; choosing between servers waits for the login screens (memory project_twr_one_signin_one_server).
+- Build an owner contract-decision command (ledger event, no table).
+- Alpha after Bundle 6.
+- Deputies get the v3 six-tick grid: stat fixes, trades, lineups, picks, rules, rollover. Co-commissioner = all six. Roles, succession and deputy grants are never delegable (memory project_twr_deputy_six_ticks).
+- The ADP feed is his call; the Plans store and private two-team threads are parked.
+
+**#341 errors found (fix in the docs):**
+1. It says the engine allows withdrawing a placed bid. False: `bid_execute.go` always refuses. The app still offers withdraw; b1cleanup removes it.
+2. It says `contract.action.set` is the owner decision command. False: it is commissioner-only league policy (CM-009).
+
+Check each #341 plan line against the code before a lane relies on it.
+
+**Open Control Room decisions (ask when their screens come up):**
+- Is snooze per person or per league?
+- Do deputies see every job?
+- Who can see a written request?
+- Can divisions be named?
+
+**NEXT, in order:**
+1. Review and merge B1/B5 lane PRs into their bundle branches as they finish.
+2. Launch the remaining B5 tab lanes once b5frame lands: Rules, Season, Fix, People (uses b5perm), League, Picks, Server read-only.
+3. B0: build from main and install on lab CT 260. The lab path and refused import command are in `~/fleet/runs/pulse-lab1/RESULT.md`; the steps are in `docs/lab/STRESS-READY.md`. Then write the one-run import script for him to read and run.
+4. When B1 is complete: merge main into bundle/b1, run the full suite, open the bundle PR to main, merge on green.
+5. Queue B2 (D58 layout store; needs a migration → release number: ask him) and B3/B4 so Luna never idles.
+6. B7 needs his security sign-off: the server refuses browser Origin today, on purpose.
+
+**Needs him:**
+- #320 line-14 call
+- #304/#307 player values
+- rotate CT 257 keys
+- run the CT 260 import script (once written)
+- B7 security sign-off
+- B2 release number
+
+**Honest status:** B8–9 by Sunday means B1–B7 must merge first. That is about 7 bundles in 5 days at today's pace of roughly 23 merges a day. It is possible but tight. B5 is the largest and most likely to slip.
+
+## 0a. (older) STATE AT 1:15 PM CST TUE 11-17 (supersedes the 7:35 AM block and sections 3, 10, 11 below)
 **Rulings today:** Luna ONLY (high/xhigh/max). Full send gated by launcher room() (>=4 GB, load <12). Windows 3 h (max 4 h).
 50-min checks (`/root/.claude/scripts/twr-lane-check.sh 50`, re-arm). DAY MERGE AUTHORITY: yes, after my review + green CI.
 Private-entries table APPROVED; Release 9 / schema 16 APPROVED. API tokens MAY reach notes/watch/draft queue for the
