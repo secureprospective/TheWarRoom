@@ -725,6 +725,7 @@ string
 "franchises"?: (string)[];
 "people"?: ({
 "order"?: (string)[];
+"permissions"?: (string)[];
 "franchise"?: string;
 "principal"?: string;
 "name"?: string;
@@ -1268,6 +1269,7 @@ string
 "franchises"?: (string)[];
 "people"?: ({
 "order"?: (string)[];
+"permissions"?: (string)[];
 "franchise"?: string;
 "principal"?: string;
 "name"?: string;
@@ -1786,6 +1788,7 @@ string
 "franchises"?: (string)[];
 "people"?: ({
 "order"?: (string)[];
+"permissions"?: (string)[];
 "franchise"?: string;
 "principal"?: string;
 "name"?: string;

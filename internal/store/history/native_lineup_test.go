@@ -53,12 +53,16 @@ func TestLineupSetMustBeLegalUnderTheNativeCheck(t *testing.T) {
 func TestLineupBelongsToItsOwnerAndTheAbilityToSetIt(t *testing.T) {
 	t.Parallel()
 	f := lineupTest(t)
-	for _, principal := range []string{f.ownerOfB, "creator", "stranger"} {
+	for _, principal := range []string{f.ownerOfB, "stranger"} {
 		_, err := f.s.ExecuteCommissioner(t.Context(),
 			f.command(t, commissioner.LineupSet, f.a, 1, f.legal(f.a)), principal, nil)
 		if got := refusal(t, err); got != "You may set a lineup only for your own franchise" {
 			t.Fatalf("%s set another franchise's lineup: %q", principal, got)
 		}
+	}
+	if _, err := f.s.ExecuteCommissioner(t.Context(),
+		f.command(t, commissioner.LineupSet, f.a, 1, f.legal(f.a)), "creator", nil); err != nil {
+		t.Fatalf("commissioner could not exercise the Edit lineups permission: %v", err)
 	}
 	executePeople(t, f.s, "creator", "commish.abilities.set",
 		commissioner.RawPeople{Franchise: f.a, Ability: "lineups", On: false}, revision(t, f.s))
@@ -550,7 +554,7 @@ func TestOwnersLineupCanBeCompensatedPrivatelyAndNeedsTheReversalPermission(t *t
 	}
 }
 
-func TestVacantCaretakerSetsLineupButCannotProxyAnOwner(t *testing.T) {
+func TestCommissionerLineupPermissionSurvivesCaretakerSeatChange(t *testing.T) {
 	f := lineupTest(t)
 	executePeople(t, f.s, "creator", "commish.seat.remove", commissioner.RawPeople{Franchise: f.a}, revision(t, f.s))
 	executePeople(t, f.s, "creator", commissioner.CaretakerSeat, commissioner.RawPeople{Franchise: f.a, Principal: "creator"}, revision(t, f.s))
@@ -564,11 +568,11 @@ func TestVacantCaretakerSetsLineupButCannotProxyAnOwner(t *testing.T) {
 	}
 	executePeople(t, f.s, "creator", "commish.seat.replace", commissioner.RawPeople{Franchise: f.a, Principal: f.ownerOfA}, revision(t, f.s))
 	before := revision(t, f.s)
-	if _, err := f.s.ExecuteCommissioner(t.Context(), f.command(t, commissioner.LineupSet, f.a, 1, f.legal(f.a)), "creator", nil); err == nil {
-		t.Fatal("former caretaker set owner's lineup")
+	if _, err := f.s.ExecuteCommissioner(t.Context(), f.command(t, commissioner.LineupSet, f.a, 1, f.legal(f.a)), "creator", nil); err != nil {
+		t.Fatalf("commissioner lost delegated lineup authority after seat replacement: %v", err)
 	}
-	if revision(t, f.s) != before {
-		t.Fatal("refused caretaker changed ledger")
+	if revision(t, f.s) != before+1 {
+		t.Fatal("commissioner lineup change was not recorded")
 	}
 }
 

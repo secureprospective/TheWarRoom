@@ -96,13 +96,13 @@ func lineupGovernance() []Record {
 	return []Record{create, seat("seat1", "franchise.01", "owner-1"), seat("seat2", "franchise.02", "owner-2"), grant}
 }
 
-func TestOnlyTheSeatedOwnerSetsALineupAndOnlyACommissionerCorrectsOne(t *testing.T) {
+func TestLineupPermissionAllowsTheOwnerCommissionerAndCoCommissioner(t *testing.T) {
 	records := lineupGovernance()
 	set := lineupRecord("x", LineupSet, 1, "1001").Command
 	set.League = "native.test"
 	correct := lineupRecord("y", LineupCorrect, 1, "1001").Command
 	correct.League = "native.test"
-	for principal, wantSet := range map[string]bool{"owner-1": true, "owner-2": false, "boss": false, "deputy": false, "stranger": false} {
+	for principal, wantSet := range map[string]bool{"owner-1": true, "owner-2": false, "boss": true, "deputy": true, "stranger": false} {
 		_, err := AuthorizeRecords(set, principal, records)
 		if (err == nil) != wantSet {
 			t.Fatalf("%s setting franchise.01's lineup: %v", principal, err)

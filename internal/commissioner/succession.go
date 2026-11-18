@@ -17,7 +17,6 @@ type successionGate uint8
 const (
 	gateCommissioner successionGate = iota // a current commissioner
 	gateOpener                             // a co-commissioner or DOT member (who may open votes)
-	gateCloser                             // an opener who is not the vote's target
 	gateFold                               // any principal; the governance fold decides
 )
 
@@ -39,8 +38,8 @@ func successionDefinitions() map[string]successionDefinition {
 		"commish.succession.election.open":  {gateOpener, "G3", "Opened a commissioner election", false, true},
 		"commish.succession.periods.set":    {gateCommissioner, "G3", "Changed the election voting periods", false, false},
 		"commish.vote.cast":                 {gateFold, "G2", "Cast a franchise ballot", true, true},
-		"commish.vote.close":                {gateCloser, "G3", "Closed a commissioner vote", false, false},
-		"commish.vote.tiebreak":             {gateFold, "G3", "Ruled on a tied runoff", false, true},
+		"commish.vote.close":                {gateCommissioner, "G3", "Closed a commissioner vote", false, false},
+		"commish.vote.tiebreak":             {gateCommissioner, "G3", "Ruled on a tied runoff", false, true},
 	}
 }
 
@@ -146,8 +145,8 @@ func authorizeSuccession(state governance.State, raw RawCommand, principal strin
 	if d.self && raw.Args.People.Principal != principal {
 		return "", fmt.Errorf("%s", "Other owners act from their own app; this desktop can only act as you")
 	}
-	if d.gate == gateCloser {
-		if v, ok := state.Vote(raw.Args.People.ID); ok && v.Target == governance.Principal(principal) {
+	if raw.Command == "commish.vote.close" {
+		if vote, ok := state.Vote(raw.Args.People.ID); ok && vote.Target == governance.Principal(principal) {
 			return "", fmt.Errorf("the person a vote is about cannot close it")
 		}
 	}
@@ -162,7 +161,7 @@ func successionPermission(state governance.State, principal string, d succession
 		if !state.HasRole(p, governance.Commissioner) {
 			return "", fmt.Errorf("succession permission: only the commissioner may do this")
 		}
-	case gateOpener, gateCloser:
+	case gateOpener:
 		if !state.HasRole(p, governance.CoCommissioner) && !state.HasRole(p, governance.DOT) {
 			return "", fmt.Errorf("succession permission: only a co-commissioner or DOT member may do this")
 		}
