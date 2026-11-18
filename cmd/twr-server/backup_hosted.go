@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/offsite"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
@@ -48,9 +50,10 @@ func startHostedBackup(ctx context.Context, files stateFiles, path, temp string)
 	done := make(chan struct{})
 	go func() { defer close(done); offsite.RunEach(work, managers.inOrder) }()
 	backups := hostedBackups{
-		league:    managers.leagueStatus,
-		reference: func() (offsite.Status, bool) { return managers.reference.Status(), true },
-		signIns:   func() (offsite.Status, bool) { return managers.signIns.Status(), true },
+		league:       managers.leagueStatus,
+		reference:    func() (offsite.Status, bool) { return managers.reference.Status(), true },
+		signIns:      func() (offsite.Status, bool) { return managers.signIns.Status(), true },
+		backupLeague: managers.backupLeague,
 	}
 	return hostedGuards{managers.checkLeague, managers.signIns.CheckWrite}, backups, func() { cancel(); <-done }, nil
 }
@@ -91,6 +94,28 @@ func (b backupManagers) leagueManagers() []*offsite.Manager {
 }
 
 // checkLeague is league's write guard; a league the server does not hold has nothing to pause.
+func (b backupManagers) backupLeague(ctx context.Context, league string) (leagueservice.BackupResult, error) {
+	b.mu.Lock()
+	manager := b.leagues[league]
+	b.mu.Unlock()
+	if manager == nil {
+		return leagueservice.BackupResult{}, fmt.Errorf("league backup is not configured on this server")
+	}
+	attempt, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	status, err := manager.BackupNow(attempt)
+	if errors.Is(err, offsite.ErrBackupInProgress) {
+		return leagueservice.BackupResult{}, leagueservice.ErrBackupInProgress
+	}
+	if err != nil {
+		return leagueservice.BackupResult{}, fmt.Errorf("save the league's off-site backup: %w", err)
+	}
+	when := status.Captured.UTC().Format("2006-01-02 15:04 UTC")
+	return leagueservice.BackupResult{League: league, Captured: status.Captured, Verified: status.Verified,
+		Where: "Cloudflare R2", Checked: !status.Verified.IsZero(),
+		Message: "League backup saved " + when + " and checked in Cloudflare R2."}, nil
+}
+
 func (b backupManagers) checkLeague(league string) error {
 	b.mu.Lock()
 	m := b.leagues[league]
@@ -226,5 +251,6 @@ func configureHostedBackup(ctx context.Context, handler *serverhttp.Hosted, file
 		return nil, hostedBackups{}, err
 	}
 	handler.LeagueAdmission, handler.SignInAdmission = guards.league, guards.signIns
+	handler.BackupLeague = status.backupLeague
 	return stop, status, nil
 }

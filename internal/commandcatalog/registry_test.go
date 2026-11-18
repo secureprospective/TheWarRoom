@@ -74,8 +74,12 @@ func TestOperatorRegistryKeepsOfflineAuthorityConsoleOnly(t *testing.T) {
 	}
 }
 
-func TestDeputyPermissionPolicyCoversTheNativeMutationCatalog(t *testing.T) {
+func TestDeputyPermissionPolicyCoversNativeMutationsAndHostedWorkflows(t *testing.T) {
 	catalog := make(map[string]int)
+	workflows := make(map[string]bool)
+	for _, entry := range serverWorkflowEntries() {
+		workflows[entry.ID] = true
+	}
 	for _, command := range nativeMutations() {
 		catalog[command.id]++
 	}
@@ -95,8 +99,12 @@ func TestDeputyPermissionPolicyCoversTheNativeMutationCatalog(t *testing.T) {
 		default:
 			t.Errorf("command %s has unknown deputy policy class %q", rule.Command, rule.Class)
 		}
-		if catalog[rule.Command] != 1 {
-			t.Errorf("policy command %s appears %d times in the catalog", rule.Command, catalog[rule.Command])
+		count := catalog[rule.Command]
+		if workflows[rule.Command] {
+			count++
+		}
+		if count != 1 {
+			t.Errorf("policy command %s appears %d times in native/workflow commands", rule.Command, count)
 		}
 	}
 	for command, count := range catalog {
@@ -104,7 +112,7 @@ func TestDeputyPermissionPolicyCoversTheNativeMutationCatalog(t *testing.T) {
 			t.Errorf("catalog command %s appears %d times", command, count)
 		}
 		if seen[command] != 1 {
-			t.Errorf("native mutation %s has %d permission classifications", command, seen[command])
+			t.Errorf("native/workflow command %s has %d permission classifications", command, seen[command])
 		}
 	}
 }

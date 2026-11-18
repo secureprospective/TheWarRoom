@@ -58,6 +58,8 @@ type hostedFixture struct {
 	// commissioner caches one signed-in bearer and recent-auth proof (contract_parity_test.go).
 	commissioner [2]string
 	join         *accounts.JoinService
+	backupCalls  atomic.Int64
+	backupBusy   atomic.Bool
 }
 
 func initializePrivateEntriesFixture(t *testing.T, pools *db.Pools) {
@@ -141,6 +143,16 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	f.publisher = serverhttp.NewPublisher()
 	f.games = leagueservice.NewLiveGames()
 	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+		BackupLeague: func(_ context.Context, league string) (leagueservice.BackupResult, error) {
+			if f.backupBusy.Load() {
+				return leagueservice.BackupResult{}, leagueservice.ErrBackupInProgress
+			}
+			f.backupCalls.Add(1)
+			at := f.clockTime()
+			return leagueservice.BackupResult{League: league, Captured: at, Verified: at.Add(time.Second),
+				Where: "Cloudflare R2", Checked: true,
+				Message: "League backup saved " + at.Format("2006-01-02 15:04 UTC") + " and checked in Cloudflare R2."}, nil
+		},
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}), Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, nil),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
 			"CM-018,Franchise,What is this franchise called?,\n"}

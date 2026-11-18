@@ -3,6 +3,7 @@ import { HQAct } from '../shell/HQAct';
 import { onHostedTopics } from '../data/hostedReads';
 import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
+import { HostedBackupNow } from './HostedBackupNow';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
 import { HostedControlRoomPicks } from './HostedControlRoomPicks';
 import { HostedControlRoomPeople } from './HostedControlRoomPeople';
@@ -171,9 +172,9 @@ function HostedServerTab({ league, port = hostedWorkflow }: { league: string; po
   const error = ledgerState.error;
   return <div className="cr-note" aria-label="Server status">
     <h3>Server</h3>
-    <p>Commissioner view is read-only. Restore, feed controls and upgrades are operator-only.</p>
-    <h4>Backups</h4>
-    <p>Back up now is not available through the hosted server command path.</p>
+    <p>Commissioners can save and verify a fresh league backup. Restore, feed controls and upgrades
+      are operator-only.</p>
+    <HostedBackupNow league={league} port={port} />
     <p>Restore is operator-only and unavailable here.</p>
     <h4>Feeds and upgrades</h4>
     <p>Feed controls and upgrades are operator-only and unavailable here.</p>

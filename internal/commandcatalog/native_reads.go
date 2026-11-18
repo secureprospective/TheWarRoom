@@ -111,6 +111,15 @@ func nativeServerReads() []Command {
 		Safeguards: "none"}}
 }
 
+func serverBackupCommands() []Command {
+	return []Command{{ID: leagueservice.BackupNowCommand, Method: "TargetBackupNow", Version: "1", Role: "domain",
+		Gravity: "G1", Availability: "server",
+		Arguments:  Shape(reflect.TypeFor[leagueservice.RawBackupNow](), "RawBackupNow.Validate"),
+		Permission: "commissioner-or-co-commissioner", Modes: []Mode{Preview, Execute}, Undo: "none",
+		Facts:      "server-held league database and R2 settings",
+		Safeguards: "current commissioner seat; per-league backup manager; refuse concurrent backup"}}
+}
+
 func tradeDraftCommands() []Command {
 	return []Command{
 		ownerPrivateCommand(leagueservice.TradeDraftRead, "TargetTradeDrafts", reflect.TypeFor[leagueservice.RawTradeDraftScope](), Read, "G0", "none", privateEntries()),

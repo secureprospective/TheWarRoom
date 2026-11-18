@@ -102,6 +102,14 @@ func TestChangeRulesTickPreservesCommissionerOnlyRuleFields(t *testing.T) {
 	}
 }
 
+func TestDeputyWithEveryTickCannotRunManualBackup(t *testing.T) {
+	records := permissionTestLedger(t)
+	raw := RawCommand{League: "native.test", Command: BackupNowCommand}
+	if role, err := AuthorizeRecords(raw, "full-deputy", records); err == nil {
+		t.Fatalf("seated deputy ran backup.now as %s", role)
+	}
+}
+
 func TestDeputyWithEveryTickCannotCloseOrTiebreakSuccessionVote(t *testing.T) {
 	records := permissionTestLedger(t)
 	for _, command := range []string{"commish.vote.close", "commish.vote.tiebreak"} {

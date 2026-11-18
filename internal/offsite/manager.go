@@ -2,6 +2,7 @@ package offsite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -18,6 +19,9 @@ type Status struct {
 	Writable bool
 	Failure  string
 }
+
+var ErrBackupInProgress = errors.New("backup already running")
+
 type Manager struct {
 	mu            sync.Mutex
 	backupMu      sync.Mutex
@@ -83,6 +87,22 @@ func (m *Manager) recordFailure(err error) {
 func (m *Manager) Backup(ctx context.Context) error {
 	m.backupMu.Lock()
 	defer m.backupMu.Unlock()
+	return m.runBackup(ctx)
+}
+
+// BackupNow starts one manual backup or refuses immediately when this league is already backing up.
+func (m *Manager) BackupNow(ctx context.Context) (Status, error) {
+	if !m.backupMu.TryLock() {
+		return Status{}, ErrBackupInProgress
+	}
+	defer m.backupMu.Unlock()
+	if err := m.runBackup(ctx); err != nil {
+		return Status{}, err
+	}
+	return m.Status(), nil
+}
+
+func (m *Manager) runBackup(ctx context.Context) error {
 	if err := m.backup(ctx); err != nil {
 		m.recordFailure(err)
 		return err

@@ -10,3 +10,13 @@
 - Filelen: `internal/store/history/commissioner.go` is 774 lines (base 727); transaction-time authorization stays beside the serialized append check so writes share one gate.
 - Final `tidy-check` found unrelated active runs b5backup, b4sync, b3home and b5league; left them untouched. This lane created no scratch files.
 - Open decisions untouched: snooze scope, deputy job visibility, written-request visibility, division names.
+
+## b5backup lane
+
+- Baton: Bee, 2026-11-18; backup feature is based on current `bundle/b5` (#355).
+- State: hosted `backup.now` uses the existing per-league R2 manager, admits only commissioner/co-commissioner, refuses agents and overlapping backups, and bypasses only the stale-backup write guard. Server UI previews/confirms; rollover backs up first.
+- Verification: `make lint`/`make bloat` pass; focused Go race tests for deputy classification, backup authorization, catalog coverage and hosted execution pass. Full frontend suite (132 files/939 tests), TypeScript, nativegen, and Wails binding freshness pass. First pre-push run passed Go and exposed five long frontend lines; fixed and reran the full frontend suite.
+- Done: PR #367 is open against `bundle/b5`; all GitHub checks are green after regenerating stale `arguments.gen.ts` and `commandbar.gen.ts`. The existing per-league R2 manager is callable; no fallback needed.
+- D65 rule/test in `internal/commissioner/deputy_permissions.go` and `deputy_permissions_test.go`: backup is commissioner-only and an all-ticks deputy is refused.
+- Verification: nativegen freshness; focused Go race tests for commandcatalog, commissioner, leagueservice, offsite, serverhttp; frontend 132 files/939 tests and TypeScript; `make lint`; `make bloat`; pre-push verify; CI green. `tidy-check` clean.
+- No blockers. Earlier tidy-check found another lane's active b4sync2 launcher (pid 429861; run output at `~/fleet/runs/pulse-b4sync2`); left it untouched.

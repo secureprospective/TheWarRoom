@@ -2,11 +2,13 @@ package serverhttp_test
 
 import (
 	"encoding/json"
+	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
@@ -20,6 +22,64 @@ func (workflowClock) Trusted() error   { return nil }
 func workflowRequest(t *testing.T, command, mode string, args string, football string) serverhttp.RawWorkflow {
 	t.Helper()
 	return serverhttp.RawWorkflow{Command: command, Version: "1", Mode: mode, Arguments: json.RawMessage(args), Football: football}
+}
+
+func TestHostedBackupWorkflowPreviewsExecutesAndRefusesOwnerAndAgent(t *testing.T) {
+	f := newHostedFixture(t, true)
+	bearer, proof := f.directCommissioner(t)
+	invoke := func(request serverhttp.RawWorkflow, token, recent string, want int) serverhttp.WorkflowResponse {
+		t.Helper()
+		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &request})
+		if err != nil {
+			t.Fatal(err)
+		}
+		response := f.post(t, serverhttp.WorkflowPath, string(body), token, recent, want)
+		var hosted serverhttp.WorkflowResponse
+		if want == 200 {
+			if err := json.Unmarshal(response, &hosted); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return hosted
+	}
+	preview := invoke(workflowRequest(t, leagueservice.BackupNowCommand, "preview",
+		`{"league":"native.hosted"}`, ""), bearer, proof, 200)
+	var description commissioner.Preview
+	if err := json.Unmarshal(preview.Data, &description); err != nil || description.Safeguard != "confirm" ||
+		description.Target.League != "native.hosted" {
+		t.Fatalf("backup preview = %+v, %v", description, err)
+	}
+	if f.backupCalls.Load() != 0 {
+		t.Fatal("preview started a backup")
+	}
+	result := invoke(workflowRequest(t, leagueservice.BackupNowCommand, "execute",
+		`{"league":"native.hosted"}`, ""), bearer, proof, 200)
+	var saved leagueservice.BackupResult
+	if err := json.Unmarshal(result.Data, &saved); err != nil || saved.League != "native.hosted" || !saved.Checked ||
+		saved.Where != "Cloudflare R2" || saved.Message == "" || f.backupCalls.Load() != 1 {
+		t.Fatalf("backup result = %+v, calls=%d, err=%v", saved, f.backupCalls.Load(), err)
+	}
+	owner := f.login(t, "owner", "private-password")
+	invoke(workflowRequest(t, leagueservice.BackupNowCommand, "preview",
+		`{"league":"native.hosted"}`, ""), owner, "", http.StatusConflict)
+	token := f.agentToken(t, bearer, []string{"commish.jobs.read"}, "read")
+	invoke(workflowRequest(t, leagueservice.BackupNowCommand, "execute",
+		`{"league":"native.hosted"}`, ""), token.Bearer, "", http.StatusForbidden)
+	f.backupBusy.Store(true)
+	busyRequest := workflowRequest(t, leagueservice.BackupNowCommand, "execute",
+		`{"league":"native.hosted"}`, "")
+	busyBody, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &busyRequest})
+	if err != nil {
+		t.Fatal(err)
+	}
+	busy := f.post(t, serverhttp.WorkflowPath, string(busyBody), bearer, proof, http.StatusConflict)
+	if string(busy) != leagueservice.BackupInProgressMessage+"\n" {
+		t.Fatalf("busy backup words = %q", busy)
+	}
+	f.backupBusy.Store(false)
+	if f.backupCalls.Load() != 1 {
+		t.Fatal("a refused owner, agent or overlapping request started another backup")
+	}
 }
 
 func TestDesktopHostedReserveMoveConfirmedRetryAndRefusalPreservesRoster(t *testing.T) {
