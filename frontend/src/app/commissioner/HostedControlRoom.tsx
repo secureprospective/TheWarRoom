@@ -5,13 +5,12 @@ import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
-import { createHostedJobsQuery, hostedControlTabs, type HostedControlTab } from './hostedControlRoomData';
+import { createHostedJobsQuery, createHostedLedgerQuery, hostedControlTabs,
+  type HostedControlTab } from './hostedControlRoomData';
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
 import type { Job } from './jobs';
 import type { ActDefinition } from './actTable';
-import { parseLedger } from './proxy';
 import { hostedWorkflow } from '../control/nativeApi';
-import type { NativeRequest } from '../commands/native';
 import './commissioner.css';
 import '../control/room/controlRoom.css';
 
@@ -119,21 +118,14 @@ export function HostedControlRoom({ league, port, heldRoom }: {
 }
 
 function HostedServerTab({ league, port = hostedWorkflow }: { league: string; port?: HostedPort }) {
-  const [ledger, setLedger] = useState<ReturnType<typeof parseLedger>>();
-  const [error, setError] = useState('');
+  const ledgerQuery = useMemo(() => createHostedLedgerQuery(league, port), [league, port]);
+  const ledgerState = ledgerQuery.use();
   useEffect(() => {
-    let active = true;
-    setLedger(undefined);
-    setError('');
-    void port({ command: 'commish.ledger.read', mode: 'read', arguments: { league } } as NativeRequest)
-      .then(response => {
-        const reading = parseLedger(response.data);
-        if (reading.league !== league) throw new Error('Ledger belongs to another league.');
-        if (active) setLedger(reading);
-      })
-      .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : String(cause)); });
-    return () => { active = false; };
-  }, [league, port]);
+    void ledgerQuery.load([league]);
+    return () => ledgerQuery.dispose();
+  }, [league, ledgerQuery]);
+  const ledger = ledgerState.ledger;
+  const error = ledgerState.error;
   return <div className="cr-note" aria-label="Server status">
     <h3>Server</h3>
     <p>Commissioner view is read-only. Restore, feed controls and upgrades are operator-only.</p>
