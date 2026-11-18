@@ -97,8 +97,9 @@ function assets() {
   return { league, revision: 7, seeded: true, source: 'held', pool: [], identities: [], snapshot: {
     season: 2026, franchises: teams.map(team => ({ id: team.franchise, heldId: team.franchise,
       name: team.name, abbreviation: team.abbreviation, division: '' })),
-    players: [{ id: '0042', name: 'Player One', franchise: 'franchise.1', status: 'ROSTER',
-      salaryCents: 100, expirationYear: 2027 }], picks: [], pool: [],
+    players: [{ id: '0042', name: 'Josh Allen', franchise: 'franchise.2', status: 'ROSTER',
+      salaryCents: 100, expirationYear: 2027 }], picks: [],
+    pool: [{ player: '0044', name: 'Free Agent', season: 2026 }],
   } };
 }
 function fixPort(): HostedPort & ReturnType<typeof vi.fn> {
@@ -146,6 +147,24 @@ function setValue(element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectEl
 const fixCommands = ['commish.stat.correct', 'commish.score.player', 'commish.score.franchise',
   'commish.lineup.correct', 'commish.player.position', 'commish.standings.override',
   'commish.standings.record.adjust', 'commish.contract.edit', 'commish.correction.revert'];
+it('finds a player rostered on another team from the owner Home screen', async () => {
+  const read = vi.fn(async (request: NativeRequest) => {
+    if (request.command === 'native.assets.read')
+      return { data: assets(), label: 'League server', writable: false, football: '' };
+    throw new Error(`Unexpected hosted request: ${request.command}`);
+  }) as HostedPort & ReturnType<typeof vi.fn>;
+  await act(async () => root.render(<HostedLeague league={league} franchise="franchise.1"
+    name="Team 1" role="Owner" port={read} />));
+  await settle();
+  const input = host.querySelector<HTMLInputElement>('#thin-player-search');
+  expect(input).not.toBeNull();
+  await act(async () => setValue(input!, 'Josh Allen'));
+  expect(host.textContent).toContain('Josh Allen');
+  expect(host.querySelector('button[aria-label="Open Josh Allen player card"]')).not.toBeNull();
+  await act(async () => setValue(input!, 'Free Agent'));
+  expect(host.querySelector('button[aria-label="Open Free Agent player card"]')).not.toBeNull();
+});
+
 async function openControlRoom(read: HostedPort, role = 'Commissioner') {
   await act(async () => root.render(<HostedLeague league={league} franchise="" name="Test League"
     role={role} port={read} />));
