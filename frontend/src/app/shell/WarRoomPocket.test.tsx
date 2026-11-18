@@ -140,10 +140,13 @@ it('reopens intact stale assets for a fresh preview and rereads the pocket after
   expect(host.textContent).toContain('No saved proposals yet');
 });
 
+const teamName = (id: string) => id === 'franchise.02' ? 'Rival Club' : 'My Club';
+
 function offer(id: string, proposer: string, assets = [{ from: proposer, to: proposer === 'franchise.01' ?
   'franchise.02' : 'franchise.01', player: '0101' }], status = 'offered') {
   return { id, proposer, parties: ['franchise.01', 'franchise.02'], assets,
-    assetDetails: assets.map(a => ({ fromTeam: a.from, toTeam: a.to, label: `Player ${a.player}` })),
+    assetDetails: assets.map(a => ({ fromTeam: teamName(a.from), toTeam: teamName(a.to),
+      label: `Player ${a.player}` })),
     accepted: [] as string[], policy: {}, offeredAt: '2026-11-17T12:00:00Z',
     expiresAt: '2026-12-01T12:00:00Z', status,
     words: status === 'offered' ? 'Waiting for every party to accept' : `Offer ${status}`,
@@ -203,6 +206,7 @@ it('lists live offer status and expiry and only offers incoming actions or own w
   expect(host.textContent).toContain('Waiting for every party to accept');
   expect(host.textContent).toContain('Expires Dec 1, 2026 at 12:00 PM UTC');
   expect(host.textContent).not.toContain('Offer approved');
+  expect([...host.querySelectorAll('.ttl')].map(t => t.textContent)).toEqual(['Rival Club', 'Rival Club']);
   expect(buttons('ACCEPT')).toHaveLength(1);
   expect(buttons('DECLINE')).toHaveLength(1);
   expect(buttons('WITHDRAW')).toHaveLength(1);

@@ -34,8 +34,15 @@ export async function readWarRoomOffers(c: WarRoomContext): Promise<WarRoomOffer
   if (reading.league !== c.native.league || reading.franchise !== c.mine)
     throw new Error('Trade offers belong to another viewer');
   return { revision: reading.revision, notes: reading.notes, offers: reading.offers
-    .filter(o => !isEndedTrade(o.status)).map(o => ({ id: o.id, name: o.id,
+    .filter(o => !isEndedTrade(o.status)).map(o => ({ id: o.id, name: partnerName(o, c.mine),
       status: o.words, details: o.details, note: o.expires, source: o })) };
+}
+
+/** partnerName is the other team's held name; the trade id only when the read names no partner. */
+function partnerName(offer: WarRoomOffer, mine: string): string {
+  const names = new Map(offer.teams);
+  const others = offer.parties.filter(id => id !== mine).map(id => names.get(id) ?? id);
+  return others.length ? others.join(' · ') : offer.id;
 }
 
 function NativeOffers({ context, reading, onLoadOffer, onChanged }: {
