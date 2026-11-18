@@ -7,5 +7,6 @@
 - Verified: focused + package race tests; nativegen freshness; Season Vitest; `pnpm exec tsc --noEmit`; full Vitest (138 files/977 tests); `make lint`; final `make verify` pass (race suite, frontend tests/build, bundle and CSP checks).
 - Lab logs: correct path `/var/lib/twr/server.log` per `deploy/server/twr-server.initd`; requested `/var/log/twr-server.log` absent. No matching Control Room log entries because validation failed before workflow logging.
 - Tidy-check reports foreign `b7lab` launcher (PID 1140150) and `claudeos` SSH tunnel (PID 1170685); left untouched. Their lane owner should handle its scratch `KEEP.md`; this lane cannot write another lane's files.
-- Next: push the branch (pre-push verify), open one PR into main, and wait for CI green.
-- Blocked on: none.
+- PR #377 is open into `main`: https://github.com/secureprospective/TheWarRoom/pull/377. CI is running; release-tools passed, package/tests/checks are pending.
+- Next: wait for all PR checks green, then leave the branch for review; do not merge from this lane.
+- Blocked on: CI completion.
