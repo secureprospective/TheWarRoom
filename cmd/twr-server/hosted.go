@@ -26,18 +26,19 @@ import (
 )
 
 type hostedFlags struct {
-	flags    *flag.FlagSet
-	path     *string
-	address  *string
-	cert     *string
-	key      *string
-	totpKey  *string
-	registry *string
-	football *string
-	backup   *string
-	trusted  *string
-	status   *string
-	official *bool
+	flags      *flag.FlagSet
+	path       *string
+	address    *string
+	cert       *string
+	key        *string
+	totpKey    *string
+	registry   *string
+	football   *string
+	backup     *string
+	trusted    *string
+	publicHost *string
+	status     *string
+	official   *bool
 }
 
 // replyCacheBytes bounds the league-state replies the server keeps in memory (serverhttp.ReplyCache).
@@ -54,12 +55,18 @@ func parseHostedFlags(args []string) (hostedFlags, error) {
 	football := flags.String("football", "", "pinned server-held football evidence digest for owner workflows")
 	backup := flags.String("backup-config", "", "private R2 backup settings; required for hosted writes")
 	trusted := flags.String("trusted-proxy", "", "loopback IP of a cloudflared hop whose CF-Connecting-IP names each client; empty trusts no proxy")
+	publicHost := flags.String("public-host", "", "configured public DNS hostname for the browser app; empty disables it")
 	status := flags.String("status-socket", "", "owner-only Unix socket for the console status dashboard; empty serves none")
 	official := flags.Bool("official-stats", false, "re-pin each league to nflverse's official statistics as its weeks finish")
 	if err := flags.Parse(args); err != nil {
 		return hostedFlags{}, fmt.Errorf("parse hosted flags: %w", err)
 	}
-	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, status: status, official: official}, nil
+	if *publicHost != "" {
+		if err := serverhttp.ValidatePublicHost(*publicHost); err != nil {
+			return hostedFlags{}, fmt.Errorf("parse hosted flags: %w", err)
+		}
+	}
+	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, publicHost: publicHost, status: status, official: official}, nil
 }
 
 func runHosted(ctx context.Context, args []string, output io.Writer) error {
@@ -98,7 +105,7 @@ func startHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err := selectHostedFootball(ctx, &handler, signInStore(files), *config.football); err != nil {
 		return err
 	}
-	handler.TrustedProxy = hop
+	handler.TrustedProxy, handler.PublicHost = hop, *config.publicHost
 	stopBackup, backups, err := configureHostedBackup(ctx, &handler, files, *config.backup, filepath.Dir(*config.path), *config.totpKey, *config.cert, *config.key, *config.registry)
 	if err != nil {
 		return err

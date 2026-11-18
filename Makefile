@@ -111,8 +111,8 @@ verify: lint
 	govulncheck ./...
 	$(MAKE) bindings-fresh
 	cd frontend && pnpm tsc --noEmit
-	go test -race -timeout $(GO_TEST_TIMEOUT) ./...
 	cd frontend && pnpm test && pnpm run build && node scripts/bundle-budget.mjs && node scripts/csp-check.mjs && node scripts/csp-browser-check.mjs
+	@set -eu; trap 'scripts/stage-webapp.sh --clean' EXIT; scripts/stage-webapp.sh; go test -race -timeout $(GO_TEST_TIMEOUT) ./...
 
 # Desktop shell. Wails embeds the built frontend; before the frontend is wired
 # substitute `go build ./...`. The build stamp is injected here (see LDFLAGS).
