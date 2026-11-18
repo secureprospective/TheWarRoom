@@ -4,12 +4,16 @@ import { array, choice, integer, object, text, timestamp } from '../data/parseVa
 // from the league's rules. Go also orders it: live jobs first. The strip shows it as it arrives.
 const jobStates = ['live', 'upcoming', 'blocked', 'unbuilt'] as const;
 export type JobState = (typeof jobStates)[number];
+export type JobIdentity = { league: string; season: number; week: number; matter: string };
 export type Job = {
   id: string; name: string; state: JobState; words: string;
   // RFC 3339 instants; empty when the state has none.
   opens: string; closes: string;
   // The census rows the job opens. They find the job's group; they are never shown.
   controls: string[];
+  // Server reads require both; parseJobs rejects either field when absent.
+  identity?: JobIdentity;
+  settles?: string[];
 };
 export type Jobs = { league: string; name: string; revision: number; jobs: Job[] };
 
@@ -23,11 +27,20 @@ export function parseJobs(v: unknown): Jobs {
     league: text(r.league, 'League'), name: text(r.name, 'League name'),
     revision: integer(r.revision, 'League version'),
     jobs: array(r.jobs, 'Jobs', (j, p) => {
-      const o = object(j, p, ['id', 'name', 'state', 'words', 'opens', 'closes', 'controls']);
+      const o = object(j, p,
+        ['id', 'name', 'state', 'words', 'opens', 'closes', 'controls', 'identity', 'settles']);
+      const identity = object(o.identity, `${p}.identity`, ['league', 'season', 'week', 'matter']);
       return {
         id: text(o.id, p), name: text(o.name, p), state: choice(o.state, `${p}.state`, jobStates),
         words: text(o.words, p), opens: timestamp(o.opens, `${p}.opens`),
         closes: timestamp(o.closes, `${p}.closes`), controls: array(o.controls, `${p}.controls`, text),
+        identity: {
+          league: text(identity.league, `${p}.identity.league`),
+          season: integer(identity.season, `${p}.identity.season`),
+          week: integer(identity.week, `${p}.identity.week`),
+          matter: text(identity.matter, `${p}.identity.matter`),
+        },
+        settles: array(o.settles, `${p}.settles`, text),
       };
     }),
   };
