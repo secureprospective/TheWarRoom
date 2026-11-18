@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { poolProvider } from '../pool/provider';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { BidFormState, Plan } from '../pool/contract';
@@ -38,6 +39,15 @@ const capReading = (roomCents = 8500000000) => ({ league, name: 'League', revisi
     roomCents, quantumCents: 1, mode: '', deadline: '', words: '', enforcement: '', name: 'Mine',
     abbreviation: 'M', charges: [], runway: [{ season: 2026, committedCents: 1500000000,
       deadCents: 0, capCents: 10000000000, roomCents }], contracts: [] }] });
+it('provides a single-column, touch-sized market at phone width without altering desktop rules', () => {
+  const css = readFileSync(new URL('./warroom.css', import.meta.url), 'utf8');
+  expect(css).toContain('@media(max-width:699px){');
+  expect(css).toContain('.wr-v6 .mk3{display:flex;flex-direction:column;min-height:0;overflow-y:auto');
+  expect(css).toContain('min-height:44px');
+  expect(css).toContain('.wr-v6 .mk3 .bidb');
+  expect(css).toContain('.wr-v6 .mk{grid-template-columns:minmax(0,1fr) 400px');
+});
+
 const context = (port?: HostedPort, owner = true): WarRoomContext => ({ mine,
   snapshot: {} as WarRoomContext['snapshot'], week: 1,
   native: { league, mine, port, owner, leave: () => {} } });

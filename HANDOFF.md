@@ -16,3 +16,10 @@
 - Checks: focused frontend tests 58/58, full Vitest 989/989, `pnpm tsc --noEmit`, pre-push verification passed; PR CI green on `bb5df4b68` (all checks passed). No server, auth, session or service-worker changes.
 - Tidy: `tidy-check.sh` found unrelated active `b9feed` and `b9boards` lanes in the main checkout. Left their processes/files untouched; their owners need to file KEEP records.
 - Next: ClaudeBox review/merge. Blocked on review.
+
+## Bee — B8-5 War Room phone market (2026-11-18)
+- Baton: Bee, `session/pulse-b8bids`, based on `bundle/b8` / PR #380.
+- State: market/bid UI has a <=699px single-column, scrollable phone layout, touch-sized filters and bid controls; desktop rules untouched. Existing held market/bid reads and preview/confirm/reread flow unchanged. No server/auth/session/service-worker edits.
+- Checks: focused tests 58/58, full Vitest 990/990, TypeScript passed. One initial full-suite failure was a long test line (fixed) plus a hostedPulse navigation failure (focused rerun passed). Full Go race suite is still active elsewhere, so heavy-work/pre-push verification is waiting; browser 390px inspection not run.
+- Next: wait for shared suite to finish, complete verification, push and open PR into `bundle/b8`. Reuse WarRoomMarket and its private bid flow rather than duplicate workflow commands.
+- Blocked on: another active Go race suite. `tidy-check.sh` reports unrelated active lane `b8trade` (pid 1599696) launched by another agent; left it untouched.
