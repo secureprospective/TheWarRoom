@@ -169,8 +169,78 @@ func authorizeOwnFranchise(auth GovernanceAuthorizer, raw RawCommand, principal 
 func AuthorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {
 	raw = policyCommand(raw, records)
 	principal = PrincipalFor(records, principal)
+	state, err := GovernanceState(records)
+	if err != nil {
+		return "", err
+	}
+	return mayRun(raw, principal, records, state)
+}
+
+func mayRun(raw RawCommand, principal string, records []Record, state governance.State) (string, error) {
+	person := governance.Principal(principal)
+	switch {
+	case state.HasRole(person, governance.Commissioner):
+		return mayRunCommissioner(raw, principal, records)
+	case state.HasRole(person, governance.CoCommissioner):
+		return mayRunCoCommissioner(raw, principal, records)
+	case state.HasRole(person, governance.Deputy):
+		return mayRunDeputy(raw, principal, records, state)
+	default:
+		return authorizeRecords(raw, principal, records)
+	}
+}
+
+func mayRunCommissioner(raw RawCommand, principal string, records []Record) (string, error) {
+	return authorizeRecords(raw, principal, records)
+}
+
+func mayRunCoCommissioner(raw RawCommand, principal string, records []Record) (string, error) {
+	if commissionerOnlyForAll(raw.Command) {
+		return "", fmt.Errorf("only this league's commissioner may make this change")
+	}
+	return authorizeRecords(raw, principal, records)
+}
+
+func mayRunDeputy(raw RawCommand, principal string, records []Record, state governance.State) (string, error) {
+	rule, known := DeputyCommandRuleFor(raw.Command)
+	if known && rule.Class == DeputyCommissionerOnly {
+		return "", fmt.Errorf("this commissioner action is not delegated")
+	}
+	if known && rule.Class == DeputyDelegable {
+		if !state.HasDeputyPermission(governance.Principal(principal), rule.Permission) {
+			return deputyOwnerAction(raw, principal, records)
+		}
+		if raw.Command == RulesSet {
+			if err := checkDeputyRulePermission(raw); err != nil {
+				return "", err
+			}
+		}
+		if TradeCommand(raw.Command) {
+			return authorizeTrade(raw, principal, records, true)
+		}
+		if raw.Command == LineupSet {
+			if _, err := authorizeLineupSet(state, raw, principal); err != nil {
+				return "", err
+			}
+		}
+		return "deputy", nil
+	}
+	return deputyOwnerAction(raw, principal, records)
+}
+
+func deputyOwnerAction(raw RawCommand, principal string, records []Record) (string, error) {
+	role, err := authorizeRecords(raw, principal, records)
+	if err == nil && role == "owner" {
+		return role, nil
+	}
+	return "", fmt.Errorf("this commissioner action is not delegated")
+}
+
+func authorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {
+	raw = policyCommand(raw, records)
+	principal = PrincipalFor(records, principal)
 	if TradeCommand(raw.Command) {
-		return authorizeTrade(raw, principal, records)
+		return authorizeTrade(raw, principal, records, false)
 	}
 	if len(records) == 0 && raw.Command == Create {
 		return "commissioner", nil

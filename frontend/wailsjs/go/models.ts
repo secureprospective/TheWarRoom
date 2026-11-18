@@ -3355,6 +3355,20 @@ export namespace commissioner {
 	        this.route = source["route"];
 	    }
 	}
+	export class PeopleActorPermissions {
+	    person: string;
+	    effectivePermissions: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PeopleActorPermissions(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.person = source["person"];
+	        this.effectivePermissions = source["effectivePermissions"];
+	    }
+	}
 	export class PeopleVoteCount {
 	    choice: string;
 	    ballots: number;
@@ -3480,6 +3494,8 @@ export namespace commissioner {
 	    dotStatus: string;
 	    votes: PeopleVote[];
 	    succession: string;
+	    actors: PeopleActorPermissions[];
+	    yourPermissions: string[];
 	    yourRole: string;
 	    yourFranchise: string;
 	    mayChangeRules: boolean;
@@ -3502,6 +3518,8 @@ export namespace commissioner {
 	        this.dotStatus = source["dotStatus"];
 	        this.votes = this.convertValues(source["votes"], PeopleVote);
 	        this.succession = source["succession"];
+	        this.actors = this.convertValues(source["actors"], PeopleActorPermissions);
+	        this.yourPermissions = source["yourPermissions"];
 	        this.yourRole = source["yourRole"];
 	        this.yourFranchise = source["yourFranchise"];
 	        this.mayChangeRules = source["mayChangeRules"];
@@ -3527,6 +3545,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	
@@ -4049,6 +4068,7 @@ export namespace commissioner {
 	}
 	export class RawPeople {
 	    order?: string[];
+	    permissions?: string[];
 	    franchise?: string;
 	    principal?: string;
 	    name?: string;
@@ -4076,6 +4096,7 @@ export namespace commissioner {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.order = source["order"];
+	        this.permissions = source["permissions"];
 	        this.franchise = source["franchise"];
 	        this.principal = source["principal"];
 	        this.name = source["name"];

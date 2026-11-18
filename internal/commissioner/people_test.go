@@ -43,6 +43,37 @@ func TestPeopleBoundary(t *testing.T) {
 	}
 }
 
+func TestDeputyPermissionCommandRequiresPrivateReasonAndKnownTicks(t *testing.T) {
+	raw := RawCommand{League: "native.test", Command: DeputyPermissionsSet,
+		Args:   RawArgs{People: &RawPeople{Principal: "deputy", Permissions: []governance.DeputyPermission{governance.RuleOnTrades}}},
+		Reason: "Delegate trade rulings", Request: "permissions", Effective: "now", Visibility: "private"}
+	if err := raw.Validate(); err != nil {
+		t.Fatalf("valid deputy permission change: %v", err)
+	}
+	for name, invalid := range map[string]RawCommand{
+		"missing reason": func() RawCommand { r := raw; r.Reason = ""; return r }(),
+		"public grant":   func() RawCommand { r := raw; r.Visibility = "league"; return r }(),
+		"unknown tick": func() RawCommand {
+			r := raw
+			person := *r.Args.People
+			person.Permissions = []governance.DeputyPermission{"run-anything"}
+			r.Args.People = &person
+			return r
+		}(),
+		"duplicate tick": func() RawCommand {
+			r := raw
+			person := *r.Args.People
+			person.Permissions = []governance.DeputyPermission{governance.RuleOnTrades, governance.RuleOnTrades}
+			r.Args.People = &person
+			return r
+		}(),
+	} {
+		if err := invalid.Validate(); err == nil {
+			t.Errorf("%s deputy permission change accepted", name)
+		}
+	}
+}
+
 func TestDeputyCommandReplayAndCommissionerOnlyPowers(t *testing.T) {
 	b := newLedger(t, PresetEmpty)
 	for _, p := range []string{"z", "a"} {

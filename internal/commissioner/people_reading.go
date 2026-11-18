@@ -28,17 +28,24 @@ type PeopleInvite struct {
 	Status    string `json:"status"`
 }
 
+type PeopleActorPermissions struct {
+	Person               string                        `json:"person"`
+	EffectivePermissions []governance.DeputyPermission `json:"effectivePermissions"`
+}
+
 type People struct {
-	League     string         `json:"league"`
-	Name       string         `json:"name"`
-	Revision   int64          `json:"revision"`
-	Seats      []PeopleSeat   `json:"seats"`
-	Roles      []PeopleRole   `json:"roles"`
-	Invites    []PeopleInvite `json:"invites"`
-	DOTCount   int            `json:"dotCount"`
-	DOTStatus  string         `json:"dotStatus"`
-	Votes      []PeopleVote   `json:"votes"`
-	Succession string         `json:"succession"`
+	League          string                        `json:"league"`
+	Name            string                        `json:"name"`
+	Revision        int64                         `json:"revision"`
+	Seats           []PeopleSeat                  `json:"seats"`
+	Roles           []PeopleRole                  `json:"roles"`
+	Invites         []PeopleInvite                `json:"invites"`
+	DOTCount        int                           `json:"dotCount"`
+	DOTStatus       string                        `json:"dotStatus"`
+	Votes           []PeopleVote                  `json:"votes"`
+	Succession      string                        `json:"succession"`
+	Actors          []PeopleActorPermissions      `json:"actors"`
+	YourPermissions []governance.DeputyPermission `json:"yourPermissions"`
 	// YourRole and the two flags say what this principal may start, so the forms can stay out of the way.
 	YourRole string `json:"yourRole"`
 	// YourFranchise is the franchise this principal owns, or empty when they own none.
@@ -54,7 +61,8 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 		return People{}, err
 	}
 	out := People{League: league, Name: Replay(records).Name, Revision: int64(len(records)),
-		Seats: []PeopleSeat{}, Roles: []PeopleRole{}, Invites: []PeopleInvite{}}
+		Seats: []PeopleSeat{}, Roles: []PeopleRole{}, Invites: []PeopleInvite{},
+		Actors: []PeopleActorPermissions{}, YourPermissions: []governance.DeputyPermission{}}
 	p := governance.Principal(PrincipalFor(records, principal))
 	private := state.HasRole(p, governance.Commissioner) || state.HasRole(p, governance.CoCommissioner)
 	persons, invites := PeopleInventory(records)
@@ -66,19 +74,7 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	for _, f := range directory.Franchises {
 		out.Seats = append(out.Seats, f.PeopleSeat)
 	}
-	for _, person := range persons {
-		for _, role := range []governance.Role{governance.Commissioner, governance.CoCommissioner, governance.DOT} {
-			if !state.HasRole(governance.Principal(person), role) {
-				continue
-			}
-			if role == governance.DOT {
-				out.DOTCount++
-			}
-			if private {
-				out.Roles = append(out.Roles, PeopleRole{Person: person, Role: roleLabel(role)})
-			}
-		}
-	}
+	out.Roles, out.DOTCount = peopleRoles(state, persons, private)
 	switch out.DOTCount {
 	case 0:
 		out.DOTStatus = "Needs a ruling: trade review needs at least one seat"
@@ -92,7 +88,11 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	}
 	out.YourRole = yourRole(state, p, out.Seats)
 	out.YourFranchise = yourFranchise(p, out.Seats)
-	out.MayChangeRules = private
+	out.YourPermissions = effectiveDeputyPermissions(state, p)
+	if private {
+		out.Actors = peopleActorPermissions(state, persons, records)
+	}
+	out.MayChangeRules = private || state.HasDeputyPermission(p, governance.ChangeRules)
 	_, grantErr := GovernanceAuthorizer{State: state}.Allow(league, principal, "commish.role.grant")
 	out.MayGrantRoles = grantErr == nil
 	_, postErr := GovernanceAuthorizer{State: state}.Allow(league, principal, NoticePublish)
@@ -102,12 +102,52 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	return out, nil
 }
 
+func peopleRoles(state governance.State, persons []string, private bool) ([]PeopleRole, int) {
+	roles := []PeopleRole{}
+	dotCount := 0
+	for _, person := range persons {
+		principal := governance.Principal(person)
+		for _, role := range []governance.Role{governance.Commissioner, governance.CoCommissioner, governance.Deputy, governance.DOT} {
+			if !state.HasRole(principal, role) {
+				continue
+			}
+			if role == governance.DOT {
+				dotCount++
+			}
+			if private {
+				roles = append(roles, PeopleRole{Person: person, Role: roleLabel(role)})
+			}
+		}
+	}
+	return roles, dotCount
+}
+
+func peopleActorPermissions(state governance.State, persons []string, records []Record) []PeopleActorPermissions {
+	actors := make([]PeopleActorPermissions, 0, len(persons))
+	for _, person := range persons {
+		principal := governance.Principal(PrincipalFor(records, person))
+		actors = append(actors, PeopleActorPermissions{Person: person,
+			EffectivePermissions: effectiveDeputyPermissions(state, principal)})
+	}
+	return actors
+}
+
+func effectiveDeputyPermissions(state governance.State, principal governance.Principal) []governance.DeputyPermission {
+	if state.HasRole(principal, governance.Commissioner) || state.HasRole(principal, governance.CoCommissioner) {
+		return governance.AllDeputyPermissions()
+	}
+	return state.DeputyPermissions(principal)
+}
+
 func yourRole(state governance.State, p governance.Principal, seats []PeopleSeat) string {
 	if state.HasRole(p, governance.Commissioner) {
 		return roleLabel(governance.Commissioner)
 	}
 	if state.HasRole(p, governance.CoCommissioner) {
 		return roleLabel(governance.CoCommissioner)
+	}
+	if state.HasRole(p, governance.Deputy) {
+		return roleLabel(governance.Deputy)
 	}
 	for _, seat := range seats {
 		if seat.Owner == string(p) {
@@ -195,6 +235,8 @@ func roleLabel(role governance.Role) string {
 		return "Commissioner"
 	case governance.CoCommissioner:
 		return "Co-commissioner"
+	case governance.Deputy:
+		return "Deputy"
 	case governance.DOT:
 		return "DOT member"
 	case governance.Owner:

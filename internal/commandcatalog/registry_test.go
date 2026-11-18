@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
 func TestExecutableRegistryRejectsBrokenDeclarations(t *testing.T) {
@@ -68,6 +71,41 @@ func TestOperatorRegistryKeepsOfflineAuthorityConsoleOnly(t *testing.T) {
 	registry.entries[0].Console[Execute] = nil
 	if err := registry.Validate(); err == nil || !strings.Contains(err.Error(), "missing execute handler") {
 		t.Fatalf("offline entry accepted a missing handler: %v", err)
+	}
+}
+
+func TestDeputyPermissionPolicyCoversTheNativeMutationCatalog(t *testing.T) {
+	catalog := make(map[string]int)
+	for _, command := range nativeMutations() {
+		catalog[command.id]++
+	}
+	policy := commissioner.DeputyCommandRules()
+	seen := make(map[string]int, len(policy))
+	for _, rule := range policy {
+		seen[rule.Command]++
+		switch rule.Class {
+		case commissioner.DeputyDelegable:
+			if !governance.ValidDeputyPermission(rule.Permission) {
+				t.Errorf("delegated command %s has no valid permission", rule.Command)
+			}
+		case commissioner.DeputyCommissionerOnly, commissioner.DeputyMemberAction:
+			if rule.Permission != "" {
+				t.Errorf("non-delegated command %s has permission %q", rule.Command, rule.Permission)
+			}
+		default:
+			t.Errorf("command %s has unknown deputy policy class %q", rule.Command, rule.Class)
+		}
+		if catalog[rule.Command] != 1 {
+			t.Errorf("policy command %s appears %d times in the catalog", rule.Command, catalog[rule.Command])
+		}
+	}
+	for command, count := range catalog {
+		if count != 1 {
+			t.Errorf("catalog command %s appears %d times", command, count)
+		}
+		if seen[command] != 1 {
+			t.Errorf("native mutation %s has %d permission classifications", command, seen[command])
+		}
 	}
 }
 

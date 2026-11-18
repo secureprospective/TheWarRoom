@@ -13,7 +13,8 @@ import (
 
 func peopleCommand(command string, args commissioner.RawPeople, revision int64) commissioner.RawCommand {
 	visibility := "league"
-	if strings.HasPrefix(command, "commish.role.") || strings.HasPrefix(command, "commish.seat.invite") {
+	if strings.HasPrefix(command, "commish.role.") || strings.HasPrefix(command, "commish.seat.invite") ||
+		command == commissioner.DeputyPermissionsSet {
 		visibility = "private"
 	}
 	return commissioner.RawCommand{League: "native.test", Command: command,
@@ -66,6 +67,93 @@ func TestCommissionerGovernancePermissions(t *testing.T) {
 	reading, err := s.CommissionerPeople(t.Context(), "native.test", "creator")
 	if err != nil || reading.Revision != 4 || reading.Seats[0].Name != "Falcons" || len(reading.Roles) != 3 {
 		t.Fatalf("wrong authorized projection or refusal appended: %+v %v", reading, err)
+	}
+}
+
+func TestDeputyPermissionsPreviewReplayRevocationAndPrivacy(t *testing.T) {
+	t.Parallel()
+	s, _, _ := newStore(t)
+	if _, err := s.ExecuteCommissioner(t.Context(), createCommand(), "creator", nil); err != nil {
+		t.Fatal(err)
+	}
+	executePeople(t, s, "creator", "commish.role.grant",
+		commissioner.RawPeople{Principal: "deputy", Role: governance.Deputy}, 1)
+
+	raw := ruleCommand("roster.limits", `{"min":20,"max":70}`, "next_rollover", "", 2)
+	if _, err := s.ExecuteCommissioner(t.Context(), raw, "deputy", nil); err == nil {
+		t.Fatal("unticked deputy changed a rule")
+	}
+	if got := revision(t, s); got != 2 {
+		t.Fatalf("refused rule change advanced revision to %d", got)
+	}
+
+	permissionArgs := commissioner.RawPeople{Principal: "deputy", Permissions: []governance.DeputyPermission{governance.ChangeRules}}
+	permissionCommand := peopleCommand(commissioner.DeputyPermissionsSet, permissionArgs, 2)
+	permissionPreview, err := s.PreviewCommissioner(t.Context(), permissionCommand, "creator", nil, commissioner.PreviewCatalogue{})
+	if err != nil || len(permissionPreview.Fields) != 1 || permissionPreview.Fields[0].Before != "No permissions" ||
+		permissionPreview.Fields[0].After != "Change rules" {
+		t.Fatalf("deputy permission change preview: %+v %v", permissionPreview, err)
+	}
+	executePeople(t, s, "creator", commissioner.DeputyPermissionsSet, permissionArgs, 2)
+	records, err := s.HeldCommissionerRecords(t.Context(), "native.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err := commissioner.GovernanceState(records)
+	if err != nil || !state.HasDeputyPermission("deputy", governance.ChangeRules) {
+		t.Fatalf("permission did not replay from ledger: %v", err)
+	}
+	previewRaw := ruleCommand("roster.limits", `{"min":20,"max":70}`, "next_rollover", "", 3)
+	preview, err := s.PreviewCommissioner(t.Context(), previewRaw, "deputy", nil, commissioner.PreviewCatalogue{})
+	if err != nil || len(preview.Blockers) != 0 {
+		t.Fatalf("ticked deputy could not preview the rule change: %+v %v", preview, err)
+	}
+	if _, err := s.ExecuteCommissioner(t.Context(), previewRaw, "deputy", nil); err != nil {
+		t.Fatalf("ticked deputy could not execute the rule change: %v", err)
+	}
+	if len(ruleRow(t, s, "roster.limits").Pending) != 1 {
+		t.Fatal("deputy rule change was not read back")
+	}
+
+	commissionerReading, err := s.CommissionerPeople(t.Context(), "native.test", "creator")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(commissionerReading.YourPermissions) != len(governance.AllDeputyPermissions()) {
+		t.Fatalf("commissioner effective permissions: %v", commissionerReading.YourPermissions)
+	}
+	found := false
+	for _, actor := range commissionerReading.Actors {
+		if actor.Person == "deputy" {
+			found = len(actor.EffectivePermissions) == 1 && actor.EffectivePermissions[0] == governance.ChangeRules
+		}
+	}
+	if !found {
+		t.Fatalf("commissioner reading omitted deputy permissions: %+v", commissionerReading.Actors)
+	}
+	deputyReading, err := s.CommissionerPeople(t.Context(), "native.test", "deputy")
+	if err != nil || len(deputyReading.YourPermissions) != 1 || deputyReading.YourPermissions[0] != governance.ChangeRules ||
+		!deputyReading.MayChangeRules || len(deputyReading.Actors) != 0 {
+		t.Fatalf("deputy read exposed wrong effective permissions: %+v %v", deputyReading, err)
+	}
+	visitorReading, err := s.CommissionerPeople(t.Context(), "native.test", "visitor")
+	if err != nil || len(visitorReading.Actors) != 0 || len(visitorReading.Roles) != 0 {
+		t.Fatalf("deputy grants leaked to a visitor: %+v %v", visitorReading, err)
+	}
+
+	executePeople(t, s, "creator", commissioner.DeputyPermissionsSet,
+		commissioner.RawPeople{Principal: "deputy", Permissions: []governance.DeputyPermission{}}, revision(t, s))
+
+	raw = ruleCommand("roster.limits", `{"min":22,"max":70}`, "next_rollover", "", revision(t, s))
+	if _, err := s.ExecuteCommissioner(t.Context(), raw, "deputy", nil); err == nil {
+		t.Fatal("revoked tick remained effective")
+	}
+	if got := revision(t, s); got != 5 {
+		t.Fatalf("refused post-revocation change advanced revision to %d", got)
+	}
+	deputyReading, err = s.CommissionerPeople(t.Context(), "native.test", "deputy")
+	if err != nil || len(deputyReading.YourPermissions) != 0 || deputyReading.MayChangeRules {
+		t.Fatalf("revoked permissions remained visible: %+v %v", deputyReading, err)
 	}
 }
 

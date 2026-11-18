@@ -356,7 +356,8 @@ func preparedCommand(raw commissioner.RawCommand, principal string,
 func timedCommandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
 	records []commissioner.Record, now time.Time) (string, error) {
 	role, originalErr := commandRole(raw, principal, auth, records)
-	if raw.Command != commissioner.RosterCut && raw.Command != commissioner.RosterReserve && raw.Command != commissioner.TradeAccept {
+	if raw.Command != commissioner.RosterCut && raw.Command != commissioner.RosterReserve && raw.Command != commissioner.TradeAccept &&
+		raw.Command != commissioner.TradeOverride {
 		return role, originalErr
 	}
 	at, err := raw.EffectiveTime(now)
@@ -365,6 +366,9 @@ func timedCommandRole(raw commissioner.RawCommand, principal string, auth commis
 	}
 	if !at.Before(now) {
 		return role, originalErr
+	}
+	if raw.Command == commissioner.TradeOverride && role != "commissioner" {
+		return "", fmt.Errorf("league change refused: %w", commissioner.Refused(errors.New("only a commissioner may backdate a trade override")))
 	}
 	permission := raw
 	permission.Command, permission.Args = commissioner.CorrectRoster, commissioner.RawArgs{}
@@ -382,15 +386,58 @@ func timedCommandRole(raw commissioner.RawCommand, principal string, auth commis
 func commandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
 	records []commissioner.Record) (string, error) {
 	if clock, ok := auth.(clockReserveAuthorizer); ok {
-		return clock.Allow(raw.League, principal, raw.Command)
-	}
-	if commissioner.TradeCommand(raw.Command) || auth == nil || commissioner.OwnerWaiverAction(raw.Command) != "" || commissioner.OwnerBidAction(raw.Command) != "" {
-		role, err := commissioner.AuthorizeRecords(raw, principal, records)
+		role, err := clock.Allow(raw.League, principal, raw.Command)
 		if err != nil {
+			return "", fmt.Errorf("authorize reserve clock: %w", err)
+		}
+		return role, nil
+	}
+	if principal == commissioner.StatFeedPrincipal && raw.Command == commissioner.StatApprove && auth != nil {
+		role, err := auth.Allow(raw.League, principal, raw.Command)
+		if err != nil {
+			return "", fmt.Errorf("authorize stat feed: %w", err)
+		}
+		return role, nil
+	}
+	switch auth.(type) {
+	case clockBidAuthorizer, clockWaiverAuthorizer, olineClockAuthorizer, clockDraftAuthorizer:
+		// Automated writes use a stricter actor-and-command authorizer, not a human office permission.
+		return authorizeCommandWithAuthorizer(raw, principal, auth)
+	}
+	if usesRecordAuthorization(raw.Command, auth) {
+		return authorizeRecordCommand(raw, principal, auth, records)
+	}
+	return authorizeCommandWithAuthorizer(raw, principal, auth)
+}
+
+func usesRecordAuthorization(command string, auth commissioner.Authorizer) bool {
+	_, known := commissioner.DeputyCommandRuleFor(command)
+	return known || commissioner.TradeCommand(command) || auth == nil ||
+		commissioner.OwnerWaiverAction(command) != "" || commissioner.OwnerBidAction(command) != ""
+}
+
+func authorizeRecordCommand(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
+	records []commissioner.Record) (string, error) {
+	role, err := commissioner.AuthorizeRecords(raw, principal, records)
+	if err != nil {
+		return "", fmt.Errorf("league change refused: %w", commissioner.Refused(err))
+	}
+	if auth == nil {
+		return role, nil
+	}
+	switch auth.(type) {
+	case commissioner.GovernanceAuthorizer, *commissioner.GovernanceAuthorizer:
+		return role, nil
+	default:
+		if _, err := auth.Allow(raw.League, principal, raw.Command); err != nil {
 			return "", fmt.Errorf("league change refused: %w", commissioner.Refused(err))
 		}
 		return role, nil
 	}
+}
+
+func authorizeCommandWithAuthorizer(raw commissioner.RawCommand, principal string,
+	auth commissioner.Authorizer) (string, error) {
 	role, err := auth.Allow(raw.League, principal, raw.Command)
 	if err != nil {
 		return "", fmt.Errorf("league change refused: %w", commissioner.Refused(err))

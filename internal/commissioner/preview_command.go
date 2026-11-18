@@ -43,6 +43,8 @@ func commandPreview(raw RawCommand, records, trial []Record, catalogue PreviewCa
 		return undoPreview(raw, records, catalogue)
 	case roleGrant, roleRevoke:
 		return rolePreview(raw, records, catalogue)
+	case DeputyPermissionsSet:
+		return deputyPermissionsPreview(raw, records, catalogue)
 	case NoticePublish, NotePost:
 		return notePreview(raw, records, catalogue)
 	}
@@ -89,7 +91,7 @@ func seatWords(role governance.Role) string {
 	switch role {
 	case governance.DOT:
 		return "Trade review seat"
-	case governance.Commissioner, governance.CoCommissioner, governance.Owner:
+	case governance.Commissioner, governance.CoCommissioner, governance.Deputy, governance.Owner:
 		return roleLabel(role)
 	}
 	return roleLabel(role)
@@ -101,6 +103,64 @@ func personWords(principal string) string {
 		return "Local operator"
 	}
 	return principal
+}
+
+func deputyPermissionsPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue) (Preview, error) {
+	if len(records) == 0 {
+		return Preview{}, fmt.Errorf("this app league has not been created")
+	}
+	state, err := GovernanceState(records)
+	if err != nil {
+		return Preview{}, err
+	}
+	principal := governance.Principal(PrincipalFor(records, raw.Args.People.Principal))
+	if !state.HasRole(principal, governance.Deputy) {
+		return Preview{}, fmt.Errorf("choose a current deputy")
+	}
+	safeguard, err := safeguardOf(raw)
+	if err != nil {
+		return Preview{}, err
+	}
+	words := func(permissions []governance.DeputyPermission) string {
+		if len(permissions) == 0 {
+			return "No permissions"
+		}
+		return strings.Join(permissionWords(permissions), ", ")
+	}
+	return Preview{Question: catalogue.questions["CM-021"], Safeguard: safeguard, Blockers: []string{},
+		Target: PreviewTarget{League: raw.League, Name: Replay(records).Name, Version: raw.Expected},
+		Fields: []PreviewField{{Label: "Permissions for " + personWords(string(principal)),
+			Before: words(state.DeputyPermissions(principal)), BeforeSource: "Recorded deputy permissions",
+			After: words(raw.Args.People.Permissions), AfterSource: proposed, When: "now"}},
+		Affects: catalogue.affects("CM-021")}, nil
+}
+
+func permissionWords(permissions []governance.DeputyPermission) []string {
+	selected := make(map[governance.DeputyPermission]bool, len(permissions))
+	for _, permission := range permissions {
+		selected[permission] = true
+	}
+	words := make([]string, 0, len(permissions))
+	for _, permission := range governance.AllDeputyPermissions() {
+		if !selected[permission] {
+			continue
+		}
+		switch permission {
+		case governance.ApproveStatFixes:
+			words = append(words, "Approve stat fixes")
+		case governance.RuleOnTrades:
+			words = append(words, "Rule on trades")
+		case governance.EditLineups:
+			words = append(words, "Edit lineups")
+		case governance.MovePicks:
+			words = append(words, "Move picks")
+		case governance.ChangeRules:
+			words = append(words, "Change rules")
+		case governance.RunRollover:
+			words = append(words, "Run rollover")
+		}
+	}
+	return words
 }
 
 func rolePreview(raw RawCommand, records []Record, catalogue PreviewCatalogue) (Preview, error) {
