@@ -25,3 +25,19 @@
   background-color: var(--surface-2);
 }
 .native-account .native-preview { white-space: pre-line; overflow-wrap: anywhere; }
+
+@media (max-width: 699px) {
+  .native-account.phone-home {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  .native-account.phone-home > header,
+  .native-account.phone-home > nav,
+  .native-account.phone-home > footer { display: none; }
+  .native-account.phone-home > div:not([hidden]) { min-width: 0; padding: 0; overflow: hidden; }
+  .native-account.phone-home .phone-shell { height: 100%; }
+  .native-account.phone-home .thin-home { border: 0; }
+}
