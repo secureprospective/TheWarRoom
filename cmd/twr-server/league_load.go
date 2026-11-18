@@ -15,6 +15,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/leagueload"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -27,7 +29,7 @@ import (
 // opened read-only; no MFL call is made.
 func runLeagueLoad(ctx context.Context, args []string, input io.Reader, output io.Writer) error {
 	flags := flag.NewFlagSet("twr-server league-load", flag.ContinueOnError)
-	path := flags.String("db", "", "existing server database (service stopped)")
+	path := flags.String("db", "", "server database (service stopped); created when absent from an empty state directory")
 	mirrorPath := flags.String("mirror", "", "a copy of the commissioner's desktop history.db; opened read-only")
 	mflLeague := flags.String("mfl-league", "", "MFL league number held in the mirror")
 	pin := flags.String("football-pin", "", "file to receive the pinned football digest the service starts with; empty writes none")
@@ -37,14 +39,45 @@ func runLeagueLoad(ctx context.Context, args []string, input io.Reader, output i
 	if flags.NArg() != 0 || *mflLeague == "" {
 		return fmt.Errorf("league-load accepts only -db, -mirror, -mfl-league and -football-pin")
 	}
-	if err := checkHostedDatabase(*path, 0); err != nil {
-		return err
-	}
 	raw, err := readConsoleCredentials(input)
 	if err != nil {
 		return err
 	}
+	if err := prepareFirstLoad(*path); err != nil {
+		return err
+	}
+	if err := checkHostedDatabase(*path, 0); err != nil {
+		return err
+	}
 	return loadLeague(ctx, *path, *mirrorPath, *mflLeague, *pin, raw, output)
+}
+
+// prepareFirstLoad lets the first load run before the service has ever started: when -db is absent and
+// its directory is empty, it creates the empty server database the installer would have made. Nothing
+// else is touched; no network is used and no player identity is filled in. Every other case is left to
+// checkHostedDatabase.
+func prepareFirstLoad(path string) error {
+	if path == "" {
+		return nil
+	}
+	if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	entries, err := os.ReadDir(filepath.Dir(path))
+	if err != nil {
+		return fmt.Errorf("first load: read the state directory: %w", err)
+	}
+	if len(entries) != 0 {
+		return fmt.Errorf("first load: %s is absent but its directory is not empty; refusing to create a server database beside other files", path)
+	}
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		return fmt.Errorf("first load: create the server database: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("first load: create the server database: %w", err)
+	}
+	return nil
 }
 
 func loadLeague(ctx context.Context, path, mirrorPath, mflLeague, pin string, raw accounts.RawCredentials, output io.Writer) error {
@@ -53,6 +86,26 @@ func loadLeague(ctx context.Context, path, mirrorPath, mflLeague, pin string, ra
 		return fmt.Errorf("open the mirror read-only: %w", err)
 	}
 	defer func() { _ = mirrorPools.Close() }()
+	registry, err := measures.Embedded()
+	if err != nil {
+		return fmt.Errorf("load server measures: %w", err)
+	}
+	mirror := leagueload.Mirror{Store: history.New(mirrorPools, registry)}
+	held := heldLeague{MFLLeague: mflLeague, Source: leagueload.ReplaySource(ctx, mirror, mflLeague, time.Now),
+		Football: func(ctx context.Context, season int) ([]byte, string, error) {
+			return mirror.Football(ctx, season, time.Now())
+		}}
+	return loadHeld(ctx, path, held, pin, raw, output)
+}
+
+// heldLeague is what the loader reads the league from: the mirror's held MFL reads in production.
+type heldLeague struct {
+	MFLLeague string
+	Source    func(leaguerules.RuleSet) (leaguemigration.Source, error)
+	Football  func(context.Context, int) ([]byte, string, error)
+}
+
+func loadHeld(ctx context.Context, path string, held heldLeague, pin string, raw accounts.RawCredentials, output io.Writer) error {
 	files, err := openStateFiles(ctx, path)
 	if err != nil {
 		return err
@@ -77,12 +130,8 @@ func loadLeague(ctx context.Context, path, mirrorPath, mflLeague, pin string, ra
 		return err
 	}
 	defer cleanup()
-	mirror := leagueload.Mirror{Store: history.New(mirrorPools, registry)}
-	result, err := leagueload.Load(ctx, leagueload.Request{MFLLeague: mflLeague, Commissioner: principal, Workspace: workspace, Server: created.create,
-		Source: leagueload.ReplaySource(ctx, mirror, mflLeague, time.Now),
-		Football: func(ctx context.Context, season int) ([]byte, string, error) {
-			return mirror.Football(ctx, season, time.Now())
-		}, Now: time.Now})
+	result, err := leagueload.Load(ctx, leagueload.Request{MFLLeague: held.MFLLeague, Commissioner: principal, Workspace: workspace,
+		Server: created.create, Source: held.Source, Football: held.Football, Now: time.Now})
 	if err != nil {
 		// Nothing names a league whose load failed; its half-made file goes with it.
 		return errors.Join(fmt.Errorf("load the league: %w", err), files.leagues.discard(created.league))
