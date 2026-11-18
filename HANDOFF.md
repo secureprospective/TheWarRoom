@@ -9,3 +9,11 @@
 - Tidy: `tidy-check.sh` found unrelated active alpha010 lanes `fixcr`, `fixhome`, and `fixsearch` launched from the main checkout. Left their processes/files untouched; their owners need to file KEEP records. Flag this to ClaudeBox.
 - Blocked on: none for this lane. The unrelated active lanes still need their owners to file KEEP records.
 - Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.
+
+## Bee — pulse-b9feed
+- Baton: ClaudeBox for review; Bee completed lane 2026-11-18, branch `session/pulse-b9feed`, target `bundle/b9`.
+- State: Commit `732bf2bfa` pushed; PR #387 open and CI green. Implemented the member-safe read, strict filters and hosted workflow/catalog route; generated native client metadata. Allow-list: notices; approved trade transitions; completed roster drops, waiver awards and free-agent additions, with bid details omitted. Unknown commands, notes, private events and reasons are hidden.
+- Evidence: race tests passed for commissioner, leagueservice and commandcatalog; hosted member/commissioner and agent-scope integration passed. Catalog generation checks, `make lint`, full `make verify`, pre-push verify and PR CI passed. One hostedPulse UI test flaked once, then passed alone and in the successful full rerun.
+- Next: ClaudeBox review/merge PR #387.
+- Blocked on: none for this lane. Final `tidy-check.sh` reported unrelated active alpha010 lanes `b7lab2`, `b9fa`, and `perf`; left them untouched due worktree-only scope; owners need to file KEEP records. No task-owned scratch or staged webapp remains.
+- Tried and rejected: Do not reuse `commish.ledger.filtered.read`; it carries reasons and broader commissioner-visible entries. Reuse existing append-only records and an independent allow-list projection.
