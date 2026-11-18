@@ -5,6 +5,7 @@ import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
+import { HostedControlRoomLeague } from './HostedControlRoomLeague';
 import { createHostedJobsQuery, hostedControlTabs, type HostedControlTab } from './hostedControlRoomData';
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
 import type { Job } from './jobs';
@@ -95,7 +96,9 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {tab === 'rules' && roomState.reading
           ? <HostedRules rules={roomState.reading.rules} commissioner room={room} />
           : tab === 'rules' && <p role="status">{roomState.error || 'Reading league rules…'}</p>}
-        {!['jobs', 'situations', 'rules'].includes(tab)
+        {tab === 'league' && <HostedControlRoomLeague key={league} league={league}
+          room={room} port={port} />}
+        {!['jobs', 'situations', 'rules', 'league'].includes(tab)
           && <p className="cr-note hosted-unported">{notOnServer}</p>}
       </section>
     </main>

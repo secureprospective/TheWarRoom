@@ -1,10 +1,10 @@
 # Handoff
 
-- Baton: ClaudeBox, 2026-11-18 (PR #350 open against `bundle/b5`; latest CI pending).
-- State: Hosted Rules board is server-backed; rule rows route by explicit section-label table, unknown sections go to Other. Owners see the commissioner ruling guidance. Preset comparison, house rules and written requests remain unavailable without hosted reads.
-- Verified: full frontend suite (921/921), frontend typecheck, targeted Rules/Control Room tests (21), `make lint`, `make bloat`, tidy-check; changed-package pre-push checks passed.
-- Slop fixed: removed name-substring rule-board classification, which could duplicate/misclassify rows; added explicit fallback and test. Restored required owner guidance. PR body lists both fixes.
-- Next: ClaudeBox reviews PR #350 and checks CI.
-- Blocked: preset comparison read is available in desktop bindings but not hosted room reads; no side-door read added. House rules/written requests have no hosted reads.
+- Baton: Bee, 2026-11-17 (Control Room League tab complete; PR pending).
+- State: `HostedControlRoomLeague.tsx` reads hosted notices and the full ledger; official notices and league notes use the existing preview → review → execute path. Newsletter, engine/feed controls, league creation/migration, and house-rule edits stay explicitly unavailable.
+- Verified: frontend 128 files/927 tests; `pnpm exec tsc --noEmit`; `make lint`; `make bloat`; lane test `HostedControlRoomLeague.test.tsx` (6 tests).
+- Slop fixed: none inherited in this lane; all new reads use the hosted session/query path and existing server parsers, and writes reuse `HostedLeagueRoom`/`HostedReview`.
+- Next: commit, push, and open PR against `bundle/b5`; include CI and filelen notes in the report.
+- Blocked: none. No Go files changed; no new server read/command or rule key added.
 - Open decisions deliberately untouched: snooze per person/league; deputy job visibility; written-request visibility; division naming.
 - Tried/rejected: none.
