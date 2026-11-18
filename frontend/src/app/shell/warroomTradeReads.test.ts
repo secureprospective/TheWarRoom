@@ -10,7 +10,7 @@ it('executes a hosted offer with its request key and verifies it in trades.read'
     if (request.command === 'trade.offer' && request.mode === 'execute') {
       expect(request.arguments.expected).toBe(12);
       expect(request.arguments.request).toBe('retry-key');
-      expect(request.arguments.visibility).toBe('league');
+      expect(request.arguments.visibility).toBe('private');
       return { data: { entry: 'offer-13', league: 'native.league', revision: 13,
         recordedAt: '2026-11-17T12:00:00Z', message: 'Recorded' }, label: 'server', writable: true,
         football: 'held' };

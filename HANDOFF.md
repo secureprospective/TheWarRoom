@@ -16,3 +16,9 @@
 - Checks: focused frontend tests 58/58, full Vitest 989/989, `pnpm tsc --noEmit`, pre-push verification passed; PR CI green on `bb5df4b68` (all checks passed). No server, auth, session or service-worker changes.
 - Tidy: `tidy-check.sh` found unrelated active `b9feed` and `b9boards` lanes in the main checkout. Left their processes/files untouched; their owners need to file KEEP records.
 - Next: ClaudeBox review/merge. Blocked on review.
+
+## Bee — B8-6 trade phone (2026-11-18)
+- Baton: Bee implementing B8-6 in `session/pulse-b8trade`; code and focused tests in progress.
+- State: responsive phone CSS added to embedded War Room trade desk; hosted offer execution now requests private visibility (matching preview and private-party scope). Existing preview/confirm/read-back path retained.
+- Next: run type check and pre-push verification; open PR to `bundle/b8`.
+- Blocked on: none.

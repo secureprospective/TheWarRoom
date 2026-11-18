@@ -167,7 +167,7 @@ export async function executeWarRoomOffer(c: WarRoomContext, catalog: WarRoomCat
   });
   const { data } = await (c.native.port ?? hostedWorkflow)({ command: 'trade.offer', mode: 'execute',
     arguments: { league: c.native.league, command: 'trade.offer', expected: catalog.revision ?? 0,
-      request, reason: '', effective: 'now', visibility: 'league', args: { trade: {
+      request, reason: '', effective: 'now', visibility: 'private', args: { trade: {
         franchise: c.mine, parties: [c.mine, deal.partner], assets: [...transfer(deal.give, c.mine,
           deal.partner), ...transfer(deal.get, deal.partner, c.mine)] } } } });
   const receipt = parseReceipt(data);
