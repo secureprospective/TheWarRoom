@@ -1,10 +1,10 @@
 # Handoff
 
-- Baton: ClaudeBox, 2026-11-18 (PR #350 open against `bundle/b5`; latest CI pending).
-- State: Hosted Rules board is server-backed; rule rows route by explicit section-label table, unknown sections go to Other. Owners see the commissioner ruling guidance. Preset comparison, house rules and written requests remain unavailable without hosted reads.
-- Verified: full frontend suite (921/921), frontend typecheck, targeted Rules/Control Room tests (21), `make lint`, `make bloat`, tidy-check; changed-package pre-push checks passed.
-- Slop fixed: removed name-substring rule-board classification, which could duplicate/misclassify rows; added explicit fallback and test. Restored required owner guidance. PR body lists both fixes.
-- Next: ClaudeBox reviews PR #350 and checks CI.
-- Blocked: preset comparison read is available in desktop bindings but not hosted room reads; no side-door read added. House rules/written requests have no hosted reads.
+- Baton: Bee, 2026-11-18 (Bundle 5 lane b5fix; `bundle/b5` now includes PRs #347 and #350).
+- State: The hosted Control Room frame and Rules board are on `bundle/b5`. This change wires Fix to the nine actTable forms, hosted reversible ledger entries, active corrections and calendar exceptions. Reversal is `commish.correction.revert`; no new read/command.
+- Scope: thin hosted Fix tab only; local mode unchanged.
+- Verified before rebasing on #350: frontend typecheck; full frontend tests (127 files, 921 tests); `make lint` (0 golangci-lint issues); standalone `make bloat`; targeted Fix tab test. Rerun after rebase.
+- Next: finish post-rebase checks, then push and open the lane PR against `bundle/b5`.
+- Blocked: none. Rebase test-file changes applied without conflict; HANDOFF overlap resolved here.
 - Open decisions deliberately untouched: snooze per person/league; deputy job visibility; written-request visibility; division naming.
-- Tried/rejected: none.
+- Slop fixed: revert choices filter on the server-provided undo eligibility and replacement state; calendar exceptions use the existing calendar read.

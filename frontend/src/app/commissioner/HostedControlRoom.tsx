@@ -5,14 +5,15 @@ import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
-import { createHostedJobsQuery, hostedControlTabs, type HostedControlTab } from './hostedControlRoomData';
+import { HostedControlRoomFix } from './HostedControlRoomFix';
+import { createHostedFixQuery, createHostedJobsQuery, hostedControlRoomNotOnServer,
+  hostedControlTabs, type HostedControlTab } from './hostedControlRoomData';
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
+import type { ActValues } from './actBody';
 import type { Job } from './jobs';
 import type { ActDefinition } from './actTable';
 import './commissioner.css';
 import '../control/room/controlRoom.css';
-
-const notOnServer = 'This part of the Control Room is not on the server app yet.';
 
 export function HostedControlRoom({ league, port, heldRoom }: {
   league: string; port?: HostedPort; heldRoom?: HostedLeagueRoom;
@@ -20,10 +21,14 @@ export function HostedControlRoom({ league, port, heldRoom }: {
   const room = useMemo(() => heldRoom ?? createHostedLeagueRoom(league, port),
     [heldRoom, league, port]);
   const jobsQuery = useMemo(() => createHostedJobsQuery(league, port), [league, port]);
+  const fixQuery = useMemo(() => createHostedFixQuery(league, port), [league, port]);
   const roomState = room.use();
   const jobsState = jobsQuery.use();
+  const fixState = fixQuery.use();
   const [tab, setTab] = useState<HostedControlTab>('jobs');
   const [definition, setDefinition] = useState<ActDefinition>();
+  const [openedTab, setOpenedTab] = useState<HostedControlTab>('jobs');
+  const [initialValues, setInitialValues] = useState<ActValues>();
   const [job, setJob] = useState<Job>();
   const [routeWords, setRouteWords] = useState('');
 
@@ -32,11 +37,16 @@ export function HostedControlRoom({ league, port, heldRoom }: {
       jobsQuery.invalidate();
       void jobsQuery.load([league], { overlap: 'after' });
     };
+    const refreshFixes = () => {
+      fixQuery.invalidate();
+      void fixQuery.load([league], { overlap: 'after' });
+    };
     if (!heldRoom) void room.refresh();
     refreshJobs();
     const unsubscribe = onHostedTopics(topics => {
       if (!topics.some(topic => topic.league === league)) return;
       refreshJobs();
+      if (fixQuery.peek().fixes || fixQuery.peek().pending) refreshFixes();
       if (topics.some(topic => topic.kind === 'league') && !room.peek().pending)
         void room.refresh();
     });
@@ -44,14 +54,22 @@ export function HostedControlRoom({ league, port, heldRoom }: {
       unsubscribe();
       if (!heldRoom) room.dispose();
       jobsQuery.dispose();
+      fixQuery.dispose();
     };
-  }, [heldRoom, jobsQuery, league, room]);
+  }, [fixQuery, heldRoom, jobsQuery, league, room]);
 
-  const openTool = (next: ActDefinition, source?: Job) => {
+  const refreshFixes = () => {
+    fixQuery.invalidate();
+    void fixQuery.load([league], { overlap: 'after' });
+  };
+  const openTool = (next: ActDefinition, source?: Job, destination: HostedControlTab = 'jobs',
+    initial?: ActValues) => {
     setDefinition(next);
+    setOpenedTab(destination);
+    setInitialValues(initial);
     setJob(source);
     setRouteWords('');
-    setTab('jobs');
+    setTab(destination);
   };
   const showRoute = (words: string) => {
     setDefinition(undefined);
@@ -61,8 +79,10 @@ export function HostedControlRoom({ league, port, heldRoom }: {
   const navigateTo = (next: HostedControlTab) => {
     setTab(next);
     setDefinition(undefined);
+    setInitialValues(undefined);
     setJob(undefined);
     setRouteWords('');
+    if (next === 'fix') refreshFixes();
   };
   const jobCount = jobsState.jobs?.jobs.length;
 
@@ -76,7 +96,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
             ? <> <span className="cr-st">{jobCount}</span></> : null}
         </HQAct>)}
         <HQAct className="hosted-control-refresh" disabled={roomState.pending || jobsState.pending}
-          onAction={() => { void room.refresh(); jobsQuery.invalidate(); void jobsQuery.load([league]); }}>
+          onAction={() => { void room.refresh(); jobsQuery.invalidate(); void jobsQuery.load([league]);
+            if (tab === 'fix') refreshFixes(); }}>
           Refresh
         </HQAct>
       </div>
@@ -86,8 +107,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {tab === 'jobs' && <div className="hosted-jobs-column">
           {jobsState.error && <p role="alert" className="cr-note">{jobsState.error}</p>}
           <HostedControlRoomJobs jobs={jobsState.jobs} onOpen={openTool} onUnavailable={showRoute} />
-          {definition && <HostedCommissionerActTray definition={definition} league={league}
-            room={room} port={port} />}
+          {definition && openedTab === 'jobs' && <HostedCommissionerActTray definition={definition}
+            league={league} room={room} port={port} initial={initialValues} />}
           {job && <p className="hosted-job-source">Opened from: {job.name}</p>}
         </div>}
         {tab === 'situations' && <HostedControlRoomSituations
@@ -95,8 +116,12 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {tab === 'rules' && roomState.reading
           ? <HostedRules rules={roomState.reading.rules} commissioner room={room} />
           : tab === 'rules' && <p role="status">{roomState.error || 'Reading league rules…'}</p>}
-        {!['jobs', 'situations', 'rules'].includes(tab)
-          && <p className="cr-note hosted-unported">{notOnServer}</p>}
+        {tab === 'fix' && <HostedControlRoomFix league={league} room={room} port={port}
+          readings={fixState.fixes} pending={fixState.pending} error={fixState.error}
+          definition={openedTab === 'fix' ? definition : undefined} initial={initialValues}
+          onOpen={(next, initial) => openTool(next, undefined, 'fix', initial)} />}
+        {!['jobs', 'situations', 'rules', 'fix'].includes(tab)
+          && <p className="cr-note hosted-unported">{hostedControlRoomNotOnServer}</p>}
       </section>
     </main>
     <aside className="insp" aria-label="League health">
