@@ -26,7 +26,8 @@ export function ThinPlayerSearch({ players, onOpen }: {
     {query.trim() && <ul aria-label="Player search results">
       {matches.length ? matches.map(player => <li key={player.id}>
         <HQAct className="leaf search-result" label={`Open ${player.name} player card`}
-          onAction={() => onOpen(player)}>{player.name}{player.position && <small>{player.position}</small>}</HQAct>
+          onAction={() => onOpen(player)}>{player.name}{player.position &&
+            <small>{player.position}</small>}</HQAct>
       </li>) : <li className="search-empty">No player found in loaded league reads.</li>}
     </ul>}
   </div>;

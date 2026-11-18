@@ -41,7 +41,7 @@ it('puts Home first and routes Home from another thin view', async () => {
   expect(host.textContent).toContain('Thin home brief');
 });
 
-it('matches player-name fragments case-insensitively and opens that player in the thin inspector', async () => {
+it('matches case-insensitive name fragments and opens the card', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
   const player: PlayerCandidate = { id: '0007', name: 'Rookie Runningback', position: 'RB' };

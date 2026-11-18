@@ -234,7 +234,8 @@ it('uses the thin rail to move from HQ to Pulse and back', async () => {
   await openNode('League Pulse');
   expect(host.textContent).toContain('Starter 2');
   await openNode('Franchise HQ');
-  expect(document.querySelector('.hq-v10')).not.toBeNull();
+  for (let i = 0; i < 20 && !host.querySelector('.hq-v10'); i++) await settle();
+  expect(host.querySelector('.hq-v10')).not.toBeNull();
   expect(host.querySelector('.lp-v14')).toBeNull();
 });
 

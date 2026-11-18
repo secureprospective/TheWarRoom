@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { RailNodes } from './RailNodes';
-import { ThinPlayerSearch, THIN_LEAVES, type PlayerCandidate, type ThinScreenRoute } from './ThinPlayerSearch';
+import { ThinPlayerSearch, THIN_LEAVES, type PlayerCandidate, type ThinScreenRoute }
+  from './ThinPlayerSearch';
 import './shell.css';
 import './ThinLeagueShell.css';
 
