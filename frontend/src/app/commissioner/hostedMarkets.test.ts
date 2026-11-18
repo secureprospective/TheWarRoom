@@ -1,10 +1,19 @@
 import { expect, it } from 'vitest';
-import { parseHostedResults, parseHostedStandings } from './hostedMarkets';
+import { parseHostedBids, parseHostedResults, parseHostedStandings } from './hostedMarkets';
 
 // The league server sends its live-score evidence on results and standings, and provisional points on a game
 // being played. HQ reads both in its one refresh; a refused field there leaves the lineup read-only.
 const evidence = { sources: ['espn'], reduced: false, stale: false, live: true, season: 2026, week: 10,
   asOf: '2026-11-15T18:00:00Z', source: 'ESPN live', provisional: true };
+
+it('keeps the auction close instant from the owner-only bids read', () => {
+  const close = '2026-11-18T18:00:00Z';
+  const read = parseHostedBids({ league: 'l', franchise: 'f', revision: 4, season: 2026,
+    mode: 'open', activeBids: 1, activeLimit: '3', notes: [], awards: [], players: [{ player: 'p',
+      name: 'Player', mode: 'open', modeWords: 'Open', youLead: true, lateAt: '', lateWords: '',
+      lateNow: false, closesAt: close, closes: 'Closes at 1 PM' }] });
+  expect(read.players[0].closesAt).toBe(close);
+});
 
 it('reads live results with score evidence and provisional points', () => {
   const read = parseHostedResults({ league: 'l', season: 2026, week: 10, revision: 4, published: true,
