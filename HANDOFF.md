@@ -1,8 +1,8 @@
 # Handoff
 
-- Baton: ClaudeBox, 2026-11-17.
-- State: offers drawer complete on `bceda8065`; live offers show server status/expiry, accept/decline/incoming and own-withdraw actions use shared preview-confirm-reread flow. Offers and saved drafts load onto the existing desk. No decline note or new state.
-- Checks: frontend 914/914; `pnpm exec tsc --noEmit`; `make lint`; `make bloat`; pre-push verification passed. PR #344 against `bundle/b1`; CI green.
-- Slop fixed: consolidated hosted asset/detail parsing; removed misleading grab cursor/touch lock from non-draggable proposal cards.
-- Next: review and merge PR #344 into `bundle/b1`.
-- Blocked: none.
+- Baton: Bee, 2026-11-18.
+- State: Pulse implementation and head-brain review fixes are committed on `session/pulse-b1pulse`, PR #345 against `bundle/b1`.
+- Changes: My Road uses `schedule.franchise.read`; team W/L form shares `recentForm` across Pulse and Home. HQ now charts each player's `results.read` starter points with a separate player-bars renderer. Removed 22-week magic cap; final games without a winner count as ties; removed stray PulseRace blank line and dead research-form calculation.
+- Verification: frontend 125 files / 919 tests; `pnpm exec tsc --noEmit`, `make lint`, `make bloat`, `tidy-check.sh` pass. No Go files changed.
+- Next: PR #345 CI is green; await head-brain review and merge into `bundle/b1`.
+- Slop fixed: removed duplicate Home research-form read; replaced shared-franchise marks on every HQ player row with per-player result points; removed stale research-based form calculation.

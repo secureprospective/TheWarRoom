@@ -7,6 +7,7 @@ import type { TileId } from './homeLayout';
 import { absent, money, unavailable } from './hqModel';
 import type { Node } from './nodes';
 import { myChance, percent, pointsLabel, type PulseStarter } from '../data/nativePulse';
+import { RecentForm } from './RecentForm';
 
 type HomeActProps = Omit<ComponentProps<typeof Act<'commissioner.surface'>>, 'verb' | 'args' | 'variant'> & {
   action: string; value?: string; open?: { node: Node; workspace?: string };
@@ -55,8 +56,9 @@ export const TILES: Record<TileId, TileDef> = {
     open: { node: 'hq', workspace: 'contracts-and-cap' }, needs: ['cap'] },
   bids: { t: 'MY BIDS', src: 'War Room · Market', prov: 'bids.read', link: 'MARKET ›', refresh: 'on bid',
     open: { node: 'war' }, needs: ['bids'] },
-  form: { t: 'FORM · LAST 5', src: 'Franchise HQ', prov: 'research.TargetResearchPlayer (Form · Wk, 5)',
-    link: 'HQ ›', refresh: 'after each final', open: { node: 'hq' }, needs: ['results', 'form'] },
+  form: { t: 'FORM · LAST 5', src: 'League Pulse · Race', prov: 'results.read (recent weeks)',
+    link: 'PULSE ›', refresh: 'after each final', open: { node: 'pulse', workspace: 'race' },
+    needs: ['pulse'] },
 };
 
 export const go = (open?: { node: Node; workspace?: string }) => {
@@ -139,7 +141,7 @@ export function TileBody({ id, b, mine, pins }: { id: TileId; b: HomeBrief;
       {b.ledger && !b.ledger.entries.length && <div className="empty">No transactions in the ledger
         yet.</div>}</>;
     case 'sc': return <Shortcuts pins={pins} />;
-    case 'form': return <Form b={b} />;
+    case 'form': return <Form b={b} mine={mine} />;
     case 'news': return <News b={b} mine={mine} />;
     case 'picks': {
       const picks = b.draft?.order.flatMap(o => o.picks).filter(p => p.owner === mine) ?? [];
@@ -200,9 +202,10 @@ function Matchup({ b, mine }: { b: HomeBrief; mine: string }) {
     (_, i) => [me?.starters[i], op?.starters[i]] as [PulseStarter | undefined, PulseStarter | undefined]);
   return <>
     <div className="mx"><div className="sd me"><b>{nameOf(b, mine)}</b><span>{rec(mine)} · proj{' '}
-      {proj(mine)}</span>
+      {proj(mine)}</span><FormMarks b={b} franchise={mine} className="home-match-form" />
       <div className="sc">{pointsLabel(pts(me))}</div></div><div className="vs">vs</div>
       <div className="sd op rt"><b>{nameOf(b, opp)}</b><span>{rec(opp)} · proj {proj(opp)}</span>
+        <FormMarks b={b} franchise={opp} className="home-match-form" />
         <div className="sc">{pointsLabel(pts(op))}</div></div></div>
     <WinChance b={b} mine={mine} />
     <div className="prog"
@@ -295,19 +298,19 @@ export function capNote(b: HomeBrief, mine: string, season: number): string {
   return season === base || !head ? `${ending.length} expiring` : head;
 }
 
-function Form({ b }: { b: HomeBrief }) {
-  const rows = (b.form ?? []).filter(f => f.weeks.length);
-  if (!rows.length) return <div className="empty">No finished weeks held for your starters yet.</div>;
-  return <>{rows.map(f => {
-    const avg = f.weeks.reduce((n, w) => n + w.points, 0) / f.weeks.length;
-    return row('pw', <><span className="m">{f.position}</span><span className="nm">{f.name}</span>
-      <span className="v">{Math.round(avg)}</span><span className="form" title={f.weeks.map(w =>
-        `W${w.week}: ${w.points}`).join(' · ')} style={{ display: 'flex', gap: 2, alignItems: 'end', height:
-          18 }}>
-        {f.weeks.map(w => <i key={w.week} style={{ width: 8, height: Math.max(0, Math.min(18, w.points /
-          1.8)),
-          background: 'var(--edge-hi)', display: 'block' }} />)}</span></>, f.player);
-  })}</>;
+function Form({ b, mine }: { b: HomeBrief; mine: string }) {
+  return <><div className="form-tile-label">MY RECENT FORM</div>
+    <FormMarks b={b} franchise={mine} className="home-tile-form" /></>;
+}
+
+function FormMarks({ b, franchise, className }: { b: HomeBrief; franchise: string; className: string }) {
+  const pulse = b.pulse;
+  if (pulse?.formPending) return <span className={className}>Reading recent results…</span>;
+  if (pulse?.formError) return <span className={className}>{`Unavailable · ${pulse.formError}`}</span>;
+  const form = pulse?.forms[franchise] ?? [];
+  return form.length ? <RecentForm form={form} className={className} />
+    : <span className={className} title={pulse?.formNote}>
+      {pulse?.formNote || pulse?.standings?.words || ''}</span>;
 }
 
 /** newsLine is an article's second line: the player's held name, else the research name when research
