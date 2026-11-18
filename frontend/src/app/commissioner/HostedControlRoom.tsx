@@ -5,6 +5,7 @@ import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
+import { HostedControlRoomSeason } from './HostedControlRoomSeason';
 import { createHostedJobsQuery, createHostedLedgerQuery, hostedControlTabs,
   type HostedControlTab } from './hostedControlRoomData';
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
@@ -55,6 +56,11 @@ export function HostedControlRoom({ league, port, heldRoom }: {
     setRouteWords('');
     setTab('jobs');
   };
+  const openSeasonTool = (next: ActDefinition) => {
+    setDefinition(next);
+    setJob(undefined);
+    setRouteWords('');
+  };
   const showRoute = (words: string) => {
     setDefinition(undefined);
     setJob(undefined);
@@ -97,8 +103,13 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {tab === 'rules' && roomState.reading
           ? <HostedRules rules={roomState.reading.rules} commissioner room={room} />
           : tab === 'rules' && <p role="status">{roomState.error || 'Reading league rules…'}</p>}
+        {tab === 'season' && <div className="hosted-jobs-column">
+          <HostedControlRoomSeason league={league} port={port} onTool={openSeasonTool} />
+          {definition && <HostedCommissionerActTray definition={definition} league={league}
+            room={room} port={port} />}
+        </div>}
         {tab === 'server' && <HostedServerTab league={league} port={port} />}
-        {!['jobs', 'situations', 'rules', 'server'].includes(tab)
+        {!['jobs', 'situations', 'rules', 'season', 'server'].includes(tab)
           && <p className="cr-note hosted-unported">{notOnServer}</p>}
       </section>
     </main>
