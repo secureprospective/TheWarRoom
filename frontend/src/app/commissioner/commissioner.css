@@ -19,6 +19,12 @@
 .twr-app .change-refused { margin: 0; font-weight: 600; }
 .twr-app .league-votes { padding-inline-start: 24px; }
 .twr-app .league-votes p { margin: 4px 0; }
+.twr-app .hosted-people-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.twr-app .hosted-people-search { display: grid; gap: 4px; margin-bottom: 8px; }
+.twr-app .hosted-people-search input { min-height: 34px; padding: 4px 8px; }
+.twr-app .hosted-people-table { max-height: min(56vh, 540px); overflow: auto; }
+.twr-app .hosted-people .cr-panel { flex: none; }
+.twr-app .hosted-people-tool .hosted-act-tray { margin-top: 8px; }
 
 .twr-app .change-reason { display: grid; gap: 4px; width: 100%; }
 .twr-app .change-reason textarea { width: 100%; box-sizing: border-box; }

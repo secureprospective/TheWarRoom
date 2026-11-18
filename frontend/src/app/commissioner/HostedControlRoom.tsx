@@ -5,6 +5,7 @@ import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
 import { HostedControlRoomPicks } from './HostedControlRoomPicks';
+import { HostedControlRoomPeople } from './HostedControlRoomPeople';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
 import { HostedControlRoomSeason } from './HostedControlRoomSeason';
 import { createHostedJobsQuery, createHostedLedgerQuery, hostedControlTabs,
@@ -111,7 +112,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         </div>}
         {tab === 'server' && <HostedServerTab league={league} port={port} />}
         {tab === 'picks' && <HostedControlRoomPicks league={league} room={room} port={port} />}
-        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks'].includes(tab)
+        {tab === 'people' && <HostedControlRoomPeople league={league} room={room} port={port} />}
+        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people'].includes(tab)
           && <p className="cr-note hosted-unported">{notOnServer}</p>}
       </section>
     </main>
