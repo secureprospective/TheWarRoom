@@ -17,7 +17,7 @@ func marketOwnerFranchise(raw RawCommand) string {
 	return ""
 }
 
-func authorizeTrade(raw RawCommand, principal string, records []Record) (string, error) {
+func authorizeTrade(raw RawCommand, principal string, records []Record, deputyPermitted bool) (string, error) {
 	state, err := GovernanceState(records)
 	if err != nil {
 		return "", err
@@ -34,17 +34,17 @@ func authorizeTrade(raw RawCommand, principal string, records []Record) (string,
 		return "owner", nil
 	}
 	if raw.Command == TradeOverride {
-		return authorizeTradeOverride(raw, principal, records, state)
+		return authorizeTradeOverride(raw, principal, records, state, deputyPermitted)
 	}
-	return authorizeTradeReviewer(raw, principal, records, state)
+	return authorizeTradeReviewer(raw, principal, records, state, deputyPermitted)
 }
 
-func authorizeTradeOverride(raw RawCommand, principal string, records []Record, state governance.State) (string, error) {
+func authorizeTradeOverride(raw RawCommand, principal string, records []Record, state governance.State, deputyPermitted bool) (string, error) {
 	person := governance.Principal(principal)
 	switch {
 	case state.HasRole(person, governance.Commissioner):
 		return "commissioner", nil
-	case state.HasRole(person, governance.Deputy):
+	case deputyPermitted && state.HasRole(person, governance.Deputy):
 		if err := authorizeDeputyTradeRuling(raw, principal, records, state); err != nil {
 			return "", err
 		}
@@ -54,10 +54,10 @@ func authorizeTradeOverride(raw RawCommand, principal string, records []Record, 
 	}
 }
 
-func authorizeTradeReviewer(raw RawCommand, principal string, records []Record, state governance.State) (string, error) {
+func authorizeTradeReviewer(raw RawCommand, principal string, records []Record, state governance.State, deputyPermitted bool) (string, error) {
 	person := governance.Principal(principal)
 	// Eligibility and the review route are judged again under the append lock.
-	if state.HasRole(person, governance.Deputy) {
+	if deputyPermitted && state.HasRole(person, governance.Deputy) {
 		if err := authorizeDeputyTradeRuling(raw, principal, records, state); err != nil {
 			return "", err
 		}

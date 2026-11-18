@@ -216,7 +216,7 @@ func mayRunDeputy(raw RawCommand, principal string, records []Record, state gove
 			}
 		}
 		if TradeCommand(raw.Command) {
-			return authorizeTrade(raw, principal, records)
+			return authorizeTrade(raw, principal, records, true)
 		}
 		if raw.Command == LineupSet {
 			if _, err := authorizeLineupSet(state, raw, principal); err != nil {
@@ -240,7 +240,7 @@ func authorizeRecords(raw RawCommand, principal string, records []Record) (strin
 	raw = policyCommand(raw, records)
 	principal = PrincipalFor(records, principal)
 	if TradeCommand(raw.Command) {
-		return authorizeTrade(raw, principal, records)
+		return authorizeTrade(raw, principal, records, false)
 	}
 	if len(records) == 0 && raw.Command == Create {
 		return "commissioner", nil

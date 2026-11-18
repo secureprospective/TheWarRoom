@@ -34,6 +34,9 @@ func releaseActors(t *testing.T, f *releaseTokenFixture) []releaseActor {
 		switch name {
 		case "deputy", "second-deputy":
 			f.change(t, "commish.role.grant", domain.RawPeople{Principal: string(principal), Role: governance.CoCommissioner})
+			if name == "deputy" {
+				f.change(t, "commish.role.grant", domain.RawPeople{Principal: string(principal), Role: governance.Deputy})
+			}
 		case "DOT":
 			f.change(t, "commish.role.grant", domain.RawPeople{Principal: string(principal), Role: governance.DOT})
 		case "owner":
@@ -100,10 +103,14 @@ func TestReleaseMatrixCatalogRolesAndDesktopDoors(t *testing.T) {
 							records = otherBefore
 						}
 						raw := row.raw(t, command, league, actor.principal, int64(len(records)))
+						if command == domain.DeputyPermissionsSet && actor.name == "commissioner" {
+							// The command must target a current deputy rather than the acting commissioner.
+							raw.Args.People.Principal = actors[1].principal
+						}
 						_, permissionErr := domain.AuthorizeRecords(raw, actor.principal, records)
 						// Fold-gated succession actions are admitted to the governance state machine,
 						// which must still reject a missing election/offer or an ineligible takeover.
-						fold := slices.Contains([]string{"commish.succession.accept", "commish.succession.decline", "commish.succession.takeover", "commish.vote.cast", "commish.vote.tiebreak"}, command)
+						fold := slices.Contains([]string{"commish.succession.accept", "commish.succession.decline", "commish.succession.takeover", "commish.vote.cast"}, command)
 						admitted := slices.Contains(row.AdmittedRoles, actor.name) && (league == "native.hosted" || fold)
 						if (permissionErr == nil) != admitted {
 							t.Fatalf("%s: authorization admitted=%v want=%v: %v", league, permissionErr == nil, admitted, permissionErr)

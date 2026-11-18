@@ -399,6 +399,11 @@ func commandRole(raw commissioner.RawCommand, principal string, auth commissione
 		}
 		return role, nil
 	}
+	switch auth.(type) {
+	case clockBidAuthorizer, clockWaiverAuthorizer, olineClockAuthorizer, clockDraftAuthorizer:
+		// Automated writes use a stricter actor-and-command authorizer, not a human office permission.
+		return authorizeCommandWithAuthorizer(raw, principal, auth)
+	}
 	if usesRecordAuthorization(raw.Command, auth) {
 		return authorizeRecordCommand(raw, principal, auth, records)
 	}
