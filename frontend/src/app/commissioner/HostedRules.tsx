@@ -16,6 +16,21 @@ import './commissioner.css';
 const hostedRule = (field: string) =>
   /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(field);
 
+const RULE_BOARDS: [string, (section: string, field: string) => boolean][] = [
+  ['Structure', (section, field) => /league|team|schedule|playoff/i.test(section + field)],
+  ['Rosters', (section, field) => /roster|lineup|taxi|ir/i.test(section + field)],
+  ['Scoring', (section, field) => /scoring|standings/i.test(section + field)],
+  ['Money', (section, field) => /cap|contract|salary/i.test(section + field)],
+  ['Moves', (section, field) => /waiver|bid|trade|move/i.test(section + field)],
+  ['Draft', (section, field) => /draft/i.test(section + field)],
+];
+
+function ruleSource(row: RuleRow) {
+  if (row.governed) return row.governed.who === 'commissioner' ? 'YOU' : row.governed.who;
+  if (/import/i.test(row.citation)) return 'IMPORTED';
+  return row.citation || 'Starting value';
+}
+
 export function HostedRules({ rules, commissioner, room }: {
   rules: Rules; commissioner: boolean; room: HostedLeagueRoom;
 }) {
@@ -30,20 +45,29 @@ export function HostedRules({ rules, commissioner, room }: {
   const row = rules.sections.flatMap(s => s.rows).find(r => r.field === selection?.field);
   return <>
     <div ref={background}>
-      <h3>Rules in force</h3>
-      <p>Your commissioner controls these rules. Ask them for a ruling if a value is missing.</p>
-      {rules.sections.filter(s => s.rows.some(r => hostedRule(r.field))).map(s =>
-        <section key={s.label}>
-          <h4>{s.label}</h4>
-          <dl>{s.rows.filter(r => hostedRule(r.field)).map(r => <div key={r.field}>
+      <h3>League rules</h3>
+      <p>Settings come from the league server. Sources and timing come from recorded rule data.</p>
+      {RULE_BOARDS.map(([board, matches]) => {
+        const rows = rules.sections.flatMap(section => section.rows
+          .filter(row => matches(section.label, row.field))
+          .map(row => ({ row, section: section.label })));
+        if (!rows.length) return null;
+        return <section key={board} aria-label={`${board} rules`}>
+          <h4>{board}</h4>
+          <dl>{rows.map(({ row: r, section }) => <div key={r.field}>
             <dt>{r.label}{r.governed && <GovernedGlyph governed={r.governed} subject={r.label} />}</dt>
-            <dd>{r.value}{commissioner && <HQAct disabled={!room.canChange()}
-              onAction={() => {
-                room.cancel();
-                setSelection({ field: r.field, opener: document.activeElement as HTMLElement });
-              }}>Change {r.label}</HQAct>}</dd>
+            <dd>{r.value} <span className="hosted-rule-source">{ruleSource(r)}</span>
+              {r.pending.map(pending => <span className="hosted-rule-pending" key={pending.entry}>
+                Takes effect: {pending.when}</span>)}
+              {commissioner && hostedRule(r.field) && <HQAct disabled={!room.canChange()}
+                onAction={() => {
+                  room.cancel();
+                  setSelection({ field: r.field, opener: document.activeElement as HTMLElement });
+                }}>Change {r.label}</HQAct>}</dd>
+            <small>{section}</small>
           </div>)}</dl>
-        </section>)}
+        </section>;
+      })}
     </div>
     {commissioner && row && selection && <SideTray title={`Change ${row.label}`} screen={screen}
       opener={selection.opener} background={background.current} onClose={close}

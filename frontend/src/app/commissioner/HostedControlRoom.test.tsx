@@ -8,7 +8,17 @@ import type { NativeRequest } from '../commands/native';
 
 const league = 'native.test';
 const ruleReading = {
-  league, name: 'Test League', revision: 7, rollover: 'No rollover date is set', sections: [],
+  league, name: 'Test League', revision: 7, rollover: 'No rollover date is set', sections: [{
+    label: 'Lineup', rows: Array.from({ length: 32 }, (_, i) => ({
+      field: `lineup.test_${i + 1}`, label: `Setting ${i + 1}`, value: `Value ${i + 1}`,
+      state: 'Set', citation: '', changedAt: '', current: `Value ${i + 1}`, unit: '',
+      competitive: false, nowOnly: false, pending: [],
+      schema: { kind: 'string', choices: [], fields: [] },
+      safeguards: { nextRollover: 'confirm', now: 'hold' },
+      governed: i === 31 ? { entry: 'ledger.32', who: 'commissioner',
+        when: '2026-11-17T12:00:00Z', change: 'Rule set' } : null,
+    })),
+  }],
 };
 function jobs(count: number) {
   return { league, name: 'Test League', revision: 7, jobs: Array.from({ length: count }, (_, i) => ({
@@ -64,6 +74,23 @@ it.each(['Commissioner', 'Co-commissioner'])(
   expect(host.textContent).toContain('Preview move to the next season');
   },
 );
+
+it('opens the server-backed Rules board and renders all 32 settings with their recorded source', async () => {
+  const read = port(0);
+  await act(async () => root.render(<HostedLeague league={league} franchise="" name="Test League"
+    role="Commissioner" port={read} />));
+  await settle();
+  await act(async () => [...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(button => button.textContent === 'Control Room')!.click());
+  await settle();
+  await act(async () => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+    .find(button => button.textContent?.includes('Rules'))!.click());
+  expect(read.mock.calls.some(([request]) => request.command === 'commish.rules.read')).toBe(true);
+  expect(host.querySelector('[aria-label="Rosters rules"]')).not.toBeNull();
+  expect(host.textContent).toContain('Setting 32');
+  expect(host.textContent).toContain('YOU');
+  expect(host.textContent).not.toContain('not on the server app yet');
+});
 
 it('opens the hosted frame for an assigned commissioner too', async () => {
   const read = port(0);
