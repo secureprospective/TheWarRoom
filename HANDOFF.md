@@ -1,10 +1,9 @@
 # Handoff
 
-- Baton: Bee, 2026-11-18; PR #356 against `bundle/b5`; merged current `origin/bundle/b5` (#354) into this branch.
-- State: League uses the shared hosted ledger query; `[league, filter]` scopes the cache so topic rereads preserve the active chip. Notices remain separate. All frame tabs retained; #354 D60 producers are present from upstream.
-- Verification: merged-tree Go race tests pass for `internal/app/commissioner`, `internal/commissioner`, and `internal/leagueservice`; frontend 130 files/931 tests and `pnpm exec tsc --noEmit` pass; `make lint` and `make bloat` pass.
-- Slop fixed: removed League's duplicate ledger query; topic reread now retains filter scope. No Go or server contract changes in this lane.
-- Next: update PR #356 body, push, and wait for CI.
-- Blocked: no code blocker. CI still required.
-- Open decisions untouched: snooze scope; deputy job visibility; written-request visibility; division naming.
-- Tried/rejected: filter kept only in a closure; it was absent from query scope and topic refresh did not preserve it.
+- Baton: ClaudeBox, 2026-11-18; PR #356 open against `bundle/b5`; CI green at `d5ac85603`.
+- State: League uses the shared hosted ledger query; `[league, filter]` scopes the cache so topic rereads preserve the active chip. Notices stay separate. Frame tabs retained; current bundle/b5 head #354 is merged.
+- Verification: Go race tests pass for `internal/app/commissioner`, `internal/commissioner`, and `internal/leagueservice`; frontend 130 files/931 tests and TypeScript pass; `make lint` and `make bloat` pass.
+- Slop fixed: removed League's duplicate ledger query; topic rereads preserve the filter. No Go or server-contract changes in the League lane.
+- Next: ClaudeBox review and merge PR #356 into `bundle/b5`.
+- Blocked: none. Lane decisions untouched: snooze scope; deputy job visibility; written-request visibility; division naming.
+- Tried/rejected: filter only in a closure; it was absent from query scope and topic refresh did not preserve it.
