@@ -23,6 +23,16 @@ describe('HQ starter and bench board', () => {
     expect(totalProjection(['missing'], new Map())).toBe(unavailable);
     expect(totalProjection(['one', 'two'], new Map([['one', 1], ['two', 2.5]]))).toBe('3.5');
   });
+  it('renders hosted franchise outcomes as HQ form bars', () => {
+    const html = renderToStaticMarkup(<FormChart id="1" recentForm={[{ week: 4, result: 'W' },
+      { week: 5, result: 'L' }, { week: 6, result: 'T' }]} />);
+    expect(html).toContain('Recent form: W, L, T');
+    expect(html).toContain('result-win'); expect(html).toContain('result-loss');
+    expect(html).toContain('result-tie'); expect(html).not.toContain('avg');
+    const unavailableForm = renderToStaticMarkup(<FormChart id="1" recentForm={[]}
+      formError="results read offline" />);
+    expect(unavailableForm).toContain('results read offline');
+  });
   it('renders saved starter and bench names, actual projections, and honest missing form/opponents', () => {
     const snapshot = heldSnapshot(); const reading = heldLineup(); const id = reading.starters[0].id;
     const html = renderToStaticMarkup(<HQBoard snapshot={snapshot} mine="0025" reading={reading}

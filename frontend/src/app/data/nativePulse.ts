@@ -132,6 +132,30 @@ export function parsePulseResults(value: unknown, league: string, week: number):
     evidence: parseEvidence(r.evidence, 'Week results') };
 }
 
+export type PulseFormResult = { week: number; result: 'W' | 'L' | 'T' | 'B' };
+
+/** recentForm derives a franchise's last completed head-to-head outcomes from published results only. */
+export function recentForm(results: readonly PulseResults[], franchise: string, season: number,
+  limit = 5): PulseFormResult[] {
+  if (!franchise || !Number.isInteger(limit) || limit < 1) return [];
+  const byWeek = new Map<number, { revision: number; result: PulseFormResult['result'] }>();
+  for (const reading of results) {
+    if (!reading.published || reading.season !== season) continue;
+    const game = reading.games.find(g => g.home === franchise || g.away === franchise);
+    const outcome = game?.status === 'Final' && (game.winner === game.home || game.winner === game.away)
+      ? game.winner === franchise ? 'W' : 'L'
+      : game?.status === 'Tie' ? 'T'
+        : !game && reading.bye === franchise ? 'B' : undefined;
+    if (outcome && reading.week > 0 && reading.week <= 22) {
+      const held = byWeek.get(reading.week);
+      if (!held || reading.revision >= held.revision)
+        byWeek.set(reading.week, { revision: reading.revision, result: outcome });
+    }
+  }
+  return [...byWeek].sort(([a], [b]) => a - b).slice(-limit)
+    .map(([week, row]) => ({ week, result: row.result }));
+}
+
 export type PulseStandingRow = { rank: number; franchise: string; name: string; division: string;
   conference: string;
   wins: number; losses: number; ties: number; record: string; pointsFor: number;
@@ -235,6 +259,25 @@ export function parsePulseSchedule(value: unknown, league: string): PulseSchedul
 }
 
 export type PulseFixture = { week: number; opponent: string; venue: string; kickoff?: string };
+export type PulseFranchiseSchedule = { league: string; franchise: string; season: number;
+  revision: number; message: string; games: PulseFixture[] };
+
+export function parsePulseFranchiseSchedule(value: unknown, league: string, franchise: string,
+  season: number): PulseFranchiseSchedule {
+  const r = object(value, 'Franchise schedule', ['league', 'franchise', 'season', 'revision', 'message',
+    'games']);
+  if (r.league !== league || r.franchise !== franchise || r.season !== season)
+    throw new Error('Schedule belongs to another franchise or season');
+  return { league: text(r.league, 'League'), franchise: text(r.franchise, 'Franchise'),
+    season: integer(r.season, 'Season', 1920), revision: integer(r.revision, 'Revision'),
+    message: r.message === undefined ? '' : text(r.message, 'Schedule message'),
+    games: array(r.games, 'Schedule games', (v, p) => {
+      const g = object(v, p, ['week', 'game', 'opponent', 'venue', 'kickoff']);
+      return { week: integer(g.week, p, 1), opponent: g.opponent === undefined ? '' : text(g.opponent, p),
+        venue: text(g.venue, p), kickoff: g.kickoff == null ? undefined : text(g.kickoff, p) };
+    }) };
+}
+
 export type PulseWeek = { league: string; franchise: string; season: number; revision: number;
   message: string; games: PulseFixture[]; week?: number; nextWeek?: number; note: string };
 

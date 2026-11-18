@@ -9,7 +9,7 @@ import {
 } from '../data/contract';
 import { parseRules, type Rules } from './rules';
 import { parseHostedLineup, parseHostedRoster, parseHostedReserves } from './hostedReadings';
-import { parsePulseResults, type PulseResults } from '../data/nativePulse';
+import { parsePulseResults, recentForm, type PulseFormResult, type PulseResults } from '../data/nativePulse';
 import { parseNativeMoves } from '../data/nativeMoves';
 import type { HQMove } from '../shell/HQMoves';
 import type { HQCap, HQSettings } from '../shell/hqModel';
@@ -21,6 +21,7 @@ import { ordinal } from '../shell/hqPlayerData';
 import { parseNativeValues, type LeagueValues } from '../data/nativeValues';
 import { parseWarRoomProjections } from '../data/nativeProjections';
 import { deadlineLabel } from '../clock/labels';
+import { readRecentResults } from '../shell/pulseReads';
 
 export function nativeHQStanding(
   rules: Rules | undefined,
@@ -248,6 +249,10 @@ export type NativeHQ = {
   decisions?: { label: string; at?: string; live: boolean }[];
   projections?: Map<string, number>;
   thisWeek?: PulseResults;
+  recentForm?: PulseFormResult[];
+  formPending?: boolean;
+  formError?: string;
+  formNote?: string;
   errors: string[];
 };
 export const OWNER_ONLY_MOVES = 'Pending moves are visible only to this franchise\'s owner';
@@ -268,13 +273,18 @@ export async function readNativeHQ(
   };
   let leagueRules: Rules | undefined;
   let standingRows: { franchise: string; division: string }[] = [];
-  const result: NativeHQ = { revision, snapshot, settings: { positions: [] }, errors: [] };
+  let standingsThrough: number | undefined;
+  let scheduleWeeks: number[] = [];
+  const result: NativeHQ = { revision, snapshot, settings: { positions: [] },
+    formPending: Boolean(mine), errors: [] };
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const apply = async (read: () => Promise<void>) => {
+  const apply = async (read: () => Promise<void>, failed?: (words: string) => void) => {
     try {
       await read();
     } catch (e) {
-      result.errors.push(String(e));
+      const words = e instanceof Error ? e.message : String(e);
+      result.errors.push(words);
+      failed?.(words);
       console.warn('Franchise HQ read failed:', e);
     } finally {
       publish?.({ ...result, errors: [...result.errors] });
@@ -402,6 +412,7 @@ export async function readNativeHQ(
         };
       });
       standingRows = rows;
+      standingsThrough = integer(raw.through, 'Standings through');
       result.record = rows.find((r) => r.franchise === mine)?.record;
       result.standingsNote = raw.words === undefined ? undefined : text(raw.words, 'Standings words');
     }),
@@ -424,6 +435,10 @@ export async function readNativeHQ(
       ]);
       if (schedule.league !== league || schedule.franchise !== mine || schedule.season !== season)
         throw new Error('Week belongs to another franchise');
+      scheduleWeeks = array(schedule.games, 'Schedule games', (v, p) => {
+        const game = object(v, p, ['week', 'game', 'opponent', 'venue', 'kickoff']);
+        return integer(game.week, p, 1);
+      });
       const current =
         raw.current == null
           ? undefined
@@ -531,6 +546,16 @@ export async function readNativeHQ(
       result.projections = values;
     });
   await Promise.all([regions, values, thisWeek]);
+  if (mine && scheduleWeeks.length) await apply(async () => {
+    const through = Math.max(standingsThrough ?? 0, (result.week ?? 1) - 1);
+    const history = await readRecentResults(league, season, scheduleWeeks, through, port);
+    if (history.some(reading => reading.revision !== revision))
+      throw new Error('League changed during the read; refresh before using this region');
+    result.recentForm = recentForm(history, mine, season);
+    result.formNote = history.map(reading => reading.words).filter(Boolean).join(' · ');
+  }, words => { result.formError = words; });
+  result.formNote ||= result.standingsNote;
+  result.formPending = false;
   await apply(async () => {
     const r = await port({ command: 'calendar.read', mode: 'read', arguments: {
       league, season, franchise: mine, action: 'lineup',

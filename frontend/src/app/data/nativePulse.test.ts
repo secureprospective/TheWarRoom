@@ -1,6 +1,19 @@
 import { expect, it } from 'vitest';
-import { parsePulseOdds, parsePulseResults, parsePulseStandings } from './nativePulse';
+import { parsePulseFranchiseSchedule, parsePulseOdds, parsePulseResults, parsePulseStandings } from
+  './nativePulse';
 import { scoreSources } from '../shell/NativeLeaguePulse';
+
+it('parses a franchise schedule only for its requested league, team and season', () => {
+  const schedule = parsePulseFranchiseSchedule({ league: 'native.x', franchise: 'franchise.1', season: 2026,
+    revision: 7, message: 'Published', games: [{ week: 8, game: 'g1', opponent: 'franchise.2',
+      venue: 'Away', kickoff: '2026-11-15T18:00:00Z' }, { week: 9, venue: 'Bye' }] }, 'native.x',
+  'franchise.1', 2026);
+  expect(schedule.games).toEqual([{ week: 8, opponent: 'franchise.2', venue: 'Away',
+    kickoff: '2026-11-15T18:00:00Z' }, { week: 9, opponent: '', venue: 'Bye', kickoff: undefined }]);
+  expect(() => parsePulseFranchiseSchedule({ league: 'native.x', franchise: 'other', season: 2026,
+    revision: 7, message: '', games: [] }, 'native.x', 'franchise.1', 2026))
+    .toThrow('another franchise or season');
+});
 
 // A week imported with its final team results carries the recorded verdict on each score.
 it('reads a week whose scores carry a recorded result', () => {

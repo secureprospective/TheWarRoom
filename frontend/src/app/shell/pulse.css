@@ -558,6 +558,14 @@
 .lp-v14 .rem .sw{height:6px;border:1px solid var(--edge);background:var(--sunken)}.lp-v14 .rem .sw i{display:block;height:100%;background:var(--ink3)}
 .lp-v14 .rem.big .sw i{background:var(--edge-hi)}
 .lp-v14 .rem .tag2{font:700 9px var(--mono);letter-spacing:.1em;color:var(--ink);border:1px solid var(--edge-hi);padding:0 4px;margin-left:6px}
+.lp-v14 .road-form{display:flex;align-items:center;gap:4px;padding:5px 14px;font:10px var(--mono);color:var(--ink2);border-bottom:1px solid var(--rule)}
+.lp-v14 .road-form>span:first-child{margin-right:5px;color:var(--ink3);font-weight:700}
+.lp-v14 .recent-form-marks{display:inline-flex;gap:3px;align-items:center}
+.lp-v14 .road-form-marks i{display:grid;place-items:center;width:19px;height:19px;border:1px solid var(--edge);font-style:normal}
+.lp-v14 .recent-form-marks i.win{background:var(--mine);color:var(--black)}
+.lp-v14 .recent-form-marks i.loss{background:var(--sunken);color:var(--ink2)}
+.lp-v14 .recent-form-marks i.tie{background:var(--edge-hi);color:var(--black)}
+.lp-v14 .recent-form-marks i.bye{background:repeating-linear-gradient(-45deg,var(--edge) 0 2px,transparent 2px 5px)}
 .lp-v14 .clinch{padding:12px 14px;display:grid;gap:10px;border-bottom:2px solid var(--black)}
 .lp-v14 .clinch .big{display:flex;gap:14px;align-items:baseline}
 .lp-v14 .clinch .big b{font:700 34px var(--mono)}.lp-v14 .clinch .big span{font:11px var(--mono);color:var(--ink3)}
