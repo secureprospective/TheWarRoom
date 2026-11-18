@@ -1,9 +1,10 @@
 # Handoff
 
-- Baton: Bee, 2026-11-17 (Season tab lane; PR pending).
-- State: Hosted Control Room Season tab now reads the league calendar, published/draft schedule counts, and playoff state. Schedule/game and playoff/title writes use shared commissioner act forms. Divisions remain an honest not-on-server state. Rollover is unavailable because `backup.now` is not hosted; do not bypass the required backup-first order.
-- Verified: frontend 128 files/920 tests; `pnpm exec tsc --noEmit`; `make lint`; `make bloat`; `git diff --check`.
-- Slop fixed: none found in scope. Existing shared workflow retained; no second write path or division feed added.
-- Next: commit, push a lane branch and open PR against `bundle/b5`; head brain reviews and merges.
-- Blocked: hosted backup command is missing, so rollover cannot be enabled without violating backup-first. Other Bundle 5 lanes are still running.
-- Open decisions untouched: division naming, snooze ownership, deputy job visibility, written-request visibility.
+- Baton: Bee, 2026-11-18; PR #351 open against `bundle/b5`, head `74b8034b5` plus final handoff update.
+- State: Hosted Server ledger uses `createHostedLedgerQuery` / `createReadQuery` and `query.use()`, with parsed league identity validation. Backup-now remains unavailable; restore/feed/upgrade remain operator-only.
+- Slop fixed: removed raw ledger port use; fixed long lines in the touched Control Room test fixture.
+- Verified: full frontend `pnpm test` (920/920); touched frontend tests (20 passed); `pnpm exec tsc --noEmit`; `make lint`; `make bloat`; push hook verify passed. PR #351 checks and desktop package/install checks are green.
+- Prior full-run failures named in PR: `Readable app source (§M2/§M3) > forbids lines longer than 110 characters` (fixture fixed) and `opens from the HQ rail and Back returns to HQ` in `hostedPulse.test.tsx` (flaky); both passed in isolated rerun (40 tests).
+- Tidy: `~/fleet/bin/tidy-check.sh` flags active other lane `b2docket` (pid 3627613) and its required scratch KEEP file. Left it untouched; cannot create outside permitted paths.
+- Blocked: hosted `backup.now` command path missing; no new command/read.
+- Open decisions untouched: snooze scope; deputy job visibility; written-request visibility; division naming.
