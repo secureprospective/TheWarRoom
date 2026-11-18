@@ -17,7 +17,10 @@ it('retains every locked mock CSS rule and declaration under a War Room-only sco
       if ([':root', 'html', 'body', 'body.room'].includes(s)) return '.wr-v6';
       return s.startsWith('body.') ? s.replace('body.', '.wr-v6.') : `.wr-v6 ${s}`;
     }).join(',');
+    // Drawer cards have no drag handler, so the mock's grab cursor and touch lock are misleading.
+    const expectedDeclarations = declarations(rule).filter(value => rule.selector !== '.pk' ||
+      !['cursor:grab', 'touch-action:none'].includes(value));
     expect(rules.some(r => r.selector === selector && JSON.stringify(declarations(r)) ===
-      JSON.stringify(declarations(rule))), selector).toBe(true);
+      JSON.stringify(expectedDeclarations)), selector).toBe(true);
   });
 });

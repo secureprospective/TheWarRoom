@@ -7,7 +7,7 @@ import { actTable, type ActDefinition, type Field } from './actTable';
 import type { ActReadings } from './actReadings';
 import { surfaceActions } from './surfaceActions';
 import { newKey } from './forms';
-import type { HostedRoom, HostedReading } from './hostedRoom';
+import type { HostedLeagueRoom, HostedRoom, HostedReading } from './hostedRoom';
 
 export type HostedTask = 'bids' | 'waivers' | 'trades' | 'results' | 'rollover';
 const field = (path: string, label: string, kind: Field['kind']): Field => ({
@@ -69,6 +69,25 @@ const ownerActs = [
     ]),
   ),
 ];
+type OwnerTradeAction = 'trade.accept' | 'trade.decline' | 'trade.withdraw';
+const ownerTradeAction = (command: string): command is OwnerTradeAction =>
+  command === 'trade.accept' || command === 'trade.decline' || command === 'trade.withdraw';
+
+export async function reviewHostedOwnerTrade(room: Pick<HostedLeagueRoom, 'canChange' | 'review' | 'peek'>,
+  league: string, franchise: string, tradeId: string, revision: number, action: OwnerTradeAction,
+  reason = '') {
+  const definition = ownerActs.find(a => a.command === action);
+  const change = definition && actChange(definition, { id: tradeId },
+    { league, revision, principal: franchise }, reason);
+  if (!definition || !change) throw new Error('Choose a trade to act on');
+  if (!room.canChange()) throw new Error('The league is not ready for changes');
+  const args = change.args as { trade: Record<string, unknown> };
+  const request = { command: action, mode: 'preview', arguments: { ...change,
+    args: { trade: { ...args.trade, franchise } }, request: newKey() } } as NativeRequest;
+  await room.review(request, definition.label);
+  if (room.peek().error) throw new Error(room.peek().error);
+}
+
 const commissionerCommands: Record<HostedTask, string[]> = {
   bids: ['bids.process', 'bids.award.override'],
   waivers: ['waivers.process', 'waivers.order.set', 'waivers.order.auto', 'waivers.award.override'],
@@ -225,6 +244,12 @@ export function HostedWorkflows({
           'Offer this trade',
         );
       if (value !== 'workflow' || !change || !definition || !reason.trim()) return;
+      if (ownerTradeAction(definition.command)) {
+        const tradeId = values.id;
+        if (typeof tradeId !== 'string') return;
+        return reviewHostedOwnerTrade(room, reading.lineup.league, franchise,
+          tradeId, revision, definition.command, reason);
+      }
       const args = change.args as Record<string, object>;
       return review(
         definition.command,

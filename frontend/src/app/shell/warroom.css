@@ -458,7 +458,7 @@
 
 /* the Pocket: unsent trades, out of sight */
 .wr-v6 .pocket{grid-template-columns:repeat(3,1fr) 300px;align-items:start}
-.wr-v6 .pk{margin:12px 0 14px 14px;border:1px solid var(--edge);border-left:4px solid var(--edge-hi);background:var(--canvas);display:grid;grid-template-rows:auto auto 1fr auto;cursor:grab;touch-action:none;transition:transform 70ms linear,box-shadow 70ms linear}
+.wr-v6 .pk{margin:12px 0 14px 14px;border:1px solid var(--edge);border-left:4px solid var(--edge-hi);background:var(--canvas);display:grid;grid-template-rows:auto auto 1fr auto;transition:transform 70ms linear,box-shadow 70ms linear}
 .wr-v6 .pk:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--black);border-color:var(--edge-hi)}
 .wr-v6 .pk .top{display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--rule);font:700 10px var(--mono);letter-spacing:.1em;color:var(--ink3)}
 .wr-v6 .pk .ttl{padding:8px 12px 2px;font-weight:700}
@@ -466,6 +466,8 @@
 .wr-v6 .pk .legs div{display:grid;gap:2px;align-content:start} .wr-v6 .pk .legs i{font-style:normal;font-size:9px;letter-spacing:.12em;color:var(--ink3)}
 .wr-v6 .pk .stale{padding:7px 12px;border-top:1px solid var(--rule);font:11px var(--mono);display:flex;gap:8px;align-items:center}
 .wr-v6 .pk .stale .s{font:700 9px var(--mono);letter-spacing:.1em;padding:1px 5px;color:var(--black)}
+.wr-v6 .offer-actions{display:flex;gap:8px;padding:8px 12px;flex-wrap:wrap}
+.wr-v6 .offer-note{margin:8px 14px;color:var(--ink2);font:11px var(--mono)}
 .wr-v6 .pk.k-red{border-left-color:var(--red)} .wr-v6 .pk.k-red .s{background:var(--red)}
 .wr-v6 .pk.k-amb{border-left-color:var(--amber)} .wr-v6 .pk.k-amb .s{background:var(--amber)}
 .wr-v6 .pk.k-ok .s{background:var(--green)}

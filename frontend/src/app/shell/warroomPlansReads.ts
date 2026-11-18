@@ -10,11 +10,12 @@ export type LookingBack = { offers: { id: string; partner: string; date: string;
   partners: { name: string; talks: number; deals: number }[]; saved?: number; offersNote?: string;
   savedNote?: string };
 const ENDED = ['approved', 'declined', 'expired', 'failed', 'vetoed', 'withdrawn'];
+export const isEndedTrade = (status: string) => ENDED.includes(status);
 const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
 // Ended offers newest first, and every franchise you have traded talk with, busiest first.
 export function lookingBack(mine: string, all: Offer[]): Pick<LookingBack, 'offers' | 'partners'> {
   const names = new Map(all.flatMap(o => o.teams));
-  const ended = all.filter(o => o.parties.includes(mine) && ENDED.includes(o.status))
+  const ended = all.filter(o => o.parties.includes(mine) && isEndedTrade(o.status))
     .sort((a, b) => b.offeredAt.localeCompare(a.offeredAt));
   const by = new Map<string, { name: string; talks: number; deals: number }>();
   const offers = ended.map(o => {
