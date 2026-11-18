@@ -6,8 +6,10 @@ import { heldLineup, heldSnapshot } from '../data/lineupTestData';
 import { HQInspector } from './HQInspector';
 import { HQBoard } from './HQBoard';
 import { useHQRead } from './hqReads';
+import { hostedReads } from '../data/hostedReads';
+import type { HostedResponse } from '../control/nativeApi';
 
-afterEach(async () => { await unmount(); vi.restoreAllMocks(); });
+afterEach(async () => { await unmount(); hostedReads.endSession(); vi.restoreAllMocks(); });
 const usage = { snapShare: .7, targetShare: .25, carryShare: null, weeksUsed: 4, opponent: 'DEN',
   allowedPoints: 15, allowedRank: 24, teams: 32, label: 'Soft', reason: 'Held weekly facts' };
 const arc = { age: 25, points: [{ season: 2026, age: 25, level: 80, survival: .9 }],
@@ -124,20 +126,46 @@ it('promotes a native reserve through its hosted review callback', async () => {
   await click(actions[0]);
   expect(activate).toHaveBeenCalledWith(reserve.id);
 });
-it('selects a real native cut quote without borrowing the previous selection or executing a move',
-  async () => {
+it('adds, removes and resets stacked moves, rereading each ordered stack', async () => {
   const { HQNativeWhatIf } = await import('./HQNativeWhatIf');
-  const snapshot = heldSnapshot(), id = snapshot.rosters.value[0].players[0].id, select = vi.fn();
-  const props = { snapshot, mine: '0025', chosen: id, select, beforeRoom: 800000000,
-    cut: { player: id, revision: 1, season: 2026, deadNow: 100000000, roomAfter: 900000000, reason: '' },
+  const snapshot = heldSnapshot(), first = snapshot.rosters.value[0].players[0].id;
+  const second = snapshot.rosters.value[0].players[1].id;
+  hostedReads.setIdentity({ serverId: 'https://league.test', serverEpoch: 'epoch', accountId: 'owner',
+    authGeneration: '1', league: 'native.test', view: 'owner/0025' });
+  const tags = { serverEpoch: 'epoch', league: {}, football: 'pin', live: '', values: '' };
+  const read = vi.fn(async (request: import('../commands/native').NativeRequest): Promise<HostedResponse> => {
+    const args = request.arguments as { league: string; moves: { player: string; action: string }[] };
+    const quote = (move: { player: string; action: string }) => ({
+      league: args.league, revision: 1, season: 2026, player: move.player,
+      name: `Player ${move.player}`, franchise: 'franchise.01', action: move.action,
+      actionName: 'Release', allowed: true, reason: '', needs: [], years: 0, salaryCents: null,
+      salaries: [], deadMoney: [{ season: 2026, cents: 100000000 }], reliefCents: 0,
+      cap: null, basis: [], notes: [], source: 'server',
+    });
+    const room = args.moves.length ? 800000000 : 900000000;
+    const year = { season: 2026, committedCents: 100000000, deadCents: args.moves.length ? 100000000 : 0,
+      capCents: 1000000000, roomCents: room };
+    return { label: 'League', writable: false, football: 'pin', tags, data: { league: args.league,
+      revision: 1, season: 2026, before: [{ ...year, deadCents: 0, roomCents: 900000000 }], after: [year],
+      moves: args.moves.map(quote) } };
+  });
+  const props = { snapshot, league: 'native.test', mine: '0025', chosen: first, select: vi.fn(), port: read,
     close: () => {} };
-  const host = await mount(render(HQNativeWhatIf, props));
+  const host = await mount(render(HQNativeWhatIf, props)); await flush();
   expect(host.textContent).toContain('$9.00M');
-  const other = snapshot.rosters.value[0].players[1].id;
-  const name = snapshot.players.value.find(p => p.id === other)!.name!;
-  await click(all(host, 'button').find(b => b.textContent.includes(name))!);
-  expect(select).toHaveBeenCalledWith(other);
-  await rerender(render(HQNativeWhatIf, { ...props, chosen: other }));
-  expect(host.textContent).not.toContain('$9.00M');
-  expect(host.textContent).toContain('Not available yet');
+  const firstName = snapshot.players.value.find(p => p.id === first)!.name!;
+  await click(button(host, `Select ${firstName}`));
+  await click(button(host, 'ADD MOVE')); await flush();
+  expect(host.textContent).toContain('$8.00M');
+  await click(button(host, `Remove ${firstName} cut`)); await flush();
+  expect(host.textContent).toContain('$9.00M');
+  const secondName = snapshot.players.value.find(p => p.id === second)!.name!;
+  await click(button(host, `Select ${secondName}`));
+  await click(button(host, 'ADD MOVE')); await flush();
+  expect(host.textContent).toContain('$8.00M');
+  await click(button(host, 'RESET MOVES')); await flush();
+  const stacks = read.mock.calls.map(([request]) =>
+    (request.arguments as { moves: { player: string }[] }).moves.map(move => move.player));
+  expect(stacks).toEqual([[], [first], [], [second], []]);
+  expect(host.textContent).toContain('$9.00M');
 });

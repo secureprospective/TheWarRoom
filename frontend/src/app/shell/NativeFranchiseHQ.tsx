@@ -127,8 +127,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
         >CHECK AND SAVE PLAN</HQAct>
       </div>
     <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
-    {drawer === 'whatif' && <HQNativeWhatIf snapshot={snapshot} mine={mine} chosen={chosen}
-      select={select} cut={cut} beforeRoom={runway?.[0]?.room} close={() => setDrawer(undefined)} />}
+    {drawer === 'whatif' && <HQNativeWhatIf snapshot={snapshot} league={league} mine={mine} chosen={chosen}
+      select={select} port={port} close={() => setDrawer(undefined)} />}
     {(drawer === 'ir' || drawer === 'taxi') && <HQReserves native kind={drawer} snapshot={snapshot}
       mine={mine} settings={settings}
       countedIRPay={runway?.[0]?.ir} values={reading.values} reserveNotes={reading.reserveNotes}

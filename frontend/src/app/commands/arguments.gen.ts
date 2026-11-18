@@ -2352,6 +2352,7 @@ export type WorkflowArgumentMap = {
 "bracket.read": NativeArguments<"bracket.read">;
 "native.cap.check": NativeArguments<"native.cap.check">;
 "contract.quote": NativeArguments<"contract.quote">;
+"whatif.stack.read": NativeArguments<"whatif.stack.read">;
 "native.directory.read": NativeArguments<"native.directory.read">;
 "nfl.game.read": NativeArguments<"nfl.game.read">;
 "nfl.games.read": NativeArguments<"nfl.games.read">;

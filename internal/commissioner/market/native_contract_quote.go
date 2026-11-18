@@ -137,6 +137,12 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return ContractQuote{}, err
 	}
+	return quoteContractOnBase(raw, records, now, local, facts, base, nativecheck.Trail{}, nil)
+}
+
+func quoteContractOnBase(raw RawContractQuote, records []commissioner.Record, now time.Time,
+	local *time.Location, facts nativecheck.Facts, base commissioner.NativeBase, trail nativecheck.Trail,
+	schedule []nativecheck.SeasonAmount) (ContractQuote, error) {
 	if !base.Assets.Seeded {
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return ContractQuote{}, commissioner.Refused(fmt.Errorf("this app league has no recorded rosters to quote"))
@@ -169,6 +175,7 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 	}
 	action := nativecheck.ContractAction(raw.Action)
 	gate := commissioner.Gate{Open: true}
+	var err error
 	if window, gated := windowAction(action); gated {
 		gate, err = commissioner.NativeActionGate(raw.League, records, player.Franchise, window, now, local)
 		if err != nil {
@@ -177,7 +184,7 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 		}
 	}
 	in := contractCheck{raw: raw, action: action, base: base, player: player, gate: gate, facts: facts,
-		revision: int64(len(records)), zone: local}
+		revision: int64(len(records)), zone: local, trail: trail, schedule: schedule}
 	return checkContract(in)
 }
 
@@ -206,6 +213,8 @@ type contractCheck struct {
 	facts    nativecheck.Facts
 	revision int64
 	zone     *time.Location
+	trail    nativecheck.Trail
+	schedule []nativecheck.SeasonAmount
 }
 
 // checkContract prices the action and then lets the calendar and the cap have their say. It is a pure
@@ -219,12 +228,11 @@ func checkContract(in contractCheck) (ContractQuote, error) {
 	if name == "" {
 		name = "Player " + in.player.ID
 	}
-	// No owner contract action is recorded in the ledger yet, so nothing has been used and no contract has
-	// been restructured, extended or tagged in the app league. The recording step fills this in.
-	priced, err := nativecheck.PriceContract(nativecheck.Input{Rules: in.base.Rules,
+	// Recorded actions are not part of this quote; a stack supplies its own simulated trail.
+	priced, err := nativecheck.PriceContract(nativecheck.Input{Rules: in.base.Rules, Trail: in.trail,
 		Contract: nativecheck.Contract{Player: in.player.ID, Name: name, Position: fact.Position,
 			PositionHeld: fact.Position != "", Salary: in.player.Salary, Expiration: in.player.ExpirationYear,
-			Status: in.player.ContractStatus},
+			Status: in.player.ContractStatus, Schedule: in.schedule},
 		Ask: nativecheck.Ask{Years: in.raw.Years, Level: in.raw.Level, Move: in.raw.MoveCents,
 			Amount: in.raw.AmountCents, Reason: in.raw.Reason},
 		Market: positionSalaries(in.base.Assets.Snapshot, in.facts, fact.Position)}, in.action)

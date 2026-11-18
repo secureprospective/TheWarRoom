@@ -4551,6 +4551,45 @@ const schema321 = {
   Type:"object",
   Enum:null,
   Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:[
+    {Name:"player",Optional:false,Schema:schema2},
+    {Name:"action",Optional:false,Schema:schema2},
+    {Name:"years",Optional:false,Schema:schema7},
+    {Name:"level",Optional:false,Schema:schema7},
+    {Name:"moveCents",Optional:false,Schema:schema7},
+    {Name:"amountCents",Optional:false,Schema:schema7},
+    {Name:"reason",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema322 = {
+  Type:"array",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:schema321,
+} as const;
+const schema323 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawWhatIfStack.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"viewerZone",Optional:false,Schema:schema2},
+    {Name:"moves",Optional:false,Schema:schema322}
+  ],
+  Items:null,
+} as const;
+const schema324 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
   Validator:"RawPlayerNotesScope.Validate",
   Nullable:false,
   Fields:[
@@ -4559,7 +4598,7 @@ const schema321 = {
   ],
   Items:null,
 } as const;
-const schema322 = {
+const schema325 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4573,7 +4612,7 @@ const schema322 = {
   ],
   Items:null,
 } as const;
-const schema323 = {
+const schema326 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4586,7 +4625,7 @@ const schema323 = {
   ],
   Items:null,
 } as const;
-const schema324 = {
+const schema327 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4599,7 +4638,7 @@ const schema324 = {
   ],
   Items:null,
 } as const;
-const schema325 = {
+const schema328 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4610,7 +4649,7 @@ const schema325 = {
   ],
   Items:null,
 } as const;
-const schema326 = {
+const schema329 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4621,7 +4660,7 @@ const schema326 = {
   ],
   Items:null,
 } as const;
-const schema327 = {
+const schema330 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4632,7 +4671,7 @@ const schema327 = {
   ],
   Items:null,
 } as const;
-const schema328 = {
+const schema331 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4644,7 +4683,7 @@ const schema328 = {
   ],
   Items:null,
 } as const;
-const schema329 = {
+const schema332 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4655,7 +4694,7 @@ const schema329 = {
   ],
   Items:null,
 } as const;
-const schema330 = {
+const schema333 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4670,7 +4709,7 @@ const schema330 = {
   ],
   Items:null,
 } as const;
-const schema331 = {
+const schema334 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -7637,6 +7676,25 @@ export const nativeCommands = {
 },
 } as const;
 export const serverCommands = {
+"whatif.stack.read": {
+  definition: {
+    "ID": "whatif.stack.read",
+    "Method": "TargetNativeWhatIfStack",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "private-player-data",
+    "Safeguards": "authenticated seated franchise; no request franchise; uncached private result",
+    "Arguments": schema323
+  },
+  phrase: "read whatif stack",
+},
 "player.note.read": {
   definition: {
     "ID": "player.note.read",
@@ -7652,7 +7710,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-player-data",
     "Safeguards": "none",
-    "Arguments": schema321
+    "Arguments": schema324
   },
   phrase: "read player note",
 },
@@ -7671,7 +7729,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-player-data",
     "Safeguards": "authenticated seated franchise; no request franchise; uncached private entries",
-    "Arguments": schema322
+    "Arguments": schema325
   },
   phrase: "set player note",
 },
@@ -7690,7 +7748,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-player-data",
     "Safeguards": "authenticated seated franchise; no request franchise; uncached private entries",
-    "Arguments": schema323
+    "Arguments": schema326
   },
   phrase: "set player watch",
 },
@@ -7709,7 +7767,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-player-data",
     "Safeguards": "authenticated seated franchise; no request franchise; uncached private entries",
-    "Arguments": schema324
+    "Arguments": schema327
   },
   phrase: "order player watch",
 },
@@ -7728,7 +7786,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-player-data",
     "Safeguards": "authenticated seated franchise; no request franchise; uncached private entries",
-    "Arguments": schema325
+    "Arguments": schema328
   },
   phrase: "read player watch",
 },
@@ -7747,7 +7805,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "none",
-    "Arguments": schema326
+    "Arguments": schema329
   },
   phrase: "read market wins",
 },
@@ -7766,7 +7824,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema327
+    "Arguments": schema330
   },
   phrase: "read draft queue",
 },
@@ -7785,7 +7843,7 @@ export const serverCommands = {
     "Undo": "replace-own-private-queue",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema328
+    "Arguments": schema331
   },
   phrase: "set draft queue",
 },
@@ -7804,7 +7862,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema329
+    "Arguments": schema332
   },
   phrase: "read trade draft",
 },
@@ -7823,7 +7881,7 @@ export const serverCommands = {
     "Undo": "delete-own-private-proposal",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema330
+    "Arguments": schema333
   },
   phrase: "save trade draft",
 },
@@ -7842,7 +7900,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema331
+    "Arguments": schema334
   },
   phrase: "delete trade draft",
 },

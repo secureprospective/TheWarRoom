@@ -217,7 +217,8 @@ func (x *pricer) spread(move domain.Money) []SeasonAmount {
 			part = move - given
 		}
 		given += part
-		out = append(out, SeasonAmount{Season: x.season + i, Cents: x.in.Contract.Salary + part})
+		season := x.season + i
+		out = append(out, SeasonAmount{Season: season, Cents: x.contractSalary(season) + part})
 	}
 	return out
 }

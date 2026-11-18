@@ -113,6 +113,26 @@ func TestHostedReadsAndPreviewsRequireCredential(t *testing.T) {
 	}
 }
 
+func TestWhatIfStackCannotQuoteAnotherFranchiseForTheSignedInOwner(t *testing.T) {
+	fixture := newDueFixture(t)
+	var admitted commissioner.Access
+	service := NewHosted(StoredHost{Store: fixture.store, Context: func() context.Context { return t.Context() },
+		Principal: "owner.one"}, admissionFunc(func(_ context.Context, access commissioner.Access) error {
+		admitted = access
+		return nil
+	}))
+	_, err := service.TargetNativeWhatIfStackContext(t.Context(), market.RawWhatIfStack{
+		League: fixture.league, ViewerZone: "UTC",
+		Moves: []market.RawWhatIfMove{{Player: "0099", Action: "cut"}},
+	})
+	if err == nil || !strings.Contains(err.Error(), "your franchise") {
+		t.Fatalf("owner quoted another franchise's player: %v", err)
+	}
+	if admitted.Operation != WhatIfStackRead || admitted.Franchise != "franchise.01" || admitted.Player != "" {
+		t.Fatalf("read scope trusted request data instead of the signed-in seat: %+v", admitted)
+	}
+}
+
 func TestHostedReadScopeIncludesFranchiseAndReferencedPlayer(t *testing.T) {
 	for _, operation := range []string{"bids", "trades", "quote", "score", "market", "week"} {
 		t.Run(operation, func(t *testing.T) {

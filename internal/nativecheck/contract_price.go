@@ -113,9 +113,18 @@ func (x *pricer) used(action ContractAction, limit leaguerules.Value[int], one, 
 func (x *pricer) remainingCells() []domain.Money {
 	cells := make([]domain.Money, x.rem)
 	for i := range cells {
-		cells[i] = x.in.Contract.Salary
+		cells[i] = x.contractSalary(x.season + i + 1)
 	}
 	return cells
+}
+
+func (x *pricer) contractSalary(season int) domain.Money {
+	for _, cell := range x.in.Contract.Schedule {
+		if cell.Season == season {
+			return cell.Cents
+		}
+	}
+	return x.in.Contract.Salary
 }
 
 // ExistingContractSchedule reads the same annual salaries the contract pricer uses, without pricing a move.
@@ -131,7 +140,7 @@ func ExistingContractSchedule(season int, contract Contract) []SeasonAmount {
 func (x *pricer) contractSchedule() []SeasonAmount {
 	out := make([]SeasonAmount, 0, x.rem+1)
 	for season := x.season; season <= x.in.Contract.Expiration; season++ {
-		out = append(out, SeasonAmount{Season: season, Cents: x.in.Contract.Salary})
+		out = append(out, SeasonAmount{Season: season, Cents: x.contractSalary(season)})
 	}
 	return out
 }
