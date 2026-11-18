@@ -3,7 +3,47 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. STATE AT 2:55 AM CST WED 11-18 (overnight run; supersedes every older 0 block and sections 3, 10, 11)
+## 0. STATE AT 11:10 AM CST WED 11-18 (supersedes every older 0 block and sections 3, 10, 11)
+
+**Targets (Christopher 11-18 6:40 AM):** desktop browser app (PWA, Bundle 7) before Thursday 11-19; phone app (Bundles 8-9) before Sunday 11-22 kickoff. He APPROVED the Bundle 7 browser door at 6:45 AM, "locked down": exact own origin only, same checks, no agent tokens from browsers (memory `project_twr_b7_browser_door_approved`). Claude-OS is released to us (leave the Paylocity Brave tab alone). Stale branch deleted by him.
+
+**On main:** Bundles 1-5 all landed: #362, #361, #365, #369 (B4), #371 (B5, `b597b6122`), #368 test flakes, #374 search name order. Alpha bundle list complete.
+
+**bundle/b7:** #373 browser client + PWA (cookie session, no bearer in JS, SW caches shell only; hidden in browser: local mode, MFL import, file dialogs, AI helpers, enrollment/recovery/TOTP/device revoke). #372 server door (security reviewed by me: `__Host-twr_session` HttpOnly Secure Strict; Origin must equal `https://`+`/etc/twr/public-host`; missing Origin w/ cookie refused; agent token with Origin 403, as cookie 401; Authorization+cookie 403; multi-league account → 409 "use desktop"; changes feed/enrollment closed). Known gap: no live push in browser.
+
+**In flight**
+| Job | Check | On result |
+|---|---|---|
+| b7lab (Luna xhigh, from ~10:15) deploy bundle/b7 to CT 260, curl security checks, browser walk on Claude-OS | `~/fleet/runs/pulse-b7lab/` completion.txt, RESULT.md | bugs → fix lanes into bundle/b7; pass + fixes on main → land B7 with `twr-bundle-land.sh bundle/b7 ...` (write b7pr.md body) |
+| fixcr (xhigh) Control Room Jobs/Season/People/Ledger refused for commissioner | `~/fleet/runs/pulse-fixcr/` | review (no weakened authz), merge to main via `twr-bundle-merge.sh fixcr <pr>` |
+| fixhome (xhigh) Home "Seed: expected safe integer ≥ 0" + Pulse "league has not said which week" | `~/fleet/runs/pulse-fixhome/` | review, merge |
+| PR #375 whole-league player search (reviewed, OK) | CI re-run after unrelated Go race; watcher task b3g2rxup6 | if green: `gh pr merge 375 --squash` (or rerun twr-bundle-merge.sh fixsearch 375) |
+| watchers | twr-lane-wait.sh fixcr fixhome; b7lab; twr-lane-check.sh 50 | re-arm |
+
+**New issues found today**
+- Go data race (flaky) in `internal/serverclient` `TestUnavailableKeychainLoginIsMemoryOnly` failed CI on #375: needs its own small fix lane.
+- Speed: lab5 server refuses 37% at 128 clients (lab4 held 256). After bugs.
+- Commissioner with no franchise gets no player-search list (#375 guards on franchise). Later.
+
+**Traps learned today (do not re-learn)**
+- Squash-merging a "merge main into bundle" PR loses the merge parent; landing re-conflicts. Instead push the lane's merge commit straight to the bundle branch (fast-forward), as done for b5sync (40596ca63). For B4 I re-recorded with `git merge -X ours origin/main` after confirming zero tree diff.
+- Pushing from the main checkout fails the pre-push hook (no Go on PATH); push from a lane worktree with the build env exported.
+- `sleep N; ssh ...` chained is blocked by the guard; launch commands bare.
+
+**Lab:** CT 260 on `b597b6122`, history 3,399, backups OK. lab5 stress 75,066 req, 6,016×503, 0×502.
+
+**Next actions**
+1. Merge #375 when CI green. Review/merge fixcr and fixhome PRs.
+2. On b7lab result: fix what it finds; merge main into bundle/b7 (direct merge commit, not squashed PR); land B7 on main; tracker.
+3. Re-walk desktop + browser on Claude-OS after fixes.
+4. Start Bundles 8-9 (phone) on top of B7: briefs from `~/Downloads/TheWarRoom-mobile-mock-v1.html` and `~/fleet/runs/twr-v3-1117/MOBILE-V1-PARITY.md`.
+5. Fix-lane for the serverclient race; perf lane after.
+
+**Needs Christopher:** rotate CT 257 keys; pick how testers reach a server (before Sunday).
+
+**Tracker:** `~/Downloads/twr-usable-week-plan.html` fully rewritten 9:31 AM (plan B1..B89, ahead stops to Sunday); last touched 10:20 AM.
+
+## 0-prev3. (older) STATE AT 2:55 AM CST WED 11-18 (overnight run; supersedes every older 0 block and sections 3, 10, 11)
 
 **Overnight run:** `~/fleet/runs/overnight-alpha-1118/` on the Beelink (`PLAN.md`, `REPORT.md` with "Needs Christopher" at the top). Merge authority is the same as daytime (his answer 11-17 ~8 PM): merge after my own review and green CI, into bundles and main. The repo allows SQUASH merges only (`--merge` is refused).
 
