@@ -3,6 +3,7 @@ import { hostedWorkflow, type HostedResponse } from '../control/nativeApi';
 import { hostedCommandAvailable, type NativeRequest } from '../commands/native';
 import { actsFor, actTable, type ActDefinition } from './actTable';
 import { parseJobs, type Job, type Jobs } from './jobs';
+import { parseLedger, type Ledger } from './proxy';
 import type { HostedPort } from './hostedRoom';
 
 export const hostedControlTabs = [
@@ -23,6 +24,21 @@ export function createHostedJobsQuery(league: string, port: HostedPort = hostedW
       return jobs;
     },
     accept: (jobs: Jobs) => ({ jobs }),
+  });
+}
+
+export function createHostedLedgerQuery(league: string, port: HostedPort = hostedWorkflow) {
+  return createReadQuery('commissioner.TargetCommissionerLedger', {
+    initial: (): { ledger?: Ledger } => ({}),
+    read: async (scope: string): Promise<Ledger> => {
+      const response: HostedResponse = await port({ command: 'commish.ledger.read', mode: 'read',
+        arguments: { league: scope } } as NativeRequest);
+      const ledger = parseLedger(response.data);
+      if (ledger.league !== league || scope !== league)
+        throw new Error('Ledger belongs to another league.');
+      return ledger;
+    },
+    accept: (ledger: Ledger) => ({ ledger }),
   });
 }
 
