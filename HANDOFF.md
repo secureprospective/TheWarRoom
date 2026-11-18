@@ -1,9 +1,9 @@
 # Handoff
 
 - Baton: Bee, 2026-11-18. Lane `pulse-fixsearch`, branch `session/pulse-fixsearch`.
-- State: regression test added and observed failing before the fix; player search now matches case-insensitive name tokens in either order, including `Last, First` against `First Last`. Targeted test, TypeScript, full Vitest (138 files/978 tests), and `make verify` pass. `make verify` needed retries for concurrent `golangci-lint`/full-race jobs; final run passed including Go race tests, frontend build, budget, CSP and browser CSP checks. `tidy-check.sh` is clean.
-- PR #374 is open into `main`: https://github.com/secureprospective/TheWarRoom/pull/374. CI checks, four test shards, verify, package and install all passed. PR body records root cause and test failure-before/fix-passes evidence.
-- Next: ClaudeBox/Christopher review; do not merge from this lane.
+- State: #374's search ordering fix is merged. Follow-up adds a regression test proving owner Home search finds another team's rostered player (and a free agent) even when Home's other reads fail. The test failed before the fix and passes after.
+- Fix: owner shell independently reads existing `native.assets.read` and combines league roster, free-agent pool and market names; no new route or permission change. TypeScript, full Vitest (138 files/979 tests), and `make verify` pass. First full Vitest run had an unrelated `nativeAccount` timing failure plus an expected commissioner-read assertion after adding an extra assets request; restricted the new request to franchise owners and reran successfully.
+- Next: commit/push and open new PR to `main`; report PR and CI state. `tidy-check.sh` flags unrelated active lane `b7lab` PID 1140150; left it untouched.
 - Blocked on: none.
 
 - Baton: Bee, 2026-11-18. Lane `pulse-b5sync`, branch `session/pulse-b5sync`; merging `origin/main` (347388a19) into Bundle 5.
