@@ -2,7 +2,7 @@
 
 - Baton: Bee, 2026-11-18.
 - State: lab4 test pass stopped at the import guard; worktree `pulse-lab4`, origin/main `f90df12627732e83a81307db78f055f9f651ffd0`.
-- Job 1 NOT MET: guard refused the compound import command (“Command recursively changes permissions; blocked (no UI for confirmation)”). Verified no credential staged, no load process, `/var/lib/twr` empty and server stopped. No retry/workaround.
+- Job 1 NOT MET: guard refused the compound import command (“Command recursively changes permissions; blocked (no UI for confirmation)”). Verified no credential staged, no load process, server data directory empty and service stopped. No retry/workaround.
 - Job 2 NOT MET: not attempted because import is a prerequisite for proving league persistence. CT260 remains release 8 / build `c4d38df6c`; its pinned root matches `../../../../fleet/lab-release-ct258`.
 - Job 3 NOT MET: no league/state; no traffic sent. Stress storm preflight rejects the requested CT LAN IP/port. Evidence is in `../../../../fleet/runs/pulse-lab4/RESULT.md` and its `evidence/` files.
 - Job 4 NOT MET: no accounts/server; Claude-OS not checked or touched; no client/screenshots.
