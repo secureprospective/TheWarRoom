@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
@@ -244,5 +245,96 @@ func TestDesktopHostedLineupDraftReconnectAndRevocation(t *testing.T) {
 	}
 	if _, err := desktop.Workflow(t.Context(), workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")); err == nil {
 		t.Fatal("revoked device could read")
+	}
+}
+
+func TestHostedCommissionerControlRoomReads(t *testing.T) {
+	f := newHostedFixture(t)
+	calendarRules := []struct{ field, value string }{
+		{"calendar.timezone", `"America/Chicago"`},
+		{"calendar.boundary", `"start_of_day"`},
+		{"calendar.windows", `{"rookie_draft":{"start":{"month":1,"day":1},"opens":["draft_pick","lineup","ir","taxi","waiver_claim","ufa_bid","trade"]}}`},
+	}
+	for _, rule := range calendarRules {
+		assets, err := f.history.NativeAssets(t.Context(), "native.hosted")
+		if err != nil {
+			t.Fatal(err)
+		}
+		command := commissioner.RawCommand{League: "native.hosted", Command: commissioner.RulesSet,
+			Args:     commissioner.RawArgs{Field: rule.field, Value: json.RawMessage(rule.value)},
+			Expected: assets.Revision, Reason: "Configure the disposable league calendar",
+			Request: "workflow.calendar-rule." + rule.field, Effective: "now", Visibility: "league"}
+		if _, err := f.history.ExecuteCommissioner(t.Context(), command, f.principal, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	events, err := f.history.Events(t.Context(), "native.hosted", commissioner.Stream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	records := make([]commissioner.Record, len(events))
+	for i, event := range events {
+		records[i] = *event.Payload.Commissioner
+	}
+	state, err := commissioner.GovernanceState(records)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.HoldsSeat("franchise.01", governance.Principal(f.principal)) {
+		t.Fatal("commissioner still holds a franchise seat")
+	}
+	eventCount := len(events)
+	bearer, proof := f.directCommissioner(t)
+	reads := []struct{ command, arguments string }{
+		{"commish.jobs.read", `{"league":"native.hosted"}`},
+		{"commish.people.read", `{"league":"native.hosted"}`},
+		{"commish.schedule.read", `{"league":"native.hosted"}`},
+		{"commish.ledger.read", `{"league":"native.hosted"}`},
+		{"commish.ledger.filtered.read", `{"league":"native.hosted","filter":{"person":"","kind":"rules","from":"","before":""}}`},
+		{"commish.notices.read", `{"league":"native.hosted"}`},
+		{"calendar.read", `{"league":"native.hosted","season":2026,"localZone":"UTC","franchise":"franchise.01","action":"lineup"}`},
+	}
+	for _, read := range reads {
+		t.Run(read.command, func(t *testing.T) {
+			raw := workflowRequest(t, read.command, "read", read.arguments, "")
+			body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+			if err != nil {
+				t.Fatal(err)
+			}
+			status, response := f.send(t, serverhttp.WorkflowPath, string(body), bearer, proof)
+			if status != http.StatusOK {
+				t.Fatalf("status %d: %s", status, response)
+			}
+			var result serverhttp.WorkflowResponse
+			if err := json.Unmarshal(response, &result); err != nil {
+				t.Fatal(err)
+			}
+			var reading struct {
+				League string `json:"league"`
+			}
+			if err := json.Unmarshal(result.Data, &reading); err != nil || reading.League != "native.hosted" {
+				t.Fatalf("wrong %s response: %s (%v)", read.command, result.Data, err)
+			}
+		})
+	}
+
+	ownerFixture := newHostedFixture(t, true)
+	owner := ownerFixture.login(t, "owner", "private-password")
+	for _, command := range []string{"commish.jobs.read", "commish.schedule.read"} {
+		t.Run(command+" denies owner", func(t *testing.T) {
+			raw := workflowRequest(t, command, "read", `{"league":"native.hosted"}`, "")
+			body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+			if err != nil {
+				t.Fatal(err)
+			}
+			status, _ := ownerFixture.send(t, serverhttp.WorkflowPath, string(body), owner, "")
+			if status != http.StatusConflict {
+				t.Fatalf("owner read status %d, want %d", status, http.StatusConflict)
+			}
+		})
+	}
+	finalEvents, err := f.history.Events(t.Context(), "native.hosted", commissioner.Stream, 0)
+	if err != nil || len(finalEvents) != eventCount {
+		t.Fatalf("Control Room reads changed the ledger: events=%d want=%d err=%v", len(finalEvents), eventCount, err)
 	}
 }
