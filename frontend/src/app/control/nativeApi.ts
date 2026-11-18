@@ -2,6 +2,7 @@
 import { observeView, prepareHostedAction } from '../data/hostedReads';
 import type { NativeRequest } from '../commands/native';
 import { object, text } from '../data/parseValues';
+import type { ReadTags } from '../data/session';
 export type NativeAction = 'update' | 'retry' | 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
   | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up' | 'recovery-codes';
 export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-check' | 'helper-confirm';
@@ -91,7 +92,25 @@ export function readConfirmRequest(text: string): boolean {
     return typeof request.tokenId === 'string' && typeof request.change?.command === 'string';
   } catch { return false; }
 }
-export type HostedResponse = { label: string; writable: boolean; football: string; data: unknown };
+export type HostedResponse = {
+  label: string; writable: boolean; football: string; data: unknown; tags?: ReadTags;
+};
+function parseWorkflowTags(value: unknown): ReadTags {
+  const row = object(value, 'Hosted read tags', ['serverEpoch', 'league', 'football', 'live', 'values']);
+  if (!row.league || typeof row.league !== 'object' || Array.isArray(row.league))
+    throw new Error('Unreadable hosted read tags.');
+  const league: Record<string, string> = {};
+  for (const [key, version] of Object.entries(row.league)) {
+    if (!/^(?:league(?::\d+)?|team:.+|scores:\d+:\d+|values:\d+:.+|clock)$/.test(key)
+      || typeof version !== 'string' || !/^\d+$/.test(version))
+      throw new Error('Unreadable hosted read tags.');
+    league[key] = version;
+  }
+  return { serverEpoch: text(row.serverEpoch, 'Server epoch'), league,
+    football: text(row.football, 'Football version'), live: text(row.live, 'Live version'),
+    values: text(row.values, 'Values version') };
+}
+
 export type HostedPlayerReadingUnavailable = { unavailable: true; reason: 'input-not-held' };
 export function hostedPlayerReadingUnavailable(data: unknown): HostedPlayerReadingUnavailable | undefined {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return undefined;
@@ -115,11 +134,12 @@ export async function hostedWorkflow(request: NativeRequest, football = ''): Pro
     }
     throw new Error(fallback);
   }
-  const r = object(await response.json(), 'Hosted league', ['label', 'writable', 'football', 'data']);
+  const r = object(await response.json(), 'Hosted league', ['label', 'writable', 'football', 'data', 'tags']);
   if (typeof r.writable !== 'boolean') throw new Error('Unreadable league authority. Refresh to try again.');
+  const tags = r.tags == null ? undefined : parseWorkflowTags(r.tags);
   return {
     label: text(r.label, 'League location'), writable: r.writable,
-    football: text(r.football, 'Football evidence'), data: r.data,
+    football: text(r.football, 'Football evidence'), data: r.data, tags,
   };
 }
 

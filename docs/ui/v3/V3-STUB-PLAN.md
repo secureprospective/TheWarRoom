@@ -33,7 +33,7 @@ Christopher's order for the real app (tracker, 11-17): **Franchise HQ → War Ro
 ## Decisions (Christopher, 2026-11-17: "go with yours on all 6")
 | # | Question | Decided |
 |---|---|---|
-| 1 | v3 lets an owner lower or withdraw a placed bid | **R3 stands: a placed bid is locked.** The real build has no lower and no withdraw on placed bids (withdraw only for an unplaced draft). |
+| 1 | v3 lets an owner lower or withdraw a placed bid | **R3 stands: a placed bid is locked.** The server refuses `bid.withdraw`; the app offers neither lowering nor withdrawal for placed bids. |
 | 2 | Phone data rules on desktop | **Yes.** Desktop shows status facts (Out · hamstring, practice, depth), no written news, no ROST %, no trending adds. Projections stay: `projections.read` is our own range engine (D11). |
 | 3 | Server operations in the Control Room | **Commissioners see read-only server health. Restore, feed pause/switch and upgrade stay operator-only (Christopher).** |
 | 4 | Per-person layout for the app-level Home | **Approved: a per-person layout table on the league server (D58, storage seam, new migration).** Layout follows the person to any device. |
@@ -83,7 +83,7 @@ Christopher's order for the real app (tracker, 11-17): **Franchise HQ → War Ro
 | `desk` | Hosted | Done in thin War Room (#324 send). Versions/pocket = saved trade drafts (PR #338, owner-only, 50 cap). Do not add a second proposal state. |
 | `review` | Hosted | Reuse HostedWorkflows trade.review/recuse/appeal; DOT votes only from DOT members (P2). |
 | `pool` | Hosted | Done in thin War Room Market (#329 bids, #336 targets). Recent winning bids = D35 from revealed history only (lane 'wins' running 11-17). Never count sealed bids. |
-| `bids` | Hosted | Done (bids.read, bid.place/raise). R3: a placed bid is final — remove v3's lower and withdraw on placed bids; withdraw only drafts. Engine bug (bid.withdraw on a placed bid) is logged. |
+| `bids` | Hosted | Done (bids.read, bid.place/raise). R3: a placed bid is final; the server refuses `bid.withdraw`, and the app offers neither lowering nor withdrawal on placed bids. |
 | `waivers` | Partly | Claims via HostedWorkflows waivers.claim. Claim reorder and claim cancel have no command: add through the commands seam (internal/commissioner) with tests; ask before adding. |
 | `draft` | Hosted | Done: embedded DraftRoom + draft.queue.* (#333). ADP/tiers wait on a server ADP feed (Christopher's call on which feed). |
 | `plans` | Not on main | D39 private plans need a store (migration → Christopher). Until then one honest empty state (#337 did this). Nothing executes from Plans. |
@@ -252,7 +252,7 @@ Each action points at its parent piece or screen above; the line says only what 
 | `eBid` | IN | Hosted | Opens the War Room bid review (WarRoomMarket "Review bid"); same component, not a card copy. |
 | `eBidGo` | OUT | Hosted | bid.place / bid.raise via hosted workflow (#329). Budget left = native.cap.check + open bids (D36: open bids count against cap). |
 | `bidStep` | OUT | Hosted | Raise only (bid.raise). Lowering a placed bid breaks R3 (a placed bid is final; only being outbid ends it). Remove the minus step. |
-| `bidDrop` | OUT | Hosted | R3: withdraw is for an unplaced draft only. Placed bids stay. The engine still allows withdraw (logged bug); the UI must not offer it. |
+| `bidDrop` | OUT | Hosted | R3: the server refuses `bid.withdraw`; the app no longer offers withdrawal on placed bids. |
 | `clMove` | OUT | Not on main | No claim-reorder command. Add through the commands seam with a test, after Christopher says claims are reorderable. |
 | `clDrop` | OUT | Not on main | No claim-cancel command. Same as clMove. |
 | `offAcc` | OUT | Hosted | Reuse HostedWorkflows trade.accept with preview → confirm. v3 shows an 8 s Undo toast; the real flow confirms first, and reversal is a checked reversal by the commissioner (catalog Undo metadata). |

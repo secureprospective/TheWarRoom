@@ -30,6 +30,13 @@ func TestWorkflowModesAndUnknownCommand(t *testing.T) {
 		t.Fatal("pre-migration workflow fixture changed")
 	}
 	for _, old := range before {
+		if old.Command == "bid.withdraw" {
+			err := (RawWorkflow{Command: old.Command, Version: "1", Mode: "execute"}).Validate()
+			if err == nil || err.Error() != "this league action is not available here" {
+				t.Fatalf("retired bid withdrawal remains exposed: %v", err)
+			}
+			continue
+		}
 		for _, mode := range []string{"read", "preview", "execute", "unknown"} {
 			t.Run(old.Command+"/"+mode, func(t *testing.T) {
 				raw := RawWorkflow{Command: old.Command, Version: "1", Mode: mode, Arguments: json.RawMessage(`{}`)}

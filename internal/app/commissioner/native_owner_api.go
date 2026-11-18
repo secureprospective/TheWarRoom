@@ -47,7 +47,7 @@ func (a *API) TargetNativeWaivers(league, franchise string, at time.Time) (marke
 
 func (a *API) TargetNativeBidAction(raw commissioner.RawCommand) (commissioner.Receipt, error) {
 	if commissioner.OwnerBidAction(raw.Command) == "" || raw.Args.Bid == nil || raw.Args.BidOutcome != nil {
-		return commissioner.Receipt{}, fmt.Errorf("choose to place, raise or withdraw a bid")
+		return commissioner.Receipt{}, fmt.Errorf("choose to place or raise a bid")
 	}
 	//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 	return a.reads.Execute(a.host.CommissionerContext(), raw)

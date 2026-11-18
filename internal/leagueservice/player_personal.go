@@ -4,19 +4,23 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 const (
-	PlayerNoteRead   = "player.note.read"
-	PlayerNoteSet    = "player.note.set"
-	PlayerWatchRead  = "player.watch.read"
-	PlayerWatchSet   = "player.watch.set"
-	PlayerWatchOrder = "player.watch.order"
+	PlayerNoteRead        = "player.note.read"
+	PlayerNoteSet         = "player.note.set"
+	PlayerWatchRead       = "player.watch.read"
+	PlayerWatchSet        = "player.watch.set"
+	PlayerWatchOrder      = "player.watch.order"
+	WhatIfStackRead       = "whatif.stack.read"
+	ContractDecisionsRead = "contract.decisions.read"
 )
 
 type RawPlayerNotesScope struct {
@@ -260,25 +264,39 @@ func privateEntriesFor(host Host) *personal.Store {
 
 func (a *Service) playerPrivateAccess(requestCtx context.Context, league, operation, mode string) (
 	context.Context, string, *personal.Store, context.CancelFunc, error) {
+	ctx, franchise, _, cancel, err := a.franchiseOwnerAccess(requestCtx, league, operation, mode)
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+	entries := privateEntriesFor(a.host)
+	if entries == nil {
+		cancel()
+		return nil, "", nil, nil, fmt.Errorf("player private storage unavailable")
+	}
+	return ctx, franchise, entries, cancel, nil
+}
+
+func (a *Service) franchiseOwnerAccess(requestCtx context.Context, league, operation, mode string) (
+	context.Context, string, []commissioner.Record, context.CancelFunc, error) {
 	if err := a.host.Ready(); err != nil {
-		return nil, "", nil, nil, fmt.Errorf("player private data startup: %w", err)
+		return nil, "", nil, nil, fmt.Errorf("private owner data startup: %w", err)
 	}
 	principal, err := a.host.CommissionerPrincipal()
 	if err != nil {
-		return nil, "", nil, nil, fmt.Errorf("player private identity: %w", err)
+		return nil, "", nil, nil, fmt.Errorf("private owner identity: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(a.viewContext(requestCtx), refreshTimeout)
-	fail := func(err error) (context.Context, string, *personal.Store, context.CancelFunc, error) {
+	fail := func(err error) (context.Context, string, []commissioner.Record, context.CancelFunc, error) {
 		cancel()
 		return nil, "", nil, nil, err
 	}
 	records, err := a.host.CommissionerRecords(ctx, league)
 	if err != nil {
-		return fail(fmt.Errorf("player private league: %w", err))
+		return fail(fmt.Errorf("private owner league: %w", err))
 	}
 	state, err := commissioner.GovernanceState(records)
 	if err != nil {
-		return fail(fmt.Errorf("player private seats: %w", err))
+		return fail(fmt.Errorf("private owner seats: %w", err))
 	}
 	owner := governance.Principal(commissioner.PrincipalFor(records, principal))
 	franchise := ""
@@ -290,15 +308,38 @@ func (a *Service) playerPrivateAccess(requestCtx context.Context, league, operat
 		}
 	}
 	if franchise == "" {
-		return fail(fmt.Errorf("player private data requires a seated franchise owner"))
+		return fail(fmt.Errorf("private owner data requires a seated franchise owner"))
 	}
 	access := commissioner.Access{Principal: principal, League: league, Operation: operation, Mode: mode, Franchise: franchise}
 	if err := commissioner.AdmitCredential(a.requestContext(ctx), access); err != nil {
-		return fail(fmt.Errorf("admit player private data: %w", err))
+		return fail(fmt.Errorf("admit private owner data: %w", err))
 	}
-	entries := privateEntriesFor(a.host)
-	if entries == nil {
-		return fail(fmt.Errorf("player private storage unavailable"))
+	return ctx, franchise, records, cancel, nil
+}
+
+func (a *Service) TargetNativeWhatIfStack(raw market.RawWhatIfStack) (market.WhatIfStack, error) {
+	return a.TargetNativeWhatIfStackContext(a.host.CommissionerContext(), raw)
+}
+
+func (a *Service) TargetNativeWhatIfStackContext(requestCtx context.Context,
+	raw market.RawWhatIfStack) (market.WhatIfStack, error) {
+	if err := raw.Validate(); err != nil {
+		return market.WhatIfStack{}, fmt.Errorf("native what-if stack input: %w", err)
 	}
-	return ctx, franchise, entries, cancel, nil
+	ctx, franchise, records, cancel, err := a.franchiseOwnerAccess(requestCtx, raw.League, WhatIfStackRead, "read")
+	if err != nil {
+		return market.WhatIfStack{}, err
+	}
+	defer cancel()
+	zone, err := time.LoadLocation(raw.ViewerZone)
+	if err != nil {
+		return market.WhatIfStack{}, fmt.Errorf("read viewer timezone: %w", err)
+	}
+	reading, err := market.QuoteWhatIfStack(raw, records, a.host.CommissionerNow(), zone,
+		a.host.NativeFacts(), franchise)
+	if err != nil {
+		return market.WhatIfStack{}, fmt.Errorf("native what-if stack: %w", err)
+	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
+	return reading, nil
 }

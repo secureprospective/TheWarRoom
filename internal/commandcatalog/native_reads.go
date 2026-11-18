@@ -24,6 +24,12 @@ func nativeReadAvailability(facts string) string {
 	}
 	return "both"
 }
+func nativeReadSafeguards(id string) string {
+	if id == leagueservice.WhatIfStackRead {
+		return "authenticated seated franchise; no request franchise; uncached private result"
+	}
+	return "none"
+}
 
 func nativeReads() []Command {
 	rows := []struct{ id, method, fields, permission, facts string }{
@@ -48,6 +54,7 @@ func nativeReads() []Command {
 		{"bracket.read", "TargetNativeBracket", "league:string season:integer", "league-view", "ledger"},
 		{"native.cap.check", "TargetNativeCapCheck", "league:string viewerZone:string", "league-view", "ledger"},
 		{"contract.quote", "TargetNativeContractQuote", "", "league-view", "ledger,player-facts"},
+		{leagueservice.WhatIfStackRead, "TargetNativeWhatIfStack", "", "franchise-owner", "private-player-data"},
 		{"native.directory.read", "TargetNativeDirectory", "league:string", "league-view", "ledger"},
 		{"nfl.game.read", "TargetNFLGame", "league:string game:string", "league-view", "stat-evidence"},
 		{"nfl.games.read", "TargetNFLGames", "league:string", "league-view", "stat-evidence"},
@@ -80,17 +87,25 @@ func nativeReads() []Command {
 	for _, row := range rows {
 		out = append(out, Command{ID: row.id, Method: row.method, Version: "1", Role: "domain",
 			Gravity: "G0", Availability: nativeReadAvailability(row.facts), Arguments: NativeReadShape(row.method, row.fields),
-			Permission: row.permission, Modes: []Mode{Read}, Undo: "none", Facts: row.facts, Safeguards: "none"})
+			Permission: row.permission, Modes: []Mode{Read}, Undo: "none", Facts: row.facts,
+			Safeguards: nativeReadSafeguards(row.id)})
 	}
 	return out
 }
 func playerPersonalNativeReads() []Command {
-	return []Command{{ID: leagueservice.PlayerWatchRead, Method: "TargetPlayerWatches", Version: "1",
-		Role: "domain", Gravity: "G0", Availability: "server",
-		Arguments: Shape(reflect.TypeFor[leagueservice.RawPlayerWatchReadScope](),
-			"RawPlayerWatchReadScope.Validate"), Permission: "franchise-owner",
-		Modes: []Mode{Read}, Undo: "none", Facts: "private-player-data",
-		Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"}}
+	return []Command{
+		{ID: leagueservice.PlayerWatchRead, Method: "TargetPlayerWatches", Version: "1",
+			Role: "domain", Gravity: "G0", Availability: "server",
+			Arguments: Shape(reflect.TypeFor[leagueservice.RawPlayerWatchReadScope](),
+				"RawPlayerWatchReadScope.Validate"), Permission: "franchise-owner",
+			Modes: []Mode{Read}, Undo: "none", Facts: "private-player-data",
+			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
+		{ID: leagueservice.ContractDecisionsRead, Method: "TargetNativeContractDecisions", Version: "1",
+			Role: "domain", Gravity: "G0", Availability: "server",
+			Arguments:  Shape(reflect.TypeFor[market.RawContractDecisionsScope](), "RawContractDecisionsScope.Validate"),
+			Permission: "franchise-owner", Modes: []Mode{Read}, Undo: "none", Facts: "private-player-data",
+			Safeguards: "authenticated seated owner; server derives franchise; no request franchise; uncached"},
+	}
 }
 
 func nativeDraftQueueCommands() []Command {
@@ -135,7 +150,21 @@ func ownerPrivateCommand(id, method string, args reflect.Type, mode Mode, gravit
 		Modes: []Mode{mode}, Undo: undo, Facts: p.facts, Safeguards: p.safeguards}
 }
 
+func privatePersonalReadShape(method string) (Schema, bool) {
+	switch method {
+	case "TargetNativeWhatIfStack":
+		return Shape(reflect.TypeFor[market.RawWhatIfStack](), "RawWhatIfStack.Validate"), true
+	case "TargetPlayerNotes":
+		return Shape(reflect.TypeFor[leagueservice.RawPlayerNotesScope](), "RawPlayerNotesScope.Validate"), true
+	default:
+		return Schema{}, false
+	}
+}
+
 func NativeReadShape(method, fields string) Schema {
+	if schema, ok := privatePersonalReadShape(method); ok {
+		return schema
+	}
 	switch method {
 	case "TargetLeagueCalendar":
 		return Shape(reflect.TypeFor[leagueservice.RawLeagueCalendarScope](), "RawLeagueCalendarScope.Validate")
@@ -155,8 +184,6 @@ func NativeReadShape(method, fields string) Schema {
 		return Shape(reflect.TypeFor[leagueservice.RawLineupDeltaScope](), "RawLineupDeltaScope.Validate")
 	case "TargetNativePlayerUsage", "TargetNativePlayerAgeArc":
 		return Shape(reflect.TypeFor[leagueservice.RawPlayerReadScope](), "RawPlayerReadScope.Validate")
-	case "TargetPlayerNotes":
-		return Shape(reflect.TypeFor[leagueservice.RawPlayerNotesScope](), "RawPlayerNotesScope.Validate")
 	case "TargetNativeLineupCheck":
 		return Shape(reflect.TypeFor[commissioner.RawNativeLineup](), "RawNativeLineup.Validate")
 	case "TargetFranchiseMovesHistory":
