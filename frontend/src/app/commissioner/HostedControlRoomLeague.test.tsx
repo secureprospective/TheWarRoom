@@ -117,7 +117,11 @@ it('filters the ledger and rereads after a newer hosted league topic', async () 
   await act(async () => root.render(
     <HostedControlRoomLeague league={league} room={room} port={fixture.port} />));
   await settle();
+  const noticeReads = () => fixture.port.mock.calls.filter(([request]) =>
+    request.command === 'commish.notices.read').length;
+  expect(noticeReads()).toBe(1);
   await click('RULES');
+  expect(noticeReads()).toBe(1);
   const filteredReads = () => fixture.port.mock.calls
     .filter(([request]) => request.command === 'commish.ledger.filtered.read')
     .map(([request]) => request);

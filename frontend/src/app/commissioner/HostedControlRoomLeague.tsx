@@ -59,8 +59,10 @@ export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }:
   useEffect(() => {
     ledgerQuery.set({ ledger: undefined, error: '' });
     void ledgerQuery.load([league, chip]);
+  }, [chip, league, ledgerQuery]);
+  useEffect(() => {
     void noticesQuery.load([league]);
-  }, [chip, league, ledgerQuery, noticesQuery]);
+  }, [league, noticesQuery]);
   useEffect(() => () => ledgerQuery.dispose(), [ledgerQuery]);
   useEffect(() => () => noticesQuery.dispose(), [noticesQuery]);
   useEffect(() => onHostedTopics(topics => {
