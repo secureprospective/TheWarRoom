@@ -273,3 +273,42 @@
   .crx .hosted-situation-steps li{grid-template-columns:1fr auto}
   .crx .hosted-fix-tables{grid-template-columns:minmax(0,1fr)}
 }
+
+@media (max-width:699px){
+  .crx.hosted-control-room{width:100%;height:auto;min-height:0;margin:10px 0;overflow:visible}
+  .crx.hosted-control-room .work{width:100%;min-width:0;min-height:0;overflow:visible}
+  .crx.hosted-control-room .ws-tabs{width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain}
+  .crx.hosted-control-room .ws-tabs button{flex:none;min-height:44px;padding:8px 12px;white-space:nowrap}
+  .crx.hosted-control-room .hosted-control-refresh{margin-left:0}
+  .crx.hosted-control-room .hosted-control-content{display:block;width:100%;min-width:0;min-height:0;padding:10px;overflow:visible}
+  .crx.hosted-control-room .hosted-control-content>*{min-width:0;max-width:100%}
+  .crx .hosted-people{width:100%;overflow:visible!important}
+  .crx .hosted-people-toolbar{flex-wrap:wrap;align-items:stretch}
+  .crx .hosted-people-toolbar>*{min-width:0}
+  .crx .hosted-people-toolbar button,.crx .hosted-people .cr-seg button,
+  .crx .hosted-people .cr-chip,.crx .hosted-people .cr-btn{min-height:44px}
+  .crx .hosted-people .cr-seg{flex-wrap:wrap}
+  .crx .hosted-people .cr-seg button{flex:1 1 140px}
+  .crx .hosted-people-search{min-width:0}
+  .crx .hosted-people-search input{width:100%;min-height:44px}
+  .crx .hosted-people-table,.crx .hosted-picks .ct-wrap,
+  .crx .hosted-fix-tables .cr-pb{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .crx .hosted-people-table{max-height:56vh}
+  .crx .hosted-people-table .cr-t{min-width:560px}
+  .crx .hosted-picks{width:100%;overflow:visible}
+  .crx .hosted-pick-filters{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  .crx .hosted-pick-filters label{display:grid;gap:4px;min-width:0}
+  .crx .hosted-pick-filters input,.crx .hosted-pick-filters select{width:100%;min-width:0;min-height:44px}
+  .crx .hosted-picks .ct-wrap .cr-t{min-width:680px}
+  .crx .hosted-pick-actions button,.crx .hosted-pick-actions .cr-btn{min-height:44px}
+  .crx .hosted-fix{width:100%;overflow:visible}
+  .crx .hosted-fix .cr-fix{grid-template-columns:minmax(0,1fr);gap:8px}
+  .crx .hosted-fix .cr-fix button{min-height:64px}
+  .crx .hosted-fix-tables{grid-template-columns:minmax(0,1fr);width:100%;gap:10px}
+  .crx .hosted-fix-tables .cr-t{min-width:480px}
+  .crx .hosted-fix .cr-btn,.crx .hosted-fix-tables button{min-height:44px}
+  .crx .hosted-people-tool .hosted-act-tray,.crx .hosted-pick-actions .hosted-act-tray,
+  .crx .hosted-fix .hosted-act-tray{max-width:100%;max-height:65vh;overflow:auto}
+  .crx .hosted-act-tray button,.crx .hosted-act-tray input,.crx .hosted-act-tray select,
+  .crx .hosted-act-tray textarea,.crx .hold-to-fire .act{min-height:44px}
+}

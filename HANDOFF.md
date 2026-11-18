@@ -17,3 +17,10 @@
 - Next: ClaudeBox review/merge PR #387.
 - Blocked on: none for this lane. Final `tidy-check.sh` reported unrelated active alpha010 lanes `b7lab2`, `b9fa`, and `perf`; left them untouched due worktree-only scope; owners need to file KEEP records. No task-owned scratch or staged webapp remains.
 - Tried and rejected: Do not reuse `commish.ledger.filtered.read`; it carries reasons and broader commissioner-visible entries. Reuse existing append-only records and an independent allow-list projection.
+
+## Bee — pulse-b9cr3 (B9-7)
+- Baton: Bee implementing hosted Control Room people / picks / server phone layout; 2026-11-18, branch `session/pulse-b9cr3`, base `bundle/b9`.
+- State: CSS phone breakpoint and focused phone-layout test added. Targeted People/Picks/fix/backup tests pass (18 tests); TypeScript passes; full Vitest passes (144 files, 995 tests). The first full run had one unrelated `leaguePicker.interaction` failure that passed alone and on full rerun. Restore remains explicitly operator-only.
+- Next: inspect 390px/desktop if browser tooling is available, run pre-push verification, commit/push, open PR into `bundle/b9`.
+- Blocked on: no browser emulation tool exposed in this session; restore remains explicitly operator-only, no live-league restore attempted. `tidy-check.sh` reports an unrelated adb fork-server PID 2189893 (started before this lane, no devices attached); left running to preserve machine state.
+- Tried and rejected: no client-side restore or bypass of hosted server authorization/preview/hold paths.
