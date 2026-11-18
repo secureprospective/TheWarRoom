@@ -11,9 +11,9 @@
 - Tried and rejected: persistent last-used league selection (requires a migration and contradicts Part 3); no picker or league-list endpoint.
 
 ## Bee — pulse-b9feed
-- Baton: Bee, 2026-11-18; branch `session/pulse-b9feed`, target `bundle/b9`.
-- State: Implemented the member-safe read, strict filter and hosted workflow/catalog route; generated native client metadata. Allow-list: notices; approved trade transitions; completed roster drops, waiver awards and free-agent additions, with bid details omitted. Unknown commands, notes, private events and reasons are hidden.
-- Evidence: race tests passed for commissioner, leagueservice and commandcatalog; focused hosted activity integration passed, including member/commissioner access and agent-scope refusal. Catalog generation checks, `make lint`, and full `make verify` passed. One existing hostedPulse UI test flaked once, then passed alone and in the successful full rerun.
-- Next: commit, push and open one PR into `bundle/b9`; update this section with results.
-- Blocked on: none. Final `tidy-check.sh` found unrelated active alpha010 lanes `b8live`, `b8bids`, and `b8trade`; left them untouched, owners need to file KEEP records. No task-owned scratch or staged webapp remains.
+- Baton: ClaudeBox for review; Bee completed lane 2026-11-18, branch `session/pulse-b9feed`, target `bundle/b9`.
+- State: Commit `732bf2bfa` pushed; PR #387 open and CI green. Implemented the member-safe read, strict filters and hosted workflow/catalog route; generated native client metadata. Allow-list: notices; approved trade transitions; completed roster drops, waiver awards and free-agent additions, with bid details omitted. Unknown commands, notes, private events and reasons are hidden.
+- Evidence: race tests passed for commissioner, leagueservice and commandcatalog; hosted member/commissioner and agent-scope integration passed. Catalog generation checks, `make lint`, full `make verify`, pre-push verify and PR CI passed. One hostedPulse UI test flaked once, then passed alone and in the successful full rerun.
+- Next: ClaudeBox review/merge PR #387.
+- Blocked on: none for this lane. `tidy-check.sh` found unrelated active alpha010 lanes `b8live`, `b8bids`, and `b8trade`; left them untouched due worktree-only scope; owners need to file KEEP records. No task-owned scratch or staged webapp remains.
 - Tried and rejected: Do not reuse `commish.ledger.filtered.read`; it carries reasons and broader commissioner-visible entries. Reuse existing append-only records and an independent allow-list projection.
