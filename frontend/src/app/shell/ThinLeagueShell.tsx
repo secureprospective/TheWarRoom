@@ -7,13 +7,15 @@ import './ThinLeagueShell.css';
 
 const ORDER = ['home', 'hq', 'war', 'pulse', 'control'] as const;
 
-export function ThinLeagueShell({ leagueName, route, commissioner, players, navigate, openPlayer, children }:
-  { leagueName: string; route: ThinScreenRoute; commissioner: boolean;
+export function ThinLeagueShell({ leagueName, route, commissioner, players, navigate, openPlayer, onHome,
+  children }: { leagueName: string; route: ThinScreenRoute; commissioner: boolean;
     players: readonly PlayerCandidate[]; navigate: (route: ThinScreenRoute) => void;
-    openPlayer: (player: PlayerCandidate) => void; children: ReactNode }) {
+    openPlayer: (player: PlayerCandidate) => void; onHome?: () => void; children: ReactNode }) {
   const order = commissioner ? ORDER : ORDER.filter(node => node !== 'control');
-  const open = (node: ThinScreenRoute['node'], workspace?: string) =>
+  const open = (node: ThinScreenRoute['node'], workspace?: string) => {
+    if (node === 'home' && onHome) { onHome(); return; }
     navigate({ node, workspace: workspace ?? defaultWorkspace(node) });
+  };
   return <div className="twr-app target-frame thin-league-shell" data-native-workspace="true">
     <aside className="rail mock">
       <div className="rail-head">

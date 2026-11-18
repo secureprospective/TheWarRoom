@@ -148,5 +148,6 @@ printf 'Installed: https://%s. Administration is Proxmox console only (pct enter
 if (( first_load )); then
   printf 'twr-server is stopped with an empty /var/lib/twr. Inside the CT run, in order:\n'
   printf '  twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db -mfl-league <number> -football-pin /etc/twr/football.sha256 < /root/seed/commissioner.json\n'
-  printf '  chown twr:twr /var/lib/twr/server.db*\n  rc-update add twr-server default\n  rc-service twr-server start\n'
+  printf 'league-load sets the state owner on each path it creates; no chown step is needed.\n'
+  printf '  rc-update add twr-server default\n  rc-service twr-server start\n'
 fi

@@ -8,6 +8,28 @@ umask 077
 [ "$ID" = alpine ] && [ -f /etc/init.d/twr-server ] && [ -d /etc/twr ] || {
   echo 'Run this inside the installed league CT, not on the Proxmox host.' >&2; exit 1;
 }
+first_load=${TWR_FIRST_LOAD:-0}
+case "$first_load" in
+  0 | 1) ;;
+  *) echo 'TWR_FIRST_LOAD must be 0 or 1.' >&2; exit 1 ;;
+esac
+if [ "$first_load" = 1 ]; then
+  [ -d /var/lib/twr ] && [ ! -L /var/lib/twr ] || {
+    echo 'First-load mode requires the installed state directory.' >&2; exit 1;
+  }
+  [ -z "$(find /var/lib/twr -mindepth 1 -maxdepth 1 -print -quit)" ] || {
+    echo 'First-load mode requires an empty /var/lib/twr; nothing was changed.' >&2; exit 1;
+  }
+  if rc-service twr-server status >/dev/null 2>&1; then
+    echo 'First-load mode requires twr-server to be stopped; nothing was changed.' >&2; exit 1;
+  fi
+  runlevel_services=$(rc-update show default 2>&1) || {
+    echo 'Could not confirm twr-server startup status; nothing was changed.' >&2; exit 1;
+  }
+  case "$runlevel_services" in
+    *twr-server*) echo 'First-load mode requires twr-server to be unscheduled; nothing was changed.' >&2; exit 1 ;;
+  esac
+fi
 [ "$#" = 2 ] && [ -f "$1" ] && [ -d "$2" ] || {
   echo 'Give the signed server bundle and its metadata folder.' >&2; exit 1;
 }
@@ -43,21 +65,25 @@ digest=$(printf '%s\n' "$verified" | sed -n 's/^verified release [0-9][0-9]* sha
 # same frozen bytes only once the upgrade has succeeded.
 tar -xzOf "$snapshot" ./twr-server > /var/lib/twr-release/upgrade.lock/twr-server
 install -m 755 /var/lib/twr-release/upgrade.lock/twr-server /usr/local/bin/twr-server.next
-su -s /bin/sh twr -c '/usr/local/libexec/twr-sandbox /usr/local/bin/twr-server.next upgrade -db /var/lib/twr/server.db -check'
+if [ "$first_load" = 0 ]; then
+  su -s /bin/sh twr -c '/usr/local/libexec/twr-sandbox /usr/local/bin/twr-server.next upgrade -db /var/lib/twr/server.db -check'
+fi
 rc-service twr-tunnel --ifstarted stop
-rc-service twr-server --ifstarted stop
-# No automatic restart after a failure: a failed restore must never serve partial state.
-save="/var/lib/twr/upgrades/$(date -u +%Y%m%dT%H%M%SZ)-$$"
-install -d -m 700 -o twr -g twr /var/lib/twr/upgrades "$save"
-cp -p /usr/local/bin/twr-server "$save/twr-server.before"
-cp -Rp /etc/twr "$save/config"
-# Keep the saved secrets private, even if the installed certificate is group-readable.
-chmod -R go-rwx "$save"
-backup=''
-if [ -f /etc/twr/backup.json ]; then backup='-backup-config /etc/twr/backup.json'; fi
-if ! su -s /bin/sh twr -c "/usr/local/libexec/twr-sandbox /usr/local/bin/twr-server.next upgrade -db /var/lib/twr/server.db -save $save/league $backup"; then
-  echo "Upgrade stopped. The server and Tunnel remain stopped. Follow UPGRADE.md; the saved set is $save." >&2
-  exit 1
+if [ "$first_load" = 0 ]; then
+  rc-service twr-server --ifstarted stop
+  # No automatic restart after a failure: a failed restore must never serve partial state.
+  save="/var/lib/twr/upgrades/$(date -u +%Y%m%dT%H%M%SZ)-$$"
+  install -d -m 700 -o twr -g twr /var/lib/twr/upgrades "$save"
+  cp -p /usr/local/bin/twr-server "$save/twr-server.before"
+  cp -Rp /etc/twr "$save/config"
+  # Keep the saved secrets private, even if the installed certificate is group-readable.
+  chmod -R go-rwx "$save"
+  backup=''
+  if [ -f /etc/twr/backup.json ]; then backup='-backup-config /etc/twr/backup.json'; fi
+  if ! su -s /bin/sh twr -c "/usr/local/libexec/twr-sandbox /usr/local/bin/twr-server.next upgrade -db /var/lib/twr/server.db -save $save/league $backup"; then
+    echo "Upgrade stopped. The server and Tunnel remain stopped. Follow UPGRADE.md; the saved set is $save." >&2
+    exit 1
+  fi
 fi
 mv /usr/local/bin/twr-server.next /usr/local/bin/twr-server
 # The console tools and service files come from the same verified bundle (ruling 2026-11-14), so an
@@ -85,6 +111,20 @@ twr-sandbox /usr/local/libexec/twr-sandbox
 twr-server.initd /etc/init.d/twr-server
 cloudflared.initd /etc/init.d/twr-tunnel
 TOOLS
+if [ "$first_load" = 1 ]; then
+  rc-service twr-tunnel --ifstopped start
+  cat <<'NEXT'
+First-load server update ready. twr-server remains stopped and unscheduled; /var/lib/twr is still empty.
+Copy the desktop history.db and owner-only commissioner.json to /root/seed, then run in this CT:
+  twr-server league-load -db /var/lib/twr/server.db -mirror /root/seed/history.db \
+    -mfl-league <MFL league number> -football-pin /etc/twr/football.sha256 < /root/seed/commissioner.json
+league-load sets ownership on every path it creates; no chown command is needed.
+  rc-update add twr-server default
+  rc-service twr-server start
+Then complete the R2 backup setup in BACKUPS.md and check twr-status.
+NEXT
+  exit 0
+fi
 rc-service twr-server start
 attempt=0
 while [ "$attempt" -lt 30 ]; do

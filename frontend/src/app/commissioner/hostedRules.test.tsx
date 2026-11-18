@@ -265,6 +265,7 @@ it.each(['Commissioner', 'Co-commissioner'])(
     }));
     await act(async () => root.render(<NativeAccount initial={admission} />));
     await settle(); await settle();
+    await click('Open Pulse for Test League');
     expect(host.textContent).toContain('League Pulse');
     expect(host.textContent).not.toContain('MY MATCHUP');
     expect(host.querySelector('.mybox')).toBeNull();
@@ -289,6 +290,9 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(buttons('Set lineup')).toHaveLength(0);
     expect(buttons('Roster and reserves')).toHaveLength(0);
     expect(buttons('Draft room')).toHaveLength(0);
+    await click('← Home');
+    await click('Open Control Room for Test League');
+    expect(buttons('Change Lineup lock')).toHaveLength(1);
   });
 it('a refused rules read leaves league-wide Pulse available', async () => {
   const port = service();

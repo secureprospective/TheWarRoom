@@ -1,14 +1,19 @@
-import { lazy, Suspense, useEffect, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore,
+  type FormEvent } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { nativeAction, type NativeAction, type NativeView } from './nativeApi';
 import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads';
 import NativeHelpers from './NativeHelpers';
+import { HQAct } from '../shell/HQAct';
+import type { ThinHomeEntry } from '../shell/ThinHome';
+import type { LeagueChoice } from '../shell/leaguePicker';
 import '../look/look.css';
 import './nativeAccount.css';
 
 const HostedLeague = lazy(() => import('../commissioner/HostedLeague'));
+const ThinHome = lazy(() => import('../shell/ThinHome'));
 
 type Screen = 'login' | 'join' | 'authenticator' | 'recovery';
 const tabs = [
@@ -37,6 +42,21 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [pending, setPending] = useState(false);
   const [signedIn, setSignedIn] = useState(Boolean(initial.message || initial.name));
   const [openAfterSignIn, setOpenAfterSignIn] = useState(Boolean(initial.message || initial.name));
+  const [activeLeagueId, setActiveLeagueId] = useState<string>();
+  const [activeEntry, setActiveEntry] = useState<ThinHomeEntry>('hq');
+  const automaticEntry = useRef(false);
+  const admittedLeagues = useMemo<LeagueChoice[]>(() => admission ? [{
+    id: admission.league, name: admission.name, app: true, franchise: admission.franchise,
+    franchiseName: admission.franchiseName, role: admission.role,
+  }] : [], [admission]);
+  const homeReady = observed && !fence.blocked && signedIn && Boolean(admission)
+    && Boolean(admission?.franchise || admission?.role === 'Commissioner'
+      || admission?.role === 'Co-commissioner');
+  useEffect(() => {
+    if (fence.blocked || !signedIn) setActiveLeagueId(undefined);
+  }, [fence.blocked, signedIn]);
+  const activeLeague = admittedLeagues.find(league => league.id === activeLeagueId);
+  const showThinHome = homeReady && screen === 'login' && !activeLeague;
   const changeScreen = (next: Screen) => {
     setScreen(next); setPassword(''); setCode(''); setError('');
     setView(current => ({ ...current, seed: '', message: current.name ? current.message : '' }));
@@ -50,7 +70,14 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         ['recover', 'enroll', 'totp-confirm', 'totp-step-up'].includes(action) ? code : '');
       setView(result);
       if (action === 'login') { setSignedIn(true); setOpenAfterSignIn(true); }
-      if (['forget', 'revoke-device', 'revoke-all'].includes(action)) setSignedIn(false);
+      if (action === 'enter') {
+        setSignedIn(true);
+        if (!automaticEntry.current) setActiveLeagueId(result.league);
+        automaticEntry.current = false;
+      }
+      if (['forget', 'revoke-device', 'revoke-all'].includes(action)) {
+        setSignedIn(false); setActiveLeagueId(undefined);
+      }
       if (action === 'enroll' || action === 'recover') setScreen('login');
       if (action === 'recover') setSignedIn(false);
     } catch (e) {
@@ -76,14 +103,14 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       if (action) return run(action);
     }
   }));
-  // Signing in goes straight on to the league, as its own recorded Open my franchise; a refusal
-  // (e.g. a fresh authenticator code is needed) shows its reason while the saved sign-in stays.
+  // Sign-in still rechecks admission before Home; a refusal shows its reason while saved access stays.
   useEffect(() => {
     if (!openAfterSignIn || pending) return;
     setOpenAfterSignIn(false);
+    automaticEntry.current = true;
     void Promise.resolve(commands.dispatch('commissioner.surface', {
       screen: 'native-account', action: 'check', value: 'enter',
-    })).catch(() => undefined);
+    })).catch(() => { automaticEntry.current = false; });
   }, [openAfterSignIn, pending]);
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -96,7 +123,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const submitLabel = pending ? 'Please wait…' : screen === 'join' ? 'Create account'
     : screen === 'authenticator' ? 'Verify fresh code' : 'Sign in to server';
   const args = (action: 'view' | 'check', value: string) => ({ screen: 'native-account', action, value });
-  return <main className="twr-app native-account" aria-busy={pending}>
+  return <main className={`twr-app native-account${showThinHome ? ' has-thin-home' : ''}`}
+    aria-busy={pending}>
     <header><h1>{view.name || 'Your league server'}</h1>
       {!view.name && <p>Your league server · No MFL account or key needed</p>}
       <p className="native-address">{initial.server}</p></header>
@@ -106,21 +134,29 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
     </nav>
     {error && <p role="alert">{error}</p>}
-    {view.message && <p role="status">{view.message}</p>}
+    {view.message && !showThinHome && <p role="status">{view.message}</p>}
     <div hidden={screen !== 'login'}>
-    {view.name && <section aria-label="Your league access">
+    {view.name && !homeReady && <section aria-label="Your league access">
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
-    {observed && !fence.blocked && signedIn && admission &&
-      (admission.franchise || admission.role === 'Commissioner' || admission.role === 'Co-commissioner') &&
-      <Suspense fallback={<p>Opening your franchise…</p>}>
-      <HostedLeague key={fence.key} league={admission.league} franchise={admission.franchise}
-        name={admission.franchiseName} role={admission.role} hq />
+    {showThinHome && <Suspense fallback={<p role="status">Opening Home…</p>}>
+      <ThinHome leagues={admittedLeagues} onOpen={(league, entry) => {
+        setActiveEntry(entry); setActiveLeagueId(league.id);
+      }} />
     </Suspense>}
-    {observed && !fence.blocked && signedIn && admission && admission.seats.length > 0 &&
-      <NativeHelpers server={initial.server}
-      league={admission.league} seats={admission.seats} franchise={admission.franchise} />}
+    {homeReady && activeLeague && <section className="native-hosted-league" aria-label="League view">
+      <HQAct className="native-home-return" onAction={() => setActiveLeagueId(undefined)}>← Home</HQAct>
+      <Suspense fallback={<p>Opening your league…</p>}>
+        <HostedLeague key={`${fence.key}:${activeLeague.id}`} league={activeLeague.id}
+          franchise={activeLeague.franchise ?? ''} name={activeLeague.franchiseName ?? ''}
+          role={activeLeague.role ?? ''} entry={activeEntry} hq
+          onHome={() => setActiveLeagueId(undefined)} />
+      </Suspense>
+    </section>}
+    {homeReady && activeLeague && admission && admission.seats.length > 0 &&
+      <NativeHelpers server={initial.server} league={admission.league} seats={admission.seats}
+        franchise={admission.franchise} />}
     </div>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>
