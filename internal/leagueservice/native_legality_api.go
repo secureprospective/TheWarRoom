@@ -10,6 +10,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -221,6 +222,61 @@ func (a *Service) TargetNativeContractQuoteContext(requestCtx context.Context, r
 	}
 	quote.Revision = commissioner.ViewRevision(viewCtx, records, quote.Revision)
 	return quote, nil
+}
+
+func (a *Service) TargetNativeContractDecisions(scope market.RawContractDecisionsScope) (market.ContractDecisions, error) {
+	return a.TargetNativeContractDecisionsContext(a.host.CommissionerContext(), scope)
+}
+
+func (a *Service) TargetNativeContractDecisionsContext(requestCtx context.Context,
+	scope market.RawContractDecisionsScope) (market.ContractDecisions, error) {
+	if err := scope.Validate(); err != nil {
+		return market.ContractDecisions{}, fmt.Errorf("contract decisions scope: %w", err)
+	}
+	if err := a.host.Ready(); err != nil {
+		return market.ContractDecisions{}, fmt.Errorf("contract decisions startup: %w", err)
+	}
+	zone, err := time.LoadLocation(scope.ViewerZone)
+	if err != nil {
+		return market.ContractDecisions{}, fmt.Errorf("read owner time zone: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.viewContext(requestCtx), refreshTimeout)
+	defer cancel()
+	principal, err := a.host.CommissionerPrincipal()
+	if err != nil {
+		return market.ContractDecisions{}, fmt.Errorf("read contract decision identity: %w", err)
+	}
+	records, err := a.host.CommissionerRecords(ctx, scope.League)
+	if err != nil {
+		return market.ContractDecisions{}, fmt.Errorf("read contract decision league: %w", err)
+	}
+	state, err := commissioner.GovernanceState(records)
+	if err != nil {
+		return market.ContractDecisions{}, fmt.Errorf("read contract decision seats: %w", err)
+	}
+	owner := governance.Principal(commissioner.PrincipalFor(records, principal))
+	franchise := ""
+	for _, id := range commissioner.LeagueFranchises(records) {
+		seat, ok := state.Franchise(governance.FranchiseID(id))
+		if ok && seat.Seat == owner {
+			franchise = id
+			break
+		}
+	}
+	if franchise == "" {
+		return market.ContractDecisions{}, fmt.Errorf("contract decisions require a seated franchise owner")
+	}
+	access := commissioner.Access{Principal: principal, League: scope.League, Operation: ContractDecisionsRead,
+		Mode: "read", Franchise: franchise}
+	if err := commissioner.AdmitCredential(a.requestContext(ctx), access); err != nil {
+		return market.ContractDecisions{}, fmt.Errorf("admit private contract decisions: %w", err)
+	}
+	reading, err := market.ContractDecisionsReading(scope, franchise, records, a.host.CommissionerNow(), zone, a.host.NativeFacts())
+	if err != nil {
+		return market.ContractDecisions{}, fmt.Errorf("read native contract decisions: %w", err)
+	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
+	return reading, nil
 }
 
 func (a *Service) TargetNativeResults(league string, season, week int) (commissioner.NativeResults, error) {

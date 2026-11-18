@@ -1,6 +1,10 @@
 import { expect, it } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import type { PulseBracket, PulseStandings } from '../data/nativePulse';
 import { bracketRounds, seedRows, tieGroups, tieStake, type PulseSeedRow } from './pulseModel';
+import { PulseRace } from './PulseRace';
+import type { NativePulse } from './pulseReads';
 
 const seed = (n: number, name: string) => ({ seed: n, franchise: `f.${name}`, name, division: 'East',
   rank: n, kind: '', bye: n === 1, byHand: false });
@@ -45,6 +49,21 @@ it('reads each tie once, with the step that split it, and leaves out the whole-t
   expect(tieStake({ ...points, teams: [{ ...side[1], inField: true }, side[2]] }))
     .toBe('PLAYOFF SEAT ON THE LINE');
   expect(tieStake({ ...points, teams: [{ ...side[1], bye: true }, side[2]] })).toBe('BYE ON THE LINE');
+});
+
+it('renders helper-derived recent form beside My Road in Pulse Race', () => {
+  const reading = { league: 'test', name: 'Test', season: 2026, revision: 1,
+    seats: [{ franchise: 'mine', name: 'Mine', abbreviation: 'M', division: '' },
+      { franchise: 'other', name: 'Other', abbreviation: 'O', division: '' }],
+    week: 6, weekNote: '', lastWeek: 8,
+    fixtures: [{ week: 6, opponent: 'other', venue: 'Away' }], scheduleNote: '',
+    forms: { mine: [{ week: 4, result: 'W' as const }, { week: 5, result: 'L' as const }] },
+    formPending: false, errors: [] } as NativePulse;
+  const html = renderToStaticMarkup(createElement(PulseRace, { reading, mine: 'mine', onClose: () => {} }));
+  expect(html).toContain('MY ROAD · WKS 6–6');
+  expect(html).toContain('Week 4 · Win');
+  expect(html).toContain('Week 5 · Loss');
+  expect(html).toContain('Other');
 });
 
 it('keeps the other side out of a side\'s bubble', () => {

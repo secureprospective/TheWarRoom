@@ -24,7 +24,7 @@ const nflGame = { season: 2026, week: 1, seasonType: 2, id: '401', kickoff: '202
   status: 'in', clock: '5:12', period: 2, state: null, last: null, box: [], plays: [] };
 const board = (stale = false) => ({ league: 'test', board: { stale, source: 'ESPN',
   at: '2026-11-15T18:00:00Z', failure: '', games: [nflGame] } });
-function fakePort() {
+function fakePort(scheduleMode: 'default' | 'empty' | 'unavailable' = 'default') {
   return vi.fn<HostedPort>(async request => {
     const args = request.arguments;
     let data: unknown;
@@ -41,6 +41,14 @@ function fakePort() {
           computed: teams.map((t, i) => ({ franchise: t.franchise, name: t.name, rank: i + 1,
             wins: 0, losses: 0, ties: 0,
             record: '0–0', pointsFor: 0, pointsWords: 'No final points', why: [] })) }; break;
+      case 'schedule.franchise.read':
+        if (scheduleMode === 'unavailable') throw new Error('schedule source offline');
+        data = { league: 'test', franchise: 'a', season: 2026, revision: 1,
+          message: scheduleMode === 'empty' ? 'The schedule is not published yet.' : '',
+          games: scheduleMode === 'empty' ? [] : [
+            { week: 1, game: 'g1', opponent: 'b', venue: 'Home' },
+            { week: 2, game: 'g2', opponent: 'b', venue: 'Away' },
+          ] }; break;
       case 'bracket.read':
         data = { ...common, status: 'Projected', started: false, fields: [], projected: [],
           rules: { startWeek: 14, finalWeek: 17, perConference: 2, byeSeeds: 0, shape: [] } }; break;
@@ -106,8 +114,9 @@ it('opens hosted Now, refreshes active reads except odds, shows Race and returns
   expect(host.textContent).toContain('Scores follow the league server as it publishes them');
   expect(host.textContent).not.toContain('unavailable');
   expect(count(port, 'lineup.read')).toBe(1);
-  const commands = ['native.directory.read', 'week.read', 'standings.read', 'bracket.read',
-    'odds.read', 'results.read', 'lineup.read', 'projections.read', 'nfl.games.read', 'nfl.game.read'];
+  const commands = ['native.directory.read', 'week.read', 'schedule.franchise.read', 'standings.read',
+    'bracket.read', 'odds.read', 'results.read', 'lineup.read', 'projections.read', 'nfl.games.read',
+    'nfl.game.read'];
   const before = commands.map(c => count(port, c));
   await click('Refresh');
   expect(commands.map(c => count(port, c)))
@@ -121,6 +130,8 @@ it('opens hosted Now, refreshes active reads except odds, shows Race and returns
   expect(host.querySelector('.field')).not.toBeNull();
   await click('Race');
   expect(host.textContent).toContain('STANDINGS');
+  expect(host.textContent).toContain('MY ROAD · WKS 1–2');
+  expect(host.textContent).toContain('Beta');
   expect(host.textContent).toContain('0–0');
   await click('Back');
   expect(host.textContent).toContain('League Pulse');
@@ -136,6 +147,45 @@ it.each(['Commissioner', 'Co-commissioner'])('reads both lineups for %s', async 
   expect(count(port, 'lineup.read')).toBe(2);
   expect(host.textContent).toContain('Starter 2');
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
+});
+
+it.each([
+  ['empty', 'The schedule is not published yet.'],
+  ['unavailable', 'The schedule is unavailable · schedule source offline'],
+] as const)('shows the schedule read’s own %s words in My Road', async (mode, words) => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const port = fakePort(mode);
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} />));
+  await click('League Pulse');
+  await click('Race');
+  expect(host.textContent).toContain(words);
+  expect(count(port, 'schedule.franchise.read')).toBe(1);
+  expect(local).not.toHaveBeenCalled();
+});
+
+it('derives every franchise form from the same bounded results.read weeks', async () => {
+  const fallback = fakePort();
+  const port = vi.fn<HostedPort>(async request => {
+    if (request.command === 'standings.read') return { data: { ...common, status: 'Ready', through: 2,
+      decided: 2, pending: 0, criteria: [], noData: [], computed: teams.map((t, i) => ({
+        franchise: t.franchise, name: t.name, rank: i + 1, wins: 1, losses: 1, ties: 0,
+        record: '1–1', pointsFor: 0, pointsWords: '', why: [],
+      })) }, football: '', writable: false, label: 'Server' };
+    if (request.command === 'results.read') {
+      const week = Number(request.arguments.week);
+      return { data: { league: 'test', season: 2026, revision: 1, week, published: true,
+        words: `Week ${week}`, games: [{ week, home: 'a', away: 'b', homeName: 'Alpha', awayName: 'Beta',
+          status: 'Final', winner: week === 1 ? 'a' : 'b', words: '', why: [] }], missed: [], scores: [] },
+        football: '', writable: false, label: 'Server' };
+    }
+    return fallback(request);
+  });
+  const reading = await readNativePulse('test', 'a', port, undefined, true, false);
+  expect(reading.forms.a).toEqual([{ week: 1, result: 'W' }, { week: 2, result: 'L' }]);
+  expect(reading.forms.b).toEqual([{ week: 1, result: 'L' }, { week: 2, result: 'W' }]);
+  expect(port.mock.calls.flatMap(([r]) => r.command === 'results.read' ? [r.arguments.week] : []))
+    .toEqual([1, 2]);
 });
 
 it('uses server time only when explicitly requested; local retains an ISO timestamp', async () => {

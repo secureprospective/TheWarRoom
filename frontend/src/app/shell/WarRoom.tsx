@@ -153,6 +153,8 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
         refreshKey={recorded} onOpenDraft={(draft: WarRoomSavedDraft) => {
           changeDeal({ partner: draft.partner, give: [...draft.give], get: [...draft.get] });
           setTab('desk'); setDrawer(undefined); setRecorded(n => n + 1);
+        }} onLoadOffer={deal => {
+          changeDeal(deal); setTab('desk'); setDrawer(undefined); setRecorded(n => n + 1);
         }} openOffer={id => { setOffer(id); setDrawer(undefined); }} />}
     </main>{offer && !native ? <aside className="insp" aria-label="Inspector">
       <WarRoomAct onAction={() => setOffer(undefined)}>Close offer</WarRoomAct>

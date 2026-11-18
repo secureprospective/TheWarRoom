@@ -4,7 +4,7 @@ import { lookingBack } from './warroomPlansReads';
 const offer = (id: string, status: string, parties: string[], offeredAt: string) => ({ id, status, parties,
   offeredAt, teams: [['f1', 'Syndicate'], ['f2', 'Iron Curtain'], ['f3', 'Tundra Line']] as [string,
     string][],
-  words: '', expires: '', expiresAt: '', proposer: '', accepted: [], details: [], reasons: [] });
+  words: '', expires: '', expiresAt: '', proposer: '', accepted: [], assets: [], details: [], reasons: [] });
 
 describe('lookingBack', () => {
   const all = [
