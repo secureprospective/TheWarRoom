@@ -16,8 +16,9 @@ export type NeedsYouItem = {
   deadline?: string;
   screen: { node: Node; workspace?: string };
 };
+type NeedsYouPerson = Pick<People, 'league' | 'yourFranchise' | 'mayChangeRules'>;
 type NeedsYouReaders = {
-  readPeople?: (league: string) => Promise<People>;
+  readPeople?: (league: string) => Promise<NeedsYouPerson>;
   readBrief?: (league: string, mine: string, port: HostedPort, owner: boolean) => Promise<HomeBrief>;
   now?: number;
 };
@@ -36,10 +37,10 @@ const isExpectedEmpty = (source: string, words: string) =>
 function failedSources(brief: HomeBrief, mine: string, commissioner: boolean): string[] {
   const sources = [...(mine ? ['trades', 'bids'] : []), 'results', 'calendar',
     ...(commissioner ? ['jobs'] : [])];
-  return sources.flatMap(source => {
+  return [...new Set(sources.flatMap(source => {
     const words = brief.errors[source as keyof HomeBrief['errors']];
     return words && !isExpectedEmpty(source, words) ? [words] : [];
-  });
+  }))];
 }
 
 function item(league: LeagueChoice, kind: NeedsYouKind, id: string, words: string,
