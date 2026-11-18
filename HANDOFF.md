@@ -14,8 +14,10 @@
 - Baton: Bee, branch `session/pulse-b8today`, base `bundle/b8` with PR #380.
 - State: added <=699px Today layout styling in `frontend/src/app/shell/thinHome.css`; increased phone action targets and stacked content. Added 390px-viewport regression to `ThinHome.test.tsx`; existing hosted reads and unavailable states retained.
 - Checks: focused Vitest 22/22; full Vitest 990/990; `pnpm tsc --noEmit`; `git diff --check`; `tidy-check.sh` clean. One initial full-suite run had a transient unrelated `hostedPulse.test.tsx` failure and a test line-length finding; split the import and reran, all tests passed.
-- Next: commit/push (pre-push verification), then PR into `bundle/b8`.
-- Blocked on: none. Browser 390px/1280px visual check remains for PR/Claude-OS; current automated 390px regression validates rendered content but does not emulate layout.
+- State: commit `23e2d01ac` pushed; PR #382 into `bundle/b8`; CI all green.
+- Checks: focused Vitest 22/22; full Vitest 990/990; `pnpm tsc --noEmit`; pre-push verification passed. `tidy-check.sh` initially clean; final check found unrelated active `b8team`, `b8live`, and `b8bids` lanes in other run dirs. Left their processes/files untouched; owners need KEEP records.
+- Next: ClaudeBox review; do the Brave 390x844 visual/no-overflow check and 1280px desktop comparison. Automated 390px test verifies content and unavailable state but does not emulate layout.
+- Blocked on: visual checks/review.
 
 ## Bee — B8-1 phone shell (2026-11-18)
 - Baton: ClaudeBox review; PR #380 from `session/pulse-b8shell` into `bundle/b8`, commit `8f2fab5ee`.
