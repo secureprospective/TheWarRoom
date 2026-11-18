@@ -1,8 +1,9 @@
-// Native-only desktop transport. Go owns HTTPS and all bearer/recent-auth secrets.
+// Thin-mode transport seam; browser sessions keep credentials in the server's HttpOnly cookie.
 import { observeView, prepareHostedAction } from '../data/hostedReads';
 import type { NativeRequest } from '../commands/native';
 import { object, text } from '../data/parseValues';
 import type { ReadTags } from '../data/session';
+import { nativeTransport } from './transport';
 export type NativeAction = 'update' | 'retry' | 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
   | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up' | 'recovery-codes';
 export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-check' | 'helper-confirm';
@@ -40,26 +41,84 @@ export function parseNativeView(raw: unknown): NativeView {
     || textKeys.some(key => typeof value[key] !== 'string')
     || !/^\d+$/.test(String(value.authGeneration))
     || !Array.isArray(value.seats) || !value.seats.every(isSeat)
-    || !String(value.server).startsWith('https://') || !String(value.league).startsWith('native.'))
+    || !validServer(value.server) || (value.league !== '' && !String(value.league).startsWith('native.'))
+    || (!value.league && (value.name || value.role)))
     throw new Error('Unreadable desktop response.');
   return value as NativeView;
 }
+function validServer(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || (url.protocol === 'http:'
+      && ['localhost', '127.0.0.1', '::1'].includes(url.hostname));
+  } catch { return false; }
+}
+let browserGeneration = 0;
+let browserIdentity = '';
+let browserCurrent: NativeView | undefined;
+function browserView(raw?: unknown, message = '', forceGeneration = false): NativeView {
+  let admission: Record<string, unknown> | undefined;
+  if (raw !== undefined) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable browser session.');
+    const response = raw as Record<string, unknown>;
+    if (response.protocol !== 1 || Object.keys(response).length !== 2 || !('admission' in response)
+      || !response.admission || typeof response.admission !== 'object' || Array.isArray(response.admission))
+      throw new Error('Unreadable browser session.');
+    admission = response.admission as Record<string, unknown>;
+    const keys = ['league', 'name', 'franchise', 'franchiseName', 'role', 'seats'];
+    if (Object.keys(admission).length !== keys.length || keys.some(key => !(key in admission!))
+      || typeof admission.league !== 'string' || !admission.league.startsWith('native.')
+      || ['name', 'franchise', 'franchiseName', 'role'].some(key => typeof admission![key] !== 'string')
+      || !Array.isArray(admission.seats) || !admission.seats.every(isSeat))
+      throw new Error('Unreadable browser admission.');
+  }
+  const identity = admission ? JSON.stringify(admission) : '';
+  if (identity !== browserIdentity || forceGeneration) { browserIdentity = identity; browserGeneration++; }
+  const value = admission ?? {};
+  const view = parseNativeView({
+    authGeneration: String(browserGeneration), server: window.location.origin,
+    league: value.league ?? '', message, name: value.name ?? '', role: value.role ?? '',
+    franchise: value.franchise ?? '', franchiseName: value.franchiseName ?? '', seats: value.seats ?? [],
+    seed: '', connection: '', helperId: '', confirmation: '',
+  });
+  nativeTransport.setIdentity(view.league, view.authGeneration);
+  browserCurrent = view;
+  return view;
+}
+async function browserActionResult(action: string, response: Response): Promise<NativeView> {
+  const raw: unknown = await response.json();
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable account response.');
+  const body = raw as Record<string, unknown>;
+  if (body.protocol !== 1 || 'bearer' in body || 'recent_auth' in body || 'recentAuth' in body)
+    throw new Error('Unreadable account response.');
+  if (['login', 'status', 'enter'].includes(action))
+    return browserView(raw, '', action === 'login');
+  throw new Error('This account feature is not available in the browser app.');
+}
+function responseMessage(response: Response, fallback: string): Promise<string> {
+  return response.text().then(text => text.trim().slice(0, 4096) || fallback).catch(() => fallback);
+}
 export async function nativeStartup(): Promise<NativeView | null> {
-  const response = await fetch('/desktop/native', { cache: 'no-store' });
-  if (response.status === 404) return null;
+  const response = await nativeTransport.startup();
+  if (response.status === 404 && nativeTransport.kind === 'wails') return null;
+  if (nativeTransport.kind === 'web' && response.status === 401) {
+    const view = browserView(); observeView(view); return view;
+  }
   if (!response.ok) throw new Error('Desktop startup unavailable.');
-  // Vite's local development fallback serves index.html for unknown routes.
-  if (response.headers.get('Content-Type')?.startsWith('text/html')) return null;
-  const view = parseNativeView(await response.json());
+  // Vite's local development fallback serves index.html for unknown desktop routes.
+  if (response.headers.get('Content-Type')?.startsWith('text/html')) {
+    if (nativeTransport.kind === 'web') throw new Error('The browser session endpoint is unavailable.');
+    return null;
+  }
+  const view = nativeTransport.kind === 'web'
+    ? browserView(await response.json()) : parseNativeView(await response.json());
   observeView(view);
   return view;
 }
 async function post(body: Record<string, string>): Promise<NativeView> {
   prepareHostedAction(body.action);
-  const response = await fetch('/desktop/native', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
-    body: JSON.stringify(body),
-  });
+  const response = await nativeTransport.action(body);
   if (response.status === 426) {
     const view = parseNativeView(await response.json());
     observeView(view);
@@ -67,8 +126,20 @@ async function post(body: Record<string, string>): Promise<NativeView> {
     updateListeners.forEach(listener => listener(view));
     return view;
   }
-  if (!response.ok) throw new Error(await response.text());
-  const view = parseNativeView(await response.json());
+  if (nativeTransport.kind === 'web' && response.status === 401
+    && ['status', 'enter'].includes(body.action)) {
+    const view = browserView(undefined, 'Your sign-in expired. Sign in again.');
+    observeView(view);
+    return view;
+  }
+  if (!response.ok) throw new Error(await responseMessage(response, 'The account request was refused.'));
+  if (nativeTransport.kind === 'web' && body.action === 'forget') {
+    const view = browserView(undefined, 'Signed out on this browser.');
+    observeView(view);
+    return view;
+  }
+  const view = nativeTransport.kind === 'web'
+    ? await browserActionResult(body.action, response) : parseNativeView(await response.json());
   observeView(view);
   return view;
 }
@@ -77,10 +148,14 @@ export function nativeAction(
 ): Promise<NativeView> {
   return post({ action, username, password, code });
 }
-export function helperAction(
+export async function helperAction(
   action: HelperAction, fields: { helper?: string; franchise?: string; code?: string; change?: string },
 ): Promise<NativeView> {
-  return post({ action, ...fields });
+  const response = await nativeTransport.helper({ action, ...fields });
+  if (!response.ok) throw new Error(await responseMessage(response, 'The helper action was refused.'));
+  const view = parseNativeView(await response.json());
+  observeView(view);
+  return view;
 }
 // Only recognize the envelope here; Go validates the change and the league describes it.
 export function readConfirmRequest(text: string): boolean {
@@ -119,11 +194,7 @@ export function hostedPlayerReadingUnavailable(data: unknown): HostedPlayerReadi
     && value.reason === 'input-not-held' ? value as HostedPlayerReadingUnavailable : undefined;
 }
 export async function hostedWorkflow(request: NativeRequest, football = ''): Promise<HostedResponse> {
-  const { nativeEnvelope } = await import('../commands/native');
-  const response = await fetch('/desktop/workflow', {
-    method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...nativeEnvelope(request), football }),
-  });
+  const response = await nativeTransport.workflow(request, football);
   if (!response.ok) {
     const fallback = 'The league could not accept this action. '
       + 'Refresh before retrying; check your connection, seat and authenticator.';
@@ -184,28 +255,9 @@ function parseChanges(raw: unknown): NativeChanges {
 
 // The read owner subscribes once, invalidates first, then notifies its screen listeners.
 export function subscribeChanged(listener: (change: NativeChanges) => void): () => void {
-  const controller = new AbortController();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let after = 0;
-  let backoff = 250;
-  async function poll(): Promise<void> {
-    try {
-      const response = await fetch('/desktop/changes', {
-        method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ after }), signal: controller.signal,
-      });
-      if (!response.ok) throw new Error('Desktop changes unavailable.');
-      const change = parseChanges(await response.json());
-      if (controller.signal.aborted) return;
-      if (change.seq > after) { after = change.seq; listener(change); }
-      backoff = 250;
-      timer = setTimeout(() => { void poll(); }, 0);
-    } catch {
-      if (controller.signal.aborted) return;
-      timer = setTimeout(() => { void poll(); }, backoff);
-      backoff = Math.min(backoff * 2, 30_000);
+  return nativeTransport.subscribeChanged(value => {
+    try { listener(parseChanges(value)); } catch {
+      // Invalidations are hints; reads validate their own replies.
     }
-  }
-  void poll();
-  return () => { controller.abort(); clearTimeout(timer); };
+  });
 }
