@@ -74,6 +74,8 @@ describe('War Room hosted market readings', () => {
         case 'bids.read': return { label: '', writable: true, football: 'pin', data: bidReading() };
         case 'player.watch.read': return { label: '', writable: true, football: 'pin', data: {
           league, players: [], } };
+        case 'market.wins.read': return { label: '', writable: true, football: 'pin',
+          data: { league, wins: [] } };
         case 'native.cap.check': return { label: '', writable: true, football: 'pin', data: capReading() };
         case 'waivers.read': return { label: '', writable: true, football: 'pin', data: { league,
           franchise: mine, revision: 4, season: 2026, players: [], claims: [], order: [],
@@ -111,6 +113,8 @@ describe('War Room hosted market readings', () => {
         data: bidReading() };
       if (request.command === 'player.watch.read') return { label: '', writable: true, football: 'pin',
         data: { league, players: [] } };
+      if (request.command === 'market.wins.read') return { label: '', writable: true, football: 'pin',
+        data: { league, wins: [] } };
       if (request.command === 'native.cap.check') return { label: '', writable: true, football: 'pin',
         data: capReading() };
       if (request.command === 'waivers.read') return { label: '', writable: true, football: 'pin', data: {

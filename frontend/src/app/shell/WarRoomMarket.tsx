@@ -270,6 +270,13 @@ export function WarRoomMarket({ context, room, needs, select }: { context: WarRo
         }}>REFRESH BIDS AND CAP</WarRoomAct>}
         {notice && <p role="status">{notice}</p>}
       </div><div className="nested" />
-      <div className="recent"><div className="ch"><b>RECENT WINS</b></div><WarRoomEmpty /></div></div>
+      <div className="recent"><div className="ch"><b>RECENT WINS</b></div>
+        {value?.wins?.length ? value.wins.map(win => <div className="r win"
+          key={`${win.player}-${win.decidedAt}`}><span className="player"><b>{win.name}</b>
+            <small>{win.team}</small></span><span className="terms"><b>{money(win.salaryCents)}</b>
+            <small>{win.years} {win.years === 1 ? 'year' : 'years'} · {
+              new Date(win.decidedAt).toLocaleDateString()}</small></span></div>) :
+          <WarRoomEmpty pending={!value && !reading.error}
+            reason={value?.wins ? 'No completed auction wins yet' : undefined} />}</div></div>
   </section>;
 }

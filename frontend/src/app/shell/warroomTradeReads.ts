@@ -5,6 +5,7 @@ import { targetTradeBuilderRead, targetTradeBuilderPreview } from '../trades/api
 import { parseBuilder } from './tradeBuilderState';
 import { hostedWorkflow } from '../commissioner/api';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
+import { parseHostedTrades } from '../commissioner/hostedMarkets';
 import { nativeHQAssets } from '../commissioner/hqReading';
 import { parsePreview } from '../commissioner/preview';
 import { newKey } from '../commissioner/forms';
@@ -17,6 +18,22 @@ export type WarRoomAsset = TradeAsset & { age?: number;
 export type WarRoomCatalog = { teams: { id: string; name: string; assets: WarRoomAsset[] }[];
   revision?: number };
 export type WarRoomDeal = { partner: string; give: string[]; get: string[] };
+export type WarRoomOffer = ReturnType<typeof parseHostedTrades>['offers'][number];
+export function dealFromWarRoomOffer(offer: WarRoomOffer, mine: string): WarRoomDeal {
+  const partners = offer.parties.filter(id => id !== mine);
+  if (offer.parties.length !== 2 || new Set(offer.parties).size !== 2 ||
+    !offer.parties.includes(mine) || partners.length !== 1)
+    throw new Error('This offer does not fit the two-team trade desk');
+  const partner = partners[0];
+  const give: string[] = [], get: string[] = [];
+  for (const asset of offer.assets) {
+    if (asset.from === mine && asset.to === partner) give.push(asset.token);
+    else if (asset.from === partner && asset.to === mine) get.push(asset.token);
+    else throw new Error('This offer contains an asset the trade desk cannot load');
+  }
+  if (!give.length && !get.length) throw new Error('This offer has no assets to load');
+  return { partner, give, get };
+}
 export type WarRoomDeltaSide = { franchise: string; perWeek: number; thisWeek: number;
   before: { player: string; position: string; ppg: number }[];
   after: { player: string; position: string; ppg: number }[];

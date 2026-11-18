@@ -458,7 +458,7 @@
 
 /* the Pocket: unsent trades, out of sight */
 .wr-v6 .pocket{grid-template-columns:repeat(3,1fr) 300px;align-items:start}
-.wr-v6 .pk{margin:12px 0 14px 14px;border:1px solid var(--edge);border-left:4px solid var(--edge-hi);background:var(--canvas);display:grid;grid-template-rows:auto auto 1fr auto;cursor:grab;touch-action:none;transition:transform 70ms linear,box-shadow 70ms linear}
+.wr-v6 .pk{margin:12px 0 14px 14px;border:1px solid var(--edge);border-left:4px solid var(--edge-hi);background:var(--canvas);display:grid;grid-template-rows:auto auto 1fr auto;transition:transform 70ms linear,box-shadow 70ms linear}
 .wr-v6 .pk:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--black);border-color:var(--edge-hi)}
 .wr-v6 .pk .top{display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--rule);font:700 10px var(--mono);letter-spacing:.1em;color:var(--ink3)}
 .wr-v6 .pk .ttl{padding:8px 12px 2px;font-weight:700}
@@ -466,6 +466,8 @@
 .wr-v6 .pk .legs div{display:grid;gap:2px;align-content:start} .wr-v6 .pk .legs i{font-style:normal;font-size:9px;letter-spacing:.12em;color:var(--ink3)}
 .wr-v6 .pk .stale{padding:7px 12px;border-top:1px solid var(--rule);font:11px var(--mono);display:flex;gap:8px;align-items:center}
 .wr-v6 .pk .stale .s{font:700 9px var(--mono);letter-spacing:.1em;padding:1px 5px;color:var(--black)}
+.wr-v6 .offer-actions{display:flex;gap:8px;padding:8px 12px;flex-wrap:wrap}
+.wr-v6 .offer-note{margin:8px 14px;color:var(--ink2);font:11px var(--mono)}
 .wr-v6 .pk.k-red{border-left-color:var(--red)} .wr-v6 .pk.k-red .s{background:var(--red)}
 .wr-v6 .pk.k-amb{border-left-color:var(--amber)} .wr-v6 .pk.k-amb .s{background:var(--amber)}
 .wr-v6 .pk.k-ok .s{background:var(--green)}
@@ -599,6 +601,10 @@
 .wr-v6 .recent{border-top:2px solid var(--black)}
 .wr-v6 .recent .r{display:grid;grid-template-columns:34px 1fr 60px 60px;gap:8px;padding:0 14px;height:26px;align-items:center;border-bottom:1px solid var(--rule);font:11px var(--mono);color:var(--ink2)}
 .wr-v6 .recent .r b{color:var(--ink);text-align:right} .wr-v6 .recent .r span:nth-child(3){text-align:right}
+.wr-v6 .recent .win{grid-template-columns:minmax(0,1fr) auto;height:auto;min-height:38px;padding:5px 10px}
+.wr-v6 .recent .win .player,.wr-v6 .recent .win .terms{display:grid;gap:2px;min-width:0}
+.wr-v6 .recent .win .player b{text-align:left}.wr-v6 .recent .win .terms{text-align:right}
+.wr-v6 .recent .win small{font:9px var(--mono);color:var(--ink3)}
 /* ---------- v3: negotiation ---------- */
 .wr-v6 .scale .gh{position:absolute;top:-5px;bottom:-5px;width:0;border-left:2px dashed var(--ink2);transition:left 90ms linear}
 .wr-v6 .scale .gh.off{display:none}
