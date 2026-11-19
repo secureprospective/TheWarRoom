@@ -20,6 +20,22 @@ export function ScheduleDrawer({ open, onClose, reading, mine, port }: { open: b
   </PulseDrawer>;
 }
 
+export function PulseScheduleView({ reading, mine, port }: { reading: NativePulse;
+  mine: string; port: HostedPort }) {
+  const [team, setTeam] = useState(false);
+  return <section className="ws cols on" id="ws-schedule">
+    <div className="pcol pulse-schedule-page">
+      <div className="ch"><b>LEAGUE SCHEDULE</b><div className="seg" role="tablist"
+        aria-label="Schedule view">
+        <PulseAct role="tab" selected={!team} onAction={() => setTeam(false)}>LEAGUE</PulseAct>
+        <PulseAct role="tab" selected={team} disabled={!mine} onAction={() => setTeam(true)}>
+          MY TEAM</PulseAct>
+      </div></div>
+      <Body reading={reading} mine={mine} port={port} team={team} />
+    </div>
+  </section>;
+}
+
 type Cell = { opponent: string; away: boolean; result: string; score: string };
 
 /** cellOf is one franchise's week: who it plays and, once the week has a result, how it went. */
@@ -48,6 +64,7 @@ function Body({ reading, mine, port, team }: { reading: NativePulse; mine: strin
     : 'Reading the schedule…'} />;
   const nameOf = (id: string) => reading.seats.find(s => s.franchise === id)?.name ?? id;
   const weeks = season.reading.schedule.weeks.filter(w => w.games.length).map(w => w.week);
+  if (!weeks.length) return <PulseIdle words="No league schedule has been published yet." />;
   if (team) return <div className="scroll"><table className="ct"><thead><tr>
     <th>WK</th><th>OPPONENT</th><th>RESULT</th><th>SCORE</th></tr></thead><tbody>
     {weeks.map(week => {

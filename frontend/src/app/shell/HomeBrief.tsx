@@ -2,6 +2,9 @@ import { seasonPhase, HomeAct } from './homeTiles';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import './home.css';
+import './homePhone.css';
+import { PhoneAsk } from './PhoneAsk';
+import { usePhoneViewport } from './PhoneShell';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { ResearchReader } from '../research/api';
 import { subscribeSeason } from '../market/api';
@@ -90,6 +93,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
   commissioner = false }: { league: string; mine: string; port: HostedPort; initial?: Brief;
   research?: ResearchReader; owner?: boolean; accountSync?: boolean; commissioner?: boolean }) {
   const syncLayout = accountSync ?? true;
+  const phone = usePhoneViewport(true);
   const [b, setB] = useState<Brief>(initial ?? { at: {}, errors: {} });
   const grid = useRef<HTMLElement>(null);
   const [tab, setTab] = useState<Tab>('brief');
@@ -225,6 +229,15 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
       case 'close-drawer': setDrawer(undefined); break;
       case 'select': clickTile(id as TileId); break;
       case 'resize': resize(id as TileId, size as Span); break;
+      case 'move-up':
+      case 'move-down': {
+        const index = tiles.findIndex(([tile]) => tile === id);
+        const neighbor = tiles[index + (action === 'move-up' ? -1 : 1)]?.[0];
+        if (!neighbor) break;
+        const next = swap(lay, phase, id as TileId, neighbor);
+        if (next) save(next); else setMsg('These boards cannot be reordered without changing their sizes');
+        break;
+      }
       case 'pin': {
         const pins = { ...lay.pins };
         if (pins[id as TileId]) delete pins[id as TileId]; else pins[id as TileId] = true;
@@ -253,6 +266,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
           <HomeAct className={`queue${edit ? ' on' : ''}`} style={{ marginLeft: 'auto' }}
             disabled={syncLayout && owner && layoutStatus === 'loading'} action="customize">
             <span className="ql">CUSTOMIZE</span></HomeAct>
+          {phone && <PhoneAsk brief={b} mine={mine} />}
         </div>
         <section className="now" aria-label="Now">
           <div className="nl"><span className="tag">{known === undefined ? 'READING…' : known === 'off' ?
@@ -307,7 +321,12 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
                   action="pin" value={p.id}>
                   {lay.pins[p.id] ? '★' : '☆'}</HomeAct>
                 <HomeAct className="off" label="Move to overflow"
-                  action="overflow" value={p.id}>✕</HomeAct></span></div>
+                  action="overflow" value={p.id}>✕</HomeAct>
+                <HomeAct className="move" label={`Move ${d.t} up`} action="move-up" value={p.id}
+                  disabled={tiles.findIndex(([tile]) => tile === p.id) === 0}>↑</HomeAct>
+                <HomeAct className="move" label={`Move ${d.t} down`} action="move-down" value={p.id}
+                  disabled={tiles.findIndex(([tile]) => tile === p.id) === tiles.length - 1}>
+                  ↓</HomeAct></span></div>
             <div className="tb"><TileBody id={p.id} b={b} mine={mine} pins={pins} /></div>
             <div className="tf"><span>{asOf(p.id, b)}</span><span className="more" /></div>
           </article>;

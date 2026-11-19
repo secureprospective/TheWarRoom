@@ -18,6 +18,7 @@ import { ThinLeagueShell } from '../shell/ThinLeagueShell';
 import type { PhoneTab } from '../shell/PhoneShell';
 import type { PlayerCandidate, ThinScreenRoute } from '../shell/ThinPlayerSearch';
 import type { HQTab } from '../shell/HQShell';
+import type { PulseTab } from '../shell/NativeLeaguePulse';
 import type { Node } from '../shell/nodes';
 
 type Tab = 'lineup' | 'roster' | 'draft' | 'rules' | HostedTask;
@@ -25,6 +26,8 @@ export type HostedEntry = 'home' | 'hq' | 'war' | 'pulse' | 'league' | 'control'
   | 'lineup' | 'bids' | 'trades';
 const entryTab = (entry?: HostedEntry): Tab => entry === 'control' ? 'rules'
   : entry === 'bids' || entry === 'trades' || entry === 'lineup' ? entry : 'lineup';
+const pulseTab = (workspace: string): PulseTab => workspace === 'race' || workspace === 'schedule'
+  || workspace === 'activity' ? workspace : 'now';
 const labels: Record<Tab, string> = {
   lineup: 'Set lineup',
   roster: 'Roster and reserves',
@@ -120,7 +123,7 @@ export default function HostedLeague(props: {
   const page = screen === 'commissioner' || screen === 'control'
     ? <HostedCommissionerLeague league={props.league} port={props.port} embedded
         view={route.node === 'control' ? 'control' : 'home'}
-        pulseTab={route.node === 'pulse' ? route.workspace as 'now' | 'race' : 'now'}
+        pulseTab={route.node === 'pulse' ? pulseTab(route.workspace) : 'now'}
         navigatePulse={workspace => setRoute({ node: 'pulse', workspace })}
         leave={openNode} onPlayer={openPlayer} onPlayers={publishPulsePlayers} />
     : screen === 'hq' ? <Suspense fallback={<p>Opening your franchise…</p>}>
@@ -137,7 +140,7 @@ export default function HostedLeague(props: {
       </Suspense>
     : screen === 'pulse' ? <Suspense fallback={<p>Opening League Pulse…</p>}>
         <NativeLeaguePulse league={props.league} mine={props.franchise} port={props.port} serverTime
-          embedded tab={route.workspace === 'race' ? 'race' : 'now'}
+          embedded tab={pulseTab(route.workspace)}
           navigate={workspace => setRoute({ node: 'pulse', workspace })} leave={openNode}
           commissioner={commissioner} onPlayer={openPlayer} onPlayers={publishPulsePlayers} />
       </Suspense>

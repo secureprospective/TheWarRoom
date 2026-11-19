@@ -2,8 +2,8 @@
 
 ## Part 2 — bundle/b9 #398 integration (2026-11-19)
 - Baton: Bee, lane `lane/b9take7`, PR #400.
-- State: PR #400 is open and its first CI run is green. `origin/bundle/b9` now contains merged PR #398 (`eb27c6e2a`), which adds synced Home boards and Ask; its commits are not yet in this lane.
-- Next: merge `origin/bundle/b9` with a merge commit, preserving #398 behavior and the existing B7 browser-door resolution; run pre-push, push to PR #400, and verify CI.
+- State: PR #400 is open. Merge `origin/bundle/b9` (`eb27c6e2a`, including #398 synced Home boards and Ask) is in progress. Resolved `ThinHome.tsx` to retain #398 phone boards while using B7's role-derived commissioner read contract; kept both handoff histories.
+- Next: verify the merged frontend, run pre-push, push to PR #400, and verify CI.
 - Blocked on: none.
 - Tried and rejected: none.
 
@@ -92,3 +92,17 @@
 - Tidy: the task-specific Brave profile was signed out and closed. `tidy-check.sh` reports ADB PID 2504044 (PPID 1, cwd `/home/chris/work/TheWarRoom`); left it running because it is outside this worktree and has no associated scratch folder. The reusable pinned lab venv remains with `.scratch/KEEP.md`.
 - Next: Christopher review/merge PR #394. Blocked: none in this task.
 - Tried and rejected: plain `pnpm build` for hosted packaging; it emitted root-relative lazy asset paths. Use `pnpm run build:web`.
+
+- Baton: Bee, 2026-11-18; B9-2 lane on `session/b9-2-league-activity`, based on `origin/bundle/b9`.
+- State: phone League view now has Table, Schedule, Activity and Live tabs. Activity uses only the validated member-safe public feed; player status remains visibly unavailable. Blank/invalid NFL kickoffs read “dates not published yet.”
+- Evidence: 147 Vitest files/1005 tests and frontend tsc pass; member-safe activity unit and hosted-read tests pass under `-race`. The phone CSS regression covers 390px and 44px targets.
+- Next: commit, push through pre-push, open PR to `bundle/b9`, wait for CI.
+- Blocked on: pre-push and PR CI.
+- Tried and rejected: none.
+
+- Baton: Bee, 2026-11-18; B9-2 implementation complete, PR #397 open into `bundle/b9`.
+- State: commit `b3477a5e3` is pushed; pre-push verify and every PR check passed. No merge requested.
+- Evidence: full Vitest 147/1005, tsc, member-safe activity race tests, 390px CSS test, PR checks green.
+- Next: leave PR for review.
+- Blocked on: review/merge decision.
+- Tried and rejected: none.
