@@ -275,6 +275,22 @@
 }
 
 @media (max-width:699px){
+  .crx.hosted-control-room .hosted-jobs-column,.crx .hosted-situations{min-height:0;overflow:visible}
+  .crx .hosted-job-lanes{overflow:visible}
+  .crx .hosted-job-controls label{align-items:stretch;flex-direction:column;gap:6px}
+  .crx .hosted-job-controls select{min-height:44px;width:100%}
+  .crx .cr-job{grid-template-columns:8px minmax(0,1fr);gap:6px 9px;min-height:64px;padding:8px}
+  .crx .cr-job .nm{min-width:0;overflow-wrap:anywhere}
+  .crx .cr-job .cnt,.crx .cr-job .when{grid-column:2;min-width:0;text-align:left;font-size:11px}
+  .crx .cr-job .cnt{text-transform:uppercase;color:var(--ink3)}
+  .crx .cr-chip,.crx .cr-sit button,.crx .hosted-situation-steps .cr-btn{min-height:44px}
+  .crx .hosted-situation-list{max-height:40%;overflow:auto}
+  .crx .hosted-situation-steps li{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:8px 0}
+  .crx .hosted-situation-steps code{grid-column:1;grid-row:2}
+  .crx .hosted-situation-steps .cr-st{grid-column:1;grid-row:3;justify-self:start}
+  .crx .hosted-situation-steps .cr-btn{grid-column:2;grid-row:1 / span 3}
+  .crx .hosted-act-tray{max-height:60vh;padding:10px}
+  .crx .hosted-control-content :is(button,input,select,textarea){max-width:100%}
   .crx.hosted-control-room{width:100%;height:auto;min-height:0;margin:10px 0;overflow:visible}
   .crx.hosted-control-room .work{width:100%;min-width:0;min-height:0;overflow:visible}
   .crx.hosted-control-room .ws-tabs{width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain}
