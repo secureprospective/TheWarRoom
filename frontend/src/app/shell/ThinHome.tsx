@@ -8,7 +8,7 @@ import { shortTime } from './homeTiles';
 import { homeRoute, type Route } from './nodes';
 import { HQAct } from './HQAct';
 import { leagueInitials, type LeagueChoice } from './leaguePicker';
-import { usePhoneViewport } from './PhoneShell';
+import { usePhoneViewport } from './PhoneAppFrame';
 import './thinHome.css';
 
 const HomeBrief = lazy(() => import('./HomeBrief'));
@@ -23,6 +23,7 @@ type ThinHomeProps = {
   port?: HostedPort;
   readBrief?: BriefReader;
   now?: number;
+  onBriefReady?: (leagueId: string, mine: string, brief: HomeBrief) => void;
 };
 type OpenShortcut = { label: string; entry: ThinHomeEntry; commissionerOnly?: boolean };
 const shortcuts: OpenShortcut[] = [
@@ -38,7 +39,8 @@ function needsYouEntry(screen: NeedsYouItem['screen']): ThinHomeEntry | undefine
   if (screen.node === 'pulse') return 'pulse';
   return 'control';
 }
-export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, now }: ThinHomeProps) {
+export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, now,
+  onBriefReady }: ThinHomeProps) {
   const appLeagues = useMemo(() => leagues.filter(league => league.app), [leagues]);
   const phone = usePhoneViewport(true);
   const briefReader = useMemo<BriefReader>(() => readBrief ?? ((_id, mine, hosted, _owner, isCommissioner) =>
@@ -66,7 +68,10 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       readBrief: async (id, mine, hosted, owner, isCommissioner) => {
         try {
           const brief = await briefReader(id, mine, hosted, owner, isCommissioner);
-          if (active) setBriefs(current => ({ ...current, [id]: brief }));
+          if (active) {
+            setBriefs(current => ({ ...current, [id]: brief }));
+            onBriefReady?.(id, mine, brief);
+          }
           return brief;
         } catch (cause) {
           if (active) setFailures(current => ({ ...current,
@@ -78,7 +83,7 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       .catch(cause => { if (active) setFailures({ '*': String(cause) }); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [appLeagues, briefReader, port, readingTime]);
+  }, [appLeagues, briefReader, onBriefReady, port, readingTime]);
 
   const openFrom = (item: NeedsYouItem) => {
     const league = appLeagues.find(choice => choice.id === item.leagueId);
