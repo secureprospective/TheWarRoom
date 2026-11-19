@@ -33,7 +33,7 @@ function setValue(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-it('lands on the new phone app after sign-in and changes placeholder tabs', async () => {
+it('lands on the new phone app after sign-in and shows the ported Today tab', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   setPhoneViewport(390);
   goDescriptor = Object.getOwnPropertyDescriptor(window, 'go');
@@ -68,7 +68,8 @@ it('lands on the new phone app after sign-in and changes placeholder tabs', asyn
 
   expect(host.querySelector('.phone-app')).not.toBeNull();
   expect(host.querySelector('.phone-app__league')?.textContent).toContain('Test League');
-  expect(host.querySelector('.phone-app__slot h1')?.textContent).toBe('Today');
+  expect(host.querySelector('.phone-app__slot')?.getAttribute('aria-label')).toBe('Today');
+  expect(host.querySelector('.phone-app__slot h1')).toBeNull();
   const live = [...host.querySelectorAll('.phone-app__tab')]
     .find(button => button.textContent?.includes('Live')) as HTMLButtonElement;
   await act(async () => live.click());

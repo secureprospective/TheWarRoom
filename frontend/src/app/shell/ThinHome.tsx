@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { unavailable } from './hqModel';
@@ -8,10 +8,8 @@ import { shortTime } from './homeTiles';
 import { homeRoute, type Route } from './nodes';
 import { HQAct } from './HQAct';
 import { leagueInitials, type LeagueChoice } from './leaguePicker';
-import { usePhoneViewport } from './PhoneAppFrame';
 import './thinHome.css';
 
-const HomeBrief = lazy(() => import('./HomeBrief'));
 export const thinHomeRoute: Route = homeRoute;
 type BriefReader = (league: string, mine: string, port: HostedPort, owner: boolean,
   commissioner: boolean) => Promise<HomeBrief>;
@@ -42,7 +40,6 @@ function needsYouEntry(screen: NeedsYouItem['screen']): ThinHomeEntry | undefine
 export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, now,
   onBriefReady }: ThinHomeProps) {
   const appLeagues = useMemo(() => leagues.filter(league => league.app), [leagues]);
-  const phone = usePhoneViewport(true);
   const briefReader = useMemo<BriefReader>(() => readBrief ?? ((_id, mine, hosted, _owner, isCommissioner) =>
     readThinHomeBrief(_id, mine, hosted, undefined, isCommissioner)),
   [appLeagues, readBrief]);
@@ -128,23 +125,6 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
         </div>
       </section>
     </div>
-    {phone && <section className="thin-home__phone-boards" aria-label="My boards">
-      <div className="thin-home__section-head"><h2>MY BOARDS</h2>
-        <span>ACCOUNT LAYOUT</span></div>
-      {!appLeagues.length && <p role="status">{unavailable} · No admitted league for these boards.</p>}
-      {appLeagues.length > 1 && <p role="status">{unavailable} · Phone boards need one admitted league.</p>}
-      {appLeagues.length === 1 && !appLeagues[0].franchise &&
-        <p role="status">{unavailable} · No owner franchise is admitted for these boards.</p>}
-      {appLeagues.length === 1 && appLeagues[0].franchise && failures[appLeagues[0].id] &&
-        <p role="alert">{unavailable} · {failures[appLeagues[0].id]}</p>}
-      {appLeagues.length === 1 && appLeagues[0].franchise && !failures[appLeagues[0].id]
-        && !briefs[appLeagues[0].id] && <p role="status">Reading your Home boards…</p>}
-      {appLeagues.length === 1 && appLeagues[0].franchise && briefs[appLeagues[0].id] &&
-        <Suspense fallback={<p role="status">Opening your Home boards…</p>}>
-          <HomeBrief league={appLeagues[0].id} mine={appLeagues[0].franchise!} port={port}
-            initial={briefs[appLeagues[0].id]} owner accountSync />
-        </Suspense>}
-    </section>}
   </section>;
 }
 

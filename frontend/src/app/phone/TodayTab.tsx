@@ -1,0 +1,178 @@
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { hostedWorkflow } from '../commissioner/api';
+import type { HostedPort } from '../commissioner/hostedRoom';
+import { myChance, percent, pointsLabel } from '../data/nativePulse';
+import { unavailable } from '../shell/hqModel';
+import { gatherNeedsYou, type NeedsYouItem } from '../shell/homeNeedsYou';
+import { readThinHomeBrief, type HomeBrief } from '../shell/homeReads';
+import { myGame, shortTime } from '../shell/homeTiles';
+import { HQAct } from '../shell/HQAct';
+import type { LeagueChoice } from '../shell/leaguePicker';
+import type { ThinHomeEntry } from '../shell/ThinHome';
+import './TodayTab.css';
+
+const Boards = lazy(() => import('../shell/HomeBrief'));
+const HOUR = 60 * 60 * 1000;
+type BriefReader = (league: string, mine: string, port: HostedPort, owner: boolean,
+  commissioner: boolean) => Promise<HomeBrief>;
+export type TodayLane = 'NOW' | 'TODAY' | 'THIS WEEK' | 'NO CLOCK' | 'NOT AVAILABLE';
+const LANES: TodayLane[] = ['NOW', 'TODAY', 'THIS WEEK', 'NO CLOCK', 'NOT AVAILABLE'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** laneOf files an item by its server deadline: within three hours (or past) is NOW. */
+export function laneOf(item: NeedsYouItem, now: number): TodayLane {
+  if (item.kind === 'unavailable') return 'NOT AVAILABLE';
+  if (!item.deadline) return 'NO CLOCK';
+  const due = Date.parse(item.deadline);
+  if (due - now <= 3 * HOUR) return 'NOW';
+  return new Date(due).toDateString() === new Date(now).toDateString() ? 'TODAY' : 'THIS WEEK';
+}
+
+function entryFor(screen: NeedsYouItem['screen']): ThinHomeEntry | undefined {
+  if (screen.node === 'home') return undefined;
+  if (screen.node === 'hq') return screen.workspace === 'lineup-and-roster' ? 'lineup' : 'hq';
+  if (screen.node === 'war') return screen.workspace === 'trade-desk' ? 'trades'
+    : screen.workspace === 'valuations-and-pool' ? 'bids' : 'war';
+  if (screen.node === 'pulse') return 'pulse';
+  return 'control';
+}
+
+export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, now, onBriefReady }: {
+  leagues: LeagueChoice[];
+  onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void;
+  port?: HostedPort;
+  readBrief?: BriefReader;
+  now?: number;
+  onBriefReady?: (leagueId: string, mine: string, brief: HomeBrief) => void;
+}) {
+  const appLeagues = useMemo(() => leagues.filter(league => league.app), [leagues]);
+  const reader = useMemo<BriefReader>(() => readBrief ?? ((id, mine, hosted, _owner, isCommissioner) =>
+    readThinHomeBrief(id, mine, hosted, undefined, isCommissioner)), [readBrief]);
+  const readingTime = useMemo(() => now ?? Date.now(), [now]);
+  const [briefs, setBriefs] = useState<Record<string, HomeBrief>>({});
+  const [failures, setFailures] = useState<Record<string, string>>({});
+  const [items, setItems] = useState<NeedsYouItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setBriefs({}); setFailures({}); setItems([]); setLoading(true);
+    void gatherNeedsYou(appLeagues, port, {
+      now: readingTime,
+      readPeople: async id => {
+        const league = appLeagues.find(choice => choice.id === id);
+        if (!league) throw new Error('Admitted league is unavailable');
+        return { league: id, yourFranchise: league.franchise ?? '', yourRole: league.role ?? '' };
+      },
+      readBrief: async (id, mine, hosted, owner, isCommissioner) => {
+        try {
+          const brief = await reader(id, mine, hosted, owner, isCommissioner);
+          if (active) {
+            setBriefs(current => ({ ...current, [id]: brief }));
+            onBriefReady?.(id, mine, brief);
+          }
+          return brief;
+        } catch (cause) {
+          if (active) setFailures(current => ({ ...current,
+            [id]: cause instanceof Error ? cause.message : String(cause) }));
+          throw cause;
+        }
+      },
+    }).then(found => { if (active) setItems(found); })
+      .catch(cause => { if (active) setFailures({ '*': String(cause) }); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [appLeagues, reader, onBriefReady, port, readingTime]);
+
+  const jobs = items.map(item => ({ item, lane: laneOf(item, readingTime) }))
+    .sort((a, b) => LANES.indexOf(a.lane) - LANES.indexOf(b.lane));
+  const open = jobs.filter(job => job.lane !== 'NOT AVAILABLE').length;
+  const failed = Object.keys(failures).length > 0 || jobs.length > open;
+  const first = appLeagues[0];
+  const week = first && briefs[first.id]?.pulse?.week;
+  const playing = appLeagues.filter(league => {
+    const brief = briefs[league.id];
+    const game = brief && league.franchise ? myGame(brief, league.franchise) : undefined;
+    return game && !game.winner
+      && (game.homeProvisional !== undefined || game.awayProvisional !== undefined);
+  }).length;
+  const go = (item: NeedsYouItem) => {
+    const league = appLeagues.find(choice => choice.id === item.leagueId);
+    const entry = entryFor(item.screen);
+    if (league && entry) onOpen(league, entry);
+  };
+  return <div className="today6" data-testid="today-tab">
+    <h2>{DAYS[new Date(readingTime).getDay()]} · {week !== undefined ? `week ${week}`
+      : 'week unavailable'}</h2>
+    <div className="today6__sub">{appLeagues.length} {appLeagues.length === 1 ? 'league' : 'leagues'}
+      {' · '}{playing} playing now</div>
+    <div className="today6__sec"><b>Needs you</b>
+      <span>{loading ? 'reading' : open ? `${open} open` : ''}</span></div>
+    <section className="today6__grp" aria-label="Needs you">
+      {failures['*'] && <p role="alert" className="today6__note">{unavailable} · {failures['*']}</p>}
+      {loading && <p role="status" className="today6__note">Reading your leagues…</p>}
+      {!loading && !failed && jobs.length === 0 &&
+        <div className="today6__clear"><i aria-hidden="true">✓</i>Nothing needs you right now.</div>}
+      {!loading && failed && open === 0 && !failures['*'] &&
+        <p role="alert" className="today6__note">
+          {unavailable} · Some reads failed, so this list may be short.</p>}
+      {jobs.map(({ item, lane }) => <div key={item.id}
+        className={`today6__job${lane === 'NOW' ? ' is-now' : ''}`
+        + `${lane === 'NOT AVAILABLE' ? ' is-off' : ''}`}>
+        <span><small>{lane} · {item.leagueName.toUpperCase()}</small>
+          <b>{lane === 'NOT AVAILABLE' ? unavailable : item.words}</b>
+          <em>{lane === 'NOT AVAILABLE' ? item.words
+            : item.deadline ? `Due ${shortTime(item.deadline, readingTime)}`
+              : 'No deadline from the league'}</em></span>
+        {entryFor(item.screen) && <HQAct className="today6__key"
+          label={`Open ${item.words} in ${item.leagueName}`} onAction={() => go(item)}>Open</HQAct>}
+      </div>)}
+    </section>
+    <div className="today6__sec"><b>Live now</b><span>your matchups</span></div>
+    <section className="today6__grp" aria-label="Live now">
+      {appLeagues.map(league => <LiveRow key={league.id} league={league} brief={briefs[league.id]}
+        failure={failures[league.id]} onOpen={() => onOpen(league, 'pulse')} />)}
+    </section>
+    <div className="today6__sec"><b>My boards</b><span>your account layout</span></div>
+    {!first && <p role="status" className="today6__note">
+      {unavailable} · No admitted league for these boards.</p>}
+    {first && !first.franchise &&
+      <p role="status" className="today6__note">
+        {unavailable} · No owner franchise is admitted for these boards.</p>}
+    {first?.franchise && failures[first.id] &&
+      <p role="alert" className="today6__note">{unavailable} · {failures[first.id]}</p>}
+    {first?.franchise && !failures[first.id] && !briefs[first.id] &&
+      <p role="status" className="today6__note">Reading your boards…</p>}
+    {first?.franchise && briefs[first.id] && <div className="today6__boards">
+      <Suspense fallback={<p role="status" className="today6__note">Opening your boards…</p>}>
+        <Boards league={first.id} mine={first.franchise} port={port} initial={briefs[first.id]}
+          owner accountSync />
+      </Suspense></div>}
+  </div>;
+}
+
+function LiveRow({ league, brief, failure, onOpen }: { league: LeagueChoice; brief?: HomeBrief;
+  failure?: string; onOpen: () => void }) {
+  const mine = league.franchise ?? '';
+  const game = brief && mine ? myGame(brief, mine) : undefined;
+  const words = failure ? `${unavailable} · ${failure}`
+    : !brief ? 'Reading…'
+      : !mine ? 'No team of yours in this league'
+        : brief.errors.results ? `${unavailable} · ${brief.errors.results}`
+          : !game ? brief.results?.bye === mine ? 'Bye week' : 'No game this week'
+            : '';
+  if (!game || !brief) return <div className="today6__live is-quiet">
+    <span><b>{league.name}</b><em>{words}</em></span><b></b><i>–</i></div>;
+  const home = game.home === mine;
+  const score = (side: 'home' | 'away') => game[`${side}Points`] ?? game[`${side}Provisional`];
+  const chance = myChance(brief.pulse?.odds, mine);
+  const shown = chance && chance.week === brief.results?.week ? percent(chance.mine) : '–';
+  return <HQAct className="today6__live" label={`Open Live for ${league.name}`} onAction={onOpen}>
+    <span><b>{league.name}</b>
+      <em>{home ? game.homeName : game.awayName} vs {home ? game.awayName : game.homeName}</em></span>
+    <b>{pointsLabel(score(home ? 'home' : 'away'))}–{pointsLabel(score(home ? 'away' : 'home'))}</b>
+    <i>{shown}</i>
+  </HQAct>;
+}
+
+export default TodayTab;
