@@ -15,7 +15,7 @@ it('rereads after import, selects the league and preserves it on refresh failure
   let state: LeagueState;
   const flow = createMigration({ run: async command => {
     if (command.endsWith('prepare')) return { league: added.id, name: added.name, season: 2026,
-      franchises: 12, players: 0, picks: 0, settings: 1, notes: [], problems: [], ready: true,
+      franchises: 12, players: 0, picks: 0, settings: 1, lineups: [], notes: [], problems: [], ready: true,
       preset: 'default32', waiting: [] };
     choices = [mirror, added];
     return [{ entry: 'import.1', league: added.id, revision: 1,

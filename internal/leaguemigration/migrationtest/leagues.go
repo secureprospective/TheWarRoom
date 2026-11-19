@@ -193,3 +193,7 @@ func (s *Source) Transactions(context.Context) (transactions.RawTransactions, er
 func (s *Source) Results(context.Context) ([]leaguefeed.WeekResult, error) {
 	return s.Export.Results, s.fail("results")
 }
+
+func (s *Source) LiveLineups(context.Context) (*leaguefeed.Lineups, error) {
+	return s.Export.LiveLineups, s.fail("lineups")
+}

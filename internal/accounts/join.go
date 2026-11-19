@@ -42,21 +42,22 @@ type JoinFranchise struct {
 	Seat string `json:"-"`
 }
 
-// JoinSeats is the league ledger as the join link uses it. Seat and Release record league events
-// (an owner seated, an owner removed) as the issuing commissioner, through the normal checks.
+// JoinSeats is the league ledger as the join link uses it. Claim records the owner's seat and the
+// consumed link digest in one commissioner event; Seat and Release remain ordinary league actions.
 type JoinSeats interface {
 	Franchises(ctx context.Context, league string) ([]JoinFranchise, error)
 	IsCommissioner(ctx context.Context, league string, p governance.Principal) (bool, error)
+	LinkClaimed(ctx context.Context, league, digest string) (bool, error)
 	Seat(ctx context.Context, league, franchise string, owner, issuer governance.Principal) error
+	Claim(ctx context.Context, league, franchise string, owner, issuer governance.Principal, digest string) error
 	Release(ctx context.Context, league, franchise string, commissioner governance.Principal) error
 }
 
 // FUTURE-SEAM(join): every link-based sign-up (league recruiting, share-to-join) redeems through this
 // one service: a revocable per-league secret, first pick binds, an ordinary owner seat, ledger events.
 //
-// JoinService is pick-your-team sign-up: one secret, revocable link per league; whoever holds it may
-// pick a franchise with no owner and set a password. The first pick binds; the account is an ordinary
-// owner of that franchise and nothing more.
+// JoinService is pick-your-team sign-up: one revocable link per league, usable for one successful
+// claim. The commissioner issues a fresh link for each owner; the account is an ordinary owner of its seat.
 type JoinService struct {
 	store JoinRepository
 	seats JoinSeats
@@ -191,6 +192,13 @@ func (s *JoinService) Franchises(ctx context.Context, raw RawJoin) ([]JoinFranch
 		}
 		return claimFranchises(claim), nil
 	}
+	used, err := s.seats.LinkClaimed(ctx, raw.League, enrollmentDigest(raw.Code))
+	if err != nil {
+		return nil, fmt.Errorf("check join link use: %w", err)
+	}
+	if used {
+		return nil, ErrJoinRefused
+	}
 	list, err := s.seats.Franchises(ctx, raw.League)
 	if err != nil {
 		return nil, fmt.Errorf("read franchises: %w", err)
@@ -238,8 +246,7 @@ func (r RawJoinClaim) Validate() error {
 }
 
 // Claim creates the owner's account and seats it in franchise, if the link is live and the franchise
-// has no owner. Exactly one of two simultaneous claims of a franchise wins; the other gets
-// ErrFranchiseTaken and no account.
+// has no owner. The successful seat event consumes the link; a second use gets ErrJoinRefused.
 func (s *JoinService) Claim(ctx context.Context, raw RawJoinClaim) (Account, error) {
 	if err := raw.Validate(); err != nil {
 		return Account{}, err
@@ -274,13 +281,20 @@ func (s *JoinService) Claim(ctx context.Context, raw RawJoinClaim) (Account, err
 	}
 	s.claims.Lock()
 	defer s.claims.Unlock()
+	used, err := s.seats.LinkClaimed(ctx, raw.League, enrollmentDigest(raw.Code))
+	if err != nil {
+		return Account{}, fmt.Errorf("check join link use: %w", err)
+	}
+	if used {
+		return Account{}, ErrJoinRefused
+	}
 	if err := s.vacant(ctx, raw.League, raw.Franchise); err != nil {
 		return Account{}, err
 	}
 	if err := s.store.Insert(ctx, Credential{Account: account, PasswordHash: hash}, false); err != nil {
 		return Account{}, err //nolint:wrapcheck // ErrUsernameTaken is shown as is
 	}
-	if err := s.seats.Seat(ctx, raw.League, raw.Franchise, principal, issuer); err != nil {
+	if err := s.seats.Claim(ctx, raw.League, raw.Franchise, principal, issuer, enrollmentDigest(raw.Code)); err != nil {
 		return Account{}, fmt.Errorf("seat the new owner (the account exists without a franchise; ask the commissioner): %w", err)
 	}
 	return account, nil

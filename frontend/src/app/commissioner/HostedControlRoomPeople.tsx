@@ -212,8 +212,16 @@ export function HostedControlRoomPeople({ league, room, port }: {
       <section className="cr-panel" aria-label="Deputy permission sets">
         <div className="cr-ph">DEPUTY PERMISSION SETS<span className="sp" /></div>
         <div className="cr-pb">
-          <p role="status">Permission sets and their six-permission grid are not available in this
-            server app yet (D65). No permissions are inferred from a deputy’s role.</p>
+          <p>Custom permission sets and their six-permission editor are not available in this server
+            app yet (D65). Effective deputy permissions come from commish.people.read.</p>
+          {people.actors.length === 0 ? <p role="status">Actor permissions are not included in this
+            reading for your role.</p> : <table className="cr-t">
+            <thead><tr><th>PERSON</th><th>EFFECTIVE DEPUTY PERMISSIONS</th></tr></thead>
+            <tbody>{people.actors.map(actor => <tr key={actor.person}>
+              <td>{people.seats.find(seat => seat.owner === actor.person)?.name ?? actor.person}</td>
+              <td>{actor.effectivePermissions.join(' · ') || 'No deputy permissions'}</td>
+            </tr>)}</tbody>
+          </table>}
         </div>
       </section>
     </>}
