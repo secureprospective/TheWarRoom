@@ -7,7 +7,8 @@ import type { WarRoomContext } from './warroomReads';
 import type { WarRoomOwnBid, WarRoomMarketActionResult } from './warroomMarketReads';
 import { useWarRoomRead } from './warroomReads';
 import { readWarRoomMarket, changeWarRoomTarget, warRoomMarketAction, warRoomTargetLanes,
-  type WarRoomMarketReading, type WarRoomMarketPlayer } from './warroomMarketReads';
+  confirmWarRoomRosterAdd, reviewWarRoomRosterAdd, type WarRoomMarketReading,
+  type WarRoomMarketPlayer, type WarRoomRosterAddReview } from './warroomMarketReads';
 import { WarRoomEmpty } from './WarRoomHeader';
 import { money, unavailable } from './hqModel';
 import { copyText, planForm } from '../pool/state';
@@ -56,16 +57,21 @@ type BidEditor = { type: 'place'; player: WarRoomMarketPlayer; salary: string; y
   { type: 'raise'; bid: WarRoomOwnBid; salary: string; years: number };
 type BidReview = Extract<WarRoomMarketActionResult, { kind: 'review' }>;
 type RefreshedBids = { bids?: WarRoomOwnBid[]; revision?: number; capRoom?: number; error?: string };
+type RosterAddEditor = { player: WarRoomMarketPlayer; drop: string; reason: string };
 export function WarRoomMarket({ context, room, needs, select, onPlayers }: { context: WarRoomContext;
   room?: number; needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void;
   onPlayers?: (players: PlayerCandidate[]) => void }) {
   const [refresh, setRefresh] = useState(0);
   const [filter, setFilter] = useState('All');
+  const [search, setSearch] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [editor, setEditor] = useState<BidEditor>();
   const [review, setReview] = useState<BidReview>();
+  const [addEditor, setAddEditor] = useState<RosterAddEditor>();
+  const [addReview, setAddReview] = useState<WarRoomRosterAddReview>();
+  const [addNotice, setAddNotice] = useState('');
   const [fresh, setFresh] = useState<RefreshedBids>();
   const [own, setOwn] = useState<Record<string, WarRoomOwnBid>>({});
   const reading = useWarRoomRead(JSON.stringify([context.native?.league, context.mine, refresh]), () =>
@@ -156,6 +162,29 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
     } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
     finally { setPending(false); }
   };
+  const reviewRosterAdd = async () => {
+    if (!addEditor || pending || value?.rosterRevision === undefined) return;
+    setPending(true); setError(''); setAddNotice('');
+    try {
+      const next = await reviewWarRoomRosterAdd(context, { player: addEditor.player.id,
+        ...(addEditor.drop ? { drop: addEditor.drop } : {}), reason: addEditor.reason,
+        revision: value.rosterRevision, writable: value.writable === true, football: value.football ?? '' });
+      setAddReview(next); setAddEditor(undefined);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    finally { setPending(false); }
+  };
+  const confirmRosterAdd = async () => {
+    if (!addReview || pending) return;
+    setPending(true); setError(''); setAddNotice('');
+    try {
+      const result = await confirmWarRoomRosterAdd(context, addReview);
+      if (result.kind === 'recorded') {
+        setAddNotice(result.receipt.message); setAddReview(undefined); setAddEditor(undefined);
+        setRefresh(n => n + 1);
+      }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    finally { setPending(false); }
+  };
   const confirmBid = async () => {
     if (!review || pending) return;
     setPending(true); setError(''); setNotice('');
@@ -183,11 +212,21 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
     n.position === 'PK' ? 'K' : n.position));
   const players = value?.players?.filter(p => (filter !== 'Targets' || targets.has(p.id)) &&
     (filter !== 'My needs' || needPositions.has(p.position)) && (filter !== 'Affordable' ||
-      capRoom !== undefined && p.minimumCents !== undefined && p.minimumCents <= capRoom));
+      capRoom !== undefined && p.minimumCents !== undefined && p.minimumCents <= capRoom) &&
+      (!search.trim() || `${p.name} ${p.position} ${p.string ?? ''}`.toLowerCase()
+        .includes(search.trim().toLowerCase())));
   const filterUnavailable = (name: string) => name === 'My needs' ? needs === undefined :
     name === 'Affordable' ? !context.native || capRoom === undefined : false;
   const canManageBids = context.native && context.native.owner !== false && !fresh?.error;
   const canManageTargets = !context.native || context.native.owner !== false;
+  const addUnavailable = (player: WarRoomMarketPlayer) => !context.native || context.native.owner !== true
+    ? 'Only the seated franchise owner can add players'
+    : player.waiverStatus ? `${player.waiverStatus}; use the Waivers workflow instead`
+      : player.freeAgent !== true ? 'This player is not confirmed in the free-agent pool'
+        : value?.waiverPriority === undefined
+          ? 'Waiver status is unavailable; direct add is unavailable'
+          : value.writable !== true || !value.football || value.rosterRevision === undefined
+            ? 'Add unavailable until the server reading is ready' : '';
   return <section className="mk3 ws on" aria-label="Market"><div className="tg"><div className="ch">
     <b>MY TARGETS</b><span>ranked per need</span></div><div className="tg-l">
     {value?.targets?.length ? [...warRoomTargetLanes(context, value)].map(([position, lane]) => <div
@@ -204,26 +243,71 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
       value?.targets === undefined ? 'Private targets are not available for this league' :
       'Star a player to add a target'} />}</div></div>
     <div><div className="ch"><b>FREE AGENT POOL</b><span>in-season · drag a row to a target lane or to BIDS
-    </span></div><div className="bench"><div className="filters">{['All', 'My needs', 'Targets',
+    </span></div><div className="phone-market-tools">
+      <label className="fa-search">Search players or teams
+        <input aria-label="Search free agents by player or team" value={search}
+          onChange={e => setSearch(e.target.value)} placeholder="Search players or teams" />
+      </label>
+      <div className="waiver-priority" aria-label="Waiver priority"><b>WAIVER ORDER</b>
+        <span>{value?.waiverPriority?.place
+          ? `You are ${value.waiverPriority.place} of ${value.waiverPriority.total}`
+          : 'Your place is unavailable'}</span>
+        <small>{value?.waiverPriority?.source || unavailable}</small></div>
+    </div><div className="bench"><div className="filters">{['All', 'My needs', 'Targets',
       'Affordable'].map(f => <WarRoomAct key={f} className="chip" active={filter === f}
         disabled={filterUnavailable(f)} title={filterUnavailable(f) ? unavailable : undefined}
         onAction={() => setFilter(f)}>{f}</WarRoomAct>)}</div></div>
-      <div className="fa-h">{['☆', 'POS', 'PLAYER', 'AGE', 'STRING', 'PTS', 'VALUE', 'MIN BID'].map((h, i) =>
+      <div className="fa-h">{['☆', 'POS', 'PLAYER', 'AGE', 'STRING', 'PTS', 'VALUE',
+        'MIN BID'].map((h, i) =>
         <span key={i}>{h}</span>)}</div><div className="fa-list">
       {players?.length ? players.map(p =>
         <div className={`fa-r${bids?.some(b => b.player === p.id) ? ' bid' : ''}`}
-        key={p.id} onPointerDown={e => drag(e, p.id)}><WarRoomAct className="st"
+          key={p.id} onPointerDown={e => { if ((e.target as HTMLElement).closest('button')) return;
+          drag(e, p.id); }}><WarRoomAct className="st"
           label={`${targets.has(p.id) ? 'Unwatch' : 'Watch'} ${p.name}`} active={targets.has(p.id)}
           disabled={pending || !canManageTargets || !value?.targets} onAction={() => { void change(p.id); }}>
           {targets.has(p.id) ? '★' : '☆'}</WarRoomAct><span className="ps">{p.position}</span>
         <WarRoomAct className="nm" onAction={() => select(p)}>{p.name}</WarRoomAct>
       <span>{p.age ?? "—"}</span>
         <span>{p.string ?? "—"}</span><span>{p.points ?? "—"}</span>
-        <span className="fa-value">{p.value ?? "—"}</span><span>{p.minimum ?? "—"}</span></div>) :
+        <span className="fa-value">{p.value ?? "—"}</span><span>{p.minimum ?? "—"}</span>
+        <WarRoomAct className="add-player" disabled={pending || Boolean(addUnavailable(p))}
+          title={addUnavailable(p) || undefined}
+          label={`${p.freeAgent && !p.waiverStatus && value?.waiverPriority
+            ? 'Add' : 'Unavailable'} ${p.name}`}
+          onAction={() => { setError(''); setAddNotice(''); setAddReview(undefined);
+            setAddEditor({ player: p, drop: '', reason: '' }); }}>
+          {p.waiverStatus ? 'WAIVER'
+            : p.freeAgent && value?.waiverPriority ? 'ADD' : 'UNAVAILABLE'}</WarRoomAct></div>) :
         <WarRoomEmpty pending={!value && !reading.error} reason={reading.error ?? (value?.players ===
           undefined ? value?.errors.join(' · ') ||
           'Pool could not be read' : 'No free agents match this view')} />}</div>
-        {error && <p className="empty" role="alert">{error}</p>}</div>
+        {addEditor && <div className="bidb roster-add-editor" aria-label="Add free agent">
+          <b>Add {addEditor.player.name} to your roster</b>
+          <label>Release a player if the roster is full<select value={addEditor.drop} disabled={pending}
+            onChange={e => setAddEditor({ ...addEditor, drop: e.target.value })}>
+            <option value="">Keep current roster</option>
+            {(value?.rosterPlayers ?? []).map(player => <option key={player.id} value={player.id}>
+              {player.name}</option>)}
+          </select></label>
+          <label>Reason<textarea value={addEditor.reason} disabled={pending}
+            onChange={e => setAddEditor({ ...addEditor, reason: e.target.value })} /></label>
+          <WarRoomAct disabled={pending || !addEditor.reason.trim() || value?.rosterRevision === undefined}
+            onAction={() => { void reviewRosterAdd(); }}>REVIEW ADD</WarRoomAct>
+          <WarRoomAct disabled={pending} onAction={() => setAddEditor(undefined)}>CANCEL</WarRoomAct>
+        </div>}
+        {addReview && <div className="bidb roster-add-review" aria-label="Review roster add">
+          <b>{addReview.preview.question}</b>
+          {addReview.preview.fields.map((field, i) => <p key={i}><strong>{field.label}</strong>:
+            {' '}{previewChange(field)}</p>)}
+          {addReview.preview.blockers.map((blocker, i) => <p key={i} role="alert">{blocker}</p>)}
+          <HoldToFire label="Confirm roster add" body={JSON.stringify(addReview.request)}
+            disabled={pending || addReview.preview.blockers.length > 0}
+            onConfirm={() => { void confirmRosterAdd(); }} />
+          <WarRoomAct disabled={pending} onAction={() => setAddReview(undefined)}>CANCEL</WarRoomAct>
+        </div>}
+        {error && <p className="empty" role="alert">{error}</p>}
+        {addNotice && <p role="status">{addNotice}</p>}</div>
     <div className="bcol"><div className="budget"><div className="t"><span>CAP ROOM</span><b>{money(capRoom)}
       </b><span className="lim">HARD LIMIT</span></div><div className="bar" /><div className="t">
         <span>committed {unavailable}</span><span>free {unavailable}</span></div></div>
