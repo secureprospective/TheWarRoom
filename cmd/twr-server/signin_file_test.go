@@ -252,12 +252,12 @@ type failingSeats struct {
 	failed bool
 }
 
-func (f *failingSeats) Seat(ctx context.Context, league, franchise string, owner, issuer governance.Principal) error {
+func (f *failingSeats) Claim(ctx context.Context, league, franchise string, owner, issuer governance.Principal, digest string) error {
 	if !f.failed {
 		f.failed = true
 		return errors.New("stopped between the two commits")
 	}
-	return f.JoinSeats.Seat(ctx, league, franchise, owner, issuer)
+	return f.JoinSeats.Claim(ctx, league, franchise, owner, issuer, digest)
 }
 
 // The account commits in the sign-in file first; if the seat never commits the account stands
@@ -312,7 +312,11 @@ func TestJoinStoppedBetweenCommitsLeavesAccountWithoutSeat(t *testing.T) {
 	if err := claim("owner.retry"); err != nil {
 		t.Fatalf("retry: %v", err)
 	}
-	if !franchiseTaken(t, join, code.Code) {
+	current, err := join.Rotate(ctx, "native.hosted", principal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !franchiseTaken(t, join, current.Code) {
 		t.Fatal("retry did not seat the owner")
 	}
 }
