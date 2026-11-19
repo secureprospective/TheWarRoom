@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from 'react';
+import { act, useLayoutEffect, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { HostedPort } from '../commissioner/hostedRoom';
@@ -16,8 +16,16 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-function LayoutProbe({ port, storage }: { port: HostedPort; storage: SettingsStorage }) {
+function LayoutProbe({ port, storage, saveBeforeLoad = false }: {
+  port: HostedPort; storage: SettingsStorage; saveBeforeLoad?: boolean;
+}) {
   const state = useHomeLayout(port, 'home', storage, true, () => {});
+  const attempted = useRef(false);
+  useLayoutEffect(() => {
+    if (!saveBeforeLoad || attempted.current) return;
+    attempted.current = true;
+    state.save({ mode: 'custom', tiles: [['cap', '1x1']], over: [], pins: {} });
+  }, [saveBeforeLoad, state.save]);
   return <><output data-testid="layout">{JSON.stringify(state.layout)}</output>
     <HQAct label="Save layout" onAction={() => state.save({ mode: 'custom',
       tiles: [['cap', '1x1']], over: [], pins: {} })}>Save</HQAct></>;
@@ -34,7 +42,7 @@ it('does not read or write hosted account layouts through browser storage', asyn
     label: 'Account home layout', writable: true, football: '',
     data: { layout: defaultLayout(), revision: request.command === 'home.layout.set' ? 1 : 0 },
   }));
-  await act(async () => root!.render(<LayoutProbe port={port} storage={storage} />));
+  await act(async () => root!.render(<LayoutProbe port={port} storage={storage} saveBeforeLoad />));
   expect(storage.getItem).not.toHaveBeenCalled();
   expect(JSON.parse(host.querySelector('[data-testid="layout"]')!.textContent!)).toEqual(defaultLayout());
 
