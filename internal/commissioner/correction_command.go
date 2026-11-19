@@ -237,16 +237,16 @@ func (r RawCorrection) validatePick() error {
 	return nil
 }
 
-// reversibleEntry is the rule for which recorded entry a commissioner may reverse: an active cut, waiver
+// reversibleEntry is the rule for which recorded entry a commissioner may reverse: an active cut, add, waiver
 // award or draft pick, or an owner's free-agent bid that is still standing. Owners cannot withdraw a bid
 // (a bid is a bid); a mistaken one is removed only by this recorded correction.
 func reversibleEntry(league string, records []Record, entry string) error {
 	index := slices.IndexFunc(records, func(r Record) bool { return r.Receipt.Entry == entry })
 	if index < 0 || !Replay(records).Active[entry] {
-		return fmt.Errorf("choose one active recorded cut, waiver award, draft pick or standing bid")
+		return fmt.Errorf("choose one active recorded cut, add, waiver award, draft pick or standing bid")
 	}
 	switch records[index].Command.Command {
-	case RosterCut, WaiverProcess, WaiverOverride, DraftPick:
+	case RosterCut, RosterAdd, WaiverProcess, WaiverOverride, DraftPick:
 		return nil
 	case BidPlace, BidRaise:
 		_, market, err := nativeAssetsState(league, records)
@@ -259,5 +259,5 @@ func reversibleEntry(league string, records []Record, entry string) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("choose one active recorded cut, waiver award, draft pick or standing bid")
+	return fmt.Errorf("choose one active recorded cut, add, waiver award, draft pick or standing bid")
 }

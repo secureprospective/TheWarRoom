@@ -33,7 +33,7 @@ func (a *API) TargetNativeTrades(league, viewer string) (market.NativeTrades, er
 
 func (a *API) TargetNativeWaiverAction(raw commissioner.RawCommand) (commissioner.Receipt, error) {
 	if commissioner.OwnerWaiverAction(raw.Command) == "" || raw.Args.Waiver == nil || raw.Args.WaiverOutcome != nil {
-		return commissioner.Receipt{}, fmt.Errorf("choose a native cut or waiver claim")
+		return commissioner.Receipt{}, fmt.Errorf("choose a native roster or waiver action")
 	}
 	//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 	return a.reads.Execute(a.host.CommissionerContext(), raw)

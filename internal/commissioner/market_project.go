@@ -270,22 +270,41 @@ func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 	if r.Command.Command != WaiverClaim && result == nil {
 		return fmt.Errorf("a waiver change has no recorded decision")
 	}
+	if handled, err := projectRosterWaiver(seed, state, r, effective); handled {
+		return err
+	}
+	return projectOtherWaiver(seed, state, r)
+}
+
+func projectRosterWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record, effective time.Time) (bool, error) {
+	args, result := r.Command.Args.Waiver, r.Command.Args.WaiverOutcome
 	switch r.Command.Command {
 	case RosterReserve:
-		return projectReserve(seed, args, result)
+		return true, projectReserve(seed, args, result)
 	case RosterCut:
 		if result.Player == nil {
-			return fmt.Errorf("a cut has no recorded contract")
+			return true, fmt.Errorf("a cut has no recorded contract")
 		}
 		index := seed.PlayerOf(args.Franchise, args.Player)
 		if index < 0 || !reflect.DeepEqual(seed.Players[index], *result.Player) {
-			return fmt.Errorf("a later cut depends on the earlier roster change; reverse it first")
+			return true, fmt.Errorf("a later cut depends on the earlier roster change; reverse it first")
 		}
 		seed.Players = slices.Delete(seed.Players, index, index+1)
 		seed.Adjustments = append(seed.Adjustments, NativeCharge{ID: r.Receipt.Entry, Franchise: args.Franchise,
 			Amount: result.Dead, Season: result.Season, Description: "Dead money for released player " + cmp.Or(result.Player.Name, args.Player)})
 		state.Windows = append(state.Windows, WaiverWindow{ID: r.Receipt.Entry, Side: seed.SideOf(args.Franchise), Player: *result.Player,
 			CutAt: effective, Season: result.Season, Dead: result.Dead, Claims: []WaiverBookClaim{}})
+		return true, nil
+	case RosterAdd:
+		return true, projectRosterAdd(seed, state, r, effective)
+	default:
+		return false, nil
+	}
+}
+
+func projectOtherWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
+	args, result := r.Command.Args.Waiver, r.Command.Args.WaiverOutcome
+	switch r.Command.Command {
 	case WaiverClaim:
 		w, err := state.Window(args.Window)
 		if err != nil {
@@ -301,6 +320,58 @@ func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 	case WaiverProcess, WaiverOverride:
 		return projectWaiverAward(seed, state, r)
 	}
+	return nil
+}
+
+func projectRosterAdd(seed *RawNativeSnapshot, state *MarketBook, r Record, effective time.Time) error {
+	args, result := r.Command.Args.Waiver, r.Command.Args.WaiverOutcome
+	player, err := projectRosterAddContract(seed, args, result)
+	if err != nil {
+		return err
+	}
+	if seed.OnSide(seed.SideOf(args.Franchise), args.Player) {
+		return fmt.Errorf("this player already belongs to a roster")
+	}
+	if err := projectRosterAddDrop(seed, state, r, effective); err != nil {
+		return err
+	}
+	seed.Players = append(seed.Players, player)
+	return nil
+}
+
+func projectRosterAddContract(seed *RawNativeSnapshot, args *RawWaiverArgs, result *WaiverOutcome) (NativePlayer, error) {
+	if result.Player == nil || result.Season != seed.Season {
+		return NativePlayer{}, fmt.Errorf("a free-agent add has no recorded contract")
+	}
+	player := *result.Player
+	if player.ID != args.Player || player.Franchise != args.Franchise || player.Status != domain.RosterActive ||
+		player.Salary <= 0 || player.ExpirationYear != seed.Season || player.ContractStatus != domain.CStatusUFA || player.ContractMissing {
+		return NativePlayer{}, fmt.Errorf("a free-agent add has invalid contract details")
+	}
+	return player, nil
+}
+
+func projectRosterAddDrop(seed *RawNativeSnapshot, state *MarketBook, r Record, effective time.Time) error {
+	args, result := r.Command.Args.Waiver, r.Command.Args.WaiverOutcome
+	if args.Drop == "" {
+		if result.DropPlayer != nil || result.Dead != 0 {
+			return fmt.Errorf("a free-agent add has an unexpected release")
+		}
+		return nil
+	}
+	dropped := result.DropPlayer
+	if dropped == nil || dropped.ID != args.Drop || dropped.Franchise != args.Franchise {
+		return fmt.Errorf("a combined add and release has no matching released player")
+	}
+	index := seed.PlayerOf(args.Franchise, args.Drop)
+	if index < 0 || !reflect.DeepEqual(seed.Players[index], *dropped) {
+		return fmt.Errorf("a later roster change depends on the player to release; reverse it first")
+	}
+	seed.Players = slices.Delete(seed.Players, index, index+1)
+	seed.Adjustments = append(seed.Adjustments, NativeCharge{ID: r.Receipt.Entry, Franchise: args.Franchise,
+		Amount: result.Dead, Season: result.Season, Description: "Dead money for released player " + cmp.Or(dropped.Name, args.Drop)})
+	state.Windows = append(state.Windows, WaiverWindow{ID: r.Receipt.Entry, Side: seed.SideOf(args.Franchise), Player: *dropped,
+		CutAt: effective, Season: result.Season, Dead: result.Dead, Claims: []WaiverBookClaim{}})
 	return nil
 }
 

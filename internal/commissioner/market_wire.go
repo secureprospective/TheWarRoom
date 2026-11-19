@@ -121,6 +121,7 @@ type RawWaiverArgs struct {
 	Bucket    string   `json:"bucket,omitempty"`
 	Player    string   `json:"player,omitempty"`
 	Franchise string   `json:"franchise,omitempty"`
+	Drop      string   `json:"drop,omitempty"`
 	Window    string   `json:"window,omitempty"`
 	Claim     string   `json:"claim,omitempty"`
 	Order     []string `json:"order,omitempty"`
@@ -137,6 +138,7 @@ type WaiverOutcome struct {
 	PriorOrder []string            `json:"priorOrder,omitempty"`
 	CloseAt    time.Time           `json:"closeAt,omitempty"`
 	Player     *NativePlayer       `json:"player,omitempty"`
+	DropPlayer *NativePlayer       `json:"dropPlayer,omitempty"`
 	Dead       domain.Money        `json:"deadCents,omitempty"`
 	Season     int                 `json:"season"`
 	Winner     string              `json:"winner,omitempty"`

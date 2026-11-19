@@ -67,6 +67,9 @@ it('saves hosted private notes and watch stars from HQ and the War Room inspecto
   host = await mount(render(WarRoomInspector, { context, asset: { token: player, name: 'Hosted Player' },
     watch: current => setHostedPlayerWatch(league, player, !current, port) }));
   await flush();
+  expect(host.textContent).toContain('Not available yet');
+  expect(host.textContent).not.toContain('Player status');
+  expect(host.textContent).not.toContain('NFL stats');
   const notesDrawer = all(host, 'button').find(item => item.textContent.startsWith('NOTES'));
   if (!notesDrawer) throw new Error('Notes drawer unavailable');
   await click(notesDrawer);
