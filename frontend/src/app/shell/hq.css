@@ -397,35 +397,3 @@
 .hq-v10 .wi-runway table{width:100%;border-collapse:collapse;font:10px var(--mono)}
 .hq-v10 .wi-runway th,.hq-v10 .wi-runway td{padding:4px;border-bottom:1px solid var(--rule);text-align:right}
 .hq-v10 .wi-runway th:first-child{text-align:left}
-
-@media (max-width:699px){
-  .hq-v10.shell.embedded{display:block;min-width:0;min-height:0;width:100%;height:100%;overflow:hidden}
-  .hq-v10.embedded .work{height:100%;min-width:0;grid-template-rows:minmax(0,1fr) auto;overflow:hidden}
-  .hq-v10.embedded .insp{display:none}
-  .hq-v10.embedded .board{display:flex;flex-direction:column;gap:0;min-width:0;min-height:0;height:100%;overflow:auto;overscroll-behavior:contain;border:0}
-  .hq-v10.embedded .board>.col{flex:none;min-width:0;min-height:0;width:100%;overflow:visible;border:0;border-bottom:2px solid var(--black)}
-  .hq-v10.embedded .board>.col:first-child{container-type:normal}
-  .hq-v10.embedded .board>.col:first-child .slot{grid-template-columns:40px 32px minmax(0,1fr) 0 0 44px 34px;gap:5px;height:auto;min-height:48px;padding:5px 10px}
-  .hq-v10.embedded .board>.col:first-child .slot .form,
-  .hq-v10.embedded .board>.col:first-child .slot .elig{display:none}
-  .hq-v10.embedded .board>.col:first-child .slot .nm{grid-column:auto;min-width:0;white-space:normal}
-  .hq-v10.embedded .board>.col:first-child .slot .st{grid-column:7}
-  .hq-v10.embedded .board>.col:first-child .mu{overflow:visible;flex:none}
-  .hq-v10.embedded .board>.col:first-child .mu-rows{grid-template-columns:1fr}
-  .hq-v10.embedded .board>.col:first-child .mu-rows div{grid-template-columns:44px minmax(0,1fr) 48px;gap:6px;padding:0 10px;height:auto;min-height:40px}
-  .hq-v10.embedded .bench .ch{flex-wrap:wrap;gap:5px;padding:10px}
-  .hq-v10.embedded .bench .filters{gap:4px;padding:8px 10px;overflow-x:auto}
-  .hq-v10.embedded .bench .chip{flex:none;min-width:44px;min-height:44px;padding:10px}
-  .hq-v10.embedded .blist{max-height:40vh;overflow:auto}
-  .hq-v10.embedded .blist .slot{grid-template-columns:34px minmax(0,1fr) 0 0 44px 34px;gap:5px;min-height:48px;height:auto;padding:5px 10px}
-  .hq-v10.embedded .blist .slot .form,.hq-v10.embedded .blist .slot .elig{display:none}
-  .hq-v10.embedded .tray{position:relative;z-index:5;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-bottom));white-space:normal;border-top:2px solid var(--edge)}
-  .hq-v10.embedded .tray .pulls{grid-column:1/-1;display:flex;gap:6px;margin:0;overflow:auto}
-  .hq-v10.embedded .tray .msg{grid-column:1/-1;margin:0;white-space:normal}
-  .hq-v10.embedded .tray .btn{display:flex;align-items:center;justify-content:center;min-height:48px;padding:8px;white-space:normal;text-align:center}
-  .hq-v10.embedded .tray .pull{min-height:44px;margin:0;padding:6px 10px;transform:none}
-  .hq-v10.embedded .bd-main{min-width:0}
-  .hq-v10.embedded .bdrawer{left:0;right:0;width:100%;max-height:75%;overflow:auto}
-  .hq-v10.embedded .bd-head{padding:12px}
-  .hq-v10.embedded .sd-body{overflow:auto}
-}

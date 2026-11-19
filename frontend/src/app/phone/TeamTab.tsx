@@ -1,0 +1,229 @@
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { hostedWorkflow } from '../commissioner/api';
+import { readNativeHQ, type NativeHQ } from '../commissioner/hqReading';
+import type { HostedPort } from '../commissioner/hostedRoom';
+import { useContractRead } from '../contracts/Contracts';
+import { parseDraft } from '../draftroom/draft';
+import { parseHostedGames, type Game } from '../now/liveContract';
+import { HQAct } from '../shell/HQAct';
+import { useNativeLineup, NativeLineupReview } from '../shell/hqNativeLineup';
+import { addHQTrade, hqEvents } from '../shell/hqReads';
+import { absent, unavailable } from '../shell/hqModel';
+import { readHostedPlayerNotes, setHostedPlayerNote } from '../shell/playerPersonal';
+import { canMoveTo, moveStarters, myPicks, teamView, type TeamPick, type TeamRow } from './teamModel';
+import './TeamTab.css';
+
+const fixed = (n?: number) => n === undefined ? '–' : n.toFixed(1);
+const ordinal = (standing?: string) => standing || unavailable;
+
+/** The phone Team tab: lineup, bench and IR from the hosted HQ reads; moves go through the lineup command. */
+export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
+  league: string; mine: string; port?: HostedPort; onByes?: (count: number) => void;
+}) {
+  const [revision, refresh] = useState(0);
+  const provider = useMemo(() => ({ onChange: hqEvents.onChange }), []);
+  const { reading, error, pending } = useContractRead<NativeHQ>(JSON.stringify([league, mine, revision]),
+    publish => readNativeHQ(league, mine, port, publish, true, true), provider);
+  const [games, setGames] = useState<Game[]>();
+  useEffect(() => {
+    let live = true;
+    port({ command: 'nfl.games.read', mode: 'read', arguments: { league } })
+      .then(r => { if (live) setGames(parseHostedGames(r.data, league).games); })
+      .catch(() => { if (live) setGames(undefined); });
+    return () => { live = false; };
+  }, [league, port, revision]);
+  const editor = useNativeLineup(league, mine, reading?.lineup, port, true);
+  const [moving, setMoving] = useState<string>();
+  const [sheet, setSheet] = useState<{ kind: 'card'; row: TeamRow } | { kind: 'picks' }>();
+  const view = reading && teamView(reading, editor.edited, mine, games);
+  const byes = view?.starters.filter(r => r.state === 'bye').length ?? 0;
+  useEffect(() => { onByes?.(byes); }, [byes, onByes]);
+  if (!reading || !view) return <div className="team-tab"><p className="team-tab__note" role="status"
+    title={error}>{error ? unavailable : absent(pending)}</p></div>;
+  const all = [...view.starters, ...view.bench, ...view.ir];
+  const from = all.find(r => r.key === moving);
+  const team = reading.snapshot.franchises.value.find(f => f.id === mine)?.name ?? unavailable;
+  const editable = editor.canEdit;
+  const tap = (to: TeamRow) => {
+    if (!from || !editor.edited) return;
+    if (to.key === from.key) return setMoving(undefined);
+    if (!canMoveTo(from, to, reading)) return;
+    editor.assign(moveStarters(editor.edited, from, to));
+    setMoving(undefined);
+  };
+  const row = (r: TeamRow) => {
+    const can = from && canMoveTo(from, r, reading);
+    const cls = ['team-row', r.id ? '' : 'empty', from?.key === r.key ? 'pick' : '', can ? 'can' : '']
+      .filter(Boolean).join(' ');
+    const control = r.section === 'ir' ? 'IR' : r.locked ? 'LOCKED' : 'MOVE';
+    const off = !editable || !r.id || r.section === 'ir' || r.locked;
+    return <div className={cls} key={r.key} data-row={r.key}>
+      <span className="team-row__slot">{r.slot}</span>
+      {r.id ? <HQAct className="team-row__who" label={`${r.name} player card`}
+        onAction={() => from ? tap(r) : setSheet({ kind: 'card', row: r })}>
+        <b>{r.name}</b><em className={r.state}>{r.position !== r.slot && r.section === 'starters'
+          ? `${r.position} · ` : ''}{r.words}</em></HQAct>
+        : <span className="team-row__who"><b>{r.name}</b><em>{can ? 'Tap to place' : ''}</em></span>}
+      <span className={`team-row__pt ${r.state}`}
+        title={r.range ? `Last 6 games: low ${r.range[0]} · high ${r.range[1]}` : undefined}>
+        <b>{fixed(r.points)}</b><em>{r.range ? r.range.map(x => x.toFixed(0)).join('–') : ''}</em></span>
+      {from ? <HQAct className="team-row__mv" disabled={!can && from.key !== r.key}
+        label={can ? `Place ${from.name} here` : from.key === r.key ? 'Cancel move' : `${r.slot} not legal`}
+        onAction={() => tap(r)}>{from.key === r.key ? 'CANCEL' : can ? 'HERE' : '—'}</HQAct>
+        : <HQAct className="team-row__mv" disabled={off}
+          label={r.locked ? 'Locked, game started'
+            : r.section === 'ir' ? 'On injured reserve' : `Move ${r.name}`}
+          onAction={() => setMoving(r.key)}>{control}</HQAct>}
+    </div>;
+  };
+  return <div className={`team-tab${from ? ' moving' : ''}`}>
+    <div className="team-head">
+      <h2>{team} <HQAct className="team-key team-head__picks" onAction={() => setSheet({ kind: 'picks' })}>
+        My picks</HQAct></h2>
+      <span className="team-head__m">{reading.record ?? unavailable} · {ordinal(reading.standing)}
+        {reading.week ? ` · week ${reading.week}` : ''}</span>
+      <span className="team-head__pts"><b>{fixed(view.points)}</b>
+        <em>PROJ {fixed(view.projection)}</em></span>
+    </div>
+    {reading.weekNote && <p className="team-tab__note" role="status">{reading.weekNote}</p>}
+    {from ? <div className="team-movebar" role="status">
+      <span>Moving <b>{from.name}</b>. Tap a lit row.</span>
+      <HQAct className="team-key" onAction={() => setMoving(undefined)}>Cancel</HQAct></div>
+      : view.bye && <div className="team-warn" role="alert">
+        <span><b>STARTER ON BYE</b><br />{view.bye.name} scores 0 this week.</span>
+        <HQAct className="team-key" disabled={!editable}
+          onAction={() => setMoving(view.bye!.key)}>Fix</HQAct></div>}
+    {editor.dirty && !from && <div className="team-save" role="status">
+      <span>{editor.message}</span>
+      <HQAct className="team-key" onAction={editor.discard}>Discard</HQAct>
+      <HQAct className="team-key team-key--go" disabled={!editable || !editor.changed.length}
+        onAction={() => { void editor.save(); }}>Check and save</HQAct></div>}
+    {reading.errors.length > 0 && <p className="team-tab__note" title={reading.errors.join(' · ')}>
+      Some reads are unavailable: {reading.errors[0]}</p>}
+    <Group title="Starters" aside={`${view.locked} locked · games started`}>{view.starters.map(row)}</Group>
+    <Group title="Bench" aside={`${view.bench.length} players`}>
+      {view.bench.length ? view.bench.map(row) : <p className="team-tab__note">No bench players.</p>}</Group>
+    <Group title="Injured reserve" aside={view.irOutsideBench
+      ? "doesn't count toward the bench" : 'counts toward the roster'}>
+      {view.ir.length ? view.ir.map(row)
+        : <p className="team-tab__note">No players on injured reserve.</p>}</Group>
+    <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
+    {sheet?.kind === 'picks' && <TeamSheet title="My draft picks" onClose={() => setSheet(undefined)}>
+      <PicksList league={league} mine={mine} port={port} /></TeamSheet>}
+    {sheet?.kind === 'card' && <TeamSheet title="Player" onClose={() => setSheet(undefined)}>
+      <PlayerSheet row={sheet.row} reading={reading} league={league} port={port}
+        canMove={editable && sheet.row.section !== 'ir' && !sheet.row.locked}
+        onMove={() => { setSheet(undefined); setMoving(sheet.row.key); }}
+        onTrade={() => { setSheet(undefined);
+          void addHQTrade(mine, sheet.row.id!, reading.snapshot, league).catch(() => {}); }} />
+    </TeamSheet>}
+  </div>;
+}
+
+function Group({ title, aside, children }: { title: string; aside: string; children: ReactNode }) {
+  return <section className="team-grp" aria-label={title}>
+    <h3>{title} <span>{aside}</span></h3>{children}</section>;
+}
+
+function PicksList({ league, mine, port }: { league: string; mine: string; port: HostedPort }) {
+  const [picks, setPicks] = useState<TeamPick[] | string>();
+  useEffect(() => {
+    let live = true;
+    port({ command: 'draft.read', mode: 'read', arguments: { league, franchise: mine, season: 0,
+      at: '0001-01-01T00:00:00Z' } })
+      .then(r => { const draft = parseDraft(r.data);
+        if (draft.league !== league) throw new Error('Draft belongs to another league');
+        if (live) setPicks(myPicks(draft, mine)); })
+      .catch(e => { if (live) setPicks(e instanceof Error ? e.message : unavailable); });
+    return () => { live = false; };
+  }, [league, mine, port]);
+  return <>
+    <section className="team-grp">
+      {picks === undefined ? <p className="team-tab__note" role="status">Still reading…</p>
+        : typeof picks === 'string' ? <p className="team-tab__note" role="status"
+          title={picks}>{unavailable}</p>
+          : picks.length === 0 ? <p className="team-tab__note">You hold no unused picks in this draft.</p>
+            : picks.map(p => <div className="team-pick" key={p.key}>
+              <b>{p.label}</b><span>{p.from}</span></div>)}
+    </section>
+    <p className="team-tab__note">Trade picks from Moves › Trades.</p>
+  </>;
+}
+
+function PlayerSheet({ row, reading, league, port, canMove, onMove, onTrade }: {
+  row: TeamRow; reading: NativeHQ; league: string; port: HostedPort; canMove: boolean;
+  onMove: () => void; onTrade: () => void;
+}) {
+  const id = row.id!;
+  const weeks = reading.playerForm?.[id] ?? [];
+  const max = Math.max(1, ...weeks.map(w => w.points));
+  const status = reading.snapshot.rosters.value.flatMap(r => r.players).find(p => p.id === id)?.rosterStatus;
+  const [note, setNote] = useState<{ text: string; at?: string; saved: string }>();
+  const latest = useRef<string>();
+  useEffect(() => {
+    let live = true;
+    readHostedPlayerNotes(league, id, port).then(r => {
+      const last = r.notes.at(-1);
+      if (live) setNote({ text: last?.text ?? '', at: last?.at, saved: '' });
+    }).catch(() => { if (live) setNote({ text: '', saved: 'Notes are unavailable' }); });
+    return () => { live = false; };
+  }, [league, id, port]);
+  const save = async () => {
+    if (!note || note.text === latest.current) return;
+    latest.current = note.text;
+    try {
+      // One note per player: add the new words, then remove the note they replace.
+      if (note.text.trim()) await setHostedPlayerNote(league, id, note.text.trim(), port);
+      if (note.at) await setHostedPlayerNote(league, id, '', port, note.at);
+      const fresh = await readHostedPlayerNotes(league, id, port);
+      setNote({ text: note.text, at: fresh.notes.at(-1)?.at, saved: 'Saved' });
+    } catch { setNote({ ...note, saved: 'Not saved. Try again.' }); }
+  };
+  return <div className="team-card">
+    <div className="team-card__h"><span className="team-tag">{row.position}</span><b>{row.name}</b>
+      <em className={row.state}>{row.words}</em></div>
+    <div className="team-card__n">
+      <div><span>THIS WEEK</span><b>{fixed(row.points)}</b></div>
+      <div><span>PROJECTION</span><b>{fixed(reading.projections?.get(id))}</b></div>
+      <div><span>RANGE · 6 WK</span><b>{row.range
+        ? row.range.map(x => x.toFixed(0)).join('–') : '–'}</b></div>
+    </div>
+    <div className="team-lbl">Last five weeks</div>
+    {weeks.length ? <div className="team-card__w">{weeks.map(w => <div key={w.week}>{w.points.toFixed(1)}
+      <i style={{ height: `${Math.max(2, (w.points / max) * 40)}px` }} />WK{w.week}</div>)}</div>
+      : <p className="team-tab__note">{reading.formError || reading.formNote || unavailable}</p>}
+    <div className="team-lbl"><label htmlFor="team-note">My note</label></div>
+    <div className="team-fld"><textarea id="team-note" placeholder="Only you see this."
+      disabled={!note} value={note?.text ?? ''}
+      onChange={e => setNote({ ...(note ?? { saved: '' }), text: e.target.value, saved: '' })}
+      onBlur={() => { void save(); }} />{note?.saved && <small role="status">{note.saved}</small>}</div>
+    <div className="team-lbl">Status</div>
+    <div className="team-card__s"><em>ROSTER</em><p><b>Status</b> {status === 'IR' ? 'Injured reserve'
+      : status === 'TAXI_SQUAD' ? 'Taxi squad'
+      : status === 'ROSTER' ? 'Active roster' : unavailable}</p></div>
+    <div className="team-card__a">
+      <HQAct className="team-key" disabled={!canMove} onAction={onMove}>
+        {row.locked ? 'Locked' : 'Move'}</HQAct>
+      <HQAct className="team-key" onAction={onTrade}>Trade</HQAct>
+      <HQAct className="team-key" disabled label="Drop is not on the phone yet">Drop</HQAct>
+    </div>
+  </div>;
+}
+
+function TeamSheet({ title, onClose, children }: {
+  title: string; onClose: () => void; children: ReactNode;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const element = dialog.current;
+    if (element && !element.open) element.showModal?.();
+    return () => element?.close?.();
+  }, []);
+  return <dialog ref={dialog} className="phone-app__sheet team-sheet" aria-modal="true" aria-label={title}
+    onCancel={event => { event.preventDefault(); onClose(); }}
+    onPointerUp={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <header className="phone-app__sheet-head"><h2>{title}</h2>
+      <HQAct className="phone-app__close" label={`Close ${title}`} onAction={onClose}>Close</HQAct></header>
+    <div className="phone-app__sheet-body">{children}</div>
+  </dialog>;
+}

@@ -11,6 +11,7 @@ import { HQAct } from '../shell/HQAct';
 import type { ThinHomeEntry } from '../shell/ThinHome';
 import { PhoneAppFrame, type PhoneTab } from '../shell/PhoneAppFrame';
 import type { HomeBrief } from '../shell/homeReads';
+import { TeamTab } from '../phone/TeamTab';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import '../look/look.css';
 import './nativeAccount.css';
@@ -209,11 +210,15 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       onSignOut={() => {
         void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget')))
           .catch(() => {});
-      }} homeReadSource={thinHome} tabs={{ today: <Suspense fallback={<p role="status">Opening Today…</p>}>
-        <TodayTab leagues={admittedLeagues} onOpen={(league, entry) => {
-          if (browser && league.id !== admission?.league) setView(selectBrowserLeague(league.id));
-          setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
-        }} /></Suspense> }}>{leagueContent}</PhoneAppFrame>}
+      }} homeReadSource={thinHome} tabs={{
+        today: <Suspense fallback={<p role="status">Opening Today…</p>}>
+          <TodayTab leagues={admittedLeagues} onOpen={(league, entry) => {
+            if (browser && league.id !== admission?.league) setView(selectBrowserLeague(league.id));
+            setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
+          }} /></Suspense>,
+        team: admission?.franchise
+          ? <TeamTab league={admission.league} mine={admission.franchise} /> : undefined,
+      }}>{leagueContent}</PhoneAppFrame>}
     </div>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>
