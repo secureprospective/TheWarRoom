@@ -60,8 +60,8 @@ func TestLeagueActivityIsAHostedLeagueViewRead(t *testing.T) {
 	if _, ok := WorkflowCommands()["league.activity.read"]; !ok {
 		t.Fatal("activity read missing from hosted workflow")
 	}
-	if _, ok := WorkflowCommands()["commish.ledger.filtered.read"]; ok {
-		t.Fatal("commissioner ledger filter entered the workflow as an activity shortcut")
+	if _, ok := WorkflowCommands()["commish.ledger.filtered.read"]; !ok {
+		t.Fatal("commissioner ledger filter missing from hosted workflow")
 	}
 }
 
