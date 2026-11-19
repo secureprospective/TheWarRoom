@@ -26,6 +26,8 @@ func TestSinglePoolMarketIsUnchanged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// This market digest excludes the rule-derived capacity field added to the shared roster read.
+	assets.OpenBenchSlots = nil
 	write(assets)
 	for _, command := range []string{commissioner.BidsProcess, commissioner.BidsOverride, commissioner.WaiverProcess,
 		commissioner.WaiverOverride, commissioner.TradeOverride} {

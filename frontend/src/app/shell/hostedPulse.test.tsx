@@ -444,6 +444,18 @@ it('reads the hosted NFL board for its own league only and labels held boards', 
   expect(empty.source).toMatch(/not read the NFL scoreboard yet/);
 });
 
+it('keeps source-held NFL records on each team and leaves absent records absent', () => {
+  const source = { ...board(), board: { ...board().board, games: [{ ...nflGame,
+    home: { ...nflGame.home, record: '5-4' }, away: { ...nflGame.away, record: '3-6' } }] } };
+  const parsed = parseHostedGames(source, 'test').games[0];
+  expect(parsed.home.record).toBe('5-4');
+  expect(parsed.away.record).toBe('3-6');
+  expect(parseHostedGames(board(), 'test').games[0].home.record).toBeUndefined();
+  expect(() => parseHostedGames({ ...source, board: { ...source.board,
+    games: [{ ...source.board.games[0], home: { ...source.board.games[0].home, record: '5 wins' } }] } }, 'test'))
+    .toThrow(/invalid team record/);
+});
+
 it('rereads open hosted Pulse once per burst of its league topics and ignores other leagues', async () => {
   let hear: ((topics: ReadTopic[]) => void) | undefined;
   const off = vi.fn();

@@ -466,6 +466,7 @@
 .lp-v14 .nfl.sel{background:var(--raised);box-shadow:inset 4px 0 0 var(--edge-hi)}
 .lp-v14 .nfl .r{display:flex;gap:8px;align-items:center;font:600 12px var(--mono);color:var(--ink2)}
 .lp-v14 .nfl .r b{margin-left:auto;font-size:13px;color:var(--ink)}
+.lp-v14 .nfl .r .record{font:400 9px var(--mono);color:var(--ink3)}
 .lp-v14 .nfl .r .pos{width:6px;height:6px;background:var(--ink)}
 .lp-v14 .nfl .r .pos.no{background:transparent}
 .lp-v14 .nfl .meta{grid-column:1/3;display:flex;gap:8px;align-items:center;font:10px var(--mono);color:var(--ink3)}
@@ -487,6 +488,7 @@
 .lp-v14 .gh .t{display:flex;gap:10px;align-items:baseline;font:700 15px var(--mono)}
 .lp-v14 .gh .t.r{justify-content:end}
 .lp-v14 .gh .t span{font:400 11px var(--mono);color:var(--ink3)}
+.lp-v14 .gh .t small{font:400 9px var(--mono);color:var(--ink3)}
 .lp-v14 .gh .t b{font-size:30px}
 .lp-v14 .gh .clk{display:grid;justify-items:center;gap:2px;padding:0 18px;font:700 12px var(--mono)}
 .lp-v14 .gh .clk small{font:400 10px var(--mono);color:var(--ink3)}
@@ -503,6 +505,7 @@
 .lp-v14 .dd{display:flex;gap:18px;align-items:center;padding:4px 18px 10px;font:11px var(--mono);color:var(--ink3);border-bottom:2px solid var(--black)}
 .lp-v14 .dd b{color:var(--ink);font-size:12px}
 .lp-v14 .dd .lp{margin-left:auto;color:var(--ink2);max-width:52%;text-align:right}
+.lp-v14 .dd .timeout-note{font:9px var(--mono);color:var(--ink3)}
 .lp-v14 .spine{display:flex;flex-direction:column;min-height:0}
 .lp-v14 .sp-row{display:grid;grid-template-columns:62px 4px 34px minmax(0,1fr) 70px;align-items:center;gap:10px;padding:7px 14px 7px 12px;border-bottom:1px solid var(--rule)}
 .lp-v14 .sp-row .tm{font:10px var(--mono);color:var(--ink3);line-height:1.3}
@@ -535,6 +538,8 @@
 .lp-v14 .stand .ins{font:700 9px var(--mono);letter-spacing:.1em;padding:0 4px;border:1px solid var(--edge-hi);color:var(--ink)}
 .lp-v14 .stand .ins.x{border-color:var(--edge);color:var(--ink3)}
 .lp-v14 .stand .strk{color:var(--ink3)}
+.lp-v14 .stand .streak{margin-left:6px;font:700 9px var(--mono);color:var(--live)}
+.lp-v14 .stand .streak.unavailable{color:var(--ink3);font-weight:400}
 .lp-v14 .path{display:grid;grid-template-rows:auto auto 1fr;min-height:0}
 .lp-v14 .ladder{display:grid;grid-template-columns:repeat(10,1fr);gap:0;border-bottom:2px solid var(--black)}
 .lp-v14 .rung{padding:10px 10px 12px;border-right:1px solid var(--edge);display:grid;gap:4px;align-content:start;min-width:0;cursor:pointer;transition:transform 70ms linear}

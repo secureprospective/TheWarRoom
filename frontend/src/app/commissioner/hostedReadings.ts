@@ -1,4 +1,4 @@
-import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
+import { array, choice, integer, object, requiredText, text, timestamp } from '../data/parseValues';
 import { POSITIONS, type Position } from '../data/contract';
 
 const flag = (v: unknown): boolean => {
@@ -80,6 +80,7 @@ export function parseHostedLineup(v: unknown): HostedLineup {
 }
 export type HostedRoster = {
   identities: { player: string; franchise: string; side: string; name: string; position?: Position }[];
+  openBenchSlots?: Record<string, number>;
   league: string;
   revision: number;
   season: number;
@@ -98,8 +99,20 @@ export type HostedRoster = {
     bucket: 'active' | 'ir' | 'taxi';
   }[];
 };
+function parseOpenBenchSlots(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    throw new Error('Open bench slots: expected object');
+  const source = object(value, 'Open bench slots', Object.keys(value));
+  const slots: Record<string, number> = {};
+  for (const [franchise, count] of Object.entries(source)) {
+    const id = requiredText(franchise, 'Open bench franchise');
+    slots[id] = integer(count, `Open bench slots.${id}`);
+  }
+  return slots;
+}
 export function parseHostedRoster(v: unknown): HostedRoster {
   const r = object(v, 'Roster', [
+    'openBenchSlots',
     'pool', 'identities', 'poolPointsNote',
     'corrections',
     'league',
@@ -110,6 +123,7 @@ export function parseHostedRoster(v: unknown): HostedRoster {
     'snapshot',
   ]);
   if (!flag(r.seeded)) throw new Error('Ask your commissioner to record the starting rosters.');
+  const openBenchSlots = r.openBenchSlots === undefined ? undefined : parseOpenBenchSlots(r.openBenchSlots);
   const s = object(r.snapshot, 'Roster snapshot', [
     'standingsOrder',
     'season',
@@ -129,6 +143,7 @@ export function parseHostedRoster(v: unknown): HostedRoster {
   ]);
   return {
     league: text(r.league, 'League'),
+    openBenchSlots,
     market: array(r.pool ?? [], 'Market pool', (v, p) => {
       const row = object(v, p, ['player', 'name', 'position', 'string', 'points', 'age', 'value', 'minimum']);
       return { id: text(row.player, p), name: text(row.name, p), position: text(row.position, p),

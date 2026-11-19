@@ -204,6 +204,7 @@ export function NflList({ games, followed, onFollow, words }: { games: LiveNflGa
       const body = <>
         {[g.away, g.home].map(t => <div className="r" key={t.id}>
           <span className={`pos${has(t) ? '' : ' no'}`} />{t.abbreviation}
+          <small className={`record${t.record ? '' : ' unavailable'}`}>{t.record ?? 'Not held'}</small>
           <b>{g.status === 'pre' ? '' : t.score}</b></div>)}
         <div className="meta">
           <span className={`st${g.status === 'in' ? ' live' : g.status === 'post' ? ' fin' : ''}`}>
@@ -255,6 +256,7 @@ export function FollowedGame({ game }: { game: LiveNflGame }) {
               <span>{s.toEndzone} to go for six</span></>
               : <span>{game.status === 'post' ? 'Final' : 'Field position not supplied'}</span>}
             <span className="lp">{game.last?.text ?? ''}</span>
+            <span className="timeout-note">Timeout counts not supplied by held feed</span>
           </div>
         </>}
     </div>

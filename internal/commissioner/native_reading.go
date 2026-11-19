@@ -6,11 +6,13 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // NativeAssets is app-owned state, not an MFL roster or a what-if plan.
 type NativeAssets struct {
 	PoolPointsNote string                `json:"poolPointsNote,omitempty"`
+	OpenBenchSlots map[string]int        `json:"openBenchSlots,omitempty"`
 	Pool           []NativePoolPlayer    `json:"pool,omitempty"`
 	Identities     []NativeAssetIdentity `json:"identities,omitempty"`
 	Corrections    []Correction          `json:"corrections,omitempty"`
@@ -70,7 +72,38 @@ func NativeAssetsAsOf(league string, records []Record, at time.Time) (NativeAsse
 
 func NativeAssetsReading(league string, records []Record, at ...time.Time) (NativeAssets, error) {
 	assets, _, err := nativeAssetsState(league, records, at...)
-	return assets, err
+	if err != nil || assets.Snapshot == nil {
+		return assets, err
+	}
+	now := records[len(records)-1].Receipt.RecordedAt
+	if len(at) != 0 {
+		now = at[0]
+	}
+	rules, err := RulesNow(records, now)
+	if err != nil {
+		return NativeAssets{}, fmt.Errorf("read roster limits for open bench slots: %w", err)
+	}
+	assets.OpenBenchSlots = openBenchSlots(assets.Snapshot, rules)
+	return assets, nil
+}
+
+func openBenchSlots(snapshot *RawNativeSnapshot, rules leaguerules.RuleSet) map[string]int {
+	limits, reserves := rules.Roster.Limits, rules.Roster.ReserveExcluded
+	if snapshot == nil || limits.State != leaguerules.IsKnown || limits.Value.Max.State != leaguerules.IsKnown ||
+		limits.Value.Max.Value < 0 || reserves.State != leaguerules.IsKnown {
+		return nil
+	}
+	rostered := make(map[string]int, len(snapshot.Franchises))
+	for _, player := range snapshot.Players {
+		if !reserves.Value || player.Status == domain.RosterActive {
+			rostered[player.Franchise]++
+		}
+	}
+	out := make(map[string]int, len(snapshot.Franchises))
+	for _, franchise := range snapshot.Franchises {
+		out[franchise.ID] = max(0, limits.Value.Max.Value-rostered[franchise.ID])
+	}
+	return out
 }
 
 // foldNativeAssets projects the ledger; nativeAssetsState serves it from the held revision's cache.
