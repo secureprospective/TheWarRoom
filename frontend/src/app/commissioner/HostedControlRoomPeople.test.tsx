@@ -217,6 +217,12 @@ it('routes every People tool to a registered hosted form and leaves D65 unavaila
   await act(async () => button('Permissions')!.click());
   expect(commands()).toEqual(['commish.abilities.set']);
   expect(forms.has('commish.abilities.set')).toBe(true);
-  expect(host.textContent).toContain('Permission sets and their six-permission grid are not available');
+  expect(host.textContent).toContain(
+    'Custom permission sets and their six-permission editor are not available',
+  );
+  const permissions = host.querySelector('[aria-label="Deputy permission sets"]');
+  expect(permissions?.textContent).toContain('Team 01');
+  expect(permissions?.textContent).toContain('approve-stat-fixes');
+  expect(permissions?.textContent).toContain('run-rollover');
   expect(forms.has('commish.permissions.grant')).toBe(false);
 });

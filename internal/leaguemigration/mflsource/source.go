@@ -13,6 +13,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/salaryadjustments"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
@@ -204,4 +205,16 @@ func (s *Source) Results(ctx context.Context) ([]leaguefeed.WeekResult, error) {
 		return nil, fmt.Errorf("read recorded weekly results: %w", err)
 	}
 	return weeks, nil
+}
+
+func (s *Source) LiveLineups(ctx context.Context) (*leaguefeed.Lineups, error) {
+	raw, err := livescoring.Fetch(ctx, s.Client, s.year(), s.ID, 0)
+	if err != nil {
+		return nil, fmt.Errorf("read current lineups: %w", err)
+	}
+	lineups, err := livescoring.ToLineups(raw)
+	if err != nil {
+		return nil, fmt.Errorf("check current lineups: %w", err)
+	}
+	return &lineups, nil
 }

@@ -42,6 +42,15 @@ export default function MoveMFL() {
       {s.prep && <>
         <h4>{s.prep.name} · {s.prep.season}</h4>
         <p>{s.prep.franchises} teams · {s.prep.players} players · {s.prep.picks} picks</p>
+        {s.prep.lineups.length > 0 ? <details>
+          <summary>Preview {s.prep.lineups.length} starting-lineup rows</summary>
+          <ul>{s.prep.lineups.map(lineup => <li key={`${lineup.week}.${lineup.franchise}`}>
+            Week {lineup.week} · {lineup.team || lineup.franchise}:{' '}
+            {lineup.starters.map(starter => starter.name
+              ? `${starter.name} (#${starter.player})` : starter.player).join(', ')}
+          </li>)}</ul>
+          <p>Only lineups MFL holds are imported; missing lineups remain incomplete.</p>
+        </details> : <p>No MFL starting lineups were found; missing lineups remain incomplete.</p>}
         {s.prep.problems.length > 0 && <div role="alert"><h5>Fix these before importing</h5>
           <ul>{s.prep.problems.map(p => <li key={p}>{p}</li>)}</ul></div>}
         {s.prep.ready && <fieldset disabled={s.pending || Boolean(s.done)}>
