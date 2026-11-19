@@ -1,11 +1,11 @@
 # Handoff
 
 ## lane/b9take7 progress (2026-11-18)
-- Baton: Bee; PR #400 into `bundle/b9`; merge commit `a7d6b6ed1` merges `origin/bundle/b7` into B9.
+- Baton: ClaudeBox for review; PR #400 into `bundle/b9`; merge commit `a7d6b6ed1` merges `origin/bundle/b7` into B9.
 - State: conflicts resolved with B9 phone routes/layout and new reads alongside B7 browser ingress/security and franchise schedule/read contracts. Session security remains same-origin, `SameSite=Strict`, and rejects Authorization with a cookie. `league.activity.read` and commissioner filtered-ledger reads remain distinct.
-- Verified: Go build/vet, lint, no-Origin valid-cookie session regression, `tsc`, and hosted Pulse tests. Pre-push passes. One full Vitest attempt had an intermittent `nativeAccount` failure; that test passed alone on retry. Full CI is pending.
-- Next: await PR #400 checks and review; do not merge from this lane.
-- Blocked on: PR CI/review.
+- Verified: Go build/vet, lint, no-Origin valid-cookie session regression, `tsc`, hosted Pulse tests; pre-push passes. PR CI is green: all test shards, checks, release-tools, package and install.
+- Next: ClaudeBox review/merge PR #400; do not merge from this lane.
+- Blocked on: none.
 
 - Baton: ClaudeBox for review; Bee completed lane `pulse-b7door`, 2026-11-18, branch `session/pulse-b7door`, base `bundle/b7` (`b597b6122`).
 - State: commit `84f79ddab` pushed to ready PR #372; CI green. Browser door implemented without schema migration or league-recency state. `POST /app/session` returns 409 with the desktop-app message for accounts admitted to multiple leagues. `make verify` passed, including race tests, frontend build, lint and staged embedded-bundle test; staging cleaned.
