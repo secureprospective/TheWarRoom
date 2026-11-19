@@ -51,3 +51,10 @@
 - Tidy: the task-specific Brave profile was signed out and closed. `tidy-check.sh` reports ADB PID 2504044 (PPID 1, cwd `/home/chris/work/TheWarRoom`); left it running because it is outside this worktree and has no associated scratch folder. The reusable pinned lab venv remains with `.scratch/KEEP.md`.
 - Next: Christopher review/merge PR #394. Blocked: none in this task.
 - Tried and rejected: plain `pnpm build` for hosted packaging; it emitted root-relative lazy asset paths. Use `pnpm run build:web`.
+
+### Bee closeout — pulse-mstub-shell (2026-11-19)
+- Baton: inventory lane complete.
+- State: Read the binding format, mock sources, b9 catalog, V3 inventory/plan, and b9 app owners. The run output has 109 validated nine-field rows; feed names, V3 IDs, and owner paths pass checks. Counts: WIRED 12, PARTIAL 77, NEW-MOBILE 2, NEW 3, RULING 2, MOCK 13.
+- Next: Christopher review; no implementation follow-up requested in this lane.
+- Blocked on: none. No code changes, PR, or lab access. `tidy-check.sh` is clean.
+- Tried and rejected: did not create an additional b9 worktree because the task's write boundary forbade it; used the existing b9 worktree read-only and left its unrelated changes untouched.
