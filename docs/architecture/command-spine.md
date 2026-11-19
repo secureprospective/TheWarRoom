@@ -40,7 +40,8 @@ doors, not automatically in privileged or unsupported transports.
 ## Drift gate and proof
 
 Use one table-driven parity test against a frozen pre-migration fixture: every old ID,
-role/permission, mode and door must survive unchanged. The hosted set remains 42.
+role/permission, mode and door must survive unchanged. The original 42 league workflows remain;
+three account-preference workflows add a separate account-scoped route (45 total).
 Generated-file freshness checks run in the existing verify pipeline. Also reject a door
 with no entry, duplicate IDs, missing executable handlers and unsupported modes. Exercise
 an intentionally unregistered action to establish that the gate fails for the right reason.
@@ -71,9 +72,10 @@ Browser metadata now comes from `catalog.BrowserCommands()` and generates
 62-command browser fixture exercises all three display roles and both local admission
 and direct command-bar exposure (372 assertions). Removing a handler or naming an
 undeclared action fails TypeScript checking. Nine MFL transport IDs use `mfl.*`;
-saved bid receipts still use their original intent. Hosted workflow exposure remains 42.
+saved bid receipts still use their original intent. Hosted workflow exposure is 45: the original 42
+league workflows plus three account-preference workflows.
 
-Native (136), local MFL (9), desktop (136), hosted workflow (42), and browser (62)
+Native (136), local MFL (9), desktop (136), hosted workflow (45), and browser (62)
 metadata now feed `catalog.Registry` in `internal/commandcatalog`.
 Relocation: `internal/app/catalog` → `internal/commandcatalog`; transport-neutral
 metadata and execution must sit below both the app and hosted transports. Native and MFL definitions and desktop exposure
@@ -92,7 +94,7 @@ adapter. Browser handlers remain typed TypeScript functions, not server authorit
 | --- | --- |
 | Desktop startup | Build APIs → bind registry → retain the unchanged Wails API objects. Missing/extra methods or absent handlers refuse startup. |
 | Native/MFL registry calls | Look up ID, declared door and mode → checked argument adapter → existing Raw validation and service/API admission → checked JSON result. |
-| Hosted workflow | The existing HTTP envelope aliases catalog-owned Raw types; its compatibility table and dispatch derive from catalog-owned executable workflows. The 42-command boundary is unchanged. |
+| Hosted workflow | The HTTP envelope aliases catalog-owned Raw types; league workflow dispatch remains unchanged, while three private account-preference workflows use the authenticated account scope. |
 | Evidence | `doors-before.json` freezes 281 native/MFL/Wails records, including schema hashes. Composition tests compare both compatibility views and executable entries; existing workflow/browser fixtures retain their own coverage. |
 
 `frontend/scripts/nativegen -surface doors` inspects the same bound registry without

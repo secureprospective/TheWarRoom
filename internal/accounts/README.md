@@ -177,6 +177,18 @@ history must share the same database pools/writer; separate account databases ar
 not a supported hosted composition. Device sessions now enforce recovery generation
 and epoch fences. Agent delegations and deployed recovery remain separate work.
 
+## Private commissioner job snoozes
+
+`job.snoozes.read`, `job.snooze.set` and `job.snooze.wake` use the hosted account
+preference route and the authenticated account ID; arguments cannot select a
+principal. `internal/store/accounts` stores one `(account, league, job ID)` expiry
+in the sign-in file. It never changes the league job or `commish.jobs.read`.
+Control Room and Home join the private reading on the client, hide only active
+marks for that account, list snoozed jobs and wake by deleting only that account's
+mark. Expiry is an absolute RFC 3339 instant; “tomorrow at 9 AM” is calculated in
+the user's local timezone. The server migration and sign-in-file move proof include
+the new table. A missing private preference read leaves shared jobs visible.
+
 ## Hosted password resource budget
 
 The deployed composition shares one `PasswordWork` between `NewWithPasswordWork`

@@ -47,6 +47,8 @@ function port(count: number): HostedPort & ReturnType<typeof vi.fn> {
     let data: unknown;
     if (request.command === 'commish.rules.read') data = ruleReading;
     else if (request.command === 'commish.jobs.read') data = jobs(count);
+    else if (request.command === 'job.snoozes.read' || request.command === 'job.snooze.set'
+      || request.command === 'job.snooze.wake') data = { snoozes: [] };
     else if (request.command === 'commish.ledger.read') data = ledger();
     else if (request.command === 'backup.now' && request.mode === 'preview') data = backupPreview;
     else if (request.command === 'backup.now') data = { league, captured: '2026-11-18T12:00:00Z',
@@ -108,6 +110,8 @@ function fixPort(): HostedPort & ReturnType<typeof vi.fn> {
     let data: unknown;
     if (request.command === 'commish.rules.read') data = { ...ruleReading, revision };
     else if (request.command === 'commish.jobs.read') data = jobs(32);
+    else if (request.command === 'job.snoozes.read' || request.command === 'job.snooze.set'
+      || request.command === 'job.snooze.wake') data = { snoozes: [] };
     else if (request.command === 'commish.corrections.read') data = { ...corrections, revision };
     else if (request.command === 'commish.ledger.read') data = { ...fixLedger, revision };
     else if (request.command === 'native.directory.read') data = { league, name: 'Test League',
@@ -411,3 +415,42 @@ it('routes each of the nine Fix writes through hosted preview, review and execut
     expect(JSON.stringify(sentPreview?.arguments), command).toContain('Correction reason');
   }
 }, 15000);
+
+it('snoozes a shared job privately, lists it, and wakes it without a league write', async () => {
+  let state: { snoozes: { league: string; jobId: string; until: string }[] } = { snoozes: [] };
+  const read = vi.fn(async (request: NativeRequest) => {
+    let data: unknown;
+    if (request.command === 'commish.rules.read') data = ruleReading;
+    else if (request.command === 'commish.jobs.read') data = jobs(2);
+    else if (request.command === 'job.snoozes.read') data = state;
+    else if (request.command === 'job.snooze.set') {
+      const args = request.arguments as { league: string; jobId: string; until: string };
+      state = { snoozes: [{ ...args }] };
+      data = state;
+    } else if (request.command === 'job.snooze.wake') {
+      state = { snoozes: [] };
+      data = state;
+    } else throw new Error(`Unexpected hosted request: ${request.command}`);
+    return { data, label: 'League server', writable: true, football: 'held-pin' };
+  }) as HostedPort & ReturnType<typeof vi.fn>;
+  await openControlRoom(read);
+  expect(host.querySelector('[data-job="rollover"]')).not.toBeNull();
+  const summary = host.querySelector<HTMLElement>('summary[aria-label="Snooze Rollover"]');
+  expect(summary).not.toBeNull();
+  await act(async () => summary!.click());
+  const snooze = host.querySelector<HTMLButtonElement>(
+    'button[aria-label="Snooze Rollover for 3 hours"]');
+  expect(snooze).not.toBeNull();
+  await act(async () => snooze!.click());
+  await vi.waitFor(() => expect(host.querySelector('[data-job="rollover"]')).toBeNull());
+  expect(host.querySelector('[aria-label="Snoozed jobs"]')?.textContent).toContain('Rollover');
+  expect(read.mock.calls.some(([request]) => request.command === 'job.snooze.set')).toBe(true);
+
+  const wake = host.querySelector<HTMLButtonElement>('button[aria-label="Wake Rollover"]');
+  expect(wake).not.toBeNull();
+  await act(async () => wake!.click());
+  await vi.waitFor(() => expect(host.querySelector('[data-job="rollover"]')).not.toBeNull());
+  expect(read.mock.calls.some(([request]) => request.command === 'job.snooze.wake')).toBe(true);
+  expect(read.mock.calls.some(([request]) => request.command === 'commish.jobs.read'
+    && request.mode === 'execute')).toBe(false);
+});

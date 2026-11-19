@@ -137,7 +137,7 @@ func (r *Registry) addBrowser(command BrowserCommand) error {
 
 func serverWorkflowEntries() []Entry {
 	commands := append(nativeDraftQueueCommands(), tradeDraftCommands()...)
-	commands = append(commands, accountHomeLayoutCommands()...)
+	commands = append(commands, accountPreferenceCommands()...)
 	commands = append(commands, serverBackupCommands()...)
 	entries := make([]Entry, 0, len(commands))
 	for _, command := range commands {

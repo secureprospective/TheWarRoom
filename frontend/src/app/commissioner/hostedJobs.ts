@@ -11,6 +11,21 @@ export const jobLanes = [
 export type JobLane = (typeof jobLanes)[number][0];
 export type JobKind = 'Ruling' | 'Deadline' | 'Roster' | 'People' | 'System' | 'Other';
 export type LaneJobs = Record<JobLane, Job[]>;
+export type JobSnoozeChoice = { label: string; until: string };
+
+export function jobSnoozeChoices(job: Job, now: number): JobSnoozeChoice[] {
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(9, 0, 0, 0);
+  const choices = [
+    { label: '3 hours', until: new Date(now + 3 * 60 * 60 * 1000).toISOString() },
+    { label: 'Tomorrow at 9 AM (local)', until: tomorrow.toISOString() },
+  ];
+  const deadline = Date.parse(job.closes);
+  if (job.closes && Number.isFinite(deadline) && deadline > now)
+    choices.push({ label: 'Until next deadline', until: job.closes });
+  return choices;
+}
 
 const kindByControl: Record<string, JobKind> = {
   'CM-001': 'Ruling', 'CM-002': 'Ruling', 'CM-003': 'Roster', 'CM-004': 'Roster',

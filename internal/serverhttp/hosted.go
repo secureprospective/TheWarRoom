@@ -63,16 +63,16 @@ type Hosted struct {
 	Confirmations   *Confirmations
 	Store           *history.Store
 	// Leagues finds the store holding a league; league heads and the due worker read through it.
-	Leagues     history.LeagueResolver
-	Sessions    *accounts.SessionService
-	HomeLayouts accounts.HomeLayoutRepository
-	TOTP        *accounts.TOTPService
-	Enrollment  *accounts.EnrollmentService
-	Passwords   *accounts.Service
-	Join        *accounts.JoinService
-	Recovery    *accounts.RecoveryService
-	Worker      *leagueservice.DueWorker
-	Registry    string
+	Leagues            history.LeagueResolver
+	Sessions           *accounts.SessionService
+	AccountPreferences accounts.PreferenceRepository
+	TOTP               *accounts.TOTPService
+	Enrollment         *accounts.EnrollmentService
+	Passwords          *accounts.Service
+	Join               *accounts.JoinService
+	Recovery           *accounts.RecoveryService
+	Worker             *leagueservice.DueWorker
+	Registry           string
 	// Replies caches league-state readings per head and reading epoch; nil reads every request afresh.
 	Replies  *ReplyCache
 	Requests *RequestTally

@@ -16,6 +16,28 @@ export type Job = {
   settles?: string[];
 };
 export type Jobs = { league: string; name: string; revision: number; jobs: Job[] };
+export type JobSnooze = { league: string; jobId: string; until: string };
+export type JobSnoozes = { snoozes: JobSnooze[] };
+
+export function parseJobSnoozes(v: unknown): JobSnoozes {
+  const r = object(v, 'Job snoozes', ['snoozes']);
+  return { snoozes: array(r.snoozes, 'Job snoozes', (s, p) => {
+    const o = object(s, p, ['league', 'jobId', 'until']);
+    const league = text(o.league, `${p}.league`);
+    const jobId = text(o.jobId, `${p}.jobId`);
+    const until = timestamp(o.until, `${p}.until`);
+    if (!league.trim() || league !== league.trim() || !jobId.trim() || jobId !== jobId.trim() || !until)
+      throw new Error(`${p}: invalid snooze`);
+    return { league, jobId, until };
+  }) };
+}
+
+export function activeJobSnoozes(state: JobSnoozes | undefined, league: string, now: number): JobSnooze[] {
+  return (state?.snoozes ?? []).filter(snooze => snooze.league === league && Date.parse(snooze.until) > now);
+}
+
+export const isJobSnoozed = (state: JobSnoozes | undefined, league: string, jobId: string, now: number) =>
+  activeJobSnoozes(state, league, now).some(snooze => snooze.jobId === jobId);
 
 export const startingJob = (jobs?: Jobs) => jobs?.jobs.find(job => job.id === 'seed');
 // The startup draft's job opens the draft room on the startup draft rather than on a control.

@@ -43,11 +43,21 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
   const briefReader = useMemo<BriefReader>(() => readBrief ?? ((_id, mine, hosted, _owner, isCommissioner) =>
     readThinHomeBrief(_id, mine, hosted, undefined, isCommissioner)),
   [appLeagues, readBrief]);
-  const readingTime = useMemo(() => now ?? Date.now(), [now]);
+  const [wallClock, setWallClock] = useState(Date.now());
+  const readingTime = now ?? wallClock;
   const [briefs, setBriefs] = useState<Record<string, HomeBrief>>({});
   const [failures, setFailures] = useState<Record<string, string>>({});
   const [needsYou, setNeedsYou] = useState<NeedsYouItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const nextSnoozeExpiry = Object.values(briefs).flatMap(brief => brief.jobSnoozes?.snoozes ?? [])
+    .map(snooze => Date.parse(snooze.until)).filter(until => until > readingTime).sort((a, b) => a - b)[0];
+  useEffect(() => {
+    if (now !== undefined || nextSnoozeExpiry === undefined) return;
+    const delay = Math.min(2_147_483_647, Math.max(0, nextSnoozeExpiry - readingTime + 1));
+    const timer = window.setTimeout(() => setWallClock(Date.now()), delay);
+    return () => window.clearTimeout(timer);
+  }, [nextSnoozeExpiry, now, readingTime]);
 
   useEffect(() => {
     let active = true;

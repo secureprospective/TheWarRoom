@@ -15,7 +15,7 @@ import (
 type WorkflowCommand struct {
 	Validate   func(RawWorkflow) error
 	Run        func(context.Context, *leagueservice.Service, RawWorkflow) (json.RawMessage, error)
-	RunAccount func(context.Context, accounts.HomeLayoutRepository, string, RawWorkflow) (json.RawMessage, error)
+	RunAccount func(context.Context, accounts.PreferenceRepository, string, RawWorkflow) (json.RawMessage, error)
 }
 
 // Membership is executable: the same entry validates and runs a workflow. The changes are exactly

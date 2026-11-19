@@ -1,7 +1,7 @@
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { parseHostedBids, parseHostedTrades } from '../commissioner/hostedMarkets';
 import { nativeHQAssets, nativeHQCap } from '../commissioner/hqReading';
-import { parseJobs, type Jobs } from '../commissioner/jobs';
+import { parseJobSnoozes, parseJobs, type JobSnoozes, type Jobs } from '../commissioner/jobs';
 import { researchAPI, researchAvailable, type ResearchReader } from '../research/api';
 import type { Research } from '../research/contract';
 import { parseLedger, type Ledger } from '../commissioner/proxy';
@@ -32,6 +32,8 @@ export type HomeBrief = {
   assets?: Snapshot;
   /** The commissioner jobs board: live and blocked jobs are the league's alerts. */
   jobs?: Jobs;
+  /** Private account marks hide matching commissioner jobs on this device's Home. */
+  jobSnoozes?: JobSnoozes;
   /** Every trade offer I am a party to, live and finished: the tray's trade alerts. */
   trades?: ReturnType<typeof parseHostedTrades>;
   /** Player research (NFL news, depth charts): the same read the Research screen calls. */
@@ -41,7 +43,7 @@ export type HomeBrief = {
   errors: Partial<Record<HomeSource, string>>;
 };
 export type HomeSource = 'pulse' | 'results' | 'calendar' | 'cap' | 'ledger' | 'bids' | 'draft'
-  | 'matchup' | 'assets' | 'jobs' | 'trades' | 'research';
+  | 'matchup' | 'assets' | 'jobs' | 'jobSnoozes' | 'trades' | 'research';
 
 export const defaultResearch = (): ResearchReader | undefined => researchAvailable() ? researchAPI :
   undefined;
@@ -53,7 +55,7 @@ export const OWNER_ONLY_TRADES = 'Trade offers are visible only to this franchis
 export async function readHomeBrief(league: string, mine: string, port: HostedPort,
   publish?: (brief: HomeBrief) => void,
   research: ResearchReader | null | undefined = defaultResearch(), owner = true,
-  commissioner = false): Promise<HomeBrief> {
+  commissioner = false, accountPreferences = false): Promise<HomeBrief> {
   const out: HomeBrief = { at: {}, errors: {} };
   const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
   const apply = async (source: HomeSource, read: () => Promise<void>) => {
@@ -101,6 +103,10 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       const jobs = parseJobs(r.data);
       if (jobs.league !== league) throw new Error('Jobs belong to another league');
       out.jobs = jobs;
+    })] : []),
+    ...(commissioner && accountPreferences ? [apply('jobSnoozes', async () => {
+      const r = await port({ command: 'job.snoozes.read', mode: 'read', arguments: {} });
+      out.jobSnoozes = parseJobSnoozes(r.data);
     })] : []),
     apply('trades', async () => {
       // Offers are private to the two sides; viewing another franchise must not ask for them.
@@ -160,7 +166,7 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
 /** Thin Home's unassigned commissioner view reads league-wide pulse and commissioner jobs only. */
 export async function readThinHomeBrief(league: string, mine: string, port: HostedPort,
   publish?: (brief: HomeBrief) => void, commissioner = false): Promise<HomeBrief> {
-  if (mine) return readHomeBrief(league, mine, port, publish, null, true, commissioner);
+  if (mine) return readHomeBrief(league, mine, port, publish, null, true, commissioner, true);
   const out: HomeBrief = { at: {}, errors: {} };
   const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
   const apply = async (source: HomeSource, read: () => Promise<void>) => {
@@ -178,7 +184,11 @@ export async function readThinHomeBrief(league: string, mine: string, port: Host
     if (reading.league !== league) throw new Error('Jobs belong to another league');
     out.jobs = reading;
   }) : Promise.resolve();
-  await Promise.all([pulse, jobs]);
+  const snoozes = commissioner ? apply('jobSnoozes', async () => {
+    const r = await port({ command: 'job.snoozes.read', mode: 'read', arguments: {} });
+    out.jobSnoozes = parseJobSnoozes(r.data);
+  }) : Promise.resolve();
+  await Promise.all([pulse, jobs, snoozes]);
   return out;
 }
 

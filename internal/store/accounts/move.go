@@ -14,6 +14,10 @@ import (
 // security chain's rows as stored, prove the copy (per set: row count and ordered-row digest), then
 // remove the sign-in tables from the league file in one transaction that also records the move.
 
+func optionalSignInTable(table string) bool {
+	return table == "account_home_layouts" || table == "account_job_snoozes"
+}
+
 func signInRows() []db.MovedRows {
 	var out []db.MovedRows
 	for _, table := range SignInTables() {
@@ -31,8 +35,8 @@ func signInRowsHeld(ctx context.Context, pools *db.Pools) ([]db.MovedRows, error
 		if err != nil {
 			return nil, fmt.Errorf("inspect %s: %w", set.Table, err)
 		}
-		if !present && set.Table == "account_home_layouts" {
-			continue // This preference was added after one-file servers began moving sign-ins.
+		if !present && optionalSignInTable(set.Table) {
+			continue // These preferences may postdate a one-file server's sign-in move.
 		}
 		if !present {
 			return nil, fmt.Errorf("sign-in file is missing %s", set.Table)
@@ -79,13 +83,16 @@ func ProveSignIns(ctx context.Context, source, target *db.Pools) error {
 	if err := db.ProveMoved(ctx, source, target, sets); err != nil {
 		return fmt.Errorf("accounts: %w", err)
 	}
-	if !hasMovedSet(sets, "account_home_layouts") {
-		proof, err := db.ProveRows(ctx, target.Read(), db.MovedRows{Table: "account_home_layouts"})
+	for _, table := range []string{"account_home_layouts", "account_job_snoozes"} {
+		if hasMovedSet(sets, table) {
+			continue
+		}
+		proof, err := db.ProveRows(ctx, target.Read(), db.MovedRows{Table: table})
 		if err != nil {
-			return fmt.Errorf("accounts: prove empty home layout table: %w", err)
+			return fmt.Errorf("accounts: prove empty %s table: %w", table, err)
 		}
 		if proof.Rows != 0 {
-			return fmt.Errorf("accounts: home layout rows appeared during sign-in conversion")
+			return fmt.Errorf("accounts: %s rows appeared during sign-in conversion", table)
 		}
 	}
 	return nil
@@ -183,7 +190,7 @@ func CommitMove(ctx context.Context, league *db.Pools, held bool, record MoveRec
 			if err != nil {
 				return fmt.Errorf("accounts: inspect %s before move: %w", table, err)
 			}
-			if !exists && table == "account_home_layouts" {
+			if !exists && optionalSignInTable(table) {
 				continue
 			}
 			if !exists {

@@ -5,6 +5,7 @@ import './home.css';
 import './homePhone.css';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { ResearchReader } from '../research/api';
+import { activeJobSnoozes, isJobSnoozed } from '../commissioner/jobs';
 import { subscribeSeason } from '../market/api';
 import { defaultResearch, mergeBrief, readHomeBrief, retryDelay, transientErrors,
   type HomeBrief as Brief } from './homeReads';
@@ -29,7 +30,8 @@ function layoutSummary(syncLayout: boolean, owner: boolean, status: LayoutSyncSt
 }
 const TRAY: Record<Tab | 'edit', string> = {
   brief: 'Home reads and links only · nothing here changes the league',
-  edit: 'CUSTOMIZE · drag ⠿ to move · size buttons resize · ✕ sends to overflow · nothing commits from Home',
+  edit: 'CUSTOMIZE · drag ⠿ to move · size buttons resize · ✕ sends to overflow · ' +
+    'nothing commits from Home',
   depth: 'Depth source: nflverse depth charts, newest snapshot · ' +
     'names coloured by who has them in your league',
   stats: 'NFL stats: no league-wide stats table read exists yet',
@@ -72,8 +74,8 @@ export function seasonAlerts(b: Brief, now: number): Alert[] {
 }
 export function alertsOf(b: Brief, now = Date.now()): Alert[] {
   // A blocked job needs someone; a live job is an alert only when it has a deadline to meet.
-  const jobs = (b.jobs?.jobs ?? []).filter(j => j.state === 'blocked' || (j.state === 'live' && j.closes))
-    .map(j => ({
+  const jobs = (b.jobs?.jobs ?? []).filter(j => !isJobSnoozed(b.jobSnoozes, b.jobs?.league ?? '', j.id, now)
+    && (j.state === 'blocked' || (j.state === 'live' && j.closes))).map(j => ({
     id: `job.${j.id}`, level: j.state === 'blocked' ? 'red' as const : 'amber' as const, title: j.name,
     words: j.words, when: j.closes || undefined }));
   const room = b.runway?.[0]?.room;
@@ -90,6 +92,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
   research?: ResearchReader; owner?: boolean; accountSync?: boolean; commissioner?: boolean }) {
   const syncLayout = accountSync ?? true;
   const [b, setB] = useState<Brief>(initial ?? { at: {}, errors: {} });
+  const [renderedAt, setRenderedAt] = useState(Date.now());
   const grid = useRef<HTMLElement>(null);
   const [tab, setTab] = useState<Tab>('brief');
   const key = layoutKey(league, mine);
@@ -116,9 +119,19 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
     const first = scope.current !== `${league}|${mine}`;
     scope.current = `${league}|${mine}`;
     void readHomeBrief(league, mine, port, r => { if (live) setB(prev => first ? r : mergeBrief(prev, r)); },
-      research ?? defaultResearch(), owner, commissioner).finally(() => { if (live) setDone(pass); });
+      research ?? defaultResearch(), owner, commissioner, syncLayout).finally(() => {
+      if (live) setDone(pass);
+    });
     return () => { live = false; };
-  }, [league, mine, port, initial, research, pass, owner, commissioner]);
+  }, [league, mine, port, initial, research, pass, owner, commissioner, syncLayout]);
+  useEffect(() => {
+    const next = activeJobSnoozes(b.jobSnoozes, b.jobs?.league ?? '', renderedAt)
+      .map(snooze => Date.parse(snooze.until)).sort((a, c) => a - c)[0];
+    if (next === undefined) return;
+    const delay = Math.min(2_147_483_647, Math.max(0, next - renderedAt + 1));
+    const timer = window.setTimeout(() => setRenderedAt(Date.now()), delay);
+    return () => window.clearTimeout(timer);
+  }, [b.jobSnoozes, b.jobs?.league, renderedAt]);
   const retrying = !initial && done === pass && transientErrors(b);
   useEffect(() => {
     if (!retrying) { if (done === pass) attempts.current = 0; return; }
@@ -164,7 +177,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
     document.addEventListener('keydown', key);
     return () => document.removeEventListener('keydown', key);
   }, [edit, tab]);
-  const alerts = alertsOf(b);
+  const alerts = alertsOf(b, renderedAt);
   const alertsLost = b.errors.jobs;
   const pins = (Object.keys(lay.pins) as TileId[]).filter(id => lay.pins[id]);
   const row = myRow(b, mine);
@@ -275,7 +288,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
             : !b.at.jobs ? <><span className="ak">ALERTS</span><span className="at">Reading…</span></>
             : alerts.length ? <><span className="ak">▲ {alerts[0].title.toUpperCase()}</span>
               <span className="at">{alerts[0].words}</span>
-              {alerts[0].when && <span className="clock">{left(alerts[0].when, Date.now())}</span>}</>
+              {alerts[0].when && <span className="clock">{left(alerts[0].when, renderedAt)}</span>}</>
             : <><span className="ak">NO ALERTS</span><span className="at">Nothing needs you right now</span>
               </>}
           <span className="more">{alerts.length > 1 && <b>+{alerts.length - 1}</b>}ALL ALERTS ›</span>
@@ -402,8 +415,8 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
           <span className="m" style={{ font: '11px var(--mono)', color: 'var(--ink3)' }}>{row?.division ??
             ''}</span></div>
           <div className="nm">{nameOf(b, mine)}</div><div className="sub">{b.pulse?.name ?? ''}</div></div>
-        <div className="nums"><div><b>{row?.record ?? '—'}</b><span>RECORD · SEED {row?.rank ?? '—'}</span>
-          </div>
+        <div className="nums"><div><b>{row?.record ?? '—'}</b>
+            <span>RECORD · SEED {row?.rank ?? '—'}</span></div>
           <div title={b.pulse?.odds?.powerWords}><b>{power ? `#${power}` : '—'}</b>
             <span>POWER · {power ? 'SEASON' : b.pulse?.odds ? unavailable : stillReading}</span></div></div>
         <div className="idrawers" style={{ overflow: 'hidden' }}>{sel ? <>

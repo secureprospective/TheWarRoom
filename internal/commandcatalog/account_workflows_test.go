@@ -9,9 +9,12 @@ import (
 )
 
 type homeLayoutRepositoryFixture struct {
-	accountID string
-	input     accounts.RawHomeLayoutSet
-	state     accounts.HomeLayoutState
+	accountID   string
+	input       accounts.RawHomeLayoutSet
+	state       accounts.HomeLayoutState
+	snoozeInput accounts.RawJobSnoozeSet
+	wakeInput   accounts.RawJobSnoozeWake
+	snoozes     accounts.JobSnoozesState
 }
 
 func (f *homeLayoutRepositoryFixture) ReadHomeLayout(_ context.Context, accountID string) (accounts.HomeLayoutState, error) {
@@ -23,6 +26,23 @@ func (f *homeLayoutRepositoryFixture) SetHomeLayout(_ context.Context, accountID
 	input accounts.RawHomeLayoutSet) (accounts.HomeLayoutState, error) {
 	f.accountID, f.input = accountID, input
 	return f.state, nil
+}
+
+func (f *homeLayoutRepositoryFixture) ReadJobSnoozes(_ context.Context, accountID string) (accounts.JobSnoozesState, error) {
+	f.accountID = accountID
+	return f.snoozes, nil
+}
+
+func (f *homeLayoutRepositoryFixture) SetJobSnooze(_ context.Context, accountID string,
+	input accounts.RawJobSnoozeSet) (accounts.JobSnoozesState, error) {
+	f.accountID, f.snoozeInput = accountID, input
+	return f.snoozes, nil
+}
+
+func (f *homeLayoutRepositoryFixture) WakeJobSnooze(_ context.Context, accountID string,
+	input accounts.RawJobSnoozeWake) (accounts.JobSnoozesState, error) {
+	f.accountID, f.wakeInput = accountID, input
+	return f.snoozes, nil
 }
 
 func TestHomeLayoutWorkflowsUseAccountScopeWithoutLeagueInput(t *testing.T) {

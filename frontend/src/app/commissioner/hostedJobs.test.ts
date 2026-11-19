@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
-import type { Job, Jobs } from './jobs';
-import { filterJobLanes, jobKind, orderJobLanes } from './hostedJobs';
+import { activeJobSnoozes, isJobSnoozed, parseJobSnoozes, type Job, type Jobs } from './jobs';
+import { filterJobLanes, jobKind, jobSnoozeChoices, orderJobLanes } from './hostedJobs';
 
 const now = Date.parse('2026-11-17T12:00:00Z');
 function job(id: string, state: Job['state'], due = '', controls: string[] = []): Job {
@@ -28,6 +28,38 @@ it('orders all six lanes and prioritizes due-now work, then blockers, then the n
   expect(lanes.week.map(item => item.id)).toEqual(['week']);
   expect(lanes.later.map(item => item.id)).toEqual(['later']);
   expect(lanes['no-clock'].map(item => item.id)).toEqual(['no-clock']);
+});
+
+it('validates the private snooze reading before using it', () => {
+  expect(parseJobSnoozes({ snoozes: [{ league: 'native.test', jobId: 'review',
+    until: '2026-11-19T12:00:00Z' }] }).snoozes).toHaveLength(1);
+  expect(() => parseJobSnoozes({ snoozes: [{ league: 'native.test', jobId: 'review', until: 'later' }] }))
+    .toThrow('RFC3339');
+});
+
+it('snoozes only the matching league job and expires at its saved instant', () => {
+  const state = { snoozes: [
+    { league: 'native.test', jobId: 'review', until: new Date(now + 1000).toISOString() },
+    { league: 'other.league', jobId: 'review', until: new Date(now + 1000).toISOString() },
+  ] };
+  expect(isJobSnoozed(state, 'native.test', 'review', now)).toBe(true);
+  expect(activeJobSnoozes(state, 'native.test', now)).toHaveLength(1);
+  expect(isJobSnoozed(state, 'native.test', 'review', now + 1000)).toBe(false);
+  expect(isJobSnoozed({ snoozes: [] }, 'native.test', 'review', now)).toBe(false);
+});
+
+it('offers the three-hour, local next-morning and available deadline choices', () => {
+  const nextMorning = new Date(now);
+  nextMorning.setDate(nextMorning.getDate() + 1);
+  nextMorning.setHours(9, 0, 0, 0);
+  const item = job('review', 'live', new Date(now + 48 * 60 * 60 * 1000).toISOString());
+  expect(jobSnoozeChoices(item, now)).toEqual([
+    { label: '3 hours', until: new Date(now + 3 * 60 * 60 * 1000).toISOString() },
+    { label: 'Tomorrow at 9 AM (local)', until: nextMorning.toISOString() },
+    { label: 'Until next deadline', until: item.closes },
+  ]);
+  expect(jobSnoozeChoices(job('no-deadline', 'live'), now).map(choice => choice.label))
+    .toEqual(['3 hours', 'Tomorrow at 9 AM (local)']);
 });
 
 it('orders all jobs at 32-team depth and filters by actTable kind', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { onHostedTopics } from '../data/hostedReads';
 import { HostedRules } from './HostedRules';
@@ -16,7 +16,8 @@ import { createHostedFixQuery, createHostedJobsQuery, createHostedLedgerQuery, h
   hostedControlTabs, type HostedControlTab } from './hostedControlRoomData';
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
 import type { ActValues } from './actBody';
-import type { Job } from './jobs';
+import type { NativeRequest } from '../commands/native';
+import { activeJobSnoozes, parseJobSnoozes, type Job, type JobSnooze, type JobSnoozes } from './jobs';
 import type { ActDefinition } from './actTable';
 import { hostedWorkflow } from '../control/nativeApi';
 import './commissioner.css';
@@ -39,6 +40,41 @@ export function HostedControlRoom({ league, port, heldRoom }: {
   const [job, setJob] = useState<Job>();
   const [routeWords, setRouteWords] = useState('');
   const [feedbackRefreshVersion, setFeedbackRefreshVersion] = useState(0);
+  const [jobSnoozes, setJobSnoozes] = useState<JobSnoozes>();
+  const [snoozeError, setSnoozeError] = useState('');
+  const [snoozePending, setSnoozePending] = useState('');
+  const [jobNow, setJobNow] = useState(Date.now());
+  const preferencePort = port ?? hostedWorkflow;
+  const loadJobSnoozes = useCallback(async (isCurrent: () => boolean = () => true) => {
+    if (isCurrent()) { setJobSnoozes(undefined); setSnoozeError(''); }
+    try {
+      const response = await preferencePort({ command: 'job.snoozes.read', mode: 'read', arguments: {} });
+      const state = parseJobSnoozes(response.data);
+      if (isCurrent()) { setJobSnoozes(state); setSnoozeError(''); }
+    } catch {
+      if (isCurrent()) {
+        setJobSnoozes(undefined);
+        setSnoozeError('Your private job snoozes could not be read. Jobs are shown normally.');
+      }
+    }
+  }, [preferencePort]);
+
+  useEffect(() => {
+    let active = true;
+    setJobSnoozes(undefined);
+    setSnoozeError('');
+    void loadJobSnoozes(() => active);
+    return () => { active = false; };
+  }, [league, loadJobSnoozes]);
+
+  useEffect(() => {
+    const next = activeJobSnoozes(jobSnoozes, league, jobNow)
+      .map(snooze => Date.parse(snooze.until)).sort((a, b) => a - b)[0];
+    if (next === undefined) return;
+    const delay = Math.min(2_147_483_647, Math.max(0, next - jobNow + 1));
+    const timer = window.setTimeout(() => setJobNow(Date.now()), delay);
+    return () => window.clearTimeout(timer);
+  }, [jobNow, jobSnoozes, league]);
 
   useEffect(() => {
     const refreshJobs = () => {
@@ -70,6 +106,27 @@ export function HostedControlRoom({ league, port, heldRoom }: {
     fixQuery.invalidate();
     void fixQuery.load([league], { overlap: 'after' });
   };
+  const writeJobSnooze = async (request: NativeRequest, jobID: string) => {
+    if (snoozePending) return;
+    setSnoozePending(jobID);
+    setSnoozeError('');
+    try {
+      const response = await preferencePort(request);
+      setJobSnoozes(parseJobSnoozes(response.data));
+    } catch {
+      setSnoozeError('Could not update your private job snoozes. Refresh and try again.');
+    } finally {
+      setSnoozePending('');
+    }
+  };
+  const snoozeJob = (source: Job, until: string) => void writeJobSnooze({
+    command: 'job.snooze.set', mode: 'execute',
+    arguments: { league, jobId: source.id, until },
+  }, source.id);
+  const wakeJob = (source: JobSnooze) => void writeJobSnooze({
+    command: 'job.snooze.wake', mode: 'execute',
+    arguments: { league: source.league, jobId: source.jobId },
+  }, source.jobId);
   const openTool = (next: ActDefinition, source?: Job, destination: HostedControlTab = 'jobs',
     initial?: ActValues) => {
     setDefinition(next);
@@ -108,9 +165,10 @@ export function HostedControlRoom({ league, port, heldRoom }: {
           {label}{id === 'jobs' && jobCount !== undefined
             ? <> <span className="cr-st">{jobCount}</span></> : null}
         </HQAct>)}
-        <HQAct className="hosted-control-refresh" disabled={roomState.pending || jobsState.pending}
+        <HQAct className="hosted-control-refresh" disabled={roomState.pending || jobsState.pending
+          || snoozePending !== ''}
           onAction={() => { void room.refresh(); jobsQuery.invalidate(); void jobsQuery.load([league]);
-            if (tab === 'fix') refreshFixes();
+            void loadJobSnoozes(); if (tab === 'fix') refreshFixes();
             if (tab === 'feedback') setFeedbackRefreshVersion(version => version + 1); }}>
           Refresh
         </HQAct>
@@ -120,7 +178,9 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {routeWords && <p role="status" className="cr-note">{routeWords}</p>}
         {tab === 'jobs' && <div className="hosted-jobs-column">
           {jobsState.error && <p role="alert" className="cr-note">{jobsState.error}</p>}
-          <HostedControlRoomJobs jobs={jobsState.jobs} onOpen={openTool} onUnavailable={showRoute} />
+          <HostedControlRoomJobs league={league} jobs={jobsState.jobs} snoozes={jobSnoozes} now={jobNow}
+            snoozeError={snoozeError} pendingJob={snoozePending} onSnooze={snoozeJob} onWake={wakeJob}
+            onOpen={openTool} onUnavailable={showRoute} />
           {definition && openedTab === 'jobs' && <HostedCommissionerActTray definition={definition}
             league={league} room={room} port={port} initial={initialValues} />}
           {job && <p className="hosted-job-source">Opened from: {job.name}</p>}

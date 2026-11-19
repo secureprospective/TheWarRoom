@@ -109,6 +109,18 @@ it('routes account layout workflows through the account preference endpoint', as
   } });
 });
 
+it('routes private job snooze workflows through the account preference endpoint', async () => {
+  const fetcher = vi.fn().mockResolvedValue(jsonResponse({ protocol: 1 }));
+  vi.stubGlobal('fetch', fetcher);
+  const request = { command: 'job.snoozes.read', mode: 'read', arguments: {} } as NativeRequest;
+  await webTransport.workflow(request, '');
+  const [path, init] = fetcher.mock.calls[0];
+  expect(path).toBe('/v1/account/preferences');
+  expect(JSON.parse(init.body)).toMatchObject({ protocol: 1, workflow: {
+    command: 'job.snoozes.read', mode: 'read', arguments: {},
+  } });
+});
+
 it('does not open the desktop bearer-only invalidation stream for browser sessions', () => {
   const eventSource = vi.fn();
   vi.stubGlobal('EventSource', eventSource);

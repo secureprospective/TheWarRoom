@@ -123,6 +123,22 @@ describe('gatherNeedsYou', () => {
     expect(got.filter(entry => entry.kind === 'commissioner').map(entry => entry.leagueId)).toEqual(['a']);
   });
 
+  it('hides a snoozed commissioner need only until its saved time', async () => {
+    const readBrief = vi.fn(async (league: string) => brief({
+      jobs: { league, jobs: [{ id: 'review', name: 'Review the season', state: 'blocked',
+        words: 'Waiting on the commissioner', closes: '' }] } as never,
+      jobSnoozes: { snoozes: league === 'a' ? [{ league: 'a', jobId: 'review', until: at(7) }] : [] },
+    }));
+    const options = { readPeople: async (league: string) => person(league, `${league}-owner`, 'Commissioner'),
+      readBrief, now: Date.parse(at(6)) };
+    const hidden = await gatherNeedsYou(leagues.slice(0, 2), port, options);
+    expect(hidden.filter(entry => entry.kind === 'commissioner').map(entry => entry.leagueId)).toEqual(['b']);
+    const restored = await gatherNeedsYou(leagues.slice(0, 2), port,
+      { ...options, now: Date.parse(at(7)) });
+    expect(restored.filter(entry => entry.kind === 'commissioner').map(entry => entry.leagueId))
+      .toEqual(['a', 'b']);
+  });
+
   it('does not turn a normal offseason with no open week into an unavailable item', async () => {
     const got = await gatherNeedsYou([leagues[0]], port, {
       readPeople: async () => person('a', 'a-owner'),

@@ -2812,6 +2812,9 @@ export type WorkflowArgumentMap = {
 "trade.draft.delete": NativeArguments<"trade.draft.delete">;
 "home.layout.read": NativeArguments<"home.layout.read">;
 "home.layout.set": NativeArguments<"home.layout.set">;
+"job.snoozes.read": NativeArguments<"job.snoozes.read">;
+"job.snooze.set": NativeArguments<"job.snooze.set">;
+"job.snooze.wake": NativeArguments<"job.snooze.wake">;
 "backup.now": NativeArguments<"backup.now">;
 };
 export type CommandArgumentMap = {
