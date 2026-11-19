@@ -4,12 +4,9 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 )
@@ -28,6 +25,8 @@ type NFLInjuryFeed struct {
 // NFLInjuryFeedSource reads the latest validated report from held reference storage.
 type NFLInjuryFeedSource interface {
 	ReadNFLInjuryFeed(context.Context) (NFLInjuryFeed, error)
+	// ResolveNFLReturnWeeks maps each expected return date onto the league's pinned NFL weeks.
+	ResolveNFLReturnWeeks(rows []leaguefeed.Injury, weeks []leagueweek.Week) []leaguefeed.Injury
 }
 
 // NFLPlayerStatusFact contains only public status facts for one player.
@@ -90,11 +89,10 @@ func (a *Service) reportNFLPlayerStatus(ctx context.Context, reading NFLPlayerSt
 		reading.State = "stale"
 	}
 	weeks, scheduleErr := a.host.NativeScheduleDates(ctx, feed.Season, now)
-	var schedule []nflschedule.RawWeek
-	if scheduleErr == nil {
-		schedule = injurySchedule(weeks)
+	if scheduleErr != nil {
+		weeks = nil
 	}
-	for _, injury := range injuries.ResolveReturnWeeks(feed.Injuries, schedule) {
+	for _, injury := range a.injuryFeed.ResolveNFLReturnWeeks(feed.Injuries, weeks) {
 		fact := NFLPlayerStatusFact{Player: injury.ID.String(), Designation: injury.Status, BodyPart: injuryBodyPart(injury.Details)}
 		if injury.ReturnSeason == feed.Season {
 			fact.ExpectedReturnWeek = injury.ReturnWeek
@@ -116,16 +114,4 @@ func (a *Service) reportNFLPlayerStatus(ctx context.Context, reading NFLPlayerSt
 func injuryBodyPart(details string) string {
 	bodyPart, _, _ := strings.Cut(strings.TrimSpace(details), " - ")
 	return strings.TrimSpace(bodyPart)
-}
-
-func injurySchedule(weeks []leagueweek.Week) []nflschedule.RawWeek {
-	out := make([]nflschedule.RawWeek, 0, len(weeks))
-	for _, week := range weeks {
-		raw := nflschedule.RawWeek{Week: strconv.Itoa(week.Number), Matchups: make([]nflschedule.RawMatchup, 0, len(week.Games))}
-		for _, game := range week.Games {
-			raw.Matchups = append(raw.Matchups, nflschedule.RawMatchup{Kickoff: strconv.FormatInt(game.Kickoff.Unix(), 10)})
-		}
-		out = append(out, raw)
-	}
-	return out
 }

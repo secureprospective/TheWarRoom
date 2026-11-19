@@ -14,8 +14,10 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -160,4 +162,17 @@ func runRefreshNFLInjuries(ctx context.Context, args []string, output io.Writer)
 		}
 	}()
 	return newNFLInjuryFeed(files.leagues.family.Over(files.reference)).Refresh(ctx, *season, nil, output)
+}
+
+// ResolveNFLReturnWeeks maps expected return dates onto the league's pinned NFL weeks.
+func (f nflInjuryFeed) ResolveNFLReturnWeeks(rows []leaguefeed.Injury, weeks []leagueweek.Week) []leaguefeed.Injury {
+	raw := make([]nflschedule.RawWeek, 0, len(weeks))
+	for _, week := range weeks {
+		held := nflschedule.RawWeek{Week: strconv.Itoa(week.Number), Matchups: make([]nflschedule.RawMatchup, 0, len(week.Games))}
+		for _, game := range week.Games {
+			held.Matchups = append(held.Matchups, nflschedule.RawMatchup{Kickoff: strconv.FormatInt(game.Kickoff.Unix(), 10)})
+		}
+		raw = append(raw, held)
+	}
+	return injuries.ResolveReturnWeeks(rows, raw)
 }

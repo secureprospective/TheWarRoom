@@ -10,6 +10,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -95,6 +96,10 @@ type fixedNFLInjuryFeed struct{ feed leagueservice.NFLInjuryFeed }
 
 func (f fixedNFLInjuryFeed) ReadNFLInjuryFeed(context.Context) (leagueservice.NFLInjuryFeed, error) {
 	return f.feed, nil
+}
+
+func (fixedNFLInjuryFeed) ResolveNFLReturnWeeks(rows []leaguefeed.Injury, _ []leagueweek.Week) []leaguefeed.Injury {
+	return rows
 }
 
 func TestHostedNFLPlayerStatusIsAReportedMemberRead(t *testing.T) {

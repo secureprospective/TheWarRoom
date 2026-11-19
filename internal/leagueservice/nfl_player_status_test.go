@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,19 @@ type nflInjuryFeedFunc func(context.Context) (NFLInjuryFeed, error)
 
 func (f nflInjuryFeedFunc) ReadNFLInjuryFeed(ctx context.Context) (NFLInjuryFeed, error) {
 	return f(ctx)
+}
+
+// ResolveNFLReturnWeeks stands in for the server adapter: a return date on a week's kickoff day is that week.
+func (nflInjuryFeedFunc) ResolveNFLReturnWeeks(rows []leaguefeed.Injury, weeks []leagueweek.Week) []leaguefeed.Injury {
+	out := slices.Clone(rows)
+	for i := range out {
+		for _, week := range weeks {
+			if len(week.Games) > 0 && week.Games[0].Kickoff.Format("Jan 2, 2006") == out[i].ExpReturn {
+				out[i].ReturnSeason, out[i].ReturnWeek = week.Games[0].Kickoff.Year(), week.Number
+			}
+		}
+	}
+	return out
 }
 
 type nflStatusTestHost struct {
