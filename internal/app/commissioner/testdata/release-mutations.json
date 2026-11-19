@@ -1275,7 +1275,6 @@
     "visibility": "league",
     "effective": "now",
     "admittedRoles": [
-      "commissioner",
       "owner"
     ]
   },

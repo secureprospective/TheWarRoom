@@ -275,13 +275,14 @@ func TestHostedRosterAddIsSeatedPreviewedAndReceipted(t *testing.T) {
 	if index := assets.Snapshot.PlayerOf("franchise.02", "6001"); index < 0 || assets.Snapshot.Players[index].Salary <= 0 {
 		t.Fatalf("owner add did not land a contracted player: %+v", assets.Snapshot.Players)
 	}
-	commissionerClient.run(commissionerClient.command(commissioner.RosterAdd,
-		commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: "6002", Franchise: "franchise.02"}}, "commissioner.add.with.reason"))
+	// roster.add is owner-only: a commissioner changes another team's roster through a correction.
+	commissionerClient.refuse(commissionerClient.command(commissioner.RosterAdd,
+		commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: "6002", Franchise: "franchise.02"}}, "commissioner.add"), "")
 	if err := json.Unmarshal(owner.invoke("native.assets.read", "read", []byte(`{"league":"native.hosted"}`), 200).Data, &assets); err != nil {
 		t.Fatal(err)
 	}
-	if assets.Snapshot.PlayerOf("franchise.02", "6002") < 0 {
-		t.Fatal("commissioner could not add for another franchise with a reason")
+	if assets.Snapshot.PlayerOf("franchise.02", "6002") >= 0 {
+		t.Fatal("commissioner added a free agent to another owner's franchise")
 	}
 	beforeOther := assets.Revision
 	beforeOtherSnapshot, err := json.Marshal(assets.Snapshot)
