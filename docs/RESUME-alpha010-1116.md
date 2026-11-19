@@ -3,7 +3,26 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. TOM HEAD BRAIN — STATE AT 9:15 PM CST WED 11-18 (supersedes every older 0 block)
+## 0. TOM HEAD BRAIN — STATE AT 10:05 AM CST THU 11-19 (supersedes every older 0 block)
+
+**Goal:** phone app (Bundle 9) proven on real phones, on main Sat; testers on lab CT 260 Sun 11-22 (week 12).
+Run dir `~/fleet/runs/overnight-alpha-1118/` (REPORT.md, PLAN.md). Tracker `~/Downloads/twr-usable-week-plan.html` via `~/fleet/bin/twr-tracker.py` only.
+Merge authority: lane PRs → bundle branches after my review + green CI (twr-batch-merge.sh). **main needs Christopher's go each time** (CLAUDE.md hard limit 2).
+
+**Done since 9:15 PM:** #394→b7; **B7 on main #396 (5a582c47a, his go)**; into b9: #397 league, #398 Today/Ask, #399 Moves, #400 b7→b9 (fixes phone sign-in 403: Chrome GET /app/session had no Origin), main sync 4c15e137a, #402 tester guide, #403 release 10, #401 flaky tests, #405 layouts server-only (sec9 finding). Closed #304 #342 (superseded). Tool `~/fleet/bin/phone-chrome.py` drives Chrome on both phones (goto/eval/shot/measure/walk). bundle/b8 sync skipped (wholly inside b9).
+
+**Rulings 11-19 (do not re-ask):** lab CT 260 = alpha tester server; LAB-ONLY trust chain accepted for alpha; release 10 on b9 OK; Saturday 11-21 fresh re-import of CURRENT MFL league 14432 (MFL stays official, TWR mirrors); seats start vacant.
+
+**In flight (check: `cat ~/fleet/runs/pulse-<lane>/completion.txt`; report `tail -c 2500 stdout.log`):**
+- batch #404 (refresh-nfl-schedule cmd) → b9, then chain auto-launches **b9lab2** (redeploy b9 release 10 to CT 260 + run refresh-nfl-schedule; brief `~/fleet/briefs/alpha010/b9lab2.md`, TUF targets v9). Chain shell task bjtn5ffsq; it moves old `pulse-b9lab2` → `-try1`. If chain died: do those steps by hand.
+- lanes joinonce (join link one claim), freshlab (Sat re-import runbook; launched BEFORE Part 2 ruling — relaunch with brief Part 2 if it delivers "free seats, keep 11-08 data"), lineup12 (import carries current-week lineups). Watchers: twr-lane-wait.sh + twr-lane-check.sh 50 (re-arm each time).
+
+**Refuted — don't retest:** scores wk1-8 match MFL exactly (scores11); wk9-10 absent = 11-08 import, not a scoring bug. perf: no regression (holds 256). flaky roster-add test: 50/50 pass.
+
+**Next:** 1) b9lab2 deploy → verify `/app/session` no-Origin = 401, dates present. 2) Phone walk v2 (brief phonewalk.md + use phone-chrome.py; output ~/fleet/runs/phone-walk-1118/) owner+commish, iPhone+S8. 3) Bugs → fix lanes into b9. 4) Merge joinonce/lineup12/freshlab PRs; update TESTER-GUIDE (join link, open seats, clipping). 5) Sat: run freshlab runbook (backup first). 6) Ask his go: b9 → main.
+**Needs Christopher:** CT 257 keys rotate; Paylocity tab glance; b9→main go (Sat). Windows laptop: 192.168.1.210 (HP?) 4-224 ms jitter = weak Wi-Fi; suggested fixes given.
+
+## 0-prev7. (older) TOM HEAD BRAIN — STATE AT 9:15 PM CST WED 11-18
 
 **Christopher is asleep. Ruling 9:10 PM: "take the wheel and finish the main session; do what you can on the
 iPhone and the S8; keep working."** Tom runs unattended; blocked steps go to "Needs Christopher" in
