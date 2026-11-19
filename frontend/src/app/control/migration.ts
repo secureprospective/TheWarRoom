@@ -6,18 +6,33 @@ import { leagueState, parseReceipt } from '../commissioner/proxy';
 import { runMigration } from './api';
 
 export type Waiting = { field: string; label: string; schema: RuleSchema };
+export type LineupPreview = {
+  week: number; franchise: string; team: string; starters: { player: string; name: string }[];
+};
 export type Preparation = {
   league: string; name: string; season: number; franchises: number; players: number; picks: number;
-  settings: number; notes: string[]; problems: string[]; ready: boolean; preset: string; waiting: Waiting[];
+  settings: number; lineups: LineupPreview[]; notes: string[]; problems: string[]; ready: boolean;
+  preset: string; waiting: Waiting[];
 };
 export function parsePreparation(value: unknown): Preparation {
   const r = object(value, 'MFL league', ['league', 'name', 'season', 'franchises', 'players', 'picks',
-    'settings', 'notes', 'problems', 'ready', 'preset', 'waiting']);
+    'settings', 'lineups', 'notes', 'problems', 'ready', 'preset', 'waiting']);
   if (typeof r.ready !== 'boolean') throw new Error('The MFL league could not be read. Prepare again.');
   return {
     league: text(r.league, 'League'), name: text(r.name, 'Name'), season: integer(r.season, 'Season'),
     franchises: integer(r.franchises, 'Teams'), players: integer(r.players, 'Players'),
     picks: integer(r.picks, 'Picks'), settings: integer(r.settings, 'Settings'), ready: r.ready,
+    lineups: array(r.lineups, 'Starting lineups', (value, path) => {
+      const l = object(value, path, ['week', 'franchise', 'team', 'starters']);
+      return { week: integer(l.week, `${path}.week`), franchise: text(l.franchise, `${path}.franchise`),
+        team: text(l.team, `${path}.team`), starters: array(
+          l.starters, `${path}.starters`, (item, itemPath) => {
+            const s = object(item, itemPath, ['player', 'name']);
+            return { player: text(s.player, `${itemPath}.player`),
+              name: text(s.name, `${itemPath}.name`) };
+          }),
+      };
+    }),
     preset: text(r.preset, 'Starting settings'), notes: array(r.notes, 'Notes', text),
     problems: array(r.problems, 'Problems', text),
     waiting: array(r.waiting ?? [], 'Settings waiting', (value, path) => {
