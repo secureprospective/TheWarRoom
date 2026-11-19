@@ -183,8 +183,10 @@ function LiveRow({ league, brief, failure, onOpen }: { league: LeagueChoice; bri
   failure?: string; onOpen: () => void }) {
   const mine = league.franchise ?? '';
   const game = brief && mine ? myGame(brief, mine) : undefined;
-  const words = failure ? `${unavailable} · ${failure}`
-    : !brief ? 'Reading…'
+  // A refused or failed read is never shown as error text: the row offers to switch to that league.
+  if (failure) return <HQAct className="today6__live is-quiet" label={`Open ${league.name} to see scores`}
+    onAction={onOpen}><span><b>{league.name}</b><em>Open to see scores</em></span><b></b><i>›</i></HQAct>;
+  const words = !brief ? 'Reading…'
       : !mine ? 'No team of yours in this league'
         : brief.errors.results ? `${unavailable} · ${brief.errors.results}`
           : !game ? brief.results?.bye === mine ? 'Bye week' : 'No game this week'

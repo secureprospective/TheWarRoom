@@ -132,14 +132,18 @@ describe('TodayTab', () => {
     const other: LeagueChoice = { ...league, id: 'f32', name: 'Foundry 32' };
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     host = document.createElement('div'); document.body.append(host); root = createRoot(host);
-    await act(async () => root!.render(<TodayTab leagues={[league, other]} onOpen={vi.fn()}
+    const onOpen = vi.fn();
+    await act(async () => root!.render(<TodayTab leagues={[league, other]} onOpen={onOpen}
       port={layoutPort([], { saved: defaultLayout(), revision: 0 })} now={now}
       readBrief={async id => { if (id === 'f32') throw new Error('Not admitted to this league');
         return loaded(); }} />));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
     const rows = [...host.querySelectorAll('[aria-label="Live now"] .today6__live')];
     expect(rows.map(r => r.textContent)).toEqual([expect.stringContaining('Iron Curtain vs Gridlock'),
-      expect.stringContaining('Foundry 32Not available yet · Not admitted to this league')]);
+      'Foundry 32Open to see scores›']);
+    expect(host.querySelector('[aria-label="Live now"]')!.textContent).not.toContain('Not admitted');
+    await press('Open Foundry 32 to see scores');
+    expect(onOpen).toHaveBeenCalledWith(other, 'pulse');
     expect(host.textContent).toContain('2 leagues');
   });
 });
