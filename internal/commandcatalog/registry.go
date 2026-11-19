@@ -292,8 +292,13 @@ func (e *Entry) handlers(door Door) map[Mode]Handler {
 }
 
 func commandLabel(id string) string {
-	if id == "oline.auction.close" {
+	switch id {
+	case "oline.auction.close":
 		return "Close O-Line auction"
+	case "waivers.claim.order.set":
+		return "Set your waiver claim order"
+	case "waivers.claim.cancel":
+		return "Cancel your waiver claim"
 	}
 	if strings.Contains(id, ".") {
 		words := strings.Split(strings.ReplaceAll(id, "_", " "), ".")

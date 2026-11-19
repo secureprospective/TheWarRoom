@@ -29,11 +29,11 @@ func TestAliasPrivateWaiverClaims(t *testing.T) {
 	b := newLedger(t, commissioner.PresetEmpty)
 	records, account := principalRecords(t, b.records, "legacy-owner", "other-install")
 	window := commissioner.WaiverWindow{ID: "window", Claims: []commissioner.WaiverBookClaim{{ID: "claim", Franchise: "one", Principal: "legacy-owner"}}}
-	claims := appendOwnWaiverClaims(nil, window, "one", account, records)
+	claims := appendOwnWaiverClaims(nil, window, "one", account, records, nil)
 	if len(claims) != 1 || claims[0].ID != "claim" {
 		t.Fatalf("own alias claim hidden: %+v", claims)
 	}
-	if got := appendOwnWaiverClaims(nil, window, "one", "unverified", records); len(got) != 0 {
+	if got := appendOwnWaiverClaims(nil, window, "one", "unverified", records, nil); len(got) != 0 {
 		t.Fatal("claim leaked")
 	}
 }

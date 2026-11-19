@@ -105,6 +105,8 @@ func nativeMarketMutations() []struct{ id, args string } {
 		{commissioner.RosterCut, "waiver"},
 		{commissioner.RosterAdd, "waiver"},
 		{commissioner.WaiverClaim, "waiver"},
+		{commissioner.WaiverClaimOrderSet, "waiver"},
+		{commissioner.WaiverClaimCancel, "waiver"},
 		{commissioner.WaiverProcess, "waiver"},
 		{commissioner.WaiverOrderSet, "waiver"},
 		{commissioner.WaiverOrderAuto, "waiver"},

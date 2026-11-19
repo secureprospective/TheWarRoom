@@ -258,7 +258,7 @@ func TradeDigest(t TradeState) string {
 	return fmt.Sprintf("%x", sha256.Sum256(body))
 }
 
-func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
+func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record, records []Record) error {
 	args, result := r.Command.Args.Waiver, r.Command.Args.WaiverOutcome
 	effective, err := r.Command.EffectiveTime(r.Receipt.RecordedAt)
 	if err != nil {
@@ -267,13 +267,14 @@ func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 	if args == nil {
 		return fmt.Errorf("a waiver change has no details")
 	}
-	if r.Command.Command != WaiverClaim && result == nil {
+	if r.Command.Command != WaiverClaim && r.Command.Command != WaiverClaimOrderSet &&
+		r.Command.Command != WaiverClaimCancel && result == nil {
 		return fmt.Errorf("a waiver change has no recorded decision")
 	}
 	if handled, err := projectRosterWaiver(seed, state, r, effective); handled {
 		return err
 	}
-	return projectOtherWaiver(seed, state, r)
+	return projectOtherWaiver(seed, state, r, records)
 }
 
 func projectRosterWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record, effective time.Time) (bool, error) {
@@ -302,7 +303,7 @@ func projectRosterWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record, e
 	}
 }
 
-func projectOtherWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
+func projectOtherWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record, records []Record) error {
 	args, result := r.Command.Args.Waiver, r.Command.Args.WaiverOutcome
 	switch r.Command.Command {
 	case WaiverClaim:
@@ -314,6 +315,23 @@ func projectOtherWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) er
 			return fmt.Errorf("reverse the waiver award before reversing its claims")
 		}
 		w.Claims = append(w.Claims, WaiverBookClaim{ID: r.Receipt.Entry, Franchise: args.Franchise, Principal: r.Principal})
+		if order, ok := state.ClaimOrders[args.Franchise]; ok {
+			state.ClaimOrders[args.Franchise] = append(order, r.Receipt.Entry)
+		}
+	case WaiverClaimOrderSet:
+		if err := state.SetClaimOrder(args.Franchise, r.Principal, records, args.Order); err != nil {
+			return err
+		}
+	case WaiverClaimCancel:
+		w, claim, err := state.Claim(args.Claim)
+		if err != nil {
+			return err
+		}
+		if claim.Franchise != args.Franchise || !SamePrincipal(records, claim.Principal, r.Principal) || w.Processed {
+			return fmt.Errorf("cancel only your own unprocessed waiver claim")
+		}
+		w.Claims = slices.DeleteFunc(w.Claims, func(c WaiverBookClaim) bool { return c.ID == args.Claim })
+		removeWaiverClaimOrder(state, args.Franchise, args.Claim)
 	case WaiverOrderSet, WaiverOrderAuto:
 		state.Order, state.OrderSeason, state.Source = slices.Clone(result.Order), result.Season, result.Source
 		state.BaseOrder = slices.Clone(result.Order)
@@ -402,6 +420,9 @@ func projectWaiverAward(seed *RawNativeSnapshot, state *MarketBook, r Record) er
 		}
 	}
 	w.Processed, w.Winner, w.ClosedAt = true, result.Winner, result.CloseAt
+	for _, claim := range w.Claims {
+		removeWaiverClaimOrder(state, claim.Franchise, claim.ID)
+	}
 	w.Results = slices.Clone(result.Claims)
 	w.PriorOrder = slices.Clone(result.PriorOrder)
 	if len(state.BaseOrder) == 0 {
@@ -411,11 +432,8 @@ func projectWaiverAward(seed *RawNativeSnapshot, state *MarketBook, r Record) er
 	return nil
 }
 
-// privateWaiverRecord also hides a compensation of a claim, even from league administrators.
+// privateWaiverRecord also hides claim-order and cancellation entries, even from league administrators.
 func privateWaiverRecord(r Record, records []Record) bool {
-	if r.Command.Command == WaiverClaim {
-		return true
-	}
 	for r.Command.Command == Revert {
 		index := slices.IndexFunc(records, func(v Record) bool { return v.Receipt.Entry == r.Command.Args.Entry })
 		if index < 0 {
@@ -423,7 +441,7 @@ func privateWaiverRecord(r Record, records []Record) bool {
 		}
 		r = records[index]
 	}
-	return r.Command.Command == WaiverClaim
+	return slices.Contains([]string{WaiverClaim, WaiverClaimOrderSet, WaiverClaimCancel}, r.Command.Command)
 }
 
 func replaceWaiverWinner(seed *RawNativeSnapshot, w *WaiverWindow, winner string) error {

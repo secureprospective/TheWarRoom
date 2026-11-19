@@ -94,7 +94,8 @@ func DefinitionFor(command string) (Definition, error) {
 	case RosterAdd:
 		return Definition{Gravity: "G3"}, nil
 	case DraftArchive, DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
-		RosterReserve, RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
+		RosterReserve, RosterCut, WaiverClaim, WaiverClaimOrderSet, WaiverClaimCancel, WaiverProcess,
+		WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
 		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride, OLineAuctionClose,
 		ContractEdit, CapAdjust, CapRelief, WindowSet, WindowMove, WindowRemove, ContractActionSet,
 		ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed,

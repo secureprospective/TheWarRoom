@@ -20,10 +20,11 @@ type NativeWaiverPlayer struct {
 }
 
 type NativeWaiverClaim struct {
-	ID     string `json:"id"`
-	Window string `json:"window"`
-	Player string `json:"player"`
-	Status string `json:"status"`
+	ID       string `json:"id"`
+	Window   string `json:"window"`
+	Player   string `json:"player"`
+	Status   string `json:"status"`
+	Position int    `json:"position,omitempty"`
 }
 
 type NativeWaivers struct {
@@ -54,7 +55,7 @@ func NativeWaiversReading(league, franchise, principal string, records []commiss
 }
 
 func nativeWaiversFrame(f commissioner.Frame, franchise, principal string) (NativeWaivers, error) {
-	league, records, at, zone, facts := f.League, f.Records, f.At, f.Zone, f.Facts
+	league, records, at := f.League, f.Records, f.At
 	if err := f.ReadRules(); err != nil {
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return NativeWaivers{}, err
@@ -83,16 +84,28 @@ func nativeWaiversFrame(f commissioner.Frame, franchise, principal string) (Nati
 	if err != nil {
 		return NativeWaivers{}, fmt.Errorf("read waiver rules: %w", err)
 	}
+	positions := make(map[string]int)
+	for position, id := range f.Book.PendingClaimIDsFor(franchise, principal, records) {
+		positions[id] = position + 1
+	}
+	if err := appendNativeWaiverRows(&out, f, franchise, principal, positions, policy); err != nil {
+		return NativeWaivers{}, err
+	}
+	return out, nil
+}
+
+func appendNativeWaiverRows(out *NativeWaivers, f commissioner.Frame, franchise, principal string,
+	positions map[string]int, policy nativecheck.WaiverPolicy) error {
 	for _, w := range f.Book.Windows {
 		closeAt, err := policy.Close(w.CutAt)
 		if err != nil {
-			return NativeWaivers{}, fmt.Errorf("read waiver close: %w", err)
+			return fmt.Errorf("read waiver close: %w", err)
 		}
 		if w.Processed {
 			closeAt = w.ClosedAt
 		}
-		row := NativeWaiverPlayer{Window: w.ID, Player: w.Player.ID, Name: facts[w.Player.ID].Name,
-			ClosesAt: closeAt.In(zone), Closes: closeAt.In(zone).Format("Jan 2, 2006 at 3:04 PM MST"), Status: "On waivers"}
+		row := NativeWaiverPlayer{Window: w.ID, Player: w.Player.ID, Name: f.Facts[w.Player.ID].Name,
+			ClosesAt: closeAt.In(f.Zone), Closes: closeAt.In(f.Zone).Format("Jan 2, 2006 at 3:04 PM MST"), Status: "On waivers"}
 		if row.Name == "" {
 			row.Name = "Player " + w.Player.ID
 		}
@@ -102,16 +115,26 @@ func nativeWaiversFrame(f commissioner.Frame, franchise, principal string) (Nati
 			if w.Winner == "" {
 				row.Status = "Available as a free agent"
 			}
-		} else if !at.Before(closeAt) {
+		} else if !f.At.Before(closeAt) {
 			row.Status = "Closed; awaiting processing"
 		}
 		out.Players = append(out.Players, row)
-		out.Claims = appendOwnWaiverClaims(out.Claims, w, franchise, principal, records)
+		out.Claims = appendOwnWaiverClaims(out.Claims, w, franchise, principal, f.Records, positions)
 	}
-	return out, nil
+	slices.SortStableFunc(out.Claims, func(a, b NativeWaiverClaim) int {
+		if (a.Position > 0) != (b.Position > 0) {
+			if a.Position > 0 {
+				return -1
+			}
+			return 1
+		}
+		return a.Position - b.Position
+	})
+	return nil
 }
 
-func appendOwnWaiverClaims(out []NativeWaiverClaim, w commissioner.WaiverWindow, franchise, principal string, records []commissioner.Record) []NativeWaiverClaim {
+func appendOwnWaiverClaims(out []NativeWaiverClaim, w commissioner.WaiverWindow, franchise, principal string,
+	records []commissioner.Record, positions map[string]int) []NativeWaiverClaim {
 	for _, c := range w.Claims {
 		if c.Franchise != franchise || !commissioner.SamePrincipal(records, c.Principal, principal) {
 			continue
@@ -128,7 +151,7 @@ func appendOwnWaiverClaims(out []NativeWaiverClaim, w commissioner.WaiverWindow,
 				status = "Awarded to your franchise"
 			}
 		}
-		out = append(out, NativeWaiverClaim{ID: c.ID, Window: w.ID, Player: w.Player.ID, Status: status})
+		out = append(out, NativeWaiverClaim{ID: c.ID, Window: w.ID, Player: w.Player.ID, Status: status, Position: positions[c.ID]})
 	}
 	return out
 }
@@ -160,14 +183,53 @@ func dueWaiverWindowsFrame(f commissioner.Frame) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read waiver rules: %w", err)
 	}
+	duePosition := make(map[string]int)
 	for _, w := range state.Windows {
 		closeAt, err := policy.Close(w.CutAt)
 		if err != nil {
 			return nil, fmt.Errorf("date due waiver: %w", err)
 		}
 		if !w.Processed && !at.Before(closeAt) {
+			duePosition[w.ID] = len(due)
 			due = append(due, w.ID)
 		}
 	}
+	orderDueWaiverWindows(due, duePosition, state)
 	return due, nil
+}
+
+func orderDueWaiverWindows(due []string, duePosition map[string]int, state commissioner.MarketBook) {
+	claimRank := map[string]int{}
+	for _, order := range state.ClaimOrders {
+		for rank, id := range order {
+			claimRank[id] = rank
+		}
+	}
+	rankByWindow := map[string]int{}
+	for _, window := range state.Windows {
+		if _, isDue := duePosition[window.ID]; !isDue {
+			continue
+		}
+		for _, claim := range window.Claims {
+			rank, ordered := claimRank[claim.ID]
+			current, ranked := rankByWindow[window.ID]
+			if ordered && (!ranked || rank < current) {
+				rankByWindow[window.ID] = rank
+			}
+		}
+	}
+	slices.SortStableFunc(due, func(a, b string) int {
+		aRank, aOrdered := rankByWindow[a]
+		bRank, bOrdered := rankByWindow[b]
+		if aOrdered != bOrdered {
+			if aOrdered {
+				return -1
+			}
+			return 1
+		}
+		if aOrdered && aRank != bRank {
+			return aRank - bRank
+		}
+		return duePosition[a] - duePosition[b]
+	})
 }

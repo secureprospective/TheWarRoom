@@ -151,6 +151,8 @@ func memberActionCommandRules() []DeputyCommandRule {
 		{RosterCut, DeputyMemberAction, ""},
 		{RosterAdd, DeputyMemberAction, ""},
 		{WaiverClaim, DeputyMemberAction, ""},
+		{WaiverClaimOrderSet, DeputyMemberAction, ""},
+		{WaiverClaimCancel, DeputyMemberAction, ""},
 		{BidPlace, DeputyMemberAction, ""},
 		{BidRaise, DeputyMemberAction, ""},
 		{ContractDecisionSet, DeputyMemberAction, ""},

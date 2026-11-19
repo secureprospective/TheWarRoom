@@ -13187,6 +13187,7 @@ export namespace market {
 	    window: string;
 	    player: string;
 	    status: string;
+	    position?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new NativeWaiverClaim(source);
@@ -13198,6 +13199,7 @@ export namespace market {
 	        this.window = source["window"];
 	        this.player = source["player"];
 	        this.status = source["status"];
+	        this.position = source["position"];
 	    }
 	}
 	export class NativeWaiverPlayer {

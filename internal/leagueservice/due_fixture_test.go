@@ -52,23 +52,30 @@ type dueFixture struct {
 }
 
 func newDueFixture(t *testing.T) *dueFixture {
+	return newDueFixtureWithPlayers(t, nil)
+}
+
+func newDueFixtureWithPlayers(t *testing.T, extra []commissioner.NativePlayer) *dueFixture {
 	t.Helper()
 	f := &dueFixture{league: dueLeague, clock: &dueTestClock{}, path: filepath.Join(t.TempDir(), "history.db")}
 	f.clock.instant.Store(time.Date(2026, 10, 24, 12, 0, 0, 321, time.UTC).UnixNano())
-	f.facts = nativecheck.Facts{"0099": {Position: leaguerules.QB, DesignationHeld: true}, "5001": {Position: leaguerules.QB, DesignationHeld: true}}
+	f.facts = nativecheck.Facts{
+		"0099": {Position: leaguerules.QB, DesignationHeld: true},
+		"0100": {Position: leaguerules.QB, DesignationHeld: true},
+		"5001": {Position: leaguerules.QB, DesignationHeld: true},
+	}
 	f.open(t)
-	f.seed(t)
+	f.seed(t, extra...)
 	return f
 }
 
-func (f *dueFixture) seed(t *testing.T) {
+func (f *dueFixture) seed(t *testing.T, extra ...commissioner.NativePlayer) {
 	t.Helper()
 	f.execute(t, "creator", commissioner.Create, commissioner.RawArgs{Name: "Worker league", Preset: commissioner.PresetLegacy, Source: commissioner.SourceMFLImport, Season: 2026, FranchiseCount: 32})
 	at := f.clock.Now()
-	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at,
-
-		Players: []commissioner.NativePlayer{{ID: "0099", Franchise: "franchise.02", Status: domain.RosterActive, Salary: 100000000, ExpirationYear: 2028, ContractStatus: domain.CStatusUFA}},
-	}
+	players := append([]commissioner.NativePlayer{{ID: "0099", Franchise: "franchise.02", Status: domain.RosterActive,
+		Salary: 100000000, ExpirationYear: 2028, ContractStatus: domain.CStatusUFA}}, extra...)
+	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at, Players: players}
 	order := []string{}
 	for n := 1; n <= 32; n++ {
 		id := fmt.Sprintf("franchise.%02d", n)
@@ -83,7 +90,11 @@ func (f *dueFixture) seed(t *testing.T) {
 	} {
 		f.execute(t, "creator", commissioner.RulesSet, commissioner.RawArgs{Field: rule.field, Value: json.RawMessage(rule.value)})
 	}
-	for _, seat := range []struct{ team, owner string }{{"franchise.01", "owner.one"}, {"franchise.02", "owner.two"}} {
+	seats := []struct{ team, owner string }{{"franchise.01", "owner.one"}, {"franchise.02", "owner.two"}}
+	if len(extra) != 0 {
+		seats = append(seats, struct{ team, owner string }{"franchise.03", "owner.three"})
+	}
+	for _, seat := range seats {
 		f.execute(t, "creator", "commish.seat.replace", commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: seat.team, Principal: seat.owner}})
 	}
 	f.execute(t, "creator", commissioner.WaiverOrderSet, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Order: order}})
@@ -117,7 +128,8 @@ func (f *dueFixture) raw(t *testing.T, command string, args commissioner.RawArgs
 		t.Fatal(err)
 	}
 	visibility := "league"
-	if command == commissioner.BidPlace || command == commissioner.BidRaise || command == commissioner.BidWithdraw || command == commissioner.WaiverClaim {
+	if command == commissioner.BidPlace || command == commissioner.BidRaise || command == commissioner.BidWithdraw ||
+		command == commissioner.WaiverClaim || command == commissioner.WaiverClaimOrderSet || command == commissioner.WaiverClaimCancel {
 		visibility = "private"
 	}
 	return commissioner.RawCommand{League: f.league, Command: command, Args: args, Expected: int64(len(events)), Request: fmt.Sprintf("worker.%d.%s", len(events), command), Reason: "Exercise due scheduling", Effective: "now", Visibility: visibility}

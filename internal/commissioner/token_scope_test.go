@@ -22,6 +22,7 @@ func TestTokenArgumentScopeIncludesIndirectReferences(t *testing.T) {
 		"player":       {Args: RawArgs{Override: &RawNativeOverride{Player: player.ID}}},
 		"bid-id":       {Args: RawArgs{Bid: &RawBidArgs{Bid: bid}}},
 		"claim-id":     {Args: RawArgs{Waiver: &RawWaiverArgs{Claim: claim}}},
+		"claim-order":  {Command: WaiverClaimOrderSet, Args: RawArgs{Waiver: &RawWaiverArgs{Franchise: own, Order: []string{claim}}}},
 		"trade":        {Args: RawArgs{Trade: &RawTradeArgs{Franchise: other}}},
 		"bracket":      {Args: RawArgs{Bracket: &RawBracketChange{Team: other}}},
 		"history":      {Args: RawArgs{Link: &RawHistoryLink{Franchise: other}}},
