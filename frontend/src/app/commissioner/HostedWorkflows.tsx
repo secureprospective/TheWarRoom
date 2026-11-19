@@ -90,7 +90,7 @@ export async function reviewHostedOwnerTrade(room: Pick<HostedLeagueRoom, 'canCh
 const commissionerCommands: Record<HostedTask, string[]> = {
   bids: ['bids.process', 'bids.award.override'],
   waivers: ['waivers.process', 'waivers.order.set', 'waivers.order.auto', 'waivers.award.override'],
-  trades: ['trade.review', 'trade.recuse', 'trade.appeal.rule', 'trade.override'],
+  trades: ['trade.review', 'trade.hold', 'trade.recuse', 'trade.appeal.rule', 'trade.override'],
   results: [
     'commish.score.franchise',
     'commish.standings.record.adjust',
@@ -139,6 +139,7 @@ export function HostedWorkflows({
     'waivers.process',
     'waivers.award.override',
     'trade.review',
+    'trade.hold',
     'trade.appeal.rule',
     'trade.override',
   ].includes(selected);
@@ -450,6 +451,7 @@ export function HostedWorkflows({
                     'waivers.process',
                     'waivers.award.override',
                     'trade.review',
+                    'trade.hold',
                     'trade.appeal.rule',
                     'trade.override',
                   ].includes(e.target.value)

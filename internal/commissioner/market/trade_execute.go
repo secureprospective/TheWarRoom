@@ -113,6 +113,8 @@ func (x tradeExecution) act(raw commissioner.RawCommand, t *commissioner.TradeSt
 		return x.ownerAct(raw, t)
 	case commissioner.TradeReview, commissioner.TradeRecuse:
 		return x.review(raw, t)
+	case commissioner.TradeHold:
+		return x.hold(raw, t)
 	case commissioner.TradeAppeal:
 		if t.Status != "vetoed" || t.AppealedVeto == t.VetoNumber {
 			return fmt.Errorf("a party may appeal this veto only once")
@@ -201,6 +203,21 @@ func (x tradeExecution) decide(t *commissioner.TradeState, decision string) erro
 		}
 		t.Status, t.Words = "vetoed", "Vetoed; the assets stay with their original teams"
 	}
+	return nil
+}
+
+func (x tradeExecution) hold(raw commissioner.RawCommand, t *commissioner.TradeState) error {
+	if t.Status != "review" {
+		return fmt.Errorf("only a trade in review can be held")
+	}
+	if len(t.Holds) != 0 {
+		return fmt.Errorf("this trade review was already held")
+	}
+	if t.ExpiresAt.IsZero() {
+		return fmt.Errorf("this trade has no recorded review deadline")
+	}
+	t.ExpiresAt = t.ExpiresAt.Add(24 * time.Hour)
+	t.Holds = append(t.Holds, commissioner.TradeHoldRecord{Who: x.principal, At: x.now, Reason: raw.Reason})
 	return nil
 }
 

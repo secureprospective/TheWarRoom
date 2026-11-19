@@ -137,6 +137,7 @@ func commissionerOnlyMarketRules() []DeputyCommandRule {
 		{OLineAuctionClose, DeputyCommissionerOnly, ""},
 		{BidsProcess, DeputyCommissionerOnly, ""},
 		{BidsOverride, DeputyCommissionerOnly, ""},
+		{TradeHold, DeputyCommissionerOnly, ""},
 	}
 }
 

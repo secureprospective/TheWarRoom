@@ -94,7 +94,7 @@ func governanceEvents(records []Record, projection Projection) ([]governance.Eve
 type GovernanceAuthorizer struct{ State governance.State }
 
 func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string, error) {
-	if (command == ContractActionSet || command == TradeOverride || command == OLineAuctionClose) && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
+	if (command == ContractActionSet || command == TradeHold || command == TradeOverride || command == OLineAuctionClose) && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
 		return "", fmt.Errorf("only this league's commissioner may make this change")
 	}
 	if d, ok := successionDefinitionFor(command); ok {
@@ -130,7 +130,7 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 // commandControls names the census control that governs each commissioner command.
 func commandControls() map[string]string {
 	return map[string]string{
-		TradeReview: "CM-037", TradeRecuse: "CM-037", TradeAppeal: "CM-037", TradeAppealRule: "CM-037", TradeOverride: "CM-037",
+		TradeReview: "CM-037", TradeHold: "CM-037", TradeRecuse: "CM-037", TradeAppeal: "CM-037", TradeAppealRule: "CM-037", TradeOverride: "CM-037",
 		DraftStart: "CM-042", DraftStartupOpen: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
 		DraftSkip: "CM-043", DraftAssign: "CM-043", DraftInsert: "CM-043", DraftChange: "CM-043",
