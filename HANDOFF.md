@@ -20,7 +20,7 @@
 
 ## Bee — pulse-b9cr3 (B9-7)
 - Baton: Bee implementing hosted Control Room people / picks / server phone layout; 2026-11-18, branch `session/pulse-b9cr3`, base `bundle/b9`.
-- State: CSS phone breakpoint and focused phone-layout test added. Targeted People/Picks/fix/backup tests pass (18 tests); TypeScript passes; full Vitest passes (144 files, 995 tests). The first full run had one unrelated `leaguePicker.interaction` failure that passed alone and on full rerun. Restore remains explicitly operator-only.
-- Next: inspect 390px/desktop if browser tooling is available, run pre-push verification, commit/push, open PR into `bundle/b9`.
+- State: Commit `b44db5e39` pushed; PR #393 open into `bundle/b9`. Targeted People/Picks/fix/backup tests pass (18 tests); TypeScript passes; full Vitest passes (144 files, 995 tests). First full run had one unrelated `leaguePicker.interaction` failure that passed alone and on full rerun. Pre-push verification and retried GitHub CI passed; first CI attempt had one unrelated hostedRules test failure. Restore remains explicitly operator-only.
+- Next: ClaudeBox review/merge PR #393; visual 390px/desktop check remains unavailable in this session.
 - Blocked on: no browser emulation tool exposed in this session; restore remains explicitly operator-only, no live-league restore attempted. `tidy-check.sh` reports an unrelated adb fork-server PID 2189893 (started before this lane, no devices attached); left running to preserve machine state.
 - Tried and rejected: no client-side restore or bypass of hosted server authorization/preview/hold paths.
