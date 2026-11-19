@@ -471,7 +471,7 @@ func (t TradeState) Clone() TradeState {
 		}
 	}
 	t.Parties, t.Assets, t.Accepted = slices.Clone(t.Parties), slices.Clone(t.Assets), slices.Clone(t.Accepted)
-	t.Votes, t.Recusals, t.Appeals, t.Overrides = slices.Clone(t.Votes), slices.Clone(t.Recusals), slices.Clone(t.Appeals), slices.Clone(t.Overrides)
+	t.Votes, t.Holds, t.Recusals, t.Appeals, t.Overrides = slices.Clone(t.Votes), slices.Clone(t.Holds), slices.Clone(t.Recusals), slices.Clone(t.Appeals), slices.Clone(t.Overrides)
 	return t
 }
 

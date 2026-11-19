@@ -585,6 +585,11 @@ string
 "at": string;
 "reason"?: string
 })[];
+"holds"?: ({
+"who": string;
+"at": string;
+"reason": string
+})[];
 "recusals": ({
 "who": string;
 "decision": string;
@@ -1240,6 +1245,11 @@ string
 "at": string;
 "reason"?: string
 })[];
+"holds"?: ({
+"who": string;
+"at": string;
+"reason": string
+})[];
 "recusals": ({
 "who": string;
 "decision": string;
@@ -1869,6 +1879,11 @@ string
 "decision": string;
 "at": string;
 "reason"?: string
+})[];
+"holds"?: ({
+"who": string;
+"at": string;
+"reason": string
 })[];
 "recusals": ({
 "who": string;
@@ -2777,6 +2792,7 @@ export type WorkflowArgumentMap = {
 "trade.decline": NativeArguments<"trade.decline">;
 "trade.withdraw": NativeArguments<"trade.withdraw">;
 "trade.review": NativeArguments<"trade.review">;
+"trade.hold": NativeArguments<"trade.hold">;
 "trade.recuse": NativeArguments<"trade.recuse">;
 "trade.appeal": NativeArguments<"trade.appeal">;
 "trade.appeal.rule": NativeArguments<"trade.appeal.rule">;

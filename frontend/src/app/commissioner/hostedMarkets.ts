@@ -151,6 +151,7 @@ export function parseHostedTrades(v: unknown) {
         'status',
         'words',
         'votes',
+        'holds',
         'recusals',
         'appeals',
         'overrides',
@@ -198,12 +199,18 @@ export function parseHostedTrades(v: unknown) {
         words: text(t.words, 'Trade status'),
         expires: text(t.expires, 'Expiry'),
         details: details.map(asset => asset.words),
-        reasons: ['votes', 'recusals', 'appeals', 'overrides'].flatMap((key) =>
-          array(t[key] ?? [], key, (v) => {
-            const a = object(v, 'Decision', ['who', 'decision', 'at', 'reason']);
-            return `${text(a.decision, 'Decision')}${a.reason ? `: ${text(a.reason, 'Reason')}` : ''}`;
+        reasons: [
+          ...['votes', 'recusals', 'appeals', 'overrides'].flatMap((key) =>
+            array(t[key] ?? [], key, (v) => {
+              const a = object(v, 'Decision', ['who', 'decision', 'at', 'reason']);
+              return `${text(a.decision, 'Decision')}${a.reason ? `: ${text(a.reason, 'Reason')}` : ''}`;
+            }),
+          ),
+          ...array(t.holds ?? [], 'Review holds', (v) => {
+            const hold = object(v, 'Review hold', ['who', 'at', 'reason']);
+            return `Review held for 24 hours: ${text(hold.reason, 'Reason')}`;
           }),
-        ),
+        ],
       };
     }),
   };

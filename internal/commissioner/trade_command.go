@@ -14,6 +14,7 @@ const (
 	TradeDecline    = "trade.decline"
 	TradeWithdraw   = "trade.withdraw"
 	TradeReview     = "trade.review"
+	TradeHold       = "trade.hold"
 	TradeRecuse     = "trade.recuse"
 	TradeAppeal     = "trade.appeal"
 	TradeAppealRule = "trade.appeal.rule"
@@ -22,7 +23,7 @@ const (
 
 func TradeCommand(command string) bool {
 	return slices.Contains([]string{TradeOffer, TradeAccept, TradeDecline, TradeWithdraw, TradeReview,
-		TradeRecuse, TradeAppeal, TradeAppealRule, TradeOverride}, command)
+		TradeHold, TradeRecuse, TradeAppeal, TradeAppealRule, TradeOverride}, command)
 }
 
 func OwnerTradeAction(command string) leaguerules.Action {

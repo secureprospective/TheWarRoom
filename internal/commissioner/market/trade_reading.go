@@ -63,6 +63,9 @@ func nativeTradesFrame(f commissioner.Frame, viewer string) (NativeTrades, error
 				votes[i].At = votes[i].At.In(zone)
 			}
 		}
+		for i := range t.Holds {
+			t.Holds[i].At = t.Holds[i].At.In(zone)
+		}
 		out.Offers = append(out.Offers, NativeTradeOffer{TradeState: t, Expires: t.ExpiresAt.Format("Jan 2, 2006 at 3:04 PM MST")})
 	}
 	return out, nil

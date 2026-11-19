@@ -1181,6 +1181,18 @@
       "DOT"
     ]
   },
+  "trade.hold": {
+    "args": {
+      "trade": {
+        "id": "reference.trade"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
   "trade.recuse": {
     "args": {
       "trade": {
