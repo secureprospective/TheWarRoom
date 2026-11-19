@@ -105,6 +105,7 @@ type Service struct {
 	hosted       bool
 	cancels      readCancels
 	games        *LiveGames
+	injuryFeed   NFLInjuryFeedSource
 	backupRunner BackupRunner
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"strconv"
 	"time"
 
@@ -11,12 +12,22 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pendingtrades"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
+
+// FlattenScheduleWeeks turns held per-week feeds into one season schedule.
+func FlattenScheduleWeeks[T any](feeds iter.Seq[T], value func(T) []nflschedule.RawWeek) []nflschedule.RawWeek {
+	var weeks []nflschedule.RawWeek
+	for feed := range feeds {
+		weeks = append(weeks, value(feed)...)
+	}
+	return weeks
+}
 
 type SeasonRefresh struct {
 	Changed                                                                                 func(context.Context)

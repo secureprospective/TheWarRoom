@@ -67,8 +67,10 @@ auth generation; no credential crosses into the webview. See
   automatic schedule refresh. Live scoring remains a separate immutable current-week overlay; ticks
   leave action-relevant pin digests unchanged. Historical weeks use the selected pin.
 - **MFL calls:** `twr-server league-load` is a one-time console load from a desktop MFL copy.
-  `refresh-nfl-schedule` is an explicit keyless MFL `nflSchedule` request while the server is stopped;
-  there is no automatic league/MFL sync.
+  Hosted reads get one automatic MFL-wide fetch: the keyless NFL injuries export, refreshed every four
+  hours and exposed as status facts to league members. `refresh-nfl-injuries` is its operator refresh
+  while the server is stopped. `refresh-nfl-schedule` remains an explicit keyless `nflSchedule` request;
+  there is no automatic league-specific MFL sync.
 - **Browser access to the league:** `internal/serverhttp/browser.go` admits `/app/` and its hosted JSON command routes only when Origin is exactly `https://` plus the configured public host. `/app/session` issues the revocable owner session in the `__Host-twr_session` cookie and returns only one admitted league; a multi-league account gets HTTP 409 and uses desktop alpha. The browser never receives the owner bearer. Agent-token requests with Origin, mixed Authorization+cookie requests, enrollment and the changes feed remain refused. Static app responses use the required CSP, `nosniff`, same-origin referrer policy and no-cache service worker.
 
 ## So "finish the desktop" means

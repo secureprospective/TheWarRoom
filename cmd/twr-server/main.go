@@ -51,6 +51,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, outputCommand(name)(ctx, args, output)
 	case "refresh-nfl-schedule":
 		return true, runRefreshNFLSchedule(ctx, args, output)
+	case "refresh-nfl-injuries":
+		return true, runRefreshNFLInjuries(ctx, args, output)
 	case "join-link":
 		return true, runJoinLink(ctx, args, os.Stdin, output)
 	case "reset-password":
