@@ -12,18 +12,19 @@ import (
 )
 
 type waiverExecution struct {
-	assets  commissioner.NativeAssets
-	state   commissioner.MarketBook
-	rules   leaguerules.RuleSet
-	records []commissioner.Record
-	now     time.Time
-	facts   nativecheck.Facts
-	zone    *time.Location
+	assets    commissioner.NativeAssets
+	state     commissioner.MarketBook
+	rules     leaguerules.RuleSet
+	records   []commissioner.Record
+	now       time.Time
+	facts     nativecheck.Facts
+	zone      *time.Location
+	principal string
 }
 
 // PrepareWaiverAppend computes and validates the decision against the transaction's current records.
-func PrepareWaiverAppend(raw *commissioner.RawCommand, records []commissioner.Record, now time.Time, facts nativecheck.Facts,
-	zone *time.Location) error {
+func PrepareWaiverAppend(raw *commissioner.RawCommand, principal string, records []commissioner.Record, now time.Time,
+	facts nativecheck.Facts, zone *time.Location) error {
 	if !commissioner.WaiverCommand(raw.Command) {
 		return nil
 	}
@@ -32,10 +33,10 @@ func PrepareWaiverAppend(raw *commissioner.RawCommand, records []commissioner.Re
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
-	return prepareWaiverFrame(f, raw)
+	return prepareWaiverFrame(f, raw, principal)
 }
 
-func prepareWaiverFrame(f commissioner.Frame, raw *commissioner.RawCommand) error {
+func prepareWaiverFrame(f commissioner.Frame, raw *commissioner.RawCommand, principal string) error {
 	records, now, facts, zone := f.Records, f.At, f.Facts, f.Zone
 	if err := f.Seeded("record starting assets before waiver actions"); err != nil {
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
@@ -45,7 +46,8 @@ func prepareWaiverFrame(f commissioner.Frame, raw *commissioner.RawCommand) erro
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
-	x := waiverExecution{assets: f.Assets, state: f.Book, rules: f.Rules, records: records, now: now, facts: facts, zone: zone}
+	x := waiverExecution{assets: f.Assets, state: f.Book, rules: f.Rules, records: records, now: now,
+		facts: facts, zone: zone, principal: principal}
 	if commissioner.OwnerWaiverAction(raw.Command) != "" {
 		if err := f.Gate(raw.Args.Waiver.Franchise, x.reserveAction(*raw)); err != nil {
 			//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
@@ -68,6 +70,8 @@ func (x *waiverExecution) prepare(raw *commissioner.RawCommand) error {
 		err = x.prepareRoster(raw)
 	case commissioner.WaiverClaim:
 		err = x.claim(raw)
+	case commissioner.WaiverClaimOrderSet, commissioner.WaiverClaimCancel:
+		err = x.maintainClaim(raw)
 	case commissioner.WaiverOrderSet, commissioner.WaiverOrderAuto:
 		err = x.setOrder(raw)
 	case commissioner.WaiverProcess, commissioner.WaiverOverride:
@@ -77,7 +81,7 @@ func (x *waiverExecution) prepare(raw *commissioner.RawCommand) error {
 		return err
 	}
 	f := commissioner.Frame{League: raw.League, Records: x.records, At: x.now}
-	assets, err := f.Trial(*raw, "")
+	assets, err := f.Trial(*raw, x.principal)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err

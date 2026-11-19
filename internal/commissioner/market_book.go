@@ -155,6 +155,7 @@ type MarketBook struct {
 	Order       []string
 	OrderSeason int
 	Source      string
+	ClaimOrders map[string][]string `json:"claimOrders,omitempty"`
 	// Bids rides with the waiver state because both fold the same ledger into the same rosters.
 	Bids   BidBook
 	Trades []TradeState
@@ -175,6 +176,111 @@ func (s *MarketBook) Claim(id string) (*WaiverWindow, WaiverBookClaim, error) {
 		return &s.Windows[i], s.Windows[i].Claims[j], nil
 	}
 	return nil, WaiverBookClaim{}, fmt.Errorf("choose a recorded waiver claim")
+}
+
+// PendingClaimIDs returns this franchise's active claims in its chosen order, or window order until set.
+func (s *MarketBook) PendingClaimIDs(franchise string) []string {
+	pending := []string{}
+	known := map[string]bool{}
+	for _, window := range s.Windows {
+		if window.Processed {
+			continue
+		}
+		for _, claim := range window.Claims {
+			if claim.Franchise == franchise {
+				pending = append(pending, claim.ID)
+				known[claim.ID] = true
+			}
+		}
+	}
+	order, ordered := s.ClaimOrders[franchise]
+	if !ordered {
+		return pending
+	}
+	out := make([]string, 0, len(pending))
+	for _, id := range order {
+		if known[id] {
+			out = append(out, id)
+			delete(known, id)
+		}
+	}
+	for _, id := range pending {
+		if known[id] {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// PendingClaimIDsFor restricts the franchise queue to claims visible to this principal.
+func (s *MarketBook) PendingClaimIDsFor(franchise, principal string, records []Record) []string {
+	pending := []string{}
+	for _, id := range s.PendingClaimIDs(franchise) {
+		_, claim, err := s.Claim(id)
+		if err == nil && SamePrincipal(records, claim.Principal, principal) {
+			pending = append(pending, id)
+		}
+	}
+	return pending
+}
+
+// SetClaimOrder moves the supplied owner's claims through their existing queue slots.
+func (s *MarketBook) SetClaimOrder(franchise, principal string, records []Record, order []string) error {
+	pending := s.PendingClaimIDsFor(franchise, principal, records)
+	if !sameWaiverClaimSet(pending, order) {
+		return fmt.Errorf("waiver claim order must list every pending claim for this owner exactly once")
+	}
+	current := s.PendingClaimIDs(franchise)
+	selected := make(map[string]bool, len(order))
+	for _, id := range order {
+		selected[id] = true
+	}
+	next := slices.Clone(current)
+	position := 0
+	for i, id := range current {
+		if selected[id] {
+			next[i] = order[position]
+			position++
+		}
+	}
+	if position != len(order) {
+		return fmt.Errorf("waiver claim order contains a claim outside this franchise")
+	}
+	if s.ClaimOrders == nil {
+		s.ClaimOrders = map[string][]string{}
+	}
+	s.ClaimOrders[franchise] = next
+	return nil
+}
+
+func sameWaiverClaimSet(expected, supplied []string) bool {
+	if len(expected) == 0 || len(expected) != len(supplied) {
+		return false
+	}
+	seen := make(map[string]bool, len(expected))
+	for _, id := range expected {
+		seen[id] = true
+	}
+	for _, id := range supplied {
+		if !seen[id] {
+			return false
+		}
+		delete(seen, id)
+	}
+	return len(seen) == 0
+}
+
+func removeWaiverClaimOrder(state *MarketBook, franchise, claim string) {
+	order, ok := state.ClaimOrders[franchise]
+	if !ok {
+		return
+	}
+	order = slices.DeleteFunc(order, func(id string) bool { return id == claim })
+	if len(order) == 0 {
+		delete(state.ClaimOrders, franchise)
+		return
+	}
+	state.ClaimOrders[franchise] = order
 }
 
 // lastBidOf is the franchise's final bid on the auction, standing or not.

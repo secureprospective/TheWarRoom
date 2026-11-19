@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -96,8 +97,33 @@ func TestBidWithdrawalIsNotPublishedThroughCommandDoors(t *testing.T) {
 	}
 }
 
+func TestClaimMaintenanceCommandsUseTheOwnerWorkflow(t *testing.T) {
+	want := map[string]bool{"waivers.claim.order.set": false, "waivers.claim.cancel": false}
+	for _, command := range NativeCommands(Schema{}) {
+		if _, expected := want[command.ID]; !expected {
+			continue
+		}
+		if command.Method != "TargetNativeWaiverAction" || command.Availability != "both" ||
+			!slices.Equal(command.Modes, []Mode{Preview, Execute}) {
+			t.Errorf("%s catalog entry = %+v", command.ID, command)
+		}
+		want[command.ID] = true
+	}
+	workflows := WorkflowCommands()
+	for id, found := range want {
+		if !found {
+			t.Errorf("%s missing from the native catalog", id)
+		}
+		if _, found := workflows[id]; !found {
+			t.Errorf("%s missing from hosted workflows", id)
+		}
+	}
+}
+
 func TestCommandLabelsDoNotExposeMachineSyntax(t *testing.T) {
-	for id, want := range map[string]string{"mfl.bid.revise": "revise local MFL bid", "commish.rules.set": "set league rules", "TargetMFLKeyStatus": "MFL Key Status", "GetParams": "Get Params"} {
+	for id, want := range map[string]string{"mfl.bid.revise": "revise local MFL bid", "commish.rules.set": "set league rules",
+		"waivers.claim.order.set": "Set your waiver claim order", "waivers.claim.cancel": "Cancel your waiver claim",
+		"TargetMFLKeyStatus": "MFL Key Status", "GetParams": "Get Params"} {
 		if got := commandLabel(id); got != want || strings.Contains(got, ".") {
 			t.Errorf("%s label=%q, want %q", id, got, want)
 		}

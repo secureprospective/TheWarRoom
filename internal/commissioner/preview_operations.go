@@ -13,8 +13,16 @@ import (
 // recorded. It carries the replay memo, so the preview's readings share its folds instead of each folding
 // it again. The store builds it once per preview; a nil trial makes operationPreview build its own.
 func PreviewTrial(raw RawCommand, records []Record, now time.Time) ([]Record, error) {
+	return PreviewTrialAs(raw, records, now, previewPrincipal(raw, records))
+}
+
+// PreviewTrialAs gives the proposed entry the authenticated actor's identity for private projections.
+func PreviewTrialAs(raw RawCommand, records []Record, now time.Time, principal string) ([]Record, error) {
+	if principal == "" {
+		principal = previewPrincipal(raw, records)
+	}
 	trial := append(slices.Clone(records), Record{Command: raw,
-		Principal: previewPrincipal(raw, records), Receipt: Receipt{Entry: "proposed." + raw.Request,
+		Principal: principal, Receipt: Receipt{Entry: "proposed." + raw.Request,
 			Revision: raw.Expected + 1, RecordedAt: now}})
 	if raw.Command == ScheduleGenerate {
 		weeks, err := FreezeSchedule(raw, records)

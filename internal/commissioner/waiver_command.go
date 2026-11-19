@@ -11,19 +11,21 @@ import (
 )
 
 const (
-	RosterReserve   = "roster.reserve"
-	RosterCut       = "roster.cut"
-	RosterAdd       = "roster.add"
-	WaiverClaim     = "waivers.claim"
-	WaiverProcess   = "waivers.process"
-	WaiverOrderSet  = "waivers.order.set"
-	WaiverOrderAuto = "waivers.order.auto"
-	WaiverOverride  = "waivers.award.override"
+	RosterReserve       = "roster.reserve"
+	RosterCut           = "roster.cut"
+	RosterAdd           = "roster.add"
+	WaiverClaim         = "waivers.claim"
+	WaiverClaimOrderSet = "waivers.claim.order.set"
+	WaiverClaimCancel   = "waivers.claim.cancel"
+	WaiverProcess       = "waivers.process"
+	WaiverOrderSet      = "waivers.order.set"
+	WaiverOrderAuto     = "waivers.order.auto"
+	WaiverOverride      = "waivers.award.override"
 )
 
 func WaiverCommand(command string) bool {
-	return slices.Contains([]string{RosterReserve, RosterCut, RosterAdd, WaiverClaim, WaiverProcess,
-		WaiverOrderSet, WaiverOrderAuto, WaiverOverride}, command)
+	return slices.Contains([]string{RosterReserve, RosterCut, RosterAdd, WaiverClaim, WaiverClaimOrderSet,
+		WaiverClaimCancel, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride}, command)
 }
 
 func OwnerWaiverAction(command string) leaguerules.Action {
@@ -32,7 +34,7 @@ func OwnerWaiverAction(command string) leaguerules.Action {
 		return "ir"
 	case RosterCut:
 		return "cut"
-	case WaiverClaim:
+	case WaiverClaim, WaiverClaimOrderSet, WaiverClaimCancel:
 		return "waiver_claim"
 	case RosterAdd:
 		return "ufa_bid"
@@ -48,19 +50,49 @@ func (a RawArgs) validateWaiver(command string) error {
 }
 
 func (r RawWaiverArgs) Validate(command string) error {
+	if err := r.validateRosterArgs(command); err != nil {
+		return err
+	}
+	if err := r.validateClaimArgs(command); err != nil {
+		return err
+	}
+	if err := r.validateWaiverRunArgs(command); err != nil {
+		return err
+	}
+	return r.validateWaiverShape(command)
+}
+
+func (r RawWaiverArgs) validateRosterArgs(command string) error {
 	switch command {
 	case RosterReserve, RosterCut:
-		if err := r.validateRosterMove(command); err != nil {
-			return err
-		}
+		return r.validateRosterMove(command)
 	case RosterAdd:
-		if err := r.validateRosterAdd(); err != nil {
-			return err
-		}
+		return r.validateRosterAdd()
+	default:
+		return nil
+	}
+}
+
+func (r RawWaiverArgs) validateClaimArgs(command string) error {
+	switch command {
 	case WaiverClaim:
 		if r.Window == "" || r.Franchise == "" {
 			return fmt.Errorf("choose a waiver player and your franchise")
 		}
+	case WaiverClaimOrderSet:
+		if r.Franchise == "" || len(r.Order) == 0 {
+			return fmt.Errorf("choose your pending waiver claims in order")
+		}
+	case WaiverClaimCancel:
+		if r.Claim == "" || r.Franchise == "" {
+			return fmt.Errorf("choose your pending waiver claim")
+		}
+	}
+	return nil
+}
+
+func (r RawWaiverArgs) validateWaiverRunArgs(command string) error {
+	switch command {
 	case WaiverProcess:
 		if r.Window == "" {
 			return fmt.Errorf("choose a waiver window to process")
@@ -74,7 +106,7 @@ func (r RawWaiverArgs) Validate(command string) error {
 			return fmt.Errorf("choose a recorded claim and its winning franchise")
 		}
 	}
-	return r.validateWaiverShape(command)
+	return nil
 }
 
 func (r RawWaiverArgs) validateRosterAdd() error {
@@ -115,6 +147,10 @@ func (r RawWaiverArgs) validateWaiverShape(command string) error {
 		expected.Player, expected.Franchise, expected.Drop = r.Player, r.Franchise, r.Drop
 	case WaiverClaim:
 		expected.Window, expected.Franchise = r.Window, r.Franchise
+	case WaiverClaimOrderSet:
+		expected.Franchise, expected.Order = r.Franchise, r.Order
+	case WaiverClaimCancel:
+		expected.Franchise, expected.Claim = r.Franchise, r.Claim
 	case WaiverProcess:
 		expected.Window = r.Window
 	case WaiverOrderSet:
@@ -130,7 +166,7 @@ func (r RawWaiverArgs) validateWaiverShape(command string) error {
 
 func (r RawCommand) validateWaiverPlacement() error {
 	visibility := "league"
-	if r.Command == WaiverClaim {
+	if r.Command == WaiverClaim || r.Command == WaiverClaimOrderSet || r.Command == WaiverClaimCancel {
 		visibility = "private"
 	}
 	if r.Effective != "now" || r.Visibility != visibility {
@@ -156,6 +192,10 @@ func waiverLabel(raw RawCommand) string {
 		return label
 	case WaiverClaim:
 		return "Recorded a private waiver claim"
+	case WaiverClaimOrderSet:
+		return "Reordered your pending waiver claims"
+	case WaiverClaimCancel:
+		return "Cancelled a private waiver claim"
 	case WaiverProcess:
 		return "Processed a closed waiver window"
 	case WaiverOrderSet:

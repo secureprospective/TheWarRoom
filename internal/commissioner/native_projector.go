@@ -53,12 +53,12 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 	return nil
 }
 
-func projectSeededMarket(assets *NativeAssets, waivers *MarketBook, record Record) error {
+func projectSeededMarket(assets *NativeAssets, waivers *MarketBook, record Record, records []Record) error {
 	if WaiverCommand(record.Command.Command) {
 		if !assets.Seeded {
 			return fmt.Errorf("record starting assets before waiver actions")
 		}
-		return projectWaiver(assets.Snapshot, waivers, record)
+		return projectWaiver(assets.Snapshot, waivers, record, records)
 	}
 	if !assets.Seeded {
 		return fmt.Errorf("record starting assets before bid actions")
@@ -73,7 +73,7 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		return projectNativeTrade(assets, waivers, record)
 	}
 	if WaiverCommand(record.Command.Command) || BidCommand(record.Command.Command) {
-		return projectSeededMarket(assets, waivers, record)
+		return projectSeededMarket(assets, waivers, record, records)
 	}
 	switch record.Command.Command {
 	case OLineAuctionClose:

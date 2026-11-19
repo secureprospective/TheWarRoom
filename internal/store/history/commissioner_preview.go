@@ -165,7 +165,7 @@ func (s *Store) describePreparedChange(ctx context.Context, raw commissioner.Raw
 	// description reports why, before any reading needs it.
 	var trial []commissioner.Record
 	if accepted && plan == nil {
-		trial, _ = commissioner.PreviewTrial(raw, records, s.now())
+		trial, _ = commissioner.PreviewTrialAs(raw, records, s.now(), principal)
 	}
 	preview, err := s.describeChange(raw, records, trial, catalogue, facts)
 	if err != nil {
