@@ -17,6 +17,7 @@ import './nativeAccount.css';
 
 const HostedLeague = lazy(() => import('../commissioner/HostedLeague'));
 const ThinHome = lazy(() => import('../shell/ThinHome'));
+const MovesTab = lazy(() => import('../phone/MovesTab'));
 
 type Screen = 'login' | 'join' | 'authenticator' | 'recovery';
 const tabs = [
@@ -204,7 +205,11 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       onSignOut={() => {
         void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget')))
           .catch(() => {});
-      }} homeReadSource={thinHome}>{leagueContent}</PhoneAppFrame>}
+      }} homeReadSource={thinHome} tabs={{
+        moves: <Suspense fallback={<p role="status">Opening Moves…</p>}>
+          <MovesTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)} />
+        </Suspense>,
+      }}>{leagueContent}</PhoneAppFrame>}
     </div>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>
@@ -222,7 +227,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           maxLength={1024} value={password} disabled={pending}
           onChange={e => setPassword(e.target.value)} /></label>
         <Act variant="button" verb="commissioner.surface" args={args('check', 'submit')}
-          submit disabled={pending} label="Reset password">{pending ? 'Please wait…' : 'Reset password'}</Act>
+          submit disabled={pending} label="Reset password">
+          {pending ? 'Please wait…' : 'Reset password'}</Act>
       </form>
       <p>No unused code? Contact the server operator for audited console recovery with the offline
         recovery key and its key holder. A commissioner cannot reset your account by reassigning a seat.</p>
