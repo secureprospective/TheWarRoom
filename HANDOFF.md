@@ -1,10 +1,10 @@
 # Handoff
 
-- Baton: Bee, lane `rel10`, 2026-11-19.
-- State: Based on `origin/bundle/b9` at `4c15e137a`; release 9/schema 16 is current. Rel9 pattern uses an appended contract row and the 0.10 roadmap table; release tooling reads the contract dynamically, with no hardcoded release allowlist found.
-- State: Release 10/schema 16 appended. `TestCurrentContract` expects release 10 and checks increasing release numbers. Targeted race test passes; removing row 10 makes the test fail. Schema remains 16 because there is no schema change.
-- Verification: full `make test` passed; Vitest passed (153 files/1026 tests); TypeScript `tsc --noEmit` passed. Heavy-work guard cleared after two 120-second waits.
-- Verification: `make verify` passed, including lint, bindings freshness, security checks, frontend build/CSP checks, and staged embedded-web race suite.
-- Next: Commit/push through pre-push hook, open PR into `bundle/b9`, wait for CI.
+- Baton: Bee completed lane `rel10`, 2026-11-19.
+- State: PR #403 (`release: bundle/b9 carries release number 10`) is open into `bundle/b9`. Release 10/schema 16 appended; roadmap row identifies 0.10.3. No tag or GitHub release.
+- Verification: `make test`, Vitest (153 files/1026 tests), `tsc --noEmit`, `make verify`, and push hook passed. PR CI passed all test shards, checks, release-tools, package, install, and verify.
+- Mutant: Removing release row 10 caused `TestCurrentContract` to fail with current release 9 vs expected 10; restored row and targeted race test passed.
+- Decision: Schema remains 16 because this is a release-number-only bump. No explicit release allowlist exists; tooling reads the append-only contract.
+- Next: Christopher review PR #403; do not merge.
 - Blocked on: None.
 - Tried/rejected: None.
