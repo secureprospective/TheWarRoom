@@ -3,7 +3,61 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. HANDOFF TO TOM — STATE AT 3:45 PM CST WED 11-18 (supersedes every older 0 block)
+## 0. TOM HEAD BRAIN — STATE AT 7:05 PM CST WED 11-18 (supersedes every older 0 block)
+
+Head brain: **Tom (Beelink)** since 3:29 PM (ClaudeBox out of weekly tokens). Merge authority unchanged: merge lane PRs into bundles and land bundles on main after own review + green CI.
+Run report: `~/fleet/runs/overnight-alpha-1118/REPORT.md`. Tracker: `~/Downloads/twr-usable-week-plan.html` via `~/fleet/bin/twr-tracker.py` (new subcommands `plan`, `server`, `headbrain`).
+
+### Done looks like
+1. B7 (desktop browser app) on main — NOT MET (b7fix2 PR #394 in CI; then land).
+2. B8 phone screens on main — NOT MET (all 6 merged into bundle/b8; needs phone walk + land after B7).
+3. B9 on main by Sat — NOT MET (server pieces #387 #388 #389 merged into b9; screens #391-#395 reviewed/merging).
+4. Phone walk on a real iPhone over Wi-Fi — NOT STARTED (tools ready; needs b9 on the lab).
+
+### Branch heads 7:05 PM
+main bb99a5881 (incl. #390 CI change) · bundle/b7 c0d60f35b · bundle/b8 10406a70c (all of B8: #380 #382 #383 #384 #385 #386) · bundle/b9 f18f9a894 (b8 merged in + #387 #388 #389).
+
+### In flight
+| Job | Check alive | Output | On result |
+|---|---|---|---|
+| b7fix2 (Luna xhigh, from ~5:06 PM, 3 h) People actors field, owner Home League Read, Pulse week, prove #381 on lab | `pgrep -af "pi -p.*pulse-b7fix2"`; transcript mtime `~/fleet/runs/pulse-b7fix2/sessions/*.jsonl` | PR **#394** into bundle/b7, `~/fleet/runs/pulse-b7fix2/` | review (no widened owner reads), batch-merge `twr-batch-merge.sh bundle/b7 394`, then merge main into b7 and land: `twr-bundle-land.sh bundle/b7 "<title>" <body.md>` |
+| b9lab launcher (Tom bg shell) waits for b7fix2 completion.txt, then launches `luna b9lab` (brief `~/fleet/briefs/alpha010/b9lab.md`, deploy bundle/b9 to CT 260 only) | real lane: `pgrep -af "pi -p.*pulse-b9lab"` (NOT `pgrep -f "luna b9lab"`: matches the launcher's own command line) | `~/fleet/runs/pulse-b9lab/RESULT.md` | then run the iPhone walk (below) |
+| batch #391+#392 into bundle/b9 | DONE 7:10 PM: both MERGED | — | next: batch #393 + #395 (both add CSS at end of controlRoom.css after #391: if the batch skips one for conflict, resolve in its lane worktree keeping all blocks) |
+
+### Phone walk plan (iPhone, mine)
+Driver: `~/.local/share/pipx/venvs/pymobiledevice3/bin/python -I ~/fleet/bin/iphone-walk.py steps.json outdir` (steps: go/js/measure/shot/wait; measure lists elements wider than 390 px). Lab URL https://twr-lab-260.secureprospective.com/app/ ; creds `~/fleet/runs/pulse-lab4/private/` (never print; load into the steps file at runtime and delete it). Walk owner then commissioner: Today, Team/lineup, Live/Pulse, bids, trades, player card, Control Room tabs; Add to Home Screen. Output to `~/fleet/runs/phone-walk-1118/`. Device facts: `~/fleet/tom/homelab/HOMELAB-REFERENCE.md` "iPhone 13 — AI + Dev Test Phone".
+
+### Done today since 3:45 PM
+- Reviewed + merged: #387 (activity feed, allow-list), #388 (boards sync; resolved workflow.go union conflict with #387), #389 (roster.add — **I removed the commissioner shortcut**: owner-only like cuts/claims/bids; test `TestRosterAddIsOwnerOnlyEvenForCommissioners`; matrix + hosted test updated), #385, #383 + #386 (first batch), b8 merged into b9 (direct push).
+- #390 on main: `session/**` and `batch/**` skip desktop packaging; bundles + main still package.
+- New `~/fleet/bin/twr-batch-merge.sh <bundle> <pr>...` (DRY=1 stops before push): local merge, regenerate gen files FIRST, tsc/vitest/go build+vet/go test on changed pkgs, push `batch/*`, wait verify, fast-forward bundle (PRs show MERGED).
+- perf lane: NO regression (lab5 refusals were ramp phase; 128-client hold 81.7 ok req/s vs lab4 82.3 at 256). Closed.
+- b7lab2: security spot checks MET; bugs → b7fix2. Phone-width clipping on B7 is B8's job.
+- Go cache trimmed (entries >6 h): disk 91% → 67%.
+
+### Refuted / learned — do not re-learn
+- `pgrep -f "<pattern>"` inside a `bash -c` waiter matches the waiter's own command line (stuck #388 waiter; false "b9lab alive"). Wait on a PID or a file instead.
+- Generated `native.gen.ts` can merge as text with NO conflict and still be broken (duplicate schemaNNN). Always regenerate before building (batch script does).
+- The guard blocks any command containing `--force` (e.g. `git worktree remove --force`) together with `git push`; and the word "reboot" in a heredoc. Split commands / reword.
+- `twr-bundle-merge.sh` waits for every check incl. the 27-min package/install job; only `verify` is required on main.
+- #389's brief premise "commissioner acting with reason, same as other owner commands" was false: no owner market command admits the commissioner.
+
+### Next actions
+1. On #394: review (People contract fixed on the right side, owner League Read not widened, Pulse decision evidenced, #381 proof), batch-merge into b7, land B7 on main.
+2. Merge main into bundle/b8 and bundle/b9 after B7 lands.
+3. When b9lab reports: run the iPhone walk; fix lanes for what breaks; then land B8, then B9.
+4. Batch #393 + #395 now (#391/#392 landed 7:10 PM): `twr-batch-merge.sh bundle/b9 393 395`.
+5. Write + launch remaining B9 lanes: b9moves (after #389 ✓), b9act (after #387 ✓), b9ask (after #388 ✓) — briefs from `~/fleet/runs/pulse-b8plan/RESULT.md` §3+§5 using b9card.md template.
+6. Samsung S8 Active: when a data cable appears, back up photos/video/recordings to `~/Pictures/phone_backup/android/`, then same setup as the iPhone.
+7. 50-min lane checks; keep tracker + REPORT current.
+
+### Needs Christopher
+Rotate CT 257 keys · pick how testers reach a server before Sunday · glance at Paylocity tab on Claude-OS · USB-C data cable for the Samsung.
+
+### Honest status
+B7 on main: tonight late / early Thu if #394 is clean. B8: Thu midday–afternoon (never walked on a phone yet: expect layout fixes). B9: Fri–Sat. Batch merging cut merge time roughly 3×.
+
+## 0-prev5. (older) HANDOFF TO TOM — STATE AT 3:45 PM CST WED 11-18 (supersedes every older 0 block)
 
 **Head brain moves to Tom (Beelink) now: ClaudeBox is out of weekly tokens.** Christopher's order, 11-18 ~3:45 PM.
 Tom: you run everything below from the Beelink; your tools are under `~/fleet/bin/` (same scripts ClaudeBox used over ssh).
