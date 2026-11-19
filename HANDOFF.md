@@ -23,3 +23,8 @@
 - State: Added phone-only player card/picks CSS stacking and a focused viewport-rule test; existing hosted scoped notes and draft queue paths remain unchanged. No player-status or NFL-stat feed added.
 - Next: Run focused tests, full Vitest/typecheck and pre-push; create PR into `bundle/b9`.
 - Blocked on: Heavy-work guard reports a full race suite is running; wait before starting gates.
+
+## Bee — pulse-b9card status
+- PR: #392 into `bundle/b9`; commit `95c2ec5e5`. Focused tests, full Vitest (995 tests), tsc, and pre-push passed. CI's tests/checks/verify pass; package job remains in progress.
+- Phone visual click-through not run: Claude-OS Brave is occupied by another lane's `b7walk-profile`; left it untouched. Phone CSS contract test passes.
+- Tidy-check found unrelated active `b9cr1`, `b9cr2`, `b9cr3` lanes and adb process; left untouched. Their owners should file KEEP records.
