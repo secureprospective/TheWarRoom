@@ -4923,7 +4923,7 @@ const schema348 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawDraftQueueScope.Validate",
+  Validator:"RawProblemReportsScope.Validate",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2}
@@ -4931,6 +4931,32 @@ const schema348 = {
   Items:null,
 } as const;
 const schema349 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawProblemReport.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"text",Optional:false,Schema:schema2},
+    {Name:"route",Optional:false,Schema:schema2},
+    {Name:"appRelease",Optional:false,Schema:schema7},
+    {Name:"viewportWidth",Optional:false,Schema:schema7}
+  ],
+  Items:null,
+} as const;
+const schema350 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawDraftQueueScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema351 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4942,7 +4968,7 @@ const schema349 = {
   ],
   Items:null,
 } as const;
-const schema350 = {
+const schema352 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4953,7 +4979,7 @@ const schema350 = {
   ],
   Items:null,
 } as const;
-const schema351 = {
+const schema353 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4968,7 +4994,7 @@ const schema351 = {
   ],
   Items:null,
 } as const;
-const schema352 = {
+const schema354 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4980,7 +5006,7 @@ const schema352 = {
   ],
   Items:null,
 } as const;
-const schema353 = {
+const schema355 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -4991,7 +5017,7 @@ const schema353 = {
   ],
   Items:null,
 } as const;
-const schema354 = {
+const schema356 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5003,7 +5029,7 @@ const schema354 = {
   ],
   Items:null,
 } as const;
-const schema355 = {
+const schema357 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -8279,6 +8305,44 @@ export const serverCommands = {
   },
   phrase: "read nfl player-status",
 },
+"commish.feedback.read": {
+  definition: {
+    "ID": "commish.feedback.read",
+    "Method": "TargetProblemReports",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "commissioner-or-co-commissioner",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "ledger",
+    "Safeguards": "current commissioner or co-commissioner; private reports only",
+    "Arguments": schema348
+  },
+  phrase: "read league feedback",
+},
+"feedback.report.create": {
+  definition: {
+    "ID": "feedback.report.create",
+    "Method": "SubmitProblemReport",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "league-member",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "none",
+    "Facts": "ledger",
+    "Safeguards": "current league member; trusted User-Agent; ten reports per hour per principal",
+    "Arguments": schema349
+  },
+  phrase: "create feedback report",
+},
 "draft.queue.read": {
   definition: {
     "ID": "draft.queue.read",
@@ -8294,7 +8358,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema348
+    "Arguments": schema350
   },
   phrase: "read draft queue",
 },
@@ -8313,7 +8377,7 @@ export const serverCommands = {
     "Undo": "replace-own-private-queue",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema349
+    "Arguments": schema351
   },
   phrase: "set draft queue",
 },
@@ -8332,7 +8396,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema350
+    "Arguments": schema352
   },
   phrase: "read trade draft",
 },
@@ -8351,7 +8415,7 @@ export const serverCommands = {
     "Undo": "delete-own-private-proposal",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema351
+    "Arguments": schema353
   },
   phrase: "save trade draft",
 },
@@ -8370,7 +8434,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema352
+    "Arguments": schema354
   },
   phrase: "delete trade draft",
 },
@@ -8389,7 +8453,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-account-data",
     "Safeguards": "session account scope; no request account ID; agents denied; uncached",
-    "Arguments": schema353
+    "Arguments": schema355
   },
   phrase: "read home layout",
 },
@@ -8408,7 +8472,7 @@ export const serverCommands = {
     "Undo": "replace-own-account-preference",
     "Facts": "private-account-data",
     "Safeguards": "session account scope; no request account ID; agent denied; revision checked",
-    "Arguments": schema354
+    "Arguments": schema356
   },
   phrase: "set home layout",
 },
@@ -8428,7 +8492,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "server-held league database and R2 settings",
     "Safeguards": "current commissioner seat; per-league backup manager; refuse concurrent backup",
-    "Arguments": schema355
+    "Arguments": schema357
   },
   phrase: "now backup",
 },

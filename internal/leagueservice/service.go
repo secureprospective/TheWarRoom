@@ -100,13 +100,14 @@ type Host interface {
 
 // Service composes native readings, previews and mutations over the shared transactional store.
 type Service struct {
-	host         Host
-	admission    commissioner.CredentialAdmission
-	hosted       bool
-	cancels      readCancels
-	games        *LiveGames
-	injuryFeed   NFLInjuryFeedSource
-	backupRunner BackupRunner
+	host           Host
+	admission      commissioner.CredentialAdmission
+	hosted         bool
+	cancels        readCancels
+	games          *LiveGames
+	injuryFeed     NFLInjuryFeedSource
+	backupRunner   BackupRunner
+	problemReports *history.Store
 }
 
 func New(host Host) *Service { return &Service{host: host} }

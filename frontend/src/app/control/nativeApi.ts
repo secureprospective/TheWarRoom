@@ -168,7 +168,7 @@ export function readConfirmRequest(text: string): boolean {
   } catch { return false; }
 }
 export type HostedResponse = {
-  label: string; writable: boolean; football: string; data: unknown; tags?: ReadTags;
+  label: string; writable: boolean; football: string; appRelease?: number; data: unknown; tags?: ReadTags;
 };
 function parseWorkflowTags(value: unknown): ReadTags {
   const row = object(value, 'Hosted read tags', ['serverEpoch', 'league', 'football', 'live', 'values']);
@@ -198,19 +198,23 @@ export async function hostedWorkflow(request: NativeRequest, football = ''): Pro
   if (!response.ok) {
     const fallback = 'The league could not accept this action. '
       + 'Refresh before retrying; check your connection, seat and authenticator.';
-    if (request.mode === 'execute' && response.status === 409
+    if (request.mode === 'execute' && [400, 409, 429].includes(response.status)
       && response.headers.get('Content-Type') === 'text/plain; charset=utf-8') {
       const message = (await response.text()).trim();
       if (message.length > 0 && message.length <= 4096) throw new Error(message);
     }
     throw new Error(fallback);
   }
-  const r = object(await response.json(), 'Hosted league', ['label', 'writable', 'football', 'data', 'tags']);
+  const r = object(await response.json(), 'Hosted league',
+    ['label', 'writable', 'football', 'appRelease', 'data', 'tags']);
   if (typeof r.writable !== 'boolean') throw new Error('Unreadable league authority. Refresh to try again.');
+  if (r.appRelease !== undefined && (!Number.isSafeInteger(r.appRelease) || Number(r.appRelease) < 1))
+    throw new Error('Unreadable app release. Refresh to try again.');
   const tags = r.tags == null ? undefined : parseWorkflowTags(r.tags);
   return {
     label: text(r.label, 'League location'), writable: r.writable,
-    football: text(r.football, 'Football evidence'), data: r.data, tags,
+    football: text(r.football, 'Football evidence'),
+    ...(r.appRelease === undefined ? {} : { appRelease: Number(r.appRelease) }), data: r.data, tags,
   };
 }
 

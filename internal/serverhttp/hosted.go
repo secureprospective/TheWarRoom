@@ -302,7 +302,8 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).
-		WithLiveGames(h.LiveGames).WithNFLInjuryFeed(h.InjuryFeed).WithBackupRunner(h.BackupLeague)
+		WithLiveGames(h.LiveGames).WithNFLInjuryFeed(h.InjuryFeed).WithBackupRunner(h.BackupLeague).
+		WithProblemReportStore(pin.Store)
 	h.dispatch(w, r, service, raw)
 }
 
@@ -637,6 +638,9 @@ func backupAccess(records []commissioner.Record, principal governance.Principal)
 }
 
 func admitLeagueAccess(access commissioner.Access, policy governance.State, principal governance.Principal, records []commissioner.Record) error {
+	if access.Operation == commissioner.ProblemReportCreate {
+		return admitProblemReport(access, policy, principal, records)
+	}
 	if privateOwnerPersonalOperation(access.Operation) {
 		seat, ok := policy.Franchise(governance.FranchiseID(access.Franchise))
 		if !ok || seat.Seat != principal {
@@ -750,14 +754,12 @@ func privateTradeDraftOperation(operation string) bool {
 	}
 }
 
-func hostedOwner(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {
-	for _, id := range commissioner.LeagueFranchises(records) {
-		seat, ok := policy.Franchise(governance.FranchiseID(id))
-		if ok && seat.Seat == principal {
-			return true
-		}
+func admitProblemReport(access commissioner.Access, policy governance.State, principal governance.Principal,
+	records []commissioner.Record) error {
+	if access.Mode != "execute" || !commissioner.IsLeagueMember(policy, string(principal), records) {
+		return fmt.Errorf("league membership required")
 	}
-	return false
+	return nil
 }
 
 func (r RawNativeRequest) matchesPath(path string) bool {
@@ -795,8 +797,7 @@ func (h Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *l
 }
 
 func hostedMember(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {
-	return policy.HasRole(principal, governance.Commissioner) || policy.HasRole(principal, governance.CoCommissioner) ||
-		hostedOwner(policy, principal, records) || policy.HasRole(principal, governance.DOT)
+	return commissioner.IsLeagueMember(policy, string(principal), records)
 }
 
 func (h Hosted) backupAdmission(next http.Handler) http.Handler {

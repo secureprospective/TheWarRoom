@@ -23,6 +23,14 @@ type tokenPolicy struct {
 	principal governance.Principal
 }
 
+func TestProblemReportsCannotBeDelegatedToAgents(t *testing.T) {
+	for _, command := range []string{commissioner.ProblemReportCreate, commissioner.ProblemReportsRead} {
+		if accounts.DelegableCommand(command) {
+			t.Errorf("agent token may carry %s", command)
+		}
+	}
+}
+
 func (p *tokenPolicy) CheckTokenScope(_ context.Context, account accounts.Account, scope accounts.RawTokenScope) error {
 	principal, err := account.Principal()
 	if err != nil || principal != p.principal || scope.League != "native.tokens" || scope.Franchise != "franchise.01" {

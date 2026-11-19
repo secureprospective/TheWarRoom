@@ -10,7 +10,10 @@ import (
 	"net/http"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 const WorkflowPath = "/v1/native/workflow"
@@ -20,11 +23,12 @@ type RawWorkflowScope = catalog.RawWorkflowScope
 
 // WorkflowResponse carries the authority's own wording; a cached writable bit is never a grant.
 type WorkflowResponse struct {
-	Label    string          `json:"label"`
-	Writable bool            `json:"writable"`
-	Football string          `json:"football"`
-	Data     json.RawMessage `json:"data"`
-	Tags     *WorkflowTags   `json:"tags,omitempty"`
+	Label      string          `json:"label"`
+	Writable   bool            `json:"writable"`
+	Football   string          `json:"football"`
+	AppRelease int             `json:"appRelease"`
+	Data       json.RawMessage `json:"data"`
+	Tags       *WorkflowTags   `json:"tags,omitempty"`
 }
 
 type WorkflowTags struct {
@@ -36,7 +40,7 @@ type WorkflowTags struct {
 }
 
 func (r WorkflowResponse) Validate() error {
-	if r.Label == "" || !json.Valid(r.Data) {
+	if r.Label == "" || r.AppRelease < 1 || !json.Valid(r.Data) {
 		return fmt.Errorf("unreadable league response")
 	}
 	return nil
@@ -74,7 +78,8 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		http.Error(w, location.Label, http.StatusConflict)
 		return
 	}
-	ctx := leagueservice.WithFootballDigest(r.Context(), raw.Football)
+	ctx := leagueservice.WithFootballDigest(
+		leagueservice.WithProblemReportUserAgent(r.Context(), r.UserAgent()), raw.Football)
 	data, err := h.workflowData(ctx, service, raw, league)
 	if err != nil {
 		logWorkflowFailure(raw, err)
@@ -84,7 +89,8 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	}
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
 	writable := location.Writable && (!pin.Missing || privateQueueSet || privateDraftChange)
-	response := WorkflowResponse{Label: location.Label, Writable: writable, Football: pin.Digest, Data: data}
+	response := WorkflowResponse{Label: location.Label, Writable: writable, Football: pin.Digest,
+		AppRelease: serverversion.Current().Release, Data: data}
 	if !h.attachPrivateWorkflowTags(r.Context(), raw.Command, league, pin.Digest, &response) {
 		http.Error(w, "private reading tags unavailable", http.StatusServiceUnavailable)
 		return
@@ -97,7 +103,8 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 }
 
 func workflowLocationWritable(writable bool, raw RawWorkflow) bool {
-	return raw.Mode == "read" || writable || raw.Command == leagueservice.BackupNowCommand
+	return raw.Mode == "read" || writable || raw.Command == leagueservice.BackupNowCommand ||
+		raw.Command == commissioner.ProblemReportCreate
 }
 
 func (h Hosted) attachPrivateWorkflowTags(ctx context.Context, command, league, football string,
@@ -144,6 +151,10 @@ func logWorkflowFailure(raw RawWorkflow, err error) {
 }
 
 func workflowActionRefusal(w http.ResponseWriter, r *http.Request, raw RawWorkflow, err error) {
+	if raw.Command == commissioner.ProblemReportCreate && errors.Is(err, history.ErrProblemReportRateLimit) {
+		http.Error(w, "You have sent 10 reports in the past hour. Try again later.", http.StatusTooManyRequests)
+		return
+	}
 	if raw.Command == leagueservice.BackupNowCommand && raw.Mode == "execute" &&
 		errors.Is(err, leagueservice.ErrBackupInProgress) {
 		http.Error(w, leagueservice.BackupInProgressMessage, http.StatusConflict)
@@ -163,7 +174,8 @@ func workflowRefusal(w http.ResponseWriter, r *http.Request, err error) {
 
 func workflowFootballRefusal(raw RawWorkflow, pin LeaguePin) string {
 	if raw.Mode == "read" || raw.Command == leagueservice.BackupNowCommand ||
-		raw.Command == "draft.queue.set" || privateTradeDraftOperation(raw.Command) {
+		raw.Command == commissioner.ProblemReportCreate || raw.Command == "draft.queue.set" ||
+		privateTradeDraftOperation(raw.Command) {
 		return ""
 	}
 	if pin.Digest == "" {
@@ -178,7 +190,8 @@ func workflowFootballRefusal(raw RawWorkflow, pin LeaguePin) string {
 // workflowData runs a workflow, answering a league-state reading from the reply cache when it holds one.
 // The envelope (label, writable) is never cached: it is read for every request.
 func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service, raw RawWorkflow, league string) (json.RawMessage, error) {
-	if raw.Mode != "read" || raw.Command == "draft.queue.read" || raw.Command == leagueservice.TradeDraftRead {
+	if raw.Mode != "read" || raw.Command == "draft.queue.read" || raw.Command == leagueservice.TradeDraftRead ||
+		raw.Command == commissioner.ProblemReportsRead {
 		return runWorkflow(ctx, service, raw)
 	}
 	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.pinFor(ctx, league).cacheKey()+"|"+raw.Football)

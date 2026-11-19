@@ -129,7 +129,7 @@ func TestWorkflowParallelRequests(t *testing.T) {
 		started <- struct{}{}
 		<-release
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"label":"league","data":{}}`))
+		_, _ = w.Write([]byte(`{"label":"league","appRelease":1,"data":{}}`))
 	}))
 	defer server.Close()
 	released := false
@@ -181,7 +181,7 @@ func TestWorkflowReadHonorsRetryAfterOnce(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"label":"league","data":{}}`))
+		_, _ = w.Write([]byte(`{"label":"league","appRelease":1,"data":{}}`))
 	}))
 	defer server.Close()
 	roots := x509.NewCertPool()
@@ -214,7 +214,7 @@ func TestWorkflowReadWithoutRetryAfterBacksOff(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"label":"league","data":{}}`))
+		_, _ = w.Write([]byte(`{"label":"league","appRelease":1,"data":{}}`))
 	}))
 	defer server.Close()
 	roots := x509.NewCertPool()
@@ -311,7 +311,7 @@ func TestDesktopAccountPreferenceWorkflowUsesItsAccountScopeEndpoint(t *testing.
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestPath, authorization = r.URL.Path, r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprint(w, `{"label":"Account home layout","writable":true,"football":"","data":{"layout":{"mode":"default","tiles":[],"over":[],"pins":{}},"revision":0}}`)
+		_, _ = fmt.Fprint(w, `{"label":"Account home layout","writable":true,"football":"","appRelease":1,"data":{"layout":{"mode":"default","tiles":[],"over":[],"pins":{}},"revision":0}}`)
 	}))
 	defer server.Close()
 	roots := x509.NewCertPool()
