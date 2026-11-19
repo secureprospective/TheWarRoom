@@ -37,13 +37,23 @@ function entryFor(screen: NeedsYouItem['screen']): ThinHomeEntry | undefined {
   return 'control';
 }
 
-export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, now, onBriefReady }: {
+/** tomorrowMorning is the mock's "Snooze until tomorrow": 9 AM local the next day. */
+export function tomorrowMorning(now: number): string {
+  const at = new Date(now);
+  at.setDate(at.getDate() + 1);
+  at.setHours(9, 0, 0, 0);
+  return at.toISOString();
+}
+
+export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, now, onBriefReady, onNow }: {
   leagues: LeagueChoice[];
   onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void;
   port?: HostedPort;
   readBrief?: BriefReader;
   now?: number;
   onBriefReady?: (leagueId: string, mine: string, brief: HomeBrief) => void;
+  /** onNow reports how many open jobs are in the NOW lane, for the Today tab badge. */
+  onNow?: (count: number) => void;
 }) {
   const appLeagues = useMemo(() => leagues.filter(league => league.app), [leagues]);
   const reader = useMemo<BriefReader>(() => readBrief ?? ((id, mine, hosted, _owner, isCommissioner) =>
@@ -53,6 +63,8 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
   const [failures, setFailures] = useState<Record<string, string>>({});
   const [items, setItems] = useState<NeedsYouItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [snoozed, setSnoozed] = useState<Set<string>>(new Set());
+  const [snoozeError, setSnoozeError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -84,9 +96,20 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
     return () => { active = false; };
   }, [appLeagues, reader, onBriefReady, port, readingTime]);
 
-  const jobs = items.map(item => ({ item, lane: laneOf(item, readingTime) }))
+  const jobs = items.filter(item => !snoozed.has(item.id))
+    .map(item => ({ item, lane: laneOf(item, readingTime) }))
     .sort((a, b) => LANES.indexOf(a.lane) - LANES.indexOf(b.lane));
   const open = jobs.filter(job => job.lane !== 'NOT AVAILABLE').length;
+  const nowCount = loading ? 0 : jobs.filter(job => job.lane === 'NOW').length;
+  useEffect(() => { onNow?.(nowCount); }, [nowCount, onNow]);
+  const snooze = (item: NeedsYouItem) => {
+    const jobId = item.id.slice(`${item.leagueId}:commissioner:`.length);
+    setSnoozeError('');
+    void port({ command: 'job.snooze.set', mode: 'execute',
+      arguments: { league: item.leagueId, jobId, until: tomorrowMorning(readingTime) } })
+      .then(() => setSnoozed(current => new Set(current).add(item.id)))
+      .catch(cause => setSnoozeError(cause instanceof Error ? cause.message : String(cause)));
+  };
   const failed = Object.keys(failures).length > 0 || jobs.length > open;
   const first = appLeagues[0];
   const week = first && briefs[first.id]?.pulse?.week;
@@ -109,6 +132,7 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
     <div className="today6__sec"><b>Needs you</b>
       <span>{loading ? 'reading' : open ? `${open} open` : ''}</span></div>
     <section className="today6__grp" aria-label="Needs you">
+      {snoozeError && <p role="alert" className="today6__note">{snoozeError}</p>}
       {failures['*'] && <p role="alert" className="today6__note">{unavailable} · {failures['*']}</p>}
       {loading && <p role="status" className="today6__note">Reading your leagues…</p>}
       {!loading && !failed && jobs.length === 0 &&
@@ -126,6 +150,10 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
               : 'No deadline from the league'}</em></span>
         {entryFor(item.screen) && <HQAct className="today6__key"
           label={`Open ${item.words} in ${item.leagueName}`} onAction={() => go(item)}>Open</HQAct>}
+        {item.kind === 'commissioner' && <HQAct className="today6__key today6__clock"
+          label="Snooze until tomorrow" onAction={() => snooze(item)}>
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor"
+            strokeWidth="1.8"><circle cx="8" cy="8" r="6.2" /><path d="M8 4.5V8l2.5 1.6" /></svg></HQAct>}
       </div>)}
     </section>
     <div className="today6__sec"><b>Live now</b><span>your matchups</span></div>
@@ -155,8 +183,10 @@ function LiveRow({ league, brief, failure, onOpen }: { league: LeagueChoice; bri
   failure?: string; onOpen: () => void }) {
   const mine = league.franchise ?? '';
   const game = brief && mine ? myGame(brief, mine) : undefined;
-  const words = failure ? `${unavailable} · ${failure}`
-    : !brief ? 'Reading…'
+  // A refused or failed read is never shown as error text: the row offers to switch to that league.
+  if (failure) return <HQAct className="today6__live is-quiet" label={`Open ${league.name} to see scores`}
+    onAction={onOpen}><span><b>{league.name}</b><em>Open to see scores</em></span><b></b><i>›</i></HQAct>;
+  const words = !brief ? 'Reading…'
       : !mine ? 'No team of yours in this league'
         : brief.errors.results ? `${unavailable} · ${brief.errors.results}`
           : !game ? brief.results?.bye === mine ? 'Bye week' : 'No game this week'

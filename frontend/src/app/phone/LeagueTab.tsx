@@ -9,13 +9,17 @@ import type { LeagueChoice } from '../shell/leaguePicker';
 import { PhoneSheet } from '../shell/PhoneAppFrame';
 import { readNativePulse, readPulseActivity, readPulseSeason, readPulseWeekResults,
   type NativePulse, type PulseSeason } from '../shell/pulseReads';
+import { ProblemReport } from '../control/ProblemReport';
+import { readPlayerStatus, statusNote, statusWords, type PlayerStatus } from './playerStatus';
 import './LeagueTab.css';
 
 export type LeagueView = 'st' | 'mu' | 'sc' | 'ac';
 type Part<T> = { value?: T; error?: string };
 export type LeagueJobs = { open: number; now: number };
 export type LeagueReading = { pulse: Part<NativePulse>; season: Part<PulseSeason>;
-  activity: Part<PulseActivity>; jobs?: Part<LeagueJobs> };
+  activity: Part<PulseActivity>; jobs?: Part<LeagueJobs>; status?: Part<LeagueStatus> };
+/** LeagueStatus is the NFL player status read narrowed to players on this league's rosters. */
+export type LeagueStatus = { read: PlayerStatus; names: Map<string, string> };
 export type LeagueRosterPlayer = { id: string; name: string; position: string };
 export const NOT_YET = 'Not available yet';
 const message = (cause: unknown) => cause instanceof Error ? cause.message : String(cause);
@@ -30,7 +34,7 @@ export async function readLeague(league: string, mine: string, commissioner: boo
   const pulse = await part(() => readNativePulse(league, mine, port, undefined, true, false));
   const p = pulse.value;
   const through = Math.max(p?.standings?.through ?? 0, (p?.week ?? 1) - 1);
-  const [season, activity, jobs] = await Promise.all([
+  const [season, activity, jobs, status] = await Promise.all([
     p ? part(() => readPulseSeason(league, p.season, through, port))
       : Promise.resolve({ error: pulse.error }),
     part(() => readPulseActivity(league, port)),
@@ -39,8 +43,14 @@ export async function readLeague(league: string, mine: string, commissioner: boo
       const jobs = parseJobs(r.data).jobs.filter(job => job.state !== 'unbuilt');
       return { open: jobs.length, now: jobs.filter(job => job.state === 'live').length };
     }) : Promise.resolve(undefined),
+    part(async () => {
+      const [read, assets] = await Promise.all([readPlayerStatus(league, port),
+        port({ command: 'native.assets.read', mode: 'read', arguments: { league } })]);
+      const names = new Map(parseHostedRoster(assets.data).players.map(p => [p.id, p.name]));
+      return { read, names };
+    }),
   ]);
-  return { pulse, season, activity, ...(jobs ? { jobs } : {}) };
+  return { pulse, season, activity, status, ...(jobs ? { jobs } : {}) };
 }
 
 /** readTeamRoster lists one franchise's players from the existing native.assets.read. */
@@ -57,15 +67,18 @@ type Props = { league?: LeagueChoice; port?: HostedPort;
   read?: (league: string, mine: string, commissioner: boolean) => Promise<LeagueReading>;
   readWeek?: (league: string, season: number, week: number) => Promise<PulseResults>;
   readRoster?: (league: string, franchise: string) => Promise<LeagueRosterPlayer[]>;
-  onControlRoom?: () => void; onTrade?: () => void; onWatch?: () => void };
+  onControlRoom?: () => void; onTrade?: () => void; onWatch?: () => void;
+  /** onOpenJobs reports the commissioner's open job count, for the League tab badge. */
+  onOpenJobs?: (count: number) => void };
 
 export function LeagueTab({ league, port = hostedWorkflow, read, readWeek, readRoster, onControlRoom,
-  onTrade, onWatch }: Props) {
+  onTrade, onWatch, onOpenJobs }: Props) {
   const commissioner = league?.role === 'Commissioner' || league?.role === 'Co-commissioner';
   const mine = league?.franchise ?? '';
   const [reading, setReading] = useState<LeagueReading>();
   const [view, setView] = useState<LeagueView>('st');
   const [team, setTeam] = useState<PulseStandingRow>();
+  const [reporting, setReporting] = useState(false);
   useEffect(() => {
     if (!league) return;
     let live = true;
@@ -76,6 +89,8 @@ export function LeagueTab({ league, port = hostedWorkflow, read, readWeek, readR
         activity: {} }); });
     return () => { live = false; };
   }, [league, mine, commissioner, port, read]);
+  const openJobs = reading?.jobs?.value?.open ?? 0;
+  useEffect(() => { onOpenJobs?.(openJobs); }, [openJobs, onOpenJobs]);
   if (!league) return <p className="lg5-empty" role="status">No league selected.</p>;
   if (!reading) return <p className="lg5-empty" role="status">Reading the league…</p>;
   const pulse = reading.pulse.value;
@@ -99,8 +114,13 @@ export function LeagueTab({ league, port = hostedWorkflow, read, readWeek, readR
         : view === 'mu' ? <Scores pulse={pulse} mine={mine} season={reading.season.value} onWatch={onWatch}
           readWeek={readWeek ?? ((l, s, w) => readPulseWeekResults(l, s, w, port))} />
           : view === 'sc' ? <Schedule pulse={pulse} mine={mine} season={reading.season} />
-            : <Activity activity={reading.activity} />}
+            : <Activity activity={reading.activity} status={reading.status} />}
+    <HQAct className="lg5-key lg5-big lg5-report" onAction={() => setReporting(true)}>
+      Report a problem</HQAct>
+    {reporting && <ProblemReport league={league.id} route={{ node: 'pulse', workspace: 'league' }}
+      port={port} onClose={() => setReporting(false)} />}
     {team && pulse && <TeamSheet team={team} mine={mine} commissioner={commissioner} league={league.id}
+      status={reading.status?.value?.read}
       readRoster={readRoster ?? ((l, f) => readTeamRoster(l, f, port))} onClose={() => setTeam(undefined)}
       onTrade={onTrade && (() => { setTeam(undefined); onTrade(); })}
       onSeat={onControlRoom && (() => { setTeam(undefined); onControlRoom(); })} />}
@@ -135,7 +155,7 @@ function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
         <td><HQAct className="st5-team" label={`${r.name}: owner and record`} onAction={() => onTeam(r)}>
           {r.name}</HQAct></td>
         <td>{r.ties ? `${r.wins}-${r.losses}-${r.ties}` : `${r.wins}-${r.losses}`}</td>
-        <td>{r.pointsFor.toFixed(0)}</td><td title={`Streak: ${NOT_YET}`}>–</td></tr>)}</tbody></table>
+        <td>{r.pointsFor.toFixed(0)}</td><td>{r.streak || '–'}</td></tr>)}</tbody></table>
   </section>;
   const chips = conferences.length > 1 || divisions.length > 1 ? <div className="lg5-chips">
     {[['all', 'Overall'], ...conferences.map(c => [c, `${c} conf.`]),
@@ -143,7 +163,6 @@ function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
       <HQAct key={id} className={split === id ? 'on' : ''} selected={split === id}
         onAction={() => setSplit(id)}>{label}</HQAct>)}
   </div> : null;
-  const streak = <p className="lg5-note">STRK: {NOT_YET}.</p>;
   if (split === 'div') return <>{chips}
     {divisions.map(d => {
       const list = rows.filter(r => r.division === d);
@@ -151,14 +170,14 @@ function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
       return <div key={d}><div className="lg5-lbl">{title}</div>
         {grid(list)}</div>;
     })}
-    <p className="lg5-note">{pulse.bracket?.words || NOT_YET}</p>{streak}</>;
+    <p className="lg5-note">{pulse.bracket?.words || NOT_YET}</p></>;
   const conference = split !== 'all';
   const list = conference ? rows.filter(r => r.conference === split) : rows;
   const cut = cutOf(pulse, conference);
   return <>{chips}{grid(list, cut)}
     <p className="lg5-note">{cut ? conference ? `Top ${cut} in each conference make the playoffs.`
       : `Top ${cut} make the playoffs (dashed line).` : pulse.bracket?.words || `Playoff line: ${NOT_YET}.`}
-    {' '}Tap a team for its owner and record.</p>{streak}</>;
+    {' '}Tap a team for its owner and record.</p></>;
 }
 
 function Scores({ pulse, mine, season, readWeek, onWatch }: { pulse: NativePulse; mine: string;
@@ -248,7 +267,7 @@ function Schedule({ pulse, mine, season }: { pulse: NativePulse; mine: string; s
     })}</section></>;
 }
 
-function Activity({ activity }: { activity: Part<PulseActivity> }) {
+function Activity({ activity, status }: { activity: Part<PulseActivity>; status?: Part<LeagueStatus> }) {
   const [filter, setFilter] = useState<'all' | 'lg' | 'pl'>('all');
   const events = activity.value?.events ?? [];
   return <>
@@ -260,15 +279,29 @@ function Activity({ activity }: { activity: Part<PulseActivity> }) {
         : !events.length ? <p className="lg5-empty" role="status">No league activity yet.</p>
           : events.map(e => <div key={e.id} className="ac"><em>{when(e.when)} · {e.kind.toUpperCase()}</em>
             <p>{e.summary}</p></div>))}
-      {filter !== 'lg' && <div className="ac"><em>STATUS</em><p>Player status: {NOT_YET}</p></div>}
+      {filter !== 'lg' && <PlayerStatusRows status={status} />}
     </section></>;
+}
+
+function PlayerStatusRows({ status }: { status?: Part<LeagueStatus> }) {
+  const s = status?.value;
+  if (!s) return <div className="ac"><em>STATUS</em><p>Player status: {status?.error || NOT_YET}</p></div>;
+  const rows = [...s.read.facts.values()].filter(f => s.names.has(f.player));
+  const note = statusNote(s.read);
+  return <>
+    {note && <div className="ac"><em>STATUS</em><p>{note}</p></div>}
+    {s.read.state !== 'unavailable' && !rows.length && <div className="ac"><em>STATUS</em>
+      <p>No injury designations for rostered players.</p></div>}
+    {rows.map(f => <div key={f.player} className="ac"><em>STATUS</em>
+      <p>{s.names.get(f.player)} · {statusWords(f)}</p></div>)}
+  </>;
 }
 
 const when = (stamp: string) => new Date(stamp).toLocaleString(undefined, { weekday: 'short',
   hour: 'numeric', minute: '2-digit' }).toUpperCase();
 
-function TeamSheet({ team, mine, commissioner, league, readRoster, onTrade, onSeat, onClose }: {
-  team: PulseStandingRow; mine: string; commissioner: boolean; league: string;
+function TeamSheet({ team, mine, commissioner, league, status, readRoster, onTrade, onSeat, onClose }: {
+  team: PulseStandingRow; mine: string; commissioner: boolean; league: string; status?: PlayerStatus;
   readRoster: (league: string, franchise: string) => Promise<LeagueRosterPlayer[]>;
   onTrade?: () => void; onSeat?: () => void; onClose: () => void }) {
   const [roster, setRoster] = useState<Part<LeagueRosterPlayer[]>>();
@@ -281,7 +314,8 @@ function TeamSheet({ team, mine, commissioner, league, readRoster, onTrade, onSe
   const own = team.franchise === mine;
   return <PhoneSheet title={team.name} id="league-team-sheet" onClose={onClose}>
     <div className="lg5-sheet">
-      <p className="lg5-note">{team.record} · {team.pointsFor.toFixed(0)} points for · streak {NOT_YET}
+      <p className="lg5-note">{team.record} · {team.pointsFor.toFixed(0)} points for
+        {' · streak '}{team.streak || NOT_YET}
         {[team.conference, team.division].filter(Boolean).map(part => ` · ${part}`).join('')}
       </p>
       <p className="lg5-note">Owner: {NOT_YET}</p>
@@ -290,7 +324,9 @@ function TeamSheet({ team, mine, commissioner, league, readRoster, onTrade, onSe
           : roster.error ? <p className="lg5-empty" role="alert">{roster.error}</p>
             : !roster.value!.length ? <p className="lg5-empty" role="status">No players on this roster.</p>
               : roster.value!.map(p => <div key={p.id} className="lg5-pk"><span><b>{p.name}</b>
-                <em>{p.position || '–'}</em></span><b title={`Projection: ${NOT_YET}`}>–</b></div>)}
+                <em>{p.position || '–'}{status?.facts.get(p.id)
+                  ? ` · ${statusWords(status.facts.get(p.id)!)}` : ''}</em></span>
+                <b title={`Projection: ${NOT_YET}`}>–</b></div>)}
       </section>
       {!own && onTrade && <HQAct className="lg5-key lg5-big" onAction={onTrade}>Propose a trade</HQAct>}
       {!own && commissioner && onSeat && <HQAct className="lg5-key lg5-big" onAction={onSeat}>

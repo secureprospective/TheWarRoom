@@ -69,7 +69,7 @@ describe('TodayTab', () => {
     expect(view.textContent).toContain('1 open');
     expect(view.querySelector('.today6__job.is-now small')!.textContent).toBe('NOW · TEST LEAGUE');
     expect(view.textContent).not.toContain('Done');
-    expect(view.querySelector('[aria-label*="Later"]')).toBeNull();
+    expect(view.querySelector('[aria-label="Snooze until tomorrow"]')).toBeNull();
     const live = view.querySelector('.today6__live')!;
     expect(live.textContent).toContain('Iron Curtain vs Gridlock');
     expect(live.textContent).toContain('24.2–25.8');
@@ -98,5 +98,52 @@ describe('TodayTab', () => {
     expect(view.textContent).not.toContain('Nothing needs you right now.');
     expect(view.textContent).toContain('Server unreachable');
     expect(view.querySelector('h2')!.textContent).toBe('Sunday · week unavailable');
+  });
+
+  it('snooze: a commissioner job gets the clock, which writes job.snooze.set and hides it', async () => {
+    const commish = { ...league, role: 'Commissioner' };
+    const brief = { ...loaded(), trades: { league: 'league', franchise: 'mine', offers: [] },
+      jobs: { league: 'league', name: 'Test League', revision: 1, jobs: [{ id: 'j1', name: 'Approve trade',
+        state: 'blocked', words: 'Waiting', opens: '', closes: '2026-11-15T13:00:00Z', controls: [] }] },
+    } as unknown as HomeBrief;
+    const requests: NativeRequest[] = [];
+    const base = layoutPort(requests, { saved: defaultLayout(), revision: 0 });
+    const port = vi.fn(async (request: NativeRequest) => {
+      if (request.command === 'job.snooze.set') { requests.push(request);
+        return { label: '', writable: true, football: '', data: {} }; }
+      return base(request);
+    }) as unknown as HostedPort;
+    const onNow = vi.fn();
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+    await act(async () => root!.render(<TodayTab leagues={[commish]} onOpen={vi.fn()} port={port}
+      readBrief={async () => brief} now={now} onNow={onNow} />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    expect(host.textContent).toContain('Approve trade');
+    expect(onNow).toHaveBeenLastCalledWith(1);
+    await press('Snooze until tomorrow');
+    const sent = requests.find(r => r.command === 'job.snooze.set');
+    expect(sent?.arguments).toMatchObject({ league: 'league', jobId: 'j1' });
+    expect(host.querySelector('[aria-label="Needs you"]')!.textContent).not.toContain('Approve trade');
+    expect(onNow).toHaveBeenLastCalledWith(0);
+  });
+
+  it('live now: one row per admitted league, each with its own read or failure words', async () => {
+    const other: LeagueChoice = { ...league, id: 'f32', name: 'Foundry 32' };
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+    const onOpen = vi.fn();
+    await act(async () => root!.render(<TodayTab leagues={[league, other]} onOpen={onOpen}
+      port={layoutPort([], { saved: defaultLayout(), revision: 0 })} now={now}
+      readBrief={async id => { if (id === 'f32') throw new Error('Not admitted to this league');
+        return loaded(); }} />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    const rows = [...host.querySelectorAll('[aria-label="Live now"] .today6__live')];
+    expect(rows.map(r => r.textContent)).toEqual([expect.stringContaining('Iron Curtain vs Gridlock'),
+      'Foundry 32Open to see scores›']);
+    expect(host.querySelector('[aria-label="Live now"]')!.textContent).not.toContain('Not admitted');
+    await press('Open Foundry 32 to see scores');
+    expect(onOpen).toHaveBeenCalledWith(other, 'pulse');
+    expect(host.textContent).toContain('2 leagues');
   });
 });

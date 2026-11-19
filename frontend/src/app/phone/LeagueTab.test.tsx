@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PulseResults } from '../data/nativePulse';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import type { NativePulse } from '../shell/pulseReads';
-import { LeagueTab, type LeagueReading, type LeagueRosterPlayer } from './LeagueTab';
+import { readLeague, LeagueTab, type LeagueReading, type LeagueRosterPlayer } from './LeagueTab';
 
 const owner: LeagueChoice = { id: 'lg', name: 'Test League', app: true, franchise: 'a', role: 'Owner' };
 const commish: LeagueChoice = { ...owner, role: 'Commissioner' };
@@ -19,7 +19,8 @@ const row = (rank: number, franchise: string, name: string, wins: number, confer
   division = '') => ({ rank, franchise, name, division, conference, wins, losses: 10 - wins, ties: 0,
   record: `${wins}-${10 - wins}`,
     pointsFor: 1000 + wins, pointsWords: '', why: [] });
-const pulse = (rows = [row(1, 'b', 'Bravo', 8, 'Forge', 'East'), row(2, 'a', 'Alpha', 6, 'Mill', 'West'),
+const pulse = (rows = [row(1, 'b', 'Bravo', 8, 'Forge', 'East'), { ...row(2, 'a', 'Alpha', 6, 'Mill', 'West'),
+  streak: 'L2' },
   row(3, 'c', 'Charlie', 4, 'Forge', 'East')]): NativePulse => ({
   league: 'lg', name: 'Test League', season: 2026, revision: 1,
   seats: [{ franchise: 'a', name: 'Alpha', abbreviation: 'A', division: '' },
@@ -67,7 +68,48 @@ const click = (label: RegExp, scope: ParentNode = host!) => act(async () => {
   await new Promise(resolve => setTimeout(resolve, 10));
 });
 
+const statusRead = (state: string, players: unknown[]) => ({ league: 'lg', state, season: 2026,
+  fetchedAt: state === 'unavailable' ? null : '2026-11-18T15:00:00Z', players });
+
 describe('LeagueTab', () => {
+  it('player status: rostered facts in Activity and the team sheet; unavailable words', async () => {
+    const withStatus = loaded();
+    withStatus.status = { value: { read: { league: 'lg', state: 'available', facts: new Map([
+      ['p1', { player: 'p1', designation: 'Out', bodyPart: 'Hamstring', returnWeek: 12 }],
+      ['p9', { player: 'p9', designation: 'Questionable', bodyPart: '' }]]) },
+    names: new Map([['p1', 'Ace Runner']]) } };
+    const view = await show(owner, async () => withStatus);
+    await click(/^Activity$/);
+    expect(view.textContent).toContain('Ace Runner · Out · Hamstring · back week 12');
+    expect(view.textContent).not.toContain('Questionable');
+    await click(/^Table$/);
+    await click(/Bravo: owner and record/);
+    expect(document.querySelector('dialog')?.textContent).toContain('RB · Out · Hamstring · back week 12');
+    await act(async () => root!.unmount()); host!.remove();
+    const off = loaded();
+    off.status = { value: { read: { league: 'lg', state: 'unavailable', facts: new Map() },
+      names: new Map() } };
+    const again = await show(owner, async () => off);
+    await click(/^Activity$/);
+    expect(again.textContent).toContain('the NFL injury report is not available right now');
+  });
+  it('readLeague reads nfl.player-status.read and names rostered players', async () => {
+    const port = vi.fn(async (request: { command: string }) => {
+      if (request.command === 'nfl.player-status.read') return { label: '', writable: false, football: '',
+        data: statusRead('stale', [{ player: '0101', designation: 'Doubtful', bodyPart: 'Knee' }]) };
+      if (request.command === 'native.assets.read') throw new Error('Assets held');
+      throw new Error(`${request.command} held`);
+    });
+    const reading = await readLeague('lg', 'a', false, port as never);
+    expect(reading.status?.error).toBe('Assets held');
+  });
+  it('report a problem opens the shared report form', async () => {
+    const view = await show(owner, async () => loaded());
+    await click(/^Report a problem$/);
+    expect(view.querySelector('[data-testid="problem-report"]')).not.toBeNull();
+    await click(/Close report form/);
+    expect(view.querySelector('[data-testid="problem-report"]')).toBeNull();
+  });
   it('loaded: table, scores, schedule and activity from the reads', async () => {
     const onWatch = vi.fn();
     const view = await show(commish, async () => loaded(), { onWatch });
@@ -75,7 +117,8 @@ describe('LeagueTab', () => {
     expect([...view.querySelectorAll('[role="tab"]')].map(t => t.textContent))
       .toEqual(['Table', 'Scores', 'Schedule', 'Activity']);
     expect(view.querySelector('tr.me')?.textContent).toContain('Alpha');
-    expect(view.textContent).toContain('STRK: Not available yet');
+    expect(view.querySelector('tr.me')?.textContent).toContain('L2');
+    expect(view.querySelector('tbody tr:nth-child(3)')?.textContent).toMatch(/–$/);
     await click(/^Forge conf\.$/);
     expect(view.textContent).not.toContain('Alpha');
     expect(view.textContent).toContain('Top 1 in each conference make the playoffs.');
@@ -101,7 +144,7 @@ describe('LeagueTab', () => {
     expect(view.textContent).toContain('Bravo and Charlie traded receivers.');
     expect(view.textContent).toContain('Player status: Not available yet');
     await click(/^League$/);
-    expect(view.textContent).not.toContain('Player status: Not available yet');
+    expect(view.textContent).not.toContain('Player status:');
   });
   it('empty: no standings, no games, no activity, nothing waiting', async () => {
     const view = await show(commish, async () => ({ pulse: { value: { ...pulse([]), week: 1 } },

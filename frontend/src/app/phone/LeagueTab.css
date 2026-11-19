@@ -85,3 +85,4 @@
 .lg5-pk span { display: grid; gap: 2px; } .lg5-pk em { font: 10px var(--mono, monospace);
   color: var(--ink3, #888);
   font-style: normal; }
+.lg5-report { margin-top: 16px; }

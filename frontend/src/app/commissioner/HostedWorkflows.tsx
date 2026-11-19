@@ -102,6 +102,25 @@ export async function reviewHostedWaiverClaim(room: Pick<HostedLeagueRoom, 'canC
   if (room.peek().error) throw new Error(room.peek().error);
 }
 
+/** reviewHostedClaimChange previews the owner's own claim maintenance: a new claim order or one cancel. */
+export async function reviewHostedClaimChange(room: Pick<HostedLeagueRoom, 'canChange' | 'review' | 'peek'>,
+  league: string, franchise: string, revision: number,
+  change: { command: 'waivers.claim.order.set'; order: string[] }
+    | { command: 'waivers.claim.cancel'; claim: string }) {
+  const definition = ownerActs.find(a => a.command === 'waivers.claim');
+  const envelope = definition && actChange(definition, { window: 'claim' },
+    { league, revision, principal: franchise }, '');
+  if (!envelope) throw new Error('Choose a claim to change');
+  if (!room.canChange()) throw new Error('The league is not ready for changes');
+  const waiver = change.command === 'waivers.claim.order.set' ? { franchise, order: change.order }
+    : { franchise, claim: change.claim };
+  const label = change.command === 'waivers.claim.cancel' ? 'Cancel a claim' : 'Reorder my claims';
+  const request = { command: change.command, mode: 'preview', arguments: { ...envelope,
+    command: change.command, args: { waiver }, request: newKey() } } as NativeRequest;
+  await room.review(request, label);
+  if (room.peek().error) throw new Error(room.peek().error);
+}
+
 const commissionerCommands: Record<HostedTask, string[]> = {
   bids: ['bids.process', 'bids.award.override'],
   waivers: ['waivers.process', 'waivers.order.set', 'waivers.order.auto', 'waivers.award.override'],

@@ -25,10 +25,13 @@
 .mv4 em.wv { color: var(--ink2, #bbb); }
 .mv4-empty { padding: 18px 10px; text-align: center; color: var(--ink3, #888); font-size: 13px; margin: 0; }
 .mv4-note { font: 10px var(--mono, monospace); color: var(--ink3, #888); padding: 0 2px; margin: 0; }
-.mv4-wc { display: grid; grid-template-columns: 28px 1fr; align-items: center; gap: 6px; min-height: 60px;
+.mv4-wc { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 6px; min-height: 60px;
   padding: 6px 6px 6px 0; border-top: 1px solid var(--rule, #222); }
 .mv4-wc > b { font: 700 13px var(--mono, monospace); text-align: center; color: var(--ink3, #888); }
-.mv4-wc .mv4-later { grid-column: 2; }
+.mv4-wc span.mv4-ud { display: flex; gap: 2px; }
+.mv4-ud > * { min-width: 44px; min-height: 44px; display: grid; place-items: center; background: none;
+  border: 1px solid var(--rule, #333); color: inherit; font: inherit; }
+.mv4-ud > [disabled] { opacity: .35; }
 .mv4-to { border: 1px solid var(--edge, #333); background: var(--tile, #111); }
 .mv4-to.need { border-color: var(--amber, #f5a623); }
 .mv4-to h4 { margin: 0; display: flex; justify-content: space-between; gap: 8px; padding: 7px 10px;
