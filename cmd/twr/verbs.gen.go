@@ -64,6 +64,7 @@ func generatedVerbs() []commandVerb {
 		{ID: "trade.decline", Label: "decline trade", Modes: []string{"preview", "execute"}},
 		{ID: "trade.withdraw", Label: "withdraw trade", Modes: []string{"preview", "execute"}},
 		{ID: "trade.review", Label: "review trade", Modes: []string{"preview", "execute"}},
+		{ID: "trade.hold", Label: "hold trade", Modes: []string{"preview", "execute"}},
 		{ID: "trade.recuse", Label: "recuse trade", Modes: []string{"preview", "execute"}},
 		{ID: "trade.appeal", Label: "appeal trade", Modes: []string{"preview", "execute"}},
 		{ID: "trade.appeal.rule", Label: "rule trade appeal", Modes: []string{"preview", "execute"}},

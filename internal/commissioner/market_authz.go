@@ -36,6 +36,12 @@ func authorizeTrade(raw RawCommand, principal string, records []Record, deputyPe
 		}
 		return "owner", nil
 	}
+	if raw.Command == TradeHold {
+		if state.HasRole(governance.Principal(principal), governance.Commissioner) {
+			return "commissioner", nil
+		}
+		return "", fmt.Errorf("only the commissioner may hold a trade review")
+	}
 	if raw.Command == TradeOverride {
 		return authorizeTradeOverride(raw, principal, records, state, deputyPermitted)
 	}

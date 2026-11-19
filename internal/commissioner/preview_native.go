@@ -45,14 +45,8 @@ func nativePreviewValues(raw RawCommand, records []Record, now time.Time, out ma
 		}
 	}
 	marketPreviewValues(raw, book, names, out)
-	if raw.Args.Trade != nil {
-		labels := map[string]int{}
-		for _, t := range book.Trades {
-			label := tradePreviewLabel(raw, t, names, labels)
-			out[label] = tradePreviewWords(t)
-			tradePreviewVotes(t, label, seats, records, out)
-		}
-	}
+	tradeHoldPreviewValues(raw, book, out)
+	tradePreviewValues(raw, book, names, seats, records, out)
 	if raw.Args.Correction != nil {
 		changes, err := CorrectionsReading(raw.League, records, now)
 		if err != nil {
@@ -63,6 +57,37 @@ func nativePreviewValues(raw RawCommand, records []Record, now time.Time, out ma
 		}
 	}
 	return nil
+}
+
+func tradePreviewValues(raw RawCommand, book MarketBook, names map[string]string, seats []PeopleSeat,
+	records []Record, out map[string]string) {
+	if raw.Args.Trade == nil {
+		return
+	}
+	labels := map[string]int{}
+	for _, trade := range book.Trades {
+		label := tradePreviewLabel(raw, trade, names, labels)
+		out[label] = tradePreviewWords(trade)
+		tradePreviewVotes(trade, label, seats, records, out)
+	}
+}
+
+func tradeHoldPreviewValues(raw RawCommand, book MarketBook, out map[string]string) {
+	if raw.Command != TradeHold || raw.Args.Trade == nil {
+		return
+	}
+	for _, trade := range book.Trades {
+		if trade.ID != raw.Args.Trade.ID {
+			continue
+		}
+		out["Trade review deadline"] = trade.ExpiresAt.UTC().Format(time.RFC3339)
+		reason := "No hold reason recorded"
+		if len(trade.Holds) > 0 {
+			reason = trade.Holds[len(trade.Holds)-1].Reason
+		}
+		out["Trade review hold reason"] = reason
+		return
+	}
 }
 
 // rosterStatusWords names a squad the way the owner screens do, never by its stored code.
@@ -266,7 +291,7 @@ func tradePreviewWords(t TradeState) string {
 	for _, c := range []struct {
 		n         int
 		one, many string
-	}{{len(t.Votes), "review vote", "review votes"}, {len(t.Recusals), "recusal", "recusals"},
+	}{{len(t.Votes), "review vote", "review votes"}, {len(t.Holds), "review hold", "review holds"}, {len(t.Recusals), "recusal", "recusals"},
 		{len(t.Appeals), "appeal", "appeals"}, {len(t.Overrides), "override", "overrides"}} {
 		if c.n > 0 {
 			parts = append(parts, countWords(c.n, c.one, c.many))

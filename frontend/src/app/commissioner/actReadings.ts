@@ -62,7 +62,7 @@ export async function readActData(league: string, kinds: readonly FieldKind[], s
       label: `Transaction: ${o.label}` })),
   ];
   const marketCommands = ['waivers.process', 'waivers.award.override', 'bids.process',
-    'bids.award.override', 'trade.review', 'trade.appeal.rule', 'trade.override'];
+    'bids.award.override', 'trade.review', 'trade.hold', 'trade.appeal.rule', 'trade.override'];
   const market = marketCommands.includes(command);
   if (market) {
     const reading = await app.TargetCommissionerMarket(league, command);
@@ -272,7 +272,7 @@ export async function readHostedActData(league: string, revision: number, kinds:
       .map(role => ({ value: role.person, label: role.person }));
   }
   const marketCommands = ['waivers.process', 'waivers.award.override', 'bids.process',
-    'bids.award.override', 'trade.review', 'trade.appeal.rule', 'trade.override',
+    'bids.award.override', 'trade.review', 'trade.hold', 'trade.appeal.rule', 'trade.override',
     'trade.recuse', 'trade.appeal'];
   const marketFields: FieldKind[] = ['window', 'claim', 'bid', 'bidPlayer', 'trade'];
   if (marketCommands.includes(command) && kinds.some(kind => marketFields.includes(kind))) {

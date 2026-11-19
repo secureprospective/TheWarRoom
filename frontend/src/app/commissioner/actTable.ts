@@ -153,6 +153,7 @@ export const actTable: readonly ActDefinition[] = [
   def('CM-036', 'oline.auction.close', 'Close the O-Line auction', '', []),
   def('CM-036', 'bids.process', 'Process bids for a player', 'bid', [f('player', 'Player', 'bidPlayer')]),
   def('CM-036', 'bids.award.override', 'Correct a bid award', 'bid', [f('bid', 'Bid', 'bid'), franchise]),
+  def('CM-037', 'trade.hold', 'Extend a trade review by 24 hours', 'trade', [f('id', 'Trade', 'trade')]),
   ...['review', 'appeal.rule', 'override', 'recuse', 'appeal'].map(action =>
     def('CM-037', `trade.${action}`, {
       review: 'Review a trade', 'appeal.rule': 'Rule on a trade appeal',

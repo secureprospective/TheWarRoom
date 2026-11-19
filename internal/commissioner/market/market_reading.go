@@ -28,7 +28,7 @@ type Market struct {
 
 func marketCommand(command string) bool {
 	switch command {
-	case commissioner.WaiverProcess, commissioner.WaiverOverride, commissioner.BidsProcess, commissioner.BidsOverride, commissioner.TradeReview, commissioner.TradeAppealRule, commissioner.TradeOverride:
+	case commissioner.WaiverProcess, commissioner.WaiverOverride, commissioner.BidsProcess, commissioner.BidsOverride, commissioner.TradeReview, commissioner.TradeHold, commissioner.TradeAppealRule, commissioner.TradeOverride:
 		return true
 	}
 	return false
@@ -104,6 +104,10 @@ func (out *Market) readTrades(trades []commissioner.TradeState, v bidViewer, com
 		switch command {
 		case commissioner.TradeReview:
 			if x.review(raw, &candidate) != nil {
+				continue
+			}
+		case commissioner.TradeHold:
+			if x.hold(raw, &candidate) != nil {
 				continue
 			}
 		case commissioner.TradeAppealRule:
