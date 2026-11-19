@@ -98,8 +98,7 @@ export const layoutKey = (league: string, franchise: string) =>
   `thewarroom.home.layout:${league}:${franchise}`;
 
 type LayoutReply = { layout: Layout; revision: number; conflict: boolean };
-export type HomeLayoutResult = LayoutReply & { offline: boolean; cached: boolean };
-type LayoutStorage = Pick<Storage, 'getItem' | 'setItem'>;
+export type HomeLayoutResult = LayoutReply & { offline: boolean };
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -118,16 +117,8 @@ function readLayoutReply(value: unknown): LayoutReply {
     throw new Error('The saved Home layout is invalid.');
   return { layout: parsed, revision: Number(value.revision), conflict: value.conflict === true };
 }
-function saveLayout(storage: LayoutStorage | undefined, key: string, layout: Layout): boolean {
-  try {
-    if (!storage) return false;
-    storage.setItem(key, JSON.stringify(layout));
-    return true;
-  } catch { return false; }
-}
-
-/** Reads the signed-in account's layout first, with the old local key as an offline-only fallback. */
-export function createHomeLayoutStore(port: HostedPort, key: string, storage?: LayoutStorage) {
+/** Reads and writes the signed-in account's layout without persisting a browser copy. */
+export function createHomeLayoutStore(port: HostedPort) {
   let revision = 0;
   let currentLayout = defaultLayout();
   let initialized = false;
@@ -151,18 +142,12 @@ export function createHomeLayoutStore(port: HostedPort, key: string, storage?: L
       revision = result.revision;
       currentLayout = result.layout;
       initialized = true;
-      const cached = saveLayout(storage, key, result.layout);
-      return { ...result, offline: false, cached };
+      return { ...result, offline: false };
     } catch {
-      let cached = false;
-      try {
-        const raw = storage?.getItem(key);
-        cached = raw !== null && raw !== undefined;
-        currentLayout = parseLayout(raw);
-      } catch { currentLayout = defaultLayout(); }
+      currentLayout = defaultLayout();
       revision = 0;
       initialized = true;
-      return { layout: currentLayout, revision, conflict: false, offline: true, cached };
+      return { layout: currentLayout, revision, conflict: false, offline: true };
     }
   }
 
@@ -172,7 +157,7 @@ export function createHomeLayoutStore(port: HostedPort, key: string, storage?: L
     const operation = queue.then(async (): Promise<HomeLayoutResult> => {
       if (!initialized) await read();
       if (sequence !== writeSequence)
-        return { layout: currentLayout, revision, conflict: false, offline: false, cached: false };
+        return { layout: currentLayout, revision, conflict: false, offline: false };
       try {
         const request = { command: 'home.layout.set', mode: 'execute',
           arguments: { layout, expectedRevision: revision } } satisfies NativeRequest;
@@ -180,15 +165,13 @@ export function createHomeLayoutStore(port: HostedPort, key: string, storage?: L
         const result = readLayoutReply(response.data);
         revision = result.revision;
         currentLayout = result.layout;
-        const cached = saveLayout(storage, key, result.layout);
         if (result.conflict) writeSequence++;
-        return { ...result, offline: false, cached };
+        return { ...result, offline: false };
       } catch {
         if (sequence === writeSequence) {
           currentLayout = layout;
         }
-        const cached = sequence === writeSequence ? saveLayout(storage, key, layout) : false;
-        return { layout: currentLayout, revision, conflict: false, offline: true, cached };
+        return { layout: currentLayout, revision, conflict: false, offline: true };
       }
     });
     queue = operation.then(() => undefined, () => undefined);

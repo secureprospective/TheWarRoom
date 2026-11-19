@@ -46,3 +46,12 @@ func TestRosterAddIsOwnerOnlyEvenForCommissioners(t *testing.T) {
 		}
 	}
 }
+
+func TestRosterAddIsNotADeputyDelegation(t *testing.T) {
+	records := permissionTestLedger(t)
+	command := RawCommand{League: "native.test", Command: RosterAdd,
+		Args: RawArgs{Waiver: &RawWaiverArgs{Player: "6001", Franchise: "franchise.02"}}}
+	if _, err := AuthorizeRecords(command, "full-deputy", records); err == nil {
+		t.Fatal("a deputy with every permission added a player to another franchise")
+	}
+}

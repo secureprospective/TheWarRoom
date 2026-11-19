@@ -18,6 +18,28 @@ func TestBrowserHomeLayoutUsesSameOriginAccountCookie(t *testing.T) {
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("browser layout read: status=%d body=%s", response.StatusCode, body)
 	}
+	response, _ = browserRequest(t, f, http.MethodGet, serverhttp.AccountPreferencePath,
+		request, cookie.Value, "")
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("originless GET did not reach the POST-only door: status=%d", response.StatusCode)
+	}
+	for _, method := range []string{http.MethodPost, http.MethodDelete} {
+		response, _ = browserRequest(t, f, method, serverhttp.AccountPreferencePath,
+			request, cookie.Value, "")
+		if response.StatusCode != http.StatusForbidden {
+			t.Errorf("originless %s status=%d, want 403", method, response.StatusCode)
+		}
+	}
+	response, _ = browserRequest(t, f, http.MethodDelete, serverhttp.AccountPreferencePath,
+		request, cookie.Value, "", browserOrigin)
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("same-origin unsupported DELETE status=%d, want 400", response.StatusCode)
+	}
+	response, _ = browserRequest(t, f, http.MethodPost, serverhttp.AccountPreferencePath,
+		request, cookie.Value, "Bearer "+cookie.Value, browserOrigin)
+	if response.StatusCode != http.StatusForbidden {
+		t.Fatalf("Authorization plus cookie status=%d, want 403", response.StatusCode)
+	}
 	var envelope serverhttp.WorkflowResponse
 	if err := json.Unmarshal(body, &envelope); err != nil {
 		t.Fatal(err)

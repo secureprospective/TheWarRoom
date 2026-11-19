@@ -22,14 +22,12 @@ import { pointsLabel } from '../data/nativePulse';
 
 type Tab = 'brief' | 'depth' | 'stats';
 type Alert = { id: string; level: 'red' | 'amber'; title: string; words: string; when?: string };
-function layoutSummary(
-  syncLayout: boolean, owner: boolean, status: LayoutSyncStatus, cached: boolean,
-): string {
+function layoutSummary(syncLayout: boolean, owner: boolean, status: LayoutSyncStatus): string {
   if (!syncLayout || !owner) return 'saved on this device';
   if (status === 'synced') return 'synced across devices';
   if (status === 'saving') return 'saving to your account';
   if (status === 'loading') return 'reading your account layout';
-  return cached ? 'using this device while server is unavailable' : 'no device copy · server unavailable';
+  return 'no device copy · server unavailable';
 }
 const TRAY: Record<Tab | 'edit', string> = {
   brief: 'Home reads and links only · nothing here changes the league',
@@ -107,7 +105,6 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
   const layoutState = useHomeLayout(port, key, browserStorage(), syncLayout && owner, setMsg);
   const lay = layoutState.layout;
   const layoutStatus = layoutState.status;
-  const layoutCached = layoutState.cached;
   const save = layoutState.save;
   const [drag, setDrag] = useState<TileId>();
   // pass counts reads; done is the last pass that finished. A startup timeout is not final: Home
@@ -350,8 +347,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
               `Grid full · click the tile to move to OVERFLOW to make room for ${TILES[pick.id].t} ` +
               pick.span.replace('x', '×')
             : msg || (layoutStatus === 'offline' && syncLayout && owner
-              ? layoutCached ? 'Server unavailable · showing this device’s saved layout'
-                : 'Server unavailable · no saved layout on this device' : TRAY[edit ? 'edit' : tab])}</span>
+              ? 'Server unavailable · no saved layout on this device' : TRAY[edit ? 'edit' : tab])}</span>
           <span className="sp" />
           <span style={{ display: 'flex', gap: 8 }}>{pick
             ? <HomeAct className="btn" action="cancel">CANCEL</HomeAct>
@@ -426,7 +422,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
             <div className="empty">Click a tile to see where its data comes from, how fresh it is and where it
               opens.</div></>}
           <div className="ch" style={{ borderTop: '2px solid var(--black)' }}><b>LAYOUT</b>
-            <span>{layoutSummary(syncLayout, owner, layoutStatus, layoutCached)}</span></div>
+            <span>{layoutSummary(syncLayout, owner, layoutStatus)}</span></div>
           <div className="kv3">
             <span>MODE</span><span>{lay.mode === 'default' ? 'Default · follows season phase' :
               'Custom · never moves on its own'}</span>

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import type { HomeBrief } from './homeReads';
 import { answerPhoneQuestion, PhoneAsk } from './PhoneAsk';
 
@@ -15,6 +15,7 @@ let host: HTMLDivElement | undefined;
 afterEach(async () => {
   if (root) await act(async () => root!.unmount());
   host?.remove(); root = undefined; host = undefined;
+  vi.unstubAllGlobals();
 });
 
 it('answers supported score questions from the held Home reading only', () => {
@@ -31,8 +32,10 @@ it('labels unknown and missing score readings without saving or requesting anyth
     .toMatchObject({ label: 'READING UNAVAILABLE', text: expect.stringContaining('No score reading') });
 });
 
-it('opens a local Ask sheet and shows a score answer', async () => {
+it('opens a local Ask sheet, answers from Home and makes no request', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const request = vi.fn();
+  vi.stubGlobal('fetch', request);
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
   await act(async () => root!.render(<PhoneAsk brief={brief} mine="mine" />));
   const open = host.querySelector('.phone-ask__open') as HTMLButtonElement;
@@ -41,4 +44,5 @@ it('opens a local Ask sheet and shows a score answer', async () => {
   const sample = [...host.querySelectorAll('.phone-ask__suggestions button')][0] as HTMLButtonElement;
   await act(async () => sample.click());
   expect(host.querySelector('[role="status"]')?.textContent).toContain('You are ahead of Rivals');
+  expect(request).not.toHaveBeenCalled();
 });
