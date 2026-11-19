@@ -38,6 +38,10 @@ Bundles 8–9 got this wrong: they squeezed desktop screens into a phone frame (
 | Per-person Home layout | Server per-person layout (D58, built in b9 #388/#405). | `today:board-*` |
 | New owner commands | v3 Decision 5: approve each one when its screen is next. | claim reorder/cancel, trade hold |
 | Test accounts | Left unseated for alpha (11-19). | — |
+| Q1 League switcher (11-19) | **Build it.** Member-safe list of my own leagues + switch in the app bar; Today spans all my leagues. | `live:league-*`, `shell:league-switch`, `today:league-count`, `today:job-commish-seven` |
+| Q2 Job Done/snooze (11-19) | **Snooze only**, private to the person (D57 store). No manual Done: a job clears when its command settles. | `today:job-*-done`, `shell:toast-done`, `cr:job-later/done/wake/snoozed-list` |
+| Q5 Claims (11-19) | **Approved:** claim reorder, claim cancel (preview → confirm), waiver bid sheet. Placed free-agent bids stay locked. | `moves:claim-reorder`, `moves:claim-cancel`, `moves:waiver-bid-sheet` |
+| Q3 Owner-to-owner messages (11-19) | **Not for alpha.** Nudge and seat message are left out; revisit after alpha. | `act:quiet-nudge`, `cr:seat-message` |
 
 ## Open questions for Christopher
 | # | Question | Rows |
