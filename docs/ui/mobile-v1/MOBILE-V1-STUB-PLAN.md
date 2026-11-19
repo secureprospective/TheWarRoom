@@ -42,8 +42,12 @@ Bundles 8–9 got this wrong: they squeezed desktop screens into a phone frame (
 | Q2 Job Done/snooze (11-19) | **Snooze only**, private to the person (D57 store). No manual Done: a job clears when its command settles. | `today:job-*-done`, `shell:toast-done`, `cr:job-later/done/wake/snoozed-list` |
 | Q5 Claims (11-19) | **Approved:** claim reorder, claim cancel (preview → confirm), waiver bid sheet. Placed free-agent bids stay locked. | `moves:claim-reorder`, `moves:claim-cancel`, `moves:waiver-bid-sheet` |
 | Q3 Owner-to-owner messages (11-19) | **Not for alpha.** Nudge and seat message are left out; revisit after alpha. | `act:quiet-nudge`, `cr:seat-message` |
+| Q4 Trade hold (11-19) | **Add it:** commissioner command extends one trade's review window by 24 h with a reason owners see; logged. | `act:trade-hold-24h`, `cr:trade-hold-reason` |
+| Q6 League colour (11-19) | **Not for alpha.** Phone uses the mock's fixed palette. | `cr:league-color` |
+| Q7 Collusion freeze (11-19) | **Not for alpha.** Ledger review + veto of pending trades only. | `act:complaint-freeze-trades` |
+| G2 Player status source (11-19) | **Reuse the MFL injuries fetcher** (`internal/ingestion/injuries`) on the hosted server on a schedule; status + expected return. No depth charts for alpha. | `team:injury-facts`, `cr:activity-player-fact-*`, `league:activity-player-filter` |
 
-## Open questions for Christopher
+## Open questions for Christopher (all answered 11-19; rulings are in the table above)
 | # | Question | Rows |
 |---|---|---|
 | Q1 | **League switcher on phone.** The mock has one; the browser session admits one league (409 for multi-league accounts). Allow a member-safe list of my leagues + switch? | `live:league-*`, `shell:league-switch`, cross-league Today (`today:league-count`, `today:job-commish-seven`) |
