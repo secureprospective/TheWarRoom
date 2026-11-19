@@ -75,13 +75,15 @@ export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeag
   const selected = leagues.find(league => league.id === selectedLeagueId);
   const leagueName = selected?.name || 'Your league';
 
-  const closeSheet = useCallback(() => {
-    setSheet(null);
-    // Focus returns to the app-bar control that opened the sheet.
-    const from = opener.current === 'ask' ? '.phone-app__ask' : '.phone-app__league';
-    window.setTimeout(() => document.querySelector<HTMLElement>(from)?.focus(), 0);
-  }, []);
+  const closeSheet = useCallback(() => setSheet(null), []);
 
+  useEffect(() => {
+    // Focus returns to the app-bar control that opened the sheet, once the sheet is gone.
+    if (sheet || !opener.current) return;
+    const from = opener.current === 'ask' ? '.phone-app__ask' : '.phone-app__league';
+    opener.current = null;
+    document.querySelector<HTMLElement>(from)?.focus();
+  }, [sheet]);
 
   useEffect(() => {
     if (!toast) return;
