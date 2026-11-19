@@ -18,7 +18,6 @@ import './nativeAccount.css';
 const HostedLeague = lazy(() => import('../commissioner/HostedLeague'));
 const ThinHome = lazy(() => import('../shell/ThinHome'));
 const LiveTab = lazy(() => import('../phone/LiveTab'));
-const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 
 type Screen = 'login' | 'join' | 'authenticator' | 'recovery';
 const tabs = [
@@ -163,8 +162,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   </Suspense>;
   const liveLeague = admittedLeagues[0];
   const liveTab = <Suspense fallback={<p role="status">Opening Live…</p>}>
-    <LiveTab league={liveLeague}>{liveLeague && <NativeLeaguePulse embedded serverTime tab="now"
-      league={liveLeague.id} mine={liveLeague.franchise ?? ''} leave={() => {}} />}</LiveTab></Suspense>;
+    <LiveTab league={liveLeague} /></Suspense>;
   const leagueContent = <>
     {showThinHome && thinHome}
     {homeReady && activeLeague && <section className="native-hosted-league" aria-label="League view">
