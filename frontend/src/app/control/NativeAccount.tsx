@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore,
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore,
   type FormEvent } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
@@ -9,7 +9,8 @@ import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads
 import NativeHelpers from './NativeHelpers';
 import { HQAct } from '../shell/HQAct';
 import type { ThinHomeEntry } from '../shell/ThinHome';
-import { PhoneShell, phoneTabEntry, type PhoneTab } from '../shell/PhoneShell';
+import { PhoneAppFrame, type PhoneTab } from '../shell/PhoneAppFrame';
+import type { HomeBrief } from '../shell/homeReads';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import '../look/look.css';
 import './nativeAccount.css';
@@ -44,10 +45,12 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const [signedIn, setSignedIn] = useState(Boolean(initial.message || initial.name));
+  const [signedInName, setSignedInName] = useState('');
   const [openAfterSignIn, setOpenAfterSignIn] = useState(Boolean(initial.message || initial.name));
   const [activeLeagueId, setActiveLeagueId] = useState<string>();
   const [activeEntry, setActiveEntry] = useState<ThinHomeEntry>('hq');
   const [phoneTab, setPhoneTab] = useState<PhoneTab>('today');
+  const [phoneBrief, setPhoneBrief] = useState<{ leagueId: string; brief: HomeBrief; mine: string }>();
   const automaticEntry = useRef(false);
   const admittedLeagues = useMemo<LeagueChoice[]>(() => admission ? [{
     id: admission.league, name: admission.name, app: true, franchise: admission.franchise,
@@ -56,25 +59,28 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const homeReady = observed && !fence.blocked && signedIn && Boolean(admission)
     && Boolean(admission?.franchise || admission?.role === 'Commissioner'
       || admission?.role === 'Co-commissioner');
-  const selectPhoneTab = (tab: PhoneTab) => {
-    setPhoneTab(tab);
-    const entry = phoneTabEntry(tab);
-    if (entry === 'home') { setActiveLeagueId(undefined); return; }
-    setActiveEntry(entry);
-    if (admission) setActiveLeagueId(admission.league);
-  };
-  const openPhoneControlRoom = () => {
-    setPhoneTab('league'); setActiveEntry('control');
-    if (admission) setActiveLeagueId(admission.league);
-  };
+  const receiveHomeBrief = useCallback((leagueId: string, mine: string, brief: HomeBrief) => {
+    const latest = hostedSnapshot();
+    if (latest.blocked || latest.key !== fence.key || leagueId !== admission?.league) return;
+    setPhoneBrief({ leagueId, brief, mine });
+  }, [admission?.league, fence.key]);
   const tabForEntry = (entry: ThinHomeEntry): PhoneTab => entry === 'pulse' ? 'live'
     : entry === 'hq' || entry === 'lineup' ? 'team'
       : entry === 'war' || entry === 'bids' || entry === 'trades' ? 'moves' : 'league';
   useEffect(() => {
-    if (fence.blocked || !signedIn) { setActiveLeagueId(undefined); setPhoneTab('today'); }
+    if (fence.blocked || !signedIn) {
+      setActiveLeagueId(undefined); setPhoneTab('today'); setPhoneBrief(undefined);
+    }
+    if (fence.blocked) setSignedInName('');
   }, [fence.blocked, signedIn]);
+  useEffect(() => { setPhoneBrief(undefined); }, [fence.blocked, fence.key, admission?.league]);
   const activeLeague = admittedLeagues.find(league => league.id === activeLeagueId);
   const showThinHome = homeReady && screen === 'login' && !activeLeague;
+  const selectedPhoneLeagueId = admission?.league ?? '';
+  const currentPhoneBrief = phoneBrief?.leagueId === selectedPhoneLeagueId ? phoneBrief : undefined;
+  const phoneWeek = currentPhoneBrief?.brief.pulse?.week;
+  const phoneWeekLabel = phoneWeek !== undefined ? `WK ${phoneWeek}`
+    : currentPhoneBrief?.brief.pulse?.weekNote?.trim() || 'Week unavailable';
   const changeScreen = (next: Screen) => {
     setScreen(next); setPassword(''); setCode(''); setError('');
     setView(current => ({ ...current, seed: '', message: current.name ? current.message : '' }));
@@ -88,7 +94,9 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         ['recover', 'enroll', 'totp-confirm', 'totp-step-up'].includes(action)
           || (browser && action === 'login') ? code : '');
       setView(result);
-      if (action === 'login') { setSignedIn(true); setOpenAfterSignIn(true); }
+      if (action === 'login') {
+        setSignedIn(true); setSignedInName(username); setOpenAfterSignIn(true);
+      }
       if (action === 'enter') {
         setSignedIn(browser ? Boolean(result.name) : true);
         if (!automaticEntry.current) setActiveLeagueId(result.league);
@@ -96,7 +104,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         automaticEntry.current = false;
       }
       if (['forget', 'revoke-device', 'revoke-all'].includes(action)) {
-        setSignedIn(false); setActiveLeagueId(undefined);
+        setSignedIn(false); setSignedInName(''); setActiveLeagueId(undefined);
       }
       if (action === 'enroll' || action === 'recover') setScreen('login');
       if (action === 'recover') setSignedIn(false);
@@ -146,8 +154,28 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const submitLabel = pending ? 'Please wait…' : screen === 'join' ? 'Create account'
     : screen === 'authenticator' ? 'Verify fresh code' : browser ? 'Sign in' : 'Sign in to server';
   const args = (action: 'view' | 'check', value: string) => ({ screen: 'native-account', action, value });
+  const thinHome = <Suspense fallback={<p role="status">Opening Home…</p>}>
+    <ThinHome leagues={admittedLeagues} onBriefReady={receiveHomeBrief} onOpen={(league, entry) => {
+      setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
+    }} />
+  </Suspense>;
+  const leagueContent = <>
+    {showThinHome && thinHome}
+    {homeReady && activeLeague && <section className="native-hosted-league" aria-label="League view">
+      <HQAct className="native-home-return" onAction={() => setActiveLeagueId(undefined)}>← Home</HQAct>
+      <Suspense fallback={<p>Opening your league…</p>}>
+        <HostedLeague key={`${fence.key}:${activeLeague.id}`} league={activeLeague.id}
+          franchise={activeLeague.franchise ?? ''} name={activeLeague.franchiseName ?? ''}
+          role={activeLeague.role ?? ''} entry={activeEntry} hq
+          onHome={() => setActiveLeagueId(undefined)} />
+      </Suspense>
+    </section>}
+    {!browser && homeReady && activeLeague && admission && admission.seats.length > 0 &&
+      <NativeHelpers server={initial.server} league={admission.league} seats={admission.seats}
+        franchise={admission.franchise} />}
+  </>;
   return <main className={`twr-app native-account${showThinHome ? ' has-thin-home' : ''}`
-    + `${browser && showThinHome ? ' phone-home' : ''}`} aria-busy={pending}>
+    + `${browser && homeReady ? ' phone-home' : ''}`} aria-busy={pending}>
     <header><h1>{view.name || 'Your league server'}</h1>
       {!view.name && <p>Your league server · No MFL account or key needed</p>}
       {!browser && <p className="native-address">{initial.server}</p>}</header>
@@ -163,29 +191,15 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
-    {showThinHome && <Suspense fallback={<p role="status">Opening Home…</p>}>
-      <PhoneShell enabled={browser} leagueName={admission?.name ?? ''} activeTab={phoneTab}
-        commissioner={admission?.role === 'Commissioner' || admission?.role === 'Co-commissioner'}
-        onSelect={selectPhoneTab} onControlRoom={openPhoneControlRoom}>
-        <ThinHome leagues={admittedLeagues} onOpen={(league, entry) => {
-          setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
-        }} />
-      </PhoneShell>
-    </Suspense>}
-    {homeReady && activeLeague && <section className="native-hosted-league" aria-label="League view">
-      <HQAct className="native-home-return" onAction={() => setActiveLeagueId(undefined)}>← Home</HQAct>
-      <Suspense fallback={<p>Opening your league…</p>}>
-        <HostedLeague key={`${fence.key}:${activeLeague.id}`} league={activeLeague.id}
-          franchise={activeLeague.franchise ?? ''} name={activeLeague.franchiseName ?? ''}
-          role={activeLeague.role ?? ''} entry={activeEntry} hq phoneShell={browser}
-          phoneLeagueName={admission?.name ?? ''} phoneTab={phoneTab}
-          onPhoneTab={selectPhoneTab} onPhoneControlRoom={openPhoneControlRoom}
-          onHome={() => setActiveLeagueId(undefined)} />
-      </Suspense>
-    </section>}
-    {!browser && homeReady && activeLeague && admission && admission.seats.length > 0 &&
-      <NativeHelpers server={initial.server} league={admission.league} seats={admission.seats}
-        franchise={admission.franchise} />}
+    {homeReady && <PhoneAppFrame enabled={browser} activeTab={phoneTab}
+      leagues={admittedLeagues} selectedLeagueId={selectedPhoneLeagueId} weekLabel={phoneWeekLabel}
+      askBrief={currentPhoneBrief?.brief} askMine={currentPhoneBrief?.mine}
+      accountName={signedInName || undefined} accountPending={pending} onSelectTab={setPhoneTab}
+      onAuthenticator={() => changeScreen('authenticator')}
+      onSignOut={() => {
+        void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget')))
+          .catch(() => {});
+      }} homeReadSource={thinHome}>{leagueContent}</PhoneAppFrame>}
     </div>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>
@@ -216,6 +230,9 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <Act variant="button" verb="commissioner.surface" args={args('view', 'login')}
         label="Back to sign in">Back to sign in</Act>
     </section> : screen === 'login' && view.name ? null : <form onSubmit={submit}>
+      {browser && homeReady && screen === 'authenticator' && <Act variant="button"
+        verb="commissioner.surface" args={args('view', 'login')} label="Back to league">
+        ← Back to league</Act>}
       <h2>{title}</h2>
       {screen === 'authenticator' && <p>An authenticator is optional. Once it is on,
         commissioners and deputies verify a fresh code to open the league. Enter your password

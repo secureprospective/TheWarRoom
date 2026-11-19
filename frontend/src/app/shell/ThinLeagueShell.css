@@ -72,5 +72,4 @@
   .twr-app.thin-league-shell { display: block; }
   .thin-league-shell > .rail { display: none; }
   .thin-league-shell .thin-league-main { height: 100%; overflow: hidden; }
-  .thin-league-shell .phone-shell { height: 100%; }
 }

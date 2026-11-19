@@ -2,20 +2,16 @@ import type { ReactNode } from 'react';
 import { RailNodes } from './RailNodes';
 import { ThinPlayerSearch, THIN_LEAVES, type PlayerCandidate, type ThinScreenRoute }
   from './ThinPlayerSearch';
-import { PhoneShell, type PhoneTab } from './PhoneShell';
 import './shell.css';
 import './ThinLeagueShell.css';
 
 const ORDER = ['home', 'hq', 'war', 'pulse', 'control'] as const;
 
-export function ThinLeagueShell({ leagueName, route, commissioner, players, navigate, openPlayer, onHome,
-  phoneShell = false, phoneTab = 'today', phoneLeagueName, onPhoneTab, onPhoneControlRoom, children }: {
+export function ThinLeagueShell({ leagueName, route, commissioner, players, navigate, openPlayer,
+  onHome, children }: {
     leagueName: string; route: ThinScreenRoute; commissioner: boolean;
     players: readonly PlayerCandidate[]; navigate: (route: ThinScreenRoute) => void;
-    openPlayer: (player: PlayerCandidate) => void; onHome?: () => void; phoneShell?: boolean;
-    phoneTab?: PhoneTab; phoneLeagueName?: string; onPhoneTab?: (tab: PhoneTab) => void;
-    onPhoneControlRoom?: () => void;
-    children: ReactNode }) {
+    openPlayer: (player: PlayerCandidate) => void; onHome?: () => void; children: ReactNode }) {
   const order = commissioner ? ORDER : ORDER.filter(node => node !== 'control');
   const open = (node: ThinScreenRoute['node'], workspace?: string) => {
     if (node === 'home' && onHome) { onHome(); return; }
@@ -32,10 +28,7 @@ export function ThinLeagueShell({ leagueName, route, commissioner, players, navi
         open={open} />
       <div className="rail-foot"><span>THIN MODE</span></div>
     </aside>
-    <main className="thin-league-main"><PhoneShell enabled={phoneShell}
-      leagueName={phoneLeagueName ?? leagueName}
-      activeTab={phoneTab} commissioner={commissioner} onSelect={tab => onPhoneTab?.(tab)}
-      onControlRoom={() => onPhoneControlRoom?.()}>{children}</PhoneShell></main>
+    <main className="thin-league-main">{children}</main>
   </div>;
 }
 
