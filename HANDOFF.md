@@ -18,7 +18,7 @@
 - Verified on candidate: `sh -n`; final `make lint` (golangci-lint 0 issues); focused race test `TestAlphaCleanPlanDryRunLeavesThrowawayDatabaseUnchanged` passed. `shellcheck` is unavailable. CT 260 untouched.
 - State: Rebasing onto current `origin/bundle/b9` (including release-10 commit `527d6ba9`) is complete; commit `a9937015b` is based on b9. The `HANDOFF.md` conflict was resolved by preserving b9's release-10 section and adding only this lane's block.
 - Verified after rebase: `sh -n deploy/server/alpha-clean-plan.sh`, `make lint` (golangci-lint 0 issues), and the focused `cmd/twr-server` race test passed on `a9937015b` rebased onto b9.
-- Tidy: `tidy-check.sh` reports foreign active lane Luna `b9lab2` (PID 3444457); left it running and did not edit its scratch. Its owner must add the required `KEEP.md`.
+- Tidy: the first check found foreign Luna lane `b9lab2` (PID 3444457); left it and its scratch untouched. Final `tidy-check.sh` is clean.
 - PR: #407 (`session/pulse-freshlab` into `bundle/b9`) is open; checks, four test shards, release-tools and verify are green. Not merged.
 - Next: Christopher review; decide whether leaving unseated stress accounts is acceptable or request account-retirement support. No execution on CT 260.
 - Blocked on: approval if deleting test-account rows is mandatory; no supported command exists. Option A frees seats/revokes sessions but leaves accounts able to sign in; the plan explicitly stops there.
