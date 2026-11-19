@@ -1,7 +1,7 @@
 # Handoff
 
-- Baton: Bee, lane `joinonce`, 2026-11-19.
-- State: PR #406 is open into `bundle/b9`. Commit `6ab030b6c` consumes a join link through the digest-derived request key on the seat event; no migration. One-use, other-seat and concurrent tests pass. Full `make test`, Vitest (153 files/1,026 tests), TypeScript, mutant proof, pre-push, and all PR CI checks passed.
-- Next: Christopher review PR #406; no merge performed.
-- Blocked on: none.
-- Tried and rejected: new schema/cross-file transaction; the existing unique commissioner request key provides atomic consumption with the seat.
+- Baton: Bee, `pulse-mleagues`, 2026-11-19.
+- State: Uncommitted changes in `internal/serverhttp/browser_session.go`, its tests, `frontend/src/app/control/NativeAccount.tsx`, `nativeApi.ts`, and `transport.test.ts`. `/app/session` returns summaries for `hostedMember` matches; the multi-league 409 is removed. Existing Home league choices update the active browser read identity; protected requests still use existing per-league admission. No storage/migration. Focused `go test -race ./internal/serverhttp -run '^TestBrowser' -count=1` passed before the latest base update. `git diff --check` and `tidy-check.sh` passed before the latest base update. `git pull --ff-only` advanced the branch to current `origin/bundle/b9` (5b4edaea7), preserving this work.
+- Next: Wait for `heavy-ok.sh`, then run the affected serverhttp race suite, frontend transport tests/Vitest/typecheck and lint; verify the base merge, commit/push and open one PR into `bundle/b9`.
+- Blocked on: `heavy-ok.sh` currently reports one full `-race` suite running; per lane rule, wait 120 seconds and retry (up to 60 minutes). The broad serverhttp race attempt timed out at Go's default 10 minutes before the base update; no retry yet. Frontend tests/typecheck, lint, commit/push and PR are not verified/done.
+- Tried and rejected: `commish.leagues.read` as membership source; it returns the server league directory, not the signed-in account's memberships.

@@ -75,7 +75,7 @@ func appLogin(t *testing.T, f *hostedFixture, username, password, code string) (
 	if err := json.Unmarshal(result, &session); err != nil {
 		t.Fatal(err)
 	}
-	if session.Protocol != 1 || session.Admission.League != "native.hosted" {
+	if session.Protocol != 1 || session.Admission.League != "native.hosted" || len(session.Leagues) == 0 {
 		t.Fatalf("browser admission = %+v", session)
 	}
 	if bytes.Contains(result, []byte("bearer")) || bytes.Contains(result, []byte("session")) {
@@ -99,15 +99,17 @@ func appLogin(t *testing.T, f *hostedFixture, username, password, code string) (
 func TestBrowserSessionCookieLifecycleAndNativeRoute(t *testing.T) {
 	f := newHostedFixture(t)
 	admission, cookie := appLogin(t, f, "commissioner", "private-password", "")
-	if admission.Admission.Role != "Commissioner" || admission.Admission.Name != "Hosted test" || len(admission.Admission.Seats) != 2 {
-		t.Fatalf("admission = %+v", admission.Admission)
+	if admission.Admission.Role != "Commissioner" || admission.Admission.Name != "Hosted test" || len(admission.Admission.Seats) != 2 ||
+		len(admission.Leagues) != 1 || admission.Leagues[0].ID != "native.hosted" ||
+		admission.Leagues[0].Role != "Commissioner" || admission.Leagues[0].Franchise != admission.Admission.Franchise {
+		t.Fatalf("admission = %+v", admission)
 	}
 	response, body := browserRequest(t, f, http.MethodGet, serverhttp.AppSessionPath, "", cookie.Value, "", browserOrigin)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("GET app session: status=%d body=%s", response.StatusCode, body)
 	}
 	var current serverhttp.BrowserSessionResponse
-	if err := json.Unmarshal(body, &current); err != nil || !reflect.DeepEqual(current.Admission, admission.Admission) {
+	if err := json.Unmarshal(body, &current); err != nil || !reflect.DeepEqual(current, admission) {
 		t.Fatalf("GET app session = %+v, err=%v", current, err)
 	}
 	response, body = browserRequest(t, f, http.MethodPost, serverhttp.LedgerPath,
@@ -241,7 +243,7 @@ func TestBrowserAgentTokenCannotUseOriginAndCookiePermissionStaysEnforced(t *tes
 	}
 }
 
-func TestBrowserSessionMultipleLeaguesRefusesWithoutListingOrLeavingSession(t *testing.T) {
+func TestBrowserSessionListsOwnMembershipsAndAllowsSwitching(t *testing.T) {
 	f := newHostedFixture(t)
 	create := commissioner.RawCommand{League: "native.second", Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "Second league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2},
@@ -249,21 +251,59 @@ func TestBrowserSessionMultipleLeaguesRefusesWithoutListingOrLeavingSession(t *t
 	if _, err := f.history.ExecuteCommissioner(t.Context(), create, f.principal, nil); err != nil {
 		t.Fatal(err)
 	}
-	body := `{"protocol":1,"username":"commissioner","password":"private-password"}`
-	response, result := browserRequest(t, f, http.MethodPost, serverhttp.AppSessionPath, body, "", "", browserOrigin)
-	const want = "This account is in more than one league on this server. Use the desktop app for now.\n"
-	if response.StatusCode != http.StatusConflict || string(result) != want {
-		t.Fatalf("multi-league sign-in status=%d body=%q", response.StatusCode, result)
+
+	session, cookie := appLogin(t, f, "commissioner", "private-password", "")
+	if len(session.Leagues) != 2 || session.Leagues[0].ID != "native.hosted" || session.Leagues[1].ID != "native.second" ||
+		session.Leagues[1].Name != "Second league" || session.Leagues[1].Role != "Commissioner" {
+		t.Fatalf("own league memberships = %+v", session.Leagues)
 	}
-	if strings.Contains(string(result), "native.hosted") || strings.Contains(string(result), "native.second") || len(response.Cookies()) != 0 {
-		t.Fatalf("multi-league refusal disclosed a league or set a cookie: %s %v", result, response.Cookies())
+	response, body := browserRequest(t, f, http.MethodGet, serverhttp.AppSessionPath, "", cookie.Value, "", browserOrigin)
+	var current serverhttp.BrowserSessionResponse
+	if response.StatusCode != http.StatusOK || json.Unmarshal(body, &current) != nil ||
+		!reflect.DeepEqual(current.Leagues, session.Leagues) {
+		t.Fatalf("GET multi-league session status=%d memberships=%+v body=%s", response.StatusCode, current.Leagues, body)
+	}
+
+	response, body = browserRequest(t, f, http.MethodPost, serverhttp.LedgerPath,
+		`{"protocol":1,"league":"native.second"}`, cookie.Value, "", browserOrigin)
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("read selected second league status=%d body=%s", response.StatusCode, body)
 	}
 	var active int
 	if err := f.pools.Read().QueryRowContext(t.Context(), `SELECT count(*) FROM account_sessions WHERE revoked = 0`).Scan(&active); err != nil {
 		t.Fatal(err)
 	}
-	if active != 0 {
-		t.Fatalf("multi-league refusal left %d active sessions", active)
+	if active != 1 {
+		t.Fatalf("multi-league sign-in left %d active sessions", active)
+	}
+}
+
+func TestBrowserSessionNeverListsAnotherAccountsLeague(t *testing.T) {
+	f := newHostedFixture(t)
+	invitation, err := f.enrollment.Issue(t.Context(), "native.hosted", "other-owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := f.enrollment.Redeem(t.Context(), accounts.RawEnrollment{
+		Code: invitation.Code, Username: "other-owner", Password: "private-password",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherPrincipal, err := other.Principal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := commissioner.RawCommand{League: "native.private", Command: commissioner.Create,
+		Args:   commissioner.RawArgs{Name: "Other owner's league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2},
+		Reason: "Create another account's league", Request: "other-account-league", Effective: "now", Visibility: "league"}
+	if _, err := f.history.ExecuteCommissioner(t.Context(), create, string(otherPrincipal), nil); err != nil {
+		t.Fatal(err)
+	}
+
+	session, _ := appLogin(t, f, "commissioner", "private-password", "")
+	if len(session.Leagues) != 1 || session.Leagues[0].ID != "native.hosted" {
+		t.Fatalf("listed a league without this account's membership: %+v", session.Leagues)
 	}
 }
 

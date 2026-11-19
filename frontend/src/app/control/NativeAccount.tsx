@@ -3,7 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalSt
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { surfaceActions } from '../commissioner/surfaceActions';
-import { nativeAction, type NativeAction, type NativeView } from './nativeApi';
+import { nativeAction, selectBrowserLeague, type NativeAction, type NativeView } from './nativeApi';
 import { isWebTransport } from './transport';
 import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads';
 import NativeHelpers from './NativeHelpers';
@@ -49,10 +49,12 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [activeEntry, setActiveEntry] = useState<ThinHomeEntry>('hq');
   const [phoneTab, setPhoneTab] = useState<PhoneTab>('today');
   const automaticEntry = useRef(false);
-  const admittedLeagues = useMemo<LeagueChoice[]>(() => admission ? [{
-    id: admission.league, name: admission.name, app: true, franchise: admission.franchise,
-    franchiseName: admission.franchiseName, role: admission.role,
-  }] : [], [admission]);
+  const admittedLeagues = useMemo<LeagueChoice[]>(() => {
+    const memberships = browser ? admission?.leagues : admission ? [{ id: admission.league,
+      name: admission.name, role: admission.role, franchise: admission.franchise,
+      franchiseName: admission.franchiseName }] : undefined;
+    return (memberships ?? []).map(league => ({ ...league, app: true }));
+  }, [admission, browser]);
   const homeReady = observed && !fence.blocked && signedIn && Boolean(admission)
     && Boolean(admission?.franchise || admission?.role === 'Commissioner'
       || admission?.role === 'Co-commissioner');
@@ -168,6 +170,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         commissioner={admission?.role === 'Commissioner' || admission?.role === 'Co-commissioner'}
         onSelect={selectPhoneTab} onControlRoom={openPhoneControlRoom}>
         <ThinHome leagues={admittedLeagues} onOpen={(league, entry) => {
+          if (browser && league.id !== admission?.league) setView(selectBrowserLeague(league.id));
           setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
         }} />
       </PhoneShell>
