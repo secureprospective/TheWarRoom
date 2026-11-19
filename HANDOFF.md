@@ -18,3 +18,10 @@
 - Next: ClaudeBox review/merge PR #388.
 - Blocked on: none. `tidy-check.sh` reports unrelated active lanes/hosted test server; left untouched for their owners.
 - Tried and rejected: reusing a per-franchise league store (wrong owner boundary and not cross-league); no settings/preferences table exists in the hosted account store.
+
+## Bee — pulse-b9cr1
+- Baton: Bee implementing B9-5 Control Room phone layout, 2026-11-18, branch `session/pulse-b9cr1`, target `bundle/b9`.
+- State: Commit `3e8edb5aa` rebased onto current `bundle/b9`. Added <700px hosted Control Room layout rules and focused phone CSS test; reads, commissioner checks and authorization unchanged. Focused tests 14/14; full Vitest 995/995; tsc, frontend build, bundle budget and CSP passed. `make verify` exceeded command time limit in Go tests. Push pre-check failed on one unrelated `nativeAccount.test.tsx` flake; that test passed alone on retry.
+- Next: Retry pre-push/push, open PR into `bundle/b9`, verify CI.
+- Blocked on: Heavy guard refuses new suites (disk 91%, other full suite activity); do not clear shared cache or touch other lane files. Claude-OS/Brave phone browser not installed; 390px CSS contract test passed, interactive emulation unverified.
+- Tried and rejected: no JavaScript viewport mode; retain existing hosted screen and use the approved CSS breakpoint.
