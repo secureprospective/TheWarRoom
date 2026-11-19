@@ -32,3 +32,4 @@
 - Evidence: full Vitest 1007/1007, tsc, and 390px integration/layout tests pass; desktop suite remains green.
 - Next: pre-push verification, push, open PR into `bundle/b9`, wait for CI.
 - Blocked on: real-device/Claude-OS visual check not run.
+- Closeout: PR #398 is open into `bundle/b9`; all checks passed. Claude-OS/real-device visual check remains unrun. Tidy-check found unrelated `b9take7` launcher PID 2629227; left it and its scratch to its owner.
