@@ -106,4 +106,7 @@ Migration failure restores the snapshot, not an attempted reverse SQL migration.
 service's startup preflight refuses older files requiring this tool, newer schemas, and
 newer release stamps before opening a database writer. Deployment owns service exclusion:
 do not run a mutating `twr-server upgrade` while the server is running. `upgrade -check`
-is read-only and may be used while serving. The upgrade does not change configuration.
+is read-only and may be used while serving. The updater preserves settings; the installed OpenRC
+start hooks idempotently add `/app` to the Tunnel ingress and recover a missing public hostname.
+If no valid hostname can be recovered, the server still starts with the browser door disabled and
+`twr-status` explains why.

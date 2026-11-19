@@ -43,6 +43,22 @@ type RawWorkflowScope struct {
 	Player    string `json:"player,omitempty"`
 }
 
+// RawFilteredLedgerScope is the separately validated filter used by commissioner Control Room reads.
+type RawFilteredLedgerScope struct {
+	League string                       `json:"league"`
+	Filter commissioner.RawLedgerFilter `json:"filter"`
+}
+
+func (r RawFilteredLedgerScope) Validate() error {
+	if err := leagueservice.AppLeague(r.League); err != nil {
+		return fmt.Errorf("choose an app league: %w", err)
+	}
+	if err := r.Filter.Validate(); err != nil {
+		return fmt.Errorf("ledger filter: %w", err)
+	}
+	return nil
+}
+
 func (r RawWorkflowScope) Validate() error {
 	if !strings.HasPrefix(r.League, "native.") || len(r.League) <= 7 || len(r.League) > 128 || r.Week < 0 || r.Week > 22 || r.Season < 0 || r.Season > 9999 {
 		return fmt.Errorf("choose your league, franchise and week")
@@ -84,6 +100,9 @@ func (r RawWorkflowScope) validateCommand(command string) error {
 }
 
 func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) {
+	if kept, complete, matched := r.franchiseScope(command); matched {
+		return kept, complete
+	}
 	if kept, complete, matched := r.pulseScope(command); matched {
 		return kept, complete
 	}
@@ -92,9 +111,6 @@ func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) 
 	case "commish.market.read":
 		kept.Command = r.Command
 		return kept, r.Command != ""
-	case "lineup.read":
-		kept.Franchise, kept.Week, kept.At = r.Franchise, r.Week, r.At
-		return kept, r.Franchise != "" && r.Week > 0
 	case "draft.read":
 		kept.Franchise, kept.Season, kept.At = r.Franchise, r.Season, r.At
 		return kept, r.Franchise != ""
@@ -121,6 +137,22 @@ func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) 
 		return kept, r.Season >= 1920
 	default:
 		return kept, true
+	}
+}
+
+func (r RawWorkflowScope) franchiseScope(command string) (RawWorkflowScope, bool, bool) {
+	kept := RawWorkflowScope{League: r.League}
+	switch command {
+	case "schedule.franchise.read":
+		kept.Franchise, kept.Season, kept.LocalZone = r.Franchise, r.Season, r.LocalZone
+		scope := leagueservice.RawNativeScheduleScope{League: r.League, Franchise: r.Franchise,
+			Season: r.Season, LocalZone: r.LocalZone}
+		return kept, scope.Validate() == nil, true
+	case "lineup.read":
+		kept.Franchise, kept.Week, kept.At = r.Franchise, r.Week, r.At
+		return kept, r.Franchise != "" && r.Week > 0, true
+	default:
+		return RawWorkflowScope{}, false, false
 	}
 }
 
@@ -182,8 +214,9 @@ func (r RawWorkflow) Validate() error {
 
 type workflowInput interface {
 	Validate() error
-	*RawWorkflowScope | *commissioner.RawCommand | *commissioner.DraftPickInput |
-		*commissioner.RawNativeCapScope | *market.RawContractQuote | *market.RawWhatIfStack | *market.RawContractDecisionsScope | *leagueservice.RawDraftQueueScope |
+	*RawWorkflowScope | *RawFilteredLedgerScope | *commissioner.RawCommand | *commissioner.DraftPickInput |
+		*commissioner.RawNativeCapScope | *leagueservice.RawLeagueCalendarScope |
+		*market.RawContractQuote | *market.RawWhatIfStack | *market.RawContractDecisionsScope | *leagueservice.RawDraftQueueScope |
 		*leagueservice.RawDraftQueueSet | *leagueservice.RawPlayerNotesScope | *leagueservice.RawPlayerNoteSet |
 		*leagueservice.RawPlayerWatchReadScope | *leagueservice.RawPlayerWatchSet | *leagueservice.RawPlayerWatchOrder |
 		*leagueservice.RawTradeDraftScope | *leagueservice.RawTradeDraftSave | *leagueservice.RawTradeDraftDelete |
@@ -226,8 +259,10 @@ func (r RawWorkflow) League() (string, error) {
 }
 
 type workflowOutput interface {
-	commissioner.Ledger | history.NativeProjections | commissioner.NativeDirectory |
-		commissioner.NativeWeek | commissioner.Schedule | commissioner.NativeBracket | appvalue.Reading |
+	commissioner.Ledger | commissioner.Jobs | commissioner.People | commissioner.ManagedSchedule |
+		commissioner.LeagueNotes | commissioner.Calendar | history.NativeProjections | commissioner.NativeDirectory |
+		commissioner.NativeWeek | commissioner.Schedule | commissioner.FranchiseSchedule | commissioner.NativeBracket |
+		appvalue.Reading |
 		market.NativeMoves | market.Market | market.NativeBids | market.NativeBidWins | market.NativeWaivers |
 		market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings |
 		commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets |

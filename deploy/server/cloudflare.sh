@@ -24,9 +24,10 @@ valid_public_host() {
     }
   '
 }
-valid_public_host "$zone" && valid_public_host "$hostname" || {
-  echo 'The zone and public hostname must be bare lowercase DNS names.' >&2; exit 1;
-}
+if ! valid_public_host "$zone" || ! valid_public_host "$hostname"; then
+  echo 'The zone and public hostname must be bare lowercase DNS names.' >&2
+  exit 1
+fi
 case "$hostname" in *."$zone") ;; *) echo 'The public hostname must be inside the configured zone.' >&2; exit 1 ;; esac
 header=$(mktemp)
 reply=$(mktemp)

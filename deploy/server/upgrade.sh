@@ -111,12 +111,6 @@ twr-sandbox /usr/local/libexec/twr-sandbox
 twr-server.initd /etc/init.d/twr-server
 cloudflared.initd /etc/init.d/twr-tunnel
 TOOLS
-if [ -f /etc/cloudflared/config.yml ]; then
-  public_host=$(jq -er '.ingress[0].hostname | select(type == "string" and length > 0)' /etc/cloudflared/config.yml)
-  printf '%s\n' "$public_host" > /etc/twr/public-host
-  chown root:twr /etc/twr/public-host
-  chmod 640 /etc/twr/public-host
-fi
 if [ "$first_load" = 1 ]; then
   rc-service twr-tunnel --ifstopped start
   cat <<'NEXT'

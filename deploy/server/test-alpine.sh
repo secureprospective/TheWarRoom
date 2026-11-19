@@ -18,7 +18,7 @@ docker exec -e "DELIVERY=/src/$fixtures/delivery" "$name" sh -ec '
   tar xzf /src/.scratch/server.tar.gz -C /root/twr
   cp "$DELIVERY/root.json" /root/twr/root.json
   apk add --no-cache bash shellcheck
-  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/restore.sh /src/deploy/server/upgrade.sh /src/deploy/server/reset-sign-ins.sh /src/deploy/server/restore-league.sh /src/deploy/server/delete-league.sh /src/deploy/server/move-league.sh /src/deploy/server/receive-league.sh /src/deploy/server/status.sh /src/deploy/server/cloudflare.sh /src/deploy/server/test-alpine.sh /src/deploy/server/bundle.sh /src/deploy/server/twr-sandbox
+  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/restore.sh /src/deploy/server/upgrade.sh /src/deploy/server/reset-sign-ins.sh /src/deploy/server/restore-league.sh /src/deploy/server/delete-league.sh /src/deploy/server/move-league.sh /src/deploy/server/receive-league.sh /src/deploy/server/status.sh /src/deploy/server/cloudflare.sh /src/deploy/server/test-alpine.sh /src/deploy/server/test-browser-reconcile.sh /src/deploy/server/bundle.sh /src/deploy/server/twr-sandbox
   mkdir /tmp/host-tools
   cat > /tmp/host-tools/stub <<'\''STUB'\''
 #!/bin/sh
@@ -46,6 +46,7 @@ STUB
   mkdir -p /etc/periodic/hourly
   ln -s /etc/periodic/daily/logrotate /etc/periodic/hourly/twr-logrotate
   sh /root/twr/install.sh
+  TMPDIR=/tmp sh /src/deploy/server/test-browser-reconcile.sh /src/deploy/server/status.sh
   sed -n "/^ln -s/p" /root/twr/install.sh > /tmp/schedule-rotation
   sh /tmp/schedule-rotation
   sh /tmp/schedule-rotation
@@ -134,6 +135,7 @@ PROBE
   sh /usr/local/libexec/twr-status > /tmp/status-result
   cat /tmp/status-result
   grep -F "OK       League server: Running and answering securely" /tmp/status-result
+  grep -F "PROBLEM  Browser app: Disabled; no public hostname was recovered from /etc/cloudflared/config.yml" /tmp/status-result
   grep -F "PROBLEM  Tunnel: Not connected to Cloudflare" /tmp/status-result
   grep -F "PROBLEM  Backups: Off-site backups are not set up" /tmp/status-result
   grep -F "OK       History: League history (0 entries)" /tmp/status-result
@@ -168,7 +170,7 @@ SERVICE
   # An older server lacks a newer tool and has an older service file: the upgrade brings both.
   # A pre-browser Tunnel config must recover the exact public hostname for the new server binary.
   mkdir -p /etc/cloudflared
-  jq -n '{ingress:[{hostname:"league.example.org",path:"^/(v1/.*|app(/.*)?|join|password)?$",service:"https://127.0.0.1:8443"},{service:"http_status:404"}]}' > /etc/cloudflared/config.yml
+  jq -n --arg host "league.example.org" --arg path "^/(v1/.*|join|password)?\$" "{ingress:[{hostname:\$host,path:\$path,service:\"https://127.0.0.1:8443\"},{service:\"http_status:404\"}]}" > /etc/cloudflared/config.yml
   chown root:twr-tunnel /etc/cloudflared/config.yml
   chmod 640 /etc/cloudflared/config.yml
   rm /usr/local/libexec/twr-move-league
@@ -177,13 +179,23 @@ SERVICE
   cat /tmp/upgrade-result
   grep -F "Server upgrade ready" /tmp/upgrade-result
   test "$(cat /etc/twr/public-host)" = league.example.org
-  test "$(stat -c %a:%U:%G /etc/twr/public-host)" = 640:root:twr
+  echo "Upgrade recovered public hostname: PASS"
+  test "$(stat -c %a:%U:%G /etc/twr/public-host)" = 644:root:root
+  echo "Recovered hostname permissions: PASS"
+  jq -e --arg expected "^/(v1/.*|join|password|app(/.*)?)?\$" ".ingress[0].path == \$expected" /etc/cloudflared/config.yml >/dev/null
+  echo "Upgrade added /app ingress: PASS"
+  before=$(sha256sum /etc/cloudflared/config.yml | cut -d " " -f 1)
+  /usr/local/libexec/twr-status --prepare-browser
+  test "$before" = "$(sha256sum /etc/cloudflared/config.yml | cut -d " " -f 1)"
+  echo "Second reconciliation made no config change: PASS"
   rc-service twr-server status
   saved=$(find /var/lib/twr/upgrades -name checkpoint.json)
   test -n "$saved"
   /usr/local/bin/twr-server checkpoint -db /var/lib/twr/server.db -check "$saved"
-  test "$(sqlite3 /var/lib/twr/server.db "PRAGMA user_version")" = 12
+  test "$(sqlite3 /var/lib/twr/server.db "PRAGMA user_version")" = 16
+  echo "Upgraded league database schema: PASS"
   grep -F "twr-tunnel --ifstopped start" /tmp/upgrade-tunnel-calls
+  echo "Tunnel restarted after upgrade: PASS"
   tar -xzOf "$DELIVERY/good/server.tar.gz" ./move-league.sh | cmp - /usr/local/libexec/twr-move-league
   tar -xzOf "$DELIVERY/good/server.tar.gz" ./cloudflared.initd | cmp - /etc/init.d/twr-tunnel
   test "$(stat -c %a:%U:%G /usr/local/libexec/twr-move-league)" = 755:root:root
@@ -259,7 +271,7 @@ exec /sbin/rc-service "$@"
 SERVICE
   chmod 755 /tmp/upgrade-tools/rc-service
   : > /tmp/first-load-service-calls
-  TWR_FIRST_LOAD=1 PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$DELIVERY/good/server.tar.gz" "$DELIVERY/good" > /tmp/first-load-result
+  TWR_FIRST_LOAD=1 PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$DELIVERY/first-load/server.tar.gz" "$DELIVERY/first-load" > /tmp/first-load-result
   cat /tmp/first-load-result
   grep -F "First-load server update ready" /tmp/first-load-result
   grep -F "twr-server league-load -db /var/lib/twr/server.db" /tmp/first-load-result

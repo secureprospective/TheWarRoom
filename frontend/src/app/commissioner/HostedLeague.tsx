@@ -9,9 +9,10 @@ import { HostedCommissionerLeague } from './HostedCommissionerLeague';
 import { localTime } from '../clock/localTime';
 import { createHostedRoom, type HostedPort } from './hostedRoom';
 import type { NativeArguments, NativeRequest } from '../commands/native';
-import type { HostedResponse } from './api';
+import { hostedWorkflow, type HostedResponse } from './api';
 import './hostedLeague.css';
 import { hostedScreens } from '../data/hostedReads';
+import { parseHostedRoster } from './hostedReadings';
 import { HostedWorkflows, type HostedTask } from './HostedWorkflows';
 import { ThinLeagueShell } from '../shell/ThinLeagueShell';
 import type { PhoneTab } from '../shell/PhoneShell';
@@ -75,6 +76,22 @@ export default function HostedLeague(props: {
     props.entry !== undefined);
   const [playerSources, setPlayerSources] = useState<Record<string, PlayerCandidate[]>>({});
   const [inspectPlayer, setInspectPlayer] = useState<PlayerCandidate>();
+  useEffect(() => {
+    if (!props.franchise) return;
+    let active = true;
+    void (props.port ?? hostedWorkflow)({ command: 'native.assets.read', mode: 'read',
+      arguments: { league: props.league } }).then(response => {
+      const roster = parseHostedRoster(response.data);
+      if (!active) return;
+      publishLeaguePlayers([
+        ...roster.players.map(player => ({ id: player.id, name: player.name })),
+        ...roster.market.map(player => ({ id: player.id, name: player.name,
+          position: player.position })),
+        ...roster.pool.map(player => ({ id: player.value, name: player.label })),
+      ]);
+    }).catch(error => console.warn('League player search read failed:', error));
+    return () => { active = false; };
+  }, [props.league, props.port]);
   const publishPlayers = useCallback((source: string, players: PlayerCandidate[]) => {
     setPlayerSources(previous => ({ ...previous, [source]: players }));
   }, []);
@@ -84,6 +101,8 @@ export default function HostedLeague(props: {
     return [...byId.values()];
   }, [playerSources]);
   const navigate = (next: ThinScreenRoute) => { setRoute(next); setInspectPlayer(undefined); };
+  const publishLeaguePlayers = useCallback((found: PlayerCandidate[]) => publishPlayers('league', found),
+    [publishPlayers]);
   const openPlayer = (player: PlayerCandidate) => {
     setInspectPlayer(player);
     setRoute({ node: 'war', workspace: 'valuations-and-pool' });

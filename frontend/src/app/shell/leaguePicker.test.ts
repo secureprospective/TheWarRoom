@@ -106,6 +106,7 @@ it('uses only the signed-in person’s franchise, including an empty seat', asyn
     league: 'native.one', name: 'One', revision: 1,
     seats: [{ franchise: 'other', name: 'Other', abbreviation: 'O', owner: 'someone' }],
     roles: [], invites: [], dotCount: 0, dotStatus: '', votes: [], succession: '',
+    actors: [], yourPermissions: [],
     yourRole: 'Commissioner', yourFranchise: '', mayChangeRules: true, mayGrantRoles: true,
     mayPostNotices: true,
   };

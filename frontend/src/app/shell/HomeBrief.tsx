@@ -89,9 +89,9 @@ export function alertsOf(b: Brief, now = Date.now()): Alert[] {
 
 /** HomeBrief is Home as the locked mock draws it (docs/ui/mocks/home-mock-v5.html), fed by the reads
  *  in homeReads. Hosted layouts sync to the signed-in account; local mode stays on this device. */
-export default function HomeBrief({ league, mine, port, initial, research, owner = true, accountSync }: {
-  league: string; mine: string; port: HostedPort; initial?: Brief; research?: ResearchReader; owner?: boolean;
-  accountSync?: boolean }) {
+export default function HomeBrief({ league, mine, port, initial, research, owner = true, accountSync,
+  commissioner = false }: { league: string; mine: string; port: HostedPort; initial?: Brief;
+  research?: ResearchReader; owner?: boolean; accountSync?: boolean; commissioner?: boolean }) {
   const syncLayout = accountSync ?? true;
   const phone = usePhoneViewport(true);
   const [b, setB] = useState<Brief>(initial ?? { at: {}, errors: {} });
@@ -122,9 +122,9 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
     const first = scope.current !== `${league}|${mine}`;
     scope.current = `${league}|${mine}`;
     void readHomeBrief(league, mine, port, r => { if (live) setB(prev => first ? r : mergeBrief(prev, r)); },
-      research ?? defaultResearch(), owner).finally(() => { if (live) setDone(pass); });
+      research ?? defaultResearch(), owner, commissioner).finally(() => { if (live) setDone(pass); });
     return () => { live = false; };
-  }, [league, mine, port, initial, research, pass, owner]);
+  }, [league, mine, port, initial, research, pass, owner, commissioner]);
   const retrying = !initial && done === pass && transientErrors(b);
   useEffect(() => {
     if (!retrying) { if (done === pass) attempts.current = 0; return; }
