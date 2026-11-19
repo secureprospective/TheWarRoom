@@ -32,10 +32,11 @@ type Export struct {
 	Players   map[string]string
 	Champions []Champion
 	// DraftType is MFL's rookie draft order kind ("SAME" every round alike, "SNAKE"); empty when MFL states none.
-	DraftType string
-	Results   []leaguefeed.WeekResult
-	Schedule  []leagueschedule.RawScheduleWeek
-	ReadAt    time.Time
+	DraftType   string
+	Results     []leaguefeed.WeekResult
+	LiveLineups *leaguefeed.Lineups
+	Schedule    []leagueschedule.RawScheduleWeek
+	ReadAt      time.Time
 }
 
 // Rostered is one rostered player's contract as MFL states it; Salary is MFL's raw millions ("1.30").
@@ -67,6 +68,10 @@ type TransactionReader interface {
 
 type ResultsReader interface {
 	Results(context.Context) ([]leaguefeed.WeekResult, error)
+}
+
+type LiveLineupsReader interface {
+	LiveLineups(context.Context) (*leaguefeed.Lineups, error)
 }
 
 type ScheduleReader interface {
@@ -121,29 +126,43 @@ func Read(ctx context.Context, src Reader, now time.Time) (Export, error) {
 		}
 		out.DraftType = kind
 	}
+	if err := readOptional(ctx, src, &out); err != nil {
+		return Export{}, err
+	}
+	out.ReadAt = now.UTC()
+	return out, nil
+}
+
+func readOptional(ctx context.Context, src Reader, out *Export) error {
 	if reader, ok := src.(ScheduleReader); ok {
 		var err error
 		out.Schedule, err = reader.Schedule(ctx)
 		if err != nil {
-			return Export{}, &leaguemigration.ReadError{Part: "weekly schedule", Err: err}
+			return &leaguemigration.ReadError{Part: "weekly schedule", Err: err}
 		}
 	}
 	if reader, ok := src.(ResultsReader); ok {
 		var err error
 		out.Results, err = reader.Results(ctx)
 		if err != nil {
-			return Export{}, &leaguemigration.ReadError{Part: "recorded results", Err: err}
+			return &leaguemigration.ReadError{Part: "recorded results", Err: err}
+		}
+	}
+	if reader, ok := src.(LiveLineupsReader); ok {
+		var err error
+		out.LiveLineups, err = reader.LiveLineups(ctx)
+		if err != nil {
+			return &leaguemigration.ReadError{Part: "current lineups", Err: err}
 		}
 	}
 	if reader, ok := src.(TransactionReader); ok {
 		raw, err := reader.Transactions(ctx)
 		if err != nil {
-			return Export{}, &leaguemigration.ReadError{Part: "transactions", Err: err}
+			return &leaguemigration.ReadError{Part: "transactions", Err: err}
 		}
 		out.Transactions = &raw
 	}
-	out.ReadAt = now.UTC()
-	return out, nil
+	return nil
 }
 
 // wrapped keeps the reader's own error under the leaguemigration.ReadError that names the part.

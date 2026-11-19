@@ -81,6 +81,7 @@ type Plan struct {
 	Recorded     *commissioner.RawRecordedResults
 	Transactions func(league, reason string, seed commissioner.RawNativeSnapshot) ([][]commissioner.RawCommand, error)
 	Schedule     []commissioner.ScheduleWeek
+	Lineups      []commissioner.RawLineupChange
 	Create       commissioner.RawArgs
 	Seed         commissioner.RawNativeSnapshot
 	Rules        leaguerules.RuleSet

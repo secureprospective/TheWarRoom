@@ -1,7 +1,8 @@
 import { Act } from '../../commands/Act';
 import { fixes, pickActs, situations } from './guide';
 import { routeCommand, unbuiltWords } from './route';
-import { Kv, tabs, type Room, type Tab } from './room';
+import { signInOf } from './roomReads';
+import { Kv, NotYet, tabs, type Room, type Tab } from './room';
 
 const mark = {
   B: null,
@@ -97,6 +98,8 @@ export function openTeam(room: Room, franchise: string) {
   const seat = people?.seats.find((s) => s.franchise === franchise);
   if (!seat) return;
   const roles = people!.roles.filter((r) => r.person === seat.owner).map((r) => r.role);
+  const actor = people!.actors.find((entry) => entry.person === seat.owner);
+  const signIn = signInOf(room.data, seat.owner);
   const season = room.data.assets?.snapshot?.season;
   const picks = (room.data.assets?.snapshot?.picks ?? []).filter(
     (p) => p.owner === franchise && !p.player && !p.skipped && (!season || p.season === season + 1),
@@ -111,15 +114,13 @@ export function openTeam(room: Room, franchise: string) {
           ['Role', roles.join(', ') || 'owner'],
           [
             'Authenticator',
-            <span key="a" className="cr-na">
-              Not available yet
-            </span>,
+            signIn?.authenticator ? 'Enabled' : signIn ? 'Not enrolled' :
+              <NotYet key="a" what={room.data.errors.signIns ?? 'no local sign-in fact for this account'} />,
           ],
           [
-            'Permission sets',
-            <span key="p" className="cr-na">
-              Not available yet
-            </span>,
+            'Effective deputy permissions',
+            actor ? actor.effectivePermissions.join(' · ') || 'No deputy permissions' :
+              <NotYet key="p" what="this reading has no permissions for the selected account" />,
           ],
           [`Picks ${season ? season + 1 : ''}`.trim(), String(picks)],
         ]}

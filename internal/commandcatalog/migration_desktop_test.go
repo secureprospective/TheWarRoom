@@ -9,6 +9,8 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
@@ -16,6 +18,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -26,6 +30,109 @@ type baseFixture struct {
 
 func (f baseFixture) Read(ctx context.Context, now time.Time) (leaguemigration.Candidate, error) {
 	return mflsource.ReadCandidate(ctx, f.reader, now, f.base)
+}
+
+type importedLineupEnvironment struct{}
+
+func (importedLineupEnvironment) PlayerFacts() nativecheck.Facts { return nativecheck.Facts{} }
+
+func (importedLineupEnvironment) LineupFacts(context.Context, int, int) (commissioner.LineupFacts, error) {
+	return commissioner.LineupFacts{}, nil
+}
+
+type importedLineupScoreSource struct{}
+
+func (importedLineupScoreSource) Lineup(_ context.Context, records []commissioner.Record, franchise string,
+	week int) (commissioner.WeekLineup, error) {
+	return commissioner.LedgerWeekLineup(records, franchise, 2026, week)
+}
+
+func (importedLineupScoreSource) PlayerScore(_ context.Context, _ []commissioner.Record, player string,
+	week int) (commissioner.NativePlayerScore, error) {
+	points := leaguerules.Decimal(10000)
+	return commissioner.NativePlayerScore{Player: player, Season: 2026, Week: week, Status: "Complete",
+		Words: "1 point", Points: &points, Position: leaguerules.RB}, nil
+}
+
+func TestMigrationImportsCurrentLineupsAsNativeEventsAndScoresThem(t *testing.T) {
+	t.Parallel()
+	export, err := migrationtest.Legacy()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var starter string
+	for _, roster := range export.Rosters {
+		if roster.Franchise == "0001" && roster.Status == "ROSTER" {
+			starter = roster.Player
+			break
+		}
+	}
+	if starter == "" {
+		t.Fatal("fixture has no active player on franchise 0001")
+	}
+	id, err := playerid.New(starter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	export.LiveLineups = &leaguefeed.Lineups{Week: 1, Matchups: []leaguefeed.Matchup{{Home: "0001", Away: "0002"}},
+		Franchises: []leaguefeed.Lineup{
+			{Franchise: "0001", Starters: []playerid.PlayerID{id}},
+			{Franchise: "0002"},
+		}}
+	export.Schedule = []leagueschedule.RawScheduleWeek{{Week: "1", Matchups: []leagueschedule.RawMatchup{{
+		Franchises: [2]leagueschedule.RawMatchupSide{{FranchiseID: "0001", IsHome: "1"}, {FranchiseID: "0002", IsHome: "0"}},
+	}}}}
+	pools, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "history.db"), history.SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	store := history.New(pools, &measures.Registry{})
+	if err := store.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	store.SetLineupEnvironment(importedLineupEnvironment{})
+	now := migrationtest.ReadAt.Add(time.Hour)
+	store.SetClock(func() time.Time { return now })
+	service := &leaguemigration.Service{Now: func() time.Time { return now },
+		Ledger: leagueservice.MigrationLedger{Store: store},
+		SourceWithBase: func(_ string, base leaguerules.RuleSet) (leaguemigration.Source, error) {
+			return baseFixture{reader: &migrationtest.Source{Export: export}, base: base}, nil
+		}}
+	preview, err := service.Prepare(t.Context(), export.LeagueID, "default32")
+	if err != nil || !preview.Ready || len(preview.Lineups) != 1 ||
+		len(preview.Lineups[0].Starters) != 1 || preview.Lineups[0].Week != 1 ||
+		preview.Lineups[0].Franchise != "franchise.01" || preview.Lineups[0].Starters[0].Player != starter {
+		t.Fatalf("import preview: %+v, %v", preview, err)
+	}
+	league := leaguemigration.AppLeagueID(export.LeagueID, export.Season)
+	if _, err := service.ImportWithOptions(t.Context(), export.LeagueID, "Import fixture", "commish",
+		leaguemigration.ImportOptions{Preset: "default32"}); err != nil {
+		t.Fatal(err)
+	}
+	records, err := service.Ledger.Records(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lineup, found, err := commissioner.RecordedLineupFor(records, "franchise.01", 2026, 1)
+	if err != nil || !found || len(lineup.Starters) != 1 || lineup.Starters[0] != starter {
+		t.Fatalf("imported native lineup: %+v, found=%v, err=%v", lineup, found, err)
+	}
+	absent, found, err := commissioner.RecordedLineupFor(records, "franchise.02", 2026, 1)
+	if err != nil || found || len(absent.Starters) != 0 {
+		t.Fatalf("missing MFL lineup was imputed: %+v, found=%v, err=%v", absent, found, err)
+	}
+	result, err := commissioner.NativeResultsReading(t.Context(), league, records, importedLineupScoreSource{}, 2026, 1, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	status := map[string]string{}
+	for _, score := range result.Scores {
+		status[score.Franchise] = score.Status
+	}
+	if status["franchise.01"] != "Complete" || status["franchise.02"] != "Incomplete" {
+		t.Fatalf("week score statuses: %+v", status)
+	}
 }
 
 func TestDesktopMigrationBaseKeyAndAnswers(t *testing.T) {

@@ -41,6 +41,11 @@ func Prepare(export Export) (leaguemigration.Plan, error) {
 			p.problem("the recorded results could not be kept: %v", err)
 		}
 	}
+	plan.Lineups, err = ImportLineups(export.Results, export.LiveLineups, export.Season,
+		plan.Mapping, playerIdentityMapping(export.Players))
+	if err != nil {
+		p.problem("the starting lineups could not be kept: %v", err)
+	}
 	plan.Create = p.create(rules)
 	if len(export.Rosters) == 0 {
 		p.problem("MFL holds no rostered players for this league, so there is nothing to move; " +
@@ -355,10 +360,7 @@ func prepareTransactionPlan(export Export, plan leaguemigration.Plan) leaguemigr
 		return plan
 	}
 	plan.Transactions = func(league, reason string, seed commissioner.RawNativeSnapshot) ([][]commissioner.RawCommand, error) {
-		players, mapping := map[string]string{}, map[string]string{}
-		for id := range export.Players {
-			players[id] = id
-		}
+		players, mapping := playerIdentityMapping(export.Players), map[string]string{}
 		for _, f := range seed.Franchises {
 			mapping[f.HeldID] = f.ID
 		}

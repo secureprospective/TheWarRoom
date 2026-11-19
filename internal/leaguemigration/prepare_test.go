@@ -1,16 +1,20 @@
 package leaguemigration_test
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	ingestleague "github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 func leagues(t *testing.T) map[string]mflsource.Export {
@@ -49,6 +53,28 @@ func TestEveryFixtureLeaguePreparesWhole(t *testing.T) {
 				t.Fatal("the league's MFL scoring was not carried through FromMFLScoring")
 			}
 		})
+	}
+}
+
+func TestPreparationShowsCurrentLineupRows(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Preview league", migrationtest.Specs()["8 teams"])
+	id, err := playerid.New(export.Rosters[0].Player)
+	if err != nil {
+		t.Fatal(err)
+	}
+	export.LiveLineups = &leaguefeed.Lineups{Week: 12, Franchises: []leaguefeed.Lineup{{
+		Franchise: export.Rosters[0].Franchise, Starters: []playerid.PlayerID{id},
+	}}}
+	service := &leaguemigration.Service{Now: func() time.Time { return migrationtest.ReadAt },
+		Source: func(string) (leaguemigration.Source, error) {
+			return &migrationtest.Source{Export: export}, nil
+		}}
+	got, err := service.Prepare(context.Background(), export.LeagueID)
+	if err != nil || !got.Ready || len(got.Lineups) != 1 || got.Lineups[0].Week != 12 ||
+		got.Lineups[0].Team != "Team 1" || len(got.Lineups[0].Starters) != 1 ||
+		got.Lineups[0].Starters[0].Player != id.String() {
+		t.Fatalf("lineup preview: %+v, %v", got, err)
 	}
 }
 
@@ -183,7 +209,7 @@ func TestFailurePathsEndInAPlainList(t *testing.T) {
 
 func TestReadStopsAtTheFirstUnreachablePart(t *testing.T) {
 	t.Parallel()
-	for _, part := range []string{"league", "rosters", "adjustments", "draft", "players"} {
+	for _, part := range []string{"league", "rosters", "adjustments", "draft", "players", "lineups"} {
 		t.Run(part, func(t *testing.T) {
 			t.Parallel()
 			src := &migrationtest.Source{Export: migrationtest.Synthetic("x", migrationtest.Specs()["8 teams"]), FailAt: part}

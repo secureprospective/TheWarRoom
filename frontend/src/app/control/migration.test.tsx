@@ -1,13 +1,15 @@
-import { createElement } from 'react';
+// @vitest-environment jsdom
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it } from 'vitest';
-import { createMigration, parsePreparation, type Preparation } from './migration';
+import { createMigration, migration, parsePreparation, type Preparation } from './migration';
 import MoveMFL from './MoveMFL';
 
 const prep: Preparation = {
   league: 'native.mfl-12345-2026', name: 'Our league', season: 2026, franchises: 16,
-  players: 400, picks: 64, settings: 200, notes: [], problems: [], ready: true, preset: 'mirror16',
-  waiting: [{ field: 'contracts.maximumYears', label: 'Maximum new contract years',
+  players: 400, picks: 64, settings: 200, lineups: [], notes: [], problems: [], ready: true,
+  preset: 'mirror16', waiting: [{ field: 'contracts.maximumYears', label: 'Maximum new contract years',
     schema: { kind: 'count', minimum: 1, maximum: 20, choices: [], fields: [] } }],
 };
 const receipt = { entry: 'import.1', league: prep.league, revision: 1,
@@ -76,6 +78,27 @@ it('renders the desktop import entry and refuses malformed preparation', () => {
   for (const words of ['Move my MFL league', 'MFL league ID', 'type="password"', 'Prepare'])
     expect(html).toContain(words);
   expect(() => parsePreparation({ ...prep, ready: 'yes' })).toThrow();
+});
+it('shows the lineup rows and starter identities in the confirm preview', async () => {
+  const row = { week: 12, franchise: 'franchise.01', team: 'Team One',
+    starters: [{ player: '0012', name: 'Player Twelve' }] };
+  const preview = { ...prep, lineups: [row], waiting: [] };
+  expect(parsePreparation(preview).lineups).toEqual([row]);
+  expect(() => parsePreparation({ ...preview, lineups: [{ ...row, extra: true }] })).toThrow();
+  migration.use.setState({ ...migration.peek(), id: '12345', prep: preview, preset: 'mirror16', drafts: {} });
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const host = document.createElement('div');
+  const root = createRoot(host);
+  try {
+    await act(async () => root.render(createElement(MoveMFL)));
+    expect(host.innerHTML).toContain('Preview 1 starting-lineup rows');
+    expect(host.innerHTML).toContain('Week 12 · Team One');
+    expect(host.innerHTML).toContain('Player Twelve (#0012)');
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+    migration.input('');
+  }
 });
 it('clears the credential and typed reason when choosing a different MFL league', () => {
   const flow = createMigration({ run: async () => prep, open: async () => {} });
