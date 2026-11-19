@@ -3,6 +3,8 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
+- **11-19 3:50 PM CST Christopher approved:** (1) release 11 lab deploy to CT 260 incl. migration 5 on Friday; (2) Saturday backup → cleanup → re-import → b9→main.
+
 ## 0. STATE AT 3:55 PM CST THU 11-19 (Tom, after "we are back" + go)
 **Ruling 11-19 ~2:30 PM:** Christopher gave the go on the no-GPT plan: cut field animation (G1) and phone Control Room
 from alpha; Claude helpers allowed (2 Opus now, Haiku for trivial jobs); Claudebox frees up at 7 PM CST to help.
