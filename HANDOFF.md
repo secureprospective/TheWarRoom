@@ -2,8 +2,9 @@
 
 ## Part 2 — bundle/b9 #398 integration (2026-11-19)
 - Baton: Bee, lane `lane/b9take7`, PR #400.
-- State: PR #400 is open. Merge `origin/bundle/b9` (`eb27c6e2a`, including #398 synced Home boards and Ask) is in progress. Resolved `ThinHome.tsx` to retain #398 phone boards while using B7's role-derived commissioner read contract; kept both handoff histories.
-- Next: verify the merged frontend, run pre-push, push to PR #400, and verify CI.
+- State: PR #400 is open. Merge commit `03f2a8d54` integrates `origin/bundle/b9` (`eb27c6e2a`, including #398 synced Home boards and Ask). `ThinHome.tsx` retains #398 phone boards while using B7's role-derived commissioner read contract; both handoff histories remain.
+- Verified: eight focused frontend files, 53 tests, and `pnpm tsc --noEmit` pass on the merge candidate.
+- Next: run pre-push, push to PR #400, and verify CI.
 - Blocked on: none.
 - Tried and rejected: none.
 
