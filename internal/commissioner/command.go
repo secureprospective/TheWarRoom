@@ -91,6 +91,8 @@ func DefinitionFor(command string) (Definition, error) {
 		CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException,
 		TradeReview, TradeAppeal, TradeAppealRule, TradeOverride:
 		return Definition{Gravity: "G3"}, nil
+	case RosterAdd:
+		return Definition{Gravity: "G3"}, nil
 	case DraftArchive, DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
 		RosterReserve, RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
 		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride, OLineAuctionClose,

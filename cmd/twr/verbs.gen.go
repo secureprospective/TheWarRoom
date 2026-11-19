@@ -70,6 +70,7 @@ func generatedVerbs() []commandVerb {
 		{ID: "trade.override", Label: "override trade", Modes: []string{"preview", "execute"}},
 		{ID: "roster.reserve", Label: "reserve roster", Modes: []string{"preview", "execute"}},
 		{ID: "roster.cut", Label: "cut roster", Modes: []string{"preview", "execute"}},
+		{ID: "roster.add", Label: "add roster", Modes: []string{"preview", "execute"}},
 		{ID: "waivers.claim", Label: "claim waivers", Modes: []string{"preview", "execute"}},
 		{ID: "waivers.process", Label: "process waivers", Modes: []string{"preview", "execute"}},
 		{ID: "waivers.order.set", Label: "set waivers order", Modes: []string{"preview", "execute"}},

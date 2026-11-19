@@ -337,7 +337,7 @@ func familyLabel(r Record) (string, bool) {
 	case draftCommand(c):
 		return draftLabel(r), true
 	case WaiverCommand(c):
-		return waiverLabel(c), true
+		return waiverLabel(r.Command), true
 	case TradeCommand(c):
 		return tradeLabel(r), true
 	case BidCommand(c):
