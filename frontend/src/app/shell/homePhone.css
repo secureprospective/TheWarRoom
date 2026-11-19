@@ -1,0 +1,122 @@
+.phone-ask { display: none; }
+
+@media (max-width: 699px) {
+  .phone-ask { display: block; flex: none; }
+  .phone-ask__open, .phone-ask__sheet button, .phone-ask__sheet input {
+    min-height: 44px;
+  }
+  .phone-ask__open {
+    min-width: 56px;
+    padding: 0 12px;
+    border: 1px solid var(--edge-hi);
+    background: var(--tile);
+    color: var(--ink);
+    font: 700 11px var(--mono);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  .phone-ask__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    background: hsla(0, 0%, 0%, .72);
+  }
+  .phone-ask__sheet {
+    width: 100%;
+    max-height: 82dvh;
+    overflow-y: auto;
+    padding: 16px;
+    border-top: 3px solid var(--edge-hi);
+    background: var(--tile);
+    color: var(--ink);
+  }
+  .phone-ask__sheet header, .phone-ask__sheet form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .phone-ask__sheet header { justify-content: space-between; }
+  .phone-ask__sheet h2 { font: 700 15px var(--mono); letter-spacing: .1em; }
+  .phone-ask__sheet p { margin: 12px 0; color: var(--ink2); }
+  .phone-ask__sheet form { flex-wrap: wrap; }
+  .phone-ask__sheet form label { flex-basis: 100%; font: 10px var(--mono); color: var(--ink2); }
+  .phone-ask__sheet input { flex: 1; min-width: 0; padding: 8px; border: 1px solid var(--edge); background: var(--canvas); color: var(--ink); }
+  .phone-ask__sheet button, .phone-ask__suggestions button {
+    padding: 8px 12px;
+    border: 1px solid var(--edge-hi);
+    background: var(--canvas);
+    color: var(--ink);
+    font: 600 11px var(--mono);
+  }
+  .phone-ask__suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .phone-ask__answer { margin-top: 14px; padding: 10px; border: 1px solid var(--edge); }
+  .phone-ask__answer b { font: 700 10px var(--mono); letter-spacing: .1em; }
+  .phone-ask__answer p { margin-bottom: 0; }
+
+  .thin-home__phone-boards { width: 100%; max-width: 100%; flex: none; overflow-x: hidden; border-top: 2px solid #000; }
+  .hb { max-width: 100%; overflow-x: hidden; }
+  .thin-home__phone-boards > .thin-home__section-head { min-height: 44px; }
+  .thin-home__phone-boards > [role="status"], .thin-home__phone-boards > [role="alert"] {
+    margin: 12px;
+  }
+
+  .hb, .hb .shell.hb-shell, .hb .work {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .hb .shell.hb-shell { display: block; }
+  .hb .work { display: block; }
+  .hb .insp, .hb .tick, .hb .ws-tabs [role="tab"], .hb .lay { display: none; }
+  .hb .ws-tabs { min-height: 50px; align-items: center; padding: 3px 8px; }
+  .hb .queue { min-height: 44px; margin-left: 0 !important; }
+  .hb .queue .ql { min-height: 44px; padding-inline: 10px; }
+  .hb .now { flex-wrap: wrap; }
+  .hb .now .nl { flex: 1 1 100%; min-height: 44px; padding: 6px 12px; }
+  .hb .now .st { flex: 1 1 40%; min-width: 0; min-height: 46px; padding: 5px 10px; }
+  .hb .aband { min-height: 48px; height: auto; padding: 7px 10px 7px 16px; gap: 6px; }
+  .hb .aband .ak { flex: none; }
+  .hb .aband .at { flex: 1; min-width: 0; white-space: normal; }
+  .hb .aband .more { flex: none; }
+  .hb .grid { display: flex; flex-direction: column; gap: 10px; padding: 10px 8px; }
+  .hb .t { flex: none; min-height: 120px; height: auto; min-width: 0; }
+  .hb .t .th { flex-wrap: wrap; gap: 6px; padding: 8px; white-space: normal; }
+  .hb .t .th .src { flex-basis: 100%; }
+  .hb .t .th .lnk { min-height: 44px; display: inline-flex; align-items: center; padding-inline: 10px; }
+  .hb .t .grip { display: none; }
+  .hb .t .th > .ed:last-child { width: 100%; margin-left: 0 !important; flex-wrap: wrap; gap: 4px; }
+  .hb .t .ed .sp, .hb .t .ed .pin, .hb .t .ed .off, .hb .t .ed .move {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .hb .t .ed .move { display: inline-flex; }
+  .hb .t .tb { flex: none; min-height: 64px; overflow: visible; }
+  .hb .tray { flex-wrap: wrap; gap: 8px; padding: 8px; white-space: normal; }
+  .hb .pulls { width: 100%; min-height: 44px; margin: 0; flex-wrap: wrap; }
+  .hb .pull { min-height: 44px; padding-inline: 10px; }
+  .hb .tray .msg { flex: 1 1 100%; margin: 0; white-space: normal; }
+  .hb .tray > span[style] { flex-wrap: wrap; }
+  .hb .tray .btn { min-height: 44px; }
+  .hb .bdrawer { position: fixed; left: 8px; right: 8px; bottom: 68px; width: auto; max-height: 70dvh; overflow-y: auto; }
+  .hb .bd-head { flex-wrap: wrap; gap: 8px; padding: 10px; }
+  .hb .bd-head .x { min-height: 44px; padding-inline: 10px; }
+  .hb .addg { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px; }
+  .hb .at2 { min-height: 44px; }
+  .hb .sdrawer { position: fixed; top: 8vh; right: 8px; bottom: 68px; left: 8px; width: auto; max-height: 84vh; overflow-y: auto; border: 2px solid var(--edge-hi); }
+  .hb .scrim.open { position: fixed; inset: 0; z-index: 8; }
+  .hb .card.small { position: fixed; left: 8px; right: 8px; top: 12vh; width: auto; max-height: 72vh; overflow-y: auto; transform: none; }
+  .hb .ch2 { flex-wrap: wrap; gap: 8px; padding: 14px 12px 0; }
+  .hb .cardx { min-height: 44px; padding-inline: 10px; }
+  .hb .hd { padding: 10px 12px; font-size: 19px; }
+  .hb .kvc { padding: 8px 12px 14px; }
+  .hb .cfoot { flex-wrap: wrap; padding: 10px 12px; }
+  .hb .al { min-height: 44px; }
+}
