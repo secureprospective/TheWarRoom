@@ -2014,6 +2014,7 @@ export namespace commissioner {
 	}
 	export class NativeAssets {
 	    poolPointsNote?: string;
+	    openBenchSlots?: Record<string, number>;
 	    pool?: NativePoolPlayer[];
 	    identities?: NativeAssetIdentity[];
 	    corrections?: Correction[];
@@ -2031,6 +2032,7 @@ export namespace commissioner {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.poolPointsNote = source["poolPointsNote"];
+	        this.openBenchSlots = source["openBenchSlots"];
 	        this.pool = this.convertValues(source["pool"], NativePoolPlayer);
 	        this.identities = this.convertValues(source["identities"], NativeAssetIdentity);
 	        this.corrections = this.convertValues(source["corrections"], Correction);
@@ -3238,6 +3240,7 @@ export namespace commissioner {
 	    losses: number;
 	    ties: number;
 	    record: string;
+	    streak?: string;
 	    computedRecord?: string;
 	    pointsFor: number;
 	    pointsWords: string;
@@ -3258,6 +3261,7 @@ export namespace commissioner {
 	        this.losses = source["losses"];
 	        this.ties = source["ties"];
 	        this.record = source["record"];
+	        this.streak = source["streak"];
 	        this.computedRecord = source["computedRecord"];
 	        this.pointsFor = source["pointsFor"];
 	        this.pointsWords = source["pointsWords"];
@@ -12284,6 +12288,7 @@ export namespace livegame {
 	    id: string;
 	    abbreviation: string;
 	    score: number;
+	    record?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Team(source);
@@ -12294,6 +12299,7 @@ export namespace livegame {
 	        this.id = source["id"];
 	        this.abbreviation = source["abbreviation"];
 	        this.score = source["score"];
+	        this.record = source["record"];
 	    }
 	}
 	export class Game {
