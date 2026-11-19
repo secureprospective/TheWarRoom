@@ -19,6 +19,7 @@ import './nativeAccount.css';
 const HostedLeague = lazy(() => import('../commissioner/HostedLeague'));
 const ThinHome = lazy(() => import('../shell/ThinHome'));
 const TodayTab = lazy(() => import('../phone/TodayTab'));
+const LiveTab = lazy(() => import('../phone/LiveTab'));
 
 type Screen = 'login' | 'join' | 'authenticator' | 'recovery';
 const tabs = [
@@ -163,6 +164,9 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
     }} />
   </Suspense>;
+  const liveLeague = admittedLeagues[0];
+  const liveTab = <Suspense fallback={<p role="status">Opening Live…</p>}>
+    <LiveTab league={liveLeague} /></Suspense>;
   const leagueContent = <>
     {showThinHome && thinHome}
     {homeReady && activeLeague && <section className="native-hosted-league" aria-label="League view">
@@ -218,6 +222,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           }} /></Suspense>,
         team: admission?.franchise
           ? <TeamTab league={admission.league} mine={admission.franchise} /> : undefined,
+        live: liveTab,
       }}>{leagueContent}</PhoneAppFrame>}
     </div>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">

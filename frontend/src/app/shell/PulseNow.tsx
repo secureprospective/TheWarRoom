@@ -6,6 +6,7 @@ import { PulseWaiting, readPulseMatchup, usePulseRead, type NativePulse, type Pu
   from './pulseReads';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
+import { clockWords, followKey } from './hostedGames';
 import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveContract';
 import type { usePulseLive } from './hqLive';
 import { boxLine, compactLine } from './statLine';
@@ -183,13 +184,6 @@ function StatChangesDrawer({ open, onClose, sides, week, changes, left, right }:
     <div className="drawer-note">Compares the last live line this app held with the final stats, for the
       starters in this matchup. It is not the complete list of NFL stat corrections.</div>
   </PulseDrawer>;
-}
-
-function followKey(g: LiveNflGame) { return `${g.away.abbreviation}-${g.home.abbreviation}`; }
-function clockWords(g: LiveNflGame) {
-  if (g.status === 'post') return 'FINAL';
-  if (g.status === 'pre') return kickoffText(g.kickoff);
-  return `${g.period > 4 ? 'OT' : `Q${g.period}`} ${g.clock}`;
 }
 
 /** NflList is the week's NFL games, optionally selectable by a read-only follower. */

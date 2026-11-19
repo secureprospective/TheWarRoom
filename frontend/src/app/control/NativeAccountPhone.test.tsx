@@ -73,7 +73,8 @@ it('lands on the new phone app after sign-in and shows the ported Today tab', as
   const live = [...host.querySelectorAll('.phone-app__tab')]
     .find(button => button.textContent?.includes('Live')) as HTMLButtonElement;
   await act(async () => live.click());
-  expect(host.querySelector('.phone-app__slot h1')?.textContent).toBe('Live');
+  expect(host.querySelector('.phone-app__slot')?.getAttribute('aria-label')).toBe('Live');
+  expect(host.querySelector('.phone-app__slot h1')).toBeNull();
   expect(host.querySelector('.phone-app__bar')?.textContent).not.toContain('Mock');
   await act(async () => host!.querySelector<HTMLButtonElement>('.phone-app__league')!.click());
   expect(host.querySelector('.phone-app__account-name')?.textContent).toContain('owner');
