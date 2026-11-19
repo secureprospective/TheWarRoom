@@ -10,9 +10,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-// JoinSeats is the league ledger as pick-your-team sign-up uses it. Seating and releasing are the
-// existing commish.seat.replace / commish.seat.remove changes, recorded as the commissioner who
-// issued the join link, with the ledger's normal policy, fence and expected-revision checks.
+// JoinSeats is the league ledger as pick-your-team sign-up uses it. Claim records a link's digest
+// in the unique request key of the existing commish.seat.replace event, consuming it atomically with
+// the seat. Seat and Release retain the normal commissioner event, policy and revision checks.
 type JoinSeats struct {
 	Store *history.Store
 	// Leagues, when set, finds each league's own store (the hosted server, one file per league).
@@ -95,6 +95,25 @@ func (j JoinSeats) IsCommissioner(ctx context.Context, league string, p governan
 	return state.HasRole(p, governance.Commissioner), nil
 }
 
+// LinkClaimed reports whether a committed seat event has consumed this join-link digest.
+func (j JoinSeats) LinkClaimed(ctx context.Context, league, digest string) (bool, error) {
+	records, _, err := j.policy(ctx, league)
+	if err != nil {
+		return false, err
+	}
+	return joinLinkClaimed(records, digest), nil
+}
+
+func joinLinkClaimed(records []commissioner.Record, digest string) bool {
+	request := "join.claim." + digest
+	for _, record := range records {
+		if record.Command.Request == request {
+			return true
+		}
+	}
+	return false
+}
+
 func (j JoinSeats) record(ctx context.Context, league, command, request, reason string, people commissioner.RawPeople, actor governance.Principal, expected int64) error {
 	raw := commissioner.RawCommand{League: league, Command: command, Args: commissioner.RawArgs{People: &people}, Expected: expected,
 		Request: request, Reason: reason, Effective: "now", Visibility: "league"}
@@ -122,6 +141,32 @@ func (j JoinSeats) Seat(ctx context.Context, league, franchise string, owner, is
 	return j.record(ctx, league, "commish.seat.replace", "join.claim."+franchise+"."+string(owner),
 		"Owner claimed this franchise through the league join link", commissioner.RawPeople{Franchise: franchise, Principal: string(owner)}, issuer,
 		records[len(records)-1].Receipt.Revision)
+}
+
+// Claim spends the join link with the seat event. Its unique request key uses only the stored link digest,
+// so the ledger transaction both seats the owner and permanently marks this code as used.
+func (j JoinSeats) Claim(ctx context.Context, league, franchise string, owner, issuer governance.Principal, digest string) error {
+	records, state, err := j.policy(ctx, league)
+	if err != nil {
+		return err
+	}
+	if joinLinkClaimed(records, digest) {
+		return accounts.ErrJoinRefused
+	}
+	if f, ok := state.Franchise(governance.FranchiseID(franchise)); !ok || f.Seat != "" {
+		return accounts.ErrFranchiseTaken
+	}
+	request := "join.claim." + digest
+	err = j.record(ctx, league, "commish.seat.replace", request,
+		"Owner claimed this franchise through the league join link", commissioner.RawPeople{Franchise: franchise, Principal: string(owner)}, issuer,
+		records[len(records)-1].Receipt.Revision)
+	if err != nil {
+		used, checkErr := j.LinkClaimed(ctx, league, digest)
+		if checkErr == nil && used {
+			return accounts.ErrJoinRefused
+		}
+	}
+	return err
 }
 
 // Release removes franchise's owner so the franchise can be claimed again.
