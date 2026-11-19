@@ -52,7 +52,7 @@ Driver: `~/.local/share/pipx/venvs/pymobiledevice3/bin/python -I ~/fleet/bin/iph
 1. On #394: review (People contract fixed on the right side, owner League Read not widened, Pulse decision evidenced, #381 proof), batch-merge into b7, land B7 on main.
 2. Merge main into bundle/b8 and bundle/b9 after B7 lands.
 3. When b9lab reports: run the iPhone walk; fix lanes for what breaks; then land B8, then B9.
-4. Batch #393 + #395: both branches synced by Tom 7:15 PM (#393 = b9 merged in; #395 = #393 merged in). Run `twr-batch-merge.sh bundle/b9 393 395` once #395's push finished (check `git ls-remote origin session/pulse-b9cr1` = 4fe781aa7).
+4. Batch #393 + #395: both branches synced by Tom 7:15 PM (#393 = b9 merged in; #395 = #393 merged in). Run `twr-batch-merge.sh bundle/b9 393 395` once #395's push finished (check `git ls-remote origin session/pulse-b9cr1` = 4d5302527; first push failed on the 110-char line rule, fixed).
 5. Write + launch remaining B9 lanes: b9moves (after #389 ✓), b9act (after #387 ✓), b9ask (after #388 ✓) — briefs from `~/fleet/runs/pulse-b8plan/RESULT.md` §3+§5 using b9card.md template.
 6. Samsung S8 Active: when a data cable appears, back up photos/video/recordings to `~/Pictures/phone_backup/android/`, then same setup as the iPhone.
 7. 50-min lane checks; keep tracker + REPORT current.
