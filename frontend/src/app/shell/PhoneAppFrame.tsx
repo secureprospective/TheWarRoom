@@ -43,7 +43,7 @@ function phoneViewport(): boolean {
 export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeagueId,
   weekLabel = 'Week unavailable', badges, live = false, askBrief, askMine = '', accountName,
   accountPending = false, commissioner = false, showControlRoom = false, onSelectTab,
-  onSelectLeague, onAuthenticator, onSignOut, onControlRoom, homeReadSource, children }: {
+  onSelectLeague, onAuthenticator, onSignOut, onControlRoom, homeReadSource, tabs, children }: {
     enabled?: boolean;
     activeTab: PhoneTab;
     leagues: LeagueChoice[];
@@ -64,6 +64,8 @@ export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeag
     onControlRoom?: () => void;
     /** Keep Home's reads available to Ask and the week chip without filling the placeholder tab body. */
     homeReadSource?: ReactNode;
+    /** Each ported tab's content; a tab without one shows its name until its port lands. */
+    tabs?: Partial<Record<PhoneTab, ReactNode>>;
     children: ReactNode;
   }) {
   const phone = usePhoneViewport(enabled);
@@ -145,7 +147,7 @@ export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeag
     <div className="phone-app__body">
       <section className="phone-app__slot" id="phone-panel" role="tabpanel"
         aria-label={tabLabel(activeTab)} key={activeTab}>
-        <h1>{tabLabel(activeTab)}</h1>
+        {tabs?.[activeTab] ?? <h1>{tabLabel(activeTab)}</h1>}
       </section>
     </div>
     <nav className="phone-app__tabs" role="tablist" aria-label="Main">
