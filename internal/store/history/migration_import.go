@@ -13,8 +13,9 @@ import (
 // ExecuteCommissionerBatch records several league changes as one: each is checked against the ledger
 // as the ones before it leave it, and either every change is recorded or none is. The first change is
 // checked against the version its caller read; each later one is checked at the version the batch has
-// reached, under the same lock, so nothing else can land between them. An MFL import (creation and
-// starting snapshot) and an invitation send use it, so a failure at any step leaves no half league.
+// reached, under the same lock, so nothing else can land between them. MFL import creation, its
+// starting snapshot and imported lineup corrections, and invitation sends use it, so a failure at
+// any step leaves no half league.
 func (s *Store) ExecuteCommissionerBatch(ctx context.Context, raws []commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer) ([]commissioner.Receipt, error) {
 	return s.ExecuteCommissionerBatchWithFacts(ctx, raws, principal, auth, nil, time.UTC)
@@ -26,8 +27,16 @@ func (s *Store) ExecuteCommissionerBatch(ctx context.Context, raws []commissione
 func (s *Store) ExecuteCommissionerBatchWithFacts(ctx context.Context, raws []commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location) ([]commissioner.Receipt, error) {
 	gathered := make([]appendFacts, len(raws))
-	for i := range gathered {
+	for i, raw := range raws {
 		gathered[i] = appendFacts{players: facts}
+		if raw.Command != commissioner.LineupCorrect {
+			continue
+		}
+		lineup, err := s.lineupFactsFor(ctx, raw)
+		if err != nil {
+			return nil, err
+		}
+		gathered[i].lineup = lineup
 	}
 	return s.executeBatch(ctx, raws, principal, auth, zone, gathered, false)
 }
@@ -169,7 +178,8 @@ func batchable(command string, creating bool) bool {
 		// At creation, or in a rules-only batch: a preset applied to the league.
 		return creating
 	case commissioner.RosterReserve, commissioner.CorrectRoster, commissioner.CorrectPick,
-		commissioner.Create, commissioner.NativeSeed, commissioner.ScheduleGenerate, commissioner.SchedulePublish, "commish.seat.invite":
+		commissioner.Create, commissioner.NativeSeed, commissioner.ScheduleGenerate, commissioner.SchedulePublish,
+		commissioner.LineupCorrect, "commish.seat.invite":
 		return true
 	}
 	return false

@@ -73,11 +73,24 @@ type Preparation struct {
 	Players    int              `json:"players"`
 	Picks      int              `json:"picks"`
 	Settings   int              `json:"settings"`
+	Lineups    []LineupPreview  `json:"lineups"`
 	Notes      []string         `json:"notes"`
 	Problems   []string         `json:"problems"`
 	Ready      bool             `json:"ready"`
 	Preset     string           `json:"preset"`
 	Waiting    []WaitingSetting `json:"waiting"`
+}
+
+type LineupPreview struct {
+	Week      int                    `json:"week"`
+	Franchise string                 `json:"franchise"`
+	Team      string                 `json:"team"`
+	Starters  []LineupStarterPreview `json:"starters"`
+}
+
+type LineupStarterPreview struct {
+	Player string `json:"player"`
+	Name   string `json:"name"`
 }
 
 // Prepare reads the MFL league and says what the import would land, or what stops it.
@@ -87,7 +100,7 @@ func (s *Service) Prepare(ctx context.Context, mflLeague string, preset ...strin
 		return Preparation{}, err
 	}
 	out := Preparation{League: AppLeagueID(mflLeague, export.Season), Name: export.Name, Season: export.Season,
-		Notes: []string{}, Problems: []string{}, Waiting: []WaitingSetting{},
+		Notes: []string{}, Problems: []string{}, Waiting: []WaitingSetting{}, Lineups: []LineupPreview{},
 		Franchises: export.Franchises, Players: export.Players, Picks: export.Picks}
 	plan, err := export.prepared()
 	if problems, ok := AsProblems(err); ok {
@@ -102,13 +115,14 @@ func (s *Service) Prepare(ctx context.Context, mflLeague string, preset ...strin
 		out.Preset = preset[0]
 	}
 	out.Waiting = plan.Waiting
+	out.Lineups = previewLineups(plan)
 	out.Settings, out.Notes, out.Ready = len(plan.Create.Seed), plan.Notes, true
 	return out, nil
 }
 
 // Import reads the MFL league afresh and lands it whole in one recorded act: the league, with every
-// setting MFL holds, and its starting rosters, contracts, picks, franchises and divisions. Until the
-// cutover it follows MFL. A failure at any step records nothing.
+// setting MFL holds, its starting rosters, contracts, picks, franchises, divisions and available
+// starting lineups. Until the cutover it follows MFL. A failure at any step records nothing.
 func (s *Service) Import(ctx context.Context, mflLeague, reason, principal string) ([]commissioner.Receipt, error) {
 	return s.ImportWithOptions(ctx, mflLeague, reason, principal, ImportOptions{})
 }
@@ -156,11 +170,58 @@ func (s *Service) ImportWithOptions(ctx context.Context, mflLeague, reason, prin
 	for _, group := range groups {
 		raws = append(raws, group...)
 	}
+	lineupCommands, err := importLineupCommands(league, reason, plan.Lineups)
+	if err != nil {
+		return nil, err
+	}
+	raws = append(raws, lineupCommands...)
 	receipts, err := s.Ledger.Batch(ctx, raws, principal)
 	if err != nil {
 		return nil, fmt.Errorf("import the MFL league (nothing was recorded; start the import again): %w", err)
 	}
 	return receipts, nil
+}
+
+func previewLineups(plan Plan) []LineupPreview {
+	teams := make(map[string]string, len(plan.Seed.Franchises))
+	players := make(map[string]string, len(plan.Seed.Players))
+	for _, franchise := range plan.Seed.Franchises {
+		teams[franchise.ID] = franchise.Name
+	}
+	for _, player := range plan.Seed.Players {
+		players[player.ID] = player.Name
+	}
+	out := make([]LineupPreview, 0, len(plan.Lineups))
+	for _, lineup := range plan.Lineups {
+		preview := LineupPreview{Week: lineup.Week, Franchise: lineup.Franchise,
+			Team: teams[lineup.Franchise], Starters: make([]LineupStarterPreview, 0, len(lineup.Starters))}
+		for _, player := range lineup.Starters {
+			preview.Starters = append(preview.Starters, LineupStarterPreview{Player: player, Name: players[player]})
+		}
+		out = append(out, preview)
+	}
+	return out
+}
+
+func importLineupCommands(league, reason string, lineups []commissioner.RawLineupChange) ([]commissioner.RawCommand, error) {
+	commands := make([]commissioner.RawCommand, 0, len(lineups))
+	seen := map[string]bool{}
+	for _, lineup := range lineups {
+		key := fmt.Sprintf("%d.%s", lineup.Week, lineup.Franchise)
+		if seen[key] {
+			return nil, fmt.Errorf("week %d franchise %s is listed more than once", lineup.Week, lineup.Franchise)
+		}
+		seen[key] = true
+		// Do not use the lineup.sync prefix: this one-time import is not an ongoing sync source.
+		raw := commissioner.RawCommand{League: league, Command: commissioner.LineupCorrect,
+			Args: commissioner.RawArgs{Lineup: &lineup}, Request: "mfl-import.lineup." + key,
+			Reason: reason, Effective: "now", Visibility: "league"}
+		if err := raw.Validate(); err != nil {
+			return nil, fmt.Errorf("check imported lineup %s: %w", key, err)
+		}
+		commands = append(commands, raw)
+	}
+	return commands, nil
 }
 
 // Review compares the app league with a fresh read of MFL. It can be run any number of times.

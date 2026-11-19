@@ -18,6 +18,7 @@ import (
 type fixtureTransport struct {
 	t             *testing.T
 	reads, writes int
+	live          []byte
 }
 
 func (f *fixtureTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -29,7 +30,7 @@ func (f *fixtureTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"draftResults":     "draftreports/testdata/results-2026.json",
 		"futureDraftPicks": "draftreports/testdata/future-2026.json",
 	}
-	if req.Method != http.MethodGet || (paths[kind] == "" && kind != "salaryAdjustments" && kind != "schedule" && kind != "transactions" && kind != "weeklyResults") {
+	if req.Method != http.MethodGet || (paths[kind] == "" && kind != "salaryAdjustments" && kind != "schedule" && kind != "transactions" && kind != "weeklyResults" && kind != "liveScoring") {
 		f.writes++
 		return nil, fmt.Errorf("unexpected MFL operation: %s %s", req.Method, kind)
 	}
@@ -40,6 +41,12 @@ func (f *fixtureTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	}
 	if kind == "weeklyResults" {
 		body = []byte(`{"allWeeklyResults":{"weeklyResults":{"week":"1"}}}`)
+	}
+	if kind == "liveScoring" {
+		body = f.live
+		if len(body) == 0 {
+			body = []byte(`{"liveScoring":{"week":"12","matchup":{"franchise":[{"id":"0001","isHome":"1","score":"0","gameSecondsRemaining":"0","players":{"player":[]}},{"id":"0002","isHome":"0","score":"0","gameSecondsRemaining":"0","players":{"player":[]}}]}}}`)
+		}
 	}
 	if kind == "schedule" {
 		body = []byte(`{"schedule":{"weeklySchedule":{"week":"1"}}}`)
@@ -74,6 +81,40 @@ func TestSourceAdapterOnlyReadsMFL(t *testing.T) {
 	}
 	if len(candidate.Plan.Schedule) != 1 || transport.reads == 0 || transport.writes != 0 {
 		t.Fatalf("source traffic: reads=%d writes=%d", transport.reads, transport.writes)
+	}
+}
+
+func TestSourcePlanCarriesCurrentMFLLineups(t *testing.T) {
+	t.Parallel()
+	fixture, err := migrationtest.Legacy()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var starter string
+	for _, roster := range fixture.Rosters {
+		if roster.Franchise == "0001" && roster.Status == "ROSTER" {
+			starter = roster.Player
+			break
+		}
+	}
+	if starter == "" {
+		t.Fatal("fixture has no active player on franchise 0001")
+	}
+	transport := &fixtureTransport{t: t, live: []byte(fmt.Sprintf(`{"liveScoring":{"week":"12","matchup":{"franchise":[{"id":"0001","isHome":"1","score":"0","gameSecondsRemaining":"0","players":{"player":[{"id":%q,"status":"starter"}]}},{"id":"0002","isHome":"0","score":"0","gameSecondsRemaining":"0","players":{"player":[]}}]}}}`, starter))}
+	client, err := mfl.New("api", 100000, mfl.WithTransport(transport))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &mflsource.Source{Client: client, ID: fixture.LeagueID,
+		Now: func() time.Time { return migrationtest.ReadAt }, Held: func() map[string]string { return fixture.Players }}
+	candidate, err := source.Read(t.Context(), migrationtest.ReadAt)
+	if err != nil || len(candidate.Problems) > 0 {
+		t.Fatalf("source candidate: %v, %v", candidate.Problems, err)
+	}
+	if len(candidate.Plan.Lineups) != 1 || candidate.Plan.Lineups[0].Week != 12 ||
+		candidate.Plan.Lineups[0].Franchise != "franchise.01" || len(candidate.Plan.Lineups[0].Starters) != 1 ||
+		candidate.Plan.Lineups[0].Starters[0] != starter || transport.writes != 0 {
+		t.Fatalf("current lineup plan: %+v; MFL writes=%d", candidate.Plan.Lineups, transport.writes)
 	}
 }
 
