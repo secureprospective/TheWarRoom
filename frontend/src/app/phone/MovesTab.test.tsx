@@ -58,7 +58,7 @@ describe('MovesTab', () => {
     await tab(/Waivers/);
     expect(view.textContent).toContain('Waiver order: 3 of 10 · Reverse standings');
     expect(view.textContent).toContain('Pending');
-    expect(view.textContent).toContain('Reorder and cancel: Not available yet');
+    expect(view.querySelector('[aria-label="Cancel claim"]')).not.toBeNull();
     await tab(/Trades/);
     expect(view.textContent).toContain('From Gridlock');
     expect(view.textContent).toContain('You get Bolt');
@@ -162,6 +162,41 @@ describe('MovesTab', () => {
     expect(sent.map(r => r.mode)).toEqual(['preview', 'execute']);
     expect(view.querySelector('dialog')).toBeNull();
     expect(view.textContent).toContain('Offer sent to Gridlock');
+  });
+  it('claims: reorder sends waivers.claim.order.set, cancel sends waivers.claim.cancel', async () => {
+    const port = service();
+    const two = loaded();
+    two.waivers.value!.claims.push({ id: 'c2', player: 'p1', name: 'Ace Runner', words: 'Pending' });
+    const view = await show(async () => two, port);
+    await tab(/Waivers/);
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+    await press('Move down');
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+    const order = port.mock.calls.map(([r]) => r).filter(r => r.command === 'waivers.claim.order.set');
+    expect(order[0]?.mode).toBe('preview');
+    expect(order[0]?.arguments).toMatchObject({ args: { waiver: { franchise: 'mine', order: ['c2', 'c1'] } },
+      expected: 5 });
+  });
+  it('claims: cancel previews waivers.claim.cancel for that claim', async () => {
+    const port = service();
+    const view = await show(async () => loaded(), port);
+    await tab(/Waivers/);
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+    await press('Cancel claim');
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
+    const sent = port.mock.calls.map(([r]) => r).filter(r => r.command === 'waivers.claim.cancel');
+    expect(sent[0]?.arguments).toMatchObject({ args: { waiver: { franchise: 'mine', claim: 'c1' } } });
+    expect(view.textContent).toContain('Pending');
+  });
+  it('trades: a held trade shows its public hold reason; bench capacity shows open slots', async () => {
+    const held = loaded();
+    held.openBench = 2;
+    held.trades.value!.offers = [{ ...offer,
+      reasons: ['Review held for 24 hours: checking both owners'] } as never];
+    const view = await show(async () => held);
+    expect(view.textContent).toContain('Bench: 2 open slots');
+    await tab(/Trades/);
+    expect(view.textContent).toContain('Review held for 24 hours: checking both owners');
   });
   it('counter opens the trade sheet loaded with the offer', async () => {
     const port = service();

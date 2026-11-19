@@ -11,6 +11,8 @@ import { addHQTrade, hqEvents } from '../shell/hqReads';
 import { absent, unavailable } from '../shell/hqModel';
 import { readHostedPlayerNotes, setHostedPlayerNote } from '../shell/playerPersonal';
 import { canMoveTo, moveStarters, myPicks, teamView, type TeamPick, type TeamRow } from './teamModel';
+import { parseHostedRoster } from '../commissioner/hostedReadings';
+import { readPlayerStatus, statusWords, type PlayerStatus } from './playerStatus';
 import './TeamTab.css';
 
 const fixed = (n?: number) => n === undefined ? '–' : n.toFixed(1);
@@ -32,6 +34,18 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
       .catch(() => { if (live) setGames(undefined); });
     return () => { live = false; };
   }, [league, port, revision]);
+  const [openBench, setOpenBench] = useState<number>();
+  const [status, setStatus] = useState<PlayerStatus>();
+  useEffect(() => {
+    let live = true;
+    setOpenBench(undefined);
+    port({ command: 'native.assets.read', mode: 'read', arguments: { league } })
+      .then(r => { if (live) setOpenBench(parseHostedRoster(r.data).openBenchSlots?.[mine]); })
+      .catch(() => { if (live) setOpenBench(undefined); });
+    readPlayerStatus(league, port).then(s => { if (live) setStatus(s); })
+      .catch(() => { if (live) setStatus(undefined); });
+    return () => { live = false; };
+  }, [league, mine, port, revision]);
   const editor = useNativeLineup(league, mine, reading?.lineup, port, true);
   const [moving, setMoving] = useState<string>();
   const [sheet, setSheet] = useState<{ kind: 'card'; row: TeamRow } | { kind: 'picks' }>();
@@ -62,7 +76,8 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
       {r.id ? <HQAct className="team-row__who" label={`${r.name} player card`}
         onAction={() => from ? tap(r) : setSheet({ kind: 'card', row: r })}>
         <b>{r.name}</b><em className={r.state}>{r.position !== r.slot && r.section === 'starters'
-          ? `${r.position} · ` : ''}{r.words}</em></HQAct>
+          ? `${r.position} · ` : ''}{r.words}{status?.facts.get(r.id)
+          ? ` · ${statusWords(status.facts.get(r.id)!)}` : ''}</em></HQAct>
         : <span className="team-row__who"><b>{r.name}</b><em>{can ? 'Tap to place' : ''}</em></span>}
       <span className={`team-row__pt ${r.state}`}
         title={r.range ? `Last 6 games: low ${r.range[0]} · high ${r.range[1]}` : undefined}>
@@ -101,7 +116,8 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
     {reading.errors.length > 0 && <p className="team-tab__note" title={reading.errors.join(' · ')}>
       Some reads are unavailable: {reading.errors[0]}</p>}
     <Group title="Starters" aside={`${view.locked} locked · games started`}>{view.starters.map(row)}</Group>
-    <Group title="Bench" aside={`${view.bench.length} players`}>
+    <Group title="Bench" aside={openBench === undefined ? `${view.bench.length} players`
+      : `${view.bench.length} of ${view.bench.length + openBench}`}>
       {view.bench.length ? view.bench.map(row) : <p className="team-tab__note">No bench players.</p>}</Group>
     <Group title="Injured reserve" aside={view.irOutsideBench
       ? "doesn't count toward the bench" : 'counts toward the roster'}>
@@ -111,7 +127,7 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
     {sheet?.kind === 'picks' && <TeamSheet title="My draft picks" onClose={() => setSheet(undefined)}>
       <PicksList league={league} mine={mine} port={port} /></TeamSheet>}
     {sheet?.kind === 'card' && <TeamSheet title="Player" onClose={() => setSheet(undefined)}>
-      <PlayerSheet row={sheet.row} reading={reading} league={league} port={port}
+      <PlayerSheet row={sheet.row} reading={reading} league={league} port={port} status={status}
         canMove={editable && sheet.row.section !== 'ir' && !sheet.row.locked}
         onMove={() => { setSheet(undefined); setMoving(sheet.row.key); }}
         onTrade={() => { setSheet(undefined);
@@ -150,14 +166,16 @@ function PicksList({ league, mine, port }: { league: string; mine: string; port:
   </>;
 }
 
-function PlayerSheet({ row, reading, league, port, canMove, onMove, onTrade }: {
-  row: TeamRow; reading: NativeHQ; league: string; port: HostedPort; canMove: boolean;
+function PlayerSheet({ row, reading, league, port, status, canMove, onMove, onTrade }: {
+  row: TeamRow; reading: NativeHQ; league: string; port: HostedPort; status?: PlayerStatus; canMove: boolean;
   onMove: () => void; onTrade: () => void;
 }) {
   const id = row.id!;
   const weeks = reading.playerForm?.[id] ?? [];
   const max = Math.max(1, ...weeks.map(w => w.points));
-  const status = reading.snapshot.rosters.value.flatMap(r => r.players).find(p => p.id === id)?.rosterStatus;
+  const injuries = status;
+  const rosterStatus = reading.snapshot.rosters.value.flatMap(r => r.players)
+    .find(p => p.id === id)?.rosterStatus;
   const [note, setNote] = useState<{ text: string; at?: string; saved: string }>();
   const latest = useRef<string>();
   useEffect(() => {
@@ -198,9 +216,12 @@ function PlayerSheet({ row, reading, league, port, canMove, onMove, onTrade }: {
       onChange={e => setNote({ ...(note ?? { saved: '' }), text: e.target.value, saved: '' })}
       onBlur={() => { void save(); }} />{note?.saved && <small role="status">{note.saved}</small>}</div>
     <div className="team-lbl">Status</div>
-    <div className="team-card__s"><em>ROSTER</em><p><b>Status</b> {status === 'IR' ? 'Injured reserve'
-      : status === 'TAXI_SQUAD' ? 'Taxi squad'
-      : status === 'ROSTER' ? 'Active roster' : unavailable}</p></div>
+    <div className="team-card__s"><em>ROSTER</em><p><b>Status</b> {rosterStatus === 'IR' ? 'Injured reserve'
+      : rosterStatus === 'TAXI_SQUAD' ? 'Taxi squad'
+      : rosterStatus === 'ROSTER' ? 'Active roster' : unavailable}</p></div>
+    <div className="team-card__s"><em>NFL</em><p><b>Injury</b> {!injuries ? unavailable
+      : injuries.facts.get(id) ? statusWords(injuries.facts.get(id)!)
+        : injuries.state === 'unavailable' ? unavailable : 'No injury designation'}</p></div>
     <div className="team-card__a">
       <HQAct className="team-key" disabled={!canMove} onAction={onMove}>
         {row.locked ? 'Locked' : 'Move'}</HQAct>

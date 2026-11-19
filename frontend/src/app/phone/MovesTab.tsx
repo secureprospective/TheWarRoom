@@ -4,7 +4,7 @@ import { Review } from '../commissioner/HostedReview';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
 import { parseHostedTrades, parseHostedWaivers } from '../commissioner/hostedMarkets';
 import { createHostedLeagueRoom, type HostedPort } from '../commissioner/hostedRoom';
-import { reviewHostedOwnerTrade } from '../commissioner/HostedWorkflows';
+import { reviewHostedClaimChange, reviewHostedOwnerTrade } from '../commissioner/HostedWorkflows';
 import type { NativeRequest } from '../commands/native';
 import { HQAct } from '../shell/HQAct';
 import type { LeagueChoice } from '../shell/leaguePicker';
@@ -22,12 +22,13 @@ type Part<T> = { value?: T; error?: string };
 export type MovesReading = {
   pool: Part<MovesPlayer[]>;
   roster?: MovesRoster;
+  /** openBench is this seat's open bench slots from native.assets.read, when the read holds it. */
+  openBench?: number;
   waivers: Part<{ revision: number; place?: number; total: number; source: string; method: string;
     claims: { id: string; player: string; name: string; words: string }[] }>;
   trades: Part<{ revision: number; notes: string[]; offers: Offer[] }>;
 };
 const POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
-const NOT_YET = 'Not available yet';
 const message = (cause: unknown) => cause instanceof Error ? cause.message : String(cause);
 async function part<T>(read: () => Promise<T>): Promise<Part<T>> {
   try { return { value: await read() }; } catch (cause) { return { error: message(cause) }; }
@@ -63,6 +64,7 @@ export async function readMoves(league: string, mine: string, port: HostedPort):
   const w = waivers.value;
   return {
     pool: pool ?? { error: roster.error },
+    ...(r?.openBenchSlots?.[mine] !== undefined ? { openBench: r.openBenchSlots[mine] } : {}),
     ...(r ? { roster: { revision: r.revision, writable: r.writable, football: r.football,
       mine: r.players.filter(p => p.franchise === mine).map(p => ({ id: p.id, name: p.name })) } } : {}),
     waivers: w ? { value: { revision: w.revision,
@@ -143,8 +145,9 @@ export function MovesTab({ league, port = hostedWorkflow, read = readMoves,
     {done && <p className="mv4-done" role="status">{done}</p>}
     {segment === 'players' && <Players reading={reading.pool} search={search} setSearch={setSearch}
       position={position} setPosition={setPosition} open={player => setSheet({ kind: 'player', player })}
-      move={move} canAdd={Boolean(reading.roster?.writable)} />}
-    {segment === 'waivers' && <Waivers reading={reading.waivers} />}
+      move={move} canAdd={Boolean(reading.roster?.writable)} openBench={reading.openBench} />}
+    {segment === 'waivers' && <Waivers reading={reading.waivers} league={league.id} mine={mine} port={port}
+      onChanged={() => setRevision(n => n + 1)} />}
     {segment === 'trades' && <Trades reading={reading.trades} league={league.id} mine={mine} port={port}
       onChanged={() => setRevision(n => n + 1)} onTrade={deal => setSheet({ kind: 'trade', deal })} />}
     {sheet && !context && <p role={contextError ? 'alert' : 'status'}>
@@ -161,15 +164,17 @@ export function MovesTab({ league, port = hostedWorkflow, read = readMoves,
   </section>;
 }
 
-function Players({ reading, search, setSearch, position, setPosition, open, move, canAdd }: {
+function Players({ reading, search, setSearch, position, setPosition, open, move, canAdd, openBench }: {
   reading: MovesReading['pool']; search: string; setSearch: (v: string) => void;
   position: string; setPosition: (v: string) => void; open: (p: MovesPlayer) => void;
-  move: (p: MovesPlayer) => void; canAdd: boolean }) {
+  move: (p: MovesPlayer) => void; canAdd: boolean; openBench?: number }) {
   const shown = useMemo(() => (reading.value ?? []).filter(p =>
     (position === 'ALL' || p.position === position)
     && p.name.toLowerCase().includes(search.trim().toLowerCase())), [reading, search, position]);
   if (!reading.value) return unavailableLine(reading.error);
   return <>
+    {openBench !== undefined && <p className="mv4-note">Bench: {openBench === 0
+      ? 'full · adding a player needs a drop' : `${openBench} open slot${openBench === 1 ? '' : 's'}`}</p>}
     <div className="mv4-search"><input type="search" aria-label="Search players" placeholder="Search players"
       value={search} onChange={event => setSearch(event.target.value)} /></div>
     <div className="mv4-chips">{POSITIONS.map(p => <HQAct key={p} className={position === p ? 'on' : ''}
@@ -186,17 +191,41 @@ function Players({ reading, search, setSearch, position, setPosition, open, move
   </>;
 }
 
-function Waivers({ reading }: { reading: MovesReading['waivers'] }) {
+function Waivers({ reading, league, mine, port, onChanged }: { reading: MovesReading['waivers'];
+  league: string; mine: string; port: HostedPort; onChanged: () => void }) {
+  const room = useMemo(() => createHostedLeagueRoom(league, port), [league, port]);
+  const state = room.use();
+  const [error, setError] = useState('');
+  useEffect(() => { void room.refresh(); return room.dispose; }, [room]);
   if (!reading.value) return unavailableLine(reading.error);
   const w = reading.value;
+  const change = (c: Parameters<typeof reviewHostedClaimChange>[4]) => {
+    setError('');
+    void reviewHostedClaimChange(room, league, mine, w.revision, c).catch(cause => setError(message(cause)));
+  };
+  const ids = w.claims.map(c => c.id);
+  const swap = (i: number, j: number) => {
+    const order = [...ids];
+    [order[i], order[j]] = [order[j], order[i]];
+    change({ command: 'waivers.claim.order.set', order });
+  };
+  const off = !room.canChange() || Boolean(state.review);
   return <>
     <p className="mv4-note">Waiver order: {w.place ? `${w.place} of ${w.total}` : `not listed of ${w.total}`}
       {w.source ? ` · ${w.source}` : ''}</p>
     {!w.claims.length && <p className="mv4-empty">No claims. Your claims stay private until waivers run.</p>}
     <div className="mv4-list">{w.claims.map((c, i) => <div className="mv4-wc" key={c.id}>
       <b>{i + 1}</b><span><b>{c.name}</b><em>{c.words}</em></span>
-      <em className="mv4-later">Reorder and cancel: {NOT_YET}</em>
+      <span className="mv4-ud">
+        <HQAct label="Move up" disabled={off || i === 0} onAction={() => swap(i, i - 1)}>▲</HQAct>
+        <HQAct label="Move down" disabled={off || i === ids.length - 1}
+          onAction={() => swap(i, i + 1)}>▼</HQAct>
+        <HQAct label="Cancel claim" disabled={off}
+          onAction={() => change({ command: 'waivers.claim.cancel', claim: c.id })}>✕</HQAct></span>
     </div>)}</div>
+    {error && <p role="alert">{error}</p>}
+    {state.error && <p role="alert">{state.error}</p>}
+    {state.review && <Review room={room} onConfirmed={onChanged} />}
   </>;
 }
 
@@ -232,7 +261,8 @@ function Trades({ reading, league, mine, port, onChanged, onTrade }: { reading: 
         <h4><span>{incoming ? 'From' : 'To'} {other || offer.id}</span><em>{offer.expires}</em></h4>
         <p className="mv4-words">{offer.words}</p>
         <ul>{offer.details.map((d, i) => <li key={i}>{d}</li>)}</ul>
-        <p className="mv4-note">Hold reason: {NOT_YET}</p>
+        {(offer.reasons ?? []).filter(reason => reason.startsWith('Review held')).map(reason =>
+          <p className="mv4-note mv4-hold" key={reason}>{reason}</p>)}
         <div className="mv4-acts">
           {need && <HQAct className="yes" disabled={!room.canChange()}
             onAction={() => act(offer, 'trade.accept')}>Accept</HQAct>}

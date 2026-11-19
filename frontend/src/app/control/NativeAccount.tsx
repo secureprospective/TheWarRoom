@@ -55,6 +55,12 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [activeLeagueId, setActiveLeagueId] = useState<string>();
   const [activeEntry, setActiveEntry] = useState<ThinHomeEntry>('hq');
   const [phoneTab, setPhoneTab] = useState<PhoneTab>('today');
+  const [phoneBadges, setPhoneBadges] = useState<Partial<Record<PhoneTab, number>>>({});
+  const badge = useMemo(() => {
+    const set = (tab: PhoneTab) => (count: number) =>
+      setPhoneBadges(current => current[tab] === count ? current : { ...current, [tab]: count });
+    return { today: set('today'), team: set('team'), league: set('league') };
+  }, []);
   const [phoneBrief, setPhoneBrief] = useState<{ leagueId: string; brief: HomeBrief; mine: string }>();
   const automaticEntry = useRef(false);
   const admittedLeagues = useMemo<LeagueChoice[]>(() => {
@@ -201,7 +207,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
-    {homeReady && <PhoneAppFrame enabled={browser} activeTab={phoneTab}
+    {homeReady && <PhoneAppFrame enabled={browser} activeTab={phoneTab} badges={phoneBadges}
       leagues={admittedLeagues} selectedLeagueId={selectedPhoneLeagueId} weekLabel={phoneWeekLabel}
       askBrief={currentPhoneBrief?.brief} askMine={currentPhoneBrief?.mine}
       accountName={signedInName || undefined} accountPending={pending}
@@ -218,19 +224,20 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           .catch(() => {});
       }} homeReadSource={thinHome} tabs={{
         today: <Suspense fallback={<p role="status">Opening Today…</p>}>
-          <TodayTab leagues={admittedLeagues} onOpen={(league, entry) => {
+          <TodayTab leagues={admittedLeagues} onNow={badge.today} onOpen={(league, entry) => {
             if (browser && league.id !== admission?.league) setView(selectBrowserLeague(league.id));
             setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
           }} /></Suspense>,
         team: admission?.franchise
-          ? <TeamTab league={admission.league} mine={admission.franchise} /> : undefined,
+          ? <TeamTab league={admission.league} mine={admission.franchise}
+            onByes={badge.team} /> : undefined,
         live: liveTab,
         moves: <Suspense fallback={<p role="status">Opening Moves…</p>}>
           <MovesTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)} />
         </Suspense>,
         league: <Suspense fallback={<p role="status">Opening League…</p>}>
           <LeagueTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)}
-            onTrade={() => setPhoneTab('moves')} onWatch={() => setPhoneTab('live')}
+            onOpenJobs={badge.league} onTrade={() => setPhoneTab('moves')} onWatch={() => setPhoneTab('live')}
             onControlRoom={() => {
               setActiveEntry('control');
               if (admission) setActiveLeagueId(admission.league);

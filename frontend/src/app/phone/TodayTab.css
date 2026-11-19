@@ -16,7 +16,7 @@
 .today6__grp { background: var(--today-mat);
   box-shadow: inset 0 1px 0 hsl(220 4% 18%), 0 2px 0 var(--phone-black); }
 .today6__note { margin: 0; padding: 12px; font-size: 12px; color: var(--phone-ink2); }
-.today6__job { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px;
+.today6__job { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px;
   min-height: 56px; padding: 6px 6px 6px 12px; border-top: 1px solid var(--today-rule); }
 .today6__job:first-child { border-top: 0; }
 .today6__job:nth-of-type(even) { background: var(--today-zebra); }
@@ -53,3 +53,4 @@
   color: var(--phone-blue); }
 .today6__live.is-quiet > i { color: var(--phone-ink3); }
 .today6__boards { min-width: 0; max-width: 100%; overflow-x: hidden; }
+.today6 .today6__clock { min-width: 44px; padding: 0; display: grid; place-items: center; }

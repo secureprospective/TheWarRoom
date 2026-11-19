@@ -20,6 +20,10 @@ vi.mock('../shell/hqNativeLineup', () => ({
     changed: [], message: '', assign: vi.fn(), discard: vi.fn(), save: vi.fn(), state: {} }),
   NativeLineupReview: () => null,
 }));
+vi.mock('../commissioner/hostedReadings', async original => ({
+  ...(await original<object>()),
+  parseHostedRoster: (data: { open?: number }) => ({ openBenchSlots: { mine: data.open } }),
+}));
 const { TeamTab } = await import('./TeamTab');
 
 const later = new Date(Date.now() + 86_400_000).toISOString();
@@ -135,4 +139,30 @@ it('shows the unavailable words when the reads fail', async () => {
   const page = await render();
   expect(page.textContent).toContain('Not available yet');
   expect(page.textContent).not.toContain('My Squad');
+});
+
+it('bench shows N of capacity; injury facts on rows and the card', async () => {
+  read.value = hq();
+  const port = vi.fn(async (request: { command: string }) => {
+    if (request.command === 'native.assets.read') return { label: '', writable: true, football: '',
+      data: { open: 5 } };
+    if (request.command === 'nfl.player-status.read') return { label: '', writable: false, football: '',
+      data: { league: 'L', state: 'available', season: 2026, fetchedAt: '2026-11-18T15:00:00Z',
+        players: [{ player: '0103', designation: 'Questionable', bodyPart: 'Ankle' }] } };
+    throw new Error('offline');
+  });
+  const page = await render(port as never);
+  await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+  expect(page.textContent).toContain('Bench 1 of 6');
+  expect(page.querySelector('[data-row="bench-0"]')?.textContent).toContain('Questionable · Ankle');
+  await act(async () => (page.querySelector('[aria-label="Rb Bench player card"]') as HTMLElement).click());
+  expect(document.querySelector('dialog')?.textContent).toContain('Injury Questionable · Ankle');
+});
+
+it('without those reads the bench counts players and injury is unavailable', async () => {
+  read.value = hq();
+  const page = await render();
+  expect(page.textContent).toContain('Bench 1 players');
+  await act(async () => (page.querySelector('[aria-label="Rb Bench player card"]') as HTMLElement).click());
+  expect(document.querySelector('dialog')?.textContent).toContain('Injury Not available yet');
 });
