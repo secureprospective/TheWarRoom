@@ -32,3 +32,10 @@
 - Next: commit, push through pre-push, open PR to `bundle/b9`, wait for CI.
 - Blocked on: pre-push and PR CI.
 - Tried and rejected: none.
+
+- Baton: Bee, 2026-11-18; B9-2 implementation complete, PR #397 open into `bundle/b9`.
+- State: commit `b3477a5e3` is pushed; pre-push verify and every PR check passed. No merge requested.
+- Evidence: full Vitest 147/1005, tsc, member-safe activity race tests, 390px CSS test, PR checks green.
+- Next: leave PR for review.
+- Blocked on: review/merge decision.
+- Tried and rejected: none.
