@@ -24,3 +24,7 @@
 - Next: Run focused tests, full Vitest, frontend typecheck and pre-push/PR workflow; perform 390x844 and 1280px browser checks if available.
 - Blocked on: none.
 - Tried and rejected: no new workflow or data source; layout-only change reuses hosted reads and guarded actions.
+
+## Bee — pulse-b9cr2 closeout
+- State: PR #391 open against `bundle/b9`; all CI checks green. Full Vitest (995), tsc, build and pre-push verify passed.
+- Phone visual emulation was not run. `tidy-check.sh` reports unrelated active lane `b9cr3` (pid 2186398) and its adb server (pid 2189893); left both untouched. Lane owner should file KEEP metadata for its scratch folder.
