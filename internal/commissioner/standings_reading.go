@@ -21,6 +21,7 @@ type StandingRow struct {
 	Losses         int                 `json:"losses"`
 	Ties           int                 `json:"ties"`
 	Record         string              `json:"record"`
+	Streak         string              `json:"streak,omitempty"`
 	ComputedRecord string              `json:"computedRecord,omitempty"`
 	PointsFor      leaguerules.Decimal `json:"pointsFor"`
 	PointsWords    string              `json:"pointsWords"`
@@ -202,7 +203,9 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 	input := competition.RankInput{Teams: teams, Games: counted.games, AllPlay: counted.allPlay, Points: counted.points,
 		Criteria: rules.Standings.Criteria.Value}
 	computed := competition.RankStandings(input)
+	streaks := currentStreaks(counted.games)
 	out.Computed, out.level = standingRows(computed, teams, counted.points, nil), computed.Level
+	applyStreaks(out.Computed, streaks)
 	out.NoData = computed.Skipped
 	out.counted, out.teams, out.criteria = counted, teams, rules.Standings.Criteria.Value
 	out.Decided, out.Pending, out.Through, out.Status = counted.decided, counted.pending, counted.through, "Ranked"
@@ -227,6 +230,7 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 	stands := competition.RankStandings(input)
 	view := &StandingsOverrideView{Records: adjustments.Records, Order: adjustments.Order}
 	view.Rows = standingRows(stands, teams, counted.points, &computed)
+	applyStreaks(view.Rows, streaks)
 	view.Words = "The commissioner's records stand beside the computed standings"
 	if adjustments.Order != nil {
 		view.Rows = overrideOrderRows(view.Rows, *adjustments.Order)
@@ -234,6 +238,46 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 	}
 	out.Override, out.overrideLevel = view, stands.Level
 	return out, nil
+}
+
+// currentStreaks consumes decided games in schedule order; open games do not reset a streak.
+func currentStreaks(games []competition.RankGame) map[string]string {
+	type run struct {
+		result byte
+		count  int
+	}
+	runs := map[string]run{}
+	for _, game := range games {
+		home, away := byte('T'), byte('T')
+		if game.HomePoints > game.AwayPoints {
+			home, away = 'W', 'L'
+		} else if game.HomePoints < game.AwayPoints {
+			home, away = 'L', 'W'
+		}
+		for _, side := range []struct {
+			franchise string
+			result    byte
+		}{{game.Home, home}, {game.Away, away}} {
+			prior := runs[side.franchise]
+			if prior.result == side.result {
+				prior.count++
+			} else {
+				prior = run{result: side.result, count: 1}
+			}
+			runs[side.franchise] = prior
+		}
+	}
+	out := make(map[string]string, len(runs))
+	for franchise, streak := range runs {
+		out[franchise] = fmt.Sprintf("%c%d", streak.result, streak.count)
+	}
+	return out
+}
+
+func applyStreaks(rows []StandingRow, streaks map[string]string) {
+	for i := range rows {
+		rows[i].Streak = streaks[rows[i].Franchise]
+	}
 }
 
 // standingRows lists the ranking's order with each record and the lines behind its ties. When a computed

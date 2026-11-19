@@ -59,6 +59,19 @@ func (c hostedWorkflowClient) invoke(command, mode string, args []byte, status i
 	}
 	return response
 }
+func TestHostedNativeAssetsReadIncludesRuleBasedOpenBenchSlots(t *testing.T) {
+	client := workflowClient(t)
+	response := client.invoke("native.assets.read", "read", []byte(`{"league":"native.hosted"}`), 200)
+	var assets commissioner.NativeAssets
+	if err := json.Unmarshal(response.Data, &assets); err != nil {
+		t.Fatal(err)
+	}
+	if assets.OpenBenchSlots["franchise.01"] != 97 || assets.OpenBenchSlots["franchise.02"] != 99 {
+		t.Fatalf("hosted open bench slots = %v; want 97 and 99 under the held 100-player limit",
+			assets.OpenBenchSlots)
+	}
+}
+
 func (c hostedWorkflowClient) command(command string, args commissioner.RawArgs, key string) commissioner.RawCommand {
 	c.t.Helper()
 	var assets commissioner.NativeAssets

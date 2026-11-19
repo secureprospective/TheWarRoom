@@ -117,7 +117,8 @@ function Divisions({ standings, mine, onFranchise }: { standings: PulseStandings
           className={row.franchise === mine ? 'me' : undefined}>
           <td className="sd">{row.rank}</td>
           <td><FranchiseName id={row.franchise} name={row.name} open={onFranchise} /></td>
-          <td>{row.record}</td>
+          <td>{row.record}<small className={`streak${row.streak ? '' : ' unavailable'}`}>
+            {row.streak ?? 'Not held'}</small></td>
           <td title={row.pointsWords}>{row.pointsFor.toFixed(2)}</td>
         </tr>),
       ])}
@@ -141,7 +142,8 @@ function Seeds({ reading, standings, side, mine, onFranchise }: { reading: Nativ
         <td><FranchiseName id={row.franchise} name={row.name} open={onFranchise} />
           <span className="div">{row.division.toUpperCase().replace(`${side.toUpperCase()} `, '')}
             {row.bye ? ' ★ BYE' : ''}</span></td>
-        <td>{row.record}</td>
+        <td>{row.record}<small className={`streak${row.streak ? '' : ' unavailable'}`}>
+          {row.streak ?? 'Not held'}</small></td>
         <td title={row.pointsWords}>{row.pointsFor?.toFixed(2) ?? '—'}</td>
         <td>{oddsOf(reading.odds, row.franchise)?.power ?? '—'}</td>
         <td title={reading.odds?.oddsWords}>{percent(oddsOf(reading.odds, row.franchise)?.playoffOdds)}</td>

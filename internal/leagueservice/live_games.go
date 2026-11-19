@@ -2,7 +2,6 @@ package leagueservice
 
 import (
 	"fmt"
-	"slices"
 	"sync/atomic"
 	"time"
 
@@ -28,7 +27,7 @@ func (g *LiveGames) Set(games []livegame.Game, at time.Time, source string) {
 	if g == nil {
 		return
 	}
-	board := livegame.Held{Games: slices.Clone(games), At: at.UTC(), Source: source}
+	board := livegame.Held{Games: cloneLiveGames(games), At: at.UTC(), Source: source}
 	g.held.Store(&board)
 }
 
@@ -42,9 +41,41 @@ func (g *LiveGames) Board() livegame.Held {
 		return livegame.Held{Games: []livegame.Game{}}
 	}
 	board := *held
-	board.Games = slices.Clone(board.Games)
+	board.Games = cloneLiveGames(board.Games)
 	board.Stale = g.now().Sub(board.At) > liveGamesStale
 	return board
+}
+
+func cloneLiveGames(games []livegame.Game) []livegame.Game {
+	out := make([]livegame.Game, len(games))
+	for i := range games {
+		out[i] = *cloneLiveGame(&games[i])
+	}
+	return out
+}
+
+func (g *LiveGames) addHeldRecords(board *livegame.Held) {
+	if g == nil || board == nil {
+		return
+	}
+	details := g.details.Load()
+	if details == nil {
+		return
+	}
+	now := g.now()
+	for i := range board.Games {
+		game := &board.Games[i]
+		detail, ok := (*details)[game.ID]
+		if !ok || detail.Game == nil || detail.At.IsZero() || now.Sub(detail.At) > liveGamesStale {
+			continue
+		}
+		if detail.Game.Home.ID == game.Home.ID && detail.Game.Home.Record != "" {
+			game.Home.Record = detail.Game.Home.Record
+		}
+		if detail.Game.Away.ID == game.Away.ID && detail.Game.Away.Record != "" {
+			game.Away.Record = detail.Game.Away.Record
+		}
+	}
 }
 
 // NFLGames is the hosted NFL scoreboard reading: the current week's games, provisional and public.
@@ -69,6 +100,7 @@ func (a *Service) TargetNFLGames(league string) (NFLGames, error) {
 		return NFLGames{}, err
 	}
 	board := a.games.Board()
+	a.games.addHeldRecords(&board)
 	if board.Games == nil {
 		board.Games = []livegame.Game{}
 	}

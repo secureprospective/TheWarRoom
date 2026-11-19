@@ -13,6 +13,7 @@ type Team struct {
 	ID           string `json:"id"`
 	Abbreviation string `json:"abbreviation"`
 	Score        int    `json:"score"`
+	Record       string `json:"record,omitempty"`
 }
 type State struct {
 	Possession string `json:"possession"`

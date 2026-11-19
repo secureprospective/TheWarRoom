@@ -221,7 +221,8 @@ export function scoreOf(results: PulseResults | undefined, franchise: string) {
 }
 
 export type PulseSeedRow = { seed?: number; bye: boolean; kind: string; franchise: string;
-  name: string; division: string; rank: number; record: string; pointsWords: string; pointsFor?: number;
+  name: string; division: string; rank: number; record: string; streak?: string;
+  pointsWords: string; pointsFor?: number;
   mine: boolean; inField: boolean };
 
 /** seedRows is the Race standings read as a playoff field: the seeds the playoff read has set,
@@ -233,15 +234,16 @@ export function seedRows(standings: PulseStandings, bracket: PulseBracket | unde
   const seeded: PulseSeedRow[] = (field?.seeds ?? []).map(s => {
     const r = row(s.franchise);
     return { seed: s.seed, bye: s.bye, kind: s.kind, franchise: s.franchise, name: s.name,
-      division: s.division, rank: r?.rank ?? 0, record: r?.record ?? '', mine: s.franchise === mine,
-      pointsWords: r?.pointsWords ?? '', pointsFor: r?.pointsFor, inField: true };
+      division: s.division, rank: r?.rank ?? 0, record: r?.record ?? '', streak: r?.streak,
+      mine: s.franchise === mine, pointsWords: r?.pointsWords ?? '', pointsFor: r?.pointsFor,
+      inField: true };
   });
   const inField = new Set(seeded.map(s => s.franchise));
   const bubble = standings.rows.filter(r => !inField.has(r.franchise)
     && (!field || !r.conference || r.conference === conference)).map(r => ({
     bye: false, kind: '', franchise: r.franchise, name: r.name, division: r.division, rank: r.rank,
-    record: r.record, pointsWords: r.pointsWords, pointsFor: r.pointsFor, mine: r.franchise === mine,
-    inField: false }));
+    record: r.record, streak: r.streak, pointsWords: r.pointsWords, pointsFor: r.pointsFor,
+    mine: r.franchise === mine, inField: false }));
   return [...seeded, ...bubble];
 }
 
