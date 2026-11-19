@@ -1291,6 +1291,34 @@
       "owner"
     ]
   },
+  "waivers.claim.cancel": {
+    "args": {
+      "waiver": {
+        "claim": "reference.claim",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "waivers.claim.order.set": {
+    "args": {
+      "waiver": {
+        "franchise": "franchise.02",
+        "order": [
+          "reference.claim"
+        ]
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
   "waivers.process": {
     "args": {
       "waiver": {
