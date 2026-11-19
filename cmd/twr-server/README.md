@@ -85,7 +85,8 @@ This is not a deployed recovery or key-custody drill.
 twr-server hosted -db /path/to/server.db \
   -tls-cert /path/to/server.pem -tls-key /path/to/server.key \
   -totp-key-file /path/to/authenticator.key \
-  -preview-registry docs/ui/endpoint-registry.csv
+  -preview-registry docs/ui/endpoint-registry.csv \
+  -public-host league.example.org
 ```
 
 This is a separate mode, still literal-loopback-only pending the deployment work.
@@ -113,11 +114,21 @@ migration and persisted verified-alias configuration are not supplied here.
 | `/v1/native/ledger` | `protocol`, `league`; authorized ledger. |
 | `/v1/native/preview` | `protocol`, `command` (RawCommand); shared-service dry run. |
 | `/v1/native/execute` | Same command envelope; shared-service receipt, including canonical retries. |
+| `/app/` | Embedded built web client; prefers `frontend/dist-web`, otherwise `frontend/dist`. |
+| `/app/session` | Browser sign-in/status/sign-out: POST `{protocol, username, password, code?}`, GET admission, DELETE revokes. |
 
-Native routes require `Authorization: Bearer <device secret>`. Commissioners and
-all deputies also need `X-TWR-Recent-Auth: <proof>`. Credentials, setup seeds and
-proofs belong in desktop Go memory/keychain, never the webview or logs. TLS,
-no browser Origin, no query parameters, strict single-object bounded JSON and
+Desktop native routes require `Authorization: Bearer <device secret>`. Browser
+command requests instead use `__Host-twr_session` with the exact configured
+`https://<public-host>` Origin; Authorization plus cookie is refused. The cookie
+contains the same server-side owner session and expiry, never reaches JavaScript,
+and is set only after the same password/authenticator and league admission checks.
+The response contains the single `admission` object, not a bearer or league list;
+accounts admitted to multiple leagues receive HTTP 409 and must use desktop alpha.
+The browser never uses agent tokens; enrollment and the changes feed remain refused.
+Commissioners and all deputies also need `X-TWR-Recent-Auth: <proof>` on desktop
+commands; the browser keeps that proof server-side for its session. Desktop
+credentials, setup seeds and proofs belong in Go memory/keychain, never the webview
+or logs. TLS, no query parameters, strict single-object bounded JSON and
 `Cache-Control: no-store` apply. Identity/role/time fields are not accepted;
 spoofed identity headers do not select the principal.
 

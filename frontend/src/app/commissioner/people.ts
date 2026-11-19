@@ -1,4 +1,4 @@
-import { array, integer, object, text, timestamp } from '../data/parseValues';
+import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
 
 // The Go people reading (TargetCommissionerPeople). Owners get no role or invite rows from Go.
 export type PeopleSeat = {
@@ -9,15 +9,23 @@ export type PeopleVote = {
   requirement: string; endsAt: string; candidates: string[]; counts: { choice: string; ballots: number }[];
   votedFranchises: string[];
 };
+export const DEPUTY_PERMISSIONS = ['approve-stat-fixes', 'rule-on-trades', 'edit-lineups', 'move-picks',
+  'change-rules', 'run-rollover'] as const;
+export type DeputyPermission = (typeof DEPUTY_PERMISSIONS)[number];
+export type PeopleActor = { person: string; effectivePermissions: DeputyPermission[] };
 export type People = {
   league: string; name: string; revision: number; seats: PeopleSeat[];
   roles: { person: string; role: string }[];
   invites: { id: string; franchise: string; person: string; status: string }[];
   dotCount: number; dotStatus: string; votes: PeopleVote[]; succession: string;
+  actors: PeopleActor[]; yourPermissions: DeputyPermission[];
   yourRole: string; yourFranchise: string; mayChangeRules: boolean; mayGrantRoles: boolean;
   mayPostNotices: boolean;
 };
 
+function permissions(value: unknown, path: string): DeputyPermission[] {
+  return array(value, path, (permission, p) => choice(permission, p, DEPUTY_PERMISSIONS));
+}
 function flag(v: unknown, path: string): boolean {
   if (typeof v !== 'boolean') throw new Error(`${path}: expected true or false`);
   return v;
@@ -41,7 +49,8 @@ function parseVote(v: unknown, p: string): PeopleVote {
 }
 export function parsePeople(v: unknown): People {
   const keys = ['league', 'name', 'revision', 'seats', 'roles', 'invites', 'dotCount', 'dotStatus', 'votes',
-    'succession', 'yourRole', 'yourFranchise', 'mayChangeRules', 'mayGrantRoles', 'mayPostNotices'];
+    'succession', 'actors', 'yourPermissions', 'yourRole', 'yourFranchise', 'mayChangeRules', 'mayGrantRoles',
+    'mayPostNotices'];
   const r = object(v, 'League people', keys);
   return {
     league: text(r.league, 'League'), name: text(r.name, 'League name'),
@@ -63,6 +72,12 @@ export function parsePeople(v: unknown): People {
     }),
     dotCount: integer(r.dotCount, 'DOT seats'), dotStatus: text(r.dotStatus, 'DOT status'),
     votes: array(r.votes, 'Votes', parseVote), succession: text(r.succession, 'Succession'),
+    actors: array(r.actors, 'People actors', (actor, p) => {
+      const entry = object(actor, p, ['person', 'effectivePermissions']);
+      return { person: text(entry.person, p),
+        effectivePermissions: permissions(entry.effectivePermissions, p) };
+    }),
+    yourPermissions: permissions(r.yourPermissions, 'Your permissions'),
     yourRole: text(r.yourRole, 'Your role'), yourFranchise: text(r.yourFranchise, 'Your franchise'),
     mayChangeRules: flag(r.mayChangeRules, 'May change rules'),
     mayGrantRoles: flag(r.mayGrantRoles, 'May give roles'),

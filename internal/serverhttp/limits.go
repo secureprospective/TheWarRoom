@@ -140,6 +140,11 @@ func passwordBusy(w http.ResponseWriter, r *http.Request, err error) bool {
 }
 
 func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
+	return resourceLimitsWithOrigin(next, hop, originAdmissible, func(*http.Request) bool { return false })
+}
+
+func resourceLimitsWithOrigin(next http.Handler, hop netip.Addr, originAllowed func(*http.Request) bool,
+	originForbidden func(*http.Request) bool) http.Handler {
 	throttle := &authThrottle{peers: make(map[string]authWindow)}
 	inFlight := make(chan struct{}, 64)
 	authInFlight := make(chan struct{}, 6)
@@ -151,8 +156,8 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		if !originAdmissible(r) {
-			http.Error(w, "browser requests refused", http.StatusBadRequest)
+		if !originAllowed(r) {
+			http.Error(w, "browser requests refused", originRefusalStatus(r, originForbidden))
 			return
 		}
 		// Clients never select their throttle identity or assert that an insecure hop was HTTPS.
@@ -166,7 +171,8 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if strings.HasPrefix(r.URL.Path, "/v1/auth/") {
+		authRequest := strings.HasPrefix(r.URL.Path, "/v1/auth/") || (r.URL.Path == AppSessionPath && r.Method == http.MethodPost)
+		if authRequest {
 			select {
 			case authInFlight <- struct{}{}:
 				defer func() { <-authInFlight }()
@@ -185,7 +191,7 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 			return
 		}
 		budget := 5 * time.Second
-		if strings.HasPrefix(r.URL.Path, "/v1/auth/") {
+		if authRequest {
 			budget = 10 * time.Second
 			if !throttle.allow(client, time.Now()) {
 				w.Header().Set("Retry-After", "60")
@@ -198,4 +204,11 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 		r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func originRefusalStatus(r *http.Request, forbidden func(*http.Request) bool) int {
+	if forbidden(r) {
+		return http.StatusForbidden
+	}
+	return http.StatusBadRequest
 }

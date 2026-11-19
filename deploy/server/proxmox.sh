@@ -38,8 +38,19 @@ if [[ ! $vlan =~ ^[0-9]{1,4}$ ]] || (( 10#$vlan < 1 || 10#$vlan > 4094 )); then
 fi
 [[ $bridge =~ ^[a-zA-Z0-9_-]+$ && -d /sys/class/net/$bridge ]] || stop "Network bridge $bridge was not found on this host."
 [[ $storage =~ ^[a-zA-Z0-9_-]+$ && $templates =~ ^[a-zA-Z0-9_-]+$ ]] || stop 'Storage names may only use letters, numbers, - and _.'
-[[ $zone =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ ]] || stop 'The Cloudflare zone should look like example.org.'
-[[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $hostname == *."$zone" ]] || stop "The hostname should end in .$zone, like league.$zone."
+valid_dns_name() {
+  local value=$1 label
+  [[ ${#value} -le 253 && $value == *.* ]] || return 1
+  local IFS=.
+  local -a labels=()
+  read -r -a labels <<< "$value"
+  (( ${#labels[@]} >= 2 )) || return 1
+  for label in "${labels[@]}"; do
+    [[ ${#label} -le 63 && $label =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]] || return 1
+  done
+}
+valid_dns_name "$zone" && [[ $zone =~ \.[a-z]{2,}$ ]] || stop 'The Cloudflare zone should look like example.org.'
+valid_dns_name "$hostname" && [[ $hostname == *."$zone" ]] || stop "The hostname should end in .$zone, like league.$zone."
 [[ $replace == yes || $replace == no ]] || stop 'Answer yes or no to replacing a lost server.'
 if [[ $replace == yes ]]; then replace=true; else replace=false; fi
 # Terminal paste can wrap the hidden input in bracketed-paste markers or spaces.
@@ -128,12 +139,16 @@ printf '{"zone":"%s","hostname":"%s","api_token":"%s","replace":%s}\n' \
   "$zone" "$hostname" "$token" "$replace" > "$work/input.json"
 unset token
 pct push "$ctid" "$work/input.json" /root/twr-input.json --perms 0600
-pct exec "$ctid" -- env TWR_FIRST_LOAD="$first_load" sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'
+# Keep the script single-quoted so TWR_FIRST_LOAD expands inside the CT, not on this host.
+# shellcheck disable=SC2016
+pct exec "$ctid" -- env TWR_FIRST_LOAD="$first_load" sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; if [ "$TWR_FIRST_LOAD" = 0 ]; then rc-service twr-server restart; fi; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'
 # A real reboot, not merely writing an init file.
 pct reboot "$ctid"
 ready=0
 for ((attempt=0; attempt<60; attempt++)); do
   # A first-load install keeps twr-server stopped until the league is loaded; only the Tunnel must be up.
+  # The variable is intentionally expanded inside the CT, not on this host.
+  # shellcheck disable=SC2016
   if pct exec "$ctid" -- env TWR_FIRST_LOAD="$first_load" sh -ec '[ "$TWR_FIRST_LOAD" = 1 ] || rc-service twr-server status; rc-service twr-tunnel status; curl --fail --silent --max-time 2 http://127.0.0.1:20241/ready' >/dev/null 2>&1; then
     ready=1
     break

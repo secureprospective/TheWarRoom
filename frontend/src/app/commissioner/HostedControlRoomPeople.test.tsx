@@ -20,6 +20,10 @@ const people = {
   roles: [{ person: 'owner.1', role: 'commissioner' },
     { person: 'owner.2', role: 'co-commissioner' }, { person: 'owner.3', role: 'DOT' }],
   invites: [], dotCount: 1, dotStatus: 'Ready', votes: [], succession: 'Commissioner active',
+  actors: [{ person: 'owner.1', effectivePermissions: ['approve-stat-fixes', 'rule-on-trades',
+    'edit-lineups', 'move-picks', 'change-rules', 'run-rollover'] }],
+  yourPermissions: ['approve-stat-fixes', 'rule-on-trades', 'edit-lineups', 'move-picks',
+    'change-rules', 'run-rollover'],
   yourRole: 'commissioner', yourFranchise: seats[0]!.franchise, mayChangeRules: true,
   mayGrantRoles: true, mayPostNotices: true,
 };

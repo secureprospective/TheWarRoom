@@ -182,6 +182,75 @@ func TestHostedLeagueWeekAdmission(t *testing.T) {
 	}
 }
 
+func TestHostedFranchiseScheduleReadAcceptsCatalogScopeForOwner(t *testing.T) {
+	f := newHostedFixture(t, true, true)
+	owner := f.login(t, "owner", "private-password")
+	args := `{"league":"native.hosted","franchise":"franchise.02","season":2026,"localZone":"UTC"}`
+	raw := workflowRequest(t, "schedule.franchise.read", "read", args, "")
+	if err := raw.Validate(); err != nil {
+		t.Fatalf("valid catalog scope rejected: %v", err)
+	}
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, result := f.send(t, serverhttp.WorkflowPath, string(body), owner, "")
+	if status != 200 {
+		t.Fatalf("owner schedule read status %d: %s", status, result)
+	}
+	var response serverhttp.WorkflowResponse
+	if err := json.Unmarshal(result, &response); err != nil {
+		t.Fatal(err)
+	}
+	var schedule commissioner.FranchiseSchedule
+	if err := json.Unmarshal(response.Data, &schedule); err != nil {
+		t.Fatal(err)
+	}
+	if schedule.League != "native.hosted" || schedule.Franchise != "franchise.02" || schedule.Season != 2026 {
+		t.Fatalf("wrong owner schedule reading: %+v", schedule)
+	}
+
+	for _, invalid := range []string{
+		`{"league":"native.hosted","franchise":"franchise.02","season":2026}`,
+		`{"league":"native.hosted","franchise":"franchise.02","season":2026,"localZone":"UTC","at":"now"}`,
+	} {
+		request := workflowRequest(t, "schedule.franchise.read", "read", invalid, "")
+		if err := request.Validate(); err == nil {
+			t.Errorf("invalid schedule scope accepted: %s", invalid)
+		}
+	}
+}
+
+func TestHostedFranchiseScheduleReadStillRequiresLeagueMembership(t *testing.T) {
+	f := newHostedFixture(t, true, true)
+	code, err := f.enrollment.Issue(t.Context(), "native.hosted", "outsider")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.enrollment.Redeem(t.Context(), accounts.RawEnrollment{Code: code.Code,
+		Username: "outsider", Password: "private-password"}); err != nil {
+		t.Fatal(err)
+	}
+	outsider := f.login(t, "outsider", "private-password")
+	raw := workflowRequest(t, "schedule.franchise.read", "read",
+		`{"league":"native.hosted","franchise":"franchise.02","season":2026,"localZone":"UTC"}`, "")
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, bearer string
+		status       int
+	}{{"signed in without league role", outsider, 403}, {"anonymous", "", 401}} {
+		t.Run(tc.name, func(t *testing.T) {
+			status, result := f.send(t, serverhttp.WorkflowPath, string(body), tc.bearer, "")
+			if status != tc.status {
+				t.Fatalf("status %d, want %d: %s", status, tc.status, result)
+			}
+		})
+	}
+}
+
 func TestHostedNFLGameRead(t *testing.T) {
 	f := newHostedFixture(t, true, true)
 	bearer := f.login(t, "owner", "private-password")

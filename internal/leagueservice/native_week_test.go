@@ -86,7 +86,7 @@ func TestNativeWeekReadsCurrentBeforeMissingFutureDates(t *testing.T) {
 		t.Fatalf("current week should be selected before missing future dates: %+v", got)
 	}
 	unknown := read(weeks[:11])
-	if unknown.Current != nil || unknown.Message != "The NFL week dates are not held yet." {
+	if unknown.Current != nil || unknown.Message != "The current NFL week cannot be identified from this server's held schedule data. Ask the server operator to update the NFL schedule; changing the league matchup schedule will not fix Pulse." {
 		t.Fatalf("a missing current week must remain unknown rather than guessed: %+v", unknown)
 	}
 }

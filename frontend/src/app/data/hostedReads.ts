@@ -1,4 +1,4 @@
-import { parseNativeView, subscribeChanged,
+import { nativeAction, subscribeChanged,
   type NativeChanges, type NativeView } from '../control/nativeApi';
 import { createPublicReadStorage } from './clientCache';
 import { createReadSession, type ReadIdentity, type ReadTopic } from './session';
@@ -74,6 +74,10 @@ function suspend() {
   hostedReads.endSession('desktop admission changed');
   snapshot = { ...snapshot, blocked: true };
 }
+export function suspendHostedReads() {
+  suspend();
+  notify();
+}
 async function refreshView() {
   if (refreshing) { trailing = true; return; }
   refreshing = true;
@@ -81,13 +85,8 @@ async function refreshView() {
     trailing = false;
     const started = revision;
     try {
-      // Unlike startup's saved-session probe, status rechecks the current admission in Go.
-      const response = await fetch('/desktop/native', {
-        method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'status', username: '', password: '', code: '' }),
-      });
-      if (!response.ok) throw new Error('Desktop admission unavailable');
-      const view = parseNativeView(await response.json());
+      // Unlike startup's saved-session probe, status rechecks the current admission at the transport.
+      const view = await nativeAction('status');
       if (started === revision) observeView(view);
     } catch { /* A suspended identity stays hidden; ordinary refresh failures leave the screen intact. */ }
   } while (trailing);

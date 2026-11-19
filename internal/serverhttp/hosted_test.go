@@ -155,7 +155,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 		},
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}), Join: accounts.NewJoin(credentials, leagueservice.JoinSeats{Store: store}, nil),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
-			"CM-018,Franchise,What is this franchise called?,\n"}
+			"CM-018,Franchise,What is this franchise called?,\n", PublicHost: "league.example.test"}
 	if digest != "" {
 		handler.FootballDigest = digest
 		handler.Football, err = store.LoadFootball(t.Context(), digest)
