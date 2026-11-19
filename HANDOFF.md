@@ -107,3 +107,17 @@
 - Next: leave PR for review.
 - Blocked on: review/merge decision.
 - Tried and rejected: none.
+
+## Bee — pulse-sec9 security review (2026-11-19)
+- Baton: Bee, on `session/pulse-sec9-private-pref`, based on `origin/bundle/b9`.
+- State: security review source-traced for #387–#400. Member activity projection and authorization, account-owner preference route/limits, roster.add ownership and transaction path, and the Bundle 7 origin/cookie policy appear correct. The PWA service worker caches only static shell paths; Ask computes from held props and makes no request.
+- Finding: hosted account-layout sync reads/writes an account-scoped `private-account-data` preference to browser localStorage (and uses it offline), contrary to this lane's no-private-browser-storage check. Plan: add a failing-first test and remove storage fallback/persistence from hosted sync; keep legacy local-mode layout persistence.
+- Flow: authenticated session account ID → `/v1/account/preferences` → account-scoped DB row; frontend currently copies the layout into localStorage. Fix only the frontend copy; leave server persistence unchanged.
+- Next: run targeted tests, submit one PR into `bundle/b9`, record evidence in the lane report, tidy-check.
+- Blocked on: none.
+- Tried and rejected: no source edits yet.
+- Progress: the regression was observed failing first (hosted layout server responses invoked localStorage.setItem twice). Hosted layout state now uses only the server and an in-memory offline default; local-mode persistence remains in its separate branch. Added a hook-level no-storage test and made Ask's no-fetch assertion explicit. Targeted Vitest (3 files, 10 tests) and frontend TypeScript pass.
+- Waiting: `heavy-ok.sh` now reports another full `-race` suite running; will retry after 120 seconds before running the new browser-door HTTP test.
+- Additional review coverage: expanded the account-preference browser-door test to cover originless GET (POST-only route), POST/DELETE origin requirements, and Authorization-plus-cookie refusal; added a deputy-with-all-permissions roster.add denial test. The existing PWA transport test already proves account JSON routes bypass service-worker cache; Ask test now asserts zero fetch calls.
+- Hardened the hook's save branch too: localStorage writes now occur only when `enabled` is false (local mode), never merely because the hosted server store ref is temporarily unset. Hosted preference saves without an initialized store remain in-memory and report loading.
+- Go validation update: the combined race run for all `internal/serverhttp/...` and `internal/commissioner/...` packages hit the 600s tool timeout. A separate full `go test -race ./...` is now active; heavy guard blocks another race run. Next retry only the changed Go test cases once it clears, then run `make tidy-check` and finalize the PR/report.

@@ -43,29 +43,22 @@ it('a new device reads the account layout saved by the first device', async () =
     }
     throw new Error('unexpected command');
   };
-  const deviceOne = createHomeLayoutStore(port, 'home', memoryStorage());
+  const deviceOne = createHomeLayoutStore(port);
   await deviceOne.read();
   const saved: Layout = { mode: 'custom', tiles: [['cap', '1x1']], over: [], pins: { cap: true } };
   expect(await deviceOne.write(saved)).toMatchObject({ layout: saved, revision: 1, offline: false });
 
-  const secondDeviceStorage = memoryStorage();
-  secondDeviceStorage.setItem('home', JSON.stringify(defaultLayout()));
-  const deviceTwo = createHomeLayoutStore(port, 'home', secondDeviceStorage);
+  const deviceTwo = createHomeLayoutStore(port);
   expect(await deviceTwo.read()).toMatchObject({ layout: saved, revision: 1, offline: false });
 });
 
-it('uses the local copy offline and adopts the server copy on a revision conflict', async () => {
-  const storage = memoryStorage();
-  const key = 'home';
-  const saved: Layout = { mode: 'custom', tiles: [['cap', '1x1']], over: [], pins: {} };
-  storage.setItem(key, JSON.stringify(saved));
-  const offline = createHomeLayoutStore(async () => { throw new Error('offline'); }, key, storage);
-  expect(await offline.read()).toMatchObject({ layout: saved, offline: true });
+it('keeps an in-memory default while offline and adopts the server copy on conflict', async () => {
+  const offline = createHomeLayoutStore(async () => { throw new Error('offline'); });
+  expect(await offline.read()).toMatchObject({ layout: defaultLayout(), offline: true });
   const offlineEdit: Layout = { mode: 'custom', tiles: [['wire', '1x1']], over: [], pins: {} };
-  expect(await offline.write(offlineEdit)).toMatchObject({ layout: offlineEdit, offline: true,
-    cached: true });
-  expect(JSON.parse(storage.getItem(key) ?? '')).toEqual(offlineEdit);
+  expect(await offline.write(offlineEdit)).toMatchObject({ layout: offlineEdit, offline: true });
 
+  const saved: Layout = { mode: 'custom', tiles: [['cap', '1x1']], over: [], pins: {} };
   let remote: Layout = defaultLayout();
   let revision = 2;
   const port: HostedPort = async request => {
@@ -77,14 +70,8 @@ it('uses the local copy offline and adopts the server copy on a revision conflic
         data: { layout: remote, revision, conflict: true } };
     throw new Error('unexpected command');
   };
-  const device = createHomeLayoutStore(port, key, storage);
+  const device = createHomeLayoutStore(port);
   await device.read();
   const result = await device.write(saved);
   expect(result).toMatchObject({ layout: remote, revision: 2, conflict: true, offline: false });
 });
-
-function memoryStorage() {
-  const values = new Map<string, string>();
-  return { getItem: (key: string) => values.get(key) ?? null,
-    setItem: (key: string, value: string) => { values.set(key, value); } };
-}
