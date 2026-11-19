@@ -73,6 +73,8 @@ func generatedVerbs() []commandVerb {
 		{ID: "roster.cut", Label: "cut roster", Modes: []string{"preview", "execute"}},
 		{ID: "roster.add", Label: "add roster", Modes: []string{"preview", "execute"}},
 		{ID: "waivers.claim", Label: "claim waivers", Modes: []string{"preview", "execute"}},
+		{ID: "waivers.claim.order.set", Label: "Set your waiver claim order", Modes: []string{"preview", "execute"}},
+		{ID: "waivers.claim.cancel", Label: "Cancel your waiver claim", Modes: []string{"preview", "execute"}},
 		{ID: "waivers.process", Label: "process waivers", Modes: []string{"preview", "execute"}},
 		{ID: "waivers.order.set", Label: "set waivers order", Modes: []string{"preview", "execute"}},
 		{ID: "waivers.order.auto", Label: "automatically waivers order", Modes: []string{"preview", "execute"}},

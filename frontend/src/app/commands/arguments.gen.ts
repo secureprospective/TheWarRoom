@@ -2801,6 +2801,8 @@ export type WorkflowArgumentMap = {
 "roster.cut": NativeArguments<"roster.cut">;
 "roster.add": NativeArguments<"roster.add">;
 "waivers.claim": NativeArguments<"waivers.claim">;
+"waivers.claim.order.set": NativeArguments<"waivers.claim.order.set">;
+"waivers.claim.cancel": NativeArguments<"waivers.claim.cancel">;
 "waivers.process": NativeArguments<"waivers.process">;
 "waivers.order.set": NativeArguments<"waivers.order.set">;
 "waivers.order.auto": NativeArguments<"waivers.order.auto">;
@@ -2819,6 +2821,7 @@ export type WorkflowArgumentMap = {
 "contract.decisions.read": NativeArguments<"contract.decisions.read">;
 "market.wins.read": NativeArguments<"market.wins.read">;
 "league.activity.read": NativeArguments<"league.activity.read">;
+"nfl.player-status.read": NativeArguments<"nfl.player-status.read">;
 "draft.queue.read": NativeArguments<"draft.queue.read">;
 "draft.queue.set": NativeArguments<"draft.queue.set">;
 "trade.draft.read": NativeArguments<"trade.draft.read">;
