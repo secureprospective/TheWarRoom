@@ -13,6 +13,7 @@ import (
 const (
 	RosterReserve   = "roster.reserve"
 	RosterCut       = "roster.cut"
+	RosterAdd       = "roster.add"
 	WaiverClaim     = "waivers.claim"
 	WaiverProcess   = "waivers.process"
 	WaiverOrderSet  = "waivers.order.set"
@@ -21,7 +22,7 @@ const (
 )
 
 func WaiverCommand(command string) bool {
-	return slices.Contains([]string{RosterReserve, RosterCut, WaiverClaim, WaiverProcess,
+	return slices.Contains([]string{RosterReserve, RosterCut, RosterAdd, WaiverClaim, WaiverProcess,
 		WaiverOrderSet, WaiverOrderAuto, WaiverOverride}, command)
 }
 
@@ -33,6 +34,8 @@ func OwnerWaiverAction(command string) leaguerules.Action {
 		return "cut"
 	case WaiverClaim:
 		return "waiver_claim"
+	case RosterAdd:
+		return "ufa_bid"
 	}
 	return ""
 }
@@ -48,6 +51,10 @@ func (r RawWaiverArgs) Validate(command string) error {
 	switch command {
 	case RosterReserve, RosterCut:
 		if err := r.validateRosterMove(command); err != nil {
+			return err
+		}
+	case RosterAdd:
+		if err := r.validateRosterAdd(); err != nil {
 			return err
 		}
 	case WaiverClaim:
@@ -70,6 +77,20 @@ func (r RawWaiverArgs) Validate(command string) error {
 	return r.validateWaiverShape(command)
 }
 
+func (r RawWaiverArgs) validateRosterAdd() error {
+	id, err := playerid.New(r.Player)
+	if err != nil || id.String() != r.Player || strings.TrimSpace(r.Franchise) == "" || strings.TrimSpace(r.Franchise) != r.Franchise {
+		return fmt.Errorf("choose a free agent and your franchise")
+	}
+	if r.Drop != "" {
+		drop, err := playerid.New(r.Drop)
+		if err != nil || drop.String() != r.Drop || r.Drop == r.Player {
+			return fmt.Errorf("choose a different roster player to release")
+		}
+	}
+	return nil
+}
+
 func (r RawWaiverArgs) validateRosterMove(command string) error {
 	if command == RosterReserve && r.Bucket != "active" && r.Bucket != "ir" && r.Bucket != "taxi" {
 		return fmt.Errorf("choose active roster, IR or taxi")
@@ -90,6 +111,8 @@ func (r RawWaiverArgs) validateWaiverShape(command string) error {
 		expected.Player, expected.Franchise = r.Player, r.Franchise
 	case RosterCut:
 		expected.Player, expected.Franchise = r.Player, r.Franchise
+	case RosterAdd:
+		expected.Player, expected.Franchise, expected.Drop = r.Player, r.Franchise, r.Drop
 	case WaiverClaim:
 		expected.Window, expected.Franchise = r.Window, r.Franchise
 	case WaiverProcess:
@@ -116,12 +139,21 @@ func (r RawCommand) validateWaiverPlacement() error {
 	return nil
 }
 
-func waiverLabel(command string) string {
-	switch command {
+func waiverLabel(raw RawCommand) string {
+	switch raw.Command {
 	case RosterReserve:
 		return "Moved a player between the active roster and reserves"
 	case RosterCut:
 		return "Released a roster player to waivers"
+	case RosterAdd:
+		label := "Added a free agent"
+		if raw.Args.Waiver.Drop != "" {
+			label += " and released a roster player"
+		}
+		if raw.Reason != "" {
+			label += ": " + raw.Reason
+		}
+		return label
 	case WaiverClaim:
 		return "Recorded a private waiver claim"
 	case WaiverProcess:

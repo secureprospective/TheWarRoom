@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -135,6 +136,10 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 	token, err := h.Tokens.Authenticate(r.Context(), session)
 	if err != nil {
 		h.sessionFailure(w, r, err)
+		return
+	}
+	if raw.Workflow != nil && catalog.IsAccountWorkflow(raw.Workflow.Command) {
+		http.Error(w, "agent tokens cannot access account preferences", http.StatusForbidden)
 		return
 	}
 	if raw.Workflow != nil && raw.Workflow.Command == leagueservice.BackupNowCommand {

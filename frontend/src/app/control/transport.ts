@@ -99,9 +99,9 @@ export const webTransport: NativeTransport = {
   },
   workflow: async (requestBody, football) => {
     const { nativeEnvelope } = await import('../commands/native');
-    return post('/v1/native/workflow', {
-      protocol: 1, workflow: { ...nativeEnvelope(requestBody), football },
-    });
+    const path = requestBody.command.startsWith('home.layout.')
+      ? '/v1/account/preferences' : '/v1/native/workflow';
+    return post(path, { protocol: 1, workflow: { ...nativeEnvelope(requestBody), football } });
   },
   setIdentity: () => {},
   subscribeChanged() {

@@ -70,7 +70,12 @@ func initializePrivateEntriesFixture(t *testing.T, pools *db.Pools) {
  PRIMARY KEY (franchise_id, mine, kind, entity, entity_id, at), CHECK (franchise_id = mine));
  CREATE INDEX private_entries_franchise_kind ON private_entries(franchise_id, kind);
  CREATE UNIQUE INDEX private_entries_marker ON private_entries(franchise_id, mine, kind, entity, entity_id)
- WHERE kind != 'note';`)
+ WHERE kind != 'note';
+ CREATE TABLE account_home_layouts (
+ account_id TEXT PRIMARY KEY NOT NULL REFERENCES accounts(id),
+ layout TEXT NOT NULL CHECK(length(CAST(layout AS BLOB)) <= 8192),
+ revision INTEGER NOT NULL CHECK(revision > 0)
+ ) STRICT;`)
 	if err != nil {
 		t.Fatalf("create hosted private-entry fixture: %v", err)
 	}
@@ -142,7 +147,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	}
 	f.publisher = serverhttp.NewPublisher()
 	f.games = leagueservice.NewLiveGames()
-	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, HomeLayouts: credentials, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
 		BackupLeague: func(_ context.Context, league string) (leagueservice.BackupResult, error) {
 			if f.backupBusy.Load() {
 				return leagueservice.BackupResult{}, leagueservice.ErrBackupInProgress

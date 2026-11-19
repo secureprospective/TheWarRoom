@@ -8,6 +8,19 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
+func correctionTransactionKind(command string) string {
+	switch command {
+	case RosterCut:
+		return "player release"
+	case RosterAdd:
+		return "free-agent add"
+	case WaiverProcess, WaiverOverride:
+		return "waiver award"
+	default:
+		return "draft selection"
+	}
+}
+
 func correctionDescription(names *assetNames, r Record) string {
 	c := r.Command.Args.Correction
 	team := func(id string) string { return names.name(id, false) }
@@ -23,14 +36,7 @@ func correctionDescription(names *assetNames, r Record) string {
 			if original.Receipt.Entry != c.Entry {
 				continue
 			}
-			kind := "draft selection"
-			if original.Command.Command == RosterCut {
-				kind = "player release"
-			}
-			if original.Command.Command == WaiverProcess || original.Command.Command == WaiverOverride {
-				kind = "waiver award"
-			}
-			return "Reversed a recorded " + kind
+			return "Reversed a recorded " + correctionTransactionKind(original.Command.Command)
 		}
 	case CorrectProvenance:
 		via := map[string]string{"held": "the starting roster", "draft": "the rookie draft", "waiver": "a waiver claim",

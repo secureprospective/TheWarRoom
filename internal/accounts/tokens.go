@@ -75,7 +75,7 @@ func tokenName(value string) bool {
 // FUTURE-SEAM(scopes): new token powers are command-name prefix families decided here, with a test.
 // Roles, seats and credentials stay non-delegable. See docs/architecture/future-seams.md.
 func DelegableCommand(command string) bool {
-	for _, prefix := range []string{"auth.", "account.", "token.", "commish.role.", "commish.seat.", "commish.abilities.", "commish.visibility.", "commish.deputy.", "commish.succession.", "commish.commissioner.", "commish.vote."} {
+	for _, prefix := range []string{"auth.", "account.", "home.layout.", "token.", "commish.role.", "commish.seat.", "commish.abilities.", "commish.visibility.", "commish.deputy.", "commish.succession.", "commish.commissioner.", "commish.vote."} {
 		if strings.HasPrefix(command, prefix) {
 			return false
 		}

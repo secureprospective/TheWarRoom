@@ -7,8 +7,9 @@ import type { ResearchReader } from '../research/api';
 import { subscribeSeason } from '../market/api';
 import { defaultResearch, mergeBrief, readHomeBrief, retryDelay, transientErrors,
   type HomeBrief as Brief } from './homeReads';
-import { bump, current, defaultLayout, layoutKey, pack, parseLayout, place, remove, SPANS, swap,
-  type Layout, type Phase, type Span, type TileId } from './homeLayout';
+import { bump, current, defaultLayout, layoutKey, pack, place, remove, SPANS, swap,
+  type Phase, type Span, type TileId } from './homeLayout';
+import { useHomeLayout, type LayoutSyncStatus } from './homeLayoutState';
 import { clock, go, isFinal, left, myGame, myRow, nameOf, oldestAt, pts, SHORTCUT_KEYS, shortTime, TileBody,
   tileState,
   TILES, topFive } from './homeTiles';
@@ -18,6 +19,15 @@ import { pointsLabel } from '../data/nativePulse';
 
 type Tab = 'brief' | 'depth' | 'stats';
 type Alert = { id: string; level: 'red' | 'amber'; title: string; words: string; when?: string };
+function layoutSummary(
+  syncLayout: boolean, owner: boolean, status: LayoutSyncStatus, cached: boolean,
+): string {
+  if (!syncLayout || !owner) return 'saved on this device';
+  if (status === 'synced') return 'synced across devices';
+  if (status === 'saving') return 'saving to your account';
+  if (status === 'loading') return 'reading your account layout';
+  return cached ? 'using this device while server is unavailable' : 'no device copy · server unavailable';
+}
 const TRAY: Record<Tab | 'edit', string> = {
   brief: 'Home reads and links only · nothing here changes the league',
   edit: 'CUSTOMIZE · drag ⠿ to move · size buttons resize · ✕ sends to overflow · nothing commits from Home',
@@ -75,20 +85,26 @@ export function alertsOf(b: Brief, now = Date.now()): Alert[] {
 }
 
 /** HomeBrief is Home as the locked mock draws it (docs/ui/mocks/home-mock-v5.html), fed by the reads
- *  in homeReads. Layout is saved per owner per league; nothing here invents a number. */
-export default function HomeBrief({ league, mine, port, initial, research, owner = true }: { league: string;
-  mine: string; port: HostedPort; initial?: Brief; research?: ResearchReader; owner?: boolean }) {
+ *  in homeReads. Hosted layouts sync to the signed-in account; local mode stays on this device. */
+export default function HomeBrief({ league, mine, port, initial, research, owner = true, accountSync }: {
+  league: string; mine: string; port: HostedPort; initial?: Brief; research?: ResearchReader; owner?: boolean;
+  accountSync?: boolean }) {
+  const syncLayout = accountSync ?? true;
   const [b, setB] = useState<Brief>(initial ?? { at: {}, errors: {} });
   const grid = useRef<HTMLElement>(null);
   const [tab, setTab] = useState<Tab>('brief');
   const key = layoutKey(league, mine);
-  const [lay, setLay] = useState<Layout>(() => parseLayout(browserStorage()?.getItem(key)));
   const [edit, setEdit] = useState(false);
   const [pick, setPick] = useState<{ id: TileId; span: Span }>();
   const [sel, setSel] = useState<TileId>();
   const [drawer, setDrawer] = useState<'al' | 'add' | 'ov'>();
   const [card, setCard] = useState<number>();
   const [msg, setMsg] = useState('');
+  const layoutState = useHomeLayout(port, key, browserStorage(), syncLayout && owner, setMsg);
+  const lay = layoutState.layout;
+  const layoutStatus = layoutState.status;
+  const layoutCached = layoutState.cached;
+  const save = layoutState.save;
   const [drag, setDrag] = useState<TileId>();
   // pass counts reads; done is the last pass that finished. A startup timeout is not final: Home
   // re-reads when the season's data changes, and on a backing-off timer, until the error clears.
@@ -114,12 +130,6 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
   }, [retrying, done, pass]);
   // H2: a good read goes stale too; any change to the season's held data re-reads Home.
   useEffect(() => initial ? undefined : subscribeSeason(() => setPass(p => p + 1)), [initial]);
-  const save = (next: Layout) => {
-    setLay(next);
-    try { browserStorage()?.setItem(key, JSON.stringify(next)); } catch (e) {
-      setMsg(`Layout not saved · ${String(e)}`);
-    }
-  };
   const g = myGame(b, mine);
   const known = seasonPhase(b);
   const phase: Phase = known ?? 'in'; // layout only; the tag says READING until the week is known
@@ -241,7 +251,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
           <div className="lay">LAYOUT <b>{lay.mode === 'default'
             ? `DEFAULT · ${phase === 'in' ? 'IN-SEASON' : 'OFFSEASON'}` : 'MINE (custom)'}</b></div>
           <HomeAct className={`queue${edit ? ' on' : ''}`} style={{ marginLeft: 'auto' }}
-            action="customize">
+            disabled={syncLayout && owner && layoutStatus === 'loading'} action="customize">
             <span className="ql">CUSTOMIZE</span></HomeAct>
         </div>
         <section className="now" aria-label="Now">
@@ -320,7 +330,9 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
             ?
               `Grid full · click the tile to move to OVERFLOW to make room for ${TILES[pick.id].t} ` +
               pick.span.replace('x', '×')
-            : msg || TRAY[edit ? 'edit' : tab]}</span>
+            : msg || (layoutStatus === 'offline' && syncLayout && owner
+              ? layoutCached ? 'Server unavailable · showing this device’s saved layout'
+                : 'Server unavailable · no saved layout on this device' : TRAY[edit ? 'edit' : tab])}</span>
           <span className="sp" />
           <span style={{ display: 'flex', gap: 8 }}>{pick
             ? <HomeAct className="btn" action="cancel">CANCEL</HomeAct>
@@ -395,7 +407,8 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
             <div className="empty">Click a tile to see where its data comes from, how fresh it is and where it
               opens.</div></>}
           <div className="ch" style={{ borderTop: '2px solid var(--black)' }}><b>LAYOUT</b>
-            <span>saved per owner · per league</span></div><div className="kv3">
+            <span>{layoutSummary(syncLayout, owner, layoutStatus, layoutCached)}</span></div>
+          <div className="kv3">
             <span>MODE</span><span>{lay.mode === 'default' ? 'Default · follows season phase' :
               'Custom · never moves on its own'}</span>
             <span>TILES</span><span>{placed.length} on grid · {lay.over.length} in overflow</span>

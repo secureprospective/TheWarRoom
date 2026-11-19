@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -25,14 +26,15 @@ import (
 )
 
 const (
-	PeoplePath   = "/v1/native/people"
-	LoginPath    = "/v1/auth/login"
-	LedgerPath   = "/v1/native/ledger"
-	PreviewPath  = "/v1/native/preview"
-	ExecutePath  = "/v1/native/execute"
-	DispatchPath = "/v1/native/dispatch"
-	LineupPath   = "/v1/native/lineup/set"
-	PickPath     = "/v1/native/draft/pick"
+	PeoplePath            = "/v1/native/people"
+	LoginPath             = "/v1/auth/login"
+	LedgerPath            = "/v1/native/ledger"
+	PreviewPath           = "/v1/native/preview"
+	ExecutePath           = "/v1/native/execute"
+	DispatchPath          = "/v1/native/dispatch"
+	AccountPreferencePath = "/v1/account/preferences"
+	LineupPath            = "/v1/native/lineup/set"
+	PickPath              = "/v1/native/draft/pick"
 )
 
 // Hosted has no fixture fallback. Accounts live in the sign-in file and history in the league
@@ -59,15 +61,16 @@ type Hosted struct {
 	Confirmations   *Confirmations
 	Store           *history.Store
 	// Leagues finds the store holding a league; league heads and the due worker read through it.
-	Leagues    history.LeagueResolver
-	Sessions   *accounts.SessionService
-	TOTP       *accounts.TOTPService
-	Enrollment *accounts.EnrollmentService
-	Passwords  *accounts.Service
-	Join       *accounts.JoinService
-	Recovery   *accounts.RecoveryService
-	Worker     *leagueservice.DueWorker
-	Registry   string
+	Leagues     history.LeagueResolver
+	Sessions    *accounts.SessionService
+	HomeLayouts accounts.HomeLayoutRepository
+	TOTP        *accounts.TOTPService
+	Enrollment  *accounts.EnrollmentService
+	Passwords   *accounts.Service
+	Join        *accounts.JoinService
+	Recovery    *accounts.RecoveryService
+	Worker      *leagueservice.DueWorker
+	Registry    string
 	// Replies caches league-state readings per head and reading epoch; nil reads every request afresh.
 	Replies  *ReplyCache
 	Requests *RequestTally
@@ -159,7 +162,8 @@ func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
 	case DispatchPath:
 		// An older twr sends league changes here; the 426 envelope is what every client version shows as "update".
 		writeUpdateRequired(w, serverversion.App, catalogUpdate)
-	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, LineupPath, PickPath, ConfirmPath, WorkflowPath:
+	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, LineupPath, PickPath, ConfirmPath, WorkflowPath,
+		AccountPreferencePath:
 		h.native(w, r)
 	default:
 		http.NotFound(w, r)
@@ -266,6 +270,10 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	if authenticationErr != nil {
 		h.agent(w, r, rawSession, raw)
+		return
+	}
+	if raw.Workflow != nil && catalog.IsAccountWorkflow(raw.Workflow.Command) {
+		h.accountWorkflow(w, r, account.ID, *raw.Workflow)
 		return
 	}
 	principal, err := account.Principal()
@@ -751,8 +759,14 @@ func hostedOwner(policy governance.State, principal governance.Principal, record
 }
 
 func (r RawNativeRequest) matchesPath(path string) bool {
-	if path == WorkflowPath || r.Workflow != nil {
-		return path == WorkflowPath && r.Workflow != nil
+	if r.Workflow != nil {
+		if catalog.IsAccountWorkflow(r.Workflow.Command) {
+			return path == AccountPreferencePath
+		}
+		return path == WorkflowPath
+	}
+	if path == WorkflowPath || path == AccountPreferencePath {
+		return false
 	}
 	if (path == LedgerPath || path == PeoplePath) != (r.Command == nil && r.Pick == nil) {
 		return false
@@ -805,6 +819,8 @@ func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 // everything else.
 func (h Hosted) admissions(path string) []func() error {
 	switch {
+	case path == AccountPreferencePath:
+		return []func() error{h.SignInAdmission}
 	case path == JoinClaimPath:
 		return []func() error{h.SignInAdmission, h.WriteAdmission}
 	case path == AppSessionPath || strings.HasPrefix(path, "/v1/auth/") || path == PasswordPagePath || path == JoinPagePath:

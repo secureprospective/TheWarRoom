@@ -4241,6 +4241,7 @@ export namespace commissioner {
 	    priorOrder?: string[];
 	    closeAt?: time.Time;
 	    player?: NativePlayer;
+	    dropPlayer?: NativePlayer;
 	    deadCents?: number;
 	    season: number;
 	    winner?: string;
@@ -4258,6 +4259,7 @@ export namespace commissioner {
 	        this.priorOrder = source["priorOrder"];
 	        this.closeAt = this.convertValues(source["closeAt"], time.Time);
 	        this.player = this.convertValues(source["player"], NativePlayer);
+	        this.dropPlayer = this.convertValues(source["dropPlayer"], NativePlayer);
 	        this.deadCents = source["deadCents"];
 	        this.season = source["season"];
 	        this.winner = source["winner"];
@@ -4288,6 +4290,7 @@ export namespace commissioner {
 	    bucket?: string;
 	    player?: string;
 	    franchise?: string;
+	    drop?: string;
 	    window?: string;
 	    claim?: string;
 	    order?: string[];
@@ -4301,6 +4304,7 @@ export namespace commissioner {
 	        this.bucket = source["bucket"];
 	        this.player = source["player"];
 	        this.franchise = source["franchise"];
+	        this.drop = source["drop"];
 	        this.window = source["window"];
 	        this.claim = source["claim"];
 	        this.order = source["order"];

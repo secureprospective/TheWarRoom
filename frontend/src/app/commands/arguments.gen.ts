@@ -644,6 +644,7 @@ string
 "bucket"?: string;
 "player"?: string;
 "franchise"?: string;
+"drop"?: string;
 "window"?: string;
 "claim"?: string;
 "order"?: (string)[]
@@ -656,6 +657,27 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+}) | null;
+"dropPlayer"?: ({
 "contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
@@ -1277,6 +1299,7 @@ string
 "bucket"?: string;
 "player"?: string;
 "franchise"?: string;
+"drop"?: string;
 "window"?: string;
 "claim"?: string;
 "order"?: (string)[]
@@ -1289,6 +1312,27 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+}) | null;
+"dropPlayer"?: ({
 "contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
@@ -1885,6 +1929,7 @@ string
 "bucket"?: string;
 "player"?: string;
 "franchise"?: string;
+"drop"?: string;
 "window"?: string;
 "claim"?: string;
 "order"?: (string)[]
@@ -1897,6 +1942,27 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+}) | null;
+"dropPlayer"?: ({
 "contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
@@ -2709,6 +2775,7 @@ export type WorkflowArgumentMap = {
 "trade.override": NativeArguments<"trade.override">;
 "roster.reserve": NativeArguments<"roster.reserve">;
 "roster.cut": NativeArguments<"roster.cut">;
+"roster.add": NativeArguments<"roster.add">;
 "waivers.claim": NativeArguments<"waivers.claim">;
 "waivers.process": NativeArguments<"waivers.process">;
 "waivers.order.set": NativeArguments<"waivers.order.set">;
@@ -2733,6 +2800,8 @@ export type WorkflowArgumentMap = {
 "trade.draft.read": NativeArguments<"trade.draft.read">;
 "trade.draft.save": NativeArguments<"trade.draft.save">;
 "trade.draft.delete": NativeArguments<"trade.draft.delete">;
+"home.layout.read": NativeArguments<"home.layout.read">;
+"home.layout.set": NativeArguments<"home.layout.set">;
 "backup.now": NativeArguments<"backup.now">;
 };
 export type CommandArgumentMap = {

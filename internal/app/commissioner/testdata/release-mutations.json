@@ -1265,6 +1265,19 @@
       "owner"
     ]
   },
+  "roster.add": {
+    "args": {
+      "waiver": {
+        "player": "6001",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
   "waivers.claim": {
     "args": {
       "waiver": {

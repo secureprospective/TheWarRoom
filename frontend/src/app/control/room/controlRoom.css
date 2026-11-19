@@ -312,3 +312,44 @@
   .crx .hosted-act-tray button,.crx .hosted-act-tray input,.crx .hosted-act-tray select,
   .crx .hosted-act-tray textarea,.crx .hold-to-fire .act{min-height:44px}
 }
+
+@media (max-width: 699px) {
+  .crx.hosted-control-room {
+    width: 100%; min-width: 0; height: auto; min-height: 0; margin: 8px 0;
+    display: block; overflow: visible; border-inline: 0;
+  }
+  .crx.hosted-control-room .work { min-width: 0; min-height: 0; overflow: visible; }
+  .crx.hosted-control-room .ws-tabs {
+    display: flex; gap: 4px; min-width: 0; overflow-x: auto; overscroll-behavior-inline: contain;
+    padding: 4px max(8px, env(safe-area-inset-left)) 8px;
+    scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+  }
+  .crx.hosted-control-room .ws-tabs > * { flex: 0 0 auto; min-height: 44px; }
+  .crx.hosted-control-room .ws-tabs .hosted-control-refresh { margin-left: 0; }
+  .crx.hosted-control-room .hosted-control-content {
+    min-width: 0; min-height: 0; overflow: visible; padding: 8px;
+    align-items: stretch; overflow-wrap: anywhere;
+  }
+  .crx.hosted-control-room .hosted-jobs-column,
+  .crx.hosted-control-room .hosted-season,
+  .crx.hosted-control-room .hosted-control-league { width: 100%; min-width: 0; }
+  .crx.hosted-control-room .cr-panel { min-width: 0; max-width: 100%; }
+  .crx.hosted-control-room .cr-panel button,
+  .crx.hosted-control-room .league-form button,
+  .crx.hosted-control-room .hosted-control-content button { min-height: 44px; }
+  .crx.hosted-control-room .hosted-season .cr-panel > div { display: flex; flex-wrap: wrap; gap: 6px; }
+  .crx.hosted-control-room .hosted-season .cr-panel li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .crx.hosted-control-room .league-form { min-width: 0; }
+  .crx.hosted-control-room .league-form label,
+  .crx.hosted-control-room .league-form input,
+  .crx.hosted-control-room .league-form select,
+  .crx.hosted-control-room .league-form textarea { width: 100%; min-width: 0; }
+  .crx.hosted-control-room .league-form input[type="checkbox"] { width: 24px; min-height: 24px; }
+  .crx.hosted-control-room .cr-seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .crx.hosted-control-room .cr-seg > * { flex: 1 1 120px; min-height: 44px; }
+  .crx.hosted-control-room .cr-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .crx.hosted-control-room .cr-chips > * { min-height: 44px; }
+  .crx.hosted-control-room .cr-led { min-width: 0; overflow-wrap: anywhere; }
+  .crx.hosted-control-room .cr-led > div:not(.cr-chips) { display: grid; grid-template-columns: 1fr; gap: 4px; }
+  .crx.hosted-control-room .insp { display: none; }
+}

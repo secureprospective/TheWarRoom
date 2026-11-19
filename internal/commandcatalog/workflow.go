@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
@@ -186,7 +187,8 @@ type workflowInput interface {
 		*leagueservice.RawDraftQueueSet | *leagueservice.RawPlayerNotesScope | *leagueservice.RawPlayerNoteSet |
 		*leagueservice.RawPlayerWatchReadScope | *leagueservice.RawPlayerWatchSet | *leagueservice.RawPlayerWatchOrder |
 		*leagueservice.RawTradeDraftScope | *leagueservice.RawTradeDraftSave | *leagueservice.RawTradeDraftDelete |
-		*leagueservice.RawBackupNow | *commissioner.RawLeagueActivityScope
+		*leagueservice.RawBackupNow | *accounts.RawHomeLayoutRead | *accounts.RawHomeLayoutSet |
+		*commissioner.RawLeagueActivityScope
 }
 
 func decodeWorkflow[T workflowInput](body []byte, raw T) error {
@@ -211,6 +213,9 @@ func (r RawWorkflow) League() (string, error) {
 	if err := r.Validate(); err != nil {
 		return "", err
 	}
+	if IsAccountWorkflow(r.Command) {
+		return "", nil
+	}
 	var scope struct {
 		League string `json:"league"`
 	}
@@ -232,7 +237,7 @@ type workflowOutput interface {
 		market.ContractQuote | market.WhatIfStack | market.ContractDecisions | leagueservice.DraftQueue |
 		leagueservice.PlayerNotes | leagueservice.PlayerWatchList | leagueservice.PlayerPrivateChange |
 		leagueservice.TradeDraftList | leagueservice.SavedTradeDraft | leagueservice.TradeDraftDeleted |
-		leagueservice.BackupResult | commissioner.LeagueActivity
+		leagueservice.BackupResult | accounts.HomeLayoutState | commissioner.LeagueActivity
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {
@@ -249,6 +254,9 @@ func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error)
 func RunWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
 	if err := raw.Validate(); err != nil {
 		return nil, err
+	}
+	if IsAccountWorkflow(raw.Command) {
+		return nil, fmt.Errorf("this preference requires a signed-in account")
 	}
 	return WorkflowCommands()[raw.Command].Run(ctx, service, raw)
 }
