@@ -41,8 +41,8 @@ function phoneViewport(): boolean {
 
 export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeagueId,
   weekLabel = 'Week unavailable', badges, live = false, askBrief, askMine = '', accountName,
-  accountPending = false, onSelectTab, onSelectLeague, onAuthenticator, onSignOut, homeReadSource,
-  children }: {
+  accountPending = false, commissioner = false, showControlRoom = false, onSelectTab,
+  onSelectLeague, onAuthenticator, onSignOut, onControlRoom, homeReadSource, children }: {
     enabled?: boolean;
     activeTab: PhoneTab;
     leagues: LeagueChoice[];
@@ -54,10 +54,13 @@ export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeag
     askMine?: string;
     accountName?: string;
     accountPending?: boolean;
+    commissioner?: boolean;
+    showControlRoom?: boolean;
     onSelectTab: (tab: PhoneTab) => void;
     onSelectLeague?: (leagueId: string) => void;
     onAuthenticator?: () => void;
     onSignOut?: () => void;
+    onControlRoom?: () => void;
     /** Keep Home's reads available to Ask and the week chip without filling the placeholder tab body. */
     homeReadSource?: ReactNode;
     children: ReactNode;
@@ -133,7 +136,7 @@ export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeag
       closeSheet();
   }
 
-  if (!enabled || !phone) return <>{children}</>;
+  if (!enabled || !phone || showControlRoom) return <>{children}</>;
 
   return <section className="phone-app" aria-label="The War Room phone app">
     <header className="phone-app__bar">
@@ -183,6 +186,10 @@ export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeag
             {league.id === selectedLeagueId && <span className="phone-app__selected">SELECTED</span>}
           </button>)}
         </div>
+        {commissioner && activeTab === 'league' && onControlRoom && <button
+          className="phone-app__league-row" type="button" onClick={() => {
+            setSheet(null); onControlRoom();
+          }}>Control Room</button>}
         <section className="phone-app__account" role="group" aria-labelledby="phone-app-account-title">
           <h3 id="phone-app-account-title">Account</h3>
           <div className="phone-app__league-row phone-app__account-name">

@@ -134,6 +134,38 @@ it('keeps account actions at the foot of the league sheet with the existing cont
   expect(onSignOut).toHaveBeenCalledOnce();
 });
 
+it('keeps the commissioner Control Room route outside the placeholder tab body', async () => {
+  const onControlRoom = vi.fn();
+  await renderFrame(390, <PhoneAppFrame activeTab="league" leagues={[league]}
+    selectedLeagueId={league.id} commissioner onSelectTab={() => {}} onControlRoom={onControlRoom}
+    onSelectLeague={() => {}}><p>Control Room route content</p></PhoneAppFrame>);
+  expect(host!.querySelector('.phone-app__slot h1')?.textContent).toBe('League');
+  expect(host!.textContent).not.toContain('Control Room route content');
+  await click(host!.querySelector('.phone-app__league')!);
+  const controlRoom = [...host!.querySelectorAll<HTMLButtonElement>('.phone-app__league-row')]
+    .find(button => button.textContent === 'Control Room')!;
+  await click(controlRoom);
+  expect(onControlRoom).toHaveBeenCalledOnce();
+  expect(host!.querySelector('[role="dialog"]')).toBeNull();
+
+  await act(async () => root!.render(<PhoneAppFrame activeTab="league" leagues={[league]}
+    selectedLeagueId={league.id} commissioner={false} onSelectTab={() => {}}
+    onControlRoom={onControlRoom} onSelectLeague={() => {}}><p>Control Room route content</p>
+  </PhoneAppFrame>));
+  await click(host!.querySelector('.phone-app__league')!);
+  expect([...host!.querySelectorAll('.phone-app__league-row')]
+    .some(button => button.textContent === 'Control Room')).toBe(false);
+});
+
+it('renders the existing Control Room as a separate route rather than a filled tab', async () => {
+  await renderFrame(390, <PhoneAppFrame activeTab="league" leagues={[league]}
+    selectedLeagueId={league.id} showControlRoom onSelectTab={() => {}}>
+    <p>Control Room route content</p>
+  </PhoneAppFrame>);
+  expect(host!.querySelector('.phone-app')).toBeNull();
+  expect(host!.textContent).toContain('Control Room route content');
+});
+
 it('keeps Ask on the app shell and answers only from the existing Today score reading', async () => {
   await renderFrame(390, <PhoneAppFrame activeTab="live" leagues={[league]}
     selectedLeagueId={league.id} askBrief={brief} askMine="mine" onSelectTab={() => {}}

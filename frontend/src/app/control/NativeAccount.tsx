@@ -194,8 +194,13 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     {homeReady && <PhoneAppFrame enabled={browser} activeTab={phoneTab}
       leagues={admittedLeagues} selectedLeagueId={selectedPhoneLeagueId} weekLabel={phoneWeekLabel}
       askBrief={currentPhoneBrief?.brief} askMine={currentPhoneBrief?.mine}
-      accountName={signedInName || undefined} accountPending={pending} onSelectTab={setPhoneTab}
-      onAuthenticator={() => changeScreen('authenticator')}
+      accountName={signedInName || undefined} accountPending={pending}
+      commissioner={admission?.role === 'Commissioner' || admission?.role === 'Co-commissioner'}
+      showControlRoom={Boolean(activeLeague && activeEntry === 'control')}
+      onSelectTab={setPhoneTab} onControlRoom={() => {
+        setActiveEntry('control');
+        if (admission) setActiveLeagueId(admission.league);
+      }} onAuthenticator={() => changeScreen('authenticator')}
       onSignOut={() => {
         void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget')))
           .catch(() => {});
