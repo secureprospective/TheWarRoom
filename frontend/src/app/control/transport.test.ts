@@ -6,6 +6,11 @@ import type { NativeRequest } from '../commands/native';
 
 const admission = { league: 'native.test', name: 'The League', franchise: 'franchise.01',
   franchiseName: 'Home', role: 'Owner', seats: [{ franchise: 'franchise.01', name: 'Home' }] };
+const memberships = [
+  { id: 'native.test', name: 'The League', role: 'Owner', franchise: 'franchise.01', franchiseName: 'Home' },
+  { id: 'native.second', name: 'Second League', role: 'Commissioner', franchise: '', franchiseName: '' },
+];
+const sessionResponse = { protocol: 1, admission, leagues: memberships };
 const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json' },
 });
@@ -18,7 +23,7 @@ it('selects the Wails port only when window.go exists', async () => {
 });
 
 it('restores, signs in and signs out through the cookie session without a bearer', async () => {
-  const fetcher = vi.fn().mockResolvedValue(jsonResponse({ protocol: 1, admission }));
+  const fetcher = vi.fn().mockResolvedValue(jsonResponse(sessionResponse));
   vi.stubGlobal('fetch', fetcher);
   await webTransport.startup();
   expect(fetcher.mock.calls[0][0]).toBe('/app/session');
@@ -49,20 +54,30 @@ it('runs browser startup, sign-in and sign-out through the public session API', 
     addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() });
   vi.resetModules();
   const fetcher = vi.fn()
-    .mockResolvedValueOnce(jsonResponse({ protocol: 1, admission }))
-    .mockResolvedValueOnce(jsonResponse({ protocol: 1, admission }))
+    .mockResolvedValueOnce(jsonResponse(sessionResponse))
+    .mockResolvedValueOnce(jsonResponse(sessionResponse))
+    .mockResolvedValueOnce(jsonResponse(sessionResponse))
     .mockResolvedValueOnce(new Response(null, { status: 204 }));
   vi.stubGlobal('fetch', fetcher);
   const api = await import('./nativeApi');
   const restored = await api.nativeStartup();
   expect(restored?.league).toBe('native.test');
+  expect(restored?.leagues).toEqual(memberships);
   expect((await api.nativeAction('login', 'owner', 'private-password', '123456')).franchise)
     .toBe('franchise.01');
+  const switched = api.selectBrowserLeague('native.second');
+  expect(switched.league).toBe('native.second');
+  expect(switched.role).toBe('Commissioner');
+  expect(switched.authGeneration).not.toBe(restored!.authGeneration);
+  const { hostedSnapshot } = await import('../data/hostedReads');
+  expect(hostedSnapshot().view?.league).toBe('native.second');
+  expect((await api.nativeAction('status')).league).toBe('native.second');
+  expect(() => api.selectBrowserLeague('native.unrelated')).toThrow('not admitted');
   expect((await api.nativeAction('forget')).name).toBe('');
   expect(fetcher.mock.calls.map(([path]) => path)).toEqual([
-    '/app/session', '/app/session', '/app/session',
+    '/app/session', '/app/session', '/app/session', '/app/session',
   ]);
-  expect(fetcher.mock.calls.map(([, init]) => init.method)).toEqual(['GET', 'POST', 'DELETE']);
+  expect(fetcher.mock.calls.map(([, init]) => init.method)).toEqual(['GET', 'POST', 'GET', 'DELETE']);
   for (const [, init] of fetcher.mock.calls) expect(init.credentials).toBe('same-origin');
 });
 
@@ -70,8 +85,8 @@ it('rejects a browser session response that includes bearer material', async () 
   vi.stubGlobal('window', { location: { origin: 'https://league.example' } });
   vi.resetModules();
   const fetcher = vi.fn()
-    .mockResolvedValueOnce(jsonResponse({ protocol: 1, admission }))
-    .mockResolvedValueOnce(jsonResponse({ protocol: 1, admission, bearer: 'must-not-enter-js-state' }));
+    .mockResolvedValueOnce(jsonResponse(sessionResponse))
+    .mockResolvedValueOnce(jsonResponse({ ...sessionResponse, bearer: 'must-not-enter-js-state' }));
   vi.stubGlobal('fetch', fetcher);
   const api = await import('./nativeApi');
   await api.nativeStartup();

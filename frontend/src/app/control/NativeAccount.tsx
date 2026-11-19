@@ -3,7 +3,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useS
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { surfaceActions } from '../commissioner/surfaceActions';
-import { nativeAction, type NativeAction, type NativeView } from './nativeApi';
+import { nativeAction, selectBrowserLeague, type NativeAction, type NativeView } from './nativeApi';
 import { isWebTransport } from './transport';
 import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads';
 import NativeHelpers from './NativeHelpers';
@@ -53,10 +53,12 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [phoneTab, setPhoneTab] = useState<PhoneTab>('today');
   const [phoneBrief, setPhoneBrief] = useState<{ leagueId: string; brief: HomeBrief; mine: string }>();
   const automaticEntry = useRef(false);
-  const admittedLeagues = useMemo<LeagueChoice[]>(() => admission ? [{
-    id: admission.league, name: admission.name, app: true, franchise: admission.franchise,
-    franchiseName: admission.franchiseName, role: admission.role,
-  }] : [], [admission]);
+  const admittedLeagues = useMemo<LeagueChoice[]>(() => {
+    const memberships = browser ? admission?.leagues : admission ? [{ id: admission.league,
+      name: admission.name, role: admission.role, franchise: admission.franchise,
+      franchiseName: admission.franchiseName }] : undefined;
+    return (memberships ?? []).map(league => ({ ...league, app: true }));
+  }, [admission, browser]);
   const homeReady = observed && !fence.blocked && signedIn && Boolean(admission)
     && Boolean(admission?.franchise || admission?.role === 'Commissioner'
       || admission?.role === 'Co-commissioner');
@@ -198,7 +200,9 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       accountName={signedInName || undefined} accountPending={pending}
       commissioner={admission?.role === 'Commissioner' || admission?.role === 'Co-commissioner'}
       showControlRoom={Boolean(activeLeague && activeEntry === 'control')}
-      onSelectTab={setPhoneTab} onControlRoom={() => {
+      onSelectTab={setPhoneTab} onSelectLeague={id => {
+        if (browser && id !== admission?.league) setView(selectBrowserLeague(id));
+      }} onControlRoom={() => {
         setActiveEntry('control');
         if (admission) setActiveLeagueId(admission.league);
       }} onAuthenticator={() => changeScreen('authenticator')}
@@ -207,6 +211,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           .catch(() => {});
       }} homeReadSource={thinHome} tabs={{ today: <Suspense fallback={<p role="status">Opening Today…</p>}>
         <TodayTab leagues={admittedLeagues} onOpen={(league, entry) => {
+          if (browser && league.id !== admission?.league) setView(selectBrowserLeague(league.id));
           setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
         }} /></Suspense> }}>{leagueContent}</PhoneAppFrame>}
     </div>

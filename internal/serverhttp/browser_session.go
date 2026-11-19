@@ -56,9 +56,18 @@ type BrowserAdmission struct {
 	Seats         []BrowserSeat `json:"seats"`
 }
 
+type BrowserLeague struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Role          string `json:"role"`
+	Franchise     string `json:"franchise"`
+	FranchiseName string `json:"franchiseName"`
+}
+
 type BrowserSessionResponse struct {
 	Protocol  int              `json:"protocol"`
 	Admission BrowserAdmission `json:"admission"`
+	Leagues   []BrowserLeague  `json:"leagues"`
 }
 
 type browserLeagueAdmission struct {
@@ -228,16 +237,11 @@ func (h Hosted) finishBrowserSession(w http.ResponseWriter, r *http.Request, ses
 		h.rejectNewBrowserSession(w, r, session.RawSession, http.StatusForbidden, "sign-in refused")
 		return
 	}
-	if len(admissions) > 1 {
-		h.rejectNewBrowserSession(w, r, session.RawSession, http.StatusConflict,
-			"This account is in more than one league on this server. Use the desktop app for now.")
-		return
-	}
 	if proof.Token != "" {
 		h.appAuth.remember(session.Bearer, proof.Token)
 	}
 	setBrowserSessionCookie(w, session.Bearer, session.ExpiresAt)
-	writeHosted(w, BrowserSessionResponse{Protocol: 1, Admission: admissions[0].view})
+	writeHosted(w, browserSessionResponse(admissions))
 }
 
 func (h Hosted) browserPrivilegeProof(r *http.Request, admissions []browserLeagueAdmission,
@@ -280,14 +284,11 @@ func (h Hosted) readBrowserSession(w http.ResponseWriter, r *http.Request) {
 		writeUnavailable(w, "league access unavailable")
 		return
 	}
-	switch len(admissions) {
-	case 0:
+	if len(admissions) == 0 {
 		http.Error(w, "league access unavailable", http.StatusForbidden)
-	case 1:
-		writeHosted(w, BrowserSessionResponse{Protocol: 1, Admission: admissions[0].view})
-	default:
-		http.Error(w, "This account is in more than one league on this server. Use the desktop app for now.", http.StatusConflict)
+		return
 	}
+	writeHosted(w, browserSessionResponse(admissions))
 }
 
 func (h Hosted) revokeBrowserSession(w http.ResponseWriter, r *http.Request) {
@@ -332,7 +333,7 @@ func (h Hosted) browserAdmissions(ctx context.Context, account accounts.Account)
 	if err != nil {
 		return nil, fmt.Errorf("browser account identity: %w", err)
 	}
-	admissions := make([]browserLeagueAdmission, 0, 1)
+	admissions := make([]browserLeagueAdmission, 0, len(leagues))
 	for _, league := range leagues {
 		if !strings.HasPrefix(league.ID, "native.") || len(league.ID) <= len("native.") {
 			return nil, fmt.Errorf("invalid server league identity")
@@ -363,6 +364,16 @@ func (h Hosted) browserAdmissions(ctx context.Context, account accounts.Account)
 		})
 	}
 	return admissions, nil
+}
+
+func browserSessionResponse(admissions []browserLeagueAdmission) BrowserSessionResponse {
+	leagues := make([]BrowserLeague, 0, len(admissions))
+	for _, admission := range admissions {
+		leagues = append(leagues, BrowserLeague{ID: admission.view.League, Name: admission.view.Name,
+			Role: admission.view.Role, Franchise: admission.view.Franchise,
+			FranchiseName: admission.view.FranchiseName})
+	}
+	return BrowserSessionResponse{Protocol: 1, Admission: admissions[0].view, Leagues: leagues}
 }
 
 func browserAdmissionResponse(league string, people commissioner.People) BrowserAdmission {
