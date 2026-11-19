@@ -1,5 +1,13 @@
 # Handoff
 
+## Part 2 — bundle/b9 #398 integration (2026-11-19)
+- Baton: Bee, lane `lane/b9take7`, PR #400.
+- State: PR #400 is open and its first CI run is green. `origin/bundle/b9` now contains merged PR #398 (`eb27c6e2a`), which adds synced Home boards and Ask; its commits are not yet in this lane.
+- Next: merge `origin/bundle/b9` with a merge commit, preserving #398 behavior and the existing B7 browser-door resolution; run pre-push, push to PR #400, and verify CI.
+- Blocked on: none.
+- Tried and rejected: none.
+
+
 ## lane/b9take7 progress (2026-11-18)
 - Baton: ClaudeBox for review; PR #400 into `bundle/b9`; merge commit `a7d6b6ed1` merges `origin/bundle/b7` into B9.
 - State: conflicts resolved with B9 phone routes/layout and new reads alongside B7 browser ingress/security and franchise schedule/read contracts. Session security remains same-origin, `SameSite=Strict`, and rejects Authorization with a cookie. `league.activity.read` and commissioner filtered-ledger reads remain distinct.
