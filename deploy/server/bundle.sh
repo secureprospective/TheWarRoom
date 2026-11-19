@@ -11,7 +11,7 @@ mkdir -p "$PWD/.scratch"
 work=$(mktemp -d "$PWD/.scratch/server-bundle.XXXXXX")
 trap 'scripts/stage-webapp.sh --clean; rm -rf "$work"' EXIT
 export GOTOOLCHAIN=go1.26.11
-(cd frontend && pnpm install --frozen-lockfile && pnpm build)
+(cd frontend && pnpm install --frozen-lockfile && pnpm run build:web)
 scripts/stage-webapp.sh
 TWR_BUILD_VERSION=$(git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo dev)
 TWR_BUILD_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || true)

@@ -32,3 +32,12 @@
 - PR #394 is open. CI exposed a stale generated browser-door map for the newly cataloged schedule read; regenerated `frontend/src/app/commands/arguments.gen.ts`, and its freshness test plus frontend checks now pass. Re-run CI after pushing the generated change.
 - CT preflight: Proxmox host `twr-lab`, CT 260 running as `twr-260`; both OpenRC services are started, `/app` ingress is present, and `/etc/twr/public-host` is mode 0640 root:twr. Root hash is `8c91770c…`, matching the lab-260 signing root.
 - Next: prepare a scoped copy of the matching signing material in this run's private evidence workspace, build the LAB-ONLY branch bundle, back up/remove only the requested browser state, and run the installed normal upgrader.
+
+### Bee progress — CT recovery and release retest (2026-11-19)
+- Commits `2467dd9a8` and `f97d348e2` are pushed on `session/pulse-b7fix2`; PR #394 is open. `verify`, `checks`, release-tools, and all four test shards pass; the package job was still pending at last check.
+- LAB-only bundle `r9` with TUF targets v6 was built from `f97d348e2`. On CT 260, backed up the tunnel config and `/etc/twr/public-host`, removed only `/app` and the hostname file, then ran `/usr/local/libexec/twr-upgrade`. The upgrader itself reported restoring both; no manual repair ran. Evidence is under `~/fleet/runs/pulse-b7fix2/evidence/381-*.txt` and `381-upgrade.log`.
+- Recovery checks: tunnel validation passes, both services started, `twr-status` reports healthy, `/app` and `/app/` return HTTP 200, and restored hostname bytes match backup. The normal upgrade performed its standard automatic off-site backup; no league backup action was submitted.
+- Browser smoke uncovered the bundle script built `frontend/dist` instead of the hosted `dist-web`: initial HTML loaded but lazy chunks requested `/assets` and returned 404. The existing `build:web` script is the correct hosted build. Updating `deploy/server/bundle.sh` to use it; need a new TUF targets version (v7) for changed bytes, normal upgrade, then complete screen retests.
+- Next: verify and commit the bundle-mode correction, push and wait for green CI, rebuild/sign v7, upgrade CT 260 normally, retest People/Owner Home/Pulse in the isolated profile, write `RESULT.md`, and run tidy checks.
+- Blocked on: package CI check and completion of the hosted-mode rebuild/retest.
+- Tried and rejected: plain `pnpm build` produced root-relative lazy chunk imports and 404s under `/app`; do not reuse that bundle for browser verification.
