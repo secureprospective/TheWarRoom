@@ -16,6 +16,9 @@
 - Finding: No supported command removes stress-account rows. Option B is first-load for a new CT and bootstraps a new commissioner; prior import had 3,367 entries vs current 3,399 (`deploy/server/README.md:57-82`; `pulse-lab4/RESULT.md`; `pulse-ready/RESULT.md`). Neither path meets every constraint.
 - State: Added dry-run-only `deploy/server/alpha-clean-plan.sh`; its `cmd/twr-server/alpha_clean_plan_test.go` uses `newOneFileServer`, checks the throwaway DB digest stays unchanged, and rejects `--apply`.
 - Verified on candidate: `sh -n`; final `make lint` (golangci-lint 0 issues); focused race test `TestAlphaCleanPlanDryRunLeavesThrowawayDatabaseUnchanged` passed. `shellcheck` is unavailable. CT 260 untouched.
-- Next: resolve this handoff conflict by retaining bundle/b9's release-10 section, finish rebase, push/open PR to `bundle/b9`, wait for CI, and run tidy check.
+- State: Rebasing onto current `origin/bundle/b9` (including release-10 commit `527d6ba9`) is complete; commit `a9937015b` is based on b9. The `HANDOFF.md` conflict was resolved by preserving b9's release-10 section and adding only this lane's block.
+- Verified after rebase: `sh -n deploy/server/alpha-clean-plan.sh`, `make lint` (golangci-lint 0 issues), and the focused `cmd/twr-server` race test passed on `a9937015b` rebased onto b9.
+- Tidy: `tidy-check.sh` reports foreign active lane Luna `b9lab2` (PID 3444457); left it running and did not edit its scratch. Its owner must add the required `KEEP.md`.
+- Next: commit this handoff update, push branch `session/pulse-freshlab`, open PR into `bundle/b9`, and wait for CI. Do not merge.
 - Blocked on: approval if deleting test-account rows is mandatory; no supported command exists. Option A frees seats/revokes sessions but leaves accounts able to sign in; the plan explicitly stops there.
 - Tried/rejected: Option B new-server import; it would not preserve exact history/account identity and is not an in-place reset tool. No CT commands or live account/session mutations; task says plan only.
