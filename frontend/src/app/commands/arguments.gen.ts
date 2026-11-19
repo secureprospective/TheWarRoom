@@ -2803,6 +2803,8 @@ export type WorkflowArgumentMap = {
 "contract.decisions.read": NativeArguments<"contract.decisions.read">;
 "market.wins.read": NativeArguments<"market.wins.read">;
 "league.activity.read": NativeArguments<"league.activity.read">;
+"commish.feedback.read": NativeArguments<"commish.feedback.read">;
+"feedback.report.create": NativeArguments<"feedback.report.create">;
 "draft.queue.read": NativeArguments<"draft.queue.read">;
 "draft.queue.set": NativeArguments<"draft.queue.set">;
 "trade.draft.read": NativeArguments<"trade.draft.read">;

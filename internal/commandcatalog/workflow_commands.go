@@ -24,6 +24,11 @@ type WorkflowCommand struct {
 // appear here by derivation; never hand-list one. See docs/architecture/future-seams.md.
 func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
+	out[commissioner.ProblemReportCreate] = workflowInputCommand[commissioner.RawProblemReport, *commissioner.RawProblemReport](
+		"execute", "send a problem report", func(ctx context.Context, s *leagueservice.Service,
+			input commissioner.RawProblemReport) (json.RawMessage, error) {
+			return workflowJSON(s.SubmitProblemReport(ctx, input))
+		})
 	out[leagueservice.BackupNowCommand] = backupNowWorkflow()
 	out["draft.queue.read"] = workflowDraftQueueRead()
 	out["draft.queue.set"] = workflowDraftQueueSet()
@@ -214,6 +219,11 @@ func workflowReads() map[string]WorkflowCommand {
 		"read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service,
 			input commissioner.RawLeagueActivityScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetLeagueActivity(ctx, input))
+		})
+	out[commissioner.ProblemReportsRead] = workflowInputCommand[commissioner.RawProblemReportsScope, *commissioner.RawProblemReportsScope](
+		"read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service,
+			input commissioner.RawProblemReportsScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetProblemReports(ctx, input))
 		})
 	for id, command := range commissionerControlReads() {
 		out[id] = command

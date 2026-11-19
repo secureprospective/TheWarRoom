@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 )
 
 func (h Hosted) accountWorkflow(w http.ResponseWriter, r *http.Request, accountID string, raw RawWorkflow) {
@@ -23,7 +24,8 @@ func (h Hosted) accountWorkflow(w http.ResponseWriter, r *http.Request, accountI
 	}
 	h.Requests.add(raw.Command, raw.Mode, 2, 0)
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
-	response := WorkflowResponse{Label: "Account home layout", Writable: true, Data: data}
+	response := WorkflowResponse{Label: "Account home layout", Writable: true,
+		AppRelease: serverversion.Current().Release, Data: data}
 	if raw.Mode == "read" {
 		writeHostedReading(w, r, response)
 		return

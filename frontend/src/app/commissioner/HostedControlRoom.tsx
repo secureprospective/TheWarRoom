@@ -7,6 +7,7 @@ import { HostedBackupNow } from './HostedBackupNow';
 import { HostedControlRoomJobs } from './HostedControlRoomJobs';
 import { HostedControlRoomPicks } from './HostedControlRoomPicks';
 import { HostedControlRoomPeople } from './HostedControlRoomPeople';
+import { HostedControlRoomFeedback } from './HostedControlRoomFeedback';
 import { HostedControlRoomSituations } from './HostedControlRoomSituations';
 import { HostedControlRoomFix } from './HostedControlRoomFix';
 import { HostedControlRoomLeague } from './HostedControlRoomLeague';
@@ -37,6 +38,7 @@ export function HostedControlRoom({ league, port, heldRoom }: {
   const [initialValues, setInitialValues] = useState<ActValues>();
   const [job, setJob] = useState<Job>();
   const [routeWords, setRouteWords] = useState('');
+  const [feedbackRefreshVersion, setFeedbackRefreshVersion] = useState(0);
 
   useEffect(() => {
     const refreshJobs = () => {
@@ -108,7 +110,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         </HQAct>)}
         <HQAct className="hosted-control-refresh" disabled={roomState.pending || jobsState.pending}
           onAction={() => { void room.refresh(); jobsQuery.invalidate(); void jobsQuery.load([league]);
-            if (tab === 'fix') refreshFixes(); }}>
+            if (tab === 'fix') refreshFixes();
+            if (tab === 'feedback') setFeedbackRefreshVersion(version => version + 1); }}>
           Refresh
         </HQAct>
       </div>
@@ -141,11 +144,13 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {tab === 'server' && <HostedServerTab league={league} port={port} />}
         {tab === 'picks' && <HostedControlRoomPicks league={league} room={room} port={port} />}
         {tab === 'people' && <HostedControlRoomPeople league={league} room={room} port={port} />}
+        {tab === 'feedback' && <HostedControlRoomFeedback league={league} port={port}
+          refreshVersion={feedbackRefreshVersion} />}
         {tab === 'fix' && <HostedControlRoomFix league={league} room={room} port={port}
           readings={fixState.fixes} pending={fixState.pending} error={fixState.error}
           definition={openedTab === 'fix' ? definition : undefined} initial={initialValues}
           onOpen={(next, initial) => openTool(next, undefined, 'fix', initial)} />}
-        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'fix', 'league']
+        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'feedback', 'fix', 'league']
           .includes(tab)
           && <p className="cr-note hosted-unported">{hostedControlRoomNotOnServer}</p>}
       </section>

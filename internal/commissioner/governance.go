@@ -49,6 +49,22 @@ func RequireCommissionerOrCo(records []Record, principal string) error {
 	return nil
 }
 
+// IsLeagueMember applies the hosted member boundary: a commissioner, co-commissioner, seated owner
+// or DOT may send member-scoped reports; an account without a current league role or seat may not.
+func IsLeagueMember(state governance.State, principal string, records []Record) bool {
+	current := governance.Principal(PrincipalFor(records, principal))
+	if state.HasRole(current, governance.Commissioner) || state.HasRole(current, governance.CoCommissioner) ||
+		state.HasRole(current, governance.DOT) {
+		return true
+	}
+	for _, franchise := range LeagueFranchises(records) {
+		if state.HoldsSeat(governance.FranchiseID(franchise), current) {
+			return true
+		}
+	}
+	return false
+}
+
 func governanceFold(records []Record) (governance.State, error) {
 	records = policyRecords(records)
 	projection := Replay(records)

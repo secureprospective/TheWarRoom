@@ -241,7 +241,7 @@ it.each(['Commissioner', 'Co-commissioner'])(
   const tabs = [...host.querySelectorAll('[role="tab"]')].map(button =>
     button.textContent?.replace(/\s+\d+$/, '').trim());
   expect(tabs).toEqual([
-    'Jobs', 'Situations', 'Rules', 'Season', 'Fix', 'Picks', 'People', 'League', 'Server',
+    'Jobs', 'Situations', 'Rules', 'Season', 'Fix', 'Picks', 'People', 'Feedback', 'League', 'Server',
   ]);
   expect(host.textContent).toContain('32 from the league job read');
   expect(host.querySelector('[aria-label="League health"]')?.textContent).toContain('32');

@@ -145,7 +145,8 @@ export default function HostedLeague(props: {
           commissioner={commissioner} onPlayer={openPlayer} onPlayers={publishPulsePlayers} />
       </Suspense>
     : <HostedWorkRoom {...props} onPlayers={publishHomePlayers} onPlayer={openPlayer} />;
-  return <ThinLeagueShell leagueName={props.name} route={route} commissioner={commissioner}
+  return <ThinLeagueShell league={props.league} leagueName={props.name} route={route}
+    commissioner={commissioner}
     players={players} navigate={navigate} openPlayer={openPlayer} onHome={props.onHome}
     phoneShell={props.phoneShell} phoneLeagueName={props.phoneLeagueName}
     phoneTab={props.phoneTab} onPhoneTab={props.onPhoneTab}

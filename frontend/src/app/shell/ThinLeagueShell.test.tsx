@@ -46,6 +46,22 @@ it('puts Home first and routes Home from another thin view', async () => {
   expect(host.textContent).toContain('Thin home brief');
 });
 
+it('shows the report entry only outside the phone shell', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  const shell = (phoneShell: boolean) => <ThinLeagueShell league="native.test"
+    leagueName="Test league" route={{ node: 'home', workspace: 'overview' }} commissioner players={[]}
+    navigate={() => {}} openPlayer={() => {}} phoneShell={phoneShell}>
+    <p>League Home</p>
+  </ThinLeagueShell>;
+  await act(async () => root!.render(shell(false)));
+  expect([...host.querySelectorAll('button')].some(button =>
+    button.textContent === 'Report a problem')).toBe(true);
+  await act(async () => root!.render(shell(true)));
+  expect([...host.querySelectorAll('button')].some(button =>
+    button.textContent === 'Report a problem')).toBe(false);
+});
+
 it('matches case-insensitive name fragments and opens the card', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);

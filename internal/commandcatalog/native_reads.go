@@ -130,7 +130,20 @@ func nativeServerReads() []Command {
 			Arguments:  Shape(reflect.TypeFor[commissioner.RawLeagueActivityScope](), "RawLeagueActivityScope.Validate"),
 			Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "ledger",
 			Safeguards: "allow-listed public events only; private bids and commissioner details excluded"},
+		{ID: commissioner.ProblemReportsRead, Method: "TargetProblemReports", Version: "1", Role: "domain",
+			Gravity: "G0", Availability: "server",
+			Arguments:  Shape(reflect.TypeFor[commissioner.RawProblemReportsScope](), "RawProblemReportsScope.Validate"),
+			Permission: "commissioner-or-co-commissioner", Modes: []Mode{Read}, Undo: "none", Facts: "ledger",
+			Safeguards: "current commissioner or co-commissioner; private reports only"},
 	}
+}
+
+func nativeServerMutations() []Command {
+	return []Command{{ID: commissioner.ProblemReportCreate, Method: "SubmitProblemReport", Version: "1",
+		Role: "domain", Gravity: "G0", Availability: "server",
+		Arguments:  Shape(reflect.TypeFor[commissioner.RawProblemReport](), "RawProblemReport.Validate"),
+		Permission: "league-member", Modes: []Mode{Execute}, Undo: "none", Facts: "ledger",
+		Safeguards: "current league member; trusted User-Agent; ten reports per hour per principal"}}
 }
 
 func serverBackupCommands() []Command {
