@@ -11,8 +11,9 @@ const leagues: LeagueChoice[] = [
   { id: 'mirror', name: 'Reference', teams: 12, app: false },
 ];
 const at = (hour: number) => `2026-11-18T${String(hour).padStart(2, '0')}:00:00Z`;
-const person = (league: string, mine: string, mayChangeRules: boolean): People =>
-  ({ league, yourFranchise: mine, mayChangeRules } as People);
+const person = (league: string, mine: string, yourRole = 'Owner'): People =>
+  ({ league, yourFranchise: mine, yourRole, mayChangeRules: ['Commissioner', 'Co-commissioner',
+    'Deputy'].includes(yourRole) } as People);
 const brief = (values: Partial<HomeBrief> = {}) =>
   ({ at: {}, errors: {}, ...values } as HomeBrief);
 const waitingTrade = (id: string, mine: string, expiresAt: string) => ({
@@ -24,7 +25,8 @@ const port = vi.fn() as unknown as HostedPort;
 
 describe('gatherNeedsYou', () => {
   it('merges two leagues, sorts deadlines, and reads each brief once', async () => {
-    const people = vi.fn(async (league: string) => person(league, `${league}-owner`, league === 'a'));
+    const people = vi.fn(async (league: string) => person(league, `${league}-owner`,
+      league === 'a' ? 'Commissioner' : 'Owner'));
     const reads = new Map<string, HomeBrief>([
       ['a', brief({
         trades: { league: 'a', franchise: 'a-owner', offers: [
@@ -46,8 +48,8 @@ describe('gatherNeedsYou', () => {
         waitingTrade('b-trade', 'b-owner', at(7)),
       ] } as never })],
     ]);
-    const readBrief = vi.fn(async (league: string, _mine: string, _port: HostedPort, _owner: boolean) =>
-      reads.get(league)!);
+    const readBrief = vi.fn(async (league: string, _mine: string, _port: HostedPort,
+      _owner: boolean, _commissioner: boolean) => reads.get(league)!);
 
     const got = await gatherNeedsYou(leagues, port, {
       readPeople: people, readBrief, now: Date.parse(at(6)),
@@ -55,9 +57,10 @@ describe('gatherNeedsYou', () => {
 
     expect(people).toHaveBeenCalledTimes(2);
     expect(readBrief).toHaveBeenCalledTimes(2);
-    expect(readBrief.mock.calls.map(([league, mine, _port, owner]) => [league, mine, owner])
+    expect(readBrief.mock.calls.map(([league, mine, _port, owner, commissioner]) =>
+      [league, mine, owner, commissioner])
       .sort(([a], [b]) => String(a).localeCompare(String(b))))
-      .toEqual([['a', 'a-owner', true], ['b', 'b-owner', true]]);
+      .toEqual([['a', 'a-owner', true, true], ['b', 'b-owner', true, false]]);
     expect(got.map(({ leagueName, kind, deadline }) => [leagueName, kind, deadline])).toEqual([
       ['Beta', 'trade', at(7)], ['Alpha', 'lineup', at(8)], ['Alpha', 'deadline', at(9)],
       ['Alpha', 'auction', at(10)], ['Alpha', 'commissioner', at(11)], ['Alpha', 'trade', at(12)],
@@ -76,7 +79,7 @@ describe('gatherNeedsYou', () => {
       ] } as never });
     });
     const got = await gatherNeedsYou(leagues, port, {
-      readPeople: async league => person(league, `${league}-owner`, false), readBrief,
+      readPeople: async league => person(league, `${league}-owner`), readBrief,
       now: Date.parse(at(6)),
     });
 
@@ -90,7 +93,7 @@ describe('gatherNeedsYou', () => {
   it('keeps working trade items when the bids source fails', async () => {
     const words = 'Bids source refused: owner scope unavailable';
     const got = await gatherNeedsYou([leagues[0]], port, {
-      readPeople: async () => person('a', 'a-owner', false),
+      readPeople: async () => person('a', 'a-owner'),
       readBrief: async () => brief({
         trades: { league: 'a', franchise: 'a-owner', offers: [
           waitingTrade('a-trade', 'a-owner', at(9)),
@@ -106,13 +109,14 @@ describe('gatherNeedsYou', () => {
     ]);
   });
 
-  it('includes commissioner work only when the account has commissioner authority', async () => {
+  it('includes commissioner work only for commissioner roles, not a rules deputy', async () => {
     const readBrief = vi.fn(async (league: string) => brief({
       jobs: { league, jobs: [{ id: 'job', name: 'Review the season', state: 'blocked',
         words: 'Waiting on the commissioner', closes: '' }] } as never,
     }));
     const got = await gatherNeedsYou(leagues, port, {
-      readPeople: async league => person(league, `${league}-owner`, league === 'a'), readBrief,
+      readPeople: async league => person(league, `${league}-owner`,
+        league === 'a' ? 'Commissioner' : 'Deputy'), readBrief,
       now: Date.parse(at(6)),
     });
 
@@ -121,7 +125,7 @@ describe('gatherNeedsYou', () => {
 
   it('does not turn a normal offseason with no open week into an unavailable item', async () => {
     const got = await gatherNeedsYou([leagues[0]], port, {
-      readPeople: async () => person('a', 'a-owner', false),
+      readPeople: async () => person('a', 'a-owner'),
       readBrief: async () => brief({ errors: { results: 'No league week is open',
         calendar: 'The league season is not known' } }),
       now: Date.parse(at(6)),

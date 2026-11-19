@@ -128,7 +128,7 @@ func NativeWeekReading(schedule FranchiseSchedule, at time.Time, weeks []leaguew
 	current, found := leagueweek.LineupWeek(at, scheduled...)
 	if !found {
 		if missingDates {
-			reading.Message = "The NFL week dates are not held yet."
+			reading.Message = "The current NFL week cannot be identified from this server's held schedule data. Ask the server operator to update the NFL schedule; changing the league matchup schedule will not fix Pulse."
 			return reading, nil
 		}
 		reading.Message = "The regular-season schedule is finished."

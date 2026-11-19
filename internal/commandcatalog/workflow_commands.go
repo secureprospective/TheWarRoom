@@ -258,6 +258,12 @@ func pulseWorkflowReads() map[string]WorkflowCommand {
 		"schedule.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetLeagueSchedule(leagueservice.RawLeagueScheduleScope{League: r.League}))
 		}),
+		"schedule.franchise.read": workflowRead(func(s *leagueservice.Service,
+			r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeFranchiseSchedule(leagueservice.RawNativeScheduleScope{
+				League: r.League, Franchise: r.Franchise, Season: r.Season, LocalZone: r.LocalZone,
+			}))
+		}),
 		"week.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			at := time.Now().UTC()
 			if r.At != "" {
