@@ -60,7 +60,9 @@ func newTestClient(t *testing.T, srv *httptest.Server) (*Client, *redirectTransp
 	if err != nil {
 		t.Fatalf("parse test server URL: %v", err)
 	}
-	rt := &redirectTransport{target: target, inner: http.DefaultTransport}
+	inner := http.DefaultTransport.(*http.Transport).Clone()
+	t.Cleanup(inner.CloseIdleConnections)
+	rt := &redirectTransport{target: target, inner: inner}
 	c, err := New("api", 1000, WithTransport(rt))
 	if err != nil {
 		t.Fatalf("New: unexpected error: %v", err)
