@@ -35,7 +35,13 @@ Driver: `~/.local/share/pipx/venvs/pymobiledevice3/bin/python -I ~/fleet/bin/iph
 - b7lab2: security spot checks MET; bugs → b7fix2. Phone-width clipping on B7 is B8's job.
 - Go cache trimmed (entries >6 h): disk 91% → 67%.
 
+### Rulings made tonight (Tom, head brain)
+- Phone Control Room scrolls with the page: the phone shell content area (`.phone-shell__content`, overflow-y auto) is the ONE scroller. #395's contained `height:100%;overflow:hidden` box was dropped; its test now asserts page scrolling.
+- roster.add is owner-only (no commissioner shortcut); commissioners use correction commands with a reason.
+- iPhone 13 is the AI's own test phone (Christopher 11-18): erased, may be wiped/reconfigured freely. Homelab reference updated.
+
 ### Refuted / learned — do not re-learn
+- A naive union of two CSS conflict sides drops a shared closing `}` (broke #393's media block). After any CSS union, run the phone tests (postcss parse).
 - `pgrep -f "<pattern>"` inside a `bash -c` waiter matches the waiter's own command line (stuck #388 waiter; false "b9lab alive"). Wait on a PID or a file instead.
 - Generated `native.gen.ts` can merge as text with NO conflict and still be broken (duplicate schemaNNN). Always regenerate before building (batch script does).
 - The guard blocks any command containing `--force` (e.g. `git worktree remove --force`) together with `git push`; and the word "reboot" in a heredoc. Split commands / reword.
@@ -46,7 +52,7 @@ Driver: `~/.local/share/pipx/venvs/pymobiledevice3/bin/python -I ~/fleet/bin/iph
 1. On #394: review (People contract fixed on the right side, owner League Read not widened, Pulse decision evidenced, #381 proof), batch-merge into b7, land B7 on main.
 2. Merge main into bundle/b8 and bundle/b9 after B7 lands.
 3. When b9lab reports: run the iPhone walk; fix lanes for what breaks; then land B8, then B9.
-4. Batch #393 + #395 now (#391/#392 landed 7:10 PM): `twr-batch-merge.sh bundle/b9 393 395`.
+4. Batch #393 + #395: both branches synced by Tom 7:15 PM (#393 = b9 merged in; #395 = #393 merged in). Run `twr-batch-merge.sh bundle/b9 393 395` once #395's push finished (check `git ls-remote origin session/pulse-b9cr1` = 4fe781aa7).
 5. Write + launch remaining B9 lanes: b9moves (after #389 ✓), b9act (after #387 ✓), b9ask (after #388 ✓) — briefs from `~/fleet/runs/pulse-b8plan/RESULT.md` §3+§5 using b9card.md template.
 6. Samsung S8 Active: when a data cable appears, back up photos/video/recordings to `~/Pictures/phone_backup/android/`, then same setup as the iPhone.
 7. 50-min lane checks; keep tracker + REPORT current.
