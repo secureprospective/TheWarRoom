@@ -27,8 +27,10 @@
 - Tried and rejected: no JavaScript viewport mode; retain existing hosted screen and use the approved CSS breakpoint.
 
 ## Bee — B9-1 Remaining Moves (2026-11-18)
-- Baton: Bee on `session/pulse-b9moves`, based on `origin/bundle/b9` (`a10900742`); initial checkout was cleanly realigned from `main` before code work.
-- State: searchable pool, visible waiver priority/status, and owner-only `roster.add` with reason, preview, hold-to-confirm and receipt validation. Existing typed command reused; no server changes. Missing waiver reads disable add.
-- Evidence: focused market/read/phone CSS tests 23/23; full Vitest 1007/1007; `pnpm tsc --noEmit` passed. Interactive disposable-phone check not run: Firefox is installed, but no WebDriver/Playwright or disposable hosted league credentials are available.
-- Next: run push pre-check, push and open PR to `bundle/b9`, then verify CI.
-- Blocked on: interactive disposable hosted league check; not required for local CSS contract/test proof.
+- Baton: ClaudeBox review; PR #399 on `session/pulse-b9moves` → `bundle/b9`.
+- State: searchable pool, visible waiver priority/status, and owner-only `roster.add` with reason, preview, hold-to-confirm and receipt validation. Missing waiver reads disable add; no server changes.
+- Evidence: focused market/read/phone CSS tests 23/23; full Vitest 1007/1007; `pnpm tsc --noEmit`, pre-push and CI pass. Initial CI shard reported an intermittent race in untouched `internal/serverclient.TestUnavailableKeychainLoginIsMemoryOnly`; rerun passed.
+- Phone: 390px CSS contract test passed. Interactive disposable-league check not run: no WebDriver/Playwright or identified disposable hosted league available locally.
+- Tidy: `tidy-check.sh` reports active `b9take7` lane (pid 2629227); left its process/files untouched. Its owner needs to add a KEEP record.
+- Next: ClaudeBox review/merge PR #399.
+- Blocked on: none in this lane; interactive check needs a disposable hosted league/browser setup.
