@@ -27,7 +27,7 @@ export type WarRoomMarketWin = { player: string; name: string; team: string; sal
   years: number; decidedAt: string };
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
   wins?: WarRoomMarketWin[]; bidRevision?: number; capRoom?: number; writable?: boolean; football?: string;
-  targets?: Entry[]; maxYears?: number; rosterRevision?: number;
+  targets?: Entry[]; maxYears?: number; rosterRevision?: number; openBenchSlots?: number;
   rosterPlayers?: { id: string; name: string }[];
   waiverPriority?: { place?: number; total: number; source: string }; errors: string[] };
 export function parseWarRoomWatchList(value: unknown, league: string): string[] {
@@ -116,6 +116,8 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
         result.players = roster.market.map(player => ({ ...player, freeAgent: true }));
         result.writable = r.writable; result.football = r.football;
         result.rosterRevision = roster.revision;
+        const openBenchSlots = roster.openBenchSlots?.[c.mine];
+        if (openBenchSlots !== undefined) result.openBenchSlots = openBenchSlots;
         result.rosterPlayers = roster.players.filter(player => player.franchise === c.mine)
           .map(player => ({ id: player.id, name: player.name }));
       }),

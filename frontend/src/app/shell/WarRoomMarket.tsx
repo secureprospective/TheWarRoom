@@ -253,6 +253,10 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
           ? `You are ${value.waiverPriority.place} of ${value.waiverPriority.total}`
           : 'Your place is unavailable'}</span>
         <small>{value?.waiverPriority?.source || unavailable}</small></div>
+      <div className="bench-capacity" aria-label="Open bench slots"><b>OPEN BENCH</b>
+        <span>{value?.openBenchSlots === undefined ? unavailable
+          : `${value.openBenchSlots} slots open`}</span>
+      </div>
     </div><div className="bench"><div className="filters">{['All', 'My needs', 'Targets',
       'Affordable'].map(f => <WarRoomAct key={f} className="chip" active={filter === f}
         disabled={filterUnavailable(f)} title={filterUnavailable(f) ? unavailable : undefined}

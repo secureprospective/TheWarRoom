@@ -3,6 +3,7 @@ package serverhttp_test
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -91,7 +92,7 @@ func TestHostedPulseReads(t *testing.T) {
 func TestHostedNFLGamesReadsTheServerBoardForAMemberOnly(t *testing.T) {
 	f := newHostedFixture(t, true, true)
 	bearer, proof := f.directCommissioner(t)
-	read := func(league string) (int, leagueservice.NFLGames) {
+	read := func(league string) (int, leagueservice.NFLGames, []byte) {
 		t.Helper()
 		raw := workflowRequest(t, "nfl.games.read", "read", `{"league":"`+league+`"}`, "")
 		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
@@ -109,17 +110,37 @@ func TestHostedNFLGamesReadsTheServerBoardForAMemberOnly(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		return status, games
+		return status, games, result
 	}
-	if status, games := read("native.hosted"); status != 200 || games.League != "native.hosted" || len(games.Board.Games) != 0 || games.Board.Games == nil {
+	if status, games, _ := read("native.hosted"); status != 200 || games.League != "native.hosted" || len(games.Board.Games) != 0 || games.Board.Games == nil {
 		t.Fatalf("empty board: status %d %+v", status, games)
 	}
-	f.games.Set([]livegame.Game{{ID: "401", Status: "in", Home: livegame.Team{ID: "12", Abbreviation: "KC", Score: 14}, Away: livegame.Team{ID: "2", Abbreviation: "BUF", Score: 10}}}, time.Now(), "ESPN")
-	status, games := read("native.hosted")
-	if status != 200 || len(games.Board.Games) != 1 || games.Board.Games[0].Home.Abbreviation != "KC" || games.Board.Source != "ESPN" || games.Board.Stale {
-		t.Fatalf("held board not read: status %d %+v", status, games)
+	summaryBody, err := os.ReadFile("../ingestion/livegame/testdata/espn-summary-401873061-kickoff.json")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if status, _ := read("native.other"); status == 200 {
+	summary, err := livegame.ParseSummary(summaryBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	boardGame := summary
+	boardGame.Home.Record, boardGame.Away.Record = "", ""
+	f.games.Set([]livegame.Game{boardGame}, time.Now(), "ESPN")
+	status, withoutRecords, before := read("native.hosted")
+	if status != 200 || len(withoutRecords.Board.Games) != 1 || withoutRecords.Board.Games[0].Home.Record != "" ||
+		strings.Contains(string(before), `"record"`) {
+		t.Fatalf("NFL board filled records absent from its held source: status %d %s", status, before)
+	}
+	f.games.SetDetails(map[string]leagueservice.NFLGame{summary.ID: {Game: &summary, At: time.Now()}})
+	status, games, body := read("native.hosted")
+	if status != 200 || len(games.Board.Games) != 1 || games.Board.Games[0].Home.Record != "3-6" ||
+		games.Board.Games[0].Away.Record != "5-4" || games.Board.Source != "ESPN" || games.Board.Stale {
+		t.Fatalf("held NFL records not read from the summary: status %d %+v", status, games)
+	}
+	if strings.Contains(string(body), `"pace"`) {
+		t.Fatalf("live NFL board invented a pace field: %s", body)
+	}
+	if status, _, _ := read("native.other"); status == 200 {
 		t.Fatal("a league the account does not belong to read the board")
 	}
 }
@@ -300,6 +321,49 @@ func TestHostedNFLGameRead(t *testing.T) {
 
 // Franchise HQ's money (cap strip, contract schedules, cut costs) comes from these two reads; the
 // hosted app could not reach either, so every figure said "Not available yet".
+func TestHostedNFLGameReadDoesNotInventUnavailableTimeouts(t *testing.T) {
+	f := newHostedFixture(t, true, true)
+	bearer := f.login(t, "owner", "private-password")
+	body, err := os.ReadFile("../ingestion/livegame/testdata/espn-summary-401873061-kickoff.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	game, err := livegame.ParseSummary(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.games.SetDetails(map[string]leagueservice.NFLGame{game.ID: {Game: &game, At: time.Now()}})
+	raw := workflowRequest(t, "nfl.game.read", "read",
+		fmt.Sprintf(`{"league":"native.hosted","game":%q}`, game.ID), "")
+	request, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, result := f.send(t, serverhttp.WorkflowPath, string(request), bearer, "")
+	if status != 200 {
+		t.Fatalf("NFL detail status %d: %s", status, result)
+	}
+	var response serverhttp.WorkflowResponse
+	if err := json.Unmarshal(result, &response); err != nil {
+		t.Fatal(err)
+	}
+	var detail leagueservice.NFLGame
+	if err := json.Unmarshal(response.Data, &detail); err != nil || detail.Game == nil {
+		t.Fatalf("NFL detail: %v %+v", err, detail)
+	}
+	gameJSON, err := json.Marshal(detail.Game)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(gameJSON, &fields); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := fields["timeouts"]; ok {
+		t.Fatalf("NFL timeout counts were invented without held source data: %s", gameJSON)
+	}
+}
+
 func TestHostedFranchiseHQMoneyReads(t *testing.T) {
 	f := newHostedFixture(t, true, true)
 	bearer, proof := f.directCommissioner(t)

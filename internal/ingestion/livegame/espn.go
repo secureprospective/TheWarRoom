@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -12,11 +13,49 @@ type RawTeam struct {
 	Abbreviation string `json:"abbreviation"`
 }
 type RawCompetitor struct {
-	ID       string  `json:"id"`
-	HomeAway string  `json:"homeAway"`
-	Score    string  `json:"score"`
-	Team     RawTeam `json:"team"`
+	ID       string          `json:"id"`
+	HomeAway string          `json:"homeAway"`
+	Score    string          `json:"score"`
+	Team     RawTeam         `json:"team"`
+	Records  []RawTeamRecord `json:"record"`
 }
+type RawTeamRecord struct {
+	Type    string `json:"type"`
+	Summary string `json:"summary"`
+}
+
+func (r RawTeamRecord) Validate() error {
+	if r.Type != "total" {
+		return nil
+	}
+	parts := strings.Split(r.Summary, "-")
+	if len(parts) < 2 || len(parts) > 3 {
+		return fmt.Errorf("team record: invalid summary")
+	}
+	for _, part := range parts {
+		if _, err := number("team record", string(part), 25); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// totalRecord preserves the source's total-record formatting, without filling absent ties.
+func totalRecord(records []RawTeamRecord) string {
+	var total string
+	found := false
+	for _, record := range records {
+		if record.Type != "total" {
+			continue
+		}
+		if found || record.Validate() != nil {
+			return ""
+		}
+		found, total = true, record.Summary
+	}
+	return total
+}
+
 type RawStatus struct {
 	DisplayClock string `json:"displayClock"`
 	Period       *int   `json:"period"`
@@ -243,7 +282,7 @@ func (r RawEvent) game() Game {
 	}
 	for _, t := range c.Competitors {
 		score, _ := number("score", t.Score, 200)
-		v := Team{ID: t.ID, Abbreviation: t.Team.Abbreviation, Score: score}
+		v := Team{ID: t.ID, Abbreviation: t.Team.Abbreviation, Score: score, Record: totalRecord(t.Records)}
 		if t.HomeAway == "home" {
 			g.Home = v
 		} else {

@@ -1013,6 +1013,9 @@
   .wr-v6 .mk3 .waiver-priority b{font-size:9px;letter-spacing:.12em;color:var(--ink3)}
   .wr-v6 .mk3 .waiver-priority span{text-align:right}
   .wr-v6 .mk3 .waiver-priority small{grid-column:1/-1;font:10px var(--mono);color:var(--ink3)}
+  .wr-v6 .mk3 .bench-capacity{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;
+    border:1px solid var(--edge);background:var(--sunken);font:11px var(--mono)}
+  .wr-v6 .mk3 .bench-capacity b{font-size:9px;letter-spacing:.12em;color:var(--ink3)}
   .wr-v6 .mk3 .filters{padding:8px 10px;overflow-x:auto}
   .wr-v6 .mk3 .filters .chip{flex:none;min-width:64px;min-height:44px;padding:8px}
   .wr-v6 .mk3 .fa-h{display:none}

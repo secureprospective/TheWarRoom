@@ -96,6 +96,18 @@ it('reads the live-score evidence on results, standings and odds', () => {
   'native.x', 2026).week).toBe(10);
 });
 
+it('reads a standings streak from the held standings row without filling an absent streak', () => {
+  const row = { rank: 1, franchise: 'franchise.1', name: 'Alpha', wins: 4, losses: 2, ties: 0,
+    record: '4-2-0', streak: 'W3', pointsFor: 1235000, pointsWords: '123.5 points scored', why: [] };
+  const base = { league: 'native.x', name: 'L', season: 2026, revision: 1, status: 'Ranked',
+    words: 'Standings through week 6', through: 6, decided: 6, pending: 0, criteria: [], noData: [] };
+  expect(parsePulseStandings({ ...base, computed: [row] }, 'native.x', 2026).rows[0].streak).toBe('W3');
+  expect(parsePulseStandings({ ...base, computed: [{ ...row, streak: undefined }] }, 'native.x', 2026)
+    .rows[0].streak).toBeUndefined();
+  expect(() => parsePulseStandings({ ...base, computed: [{ ...row, streak: '0' }] }, 'native.x', 2026))
+    .toThrow('invalid current streak');
+});
+
 it('preserves a uint64 odds seed as an exact decimal string', () => {
   const seed = '18446744073709551615';
   const odds = parsePulseOdds({ league: 'native.x', name: 'L', season: 2026, revision: 1, status: '',

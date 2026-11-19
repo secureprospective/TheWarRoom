@@ -6,7 +6,7 @@ export type FieldState = { possession: string; down: number;
 export type Play = { id: string; sequence: number; text: string; clock: string; period: number; at: string;
   homeScore: number; awayScore: number; start: FieldState | null; end: FieldState | null;
   participants: string[] };
-export type Team = { id: string; abbreviation: string; score: number };
+export type Team = { id: string; abbreviation: string; score: number; record?: string };
 export type Box = { team: string; category: string; labels: string[];
   rows: { name: string; stats: string[] }[] };
 export type Game = { id: string; kickoff: string; home: Team; away: Team; status: 'pre' | 'in' | 'post';
@@ -40,10 +40,15 @@ function play(v: unknown, p: string): Play {
     participants: array(r.participants, p, (v, p) => id(v, p)) };
 }
 function team(v: unknown, p: string): Team {
-  const r = object(v, p, ['id', 'abbreviation', 'score']);
+  const r = object(v, p, ['id', 'abbreviation', 'score', 'record']);
   const abbreviation = text(r.abbreviation, p);
   if (!/^[A-Z]{2,3}$/.test(abbreviation)) throw new Error(`${p}: invalid team abbreviation`);
-  return { id: text(r.id, p), abbreviation, score: count(r.score, p, 200) };
+  const record = r.record === undefined ? undefined : requiredText(r.record, p);
+  if (record !== undefined && (!/^(?:0|[1-9]\d?)-(?:0|[1-9]\d?)(?:-(?:0|[1-9]\d?))?$/.test(record) ||
+    record.split('-').some(value => Number(value) > 25)))
+    throw new Error(`${p}: invalid team record`);
+  return { id: text(r.id, p), abbreviation, score: count(r.score, p, 200),
+    ...(record === undefined ? {} : { record }) };
 }
 function box(v: unknown, p: string): Box {
   const r = object(v, p, ['team', 'category', 'labels', 'rows']);

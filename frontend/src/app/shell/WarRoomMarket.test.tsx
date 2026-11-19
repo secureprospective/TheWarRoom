@@ -89,6 +89,8 @@ it('searches the pool and shows waiver priority from the held read', async () =>
   await flush();
   expect(host.textContent).toContain('You are 2 of 4');
   expect(host.textContent).toContain('Standings');
+  expect(host.textContent).toContain('OPEN BENCH');
+  expect(host.textContent).not.toContain('0 slots open');
 
   await setField(control(host, 'Search players or teams'), 'SEA');
   expect(host.textContent).toContain('Need and affordable');
@@ -218,8 +220,9 @@ it('renders recent wins and the empty state from the hosted wins read', async ()
   const port = vi.fn<HostedPort>(async request => {
     if (request.command === 'native.assets.read') return { label: '', writable: true, football: 'pin',
       data: { league: 'native.test', revision: 4, seeded: true, entry: 'entry.1', source: 'held',
-        pool: [], identities: [], corrections: [], snapshot: { season: 2026, franchises: [],
-          players: [], picks: [] } } };
+        openBenchSlots: { 'franchise.mine': 2 }, pool: [], identities: [], corrections: [],
+        snapshot: { season: 2026, franchises: [{ id: 'franchise.mine', heldId: '0001', name: 'My Team',
+          abbreviation: 'ME', division: '' }], players: [], picks: [] } } };
     if (request.command === 'market.wins.read') return { label: '', writable: true, football: 'pin',
       data: { league: 'native.test', wins: [{ player: '0001', name: 'Player One', team: 'Team 2',
         salaryCents: 1234000000, years: 3, decidedAt: '2026-11-17T12:00:00Z' }] } };
@@ -232,6 +235,7 @@ it('renders recent wins and the empty state from the hosted wins read', async ()
   const host = await mount(<WarRoomMarket context={hosted} select={() => {}} />);
   await flush();
   expect(host.textContent).toContain('Player One');
+  expect(host.textContent).toContain('2 slots open');
   expect(host.textContent).toContain('Team 2');
   expect(host.textContent).toContain('$12.34M');
   expect(host.textContent).toContain('3 years');
