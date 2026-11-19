@@ -57,8 +57,10 @@ it('shows the synced Home boards on Today and writes phone edits to the account 
     throw new Error(`Unexpected request: ${request.command}`);
   }) as unknown as HostedPort;
   const readBrief = vi.fn(async () => brief);
+  const onBriefReady = vi.fn();
   await act(async () => root!.render(<ThinHome leagues={[league]} onOpen={vi.fn()} port={port}
-    readBrief={readBrief} now={Date.parse('2026-11-18T12:00:00Z')} />));
+    readBrief={readBrief} onBriefReady={onBriefReady}
+    now={Date.parse('2026-11-18T12:00:00Z')} />));
   await act(async () => {
     for (let attempt = 0; attempt < 50 && !host!.querySelector('[data-testid="home-brief"]'); attempt++)
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -66,14 +68,8 @@ it('shows the synced Home boards on Today and writes phone edits to the account 
 
   expect(host.textContent).toContain('MY BOARDS');
   expect(host.querySelector('[data-testid="home-brief"]')).not.toBeNull();
+  expect(onBriefReady).toHaveBeenCalledWith('league', 'mine', brief);
   expect(requests.map(request => request.command)).toEqual(['home.layout.read']);
-  const ask = host.querySelector('.phone-ask__open') as HTMLButtonElement;
-  await act(async () => ask.click());
-  const suggestion = [...host.querySelectorAll('.phone-ask__suggestions button')][0] as HTMLButtonElement;
-  await act(async () => suggestion.click());
-  expect(host.querySelector('.phone-ask__answer')?.textContent).toContain('You are ahead of Rivals');
-  expect(requests.map(request => request.command)).toEqual(['home.layout.read']);
-
   const customize = [...host.querySelectorAll('button')].find(button =>
     button.textContent?.includes('CUSTOMIZE'))!;
   await act(async () => customize.click());
