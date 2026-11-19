@@ -109,10 +109,11 @@
 - Tried and rejected: none.
 
 ## Bee — pulse-sec9 security review (2026-11-19)
-- Baton: ClaudeBox review; PR #405 into `bundle/b9`, branch `session/pulse-sec9-private-pref`, head `2988d6f2e`.
+- Baton: ClaudeBox review; PR #405 into `bundle/b9`, branch `session/pulse-sec9-private-pref`, implementation commit `a7436ca9d`.
 - State: #387, #388, #389 and #400 pass. #5 found hosted account-layout localStorage/offline caching in B9; PR #405 removes it, retaining local-mode preference storage. Regression reproduced before the fix.
-- Evidence: targeted Go race tests pass for activity, account preferences, roster.add and browser origin policy; 35 frontend tests and `pnpm exec tsc --noEmit` pass. Pre-push `verify` passes. PR checks: release-tools passed; four test shards and `checks` pending at close.
+- Evidence: targeted Go race tests pass for activity, account preferences, roster.add and browser origin policy; 35 frontend tests and `pnpm exec tsc --noEmit` pass. Pre-push `verify` passes. PR CI is green: all four test shards, checks, release-tools and verify.
 - Report: `~/fleet/runs/pulse-sec9/RESULT.md` (9 lines).
 - Next: ClaudeBox review/merge PR #405; do not merge from this lane.
-- Blocked on: PR CI and review.
+- Blocked on: review/merge decision.
 - Tried and rejected: broad unfiltered Go race package run exceeded the 600s tool limit; scoped security tests passed. First pre-push exposed a raw test button/long line; replaced it with `HQAct` and reran the focused 35 frontend tests successfully.
+- Tidy: `tidy-check.sh` flags the active `pulse-scores11` lane's `pulse-scores11-1119` scratch. Its session brief restricts writes to its worktree/output; left it untouched, and its owner must file KEEP or clean it.
