@@ -21,6 +21,7 @@ const ThinHome = lazy(() => import('../shell/ThinHome'));
 const TodayTab = lazy(() => import('../phone/TodayTab'));
 const LiveTab = lazy(() => import('../phone/LiveTab'));
 const MovesTab = lazy(() => import('../phone/MovesTab'));
+const LeagueTab = lazy(() => import('../phone/LeagueTab'));
 
 type Screen = 'login' | 'join' | 'authenticator' | 'recovery';
 const tabs = [
@@ -226,6 +227,14 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         live: liveTab,
         moves: <Suspense fallback={<p role="status">Opening Moves…</p>}>
           <MovesTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)} />
+        </Suspense>,
+        league: <Suspense fallback={<p role="status">Opening League…</p>}>
+          <LeagueTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)}
+            onTrade={() => setPhoneTab('moves')} onWatch={() => setPhoneTab('live')}
+            onControlRoom={() => {
+              setActiveEntry('control');
+              if (admission) setActiveLeagueId(admission.league);
+            }} />
         </Suspense>,
       }}>{leagueContent}</PhoneAppFrame>}
     </div>
