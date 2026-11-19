@@ -452,7 +452,8 @@ it('keeps source-held NFL records on each team and leaves absent records absent'
   expect(parsed.away.record).toBe('3-6');
   expect(parseHostedGames(board(), 'test').games[0].home.record).toBeUndefined();
   expect(() => parseHostedGames({ ...source, board: { ...source.board,
-    games: [{ ...source.board.games[0], home: { ...source.board.games[0].home, record: '5 wins' } }] } }, 'test'))
+    games: [{ ...source.board.games[0],
+      home: { ...source.board.games[0].home, record: '5 wins' } }] } }, 'test'))
     .toThrow(/invalid team record/);
 });
 

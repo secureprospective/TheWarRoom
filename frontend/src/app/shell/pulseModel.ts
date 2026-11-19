@@ -221,7 +221,8 @@ export function scoreOf(results: PulseResults | undefined, franchise: string) {
 }
 
 export type PulseSeedRow = { seed?: number; bye: boolean; kind: string; franchise: string;
-  name: string; division: string; rank: number; record: string; streak?: string; pointsWords: string; pointsFor?: number;
+  name: string; division: string; rank: number; record: string; streak?: string;
+  pointsWords: string; pointsFor?: number;
   mine: boolean; inField: boolean };
 
 /** seedRows is the Race standings read as a playoff field: the seeds the playoff read has set,
