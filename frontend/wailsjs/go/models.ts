@@ -4432,6 +4432,40 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class TradeHoldRecord {
+	    who: string;
+	    at: time.Time;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TradeHoldRecord(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.who = source["who"];
+	        this.at = this.convertValues(source["at"], time.Time);
+	        this.reason = source["reason"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class TradeVote {
 	    who: string;
 	    decision: string;
@@ -4534,6 +4568,7 @@ export namespace commissioner {
 	    status: string;
 	    words: string;
 	    votes: TradeVote[];
+	    holds?: TradeHoldRecord[];
 	    recusals: TradeVote[];
 	    appeals: TradeVote[];
 	    overrides: TradeVote[];
@@ -4559,6 +4594,7 @@ export namespace commissioner {
 	        this.status = source["status"];
 	        this.words = source["words"];
 	        this.votes = this.convertValues(source["votes"], TradeVote);
+	        this.holds = this.convertValues(source["holds"], TradeHoldRecord);
 	        this.recusals = this.convertValues(source["recusals"], TradeVote);
 	        this.appeals = this.convertValues(source["appeals"], TradeVote);
 	        this.overrides = this.convertValues(source["overrides"], TradeVote);
@@ -5686,6 +5722,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	
@@ -13092,6 +13129,7 @@ export namespace market {
 	    status: string;
 	    words: string;
 	    votes: commissioner.TradeVote[];
+	    holds?: commissioner.TradeHoldRecord[];
 	    recusals: commissioner.TradeVote[];
 	    appeals: commissioner.TradeVote[];
 	    overrides: commissioner.TradeVote[];
@@ -13118,6 +13156,7 @@ export namespace market {
 	        this.status = source["status"];
 	        this.words = source["words"];
 	        this.votes = this.convertValues(source["votes"], commissioner.TradeVote);
+	        this.holds = this.convertValues(source["holds"], commissioner.TradeHoldRecord);
 	        this.recusals = this.convertValues(source["recusals"], commissioner.TradeVote);
 	        this.appeals = this.convertValues(source["appeals"], commissioner.TradeVote);
 	        this.overrides = this.convertValues(source["overrides"], commissioner.TradeVote);
