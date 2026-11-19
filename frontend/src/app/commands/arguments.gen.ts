@@ -2679,9 +2679,16 @@ string
 ];
 };
 export type WorkflowArgumentMap = {
+"commish.jobs.read": NativeArguments<"commish.jobs.read">;
+"commish.ledger.read": NativeArguments<"commish.ledger.read">;
+"commish.ledger.filtered.read": NativeArguments<"commish.ledger.filtered.read">;
 "commish.market.read": NativeArguments<"commish.market.read">;
+"commish.notices.read": NativeArguments<"commish.notices.read">;
+"commish.people.read": NativeArguments<"commish.people.read">;
 "commish.rules.read": NativeArguments<"commish.rules.read">;
+"commish.schedule.read": NativeArguments<"commish.schedule.read">;
 "commish.corrections.read": NativeArguments<"commish.corrections.read">;
+"calendar.read": NativeArguments<"calendar.read">;
 "schedule.read": NativeArguments<"schedule.read">;
 "native.assets.read": NativeArguments<"native.assets.read">;
 "bids.read": NativeArguments<"bids.read">;
@@ -2693,6 +2700,7 @@ export type WorkflowArgumentMap = {
 "nfl.game.read": NativeArguments<"nfl.game.read">;
 "nfl.games.read": NativeArguments<"nfl.games.read">;
 "draft.read": NativeArguments<"draft.read">;
+"schedule.franchise.read": NativeArguments<"schedule.franchise.read">;
 "lineup.read": NativeArguments<"lineup.read">;
 "player.usage.read": NativeArguments<"player.usage.read">;
 "player.agearc.read": NativeArguments<"player.agearc.read">;

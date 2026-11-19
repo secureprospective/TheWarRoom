@@ -16,15 +16,16 @@ export type NeedsYouItem = {
   deadline?: string;
   screen: { node: Node; workspace?: string };
 };
-type NeedsYouPerson = Pick<People, 'league' | 'yourFranchise' | 'mayChangeRules'>;
+type NeedsYouPerson = Pick<People, 'league' | 'yourFranchise' | 'yourRole'>;
 type NeedsYouReaders = {
   readPeople?: (league: string) => Promise<NeedsYouPerson>;
-  readBrief?: (league: string, mine: string, port: HostedPort, owner: boolean) => Promise<HomeBrief>;
+  readBrief?: (league: string, mine: string, port: HostedPort, owner: boolean,
+    commissioner: boolean) => Promise<HomeBrief>;
   now?: number;
 };
 
-const briefReader = (league: string, mine: string, port: HostedPort, owner: boolean) =>
-  readHomeBrief(league, mine, port, undefined, undefined, owner);
+const briefReader = (league: string, mine: string, port: HostedPort, owner: boolean,
+  commissioner: boolean) => readHomeBrief(league, mine, port, undefined, undefined, owner, commissioner);
 
 const RFC3339 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 const oneLine = (words: string) => words.replace(/\s+/g, ' ').trim();
@@ -124,8 +125,8 @@ export async function gatherNeedsYou(leagues: readonly LeagueChoice[], port: Hos
       const people = await readPeople(league.id);
       if (people.league !== league.id) throw new Error('People belong to another league');
       const mine = people.yourFranchise;
-      const commissioner = people.mayChangeRules;
-      const brief = await readBrief(league.id, mine, port, Boolean(mine));
+      const commissioner = people.yourRole === 'Commissioner' || people.yourRole === 'Co-commissioner';
+      const brief = await readBrief(league.id, mine, port, Boolean(mine), commissioner);
       const items = needsYouFor(league, mine, commissioner, brief, now);
       for (const failure of failedSources(brief, mine, commissioner))
         items.push(item(league, 'unavailable', failure, failure, { node: 'home' }));

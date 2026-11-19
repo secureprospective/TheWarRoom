@@ -215,7 +215,42 @@ func workflowReads() map[string]WorkflowCommand {
 			input commissioner.RawLeagueActivityScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetLeagueActivity(ctx, input))
 		})
+	for id, command := range commissionerControlReads() {
+		out[id] = command
+	}
 	return out
+}
+
+func commissionerControlReads() map[string]WorkflowCommand {
+	return map[string]WorkflowCommand{
+		"commish.jobs.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetCommissionerJobs(r.League))
+		}),
+		"commish.people.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetCommissionerPeople(r.League))
+		}),
+		"commish.schedule.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetCommissionerSchedule(r.League))
+		}),
+		"commish.ledger.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetCommissionerLedger(r.League))
+		}),
+		"commish.ledger.filtered.read": workflowInputCommand[RawFilteredLedgerScope, *RawFilteredLedgerScope]("read", "this is a reading only", func(_ context.Context, s *leagueservice.Service, r RawFilteredLedgerScope) (json.RawMessage, error) {
+			filter, err := json.Marshal(r.Filter)
+			if err != nil {
+				return nil, fmt.Errorf("encode ledger filter: %w", err)
+			}
+			//nolint:contextcheck // The request-scoped Host carries context for this existing read API.
+			return workflowJSON(s.TargetCommissionerLedgerFiltered(r.League, string(filter)))
+		}),
+		"commish.notices.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetCommissionerNotices(r.League))
+		}),
+		"calendar.read": workflowInputCommand[leagueservice.RawLeagueCalendarScope, *leagueservice.RawLeagueCalendarScope]("read", "this is a reading only", func(_ context.Context, s *leagueservice.Service, r leagueservice.RawLeagueCalendarScope) (json.RawMessage, error) {
+			//nolint:contextcheck // The request-scoped Host carries context for this existing read API.
+			return workflowJSON(s.TargetLeagueCalendar(r))
+		}),
+	}
 }
 
 func pulseWorkflowReads() map[string]WorkflowCommand {
@@ -231,6 +266,12 @@ func pulseWorkflowReads() map[string]WorkflowCommand {
 		}),
 		"schedule.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetLeagueSchedule(leagueservice.RawLeagueScheduleScope{League: r.League}))
+		}),
+		"schedule.franchise.read": workflowRead(func(s *leagueservice.Service,
+			r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeFranchiseSchedule(leagueservice.RawNativeScheduleScope{
+				League: r.League, Franchise: r.Franchise, Season: r.Season, LocalZone: r.LocalZone,
+			}))
 		}),
 		"week.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			at := time.Now().UTC()

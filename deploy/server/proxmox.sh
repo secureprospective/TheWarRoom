@@ -139,12 +139,16 @@ printf '{"zone":"%s","hostname":"%s","api_token":"%s","replace":%s}\n' \
   "$zone" "$hostname" "$token" "$replace" > "$work/input.json"
 unset token
 pct push "$ctid" "$work/input.json" /root/twr-input.json --perms 0600
-pct exec "$ctid" -- env TWR_FIRST_LOAD="$first_load" sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'
+# Keep the script single-quoted so TWR_FIRST_LOAD expands inside the CT, not on this host.
+# shellcheck disable=SC2016
+pct exec "$ctid" -- env TWR_FIRST_LOAD="$first_load" sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; if [ "$TWR_FIRST_LOAD" = 0 ]; then rc-service twr-server restart; fi; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'
 # A real reboot, not merely writing an init file.
 pct reboot "$ctid"
 ready=0
 for ((attempt=0; attempt<60; attempt++)); do
   # A first-load install keeps twr-server stopped until the league is loaded; only the Tunnel must be up.
+  # The variable is intentionally expanded inside the CT, not on this host.
+  # shellcheck disable=SC2016
   if pct exec "$ctid" -- env TWR_FIRST_LOAD="$first_load" sh -ec '[ "$TWR_FIRST_LOAD" = 1 ] || rc-service twr-server status; rc-service twr-tunnel status; curl --fail --silent --max-time 2 http://127.0.0.1:20241/ready' >/dev/null 2>&1; then
     ready=1
     break

@@ -11,8 +11,8 @@ import { leagueInitials, type LeagueChoice } from './leaguePicker';
 import './thinHome.css';
 
 export const thinHomeRoute: Route = homeRoute;
-type BriefReader = (league: string, mine: string, port: HostedPort, owner: boolean) =>
-  Promise<HomeBrief>;
+type BriefReader = (league: string, mine: string, port: HostedPort, owner: boolean,
+  commissioner: boolean) => Promise<HomeBrief>;
 export type ThinHomeEntry = 'home' | 'hq' | 'war' | 'pulse' | 'league' | 'control'
   | 'lineup' | 'bids' | 'trades';
 type ThinHomeProps = {
@@ -38,9 +38,8 @@ function needsYouEntry(screen: NeedsYouItem['screen']): ThinHomeEntry | undefine
 }
 export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, now }: ThinHomeProps) {
   const appLeagues = useMemo(() => leagues.filter(league => league.app), [leagues]);
-  const briefReader = useMemo<BriefReader>(() => readBrief ?? ((id, mine, hosted) =>
-    readThinHomeBrief(id, mine, hosted, undefined,
-      commissioner(appLeagues.find(league => league.id === id)?.role))),
+  const briefReader = useMemo<BriefReader>(() => readBrief ?? ((_id, mine, hosted, _owner, isCommissioner) =>
+    readThinHomeBrief(_id, mine, hosted, undefined, isCommissioner)),
   [appLeagues, readBrief]);
   const readingTime = useMemo(() => now ?? Date.now(), [now]);
   const [briefs, setBriefs] = useState<Record<string, HomeBrief>>({});
@@ -59,12 +58,11 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       readPeople: async id => {
         const league = appLeagues.find(choice => choice.id === id);
         if (!league) throw new Error('Admitted league is unavailable');
-        return { league: id, yourFranchise: league.franchise ?? '',
-          mayChangeRules: commissioner(league.role) };
+        return { league: id, yourFranchise: league.franchise ?? '', yourRole: league.role ?? '' };
       },
-      readBrief: async (id, mine, hosted, owner) => {
+      readBrief: async (id, mine, hosted, owner, isCommissioner) => {
         try {
-          const brief = await briefReader(id, mine, hosted, owner);
+          const brief = await briefReader(id, mine, hosted, owner, isCommissioner);
           if (active) setBriefs(current => ({ ...current, [id]: brief }));
           return brief;
         } catch (cause) {

@@ -48,7 +48,8 @@ func FranchiseScheduleReading(league, franchise string, season int, records []Re
 	reading := FranchiseSchedule{League: league, Franchise: franchise, Season: season,
 		Revision: published.Revision, Games: []FranchiseGame{}}
 	if len(published.Weeks) == 0 {
-		reading.Message = "The schedule is not published yet."
+		reading.Message = "The schedule is not published yet. A commissioner must choose Generate schedule, " +
+			"then Publish schedule, in Control Room > Season."
 		return reading, nil
 	}
 	for _, week := range published.Weeks {
@@ -107,7 +108,9 @@ func NativeWeekReading(schedule FranchiseSchedule, at time.Time, weeks []leaguew
 	if len(schedule.Games) == 0 {
 		return reading, nil
 	}
+	// A missing later date cannot erase a current week already determined by the available prefix.
 	var scheduled []leagueweek.Week
+	missingDates := false
 	for _, game := range schedule.Games {
 		found := false
 		for _, week := range weeks {
@@ -118,12 +121,16 @@ func NativeWeekReading(schedule FranchiseSchedule, at time.Time, weeks []leaguew
 			}
 		}
 		if !found {
-			reading.Message = "The NFL week dates are not held yet."
-			return reading, nil
+			missingDates = true
+			break
 		}
 	}
 	current, found := leagueweek.LineupWeek(at, scheduled...)
 	if !found {
+		if missingDates {
+			reading.Message = "The current NFL week cannot be identified from this server's held schedule data. Ask the server operator to update the NFL schedule; changing the league matchup schedule will not fix Pulse."
+			return reading, nil
+		}
 		reading.Message = "The regular-season schedule is finished."
 		return reading, nil
 	}

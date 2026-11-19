@@ -77,3 +77,11 @@ it('reads the live-score evidence on results, standings and odds', () => {
     evidence },
   'native.x', 2026).week).toBe(10);
 });
+
+it('preserves a uint64 odds seed as an exact decimal string', () => {
+  const seed = '18446744073709551615';
+  const odds = parsePulseOdds({ league: 'native.x', name: 'L', season: 2026, revision: 1, status: '',
+    words: '', powerWords: '', gameWords: '', oddsWords: '', week: 10, runs: 0, seed, rows: [], games: [] },
+  'native.x', 2026);
+  expect(odds.seed).toBe(seed);
+});

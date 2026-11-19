@@ -113,7 +113,7 @@ type NativeOdds struct {
 	OddsWords  string         `json:"oddsWords"`
 	Week       int            `json:"week"`
 	Runs       int            `json:"runs"`
-	Seed       uint64         `json:"seed"` // every simulated score and coin flip is drawn from this recorded seed
+	Seed       uint64         `json:"seed,string"` // every simulated score and coin flip is drawn from this recorded seed
 	Rows       []OddsRow      `json:"rows"`
 	Games      []OddsGame     `json:"games"`
 }
