@@ -4,9 +4,9 @@ import { expect, it } from 'vitest';
 const styles = readFileSync(new URL('../control/room/controlRoom.css', import.meta.url), 'utf8');
 const phoneRules = styles.match(/@media \(max-width:699px\)\{([\s\S]*?)\n\}/)?.[1] ?? '';
 
-it('gives hosted Control Room jobs and situations a touch-sized phone layout that scrolls with the page', () => {
+it('gives Control Room jobs a touch-sized phone layout that scrolls with the page', () => {
   expect(phoneRules).not.toBe('');
-  // The phone shell's content area is the one scroller: the Control Room must not trap scrolling.
+  // The phone shell content area is the one scroller; the Control Room must not trap it.
   expect(phoneRules).toContain('.crx.hosted-control-room{width:100%;height:auto;');
   expect(phoneRules).not.toContain('overflow:hidden}');
   expect(phoneRules).toContain('.crx .hosted-job-controls select{min-height:44px;');
