@@ -1036,6 +1036,50 @@
 .wr-v6 .effect .wide.half{grid-column:span 1}
 .wr-v6 .read .kv span:first-child{flex:none;margin-right:12px} .wr-v6 .read .kv span:last-child{text-align:right}
 
+/* Player card and picks: stack their existing desktop panels in the phone viewport. */
+@media (max-width: 699px) {
+  .wr-v6.embedded { width: 100%; min-width: 0; min-height: 0; height: auto; }
+  .wr-v6.embedded .insp {
+    display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: auto auto auto auto auto auto;
+    min-width: 0; min-height: 0; height: auto; overflow: visible; border-left: 0;
+  }
+  .wr-v6.embedded .insp .ihead,
+  .wr-v6.embedded .insp .nums,
+  .wr-v6.embedded .insp .lensrow,
+  .wr-v6.embedded .insp .why,
+  .wr-v6.embedded .insp .idrawers,
+  .wr-v6.embedded .insp .iact,
+  .wr-v6.embedded .insp .ifoot { min-width: 0; }
+  .wr-v6.embedded .insp .ihead { padding: 12px; }
+  .wr-v6.embedded .insp .idrawers { overflow: visible; }
+  .wr-v6.embedded .insp .idr>button,
+  .wr-v6.embedded .insp .iact .btn,
+  .wr-v6.embedded .insp .ifoot button { min-height: 44px; }
+  .wr-v6.embedded .insp .idr>button { padding-inline: 12px; }
+  .wr-v6.embedded .insp .idr .body { padding-inline: 12px; }
+  .wr-v6.embedded .insp textarea { width: 100%; min-height: 88px; }
+  .wr-v6.embedded .native-draft { width: 100%; min-width: 0; height: auto; overflow: visible; border-inline: 0; }
+  .wr-v6.embedded .dr5 { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .wr-v6.embedded .dr5>div:not(.clockbar) { min-width: 0; min-height: 0; overflow: visible; border-right: 0; border-bottom: 2px solid var(--black); }
+  .wr-v6.embedded .clockbar { flex-wrap: wrap; min-width: 0; }
+  .wr-v6.embedded .clockbar>.cb-k { flex: 1 1 150px; min-width: 0; padding: 8px 10px; }
+  .wr-v6.embedded .clockbar .mpk { flex: 1 1 100%; flex-wrap: wrap; }
+  .wr-v6.embedded .clockbar .cb-act { min-height: 54px; }
+  .wr-v6.embedded .dr5 .rtabs { flex-wrap: wrap; }
+  .wr-v6.embedded .dr5 .rtabs button,
+  .wr-v6.embedded .dr5 .qi button,
+  .wr-v6.embedded .dr5 .queue-add button,
+  .wr-v6.embedded .dr5 .queue-add select,
+  .wr-v6.embedded .dr5 .pick { min-height: 44px; }
+  .wr-v6.embedded .dr5 .olist { flex: none; min-height: 0; max-height: 60vh; }
+  .wr-v6.embedded .dr5 .slt { min-height: 44px; grid-template-columns: 42px minmax(0,1fr) auto; }
+  .wr-v6.embedded .dr5 .slt .pick { grid-column: 2/4; }
+  .wr-v6.embedded .dr5 .q-actions { display: flex; gap: 4px; }
+  .wr-v6.embedded .dr5 .q-actions button { min-width: 44px; min-height: 44px; }
+  .wr-v6.embedded .dr5 .queue-add { min-width: 0; }
+  .wr-v6.embedded .dr5 .queue-add select { flex: 1; }
+}
+
 /* Phone trade desk: keep the private inbox and builder inside the viewport. */
 @media (max-width: 699px) {
   .wr-v6.embedded { width: 100%; min-width: 0; min-height: 0; height: auto; }
