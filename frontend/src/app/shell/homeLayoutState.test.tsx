@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { defaultLayout, type Layout } from './homeLayout';
+import { HQAct } from './HQAct';
 import { useHomeLayout } from './homeLayoutState';
 import type { SettingsStorage } from './franchise';
 
@@ -18,9 +19,8 @@ afterEach(async () => {
 function LayoutProbe({ port, storage }: { port: HostedPort; storage: SettingsStorage }) {
   const state = useHomeLayout(port, 'home', storage, true, () => {});
   return <><output data-testid="layout">{JSON.stringify(state.layout)}</output>
-    <button onClick={() => state.save({ mode: 'custom', tiles: [['cap', '1x1']], over: [], pins: {} })}>
-      Save
-    </button></>;
+    <HQAct label="Save layout" onAction={() => state.save({ mode: 'custom',
+      tiles: [['cap', '1x1']], over: [], pins: {} })}>Save</HQAct></>;
 }
 
 it('does not read or write hosted account layouts through browser storage', async () => {
@@ -30,8 +30,10 @@ it('does not read or write hosted account layouts through browser storage', asyn
   const storage: SettingsStorage = {
     getItem: vi.fn(() => JSON.stringify(browserLayout)), setItem: vi.fn(),
   };
-  const port: HostedPort = vi.fn(async request => ({ label: 'Account home layout', writable: true,
-    football: '', data: { layout: defaultLayout(), revision: request.command === 'home.layout.set' ? 1 : 0 } }));
+  const port: HostedPort = vi.fn(async request => ({
+    label: 'Account home layout', writable: true, football: '',
+    data: { layout: defaultLayout(), revision: request.command === 'home.layout.set' ? 1 : 0 },
+  }));
   await act(async () => root!.render(<LayoutProbe port={port} storage={storage} />));
   expect(storage.getItem).not.toHaveBeenCalled();
   expect(JSON.parse(host.querySelector('[data-testid="layout"]')!.textContent!)).toEqual(defaultLayout());
