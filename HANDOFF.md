@@ -41,3 +41,13 @@
 - Next: verify and commit the bundle-mode correction, push and wait for green CI, rebuild/sign v7, upgrade CT 260 normally, retest People/Owner Home/Pulse in the isolated profile, write `RESULT.md`, and run tidy checks.
 - Blocked on: package CI check and completion of the hosted-mode rebuild/retest.
 - Tried and rejected: plain `pnpm build` produced root-relative lazy chunk imports and 404s under `/app`; do not reuse that bundle for browser verification.
+
+### Bee closeout — pulse-b7fix2 (2026-11-19)
+- State: task done. PR #394 is open into `bundle/b7` at `2cc5cc0ff`; all checks were green. Final report: `~/fleet/runs/pulse-b7fix2/RESULT.md`.
+- People and owner Home passed in isolated Brave against the final hosted build; Pulse was retested for both roles and correctly identifies missing held NFL dates. Screenshots and sanitized network evidence are in the run folder.
+- #381 recovery passed on CT 260: backed up the tunnel config and public-host, removed only `/app` and the hostname file, and let the installed normal upgrader restore them. No hand repair. Final CT build is `2cc5cc0ff`; services, tunnel validation, public routes and status are healthy.
+- No league mutations or manual backup action. Both normal upgrades made their standard automatic R2 recovery backups; status verified them. Temporary CT/PVE staging and the drill-only file copies were removed.
+- The plain `pnpm build` bundle had lazy `/assets` 404s; `deploy/server/bundle.sh` now uses existing `build:web`. The final LAB v7 package served all sampled browser assets under `/app/assets`.
+- Tidy: the task-specific Brave profile was signed out and closed. `tidy-check.sh` reports ADB PID 2504044 (PPID 1, cwd `/home/chris/work/TheWarRoom`); left it running because it is outside this worktree and has no associated scratch folder. The reusable pinned lab venv remains with `.scratch/KEEP.md`.
+- Next: Christopher review/merge PR #394. Blocked: none in this task.
+- Tried and rejected: plain `pnpm build` for hosted packaging; it emitted root-relative lazy asset paths. Use `pnpm run build:web`.
