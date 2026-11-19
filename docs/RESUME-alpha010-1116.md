@@ -3,7 +3,58 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
 **MERGE AUTHORITY TONIGHT: he said "review, test if needed, merge - yolo mode" → I merge tonight's lane PRs myself after my review + green CI.**
 
-## 0. TOM HEAD BRAIN — STATE AT 7:05 PM CST WED 11-18 (supersedes every older 0 block)
+## 0. TOM HEAD BRAIN — STATE AT 9:15 PM CST WED 11-18 (supersedes every older 0 block)
+
+**Christopher is asleep. Ruling 9:10 PM: "take the wheel and finish the main session; do what you can on the
+iPhone and the S8; keep working."** Tom runs unattended; blocked steps go to "Needs Christopher" in
+`~/fleet/runs/overnight-alpha-1118/REPORT.md`.
+
+**Done since 7:05:** #393+#395 batch-merged into bundle/b9 (CI green). #394 (b7fix2) reviewed: owner
+schedule read keeps existing `league-view` admission (outsider 403 / anon 401 test), People decoder
+fixed client-side, Pulse = lab NFL schedule missing kickoff dates for 8 weeks (data, not code), #381
+proven on CT 260. GitHub refused my approve (own PR) — review recorded in REPORT. b9lab (2nd try)
+DEPLOYED bundle/b9 `a10900742` to CT 260 (release 9, TUF v8, sign-in owner+commish OK) —
+`~/fleet/runs/pulse-b9lab/RESULT.md`. First try stopped at signing: `~/fleet/runs/pulse-b9lab-try1/`.
+
+**In flight:** `twr-batch-merge.sh bundle/b7 394` (pid 2553689, started 8:45 PM). Check:
+`pgrep -f "twr-batch-merge.sh bundle/b7"`; result = `gh pr view 394 --json state` (MERGED) and REPORT.md
+line "BATCH DONE into bundle/b7". On success → land bundle/b7 on main (squash, own review + green
+verify; merge authority per §8), then merge main into bundle/b8 and bundle/b9.
+
+**Refuted — do not retest:**
+- "Lab signing needs a passphrase": FALSE. LAB-ONLY keys in `~/fleet/lab-release-ct258/` are unencrypted;
+  `release.py sign` always prompts (built for production keys). Sign with inline Python
+  `load_pem_private_key(..., password=None)` as in pulse-b7lab2 (brief b9lab.md §Signing).
+- S8 Chrome cannot go past 101: Play Store shows "Last updated May 9, 2022" for this device even after
+  `pm clear com.android.vending`. Edge and Samsung Internet updates unavailable (Android 9).
+- iPhone Chrome start page (about://newtab) is not drivable; accessibility `perform_press` only focuses.
+  Once Chrome shows any http page, `WebinspectorService.inspector_session(app,page)` +
+  `runtime_evaluate("location.href=...")` drives it (proved: example.com measured 390/390, then wikipedia).
+
+**Decisions (Christopher 11-18):** both phones are free for TWR testing. Browser priority for alpha:
+**Chrome on both phones**; Safari, Firefox, Samsung Internet, Brave, Edge after alpha. S8 is a test
+phone; TWR-server-on-phone idea parked as T659.
+
+**Phones (details: `~/fleet/tom/homelab/HOMELAB-REFERENCE.md`):**
+- iPhone 13: test Apple ID, Chrome installed + Web Inspector on, control `--remotepairing` over Wi-Fi.
+- S8 Active SM-G892U: Android 9, Christopher's Google account, `adb connect 192.168.1.122:5555`;
+  Chrome 101, Firefox 160. After any restart it needs one USB plug-in + `adb -d tcpip 5555`.
+- Backups (keep): `~/Pictures/phone_backup/{iphone,android}/`.
+
+**Next actions, in order:**
+1. Land #394 batch, then B7 → main; sync main into b8, b9.
+2. Add a Chrome mode to `~/fleet/bin/iphone-walk.py` (inspector_session + runtime_evaluate; no WebDriver).
+3. Phone walk on CT 260 (bundle/b9): owner + commissioner, every screen, iPhone Chrome + S8 Chrome
+   (adb: `am start -a android.intent.action.VIEW -d <url>`, `input text`, `screencap`; DevTools via
+   `adb forward tcp:9222 localabstract:chrome_devtools_remote`). Output `~/fleet/runs/phone-walk-1118/`.
+   Creds `~/fleet/runs/pulse-lab4/private/` — never print.
+4. Fix what the walk finds (lanes into bundle/b9), then write/launch b9moves, b9act, b9ask briefs.
+5. Keep tracker HTML + REPORT.md current.
+
+**Needs Christopher:** rotate CT 257 keys; pick how testers reach a server before Sunday; glance at the
+Paylocity tab.
+
+## 0-prev6. (older) TOM HEAD BRAIN — STATE AT 7:05 PM CST WED 11-18 (supersedes every older 0 block)
 
 Head brain: **Tom (Beelink)** since 3:29 PM (ClaudeBox out of weekly tokens). Merge authority unchanged: merge lane PRs into bundles and land bundles on main after own review + green CI.
 Run report: `~/fleet/runs/overnight-alpha-1118/REPORT.md`. Tracker: `~/Downloads/twr-usable-week-plan.html` via `~/fleet/bin/twr-tracker.py` (new subcommands `plan`, `server`, `headbrain`).
