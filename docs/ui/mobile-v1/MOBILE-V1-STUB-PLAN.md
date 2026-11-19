@@ -15,7 +15,7 @@ Bundles 8–9 got this wrong: they squeezed desktop screens into a phone frame (
 | PARTIAL | 230 | Owner exists. ~150 only warn "use the real read, not the mock's sample value"; **79 name a real missing piece** (gap list below). |
 | NEW-MOBILE | 37 | Phone-only: sheets, tab bar, gestures, install, first-run tour, live field animation. |
 | NEW | 14 | Missing everywhere, search recorded: PACE, NFL team records, timeouts, player-status feed, request store, team-count expansion, tour. |
-| RULING | 36 | 20 already settled by the v3 Decisions (below); 16 are open questions for Christopher. |
+| RULING | 36 | About 20 are already settled by the v3 Decisions (below); the rest fall under 7 open questions for Christopher. |
 | MOCK | 30 | Prototype controls (Mock controls sheet, play buttons, sample leagues). Never built. |
 
 ## Rules for every port lane (binding; v3 rules 1–12 also apply)
@@ -39,7 +39,7 @@ Bundles 8–9 got this wrong: they squeezed desktop screens into a phone frame (
 | New owner commands | v3 Decision 5: approve each one when its screen is next. | claim reorder/cancel, trade hold |
 | Test accounts | Left unseated for alpha (11-19). | — |
 
-## Open questions for Christopher (16 rows)
+## Open questions for Christopher
 | # | Question | Rows |
 |---|---|---|
 | Q1 | **League switcher on phone.** The mock has one; the browser session admits one league (409 for multi-league accounts). Allow a member-safe list of my leagues + switch? | `live:league-*`, `shell:league-switch`, cross-league Today (`today:league-count`, `today:job-commish-seven`) |
