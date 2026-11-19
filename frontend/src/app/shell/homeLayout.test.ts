@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { HostedPort } from '../commissioner/hostedRoom';
-import { bump, createHomeLayoutStore, defaultLayout, DEFAULTS, pack, parseLayout, place,
+import { bump, createHomeLayoutStore, defaultLayout, DEFAULTS, pack, parseLayout, place, swap,
   type Layout } from './homeLayout';
 
 it('packs both phase defaults into the 3 × 2 grid', () => {
@@ -13,6 +13,12 @@ it('a full grid asks for a tile to bump, and the bumped tile lands in overflow',
   expect(next.over).toEqual(['race']);
   expect(next.tiles.map(t => t[0])).toContain('cap');
 });
+it('reorders phone boards using the same validated layout rules', () => {
+  const reordered = swap(defaultLayout(), 'in', 'mu', 'news');
+  expect(reordered?.tiles.slice(0, 2).map(([id]) => id)).toEqual(['news', 'mu']);
+  expect(pack(reordered?.tiles ?? [])).not.toBeNull();
+});
+
 it('a saved layout that no longer packs falls back to the default', () => {
   expect(parseLayout(JSON.stringify({ mode: 'custom', tiles: [['news', '1x2'], ['wire', '1x2'],
     ['mu', '1x2'], ['race', '1x1']], over: [], pins: {} })).mode).toBe('default');

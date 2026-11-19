@@ -27,7 +27,7 @@ function phoneViewport(): boolean {
     ? window.matchMedia(PHONE_QUERY).matches : window.innerWidth < 700;
 }
 
-function usePhoneViewport(enabled: boolean): boolean {
+export function usePhoneViewport(enabled: boolean): boolean {
   const [phone, setPhone] = useState(() => enabled && phoneViewport());
   useEffect(() => {
     if (!enabled) return;

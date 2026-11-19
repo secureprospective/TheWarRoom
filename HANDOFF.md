@@ -25,3 +25,10 @@
 - Next: Retry pre-push/push, open PR into `bundle/b9`, verify CI.
 - Blocked on: Heavy guard refuses new suites (disk 91%, other full suite activity); do not clear shared cache or touch other lane files. Claude-OS/Brave phone browser not installed; 390px CSS contract test passed, interactive emulation unverified.
 - Tried and rejected: no JavaScript viewport mode; retain existing hosted screen and use the approved CSS breakpoint.
+
+## pulse-b9ask (Bee, 2026-11-18)
+- Baton: Bee; branch `session/pulse-b9ask-b9`, based on `bundle/b9`.
+- State: phone Today mounts existing Home boards and account layout sync; new Ask answers only from held score reads. Unknowns stay local and labelled.
+- Evidence: full Vitest 1007/1007, tsc, and 390px integration/layout tests pass; desktop suite remains green.
+- Next: pre-push verification, push, open PR into `bundle/b9`, wait for CI.
+- Blocked on: real-device/Claude-OS visual check not run.
