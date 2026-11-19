@@ -27,3 +27,8 @@
 - Pulse wait-state keys now follow the server's note; the server gives the commissioner an operator-directed action when held NFL dates are missing, without implying league schedule edits can fix it.
 - `make lint` passes. Targeted Go and frontend tests pass; full `internal/serverhttp` race suite exceeded its 10-minute test timeout during the first broad run, so endpoint tests were rerun narrowly. TypeScript check remains to rerun after the latest role-gating edit.
 - Next: finish targeted verification, commit/push, open the PR, build a LAB-only bundle, then perform CT 260 recovery drill and browser retest.
+
+### Bee progress — CI and lab preflight
+- PR #394 is open. CI exposed a stale generated browser-door map for the newly cataloged schedule read; regenerated `frontend/src/app/commands/arguments.gen.ts`, and its freshness test plus frontend checks now pass. Re-run CI after pushing the generated change.
+- CT preflight: Proxmox host `twr-lab`, CT 260 running as `twr-260`; both OpenRC services are started, `/app` ingress is present, and `/etc/twr/public-host` is mode 0640 root:twr. Root hash is `8c91770c…`, matching the lab-260 signing root.
+- Next: prepare a scoped copy of the matching signing material in this run's private evidence workspace, build the LAB-ONLY branch bundle, back up/remove only the requested browser state, and run the installed normal upgrader.
