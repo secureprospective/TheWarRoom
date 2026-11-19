@@ -197,3 +197,11 @@ it('renders only supplied badges and a source-backed live indicator', async () =
   expect(host!.querySelector('.phone-app__live-dot')).not.toBeNull();
   expect(host!.querySelector('.phone-app__tab')?.getAttribute('aria-label')).toBe('Today · 2 notifications');
 });
+
+it('fills the active tab from its ported content and keeps placeholders for the rest', async () => {
+  await renderFrame(390, <PhoneAppFrame activeTab="today" leagues={[league]} selectedLeagueId={league.id}
+    tabs={{ today: <p className="ported">Today content</p> }} onSelectTab={() => {}}
+    onSelectLeague={() => {}}><p>Desktop</p></PhoneAppFrame>);
+  expect(host!.querySelector('.phone-app__slot .ported')?.textContent).toBe('Today content');
+  expect(host!.querySelector('.phone-app__slot h1')).toBeNull();
+});
