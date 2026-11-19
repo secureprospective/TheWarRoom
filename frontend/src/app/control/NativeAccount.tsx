@@ -17,6 +17,7 @@ import './nativeAccount.css';
 
 const HostedLeague = lazy(() => import('../commissioner/HostedLeague'));
 const ThinHome = lazy(() => import('../shell/ThinHome'));
+const TodayTab = lazy(() => import('../phone/TodayTab'));
 
 type Screen = 'login' | 'join' | 'authenticator' | 'recovery';
 const tabs = [
@@ -204,7 +205,10 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       onSignOut={() => {
         void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget')))
           .catch(() => {});
-      }} homeReadSource={thinHome}>{leagueContent}</PhoneAppFrame>}
+      }} homeReadSource={thinHome} tabs={{ today: <Suspense fallback={<p role="status">Opening Today…</p>}>
+        <TodayTab leagues={admittedLeagues} onOpen={(league, entry) => {
+          setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
+        }} /></Suspense> }}>{leagueContent}</PhoneAppFrame>}
     </div>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>

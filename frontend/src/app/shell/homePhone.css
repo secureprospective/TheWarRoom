@@ -1,10 +1,5 @@
 @media (max-width: 699px) {
-  .thin-home__phone-boards { width: 100%; max-width: 100%; flex: none; overflow-x: hidden; border-top: 2px solid #000; }
   .hb { max-width: 100%; overflow-x: hidden; }
-  .thin-home__phone-boards > .thin-home__section-head { min-height: 44px; }
-  .thin-home__phone-boards > [role="status"], .thin-home__phone-boards > [role="alert"] {
-    margin: 12px;
-  }
 
   .hb, .hb .shell.hb-shell, .hb .work {
     width: 100%;
