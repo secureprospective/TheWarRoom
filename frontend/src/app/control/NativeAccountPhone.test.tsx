@@ -41,7 +41,9 @@ it('lands on the new phone app after sign-in and shows the ported Today tab', as
   await vi.resetModules();
   const { default: NativeAccount } = await import('./NativeAccount');
   const admission = { protocol: 1, admission: { league: 'native.test', name: 'Test League',
-    franchise: 'franchise.01', franchiseName: 'My Team', role: 'Owner', seats: [] } };
+    franchise: 'franchise.01', franchiseName: 'My Team', role: 'Owner', seats: [] },
+    leagues: [{ id: 'native.test', name: 'Test League', role: 'Owner', franchise: 'franchise.01',
+      franchiseName: 'My Team' }] };
   const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
     if (url === '/app/session' && init?.method === 'POST')
       return new Response(JSON.stringify(admission), { status: 200,
