@@ -143,7 +143,8 @@ export default function HostedLeague(props: {
       </Suspense>
     : <HostedWorkRoom {...props} onPlayers={publishHomePlayers} onPlayer={openPlayer} />;
   return <ThinLeagueShell leagueName={props.name} route={route} commissioner={commissioner}
-    players={players} navigate={navigate} openPlayer={openPlayer} onHome={props.onHome}>{page}</ThinLeagueShell>;
+    players={players} navigate={navigate} openPlayer={openPlayer} onHome={props.onHome}>
+    {page}</ThinLeagueShell>;
 }
 function HostedWorkRoom({
   league,

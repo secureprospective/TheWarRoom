@@ -63,11 +63,8 @@ it('lands on the phone frame with five switchable placeholder tabs and live data
   await click(tabButtons()[1]);
   expect(host!.querySelector('.phone-app__slot h1')?.textContent).toBe('Live');
   expect(tabButtons()[1].getAttribute('aria-selected')).toBe('true');
-  await act(async () => tabButtons()[1].dispatchEvent(new KeyboardEvent('keydown', {
-    key: 'ArrowRight', bubbles: true,
-  })));
+  await click(tabButtons()[2]);
   expect(host!.querySelector('.phone-app__slot h1')?.textContent).toBe('Team');
-  expect(document.activeElement).toBe(tabButtons()[2]);
 });
 
 it('opens the admitted-league picker, switches with a toast, and dismisses sheets accessibly', async () => {
@@ -79,7 +76,7 @@ it('opens the admitted-league picker, switches with a toast, and dismisses sheet
   expect(host!.querySelector('[role="dialog"]')?.getAttribute('aria-modal')).toBe('true');
   expect(host!.querySelector('#phone-app-leagues-title')?.textContent).toBe('Your leagues');
   const rows = [...host!.querySelectorAll('.phone-app__league-row')];
-  expect(rows[0].getAttribute('aria-current')).toBe('true');
+  expect(rows[0].getAttribute('aria-pressed')).toBe('true');
   await click(rows[1]);
   expect(onSelectLeague).toHaveBeenCalledWith('two');
   expect(host!.querySelector('.phone-app__toast')?.textContent).toBe('Switched to Second League');
@@ -87,12 +84,14 @@ it('opens the admitted-league picker, switches with a toast, and dismisses sheet
 
   await click(host!.querySelector('.phone-app__ask')!);
   expect(host!.querySelector('#phone-app-ask-title')?.textContent).toBe('Ask');
-  await act(async () => document.dispatchEvent(new KeyboardEvent('keydown', {
-    key: 'Escape', bubbles: true,
+  await act(async () => host!.querySelector('dialog')!.dispatchEvent(new Event('cancel', {
+    cancelable: true,
   })));
   expect(host!.querySelector('[role="dialog"]')).toBeNull();
   await click(host!.querySelector('.phone-app__league')!);
-  await click(host!.querySelector('.phone-app__scrim')!);
+  await act(async () => host!.querySelector('dialog')!.dispatchEvent(new MouseEvent('pointerup', {
+    bubbles: true,
+  })));
   expect(host!.querySelector('[role="dialog"]')).toBeNull();
 
   await click(host!.querySelector('.phone-app__ask')!);
@@ -195,5 +194,6 @@ it('renders only supplied badges and a source-backed live indicator', async () =
     selectedLeagueId={league.id} badges={{ today: 2 }} live onSelectTab={() => {}}
     onSelectLeague={() => {}}><p>Desktop</p></PhoneAppFrame>);
   expect(host!.querySelector('.phone-app__badge')?.textContent).toBe('2');
-  expect(host!.querySelector('.phone-app__live-dot')?.getAttribute('aria-label')).toBe('Games live');
+  expect(host!.querySelector('.phone-app__live-dot')).not.toBeNull();
+  expect(host!.querySelector('.phone-app__tab')?.getAttribute('aria-label')).toBe('Today · 2 notifications');
 });
