@@ -25,3 +25,10 @@
 - Next: Retry pre-push/push, open PR into `bundle/b9`, verify CI.
 - Blocked on: Heavy guard refuses new suites (disk 91%, other full suite activity); do not clear shared cache or touch other lane files. Claude-OS/Brave phone browser not installed; 390px CSS contract test passed, interactive emulation unverified.
 - Tried and rejected: no JavaScript viewport mode; retain existing hosted screen and use the approved CSS breakpoint.
+
+- Baton: Bee, 2026-11-18; B9-2 lane on `session/b9-2-league-activity`, based on `origin/bundle/b9`.
+- State: phone League view now has Table, Schedule, Activity and Live tabs. Activity uses only the validated member-safe public feed; player status remains visibly unavailable. Blank/invalid NFL kickoffs read “dates not published yet.”
+- Evidence: 147 Vitest files/1005 tests and frontend tsc pass; member-safe activity unit and hosted-read tests pass under `-race`. The phone CSS regression covers 390px and 44px targets.
+- Next: commit, push through pre-push, open PR to `bundle/b9`, wait for CI.
+- Blocked on: pre-push and PR CI.
+- Tried and rejected: none.

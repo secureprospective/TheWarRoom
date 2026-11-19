@@ -44,6 +44,7 @@ export function Field({ game }: { game: Game }) {
 }
 // "Mon, Oct 12, 7:15 PM": the app's local wording, without seconds.
 export function kickoffText(kickoff: string) {
+  if (!kickoff || Number.isNaN(Date.parse(kickoff))) return 'dates not published yet';
   return new Date(kickoff).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit' });
 }
