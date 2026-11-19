@@ -121,18 +121,6 @@ export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeag
     setAnswer(answerPhoneQuestion(prompt, askBrief, askMine));
   }
 
-  function dismissFromHandle(event: PointerEvent<HTMLDivElement>) {
-    if (event.type === 'pointerdown') {
-      event.currentTarget.dataset.startY = String(event.clientY);
-      event.currentTarget.setPointerCapture?.(event.pointerId);
-      return;
-    }
-    const start = Number(event.currentTarget.dataset.startY);
-    delete event.currentTarget.dataset.startY;
-    if (event.type === 'pointerup' && Number.isFinite(start) && event.clientY - start > 70)
-      closeSheet();
-  }
-
   if (!enabled || !phone || showControlRoom) return <>{children}</>;
 
   return <section className="phone-app" aria-label="The War Room phone app">
@@ -168,7 +156,7 @@ export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeag
     <div className="phone-app__toast" role="status" aria-live="polite">{toast}</div>
     {homeReadSource && <div className="phone-app__data" aria-hidden="true" hidden>{homeReadSource}</div>}
     {sheet && <PhoneSheet title={sheet === 'leagues' ? 'Your leagues' : 'Ask'}
-      onClose={closeSheet} onHandlePointer={dismissFromHandle}>
+      onClose={closeSheet}>
       {sheet === 'leagues' ? <>
         <div className="phone-app__league-list" aria-label="Your leagues">
           {leagues.length === 0 && <p role="status">No admitted leagues.</p>}
@@ -214,19 +202,31 @@ export function PhoneAppFrame({ enabled = true, activeTab, leagues, selectedLeag
   </section>;
 }
 
-function PhoneSheet({ title, onClose, onHandlePointer, children }: {
+/** PhoneSheet is the phone app's one bottom sheet: a native modal dialog that closes on Escape, on a
+ *  tap outside it, on its Close key and on a downward drag of its handle. */
+export function PhoneSheet({ title, id, onClose, children }: {
   title: string;
+  id?: string;
   onClose: () => void;
-  onHandlePointer: (event: PointerEvent<HTMLDivElement>) => void;
   children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const titleId = title === 'Ask' ? 'phone-app-ask-title' : 'phone-app-leagues-title';
+  const titleId = id ?? (title === 'Ask' ? 'phone-app-ask-title' : 'phone-app-leagues-title');
   useEffect(() => {
     const element = dialog.current;
     if (element && !element.open) element.showModal?.();
     return () => element?.close?.();
   }, []);
+  function onHandlePointer(event: PointerEvent<HTMLDivElement>) {
+    if (event.type === 'pointerdown') {
+      event.currentTarget.dataset.startY = String(event.clientY);
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      return;
+    }
+    const start = Number(event.currentTarget.dataset.startY);
+    delete event.currentTarget.dataset.startY;
+    if (event.type === 'pointerup' && Number.isFinite(start) && event.clientY - start > 70) onClose();
+  }
   // The browser's modal dialog traps focus and turns Escape into a cancel event.
   return <dialog ref={dialog} className="phone-app__sheet" role="dialog" aria-modal="true"
     aria-labelledby={titleId}
