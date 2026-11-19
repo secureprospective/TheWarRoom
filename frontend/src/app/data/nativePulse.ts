@@ -1,4 +1,4 @@
-import { array, integer, object, text } from './parseValues';
+import { array, choice, integer, object, requiredText, text, timestamp } from './parseValues';
 
 // League points cross the wire as leaguerules.Decimal: ten-thousandths of a point.
 const SCALE = 10000;
@@ -267,6 +267,25 @@ export function parsePulseBracket(value: unknown, league: string, season: number
 
 export type PulseSchedule = { season: number;
   weeks: { week: number; games: { home: string; away: string }[]; bye?: string }[] };
+export type PulseActivityKind = 'notice' | 'trade' | 'roster';
+export type PulseActivityEvent = { id: string; kind: PulseActivityKind; when: string; summary: string;
+  franchises: string[] };
+export type PulseActivity = { league: string; revision: number; events: PulseActivityEvent[] };
+
+/** parsePulseActivity accepts only the member-safe public event projection for this league. */
+export function parsePulseActivity(value: unknown, league: string): PulseActivity {
+  const r = object(value, 'League activity', ['league', 'revision', 'events']);
+  if (r.league !== league) throw new Error('Activity belongs to another league');
+  return { league: text(r.league, 'League'), revision: integer(r.revision, 'Revision'),
+    events: array(r.events, 'Activity events', (v, p) => {
+      const event = object(v, p, ['id', 'kind', 'when', 'summary', 'franchises']);
+      return { id: requiredText(event.id, `${p}.id`),
+        kind: choice(event.kind, `${p}.kind`, ['notice', 'trade', 'roster']),
+        when: timestamp(event.when, `${p}.when`), summary: requiredText(event.summary, `${p}.summary`),
+        franchises: event.franchises === undefined ? [] : array(event.franchises, 'Franchises',
+          (franchise, path) => requiredText(franchise, path)) };
+    }) };
+}
 export function parsePulseSchedule(value: unknown, league: string): PulseSchedule {
   const r = object(value, 'Schedule', ['league', 'revision', 'season', 'weeks']);
   if (r.league !== league) throw new Error('The schedule belongs to another league');

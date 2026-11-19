@@ -1,10 +1,18 @@
 import { expect, it } from 'vitest';
 import type { PulseGame, PulseResults, PulseStarter } from '../data/nativePulse';
+import { gameTime } from '../now/LiveGame';
 import type { Game as LiveNflGame } from '../now/liveContract';
 import { matchupPlay, playWords, pulseRows, statusLabel } from './pulseModel';
 
 const game = (extra: Partial<PulseGame>): PulseGame => ({ week: 10, home: '0001', away: '0002', homeName: 'A',
   awayName: 'B', status: 'No result yet', words: '', why: [], ...extra });
+
+it('labels an unpublished NFL kickoff date instead of formatting a blank timestamp', () => {
+  expect(gameTime({ status: 'pre', kickoff: '' } as unknown as LiveNflGame))
+    .toBe('Kickoff dates not published yet');
+  expect(gameTime({ status: 'pre', kickoff: 'not a date' } as unknown as LiveNflGame))
+    .toBe('Kickoff dates not published yet');
+});
 
 it('says where an undecided game stands', () => {
   expect(statusLabel(game({}), false)).toBe('WAITING');

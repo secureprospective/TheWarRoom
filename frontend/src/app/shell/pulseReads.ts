@@ -5,16 +5,18 @@ import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { parsePulseBracket, parsePulseDirectory, parsePulseLineup, parsePulseOdds,
   parsePulseResults, parsePulseSchedule, parsePulseFranchiseSchedule, recentForm, type PulseFormResult,
-  type PulseSchedule, parsePulseStandings, parsePulseWeek, type PulseBracket, type PulseFixture,
-  type PulseLineupPlayer, type PulseOdds, type PulseResults, type PulseSeat, type PulseStandings } from
+  type PulseSchedule, parsePulseActivity, parsePulseStandings, parsePulseWeek, type PulseActivity,
+  type PulseBracket, type PulseFixture, type PulseLineupPlayer, type PulseOdds, type PulseResults,
+  type PulseSeat, type PulseStandings } from
   '../data/nativePulse';
 import { parseWarRoomProjections } from '../data/nativeProjections';
 import type { Node } from './nodes';
 import type { PlayerCandidate } from './ThinPlayerSearch';
 
+export type PulseTab = 'now' | 'race' | 'schedule' | 'activity';
 export type PulseScope = { league: string; mine: string; port?: HostedPort;
   serverTime?: boolean; commissioner?: boolean;
-  navigate?: (tab: 'now' | 'race') => void; back?: () => void;
+  navigate?: (tab: PulseTab) => void; back?: () => void;
   leave: (node?: Node) => void; embedded?: boolean; tabs?: HTMLElement | null;
   onPlayer?: (player: PlayerCandidate) => void;
   onPlayers?: (players: PlayerCandidate[]) => void };
@@ -132,6 +134,12 @@ export async function readNativePulse(league: string, mine: string, port: Hosted
   result.formPending = false;
   result.formNote ||= result.standings?.words || result.scheduleNote || result.weekNote;
   return result;
+}
+
+export async function readPulseActivity(league: string,
+  port: HostedPort = hostedWorkflow): Promise<PulseActivity> {
+  const r = await port({ command: 'league.activity.read', mode: 'read', arguments: { league } });
+  return parsePulseActivity(r.data, league);
 }
 
 export async function readPulseOdds(league: string, season: number,

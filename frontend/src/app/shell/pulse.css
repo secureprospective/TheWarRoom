@@ -968,6 +968,15 @@
 .lp-v14 .ct.power tr.sel .tk i{background:var(--mine)}
 
 .lp-v14.hosted .shell{grid-template-columns:minmax(0,1fr) 260px}
+.lp-v14 .pulse-phone-tabs{display:none}
+.lp-v14 .pulse-activity-filters{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--edge);background:var(--sunken)}
+.lp-v14 .pulse-activity-filters button{flex:1;min-width:0;min-height:40px;padding:6px;border:1px solid var(--edge);font:700 10px var(--mono);letter-spacing:.08em}
+.lp-v14 .pulse-activity-filters button[aria-selected=true]{background:var(--edge-hi);color:var(--black)}
+.lp-v14 .pulse-activity-note{padding:10px 12px;color:var(--ink3);font:10px var(--mono);line-height:1.5}
+.lp-v14 .pulse-activity-event{display:grid;gap:5px;padding:11px 12px;border-top:1px solid var(--rule)}
+.lp-v14 .pulse-activity-event>div{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.lp-v14 .pulse-activity-event b,.lp-v14 .pulse-activity-event time{font:700 9px var(--mono);letter-spacing:.08em;color:var(--ink3)}
+.lp-v14 .pulse-activity-event p{overflow-wrap:anywhere;line-height:1.45}
 
 /* Phone Pulse is a narrow presentation of the same hosted reads. Desktop rules above stay intact. */
 @media (max-width: 699px) {
@@ -982,6 +991,17 @@
   }
   .lp-v14.embedded .ws-tabs { min-width: 0; }
   .lp-v14.embedded .ws-tabs button { min-width: 44px; min-height: 44px; padding: 8px 12px; }
+  .lp-v14.embedded .pulse-phone-tabs {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); min-width: 0;
+    border-bottom: 2px solid var(--black); background: var(--sunken);
+  }
+  .lp-v14.embedded .pulse-phone-tabs button {
+    min-width: 0; min-height: 44px; padding: 8px 4px; border-right: 1px solid var(--black);
+    color: var(--ink3); font: 700 10px var(--mono); letter-spacing: .06em;
+  }
+  .lp-v14.embedded .pulse-phone-tabs button[aria-selected=true] {
+    color: var(--ink); background: var(--canvas); box-shadow: inset 0 3px 0 var(--edge-hi);
+  }
   .lp-v14.embedded .sline {
     grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 12px;
   }
@@ -1034,4 +1054,14 @@
   .lp-v14.embedded .grid-sched { min-width: max-content; }
   .lp-v14.embedded .grid-sched div { min-width: 70px; }
   .lp-v14.embedded .scroll { max-width: 100%; overflow-x: auto; }
+  .lp-v14.embedded .pulse-activity-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lp-v14.embedded .pulse-activity-filters button { min-width: 0; min-height: 44px; padding: 6px 3px; }
+  .lp-v14.embedded .pulse-activity-list { overflow-x: hidden; }
+  .lp-v14.embedded .pulse-activity-event { min-width: 0; }
+  .lp-v14.embedded .pulse-schedule-page { min-width: 0; width: 100%; }
+  .lp-v14.embedded #ws-schedule .ch { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .lp-v14.embedded #ws-schedule .ch .seg { max-width: 100%; }
+  .lp-v14.embedded #ws-schedule .ch .seg button { min-width: 44px; min-height: 44px; padding: 8px; }
+  .lp-v14.embedded #ws-schedule .grid-sched { width: max-content; }
+  .lp-v14.embedded #ws-schedule .ct { min-width: 390px; }
 }

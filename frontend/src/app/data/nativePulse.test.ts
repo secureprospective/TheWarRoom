@@ -1,7 +1,25 @@
 import { expect, it } from 'vitest';
-import { parsePulseFranchiseSchedule, parsePulseOdds, parsePulseResults, parsePulseStandings } from
+import { parsePulseActivity, parsePulseFranchiseSchedule, parsePulseOdds, parsePulseResults,
+  parsePulseStandings } from
   './nativePulse';
 import { scoreSources } from '../shell/NativeLeaguePulse';
+
+it('accepts only the member-safe activity projection for the requested league', () => {
+  const value = { league: 'native.x', revision: 3, events: [{ id: 'notice.1', kind: 'notice',
+    when: '2026-11-18T12:00:00Z', summary: 'Trade deadline is Saturday.',
+    franchises: ['franchise.1'] }] };
+  expect(parsePulseActivity(value, 'native.x').events[0]).toEqual({ ...value.events[0] });
+  expect(() => parsePulseActivity({ ...value, league: 'native.other' }, 'native.x'))
+    .toThrow('another league');
+  expect(() => parsePulseActivity({ ...value, events: [{ ...value.events[0], kind: 'bid' }] }, 'native.x'))
+    .toThrow('expected notice | trade | roster');
+  const privateField = { ...value.events[0], reason: 'private' };
+  expect(() => parsePulseActivity({ ...value, events: [privateField] }, 'native.x'))
+    .toThrow('unexpected field');
+  const invalidTime = { ...value.events[0], when: 'tomorrow' };
+  expect(() => parsePulseActivity({ ...value, events: [invalidTime] }, 'native.x'))
+    .toThrow('expected RFC3339 timestamp');
+});
 
 it('parses a franchise schedule only for its requested league, team and season', () => {
   const schedule = parsePulseFranchiseSchedule({ league: 'native.x', franchise: 'franchise.1', season: 2026,
