@@ -130,6 +130,10 @@ func nativeServerReads() []Command {
 			Arguments:  Shape(reflect.TypeFor[commissioner.RawLeagueActivityScope](), "RawLeagueActivityScope.Validate"),
 			Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "ledger",
 			Safeguards: "allow-listed public events only; private bids and commissioner details excluded"},
+		{ID: "nfl.player-status.read", Method: "TargetNFLPlayerStatus", Version: "1", Role: "domain",
+			Gravity: "G0", Availability: "server", Arguments: NativeReadShape("TargetNFLPlayerStatus", "league:string"),
+			Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "public-nfl-status",
+			Safeguards: "public NFL injury designation, body part and expected return week only"},
 	}
 }
 

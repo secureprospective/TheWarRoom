@@ -1,6 +1,7 @@
 package serverhttp_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -11,7 +12,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -86,6 +89,86 @@ func TestHostedPulseReads(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fixedNFLInjuryFeed struct{ feed leagueservice.NFLInjuryFeed }
+
+func (f fixedNFLInjuryFeed) ReadNFLInjuryFeed(context.Context) (leagueservice.NFLInjuryFeed, error) {
+	return f.feed, nil
+}
+
+func TestHostedNFLPlayerStatusIsAReportedMemberRead(t *testing.T) {
+	id, err := playerid.New("0099")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fetched := time.Now().UTC().Add(-time.Minute)
+	feed := leagueservice.NFLInjuryFeed{Season: 2026, FetchedAt: fetched, LastAttemptAt: fetched, Available: true,
+		Injuries: []leaguefeed.Injury{{ID: id, Status: "Out", Details: "Ankle", ExpReturn: "Oct 15, 2026"}}}
+	f := newHostedFixtureWithNFLInjuryFeed(t, fixedNFLInjuryFeed{feed: feed}, true, true)
+	commissioner, _ := f.directCommissioner(t)
+	member := f.login(t, "owner", "private-password")
+	status, body := sendNFLPlayerStatusRead(t, f, member, "", "native.hosted", "")
+	if status != 200 {
+		t.Fatalf("member status read: %d: %s", status, body)
+	}
+	var response serverhttp.WorkflowResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		t.Fatal(err)
+	}
+	var data struct {
+		League    string     `json:"league"`
+		State     string     `json:"state"`
+		FetchedAt *time.Time `json:"fetchedAt"`
+		Players   []struct {
+			Player      string `json:"player"`
+			Designation string `json:"designation"`
+			BodyPart    string `json:"bodyPart"`
+		} `json:"players"`
+	}
+	if err := json.Unmarshal(response.Data, &data); err != nil {
+		t.Fatal(err)
+	}
+	if data.League != "native.hosted" || data.State != "available" || data.FetchedAt == nil || !data.FetchedAt.Equal(fetched) ||
+		len(data.Players) != 1 || data.Players[0].Player != "0099" || data.Players[0].Designation != "Out" || data.Players[0].BodyPart != "Ankle" ||
+		strings.Contains(string(response.Data), "Oct 15, 2026") {
+		t.Fatalf("unexpected public status facts: %s", response.Data)
+	}
+	if status, body := sendNFLPlayerStatusRead(t, f, member, "", "native.other", ""); status == 200 {
+		t.Fatalf("non-member read succeeded: %s", body)
+	}
+	if status, body := sendAgentNFLPlayerStatusRead(t, f, commissioner); status != 200 || !strings.Contains(string(body), `"designation":"Out"`) {
+		t.Fatalf("scoped agent status read: %d: %s", status, body)
+	}
+}
+
+func sendNFLPlayerStatusRead(t *testing.T, f *hostedFixture, bearer, proof, league, football string) (int, []byte) {
+	t.Helper()
+	raw := workflowRequest(t, "nfl.player-status.read", "read", `{"league":"`+league+`"}`, football)
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return f.send(t, serverhttp.WorkflowPath, string(body), bearer, proof)
+}
+
+func sendAgentNFLPlayerStatusRead(t *testing.T, f *hostedFixture, bearer string) (int, []byte) {
+	t.Helper()
+	token := f.agentToken(t, bearer, []string{"nfl.player-status.read"}, "read")
+	assets := workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")
+	assetsBody, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &assets})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, result := f.send(t, serverhttp.WorkflowPath, string(assetsBody), token.Bearer, "")
+	if status != 200 {
+		t.Fatalf("agent pin read: %d: %s", status, result)
+	}
+	var pin serverhttp.WorkflowResponse
+	if err := json.Unmarshal(result, &pin); err != nil {
+		t.Fatal(err)
+	}
+	return sendNFLPlayerStatusRead(t, f, token.Bearer, "", "native.hosted", pin.Football)
 }
 
 func TestHostedNFLGamesReadsTheServerBoardForAMemberOnly(t *testing.T) {

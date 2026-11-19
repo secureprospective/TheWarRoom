@@ -65,6 +65,26 @@ func TestLeagueActivityIsAHostedLeagueViewRead(t *testing.T) {
 	}
 }
 
+func TestNFLPlayerStatusIsAHostedLeagueViewRead(t *testing.T) {
+	var found bool
+	for _, command := range NativeCommands(Schema{}) {
+		if command.ID != "nfl.player-status.read" {
+			continue
+		}
+		found = true
+		if command.Method != "TargetNFLPlayerStatus" || command.Availability != "server" ||
+			command.Permission != "league-view" || len(command.Modes) != 1 || command.Modes[0] != Read {
+			t.Fatalf("NFL status catalog entry = %+v", command)
+		}
+	}
+	if !found {
+		t.Fatal("member-safe NFL status read missing from catalog")
+	}
+	if _, ok := WorkflowCommands()["nfl.player-status.read"]; !ok {
+		t.Fatal("NFL status read missing from hosted workflow")
+	}
+}
+
 func TestBidWithdrawalIsNotPublishedThroughCommandDoors(t *testing.T) {
 	for _, command := range NativeCommands(Schema{}) {
 		if command.ID == "bid.withdraw" {

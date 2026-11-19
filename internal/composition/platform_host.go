@@ -10,6 +10,7 @@ import (
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -50,7 +51,7 @@ func (a *App) injuryReturns() []leaguefeed.Injury {
 	weeks := controlapp.FlattenScheduleWeeks(maps.Values(a.now.schedules), func(feed heldSeasonFeed[[]nflschedule.RawWeek]) []nflschedule.RawWeek {
 		return feed.Value
 	})
-	return controlapp.InjuryReturns(a.core.SeasonInjuries.Value, weeks)
+	return injuries.ResolveReturnWeeks(a.core.SeasonInjuries.Value, weeks)
 }
 
 func (h platformHost) Clock() (snapshot.Sourced[leagueclock.Reading], error) {

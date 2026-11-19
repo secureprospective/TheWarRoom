@@ -268,7 +268,7 @@ type workflowOutput interface {
 		commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets |
 		commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck |
 		commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules |
-		leagueservice.NFLGames | leagueservice.NFLGame | commissioner.NativeCapCheck |
+		leagueservice.NFLGames | leagueservice.NFLGame | leagueservice.NFLPlayerStatus | commissioner.NativeCapCheck |
 		market.ContractQuote | market.WhatIfStack | market.ContractDecisions | leagueservice.DraftQueue |
 		leagueservice.PlayerNotes | leagueservice.PlayerWatchList | leagueservice.PlayerPrivateChange |
 		leagueservice.TradeDraftList | leagueservice.SavedTradeDraft | leagueservice.TradeDraftDeleted |

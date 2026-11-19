@@ -168,7 +168,7 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 		writeUnavailable(w, "football reference unavailable")
 		return
 	}
-	service := leagueservice.NewHosted(h.Worker.Host(pinned), gate)
+	service := leagueservice.NewHosted(h.Worker.Host(pinned), gate).WithNFLInjuryFeed(h.InjuryFeed)
 	h.dispatch(w, r.WithContext(ctx), service, raw)
 }
 

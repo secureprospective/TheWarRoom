@@ -316,6 +316,30 @@ football-evidence version is imported and the old pin remains selected. If impor
 fails, the new version remains archived but unselected. No league events are added; restart is required for the running
 service to load the new pin. Verify owner `week.read` and `twr-status` after restart.
 
+### Refresh NFL player status (hosted automatic & operator)
+
+The hosted worker follows the existing `startArchivePurge` lifetime pattern: fetch immediately, tick
+on a timer, and stop with the hosted context. It fetches MFL's league-less injuries export every four
+hours. `injuries.Fetch` validates the response; `archive.Transport` records attempts and bodies in
+reference storage. The member read uses the newest parseable successful body, `FetchHealth` to detect a
+later failed attempt, and the league's pinned schedule to resolve expected return week. League members
+receive only designation, body part, expected return week, and fetched-at through
+`nfl.player-status.read`; no news prose or league login is involved. A missing first fetch reads as
+`unavailable`. If an update fails after a good fetch, the last good facts remain visible as `stale`,
+with the original fetched-at. Only MFL-reported injury rows appear; an absent player is not asserted
+healthy or active, and the feed contains no practice or depth-chart data.
+
+For an immediate operator refresh while the server is stopped:
+
+```sh
+rc-service twr-server stop
+twr-server refresh-nfl-injuries -db /var/lib/twr/server.db -season 2026
+rc-service twr-server start
+```
+
+The command uses the same keyless, API-host MFL export and archives its response through the existing
+reference-data transport. No league-specific MFL data is synchronized.
+
 ## Join link: owners pick their own team
 
 ```

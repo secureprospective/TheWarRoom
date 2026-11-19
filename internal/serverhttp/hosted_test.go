@@ -90,6 +90,10 @@ func (f *hostedFixture) advanceTime(delta time.Duration) {
 }
 
 func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
+	return newHostedFixtureWithNFLInjuryFeed(t, nil, workflows...)
+}
+
+func newHostedFixtureWithNFLInjuryFeed(t *testing.T, injuryFeed leagueservice.NFLInjuryFeedSource, workflows ...bool) *hostedFixture {
 	t.Helper()
 	var registries []*measures.Registry
 	if len(workflows) > 1 && workflows[1] {
@@ -147,7 +151,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	}
 	f.publisher = serverhttp.NewPublisher()
 	f.games = leagueservice.NewLiveGames()
-	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, HomeLayouts: credentials, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, InjuryFeed: injuryFeed, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, HomeLayouts: credentials, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
 		BackupLeague: func(_ context.Context, league string) (leagueservice.BackupResult, error) {
 			if f.backupBusy.Load() {
 				return leagueservice.BackupResult{}, leagueservice.ErrBackupInProgress

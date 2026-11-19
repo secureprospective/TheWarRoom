@@ -264,6 +264,9 @@ func pulseWorkflowReads() map[string]WorkflowCommand {
 		"nfl.games.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNFLGames(r.League))
 		}),
+		"nfl.player-status.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNFLPlayerStatus(r.League))
+		}),
 		"schedule.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetLeagueSchedule(leagueservice.RawLeagueScheduleScope{League: r.League}))
 		}),
