@@ -4,6 +4,7 @@ import { nativeCommands, serverCommands } from './native.gen';
 export type NativeCommandId = keyof typeof nativeCommands;
 export type HostedWorkflowCommandId = keyof typeof serverCommands;
 type NativeRequestCommandId = NativeCommandId | HostedWorkflowCommandId;
+type CatalogRow = { definition: { Availability: string; Modes: readonly string[]; Permission: string } };
 type NativeDefinition<K extends NativeRequestCommandId> =
   K extends keyof typeof nativeCommands ? typeof nativeCommands[K]['definition'] :
   K extends keyof typeof serverCommands ? typeof serverCommands[K]['definition'] : never;
@@ -18,10 +19,14 @@ export type NativeRequest = { [K in NativeRequestCommandId]: {
 } }[NativeRequestCommandId];
 
 export function hostedCommandAvailable(command: string, mode: 'preview' | 'read' = 'preview'): boolean {
-  type CatalogRow = { definition: { Availability: string; Modes: readonly string[] } };
   const definition = (serverCommands as unknown as Record<string, CatalogRow>)[command]?.definition
     ?? (nativeCommands as unknown as Record<string, CatalogRow>)[command]?.definition;
   return Boolean(definition && definition.Availability !== 'desktop' && definition.Modes.includes(mode));
+}
+
+export function isAccountPreferenceWorkflow(command: string): boolean {
+  return (serverCommands as unknown as Record<string, CatalogRow>)[command]?.definition.Permission
+    === 'account-owner';
 }
 
 // Hosted forms validate the generated wire contract without inventing capability grants.

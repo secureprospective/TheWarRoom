@@ -98,8 +98,8 @@ export const webTransport: NativeTransport = {
     throw new Error('AI helper management is not available in the browser app.');
   },
   workflow: async (requestBody, football) => {
-    const { nativeEnvelope } = await import('../commands/native');
-    const path = requestBody.command.startsWith('home.layout.')
+    const { isAccountPreferenceWorkflow, nativeEnvelope } = await import('../commands/native');
+    const path = isAccountPreferenceWorkflow(requestBody.command)
       ? '/v1/account/preferences' : '/v1/native/workflow';
     return post(path, { protocol: 1, workflow: { ...nativeEnvelope(requestBody), football } });
   },

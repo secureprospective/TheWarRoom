@@ -12,6 +12,24 @@ const offer = (id: string, status: string, over: Partial<{ accepted: string[]; o
 const trades = (offers: ReturnType<typeof offer>[]) =>
   ({ at: {}, errors: {}, trades: { league: 'L', franchise: 'f1', revision: 1, notes: [], offers } });
 
+describe('home tray job snoozes', () => {
+  const brief = (until: string) => ({ at: {}, errors: {}, jobs: { league: 'L', name: 'League', revision: 1,
+    jobs: [
+      { id: 'blocked', name: 'Blocked', state: 'blocked', words: 'Needs work', opens: '',
+        closes: '', controls: [] },
+      { id: 'live', name: 'Live', state: 'live', words: 'Due soon', opens: '',
+        closes: iso(day), controls: [] },
+    ] }, jobSnoozes: { snoozes: [{ league: 'L', jobId: 'blocked', until }] } });
+
+  it('hides only this account’s matching job alert until the snooze expires', () => {
+    expect(alertsOf(brief(iso(day)) as never, now).map(alert => alert.id)).toEqual(['job.live']);
+    expect(alertsOf(brief(iso(day)) as never, now + day).map(alert => alert.id))
+      .toEqual(['job.blocked', 'job.live']);
+    expect(alertsOf({ ...brief(iso(day)), jobSnoozes: { snoozes: [] } } as never, now)
+      .map(alert => alert.id)).toEqual(['job.blocked', 'job.live']);
+  });
+});
+
 describe('home tray trade alerts', () => {
   it.each([
     ['offer waiting on me', offer('a', 'offered'), 'Trade offer from Iron Curtain'],

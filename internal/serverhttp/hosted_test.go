@@ -75,6 +75,13 @@ func initializePrivateEntriesFixture(t *testing.T, pools *db.Pools) {
  account_id TEXT PRIMARY KEY NOT NULL REFERENCES accounts(id),
  layout TEXT NOT NULL CHECK(length(CAST(layout AS BLOB)) <= 8192),
  revision INTEGER NOT NULL CHECK(revision > 0)
+ ) STRICT;
+ CREATE TABLE account_job_snoozes (
+ account_id TEXT NOT NULL REFERENCES accounts(id),
+ league TEXT NOT NULL,
+ job_id TEXT NOT NULL,
+ until TEXT NOT NULL,
+ PRIMARY KEY(account_id, league, job_id)
  ) STRICT;`)
 	if err != nil {
 		t.Fatalf("create hosted private-entry fixture: %v", err)
@@ -147,7 +154,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	}
 	f.publisher = serverhttp.NewPublisher()
 	f.games = leagueservice.NewLiveGames()
-	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, HomeLayouts: credentials, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
+	handler := serverhttp.Hosted{Publisher: f.publisher, LiveGames: f.games, Tokens: f.tokens, Confirmations: confirmations, Store: store, Leagues: history.NewOneFile(store), Sessions: f.sessions, AccountPreferences: credentials, TOTP: totp, Enrollment: f.enrollment, Passwords: passwords, Worker: worker,
 		BackupLeague: func(_ context.Context, league string) (leagueservice.BackupResult, error) {
 			if f.backupBusy.Load() {
 				return leagueservice.BackupResult{}, leagueservice.ErrBackupInProgress

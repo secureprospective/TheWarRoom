@@ -4906,6 +4906,42 @@ const schema348 = {
   Type:"object",
   Enum:null,
   Format:"",
+  Validator:"RawJobSnoozesRead.Validate",
+  Nullable:false,
+  Fields:[
+
+  ],
+  Items:null,
+} as const;
+const schema349 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawJobSnoozeSet.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"jobId",Optional:false,Schema:schema2},
+    {Name:"until",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema350 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawJobSnoozeWake.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"jobId",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema351 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
   Validator:"RawBackupNow.Validate",
   Nullable:false,
   Fields:[
@@ -8232,6 +8268,63 @@ export const serverCommands = {
   },
   phrase: "set home layout",
 },
+"job.snoozes.read": {
+  definition: {
+    "ID": "job.snoozes.read",
+    "Method": "ReadJobSnoozes",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "account-owner",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "private-account-data",
+    "Safeguards": "session account scope; no request account ID; agents denied; uncached",
+    "Arguments": schema348
+  },
+  phrase: "read job snoozes",
+},
+"job.snooze.set": {
+  definition: {
+    "ID": "job.snooze.set",
+    "Method": "SetJobSnooze",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "account-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "replace-own-account-snooze",
+    "Facts": "private-account-data",
+    "Safeguards": "session account scope; no request account ID; agent denied",
+    "Arguments": schema349
+  },
+  phrase: "set job snooze",
+},
+"job.snooze.wake": {
+  definition: {
+    "ID": "job.snooze.wake",
+    "Method": "WakeJobSnooze",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "account-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "clear-own-account-snooze",
+    "Facts": "private-account-data",
+    "Safeguards": "session account scope; no request account ID; agent denied",
+    "Arguments": schema350
+  },
+  phrase: "wake job snooze",
+},
 "backup.now": {
   definition: {
     "ID": "backup.now",
@@ -8248,7 +8341,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "server-held league database and R2 settings",
     "Safeguards": "current commissioner seat; per-league backup manager; refuse concurrent backup",
-    "Arguments": schema348
+    "Arguments": schema351
   },
   phrase: "now backup",
 },

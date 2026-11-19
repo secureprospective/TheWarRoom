@@ -221,6 +221,7 @@ type workflowInput interface {
 		*leagueservice.RawPlayerWatchReadScope | *leagueservice.RawPlayerWatchSet | *leagueservice.RawPlayerWatchOrder |
 		*leagueservice.RawTradeDraftScope | *leagueservice.RawTradeDraftSave | *leagueservice.RawTradeDraftDelete |
 		*leagueservice.RawBackupNow | *accounts.RawHomeLayoutRead | *accounts.RawHomeLayoutSet |
+		*accounts.RawJobSnoozesRead | *accounts.RawJobSnoozeSet | *accounts.RawJobSnoozeWake |
 		*commissioner.RawLeagueActivityScope
 }
 
@@ -272,7 +273,7 @@ type workflowOutput interface {
 		market.ContractQuote | market.WhatIfStack | market.ContractDecisions | leagueservice.DraftQueue |
 		leagueservice.PlayerNotes | leagueservice.PlayerWatchList | leagueservice.PlayerPrivateChange |
 		leagueservice.TradeDraftList | leagueservice.SavedTradeDraft | leagueservice.TradeDraftDeleted |
-		leagueservice.BackupResult | accounts.HomeLayoutState | commissioner.LeagueActivity
+		leagueservice.BackupResult | accounts.HomeLayoutState | accounts.JobSnoozesState | commissioner.LeagueActivity
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {

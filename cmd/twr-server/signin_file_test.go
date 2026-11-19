@@ -71,7 +71,7 @@ func newOneFileServer(t *testing.T) oneFile {
 	if s.proofs, err = accountstore.MoveProofs(ctx, pools); err != nil {
 		t.Fatal(err)
 	}
-	if len(s.proofs) != len(accountstore.SignInTables())+1 || s.proofs["accounts"].Rows != 2 || s.proofs["league_join_links"].Rows != 1 {
+	if len(s.proofs) != len(accountstore.SignInTables()) || s.proofs["accounts"].Rows != 2 || s.proofs["league_join_links"].Rows != 1 {
 		t.Fatalf("fixture too thin: %+v", s.proofs)
 	}
 	if s.security, err = store.VerifyAudit(ctx); err != nil || s.security.Size == 0 {
@@ -336,7 +336,7 @@ func franchiseTaken(t *testing.T, join *accounts.JoinService, code string) bool 
 	return false
 }
 
-func TestConversionMovesExistingAccountHomeLayouts(t *testing.T) {
+func TestConversionMovesExistingAccountPreferences(t *testing.T) {
 	s := newOneFileServer(t)
 	pools, err := db.Open(t.Context(), s.path, history.SchemaVersion())
 	if err != nil {
@@ -357,6 +357,15 @@ func TestConversionMovesExistingAccountHomeLayouts(t *testing.T) {
 VALUES (?, ?, 2)`, accountID, `{"mode":"default","tiles":[],"over":[],"pins":{}}`); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := pools.Write().ExecContext(t.Context(), `CREATE TABLE account_job_snoozes (
+ account_id TEXT NOT NULL REFERENCES accounts(id), league TEXT NOT NULL, job_id TEXT NOT NULL,
+ until TEXT NOT NULL, PRIMARY KEY(account_id, league, job_id)) STRICT`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pools.Write().ExecContext(t.Context(), `INSERT INTO account_job_snoozes(account_id, league, job_id, until)
+VALUES (?, 'league.a', 'trade.review', '2026-11-19T12:00:00Z')`, accountID); err != nil {
+		t.Fatal(err)
+	}
 	if s.proofs, err = accountstore.MoveProofs(t.Context(), pools); err != nil {
 		t.Fatal(err)
 	}
@@ -366,5 +375,8 @@ VALUES (?, ?, 2)`, accountID, `{"mode":"default","tiles":[],"over":[],"pins":{}}
 	s.assertConverted(t)
 	if s.proofs["account_home_layouts"].Rows != 1 {
 		t.Fatalf("home layout was not included in sign-in conversion: %+v", s.proofs)
+	}
+	if s.proofs["account_job_snoozes"].Rows != 1 {
+		t.Fatalf("job snoozes were not included in sign-in conversion: %+v", s.proofs)
 	}
 }

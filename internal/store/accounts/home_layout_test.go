@@ -90,13 +90,13 @@ func TestHomeLayoutRejectsInvalidWriteWithoutChangingSavedCopy(t *testing.T) {
 }
 
 func TestServerHomeLayoutMigrationFreshAndUpgrade(t *testing.T) {
-	if got := ServerVersion(); got != 4 {
-		t.Fatalf("server migration version = %d, want 4", got)
+	if got := ServerVersion(); got != 5 {
+		t.Fatalf("server migration version = %d, want 5", got)
 	}
 	t.Run("fresh", func(t *testing.T) {
 		store, pools := openServerStore(t, filepath.Join(t.TempDir(), "fresh.db"))
 		var version int
-		if err := pools.Read().QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil || version != 4 {
+		if err := pools.Read().QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil || version != 5 {
 			t.Fatalf("fresh schema version = %d err=%v", version, err)
 		}
 		var table string
@@ -106,6 +106,9 @@ func TestServerHomeLayoutMigrationFreshAndUpgrade(t *testing.T) {
 		layout, err := store.ReadHomeLayout(t.Context(), "12345678-1234-4234-8234-123456789abc")
 		if err != nil || layout.Revision != 0 {
 			t.Fatalf("read fresh layout = %+v err=%v", layout, err)
+		}
+		if snoozes, err := store.ReadJobSnoozes(t.Context(), "12345678-1234-4234-8234-123456789abc"); err != nil || len(snoozes.Snoozes) != 0 {
+			t.Fatalf("read fresh job snoozes = %+v err=%v", snoozes, err)
 		}
 	})
 	t.Run("upgrade v3", func(t *testing.T) {
@@ -132,11 +135,14 @@ func TestServerHomeLayoutMigrationFreshAndUpgrade(t *testing.T) {
 			t.Fatalf("upgrade changed account: %+v err=%v", stored, err)
 		}
 		var version int
-		if err := pools.Read().QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil || version != 4 {
+		if err := pools.Read().QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil || version != 5 {
 			t.Fatalf("upgrade schema version = %d err=%v", version, err)
 		}
 		if _, err := upgraded.ReadHomeLayout(t.Context(), credential.ID); err != nil {
 			t.Fatalf("read upgraded preference: %v", err)
+		}
+		if _, err := upgraded.ReadJobSnoozes(t.Context(), credential.ID); err != nil {
+			t.Fatalf("read upgraded job snoozes: %v", err)
 		}
 	})
 }
