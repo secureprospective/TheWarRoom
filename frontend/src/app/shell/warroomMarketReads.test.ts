@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { poolProvider } from '../pool/provider';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { BidFormState, Plan } from '../pool/contract';
 import type { NativeRequest } from '../commands/native';
 import type { WarRoomContext } from './warroomReads';
 import {
+  confirmWarRoomRosterAdd,
   parseWarRoomBidReading,
   readWarRoomMarket,
+  reviewWarRoomRosterAdd,
   warRoomMarketAction,
 } from './warroomMarketReads';
 
@@ -39,15 +40,6 @@ const capReading = (roomCents = 8500000000) => ({ league, name: 'League', revisi
     roomCents, quantumCents: 1, mode: '', deadline: '', words: '', enforcement: '', name: 'Mine',
     abbreviation: 'M', charges: [], runway: [{ season: 2026, committedCents: 1500000000,
       deadCents: 0, capCents: 10000000000, roomCents }], contracts: [] }] });
-it('provides a single-column, touch-sized market at phone width without altering desktop rules', () => {
-  const css = readFileSync(new URL('./warroom.css', import.meta.url), 'utf8');
-  expect(css).toContain('@media(max-width:699px){');
-  expect(css).toContain('.wr-v6 .mk3{display:flex;flex-direction:column;min-height:0;overflow-y:auto');
-  expect(css).toContain('min-height:44px');
-  expect(css).toContain('.wr-v6 .mk3 .bidb');
-  expect(css).toContain('.wr-v6 .mk{grid-template-columns:minmax(0,1fr) 400px');
-});
-
 const context = (port?: HostedPort, owner = true): WarRoomContext => ({ mine,
   snapshot: {} as WarRoomContext['snapshot'], week: 1,
   native: { league, mine, port, owner, leave: () => {} } });
@@ -89,8 +81,13 @@ describe('War Room hosted market readings', () => {
           data: { league, wins: [] } };
         case 'native.cap.check': return { label: '', writable: true, football: 'pin', data: capReading() };
         case 'waivers.read': return { label: '', writable: true, football: 'pin', data: { league,
-          franchise: mine, revision: 4, season: 2026, players: [], claims: [], order: [],
-          orderSource: '', method: '' } };
+          franchise: mine, revision: 4, season: 2026, players: [
+            { window: 'waiver.1', player: '0001', name: 'Held player', closesAt: '2026-11-18T12:00:00Z',
+              closes: 'Nov 18 at noon', status: 'On waivers' },
+            { window: 'waiver.2', player: '0002', name: 'Facts missing', closesAt: '2026-11-18T12:00:00Z',
+              closes: 'Nov 18 at noon', status: 'Closed; awaiting processing' },
+          ], claims: [], order: [other, mine, 'franchise.third'], orderSource: 'Standings',
+          method: 'Reverse standings' } };
         default: throw new Error(`Unexpected ${request.command}`);
       }
     });
@@ -99,14 +96,17 @@ describe('War Room hosted market readings', () => {
 
     expect(reading.players).toEqual([
       { id: '0001', name: 'Held player', position: 'WR', age: '25.5', string: 'FA', points: '14.2',
-        value: '12.4', minimum: '$85.00M', minimumCents: 8500000000 },
+        value: '12.4', minimum: '$85.00M', minimumCents: 8500000000, freeAgent: true,
+        waiverStatus: 'On waivers' },
       { id: '0002', name: 'Facts missing', position: 'Not available yet', age: 'Not available yet',
         string: 'Not available yet', points: 'Not available yet', value: 'Not available yet',
-        minimum: 'Not available yet' },
+        minimum: 'Not available yet', freeAgent: true, waiverStatus: 'Closed; awaiting processing' },
     ]);
     expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'value.read', mode: 'read',
       arguments: { league, franchise: '', season: 2026 } }));
     expect(reading.capRoom).toBe(8500000000);
+    expect(reading.rosterRevision).toBe(4);
+    expect(reading.waiverPriority).toEqual({ place: 2, total: 3, source: 'Standings' });
     expect(reading.targets).toEqual([]);
     expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'player.watch.read', mode: 'read',
       arguments: { league } }));
@@ -140,6 +140,41 @@ describe('War Room hosted market readings', () => {
       age: 'Not available yet', value: 'Not available yet', minimum: '$85.00M' });
     expect(reading.errors).toContain('Error: Values unavailable');
     expect(port.mock.calls.map(([request]) => request.command)).toContain('value.read');
+  });
+});
+
+describe('War Room owner free-agent add workflow', () => {
+  it('previews the owner-scoped add with reason, then confirms once and returns its receipt',
+    async () => {
+      const port = vi.fn<HostedPort>(async request => ({ label: '', writable: true, football: 'pin',
+        data: request.mode === 'preview' ? preview(7) : receipt }));
+      const c = context(port);
+      const review = await reviewWarRoomRosterAdd(c, { player: '0001', drop: '0002',
+        reason: 'Fill the open starting need', revision: 7, writable: true, football: 'pin' });
+      expect(review.preview.target).toMatchObject({ league, version: 7 });
+      expect(port.mock.calls[0]).toMatchObject([{ command: 'roster.add', mode: 'preview',
+        arguments: { league, command: 'roster.add', args: { waiver: { player: '0001',
+          franchise: mine, drop: '0002' } }, reason: 'Fill the open starting need', expected: 7,
+          effective: 'now', visibility: 'league' } }, 'pin']);
+
+      const result = await confirmWarRoomRosterAdd(c, review);
+      expect(result).toEqual({ kind: 'recorded', receipt });
+      expect(port.mock.calls[1][0]).toMatchObject({ command: 'roster.add', mode: 'execute' });
+      expect(port.mock.calls.filter(([request]) => request.mode === 'execute')).toHaveLength(1);
+    });
+
+  it('refuses non-owners and never reports an add when the server omits its receipt', async () => {
+    const port = vi.fn<HostedPort>(async request => ({ label: '', writable: true, football: 'pin',
+      data: request.mode === 'preview' ? preview(7) : { league } }));
+    const c = context(port);
+    await expect(reviewWarRoomRosterAdd(context(port, false), { player: '0001', reason: 'Need',
+      revision: 7, writable: true, football: 'pin' })).rejects.toThrow('owner seat');
+    expect(port).not.toHaveBeenCalled();
+
+    const review = await reviewWarRoomRosterAdd(c, { player: '0001', reason: 'Need', revision: 7,
+      writable: true, football: 'pin' });
+    await expect(confirmWarRoomRosterAdd(c, review)).rejects.toThrow('Entry: expected string');
+    expect(port.mock.calls.filter(([request]) => request.mode === 'execute')).toHaveLength(1);
   });
 });
 

@@ -20,14 +20,16 @@ import { planForm } from '../pool/state';
 import { unavailable } from './hqModel';
 export type WarRoomMarketPlayer = { id: string; name: string; position: string; age?: string; string?:
   string; points?: string;
-  minimum?: string; minimumCents?: number; value?: string };
+  minimum?: string; minimumCents?: number; value?: string; freeAgent?: boolean; waiverStatus?: string };
 export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string;
   kind?: 'plan' | 'placed'; id?: string; bidId?: string; post?: string; plan?: Plan };
 export type WarRoomMarketWin = { player: string; name: string; team: string; salaryCents: number;
   years: number; decidedAt: string };
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
   wins?: WarRoomMarketWin[]; bidRevision?: number; capRoom?: number; writable?: boolean; football?: string;
-  targets?: Entry[]; maxYears?: number; errors: string[] };
+  targets?: Entry[]; maxYears?: number; rosterRevision?: number;
+  rosterPlayers?: { id: string; name: string }[];
+  waiverPriority?: { place?: number; total: number; source: string }; errors: string[] };
 export function parseWarRoomWatchList(value: unknown, league: string): string[] {
   const r = object(value, 'Watched players', ['league', 'players']);
   if (r.league !== league) throw new Error('Watched players belong to another league');
@@ -111,7 +113,11 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
         const roster = parseHostedRoster(r.data);
         if (roster.league !== native.league) throw new Error('Pool belongs to another league');
         season = roster.season;
-        result.players = roster.market; result.writable = r.writable; result.football = r.football;
+        result.players = roster.market.map(player => ({ ...player, freeAgent: true }));
+        result.writable = r.writable; result.football = r.football;
+        result.rosterRevision = roster.revision;
+        result.rosterPlayers = roster.players.filter(player => player.franchise === c.mine)
+          .map(player => ({ id: player.id, name: player.name }));
       }),
       apply(async () => { if (native.owner === false) return;
         const bids = await readWarRoomBids(c);
@@ -133,8 +139,16 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       const waivers = parseHostedWaivers(data);
       if (waivers.league !== native.league || waivers.franchise !== c.mine)
         throw new Error('Waivers belong to another franchise');
-      for (const p of waivers.players) if (!result.players?.some(player => player.id === p.player))
-        (result.players ??= []).push({ id: p.player, name: p.name, position: unavailable });
+      const place = waivers.order.indexOf(c.mine);
+      result.waiverPriority = { ...(place >= 0 ? { place: place + 1 } : {}),
+        total: waivers.order.length, source: waivers.words };
+      for (const p of waivers.players) {
+        if (p.status !== 'On waivers' && p.status !== 'Closed; awaiting processing') continue;
+        const listed = result.players?.find(player => player.id === p.player);
+        if (listed) listed.waiverStatus = p.status;
+        else (result.players ??= []).push({ id: p.player, name: p.name, position: unavailable,
+          waiverStatus: p.status });
+      }
     });
     let playerValues: Map<string, LeaguePlayerValue> | undefined;
     await apply(async () => {
@@ -190,6 +204,58 @@ export type WarRoomMarketActionResult =
   | { kind: 'review'; request: NativeRequest; preview: Preview; football: string }
   | { kind: 'recorded'; receipt: ReturnType<typeof parseReceipt>; bids?: WarRoomBidReading;
       capRoom?: number; refreshError?: string };
+export type WarRoomRosterAddReview = { request: NativeRequest; preview: Preview; football: string };
+export type WarRoomRosterAddResult = { kind: 'recorded'; receipt: ReturnType<typeof parseReceipt> };
+export async function reviewWarRoomRosterAdd(c: WarRoomContext, input: { player: string;
+  drop?: string; reason: string; revision: number; writable: boolean; football: string }):
+  Promise<WarRoomRosterAddReview> {
+  const native = c.native;
+  if (!native || native.owner !== true) throw new Error('Roster additions require your franchise owner seat');
+  if (!input.reason.trim()) throw new Error('Give a reason for this roster change');
+  if (!Number.isSafeInteger(input.revision) || input.revision < 0)
+    throw new Error('Your roster version is unavailable; refresh before continuing');
+  if (!input.writable || !input.football)
+    throw new Error('This league is read-only or football evidence is unavailable; refresh before adding');
+  const port = native.port ?? hostedWorkflow;
+  const request = { command: 'roster.add', mode: 'preview', arguments: { league: native.league,
+    command: 'roster.add', args: { waiver: { player: input.player, franchise: c.mine,
+      ...(input.drop ? { drop: input.drop } : {}) } }, reason: input.reason.trim(), expected: input.revision,
+    request: newKey(), effective: 'now', visibility: 'league' } } as NativeRequest;
+  const response = await port(request, input.football);
+  if (!response.writable || response.football !== input.football)
+    throw new Error('League authority changed; refresh before confirming');
+  const preview = parsePreview(response.data);
+  if (preview.target.league !== native.league || preview.target.version !== input.revision)
+    throw new Error('Roster preview is for a different league version; refresh before confirming');
+  return { request, preview, football: input.football };
+}
+function validateRosterAddPreview(review: WarRoomRosterAddReview, league: string, franchise: string) {
+  const args = review.request.arguments as unknown as { league?: unknown; command?: unknown;
+    expected?: unknown; reason?: unknown; visibility?: unknown; args?: { waiver?: {
+      player?: unknown; franchise?: unknown; drop?: unknown } } };
+  const waiver = args.args?.waiver;
+  if (review.request.command !== 'roster.add' || review.request.mode !== 'preview' ||
+    args.league !== league || args.command !== 'roster.add' ||
+    args.expected !== review.preview.target.version || args.visibility !== 'league' ||
+    typeof args.reason !== 'string' || !args.reason.trim() ||
+    typeof waiver?.player !== 'string' || waiver.franchise !== franchise ||
+    (waiver.drop !== undefined && typeof waiver.drop !== 'string') ||
+    review.preview.target.league !== league || review.preview.blockers.length > 0)
+    throw new Error('Only an unblocked, reviewed roster add can be confirmed');
+}
+export async function confirmWarRoomRosterAdd(c: WarRoomContext, review: WarRoomRosterAddReview):
+  Promise<WarRoomRosterAddResult> {
+  const native = c.native;
+  if (!native || native.owner !== true) throw new Error('Roster additions require your franchise owner seat');
+  validateRosterAddPreview(review, native.league, c.mine);
+  if (!review.football) throw new Error('Football evidence is unavailable; refresh before confirming');
+  const port = native.port ?? hostedWorkflow;
+  const request = { ...review.request, mode: 'execute' } as NativeRequest;
+  const response = await port(request, review.football);
+  const receipt = parseReceipt(response.data);
+  if (receipt.league !== native.league) throw new Error('Roster receipt belongs to another league');
+  return { kind: 'recorded', receipt };
+}
 function validatePrivateBidPreview(request: NativeRequest, league: string) {
   const args = request.arguments as unknown as { league?: unknown; command?: unknown; visibility?: unknown };
   if (request.mode !== 'preview' || !(['bid.place', 'bid.raise'] as string[])

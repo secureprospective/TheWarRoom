@@ -98,6 +98,7 @@ export function parseHostedWaivers(v: unknown) {
     revision: integer(r.revision, 'Version'),
     words: text(r.orderSource, 'Priority'),
     method: text(r.method, 'Method'),
+    order: array(r.order, 'Waiver order', text),
     players: array(r.players, 'Waiver players', (v) => {
       const p = object(v, 'Waiver player', [
         'window',
@@ -112,6 +113,7 @@ export function parseHostedWaivers(v: unknown) {
         window: text(p.window, 'Window'),
         player: text(p.player, 'Player'),
         name: text(p.name, 'Name'),
+        status: text(p.status, 'Status'),
         words: `${text(p.status, 'Status')} · ${text(p.closes, 'Closes')}`,
       };
     }),
