@@ -585,6 +585,11 @@ string
 "at": string;
 "reason"?: string
 })[];
+"holds"?: ({
+"who": string;
+"at": string;
+"reason": string
+})[];
 "recusals": ({
 "who": string;
 "decision": string;
@@ -1240,6 +1245,11 @@ string
 "at": string;
 "reason"?: string
 })[];
+"holds"?: ({
+"who": string;
+"at": string;
+"reason": string
+})[];
 "recusals": ({
 "who": string;
 "decision": string;
@@ -1869,6 +1879,11 @@ string
 "decision": string;
 "at": string;
 "reason"?: string
+})[];
+"holds"?: ({
+"who": string;
+"at": string;
+"reason": string
 })[];
 "recusals": ({
 "who": string;
@@ -2777,6 +2792,7 @@ export type WorkflowArgumentMap = {
 "trade.decline": NativeArguments<"trade.decline">;
 "trade.withdraw": NativeArguments<"trade.withdraw">;
 "trade.review": NativeArguments<"trade.review">;
+"trade.hold": NativeArguments<"trade.hold">;
 "trade.recuse": NativeArguments<"trade.recuse">;
 "trade.appeal": NativeArguments<"trade.appeal">;
 "trade.appeal.rule": NativeArguments<"trade.appeal.rule">;
@@ -2785,6 +2801,8 @@ export type WorkflowArgumentMap = {
 "roster.cut": NativeArguments<"roster.cut">;
 "roster.add": NativeArguments<"roster.add">;
 "waivers.claim": NativeArguments<"waivers.claim">;
+"waivers.claim.order.set": NativeArguments<"waivers.claim.order.set">;
+"waivers.claim.cancel": NativeArguments<"waivers.claim.cancel">;
 "waivers.process": NativeArguments<"waivers.process">;
 "waivers.order.set": NativeArguments<"waivers.order.set">;
 "waivers.order.auto": NativeArguments<"waivers.order.auto">;
@@ -2803,6 +2821,7 @@ export type WorkflowArgumentMap = {
 "contract.decisions.read": NativeArguments<"contract.decisions.read">;
 "market.wins.read": NativeArguments<"market.wins.read">;
 "league.activity.read": NativeArguments<"league.activity.read">;
+"nfl.player-status.read": NativeArguments<"nfl.player-status.read">;
 "commish.feedback.read": NativeArguments<"commish.feedback.read">;
 "feedback.report.create": NativeArguments<"feedback.report.create">;
 "draft.queue.read": NativeArguments<"draft.queue.read">;
