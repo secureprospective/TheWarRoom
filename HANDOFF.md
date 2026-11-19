@@ -1,10 +1,8 @@
 # Handoff
 
-- Baton: Bee completed lane `rel10`, 2026-11-19.
-- State: PR #403 (`release: bundle/b9 carries release number 10`) is open into `bundle/b9`. Release 10/schema 16 appended; roadmap row identifies 0.10.3. No tag or GitHub release.
-- Verification: `make test`, Vitest (153 files/1026 tests), `tsc --noEmit`, `make verify`, and push hook passed. PR CI passed all test shards, checks, release-tools, package, install, and verify.
-- Mutant: Removing release row 10 caused `TestCurrentContract` to fail with current release 9 vs expected 10; restored row and targeted race test passed.
-- Decision: Schema remains 16 because this is a release-number-only bump. No explicit release allowlist exists; tooling reads the append-only contract.
-- Next: Christopher review PR #403; do not merge.
-- Blocked on: None.
-- Tried/rejected: None.
+- Baton: Bee, `session/pulse-notyet-b9`, 2026-11-19.
+- State: Wired existing `commish.people.read` `actors[].effectivePermissions` into hosted People and Control Room. The local team inspector now also uses the already-loaded `TargetSignInFacts` for authenticator status. Custom permission-set editing and remaining account/server placeholders have no supporting read routes; no new server reads or league mutations.
+- Verification: `go test -race ./internal/serverhttp/...` passed; targeted Vitest passed (3 files, 22 tests); `pnpm exec tsc --noEmit`, `pnpm run build:web`, `make lint`, `gofmt -d`, and `git diff --check` passed. First push-hook full Vitest run caught two >110-character lines; both are fixed. Web build retains existing dynamic-import/chunk-size warnings.
+- Next: Retry push hook, open one PR into `bundle/b9`, check CI, then run tidy check. PR body must include the placeholder disposition table.
+- Blocked on: none.
+- Tried and rejected: Assigned worktree pointed at `origin/main`; preserved it and based this lane on `origin/bundle/b9`. Initial heavy-work guard waited for another full race suite to finish; guard passed before tests.

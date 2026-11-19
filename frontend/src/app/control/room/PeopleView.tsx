@@ -6,6 +6,20 @@ import { openTeam } from './openers';
 import { Desk, Kv, NotYet, useDefaultInspector, useRoom } from './room';
 import { seenAgo, signInOf } from './roomReads';
 
+type ActorPermissionReading = {
+  actors: { person: string; effectivePermissions: string[] }[];
+  seats: { name: string; owner: string }[];
+};
+
+export function EffectivePermissions({ people }: { people?: ActorPermissionReading }) {
+  if (!people?.actors.length)
+    return <NotYet what="the server does not include actor permissions for this role" />;
+  return <Kv rows={people.actors.map((actor) => [
+    people.seats.find((seat) => seat.owner === actor.person)?.name ?? actor.person,
+    actor.effectivePermissions.join(' · ') || 'No deputy permissions',
+  ])} />;
+}
+
 export function PeopleView() {
   const room = useRoom();
   const people = room.state.people;
@@ -130,7 +144,10 @@ export function PeopleView() {
           <div className="cr-panel" style={{ flex: 1 }}>
             <div className="cr-ph">WHAT IT ALLOWS</div>
             <div className="cr-pb">
-              <NotYet what="no permission set exists to show" />
+              <p className="cr-note">
+                Effective deputy permissions come from People; custom sets are not editable here.
+              </p>
+              <EffectivePermissions people={people} />
             </div>
           </div>
         </div>

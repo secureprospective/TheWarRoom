@@ -311,9 +311,26 @@ func TestHostedCommissionerControlRoomReads(t *testing.T) {
 			}
 			var reading struct {
 				League string `json:"league"`
+				Actors []struct {
+					Person               string   `json:"person"`
+					EffectivePermissions []string `json:"effectivePermissions"`
+				} `json:"actors"`
 			}
 			if err := json.Unmarshal(result.Data, &reading); err != nil || reading.League != "native.hosted" {
 				t.Fatalf("wrong %s response: %s (%v)", read.command, result.Data, err)
+			}
+			if read.command == "commish.people.read" {
+				for _, actor := range reading.Actors {
+					if actor.Person != f.principal {
+						continue
+					}
+					for _, permission := range actor.EffectivePermissions {
+						if permission == string(governance.ChangeRules) {
+							return
+						}
+					}
+				}
+				t.Fatalf("People response omitted the commissioner's effective permissions: %s", result.Data)
 			}
 		})
 	}
