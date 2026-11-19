@@ -3,8 +3,6 @@ import { surfaceActions } from '../commissioner/surfaceActions';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import './home.css';
 import './homePhone.css';
-import { PhoneAsk } from './PhoneAsk';
-import { usePhoneViewport } from './PhoneShell';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { ResearchReader } from '../research/api';
 import { subscribeSeason } from '../market/api';
@@ -91,7 +89,6 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
   commissioner = false }: { league: string; mine: string; port: HostedPort; initial?: Brief;
   research?: ResearchReader; owner?: boolean; accountSync?: boolean; commissioner?: boolean }) {
   const syncLayout = accountSync ?? true;
-  const phone = usePhoneViewport(true);
   const [b, setB] = useState<Brief>(initial ?? { at: {}, errors: {} });
   const grid = useRef<HTMLElement>(null);
   const [tab, setTab] = useState<Tab>('brief');
@@ -263,7 +260,6 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
           <HomeAct className={`queue${edit ? ' on' : ''}`} style={{ marginLeft: 'auto' }}
             disabled={syncLayout && owner && layoutStatus === 'loading'} action="customize">
             <span className="ql">CUSTOMIZE</span></HomeAct>
-          {phone && <PhoneAsk brief={b} mine={mine} />}
         </div>
         <section className="now" aria-label="Now">
           <div className="nl"><span className="tag">{known === undefined ? 'READING…' : known === 'off' ?
