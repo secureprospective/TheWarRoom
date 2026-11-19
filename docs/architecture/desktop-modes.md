@@ -60,12 +60,15 @@ auth generation; no credential crosses into the webview. See
   the local App. ESPN/Sleeper generations remain provisional; nflverse acquisition is deferred. Raw current-week
   packets and identities are checkpointed under `live-scores/` beside the server file; restart validates digests
   and rebuilds through the same parsers. The L5 `PublishScores` interface is not yet connected.
-- **Fresh football facts:** each league is pinned to the football evidence it was loaded with
+- **Fresh football facts:** each league selects one football-evidence digest
   (`cmd/twr-server/football_pins.go`). A running server can swap a pin through `pin-football` on its
-  private status socket, but nothing produces new pins. Live scoring is a separate immutable current-week overlay;
-  ticks leave action-relevant pin digests unchanged. Historical weeks still use the selected pin.
-- **MFL calls:** `twr-server league-load` is a one-time console load from a desktop MFL copy. There is no
-  ongoing MFL sync.
+  private status socket. With the server stopped, `refresh-nfl-schedule` can append missing published
+  NFL kickoff dates from MFL and pin a new immutable evidence version to one league; there is no
+  automatic schedule refresh. Live scoring remains a separate immutable current-week overlay; ticks
+  leave action-relevant pin digests unchanged. Historical weeks use the selected pin.
+- **MFL calls:** `twr-server league-load` is a one-time console load from a desktop MFL copy.
+  `refresh-nfl-schedule` is an explicit keyless MFL `nflSchedule` request while the server is stopped;
+  there is no automatic league/MFL sync.
 - **Browser access to the league:** `internal/serverhttp/browser.go` admits `/app/` and its hosted JSON command routes only when Origin is exactly `https://` plus the configured public host. `/app/session` issues the revocable owner session in the `__Host-twr_session` cookie and returns only one admitted league; a multi-league account gets HTTP 409 and uses desktop alpha. The browser never receives the owner bearer. Agent-token requests with Origin, mixed Authorization+cookie requests, enrollment and the changes feed remain refused. Static app responses use the required CSP, `nosniff`, same-origin referrer policy and no-cache service worker.
 
 ## So "finish the desktop" means
