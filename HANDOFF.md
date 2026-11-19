@@ -51,3 +51,10 @@
 - Tidy: the task-specific Brave profile was signed out and closed. `tidy-check.sh` reports ADB PID 2504044 (PPID 1, cwd `/home/chris/work/TheWarRoom`); left it running because it is outside this worktree and has no associated scratch folder. The reusable pinned lab venv remains with `.scratch/KEEP.md`.
 - Next: Christopher review/merge PR #394. Blocked: none in this task.
 - Tried and rejected: plain `pnpm build` for hosted packaging; it emitted root-relative lazy asset paths. Use `pnpm run build:web`.
+
+## Bee — pulse-mstub-team (2026-11-19)
+- Baton: Bee completed the mobile Team-tab inventory lane.
+- State: Read-only audit against `origin/bundle/b9`, the v3 plan and the supplied mock; 40 rows delivered in the required run artifact. No application source changes.
+- Next: Christopher can use the inventory for the mobile Team implementation; no PR or lab action is part of this lane.
+- Blocked on: none.
+- Tried and rejected: creating another worktree at the assigned path; it was already registered and live, so used read-only `git show origin/bundle/b9` evidence instead.
