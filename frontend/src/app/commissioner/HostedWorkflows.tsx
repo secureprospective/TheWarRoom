@@ -87,6 +87,21 @@ export async function reviewHostedOwnerTrade(room: Pick<HostedLeagueRoom, 'canCh
   if (room.peek().error) throw new Error(room.peek().error);
 }
 
+/** reviewHostedWaiverClaim previews the owner's private waivers.claim for one waiver window. */
+export async function reviewHostedWaiverClaim(room: Pick<HostedLeagueRoom, 'canChange' | 'review' | 'peek'>,
+  league: string, franchise: string, window: string, revision: number, reason = '') {
+  const definition = ownerActs.find(a => a.command === 'waivers.claim');
+  const change = definition && actChange(definition, { window }, { league, revision, principal: franchise },
+    reason);
+  if (!definition || !change) throw new Error('Choose a waiver player to claim');
+  if (!room.canChange()) throw new Error('The league is not ready for changes');
+  const args = change.args as { waiver: Record<string, unknown> };
+  const request = { command: 'waivers.claim', mode: 'preview', arguments: { ...change,
+    args: { waiver: { ...args.waiver, franchise } }, request: newKey() } } as NativeRequest;
+  await room.review(request, definition.label);
+  if (room.peek().error) throw new Error(room.peek().error);
+}
+
 const commissionerCommands: Record<HostedTask, string[]> = {
   bids: ['bids.process', 'bids.award.override'],
   waivers: ['waivers.process', 'waivers.order.set', 'waivers.order.auto', 'waivers.award.override'],

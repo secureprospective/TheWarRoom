@@ -40,3 +40,23 @@
 .mv4-acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 0 10px 10px; }
 .mv4-acts > * { min-height: 44px; }
 .mv4-acts > .yes { border-color: var(--green, #3c3); color: var(--green, #3c3); }
+.mv4-fa { grid-template-columns: 36px 1fr 64px; }
+.mv4-who { display: grid; gap: 2px; min-width: 0; min-height: 44px; text-align: left; padding: 6px 8px 6px 0; }
+.mv4-act { align-self: stretch; margin: 7px 6px 7px 0; min-height: 44px; background: #000;
+  border: 1px solid var(--edge-hi, #ccc); color: var(--ink, #fff); font: 700 9.5px var(--mono, monospace);
+  letter-spacing: .1em; }
+.mv4-key { width: 100%; min-height: 48px; }
+.mv4-done { font: 700 10px var(--mono, monospace); color: var(--green, #3c3); margin: 0; }
+.mv4-sheet { display: grid; gap: 8px; max-height: 85vh; overflow-y: auto; }
+.mv4-sheet__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mv4-sheet__head h3 { margin: 0; font-size: 16px; }
+.mv4-close, .mv4-link { min-height: 44px; min-width: 44px; }
+.mv4-field { display: grid; gap: 4px; font: 700 10px var(--mono, monospace); letter-spacing: .1em; }
+.mv4-field select, .mv4-field input { min-height: 44px; min-width: 0; background: #000; color: var(--ink, #fff);
+  border: 1px solid var(--edge-hi, #ccc); font: 14px var(--sans, sans-serif); }
+.mv4-side { border: 1px solid var(--edge, #333); background: var(--tile, #111); }
+.mv4-side h4 { margin: 0; padding: 7px 10px; font: 700 10px var(--mono, monospace); letter-spacing: .12em;
+  text-transform: uppercase; display: flex; justify-content: space-between; }
+.mv4-row { display: flex; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px;
+  padding: 6px 10px; text-align: left; border-top: 1px solid var(--rule, #222); }
+.mv4-row[aria-pressed="true"], .mv4-row[aria-selected="true"] { color: var(--green, #3c3); }

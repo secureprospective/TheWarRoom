@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { NativeRequest } from '../commands/native';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { LeagueChoice } from '../shell/leaguePicker';
+import type { Snapshot } from '../data/contract';
+import type { WarRoomContext } from '../shell/warroomReads';
 import { MovesTab, readMoves, type MovesReading } from './MovesTab';
 
 const league: LeagueChoice = { id: 'league', name: 'Test League', app: true, franchise: 'mine',
@@ -16,10 +18,15 @@ afterEach(async () => {
   host?.remove(); root = undefined; host = undefined;
 });
 const quietPort = vi.fn(async () => { throw new Error('offline'); }) as unknown as HostedPort;
-async function show(read: () => Promise<MovesReading>) {
+async function show(read: () => Promise<MovesReading>, port = quietPort) {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
-  await act(async () => root!.render(<MovesTab league={league} port={quietPort} read={read} />));
+  const readContext = async (): Promise<WarRoomContext> => ({ mine: 'mine', week: 11,
+    snapshot: { players: { value: [] }, rosters: { value: [] }, league: { value: { season: 2026 } },
+      franchises: { value: [] } } as unknown as Snapshot,
+    native: { league: 'league', mine: 'mine', port, owner: true, leave: () => undefined } });
+  await act(async () => root!.render(<MovesTab league={league} port={port} read={read}
+    readContext={readContext} />));
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
   return host;
 }
@@ -31,8 +38,9 @@ const offer = { id: 't1', status: 'offered', proposer: 'other', parties: ['mine'
   details: ['You give Ace', 'You get Bolt'] };
 const loaded = (): MovesReading => ({
   pool: { value: [{ id: 'p1', name: 'Ace Runner', position: 'RB' },
-    { id: 'p2', name: 'Bolt Catcher', position: 'WR', waiver: 'On waivers' }] },
-  waivers: { value: { place: 3, total: 10, source: 'Reverse standings', method: 'rolling',
+    { id: 'p2', name: 'Bolt Catcher', position: 'WR', waiver: 'On waivers', window: 'w2' }] },
+  roster: { revision: 7, writable: true, football: 'pin', mine: [{ id: '0109', name: 'Old Guard' }] },
+  waivers: { value: { revision: 5, place: 3, total: 10, source: 'Reverse standings', method: 'rolling',
     claims: [{ id: 'c1', player: 'p2', name: 'Bolt Catcher', words: 'Pending' }] } },
   trades: { value: { revision: 4, notes: [], offers: [offer as never] } },
 });
@@ -60,7 +68,7 @@ describe('MovesTab', () => {
   });
   it('empty: says the pool, claims and offers are empty', async () => {
     const view = await show(async () => ({ pool: { value: [] },
-      waivers: { value: { total: 10, source: '', method: '', claims: [] } },
+      waivers: { value: { revision: 5, total: 10, source: '', method: '', claims: [] } },
       trades: { value: { revision: 1, notes: [], offers: [] } } }));
     expect(view.textContent).toContain('No free agents in the pool.');
     await tab(/Waivers/);
@@ -91,4 +99,135 @@ describe('MovesTab', () => {
     expect(reading.pool.error).toBe('native.assets.read held');
     expect(reading.trades.value?.offers).toEqual([]);
   });
+
+  it('player card opens from a pool row and closes', async () => {
+    const view = await show(async () => loaded());
+    await press('Open Ace Runner');
+    expect(view.querySelector('dialog[aria-label="Ace Runner"]')).not.toBeNull();
+    await press('Close');
+    expect(view.querySelector('dialog')).toBeNull();
+  });
+  it('add sheet: reviews roster.add, holds to confirm, closes and rereads', async () => {
+    const port = service();
+    const read = vi.fn(async () => loaded());
+    const view = await show(read, port);
+    await press('Add Ace Runner');
+    expect(view.querySelector('dialog[aria-label="Add Ace Runner"]')).not.toBeNull();
+    const select = view.querySelector('dialog select') as HTMLSelectElement;
+    await act(async () => { setValue(select, '0109'); });
+    const reason = view.querySelector('dialog input') as HTMLInputElement;
+    await act(async () => { setValue(reason, 'Need a back'); });
+    await pressText('Review add');
+    await hold('Confirm add');
+    const sent = port.mock.calls.map(([r]) => r).filter(r => r.command === 'roster.add');
+    expect(sent.map(r => r.mode)).toEqual(['preview', 'execute']);
+    expect(sent[0].arguments).toMatchObject({
+      args: { waiver: { player: 'p1', franchise: 'mine', drop: '0109' } },
+      reason: 'Need a back', expected: 7 });
+    expect(view.querySelector('dialog')).toBeNull();
+    expect(view.textContent).toContain('Ace Runner added');
+    expect(read).toHaveBeenCalledTimes(2);
+  });
+  it('claim sheet: reviews private waivers.claim, confirms, closes; blind bid not available', async () => {
+    const port = service();
+    const blind = loaded();
+    blind.waivers.value!.method = 'Blind bidding';
+    const view = await show(async () => blind, port);
+    await press('Claim Bolt Catcher');
+    expect(view.textContent).toContain('Bid amount: Not available yet');
+    await pressText('Review claim');
+    await hold('Confirm league change');
+    const sent = port.mock.calls.map(([r]) => r).filter(r => r.command === 'waivers.claim');
+    expect(sent.map(r => r.mode)).toEqual(['preview', 'execute']);
+    expect(sent[0].arguments).toMatchObject({ args: { waiver: { window: 'w2', franchise: 'mine' } },
+      expected: 5, visibility: 'private' });
+    expect(view.querySelector('dialog')).toBeNull();
+    expect(view.textContent).toContain('Claim placed for Bolt Catcher');
+  });
+  it('trade sheet: partner, both sides, review trade.offer, hold to send, closes', async () => {
+    const port = service();
+    const view = await show(async () => loaded(), port);
+    await tab(/Trades/);
+    await pressText('Start a trade');
+    await pressText('Gridlock');
+    const send = () => [...view.querySelectorAll('dialog [aria-disabled], dialog button')]
+      .find(b => b.textContent === 'Review offer') as HTMLButtonElement;
+    expect(send().disabled || send().getAttribute('aria-disabled') === 'true').toBe(true);
+    await pressText('Their Back');
+    await pressText('Old Guard');
+    expect(view.textContent).toContain('1 selected');
+    await pressText('Review offer');
+    await hold('Send offer');
+    const sent = port.mock.calls.map(([r]) => r).filter(r => r.command === 'trade.offer');
+    expect(sent.map(r => r.mode)).toEqual(['preview', 'execute']);
+    expect(view.querySelector('dialog')).toBeNull();
+    expect(view.textContent).toContain('Offer sent to Gridlock');
+  });
+  it('counter opens the trade sheet loaded with the offer', async () => {
+    const port = service();
+    const withAssets = loaded();
+    withAssets.trades.value!.offers = [{ ...offer, assets: [{ from: 'other', to: 'mine', token: '0108' },
+      { from: 'mine', to: 'other', token: '0109' }] } as never];
+    const view = await show(async () => withAssets, port);
+    await tab(/Trades/);
+    await pressText('Counter');
+    expect(view.querySelector('dialog[aria-label="Trade with Gridlock"]')).not.toBeNull();
+    expect(view.textContent).toContain('✓ Their Back');
+  });
 });
+
+const reply = (data: unknown) => ({ label: '', writable: true, football: 'pin', data });
+const previewOf = (version: number) => ({ question: 'Review',
+  target: { league: 'league', name: 'L', version },
+  fields: [], affects: { readings: [], count: 0, words: '' }, blockers: [], safeguard: 'hold' });
+const receipt = { entry: 'entry-1', league: 'league', revision: 8, recordedAt: '2026-11-17T12:01:00Z',
+  message: 'Recorded' };
+const sentOffer = { id: 'entry-1', proposer: 'mine', parties: ['mine', 'other'],
+  assets: [{ from: 'mine', to: 'other', player: '0109' }, { from: 'other', to: 'mine', player: '0108' }],
+  assetDetails: [{ fromTeam: 'My Team', toTeam: 'Gridlock', label: 'Old Guard' },
+    { fromTeam: 'Gridlock', toTeam: 'My Team', label: 'Their Back' }], accepted: [], policy: {},
+  offeredAt: '2026-11-17T12:00:00Z', expiresAt: '2026-12-01T12:00:00Z', status: 'offered',
+  words: 'Waiting', expires: 'Dec 1', votes: [], recusals: [], appeals: [], overrides: [],
+  vetoNumber: 0, appealedVetoNumber: 0 };
+function service() {
+  let offered = false;
+  return vi.fn(async (request: NativeRequest) => {
+    const { command, mode } = request;
+    if (command === 'commish.rules.read') return reply({ league: 'league', name: 'L', revision: 7,
+      rollover: '', sections: [] });
+    if (command === 'native.assets.read') return reply({ league: 'league', revision: 7, seeded: true,
+      source: 'held', pool: [], identities: [], snapshot: { season: 2026, franchises: [
+        { id: 'mine', heldId: 'mine', name: 'My Team', abbreviation: 'MY', division: '' },
+        { id: 'other', heldId: 'other', name: 'Gridlock', abbreviation: 'GR', division: '' }],
+      players: [{ id: '0109', name: 'Old Guard', franchise: 'mine', status: 'ROSTER', contractStatus: '',
+        salaryCents: 100,
+        expirationYear: 2027 }, { id: '0108', name: 'Their Back', franchise: 'other', status: 'ROSTER',
+        contractStatus: '',
+        salaryCents: 100, expirationYear: 2027 }], picks: [], pool: [] } });
+    if (command === 'trades.read') return reply({ league: 'league', viewer: 'mine', revision: 8, rules: [],
+      offers: offered ? [sentOffer] : [], notes: [] });
+    if (command === 'trade.offer' && mode === 'execute') offered = true;
+    if (['roster.add', 'waivers.claim', 'trade.offer'].includes(command))
+      return reply(mode === 'preview' ? previewOf(command === 'waivers.claim' ? 5 : 7)
+        : receipt);
+    throw new Error(`${command} not served`);
+  }) as unknown as HostedPort & ReturnType<typeof vi.fn>;
+}
+const press = (label: string) => act(async () =>
+  (host!.querySelector(`[aria-label="${label}"]`) as HTMLElement).click());
+const pressText = (text: string) => act(async () => {
+  const found = [...host!.querySelectorAll('button, [role="tab"]')]
+    .find(b => b.textContent?.includes(text)) as HTMLElement;
+  found.click();
+  await new Promise(resolve => setTimeout(resolve, 20));
+});
+async function hold(label: string) {
+  const button = host!.querySelector(`button[aria-label="${label}"]`)!;
+  await act(async () => button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 700)); });
+}
+function setValue(field: HTMLInputElement | HTMLSelectElement, value: string) {
+  const proto = Object.getPrototypeOf(field) as object;
+  Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(field, value);
+  field.dispatchEvent(new Event(field instanceof HTMLSelectElement ? 'change' : 'input', { bubbles: true }));
+}
