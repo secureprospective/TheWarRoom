@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PulseResults } from '../data/nativePulse';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import type { NativePulse } from '../shell/pulseReads';
-import { readLeague, LeagueTab, type LeagueReading, type LeagueRosterPlayer } from './LeagueTab';
+import { readLeague, LeagueTab, streakClass, type LeagueReading, type LeagueRosterPlayer } from './LeagueTab';
 
 const owner: LeagueChoice = { id: 'lg', name: 'Test League', app: true, franchise: 'a', role: 'Owner' };
 const commish: LeagueChoice = { ...owner, role: 'Commissioner' };
@@ -198,5 +198,24 @@ describe('LeagueTab', () => {
     await click(/Bravo: owner and record/);
     expect(document.querySelector('dialog')?.textContent).toContain('Roster read failed');
     expect(document.querySelector('dialog')?.textContent).not.toContain('Manage this seat');
+  });
+  it('colours the streak cell: W green, L red, none plain', async () => {
+    const view = await show(owner, async () => loaded());
+    const cell = (team: string) => [...view.querySelectorAll('tbody tr')]
+      .find(tr => tr.textContent?.includes(team))!.lastElementChild!;
+    expect(cell('Alpha').className).toBe('l');
+    expect(cell('Bravo').className).toBe('');
+    expect(streakClass('W3')).toBe('w');
+    expect(view.textContent).toContain('Tap a team for its roster.');
+  });
+  it('mock v1 layout: rules outrank the frame button reset; 38 px zebra rows', async () => {
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync('src/app/phone/LeagueTab.css', 'utf8');
+    const scoped = ['.lg5 .lg5-seg > *', '.lg5 .st5-team', '.lg5 .lg5-cr', '.lg5 .lg5-key', '.lg5 .lg5-mu'];
+    for (const sel of scoped)
+      expect(css).toContain(sel);
+    expect(css).toMatch(/\.st5 td \{[^}]*height: 38px/);
+    expect(css).toMatch(/tr:nth-child\(even\) td \{ background: var\(--lg-zebra\)/);
+    expect(css).toMatch(/\.lg5-cr span em \{[^}]*text-transform: uppercase/);
   });
 });
