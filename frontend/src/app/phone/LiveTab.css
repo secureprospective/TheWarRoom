@@ -175,3 +175,5 @@
 .live6__big { font: 500 32px var(--l6-mono); }
 .live6__big small { font-size: 11px; color: var(--phone-ink3); }
 .phone-app .live6 .live6__link:hover, .phone-app .live6 .live6__seg > *:hover { background: none; }
+.live6__field { padding: 0 10px; min-width: 0; }
+.live6__field .live-field { max-width: 100%; margin: 6px 0; }

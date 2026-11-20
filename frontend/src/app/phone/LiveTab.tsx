@@ -3,7 +3,7 @@ import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { onHostedTopics } from '../data/hostedReads';
 import { myChance, percent, pointsLabel } from '../data/nativePulse';
-import { gameTime } from '../now/LiveGame';
+import { Field, gameTime } from '../now/LiveGame';
 import type { Game } from '../now/liveContract';
 import { clockWords, followKey, useHostedGames } from '../shell/hostedGames';
 import { unavailable } from '../shell/hqModel';
@@ -282,6 +282,7 @@ function FieldState({ game, words }: { game?: Game; words: string }) {
         {known && <span>{ballOn}</span>}</div>
       <Side team={game.home} ball={known && offense === game.home} right />
     </div>
+    {known && <div className="live6__field"><Field game={game} /></div>}
     {known && offense && <DriveBar game={game} toEndzone={s.toEndzone} distance={s.down > 0 ? s.distance : 0}
       homeHasBall={offense === game.home} />}
     <div className="live6__head live6__pad"><b>NFL live</b>
