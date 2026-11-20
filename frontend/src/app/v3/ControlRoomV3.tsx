@@ -8,6 +8,15 @@ import { HostedControlRoomBody, useHostedControlRoom, type HostedControlRoomStat
   from '../commissioner/HostedControlRoom';
 import type { HostedControlTab } from '../commissioner/hostedControlRoomData';
 import { CtrlJobsV3 } from './CtrlJobsV3';
+import { CtrlSituationsV3 } from './CtrlSituationsV3';
+import { CtrlRulesV3 } from './CtrlRulesV3';
+import { CtrlSeasonV3 } from './CtrlSeasonV3';
+import { CtrlFixV3 } from './CtrlFixV3';
+import { CtrlPicksV3 } from './CtrlPicksV3';
+import { CtrlPeopleV3 } from './CtrlPeopleV3';
+import { CtrlFeedbackV3 } from './CtrlFeedbackV3';
+import { CtrlLeagueV3 } from './CtrlLeagueV3';
+import { CtrlServerV3 } from './CtrlServerV3';
 import '../commissioner/commissioner.css';
 import '../control/room/controlRoom.css';
 
@@ -17,6 +26,15 @@ export type ControlBodyProps = { c: HostedControlRoomState; league: string; port
 /** v3 bodies by tab; a tab missing here falls back to the old room's body. */
 const BODIES: Partial<Record<HostedControlTab, (p: ControlBodyProps) => ReactNode>> = {
   jobs: p => <CtrlJobsV3 {...p} />,
+  situations: p => <CtrlSituationsV3 {...p} />,
+  rules: p => <CtrlRulesV3 {...p} />,
+  season: p => <CtrlSeasonV3 {...p} />,
+  fix: p => <CtrlFixV3 {...p} />,
+  picks: p => <CtrlPicksV3 {...p} />,
+  people: p => <CtrlPeopleV3 {...p} />,
+  feedback: p => <CtrlFeedbackV3 {...p} />,
+  league: p => <CtrlLeagueV3 {...p} />,
+  server: p => <CtrlServerV3 {...p} />,
 };
 
 export default function ControlRoomV3({ league, port, tab, setTab, badge }: { league: string;
