@@ -1,3 +1,50 @@
+## §0d — Fri 11-20 ~8:20 AM CST (Claudebox head brain) — compact-safe #4
+
+**Mode (Christopher, 11-20):** we are ~1.5 days ahead of Sunday alpha kickoff. Stop open-ended building. Small
+fixes that help testers are OK when they are real and done myself. NEXT after compaction: **plan code checks so we
+are as square as possible for alpha launch** (his words). Merges to main for this work: approved.
+
+**Done today (all verified):**
+- Bundle 9 on main: #442 (b5116673). Then #443 Live field graphic, #445 League team sheet owner+projections,
+  #446 Live "Updated n min ago" + tap starter scrolls to field, #447 League "Division winners make the playoffs".
+- Lab CT 260 cleanup: backup `/var/lib/twr-backup-sat-1120/` (twr-full.tgz 203 MB + db copies). 32 stressowner
+  accounts deleted (triggers lifted on a copy, restored; script ~/scratch/satclean-1120/wipe.py). Only
+  `commissioner` remains. 32 seats freed via commish.seat.remove (Haiku script ~/fleet/runs/hk-seats/free_seats.py,
+  history 3399→3431). Fresh join link: `~/fleet/runs/pulse-lab4/private/join-link-1120.txt` (NEVER print the code).
+  Join link checked: 32 open.
+- Lab releases: v16 (b5116673) · v17 (e6321d93) · v18 (af1a88fa) · v19 (2ffa59f9). All "Everything is working".
+  `~/fleet/bin/twr-lab-release.sh` line 17 now builds origin/main.
+- Tracker updated (Parked heading renamed "Flagged for a later session (not blocking alpha)"; later items added).
+
+**IN FLIGHT at compaction:**
+1. PR #448 (session/phone-live-league, worktree .worktrees/review-1120): Live tab used admittedLeagues[0]; now the
+   selected league. Test fails without fix, passes with. Background chain on Claudebox (task b0bof3py8) waits CI →
+   merges → lab v20 (`~/fleet/runs/overnight-b9walk-1120/labrel-v20/out.log`). Check: `gh pr view 448 --json state`.
+2. S8 rehearsal (Haiku, brief briefs/hk-rehearse.md): throwaway owner `rehearsal1120` joins via link, walks 5 tabs.
+   Alive check: `cat ~/fleet/runs/hk-rehearse/completion.txt`; output `~/fleet/runs/overnight-b9walk-1120/rehearsal/`
+   (6 PNGs done, RESULT.md pending), stdout `~/fleet/runs/hk-rehearse/stdout.log`. Creds
+   `~/fleet/runs/pulse-lab4/private/rehearsal-owner.json`.
+   On result: review PNGs; then free its seat (commish.seat.remove via free_seats.py) and ROTATE the join link
+   again (twr-server join-link -rotate, see ~/scratch/satclean-1120/join.sh) so the link sent Sunday is unused.
+
+**Review findings (11-20, frontend):** no dead files except test helpers. (1) Live league bug → #448. (2) Phone
+mounts hidden ThinHome as "homeReadSource" (PhoneAppFrame.tsx:157, NativeAccount.tsx:183) → brief read 3-4× per
+load; low risk (perf held 256); fix AFTER Sunday. (3) Phone-width CSS from the old desktop-on-phone approach
+(warroom.css x3 blocks, pulse.css, thinHome.css, ThinLeagueShell.css, trade.css, homePhone.css + 4 *PhoneLayout
+tests) — only hit by a narrow desktop window; remove after Sunday as one PR. NOT yet reviewed: server-side drift;
+lab settings vs testers (sign-in rate limits on shared Wi-Fi).
+
+**Refuted / don't redo:** trade counter "bug" is false (sides already correct). Phone Drop needs server work (hosted
+release read+command) — flagged. Today bye "Fix" can't name the player (server sends only lineup missed). Activity
+commissioner label: no actor field; desktop also says NOTICE. Score reveal = parked F62 animations. B-7 banner and
+"no starters" = deleted test owners, not code.
+
+**NEXT ACTIONS:**
+1. Check #448 merged + lab v20 OK; read rehearsal RESULT.md + PNGs; free rehearsal seat; rotate join link.
+2. Plan the alpha code checks with Christopher (his ask): server drift review, lab settings/rate limits,
+   full-suite + CI state on main, join→claim→lineup→move path end to end, backups/restore check.
+3. One-page tester note for Christopher (link placeholder, what to expect). Tracker → "alpha ready".
+
 ## §0c — Fri 11-20 ~1:50 AM CST (Claudebox head brain) — compact-safe #3
 
 **Christopher's latest orders (do not re-ask):**
