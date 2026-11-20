@@ -149,6 +149,7 @@ function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
   if (!rows.length) return <p className="lg5-empty" role="status">
     {pulse.standings.words || 'No standings yet.'}</p>;
   const cut = cutOf(pulse, false);
+  const each = (pulse.bracket?.fields.length ?? 0) > 1 ? cutOf(pulse, true) : undefined;
   return <>
     <section className="lg5-grp">
       <table className="st5"><thead>
@@ -162,7 +163,10 @@ function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
           <td>{r.pointsFor.toFixed(0)}</td>
           <td className={streakClass(r.streak)}>{r.streak || '–'}</td></tr>)}</tbody></table>
     </section>
-    {cut ? <p className="lg5-note">Top {cut} make the playoffs. Tap a team for its roster.</p> : null}
+    {cut ? <p className="lg5-note">Top {cut} make the playoffs. Tap a team for its roster.</p>
+      : each ? <p className="lg5-note">Top {each} in each conference make the playoffs.
+        Tap a team for its roster.</p>
+      : null}
   </>;
 }
 
