@@ -180,7 +180,7 @@ export function parseHostedTrades(v: unknown) {
           'contractEndsInSeason',
         ]);
         const contract = a.contract ? ` · ${text(a.contract, 'Contract')}` : '';
-        return { from: text(a.fromTeam, 'From'), to: text(a.toTeam, 'To'),
+        return { from: text(a.fromTeam, 'From'), to: text(a.toTeam, 'To'), label: text(a.label, 'Asset'),
           words: `${text(a.label, 'Asset')}: ${text(a.fromTeam, 'From')} → ${
             text(a.toTeam, 'To')}${contract}` };
       });
@@ -199,6 +199,8 @@ export function parseHostedTrades(v: unknown) {
         words: text(t.words, 'Trade status'),
         expires: text(t.expires, 'Expiry'),
         details: details.map(asset => asset.words),
+        /** legs pairs each asset's franchise ids with its plain label, for give/get columns. */
+        legs: assets.map((asset, i) => ({ from: asset.from, to: asset.to, label: details[i].label })),
         reasons: [
           ...['votes', 'recusals', 'appeals', 'overrides'].flatMap((key) =>
             array(t[key] ?? [], key, (v) => {

@@ -77,6 +77,14 @@ export async function readMoves(league: string, mine: string, port: HostedPort):
   };
 }
 
+/** benchWords is the mock's line above the pool: open bench spots, or that adding means a drop. */
+export const benchWords = (open: number) => open === 0 ? 'Bench full: adding means dropping someone'
+  : `${open} open bench spot${open === 1 ? '' : 's'}`;
+const ordinal = (n: number) => {
+  const tail = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  return `${n}${tail}`;
+};
+
 const unavailableLine = (words?: string) =>
   <p className="mv4-empty" role="alert">Unavailable: {words || 'no reading'}</p>;
 
@@ -130,17 +138,18 @@ export function MovesTab({ league, port = hostedWorkflow, read = readMoves,
   const claims = reading.waivers.value?.claims.length;
   const incoming = reading.trades.value?.offers.filter(o => o.status === 'offered'
     && o.proposer !== mine && !o.accepted.includes(mine)).length;
-  const segments: [MovesSegment, string, number | undefined][] = [
-    ['players', 'Players', undefined], ['waivers', 'Waivers', claims], ['trades', 'Trades', incoming]];
+  const segments: [MovesSegment, string, number | undefined, string][] = [
+    ['players', 'Players', undefined, ''], ['waivers', 'Waivers', claims, 'n'],
+    ['trades', 'Trades', incoming, '']];
   const close = () => setSheet(undefined);
   const finish = (words: string) => { setSheet(undefined); setDone(words); setRevision(n => n + 1); };
   const move = (player: MovesPlayer) => setSheet({ kind: player.window ? 'claim' : 'add', player });
   const blind = /blind/i.test(reading.waivers.value?.method ?? '');
   return <section className="mv4" aria-label="Moves">
     <div className="mv4-seg" role="tablist">
-      {segments.map(([id, label, count]) => <HQAct key={id} role="tab" selected={segment === id}
+      {segments.map(([id, label, count, tone]) => <HQAct key={id} role="tab" selected={segment === id}
         className={segment === id ? 'on' : ''} onAction={() => setSegment(id)}>
-        {label}{count ? <i>{count}</i> : null}</HQAct>)}
+        {label}{count ? <i className={tone}>{count}</i> : null}</HQAct>)}
     </div>
     {done && <p className="mv4-done" role="status">{done}</p>}
     {segment === 'players' && <Players reading={reading.pool} search={search} setSearch={setSearch}
@@ -173,14 +182,14 @@ function Players({ reading, search, setSearch, position, setPosition, open, move
     && p.name.toLowerCase().includes(search.trim().toLowerCase())), [reading, search, position]);
   if (!reading.value) return unavailableLine(reading.error);
   return <>
-    {openBench !== undefined && <p className="mv4-note">Bench: {openBench === 0
-      ? 'full · adding a player needs a drop' : `${openBench} open slot${openBench === 1 ? '' : 's'}`}</p>}
     <div className="mv4-search"><input type="search" aria-label="Search players" placeholder="Search players"
       value={search} onChange={event => setSearch(event.target.value)} /></div>
     <div className="mv4-chips">{POSITIONS.map(p => <HQAct key={p} className={position === p ? 'on' : ''}
       selected={position === p} onAction={() => setPosition(p)}>{p}</HQAct>)}</div>
+    {openBench !== undefined && <p className="mv4-note">{benchWords(openBench)}</p>}
     {!reading.value.length && <p className="mv4-empty">No free agents in the pool.</p>}
-    {reading.value.length > 0 && !shown.length && <p className="mv4-empty">No player matches.</p>}
+    {reading.value.length > 0 && !shown.length &&
+      <p className="mv4-empty">No one matches. Clear the search or pick ALL.</p>}
     <div className="mv4-list">{shown.map(p => <div className="mv4-fa" key={p.id}>
       <span className="mv4-ps">{p.position || '—'}</span>
       <HQAct className="mv4-who" label={`Open ${p.name}`} onAction={() => open(p)}>
@@ -211,11 +220,14 @@ function Waivers({ reading, league, mine, port, onChanged }: { reading: MovesRea
   };
   const off = !room.canChange() || Boolean(state.review);
   return <>
-    <p className="mv4-note">Waiver order: {w.place ? `${w.place} of ${w.total}` : `not listed of ${w.total}`}
-      {w.source ? ` · ${w.source}` : ''}</p>
-    {!w.claims.length && <p className="mv4-empty">No claims. Your claims stay private until waivers run.</p>}
+    {!w.claims.length && <p className="mv4-empty">No waiver claims. Players with a CLAIM key in Players
+      can be claimed until waivers run.</p>}
+    {w.claims.length > 0 && <p className="mv4-note">Claims run top first. {w.place
+      ? `You are ${ordinal(w.place)} of ${w.total} in waiver order`
+      : `You are not in the waiver order of ${w.total}`}
+      {w.source ? ` · ${w.source}` : ''}.</p>}
     <div className="mv4-list">{w.claims.map((c, i) => <div className="mv4-wc" key={c.id}>
-      <b>{i + 1}</b><span><b>{c.name}</b><em>{c.words}</em></span>
+      <b>{i + 1}</b><span><b>+ {c.name}</b><em>{c.words}</em></span>
       <span className="mv4-ud">
         <HQAct label="Move up" disabled={off || i === 0} onAction={() => swap(i, i - 1)}>▲</HQAct>
         <HQAct label="Move down" disabled={off || i === ids.length - 1}
@@ -257,21 +269,25 @@ function Trades({ reading, league, mine, port, onChanged, onTrade }: { reading: 
       const open = offer.status === 'offered' && offer.parties.includes(mine);
       const incoming = open && offer.proposer !== mine;
       const need = incoming && !offer.accepted.includes(mine);
+      const give = offer.legs.filter(leg => leg.from === mine).map(leg => leg.label);
+      const get = offer.legs.filter(leg => leg.to === mine).map(leg => leg.label);
+      const side = (title: string, labels: string[]) => <div><small>{title}</small>
+        {labels.length ? labels.map((label, i) => <p key={i}>{label}</p>)
+          : <p className="none">Nothing</p>}</div>;
       return <article className={`mv4-to${need ? ' need' : ''}`} key={offer.id}>
-        <h4><span>{incoming ? 'From' : 'To'} {other || offer.id}</span><em>{offer.expires}</em></h4>
-        <p className="mv4-words">{offer.words}</p>
-        <ul>{offer.details.map((d, i) => <li key={i}>{d}</li>)}</ul>
+        <h4><span>{offer.proposer === mine ? 'Your offer to' : 'Offer from'} {other || offer.id}</span>
+          <em>{offer.expires}</em></h4>
+        <div className="mv4-sides">{side('YOU GIVE', give)}{side('YOU GET', get)}</div>
         {(offer.reasons ?? []).filter(reason => reason.startsWith('Review held')).map(reason =>
           <p className="mv4-note mv4-hold" key={reason}>{reason}</p>)}
-        <div className="mv4-acts">
+        {incoming ? <div className="mv4-acts">
           {need && <HQAct className="yes" disabled={!room.canChange()}
             onAction={() => act(offer, 'trade.accept')}>Accept</HQAct>}
-          {incoming && <HQAct onAction={() => counter(offer)}>Counter</HQAct>}
-          {incoming && <HQAct disabled={!room.canChange()}
-            onAction={() => act(offer, 'trade.decline')}>Decline</HQAct>}
-          {open && !incoming && <HQAct disabled={!room.canChange()}
-            onAction={() => act(offer, 'trade.withdraw')}>Withdraw</HQAct>}
-        </div>
+          <HQAct onAction={() => counter(offer)}>Counter</HQAct>
+          <HQAct disabled={!room.canChange()} onAction={() => act(offer, 'trade.decline')}>Decline</HQAct>
+        </div> : open ? <div className="mv4-res wait"><span>{offer.words}</span>
+          <HQAct disabled={!room.canChange()} onAction={() => act(offer, 'trade.withdraw')}>Withdraw</HQAct>
+        </div> : <p className="mv4-res">{offer.words}</p>}
       </article>;
     })}
     {error && <p role="alert">{error}</p>}
