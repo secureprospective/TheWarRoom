@@ -37,6 +37,12 @@ function entryFor(screen: NeedsYouItem['screen']): ThinHomeEntry | undefined {
   return 'control';
 }
 
+/** keyWord is the row's action word, as the mock varies it: a lineup problem is FIX, else OPEN.
+ *  DONE belongs to rows that are a simple confirm; no read today offers a confirm verb. */
+export function keyWord(item: NeedsYouItem): 'Fix' | 'Open' {
+  return item.kind === 'lineup' ? 'Fix' : 'Open';
+}
+
 /** tomorrowMorning is the mock's "Snooze until tomorrow": 9 AM local the next day. */
 export function tomorrowMorning(now: number): string {
   const at = new Date(now);
@@ -166,12 +172,13 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
         className={`today6__job${lane === 'NOW' ? ' is-now' : ''}`
         + `${lane === 'NOT AVAILABLE' ? ' is-off' : ''}`}>
         <span><small>{lane} · {item.leagueName.toUpperCase()}</small>
-          <b>{lane === 'NOT AVAILABLE' ? unavailable : item.words}</b>
-          <em>{lane === 'NOT AVAILABLE' ? item.words
-            : item.deadline ? `Due ${shortTime(item.deadline, readingTime)}`
+          <b>{lane === 'NOT AVAILABLE' ? unavailable : item.title ?? item.words}</b>
+          <em>{lane === 'NOT AVAILABLE' ? item.words : item.detail
+            ? item.detail : item.deadline ? `Due ${shortTime(item.deadline, readingTime)}`
               : 'No deadline from the league'}</em></span>
         {entryFor(item.screen) && <HQAct className="today6__key"
-          label={`Open ${item.words} in ${item.leagueName}`} onAction={() => go(item)}>Open</HQAct>}
+          label={`${keyWord(item)} ${item.words} in ${item.leagueName}`}
+          onAction={() => go(item)}>{keyWord(item)}</HQAct>}
         {item.kind === 'commissioner' && <HQAct className="today6__key today6__clock"
           label="Snooze until tomorrow" onAction={() => snooze(item)}>
           <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor"
