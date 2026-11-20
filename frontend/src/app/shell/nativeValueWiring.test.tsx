@@ -234,3 +234,21 @@ it('checks preparation shape and keeps unavailable values distinct from preparat
   expect(inspector).toContain('Values are being prepared');
   expect(inspector).not.toContain('>0.0</b>');
 });
+
+it('skips the value.read when the caller does not want trade values', async () => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const assets = { league: 'native.test', revision: 4, seeded: true, identities: [
+    { player: '0042', franchise: 'mine', side: 'mine', name: 'Hosted receiver', position: 'WR' },
+  ], pool: [], snapshot: { season: 2026, franchises: [{ id: 'mine', name: 'My team' }],
+    players: [{ id: '0042', franchise: 'mine', name: 'Hosted receiver', status: 'ROSTER',
+      salaryCents: 500000000, expirationYear: 2027, contractStatus: 'UFA' }], picks: [], pool: [] } };
+  const port = vi.fn<HostedPort>(async request => {
+    if (request.command === 'native.assets.read')
+      return { label: 'Fake', writable: false, football: '', data: assets };
+    throw new Error(request.command + ' unavailable');
+  });
+  const reading = await readNativeHQ('native.test', 'mine', port, undefined, true, false, false);
+  expect(port.mock.calls.map(([request]) => request.command)).not.toContain('value.read');
+  expect(reading.errors.some(words => words.includes('value.read'))).toBe(false);
+  expect(reading.values).toBeUndefined();
+});

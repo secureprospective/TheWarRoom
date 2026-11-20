@@ -28,7 +28,7 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
   const [revision, refresh] = useState(0);
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), []);
   const { reading, error, pending } = useContractRead<NativeHQ>(JSON.stringify([league, mine, revision]),
-    publish => readNativeHQ(league, mine, port, publish, true, true), provider);
+    publish => readNativeHQ(league, mine, port, publish, true, true, false), provider);
   const [games, setGames] = useState<Game[]>();
   useEffect(() => {
     let live = true;

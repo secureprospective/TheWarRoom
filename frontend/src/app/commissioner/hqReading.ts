@@ -272,6 +272,7 @@ export async function readNativeHQ(
   publish?: (reading: NativeHQ) => void,
   owner = true,
   includeContractDecisions = false,
+  includeValues = true,
 ): Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
   const held = parseHostedRoster(assets.data);
@@ -304,14 +305,14 @@ export async function readNativeHQ(
     }
   };
   publish?.({ ...result });
-  const values = apply(async () => {
+  const values = includeValues ? apply(async () => {
     const r = await port({
       command: 'value.read',
       mode: 'read',
       arguments: { league, franchise: mine, season },
     });
     result.values = parseNativeValues(r.data, league, mine, season);
-  });
+  }) : undefined;
   const regions = Promise.all([
     apply(async () => {
       const r = await port({
