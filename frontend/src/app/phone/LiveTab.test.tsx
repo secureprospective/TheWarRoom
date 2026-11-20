@@ -53,6 +53,8 @@ let host: HTMLDivElement | undefined;
 afterEach(async () => {
   if (root) await act(async () => root!.unmount());
   host?.remove(); root = undefined; host = undefined;
+  vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 async function show(readBrief: () => Promise<HomeBrief>, port: HostedPort = fakePort()) {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -128,6 +130,24 @@ describe('LiveTab', () => {
     expect(surname('Chiefs')).toBe('Chiefs');
     await show(async () => brief([myGameRow]));
     expect(host!.querySelector('.live6__pl span')?.textContent).toBe('Mahomes');
+  });
+  it('scrolls the field section into view when a starter row is tapped', async () => {
+    Element.prototype.scrollIntoView ??= () => {};
+    const scroll = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
+    await show(async () => brief([myGameRow]));
+    await tap('Watch Patrick Mahomes\'s game');
+    const field = host!.querySelector('[aria-label="NFL live"]');
+    expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    expect(scroll.mock.contexts).toContain(field);
+  });
+  it('shows how old the held scores are, refreshed every 30 seconds', async () => {
+    vi.useFakeTimers({ toNotFake: ['setTimeout', 'queueMicrotask', 'nextTick'] });
+    vi.setSystemTime(new Date('2026-11-15T18:00:00Z'));
+    await show(async () => brief([myGameRow]));
+    const fresh = () => region('NFL live');
+    expect(fresh()).toContain('Updated just now');
+    await act(async () => { vi.advanceTimersByTime(3 * 60_000); });
+    expect(fresh()).toContain('Updated 3 min ago');
   });
   it('draws the field graphic only when the field position is known', async () => {
     await show(async () => brief([myGameRow]));
