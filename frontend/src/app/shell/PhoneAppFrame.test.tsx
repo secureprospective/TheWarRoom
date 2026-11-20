@@ -217,4 +217,11 @@ it('owns the whole phone screen and keeps desktop button and nav faces off its k
   expect(shell).not.toMatch(/\.twr-app \.act-button[ :{](?!where\(:not\(\.phone-app \*\)\))/);
   const account = readFileSync('src/app/control/nativeAccount.css', 'utf8');
   expect(account).not.toMatch(/\.native-account nav[ ,{]/);
+  // The desktop key face (border, fill, padding) must not reach the flat phone tab bar.
+  const desk = /\.native-account button(?!:where\(:not\(\.phone-app \*\)\))/;
+  const face = account.split('\n').filter(line => /border: 1px solid/.test(line) && /button/.test(line));
+  expect(face.length).toBeGreaterThan(0);
+  face.forEach(line => expect(line).not.toMatch(desk));
+  const lit = account.split('\n').filter(line => /button.*\[aria-current\]/.test(line));
+  lit.forEach(line => expect(line).not.toMatch(desk));
 });

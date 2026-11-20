@@ -19,6 +19,7 @@ import './nativeAccount.css';
 const HostedLeague = lazy(() => import('../commissioner/HostedLeague'));
 const ThinHome = lazy(() => import('../shell/ThinHome'));
 const TodayTab = lazy(() => import('../phone/TodayTab'));
+import type { TodayBadges } from '../phone/TodayTab';
 const LiveTab = lazy(() => import('../phone/LiveTab'));
 const MovesTab = lazy(() => import('../phone/MovesTab'));
 const LeagueTab = lazy(() => import('../phone/LeagueTab'));
@@ -61,6 +62,13 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       setPhoneBadges(current => current[tab] === count ? current : { ...current, [tab]: count });
     return { today: set('today'), team: set('team'), league: set('league') };
   }, []);
+  const [phoneLive, setPhoneLive] = useState(false);
+  const todayBadges = useCallback((marks: TodayBadges) => {
+    badge.team(marks.team);
+    setPhoneBadges(current => current.moves === marks.moves && current.league === marks.league ? current
+      : { ...current, moves: marks.moves, league: marks.league });
+    setPhoneLive(marks.live);
+  }, [badge]);
   const [phoneBrief, setPhoneBrief] = useState<{ leagueId: string; brief: HomeBrief; mine: string }>();
   const automaticEntry = useRef(false);
   const admittedLeagues = useMemo<LeagueChoice[]>(() => {
@@ -211,7 +219,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
-    {homeReady && <PhoneAppFrame enabled={browser} activeTab={phoneTab} badges={phoneBadges}
+    {homeReady && <PhoneAppFrame enabled={browser} activeTab={phoneTab} badges={phoneBadges} live={phoneLive}
       leagues={admittedLeagues} selectedLeagueId={selectedPhoneLeagueId} weekLabel={phoneWeekLabel}
       askBrief={currentPhoneBrief?.brief} askMine={currentPhoneBrief?.mine}
       accountName={signedInName || undefined} accountPending={pending}
@@ -228,7 +236,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           .catch(() => {});
       }} homeReadSource={thinHome} tabs={{
         today: <Suspense fallback={<p role="status">Opening Today…</p>}>
-          <TodayTab leagues={admittedLeagues} onNow={badge.today} onOpen={(league, entry) => {
+          <TodayTab leagues={admittedLeagues} onNow={badge.today}
+            current={selectedPhoneLeagueId} onBadges={todayBadges} onOpen={(league, entry) => {
             if (browser && league.id !== admission?.league) setView(selectBrowserLeague(league.id));
             setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
           }} /></Suspense>,
