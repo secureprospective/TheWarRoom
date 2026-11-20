@@ -28,6 +28,7 @@ export function WarPlansV3({ context, badge, events, eventsError }: { context: W
     gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gridTemplateRows: 'minmax(0,1fr)' }}>
     <section className="pc panel sz-L"><div className="ph">{badge}<b className="pt">Looking back</b>
       <span className="sp" /></div><div className="pb">
+      {back.error ? <St>{back.error.replace(/^Error: /, '')}</St> : <>
       <div className="gl"><span>PAST OFFERS</span></div>
       {b?.offers.length ? b.offers.map(o => <div key={o.id} className="row"
         style={{ gridTemplateColumns: 'minmax(0,1fr) auto auto' }}>
@@ -43,7 +44,7 @@ export function WarPlansV3({ context, badge, events, eventsError }: { context: W
         : <St>{back.pending ? 'Reading…' : back.error ?? b?.offersNote ?? 'No trade talks yet.'}</St>}
       <div className="gl"><span>SAVED PROPOSALS</span></div>
       <St>{b?.saved !== undefined ? `${b.saved} built, not sent`
-        : back.error ?? b?.savedNote ?? 'Reading…'}</St>
+        : b?.savedNote ?? 'Reading…'}</St></>}
     </div><div className="pf"><span className="ell">past offers and partners · private to you</span></div>
     </section>
     <section className="pc panel sz-L"><div className="ph">{badge}<b className="pt">Calendar</b>
