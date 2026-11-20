@@ -35,7 +35,7 @@ export function dress(admitted: LeagueChoice[]): V3League[] {
 // The league screens a league can open, in the rail's order, and why one is shaped away.
 export const SCREENS: { k: ThinHomeEntry; name: string; icon: IconName; on: (L: V3League) => boolean;
   now: string; off: string }[] = [
-  { k: 'hq', name: 'Franchise HQ', icon: 'shield', on: L => L.team, now: 'Lineup and roster',
+  { k: 'hq', name: 'Franchise HQ', icon: 'shield', on: L => L.team || L.commish, now: 'Lineup and roster',
     off: 'you have no team in this league' },
   { k: 'war', name: 'War Room', icon: 'swords', on: L => L.team, now: 'Trade desk and pool',
     off: 'you have no team in this league' },

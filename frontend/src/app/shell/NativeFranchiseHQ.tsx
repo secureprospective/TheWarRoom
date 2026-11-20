@@ -25,12 +25,16 @@ import { HQNativeWhatIf } from './HQNativeWhatIf';
 import { countdown } from '../clock/urgency';
 import { connectClock } from '../clock/ticker';
 import './hq.css';
+import { HQLineupV3, HQTabs, TeamPick } from '../v3/HQLineupV3';
+import type { ReactNode } from 'react';
 
 export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded,
-  tab: activeTab, navigate, canManage = true, onPlayers }: {
+  tab: activeTab, navigate, canManage = true, onPlayers, v3, openGame }: {
   league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void;
   embedded?: boolean; canManage?: boolean; tab?: HQTab; navigate?: (tab: HQTab) => void;
   onPlayers?: (players: PlayerCandidate[]) => void;
+  /** Draw in the desktop v3 frame: its tab strip, plate and board, with this league's badge. */
+  v3?: { badge: ReactNode; kind: string; pickTeam?: (id: string) => void }; openGame?: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [localTab, setLocalTab] = useState<HQTab>('lineup-and-roster');
@@ -84,6 +88,31 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     const playerName = decisions.players.find(p => p.player === selection.player)?.name ?? selection.player;
     void editor.room.review(request, `Record ${selection.action.replace('_', ' ')} for ${playerName}`);
   };
+  const teamName = snapshot.franchises.value.find(f => f.id === mine)?.name ?? name;
+  const others = <>
+    <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
+    {release && <HQRelease native id={release} mine={mine} snapshot={snapshot} activeLimit={settings.active}
+      cut={cut?.player === release ? cut : undefined} beforeRoom={runway?.[0]?.room}
+      starter={lineup?.starters.some(p => p.id === release)} close={() => setRelease(undefined)} />}</>;
+  if (v3) return <>
+    <HQTabs tab={tab} navigate={setTab} badge={v3.badge} kind={v3.kind} moves={moves.length}
+      pick={v3.pickTeam && <TeamPick mine={mine} pick={v3.pickTeam}
+        teams={snapshot.franchises.value.map(f => ({ id: f.id, name: f.name ?? f.id }))} />} />
+    {!mine ? <div className="wbody"><div className="st"><div className="eng">Choose a franchise above. As
+      commissioner you can open and run any team in this league.</div></div></div>
+    : tab === 'lineup-and-roster' ? <HQLineupV3 reading={reading} mine={mine} name={teamName} editor={editor}
+      select={select} badge={v3.badge} league={league} port={port} now={Date.now()} openGame={openGame} />
+      : <div className="wbody hq-v10" style={{ overflow: 'auto' }}>{tab === 'contracts-and-cap'
+        ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway} positions={positions}
+          annual={reading.contracts} values={reading.values} decisions={reading.decisions}
+          contractDecisions={reading.contractDecisions} decisionReady={editor.canEdit} decide={reviewDecision}
+          cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player, cut.deadNow]])}
+          select={id => { select(id); setRelease(id); }} />
+        : <HQMoves native snapshot={snapshot} moves={moves} available={reading.moves !== undefined}
+          reason={reading.moveReason} history={<HQMoveHistory
+            key={JSON.stringify([league, mine, snapshot.league.value.season])}
+            league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} />}</div>}
+    {others}</>;
   const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab} navigate={setTab}
     week={reading.week}
     leagueName={reading.leagueName}

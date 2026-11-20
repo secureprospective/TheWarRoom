@@ -149,6 +149,7 @@ export function HostedCommissionerActTray({ definition, league, room, port, init
     <h3>{definition.label}</h3>
     <HostedCommissionerActForm key={`${league}:${definition.command}`} definition={definition}
       league={league} room={room} port={port} initial={initial} />
+    {state.error && <p role="alert">{state.error}</p>}
     {state.review && <Review room={room} />}
   </section>;
 }

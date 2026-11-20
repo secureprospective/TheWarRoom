@@ -121,12 +121,13 @@ function createRoom<R extends HostedLeagueReading>(
       if (turn !== generation) return;
       const next = { request, preview, summary };
       store.setState({ review: next });
-    } catch {
+    } catch (cause) {
       if (turn !== generation) return;
+      const why = cause instanceof Error && cause.message ? ` The server said: ${cause.message.trim()}.` : '';
       store.setState({
         stale: true,
         error:
-          'Could not check this change. Nothing is queued. Refresh your league before trying again.',
+          `Could not check this change.${why} Nothing is queued. Refresh your league before trying again.`,
       });
     } finally {
       if (turn === generation) {

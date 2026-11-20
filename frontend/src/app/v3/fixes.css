@@ -5,3 +5,6 @@
 /* 2026-11-20: `.who b{font-size:20px}` (a board piece's big name) also caught the bold word in the
    Assistant drawer's who-line; there it is body text. Same class of clash as the lanes above. */
 .asst .who b{font-size:inherit}
+/* A real roster runs past the mock's sample bench: the bench box keeps its full height so its rows never
+   spill over the taxi and IR rows below it. */
+.colm>.benchzone{flex:none}
