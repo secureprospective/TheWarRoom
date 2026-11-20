@@ -1977,6 +1977,8 @@ export namespace commissioner {
 	    position: string;
 	    string: string;
 	    points: string;
+	    team?: string;
+	    average?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new NativePoolPlayer(source);
@@ -1992,6 +1994,8 @@ export namespace commissioner {
 	        this.position = source["position"];
 	        this.string = source["string"];
 	        this.points = source["points"];
+	        this.team = source["team"];
+	        this.average = source["average"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

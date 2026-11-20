@@ -28,27 +28,37 @@ func (s *Store) nativePoolPoints(ctx context.Context, reading *commissioner.Nati
 	s.poolMu.Lock()
 	defer s.poolMu.Unlock()
 	if s.poolKey != key || s.poolPoints == nil {
-		totals, err := s.scorePoolPlayers(ctx, reading, records, src, finished)
+		totals, played, err := s.scorePoolPlayers(ctx, reading, records, src, finished)
 		if err != nil {
 			return err
 		}
-		s.poolKey, s.poolPoints = key, totals
+		s.poolKey, s.poolPoints, s.poolWeeks = key, totals, played
 	}
 	for i, player := range reading.Pool {
 		if points, held := s.poolPoints[player.Player]; held {
 			reading.Pool[i].Points = fmt.Sprintf("%.1f", float64(points)/10000)
+			reading.Pool[i].Average = s.poolAverage(player.Player)
 		}
 	}
 	return nil
 }
 
-func (s *Store) scorePoolPlayers(ctx context.Context, reading *commissioner.NativeAssets, records []commissioner.Record, src *nativeSources, weeks []int) (map[string]leaguerules.Decimal, error) {
+// poolAverage is the held season total over weeks played; empty when he has not played.
+func (s *Store) poolAverage(player string) string {
+	weeks := s.poolWeeks[player]
+	if weeks == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%.1f", float64(s.poolPoints[player])/10000/float64(weeks))
+}
+
+func (s *Store) scorePoolPlayers(ctx context.Context, reading *commissioner.NativeAssets, records []commissioner.Record, src *nativeSources, weeks []int) (map[string]leaguerules.Decimal, map[string]int, error) {
 	files, err := s.indexedHeldSeason(ctx, src.season)
 	if pinned, ok := s.lineupEnv.(*PinnedFootball); ok {
 		files, err = pinned.stats, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("pool points NFL statistics: %w", err)
+		return nil, nil, fmt.Errorf("pool points NFL statistics: %w", err)
 	}
 	gsis, canonical := map[string]bool{}, map[string]bool{}
 	for _, file := range files {
@@ -61,11 +71,11 @@ func (s *Store) scorePoolPlayers(ctx context.Context, reading *commissioner.Nati
 			canonical[key.player] = true
 		}
 	}
-	totals := map[string]leaguerules.Decimal{}
+	totals, played := map[string]leaguerules.Decimal{}, map[string]int{}
 	for _, player := range reading.Pool {
 		id, err := src.SourceID(ctx, player.Player, "gsis")
 		if err != nil {
-			return nil, fmt.Errorf("pool points identity: %w", err)
+			return nil, nil, fmt.Errorf("pool points identity: %w", err)
 		}
 		if !gsis[id] && !canonical[player.Player] {
 			continue
@@ -73,14 +83,15 @@ func (s *Store) scorePoolPlayers(ctx context.Context, reading *commissioner.Nati
 		for _, week := range weeks {
 			score, err := src.PlayerScore(ctx, records, player.Player, week)
 			if err != nil {
-				return nil, fmt.Errorf("pool points scoring: %w", err)
+				return nil, nil, fmt.Errorf("pool points scoring: %w", err)
 			}
 			if score.Points != nil {
 				totals[player.Player] += *score.Points
+				played[player.Player]++
 			}
 		}
 	}
-	return totals, nil
+	return totals, played, nil
 }
 
 func (s *Store) poolFinishedWeeks(ctx context.Context, season int) (int, []int, error) {

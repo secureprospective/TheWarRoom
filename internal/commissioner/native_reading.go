@@ -39,6 +39,10 @@ type NativePoolPlayer struct {
 	Position string      `json:"position"`
 	String   string      `json:"string"`
 	Points   string      `json:"points"`
+	// Team is the NFL team code; empty when the player has none.
+	Team string `json:"team,omitempty"`
+	// Average is league-scored points per week played across this season's finished weeks.
+	Average string `json:"average,omitempty"`
 }
 
 // NativeAssetIdentity holds public football facts separately from recorded roster state.

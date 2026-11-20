@@ -9,6 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func TestNativePoolSeasonSumUsesWeeklyScorer(t *testing.T) {
@@ -16,7 +17,7 @@ func TestNativePoolSeasonSumUsesWeeklyScorer(t *testing.T) {
 	f := scoreCacheLeague(t, true)
 	records := mustRecords(t, f.s)
 	// Real weekly acquisition without plays is incomplete, never a fabricated zero.
-	incomplete, err := f.s.scorePoolPlayers(t.Context(), &commissioner.NativeAssets{Pool: []commissioner.NativePoolPlayer{{Player: "1001"}}}, records, f.s.nativeSources(bracketLeague, 2026), []int{1})
+	incomplete, _, err := f.s.scorePoolPlayers(t.Context(), &commissioner.NativeAssets{Pool: []commissioner.NativePoolPlayer{{Player: "1001"}}}, records, f.s.nativeSources(bracketLeague, 2026), []int{1})
 	if err != nil || len(incomplete) != 0 {
 		t.Fatalf("incomplete=%v err=%v", incomplete, err)
 	}
@@ -25,7 +26,7 @@ func TestNativePoolSeasonSumUsesWeeklyScorer(t *testing.T) {
 	f.bump["franchise.01"] = map[int]leaguerules.Decimal{1: 10000, 2: 20000, 3: 40000}
 	for _, weeks := range [][]int{{1}, {1, 2}, {1, 2, 3}} {
 		reading := commissioner.NativeAssets{League: bracketLeague, Pool: []commissioner.NativePoolPlayer{{Player: "1001"}, {Player: "9999"}}}
-		totals, err := f.s.scorePoolPlayers(t.Context(), &reading, records, f.s.nativeSources(bracketLeague, 2026), weeks)
+		totals, played, err := f.s.scorePoolPlayers(t.Context(), &reading, records, f.s.nativeSources(bracketLeague, 2026), weeks)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -42,6 +43,9 @@ func TestNativePoolSeasonSumUsesWeeklyScorer(t *testing.T) {
 		}
 		if got, ok := totals["1001"]; !ok || got != want {
 			t.Fatalf("weeks %v: got %v held=%v, want %v", weeks, got, ok, want)
+		}
+		if played["1001"] != len(weeks) {
+			t.Fatalf("weeks %v: played %d", weeks, played["1001"])
 		}
 		if _, ok := totals["9999"]; ok {
 			t.Fatal("invented total for a player with no statistics")
@@ -118,5 +122,34 @@ func TestNativePoolTotalsCacheAndArchiveInvalidation(t *testing.T) {
 	}
 	if third.Pool[0].Points != "—" || f.s.poolKey == key {
 		t.Fatal("stale total survived new NFL statistics", third.Pool)
+	}
+}
+
+func TestNativePoolPlayerTeam(t *testing.T) {
+	t.Parallel()
+	if got := nativePoolPlayer("1", nativecheck.PlayerFacts{Team: "LAR"}).Team; got != "LAR" {
+		t.Fatalf("team %q", got)
+	}
+	if got := nativePoolPlayer("1", nativecheck.PlayerFacts{Team: "FA"}).Team; got != "" {
+		t.Fatalf("free agent team %q", got)
+	}
+}
+
+func TestNativePoolAverageIsPerWeekPlayed(t *testing.T) {
+	t.Parallel()
+	f := scoreCacheLeague(t, true)
+	f.s.lineupEnv = poolSchedule{lineupEnvFake: &lineupEnvFake{}, seasons: map[int][]leagueweek.Week{2026: {{Number: 1, Games: []leagueweek.Game{{Kickoff: t0().Add(-time.Hour), Final: true}}}}}}
+	records := mustRecords(t, f.s)
+	first := commissioner.NativeAssets{League: bracketLeague, Snapshot: &commissioner.RawNativeSnapshot{Season: 2026}, Pool: []commissioner.NativePoolPlayer{{Player: "1001", Points: "—"}}}
+	if err := f.s.nativePoolPoints(t.Context(), &first, records); err != nil {
+		t.Fatal(err)
+	}
+	f.s.poolPoints["1001"], f.s.poolWeeks["1001"] = 300000, 4
+	second := commissioner.NativeAssets{League: bracketLeague, Snapshot: &commissioner.RawNativeSnapshot{Season: 2026}, Pool: []commissioner.NativePoolPlayer{{Player: "1001", Points: "—"}}}
+	if err := f.s.nativePoolPoints(t.Context(), &second, records); err != nil {
+		t.Fatal(err)
+	}
+	if second.Pool[0].Points != "30.0" || second.Pool[0].Average != "7.5" {
+		t.Fatalf("%+v", second.Pool[0])
 	}
 }
