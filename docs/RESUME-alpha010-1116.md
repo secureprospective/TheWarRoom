@@ -1,3 +1,15 @@
+## §0a STATE AT ~9:30 PM CST THU 11-19 — HEAD BRAIN MOVES TO CLAUDEBOX (Tom out of weekly tokens)
+- bundle/b9 head 578ac110b. Merged tonight: #428 frame fix, #429 tab bar+Today, #430 League, #431 Team, #432 Moves, #433 Live, #434 Today pt2 (all CI green). All five tabs ported toward mock v1 (target: ~/Downloads/TheWarRoom-mobile-mock-v1.html).
+- Lab CT 260: b64fe42bf (frame fix) live, release 11, TUF v11; S8 shows full-screen app (~/fleet/runs/phone-proof-1119/s8-after-428.png).
+- IN FLIGHT (Tom Opus subagents; may die when Tom's tokens end):
+  1. Lab redeploy of 578ac110b — brief ~/fleet/briefs/alpha010/b11lab3.md, result ~/fleet/runs/pulse-b11lab3/RESULT.md. If missing: rerun that brief.
+  2. pool-fields (team/kickoff/season avg on player rows) — brief ~/fleet/briefs/alpha010/pool-fields.md, branch session/pool-fields, PR into bundle/b9. If no PR: rerun.
+- Known gaps needing server reads (named in PRs #431-#434): snooze for owner rows, AVG/usage/rising, waivers run time, pace/team colours/drive verb on Live, Drop on player card.
+- Lab sign-in got rate-limited ("too many authentication attempts") from parallel lanes; sign in once and reuse.
+- Lab league data: Bills show 0 starters/45 empty bench — expect Saturday re-import to fix; verify.
+- ~/fleet/bin/twr-phone-compare.mjs now clicks the app tab and waits for "Reading…" to clear (edited, ~/fleet is not a git repo).
+- NEXT: (1) on redeploy, S8 walk all five tabs vs mock (python3 ~/fleet/bin/phone-chrome.py s8 ...); (2) owner + commissioner walk; (3) Saturday backup→cleanup→re-import→b9→main (approved; main merge still his click).
+- Tracker: ~/Downloads/twr-usable-week-plan.html via ~/fleet/bin/twr-tracker.py only.
 # RESUME — TheWarRoom alpha 0.10 + Franchise HQ + OVERNIGHT RUN (Claudebox head brain), Mon 2026-11-16 night
 Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else section 10 item 1.
 **OVERNIGHT RUN ACTIVE: `~/fleet/runs/overnight-twr-1116/` (Beelink) — PLAN.md, briefs/, REPORT.md (keep REPORT current; "Needs Christopher" first).**
