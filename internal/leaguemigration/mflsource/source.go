@@ -29,8 +29,12 @@ import (
 type Source struct {
 	Client *mfl.Client
 	ID     string
+	// Season pins the MFL year to read when non-zero; zero discovers the league's current season.
+	Season int
 	Now    func() time.Time
 	Held   func() map[string]string
+	// FetchPlayers loads the player list after season discovery when Held is nil.
+	FetchPlayers func(ctx context.Context, season int) (map[string]string, error)
 	// Base is how the league runs where MFL holds no setting (see Export.Base).
 	Base   leaguerules.RuleSet
 	season int
@@ -55,7 +59,18 @@ func (s *Source) year() string { return strconv.Itoa(s.season) }
 
 // League reads the settings, scoring, franchises and divisions, then the name and owners.
 func (s *Source) League(ctx context.Context) (LeagueRead, error) {
-	config, err := league.Discover(ctx, s.Client, s.ID, s.Now().Year())
+	var (
+		config league.RawConfig
+		err    error
+	)
+	if s.Season != 0 {
+		config, err = league.Fetch(ctx, s.Client, strconv.Itoa(s.Season), s.ID)
+		if err == nil {
+			config.CurrentSeason = s.Season
+		}
+	} else {
+		config, err = league.Discover(ctx, s.Client, s.ID, s.Now().Year())
+	}
 	if err != nil {
 		return LeagueRead{}, fmt.Errorf("read league: %w", err)
 	}
@@ -66,7 +81,9 @@ func (s *Source) League(ctx context.Context) (LeagueRead, error) {
 	}
 	out := LeagueRead{ID: s.ID, Name: env.League.Name, Config: config}
 	for _, f := range env.League.Franchises.Franchise {
-		out.Owners = append(out.Owners, leaguemigration.Owner{Franchise: f.ID, Name: f.OwnerName, Email: f.Email})
+		out.Owners = append(out.Owners, leaguemigration.Owner{
+			Franchise: f.ID, Name: f.OwnerName, Email: f.Email,
+		})
 	}
 	return out, nil
 }
@@ -141,8 +158,18 @@ func (s *Source) DraftType(ctx context.Context) (string, error) {
 	return "", nil
 }
 
-func (s *Source) Players(context.Context) (map[string]string, error) {
-	players := s.Held()
+func (s *Source) Players(ctx context.Context) (map[string]string, error) {
+	var players map[string]string
+	switch {
+	case s.Held != nil:
+		players = s.Held()
+	case s.FetchPlayers != nil:
+		var err error
+		players, err = s.FetchPlayers(ctx, s.season)
+		if err != nil {
+			return nil, fmt.Errorf("read player list: %w", err)
+		}
+	}
 	if len(players) == 0 {
 		return nil, fmt.Errorf("the app holds no player list yet; refresh it, then import again")
 	}

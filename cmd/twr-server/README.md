@@ -295,6 +295,19 @@ statistics) is pinned, then the existing Capture → encrypted export → inacti
 activate path moves it. The server's copy is the only writable one. `twr-sandbox` passes
 `-football` from the pin file when it exists. Test: `go test ./internal/leagueload`.
 
+### Fetch an MFL mirror from the command line
+
+```sh
+twr-server mirror-fetch -db /root/seed/history.db -mfl-league 14432 [-year 2026]
+```
+
+`mirror-fetch` pulls fresh MFL league exports, the player directory, and NFL schedule weeks into a
+standalone `history.db` mirror without opening the desktop app, reusing the desktop Prepare fetch
+and archive path (`mflsource.Source` + `archive.Transport` + `mflkey`). It writes into a temporary
+file beside `-db` and renames atomically only after the full fetch and offline verification succeed,
+so a failed fetch never leaves a half-written mirror. When finished it prints fetched counts and
+the next `twr-server league-refresh ... -dry-run` command.
+
 ### Refresh an already-loaded league from an MFL mirror (local console, service stopped)
 
 ```sh

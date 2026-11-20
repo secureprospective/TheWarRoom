@@ -66,7 +66,9 @@ auth generation; no credential crosses into the webview. See
   NFL kickoff dates from MFL and pin a new immutable evidence version to one league; there is no
   automatic schedule refresh. Live scoring remains a separate immutable current-week overlay; ticks
   leave action-relevant pin digests unchanged. Historical weeks use the selected pin.
-- **MFL calls:** `twr-server league-load` is a one-time console load from a desktop MFL copy, and
+- **MFL calls:** `twr-server mirror-fetch` pulls fresh MFL league exports, players, and NFL schedule
+  weeks into a standalone `history.db` mirror atomically via the desktop Prepare fetch path.
+  `twr-server league-load` is a one-time console load from an MFL mirror, and
   `twr-server league-refresh` refreshes an already-loaded league from a newer read-only mirror while
   the service is stopped (preserving seats, rules, and in-app commissioner edits, stopping on open
   trade offers, and supporting `-dry-run`).
