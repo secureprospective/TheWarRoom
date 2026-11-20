@@ -1,11 +1,12 @@
 // Desktop v3 frame: top bar, alert band, rail, work area (Home board or a league screen), status line.
 // Markup and class names follow TheWarRoom-mock-v3-FINAL.html (shell.js, grid.js, pieces.js) one for one;
 // the styling is v3.css, copied verbatim. Only the data differs: every row here comes from hosted reads.
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import type { ThinHomeEntry } from '../shell/ThinHome';
+import type { PulseTab } from '../shell/pulseReads';
 import { HQAct } from '../shell/HQAct';
 import { Icon } from './icons';
 import { ctStamp, docketOf, dress, lanesOf, roleWords, SCREENS, useHome, type V3League } from './model';
@@ -14,6 +15,8 @@ import { Badge, HomeBoard } from './pieces';
 import './v3.css';
 import './legacyHost.css';
 import './fixes.css';
+
+const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 
 export type V3ShellProps = { leagues: LeagueChoice[]; active?: { league: LeagueChoice; entry: ThinHomeEntry };
   onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void; onHome: () => void; onSignOut: () => void;
@@ -38,6 +41,7 @@ const TIP = {
 };
 const HOST: CSSProperties = { flex: 1, minHeight: 0, overflow: 'auto' };
 const tip = (t: string) => ({ 'data-tip': t });
+const PULSE_TABS: [PulseTab, string][] = [['now', 'Now'], ['race', 'Race']];
 const isOn = (k: ThinHomeEntry, e: ThinHomeEntry) => e === k || (k === 'hq' && e === 'lineup')
   || (k === 'war' && (e === 'bids' || e === 'trades'));
 
@@ -48,6 +52,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const docket = useMemo(() => [...docketOf(needs, leagues, now), ...lanesOf(leagues, briefs, now)],
     [needs, leagues, briefs, now]);
   const [selected, setSelected] = useState<string>();
+  const [pulseTab, setPulseTab] = useState<PulseTab>('now');
   const [layer, setLayer] = useState<'switch' | 'cmdk' | 'account' | 'docket' | 'assist' | null>(null);
   const home = () => { setSelected(undefined); onHome(); };
   useEffect(() => {
@@ -118,10 +123,16 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
       <HQAct className="more" label="Open docket" onAction={() => setLayer('docket')}>
         <b>{n}</b>NEED YOU · OPEN DOCKET</HQAct></div> : <div className="band none" />}
     <Rail leagues={leagues} L={L} active={active} c={c} home={home} pick={setSelected}
+      pulseTab={pulseTab} setPulseTab={setPulseTab}
       switcher={() => setLayer('switch')} onHome={onHome} />
     <main className="work">
       {panel && <div className="legacy-host" style={HOST}>{panel}</div>}
-      {active ? <div className="legacy-host" hidden={Boolean(panel)}
+      {active && L && (active.entry === 'pulse' || active.entry === 'league') ? !panel
+        && <Suspense fallback={<div className="st"><div className="eng">Opening League Pulse…</div></div>}>
+          <NativeLeaguePulse key={L.id} league={L.id} mine={L.franchise ?? ''} port={port} serverTime
+            commissioner={L.commish} tab={pulseTab} navigate={t => setPulseTab(t)} leave={home}
+            v3={{ badge: <Badge L={L} />, kind: roleWords(L).toUpperCase() }} /></Suspense>
+      : active ? <div className="legacy-host" hidden={Boolean(panel)}
         style={HOST}>{children}</div>
         : !panel && <HomeBoard c={c} />}</main>
     <aside className="insp closed" />
@@ -160,9 +171,9 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
 
 type RailProps = { leagues: V3League[]; L: V3League | null; active?: V3ShellProps['active'];
   c: Parameters<typeof HomeBoard>[0]['c']; home: () => void; pick: (id?: string) => void;
-  switcher: () => void; onHome: () => void };
+  switcher: () => void; onHome: () => void; pulseTab: PulseTab; setPulseTab: (t: PulseTab) => void };
 
-function Rail({ leagues, L, active, c, home, pick, switcher, onHome }: RailProps) {
+function Rail({ leagues, L, active, c, home, pick, switcher, onHome, pulseTab, setPulseTab }: RailProps) {
   const waiting = (id: string) => c.docket.filter(d => d.lg === id && d.lane === 'need').length;
   const standing = (l: V3League) =>
     c.briefs[l.id]?.brief?.pulse?.standings?.rows.find(x => x.franchise === l.franchise);
@@ -200,6 +211,10 @@ function Rail({ leagues, L, active, c, home, pick, switcher, onHome }: RailProps
               onAction={() => c.open(L, s.k)}>
               <Icon n={s.icon} /><span className="lb">{s.name}</span>
               <span className="car">{on ? '▾' : '▸'}</span></HQAct>
+            {on && s.k === 'pulse' && PULSE_TABS.map(([t, name]) => <HQAct key={t}
+              className={`leaf${pulseTab === t ? ' sel' : ''}`} onAction={() => setPulseTab(t)}>
+              <span className="tr">{pulseTab === t ? '▮' : '├'}</span>
+              <span className="ell">{name}</span></HQAct>)}
             {!on && <HQAct className="leaf now" onAction={() => c.open(L, s.k)}>
               <span className="tag">NOW</span><span className="ell">{s.now}</span></HQAct>}</div>;
         })}

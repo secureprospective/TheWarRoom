@@ -15,6 +15,7 @@ import { usePulseLive } from './hqLive';
 import { useHostedGames } from './hostedGames';
 import type { LiveView } from '../now/liveContract';
 import './pulse.css';
+import { PulseNowV3, PulseTabs } from '../v3/PulseV3';
 
 export type { PulseTab } from './pulseReads';
 export const PULSE_FOLLOW_MS = 250;
@@ -132,6 +133,18 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
     retry();
     return () => clearTimeout(timer);
   }, [errored, scope.refresh, scope.serverTime]);
+  if (scope.v3 && tab === 'now') return <>
+    <PulseTabs tab={tab} navigate={scope.navigate} badge={scope.v3.badge} kind={scope.v3.kind} />
+    <div className="wbody scr scr-pulse">{!reading
+      ? <div className="st"><div className="eng">{league.error
+        ? `League Pulse is unavailable · ${league.error}`
+        : 'Reading League Pulse…'}</div></div>
+      : <PulseNowV3 reading={reading} mine={scope.mine} week={week} results={results} league={scope.league}
+        port={port} live={live} badge={scope.v3.badge} changes={changes}
+        viewer={{ mine: scope.mine, commissioner: scope.commissioner ?? false }}
+        pull={drawer === 'box' || drawer === 'sched' || drawer === 'corr' ? drawer : undefined}
+        onPull={pull} />}</div>
+  </>;
   const modeClass = scope.serverTime ? ' hosted' : '';
   const body = <div className={`lp-v14${scope.embedded ? ' embedded' : ''}${modeClass}`}>
     <div className="shell">

@@ -293,7 +293,7 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(host.querySelector('.mybox')).toBeNull();
     expect(port.mock.calls.some(([r]) => r.command === 'native.directory.read')).toBe(true);
     expect(port.mock.calls.some(([r]) => r.command === 'standings.read')).toBe(true);
-    await clickNode('Control Room'); await click('Rules');
+    await click('Open Control Room'); await click('Rules');
     expect(buttons('Change Lineup lock')).toHaveLength(1);
     await click('Change Lineup lock'); await preview();
     const dialog = host.querySelector('[role=dialog]')!;

@@ -358,7 +358,7 @@ function GameRow({ row, selected, onPick, homeWin }: { row: PulseRow; selected: 
   </PulseAct>;
 }
 
-type StarterSides = { left: PulseStarterRow[]; right: PulseStarterRow[]; private: boolean;
+export type StarterSides = { left: PulseStarterRow[]; right: PulseStarterRow[]; private: boolean;
   /** The viewer's own franchise sits on the left whenever it plays in the chosen matchup. */
   leftId?: string; rightId?: string; leftName: string; rightName: string; mine: boolean;
   /** The lineups are still being read, so who plays where is not known yet. */
@@ -366,7 +366,8 @@ type StarterSides = { left: PulseStarterRow[]; right: PulseStarterRow[]; private
 
 /** useStarterSides reads the chosen matchup's two lineups once, for the starters and for who is in
  *  the followed NFL game. */
-function useStarterSides(reading: NativePulse, week: number | undefined, results: PulseResults | undefined,
+export function useStarterSides(reading: NativePulse, week: number | undefined,
+  results: PulseResults | undefined,
   row: PulseRow | undefined, league: string, port: HostedPort, mine: string,
   viewer?: { mine: string; commissioner: boolean }): StarterSides {
   const away = row?.game.away;
