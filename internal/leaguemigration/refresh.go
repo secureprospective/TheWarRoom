@@ -248,8 +248,9 @@ type refreshPlanner struct {
 
 func (p *refreshPlanner) build(records []commissioner.Record, app AppLeague) error {
 	serverCharges := serverChargeEntries(records)
+	editedContracts := inAppEditedContracts(records, app.Snapshot)
 	p.replayTransactions(records)
-	if err := p.reconcileAssets(serverCharges); err != nil {
+	if err := p.reconcileAssets(serverCharges, editedContracts); err != nil {
 		return err
 	}
 	if err := p.reconcileFranchises(records, app); err != nil {
@@ -268,7 +269,8 @@ func (p *refreshPlanner) build(records []commissioner.Record, app AppLeague) err
 	if err != nil {
 		return fmt.Errorf("verify refreshed league state: %w", err)
 	}
-	return verifyRefreshResult(p.plan, postApp, serverCharges, p.opts.DropAppAdjustments)
+	return verifyRefreshResult(
+		p.plan, postApp, serverCharges, editedContracts, p.opts.DropAppAdjustments)
 }
 
 func (p *refreshPlanner) nextRequest(kind string) string {
@@ -484,6 +486,9 @@ func (p *refreshPlanner) reconcileOneLineup(lineup commissioner.RawLineupChange,
 	if found && slices.Equal(want, have) {
 		return nil
 	}
+	if found && previous.Corrected && !previous.Synced && !p.opts.OverwriteLiveLineup {
+		return nil
+	}
 	played := cutover > 0 && lineup.Week < cutover
 	if !played && found && !previous.Synced && !p.opts.OverwriteLiveLineup {
 		return nil
@@ -643,14 +648,79 @@ func referenceMFLLeague(records []commissioner.Record) (string, bool) {
 	return "", false
 }
 
+type franchisePlayerKey struct {
+	franchise string
+	player    string
+}
+
+type editedContracts struct {
+	byFranchise map[franchisePlayerKey]bool
+	bySide      map[playerCopyKey]bool
+}
+
+func (e editedContracts) has(snap *commissioner.RawNativeSnapshot, franchise, player string) bool {
+	if e.byFranchise[franchisePlayerKey{franchise: franchise, player: player}] {
+		return true
+	}
+	return e.bySide[playerCopyKey{side: snap.SideOf(franchise), id: player}]
+}
+
+func inAppEditedContracts(
+	records []commissioner.Record, snap commissioner.RawNativeSnapshot,
+) editedContracts {
+	active := commissioner.Replay(records).Active
+	out := editedContracts{
+		byFranchise: map[franchisePlayerKey]bool{},
+		bySide:      map[playerCopyKey]bool{},
+	}
+	for _, r := range records {
+		if !active[r.Receipt.Entry] {
+			continue
+		}
+		switch r.Command.Command {
+		case commissioner.ContractEdit:
+			if o := r.Command.Args.Override; o != nil {
+				if o.Franchise != "" {
+					out.byFranchise[franchisePlayerKey{franchise: o.Franchise, player: o.Player}] = true
+				} else {
+					out.bySide[playerCopyKey{side: snap.SideOf(""), id: o.Player}] = true
+				}
+			}
+		case commissioner.CorrectRoster:
+			c := r.Command.Args.Correction
+			if c != nil && c.Action == "contract" && !isSyncedContractRequest(r.Command.Request) {
+				out.byFranchise[franchisePlayerKey{franchise: c.Franchise, player: c.Player}] = true
+			}
+		}
+	}
+	return out
+}
+
+func isSyncedContractRequest(request string) bool {
+	return strings.HasPrefix(request, refreshRequestPrefix) ||
+		strings.HasPrefix(request, "transactions.sync.") ||
+		strings.HasPrefix(request, "mfl-import.")
+}
+
 func verifyRefreshResult(
-	plan Plan, postApp AppLeague, serverCharges map[string]bool, dropAppCharges bool,
+	plan Plan,
+	postApp AppLeague,
+	serverCharges map[string]bool,
+	edited editedContracts,
+	dropAppCharges bool,
 ) error {
 	diffs := Compare(plan, postApp)
 	var unexpected []string
 	for _, d := range diffs {
 		switch group(d.Field) {
-		case "roster", "contract", "pick":
+		case "roster", "pick":
+			unexpected = append(unexpected, fmt.Sprintf("%s %s (MFL=%s, app=%s)", d.Franchise, d.Field, d.MFL, d.App))
+		case "contract":
+			rest, ok := strings.CutPrefix(d.Field, "player ")
+			playerID, _, _ := strings.Cut(rest, " ")
+			if ok && edited.has(&postApp.Snapshot, d.Franchise, playerID) {
+				continue
+			}
 			unexpected = append(unexpected, fmt.Sprintf("%s %s (MFL=%s, app=%s)", d.Franchise, d.Field, d.MFL, d.App))
 		case "salary adjustment":
 			id := strings.TrimPrefix(d.Field, "salary adjustment ")

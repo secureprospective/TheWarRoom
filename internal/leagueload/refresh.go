@@ -2,10 +2,8 @@ package leagueload
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -14,8 +12,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
-	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
-	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -81,7 +77,7 @@ func ReplaySourceByLeague(
 }
 
 // Refresh reads the mirror without network calls, plans and trial-verifies the atomic refresh batch,
-// and commits football evidence and ledger changes unless DryRun is set.
+// and commits ledger changes and football evidence unless DryRun is set.
 func Refresh(ctx context.Context, r RefreshRequest) (RefreshResult, error) {
 	if err := checkRefreshRequest(r); err != nil {
 		return RefreshResult{}, err
@@ -116,7 +112,7 @@ func Refresh(ctx context.Context, r RefreshRequest) (RefreshResult, error) {
 		DryRun:          r.DryRun,
 		Summary:         report.Summary,
 		Commands:        len(report.Commands),
-		OldFootball:     r.CurrentPin,
+		OldFootball:     fb.oldDigest,
 		Football:        fb.digest,
 		FootballChanged: fb.changed,
 	}
@@ -151,38 +147,6 @@ func leagueIdentity(
 		season = records[0].Command.Args.Season
 	}
 	return name, season
-}
-
-type preparedFootball struct {
-	body    []byte
-	digest  string
-	changed bool
-	env     footballEnv
-}
-
-func prepareMirrorFootball(ctx context.Context, r RefreshRequest, season int) (preparedFootball, error) {
-	body, digest, err := r.Football(ctx, season)
-	if err != nil {
-		return preparedFootball{}, fmt.Errorf("build football evidence from mirror: %w", err)
-	}
-	var raw history.RawFootballEvidence
-	if err := json.Unmarshal(body, &raw); err != nil {
-		return preparedFootball{}, fmt.Errorf("decode mirror football evidence: %w", err)
-	}
-	if err := raw.Validate(); err != nil {
-		return preparedFootball{}, fmt.Errorf("validate mirror football evidence: %w", err)
-	}
-	changed := !sameFootballContent(ctx, r.Server, r.CurrentPin, raw, digest)
-	finalDigest := digest
-	if !changed {
-		finalDigest = r.CurrentPin
-	}
-	return preparedFootball{
-		body:    body,
-		digest:  finalDigest,
-		changed: changed,
-		env:     footballEnv{raw: raw},
-	}, nil
 }
 
 func planServerRefresh(
@@ -228,109 +192,21 @@ func commitServerRefresh(
 	fb preparedFootball,
 	commands []commissioner.RawCommand,
 ) error {
+	if len(commands) > 0 {
+		ledger := leagueservice.MigrationLedger{Store: sibling, Facts: fb.env.PlayerFacts}
+		if _, err := ledger.Batch(ctx, commands, string(r.Commissioner)); err != nil {
+			return fmt.Errorf("record league refresh (nothing was changed): %w", err)
+		}
+	}
 	if fb.changed {
-		evidence, err := ensureFootballStored(ctx, r.Server, fb.body, fb.digest)
-		if err != nil {
+		if _, err := ensureFootballStored(ctx, r.Server, fb.body, fb.digest); err != nil {
+			if len(commands) > 0 {
+				return fmt.Errorf("the league refresh has already committed, but %w", err)
+			}
 			return err
 		}
-		sibling.SetPinnedFootball(evidence)
-	} else if r.CurrentPin != "" {
-		evidence, err := r.Server.LoadFootball(ctx, r.CurrentPin)
-		if err != nil {
-			return fmt.Errorf("load pinned football evidence: %w", err)
-		}
-		sibling.SetPinnedFootball(evidence)
-	}
-	if len(commands) == 0 {
-		return nil
-	}
-	ledger := leagueservice.MigrationLedger{Store: sibling, Facts: fb.env.PlayerFacts}
-	if _, err := ledger.Batch(ctx, commands, string(r.Commissioner)); err != nil {
-		return fmt.Errorf("record league refresh (nothing was changed): %w", err)
 	}
 	return nil
-}
-
-func ensureFootballStored(
-	ctx context.Context, server *history.Store, body []byte, digest string,
-) (*history.PinnedFootball, error) {
-	evidence, err := server.LoadFootball(ctx, digest)
-	if err == nil {
-		return evidence, nil
-	}
-	if !errors.Is(err, history.ErrNoBody) {
-		return nil, fmt.Errorf("check held football evidence: %w", err)
-	}
-	if err := server.ImportFootball(ctx, body, digest); err != nil {
-		return nil, fmt.Errorf("import football evidence: %w", err)
-	}
-	evidence, err = server.LoadFootball(ctx, digest)
-	if err != nil {
-		return nil, fmt.Errorf("verify imported football evidence: %w", err)
-	}
-	return evidence, nil
-}
-
-func sameFootballContent(
-	ctx context.Context,
-	store *history.Store,
-	currentPin string,
-	want history.RawFootballEvidence,
-	wantDigest string,
-) bool {
-	if currentPin == "" {
-		return false
-	}
-	if currentPin == wantDigest {
-		return true
-	}
-	body, err := store.Body(ctx, currentPin)
-	if err != nil {
-		return false
-	}
-	var have history.RawFootballEvidence
-	if err := json.Unmarshal(body, &have); err != nil {
-		return false
-	}
-	return have.Season == want.Season &&
-		reflect.DeepEqual(have.Players, want.Players) &&
-		reflect.DeepEqual(have.Weeks, want.Weeks)
-}
-
-type footballEnv struct {
-	raw history.RawFootballEvidence
-}
-
-func (e footballEnv) PlayerFacts() nativecheck.Facts {
-	facts := make(nativecheck.Facts, len(e.raw.Players))
-	for id, player := range e.raw.Players {
-		f := player.Facts
-		if player.NFLRosterSeasons != nil {
-			f.NFLSeasons, f.NFLSeasonsHeld = len(*player.NFLRosterSeasons), true
-		}
-		facts[id] = f
-	}
-	nativecheck.AddLineCards(facts)
-	return facts
-}
-
-func (e footballEnv) LineupFacts(ctx context.Context, season, week int) (commissioner.LineupFacts, error) {
-	if err := ctx.Err(); err != nil {
-		return commissioner.LineupFacts{}, fmt.Errorf("read mirror football schedule: %w", err)
-	}
-	if season != e.raw.Season {
-		return commissioner.LineupFacts{}, fmt.Errorf(
-			"mirror football data is for season %d, not %d", e.raw.Season, season)
-	}
-	for _, held := range e.raw.Weeks {
-		if held.Number == week {
-			return commissioner.LineupFacts{
-				Facts: e.PlayerFacts(), Locks: leagueweek.Locks(held),
-				ScheduleHeld: true, Zone: time.UTC,
-			}, nil
-		}
-	}
-	return commissioner.LineupFacts{}, fmt.Errorf("mirror football data does not hold NFL week %d", week)
 }
 
 func namedStoppedTrades(

@@ -103,12 +103,14 @@ func tryReplayGroup(
 	return candidate, true
 }
 
-func (p *refreshPlanner) reconcileAssets(serverCharges map[string]bool) error {
+func (p *refreshPlanner) reconcileAssets(
+	serverCharges map[string]bool, edited editedContracts,
+) error {
 	assets, err := commissioner.NativeAssetsReading(p.league, p.trial, p.now)
 	if err != nil {
 		return fmt.Errorf("read trial assets: %w", err)
 	}
-	if err := p.reconcileRosters(assets.Snapshot); err != nil {
+	if err := p.reconcileRosters(assets.Snapshot, edited); err != nil {
 		return err
 	}
 	if err := p.reconcileAdjustments(assets.Snapshot, serverCharges); err != nil {
@@ -129,7 +131,9 @@ func comparePlayerKey(a, b playerCopyKey) int {
 	return strings.Compare(a.id, b.id)
 }
 
-func (p *refreshPlanner) reconcileRosters(cur *commissioner.RawNativeSnapshot) error {
+func (p *refreshPlanner) reconcileRosters(
+	cur *commissioner.RawNativeSnapshot, edited editedContracts,
+) error {
 	curMap := map[playerCopyKey]commissioner.NativePlayer{}
 	for _, pl := range cur.Players {
 		curMap[playerCopyKey{side: cur.SideOf(pl.Franchise), id: pl.ID}] = pl
@@ -141,7 +145,7 @@ func (p *refreshPlanner) reconcileRosters(cur *commissioner.RawNativeSnapshot) e
 	if err := p.emitRosterRemovals(curMap, wantMap); err != nil {
 		return err
 	}
-	return p.emitRosterAddsAndUpdates(curMap, wantMap)
+	return p.emitRosterAddsAndUpdates(curMap, wantMap, cur, edited)
 }
 
 func (p *refreshPlanner) emitRosterRemovals(
@@ -167,6 +171,8 @@ func (p *refreshPlanner) emitRosterRemovals(
 
 func (p *refreshPlanner) emitRosterAddsAndUpdates(
 	curMap, wantMap map[playerCopyKey]commissioner.NativePlayer,
+	cur *commissioner.RawNativeSnapshot,
+	edited editedContracts,
 ) error {
 	keys := slices.SortedFunc(maps.Keys(wantMap), comparePlayerKey)
 	for _, k := range keys {
@@ -189,7 +195,7 @@ func (p *refreshPlanner) emitRosterAddsAndUpdates(
 			}
 			p.summary.RosterStatusChanges++
 		}
-		if !sameContract(curP, wantP) {
+		if !sameContract(curP, wantP) && !edited.has(cur, wantP.Franchise, wantP.ID) {
 			contract := contractFromPlayer(wantP)
 			raw := p.correctionCmd(commissioner.CorrectRoster, "contract",
 				fmt.Sprintf("update contract for player %s on %s", wantP.ID, wantP.Franchise),

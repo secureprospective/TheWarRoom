@@ -22,6 +22,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
+const defaultServerPinPath = "/etc/twr/football.sha256"
+
 type refreshOptions struct {
 	dbPath     string
 	mirrorPath string
@@ -126,7 +128,9 @@ func refreshHeld(
 		return fmt.Errorf("commissioner identity: %w", err)
 	}
 	signIns := signInStore(files)
-	currentPin, err := currentLeaguePin(ctx, signIns, opts.league, opts.pinPath)
+	currentPin, err := currentLeaguePin(
+		ctx, signIns, store, opts.league, opts.pinPath, defaultServerPinPath,
+	)
 	if err != nil {
 		return err
 	}
@@ -173,18 +177,31 @@ func applyRefreshedPin(
 		return nil
 	}
 	if err := signIns.PinFootball(ctx, opts.league, res.Football); err != nil {
-		return fmt.Errorf("pin refreshed football evidence: %w", err)
+		if res.Commands > 0 {
+			return fmt.Errorf(
+				"the league refresh has already committed, but pinning refreshed football evidence failed: %w",
+				err)
+		}
+		return fmt.Errorf(
+			"football evidence %s was imported, but pinning refreshed football evidence failed: %w",
+			res.Football, err)
 	}
 	if opts.pinPath != "" {
 		if err := writePin(opts.pinPath, res.Football); err != nil {
-			return err
+			if res.Commands > 0 {
+				return fmt.Errorf("the league refresh has already committed, but %w", err)
+			}
+			return fmt.Errorf("football evidence %s was pinned on the server, but %w", res.Football, err)
 		}
 	}
 	return nil
 }
 
 func currentLeaguePin(
-	ctx context.Context, signIns *accountstore.Store, league, pinPath string,
+	ctx context.Context,
+	signIns *accountstore.Store,
+	store *history.Store,
+	league, pinPath, defaultPinPath string,
 ) (string, error) {
 	directory, err := signIns.Directory(ctx)
 	if err != nil {
@@ -195,9 +212,29 @@ func currentLeaguePin(
 			return entry.Football, nil
 		}
 	}
-	if pinPath == "" {
-		return "", nil
+	if pinPath != "" {
+		return readPinFile(pinPath)
 	}
+	return defaultPinDigest(ctx, store, defaultPinPath), nil
+}
+
+func defaultPinDigest(ctx context.Context, store *history.Store, path string) string {
+	if path == "" {
+		return ""
+	}
+	digest, err := readPinFile(path)
+	if err != nil || digest == "" {
+		return ""
+	}
+	if store != nil {
+		if _, err := store.LoadFootball(ctx, digest); err != nil {
+			return ""
+		}
+	}
+	return digest
+}
+
+func readPinFile(pinPath string) (string, error) {
 	body, err := os.ReadFile(pinPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return "", nil
@@ -254,6 +291,9 @@ func reportRefresh(output io.Writer, res leagueload.RefreshResult) error {
 		"  Open trade offers blocking refresh: none",
 	}
 	if _, err := io.WriteString(output, strings.Join(lines, "\n")+"\n"); err != nil {
+		if !res.DryRun && (res.Commands > 0 || res.FootballChanged) {
+			return fmt.Errorf("report league refresh (the refresh has already committed): %w", err)
+		}
 		return fmt.Errorf("report league refresh: %w", err)
 	}
 	return nil

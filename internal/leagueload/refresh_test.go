@@ -2,8 +2,11 @@ package leagueload
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -12,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
@@ -21,6 +25,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -344,4 +349,227 @@ func findTwoTradePicks(
 	}
 	t.Fatal("could not find two future picks owned by distinct franchises")
 	return p1, p2
+}
+
+func TestRefreshPreservesOfficialStatsIdentitiesAndScheduleWeeks(t *testing.T) {
+	h := newRefreshHarness(t)
+	body, err := h.server.Body(t.Context(), h.football)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var enriched history.RawFootballEvidence
+	if err := json.Unmarshal(body, &enriched); err != nil {
+		t.Fatal(err)
+	}
+
+	// Pick one player from the mirror and enrich with GSIS/PFR/Sleeper/NFLRosterSeasons/Designation/CareerGames.
+	var targetID string
+	for id := range enriched.Players {
+		if targetID == "" || id < targetID {
+			targetID = id
+		}
+	}
+	seasons := []int{2024, 2025, 2026}
+	target := enriched.Players[targetID]
+	target.Identity = "00-0023459"
+	target.PFR = "RodgAa00"
+	target.Sleeper = "4046"
+	target.NFLRosterSeasons = &seasons
+	target.Facts.Designation = leaguerules.Out
+	target.Facts.DesignationHeld = true
+	target.Facts.CareerGames = 42
+	target.Facts.CareerGamesHeld = true
+	enriched.Players[targetID] = target
+
+	// Also add a non-mirror player (e.g., retired/historical player) that must not be dropped.
+	enriched.Players["9899"] = history.RawFootballPlayer{
+		Identity: "00-0023853",
+		Facts:    nativecheck.PlayerFacts{Name: "Historical Kicker", Position: leaguerules.PK, Team: "BAL"},
+	}
+
+	// Mark week 1 final and add week 3 (as refresh-nfl-schedule does).
+	enriched.Weeks[0].Games[0].Final = true
+	at := time.Date(enriched.Season, 9, 1, 0, 0, 0, 0, time.UTC)
+	enriched.Weeks = append(enriched.Weeks, leagueweek.Week{
+		Number: 3,
+		Games:  []leagueweek.Game{{Teams: [2]string{"KC", "BUF"}, Kickoff: at.Add(576 * time.Hour)}},
+	})
+
+	// Attach real split nflverse official stats (week part imported separately).
+	weeksCSV, err := os.ReadFile("../fantasyscore/source/testdata/weeks.csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	weekLines := strings.Split(strings.TrimSpace(string(weeksCSV)), "\n")
+	weeklyStr := strings.ReplaceAll(strings.Join(weekLines[:3], "\n")+"\n", ",2025,", ",2026,")
+	playsStr := "game_id,play_id,season,week,season_type,passer_player_id,receiver_player_id," +
+		"rusher_player_id,passing_yards,receiving_yards,rushing_yards,touchdown,td_player_id," +
+		"td_team,return_team,interception,punt_attempt,kickoff_attempt,play_deleted,two_point_attempt\n" +
+		"2025_01_PIT_NYJ,1,2026,1,REG,00-0023459,,,40,NA,NA,0,,,,0,0,0,0,0\n" +
+		"2025_01_BAL_BUF,1,2026,1,REG,,,,NA,NA,NA,0,,,,0,0,0,0,0\n"
+	partBody, err := json.Marshal(history.RawFootballWeek{
+		Version: 1, Season: enriched.Season, Week: 1, Weekly: weeklyStr, Plays: playsStr,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	partSum := sha256.Sum256(partBody)
+	partDigest := hex.EncodeToString(partSum[:])
+	if err := h.server.ImportFootballWeek(t.Context(), partBody, partDigest); err != nil {
+		t.Fatal(err)
+	}
+	enriched.Stats = []history.RawFootballStats{{
+		AsOf:  enriched.AsOf.Add(-time.Minute),
+		Parts: []string{partDigest},
+	}}
+	enrichedBody, err := json.Marshal(enriched)
+	if err != nil {
+		t.Fatal(err)
+	}
+	enrichedSum := sha256.Sum256(enrichedBody)
+	enrichedDigest := hex.EncodeToString(enrichedSum[:])
+	if err := h.server.ImportFootball(t.Context(), enrichedBody, enrichedDigest); err != nil {
+		t.Fatal(err)
+	}
+	h.football = enrichedDigest
+
+	// 1. Refresh with unchanged mirror must recognize football is unchanged and preserve enrichedDigest.
+	unchanged, err := Refresh(t.Context(), RefreshRequest{
+		League:       h.league,
+		Commissioner: governancePrincipal(h.commish),
+		Server:       h.server,
+		CurrentPin:   h.football,
+		DryRun:       false,
+		Source:       h.source,
+		Football:     h.buildFootball,
+		Now:          func() time.Time { return h.now },
+	})
+	if err != nil {
+		t.Fatalf("refresh unchanged mirror: %v", err)
+	}
+	if unchanged.FootballChanged || unchanged.Football != enrichedDigest {
+		t.Fatalf("unchanged mirror overwrote enriched football: changed=%t got=%s want=%s",
+			unchanged.FootballChanged, unchanged.Football, enrichedDigest)
+	}
+
+	// 2. Add a new player in the mirror: refresh merges mirror update while preserving all server data.
+	h.extraPlay = []players.RawPlayer{{
+		ID: "9950", Name: "Mirror New Rookie", Position: "RB", Team: "KC", DraftYear: "2026",
+	}}
+	h.now = h.now.Add(time.Hour)
+	applied, err := Refresh(t.Context(), RefreshRequest{
+		League:       h.league,
+		Commissioner: governancePrincipal(h.commish),
+		Server:       h.server,
+		CurrentPin:   h.football,
+		DryRun:       false,
+		Source:       h.source,
+		Football:     h.buildFootball,
+		Now:          func() time.Time { return h.now },
+	})
+	if err != nil {
+		t.Fatalf("refresh with new mirror player: %v", err)
+	}
+	if !applied.FootballChanged || applied.Football == enrichedDigest {
+		t.Fatalf("expected updated merged football digest: %+v", applied)
+	}
+	mergedBody, err := h.server.Body(t.Context(), applied.Football)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var merged history.RawFootballEvidence
+	if err := json.Unmarshal(mergedBody, &merged); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := merged.Players["9950"]; !ok {
+		t.Fatal("new mirror player 9950 missing from merged football evidence")
+	}
+	if _, ok := merged.Players["9899"]; !ok {
+		t.Fatal("non-mirror player 9899 was lost during refresh")
+	}
+	gotTarget := merged.Players[targetID]
+	if gotTarget.Identity != "00-0023459" || gotTarget.PFR != "RodgAa00" || gotTarget.Sleeper != "4046" ||
+		gotTarget.NFLRosterSeasons == nil || !slices.Equal(*gotTarget.NFLRosterSeasons, seasons) ||
+		!gotTarget.Facts.DesignationHeld || gotTarget.Facts.Designation != leaguerules.Out ||
+		!gotTarget.Facts.CareerGamesHeld || gotTarget.Facts.CareerGames != 42 {
+		t.Fatalf("enriched player metadata lost during refresh: %+v", gotTarget)
+	}
+	if len(merged.Stats) != 1 || !slices.Equal(merged.Stats[0].Parts, []string{partDigest}) {
+		t.Fatalf("official nflverse stats lost during refresh: %+v", merged.Stats)
+	}
+	pinned, err := h.server.LoadFootball(t.Context(), applied.Football)
+	if err != nil {
+		t.Fatalf("load merged football evidence: %v", err)
+	}
+	heldStats, err := pinned.CanonicalPlayerWeekStats(
+		t.Context(), source.RawNativeScope{Player: targetID, Season: enriched.Season, Week: 1},
+	)
+	if err != nil || len(heldStats) != 1 || heldStats[0].Week == nil {
+		t.Fatalf("official stats not readable after refresh: %+v %v", heldStats, err)
+	}
+	if len(merged.Weeks) != 3 || !merged.Weeks[0].Games[0].Final || merged.Weeks[2].Number != 3 {
+		t.Fatalf("final week 1 or server-held week 3 lost during refresh: %+v", merged.Weeks)
+	}
+
+	// 3. Running again with the merged pin (or empty CurrentPin resolved from server store) is a no-op.
+	h.now = h.now.Add(time.Hour)
+	for _, pin := range []string{applied.Football, ""} {
+		again, err := Refresh(t.Context(), RefreshRequest{
+			League:       h.league,
+			Commissioner: governancePrincipal(h.commish),
+			Server:       h.server,
+			CurrentPin:   pin,
+			DryRun:       false,
+			Source:       h.source,
+			Football:     h.buildFootball,
+			Now:          func() time.Time { return h.now },
+		})
+		if err != nil || again.FootballChanged || again.Football != applied.Football {
+			t.Fatalf("second refresh (pin=%q) was not a no-op: %+v %v", pin, again, err)
+		}
+	}
+}
+
+func TestRefreshDoesNotImportFootballWhenBatchFails(t *testing.T) {
+	h := newRefreshHarness(t)
+	h.extraPlay = []players.RawPlayer{{
+		ID: "9960", Name: "Uncommitted Rookie", Position: "WR", Team: "DAL", DraftYear: "2026",
+	}}
+	req := RefreshRequest{
+		League:       h.league,
+		Commissioner: governancePrincipal(h.commish),
+		Server:       h.server,
+		CurrentPin:   h.football,
+		Source:       h.source,
+		Football:     h.buildFootball,
+		Now:          func() time.Time { return h.now },
+	}
+	fb, err := prepareMirrorFootball(t.Context(), req, h.export.Season)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fb.changed {
+		t.Fatal("expected changed football evidence for batch failure test")
+	}
+	sibling := h.server.Sibling()
+	sibling.SetLineupEnvironment(fb.env)
+	badCmd := commissioner.RawCommand{
+		League:     h.league,
+		Command:    commissioner.CorrectRoster,
+		Request:    "mfl-refresh.bad-expected",
+		Reason:     "Simulated stale revision",
+		Effective:  "now",
+		Visibility: "league",
+		Expected:   999999,
+		Args: commissioner.RawArgs{Correction: &commissioner.RawCorrection{
+			Franchise: "franchise.01", Player: "999999", Action: "remove",
+		}},
+	}
+	err = commitServerRefresh(t.Context(), req, sibling, fb, []commissioner.RawCommand{badCmd})
+	if err == nil || !strings.Contains(err.Error(), "nothing was changed") {
+		t.Fatalf("expected batch failure error, got: %v", err)
+	}
+	if _, loadErr := h.server.LoadFootball(t.Context(), fb.digest); !errors.Is(loadErr, history.ErrNoBody) {
+		t.Fatalf("football evidence was imported before ledger.Batch failed: loadErr=%v", loadErr)
+	}
 }

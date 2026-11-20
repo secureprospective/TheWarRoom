@@ -598,3 +598,86 @@ func summaryBody(output string) string {
 	}
 	return rest
 }
+
+func TestLeagueRefreshDryRunWithoutFootballPinFlagIsNoOpAfterLoad(t *testing.T) {
+	f := newCLIRefreshFixture(t)
+	var out strings.Builder
+	opts := refreshOptions{dbPath: f.dbPath, league: f.league, dryRun: true}
+	if err := refreshHeld(t.Context(), opts, f.held(), f.creds, &out); err != nil {
+		t.Fatalf("dry-run without -football-pin: %v", err)
+	}
+	text := out.String()
+	if !strings.Contains(text, "already up to date; no changes needed.") {
+		t.Fatalf("unchanged mirror dry-run without -football-pin not a no-op:\n%s", text)
+	}
+	if !strings.Contains(text, "Player list and NFL schedule: unchanged") {
+		t.Fatalf("expected football unchanged without -football-pin:\n%s", text)
+	}
+
+	// Verify currentLeaguePin falls back to defaultPinPath when held in store, and ignores unknown digests.
+	pinBody, err := os.ReadFile(f.pinPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantDigest := strings.TrimSpace(string(pinBody))
+	foreignPin := filepath.Join(f.dir, "foreign.sha256")
+	if err := writePin(foreignPin, strings.Repeat("b", 64)); err != nil {
+		t.Fatal(err)
+	}
+	f.withStore(t, func(files stateFiles, store *history.Store, _ string) {
+		signIns := signInStore(files)
+		got, err := currentLeaguePin(t.Context(), signIns, store, f.league, "", f.pinPath)
+		if err != nil || got != wantDigest {
+			t.Fatalf("defaultPinPath fallback = %q (%v), want %q", got, err, wantDigest)
+		}
+		gotForeign, err := currentLeaguePin(t.Context(), signIns, store, f.league, "", foreignPin)
+		if err != nil || gotForeign != "" {
+			t.Fatalf("unheld defaultPinPath = %q (%v), want empty", gotForeign, err)
+		}
+	})
+}
+
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) { return 0, os.ErrClosed }
+
+func TestPostCommitPinAndReportErrorsNoteAlreadyCommitted(t *testing.T) {
+	f := newCLIRefreshFixture(t)
+	res := leagueload.RefreshResult{
+		League:          f.league,
+		LeagueName:      "Legacy NFL",
+		Season:          2026,
+		Commands:        2,
+		Football:        strings.Repeat("a", 64),
+		FootballChanged: true,
+	}
+
+	// Failing writePin after committed ledger changes must state the refresh already committed.
+	f.withStore(t, func(files stateFiles, _ *history.Store, _ string) {
+		badPinPath := filepath.Join(f.dir, "missing-dir", "football.sha256")
+		err := applyRefreshedPin(
+			t.Context(), signInStore(files),
+			refreshOptions{league: f.league, pinPath: badPinPath}, res,
+		)
+		if err == nil || !strings.Contains(err.Error(), "already committed") {
+			t.Fatalf("writePin failure did not note already committed: %v", err)
+		}
+	})
+
+	// Failing signIns.PinFootball after committed ledger changes must state already committed.
+	f.withStore(t, func(files stateFiles, _ *history.Store, _ string) {
+		err := applyRefreshedPin(
+			t.Context(), signInStore(files),
+			refreshOptions{league: "native.missing-league"}, res,
+		)
+		if err == nil || !strings.Contains(err.Error(), "already committed") {
+			t.Fatalf("PinFootball failure did not note already committed: %v", err)
+		}
+	})
+
+	// Failing reportRefresh output on a committed run must state already committed.
+	err := reportRefresh(failingWriter{}, res)
+	if err == nil || !strings.Contains(err.Error(), "already committed") {
+		t.Fatalf("reportRefresh failure did not note already committed: %v", err)
+	}
+}

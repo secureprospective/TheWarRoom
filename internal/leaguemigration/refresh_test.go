@@ -1258,3 +1258,267 @@ func TestRefreshMergeRecordedResultsPreservesEarlierWeeksOnAdvance(t *testing.T)
 		t.Fatalf("earlier week 1 results were lost when cutover advanced: %+v", held)
 	}
 }
+
+func TestRefreshPreservesInAppCommissionerContractEdits(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Contract edits league", migrationtest.Specs()["8 teams"])
+	f := newRefreshFixture(t, export, nil)
+
+	// Pick four distinct players: A (commish.contract.edit with franchise), B (without franchise),
+	// C (manual correct.roster contract), and D (unedited, must still sync from MFL).
+	var pA, pB, pC, pD mflsource.Rostered
+	for _, r := range export.Rosters {
+		switch {
+		case pA.Player == "" && r.Franchise == "0001":
+			pA = r
+		case pB.Player == "" && r.Franchise == "0001" && r.Player != pA.Player:
+			pB = r
+		case pC.Player == "" && r.Franchise == "0002":
+			pC = r
+		case pD.Player == "" && r.Franchise == "0003":
+			pD = r
+		}
+	}
+	salA, yearsA := domain.Money(990000000), 4
+	editAReceipt := f.exec(t, commissioner.RawCommand{
+		Command: commissioner.ContractEdit, Request: "in-app-edit-a", Reason: "Manual contract A",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Override: &commissioner.RawNativeOverride{
+			Franchise: "franchise.01", Player: pA.Player, Salary: &salA, Years: &yearsA,
+		}},
+	}, "creator", nil)
+	salB, yearsB := domain.Money(770000000), 3
+	f.exec(t, commissioner.RawCommand{
+		Command: commissioner.ContractEdit, Request: "in-app-edit-b", Reason: "Manual contract B",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Override: &commissioner.RawNativeOverride{
+			Player: pB.Player, Salary: &salB, Years: &yearsB,
+		}},
+	}, "creator", nil)
+	f.exec(t, commissioner.RawCommand{
+		Command: commissioner.CorrectRoster, Request: "manual-correct-c", Reason: "Manual contract C",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Correction: &commissioner.RawCorrection{
+			Franchise: "franchise.02", Player: pC.Player, Action: "contract",
+			Contract: &commissioner.CorrectionContract{
+				Salary: 660000000, ExpirationYear: 2031, ContractInfo: "6.6M / manual",
+			},
+		}},
+	}, "creator", nil)
+
+	// Mutate MFL for edited player A and unedited player D.
+	next := f.src.Export
+	next.Rosters = slices.Clone(export.Rosters)
+	for i := range next.Rosters {
+		if next.Rosters[i].Player == pA.Player {
+			next.Rosters[i].Salary = "2.25"
+		}
+		if next.Rosters[i].Player == pD.Player {
+			next.Rosters[i].Salary = "15.50"
+		}
+	}
+	f.src.Export = next
+
+	report, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Refresh contracts", Principal: "creator",
+	})
+	if err != nil {
+		t.Fatalf("refresh failed with in-app contract edits: %v", err)
+	}
+	if report.Summary.Contracts != 1 {
+		t.Fatalf("Summary.Contracts = %d, want 1 (only unedited player D)", report.Summary.Contracts)
+	}
+	app, err := leaguemigration.ReadApp(f.league, f.records(t), f.now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snap := app.Snapshot
+	if pl := snap.Players[snap.PlayerOf("franchise.01", pA.Player)]; pl.Salary != salA ||
+		pl.ExpirationYear != 2029 {
+		t.Fatalf("commish.contract.edit A overwritten: %+v", pl)
+	}
+	if pl := snap.Players[snap.PlayerOf("franchise.01", pB.Player)]; pl.Salary != salB ||
+		pl.ExpirationYear != 2028 {
+		t.Fatalf("commish.contract.edit B (empty franchise) overwritten: %+v", pl)
+	}
+	if pl := snap.Players[snap.PlayerOf("franchise.02", pC.Player)]; pl.Salary != 660000000 ||
+		pl.ExpirationYear != 2031 || pl.ContractInfo != "6.6M / manual" {
+		t.Fatalf("manual correct.roster contract C overwritten: %+v", pl)
+	}
+	if pl := snap.Players[snap.PlayerOf("franchise.03", pD.Player)]; pl.Salary != 1550000000 {
+		t.Fatalf("unedited player D contract not synced from MFL: %+v", pl)
+	}
+
+	// Second run is a no-op.
+	again, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Refresh again", Principal: "creator",
+	})
+	if err != nil || len(again.Commands) != 0 {
+		t.Fatalf("second refresh was not a no-op: %+v %v", again, err)
+	}
+
+	// Reverting edit A re-enables MFL contract sync for player A.
+	f.exec(t, commissioner.RawCommand{
+		Command: commissioner.Revert, Request: "revert-edit-a", Reason: "Undo manual edit A",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Entry: editAReceipt.Entry},
+	}, "creator", nil)
+	afterRevert, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Refresh after revert", Principal: "creator",
+	})
+	if err != nil || afterRevert.Summary.Contracts != 1 {
+		t.Fatalf("refresh after revert failed: %+v %v", afterRevert, err)
+	}
+	app2, err := leaguemigration.ReadApp(f.league, f.records(t), f.now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pl := app2.Snapshot.Players[app2.Snapshot.PlayerOf("franchise.01", pA.Player)]; pl.Salary != 225000000 {
+		t.Fatalf("reverted player A did not sync MFL salary: %+v", pl)
+	}
+}
+
+func TestRefreshPreservesManualCommissionerLineupOnPlayedWeekAndCutoverAdvance(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Played lineup league", migrationtest.Specs()["8 teams"])
+	export.Config.Starters = migrationtest.Synthetic("tmp", migrationtest.Specs()["8 teams"]).Config.Starters
+	export.Config.Starters.Count = "1"
+	export.Config.Starters.IOPStarters = "1"
+	export.Config.Starters.IDPStarters = "0"
+	export.Config.Starters.Positions = export.Config.Starters.Positions[:1]
+
+	var f1p1, f1p2, f2p1, f2p2 string
+	for _, r := range export.Rosters {
+		if r.Franchise == "0001" && r.Status == "ROSTER" {
+			if f1p1 == "" {
+				f1p1 = r.Player
+			} else if f1p2 == "" {
+				f1p2 = r.Player
+			}
+		}
+		if r.Franchise == "0002" && r.Status == "ROSTER" {
+			if f2p1 == "" {
+				f2p1 = r.Player
+			} else if f2p2 == "" {
+				f2p2 = r.Player
+			}
+		}
+	}
+	var err error
+	export.Schedule, err = leagueschedule.Parse([]byte(`{"schedule":{"weeklySchedule":[` +
+		`{"week":"1","matchup":{"franchise":[` +
+		`{"id":"0001","isHome":"1","score":"100"},{"id":"0002","isHome":"0","score":"90"}]}},` +
+		`{"week":"2","matchup":{"franchise":[` +
+		`{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}` +
+		`]}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// At initial load, week 1 is scored (CutoverWeek = 2) with no imported lineup starters yet.
+	export.Results, err = weeklyresults.Parse([]byte(`{"allWeeklyResults":{"weeklyResults":[` +
+		`{"week":"1","matchup":{"regularSeason":"1","franchise":[` +
+		`{"id":"0001","isHome":"1","score":"100","result":"W"},` +
+		`{"id":"0002","isHome":"0","score":"90","result":"L"}]}}` +
+		`]}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	facts := nativecheck.Facts{
+		f1p1: {Name: "QB One", Position: leaguerules.QB, Team: "KC"},
+		f1p2: {Name: "QB Two", Position: leaguerules.QB, Team: "BUF"},
+		f2p1: {Name: "QB Three", Position: leaguerules.QB, Team: "SF"},
+		f2p2: {Name: "QB Four", Position: leaguerules.QB, Team: "DAL"},
+	}
+	f := newRefreshFixture(t, export, facts)
+	future := f.now.Add(24 * time.Hour)
+	f.store.SetLineupEnvironment(testLineupEnv{
+		facts: facts,
+		locks: map[int]map[string]time.Time{
+			1: {"KC": future, "BUF": future, "SF": future, "DAL": future},
+			2: {"KC": future, "BUF": future, "SF": future, "DAL": future},
+		},
+	})
+
+	// Manual commissioner lineup correction on already-played week 1 (franchise.01 -> f1p2)
+	// and on unplayed week 2 (franchise.02 -> f2p2) before CutoverWeek advances past week 2.
+	f.exec(t, commissioner.RawCommand{
+		Command: commissioner.LineupCorrect, Request: "manual-w1-f01",
+		Reason: "Commissioner corrects week 1 starter", Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Lineup: &commissioner.RawLineupChange{
+			Season: 2026, Week: 1, Franchise: "franchise.01", Starters: []string{f1p2},
+		}},
+	}, "creator", facts)
+	f.exec(t, commissioner.RawCommand{
+		Command: commissioner.LineupCorrect, Request: "manual-w2-f02",
+		Reason: "Commissioner corrects week 2 starter", Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Lineup: &commissioner.RawLineupChange{
+			Season: 2026, Week: 2, Franchise: "franchise.02", Starters: []string{f2p2},
+		}},
+	}, "creator", facts)
+
+	// MFL now has week 1 starters AND completes week 2 (CutoverWeek advances 2 -> 3).
+	next := f.src.Export
+	next.Results = []leaguefeed.WeekResult{
+		{
+			Week: 1,
+			Games: []leaguefeed.Game{{
+				Regular: true,
+				Home: leaguefeed.Side{
+					Franchise: "0001", Scored: true, Points: 10000, Result: "W",
+					Players: []leaguefeed.WeekPlayer{{ID: *mustPID(t, f1p1), Starter: true}},
+				},
+				Away: leaguefeed.Side{
+					Franchise: "0002", Scored: true, Points: 9000, Result: "L",
+					Players: []leaguefeed.WeekPlayer{{ID: *mustPID(t, f2p1), Starter: true}},
+				},
+			}},
+		},
+		{
+			Week: 2,
+			Games: []leaguefeed.Game{{
+				Regular: true,
+				Home: leaguefeed.Side{
+					Franchise: "0001", Scored: true, Points: 11200, Result: "W",
+					Players: []leaguefeed.WeekPlayer{{ID: *mustPID(t, f1p1), Starter: true}},
+				},
+				Away: leaguefeed.Side{
+					Franchise: "0002", Scored: true, Points: 9900, Result: "L",
+					Players: []leaguefeed.WeekPlayer{{ID: *mustPID(t, f2p1), Starter: true}},
+				},
+			}},
+		},
+	}
+	f.src.Export = next
+
+	report, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Advance cutover", Principal: "creator",
+	})
+	if err != nil {
+		t.Fatalf("refresh failed: %v", err)
+	}
+	// Franchise.02 week 1 and franchise.01 week 2 sync; both manual corrections survive.
+	if report.Summary.Lineups != 2 || report.Summary.CutoverWeek != 3 {
+		t.Fatalf("unexpected summary: %+v", report.Summary)
+	}
+	recs := f.records(t)
+	w1f1, ok1, err := commissioner.RecordedLineupFor(recs, "franchise.01", 2026, 1)
+	if err != nil || !ok1 || !w1f1.Corrected || w1f1.Synced || !slices.Equal(w1f1.Starters, []string{f1p2}) {
+		t.Fatalf("played week 1 manual commissioner correction overwritten: %+v %v", w1f1, err)
+	}
+	w2f2, ok2, err := commissioner.RecordedLineupFor(recs, "franchise.02", 2026, 2)
+	if err != nil || !ok2 || !w2f2.Corrected || w2f2.Synced || !slices.Equal(w2f2.Starters, []string{f2p2}) {
+		t.Fatalf("week 2 manual commissioner correction overwritten on cutover advance: %+v %v", w2f2, err)
+	}
+	w2f1, ok3, err := commissioner.RecordedLineupFor(recs, "franchise.01", 2026, 2)
+	if err != nil || !ok3 || !slices.Equal(w2f1.Starters, []string{f1p1}) {
+		t.Fatalf("unedited franchise.01 week 2 did not sync: %+v %v", w2f1, err)
+	}
+
+	// Second run is a no-op.
+	again, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Idempotency", Principal: "creator",
+	})
+	if err != nil || len(again.Commands) != 0 {
+		t.Fatalf("second refresh was not a no-op: %+v %v", again, err)
+	}
+}
