@@ -24,7 +24,7 @@ vi.mock('../commissioner/hostedReadings', async original => ({
   ...(await original<object>()),
   parseHostedRoster: (data: { open?: number }) => ({ openBenchSlots: { mine: data.open } }),
 }));
-const { TeamTab } = await import('./TeamTab');
+const { TeamTab, emptyBench, placeWords } = await import('./TeamTab');
 
 const later = new Date(Date.now() + 86_400_000).toISOString();
 const past = new Date(Date.now() - 3_600_000).toISOString();
@@ -165,4 +165,35 @@ it('without those reads the bench counts players and injury is unavailable', asy
   expect(page.textContent).toContain('Bench 1 players');
   await act(async () => (page.querySelector('[aria-label="Rb Bench player card"]') as HTMLElement).click());
   expect(document.querySelector('dialog')?.textContent).toContain('Injury Not available yet');
+});
+
+it('header place reads 11th of 12 from standings, else the division standing or unavailable', () => {
+  expect(placeWords({ place: { rank: 11, of: 12 }, standing: '1st East' })).toBe('11th of 12');
+  expect(placeWords({ standing: '1st East' })).toBe('1st East');
+  expect(placeWords({})).toBe('Not available yet');
+});
+
+it('open bench spots draw as one counted row that are not swap targets', async () => {
+  const reading = hq();
+  const view = teamView(reading, reading.lineup, 'mine', games);
+  const [open] = emptyBench(1, 2);
+  expect(emptyBench(1, 2).map(r => [r.key, r.index, r.name]))
+    .toEqual([['bench-open', 1, '2 empty bench spots']]);
+  expect(emptyBench(1, 1)[0].name).toBe('Empty bench spot');
+  expect(emptyBench(1, 0)).toEqual([]);
+  expect(canMoveTo(view.starters[1], open, reading)).toBe(false);
+  read.value = hq();
+  const port = vi.fn(async (request: { command: string }) => {
+    if (request.command === 'native.assets.read') return { label: '', writable: true, football: '',
+      data: { open: 2 } };
+    throw new Error('offline');
+  });
+  const page = await render(port as never);
+  await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+  const row = page.querySelector('[data-row="bench-open"]');
+  expect(row?.textContent).toContain('2 empty bench spotsAdd a player from Moves');
+  expect(row?.querySelector('.team-row__mv')?.textContent).toBe('—');
+  expect(page.querySelector('[data-row="bench-0"] .team-row__pt')?.getAttribute('style')).toBeNull();
+  expect(page.querySelector('[data-row="starters-0"] .team-row__pt')?.getAttribute('style'))
+    .toContain('--lo: 0.333');
 });
