@@ -9,6 +9,17 @@ import { nativeAction, nativeStartup, parseNativeView, type NativeView } from '.
 // Franchise workflow requests are covered by the hosted-room tests, not account admission. The stand-in
 // records each room's lifetime: unmount is the hosted room's dispose (its session end), mount its reread.
 const rooms = vi.hoisted(() => [] as string[]);
+// Desktop v3 opens War Room as its own screen: its lifetime is the franchise room's lifetime.
+vi.mock('../shell/WarRoomNative', async () => {
+  const { useEffect } = await import('react');
+  return { default: ({ mine }: { mine: string }) => {
+    useEffect(() => {
+      rooms.push(`open ${mine}`);
+      return () => { rooms.push(`close ${mine}`); };
+    }, [mine]);
+    return <p>War Room for {mine}</p>;
+  } };
+});
 vi.mock('../commissioner/HostedLeague', async () => {
   const { useEffect } = await import('react');
   const { HQAct } = await import('../shell/HQAct');
@@ -36,7 +47,7 @@ const clickWhenReady = async (host: Awaited<ReturnType<typeof mount>>, label: st
 const waitForLeagueOpen = async (host: Awaited<ReturnType<typeof mount>>, events: string[]) => {
   await act(async () => {
     await vi.waitFor(() => {
-      expect(host.textContent).toContain('Hosted My club');
+      expect(host.textContent).toContain('War Room for franchise.01');
       expect(rooms).toEqual(events);
     }, { timeout: 10_000 });
   });
@@ -44,7 +55,7 @@ const waitForLeagueOpen = async (host: Awaited<ReturnType<typeof mount>>, events
 // Desktop v3: a league opens from the rail (pick it, then a screen); account actions live in the
 // Account menu (the initials button in the top bar).
 const openLeague = async (host: Awaited<ReturnType<typeof mount>>) => {
-  // Franchise HQ now mounts its own v3 screen; War Room still opens the hosted franchise room.
+  // The franchise room is War Room's own v3 screen.
   await clickWhenReady(host, 'Pick League');
   await clickWhenReady(host, 'Open War Room');
 };

@@ -63,6 +63,8 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const [pulseTab, setPulseTab] = useState<PulseTab>('now');
   const [hqTab, setHqTab] = useState<HQTab>('lineup-and-roster');
   const [warTab, setWarTab] = useState('valuations-and-pool');
+  const keep = (screen: ReactNode) => <div hidden={Boolean(panel)}
+    style={panel ? undefined : { display: 'contents' }}>{screen}</div>;
   const [warTeams, setWarTeams] = useState<{ id: string; name: string }[]>([]);
   // War Room draws its own tab strip; the v3 strip replaces it, so its copy goes to a detached node.
   const warSink = useMemo(() => typeof document === 'undefined' ? null : document.createElement('span'), []);
@@ -147,22 +149,24 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
       switcher={() => setLayer('switch')} onHome={onHome} />
     <main className="work">
       {panel && <div className="legacy-host" style={HOST}>{panel}</div>}
-      {active && L && (active.entry === 'pulse' || active.entry === 'league') ? !panel
-        && <Suspense fallback={<div className="st"><div className="eng">Opening League Pulse…</div></div>}>
+      {/* A panel (account, settings) covers the open screen without unmounting it: drafts survive. */}
+      {active && L && (active.entry === 'pulse' || active.entry === 'league')
+        ? keep(<Suspense
+          fallback={<div className="st"><div className="eng">Opening League Pulse…</div></div>}>
           <NativeLeaguePulse key={L.id} league={L.id} mine={L.franchise ?? ''} port={port} serverTime
             commissioner={L.commish} tab={pulseTab} navigate={t => setPulseTab(t)} leave={home}
-            v3={{ badge: <Badge L={L} />, kind: roleWords(L).toUpperCase() }} /></Suspense>
+            v3={{ badge: <Badge L={L} />, kind: roleWords(L).toUpperCase() }} /></Suspense>)
       : active && L && (L.franchise || L.commish) && (active.entry === 'hq' || active.entry === 'lineup')
-        ? !panel
-        && <Suspense fallback={<div className="st"><div className="eng">Opening Franchise HQ…</div></div>}>
+        ? keep(<Suspense
+          fallback={<div className="st"><div className="eng">Opening Franchise HQ…</div></div>}>
           <NativeFranchiseHQ key={`${L.id}:${hqTeam[L.id] || L.franchise || ''}`} league={L.id}
             mine={hqTeam[L.id] || L.franchise || ''} name={L.franchiseName ?? ''} port={port} embedded
             tab={hqTab} navigate={setHqTab} canManage={(hqTeam[L.id] || L.franchise) === L.franchise}
             leave={home} openGame={() => { setPulseTab('now'); open(L, 'pulse'); }}
             v3={{ badge: <Badge L={L} />, kind: roleWords(L).toUpperCase(), pickTeam: L.commish
-              ? id => setHqTeam(t => ({ ...t, [L.id]: id })) : undefined }} /></Suspense>
-      : active && L && (L.franchise || L.commish) && ['war', 'bids', 'trades'].includes(active.entry) ? !panel
-        && <><div className="ws-tabs"><span className="ttl"><Icon n="swords" />WAR ROOM</span>
+              ? id => setHqTeam(t => ({ ...t, [L.id]: id })) : undefined }} /></Suspense>)
+      : active && L && (L.franchise || L.commish) && ['war', 'bids', 'trades'].includes(active.entry)
+        ? keep(<><div className="ws-tabs"><span className="ttl"><Icon n="swords" />WAR ROOM</span>
           {WAR_TABS.map(([t, words]) => <HQAct key={t} className="tb" selected={warTab === t}
             onAction={() => setWarTab(t)}>{words}</HQAct>)}
           <div className="tools">{L.commish && <TeamPick teams={warTeams}
@@ -178,7 +182,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
                 mine={hqTeam[L.id] || L.franchise || ''} port={port} tabs={warSink}
                 owner={(hqTeam[L.id] || L.franchise) === L.franchise} workspace={warTab}
                 navigateWorkspace={setWarTab} onTeams={setWarTeams} leave={home}
-                v3={{ badge: <Badge L={L} /> }} /></div></Suspense>}</>
+                v3={{ badge: <Badge L={L} /> }} /></div></Suspense>}</>)
       : active ? <div className="legacy-host" hidden={Boolean(panel)}
         style={HOST}>{children}</div>
         : !panel && <HomeBoard c={c} />}</main>
