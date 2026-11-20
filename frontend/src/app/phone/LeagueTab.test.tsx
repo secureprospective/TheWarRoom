@@ -119,11 +119,7 @@ describe('LeagueTab', () => {
     expect(view.querySelector('tr.me')?.textContent).toContain('Alpha');
     expect(view.querySelector('tr.me')?.textContent).toContain('L2');
     expect(view.querySelector('tbody tr:nth-child(3)')?.textContent).toMatch(/–$/);
-    await click(/^Forge conf\.$/);
-    expect(view.textContent).not.toContain('Alpha');
-    expect(view.textContent).toContain('Top 1 in each conference make the playoffs.');
-    await click(/^Divisions$/);
-    expect(view.textContent).toContain('Forge · East');
+    expect(view.textContent).toContain('Top 1 make the playoffs. Tap a team for its roster.');
     await click(/^Scores$/);
     expect(view.textContent).toContain('WEEK 2 · LIVE');
     expect(view.querySelector('.lg5-mu')?.textContent).toContain('YOUR MATCHUP');
@@ -145,6 +141,25 @@ describe('LeagueTab', () => {
     expect(view.textContent).toContain('Player status: Not available yet');
     await click(/^League$/);
     expect(view.textContent).not.toContain('Player status:');
+  });
+  it('table: no Overall or Divisions filter buttons render', async () => {
+    const view = await show(owner, async () => loaded());
+    expect(view.querySelector('.lg5-chips')).toBeNull();
+    expect([...view.querySelectorAll('button')].map(b => b.textContent)
+      .filter(t => /^(Overall|Divisions)$/.test(t ?? ''))).toEqual([]);
+  });
+  it('table: the playoff note shows the cut from the bracket', async () => {
+    const six = loaded();
+    six.pulse.value!.bracket!.fields[0].seeds = [1, 2, 3, 4, 5, 6].map(seed => ({ seed, franchise: 'a',
+      name: 'Alpha', division: '', rank: seed, kind: '', bye: false, byHand: false }));
+    const view = await show(owner, async () => six);
+    expect(view.textContent).toContain('Top 6 make the playoffs. Tap a team for its roster.');
+  });
+  it('table: no playoff note when the bracket gives no cut', async () => {
+    const none = loaded();
+    none.pulse.value!.bracket = undefined;
+    const view = await show(owner, async () => none);
+    expect(view.textContent).not.toContain('make the playoffs');
   });
   it('empty: no standings, no games, no activity, nothing waiting', async () => {
     const view = await show(commish, async () => ({ pulse: { value: { ...pulse([]), week: 1 } },

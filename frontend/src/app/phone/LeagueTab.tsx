@@ -145,44 +145,25 @@ export const streakClass = (streak?: string) => streak?.startsWith('W') ? 'w'
 function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
   onTeam: (row: PulseStandingRow) => void }) {
   const rows = useMemo(() => pulse.standings?.rows ?? [], [pulse.standings]);
-  const conferences = [...new Set(rows.map(r => r.conference).filter(Boolean))];
-  const divisions = [...new Set(rows.map(r => r.division).filter(Boolean))];
-  const [split, setSplit] = useState('all');
   if (!pulse.standings) return <p className="lg5-empty" role="alert">{pulse.standingsError || NOT_YET}</p>;
   if (!rows.length) return <p className="lg5-empty" role="status">
     {pulse.standings.words || 'No standings yet.'}</p>;
-  const grid = (list: PulseStandingRow[], cut?: number) => <section className="lg5-grp">
-    <table className="st5"><thead><tr><th>#</th><th>Team</th><th>W-L</th><th>PF</th><th>STRK</th></tr></thead>
-      <tbody>{list.map((r, i) => <tr key={r.franchise}
-        className={`${r.franchise === mine ? 'me' : ''}${cut && i === cut ? ' cut' : ''}`}>
-        <td>{i + 1}</td>
-        <td><HQAct className="st5-team" label={`${r.name}: owner and record`} onAction={() => onTeam(r)}>
-          {r.name}</HQAct></td>
-        <td>{r.ties ? `${r.wins}-${r.losses}-${r.ties}` : `${r.wins}-${r.losses}`}</td>
-        <td>{r.pointsFor.toFixed(0)}</td>
-        <td className={streakClass(r.streak)}>{r.streak || '–'}</td></tr>)}</tbody></table>
-  </section>;
-  const chips = conferences.length > 1 || divisions.length > 1 ? <div className="lg5-chips">
-    {[['all', 'Overall'], ...conferences.map(c => [c, `${c} conf.`]),
-      ...(divisions.length > 1 ? [['div', 'Divisions']] : [])].map(([id, label]) =>
-      <HQAct key={id} className={split === id ? 'on' : ''} selected={split === id}
-        onAction={() => setSplit(id)}>{label}</HQAct>)}
-  </div> : null;
-  if (split === 'div') return <>{chips}
-    {divisions.map(d => {
-      const list = rows.filter(r => r.division === d);
-      const title = [list[0]?.conference, d].filter(Boolean).join(' · ');
-      return <div key={d}><div className="lg5-lbl">{title}</div>
-        {grid(list)}</div>;
-    })}
-    <p className="lg5-note">{pulse.bracket?.words || NOT_YET}</p></>;
-  const conference = split !== 'all';
-  const list = conference ? rows.filter(r => r.conference === split) : rows;
-  const cut = cutOf(pulse, conference);
-  return <>{chips}{grid(list, cut)}
-    <p className="lg5-note">{cut ? conference ? `Top ${cut} in each conference make the playoffs.`
-      : `Top ${cut} make the playoffs (dashed line).` : pulse.bracket?.words || `Playoff line: ${NOT_YET}.`}
-    {' '}Tap a team for its roster.</p></>;
+  const cut = cutOf(pulse, false);
+  return <>
+    <section className="lg5-grp">
+      <table className="st5"><thead>
+        <tr><th>#</th><th>Team</th><th>W-L</th><th>PF</th><th>STRK</th></tr></thead>
+        <tbody>{rows.map((r, i) => <tr key={r.franchise}
+          className={`${r.franchise === mine ? 'me' : ''}${cut && i === cut ? ' cut' : ''}`}>
+          <td>{i + 1}</td>
+          <td><HQAct className="st5-team" label={`${r.name}: owner and record`} onAction={() => onTeam(r)}>
+            {r.name}</HQAct></td>
+          <td>{r.ties ? `${r.wins}-${r.losses}-${r.ties}` : `${r.wins}-${r.losses}`}</td>
+          <td>{r.pointsFor.toFixed(0)}</td>
+          <td className={streakClass(r.streak)}>{r.streak || '–'}</td></tr>)}</tbody></table>
+    </section>
+    {cut ? <p className="lg5-note">Top {cut} make the playoffs. Tap a team for its roster.</p> : null}
+  </>;
 }
 
 function Scores({ pulse, mine, season, readWeek, onWatch }: { pulse: NativePulse; mine: string;
