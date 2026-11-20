@@ -26,12 +26,14 @@ Phone target = mobile mock v1 ONLY (never desktop v3). Wiring map: `~/fleet/runs
 
 **In flight at compaction:** none running except Claudebox watchers (CI watcher for #435-437; 50-min checker). Check CI: `ssh chris@192.168.1.191 'export PATH=$HOME/.local/bin:$PATH; cd ~/work/TheWarRoom; gh pr checks 435; gh pr checks 436; gh pr checks 437'`.
 
-**Next actions**
-1. When CI green: merge #435, #436, #437 into bundle/b9 (head brain authorised for bundle only).
-2. Redeploy lab: same recipe as `~/fleet/briefs/alpha010/b11lab3.md` (release 11, TUF +1) — as a scoped Haiku job or by hand. Lab commands: `bash ~/fleet/runs/overnight-b9walk-1120/labrun.sh <script>` (stdin into CT 260; never inline `pct exec ... sh -c` — it ran on the host once).
-3. Re-walk S8 (owner + commissioner) with a scoped Haiku brief; Team rows decide the lineup question.
-4. Scoped Haiku jobs for Team and Moves bugs (from s8walk/RESULT.md B-6..B-10).
-5. Fix tracker template: "Running now" also lists review/stuck cards.
+**Next actions** (updated 10:57 PM CST, compact-safe #2)
+1. Check CI: `ssh chris@192.168.1.191 'export PATH=$HOME/.local/bin:$PATH; cd ~/work/TheWarRoom; for n in 435 436 437; do gh pr checks $n; done'`. Green: merge all three into bundle/b9 (bundle only).
+2. Lab redeploy, one command (new 11-19; recipe recovered from pulse-b7lab2 + b11lab3): `~/fleet/bin/twr-lab-release.sh 13 ~/fleet/runs/pulse-b11lab3-tom1/evidence/release-v12/metadata/12.targets.json ~/fleet/runs/overnight-b9walk-1120/labrel-v13`. Signing helper `~/fleet/bin/twr-lab-sign.py`; venv `.worktrees/pulse-b11lab3/.scratch/b3/venv`; client config `.worktrees/pulse-b7lab2/.scratch/pulse-b7lab2/client-config.json`. NOT yet run end to end: watch its first run.
+3. S8 re-walk owner + commissioner: Haiku with `~/fleet/runs/overnight-b9walk-1120/briefs/hk-walk2.md` (out s8walk2/RESULT.md). Its Team answers settle the lineup question.
+4. Scoped Haiku jobs: Team (B-6, B-8; B-7 per re-walk) and Moves (B-9, B-10).
+5. Keep the 50-minute checker armed (`/root/.claude/scripts/twr-lane-check.sh 50`, background), Christopher's standing ask. Tom Haiku out of tokens: run the brief as a Claudebox Agent subagent (model haiku) over ssh.
+6. Tracker template now splits Running now / Ready / Stuck / Coming next (backup `~/fleet/runs/twr-tracker-template.html.bak-1119`). Update cards on every launch, merge, stop.
+7. Hook note: `git push -q origin ...` inside a long command was blocked as a force-push (false positive). Push in a separate plain command.
 
 **Needs Christopher:** Saturday lab backup + cleanup (approved plan); Bundle 9 → main sign-off (command when all lanes in).
 **Process lessons:** never `kill $(pgrep -f X)` over ssh (killed my own shell); watchers must check process liveness without matching their own ssh command.
