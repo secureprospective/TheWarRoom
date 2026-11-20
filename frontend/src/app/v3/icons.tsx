@@ -48,5 +48,6 @@ export const IC = {
 export type IconName = keyof typeof IC;
 
 export function Icon({ n, className }: { n: IconName; className?: string }) {
-  return <svg className={`i ${className ?? ''}`} viewBox="0 0 24 24" aria-hidden="true"><path d={IC[n]} /></svg>;
+  return <svg className={`i ${className ?? ''}`} viewBox="0 0 24 24" aria-hidden="true">
+    <path d={IC[n]} /></svg>;
 }

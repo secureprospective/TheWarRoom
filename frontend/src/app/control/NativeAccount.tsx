@@ -316,13 +316,20 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <V3Shell leagues={admittedLeagues} accountName={signedInName || undefined} panel={accountPanel}
         account={accountMenu} status={error || undefined}
         active={activeLeague ? { league: activeLeague, entry: activeEntry } : undefined}
-        onOpen={(league, entry) => { if (screen !== 'login') changeScreen('login'); setActiveEntry(entry); setActiveLeagueId(league.id); }}
+        onOpen={(league, entry) => {
+          if (screen !== 'login') changeScreen('login');
+          setActiveEntry(entry); setActiveLeagueId(league.id);
+        }}
         onHome={() => { if (screen !== 'login') changeScreen('login'); setActiveLeagueId(undefined); }}
-        onSignOut={() => { void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget'))).catch(() => {}); }}>
+        onSignOut={() => {
+          void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget')))
+            .catch(() => {});
+        }}>
         {activeLeague && <Suspense fallback={<p>Opening your league…</p>}>
           <HostedLeague key={`${fence.key}:${activeLeague.id}`} league={activeLeague.id}
             franchise={activeLeague.franchise ?? ''} name={activeLeague.franchiseName ?? ''}
-            role={activeLeague.role ?? ''} entry={activeEntry} hq onHome={() => setActiveLeagueId(undefined)} />
+            role={activeLeague.role ?? ''} entry={activeEntry} hq
+            onHome={() => setActiveLeagueId(undefined)} />
         </Suspense>}
       </V3Shell></Suspense>;
   }
