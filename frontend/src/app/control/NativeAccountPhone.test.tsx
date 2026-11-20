@@ -147,3 +147,44 @@ it('says No team of yours in the Team tab when the account holds no franchise', 
   expect(host.querySelector('.phone-app__slot')?.textContent)
     .toContain('No team of yours in this league');
 });
+
+
+it('shows Live for the league the bar has selected, not the first league', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  setPhoneViewport(390);
+  goDescriptor = Object.getOwnPropertyDescriptor(window, 'go');
+  Reflect.deleteProperty(window, 'go');
+  await vi.resetModules();
+  vi.doMock('../phone/LiveTab', () => ({ default: ({ league }: { league?: { id: string } }) =>
+    <p className="live-league">{league?.id ?? 'none'}</p> }));
+  const { default: NativeAccount } = await import('./NativeAccount');
+  const admission = { protocol: 1, admission: { league: 'native.second', name: 'Second League',
+    franchise: 'franchise.02', franchiseName: 'My Team', role: 'Owner', seats: [] },
+    leagues: [{ id: 'native.first', name: 'First League', role: 'Owner', franchise: 'franchise.01',
+      franchiseName: 'Other Team' }, { id: 'native.second', name: 'Second League', role: 'Owner',
+      franchise: 'franchise.02', franchiseName: 'My Team' }] };
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => url === '/app/session'
+    ? new Response(JSON.stringify(admission), { status: 200,
+      headers: { 'Content-Type': 'application/json' } })
+    : new Response('not found', { status: 404 })));
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  await act(async () => root!.render(<NativeAccount initial={initial} />));
+  const username = host.querySelector('input[autocomplete="username"]') as HTMLInputElement;
+  const password = host.querySelector('input[autocomplete="current-password"]') as HTMLInputElement;
+  setValue(username, 'owner'); setValue(password, 'private-password');
+  await act(async () => password.form!.dispatchEvent(
+    new Event('submit', { bubbles: true, cancelable: true })));
+  await act(async () => {
+    for (let attempt = 0; attempt < 80 && !host!.querySelector('.phone-app'); attempt++)
+      await new Promise(resolve => setTimeout(resolve, 10));
+  });
+  const live = [...host.querySelectorAll('.phone-app__tab')]
+    .find(button => button.textContent?.includes('Live')) as HTMLButtonElement;
+  await act(async () => live.click());
+  await act(async () => {
+    for (let attempt = 0; attempt < 80 && !host!.querySelector('.live-league'); attempt++)
+      await new Promise(resolve => setTimeout(resolve, 10));
+  });
+  expect(host.querySelector('.live-league')?.textContent).toBe('native.second');
+  vi.doUnmock('../phone/LiveTab');
+});

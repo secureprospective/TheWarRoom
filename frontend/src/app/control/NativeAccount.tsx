@@ -184,7 +184,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
     }} />
   </Suspense>;
-  const liveLeague = admittedLeagues[0];
+  const liveLeague = admittedLeagues.find(league => league.id === selectedPhoneLeagueId);
   const liveTab = <Suspense fallback={<p role="status">Opening Live…</p>}>
     <LiveTab league={liveLeague} /></Suspense>;
   const leagueContent = <>
