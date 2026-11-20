@@ -29,6 +29,7 @@ import './warroom.css';
 import { WarPoolV3 } from '../v3/WarPoolV3';
 import { WarPlansV3 } from '../v3/WarPlansV3';
 import { WarDraftV3 } from '../v3/WarDraftV3';
+import { WarTradeV3 } from '../v3/WarTradeV3';
 export type WarRoomTab = 'desk' | 'market' | 'draft' | 'plans';
 export default function WarRoom({ snapshot, native }: { snapshot: Snapshot; native?: WarRoomNative }) {
   const state = commands.use();
@@ -116,6 +117,25 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   if (native?.v3 && tab === 'market') return <WarPoolV3 context={context} badge={native.v3.badge}
     room={headerReading?.runway?.[0]?.room}
     needs={lensReading && !lensReading.preparing ? lensReading.you.needs : undefined} />;
+  const drawers = drawer && <WarRoomDrawers context={context} drawer={drawer} close={() =>
+    setDrawer(undefined)}
+    refreshKey={recorded} onOpenDraft={(draft: WarRoomSavedDraft) => {
+      changeDeal({ partner: draft.partner, give: [...draft.give], get: [...draft.get] });
+      setTab('desk'); setDrawer(undefined); setRecorded(n => n + 1);
+    }} onLoadOffer={deal => {
+      changeDeal(deal); setTab('desk'); setDrawer(undefined); setRecorded(n => n + 1);
+    }} openOffer={id => { setOffer(id); setDrawer(undefined); }} />;
+  if (native?.v3 && tab === 'desk') return <><WarTradeV3 context={context} catalog={catalog.reading}
+    deal={deal} change={changeDeal} lens={lensReading} lensPending={lens.pending} previewNonce={recorded}
+    header={headerReading} name={snapshot.franchises.value.find(f => f.id === mine)?.name} choose={choose}
+    directing={directing} tray={<>{(['pocket', 'offers'] as const).map(d => <WarRoomAct key={d}
+      className="btn" expanded={drawer === d} onAction={() => setDrawer(drawer === d ? undefined : d)}>
+      {d === 'pocket' ? 'Pocket' : 'Negotiations'}</WarRoomAct>)}
+      <WarRoomPocketSave context={context} deal={deal} onSaved={() => {
+        setRecorded(n => n + 1); setDrawer('pocket'); }} />
+      <WarRoomAct className="btn" onAction={() => changeDeal({ ...deal, give: [], get: []
+        })}>Clear</WarRoomAct>
+    </>} />{drawers}</>;
   if (native?.v3 && tab === 'draft') return <WarDraftV3 context={context} badge={native.v3.badge} />;
   if (native?.v3 && tab === 'plans') return <WarPlansV3 context={context} badge={native.v3.badge}
     events={deadlines} eventsError={calendar.error ?? undefined} />;
