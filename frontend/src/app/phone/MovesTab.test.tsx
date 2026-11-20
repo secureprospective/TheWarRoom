@@ -35,7 +35,8 @@ const tab = (label: RegExp) => act(async () =>
     .find(t => label.test(t.textContent ?? '')) as HTMLElement).click());
 const offer = { id: 't1', status: 'offered', proposer: 'other', parties: ['mine', 'other'], accepted: [],
   teams: [['mine', 'My Team'], ['other', 'Gridlock']], words: 'Waiting for you', expires: 'Fri 6:00 PM',
-  details: ['You give Ace', 'You get Bolt'] };
+  details: ['Ace: My Team → Gridlock', 'Bolt: Gridlock → My Team'],
+  legs: [{ from: 'mine', to: 'other', label: 'Ace' }, { from: 'other', to: 'mine', label: 'Bolt' }] };
 const loaded = (): MovesReading => ({
   pool: { value: [{ id: 'p1', name: 'Ace Runner', position: 'RB' },
     { id: 'p2', name: 'Bolt Catcher', position: 'WR', waiver: 'On waivers', window: 'w2' }] },
@@ -56,12 +57,16 @@ describe('MovesTab', () => {
       .find(c => c.textContent === 'WR') as HTMLElement).click());
     expect(view.textContent).not.toContain('Ace Runner');
     await tab(/Waivers/);
-    expect(view.textContent).toContain('Waiver order: 3 of 10 · Reverse standings');
+    expect(view.textContent)
+      .toContain('Claims run top first. You are 3rd of 10 in waiver order · Reverse standings.');
+    expect(view.textContent).toContain('+ Bolt Catcher');
     expect(view.textContent).toContain('Pending');
     expect(view.querySelector('[aria-label="Cancel claim"]')).not.toBeNull();
     await tab(/Trades/);
-    expect(view.textContent).toContain('From Gridlock');
-    expect(view.textContent).toContain('You get Bolt');
+    expect(view.textContent).toContain('Offer from Gridlock');
+    const sides = [...view.querySelectorAll('.mv4-sides > div')].map(d => d.textContent);
+    expect(sides).toEqual(['YOU GIVEAce', 'YOU GETBolt']);
+    expect(view.querySelector('.mv4-to.need')).not.toBeNull();
     expect(view.textContent).toContain('Accept');
     expect(view.textContent).toContain('Decline');
     expect(view.textContent).not.toContain('Withdraw');
@@ -72,7 +77,7 @@ describe('MovesTab', () => {
       trades: { value: { revision: 1, notes: [], offers: [] } } }));
     expect(view.textContent).toContain('No free agents in the pool.');
     await tab(/Waivers/);
-    expect(view.textContent).toContain('No claims. Your claims stay private until waivers run.');
+    expect(view.textContent).toContain('No waiver claims. Players with a CLAIM key in Players');
     await tab(/Trades/);
     expect(view.textContent).toContain('No trade offers.');
   });
@@ -194,9 +199,22 @@ describe('MovesTab', () => {
     held.trades.value!.offers = [{ ...offer,
       reasons: ['Review held for 24 hours: checking both owners'] } as never];
     const view = await show(async () => held);
-    expect(view.textContent).toContain('Bench: 2 open slots');
+    expect(view.textContent).toContain('2 open bench spots');
     await tab(/Trades/);
     expect(view.textContent).toContain('Review held for 24 hours: checking both owners');
+  });
+  it('trades: my own open offer says its status with a Withdraw key; bench full names the drop', async () => {
+    const mineOut = loaded();
+    mineOut.openBench = 0;
+    mineOut.trades.value!.offers = [{ ...offer, proposer: 'mine', words: 'Waiting on Gridlock' } as never];
+    const view = await show(async () => mineOut);
+    expect(view.textContent).toContain('Bench full: adding means dropping someone');
+    await tab(/Trades/);
+    expect(view.textContent).toContain('Your offer to Gridlock');
+    expect(view.querySelector('.mv4-res.wait')?.textContent).toBe('Waiting on GridlockWithdraw');
+    expect(view.textContent).not.toContain('Accept');
+    expect([...view.querySelectorAll('.mv4-sides > div')].map(d => d.textContent))
+      .toEqual(['YOU GIVEAce', 'YOU GETBolt']);
   });
   it('counter opens the trade sheet loaded with the offer', async () => {
     const port = service();
