@@ -36,8 +36,10 @@ func correctionDescription(names *assetNames, r Record) string {
 			return "Reversed a recorded " + correctionTransactionKind(original.Command.Command)
 		}
 	case CorrectProvenance:
-		via := map[string]string{"held": "the starting roster", "draft": "the rookie draft", "waiver": "a waiver claim",
-			"trade": "a trade", "free_agent": "free agency", "commissioner": "a commissioner assignment"}
+		via := map[string]string{
+			"held": "the starting roster", "draft": "the rookie draft", "waiver": "a waiver claim",
+			"trade": "a trade", "free_agent": "free agency", "commissioner": "a commissioner assignment",
+		}
 		return fmt.Sprintf("Corrected %s's acquisition to %s", player(c.Player), via[c.Via])
 	case CorrectPick:
 		return pickCorrectionDescription(c, player, team)
@@ -139,7 +141,8 @@ func rosterCorrectionDescription(c *RawCorrection, player, team func(string) str
 }
 
 func pickCorrectionDescription(c *RawCorrection, player, team func(string) string) string {
-	base := fmt.Sprintf("the season %d round %d pick originally belonging to %s", c.Pick.Season, c.Pick.Round, team(c.Pick.Original))
+	base := fmt.Sprintf("the season %d round %d pick originally belonging to %s",
+		c.Pick.Season, c.Pick.Round, team(c.Pick.Original))
 	if c.Pick.Original == "" {
 		base = fmt.Sprintf("the season %d round %d slot %d pick", c.Pick.Season, c.Pick.Round, c.Pick.Slot)
 	}

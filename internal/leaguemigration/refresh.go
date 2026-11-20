@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 const (
@@ -31,10 +32,16 @@ type RefreshRequest struct {
 
 // RefreshOptions controls how PlanRefresh builds a refresh batch.
 type RefreshOptions struct {
+	MFLLeague           string
 	Reason              string
 	Principal           string
 	OverwriteLiveLineup bool
 	DropAppAdjustments  bool
+	LineupFacts         func(season, week int) (commissioner.LineupFacts, error)
+}
+
+type lineupFactsReader interface {
+	LineupFacts(ctx context.Context, season, week int) (commissioner.LineupFacts, error)
 }
 
 // RefreshSummary counts the changes planned or applied by a refresh.
@@ -85,12 +92,22 @@ func (e *OpenTradesError) Error() string {
 		len(e.Offers), strings.Join(parts, "; "))
 }
 
-// Refresh reads MFL afresh, plans and verifies the atomic refresh batch, and commits it unless DryRun is set.
+// Refresh reads MFL afresh, plans and verifies the atomic refresh batch, and commits unless DryRun is set.
 func (s *Service) Refresh(ctx context.Context, req RefreshRequest) (RefreshReport, error) {
 	if strings.TrimSpace(req.League) == "" {
 		return RefreshReport{}, fmt.Errorf("name the app league to refresh")
 	}
-	export, err := s.read(ctx, req.MFLLeague)
+	records, err := s.Ledger.Records(ctx, req.League)
+	if err != nil {
+		return RefreshReport{}, fmt.Errorf("read the app league: %w", err)
+	}
+	mflLeague := strings.TrimSpace(req.MFLLeague)
+	if mflLeague == "" {
+		if ref, ok := referenceMFLLeague(records); ok {
+			mflLeague = ref
+		}
+	}
+	export, err := s.read(ctx, mflLeague)
 	if err != nil {
 		return RefreshReport{}, err
 	}
@@ -98,21 +115,23 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest) (RefreshRepor
 	if err != nil {
 		return RefreshReport{}, err
 	}
-	records, err := s.Ledger.Records(ctx, req.League)
-	if err != nil {
-		return RefreshReport{}, fmt.Errorf("read the app league: %w", err)
-	}
 	opts := RefreshOptions{
+		MFLLeague:           mflLeague,
 		Reason:              req.Reason,
 		Principal:           req.Principal,
 		OverwriteLiveLineup: req.OverwriteLiveLineup,
 		DropAppAdjustments:  req.DropAppAdjustments,
 	}
+	if reader, ok := s.Ledger.(lineupFactsReader); ok {
+		opts.LineupFacts = func(season, week int) (commissioner.LineupFacts, error) {
+			return reader.LineupFacts(ctx, season, week)
+		}
+	}
 	report, err := PlanRefresh(req.League, records, plan, s.Now(), opts)
 	if err != nil {
 		return RefreshReport{}, err
 	}
-	report.MFLLeague = strings.TrimSpace(req.MFLLeague)
+	report.MFLLeague = mflLeague
 	report.DryRun = req.DryRun
 	if req.DryRun || len(report.Commands) == 0 {
 		return report, nil
@@ -126,7 +145,9 @@ func (s *Service) Refresh(ctx context.Context, req RefreshRequest) (RefreshRepor
 }
 
 // PlanRefresh builds and trial-verifies the atomic refresh batch without writing to the ledger.
-func PlanRefresh(league string, records []commissioner.Record, plan Plan, now time.Time, opts RefreshOptions) (RefreshReport, error) {
+func PlanRefresh(
+	league string, records []commissioner.Record, plan Plan, now time.Time, opts RefreshOptions,
+) (RefreshReport, error) {
 	if len(records) == 0 {
 		return RefreshReport{}, fmt.Errorf("import the MFL league before refreshing it")
 	}
@@ -134,7 +155,7 @@ func PlanRefresh(league string, records []commissioner.Record, plan Plan, now ti
 	if err != nil {
 		return RefreshReport{}, err
 	}
-	if err := checkRefreshPreconditions(league, records, plan, app, now); err != nil {
+	if err := checkRefreshPreconditions(league, records, plan, app, now, opts); err != nil {
 		return RefreshReport{}, err
 	}
 	reason := strings.TrimSpace(opts.Reason)
@@ -162,7 +183,25 @@ func PlanRefresh(league string, records []commissioner.Record, plan Plan, now ti
 	}, nil
 }
 
-func checkRefreshPreconditions(league string, records []commissioner.Record, plan Plan, app AppLeague, now time.Time) error {
+func checkRefreshPreconditions(
+	league string, records []commissioner.Record, plan Plan, app AppLeague,
+	now time.Time, opts RefreshOptions,
+) error {
+	if err := commissioner.RequireCommissionerOrCo(records, opts.Principal); err != nil {
+		return fmt.Errorf("authorize refresh: %w", err)
+	}
+	if mflLeague := strings.TrimSpace(opts.MFLLeague); mflLeague != "" {
+		if AppLeagueID(mflLeague, plan.Seed.Season) != league {
+			return fmt.Errorf(
+				"the MFL league %s (%d) does not match app league %s",
+				mflLeague, plan.Seed.Season, league)
+		}
+		if ref, ok := referenceMFLLeague(records); ok && ref != mflLeague {
+			return fmt.Errorf(
+				"the MFL league %s does not match this league's recorded MFL reference %s",
+				mflLeague, ref)
+		}
+	}
 	if plan.Seed.Season != app.Snapshot.Season {
 		return fmt.Errorf("the MFL source season (%d) does not match the league's current season (%d)",
 			plan.Seed.Season, app.Snapshot.Season)
@@ -208,7 +247,7 @@ type refreshPlanner struct {
 }
 
 func (p *refreshPlanner) build(records []commissioner.Record, app AppLeague) error {
-	serverCharges := recordEntrySet(records)
+	serverCharges := serverChargeEntries(records)
 	p.replayTransactions(records)
 	if err := p.reconcileAssets(serverCharges); err != nil {
 		return err
@@ -242,7 +281,7 @@ func (p *refreshPlanner) detailReason(detail string) string {
 }
 
 func (p *refreshPlanner) emit(raw commissioner.RawCommand) error {
-	next, err := appendTrialRecord(p.trial, raw, p.principal, p.now)
+	next, err := appendTrialRecord(p.trial, raw, p.principal, p.now, p.opts.LineupFacts)
 	if err != nil {
 		return err
 	}
@@ -251,13 +290,22 @@ func (p *refreshPlanner) emit(raw commissioner.RawCommand) error {
 	return nil
 }
 
-func appendTrialRecord(trial []commissioner.Record, raw commissioner.RawCommand, principal string, now time.Time) ([]commissioner.Record, error) {
+func appendTrialRecord(
+	trial []commissioner.Record,
+	raw commissioner.RawCommand,
+	principal string,
+	now time.Time,
+	lineupFacts func(season, week int) (commissioner.LineupFacts, error),
+) ([]commissioner.Record, error) {
 	prepared, err := raw.Prepared()
 	if err != nil {
 		return nil, fmt.Errorf("prepare %s: %w", raw.Command, err)
 	}
 	if err := prepared.Validate(); err != nil {
 		return nil, fmt.Errorf("validate %s: %w", raw.Command, err)
+	}
+	if _, err := commissioner.AuthorizeRecords(prepared, principal, trial); err != nil {
+		return nil, fmt.Errorf("authorize %s: %w", prepared.Command, err)
 	}
 	var generated []commissioner.ScheduleWeek
 	switch prepared.Command {
@@ -277,8 +325,8 @@ func appendTrialRecord(trial []commissioner.Record, raw commissioner.RawCommand,
 			}
 		}
 	case commissioner.LineupCorrect:
-		if err := commissioner.CheckLineupAppend(prepared, trial, now, commissioner.LineupFacts{}); err != nil {
-			return nil, fmt.Errorf("check %s: %w", prepared.Command, err)
+		if err := checkTrialLineup(prepared, trial, now, lineupFacts); err != nil {
+			return nil, err
 		}
 	case franchiseEditCommand:
 		if err := commissioner.CheckGovernanceAppend(prepared, principal, trial, now); err != nil {
@@ -298,6 +346,29 @@ func appendTrialRecord(trial []commissioner.Record, raw commissioner.RawCommand,
 		},
 	}
 	return append(slices.Clone(trial), rec), nil
+}
+
+func checkTrialLineup(
+	prepared commissioner.RawCommand,
+	trial []commissioner.Record,
+	now time.Time,
+	lineupFacts func(season, week int) (commissioner.LineupFacts, error),
+) error {
+	var env commissioner.LineupFacts
+	if lineupFacts != nil {
+		change, err := commissioner.DecodeLineupChange(prepared.Args, prepared.Command)
+		if err != nil {
+			return fmt.Errorf("decode %s: %w", prepared.Command, err)
+		}
+		env, err = lineupFacts(change.Season, change.Week)
+		if err != nil {
+			return fmt.Errorf("load lineup facts for %s: %w", prepared.Command, err)
+		}
+	}
+	if err := commissioner.CheckLineupAppend(prepared, trial, now, env); err != nil {
+		return fmt.Errorf("check %s: %w", prepared.Command, err)
+	}
+	return nil
 }
 
 func (p *refreshPlanner) reconcileFranchises(records []commissioner.Record, app AppLeague) error {
@@ -358,7 +429,8 @@ func (p *refreshPlanner) reconcileSchedule() error {
 	if len(weeks) == 0 || (!scheduleChanged && !recordedChanged) {
 		return nil
 	}
-	cmds := ScheduleCommands(p.league, p.detailReason("update schedule and completed results"), weeks, p.baseRev, recorded)
+	cmds := ScheduleCommands(
+		p.league, p.detailReason("update schedule and completed results"), weeks, p.baseRev, recorded)
 	cmds[0].Request = p.nextRequest("schedule.draft")
 	cmds[0].Expected = 0
 	cmds[1].Request = p.nextRequest("schedule.publish")
@@ -401,7 +473,8 @@ func (p *refreshPlanner) reconcileLineups() error {
 }
 
 func (p *refreshPlanner) reconcileOneLineup(lineup commissioner.RawLineupChange, cutover int) error {
-	previous, found, err := commissioner.RecordedLineupFor(p.trial, lineup.Franchise, p.plan.Seed.Season, lineup.Week)
+	previous, found, err := commissioner.RecordedLineupFor(
+		p.trial, lineup.Franchise, p.plan.Seed.Season, lineup.Week)
 	if err != nil {
 		return fmt.Errorf("read lineup %s week %d: %w", lineup.Franchise, lineup.Week, err)
 	}
@@ -412,7 +485,7 @@ func (p *refreshPlanner) reconcileOneLineup(lineup commissioner.RawLineupChange,
 		return nil
 	}
 	played := cutover > 0 && lineup.Week < cutover
-	if !played && found && !previous.Corrected && !p.opts.OverwriteLiveLineup {
+	if !played && found && !previous.Synced && !p.opts.OverwriteLiveLineup {
 		return nil
 	}
 	copyLineup := lineup
@@ -433,7 +506,9 @@ func (p *refreshPlanner) reconcileOneLineup(lineup commissioner.RawLineupChange,
 	return nil
 }
 
-func (p *refreshPlanner) correctionCmd(command, kind, detail string, c commissioner.RawCorrection) commissioner.RawCommand {
+func (p *refreshPlanner) correctionCmd(
+	command, kind, detail string, c commissioner.RawCorrection,
+) commissioner.RawCommand {
 	return commissioner.RawCommand{
 		League:     p.league,
 		Command:    command,
@@ -445,23 +520,28 @@ func (p *refreshPlanner) correctionCmd(command, kind, detail string, c commissio
 	}
 }
 
-func mergeRecordedResults(previous, incoming *commissioner.RawRecordedResults) *commissioner.RawRecordedResults {
+func mergeRecordedResults(
+	previous, incoming *commissioner.RawRecordedResults,
+) *commissioner.RawRecordedResults {
 	if incoming == nil {
 		return previous
 	}
-	if previous == nil || incoming.CutoverWeek >= previous.CutoverWeek {
+	if previous == nil {
 		return incoming
 	}
+	cutover := max(previous.CutoverWeek, incoming.CutoverWeek)
 	type weekTeam struct {
 		week      int
 		franchise string
 	}
 	merged := map[weekTeam]commissioner.RecordedTeamResult{}
 	for _, t := range previous.Teams {
-		merged[weekTeam{t.Week, t.Franchise}] = t
+		if t.Week < cutover {
+			merged[weekTeam{t.Week, t.Franchise}] = t
+		}
 	}
 	for _, t := range incoming.Teams {
-		if t.Week < previous.CutoverWeek {
+		if t.Week < cutover {
 			merged[weekTeam{t.Week, t.Franchise}] = t
 		}
 	}
@@ -475,7 +555,11 @@ func mergeRecordedResults(previous, incoming *commissioner.RawRecordedResults) *
 		}
 		return strings.Compare(a.Franchise, b.Franchise)
 	})
-	return &commissioner.RawRecordedResults{Season: previous.Season, CutoverWeek: previous.CutoverWeek, Teams: teams}
+	return &commissioner.RawRecordedResults{
+		Season:      previous.Season,
+		CutoverWeek: cutover,
+		Teams:       teams,
+	}
 }
 
 func countRecordedWeeks(r *commissioner.RawRecordedResults) int {
@@ -503,10 +587,16 @@ func inAppEditedFranchises(records []commissioner.Record) map[string]bool {
 	return out
 }
 
-func recordEntrySet(records []commissioner.Record) map[string]bool {
-	out := make(map[string]bool, len(records))
+func serverChargeEntries(records []commissioner.Record) map[string]bool {
+	active := commissioner.Replay(records).Active
+	out := map[string]bool{}
 	for _, r := range records {
-		out[r.Receipt.Entry] = true
+		if !active[r.Receipt.Entry] {
+			continue
+		}
+		if r.Command.Command == commissioner.CapAdjust || r.Command.Command == commissioner.CapRelief {
+			out[r.Receipt.Entry] = true
+		}
 	}
 	return out
 }
@@ -528,23 +618,34 @@ func initialSeedSnapshot(records []commissioner.Record) (commissioner.RawNativeS
 	return commissioner.RawNativeSnapshot{}, false
 }
 
-func lastSyncInstant(records []commissioner.Record, fallback time.Time) time.Time {
-	latest := fallback
-	for _, r := range records {
-		if strings.HasPrefix(r.Command.Request, refreshRequestPrefix) && r.Receipt.RecordedAt.After(latest) {
-			latest = r.Receipt.RecordedAt
+func referenceMFLLeague(records []commissioner.Record) (string, bool) {
+	active := commissioner.Replay(records).Active
+	for i := len(records); i > 0; i-- {
+		r := records[i-1]
+		if !active[r.Receipt.Entry] {
+			continue
 		}
-		if strings.HasPrefix(r.Command.Request, "transactions.sync.") &&
-			!strings.HasPrefix(r.Command.Request, "transactions.sync.baseline.") {
-			if at, err := r.Command.EffectiveTime(r.Receipt.RecordedAt); err == nil && at.After(latest) {
-				latest = at
-			}
+		isFollow := r.Command.Command == commissioner.RulesSet &&
+			r.Command.Args.Field == "schedule.follow"
+		if r.Command.Command != commissioner.Create && !isFollow {
+			continue
+		}
+		rules, err := commissioner.RulesNow(records[:i], time.Time{})
+		if err != nil {
+			continue
+		}
+		follow := rules.Schedule.Follow
+		if follow.State == leaguerules.IsKnown && follow.Value.Source == "mfl" &&
+			strings.TrimSpace(follow.Value.League) != "" {
+			return strings.TrimSpace(follow.Value.League), true
 		}
 	}
-	return latest
+	return "", false
 }
 
-func verifyRefreshResult(plan Plan, postApp AppLeague, serverCharges map[string]bool, dropAppCharges bool) error {
+func verifyRefreshResult(
+	plan Plan, postApp AppLeague, serverCharges map[string]bool, dropAppCharges bool,
+) error {
 	diffs := Compare(plan, postApp)
 	var unexpected []string
 	for _, d := range diffs {

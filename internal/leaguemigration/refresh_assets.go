@@ -25,12 +25,11 @@ func (p *refreshPlanner) replayTransactions(records []commissioner.Record) {
 		return
 	}
 	seen := requestSet(records)
-	lastSync := lastSyncInstant(records, origSeed.RosterAt)
 	for _, group := range groups {
-		if !p.canReplayGroup(group, seen, lastSync) {
+		if !p.canReplayGroup(group, seen, origSeed.RosterAt) {
 			continue
 		}
-		nextTrial, ok := tryReplayGroup(p.trial, group, p.principal, p.now)
+		nextTrial, ok := tryReplayGroup(p.trial, group, p.principal, p.now, p.opts.LineupFacts)
 		if !ok {
 			continue
 		}
@@ -38,12 +37,34 @@ func (p *refreshPlanner) replayTransactions(records []commissioner.Record) {
 		p.raws = append(p.raws, group...)
 		for _, cmd := range group {
 			seen[cmd.Request] = true
+			p.countReplayedCommand(cmd)
 		}
 		p.summary.Transactions++
 	}
 }
 
-func (p *refreshPlanner) canReplayGroup(group []commissioner.RawCommand, seen map[string]bool, lastSync time.Time) bool {
+func (p *refreshPlanner) countReplayedCommand(cmd commissioner.RawCommand) {
+	if cmd.Args.Correction == nil {
+		return
+	}
+	switch cmd.Command {
+	case commissioner.CorrectRoster:
+		switch cmd.Args.Correction.Action {
+		case "add":
+			p.summary.RosterAdds++
+		case "remove":
+			p.summary.RosterRemoves++
+		case "status":
+			p.summary.RosterStatusChanges++
+		}
+	case commissioner.CorrectPick:
+		p.summary.Picks++
+	}
+}
+
+func (p *refreshPlanner) canReplayGroup(
+	group []commissioner.RawCommand, seen map[string]bool, minTime time.Time,
+) bool {
 	if len(group) == 0 {
 		return false
 	}
@@ -57,17 +78,23 @@ func (p *refreshPlanner) canReplayGroup(group []commissioner.RawCommand, seen ma
 			return false
 		}
 		at, err := cmd.EffectiveTime(p.now)
-		if err != nil || !at.After(lastSync) || at.After(p.now) {
+		if err != nil || at.Before(minTime) || at.After(p.now) {
 			return false
 		}
 	}
 	return true
 }
 
-func tryReplayGroup(trial []commissioner.Record, group []commissioner.RawCommand, principal string, now time.Time) ([]commissioner.Record, bool) {
+func tryReplayGroup(
+	trial []commissioner.Record,
+	group []commissioner.RawCommand,
+	principal string,
+	now time.Time,
+	lineupFacts func(season, week int) (commissioner.LineupFacts, error),
+) ([]commissioner.Record, bool) {
 	candidate := trial
 	for _, cmd := range group {
-		next, err := appendTrialRecord(candidate, cmd, principal, now)
+		next, err := appendTrialRecord(candidate, cmd, principal, now, lineupFacts)
 		if err != nil {
 			return nil, false
 		}
@@ -117,7 +144,9 @@ func (p *refreshPlanner) reconcileRosters(cur *commissioner.RawNativeSnapshot) e
 	return p.emitRosterAddsAndUpdates(curMap, wantMap)
 }
 
-func (p *refreshPlanner) emitRosterRemovals(curMap, wantMap map[playerCopyKey]commissioner.NativePlayer) error {
+func (p *refreshPlanner) emitRosterRemovals(
+	curMap, wantMap map[playerCopyKey]commissioner.NativePlayer,
+) error {
 	keys := slices.SortedFunc(maps.Keys(curMap), comparePlayerKey)
 	for _, k := range keys {
 		curP := curMap[k]
@@ -136,7 +165,9 @@ func (p *refreshPlanner) emitRosterRemovals(curMap, wantMap map[playerCopyKey]co
 	return nil
 }
 
-func (p *refreshPlanner) emitRosterAddsAndUpdates(curMap, wantMap map[playerCopyKey]commissioner.NativePlayer) error {
+func (p *refreshPlanner) emitRosterAddsAndUpdates(
+	curMap, wantMap map[playerCopyKey]commissioner.NativePlayer,
+) error {
 	keys := slices.SortedFunc(maps.Keys(wantMap), comparePlayerKey)
 	for _, k := range keys {
 		wantP := wantMap[k]
@@ -150,7 +181,9 @@ func (p *refreshPlanner) emitRosterAddsAndUpdates(curMap, wantMap map[playerCopy
 		if curP.Status != wantP.Status {
 			raw := p.correctionCmd(commissioner.CorrectRoster, "roster-status",
 				fmt.Sprintf("set player %s on %s to %s", wantP.ID, wantP.Franchise, wantP.Status),
-				commissioner.RawCorrection{Player: wantP.ID, Franchise: wantP.Franchise, Action: "status", Status: wantP.Status})
+				commissioner.RawCorrection{
+					Player: wantP.ID, Franchise: wantP.Franchise, Action: "status", Status: wantP.Status,
+				})
 			if err := p.emit(raw); err != nil {
 				return err
 			}
@@ -160,7 +193,9 @@ func (p *refreshPlanner) emitRosterAddsAndUpdates(curMap, wantMap map[playerCopy
 			contract := contractFromPlayer(wantP)
 			raw := p.correctionCmd(commissioner.CorrectRoster, "contract",
 				fmt.Sprintf("update contract for player %s on %s", wantP.ID, wantP.Franchise),
-				commissioner.RawCorrection{Player: wantP.ID, Franchise: wantP.Franchise, Action: "contract", Contract: &contract})
+				commissioner.RawCorrection{
+					Player: wantP.ID, Franchise: wantP.Franchise, Action: "contract", Contract: &contract,
+				})
 			if err := p.emit(raw); err != nil {
 				return err
 			}
@@ -174,7 +209,9 @@ func (p *refreshPlanner) emitRosterAdd(wantP commissioner.NativePlayer) error {
 	contract := contractFromPlayer(wantP)
 	addRaw := p.correctionCmd(commissioner.CorrectRoster, "roster-add",
 		fmt.Sprintf("add player %s to %s", wantP.ID, wantP.Franchise),
-		commissioner.RawCorrection{Player: wantP.ID, Franchise: wantP.Franchise, Action: "add", Contract: &contract})
+		commissioner.RawCorrection{
+			Player: wantP.ID, Franchise: wantP.Franchise, Action: "add", Contract: &contract,
+		})
 	if err := p.emit(addRaw); err != nil {
 		return err
 	}
@@ -182,7 +219,9 @@ func (p *refreshPlanner) emitRosterAdd(wantP commissioner.NativePlayer) error {
 	if wantP.Status != domain.RosterActive {
 		statusRaw := p.correctionCmd(commissioner.CorrectRoster, "roster-status",
 			fmt.Sprintf("set player %s on %s to %s", wantP.ID, wantP.Franchise, wantP.Status),
-			commissioner.RawCorrection{Player: wantP.ID, Franchise: wantP.Franchise, Action: "status", Status: wantP.Status})
+			commissioner.RawCorrection{
+				Player: wantP.ID, Franchise: wantP.Franchise, Action: "status", Status: wantP.Status,
+			})
 		if err := p.emit(statusRaw); err != nil {
 			return err
 		}
@@ -191,7 +230,9 @@ func (p *refreshPlanner) emitRosterAdd(wantP commissioner.NativePlayer) error {
 	return nil
 }
 
-func (p *refreshPlanner) reconcileAdjustments(cur *commissioner.RawNativeSnapshot, serverCharges map[string]bool) error {
+func (p *refreshPlanner) reconcileAdjustments(
+	cur *commissioner.RawNativeSnapshot, serverCharges map[string]bool,
+) error {
 	curMap := map[string]commissioner.NativeCharge{}
 	for _, a := range cur.Adjustments {
 		curMap[a.ID] = a
@@ -278,7 +319,9 @@ func (p *refreshPlanner) reconcilePicks(cur *commissioner.RawNativeSnapshot) err
 			continue
 		}
 		c := curMap[k]
-		pick := commissioner.CorrectionPick{Season: c.Season, Round: c.Round, Slot: c.Slot, Original: c.Original, Remove: true}
+		pick := commissioner.CorrectionPick{
+			Season: c.Season, Round: c.Round, Slot: c.Slot, Original: c.Original, Remove: true,
+		}
 		raw := p.correctionCmd(commissioner.CorrectPick, "pick-remove", "remove "+pickKey(c),
 			commissioner.RawCorrection{Owner: c.Owner, Pick: &pick})
 		if err := p.emit(raw); err != nil {

@@ -25,7 +25,9 @@ func TestCorrectRosterContractAndAddWithContract(t *testing.T) {
 	addCmd := RawCommand{
 		League: rolloverLeague, Command: CorrectRoster, Request: "add-with-contract",
 		Reason: "Refresh add with contract", Effective: "now", Visibility: "league",
-		Args: RawArgs{Correction: &RawCorrection{Player: "0099", Franchise: "franchise.01", Action: "add", Contract: addContract}},
+		Args: RawArgs{Correction: &RawCorrection{
+			Player: "0099", Franchise: "franchise.01", Action: "add", Contract: addContract,
+		}},
 	}
 	if err := addCmd.Validate(); err != nil {
 		t.Fatal(err)
@@ -46,7 +48,9 @@ func TestCorrectRosterContractAndAddWithContract(t *testing.T) {
 	editCmd := RawCommand{
 		League: rolloverLeague, Command: CorrectRoster, Request: "edit-contract",
 		Reason: "Refresh contract", Effective: "now", Visibility: "league",
-		Args: RawArgs{Correction: &RawCorrection{Player: "0099", Franchise: "franchise.01", Action: "contract", Contract: editContract}},
+		Args: RawArgs{Correction: &RawCorrection{
+			Player: "0099", Franchise: "franchise.01", Action: "contract", Contract: editContract,
+		}},
 	}
 	if err := editCmd.Validate(); err != nil {
 		t.Fatal(err)
@@ -89,7 +93,9 @@ func TestCorrectRosterAdjustmentUpsertAndRemove(t *testing.T) {
 	t.Parallel()
 	b := rolloverLedger(t)
 
-	charge := &NativeCharge{ID: "mfl-adj-1", Franchise: "franchise.01", Amount: 5000000, Description: "Trade dead cap"}
+	charge := &NativeCharge{
+		ID: "mfl-adj-1", Franchise: "franchise.01", Amount: 5000000, Description: "Trade dead cap",
+	}
 	upsert := RawCommand{
 		League: rolloverLeague, Command: CorrectRoster, Request: "adj-add",
 		Reason: "Refresh adjustment", Effective: "now", Visibility: "league",
@@ -104,7 +110,9 @@ func TestCorrectRosterAdjustmentUpsertAndRemove(t *testing.T) {
 	b.add(upsert, seasonMoment(5))
 
 	// Update the same MFL adjustment ID with a new amount and description.
-	updated := &NativeCharge{ID: "mfl-adj-1", Franchise: "franchise.01", Amount: 7500000, Description: "Updated cap hit"}
+	updated := &NativeCharge{
+		ID: "mfl-adj-1", Franchise: "franchise.01", Amount: 7500000, Description: "Updated cap hit",
+	}
 	upsert2 := RawCommand{
 		League: rolloverLeague, Command: CorrectRoster, Request: "adj-edit",
 		Reason: "Refresh adjustment edit", Effective: "now", Visibility: "league",
@@ -119,7 +127,8 @@ func TestCorrectRosterAdjustmentUpsertAndRemove(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	found := slices.IndexFunc(assets.Snapshot.Adjustments, func(a NativeCharge) bool { return a.ID == "mfl-adj-1" })
+	isAdj1 := func(a NativeCharge) bool { return a.ID == "mfl-adj-1" }
+	found := slices.IndexFunc(assets.Snapshot.Adjustments, isAdj1)
 	if found < 0 || assets.Snapshot.Adjustments[found] != *updated {
 		t.Fatalf("unexpected adjustments after upsert: %+v", assets.Snapshot.Adjustments)
 	}
@@ -140,7 +149,7 @@ func TestCorrectRosterAdjustmentUpsertAndRemove(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if slices.ContainsFunc(assets.Snapshot.Adjustments, func(a NativeCharge) bool { return a.ID == "mfl-adj-1" }) {
+	if slices.ContainsFunc(assets.Snapshot.Adjustments, isAdj1) {
 		t.Fatalf("adjustment was not removed: %+v", assets.Snapshot.Adjustments)
 	}
 
@@ -152,6 +161,15 @@ func TestCorrectRosterAdjustmentUpsertAndRemove(t *testing.T) {
 	badFranchise := RawCorrection{Franchise: "franchise.02", Action: "adjustment", Charge: charge}
 	if err := badFranchise.Validate(CorrectRoster); err == nil {
 		t.Fatal("accepted adjustment with mismatched franchise")
+	}
+	badRemoveExtra := RawCorrection{
+		Franchise: "franchise.01", Action: "remove_adjustment",
+		Charge: &NativeCharge{
+			ID: "mfl-adj-1", Franchise: "franchise.01", Amount: 100, Description: "extra",
+		},
+	}
+	if err := badRemoveExtra.Validate(CorrectRoster); err == nil {
+		t.Fatal("accepted remove_adjustment with extraneous charge fields")
 	}
 }
 
@@ -166,62 +184,58 @@ func TestCorrectPickSelectionAddClearAndRemove(t *testing.T) {
 		},
 	}
 
+	applyPick := func(c *RawCorrection, reason string) {
+		t.Helper()
+		if err := c.Validate(CorrectPick); err != nil {
+			t.Fatal(err)
+		}
+		rec := Record{Command: RawCommand{
+			Command: CorrectPick, Args: RawArgs{Correction: c}, Reason: reason,
+		}}
+		if err := correctPick(&seed, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	// Record a draft selection (Player + owner update).
-	selectPick := RawCorrection{Owner: "franchise.02", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 1, Player: "0088"}}
-	if err := selectPick.Validate(CorrectPick); err != nil {
-		t.Fatal(err)
-	}
-	if err := correctPick(&seed, Record{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &selectPick}, Reason: "Draft result"}}); err != nil {
-		t.Fatal(err)
-	}
+	applyPick(&RawCorrection{
+		Owner: "franchise.02", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 1, Player: "0088"},
+	}, "Draft result")
 	if seed.Picks[0].Owner != "franchise.02" || seed.Picks[0].Player != "0088" || seed.Picks[0].Skipped {
 		t.Fatalf("selection not applied: %+v", seed.Picks[0])
 	}
 
 	// Mark slot 2 skipped.
-	skipPick := RawCorrection{Owner: "franchise.02", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 2, Skipped: true}}
-	if err := skipPick.Validate(CorrectPick); err != nil {
-		t.Fatal(err)
-	}
-	if err := correctPick(&seed, Record{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &skipPick}, Reason: "Skipped"}}); err != nil {
-		t.Fatal(err)
-	}
+	applyPick(&RawCorrection{
+		Owner: "franchise.02", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 2, Skipped: true},
+	}, "Skipped")
 	if !seed.Picks[1].Skipped || seed.Picks[1].Player != "" {
 		t.Fatalf("skip not applied: %+v", seed.Picks[1])
 	}
 
 	// Clear slot 2 back to unselected.
-	clearPick := RawCorrection{Owner: "franchise.01", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 2, Clear: true}}
-	if err := clearPick.Validate(CorrectPick); err != nil {
-		t.Fatal(err)
-	}
-	if err := correctPick(&seed, Record{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &clearPick}, Reason: "Clear"}}); err != nil {
-		t.Fatal(err)
-	}
+	applyPick(&RawCorrection{
+		Owner: "franchise.01", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 2, Clear: true},
+	}, "Clear")
 	if seed.Picks[1].Skipped || seed.Picks[1].Player != "" || seed.Picks[1].Owner != "franchise.01" {
 		t.Fatalf("clear not applied: %+v", seed.Picks[1])
 	}
 
 	// Add a new future draft pick.
-	addFuture := RawCorrection{Owner: "franchise.02", Pick: &CorrectionPick{Season: 2028, Round: 1, Original: "franchise.01", Add: true}}
-	if err := addFuture.Validate(CorrectPick); err != nil {
-		t.Fatal(err)
-	}
-	if err := correctPick(&seed, Record{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &addFuture}, Reason: "Future pick"}}); err != nil {
-		t.Fatal(err)
-	}
-	if len(seed.Picks) != 3 || seed.Picks[2].Season != 2028 || seed.Picks[2].Original != "franchise.01" || seed.Picks[2].Owner != "franchise.02" {
+	applyPick(&RawCorrection{
+		Owner: "franchise.02",
+		Pick:  &CorrectionPick{Season: 2028, Round: 1, Original: "franchise.01", Add: true},
+	}, "Future pick")
+	if len(seed.Picks) != 3 || seed.Picks[2].Season != 2028 ||
+		seed.Picks[2].Original != "franchise.01" || seed.Picks[2].Owner != "franchise.02" {
 		t.Fatalf("future pick not added: %+v", seed.Picks)
 	}
 
 	// Remove the added future pick.
-	removeFuture := RawCorrection{Owner: "franchise.02", Pick: &CorrectionPick{Season: 2028, Round: 1, Original: "franchise.01", Remove: true}}
-	if err := removeFuture.Validate(CorrectPick); err != nil {
-		t.Fatal(err)
-	}
-	if err := correctPick(&seed, Record{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &removeFuture}, Reason: "Remove pick"}}); err != nil {
-		t.Fatal(err)
-	}
+	applyPick(&RawCorrection{
+		Owner: "franchise.02",
+		Pick:  &CorrectionPick{Season: 2028, Round: 1, Original: "franchise.01", Remove: true},
+	}, "Remove pick")
 	if len(seed.Picks) != 2 {
 		t.Fatalf("future pick not removed: %+v", seed.Picks)
 	}
@@ -232,6 +246,7 @@ func TestCorrectPickSelectionAddClearAndRemove(t *testing.T) {
 		{Season: 2028, Round: 1, Original: "franchise.01", Player: "0088"},
 		{Season: 2026, Round: 1, Slot: 1, Add: true, Remove: true},
 		{Season: 2026, Round: 1, Slot: 1, Clear: true, Player: "0088"},
+		{Season: 2028, Round: 101, Original: "franchise.01", Add: true},
 	} {
 		if err := (RawCorrection{Owner: "franchise.01", Pick: &bad}).Validate(CorrectPick); err == nil {
 			t.Fatalf("accepted invalid pick correction %+v", bad)
@@ -242,7 +257,9 @@ func TestCorrectPickSelectionAddClearAndRemove(t *testing.T) {
 func TestCheckRecordedAppendMonotonicCutoverWeek(t *testing.T) {
 	t.Parallel()
 	b := rolloverLedger(t)
-	weeks := []ScheduleWeek{{Week: 1, Games: []ScheduleGame{{ID: "w1g1", Home: "franchise.01", Away: "franchise.02"}}}}
+	weeks := []ScheduleWeek{{
+		Week: 1, Games: []ScheduleGame{{ID: "w1g1", Home: "franchise.01", Away: "franchise.02"}},
+	}}
 
 	// Record initial boundary at CutoverWeek 3.
 	gen1 := RawCommand{
@@ -264,7 +281,10 @@ func TestCheckRecordedAppendMonotonicCutoverWeek(t *testing.T) {
 	}
 	b.records = append(b.records, Record{
 		Command: gen1, Principal: "creator", GeneratedSchedule: weeks,
-		Receipt: Receipt{Entry: "e-sched-1", League: rolloverLeague, Revision: int64(len(b.records) + 1), RecordedAt: seasonMoment(5)},
+		Receipt: Receipt{
+			Entry: "e-sched-1", League: rolloverLeague,
+			Revision: int64(len(b.records) + 1), RecordedAt: seasonMoment(5),
+		},
 	})
 
 	// Moving backwards (3 -> 2) must be refused.
@@ -274,7 +294,8 @@ func TestCheckRecordedAppendMonotonicCutoverWeek(t *testing.T) {
 			{Franchise: "franchise.01", Week: 1, Points: leaguerules.Decimal(1000000), Result: "W"},
 		},
 	}
-	if err := checkRecordedAppend(backwards, b.records); err == nil || !strings.Contains(err.Error(), "cannot move backwards") {
+	err := checkRecordedAppend(backwards, b.records)
+	if err == nil || !strings.Contains(err.Error(), "cannot move backwards") {
 		t.Fatalf("expected backwards cutover refusal, got: %v", err)
 	}
 
@@ -297,20 +318,43 @@ func TestCorrectionLabelsForRefreshActions(t *testing.T) {
 	t.Parallel()
 	b := rolloverLedger(t)
 	names := newAssetNames(b.records)
+	mkRec := func(cmd string, c RawCorrection) Record {
+		return Record{Command: RawCommand{Command: cmd, Args: RawArgs{Correction: &c}}}
+	}
 	cases := []Record{
-		{Command: RawCommand{Command: CorrectRoster, Args: RawArgs{Correction: &RawCorrection{Player: "0003", Franchise: "franchise.01", Action: "status", Status: domain.RosterIR}}}},
-		{Command: RawCommand{Command: CorrectRoster, Args: RawArgs{Correction: &RawCorrection{Player: "0003", Franchise: "franchise.01", Action: "contract", Contract: &CorrectionContract{Salary: 100}}}}},
-		{Command: RawCommand{Command: CorrectRoster, Args: RawArgs{Correction: &RawCorrection{Franchise: "franchise.01", Action: "adjustment", Charge: &NativeCharge{ID: "adj-1", Franchise: "franchise.01"}}}}},
-		{Command: RawCommand{Command: CorrectRoster, Args: RawArgs{Correction: &RawCorrection{Franchise: "franchise.01", Action: "remove_adjustment", Charge: &NativeCharge{ID: "adj-1", Franchise: "franchise.01"}}}}},
-		{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &RawCorrection{Owner: "franchise.01", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 1, Player: "0003"}}}}},
-		{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &RawCorrection{Owner: "franchise.01", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 1, Skipped: true}}}}},
-		{Command: RawCommand{Command: CorrectPick, Args: RawArgs{Correction: &RawCorrection{Owner: "franchise.01", Pick: &CorrectionPick{Season: 2028, Round: 1, Original: "franchise.02", Remove: true}}}}},
+		mkRec(CorrectRoster, RawCorrection{
+			Player: "0003", Franchise: "franchise.01", Action: "status", Status: domain.RosterIR,
+		}),
+		mkRec(CorrectRoster, RawCorrection{
+			Player: "0003", Franchise: "franchise.01", Action: "contract",
+			Contract: &CorrectionContract{Salary: 100},
+		}),
+		mkRec(CorrectRoster, RawCorrection{
+			Franchise: "franchise.01", Action: "adjustment",
+			Charge: &NativeCharge{ID: "adj-1", Franchise: "franchise.01"},
+		}),
+		mkRec(CorrectRoster, RawCorrection{
+			Franchise: "franchise.01", Action: "remove_adjustment",
+			Charge: &NativeCharge{ID: "adj-1", Franchise: "franchise.01"},
+		}),
+		mkRec(CorrectPick, RawCorrection{
+			Owner: "franchise.01", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 1, Player: "0003"},
+		}),
+		mkRec(CorrectPick, RawCorrection{
+			Owner: "franchise.01", Pick: &CorrectionPick{Season: 2026, Round: 1, Slot: 1, Skipped: true},
+		}),
+		mkRec(CorrectPick, RawCorrection{
+			Owner: "franchise.01",
+			Pick:  &CorrectionPick{Season: 2028, Round: 1, Original: "franchise.02", Remove: true},
+		}),
 	}
 	for i, r := range cases {
 		if label := correctionLabel(r); label == "" || label == "Corrected a recorded asset" {
 			t.Errorf("case %d: unexpected label %q", i, label)
 		}
-		if desc := correctionDescription(names, r); desc == "" || strings.Contains(desc, "Removed ") && r.Command.Args.Correction.Action == "status" {
+		desc := correctionDescription(names, r)
+		badStatus := strings.Contains(desc, "Removed ") && r.Command.Args.Correction.Action == "status"
+		if desc == "" || badStatus {
 			t.Errorf("case %d: unexpected description %q", i, desc)
 		}
 	}
@@ -346,5 +390,64 @@ func TestOpenTradesReportsUnsettledOnly(t *testing.T) {
 	}
 	if len(open) != 2 || open[0].Status != "offered" || open[1].Status != "review" {
 		t.Fatalf("unexpected open trades: %+v", open)
+	}
+}
+
+func TestSyncedLineupAllowsPostKickoffRosterAndOwnerOverride(t *testing.T) {
+	t.Parallel()
+	b := rolloverLedger(t)
+	kickoff := seasonMoment(10)
+	afterKickoff := kickoff.Add(time.Hour)
+
+	// Add a player at afterKickoff (after Thursday kickoff).
+	addCmd := RawCommand{
+		League: rolloverLeague, Command: CorrectRoster, Request: "mfl-refresh.10.0001.roster-add",
+		Reason: "Refresh add", Effective: "now", Visibility: "league",
+		Args: RawArgs{Correction: &RawCorrection{
+			Player: "0099", Franchise: "franchise.01", Action: "add",
+		}},
+	}
+	b.add(addCmd, afterKickoff)
+
+	env := LineupFacts{
+		ScheduleHeld: true,
+		Locks:        map[string]time.Time{"KC": kickoff},
+		Zone:         time.UTC,
+	}
+	syncedLineup := RawCommand{
+		League: rolloverLeague, Command: LineupCorrect,
+		Request: "mfl-refresh.10.0002.lineup.1.franchise.01",
+		Reason:  "Refresh from MFL: week 1 lineup", Effective: "now", Visibility: "league",
+		Args: RawArgs{Lineup: &RawLineupChange{
+			Season: 2026, Week: 1, Franchise: "franchise.01", Starters: []string{"0099"},
+		}},
+	}
+	if err := CheckLineupAppend(syncedLineup, b.records, afterKickoff, env); err != nil {
+		t.Fatalf("MFL-synced lineup refused after kickoff: %v", err)
+	}
+	b.add(syncedLineup, afterKickoff)
+	gotSynced, foundSynced, err := RecordedLineupFor(b.records, "franchise.01", 2026, 1)
+	if err != nil || !foundSynced || !gotSynced.Corrected || !gotSynced.Synced {
+		t.Fatalf("expected Synced=true on MFL-synced lineup: %+v %t %v", gotSynced, foundSynced, err)
+	}
+
+	// Owner must still be able to submit LineupSet after an MFL-synced lineup.
+	// Use a future kickoff so locks don't block the owner; the check under test is the
+	// "a commissioner has set ... lineup" guard.
+	futureEnv := LineupFacts{
+		ScheduleHeld: true,
+		Locks:        map[string]time.Time{"KC": afterKickoff.Add(24 * time.Hour)},
+		Zone:         time.UTC,
+	}
+	ownerSet := RawCommand{
+		League: rolloverLeague, Command: LineupSet, Request: "owner-override-synced",
+		Reason: "Owner sets lineup", Effective: "now", Visibility: "private",
+		Args: RawArgs{Lineup: &RawLineupChange{
+			Season: 2026, Week: 1, Franchise: "franchise.01", Starters: []string{"0099"},
+		}},
+	}
+	err = CheckLineupAppend(ownerSet, b.records, afterKickoff, futureEnv)
+	if err != nil && strings.Contains(err.Error(), "a commissioner has set") {
+		t.Fatalf("MFL-synced lineup blocked owner LineupSet: %v", err)
 	}
 }

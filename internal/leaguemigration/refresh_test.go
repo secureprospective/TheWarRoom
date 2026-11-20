@@ -86,19 +86,23 @@ func newRefreshFixture(t *testing.T, export mflsource.Export, facts nativecheck.
 	if _, err := f.svc.Import(t.Context(), export.LeagueID, "Initial MFL load", "creator"); err != nil {
 		t.Fatal(err)
 	}
-	review, err := f.svc.Review(t.Context(), leaguemigration.Request{MFLLeague: export.LeagueID, League: f.league})
+	req := leaguemigration.Request{MFLLeague: export.LeagueID, League: f.league}
+	review, err := f.svc.Review(t.Context(), req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.svc.Cutover(t.Context(), leaguemigration.Request{MFLLeague: export.LeagueID, League: f.league},
-		review.Digest, "Cutover to hosted server", "creator"); err != nil {
+	if _, err := f.svc.Cutover(
+		t.Context(), req, review.Digest, "Cutover to hosted server", "creator",
+	); err != nil {
 		t.Fatal(err)
 	}
 	f.now = f.now.Add(time.Hour)
 	return f
 }
 
-func (f *refreshFixture) exec(t *testing.T, raw commissioner.RawCommand, principal string, facts nativecheck.Facts) commissioner.Receipt {
+func (f *refreshFixture) exec(
+	t *testing.T, raw commissioner.RawCommand, principal string, facts nativecheck.Facts,
+) commissioner.Receipt {
 	t.Helper()
 	records, err := f.ledger.Records(t.Context(), f.league)
 	if err != nil {
@@ -182,7 +186,7 @@ func TestRefreshRostersContractsAdjustmentsAndPicks(t *testing.T) {
 		{ID: "adj-3", Franchise: "0004", Amount: "-1.00", Description: "Comp credit"},
 	}
 
-	// Picks: select draft slot 0, skip draft slot 1, change future pick 0 owner, remove future pick 1, add 2029 future pick.
+	// Picks: select slot 0, skip slot 1, move future pick 0, drop future pick 1, add 2029 pick.
 	draft := slices.Clone(f.src.Export.Draft)
 	draft[0].Player = mustPID(t, "9902")
 	draft[0].Skipped = false
@@ -260,7 +264,8 @@ func TestRefreshRostersContractsAdjustmentsAndPicks(t *testing.T) {
 		if pk.Season == 2029 && pk.Round == 1 && pk.Original == "franchise.01" && pk.Owner == "franchise.06" {
 			found2029 = true
 		}
-		if pk.Season == removedFuture.Year && pk.Round == removedFuture.Round && pk.Original == "franchise."+removedFuture.Original[2:] {
+		removedOrig := "franchise." + removedFuture.Original[2:]
+		if pk.Season == removedFuture.Year && pk.Round == removedFuture.Round && pk.Original == removedOrig {
 			foundRemoved = true
 		}
 	}
@@ -282,18 +287,24 @@ func TestRefreshScheduleAndMonotonicCutoverWeek(t *testing.T) {
 	t.Parallel()
 	export := migrationtest.Synthetic("Schedule league", migrationtest.Specs()["8 teams"])
 	var err error
-	export.Schedule, err = leagueschedule.Parse([]byte(`{"schedule":{"weeklySchedule":[
-		{"week":"1","matchup":{"franchise":[{"id":"0001","isHome":"1","score":"105.25"},{"id":"0002","isHome":"0","score":"99.00"}]}},
-		{"week":"2","matchup":{"franchise":[{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}},
-		{"week":"3","matchup":{"franchise":[{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}
-	]}}`))
+	export.Schedule, err = leagueschedule.Parse([]byte(`{"schedule":{"weeklySchedule":[` +
+		`{"week":"1","matchup":{"franchise":[` +
+		`{"id":"0001","isHome":"1","score":"105.25"},{"id":"0002","isHome":"0","score":"99.00"}]}},` +
+		`{"week":"2","matchup":{"franchise":[` +
+		`{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}},` +
+		`{"week":"3","matchup":{"franchise":[` +
+		`{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}` +
+		`]}}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	export.Results, err = weeklyresults.Parse([]byte(`{"allWeeklyResults":{"weeklyResults":[
-		{"week":"1","matchup":{"regularSeason":"1","franchise":[{"id":"0001","isHome":"1","score":"105.25","result":"W"},{"id":"0002","isHome":"0","score":"99.00","result":"L"}]}},
-		{"week":"2","matchup":{"regularSeason":"1","franchise":[{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}
-	]}}`))
+	export.Results, err = weeklyresults.Parse([]byte(`{"allWeeklyResults":{"weeklyResults":[` +
+		`{"week":"1","matchup":{"regularSeason":"1","franchise":[` +
+		`{"id":"0001","isHome":"1","score":"105.25","result":"W"},` +
+		`{"id":"0002","isHome":"0","score":"99.00","result":"L"}]}},` +
+		`{"week":"2","matchup":{"regularSeason":"1","franchise":[` +
+		`{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}` +
+		`]}}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,11 +315,17 @@ func TestRefreshScheduleAndMonotonicCutoverWeek(t *testing.T) {
 
 	// Week 2 and Week 3 finish on MFL -> CutoverWeek advances from 2 to 4.
 	next := f.src.Export
-	next.Results, err = weeklyresults.Parse([]byte(`{"allWeeklyResults":{"weeklyResults":[
-		{"week":"1","matchup":{"regularSeason":"1","franchise":[{"id":"0001","isHome":"1","score":"105.25","result":"W"},{"id":"0002","isHome":"0","score":"99.00","result":"L"}]}},
-		{"week":"2","matchup":{"regularSeason":"1","franchise":[{"id":"0001","isHome":"1","score":"120.50","result":"W"},{"id":"0002","isHome":"0","score":"110.00","result":"L"}]}},
-		{"week":"3","matchup":{"regularSeason":"1","franchise":[{"id":"0001","isHome":"1","score":"88.00","result":"L"},{"id":"0002","isHome":"0","score":"95.00","result":"W"}]}}
-	]}}`))
+	next.Results, err = weeklyresults.Parse([]byte(`{"allWeeklyResults":{"weeklyResults":[` +
+		`{"week":"1","matchup":{"regularSeason":"1","franchise":[` +
+		`{"id":"0001","isHome":"1","score":"105.25","result":"W"},` +
+		`{"id":"0002","isHome":"0","score":"99.00","result":"L"}]}},` +
+		`{"week":"2","matchup":{"regularSeason":"1","franchise":[` +
+		`{"id":"0001","isHome":"1","score":"120.50","result":"W"},` +
+		`{"id":"0002","isHome":"0","score":"110.00","result":"L"}]}},` +
+		`{"week":"3","matchup":{"regularSeason":"1","franchise":[` +
+		`{"id":"0001","isHome":"1","score":"88.00","result":"L"},` +
+		`{"id":"0002","isHome":"0","score":"95.00","result":"W"}]}}` +
+		`]}}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,7 +358,8 @@ func TestRefreshScheduleAndMonotonicCutoverWeek(t *testing.T) {
 	if len(report2.Commands) != 0 || report2.Summary.CutoverWeek != 4 {
 		t.Fatalf("cutover moved backwards or rewrote unnecessarily: %+v", report2)
 	}
-	if heldAfter := commissioner.RecordedResults(f.records(t), 2026); heldAfter == nil || heldAfter.CutoverWeek != 4 {
+	heldAfter := commissioner.RecordedResults(f.records(t), 2026)
+	if heldAfter == nil || heldAfter.CutoverWeek != 4 {
 		t.Fatalf("cutover regressed: %+v", heldAfter)
 	}
 }
@@ -357,17 +375,20 @@ func TestRefreshLineupsPlayedVsOwnerCurrentWeek(t *testing.T) {
 	export.Config.Starters.Positions = export.Config.Starters.Positions[:1] // QB: 1
 
 	var err error
-	export.Schedule, err = leagueschedule.Parse([]byte(`{"schedule":{"weeklySchedule":[
-		{"week":"1","matchup":{"franchise":[{"id":"0001","isHome":"1","score":"100"},{"id":"0002","isHome":"0","score":"90"}]}},
-		{"week":"2","matchup":{"franchise":[{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}
-	]}}`))
+	export.Schedule, err = leagueschedule.Parse([]byte(`{"schedule":{"weeklySchedule":[` +
+		`{"week":"1","matchup":{"franchise":[` +
+		`{"id":"0001","isHome":"1","score":"100"},{"id":"0002","isHome":"0","score":"90"}]}},` +
+		`{"week":"2","matchup":{"franchise":[` +
+		`{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}` +
+		`]}}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	// At initial load, week 1 is NOT yet finished (CutoverWeek 1).
-	export.Results, err = weeklyresults.Parse([]byte(`{"allWeeklyResults":{"weeklyResults":[
-		{"week":"1","matchup":{"regularSeason":"1","franchise":[{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}
-	]}}`))
+	export.Results, err = weeklyresults.Parse([]byte(`{"allWeeklyResults":{"weeklyResults":[` +
+		`{"week":"1","matchup":{"regularSeason":"1","franchise":[` +
+		`{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}` +
+		`]}}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -405,7 +426,9 @@ func TestRefreshLineupsPlayedVsOwnerCurrentWeek(t *testing.T) {
 	f.exec(t, commissioner.RawCommand{
 		Command: "commish.seat.replace", Request: "seat-owner1", Reason: "Seat owner 1",
 		Effective: "now", Visibility: "league",
-		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.01", Principal: "owner1@example.com"}},
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			Franchise: "franchise.01", Principal: "owner1@example.com",
+		}},
 	}, "creator", facts)
 	// Owner 1 sets their week-2 (current week) lineup in-app to f1p2.
 	f.exec(t, commissioner.RawCommand{
@@ -416,8 +439,8 @@ func TestRefreshLineupsPlayedVsOwnerCurrentWeek(t *testing.T) {
 		}},
 	}, "owner1@example.com", facts)
 
-	// Now MFL finishes week 1 (f1p1 started week 1 and was THEN dropped from MFL's current roster!),
-	// and MFL liveScoring has week 2 starters for franchise.01 (f1p1? no, use another active player) and franchise.02 (f2p1).
+	// Now MFL finishes week 1 (f1p1 started week 1 and was then dropped from MFL's roster),
+	// and MFL liveScoring has week 2 starters for franchise.01 (f1p3) and franchise.02 (f2p1).
 	var f1p3 string
 	for _, r := range export.Rosters {
 		if r.Franchise == "0001" && r.Status == "ROSTER" && r.Player != f1p1 && r.Player != f1p2 {
@@ -497,27 +520,37 @@ func TestRefreshPreservesSeatsRolesRulesNotesAndInAppFranchiseEdits(t *testing.T
 	f.exec(t, commissioner.RawCommand{
 		Command: "commish.seat.replace", Request: "seat-commish-25", Reason: "Seat commissioner on 25",
 		Effective: "now", Visibility: "league",
-		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.25", Principal: "creator"}},
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			Franchise: "franchise.25", Principal: "creator",
+		}},
 	}, "creator", nil)
 	f.exec(t, commissioner.RawCommand{
 		Command: "commish.seat.invite", Request: "invite-f02", Reason: "Invite owner 2",
 		Effective: "now", Visibility: "private",
-		Args: commissioner.RawArgs{People: &commissioner.RawPeople{ID: "inv.02", Franchise: "franchise.02", Principal: "owner2@example.com"}},
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			ID: "inv.02", Franchise: "franchise.02", Principal: "owner2@example.com",
+		}},
 	}, "creator", nil)
 	f.exec(t, commissioner.RawCommand{
 		Command: "commish.seat.invite.redeem", Request: "redeem-f02", Reason: "Claim seat",
 		Effective: "now", Visibility: "private",
-		Args: commissioner.RawArgs{People: &commissioner.RawPeople{ID: "inv.02", Principal: "owner2@example.com"}},
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			ID: "inv.02", Principal: "owner2@example.com",
+		}},
 	}, "owner2@example.com", nil)
 	f.exec(t, commissioner.RawCommand{
 		Command: "commish.role.grant", Request: "grant-cocommish", Reason: "Co-commissioner",
 		Effective: "now", Visibility: "private",
-		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Principal: "co@example.com", Role: governance.CoCommissioner}},
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			Principal: "co@example.com", Role: governance.CoCommissioner,
+		}},
 	}, "creator", nil)
 	f.exec(t, commissioner.RawCommand{
 		Command: "commish.role.grant", Request: "grant-deputy", Reason: "Deputy",
 		Effective: "now", Visibility: "private",
-		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Principal: "dep@example.com", Role: governance.Deputy}},
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			Principal: "dep@example.com", Role: governance.Deputy,
+		}},
 	}, "creator", nil)
 	f.exec(t, commissioner.RawCommand{
 		Command: commissioner.RulesSet, Request: "edit-cap-rule", Reason: "Raise cap in app",
@@ -532,7 +565,9 @@ func TestRefreshPreservesSeatsRolesRulesNotesAndInAppFranchiseEdits(t *testing.T
 	f.exec(t, commissioner.RawCommand{
 		Command: "commish.franchise.edit", Request: "in-app-rename-f02", Reason: "Owner custom name",
 		Effective: "now", Visibility: "league",
-		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.02", Name: "Server Custom Name", Abbreviation: "SCN"}},
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			Franchise: "franchise.02", Name: "Server Custom Name", Abbreviation: "SCN",
+		}},
 	}, "creator", nil)
 
 	// Mutate MFL: rename franchise 0001 (unedited) AND 0002 (edited in-app), and change a salary.
@@ -564,7 +599,8 @@ func TestRefreshPreservesSeatsRolesRulesNotesAndInAppFranchiseEdits(t *testing.T
 	if !state.HoldsSeat("franchise.25", "creator") || !state.HoldsSeat("franchise.02", "owner2@example.com") {
 		t.Fatal("claimed seats were not preserved")
 	}
-	if !state.HasRole("co@example.com", governance.CoCommissioner) || !state.HasRole("dep@example.com", governance.Deputy) {
+	if !state.HasRole("co@example.com", governance.CoCommissioner) ||
+		!state.HasRole("dep@example.com", governance.Deputy) {
 		t.Fatal("roles/deputies were not preserved")
 	}
 	rules, err := commissioner.RulesNow(recs, f.now)
@@ -632,19 +668,24 @@ func TestRefreshRefusesOpenInAppTradeOffers(t *testing.T) {
 		Command: commissioner.WindowSet, Request: "open-trades", Reason: "Open trade window",
 		Effective: "now", Visibility: "league",
 		Args: commissioner.RawArgs{Window: &commissioner.RawWindowArgs{
-			ID: "trades", Start: &commissioner.RawDate{Month: 1, Day: 1}, End: &commissioner.RawDate{Month: 12, Day: 31},
+			ID: "trades", Start: &commissioner.RawDate{Month: 1, Day: 1},
+			End:   &commissioner.RawDate{Month: 12, Day: 31},
 			Opens: []leaguerules.Action{"trade"},
 		}},
 	}, "creator", nil)
 	f.exec(t, commissioner.RawCommand{
 		Command: "commish.seat.replace", Request: "seat-1", Reason: "Seat 1",
 		Effective: "now", Visibility: "league",
-		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.01", Principal: "o1@example.com"}},
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			Franchise: "franchise.01", Principal: "o1@example.com",
+		}},
 	}, "creator", nil)
 	f.exec(t, commissioner.RawCommand{
 		Command: "commish.seat.replace", Request: "seat-2", Reason: "Seat 2",
 		Effective: "now", Visibility: "league",
-		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.02", Principal: "o2@example.com"}},
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			Franchise: "franchise.02", Principal: "o2@example.com",
+		}},
 	}, "creator", nil)
 
 	// Offer a pick-for-pick trade between franchise.01 and franchise.02 using picks each actually owns.
@@ -670,8 +711,14 @@ func TestRefreshRefusesOpenInAppTradeOffers(t *testing.T) {
 			Franchise: "franchise.01",
 			Parties:   []string{"franchise.01", "franchise.02"},
 			Assets: []commissioner.TradeAsset{
-				{From: "franchise.01", To: "franchise.02", Season: pick1.Season, Round: pick1.Round, Original: pick1.Original},
-				{From: "franchise.02", To: "franchise.01", Season: pick2.Season, Round: pick2.Round, Original: pick2.Original},
+				{
+					From: "franchise.01", To: "franchise.02",
+					Season: pick1.Season, Round: pick1.Round, Original: pick1.Original,
+				},
+				{
+					From: "franchise.02", To: "franchise.01",
+					Season: pick2.Season, Round: pick2.Round, Original: pick2.Original,
+				},
 			},
 		}},
 	}, "o1@example.com", nil)
@@ -685,7 +732,8 @@ func TestRefreshRefusesOpenInAppTradeOffers(t *testing.T) {
 	before := f.records(t)
 	for _, dryRun := range []bool{true, false} {
 		_, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
-			MFLLeague: export.LeagueID, League: f.league, Reason: "Refresh blocked", Principal: "creator", DryRun: dryRun,
+			MFLLeague: export.LeagueID, League: f.league,
+			Reason: "Refresh blocked", Principal: "creator", DryRun: dryRun,
 		})
 		var openErr *leaguemigration.OpenTradesError
 		if !errors.As(err, &openErr) || len(openErr.Offers) != 1 || openErr.Offers[0].ID != offerReceipt.Entry {
@@ -705,7 +753,9 @@ func TestRefreshRefusesOpenInAppTradeOffers(t *testing.T) {
 	f.exec(t, commissioner.RawCommand{
 		Command: commissioner.TradeWithdraw, Request: "trade-withdraw-1", Reason: "Withdraw",
 		Effective: "now", Visibility: "league",
-		Args: commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: offerReceipt.Entry, Franchise: "franchise.01"}},
+		Args: commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{
+			ID: offerReceipt.Entry, Franchise: "franchise.01",
+		}},
 	}, "o1@example.com", nil)
 
 	report, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
@@ -753,7 +803,8 @@ func TestRefreshDryRunAndIdempotency(t *testing.T) {
 	second, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
 		MFLLeague: export.LeagueID, League: f.league, Reason: "Second run", Principal: "creator",
 	})
-	if err != nil || len(second.Commands) != 0 || len(second.Receipts) != 0 || !reflect.DeepEqual(afterCommit, f.records(t)) {
+	if err != nil || len(second.Commands) != 0 || len(second.Receipts) != 0 ||
+		!reflect.DeepEqual(afterCommit, f.records(t)) {
 		t.Fatalf("second run was not idempotent: %+v %v", second, err)
 	}
 }
@@ -763,7 +814,9 @@ type faultingLedger struct {
 	failBatch error
 }
 
-func (l faultingLedger) Batch(ctx context.Context, raws []commissioner.RawCommand, principal string) ([]commissioner.Receipt, error) {
+func (l faultingLedger) Batch(
+	ctx context.Context, raws []commissioner.RawCommand, principal string,
+) ([]commissioner.Receipt, error) {
 	if l.failBatch != nil {
 		return nil, l.failBatch
 	}
@@ -827,8 +880,9 @@ func TestRefreshReplaysUnseenMFLTransactions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("refresh with transactions failed: %v", err)
 	}
-	if report.Summary.Transactions != 1 || report.Summary.Contracts != 1 {
-		t.Fatalf("expected 1 replayed tx + 1 contract update, got %+v", report.Summary)
+	if report.Summary.Transactions != 1 || report.Summary.Contracts != 1 ||
+		report.Summary.RosterAdds != 1 || report.Summary.RosterRemoves != 1 {
+		t.Fatalf("expected 1 tx, 1 contract, 1 add, 1 remove, got %+v", report.Summary)
 	}
 	// Second run must be a 0-command no-op.
 	again, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
@@ -842,4 +896,365 @@ func TestRefreshReplaysUnseenMFLTransactions(t *testing.T) {
 func jsonNumber(n int64) string {
 	b, _ := json.Marshal(n)
 	return string(b)
+}
+
+func TestRefreshPostKickoffLineupAndManualCommissionerLineup(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Kickoff lineup league", migrationtest.Specs()["8 teams"])
+	export.Config.Starters = migrationtest.Synthetic("tmp", migrationtest.Specs()["8 teams"]).Config.Starters
+	export.Config.Starters.Count = "1"
+	export.Config.Starters.IOPStarters = "1"
+	export.Config.Starters.IDPStarters = "0"
+	export.Config.Starters.Positions = export.Config.Starters.Positions[:1]
+
+	var f1p1, f1p2, f2p1, f2p2 string
+	for _, r := range export.Rosters {
+		if r.Franchise == "0001" && r.Status == "ROSTER" {
+			if f1p1 == "" {
+				f1p1 = r.Player
+			} else if f1p2 == "" {
+				f1p2 = r.Player
+			}
+		}
+		if r.Franchise == "0002" && r.Status == "ROSTER" {
+			if f2p1 == "" {
+				f2p1 = r.Player
+			} else if f2p2 == "" {
+				f2p2 = r.Player
+			}
+		}
+	}
+	facts := nativecheck.Facts{
+		f1p1:   {Name: "QB One", Position: leaguerules.QB, Team: "KC"},
+		f1p2:   {Name: "QB Two", Position: leaguerules.QB, Team: "BUF"},
+		f2p1:   {Name: "QB Three", Position: leaguerules.QB, Team: "SF"},
+		f2p2:   {Name: "QB Four", Position: leaguerules.QB, Team: "DAL"},
+		"9955": {Name: "QB Late Add", Position: leaguerules.QB, Team: "NYJ"},
+	}
+
+	f := newRefreshFixture(t, export, facts)
+	pastKickoff := f.now.Add(-2 * time.Hour)
+	futureKickoff := f.now.Add(24 * time.Hour)
+	f.store.SetLineupEnvironment(testLineupEnv{
+		facts: facts,
+		locks: map[int]map[string]time.Time{
+			1: {"KC": pastKickoff, "BUF": futureKickoff, "SF": futureKickoff, "NYJ": futureKickoff},
+			2: {"KC": futureKickoff, "BUF": futureKickoff, "SF": futureKickoff, "DAL": futureKickoff},
+		},
+	})
+
+	// Manual commissioner LineupCorrect on franchise.02 for week 2 must be preserved by refresh.
+	f.exec(t, commissioner.RawCommand{
+		Command: commissioner.LineupCorrect, Request: "manual-commish-w2",
+		Reason: "Manual override", Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Lineup: &commissioner.RawLineupChange{
+			Season: 2026, Week: 2, Franchise: "franchise.02", Starters: []string{f2p1},
+		}},
+	}, "creator", facts)
+
+	// MFL adds player 9955 and starts him in week 1 (after Thursday kickoff!).
+	next := f.src.Export
+	next.Players = map[string]string{}
+	for k, v := range export.Players {
+		next.Players[k] = v
+	}
+	next.Players["9955"] = "QB Late Add"
+	next.Rosters = append(slices.Clone(export.Rosters), mflsource.Rostered{
+		Franchise: "0001", Player: "9955", Status: "ROSTER",
+		Salary: "1.00", ContractYear: "2027", ContractStatus: "UFA",
+	})
+	next.LiveLineups = &leaguefeed.Lineups{
+		Week: 1,
+		Franchises: []leaguefeed.Lineup{
+			{Franchise: "0001", Starters: []playerid.PlayerID{*mustPID(t, "9955")}},
+		},
+	}
+	f.src.Export = next
+
+	if _, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Post-kickoff refresh", Principal: "creator",
+	}); err != nil {
+		t.Fatalf("post-kickoff refresh with newly added starter failed: %v", err)
+	}
+
+	// Now MFL liveScoring has week 2 for franchise.01 (syncs) and franchise.02 (manual commish: preserved).
+	next2 := f.src.Export
+	next2.LiveLineups = &leaguefeed.Lineups{
+		Week: 2,
+		Franchises: []leaguefeed.Lineup{
+			{Franchise: "0001", Starters: []playerid.PlayerID{*mustPID(t, f1p1)}},
+			{Franchise: "0002", Starters: []playerid.PlayerID{*mustPID(t, f2p2)}},
+		},
+	}
+	f.src.Export = next2
+	if _, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Week 2 live sync", Principal: "creator",
+	}); err != nil {
+		t.Fatalf("week 2 live sync failed: %v", err)
+	}
+	w2f2, ok, err := commissioner.RecordedLineupFor(f.records(t), "franchise.02", 2026, 2)
+	if err != nil || !ok || !slices.Equal(w2f2.Starters, []string{f2p1}) {
+		t.Fatalf("manual commissioner week-2 lineup was overwritten: %+v %v", w2f2, err)
+	}
+
+	// Seat owner1 on franchise.01; owner MUST be able to override the MFL-synced week-2 lineup.
+	f.exec(t, commissioner.RawCommand{
+		Command: "commish.seat.replace", Request: "seat-o1-kickoff", Reason: "Seat owner 1",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			Franchise: "franchise.01", Principal: "owner1@example.com",
+		}},
+	}, "creator", facts)
+	f.exec(t, commissioner.RawCommand{
+		Command: commissioner.LineupSet, Request: "owner-w2-after-sync", Reason: "Owner changes starter",
+		Effective: "now", Visibility: "private",
+		Args: commissioner.RawArgs{Lineup: &commissioner.RawLineupChange{
+			Season: 2026, Week: 2, Franchise: "franchise.01", Starters: []string{f1p2},
+		}},
+	}, "owner1@example.com", facts)
+
+	// Subsequent refresh keeps owner's week 2 lineup.
+	next3 := f.src.Export
+	next3.LiveLineups = &leaguefeed.Lineups{
+		Week: 2,
+		Franchises: []leaguefeed.Lineup{
+			{Franchise: "0001", Starters: []playerid.PlayerID{*mustPID(t, f1p1)}},
+		},
+	}
+	f.src.Export = next3
+	if _, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "After owner edit", Principal: "creator",
+	}); err != nil {
+		t.Fatalf("refresh after owner edit failed: %v", err)
+	}
+	w2f1, ok, err := commissioner.RecordedLineupFor(f.records(t), "franchise.01", 2026, 2)
+	if err != nil || !ok || w2f1.Corrected || !slices.Equal(w2f1.Starters, []string{f1p2}) {
+		t.Fatalf("owner lineup after sync was not preserved: %+v %v", w2f1, err)
+	}
+}
+
+func TestRefreshRejectsWrongMFLLeagueAndResolvesEmptyMFLLeague(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Identity league", migrationtest.Specs()["8 teams"])
+	f := newRefreshFixture(t, export, nil)
+
+	// Wrong MFL league ID (same franchise count) must be refused.
+	if _, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: "99999", League: f.league, Reason: "Wrong MFL", Principal: "creator",
+	}); err == nil {
+		t.Fatal("accepted refresh with mismatched MFLLeague")
+	}
+
+	// Empty MFLLeague resolves from ReferenceLeague(records) and succeeds.
+	report, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: "", League: f.league, Reason: "Resolve MFL", Principal: "creator", DryRun: true,
+	})
+	if err != nil || report.MFLLeague != export.LeagueID {
+		t.Fatalf("empty MFLLeague did not resolve to %s: report=%+v err=%v", export.LeagueID, report, err)
+	}
+}
+
+func TestRefreshRemovesOrphanInAppCutDeadMoney(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Cut dead money league", migrationtest.Specs()["8 teams"])
+	facts := nativecheck.Facts{}
+	for _, r := range export.Rosters {
+		facts[r.Player] = nativecheck.PlayerFacts{Name: "Player " + r.Player, Position: leaguerules.WR}
+	}
+	f := newRefreshFixture(t, export, facts)
+
+	// Enable waivers window and cut rules so an in-app RosterCut can be recorded.
+	for _, rule := range [][2]string{
+		{"cap.enforcement", `"hard"`},
+		{"cap.quantum", `100000`},
+		{"calendar.timezone", `"UTC"`},
+		{"contracts.flatSalaries", `true`},
+		{"contracts.deadCap", `5000`},
+		{"contracts.restructuredDeadCap", `10000`},
+		{"contracts.claimClearsDeadCap", `false`},
+		{"waivers.trigger", `"cut"`},
+		{"waivers.duration", `86400000000000`},
+		{"waivers.method", `"reverse_standings"`},
+	} {
+		f.exec(t, commissioner.RawCommand{
+			Command: commissioner.RulesSet, Request: "cut-rule-" + rule[0], Reason: "Set rule",
+			Effective: "now", Visibility: "league",
+			Args: commissioner.RawArgs{Field: rule[0], Value: json.RawMessage(rule[1])},
+		}, "creator", facts)
+	}
+	f.exec(t, commissioner.RawCommand{
+		Command: commissioner.WindowSet, Request: "open-waivers", Reason: "Open waivers",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Window: &commissioner.RawWindowArgs{
+			ID: "waivers", Start: &commissioner.RawDate{Month: 1, Day: 1},
+			End: &commissioner.RawDate{Month: 12, Day: 31}, Opens: []leaguerules.Action{"cut"},
+		}},
+	}, "creator", facts)
+	f.exec(t, commissioner.RawCommand{
+		Command: "commish.seat.replace", Request: "seat-cut-1", Reason: "Seat owner 1",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{
+			Franchise: "franchise.01", Principal: "o1@example.com",
+		}},
+	}, "creator", facts)
+
+	// Record a real server-only CapAdjust (must survive) and an in-app RosterCut (dead money must NOT survive).
+	serverAmt := domain.Money(1000000)
+	capAdj := f.exec(t, commissioner.RawCommand{
+		Command: commissioner.CapAdjust, Request: "keep-cap-adj", Reason: "Server fine",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Override: &commissioner.RawNativeOverride{
+			Franchise: "franchise.01", Season: 2026, Amount: &serverAmt,
+		}},
+	}, "creator", facts)
+	cutPlayer := export.Rosters[0].Player
+	cutReceipt := f.exec(t, commissioner.RawCommand{
+		Command: commissioner.RosterCut, Request: "in-app-cut", Reason: "Test cut",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+			Franchise: "franchise.01", Player: cutPlayer,
+		}},
+	}, "o1@example.com", facts)
+
+	// Refresh against unchanged MFL: restores cutPlayer and MUST remove the orphan cut dead-money charge.
+	if _, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Restore from MFL", Principal: "creator",
+	}); err != nil {
+		t.Fatalf("refresh after in-app cut failed: %v", err)
+	}
+	app, err := leaguemigration.ReadApp(f.league, f.records(t), f.now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var hasCapAdj, hasCutDead bool
+	for _, a := range app.Snapshot.Adjustments {
+		if a.ID == capAdj.Entry {
+			hasCapAdj = true
+		}
+		if a.ID == cutReceipt.Entry {
+			hasCutDead = true
+		}
+	}
+	if !hasCapAdj {
+		t.Fatal("server CapAdjust was dropped")
+	}
+	if hasCutDead {
+		t.Fatal("orphan in-app RosterCut dead-money charge was retained after refresh")
+	}
+}
+
+func TestRefreshRejectsUnauthorizedPrincipalOnDryRunAndNoOp(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Auth league", migrationtest.Specs()["8 teams"])
+	f := newRefreshFixture(t, export, nil)
+
+	for _, principal := range []string{"", "outsider@example.com"} {
+		for _, dryRun := range []bool{true, false} {
+			if _, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+				MFLLeague: export.LeagueID, League: f.league,
+				Reason: "Unauthorized", Principal: principal, DryRun: dryRun,
+			}); err == nil {
+				t.Fatalf("accepted principal=%q dryRun=%t", principal, dryRun)
+			}
+		}
+	}
+}
+
+func TestRefreshReplaysTransactionBetweenMirrorFetchAndPriorRefresh(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Tx window league", migrationtest.Specs()["8 teams"])
+	f := newRefreshFixture(t, export, nil)
+
+	// First refresh runs at f.now (say 12:00) with a contract edit, recording an mfl-refresh.* entry at 12:00.
+	first := f.src.Export
+	first.Rosters = slices.Clone(export.Rosters)
+	first.Rosters[1].Salary = "5.55"
+	f.src.Export = first
+	if _, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "First refresh", Principal: "creator",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Next mirror arrives later (13:00), containing an unseen MFL transaction that occurred at 11:30
+	// (after RosterAt, BEFORE the 12:00 server refresh RecordedAt).
+	txTime := f.now.Add(-30 * time.Minute)
+	f.now = f.now.Add(time.Hour)
+	dropped := first.Rosters[0]
+	second := first
+	second.Players = map[string]string{}
+	for k, v := range first.Players {
+		second.Players[k] = v
+	}
+	second.Players["9920"] = "Missed Window Pickup"
+	rosters := slices.Clone(first.Rosters[1:])
+	rosters = append(rosters, mflsource.Rostered{
+		Franchise: dropped.Franchise, Player: "9920", Status: "ROSTER",
+		Salary: "2.00", ContractYear: "2028", ContractStatus: "UFA",
+	})
+	second.Rosters = rosters
+	txJSON := `{"transactions":{"transaction":[{"type":"FREE_AGENT","franchise":"` + dropped.Franchise +
+		`","timestamp":"` + jsonNumber(txTime.Unix()) + `","transaction":"9920,|` + dropped.Player + `,"}]}}`
+	parsed, err := transactions.Parse([]byte(txJSON))
+	if err != nil {
+		t.Fatal(err)
+	}
+	second.Transactions = &parsed
+	f.src.Export = second
+
+	report, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Second refresh", Principal: "creator",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Summary.Transactions != 1 {
+		t.Fatalf("unseen transaction before prior refresh RecordedAt was skipped: %+v", report.Summary)
+	}
+}
+
+func TestRefreshMergeRecordedResultsPreservesEarlierWeeksOnAdvance(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Merge results league", migrationtest.Specs()["8 teams"])
+	var err error
+	export.Schedule, err = leagueschedule.Parse([]byte(`{"schedule":{"weeklySchedule":[` +
+		`{"week":"1","matchup":{"franchise":[` +
+		`{"id":"0001","isHome":"1","score":"105.25"},{"id":"0002","isHome":"0","score":"99.00"}]}},` +
+		`{"week":"2","matchup":{"franchise":[` +
+		`{"id":"0001","isHome":"1","score":""},{"id":"0002","isHome":"0","score":""}]}}` +
+		`]}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	export.Results, err = weeklyresults.Parse([]byte(`{"allWeeklyResults":{"weeklyResults":[` +
+		`{"week":"1","matchup":{"regularSeason":"1","franchise":[` +
+		`{"id":"0001","isHome":"1","score":"105.25","result":"W"},` +
+		`{"id":"0002","isHome":"0","score":"99.00","result":"L"}]}}` +
+		`]}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := newRefreshFixture(t, export, nil)
+
+	// Incoming feed advances CutoverWeek to 3, but only carries week 2 (omitting week 1).
+	next := f.src.Export
+	next.Results = []leaguefeed.WeekResult{{
+		Week: 2,
+		Games: []leaguefeed.Game{{
+			Regular: true,
+			Home:    leaguefeed.Side{Franchise: "0001", Scored: true, Points: 11200, Result: "W"},
+			Away:    leaguefeed.Side{Franchise: "0002", Scored: true, Points: 10100, Result: "L"},
+		}},
+	}}
+	f.src.Export = next
+
+	if _, err := f.svc.Refresh(t.Context(), leaguemigration.RefreshRequest{
+		MFLLeague: export.LeagueID, League: f.league, Reason: "Advance partial feed", Principal: "creator",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	held := commissioner.RecordedResults(f.records(t), 2026)
+	if held == nil || held.CutoverWeek != 3 || len(held.Teams) != 4 {
+		t.Fatalf("earlier week 1 results were lost when cutover advanced: %+v", held)
+	}
 }

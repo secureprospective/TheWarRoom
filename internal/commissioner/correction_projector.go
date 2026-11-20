@@ -32,7 +32,9 @@ func applyAssetCorrection(seed *RawNativeSnapshot, contracts map[string]NativePl
 	return applyRosterCorrection(seed, contracts, side, index, r)
 }
 
-func applyRosterCorrection(seed *RawNativeSnapshot, contracts map[string]NativePlayer, side string, index int, r Record) error {
+func applyRosterCorrection(
+	seed *RawNativeSnapshot, contracts map[string]NativePlayer, side string, index int, r Record,
+) error {
 	c := r.Command.Args.Correction
 	if !slices.ContainsFunc(seed.Franchises, func(f NativeFranchise) bool { return f.ID == c.Franchise }) {
 		return fmt.Errorf("choose a franchise in this app league")
@@ -128,7 +130,8 @@ func correctPick(seed *RawNativeSnapshot, r Record) error {
 		return correctHistoricalPick(seed, c)
 	}
 	idx := slices.IndexFunc(seed.Picks, func(p NativePick) bool {
-		return p.Season == c.Pick.Season && p.Round == c.Pick.Round && p.Original == c.Pick.Original && p.Slot == c.Pick.Slot
+		return p.Season == c.Pick.Season && p.Round == c.Pick.Round &&
+			p.Original == c.Pick.Original && p.Slot == c.Pick.Slot
 	})
 	if c.Pick.Add {
 		return addCorrectedPick(seed, idx, r)
@@ -148,7 +151,10 @@ func addCorrectedPick(seed *RawNativeSnapshot, existing int, r Record) error {
 		return fmt.Errorf("this draft pick is already recorded")
 	}
 	c := r.Command.Args.Correction
-	if c.Pick.Original != "" && !slices.ContainsFunc(seed.Franchises, func(f NativeFranchise) bool { return f.ID == c.Pick.Original }) {
+	hasOrig := slices.ContainsFunc(seed.Franchises, func(f NativeFranchise) bool {
+		return f.ID == c.Pick.Original
+	})
+	if c.Pick.Original != "" && !hasOrig {
 		return fmt.Errorf("choose an original franchise in this league")
 	}
 	seed.Picks = append(seed.Picks, NativePick{

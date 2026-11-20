@@ -83,7 +83,9 @@ type ExceptionScope struct {
 }
 
 func correctionCommand(command string) bool {
-	return slices.Contains([]string{CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException}, command)
+	return slices.Contains([]string{
+		CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException,
+	}, command)
 }
 
 func decodeCorrection(a RawArgs, command string) (RawCorrection, error) {
@@ -113,7 +115,8 @@ func (r RawCorrection) Validate(command string) error {
 		// The franchise names whose copy is meant; a league with a player pool per side requires it.
 		expected.Player, expected.Via, expected.Franchise = r.Player, r.Via, r.Franchise
 		if !slices.Contains([]string{"held", "draft", "waiver", "trade", "free_agent", "commissioner"}, r.Via) {
-			return fmt.Errorf("choose how the player was acquired: held, draft, waiver, trade, free_agent or commissioner")
+			return fmt.Errorf(
+				"choose how the player was acquired: held, draft, waiver, trade, free_agent or commissioner")
 		}
 	case CorrectPick:
 		expected.Pick, expected.Owner, expected.History = r.Pick, r.Owner, r.History
@@ -153,7 +156,8 @@ func (r RawCorrection) validateRoster() (RawCorrection, error) {
 		expected.Player = r.Player
 	case "status":
 		expected.Player, expected.Status = r.Player, r.Status
-		if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, r.Status) {
+		statuses := []domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}
+		if !slices.Contains(statuses, r.Status) {
 			return RawCorrection{}, fmt.Errorf("choose active roster, injured reserve or taxi")
 		}
 	case "contract":
@@ -168,7 +172,11 @@ func (r RawCorrection) validateRoster() (RawCorrection, error) {
 		if err := r.validateCharge(); err != nil {
 			return RawCorrection{}, err
 		}
-		expected.Charge = r.Charge
+		if r.Action == "remove_adjustment" {
+			expected.Charge = &NativeCharge{ID: r.Charge.ID, Franchise: r.Franchise}
+		} else {
+			expected.Charge = r.Charge
+		}
 	default:
 		return RawCorrection{}, fmt.Errorf("choose a franchise and whether to add or remove the player")
 	}
@@ -182,7 +190,8 @@ func (r RawCorrection) validateCharge() error {
 	if r.Action == "remove_adjustment" {
 		return nil
 	}
-	if (r.Charge.Kind != "" && r.Charge.Kind != deadMoney) || r.Charge.Season < 0 || r.Charge.Season > lastSeason {
+	badKind := r.Charge.Kind != "" && r.Charge.Kind != deadMoney
+	if badKind || r.Charge.Season < 0 || r.Charge.Season > lastSeason {
 		return fmt.Errorf("a corrected salary adjustment has an invalid kind or season")
 	}
 	return nil
@@ -283,7 +292,10 @@ func checkExceptionScope(c RawCorrection, records []Record, snapshot *RawNativeS
 			return fmt.Errorf("choose a player on that franchise's recorded roster")
 		}
 	case c.Scope.Franchise != "":
-		if !slices.ContainsFunc(snapshot.Franchises, func(f NativeFranchise) bool { return f.ID == c.Scope.Franchise }) {
+		hasFranchise := slices.ContainsFunc(snapshot.Franchises, func(f NativeFranchise) bool {
+			return f.ID == c.Scope.Franchise
+		})
+		if !hasFranchise {
 			return fmt.Errorf("choose a franchise in this app league")
 		}
 	case c.Scope.Player != "":
@@ -313,8 +325,8 @@ func (r RawCorrection) validatePick() error {
 }
 
 func (r RawCorrection) validatePickIdentity() error {
-	if r.Pick == nil || r.Pick.Season < 1920 || r.Pick.Season > 9999 || r.Pick.Round < 1 ||
-		!strings.HasPrefix(r.Owner, "franchise.") {
+	if r.Pick == nil || r.Pick.Season < 1920 || r.Pick.Season > 9999 ||
+		r.Pick.Round < 1 || r.Pick.Round > 100 || !strings.HasPrefix(r.Owner, "franchise.") {
 		return fmt.Errorf("choose the draft season, round, pick and corrected owner")
 	}
 	if r.Pick.Original == "" {

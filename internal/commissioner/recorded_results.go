@@ -63,7 +63,9 @@ func RecordedResults(records []Record, season int) *RawRecordedResults {
 	return nil
 }
 
-func recordedWeekScore(records []Record, seat NativeDirectorySeat, season, week int) (FranchiseWeekScore, bool) {
+func recordedWeekScore(
+	records []Record, seat NativeDirectorySeat, season, week int,
+) (FranchiseWeekScore, bool) {
 	held := RecordedResults(records, season)
 	if held == nil || week >= held.CutoverWeek {
 		return FranchiseWeekScore{}, false
@@ -75,7 +77,8 @@ func recordedWeekScore(records []Record, seat NativeDirectorySeat, season, week 
 		if team.Franchise == seat.Franchise && team.Week == week {
 			points := team.Points
 			out.Status, out.Points, out.RecordedResult = "Complete", &points, team.Result
-			out.Words = fmt.Sprintf("%s scored %s points as recorded before cutover", seat.Name, scorePointsWords(points))
+			out.Words = fmt.Sprintf(
+				"%s scored %s points as recorded before cutover", seat.Name, scorePointsWords(points))
 			return out, true
 		}
 	}
@@ -110,7 +113,8 @@ func checkRecordedAppend(held RawRecordedResults, records []Record) error {
 	if held.Season != rules.Season {
 		return fmt.Errorf("recorded results must match the current season")
 	}
-	if previous := RecordedResults(records, held.Season); previous != nil && held.CutoverWeek < previous.CutoverWeek {
+	previous := RecordedResults(records, held.Season)
+	if previous != nil && held.CutoverWeek < previous.CutoverWeek {
 		return fmt.Errorf("the recorded scoring boundary cannot move backwards")
 	}
 	franchises := map[string]bool{}
@@ -138,6 +142,7 @@ func applyRecordedVerdict(game *NativeGame, home, away string) bool {
 		return false
 	}
 	game.Words = fmt.Sprintf("%s %s, %s %s, as recorded before cutover (%s–%s points)",
-		game.HomeName, home, game.AwayName, away, scorePointsWords(*game.HomePoints), scorePointsWords(*game.AwayPoints))
+		game.HomeName, home, game.AwayName, away,
+		scorePointsWords(*game.HomePoints), scorePointsWords(*game.AwayPoints))
 	return true
 }

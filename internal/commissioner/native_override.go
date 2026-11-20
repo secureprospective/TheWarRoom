@@ -80,7 +80,8 @@ func (r RawNativeOverride) validateTarget(command string) error {
 func (r RawNativeOverride) validateChange(command string) error {
 	switch command {
 	case ContractEdit:
-		if r.Years == nil || *r.Years < 1 || *r.Years > 9999 || r.Salary == nil || *r.Salary < 0 || r.Amount != nil {
+		badYears := r.Years == nil || *r.Years < 1 || *r.Years > 9999
+		if badYears || r.Salary == nil || *r.Salary < 0 || r.Amount != nil {
 			return fmt.Errorf("give a positive contract length and a nonnegative salary in cents")
 		}
 	case CapAdjust:
@@ -139,8 +140,8 @@ func OpenTrades(league string, records []Record, now time.Time) ([]TradeState, e
 	return out, nil
 }
 
-// PendingTradeCapCheck says whether a contract or cap correction would change the money in a trade still waiting
-// for acceptance, review or an appeal ruling. That trade was judged on the old figures, so it must be settled first.
+// PendingTradeCapCheck says whether a contract or cap correction would change the money in a trade waiting
+// for acceptance, review or an appeal ruling. That trade was judged on the old figures, so settle it first.
 func PendingTradeCapCheck(raw RawCommand, records []Record, now time.Time) (bool, string) {
 	o := raw.Args.Override
 	if o == nil || len(records) == 0 {
