@@ -26,6 +26,9 @@ import { countdown } from '../clock/urgency';
 import { connectClock } from '../clock/ticker';
 import './hq.css';
 import { HQLineupV3, HQTabs, TeamPick } from '../v3/HQLineupV3';
+import { HQContractsV3 } from '../v3/HQContractsV3';
+import { BDrawer } from '../v3/pulseDrawers';
+import { ContractDecisionList } from './HQPanels';
 import type { ReactNode } from 'react';
 
 export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded,
@@ -40,7 +43,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   const [localTab, setLocalTab] = useState<HQTab>('lineup-and-roster');
   const tab = activeTab ?? localTab;
   const setTab = navigate ?? setLocalTab;
-  const [drawer, setDrawer] = useState<'ir' | 'taxi' | 'whatif'>();
+  const [drawer, setDrawer] = useState<'ir' | 'taxi' | 'whatif' | 'decide'>();
   const [release, setRelease] = useState<string>();
   const [selected, select] = useState<string>();
   const [revision, refresh] = useState(0);
@@ -93,7 +96,14 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
     {release && <HQRelease native id={release} mine={mine} snapshot={snapshot} activeLimit={settings.active}
       cut={cut?.player === release ? cut : undefined} beforeRoom={runway?.[0]?.room}
-      starter={lineup?.starters.some(p => p.id === release)} close={() => setRelease(undefined)} />}</>;
+      starter={lineup?.starters.some(p => p.id === release)} close={() => setRelease(undefined)} />}
+    {v3 && drawer === 'whatif' && <HQNativeWhatIf snapshot={snapshot} league={league} mine={mine}
+      chosen={chosen} select={select} port={port} close={() => setDrawer(undefined)} />}
+    {v3 && drawer === 'decide' && <BDrawer title="Contract decisions" close={() => setDrawer(undefined)}
+      sub={`priced by league rules · season ${reading.contractDecisions?.season
+        ?? snapshot.league.value.season}`}>
+      <ContractDecisionList reading={reading.contractDecisions} canDecide={editor.canEdit}
+        decide={selection => { setDrawer(undefined); reviewDecision(selection); }} /></BDrawer>}</>;
   if (v3) return <>
     <HQTabs tab={tab} navigate={setTab} badge={v3.badge} kind={v3.kind} moves={moves.length}
       pick={v3.pickTeam && <TeamPick mine={mine} pick={v3.pickTeam}
@@ -102,16 +112,16 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       commissioner you can open and run any team in this league.</div></div></div>
     : tab === 'lineup-and-roster' ? <HQLineupV3 reading={reading} mine={mine} name={teamName} editor={editor}
       select={select} badge={v3.badge} league={league} port={port} now={Date.now()} openGame={openGame} />
-      : <div className="wbody hq-v10" style={{ overflow: 'auto' }}>{tab === 'contracts-and-cap'
-        ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway} positions={positions}
-          annual={reading.contracts} values={reading.values} decisions={reading.decisions}
-          contractDecisions={reading.contractDecisions} decisionReady={editor.canEdit} decide={reviewDecision}
-          cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player, cut.deadNow]])}
-          select={id => { select(id); setRelease(id); }} />
-        : <HQMoves native snapshot={snapshot} moves={moves} available={reading.moves !== undefined}
+      : tab === 'contracts-and-cap' ? <HQContractsV3 reading={reading} mine={mine} badge={v3.badge}
+        select={select} chosen={selected} whatIf={() => setDrawer('whatif')}
+        release={canManage ? () => { if (selected) setRelease(selected); } : undefined}
+        decide={canManage && reading.contractDecisions ? () => setDrawer('decide') : undefined} />
+      : <div className="wbody hq-v10" style={{ overflow: 'auto' }}>
+        <HQMoves native snapshot={snapshot} moves={moves}
+        available={reading.moves !== undefined}
           reason={reading.moveReason} history={<HQMoveHistory
             key={JSON.stringify([league, mine, snapshot.league.value.season])}
-            league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} />}</div>}
+            league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} /></div>}
     {others}</>;
   const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab} navigate={setTab}
     week={reading.week}
