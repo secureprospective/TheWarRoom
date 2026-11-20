@@ -72,6 +72,7 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 ## Where to look
 
 - `SYSTEM_MAP.md` — the feature directory: where each feature lives and where new code goes. Check before writing.
+- Product terms: GLOSSARY.md. Decisions: docs/adr/.
 - `docs/architecture/system-narrative.md` — what exists at length: layers, IPC, data, services.
 - `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` — the governing plan; the newest `docs/RESUME-*.md` — latest state.
 - `docs/` — engine spec, rubrics, data layer, UI, backend architecture.
