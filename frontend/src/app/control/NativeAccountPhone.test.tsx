@@ -104,3 +104,46 @@ it('lands on the new phone app after sign-in and shows the ported Today tab', as
   expect(fetcher.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(true);
   expect(host.querySelector('.phone-app')).toBeNull();
 });
+
+it('says No team of yours in the Team tab when the account holds no franchise', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  setPhoneViewport(390);
+  goDescriptor = Object.getOwnPropertyDescriptor(window, 'go');
+  Reflect.deleteProperty(window, 'go');
+  await vi.resetModules();
+  const { default: NativeAccount } = await import('./NativeAccount');
+  const admission = { protocol: 1, admission: { league: 'native.test', name: 'Test League',
+    franchise: '', franchiseName: '', role: 'Commissioner', seats: [] },
+    leagues: [{ id: 'native.test', name: 'Test League', role: 'Commissioner', franchise: '',
+      franchiseName: '' }] };
+  const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url === '/app/session' && init?.method === 'POST')
+      return new Response(JSON.stringify(admission), { status: 200,
+        headers: { 'Content-Type': 'application/json' } });
+    if (url === '/app/session' && init?.method === 'DELETE')
+      return new Response(null, { status: 204 });
+    if (url === '/app/session')
+      return new Response(JSON.stringify(admission), { status: 200,
+        headers: { 'Content-Type': 'application/json' } });
+    return new Response('not found', { status: 404 });
+  });
+  vi.stubGlobal('fetch', fetcher);
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  await act(async () => root!.render(<NativeAccount initial={initial} />));
+  const username = host.querySelector('input[autocomplete="username"]') as HTMLInputElement;
+  const password = host.querySelector('input[autocomplete="current-password"]') as HTMLInputElement;
+  setValue(username, 'owner'); setValue(password, 'private-password');
+  const form = password.form!;
+  await act(async () => form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  await act(async () => {
+    for (let attempt = 0; attempt < 80 && !host!.querySelector('.phone-app'); attempt++)
+      await new Promise(resolve => setTimeout(resolve, 10));
+  });
+
+  expect(host.querySelector('.phone-app')).not.toBeNull();
+  const team = [...host.querySelectorAll('.phone-app__tab')]
+    .find(button => button.textContent?.includes('Team')) as HTMLButtonElement;
+  await act(async () => team.click());
+  expect(host.querySelector('.phone-app__slot')?.textContent)
+    .toContain('No team of yours in this league');
+});

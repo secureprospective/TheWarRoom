@@ -243,7 +243,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           }} /></Suspense>,
         team: admission?.franchise
           ? <TeamTab league={admission.league} mine={admission.franchise}
-            onByes={badge.team} /> : undefined,
+            onByes={badge.team} />
+          : <p className="team-tab__note" role="status">No team of yours in this league.</p>,
         live: liveTab,
         moves: <Suspense fallback={<p role="status">Opening Moves…</p>}>
           <MovesTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)} />
