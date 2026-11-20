@@ -1,3 +1,41 @@
+## §0b — Overnight run b9walk, Thu 11-19 evening (Claudebox head brain) — compact-safe 10:50 PM CST
+
+**Doing:** finish Bundle 9 (bundle/b9) phone port against mobile mock v1, on lab CT 260, walked on the S8. Run dir: Beelink `~/fleet/runs/overnight-b9walk-1120/` (PLAN.md, REPORT.md log, briefs/, s8walk/RESULT.md). Tracker: `~/Downloads/twr-usable-week-plan.html` via `~/fleet/bin/twr-tracker.py`.
+
+**Done lines**
+1. Lab runs bundle/b9 head incl. new PRs — NOT MET (lab on 578ac110b; #435-437 not yet merged/deployed).
+2. Player-row PR merged into bundle/b9 — NOT MET (#435 reviewed, CI pending).
+3. S8 walk 5 tabs x owner+commissioner — PARTLY: owner walked (12 bugs, s8walk/RESULT.md); commissioner NOT walked (Haiku didn't use `~/fleet/runs/pulse-lab4/private/commissioner.json`).
+4. Bills starters cause — see Current bug.
+5. REPORT.md with Needs Christopher — kept current.
+
+**Agents (Christopher's rulings tonight):** NO new Luna. DeepSeek free is exhausted ~20h (I ran 5 at once — never more than one short job). Use **Tom Haiku** (`claude -p --model haiku` on Beelink) with **tightly scoped briefs**: exact files, exact change, one test command, exact commit/push/PR commands, "fail twice → stop". Haiku env needs `PATH=$HOME/go/bin:$HOME/.local/bin:/usr/local/go/bin:$PATH` (pre-push needs go + wails) and a pre-built `frontend/dist` (`cd frontend && pnpm install --frozen-lockfile && pnpm build`). Line limit 110 chars (controls.test.ts).
+Phone target = mobile mock v1 ONLY (never desktop v3). Wiring map: `~/fleet/runs/twr-mobile-stubs-1119/data/all.txt` (also PR #409 docs/ui/mobile-v1, unmerged) — extend the owner each row names.
+
+**Status**
+| Item | State |
+|---|---|
+| Lab CT 260 | 578ac110b release 11, twr-status clean, history 3,399. DB backup `/var/lib/twr/manual-1119-nfl-refresh` (43 MB, 9:53 PM). |
+| PR #435 player rows (team, kickoff, AVG) | reviewed OK (server: average counts only scored weeks); Haiku pushed fix to use `useHostedGames`; CI pending |
+| PR #436 Live header one line 360px | reviewed OK, CI pending |
+| PR #437 League: drop filter chips, playoff note | reviewed OK, CI pending |
+| Deferred | Today per-item snooze clock (design call; mock = commissioner jobs), Live field graphic (big), Team fixes (AVG label B-6, banner B-7, My Picks 44px B-8), Moves (Rising filter, trades count, waiver time) — Team/Moves after #435 merges |
+
+**Current bug (lineup):** lab server.log: `hosted league lineup.read read refused: ... This lineup is private to its team and the commissioner.` (internal/commissioner/lineup_reading.go:177-189; seat owner from governance seat people_reading.go:200; app's `mine` = league.franchise). Seen only with **stress-test owner #1 of 32** (`stress-owners.json`). Hypothesis: lab test-account artefact (Saturday cleanup unseats them), NOT proven a product bug. Check: walk Team with Christopher's own account / commissioner.
+**Refuted — do not retest:** (1) Bills "data gap / NFL dates missing wk1-5" — `twr-server refresh-nfl-schedule` says all 17 weeks dated; week resolves (live stats wk 9-11). (2) Re-import needed — no.
+
+**In flight at compaction:** none running except Claudebox watchers (CI watcher for #435-437; 50-min checker). Check CI: `ssh chris@192.168.1.191 'export PATH=$HOME/.local/bin:$PATH; cd ~/work/TheWarRoom; gh pr checks 435; gh pr checks 436; gh pr checks 437'`.
+
+**Next actions**
+1. When CI green: merge #435, #436, #437 into bundle/b9 (head brain authorised for bundle only).
+2. Redeploy lab: same recipe as `~/fleet/briefs/alpha010/b11lab3.md` (release 11, TUF +1) — as a scoped Haiku job or by hand. Lab commands: `bash ~/fleet/runs/overnight-b9walk-1120/labrun.sh <script>` (stdin into CT 260; never inline `pct exec ... sh -c` — it ran on the host once).
+3. Re-walk S8 (owner + commissioner) with a scoped Haiku brief; Team rows decide the lineup question.
+4. Scoped Haiku jobs for Team and Moves bugs (from s8walk/RESULT.md B-6..B-10).
+5. Fix tracker template: "Running now" also lists review/stuck cards.
+
+**Needs Christopher:** Saturday lab backup + cleanup (approved plan); Bundle 9 → main sign-off (command when all lanes in).
+**Process lessons:** never `kill $(pgrep -f X)` over ssh (killed my own shell); watchers must check process liveness without matching their own ssh command.
+
 ## §0a STATE AT ~9:30 PM CST THU 11-19 — HEAD BRAIN MOVES TO CLAUDEBOX (Tom out of weekly tokens)
 - bundle/b9 head 578ac110b. Merged tonight: #428 frame fix, #429 tab bar+Today, #430 League, #431 Team, #432 Moves, #433 Live, #434 Today pt2 (all CI green). All five tabs ported toward mock v1 (target: ~/Downloads/TheWarRoom-mobile-mock-v1.html).
 - Lab CT 260: b64fe42bf (frame fix) live, release 11, TUF v11; S8 shows full-screen app (~/fleet/runs/phone-proof-1119/s8-after-428.png).
