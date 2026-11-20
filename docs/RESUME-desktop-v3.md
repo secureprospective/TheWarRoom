@@ -1,3 +1,31 @@
+# ALIGNMENT CONVERSATION 11-20 ~4:00-5:40 PM CT (Christopher's rulings — do not relitigate)
+
+**Alpha (scope frozen; Sunday 11-22 kickoff is a target, not a hard deadline)**
+- Order: MFL sync runs 2-3 -> lab dry run (backup first) + Arizona roster check -> T667 error codes -> T668 PWA auto-update + hot fixes -> Christopher walks desktop v3 -> ONE alpha merge bundle (desktop v3 + glossary + MFL sync + T667 + T668), one sign-off -> lab release.
+- Claudebox drafts a one-page alpha checklist (league, owners, screens, actions) for his approval.
+- T667: every error shows a short code + Copy button (code, time, screen, app version); server logs same code; "Send to commissioner" files it as a problem report in the Feedback tab. He does most testing: make it easy for him = easy for everyone.
+- T668 (BLOCKER): frontend/pwa/sw.js cache name hardcoded `twr-static-shell-v1`, assets cache-first -> fixes never reach phones. Fix: build stamps version, app checks on open/focus, swaps + "Updated" note, server minimum version. Hot-fix lane: production still needs his sign-off, made one-tap (fix + plain what-it-fixes + one command).
+
+**How we work** (`~/fleet/AGENTS.md` "How we build together", loose habits not gates)
+- Christopher = strategic partner (real world, what people need); cannot code. AI = tactical partner / logic engine.
+- Keep model creativity; don't stop on small stuff; pitch ideas he wouldn't know (engineering AND how real people operate) as "would this work?" with a recommendation. Talk in behaviour; show results.
+- Memory: feedback_feature_loop_1120.md.
+
+**Post-alpha: the realignment session** (memory project_twr_realign_session_1120.md)
+1. Clean workspace: main checkout parked on session/league-history-pwa with 595 broken files; 136 worktrees (22 GB), 19 merged; 353 branches; 21 RESUME docs; 3 front doors (README/North_Star/HANDOFF).
+2. De-slop code from early weak models. 3. Remove old assumptions (legacy desktop mode, old Control Room). 4. Realign code/docs/glossary to one direction. Start with a grilling session on real-world direction.
+- Codebase facts: ~163k Go + 62k TS production lines, ~124k test lines; SYSTEM_MAP.md good but dense, header says current as of 10-20.
+
+**Live tracker** (replaces ~/Downloads/twr-usable-week-plan.html; memory reference_fleet_tracker_1120.md)
+- http://192.168.1.222:8790/ on Hermes (fleet-tracker.service + fleet-tracker-collect.timer). Facts every minute, zero tokens. My file: /home/hermes/fleet/tracker/data/plan.json, updated at start/finish/blocked/direction change only.
+- Every update: read data/answers.jsonl FIRST, act, list in plan.json "seen".
+- v2 in flight (Hydrogen, run tracker2-1120): War Room dark moulded-rubber look, collapsible status groups, interactive agent track. Deploy: tar ~/fleet/tracker Beelink -> Hermes ~/fleet/tracker, keep data/, restart fleet-tracker.service.
+
+**In flight at 5:40 PM**
+- MFL run 2 (league-refresh command, Neon High): ~/fleet/runs/mflsync-b2-1120. Then Argon review -> Neon Medium fix -> verify -> run 3 (mirror fetch).
+- Run 1 done: d85711676 + fix 04bcb4761 (10/10 Argon findings fixed, verified by Claudebox).
+- Go on the Beelink over ssh: export PATH=$PATH:/usr/local/go/bin.
+
 # RESUME — Desktop v3 finish (and phone v1) — updated 2026-11-20 ~09:40 CT
 
 ## NOW (read first after a restart)
