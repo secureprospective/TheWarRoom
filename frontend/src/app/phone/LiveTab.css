@@ -10,7 +10,10 @@
 .live6__head { display: flex; align-items: center; justify-content: space-between; gap: 8px;
   font: 700 10px var(--l6-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--phone-ink2);
   padding-block: 3px; }
-.live6__head > span { display: flex; }
+.live6__head { flex-wrap: nowrap; }
+.live6__head > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live6__head > span { display: flex; flex: none; align-items: center; gap: 8px; white-space: nowrap; }
+.live6__head .live6__link { min-height: 44px; }
 .live6__pad { padding: 6px 12px; }
 .live6__m { font: 10px var(--l6-mono); color: var(--phone-ink3); letter-spacing: .05em;
   text-transform: none; }

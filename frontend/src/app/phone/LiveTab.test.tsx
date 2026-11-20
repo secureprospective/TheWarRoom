@@ -116,6 +116,12 @@ describe('LiveTab', () => {
       .toContain('results.read refused');
     expect(region('League matchups')).toBe('');
   });
+  it('keeps the matchup header as one row: title, then both controls', async () => {
+    await show(async () => brief([myGameRow]));
+    const row = host!.querySelector<HTMLElement>('[aria-label="My matchup"] .live6__head')!;
+    expect(row.children[0].tagName).toBe('B');
+    expect(row.querySelectorAll(':scope > span > .live6__link')).toHaveLength(2);
+  });
   it('names starter tiles by surname, as the mock does', async () => {
     expect(surname('Patrick Mahomes')).toBe('Mahomes');
     expect(surname('Amon-Ra St. Brown')).toBe('St. Brown');
