@@ -5,7 +5,34 @@ Updated 1:15 PM CT Tue 11-17. On "we are back": do his instruction first, else s
 
 - **11-19 3:50 PM CST Christopher approved:** (1) release 11 lab deploy to CT 260 incl. migration 5 on Friday; (2) Saturday backup → cleanup → re-import → b9→main.
 
-## 0. STATE AT 3:55 PM CST THU 11-19 (Tom, after "we are back" + go)
+## 0. STATE AT 8:05 PM CST THU 11-19 (Tom)
+
+**Christopher's standing word (11-19 8 PM):** mobile mock v1 (`~/Downloads/TheWarRoom-mobile-mock-v1.html`, sha dd5740ce…0651) IS the target. A lot of time went into tuning it: make it a real thing, faithful, not "close". Every tab must match the mock at 390/430 on the real lab + S8; "shown by old screen" or placeholder is not acceptable.
+**Approvals given 11-19 3:50 PM:** (1) release 11 lab deploy — DONE; (2) Saturday backup → cleanup → re-import → b9→main (still to do).
+**Claudebox available:** Opus low + Haiku for helper work (Christopher 11-19 ~7:40 PM).
+
+### Done today (all in bundle/b9, CI green)
+#410-#427 merged: phone frame #411, tabs slot #420, Today #421, Team #422, Live #423 (mock layout, Pulse removed, field animation cut), Moves #424 (all action sheets), League #425, server lanes #412-#419, fill-in rows #426, release 11 #427. Conflicted ones merged by hand on integ branch (5844fc0b3).
+**Lab CT 260 = release 11, commit f7ad8c98e, TUF v10**, migration 5 applied, sign-in OK. Evidence ~/fleet/runs/pulse-b11lab/RESULT.md.
+
+### THE CURRENT BUG (blocks testers)
+On the lab at 390px and on the real S8 (`~/fleet/runs/phone-proof-1119/s8-now.png`, `today-390.png`): old NativeAccount page bits ("Legacy NFL" h1 + "League" button above, "Open my franchise"/"Sign out" below) render around the phone frame; frame not full-height; tab bar cut off, tabs render as bordered icon-only boxes (PhoneAppFrame.css grid/labels not winning). Data reads DO work on S8. Hypothesis: page chrome not suppressed when PhoneAppFrame active + global button/HQAct CSS overriding; caveat: unverified, helper is diagnosing.
+**In flight:** Claude helper "Fix phone frame layout on lab" (Beelink, Opus) → worktree `.worktrees/framefix`, branch session/framefix, scratch ~/scratch/framefix-1119; will open a PR into bundle/b9 and NOT deploy. On its report: review, merge via twr-batch-merge.sh, redeploy lab (brief ~/fleet/briefs/alpha010/b11lab.md recipe, release stays 11? — if the upgrade tool needs a higher release, add release 12 like #427), recheck S8 + `twr-phone-compare.mjs <tab> --width 390|430 --out ~/fleet/runs/phone-proof-1119` all five tabs.
+
+### Refuted / don't retry
+- Practice league cannot serve a signed-in browser: sign-in writes pause until R2 backups exist (cmd/twr-server/backup_hosted.go, by design). Proof = lab only. (`~/fleet/bin/twr-practice-web.sh` + `twr-practice-proxy.mjs` exist but end at that wall.)
+- Compare tool "missingLabels" counts are mock-text diffs, not failures; read the PNGs.
+- Compare tool now waits for `.phone-app` after sign-in (earlier captures were taken too early).
+
+### NEXT ACTIONS
+1. Land framefix → redeploy lab → S8 + 10 side-by-sides.
+2. Per-tab faithful-to-mock pass: list every visual/row gap per tab from the side-by-sides; dispatch fixes (Claudebox Opus low / Haiku for trivial CSS), merge, redeploy, recheck. Repeat until each tab matches.
+3. Phone walk owner + commissioner on S8 (+ iPhone if available) per ~/fleet/briefs/alpha010/phonewalk.md.
+4. Saturday (approved): backup → cleanup → re-import → b9→main (main merge still needs his live sign-off at the moment).
+**Needs Christopher:** `git push origin --delete integ/b9-tabs-1119` (guard blocked delete as force-push; harmless leftover). Review #409; rotate CT 257 keys.
+**Honest status:** all five tabs built and deployed, but NOT yet visually proven against the mock on a phone; the frame layout bug is real and open. Sunday still reachable if framefix lands tonight.
+
+## 0-prev9. (older) STATE AT 3:55 PM CST THU 11-19 (Tom, after "we are back" + go)
 **Ruling 11-19 ~2:30 PM:** Christopher gave the go on the no-GPT plan: cut field animation (G1) and phone Control Room
 from alpha; Claude helpers allowed (2 Opus now, Haiku for trivial jobs); Claudebox frees up at 7 PM CST to help.
 Phone app = faithful mobile mock v1 (proved to him: compare tool mock sha256 dd5740ce…0651 == repo zip).
