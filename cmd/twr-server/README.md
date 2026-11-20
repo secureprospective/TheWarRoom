@@ -295,6 +295,25 @@ statistics) is pinned, then the existing Capture → encrypted export → inacti
 activate path moves it. The server's copy is the only writable one. `twr-sandbox` passes
 `-football` from the pin file when it exists. Test: `go test ./internal/leagueload`.
 
+### Refresh an already-loaded league from an MFL mirror (local console, service stopped)
+
+```sh
+rc-service twr-server stop
+twr-server league-refresh -db /var/lib/twr/server.db -mirror /root/seed/history.db \
+  -league native.mfl-14432-2026 [-mfl-league 14432] [-football-pin /etc/twr/football.sha256] \
+  [-dry-run] < commissioner.json
+rc-service twr-server start
+```
+
+`league-refresh` opens the mirror read-only (`archive.Replay`: zero network calls), checks
+the commissioner's password and league role, and plans an atomic refresh batch covering
+rosters, contracts, salary adjustments, draft picks, unedited franchise names, completed MFL
+scores (advancing the MFL scoring boundary monotonically), and weekly lineups. Claimed seats,
+roles, rules, and in-app commissioner edits are never overwritten. If any in-app trade offer
+is still open, the refresh stops without writing anything and lists the open offers by team
+name. `-dry-run` changes nothing and prints the same plain-English summary counts; running
+again against the same mirror is a zero-change no-op.
+
 ### Refresh missing published NFL kickoff dates (local console, service stopped)
 
 The hosted server reads schedule dates from its pinned football evidence; restart and

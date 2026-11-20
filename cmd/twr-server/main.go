@@ -57,8 +57,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runJoinLink(ctx, args, os.Stdin, output)
 	case "reset-password":
 		return true, runResetPassword(ctx, args, os.Stdin, output)
-	case "league-load":
-		return true, runLeagueLoad(ctx, args, os.Stdin, output)
+	case "league-load", "league-refresh":
+		return true, leagueConsoleCommand(name)(ctx, args, os.Stdin, output)
 	case "stand-up":
 		return true, runStandUp(ctx, args, output)
 	case "verify-release":
@@ -232,4 +232,11 @@ func outputCommand(name string) func(context.Context, []string, io.Writer) error
 		return runPinFootball
 	}
 	return runCheckpoint
+}
+
+func leagueConsoleCommand(name string) func(context.Context, []string, io.Reader, io.Writer) error {
+	if name == "league-refresh" {
+		return runLeagueRefresh
+	}
+	return runLeagueLoad
 }
