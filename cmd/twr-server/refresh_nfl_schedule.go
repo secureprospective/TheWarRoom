@@ -104,22 +104,20 @@ func refreshNFLWeekEvidence(ctx context.Context, store *history.Store, signIns *
 	if err != nil {
 		return err
 	}
-	stale, err := refetchStaleNFLWeeks(ctx, season, time.Now().UTC(), held, fetch)
+	stale, final, err := refetchStaleNFLWeeks(ctx, season, time.Now().UTC(), held, fetch)
 	if err != nil {
 		return err
 	}
-	if len(stale) > 0 {
-		if _, err := fmt.Fprintf(output, "Re-fetched results for %d past week(s) that were not final: %s.\n", len(stale), joinWeekNumbers(stale)); err != nil {
-			return fmt.Errorf("report schedule refresh: %w", err)
-		}
+	if err := reportRefetchedWeeks(output, stale); err != nil {
+		return err
 	}
-	if len(missing) == 0 {
+	if len(missing) == 0 && len(final) == 0 {
 		if _, err := fmt.Fprintf(output, "All %d published league weeks already have NFL kickoff dates; no changes made.\n", len(expected)); err != nil {
 			return fmt.Errorf("report schedule refresh: %w", err)
 		}
 		return nil
 	}
-	next, err := store.ExtendFootballSchedule(ctx, digest, missing, time.Now().UTC())
+	next, err := store.ReviseFootballSchedule(ctx, digest, final, missing, time.Now().UTC())
 	if err != nil {
 		return fmt.Errorf("import refreshed NFL schedule: %w", err)
 	}
@@ -129,7 +127,30 @@ func refreshNFLWeekEvidence(ctx context.Context, store *history.Store, signIns *
 	if err := signIns.PinFootball(ctx, league, next); err != nil {
 		return fmt.Errorf("football evidence %s was imported, but updating league %s's pin failed: %w", next, league, err)
 	}
-	if _, err := fmt.Fprintf(output, "Added NFL kickoff dates for %d missing published week(s) in %s. League history was not changed; restart the server to load the new pin.\n", len(missing), league); err != nil {
+	return reportRevisedWeeks(output, league, final, missing)
+}
+
+func reportRefetchedWeeks(output io.Writer, stale []int) error {
+	if len(stale) > 0 {
+		if _, err := fmt.Fprintf(output, "Re-fetched results for %d past week(s) that were not final: %s.\n", len(stale), joinWeekNumbers(stale)); err != nil {
+			return fmt.Errorf("report schedule refresh: %w", err)
+		}
+	}
+	return nil
+}
+
+func reportRevisedWeeks(output io.Writer, league string, final, missing []leagueweek.Week) error {
+	if len(final) > 0 {
+		if _, err := fmt.Fprintf(output, "Updated results for %d past week(s): %s.\n", len(final), joinWeekNumbers(weekNumbers(final))); err != nil {
+			return fmt.Errorf("report schedule refresh: %w", err)
+		}
+	}
+	if len(missing) > 0 {
+		if _, err := fmt.Fprintf(output, "Added NFL kickoff dates for %d missing published week(s) in %s.\n", len(missing), league); err != nil {
+			return fmt.Errorf("report schedule refresh: %w", err)
+		}
+	}
+	if _, err := fmt.Fprint(output, "League history was not changed; restart the server to load the new pin.\n"); err != nil {
 		return fmt.Errorf("report schedule refresh: %w", err)
 	}
 	return nil
@@ -225,23 +246,54 @@ func fetchMissingNFLWeeks(ctx context.Context, season int, expected []int, held 
 }
 
 // refetchStaleNFLWeeks re-fetches each held week whose games have all kicked off but are not all
-// final, so the newest archived copy carries results. It changes no pin and extends no schedule.
-func refetchStaleNFLWeeks(ctx context.Context, season int, now time.Time, held []leagueweek.Week, fetch nflWeekFetcher) ([]int, error) {
+// final. It returns every re-fetched week number and the re-fetched weeks now fully final, which the
+// caller may pin in place of the held copy. A week still not final is reported but never returned.
+func refetchStaleNFLWeeks(ctx context.Context, season int, now time.Time, held []leagueweek.Week, fetch nflWeekFetcher) ([]int, []leagueweek.Week, error) {
 	var stale []int
+	var final []leagueweek.Week
 	var errs []error
 	for _, week := range held {
 		if !pastNotFinal(now, week) {
 			continue
 		}
 		stale = append(stale, week.Number)
-		if _, err := fetch(ctx, season, week.Number); err != nil {
+		refreshed, err := fetch(ctx, season, week.Number)
+		if err != nil {
 			errs = append(errs, fmt.Errorf("re-fetch NFL week %d: %w", week.Number, err))
+			continue
+		}
+		if refreshed.Number != week.Number {
+			errs = append(errs, fmt.Errorf("re-fetch NFL week %d: source returned week %d", week.Number, refreshed.Number))
+			continue
+		}
+		if allGamesFinal(refreshed) {
+			final = append(final, refreshed)
 		}
 	}
 	if err := errors.Join(errs...); err != nil {
-		return nil, fmt.Errorf("refresh past NFL results: %w", err)
+		return nil, nil, fmt.Errorf("refresh past NFL results: %w", err)
 	}
-	return stale, nil
+	return stale, final, nil
+}
+
+func allGamesFinal(week leagueweek.Week) bool {
+	if len(week.Games) == 0 {
+		return false
+	}
+	for _, game := range week.Games {
+		if !game.Final {
+			return false
+		}
+	}
+	return true
+}
+
+func weekNumbers(weeks []leagueweek.Week) []int {
+	numbers := make([]int, len(weeks))
+	for i, week := range weeks {
+		numbers[i] = week.Number
+	}
+	return numbers
 }
 
 // pastNotFinal holds when every game has kicked off and at least one game is not yet final.

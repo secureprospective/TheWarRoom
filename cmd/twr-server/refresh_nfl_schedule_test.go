@@ -3,6 +3,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,7 +16,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -212,6 +217,20 @@ func scheduleRefreshFixture(t *testing.T) (*twoFileHost, *history.Store, string)
 	return host, store, digest
 }
 
+// footballEvidenceWithWeeks is footballEvidence holding the given schedule week instead of week 1.
+func footballEvidenceWithWeeks(t *testing.T, name string, weeks ...leagueweek.Week) ([]byte, string) {
+	t.Helper()
+	raw := history.RawFootballEvidence{Version: 1, Season: 2026, Source: "reference move fixture", AsOf: time.Date(2026, 10, 24, 12, 0, 0, 0, time.UTC),
+		Players: map[string]history.RawFootballPlayer{"0099": {Identity: "reference.99", Facts: nativecheck.PlayerFacts{Name: name, Position: leaguerules.QB, Team: "DAL", DesignationHeld: true}}},
+		Weeks:   weeks}
+	body, err := json.Marshal(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(body)
+	return body, hex.EncodeToString(sum[:])
+}
+
 func scheduleWeek(number int, teams [2]string) leagueweek.Week {
 	return leagueweek.Week{Number: number, Games: []leagueweek.Game{{Teams: teams, Kickoff: time.Date(2026, 11, 1, 18, 0, 0, 0, time.UTC)}}}
 }
@@ -248,11 +267,114 @@ func TestRefetchStaleNFLWeeksFetchesOnlyPastWeeksNotFinal(t *testing.T) {
 		requested = append(requested, week)
 		return scheduleWeek(week, [2]string{"BUF", "MIA"}), nil
 	}
-	stale, err := refetchStaleNFLWeeks(t.Context(), 2026, now, held, fetch)
+	stale, _, err := refetchStaleNFLWeeks(t.Context(), 2026, now, held, fetch)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(requested) != 1 || requested[0] != 9 || len(stale) != 1 || stale[0] != 9 {
 		t.Fatalf("requested = %v, stale = %v", requested, stale)
+	}
+}
+
+func TestRefetchStaleNFLWeeksReturnsOnlyWeeksNowFinal(t *testing.T) {
+	now := time.Date(2026, 11, 20, 12, 0, 0, 0, time.UTC)
+	past := now.Add(-48 * time.Hour)
+	held := []leagueweek.Week{
+		{Number: 9, Games: []leagueweek.Game{{Teams: [2]string{"BUF", "MIA"}, Kickoff: past}}},
+		{Number: 8, Games: []leagueweek.Game{{Teams: [2]string{"DAL", "NYG"}, Kickoff: past}}},
+	}
+	fetch := func(_ context.Context, _, week int) (leagueweek.Week, error) {
+		if week == 8 {
+			return leagueweek.Week{Number: 8, Games: []leagueweek.Game{{Teams: [2]string{"DAL", "NYG"}, Kickoff: past}}}, nil
+		}
+		return leagueweek.Week{Number: 9, Games: []leagueweek.Game{{Teams: [2]string{"BUF", "MIA"}, Kickoff: past, Final: true}}}, nil
+	}
+	stale, final, err := refetchStaleNFLWeeks(t.Context(), 2026, now, held, fetch)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(stale) != 2 || len(final) != 1 || final[0].Number != 9 {
+		t.Fatalf("stale = %v, final = %v", stale, weekNumbers(final))
+	}
+}
+
+func TestRefreshNFLWeekEvidenceReplacesStaleWeekWhenFinal(t *testing.T) {
+	host, store, _ := scheduleRefreshFixture(t)
+	ctx := t.Context()
+	pastKickoff := time.Now().UTC().Add(-48 * time.Hour)
+	held := leagueweek.Week{Number: 1, Games: []leagueweek.Game{{Teams: [2]string{"BUF", "MIA"}, Kickoff: pastKickoff}}}
+	next := leagueweek.Week{Number: 2, Games: []leagueweek.Game{{Teams: [2]string{"KC", "LV"}, Kickoff: pastKickoff.Add(72 * time.Hour)}}}
+	body, pinned := footballEvidenceWithWeeks(t, "Schedule refresh", held, next)
+	if err := store.ImportFootball(ctx, body, pinned); err != nil {
+		t.Fatal(err)
+	}
+	if err := signInStore(host.files).PinFootball(ctx, "native.hosted", pinned); err != nil {
+		t.Fatal(err)
+	}
+	beforeEvents := commissionerEvents(t, store)
+	fetch := func(_ context.Context, _, week int) (leagueweek.Week, error) {
+		return leagueweek.Week{Number: week, Games: []leagueweek.Game{{Teams: [2]string{"BUF", "MIA"}, Kickoff: pastKickoff, Final: true}}}, nil
+	}
+	var output bytes.Buffer
+	if err := refreshNFLWeekEvidence(ctx, store, signInStore(host.files), "native.hosted", 2026, pinned, []int{1}, fetch, &output); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := signInStore(host.files).Directory(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Football == pinned {
+		t.Fatalf("league pin did not move: %+v", entries)
+	}
+	updated, err := store.LoadFootball(ctx, entries[0].Football)
+	if err != nil {
+		t.Fatal(err)
+	}
+	weeks, err := updated.ScheduleDates(ctx, 2026)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(weeks) != 2 || !weeks[0].Games[0].Final {
+		t.Fatalf("week 1 not final in new pin: %+v", weeks)
+	}
+	if lineup, ok := leagueweek.LineupWeek(pastKickoff.Add(96*time.Hour), weeks...); !ok || lineup.Number != 2 {
+		t.Fatalf("lineup after week-2 games = %d, want 2", lineup.Number)
+	}
+	if after := commissionerEvents(t, store); after != beforeEvents {
+		t.Fatalf("league events changed from %d to %d", beforeEvents, after)
+	}
+	if !strings.Contains(output.String(), "Updated results for 1 past week(s): 1.") {
+		t.Fatalf("report = %q", output.String())
+	}
+}
+
+func TestRefreshNFLWeekEvidenceKeepsPinWhenStaleWeekStillNotFinal(t *testing.T) {
+	host, store, _ := scheduleRefreshFixture(t)
+	ctx := t.Context()
+	pastKickoff := time.Now().UTC().Add(-48 * time.Hour)
+	held := leagueweek.Week{Number: 1, Games: []leagueweek.Game{{Teams: [2]string{"BUF", "MIA"}, Kickoff: pastKickoff}}}
+	body, pinned := footballEvidenceWithWeeks(t, "Schedule refresh", held)
+	if err := store.ImportFootball(ctx, body, pinned); err != nil {
+		t.Fatal(err)
+	}
+	if err := signInStore(host.files).PinFootball(ctx, "native.hosted", pinned); err != nil {
+		t.Fatal(err)
+	}
+	fetch := func(_ context.Context, _, week int) (leagueweek.Week, error) {
+		return leagueweek.Week{Number: week, Games: []leagueweek.Game{{Teams: [2]string{"BUF", "MIA"}, Kickoff: pastKickoff}}}, nil
+	}
+	var output bytes.Buffer
+	if err := refreshNFLWeekEvidence(ctx, store, signInStore(host.files), "native.hosted", 2026, pinned, []int{1}, fetch, &output); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := signInStore(host.files).Directory(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Football != pinned {
+		t.Fatalf("pin moved for a week still not final: %+v", entries)
+	}
+	if !strings.Contains(output.String(), "no changes made") {
+		t.Fatalf("report = %q", output.String())
 	}
 }
