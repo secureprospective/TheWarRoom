@@ -155,6 +155,14 @@ describe('LeagueTab', () => {
     const view = await show(owner, async () => six);
     expect(view.textContent).toContain('Top 6 make the playoffs. Tap a team for its roster.');
   });
+  it('table: a two-conference bracket gives the per-conference note', async () => {
+    const two = loaded();
+    const b = two.pulse.value!.bracket!;
+    b.perConference = 7;
+    b.fields = [{ ...b.fields[0], conference: 'AFC' }, { ...b.fields[0], conference: 'NFC' }];
+    const view = await show(owner, async () => two);
+    expect(view.textContent).toContain('Top 7 in each conference make the playoffs.');
+  });
   it('table: no playoff note when the bracket gives no cut', async () => {
     const none = loaded();
     none.pulse.value!.bracket = undefined;
