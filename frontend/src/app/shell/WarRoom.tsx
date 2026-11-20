@@ -26,6 +26,7 @@ import type { WarRoomSavedDraft } from './warroomDrafts';
 import { readWarRoomCatalog, type WarRoomDeal, type WarRoomAsset } from './warroomTradeReads';
 import { readWarRoomLens, setWarRoomDirection, type Direction, type WarRoomLens } from './warroomLens';
 import './warroom.css';
+import { WarPoolV3 } from '../v3/WarPoolV3';
 export type WarRoomTab = 'desk' | 'market' | 'draft' | 'plans';
 export default function WarRoom({ snapshot, native }: { snapshot: Snapshot; native?: WarRoomNative }) {
   const state = commands.use();
@@ -110,6 +111,9 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     className={native?.embedded ? `act act-tab${tab === t ? ' on' : ''}` : undefined}
     selected={tab === t} onAction={() => setTab(t)}>{['TRADE DESK', 'MARKET', 'DRAFT ROOM',
       'PLANS'][i]}</WarRoomAct>);
+  if (native?.v3 && tab === 'market') return <WarPoolV3 context={context} badge={native.v3.badge}
+    room={headerReading?.runway?.[0]?.room}
+    needs={lensReading && !lensReading.preparing ? lensReading.you.needs : undefined} />;
   return <div className={`wr-v6${native?.embedded ? ' embedded' : ''}`} ref={root}><div className="shell">
     {!native?.embedded && <nav className="rail" aria-label="Main"><RailLeaguePicker />
       {native && !mine && <p role="status">No franchise assigned · read-only</p>}<div className="rail-head">

@@ -12,7 +12,9 @@ export default function WarRoomNative(native: NativeScope) {
     publish => readNativeHQ(native.league, native.mine, port, publish, native.owner ?? true));
   useEffect(() => {
     if (reading.reading) native.onPlayers?.(reading.reading.searchPlayers);
-  }, [native.onPlayers, reading.reading]);
+    if (reading.reading) native.onTeams?.(reading.reading.snapshot.franchises.value
+      .map(f => ({ id: f.id, name: f.name ?? f.id })));
+  }, [native.onPlayers, native.onTeams, reading.reading]);
   if (!reading.reading) return <div className={`wr-v6${native.embedded ? ' embedded' : ''}`}>
     {!native.embedded && <RailLeaguePicker />}
     <WarRoomEmpty reason={reading.error} pending={reading.pending} /></div>;

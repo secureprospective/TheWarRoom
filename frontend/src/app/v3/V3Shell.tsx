@@ -9,6 +9,7 @@ import type { ThinHomeEntry } from '../shell/ThinHome';
 import type { PulseTab } from '../shell/pulseReads';
 import type { HQTab } from '../shell/HQShell';
 import { HQAct } from '../shell/HQAct';
+import { TeamPick } from './HQLineupV3';
 import { Icon } from './icons';
 import { ctStamp, docketOf, dress, lanesOf, roleWords, SCREENS, useHome, type V3League } from './model';
 import { AssistantDrawer, Commands, DocketDrawer, Switcher } from './overlays';
@@ -19,6 +20,9 @@ import './fixes.css';
 
 const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
+const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
+const WAR_TABS: [string, string][] = [['valuations-and-pool', 'Valuations and pool'],
+  ['trade-desk', 'Trade desk'], ['draft-room', 'Draft room'], ['plans', 'Plans']];
 const HQ_TABS: [HQTab, string][] = [['lineup-and-roster', 'Lineup and roster'],
   ['contracts-and-cap', 'Contracts and cap'], ['my-moves', 'My moves']];
 
@@ -58,6 +62,10 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const [selected, setSelected] = useState<string>();
   const [pulseTab, setPulseTab] = useState<PulseTab>('now');
   const [hqTab, setHqTab] = useState<HQTab>('lineup-and-roster');
+  const [warTab, setWarTab] = useState('valuations-and-pool');
+  const [warTeams, setWarTeams] = useState<{ id: string; name: string }[]>([]);
+  // War Room draws its own tab strip; the v3 strip replaces it, so its copy goes to a detached node.
+  const warSink = useMemo(() => typeof document === 'undefined' ? null : document.createElement('span'), []);
   // The commissioner's franchise choice per league, kept in this browser so a reload reopens it.
   const [hqTeam, setHqTeamState] = useState<Record<string, string>>(() => {
     try { return JSON.parse(localStorage.getItem('twr.hqTeam') ?? '{}') as Record<string, string>; }
@@ -135,6 +143,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         <b>{n}</b>NEED YOU · OPEN DOCKET</HQAct></div> : <div className="band none" />}
     <Rail leagues={leagues} L={L} active={active} c={c} home={home} pick={setSelected}
       pulseTab={pulseTab} setPulseTab={setPulseTab} hqTab={hqTab} setHqTab={setHqTab}
+      warTab={warTab} setWarTab={setWarTab}
       switcher={() => setLayer('switch')} onHome={onHome} />
     <main className="work">
       {panel && <div className="legacy-host" style={HOST}>{panel}</div>}
@@ -152,6 +161,24 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
             leave={home} openGame={() => { setPulseTab('now'); open(L, 'pulse'); }}
             v3={{ badge: <Badge L={L} />, kind: roleWords(L).toUpperCase(), pickTeam: L.commish
               ? id => setHqTeam(t => ({ ...t, [L.id]: id })) : undefined }} /></Suspense>
+      : active && L && (L.franchise || L.commish) && ['war', 'bids', 'trades'].includes(active.entry) ? !panel
+        && <><div className="ws-tabs"><span className="ttl"><Icon n="swords" />WAR ROOM</span>
+          {WAR_TABS.map(([t, words]) => <HQAct key={t} className="tb" selected={warTab === t}
+            onAction={() => setWarTab(t)}>{words}</HQAct>)}
+          <div className="tools">{L.commish && <TeamPick teams={warTeams}
+            mine={hqTeam[L.id] || L.franchise || ''}
+            pick={id => setHqTeam(t => ({ ...t, [L.id]: id }))} />}
+            <span className="d mono" style={{ fontSize: 10, letterSpacing: '.08em' }}>
+              <Badge L={L} /> {roleWords(L).toUpperCase()}</span></div></div>
+          {!(hqTeam[L.id] || L.franchise) ? <div className="wbody"><div className="st"><div className="eng">
+            Choose a franchise above. As commissioner you can open any team in this league.</div></div></div>
+          : <Suspense fallback={<div className="st"><div className="eng">Opening War Room…</div></div>}>
+            <div style={{ display: 'contents' }}>
+              <WarRoomNative key={`${L.id}:${hqTeam[L.id] || L.franchise}`} embedded league={L.id}
+                mine={hqTeam[L.id] || L.franchise || ''} port={port} tabs={warSink}
+                owner={(hqTeam[L.id] || L.franchise) === L.franchise} workspace={warTab}
+                navigateWorkspace={setWarTab} onTeams={setWarTeams} leave={home}
+                v3={{ badge: <Badge L={L} /> }} /></div></Suspense>}</>
       : active ? <div className="legacy-host" hidden={Boolean(panel)}
         style={HOST}>{children}</div>
         : !panel && <HomeBoard c={c} />}</main>
@@ -192,10 +219,10 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
 type RailProps = { leagues: V3League[]; L: V3League | null; active?: V3ShellProps['active'];
   c: Parameters<typeof HomeBoard>[0]['c']; home: () => void; pick: (id?: string) => void;
   switcher: () => void; onHome: () => void; pulseTab: PulseTab; setPulseTab: (t: PulseTab) => void;
-  hqTab: HQTab; setHqTab: (t: HQTab) => void };
+  hqTab: HQTab; setHqTab: (t: HQTab) => void; warTab: string; setWarTab: (t: string) => void };
 
 function Rail({ leagues, L, active, c, home, pick, switcher, onHome, pulseTab, setPulseTab, hqTab,
-  setHqTab }: RailProps) {
+  setHqTab, warTab, setWarTab }: RailProps) {
   const waiting = (id: string) => c.docket.filter(d => d.lg === id && d.lane === 'need').length;
   const standing = (l: V3League) =>
     c.briefs[l.id]?.brief?.pulse?.standings?.rows.find(x => x.franchise === l.franchise);
@@ -236,6 +263,10 @@ function Rail({ leagues, L, active, c, home, pick, switcher, onHome, pulseTab, s
             {on && s.k === 'pulse' && PULSE_TABS.map(([t, name]) => <HQAct key={t}
               className={`leaf${pulseTab === t ? ' sel' : ''}`} onAction={() => setPulseTab(t)}>
               <span className="tr">{pulseTab === t ? '▮' : '├'}</span>
+              <span className="ell">{name}</span></HQAct>)}
+            {on && s.k === 'war' && WAR_TABS.map(([t, name]) => <HQAct key={t}
+              className={`leaf${warTab === t ? ' sel' : ''}`} onAction={() => setWarTab(t)}>
+              <span className="tr">{warTab === t ? '▮' : '├'}</span>
               <span className="ell">{name}</span></HQAct>)}
             {on && s.k === 'hq' && HQ_TABS.map(([t, name]) => <HQAct key={t}
               className={`leaf${hqTab === t ? ' sel' : ''}`} onAction={() => setHqTab(t)}>

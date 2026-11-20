@@ -37,7 +37,7 @@ export const SCREENS: { k: ThinHomeEntry; name: string; icon: IconName; on: (L: 
   now: string; off: string }[] = [
   { k: 'hq', name: 'Franchise HQ', icon: 'shield', on: L => L.team || L.commish, now: 'Lineup and roster',
     off: 'you have no team in this league' },
-  { k: 'war', name: 'War Room', icon: 'swords', on: L => L.team, now: 'Trade desk and pool',
+  { k: 'war', name: 'War Room', icon: 'swords', on: L => L.team || L.commish, now: 'Trade desk and pool',
     off: 'you have no team in this league' },
   { k: 'pulse', name: 'League Pulse', icon: 'pulse', on: () => true, now: 'Scores and the race', off: '' },
   { k: 'control', name: 'Control Room', icon: 'gear', on: L => L.commish, now: 'Jobs waiting',
