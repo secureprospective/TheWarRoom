@@ -1,0 +1,73 @@
+# RESUME — Desktop v3 finish (and phone v1) — updated 2026-11-20 ~09:40 CT
+
+## NOW (read first after a restart)
+- **Build branch:** `session/desktop-v3-shell`, worktree `~/work/TheWarRoom/.worktrees/dv3-shell` (from origin/main 796887798). Gap list committed: `docs/desktop-v3-gaps.md` (regions, grades, 4 batches). Read it.
+- **Method (Christopher 11-20: "hi-fidelity textures and real UI match the mock, no shortcuts"):** port the mock's CSS verbatim (`.scratch/mock/v3.css`, extracted from the mock) and emit the mock's DOM and class names from React (`.scratch/mock/v3.js` shell.js l.760-905 = frame; grid.js l.484-760 = boards; pieces.js l.345-484). Swap sample data for hosted reads. Legacy `TargetApp`/`homeLayout` is the OLD v5 mock: do not reuse its visuals; reuse data layer only (`homeReads`, `homeNeedsYou`, pulse reads).
+- **Integration point:** `frontend/src/app/control/NativeAccount.tsx` ~l.183-260: on desktop (not phoneFrame) with homeReady, mount the v3 frame instead of header/nav/ThinHome/league section; work area = Home board, or `HostedLeague` when a league is open (reskin in batch 2). Phone path untouched.
+- **Batch 1 = frame + Home** (top bar, band, rail, board tab strip, 24x14 grid with default Home board + 6 pieces, inspector, status line, switcher, Ctrl K). One PR when the batch is complete and side-by-side checked. No small merges (Christopher 11-20).
+- **Work in the open on Claude-OS** (Christopher 11-20): visible Brave window, fullscreen F11 = true 1920x1080. Dev loop: `cd dv3-shell/frontend && pnpm exec vite --config vite.lab.config.ts` (port 5199, proxies /app/session,/v1,/headshot to the lab; file is local only, do not commit) -> on CT105 `ssh -f -N -L 5199:127.0.0.1:5199 chris@192.168.1.191` and `ssh -f -N -R 5199:127.0.0.1:5199 claudeos` (claudeos cannot ssh to the Beelink). App URL on claudeos `http://127.0.0.1:5199/app/`. Drive: `node ~/cdp/cdp.cjs <tab> nav|eval|click|type|shot`; sign in: `ssh chris@192.168.1.191 cat ~/fleet/runs/pulse-lab4/private/commissioner.json | ssh claudeos node ~/cdp/signin.cjs <tab>` (never print creds). Mock copy on claudeos `~/scratch/TheWarRoom-mock-v3-FINAL.html`, shot `~/scratch/dv3/mock-home.png`.
+- **Week stuck on 9 — ROOT CAUSE FOUND:** hosted `week.read` reads only the pinned football evidence (`internal/leagueservice/football.go:41` -> `PinnedFootball.ScheduleDates`). `refresh-nfl-schedule` re-fetches stale weeks (`refetchStaleNFLWeeks`, discards result) and only re-pins MISSING weeks. MFL shows weeks 9 and 10 all final (checked 11-20). Fix lane `hk-weekpin` (Haiku) on branch `session/refresh-pins-final-weeks`: re-fetched final weeks replace pinned weeks in a new evidence digest. Review its diff yourself, then it ships with a lab release (v23) and a rerun of `lab-nfl-1120.sh` in `~/fleet/runs/overnight-b9walk-1120/`. Lab refresh ran 11-20 15:07 UTC (backup `/var/lib/twr/manual-1120-nfl-refresh`).
+- **Rehearsal seat freed (by accident, 11-20 ~09:00 CT):** importing `~/fleet/runs/hk-seats/free_seats.py` runs its main body. franchise.01 freed; 32/32 seats open. Join link NOT yet rotated. Never import that file; my own helper is `~/fleet/runs/dv3/wk.py`.
+- **Open question for Christopher:** NFL news piece has no hosted read (none in `internal/commandcatalog/native_reads.go`). Needs a source decision.
+
+## 0. Christopher's rulings for this workstream (2026-11-20, read first)
+- **Finish the product to the mock. No slop, no "ship less" options, the date never cuts quality.** Sunday 11-22 is a checkpoint, not the finish. (memory: feedback_twr_finish_product_not_ship_date)
+- **Claude (head brain) does the UI work itself.** No Luna. Haiku agents on Tom only for easy, mechanical jobs (inventories, greps, wiring checks, CI/merge chains).
+- **Desktop target = `~/Downloads/TheWarRoom-mock-v3-FINAL.html` (Beelink).** Phone target = `~/Downloads/TheWarRoom-mobile-mock-v1.html`, never a blend.
+- **All UI testing on Claude-OS at 1920x1080** (`ssh claudeos`; shared desktop — check idle first, leave it running). Done for a screen = side-by-side screenshot with the mock at 1920x1080, taken by Claude, before Christopher sees it.
+- His verdict on the current desktop (thin mode PWA, screenshot `/home/chris/content/feedback/2026-11-20_08-51.png`): "the UI is dogshit, not close". **The wiring (server reads/commands) is likely in place; the UI is the job.**
+- Merges for this work are approved (squash, after green CI). Hard limits in CLAUDE.md still apply (no email, no Proxmox host changes, never print secrets/join codes/passwords, never --no-verify).
+
+## 1. What we are doing
+Bring the thin-mode desktop app (the product, `docs/architecture/desktop-modes.md`) up to mock v3 region by region, then the phone to mobile v1. Repo: Beelink `~/work/TheWarRoom`, worktrees in `.worktrees/`, branch per piece `session/<desc>`, never work on main.
+Key fact: most v3-looking pieces exist in the **legacy local shell** `TargetApp.tsx` (Home, War Room, HQ, Pulse, Control Room, command bar). Thin mode (`NativeStartup.tsx` → `NativeAccount` → `ThinHome` → `HostedLeague`/`HostedWorkflows`) got a bare rail + Pulse. Plan: bring the v3 shell into thin mode, feed it from hosted reads, then polish each panel to the mock. Legacy mode must not grow (desktop-modes.md).
+
+## 2. Done looks like (all NOT met yet)
+1. Every region of mock v3 exists in the thin app with real data: top bar (league picker, search/command, Needs you, Assistant, Feeds, avatar), NOW ticker, tab strip (Home, Today, Game day, All leagues live, Commissioner desk, Front office, Board, Add a piece, Edit), left rail (App nav, My shortcuts, league picker list), Home panels (Docket, This week across my leagues, My players today, NFL news, Deadlines, Shortcuts), status bar. Side-by-side at 1920x1080 on Claude-OS.
+2. Phone: every tab matches mobile v1, side by side.
+3. Data behind the panels is right on the lab (current week, lineups, projections, values) — empty panels from missing data are defects.
+4. Tracker `~/Downloads/twr-usable-week-plan.html` lists each region matched/not with screenshots.
+
+## 3. Next actions, in order
+1. **Gap list (Claude, by hand):** open mock v3 at 1920x1080 and the thin app (commissioner sign-in) at 1920x1080; for each region record: mock look, existing code (thin or legacy file), the hosted read that feeds it, grade match/partial/missing. Write to `docs/desktop-v3-gaps.md` on a branch.
+2. Build the shell first (top bar, tab strip, rail, status bar) in thin mode, then Home panels, then the other tabs. One PR per piece, screenshot-checked against the mock before merge.
+3. Lab week fix (see §4) — must be done before any screenshot judging "week" panels.
+4. Small open item: sign-in screen label. Worktree `.worktrees/signin-label`, branch `session/signin-code-optional`, **no changes made yet**. Change `NativeAccount.tsx:307`: on the login screen label "Authenticator code (only if you set one up)"; keep "Six-digit authenticator code" on the authenticator screen. Add a test in `frontend/src/app/control/nativeAccount.test.tsx`. (Rehearsal also saw a button click not submit on the first try; unproven, don't chase without evidence.)
+5. Lab housekeeping before any outside join: free the rehearsal seat (franchise.01 BUF, creds `~/fleet/runs/pulse-lab4/private/rehearsal-owner.json`; use `~/fleet/runs/hk-seats/free_seats.py` pattern — it skips only the commissioner seat), then rotate the join link (summary of CLI in §6).
+6. Hermes weekly job (Tue 03:00 CT) to run refresh-nfl-schedule on the lab (stop server, refresh, start) so the week keeps advancing until the server refreshes on its own (post-fix design item).
+
+## 4. In flight at handoff
+- **PR #450** MERGED 7968877; lab release **v22 DONE** (79688779) at ~09:00 CT 11-20.
+- **After v22:** run on the lab (server must be stopped): copy of `~/fleet/runs/overnight-b9walk-1120/lab-nfl.sh` (it backs up, stops, runs `twr-server refresh-nfl-schedule -db /var/lib/twr/server.db -league native.mfl-14432-2026 -season 2026` as user twr, starts, prints status) via `bash ~/fleet/runs/overnight-b9walk-1120/labrun.sh <script>`. Expect "Re-fetched results for N past week(s) that were not final: 9, 11." (11 only if its games are over). Then `week.read` should give current week 11 (Sunday 11-22 is week 11). If the clock still says 9: the archived re-fetch is not what the schedule cache reads — next suspect is `internal/app/commissioner/native/schedule_cache.go` (reads `History.ReferenceBodies`, newest copy first; cache keyed on archive mark) vs where the transport sink writes. Medium confidence on that hypothesis.
+
+## 5. State / gates
+| Item | State |
+|---|---|
+| Lab CT 260 | release v22 (79688779) live; schedule refresh NOT yet run. 1 commissioner account + rehearsal owner on BUF. 31 open seats. |
+| PR #448 Live follows selected league | merged, lab v20 |
+| PR #449 phone Team skips value.read (banner gone) | merged, lab v21 |
+| PR #450 stale-week re-fetch | merged, v22 in flight |
+| CI on main | green at #450 merge |
+| Backup | `/var/lib/twr-backup-sat-1120/twr-full.tgz` 203,087,044 B, sha256 73da36…; restore verified (16 dbs integrity ok) |
+| Rate limits (labcfg lane) | fine: per-IP via CF-Connecting-IP, 10 auth/min/IP, 64 in-flight global, 6 auth in-flight; sessions 7d idle/30d |
+| Server drift since 11-16 | no migrations, no TODO/panic; draft.queue seat check concern REFUTED (seat comes from caller's own principal, `draft_queue.go:88-111`) |
+
+## 6. Refuted / known — do not retest
+- Team-tab "Some reads are unavailable" = `value.read` 409 for everyone: lab has no values feed ("player records and fitted parameters are not available on this host"). Fixed by #449 for phone; desktop HQ still reads values — the values feed itself is a data item.
+- Week stuck on 9 = held nflSchedule copy for week 9 fetched before games ended (`gameSecondsRemaining` != 0); week 11 copy fetched Thu 11-19 16:02Z. `leagueweek.LineupWeek` needs all games Final.
+- Empty starters / PROJ 0.0 on lab = no lineup set + no NFL stats held (projections.read available:false). Data, not code.
+- Live "updated 9:12 AM · ESPN · provisional" = board line, as designed; "Updated n min ago" only inside a followed game.
+- Commissioner sign-in does NOT need an authenticator (ruling 11-14, `accounts/totp.go:221`). Leave the code box empty. Browser sign-in verified 200 with stored creds.
+- Blank screen after sign-in on the installed PWA = stale page across the v21 restart; fresh browser renders Home fine.
+- golangci-lint-full "153 issues naming a deleted worktree" = stale cache: `golangci-lint cache clean`, then commit normally.
+
+## 7. Tools and access
+- Lab shell: `bash ~/fleet/runs/overnight-b9walk-1120/labrun.sh <script-file>` (busybox; no python/sqlite/journalctl; log `/var/lib/twr/server.log`). Lab URL `https://twr-lab-260.secureprospective.com/app/`, league `native.mfl-14432-2026`.
+- API helpers: `~/fleet/runs/hk-seats/free_seats.py` (login/post; workflow reads: season/week are integers). Creds in `~/fleet/runs/pulse-lab4/private/` — never print.
+- Lab release: `~/fleet/bin/twr-lab-release.sh <V> <prev>/release-v<prev>/metadata/<prev>.targets.json <run-dir>` (builds origin/main).
+- Haiku launcher: `~/fleet/runs/overnight-b9walk-1120/hkx.sh <lane>` with brief `briefs/hk-<lane>.md` → worktree `.worktrees/hk-<lane>`, output `~/fleet/runs/hk-<lane>/{stdout.log,completion.txt}`. Launch: `setsid nohup bash .../hkx.sh <lane> >/dev/null 2>&1 </dev/null &`.
+- Headless screenshot without playwright: node 24 + brave `--headless=new --remote-debugging-port=…` over CDP (built-in WebSocket); fill React inputs via the native value setter + input event, `form.requestSubmit()`. Redact the password from output. (For the real check use Claude-OS 1920x1080.)
+- Christopher installed the PWA on the Beelink in Brave (shows "Uninstall" in title bar).
+
+## 8. Honest status
+Wiring and server: solid, CI green, lab healthy. Desktop UI: far from mock v3 — essentially unstarted against the mock. Phone: close to mobile v1 per the earlier walks, not yet side-by-side verified at full fidelity. ETA for desktop v3 match: several days of focused work; not Sunday.
