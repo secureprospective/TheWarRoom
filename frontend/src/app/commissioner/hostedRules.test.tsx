@@ -285,9 +285,9 @@ it.each(['Commissioner', 'Co-commissioner'])(
         json: async () => admission };
     }));
     await act(async () => root.render(<NativeAccount initial={admission} />));
-    await vi.waitFor(() => expect(buttons('Open Pulse for Test League')).toHaveLength(1),
-      { timeout: 10_000 });
-    await click('Open Pulse for Test League');
+    await vi.waitFor(() => expect(buttons('Pick Test League')).toHaveLength(1), { timeout: 15_000 });
+    await click('Pick Test League');
+    await click('Open League Pulse');
     await vi.waitFor(() => expect(host.textContent).toContain('League Pulse'), { timeout: 10_000 });
     expect(host.textContent).not.toContain('MY MATCHUP');
     expect(host.querySelector('.mybox')).toBeNull();
@@ -312,12 +312,13 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(buttons('Set lineup')).toHaveLength(0);
     expect(buttons('Roster and reserves')).toHaveLength(0);
     expect(buttons('Draft room')).toHaveLength(0);
-    await click('← Home');
-    await vi.waitFor(() => expect(buttons('Open Control Room for Test League')).toHaveLength(1),
-      { timeout: 10_000 });
-    await click('Open Control Room for Test League'); await click('Rules');
+    const home = buttons('Home').find(b => b.closest('.appz'))!;
+    await act(async () => { home.click(); });
+    await vi.waitFor(() => expect(buttons('Pick Test League')).toHaveLength(1), { timeout: 10_000 });
+    await click('Pick Test League');
+    await click('Open Control Room'); await click('Rules');
     expect(buttons('Change Lineup lock')).toHaveLength(1);
-  }, 15_000);
+  }, 30_000);
 it('a refused rules read leaves league-wide Pulse available', async () => {
   const port = service();
   const serve = port.getMockImplementation()!;
