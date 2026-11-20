@@ -4,6 +4,16 @@ import { parseHostedGame, parseHostedGames, type Game, type LiveView } from '../
 import type { usePulseLive } from './hqLive';
 import type { PulseScope } from './pulseReads';
 
+/** useNow is the current time, re-read every `ms` (one interval, cleared on unmount), for text that ages. */
+export function useNow(ms: number) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(id);
+  }, [ms]);
+  return now;
+}
+
 /** followKey is how useHostedGames names a game to follow: away-home abbreviations. */
 export function followKey(g: Game) { return `${g.away.abbreviation}-${g.home.abbreviation}`; }
 /** clockWords is a game's short state: kickoff time, quarter and clock, or FINAL. */
@@ -15,8 +25,8 @@ export function clockWords(g: Game) {
 
 export function useHostedGames(league: string, port: NonNullable<PulseScope['port']>,
   onChange: (load: () => void) => () => void):
-  ReturnType<typeof usePulseLive> & { prefer: (key: string) => void } {
-  const [held, setHeld] = useState<{ view?: LiveView; error: string }>({ error: '' });
+  ReturnType<typeof usePulseLive> & { prefer: (key: string) => void; heldAt?: number } {
+  const [held, setHeld] = useState<{ view?: LiveView; error: string; at?: number }>({ error: '' });
   const [chosen, choose] = useState('');
   const [preferred, prefer] = useState('');
   useEffect(() => {
@@ -33,20 +43,21 @@ export function useHostedGames(league: string, port: NonNullable<PulseScope['por
           ?? view.games.find(g => g.status === 'in');
         if (current()) setHeld(prior => ({ view: { ...view,
           followed: prior.view?.followed?.id === selected?.id ? prior.view?.followed ?? null : null },
-          error: '' }));
+          error: '', at: Date.now() }));
         if (!selected) return;
         const detail = await port({ command: 'nfl.game.read', mode: 'read',
           arguments: { league, game: selected.id } });
         view.followed = parseHostedGame(detail.data, league, selected.id);
-        if (current()) setHeld({ view, error: '' });
+        if (current()) setHeld({ view, error: '', at: Date.now() });
       } catch (e: unknown) {
         const error = e instanceof Error ? e.message : String(e);
-        if (current()) setHeld(prior => ({ view: prior.view, error }));
+        if (current()) setHeld(prior => ({ view: prior.view, error, at: prior.at }));
       }
     };
     void load();
     const off = onChange(() => { void load(); });
     return () => { live = false; off(); };
   }, [league, port, onChange, chosen, preferred]);
-  return { view: held.view, error: held.error, follow: choose, prefer };
+  // heldAt: when the last held board read resolved (the view's asOf is only a display string).
+  return { view: held.view, error: held.error, heldAt: held.at, follow: choose, prefer };
 }

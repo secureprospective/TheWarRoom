@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { onHostedTopics } from '../data/hostedReads';
 import { myChance, percent, pointsLabel } from '../data/nativePulse';
 import { Field, gameTime } from '../now/LiveGame';
 import type { Game } from '../now/liveContract';
-import { clockWords, followKey, useHostedGames } from '../shell/hostedGames';
+import { clockWords, followKey, useHostedGames, useNow } from '../shell/hostedGames';
 import { unavailable } from '../shell/hqModel';
 import { HQAct } from '../shell/HQAct';
 import { readThinHomeBrief, type HomeBrief } from '../shell/homeReads';
@@ -48,7 +48,9 @@ function LiveBody({ league, port, readBrief, subscribe }: { league: LeagueChoice
   const [picked, pick] = useState<string>();
   const [box, setBox] = useState<'nfl' | 'lg'>('nfl');
   const [sheet, setSheet] = useState<Sheet>();
+  const now = useNow(30_000);
   const boxes = useRef<HTMLDivElement>(null);
+  const field = useRef<HTMLElement>(null);
   useEffect(() => onChange(() => setTick(n => n + 1)), [onChange]);
   useEffect(() => {
     let active = true;
@@ -95,6 +97,7 @@ function LiveBody({ league, port, readBrief, subscribe }: { league: LeagueChoice
             label={`Watch ${p.name}'s game`} onAction={() => {
               if (g) live.follow(followKey(g));
               setSheet({ kind: 'player', player: p, name: p.name });
+              field.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
             }}>
             <i className="live6__pos">{p.slot}</i><span>{surname(p.name)}</span>
             {onField(p, g) && <i className="live6__onf" title="on the field now" aria-label="on the field" />}
@@ -118,7 +121,9 @@ function LiveBody({ league, port, readBrief, subscribe }: { league: LeagueChoice
           <em>{clockWords(g)}</em>
         </HQAct>)}
       </div></nav>
-    <FieldState game={followed} words={!current ? 'Live games show for the week being played.'
+    <FieldState game={followed} anchor={field}
+      fresh={live.heldAt === undefined ? '' : freshness(now - live.heldAt)}
+      words={!current ? 'Live games show for the week being played.'
       : live.error && !live.view ? `${unavailable} · ${live.error}`
         : !live.view ? 'Reading the NFL scoreboard…'
           : 'Pick a game in the NFL strip to follow it.'} />
@@ -264,8 +269,15 @@ function NflBox({ game }: { game?: Game }) {
   </>;
 }
 
-function FieldState({ game, words }: { game?: Game; words: string }) {
-  if (!game) return <section className="live6__card" aria-label="NFL live">
+/** freshness: the held board's age in words, from its read time. */
+function freshness(ms: number) {
+  const minutes = Math.floor(ms / 60_000);
+  return minutes < 1 ? 'Updated just now' : `Updated ${minutes} min ago`;
+}
+
+function FieldState({ game, words, fresh, anchor }: { game?: Game; words: string; fresh: string;
+  anchor: RefObject<HTMLElement> }) {
+  if (!game) return <section className="live6__card" aria-label="NFL live" ref={anchor}>
     <p className="live6__note">{words}</p></section>;
   const s = game.state;
   const known = game.status === 'in' && s !== null && s.toEndzone >= 0
@@ -275,7 +287,7 @@ function FieldState({ game, words }: { game?: Game; words: string }) {
   const ballOn = known && offense ? s.toEndzone > 50 ? `${offense.abbreviation} ${100 - s.toEndzone}`
     : s.toEndzone === 50 ? '50' : `${defense.abbreviation} ${s.toEndzone}` : '—';
   const down = known && s.down > 0 ? `${ordinal(s.down)} & ${s.distance}` : '';
-  return <section className="live6__live" aria-label="NFL live">
+  return <section className="live6__live" aria-label="NFL live" ref={anchor}>
     <div className="live6__score">
       <Side team={game.away} ball={known && offense === game.away} />
       <div className="live6__mid"><b>{clockWords(game)}</b>{down && <span className="live6__dd">{down}</span>}
@@ -288,6 +300,7 @@ function FieldState({ game, words }: { game?: Game; words: string }) {
     <div className="live6__head live6__pad"><b>NFL live</b>
       <span className="live6__m">
         {game.away.abbreviation} at {game.home.abbreviation} · {gameTime(game)}</span></div>
+    {fresh && <p className="live6__m live6__pad">{fresh}</p>}
     <div className="live6__sit">
       <div><span>Down</span><b>{known && s.down > 0 ? ordinal(s.down).toUpperCase() : '—'}</b></div>
       <div><span>To go</span><b>{known && s.down > 0 ? s.distance : '—'}</b></div>
