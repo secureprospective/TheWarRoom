@@ -5,7 +5,8 @@
 import { useState, type ReactNode } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { percent, pointsLabel, type PulseOdds, type PulseResults } from '../data/nativePulse';
-import { applyFilter, espnTeam, pulseRows, PULSE_FILTERS, scoreOf, type PulseFilter, type PulseRow,
+import { applyFilter, espnTeam, pulseRows, PULSE_FILTERS, scoreOf, statChanges,
+  type PulseFilter, type PulseRow,
   type PulseStarterRow } from '../shell/pulseModel';
 import { useStarterSides, type StarterSides } from '../shell/PulseNow';
 import { clockWords } from '../shell/hostedGames';
@@ -16,6 +17,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import type { PulseTab } from '../shell/pulseReads';
 import type { NativePulse } from '../shell/pulseReads';
 import { Icon } from './icons';
+import { BoxDrawer, ChangesDrawer, ScheduleDrawer } from './pulseDrawers';
 
 type Reading<T> = { reading?: T; pending?: boolean; error?: string };
 export type PulsePull = 'box' | 'sched' | 'corr';
@@ -41,11 +43,11 @@ export function PulseTabs({ tab, navigate, badge, kind }: { tab: PulseTab; navig
 }
 
 export function PulseNowV3({ reading, mine, week, results, league, port, live, viewer, badge, pull,
-  onPull, changes }: {
+  onPull }: {
   reading: NativePulse; mine: string; week?: number; results: Reading<PulseResults>; league: string;
   port: HostedPort; live: { view?: LiveView; error?: string };
   viewer?: { mine: string; commissioner: boolean }; badge: ReactNode;
-  pull?: PulsePull; onPull: (p: PulsePull) => void; changes: number;
+  pull?: PulsePull; onPull: (p: PulsePull) => void;
 }) {
   const [filter, setFilter] = useState<PulseFilter>('all');
   const [picked, pick] = useState<string>();
@@ -57,6 +59,10 @@ export function PulseNowV3({ reading, mine, week, results, league, port, live, v
   const sides = useStarterSides(reading, week, results.reading, selected, league, port, mine, viewer);
   const odds = week === reading.odds?.week ? reading.odds : undefined;
   const anyLive = rows.some(r => r.status === 'LIVE');
+  const changeList = statChanges(sides.left, sides.right), changes = changeList.length;
+  const left = scoreOf(results.reading, sides.leftId ?? '');
+  const right = scoreOf(results.reading, sides.rightId ?? '');
+  const close = () => { if (pull) onPull(pull); };
   return <>
     <div className="pnow">
       <Board rows={rows} filter={filter} setFilter={setFilter} selected={selected} pick={pick} odds={odds}
@@ -79,6 +85,10 @@ export function PulseNowV3({ reading, mine, week, results, league, port, live, v
       <HQAct className="pull" expanded={pull === 'corr'} onAction={() => onPull('corr')}>
         {`▴ STAT CHANGES${changes ? ` ${changes}` : ''}`}</HQAct>
     </div>
+    {pull === 'box' && <BoxDrawer sides={sides} week={week} left={left} right={right} close={close} />}
+    {pull === 'sched' && <ScheduleDrawer reading={reading} mine={mine} port={port} close={close} />}
+    {pull === 'corr' && <ChangesDrawer sides={sides} week={week} changes={changeList} left={left}
+      right={right} close={close} />}
   </>;
 }
 

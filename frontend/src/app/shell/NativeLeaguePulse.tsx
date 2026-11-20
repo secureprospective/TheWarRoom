@@ -140,7 +140,7 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
         ? `League Pulse is unavailable · ${league.error}`
         : 'Reading League Pulse…'}</div></div>
       : <PulseNowV3 reading={reading} mine={scope.mine} week={week} results={results} league={scope.league}
-        port={port} live={live} badge={scope.v3.badge} changes={changes}
+        port={port} live={live} badge={scope.v3.badge}
         viewer={{ mine: scope.mine, commissioner: scope.commissioner ?? false }}
         pull={drawer === 'box' || drawer === 'sched' || drawer === 'corr' ? drawer : undefined}
         onPull={pull} />}</div>

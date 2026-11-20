@@ -39,7 +39,7 @@ export function PulseScheduleView({ reading, mine, port }: { reading: NativePuls
 type Cell = { opponent: string; away: boolean; result: string; score: string };
 
 /** cellOf is one franchise's week: who it plays and, once the week has a result, how it went. */
-function cellOf(season: PulseSeason, franchise: string, week: number, nameOf: (id: string) => string):
+export function cellOf(season: PulseSeason, franchise: string, week: number, nameOf: (id: string) => string):
   Cell | undefined {
   const fixture = season.schedule.weeks.find(w => w.week === week)?.games
     .find(g => g.home === franchise || g.away === franchise);
