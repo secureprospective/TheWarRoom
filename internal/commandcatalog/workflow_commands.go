@@ -263,6 +263,20 @@ func commissionerControlReads() map[string]WorkflowCommand {
 	}
 }
 
+// workflowNFLNewsRead is the member-safe public news read; its players list is optional.
+func workflowNFLNewsRead() WorkflowCommand {
+	return workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+		players := ""
+		if r.Players != "" {
+			var err error
+			if players, err = workflowPlayers(r.Players); err != nil {
+				return nil, err
+			}
+		}
+		return workflowJSON(s.TargetNFLNews(r.League, players))
+	})
+}
+
 func pulseWorkflowReads() map[string]WorkflowCommand {
 	return map[string]WorkflowCommand{
 		"native.directory.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
@@ -277,6 +291,7 @@ func pulseWorkflowReads() map[string]WorkflowCommand {
 		"nfl.player-status.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNFLPlayerStatus(r.League))
 		}),
+		"nfl.news.read": workflowNFLNewsRead(),
 		"schedule.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetLeagueSchedule(leagueservice.RawLeagueScheduleScope{League: r.League}))
 		}),

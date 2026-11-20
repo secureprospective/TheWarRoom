@@ -46,6 +46,8 @@ type Hosted struct {
 	LiveGames *leagueservice.LiveGames
 	// InjuryFeed reads the latest validated public NFL injury report from reference storage.
 	InjuryFeed leagueservice.NFLInjuryFeedSource
+	// News reads the held public player news (Sleeper statuses, ESPN notes) for rostered players.
+	News leagueservice.NFLNewsSource
 	// FootballDigest and Football are the server's pin (-football); Pins, when set, answers each league's
 	// own store and pin, and an unpinned league gets the server's.
 	FootballDigest string
@@ -302,7 +304,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).
-		WithLiveGames(h.LiveGames).WithNFLInjuryFeed(h.InjuryFeed).WithBackupRunner(h.BackupLeague).
+		WithLiveGames(h.LiveGames).WithNFLInjuryFeed(h.InjuryFeed).WithNFLNews(h.News).WithBackupRunner(h.BackupLeague).
 		WithProblemReportStore(pin.Store)
 	h.dispatch(w, r, service, raw)
 }

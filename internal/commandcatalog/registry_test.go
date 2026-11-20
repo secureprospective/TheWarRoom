@@ -215,3 +215,23 @@ func TestOLineCloseRegistryMetadata(t *testing.T) {
 	}
 	t.Fatal("close command missing")
 }
+
+func TestNFLNewsIsAHostedLeagueViewRead(t *testing.T) {
+	var found bool
+	for _, command := range NativeCommands(Schema{}) {
+		if command.ID != "nfl.news.read" {
+			continue
+		}
+		found = true
+		if command.Method != "TargetNFLNews" || command.Availability != "server" ||
+			command.Permission != "league-view" || len(command.Modes) != 1 || command.Modes[0] != Read {
+			t.Fatalf("NFL news catalog entry = %+v", command)
+		}
+	}
+	if !found {
+		t.Fatal("public NFL news read missing from catalog")
+	}
+	if _, ok := WorkflowCommands()["nfl.news.read"]; !ok {
+		t.Fatal("NFL news read missing from hosted workflow")
+	}
+}
