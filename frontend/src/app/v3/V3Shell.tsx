@@ -9,10 +9,11 @@ import type { ThinHomeEntry } from '../shell/ThinHome';
 import { HQAct } from '../shell/HQAct';
 import { Icon } from './icons';
 import { ctStamp, docketOf, dress, lanesOf, roleWords, SCREENS, useHome, type V3League } from './model';
-import { Commands, DocketDrawer, Switcher } from './overlays';
+import { AssistantDrawer, Commands, DocketDrawer, Switcher } from './overlays';
 import { Badge, HomeBoard } from './pieces';
 import './v3.css';
 import './legacyHost.css';
+import './fixes.css';
 
 export type V3ShellProps = { leagues: LeagueChoice[]; active?: { league: LeagueChoice; entry: ThinHomeEntry };
   onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void; onHome: () => void; onSignOut: () => void;
@@ -33,7 +34,6 @@ const TIP = {
   search: 'Find a player, team, screen, piece or command|Ctrl+K',
   needs: 'What is waiting on you, in every league|Alt+D',
   assist: 'Ask in plain words: arrange screens, prepare a move|Alt+A',
-  feeds: 'Show where every number comes from and goes|Alt+F',
   acct: 'Account, devices, labels, your AI key, sign out',
 };
 const HOST: CSSProperties = { flex: 1, minHeight: 0, overflow: 'auto' };
@@ -48,13 +48,14 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const docket = useMemo(() => [...docketOf(needs, leagues, now), ...lanesOf(leagues, briefs, now)],
     [needs, leagues, briefs, now]);
   const [selected, setSelected] = useState<string>();
-  const [layer, setLayer] = useState<'switch' | 'cmdk' | 'account' | 'docket' | null>(null);
+  const [layer, setLayer] = useState<'switch' | 'cmdk' | 'account' | 'docket' | 'assist' | null>(null);
   const home = () => { setSelected(undefined); onHome(); };
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       if (e.key === 'Escape' && layer) setLayer(null);
       else if ((e.ctrlKey || e.metaKey) && k === 'k') { e.preventDefault(); setLayer('cmdk'); }
+      else if (e.altKey && k === 'a') { e.preventDefault(); setLayer('assist'); }
       else if (e.altKey && k === 'd') { e.preventDefault(); setLayer('docket'); }
       else if (e.altKey && k === 'l') { e.preventDefault(); setLayer('switch'); }
       else if (e.altKey && k === 'h') { e.preventDefault(); setLayer(null); home(); }
@@ -102,10 +103,9 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         <HQAct className="key" attributes={tip(TIP.needs)} expanded={layer === 'docket'}
           onAction={() => setLayer(l => l === 'docket' ? null : 'docket')}><Icon n="bell" />
           <span className="lb">Needs you</span>{n ? <span className="ct">{n}</span> : null}</HQAct>
-        <HQAct className="key" attributes={tip(TIP.assist)}>
+        <HQAct className="key" attributes={tip(TIP.assist)} expanded={layer === 'assist'}
+          onAction={() => setLayer(l => l === 'assist' ? null : 'assist')}>
           <Icon n="chat" /><span className="lb">Assistant</span></HQAct>
-        <HQAct className="key" attributes={tip(TIP.feeds)}>
-          <Icon n="plug" /><span className="lb">Feeds</span></HQAct>
         <HQAct className="acct" label="Account" expanded={layer === 'account'} attributes={tip(TIP.acct)}
           onAction={() => setLayer(l => l === 'account' ? null : 'account')}>{initials}</HQAct></div>
     </header>
@@ -147,6 +147,9 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         home={home} pick={id => setSelected(id)} />}
       {layer === 'docket' && <DocketDrawer leagues={leagues} docket={docket} current={L} open={open}
         close={() => setLayer(null)} home={home} />}
+      {layer === 'assist' && <AssistantDrawer close={() => setLayer(null)}
+        commish={active?.entry === 'control' && L?.commish ? L : null}
+        league={L ?? leagues.find(l => l.team)} />}
       {layer === 'account' && <div className="pop menu" style={{ right: 8, top: 52, width: 300 }}>
         <div className="mh">YOU · {plural(leagues.length, 'LEAGUE', 'LEAGUES')}</div>
         {account ?? <HQAct onAction={() => { setLayer(null); onSignOut(); }}>

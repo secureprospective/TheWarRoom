@@ -1,0 +1,7 @@
+/* Corrections to the mock's own CSS, each approved by Christopher. v3.css stays the verbatim mock.
+   2026-11-20: the board docket's `.lanes` rule (flex:1, 3-column grid) also caught the Docket drawer's
+   lane tabs and stretched them to ~375px; the drawer's tabs are one row. */
+.sdrawer>.lanes{flex:none;display:flex}
+/* 2026-11-20: `.who b{font-size:20px}` (a board piece's big name) also caught the bold word in the
+   Assistant drawer's who-line; there it is body text. Same class of clash as the lanes above. */
+.asst .who b{font-size:inherit}

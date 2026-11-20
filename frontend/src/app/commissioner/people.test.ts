@@ -10,6 +10,10 @@ const reading = {
 };
 
 describe('parsePeople', () => {
+  it('reads a seat the server calls Vacant as a seat with no owner', () => {
+    const seat = { franchise: 'franchise.01', name: 'Buffalo Bills', abbreviation: 'BUF', owner: 'Vacant' };
+    expect(parsePeople({ ...reading, seats: [seat] }).seats[0].owner).toBe('');
+  });
   it('parses the catalog People actors and effective-permission contract', () => {
     expect(parsePeople(reading)).toMatchObject({
       actors: [{ person: 'acct.owner', effectivePermissions: ['approve-stat-fixes', 'rule-on-trades'] }],

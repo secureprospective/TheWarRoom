@@ -4,6 +4,8 @@ import { array, choice, integer, object, text, timestamp } from '../data/parseVa
 export type PeopleSeat = {
   franchise: string; name: string; abbreviation: string; owner: string; caretaker?: string;
 };
+// Go names an empty seat's owner "Vacant" (people_reading.go readSeats); here an empty seat has no owner.
+const ownerOf = (owner: string) => owner === 'Vacant' ? '' : owner;
 export type PeopleVote = {
   id: string; status: string; ballotsCast: number; totalFranchises: number; votesRequired: number;
   requirement: string; endsAt: string; candidates: string[]; counts: { choice: string; ballots: number }[];
@@ -58,7 +60,7 @@ export function parsePeople(v: unknown): People {
     seats: array(r.seats, 'Seats', (s, p) => {
       const o = object(s, p, ['franchise', 'name', 'abbreviation', 'owner', 'caretaker']);
       return { franchise: text(o.franchise, p), name: text(o.name, p),
-        abbreviation: text(o.abbreviation, p), owner: text(o.owner, p),
+        abbreviation: text(o.abbreviation, p), owner: ownerOf(text(o.owner, p)),
         ...(o.caretaker === undefined ? {} : { caretaker: text(o.caretaker, p) }) };
     }),
     roles: array(r.roles, 'Roles', (s, p) => {

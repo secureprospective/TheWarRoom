@@ -105,3 +105,34 @@ export function DocketDrawer({ leagues, docket, current, open, close, home }: { 
       <HQAct className="btn" onAction={() => { close(); home(); }}>Add to Home</HQAct></div>
   </aside>;
 }
+
+const CM_ASKS = ['Make receptions worth half a point', 'The lowest score each week loses two waiver spots',
+  'Let owners loan a player to another team for one week'];
+
+/** The Assistant drawer (Alt+A), after the mock's assistant(). No assistant runs on the league server yet,
+ *  so the drawer says so and its asks stay switched off; nothing here prepares or sends a change. */
+export function AssistantDrawer({ commish, league, close }: { commish: V3League | null;
+  league?: V3League; close: () => void }) {
+  const asks = commish ? CM_ASKS : ['Put all my live matchups on one board, biggest games first.',
+    'Make me a commissioner board', 'Shrink everything and add the news',
+    'Pop out live scoring and keep it on top', `Set my best lineup${league ? ` in ${league.name}` : ''}`];
+  return <aside className={`sdrawer asst${commish ? ' cm' : ''}`}>
+    <div className="dh rivets"><h2>{commish ? "Commissioner's assistant" : 'Your assistant'}</h2>
+      <HQAct className="x" onAction={close}>CLOSE ✕</HQAct></div>
+    <div className="who"><Icon n={commish ? 'crown' : 'chat'} />
+      {commish ? <span>Works only inside <b>{commish.name}</b>'s Control Room: rules, season, people, fixes.
+        It cannot be opened from an owner screen.</span>
+        : <span>Works on <b>your</b> screens, your layout and your own team. It prepares; you
+          confirm. It never
+          sends anything on its own.</span>}</div>
+    <div className="db">
+      <div className="msg-a">The assistant is not on this league server yet. When it arrives, tell it what you
+        want in plain words; it shows you exactly what will change first, and nothing moves until you press
+        Apply.</div>
+      <div className="sugg"><span className="d mono" style={{ fontSize: 10, letterSpacing: '.12em' }}>
+        TRY ONE OF THESE</span>{asks.map(s => <HQAct key={s} disabled>{`“${s}”`}</HQAct>)}</div></div>
+    <div className="df"><input style={{ flex: 1 }} disabled aria-label="Ask the assistant"
+      placeholder={commish ? 'Describe a league change…' : 'Ask for a layout, a board, a move…'} />
+      <HQAct className="btn solid" disabled>Ask</HQAct></div>
+  </aside>;
+}
