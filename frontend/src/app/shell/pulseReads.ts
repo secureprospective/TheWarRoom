@@ -198,17 +198,26 @@ export async function readPulseMatchup(league: string, season: number, week: num
   publish?.({ ...out, lineups: { ...out.lineups }, errors: [...out.errors] });
   const players = [...new Set(franchises.flatMap(f => [...(starters[f] ?? [])]))];
   await apply(async () => {
-    for (let offset = 0; offset < players.length; offset += 120) {
-      const ids = players.slice(offset, offset + 120);
-      const r = await port({ command: 'projections.read', mode: 'read',
-        arguments: { league, players: ids.join(','), season, week } });
-      for (const p of parseWarRoomProjections(r.data, league, season, week)) {
-        if (!ids.includes(p.player)) throw new Error('Projection player scope changed');
-        if (p.available) out.projections[p.player] = p.median;
-      }
-    }
+    await readPulseProjections(league, season, week, players, port, out.projections);
   });
   return out;
+}
+
+/** readPulseProjections is the week's median projection for each player the league holds one for.
+ *  A player without a projection is left out. */
+export async function readPulseProjections(league: string, season: number, week: number,
+  players: readonly string[], port: HostedPort = hostedWorkflow,
+  projections: Record<string, number> = {}): Promise<Record<string, number>> {
+  for (let offset = 0; offset < players.length; offset += 120) {
+    const ids = players.slice(offset, offset + 120);
+    const r = await port({ command: 'projections.read', mode: 'read',
+      arguments: { league, players: ids.join(','), season, week } });
+    for (const p of parseWarRoomProjections(r.data, league, season, week)) {
+      if (!ids.includes(p.player)) throw new Error('Projection player scope changed');
+      if (p.available) projections[p.player] = p.median;
+    }
+  }
+  return projections;
 }
 
 /** RailNow is what the shell rail says on every screen: the week being played and where my

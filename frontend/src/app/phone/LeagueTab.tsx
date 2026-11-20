@@ -3,12 +3,12 @@ import { hostedWorkflow } from '../commissioner/api';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { parseJobs } from '../commissioner/jobs';
-import type { PulseActivity, PulseResults, PulseStandingRow } from '../data/nativePulse';
+import type { PulseActivity, PulseResults, PulseSeat, PulseStandingRow } from '../data/nativePulse';
 import { HQAct } from '../shell/HQAct';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import { PhoneSheet } from '../shell/PhoneAppFrame';
-import { readNativePulse, readPulseActivity, readPulseSeason, readPulseWeekResults,
-  type NativePulse, type PulseSeason } from '../shell/pulseReads';
+import { readNativePulse, readPulseActivity, readPulseProjections, readPulseSeason,
+  readPulseWeekResults, type NativePulse, type PulseSeason } from '../shell/pulseReads';
 import { ProblemReport } from '../control/ProblemReport';
 import { readPlayerStatus, statusNote, statusWords, type PlayerStatus } from './playerStatus';
 import './LeagueTab.css';
@@ -67,12 +67,14 @@ type Props = { league?: LeagueChoice; port?: HostedPort;
   read?: (league: string, mine: string, commissioner: boolean) => Promise<LeagueReading>;
   readWeek?: (league: string, season: number, week: number) => Promise<PulseResults>;
   readRoster?: (league: string, franchise: string) => Promise<LeagueRosterPlayer[]>;
+  readProjections?: (league: string, season: number, week: number, players: string[])
+    => Promise<Record<string, number>>;
   onControlRoom?: () => void; onTrade?: () => void; onWatch?: () => void;
   /** onOpenJobs reports the commissioner's open job count, for the League tab badge. */
   onOpenJobs?: (count: number) => void };
 
-export function LeagueTab({ league, port = hostedWorkflow, read, readWeek, readRoster, onControlRoom,
-  onTrade, onWatch, onOpenJobs }: Props) {
+export function LeagueTab({ league, port = hostedWorkflow, read, readWeek, readRoster, readProjections,
+  onControlRoom, onTrade, onWatch, onOpenJobs }: Props) {
   const commissioner = league?.role === 'Commissioner' || league?.role === 'Co-commissioner';
   const mine = league?.franchise ?? '';
   const [reading, setReading] = useState<LeagueReading>();
@@ -121,7 +123,11 @@ export function LeagueTab({ league, port = hostedWorkflow, read, readWeek, readR
       port={port} onClose={() => setReporting(false)} />}
     {team && pulse && <TeamSheet team={team} mine={mine} commissioner={commissioner} league={league.id}
       status={reading.status?.value?.read}
-      readRoster={readRoster ?? ((l, f) => readTeamRoster(l, f, port))} onClose={() => setTeam(undefined)}
+      readRoster={readRoster ?? ((l, f) => readTeamRoster(l, f, port))}
+      season={pulse.season} week={pulse.week}
+      seat={pulse.seats.find(seat => seat.franchise === team.franchise)}
+      readProjections={readProjections ?? ((l, s, w, ids) => readPulseProjections(l, s, w, ids, port))}
+      onClose={() => setTeam(undefined)}
       onTrade={onTrade && (() => { setTeam(undefined); onTrade(); })}
       onSeat={onControlRoom && (() => { setTeam(undefined); onControlRoom(); })} />}
   </div>;
@@ -287,20 +293,38 @@ function PlayerStatusRows({ status }: { status?: Part<LeagueStatus> }) {
   </>;
 }
 
+/** ownerWords says who holds a seat without showing an account id: an open seat, a signed-up owner,
+ *  or the not-yet line when the directory has not come through. */
+const ownerWords = (seat?: PulseSeat) => !seat ? NOT_YET : seat.owner ? 'Owner signed up' : 'Open seat';
+
 const when = (stamp: string) => new Date(stamp).toLocaleString(undefined, { weekday: 'short',
   hour: 'numeric', minute: '2-digit' }).toUpperCase();
 
-function TeamSheet({ team, mine, commissioner, league, status, readRoster, onTrade, onSeat, onClose }: {
+function TeamSheet({ team, mine, commissioner, league, status, readRoster, season, week,
+  readProjections, seat, onTrade, onSeat, onClose }: {
   team: PulseStandingRow; mine: string; commissioner: boolean; league: string; status?: PlayerStatus;
   readRoster: (league: string, franchise: string) => Promise<LeagueRosterPlayer[]>;
+  season?: number; week?: number;
+  readProjections: (league: string, season: number, week: number, players: string[])
+    => Promise<Record<string, number>>;
+  seat?: PulseSeat;
   onTrade?: () => void; onSeat?: () => void; onClose: () => void }) {
   const [roster, setRoster] = useState<Part<LeagueRosterPlayer[]>>();
+  const [projections, setProjections] = useState<Record<string, number>>({});
   useEffect(() => {
     let live = true;
     readRoster(league, team.franchise).then(value => { if (live) setRoster({ value }); },
       cause => { if (live) setRoster({ error: message(cause) }); });
     return () => { live = false; };
   }, [league, team.franchise, readRoster]);
+  const players = roster?.value?.map(p => p.id).join(',') ?? '';
+  useEffect(() => {
+    if (!players || season === undefined || week === undefined) return;
+    let live = true;
+    readProjections(league, season, week, players.split(',')).then(
+      value => { if (live) setProjections(value); }, () => { if (live) setProjections({}); });
+    return () => { live = false; };
+  }, [league, season, week, players, readProjections]);
   const own = team.franchise === mine;
   return <PhoneSheet title={team.name} id="league-team-sheet" onClose={onClose}>
     <div className="lg5-sheet">
@@ -308,7 +332,7 @@ function TeamSheet({ team, mine, commissioner, league, status, readRoster, onTra
         {' · streak '}{team.streak || NOT_YET}
         {[team.conference, team.division].filter(Boolean).map(part => ` · ${part}`).join('')}
       </p>
-      <p className="lg5-note">Owner: {NOT_YET}</p>
+      <p className="lg5-note">Owner: {ownerWords(seat)}</p>
       <section className="lg5-grp" aria-label="Roster">
         {!roster ? <p className="lg5-empty" role="status">Reading the roster…</p>
           : roster.error ? <p className="lg5-empty" role="alert">{roster.error}</p>
@@ -316,7 +340,7 @@ function TeamSheet({ team, mine, commissioner, league, status, readRoster, onTra
               : roster.value!.map(p => <div key={p.id} className="lg5-pk"><span><b>{p.name}</b>
                 <em>{p.position || '–'}{status?.facts.get(p.id)
                   ? ` · ${statusWords(status.facts.get(p.id)!)}` : ''}</em></span>
-                <b title={`Projection: ${NOT_YET}`}>–</b></div>)}
+                <b>{projections[p.id] === undefined ? '–' : projections[p.id].toFixed(1)}</b></div>)}
       </section>
       {!own && onTrade && <HQAct className="lg5-key lg5-big" onAction={onTrade}>Propose a trade</HQAct>}
       {!own && commissioner && onSeat && <HQAct className="lg5-key lg5-big" onAction={onSeat}>
