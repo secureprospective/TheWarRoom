@@ -53,8 +53,8 @@ it('reads each tie once, with the step that split it, and leaves out the whole-t
 
 it('renders helper-derived recent form beside My Road in Pulse Race', () => {
   const reading = { league: 'test', name: 'Test', season: 2026, revision: 1,
-    seats: [{ franchise: 'mine', name: 'Mine', abbreviation: 'M', division: '' },
-      { franchise: 'other', name: 'Other', abbreviation: 'O', division: '' }],
+    seats: [{ franchise: 'mine', name: 'Mine', abbreviation: 'M', division: '', owner: '' },
+      { franchise: 'other', name: 'Other', abbreviation: 'O', division: '', owner: '' }],
     week: 6, weekNote: '', lastWeek: 8,
     fixtures: [{ week: 6, opponent: 'other', venue: 'Away' }], scheduleNote: '',
     forms: { mine: [{ week: 4, result: 'W' as const }, { week: 5, result: 'L' as const }] },

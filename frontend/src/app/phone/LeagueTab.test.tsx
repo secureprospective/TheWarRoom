@@ -23,9 +23,9 @@ const pulse = (rows = [row(1, 'b', 'Bravo', 8, 'Forge', 'East'), { ...row(2, 'a'
   streak: 'L2' },
   row(3, 'c', 'Charlie', 4, 'Forge', 'East')]): NativePulse => ({
   league: 'lg', name: 'Test League', season: 2026, revision: 1,
-  seats: [{ franchise: 'a', name: 'Alpha', abbreviation: 'A', division: '' },
-    { franchise: 'b', name: 'Bravo', abbreviation: 'B', division: '' },
-    { franchise: 'c', name: 'Charlie', abbreviation: 'C', division: '' }],
+  seats: [{ franchise: 'a', name: 'Alpha', abbreviation: 'A', division: '', owner: 'acct-a' },
+    { franchise: 'b', name: 'Bravo', abbreviation: 'B', division: '', owner: 'acct-b' },
+    { franchise: 'c', name: 'Charlie', abbreviation: 'C', division: '', owner: '' }],
   week: 2, weekNote: '', lastWeek: 3, fixtures: [], scheduleNote: '', forms: {}, formPending: false,
   standings: { league: 'lg', name: 'Test League', season: 2026, revision: 1, status: 'ok', words: '',
     through: 1,
@@ -52,7 +52,9 @@ const loaded = (): LeagueReading => ({ pulse: { value: pulse() },
 
 async function show(league: LeagueChoice, read: () => Promise<LeagueReading>,
   extra: { onTrade?: () => void; onControlRoom?: () => void; onWatch?: () => void;
-    readRoster?: () => Promise<LeagueRosterPlayer[]> } = {}) {
+    readRoster?: () => Promise<LeagueRosterPlayer[]>;
+    readProjections?: (league: string, season: number, week: number, players: string[])
+      => Promise<Record<string, number>> } = {}) {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
   const readWeek = vi.fn(async (_l: string, _s: number, week: number) => results(week, week < 2));
@@ -202,7 +204,8 @@ describe('LeagueTab', () => {
     const sheet = () => document.querySelector('dialog');
     expect(sheet()?.getAttribute('aria-label') ?? sheet()?.textContent).toBeTruthy();
     expect(sheet()?.textContent).toContain('Ace Runner');
-    expect(sheet()?.textContent).toContain('Owner: Not available yet');
+    expect(sheet()?.textContent).toContain('Owner: Owner signed up');
+    expect(sheet()?.textContent).not.toContain('acct-b');
     await click(/^Close$/, sheet()!);
     expect(sheet()).toBeNull();
     await click(/Bravo: owner and record/);
@@ -214,6 +217,26 @@ describe('LeagueTab', () => {
     await click(/Alpha: owner and record/);
     expect(sheet()?.textContent).not.toContain('Propose a trade');
     expect(view.querySelector('.lg5')).not.toBeNull();
+  });
+  it('team sheet: an open seat says Open seat; a seat held by an account never shows its id', async () => {
+    await show(owner, async () => loaded());
+    await click(/Charlie: owner and record/);
+    expect(document.querySelector('dialog')?.textContent).toContain('Owner: Open seat');
+    await click(/^Close$/, document.querySelector('dialog')!);
+    await click(/Bravo: owner and record/);
+    expect(document.querySelector('dialog')?.textContent).not.toContain('acct-b');
+  });
+  it('team sheet: projections fill the column for the week; a player without one shows a dash', async () => {
+    const readProjections = vi.fn(async () => ({ p1: 14.64 }));
+    await show(owner, async () => loaded(),
+      { readRoster: async () => [{ id: 'p1', name: 'Ace Runner', position: 'RB' },
+        { id: 'p2', name: 'Bench Man', position: 'WR' }], readProjections });
+    await click(/Bravo: owner and record/);
+    const sheet = document.querySelector('dialog')!;
+    expect(readProjections).toHaveBeenCalledWith('lg', 2026, 2, ['p1', 'p2']);
+    const rows = [...sheet.querySelectorAll('.lg5-pk')];
+    expect(rows[0].querySelector('b:last-child')?.textContent).toBe('14.6');
+    expect(rows[1].querySelector('b:last-child')?.textContent).toBe('–');
   });
   it('team sheet says when the roster read fails', async () => {
     await show(owner, async () => loaded(),

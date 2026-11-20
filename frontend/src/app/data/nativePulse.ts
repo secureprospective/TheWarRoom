@@ -352,7 +352,9 @@ export function parsePulseWeek(value: unknown, league: string, franchise: string
     note: r.message === undefined ? '' : text(r.message, 'Week note') };
 }
 
-export type PulseSeat = { franchise: string; name: string; abbreviation: string; division: string };
+/** owner is the account id of whoever holds the seat, or '' for an open seat. It is never shown. */
+export type PulseSeat = { franchise: string; name: string; abbreviation: string; division: string;
+  owner: string };
 export type PulseDirectory = { league: string; name: string; revision: number; season: number;
   seats: PulseSeat[] };
 
@@ -366,7 +368,8 @@ export function parsePulseDirectory(value: unknown, league: string): PulseDirect
       const s = object(v, p, ['franchise', 'name', 'abbreviation', 'owner', 'caretaker', 'division']);
       return { franchise: text(s.franchise, p), name: text(s.name, p),
         abbreviation: text(s.abbreviation, p),
-        division: s.division === undefined ? '' : text(s.division, p) };
+        division: s.division === undefined ? '' : text(s.division, p),
+        owner: s.owner === undefined || s.owner === null ? '' : text(s.owner, p) };
     }) };
 }
 
