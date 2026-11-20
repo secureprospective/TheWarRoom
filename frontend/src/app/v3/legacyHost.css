@@ -1,0 +1,8 @@
+/* Interim (batch 1): a league screen not yet rebuilt to v3 renders inside the v3 work area.
+   The old thin league shell is a fixed full-window frame with its own rail; inside the v3 frame it
+   fills the work area instead and the v3 rail replaces its rail. Removed when batch 2 lands. */
+.legacy-host { position: relative; transform: translateZ(0); }
+.legacy-host > .twr-app.thin-league-shell {
+  position: absolute; inset: 0; width: 100%; height: 100%; z-index: auto; grid-template-columns: minmax(0, 1fr);
+}
+.legacy-host > .twr-app.thin-league-shell > .rail { display: none; }

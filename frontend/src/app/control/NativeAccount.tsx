@@ -18,6 +18,7 @@ import './nativeAccount.css';
 
 const HostedLeague = lazy(() => import('../commissioner/HostedLeague'));
 const ThinHome = lazy(() => import('../shell/ThinHome'));
+const V3Shell = lazy(() => import('../v3/V3Shell'));
 const TodayTab = lazy(() => import('../phone/TodayTab'));
 import type { TodayBadges } from '../phone/TodayTab';
 const LiveTab = lazy(() => import('../phone/LiveTab'));
@@ -202,6 +203,21 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <NativeHelpers server={initial.server} league={admission.league} seats={admission.seats}
         franchise={admission.franchise} />}
   </>;
+  // Desktop v3: once admitted on a desktop-sized screen, the v3 frame owns the window (mock v3).
+  if (homeReady && screen === 'login' && !phoneFrame && !(browser && phoneViewport)) {
+    return <Suspense fallback={<p role="status">Opening The War Room…</p>}>
+      <V3Shell leagues={admittedLeagues} accountName={signedInName || undefined}
+        active={activeLeague ? { league: activeLeague, entry: activeEntry } : undefined}
+        onOpen={(league, entry) => { setActiveEntry(entry); setActiveLeagueId(league.id); }}
+        onHome={() => setActiveLeagueId(undefined)}
+        onSignOut={() => { void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget'))).catch(() => {}); }}>
+        {activeLeague && <Suspense fallback={<p>Opening your league…</p>}>
+          <HostedLeague key={`${fence.key}:${activeLeague.id}:${activeEntry}`} league={activeLeague.id}
+            franchise={activeLeague.franchise ?? ''} name={activeLeague.franchiseName ?? ''}
+            role={activeLeague.role ?? ''} entry={activeEntry} hq onHome={() => setActiveLeagueId(undefined)} />
+        </Suspense>}
+      </V3Shell></Suspense>;
+  }
   return <main className={`twr-app native-account${showThinHome ? ' has-thin-home' : ''}`
     + `${browser && homeReady ? ' phone-home' : ''}`} aria-busy={pending}>
     {!phoneFrame && <><header><h1>{view.name || 'Your league server'}</h1>
