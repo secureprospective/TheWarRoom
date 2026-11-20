@@ -233,3 +233,26 @@ func referenceArchiveRows(t *testing.T, host *twoFileHost) int64 {
 	}
 	return proof.Archive.Rows
 }
+
+func TestRefetchStaleNFLWeeksFetchesOnlyPastWeeksNotFinal(t *testing.T) {
+	now := time.Date(2026, 11, 20, 12, 0, 0, 0, time.UTC)
+	past := now.Add(-48 * time.Hour)
+	future := now.Add(48 * time.Hour)
+	held := []leagueweek.Week{
+		{Number: 9, Games: []leagueweek.Game{{Teams: [2]string{"BUF", "MIA"}, Kickoff: past}}},
+		{Number: 8, Games: []leagueweek.Game{{Teams: [2]string{"DAL", "NYG"}, Kickoff: past, Final: true}}},
+		{Number: 10, Games: []leagueweek.Game{{Teams: [2]string{"KC", "LV"}, Kickoff: future}}},
+	}
+	var requested []int
+	fetch := func(_ context.Context, _, week int) (leagueweek.Week, error) {
+		requested = append(requested, week)
+		return scheduleWeek(week, [2]string{"BUF", "MIA"}), nil
+	}
+	stale, err := refetchStaleNFLWeeks(t.Context(), 2026, now, held, fetch)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(requested) != 1 || requested[0] != 9 || len(stale) != 1 || stale[0] != 9 {
+		t.Fatalf("requested = %v, stale = %v", requested, stale)
+	}
+}

@@ -104,6 +104,15 @@ func refreshNFLWeekEvidence(ctx context.Context, store *history.Store, signIns *
 	if err != nil {
 		return err
 	}
+	stale, err := refetchStaleNFLWeeks(ctx, season, time.Now().UTC(), held, fetch)
+	if err != nil {
+		return err
+	}
+	if len(stale) > 0 {
+		if _, err := fmt.Fprintf(output, "Re-fetched results for %d past week(s) that were not final: %s.\n", len(stale), joinWeekNumbers(stale)); err != nil {
+			return fmt.Errorf("report schedule refresh: %w", err)
+		}
+	}
 	if len(missing) == 0 {
 		if _, err := fmt.Fprintf(output, "All %d published league weeks already have NFL kickoff dates; no changes made.\n", len(expected)); err != nil {
 			return fmt.Errorf("report schedule refresh: %w", err)
@@ -213,4 +222,49 @@ func fetchMissingNFLWeeks(ctx context.Context, season int, expected []int, held 
 		present[number] = struct{}{}
 	}
 	return missing, nil
+}
+
+// refetchStaleNFLWeeks re-fetches each held week whose games have all kicked off but are not all
+// final, so the newest archived copy carries results. It changes no pin and extends no schedule.
+func refetchStaleNFLWeeks(ctx context.Context, season int, now time.Time, held []leagueweek.Week, fetch nflWeekFetcher) ([]int, error) {
+	var stale []int
+	var errs []error
+	for _, week := range held {
+		if !pastNotFinal(now, week) {
+			continue
+		}
+		stale = append(stale, week.Number)
+		if _, err := fetch(ctx, season, week.Number); err != nil {
+			errs = append(errs, fmt.Errorf("re-fetch NFL week %d: %w", week.Number, err))
+		}
+	}
+	if err := errors.Join(errs...); err != nil {
+		return nil, fmt.Errorf("refresh past NFL results: %w", err)
+	}
+	return stale, nil
+}
+
+// pastNotFinal holds when every game has kicked off and at least one game is not yet final.
+func pastNotFinal(now time.Time, week leagueweek.Week) bool {
+	if len(week.Games) == 0 {
+		return false
+	}
+	allFinal := true
+	for _, game := range week.Games {
+		if now.Before(game.Kickoff) {
+			return false
+		}
+		if !game.Final {
+			allFinal = false
+		}
+	}
+	return !allFinal
+}
+
+func joinWeekNumbers(weeks []int) string {
+	parts := make([]string, len(weeks))
+	for i, week := range weeks {
+		parts[i] = strconv.Itoa(week)
+	}
+	return strings.Join(parts, ", ")
 }
