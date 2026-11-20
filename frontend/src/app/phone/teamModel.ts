@@ -19,7 +19,7 @@ export type TeamView = {
   locked: number; bye?: TeamRow; irOutsideBench: boolean;
 };
 
-const dayTime = (at: string) => new Date(at).toLocaleString('en-US',
+export const dayTime = (at: string) => new Date(at).toLocaleString('en-US',
   { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(',', '').toUpperCase();
 
 /** gameWords is the row's game line: live clock, final, bye, or the kickoff the reads hold. */

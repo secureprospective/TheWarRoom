@@ -17,7 +17,7 @@ import { AddSheet, ClaimSheet, PlayerSheet, TradeSheet, type MovesPlayer,
 import { onHostedTopics } from '../data/hostedReads';
 import type { Game } from '../now/liveContract';
 import { useHostedGames } from '../shell/hostedGames';
-import { gameWords } from './teamModel';
+import { dayTime, gameWords } from './teamModel';
 import './MovesTab.css';
 
 type Subscribe = (load: () => void) => () => void;
@@ -216,8 +216,7 @@ function Players({ reading, search, setSearch, position, setPosition, open, move
     <div className="mv4-chips">{POSITIONS.map(p => <HQAct key={p} className={position === p ? 'on' : ''}
       selected={position === p} onAction={() => setPosition(p)}>{p}</HQAct>)}</div>
     {openBench !== undefined && <p className="mv4-note">{benchWords(openBench)}</p>}
-    {runAt && <p className="mv4-note">Waivers run {new Date(runAt).toLocaleString('en-US',
-      { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(',', '').toUpperCase()}</p>}
+    {runAt && <p className="mv4-note">Waivers run {dayTime(runAt)}</p>}
     {!reading.value.length && <p className="mv4-empty">No free agents in the pool.</p>}
     {reading.value.length > 0 && !shown.length &&
       <p className="mv4-empty">No one matches. Clear the search or pick ALL.</p>}
