@@ -88,3 +88,36 @@ Key fact: most v3-looking pieces exist in the **legacy local shell** `TargetApp.
 
 ## 8. Honest status
 Wiring and server: solid, CI green, lab healthy. Desktop UI: far from mock v3 — essentially unstarted against the mock. Phone: close to mobile v1 per the earlier walks, not yet side-by-side verified at full fidelity. ETA for desktop v3 match: several days of focused work; not Sunday.
+
+---
+## COMPACT POINT 2026-11-20 ~13:40 CT — Control Room v3 built with AGY (Claudebox = head-brain)
+
+**State:** Control Room v3 is DONE on the branch locally, verified on Claude-OS against the lab league (all 10 tabs,
+rail leaves + strip + body agree). Local commits (NOT pushed): 51d035df6 hook, b41ec5a6c shell mount, 5769e9b7b Jobs,
+ffa67fde1 ten bodies, fdac8da89 tests, 72d21415d Rules/Season/League pass 2. Also 64d8815ee (`join-link -take -no-login`).
+Last pushed: b5b2fa53a.
+
+**PUSH FAILED** at 13:38: pre-push `Test failed` — test name not captured (output was tail -3). FIRST NEXT ACTION:
+`cd frontend && npm run build`, then `git push 2>&1 | grep -E "FAIL|×" -A15` to see which test; fix; push. Known flaky under
+load: `commissioner/hostedRules.test.tsx > NativeAccount admits a teamless Commissioner...` (passes alone and on rerun).
+
+**Files:** v3/ControlRoomV3.tsx (BODIES map, shell owns tab), v3/Ctrl{Jobs,Situations,Rules,Season,Fix,Picks,People,
+Feedback,League,Server}V3.tsx (+tests); commissioner/HostedControlRoom.tsx exports useHostedControlRoom,
+HostedControlRoomState, HostedControlRoomBody; shared hooks useProblemReports, useHostedSeason (+ League/Rules hooks).
+V3Shell: crTab state, hostedControlTabs strip + rail leaves, ControlRoomV3 lazy mount for entry 'control'.
+
+**Seat:** Christopher is COMMISSIONER + OWNER of Arizona (franchise.25) on the lab via new `join-link -take -no-login`
+(backup /var/lib/twr/manual-1120-seat-az). Owner-only flows now testable.
+
+**AGY (fleet agent, Beelink):** plugin ~/.gemini/config/plugins/fleet (rules, skills links, guard.sh PreToolUse,
+stopguard.sh Stop); launcher ~/fleet/bin/agy-run.sh <job> <brief> [model]; briefs ~/fleet/briefs/agy-cr-*-1120.md;
+runs ~/fleet/runs/agy-cr-*-1120/. Routing + calibration in memory feedback_agy_routing_1120.md. AGY Claude/GPT
+5-hour bucket EXHAUSTED at 13:30 (resets ~18:10 CT) → use Hydrogen for coding until then. Christopher will not use
+AGY while Claudebox runs it (his sign-in knocks ours out). Test sign-in with a Flash "Reply: OK" before launching.
+
+**Side quests found (not chased):** ledger/deputies show raw account ids (acct.…) not names — server read;
+Beelink disk 87% (go cache 79G: `go clean -cache` when no build runs); fallback text "this part … not on the server app
+yet" appears in Season Divisions and League; Season calendar first row has no name in the data.
+
+**NEXT ACTIONS:** 1) fix the push (above). 2) Christopher's walk of Control Room on http://127.0.0.1:5199/app/.
+3) Then phone mock / side quests per his list. Dev server (vite pid 1663256) still running on purpose.
