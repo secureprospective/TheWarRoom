@@ -44,8 +44,9 @@ const waitForLeagueOpen = async (host: Awaited<ReturnType<typeof mount>>, events
 // Desktop v3: a league opens from the rail (pick it, then a screen); account actions live in the
 // Account menu (the initials button in the top bar).
 const openLeague = async (host: Awaited<ReturnType<typeof mount>>) => {
+  // Franchise HQ now mounts its own v3 screen; War Room still opens the hosted franchise room.
   await clickWhenReady(host, 'Pick League');
-  await clickWhenReady(host, 'Open Franchise HQ');
+  await clickWhenReady(host, 'Open War Room');
 };
 const account = async (host: Awaited<ReturnType<typeof mount>>, label: string) => {
   if (!all(host, 'button').some(b => b.getAttribute('aria-label') === label || b.textContent === label))
