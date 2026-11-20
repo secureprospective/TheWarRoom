@@ -213,3 +213,31 @@ func TestCommissionerTakesAnOpenFranchise(t *testing.T) {
 		t.Fatalf("people = %+v, want the commissioner holding franchise.02", people)
 	}
 }
+
+// A join-link owner must read their own lineup; another franchise's lineup stays refused.
+func TestJoinedOwnerReadsOwnLineup(t *testing.T) {
+	f := newHostedFixture(t, true)
+	commish := governance.Principal(f.principal)
+	code, err := f.join.Rotate(t.Context(), "native.hosted", commish)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.post(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.04", "fourth"), "", "", http.StatusCreated)
+	bearer := f.login(t, "fourth", "private-password")
+	read := func(franchise string) (int, string) {
+		t.Helper()
+		raw := workflowRequest(t, "lineup.read", "read", fmt.Sprintf(`{"league":"native.hosted","franchise":%q,"week":1,"at":""}`, franchise), "")
+		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+		if err != nil {
+			t.Fatal(err)
+		}
+		status, result := f.send(t, serverhttp.WorkflowPath, string(body), bearer, "")
+		return status, string(result)
+	}
+	if status, result := read("franchise.04"); status != http.StatusOK || strings.Contains(result, "private to its team") {
+		t.Fatalf("own lineup: status=%d body=%s", status, result)
+	}
+	if status, result := read("franchise.05"); status == http.StatusOK {
+		t.Fatalf("other lineup readable: body=%s", result)
+	}
+}
