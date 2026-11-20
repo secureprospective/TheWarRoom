@@ -58,7 +58,12 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const [selected, setSelected] = useState<string>();
   const [pulseTab, setPulseTab] = useState<PulseTab>('now');
   const [hqTab, setHqTab] = useState<HQTab>('lineup-and-roster');
-  const [hqTeam, setHqTeam] = useState<Record<string, string>>({});
+  // The commissioner's franchise choice per league, kept in this browser so a reload reopens it.
+  const [hqTeam, setHqTeamState] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem('twr.hqTeam') ?? '{}') as Record<string, string>; }
+    catch { return {}; } });
+  const setHqTeam = (f: (t: Record<string, string>) => Record<string, string>) => setHqTeamState(t => {
+    const next = f(t); localStorage.setItem('twr.hqTeam', JSON.stringify(next)); return next; });
   const [layer, setLayer] = useState<'switch' | 'cmdk' | 'account' | 'docket' | 'assist' | null>(null);
   const home = () => { setSelected(undefined); onHome(); };
   useEffect(() => {

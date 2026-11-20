@@ -26,6 +26,8 @@ import { countdown } from '../clock/urgency';
 import { connectClock } from '../clock/ticker';
 import './hq.css';
 import { HQLineupV3, HQTabs, TeamPick } from '../v3/HQLineupV3';
+import { HQMovesV3 } from '../v3/HQMovesV3';
+import { OWNER_ONLY_MOVES } from '../commissioner/hqReading';
 import { HQContractsV3 } from '../v3/HQContractsV3';
 import { BDrawer } from '../v3/pulseDrawers';
 import { ContractDecisionList } from './HQPanels';
@@ -116,12 +118,11 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
         select={select} chosen={selected} whatIf={() => setDrawer('whatif')}
         release={canManage ? () => { if (selected) setRelease(selected); } : undefined}
         decide={canManage && reading.contractDecisions ? () => setDrawer('decide') : undefined} />
-      : <div className="wbody hq-v10" style={{ overflow: 'auto' }}>
-        <HQMoves native snapshot={snapshot} moves={moves}
-        available={reading.moves !== undefined}
-          reason={reading.moveReason} history={<HQMoveHistory
-            key={JSON.stringify([league, mine, snapshot.league.value.season])}
-            league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} /></div>}
+      : <HQMovesV3 snapshot={snapshot} moves={moves}
+        available={reading.moves !== undefined && reading.moveReason !== OWNER_ONLY_MOVES}
+        reason={reading.moveReason} badge={v3.badge} history={<HQMoveHistory
+          key={JSON.stringify([league, mine, snapshot.league.value.season])}
+          league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} />}
     {others}</>;
   const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab} navigate={setTab}
     week={reading.week}
