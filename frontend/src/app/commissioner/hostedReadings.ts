@@ -86,7 +86,8 @@ export type HostedRoster = {
   season: number;
   franchises: { value: string; label: string }[];
   pool: { value: string; label: string }[];
-  market: { id: string; name: string; position: string; string: string; points: string; team?: string; average?: string; age?: string; value?:
+  market: { id: string; name: string; position: string; string: string; points: string;
+    team?: string; average?: string; age?: string; value?:
     string; minimum?: string; minimumCents?: number }[];
   picks: {
     season: number; round: number; slot: number; original: string; owner: string;
