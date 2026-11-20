@@ -96,7 +96,7 @@ function LiveBody({ league, port, readBrief, subscribe }: { league: LeagueChoice
               if (g) live.follow(followKey(g));
               setSheet({ kind: 'player', player: p, name: p.name });
             }}>
-            <i className="live6__pos">{p.slot}</i><span>{p.name}</span>
+            <i className="live6__pos">{p.slot}</i><span>{surname(p.name)}</span>
             {onField(p, g) && <i className="live6__onf" title="on the field now" aria-label="on the field" />}
             <b>{pointsLabel(p.points)}</b>
           </HQAct>;
@@ -118,19 +118,6 @@ function LiveBody({ league, port, readBrief, subscribe }: { league: LeagueChoice
           <em>{clockWords(g)}</em>
         </HQAct>)}
       </div></nav>
-    <nav className="live6__strip" aria-label="League matchups"><b className="live6__strip-l">LEAGUE</b>
-      <div className="live6__strip-s">
-        {!rows.length && <span className="live6__strip-w">{words || results?.words
-          || 'No matchups are read for this week'}</span>}
-        {rows.map(r => <HQAct key={r.key} className={`live6__mc${r.key === selected?.key ? ' is-on' : ''}`
-          + `${r.mine ? ' is-me' : ''}`} label={r.game.words || `${r.game.awayName} at ${r.game.homeName}`}
-          onAction={() => { pick(r.key); setBox('lg'); }}>
-          <span>{r.game.awayName}<b>{pointsLabel(r.away)}</b></span>
-          <span>{r.game.homeName}<b>{pointsLabel(r.home)}</b></span>
-          <em>{r.mine ? 'YOURS · ' : ''}{r.status}</em>
-        </HQAct>)}
-      </div></nav>
-
     <FieldState game={followed} words={!current ? 'Live games show for the week being played.'
       : live.error && !live.view ? `${unavailable} · ${live.error}`
         : !live.view ? 'Reading the NFL scoreboard…'
@@ -189,7 +176,9 @@ function Matchup({ brief, mine }: { brief: HomeBrief; mine: string }) {
   const chance = myChance(brief.pulse?.odds, mine);
   const held = chance && chance.week === brief.results?.week ? chance.mine : undefined;
   return <div className="live6__mys">
-    <div className="live6__t is-me"><span>{home ? game.homeName : game.awayName} · YOU</span>
+    <div className="live6__t is-me"><span>
+      <span className="live6__nm">{home ? game.homeName : game.awayName}</span>
+      {' · YOU'}</span>
       <b>{pointsLabel(score(home ? 'home' : 'away'))}</b></div>
     <div className="live6__wp">
       <div className="live6__bar">
@@ -288,12 +277,13 @@ function FieldState({ game, words }: { game?: Game; words: string }) {
   const down = known && s.down > 0 ? `${ordinal(s.down)} & ${s.distance}` : '';
   return <section className="live6__live" aria-label="NFL live">
     <div className="live6__score">
-      <div className="live6__side"><b>{game.away.abbreviation}</b><strong>{game.away.score}</strong></div>
+      <Side team={game.away} ball={known && offense === game.away} />
       <div className="live6__mid"><b>{clockWords(game)}</b>{down && <span className="live6__dd">{down}</span>}
         {known && <span>{ballOn}</span>}</div>
-      <div className="live6__side is-r"><strong>{game.home.score}</strong>
-        <b>{game.home.abbreviation}</b></div>
+      <Side team={game.home} ball={known && offense === game.home} right />
     </div>
+    {known && offense && <DriveBar game={game} toEndzone={s.toEndzone} distance={s.down > 0 ? s.distance : 0}
+      homeHasBall={offense === game.home} />}
     <div className="live6__head live6__pad"><b>NFL live</b>
       <span className="live6__m">
         {game.away.abbreviation} at {game.home.abbreviation} · {gameTime(game)}</span></div>
@@ -305,6 +295,46 @@ function FieldState({ game, words }: { game?: Game; words: string }) {
     </div>
     {!known && <p className="live6__note">{game.status === 'pre' ? gameTime(game)
       : game.status === 'post' ? 'Final' : 'Field position not supplied'}</p>}
+    <LastPlay game={game} />
+  </section>;
+}
+
+function Side({ team, ball, right }: { team: Game['home']; ball: boolean; right?: boolean }) {
+  const id = <div className="live6__id"><b>{team.abbreviation}</b>
+    {team.record && <span>{team.record}</span>}</div>;
+  const mark = ball && <i className="live6__poss" title="has the ball" aria-label="has the ball" />;
+  return <div className={`live6__side${right ? ' is-r' : ''}`}>
+    {right ? <>{mark}<strong>{team.score}</strong>{id}</> : <>{id}<strong>{team.score}</strong>{mark}</>}
+  </div>;
+}
+
+/** DriveBar is the mock's drive bar: the field left (away goal) to right (home goal), the ball and the
+ *  line to gain, placed from the read's own yards-to-endzone. */
+function DriveBar({ game, toEndzone, distance, homeHasBall }: { game: Game; toEndzone: number;
+  distance: number; homeHasBall: boolean }) {
+  // Away defends the left goal: the away offense drives right, the home offense drives left.
+  const at = (yards: number) => homeHasBall ? yards : 100 - yards;
+  const ball = at(toEndzone);
+  const gain = distance > 0 ? at(Math.max(0, toEndzone - distance)) : undefined;
+  const pos = (yards: number) => `${(100 / 120) * (10 + yards)}%`;
+  return <div className="live6__dbar" data-dir={homeHasBall ? 'l' : 'r'} data-testid="live-drive-bar"
+    aria-label={`Ball ${toEndzone} yards from the goal`} role="img">
+    <div className="live6__track"><i className="live6__ez" /><i className="live6__ez is-r" />
+      <i className="live6__ball" style={{ left: pos(ball) }} />
+      {gain !== undefined && <i className="live6__first" style={{ left: pos(gain) }} />}</div>
+    <div className="live6__dnums"><span>{game.away.abbreviation}</span><span>20</span><span>50</span>
+      <span>20</span><span>{game.home.abbreviation}</span></div>
+  </div>;
+}
+
+/** LastPlay is the mock's latest-play card: the read's own last play, or its absence. */
+function LastPlay({ game }: { game: Game }) {
+  const last = game.last ?? [...game.plays].sort((a, b) => b.sequence - a.sequence)[0];
+  return <section className="live6__lastp" aria-label="Latest play">
+    <div className="live6__head"><b>Last play</b>
+      {last && <span className="live6__m">Q{last.period} {last.clock}</span>}</div>
+    <p>{last ? last.text
+      : game.status === 'pre' ? 'The game has not kicked off.' : 'No play is held yet.'}</p>
   </section>;
 }
 
@@ -345,6 +375,8 @@ function onField(p: PulseStarterRow, g?: Game) {
   const club = g.home.abbreviation === espnTeam(p.team) ? g.home : g.away;
   return g.state.possession === club.id && !['DEF', 'DST', 'K'].includes(p.slot);
 }
+/** surname: the mock's starter tiles name a player by surname ("Patrick Mahomes" reads "Mahomes"). */
+export function surname(name: string) { return name.trim().split(/\s+/).slice(1).join(' ') || name; }
 function ordinal(n: number) { return `${n}${['th', 'st', 'nd', 'rd'][n] ?? 'th'}`; }
 
 export default LiveTab;

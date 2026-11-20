@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { HomeBrief } from '../shell/homeReads';
 import type { LeagueChoice } from '../shell/leaguePicker';
-import { LiveTab } from './LiveTab';
+import { LiveTab, surname } from './LiveTab';
 
 const league: LeagueChoice = { id: 'league', name: 'Test League', app: true, franchise: 'mine',
   franchiseName: 'My Team', role: 'Owner' };
@@ -13,7 +13,8 @@ const state = { possession: '12', down: 2, distance: 7, yardLine: 57, toEndzone:
 const play = { id: 'p1', sequence: 1, text: 'Mahomes pass short right', clock: '8:42', period: 2,
   at: '2026-11-15T18:00:00Z', homeScore: 7, awayScore: 3, start: state, end: state, participants: [] };
 const nflGame = { season: 2026, week: 11, seasonType: 2, id: '401', kickoff: '2026-11-15T18:00:00Z',
-  home: { id: '12', abbreviation: 'KC', score: 7 }, away: { id: '2', abbreviation: 'BUF', score: 3 },
+  home: { id: '12', abbreviation: 'KC', score: 7, record: '8-2' },
+  away: { id: '2', abbreviation: 'BUF', score: 3 },
   status: 'in', clock: '8:42', period: 2, state, last: play, plays: [play],
   box: [{ team: 'KC', category: 'passing', labels: ['C/ATT', 'YDS'], rows: [{ name: 'P. Mahomes',
     stats: ['6/10', '95'] }] }] };
@@ -80,7 +81,7 @@ describe('LiveTab', () => {
     expect(region('My matchup')).toContain('44% WIN');
     expect(region('My matchup')).toContain('Mahomes');
     expect(region('NFL games')).toContain('BUF3KC7Q2 8:42');
-    expect(region('League matchups')).toContain('Gridlock25.8Iron Curtain24.2');
+    expect(region('League matchups')).toBe('');
     expect(region('NFL live')).toContain('2nd & 7');
     expect(region('NFL live')).toContain('KC 43');
     expect(region('NFL live')).toContain('57 YD');
@@ -113,6 +114,27 @@ describe('LiveTab', () => {
     await show(async () => { throw new Error('results.read refused'); }, fakePort('fail'));
     expect(host!.querySelector('[aria-label="My matchup"] [role="alert"]')?.textContent)
       .toContain('results.read refused');
-    expect(region('League matchups')).toContain('results.read refused');
+    expect(region('League matchups')).toBe('');
+  });
+  it('names starter tiles by surname, as the mock does', async () => {
+    expect(surname('Patrick Mahomes')).toBe('Mahomes');
+    expect(surname('Amon-Ra St. Brown')).toBe('St. Brown');
+    expect(surname('Chiefs')).toBe('Chiefs');
+    await show(async () => brief([myGameRow]));
+    expect(host!.querySelector('.live6__pl span')?.textContent).toBe('Mahomes');
+  });
+  it('shows the mock score header, drive bar and last play from the followed game', async () => {
+    await show(async () => brief([myGameRow]));
+    const live = host!.querySelector('[aria-label="NFL live"]')!;
+    expect(live.querySelector('.live6__side.is-r .live6__id')?.textContent).toBe('KC8-2');
+    expect(live.querySelector('.live6__side.is-r [aria-label="has the ball"]')).not.toBeNull();
+    expect(live.querySelector('.live6__side:not(.is-r) [aria-label="has the ball"]')).toBeNull();
+    const bar = host!.querySelector<HTMLElement>('[data-testid="live-drive-bar"]')!;
+    expect(bar.dataset.dir).toBe('l');
+    expect(bar.querySelector<HTMLElement>('.live6__ball')!.style.left).toBe(`${(100 / 120) * 67}%`);
+    expect(bar.querySelector<HTMLElement>('.live6__first')!.style.left).toBe(`${(100 / 120) * 60}%`);
+    expect(bar.textContent).toBe('BUF205020KC');
+    expect(region('Latest play')).toContain('Q2 8:42');
+    expect(region('Latest play')).toContain('Mahomes pass short right');
   });
 });
