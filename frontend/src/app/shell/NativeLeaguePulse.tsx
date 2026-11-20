@@ -16,6 +16,7 @@ import { useHostedGames } from './hostedGames';
 import type { LiveView } from '../now/liveContract';
 import './pulse.css';
 import { PulseNowV3, PulseTabs } from '../v3/PulseV3';
+import { PulseRaceV3 } from '../v3/PulseRaceV3';
 
 export type { PulseTab } from './pulseReads';
 export const PULSE_FOLLOW_MS = 250;
@@ -133,6 +134,14 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
     retry();
     return () => clearTimeout(timer);
   }, [errored, scope.refresh, scope.serverTime]);
+  if (scope.v3 && tab === 'race') return <>
+    <PulseTabs tab={tab} navigate={scope.navigate} badge={scope.v3.badge} kind={scope.v3.kind} />
+    <div className="wbody scr scr-pulse">{!reading
+      ? <div className="st"><div className="eng">{league.error
+        ? `League Pulse is unavailable · ${league.error}` : 'Reading League Pulse…'}</div></div>
+      : <PulseRaceV3 reading={reading} mine={scope.mine} badge={scope.v3.badge}
+        pull={drawer === 'tb' || drawer === 'bk' ? drawer : undefined} onPull={pull} />}</div>
+  </>;
   if (scope.v3 && tab === 'now') return <>
     <PulseTabs tab={tab} navigate={scope.navigate} badge={scope.v3.badge} kind={scope.v3.kind} />
     <div className="wbody scr scr-pulse">{!reading
