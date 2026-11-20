@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import { Review } from '../commissioner/HostedReview';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
@@ -14,9 +14,16 @@ import type { WarRoomContext } from '../shell/warroomReads';
 import { dealFromWarRoomOffer, type WarRoomDeal } from '../shell/warroomTradeReads';
 import { AddSheet, ClaimSheet, PlayerSheet, TradeSheet, type MovesPlayer,
   type MovesRoster } from './MovesSheets';
-import { parseHostedGames, type Game } from '../now/liveContract';
+import { onHostedTopics } from '../data/hostedReads';
+import type { Game } from '../now/liveContract';
+import { useHostedGames } from '../shell/hostedGames';
 import { gameWords } from './teamModel';
 import './MovesTab.css';
+
+type Subscribe = (load: () => void) => () => void;
+/** topicsFor reloads when a hosted topic of this league changes (same rule as LiveTab). */
+const topicsFor = (league: string): Subscribe => load =>
+  onHostedTopics(topics => { if (topics.some(topic => topic.league === league)) load(); });
 
 export type MovesSegment = 'players' | 'waivers' | 'trades';
 type Offer = ReturnType<typeof parseHostedTrades>['offers'][number];
@@ -104,9 +111,17 @@ type Sheet = { kind: 'player' | 'add' | 'claim'; player: MovesPlayer }
   | { kind: 'trade'; deal?: WarRoomDeal };
 
 export function MovesTab({ league, port = hostedWorkflow, read = readMoves,
-  readContext = readMovesContext }: { league?: LeagueChoice; port?: HostedPort; read?: typeof readMoves;
-  readContext?: typeof readMovesContext }) {
-  const mine = league?.franchise ?? '';
+  readContext = readMovesContext, subscribe }: { league?: LeagueChoice; port?: HostedPort;
+  read?: typeof readMoves; readContext?: typeof readMovesContext; subscribe?: Subscribe }) {
+  if (!league || !league.franchise) return <section className="mv4" aria-label="Moves">
+    <p className="mv4-empty">Moves opens once you hold a franchise in a league.</p></section>;
+  return <MovesBody key={league.id} league={league} port={port} read={read} readContext={readContext}
+    subscribe={subscribe ?? topicsFor(league.id)} />;
+}
+
+function MovesBody({ league, port, read, readContext, subscribe }: { league: LeagueChoice;
+  port: HostedPort; read: typeof readMoves; readContext: typeof readMovesContext; subscribe: Subscribe }) {
+  const mine = league.franchise ?? '';
   const [segment, setSegment] = useState<MovesSegment>('players');
   const [reading, setReading] = useState<MovesReading>();
   const [failure, setFailure] = useState('');
@@ -133,15 +148,10 @@ export function MovesTab({ league, port = hostedWorkflow, read = readMoves,
       .catch(cause => { if (active) setContextError(message(cause)); });
     return () => { active = false; };
   }, [league, mine, port, readContext, sheet, context]);
-  const [games, setGames] = useState<Game[]>();
-  useEffect(() => {
-    if (!league) return;
-    let active = true;
-    port({ command: 'nfl.games.read', mode: 'read', arguments: { league: league.id } })
-      .then(r => { if (active) setGames(parseHostedGames(r.data, league.id).games); })
-      .catch(() => { if (active) setGames(undefined); });
-    return () => { active = false; };
-  }, [league, port, revision]);
+  const changes = useRef(subscribe); changes.current = subscribe;
+  const onChange = useCallback<Subscribe>(load => changes.current(load), []);
+  const live = useHostedGames(league.id, port, onChange);
+  const games = live.view?.games;
   if (!league || !mine) return <section className="mv4" aria-label="Moves">
     <p className="mv4-empty">Moves opens once you hold a franchise in a league.</p></section>;
   if (failure) return <section className="mv4" aria-label="Moves">{unavailableLine(failure)}</section>;
