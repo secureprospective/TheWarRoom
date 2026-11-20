@@ -13,7 +13,8 @@ import type { WarRoomContext } from '../shell/warroomReads';
 import { executeWarRoomOffer, readWarRoomCatalog, readWarRoomPartner, readWarRoomPreview,
   type WarRoomCatalog, type WarRoomDeal } from '../shell/warroomTradeReads';
 
-export type MovesPlayer = { id: string; name: string; position: string; window?: string; waiver?: string };
+export type MovesPlayer = { id: string; name: string; position: string; window?: string; waiver?: string;
+  team?: string; average?: string };
 export type MovesRoster = { revision: number; writable: boolean; football: string;
   mine: { id: string; name: string }[] };
 const message = (cause: unknown) => cause instanceof Error ? cause.message : String(cause);

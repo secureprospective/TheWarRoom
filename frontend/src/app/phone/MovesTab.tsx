@@ -14,6 +14,8 @@ import type { WarRoomContext } from '../shell/warroomReads';
 import { dealFromWarRoomOffer, type WarRoomDeal } from '../shell/warroomTradeReads';
 import { AddSheet, ClaimSheet, PlayerSheet, TradeSheet, type MovesPlayer,
   type MovesRoster } from './MovesSheets';
+import { parseHostedGames, type Game } from '../now/liveContract';
+import { gameWords } from './teamModel';
 import './MovesTab.css';
 
 export type MovesSegment = 'players' | 'waivers' | 'trades';
@@ -56,6 +58,7 @@ export async function readMoves(league: string, mine: string, port: HostedPort):
     .map(p => [p.player, { waiver: p.status, window: p.window }]));
   const pool = roster.value && { value: [
     ...roster.value.market.map(p => ({ id: p.id, name: p.name, position: p.position,
+      ...(p.team ? { team: p.team } : {}), ...(p.average ? { average: p.average } : {}),
       ...onWaivers.get(p.id) })),
     ...[...onWaivers].filter(([id]) => !roster.value!.market.some(p => p.id === id))
       .map(([id, held]) => ({ id, name: names.get(id) ?? id, position: '', ...held })),
@@ -130,6 +133,15 @@ export function MovesTab({ league, port = hostedWorkflow, read = readMoves,
       .catch(cause => { if (active) setContextError(message(cause)); });
     return () => { active = false; };
   }, [league, mine, port, readContext, sheet, context]);
+  const [games, setGames] = useState<Game[]>();
+  useEffect(() => {
+    if (!league) return;
+    let active = true;
+    port({ command: 'nfl.games.read', mode: 'read', arguments: { league: league.id } })
+      .then(r => { if (active) setGames(parseHostedGames(r.data, league.id).games); })
+      .catch(() => { if (active) setGames(undefined); });
+    return () => { active = false; };
+  }, [league, port, revision]);
   if (!league || !mine) return <section className="mv4" aria-label="Moves">
     <p className="mv4-empty">Moves opens once you hold a franchise in a league.</p></section>;
   if (failure) return <section className="mv4" aria-label="Moves">{unavailableLine(failure)}</section>;
@@ -154,7 +166,8 @@ export function MovesTab({ league, port = hostedWorkflow, read = readMoves,
     {done && <p className="mv4-done" role="status">{done}</p>}
     {segment === 'players' && <Players reading={reading.pool} search={search} setSearch={setSearch}
       position={position} setPosition={setPosition} open={player => setSheet({ kind: 'player', player })}
-      move={move} canAdd={Boolean(reading.roster?.writable)} openBench={reading.openBench} />}
+      move={move} canAdd={Boolean(reading.roster?.writable)} openBench={reading.openBench}
+      games={games} />}
     {segment === 'waivers' && <Waivers reading={reading.waivers} league={league.id} mine={mine} port={port}
       onChanged={() => setRevision(n => n + 1)} />}
     {segment === 'trades' && <Trades reading={reading.trades} league={league.id} mine={mine} port={port}
@@ -173,10 +186,11 @@ export function MovesTab({ league, port = hostedWorkflow, read = readMoves,
   </section>;
 }
 
-function Players({ reading, search, setSearch, position, setPosition, open, move, canAdd, openBench }: {
+function Players({ reading, search, setSearch, position, setPosition, open, move, canAdd, openBench,
+  games }: {
   reading: MovesReading['pool']; search: string; setSearch: (v: string) => void;
   position: string; setPosition: (v: string) => void; open: (p: MovesPlayer) => void;
-  move: (p: MovesPlayer) => void; canAdd: boolean; openBench?: number }) {
+  move: (p: MovesPlayer) => void; canAdd: boolean; openBench?: number; games?: Game[] }) {
   const shown = useMemo(() => (reading.value ?? []).filter(p =>
     (position === 'ALL' || p.position === position)
     && p.name.toLowerCase().includes(search.trim().toLowerCase())), [reading, search, position]);
@@ -193,7 +207,10 @@ function Players({ reading, search, setSearch, position, setPosition, open, move
     <div className="mv4-list">{shown.map(p => <div className="mv4-fa" key={p.id}>
       <span className="mv4-ps">{p.position || '—'}</span>
       <HQAct className="mv4-who" label={`Open ${p.name}`} onAction={() => open(p)}>
-        <b>{p.name}</b>{p.waiver && <em className="wv">{p.waiver}</em>}</HQAct>
+        <b>{p.name}</b>{p.team && <em className="tm">{gameWords(p.team, games, undefined).words}</em>}
+        {p.waiver && <em className="wv">{p.waiver}</em>}</HQAct>
+      <span className="mv4-avg" aria-label={p.average ? `Season average ${p.average}` : 'No season average'}>
+        <b>{p.average ?? '—'}</b><em>AVG</em></span>
       <HQAct className="mv4-act" label={`${p.window ? 'Claim' : 'Add'} ${p.name}`}
         disabled={!p.window && !canAdd} onAction={() => move(p)}>{p.window ? 'CLAIM' : 'ADD'}</HQAct>
     </div>)}</div>

@@ -91,6 +91,37 @@ describe('MovesTab', () => {
     const whole = await show(async () => { throw new Error('Server asleep'); });
     expect(whole.textContent).toContain('Unavailable: Server asleep');
   });
+  it('pool rows join the NFL games read for team · kickoff and show the season AVG column', async () => {
+    const board = { league: 'league', board: { stale: false, source: 'ESPN',
+      at: '2026-11-19T18:00:00Z', failure: '', games: [{ id: 'g1', season: 2026, week: 11, seasonType: 2,
+        kickoff: '2026-11-22T18:00:00Z', home: { id: '1', abbreviation: 'LAR', score: 0 },
+        away: { id: '2', abbreviation: 'SF', score: 0 }, status: 'pre', clock: '', period: 0,
+        state: null, last: null, box: [], plays: [] }] } };
+    const port = vi.fn(async (request: NativeRequest) => {
+      if (request.command !== 'nfl.games.read') throw new Error('held');
+      return { data: board, writable: false, football: '', label: 'Server' };
+    }) as unknown as HostedPort;
+    const view = await show(async () => ({ ...loaded(), pool: { value: [{ id: 'p1', name: 'Ace Runner',
+      position: 'RB', team: 'LAR', average: '12.4' },
+      { id: 'p3', name: 'No Stats', position: 'TE' }] } }), port);
+    const rows = [...view.querySelectorAll('.mv4-fa')];
+    expect(rows[0].querySelector('em.tm')?.textContent).toMatch(/^LAR · \w{3} /);
+    expect(rows[0].querySelector('.mv4-avg')?.textContent).toBe('12.4AVG');
+    expect(rows[1].querySelector('em.tm')).toBeNull();
+    expect(rows[1].querySelector('.mv4-avg')?.textContent).toBe('—AVG');
+  });
+  it('readMoves carries team and average from the assets pool', async () => {
+    const port = vi.fn(async (request: NativeRequest) => {
+      if (request.command !== 'native.assets.read') throw new Error('held');
+      return { writable: true, football: 'pin', data: { league: 'league', revision: 1, seeded: true,
+        entry: 'e', source: 'held', identities: [],
+        pool: [{ player: 'p1', name: 'Ace', position: 'RB', string: '—', points: '40.0', team: 'LAR',
+          average: '10.0' }],
+        snapshot: { season: 2026, franchises: [], players: [], picks: [], pool: [] } } };
+    }) as unknown as HostedPort;
+    const reading = await readMoves('league', 'mine', port);
+    expect(reading.pool.value?.[0]).toMatchObject({ team: 'LAR', average: '10.0' });
+  });
   it('readMoves keeps a failed read separate from the others', async () => {
     const requests: string[] = [];
     const port = vi.fn(async (request: NativeRequest) => {

@@ -89,6 +89,7 @@ type Store struct {
 	poolMu     sync.Mutex
 	poolKey    string
 	poolPoints map[string]leaguerules.Decimal
+	poolWeeks  map[string]int
 	statPrices statPrices
 	wmu        sync.Mutex
 	// batchFault, set only by tests, fails a batch after the given step to prove nothing is kept.

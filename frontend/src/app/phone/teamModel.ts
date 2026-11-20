@@ -61,7 +61,8 @@ export function teamView(reading: NativeHQ, lineup: HQLineup | undefined, mine: 
     const out = status === 'IR';
     return { key, section, slot, index, id, name: player?.name || id, position,
       state: out ? 'out' : game.state, words: out ? 'INJURED RESERVE' : game.words,
-      points: section === 'starters' ? scored.get(id) : undefined, range, locked: game.started };
+      points: section === 'starters' ? scored.get(id) : undefined,
+      range, locked: game.started };
   };
   const starters = boardSlots(lineup, reading.settings).map((slot, i) =>
     row('starters', slot.code, i, slot.id, lineup?.starters.find(p => p.id === slot.id)?.position));

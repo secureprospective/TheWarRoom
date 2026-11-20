@@ -181,5 +181,9 @@ func nativePoolPlayer(id string, f nativecheck.PlayerFacts) commissioner.NativeP
 	if f.DesignationHeld && (f.Designation == "IR" || f.Designation == "PUP" || f.Designation == "NFI") {
 		status = string(f.Designation)
 	}
-	return commissioner.NativePoolPlayer{Player: id, Name: f.Name, Position: string(f.Position), String: status, Points: "—"}
+	team := f.Team
+	if team == "FA" {
+		team = ""
+	}
+	return commissioner.NativePoolPlayer{Player: id, Name: f.Name, Position: string(f.Position), String: status, Points: "—", Team: team}
 }
