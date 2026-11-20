@@ -483,15 +483,16 @@
 .twr-app .wtabs { flex-wrap: wrap; min-width: 0; }
 .twr-app .wtabs .act-tab { min-height: 44px; }
 
-/* Intent, not wording, gives a command its face and an inline destination its underline. */
-.twr-app .act-button {
+/* Intent, not wording, gives a command its face and an inline destination its underline.
+   The phone app frame styles its own keys, so the desktop button face stops at its edge. */
+.twr-app .act-button:where(:not(.phone-app *)) {
   border: 1px solid var(--surface-line-hi);
   background: var(--surface-2);
   padding: 7px 9px;
 }
-.twr-app .act-button:hover:not(:disabled) { background: var(--surface-3); }
-.twr-app .act-button:focus-visible { outline: 2px solid var(--surface-tx1); outline-offset: 2px; }
-.twr-app .act-button:disabled { opacity: .6; background: var(--surface-2); }
+.twr-app .act-button:where(:not(.phone-app *)):hover:not(:disabled) { background: var(--surface-3); }
+.twr-app .act-button:where(:not(.phone-app *)):focus-visible { outline: 2px solid var(--surface-tx1); outline-offset: 2px; }
+.twr-app .act-button:where(:not(.phone-app *)):disabled { opacity: .6; background: var(--surface-2); }
 .twr-app .act-text { text-decoration: underline; text-underline-offset: 3px; }
 .twr-app .act-card { display: block; width: 100%; }
 
