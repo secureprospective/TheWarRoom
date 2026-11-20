@@ -32,7 +32,8 @@ const pulse = (rows = [row(1, 'b', 'Bravo', 8, 'Forge', 'East'), { ...row(2, 'a'
     decided: 1, pending: 0, criteria: [], noData: [], rows },
   bracket: { league: 'lg', season: 2026, revision: 1, status: '', words: 'Top 1 per conference',
     startWeek: 15,
-    finalWeek: 17, perConference: 1, byeSeeds: 0, started: false, fields: [{ conference: '',
+    finalWeek: 17, perConference: 1, byeSeeds: 0, divisionWinners: false, started: false,
+    fields: [{ conference: '',
       seeds: [{ seed: 1, franchise: 'b', name: 'Bravo', division: '', rank: 1, kind: '', bye: false,
         byHand: false }] }], projected: true, shape: [] },
   errors: [] });
@@ -164,6 +165,18 @@ describe('LeagueTab', () => {
     b.fields = [{ ...b.fields[0], conference: 'AFC' }, { ...b.fields[0], conference: 'NFC' }];
     const view = await show(owner, async () => two);
     expect(view.textContent).toContain('Top 7 in each conference make the playoffs.');
+  });
+  it('table: a divisional bracket adds the division line under the playoff note', async () => {
+    const div = loaded();
+    div.pulse.value!.bracket!.divisionWinners = true;
+    const view = await show(owner, async () => div);
+    expect(view.textContent).toContain('Top 1 make the playoffs. Tap a team for its roster.');
+    expect(view.textContent).toContain('Division winners make the playoffs.');
+  });
+  it('table: no division line when the bracket has no division winners', async () => {
+    const plain = loaded();
+    const view = await show(owner, async () => plain);
+    expect(view.textContent).not.toContain('Division winners make the playoffs.');
   });
   it('table: no playoff note when the bracket gives no cut', async () => {
     const none = loaded();
