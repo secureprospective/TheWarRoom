@@ -287,7 +287,16 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const { briefs, needs, loading, now } = useHome(leagues, port);
   const docket = useMemo(() => docketOf(needs, leagues, now), [needs, leagues, now]);
   const [selected, setSelected] = useState<string>();
-  const [menu, setMenu] = useState(false);
+  const [layer, setLayer] = useState<'switch' | 'cmdk' | 'account' | null>(null);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && layer) { setLayer(null); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setLayer('cmdk'); return; }
+      if (e.altKey && e.key.toLowerCase() === 'l') { e.preventDefault(); setLayer('switch'); return; }
+      if (e.altKey && e.key.toLowerCase() === 'h') { e.preventDefault(); setLayer(null); setSelected(undefined); onHome(); }
+    };
+    window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
+  }, [layer, onHome]);
   const L = leagues.find(l => l.id === (active?.league.id ?? selected)) ?? null;
   const open = (l: V3League, e: ThinHomeEntry) => onOpen(admitted.find(a => a.id === l.id) ?? l, e);
   const screen = active?.entry === 'control' ? 'pal-slate' : active ? ({ hq: 'pal-hq', lineup: 'pal-hq', war: 'pal-war',
@@ -312,17 +321,17 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
     <header className="top">
       <button className="mark" onClick={() => { setSelected(undefined); onHome(); }} data-tip="Home: everything you play is here|Alt+H">
         <span className="gl">TWR</span><span><b>THEWARROOM</b><small>COMMAND CENTER</small></span></button>
-      <button className="lchip" style={{ '--lg': L ? L.c : 'var(--edge)' } as CSSProperties} data-tip="The league you are working in. Click to switch.|Alt+L">
+      <button className="lchip" onClick={() => setLayer('switch')} style={{ '--lg': L ? L.c : 'var(--edge)' } as CSSProperties} data-tip="The league you are working in. Click to switch.|Alt+L">
         <span className="edge" /><Badge L={L} big /><span className="ell"><b className="ell">{L ? L.name : 'All leagues'}</b>
           <small>{L ? roleWords(L).toUpperCase() : `${leagues.length} ${leagues.length === 1 ? 'LEAGUE' : 'LEAGUES'} · PICK ONE`}</small></span>
         <span className="car">▾</span></button>
-      <button className="search" data-tip="Find a player, team, screen, piece or command|Ctrl+K"><Icon n="search" />
+      <button className="search" onClick={() => setLayer('cmdk')} data-tip="Find a player, team, screen, piece or command|Ctrl+K"><Icon n="search" />
         <span>Search or type a command</span><kbd>Ctrl K</kbd></button>
       <div className="tkeys"><button className="key" data-tip="What is waiting on you, in every league|Alt+D"><Icon n="bell" />
         <span className="lb">Needs you</span>{n ? <span className="ct">{n}</span> : null}</button>
         <button className="key" data-tip="Ask in plain words: arrange screens, prepare a move|Alt+A"><Icon n="chat" /><span className="lb">Assistant</span></button>
         <button className="key" data-tip="Show where every number comes from and goes|Alt+F"><Icon n="plug" /><span className="lb">Feeds</span></button>
-        <button className="acct" onClick={() => setMenu(m => !m)} aria-expanded={menu} data-tip="Account, devices, labels, your AI key, sign out">{initials}</button></div>
+        <button className="acct" onClick={() => setLayer(l => l === 'account' ? null : 'account')} aria-expanded={layer === 'account'} data-tip="Account, devices, labels, your AI key, sign out">{initials}</button></div>
     </header>
     {top && topL ? <div className={`band${top.urgent ? ' crit' : ''}`} role="button" tabIndex={0}
       onClick={() => top.entry && open(topL, top.entry)}>
@@ -335,7 +344,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         <button className={`leaf${active ? '' : ' sel'}`}><span className="tr">{active ? '├' : '▮'}</span><span className="ell">Today</span></button>
         <div className="gl" style={{ paddingTop: 8 }}><Icon n="star" /><span>MY SHORTCUTS</span></div>
         <div className="leaf gone" data-tip="Open any league tab and press the star to pin it here">Pin any tab with ☆</div></div>
-      {!L ? <div className="lz none"><button className="cart" style={{ boxShadow: 'inset 0 -3px 0 var(--edge)' }}>
+      {!L ? <div className="lz none"><button className="cart" onClick={() => setLayer('switch')} style={{ boxShadow: 'inset 0 -3px 0 var(--edge)' }}>
         <Badge big /><b>All leagues</b><span className="rl">▾</span><small>No league selected</small></button>
         <div className="lzb"><div className="gl"><span>PICK A LEAGUE</span></div>
           {leagues.map(l => { const w = docket.filter(d => d.lg === l.id && d.lane === 'need').length;
@@ -363,5 +372,59 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
       <button className="stb" data-tip="Season calendar">{stamp} CT{week !== undefined ? ` · WEEK ${week}` : ''}</button>
       <span className="idp">TWR-MK3 · {accountName ? accountName.toUpperCase() : 'SIGNED IN'} · <button onClick={onSignOut} style={{ textDecoration: 'underline' }}>SIGN OUT</button></span>
     </footer>
+    <div id="layer">{layer && <div className="ov" style={{ position: 'absolute', inset: 0 }}>
+      {layer === 'cmdk' ? <div className="scrim" onClick={() => setLayer(null)} />
+        : <div style={{ position: 'absolute', inset: 0 }} onClick={() => setLayer(null)} />}
+      {layer === 'switch' && <Switcher leagues={leagues} docket={docket} briefs={briefs} current={L?.id}
+        pick={id => { setLayer(null); setSelected(id); if (!id) onHome(); }} />}
+      {layer === 'cmdk' && <Commands leagues={leagues} close={() => setLayer(null)} open={open}
+        home={() => { setSelected(undefined); onHome(); }} pick={id => setSelected(id)} />}
+      {layer === 'account' && <div className="pop menu" style={{ right: 8, top: 52, width: 300 }}>
+        <div className="mh">YOU · {leagues.length} {leagues.length === 1 ? 'LEAGUE' : 'LEAGUES'}</div>
+        <button disabled><Icon n="tv" /> Devices <span className="w">this desktop</span></button>
+        <button disabled><Icon n="chat" /> Assistant: connect your AI provider</button><hr />
+        <button onClick={() => { setLayer(null); onSignOut(); }}><Icon n="x" /> Sign out</button></div>}
+    </div>}</div>
   </div>;
+}
+
+function Switcher({ leagues, docket, briefs, current, pick }: { leagues: V3League[]; docket: DocketItem[];
+  briefs: Record<string, Brief>; current?: string; pick: (id?: string) => void }) {
+  const [q, setQ] = useState('');
+  const waiting = (l: V3League) => docket.filter(d => d.lg === l.id && d.lane === 'need').length;
+  const grp: [string, V3League[]][] = [['NEEDS YOU', leagues.filter(l => waiting(l))],
+    ['EVERYTHING ELSE', leagues.filter(l => !waiting(l))]];
+  const rec = (l: V3League) => briefs[l.id]?.brief?.pulse?.standings?.rows.find(r => r.franchise === l.franchise)?.record;
+  return <div className="pop sw"><input placeholder="Find a league…" autoFocus value={q} onChange={e => setQ(e.target.value)} />
+    <button className={`lrow${current ? '' : ' sel'}`} onClick={() => pick(undefined)}><Badge />
+      <span><b>All leagues</b> <span className="d">back to Home</span></span><span /><span /><span /></button>
+    <div className="list">{grp.map(([g, ls]) => { ls = ls.filter(l => !q || l.name.toLowerCase().includes(q.toLowerCase()));
+      return ls.length ? <div key={g}><div className="sh">{g} · {ls.length}</div>{ls.map(l =>
+        <button key={l.id} className={`lrow${l.id === current ? ' sel' : ''}`} style={{ '--c': l.c } as CSSProperties} onClick={() => pick(l.id)}>
+          <Badge L={l} /><span className="ell"><b>{l.name}</b> <span className="d">{l.franchiseName ?? ''}</span></span>
+          <span className="role">{l.commish ? <Icon n="crown" /> : null}</span><span className="rc">{rec(l) ?? '—'}</span>
+          <span className={`w8${waiting(l) ? '' : ' z'}`}>{waiting(l) || '·'}</span></button>)}</div> : null; })}</div>
+    <div className="sh" style={{ borderTop: '1px solid var(--edge)' }}><Icon n="crown" /> commissioner · amber = matters waiting on you</div></div>;
+}
+
+function Commands({ leagues, close, open, home, pick }: { leagues: V3League[]; close: () => void;
+  open: (L: V3League, e: ThinHomeEntry) => void; home: () => void; pick: (id: string) => void }) {
+  const [q, setQ] = useState(''), [sel, setSel] = useState(0);
+  const items = useMemo(() => {
+    const out: [string, string, () => void][] = [['Home', 'screen', home]];
+    for (const L of leagues) {
+      for (const s of SCREENS.filter(x => x.on(L))) out.push([`${s.name} › ${L.name}`, 'screen', () => open(L, s.k)]);
+      out.push([`League › ${L.name}`, 'league', () => pick(L.id)]);
+    }
+    return out;
+  }, [leagues, home, open, pick]);
+  const shown = items.filter(i => !q || i[0].toLowerCase().includes(q.toLowerCase())).slice(0, 12);
+  const run = (i: number) => { const f = shown[i]; close(); f?.[2](); };
+  return <div className="pop cmdk"><input placeholder="Search players, teams, screens, pieces and commands" autoFocus value={q}
+    onChange={e => { setQ(e.target.value); setSel(0); }} onKeyDown={e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); setSel(v => Math.max(0, Math.min(shown.length - 1, v + (e.key === 'ArrowDown' ? 1 : -1)))); }
+      if (e.key === 'Enter') run(sel);
+    }} />
+    <div className="res">{shown.length ? shown.map((it, k) => <button key={it[0]} className={k === sel ? 'on' : ''} onClick={() => run(k)}>
+      {it[0]}<small>{it[1].toUpperCase()}</small></button>) : <div className="st">Nothing matches. Try a league or a screen.</div>}</div></div>;
 }
