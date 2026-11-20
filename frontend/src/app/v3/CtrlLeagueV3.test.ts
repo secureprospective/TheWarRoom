@@ -37,4 +37,15 @@ describe('ledgerEntryDetail', () => {
     expect(ledgerEntryDetail({ who: 'Commissioner', why: 'Rule vote' })).toBe('Commissioner · Rule vote');
     expect(ledgerEntryDetail({ who: 'Commissioner', why: '' })).toBe('Commissioner');
   });
+
+  it('maps account ids to member display names and keeps the id as fallback', () => {
+    const people = { seats: [{ franchise: 'f25', name: 'Arizona Cardinals', abbreviation: 'ARI',
+      owner: 'acct.az' }] };
+    expect(ledgerEntryDetail({ who: 'acct.az', why: 'Updated scoring' }, people))
+      .toBe('Arizona Cardinals · Updated scoring');
+    expect(ledgerEntryDetail({ who: 'via AI/CLI, acting for acct.az', why: '' }, people))
+      .toBe('via AI/CLI, acting for Arizona Cardinals');
+    expect(ledgerEntryDetail({ who: 'acct.unknown', why: 'Manual fix' }, people))
+      .toBe('acct.unknown · Manual fix');
+  });
 });

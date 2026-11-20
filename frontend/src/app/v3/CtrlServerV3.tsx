@@ -4,6 +4,7 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { HostedBackupNow } from '../commissioner/HostedBackupNow';
 import { createHostedLedgerQuery } from '../commissioner/hostedControlRoomData';
+import { memberDisplayName, type People } from '../commissioner/people';
 import type { LedgerEntry } from '../commissioner/proxy';
 import { hostedWorkflow } from '../control/nativeApi';
 import type { ControlBodyProps } from './ControlRoomV3';
@@ -18,12 +19,13 @@ function Panel({ title, badge, children, foot, style, tag }: { title: string; ba
     {foot && <div className="pf"><span className="ell">{foot}</span></div>}</section>;
 }
 
-/** Formats a ledger entry's actor, reason and safeguard for display. */
-export function ledgerDetail(entry: LedgerEntry): string {
-  return `By ${entry.who} · Reason: ${entry.why || 'No reason recorded'} · Safeguard: ${entry.gravity}`;
+/** Formats a ledger entry's actor display name, reason and safeguard for display. */
+export function ledgerDetail(entry: LedgerEntry, people?: Pick<People, 'seats'>): string {
+  const actor = memberDisplayName(entry.who, people);
+  return `By ${actor} · Reason: ${entry.why || 'No reason recorded'} · Safeguard: ${entry.gravity}`;
 }
 
-export function CtrlServerV3({ league, port = hostedWorkflow, badge }: ControlBodyProps) {
+export function CtrlServerV3({ league, port = hostedWorkflow, badge, people }: ControlBodyProps) {
   const ledgerQuery = useMemo(() => createHostedLedgerQuery(league, port), [league, port]);
   const ledgerState = ledgerQuery.use();
   useEffect(() => {
@@ -44,7 +46,7 @@ export function CtrlServerV3({ league, port = hostedWorkflow, badge }: ControlBo
       {ledger && ledger.entries.map(entry => <div key={entry.id} className="row"
         style={{ gridTemplateColumns: 'auto minmax(0,1fr) auto' }}>
         <span className="tag">{entry.gravity}</span>
-        <span className="ell"><b>{entry.what}</b> <span className="d">{ledgerDetail(entry)}</span></span>
+        <span className="ell"><b>{entry.what}</b> <span className="d">{ledgerDetail(entry, people)}</span></span>
         <span className="m">{new Date(entry.when).toLocaleString()}</span></div>)}
     </Panel>
     <Panel title="Backups, feeds and upgrades" badge={badge}

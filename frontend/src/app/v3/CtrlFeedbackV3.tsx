@@ -2,6 +2,7 @@
 // commish.feedback.read and refreshed from c.feedbackRefreshVersion.
 import type { ReactNode } from 'react';
 import { hostedWorkflow } from '../control/nativeApi';
+import { memberDisplayName } from '../commissioner/people';
 import type { ProblemReport } from '../commissioner/problemReports';
 import { useProblemReports } from '../commissioner/HostedControlRoomFeedback';
 import type { ControlBodyProps } from './ControlRoomV3';
@@ -24,7 +25,7 @@ export function reportMeta(
     + ` · User agent: ${report.userAgent || 'Unavailable'}`;
 }
 
-export function CtrlFeedbackV3({ c, league, port = hostedWorkflow, badge }: ControlBodyProps) {
+export function CtrlFeedbackV3({ c, league, port = hostedWorkflow, badge, people }: ControlBodyProps) {
   const { reports, error } = useProblemReports(league, port, c.feedbackRefreshVersion);
 
   const foot = reports
@@ -43,7 +44,7 @@ export function CtrlFeedbackV3({ c, league, port = hostedWorkflow, badge }: Cont
           alignItems: 'start', gridTemplateColumns: 'minmax(0,1fr)' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
           <span className="tag">{report.route}</span>
-          <b>{report.principal}</b>
+          <b title={report.principal}>{memberDisplayName(report.principal, people)}</b>
           <span className="sp" />
           <time className="m" dateTime={report.createdAt}>
             {new Date(report.createdAt).toLocaleString()}</time>

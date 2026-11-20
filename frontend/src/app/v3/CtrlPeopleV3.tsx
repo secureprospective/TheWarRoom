@@ -3,14 +3,12 @@
 // Reads come from commish.people.read (the old People body's own read); every action is the old tool form.
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { HQAct } from '../shell/HQAct';
-import { hostedCommandAvailable, type NativeRequest } from '../commands/native';
-import { createReadQuery } from '../data/query';
+import { hostedCommandAvailable } from '../commands/native';
 import { hostedSnapshot, onHostedChange, onHostedTopics } from '../data/hostedReads';
-import { hostedWorkflow, type HostedResponse } from '../control/nativeApi';
 import { HostedCommissionerActTray } from '../commissioner/CommissionerActTray';
 import { actTable, type ActDefinition } from '../commissioner/actTable';
-import type { HostedPort } from '../commissioner/hostedRoom';
-import { parsePeople, type People, type PeopleSeat } from '../commissioner/people';
+import { createHostedPeopleQuery } from '../commissioner/HostedControlRoomPeople';
+import { memberDisplayName, type People, type PeopleSeat } from '../commissioner/people';
 import type { ControlBodyProps } from './ControlRoomV3';
 
 export type SeatFilter = 'all' | 'vacant';
@@ -58,35 +56,30 @@ export function seatRoles(people: Pick<People, 'roles'>, seat: PeopleSeat): stri
 }
 
 export type DeputyRow = { person: string; team: string; roles: string; permissions: string };
+export type RoleRow = { person: string; name: string; role: string };
 
 /** People with effective deputy permissions, named by their seat when they hold one. */
 export function deputyRows(people: Pick<People, 'actors' | 'seats' | 'roles'>): DeputyRow[] {
   return people.actors.map(actor => ({
     person: actor.person,
-    team: people.seats.find(seat => seat.owner === actor.person)?.name ?? actor.person,
+    team: memberDisplayName(actor.person, people),
     roles: people.roles.filter(role => role.person === actor.person).map(role => role.role)
       .join(', ') || '—',
     permissions: actor.effectivePermissions.join(' · ') || 'No deputy permissions',
   }));
 }
 
+/** League roles paired with the holder's seat name, falling back to their id when unseated. */
+export function roleRows(people: Pick<People, 'roles' | 'seats'>): RoleRow[] {
+  return people.roles.map(role => ({
+    person: role.person,
+    name: memberDisplayName(role.person, people),
+    role: role.role,
+  }));
+}
+
 const definition = (command: string): ActDefinition | undefined =>
   actTable.find(action => action.command === command);
-
-function createPeopleQuery(league: string, port: HostedPort = hostedWorkflow) {
-  return createReadQuery('commissioner.TargetCommissionerPeople', {
-    initial: (): { people?: People } => ({}),
-    read: async (scope: string): Promise<People> => {
-      const response: HostedResponse = await port({ command: 'commish.people.read', mode: 'read',
-        arguments: { league: scope } } as NativeRequest);
-      const people = parsePeople(response.data);
-      if (people.league !== league || scope !== league)
-        throw new Error('People belong to another league.');
-      return people;
-    },
-    accept: (people: People) => ({ people }),
-  });
-}
 
 function ToolButtons({ commands, onTool }: { commands: string[]; onTool(d: ActDefinition): void }) {
   return <>{commands.map(command => {
@@ -100,7 +93,7 @@ function ToolButtons({ commands, onTool }: { commands: string[]; onTool(d: ActDe
 
 export function CtrlPeopleV3({ c, league, port, badge }: ControlBodyProps) {
   const room = c.room;
-  const query = useMemo(() => createPeopleQuery(league, port), [league, port]);
+  const query = useMemo(() => createHostedPeopleQuery(league, port), [league, port]);
   const reading = query.use();
   const [filter, setFilter] = useState<SeatFilter>('all');
   const [search, setSearch] = useState('');
@@ -130,6 +123,7 @@ export function CtrlPeopleV3({ c, league, port, badge }: ControlBodyProps) {
   const waiting = <St>{reading.pending ? 'Reading people from the league server…'
     : 'People have not been read yet.'}</St>;
   const deputies = people ? deputyRows(people) : [];
+  const roles = people ? roleRows(people) : [];
   return <div className="wbody scr scr-ctrl"><div className="lay" style={{
     gridTemplateColumns: 'minmax(0,1.4fr) minmax(0,1fr)',
     gridTemplateRows: 'minmax(0,1fr) minmax(0,1fr)' }}>
@@ -189,13 +183,14 @@ export function CtrlPeopleV3({ c, league, port, badge }: ControlBodyProps) {
           role.</St>}
         {deputies.map(d => <div key={d.person} className="row"
           style={{ gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1.4fr)' }}>
-          <span className="ell"><b>{d.team}</b></span><span className="tag">{d.roles}</span>
+          <span className="ell" title={d.person}><b>{d.team}</b></span><span className="tag">{d.roles}</span>
           <span className="ell m" title={d.permissions}>{d.permissions}</span></div>)}
-        <div className="sec">ROLES · {people.roles.length}</div>
-        {people.roles.length === 0 && <St>No league roles are listed.</St>}
-        {people.roles.map((role, index) => <div key={`${role.person}:${role.role}:${index}`} className="row"
+        <div className="sec">ROLES · {roles.length}</div>
+        {roles.length === 0 && <St>No league roles are listed.</St>}
+        {roles.map((role, index) => <div key={`${role.person}:${role.role}:${index}`} className="row"
           style={{ gridTemplateColumns: 'auto minmax(0,1fr)' }}>
-          <span className="tag">{role.role}</span><span className="ell">{role.person}</span></div>)}
+          <span className="tag">{role.role}</span>
+          <span className="ell" title={role.person}>{role.name}</span></div>)}
         <div className="acts"><ToolButtons onTool={setAction} commands={['commish.role.grant',
           'commish.role.revoke', 'commish.deputy.order', 'commish.abilities.set']} /></div>
         <div className="sec">SUCCESSION</div>

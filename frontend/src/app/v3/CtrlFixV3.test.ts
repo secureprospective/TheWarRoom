@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fixExceptions, undoableEntries } from './CtrlFixV3';
+import { fixActorName, fixExceptions, undoableEntries } from './CtrlFixV3';
 import type { HostedFixReadings } from '../commissioner/hostedControlRoomData';
 
 const as = (x: unknown) => x as HostedFixReadings;
@@ -26,5 +26,14 @@ describe('undoableEntries', () => {
       { id: 'd', undo: 'y' }] } });
     expect(undoableEntries(r).map(e => e.id)).toEqual(['a', 'd']);
     expect(undoableEntries(r, 1).map(e => e.id)).toEqual(['a']);
+  });
+});
+
+describe('fixActorName', () => {
+  it('resolves ledger actor ids to member names with id fallback', () => {
+    const people = { seats: [{ franchise: 'f25', name: 'Arizona Cardinals', abbreviation: 'ARI',
+      owner: 'acct.az' }] };
+    expect(fixActorName('acct.az', people)).toBe('Arizona Cardinals');
+    expect(fixActorName('acct.other', people)).toBe('acct.other');
   });
 });

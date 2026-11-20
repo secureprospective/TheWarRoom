@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { deputyRows, filterSeats, seatHolder, seatRoles, seatState, vacantSeats } from './CtrlPeopleV3';
+import { deputyRows, filterSeats, roleRows, seatHolder, seatRoles, seatState, vacantSeats }
+  from './CtrlPeopleV3';
 import type { PeopleSeat } from '../commissioner/people';
 
 const seat = (franchise: string, owner: string, caretaker?: string): PeopleSeat =>
@@ -28,9 +29,27 @@ describe('roles and deputies', () => {
     expect(seatRoles(people, seats[0])).toBe('co-commissioner');
     expect(seatRoles(people, seats[1])).toBe('—');
   });
-  it('lists deputies by seat name with their permissions', () => {
+  it('lists deputies by seat name with their permissions and resolves caretakers and local principals', () => {
     expect(deputyRows(people)).toEqual([
       { person: 'ann', team: 'Team a', roles: 'co-commissioner', permissions: 'edit-lineups' },
       { person: 'zed', team: 'zed', roles: '—', permissions: 'No deputy permissions' }]);
+    const withCaretaker = {
+      seats,
+      roles: [{ person: 'cal', role: 'Deputy' }],
+      actors: [
+        { person: 'cal', effectivePermissions: ['edit-lineups' as const] },
+        { person: 'local.admin', effectivePermissions: [] },
+      ],
+    };
+    expect(deputyRows(withCaretaker).map(row => row.team)).toEqual(['Team c', 'Local operator']);
+  });
+  it('maps role account ids to seat display names with id fallback', () => {
+    expect(roleRows({
+      seats,
+      roles: [{ person: 'ann', role: 'Commissioner' }, { person: 'acct.unseated', role: 'DOT member' }],
+    })).toEqual([
+      { person: 'ann', name: 'Team a', role: 'Commissioner' },
+      { person: 'acct.unseated', name: 'acct.unseated', role: 'DOT member' },
+    ]);
   });
 });

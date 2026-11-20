@@ -7,6 +7,7 @@ import { hostedLeagueUnavailable, ledgerChips, useHostedLeague }
   from '../commissioner/HostedControlRoomLeague';
 import { Review } from '../commissioner/HostedReview';
 import type { LeagueNotes, Note } from '../commissioner/notes';
+import { memberDisplayName, type People } from '../commissioner/people';
 import type { LedgerEntry } from '../commissioner/proxy';
 import { when } from '../control/room/room';
 import type { ControlBodyProps } from './ControlRoomV3';
@@ -37,12 +38,16 @@ export function noticeKindTag(note: Pick<Note, 'kind' | 'pinned'>): string {
   return note.pinned ? 'PINNED NOTE' : 'LEAGUE NOTE';
 }
 
-/** Actor and optional reason for a ledger entry row. */
-export function ledgerEntryDetail(entry: Pick<LedgerEntry, 'who' | 'why'>): string {
-  return entry.why ? `${entry.who} · ${entry.why}` : entry.who;
+/** Actor display name and optional reason for a ledger entry row. */
+export function ledgerEntryDetail(
+  entry: Pick<LedgerEntry, 'who' | 'why'>,
+  people?: Pick<People, 'seats'>,
+): string {
+  const actor = memberDisplayName(entry.who, people);
+  return entry.why ? `${actor} · ${entry.why}` : actor;
 }
 
-export function CtrlLeagueV3({ c, league, port, badge }: ControlBodyProps) {
+export function CtrlLeagueV3({ c, league, port, badge, people }: ControlBodyProps) {
   const {
     chip, setChip, ledgerState, ledger, noticesState, notices, roomState,
     kind, setKind, text, setText, pin, setPin, reason, setReason, refresh,
@@ -106,7 +111,7 @@ export function CtrlLeagueV3({ c, league, port, badge }: ControlBodyProps) {
         style={{ ...rowWrap, gridTemplateColumns: 'auto minmax(0,1fr) auto' }}>
         <span className={item.pinned ? 'tag o' : 'tag'}>{noticeKindTag(item)}</span>
         <span>{item.text}</span>
-        <span className="m">{item.who} · {when(item.when)}</span>
+        <span className="m">{memberDisplayName(item.who, people)} · {when(item.when)}</span>
       </div>)}
     </Panel>
 
@@ -129,7 +134,7 @@ export function CtrlLeagueV3({ c, league, port, badge }: ControlBodyProps) {
       {ledger?.entries.map(entry => <div key={entry.id} className="row"
         style={{ ...rowWrap, gridTemplateColumns: 'auto minmax(0,1fr) auto' }}>
         <span className="m">{when(entry.when)}</span>
-        <span><b>{entry.what}</b> <span className="d">{ledgerEntryDetail(entry)}</span></span>
+        <span><b>{entry.what}</b> <span className="d">{ledgerEntryDetail(entry, people)}</span></span>
         <span className="tag">{entry.gravity}</span>
       </div>)}
     </Panel>

@@ -16,4 +16,12 @@ describe('ledgerDetail', () => {
     expect(ledgerDetail(entry('')))
       .toBe('By Chris · Reason: No reason recorded · Safeguard: league');
   });
+  it('maps account ids to member display names with id fallback', () => {
+    const people = { seats: [{ franchise: 'f25', name: 'Arizona Cardinals', abbreviation: 'ARI',
+      owner: 'acct.az' }] };
+    expect(ledgerDetail({ ...entry('Backup'), who: 'acct.az' }, people))
+      .toBe('By Arizona Cardinals · Reason: Backup · Safeguard: league');
+    expect(ledgerDetail({ ...entry('Backup'), who: 'acct.unknown' }, people))
+      .toBe('By acct.unknown · Reason: Backup · Safeguard: league');
+  });
 });

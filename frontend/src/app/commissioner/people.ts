@@ -1,4 +1,5 @@
 import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
+import { personLabel } from './forms';
 
 // The Go people reading (TargetCommissionerPeople). Owners get no role or invite rows from Go.
 export type PeopleSeat = {
@@ -85,4 +86,16 @@ export function parsePeople(v: unknown): People {
     mayGrantRoles: flag(r.mayGrantRoles, 'May give roles'),
     mayPostNotices: flag(r.mayPostNotices, 'May post notices'),
   };
+}
+
+const VIA_AI_PREFIX = 'via AI/CLI, acting for ';
+
+/** Resolves an account id (or "via AI/CLI, acting for <id>") to the member's seat name,
+ *  falling back to "Local operator" for local.* principals or the original id when unknown. */
+export function memberDisplayName(person: string, people?: Pick<People, 'seats'>): string {
+  if (!person) return '';
+  if (person.startsWith(VIA_AI_PREFIX))
+    return `${VIA_AI_PREFIX}${memberDisplayName(person.slice(VIA_AI_PREFIX.length), people)}`;
+  const seat = people?.seats.find(s => s.owner === person || s.caretaker === person);
+  return seat?.name || personLabel(person);
 }

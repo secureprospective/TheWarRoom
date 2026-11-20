@@ -85,8 +85,9 @@ export function filterPicks(reading: HostedRoster, f: PickFilters): PickRow[] {
 
 const movePick = actTable.find((definition): definition is ActDefinition =>
   definition.command === 'correct.pick');
-const unavailableActions = 'Grant, swap, condition, forfeit, void, restore and create are not on the '
-  + 'server app yet. Existing draft commands operate on the rookie draft, not future pick ownership.';
+export const PICK_CONDITION_EMPTY = '—';
+export const PICK_ACTIONS_NOTE = "Only correcting a pick's owner is available here; "
+  + 'pick conditions, grants, swaps, forfeits, and extra picks cannot be edited here yet.';
 
 export function CtrlPicksV3({ c, league, port, badge }: ControlBodyProps) {
   const room = c.room;
@@ -153,18 +154,18 @@ export function CtrlPicksV3({ c, league, port, badge }: ControlBodyProps) {
           <span className="m">{pick.season}</span><b className="m">{pickNumber(pick)}</b>
           <span className="ell">{franchiseName(reading, pick.original)}</span>
           <span className="ell">{franchiseName(reading, pick.owner)}</span>
-          <span className="m ell">Not on the server app yet</span>
+          <span className="m ell" title="Pick conditions are not tracked here yet.">{PICK_CONDITION_EMPTY}</span>
           <span className="m">{pickHow(pick)}</span>
           <span className="tag o">{pickStatus(pick)}</span></div>)}
         {rows.length === 0 && <St>No picks match these filters.</St>}
       </>}
     </Panel>
     <Panel title="Pick actions" badge={badge} foot="every pick change is in the ledger">
-      {movePick && hostedCommandAvailable(movePick.command)
-        ? <HQAct className="btn sm" disabled={!canChange} onAction={() => setDefinition(movePick)}>
+      {movePick && hostedCommandAvailable(movePick.command) && (
+        <HQAct className="btn sm" disabled={!canChange} onAction={() => setDefinition(movePick)}>
           Correct a pick owner</HQAct>
-        : <St><span role="status">Changing pick ownership is not on the server app yet.</span></St>}
-      <St><span role="status">{unavailableActions}</span></St>
+      )}
+      <St><span role="status">{PICK_ACTIONS_NOTE}</span></St>
       {definition && <>
         <HQAct className="btn sm" disabled={roomState.pending}
           onAction={() => { room.cancel(); setDefinition(undefined); }}>Close pick correction</HQAct>

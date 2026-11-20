@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { defaultPickYear, filterPicks, pickHow, pickNumber, pickStatus } from './CtrlPicksV3';
+import { hostedCommandAvailable } from '../commands/native';
+import { defaultPickYear, filterPicks, PICK_ACTIONS_NOTE, PICK_CONDITION_EMPTY, pickHow,
+  pickNumber, pickStatus } from './CtrlPicksV3';
 import type { HostedRoster } from '../commissioner/hostedReadings';
 
 type P = HostedRoster['picks'][number];
@@ -49,5 +51,14 @@ describe('filterPicks', () => {
   it('searches team labels and ids', () => {
     expect(filterPicks(reading, { ...all, search: ' bravo ' })).toHaveLength(1);
     expect(filterPicks(reading, { ...all, search: 'zzz' })).toHaveLength(0);
+  });
+});
+
+describe('picks availability wording', () => {
+  it('keeps correct.pick wired and uses plain language for unsupported pick features', () => {
+    expect(hostedCommandAvailable('correct.pick')).toBe(true);
+    expect(PICK_CONDITION_EMPTY).toBe('—');
+    expect(PICK_ACTIONS_NOTE.toLowerCase()).not.toContain('not on the server app yet');
+    expect(PICK_ACTIONS_NOTE).toContain("correcting a pick's owner");
   });
 });

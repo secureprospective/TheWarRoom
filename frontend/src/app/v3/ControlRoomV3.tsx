@@ -2,10 +2,13 @@
 // the tab strip and rail leaves; this file draws the body for the chosen tab. Reads and actions are the
 // hosted room's own (useHostedControlRoom), shared with the old room. A tab without a v3 body yet shows
 // the old room's body for that tab, so every tool keeps working while the v3 bodies land one by one.
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { hostedSnapshot, onHostedChange, onHostedTopics } from '../data/hostedReads';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { HostedControlRoomBody, useHostedControlRoom, type HostedControlRoomState }
   from '../commissioner/HostedControlRoom';
+import { createHostedPeopleQuery } from '../commissioner/HostedControlRoomPeople';
+import type { People } from '../commissioner/people';
 import type { HostedControlTab } from '../commissioner/hostedControlRoomData';
 import { CtrlJobsV3 } from './CtrlJobsV3';
 import { CtrlSituationsV3 } from './CtrlSituationsV3';
@@ -21,7 +24,7 @@ import '../commissioner/commissioner.css';
 import '../control/room/controlRoom.css';
 
 export type ControlBodyProps = { c: HostedControlRoomState; league: string; port?: HostedPort;
-  badge: ReactNode };
+  badge: ReactNode; people?: People };
 
 /** v3 bodies by tab; a tab missing here falls back to the old room's body. */
 const BODIES: Partial<Record<HostedControlTab, (p: ControlBodyProps) => ReactNode>> = {
@@ -40,6 +43,24 @@ const BODIES: Partial<Record<HostedControlTab, (p: ControlBodyProps) => ReactNod
 export default function ControlRoomV3({ league, port, tab, setTab, badge }: { league: string;
   port?: HostedPort; tab: HostedControlTab; setTab: (t: HostedControlTab) => void; badge: ReactNode }) {
   const c = useHostedControlRoom(league, port);
+  const peopleQuery = useMemo(() => createHostedPeopleQuery(league, port), [league, port]);
+  const peopleReading = peopleQuery.use();
+  const people = !peopleReading.error ? peopleReading.people : undefined;
+  useEffect(() => {
+    const refresh = () => { peopleQuery.invalidate(); void peopleQuery.load([league], { overlap: 'after' }); };
+    refresh();
+    let identity = hostedSnapshot();
+    const unsubscribeIdentity = onHostedChange(() => {
+      const next = hostedSnapshot();
+      if (next.blocked) peopleQuery.reset();
+      else if (identity.blocked || next.key !== identity.key) { peopleQuery.reset(); refresh(); }
+      identity = next;
+    });
+    const unsubscribeTopics = onHostedTopics(topics => {
+      if (topics.some(topic => topic.league === league)) refresh();
+    });
+    return () => { unsubscribeIdentity(); unsubscribeTopics(); peopleQuery.dispose(); };
+  }, [league, peopleQuery]);
   // The shell owns the tab; the room may move it too (a job opens its tool on another tab).
   // On mount and whenever the shell picks a tab, the room follows the shell.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,7 +72,7 @@ export default function ControlRoomV3({ league, port, tab, setTab, badge }: { le
     if (c.tab !== tab) setTab(c.tab);
   }, [c.tab]); // eslint-disable-line react-hooks/exhaustive-deps
   const Body = BODIES[tab];
-  return Body ? <>{Body({ c, league, port, badge })}</>
+  return Body ? <>{Body({ c, league, port, badge, people })}</>
     : <div className="wbody"><section className="crx hosted-control-room legacy-cr"
       style={{ height: '100%', overflow: 'auto' }}>
       <div className="cr-main on hosted-control-content">

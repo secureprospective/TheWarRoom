@@ -2,6 +2,7 @@
 // rollover with its backup step, divisions status, and the act tray its actions open, drawn with
 // v3 panels and rows. Reads and action state come from useHostedSeason and useHostedControlRoom.
 import { useState, type ReactNode } from 'react';
+import { deadlineLabel } from '../clock/labels';
 import { HQAct } from '../shell/HQAct';
 import { hostedCommandAvailable } from '../commands/native';
 import { HostedCommissionerActTray } from '../commissioner/CommissionerActTray';
@@ -22,6 +23,38 @@ function Panel({ title, badge, children, foot, style, tag }: { title: string; ba
     <div className="ph">{badge}<b className="pt">{title}</b><span className="sp" />{tag}</div>
     <div className="pb">{children}</div>
     {foot && <div className="pf"><span className="ell">{foot}</span></div>}</section>;
+}
+
+export const DIVISIONS_UNAVAILABLE = 'Division alignment cannot be changed here yet.';
+
+const SEASON_WINDOW_NAMES: Record<string, string> = {
+  contracts: 'Contracts',
+  cut_buyout: 'Cut / buyout',
+  lineups: 'Lineups',
+  open_fa: 'Open FA',
+  resign: 'Re-sign',
+  rfa_tenders: 'RFA tenders',
+  rookie_draft: 'Rookie draft',
+  ufa: 'UFA',
+  waivers: 'Waivers',
+};
+
+function humanizeWindowId(id: string): string {
+  if (id in SEASON_WINDOW_NAMES) return SEASON_WINDOW_NAMES[id];
+  const words = id.trim().replaceAll('_', ' ');
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : '';
+}
+
+/** Human-readable name for a calendar window, using its id so windows with empty `opens` stay named. */
+export function seasonWindowName(actionWindow: Pick<SeasonWindow, 'id' | 'opens'>): string {
+  const fromId = humanizeWindowId(actionWindow.id);
+  if (fromId) return fromId;
+  return actionWindow.opens.map(deadlineLabel).join(', ') || 'League window';
+}
+
+/** Actions opened by a calendar window, formatted for display (empty when none are configured). */
+export function seasonWindowOpens(actionWindow: Pick<SeasonWindow, 'opens'>): string {
+  return actionWindow.opens.map(deadlineLabel).join(', ');
 }
 
 /** Filters league calendar windows by all or live-only. */
@@ -84,14 +117,18 @@ export function CtrlSeasonV3({ c, league, port, badge }: ControlBodyProps) {
         <div className="sec">ACTION WINDOWS · {visibleWindows.length}</div>
         {visibleWindows.length === 0 && <St>{windowFilter === 'live'
           ? 'No live action windows right now.' : 'No action windows in the league calendar.'}</St>}
-        {visibleWindows.map(actionWindow => <div key={actionWindow.id} className="row"
-          style={{ gridTemplateColumns: 'minmax(0,1fr) auto auto auto' }}>
-          <span className="ell"><b>{actionWindow.opens.join(', ')}</b></span>
-          <span className="m">{actionWindow.start}</span>
-          {actionWindow.live ? <span className="tag gr">Live</span> : <span className="tag">Scheduled</span>}
-          <span className="acts">{canMoveWindow && <HQAct className="btn sm"
-            onAction={() => open('calendar.window.move')}>Move window</HQAct>}</span>
-        </div>)}
+        {visibleWindows.map(actionWindow => {
+          const opens = seasonWindowOpens(actionWindow);
+          return <div key={actionWindow.id} className="row"
+            style={{ gridTemplateColumns: 'minmax(0,1fr) auto auto auto' }}>
+            <span className="ell"><b>{seasonWindowName(actionWindow)}</b>
+              {opens && <span className="d"> · {opens}</span>}</span>
+            <span className="m">{actionWindow.start}</span>
+            {actionWindow.live ? <span className="tag gr">Live</span> : <span className="tag">Scheduled</span>}
+            <span className="acts">{canMoveWindow && <HQAct className="btn sm"
+              onAction={() => open('calendar.window.move')}>Move window</HQAct>}</span>
+          </div>;
+        })}
       </>}
     </Panel>
 
@@ -161,7 +198,7 @@ export function CtrlSeasonV3({ c, league, port, badge }: ControlBodyProps) {
           }} />
         </div>}
         <div className="sec">DIVISIONS</div>
-        <St>This part of the Control Room is not on the server app yet.</St>
+        <St>{DIVISIONS_UNAVAILABLE}</St>
       </>}
     </Panel>
 

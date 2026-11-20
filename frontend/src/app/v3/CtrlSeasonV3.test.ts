@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { filterSeasonWindows, groupSeasonActions, scheduleSummaryRows,
-  type SeasonWindow } from './CtrlSeasonV3';
+import { DIVISIONS_UNAVAILABLE, filterSeasonWindows, groupSeasonActions, scheduleSummaryRows,
+  seasonWindowName, seasonWindowOpens, type SeasonWindow } from './CtrlSeasonV3';
 
 const windows: SeasonWindow[] = [
   { id: 'lineup', opens: ['lineup'], start: '2026-09-01T00:00:00Z', live: true },
@@ -38,5 +38,28 @@ describe('groupSeasonActions', () => {
       .toEqual(['schedule.generate', 'schedule.edit']);
     expect(groupSeasonActions(available, 'playoffs').map(([cmd]) => cmd))
       .toEqual(['bracket.build', 'title.set']);
+  });
+});
+
+describe('seasonWindowName and seasonWindowOpens', () => {
+  it('names calendar windows even when opens is empty (such as the contracts window)', () => {
+    expect(seasonWindowName({ id: 'contracts', opens: [] })).toBe('Contracts');
+    expect(seasonWindowOpens({ opens: [] })).toBe('');
+  });
+
+  it('formats known and custom calendar window names and actions', () => {
+    expect(seasonWindowName({ id: 'rfa_tenders', opens: ['rfa_tender'] })).toBe('RFA tenders');
+    expect(seasonWindowName({ id: 'open_fa', opens: ['ufa_bid'] })).toBe('Open FA');
+    expect(seasonWindowName({ id: 'cut_buyout', opens: ['cut', 'buyout'] })).toBe('Cut / buyout');
+    expect(seasonWindowName({ id: 'spring_cleanup', opens: ['cut'] })).toBe('Spring cleanup');
+    expect(seasonWindowName({ id: '', opens: ['lineup'] })).toBe('Lineup');
+    expect(seasonWindowOpens({ opens: ['cut', 'waiver_claim'] })).toBe('Cut, Waiver claim');
+  });
+});
+
+describe('divisions availability notice', () => {
+  it('uses plain language without developer placeholder text', () => {
+    expect(DIVISIONS_UNAVAILABLE.toLowerCase()).not.toContain('not on the server app yet');
+    expect(DIVISIONS_UNAVAILABLE).toContain('Division');
   });
 });

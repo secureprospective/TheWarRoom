@@ -19,7 +19,7 @@ function definition(command: string): ActDefinition | undefined {
   return actTable.find(action => action.command === command);
 }
 
-function createHostedPeopleQuery(league: string, port: HostedPort = hostedWorkflow) {
+export function createHostedPeopleQuery(league: string, port: HostedPort = hostedWorkflow) {
   return createReadQuery('commissioner.TargetCommissionerPeople', {
     initial: (): { people?: People } => ({}),
     read: async (scope: string): Promise<People> => {

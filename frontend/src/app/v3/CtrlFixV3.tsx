@@ -7,6 +7,7 @@ import { hostedCommandAvailable } from '../commands/native';
 import { actTable } from '../commissioner/actTable';
 import { HostedCommissionerActTray } from '../commissioner/CommissionerActTray';
 import { hostedControlRoomNotOnServer, type HostedFixReadings } from '../commissioner/hostedControlRoomData';
+import { memberDisplayName, type People } from '../commissioner/people';
 import type { ControlBodyProps } from './ControlRoomV3';
 
 const fixCommands = [
@@ -53,7 +54,12 @@ export function undoableEntries(readings: HostedFixReadings | undefined, limit =
     .slice(0, limit) ?? [];
 }
 
-export function CtrlFixV3({ c, league, port, badge }: ControlBodyProps) {
+/** Resolves the actor display name on a recent-fix ledger row, falling back to the raw id. */
+export function fixActorName(who: string, people?: Pick<People, 'seats'>): string {
+  return memberDisplayName(who, people);
+}
+
+export function CtrlFixV3({ c, league, port, badge, people }: ControlBodyProps) {
   const readings = c.fixState.fixes;
   const { pending, error } = c.fixState;
   const open = (next: Parameters<typeof c.openTool>[0], initial?: Parameters<typeof c.openTool>[3]) =>
@@ -111,7 +117,7 @@ export function CtrlFixV3({ c, league, port, badge }: ControlBodyProps) {
         style={{ gridTemplateColumns: 'auto minmax(0,1fr) auto auto' }}>
         <span className="m">{new Date(entry.when).toLocaleDateString()}</span>
         <span className="ell">{entry.what}</span>
-        <span className="m">{entry.who}</span>
+        <span className="m">{fixActorName(entry.who, people)}</span>
         <span className="acts">{canRevert && <HQAct className="btn sm" label={`Undo ${entry.what}`}
           onAction={() => open(revert, { entry: entry.id })}>Undo</HQAct>}</span></div>)}
       {readings?.ledger && recent.length === 0 && <St>Nothing on the ledger can be undone.</St>}
