@@ -129,6 +129,20 @@ describe('LiveTab', () => {
     await show(async () => brief([myGameRow]));
     expect(host!.querySelector('.live6__pl span')?.textContent).toBe('Mahomes');
   });
+  it('draws the field graphic only when the field position is known', async () => {
+    await show(async () => brief([myGameRow]));
+    expect(host!.querySelector('[aria-label="NFL live"] .live-field')).not.toBeNull();
+  });
+  it('shows no field graphic when the game holds no field position', async () => {
+    const noPosition = { ...nflGame, state: null };
+    const port = vi.fn<HostedPort>(async request => request.command === 'nfl.games.read'
+      ? reply({ league: 'league',
+        board: { stale: false, source: 'ESPN', at: '', failure: '', games: [noPosition] } })
+      : reply({ league: 'league', game: noPosition, at: '', stale: false, words: '' }));
+    await show(async () => brief([myGameRow]), port);
+    expect(host!.querySelector('[aria-label="NFL live"] .live-field')).toBeNull();
+    expect(region('NFL live')).toContain('Field position not supplied');
+  });
   it('shows the mock score header, drive bar and last play from the followed game', async () => {
     await show(async () => brief([myGameRow]));
     const live = host!.querySelector('[aria-label="NFL live"]')!;
