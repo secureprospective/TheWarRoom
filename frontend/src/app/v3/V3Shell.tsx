@@ -9,6 +9,7 @@ import type { ThinHomeEntry } from '../shell/ThinHome';
 import type { PulseTab } from '../shell/pulseReads';
 import type { HQTab } from '../shell/HQShell';
 import { HQAct } from '../shell/HQAct';
+import { hostedControlTabs, type HostedControlTab } from '../commissioner/hostedControlRoomData';
 import { TeamPick } from './HQLineupV3';
 import { Icon } from './icons';
 import { ctStamp, docketOf, dress, lanesOf, roleWords, SCREENS, useHome, type V3League } from './model';
@@ -21,6 +22,7 @@ import './fixes.css';
 const NativeLeaguePulse = lazy(() => import('../shell/NativeLeaguePulse'));
 const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
 const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
+const ControlRoomV3 = lazy(() => import('./ControlRoomV3'));
 const WAR_TABS: [string, string][] = [['valuations-and-pool', 'Valuations and pool'],
   ['trade-desk', 'Trade desk'], ['draft-room', 'Draft room'], ['plans', 'Plans']];
 const HQ_TABS: [HQTab, string][] = [['lineup-and-roster', 'Lineup and roster'],
@@ -63,6 +65,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const [pulseTab, setPulseTab] = useState<PulseTab>('now');
   const [hqTab, setHqTab] = useState<HQTab>('lineup-and-roster');
   const [warTab, setWarTab] = useState('valuations-and-pool');
+  const [crTab, setCrTab] = useState<HostedControlTab>('jobs');
   const keep = (screen: ReactNode) => <div hidden={Boolean(panel)}
     style={panel ? undefined : { display: 'contents' }}>{screen}</div>;
   const [warTeams, setWarTeams] = useState<{ id: string; name: string }[]>([]);
@@ -145,7 +148,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         <b>{n}</b>NEED YOU · OPEN DOCKET</HQAct></div> : <div className="band none" />}
     <Rail leagues={leagues} L={L} active={active} c={c} home={home} pick={setSelected}
       pulseTab={pulseTab} setPulseTab={setPulseTab} hqTab={hqTab} setHqTab={setHqTab}
-      warTab={warTab} setWarTab={setWarTab}
+      warTab={warTab} setWarTab={setWarTab} crTab={crTab} setCrTab={setCrTab}
       switcher={() => setLayer('switch')} onHome={onHome} />
     <main className="work">
       {panel && <div className="legacy-host" style={HOST}>{panel}</div>}
@@ -183,6 +186,15 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
                 owner={(hqTeam[L.id] || L.franchise) === L.franchise} workspace={warTab}
                 navigateWorkspace={setWarTab} onTeams={setWarTeams} leave={home}
                 v3={{ badge: <Badge L={L} /> }} /></div></Suspense>}</>)
+      : active && L && L.commish && active.entry === 'control'
+        ? keep(<><div className="ws-tabs"><span className="ttl"><Icon n="gear" />CONTROL ROOM</span>
+          {hostedControlTabs.map(([t, words]) => <HQAct key={t} className="tb" selected={crTab === t}
+            onAction={() => setCrTab(t)}>{words}</HQAct>)}
+          <div className="tools"><span className="d mono" style={{ fontSize: 10, letterSpacing: '.08em' }}>
+            <Badge L={L} /> {roleWords(L).toUpperCase()}</span></div></div>
+          <Suspense fallback={<div className="st"><div className="eng">Opening Control Room…</div></div>}>
+            <ControlRoomV3 key={L.id} league={L.id} port={port} tab={crTab} setTab={setCrTab}
+              badge={<Badge L={L} />} /></Suspense></>)
       : active ? <div className="legacy-host" hidden={Boolean(panel)}
         style={HOST}>{children}</div>
         : !panel && <HomeBoard c={c} />}</main>
@@ -223,10 +235,11 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
 type RailProps = { leagues: V3League[]; L: V3League | null; active?: V3ShellProps['active'];
   c: Parameters<typeof HomeBoard>[0]['c']; home: () => void; pick: (id?: string) => void;
   switcher: () => void; onHome: () => void; pulseTab: PulseTab; setPulseTab: (t: PulseTab) => void;
-  hqTab: HQTab; setHqTab: (t: HQTab) => void; warTab: string; setWarTab: (t: string) => void };
+  hqTab: HQTab; setHqTab: (t: HQTab) => void; warTab: string; setWarTab: (t: string) => void;
+  crTab: HostedControlTab; setCrTab: (t: HostedControlTab) => void };
 
 function Rail({ leagues, L, active, c, home, pick, switcher, onHome, pulseTab, setPulseTab, hqTab,
-  setHqTab, warTab, setWarTab }: RailProps) {
+  setHqTab, warTab, setWarTab, crTab, setCrTab }: RailProps) {
   const waiting = (id: string) => c.docket.filter(d => d.lg === id && d.lane === 'need').length;
   const standing = (l: V3League) =>
     c.briefs[l.id]?.brief?.pulse?.standings?.rows.find(x => x.franchise === l.franchise);
@@ -271,6 +284,10 @@ function Rail({ leagues, L, active, c, home, pick, switcher, onHome, pulseTab, s
             {on && s.k === 'war' && WAR_TABS.map(([t, name]) => <HQAct key={t}
               className={`leaf${warTab === t ? ' sel' : ''}`} onAction={() => setWarTab(t)}>
               <span className="tr">{warTab === t ? '▮' : '├'}</span>
+              <span className="ell">{name}</span></HQAct>)}
+            {on && s.k === 'control' && hostedControlTabs.map(([t, name]) => <HQAct key={t}
+              className={`leaf${crTab === t ? ' sel' : ''}`} onAction={() => setCrTab(t)}>
+              <span className="tr">{crTab === t ? '▮' : '├'}</span>
               <span className="ell">{name}</span></HQAct>)}
             {on && s.k === 'hq' && HQ_TABS.map(([t, name]) => <HQAct key={t}
               className={`leaf${hqTab === t ? ' sel' : ''}`} onAction={() => setHqTab(t)}>

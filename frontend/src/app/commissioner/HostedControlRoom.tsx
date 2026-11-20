@@ -190,44 +190,7 @@ export function HostedControlRoom({ league, port, heldRoom }: {
       </div>
       <section className="cr-main on hosted-control-content"
         aria-label={hostedControlTabs.find(([id]) => id === c.tab)?.[1]}>
-        {c.routeWords && <p role="status" className="cr-note">{c.routeWords}</p>}
-        {c.tab === 'jobs' && <div className="hosted-jobs-column">
-          {c.jobsState.error && <p role="alert" className="cr-note">{c.jobsState.error}</p>}
-          <HostedControlRoomJobs league={league} jobs={c.jobsState.jobs} snoozes={c.jobSnoozes} now={c.jobNow}
-            snoozeError={c.snoozeError} pendingJob={c.snoozePending} onSnooze={c.snoozeJob} onWake={c.wakeJob}
-            onOpen={c.openTool} onUnavailable={c.showRoute} />
-          {c.definition && c.openedTab === 'jobs' && <HostedCommissionerActTray definition={c.definition}
-            league={league} room={c.room} port={port} initial={c.initialValues} />}
-          {c.job && <p className="hosted-job-source">Opened from: {c.job.name}</p>}
-        </div>}
-        {c.tab === 'situations' && <HostedControlRoomSituations
-          onTab={c.navigateTo} onTool={next => c.openTool(next)} onUnavailable={c.showRoute} />}
-        {c.tab === 'rules' && c.roomState.error && <p role="alert">{c.roomState.error}</p>}
-        {c.tab === 'rules' && c.roomState.stale &&
-          <p role="status">Rules are read-only until refreshed from the league server.</p>}
-        {c.tab === 'rules' && c.roomState.message && <p role="status">{c.roomState.message}</p>}
-        {c.tab === 'rules' && c.roomState.reading
-          ? <HostedRules rules={c.roomState.reading.rules} commissioner room={c.room} />
-          : c.tab === 'rules' && <p role="status">{c.roomState.error || 'Reading league rules…'}</p>}
-        {c.tab === 'league' && <HostedControlRoomLeague key={league} league={league}
-          room={c.room} port={port} />}
-        {c.tab === 'season' && <div className="hosted-jobs-column">
-          <HostedControlRoomSeason league={league} port={port} onTool={c.openSeasonTool} />
-          {c.definition && <HostedCommissionerActTray definition={c.definition} league={league}
-            room={c.room} port={port} />}
-        </div>}
-        {c.tab === 'server' && <HostedServerTab league={league} port={port} />}
-        {c.tab === 'picks' && <HostedControlRoomPicks league={league} room={c.room} port={port} />}
-        {c.tab === 'people' && <HostedControlRoomPeople league={league} room={c.room} port={port} />}
-        {c.tab === 'feedback' && <HostedControlRoomFeedback league={league} port={port}
-          refreshVersion={c.feedbackRefreshVersion} />}
-        {c.tab === 'fix' && <HostedControlRoomFix league={league} room={c.room} port={port}
-          readings={c.fixState.fixes} pending={c.fixState.pending} error={c.fixState.error}
-          definition={c.openedTab === 'fix' ? c.definition : undefined} initial={c.initialValues}
-          onOpen={(next, initial) => c.openTool(next, undefined, 'fix', initial)} />}
-        {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'feedback', 'fix', 'league']
-          .includes(c.tab)
-          && <p className="cr-note hosted-unported">{hostedControlRoomNotOnServer}</p>}
+        <HostedControlRoomBody c={c} league={league} port={port} />
       </section>
     </main>
     <aside className="insp" aria-label="League health">
@@ -243,6 +206,52 @@ export function HostedControlRoom({ league, port, heldRoom }: {
       </div>
     </aside>
   </section>;
+}
+
+/** One Control Room tab's body, as the old room draws it; the desktop v3 room falls back to it
+ *  for any tab that has no v3 body yet. */
+export function HostedControlRoomBody({ c, league, port }: {
+  c: HostedControlRoomState; league: string; port?: HostedPort }) {
+  return <>
+    {c.routeWords && <p role="status" className="cr-note">{c.routeWords}</p>}
+    {c.tab === 'jobs' && <div className="hosted-jobs-column">
+      {c.jobsState.error && <p role="alert" className="cr-note">{c.jobsState.error}</p>}
+      <HostedControlRoomJobs league={league} jobs={c.jobsState.jobs} snoozes={c.jobSnoozes} now={c.jobNow}
+        snoozeError={c.snoozeError} pendingJob={c.snoozePending} onSnooze={c.snoozeJob} onWake={c.wakeJob}
+        onOpen={c.openTool} onUnavailable={c.showRoute} />
+      {c.definition && c.openedTab === 'jobs' && <HostedCommissionerActTray definition={c.definition}
+        league={league} room={c.room} port={port} initial={c.initialValues} />}
+      {c.job && <p className="hosted-job-source">Opened from: {c.job.name}</p>}
+    </div>}
+    {c.tab === 'situations' && <HostedControlRoomSituations
+      onTab={c.navigateTo} onTool={next => c.openTool(next)} onUnavailable={c.showRoute} />}
+    {c.tab === 'rules' && c.roomState.error && <p role="alert">{c.roomState.error}</p>}
+    {c.tab === 'rules' && c.roomState.stale &&
+      <p role="status">Rules are read-only until refreshed from the league server.</p>}
+    {c.tab === 'rules' && c.roomState.message && <p role="status">{c.roomState.message}</p>}
+    {c.tab === 'rules' && c.roomState.reading
+      ? <HostedRules rules={c.roomState.reading.rules} commissioner room={c.room} />
+      : c.tab === 'rules' && <p role="status">{c.roomState.error || 'Reading league rules…'}</p>}
+    {c.tab === 'league' && <HostedControlRoomLeague key={league} league={league}
+      room={c.room} port={port} />}
+    {c.tab === 'season' && <div className="hosted-jobs-column">
+      <HostedControlRoomSeason league={league} port={port} onTool={c.openSeasonTool} />
+      {c.definition && <HostedCommissionerActTray definition={c.definition} league={league}
+        room={c.room} port={port} />}
+    </div>}
+    {c.tab === 'server' && <HostedServerTab league={league} port={port} />}
+    {c.tab === 'picks' && <HostedControlRoomPicks league={league} room={c.room} port={port} />}
+    {c.tab === 'people' && <HostedControlRoomPeople league={league} room={c.room} port={port} />}
+    {c.tab === 'feedback' && <HostedControlRoomFeedback league={league} port={port}
+      refreshVersion={c.feedbackRefreshVersion} />}
+    {c.tab === 'fix' && <HostedControlRoomFix league={league} room={c.room} port={port}
+      readings={c.fixState.fixes} pending={c.fixState.pending} error={c.fixState.error}
+      definition={c.openedTab === 'fix' ? c.definition : undefined} initial={c.initialValues}
+      onOpen={(next, initial) => c.openTool(next, undefined, 'fix', initial)} />}
+    {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'feedback', 'fix', 'league']
+      .includes(c.tab)
+      && <p className="cr-note hosted-unported">{hostedControlRoomNotOnServer}</p>}
+  </>;
 }
 
 function HostedServerTab({ league, port = hostedWorkflow }: { league: string; port?: HostedPort }) {
