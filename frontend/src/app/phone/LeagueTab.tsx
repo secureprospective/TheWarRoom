@@ -138,6 +138,10 @@ function cutOf(pulse: NativePulse, conference: boolean): number | undefined {
   return undefined;
 }
 
+/** streakClass colours a W streak green and an L streak red, as the mock does. */
+export const streakClass = (streak?: string) => streak?.startsWith('W') ? 'w'
+  : streak?.startsWith('L') ? 'l' : undefined;
+
 function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
   onTeam: (row: PulseStandingRow) => void }) {
   const rows = useMemo(() => pulse.standings?.rows ?? [], [pulse.standings]);
@@ -155,7 +159,8 @@ function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
         <td><HQAct className="st5-team" label={`${r.name}: owner and record`} onAction={() => onTeam(r)}>
           {r.name}</HQAct></td>
         <td>{r.ties ? `${r.wins}-${r.losses}-${r.ties}` : `${r.wins}-${r.losses}`}</td>
-        <td>{r.pointsFor.toFixed(0)}</td><td>{r.streak || '–'}</td></tr>)}</tbody></table>
+        <td>{r.pointsFor.toFixed(0)}</td>
+        <td className={streakClass(r.streak)}>{r.streak || '–'}</td></tr>)}</tbody></table>
   </section>;
   const chips = conferences.length > 1 || divisions.length > 1 ? <div className="lg5-chips">
     {[['all', 'Overall'], ...conferences.map(c => [c, `${c} conf.`]),
@@ -177,7 +182,7 @@ function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
   return <>{chips}{grid(list, cut)}
     <p className="lg5-note">{cut ? conference ? `Top ${cut} in each conference make the playoffs.`
       : `Top ${cut} make the playoffs (dashed line).` : pulse.bracket?.words || `Playoff line: ${NOT_YET}.`}
-    {' '}Tap a team for its owner and record.</p></>;
+    {' '}Tap a team for its roster.</p></>;
 }
 
 function Scores({ pulse, mine, season, readWeek, onWatch }: { pulse: NativePulse; mine: string;
