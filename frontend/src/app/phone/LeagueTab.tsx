@@ -151,7 +151,8 @@ function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
   const cut = cutOf(pulse, false);
   return <>
     <section className="lg5-grp">
-      <table className="st5"><thead><tr><th>#</th><th>Team</th><th>W-L</th><th>PF</th><th>STRK</th></tr></thead>
+      <table className="st5"><thead>
+        <tr><th>#</th><th>Team</th><th>W-L</th><th>PF</th><th>STRK</th></tr></thead>
         <tbody>{rows.map((r, i) => <tr key={r.franchise}
           className={`${r.franchise === mine ? 'me' : ''}${cut && i === cut ? ' cut' : ''}`}>
           <td>{i + 1}</td>
