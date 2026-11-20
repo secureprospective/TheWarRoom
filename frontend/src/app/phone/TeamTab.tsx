@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import { readNativeHQ, type NativeHQ } from '../commissioner/hqReading';
 import type { HostedPort } from '../commissioner/hostedRoom';
@@ -12,11 +12,14 @@ import { absent, unavailable } from '../shell/hqModel';
 import { readHostedPlayerNotes, setHostedPlayerNote } from '../shell/playerPersonal';
 import { canMoveTo, moveStarters, myPicks, teamView, type TeamPick, type TeamRow } from './teamModel';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
+import { ordinal } from '../shell/hqPlayerData';
 import { readPlayerStatus, statusWords, type PlayerStatus } from './playerStatus';
 import './TeamTab.css';
 
 const fixed = (n?: number) => n === undefined ? '–' : n.toFixed(1);
-const ordinal = (standing?: string) => standing || unavailable;
+/** placeWords is the mock's "11th of 12"; a division standing or the unavailable words stand in. */
+export const placeWords = (reading: Pick<NativeHQ, 'place' | 'standing'>) =>
+  reading.place ? `${ordinal(reading.place.rank)} of ${reading.place.of}` : reading.standing || unavailable;
 
 /** The phone Team tab: lineup, bench and IR from the hosted HQ reads; moves go through the lineup command. */
 export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
@@ -69,8 +72,9 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
     const can = from && canMoveTo(from, r, reading);
     const cls = ['team-row', r.id ? '' : 'empty', from?.key === r.key ? 'pick' : '', can ? 'can' : '']
       .filter(Boolean).join(' ');
-    const control = r.section === 'ir' ? 'IR' : r.locked ? 'LOCKED' : 'MOVE';
-    const off = !editable || !r.id || r.section === 'ir' || r.locked;
+    const control = !r.id ? '—' : r.section === 'ir' ? 'IR' : r.locked ? 'LOCKED' : 'MOVE';
+    const fact = !r.id || r.section === 'ir' || r.locked;
+    const off = !editable || fact;
     return <div className={cls} key={r.key} data-row={r.key}>
       <span className="team-row__slot">{r.slot}</span>
       {r.id ? <HQAct className="team-row__who" label={`${r.name} player card`}
@@ -78,14 +82,15 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
         <b>{r.name}</b><em className={r.state}>{r.position !== r.slot && r.section === 'starters'
           ? `${r.position} · ` : ''}{r.words}{status?.facts.get(r.id)
           ? ` · ${statusWords(status.facts.get(r.id)!)}` : ''}</em></HQAct>
-        : <span className="team-row__who"><b>{r.name}</b><em>{can ? 'Tap to place' : ''}</em></span>}
-      <span className={`team-row__pt ${r.state}`}
+        : <span className="team-row__who"><b>{r.name}</b><em>{can ? 'Tap to place'
+          : r.section === 'bench' ? 'Add a player from Moves' : ''}</em></span>}
+      <span className={`team-row__pt ${r.state}`} style={meter(r)}
         title={r.range ? `Last 6 games: low ${r.range[0]} · high ${r.range[1]}` : undefined}>
         <b>{fixed(r.points)}</b><em>{r.range ? r.range.map(x => x.toFixed(0)).join('–') : ''}</em></span>
       {from ? <HQAct className="team-row__mv" disabled={!can && from.key !== r.key}
         label={can ? `Place ${from.name} here` : from.key === r.key ? 'Cancel move' : `${r.slot} not legal`}
         onAction={() => tap(r)}>{from.key === r.key ? 'CANCEL' : can ? 'HERE' : '—'}</HQAct>
-        : <HQAct className="team-row__mv" disabled={off}
+        : <HQAct className={`team-row__mv${fact ? ' team-row__mv--fact' : ''}`} disabled={off}
           label={r.locked ? 'Locked, game started'
             : r.section === 'ir' ? 'On injured reserve' : `Move ${r.name}`}
           onAction={() => setMoving(r.key)}>{control}</HQAct>}
@@ -95,7 +100,7 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
     <div className="team-head">
       <h2>{team} <HQAct className="team-key team-head__picks" onAction={() => setSheet({ kind: 'picks' })}>
         My picks</HQAct></h2>
-      <span className="team-head__m">{reading.record ?? unavailable} · {ordinal(reading.standing)}
+      <span className="team-head__m">{reading.record ?? unavailable} · {placeWords(reading)}
         {reading.week ? ` · week ${reading.week}` : ''}</span>
       <span className="team-head__pts"><b>{fixed(view.points)}</b>
         <em>PROJ {fixed(view.projection)}</em></span>
@@ -118,7 +123,8 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
     <Group title="Starters" aside={`${view.locked} locked · games started`}>{view.starters.map(row)}</Group>
     <Group title="Bench" aside={openBench === undefined ? `${view.bench.length} players`
       : `${view.bench.length} of ${view.bench.length + openBench}`}>
-      {view.bench.length ? view.bench.map(row) : <p className="team-tab__note">No bench players.</p>}</Group>
+      {view.bench.length || openBench ? [...view.bench, ...emptyBench(view.bench.length, openBench)].map(row)
+        : <p className="team-tab__note">No bench players.</p>}</Group>
     <Group title="Injured reserve" aside={view.irOutsideBench
       ? "doesn't count toward the bench" : 'counts toward the roster'}>
       {view.ir.length ? view.ir.map(row)
@@ -134,6 +140,23 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
           void addHQTrade(mine, sheet.row.id!, reading.snapshot, league).catch(() => {}); }} />
     </TeamSheet>}
   </div>;
+}
+
+/** meter feeds the row's 2px range bar: the lit band is his low–high, the fill is this week so far. */
+function meter(r: TeamRow): CSSProperties | undefined {
+  if (!r.range) return undefined;
+  const high = r.range[1] || 1;
+  return { '--pp': Math.min(1, Math.max(0, (r.points ?? 0) / high)).toFixed(3),
+    '--lo': Math.max(0, r.range[0] / high).toFixed(3) } as CSSProperties;
+}
+
+/** emptyBench is the mock's open bench row. A league with many open spots gets one row that counts
+ * them, so a 45-spot bench does not push the lineup off the screen. */
+export function emptyBench(filled: number, open = 0): TeamRow[] {
+  if (open <= 0) return [];
+  return [{ key: 'bench-open', section: 'bench', slot: 'BN', index: filled,
+    name: open > 1 ? `${open} empty bench spots` : 'Empty bench spot', position: '', state: '', words: '',
+    locked: false }];
 }
 
 function Group({ title, aside, children }: { title: string; aside: string; children: ReactNode }) {

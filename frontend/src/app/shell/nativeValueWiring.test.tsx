@@ -142,7 +142,8 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
       'commish.rules.read': {}, 'moves.read': {},
       'standings.read': { league: 'native.test', name: 'Test', season: 2026, revision: 4, status: 'Ready',
         words: 'Two weeks have results', through: 2, decided: 2, pending: 0, criteria: [], noData: [],
-        computed: [] },
+        computed: [{ franchise: 'other', rank: 1, record: '2-0' },
+          { franchise: 'mine', rank: 2, record: '0-2' }] },
       'contract.decisions.read': { league: 'native.test', franchise: 'mine', revision: 4, season: 2026,
         words: 'No priceable owner contract decisions are due.', players: [] },
       'week.read': { schedule: { league: 'native.test', franchise: 'mine', season: 2026, revision: 4,
@@ -162,6 +163,7 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
     return { label: 'Fake hosted workflow', writable: false, football: '', data: data[request.command] };
   });
   const reading = await readNativeHQ('native.test', 'mine', port, undefined, true, true);
+  expect([reading.record, reading.place]).toEqual(['0-2', { rank: 2, of: 2 }]);
   expect(reading.playerForm?.['0042']).toEqual([]);
   expect(port.mock.calls.flatMap(([r]) => r.command === 'results.read' ? [r.arguments.week] : []))
     .toEqual([1, 2]);

@@ -244,6 +244,8 @@ export type NativeHQ = {
   reserveExperience?: Map<string, { experienceYears?: number; taxiYearsLeft?: number }>;
   record?: string;
   standing?: string;
+  /** League-wide place from standings.read, e.g. 11 of 12. */
+  place?: { rank: number; of: number };
   standingsNote?: string;
   week?: number;
   weekNote?: string;
@@ -431,7 +433,9 @@ export async function readNativeHQ(
       });
       standingRows = rows;
       standingsThrough = integer(raw.through, 'Standings through');
-      result.record = rows.find((r) => r.franchise === mine)?.record;
+      const own = rows.find((r) => r.franchise === mine);
+      result.record = own?.record;
+      if (own) result.place = { rank: own.rank, of: rows.length };
       result.standingsNote = raw.words === undefined ? undefined : text(raw.words, 'Standings words');
     }),
   ]);

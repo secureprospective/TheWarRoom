@@ -82,6 +82,8 @@ export function canMoveTo(from: TeamRow, to: TeamRow, reading: NativeHQ): boolea
   if (from.locked || to.locked) return false;
   if (from.section === to.section) return false;
   const [starter, bench] = from.section === 'starters' ? [from, to] : [to, from];
+  // An open bench spot is a place to add a player from Moves, not a swap target.
+  if (!bench.id) return false;
   return fitsSlot(bench.id ? { id: bench.id, position: bench.position } : undefined,
     { code: starter.slot, side: 'off' }, reading.settings);
 }
