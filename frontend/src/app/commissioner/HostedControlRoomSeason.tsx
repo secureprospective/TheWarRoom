@@ -109,7 +109,7 @@ export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool 
       <section className="cr-panel" aria-label="League calendar">
         <h3>League calendar</h3>
         {state.windows?.length ? <ul>{state.windows.map(actionWindow => <li key={actionWindow.id}>
-          {actionWindow.opens.join(', ') || actionWindow.id} · {actionWindow.start}
+          {actionWindow.opens.join(', ')} · {actionWindow.start}
           {actionWindow.live ? ' · Live' : ''}
           {hostedCommandAvailable('calendar.window.move') && <HQAct
             onAction={() => open('calendar.window.move')}>Move window</HQAct>}

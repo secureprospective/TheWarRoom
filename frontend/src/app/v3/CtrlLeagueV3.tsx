@@ -3,7 +3,7 @@
 // HostedControlRoomLeague via useHostedLeague.
 import type { ReactNode } from 'react';
 import { HQAct } from '../shell/HQAct';
-import { hostedLeagueUnavailable, ledgerChips, useHostedLeague }
+import { ledgerChips, useHostedLeague }
   from '../commissioner/HostedControlRoomLeague';
 import { Review } from '../commissioner/HostedReview';
 import type { LeagueNotes, Note } from '../commissioner/notes';
@@ -94,11 +94,11 @@ export function CtrlLeagueV3({ c, league, port, badge, people }: ControlBodyProp
           Preview {title.toLowerCase()}</HQAct></div>
         {roomState.error && <St><span role="alert">{roomState.error}</span></St>}
       </section> : <St><span role="status">
-        {hostedLeagueUnavailable} Newsletter publishing has no hosted command.</span></St>}
+        Publishing the newsletter isn’t available yet.</span></St>}
       {roomState.review && <Review room={c.room} />}
-      <St><span role="status">{hostedLeagueUnavailable} Feed and engine controls, league creation or
-        migration, and house-rule editing are not exposed in this tab. Use the hosted Rules tab for
-        supported rule changes.</span></St>
+      <St><span role="status">Feed and engine controls, league creation or migration, and
+        house-rule editing aren’t available in this tab. Use the Rules tab for supported rule
+        changes.</span></St>
     </Panel>
 
     <Panel title="League notices & notes" badge={badge} style={{ gridRow: '2/3' }}

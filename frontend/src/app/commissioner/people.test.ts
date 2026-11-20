@@ -46,6 +46,14 @@ describe('memberDisplayName', () => {
     expect(memberDisplayName('local.operator', people)).toBe('Local operator');
   });
 
+  it('prefers the owned seat over an earlier caretaker seat for the same person', () => {
+    const seats = [
+      { franchise: 'f2', name: 'Detroit Lions', abbreviation: 'DET', owner: '', caretaker: 'acct.111' },
+      { franchise: 'f1', name: 'Arizona Cardinals', abbreviation: 'ARI', owner: 'acct.111' },
+    ];
+    expect(memberDisplayName('acct.111', { seats })).toBe('Arizona Cardinals');
+  });
+
   it('falls back to the raw id when no seat name is known', () => {
     expect(memberDisplayName('acct.unknown', people)).toBe('acct.unknown');
     expect(memberDisplayName('acct.111', undefined)).toBe('acct.111');

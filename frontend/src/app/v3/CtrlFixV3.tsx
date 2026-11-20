@@ -6,7 +6,7 @@ import { HQAct } from '../shell/HQAct';
 import { hostedCommandAvailable } from '../commands/native';
 import { actTable } from '../commissioner/actTable';
 import { HostedCommissionerActTray } from '../commissioner/CommissionerActTray';
-import { hostedControlRoomNotOnServer, type HostedFixReadings } from '../commissioner/hostedControlRoomData';
+import type { HostedFixReadings } from '../commissioner/hostedControlRoomData';
 import { memberDisplayName, type People } from '../commissioner/people';
 import type { ControlBodyProps } from './ControlRoomV3';
 
@@ -87,7 +87,7 @@ export function CtrlFixV3({ c, league, port, badge, people }: ControlBodyProps) 
           {act.fields.map(f => f.label).join(' · ') || 'Select an eligible ledger entry'}</span></span>
         <span className="acts">{hostedCommandAvailable(act.command)
           ? <HQAct className="btn sm" label={act.label} onAction={() => open(act)}>Open ▸</HQAct>
-          : <span className="m">{hostedControlRoomNotOnServer}</span>}</span></div>)}
+          : <span className="m">Not available yet.</span>}</span></div>)}
       {c.definition && c.openedTab === 'fix' && <HostedCommissionerActTray definition={c.definition}
         league={league} room={c.room} port={port} initial={c.initialValues} />}
     </Panel>

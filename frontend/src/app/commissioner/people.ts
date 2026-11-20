@@ -96,6 +96,7 @@ export function memberDisplayName(person: string, people?: Pick<People, 'seats'>
   if (!person) return '';
   if (person.startsWith(VIA_AI_PREFIX))
     return `${VIA_AI_PREFIX}${memberDisplayName(person.slice(VIA_AI_PREFIX.length), people)}`;
-  const seat = people?.seats.find(s => s.owner === person || s.caretaker === person);
+  const seat = people?.seats.find(s => s.owner === person)
+    ?? people?.seats.find(s => s.caretaker === person);
   return seat?.name || personLabel(person);
 }

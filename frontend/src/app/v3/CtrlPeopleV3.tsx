@@ -1,13 +1,11 @@
 // Desktop v3 Control Room, People tab, after TheWarRoom-mock-v3-FINAL.html (screens.js control.people):
 // seats with search and filter, league health from the seats, and deputies with succession.
-// Reads come from commish.people.read (the old People body's own read); every action is the old tool form.
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+// Reads come from the Control Room shell's shared people query; every action is the old tool form.
+import { useEffect, useState, type ReactNode } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { hostedCommandAvailable } from '../commands/native';
-import { hostedSnapshot, onHostedChange, onHostedTopics } from '../data/hostedReads';
 import { HostedCommissionerActTray } from '../commissioner/CommissionerActTray';
 import { actTable, type ActDefinition } from '../commissioner/actTable';
-import { createHostedPeopleQuery } from '../commissioner/HostedControlRoomPeople';
 import { memberDisplayName, type People, type PeopleSeat } from '../commissioner/people';
 import type { ControlBodyProps } from './ControlRoomV3';
 
@@ -84,43 +82,29 @@ const definition = (command: string): ActDefinition | undefined =>
 function ToolButtons({ commands, onTool }: { commands: string[]; onTool(d: ActDefinition): void }) {
   return <>{commands.map(command => {
     const action = definition(command);
-    if (!action) return <span key={command} className="m" role="status">{command} has no hosted form.</span>;
+    if (!action) return <span key={command} className="m" role="status">Not available yet.</span>;
     return <HQAct key={command} className="btn sm" disabled={!hostedCommandAvailable(command)}
       label={action.label} attributes={{ 'data-people-command': command }}
       onAction={() => onTool(action)}>{action.label}</HQAct>;
   })}</>;
 }
 
-export function CtrlPeopleV3({ c, league, port, badge }: ControlBodyProps) {
+export function CtrlPeopleV3({
+  c, league, port, badge, people: sharedPeople, peoplePending = false, peopleError, refreshPeople,
+}: ControlBodyProps) {
   const room = c.room;
-  const query = useMemo(() => createHostedPeopleQuery(league, port), [league, port]);
-  const reading = query.use();
   const [filter, setFilter] = useState<SeatFilter>('all');
   const [search, setSearch] = useState('');
   const [action, setAction] = useState<ActDefinition>();
-  const people = !reading.pending && !reading.error ? reading.people : undefined;
+  const people = !peoplePending && !peopleError ? sharedPeople : undefined;
   const seats = people?.seats ?? [];
   const vacant = vacantSeats(seats);
   const visible = filterSeats(seats, filter, search);
 
-  useEffect(() => {
-    const refresh = () => { query.invalidate(); void query.load([league], { overlap: 'after' }); };
-    refresh();
-    let identity = hostedSnapshot();
-    const unsubscribeIdentity = onHostedChange(() => {
-      const next = hostedSnapshot();
-      if (next.blocked) query.reset();
-      else if (identity.blocked || next.key !== identity.key) { query.reset(); refresh(); }
-      identity = next;
-    });
-    const unsubscribeTopics = onHostedTopics(topics => {
-      if (topics.some(topic => topic.league === league)) refresh();
-    });
-    return () => { unsubscribeIdentity(); unsubscribeTopics(); query.dispose(); room.cancel(); };
-  }, [league, query, room]);
+  useEffect(() => () => room.cancel(), [room]);
 
-  const pending = !people && !reading.error;
-  const waiting = <St>{reading.pending ? 'Reading people from the league server…'
+  const pending = !people && !peopleError;
+  const waiting = <St>{peoplePending ? 'Reading people from the league server…'
     : 'People have not been read yet.'}</St>;
   const deputies = people ? deputyRows(people) : [];
   const roles = people ? roleRows(people) : [];
@@ -138,18 +122,17 @@ export function CtrlPeopleV3({ c, league, port, badge }: ControlBodyProps) {
           {`All ${seats.length}`}</HQAct>
         <HQAct className="chip" selected={filter === 'vacant'} onAction={() => setFilter('vacant')}>
           {`Vacant ${vacant.length}`}</HQAct>
-        <HQAct className="chip" disabled title="Last-seen activity is not in this server read">
+        <HQAct className="chip" disabled title="Last-seen activity isn’t available yet">
           Quiet · unavailable</HQAct>
-        <HQAct className="chip" disabled title="Staff identities are not in this server read">
+        <HQAct className="chip" disabled title="Staff filters aren’t available yet">
           Staff · unavailable</HQAct>
-        <HQAct className="btn sm" disabled={reading.pending} onAction={() => {
-          query.invalidate(); void query.load([league]);
+        <HQAct className="btn sm" disabled={peoplePending || !refreshPeople} onAction={() => {
+          refreshPeople?.();
         }}>Refresh people</HQAct>
       </div>
-      <p className="m">Quiet / last-seen and staff status are not returned by commish.people.read.
-        These filters stay unavailable until their server reads exist.</p>
-      {reading.error && <St><span role="alert">{reading.error}</span></St>}
-      {pending && !reading.error && waiting}
+      <p className="m">Quiet / last-seen and staff filters aren’t available yet.</p>
+      {peopleError && <St><span role="alert">{peopleError}</span></St>}
+      {pending && !peopleError && waiting}
       {people && <>
         {visible.length === 0 && <St>No seats match this search.</St>}
         {visible.map(seat => <div key={seat.franchise} className="row" data-seat={seat.franchise}
