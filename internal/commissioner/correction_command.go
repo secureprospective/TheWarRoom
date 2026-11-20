@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -19,12 +20,40 @@ const (
 	RuleException      = "rule.exception"
 )
 
+// CorrectionContract carries explicit contract terms for a roster correction.
+type CorrectionContract struct {
+	ContractMissing    bool                       `json:"contractMissing,omitempty"`
+	Salary             domain.Money               `json:"salaryCents,omitempty"`
+	ExpirationYear     int                        `json:"expirationYear,omitempty"`
+	ContractStatus     domain.ContractStatus      `json:"contractStatus,omitempty"`
+	ContractInfo       string                     `json:"contractInfo,omitempty"`
+	HeldContractStatus string                     `json:"heldContractStatus,omitempty"`
+	ContractSchedule   []nativecheck.SeasonAmount `json:"contractSchedule,omitempty"`
+}
+
+func (c CorrectionContract) Validate() error {
+	if c.Salary < 0 || c.ExpirationYear < 0 || c.ExpirationYear > lastSeason {
+		return fmt.Errorf("a corrected contract needs nonnegative salary and a valid expiration year")
+	}
+	return (NativePlayer{
+		ContractMissing:    c.ContractMissing,
+		Salary:             c.Salary,
+		ExpirationYear:     c.ExpirationYear,
+		ContractStatus:     c.ContractStatus,
+		ContractInfo:       c.ContractInfo,
+		HeldContractStatus: c.HeldContractStatus,
+		ContractSchedule:   c.ContractSchedule,
+	}).validateContract()
+}
+
 // RawCorrection names one asset or one automated decision; unrecorded contracts stay missing.
 type RawCorrection struct {
 	Franchise string              `json:"franchise,omitempty"`
 	Player    string              `json:"player,omitempty"`
 	Action    string              `json:"action,omitempty"`
 	Status    domain.RosterStatus `json:"status,omitempty"`
+	Contract  *CorrectionContract `json:"contract,omitempty"`
+	Charge    *NativeCharge       `json:"charge,omitempty"`
 	Entry     string              `json:"entry,omitempty"`
 	Via       string              `json:"via,omitempty"`
 	History   *PickEvidence       `json:"history,omitempty"`
@@ -40,6 +69,11 @@ type CorrectionPick struct {
 	Season   int    `json:"season"`
 	Round    int    `json:"round"`
 	Original string `json:"original"`
+	Player   string `json:"player,omitempty"`
+	Skipped  bool   `json:"skipped,omitempty"`
+	Add      bool   `json:"add,omitempty"`
+	Clear    bool   `json:"clear,omitempty"`
+	Remove   bool   `json:"remove,omitempty"`
 }
 
 type ExceptionScope struct {
@@ -65,15 +99,10 @@ func (r RawCorrection) Validate(command string) error {
 	expected := RawCorrection{}
 	switch command {
 	case CorrectRoster:
-		expected.Player, expected.Franchise, expected.Action = r.Player, r.Franchise, r.Action
-		if !slices.Contains([]string{"add", "remove", "status"}, r.Action) || !strings.HasPrefix(r.Franchise, "franchise.") {
-			return fmt.Errorf("choose a franchise and whether to add or remove the player")
-		}
-		if r.Action == "status" {
-			expected.Status = r.Status
-			if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, r.Status) {
-				return fmt.Errorf("choose active roster, injured reserve or taxi")
-			}
+		var err error
+		expected, err = r.validateRoster()
+		if err != nil {
+			return err
 		}
 	case CorrectTransaction:
 		expected.Entry = r.Entry
@@ -106,8 +135,64 @@ func (r RawCorrection) Validate(command string) error {
 	return r.validatePlayer(command)
 }
 
+func (r RawCorrection) validateRoster() (RawCorrection, error) {
+	if !strings.HasPrefix(r.Franchise, "franchise.") {
+		return RawCorrection{}, fmt.Errorf("choose a franchise and whether to add or remove the player")
+	}
+	expected := RawCorrection{Franchise: r.Franchise, Action: r.Action}
+	switch r.Action {
+	case "add":
+		expected.Player = r.Player
+		if r.Contract != nil {
+			if err := r.Contract.Validate(); err != nil {
+				return RawCorrection{}, err
+			}
+			expected.Contract = r.Contract
+		}
+	case "remove":
+		expected.Player = r.Player
+	case "status":
+		expected.Player, expected.Status = r.Player, r.Status
+		if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, r.Status) {
+			return RawCorrection{}, fmt.Errorf("choose active roster, injured reserve or taxi")
+		}
+	case "contract":
+		expected.Player, expected.Contract = r.Player, r.Contract
+		if r.Contract == nil {
+			return RawCorrection{}, fmt.Errorf("supply the corrected contract details")
+		}
+		if err := r.Contract.Validate(); err != nil {
+			return RawCorrection{}, err
+		}
+	case "adjustment", "remove_adjustment":
+		if err := r.validateCharge(); err != nil {
+			return RawCorrection{}, err
+		}
+		expected.Charge = r.Charge
+	default:
+		return RawCorrection{}, fmt.Errorf("choose a franchise and whether to add or remove the player")
+	}
+	return expected, nil
+}
+
+func (r RawCorrection) validateCharge() error {
+	if r.Charge == nil || r.Charge.ID == "" || r.Charge.Franchise != r.Franchise {
+		return fmt.Errorf("supply a salary adjustment with an id matching the franchise")
+	}
+	if r.Action == "remove_adjustment" {
+		return nil
+	}
+	if (r.Charge.Kind != "" && r.Charge.Kind != deadMoney) || r.Charge.Season < 0 || r.Charge.Season > lastSeason {
+		return fmt.Errorf("a corrected salary adjustment has an invalid kind or season")
+	}
+	return nil
+}
+
 func (r RawCorrection) validatePlayer(command string) error {
 	if command != CorrectRoster && command != CorrectProvenance {
+		return nil
+	}
+	if command == CorrectRoster && (r.Action == "adjustment" || r.Action == "remove_adjustment") {
 		return nil
 	}
 	id, err := playerid.New(r.Player)
@@ -218,11 +303,16 @@ func checkExceptionScope(c RawCorrection, records []Record, snapshot *RawNativeS
 }
 
 func (r RawCorrection) validatePick() error {
-	if r.History != nil {
-		if err := r.History.Validate(); err != nil {
-			return err
-		}
+	if err := r.validatePickIdentity(); err != nil {
+		return err
 	}
+	if r.History != nil {
+		return r.validatePickHistory()
+	}
+	return r.Pick.validateMutation()
+}
+
+func (r RawCorrection) validatePickIdentity() error {
 	if r.Pick == nil || r.Pick.Season < 1920 || r.Pick.Season > 9999 || r.Pick.Round < 1 ||
 		!strings.HasPrefix(r.Owner, "franchise.") {
 		return fmt.Errorf("choose the draft season, round, pick and corrected owner")
@@ -231,8 +321,54 @@ func (r RawCorrection) validatePick() error {
 		if r.Pick.Slot < 1 || r.Pick.Slot > 1000 {
 			return fmt.Errorf("choose the current draft slot")
 		}
-	} else if r.Pick.Slot != 0 || !strings.HasPrefix(r.Pick.Original, "franchise.") {
+		return nil
+	}
+	if r.Pick.Slot != 0 || !strings.HasPrefix(r.Pick.Original, "franchise.") {
 		return fmt.Errorf("choose an original franchise or a current draft slot, not both")
+	}
+	return nil
+}
+
+func (r RawCorrection) validatePickHistory() error {
+	if err := r.History.Validate(); err != nil {
+		return err
+	}
+	if r.Pick.hasMutation() {
+		return fmt.Errorf("historical pick ownership cannot carry selection or pick changes")
+	}
+	return nil
+}
+
+func (p CorrectionPick) hasMutation() bool {
+	return p.Player != "" || p.Skipped || p.Add || p.Clear || p.Remove
+}
+
+func (p CorrectionPick) hasSelection() bool {
+	return p.Player != "" || p.Skipped
+}
+
+func (p CorrectionPick) validateMutation() error {
+	if p.Remove && (p.Add || p.Clear || p.hasSelection()) {
+		return fmt.Errorf("a removed pick cannot also carry selection or add flags")
+	}
+	if p.Clear && (p.Add || p.hasSelection()) {
+		return fmt.Errorf("a cleared pick cannot also carry a selection or add flag")
+	}
+	return p.validateSelection()
+}
+
+func (p CorrectionPick) validateSelection() error {
+	if p.Player != "" && p.Skipped {
+		return fmt.Errorf("a draft pick cannot be both selected and skipped")
+	}
+	if (p.hasSelection() || p.Clear) && p.Original != "" {
+		return fmt.Errorf("only a current draft slot can carry a selection")
+	}
+	if p.Player != "" {
+		id, err := playerid.New(p.Player)
+		if err != nil || id.String() != p.Player {
+			return fmt.Errorf("choose a valid selected player")
+		}
 	}
 	return nil
 }

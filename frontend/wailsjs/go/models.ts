@@ -623,6 +623,11 @@ export namespace commissioner {
 	    season: number;
 	    round: number;
 	    original: string;
+	    player?: string;
+	    skipped?: boolean;
+	    add?: boolean;
+	    clear?: boolean;
+	    remove?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new CorrectionPick(source);
@@ -634,6 +639,11 @@ export namespace commissioner {
 	        this.season = source["season"];
 	        this.round = source["round"];
 	        this.original = source["original"];
+	        this.player = source["player"];
+	        this.skipped = source["skipped"];
+	        this.add = source["add"];
+	        this.clear = source["clear"];
+	        this.remove = source["remove"];
 	    }
 	}
 	export class Correction {
@@ -666,6 +676,48 @@ export namespace commissioner {
 	        this.rule = source["rule"];
 	        this.scope = this.convertValues(source["scope"], ExceptionScope);
 	        this.until = source["until"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class CorrectionContract {
+	    contractMissing?: boolean;
+	    salaryCents?: number;
+	    expirationYear?: number;
+	    contractStatus?: string;
+	    contractInfo?: string;
+	    heldContractStatus?: string;
+	    contractSchedule?: nativecheck.SeasonAmount[];
+	
+	    static createFrom(source: any = {}) {
+	        return new CorrectionContract(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.contractMissing = source["contractMissing"];
+	        this.salaryCents = source["salaryCents"];
+	        this.expirationYear = source["expirationYear"];
+	        this.contractStatus = source["contractStatus"];
+	        this.contractInfo = source["contractInfo"];
+	        this.heldContractStatus = source["heldContractStatus"];
+	        this.contractSchedule = this.convertValues(source["contractSchedule"], nativecheck.SeasonAmount);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -4691,6 +4743,8 @@ export namespace commissioner {
 	    player?: string;
 	    action?: string;
 	    status?: string;
+	    contract?: CorrectionContract;
+	    charge?: NativeCharge;
 	    entry?: string;
 	    via?: string;
 	    history?: PickEvidence;
@@ -4710,6 +4764,8 @@ export namespace commissioner {
 	        this.player = source["player"];
 	        this.action = source["action"];
 	        this.status = source["status"];
+	        this.contract = this.convertValues(source["contract"], CorrectionContract);
+	        this.charge = this.convertValues(source["charge"], NativeCharge);
 	        this.entry = source["entry"];
 	        this.via = source["via"];
 	        this.history = this.convertValues(source["history"], PickEvidence);

@@ -110,8 +110,8 @@ func checkRecordedAppend(held RawRecordedResults, records []Record) error {
 	if held.Season != rules.Season {
 		return fmt.Errorf("recorded results must match the current season")
 	}
-	if previous := RecordedResults(records, held.Season); previous != nil && previous.CutoverWeek != held.CutoverWeek {
-		return fmt.Errorf("the recorded scoring boundary cannot move on refresh")
+	if previous := RecordedResults(records, held.Season); previous != nil && held.CutoverWeek < previous.CutoverWeek {
+		return fmt.Errorf("the recorded scoring boundary cannot move backwards")
 	}
 	franchises := map[string]bool{}
 	for _, id := range LeagueFranchises(records) {
