@@ -1,3 +1,41 @@
+## §0c — Fri 11-20 ~1:50 AM CST (Claudebox head brain) — compact-safe #3
+
+**Christopher's latest orders (do not re-ask):**
+- "Do the Saturday cleanup now, don't wait." → NEXT ACTION 1.
+- Bundle 9 → main: SIGNED OFF (11-20 ~1:30 AM).
+- Stop being careful about logins/Bills: "rip whatever out of the way and keep moving"; imperfect is fine, flag and move on.
+- All lab accounts are us (no real people yet): scrub freely.
+
+**Done tonight (all CI green, merged into bundle/b9):** #435 pool rows team/kickoff/AVG · #436 Live header one line ·
+#437 League chips gone + playoff note · #438 Moves "Waivers run <time>" · #439 Team "No team of yours" for teamless ·
+#440 test: join-link owner reads own lineup (PASS, so Bills = lab data, not code) · #441 two-conference playoff note.
+Lab CT 260: v15 = bundle/b9 0b03748f, twr-status all OK. S8 walked owner + commissioner: no sideways scroll.
+
+**In flight:** Bundle 9 landing on main — `~/fleet/bin/twr-bundle-land.sh bundle/b9 ...` (pid 1325861, Tom/Beelink,
+timeout 2h, started ~1:35 AM). Log `~/fleet/runs/overnight-b9walk-1120/land-b9.log`. Alive: `pgrep -af "twr-bundle-land.sh bundle/b9"`.
+Frontend suite passed 1,111/1,111; then make verify, push, PR, CI, squash-merge. On done: check `gh pr list --base main --state merged -L 3`.
+If it stops on a conflict: read the log tail, fix in its worktree, rerun.
+
+**NEXT ACTIONS**
+1. Saturday cleanup NOW on lab CT 260 (all accounts are us):
+   a. Backup first: `twr-status` shows checked backups; also copy /var/lib/twr to /var/lib/twr/manual-<date>-precleanup.
+   b. Fresh re-import of CURRENT MFL league 14432 (ruling 11-19; MFL stays official). The old seed gave 3,367 not 3,399 —
+      that is expected for a fresh pull; do not block on it. Tools in CT: /usr/local/libexec/twr-{delete-league,receive-league,
+      restore-league,reset-sign-ins}. Fallback if re-import is slow: Option A in ~/fleet/runs/pulse-freshlab/RESULT.md
+      (commish.seat.remove x32 + twr-reset-sign-ins); accounts cannot be deleted, only unseated.
+   c. Verify twr-status "Everything is working", 32 open seats, issue a fresh join link for Sunday testers.
+2. After Bundle 9 lands: redeploy lab from main with `~/fleet/bin/twr-lab-release.sh <V> <prev targets.json> <run-dir>`
+   (last: v15, prev targets `~/fleet/runs/overnight-b9walk-1120/labrel-v15/release-v15/metadata/15.targets.json`).
+   NOTE the script builds origin/bundle/b9 — change line 17 to origin/main once b9 is landed.
+3. Sunday: Christopher sends testers the join link.
+
+**Flagged for later (not alpha):** Bills lab seat (clears with the re-import) · Team B-7 banner (same) · Today snooze clock ·
+Live field graphic · L11 version tags · tfeedback · PLANS · F51 player values · F62 animations · F18 CT 257 test accounts.
+
+**Lessons tonight:** deploy/server/bundle.sh is not executable in git → script calls `bash deploy/server/bundle.sh`.
+New worktrees need `pnpm install` + `pnpm build` (or copied frontend/dist) before the push hook. Stale golangci cache
+from a deleted worktree: `golangci-lint cache clean`. CI flake: hostedRules "teamless Commissioner" 10 s timeout — rerun.
+Watchers: wait until no check is "pending" (gh exit codes are unreliable for fail vs pending).
 ## §0b — Overnight run b9walk, Thu 11-19 evening (Claudebox head brain) — compact-safe 10:50 PM CST
 
 **Doing:** finish Bundle 9 (bundle/b9) phone port against mobile mock v1, on lab CT 260, walked on the S8. Run dir: Beelink `~/fleet/runs/overnight-b9walk-1120/` (PLAN.md, REPORT.md log, briefs/, s8walk/RESULT.md). Tracker: `~/Downloads/twr-usable-week-plan.html` via `~/fleet/bin/twr-tracker.py`.
