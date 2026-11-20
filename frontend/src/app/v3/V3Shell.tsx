@@ -65,7 +65,7 @@ function useHome(leagues: V3League[], port: HostedPort) {
   const [needs, setNeeds] = useState<NeedsYouItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [stamp, setStamp] = useState(Date.now());
-  useEffect(() => { const t = window.setInterval(() => setStamp(Date.now()), 60_000); return () => clearInterval(t); }, []);
+  useEffect(() => { const t = setInterval(() => setStamp(Date.now()), 60_000); return () => clearInterval(t); }, []);
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -251,7 +251,8 @@ function HomeBoard({ c }: { c: Omit<Ctx, 'size' | 'w'> }) {
   useLayoutEffect(() => {
     const g = grid.current; if (!g) return;
     const fit = () => setCell({ cw: g.clientWidth / COLS, ch: g.clientHeight / ROWS });
-    fit(); const ro = new ResizeObserver(fit); ro.observe(g); return () => ro.disconnect();
+    fit(); if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(fit); ro.observe(g); return () => ro.disconnect();
   }, []);
   const place = (r: Inst): CSSProperties => !cell ? { visibility: 'hidden' } : {
     transform: `translate(${r.x * cell.cw + GAP}px,${r.y * cell.ch + GAP}px)`,
@@ -278,10 +279,16 @@ const SCREENS: { k: ThinHomeEntry; name: string; icon: IconName; on: (L: V3Leagu
 
 export type V3ShellProps = { leagues: LeagueChoice[]; active?: { league: LeagueChoice; entry: ThinHomeEntry };
   onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void; onHome: () => void; onSignOut: () => void;
-  accountName?: string; port?: HostedPort; children?: ReactNode };
+  accountName?: string; port?: HostedPort; children?: ReactNode;
+  /** An account screen (authenticator, recovery) shown in the work area over Home or the open league. */
+  panel?: ReactNode;
+  /** Account menu entries (the initials button). */
+  account?: ReactNode;
+  /** A failed account action's reason, shown in the status line. */
+  status?: string };
 
 export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onSignOut, accountName,
-  port = hostedWorkflow, children }: V3ShellProps) {
+  port = hostedWorkflow, children, panel, account, status }: V3ShellProps) {
   const leagues = useMemo<V3League[]>(() => admitted.filter(l => l.app).map((l, i) => ({ ...l,
     bd: leagueInitials(l.name), c: IDC[i % IDC.length], commish: isCommish(l.role), team: Boolean(l.franchise) })), [admitted]);
   const { briefs, needs, loading, now } = useHome(leagues, port);
@@ -295,6 +302,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
       if (e.altKey && e.key.toLowerCase() === 'l') { e.preventDefault(); setLayer('switch'); return; }
       if (e.altKey && e.key.toLowerCase() === 'h') { e.preventDefault(); setLayer(null); setSelected(undefined); onHome(); }
     };
+    if (typeof window.addEventListener !== 'function') return;
     window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
   }, [layer, onHome]);
   const L = leagues.find(l => l.id === (active?.league.id ?? selected)) ?? null;
@@ -331,7 +339,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         <span className="lb">Needs you</span>{n ? <span className="ct">{n}</span> : null}</button>
         <button className="key" data-tip="Ask in plain words: arrange screens, prepare a move|Alt+A"><Icon n="chat" /><span className="lb">Assistant</span></button>
         <button className="key" data-tip="Show where every number comes from and goes|Alt+F"><Icon n="plug" /><span className="lb">Feeds</span></button>
-        <button className="acct" onClick={() => setLayer(l => l === 'account' ? null : 'account')} aria-expanded={layer === 'account'} data-tip="Account, devices, labels, your AI key, sign out">{initials}</button></div>
+        <button className="acct" aria-label="Account" onClick={() => setLayer(l => l === 'account' ? null : 'account')} aria-expanded={layer === 'account'} data-tip="Account, devices, labels, your AI key, sign out">{initials}</button></div>
     </header>
     {top && topL ? <div className={`band${top.urgent ? ' crit' : ''}`} role="button" tabIndex={0}
       onClick={() => top.entry && open(topL, top.entry)}>
@@ -348,7 +356,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         <Badge big /><b>All leagues</b><span className="rl">▾</span><small>No league selected</small></button>
         <div className="lzb"><div className="gl"><span>PICK A LEAGUE</span></div>
           {leagues.map(l => { const w = docket.filter(d => d.lg === l.id && d.lane === 'need').length;
-            return <button key={l.id} className="leaf" style={{ paddingLeft: 14 }} onClick={() => setSelected(l.id)}>
+            return <button key={l.id} className="leaf" aria-label={`Pick ${l.name}`} style={{ paddingLeft: 14 }} onClick={() => setSelected(l.id)}>
               <Badge L={l} /><span className="ell">{l.name}</span>{w ? <span className="sp tag am">{w}</span> : null}</button>; })}</div></div>
         : <div className="lz" style={{ '--lg': L.c } as CSSProperties}>
           <button className="cart" onClick={() => { setSelected(undefined); if (active) onHome(); }} data-tip="Selected league. Click to switch.">
@@ -356,7 +364,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
             <small className="ell">{L.team ? `${L.franchiseName ?? ''}${(() => { const r = briefs[L.id]?.brief?.pulse?.standings?.rows.find(x => x.franchise === L.franchise); return r ? ` · ${r.record} · seed ${r.rank}` : ''; })()}` : `No team · ${roleWords(L)}`}</small></button>
           <div className="lzb">{SCREENS.filter(s => s.on(L)).map(s => { const on = active && (active.entry === s.k
             || (s.k === 'hq' && active.entry === 'lineup') || (s.k === 'war' && (active.entry === 'bids' || active.entry === 'trades')));
-          return <div key={s.k}><button className={`nb${on ? ' on' : ''}`} onClick={() => open(L, s.k)}><Icon n={s.icon} />
+          return <div key={s.k}><button className={`nb${on ? ' on' : ''}`} aria-label={`Open ${s.name}`} onClick={() => open(L, s.k)}><Icon n={s.icon} />
             <span className="lb">{s.name}</span><span className="car">{on ? '▾' : '▸'}</span></button>
             {!on && <button className="leaf now" onClick={() => open(L, s.k)}><span className="tag">NOW</span><span className="ell">{s.now}</span></button>}</div>; })}
           {SCREENS.some(s => !s.on(L)) && <><div className="gl" style={{ paddingTop: 12 }}><span>SHAPED FOR THIS LEAGUE</span></div>
@@ -364,12 +372,15 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
               No {s.name}: {s.k === 'control' ? 'only the commissioner has a Control Room' : 'you have no team in this league'}</div>)}</>}</div></div>}
       <div className="rail-foot"><button data-tip="Collapse the rail to icons">«</button><span>{L ? 'hosted league' : 'your app, above your leagues'}</span></div>
     </nav>
-    <main className="work">{active ? <div className="legacy-host" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>{children}</div> : <HomeBoard c={c} />}</main>
+    <main className="work">{panel && <div className="legacy-host" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>{panel}</div>}
+      {active ? <div className="legacy-host" hidden={Boolean(panel)} style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>{children}</div>
+        : !panel && <HomeBoard c={c} />}</main>
     <aside className="insp closed" />
     <footer className="status">
       <button className="stb" data-tip="League servers"><i className="lamp g" />CONNECTED · {L ? `league server ${L.bd.toLowerCase()}` : `${leagues.length} league ${leagues.length === 1 ? 'server' : 'servers'}`}</button>
       <button className="stb" data-tip="Spoiler delay"><i className={`lamp${liveOn ? ' live' : ''}`} />{liveOn ? 'LIVE · NO DELAY' : 'CURRENT'}</button>
       <button className="stb" data-tip="Season calendar">{stamp} CT{week !== undefined ? ` · WEEK ${week}` : ''}</button>
+      {status && <span className="r" role="alert">{status}</span>}
       <span className="idp">TWR-MK3 · {accountName ? accountName.toUpperCase() : 'SIGNED IN'} · <button onClick={onSignOut} style={{ textDecoration: 'underline' }}>SIGN OUT</button></span>
     </footer>
     <div id="layer">{layer && <div className="ov" style={{ position: 'absolute', inset: 0 }}>
@@ -381,9 +392,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         home={() => { setSelected(undefined); onHome(); }} pick={id => setSelected(id)} />}
       {layer === 'account' && <div className="pop menu" style={{ right: 8, top: 52, width: 300 }}>
         <div className="mh">YOU · {leagues.length} {leagues.length === 1 ? 'LEAGUE' : 'LEAGUES'}</div>
-        <button disabled><Icon n="tv" /> Devices <span className="w">this desktop</span></button>
-        <button disabled><Icon n="chat" /> Assistant: connect your AI provider</button><hr />
-        <button onClick={() => { setLayer(null); onSignOut(); }}><Icon n="x" /> Sign out</button></div>}
+        {account ?? <button onClick={() => { setLayer(null); onSignOut(); }}><Icon n="x" /> Sign out</button>}</div>}
     </div>}</div>
   </div>;
 }

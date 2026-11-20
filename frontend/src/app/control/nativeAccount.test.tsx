@@ -41,6 +41,17 @@ const waitForLeagueOpen = async (host: Awaited<ReturnType<typeof mount>>, events
     }, { timeout: 10_000 });
   });
 };
+// Desktop v3: a league opens from the rail (pick it, then a screen); account actions live in the
+// Account menu (the initials button in the top bar).
+const openLeague = async (host: Awaited<ReturnType<typeof mount>>) => {
+  await clickWhenReady(host, 'Pick League');
+  await clickWhenReady(host, 'Open League Pulse');
+};
+const account = async (host: Awaited<ReturnType<typeof mount>>, label: string) => {
+  if (!all(host, 'button').some(b => b.getAttribute('aria-label') === label || b.textContent === label))
+    await click(button(host, 'Account'));
+  await click(button(host, label));
+};
 const submit = async (host: Awaited<ReturnType<typeof mount>>) => {
   await act(async () => {
     const form = all(host, 'form')[0];
@@ -88,18 +99,17 @@ describe('native desktop account access', () => {
     await submit(host);
     fetcher.mockResolvedValue(reply({ ...initial, name: 'League', role: 'Owner',
       franchise: 'franchise.01', franchiseName: 'My club' }));
-    await click(button(host, 'Open my franchise'));
-    await settle();
-    expect(host.textContent).toContain('My club');
+    await account(host, 'Open my franchise');
+    await vi.waitFor(() => expect(host.textContent).toContain('My club'), { timeout: 10_000 });
     expect(JSON.parse(fetcher.mock.calls[2][1].body)).toEqual({
       action: 'enter', username: '', password: '', code: '',
     });
     // A refused reread must remove the previously private view, not show it as current.
     fetcher.mockResolvedValue({ ok: false, text: async () => 'Session revoked. Sign in again.' });
-    await click(button(host, 'Open my franchise')); await settle();
+    await account(host, 'Open my franchise'); await settle();
     expect(host.textContent).not.toContain('My club');
     expect(host.textContent).toContain('Sign in again');
-  });
+  }, 15_000);
 
   // Lazy Home/league modules can resolve slowly when the full Vitest pool is under load.
   it('sign-in shows Home before the league and hides the form while open', async () => {
@@ -114,25 +124,25 @@ describe('native desktop account access', () => {
     await type(control(host, 'Username'), 'commissioner');
     await type(control(host, 'Password'), 'private-password');
     await submit(host);
-    await vi.waitFor(() => expect(button(host, 'Open League')).toBeTruthy(), { timeout: 10_000 });
+    await vi.waitFor(() => expect(button(host, 'Pick League')).toBeTruthy(), { timeout: 10_000 });
     expect(fetcher.mock.calls.filter(call => call[0] === '/desktop/native')
       .map(call => JSON.parse(call[1].body).action)).toEqual(['login', 'enter']);
     expect(rooms).toEqual([]);
     expect(all(host, 'form')).toHaveLength(0);
-    expect(button(host, 'League')).toBeTruthy();
+    expect(button(host, 'Account')).toBeTruthy();
     expect(host.textContent).toContain('Home');
-    await clickWhenReady(host, 'Open League');
+    await openLeague(host);
     await waitForLeagueOpen(host, ['open franchise.01']);
     await click(button(host, 'Home')); await settle();
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01']);
-    expect(host.textContent).toContain('YOUR LEAGUES');
-    await clickWhenReady(host, 'Open League');
+    expect(host.textContent).toContain('PICK A LEAGUE');
+    await openLeague(host);
     await waitForLeagueOpen(host, ['open franchise.01', 'close franchise.01', 'open franchise.01']);
     expect(host.textContent).not.toContain('Join with a code');
     expect(host.textContent).not.toContain('No MFL account or key needed');
     // The Authenticator tab shows its own form; the league stays mounted but hidden, and its
     // status line survives the switch.
-    await click(button(host, 'Authenticator'));
+    await account(host, 'Authenticator'); await settle();
     expect(all(host, 'form')).toHaveLength(1);
     expect(all(host, 'div').some(d => d.props().hidden === true)).toBe(true);
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01', 'open franchise.01']);
@@ -141,7 +151,7 @@ describe('native desktop account access', () => {
     expect(all(host, 'form')).toHaveLength(0);
     // A refused reread clears the league view, and the form is back to sign in again.
     fetcher.mockResolvedValue({ ok: false, text: async () => 'Session revoked. Sign in again.' });
-    await click(button(host, 'Open my franchise')); await settle();
+    await account(host, 'Open my franchise'); await settle();
     expect(all(host, 'form')).toHaveLength(1);
     expect(host.textContent).toContain('Sign in again');
   }, 15_000);
@@ -264,16 +274,16 @@ it.each(['enter', 'forget', 'revoke-device', 'revoke-all'] as const)(
     const host = await mount(render(NativeAccount, { initial: { ...initial, message: 'Saved.' } }));
     await settle(); await flush(); await settle();
     expect(rooms).toEqual([]);
-    await clickWhenReady(host, 'Open League');
+    await openLeague(host);
     expect(rooms).toEqual(['open franchise.01']);
     fetcher.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
     const label = { enter: 'Open my franchise', forget: 'Forget saved sign-in',
       'revoke-device': 'Revoke this device', 'revoke-all': 'Revoke all devices' }[action];
-    await click(button(host, label)); await settle();
+    await account(host, label); await settle();
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01']);
     await act(async () => { answer(reply({ ...initial, name: 'League', role: 'Owner', message: 'Done.',
       franchise: action === 'enter' ? 'franchise.02' : '' })); });
     await settle();
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01',
       ...(action === 'enter' ? ['open franchise.02'] : [])]);
-  });
+   }, 15_000);
