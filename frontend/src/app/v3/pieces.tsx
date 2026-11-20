@@ -48,7 +48,7 @@ export type Ctx = { leagues: V3League[]; briefs: Record<string, Brief>; docket: 
 type PieceCtx = Ctx & { size: string; w: number };
 type Body = { fb?: ReactNode; b: ReactNode; f?: string };
 
-function DkRow({ d, L, sm, open }: { d: DocketItem; L?: V3League; sm?: boolean; open: Open }) {
+export function DkRow({ d, L, sm, open }: { d: DocketItem; L?: V3League; sm?: boolean; open: Open }) {
   const cls = `dk${sm ? ' sm' : ''}${d.urgent ? ' u' : ''}${d.bad ? ' bad' : ''} unread`;
   return <div className={cls}>
     <Badge L={L} /><span className="t ell">{d.t}</span>

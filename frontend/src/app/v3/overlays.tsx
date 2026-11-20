@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { Icon } from './icons';
-import { Badge } from './pieces';
-import { SCREENS, type Brief, type DocketItem, type Open, type V3League } from './model';
+import { Badge, DkRow } from './pieces';
+import { SCREENS, type Brief, type DocketItem, type Lane, type Open,
+  type V3League } from './model';
 
 export function Switcher({ leagues, docket, briefs, current, pick }: { leagues: V3League[];
   docket: DocketItem[]; briefs: Record<string, Brief>; current?: string; pick: (id?: string) => void }) {
@@ -70,4 +71,37 @@ export function Commands({ leagues, close, open, home, pick }: { leagues: V3Leag
       <HQAct key={it[0]} className={k === sel ? 'on' : ''} onAction={() => run(k)}>
         {it[0]}<small>{it[1].toUpperCase()}</small></HQAct>)
       : <div className="st">Nothing matches. Try a league or a screen.</div>}</div></div>;
+}
+
+const LANES: [Lane, string][] = [['need', 'NEEDS YOU'], ['wait', 'WAITING ON'], ['land', 'LANDED']];
+const EMPTY: Record<Lane, string> = { need: 'Nothing needs you.', wait: 'Nothing is waiting on anyone else.',
+  land: 'Nothing has landed since you were last here.' };
+
+/** The Docket drawer (Needs you key, Alt+D, the band's OPEN DOCKET): who has the ball, in every league. */
+export function DocketDrawer({ leagues, docket, current, open, close, home }: { leagues: V3League[];
+  docket: DocketItem[]; current: V3League | null; open: Open; close: () => void; home: () => void }) {
+  const [lane, setLane] = useState<Lane>('need'), [only, setOnly] = useState(false);
+  const all = docket.filter(d => !only || !current || d.lg === current.id);
+  const rows = all.filter(d => d.lane === lane);
+  const go: Open = (L, e) => { close(); open(L, e); };
+  return <aside className="sdrawer">
+    <div className="dh rivets"><h2>Docket</h2><span className="sub">who has the ball, in every league</span>
+      <HQAct className="x" onAction={close}>CLOSE ✕</HQAct></div>
+    <div className="lanes">{LANES.map(([k, t]) => <HQAct key={k} className={k === 'need' ? 'need' : undefined}
+      selected={lane === k} label={`${t} ${all.filter(d => d.lane === k).length}`}
+      onAction={() => setLane(k)}>
+      {t}<b>{all.filter(d => d.lane === k).length}</b></HQAct>)}</div>
+    <div className="fbar" style={{ display: 'flex' }}>
+      <HQAct className="chip" active={!only || !current} onAction={() => setOnly(false)}>
+        {`All ${leagues.length} ${leagues.length === 1 ? 'league' : 'leagues'}`}</HQAct>
+      {current && <HQAct className="chip" active={only} onAction={() => setOnly(true)}>
+        {`${current.name} only`}</HQAct>}</div>
+    <div className="db" style={{ padding: 0, gap: 0 }}>{rows.length ? rows.map(d =>
+      <DkRow key={d.id} d={d} L={leagues.find(l => l.id === d.lg)} open={go} />)
+      : <div className="st"><div className="eng">{EMPTY[lane]}</div></div>}</div>
+    <div className="df"><span className="d mono" style={{ fontSize: 10, lineHeight: 1.5 }}>
+      NOTHING LEAVES THE APP: no email, no push.<br />Read marks are private. Private offers stay between
+      the parties.</span><span className="sp" />
+      <HQAct className="btn" onAction={() => { close(); home(); }}>Add to Home</HQAct></div>
+  </aside>;
 }

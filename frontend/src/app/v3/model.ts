@@ -1,12 +1,14 @@
 // Desktop v3 data: the admitted leagues dressed for the frame, and the Home reads behind the pieces.
 // The reads are the thin Home's (gatherNeedsYou, readThinHomeBrief); only their presentation is v3.
 import { useEffect, useState } from 'react';
+import { parseHostedWaivers } from '../commissioner/hostedMarkets';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { gatherNeedsYou, type NeedsYouItem } from '../shell/homeNeedsYou';
 import { readThinHomeBrief, type HomeBrief } from '../shell/homeReads';
 import { left } from '../shell/homeTiles';
 import { leagueInitials, type LeagueChoice } from '../shell/leaguePicker';
 import type { ThinHomeEntry } from '../shell/ThinHome';
+import { isEndedTrade } from '../shell/warroomPlansReads';
 import type { IconName } from './icons';
 
 // League identity colours, in the mock's order (IDC).
@@ -14,7 +16,8 @@ const IDC = ['hsl(172,30%,52%)', 'hsl(210,28%,66%)', 'hsl(14,48%,58%)', 'hsl(75,
   'hsl(30,62%,56%)', 'hsl(195,32%,60%)', 'hsl(40,40%,66%)', 'hsl(36,22%,72%)'];
 
 export type V3League = LeagueChoice & { bd: string; c: string; commish: boolean; team: boolean };
-export type Brief = { brief?: HomeBrief; error?: string };
+export type Waivers = ReturnType<typeof parseHostedWaivers>;
+export type Brief = { brief?: HomeBrief; error?: string; waivers?: Waivers };
 export type Lane = 'need' | 'wait' | 'land';
 export type DocketItem = { id: string; lg: string; lane: Lane; t: string; who: string; clock: string;
   btn: string; entry?: ThinHomeEntry; urgent?: boolean; bad?: boolean };
@@ -63,8 +66,10 @@ export function useHome(leagues: V3League[], port: HostedPort) {
       },
       readBrief: async (id, mine, hosted, _owner, commish) => {
         try {
-          const brief = await readThinHomeBrief(id, mine, hosted, undefined, commish);
-          keep(id, { brief });
+          const [brief, waivers] = await Promise.all([
+            readThinHomeBrief(id, mine, hosted, undefined, commish),
+            mine ? readWaivers(id, mine, hosted) : Promise.resolve(undefined)]);
+          keep(id, { brief, waivers });
           return brief;
         } catch (cause) {
           keep(id, { error: cause instanceof Error ? cause.message : String(cause) });
@@ -76,6 +81,16 @@ export function useHome(leagues: V3League[], port: HostedPort) {
     return () => { active = false; };
   }, [leagues, port]);
   return { briefs, needs, loading, now };
+}
+
+// Your own waiver claims: the Waiting on and Landed lanes. A failed read leaves those rows out.
+async function readWaivers(league: string, franchise: string, port: HostedPort) {
+  try {
+    const r = await port({ command: 'waivers.read', mode: 'read',
+      arguments: { league, franchise, at: new Date().toISOString() } });
+    const w = parseHostedWaivers(r.data);
+    return w.league === league && w.franchise === franchise ? w : undefined;
+  } catch { return undefined; }
 }
 
 function entryFor(item: NeedsYouItem): ThinHomeEntry | undefined {
@@ -111,4 +126,66 @@ export function docketOf(needs: NeedsYouItem[], leagues: V3League[], now: number
       clock: clockOf(n.deadline, now), btn: (entry && BUTTON[entry]) ?? 'Open',
       urgent: soon || (i === 0 && Boolean(n.deadline)) };
   });
+}
+
+// Waiting on and Landed: the moves you started that others now hold, and what has finished.
+// Landed keeps the last week. Rows come only from trades.read, bids.read and waivers.read.
+const LANDED_MS = 7 * 86_400_000;
+const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: CT });
+export function ago(iso: string, now: number) {
+  const ms = now - Date.parse(iso);
+  if (ms < 3_600_000) return `${Math.max(1, Math.round(ms / 60_000))}m ago`;
+  if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)}h ago`;
+  return ms < 2 * 86_400_000 ? 'yesterday' : `${Math.floor(ms / 86_400_000)} days ago`;
+}
+const TRADE_BAD = ['declined', 'expired', 'failed', 'vetoed', 'withdrawn'];
+
+export function lanesOf(leagues: V3League[], briefs: Record<string, Brief>, now: number): DocketItem[] {
+  const out: DocketItem[] = [];
+  const recent = (iso?: string) => {
+    const at = iso ? Date.parse(iso) : NaN;
+    return at <= now && now - at < LANDED_MS;
+  };
+  for (const L of leagues) {
+    const mine = L.franchise, b = briefs[L.id];
+    if (!mine || !b) continue;
+    const add = (lane: Lane, id: string, t: string, who: string, clock: string, btn: string,
+      entry: ThinHomeEntry, bad?: boolean) => out.push({ id: `${L.id}:${lane}:${id}`, lg: L.id, lane, t, who,
+      clock, btn, entry, bad });
+    for (const o of b.brief?.trades?.offers ?? []) {
+      if (!o.parties.includes(mine)) continue;
+      const names = new Map(o.teams);
+      const other = o.parties.filter(p => p !== mine).map(p => names.get(p) ?? p).join(' + ');
+      if (isEndedTrade(o.status)) {
+        if (!recent(o.offeredAt)) continue;
+        const day = `offered ${DAY.format(new Date(o.offeredAt))}`;
+        add('land', o.id, `Trade with ${other}: ${o.status}`, 'done', day, 'View', 'trades',
+          TRADE_BAD.includes(o.status));
+      } else if (!(o.status === 'offered' && !o.accepted.includes(mine))) {
+        add('wait', o.id, o.proposer === mine ? `Your offer to ${other}` : `Trade with ${other}`, o.words,
+          o.expiresAt ? left(o.expiresAt, now) : 'no clock', 'View', 'trades');
+      }
+    }
+    for (const a of b.brief?.bids?.results ?? []) {
+      if (!recent(a.decided)) continue;
+      const won = `Won ${a.name}${a.contract ? ` for ${a.contract}` : ''}`;
+      if (a.winner === mine) add('land', a.player, won, 'done', ago(a.decided, now), 'See pool', 'bids');
+      else if (a.yours) {
+        add('land', a.player, `${a.name}: ${a.yours}`, 'done', ago(a.decided, now), 'See pool', 'bids', true);
+      }
+    }
+    const players = new Map((b.waivers?.players ?? []).map(p => [p.player, p]));
+    for (const c of b.waivers?.claims ?? []) {
+      const p = players.get(c.player), name = p?.name ?? c.player;
+      if (c.words === 'Claim recorded privately') {
+        add('wait', c.id, `Waiver claim: ${name}`, p ? `processing · ${p.words}` : 'processing',
+          p?.closesAt ? left(p.closesAt, now) : 'no clock', 'View', 'bids');
+      } else if (!p?.closesAt || recent(p.closesAt)) {
+        const when = p?.closesAt ? ago(p.closesAt, now) : '';
+        add('land', c.id, `Waiver claim: ${name}. ${c.words}`, 'done', when, 'See pool', 'bids',
+          c.words !== 'Awarded to your franchise');
+      }
+    }
+  }
+  return out;
 }

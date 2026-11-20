@@ -8,8 +8,8 @@ import type { LeagueChoice } from '../shell/leaguePicker';
 import type { ThinHomeEntry } from '../shell/ThinHome';
 import { HQAct } from '../shell/HQAct';
 import { Icon } from './icons';
-import { ctStamp, docketOf, dress, roleWords, SCREENS, useHome, type V3League } from './model';
-import { Commands, Switcher } from './overlays';
+import { ctStamp, docketOf, dress, lanesOf, roleWords, SCREENS, useHome, type V3League } from './model';
+import { Commands, DocketDrawer, Switcher } from './overlays';
 import { Badge, HomeBoard } from './pieces';
 import './v3.css';
 import './legacyHost.css';
@@ -45,15 +45,17 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   port = hostedWorkflow, children, panel, account, status }: V3ShellProps) {
   const leagues = useMemo(() => dress(admitted), [admitted]);
   const { briefs, needs, loading, now } = useHome(leagues, port);
-  const docket = useMemo(() => docketOf(needs, leagues, now), [needs, leagues, now]);
+  const docket = useMemo(() => [...docketOf(needs, leagues, now), ...lanesOf(leagues, briefs, now)],
+    [needs, leagues, briefs, now]);
   const [selected, setSelected] = useState<string>();
-  const [layer, setLayer] = useState<'switch' | 'cmdk' | 'account' | null>(null);
+  const [layer, setLayer] = useState<'switch' | 'cmdk' | 'account' | 'docket' | null>(null);
   const home = () => { setSelected(undefined); onHome(); };
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       if (e.key === 'Escape' && layer) setLayer(null);
       else if ((e.ctrlKey || e.metaKey) && k === 'k') { e.preventDefault(); setLayer('cmdk'); }
+      else if (e.altKey && k === 'd') { e.preventDefault(); setLayer('docket'); }
       else if (e.altKey && k === 'l') { e.preventDefault(); setLayer('switch'); }
       else if (e.altKey && k === 'h') { e.preventDefault(); setLayer(null); home(); }
     };
@@ -79,6 +81,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const liveOn = Object.values(briefs).some(b => b.brief?.pulse?.results?.evidence?.live === 'live');
   const initials = (accountName ?? 'You').slice(0, 2).toUpperCase();
   const c = { leagues, briefs, docket, now, open, loading };
+  const scrim = layer === 'cmdk' || layer === 'docket';
   const plural = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
 
   return <div id="app">
@@ -96,7 +99,8 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         <Icon n="search" />
         <span>Search or type a command</span><kbd>Ctrl K</kbd></HQAct>
       <div className="tkeys">
-        <HQAct className="key" attributes={tip(TIP.needs)}><Icon n="bell" />
+        <HQAct className="key" attributes={tip(TIP.needs)} expanded={layer === 'docket'}
+          onAction={() => setLayer(l => l === 'docket' ? null : 'docket')}><Icon n="bell" />
           <span className="lb">Needs you</span>{n ? <span className="ct">{n}</span> : null}</HQAct>
         <HQAct className="key" attributes={tip(TIP.assist)}>
           <Icon n="chat" /><span className="lb">Assistant</span></HQAct>
@@ -105,12 +109,14 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         <HQAct className="acct" label="Account" expanded={layer === 'account'} attributes={tip(TIP.acct)}
           onAction={() => setLayer(l => l === 'account' ? null : 'account')}>{initials}</HQAct></div>
     </header>
-    {top && topL ? <HQAct className={`band${top.urgent ? ' crit' : ''}`} label={`Open ${top.t}`}
-      onAction={() => { if (top.entry) open(topL, top.entry); }}>
+    {top && topL ? <div className={`band${top.urgent ? ' crit' : ''}`}>
+      <HQAct label={`Open ${top.t}`} style={{ display: 'contents' }}
+        onAction={() => { if (top.entry) open(topL, top.entry); }}>
       <span className="ak">{top.urgent ? 'NOW' : 'NEXT'}</span><Badge L={topL} />
       <span className="at ell">{top.t}</span>
-      <span className="clock">{top.clock}</span><span className="go">{top.btn.toUpperCase()} ▸</span>
-      <span className="more"><b>{n}</b>NEED YOU · OPEN DOCKET</span></HQAct> : <div className="band none" />}
+      <span className="clock">{top.clock}</span><span className="go">{top.btn.toUpperCase()} ▸</span></HQAct>
+      <HQAct className="more" label="Open docket" onAction={() => setLayer('docket')}>
+        <b>{n}</b>NEED YOU · OPEN DOCKET</HQAct></div> : <div className="band none" />}
     <Rail leagues={leagues} L={L} active={active} c={c} home={home} pick={setSelected}
       switcher={() => setLayer('switch')} onHome={onHome} />
     <main className="work">
@@ -132,13 +138,15 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         onAction={onSignOut} style={{ textDecoration: 'underline' }}>SIGN OUT</HQAct></span>
     </footer>
     <div id="layer">{layer && <div className="ov" style={{ position: 'absolute', inset: 0 }}>
-      <HQAct className={layer === 'cmdk' ? 'scrim' : undefined} label="Close"
-        style={layer === 'cmdk' ? undefined : { position: 'absolute', inset: 0, cursor: 'default' }}
-        onAction={() => setLayer(null)} />
+      <HQAct className={scrim ? 'scrim' : undefined} label="Close"
+        style={scrim ? undefined : { position: 'absolute', inset: 0, cursor: 'default' }}
+        onAction={() => setLayer(null)}><></></HQAct>
       {layer === 'switch' && <Switcher leagues={leagues} docket={docket} briefs={briefs} current={L?.id}
         pick={id => { setLayer(null); setSelected(id); if (!id) onHome(); }} />}
       {layer === 'cmdk' && <Commands leagues={leagues} close={() => setLayer(null)} open={open}
         home={home} pick={id => setSelected(id)} />}
+      {layer === 'docket' && <DocketDrawer leagues={leagues} docket={docket} current={L} open={open}
+        close={() => setLayer(null)} home={home} />}
       {layer === 'account' && <div className="pop menu" style={{ right: 8, top: 52, width: 300 }}>
         <div className="mh">YOU · {plural(leagues.length, 'LEAGUE', 'LEAGUES')}</div>
         {account ?? <HQAct onAction={() => { setLayer(null); onSignOut(); }}>

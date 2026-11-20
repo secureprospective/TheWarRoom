@@ -77,6 +77,15 @@ export function parseHostedBids(v: unknown) {
       const own = a.yours ? ` — ${text(a.yours, 'Your result')}` : '';
       return `${text(a.name, 'Name')}: ${text(a.words, 'Award')}${own}`;
     }),
+    /** The same awards as facts: who won, when it was decided, and the viewer's own result. */
+    results: array(r.awards, 'Awards', (v) => {
+      const a = object(v, 'Award', ['player', 'name', 'winner', 'team', 'contract', 'points', 'decided',
+        'words', 'yours']);
+      return { player: text(a.player, 'Player'), name: text(a.name, 'Name'),
+        winner: a.winner ? text(a.winner, 'Winner') : '',
+        contract: a.contract ? text(a.contract, 'Contract') : '',
+        decided: timestamp(a.decided, 'Decided'), yours: a.yours ? text(a.yours, 'Your result') : '' };
+    }),
   };
 }
 export function parseHostedWaivers(v: unknown) {
