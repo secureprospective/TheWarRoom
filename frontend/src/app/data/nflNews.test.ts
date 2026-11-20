@@ -10,7 +10,8 @@ describe('nfl.news.read', () => {
     expect(port).toHaveBeenCalledWith({ command: 'nfl.news.read', mode: 'read',
       arguments: { league: 'native.test', players: '0099,0100' } });
     await readNFLNews('native.test', [], port as never);
-    expect(port).toHaveBeenLastCalledWith({ command: 'nfl.news.read', mode: 'read', arguments: { league: 'native.test', players: '' } });
+    expect(port).toHaveBeenLastCalledWith({ command: 'nfl.news.read', mode: 'read',
+      arguments: { league: 'native.test', players: '' } });
     expect(news.stale).toBe(false);
     expect(news.items[0]).toMatchObject({ player: '0099', tag: 'INJ', source: 'sleeper' });
   });

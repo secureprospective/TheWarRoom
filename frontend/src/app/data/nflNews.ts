@@ -4,7 +4,8 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 /** NFLNewsItem is one public news line for a rostered player (nfl.news.read). */
 export type NFLNewsItem = {
   at: string; player: string; name: string; position: string; nflTeam: string;
-  tag: 'INJ' | 'OUT' | 'IR' | 'ACT' | 'BYE' | 'NOTE' | string; text: string; source: 'espn' | 'sleeper' | string;
+  tag: 'INJ' | 'OUT' | 'IR' | 'ACT' | 'BYE' | 'NOTE' | string; text: string;
+  source: 'espn' | 'sleeper' | string;
 };
 export type NFLNews = { asOf: string | null; stale: boolean; items: NFLNewsItem[] };
 
@@ -33,7 +34,8 @@ export function parseNFLNews(v: unknown): NFLNews {
   return { asOf, stale: r.stale, items };
 }
 
-/** readNFLNews asks the league's server for public news about its rostered players (optionally just these ids). */
+/** readNFLNews asks the league's server for public news about its rostered players
+ *  (optionally just these ids). */
 export async function readNFLNews(league: string, players: string[] = [],
   port: HostedPort = hostedWorkflow): Promise<NFLNews> {
   const reply = await port({ command: 'nfl.news.read', mode: 'read',
