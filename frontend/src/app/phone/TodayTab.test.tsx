@@ -7,7 +7,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import { defaultLayout, type Layout } from '../shell/homeLayout';
 import type { HomeBrief } from '../shell/homeReads';
 import type { LeagueChoice } from '../shell/leaguePicker';
-import { badgesFor, TodayTab } from './TodayTab';
+import { badgesFor, keyWord, TodayTab } from './TodayTab';
 
 const now = Date.parse('2026-11-15T12:00:00Z');
 const league: LeagueChoice = { id: 'league', name: 'Test League', app: true, franchise: 'mine',
@@ -120,6 +120,10 @@ describe('TodayTab', () => {
       readBrief={async () => brief} now={now} onNow={onNow} />));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
     expect(host.textContent).toContain('Approve trade');
+    const row = host.querySelector('.today6__job')!;
+    expect(row.querySelector('b')!.textContent).toBe('Approve trade');
+    expect(row.querySelector('em')!.textContent).toBe('Waiting');
+    expect(row.querySelector('.today6__key')!.textContent).toBe('Open');
     expect(onNow).toHaveBeenLastCalledWith(1);
     await press('Snooze until tomorrow');
     const sent = requests.find(r => r.command === 'job.snooze.set');
@@ -157,6 +161,19 @@ describe('TodayTab', () => {
       job('a', 'unavailable'), job('b', 'trade')];
     expect(badgesFor(jobs, 'a', false)).toEqual({ team: 1, moves: 1, league: 2, live: false });
     expect(badgesFor(jobs, 'c', true)).toEqual({ team: 0, moves: 0, league: 0, live: true });
+  });
+
+  it('key word: a missed lineup row says Fix, every other row says Open', async () => {
+    const brief = { ...loaded(), trades: { league: 'league', franchise: 'mine', offers: [] },
+      results: { ...loaded().results!, scores: [{ franchise: 'mine', starters: [], lineupStatus: 'missed',
+        lineupWords: 'No lineup was set' }] } } as unknown as HomeBrief;
+    const view = await show(async () => brief, layoutPort([], { saved: defaultLayout(), revision: 0 }));
+    const row = view.querySelector('.today6__job')!;
+    expect(row.querySelector('b')!.textContent).toBe('No lineup was set');
+    expect(row.querySelector('.today6__key')!.textContent).toBe('Fix');
+    const base = { id: 'x', leagueId: 'l', leagueName: 'L', words: 'w', screen: { node: 'war' as const } };
+    expect(keyWord({ ...base, kind: 'trade' })).toBe('Open');
+    expect(keyWord({ ...base, kind: 'commissioner' })).toBe('Open');
   });
 
   it('live now: one row per admitted league, each with its own read or failure words', async () => {

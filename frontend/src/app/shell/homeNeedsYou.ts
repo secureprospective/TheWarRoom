@@ -14,6 +14,9 @@ export type NeedsYouItem = {
   leagueName: string;
   kind: NeedsYouKind;
   words: string;
+  /** title and detail split words for a two-line row (commissioner: job name, then its top job). */
+  title?: string;
+  detail?: string;
   deadline?: string;
   screen: { node: Node; workspace?: string };
 };
@@ -102,8 +105,9 @@ function needsYouFor(league: LeagueChoice, mine: string, commissioner: boolean, 
     for (const job of brief.jobs.jobs) {
       if (isJobSnoozed(brief.jobSnoozes, league.id, job.id, now)) continue;
       if (job.state !== 'blocked' && !(job.state === 'live' && job.closes)) continue;
-      out.push(item(league, 'commissioner', job.id, `${job.name} · ${job.words}`,
-        { node: 'control', workspace: 'league' }, job.closes));
+      out.push({ ...item(league, 'commissioner', job.id, `${job.name} · ${job.words}`,
+        { node: 'control', workspace: 'league' }, job.closes),
+      title: oneLine(job.name), detail: oneLine(job.words) || undefined });
     }
   }
   return out;
