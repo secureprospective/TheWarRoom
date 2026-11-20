@@ -47,6 +47,7 @@ internal/ingestion/livegame	now
 internal/ingestion/livescoring	control
 internal/ingestion/marketfeeds	market
 internal/ingestion/nflschedule	control
+internal/ingestion/nflnews	research
 internal/ingestion/pendingtrades	trades
 internal/ingestion/players	sources
 internal/ingestion/playerscores	scoring
