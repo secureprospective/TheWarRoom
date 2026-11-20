@@ -30,15 +30,12 @@
 .lg5-cr .n.z { background: var(--lg-green); }
 .lg5-seg { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--lg-black);
   box-shadow: inset 0 0 0 1px var(--lg-rule); }
-.lg5 .lg5-seg > *, .lg5 .lg5-chips > * { min-height: 44px; margin: 0; padding: 0 7px; border: 0;
+.lg5 .lg5-seg > * { min-height: 44px; margin: 0; padding: 0 7px; border: 0;
   border-left: 1px solid var(--lg-rule); border-radius: 0; background: none; color: var(--lg-ink3);
   font: 700 10px var(--lg-mono); letter-spacing: .12em; text-transform: uppercase; }
-.lg5 .lg5-seg > :first-child, .lg5 .lg5-chips > :first-child { border-left: 0; }
-.lg5 .lg5-seg > .on, .lg5 .lg5-chips > .on { background: var(--lg-key-on); color: var(--lg-ink);
+.lg5 .lg5-seg > :first-child { border-left: 0; }
+.lg5 .lg5-seg > .on { background: var(--lg-key-on); color: var(--lg-ink);
   box-shadow: inset 0 1px 0 var(--lg-key-lit), inset 0 -2px 0 var(--lg-blue); }
-.lg5-chips { display: flex; overflow-x: auto; scrollbar-width: none; background: var(--lg-black);
-  box-shadow: inset 0 0 0 1px var(--lg-rule); }
-.lg5 .lg5-chips > * { flex: 1 0 auto; letter-spacing: .1em; text-transform: none; }
 .lg5-grp { background: var(--lg-mat); box-shadow: var(--lg-lift); min-width: 0; }
 .lg5-lbl { font: 700 10px var(--lg-mono); letter-spacing: .14em; color: var(--lg-ink3); margin-top: 4px;
   text-transform: uppercase; }
