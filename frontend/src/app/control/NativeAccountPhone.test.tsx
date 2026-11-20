@@ -70,6 +70,13 @@ it('lands on the new phone app after sign-in and shows the ported Today tab', as
 
   expect(host.querySelector('.phone-app')).not.toBeNull();
   expect(host.querySelector('.phone-app__league')?.textContent).toContain('Test League');
+  // The frame owns the phone screen: nothing from the account page's own chrome may render.
+  expect(host.querySelector('.native-account > header')).toBeNull();
+  expect(host.querySelector('nav[aria-label="Account access"]')).toBeNull();
+  expect(host.querySelector('.native-account > .native-actions')).toBeNull();
+  expect(host.querySelector('.native-account > footer')).toBeNull();
+  expect([...host.querySelectorAll('button')].map(button => button.textContent))
+    .not.toContain('Open my franchise');
   expect(host.querySelector('.phone-app__slot')?.getAttribute('aria-label')).toBe('Today');
   expect(host.querySelector('.phone-app__slot h1')).toBeNull();
   const live = [...host.querySelectorAll('.phone-app__tab')]

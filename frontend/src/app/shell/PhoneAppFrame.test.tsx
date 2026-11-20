@@ -205,3 +205,16 @@ it('fills the active tab from its ported content and keeps placeholders for the 
   expect(host!.querySelector('.phone-app__slot .ported')?.textContent).toBe('Today content');
   expect(host!.querySelector('.phone-app__slot h1')).toBeNull();
 });
+
+it('owns the whole phone screen and keeps desktop button and nav faces off its keys', async () => {
+  const { readFileSync } = await import('node:fs');
+  const frame = readFileSync('src/app/shell/PhoneAppFrame.css', 'utf8');
+  const root = frame.slice(frame.indexOf('.phone-app {'), frame.indexOf('}', frame.indexOf('.phone-app {')));
+  expect(root).toContain('position: fixed');
+  expect(root).toContain('inset: 0');
+  expect(root).toContain('height: 100dvh');
+  const shell = readFileSync('src/app/shell/shell.css', 'utf8');
+  expect(shell).not.toMatch(/\.twr-app \.act-button[ :{](?!where\(:not\(\.phone-app \*\)\))/);
+  const account = readFileSync('src/app/control/nativeAccount.css', 'utf8');
+  expect(account).not.toMatch(/\.native-account nav[ ,{]/);
+});

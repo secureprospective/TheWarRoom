@@ -9,7 +9,7 @@ import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads
 import NativeHelpers from './NativeHelpers';
 import { HQAct } from '../shell/HQAct';
 import type { ThinHomeEntry } from '../shell/ThinHome';
-import { PhoneAppFrame, type PhoneTab } from '../shell/PhoneAppFrame';
+import { PhoneAppFrame, usePhoneViewport, type PhoneTab } from '../shell/PhoneAppFrame';
 import type { HomeBrief } from '../shell/homeReads';
 import { TeamTab } from '../phone/TeamTab';
 import type { LeagueChoice } from '../shell/leaguePicker';
@@ -89,6 +89,10 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   useEffect(() => { setPhoneBrief(undefined); }, [fence.blocked, fence.key, admission?.league]);
   const activeLeague = admittedLeagues.find(league => league.id === activeLeagueId);
   const showThinHome = homeReady && screen === 'login' && !activeLeague;
+  const phoneViewport = usePhoneViewport(browser);
+  // On a phone the app frame owns the whole screen: none of this page's own chrome may show.
+  const phoneFrame = browser && phoneViewport && homeReady && screen === 'login'
+    && !(activeLeague && activeEntry === 'control');
   const selectedPhoneLeagueId = admission?.league ?? '';
   const currentPhoneBrief = phoneBrief?.leagueId === selectedPhoneLeagueId ? phoneBrief : undefined;
   const phoneWeek = currentPhoneBrief?.brief.pulse?.week;
@@ -192,16 +196,16 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   </>;
   return <main className={`twr-app native-account${showThinHome ? ' has-thin-home' : ''}`
     + `${browser && homeReady ? ' phone-home' : ''}`} aria-busy={pending}>
-    <header><h1>{view.name || 'Your league server'}</h1>
+    {!phoneFrame && <><header><h1>{view.name || 'Your league server'}</h1>
       {!view.name && <p>Your league server · No MFL account or key needed</p>}
       {!browser && <p className="native-address">{initial.server}</p>}</header>
     <nav aria-label="Account access">
       {visibleTabs.map(([id, label]) =>
         <Act key={id} variant="button" verb="commissioner.surface"
         args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
-    </nav>
+    </nav></>}
     {error && <p role="alert">{error}</p>}
-    {view.message && !showThinHome && <p role="status">{view.message}</p>}
+    {view.message && !showThinHome && !phoneFrame && <p role="status">{view.message}</p>}
     <div hidden={screen !== 'login'}>
     {view.name && !homeReady && <section aria-label="Your league access">
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
@@ -313,7 +317,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           submit disabled={pending} label={submitLabel}>{submitLabel}</Act>
       </div>
     </form>}
-    {signedIn && <div className="native-actions">
+    {signedIn && !phoneFrame && <div className="native-actions">
       <Act variant="button" verb="commissioner.surface" args={args('check', 'enter')}
         disabled={pending} label="Open my franchise">Open my franchise</Act>
       <Act variant="button" verb="commissioner.surface" args={args('check', 'forget')}
@@ -326,10 +330,10 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           disabled={pending} label="Revoke all devices">Revoke all devices</Act>
       </>}
     </div>}
-    <footer>{browser
+    {!phoneFrame && <footer>{browser
       ? 'Your sign-in stays in this browser as an HttpOnly cookie. The league needs an internet connection.'
       : 'This computer keeps your sign-in in its keychain when it has one, '
         + 'otherwise until you close the app. Revoke all devices signs you out everywhere. '
-        + 'Authenticator codes are never saved. The league needs an internet connection.'}</footer>
+        + 'Authenticator codes are never saved. The league needs an internet connection.'}</footer>}
   </main>;
 }
