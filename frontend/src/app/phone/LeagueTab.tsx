@@ -173,6 +173,8 @@ function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
       : each ? <p className="lg5-note">Top {each} in each conference make the playoffs.
         Tap a team for its roster.</p>
       : null}
+    {pulse.bracket?.divisionWinners ? <p className="lg5-note">Division winners make the playoffs.</p>
+      : null}
   </>;
 }
 

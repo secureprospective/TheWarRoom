@@ -223,6 +223,8 @@ export type PulseSeed = { seed: number; franchise: string; name: string; divisio
   rank: number; kind: string; bye: boolean; byHand: boolean };
 export type PulseBracket = { league: string; season: number; revision: number; status: string;
   words: string; startWeek: number; finalWeek: number; perConference: number; byeSeeds: number;
+  /** True when the rules qualify division winners (the wire count is per conference, above zero). */
+  divisionWinners: boolean;
   started: boolean; fields: { conference: string; seeds: PulseSeed[] }[];
   /** The fields are today's standings read as seeds, not a set playoff field. */
   projected: boolean;
@@ -258,7 +260,9 @@ export function parsePulseBracket(value: unknown, league: string, season: number
     words: text(r.words, 'Playoffs'), startWeek: integer(rules.startWeek, 'Playoff start'),
     finalWeek: integer(rules.finalWeek, 'Playoff final'),
     perConference: integer(rules.perConference, 'Playoff places'),
-    byeSeeds: integer(rules.byeSeeds, 'Bye seeds'), started: r.started,
+    byeSeeds: integer(rules.byeSeeds, 'Bye seeds'),
+    divisionWinners: rules.divisionWinners === undefined ? false
+      : integer(rules.divisionWinners, 'Division winners') > 0, started: r.started,
     shape: array(rules.shape, 'Bracket shape', (v, p) => {
       const n = object(v, p, ['id', 'week', 'homeSeed', 'awaySeed', 'homeFrom', 'awayFrom']);
       const seed = (s: unknown) => s === undefined ? undefined : integer(s, p, 1);
