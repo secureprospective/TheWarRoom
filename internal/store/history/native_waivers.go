@@ -51,19 +51,19 @@ func (clockWaiverAuthorizer) Allow(_ string, principal, command string) (string,
 
 // ProcessDueWaivers uses the same append transaction and deterministic request keys as manual processing.
 func (s *Store) ProcessDueWaivers(ctx context.Context, league string, facts nativecheck.Facts) error {
-	records, err := s.nativeRecords(ctx, league)
-	if err != nil {
-		return err
-	}
-	due, err := market.DueWaiverWindows(league, records, s.now())
-	if err != nil {
-		return fmt.Errorf("read due waivers: %w", err)
-	}
-	for _, window := range due {
-		records, err = s.nativeRecords(ctx, league)
+	for {
+		records, err := s.nativeRecords(ctx, league)
 		if err != nil {
 			return err
 		}
+		due, err := market.DueWaiverWindows(league, records, s.now())
+		if err != nil {
+			return fmt.Errorf("read due waivers: %w", err)
+		}
+		if len(due) == 0 {
+			return nil
+		}
+		window := due[0]
 		raw := commissioner.RawCommand{League: league, Command: commissioner.WaiverProcess,
 			Args:     commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Window: window}},
 			Expected: int64(len(records)), Request: fmt.Sprintf("waiver-clock.%s.%d", window, len(records)),
@@ -72,7 +72,6 @@ func (s *Store) ProcessDueWaivers(ctx context.Context, league string, facts nati
 			return fmt.Errorf("process due waiver: %w", err)
 		}
 	}
-	return nil
 }
 
 // NativeBids reads the open and decided bids as one franchise's owner is allowed to see them.

@@ -244,6 +244,8 @@ export type NativeHQ = {
   reserveExperience?: Map<string, { experienceYears?: number; taxiYearsLeft?: number }>;
   record?: string;
   standing?: string;
+  /** League-wide place from standings.read, e.g. 11 of 12. */
+  place?: { rank: number; of: number };
   standingsNote?: string;
   week?: number;
   weekNote?: string;
@@ -253,6 +255,10 @@ export type NativeHQ = {
   projections?: Map<string, number>;
   thisWeek?: PulseResults;
   playerForm?: Record<string, PulsePlayerFormPoint[]>;
+  /** The last six started weeks per player, for the phone's low–high range. */
+  playerHistory?: Record<string, PulsePlayerFormPoint[]>;
+  /** Each lineup player's kickoff lock time from lineup.read, past or future. */
+  kickoffs?: Map<string, string>;
   formPending?: boolean;
   formError?: string;
   formNote?: string;
@@ -427,7 +433,9 @@ export async function readNativeHQ(
       });
       standingRows = rows;
       standingsThrough = integer(raw.through, 'Standings through');
-      result.record = rows.find((r) => r.franchise === mine)?.record;
+      const own = rows.find((r) => r.franchise === mine);
+      result.record = own?.record;
+      if (own) result.place = { rank: own.rank, of: rows.length };
       result.standingsNote = raw.words === undefined ? undefined : text(raw.words, 'Standings words');
     }),
   ]);
@@ -513,6 +521,8 @@ export async function readNativeHQ(
         .filter((at) => Date.parse(at) > Date.now())
         .sort();
       result.lock = locks[0];
+      result.kickoffs = new Map([...raw.starters, ...raw.bench].flatMap((p) =>
+        p.locksAt ? [[p.player, timestamp(p.locksAt, 'Kickoff')] as const] : []));
       result.check = held.verdict;
       result.lineup = {
         franchise: mine,
@@ -566,8 +576,10 @@ export async function readNativeHQ(
     if (history.some(reading => reading.revision !== revision))
       throw new Error('League changed during the read; refresh before using this region');
     const players = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players.map(p => p.id) ?? [];
+    result.playerHistory = Object.fromEntries(players.map(player => [player,
+      recentPlayerForm(history, player, 6)]));
     result.playerForm = Object.fromEntries(players.map(player => [player,
-      recentPlayerForm(history, player)]));
+      result.playerHistory![player].slice(-5)]));
     result.formNote = history.map(reading => reading.words).filter(Boolean).join(' · ');
   }, words => { result.formError = words; });
   result.formNote ||= result.standingsNote;

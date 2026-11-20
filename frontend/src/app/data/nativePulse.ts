@@ -1,4 +1,4 @@
-import { array, integer, object, text } from './parseValues';
+import { array, choice, integer, object, requiredText, text, timestamp } from './parseValues';
 
 // League points cross the wire as leaguerules.Decimal: ten-thousandths of a point.
 const SCALE = 10000;
@@ -180,7 +180,7 @@ export function recentPlayerForm(results: readonly PulseResults[], player: strin
 
 export type PulseStandingRow = { rank: number; franchise: string; name: string; division: string;
   conference: string;
-  wins: number; losses: number; ties: number; record: string; pointsFor: number;
+  wins: number; losses: number; ties: number; record: string; streak?: string; pointsFor: number;
   pointsWords: string; why: string[] };
 export type PulseStandings = { league: string; name: string; season: number; revision: number;
   status: string; words: string; through: number; decided: number; pending: number;
@@ -194,11 +194,15 @@ export function parsePulseStandings(value: unknown, league: string, season: numb
     throw new Error('Standings belong to another league or season');
   const rows = (v: unknown) => array(v, 'Standings rows', (v, p) => {
     const s = object(v, p, ['rank', 'franchise', 'name', 'division', 'conference', 'wins', 'losses', 'ties',
-      'record', 'computedRecord', 'pointsFor', 'pointsWords', 'why']);
+      'record', 'streak', 'computedRecord', 'pointsFor', 'pointsWords', 'why']);
+    const streak = s.streak === undefined ? undefined : text(s.streak, p);
+    if (streak !== undefined && !/^[WLT][1-9]\d*$/.test(streak))
+      throw new Error(`${p}: invalid current streak`);
     return { rank: integer(s.rank, p, 1), franchise: text(s.franchise, p), name: text(s.name, p),
       division: s.division === undefined ? '' : text(s.division, p),
       conference: s.conference === undefined ? '' : text(s.conference, p), wins: integer(s.wins, p),
       losses: integer(s.losses, p), ties: integer(s.ties, p), record: text(s.record, p),
+      ...(streak === undefined ? {} : { streak }),
       pointsFor: points(s.pointsFor, p), pointsWords: text(s.pointsWords, p),
       why: array(s.why, 'Reasons', (v, p) => text(v, p)) };
   });
@@ -267,6 +271,25 @@ export function parsePulseBracket(value: unknown, league: string, season: number
 
 export type PulseSchedule = { season: number;
   weeks: { week: number; games: { home: string; away: string }[]; bye?: string }[] };
+export type PulseActivityKind = 'notice' | 'trade' | 'roster';
+export type PulseActivityEvent = { id: string; kind: PulseActivityKind; when: string; summary: string;
+  franchises: string[] };
+export type PulseActivity = { league: string; revision: number; events: PulseActivityEvent[] };
+
+/** parsePulseActivity accepts only the member-safe public event projection for this league. */
+export function parsePulseActivity(value: unknown, league: string): PulseActivity {
+  const r = object(value, 'League activity', ['league', 'revision', 'events']);
+  if (r.league !== league) throw new Error('Activity belongs to another league');
+  return { league: text(r.league, 'League'), revision: integer(r.revision, 'Revision'),
+    events: array(r.events, 'Activity events', (v, p) => {
+      const event = object(v, p, ['id', 'kind', 'when', 'summary', 'franchises']);
+      return { id: requiredText(event.id, `${p}.id`),
+        kind: choice(event.kind, `${p}.kind`, ['notice', 'trade', 'roster']),
+        when: timestamp(event.when, `${p}.when`), summary: requiredText(event.summary, `${p}.summary`),
+        franchises: event.franchises === undefined ? [] : array(event.franchises, 'Franchises',
+          (franchise, path) => requiredText(franchise, path)) };
+    }) };
+}
 export function parsePulseSchedule(value: unknown, league: string): PulseSchedule {
   const r = object(value, 'Schedule', ['league', 'revision', 'season', 'weeks']);
   if (r.league !== league) throw new Error('The schedule belongs to another league');

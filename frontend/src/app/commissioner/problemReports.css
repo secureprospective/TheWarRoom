@@ -1,0 +1,10 @@
+.hosted-feedback { max-width: 960px; }
+.hosted-feedback h2 { margin-top: 0; }
+.hosted-feedback ol { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.hosted-feedback li { padding: 14px; border: 1px solid var(--edge); background: var(--surface-1); }
+.hosted-feedback li header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.hosted-feedback-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.hosted-feedback dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 12px; }
+.hosted-feedback dl div { display: contents; }
+.hosted-feedback dt { color: var(--ink2); }
+.hosted-feedback dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }

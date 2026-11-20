@@ -1977,6 +1977,8 @@ export namespace commissioner {
 	    position: string;
 	    string: string;
 	    points: string;
+	    team?: string;
+	    average?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new NativePoolPlayer(source);
@@ -1992,6 +1994,8 @@ export namespace commissioner {
 	        this.position = source["position"];
 	        this.string = source["string"];
 	        this.points = source["points"];
+	        this.team = source["team"];
+	        this.average = source["average"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -2014,6 +2018,7 @@ export namespace commissioner {
 	}
 	export class NativeAssets {
 	    poolPointsNote?: string;
+	    openBenchSlots?: Record<string, number>;
 	    pool?: NativePoolPlayer[];
 	    identities?: NativeAssetIdentity[];
 	    corrections?: Correction[];
@@ -2031,6 +2036,7 @@ export namespace commissioner {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.poolPointsNote = source["poolPointsNote"];
+	        this.openBenchSlots = source["openBenchSlots"];
 	        this.pool = this.convertValues(source["pool"], NativePoolPlayer);
 	        this.identities = this.convertValues(source["identities"], NativeAssetIdentity);
 	        this.corrections = this.convertValues(source["corrections"], Correction);
@@ -3238,6 +3244,7 @@ export namespace commissioner {
 	    losses: number;
 	    ties: number;
 	    record: string;
+	    streak?: string;
 	    computedRecord?: string;
 	    pointsFor: number;
 	    pointsWords: string;
@@ -3258,6 +3265,7 @@ export namespace commissioner {
 	        this.losses = source["losses"];
 	        this.ties = source["ties"];
 	        this.record = source["record"];
+	        this.streak = source["streak"];
 	        this.computedRecord = source["computedRecord"];
 	        this.pointsFor = source["pointsFor"];
 	        this.pointsWords = source["pointsWords"];
@@ -4241,6 +4249,7 @@ export namespace commissioner {
 	    priorOrder?: string[];
 	    closeAt?: time.Time;
 	    player?: NativePlayer;
+	    dropPlayer?: NativePlayer;
 	    deadCents?: number;
 	    season: number;
 	    winner?: string;
@@ -4258,6 +4267,7 @@ export namespace commissioner {
 	        this.priorOrder = source["priorOrder"];
 	        this.closeAt = this.convertValues(source["closeAt"], time.Time);
 	        this.player = this.convertValues(source["player"], NativePlayer);
+	        this.dropPlayer = this.convertValues(source["dropPlayer"], NativePlayer);
 	        this.deadCents = source["deadCents"];
 	        this.season = source["season"];
 	        this.winner = source["winner"];
@@ -4288,6 +4298,7 @@ export namespace commissioner {
 	    bucket?: string;
 	    player?: string;
 	    franchise?: string;
+	    drop?: string;
 	    window?: string;
 	    claim?: string;
 	    order?: string[];
@@ -4301,6 +4312,7 @@ export namespace commissioner {
 	        this.bucket = source["bucket"];
 	        this.player = source["player"];
 	        this.franchise = source["franchise"];
+	        this.drop = source["drop"];
 	        this.window = source["window"];
 	        this.claim = source["claim"];
 	        this.order = source["order"];
@@ -4428,6 +4440,40 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class TradeHoldRecord {
+	    who: string;
+	    at: time.Time;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TradeHoldRecord(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.who = source["who"];
+	        this.at = this.convertValues(source["at"], time.Time);
+	        this.reason = source["reason"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class TradeVote {
 	    who: string;
 	    decision: string;
@@ -4530,6 +4576,7 @@ export namespace commissioner {
 	    status: string;
 	    words: string;
 	    votes: TradeVote[];
+	    holds?: TradeHoldRecord[];
 	    recusals: TradeVote[];
 	    appeals: TradeVote[];
 	    overrides: TradeVote[];
@@ -4555,6 +4602,7 @@ export namespace commissioner {
 	        this.status = source["status"];
 	        this.words = source["words"];
 	        this.votes = this.convertValues(source["votes"], TradeVote);
+	        this.holds = this.convertValues(source["holds"], TradeHoldRecord);
 	        this.recusals = this.convertValues(source["recusals"], TradeVote);
 	        this.appeals = this.convertValues(source["appeals"], TradeVote);
 	        this.overrides = this.convertValues(source["overrides"], TradeVote);
@@ -5682,6 +5730,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	
@@ -12280,6 +12329,7 @@ export namespace livegame {
 	    id: string;
 	    abbreviation: string;
 	    score: number;
+	    record?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Team(source);
@@ -12290,6 +12340,7 @@ export namespace livegame {
 	        this.id = source["id"];
 	        this.abbreviation = source["abbreviation"];
 	        this.score = source["score"];
+	        this.record = source["record"];
 	    }
 	}
 	export class Game {
@@ -13088,6 +13139,7 @@ export namespace market {
 	    status: string;
 	    words: string;
 	    votes: commissioner.TradeVote[];
+	    holds?: commissioner.TradeHoldRecord[];
 	    recusals: commissioner.TradeVote[];
 	    appeals: commissioner.TradeVote[];
 	    overrides: commissioner.TradeVote[];
@@ -13114,6 +13166,7 @@ export namespace market {
 	        this.status = source["status"];
 	        this.words = source["words"];
 	        this.votes = this.convertValues(source["votes"], commissioner.TradeVote);
+	        this.holds = this.convertValues(source["holds"], commissioner.TradeHoldRecord);
 	        this.recusals = this.convertValues(source["recusals"], commissioner.TradeVote);
 	        this.appeals = this.convertValues(source["appeals"], commissioner.TradeVote);
 	        this.overrides = this.convertValues(source["overrides"], commissioner.TradeVote);
@@ -13183,6 +13236,7 @@ export namespace market {
 	    window: string;
 	    player: string;
 	    status: string;
+	    position?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new NativeWaiverClaim(source);
@@ -13194,6 +13248,7 @@ export namespace market {
 	        this.window = source["window"];
 	        this.player = source["player"];
 	        this.status = source["status"];
+	        this.position = source["position"];
 	    }
 	}
 	export class NativeWaiverPlayer {

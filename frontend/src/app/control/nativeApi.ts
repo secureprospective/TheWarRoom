@@ -8,6 +8,8 @@ export type NativeAction = 'update' | 'retry' | 'status' | 'recover' | 'enroll' 
   | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up' | 'recovery-codes';
 export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-check' | 'helper-confirm';
 export type NativeSeat = { franchise: string; name: string };
+export type NativeLeagueMembership = { id: string; name: string; role: string;
+  franchise: string; franchiseName: string };
 export type NativeView = {
   helperPreview?: string;
   update?: 'app' | 'server';
@@ -15,6 +17,8 @@ export type NativeView = {
   franchise: string; franchiseName: string; seed: string;
   // A helper's connection line is shown once; a confirmation code covers one change.
   connection: string; helperId: string; confirmation: string; seats: NativeSeat[];
+  // Browser session membership summaries; desktop admission remains a single configured league.
+  leagues?: NativeLeagueMembership[];
   // New recovery codes are shown once, right after they are printed.
   recoveryCodes?: string[];
 };
@@ -29,15 +33,33 @@ const textKeys = ['authGeneration', 'server', 'league', 'message', 'name', 'role
 const isSeat = (seat: unknown) => Boolean(seat) && typeof seat === 'object'
   && Object.keys(seat as object).length === 2
   && typeof (seat as NativeSeat).franchise === 'string' && typeof (seat as NativeSeat).name === 'string';
+function parseBrowserMemberships(value: unknown, allowEmpty = false): NativeLeagueMembership[] {
+  if (!Array.isArray(value) || (!allowEmpty && value.length === 0))
+    throw new Error('Unreadable browser memberships.');
+  const seen = new Set<string>();
+  return value.map(entry => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry))
+      throw new Error('Unreadable browser membership.');
+    const row = entry as Record<string, unknown>;
+    const keys = ['id', 'name', 'role', 'franchise', 'franchiseName'];
+    if (Object.keys(row).length !== keys.length || keys.some(key => typeof row[key] !== 'string')
+      || !String(row.id).startsWith('native.') || seen.has(String(row.id)))
+      throw new Error('Unreadable browser membership.');
+    seen.add(String(row.id));
+    return row as NativeLeagueMembership;
+  });
+}
 export function parseNativeView(raw: unknown): NativeView {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable desktop response.');
   const value = raw as Record<string, unknown>;
   if (Object.keys(value).length !== textKeys.length + 1 + ('helperPreview' in value ? 1 : 0)
       + ('update' in value ? 1 : 0) + ('recoveryCodes' in value ? 1 : 0)
+      + ('leagues' in value ? 1 : 0)
     || ('update' in value && value.update !== 'app' && value.update !== 'server')
     || ('helperPreview' in value && typeof value.helperPreview !== 'string')
     || ('recoveryCodes' in value && (!Array.isArray(value.recoveryCodes) || value.recoveryCodes.length !== 8
       || !value.recoveryCodes.every(c => typeof c === 'string' && c.length === 43)))
+    || ('leagues' in value && !parseBrowserMemberships(value.leagues, value.league === ''))
     || textKeys.some(key => typeof value[key] !== 'string')
     || !/^\d+$/.test(String(value.authGeneration))
     || !Array.isArray(value.seats) || !value.seats.every(isSeat)
@@ -57,33 +79,51 @@ function validServer(value: unknown): boolean {
 let browserGeneration = 0;
 let browserIdentity = '';
 let browserCurrent: NativeView | undefined;
-function browserView(raw?: unknown, message = '', forceGeneration = false): NativeView {
-  let admission: Record<string, unknown> | undefined;
-  if (raw !== undefined) {
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable browser session.');
-    const response = raw as Record<string, unknown>;
-    if (response.protocol !== 1 || Object.keys(response).length !== 2 || !('admission' in response)
-      || !response.admission || typeof response.admission !== 'object' || Array.isArray(response.admission))
-      throw new Error('Unreadable browser session.');
-    admission = response.admission as Record<string, unknown>;
-    const keys = ['league', 'name', 'franchise', 'franchiseName', 'role', 'seats'];
-    if (Object.keys(admission).length !== keys.length || keys.some(key => !(key in admission!))
-      || typeof admission.league !== 'string' || !admission.league.startsWith('native.')
-      || ['name', 'franchise', 'franchiseName', 'role'].some(key => typeof admission![key] !== 'string')
-      || !Array.isArray(admission.seats) || !admission.seats.every(isSeat))
-      throw new Error('Unreadable browser admission.');
-  }
-  const identity = admission ? JSON.stringify(admission) : '';
+function createBrowserView(selected: NativeLeagueMembership | undefined, leagues: NativeLeagueMembership[],
+  seats: NativeSeat[], message: string, forceGeneration: boolean): NativeView {
+  const identity = selected ? JSON.stringify({ selected, leagues }) : '';
   if (identity !== browserIdentity || forceGeneration) { browserIdentity = identity; browserGeneration++; }
-  const value = admission ?? {};
   const view = parseNativeView({
     authGeneration: String(browserGeneration), server: window.location.origin,
-    league: value.league ?? '', message, name: value.name ?? '', role: value.role ?? '',
-    franchise: value.franchise ?? '', franchiseName: value.franchiseName ?? '', seats: value.seats ?? [],
-    seed: '', connection: '', helperId: '', confirmation: '',
+    league: selected?.id ?? '', message, name: selected?.name ?? '', role: selected?.role ?? '',
+    franchise: selected?.franchise ?? '', franchiseName: selected?.franchiseName ?? '',
+    seats, leagues, seed: '', connection: '', helperId: '', confirmation: '',
   });
   nativeTransport.setIdentity(view.league, view.authGeneration);
   browserCurrent = view;
+  return view;
+}
+function browserView(raw?: unknown, message = '', forceGeneration = false): NativeView {
+  if (raw === undefined) return createBrowserView(undefined, [], [], message, forceGeneration);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable browser session.');
+  const response = raw as Record<string, unknown>;
+  if (response.protocol !== 1 || Object.keys(response).length !== 3
+    || !response.admission || typeof response.admission !== 'object' || Array.isArray(response.admission))
+    throw new Error('Unreadable browser session.');
+  const admission = response.admission as Record<string, unknown>;
+  const keys = ['league', 'name', 'franchise', 'franchiseName', 'role', 'seats'];
+  if (Object.keys(admission).length !== keys.length || keys.some(key => !(key in admission))
+    || typeof admission.league !== 'string' || !admission.league.startsWith('native.')
+    || ['name', 'franchise', 'franchiseName', 'role'].some(key => typeof admission[key] !== 'string')
+    || !Array.isArray(admission.seats) || !admission.seats.every(isSeat))
+    throw new Error('Unreadable browser admission.');
+  const leagues = parseBrowserMemberships(response.leagues);
+  const admitted = leagues.find(league => league.id === admission.league);
+  if (!admitted || admitted.name !== admission.name || admitted.role !== admission.role
+    || admitted.franchise !== admission.franchise || admitted.franchiseName !== admission.franchiseName)
+    throw new Error('Browser admission is not in the membership list.');
+  const selected = (!forceGeneration && browserCurrent
+    ? leagues.find(league => league.id === browserCurrent?.league) : undefined) ?? admitted;
+  return createBrowserView(selected, leagues,
+    selected.id === admission.league ? admission.seats as NativeSeat[] : [], message, forceGeneration);
+}
+export function selectBrowserLeague(league: string): NativeView {
+  if (nativeTransport.kind !== 'web' || !browserCurrent?.leagues)
+    throw new Error('Browser league selection is unavailable.');
+  const selected = browserCurrent.leagues.find(item => item.id === league);
+  if (!selected) throw new Error('This account is not admitted to that league.');
+  const view = createBrowserView(selected, browserCurrent.leagues, [], '', false);
+  observeView(view);
   return view;
 }
 async function browserActionResult(action: string, response: Response): Promise<NativeView> {
@@ -168,7 +208,7 @@ export function readConfirmRequest(text: string): boolean {
   } catch { return false; }
 }
 export type HostedResponse = {
-  label: string; writable: boolean; football: string; data: unknown; tags?: ReadTags;
+  label: string; writable: boolean; football: string; appRelease?: number; data: unknown; tags?: ReadTags;
 };
 function parseWorkflowTags(value: unknown): ReadTags {
   const row = object(value, 'Hosted read tags', ['serverEpoch', 'league', 'football', 'live', 'values']);
@@ -198,19 +238,23 @@ export async function hostedWorkflow(request: NativeRequest, football = ''): Pro
   if (!response.ok) {
     const fallback = 'The league could not accept this action. '
       + 'Refresh before retrying; check your connection, seat and authenticator.';
-    if (request.mode === 'execute' && response.status === 409
+    if (request.mode === 'execute' && [400, 409, 429].includes(response.status)
       && response.headers.get('Content-Type') === 'text/plain; charset=utf-8') {
       const message = (await response.text()).trim();
       if (message.length > 0 && message.length <= 4096) throw new Error(message);
     }
     throw new Error(fallback);
   }
-  const r = object(await response.json(), 'Hosted league', ['label', 'writable', 'football', 'data', 'tags']);
+  const r = object(await response.json(), 'Hosted league',
+    ['label', 'writable', 'football', 'appRelease', 'data', 'tags']);
   if (typeof r.writable !== 'boolean') throw new Error('Unreadable league authority. Refresh to try again.');
+  if (r.appRelease !== undefined && (!Number.isSafeInteger(r.appRelease) || Number(r.appRelease) < 1))
+    throw new Error('Unreadable app release. Refresh to try again.');
   const tags = r.tags == null ? undefined : parseWorkflowTags(r.tags);
   return {
     label: text(r.label, 'League location'), writable: r.writable,
-    football: text(r.football, 'Football evidence'), data: r.data, tags,
+    football: text(r.football, 'Football evidence'),
+    ...(r.appRelease === undefined ? {} : { appRelease: Number(r.appRelease) }), data: r.data, tags,
   };
 }
 

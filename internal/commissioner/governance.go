@@ -49,6 +49,22 @@ func RequireCommissionerOrCo(records []Record, principal string) error {
 	return nil
 }
 
+// IsLeagueMember applies the hosted member boundary: a commissioner, co-commissioner, seated owner
+// or DOT may send member-scoped reports; an account without a current league role or seat may not.
+func IsLeagueMember(state governance.State, principal string, records []Record) bool {
+	current := governance.Principal(PrincipalFor(records, principal))
+	if state.HasRole(current, governance.Commissioner) || state.HasRole(current, governance.CoCommissioner) ||
+		state.HasRole(current, governance.DOT) {
+		return true
+	}
+	for _, franchise := range LeagueFranchises(records) {
+		if state.HoldsSeat(governance.FranchiseID(franchise), current) {
+			return true
+		}
+	}
+	return false
+}
+
 func governanceFold(records []Record) (governance.State, error) {
 	records = policyRecords(records)
 	projection := Replay(records)
@@ -94,7 +110,7 @@ func governanceEvents(records []Record, projection Projection) ([]governance.Eve
 type GovernanceAuthorizer struct{ State governance.State }
 
 func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string, error) {
-	if (command == ContractActionSet || command == TradeOverride || command == OLineAuctionClose) && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
+	if (command == ContractActionSet || command == TradeHold || command == TradeOverride || command == OLineAuctionClose) && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
 		return "", fmt.Errorf("only this league's commissioner may make this change")
 	}
 	if d, ok := successionDefinitionFor(command); ok {
@@ -130,7 +146,7 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 // commandControls names the census control that governs each commissioner command.
 func commandControls() map[string]string {
 	return map[string]string{
-		TradeReview: "CM-037", TradeRecuse: "CM-037", TradeAppeal: "CM-037", TradeAppealRule: "CM-037", TradeOverride: "CM-037",
+		TradeReview: "CM-037", TradeHold: "CM-037", TradeRecuse: "CM-037", TradeAppeal: "CM-037", TradeAppealRule: "CM-037", TradeOverride: "CM-037",
 		DraftStart: "CM-042", DraftStartupOpen: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
 		DraftSkip: "CM-043", DraftAssign: "CM-043", DraftInsert: "CM-043", DraftChange: "CM-043",
@@ -249,6 +265,15 @@ func deputyOwnerAction(raw RawCommand, principal string, records []Record) (stri
 	return "", fmt.Errorf("this commissioner action is not delegated")
 }
 
+// authorizeMarketOwner admits only the seated owner for every owner market command, roster.add included.
+// A commissioner changes another team's roster through the correction commands, which need a visible reason.
+func authorizeMarketOwner(principal string, records []Record, franchise string) (string, error) {
+	if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
+		return "", err
+	}
+	return "owner", nil
+}
+
 func authorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {
 	raw = policyCommand(raw, records)
 	principal = PrincipalFor(records, principal)
@@ -259,10 +284,7 @@ func authorizeRecords(raw RawCommand, principal string, records []Record) (strin
 		return "commissioner", nil
 	}
 	if franchise := marketOwnerFranchise(raw); franchise != "" {
-		if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
-			return "", err
-		}
-		return "owner", nil
+		return authorizeMarketOwner(principal, records, franchise)
 	}
 	state, err := GovernanceState(records)
 	if err != nil {

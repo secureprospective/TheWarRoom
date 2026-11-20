@@ -35,7 +35,7 @@ export async function readWarRoomOffers(c: WarRoomContext): Promise<WarRoomOffer
     throw new Error('Trade offers belong to another viewer');
   return { revision: reading.revision, notes: reading.notes, offers: reading.offers
     .filter(o => !isEndedTrade(o.status)).map(o => ({ id: o.id, name: partnerName(o, c.mine),
-      status: o.words, details: o.details, note: o.expires, source: o })) };
+      status: o.words, details: [...o.details, ...o.reasons], note: o.expires, source: o })) };
 }
 
 /** partnerName is the other team's held name; the trade id only when the read names no partner. */

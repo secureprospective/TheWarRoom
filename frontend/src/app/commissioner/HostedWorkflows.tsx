@@ -87,10 +87,44 @@ export async function reviewHostedOwnerTrade(room: Pick<HostedLeagueRoom, 'canCh
   if (room.peek().error) throw new Error(room.peek().error);
 }
 
+/** reviewHostedWaiverClaim previews the owner's private waivers.claim for one waiver window. */
+export async function reviewHostedWaiverClaim(room: Pick<HostedLeagueRoom, 'canChange' | 'review' | 'peek'>,
+  league: string, franchise: string, window: string, revision: number, reason = '') {
+  const definition = ownerActs.find(a => a.command === 'waivers.claim');
+  const change = definition && actChange(definition, { window }, { league, revision, principal: franchise },
+    reason);
+  if (!definition || !change) throw new Error('Choose a waiver player to claim');
+  if (!room.canChange()) throw new Error('The league is not ready for changes');
+  const args = change.args as { waiver: Record<string, unknown> };
+  const request = { command: 'waivers.claim', mode: 'preview', arguments: { ...change,
+    args: { waiver: { ...args.waiver, franchise } }, request: newKey() } } as NativeRequest;
+  await room.review(request, definition.label);
+  if (room.peek().error) throw new Error(room.peek().error);
+}
+
+/** reviewHostedClaimChange previews the owner's own claim maintenance: a new claim order or one cancel. */
+export async function reviewHostedClaimChange(room: Pick<HostedLeagueRoom, 'canChange' | 'review' | 'peek'>,
+  league: string, franchise: string, revision: number,
+  change: { command: 'waivers.claim.order.set'; order: string[] }
+    | { command: 'waivers.claim.cancel'; claim: string }) {
+  const definition = ownerActs.find(a => a.command === 'waivers.claim');
+  const envelope = definition && actChange(definition, { window: 'claim' },
+    { league, revision, principal: franchise }, '');
+  if (!envelope) throw new Error('Choose a claim to change');
+  if (!room.canChange()) throw new Error('The league is not ready for changes');
+  const waiver = change.command === 'waivers.claim.order.set' ? { franchise, order: change.order }
+    : { franchise, claim: change.claim };
+  const label = change.command === 'waivers.claim.cancel' ? 'Cancel a claim' : 'Reorder my claims';
+  const request = { command: change.command, mode: 'preview', arguments: { ...envelope,
+    command: change.command, args: { waiver }, request: newKey() } } as NativeRequest;
+  await room.review(request, label);
+  if (room.peek().error) throw new Error(room.peek().error);
+}
+
 const commissionerCommands: Record<HostedTask, string[]> = {
   bids: ['bids.process', 'bids.award.override'],
   waivers: ['waivers.process', 'waivers.order.set', 'waivers.order.auto', 'waivers.award.override'],
-  trades: ['trade.review', 'trade.recuse', 'trade.appeal.rule', 'trade.override'],
+  trades: ['trade.review', 'trade.hold', 'trade.recuse', 'trade.appeal.rule', 'trade.override'],
   results: [
     'commish.score.franchise',
     'commish.standings.record.adjust',
@@ -139,6 +173,7 @@ export function HostedWorkflows({
     'waivers.process',
     'waivers.award.override',
     'trade.review',
+    'trade.hold',
     'trade.appeal.rule',
     'trade.override',
   ].includes(selected);
@@ -450,6 +485,7 @@ export function HostedWorkflows({
                     'waivers.process',
                     'waivers.award.override',
                     'trade.review',
+                    'trade.hold',
                     'trade.appeal.rule',
                     'trade.override',
                   ].includes(e.target.value)

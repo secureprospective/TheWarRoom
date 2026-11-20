@@ -2,6 +2,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import type { People } from '../commissioner/people';
 import { readAppLeaguePeople, type LeagueChoice } from './leaguePicker';
 import { readHomeBrief, type HomeBrief } from './homeReads';
+import { isJobSnoozed } from '../commissioner/jobs';
 import type { Node } from './nodes';
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -13,6 +14,9 @@ export type NeedsYouItem = {
   leagueName: string;
   kind: NeedsYouKind;
   words: string;
+  /** title and detail split words for a two-line row (commissioner: job name, then its top job). */
+  title?: string;
+  detail?: string;
   deadline?: string;
   screen: { node: Node; workspace?: string };
 };
@@ -25,7 +29,8 @@ type NeedsYouReaders = {
 };
 
 const briefReader = (league: string, mine: string, port: HostedPort, owner: boolean,
-  commissioner: boolean) => readHomeBrief(league, mine, port, undefined, undefined, owner, commissioner);
+  commissioner: boolean) => readHomeBrief(league, mine, port, undefined, undefined,
+  owner, commissioner, true);
 
 const RFC3339 = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 const oneLine = (words: string) => words.replace(/\s+/g, ' ').trim();
@@ -98,9 +103,11 @@ function needsYouFor(league: LeagueChoice, mine: string, commissioner: boolean, 
   if (commissioner && brief.jobs) {
     if (brief.jobs.league !== league.id) throw new Error('Jobs belong to another league');
     for (const job of brief.jobs.jobs) {
+      if (isJobSnoozed(brief.jobSnoozes, league.id, job.id, now)) continue;
       if (job.state !== 'blocked' && !(job.state === 'live' && job.closes)) continue;
-      out.push(item(league, 'commissioner', job.id, `${job.name} · ${job.words}`,
-        { node: 'control', workspace: 'league' }, job.closes));
+      out.push({ ...item(league, 'commissioner', job.id, `${job.name} · ${job.words}`,
+        { node: 'control', workspace: 'league' }, job.closes),
+      title: oneLine(job.name), detail: oneLine(job.words) || undefined });
     }
   }
   return out;

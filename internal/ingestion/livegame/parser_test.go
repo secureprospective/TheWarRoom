@@ -68,6 +68,11 @@ func TestCapturedParsers(t *testing.T) {
 	if pre.Status != "pre" || pre.Last != nil || len(pre.Box) != 0 || len(pre.Plays) != 0 {
 		t.Fatalf("pregame %+v", pre)
 	}
+	kickoff, err := ParseSummary(fixture(t, "espn-summary-401873061-kickoff"))
+	if err != nil || kickoff.Home.Record != "3-6" || kickoff.Away.Record != "5-4" {
+		t.Fatalf("held NFL records = %s at %s, %s at %s: %v", kickoff.Home.Record,
+			kickoff.Home.Abbreviation, kickoff.Away.Record, kickoff.Away.Abbreviation, err)
+	}
 	yahoo, err := ParseYahoo(fixture(t, "yahoo-scoreboard"))
 	if err != nil {
 		t.Fatal(err)

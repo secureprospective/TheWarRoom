@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -25,14 +26,15 @@ import (
 )
 
 const (
-	PeoplePath   = "/v1/native/people"
-	LoginPath    = "/v1/auth/login"
-	LedgerPath   = "/v1/native/ledger"
-	PreviewPath  = "/v1/native/preview"
-	ExecutePath  = "/v1/native/execute"
-	DispatchPath = "/v1/native/dispatch"
-	LineupPath   = "/v1/native/lineup/set"
-	PickPath     = "/v1/native/draft/pick"
+	PeoplePath            = "/v1/native/people"
+	LoginPath             = "/v1/auth/login"
+	LedgerPath            = "/v1/native/ledger"
+	PreviewPath           = "/v1/native/preview"
+	ExecutePath           = "/v1/native/execute"
+	DispatchPath          = "/v1/native/dispatch"
+	AccountPreferencePath = "/v1/account/preferences"
+	LineupPath            = "/v1/native/lineup/set"
+	PickPath              = "/v1/native/draft/pick"
 )
 
 // Hosted has no fixture fallback. Accounts live in the sign-in file and history in the league
@@ -42,6 +44,8 @@ type Hosted struct {
 	Publisher *Publisher
 	// LiveGames is the server's shared NFL scoreboard (public data) behind nfl.games.read; nil reads empty.
 	LiveGames *leagueservice.LiveGames
+	// InjuryFeed reads the latest validated public NFL injury report from reference storage.
+	InjuryFeed leagueservice.NFLInjuryFeedSource
 	// FootballDigest and Football are the server's pin (-football); Pins, when set, answers each league's
 	// own store and pin, and an unpinned league gets the server's.
 	FootballDigest string
@@ -59,15 +63,16 @@ type Hosted struct {
 	Confirmations   *Confirmations
 	Store           *history.Store
 	// Leagues finds the store holding a league; league heads and the due worker read through it.
-	Leagues    history.LeagueResolver
-	Sessions   *accounts.SessionService
-	TOTP       *accounts.TOTPService
-	Enrollment *accounts.EnrollmentService
-	Passwords  *accounts.Service
-	Join       *accounts.JoinService
-	Recovery   *accounts.RecoveryService
-	Worker     *leagueservice.DueWorker
-	Registry   string
+	Leagues            history.LeagueResolver
+	Sessions           *accounts.SessionService
+	AccountPreferences accounts.PreferenceRepository
+	TOTP               *accounts.TOTPService
+	Enrollment         *accounts.EnrollmentService
+	Passwords          *accounts.Service
+	Join               *accounts.JoinService
+	Recovery           *accounts.RecoveryService
+	Worker             *leagueservice.DueWorker
+	Registry           string
 	// Replies caches league-state readings per head and reading epoch; nil reads every request afresh.
 	Replies  *ReplyCache
 	Requests *RequestTally
@@ -159,7 +164,8 @@ func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
 	case DispatchPath:
 		// An older twr sends league changes here; the 426 envelope is what every client version shows as "update".
 		writeUpdateRequired(w, serverversion.App, catalogUpdate)
-	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, LineupPath, PickPath, ConfirmPath, WorkflowPath:
+	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, LineupPath, PickPath, ConfirmPath, WorkflowPath,
+		AccountPreferencePath:
 		h.native(w, r)
 	default:
 		http.NotFound(w, r)
@@ -268,6 +274,10 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		h.agent(w, r, rawSession, raw)
 		return
 	}
+	if raw.Workflow != nil && catalog.IsAccountWorkflow(raw.Workflow.Command) {
+		h.accountWorkflow(w, r, account.ID, *raw.Workflow)
+		return
+	}
 	principal, err := account.Principal()
 	if err != nil {
 		h.writeFailure(w, r, "session refused", http.StatusUnauthorized)
@@ -292,7 +302,8 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).
-		WithLiveGames(h.LiveGames).WithBackupRunner(h.BackupLeague)
+		WithLiveGames(h.LiveGames).WithNFLInjuryFeed(h.InjuryFeed).WithBackupRunner(h.BackupLeague).
+		WithProblemReportStore(pin.Store)
 	h.dispatch(w, r, service, raw)
 }
 
@@ -627,6 +638,9 @@ func backupAccess(records []commissioner.Record, principal governance.Principal)
 }
 
 func admitLeagueAccess(access commissioner.Access, policy governance.State, principal governance.Principal, records []commissioner.Record) error {
+	if access.Operation == commissioner.ProblemReportCreate {
+		return admitProblemReport(access, policy, principal, records)
+	}
 	if privateOwnerPersonalOperation(access.Operation) {
 		seat, ok := policy.Franchise(governance.FranchiseID(access.Franchise))
 		if !ok || seat.Seat != principal {
@@ -740,19 +754,23 @@ func privateTradeDraftOperation(operation string) bool {
 	}
 }
 
-func hostedOwner(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {
-	for _, id := range commissioner.LeagueFranchises(records) {
-		seat, ok := policy.Franchise(governance.FranchiseID(id))
-		if ok && seat.Seat == principal {
-			return true
-		}
+func admitProblemReport(access commissioner.Access, policy governance.State, principal governance.Principal,
+	records []commissioner.Record) error {
+	if access.Mode != "execute" || !commissioner.IsLeagueMember(policy, string(principal), records) {
+		return fmt.Errorf("league membership required")
 	}
-	return false
+	return nil
 }
 
 func (r RawNativeRequest) matchesPath(path string) bool {
-	if path == WorkflowPath || r.Workflow != nil {
-		return path == WorkflowPath && r.Workflow != nil
+	if r.Workflow != nil {
+		if catalog.IsAccountWorkflow(r.Workflow.Command) {
+			return path == AccountPreferencePath
+		}
+		return path == WorkflowPath
+	}
+	if path == WorkflowPath || path == AccountPreferencePath {
+		return false
 	}
 	if (path == LedgerPath || path == PeoplePath) != (r.Command == nil && r.Pick == nil) {
 		return false
@@ -779,8 +797,7 @@ func (h Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *l
 }
 
 func hostedMember(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {
-	return policy.HasRole(principal, governance.Commissioner) || policy.HasRole(principal, governance.CoCommissioner) ||
-		hostedOwner(policy, principal, records) || policy.HasRole(principal, governance.DOT)
+	return commissioner.IsLeagueMember(policy, string(principal), records)
 }
 
 func (h Hosted) backupAdmission(next http.Handler) http.Handler {
@@ -805,6 +822,8 @@ func (h Hosted) backupAdmission(next http.Handler) http.Handler {
 // everything else.
 func (h Hosted) admissions(path string) []func() error {
 	switch {
+	case path == AccountPreferencePath:
+		return []func() error{h.SignInAdmission}
 	case path == JoinClaimPath:
 		return []func() error{h.SignInAdmission, h.WriteAdmission}
 	case path == AppSessionPath || strings.HasPrefix(path, "/v1/auth/") || path == PasswordPagePath || path == JoinPagePath:

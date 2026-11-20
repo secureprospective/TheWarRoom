@@ -129,7 +129,7 @@ func TestWorkflowParallelRequests(t *testing.T) {
 		started <- struct{}{}
 		<-release
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"label":"league","data":{}}`))
+		_, _ = w.Write([]byte(`{"label":"league","appRelease":1,"data":{}}`))
 	}))
 	defer server.Close()
 	released := false
@@ -181,7 +181,7 @@ func TestWorkflowReadHonorsRetryAfterOnce(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"label":"league","data":{}}`))
+		_, _ = w.Write([]byte(`{"label":"league","appRelease":1,"data":{}}`))
 	}))
 	defer server.Close()
 	roots := x509.NewCertPool()
@@ -214,7 +214,7 @@ func TestWorkflowReadWithoutRetryAfterBacksOff(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"label":"league","data":{}}`))
+		_, _ = w.Write([]byte(`{"label":"league","appRelease":1,"data":{}}`))
 	}))
 	defer server.Close()
 	roots := x509.NewCertPool()
@@ -302,6 +302,33 @@ func TestWorkflowUnauthorizedSessionGeneration(t *testing.T) {
 				t.Fatal("wrong session retained after unauthorized response")
 			}
 		})
+	}
+}
+
+func TestDesktopAccountPreferenceWorkflowUsesItsAccountScopeEndpoint(t *testing.T) {
+	secret := strings.Repeat("a", 42) + "A"
+	var requestPath, authorization string
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestPath, authorization = r.URL.Path, r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"label":"Account home layout","writable":true,"football":"","appRelease":1,"data":{"layout":{"mode":"default","tiles":[],"over":[],"pins":{}},"revision":0}}`)
+	}))
+	defer server.Close()
+	roots := x509.NewCertPool()
+	roots.AddCert(server.Certificate())
+	store := &testCredentials{secret: secret}
+	desktop, err := NewDesktop(server.URL, "native.desktop", roots, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer desktop.Close()
+	_, err = desktop.Workflow(t.Context(), serverhttp.RawWorkflow{Command: "home.layout.read", Version: "1",
+		Mode: "read", Arguments: json.RawMessage(`{}`)})
+	if err != nil {
+		t.Fatalf("account preference read: %v", err)
+	}
+	if requestPath != serverhttp.AccountPreferencePath || authorization != "Bearer "+secret {
+		t.Fatalf("request path=%q authorization=%q", requestPath, authorization)
 	}
 }
 

@@ -83,6 +83,12 @@ type TradeVote struct {
 	Reason   string    `json:"reason,omitempty"`
 }
 
+type TradeHoldRecord struct {
+	Who    string    `json:"who"`
+	At     time.Time `json:"at"`
+	Reason string    `json:"reason"`
+}
+
 type TradeState struct {
 	VetoNumber   int                `json:"vetoNumber"`
 	AppealedVeto int                `json:"appealedVetoNumber"`
@@ -99,6 +105,7 @@ type TradeState struct {
 	Status       string             `json:"status"`
 	Words        string             `json:"words"`
 	Votes        []TradeVote        `json:"votes"`
+	Holds        []TradeHoldRecord  `json:"holds,omitempty"`
 	Recusals     []TradeVote        `json:"recusals"`
 	Appeals      []TradeVote        `json:"appeals"`
 	Overrides    []TradeVote        `json:"overrides"`
@@ -121,6 +128,7 @@ type RawWaiverArgs struct {
 	Bucket    string   `json:"bucket,omitempty"`
 	Player    string   `json:"player,omitempty"`
 	Franchise string   `json:"franchise,omitempty"`
+	Drop      string   `json:"drop,omitempty"`
 	Window    string   `json:"window,omitempty"`
 	Claim     string   `json:"claim,omitempty"`
 	Order     []string `json:"order,omitempty"`
@@ -137,6 +145,7 @@ type WaiverOutcome struct {
 	PriorOrder []string            `json:"priorOrder,omitempty"`
 	CloseAt    time.Time           `json:"closeAt,omitempty"`
 	Player     *NativePlayer       `json:"player,omitempty"`
+	DropPlayer *NativePlayer       `json:"dropPlayer,omitempty"`
 	Dead       domain.Money        `json:"deadCents,omitempty"`
 	Season     int                 `json:"season"`
 	Winner     string              `json:"winner,omitempty"`
@@ -147,7 +156,7 @@ type WaiverOutcome struct {
 
 func tradeLabel(r Record) string {
 	labels := map[string]string{TradeOffer: "Offered a trade", TradeAccept: "Accepted a trade", TradeDecline: "Declined a trade",
-		TradeWithdraw: "Withdrew a trade offer", TradeReview: "Reviewed a trade", TradeRecuse: "Sat out a trade review",
+		TradeWithdraw: "Withdrew a trade offer", TradeReview: "Reviewed a trade", TradeHold: "Held a trade review for 24 hours", TradeRecuse: "Sat out a trade review",
 		TradeAppeal: "Appealed a trade veto", TradeAppealRule: "Ruled on a trade appeal", TradeOverride: "Overrode a trade decision"}
 	label := labels[r.Command.Command]
 	if r.Command.Reason != "" {

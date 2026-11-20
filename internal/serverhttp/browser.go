@@ -32,7 +32,8 @@ func appRoute(path string) bool { return path == "/app" || strings.HasPrefix(pat
 // account administration and enrollment remain outside this browser exception.
 func browserJSONRoute(path string) bool {
 	switch path {
-	case PeoplePath, DispatchPath, LedgerPath, PreviewPath, ExecutePath, LineupPath, PickPath, ConfirmPath, WorkflowPath:
+	case PeoplePath, DispatchPath, LedgerPath, PreviewPath, ExecutePath, LineupPath, PickPath, ConfirmPath,
+		WorkflowPath, AccountPreferencePath:
 		return true
 	default:
 		return false

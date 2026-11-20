@@ -98,6 +98,7 @@ export function parseHostedWaivers(v: unknown) {
     revision: integer(r.revision, 'Version'),
     words: text(r.orderSource, 'Priority'),
     method: text(r.method, 'Method'),
+    order: array(r.order, 'Waiver order', text),
     players: array(r.players, 'Waiver players', (v) => {
       const p = object(v, 'Waiver player', [
         'window',
@@ -112,6 +113,8 @@ export function parseHostedWaivers(v: unknown) {
         window: text(p.window, 'Window'),
         player: text(p.player, 'Player'),
         name: text(p.name, 'Name'),
+        status: text(p.status, 'Status'),
+        closesAt: p.closesAt == null ? undefined : timestamp(p.closesAt, 'Bid close'),
         words: `${text(p.status, 'Status')} · ${text(p.closes, 'Closes')}`,
       };
     }),
@@ -149,6 +152,7 @@ export function parseHostedTrades(v: unknown) {
         'status',
         'words',
         'votes',
+        'holds',
         'recusals',
         'appeals',
         'overrides',
@@ -177,7 +181,7 @@ export function parseHostedTrades(v: unknown) {
           'contractEndsInSeason',
         ]);
         const contract = a.contract ? ` · ${text(a.contract, 'Contract')}` : '';
-        return { from: text(a.fromTeam, 'From'), to: text(a.toTeam, 'To'),
+        return { from: text(a.fromTeam, 'From'), to: text(a.toTeam, 'To'), label: text(a.label, 'Asset'),
           words: `${text(a.label, 'Asset')}: ${text(a.fromTeam, 'From')} → ${
             text(a.toTeam, 'To')}${contract}` };
       });
@@ -196,12 +200,20 @@ export function parseHostedTrades(v: unknown) {
         words: text(t.words, 'Trade status'),
         expires: text(t.expires, 'Expiry'),
         details: details.map(asset => asset.words),
-        reasons: ['votes', 'recusals', 'appeals', 'overrides'].flatMap((key) =>
-          array(t[key] ?? [], key, (v) => {
-            const a = object(v, 'Decision', ['who', 'decision', 'at', 'reason']);
-            return `${text(a.decision, 'Decision')}${a.reason ? `: ${text(a.reason, 'Reason')}` : ''}`;
+        /** legs pairs each asset's franchise ids with its plain label, for give/get columns. */
+        legs: assets.map((asset, i) => ({ from: asset.from, to: asset.to, label: details[i].label })),
+        reasons: [
+          ...['votes', 'recusals', 'appeals', 'overrides'].flatMap((key) =>
+            array(t[key] ?? [], key, (v) => {
+              const a = object(v, 'Decision', ['who', 'decision', 'at', 'reason']);
+              return `${text(a.decision, 'Decision')}${a.reason ? `: ${text(a.reason, 'Reason')}` : ''}`;
+            }),
+          ),
+          ...array(t.holds ?? [], 'Review holds', (v) => {
+            const hold = object(v, 'Review hold', ['who', 'at', 'reason']);
+            return `Review held for 24 hours: ${text(hold.reason, 'Reason')}`;
           }),
-        ),
+        ],
       };
     }),
   };

@@ -4,19 +4,21 @@ import { HQAct as PulseAct } from './HQAct';
 import { hostedWorkflow } from '../commissioner/api';
 import { myChance, percent, pointsLabel, type PulseResults } from '../data/nativePulse';
 import { readNativePulse, readPulseOdds, readPulseWeekResults, usePulseRead, PulseChanges, PulseWaiting,
-  type NativePulse, type PulseScope }
+  readPulseActivity, type NativePulse, type PulseScope, type PulseTab }
   from './pulseReads';
 import { scoreOf } from './pulseModel';
 import { PulseIdle, PulseNow, type NowDrawer } from './PulseNow';
 import { PulseRace, type RaceDrawer } from './PulseRace';
 import { PulseInspector } from './PulseInspector';
-import { ScheduleDrawer } from './PulseSchedule';
+import { PulseScheduleView, ScheduleDrawer } from './PulseSchedule';
 import { usePulseLive } from './hqLive';
-import { parseHostedGame, parseHostedGames, type LiveView } from '../now/liveContract';
+import { useHostedGames } from './hostedGames';
+import type { LiveView } from '../now/liveContract';
 import './pulse.css';
 
-export type PulseTab = 'now' | 'race';
+export type { PulseTab } from './pulseReads';
 export const PULSE_FOLLOW_MS = 250;
+export { useHostedGames };
 
 export default function NativeLeaguePulse(scope: PulseScope & { tab?: PulseTab }) {
   if (!scope.serverTime) return <LocalPulse {...scope} />;
@@ -81,44 +83,6 @@ function HostedBody({ scope, changes }: { scope: PulseScope & { tab?: PulseTab }
   return <PulseBody {...scope} refresh={changes.refresh} live={live} />;
 }
 
-export function useHostedGames(league: string, port: NonNullable<PulseScope['port']>,
-  onChange: (load: () => void) => () => void):
-  ReturnType<typeof usePulseLive> & { prefer: (key: string) => void } {
-  const [held, setHeld] = useState<{ view?: LiveView; error: string }>({ error: '' });
-  const [chosen, choose] = useState('');
-  const [preferred, prefer] = useState('');
-  useEffect(() => {
-    let live = true;
-    let generation = 0;
-    const load = async () => {
-      const request = ++generation;
-      const current = () => live && request === generation;
-      try {
-        const reply = await port({ command: 'nfl.games.read', mode: 'read', arguments: { league } });
-        const view = parseHostedGames(reply.data, league);
-        const key = chosen || preferred;
-        const selected = view.games.find(g => `${g.away.abbreviation}-${g.home.abbreviation}` === key)
-          ?? view.games.find(g => g.status === 'in');
-        if (current()) setHeld(prior => ({ view: { ...view,
-          followed: prior.view?.followed?.id === selected?.id ? prior.view?.followed ?? null : null },
-          error: '' }));
-        if (!selected) return;
-        const detail = await port({ command: 'nfl.game.read', mode: 'read',
-          arguments: { league, game: selected.id } });
-        view.followed = parseHostedGame(detail.data, league, selected.id);
-        if (current()) setHeld({ view, error: '' });
-      } catch (e: unknown) {
-        const error = e instanceof Error ? e.message : String(e);
-        if (current()) setHeld(prior => ({ view: prior.view, error }));
-      }
-    };
-    void load();
-    const off = onChange(() => { void load(); });
-    return () => { live = false; off(); };
-  }, [league, port, onChange, chosen, preferred]);
-  return { view: held.view, error: held.error, follow: choose, prefer };
-}
-
 function PulseBody(scope: PulseScope & { tab?: PulseTab;
   live: ReturnType<typeof usePulseLive> & { prefer?: (key: string) => void };
   refresh?: () => void }) {
@@ -179,6 +143,17 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
           <PulseAct role="tab" selected={tab === 'race'} onAction={() => scope.navigate?.('race')}>
             Race</PulseAct>
         </nav>}
+        {scope.serverTime && scope.embedded && <nav className="pulse-phone-tabs" role="tablist"
+          aria-label="League overview">
+          <PulseAct role="tab" selected={tab === 'race'} onAction={() => scope.navigate?.('race')}>
+            Table</PulseAct>
+          <PulseAct role="tab" selected={tab === 'schedule'}
+            onAction={() => scope.navigate?.('schedule')}>Schedule</PulseAct>
+          <PulseAct role="tab" selected={tab === 'activity'}
+            onAction={() => scope.navigate?.('activity')}>Activity</PulseAct>
+          <PulseAct role="tab" selected={tab === 'now'} onAction={() => scope.navigate?.('now')}>
+            Live</PulseAct>
+        </nav>}
         <Strip reading={reading} results={results.reading} pending={Boolean(league.pending)}
           error={league.error ?? (week ? results.error : undefined)} mine={scope.mine}
           week={week} onWeek={chooseWeek} live={live} hosted={scope.serverTime} />
@@ -189,6 +164,16 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
             onFranchise={scope.serverTime ? inspectFranchise : undefined}
             drawer={drawer === 'tb' || drawer === 'bk' ? drawer : undefined}
             onClose={() => setDrawer(undefined)} />
+        : tab === 'schedule' ? scope.serverTime
+          ? <PulseScheduleView reading={reading} mine={scope.mine} port={port} />
+          : <section className="ws cols on">
+            <PulseIdle words="The hosted league schedule is unavailable in this view." />
+          </section>
+        : tab === 'activity' ? scope.serverTime
+          ? <PulseActivity league={scope.league} port={port} />
+          : <section className="ws cols on">
+            <PulseIdle words="League activity is unavailable in this view." />
+          </section>
         : <PulseNow reading={reading} mine={scope.mine} week={week} results={results}
             league={scope.league} port={port} live={live}
             viewer={scope.serverTime
@@ -228,6 +213,48 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
     </div>
   </div>;
   return body;
+}
+
+function PulseActivity({ league, port }: { league: string; port: NonNullable<PulseScope['port']> }) {
+  const [filter, setFilter] = useState<'all' | 'league' | 'player-status'>('all');
+  const activity = usePulseRead(JSON.stringify(['pulse-activity', league]),
+    () => readPulseActivity(league, port), 'league');
+  const events = activity.reading?.events ?? [];
+  return <section className="ws cols on" id="ws-activity">
+    <div className="pcol pulse-activity">
+      <div className="ch"><b>LEAGUE ACTIVITY</b><span>Public events only</span></div>
+      <div className="fbar pulse-activity-filters" role="tablist" aria-label="Activity filter">
+        <PulseAct role="tab" selected={filter === 'all'} onAction={() => setFilter('all')}>All</PulseAct>
+        <PulseAct role="tab" selected={filter === 'league'} onAction={() => setFilter('league')}>
+          League</PulseAct>
+        <PulseAct role="tab" selected={filter === 'player-status'}
+          onAction={() => setFilter('player-status')}>Player status</PulseAct>
+      </div>
+      <div className="scroll pulse-activity-list" role="tabpanel">
+        {filter === 'player-status'
+          ? <PulseIdle words="Player status is unavailable · no member-safe status feed is published." />
+          : !activity.reading ? <PulseIdle words={activity.error
+            ? `League activity is unavailable · ${activity.error}`
+            : 'Reading public league activity…'} />
+          : !events.length ? <PulseIdle words="No public league activity has been recorded yet." />
+          : <>
+            <p className="pulse-activity-note">Only public league events are shown. Private bids and
+              commissioner details are excluded.</p>
+            {events.map(event => <article className="pulse-activity-event" key={event.id}>
+              <div><b>{event.kind === 'notice' ? 'NOTICE' : event.kind === 'trade' ? 'TRADE' : 'ROSTER'}</b>
+                <time dateTime={event.when}>{activityTime(event.when)}</time></div>
+              <p>{event.summary}</p>
+            </article>)}
+          </>}
+      </div>
+    </div>
+  </section>;
+}
+
+function activityTime(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf()) ? 'Time unavailable'
+    : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
 function Strip({ reading, results, pending, error, mine, week, onWeek, live, hosted }: {

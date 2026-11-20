@@ -1,0 +1,65 @@
+/* Today, as mobile mock v1 draws it (.td6, .sec6, .jb, .clear6, .lv6, .grp). */
+.today6 {
+  --today-amber: hsl(38 92% 58%); --today-green: hsl(145 50% 58%); --today-rule: hsl(220 5% 13%);
+  --today-mat: hsl(220 4% 10.5%); --today-zebra: hsl(220 5% 9.5%); --today-key: hsl(220 4% 14.5%);
+  display: grid; gap: 10px; padding: 10px 10px 28px; min-width: 0; overflow-x: hidden;
+}
+.today6 h2 { margin: 0; font: 700 17px var(--surface-mono, monospace); letter-spacing: .06em;
+  text-transform: uppercase; }
+.today6__sub { margin-top: -6px; font: 10px var(--surface-mono, monospace); color: var(--phone-ink3);
+  text-transform: uppercase; letter-spacing: .08em; }
+.today6__sec { display: flex; align-items: center; justify-content: space-between; min-height: 32px;
+  margin: 4px 0 -4px; }
+.today6__sec b { font: 700 10px var(--surface-mono, monospace); letter-spacing: .14em;
+  color: var(--phone-ink2);
+  text-transform: uppercase; }
+.today6__sec span { display: inline-flex; align-items: center; min-height: 32px;
+  font: 10px var(--surface-mono, monospace); color: var(--phone-ink3); letter-spacing: .1em;
+  text-transform: uppercase; }
+.today6__grp { background: var(--today-mat);
+  box-shadow: inset 0 1px 0 hsl(220 4% 18%), 0 2px 0 var(--phone-black); }
+.today6__note { margin: 0; padding: 12px; font-size: 12px; color: var(--phone-ink2); }
+.today6__job { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px;
+  min-height: 56px; padding: 6px 6px 6px 12px; border-top: 1px solid var(--today-rule); }
+.today6__job:first-child { border-top: 0; }
+.today6__job:nth-of-type(even) { background: var(--today-zebra); }
+.today6__job > span { display: grid; gap: 3px; min-width: 0; }
+.today6__job small { font: 700 9px var(--surface-mono, monospace); letter-spacing: .12em;
+  color: var(--phone-ink3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.today6__job b { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.today6__job em { font: 10px var(--surface-mono, monospace); color: var(--phone-ink3); font-style: normal; }
+.today6__job.is-now { box-shadow: inset 3px 0 0 var(--today-amber); }
+.today6__job.is-now small, .today6__job.is-now .today6__key { color: var(--today-amber); }
+.today6__job.is-off b { color: var(--phone-ink2); }
+.today6 .today6__key { min-width: 64px; height: 44px; padding: 0 10px; background: var(--today-key);
+  border: 0;
+  box-shadow: inset 0 1px 0 var(--phone-key-lit), 0 2px 0 var(--phone-black); color: var(--phone-ink);
+  font: 700 10px var(--surface-mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
+.today6__clear { display: flex; gap: 10px; align-items: center; padding: 14px 12px; font-size: 13px;
+  color: var(--phone-ink2); }
+.today6__clear i { display: grid; place-items: center; width: 22px; height: 22px;
+  background: var(--today-green);
+  color: #000; font: 700 13px var(--surface-mono, monospace); font-style: normal; }
+.today6 .today6__live { display: grid; grid-template-columns: minmax(0, 1fr) auto 44px;
+  align-items: center; gap: 8px;
+  width: 100%; min-height: 54px; padding: 6px 10px; border: 0; border-top: 1px solid var(--today-rule);
+  background: none; color: var(--phone-ink); font: inherit; text-align: left; }
+.today6 .today6__live:first-child { border-top: 0; }
+.today6__live > span { display: grid; gap: 2px; min-width: 0; }
+.today6__live > span b { font-size: 13.5px; font-weight: 600; }
+.today6__live > span em { font: 9.5px var(--surface-mono, monospace); color: var(--phone-ink3);
+  font-style: normal;
+  overflow-wrap: anywhere; }
+.today6__live > b { font: 700 13px var(--surface-mono, monospace); }
+.today6__live > i { font: 700 11px var(--surface-mono, monospace); font-style: normal; text-align: right;
+  color: var(--phone-blue); }
+.today6__live.is-quiet > i { color: var(--phone-ink3); }
+.today6__boards { min-width: 0; max-width: 100%; overflow-x: hidden; }
+/* The mock's clock key is 36 px wide; it stays 44 px here for the tap-target rule. */
+.today6 .today6__clock { min-width: 44px; width: 44px; padding: 0; display: grid; place-items: center;
+  color: var(--phone-ink3); }
+.today6 .today6__clock svg { width: 15px; height: 15px; }
+.today6__job.is-now .today6__clock { color: var(--phone-ink3); }
+/* The mock's Today page carries its own 10 px gutter; the frame's slot padding would double it. */
+.phone-app__slot:has(> .today6) { padding: 0; }

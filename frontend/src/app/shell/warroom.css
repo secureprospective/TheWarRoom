@@ -995,6 +995,52 @@
 .wr-v6 .value-ages dt, .wr-v6 .value-ages dd { white-space: nowrap; overflow-wrap: normal; }
 
 .wr-v6 .bid-salary{width:72px;min-width:0;font:inherit;background:var(--sunken);color:var(--ink);border:1px solid var(--rule)}
+.wr-v6 .phone-market-tools,.wr-v6 .mk3 .add-player{display:none}
+
+@media(max-width:699px){
+  .wr-v6 .shell{display:block}
+  .wr-v6 .work{height:100%;grid-template-rows:auto auto minmax(0,1fr) auto}
+  .wr-v6.embedded .work.external-tabs{grid-template-rows:auto auto minmax(0,1fr) auto}
+  .wr-v6 .mk3{display:flex;flex-direction:column;min-height:0;overflow-y:auto;overflow-x:hidden}
+  .wr-v6 .mk3>div{flex:none;min-width:0;border-right:0!important}
+  .wr-v6 .mk3 .ch{padding:10px 12px 8px;gap:8px;flex-wrap:wrap}
+  .wr-v6 .mk3 .phone-market-tools{display:grid;gap:8px;padding:8px 10px}
+  .wr-v6 .mk3 .fa-search{display:grid;gap:5px;font:700 10px var(--mono);letter-spacing:.1em;color:var(--ink2)}
+  .wr-v6 .mk3 .fa-search input{width:100%;min-width:0;min-height:44px;padding:8px 10px;
+    border:1px solid var(--edge-hi);background:var(--sunken);color:var(--ink);font:13px var(--sans)}
+  .wr-v6 .mk3 .waiver-priority{display:grid;grid-template-columns:1fr auto;gap:3px 8px;padding:8px 10px;
+    border:1px solid var(--edge);background:var(--sunken);font:11px var(--mono)}
+  .wr-v6 .mk3 .waiver-priority b{font-size:9px;letter-spacing:.12em;color:var(--ink3)}
+  .wr-v6 .mk3 .waiver-priority span{text-align:right}
+  .wr-v6 .mk3 .waiver-priority small{grid-column:1/-1;font:10px var(--mono);color:var(--ink3)}
+  .wr-v6 .mk3 .bench-capacity{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;
+    border:1px solid var(--edge);background:var(--sunken);font:11px var(--mono)}
+  .wr-v6 .mk3 .bench-capacity b{font-size:9px;letter-spacing:.12em;color:var(--ink3)}
+  .wr-v6 .mk3 .filters{padding:8px 10px;overflow-x:auto}
+  .wr-v6 .mk3 .filters .chip{flex:none;min-width:64px;min-height:44px;padding:8px}
+  .wr-v6 .mk3 .fa-h{display:none}
+  .wr-v6 .mk3 .fa-list{flex:none;max-height:none;overflow:visible}
+  .wr-v6 .mk3 .fa-r{height:auto;min-height:106px;grid-template-columns:36px 36px minmax(0,1fr) auto;
+    grid-template-rows:auto auto;gap:6px;padding:7px 10px}
+  .wr-v6 .mk3 .fa-r>.nm{grid-column:3;grid-row:1;min-height:44px;display:flex;align-items:center}
+  .wr-v6 .mk3 .fa-r>span:nth-of-type(n+3){display:none}
+  .wr-v6 .mk3 .fa-r .st{grid-column:4;grid-row:1;min-width:52px;min-height:44px;text-align:right}
+  .wr-v6 .mk3 .fa-r .add-player{display:flex;grid-column:3/5;grid-row:2;justify-content:center;
+    min-width:88px;min-height:44px;padding:8px 12px;border:1px solid var(--edge-hi);
+    background:var(--tile);color:var(--ink);font:700 10px var(--mono);letter-spacing:.1em}
+  .wr-v6 .mk3 .fa-r .add-player:disabled{opacity:.45;cursor:not-allowed}
+  .wr-v6 .mk3 .bcol{display:flex;flex-direction:column}
+  .wr-v6 .mk3 .budget{padding:10px 12px}
+  .wr-v6 .mk3 .bids{flex:none;min-height:0;padding:0 0 8px}
+  .wr-v6 .mk3 .bidb{grid-template-columns:minmax(0,1fr);gap:8px;margin:8px 10px;padding:10px}
+  .wr-v6 .mk3 .bidb label{display:grid;gap:5px}
+  .wr-v6 .mk3 .bidb button,.wr-v6 .mk3 .bidb select,.wr-v6 .mk3 .bidb input,
+  .wr-v6 .mk3 .bidb textarea{min-width:0;min-height:44px}
+  .wr-v6 .mk3 .roster-add-editor textarea{width:100%;min-height:88px;padding:8px;
+    border:1px solid var(--edge);background:var(--sunken);color:var(--ink);font:13px/1.4 var(--sans)}
+  .wr-v6 .mk3 .bidb .step2 button{min-width:44px;min-height:44px}
+  .wr-v6 .mk3 .recent{padding-bottom:12px}
+}
 
 @media(min-width:1800px){
 .wr-v6.embedded .mk3{grid-template-columns:220px minmax(0,1fr) 300px}
@@ -1011,3 +1057,76 @@
 .wr-v6 .build>.sugg{flex:0 0 auto;max-height:132px;overflow-y:auto}
 .wr-v6 .effect .wide.half{grid-column:span 1}
 .wr-v6 .read .kv span:first-child{flex:none;margin-right:12px} .wr-v6 .read .kv span:last-child{text-align:right}
+
+/* Player card and picks: stack their existing desktop panels in the phone viewport. */
+@media (max-width: 699px) {
+  .wr-v6.embedded { width: 100%; min-width: 0; min-height: 0; height: auto; }
+  .wr-v6.embedded .insp {
+    display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: auto auto auto auto auto auto;
+    min-width: 0; min-height: 0; height: auto; overflow: visible; border-left: 0;
+  }
+  .wr-v6.embedded .insp .ihead,
+  .wr-v6.embedded .insp .nums,
+  .wr-v6.embedded .insp .lensrow,
+  .wr-v6.embedded .insp .why,
+  .wr-v6.embedded .insp .idrawers,
+  .wr-v6.embedded .insp .iact,
+  .wr-v6.embedded .insp .ifoot { min-width: 0; }
+  .wr-v6.embedded .insp .ihead { padding: 12px; }
+  .wr-v6.embedded .insp .idrawers { overflow: visible; }
+  .wr-v6.embedded .insp .idr>button,
+  .wr-v6.embedded .insp .iact .btn,
+  .wr-v6.embedded .insp .ifoot button { min-height: 44px; }
+  .wr-v6.embedded .insp .idr>button { padding-inline: 12px; }
+  .wr-v6.embedded .insp .idr .body { padding-inline: 12px; }
+  .wr-v6.embedded .insp textarea { width: 100%; min-height: 88px; }
+  .wr-v6.embedded .native-draft { width: 100%; min-width: 0; height: auto; overflow: visible; border-inline: 0; }
+  .wr-v6.embedded .dr5 { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .wr-v6.embedded .dr5>div:not(.clockbar) { min-width: 0; min-height: 0; overflow: visible; border-right: 0; border-bottom: 2px solid var(--black); }
+  .wr-v6.embedded .clockbar { flex-wrap: wrap; min-width: 0; }
+  .wr-v6.embedded .clockbar>.cb-k { flex: 1 1 150px; min-width: 0; padding: 8px 10px; }
+  .wr-v6.embedded .clockbar .mpk { flex: 1 1 100%; flex-wrap: wrap; }
+  .wr-v6.embedded .clockbar .cb-act { min-height: 54px; }
+  .wr-v6.embedded .dr5 .rtabs { flex-wrap: wrap; }
+  .wr-v6.embedded .dr5 .rtabs button,
+  .wr-v6.embedded .dr5 .qi button,
+  .wr-v6.embedded .dr5 .queue-add button,
+  .wr-v6.embedded .dr5 .queue-add select,
+  .wr-v6.embedded .dr5 .pick { min-height: 44px; }
+  .wr-v6.embedded .dr5 .olist { flex: none; min-height: 0; max-height: 60vh; }
+  .wr-v6.embedded .dr5 .slt { min-height: 44px; grid-template-columns: 42px minmax(0,1fr) auto; }
+  .wr-v6.embedded .dr5 .slt .pick { grid-column: 2/4; }
+  .wr-v6.embedded .dr5 .q-actions { display: flex; gap: 4px; }
+  .wr-v6.embedded .dr5 .q-actions button { min-width: 44px; min-height: 44px; }
+  .wr-v6.embedded .dr5 .queue-add { min-width: 0; }
+  .wr-v6.embedded .dr5 .queue-add select { flex: 1; }
+}
+
+/* Phone trade desk: keep the private inbox and builder inside the viewport. */
+@media (max-width: 699px) {
+  .wr-v6.embedded { width: 100%; min-width: 0; min-height: 0; height: auto; }
+  .wr-v6.embedded .shell { display: block; min-width: 0; }
+  .wr-v6.embedded .work { display: block; width: 100%; min-width: 0; overflow: visible; }
+  .wr-v6.embedded .work > * { min-width: 0; }
+  .wr-v6.embedded .desk { display: flex; flex-direction: column; min-width: 0; overflow: visible; }
+  .wr-v6.embedded .desk > .shelf,
+  .wr-v6.embedded .desk > .build { width: 100%; min-width: 0; max-height: none; overflow: visible; }
+  .wr-v6.embedded .desk > .build { order: 1; }
+  .wr-v6.embedded .desk > .shelf:first-child { order: 0; }
+  .wr-v6.embedded .desk > .shelf:last-child { order: 2; }
+  .wr-v6.embedded .desk .trays { grid-template-columns: minmax(0,1fr); }
+  .wr-v6.embedded .desk .tray2 { min-height: 0; }
+  .wr-v6.embedded .desk .blk.trow { grid-template-columns: 30px minmax(0,1fr) 22px 36px 36px; height: auto; min-height: 44px; }
+  .wr-v6.embedded .desk .tcols { grid-template-columns: 30px minmax(0,1fr) 22px 36px 36px; padding-inline: 10px; }
+  .wr-v6.embedded .desk .lenses { padding: 12px; }
+  .wr-v6.embedded .desk [aria-live="polite"] { position: sticky; bottom: 0; z-index: 5; padding: 8px; background: var(--canvas); border-top: 1px solid var(--edge); }
+  .wr-v6.embedded .desk .effect { grid-template-columns: minmax(0,1fr); }
+  .wr-v6.embedded .desk .effect .wide.half,
+  .wr-v6.embedded .desk .effect .wide.half + .wide.half { grid-column: auto; }
+  .wr-v6.embedded .desk .shelf .list { max-height: 240px; overflow-y: auto; }
+  .wr-v6.embedded .partner select,
+  .wr-v6.embedded .desk .btn,
+  .wr-v6.embedded .desk button { min-height: 44px; }
+  .wr-v6.embedded .bdrawer { position: relative; inset: auto; width: 100%; max-height: 65vh; }
+  .wr-v6.embedded .bd-body { max-height: 52vh; overflow-y: auto; }
+}

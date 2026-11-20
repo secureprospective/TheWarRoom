@@ -89,10 +89,13 @@ func DefinitionFor(command string) (Definition, error) {
 		ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear,
 		LineupCorrect, BracketAdvance,
 		CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException,
-		TradeReview, TradeAppeal, TradeAppealRule, TradeOverride:
+		TradeReview, TradeHold, TradeAppeal, TradeAppealRule, TradeOverride:
+		return Definition{Gravity: "G3"}, nil
+	case RosterAdd:
 		return Definition{Gravity: "G3"}, nil
 	case DraftArchive, DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
-		RosterReserve, RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
+		RosterReserve, RosterCut, WaiverClaim, WaiverClaimOrderSet, WaiverClaimCancel, WaiverProcess,
+		WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
 		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride, OLineAuctionClose,
 		ContractEdit, CapAdjust, CapRelief, WindowSet, WindowMove, WindowRemove, ContractActionSet,
 		ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed,
@@ -373,6 +376,8 @@ func publicNowRule(command string) string {
 		return "statistic decisions take effect now and are shown to the league"
 	case command == CalendarException:
 		return "window exceptions take effect now and are visible to every owner"
+	case command == TradeHold:
+		return "trade review holds take effect now and are visible to every owner"
 	case playoffCommand(command):
 		return playoffPlacement(command)
 	case command == Create:

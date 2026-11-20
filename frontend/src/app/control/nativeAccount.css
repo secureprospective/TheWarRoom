@@ -4,12 +4,12 @@
 .native-account h2 { font-size: 20px; margin: 28px 0 12px; font-weight: 600; }
 .native-account h3 { font-size: 15px; margin: 24px 0 8px; font-weight: 600; }
 .native-account p { margin: 8px 0; line-height: 1.6; }
-.native-account nav, .native-account .native-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 24px; }
+.native-account nav:where(:not(.phone-app *)), .native-account .native-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 24px; }
 .native-account label { display: grid; gap: 6px; margin-block: 16px; max-width: 46ch; }
-.native-account input, .native-account select, .native-account textarea, .native-account button { font: inherit; color: var(--surface-tx1); background: var(--surface-2); border: 1px solid var(--surface-line-hi); padding: 10px 12px; border-radius: 4px; }
+.native-account input, .native-account select, .native-account textarea, .native-account button:where(:not(.phone-app *)) { font: inherit; color: var(--surface-tx1); background: var(--surface-2); border: 1px solid var(--surface-line-hi); padding: 10px 12px; border-radius: 4px; }
 .native-account input, .native-account select, .native-account textarea { min-width: 0; width: 100%; box-sizing: border-box; caret-color: var(--surface-tx1); }
 .native-account button { cursor: pointer; min-height: 44px; }
-.native-account button:hover:not(:disabled), .native-account button[aria-current] { background: var(--surface-4); border-color: var(--surface-tx2); }
+.native-account button:where(:not(.phone-app *)):hover:not(:disabled), .native-account button:where(:not(.phone-app *))[aria-current] { background: var(--surface-4); border-color: var(--surface-tx2); }
 .native-account button:disabled { opacity: .6; cursor: wait; }
 .native-account :focus-visible { outline: 2px solid var(--signal-blue); outline-offset: 3px; }
 .native-account [role=alert] { color: var(--signal-red); }
@@ -25,3 +25,40 @@
   background-color: var(--surface-2);
 }
 .native-account .native-preview { white-space: pre-line; overflow-wrap: anywhere; }
+
+@media (max-width: 699px) {
+  .native-account.phone-home, .native-account.phone-home.has-thin-home {
+    display: flex;
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  .native-account.phone-home > header,
+  .native-account.phone-home > nav,
+  .native-account.phone-home > footer { display: none; }
+  .native-account.phone-home > div:not([hidden]) {
+    display: block;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-width: none;
+    padding: 0;
+    overflow: hidden;
+  }
+  .native-account.phone-home > .native-actions { display: none; }
+  .native-account.phone-home > form {
+    flex: 1;
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    overflow: auto;
+    padding: 20px;
+  }
+  .native-account.phone-home > form > h2:first-child { margin-top: 18px; }
+  .native-account.phone-home footer { display: none; }
+}

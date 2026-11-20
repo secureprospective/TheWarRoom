@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -14,6 +15,7 @@ import (
 // 0000 empty slot is omitted; an unknown real player refuses the import.
 func Lineups(weeks []leaguefeed.WeekResult, season int, franchises, players map[string]string) ([]commissioner.RawLineupChange, error) {
 	out := []commissioner.RawLineupChange{}
+	seen := map[string]bool{}
 	for _, week := range weeks {
 		sides := slices.Clone(week.Others)
 		for _, game := range week.Games {
@@ -38,12 +40,55 @@ func Lineups(weeks []leaguefeed.WeekResult, season int, franchises, players map[
 				lineup.Starters = append(lineup.Starters, mapped)
 			}
 			slices.Sort(lineup.Starters)
+			if len(lineup.Starters) == 0 {
+				continue
+			}
 			if _, err := commissioner.DecodeLineupChange(commissioner.RawArgs{Lineup: &lineup}, commissioner.LineupCorrect); err != nil {
 				return nil, fmt.Errorf("week %d franchise %s: %w", week.Week, side.Franchise, err)
 			}
+			key := fmt.Sprintf("%d.%s", lineup.Week, lineup.Franchise)
+			if seen[key] {
+				return nil, fmt.Errorf("week %d franchise %s is listed more than once", lineup.Week, side.Franchise)
+			}
+			seen[key] = true
 			out = append(out, lineup)
 		}
 	}
+	return out, nil
+}
+
+// ImportLineups combines scored weeks with MFL's current live lineup read. The live snapshot wins
+// when both reads contain the same franchise-week; an absent live lineup does not erase a finished one.
+func ImportLineups(weeks []leaguefeed.WeekResult, live *leaguefeed.Lineups, season int,
+	franchises, players map[string]string) ([]commissioner.RawLineupChange, error) {
+	out, err := Lineups(weeks, season, franchises, players)
+	if err != nil {
+		return nil, err
+	}
+	if live == nil {
+		return out, nil
+	}
+	current, err := Lineups([]leaguefeed.WeekResult{LiveWeekResult(*live)}, season, franchises, players)
+	if err != nil {
+		return nil, err
+	}
+	byFranchiseWeek := make(map[string]commissioner.RawLineupChange, len(out)+len(current))
+	for _, lineup := range out {
+		byFranchiseWeek[fmt.Sprintf("%d.%s", lineup.Week, lineup.Franchise)] = lineup
+	}
+	for _, lineup := range current {
+		byFranchiseWeek[fmt.Sprintf("%d.%s", lineup.Week, lineup.Franchise)] = lineup
+	}
+	out = make([]commissioner.RawLineupChange, 0, len(byFranchiseWeek))
+	for _, lineup := range byFranchiseWeek {
+		out = append(out, lineup)
+	}
+	slices.SortFunc(out, func(a, b commissioner.RawLineupChange) int {
+		if a.Week != b.Week {
+			return a.Week - b.Week
+		}
+		return strings.Compare(a.Franchise, b.Franchise)
+	})
 	return out, nil
 }
 
@@ -61,14 +106,11 @@ func BackfillLineups(ctx context.Context, ledger leaguemigration.Ledger, league,
 	if assets.Snapshot == nil {
 		return nil, fmt.Errorf("record starting franchises before importing lineups")
 	}
-	franchises, players := map[string]string{}, map[string]string{}
+	franchises := map[string]string{}
 	for _, f := range assets.Snapshot.Franchises {
 		franchises[f.HeldID] = f.ID
 	}
-	for id := range heldPlayers {
-		players[id] = id
-	}
-	lineups, err := Lineups(weeks, season, franchises, players)
+	lineups, err := Lineups(weeks, season, franchises, playerIdentityMapping(heldPlayers))
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +166,14 @@ func LiveWeekResult(live leaguefeed.Lineups) leaguefeed.WeekResult {
 		}
 	}
 	return out
+}
+
+func playerIdentityMapping(heldPlayers map[string]string) map[string]string {
+	players := make(map[string]string, len(heldPlayers))
+	for id := range heldPlayers {
+		players[id] = id
+	}
+	return players
 }
 
 // BackfillLiveLineups records the starters MFL holds for one week in progress, through the same

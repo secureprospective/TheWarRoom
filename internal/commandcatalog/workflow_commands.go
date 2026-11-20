@@ -13,8 +13,9 @@ import (
 )
 
 type WorkflowCommand struct {
-	Validate func(RawWorkflow) error
-	Run      func(context.Context, *leagueservice.Service, RawWorkflow) (json.RawMessage, error)
+	Validate   func(RawWorkflow) error
+	Run        func(context.Context, *leagueservice.Service, RawWorkflow) (json.RawMessage, error)
+	RunAccount func(context.Context, accounts.PreferenceRepository, string, RawWorkflow) (json.RawMessage, error)
 }
 
 // Membership is executable: the same entry validates and runs a workflow. The changes are exactly
@@ -23,9 +24,17 @@ type WorkflowCommand struct {
 // appear here by derivation; never hand-list one. See docs/architecture/future-seams.md.
 func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
+	out[commissioner.ProblemReportCreate] = workflowInputCommand[commissioner.RawProblemReport, *commissioner.RawProblemReport](
+		"execute", "send a problem report", func(ctx context.Context, s *leagueservice.Service,
+			input commissioner.RawProblemReport) (json.RawMessage, error) {
+			return workflowJSON(s.SubmitProblemReport(ctx, input))
+		})
 	out[leagueservice.BackupNowCommand] = backupNowWorkflow()
 	out["draft.queue.read"] = workflowDraftQueueRead()
 	out["draft.queue.set"] = workflowDraftQueueSet()
+	for id, command := range accountPreferenceWorkflows() {
+		out[id] = command
+	}
 	for id, command := range privatePersonalWorkflows() {
 		out[id] = command
 	}
@@ -206,6 +215,16 @@ func workflowReads() map[string]WorkflowCommand {
 	for id, command := range otherWorkflowReads() {
 		out[id] = command
 	}
+	out["league.activity.read"] = workflowInputCommand[commissioner.RawLeagueActivityScope, *commissioner.RawLeagueActivityScope](
+		"read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service,
+			input commissioner.RawLeagueActivityScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetLeagueActivity(ctx, input))
+		})
+	out[commissioner.ProblemReportsRead] = workflowInputCommand[commissioner.RawProblemReportsScope, *commissioner.RawProblemReportsScope](
+		"read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service,
+			input commissioner.RawProblemReportsScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetProblemReports(ctx, input))
+		})
 	for id, command := range commissionerControlReads() {
 		out[id] = command
 	}
@@ -254,6 +273,9 @@ func pulseWorkflowReads() map[string]WorkflowCommand {
 		}),
 		"nfl.games.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNFLGames(r.League))
+		}),
+		"nfl.player-status.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNFLPlayerStatus(r.League))
 		}),
 		"schedule.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetLeagueSchedule(leagueservice.RawLeagueScheduleScope{League: r.League}))

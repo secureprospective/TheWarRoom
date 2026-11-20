@@ -70,8 +70,8 @@ func TestResetPasswordReleasesTeamAndPrintsPageLink(t *testing.T) {
 	if _, err := after.Claim(ctx, claim); err != nil {
 		t.Fatalf("released team cannot be claimed: %v", err)
 	}
-	if _, err := after.Claim(ctx, claim); !errors.Is(err, accounts.ErrFranchiseTaken) {
-		t.Fatalf("reset link claimed twice: %v", err)
+	if _, err := after.Claim(ctx, claim); !errors.Is(err, accounts.ErrJoinRefused) {
+		t.Fatalf("reset link reused: %v", err)
 	}
 	if err := runResetPassword(ctx, []string{"-db", path, "-league", "native.hosted"}, strings.NewReader("{}"), io.Discard); err == nil {
 		t.Fatal("missing -team accepted")

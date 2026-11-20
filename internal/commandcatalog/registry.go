@@ -137,6 +137,7 @@ func (r *Registry) addBrowser(command BrowserCommand) error {
 
 func serverWorkflowEntries() []Entry {
 	commands := append(nativeDraftQueueCommands(), tradeDraftCommands()...)
+	commands = append(commands, accountPreferenceCommands()...)
 	commands = append(commands, serverBackupCommands()...)
 	entries := make([]Entry, 0, len(commands))
 	for _, command := range commands {
@@ -291,8 +292,13 @@ func (e *Entry) handlers(door Door) map[Mode]Handler {
 }
 
 func commandLabel(id string) string {
-	if id == "oline.auction.close" {
+	switch id {
+	case "oline.auction.close":
 		return "Close O-Line auction"
+	case "waivers.claim.order.set":
+		return "Set your waiver claim order"
+	case "waivers.claim.cancel":
+		return "Cancel your waiver claim"
 	}
 	if strings.Contains(id, ".") {
 		words := strings.Split(strings.ReplaceAll(id, "_", " "), ".")

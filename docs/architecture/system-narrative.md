@@ -1140,3 +1140,18 @@ Held membership and bye decoding lives in `internal/fantasyscore/source`; histor
 validated depth/bye values, not acquisition packages. `internal/feedwire` owns singleton/array
 envelopes and API-error rejection shared by held decoding and ingestion. Acquisition wrappers
 retain their old public types as aliases. No feed selection or zero-admission policy changed.
+
+## Hosted member-safe NFL status
+
+`cmd/twr-server/nfl_injuries.go` uses the existing validated `ingestion/injuries` MFL export and
+`archive.Transport` to hold fetches in the shared football reference file. The hosted server starts
+an immediate refresh and a four-hour timer using the existing cancel-and-wait worker lifetime pattern;
+`refresh-nfl-injuries` invokes the same refresh while the server is stopped. `ReadNFLInjuryFeed` selects
+the newest parseable successful body and combines it with `FetchHealth`, so a later failed attempt
+marks the preserved last-good facts stale; no valid copy yields `unavailable`. The league service
+admits `nfl.player-status.read` before reading, resolves expected return against that league's pinned
+schedule through the shared injury-week helpers, and emits only designation, body part, expected
+return week, and league/season/state/fetched-at metadata. Both signed-in and scoped-agent workflow
+paths inject the reference reader. Only source-reported injury rows appear; absence does not mean
+active or healthy. No practice/depth-chart or news text is published, and no database migration is
+needed.

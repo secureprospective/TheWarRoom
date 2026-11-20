@@ -58,7 +58,7 @@ func (f *marketFixture) act(t *testing.T, command string, args commissioner.RawA
 	case commissioner.BidCommand(command):
 		err = market.PrepareBidAppend(&raw, f.b.records, f.now, f.facts, time.UTC, market.BidEnvironment{Season: nativecheck.BidSeason{Week: 5, WeekKnown: true}})
 	case commissioner.WaiverCommand(command):
-		err = market.PrepareWaiverAppend(&raw, f.b.records, f.now, f.facts, time.UTC)
+		err = market.PrepareWaiverAppend(&raw, principal, f.b.records, f.now, f.facts, time.UTC)
 	case commissioner.TradeCommand(command):
 		err = market.PrepareTradeAppend(&raw, principal, f.b.records, f.now, f.facts, time.UTC)
 	}

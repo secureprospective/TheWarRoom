@@ -85,6 +85,8 @@ function fakePort(scheduleMode: 'default' | 'empty' | 'unavailable' = 'default',
         data = { ...common, franchise: 'franchise' in args ? args.franchise : '', week: 1,
           starters: [{ player: '0001', team: 'DAL', locked: true }] }; break;
       case 'nfl.games.read': data = board(); break;
+      case 'league.activity.read': data = { league: 'test', revision: 2, events: [{ id: 'notice.1',
+        kind: 'notice', when: '2026-11-18T12:00:00Z', summary: 'Public league notice' }] }; break;
       case 'nfl.game.read': data = { league: 'test', game: nflGame,
         at: '2026-11-15T18:00:00Z', stale: false, words: '' }; break;
       case 'projections.read': data = { league: 'test', season: 2026, week: 1, players: [] }; break;
@@ -167,6 +169,57 @@ it('opens hosted Now, refreshes active reads except odds, shows Race and returns
   expect(host.textContent).toContain('League Pulse');
   expect(host.querySelector('.lp-v14')).toBeNull();
   expect(local).not.toHaveBeenCalled(); expect(events).not.toHaveBeenCalled();
+});
+
+it('opens the League phone entry on the standings table', async () => {
+  const port = fakePort();
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} entry="league" />));
+  await settle();
+  expect(host.textContent).toContain('STANDINGS');
+  expect(host.textContent).toContain('MY ROAD · WKS 1–2');
+  expect(host.querySelector('.lp-v14')).not.toBeNull();
+  expect([...host.querySelectorAll('.pulse-phone-tabs button')].map(button => button.textContent))
+    .toEqual(['Table', 'Schedule', 'Activity', 'Live']);
+  expect(count(port, 'league.activity.read')).toBe(0);
+});
+
+it('shows server-projected public events and schedule on the League phone screen',
+  async () => {
+  const port = fakePort();
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} entry="league" />));
+  await settle();
+  await click('Schedule');
+  expect(host.textContent).toContain('LEAGUE SCHEDULE');
+  expect(host.textContent).toContain('Beta');
+  expect(count(port, 'schedule.read')).toBe(1);
+  await click('MY TEAM');
+  expect(host.textContent).toContain('OPPONENT');
+  expect(host.textContent).toContain('Beta');
+  await click('Activity');
+  expect(host.textContent).toContain('Public league notice');
+  expect(host.textContent).toContain('Private bids and commissioner details are excluded.');
+  expect(count(port, 'league.activity.read')).toBe(1);
+  await click('Player status');
+  expect(host.textContent).toContain('Player status is unavailable');
+  expect(count(port, 'league.activity.read')).toBe(1);
+  expect(port.mock.calls.some(([request]) => String(request.command) === 'player.status.read')).toBe(false);
+});
+
+it('keeps league activity visibly unavailable when its member-safe read fails', async () => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const fallback = fakePort();
+  const port = vi.fn<HostedPort>(async request => {
+    if (request.command === 'league.activity.read') throw new Error('activity source offline');
+    return fallback(request);
+  });
+  await act(async () => root.render(<HostedLeague league="test" franchise="a" name="Alpha"
+    role="Owner" port={port} entry="league" />));
+  await settle();
+  await click('Activity');
+  expect(host.textContent).toContain('League activity is unavailable · Error: activity source offline');
+  expect(host.textContent).not.toContain('Public league notice');
 });
 
 it('shows the commissioner action when Pulse has no published schedule week', async () => {
@@ -389,6 +442,19 @@ it('reads the hosted NFL board for its own league only and labels held boards', 
     at: '0001-01-01T00:00:00Z', failure: '', games: [] } }, 'test');
   expect(empty.games).toEqual([]);
   expect(empty.source).toMatch(/not read the NFL scoreboard yet/);
+});
+
+it('keeps source-held NFL records on each team and leaves absent records absent', () => {
+  const source = { ...board(), board: { ...board().board, games: [{ ...nflGame,
+    home: { ...nflGame.home, record: '5-4' }, away: { ...nflGame.away, record: '3-6' } }] } };
+  const parsed = parseHostedGames(source, 'test').games[0];
+  expect(parsed.home.record).toBe('5-4');
+  expect(parsed.away.record).toBe('3-6');
+  expect(parseHostedGames(board(), 'test').games[0].home.record).toBeUndefined();
+  expect(() => parseHostedGames({ ...source, board: { ...source.board,
+    games: [{ ...source.board.games[0],
+      home: { ...source.board.games[0].home, record: '5 wins' } }] } }, 'test'))
+    .toThrow(/invalid team record/);
 });
 
 it('rereads open hosted Pulse once per burst of its league topics and ignores other leagues', async () => {

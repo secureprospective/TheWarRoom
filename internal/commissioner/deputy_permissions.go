@@ -137,6 +137,7 @@ func commissionerOnlyMarketRules() []DeputyCommandRule {
 		{OLineAuctionClose, DeputyCommissionerOnly, ""},
 		{BidsProcess, DeputyCommissionerOnly, ""},
 		{BidsOverride, DeputyCommissionerOnly, ""},
+		{TradeHold, DeputyCommissionerOnly, ""},
 	}
 }
 
@@ -149,7 +150,10 @@ func memberActionCommandRules() []DeputyCommandRule {
 		{TradeAppeal, DeputyMemberAction, ""},
 		{RosterReserve, DeputyMemberAction, ""},
 		{RosterCut, DeputyMemberAction, ""},
+		{RosterAdd, DeputyMemberAction, ""},
 		{WaiverClaim, DeputyMemberAction, ""},
+		{WaiverClaimOrderSet, DeputyMemberAction, ""},
+		{WaiverClaimCancel, DeputyMemberAction, ""},
 		{BidPlace, DeputyMemberAction, ""},
 		{BidRaise, DeputyMemberAction, ""},
 		{ContractDecisionSet, DeputyMemberAction, ""},

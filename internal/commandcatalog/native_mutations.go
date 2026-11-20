@@ -20,6 +20,7 @@ func NativeCommands(seed Schema) []Command {
 	out = append(out, playerPersonalNativeMutations()...)
 	out = append(out, playerPersonalNativeReads()...)
 	out = append(out, nativeServerReads()...)
+	out = append(out, nativeServerMutations()...)
 	return out
 }
 
@@ -97,13 +98,17 @@ func nativeMarketMutations() []struct{ id, args string } {
 		{commissioner.TradeDecline, "trade"},
 		{commissioner.TradeWithdraw, "trade"},
 		{commissioner.TradeReview, "trade"},
+		{commissioner.TradeHold, "trade"},
 		{commissioner.TradeRecuse, "trade"},
 		{commissioner.TradeAppeal, "trade"},
 		{commissioner.TradeAppealRule, "trade"},
 		{commissioner.TradeOverride, "trade"},
 		{commissioner.RosterReserve, "waiver"},
 		{commissioner.RosterCut, "waiver"},
+		{commissioner.RosterAdd, "waiver"},
 		{commissioner.WaiverClaim, "waiver"},
+		{commissioner.WaiverClaimOrderSet, "waiver"},
+		{commissioner.WaiverClaimCancel, "waiver"},
 		{commissioner.WaiverProcess, "waiver"},
 		{commissioner.WaiverOrderSet, "waiver"},
 		{commissioner.WaiverOrderAuto, "waiver"},
@@ -178,6 +183,9 @@ func nativeMutation(id, args string, seed Schema) Command {
 
 	if id == commissioner.OLineAuctionClose {
 		command.Role, command.Undo = "commish", "none"
+	}
+	if id == commissioner.TradeHold {
+		command.Role = "commish"
 	}
 	if id == commissioner.Create || strings.HasPrefix(id, "draft.") &&
 		!strings.HasPrefix(id, "draft.order.") && id != commissioner.DraftStart {

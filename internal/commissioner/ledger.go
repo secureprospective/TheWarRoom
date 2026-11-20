@@ -337,7 +337,7 @@ func familyLabel(r Record) (string, bool) {
 	case draftCommand(c):
 		return draftLabel(r), true
 	case WaiverCommand(c):
-		return waiverLabel(c), true
+		return waiverLabel(r.Command), true
 	case TradeCommand(c):
 		return tradeLabel(r), true
 	case BidCommand(c):
@@ -386,7 +386,8 @@ func undoPlacement(records []Record, i, root int, p Projection, principal string
 
 func ledgerEntryVisible(r, target Record, records []Record, principal string, privileged bool) bool {
 	if privateWaiverRecord(target, records) {
-		return (SamePrincipal(records, r.Principal, principal) && r.Command.Command == WaiverClaim) ||
+		ownerEntry := slices.Contains([]string{WaiverClaim, WaiverClaimOrderSet, WaiverClaimCancel}, r.Command.Command)
+		return (SamePrincipal(records, r.Principal, principal) && ownerEntry) ||
 			(privileged && processedWaiverClaim(r, records))
 	}
 	if privateBidRecord(target, records) {

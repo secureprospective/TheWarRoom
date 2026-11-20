@@ -33,6 +33,14 @@ const clickWhenReady = async (host: Awaited<ReturnType<typeof mount>>, label: st
   const found = await vi.waitFor(() => button(host, label), { timeout: 5_000 });
   await click(found); await settle();
 };
+const waitForLeagueOpen = async (host: Awaited<ReturnType<typeof mount>>, events: string[]) => {
+  await act(async () => {
+    await vi.waitFor(() => {
+      expect(host.textContent).toContain('Hosted My club');
+      expect(rooms).toEqual(events);
+    }, { timeout: 10_000 });
+  });
+};
 const submit = async (host: Awaited<ReturnType<typeof mount>>) => {
   await act(async () => {
     const form = all(host, 'form')[0];
@@ -114,13 +122,12 @@ describe('native desktop account access', () => {
     expect(button(host, 'League')).toBeTruthy();
     expect(host.textContent).toContain('Home');
     await clickWhenReady(host, 'Open League');
-    expect(rooms).toEqual(['open franchise.01']);
-    await vi.waitFor(() => expect(host.textContent).toContain('Hosted My club'), { timeout: 10_000 });
+    await waitForLeagueOpen(host, ['open franchise.01']);
     await click(button(host, 'Home')); await settle();
     expect(rooms).toEqual(['open franchise.01', 'close franchise.01']);
     expect(host.textContent).toContain('YOUR LEAGUES');
-    await clickWhenReady(host, 'Open League'); await settle();
-    expect(rooms).toEqual(['open franchise.01', 'close franchise.01', 'open franchise.01']);
+    await clickWhenReady(host, 'Open League');
+    await waitForLeagueOpen(host, ['open franchise.01', 'close franchise.01', 'open franchise.01']);
     expect(host.textContent).not.toContain('Join with a code');
     expect(host.textContent).not.toContain('No MFL account or key needed');
     // The Authenticator tab shows its own form; the league stays mounted but hidden, and its

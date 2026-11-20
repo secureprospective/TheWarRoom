@@ -585,6 +585,11 @@ string
 "at": string;
 "reason"?: string
 })[];
+"holds"?: ({
+"who": string;
+"at": string;
+"reason": string
+})[];
 "recusals": ({
 "who": string;
 "decision": string;
@@ -644,6 +649,7 @@ string
 "bucket"?: string;
 "player"?: string;
 "franchise"?: string;
+"drop"?: string;
 "window"?: string;
 "claim"?: string;
 "order"?: (string)[]
@@ -656,6 +662,27 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+}) | null;
+"dropPlayer"?: ({
 "contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
@@ -1218,6 +1245,11 @@ string
 "at": string;
 "reason"?: string
 })[];
+"holds"?: ({
+"who": string;
+"at": string;
+"reason": string
+})[];
 "recusals": ({
 "who": string;
 "decision": string;
@@ -1277,6 +1309,7 @@ string
 "bucket"?: string;
 "player"?: string;
 "franchise"?: string;
+"drop"?: string;
 "window"?: string;
 "claim"?: string;
 "order"?: (string)[]
@@ -1289,6 +1322,27 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+}) | null;
+"dropPlayer"?: ({
 "contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
@@ -1826,6 +1880,11 @@ string
 "at": string;
 "reason"?: string
 })[];
+"holds"?: ({
+"who": string;
+"at": string;
+"reason": string
+})[];
 "recusals": ({
 "who": string;
 "decision": string;
@@ -1885,6 +1944,7 @@ string
 "bucket"?: string;
 "player"?: string;
 "franchise"?: string;
+"drop"?: string;
 "window"?: string;
 "claim"?: string;
 "order"?: (string)[]
@@ -1897,6 +1957,27 @@ string
 "priorOrder"?: (string)[];
 "closeAt"?: string;
 "player"?: ({
+"contractMissing"?: boolean;
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[];
+"heldContractStatus"?: string
+}) | null;
+"dropPlayer"?: ({
 "contractMissing"?: boolean;
 "acquiredVia"?: string;
 "correction"?: string;
@@ -2711,13 +2792,17 @@ export type WorkflowArgumentMap = {
 "trade.decline": NativeArguments<"trade.decline">;
 "trade.withdraw": NativeArguments<"trade.withdraw">;
 "trade.review": NativeArguments<"trade.review">;
+"trade.hold": NativeArguments<"trade.hold">;
 "trade.recuse": NativeArguments<"trade.recuse">;
 "trade.appeal": NativeArguments<"trade.appeal">;
 "trade.appeal.rule": NativeArguments<"trade.appeal.rule">;
 "trade.override": NativeArguments<"trade.override">;
 "roster.reserve": NativeArguments<"roster.reserve">;
 "roster.cut": NativeArguments<"roster.cut">;
+"roster.add": NativeArguments<"roster.add">;
 "waivers.claim": NativeArguments<"waivers.claim">;
+"waivers.claim.order.set": NativeArguments<"waivers.claim.order.set">;
+"waivers.claim.cancel": NativeArguments<"waivers.claim.cancel">;
 "waivers.process": NativeArguments<"waivers.process">;
 "waivers.order.set": NativeArguments<"waivers.order.set">;
 "waivers.order.auto": NativeArguments<"waivers.order.auto">;
@@ -2735,11 +2820,20 @@ export type WorkflowArgumentMap = {
 "player.watch.read": NativeArguments<"player.watch.read">;
 "contract.decisions.read": NativeArguments<"contract.decisions.read">;
 "market.wins.read": NativeArguments<"market.wins.read">;
+"league.activity.read": NativeArguments<"league.activity.read">;
+"nfl.player-status.read": NativeArguments<"nfl.player-status.read">;
+"commish.feedback.read": NativeArguments<"commish.feedback.read">;
+"feedback.report.create": NativeArguments<"feedback.report.create">;
 "draft.queue.read": NativeArguments<"draft.queue.read">;
 "draft.queue.set": NativeArguments<"draft.queue.set">;
 "trade.draft.read": NativeArguments<"trade.draft.read">;
 "trade.draft.save": NativeArguments<"trade.draft.save">;
 "trade.draft.delete": NativeArguments<"trade.draft.delete">;
+"home.layout.read": NativeArguments<"home.layout.read">;
+"home.layout.set": NativeArguments<"home.layout.set">;
+"job.snoozes.read": NativeArguments<"job.snoozes.read">;
+"job.snooze.set": NativeArguments<"job.snooze.set">;
+"job.snooze.wake": NativeArguments<"job.snooze.wake">;
 "backup.now": NativeArguments<"backup.now">;
 };
 export type CommandArgumentMap = {

@@ -295,6 +295,51 @@ statistics) is pinned, then the existing Capture → encrypted export → inacti
 activate path moves it. The server's copy is the only writable one. `twr-sandbox` passes
 `-football` from the pin file when it exists. Test: `go test ./internal/leagueload`.
 
+### Refresh missing published NFL kickoff dates (local console, service stopped)
+
+The hosted server reads schedule dates from its pinned football evidence; restart and
+`-official-stats` do not acquire missing kickoff dates. Use the operator command below to fetch only
+weeks in this league's published schedule that are absent from the current pin:
+
+```sh
+rc-service twr-server stop
+twr-server refresh-nfl-schedule -db /var/lib/twr/server.db -league native.example -season 2026
+rc-service twr-server start
+```
+
+The command uses the existing keyless MFL `nflSchedule` fetcher (routed through the API host), validates
+all requested weeks before writing, imports a new immutable `history.Store` football-evidence version,
+then pins only the selected league. If that league has no individual pin, the current server pin is read
+from `/etc/twr/football.sha256` (override with `-football-pin-file`). Source bodies and failures are
+recorded through the normal archive transport as they arrive. If any week is absent or invalid, no new
+football-evidence version is imported and the old pin remains selected. If import succeeds but pinning
+fails, the new version remains archived but unselected. No league events are added; restart is required for the running
+service to load the new pin. Verify owner `week.read` and `twr-status` after restart.
+
+### Refresh NFL player status (hosted automatic & operator)
+
+The hosted worker follows the existing `startArchivePurge` lifetime pattern: fetch immediately, tick
+on a timer, and stop with the hosted context. It fetches MFL's league-less injuries export every four
+hours. `injuries.Fetch` validates the response; `archive.Transport` records attempts and bodies in
+reference storage. The member read uses the newest parseable successful body, `FetchHealth` to detect a
+later failed attempt, and the league's pinned schedule to resolve expected return week. League members
+receive only designation, body part, expected return week, and fetched-at through
+`nfl.player-status.read`; no news prose or league login is involved. A missing first fetch reads as
+`unavailable`. If an update fails after a good fetch, the last good facts remain visible as `stale`,
+with the original fetched-at. Only MFL-reported injury rows appear; an absent player is not asserted
+healthy or active, and the feed contains no practice or depth-chart data.
+
+For an immediate operator refresh while the server is stopped:
+
+```sh
+rc-service twr-server stop
+twr-server refresh-nfl-injuries -db /var/lib/twr/server.db -season 2026
+rc-service twr-server start
+```
+
+The command uses the same keyless, API-host MFL export and archives its response through the existing
+reference-data transport. No league-specific MFL data is synchronized.
+
 ## Join link: owners pick their own team
 
 ```
@@ -303,13 +348,14 @@ twr-server join-link -db … -league LEAGUE -revoke                       < comm
 twr-server join-link -db … -league LEAGUE -release franchise.07         < commissioner.json
 ```
 
-`-rotate` prints a new code and a same-origin page link (the old code stops working). The link keeps
-the league and code in the URL fragment, so the server never sees them in a path or log. Holders can
+`-rotate` prints a new code and a same-origin page link (the old code stops working). Each code claims
+exactly one owner's seat; rotate a fresh link for each owner. A claimed link is no longer valid. The
+link keeps the league and code in the URL fragment, so the server never sees them in a path or log. Holders can
 open `/join#league=…&code=…` on a phone, or POST `{"protocol":1,"join":{"league":…,"code":…}}` to
 `/v1/auth/join/franchises` (names + taken flags), then
 `{"protocol":1,"claim":{"league":…,"code":…,"franchise":…,"username":…,"password":…}}` to
-`/v1/auth/join/claim` (201 with eight one-time recovery codes, or 409 taken / username taken, 403 bad
-link), then sign in at `/v1/auth/login`. The first claim binds; the seat is `commish.seat.replace`
+`/v1/auth/join/claim` (201 with eight one-time recovery codes, or 409 taken / username taken, 403 bad,
+revoked or already-used link), then sign in at `/v1/auth/login`. The seat is `commish.seat.replace`
 recorded by the issuing commissioner, and `-release` is `commish.seat.remove` (also available to the
 commissioner in the app through the catalog). Both doors share login's per-client limit (10 a
 minute) and the backup write gate. Only these page routes and their two JSON doors accept a

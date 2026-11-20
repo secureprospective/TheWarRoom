@@ -18,19 +18,24 @@ import type { WarRoomContext } from './warroomReads';
 const reading = vi.hoisted(() => ({
   players: [
     { id: '0001', name: 'Need and affordable', position: 'WR', minimum: '$85M', minimumCents: 8500000000,
-      age: '25', points: '12', value: '10' },
+      age: '25', points: '12', value: '10', string: 'SEA', freeAgent: true },
     { id: '0002', name: 'Affordable only', position: 'RB', minimum: '$50M', minimumCents: 5000000000,
-      age: '24', points: '8', value: '7' },
+      age: '24', points: '8', value: '7', string: 'NYJ', freeAgent: true },
     { id: '0003', name: 'Need but costly', position: 'WR', minimum: '$90M', minimumCents: 9000000000,
-      age: '26', points: '4', value: '3' },
+      age: '26', points: '4', value: '3', string: 'SEA', freeAgent: true },
     { id: '0004', name: 'Kicker need', position: 'K', minimum: '$1M', minimumCents: 100000000,
-      age: '23', points: '2', value: '2' },
-  ], capRoom: 8500000000 as number | undefined, targets: [], bids: [] as {
+      age: '23', points: '2', value: '2', string: 'BUF', freeAgent: true },
+  ] as import('./warroomMarketReads').WarRoomMarketPlayer[],
+  capRoom: 8500000000 as number | undefined, targets: [], bids: [] as {
     player: string; name: string; contract: string; state: string; kind: 'placed'; bidId: string;
   }[], bidRevision: 4, wins: [] as {
     player: string; name: string; team: string; salaryCents: number; years: number; decidedAt: string;
   }[],
-  maxYears: 4, writable: true, football: 'pin', errors: [], integrate: false,
+  maxYears: 4, writable: true, football: 'pin', rosterRevision: 4,
+  rosterPlayers: [{ id: '0005', name: 'Roster player' }],
+  waiverPriority: { place: 2, total: 4, source: 'Standings' } as {
+    place?: number; total: number; source: string;
+  } | undefined, errors: [], integrate: false,
 }));
 vi.mock('./warroomReads', async () => {
   const React = await import('react');
@@ -58,7 +63,9 @@ import { WarRoomMarket } from './WarRoomMarket';
 import { WarRoomInspector } from './WarRoomInspector';
 
 beforeEach(() => { reading.capRoom = 8500000000; reading.integrate = false; reading.bids = [];
-  reading.bidRevision = 4; reading.maxYears = 4; reading.writable = true; reading.football = 'pin'; });
+  reading.players.forEach(player => { player.freeAgent = true; delete player.waiverStatus; });
+  reading.bidRevision = 4; reading.maxYears = 4; reading.writable = true; reading.football = 'pin';
+  reading.waiverPriority = { place: 2, total: 4, source: 'Standings' }; });
 afterEach(async () => { reading.integrate = false; await unmount(); vi.restoreAllMocks(); });
 
 const context = { mine: 'franchise.mine', snapshot: {} as WarRoomContext['snapshot'], week: 1,
@@ -75,6 +82,66 @@ it('opens the existing War Room card when a market player name is selected', asy
   await flush(); await click(button(host, 'Need and affordable')); await flush();
   const inspector = all(host, 'aside').find(node => node.attributes.get('aria-label') === 'Inspector');
   expect(inspector?.textContent).toContain('Need and affordable');
+});
+
+it('searches the pool and shows waiver priority from the held read', async () => {
+  const host = await mount(<WarRoomMarket context={context} select={() => {}} />);
+  await flush();
+  expect(host.textContent).toContain('You are 2 of 4');
+  expect(host.textContent).toContain('Standings');
+  expect(host.textContent).toContain('OPEN BENCH');
+  expect(host.textContent).not.toContain('0 slots open');
+
+  await setField(control(host, 'Search players or teams'), 'SEA');
+  expect(host.textContent).toContain('Need and affordable');
+  expect(host.textContent).toContain('Need but costly');
+  expect(host.textContent).not.toContain('Affordable only');
+  expect(host.textContent).not.toContain('Kicker need');
+});
+
+it('keeps players on waivers out of the direct-add action', async () => {
+  reading.players[0].waiverStatus = 'On waivers';
+  const port = vi.fn<HostedPort>();
+  const hostedContext = { ...context, native: { ...context.native!, port } };
+  const host = await mount(<WarRoomMarket context={hostedContext} select={() => {}} />);
+  await flush();
+  const waiverAction = button(host, 'Unavailable Need and affordable');
+  expect(waiverAction.textContent).toBe('WAIVER');
+  expect(waiverAction.attributes.has('disabled')).toBe(true);
+  expect(port).not.toHaveBeenCalled();
+});
+
+it('keeps direct add unavailable when the waiver read fails', async () => {
+  reading.waiverPriority = undefined;
+  const host = await mount(<WarRoomMarket context={context} select={() => {}} />);
+  await flush();
+  const unavailable = button(host, 'Unavailable Need and affordable');
+  expect(unavailable.textContent).toBe('UNAVAILABLE');
+  expect(unavailable.attributes.has('disabled')).toBe(true);
+});
+
+it('previews a direct roster add with the selected optional drop and reason', async () => {
+  const preview = { question: 'Add a free agent', target: { league: 'native.test',
+    name: 'Test league', version: 4 }, fields: [{ label: 'Roster', before: 'Current',
+    beforeSource: 'Ledger', after: 'Updated', afterSource: 'Request', when: 'now' }],
+    affects: { readings: [], count: null, words: 'Not known yet' }, blockers: [], safeguard: 'hold' };
+  const port = vi.fn<HostedPort>(async () => ({ label: '', writable: true, football: 'pin', data: preview }));
+  const hostedContext = { ...context, native: { ...context.native!, port } };
+  const host = await mount(<WarRoomMarket context={hostedContext} select={() => {}} />);
+  await flush();
+  await click(button(host, 'Add Need and affordable'));
+  await setField(control(host, 'Reason'), 'Fill an open roster spot');
+  await setField(control(host, 'Release a player'), '0005');
+  await click(button(host, 'REVIEW ADD'));
+  await flush();
+
+  expect(port.mock.calls[0][0]).toMatchObject({ command: 'roster.add', mode: 'preview',
+    arguments: { league: 'native.test', command: 'roster.add', args: { waiver: { player: '0001',
+      franchise: 'franchise.mine', drop: '0005' } }, reason: 'Fill an open roster spot', expected: 4,
+      effective: 'now', visibility: 'league' } });
+  expect(port.mock.calls[0][1]).toBe('pin');
+  expect(host.textContent).toContain('Add a free agent');
+  expect(host.textContent).toContain('Updated');
 });
 
 it('filters hosted players by the header needs and server cap room', async () => {
@@ -153,8 +220,9 @@ it('renders recent wins and the empty state from the hosted wins read', async ()
   const port = vi.fn<HostedPort>(async request => {
     if (request.command === 'native.assets.read') return { label: '', writable: true, football: 'pin',
       data: { league: 'native.test', revision: 4, seeded: true, entry: 'entry.1', source: 'held',
-        pool: [], identities: [], corrections: [], snapshot: { season: 2026, franchises: [],
-          players: [], picks: [] } } };
+        openBenchSlots: { 'franchise.mine': 2 }, pool: [], identities: [], corrections: [],
+        snapshot: { season: 2026, franchises: [{ id: 'franchise.mine', heldId: '0001', name: 'My Team',
+          abbreviation: 'ME', division: '' }], players: [], picks: [] } } };
     if (request.command === 'market.wins.read') return { label: '', writable: true, football: 'pin',
       data: { league: 'native.test', wins: [{ player: '0001', name: 'Player One', team: 'Team 2',
         salaryCents: 1234000000, years: 3, decidedAt: '2026-11-17T12:00:00Z' }] } };
@@ -167,6 +235,7 @@ it('renders recent wins and the empty state from the hosted wins read', async ()
   const host = await mount(<WarRoomMarket context={hosted} select={() => {}} />);
   await flush();
   expect(host.textContent).toContain('Player One');
+  expect(host.textContent).toContain('2 slots open');
   expect(host.textContent).toContain('Team 2');
   expect(host.textContent).toContain('$12.34M');
   expect(host.textContent).toContain('3 years');

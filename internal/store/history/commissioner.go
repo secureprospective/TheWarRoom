@@ -718,7 +718,7 @@ func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records
 	if err := market.PrepareContractDecisionAppend(raw, records, now, facts, zone); err != nil {
 		return fmt.Errorf("check contract decision: %w", commissioner.Refused(err))
 	}
-	if err := market.PrepareWaiverAppend(raw, records, now, facts, zone); err != nil {
+	if err := market.PrepareWaiverAppend(raw, principal, records, now, facts, zone); err != nil {
 		return fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
 	}
 	// The bid clock's scan is repeated here, under the append lock, against the current ledger.

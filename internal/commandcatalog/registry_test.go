@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -42,6 +43,49 @@ func TestExecutableRegistryRejectsBrokenDeclarations(t *testing.T) {
 	}
 }
 
+func TestLeagueActivityIsAHostedLeagueViewRead(t *testing.T) {
+	var found bool
+	for _, command := range NativeCommands(Schema{}) {
+		if command.ID != "league.activity.read" {
+			continue
+		}
+		found = true
+		if command.Method != "TargetLeagueActivity" || command.Availability != "server" ||
+			command.Permission != "league-view" || len(command.Modes) != 1 || command.Modes[0] != Read {
+			t.Fatalf("activity catalog entry = %+v", command)
+		}
+	}
+	if !found {
+		t.Fatal("member-safe activity read missing from catalog")
+	}
+	if _, ok := WorkflowCommands()["league.activity.read"]; !ok {
+		t.Fatal("activity read missing from hosted workflow")
+	}
+	if _, ok := WorkflowCommands()["commish.ledger.filtered.read"]; !ok {
+		t.Fatal("commissioner ledger filter missing from hosted workflow")
+	}
+}
+
+func TestNFLPlayerStatusIsAHostedLeagueViewRead(t *testing.T) {
+	var found bool
+	for _, command := range NativeCommands(Schema{}) {
+		if command.ID != "nfl.player-status.read" {
+			continue
+		}
+		found = true
+		if command.Method != "TargetNFLPlayerStatus" || command.Availability != "server" ||
+			command.Permission != "league-view" || len(command.Modes) != 1 || command.Modes[0] != Read {
+			t.Fatalf("NFL status catalog entry = %+v", command)
+		}
+	}
+	if !found {
+		t.Fatal("member-safe NFL status read missing from catalog")
+	}
+	if _, ok := WorkflowCommands()["nfl.player-status.read"]; !ok {
+		t.Fatal("NFL status read missing from hosted workflow")
+	}
+}
+
 func TestBidWithdrawalIsNotPublishedThroughCommandDoors(t *testing.T) {
 	for _, command := range NativeCommands(Schema{}) {
 		if command.ID == "bid.withdraw" {
@@ -53,8 +97,33 @@ func TestBidWithdrawalIsNotPublishedThroughCommandDoors(t *testing.T) {
 	}
 }
 
+func TestClaimMaintenanceCommandsUseTheOwnerWorkflow(t *testing.T) {
+	want := map[string]bool{"waivers.claim.order.set": false, "waivers.claim.cancel": false}
+	for _, command := range NativeCommands(Schema{}) {
+		if _, expected := want[command.ID]; !expected {
+			continue
+		}
+		if command.Method != "TargetNativeWaiverAction" || command.Availability != "both" ||
+			!slices.Equal(command.Modes, []Mode{Preview, Execute}) {
+			t.Errorf("%s catalog entry = %+v", command.ID, command)
+		}
+		want[command.ID] = true
+	}
+	workflows := WorkflowCommands()
+	for id, found := range want {
+		if !found {
+			t.Errorf("%s missing from the native catalog", id)
+		}
+		if _, found := workflows[id]; !found {
+			t.Errorf("%s missing from hosted workflows", id)
+		}
+	}
+}
+
 func TestCommandLabelsDoNotExposeMachineSyntax(t *testing.T) {
-	for id, want := range map[string]string{"mfl.bid.revise": "revise local MFL bid", "commish.rules.set": "set league rules", "TargetMFLKeyStatus": "MFL Key Status", "GetParams": "Get Params"} {
+	for id, want := range map[string]string{"mfl.bid.revise": "revise local MFL bid", "commish.rules.set": "set league rules",
+		"waivers.claim.order.set": "Set your waiver claim order", "waivers.claim.cancel": "Cancel your waiver claim",
+		"TargetMFLKeyStatus": "MFL Key Status", "GetParams": "Get Params"} {
 		if got := commandLabel(id); got != want || strings.Contains(got, ".") {
 			t.Errorf("%s label=%q, want %q", id, got, want)
 		}

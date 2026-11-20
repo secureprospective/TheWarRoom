@@ -6,6 +6,7 @@ import { PulseWaiting, readPulseMatchup, usePulseRead, type NativePulse, type Pu
   from './pulseReads';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { fieldPositions, gameTime, kickoffText } from '../now/LiveGame';
+import { clockWords, followKey } from './hostedGames';
 import type { Game as LiveNflGame, LiveView as LiveNflView } from '../now/liveContract';
 import type { usePulseLive } from './hqLive';
 import { boxLine, compactLine } from './statLine';
@@ -185,13 +186,6 @@ function StatChangesDrawer({ open, onClose, sides, week, changes, left, right }:
   </PulseDrawer>;
 }
 
-function followKey(g: LiveNflGame) { return `${g.away.abbreviation}-${g.home.abbreviation}`; }
-function clockWords(g: LiveNflGame) {
-  if (g.status === 'post') return 'FINAL';
-  if (g.status === 'pre') return kickoffText(g.kickoff);
-  return `${g.period > 4 ? 'OT' : `Q${g.period}`} ${g.clock}`;
-}
-
 /** NflList is the week's NFL games, optionally selectable by a read-only follower. */
 export function NflList({ games, followed, onFollow, words }: { games: LiveNflGame[];
   followed?: LiveNflGame; onFollow?: (id: string) => void; words: string }) {
@@ -204,6 +198,7 @@ export function NflList({ games, followed, onFollow, words }: { games: LiveNflGa
       const body = <>
         {[g.away, g.home].map(t => <div className="r" key={t.id}>
           <span className={`pos${has(t) ? '' : ' no'}`} />{t.abbreviation}
+          <small className={`record${t.record ? '' : ' unavailable'}`}>{t.record ?? 'Not held'}</small>
           <b>{g.status === 'pre' ? '' : t.score}</b></div>)}
         <div className="meta">
           <span className={`st${g.status === 'in' ? ' live' : g.status === 'post' ? ' fin' : ''}`}>
@@ -255,6 +250,7 @@ export function FollowedGame({ game }: { game: LiveNflGame }) {
               <span>{s.toEndzone} to go for six</span></>
               : <span>{game.status === 'post' ? 'Final' : 'Field position not supplied'}</span>}
             <span className="lp">{game.last?.text ?? ''}</span>
+            <span className="timeout-note">Timeout counts not supplied by held feed</span>
           </div>
         </>}
     </div>

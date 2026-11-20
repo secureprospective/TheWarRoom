@@ -1,5 +1,9 @@
+import type { NativeRequest } from '../commands/native';
+import type { HostedPort } from '../commissioner/hostedRoom';
+
 // The Home grid as the locked mock (docs/ui/mocks/home-mock-v5.html) packs it: three columns by two
-// rows, tiles placed first-fit in layout order. A layout is saved per owner per league.
+// rows, tiles placed first-fit in layout order. Hosted layouts are account preferences; local mode
+// retains its per-league localStorage key.
 export type Span = '1x1' | '2x1' | '1x2';
 export type TileId = 'due' | 'mu' | 'race' | 'head' | 'news' | 'wire' | 'sc' | 'pwr' | 'plan' | 'picks'
   | 'cap' | 'bids' | 'form';
@@ -92,3 +96,86 @@ export function parseLayout(raw: string | null | undefined): Layout {
 }
 export const layoutKey = (league: string, franchise: string) =>
   `thewarroom.home.layout:${league}:${franchise}`;
+
+type LayoutReply = { layout: Layout; revision: number; conflict: boolean };
+export type HomeLayoutResult = LayoutReply & { offline: boolean };
+
+function record(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function readLayoutReply(value: unknown): LayoutReply {
+  if (!record(value) || Object.keys(value).some(key => !['layout', 'revision', 'conflict'].includes(key))
+    || !Number.isSafeInteger(value.revision) || Number(value.revision) < 0
+    || ('conflict' in value && typeof value.conflict !== 'boolean') || !record(value.layout))
+    throw new Error('The saved Home layout could not be read.');
+  const raw = value.layout;
+  const parsed = parseLayout(JSON.stringify(raw));
+  const pins = record(raw.pins) ? raw.pins : {};
+  if (parsed.mode !== raw.mode || !Array.isArray(raw.tiles) || parsed.tiles.length !== raw.tiles.length
+    || !Array.isArray(raw.over) || parsed.over.length !== raw.over.length
+    || Object.keys(parsed.pins).length !== Object.keys(pins).length)
+    throw new Error('The saved Home layout is invalid.');
+  return { layout: parsed, revision: Number(value.revision), conflict: value.conflict === true };
+}
+/** Reads and writes the signed-in account's layout without persisting a browser copy. */
+export function createHomeLayoutStore(port: HostedPort) {
+  let revision = 0;
+  let currentLayout = defaultLayout();
+  let initialized = false;
+  let writeSequence = 0;
+  let queue: Promise<void> = Promise.resolve();
+  let reading: Promise<HomeLayoutResult> | undefined;
+
+  function read(): Promise<HomeLayoutResult> {
+    if (reading) return reading;
+    const operation = load();
+    reading = operation;
+    void operation.then(() => { if (reading === operation) reading = undefined; },
+      () => { if (reading === operation) reading = undefined; });
+    return operation;
+  }
+
+  async function load(): Promise<HomeLayoutResult> {
+    try {
+      const response = await port({ command: 'home.layout.read', mode: 'read', arguments: {} });
+      const result = readLayoutReply(response.data);
+      revision = result.revision;
+      currentLayout = result.layout;
+      initialized = true;
+      return { ...result, offline: false };
+    } catch {
+      currentLayout = defaultLayout();
+      revision = 0;
+      initialized = true;
+      return { layout: currentLayout, revision, conflict: false, offline: true };
+    }
+  }
+
+  function write(layout: Layout): Promise<HomeLayoutResult> {
+    const sequence = ++writeSequence;
+    currentLayout = layout;
+    const operation = queue.then(async (): Promise<HomeLayoutResult> => {
+      if (!initialized) await read();
+      if (sequence !== writeSequence)
+        return { layout: currentLayout, revision, conflict: false, offline: false };
+      try {
+        const request = { command: 'home.layout.set', mode: 'execute',
+          arguments: { layout, expectedRevision: revision } } satisfies NativeRequest;
+        const response = await port(request);
+        const result = readLayoutReply(response.data);
+        revision = result.revision;
+        currentLayout = result.layout;
+        if (result.conflict) writeSequence++;
+        return { ...result, offline: false };
+      } catch {
+        if (sequence === writeSequence) {
+          currentLayout = layout;
+        }
+        return { layout: currentLayout, revision, conflict: false, offline: true };
+      }
+    });
+    queue = operation.then(() => undefined, () => undefined);
+    return operation;
+  }
+  return { read, write };
+}

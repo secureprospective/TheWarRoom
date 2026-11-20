@@ -46,6 +46,19 @@ it('puts Home first and routes Home from another thin view', async () => {
   expect(host.textContent).toContain('Thin home brief');
 });
 
+it('shows the report entry on the league rail', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  const shell = () => <ThinLeagueShell league="native.test"
+    leagueName="Test league" route={{ node: 'home', workspace: 'overview' }} commissioner players={[]}
+    navigate={() => {}} openPlayer={() => {}}>
+    <p>League Home</p>
+  </ThinLeagueShell>;
+  await act(async () => root!.render(shell()));
+  expect([...host.querySelectorAll('button')].some(button =>
+    button.textContent === 'Report a problem')).toBe(true);
+});
+
 it('matches case-insensitive name fragments and opens the card', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);

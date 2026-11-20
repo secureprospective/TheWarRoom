@@ -122,16 +122,10 @@ func tokenMarketTargets(raw RawCommand, records []Record) ([]string, error) {
 		}
 	}
 	if a.Waiver != nil {
-		targets = append(targets, a.Waiver.Franchise)
-		if a.Waiver.Claim != "" {
-			r, err := tokenReferencedRecord(records, a.Waiver.Claim)
-			if err != nil {
-				return nil, err
-			}
-			if r.Command.Args.Waiver == nil {
-				return nil, fmt.Errorf("claim is unavailable")
-			}
-			targets = append(targets, r.Command.Args.Waiver.Franchise)
+		var err error
+		targets, err = tokenWaiverTargets(targets, raw, records)
+		if err != nil {
+			return nil, err
 		}
 	}
 	if a.Trade != nil {
@@ -147,6 +141,29 @@ func tokenMarketTargets(raw RawCommand, records []Record) ([]string, error) {
 		for _, game := range a.Schedule.Games {
 			targets = append(targets, game.Home, game.Away)
 		}
+	}
+	return targets, nil
+}
+
+func tokenWaiverTargets(targets []string, raw RawCommand, records []Record) ([]string, error) {
+	args := raw.Args.Waiver
+	targets = append(targets, args.Franchise)
+	claimIDs := []string{}
+	if args.Claim != "" {
+		claimIDs = append(claimIDs, args.Claim)
+	}
+	if raw.Command == WaiverClaimOrderSet {
+		claimIDs = append(claimIDs, args.Order...)
+	}
+	for _, id := range claimIDs {
+		record, err := tokenReferencedRecord(records, id)
+		if err != nil {
+			return nil, err
+		}
+		if record.Command.Command != WaiverClaim || record.Command.Args.Waiver == nil {
+			return nil, fmt.Errorf("claim is unavailable")
+		}
+		targets = append(targets, record.Command.Args.Waiver.Franchise)
 	}
 	return targets, nil
 }

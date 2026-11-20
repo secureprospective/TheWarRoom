@@ -466,6 +466,7 @@
 .lp-v14 .nfl.sel{background:var(--raised);box-shadow:inset 4px 0 0 var(--edge-hi)}
 .lp-v14 .nfl .r{display:flex;gap:8px;align-items:center;font:600 12px var(--mono);color:var(--ink2)}
 .lp-v14 .nfl .r b{margin-left:auto;font-size:13px;color:var(--ink)}
+.lp-v14 .nfl .r .record{font:400 9px var(--mono);color:var(--ink3)}
 .lp-v14 .nfl .r .pos{width:6px;height:6px;background:var(--ink)}
 .lp-v14 .nfl .r .pos.no{background:transparent}
 .lp-v14 .nfl .meta{grid-column:1/3;display:flex;gap:8px;align-items:center;font:10px var(--mono);color:var(--ink3)}
@@ -487,6 +488,7 @@
 .lp-v14 .gh .t{display:flex;gap:10px;align-items:baseline;font:700 15px var(--mono)}
 .lp-v14 .gh .t.r{justify-content:end}
 .lp-v14 .gh .t span{font:400 11px var(--mono);color:var(--ink3)}
+.lp-v14 .gh .t small{font:400 9px var(--mono);color:var(--ink3)}
 .lp-v14 .gh .t b{font-size:30px}
 .lp-v14 .gh .clk{display:grid;justify-items:center;gap:2px;padding:0 18px;font:700 12px var(--mono)}
 .lp-v14 .gh .clk small{font:400 10px var(--mono);color:var(--ink3)}
@@ -503,6 +505,7 @@
 .lp-v14 .dd{display:flex;gap:18px;align-items:center;padding:4px 18px 10px;font:11px var(--mono);color:var(--ink3);border-bottom:2px solid var(--black)}
 .lp-v14 .dd b{color:var(--ink);font-size:12px}
 .lp-v14 .dd .lp{margin-left:auto;color:var(--ink2);max-width:52%;text-align:right}
+.lp-v14 .dd .timeout-note{font:9px var(--mono);color:var(--ink3)}
 .lp-v14 .spine{display:flex;flex-direction:column;min-height:0}
 .lp-v14 .sp-row{display:grid;grid-template-columns:62px 4px 34px minmax(0,1fr) 70px;align-items:center;gap:10px;padding:7px 14px 7px 12px;border-bottom:1px solid var(--rule)}
 .lp-v14 .sp-row .tm{font:10px var(--mono);color:var(--ink3);line-height:1.3}
@@ -535,6 +538,8 @@
 .lp-v14 .stand .ins{font:700 9px var(--mono);letter-spacing:.1em;padding:0 4px;border:1px solid var(--edge-hi);color:var(--ink)}
 .lp-v14 .stand .ins.x{border-color:var(--edge);color:var(--ink3)}
 .lp-v14 .stand .strk{color:var(--ink3)}
+.lp-v14 .stand .streak{margin-left:6px;font:700 9px var(--mono);color:var(--live)}
+.lp-v14 .stand .streak.unavailable{color:var(--ink3);font-weight:400}
 .lp-v14 .path{display:grid;grid-template-rows:auto auto 1fr;min-height:0}
 .lp-v14 .ladder{display:grid;grid-template-columns:repeat(10,1fr);gap:0;border-bottom:2px solid var(--black)}
 .lp-v14 .rung{padding:10px 10px 12px;border-right:1px solid var(--edge);display:grid;gap:4px;align-content:start;min-width:0;cursor:pointer;transition:transform 70ms linear}
@@ -968,3 +973,100 @@
 .lp-v14 .ct.power tr.sel .tk i{background:var(--mine)}
 
 .lp-v14.hosted .shell{grid-template-columns:minmax(0,1fr) 260px}
+.lp-v14 .pulse-phone-tabs{display:none}
+.lp-v14 .pulse-activity-filters{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--edge);background:var(--sunken)}
+.lp-v14 .pulse-activity-filters button{flex:1;min-width:0;min-height:40px;padding:6px;border:1px solid var(--edge);font:700 10px var(--mono);letter-spacing:.08em}
+.lp-v14 .pulse-activity-filters button[aria-selected=true]{background:var(--edge-hi);color:var(--black)}
+.lp-v14 .pulse-activity-note{padding:10px 12px;color:var(--ink3);font:10px var(--mono);line-height:1.5}
+.lp-v14 .pulse-activity-event{display:grid;gap:5px;padding:11px 12px;border-top:1px solid var(--rule)}
+.lp-v14 .pulse-activity-event>div{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.lp-v14 .pulse-activity-event b,.lp-v14 .pulse-activity-event time{font:700 9px var(--mono);letter-spacing:.08em;color:var(--ink3)}
+.lp-v14 .pulse-activity-event p{overflow-wrap:anywhere;line-height:1.45}
+
+/* Phone Pulse is a narrow presentation of the same hosted reads. Desktop rules above stay intact. */
+@media (max-width: 699px) {
+  .lp-v14.embedded {
+    width: 100%; min-width: 0; min-height: 0; height: auto; overflow: visible;
+  }
+  .lp-v14.embedded .shell,
+  .lp-v14.hosted .shell { display: block; min-width: 0; height: auto; }
+  .lp-v14.embedded .work {
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto; min-width: 0; overflow: visible;
+  }
+  .lp-v14.embedded .ws-tabs { min-width: 0; }
+  .lp-v14.embedded .ws-tabs button { min-width: 44px; min-height: 44px; padding: 8px 12px; }
+  .lp-v14.embedded .pulse-phone-tabs {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); min-width: 0;
+    border-bottom: 2px solid var(--black); background: var(--sunken);
+  }
+  .lp-v14.embedded .pulse-phone-tabs button {
+    min-width: 0; min-height: 44px; padding: 8px 4px; border-right: 1px solid var(--black);
+    color: var(--ink3); font: 700 10px var(--mono); letter-spacing: .06em;
+  }
+  .lp-v14.embedded .pulse-phone-tabs button[aria-selected=true] {
+    color: var(--ink); background: var(--canvas); box-shadow: inset 0 3px 0 var(--edge-hi);
+  }
+  .lp-v14.embedded .sline {
+    grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 12px;
+  }
+  .lp-v14.embedded .wk { width: 100%; }
+  .lp-v14.embedded .wk button { min-width: 44px; min-height: 44px; }
+  .lp-v14.embedded .wk b { flex: 1; }
+  .lp-v14.embedded .slate { flex-wrap: wrap; gap: 6px 12px; min-width: 0; }
+  .lp-v14.embedded .fresh { text-align: left; overflow-wrap: anywhere; }
+  .lp-v14.embedded .mybox { justify-self: stretch; justify-content: space-between; gap: 6px; min-width: 0; }
+  .lp-v14.embedded .mybox .wpm { width: min(18vw, 70px); }
+  .lp-v14.embedded .ws.on,
+  .lp-v14.embedded .ws.cols.on { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: visible; }
+  .lp-v14.embedded .ws.cols > .pcol {
+    min-width: 0; min-height: auto; overflow: visible; border-right: 0; border-bottom: 2px solid var(--black);
+  }
+  .lp-v14.embedded #ws-live,
+  .lp-v14.embedded #ws-race { grid-template-columns: minmax(0, 1fr); }
+  .lp-v14.embedded #ws-live .pcol,
+  .lp-v14.embedded #ws-race .pcol { width: 100%; }
+  .lp-v14.embedded #ws-live .follow { overflow-x: auto; min-height: 48px; }
+  .lp-v14.embedded #ws-live .gh { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); padding: 10px 12px; }
+  .lp-v14.embedded #ws-live .gh .t { gap: 5px; font-size: 12px; }
+  .lp-v14.embedded #ws-live .gh .t b { font-size: 22px; }
+  .lp-v14.embedded #ws-live .gh .clk { padding: 0 6px; font-size: 11px; }
+  .lp-v14.embedded #ws-live .field { margin: 10px 12px 6px; }
+  .lp-v14.embedded #ws-live .dd { gap: 8px; padding: 6px 12px 10px; flex-wrap: wrap; }
+  .lp-v14.embedded #ws-live .dd .lp { flex: 1 1 100%; max-width: none; margin-left: 0; text-align: left; }
+  .lp-v14.embedded #ws-live .mr { grid-template-columns: minmax(0, 1fr) 38px 20px 38px minmax(0, 1fr); }
+  .lp-v14.embedded #ws-live .mr .chipc { display: none; }
+  .lp-v14.embedded #ws-live .mr .s { padding: 0 4px; font-size: 13px; }
+  .lp-v14.embedded #ws-live .mr .p { padding: 0 8px; }
+  .lp-v14.embedded #ws-live .mym .mh { grid-template-columns: minmax(0, 1fr) 38px 20px 38px minmax(0, 1fr); }
+  .lp-v14.embedded #ws-live .sp-row { grid-template-columns: 38px 3px 30px minmax(0, 1fr) 48px; gap: 6px; padding-right: 8px; }
+  .lp-v14.embedded .tray { flex-wrap: wrap; white-space: normal; gap: 8px; padding: 10px 12px; }
+  .lp-v14.embedded .tray .pulls { display: flex; flex-wrap: wrap; gap: 8px; }
+  .lp-v14.embedded .tray button { min-width: 44px; min-height: 44px; }
+  .lp-v14.embedded .tray .msg { flex: 1 1 100%; min-width: 0; margin-left: 0; white-space: normal; }
+  .lp-v14.embedded #ws-race .ch { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .lp-v14.embedded #ws-race .ch > div { flex-wrap: wrap; }
+  .lp-v14.embedded #ws-race .seg button { min-height: 44px; padding: 8px; }
+  .lp-v14.embedded #ws-race .stand { table-layout: fixed; font-size: 11px; }
+  .lp-v14.embedded #ws-race .stand th,
+  .lp-v14.embedded #ws-race .stand td { padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; }
+  .lp-v14.embedded #ws-race .stand th:nth-child(5),
+  .lp-v14.embedded #ws-race .stand td:nth-child(5),
+  .lp-v14.embedded #ws-race .stand th:nth-child(6),
+  .lp-v14.embedded #ws-race .stand td:nth-child(6) { display: none; }
+  .lp-v14.embedded #ws-race .tie { grid-template-columns: 1fr; gap: 4px; height: auto; padding: 10px 12px; }
+  .lp-v14.embedded #ws-race .tie .stk { justify-self: start; }
+  .lp-v14.embedded .grid-sched { min-width: max-content; }
+  .lp-v14.embedded .grid-sched div { min-width: 70px; }
+  .lp-v14.embedded .scroll { max-width: 100%; overflow-x: auto; }
+  .lp-v14.embedded .pulse-activity-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lp-v14.embedded .pulse-activity-filters button { min-width: 0; min-height: 44px; padding: 6px 3px; }
+  .lp-v14.embedded .pulse-activity-list { overflow-x: hidden; }
+  .lp-v14.embedded .pulse-activity-event { min-width: 0; }
+  .lp-v14.embedded .pulse-schedule-page { min-width: 0; width: 100%; }
+  .lp-v14.embedded #ws-schedule .ch { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .lp-v14.embedded #ws-schedule .ch .seg { max-width: 100%; }
+  .lp-v14.embedded #ws-schedule .ch .seg button { min-width: 44px; min-height: 44px; padding: 8px; }
+  .lp-v14.embedded #ws-schedule .grid-sched { width: max-content; }
+  .lp-v14.embedded #ws-schedule .ct { min-width: 390px; }
+}

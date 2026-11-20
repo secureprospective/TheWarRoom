@@ -83,7 +83,7 @@ func (f *fakeLeague) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			f.dispatched = append(f.dispatched, dispatched{Mode: request.Workflow.Mode, Command: &command})
 			f.confirms = append(f.confirms, r.Header.Get("X-TWR-Human-Confirmation"))
 		}
-		_, _ = w.Write([]byte(`{"label":"Hosted","writable":true,"football":"fb","data":{"mode":"` + request.Workflow.Mode + `"}}`))
+		_, _ = w.Write([]byte(`{"label":"Hosted","writable":true,"football":"fb","appRelease":1,"data":{"mode":"` + request.Workflow.Mode + `"}}`))
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}

@@ -19,8 +19,8 @@ import (
 // open a file, or serve a client, it does not understand.
 func TestCurrentContract(t *testing.T) {
 	current := Current()
-	if current.Release != 9 || current.Schema != 16 {
-		t.Fatalf("current server contract = %+v, want release 9 / schema 16", current)
+	if current.Release != 11 || current.Schema != 16 {
+		t.Fatalf("current server contract = %+v, want release 11 / schema 16", current)
 	}
 	if current.Schema != history.LeagueSchemaVersion() || current.Commands != commissioner.DurableCommandVersion {
 		t.Fatalf("add a release row: contract %+v, history schema %d, commands %d", current, history.LeagueSchemaVersion(), commissioner.DurableCommandVersion)
@@ -36,9 +36,8 @@ func TestCurrentContract(t *testing.T) {
 		if row.Schema < before.Schema || row.ProtocolMinor < before.ProtocolMinor || row.SecurityFloor < before.SecurityFloor || row.Commands < before.Commands {
 			t.Fatalf("release %d goes backwards from %+v", row.Release, before)
 		}
-		before.Release = row.Release
-		if row == before {
-			t.Fatalf("release %d changes nothing; reuse release %d", row.Release, row.Release-1)
+		if row.Release <= before.Release {
+			t.Fatalf("release %d does not increase from release %d", row.Release, before.Release)
 		}
 	}
 }

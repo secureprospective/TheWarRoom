@@ -13,13 +13,15 @@ import './thinHome.css';
 export const thinHomeRoute: Route = homeRoute;
 type BriefReader = (league: string, mine: string, port: HostedPort, owner: boolean,
   commissioner: boolean) => Promise<HomeBrief>;
-export type ThinHomeEntry = 'hq' | 'war' | 'pulse' | 'control' | 'lineup' | 'bids' | 'trades';
+export type ThinHomeEntry = 'home' | 'hq' | 'war' | 'pulse' | 'league' | 'control'
+  | 'lineup' | 'bids' | 'trades';
 type ThinHomeProps = {
   leagues: LeagueChoice[];
   onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void;
   port?: HostedPort;
   readBrief?: BriefReader;
   now?: number;
+  onBriefReady?: (leagueId: string, mine: string, brief: HomeBrief) => void;
 };
 type OpenShortcut = { label: string; entry: ThinHomeEntry; commissionerOnly?: boolean };
 const shortcuts: OpenShortcut[] = [
@@ -35,16 +37,27 @@ function needsYouEntry(screen: NeedsYouItem['screen']): ThinHomeEntry | undefine
   if (screen.node === 'pulse') return 'pulse';
   return 'control';
 }
-export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, now }: ThinHomeProps) {
+export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, now,
+  onBriefReady }: ThinHomeProps) {
   const appLeagues = useMemo(() => leagues.filter(league => league.app), [leagues]);
   const briefReader = useMemo<BriefReader>(() => readBrief ?? ((_id, mine, hosted, _owner, isCommissioner) =>
     readThinHomeBrief(_id, mine, hosted, undefined, isCommissioner)),
   [appLeagues, readBrief]);
-  const readingTime = useMemo(() => now ?? Date.now(), [now]);
+  const [wallClock, setWallClock] = useState(Date.now());
+  const readingTime = now ?? wallClock;
   const [briefs, setBriefs] = useState<Record<string, HomeBrief>>({});
   const [failures, setFailures] = useState<Record<string, string>>({});
   const [needsYou, setNeedsYou] = useState<NeedsYouItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const nextSnoozeExpiry = Object.values(briefs).flatMap(brief => brief.jobSnoozes?.snoozes ?? [])
+    .map(snooze => Date.parse(snooze.until)).filter(until => until > readingTime).sort((a, b) => a - b)[0];
+  useEffect(() => {
+    if (now !== undefined || nextSnoozeExpiry === undefined) return;
+    const delay = Math.min(2_147_483_647, Math.max(0, nextSnoozeExpiry - readingTime + 1));
+    const timer = window.setTimeout(() => setWallClock(Date.now()), delay);
+    return () => window.clearTimeout(timer);
+  }, [nextSnoozeExpiry, now, readingTime]);
 
   useEffect(() => {
     let active = true;
@@ -62,7 +75,10 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       readBrief: async (id, mine, hosted, owner, isCommissioner) => {
         try {
           const brief = await briefReader(id, mine, hosted, owner, isCommissioner);
-          if (active) setBriefs(current => ({ ...current, [id]: brief }));
+          if (active) {
+            setBriefs(current => ({ ...current, [id]: brief }));
+            onBriefReady?.(id, mine, brief);
+          }
           return brief;
         } catch (cause) {
           if (active) setFailures(current => ({ ...current,
@@ -74,7 +90,7 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       .catch(cause => { if (active) setFailures({ '*': String(cause) }); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [appLeagues, briefReader, port, readingTime]);
+  }, [appLeagues, briefReader, onBriefReady, port, readingTime]);
 
   const openFrom = (item: NeedsYouItem) => {
     const league = appLeagues.find(choice => choice.id === item.leagueId);

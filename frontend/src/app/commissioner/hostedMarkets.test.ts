@@ -1,5 +1,10 @@
 import { expect, it } from 'vitest';
-import { parseHostedBids, parseHostedResults, parseHostedStandings } from './hostedMarkets';
+import {
+  parseHostedBids,
+  parseHostedResults,
+  parseHostedStandings,
+  parseHostedTrades,
+} from './hostedMarkets';
 
 // The league server sends its live-score evidence on results and standings, and provisional points on a game
 // being played. HQ reads both in its one refresh; a refused field there leaves the lineup read-only.
@@ -21,6 +26,20 @@ it('reads live results with score evidence and provisional points', () => {
       awayName: 'B', status: 'live', homeProvisional: 41.5, awayProvisional: 38.2, words: 'A leads',
       why: [] }] });
   expect(read.games).toEqual([{ names: 'A v B', words: 'A leads', why: [] }]);
+});
+
+it('shows the public reason for a 24-hour trade review hold', () => {
+  const reason = 'Updated injury information needs another review day';
+  const read = parseHostedTrades({ league: 'l', viewer: 'f', revision: 5, rules: [], notes: [], offers: [{
+    vetoNumber: 0, appealedVetoNumber: 0, assetDetails: [{ fromTeam: 'A', toTeam: 'B', label: 'Pick' }],
+    previous: '', id: 'trade-1', proposer: 'a', parties: ['a', 'b'], assets: [{ from: 'a', to: 'b',
+      season: 2027, round: 1, original: 'a' }], accepted: ['a', 'b'], policy: {},
+    offeredAt: '2026-11-19T00:00:00Z',
+    expiresAt: '2026-11-20T00:00:00Z', status: 'review', words: 'Waiting for trade review', votes: [],
+    holds: [{ who: 'commissioner', at: '2026-11-19T00:00:00Z', reason }], recusals: [], appeals: [],
+    overrides: [], expires: 'Nov 20, 2026 at 12:00 AM UTC',
+  }] });
+  expect(read.offers[0].reasons).toContain(`Review held for 24 hours: ${reason}`);
 });
 
 it('reads standings that carry score evidence', () => {

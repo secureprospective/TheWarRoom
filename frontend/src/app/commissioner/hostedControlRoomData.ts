@@ -12,7 +12,8 @@ import type { HostedPort } from './hostedRoom';
 
 export const hostedControlTabs = [
   ['jobs', 'Jobs'], ['situations', 'Situations'], ['rules', 'Rules'], ['season', 'Season'],
-  ['fix', 'Fix'], ['picks', 'Picks'], ['people', 'People'], ['league', 'League'], ['server', 'Server'],
+  ['fix', 'Fix'], ['picks', 'Picks'], ['people', 'People'], ['feedback', 'Feedback'],
+  ['league', 'League'], ['server', 'Server'],
 ] as const;
 export type HostedControlTab = (typeof hostedControlTabs)[number][0];
 

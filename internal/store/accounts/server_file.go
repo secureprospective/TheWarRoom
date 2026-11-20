@@ -21,7 +21,7 @@ func ServerVersion() int { return len(serverMigrations()) }
 
 // serverMigrations is append-only.
 func serverMigrations() []db.Migration {
-	return []db.Migration{createServerFile, addLeagueFootball, addSeatClaims}
+	return []db.Migration{createServerFile, addLeagueFootball, addSeatClaims, addHomeLayouts, addJobSnoozes}
 }
 
 // addLeagueFootball gives each league its own pinned football evidence digest; empty means the league
@@ -54,7 +54,7 @@ func PrepareServerFile(ctx context.Context, pools *db.Pools) error {
 // SignInTables are the sign-in tables, parents first. A conversion copies them in this order and
 // drops them from the league file in the reverse order.
 func SignInTables() []string {
-	return []string{"accounts", "account_enrollments", "account_totp", "account_recovery_codes", "account_auth_generation",
+	return []string{"accounts", "account_home_layouts", "account_job_snoozes", "account_enrollments", "account_totp", "account_recovery_codes", "account_auth_generation",
 		"account_security_audit", "account_auth_epoch", "account_sessions", "account_agent_tokens", "account_aliases", "league_join_links"}
 }
 

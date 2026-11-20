@@ -6,7 +6,7 @@ If work is not on this list, it does not belong in 0.10.
 | Number | Meaning | Tag |
 |---|---|---|
 | 0.10 | First alpha. Cut from main at #294 (17c9109ef) plus the version stamp. | `v0.10.0` |
-| 0.10.1, 0.10.2 … | Small patch: one PR. May happen hourly. Exercises the update path. | `v0.10.1` |
+| 0.10.1, 0.10.2, 0.10.3, 0.10.4 … | Small patch: one PR. May happen hourly. Exercises the update path. 0.10.2 carries server release 9; 0.10.3 carries server release 10 (schema 16); 0.10.4 carries server release 11 (schema 16; adds sign-in file migration 5, account_job_snoozes). | `v0.10.1` |
 | 0.11, 0.12 … | Recommended update. | `v0.11.0` |
 | 0.20, 0.30 … | A full field of fixes, features and upgrades. | `v0.20.0` |
 
