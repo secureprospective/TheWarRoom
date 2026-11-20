@@ -27,13 +27,13 @@ Key fact: most v3-looking pieces exist in the **legacy local shell** `TargetApp.
 6. Hermes weekly job (Tue 03:00 CT) to run refresh-nfl-schedule on the lab (stop server, refresh, start) so the week keeps advancing until the server refreshes on its own (post-fix design item).
 
 ## 4. In flight at handoff
-- **PR #450** (refresh-nfl-schedule re-fetches past not-final weeks) MERGED 7968877. Claudebox background chain `btgcqjvoo` then runs lab release **v22**: log `~/fleet/runs/overnight-b9walk-1120/labrel-v22/out.log` (Beelink). Check: `tail -3` that file for `LAB RELEASE DONE`.
+- **PR #450** MERGED 7968877; lab release **v22 DONE** (79688779) at ~09:00 CT 11-20.
 - **After v22:** run on the lab (server must be stopped): copy of `~/fleet/runs/overnight-b9walk-1120/lab-nfl.sh` (it backs up, stops, runs `twr-server refresh-nfl-schedule -db /var/lib/twr/server.db -league native.mfl-14432-2026 -season 2026` as user twr, starts, prints status) via `bash ~/fleet/runs/overnight-b9walk-1120/labrun.sh <script>`. Expect "Re-fetched results for N past week(s) that were not final: 9, 11." (11 only if its games are over). Then `week.read` should give current week 11 (Sunday 11-22 is week 11). If the clock still says 9: the archived re-fetch is not what the schedule cache reads — next suspect is `internal/app/commissioner/native/schedule_cache.go` (reads `History.ReferenceBodies`, newest copy first; cache keyed on archive mark) vs where the transport sink writes. Medium confidence on that hypothesis.
 
 ## 5. State / gates
 | Item | State |
 |---|---|
-| Lab CT 260 | release v21 (1c8be58d) live; v22 pending. 1 commissioner account + rehearsal owner on BUF. 31 open seats. |
+| Lab CT 260 | release v22 (79688779) live; schedule refresh NOT yet run. 1 commissioner account + rehearsal owner on BUF. 31 open seats. |
 | PR #448 Live follows selected league | merged, lab v20 |
 | PR #449 phone Team skips value.read (banner gone) | merged, lab v21 |
 | PR #450 stale-week re-fetch | merged, v22 in flight |
