@@ -154,7 +154,9 @@ export function CtrlPicksV3({ c, league, port, badge }: ControlBodyProps) {
           <span className="m">{pick.season}</span><b className="m">{pickNumber(pick)}</b>
           <span className="ell">{franchiseName(reading, pick.original)}</span>
           <span className="ell">{franchiseName(reading, pick.owner)}</span>
-          <span className="m ell" title="Pick conditions are not tracked here yet.">{PICK_CONDITION_EMPTY}</span>
+          <span className="m ell" title="Pick conditions are not tracked here yet.">
+            {PICK_CONDITION_EMPTY}
+          </span>
           <span className="m">{pickHow(pick)}</span>
           <span className="tag o">{pickStatus(pick)}</span></div>)}
         {rows.length === 0 && <St>No picks match these filters.</St>}

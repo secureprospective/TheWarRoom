@@ -46,7 +46,9 @@ export function CtrlServerV3({ league, port = hostedWorkflow, badge, people }: C
       {ledger && ledger.entries.map(entry => <div key={entry.id} className="row"
         style={{ gridTemplateColumns: 'auto minmax(0,1fr) auto' }}>
         <span className="tag">{entry.gravity}</span>
-        <span className="ell"><b>{entry.what}</b> <span className="d">{ledgerDetail(entry, people)}</span></span>
+        <span className="ell">
+          <b>{entry.what}</b> <span className="d">{ledgerDetail(entry, people)}</span>
+        </span>
         <span className="m">{new Date(entry.when).toLocaleString()}</span></div>)}
     </Panel>
     <Panel title="Backups, feeds and upgrades" badge={badge}

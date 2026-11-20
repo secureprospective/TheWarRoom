@@ -29,7 +29,7 @@ describe('roles and deputies', () => {
     expect(seatRoles(people, seats[0])).toBe('co-commissioner');
     expect(seatRoles(people, seats[1])).toBe('—');
   });
-  it('lists deputies by seat name with their permissions and resolves caretakers and local principals', () => {
+  it('lists deputies by seat name with permissions; resolves caretakers and local principals', () => {
     expect(deputyRows(people)).toEqual([
       { person: 'ann', team: 'Team a', roles: 'co-commissioner', permissions: 'edit-lineups' },
       { person: 'zed', team: 'zed', roles: '—', permissions: 'No deputy permissions' }]);

@@ -124,7 +124,9 @@ export function CtrlSeasonV3({ c, league, port, badge }: ControlBodyProps) {
             <span className="ell"><b>{seasonWindowName(actionWindow)}</b>
               {opens && <span className="d"> · {opens}</span>}</span>
             <span className="m">{actionWindow.start}</span>
-            {actionWindow.live ? <span className="tag gr">Live</span> : <span className="tag">Scheduled</span>}
+            {actionWindow.live
+              ? <span className="tag gr">Live</span>
+              : <span className="tag">Scheduled</span>}
             <span className="acts">{canMoveWindow && <HQAct className="btn sm"
               onAction={() => open('calendar.window.move')}>Move window</HQAct>}</span>
           </div>;

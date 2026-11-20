@@ -54,7 +54,8 @@ beforeEach(() => {
   authGeneration++;
   observeView({
     authGeneration: String(authGeneration), server: 'https://league.test', league,
-    message: '', name: 'Commissioner', role: 'Commissioner', franchise: 'f1', franchiseName: 'Arizona Cardinals',
+    message: '', name: 'Commissioner', role: 'Commissioner',
+    franchise: 'f1', franchiseName: 'Arizona Cardinals',
     seed: '', connection: '', helperId: '', confirmation: '', seats: [],
   });
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -99,7 +100,7 @@ function stubRoomState(port: HostedPort): HostedControlRoomState {
 }
 
 describe('ControlRoomV3 rendered tabs', () => {
-  it('renders member names in People deputies/roles, uses plain copy, and delegates refresh to shell', async () => {
+  it('renders member names in People deputies/roles, plain copy, refresh via shell', async () => {
     const port = vi.fn<HostedPort>(async (request: NativeRequest) => {
       throw new Error(`Unexpected read ${request.command}`);
     });
@@ -229,7 +230,7 @@ describe('ControlRoomV3 rendered tabs', () => {
     expect(firstWindowRow?.textContent).toBe('Contracts');
   });
 
-  it('uses one shared people query in ControlRoomV3 and propagates Refresh people to other tabs', async () => {
+  it('uses one shared people query and propagates Refresh people to other tabs', async () => {
     let teamName = 'Arizona Cardinals';
     const port = vi.fn<HostedPort>(async (request: NativeRequest) => {
       if (request.command === 'commish.rules.read') {
@@ -261,7 +262,10 @@ describe('ControlRoomV3 rendered tabs', () => {
       }
       if (request.command === 'commish.notices.read') {
         return {
-          data: { league, revision: 7, notices: [], notes: [], releases: [], mail: { words: '', recorded: [] } },
+          data: {
+            league, revision: 7, notices: [], notes: [], releases: [],
+            mail: { words: '', recorded: [] },
+          },
           label: 'Server', writable: true, football: 'held-pin',
         };
       }
