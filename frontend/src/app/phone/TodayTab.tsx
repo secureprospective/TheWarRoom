@@ -45,7 +45,20 @@ export function tomorrowMorning(now: number): string {
   return at.toISOString();
 }
 
-export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, now, onBriefReady, onNow }: {
+/** Tab bar marks Today can fill from its own reads, for the league the bar is showing. */
+export type TodayBadges = { team: number; moves: number; league: number; live: boolean };
+
+/** badgesFor counts open jobs per tab for one league, as the mock's bar does. */
+export function badgesFor(jobs: { item: NeedsYouItem; lane: TodayLane }[], league: string | undefined,
+  playing: boolean): TodayBadges {
+  const mine = jobs.filter(job => job.lane !== 'NOT AVAILABLE' && job.item.leagueId === league);
+  const count = (kinds: NeedsYouItem['kind'][]) => mine.filter(job => kinds.includes(job.item.kind)).length;
+  return { team: count(['lineup']), moves: count(['trade', 'auction']), league: count(['commissioner']),
+    live: playing };
+}
+
+export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, now, onBriefReady, onNow,
+  current, onBadges }: {
   leagues: LeagueChoice[];
   onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void;
   port?: HostedPort;
@@ -54,6 +67,9 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
   onBriefReady?: (leagueId: string, mine: string, brief: HomeBrief) => void;
   /** onNow reports how many open jobs are in the NOW lane, for the Today tab badge. */
   onNow?: (count: number) => void;
+  /** current is the league the tab bar is showing; onBadges reports its Team/Moves/League/Live marks. */
+  current?: string;
+  onBadges?: (badges: TodayBadges) => void;
 }) {
   const appLeagues = useMemo(() => leagues.filter(league => league.app), [leagues]);
   const reader = useMemo<BriefReader>(() => readBrief ?? ((id, mine, hosted, _owner, isCommissioner) =>
@@ -113,12 +129,18 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
   const failed = Object.keys(failures).length > 0 || jobs.length > open;
   const first = appLeagues[0];
   const week = first && briefs[first.id]?.pulse?.week;
-  const playing = appLeagues.filter(league => {
+  const isPlaying = (league: LeagueChoice) => {
     const brief = briefs[league.id];
     const game = brief && league.franchise ? myGame(brief, league.franchise) : undefined;
-    return game && !game.winner
-      && (game.homeProvisional !== undefined || game.awayProvisional !== undefined);
-  }).length;
+    return Boolean(game && !game.winner
+      && (game.homeProvisional !== undefined || game.awayProvisional !== undefined));
+  };
+  const playing = appLeagues.filter(isPlaying).length;
+  const shown = current ?? first?.id;
+  const shownPlaying = playing > 0 && appLeagues.some(league => league.id === shown && isPlaying(league));
+  const marks = loading ? undefined : badgesFor(jobs, shown, shownPlaying);
+  const markKey = marks && JSON.stringify(marks);
+  useEffect(() => { if (marks) onBadges?.(marks); }, [markKey, onBadges]); // eslint-disable-line
   const go = (item: NeedsYouItem) => {
     const league = appLeagues.find(choice => choice.id === item.leagueId);
     const entry = entryFor(item.screen);

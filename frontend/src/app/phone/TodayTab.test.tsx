@@ -7,7 +7,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import { defaultLayout, type Layout } from '../shell/homeLayout';
 import type { HomeBrief } from '../shell/homeReads';
 import type { LeagueChoice } from '../shell/leaguePicker';
-import { TodayTab } from './TodayTab';
+import { badgesFor, TodayTab } from './TodayTab';
 
 const now = Date.parse('2026-11-15T12:00:00Z');
 const league: LeagueChoice = { id: 'league', name: 'Test League', app: true, franchise: 'mine',
@@ -126,6 +126,37 @@ describe('TodayTab', () => {
     expect(sent?.arguments).toMatchObject({ league: 'league', jobId: 'j1' });
     expect(host.querySelector('[aria-label="Needs you"]')!.textContent).not.toContain('Approve trade');
     expect(onNow).toHaveBeenLastCalledWith(0);
+  });
+
+  it('badges: Moves, League and the Live mark come from the shown league\'s own reads', async () => {
+    const onBadges = vi.fn();
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+    const port = layoutPort([], { saved: defaultLayout(), revision: 0 });
+    await act(async () => root!.render(<TodayTab leagues={[league]} onOpen={vi.fn()} port={port}
+      readBrief={async () => loaded()} now={now} current="league" onBadges={onBadges} />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+    expect(onBadges).toHaveBeenLastCalledWith({ team: 0, moves: 1, league: 0, live: true });
+  });
+
+  it('layout: Today keeps the mock\'s single 10 px gutter and its uppercase header lines', async () => {
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync('src/app/phone/TodayTab.css', 'utf8');
+    expect(css).toContain('.phone-app__slot:has(> .today6) { padding: 0; }');
+    expect(css).toMatch(/\.today6__sub \{[^}]*text-transform: uppercase/);
+    expect(css).toMatch(/\.today6__sec span \{[^}]*text-transform: uppercase/);
+    expect(css).toMatch(/\.today6__clock svg \{ width: 15px; height: 15px; \}/);
+  });
+
+  it('badgesFor: counts only open jobs of the shown league, by kind', () => {
+    const job = (leagueId: string, kind: 'trade' | 'commissioner' | 'lineup' | 'unavailable') => ({
+      item: { id: `${leagueId}:${kind}`, leagueId, leagueName: leagueId, kind, words: 'x',
+        screen: { node: 'home' as const } },
+      lane: kind === 'unavailable' ? 'NOT AVAILABLE' as const : 'TODAY' as const });
+    const jobs = [job('a', 'trade'), job('a', 'commissioner'), job('a', 'commissioner'), job('a', 'lineup'),
+      job('a', 'unavailable'), job('b', 'trade')];
+    expect(badgesFor(jobs, 'a', false)).toEqual({ team: 1, moves: 1, league: 2, live: false });
+    expect(badgesFor(jobs, 'c', true)).toEqual({ team: 0, moves: 0, league: 0, live: true });
   });
 
   it('live now: one row per admitted league, each with its own read or failure words', async () => {
