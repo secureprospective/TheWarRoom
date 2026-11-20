@@ -224,6 +224,19 @@ describe('MovesTab', () => {
     expect(sent[0]?.arguments).toMatchObject({ args: { waiver: { franchise: 'mine', claim: 'c1' } } });
     expect(view.textContent).toContain('Pending');
   });
+  it('players: shows when waivers run from the earliest open waiver close', async () => {
+    const timed = loaded();
+    timed.waivers.value!.runAt = '2026-11-19T20:00:00.000Z';
+    const view = await show(async () => timed);
+    expect(view.textContent).toContain('Waivers run');
+    expect(view.textContent).toContain(new Date(timed.waivers.value!.runAt!).toLocaleString('en-US',
+      { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(',', '').toUpperCase());
+  });
+  it('players: no open waiver player means no Waivers run line', async () => {
+    const view = await show(async () => ({ ...loaded(), waivers: { value: { revision: 5, total: 10,
+      source: '', method: '', claims: [] } } }));
+    expect(view.textContent).not.toContain('Waivers run');
+  });
   it('trades: a held trade shows its public hold reason; bench capacity shows open slots', async () => {
     const held = loaded();
     held.openBench = 2;

@@ -114,6 +114,7 @@ export function parseHostedWaivers(v: unknown) {
         player: text(p.player, 'Player'),
         name: text(p.name, 'Name'),
         status: text(p.status, 'Status'),
+        closesAt: p.closesAt == null ? undefined : timestamp(p.closesAt, 'Bid close'),
         words: `${text(p.status, 'Status')} · ${text(p.closes, 'Closes')}`,
       };
     }),

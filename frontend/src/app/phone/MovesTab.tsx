@@ -17,7 +17,7 @@ import { AddSheet, ClaimSheet, PlayerSheet, TradeSheet, type MovesPlayer,
 import { onHostedTopics } from '../data/hostedReads';
 import type { Game } from '../now/liveContract';
 import { useHostedGames } from '../shell/hostedGames';
-import { gameWords } from './teamModel';
+import { dayTime, gameWords } from './teamModel';
 import './MovesTab.css';
 
 type Subscribe = (load: () => void) => () => void;
@@ -34,6 +34,8 @@ export type MovesReading = {
   /** openBench is this seat's open bench slots from native.assets.read, when the read holds it. */
   openBench?: number;
   waivers: Part<{ revision: number; place?: number; total: number; source: string; method: string;
+    /** runAt is the earliest close of an open waiver player: when the waivers run. */
+    runAt?: string;
     claims: { id: string; player: string; name: string; words: string }[] }>;
   trades: Part<{ revision: number; notes: string[]; offers: Offer[] }>;
 };
@@ -72,6 +74,8 @@ export async function readMoves(league: string, mine: string, port: HostedPort):
   ] };
   const r = roster.value;
   const w = waivers.value;
+  const closes = (w?.players ?? []).filter(p => open(p.status) && p.closesAt)
+    .map(p => p.closesAt!).sort((a, b) => Date.parse(a) - Date.parse(b));
   return {
     pool: pool ?? { error: roster.error },
     ...(r?.openBenchSlots?.[mine] !== undefined ? { openBench: r.openBenchSlots[mine] } : {}),
@@ -80,6 +84,7 @@ export async function readMoves(league: string, mine: string, port: HostedPort):
     waivers: w ? { value: { revision: w.revision,
       ...(w.order.includes(mine) ? { place: w.order.indexOf(mine) + 1 } : {}),
       total: w.order.length, source: w.words, method: w.method,
+      ...(closes[0] ? { runAt: closes[0] } : {}),
       claims: w.claims.map(c => ({ ...c, name: names.get(c.player) ?? c.player })) } }
       : { error: waivers.error },
     trades: trades.value ? { value: { revision: trades.value.revision, notes: trades.value.notes,
@@ -177,7 +182,7 @@ function MovesBody({ league, port, read, readContext, subscribe }: { league: Lea
     {segment === 'players' && <Players reading={reading.pool} search={search} setSearch={setSearch}
       position={position} setPosition={setPosition} open={player => setSheet({ kind: 'player', player })}
       move={move} canAdd={Boolean(reading.roster?.writable)} openBench={reading.openBench}
-      games={games} />}
+      games={games} runAt={reading.waivers.value?.runAt} />}
     {segment === 'waivers' && <Waivers reading={reading.waivers} league={league.id} mine={mine} port={port}
       onChanged={() => setRevision(n => n + 1)} />}
     {segment === 'trades' && <Trades reading={reading.trades} league={league.id} mine={mine} port={port}
@@ -197,10 +202,10 @@ function MovesBody({ league, port, read, readContext, subscribe }: { league: Lea
 }
 
 function Players({ reading, search, setSearch, position, setPosition, open, move, canAdd, openBench,
-  games }: {
+  games, runAt }: {
   reading: MovesReading['pool']; search: string; setSearch: (v: string) => void;
   position: string; setPosition: (v: string) => void; open: (p: MovesPlayer) => void;
-  move: (p: MovesPlayer) => void; canAdd: boolean; openBench?: number; games?: Game[] }) {
+  move: (p: MovesPlayer) => void; canAdd: boolean; openBench?: number; games?: Game[]; runAt?: string }) {
   const shown = useMemo(() => (reading.value ?? []).filter(p =>
     (position === 'ALL' || p.position === position)
     && p.name.toLowerCase().includes(search.trim().toLowerCase())), [reading, search, position]);
@@ -211,6 +216,7 @@ function Players({ reading, search, setSearch, position, setPosition, open, move
     <div className="mv4-chips">{POSITIONS.map(p => <HQAct key={p} className={position === p ? 'on' : ''}
       selected={position === p} onAction={() => setPosition(p)}>{p}</HQAct>)}</div>
     {openBench !== undefined && <p className="mv4-note">{benchWords(openBench)}</p>}
+    {runAt && <p className="mv4-note">Waivers run {dayTime(runAt)}</p>}
     {!reading.value.length && <p className="mv4-empty">No free agents in the pool.</p>}
     {reading.value.length > 0 && !shown.length &&
       <p className="mv4-empty">No one matches. Clear the search or pick ALL.</p>}
