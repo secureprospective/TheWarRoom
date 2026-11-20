@@ -178,6 +178,10 @@ func (s State) Directions() map[FranchiseID]string {
 }
 func (s State) Invite(id string) (Invite, bool) { i, ok := s.invites[id]; return i, ok }
 func (s State) Audience(report string) string   { return s.visibility[report] }
+
+// Members lists who holds role r now.
+func (s State) Members(r Role) []Principal { return s.members(r) }
+
 func (s State) members(r Role) []Principal {
 	ps := []Principal{}
 	for p, roles := range s.roles {
