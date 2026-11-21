@@ -18,7 +18,7 @@ import { espnTeam, pairStarters, pulseRows, scoreOf, starterRows, type PulseRow,
 import { readPulseMatchup, type PulseMatchup } from '../shell/pulseReads';
 import { compactLine } from '../shell/statLine';
 import { LiveField, useReducedMotion } from './LiveField';
-import { onFieldFromPossession, useAnimatedValue } from './liveMotion';
+import { useAnimatedValue } from './liveMotion';
 import './LiveTab.css';
 
 type BriefReader = (league: string, mine: string, port: HostedPort) => Promise<HomeBrief>;
@@ -77,8 +77,6 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
   const selected = rows.find(r => r.key === picked) ?? rows.find(r => r.mine) ?? rows[0];
   const sides = useSides(brief, selected, league.id, port, mine);
   const followed = current ? live.view?.followed ?? undefined : undefined;
-  const myRows = starterRows(scoreOf(results, mine), brief?.matchup?.lineups[mine],
-    brief?.matchup?.projections ?? {});
   const toBoxes = (which: 'nfl' | 'lg') => {
     setBox(which);
     boxes.current?.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
@@ -111,18 +109,6 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
           />
         : <p role="status" className="live6__note">{words}</p>
         : <Matchup brief={brief!} mine={mine} reduced={reduced} />}
-      {!words && myRows.length > 0 && <div className="myp live6__myp">
-        {myRows.map(p => <StarterTile key={p.player} starter={p} game={gameOf(p, games)}
-          followed={followed} reduced={reduced}
-          contextKey={`${league.id}:${results?.week ?? ''}:${p.player}`}
-          onSelect={g => {
-            if (g) live.follow(followKey(g));
-            setSheet({ kind: 'player', player: p, name: p.name });
-            field.current?.scrollIntoView?.({
-              behavior: reduced ? 'auto' : 'smooth', block: 'start',
-            });
-          }} />)}
-      </div>}
     </section>
 
     <nav className="strip live6__strip" aria-label="NFL games"><b className="strip-l live6__strip-l">NFL</b>
@@ -266,32 +252,6 @@ function projectedPair(brief: HomeBrief, myId: string, theirId: string): string 
     ? '' : `PROJ ${Math.round(mine)}–${Math.round(theirs)}`;
 }
 
-/** StarterTile renders one fantasy starter in mock v1's two-across badge layout.
- *  The football icon indicates "on field now" approximated from NFL possession only. */
-function StarterTile({ starter, game, followed, reduced, contextKey, onSelect }: {
-  starter: PulseStarterRow; game?: Game; followed?: Game; reduced: boolean; contextKey: string;
-  onSelect: (game?: Game) => void;
-}) {
-  const inFollowed = Boolean(game && game.id === followed?.id);
-  const onFieldNow = onFieldFromPossession(starter, game);
-  const pts = useAnimatedValue(starter.points, contextKey, { reduced, decimals: 1 });
-  return <HQAct className={`live6__pl${inFollowed ? ' on is-on' : ''}`}
-    label={`Watch ${starter.name}'s game`} onAction={() => onSelect(game)}>
-    <i className="pos live6__pos">{starter.slot}</i>
-    <span>{surname(starter.name)}</span>
-    <i className={`onf live6__onf${onFieldNow ? ' is-live' : ''}`}
-      title={onFieldNow ? 'on the field now (from possession)' : undefined}
-      aria-label={onFieldNow ? 'on the field' : undefined}
-      aria-hidden={onFieldNow ? undefined : true}>
-      <svg viewBox="0 0 26 14" aria-hidden="true">
-        <path className="lth" d="M1 7C6 -.5 20 -.5 25 7C20 14.5 6 14.5 1 7Z" />
-        <path className="lc" d="M8 7h10M11 5v4M13 5v4M15 5v4" />
-      </svg>
-    </i>
-    <b key={pts.flashKey} className={pts.changing ? 'chg' : undefined}>{pointsLabel(pts.display)}</b>
-  </HQAct>;
-}
-
 type Sides = { left: PulseStarterRow[]; right: PulseStarterRow[]; leftName: string; rightName: string;
   leftPoints?: number; rightPoints?: number; words: string; error?: string; errorCode?: string };
 
@@ -431,7 +391,5 @@ function gameOf(p: PulseStarterRow | undefined, games: Game[]) {
   const club = espnTeam(p?.team);
   return club ? games.find(g => g.away.abbreviation === club || g.home.abbreviation === club) : undefined;
 }
-/** surname: the mock's starter tiles name a player by surname ("Patrick Mahomes" reads "Mahomes"). */
-export function surname(name: string) { return name.trim().split(/\s+/).slice(1).join(' ') || name; }
 
 export default LiveTab;
