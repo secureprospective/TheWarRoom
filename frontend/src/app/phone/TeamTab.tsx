@@ -10,14 +10,16 @@ import { HQAct } from '../shell/HQAct';
 import { useNativeLineup, NativeLineupReview } from '../shell/hqNativeLineup';
 import { addHQTrade, hqEvents } from '../shell/hqReads';
 import { absent, unavailable } from '../shell/hqModel';
-import { readHostedPlayerNotes, setHostedPlayerNote } from '../shell/playerPersonal';
+import {
+  fixedPoints, PlayerFormBars, PlayerNoteField, PlayerStatusRows,
+} from '../shell/playerCardParts';
 import { canMoveTo, moveStarters, myPicks, teamView, type TeamPick, type TeamRow } from './teamModel';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
 import { ordinal } from '../shell/hqPlayerData';
 import { readPlayerStatus, statusWords, type PlayerStatus } from './playerStatus';
 import './TeamTab.css';
 
-const fixed = (n?: number) => n === undefined ? '–' : n.toFixed(1);
+const fixed = fixedPoints;
 /** placeWords is the mock's "11th of 12"; a division standing or the unavailable words stand in. */
 export const placeWords = (reading: Pick<NativeHQ, 'place' | 'standing'>) =>
   reading.place ? `${ordinal(reading.place.rank)} of ${reading.place.of}` : reading.standing || unavailable;
@@ -212,31 +214,8 @@ function PlayerSheet({ row, reading, league, port, status, canMove, onMove, onTr
 }) {
   const id = row.id!;
   const weeks = reading.playerForm?.[id] ?? [];
-  const max = Math.max(1, ...weeks.map(w => w.points));
-  const injuries = status;
   const rosterStatus = reading.snapshot.rosters.value.flatMap(r => r.players)
     .find(p => p.id === id)?.rosterStatus;
-  const [note, setNote] = useState<{ text: string; at?: string; saved: string }>();
-  const latest = useRef<string>();
-  useEffect(() => {
-    let live = true;
-    readHostedPlayerNotes(league, id, port).then(r => {
-      const last = r.notes.at(-1);
-      if (live) setNote({ text: last?.text ?? '', at: last?.at, saved: '' });
-    }).catch(() => { if (live) setNote({ text: '', saved: 'Notes are unavailable' }); });
-    return () => { live = false; };
-  }, [league, id, port]);
-  const save = async () => {
-    if (!note || note.text === latest.current) return;
-    latest.current = note.text;
-    try {
-      // One note per player: add the new words, then remove the note they replace.
-      if (note.text.trim()) await setHostedPlayerNote(league, id, note.text.trim(), port);
-      if (note.at) await setHostedPlayerNote(league, id, '', port, note.at);
-      const fresh = await readHostedPlayerNotes(league, id, port);
-      setNote({ text: note.text, at: fresh.notes.at(-1)?.at, saved: 'Saved' });
-    } catch { setNote({ ...note, saved: 'Not saved. Try again.' }); }
-  };
   return <div className="team-card">
     <div className="team-card__h"><span className="team-tag">{row.position}</span><b>{row.name}</b>
       <em className={row.state}>{row.words}</em></div>
@@ -247,21 +226,10 @@ function PlayerSheet({ row, reading, league, port, status, canMove, onMove, onTr
         ? row.range.map(x => x.toFixed(0)).join('–') : '–'}</b></div>
     </div>
     <div className="team-lbl">Last five weeks</div>
-    {weeks.length ? <div className="team-card__w">{weeks.map(w => <div key={w.week}>{w.points.toFixed(1)}
-      <i style={{ height: `${Math.max(2, (w.points / max) * 40)}px` }} />WK{w.week}</div>)}</div>
-      : <p className="team-tab__note">{reading.formError || reading.formNote || unavailable}</p>}
-    <div className="team-lbl"><label htmlFor="team-note">My note</label></div>
-    <div className="team-fld"><textarea id="team-note" placeholder="Only you see this."
-      disabled={!note} value={note?.text ?? ''}
-      onChange={e => setNote({ ...(note ?? { saved: '' }), text: e.target.value, saved: '' })}
-      onBlur={() => { void save(); }} />{note?.saved && <small role="status">{note.saved}</small>}</div>
+    <PlayerFormBars weeks={weeks} empty={reading.formError || reading.formNote || unavailable} />
+    <PlayerNoteField league={league} id={id} port={port} />
     <div className="team-lbl">Status</div>
-    <div className="team-card__s"><em>ROSTER</em><p><b>Status</b> {rosterStatus === 'IR' ? 'Injured reserve'
-      : rosterStatus === 'TAXI_SQUAD' ? 'Taxi squad'
-      : rosterStatus === 'ROSTER' ? 'Active roster' : unavailable}</p></div>
-    <div className="team-card__s"><em>NFL</em><p><b>Injury</b> {!injuries ? unavailable
-      : injuries.facts.get(id) ? statusWords(injuries.facts.get(id)!)
-        : injuries.state === 'unavailable' ? unavailable : 'No injury designation'}</p></div>
+    <PlayerStatusRows id={id} rosterStatus={rosterStatus} injuries={status} />
     <div className="team-card__a">
       <HQAct className="team-key" disabled={!canMove} onAction={onMove}>
         {row.locked ? 'Locked' : 'Move'}</HQAct>

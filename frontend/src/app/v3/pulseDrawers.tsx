@@ -15,15 +15,15 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 const St = ({ children }: { children: ReactNode }) =>
   <div className="st"><div className="eng">{children}</div></div>;
 
-export function BDrawer({ title, sub, tabs, close, children, side }: { title: string; sub: string;
-  tabs?: ReactNode; close: () => void; children: ReactNode; side?: ReactNode }) {
+export function BDrawer({ title, sub, tabs, close, children, side, tall }: { title: string; sub: string;
+  tabs?: ReactNode; close: () => void; children: ReactNode; side?: ReactNode; tall?: boolean }) {
   const layer = typeof document === 'undefined' ? null : document.getElementById('layer');
   const body = <div className="bdrawer" role="dialog" aria-label={title}>
     <div className="dh"><h2>{title.toUpperCase()}</h2><span className="sub">{sub}</span>
       {tabs && <div className="fbar" style={{ display: 'flex', border: 0, padding: 0 }}>{tabs}</div>}
       <HQAct className="x" onAction={close}>CLOSE ✕</HQAct></div>
     <div style={{ display: 'grid', gridTemplateColumns: side ? '1.6fr 1fr' : '1fr',
-      gridTemplateRows: 'minmax(0,300px)' }}>
+      gridTemplateRows: tall ? 'minmax(0,420px)' : 'minmax(0,300px)' }}>
       <div style={{ overflow: 'auto', minHeight: 0 }}>{children}</div>
       {side && <div className="db" style={{ borderLeft: '2px solid var(--black)', overflow: 'auto' }}>
         {side}</div>}

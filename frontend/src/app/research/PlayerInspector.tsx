@@ -1,36 +1,95 @@
 import { useEffect, useState } from 'react';
 import { type PlayerReading } from './contract';
 import { Act } from '../commands/Act';
+import type { HostedPort } from '../commissioner/hostedRoom';
+import { hostedPlayerReadingUnavailable } from '../control/nativeApi';
 import { ReportView } from '../reports/ReportView';
+import { parseUsage, type Usage } from '../shell/hqPlayerData';
 import { researchState } from './state';
 import type { Research as ResearchBoard } from './contract';
 import './research.css';
-import { researchAPI, researchAvailable, subscribeResearchPlayer } from './api';
+import { readPlayerUsage, researchAPI, researchAvailable, subscribeResearchPlayer } from './api';
 
-export default function ResearchPlayerInspector({ id, identity = true }: { id: string; identity?: boolean }) {
+export default function ResearchPlayerInspector({
+  id, identity = true, league, port, position, usage: suppliedUsage, usageDone,
+}: {
+  id: string; identity?: boolean; league?: string; port?: HostedPort; position?: string;
+  usage?: Usage; usageDone?: boolean;
+}) {
   const [player, setPlayer] = useState<PlayerReading>();
   const [error, setError] = useState('');
+  const [fetchedUsage, setFetchedUsage] = useState<{ ready: boolean; value?: Usage }>({ ready: false });
+  const hostedOnly = Boolean(league) && !researchAvailable();
   useEffect(() => {
     let disposed = false;
     setPlayer(undefined);
     setError('');
-    if (!researchAvailable()) { setError('Player research requires the desktop app.'); return; }
+    if (!researchAvailable()) {
+      if (!league) setError('Player research requires the desktop app.');
+      return;
+    }
     let revision = 0;
     const read = () => {
       const request = ++revision;
       void researchAPI.player!(id).then(value => {
-      if (!disposed && request === revision) setPlayer(value);
+        if (!disposed && request === revision) setPlayer(value);
       }).catch(cause => { if (!disposed && request === revision) setError(String(cause)); });
     };
     read();
     const stop = subscribeResearchPlayer(read);
     return () => { disposed = true; stop(); };
-  }, [id]);
+  }, [id, league]);
+  useEffect(() => {
+    if (!hostedOnly || usageDone !== undefined) return;
+    let disposed = false;
+    setFetchedUsage({ ready: false });
+    void readPlayerUsage(id, league, port).then(raw => {
+      if (disposed) return;
+      const value = hostedPlayerReadingUnavailable(raw) ? undefined : parseUsage(raw);
+      setFetchedUsage({ ready: true, value });
+    }).catch(() => { if (!disposed) setFetchedUsage({ ready: true }); });
+    return () => { disposed = true; };
+  }, [hostedOnly, id, league, port, usageDone]);
+  if (hostedOnly) {
+    const usage = usageDone !== undefined ? suppliedUsage : fetchedUsage.value;
+    const ready = usageDone ?? fetchedUsage.ready;
+    return <section aria-label="Research player Inspector">
+      <HostedResearchView usage={usage} ready={ready} position={position} />
+    </section>;
+  }
   return <section aria-label="Research player Inspector">
     {error && <p role="alert">{error}</p>}
     {!player && !error && <p role="status">Reading held player reports…</p>}
     {player && <PlayerResearchView player={player} identity={identity} />}
   </section>;
+}
+
+function HostedResearchView({ usage, ready, position }: {
+  usage?: Usage; ready: boolean; position?: string;
+}) {
+  const shareLabel = position === 'RB' ? 'Carry share, last 4'
+    : ['QB', 'DT', 'DE', 'LB', 'CB', 'S'].includes(position ?? '') ? 'Snap share, last 4'
+      : 'Target share, last 4';
+  const share = position === 'RB' ? usage?.carryShare
+    : ['QB', 'DT', 'DE', 'LB', 'CB', 'S'].includes(position ?? '') ? usage?.snapShare
+      : usage?.targetShare;
+  return <div className="draft-reports">
+    <section className="research-facts" aria-label="Player news">
+      <h5>Player news</h5>
+      <p>Not available</p>
+    </section>
+    <section className="research-facts" aria-label="Player research facts">
+      <h5>Research facts</h5>
+      {!ready ? <p role="status">Reading player usage…</p> : !usage ? <p>Not available</p> : <dl>
+        <div><dt>Opponent</dt><dd>{usage.opponent || 'Not available'}</dd></div>
+        <div><dt>Matchup vs {position ?? '—'}</dt><dd>{usage.label && usage.allowedRank !== undefined
+          ? `${usage.label} · #${usage.allowedRank}` : 'Not available'}</dd></div>
+        <div><dt>{shareLabel}</dt><dd>{share !== undefined
+          ? `${(share * 100).toFixed(0)}%` : 'Not available'}
+          <small>{usage.weeksUsed} weeks used · {usage.reason}</small></dd></div>
+      </dl>}
+    </section>
+  </div>;
 }
 export function PlayerResearchView({ player, identity }: { player: PlayerReading; identity: boolean }) {
   return <div className="draft-reports">
