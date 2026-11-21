@@ -2,6 +2,7 @@
 // notices and notes, and inspect the filtered league ledger. Shares all reads and state with
 // HostedControlRoomLeague via useHostedLeague.
 import type { ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { ledgerChips, useHostedLeague }
   from '../commissioner/HostedControlRoomLeague';
@@ -92,7 +93,9 @@ export function CtrlLeagueV3({ c, league, port, badge, people }: ControlBodyProp
           League records changed. Refresh the Control Room before posting.</span></St>}
         <div><HQAct className="btn sm" disabled={disabled} onAction={() => void preview()}>
           Preview {title.toLowerCase()}</HQAct></div>
-        {roomState.error && <St><span role="alert">{roomState.error}</span></St>}
+        {roomState.error && <St><FailureAlert message={roomState.error}
+          code={roomState.errorCode} league={league} screen="Control Room · League"
+          route="control/league" port={port} /></St>}
       </section> : <St><span role="status">
         Publishing the newsletter isn’t available yet.</span></St>}
       {roomState.review && <Review room={c.room} />}
@@ -104,8 +107,10 @@ export function CtrlLeagueV3({ c, league, port, badge, people }: ControlBodyProp
     <Panel title="League notices & notes" badge={badge} style={{ gridRow: '2/3' }}
       tag={notices ? <span className="tag o">{items.length}</span> : null}
       foot="in-app only · never emailed">
-      {!notices && <St><span role={noticesState.error ? 'alert' : 'status'}>
-        {noticesState.error || 'Reading league notices…'}</span></St>}
+      {!notices && (noticesState.error ? <St><FailureAlert message={noticesState.error}
+        code={noticesState.errorCode} league={league} screen="Control Room · League"
+        route="control/league" port={port} /></St>
+        : <St><span role="status">Reading league notices…</span></St>)}
       {notices && items.length === 0 && <St>No league notices or notes have been posted.</St>}
       {items.map(item => <div key={item.id} className="row"
         style={{ ...rowWrap, gridTemplateColumns: 'auto minmax(0,1fr) auto' }}>
@@ -127,8 +132,10 @@ export function CtrlLeagueV3({ c, league, port, badge, people }: ControlBodyProp
           selected={chip === value} disabled={value === null}
           onAction={() => { if (value !== null) setChip(value); }}>{label}</HQAct>)}
       </div>
-      {(ledgerState.error || noticesState.error) &&
-        <St><span role="alert">{ledgerState.error || noticesState.error}</span></St>}
+      {(ledgerState.error || noticesState.error) && <St><FailureAlert
+        message={ledgerState.error || noticesState.error}
+        code={ledgerState.error ? ledgerState.errorCode : noticesState.errorCode}
+        league={league} screen="Control Room · League" route="control/league" port={port} /></St>}
       {!ledger && !ledgerState.error && <St><span role="status">Reading league ledger…</span></St>}
       {ledger && ledger.entries.length === 0 && <St>No ledger entries match this filter.</St>}
       {ledger?.entries.map(entry => <div key={entry.id} className="row"

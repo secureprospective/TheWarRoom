@@ -3,6 +3,7 @@
 // v3 panels and rows. Reads and action state come from useHostedSeason and useHostedControlRoom.
 import { useState, type ReactNode } from 'react';
 import { deadlineLabel } from '../clock/labels';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { hostedCommandAvailable } from '../commands/native';
 import { HostedCommissionerActTray } from '../commissioner/CommissionerActTray';
@@ -98,6 +99,8 @@ export function CtrlSeasonV3({ c, league, port, badge }: ControlBodyProps) {
   const playoffActs = groupSeasonActions(available, 'playoffs');
   const canMoveWindow = hostedCommandAvailable('calendar.window.move');
   const canRollover = hostedCommandAvailable('season.rollover');
+  const seasonError = state.error ? <St><FailureAlert message={state.error} code={state.errorCode}
+    league={league} screen="Control Room · Season" route="control/season" port={port} /></St> : null;
 
   return <div className="wbody scr scr-ctrl"><div className="lay" style={{
     gridTemplateColumns: 'minmax(0,1.25fr) minmax(0,1fr)',
@@ -110,7 +113,7 @@ export function CtrlSeasonV3({ c, league, port, badge }: ControlBodyProps) {
           <HQAct key={value} className="chip" selected={windowFilter === value}
             onAction={() => setWindowFilter(value)}>{label}</HQAct>)}
       </div>
-      {state.error && <St><span role="alert">{state.error}</span></St>}
+      {seasonError}
       {!state.schedule && !state.error &&
         <St><span role="status">Reading season from the league server…</span></St>}
       {state.schedule && <>
@@ -137,7 +140,7 @@ export function CtrlSeasonV3({ c, league, port, badge }: ControlBodyProps) {
     <Panel title="Schedule" badge={badge}
       tag={state.season !== undefined ? <span className="tag o">{state.season}</span> : null}
       foot="from the league server's schedule read">
-      {state.error && <St><span role="alert">{state.error}</span></St>}
+      {seasonError}
       {!state.schedule && !state.error &&
         <St><span role="status">Reading season from the league server…</span></St>}
       {state.schedule && <>
@@ -156,7 +159,7 @@ export function CtrlSeasonV3({ c, league, port, badge }: ControlBodyProps) {
     </Panel>
 
     <Panel title="Playoffs" badge={badge} foot="from the league server's bracket read">
-      {state.error && <St><span role="alert">{state.error}</span></St>}
+      {seasonError}
       {!state.schedule && !state.error &&
         <St><span role="status">Reading season from the league server…</span></St>}
       {state.schedule && <>
@@ -175,7 +178,7 @@ export function CtrlSeasonV3({ c, league, port, badge }: ControlBodyProps) {
 
     <Panel title="Rollover & divisions" badge={badge}
       foot="rollover starts with a fresh verified backup">
-      {state.error && <St><span role="alert">{state.error}</span></St>}
+      {seasonError}
       {!state.schedule && !state.error &&
         <St><span role="status">Reading season from the league server…</span></St>}
       {state.schedule && <>

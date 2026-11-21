@@ -2,6 +2,7 @@
 // commissioner's lanes with kind filter, snooze/wake and open-tool, a season clock and league health.
 // Everything comes from the hosted room's own reads and actions (useHostedControlRoom via `c`).
 import { useState, type ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { HostedCommissionerActTray } from '../commissioner/CommissionerActTray';
 import { firstHostedJobTool } from '../commissioner/hostedControlRoomData';
@@ -57,8 +58,12 @@ export function CtrlJobsV3({ c, league, port, badge }: ControlBodyProps) {
       foot={jobs ? `${jobs.jobs.length} from the league job read` : 'Reading league jobs…'}>
       <div className="fbar">{(['All kinds', ...jobKinds] as const).map(k => <HQAct key={k}
         className="chip" selected={kind === k} onAction={() => setKind(k)}>{k}</HQAct>)}</div>
-      {c.jobsState.error && <St><span role="alert">{c.jobsState.error}</span></St>}
-      {c.snoozeError && <St><span role="alert">{c.snoozeError}</span></St>}
+      {c.jobsState.error && <St><FailureAlert message={c.jobsState.error}
+        code={c.jobsState.errorCode} league={league} screen="Control Room · Jobs"
+        route="control/jobs" port={port} /></St>}
+      {c.snoozeError && <St><FailureAlert message={c.snoozeError}
+        code={c.snoozeErrorCode} league={league} screen="Control Room · Jobs"
+        route="control/jobs" port={port} /></St>}
       {c.routeWords && <St><span role="status">{c.routeWords}</span></St>}
       {!jobs && !c.jobsState.error && <St>The league jobs have not been read yet.</St>}
       <div className="sec" data-lane="snoozed">SNOOZED · {snoozes ? active.length : '—'}</div>

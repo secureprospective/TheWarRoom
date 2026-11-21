@@ -2,6 +2,7 @@
 // seats with search and filter, league health from the seats, and deputies with succession.
 // Reads come from the Control Room shell's shared people query; every action is the old tool form.
 import { useEffect, useState, type ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { hostedCommandAvailable } from '../commands/native';
 import { HostedCommissionerActTray } from '../commissioner/CommissionerActTray';
@@ -90,7 +91,8 @@ function ToolButtons({ commands, onTool }: { commands: string[]; onTool(d: ActDe
 }
 
 export function CtrlPeopleV3({
-  c, league, port, badge, people: sharedPeople, peoplePending = false, peopleError, refreshPeople,
+  c, league, port, badge, people: sharedPeople, peoplePending = false, peopleError, peopleErrorCode,
+  refreshPeople,
 }: ControlBodyProps) {
   const room = c.room;
   const [filter, setFilter] = useState<SeatFilter>('all');
@@ -131,7 +133,8 @@ export function CtrlPeopleV3({
         }}>Refresh people</HQAct>
       </div>
       <p className="m">Quiet / last-seen and staff filters aren’t available yet.</p>
-      {peopleError && <St><span role="alert">{peopleError}</span></St>}
+      {peopleError && <St><FailureAlert message={peopleError} code={peopleErrorCode}
+        league={league} screen="Control Room · People" route="control/people" port={port} /></St>}
       {pending && !peopleError && waiting}
       {people && <>
         {visible.length === 0 && <St>No seats match this search.</St>}

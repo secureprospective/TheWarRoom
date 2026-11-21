@@ -2,6 +2,7 @@
 // the free-agent pool, my bids and the budget with recent winning bids. Reads and every action are the
 // War Room market's own (useWarRoomMarket): bids are reviewed by the server and held to confirm.
 import { useState, type ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { HoldToFire } from '../commissioner/HoldToFire';
 import { previewChange } from '../commissioner/preview';
@@ -70,7 +71,9 @@ export function WarPoolV3({ context, room, needs, select, badge }: { context: Wa
           disabled={pending || addReview.preview.blockers.length > 0}
           onConfirm={() => { void m.confirmRosterAdd(); }} />
         <HQAct className="btn sm" onAction={() => m.setAddReview(undefined)}>Cancel</HQAct></div></div>}
-      {m.error && <St><span role="alert">{m.error}</span></St>}
+      {m.error && <St><FailureAlert message={m.error} code={m.errorCode}
+        league={context.native?.league} screen="War Room · Market" route="war/market"
+        port={context.native?.port} /></St>}
       {m.addNotice && <St><span role="status">{m.addNotice}</span></St>}
       {!value ? <St>{reading.error ?? 'Reading the pool…'}</St>
         : !rows.length ? <St>{value.players === undefined

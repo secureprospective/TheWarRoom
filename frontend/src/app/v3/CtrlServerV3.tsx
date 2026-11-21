@@ -2,6 +2,7 @@
 // the league ledger, commissioner backup via HostedBackupNow, and operator-only notices for restore, feeds
 // and upgrades. Everything comes from the hosted room's own ledger query and backup command.
 import { useEffect, useMemo, type ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HostedBackupNow } from '../commissioner/HostedBackupNow';
 import { createHostedLedgerQuery } from '../commissioner/hostedControlRoomData';
 import { memberDisplayName, type People } from '../commissioner/people';
@@ -39,7 +40,8 @@ export function CtrlServerV3({ league, port = hostedWorkflow, badge, people }: C
     <Panel title="League ledger" badge={badge}
       tag={ledger ? <span className="tag o">{ledger.entries.length}</span> : null}
       foot={ledger ? `${ledger.entries.length} from the league ledger` : 'Reading server ledger…'}>
-      {error && <St><span role="alert">{error}</span></St>}
+      {error && <St><FailureAlert message={error} code={ledgerState.errorCode} league={league}
+        screen="Control Room · Server" route="control/server" port={port} /></St>}
       {!ledger && !error && <St><span role="status">Reading server ledger…</span></St>}
       {ledger && ledger.entries.length === 0 &&
         <St>No changes are visible to you in this league yet.</St>}

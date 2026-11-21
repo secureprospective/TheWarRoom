@@ -4,7 +4,14 @@ import { parseHostedGame, parseHostedGames, type Game } from '../now/liveContrac
 import { useNow } from '../shell/hostedGames';
 import { pickGames } from './pickGames';
 
-export type WallRead = { board?: Game[]; detail: Record<string, Game>; error: string; picked: Game[] };
+export type WallRead = {
+  board?: Game[];
+  detail: Record<string, Game>;
+  error: string;
+  picked: Game[];
+  allGames: Game[];
+};
+
 /** Board re-read cadence when no change topic arrives (LiveTab reloads only on topics; the wall adds a
  *  slow fallback because nobody taps it). */
 export const wallPollMs = 20_000;
@@ -13,7 +20,7 @@ export const wallPollMs = 20_000;
  *  (`nfl.games.read`, then `nfl.game.read` per game), reloading on every change topic and on a timer. */
 export function useWallGames(league: string, port: HostedPort, cap: number,
   onChange: (load: () => void) => () => void, pollMs = wallPollMs): WallRead {
-  const [held, setHeld] = useState<Omit<WallRead, 'picked'>>({ detail: {}, error: '' });
+  const [held, setHeld] = useState<Omit<WallRead, 'picked' | 'allGames'>>({ detail: {}, error: '' });
   const now = useNow(30_000);
   useEffect(() => {
     let live = true;
@@ -41,6 +48,7 @@ export function useWallGames(league: string, port: HostedPort, cap: number,
     const timer = setInterval(() => { void load(); }, pollMs);
     return () => { live = false; off(); clearInterval(timer); };
   }, [league, port, cap, onChange, pollMs]);
+  const allGames = (held.board ?? []).map(g => held.detail[g.id] ?? g);
   const picked = pickGames(held.board ?? [], cap, now).map(g => held.detail[g.id] ?? g);
-  return { ...held, picked };
+  return { ...held, picked, allGames };
 }

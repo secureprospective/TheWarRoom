@@ -2,6 +2,7 @@
 // actions, the exceptions in force and the recent fixes that can be undone. Reads and actions are the old
 // room's own (c.fixState, c.openTool, the commissioner act tray); nothing here is invented.
 import type { ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { hostedCommandAvailable } from '../commands/native';
 import { actTable } from '../commissioner/actTable';
@@ -61,7 +62,7 @@ export function fixActorName(who: string, people?: Pick<People, 'seats'>): strin
 
 export function CtrlFixV3({ c, league, port, badge, people }: ControlBodyProps) {
   const readings = c.fixState.fixes;
-  const { pending, error } = c.fixState;
+  const { pending, error, errorCode } = c.fixState;
   const open = (next: Parameters<typeof c.openTool>[0], initial?: Parameters<typeof c.openTool>[3]) =>
     c.openTool(next, undefined, 'fix', initial);
   const definitions = fixCommands.map(command => actTable.find(row => row.command === command));
@@ -80,7 +81,8 @@ export function CtrlFixV3({ c, league, port, badge, people }: ControlBodyProps) 
     <Panel title="Fix something" badge={badge}
       foot={'Every fix is previewed with its affected league data before review and confirmation. '
         + 'Record the reason with the change; the server applies its safeguard.'}>
-      {error && <St><span role="alert">{error}</span></St>}
+      {error && <St><FailureAlert message={error} code={errorCode} league={league}
+        screen="Control Room · Fix" route="control/fix" port={port} /></St>}
       {definitions.map(act => act && <div key={act.command} className="row" data-fix-command={act.command}
         style={{ gridTemplateColumns: 'minmax(0,1fr) auto' }}>
         <span className="ell"><b>{act.label}</b> <span className="d">

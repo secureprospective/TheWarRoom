@@ -2,6 +2,7 @@
 // year / round / traded filters and a team search, plus the one real pick action (correct an owner).
 // Reads come from the same native.assets.read the old picks body uses; actions are the old act tray.
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { onHostedTopics } from '../data/hostedReads';
 import { createReadQuery } from '../data/query';
@@ -141,7 +142,9 @@ export function CtrlPicksV3({ c, league, port, badge }: ControlBodyProps) {
         <input aria-label="Search picks by team" type="search" placeholder="Find a team" value={team}
           onChange={event => setTeam(event.target.value)} />
       </div>
-      {state.error && <St><span role="alert">Picks unavailable. {state.error}</span></St>}
+      {state.error && <St><FailureAlert message={state.error} prefix="Picks unavailable. "
+        code={state.errorCode} league={league} screen="Control Room · Picks"
+        route="control/picks" port={port} /></St>}
       {!reading && !state.error && <St><span role="status">Reading the league's picks…</span></St>}
       {reading && <>
         <div className="sec">PICKS · {rows.length}</div>
