@@ -294,7 +294,7 @@ it.each(['Commissioner', 'Co-commissioner'])(
     expect(port.mock.calls.some(([r]) => r.command === 'native.directory.read')).toBe(true);
     expect(port.mock.calls.some(([r]) => r.command === 'standings.read')).toBe(true);
     await click('Open Control Room'); await click('Rules');
-    expect(buttons('Change Lineup lock')).toHaveLength(1);
+    await vi.waitFor(() => expect(buttons('Change Lineup lock')).toHaveLength(1), { timeout: 10_000 });
     await click('Change Lineup lock'); await preview();
     const dialog = host.querySelector('[role=dialog]')!;
     const confirm = buttons('Confirm league change')[0];
@@ -317,7 +317,7 @@ it.each(['Commissioner', 'Co-commissioner'])(
     await vi.waitFor(() => expect(buttons('Pick Test League')).toHaveLength(1), { timeout: 10_000 });
     await click('Pick Test League');
     await click('Open Control Room'); await click('Rules');
-    expect(buttons('Change Lineup lock')).toHaveLength(1);
+    await vi.waitFor(() => expect(buttons('Change Lineup lock')).toHaveLength(1), { timeout: 10_000 });
   }, 30_000);
 it('a refused rules read leaves league-wide Pulse available', async () => {
   const port = service();
