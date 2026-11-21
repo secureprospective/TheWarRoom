@@ -218,7 +218,7 @@ describe('PlayerCardDrawer', () => {
     expect(text).toContain('Not available');
     expect(text).not.toContain('Career Stats');
     const photoImg = dialog.querySelector<HTMLImageElement>('.pcd-photo img');
-    expect(photoImg?.src).toContain('4429795.png');
+    expect(photoImg?.getAttribute("src")).toBe("/headshot/16162");
 
     // News tab (default) shows ESPN items (bold headline link in new tab, age, description, source tag)
     expect(text).toContain('Player news');

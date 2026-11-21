@@ -8,9 +8,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
+	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/espnnews"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -71,4 +73,27 @@ func newHostedNewsService(referenceStore *history.Store) *leagueservice.NewsServ
 	return leagueservice.NewNewsService(
 		client, espnnews.DefaultEndpoints(), espnNewsArchive{store: referenceStore}, referenceStore,
 	)
+}
+
+// hostedPhotoTimeout bounds one request to a photo host; a dead host never holds a card.
+const hostedPhotoTimeout = 10 * time.Second
+
+// newHostedPhotos is the desktop photo cache on the server: /headshot/<mfl id> is fetched once
+// from ESPN (Sleeper as fallback) and kept next to the database, so the web app shows photos
+// without loosening its img-src self policy. Photos are personal use only, never in history.db.
+func newHostedPhotos(databasePath string, reference *history.Store) http.Handler {
+	ids := func(ctx context.Context, mflID string) (string, string, error) {
+		espn, err := reference.SourceID(ctx, mflID, "espn")
+		if err != nil {
+			return "", "", fmt.Errorf("server photo ids: %w", err)
+		}
+		sleeper, err := reference.SourceID(ctx, mflID, "sleeper")
+		if err != nil {
+			return "", "", fmt.Errorf("server photo ids: %w", err)
+		}
+		return espn, sleeper, nil
+	}
+	dir := filepath.Join(filepath.Dir(databasePath), "headshots")
+	photos := headshot.New(dir, ids, &http.Client{Timeout: hostedPhotoTimeout})
+	return photos.Handler(func() bool { return true })
 }

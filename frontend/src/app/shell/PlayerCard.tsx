@@ -177,8 +177,8 @@ export function usePlayerCard({
 
   const injuries = fetchStatus ? loadedStatus : suppliedStatus;
   const bio = news.value?.bio;
-  const effectivePhoto = photo?.src ? photo
-    : bio?.headshot ? { src: bio.headshot, alt: model.name } : undefined;
+  // ESPN's own headshot URL is blocked by img-src 'self'; photos come only from /headshot/.
+  const effectivePhoto = photo?.src ? { src: photo.src, alt: `Photo of ${model.name}` } : undefined;
   const annual = reading.contracts?.get(id) ?? [];
   const ends = annual.length ? Math.max(...annual.map(y => y.season))
     : rosterPlayer?.yearsRemaining !== undefined ? season + rosterPlayer.yearsRemaining - 1 : undefined;

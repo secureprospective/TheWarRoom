@@ -102,6 +102,7 @@ func startHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
+	handler.Photos = newHostedPhotos(*config.path, files.leagues.family.Over(files.reference))
 	if err := selectHostedFootball(ctx, &handler, signInStore(files), *config.football); err != nil {
 		return err
 	}

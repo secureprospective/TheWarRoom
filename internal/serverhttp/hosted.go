@@ -49,6 +49,8 @@ type Hosted struct {
 	InjuryFeed leagueservice.NFLInjuryFeedSource
 	// News caches public ESPN league news, player news, and player bios.
 	News *leagueservice.NewsService
+	// Photos serves GET /headshot/<mfl id> from the server photo cache; nil means no photos (404).
+	Photos http.Handler
 	// FootballDigest and Football are the server's pin (-football); Pins, when set, answers each league's
 	// own store and pin, and an unpinned league gets the server's.
 	FootballDigest string
@@ -146,6 +148,10 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, PhotoPathPrefix) {
+		h.photo(w, r)
+		return
+	}
 	switch r.URL.Path {
 	case RecoveryPath:
 		h.recoverAccount(w, r)
@@ -890,4 +896,17 @@ func (h Hosted) leagueHead(ctx context.Context, league string) (int64, error) {
 		return 0, fmt.Errorf("find league store: %w", err)
 	}
 	return store.CommittedHead(ctx, league, commissioner.Stream) //nolint:wrapcheck // the store names its read
+}
+
+// PhotoPathPrefix is the player photo route, shared with the desktop app: /headshot/<mfl id>.
+const PhotoPathPrefix = "/headshot/"
+
+// photo serves a player photo on the app host only. A server without a photo cache answers 404,
+// which the card reads as "show the team instead".
+func (h Hosted) photo(w http.ResponseWriter, r *http.Request) {
+	if h.Photos == nil || !validPublicHost(h.PublicHost) || r.Host != h.PublicHost {
+		http.NotFound(w, r)
+		return
+	}
+	h.Photos.ServeHTTP(w, r)
 }
