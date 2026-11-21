@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"slices"
@@ -360,4 +361,49 @@ func pinRunning(ctx context.Context, socket string, request pinRequest, output i
 		return fmt.Errorf("report pin: %w", err)
 	}
 	return nil
+}
+
+// Results warm-up timing: soon after start, then inside the recorded-starters reuse window (1 h).
+const (
+	resultsWarmFirst = 20 * time.Second
+	resultsWarmEvery = 50 * time.Minute
+	resultsWarmWeeks = 18
+)
+
+// startResultsWarm reads every week's results for each league in the background, one at a time, so
+// finished weeks' starters are already held when a phone opens League (cold: ~4 s a week, 22 s for
+// the tab; warm: ~3 s). It runs before the reuse window ends, so nobody waits on a cold read.
+func startResultsWarm(ctx context.Context, pins *leaguePins) func() {
+	scope, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		delay := resultsWarmFirst
+		for {
+			timer := time.NewTimer(delay)
+			select {
+			case <-scope.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+			}
+			warmResults(scope, pins)
+			delay = resultsWarmEvery
+		}
+	}()
+	return func() { cancel(); <-done }
+}
+
+func warmResults(ctx context.Context, pins *leaguePins) {
+	started := time.Now()
+	for _, league := range pins.files.leagues() {
+		pin := pins.pin(ctx, league)
+		if pin.Err != nil || pin.Store == nil || pin.Football == nil {
+			continue
+		}
+		for week := 1; week <= resultsWarmWeeks && ctx.Err() == nil; week++ {
+			_, _ = pin.Store.NativeResults(ctx, league, pin.Football.Season(), week)
+		}
+	}
+	log.Printf("server results warm-up: %d leagues in %s", len(pins.files.leagues()), time.Since(started).Round(time.Millisecond))
 }

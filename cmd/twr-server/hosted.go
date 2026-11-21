@@ -133,11 +133,12 @@ func startHosted(ctx context.Context, args []string, output io.Writer) error {
 // startHostedScores starts live scores and, when the operator asked for them, official statistics.
 func startHostedScores(ctx context.Context, pins *leaguePins, files stateFiles, config hostedFlags, handler serverhttp.Hosted) func() {
 	stopLive := startHostedLive(ctx, pins, filepath.Dir(*config.path), handler.Publisher, handler.LiveGames)
+	stopWarm := startResultsWarm(ctx, pins)
 	if !*config.official {
-		return stopLive
+		return func() { stopWarm(); stopLive() }
 	}
 	stopOfficial := startOfficialStats(ctx, pins, signInStore(files))
-	return func() { stopOfficial(); stopLive() }
+	return func() { stopOfficial(); stopWarm(); stopLive() }
 }
 
 func checkHostedDatabase(path string, extraArgs int) error {
