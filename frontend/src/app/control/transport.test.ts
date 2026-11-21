@@ -231,3 +231,22 @@ it('captures server X-TWR-Error-Code headers and mints client codes on network f
   }
   expect(codes.errorCodeFor(networkErr)).toMatch(/^TWR-C/);
 });
+
+it('shares identical reads in flight, then reads fresh', async () => {
+  vi.stubGlobal('window', { location: { origin: 'https://league.example' },
+    addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() });
+  vi.resetModules();
+  const body = JSON.stringify({ label: 'L', writable: true, football: 'f', data: { n: 1 } });
+  const reply = () => new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
+  const fetcher = vi.fn(async () => reply());
+  vi.stubGlobal('fetch', fetcher);
+  const api = await import('./nativeApi');
+  const read = { command: 'results.read', mode: 'read',
+    arguments: { league: 'native.test', season: 2026, week: 3 } } as NativeRequest;
+  const [a, b] = await Promise.all([api.hostedWorkflow(read), api.hostedWorkflow(read)]);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(a.data).toEqual({ n: 1 });
+  expect(a).not.toBe(b);
+  await api.hostedWorkflow(read);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+});

@@ -4,12 +4,14 @@
 import { Fragment, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { boardSlots, type HQLineup, type HQSlot } from '../shell/HQBoard';
-import { fitsSlot, placePlayer } from '../shell/hqPlacement';
+import { fitsSlot, placePlayer, quickMove } from '../shell/hqPlacement';
+export { quickMove } from '../shell/hqPlacement';
 import { totalProjection } from '../shell/hqPlayerData';
 import type { HQSettings } from '../shell/hqModel';
 import type { NativeHQ } from '../commissioner/hqReading';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { pointsLabel, type PulseResults } from '../data/nativePulse';
+import { slotRank } from '../shell/pulseModel';
 import { readPulseOdds, readRecentResults, usePulseRead } from '../shell/pulseReads';
 import type { useNativeLineup } from '../shell/hqNativeLineup';
 import type { HQTab } from '../shell/HQShell';
@@ -17,9 +19,7 @@ import { Icon } from './icons';
 import { Seg } from './PulseV3';
 
 type Editor = ReturnType<typeof useNativeLineup>;
-const ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'OL', 'DL', 'DT', 'DE', 'LB', 'DB', 'CB', 'S', 'D·FLX',
-  'K', 'PK'];
-const rank = (code: string) => { const i = ORDER.indexOf(code); return i < 0 ? ORDER.length : i; };
+const rank = slotRank;
 const St = ({ children }: { children: ReactNode }) =>
   <div className="st"><div className="eng">{children}</div></div>;
 const cash = (v?: number | null) => v == null ? '—' : `$${(v / 100_000_000).toFixed(1)}M`;
@@ -120,7 +120,12 @@ export function HQLineupV3({ reading, mine, name, editor, select, badge, league,
         if (editor.canEdit) setPicked(picked === id ? undefined : id); }}>{posOf(id)}</HQAct></span>;
   const nm = (id: string) => <HQAct className="nm" onAction={() => {
     if (picked && picked !== id) { const s = slots.find(x => x.id === id); if (s) move(picked, s);
-      else if (slots.some(x => x.id === picked)) move(picked); setPicked(undefined); } else select(id); }}>
+      else if (slots.some(x => x.id === picked)) move(picked); setPicked(undefined); return; }
+    if (picked === id) { setPicked(undefined); return; }
+    const quick = editor.canEdit && lineup ? quickMove(id, slots, s => canPlace(id, s))
+      : { kind: 'card' } as const;
+    if (quick.kind === 'bench') move(id); else if (quick.kind === 'fill') move(id, quick.slot);
+    else select(id); }}>
     {directory.get(id)?.name ?? id}<small>{directory.get(id)?.team}</small></HQAct>;
   const state = (id: string, reserve?: string) => {
     if (reserve) return <span className="stt d">{reserve}</span>;
@@ -161,7 +166,8 @@ export function HQLineupV3({ reading, mine, name, editor, select, badge, league,
           onAction={() => { void editor.save(); }}>CHECK AND SAVE</HQAct></>
         : <span className="d mono" title={reading.errors.join(' · ')}
           style={{ fontSize: 10, maxWidth: 280, lineHeight: 1.5 }}>{editor.canEdit
-          ? 'Drag a position tag to move a player, or click it and then click the slot. Illegal slots dim.'
+          ? 'Click a name: starters sit, bench players fill an open slot. ' +
+            'Or drag a position tag. Illegal slots dim.'
           : editor.message}</span>}
     </div>
     <div className="hq-board">

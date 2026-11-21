@@ -30,6 +30,7 @@ import { HQLineupV3, HQTabs, TeamPick } from '../v3/HQLineupV3';
 import { HQMovesV3 } from '../v3/HQMovesV3';
 import { OWNER_ONLY_MOVES } from '../commissioner/hqReading';
 import { HQContractsV3 } from '../v3/HQContractsV3';
+import { PlayerCardDrawer } from '../v3/PlayerCardDrawer';
 import { BDrawer } from '../v3/pulseDrawers';
 import { ContractDecisionList } from './HQPanels';
 import type { ReactNode } from 'react';
@@ -46,9 +47,10 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   const [localTab, setLocalTab] = useState<HQTab>('lineup-and-roster');
   const tab = activeTab ?? localTab;
   const setTab = navigate ?? setLocalTab;
-  const [drawer, setDrawer] = useState<'ir' | 'taxi' | 'whatif' | 'decide'>();
+  const [drawer, setDrawer] = useState<'ir' | 'taxi' | 'whatif' | 'decide' | 'player'>();
   const [release, setRelease] = useState<string>();
   const [selected, select] = useState<string>();
+  const openCard = (id: string) => { select(id); setDrawer('player'); };
   const [revision, refresh] = useState(0);
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), [port]);
   const { reading, error, errorCode, pending } = useContractRead<NativeHQ>(
@@ -114,7 +116,10 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       sub={`priced by league rules · season ${reading.contractDecisions?.season
         ?? snapshot.league.value.season}`}>
       <ContractDecisionList reading={reading.contractDecisions} canDecide={editor.canEdit}
-        decide={selection => { setDrawer(undefined); reviewDecision(selection); }} /></BDrawer>}</>;
+        decide={selection => { setDrawer(undefined); reviewDecision(selection); }} /></BDrawer>}
+    {v3 && drawer === 'player' && selected && <PlayerCardDrawer id={selected} reading={reading}
+      league={league} mine={mine} port={port} cut={cut?.player === selected ? cut : undefined}
+      close={() => setDrawer(undefined)} />}</>;
   if (v3) return <>
     <HQTabs tab={tab} navigate={setTab} badge={v3.badge} kind={v3.kind} moves={moves.length}
       pick={v3.pickTeam && <TeamPick mine={mine} pick={v3.pickTeam}
@@ -122,9 +127,9 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     {!mine ? <div className="wbody"><div className="st"><div className="eng">Choose a franchise above. As
       commissioner you can open and run any team in this league.</div></div></div>
     : tab === 'lineup-and-roster' ? <HQLineupV3 reading={reading} mine={mine} name={teamName} editor={editor}
-      select={select} badge={v3.badge} league={league} port={port} now={Date.now()} openGame={openGame} />
+      select={openCard} badge={v3.badge} league={league} port={port} now={Date.now()} openGame={openGame} />
       : tab === 'contracts-and-cap' ? <HQContractsV3 reading={reading} mine={mine} badge={v3.badge}
-        select={select} chosen={selected} whatIf={() => setDrawer('whatif')}
+        select={openCard} chosen={selected} whatIf={() => setDrawer('whatif')}
         release={canManage ? () => { if (selected) setRelease(selected); } : undefined}
         decide={canManage && reading.contractDecisions ? () => setDrawer('decide') : undefined} />
       : <HQMovesV3 snapshot={snapshot} moves={moves}

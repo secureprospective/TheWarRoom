@@ -166,7 +166,11 @@ export async function readRecentResults(league: string, season: number, weeks: r
   through: number, port: HostedPort = hostedWorkflow): Promise<PulseResults[]> {
   const recent = [...new Set(weeks.filter(week => Number.isInteger(week) && week > 0 && week <= through))]
     .sort((a, b) => a - b).slice(-5);
-  return Promise.all(recent.map(week => readPulseWeekResults(league, season, week, port)));
+  // One week at a time: the server scores results reads in parallel badly (one is ~0.3 s, five at
+  // once took ~5 s each) and the pile-up held the lineup editor locked.
+  const out: PulseResults[] = [];
+  for (const week of recent) out.push(await readPulseWeekResults(league, season, week, port));
+  return out;
 }
 
 /** PulseSeason is the published schedule and the result of every week played so far. */
@@ -175,8 +179,12 @@ export async function readPulseSeason(league: string, season: number, through: n
   port: HostedPort = hostedWorkflow): Promise<PulseSeason> {
   const r = await port({ command: 'schedule.read', mode: 'read', arguments: { league } });
   const schedule = parsePulseSchedule(r.data, league);
-  const played = await Promise.all(schedule.weeks.filter(w => w.week <= through)
-    .map(w => readPulseWeekResults(league, season, w.week, port)));
+  // Two weeks at a time: eleven parallel results reads overloaded the server and it refused some.
+  const weeks = schedule.weeks.filter(w => w.week <= through).map(w => w.week);
+  const played: PulseResults[] = [];
+  for (let i = 0; i < weeks.length; i += 2)
+    played.push(...await Promise.all(weeks.slice(i, i + 2)
+      .map(week => readPulseWeekResults(league, season, week, port))));
   return { schedule, played: Object.fromEntries(played.map(week => [week.week, week])) };
 }
 

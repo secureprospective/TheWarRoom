@@ -26,8 +26,11 @@ import (
 )
 
 const (
-	// espnURL asks ESPN's resizer for a 96×70 crop (about 7 KB) instead of the 230 KB original.
-	espnURL    = "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/%s.png&w=96&h=70&scale=crop"
+	// espnURL asks ESPN's resizer for a 350×254 crop (about 110 KB, half the original): sharp on a
+	// phone player card at 3× density. The 96×70 thumbnail it replaced blurred the face.
+	espnURL = "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/%s.png&w=350&h=254&scale=crop"
+	// sizeDir is the cache subfolder for this photo size; a new size gets a new folder.
+	sizeDir    = "350"
 	sleeperURL = "https://sleepercdn.com/content/nfl/players/%s.jpg"
 
 	minBytes = 200     // smaller is no photo
@@ -75,7 +78,7 @@ type Stats struct {
 
 // New builds the cache in dir with the given id lookup and HTTP client.
 func New(dir string, ids IDs, client *http.Client) *Service {
-	return &Service{dir: dir, ids: ids, client: client, now: time.Now, cap: DefaultCap, silhouettes: map[string]bool{}}
+	return &Service{dir: filepath.Join(dir, sizeDir), ids: ids, client: client, now: time.Now, cap: DefaultCap, silhouettes: map[string]bool{}}
 }
 
 // Photo returns the player's photo bytes and content type, from the cache or fetched on first

@@ -5,9 +5,11 @@ import { afterEach, expect, it, vi } from 'vitest';
 import type { NativeHQ } from '../commissioner/hqReading';
 import type { Draft } from '../draftroom/draft';
 import type { Game } from '../now/liveContract';
-import { canMoveTo, gameWords, moveStarters, myPicks, teamView } from './teamModel';
+import { benchStarter, canMoveTo, gameWords, moveStarters, myPicks, teamView } from './teamModel';
+import { HOLD_MS } from './rowDrag';
 
 const read = vi.hoisted(() => ({ value: undefined as unknown, fail: false }));
+const lineupMock = vi.hoisted(() => ({ canEdit: true, assign: vi.fn() }));
 vi.mock('../commissioner/hqReading', () => ({
   readNativeHQ: async (_l: string, _m: string, _p: unknown, publish?: (r: unknown) => void) => {
     if (read.fail) throw new Error('lineup.read: server unavailable');
@@ -16,8 +18,8 @@ vi.mock('../commissioner/hqReading', () => ({
 }));
 vi.mock('../shell/hqNativeLineup', () => ({
   useNativeLineup: (_l: string, _m: string, lineup: unknown) => ({
-    edited: lineup, canEdit: true, dirty: false,
-    changed: [], message: '', assign: vi.fn(), discard: vi.fn(), save: vi.fn(), state: {} }),
+    edited: lineup, canEdit: lineupMock.canEdit, dirty: false,
+    changed: [], message: '', assign: lineupMock.assign, discard: vi.fn(), save: vi.fn(), state: {} }),
   NativeLineupReview: () => null,
 }));
 vi.mock('../commissioner/hostedReadings', async original => ({
@@ -103,6 +105,7 @@ it('lists unused owned picks with their original owner', () => {
 let root: Root | undefined; let host: HTMLDivElement | undefined;
 afterEach(async () => {
   if (root) await act(async () => root!.unmount()); host?.remove(); read.fail = false;
+  lineupMock.canEdit = true; lineupMock.assign.mockReset(); vi.useRealTimers(); vi.restoreAllMocks();
 });
 async function render(port = vi.fn(async () => { throw new Error('offline'); })) {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -196,4 +199,178 @@ it('open bench spots draw as one counted row that are not swap targets', async (
   expect(page.querySelector('[data-row="bench-0"] .team-row__pt')?.getAttribute('style')).toBeNull();
   expect(page.querySelector('[data-row="starters-0"] .team-row__pt')?.getAttribute('style'))
     .toContain('--lo: 0.333');
+});
+
+function pointerEvent(type: string, init: { pointerId?: number; clientX?: number; clientY?: number } = {}) {
+  const e = new MouseEvent(type, {
+    bubbles: true, cancelable: true, button: 0,
+    clientX: init.clientX ?? 0, clientY: init.clientY ?? 0,
+  });
+  Object.defineProperty(e, 'pointerId', { value: init.pointerId ?? 1 });
+  return e;
+}
+
+it('MOVE on a starter benches him straight away', async () => {
+  const reading = hq();
+  expect(benchStarter(reading.lineup!, '0102')).toEqual(['0101']);
+  read.value = reading;
+  const page = await render();
+  const btn = page.querySelector<HTMLButtonElement>('[data-row="starters-1"] .team-row__mv')!;
+  await act(async () => btn.click());
+  expect(lineupMock.assign).toHaveBeenCalledWith(['0101']);
+  expect(page.querySelector('.team-movebar')).toBeNull();
+});
+
+it('MOVE on a bench player fills a fitting open starting slot', async () => {
+  const base = hq();
+  read.value = hq({
+    lineup: {
+      ...base.lineup!,
+      starters: [{ id: '0101', position: 'QB' }],
+      bench: [{ id: '0103', position: 'RB' }],
+    },
+  });
+  const page = await render();
+  const btn = page.querySelector<HTMLButtonElement>('[data-row="bench-0"] .team-row__mv')!;
+  await act(async () => btn.click());
+  expect(lineupMock.assign).toHaveBeenCalledWith(['0101', '0103']);
+  expect(page.querySelector('.team-movebar')).toBeNull();
+});
+
+it('MOVE with no fitting open slot enters lit-row mode and swaps on tap', async () => {
+  read.value = hq();
+  const page = await render();
+  const btn = page.querySelector<HTMLButtonElement>('[data-row="bench-0"] .team-row__mv')!;
+  await act(async () => btn.click());
+  expect(lineupMock.assign).not.toHaveBeenCalled();
+  expect(page.querySelector('.team-movebar')?.textContent).toContain('Moving Rb Bench. Tap a lit row.');
+  expect(page.querySelector('[data-row="starters-1"]')?.classList.contains('can')).toBe(true);
+  expect(page.querySelector('[data-row="starters-0"]')?.classList.contains('can')).toBe(false);
+  const target = page.querySelector<HTMLButtonElement>('[data-row="starters-1"] .team-row__mv')!;
+  await act(async () => target.click());
+  expect(lineupMock.assign).toHaveBeenCalledWith(['0101', '0103']);
+});
+
+it('the card sheet shows the shared full card with news, stats, contract, status, note and actions',
+  async () => {
+    const base = hq();
+    read.value = hq({
+      contracts: new Map([['0103', [{ season: 2026, cents: 400_000_000 }]]]),
+      snapshot: {
+        ...base.snapshot,
+        rosters: {
+          value: [{
+            franchiseId: 'mine',
+            players: [
+              { id: '0101', rosterStatus: 'ROSTER' }, { id: '0102', rosterStatus: 'ROSTER' },
+              { id: '0103', rosterStatus: 'ROSTER', salary: 400_000_000, contractStatus: 'RFA' },
+              { id: '0104', rosterStatus: 'IR' },
+            ],
+          }],
+        },
+      } as never,
+    });
+    const port = vi.fn(async (request: { command: string }) => {
+      if (request.command === 'player.usage.read') {
+        return {
+          label: 'L', writable: false, football: '',
+          data: {
+            snapShare: 0.65, targetShare: 0.14, carryShare: 0.58, weeksUsed: 4,
+            opponent: 'MIA', allowedPoints: 17.2, allowedRank: 20, teams: 32,
+            label: 'Neutral', reason: 'Last 4 weeks',
+          },
+        };
+      }
+      if (request.command === 'player.note.read') {
+        return {
+          label: 'L', writable: true, football: '',
+          data: { league: 'L', player: '0103', count: 1, watched: false,
+            notes: [{ kind: 'note', entity: 'player', id: '0103', text: 'Watch snaps',
+              at: '2026-11-19T10:00:00Z', order: 1 }] },
+        };
+      }
+      throw new Error('offline');
+    });
+    const page = await render(port as never);
+    await act(async () => (page.querySelector('[aria-label="Rb Bench player card"]') as HTMLElement).click());
+    await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+    const dialog = document.querySelector('dialog')!;
+    expect(dialog.querySelector('[aria-label="Player news"]')).toBeTruthy();
+    expect(dialog.textContent).toContain('Player news');
+    expect(dialog.textContent).toContain('MIA');
+    expect(dialog.textContent).toContain('58%');
+    expect(dialog.textContent).toContain('Contract years');
+    expect(dialog.textContent).toContain('$4.0M');
+    expect(dialog.textContent).toContain('Status Active roster');
+    expect(dialog.querySelector<HTMLTextAreaElement>('#team-note')?.value).toBe('Watch snaps');
+    const buttons = [...dialog.querySelectorAll('.team-card__a button')].map(b => b.textContent);
+    expect(buttons).toEqual(['Move', 'Trade', 'Drop']);
+    const statsBtn = [...dialog.querySelectorAll('button')].find(b => b.textContent === '2026 Stats')!;
+    await act(async () => statsBtn.click());
+    expect(dialog.textContent).toContain('Last five weeks');
+  });
+
+it('press-and-hold drag moves onto a lit row, cancels elsewhere, and cancels on early scroll', async () => {
+  read.value = hq();
+  const page = await render();
+  vi.useFakeTimers();
+  const tab = page.querySelector<HTMLElement>('.team-tab')!;
+  const benchRow = page.querySelector<HTMLElement>('[data-row="bench-0"]')!;
+  const targetRow = page.querySelector<HTMLElement>('[data-row="starters-1"]')!;
+
+  // Moving beyond threshold before HOLD_MS cancels so scrolling is never blocked.
+  await act(async () => {
+    benchRow.dispatchEvent(pointerEvent('pointerdown', { pointerId: 1, clientX: 50, clientY: 200 }));
+    tab.dispatchEvent(pointerEvent('pointermove', { pointerId: 1, clientX: 50, clientY: 220 }));
+    vi.advanceTimersByTime(HOLD_MS + 20);
+  });
+  expect(tab.classList.contains('dragging')).toBe(false);
+
+  // Hold past HOLD_MS lights legal rows; drop on a lit row assigns the move.
+  const origFromPoint = document.elementFromPoint;
+  document.elementFromPoint = vi.fn(() => targetRow);
+  try {
+    await act(async () => {
+      benchRow.dispatchEvent(pointerEvent('pointerdown', { pointerId: 2, clientX: 50, clientY: 200 }));
+      vi.advanceTimersByTime(HOLD_MS);
+    });
+    expect(tab.classList.contains('dragging')).toBe(true);
+    expect(tab.classList.contains('moving')).toBe(true);
+    expect(targetRow.classList.contains('can')).toBe(true);
+    await act(async () => {
+      tab.dispatchEvent(pointerEvent('pointermove', { pointerId: 2, clientX: 50, clientY: 120 }));
+      tab.dispatchEvent(pointerEvent('pointerup', { pointerId: 2, clientX: 50, clientY: 120 }));
+    });
+    expect(lineupMock.assign).toHaveBeenCalledWith(['0101', '0103']);
+    expect(tab.classList.contains('dragging')).toBe(false);
+
+    // Releasing off a lit row cancels without assigning.
+    lineupMock.assign.mockReset();
+    document.elementFromPoint = vi.fn(() => null);
+    await act(async () => {
+      benchRow.dispatchEvent(pointerEvent('pointerdown', { pointerId: 3, clientX: 50, clientY: 200 }));
+      vi.advanceTimersByTime(HOLD_MS);
+      tab.dispatchEvent(pointerEvent('pointerup', { pointerId: 3, clientX: 50, clientY: 10 }));
+    });
+    expect(lineupMock.assign).not.toHaveBeenCalled();
+    expect(tab.classList.contains('dragging')).toBe(false);
+  } finally {
+    document.elementFromPoint = origFromPoint;
+  }
+});
+
+it('keeps rows read-only when editor.canEdit is false', async () => {
+  lineupMock.canEdit = false;
+  read.value = hq();
+  const page = await render();
+  vi.useFakeTimers();
+  const tab = page.querySelector<HTMLElement>('.team-tab')!;
+  const benchRow = page.querySelector<HTMLElement>('[data-row="bench-0"]')!;
+  expect(benchRow.querySelector<HTMLButtonElement>('.team-row__mv')?.disabled).toBe(true);
+  await act(async () => {
+    benchRow.dispatchEvent(pointerEvent('pointerdown', { pointerId: 4, clientX: 50, clientY: 200 }));
+    vi.advanceTimersByTime(HOLD_MS + 20);
+  });
+  expect(tab.classList.contains('dragging')).toBe(false);
+  expect(lineupMock.assign).not.toHaveBeenCalled();
 });

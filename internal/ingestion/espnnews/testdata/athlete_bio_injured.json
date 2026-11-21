@@ -1,0 +1,596 @@
+{
+  "athlete": {
+    "id": "4432665",
+    "fullName": "Brock Bowers",
+    "displayName": "Brock Bowers",
+    "displayHeight": "6' 4\"",
+    "displayWeight": "235 lbs",
+    "displayDOB": "13/12/2002",
+    "age": 23,
+    "college": {
+      "id": "61",
+      "mascot": "Bulldogs",
+      "name": "Georgia",
+      "shortName": "Georgia",
+      "abbrev": "UGA"
+    },
+    "displayDraft": "2024: Rd 1, Pk 13 (LV)",
+    "headshot": {
+      "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4432665.png",
+      "alt": "Brock Bowers"
+    },
+    "team": {
+      "id": "13",
+      "uid": "s:20~l:28~t:13",
+      "guid": "b18540eb-6f2b-534c-e7f9-9bd930518da9",
+      "slug": "las-vegas-raiders",
+      "location": "Las Vegas",
+      "name": "Raiders",
+      "nickname": "Raiders",
+      "abbreviation": "LV",
+      "displayName": "Las Vegas Raiders",
+      "shortDisplayName": "Raiders",
+      "color": "000000",
+      "alternateColor": "a5acaf",
+      "isActive": true,
+      "isAllStar": false,
+      "logos": [
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/nfl/500/lv.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "default"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/lv.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "dark"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/lv.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "scoreboard"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/lv.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "scoreboard",
+            "dark"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/grayscale.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "grayscale"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/primary_logo_on_white_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_on_white_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/primary_logo_on_black_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_on_black_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/primary_logo_on_primary_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_on_primary_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/primary_logo_on_secondary_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_on_secondary_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/primary_logo_black.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_black"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/primary_logo_white.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_white"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/secondary_logo_on_white_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_on_white_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/secondary_logo_on_black_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_on_black_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/secondary_logo_on_primary_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_on_primary_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/secondary_logo_on_secondary_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_on_secondary_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/secondary_logo_black.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_black"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/b18540eb-6f2b-534c-e7f9-9bd930518da9/logos/secondary_logo_white.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_white"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "language": "en",
+          "rel": [
+            "clubhouse",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/_/name/lv/las-vegas-raiders",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "roster",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/roster/_/name/lv/las-vegas-raiders",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "roster",
+            "sportscenter",
+            "app",
+            "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:20~l:28~t:13&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "stats",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/stats/_/name/lv/las-vegas-raiders",
+          "text": "Statistics",
+          "shortText": "Statistics",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "stats",
+            "sportscenter",
+            "app",
+            "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:20~l:28~t:13&section=stats",
+          "text": "Statistics",
+          "shortText": "Statistics",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "schedule",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/schedule/_/name/lv",
+          "text": "Schedule",
+          "shortText": "Schedule",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "schedule",
+            "sportscenter",
+            "app",
+            "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:20~l:28~t:13&section=scores",
+          "text": "Schedule",
+          "shortText": "Schedule",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "photos",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/photos/_/name/lv",
+          "text": "photos",
+          "shortText": "photos",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "tickets",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.vividseats.com/las-vegas-raiders-tickets--sports-nfl-football/performer/626?wsUser=717",
+          "text": "Tickets",
+          "shortText": "Tickets",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "draftpicks",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/draft/teams/_/name/lv/las-vegas-raiders",
+          "text": "Draft Picks",
+          "shortText": "Draft Picks",
+          "isExternal": false,
+          "isPremium": true
+        },
+        {
+          "language": "en",
+          "rel": [
+            "transactions",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/transactions/_/name/lv",
+          "text": "Transactions",
+          "shortText": "Transactions",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "injuries",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/injuries/_/name/lv",
+          "text": "Injuries",
+          "shortText": "Injuries",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "depthchart",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/depth/_/name/lv",
+          "text": "Depth Chart",
+          "shortText": "Depth Chart",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "depthchart",
+            "sportscenter",
+            "app",
+            "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:20~l:28~t:13&section=depthchart",
+          "text": "Depth Chart",
+          "shortText": "Depth Chart",
+          "isExternal": false,
+          "isPremium": false
+        }
+      ],
+      "groups": {
+        "uid": "s:20~l:28~g:6",
+        "id": "6",
+        "name": "AFC West",
+        "abbreviation": "WEST",
+        "slug": "afc-west",
+        "season": {
+          "year": 2026,
+          "startDate": "2026-08-06T07:00:00.000+00:00",
+          "endDate": "2027-02-16T07:59:00.000+00:00",
+          "type": {
+            "id": "2",
+            "type": 2,
+            "name": "Regular Season",
+            "abbreviation": "reg",
+            "slug": "regular-season",
+            "startDate": "2026-09-06T07:00:00.000+00:00",
+            "endDate": "2027-01-13T07:59:00.000+00:00",
+            "hasGroups": false,
+            "hasStandings": true,
+            "hasLegs": false,
+            "week": {
+              "number": 11,
+              "startDate": "2026-11-18T08:00:00.000+00:00",
+              "endDate": "2026-11-25T07:59:00.000+00:00",
+              "text": "Week 11",
+              "qbr": {},
+              "talentpicks": {}
+            },
+            "weeks": {},
+            "year": 2026
+          },
+          "types": {
+            "count": 4,
+            "pageIndex": 1,
+            "pageSize": 4,
+            "pageCount": 1,
+            "items": [
+              {
+                "id": "1",
+                "type": 1,
+                "name": "Preseason",
+                "abbreviation": "pre",
+                "slug": "preseason",
+                "startDate": "2026-08-06T07:00:00.000+00:00",
+                "endDate": "2026-09-06T06:59:00.000+00:00",
+                "hasGroups": false,
+                "hasStandings": true,
+                "hasLegs": false,
+                "weeks": {},
+                "year": 2026
+              },
+              {
+                "id": "2",
+                "type": 2,
+                "name": "Regular Season",
+                "abbreviation": "reg",
+                "slug": "regular-season",
+                "startDate": "2026-09-06T07:00:00.000+00:00",
+                "endDate": "2027-01-13T07:59:00.000+00:00",
+                "hasGroups": false,
+                "hasStandings": true,
+                "hasLegs": false,
+                "week": {
+                  "number": 11,
+                  "startDate": "2026-11-18T08:00:00.000+00:00",
+                  "endDate": "2026-11-25T07:59:00.000+00:00",
+                  "text": "Week 11",
+                  "qbr": {},
+                  "talentpicks": {}
+                },
+                "weeks": {},
+                "year": 2026
+              },
+              {
+                "id": "3",
+                "type": 3,
+                "name": "Postseason",
+                "abbreviation": "post",
+                "slug": "post-season",
+                "startDate": "2027-01-13T08:00:00.000+00:00",
+                "endDate": "2027-02-16T07:59:00.000+00:00",
+                "hasGroups": false,
+                "hasStandings": false,
+                "hasLegs": false,
+                "weeks": {},
+                "year": 2026
+              },
+              {
+                "id": "4",
+                "type": 4,
+                "name": "Off Season",
+                "abbreviation": "off",
+                "slug": "off-season",
+                "startDate": "2027-02-16T08:00:00.000+00:00",
+                "endDate": "2027-08-01T06:59:00.000+00:00",
+                "hasGroups": false,
+                "hasStandings": false,
+                "hasLegs": false,
+                "weeks": {},
+                "year": 2026
+              }
+            ]
+          },
+          "displayName": "2026"
+        },
+        "parent": {
+          "uid": "s:20~l:28~g:8",
+          "id": "8",
+          "name": "American Football Conference",
+          "abbreviation": "AFC",
+          "slug": "american-football-conference",
+          "season": {},
+          "parent": {},
+          "standings": {},
+          "isConference": true,
+          "teams": {}
+        },
+        "standings": {},
+        "isConference": false,
+        "teams": {}
+      },
+      "coaches": {},
+      "venue": {
+        "id": "6501",
+        "fullName": "Allegiant Stadium",
+        "address": {
+          "city": "Las Vegas",
+          "state": "NV",
+          "zipCode": "89118",
+          "country": "USA"
+        },
+        "grass": true,
+        "indoor": true,
+        "images": [
+          {
+            "href": "https://a.espncdn.com/i/venues/nfl/day/6501.jpg",
+            "width": 2000,
+            "height": 1125,
+            "rel": [
+              "full",
+              "day"
+            ]
+          },
+          {
+            "href": "https://a.espncdn.com/i/venues/nfl/day/interior/6501.jpg",
+            "width": 2000,
+            "height": 1125,
+            "rel": [
+              "full",
+              "day",
+              "interior"
+            ]
+          }
+        ]
+      },
+      "record": {},
+      "athletes": {},
+      "againstTheSpreadRecords": {},
+      "ranks": {},
+      "franchise": {
+        "id": "13",
+        "uid": "s:20~l:28~f:13",
+        "slug": "las-vegas-raiders",
+        "abbreviation": "LV",
+        "displayName": "Las Vegas Raiders",
+        "location": "Las Vegas",
+        "name": "Raiders",
+        "nickname": "Raiders",
+        "shortDisplayName": "Raiders"
+      }
+    },
+    "position": {
+      "id": "7",
+      "name": "Tight End",
+      "displayName": "Tight End",
+      "abbreviation": "TE",
+      "leaf": true,
+      "parent": {
+        "leaf": false
+      },
+      "slug": "tight-end"
+    },
+    "status": {
+      "id": "1",
+      "name": "Active",
+      "type": "active",
+      "abbreviation": "Active"
+    },
+    "injuries": [
+      {
+        "longComment": "Bowers, who was limited at Thursday's practice, was back on the field Friday, but the tight end nonetheless will head into the weekend with a questionable designation. Look for added intel regarding his Week 11 status to arrive late Saturday or early Sunday via the usual assortment of NFL insiders, but if Bowers is limited or ends up out for his team's 4:25 p.m. ET kickoff, fellow TE Michael Mayer will merit fantasy lineup consideration while facing 7-2 Denver.",
+        "shortComment": "Coach Klint Kubiak said Friday that Bowers (ankle) is slated to be listed as questionable for Sunday's game against the Broncos, Sam Warren of The Athletic reports.",
+        "status": "Questionable",
+        "date": "2026-11-20T20:22:00.000+00:00",
+        "type": {
+          "id": "2",
+          "name": "INJURY_STATUS_QUESTIONABLE",
+          "description": "questionable",
+          "abbreviation": "Q"
+        },
+        "details": {
+          "fantasyStatus": {
+            "description": "QUESTIONABLE",
+            "abbreviation": "QUESTIONABLE"
+          },
+          "type": "Ankle",
+          "location": "Leg",
+          "detail": "Not Specified",
+          "side": "Not Specified",
+          "returnDate": "2026-11-22T00:00:00.000+00:00"
+        }
+      }
+    ]
+  }
+}

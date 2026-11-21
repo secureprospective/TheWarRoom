@@ -134,6 +134,15 @@ func nativeServerReads() []Command {
 			Gravity: "G0", Availability: "server", Arguments: NativeReadShape("TargetNFLPlayerStatus", "league:string"),
 			Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "public-nfl-status",
 			Safeguards: "public NFL injury designation, body part and expected return week only"},
+		{ID: leagueservice.PlayerNewsRead, Method: "TargetPlayerNews", Version: "1", Role: "domain",
+			Gravity: "G0", Availability: "server",
+			Arguments:  NativeReadShape("TargetPlayerNews", "league:string player:string"),
+			Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "public-nfl-news",
+			Safeguards: "cached public ESPN player news and bio only"},
+		{ID: leagueservice.NewsFeedRead, Method: "TargetNewsFeed", Version: "1", Role: "domain",
+			Gravity: "G0", Availability: "server", Arguments: NativeReadShape("TargetNewsFeed", "league:string"),
+			Permission: "league-view", Modes: []Mode{Read}, Undo: "none", Facts: "public-nfl-news",
+			Safeguards: "cached public ESPN league news tagged with league player ids"},
 		{ID: commissioner.ProblemReportsRead, Method: "TargetProblemReports", Version: "1", Role: "domain",
 			Gravity: "G0", Availability: "server",
 			Arguments:  Shape(reflect.TypeFor[commissioner.RawProblemReportsScope](), "RawProblemReportsScope.Validate"),
@@ -215,7 +224,7 @@ func NativeReadShape(method, fields string) Schema {
 		return Shape(reflect.TypeFor[leagueservice.RawTradeLensScope](), "RawTradeLensScope.Validate")
 	case "TargetNativeLineupDelta":
 		return Shape(reflect.TypeFor[leagueservice.RawLineupDeltaScope](), "RawLineupDeltaScope.Validate")
-	case "TargetNativePlayerUsage", "TargetNativePlayerAgeArc":
+	case "TargetNativePlayerUsage", "TargetNativePlayerAgeArc", "TargetPlayerNews":
 		return Shape(reflect.TypeFor[leagueservice.RawPlayerReadScope](), "RawPlayerReadScope.Validate")
 	case "TargetNativeLineupCheck":
 		return Shape(reflect.TypeFor[commissioner.RawNativeLineup](), "RawNativeLineup.Validate")

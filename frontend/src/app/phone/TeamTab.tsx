@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode,
+} from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import { readNativeHQ, type NativeHQ } from '../commissioner/hqReading';
 import type { HostedPort } from '../commissioner/hostedRoom';
@@ -8,16 +10,21 @@ import { parseDraft } from '../draftroom/draft';
 import { parseHostedGames, type Game } from '../now/liveContract';
 import { HQAct } from '../shell/HQAct';
 import { useNativeLineup, NativeLineupReview } from '../shell/hqNativeLineup';
+import { quickMove } from '../shell/hqPlacement';
 import { addHQTrade, hqEvents } from '../shell/hqReads';
 import { absent, unavailable } from '../shell/hqModel';
-import { readHostedPlayerNotes, setHostedPlayerNote } from '../shell/playerPersonal';
-import { canMoveTo, moveStarters, myPicks, teamView, type TeamPick, type TeamRow } from './teamModel';
+import { usePlayerCard } from '../shell/PlayerCard';
+import { fixedPoints } from '../shell/playerCardParts';
+import {
+  benchStarter, canMoveTo, moveStarters, myPicks, teamView, type TeamPick, type TeamRow,
+} from './teamModel';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
 import { ordinal } from '../shell/hqPlayerData';
 import { readPlayerStatus, statusWords, type PlayerStatus } from './playerStatus';
+import { createRowDrag, rowKeyAtPoint, type DragState } from './rowDrag';
 import './TeamTab.css';
 
-const fixed = (n?: number) => n === undefined ? '–' : n.toFixed(1);
+const fixed = fixedPoints;
 /** placeWords is the mock's "11th of 12"; a division standing or the unavailable words stand in. */
 export const placeWords = (reading: Pick<NativeHQ, 'place' | 'standing'>) =>
   reading.place ? `${ordinal(reading.place.rank)} of ${reading.place.of}` : reading.standing || unavailable;
@@ -52,7 +59,14 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
   }, [league, mine, port, revision]);
   const editor = useNativeLineup(league, mine, reading?.lineup, port, true);
   const [moving, setMoving] = useState<string>();
+  const [drag, setDrag] = useState<DragState>();
   const [sheet, setSheet] = useState<{ kind: 'card'; row: TeamRow } | { kind: 'picks' }>();
+  const tabRef = useRef<HTMLDivElement>(null);
+  const dragCtrl = useMemo(() => createRowDrag(), []);
+  useEffect(() => () => dragCtrl.cancel(), [dragCtrl]);
+  useEffect(() => {
+    if (!editor.canEdit) { dragCtrl.cancel(); setDrag(undefined); }
+  }, [editor.canEdit, dragCtrl]);
   const view = reading && teamView(reading, editor.edited, mine, games);
   const byes = view?.starters.filter(r => r.state === 'bye').length ?? 0;
   useEffect(() => { onByes?.(byes); }, [byes, onByes]);
@@ -68,7 +82,7 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
     /> : <p className="team-tab__note" role="status">{absent(pending)}</p>}
   </div>;
   const all = [...view.starters, ...view.bench, ...view.ir];
-  const from = all.find(r => r.key === moving);
+  const from = all.find(r => r.key === (drag?.key ?? moving));
   const team = reading.snapshot.franchises.value.find(f => f.id === mine)?.name ?? unavailable;
   const editable = editor.canEdit;
   const tap = (to: TeamRow) => {
@@ -78,14 +92,42 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
     editor.assign(moveStarters(editor.edited, from, to));
     setMoving(undefined);
   };
+  const quickAct = (r: TeamRow) => {
+    if (!editable || !editor.edited || !r.id || r.section === 'ir' || r.locked) return;
+    const next = quickMove(r.id, view.starters, slot => canMoveTo(r, slot, reading));
+    if (next.kind === 'bench') editor.assign(benchStarter(editor.edited, r.id));
+    else if (next.kind === 'fill') editor.assign(moveStarters(editor.edited, r, next.slot));
+    else setMoving(r.key);
+  };
+  const startDrag = (r: TeamRow, e: PointerEvent) => {
+    if (!editable || from || !r.id || r.section === 'ir' || r.locked) return;
+    if (typeof e.button === 'number' && e.button !== 0) return;
+    dragCtrl.start(r.key, e.pointerId, e.clientX, e.clientY, active => {
+      try { tabRef.current?.setPointerCapture?.(active.pointerId); } catch { /* noop */ }
+      setDrag(active);
+    });
+  };
+  const finishDrag = (e: PointerEvent) => {
+    const result = dragCtrl.finish(e.pointerId, e.clientX, e.clientY, rowKeyAtPoint);
+    if (!result) return;
+    setDrag(undefined);
+    const source = all.find(r => r.key === result.from);
+    const target = result.to ? all.find(r => r.key === result.to) : undefined;
+    if (source && target && editor.edited && canMoveTo(source, target, reading)) {
+      editor.assign(moveStarters(editor.edited, source, target));
+    }
+  };
   const row = (r: TeamRow) => {
     const can = from && canMoveTo(from, r, reading);
-    const cls = ['team-row', r.id ? '' : 'empty', from?.key === r.key ? 'pick' : '', can ? 'can' : '']
-      .filter(Boolean).join(' ');
+    const over = Boolean(drag && can && drag.over === r.key);
+    const cls = [
+      'team-row', r.id ? '' : 'empty', from?.key === r.key ? 'pick' : '',
+      can ? 'can' : '', over ? 'over' : '',
+    ].filter(Boolean).join(' ');
     const control = !r.id ? '—' : r.section === 'ir' ? 'IR' : r.locked ? 'LOCKED' : 'MOVE';
     const fact = !r.id || r.section === 'ir' || r.locked;
     const off = !editable || fact;
-    return <div className={cls} key={r.key} data-row={r.key}>
+    return <div className={cls} key={r.key} data-row={r.key} onPointerDown={e => startDrag(r, e)}>
       <span className="team-row__slot">{r.slot}</span>
       {r.id ? <HQAct className="team-row__who" label={`${r.name} player card`}
         onAction={() => from ? tap(r) : setSheet({ kind: 'card', row: r })}>
@@ -103,10 +145,15 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
         : <HQAct className={`team-row__mv${fact ? ' team-row__mv--fact' : ''}`} disabled={off}
           label={r.locked ? 'Locked, game started'
             : r.section === 'ir' ? 'On injured reserve' : `Move ${r.name}`}
-          onAction={() => setMoving(r.key)}>{control}</HQAct>}
+          onAction={() => quickAct(r)}>{control}</HQAct>}
     </div>;
   };
-  return <div className={`team-tab${from ? ' moving' : ''}`}>
+  return <div ref={tabRef} className={`team-tab${from ? ' moving' : ''}${drag ? ' dragging' : ''}`}
+    onPointerMove={e => dragCtrl.move(e.pointerId, e.clientX, e.clientY, rowKeyAtPoint, setDrag)}
+    onPointerUp={finishDrag}
+    onPointerCancel={() => { dragCtrl.cancel(); setDrag(undefined); }}
+    onClickCapture={e => { if (dragCtrl.consumeClick()) { e.stopPropagation(); e.preventDefault(); } }}
+    onContextMenu={e => { if (drag) e.preventDefault(); }}>
     <div className="team-head">
       <h2>{team} <HQAct className="team-key team-head__picks" onAction={() => setSheet({ kind: 'picks' })}>
         My picks</HQAct></h2>
@@ -117,8 +164,9 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
     </div>
     {reading.weekNote && <p className="team-tab__note" role="status">{reading.weekNote}</p>}
     {from ? <div className="team-movebar" role="status">
-      <span>Moving <b>{from.name}</b>. Tap a lit row.</span>
-      <HQAct className="team-key" onAction={() => setMoving(undefined)}>Cancel</HQAct></div>
+      <span>{drag ? <>Dragging <b>{from.name}</b>. Drop on a lit row.</>
+        : <>Moving <b>{from.name}</b>. Tap a lit row.</>}</span>
+      {!drag && <HQAct className="team-key" onAction={() => setMoving(undefined)}>Cancel</HQAct>}</div>
       : view.bye && <div className="team-warn" role="alert">
         <span><b>STARTER ON BYE</b><br />{view.bye.name} scores 0 this week.</span>
         <HQAct className="team-key" disabled={!editable}
@@ -146,11 +194,13 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
       ? "doesn't count toward the bench" : 'counts toward the roster'}>
       {view.ir.length ? view.ir.map(row)
         : <p className="team-tab__note">No players on injured reserve.</p>}</Group>
+    {drag && from && <span className="team-drag-pill" style={{ left: drag.x + 8, top: drag.y - 18 }}>
+      {from.position} · {from.name}</span>}
     <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
     {sheet?.kind === 'picks' && <TeamSheet title="My draft picks" onClose={() => setSheet(undefined)}>
       <PicksList league={league} mine={mine} port={port} /></TeamSheet>}
     {sheet?.kind === 'card' && <TeamSheet title="Player" onClose={() => setSheet(undefined)}>
-      <PlayerSheet row={sheet.row} reading={reading} league={league} port={port} status={status}
+      <PlayerSheet row={sheet.row} reading={reading} league={league} mine={mine} port={port} status={status}
         canMove={editable && sheet.row.section !== 'ir' && !sheet.row.locked}
         onMove={() => { setSheet(undefined); setMoving(sheet.row.key); }}
         onTrade={() => { setSheet(undefined);
@@ -206,62 +256,19 @@ function PicksList({ league, mine, port }: { league: string; mine: string; port:
   </>;
 }
 
-function PlayerSheet({ row, reading, league, port, status, canMove, onMove, onTrade }: {
-  row: TeamRow; reading: NativeHQ; league: string; port: HostedPort; status?: PlayerStatus; canMove: boolean;
-  onMove: () => void; onTrade: () => void;
+function PlayerSheet({ row, reading, league, mine, port, status, canMove, onMove, onTrade }: {
+  row: TeamRow; reading: NativeHQ; league: string; mine: string; port: HostedPort; status?: PlayerStatus;
+  canMove: boolean; onMove: () => void; onTrade: () => void;
 }) {
-  const id = row.id!;
-  const weeks = reading.playerForm?.[id] ?? [];
-  const max = Math.max(1, ...weeks.map(w => w.points));
-  const injuries = status;
-  const rosterStatus = reading.snapshot.rosters.value.flatMap(r => r.players)
-    .find(p => p.id === id)?.rosterStatus;
-  const [note, setNote] = useState<{ text: string; at?: string; saved: string }>();
-  const latest = useRef<string>();
-  useEffect(() => {
-    let live = true;
-    readHostedPlayerNotes(league, id, port).then(r => {
-      const last = r.notes.at(-1);
-      if (live) setNote({ text: last?.text ?? '', at: last?.at, saved: '' });
-    }).catch(() => { if (live) setNote({ text: '', saved: 'Notes are unavailable' }); });
-    return () => { live = false; };
-  }, [league, id, port]);
-  const save = async () => {
-    if (!note || note.text === latest.current) return;
-    latest.current = note.text;
-    try {
-      // One note per player: add the new words, then remove the note they replace.
-      if (note.text.trim()) await setHostedPlayerNote(league, id, note.text.trim(), port);
-      if (note.at) await setHostedPlayerNote(league, id, '', port, note.at);
-      const fresh = await readHostedPlayerNotes(league, id, port);
-      setNote({ text: note.text, at: fresh.notes.at(-1)?.at, saved: 'Saved' });
-    } catch { setNote({ ...note, saved: 'Not saved. Try again.' }); }
-  };
+  const card = usePlayerCard({
+    id: row.id!, reading, league, mine, port, status, fetchStatus: false, statusEmpty: unavailable,
+    noteInputId: 'team-note',
+  });
   return <div className="team-card">
-    <div className="team-card__h"><span className="team-tag">{row.position}</span><b>{row.name}</b>
-      <em className={row.state}>{row.words}</em></div>
-    <div className="team-card__n">
-      <div><span>THIS WEEK</span><b>{fixed(row.points)}</b></div>
-      <div><span>PROJECTION</span><b>{fixed(reading.projections?.get(id))}</b></div>
-      <div><span>RANGE · 6 WK</span><b>{row.range
-        ? row.range.map(x => x.toFixed(0)).join('–') : '–'}</b></div>
-    </div>
-    <div className="team-lbl">Last five weeks</div>
-    {weeks.length ? <div className="team-card__w">{weeks.map(w => <div key={w.week}>{w.points.toFixed(1)}
-      <i style={{ height: `${Math.max(2, (w.points / max) * 40)}px` }} />WK{w.week}</div>)}</div>
-      : <p className="team-tab__note">{reading.formError || reading.formNote || unavailable}</p>}
-    <div className="team-lbl"><label htmlFor="team-note">My note</label></div>
-    <div className="team-fld"><textarea id="team-note" placeholder="Only you see this."
-      disabled={!note} value={note?.text ?? ''}
-      onChange={e => setNote({ ...(note ?? { saved: '' }), text: e.target.value, saved: '' })}
-      onBlur={() => { void save(); }} />{note?.saved && <small role="status">{note.saved}</small>}</div>
-    <div className="team-lbl">Status</div>
-    <div className="team-card__s"><em>ROSTER</em><p><b>Status</b> {rosterStatus === 'IR' ? 'Injured reserve'
-      : rosterStatus === 'TAXI_SQUAD' ? 'Taxi squad'
-      : rosterStatus === 'ROSTER' ? 'Active roster' : unavailable}</p></div>
-    <div className="team-card__s"><em>NFL</em><p><b>Injury</b> {!injuries ? unavailable
-      : injuries.facts.get(id) ? statusWords(injuries.facts.get(id)!)
-        : injuries.state === 'unavailable' ? unavailable : 'No injury designation'}</p></div>
+    <div className="team-card__title"><b>{card.title}</b><span>{card.sub}</span></div>
+    <div className="team-card__tabs">{card.tabs}</div>
+    {card.main}
+    {card.side}
     <div className="team-card__a">
       <HQAct className="team-key" disabled={!canMove} onAction={onMove}>
         {row.locked ? 'Locked' : 'Move'}</HQAct>

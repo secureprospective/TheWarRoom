@@ -279,7 +279,22 @@ export function hostedPlayerReadingUnavailable(data: unknown): HostedPlayerReadi
   return Object.keys(value).length === 2 && value.unavailable === true
     && value.reason === 'input-not-held' ? value as HostedPlayerReadingUnavailable : undefined;
 }
-export async function hostedWorkflow(request: NativeRequest, football = ''): Promise<HostedResponse> {
+// Identical reads already in flight share one server request: a screen mounts many panels that ask
+// the same thing at once, and a 2-core server queued ~160 reads so the lineup took 50 s to unlock.
+// Each caller gets its own copy; nothing is kept once the reply lands, so no answer goes stale.
+const readsInFlight = new Map<string, Promise<HostedResponse>>();
+export function hostedWorkflow(request: NativeRequest, football = ''): Promise<HostedResponse> {
+  if (request.mode !== 'read') return sendHostedWorkflow(request, football);
+  const key = JSON.stringify([request, football]);
+  let shared = readsInFlight.get(key);
+  if (!shared) {
+    shared = sendHostedWorkflow(request, football).finally(() => readsInFlight.delete(key));
+    readsInFlight.set(key, shared);
+  }
+  return shared.then(r => structuredClone(r));
+}
+
+async function sendHostedWorkflow(request: NativeRequest, football: string): Promise<HostedResponse> {
   let response: Response;
   try {
     response = await nativeTransport.workflow(request, football);

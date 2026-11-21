@@ -18,6 +18,7 @@ export interface PwaUpdateDeps {
   reload: () => void;
   store: Store | undefined;
   now: () => number;
+  win: Pick<Window, 'addEventListener' | 'removeEventListener'>;
 }
 
 let running = false;
@@ -84,6 +85,20 @@ export function startPwaUpdates(overrides: Partial<PwaUpdateDeps> = {}): () => v
     if (pending) reloadNow();
   };
 
+  // A page from an older release asks for code files the server no longer has (a tab opened
+  // before the new worker took over). Vite reports that as vite:preloadError; load the new release
+  // once instead of showing a broken screen. The reload guard stops a loop if the file is truly gone.
+  const onStaleChunk = (event: Event) => {
+    const last = Number(deps.store?.getItem(RELOAD_KEY) ?? 0);
+    if (reloading || deps.now() - last < RELOAD_GUARD_MS) return;
+    event.preventDefault();
+    reloading = true;
+    deps.store?.setItem(RELOAD_KEY, String(deps.now()));
+    deps.reload();
+  };
+  const win = overrides.win ?? (typeof window === 'undefined' ? undefined : window);
+  win?.addEventListener('vite:preloadError', onStaleChunk);
+
   container.register(PWA_SCRIPT, { scope: PWA_SCOPE, updateViaCache: 'none' }).then(reg => {
     if (stopped) return;
     registration = reg;
@@ -98,6 +113,7 @@ export function startPwaUpdates(overrides: Partial<PwaUpdateDeps> = {}): () => v
   return () => {
     stopped = true;
     running = false;
+    win?.removeEventListener('vite:preloadError', onStaleChunk);
     container.removeEventListener('controllerchange', onControllerChange);
     deps.doc.removeEventListener('visibilitychange', onVisibility);
     clearInterval(timer);

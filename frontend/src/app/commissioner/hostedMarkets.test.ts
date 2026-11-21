@@ -50,3 +50,11 @@ it('reads standings that carry score evidence', () => {
   expect(read.computed).toEqual([{ rank: 1, franchise: 'a', name: 'A', record: '9-0',
     points: '1000.0', why: [] }]);
 });
+
+it("reads standings rows that carry a streak, so the lineup stays editable", () => {
+  const read = parseHostedStandings({ league: "l", name: "L", season: 2026, revision: 4, status: "live",
+    words: "Through week 10", through: 10, decided: 160, pending: 0, criteria: [], noData: [], evidence,
+    computed: [{ rank: 1, franchise: "a", name: "A", wins: 9, losses: 1, ties: 0, record: "9-1",
+      streak: "W3", pointsFor: 1000, pointsWords: "1000.0", why: [] }] });
+  expect(read.computed[0]?.record).toBe("9-1");
+});

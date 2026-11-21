@@ -1,4 +1,4 @@
-/* Live tab of mobile mock v1 (.mym, .mys, .wp-bar, .myp, .strip, .boxes, .panel), Grip material. */
+/* Live tab of mobile mock v1 (.mym, .mys, .wp-bar, .strip, .boxes, .panel), Grip material. */
 .phone-app__slot:has(> .live6) { padding: 0; }
 .live6 {
   --l6-mono: "JetBrains Mono", "DejaVu Sans Mono", var(--surface-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
@@ -46,6 +46,9 @@
   font: 700 10px var(--l6-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--l6-ink2);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.live6 .mym .bhead .live6__mine { background: none; border: 0; padding: 0; min-height: 44px; margin-block: -6px;
+  text-align: left; cursor: pointer; }
+.live6 .mym .bhead .live6__mine.is-away { color: var(--l6-blue); }
 .live6 .mym .bhead > span { display: flex; flex: none; align-items: center; white-space: nowrap; }
 .live6 .mym .bhead button, .phone-app .live6 .live6__link {
   background: none; border: 0; color: var(--l6-blue);
@@ -92,42 +95,6 @@
 @keyframes l6-chg {
   0%, 40% { background: hsl(220, 5%, 19%); color: var(--l6-ink); box-shadow: 0 2px 0 hsl(40, 8%, 66%); }
   100% { background: transparent; box-shadow: 0 2px 0 transparent; }
-}
-
-/* Fantasy starter tiles (.myp): mock v1 two-across layout, Grip pos chip, rotated SVG football */
-.live6 .myp {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px;
-  margin-top: 6px;
-}
-.live6 .myp button, .phone-app .live6 .live6__pl {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-rows: auto;
-  grid-template-areas: "pos name ball pts"; align-items: center; column-gap: 6px;
-  min-height: 32px; height: 32px; padding: 0 8px 0 6px;
-  background-color: var(--l6-black); border: 1px solid var(--l6-edge); color: var(--l6-ink);
-  font: inherit; text-align: left; cursor: pointer;
-}
-.live6 .myp button.on, .phone-app .live6 .live6__pl.is-on {
-  border-color: var(--l6-blue); box-shadow: inset 3px 0 0 var(--l6-blue);
-}
-.live6 .myp .pos {
-  grid-area: pos; min-width: 22px; padding: 3px 2px 2px; text-align: center;
-  font: 700 9px/1 var(--l6-mono); font-style: normal; letter-spacing: .02em;
-  color: var(--l6-ink); background: var(--l6-mat-hi); box-shadow: inset 0 -1px 0 #000;
-}
-.live6 .myp button span {
-  grid-area: name; display: block; min-width: 0;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font: 600 13px/1 var(--l6-sans); letter-spacing: 0; color: var(--l6-ink);
-}
-.live6 .myp .onf {
-  grid-area: ball; display: block; visibility: hidden; width: 15px; height: 9px;
-}
-.live6 .myp .onf.is-live { visibility: visible; }
-.live6 .myp .onf svg { display: block; width: 100%; height: 100%; overflow: visible; transform: rotate(-18deg); }
-.live6 .myp .onf .lth { fill: hsl(24, 38%, 46%); stroke: hsl(24, 40%, 18%); stroke-width: 1.2; }
-.live6 .myp .onf .lc { stroke: hsl(40, 20%, 90%); stroke-width: 1.3; fill: none; }
-.live6 .myp button > b {
-  grid-area: pts; font: 700 13px/1 var(--l6-mono); letter-spacing: -.02em; text-align: right; min-width: 3.4ch;
 }
 
 /* NFL game strip (.strip) in mock v1 Grip styling */

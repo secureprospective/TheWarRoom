@@ -1,0 +1,623 @@
+{
+  "header": "NFL News",
+  "articles": [
+    {
+      "id": 50521728,
+      "nowId": "1-50521728",
+      "contentKey": "50521728-1-6-1",
+      "dataSourceIdentifier": "481f6b6eb5e6b",
+      "type": "Story",
+      "headline": "NFL Week 11 predictions: Upsets, fantasy sleepers, stat lines, TD scorers, more",
+      "description": "Eagles upsetting the Steelers? Big receiving day for Christian McCaffrey? Touchdown for Josh Downs? Let's predict 15 things for Week 11.",
+      "lastModified": "2026-11-21T11:49:08Z",
+      "published": "2026-11-21T11:49:08Z",
+      "images": [
+        {
+          "dataSourceIdentifier": "c01eae69238e6",
+          "id": 50497429,
+          "type": "header",
+          "name": "Christian McCaffrey [608x342]",
+          "caption": "Christian McCaffrey had the biggest receiving day of his illustrious career on Sunday.",
+          "alt": "San Francisco 49ers running back Christian McCaffrey breaks free for a long touchdown during the NFL game between the San Francisco 49ers and the Dallas Cowboys on November 15, 2026 at AT&T Stadium in Arlington, Texas.",
+          "credit": "Brian Rothmuller/Icon Sportswire",
+          "height": 342,
+          "width": 608,
+          "url": "https://a.espncdn.com/photo/2026/1116/r1746461_608x342_16-9.jpg"
+        },
+        {
+          "type": "Media",
+          "name": "What Stephen A. is looking to see from Vikings in 'litmus test' vs. 49ers",
+          "caption": "What Stephen A. is looking to see from Vikings in 'litmus test' vs. 49ers",
+          "height": 324,
+          "width": 576,
+          "url": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1119/ss_20261119_102322963_3749414626/ss_20261119_102322963_3749414626.jpg"
+        }
+      ],
+      "categories": [
+        {
+          "id": 9572,
+          "type": "league",
+          "uid": "s:20~l:28",
+          "guid": "ad4c3bd2-ddb6-3f8c-8abf-744855a08fa4",
+          "description": "NFL",
+          "sportId": 28,
+          "leagueId": 28,
+          "league": {
+            "id": 28,
+            "description": "NFL",
+            "abbreviation": "NFL",
+            "links": {
+              "mobile": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              },
+              "web": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 409222,
+          "type": "topic",
+          "guid": "b66e959d-b64e-9bd6-7d5c-1bcb0d53c0cb",
+          "description": "daily",
+          "sportId": 0,
+          "topicId": 779
+        },
+        {
+          "id": 12024,
+          "type": "league",
+          "uid": "s:20~l:3080",
+          "guid": "a472a0eb-d630-3568-bf2a-59572429de6c",
+          "description": "Fantasy NFL",
+          "sportId": 3080,
+          "leagueId": 3080,
+          "league": {
+            "id": 3080,
+            "description": "Fantasy NFL",
+            "abbreviation": "NFLFD"
+          }
+        },
+        {
+          "id": 611584,
+          "type": "league",
+          "guid": "550a1e9e-377e-3019-bf5e-19c027d50a49",
+          "description": "Sports Betting",
+          "sportId": 22000,
+          "leagueId": 22000,
+          "league": {
+            "id": 22000,
+            "description": "Sports Betting"
+          }
+        },
+        {
+          "id": 1407,
+          "type": "team",
+          "uid": "s:20~l:28~t:21",
+          "guid": "d1a9b001-1df7-fbd7-ae4c-6ca7065286ec",
+          "description": "Philadelphia Eagles",
+          "sportId": 28,
+          "teamId": 21,
+          "team": {
+            "id": 21,
+            "description": "Philadelphia Eagles",
+            "abbreviation": "PHI",
+            "shortDisplayName": "Eagles",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/phi/philadelphia-eagles"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/phi/philadelphia-eagles"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 1920,
+          "type": "team",
+          "uid": "s:20~l:28~t:16",
+          "guid": "3db556c9-ed76-a7a5-4ccb-a92fc6db4334",
+          "description": "Minnesota Vikings",
+          "sportId": 28,
+          "teamId": 16,
+          "team": {
+            "id": 16,
+            "description": "Minnesota Vikings",
+            "abbreviation": "MIN",
+            "shortDisplayName": "Vikings",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/min/minnesota-vikings"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/min/minnesota-vikings"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 2496,
+          "type": "team",
+          "uid": "s:20~l:28~t:12",
+          "guid": "f68f2343-8ceb-7a02-740d-af6338be21d2",
+          "description": "Kansas City Chiefs",
+          "sportId": 28,
+          "teamId": 12,
+          "team": {
+            "id": 12,
+            "description": "Kansas City Chiefs",
+            "abbreviation": "KC",
+            "shortDisplayName": "Chiefs",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/kc/kansas-city-chiefs"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/kc/kansas-city-chiefs"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 1637,
+          "type": "team",
+          "uid": "s:20~l:28~t:25",
+          "guid": "985a261f-296c-c95c-32a5-addc4df75001",
+          "description": "San Francisco 49ers",
+          "sportId": 28,
+          "teamId": 25,
+          "team": {
+            "id": 25,
+            "description": "San Francisco 49ers",
+            "abbreviation": "SF",
+            "shortDisplayName": "49ers",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/sf/san-francisco-49ers"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/sf/san-francisco-49ers"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 2664,
+          "type": "team",
+          "uid": "s:20~l:28~t:4",
+          "guid": "75b8623b-8926-b411-0476-3d3602b78523",
+          "description": "Cincinnati Bengals",
+          "sportId": 28,
+          "teamId": 4,
+          "team": {
+            "id": 4,
+            "description": "Cincinnati Bengals",
+            "abbreviation": "CIN",
+            "shortDisplayName": "Bengals",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/cin/cincinnati-bengals"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/cin/cincinnati-bengals"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 2886,
+          "type": "team",
+          "uid": "s:20~l:28~t:10",
+          "guid": "0a0aea59-9a5e-01b3-57a3-0151cf4bf393",
+          "description": "Tennessee Titans",
+          "sportId": 28,
+          "teamId": 10,
+          "team": {
+            "id": 10,
+            "description": "Tennessee Titans",
+            "abbreviation": "TEN",
+            "shortDisplayName": "Titans",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/ten/tennessee-titans"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/ten/tennessee-titans"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 1298,
+          "type": "team",
+          "uid": "s:20~l:28~t:6",
+          "guid": "b0fc8fb7-9dbe-e574-9008-6f0ee7c6b234",
+          "description": "Dallas Cowboys",
+          "sportId": 28,
+          "teamId": 6,
+          "team": {
+            "id": 6,
+            "description": "Dallas Cowboys",
+            "abbreviation": "DAL",
+            "shortDisplayName": "Cowboys",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/dal/dallas-cowboys"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/dal/dallas-cowboys"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 2830,
+          "type": "team",
+          "uid": "s:20~l:28~t:33",
+          "guid": "38248455-3da4-84e4-8090-98b5cc38ffdc",
+          "description": "Baltimore Ravens",
+          "sportId": 28,
+          "teamId": 33,
+          "team": {
+            "id": 33,
+            "description": "Baltimore Ravens",
+            "abbreviation": "BAL",
+            "shortDisplayName": "Ravens",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/bal/baltimore-ravens"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/bal/baltimore-ravens"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 2432,
+          "type": "team",
+          "uid": "s:20~l:28~t:7",
+          "guid": "51042145-e3c1-0694-ae0d-f720342ff8fc",
+          "description": "Denver Broncos",
+          "sportId": 28,
+          "teamId": 7,
+          "team": {
+            "id": 7,
+            "description": "Denver Broncos",
+            "abbreviation": "DEN",
+            "shortDisplayName": "Broncos",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/den/denver-broncos"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/den/denver-broncos"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 1462,
+          "type": "team",
+          "uid": "s:20~l:28~t:28",
+          "guid": "fbeaf73e-6d6c-cca4-0809-713d9d741f90",
+          "description": "Washington Commanders",
+          "sportId": 28,
+          "teamId": 28,
+          "team": {
+            "id": 28,
+            "description": "Washington Commanders",
+            "abbreviation": "WSH",
+            "shortDisplayName": "Commanders",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/wsh/washington-commanders"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/wsh/washington-commanders"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 1750,
+          "type": "team",
+          "uid": "s:20~l:28~t:3",
+          "guid": "19d73366-b5a5-cca2-a176-a2c024ce0bb3",
+          "description": "Chicago Bears",
+          "sportId": 28,
+          "teamId": 3,
+          "team": {
+            "id": 3,
+            "description": "Chicago Bears",
+            "abbreviation": "CHI",
+            "shortDisplayName": "Bears",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/chi/chicago-bears"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/chi/chicago-bears"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 2996,
+          "type": "team",
+          "uid": "s:20~l:28~t:30",
+          "guid": "ca6fb778-cbf6-d9a3-3e93-01230335fcab",
+          "description": "Jacksonville Jaguars",
+          "sportId": 28,
+          "teamId": 30,
+          "team": {
+            "id": 30,
+            "description": "Jacksonville Jaguars",
+            "abbreviation": "JAX",
+            "shortDisplayName": "Jaguars",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/jax/jacksonville-jaguars"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/jax/jacksonville-jaguars"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 694302,
+          "type": "contributor",
+          "guid": "89eed48f-9a22-3c0c-8dee-e558b09d16b0",
+          "description": "Pamela Maldonado",
+          "slug": "pamela-maldonado",
+          "contributor": {
+            "id": 4039,
+            "description": "Pamela Maldonado"
+          }
+        }
+      ],
+      "byline": "Matt Bowen, Pamela Maldonado, Eric Moody, Ben Solak and Seth Walder",
+      "links": {
+        "api": {
+          "self": {
+            "href": "https://content.core.api.espn.com/v1/sports/news/50521728"
+          }
+        },
+        "app": {
+          "sportscenter": {
+            "href": "sportscenter://x-callback-url/showStory?uid=50521728"
+          }
+        },
+        "mobile": {
+          "href": "http://m.espn.go.com/nfl/story?storyId=50521728"
+        },
+        "web": {
+          "href": "https://www.espn.com/nfl/story/_/id/50521728/week-11-predictions-upsets-fantasy-sleepers-stats-2026"
+        }
+      },
+      "premium": false
+    },
+    {
+      "id": 50473666,
+      "nowId": "1-50473666",
+      "contentKey": "50473666-1-6-1",
+      "dataSourceIdentifier": "faaa82c8f2010",
+      "type": "Story",
+      "headline": "Falcons insist winning still the goal despite trading Jessie Bates III",
+      "description": "Atlanta wanted to ensure trading away Jessie Bates III didn't send the wrong message to the team.",
+      "lastModified": "2026-11-21T11:59:54Z",
+      "published": "2026-11-21T11:59:54Z",
+      "images": [
+        {
+          "dataSourceIdentifier": "20e81f9b1eb39",
+          "id": 50473705,
+          "type": "header",
+          "name": "Jessie Bates III [1296x729]",
+          "caption": "Jessie Bates III wasn't just a leader on the field, he was a key veteran voice in the locker room.",
+          "credit": "AP Photo/Mike Stewart",
+          "height": 729,
+          "width": 1296,
+          "url": "https://a.espncdn.com/photo/2026/1113/r1745395_1296x729_16-9.jpg"
+        },
+        {
+          "type": "Media",
+          "name": "Falcons adjust to major roster changes after trade deadline",
+          "caption": "Marc Raimondi reports on how the Falcons are handling the departures of Jessie Bates III and Ryan Neuzil as they prepare to face the Chiefs.",
+          "height": 324,
+          "width": 576,
+          "url": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1113/dm_261113_Watchfolder_Falconsdwd/dm_261113_Watchfolder_Falconsdwd.jpg"
+        }
+      ],
+      "categories": [
+        {
+          "id": 9572,
+          "type": "league",
+          "uid": "s:20~l:28",
+          "guid": "ad4c3bd2-ddb6-3f8c-8abf-744855a08fa4",
+          "description": "NFL",
+          "sportId": 28,
+          "leagueId": 28,
+          "league": {
+            "id": 28,
+            "description": "NFL",
+            "abbreviation": "NFL",
+            "links": {
+              "mobile": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              },
+              "web": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 1979,
+          "type": "team",
+          "uid": "s:20~l:28~t:1",
+          "guid": "49fd392a-86fe-4df3-1b77-9bbfa18b2ad5",
+          "description": "Atlanta Falcons",
+          "sportId": 28,
+          "teamId": 1,
+          "team": {
+            "id": 1,
+            "description": "Atlanta Falcons",
+            "abbreviation": "ATL",
+            "shortDisplayName": "Falcons",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/atl/atlanta-falcons"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/atl/atlanta-falcons"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 208615,
+          "type": "athlete",
+          "uid": "s:20~l:28~a:4360423",
+          "guid": "28022fa1-9050-eee1-5160-c77a6a379ec2",
+          "description": "Michael Penix Jr",
+          "sportId": 28,
+          "athleteId": 4360423,
+          "athlete": {
+            "id": 4360423,
+            "description": "Michael Penix Jr",
+            "links": {
+              "mobile": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4360423/michael-penix-jr"
+                }
+              },
+              "web": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4360423/michael-penix-jr"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 184648,
+          "type": "athlete",
+          "uid": "s:20~l:28~a:3919512",
+          "guid": "dadb4f44-91c3-441e-a543-88e002a9e1c5",
+          "description": "Jessie Bates III",
+          "sportId": 28,
+          "athleteId": 3919512,
+          "athlete": {
+            "id": 3919512,
+            "description": "Jessie Bates III",
+            "links": {
+              "mobile": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/3919512/jessie-bates-iii"
+                }
+              },
+              "web": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/3919512/jessie-bates-iii"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 696353,
+          "type": "contributor",
+          "guid": "99dc8264-cb24-3d5b-b2bf-1a5e36dfeca0",
+          "description": "Marc Raimondi",
+          "slug": "marc-raimondi",
+          "contributor": {
+            "id": 3788,
+            "description": "Marc Raimondi"
+          }
+        }
+      ],
+      "byline": "Marc Raimondi",
+      "links": {
+        "api": {
+          "self": {
+            "href": "https://content.core.api.espn.com/v1/sports/news/50473666"
+          }
+        },
+        "app": {
+          "sportscenter": {
+            "href": "sportscenter://x-callback-url/showStory?uid=50473666"
+          }
+        },
+        "mobile": {
+          "href": "http://m.espn.go.com/nfl/story?storyId=50473666"
+        },
+        "web": {
+          "href": "https://www.espn.com/nfl/story/_/id/50473666/atlanta-falcons-trade-deadline-jessie-bates-morale"
+        }
+      },
+      "premium": false
+    }
+  ]
+}

@@ -1,3 +1,270 @@
+# COMPACT POINT 11-21 ~3:45 PM CT — Live checked, fixes 1-2 shipped to lab v43, MAIN PUSH IN FLIGHT (newest; READ FIRST)
+
+## NEXT (his instruction): work through T673, T674, T675, T676 in that order
+- T673 🔴 Live field proof Sun 11-22 12:00 PM CT on S25. Already proven 11-21 on finished IND-HOU (ESPN 401873066):
+  collector polling (checkpoint /var/lib/twr/live-scores/checkpoint.json, week 11 board, 13 games), summary held with
+  159 plays all with yard lines, nfl.game.read returned 160 plays + state, phone drew field (ball IND 30).
+  Unproven: 5-s in-game poll on v43. During games: watch lab log `grep "server live" /var/lib/twr/server.log`.
+- T674 ⚪ finished game shows "1ST & 11" (END GAME play down=0 → render; hide down/dist when status post) in
+  frontend/src/app/phone/LiveField.tsx / fieldView.ts HUD (hDown/hDist). Console: CSP "Applying inline style" warnings
+  + one 404 on Live tab (find which URL; harness lv2.js logs >=400).
+- T675 🟡 lab CT 260 disk 2.0 GB free / 8.4. Candidates seen: /twr-b7lab-new (old tarballs v4), labrel-* dirs,
+  first-start-data.tar.gz at / of CT. Check which are referenced by the running release before deleting.
+- T676 🔴 his steps: sign out other sessions on the lab account; rotate lab R2 keys. Hand him numbered steps.
+
+## IN FLIGHT AT COMPACTION
+- Push of squash commit e371ff5f to main, run by Christopher via `!` from Claudebox chat (background task output
+  /tmp/claude-0/-root/61ea614a-bffb-482b-b76e-4b768b2d36b1/tasks/bez3vfvd1.output). Pre-push checks were running
+  (go test on 9 changed pkgs). Check: `ssh beelink 'ps -eo args | grep -c "[h]ook-type=pre-push"'` (0 = done) and
+  `git -C ~/scratch/merge-pc fetch -q origin && git -C ~/scratch/merge-pc log --oneline -1 origin/main`
+  (landed = e371ff5f-equivalent "Mobile alpha walk..." on top of eb6dd752d). Main at compaction: eb6dd752d.
+- If it landed: release main to lab (REF=origin/main twr-lab-release-ref.sh 44 with prev
+  ~/fleet/runs/labrel-v43-1121/release-v43/metadata/targets.json), walk w40.js, `cc task check T671`, then
+  `git worktree remove ~/scratch/merge-pc` and delete ~/scratch/lineup-1121.
+  If push failed: read the output file; branch protection may need the browser PR path
+  (https://github.com/secureprospective/TheWarRoom/compare/main...session/player-card, Squash and merge).
+- Never run the push or anything containing its text yourself: hook blocks it (even a pgrep with that string).
+
+## SHIPPED SINCE LAST COMPACT (branch session/player-card 1b4e2fcd3, lab v43, walked)
+- Live: starter tiles removed from My matchup (8fd71daee).
+- Fix 1: score row follows matchup picked in All matchups; header "My matchup" is a button (aria "Show my matchup"),
+  shows "‹ My matchup" when away. Walked: BUF 4.2 98% NYJ → back to ARZ 32.3 93% CAR 38.0.
+- Fix 2: headshots 350x254 (was 96x70) in package subfolder headshots/350; route /v1/headshot/350/<id>; ESPN jersey
+  in Bio.Jersey; phone card hero (club colour --tc, #7, ghost number). Walked: Stroud natural 350x254, #7.
+- Tests: frontend 807 pass in touched dirs; Go tests pass for changed pkgs.
+
+## REFUTED / LEARNED — DO NOT RETEST
+- `?s=350` query on photo URL: hosted server refuses ANY query string (hosted.go RawQuery check) → 400. Don't loosen.
+- Cloudflare caches /v1/headshot/<id> (max-age 86400, cf-cache-status HIT) → use versioned path, not purge.
+- boundarycheck refuses changes to internal/composition/platform_host.go startHeadshots → put policy in the package.
+- Push hooks need PATH=/usr/local/go/bin:$HOME/go/bin (wails missing otherwise). Fresh worktree needs frontend/dist
+  copied for ifaceguard.
+- Lab release script builds what is PUSHED: a failed push silently released old code (v39).
+
+## DECISIONS
+- Pre-game preview: direction B (Broadcast) picked; later build T672. No betting odds. Game-time weather (NWS hourly),
+  not day high/low. Mock ~/work/TheWarRoom/design-mocks/live-pregame-preview-B.html.
+- Small fixes logged to ~/work/TheWarRoom/design-mocks/FIXES-mobile-batch-1121.md (1-2 done).
+- He approved this merge to main 11-21 ("go ahead and merge it. i approve").
+
+## TASK LIST (Hermes) this session
+T671 rewritten (merge state), T668, T660 updated; T672 B picked; added T673-T676.
+
+---
+# COMPACT POINT 11-21 ~1:05 PM CT — mobile walk on S25, lab v37 (newest; READ FIRST)
+
+## WHAT WE ARE DOING
+Christopher walks the PHONE app (target: mobile mock v1 only) on his S25 against the LAB:
+https://twr-lab-260.secureprospective.com/app/ (no IP; Cloudflare tunnel). He sends error codes; Claudebox
+finds them in the lab log, fixes on `session/player-card`, releases the branch to the LAB only, verifies.
+Repo: Beelink ~/work/TheWarRoom/.worktrees/player-card. Branch `session/player-card` = a42fd1594, pushed,
+NOT merged. Desktop v3: he says good enough for alpha; still needs lots of work later.
+
+## NEXT ACTION (his instruction after compaction): work on LIVE / field view
+His question: "Does the server serve the live game to the mobile app with a field view?" Answer given:
+path exists end to end, never proven on an in-progress game. Path: cmd/twr-server/live_collector.go polls
+ESPN (scoreboard Set line ~284, details SetDetails ~371: plays, possession, down, distance, yardLine) ->
+reads `nfl.games.read` / `nfl.game.read` -> frontend/src/app/now/liveContract.ts (FieldState) ->
+phone/LiveTab.tsx -> phone/LiveField.tsx + fieldView.ts. Offered check (he had not answered): open the
+FINISHED Thursday week-11 game in phone Live on the lab and confirm the field draws from real server data.
+Harness ready: ~/scratch/lineup-1121/lv.js (phone viewport, state-lab.json, Live tab, screenshots
+live1.png/live2.png). It was interrupted mid-run once; read-only. First real live proof: Sun 11-22 noon CT.
+RULING 11-21: Hermes live-recorder has NOTHING to do with the phone walk. Do not look at Hermes for this.
+
+## LAB STATE
+- Lab CT260 runs v37 = a42fd1594 (branch release). All 8 status OK.
+- Next release prev targets: `~/fleet/runs/labrel-v37-1121/release-v37/metadata/targets.json`.
+- Release cmd: `R=~/fleet/runs/labrel-v38-1121; mkdir -p $R; REF=origin/session/player-card
+  ~/fleet/bin/twr-lab-release-ref.sh 38 <prev targets> $R > $R/release.log 2>&1 </dev/null` (~3 min, blocks).
+- Lab log: `S="ssh -F ~/work/TheWarRoom/.worktrees/pulse-a010s/.scratch/ssh-lab.conf lab"; $S pct exec 260
+  -- sh -s` with a heredoc script (quoted inside ssh '...' runs on the Beelink by mistake). Log
+  /var/lib/twr/server.log. Grep the error code he sends.
+- Lab tunnel only forwards ^/(v1/.*|join|password|site.css|...|app(/.*)?)$ — new routes must live under /v1/ or /app/.
+
+## FIXES THIS SESSION (all on session/player-card, all lab-verified)
+| Commit | Fix | Proof |
+|---|---|---|
+| eb6e4f3fa,3c2e85d29 | Player photos: hosted /v1/headshot/<mfl id> (desktop cache reused) | browser: 96x70 photo on card |
+| 13e97f695 | Lineup unlock 12-16 s -> 3.3 s: identical in-flight reads shared (nativeApi.ts), recent form read 1 week at a time | browser timing x2 |
+| 1fab5c051 | Log why native request refused + missing app file | log lines seen |
+| c2c05470e | vite:preloadError reloads once (pwaUpdate.ts); League season reads 2 weeks at a time | tests |
+| 086b32844 | Recorded starters memo per records mark+week gen, 1 h (history/native_results.go) | timed: RecordedStarters was 4.2 s/week |
+| 231f8b654 | Server warms weeks 1-18 at start +20 s and every 50 min (football_pins.go) | League cold 3.1 s after release |
+| 0a1711134 | Contract quotes carry viewer revision (StampRevision) — "quote belongs to another decision" gone | lab reading + Team no banner |
+| a42fd1594 | week.read allows 5 min device clock skew (S25 fast); missing /app/assets file answers Clear-Site-Data cache+storage | curl shows header |
+
+## OPEN / UNVERIFIED
+- His S25 kept loading an OLD page (asked for assets/commissioner.M5lPOGmH.js, control.ChxWdhoY.js).
+  v37 Clear-Site-Data should clear it; NOT yet confirmed on his phone. Manual fallback: Brave site settings -> Clear & reset.
+- 503 request-deadline bursts on odds/standings/bracket/results when phone loads (2-core lab). Watch.
+- Desktop known: Home news cold load; HQ value.read 409.
+- Phone hold-to-drag only tests. Field view never seen live.
+
+## REFUTED — DO NOT RETEST
+- 400 TWR-BVLR/PP99 was NOT the problem-report body (same body 200 from harness, direct lab too). PP99 = week.read future `at` (clock skew).
+- results.read slowness is NOT queueing alone: RecordedStarters = 4.2 s/week (timed on lab).
+- Lone results.read "0.3 s" was a cached answer; uncached ~3.2 s before memo.
+- /headshot/ 404 was the Cloudflare tunnel allowlist, not the server route.
+
+## HARNESS
+~/scratch/lineup-1121 (KEEP.md): state.json (walk server login; NEVER print), state-lab.json (same cookie on
+lab domain, chmod 600; its cookie was printed once in chat by mistake — rotate when convenient).
+t4.js = lineup unlock timing; m8/m9/m10 = phone Team/League on lab; q1.js = contract decisions shape; lv.js = Live tab.
+Walk server: vite on player-card worktree port 5199 (pid 49543); stop `kill 49543`.
+
+## NEEDS CHRISTOPHER
+- Go for merge of session/player-card -> main (squash), then normal lab release from main.
+- Rotate lab R2 keys; sign out other sessions on lab account (harness cookie printed).
+- Confirm S25 now on current build (Team + League).
+
+## RULES LEARNED TODAY
+- Never --no-verify (hook blocks). Remote branch delete is blocked: hand him `git push origin --delete <b>`.
+- Go not on PATH over ssh: `export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH` before commit/push hooks.
+- Bloat gate counts new small non-test files: fold into an existing file.
+
+# HANDOFF 11-21 ~8:00 AM CT — walk-and-fix cadence, ESPN news live on lab v26 (newest; READ FIRST)
+
+## How we work right now (the cadence — keep it)
+1. Christopher walks http://127.0.0.1:5199/app/ (desktop) and the phone layout, and sends what he finds
+   (often with screenshots: "check SS" = newest files in Beelink /home/chris/content/feedback).
+2. Small fixes: Claude does them directly in the `player-card` worktree. Fresh/larger coding: write a brief
+   file, launch Gemini (AGY Neon High) with `~/fleet/bin/agy-run.sh <job> <brief> "Gemini 4 Neon (High)" <wt>`
+   and arm a done-watcher on `~/fleet/runs/<job>-1121/exit` in the same step. Reuse existing code first.
+3. Claude verifies every fix itself: tsc + vitest + go test, then a real browser check with the harness
+   `~/scratch/lineup-1121` (playwright-core + headless brave; state.json = commissioner login, never print).
+4. Push the branch `session/player-card` (allowed). For him to see server-side changes, release the branch
+   to the LAB only (see below). NOTHING merges to main until he says go: all walk fixes ship as one batch.
+5. Report short: what works (with evidence), what's not verified, one pick-from question with a recommendation.
+
+## Branch / server state
+- Branch `session/player-card` = 6a14f7676, pushed, NOT merged. Contains origin/main + lab v25 (eb6dd752d).
+  Worktree: Beelink ~/work/TheWarRoom/.worktrees/player-card. Also `session/lineup-standings` 1bbb5edfd
+  (subset of player-card; superseded).
+- Lab server (CT 260) runs **v26 = 6a14f7676 (the branch, LAB-ONLY test release, Christopher picked "1")**.
+  Status all OK at 7:48 CT. Run dir ~/fleet/runs/labrel-news-1121 (MANIFEST, upgrade.log, status.txt).
+  Next release must pass `~/fleet/runs/labrel-news-1121/release-v26/metadata/targets.json` as previous.
+- Branch release script (new): `REF=origin/session/player-card ~/fleet/bin/twr-lab-release-ref.sh <V>
+  <prev targets.json> <run-dir>` (copy of twr-lab-release.sh with REF; default still origin/main).
+- Walk server: vite on player-card worktree, port 5199, proxies to lab. Restart:
+  `cd ~/work/TheWarRoom/.worktrees/player-card/frontend && pnpm exec vite --config vite.lab.config.ts`
+  (ssh -f + nohup setsid). Stop: `kill $(pgrep -f vite.lab.config)`. vite.lab.config.ts is not in git.
+
+## Walk fixes done this session (all on session/player-card)
+| # | Fix | Proof |
+|---|-----|-------|
+| 1 | Lineup locked: standings parser refused new `streak` field → allowed (hostedMarkets.ts + test) | browser: lineup editable |
+| 2 | One-click lineup: starter name→bench; bench name→first fitting open slot (`quickMove`, shell/hqPlacement.ts) | browser desktop |
+| 3 | "Reading your lineup from the league server…" while locked | browser |
+| 4 | One position order (`LINEUP_ORDER`/`slotRank`, shell/pulseModel.ts) for lineup, live scoring, phone Live + Team | browser desktop + phone |
+| 5 | Desktop player card drawer (names on Contracts/lineup/news open it) — Neon | browser |
+| 6 | Phone: MOVE quick-moves, hold-to-drag, full card sheet — Neon | browser except drag (tests only) |
+| 7 | ESPN news: server cache (league 15m, player 15m, bio 24h, stale on failure), `player.news.read` + `news.feed.read`, card News tab + bio header, Home NEWS panel with real chips — Neon (37a28c9fe, 6a14f7676) | browser on lab v26: Home ALL 50 / MY PLAYERS 1 / INJURIES 12 / ON THE WIRE 8; Bowers card Ht/Wt/Born/College/Draft + ESPN items |
+
+Gates at 6a14f7676: go vet + go test (espnnews, leagueservice, twr-server) ok; tsc clean; vitest 1,284/1,284
+(Neon's run); push hook passed.
+
+## Known, not fixed (candidates for next turns)
+1. Home news: first load after release showed "Reading the news…" >10 s (cold cache). Re-check a normal load.
+2. Player photos blocked by app CSP (a.espncdn.com) → default image. Fix: serve via our own `/headshot/` proxy.
+3. Lineup editor takes 12–16 s to unlock (room reads ~10 calls incl. many results.read).
+4. HQ read warnings: `value.read` 409; "Contract decision … quote belongs to another decision".
+5. Phone card on the phone layout not browser-checked after the news change (shared code, tests pass).
+6. cmd/twr-server/espn_news.go makes its own `http.Client{Timeout:10s}` as the livegame transport (fine;
+   parsing reuses livegame.FetchHTTPS).
+ESPN does not give: Acquired, Contract Notes, draft for undrafted players.
+
+## Rulings (do not relitigate)
+- Phone keeps name-tap = card (no ⓘ button). News from ESPN only for now; keep a `source` field per item.
+- Gemini does fresh coding; reuse existing code first. Batch walk fixes; one merge on his go.
+- Cap: runway = MFL contracts; what-if = calculator; dead cap = MFL adjustments + TWR cuts; committed = TWR-only.
+
+## Next actions, in order
+1. Take Christopher's next walk items (the cadence above).
+2. Fix items from "Known, not fixed" he cares about (recommend 2 photos, then 3 slow unlock).
+3. On his go: PR session/player-card → main (squash only), merge, then normal lab release from main
+   (`twr-lab-release.sh 27 ~/fleet/runs/labrel-news-1121/release-v26/metadata/targets.json <run>`).
+4. Carry-overs: DEMO mark on ?demo wall; OBS wall test; Sunday 11-22 ~11 AM live check (wall, phone,
+   recorder), noon first plays; Argon review of #453.
+
+## Needs Christopher
+- Go for the merge to main. Rotate lab R2 keys. OBS sign-in test.
+Task list: T671 (Hermes) = this walk-fixes batch.
+
+# COMPACT POINT 11-21 ~7:10 AM CT — walk fixes in progress (newest section; older below)
+
+**State:** #453 merged (main eb6dd752d), lab on v25. Christopher is walking http://127.0.0.1:5199/app/
+and sending fixes. Walk server now runs on the **player-card** worktree (vite.lab.config.ts copied in).
+Restart: `cd ~/work/TheWarRoom/.worktrees/player-card/frontend && pnpm exec vite --config vite.lab.config.ts`
+(launch with ssh -f + nohup setsid). Stop: `kill $(pgrep -f vite.lab.config)`.
+
+**Branches (both pushed, none merged; he chose to batch walk fixes into one release):**
+- `session/lineup-standings` (1bbb5edfd, worktree alpha-2, off main): (1) lineup locked because standings
+  parser refused new `streak` field (from #442) → added; (2) one-click: starter name→bench, bench name→
+  first fitting open slot (`quickMove`); (3) "Reading your lineup…" message while locked (was "No changes");
+  (4) one `LINEUP_ORDER`/`slotRank`/`bySlot` in shell/pulseModel.ts drives lineup, desktop My matchup,
+  phone Live tiles, paired box score; kickers own group last. Test shell/lineupOrder.test.ts.
+- `session/player-card` (0eb4271a8 pushed; worktree player-card) = lineup-standings + Neon desktop player
+  card drawer (dd321d4e7) + Neon phone quick Move / hold-drag / full card sheet (1d4571bb0) + phone Team tab
+  lineup order (0eb4271a8). Browser-verified: desktop Contracts name→card; phone Move benches; phone card.
+  NOT verified: phone hold-to-drag (tests only).
+
+**In flight:** Neon High `espn-news-1121` in player-card worktree (started ~7:00 CT; brief
+`~/fleet/runs/espn-news-1121/brief.md`; run dir `~/fleet/runs/espn-news-1121-1121/`, done = `exit` file;
+out.log = report). Builds ESPN player news + bio service, `player.news.read` + `news.feed.read`, card News
+tab + bio header, Home NEWS panel with real chips. On done: read report, review diff, run tsc/vitest/go test,
+browser-check card news + Home feed, push branch, tell Christopher. Quota-hit → err.log "Resets in".
+
+**Rulings today:** phone keeps name-tap = card (option 2, no ⓘ button); news from ESPN only for now
+("first-class from that single source", other sources later, keep a source field); lean on Gemini for
+fresh coding; reuse existing code before building.
+
+**Cap Q answered:** runway = MFL contracts; what-if = calculator; dead cap = MFL salary adjustments + TWR
+cuts (team checked had none); committed moves = TWR-only decisions, empty until owners act.
+
+**Known, not fixed:** lineup editor takes 12–16 s to unlock (room readBundle ~10 reads incl. many
+results.read); value.read 409 and "Contract decision … quote belongs to another decision" warnings on HQ read.
+
+**Refuted:** lineup lock was NOT permissions, NOT HQAct dispatch, NOT unstable port/room recreation —
+it was the strict parser (verified by logging the hidden failure cause).
+
+**Test harness:** `~/scratch/lineup-1121` (playwright-core + brave headless, state.json = commissioner
+login; p5/p6 lineup, p10/p11 order, p12 card+phone). KEEP until walk fixes merge.
+
+**Next:** 1) finish ESPN news on done; 2) take Christopher's next walk items; 3) fix slow lineup unlock;
+4) on his go: PR player-card → main, merge, lab release (`twr-lab-release.sh 26 <v25 targets> <run>`).
+
+# COMPACT POINT 11-21 ~5:15 AM CT — ALPHA ON MAIN + LAB; walk next
+
+**WHAT:** TWR alpha live on Legacy lab before Sun 11-22 12 PM CT kickoff. Repo ~/work/TheWarRoom (Beelink). Main = 877683d50 (#452 squash: desktop v3, glossary, MFL sync, error codes, phone live w1+w2+fixes, PWA update, live wall v1).
+**DONE LOOKS LIKE:** (1) alpha on main — MET 877683d50. (2) lab runs main — MET v24 (0.10.1-60-g877683d50), status all OK. (3) lab matches MFL — MET: real refresh 68 adds/50 removes/17 status/9 cap/29 picks/352 lineups/10 wks scores; rerun dry = "already up to date". (4) follow-ups #453 on main + lab v25 — IN FLIGHT. (5) Christopher walk + fixes — NEXT. (6) Sunday live proof (wall + phone + recorder) — NOT MET until noon Sunday.
+
+**IN FLIGHT**
+- `~/fleet/bin/merge-453-release.sh` (pid 2732379, Beelink, started 5:10 AM): waits for PR #453 CI green -> `gh pr merge 453 --squash` (Christopher authorized 11-21) -> `twr-lab-release.sh 25 ~/fleet/runs/labrel-alpha-1121/release-v24/metadata/24.targets.json ~/fleet/runs/labrel-453-1121`. Log: `~/fleet/runs/labrel-453-1121/log.txt`. Alive: `pgrep -f merge-453-release`. CI fail -> exit 3 "CI FAILED" in log: read `gh run view <id> --log-failed`, fix on session/alpha-2, push.
+- Walk dev server: vite on alpha-2 worktree (`frontend/vite.lab.config.ts`, excluded from git), http://127.0.0.1:5199/app/ (lab proxy; wall /app/wall, demo /app/wall?demo). Stop: `pkill`-free: `kill $(pgrep -f vite.lab.config)` locally on Beelink.
+- Hermes: live-recorder (~/live-recorder, data/YYYY-MM-DD), fleet tracker (port 8790, ~/fleet/tracker; source Beelink ~/fleet/tracker branch session/tracker-v1 head de5ce1b).
+
+**#453 contents (session/alpha-2, 220ceb295):** refresh test store pinned to fixture clock (Christopher: "the clock should be pinned to the server"), v3 Control Room error codes with Copy (d2034e904), wall v2 fluid full-screen + ticker + spotlight + big-plays rail (18eac730a). Local gates: tsc clean, 108 vitest, go Refresh tests ok.
+
+**LAB FACTS:** release script `~/fleet/bin/twr-lab-release.sh <V> <prev targets.json> <run>` builds origin/main. Prev targets also on lab `/root/labrel-<sha>-v<V>/metadata/<V>.targets.json`. Backup before alpha: `~/fleet/runs/labrel-alpha-1121/lab-backup-before.tgz` (325 MB, tar of /var/lib/twr). MFL refresh: build twr-server, `mirror-fetch -db <h.db> -mfl-league 14432`; copy to lab `/var/lib/twr/manual-1121-mfl-refresh/` (chown twr — /root is unreadable to twr); `rc-service twr-server stop`; `su -s /bin/sh twr -c "twr-server league-refresh -db /var/lib/twr/server.db -mirror <file> -league native.mfl-14432-2026 [-dry-run]" < ~/fleet/runs/pulse-lab4/private/commissioner.json`; start. Lab is Alpine/busybox (no bash, no sqlite3).
+
+**REFUTED — DO NOT RETEST**
+- "AGY signed out": agy keeps sign-in in GNOME keyring but uses empty file store when SSH_CONNECTION/SSH_CLIENT set. Fixed in agy-run.sh (unset + `agy models` preflight, exit 4 = SIGNED_OUT). Fallback: `systemd-run --user -p KillMode=process`.
+- CI flake TestLeagueRefreshStopsOnOpenTradeOffers: not a code bug; fixture clock vs wall clock. Fixed in #453.
+- Argon "162 h lock" from ledger was false; AGY screen said 100%. Trust the AGY screen.
+- `gh pr merge --merge` fails: repo allows squash only.
+
+**DECISIONS (11-21):** tracker usage bars removed (no real quota numbers — facts only). Wall: real games only; ?demo dev-only, add a visible DEMO mark. Christopher live-streams the wall weekly. Gemini when available, Tom/Haiku fallback. Hydrogen shares Neon's bucket; Argon separate; AGY Claude/GPT locked to ~Fri 11/27.
+
+**NEXT ACTIONS**
+1. Take Christopher's walk fixes and thoughts (he walks after compaction) — triage into lanes (Neon/Hydrogen), verify each myself.
+2. Check merge-453 log; confirm lab v25 status OK; walk server stays on alpha-2 (or main after merge).
+3. DEMO mark on ?demo wall; test wall in OBS signed in.
+4. Sunday ~11 AM: wall shows today's slate, recorder live mode, phone check on lab; noon watch first plays.
+5. Argon review of #453 pieces post-merge (v3 errors, wall v2).
+
+**NEEDS CHRISTOPHER:** walk + fixes; rotate lab R2 keys; OBS sign-in test with me.
+**HONEST STATUS:** wall/phone never seen on a live game; first proof Sun noon. PWA self-update unproven on a real phone. #453 not merged until CI green.
+
 # COMPACT POINT 11-20 ~8:40 PM CT — alpha push, Sunday 11-22 kickoff (12 PM CT)
 
 ## WHAT WE ARE DOING

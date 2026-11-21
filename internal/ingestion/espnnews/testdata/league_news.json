@@ -1,0 +1,515 @@
+{
+  "header": "NFL News",
+  "articles": [
+    {
+      "id": 50473666,
+      "nowId": "1-50473666",
+      "contentKey": "50473666-1-6-1",
+      "dataSourceIdentifier": "faaa82c8f2010",
+      "type": "Story",
+      "headline": "Falcons insist winning still the goal despite trading Jessie Bates III",
+      "description": "Atlanta wanted to ensure trading away Jessie Bates III didn't send the wrong message to the team.",
+      "lastModified": "2026-11-21T11:59:54Z",
+      "published": "2026-11-21T11:59:54Z",
+      "images": [
+        {
+          "dataSourceIdentifier": "20e81f9b1eb39",
+          "id": 50473705,
+          "type": "header",
+          "name": "Jessie Bates III [1296x729]",
+          "caption": "Jessie Bates III wasn't just a leader on the field, he was a key veteran voice in the locker room.",
+          "credit": "AP Photo/Mike Stewart",
+          "height": 729,
+          "width": 1296,
+          "url": "https://a.espncdn.com/photo/2026/1113/r1745395_1296x729_16-9.jpg"
+        },
+        {
+          "type": "Media",
+          "name": "Falcons adjust to major roster changes after trade deadline",
+          "caption": "Marc Raimondi reports on how the Falcons are handling the departures of Jessie Bates III and Ryan Neuzil as they prepare to face the Chiefs.",
+          "height": 324,
+          "width": 576,
+          "url": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1113/dm_261113_Watchfolder_Falconsdwd/dm_261113_Watchfolder_Falconsdwd.jpg"
+        }
+      ],
+      "categories": [
+        {
+          "id": 9572,
+          "type": "league",
+          "uid": "s:20~l:28",
+          "guid": "ad4c3bd2-ddb6-3f8c-8abf-744855a08fa4",
+          "description": "NFL",
+          "sportId": 28,
+          "leagueId": 28,
+          "league": {
+            "id": 28,
+            "description": "NFL",
+            "abbreviation": "NFL",
+            "links": {
+              "mobile": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              },
+              "web": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 1979,
+          "type": "team",
+          "uid": "s:20~l:28~t:1",
+          "guid": "49fd392a-86fe-4df3-1b77-9bbfa18b2ad5",
+          "description": "Atlanta Falcons",
+          "sportId": 28,
+          "teamId": 1,
+          "team": {
+            "id": 1,
+            "description": "Atlanta Falcons",
+            "abbreviation": "ATL",
+            "shortDisplayName": "Falcons",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/atl/atlanta-falcons"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/atl/atlanta-falcons"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 208615,
+          "type": "athlete",
+          "uid": "s:20~l:28~a:4360423",
+          "guid": "28022fa1-9050-eee1-5160-c77a6a379ec2",
+          "description": "Michael Penix Jr",
+          "sportId": 28,
+          "athleteId": 4360423,
+          "athlete": {
+            "id": 4360423,
+            "description": "Michael Penix Jr",
+            "links": {
+              "mobile": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4360423/michael-penix-jr"
+                }
+              },
+              "web": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4360423/michael-penix-jr"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 184648,
+          "type": "athlete",
+          "uid": "s:20~l:28~a:3919512",
+          "guid": "dadb4f44-91c3-441e-a543-88e002a9e1c5",
+          "description": "Jessie Bates III",
+          "sportId": 28,
+          "athleteId": 3919512,
+          "athlete": {
+            "id": 3919512,
+            "description": "Jessie Bates III",
+            "links": {
+              "mobile": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/3919512/jessie-bates-iii"
+                }
+              },
+              "web": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/3919512/jessie-bates-iii"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 696353,
+          "type": "contributor",
+          "guid": "99dc8264-cb24-3d5b-b2bf-1a5e36dfeca0",
+          "description": "Marc Raimondi",
+          "slug": "marc-raimondi",
+          "contributor": {
+            "id": 3788,
+            "description": "Marc Raimondi"
+          }
+        }
+      ],
+      "byline": "Marc Raimondi",
+      "links": {
+        "api": {
+          "self": {
+            "href": "https://content.core.api.espn.com/v1/sports/news/50473666"
+          }
+        },
+        "app": {
+          "sportscenter": {
+            "href": "sportscenter://x-callback-url/showStory?uid=50473666"
+          }
+        },
+        "mobile": {
+          "href": "http://m.espn.go.com/nfl/story?storyId=50473666"
+        },
+        "web": {
+          "href": "https://www.espn.com/nfl/story/_/id/50473666/atlanta-falcons-trade-deadline-jessie-bates-morale"
+        }
+      },
+      "premium": false
+    },
+    {
+      "id": 50545137,
+      "nowId": "1-50545137",
+      "contentKey": "50545137-1-6-1",
+      "dataSourceIdentifier": "e248c8715eff4",
+      "type": "Story",
+      "headline": "How Steelers' wide receiver corps gets big boost in Week 11",
+      "description": "DK Metcalf and the passing game are poised to get a lift this week with the return of Roman Wilson and Michael Pittman Jr.",
+      "lastModified": "2026-11-21T11:00:10Z",
+      "published": "2026-11-21T11:00:10Z",
+      "images": [
+        {
+          "dataSourceIdentifier": "a8f9111f8b50b",
+          "id": 50464945,
+          "type": "header",
+          "name": "DK Metcalf [576x324]",
+          "caption": "Steelers WR DK Metcalf had three catches for 31 yards and a touchdown in Pittsburgh's Week 3 win against the Bengals this year.",
+          "alt": "DK Metcalf",
+          "credit": "Joe Sargent/Getty Images",
+          "height": 324,
+          "width": 576,
+          "url": "https://a.espncdn.com/photo/2026/1112/r1745036_576x324_16-9.jpg"
+        },
+        {
+          "type": "Media",
+          "name": "Can play-action be the answer for the Steelers' offense?",
+          "caption": "Brooke Pryor details the lack of play action in the Steelers offense.",
+          "height": 324,
+          "width": 576,
+          "url": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1119/dm_261119_Steelers_play_action_IA/dm_261119_Steelers_play_action_IA.jpg"
+        }
+      ],
+      "categories": [
+        {
+          "id": 9572,
+          "type": "league",
+          "uid": "s:20~l:28",
+          "guid": "ad4c3bd2-ddb6-3f8c-8abf-744855a08fa4",
+          "description": "NFL",
+          "sportId": 28,
+          "leagueId": 28,
+          "league": {
+            "id": 28,
+            "description": "NFL",
+            "abbreviation": "NFL",
+            "links": {
+              "mobile": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              },
+              "web": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 2776,
+          "type": "team",
+          "uid": "s:20~l:28~t:23",
+          "guid": "debcd592-8d53-71f1-fc15-5c8b8ef9df6e",
+          "description": "Pittsburgh Steelers",
+          "sportId": 28,
+          "teamId": 23,
+          "team": {
+            "id": 23,
+            "description": "Pittsburgh Steelers",
+            "abbreviation": "PIT",
+            "shortDisplayName": "Steelers",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/pit/pittsburgh-steelers"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/pit/pittsburgh-steelers"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 443979,
+          "type": "athlete",
+          "uid": "s:20~l:28~a:4431492",
+          "guid": "26f43986-7674-3ef9-b523-f3f66dbd16a4",
+          "description": "Roman Wilson",
+          "sportId": 28,
+          "athleteId": 4431492,
+          "athlete": {
+            "id": 4431492,
+            "description": "Roman Wilson",
+            "links": {
+              "mobile": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4431492/roman-wilson"
+                }
+              },
+              "web": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4431492/roman-wilson"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 435184,
+          "type": "athlete",
+          "uid": "s:20~l:28~a:4035687",
+          "guid": "f9ac7a55-5934-2bf7-e70a-9c1d04cac2eb",
+          "description": "Michael Pittman Jr",
+          "sportId": 28,
+          "athleteId": 4035687,
+          "athlete": {
+            "id": 4035687,
+            "description": "Michael Pittman Jr",
+            "links": {
+              "mobile": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4035687/michael-pittman-jr"
+                }
+              },
+              "web": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4035687/michael-pittman-jr"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 447687,
+          "type": "athlete",
+          "uid": "s:20~l:28~a:4694237",
+          "guid": "c594fa98-bf7e-39ae-a32b-eb664a8e7a36",
+          "description": "Max Hurleman",
+          "sportId": 28,
+          "athleteId": 4694237,
+          "athlete": {
+            "id": 4694237,
+            "description": "Max Hurleman",
+            "links": {
+              "mobile": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4694237/max-hurleman"
+                }
+              },
+              "web": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4694237/max-hurleman"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 380063,
+          "type": "athlete",
+          "uid": "s:20~l:28~a:4047650",
+          "guid": "c6727be7-1ac0-315c-437d-e281fe9a2e84",
+          "description": "DK Metcalf",
+          "sportId": 28,
+          "athleteId": 4047650,
+          "athlete": {
+            "id": 4047650,
+            "description": "DK Metcalf",
+            "links": {
+              "mobile": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4047650/dk-metcalf"
+                }
+              },
+              "web": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4047650/dk-metcalf"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "byline": "Brooke Pryor",
+      "links": {
+        "api": {
+          "self": {
+            "href": "https://content.core.api.espn.com/v1/sports/news/50545137"
+          }
+        },
+        "app": {
+          "sportscenter": {
+            "href": "sportscenter://x-callback-url/showStory?uid=50545137"
+          }
+        },
+        "mobile": {
+          "href": "http://m.espn.go.com/nfl/story?storyId=50545137"
+        },
+        "web": {
+          "href": "https://www.espn.com/nfl/story/_/id/50545137/steelers-receiver-corps-boost-wilson-pittman-week-11"
+        }
+      },
+      "premium": false
+    },
+    {
+      "id": 50543720,
+      "nowId": "1-50543720",
+      "contentKey": "50543720-1-5-1",
+      "dataSourceIdentifier": "3a90da92e47f4",
+      "type": "HeadlineNews",
+      "headline": "Raiders TE Brock Bowers (ankle, quad) listed as questionable",
+      "description": "Las Vegas Raiders tight end Brock Bowers (ankle/quad) is questionable for Sunday's divisional matchup against the Denver Broncos, coach Klint Kubiak said Friday.",
+      "lastModified": "2026-11-21T12:51:13Z",
+      "published": "2026-11-21T12:51:13Z",
+      "images": [
+        {
+          "dataSourceIdentifier": "b1852ccdc1552",
+          "id": 49546997,
+          "type": "header",
+          "name": "Brock Bowers [600x400]",
+          "credit": "Candice Ward-Imagn Images",
+          "height": 400,
+          "width": 600,
+          "url": "https://a.espncdn.com/photo/2026/0806/r1698471_600x400_3-2.jpg"
+        }
+      ],
+      "categories": [
+        {
+          "id": 9572,
+          "type": "league",
+          "uid": "s:20~l:28",
+          "guid": "ad4c3bd2-ddb6-3f8c-8abf-744855a08fa4",
+          "description": "NFL",
+          "sportId": 28,
+          "leagueId": 28,
+          "league": {
+            "id": 28,
+            "description": "NFL",
+            "abbreviation": "NFL",
+            "links": {
+              "mobile": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              },
+              "web": {
+                "leagues": {
+                  "href": "https://www.espn.com/nfl/"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 2553,
+          "type": "team",
+          "uid": "s:20~l:28~t:13",
+          "guid": "b18540eb-6f2b-534c-e7f9-9bd930518da9",
+          "description": "Las Vegas Raiders",
+          "sportId": 28,
+          "teamId": 13,
+          "team": {
+            "id": 13,
+            "description": "Las Vegas Raiders",
+            "abbreviation": "LV",
+            "shortDisplayName": "Raiders",
+            "links": {
+              "mobile": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/lv/las-vegas-raiders"
+                }
+              },
+              "web": {
+                "teams": {
+                  "href": "https://www.espn.com/nfl/team/_/name/lv/las-vegas-raiders"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 489617,
+          "type": "athlete",
+          "uid": "s:20~l:28~a:4432665",
+          "guid": "bc4ba7ee-446b-36fd-9985-7fd2a94a98bc",
+          "description": "Brock Bowers",
+          "sportId": 28,
+          "athleteId": 4432665,
+          "athlete": {
+            "id": 4432665,
+            "description": "Brock Bowers",
+            "links": {
+              "mobile": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4432665/brock-bowers"
+                }
+              },
+              "web": {
+                "athletes": {
+                  "href": "https://www.espn.com/nfl/player/_/id/4432665/brock-bowers"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 704689,
+          "type": "contributor",
+          "guid": "b01f248b-d634-36a1-95d7-36c479b8a8b6",
+          "description": "Ryan McFadden",
+          "slug": "ryan-mcfadden",
+          "contributor": {
+            "id": 4152,
+            "description": "Ryan McFadden"
+          }
+        }
+      ],
+      "byline": "Ryan McFadden",
+      "links": {
+        "api": {
+          "self": {
+            "href": "https://content.core.api.espn.com/v1/sports/news/50543720"
+          }
+        },
+        "app": {
+          "sportscenter": {
+            "href": "sportscenter://x-callback-url/showStory?uid=50543720"
+          }
+        },
+        "mobile": {
+          "href": "http://m.espn.go.com/nfl/story?storyId=50543720"
+        },
+        "web": {
+          "href": "https://www.espn.com/nfl/story/_/id/50543720/raiders-te-brock-bowers-ankle-quad-listed-questionable"
+        }
+      },
+      "premium": false
+    }
+  ]
+}

@@ -41,6 +41,7 @@ export function useNativeLineup(league: string, mine: string, lineup?: HQLineup,
         'injured reserve' : 'taxi squad'}`);
   };
   const message = !canManage ? 'Viewing this franchise. Lineup changes are read-only.' : state.error ||
+    (!state.reading ? 'Reading your lineup from the league server. Moves unlock when it lands.' : '') ||
     state.message || (changed.length ?
     `${changed.length} players changed from saved`
     : 'No changes. Swaps stay a plan until you save.');

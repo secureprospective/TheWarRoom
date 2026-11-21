@@ -1,0 +1,93 @@
+/* Desktop v3 player card drawer styles; scoped under .pcd to avoid touching verbatim v3.css. */
+.pcd-main { display: grid; gap: 12px; padding: 12px 16px; align-content: start; }
+.pcd-head {
+  display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; align-items: start;
+  padding: 10px 12px; background: var(--sunken); border: 1px solid var(--edge);
+}
+.pcd-photo { display: grid; gap: 6px; justify-items: center; }
+.pcd-photo .player-photo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 68px; height: 68px; border: 1px solid var(--edge); background: var(--tile); overflow: hidden;
+}
+.pcd-photo .player-photo img { width: 100%; height: 100%; object-fit: cover; }
+.pcd-photo .player-photo-fallback { font: 700 12px var(--mono); color: var(--ink2); }
+.pcd-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.pcd-meta {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 14px; font-size: 12px;
+}
+.pcd-meta > div {
+  display: flex; justify-content: space-between; gap: 8px; padding: 3px 0;
+  border-bottom: 1px solid var(--rule); min-width: 0;
+}
+.pcd-meta dt { font: 700 10px var(--mono); letter-spacing: .08em; color: var(--ink3); flex: none; }
+.pcd-meta dd {
+  font: 11.5px var(--mono); color: var(--ink); text-align: right;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pcd-panel { display: grid; gap: 10px; }
+.pcd-nums {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px;
+  background: var(--edge); border: 1px solid var(--edge);
+}
+.pcd-nums > div { background: var(--sunken); padding: 8px 10px; display: grid; gap: 2px; }
+.pcd-nums span { font: 700 9px var(--mono); letter-spacing: .12em; color: var(--ink3); }
+.pcd-nums b { font: 700 20px/1.1 var(--mono); color: var(--ink); }
+.pcd-lbl {
+  font: 700 10px var(--mono); letter-spacing: .14em; color: var(--ink3); text-transform: uppercase;
+}
+.pcd-bars {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-items: end;
+  height: 76px; padding: 8px; background: var(--black); border: 1px solid var(--edge);
+}
+.pcd-bars div {
+  display: grid; align-content: end; gap: 3px; height: 100%; text-align: center;
+  font: 10px var(--mono); color: var(--ink2);
+}
+.pcd-bars i { display: block; background: var(--edge-hi); }
+.pcd-note { font: 11px var(--mono); color: var(--ink3); }
+.pcd-side { display: grid; gap: 12px; align-content: start; }
+.pcd-status {
+  display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: baseline; gap: 8px;
+  padding: 6px 8px; background: var(--sunken); border: 1px solid var(--rule); font-size: 12px;
+}
+.pcd-status em { font: 700 9.5px var(--mono); color: var(--ink3); font-style: normal; }
+.pcd-status p { margin: 0; }
+.pcd-note-fld { display: grid; gap: 6px; }
+.pcd-note-fld textarea {
+  min-height: 68px; width: 100%; font: 12.5px var(--sans); resize: vertical;
+  background: var(--sunken); color: var(--ink); border: 1px solid var(--edge); padding: 6px 8px;
+}
+.pcd-note-fld small { font: 10px var(--mono); color: var(--ink3); }
+.pcd-contract .contracts { gap: 6px; }
+.pcd-contract .contract-reading h4 {
+  font: 700 10px var(--mono); letter-spacing: .14em; color: var(--ink3); text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.pcd-contract .contract-years { width: 100%; border-collapse: collapse; font: 12px var(--mono); }
+.pcd-contract .contract-years th,
+.pcd-contract .contract-years td {
+  padding: 4px 6px; border-bottom: 1px solid var(--rule); text-align: left;
+}
+.pcd-contract .contract-years td.contract-money { text-align: right; }
+.pcd-contract .contract-source,
+.pcd-contract .contract-footnote,
+.pcd-contract details { font: 10px var(--mono); color: var(--ink3); margin-top: 4px; }
+.espn-news-list { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 8px; }
+.espn-news-item {
+  padding: 8px 10px; background: var(--sunken); border: 1px solid var(--rule); display: grid; gap: 4px;
+}
+.espn-news-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.espn-news-title { font-size: 13px; color: var(--ink); line-height: 1.35; }
+.espn-news-link {
+  background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+.espn-news-meta {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  font: 10px var(--mono); color: var(--ink3);
+}
+.espn-news-desc { margin: 0; font-size: 12px; color: var(--ink2); line-height: 1.45; }
+.espn-news-foot { margin: 6px 0 0; font: 10px var(--mono); color: var(--ink3); }
+.news-players { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0; }
+.news .espn-news-link { text-decoration: none; }
+.news .espn-news-link:hover { text-decoration: underline; }

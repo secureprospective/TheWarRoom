@@ -13,6 +13,21 @@ export function fitsSlot(player: PlacementPlayer | undefined, slot: HQSlot, sett
     false;
 }
 
+/** quickMove decides one-tap lineup movement: a starter goes to the bench, a bench player fills the first
+ *  open starting slot his position fits, otherwise the caller falls back (card on desktop, lit-row mode
+ *  on phone). */
+export function quickMove(id: string, slots: HQSlot[], fits: (slot: HQSlot) => boolean):
+  { kind: 'bench' } | { kind: 'fill'; slot: HQSlot } | { kind: 'card' };
+export function quickMove<T extends { id?: string }>(id: string, slots: T[], fits: (slot: T) => boolean):
+  { kind: 'bench' } | { kind: 'fill'; slot: T } | { kind: 'card' };
+export function quickMove<T extends { id?: string }>(
+  id: string, slots: T[], fits: (slot: T) => boolean,
+): { kind: 'bench' } | { kind: 'fill'; slot: T } | { kind: 'card' } {
+  if (slots.some(s => s.id === id)) return { kind: 'bench' };
+  const open = slots.find(s => !s.id && fits(s));
+  return open ? { kind: 'fill', slot: open } : { kind: 'card' } as const;
+}
+
 // Slot choice is presentation; the existing lineup command still checks league legality.
 export function placePlayer(slots: HQSlot[], players: PlacementPlayer[], settings: HQSettings,
   values: Map<string, number>, id: string, target?: number, toBench = false): HQSlot[] {

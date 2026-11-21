@@ -3,6 +3,8 @@ package history
 import (
 	"context"
 	"fmt"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -145,13 +147,14 @@ func (s *Store) NativeResults(ctx context.Context, league string, season, week i
 	}
 	src := s.nativeSources(league, season)
 	args := src.liveKey() + "|" + mark + "|" + fmt.Sprintf("%s|%d|%d", league, season, week)
+	starters := league + "|" + mark + "|" + src.weekKey(season, week) + fmt.Sprintf("|%d|%d", season, week)
 	return shareReading(ctx, &s.flights, "NativeResults", args,
 		func(ctx context.Context) (commissioner.NativeResults, error) {
-			return s.readNativeResults(ctx, league, season, week, src)
+			return s.readNativeResults(ctx, league, season, week, src, starters)
 		})
 }
 
-func (s *Store) readNativeResults(ctx context.Context, league string, season, week int, src *nativeSources) (commissioner.NativeResults, error) {
+func (s *Store) readNativeResults(ctx context.Context, league string, season, week int, src *nativeSources, startersKey string) (commissioner.NativeResults, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeResults{}, err
@@ -160,7 +163,9 @@ func (s *Store) readNativeResults(ctx context.Context, league string, season, we
 	if err != nil {
 		return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
 	}
-	commissioner.RecordedStarters(ctx, records, src, &out)
+	s.recordedStarters.apply(startersKey, s.now(), &out, func() {
+		commissioner.RecordedStarters(ctx, records, src, &out)
+	})
 	out.Evidence = src.scoreEvidence(season, week)
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
@@ -309,4 +314,49 @@ func (s *Store) readNativeOdds(ctx context.Context, league string, season int, v
 	out.Evidence = src.scoreEvidence(season, 0)
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
+}
+
+// recordedStartersTTL bounds how long a finished week's starters are reused, so a late NFL stat
+// correction still reaches the screen.
+const recordedStartersTTL = time.Hour
+
+// recordedStartersCache keeps each finished (recorded) week's starters. Rebuilding them reloads every
+// franchise's lineup and rescores every starter: ~4 s a week on the lab, which made the phone League
+// tab take 40 s. The key holds the league records mark and the week's live generation, so a ledger
+// change or new scores for that week read fresh.
+type recordedStartersCache struct {
+	mu      sync.Mutex
+	entries map[string]recordedStartersEntry
+}
+
+type recordedStartersEntry struct {
+	at       time.Time
+	starters map[string][]commissioner.StarterScore
+}
+
+func (c *recordedStartersCache) apply(key string, now time.Time, out *commissioner.NativeResults, build func()) {
+	c.mu.Lock()
+	hit, ok := c.entries[key]
+	c.mu.Unlock()
+	if ok && now.Sub(hit.at) < recordedStartersTTL {
+		for i := range out.Scores {
+			if starters, held := hit.starters[out.Scores[i].Franchise]; held && out.Scores[i].RecordedResult != "" {
+				out.Scores[i].Starters = slices.Clone(starters)
+			}
+		}
+		return
+	}
+	build()
+	kept := map[string][]commissioner.StarterScore{}
+	for _, score := range out.Scores {
+		if score.RecordedResult != "" {
+			kept[score.Franchise] = slices.Clone(score.Starters)
+		}
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.entries == nil || len(c.entries) >= 256 {
+		c.entries = map[string]recordedStartersEntry{}
+	}
+	c.entries[key] = recordedStartersEntry{at: now, starters: kept}
 }

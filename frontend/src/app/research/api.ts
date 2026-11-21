@@ -1,6 +1,7 @@
 import { parseResearch, type Research, type Scope, parsePlayerReading, type PlayerReading } from './contract';
 import { commands } from '../commands/registry';
 import type * as Bindings from '../../../wailsjs/go/research/API';
+import type { HostedPort } from '../commissioner/hostedRoom';
 import { hostedPlayerReadingUnavailable, hostedWorkflow, type HostedPlayerReadingUnavailable } from
   '../control/nativeApi';
 
@@ -42,10 +43,11 @@ export function subscribeResearchPlayer(changed: () => void): () => void {
   return commands.alerts.onSeasonChange(changed);
 }
 
-export const readPlayerUsage = async (id: string, league?: string): Promise<
-  unknown | HostedPlayerReadingUnavailable> => {
+export const readPlayerUsage = async (
+  id: string, league?: string, port: HostedPort = hostedWorkflow,
+): Promise<unknown | HostedPlayerReadingUnavailable> => {
   if (!league) return bindings().TargetPlayerUsage(id);
-  const { data } = await hostedWorkflow({ command: 'player.usage.read', mode: 'read',
+  const { data } = await port({ command: 'player.usage.read', mode: 'read',
     arguments: { league, player: id } });
   return hostedPlayerReadingUnavailable(data) ?? data;
 };

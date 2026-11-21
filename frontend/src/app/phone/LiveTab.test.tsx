@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { HomeBrief } from '../shell/homeReads';
 import type { LeagueChoice } from '../shell/leaguePicker';
-import { LiveTab, surname } from './LiveTab';
+import { LiveTab } from './LiveTab';
 
 const league: LeagueChoice = { id: 'league', name: 'Test League', app: true, franchise: 'mine',
   franchiseName: 'My Team', role: 'Owner' };
@@ -81,7 +81,7 @@ describe('LiveTab', () => {
     expect(region('My matchup')).toContain('My matchup · wk 11');
     expect(region('My matchup')).toContain('Iron Curtain · YOU');
     expect(region('My matchup')).toContain('44% WIN');
-    expect(region('My matchup')).toContain('Mahomes');
+    expect(region('My matchup')).not.toContain('Mahomes');
     expect(region('NFL games')).toContain('BUF3KC7Q2 8:42');
     expect(region('League matchups')).toBe('');
     expect(region('NFL live')).toContain('2ND & 7');
@@ -94,7 +94,7 @@ describe('LiveTab', () => {
     expect(region('Matchup box score')).toContain('Patrick Mahomes');
     expect(region('Matchup box score')).toContain('Josh Allen');
   });
-  it('opens and closes the all-matchups sheet, and opens a starter row detail', async () => {
+  it('opens and closes the all-matchups sheet', async () => {
     await show(async () => brief([myGameRow]));
     await tap('All matchups');
     const sheet = host!.querySelector('dialog');
@@ -102,10 +102,26 @@ describe('LiveTab', () => {
     expect(sheet?.textContent).toContain('YOUR MATCHUP');
     await tap('Close Week 11 matchups');
     expect(host!.querySelector('dialog')).toBeNull();
-    await tap('Watch Patrick Mahomes\'s game');
-    expect(host!.querySelector('dialog')?.textContent).toContain('18.1');
-    await act(async () => host!.querySelector('dialog')!.dispatchEvent(new Event('cancel')));
-    expect(host!.querySelector('dialog')).toBeNull();
+  });
+  it('follows the matchup picked in All matchups and returns to mine from the header', async () => {
+    Element.prototype.scrollIntoView ??= () => {};
+    const otherRow = { week: 11, home: 'h2', away: 'a2', homeName: 'Hammers', awayName: 'Arrows',
+      status: 'in', homeProvisional: 40.5, awayProvisional: 31.25, words: '', why: [] };
+    const b = brief([myGameRow, otherRow]);
+    b.pulse!.odds!.games.push({ week: 11, home: 'h2', away: 'a2', homeName: 'Hammers',
+      awayName: 'Arrows', homeWin: 0.7 });
+    await show(async () => b);
+    const score = () => host!.querySelector('[aria-label="My matchup"] .mys')?.textContent ?? '';
+    expect(score()).toContain('YOU');
+    await tap('All matchups');
+    await tap('Arrows 31.3, Hammers 40.5');
+    expect(score()).toContain('Arrows');
+    expect(score()).toContain('Hammers');
+    expect(score()).toContain('30% WIN');
+    expect(score()).not.toContain('YOU');
+    await tap('Show my matchup');
+    expect(score()).toContain('Iron Curtain · YOU');
+    expect(score()).toContain('44% WIN');
   });
   it('says there is no game when the week holds none for me', async () => {
     await show(async () => brief([]));
@@ -121,24 +137,8 @@ describe('LiveTab', () => {
   it('keeps the matchup header as one row: title, then both controls', async () => {
     await show(async () => brief([myGameRow]));
     const row = host!.querySelector<HTMLElement>('[aria-label="My matchup"] .live6__head')!;
-    expect(row.children[0].tagName).toBe('B');
+    expect(row.children[0].getAttribute('aria-label')).toBe('Show my matchup');
     expect(row.querySelectorAll(':scope > span > .live6__link')).toHaveLength(2);
-  });
-  it('names starter tiles by surname, as the mock does', async () => {
-    expect(surname('Patrick Mahomes')).toBe('Mahomes');
-    expect(surname('Amon-Ra St. Brown')).toBe('St. Brown');
-    expect(surname('Chiefs')).toBe('Chiefs');
-    await show(async () => brief([myGameRow]));
-    expect(host!.querySelector('.live6__pl span')?.textContent).toBe('Mahomes');
-  });
-  it('scrolls the field section into view when a starter row is tapped', async () => {
-    Element.prototype.scrollIntoView ??= () => {};
-    const scroll = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
-    await show(async () => brief([myGameRow]));
-    await tap('Watch Patrick Mahomes\'s game');
-    const field = host!.querySelector('[aria-label="NFL live"]');
-    expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
-    expect(scroll.mock.contexts).toContain(field);
   });
   it('shows how old the held scores are, refreshed every 30 seconds', async () => {
     vi.useFakeTimers({ toNotFake: ['setTimeout', 'queueMicrotask', 'nextTick'] });
@@ -176,7 +176,7 @@ describe('LiveTab', () => {
     expect(region('Latest play')).toContain('Q2 8:42');
     expect(region('Latest play')).toContain('Mahomes pass short right');
   });
-  it('renders the mock matchup header, win-chance bar, and starter badges with possession icon', async () => {
+  it('renders the matchup scores and win-chance bar with no starter tiles', async () => {
     const richBrief = brief([myGameRow]);
     richBrief.pulse!.seats = [
       { franchise: 'mine', name: 'Iron Curtain', abbreviation: 'IRN', division: '', owner: 'me' },
@@ -198,12 +198,7 @@ describe('LiveTab', () => {
     expect(mym.querySelector('.mys .t.me')?.textContent).toContain('IRN · YOU');
     expect(mym.querySelector('.mys .t.r')?.textContent).toContain('GRD');
     expect(mym.querySelector<HTMLElement>('.wp-bar i')?.style.width).toBe('44%');
-    const tiles = [...mym.querySelectorAll('.myp .live6__pl')];
-    expect(tiles).toHaveLength(3);
-    // KC holds possession (id '12'): KC QB has the football icon; KC kicker and BUF QB do not.
-    expect(tiles[0].querySelector('.onf.is-live svg')).not.toBeNull();
-    expect(tiles[1].querySelector('.onf.is-live')).toBeNull();
-    expect(tiles[2].querySelector('.onf.is-live')).toBeNull();
+    expect(mym.querySelector('.myp, .live6__pl')).toBeNull();
   });
   it('animates held score and win-chance updates between reads, snapping under reduced motion', async () => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });

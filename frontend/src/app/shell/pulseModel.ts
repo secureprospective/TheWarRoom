@@ -134,27 +134,35 @@ export function naturalName(name: string): string {
   return first && !more.length ? `${first} ${last}` : name;
 }
 
-const OFFENSE = ['QB', 'RB', 'WR', 'TE', 'FLX', 'K', 'PK', 'OL'];
-const DEFENSE = ['DT', 'DE', 'DL', 'LB', 'CB', 'S', 'DB'];
-const SLOT_ORDER = [...OFFENSE, ...DEFENSE];
-/** bySlot orders positions the way a lineup reads: offense, then defense, unknown slots last. */
+/** LINEUP_ORDER is the one position order every lineup and live list follows (the Franchise HQ lineup
+ *  set it): offense, flex, defense, defensive flex, then kickers. */
+export const LINEUP_ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'FLX', 'OL',
+  'DL', 'DT', 'DE', 'LB', 'DB', 'CB', 'S', 'D·FLX', 'K', 'PK'];
+const OFFENSE = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'FLX', 'OL'];
+const KICKERS = ['K', 'PK'];
+/** slotRank places a slot code in LINEUP_ORDER; unknown slots go last. */
+export function slotRank(slot: string): number {
+  const i = LINEUP_ORDER.indexOf(slot);
+  return i < 0 ? LINEUP_ORDER.length : i;
+}
+/** bySlot orders positions the way a lineup reads: LINEUP_ORDER, unknown slots last. */
 export function bySlot(a: string, b: string): number {
-  const rank = (slot: string) => (SLOT_ORDER.indexOf(slot) + SLOT_ORDER.length + 1) % (SLOT_ORDER.length + 1);
-  return rank(a) - rank(b) || a.localeCompare(b);
+  return slotRank(a) - slotRank(b) || (slotRank(a) === LINEUP_ORDER.length ? a.localeCompare(b) : 0);
 }
 export type StarterPair = { slot: string; left?: PulseStarterRow; right?: PulseStarterRow };
 
 /** pairStarters sets two lineups across the line like for like: offense then defense, one row per
  *  starter at each position either side fills, so a pair never sets a kicker against a running back. */
 export function pairStarters(left: PulseStarterRow[], right: PulseStarterRow[]):
-  { heading: 'OFFENSE' | 'DEFENSE'; pairs: StarterPair[] }[] {
+  { heading: 'OFFENSE' | 'DEFENSE' | 'KICKERS'; pairs: StarterPair[] }[] {
   const slots = [...new Set([...left, ...right].map(r => r.slot))].sort(bySlot);
-  const groups: { heading: 'OFFENSE' | 'DEFENSE'; pairs: StarterPair[] }[] =
-    [{ heading: 'OFFENSE', pairs: [] }, { heading: 'DEFENSE', pairs: [] }];
+  const groups: { heading: 'OFFENSE' | 'DEFENSE' | 'KICKERS'; pairs: StarterPair[] }[] =
+    [{ heading: 'OFFENSE', pairs: [] }, { heading: 'DEFENSE', pairs: [] },
+      { heading: 'KICKERS', pairs: [] }];
   for (const slot of slots) {
     const l = left.filter(r => r.slot === slot);
     const r = right.filter(x => x.slot === slot);
-    const into = groups[OFFENSE.includes(slot) ? 0 : 1];
+    const into = groups[OFFENSE.includes(slot) ? 0 : KICKERS.includes(slot) ? 2 : 1];
     for (let i = 0; i < Math.max(l.length, r.length); i++)
       into.pairs.push({ slot, left: l[i], right: r[i] });
   }
@@ -174,7 +182,7 @@ export function starterRows(score: PulseScore | undefined, lineup: PulseLineupPl
       line: s.line, revision: s.revision,
       words: [s.words, s.source, ...Object.entries(s.fieldSources ?? {}).map(([field, owner]) =>
         `${field}: ${owner}`)].filter(Boolean).join(" · ") };
-  });
+  }).sort((a, b) => bySlot(a.slot, b.slot));
 }
 
 export type StatChange = { player: string; name: string; left: boolean; stats: string;

@@ -47,6 +47,10 @@ type Hosted struct {
 	LiveGames *leagueservice.LiveGames
 	// InjuryFeed reads the latest validated public NFL injury report from reference storage.
 	InjuryFeed leagueservice.NFLInjuryFeedSource
+	// News caches public ESPN league news, player news, and player bios.
+	News *leagueservice.NewsService
+	// Photos serves GET /headshot/<mfl id> from the server photo cache; nil means no photos (404).
+	Photos http.Handler
 	// FootballDigest and Football are the server's pin (-football); Pins, when set, answers each league's
 	// own store and pin, and an unpinned league gets the server's.
 	FootballDigest string
@@ -144,6 +148,10 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, PhotoPathPrefix) {
+		h.photo(w, r)
+		return
+	}
 	switch r.URL.Path {
 	case RecoveryPath:
 		h.recoverAccount(w, r)
@@ -309,8 +317,8 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).
-		WithLiveGames(h.LiveGames).WithNFLInjuryFeed(h.InjuryFeed).WithBackupRunner(h.BackupLeague).
-		WithProblemReportStore(pin.Store)
+		WithLiveGames(h.LiveGames).WithNFLInjuryFeed(h.InjuryFeed).WithNews(h.News).
+		WithBackupRunner(h.BackupLeague).WithProblemReportStore(pin.Store)
 	h.dispatch(w, r, service, raw)
 }
 
@@ -400,8 +408,21 @@ func (h Hosted) admitLeague(ctx context.Context, w http.ResponseWriter, league s
 	return pin, true
 }
 
+// decodeNative logs why a request was refused (never its body): an old app copy sending a shape
+// this server no longer reads otherwise shows only "400, no command" in the error log.
 func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest) bool {
-	return r.Method == http.MethodPost && decodeHosted(w, r, raw) == nil && raw.Validate() == nil && raw.matchesPath(r.URL.Path)
+	if r.Method != http.MethodPost {
+		return false
+	}
+	if err := decodeHosted(w, r, raw); err != nil {
+		log.Printf("native request refused: %v", err)
+		return false
+	}
+	if err := raw.Validate(); err != nil {
+		log.Printf("native request refused: %v", err)
+		return false
+	}
+	return raw.matchesPath(r.URL.Path)
 }
 
 // LeaguePin is the store a league is served from and the football evidence it is pinned to. Missing
@@ -888,4 +909,29 @@ func (h Hosted) leagueHead(ctx context.Context, league string) (int64, error) {
 		return 0, fmt.Errorf("find league store: %w", err)
 	}
 	return store.CommittedHead(ctx, league, commissioner.Stream) //nolint:wrapcheck // the store names its read
+}
+
+// PhotoPathPrefix is the web player photo route, /v1/headshot/<mfl id>: under /v1 so the tunnel's
+// path allowlist passes it. The cache itself answers the desktop's /headshot/<mfl id>.
+const PhotoPathPrefix = "/v1/headshot/"
+
+// PhotoSizedPrefix is the versioned route the web app uses: /v1/headshot/350/<mfl id>.
+const PhotoSizedPrefix = PhotoPathPrefix + "350/"
+
+// photo serves a player photo on the app host only. A server without a photo cache answers 404,
+// which the card reads as "show the team instead".
+func (h Hosted) photo(w http.ResponseWriter, r *http.Request) {
+	if h.Photos == nil || !validPublicHost(h.PublicHost) || r.Host != h.PublicHost {
+		http.NotFound(w, r)
+		return
+	}
+	if id, sized := strings.CutPrefix(r.URL.Path, PhotoSizedPrefix); sized {
+		// The size segment gives sharper photos a new address, so a CDN copy of an older size is
+		// never reused. The cache itself answers /headshot/<id>.
+		r = r.Clone(r.Context())
+		r.URL.Path, r.URL.RawPath = "/headshot/"+id, ""
+		h.Photos.ServeHTTP(w, r)
+		return
+	}
+	http.StripPrefix("/v1", h.Photos).ServeHTTP(w, r)
 }

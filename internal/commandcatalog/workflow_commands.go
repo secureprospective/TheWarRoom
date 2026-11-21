@@ -225,6 +225,16 @@ func workflowReads() map[string]WorkflowCommand {
 			input commissioner.RawProblemReportsScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetProblemReports(ctx, input))
 		})
+	out[leagueservice.PlayerNewsRead] = workflowRead(
+		func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetPlayerNews(leagueservice.RawPlayerReadScope{
+				League: r.League, Player: r.Player,
+			}))
+		})
+	out[leagueservice.NewsFeedRead] = workflowRead(
+		func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNewsFeed(r.League))
+		})
 	for id, command := range commissionerControlReads() {
 		out[id] = command
 	}

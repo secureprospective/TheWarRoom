@@ -19,10 +19,17 @@ export const targetWithdrawRoster = TargetWithdrawRoster;
 export type PhotoReader = (id: string) => Promise<platform.PhotoView>;
 type GoWindow = { go?: { platform?: { API?: { TargetPhoto?: PhotoReader } } } };
 
-// photoReader is Go's photo verdict, or none outside the desktop app, so no request is made.
+// hostedPhoto is the web app photo: the server photo cache at /v1/headshot/ (inside the tunnel
+// path allowlist), so img-src stays self. A missing photo is a 404; the card shows the team.
+export const hostedPhoto: PhotoReader = (id) =>
+  Promise.resolve(/^[0-9]{1,8}$/.test(id)
+    ? { src: `/v1/headshot/350/${id}`, alt: 'Photo' }
+    : { src: '', alt: '' });
+
+// photoReader is Go's photo verdict in the desktop app, else the server's photo cache.
 export function photoReader(): PhotoReader | undefined {
   if (typeof window === 'undefined') return undefined;
-  return (window as unknown as GoWindow).go?.platform?.API?.TargetPhoto;
+  return (window as unknown as GoWindow).go?.platform?.API?.TargetPhoto ?? hostedPhoto;
 }
 
 export { TargetInjuries as targetInjuries } from '../../../wailsjs/go/platform/API';

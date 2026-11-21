@@ -3,6 +3,7 @@ package serverhttp
 import (
 	"embed"
 	"io/fs"
+	"log/slog"
 	"mime"
 	"net/http"
 	"path"
@@ -56,6 +57,14 @@ func webAssetsHandler(assets fs.FS) http.Handler {
 		body, err := fs.ReadFile(assets, name)
 		if err != nil {
 			if path.Ext(name) != "" {
+				// A stale phone copy asks for files an older build named; the path says which build.
+				slog.Warn("browser app: no file", slog.String("file", logSafePath(name)))
+				if strings.HasPrefix(name, "assets/") {
+					// Only a page from an older release asks for a build file that is gone. Drop that
+					// device's app cache and worker so its next open loads the current release; the
+					// sign-in cookie is not touched. (An S25 stayed on an old page after many releases.)
+					w.Header().Set("Clear-Site-Data", `"cache", "storage"`)
+				}
 				http.NotFound(w, r)
 				return
 			}
@@ -112,4 +121,18 @@ func webAppContentType(name string) string {
 
 func stringLength(body []byte) string {
 	return strconv.Itoa(len(body))
+}
+
+// logSafePath keeps only the characters an app file name uses, so a request cannot forge log lines.
+func logSafePath(name string) string {
+	clean := strings.Map(func(r rune) rune {
+		if r == '/' || r == '.' || r == '-' || r == '_' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' {
+			return r
+		}
+		return '?'
+	}, name)
+	if len(clean) > 120 {
+		clean = clean[:120]
+	}
+	return clean
 }

@@ -275,7 +275,7 @@ func (a *Service) TargetNativeContractDecisionsContext(requestCtx context.Contex
 	if err != nil {
 		return market.ContractDecisions{}, fmt.Errorf("read native contract decisions: %w", err)
 	}
-	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
+	reading.StampRevision(commissioner.ViewRevision(ctx, records, reading.Revision))
 	return reading, nil
 }
 

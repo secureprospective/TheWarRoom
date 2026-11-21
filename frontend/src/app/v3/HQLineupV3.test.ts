@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kickWords } from './HQLineupV3';
+import { kickWords, quickMove } from './HQLineupV3';
 
 // Sunday 22 November 2026, 10:00 CT.
 const now = Date.parse('2026-11-22T16:00:00Z');
@@ -17,5 +17,20 @@ describe('kickWords', () => {
     expect(kickWords('2026-11-23T01:20:00Z', now).w).toBe('SNF');
     expect(kickWords('2026-11-24T01:15:00Z', now).w).toBe('MNF');
     expect(kickWords('2026-11-27T01:15:00Z', now).w).toBe('TNF');
+  });
+});
+
+describe("quickMove", () => {
+  const slots = [{ code: "QB", id: "qb1" }, { code: "RB", id: undefined },
+    { code: "WR", id: undefined }] as never[];
+  const rbOnly = (s: { code: string }) => s.code === "RB";
+  it("sends a clicked starter to the bench", () => {
+    expect(quickMove("qb1", slots, () => true)).toEqual({ kind: "bench" });
+  });
+  it("fills the first open slot the bench player fits", () => {
+    expect(quickMove("rb9", slots, rbOnly)).toEqual({ kind: "fill", slot: slots[1] });
+  });
+  it("opens the player card when no open slot fits", () => {
+    expect(quickMove("k1", slots, () => false)).toEqual({ kind: "card" });
   });
 });

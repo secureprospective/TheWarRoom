@@ -1,0 +1,571 @@
+{
+  "athlete": {
+    "id": "3139477",
+    "fullName": "Patrick Mahomes",
+    "displayName": "Patrick Mahomes",
+    "displayHeight": "6' 2\"",
+    "displayWeight": "225 lbs",
+    "displayDOB": "17/9/1995",
+    "age": 31,
+    "college": {
+      "id": "2641",
+      "mascot": "Red Raiders",
+      "name": "Texas Tech",
+      "shortName": "Texas Tech",
+      "abbrev": "TTU"
+    },
+    "displayDraft": "2017: Rd 1, Pk 10 (KC)",
+    "headshot": {
+      "href": "https://a.espncdn.com/i/headshots/nfl/players/full/3139477.png",
+      "alt": "Patrick Mahomes"
+    },
+    "team": {
+      "id": "12",
+      "uid": "s:20~l:28~t:12",
+      "guid": "f68f2343-8ceb-7a02-740d-af6338be21d2",
+      "slug": "kansas-city-chiefs",
+      "location": "Kansas City",
+      "name": "Chiefs",
+      "nickname": "Chiefs",
+      "abbreviation": "KC",
+      "displayName": "Kansas City Chiefs",
+      "shortDisplayName": "Chiefs",
+      "color": "e31837",
+      "alternateColor": "ffb612",
+      "isActive": true,
+      "isAllStar": false,
+      "logos": [
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/nfl/500/kc.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "default"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/kc.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "dark"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/kc.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "scoreboard"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/kc.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "scoreboard",
+            "dark"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/grayscale.png",
+          "width": 500,
+          "height": 500,
+          "rel": [
+            "full",
+            "grayscale"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/primary_logo_on_white_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_on_white_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/primary_logo_on_black_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_on_black_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/primary_logo_on_primary_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_on_primary_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/primary_logo_on_secondary_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_on_secondary_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/primary_logo_black.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_black"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/primary_logo_white.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "primary_logo_white"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/secondary_logo_on_white_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_on_white_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/secondary_logo_on_black_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_on_black_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/secondary_logo_on_primary_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_on_primary_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/secondary_logo_on_secondary_color.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_on_secondary_color"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/secondary_logo_black.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_black"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/guid/f68f2343-8ceb-7a02-740d-af6338be21d2/logos/secondary_logo_white.png",
+          "width": 4096,
+          "height": 4096,
+          "rel": [
+            "full",
+            "secondary_logo_white"
+          ]
+        }
+      ],
+      "links": [
+        {
+          "language": "en",
+          "rel": [
+            "clubhouse",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/_/name/kc/kansas-city-chiefs",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "roster",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/roster/_/name/kc/kansas-city-chiefs",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "roster",
+            "sportscenter",
+            "app",
+            "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:20~l:28~t:12&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "stats",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/stats/_/name/kc/kansas-city-chiefs",
+          "text": "Statistics",
+          "shortText": "Statistics",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "stats",
+            "sportscenter",
+            "app",
+            "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:20~l:28~t:12&section=stats",
+          "text": "Statistics",
+          "shortText": "Statistics",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "schedule",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/schedule/_/name/kc",
+          "text": "Schedule",
+          "shortText": "Schedule",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "schedule",
+            "sportscenter",
+            "app",
+            "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:20~l:28~t:12&section=scores",
+          "text": "Schedule",
+          "shortText": "Schedule",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "photos",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/photos/_/name/kc",
+          "text": "photos",
+          "shortText": "photos",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "tickets",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.vividseats.com/kansas-city-chiefs-tickets--sports-nfl-football/performer/427?wsUser=717",
+          "text": "Tickets",
+          "shortText": "Tickets",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "draftpicks",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/draft/teams/_/name/kc/kansas-city-chiefs",
+          "text": "Draft Picks",
+          "shortText": "Draft Picks",
+          "isExternal": false,
+          "isPremium": true
+        },
+        {
+          "language": "en",
+          "rel": [
+            "transactions",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/transactions/_/name/kc",
+          "text": "Transactions",
+          "shortText": "Transactions",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "injuries",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/injuries/_/name/kc",
+          "text": "Injuries",
+          "shortText": "Injuries",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "depthchart",
+            "desktop",
+            "team"
+          ],
+          "href": "https://www.espn.com/nfl/team/depth/_/name/kc",
+          "text": "Depth Chart",
+          "shortText": "Depth Chart",
+          "isExternal": false,
+          "isPremium": false
+        },
+        {
+          "language": "en",
+          "rel": [
+            "depthchart",
+            "sportscenter",
+            "app",
+            "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:20~l:28~t:12&section=depthchart",
+          "text": "Depth Chart",
+          "shortText": "Depth Chart",
+          "isExternal": false,
+          "isPremium": false
+        }
+      ],
+      "groups": {
+        "uid": "s:20~l:28~g:6",
+        "id": "6",
+        "name": "AFC West",
+        "abbreviation": "WEST",
+        "slug": "afc-west",
+        "season": {
+          "year": 2026,
+          "startDate": "2026-08-06T07:00:00.000+00:00",
+          "endDate": "2027-02-16T07:59:00.000+00:00",
+          "type": {
+            "id": "2",
+            "type": 2,
+            "name": "Regular Season",
+            "abbreviation": "reg",
+            "slug": "regular-season",
+            "startDate": "2026-09-06T07:00:00.000+00:00",
+            "endDate": "2027-01-13T07:59:00.000+00:00",
+            "hasGroups": false,
+            "hasStandings": true,
+            "hasLegs": false,
+            "week": {
+              "number": 11,
+              "startDate": "2026-11-18T08:00:00.000+00:00",
+              "endDate": "2026-11-25T07:59:00.000+00:00",
+              "text": "Week 11",
+              "qbr": {},
+              "talentpicks": {}
+            },
+            "weeks": {},
+            "year": 2026
+          },
+          "types": {
+            "count": 4,
+            "pageIndex": 1,
+            "pageSize": 4,
+            "pageCount": 1,
+            "items": [
+              {
+                "id": "1",
+                "type": 1,
+                "name": "Preseason",
+                "abbreviation": "pre",
+                "slug": "preseason",
+                "startDate": "2026-08-06T07:00:00.000+00:00",
+                "endDate": "2026-09-06T06:59:00.000+00:00",
+                "hasGroups": false,
+                "hasStandings": true,
+                "hasLegs": false,
+                "weeks": {},
+                "year": 2026
+              },
+              {
+                "id": "2",
+                "type": 2,
+                "name": "Regular Season",
+                "abbreviation": "reg",
+                "slug": "regular-season",
+                "startDate": "2026-09-06T07:00:00.000+00:00",
+                "endDate": "2027-01-13T07:59:00.000+00:00",
+                "hasGroups": false,
+                "hasStandings": true,
+                "hasLegs": false,
+                "week": {
+                  "number": 11,
+                  "startDate": "2026-11-18T08:00:00.000+00:00",
+                  "endDate": "2026-11-25T07:59:00.000+00:00",
+                  "text": "Week 11",
+                  "qbr": {},
+                  "talentpicks": {}
+                },
+                "weeks": {},
+                "year": 2026
+              },
+              {
+                "id": "3",
+                "type": 3,
+                "name": "Postseason",
+                "abbreviation": "post",
+                "slug": "post-season",
+                "startDate": "2027-01-13T08:00:00.000+00:00",
+                "endDate": "2027-02-16T07:59:00.000+00:00",
+                "hasGroups": false,
+                "hasStandings": false,
+                "hasLegs": false,
+                "weeks": {},
+                "year": 2026
+              },
+              {
+                "id": "4",
+                "type": 4,
+                "name": "Off Season",
+                "abbreviation": "off",
+                "slug": "off-season",
+                "startDate": "2027-02-16T08:00:00.000+00:00",
+                "endDate": "2027-08-01T06:59:00.000+00:00",
+                "hasGroups": false,
+                "hasStandings": false,
+                "hasLegs": false,
+                "weeks": {},
+                "year": 2026
+              }
+            ]
+          },
+          "displayName": "2026"
+        },
+        "parent": {
+          "uid": "s:20~l:28~g:8",
+          "id": "8",
+          "name": "American Football Conference",
+          "abbreviation": "AFC",
+          "slug": "american-football-conference",
+          "season": {},
+          "parent": {},
+          "standings": {},
+          "isConference": true,
+          "teams": {}
+        },
+        "standings": {},
+        "isConference": false,
+        "teams": {}
+      },
+      "coaches": {},
+      "venue": {
+        "id": "3622",
+        "fullName": "Arrowhead Stadium",
+        "address": {
+          "city": "Kansas City",
+          "state": "MO",
+          "zipCode": "64129",
+          "country": "USA"
+        },
+        "grass": true,
+        "indoor": false,
+        "images": [
+          {
+            "href": "https://a.espncdn.com/i/venues/nfl/day/3622.jpg",
+            "width": 2000,
+            "height": 1125,
+            "rel": [
+              "full",
+              "day"
+            ]
+          },
+          {
+            "href": "https://a.espncdn.com/i/venues/nfl/day/interior/3622.jpg",
+            "width": 2000,
+            "height": 1125,
+            "rel": [
+              "full",
+              "day",
+              "interior"
+            ]
+          }
+        ]
+      },
+      "record": {},
+      "athletes": {},
+      "againstTheSpreadRecords": {},
+      "ranks": {},
+      "franchise": {
+        "id": "12",
+        "uid": "s:20~l:28~f:12",
+        "slug": "kansas-city-chiefs",
+        "abbreviation": "KC",
+        "displayName": "Kansas City Chiefs",
+        "location": "Kansas City",
+        "name": "Chiefs",
+        "nickname": "Chiefs",
+        "shortDisplayName": "Chiefs"
+      }
+    },
+    "position": {
+      "id": "8",
+      "name": "Quarterback",
+      "displayName": "Quarterback",
+      "abbreviation": "QB",
+      "leaf": true,
+      "parent": {
+        "leaf": false
+      },
+      "slug": "quarterback"
+    },
+    "status": {
+      "id": "1",
+      "name": "Active",
+      "type": "active",
+      "abbreviation": "Active"
+    }
+  }
+}
