@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { onHostedTopics } from '../data/hostedReads';
 import { createReadQuery } from '../data/query';
 import { HQAct } from '../shell/HQAct';
@@ -12,12 +13,12 @@ import { hostedWorkflow } from './api';
 import { Review } from './HostedReview';
 
 type LeaguePageState = { notices?: LeagueNotes };
-type LedgerChip = '' | 'rules' | 'corrections' | 'people';
-const chips: [string, LedgerChip | null][] = [
+export type LedgerChip = '' | 'rules' | 'corrections' | 'people';
+export const ledgerChips: [string, LedgerChip | null][] = [
   ['ALL', ''], ['RULES', 'rules'], ['FIXES', 'corrections'], ['TRADES', null],
   ['PEOPLE', 'people'], ['VIA AI', null], ['SYSTEM', null],
 ];
-const unavailable = 'This part of the Control Room is not on the server app yet.';
+export const hostedLeagueUnavailable = 'This part of the Control Room is not on the server app yet.';
 
 function createLeagueNoticesQuery(league: string, port: HostedPort) {
   return createReadQuery('commissioner.TargetCommissionerNotices', {
@@ -34,9 +35,8 @@ function createLeagueNoticesQuery(league: string, port: HostedPort) {
   });
 }
 
-export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }: {
-  league: string; room: HostedLeagueRoom; port?: HostedPort;
-}) {
+/** League notices, ledger reads, and notice/note composer state; shared by the old room and v3. */
+export function useHostedLeague(league: string, room: HostedLeagueRoom, port: HostedPort = hostedWorkflow) {
   const [chip, setChip] = useState<LedgerChip>('');
   const ledgerQuery = useMemo(() => createHostedLedgerQuery(league, port), [league, port]);
   const ledgerState = ledgerQuery.use();
@@ -99,6 +99,22 @@ export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }:
   const disabled = !room.canChange() || roomState.pending || !ledger || !revisionMatches
     || !text.trim() || !reason.trim();
 
+  return {
+    chip, setChip, ledgerState, ledger, noticesState, notices, roomState,
+    kind, setKind, text, setText, pin, setPin, reason, setReason, refresh,
+    changeKind, title, fieldLabel, revisionMatches, preview, disabled,
+  };
+}
+
+export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }: {
+  league: string; room: HostedLeagueRoom; port?: HostedPort;
+}) {
+  const {
+    chip, setChip, ledgerState, ledger, noticesState, notices, roomState,
+    kind, setKind, text, setText, pin, setPin, reason, setReason, refresh,
+    changeKind, title, fieldLabel, revisionMatches, preview, disabled,
+  } = useHostedLeague(league, room, port);
+
   return <div className="cr-col hosted-control-league" data-testid="hosted-control-league">
     <div className="cr-panel">
       <div className="cr-ph">TELL THE LEAGUE</div>
@@ -126,8 +142,17 @@ export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }:
           {ledger && roomState.reading && !revisionMatches
             && <p role="status">League records changed. Refresh the Control Room before posting.</p>}
           <HQAct disabled={disabled} onAction={() => void preview()}>Preview {title.toLowerCase()}</HQAct>
-          {roomState.error && <p role="alert">{roomState.error}</p>}
-        </section> : <p role="status">{unavailable} Newsletter publishing has no hosted command.</p>}
+          {roomState.error && <FailureAlert
+            message={roomState.error}
+            code={roomState.errorCode}
+            league={league}
+            screen="Control Room · League"
+            route="control/league"
+            port={port}
+          />}
+        </section> : <p role="status">
+          {hostedLeagueUnavailable} Newsletter publishing has no hosted command.
+        </p>}
         {roomState.review && <Review room={room} />}
       </div>
     </div>
@@ -135,9 +160,14 @@ export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }:
     <div className="cr-panel">
       <div className="cr-ph">LEAGUE NOTICES & NOTES</div>
       <div className="cr-pb">
-        {!notices && <p role={noticesState.error ? 'alert' : 'status'}>
-          {noticesState.error || 'Reading league notices…'}
-        </p>}
+        {!notices && (noticesState.error ? <FailureAlert
+            message={noticesState.error}
+            code={noticesState.errorCode}
+            league={league}
+            screen="Control Room · League"
+            route="control/league"
+            port={port}
+          /> : <p role="status">Reading league notices…</p>)}
         {notices && <>
           {notices.notices.filter(notice => !notice.withdrawn).map(notice => <article key={notice.id}>
             <h4>{notice.pinned ? 'Pinned notice' : 'Notice'}</h4>
@@ -160,15 +190,20 @@ export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }:
       </div>
       <div className="cr-pb cr-led">
         <div className="cr-chips" aria-label="Ledger filters">
-          {chips.map(([label, value]) => <HQAct key={label} className="cr-chip"
+          {ledgerChips.map(([label, value]) => <HQAct key={label} className="cr-chip"
             selected={chip === value} disabled={value === null}
             onAction={() => { if (value !== null) setChip(value); }}>{label}</HQAct>)}
           <HQAct disabled={ledgerState.pending || noticesState.pending}
             onAction={refresh}>Refresh ledger</HQAct>
         </div>
-        {(ledgerState.error || noticesState.error) && <p role="alert">
-          {ledgerState.error || noticesState.error}
-        </p>}
+        {(ledgerState.error || (notices && noticesState.error)) && <FailureAlert
+          message={ledgerState.error || noticesState.error}
+          code={ledgerState.error ? ledgerState.errorCode : noticesState.errorCode}
+          league={league}
+          screen="Control Room · League"
+          route="control/league"
+          port={port}
+        />}
         {!ledger && !ledgerState.error && <p role="status">Reading league ledger…</p>}
         {ledger?.entries.map(entry => <div key={entry.id}>
           <span className="t">{when(entry.when)}</span><span className="a">{entry.who}</span>
@@ -179,7 +214,7 @@ export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }:
     </div>
 
     <div className="cr-note hosted-league-unported">
-      {unavailable} Feed and engine controls, league creation or migration, and house-rule editing
+      {hostedLeagueUnavailable} Feed and engine controls, league creation or migration, and house-rule editing
       are not exposed in this tab. Use the hosted Rules tab for supported rule changes.
     </div>
   </div>;

@@ -77,6 +77,7 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			http.Error(w, "invalid invalidation request", http.StatusBadRequest)
 			return
 		}
+		setFailureLeague(r.Context(), league)
 		if h.Store == nil || h.Leagues == nil || h.Sessions == nil || h.TOTP == nil || h.Worker == nil {
 			writeUnavailable(w, "service unavailable")
 			return
@@ -359,6 +360,7 @@ func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request, leag
 		h.sessionFailure(w, r, err)
 		return nil, accountAdmission{}, ""
 	}
+	setFailureAccount(r.Context(), account.ID)
 	principal, err := account.Principal()
 	if err != nil {
 		http.Error(w, "session refused", http.StatusUnauthorized)

@@ -49,6 +49,9 @@ func (d *Desktop) Handler() http.Handler {
 				_ = json.NewEncoder(w).Encode(view)
 				return
 			}
+			if code := serverErrorCode(err); code != "" {
+				w.Header().Set(serverhttp.ErrorCodeHeader, code)
+			}
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -125,6 +128,9 @@ func (d *Desktop) workflowHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	response, err := d.Workflow(r.Context(), raw)
 	if err != nil {
+		if code := serverErrorCode(err); code != "" {
+			w.Header().Set(serverhttp.ErrorCodeHeader, code)
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

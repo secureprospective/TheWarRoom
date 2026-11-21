@@ -56,8 +56,15 @@ func ReplaySource(ctx context.Context, mirror Mirror, mflLeague string, now func
 		if err != nil {
 			return nil, err
 		}
+		season, err := mirror.LeagueSeason(ctx, mflLeague)
+		if err != nil {
+			return nil, err
+		}
 		names := Names(list)
-		return &mflsource.Source{Client: client, ID: mflLeague, Now: now, Held: func() map[string]string { return names }, Base: base}, nil
+		return &mflsource.Source{
+			Client: client, ID: mflLeague, Season: season, Now: now,
+			Held: func() map[string]string { return names }, Base: base,
+		}, nil
 	}
 }
 

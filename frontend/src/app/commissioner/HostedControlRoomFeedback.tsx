@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ProblemReportsRead, parseProblemReports, type ProblemReport } from './problemReports';
+import { FailureAlert } from '../data/FailureAlert';
 import type { HostedPort } from './hostedRoom';
 import { hostedWorkflow } from '../control/nativeApi';
 import './problemReports.css';
 
-export function HostedControlRoomFeedback({ league, port = hostedWorkflow, refreshVersion = 0 }: {
-  league: string; port?: HostedPort; refreshVersion?: number;
-}) {
+/** The league's problem reports, read again whenever refreshVersion changes; shared by the old room
+ *  and the desktop v3 Feedback body. */
+export function useProblemReports(league: string, port: HostedPort = hostedWorkflow, refreshVersion = 0) {
   const [reports, setReports] = useState<ProblemReport[]>();
   const [error, setError] = useState('');
   useEffect(() => {
@@ -22,10 +23,23 @@ export function HostedControlRoomFeedback({ league, port = hostedWorkflow, refre
       });
     return () => { active = false; };
   }, [league, port, refreshVersion]);
+  return { reports, error };
+}
+
+export function HostedControlRoomFeedback({ league, port = hostedWorkflow, refreshVersion = 0 }: {
+  league: string; port?: HostedPort; refreshVersion?: number;
+}) {
+  const { reports, error } = useProblemReports(league, port, refreshVersion);
 
   return <section className="hosted-feedback" aria-label="Problem reports">
     <h2>Problem reports</h2>
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      league={league}
+      screen="Control Room · Feedback"
+      route="control/feedback"
+      port={port}
+    />}
     {!reports && !error && <p role="status">Reading reports…</p>}
     {reports?.length === 0 && <p>No reports have been sent.</p>}
     {reports && reports.length > 0 && <>

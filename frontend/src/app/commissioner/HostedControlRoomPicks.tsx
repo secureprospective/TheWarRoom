@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { onHostedTopics } from '../data/hostedReads';
 import { createReadQuery } from '../data/query';
@@ -111,7 +112,16 @@ export function HostedControlRoomPicks({ league, room, port }: {
             onChange={event => setTeam(event.target.value)} />
         </label>
       </div>
-      {state.error && <p role="alert" className="cr-note">Picks unavailable. {state.error}</p>}
+      {state.error && <FailureAlert
+        message={state.error}
+        prefix="Picks unavailable. "
+        code={state.errorCode}
+        className="cr-note"
+        league={league}
+        screen="Control Room · Picks"
+        route="control/picks"
+        port={port}
+      />}
       {!reading && !state.error && <p role="status" className="cr-note">Reading the league's picks…</p>}
       {reading && <div className="ct-wrap">
         <table className="cr-t">

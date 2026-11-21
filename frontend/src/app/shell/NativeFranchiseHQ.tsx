@@ -1,4 +1,5 @@
 import { pointsLabel, type PulseResults } from '../data/nativePulse';
+import { FailureAlert } from '../data/FailureAlert';
 import { RailLeaguePicker } from './leaguePicker';
 import type { Node } from './nodes';
 import { useNativeLineup, NativeLineupReview } from './hqNativeLineup';
@@ -25,23 +26,32 @@ import { HQNativeWhatIf } from './HQNativeWhatIf';
 import { countdown } from '../clock/urgency';
 import { connectClock } from '../clock/ticker';
 import './hq.css';
+import { HQLineupV3, HQTabs, TeamPick } from '../v3/HQLineupV3';
+import { HQMovesV3 } from '../v3/HQMovesV3';
+import { OWNER_ONLY_MOVES } from '../commissioner/hqReading';
+import { HQContractsV3 } from '../v3/HQContractsV3';
+import { BDrawer } from '../v3/pulseDrawers';
+import { ContractDecisionList } from './HQPanels';
+import type { ReactNode } from 'react';
 
 export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded,
-  tab: activeTab, navigate, canManage = true, onPlayers }: {
+  tab: activeTab, navigate, canManage = true, onPlayers, v3, openGame }: {
   league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void;
   embedded?: boolean; canManage?: boolean; tab?: HQTab; navigate?: (tab: HQTab) => void;
   onPlayers?: (players: PlayerCandidate[]) => void;
+  /** Draw in the desktop v3 frame: its tab strip, plate and board, with this league's badge. */
+  v3?: { badge: ReactNode; kind: string; pickTeam?: (id: string) => void }; openGame?: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [localTab, setLocalTab] = useState<HQTab>('lineup-and-roster');
   const tab = activeTab ?? localTab;
   const setTab = navigate ?? setLocalTab;
-  const [drawer, setDrawer] = useState<'ir' | 'taxi' | 'whatif'>();
+  const [drawer, setDrawer] = useState<'ir' | 'taxi' | 'whatif' | 'decide'>();
   const [release, setRelease] = useState<string>();
   const [selected, select] = useState<string>();
   const [revision, refresh] = useState(0);
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), [port]);
-  const { reading, error, pending } = useContractRead<NativeHQ>(
+  const { reading, error, errorCode, pending } = useContractRead<NativeHQ>(
     JSON.stringify([league, mine, revision, canManage]),
     publish => readNativeHQ(league, mine, port, publish, canManage, true), provider);
   useEffect(() => {
@@ -61,8 +71,16 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key);
       }, []);
   if (!reading) return <div className="hq-v10">{!embedded && <RailLeaguePicker />}
-    <p className="empty" role="status"
-    title={error}>{absent(pending)}</p></div>;
+    {error ? <FailureAlert
+      message={error}
+      code={errorCode}
+      className="empty"
+      league={league}
+      screen="Franchise HQ"
+      route="hq/lineup"
+      port={port}
+    /> : <p className="empty" role="status">{absent(pending)}</p>}
+  </div>;
   const { snapshot, lineup, runway, moves = [] } = reading;
   const settings = { ...reading.settings };
   const positions = new Map(lineup?.starters.concat(lineup.bench).map(p => [p.id, p.position ||
@@ -84,6 +102,37 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     const playerName = decisions.players.find(p => p.player === selection.player)?.name ?? selection.player;
     void editor.room.review(request, `Record ${selection.action.replace('_', ' ')} for ${playerName}`);
   };
+  const teamName = snapshot.franchises.value.find(f => f.id === mine)?.name ?? name;
+  const others = <>
+    <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
+    {release && <HQRelease native id={release} mine={mine} snapshot={snapshot} activeLimit={settings.active}
+      cut={cut?.player === release ? cut : undefined} beforeRoom={runway?.[0]?.room}
+      starter={lineup?.starters.some(p => p.id === release)} close={() => setRelease(undefined)} />}
+    {v3 && drawer === 'whatif' && <HQNativeWhatIf snapshot={snapshot} league={league} mine={mine}
+      chosen={chosen} select={select} port={port} close={() => setDrawer(undefined)} />}
+    {v3 && drawer === 'decide' && <BDrawer title="Contract decisions" close={() => setDrawer(undefined)}
+      sub={`priced by league rules · season ${reading.contractDecisions?.season
+        ?? snapshot.league.value.season}`}>
+      <ContractDecisionList reading={reading.contractDecisions} canDecide={editor.canEdit}
+        decide={selection => { setDrawer(undefined); reviewDecision(selection); }} /></BDrawer>}</>;
+  if (v3) return <>
+    <HQTabs tab={tab} navigate={setTab} badge={v3.badge} kind={v3.kind} moves={moves.length}
+      pick={v3.pickTeam && <TeamPick mine={mine} pick={v3.pickTeam}
+        teams={snapshot.franchises.value.map(f => ({ id: f.id, name: f.name ?? f.id }))} />} />
+    {!mine ? <div className="wbody"><div className="st"><div className="eng">Choose a franchise above. As
+      commissioner you can open and run any team in this league.</div></div></div>
+    : tab === 'lineup-and-roster' ? <HQLineupV3 reading={reading} mine={mine} name={teamName} editor={editor}
+      select={select} badge={v3.badge} league={league} port={port} now={Date.now()} openGame={openGame} />
+      : tab === 'contracts-and-cap' ? <HQContractsV3 reading={reading} mine={mine} badge={v3.badge}
+        select={select} chosen={selected} whatIf={() => setDrawer('whatif')}
+        release={canManage ? () => { if (selected) setRelease(selected); } : undefined}
+        decide={canManage && reading.contractDecisions ? () => setDrawer('decide') : undefined} />
+      : <HQMovesV3 snapshot={snapshot} moves={moves}
+        available={reading.moves !== undefined && reading.moveReason !== OWNER_ONLY_MOVES}
+        reason={reading.moveReason} badge={v3.badge} history={<HQMoveHistory
+          key={JSON.stringify([league, mine, snapshot.league.value.season])}
+          league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} />}
+    {others}</>;
   const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab} navigate={setTab}
     week={reading.week}
     leagueName={reading.leagueName}

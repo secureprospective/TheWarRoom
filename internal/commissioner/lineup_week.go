@@ -77,8 +77,15 @@ type RecordedLineup struct {
 	Entry     string
 	By        string
 	Corrected bool
+	Synced    bool
 	Reason    string
 	At        time.Time
+}
+
+func isSyncedLineupRequest(request string) bool {
+	return strings.HasPrefix(request, "mfl-import.lineup.") ||
+		strings.HasPrefix(request, "mfl-refresh.") ||
+		strings.HasPrefix(request, "lineup.sync.")
 }
 
 // RecordedLineupFor folds the active lineup commands of a franchise's week: the latest one stands, and
@@ -98,12 +105,20 @@ func RecordedLineupFor(records []Record, franchise string, season, week int) (Re
 		if err != nil {
 			return RecordedLineup{}, false, err
 		}
-		if !active[r.Receipt.Entry] || change.Franchise != franchise || change.Season != season || change.Week != week {
+		if !active[r.Receipt.Entry] || change.Franchise != franchise ||
+			change.Season != season || change.Week != week {
 			continue
 		}
-		out, found = RecordedLineup{Starters: slices.Clone(change.Starters), Entry: r.Receipt.Entry,
-			By: r.Principal, Corrected: r.Command.Command == LineupCorrect, Reason: r.Command.Reason,
-			At: r.Receipt.RecordedAt}, true
+		corrected := r.Command.Command == LineupCorrect
+		out, found = RecordedLineup{
+			Starters:  slices.Clone(change.Starters),
+			Entry:     r.Receipt.Entry,
+			By:        r.Principal,
+			Corrected: corrected,
+			Synced:    corrected && isSyncedLineupRequest(r.Command.Request),
+			Reason:    r.Command.Reason,
+			At:        r.Receipt.RecordedAt,
+		}, true
 	}
 	return out, found, nil
 }
@@ -150,18 +165,14 @@ func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env Line
 	}
 	// A week played before the league came into the app is history as recorded: the league holds no roster
 	// for it, so the record of who started is not held to a later roster.
-	if held := RecordedResults(records, change.Season); raw.Command == LineupCorrect && held != nil &&
-		change.Week < held.CutoverWeek {
+	if isPreCutoverLineupCorrection(raw, records, change) {
 		return nil
 	}
-	lockedRoster := false
-	if lock, held := firstKickoff(env); held && !now.Before(lock) {
-		base.Assets, err = NativeAssetsAsOf(raw.League, records, lock)
-		if err != nil {
-			return Refused(err)
-		}
-		lockedRoster = true
+	assets, lockedRoster, err := lineupAssetsForCheck(raw, records, now, env, base.Assets)
+	if err != nil {
+		return Refused(err)
 	}
+	base.Assets = assets
 	if err := checkLineupRoster(base, change, env, lockedRoster); err != nil {
 		return Refused(err)
 	}
@@ -169,6 +180,30 @@ func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env Line
 		return nil
 	}
 	return checkOwnerLineup(records, now, env, change, seat)
+}
+
+func isPreCutoverLineupCorrection(raw RawCommand, records []Record, change RawLineupChange) bool {
+	if raw.Command != LineupCorrect {
+		return false
+	}
+	held := RecordedResults(records, change.Season)
+	return held != nil && change.Week < held.CutoverWeek
+}
+
+func lineupAssetsForCheck(
+	raw RawCommand, records []Record, now time.Time, env LineupFacts, current NativeAssets,
+) (NativeAssets, bool, error) {
+	if raw.Command == LineupCorrect && isSyncedLineupRequest(raw.Request) {
+		return current, false, nil
+	}
+	if lock, held := firstKickoff(env); held && !now.Before(lock) {
+		assets, err := NativeAssetsAsOf(raw.League, records, lock)
+		if err != nil {
+			return NativeAssets{}, false, err
+		}
+		return assets, true, nil
+	}
+	return current, false, nil
 }
 
 // checkOwnerLineup holds an owner's lineup to this season, to the commissioner's ruling if one stands, to the
@@ -183,8 +218,9 @@ func checkOwnerLineup(records []Record, now time.Time, env LineupFacts, change R
 	if err != nil {
 		return err
 	}
-	if found && held.Corrected {
-		return Refused(fmt.Errorf("a commissioner has set %s's week %d lineup; ask them to change it", seat.Name, change.Week))
+	if found && held.Corrected && !held.Synced {
+		return Refused(fmt.Errorf(
+			"a commissioner has set %s's week %d lineup; ask them to change it", seat.Name, change.Week))
 	}
 	rules, err := RulesInForce(records, change.Season, at)
 	if err != nil {

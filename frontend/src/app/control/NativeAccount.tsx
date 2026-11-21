@@ -5,6 +5,8 @@ import { commands } from '../commands/registry';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { nativeAction, selectBrowserLeague, type NativeAction, type NativeView } from './nativeApi';
 import { isWebTransport } from './transport';
+import { FailureAlert } from '../data/FailureAlert';
+import { setFailureScreen } from '../data/errorCodes';
 import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads';
 import NativeHelpers from './NativeHelpers';
 import { HQAct } from '../shell/HQAct';
@@ -18,6 +20,7 @@ import './nativeAccount.css';
 
 const HostedLeague = lazy(() => import('../commissioner/HostedLeague'));
 const ThinHome = lazy(() => import('../shell/ThinHome'));
+const V3Shell = lazy(() => import('../v3/V3Shell'));
 const TodayTab = lazy(() => import('../phone/TodayTab'));
 import type { TodayBadges } from '../phone/TodayTab';
 const LiveTab = lazy(() => import('../phone/LiveTab'));
@@ -101,6 +104,16 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   // On a phone the app frame owns the whole screen: none of this page's own chrome may show.
   const phoneFrame = browser && phoneViewport && homeReady && screen === 'login'
     && !(activeLeague && activeEntry === 'control');
+  useEffect(() => {
+    if (phoneFrame) {
+      const label = phoneTab[0].toUpperCase() + phoneTab.slice(1);
+      setFailureScreen(`Phone · ${label}`, `phone/${phoneTab}`);
+    } else if (showThinHome) {
+      setFailureScreen('Home', 'home/overview');
+    } else if (!activeLeague) {
+      setFailureScreen(`Account · ${screen}`, `account/${screen}`);
+    }
+  }, [phoneFrame, phoneTab, showThinHome, activeLeague, screen]);
   const selectedPhoneLeagueId = admission?.league ?? '';
   const currentPhoneBrief = phoneBrief?.leagueId === selectedPhoneLeagueId ? phoneBrief : undefined;
   const phoneWeek = currentPhoneBrief?.brief.pulse?.week;
@@ -202,63 +215,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <NativeHelpers server={initial.server} league={admission.league} seats={admission.seats}
         franchise={admission.franchise} />}
   </>;
-  return <main className={`twr-app native-account${showThinHome ? ' has-thin-home' : ''}`
-    + `${browser && homeReady ? ' phone-home' : ''}`} aria-busy={pending}>
-    {!phoneFrame && <><header><h1>{view.name || 'Your league server'}</h1>
-      {!view.name && <p>Your league server · No MFL account or key needed</p>}
-      {!browser && <p className="native-address">{initial.server}</p>}</header>
-    <nav aria-label="Account access">
-      {visibleTabs.map(([id, label]) =>
-        <Act key={id} variant="button" verb="commissioner.surface"
-        args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
-    </nav></>}
-    {error && <p role="alert">{error}</p>}
-    {view.message && !showThinHome && !phoneFrame && <p role="status">{view.message}</p>}
-    <div hidden={screen !== 'login'}>
-    {view.name && !homeReady && <section aria-label="Your league access">
-      <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
-      {view.franchise && <p>You are connected to the server; no local league is created.</p>}
-    </section>}
-    {homeReady && <PhoneAppFrame enabled={browser} activeTab={phoneTab} badges={phoneBadges} live={phoneLive}
-      leagues={admittedLeagues} selectedLeagueId={selectedPhoneLeagueId} weekLabel={phoneWeekLabel}
-      askBrief={currentPhoneBrief?.brief} askMine={currentPhoneBrief?.mine}
-      accountName={signedInName || undefined} accountPending={pending}
-      commissioner={admission?.role === 'Commissioner' || admission?.role === 'Co-commissioner'}
-      showControlRoom={Boolean(activeLeague && activeEntry === 'control')}
-      onSelectTab={setPhoneTab} onSelectLeague={id => {
-        if (browser && id !== admission?.league) setView(selectBrowserLeague(id));
-      }} onControlRoom={() => {
-        setActiveEntry('control');
-        if (admission) setActiveLeagueId(admission.league);
-      }} onAuthenticator={() => changeScreen('authenticator')}
-      onSignOut={() => {
-        void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget')))
-          .catch(() => {});
-      }} homeReadSource={thinHome} tabs={{
-        today: <Suspense fallback={<p role="status">Opening Today…</p>}>
-          <TodayTab leagues={admittedLeagues} onNow={badge.today}
-            current={selectedPhoneLeagueId} onBadges={todayBadges} onOpen={(league, entry) => {
-            if (browser && league.id !== admission?.league) setView(selectBrowserLeague(league.id));
-            setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
-          }} /></Suspense>,
-        team: admission?.franchise
-          ? <TeamTab league={admission.league} mine={admission.franchise}
-            onByes={badge.team} />
-          : <p className="team-tab__note" role="status">No team of yours in this league.</p>,
-        live: liveTab,
-        moves: <Suspense fallback={<p role="status">Opening Moves…</p>}>
-          <MovesTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)} />
-        </Suspense>,
-        league: <Suspense fallback={<p role="status">Opening League…</p>}>
-          <LeagueTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)}
-            onOpenJobs={badge.league} onTrade={() => setPhoneTab('moves')} onWatch={() => setPhoneTab('live')}
-            onControlRoom={() => {
-              setActiveEntry('control');
-              if (admission) setActiveLeagueId(admission.league);
-            }} />
-        </Suspense>,
-      }}>{leagueContent}</PhoneAppFrame>}
-    </div>
+  const accountForms = <>
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>
       <h3>Lost your phone or password?</h3>
@@ -340,6 +297,112 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           disabled={pending} label="Revoke all devices">Revoke all devices</Act>
       </>}
     </div>}
+  </>;
+  // Desktop v3: once admitted on a desktop-sized screen, the v3 frame owns the window (mock v3).
+  // Account screens (authenticator, recovery) open in its work area; an open league stays mounted.
+  if (homeReady && !phoneFrame && !(browser && phoneViewport)) {
+    const accountPanel = screen === 'login' ? undefined : <section className="twr-app native-account">
+      <nav aria-label="Account access">
+        {visibleTabs.map(([id, label]) =>
+          <Act key={id} variant="button" verb="commissioner.surface"
+          args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
+      </nav>
+      {error && <FailureAlert message={error} allowSend={Boolean(admission?.league)} />}
+      {view.message && <p role="status">{view.message}</p>}
+      {accountForms}</section>;
+    const accountMenu = <>
+      {!browser && <Act variant="button" verb="commissioner.surface" args={args('view', 'authenticator')}
+        disabled={pending} label="Authenticator">Authenticator</Act>}
+      <Act variant="button" verb="commissioner.surface" args={args('check', 'enter')}
+        disabled={pending} label="Open my franchise">Open my franchise</Act><hr />
+      <Act variant="button" verb="commissioner.surface" args={args('check', 'forget')}
+        disabled={pending} label={browser ? 'Sign out' : 'Forget saved sign-in'}>
+        {browser ? 'Sign out' : 'Forget saved sign-in'}</Act>
+      {!browser && <>
+        <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-device')}
+          disabled={pending} label="Revoke this device">Revoke this device</Act>
+        <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-all')}
+          disabled={pending} label="Revoke all devices">Revoke all devices</Act></>}
+    </>;
+    return <Suspense fallback={<p role="status">Opening The War Room…</p>}>
+      <V3Shell leagues={admittedLeagues} accountName={signedInName || undefined} panel={accountPanel}
+        account={accountMenu} status={error || undefined}
+        active={activeLeague ? { league: activeLeague, entry: activeEntry } : undefined}
+        onOpen={(league, entry) => {
+          if (screen !== 'login') changeScreen('login');
+          setActiveEntry(entry); setActiveLeagueId(league.id);
+        }}
+        onHome={() => { if (screen !== 'login') changeScreen('login'); setActiveLeagueId(undefined); }}
+        onSignOut={() => {
+          void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget')))
+            .catch(() => {});
+        }}>
+        {activeLeague && <Suspense fallback={<p>Opening your league…</p>}>
+          <HostedLeague key={`${fence.key}:${activeLeague.id}`} league={activeLeague.id}
+            franchise={activeLeague.franchise ?? ''} name={activeLeague.franchiseName ?? ''}
+            role={activeLeague.role ?? ''} entry={activeEntry} hq
+            onHome={() => setActiveLeagueId(undefined)} />
+        </Suspense>}
+      </V3Shell></Suspense>;
+  }
+  return <main className={`twr-app native-account${showThinHome ? ' has-thin-home' : ''}`
+    + `${browser && homeReady ? ' phone-home' : ''}`} aria-busy={pending}>
+    {!phoneFrame && <><header><h1>{view.name || 'Your league server'}</h1>
+      {!view.name && <p>Your league server · No MFL account or key needed</p>}
+      {!browser && <p className="native-address">{initial.server}</p>}</header>
+    <nav aria-label="Account access">
+      {visibleTabs.map(([id, label]) =>
+        <Act key={id} variant="button" verb="commissioner.surface"
+        args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
+    </nav></>}
+    {error && <FailureAlert message={error} allowSend={Boolean(admission?.league)} />}
+    {view.message && !showThinHome && !phoneFrame && <p role="status">{view.message}</p>}
+    <div hidden={screen !== 'login'}>
+    {view.name && !homeReady && <section aria-label="Your league access">
+      <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
+      {view.franchise && <p>You are connected to the server; no local league is created.</p>}
+    </section>}
+    {homeReady && <PhoneAppFrame enabled={browser} activeTab={phoneTab} badges={phoneBadges} live={phoneLive}
+      leagues={admittedLeagues} selectedLeagueId={selectedPhoneLeagueId} weekLabel={phoneWeekLabel}
+      askBrief={currentPhoneBrief?.brief} askMine={currentPhoneBrief?.mine}
+      accountName={signedInName || undefined} accountPending={pending}
+      commissioner={admission?.role === 'Commissioner' || admission?.role === 'Co-commissioner'}
+      showControlRoom={Boolean(activeLeague && activeEntry === 'control')}
+      onSelectTab={setPhoneTab} onSelectLeague={id => {
+        if (browser && id !== admission?.league) setView(selectBrowserLeague(id));
+      }} onControlRoom={() => {
+        setActiveEntry('control');
+        if (admission) setActiveLeagueId(admission.league);
+      }} onAuthenticator={() => changeScreen('authenticator')}
+      onSignOut={() => {
+        void Promise.resolve(commands.dispatch('commissioner.surface', args('check', 'forget')))
+          .catch(() => {});
+      }} homeReadSource={thinHome} tabs={{
+        today: <Suspense fallback={<p role="status">Opening Today…</p>}>
+          <TodayTab leagues={admittedLeagues} onNow={badge.today}
+            current={selectedPhoneLeagueId} onBadges={todayBadges} onOpen={(league, entry) => {
+            if (browser && league.id !== admission?.league) setView(selectBrowserLeague(league.id));
+            setActiveEntry(entry); setPhoneTab(tabForEntry(entry)); setActiveLeagueId(league.id);
+          }} /></Suspense>,
+        team: admission?.franchise
+          ? <TeamTab league={admission.league} mine={admission.franchise}
+            onByes={badge.team} />
+          : <p className="team-tab__note" role="status">No team of yours in this league.</p>,
+        live: liveTab,
+        moves: <Suspense fallback={<p role="status">Opening Moves…</p>}>
+          <MovesTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)} />
+        </Suspense>,
+        league: <Suspense fallback={<p role="status">Opening League…</p>}>
+          <LeagueTab league={admittedLeagues.find(league => league.id === selectedPhoneLeagueId)}
+            onOpenJobs={badge.league} onTrade={() => setPhoneTab('moves')} onWatch={() => setPhoneTab('live')}
+            onControlRoom={() => {
+              setActiveEntry('control');
+              if (admission) setActiveLeagueId(admission.league);
+            }} />
+        </Suspense>,
+      }}>{leagueContent}</PhoneAppFrame>}
+    </div>
+    {accountForms}
     {!phoneFrame && <footer>{browser
       ? 'Your sign-in stays in this browser as an HttpOnly cookie. The league needs an internet connection.'
       : 'This computer keeps your sign-in in its keychain when it has one, '

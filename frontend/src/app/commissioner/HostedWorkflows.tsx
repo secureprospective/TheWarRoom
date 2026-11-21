@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Act } from '../commands/Act';
+import { createFailureError } from '../data/errorCodes';
 import type { NativeRequest } from '../commands/native';
 import { ActFields } from './ActFields';
 import { actChange, type ActValues } from './actBody';
@@ -84,7 +85,8 @@ export async function reviewHostedOwnerTrade(room: Pick<HostedLeagueRoom, 'canCh
   const request = { command: action, mode: 'preview', arguments: { ...change,
     args: { trade: { ...args.trade, franchise } }, request: newKey() } } as NativeRequest;
   await room.review(request, definition.label);
-  if (room.peek().error) throw new Error(room.peek().error);
+  const peeked = room.peek();
+  if (peeked.error) throw createFailureError(peeked.error, peeked.errorCode);
 }
 
 /** reviewHostedWaiverClaim previews the owner's private waivers.claim for one waiver window. */
@@ -99,7 +101,8 @@ export async function reviewHostedWaiverClaim(room: Pick<HostedLeagueRoom, 'canC
   const request = { command: 'waivers.claim', mode: 'preview', arguments: { ...change,
     args: { waiver: { ...args.waiver, franchise } }, request: newKey() } } as NativeRequest;
   await room.review(request, definition.label);
-  if (room.peek().error) throw new Error(room.peek().error);
+  const peeked = room.peek();
+  if (peeked.error) throw createFailureError(peeked.error, peeked.errorCode);
 }
 
 /** reviewHostedClaimChange previews the owner's own claim maintenance: a new claim order or one cancel. */
@@ -118,7 +121,8 @@ export async function reviewHostedClaimChange(room: Pick<HostedLeagueRoom, 'canC
   const request = { command: change.command, mode: 'preview', arguments: { ...envelope,
     command: change.command, args: { waiver }, request: newKey() } } as NativeRequest;
   await room.review(request, label);
-  if (room.peek().error) throw new Error(room.peek().error);
+  const peeked = room.peek();
+  if (peeked.error) throw createFailureError(peeked.error, peeked.errorCode);
 }
 
 const commissionerCommands: Record<HostedTask, string[]> = {

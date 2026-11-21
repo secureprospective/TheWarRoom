@@ -12,6 +12,8 @@ import type { NativeArguments, NativeRequest } from '../commands/native';
 import { hostedWorkflow, type HostedResponse } from './api';
 import './hostedLeague.css';
 import { hostedScreens } from '../data/hostedReads';
+import { FailureAlert } from '../data/FailureAlert';
+import { setFailureScreen } from '../data/errorCodes';
 import { parseHostedRoster } from './hostedReadings';
 import { HostedWorkflows, type HostedTask } from './HostedWorkflows';
 import { ThinLeagueShell } from '../shell/ThinLeagueShell';
@@ -71,6 +73,9 @@ export default function HostedLeague(props: {
     !props.franchise && commissioner);
   const [route, setRoute] = useRemembered<ThinScreenRoute>(`${place}:thinRoute`, initialRoute,
     props.entry !== undefined);
+  useEffect(() => {
+    setFailureScreen(`${route.node} · ${route.workspace}`, `${route.node}/${route.workspace}`);
+  }, [route.node, route.workspace]);
   const [playerSources, setPlayerSources] = useState<Record<string, PlayerCandidate[]>>({});
   const [inspectPlayer, setInspectPlayer] = useState<PlayerCandidate>();
   useEffect(() => {
@@ -346,7 +351,7 @@ function HostedWorkRoom({
             : 'Connected to your league server. The server records every change.'}
       </p>
       {reading && <p>Last read: {localTime(new Date(reading.readAt).toISOString())}</p>}
-      {state.error && <p role="alert">{state.error}</p>}
+      {state.error && <FailureAlert message={state.error} league={league} port={port} />}
       {state.message && <p role="status">{state.message}</p>}
       {action('refresh', state.pending ? 'Refreshing…' : 'Refresh league server', state.pending)}
       <nav aria-label="Franchise tasks">

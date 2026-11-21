@@ -1,9 +1,12 @@
 import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
+import { personLabel } from './forms';
 
 // The Go people reading (TargetCommissionerPeople). Owners get no role or invite rows from Go.
 export type PeopleSeat = {
   franchise: string; name: string; abbreviation: string; owner: string; caretaker?: string;
 };
+// Go names an empty seat's owner "Vacant" (people_reading.go readSeats); here an empty seat has no owner.
+const ownerOf = (owner: string) => owner === 'Vacant' ? '' : owner;
 export type PeopleVote = {
   id: string; status: string; ballotsCast: number; totalFranchises: number; votesRequired: number;
   requirement: string; endsAt: string; candidates: string[]; counts: { choice: string; ballots: number }[];
@@ -58,7 +61,7 @@ export function parsePeople(v: unknown): People {
     seats: array(r.seats, 'Seats', (s, p) => {
       const o = object(s, p, ['franchise', 'name', 'abbreviation', 'owner', 'caretaker']);
       return { franchise: text(o.franchise, p), name: text(o.name, p),
-        abbreviation: text(o.abbreviation, p), owner: text(o.owner, p),
+        abbreviation: text(o.abbreviation, p), owner: ownerOf(text(o.owner, p)),
         ...(o.caretaker === undefined ? {} : { caretaker: text(o.caretaker, p) }) };
     }),
     roles: array(r.roles, 'Roles', (s, p) => {
@@ -83,4 +86,17 @@ export function parsePeople(v: unknown): People {
     mayGrantRoles: flag(r.mayGrantRoles, 'May give roles'),
     mayPostNotices: flag(r.mayPostNotices, 'May post notices'),
   };
+}
+
+const VIA_AI_PREFIX = 'via AI/CLI, acting for ';
+
+/** Resolves an account id (or "via AI/CLI, acting for <id>") to the member's seat name,
+ *  falling back to "Local operator" for local.* principals or the original id when unknown. */
+export function memberDisplayName(person: string, people?: Pick<People, 'seats'>): string {
+  if (!person) return '';
+  if (person.startsWith(VIA_AI_PREFIX))
+    return `${VIA_AI_PREFIX}${memberDisplayName(person.slice(VIA_AI_PREFIX.length), people)}`;
+  const seat = people?.seats.find(s => s.owner === person)
+    ?? people?.seats.find(s => s.caretaker === person);
+  return seat?.name || personLabel(person);
 }

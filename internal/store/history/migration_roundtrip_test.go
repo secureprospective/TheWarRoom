@@ -31,6 +31,11 @@ func (l migrationLedger) Execute(ctx context.Context, raw commissioner.RawComman
 	return l.s.ExecuteCommissioner(ctx, raw, principal, nil)
 }
 
+func (l migrationLedger) LineupFacts(ctx context.Context, season, week int) (
+	commissioner.LineupFacts, error) {
+	return l.s.LineupFacts(ctx, season, week)
+}
+
 func migrationService(t *testing.T, export mflsource.Export) (*leaguemigration.Service, *Store, *migrationtest.Source) {
 	t.Helper()
 	s, c, _ := newStore(t)

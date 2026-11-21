@@ -1,5 +1,7 @@
 import { HQAct as WarRoomAct } from './HQAct';
 import { useEffect, useMemo, useState } from 'react';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
+import { FailureAlert } from '../data/FailureAlert';
 import { targetTrades } from '../trades/api';
 import { parseTrades } from '../data/parseTrades';
 import { hostedWorkflow } from '../commissioner/api';
@@ -53,16 +55,19 @@ function NativeOffers({ context, reading, onLoadOffer, onChanged }: {
     [native.league, native.port]);
   const state = room.use();
   const [actionError, setActionError] = useState('');
+  const [actionErrorCode, setActionErrorCode] = useState<string>();
   useEffect(() => {
     void room.refresh();
     return room.dispose;
   }, [room]);
   const act = (offer: WarRoomOffer, action: 'trade.accept' | 'trade.decline' | 'trade.withdraw') => {
     if (reading.revision === undefined) return;
-    setActionError('');
+    setActionError(''); setActionErrorCode(undefined);
     void reviewHostedOwnerTrade(room, native.league, context.mine, offer.id, reading.revision, action)
-      .catch(cause => setActionError(String(cause)));
+      .catch(cause => { setActionError(errorMessage(cause)); setActionErrorCode(errorCodeFor(cause)); });
   };
+  const activeError = actionError || state.error;
+  const activeCode = actionError ? actionErrorCode : state.errorCode;
   return <>
     {reading.notes.map(note => <p className="offer-note" key={note}>{note}</p>)}
     {!reading.offers.length && <WarRoomEmpty reason="No trade offers" />}
@@ -79,8 +84,12 @@ function NativeOffers({ context, reading, onLoadOffer, onChanged }: {
         <div className="legs">{offer.details.map((d, i) => <span key={i}>{d}</span>)}</div>
         <div className="stale">Expires {offer.note}</div>
         {onLoadOffer && source && <WarRoomAct className="btn" onAction={() => {
-          try { onLoadOffer(dealFromWarRoomOffer(source, context.mine)); setActionError(''); }
-          catch (cause) { setActionError(String(cause)); }
+          try {
+            onLoadOffer(dealFromWarRoomOffer(source, context.mine));
+            setActionError(''); setActionErrorCode(undefined);
+          } catch (cause) {
+            setActionError(errorMessage(cause)); setActionErrorCode(errorCodeFor(cause));
+          }
         }}>LOAD ONTO DESK</WarRoomAct>}
         {incoming && <div className="offer-actions">
           {needsAccept && <WarRoomAct className="btn"
@@ -94,8 +103,14 @@ function NativeOffers({ context, reading, onLoadOffer, onChanged }: {
           onAction={() => act(source!, 'trade.withdraw')}>WITHDRAW</WarRoomAct>}
       </div>;
     })}
-    {state.error && <p role="alert">{state.error}</p>}
-    {actionError && <p role="alert">{actionError}</p>}
+    {activeError && <FailureAlert
+      message={activeError}
+      code={activeCode}
+      league={native.league}
+      screen="War Room · Negotiations"
+      route="war/negotiations"
+      port={native.port}
+    />}
     {state.message && <p role="status">{state.message}</p>}
     {state.review && <Review room={room} onConfirmed={onChanged} />}
   </>;

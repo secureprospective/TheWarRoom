@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { createReadQuery } from '../data/query';
 import { parsePulseBracket, parsePulseDirectory } from '../data/nativePulse';
 import { array, integer, object, text } from '../data/parseValues';
@@ -74,9 +75,13 @@ function createSeasonQuery(league: string, port: HostedPort) {
   });
 }
 
-export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool }: {
-  league: string; port?: HostedPort; onTool(definition: ActDefinition): void;
-}) {
+/** Season calendar, schedule, playoff and rollover reads and action state; shared by the old room and
+ *  the desktop v3 Season body. */
+export function useHostedSeason(
+  league: string,
+  port: HostedPort = hostedWorkflow,
+  onTool?: (definition: ActDefinition) => void,
+) {
   const query = useMemo(() => createSeasonQuery(league, port), [league, port]);
   const state = query.use();
   const [backingUpForRollover, setBackingUpForRollover] = useState(false);
@@ -88,10 +93,25 @@ export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool 
     && hostedCommandAvailable(command));
   const open = (command: string) => {
     const definition = actTable.find(action => action.command === command);
-    if (definition) onTool(definition);
+    if (definition && onTool) onTool(definition);
   };
+  return { state, available, open, backingUpForRollover, setBackingUpForRollover };
+}
+
+export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool }: {
+  league: string; port?: HostedPort; onTool(definition: ActDefinition): void;
+}) {
+  const { state, available, open, backingUpForRollover, setBackingUpForRollover } =
+    useHostedSeason(league, port, onTool);
   return <div className="cr-col hosted-season" aria-label="Season">
-    {state.error && <p role="alert">{state.error}</p>}
+    {state.error && <FailureAlert
+      message={state.error}
+      code={state.errorCode}
+      league={league}
+      screen="Control Room · Season"
+      route="control/season"
+      port={port}
+    />}
     {!state.schedule && !state.error && <p role="status">Reading season from the league server…</p>}
     {state.schedule && <>
       <section className="cr-panel" aria-label="League calendar">

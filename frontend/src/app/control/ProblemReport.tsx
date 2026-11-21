@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ProblemReportCreate } from '../commissioner/problemReports';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { hostedWorkflow } from './nativeApi';
@@ -76,7 +77,13 @@ export function ProblemReport({ league, route, onClose, port = hostedWorkflow }:
         <p id="problem-report-help">Up to 2,000 characters. Screen route, app release, viewport
           width and user-agent are attached automatically. No screenshots or console logs are sent.</p>
         {loading && <p role="status">Reading app release…</p>}
-        {error && <p role="alert">{error}</p>}
+        {error && <FailureAlert
+          message={error}
+          league={league}
+          route={`${route.node}/${route.workspace}`}
+          appRelease={release}
+          allowSend={false}
+        />}
         <footer>
           <HQAct onAction={onClose} disabled={pending}>Cancel</HQAct>
           <HQAct submit disabled={pending || loading || !release}>

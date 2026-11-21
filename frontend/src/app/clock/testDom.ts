@@ -2,7 +2,12 @@
 export class TestElement {
   readonly nodeType = 1;
   readonly namespaceURI = 'http://www.w3.org/1999/xhtml';
-  readonly style = {};
+  // React writes CSS custom properties (--name) through setProperty; plain styles land as keys.
+  readonly style: Record<string, unknown> & { setProperty(name: string, value: string): void;
+    removeProperty(name: string): void } = Object.assign(Object.create(null) as Record<string, unknown>, {
+    setProperty(this: Record<string, unknown>, name: string, value: string) { this[name] = value; },
+    removeProperty(this: Record<string, unknown>, name: string) { delete this[name]; },
+  });
   readonly attributes = new Map<string, string>();
   readonly children: (TestElement | TestText)[] = [];
   parentNode: TestElement | null = null;

@@ -47,7 +47,7 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runBackupCheck(args, output)
 	case "hosted":
 		return true, runHosted(ctx, args, output)
-	case "checkpoint", "pin-football":
+	case "checkpoint", "pin-football", "mirror-fetch":
 		return true, outputCommand(name)(ctx, args, output)
 	case "refresh-nfl-schedule":
 		return true, runRefreshNFLSchedule(ctx, args, output)
@@ -57,8 +57,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runJoinLink(ctx, args, os.Stdin, output)
 	case "reset-password":
 		return true, runResetPassword(ctx, args, os.Stdin, output)
-	case "league-load":
-		return true, runLeagueLoad(ctx, args, os.Stdin, output)
+	case "league-load", "league-refresh":
+		return true, leagueConsoleCommand(name)(ctx, args, os.Stdin, output)
 	case "stand-up":
 		return true, runStandUp(ctx, args, output)
 	case "verify-release":
@@ -228,8 +228,19 @@ func serveChangesWorker(ctx context.Context, listener net.Listener, certificate 
 
 // outputCommand is a console command that reads only flags and writes only output.
 func outputCommand(name string) func(context.Context, []string, io.Writer) error {
-	if name == "pin-football" {
+	switch name {
+	case "pin-football":
 		return runPinFootball
+	case "mirror-fetch":
+		return runMirrorFetch
+	default:
+		return runCheckpoint
 	}
-	return runCheckpoint
+}
+
+func leagueConsoleCommand(name string) func(context.Context, []string, io.Reader, io.Writer) error {
+	if name == "league-refresh" {
+		return runLeagueRefresh
+	}
+	return runLeagueLoad
 }

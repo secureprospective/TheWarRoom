@@ -3,6 +3,7 @@ import { HQAct as WarRoomAct } from './HQAct';
 import { createPortal } from 'react-dom';
 import { RailLeaguePicker } from './leaguePicker';
 import { useEffect, useRef, useState } from 'react';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { useLeagueClock } from '../clock/useLeagueClock';
@@ -26,6 +27,10 @@ import type { WarRoomSavedDraft } from './warroomDrafts';
 import { readWarRoomCatalog, type WarRoomDeal, type WarRoomAsset } from './warroomTradeReads';
 import { readWarRoomLens, setWarRoomDirection, type Direction, type WarRoomLens } from './warroomLens';
 import './warroom.css';
+import { WarPoolV3 } from '../v3/WarPoolV3';
+import { WarPlansV3 } from '../v3/WarPlansV3';
+import { WarDraftV3 } from '../v3/WarDraftV3';
+import { WarTradeV3 } from '../v3/WarTradeV3';
 export type WarRoomTab = 'desk' | 'market' | 'draft' | 'plans';
 export default function WarRoom({ snapshot, native }: { snapshot: Snapshot; native?: WarRoomNative }) {
   const state = commands.use();
@@ -75,7 +80,9 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   const [prospect, setProspect] = useState<WarRoomProspect>();
   const context = { snapshot, mine, week, native };
   const [recorded, setRecorded] = useState(0);
-  const [directing, setDirecting] = useState<{ pending?: boolean; error?: string }>({});
+  const [directing, setDirecting] = useState<{
+    pending?: boolean; error?: string; errorCode?: string;
+  }>({});
   const catalog = useWarRoomRead(JSON.stringify([native?.league, mine, recorded]), () =>
     readWarRoomCatalog(context));
   const lens = useWarRoomRead(JSON.stringify([native?.league, mine, deal, catalog.reading?.revision,
@@ -89,7 +96,9 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     (direction: Direction) => {
       setDirecting({ pending: true });
       setWarRoomDirection(context, direction, revision).then(() => { setDirecting({});
-        setRecorded(n => n + 1); }, cause => setDirecting({ error: String(cause) }));
+        setRecorded(n => n + 1); }, cause => setDirecting({
+        error: errorMessage(cause), errorCode: errorCodeFor(cause),
+      }));
     } : undefined;
   const header = useWarRoomRead(JSON.stringify([native?.league, mine, week]), () =>
     readWarRoomHeader(context));
@@ -110,6 +119,31 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     className={native?.embedded ? `act act-tab${tab === t ? ' on' : ''}` : undefined}
     selected={tab === t} onAction={() => setTab(t)}>{['TRADE DESK', 'MARKET', 'DRAFT ROOM',
       'PLANS'][i]}</WarRoomAct>);
+  if (native?.v3 && tab === 'market') return <WarPoolV3 context={context} badge={native.v3.badge}
+    room={headerReading?.runway?.[0]?.room}
+    needs={lensReading && !lensReading.preparing ? lensReading.you.needs : undefined} />;
+  const drawers = drawer && <WarRoomDrawers context={context} drawer={drawer} close={() =>
+    setDrawer(undefined)}
+    refreshKey={recorded} onOpenDraft={(draft: WarRoomSavedDraft) => {
+      changeDeal({ partner: draft.partner, give: [...draft.give], get: [...draft.get] });
+      setTab('desk'); setDrawer(undefined); setRecorded(n => n + 1);
+    }} onLoadOffer={deal => {
+      changeDeal(deal); setTab('desk'); setDrawer(undefined); setRecorded(n => n + 1);
+    }} openOffer={id => { setOffer(id); setDrawer(undefined); }} />;
+  if (native?.v3 && tab === 'desk') return <><WarTradeV3 context={context} catalog={catalog.reading}
+    deal={deal} change={changeDeal} lens={lensReading} lensPending={lens.pending} previewNonce={recorded}
+    header={headerReading} name={snapshot.franchises.value.find(f => f.id === mine)?.name} choose={choose}
+    directing={directing} tray={<>{(['pocket', 'offers'] as const).map(d => <WarRoomAct key={d}
+      className="btn" expanded={drawer === d} onAction={() => setDrawer(drawer === d ? undefined : d)}>
+      {d === 'pocket' ? 'Pocket' : 'Negotiations'}</WarRoomAct>)}
+      <WarRoomPocketSave context={context} deal={deal} onSaved={() => {
+        setRecorded(n => n + 1); setDrawer('pocket'); }} />
+      <WarRoomAct className="btn" onAction={() => changeDeal({ ...deal, give: [], get: []
+        })}>Clear</WarRoomAct>
+    </>} />{drawers}</>;
+  if (native?.v3 && tab === 'draft') return <WarDraftV3 context={context} badge={native.v3.badge} />;
+  if (native?.v3 && tab === 'plans') return <WarPlansV3 context={context} badge={native.v3.badge}
+    events={deadlines} eventsError={calendar.error ?? undefined} />;
   return <div className={`wr-v6${native?.embedded ? ' embedded' : ''}`} ref={root}><div className="shell">
     {!native?.embedded && <nav className="rail" aria-label="Main"><RailLeaguePicker />
       {native && !mine && <p role="status">No franchise assigned · read-only</p>}<div className="rail-head">
@@ -138,7 +172,8 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       <div className="ws-tabs" role="tablist">{tabs}</div>}
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
         reading={headerReading} windowLabel={windowLabel} lens={lensReading} choose={choose}
-        pending={directing.pending} problem={directing.error} />
+        pending={directing.pending} problem={directing.error} problemCode={directing.errorCode}
+        league={native?.league} port={native?.port} />
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
         change={changeDeal} select={select} lens={lensReading} lensPending={lens.pending}
         previewNonce={recorded} /> :

@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { useContractRead } from '../contracts/Contracts';
 import { hqEvents } from './hqReads';
 import { hostedWorkflow } from '../commissioner/api';
@@ -19,7 +19,9 @@ export type PulseScope = { league: string; mine: string; port?: HostedPort;
   navigate?: (tab: PulseTab) => void; back?: () => void;
   leave: (node?: Node) => void; embedded?: boolean; tabs?: HTMLElement | null;
   onPlayer?: (player: PlayerCandidate) => void;
-  onPlayers?: (players: PlayerCandidate[]) => void };
+  onPlayers?: (players: PlayerCandidate[]) => void;
+  /** Desktop v3: draw the screen in the v3 frame's look; badge and kind fill its tab strip. */
+  v3?: { badge: ReactNode; kind: string } };
 
 /** NativePulse is every league-wide fact League Pulse reads. Each region reads one field and says
  *  plainly when the read it needs has not arrived. */

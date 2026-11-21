@@ -1,5 +1,11 @@
 // Thin-mode transport seam; browser sessions keep credentials in the server's HttpOnly cookie.
 import { observeView, prepareHostedAction } from '../data/hostedReads';
+import {
+  attachErrorCode,
+  createFailureError,
+  ERROR_CODE_HEADER,
+  recordAppRelease,
+} from '../data/errorCodes';
 import type { NativeRequest } from '../commands/native';
 import { object, text } from '../data/parseValues';
 import type { ReadTags } from '../data/session';
@@ -136,19 +142,34 @@ async function browserActionResult(action: string, response: Response): Promise<
     return browserView(raw, '', action === 'login');
   throw new Error('This account feature is not available in the browser app.');
 }
+function responseErrorCode(response: Response): string | undefined {
+  return response.headers?.get?.(ERROR_CODE_HEADER) ?? undefined;
+}
+function withClientCode(cause: unknown): Error {
+  return attachErrorCode(cause instanceof Error ? cause : new Error(String(cause)));
+}
 function responseMessage(response: Response, fallback: string): Promise<string> {
   return response.text().then(text => text.trim().slice(0, 4096) || fallback).catch(() => fallback);
 }
 export async function nativeStartup(): Promise<NativeView | null> {
-  const response = await nativeTransport.startup();
+  let response: Response;
+  try {
+    response = await nativeTransport.startup();
+  } catch (cause) {
+    throw withClientCode(cause);
+  }
   if (response.status === 404 && nativeTransport.kind === 'wails') return null;
   if (nativeTransport.kind === 'web' && response.status === 401) {
     const view = browserView(); observeView(view); return view;
   }
-  if (!response.ok) throw new Error('Desktop startup unavailable.');
+  if (!response.ok) {
+    throw createFailureError('Desktop startup unavailable.', responseErrorCode(response));
+  }
   // Vite's local development fallback serves index.html for unknown desktop routes.
   if (response.headers.get('Content-Type')?.startsWith('text/html')) {
-    if (nativeTransport.kind === 'web') throw new Error('The browser session endpoint is unavailable.');
+    if (nativeTransport.kind === 'web') {
+      throw createFailureError('The browser session endpoint is unavailable.');
+    }
     return null;
   }
   const view = nativeTransport.kind === 'web'
@@ -158,11 +179,21 @@ export async function nativeStartup(): Promise<NativeView | null> {
 }
 async function post(body: Record<string, string>): Promise<NativeView> {
   prepareHostedAction(body.action);
-  const response = await nativeTransport.action(body);
+  let response: Response;
+  try {
+    response = await nativeTransport.action(body);
+  } catch (cause) {
+    throw withClientCode(cause);
+  }
   if (response.status === 426) {
     const view = parseNativeView(await response.json());
     observeView(view);
-    if (!view.update) throw new Error('The update request could not be read. Close and reopen the app.');
+    if (!view.update) {
+      throw createFailureError(
+        'The update request could not be read. Close and reopen the app.',
+        responseErrorCode(response),
+      );
+    }
     updateListeners.forEach(listener => listener(view));
     return view;
   }
@@ -172,7 +203,12 @@ async function post(body: Record<string, string>): Promise<NativeView> {
     observeView(view);
     return view;
   }
-  if (!response.ok) throw new Error(await responseMessage(response, 'The account request was refused.'));
+  if (!response.ok) {
+    throw createFailureError(
+      await responseMessage(response, 'The account request was refused.'),
+      responseErrorCode(response),
+    );
+  }
   if (nativeTransport.kind === 'web' && body.action === 'forget') {
     const view = browserView(undefined, 'Signed out on this browser.');
     observeView(view);
@@ -191,8 +227,18 @@ export function nativeAction(
 export async function helperAction(
   action: HelperAction, fields: { helper?: string; franchise?: string; code?: string; change?: string },
 ): Promise<NativeView> {
-  const response = await nativeTransport.helper({ action, ...fields });
-  if (!response.ok) throw new Error(await responseMessage(response, 'The helper action was refused.'));
+  let response: Response;
+  try {
+    response = await nativeTransport.helper({ action, ...fields });
+  } catch (cause) {
+    throw withClientCode(cause);
+  }
+  if (!response.ok) {
+    throw createFailureError(
+      await responseMessage(response, 'The helper action was refused.'),
+      responseErrorCode(response),
+    );
+  }
   const view = parseNativeView(await response.json());
   observeView(view);
   return view;
@@ -234,22 +280,31 @@ export function hostedPlayerReadingUnavailable(data: unknown): HostedPlayerReadi
     && value.reason === 'input-not-held' ? value as HostedPlayerReadingUnavailable : undefined;
 }
 export async function hostedWorkflow(request: NativeRequest, football = ''): Promise<HostedResponse> {
-  const response = await nativeTransport.workflow(request, football);
+  let response: Response;
+  try {
+    response = await nativeTransport.workflow(request, football);
+  } catch (cause) {
+    throw withClientCode(cause);
+  }
   if (!response.ok) {
+    const serverCode = responseErrorCode(response);
     const fallback = 'The league could not accept this action. '
       + 'Refresh before retrying; check your connection, seat and authenticator.';
     if (request.mode === 'execute' && [400, 409, 429].includes(response.status)
       && response.headers.get('Content-Type') === 'text/plain; charset=utf-8') {
       const message = (await response.text()).trim();
-      if (message.length > 0 && message.length <= 4096) throw new Error(message);
+      if (message.length > 0 && message.length <= 4096) {
+        throw createFailureError(message, serverCode);
+      }
     }
-    throw new Error(fallback);
+    throw createFailureError(fallback, serverCode);
   }
   const r = object(await response.json(), 'Hosted league',
     ['label', 'writable', 'football', 'appRelease', 'data', 'tags']);
   if (typeof r.writable !== 'boolean') throw new Error('Unreadable league authority. Refresh to try again.');
   if (r.appRelease !== undefined && (!Number.isSafeInteger(r.appRelease) || Number(r.appRelease) < 1))
     throw new Error('Unreadable app release. Refresh to try again.');
+  if (r.appRelease !== undefined) recordAppRelease(Number(r.appRelease));
   const tags = r.tags == null ? undefined : parseWorkflowTags(r.tags);
   return {
     label: text(r.label, 'League location'), writable: r.writable,

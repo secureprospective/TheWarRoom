@@ -3,6 +3,7 @@ import { hostedWorkflow } from '../commissioner/api';
 import { readNativeHQ, type NativeHQ } from '../commissioner/hqReading';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { useContractRead } from '../contracts/Contracts';
+import { FailureAlert } from '../data/FailureAlert';
 import { parseDraft } from '../draftroom/draft';
 import { parseHostedGames, type Game } from '../now/liveContract';
 import { HQAct } from '../shell/HQAct';
@@ -55,8 +56,17 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
   const view = reading && teamView(reading, editor.edited, mine, games);
   const byes = view?.starters.filter(r => r.state === 'bye').length ?? 0;
   useEffect(() => { onByes?.(byes); }, [byes, onByes]);
-  if (!reading || !view) return <div className="team-tab"><p className="team-tab__note" role="status"
-    title={error}>{error ? unavailable : absent(pending)}</p></div>;
+  if (!reading || !view) return <div className="team-tab">
+    {error ? <FailureAlert
+      message={error}
+      prefix={`${unavailable} · `}
+      className="team-tab__note"
+      league={league}
+      screen="Phone · Team"
+      route="phone/team"
+      port={port}
+    /> : <p className="team-tab__note" role="status">{absent(pending)}</p>}
+  </div>;
   const all = [...view.starters, ...view.bench, ...view.ir];
   const from = all.find(r => r.key === moving);
   const team = reading.snapshot.franchises.value.find(f => f.id === mine)?.name ?? unavailable;
@@ -118,8 +128,15 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
       <HQAct className="team-key" onAction={editor.discard}>Discard</HQAct>
       <HQAct className="team-key team-key--go" disabled={!editable || !editor.changed.length}
         onAction={() => { void editor.save(); }}>Check and save</HQAct></div>}
-    {reading.errors.length > 0 && <p className="team-tab__note" title={reading.errors.join(' · ')}>
-      Some reads are unavailable: {reading.errors[0]}</p>}
+    {reading.errors.length > 0 && <FailureAlert
+      message={reading.errors[0]}
+      prefix="Some reads are unavailable: "
+      className="team-tab__note"
+      league={league}
+      screen="Phone · Team"
+      route="phone/team"
+      port={port}
+    />}
     <Group title="Starters" aside={`${view.locked} locked · games started`}>{view.starters.map(row)}</Group>
     <Group title="Bench" aside={openBench === undefined ? `${view.bench.length} players`
       : `${view.bench.length} of ${view.bench.length + openBench}`}>

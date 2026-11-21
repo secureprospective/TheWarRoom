@@ -52,7 +52,7 @@ it('retains last-good data on failure, clears errors on retry, and revalidates b
   await query.load([2026, '', '', '']);
   read.mockRejectedValueOnce(new Error('offline'));
   await query.load([2025, '', '', '']);
-  expect(query.peek()).toMatchObject({ value: 'first', pending: false, error: 'Error: offline' });
+  expect(query.peek()).toMatchObject({ value: 'first', pending: false, error: 'offline' });
   read.mockResolvedValueOnce('retried');
   await query.load([2026, '', '', '']);
   expect(query.peek()).toMatchObject({ value: 'retried', error: '', pending: false });
@@ -87,7 +87,7 @@ it('keeps action admission explicit, invalidates before actions and samples scop
   const count = read.mock.calls.length;
   await query.load([2026, team, '', ''], { before: async () => { throw new Error('refresh refused'); } });
   expect(read).toHaveBeenCalledTimes(count);
-  expect(query.peek()).toMatchObject({ value: '0002', error: 'Error: refresh refused', pending: false });
+  expect(query.peek()).toMatchObject({ value: '0002', error: 'refresh refused', pending: false });
 });
 
 it.each(['success', 'failure'] as const)('rejects a late older %s after the newest result', async outcome => {
@@ -184,7 +184,9 @@ it('keeps the latest failure instead of replacing it with an older success', asy
   await second;
   old.resolve('stale success');
   await first;
-  expect(query.peek()).toEqual({ selection: 0, pending: false, error: 'Error: current failure' });
+  expect(query.peek()).toEqual({
+    selection: 0, pending: false, error: 'current failure', errorCode: undefined,
+  });
 });
 
 it('does not cache a failed publication adapter and fences an awaited action after reset', async () => {

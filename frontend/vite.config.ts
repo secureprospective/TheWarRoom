@@ -1,8 +1,19 @@
+import {createHash} from 'node:crypto'
 import {readFileSync} from 'node:fs'
 import {defineConfig, type Plugin} from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 const webBuild = process.env.TWR_WEB_BUILD === '1'
+const appVersion = (() => {
+  try {
+    const raw = JSON.parse(readFileSync(new URL('../wails.json', import.meta.url), 'utf8')) as {
+      info?: { productVersion?: string }
+    }
+    return raw.info?.productVersion || '0.5.0'
+  } catch {
+    return '0.5.0'
+  }
+})()
 
 // Content-Security-Policy for the built app: same-origin scripts only, no eval, nothing remote.
 // Photos come from the asset handler (/headshot/…); Vite may inline small images and fonts as
@@ -46,8 +57,11 @@ function pwaShell(): Plugin {
         && /[.-][A-Za-z0-9_-]{8,}\.[^/]+$/.test(output.fileName))
         .map(output => `/app/${output.fileName}`);
       const shell = JSON.stringify(['/app/', ...assets]);
-      const worker = readFileSync(new URL('./pwa/sw.js', import.meta.url), 'utf8')
-        .replace('__APP_SHELL__', shell);
+      const template = readFileSync(new URL('./pwa/sw.js', import.meta.url), 'utf8');
+      // Version = hash of what the worker precaches plus the worker code itself. A release that
+      // changes any shell file or the worker gets a new version; an identical build does not.
+      const build = createHash('sha256').update(shell).update(template).digest('hex').slice(0, 12);
+      const worker = template.replace('__APP_SHELL__', shell).replace('__TWR_BUILD__', build);
       const manifest = readFileSync(new URL('./pwa/manifest.webmanifest', import.meta.url), 'utf8');
       this.emitFile({type: 'asset', fileName: 'sw.js', source: worker});
       this.emitFile({type: 'asset', fileName: 'manifest.webmanifest', source: manifest});
@@ -59,6 +73,7 @@ function pwaShell(): Plugin {
 export default defineConfig({
   base: webBuild ? '/app/' : '/',
   publicDir: webBuild ? 'public' : false,
+  define: { __TWR_APP_VERSION__: JSON.stringify(appVersion) },
   plugins: [react(), csp(), ...(webBuild ? [pwaShell()] : [])],
   test: {setupFiles: ['src/test/nativeWailsShim.ts', 'src/test/hqPrefetchStub.ts']},
   build: {

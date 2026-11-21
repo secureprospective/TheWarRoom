@@ -23,20 +23,18 @@ func runJoinLink(ctx context.Context, args []string, input io.Reader, output io.
 	revoke := flags.Bool("revoke", false, "stop the join link from working")
 	release := flags.String("release", "", "franchise ID whose owner is removed so it can be claimed again")
 	take := flags.String("take", "", "open franchise ID the signed-in commissioner also owns")
+	noLogin := flags.Bool("no-login", false, "with -take: seat the league's one commissioner without signing in (console only)")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("parse join link flags: %w", err)
 	}
-	chosen := 0
-	for _, on := range []bool{*rotate, *revoke, *release != "", *take != ""} {
-		if on {
-			chosen++
-		}
-	}
-	if flags.NArg() != 0 || chosen != 1 || *league == "" {
-		return fmt.Errorf("join-link needs -db, -league and exactly one of -rotate, -revoke, -release FRANCHISE or -take FRANCHISE")
+	if err := checkJoinFlags(flags.NArg(), *league, joinChoice{rotate: *rotate, revoke: *revoke, release: *release, take: *take}, *noLogin); err != nil {
+		return err
 	}
 	if err := checkHostedDatabase(*path, 0); err != nil {
 		return err
+	}
+	if *noLogin {
+		return takeWithoutLogin(ctx, *path, *league, *take, output)
 	}
 	raw, err := readConsoleCredentials(input)
 	if err != nil {
@@ -118,4 +116,42 @@ func commissionerSignIn(ctx context.Context, files stateFiles, raw accounts.RawC
 		return accounts.Account{}, fmt.Errorf("commissioner sign-in: %w", err)
 	}
 	return account, nil
+}
+
+// takeWithoutLogin seats the league's one commissioner on franchise without a password. Only someone
+// already at the server console, holding the database file, can run it.
+func takeWithoutLogin(ctx context.Context, path, league, franchise string, output io.Writer) error {
+	files, err := openStateFiles(ctx, path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = files.Close() }()
+	store, err := leagueStore(ctx, files, league)
+	if err != nil {
+		return err
+	}
+	seats := leagueservice.JoinSeats{Store: store}
+	principal, err := seats.Commissioner(ctx, league)
+	if err != nil {
+		return fmt.Errorf("find commissioner: %w", err)
+	}
+	service := accounts.NewJoin(signInStore(files), seats, nil)
+	return joinAction(ctx, service, league, joinChoice{take: franchise}, principal, output)
+}
+
+// checkJoinFlags requires a league and exactly one action; -no-login goes only with -take.
+func checkJoinFlags(extra int, league string, choice joinChoice, noLogin bool) error {
+	chosen := 0
+	for _, on := range []bool{choice.rotate, choice.revoke, choice.release != "", choice.take != ""} {
+		if on {
+			chosen++
+		}
+	}
+	if extra != 0 || chosen != 1 || league == "" {
+		return fmt.Errorf("join-link needs -db, -league and exactly one of -rotate, -revoke, -release FRANCHISE or -take FRANCHISE")
+	}
+	if noLogin && choice.take == "" {
+		return fmt.Errorf("-no-login works only with -take FRANCHISE")
+	}
+	return nil
 }

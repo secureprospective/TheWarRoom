@@ -118,3 +118,10 @@ func (l MigrationLedger) Execute(ctx context.Context, raw commissioner.RawComman
 	receipt, err := l.Store.ExecuteCommissioner(ctx, raw, principal, l.authorizer())
 	return receipt, ChangeError(err)
 }
+
+// LineupFacts returns the held NFL kickoff facts for one season and week.
+func (l MigrationLedger) LineupFacts(ctx context.Context, season, week int) (
+	commissioner.LineupFacts, error) {
+	facts, err := l.Store.LineupFacts(ctx, season, week)
+	return facts, ChangeError(err)
+}

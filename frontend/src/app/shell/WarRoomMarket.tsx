@@ -1,5 +1,7 @@
 import { HQAct as WarRoomAct } from './HQAct';
 import { useEffect, useState } from 'react';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
+import { FailureAlert } from '../data/FailureAlert';
 import type { PlayerCandidate } from './ThinPlayerSearch';
 import { HoldToFire } from '../commissioner/HoldToFire';
 import { previewChange } from '../commissioner/preview';
@@ -58,14 +60,15 @@ type BidEditor = { type: 'place'; player: WarRoomMarketPlayer; salary: string; y
 type BidReview = Extract<WarRoomMarketActionResult, { kind: 'review' }>;
 type RefreshedBids = { bids?: WarRoomOwnBid[]; revision?: number; capRoom?: number; error?: string };
 type RosterAddEditor = { player: WarRoomMarketPlayer; drop: string; reason: string };
-export function WarRoomMarket({ context, room, needs, select, onPlayers }: { context: WarRoomContext;
-  room?: number; needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void;
-  onPlayers?: (players: PlayerCandidate[]) => void }) {
+/** The pool's reads and bid actions, shared by the War Room market and the desktop v3 pool. */
+export function useWarRoomMarket(context: WarRoomContext, room?: number, needs?: LensNeed[],
+  onPlayers?: (players: PlayerCandidate[]) => void) {
   const [refresh, setRefresh] = useState(0);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string>();
   const [notice, setNotice] = useState('');
   const [editor, setEditor] = useState<BidEditor>();
   const [review, setReview] = useState<BidReview>();
@@ -89,9 +92,10 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
   const shown = value && { ...value, bids };
   const change = async (id: string, withPlayer?: string) => {
     if (pending) return;
-    setPending(true); setError(''); setNotice(''); setFresh(undefined);
+    setPending(true); setError(''); setErrorCode(undefined); setNotice(''); setFresh(undefined);
     try { await changeWarRoomTarget(context, id, targets.has(id), withPlayer); setRefresh(n => n + 1); }
-    catch { setError(unavailable); } finally { setPending(false); }
+    catch (cause) { setError(unavailable); setErrorCode(errorCodeFor(cause)); }
+    finally { setPending(false); }
   };
   const bid = async (p: WarRoomMarketPlayer) => {
     if (pending || fresh?.error || bids?.some(b => b.player === p.id)) return;
@@ -106,14 +110,17 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
       }
       setEditor({ type: 'place', player: p, salary: '', years: 0 }); return;
     }
-    setPending(true); setError('');
+    setPending(true); setError(''); setErrorCode(undefined);
     try {
       const result = await warRoomMarketAction(context, { type: 'draft', form: {
         planId: '', playerId: p.id, playerName: p.name, salary: String((p.minimumCents ?? 0) / 1e8),
         years: 1, snipe: false, beat: '', evidence: '', closesOpen: false, closesDate: '',
         closesTime: '', conditionalDrop: '', conditionalOpen: false } });
       if (result.kind === 'plan') setOwn(o => ({ ...o, [result.plan.playerId]: ownBid(result.plan) }));
-    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    } catch (cause) {
+      setError(cause instanceof Error ? errorMessage(cause) : unavailable);
+      setErrorCode(errorCodeFor(cause));
+    }
     finally { setPending(false); }
   };
   const revise = async (b: WarRoomOwnBid, change: { salary?: string; years?: number }) => {
@@ -135,21 +142,25 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
       if (capRoom === undefined) { setError('Cap room is unavailable; bid was not changed'); return; }
       if (Math.round(salary * 1e8) > capRoom) { setError('Bid exceeds your cap room'); return; }
     }
-    setPending(true); setError('');
+    setPending(true); setError(''); setErrorCode(undefined);
     try {
       const result = await warRoomMarketAction(context, { type: 'revise', bid: b,
         form: { ...planForm(b.plan), ...change } });
       if (result.kind === 'plan') setOwn(o => ({ ...o, [result.plan.playerId]: ownBid(result.plan) }));
-    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    } catch (cause) {
+      setError(cause instanceof Error ? errorMessage(cause) : unavailable);
+      setErrorCode(errorCodeFor(cause));
+    }
     finally { setPending(false); }
   };
   const reviewBid = async () => {
     if (!editor || pending || fresh?.error) return;
     if (bidRevision === undefined) {
       setError('Your bid version is unavailable; refresh before continuing');
+      setErrorCode(undefined);
       return;
     }
-    setPending(true); setError(''); setNotice('');
+    setPending(true); setError(''); setErrorCode(undefined); setNotice('');
     try {
       const salary = Number(editor.salary);
       const details = { salaryCents: Math.round(salary * 1e8), years: editor.years,
@@ -159,35 +170,44 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
         type: 'place', player: editor.player, ...details }) : await warRoomMarketAction(context, {
         type: 'raise', bid: editor.bid, ...details });
       if (result.kind === 'review') { setReview(result); setEditor(undefined); }
-    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    } catch (cause) {
+      setError(cause instanceof Error ? errorMessage(cause) : unavailable);
+      setErrorCode(errorCodeFor(cause));
+    }
     finally { setPending(false); }
   };
   const reviewRosterAdd = async () => {
     if (!addEditor || pending || value?.rosterRevision === undefined) return;
-    setPending(true); setError(''); setAddNotice('');
+    setPending(true); setError(''); setErrorCode(undefined); setAddNotice('');
     try {
       const next = await reviewWarRoomRosterAdd(context, { player: addEditor.player.id,
         ...(addEditor.drop ? { drop: addEditor.drop } : {}), reason: addEditor.reason,
         revision: value.rosterRevision, writable: value.writable === true, football: value.football ?? '' });
       setAddReview(next); setAddEditor(undefined);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    } catch (cause) {
+      setError(cause instanceof Error ? errorMessage(cause) : unavailable);
+      setErrorCode(errorCodeFor(cause));
+    }
     finally { setPending(false); }
   };
   const confirmRosterAdd = async () => {
     if (!addReview || pending) return;
-    setPending(true); setError(''); setAddNotice('');
+    setPending(true); setError(''); setErrorCode(undefined); setAddNotice('');
     try {
       const result = await confirmWarRoomRosterAdd(context, addReview);
       if (result.kind === 'recorded') {
         setAddNotice(result.receipt.message); setAddReview(undefined); setAddEditor(undefined);
         setRefresh(n => n + 1);
       }
-    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    } catch (cause) {
+      setError(cause instanceof Error ? errorMessage(cause) : unavailable);
+      setErrorCode(errorCodeFor(cause));
+    }
     finally { setPending(false); }
   };
   const confirmBid = async () => {
     if (!review || pending) return;
-    setPending(true); setError(''); setNotice('');
+    setPending(true); setError(''); setErrorCode(undefined); setNotice('');
     try {
       const result = await warRoomMarketAction(context, { type: 'confirm', request: review.request,
         football: review.football });
@@ -198,7 +218,10 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
         setError(result.refreshError ?? '');
         setReview(undefined);
       }
-    } catch (cause) { setError(cause instanceof Error ? cause.message : unavailable); }
+    } catch (cause) {
+      setError(cause instanceof Error ? errorMessage(cause) : unavailable);
+      setErrorCode(errorCodeFor(cause));
+    }
     finally { setPending(false); }
   };
   const drag = useWarRoomDrag((id, over) => {
@@ -227,6 +250,26 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
           ? 'Waiver status is unavailable; direct add is unavailable'
           : value.writable !== true || !value.football || value.rosterRevision === undefined
             ? 'Add unavailable until the server reading is ready' : '';
+  return {
+    refresh, setRefresh, filter, setFilter, search, setSearch, pending, setPending, error, setError,
+    errorCode, setErrorCode, notice, setNotice, editor, setEditor, review, setReview, addEditor,
+    setAddEditor, addReview, setAddReview, addNotice, setAddNotice, fresh, setFresh, own, setOwn,
+    reading, value, targets, capRoom, bidRevision, sourceBids, bids, shown, change, bid, revise,
+    reviewBid, reviewRosterAdd, confirmRosterAdd, confirmBid, drag, needPositions, players,
+    filterUnavailable, canManageBids, canManageTargets, addUnavailable,
+  };
+}
+export function WarRoomMarket({ context, room, needs, select, onPlayers }: { context: WarRoomContext;
+  room?: number; needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void;
+  onPlayers?: (players: PlayerCandidate[]) => void }) {
+  const {
+    setRefresh, filter, setFilter, search, setSearch, pending, error, setError, errorCode, notice,
+    editor, setEditor, review, setReview, addEditor, setAddEditor, addReview, setAddReview, addNotice,
+    setAddNotice, fresh, setFresh, reading, value, targets, capRoom, bids, shown, change, bid, revise,
+    reviewBid, reviewRosterAdd, confirmRosterAdd, confirmBid, drag, players, filterUnavailable,
+    canManageBids, canManageTargets, addUnavailable,
+  } =
+    useWarRoomMarket(context, room, needs, onPlayers);
   return <section className="mk3 ws on" aria-label="Market"><div className="tg"><div className="ch">
     <b>MY TARGETS</b><span>ranked per need</span></div><div className="tg-l">
     {value?.targets?.length ? [...warRoomTargetLanes(context, value)].map(([position, lane]) => <div
@@ -310,7 +353,15 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
             onConfirm={() => { void confirmRosterAdd(); }} />
           <WarRoomAct disabled={pending} onAction={() => setAddReview(undefined)}>CANCEL</WarRoomAct>
         </div>}
-        {error && <p className="empty" role="alert">{error}</p>}
+        {error && <FailureAlert
+          message={error}
+          code={errorCode}
+          className="empty"
+          league={context.native?.league}
+          screen="War Room · Market"
+          route="war/market"
+          port={context.native?.port}
+        />}
         {addNotice && <p role="status">{addNotice}</p>}</div>
     <div className="bcol"><div className="budget"><div className="t"><span>CAP ROOM</span><b>{money(capRoom)}
       </b><span className="lim">HARD LIMIT</span></div><div className="bar" /><div className="t">

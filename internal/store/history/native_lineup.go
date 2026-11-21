@@ -62,6 +62,11 @@ func (s *Store) playoffFactsFor(ctx context.Context, raw commissioner.RawCommand
 	return s.weekFacts(ctx, change.Season, week)
 }
 
+// LineupFacts returns the held NFL kickoff facts for one season and week.
+func (s *Store) LineupFacts(ctx context.Context, season, week int) (commissioner.LineupFacts, error) {
+	return s.weekFacts(ctx, season, week)
+}
+
 func (s *Store) weekFacts(ctx context.Context, season, week int) (commissioner.LineupFacts, error) {
 	if s.lineupEnv == nil {
 		return commissioner.LineupFacts{}, fmt.Errorf("league change refused: %w", commissioner.Refused(errNoLineupFacts))

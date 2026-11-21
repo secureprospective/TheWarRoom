@@ -179,7 +179,7 @@ func batchable(command string, creating bool) bool {
 		return creating
 	case commissioner.RosterReserve, commissioner.CorrectRoster, commissioner.CorrectPick,
 		commissioner.Create, commissioner.NativeSeed, commissioner.ScheduleGenerate, commissioner.SchedulePublish,
-		commissioner.LineupCorrect, "commish.seat.invite":
+		commissioner.LineupCorrect, "commish.seat.invite", "commish.franchise.edit":
 		return true
 	}
 	return false

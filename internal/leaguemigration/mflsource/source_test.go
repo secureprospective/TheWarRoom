@@ -1,6 +1,7 @@
 package mflsource_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -150,3 +151,48 @@ func TestSourceThreadsSelectedBase(t *testing.T) {
 		})
 	}
 }
+
+func TestSourceSeasonOverrideAndFetchPlayers(t *testing.T) {
+	t.Parallel()
+	fixture, err := migrationtest.Legacy()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var seenPaths []string
+	transport := &fixtureTransport{t: t}
+	recording := roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		seenPaths = append(seenPaths, req.URL.Path)
+		return transport.RoundTrip(req)
+	})
+	client, err := mfl.New("api", 100000, mfl.WithTransport(recording))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fetchedSeason := 0
+	source := &mflsource.Source{
+		Client: client,
+		ID:     fixture.LeagueID,
+		Season: 2025,
+		Now:    func() time.Time { return time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC) },
+		FetchPlayers: func(_ context.Context, season int) (map[string]string, error) {
+			fetchedSeason = season
+			return fixture.Players, nil
+		},
+	}
+	export, err := mflsource.Read(t.Context(), source, migrationtest.ReadAt)
+	if err != nil {
+		t.Fatalf("mflsource.Read: %v", err)
+	}
+	if export.Season != 2025 || fetchedSeason != 2025 {
+		t.Fatalf("season = %d, fetchedSeason = %d; want 2025", export.Season, fetchedSeason)
+	}
+	for _, p := range seenPaths {
+		if !strings.HasPrefix(p, "/2025/") {
+			t.Fatalf("requested path %q; want /2025/ prefix", p)
+		}
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }

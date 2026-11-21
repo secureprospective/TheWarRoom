@@ -1,6 +1,7 @@
 import { nativeAction, subscribeChanged,
   type NativeChanges, type NativeView } from '../control/nativeApi';
 import { createPublicReadStorage } from './clientCache';
+import { registerLeagueProvider } from './errorCodes';
 import { createReadSession, type ReadIdentity, type ReadTopic } from './session';
 
 export const hostedReads = createReadSession({ storage: createPublicReadStorage() });
@@ -42,6 +43,7 @@ export function observeView(view: NativeView) {
     || view.authGeneration !== current.authGeneration)) pendingTopics = [];
   revision++;
   current = view;
+  registerLeagueProvider(() => current ? { league: current.league, name: current.name } : undefined);
   const next = identity(view);
   hostedReads.setIdentity(next);
   hostedReads.applyTopics(pendingTopics);

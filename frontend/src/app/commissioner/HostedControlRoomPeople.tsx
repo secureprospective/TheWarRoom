@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { hostedCommandAvailable, type NativeRequest } from '../commands/native';
 import { createReadQuery } from '../data/query';
@@ -19,7 +20,7 @@ function definition(command: string): ActDefinition | undefined {
   return actTable.find(action => action.command === command);
 }
 
-function createHostedPeopleQuery(league: string, port: HostedPort = hostedWorkflow) {
+export function createHostedPeopleQuery(league: string, port: HostedPort = hostedWorkflow) {
   return createReadQuery('commissioner.TargetCommissionerPeople', {
     initial: (): { people?: People } => ({}),
     read: async (scope: string): Promise<People> => {
@@ -113,7 +114,15 @@ export function HostedControlRoomPeople({ league, room, port }: {
       {panels.map(([id, label]) => <HQAct key={id} role="tab" selected={panel === id}
         label={label} onAction={() => setPanel(id)}>{label}</HQAct>)}
     </div>
-    {reading.error && <p role="alert" className="cr-note">{reading.error}</p>}
+    {reading.error && <FailureAlert
+      message={reading.error}
+      code={reading.errorCode}
+      className="cr-note"
+      league={league}
+      screen="Control Room · People"
+      route="control/people"
+      port={port}
+    />}
     {!people && !reading.error && <p role="status" className="cr-note">
       {reading.pending ? 'Reading people from the league server…' : 'People have not been read yet.'}
     </p>}

@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
+import type { HostedPort } from './hostedRoom';
 import { activeJobSnoozes, countdown, type Job, type JobSnooze, type JobSnoozes, type Jobs } from './jobs';
 import { filterJobLanes, jobKinds, jobKind, jobLanes, jobSnoozeChoices,
   orderJobLanes, type JobKind } from './hostedJobs';
@@ -8,8 +10,9 @@ import { when } from '../control/room/room';
 import type { ActDefinition } from './actTable';
 
 export function HostedControlRoomJobs({ league, jobs, snoozes, now = Date.now(), snoozeError = '',
-  pendingJob = '', onSnooze, onWake, onOpen, onUnavailable }: {
-  league: string; jobs?: Jobs; snoozes?: JobSnoozes; now?: number; snoozeError?: string; pendingJob?: string;
+  snoozeErrorCode, port, pendingJob = '', onSnooze, onWake, onOpen, onUnavailable }: {
+  league: string; jobs?: Jobs; snoozes?: JobSnoozes; now?: number; snoozeError?: string;
+  snoozeErrorCode?: string; port?: HostedPort; pendingJob?: string;
   onSnooze(job: Job, until: string): void; onWake(snooze: JobSnooze): void;
   onOpen(definition: ActDefinition, job: Job): void; onUnavailable(words: string): void;
 }) {
@@ -40,7 +43,15 @@ export function HostedControlRoomJobs({ league, jobs, snoozes, now = Date.now(),
           </select>
         </label>
       </div>
-      {snoozeError && <p role="alert" className="cr-note">{snoozeError}</p>}
+      {snoozeError && <FailureAlert
+        message={snoozeError}
+        code={snoozeErrorCode}
+        className="cr-note"
+        league={league}
+        screen="Control Room · Jobs"
+        route="control/jobs"
+        port={port}
+      />}
       <div className="cr-pb hosted-job-lanes" aria-live="polite">
         {!jobs && <p role="status">The league jobs have not been read yet.</p>}
         <section data-lane="snoozed" aria-label="Snoozed jobs">
