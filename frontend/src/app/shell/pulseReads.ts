@@ -166,7 +166,11 @@ export async function readRecentResults(league: string, season: number, weeks: r
   through: number, port: HostedPort = hostedWorkflow): Promise<PulseResults[]> {
   const recent = [...new Set(weeks.filter(week => Number.isInteger(week) && week > 0 && week <= through))]
     .sort((a, b) => a - b).slice(-5);
-  return Promise.all(recent.map(week => readPulseWeekResults(league, season, week, port)));
+  // One week at a time: the server scores results reads in parallel badly (one is ~0.3 s, five at
+  // once took ~5 s each) and the pile-up held the lineup editor locked.
+  const out: PulseResults[] = [];
+  for (const week of recent) out.push(await readPulseWeekResults(league, season, week, port));
+  return out;
 }
 
 /** PulseSeason is the published schedule and the result of every week played so far. */
