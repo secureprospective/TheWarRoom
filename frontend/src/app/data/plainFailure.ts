@@ -8,7 +8,8 @@ export const OFFLINE = "Can't reach the league site." + ADVICE;
 const SENTENCE = new RegExp("Can't reach [^.]+\\." + ADVICE.replace(/[.,]/g, '\\$&'));
 
 export function plainFailure(text: string): string {
-  return text.match(SENTENCE)?.[0] ?? text;
+  const cleaned = text.replace(/^Error:\s*/i, '');
+  return cleaned.match(SENTENCE)?.[0] ?? cleaned;
 }
 
 type Bound = Record<string, Record<string, Record<string, unknown>>>;

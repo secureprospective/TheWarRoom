@@ -73,11 +73,11 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 		}
 		w.Header().Set("Cache-Control", "no-store")
 		league := r.Header.Get("X-TWR-League")
-		setFailureLeague(r.Context(), league)
 		if !validInvalidationRequest(r) {
 			http.Error(w, "invalid invalidation request", http.StatusBadRequest)
 			return
 		}
+		setFailureLeague(r.Context(), league)
 		if h.Store == nil || h.Leagues == nil || h.Sessions == nil || h.TOTP == nil || h.Worker == nil {
 			writeUnavailable(w, "service unavailable")
 			return

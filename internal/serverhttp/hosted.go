@@ -364,10 +364,12 @@ func (h Hosted) authenticateNative(w http.ResponseWriter, r *http.Request) (nati
 		h.sessionFailure(w, r, authenticationErr)
 		return nativeAuth{raw: rawSession}, false
 	}
-	if _, err := h.Tokens.Authenticate(r.Context(), rawSession); err != nil {
+	token, err := h.Tokens.Authenticate(r.Context(), rawSession)
+	if err != nil {
 		h.sessionFailure(w, r, err)
 		return nativeAuth{raw: rawSession}, false
 	}
+	setFailureAccount(r.Context(), token.Account.ID)
 	return nativeAuth{raw: rawSession, agent: authenticationErr}, true
 }
 

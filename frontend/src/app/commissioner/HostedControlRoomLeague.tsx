@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { onHostedTopics } from '../data/hostedReads';
 import { createReadQuery } from '../data/query';
 import { HQAct } from '../shell/HQAct';
@@ -126,7 +127,14 @@ export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }:
           {ledger && roomState.reading && !revisionMatches
             && <p role="status">League records changed. Refresh the Control Room before posting.</p>}
           <HQAct disabled={disabled} onAction={() => void preview()}>Preview {title.toLowerCase()}</HQAct>
-          {roomState.error && <p role="alert">{roomState.error}</p>}
+          {roomState.error && <FailureAlert
+            message={roomState.error}
+            code={roomState.errorCode}
+            league={league}
+            screen="Control Room · League"
+            route="control/league"
+            port={port}
+          />}
         </section> : <p role="status">{unavailable} Newsletter publishing has no hosted command.</p>}
         {roomState.review && <Review room={room} />}
       </div>
@@ -135,9 +143,14 @@ export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }:
     <div className="cr-panel">
       <div className="cr-ph">LEAGUE NOTICES & NOTES</div>
       <div className="cr-pb">
-        {!notices && <p role={noticesState.error ? 'alert' : 'status'}>
-          {noticesState.error || 'Reading league notices…'}
-        </p>}
+        {!notices && (noticesState.error ? <FailureAlert
+            message={noticesState.error}
+            code={noticesState.errorCode}
+            league={league}
+            screen="Control Room · League"
+            route="control/league"
+            port={port}
+          /> : <p role="status">Reading league notices…</p>)}
         {notices && <>
           {notices.notices.filter(notice => !notice.withdrawn).map(notice => <article key={notice.id}>
             <h4>{notice.pinned ? 'Pinned notice' : 'Notice'}</h4>
@@ -166,9 +179,14 @@ export function HostedControlRoomLeague({ league, room, port = hostedWorkflow }:
           <HQAct disabled={ledgerState.pending || noticesState.pending}
             onAction={refresh}>Refresh ledger</HQAct>
         </div>
-        {(ledgerState.error || noticesState.error) && <p role="alert">
-          {ledgerState.error || noticesState.error}
-        </p>}
+        {(ledgerState.error || (notices && noticesState.error)) && <FailureAlert
+          message={ledgerState.error || noticesState.error}
+          code={ledgerState.error ? ledgerState.errorCode : noticesState.errorCode}
+          league={league}
+          screen="Control Room · League"
+          route="control/league"
+          port={port}
+        />}
         {!ledger && !ledgerState.error && <p role="status">Reading league ledger…</p>}
         {ledger?.entries.map(entry => <div key={entry.id}>
           <span className="t">{when(entry.when)}</span><span className="a">{entry.who}</span>

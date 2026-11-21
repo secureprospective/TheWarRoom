@@ -91,9 +91,26 @@ func setFailureAccount(ctx context.Context, accountID string) {
 	meta.mu.Unlock()
 }
 
+func validFailureLeague(league string) bool {
+	if !strings.HasPrefix(league, "native.") ||
+		len(league) <= len("native.") || len(league) > 128 {
+		return false
+	}
+	for i := len("native."); i < len(league); i++ {
+		c := league[i]
+		isLower := c >= 'a' && c <= 'z'
+		isUpper := c >= 'A' && c <= 'Z'
+		isDigit := c >= '0' && c <= '9'
+		if !isLower && !isUpper && !isDigit && c != '.' && c != '_' && c != '-' {
+			return false
+		}
+	}
+	return true
+}
+
 func setFailureLeague(ctx context.Context, league string) {
 	meta, ok := ctx.Value(failureMetaKey{}).(*failureMeta)
-	if !ok || meta == nil || !strings.HasPrefix(league, "native.") || len(league) > 128 {
+	if !ok || meta == nil || !validFailureLeague(league) {
 		return
 	}
 	meta.mu.Lock()

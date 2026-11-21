@@ -64,6 +64,10 @@ export function createFailureError(message: string, code?: string): Error {
   return attachErrorCode(new Error(plainFailure(message)), code);
 }
 
+export function errorMessage(cause: unknown): string {
+  return plainFailure(cause instanceof Error ? cause.message : String(cause));
+}
+
 export function errorCodeFor(cause: unknown): string | undefined {
   if (cause instanceof Error) {
     return errorCodes.get(cause) ?? lookupErrorCode(cause.message);

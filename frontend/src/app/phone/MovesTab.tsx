@@ -15,6 +15,7 @@ import { dealFromWarRoomOffer, type WarRoomDeal } from '../shell/warroomTradeRea
 import { AddSheet, ClaimSheet, PlayerSheet, TradeSheet, type MovesPlayer,
   type MovesRoster } from './MovesSheets';
 import { onHostedTopics } from '../data/hostedReads';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
 import { FailureAlert } from '../data/FailureAlert';
 import type { Game } from '../now/liveContract';
 import { useHostedGames } from '../shell/hostedGames';
@@ -28,7 +29,7 @@ const topicsFor = (league: string): Subscribe => load =>
 
 export type MovesSegment = 'players' | 'waivers' | 'trades';
 type Offer = ReturnType<typeof parseHostedTrades>['offers'][number];
-type Part<T> = { value?: T; error?: string };
+type Part<T> = { value?: T; error?: string; errorCode?: string };
 export type MovesReading = {
   pool: Part<MovesPlayer[]>;
   roster?: MovesRoster;
@@ -41,9 +42,10 @@ export type MovesReading = {
   trades: Part<{ revision: number; notes: string[]; offers: Offer[] }>;
 };
 const POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
-const message = (cause: unknown) => cause instanceof Error ? cause.message : String(cause);
+const message = (cause: unknown) => errorMessage(cause);
 async function part<T>(read: () => Promise<T>): Promise<Part<T>> {
-  try { return { value: await read() }; } catch (cause) { return { error: message(cause) }; }
+  try { return { value: await read() }; }
+  catch (cause) { return { error: message(cause), errorCode: errorCodeFor(cause) }; }
 }
 
 /** readMoves takes the three existing owner reads; each fails on its own with the server's words. */
@@ -87,9 +89,10 @@ export async function readMoves(league: string, mine: string, port: HostedPort):
       total: w.order.length, source: w.words, method: w.method,
       ...(closes[0] ? { runAt: closes[0] } : {}),
       claims: w.claims.map(c => ({ ...c, name: names.get(c.player) ?? c.player })) } }
-      : { error: waivers.error },
+      : { error: waivers.error, errorCode: waivers.errorCode },
     trades: trades.value ? { value: { revision: trades.value.revision, notes: trades.value.notes,
-      offers: trades.value.offers.filter(o => !isEndedTrade(o.status)) } } : { error: trades.error },
+      offers: trades.value.offers.filter(o => !isEndedTrade(o.status)) } }
+      : { error: trades.error, errorCode: trades.errorCode },
   };
 }
 
@@ -101,15 +104,17 @@ const ordinal = (n: number) => {
   return `${n}${tail}`;
 };
 
-const unavailableLine = (words?: string, league?: string, port?: HostedPort) => <FailureAlert
-  message={words || 'no reading'}
-  prefix="Unavailable: "
-  className="mv4-empty"
-  league={league}
-  screen="Phone · Moves"
-  route="phone/moves"
-  port={port}
-/>;
+const unavailableLine = (words?: string, league?: string, port?: HostedPort, code?: string) =>
+  <FailureAlert
+    message={words || 'no reading'}
+    prefix="Unavailable: "
+    code={code}
+    className="mv4-empty"
+    league={league}
+    screen="Phone · Moves"
+    route="phone/moves"
+    port={port}
+  />;
 
 /** readMovesContext is the War Room context the move sheets reuse: the hosted HQ reading for this seat. */
 export async function readMovesContext(league: string, mine: string,
@@ -138,27 +143,35 @@ function MovesBody({ league, port, read, readContext, subscribe }: { league: Lea
   const [segment, setSegment] = useState<MovesSegment>('players');
   const [reading, setReading] = useState<MovesReading>();
   const [failure, setFailure] = useState('');
+  const [failureCode, setFailureCode] = useState<string>();
   const [search, setSearch] = useState('');
   const [position, setPosition] = useState('ALL');
   const [revision, setRevision] = useState(0);
   const [sheet, setSheet] = useState<Sheet>();
   const [context, setContext] = useState<WarRoomContext>();
   const [contextError, setContextError] = useState('');
+  const [contextErrorCode, setContextErrorCode] = useState<string>();
   const [done, setDone] = useState('');
   useEffect(() => {
     if (!league || !mine) return;
     let active = true;
     setFailure('');
+    setFailureCode(undefined);
     void read(league.id, mine, port).then(r => { if (active) setReading(r); })
-      .catch(cause => { if (active) setFailure(message(cause)); });
+      .catch(cause => {
+        if (active) { setFailure(message(cause)); setFailureCode(errorCodeFor(cause)); }
+      });
     return () => { active = false; };
   }, [league, mine, port, read, revision]);
   useEffect(() => {
     if (!league || !mine || !sheet || context) return;
     let active = true;
     setContextError('');
+    setContextErrorCode(undefined);
     void readContext(league.id, mine, port).then(c => { if (active) setContext(c); })
-      .catch(cause => { if (active) setContextError(message(cause)); });
+      .catch(cause => {
+        if (active) { setContextError(message(cause)); setContextErrorCode(errorCodeFor(cause)); }
+      });
     return () => { active = false; };
   }, [league, mine, port, readContext, sheet, context]);
   const changes = useRef(subscribe); changes.current = subscribe;
@@ -168,7 +181,7 @@ function MovesBody({ league, port, read, readContext, subscribe }: { league: Lea
   if (!league || !mine) return <section className="mv4" aria-label="Moves">
     <p className="mv4-empty">Moves opens once you hold a franchise in a league.</p></section>;
   if (failure) return <section className="mv4" aria-label="Moves">
-    {unavailableLine(failure, league.id, port)}</section>;
+    {unavailableLine(failure, league.id, port, failureCode)}</section>;
   if (!reading) return <section className="mv4" aria-label="Moves">
     <p role="status">Reading moves…</p></section>;
   const claims = reading.waivers.value?.claims.length;
@@ -188,7 +201,8 @@ function MovesBody({ league, port, read, readContext, subscribe }: { league: Lea
         {label}{count ? <i className={tone}>{count}</i> : null}</HQAct>)}
     </div>
     {done && <p className="mv4-done" role="status">{done}</p>}
-    {segment === 'players' && <Players reading={reading.pool} search={search} setSearch={setSearch}
+    {segment === 'players' && <Players reading={reading.pool} league={league.id} port={port}
+      search={search} setSearch={setSearch}
       position={position} setPosition={setPosition} open={player => setSheet({ kind: 'player', player })}
       move={move} canAdd={Boolean(reading.roster?.writable)} openBench={reading.openBench}
       games={games} runAt={reading.waivers.value?.runAt} />}
@@ -197,7 +211,7 @@ function MovesBody({ league, port, read, readContext, subscribe }: { league: Lea
     {segment === 'trades' && <Trades reading={reading.trades} league={league.id} mine={mine} port={port}
       onChanged={() => setRevision(n => n + 1)} onTrade={deal => setSheet({ kind: 'trade', deal })} />}
     {sheet && !context && (contextError
-      ? unavailableLine(contextError, league.id, port)
+      ? unavailableLine(contextError, league.id, port, contextErrorCode)
       : <p role="status">Opening…</p>)}
     {sheet && context && sheet.kind === 'player' && <PlayerSheet context={context} player={sheet.player}
       onMove={() => move(sheet.player)} onClose={close} />}
@@ -211,15 +225,16 @@ function MovesBody({ league, port, read, readContext, subscribe }: { league: Lea
   </section>;
 }
 
-function Players({ reading, search, setSearch, position, setPosition, open, move, canAdd, openBench,
-  games, runAt }: {
-  reading: MovesReading['pool']; search: string; setSearch: (v: string) => void;
+function Players({ reading, league, port, search, setSearch, position, setPosition, open, move, canAdd,
+  openBench, games, runAt }: {
+  reading: MovesReading['pool']; league: string; port: HostedPort;
+  search: string; setSearch: (v: string) => void;
   position: string; setPosition: (v: string) => void; open: (p: MovesPlayer) => void;
   move: (p: MovesPlayer) => void; canAdd: boolean; openBench?: number; games?: Game[]; runAt?: string }) {
   const shown = useMemo(() => (reading.value ?? []).filter(p =>
     (position === 'ALL' || p.position === position)
     && p.name.toLowerCase().includes(search.trim().toLowerCase())), [reading, search, position]);
-  if (!reading.value) return unavailableLine(reading.error);
+  if (!reading.value) return unavailableLine(reading.error, league, port, reading.errorCode);
   return <>
     <div className="mv4-search"><input type="search" aria-label="Search players" placeholder="Search players"
       value={search} onChange={event => setSearch(event.target.value)} /></div>
@@ -248,12 +263,17 @@ function Waivers({ reading, league, mine, port, onChanged }: { reading: MovesRea
   const room = useMemo(() => createHostedLeagueRoom(league, port), [league, port]);
   const state = room.use();
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string>();
   useEffect(() => { void room.refresh(); return room.dispose; }, [room]);
-  if (!reading.value) return unavailableLine(reading.error);
+  if (!reading.value) return unavailableLine(reading.error, league, port, reading.errorCode);
   const w = reading.value;
   const change = (c: Parameters<typeof reviewHostedClaimChange>[4]) => {
     setError('');
-    void reviewHostedClaimChange(room, league, mine, w.revision, c).catch(cause => setError(message(cause)));
+    setErrorCode(undefined);
+    void reviewHostedClaimChange(room, league, mine, w.revision, c).catch(cause => {
+      setError(message(cause));
+      setErrorCode(errorCodeFor(cause));
+    });
   };
   const ids = w.claims.map(c => c.id);
   const swap = (i: number, j: number) => {
@@ -262,6 +282,8 @@ function Waivers({ reading, league, mine, port, onChanged }: { reading: MovesRea
     change({ command: 'waivers.claim.order.set', order });
   };
   const off = !room.canChange() || Boolean(state.review);
+  const activeError = error || state.error;
+  const activeCode = error ? errorCode : state.errorCode;
   return <>
     {!w.claims.length && <p className="mv4-empty">No waiver claims. Players with a CLAIM key in Players
       can be claimed until waivers run.</p>}
@@ -278,10 +300,8 @@ function Waivers({ reading, league, mine, port, onChanged }: { reading: MovesRea
         <HQAct label="Cancel claim" disabled={off}
           onAction={() => change({ command: 'waivers.claim.cancel', claim: c.id })}>✕</HQAct></span>
     </div>)}</div>
-    {error && <FailureAlert message={error} league={league} screen="Phone · Moves"
-      route="phone/moves" port={port} />}
-    {state.error && <FailureAlert message={state.error} league={league} screen="Phone · Moves"
-      route="phone/moves" port={port} />}
+    {activeError && <FailureAlert message={activeError} code={activeCode} league={league}
+      screen="Phone · Moves" route="phone/moves" port={port} />}
     {state.review && <Review room={room} onConfirmed={onChanged} />}
   </>;
 }
@@ -292,18 +312,24 @@ function Trades({ reading, league, mine, port, onChanged, onTrade }: { reading: 
   const room = useMemo(() => createHostedLeagueRoom(league, port), [league, port]);
   const state = room.use();
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string>();
   useEffect(() => { void room.refresh(); return room.dispose; }, [room]);
-  if (!reading.value) return unavailableLine(reading.error);
+  if (!reading.value) return unavailableLine(reading.error, league, port, reading.errorCode);
   const t = reading.value;
   const act = (offer: Offer, action: 'trade.accept' | 'trade.decline' | 'trade.withdraw') => {
     setError('');
-    void reviewHostedOwnerTrade(room, league, mine, offer.id, t.revision, action)
-      .catch(cause => setError(message(cause)));
+    setErrorCode(undefined);
+    void reviewHostedOwnerTrade(room, league, mine, offer.id, t.revision, action).catch(cause => {
+      setError(message(cause));
+      setErrorCode(errorCodeFor(cause));
+    });
   };
   const counter = (offer: Offer) => {
-    try { setError(''); onTrade(dealFromWarRoomOffer(offer, mine)); }
-    catch (cause) { setError(message(cause)); }
+    try { setError(''); setErrorCode(undefined); onTrade(dealFromWarRoomOffer(offer, mine)); }
+    catch (cause) { setError(message(cause)); setErrorCode(errorCodeFor(cause)); }
   };
+  const activeError = error || state.error;
+  const activeCode = error ? errorCode : state.errorCode;
   return <>
     <HQAct className="mv4-key mv4-start" onAction={() => onTrade()}>Start a trade</HQAct>
     {t.notes.map(note => <p className="mv4-note" key={note}>{note}</p>)}
@@ -335,10 +361,8 @@ function Trades({ reading, league, mine, port, onChanged, onTrade }: { reading: 
         </div> : <p className="mv4-res">{offer.words}</p>}
       </article>;
     })}
-    {error && <FailureAlert message={error} league={league} screen="Phone · Moves"
-      route="phone/moves" port={port} />}
-    {state.error && <FailureAlert message={state.error} league={league} screen="Phone · Moves"
-      route="phone/moves" port={port} />}
+    {activeError && <FailureAlert message={activeError} code={activeCode} league={league}
+      screen="Phone · Moves" route="phone/moves" port={port} />}
     {state.message && <p role="status">{state.message}</p>}
     {state.review && <Review room={room} onConfirmed={onChanged} />}
   </>;

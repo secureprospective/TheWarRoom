@@ -3,6 +3,7 @@ import { HQAct as WarRoomAct } from './HQAct';
 import { createPortal } from 'react-dom';
 import { RailLeaguePicker } from './leaguePicker';
 import { useEffect, useRef, useState } from 'react';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { useLeagueClock } from '../clock/useLeagueClock';
@@ -75,7 +76,9 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   const [prospect, setProspect] = useState<WarRoomProspect>();
   const context = { snapshot, mine, week, native };
   const [recorded, setRecorded] = useState(0);
-  const [directing, setDirecting] = useState<{ pending?: boolean; error?: string }>({});
+  const [directing, setDirecting] = useState<{
+    pending?: boolean; error?: string; errorCode?: string;
+  }>({});
   const catalog = useWarRoomRead(JSON.stringify([native?.league, mine, recorded]), () =>
     readWarRoomCatalog(context));
   const lens = useWarRoomRead(JSON.stringify([native?.league, mine, deal, catalog.reading?.revision,
@@ -89,7 +92,9 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     (direction: Direction) => {
       setDirecting({ pending: true });
       setWarRoomDirection(context, direction, revision).then(() => { setDirecting({});
-        setRecorded(n => n + 1); }, cause => setDirecting({ error: String(cause) }));
+        setRecorded(n => n + 1); }, cause => setDirecting({
+        error: errorMessage(cause), errorCode: errorCodeFor(cause),
+      }));
     } : undefined;
   const header = useWarRoomRead(JSON.stringify([native?.league, mine, week]), () =>
     readWarRoomHeader(context));
@@ -138,7 +143,8 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       <div className="ws-tabs" role="tablist">{tabs}</div>}
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
         reading={headerReading} windowLabel={windowLabel} lens={lensReading} choose={choose}
-        pending={directing.pending} problem={directing.error} />
+        pending={directing.pending} problem={directing.error} problemCode={directing.errorCode}
+        league={native?.league} port={native?.port} />
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
         change={changeDeal} select={select} lens={lensReading} lensPending={lens.pending}
         previewNonce={recorded} /> :

@@ -1,4 +1,5 @@
 import { createReadQuery } from '../data/query';
+import { errorCodeFor } from '../data/errorCodes';
 import { hostedWorkflow, type HostedResponse } from './api';
 import type { NativeRequest } from '../commands/native';
 import { parseDraft, type Draft } from '../draftroom/draft';
@@ -47,6 +48,7 @@ type State<R> = {
   stale: boolean;
   pending: boolean;
   error: string;
+  errorCode?: string;
   message: string;
   review?: Review;
   market?: ReturnType<typeof parseHostedMarket>;
@@ -110,6 +112,7 @@ function createRoom<R extends HostedLeagueReading>(
     store.setState({
       pending: true,
       error: '',
+      errorCode: undefined,
       message: '',
       review: undefined,
     });
@@ -121,12 +124,13 @@ function createRoom<R extends HostedLeagueReading>(
       if (turn !== generation) return;
       const next = { request, preview, summary };
       store.setState({ review: next });
-    } catch {
+    } catch (cause) {
       if (turn !== generation) return;
       store.setState({
         stale: true,
         error:
           'Could not check this change. Nothing is queued. Refresh your league before trying again.',
+        errorCode: errorCodeFor(cause),
       });
     } finally {
       if (turn === generation) {
@@ -138,7 +142,7 @@ function createRoom<R extends HostedLeagueReading>(
   async function market(command: string) {
     if (!canChange()) return;
     const turn = generation;
-    store.setState({ pending: true, review: undefined, market: undefined });
+    store.setState({ pending: true, review: undefined, market: undefined, errorCode: undefined });
     try {
       const response = await port({
         command: 'commish.market.read',
@@ -155,12 +159,13 @@ function createRoom<R extends HostedLeagueReading>(
       )
         throw new Error('League changed');
       store.setState({ market });
-    } catch {
+    } catch (cause) {
       if (turn === generation)
         store.setState({
           stale: true,
           message: '',
           error: 'Could not read commissioner choices. Refresh before choosing another action.',
+          errorCode: errorCodeFor(cause),
         });
     } finally {
       if (turn === generation) store.setState({ pending: false });
@@ -171,7 +176,7 @@ function createRoom<R extends HostedLeagueReading>(
     if (!canChange() || !s.review || s.review.preview?.blockers.length) return;
     const review = s.review;
     const turn = generation;
-    store.setState({ pending: true, review: undefined, error: '' });
+    store.setState({ pending: true, review: undefined, error: '', errorCode: undefined });
     try {
       const request = { ...review.request, mode: 'execute' } as NativeRequest;
       const receipt = parseReceipt((await port(request, s.reading?.football)).data);
@@ -187,6 +192,7 @@ function createRoom<R extends HostedLeagueReading>(
         error: cause instanceof Error ? cause.message :
           'The change was not confirmed. It may have reached the server. ' +
           'Refresh before trying again; nothing will be sent automatically.',
+        errorCode: errorCodeFor(cause),
       });
       return;
     } finally {

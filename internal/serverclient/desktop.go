@@ -367,7 +367,9 @@ func retryDelay(value string) (time.Duration, bool) {
 }
 
 func desktopWorkflowRefusal(response *http.Response, path string, refusal error) error {
-	if path != serverhttp.WorkflowPath || response.StatusCode != http.StatusConflict ||
+	if path != serverhttp.WorkflowPath ||
+		(response.StatusCode != http.StatusConflict &&
+			response.StatusCode != http.StatusTooManyRequests) ||
 		response.Header.Get("Content-Type") != "text/plain; charset=utf-8" {
 		return refusal
 	}

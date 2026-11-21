@@ -22,7 +22,11 @@ func TestDesktopForwardsServerErrorCodeHeader(t *testing.T) {
 			http.Error(w, "login refused", http.StatusUnauthorized)
 		case serverhttp.WorkflowPath:
 			w.Header().Set(serverhttp.ErrorCodeHeader, workflowCode)
-			http.Error(w, "You have sent 10 reports in the past hour.", http.StatusConflict)
+			http.Error(
+				w,
+				"You have sent 10 reports in the past hour. Try again later.",
+				http.StatusTooManyRequests,
+			)
 		default:
 			http.NotFound(w, r)
 		}
@@ -70,10 +74,11 @@ func TestDesktopForwardsServerErrorCodeHeader(t *testing.T) {
 	wfRec := httptest.NewRecorder()
 	desktop.Handler().ServeHTTP(wfRec, wfReq)
 	if wfRec.Code != http.StatusBadRequest ||
-		wfRec.Header().Get(serverhttp.ErrorCodeHeader) != workflowCode {
+		wfRec.Header().Get(serverhttp.ErrorCodeHeader) != workflowCode ||
+		!strings.Contains(wfRec.Body.String(), "10 reports in the past hour") {
 		t.Fatalf(
-			"workflow header: status=%d code=%q",
-			wfRec.Code, wfRec.Header().Get(serverhttp.ErrorCodeHeader),
+			"workflow header/body: status=%d code=%q body=%q",
+			wfRec.Code, wfRec.Header().Get(serverhttp.ErrorCodeHeader), wfRec.Body.String(),
 		)
 	}
 

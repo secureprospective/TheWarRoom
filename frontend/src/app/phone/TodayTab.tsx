@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { myChance, percent, pointsLabel } from '../data/nativePulse';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
 import { FailureAlert } from '../data/FailureAlert';
 import { unavailable } from '../shell/hqModel';
 import { gatherNeedsYou, type NeedsYouItem } from '../shell/homeNeedsYou';
@@ -84,14 +85,16 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
   const readingTime = useMemo(() => now ?? Date.now(), [now]);
   const [briefs, setBriefs] = useState<Record<string, HomeBrief>>({});
   const [failures, setFailures] = useState<Record<string, string>>({});
+  const [failureCodes, setFailureCodes] = useState<Record<string, string | undefined>>({});
   const [items, setItems] = useState<NeedsYouItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [snoozed, setSnoozed] = useState<Set<string>>(new Set());
   const [snoozeError, setSnoozeError] = useState('');
+  const [snoozeErrorCode, setSnoozeErrorCode] = useState<string>();
 
   useEffect(() => {
     let active = true;
-    setBriefs({}); setFailures({}); setItems([]); setLoading(true);
+    setBriefs({}); setFailures({}); setFailureCodes({}); setItems([]); setLoading(true);
     void gatherNeedsYou(appLeagues, port, {
       now: readingTime,
       readPeople: async id => {
@@ -108,13 +111,20 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
           }
           return brief;
         } catch (cause) {
-          if (active) setFailures(current => ({ ...current,
-            [id]: cause instanceof Error ? cause.message : String(cause) }));
+          if (active) {
+            setFailures(current => ({ ...current, [id]: errorMessage(cause) }));
+            setFailureCodes(current => ({ ...current, [id]: errorCodeFor(cause) }));
+          }
           throw cause;
         }
       },
     }).then(found => { if (active) setItems(found); })
-      .catch(cause => { if (active) setFailures({ '*': String(cause) }); })
+      .catch(cause => {
+        if (active) {
+          setFailures({ '*': errorMessage(cause) });
+          setFailureCodes({ '*': errorCodeFor(cause) });
+        }
+      })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [appLeagues, reader, onBriefReady, port, readingTime]);
@@ -128,12 +138,17 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
   const snooze = (item: NeedsYouItem) => {
     const jobId = item.id.slice(`${item.leagueId}:commissioner:`.length);
     setSnoozeError('');
+    setSnoozeErrorCode(undefined);
     void port({ command: 'job.snooze.set', mode: 'execute',
       arguments: { league: item.leagueId, jobId, until: tomorrowMorning(readingTime) } })
       .then(() => setSnoozed(current => new Set(current).add(item.id)))
-      .catch(cause => setSnoozeError(cause instanceof Error ? cause.message : String(cause)));
+      .catch(cause => {
+        setSnoozeError(errorMessage(cause));
+        setSnoozeErrorCode(errorCodeFor(cause));
+      });
   };
   const failed = Object.keys(failures).length > 0 || jobs.length > open;
+  const firstFailureCode = Object.values(failureCodes).find(Boolean);
   const first = appLeagues[0];
   const week = first && briefs[first.id]?.pulse?.week;
   const isPlaying = (league: LeagueChoice) => {
@@ -163,6 +178,7 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
     <section className="today6__grp" aria-label="Needs you">
       {snoozeError && <FailureAlert
         message={snoozeError}
+        code={snoozeErrorCode}
         className="today6__note"
         league={shown}
         screen="Phone · Today"
@@ -172,6 +188,7 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       {failures['*'] && <FailureAlert
         message={failures['*']}
         prefix={`${unavailable} · `}
+        code={failureCodes['*']}
         className="today6__note"
         league={shown}
         screen="Phone · Today"
@@ -185,6 +202,7 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
         <FailureAlert
           message="Some reads failed, so this list may be short."
           prefix={`${unavailable} · `}
+          code={firstFailureCode}
           className="today6__note"
           league={shown}
           screen="Phone · Today"
@@ -223,6 +241,7 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       <FailureAlert
         message={failures[first.id]}
         prefix={`${unavailable} · `}
+        code={failureCodes[first.id]}
         className="today6__note"
         league={first.id}
         leagueName={first.name}

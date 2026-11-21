@@ -86,6 +86,7 @@ func (h Hosted) agentToken(w http.ResponseWriter, r *http.Request) {
 		writeHosted(w, AgentTokenResponse{Protocol: 1, ID: raw.ID})
 		return
 	}
+	setFailureLeague(r.Context(), raw.Scope.League)
 	principal, err := account.Principal()
 	if err != nil {
 		http.Error(w, "session refused", http.StatusUnauthorized)

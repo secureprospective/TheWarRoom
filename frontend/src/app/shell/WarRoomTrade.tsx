@@ -1,5 +1,7 @@
 import { HQAct as WarRoomAct } from './HQAct';
 import { useState } from 'react';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
+import { FailureAlert } from '../data/FailureAlert';
 import type { WarRoomContext } from './warroomReads';
 import { useWarRoomRead } from './warroomReads';
 import { readWarRoomDelta, readWarRoomPreview, readWarRoomPartner, type WarRoomAsset, type WarRoomCatalog,
@@ -66,7 +68,9 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
   select: (a: WarRoomAsset) => void; lens?: WarRoomLens; lensPending?: boolean; previewNonce?: number }) {
   const [filter, setFilter] = useState<typeof filters[number]>('ALL');
   const [send, setSend] = useState<{ pending: boolean; confirm: boolean; request?: string;
-    fingerprint?: string; error?: string; done?: string }>({ pending: false, confirm: false });
+    fingerprint?: string; error?: string; errorCode?: string; done?: string }>({
+    pending: false, confirm: false,
+  });
   const fingerprint = JSON.stringify([context.native?.league, context.mine, catalog?.revision, deal]);
   const mine = catalog?.teams.find(t => t.id === context.mine);
   const theirs = catalog?.teams.find(t => t.id === deal.partner);
@@ -181,10 +185,17 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
               setSend({ pending: false, confirm: false,
                 done: `Offer ${receipt.entry} recorded and read back.` });
             }, cause => setSend(current => ({ ...current, pending: false, confirm: true,
-              error: String(cause) })));
+              error: errorMessage(cause), errorCode: errorCodeFor(cause) })));
           }}>{send.pending ? 'SENDING…' : 'CONFIRM SEND'}</WarRoomAct>
         </>}
-        {send.error && <p role="alert">{send.error}</p>}{send.done && <p role="status">{send.done}</p>}
+        {send.error && <FailureAlert
+          message={send.error}
+          code={send.errorCode}
+          league={context.native?.league}
+          screen="War Room · Trade Desk"
+          route="war/trade-desk"
+          port={context.native?.port}
+        />}{send.done && <p role="status">{send.done}</p>}
       </div>}
       <div className="sugg"><div className="ch"><b>TUNE IT</b>
         <span>smallest changes that keep it acceptable</span></div>

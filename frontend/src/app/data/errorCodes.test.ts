@@ -13,6 +13,8 @@ import {
   setFailureScreen,
   validErrorCode,
 } from './errorCodes';
+import { plainFailure } from './plainFailure';
+import { createReadQuery } from './query';
 
 afterEach(() => {
   resetFailureStateForTest();
@@ -76,5 +78,28 @@ describe('errorCodes', () => {
     expect(text).toContain('App version: 0.5.0 (release 42)');
     expect(text).toContain('League: Test League (native.hosted)');
     expect(text).toContain('Message: Standings failed');
+  });
+
+  it('strips Error: prefix in plainFailure and preserves server code through createReadQuery', async () => {
+    const serverErr = createFailureError('The league refused this action.', 'TWR-7K9M-2P4X');
+    expect(plainFailure(String(serverErr))).toBe('The league refused this action.');
+    expect(lookupErrorCode(String(serverErr))).toBe('TWR-7K9M-2P4X');
+
+    const q1 = createReadQuery('draft.TargetDraftReports', {
+      initial: () => ({}),
+      read: async () => { throw createFailureError('Shared fallback', 'TWR-8N3Q-4V6W'); },
+      accept: () => ({}),
+      failure: () => 'Custom screen wording',
+    });
+    const q2 = createReadQuery('market.TargetAssetBoard', {
+      initial: () => ({}),
+      read: async () => { throw createFailureError('Shared fallback', 'TWR-9P4R-5W7X'); },
+      accept: () => ({}),
+    });
+    await Promise.all([q1.load([]), q2.load([])]);
+    expect(q1.peek().error).toBe('Custom screen wording');
+    expect(q1.peek().errorCode).toBe('TWR-8N3Q-4V6W');
+    expect(q2.peek().error).toBe('Shared fallback');
+    expect(q2.peek().errorCode).toBe('TWR-9P4R-5W7X');
   });
 });

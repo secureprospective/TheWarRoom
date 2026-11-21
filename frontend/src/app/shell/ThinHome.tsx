@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
 import { FailureAlert } from '../data/FailureAlert';
 import { unavailable } from './hqModel';
 import { gatherNeedsYou, type NeedsYouItem } from './homeNeedsYou';
@@ -48,6 +49,7 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
   const readingTime = now ?? wallClock;
   const [briefs, setBriefs] = useState<Record<string, HomeBrief>>({});
   const [failures, setFailures] = useState<Record<string, string>>({});
+  const [failureCodes, setFailureCodes] = useState<Record<string, string | undefined>>({});
   const [needsYou, setNeedsYou] = useState<NeedsYouItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,6 +66,7 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
     let active = true;
     setBriefs({});
     setFailures({});
+    setFailureCodes({});
     setNeedsYou([]);
     setLoading(true);
     void gatherNeedsYou(appLeagues, port, {
@@ -82,13 +85,20 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
           }
           return brief;
         } catch (cause) {
-          if (active) setFailures(current => ({ ...current,
-            [id]: cause instanceof Error ? cause.message : String(cause) }));
+          if (active) {
+            setFailures(current => ({ ...current, [id]: errorMessage(cause) }));
+            setFailureCodes(current => ({ ...current, [id]: errorCodeFor(cause) }));
+          }
           throw cause;
         }
       },
     }).then(items => { if (active) setNeedsYou(items); })
-      .catch(cause => { if (active) setFailures({ '*': String(cause) }); })
+      .catch(cause => {
+        if (active) {
+          setFailures({ '*': errorMessage(cause) });
+          setFailureCodes({ '*': errorCodeFor(cause) });
+        }
+      })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [appLeagues, briefReader, onBriefReady, port, readingTime]);
@@ -112,6 +122,7 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
         {failures['*'] && <FailureAlert
           message={failures['*']}
           prefix={`${unavailable} · `}
+          code={failureCodes['*']}
           screen="Home"
           route="home/overview"
           port={port}
@@ -138,15 +149,18 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
         {!appLeagues.length && <p className="thin-home__empty">No admitted leagues.</p>}
         <div className="thin-home__cards">
           {appLeagues.map(league => <LeagueCard key={league.id} league={league}
-            brief={briefs[league.id]} failure={failures[league.id]} now={readingTime} onOpen={onOpen} />)}
+            brief={briefs[league.id]} failure={failures[league.id]}
+            failureCode={failureCodes[league.id]} now={readingTime} port={port} onOpen={onOpen} />)}
         </div>
       </section>
     </div>
   </section>;
 }
 
-function LeagueCard({ league, brief, failure, now, onOpen }: { league: LeagueChoice; brief?: HomeBrief;
-  failure?: string; now: number; onOpen: ThinHomeProps['onOpen'] }) {
+function LeagueCard({ league, brief, failure, failureCode, now, port, onOpen }: {
+  league: LeagueChoice; brief?: HomeBrief; failure?: string; failureCode?: string;
+  now: number; port: HostedPort; onOpen: ThinHomeProps['onOpen'];
+}) {
   const record = brief?.pulse?.standings?.rows.find(row => row.franchise === league.franchise)?.record;
   const week = brief?.pulse?.week;
   const pulseFailure = brief?.errors.pulse || brief?.pulse?.errors[0];
@@ -181,11 +195,13 @@ function LeagueCard({ league, brief, failure, now, onOpen }: { league: LeagueCho
       {failure && <FailureAlert
         message={failure}
         prefix={`${unavailable} · `}
+        code={failureCode}
         className="thin-home__unavailable"
         league={league.id}
         leagueName={league.name}
         screen="Home"
         route="home/overview"
+        port={port}
       />}
       {!brief && !failure && <p role="status" className="thin-home__reading">Reading league details…</p>}
     </div>

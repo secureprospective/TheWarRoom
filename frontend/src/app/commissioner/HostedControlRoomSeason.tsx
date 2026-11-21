@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { createReadQuery } from '../data/query';
 import { parsePulseBracket, parsePulseDirectory } from '../data/nativePulse';
 import { array, integer, object, text } from '../data/parseValues';
@@ -91,7 +92,14 @@ export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool 
     if (definition) onTool(definition);
   };
   return <div className="cr-col hosted-season" aria-label="Season">
-    {state.error && <p role="alert">{state.error}</p>}
+    {state.error && <FailureAlert
+      message={state.error}
+      code={state.errorCode}
+      league={league}
+      screen="Control Room · Season"
+      route="control/season"
+      port={port}
+    />}
     {!state.schedule && !state.error && <p role="status">Reading season from the league server…</p>}
     {state.schedule && <>
       <section className="cr-panel" aria-label="League calendar">

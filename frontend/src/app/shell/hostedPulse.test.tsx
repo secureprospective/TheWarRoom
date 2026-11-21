@@ -218,7 +218,7 @@ it('keeps league activity visibly unavailable when its member-safe read fails', 
     role="Owner" port={port} entry="league" />));
   await settle();
   await click('Activity');
-  expect(host.textContent).toContain('League activity is unavailable · Error: activity source offline');
+  expect(host.textContent).toContain('League activity is unavailable · activity source offline');
   expect(host.textContent).not.toContain('Public league notice');
 });
 

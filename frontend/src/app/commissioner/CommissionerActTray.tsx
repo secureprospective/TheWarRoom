@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
+import { FailureAlert } from '../data/FailureAlert';
 import { Act } from '../commands/Act';
 import { HQAct } from '../shell/HQAct';
 import type { NativeRequest } from '../commands/native';
@@ -161,6 +163,7 @@ function HostedCommissionerActForm({ definition, league, room, port, initial }: 
   const [reason, setReason] = useState('');
   const [held, setHeld] = useState<HostedActReadings>();
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string>();
   const rules = state.reading?.rules;
   const selectedSeason = definition.root === 'bracket' ? Number(values.season) : undefined;
   const bracketSeason = selectedSeason !== undefined && selectedSeason >= 1920 && selectedSeason <= 9999
@@ -170,11 +173,12 @@ function HostedCommissionerActForm({ definition, league, room, port, initial }: 
     let active = true;
     setHeld(undefined);
     setError('');
+    setErrorCode(undefined);
     void readHostedActData(league, rules.revision, definition.fields.map(field => field.kind),
       definition.command, port, bracketSeason).then(data => {
         if (active) setHeld(data);
       }).catch(cause => {
-        if (active) setError(cause instanceof Error ? cause.message : String(cause));
+        if (active) { setError(errorMessage(cause)); setErrorCode(errorCodeFor(cause)); }
       });
     return () => { active = false; };
   }, [bracketSeason, definition, league, port, rules]);
@@ -190,7 +194,14 @@ function HostedCommissionerActForm({ definition, league, room, port, initial }: 
     await room.review(request, definition.label);
   };
   return <div className="league-form">
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      code={errorCode}
+      league={league}
+      screen={`Control Room · ${definition.label}`}
+      route="control/jobs"
+      port={port}
+    />}
     {!held && !error && <p role="status">Reading held league choices…</p>}
     {held && <fieldset disabled={disabled}>
       <ActFields fields={definition.fields} values={values} held={held}

@@ -271,6 +271,21 @@ describe('MovesTab', () => {
     expect(view.querySelector('dialog[aria-label="Trade with Gridlock"]')).not.toBeNull();
     expect(view.textContent).toContain('✓ Their Back');
   });
+  it('waivers: a failed preview shows one FailureAlert with the server error code', async () => {
+    const { createFailureError } = await import('../data/errorCodes');
+    const port = vi.fn(async (request: NativeRequest) => {
+      if (request.command === 'commish.rules.read') {
+        return reply({ league: 'league', name: 'L', revision: 7, rollover: '', sections: [] });
+      }
+      throw createFailureError('Server refused claim cancel.', 'TWR-7K9M-2P4X');
+    }) as unknown as HostedPort & ReturnType<typeof vi.fn>;
+    const view = await show(async () => loaded(), port);
+    await tab(/Waivers/);
+    await press('Cancel claim');
+    const alerts = view.querySelectorAll('[data-testid="failure-alert"]');
+    expect(alerts).toHaveLength(1);
+    expect(view.querySelector('[data-testid="failure-code"]')?.textContent).toBe('TWR-7K9M-2P4X');
+  });
 });
 
 const reply = (data: unknown) => ({ label: '', writable: true, football: 'pin', data });

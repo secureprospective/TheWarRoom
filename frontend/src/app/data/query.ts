@@ -5,8 +5,9 @@ import { normalized, RejectedRead, type Dependency, type ReadSession, type ReadT
   type Retention, type TaggedReply } from './session';
 import { readCommands, type ReadArguments, type ReadCommandId } from '../commands/reads.gen';
 import { validateShape } from '../commands/shape';
+import { errorCodeFor, errorMessage } from './errorCodes';
 
-export type ReadStatus = { pending: boolean; error: string };
+export type ReadStatus = { pending: boolean; error: string; errorCode?: string };
 
 // Reads of the same reader and scope never overlap: a slow reading must not stack up copies of itself
 // behind every poll and change event. A request while one runs queues at most one read after it, so a
@@ -188,10 +189,11 @@ export function createReadQuery<T, S extends object, A extends unknown[]>(comman
         cache.set(cacheKey, value);
         if (cache.size > (options.cacheSize ?? 32)) cache.delete(cache.keys().next().value!);
       }
-      store.setState({ error: '', ...accepted } as Partial<S & ReadStatus>);
+      store.setState({ error: '', errorCode: undefined, ...accepted } as Partial<S & ReadStatus>);
     } catch (cause) {
       if (request === revision && !(cause instanceof RejectedRead)) store.setState({
-        error: options.failure ? options.failure(cause) : String(cause),
+        error: options.failure ? options.failure(cause) : errorMessage(cause),
+        errorCode: errorCodeFor(cause),
       } as Partial<S & ReadStatus>);
     } finally {
       if (request === revision) store.setState({ pending: false } as Partial<S & ReadStatus>);

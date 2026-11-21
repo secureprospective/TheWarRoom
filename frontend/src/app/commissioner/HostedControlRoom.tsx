@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { onHostedTopics } from '../data/hostedReads';
+import { errorCodeFor } from '../data/errorCodes';
 import { FailureAlert } from '../data/FailureAlert';
 import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
@@ -43,19 +44,21 @@ export function HostedControlRoom({ league, port, heldRoom }: {
   const [feedbackRefreshVersion, setFeedbackRefreshVersion] = useState(0);
   const [jobSnoozes, setJobSnoozes] = useState<JobSnoozes>();
   const [snoozeError, setSnoozeError] = useState('');
+  const [snoozeErrorCode, setSnoozeErrorCode] = useState<string>();
   const [snoozePending, setSnoozePending] = useState('');
   const [jobNow, setJobNow] = useState(Date.now());
   const preferencePort = port ?? hostedWorkflow;
   const loadJobSnoozes = useCallback(async (isCurrent: () => boolean = () => true) => {
-    if (isCurrent()) { setJobSnoozes(undefined); setSnoozeError(''); }
+    if (isCurrent()) { setJobSnoozes(undefined); setSnoozeError(''); setSnoozeErrorCode(undefined); }
     try {
       const response = await preferencePort({ command: 'job.snoozes.read', mode: 'read', arguments: {} });
       const state = parseJobSnoozes(response.data);
-      if (isCurrent()) { setJobSnoozes(state); setSnoozeError(''); }
-    } catch {
+      if (isCurrent()) { setJobSnoozes(state); setSnoozeError(''); setSnoozeErrorCode(undefined); }
+    } catch (cause) {
       if (isCurrent()) {
         setJobSnoozes(undefined);
         setSnoozeError('Your private job snoozes could not be read. Jobs are shown normally.');
+        setSnoozeErrorCode(errorCodeFor(cause));
       }
     }
   }, [preferencePort]);
@@ -111,11 +114,13 @@ export function HostedControlRoom({ league, port, heldRoom }: {
     if (snoozePending) return;
     setSnoozePending(jobID);
     setSnoozeError('');
+    setSnoozeErrorCode(undefined);
     try {
       const response = await preferencePort(request);
       setJobSnoozes(parseJobSnoozes(response.data));
-    } catch {
+    } catch (cause) {
       setSnoozeError('Could not update your private job snoozes. Refresh and try again.');
+      setSnoozeErrorCode(errorCodeFor(cause));
     } finally {
       setSnoozePending('');
     }
@@ -180,6 +185,7 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         {tab === 'jobs' && <div className="hosted-jobs-column">
           {jobsState.error && <FailureAlert
             message={jobsState.error}
+            code={jobsState.errorCode}
             className="cr-note"
             league={league}
             screen="Control Room · Jobs"
@@ -187,7 +193,8 @@ export function HostedControlRoom({ league, port, heldRoom }: {
             port={port}
           />}
           <HostedControlRoomJobs league={league} jobs={jobsState.jobs} snoozes={jobSnoozes} now={jobNow}
-            snoozeError={snoozeError} pendingJob={snoozePending} onSnooze={snoozeJob} onWake={wakeJob}
+            snoozeError={snoozeError} snoozeErrorCode={snoozeErrorCode} port={port}
+            pendingJob={snoozePending} onSnooze={snoozeJob} onWake={wakeJob}
             onOpen={openTool} onUnavailable={showRoute} />
           {definition && openedTab === 'jobs' && <HostedCommissionerActTray definition={definition}
             league={league} room={room} port={port} initial={initialValues} />}
@@ -197,6 +204,7 @@ export function HostedControlRoom({ league, port, heldRoom }: {
           onTab={navigateTo} onTool={next => openTool(next)} onUnavailable={showRoute} />}
         {tab === 'rules' && roomState.error && <FailureAlert
           message={roomState.error}
+          code={roomState.errorCode}
           league={league}
           screen="Control Room · Rules"
           route="control/rules"
@@ -222,6 +230,7 @@ export function HostedControlRoom({ league, port, heldRoom }: {
           refreshVersion={feedbackRefreshVersion} />}
         {tab === 'fix' && <HostedControlRoomFix league={league} room={room} port={port}
           readings={fixState.fixes} pending={fixState.pending} error={fixState.error}
+          errorCode={fixState.errorCode}
           definition={openedTab === 'fix' ? definition : undefined} initial={initialValues}
           onOpen={(next, initial) => openTool(next, undefined, 'fix', initial)} />}
         {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'feedback', 'fix', 'league']
@@ -264,6 +273,7 @@ function HostedServerTab({ league, port = hostedWorkflow }: { league: string; po
     <h4>Ledger</h4>
     {error && <FailureAlert
       message={error}
+      code={ledgerState.errorCode}
       league={league}
       screen="Control Room · Server"
       route="control/server"

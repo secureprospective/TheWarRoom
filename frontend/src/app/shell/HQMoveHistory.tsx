@@ -4,6 +4,7 @@ import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { parseLedger } from '../commissioner/proxy';
 import { useContractRead } from '../contracts/Contracts';
+import { FailureAlert } from '../data/FailureAlert';
 import { onHostedTopics } from '../data/hostedReads';
 
 // History is a season page of the audience-filtered native ledger, not pending move payloads.
@@ -16,7 +17,7 @@ export function HQMoveHistory({ league, franchise, season, port = hostedWorkflow
     if (topics.some(t => t.league === league && (t.kind === 'league'
       || (t.kind === 'team' && t.franchise === franchise)))) load();
   }) }), [league, franchise, port]);
-  const { reading, pending, error } = useContractRead(
+  const { reading, pending, error, errorCode } = useContractRead(
     JSON.stringify([league, franchise, selected, retry]), async () => {
       const result = await port({ command: 'franchise.moves.history.read', mode: 'read',
         arguments: { league, franchise, season: selected } });
@@ -36,8 +37,16 @@ export function HQMoveHistory({ league, franchise, season, port = hostedWorkflow
       <HQAct className="btn" disabled={pending} onAction={() => refresh(n => n + 1)}>Refresh history</HQAct>
     </div>
     {pending && <p className="empty" role="status">Reading season history…</p>}
-    {error && <p className="empty" role="alert">
-      History unavailable. Refresh history to try again. {error}</p>}
+    {error && <FailureAlert
+      message={error}
+      prefix="History unavailable. Refresh history to try again. "
+      code={errorCode}
+      className="empty"
+      league={league}
+      screen="Franchise HQ · History"
+      route="hq/moves"
+      port={port}
+    />}
     {reading && <div className="ct-wrap"><table className="ct"><thead><tr>
       {['WHEN', 'MOVE', 'BY', 'REASON'].map(h => <th scope="col" key={h}>{h}</th>)}
     </tr></thead><tbody>{reading.entries.map(entry => <tr key={entry.id}>

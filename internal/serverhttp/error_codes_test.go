@@ -11,6 +11,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -183,5 +184,75 @@ func TestHostedFailuresEmitErrorCodeHeaderAndStructuredLog(t *testing.T) {
 	if !strings.Contains(nfLog, "route=/other") ||
 		strings.Contains(nfLog, "secret-join-code-xyz") {
 		t.Fatalf("unknown route log unsafe: %q", nfLog)
+	}
+
+	// 4. Unvalidated league header never enters the server log.
+	logs.Reset()
+	invReq, err := http.NewRequestWithContext(
+		t.Context(), http.MethodGet, server.URL+serverhttp.InvalidationPath, nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invReq.Header.Set("X-TWR-League", "native.bad league!")
+	invResp, err := server.Client().Do(invReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = invResp.Body.Close()
+	if invResp.StatusCode < http.StatusBadRequest {
+		t.Fatalf("invalid invalidation: status=%d", invResp.StatusCode)
+	}
+	invLog := strings.TrimSpace(logs.String())
+	if strings.Contains(invLog, "native.bad") || !strings.Contains(invLog, `league=""`) {
+		t.Fatalf("unvalidated league logged: %q", invLog)
+	}
+
+	// 5. Failed /v1/auth/agent-token logs validated scope league and account.
+	logs.Reset()
+	scopeBody := `{"protocol":1,"scope":{"league":"native.hosted","franchise":"franchise.01",` +
+		`"commands":["` + commissioner.NotePost + `","commish.ledger.read"],"modes":["preview","read"]}}`
+	status, agCode, _ := doReq(
+		http.MethodPost, serverhttp.AgentTokenPath, scopeBody, session.Bearer,
+	)
+	if status != http.StatusForbidden || !serverhttp.ValidErrorCode(agCode) {
+		t.Fatalf("agent token refusal: status=%d code=%q", status, agCode)
+	}
+	agLog := strings.TrimSpace(logs.String())
+	if !strings.Contains(agLog, "league=native.hosted") ||
+		!strings.Contains(agLog, "account="+session.Session.Account.ID) {
+		t.Fatalf("agent token log missing league/account: %q", agLog)
+	}
+
+	// 6. Early agent request refusal (400 malformed JSON) logs authenticated account.
+	logs.Reset()
+	commishBearer, _ := f.directCommissioner(t)
+	commishSession := accounts.RawSession{Bearer: commishBearer}
+	commishAcct, err := f.sessions.Authenticate(t.Context(), commishSession)
+	if err != nil {
+		t.Fatal(err)
+	}
+	issued, err := f.tokens.Issue(
+		t.Context(),
+		commishSession,
+		accounts.RawTokenScope{
+			League:    "native.hosted",
+			Franchise: "franchise.01",
+			Commands:  []string{commissioner.NotePost},
+			Modes:     []string{"preview"},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, badAgCode, _ := doReq(
+		http.MethodPost, serverhttp.WorkflowPath, "{", issued.Bearer,
+	)
+	if status != http.StatusBadRequest || !serverhttp.ValidErrorCode(badAgCode) {
+		t.Fatalf("early agent refusal: status=%d code=%q", status, badAgCode)
+	}
+	badAgLog := strings.TrimSpace(logs.String())
+	if !strings.Contains(badAgLog, "account="+commishAcct.ID) {
+		t.Fatalf("early agent log missing account: %q", badAgLog)
 	}
 }

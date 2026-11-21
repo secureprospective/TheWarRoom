@@ -1,5 +1,7 @@
 import { HQAct as WarRoomAct } from './HQAct';
 import { useState, type ReactNode } from 'react';
+import { errorCodeFor } from '../data/errorCodes';
+import { FailureAlert } from '../data/FailureAlert';
 import { useWarRoomRead, type WarRoomContext } from './warroomReads';
 import type { WarRoomAsset } from './warroomTradeReads';
 import { readWarRoomInspector, changeWarRoomNote,
@@ -45,6 +47,7 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
   const [revision, setRevision] = useState(0);
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string>();
   const [pending, setPending] = useState(false);
   const reading = useWarRoomRead<WarRoomInspectorReading | undefined>(JSON.stringify([
     context.native?.league, context.mine, asset?.token, context.week, revision]), publish => asset &&
@@ -53,9 +56,11 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
   const facts = reading.reading;
   const changeNote = async (text: string, at?: string) => {
     if (!asset || pending) return;
-    setPending(true); setError('');
+    setPending(true); setError(''); setErrorCode(undefined);
     try { await changeWarRoomNote(context, asset.token, text, at); setNote('');
-      setRevision(n => n + 1); } catch { setError(unavailable); } finally { setPending(false); }
+      setRevision(n => n + 1); }
+    catch (cause) { setError(unavailable); setErrorCode(errorCodeFor(cause)); }
+    finally { setPending(false); }
   };
   const research = facts?.research;
   const nativeContract = context.native ? context.snapshot.rosters.value.flatMap(r => r.players)
@@ -145,12 +150,20 @@ function LoadedInspector({ context, asset, add, watch, lens, theirs }: { context
         <textarea aria-label="Private player note" maxLength={8000} value={note}
           disabled={!facts?.notes || pending} onChange={e => setNote(e.target.value)}
           /><WarRoomAct className="btn" submit disabled={!facts?.notes || pending || !note.trim()}>
-            SAVE NOTE</WarRoomAct></form>{error && <p role="alert">{error}</p>}</Drawer></div>
+            SAVE NOTE</WarRoomAct></form>{error && <FailureAlert
+              message={error}
+              code={errorCode}
+              league={context.native?.league}
+              screen="War Room · Inspector"
+              route="war/inspector"
+              port={context.native?.port}
+            />}</Drawer></div>
     <div className="iact"><span className="h">MOVE</span><div className="ia"><WarRoomAct className="btn"
       disabled={!add} onAction={add}>ADD TO TRADE</WarRoomAct>
       <WarRoomAct className="btn" active={watched} disabled={!watch || !facts?.notes || pending}
-      onAction={() => { if (watch) { setPending(true); setError('');
-        void watch(watched).then(() => setRevision(n => n + 1)).catch(() => setError(unavailable))
+      onAction={() => { if (watch) { setPending(true); setError(''); setErrorCode(undefined);
+        void watch(watched).then(() => setRevision(n => n + 1))
+          .catch(cause => { setError(unavailable); setErrorCode(errorCodeFor(cause)); })
         .finally(() => setPending(false)); } }}>{watched ? 'WATCHED' : 'WATCH'}</WarRoomAct></div></div>
     <div className="ifoot">
       <WarRoomAct disabled title={unavailable}>

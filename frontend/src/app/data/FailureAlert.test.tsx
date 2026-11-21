@@ -110,4 +110,18 @@ describe('FailureAlert', () => {
     expect(host.querySelector('[data-testid="failure-code"]')?.textContent)
       .toMatch(/^TWR-C[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{3}-/);
   });
+
+  it('renders FailureAlert with server code in HostedBackupNow on preview failure', async () => {
+    const { HostedBackupNow } = await import('../commissioner/HostedBackupNow');
+    const { createFailureError } = await import('./errorCodes');
+    setupDom();
+    const port = vi.fn<HostedPort>(async () => {
+      throw createFailureError('Backup refused by server.', 'TWR-8N3Q-4V6W');
+    });
+    await act(async () => root.render(
+      <HostedBackupNow league="native.hosted" port={port} autoPreview />,
+    ));
+    expect(host.querySelectorAll('[data-testid="failure-alert"]')).toHaveLength(1);
+    expect(host.querySelector('[data-testid="failure-code"]')?.textContent).toBe('TWR-8N3Q-4V6W');
+  });
 });
