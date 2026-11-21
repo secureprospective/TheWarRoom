@@ -5,6 +5,7 @@ import { createHostedLeagueRoom } from '../commissioner/hostedRoom';
 import { reviewHostedWaiverClaim } from '../commissioner/HostedWorkflows';
 import { previewChange } from '../commissioner/preview';
 import type { Position } from '../data/contract';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { WarRoomInspector } from '../shell/WarRoomInspector';
 import { confirmWarRoomRosterAdd, reviewWarRoomRosterAdd,
@@ -81,7 +82,13 @@ export function AddSheet({ context, player, roster, onDone, onClose }: { context
           onDone(`${player.name} added`);
         })} />}
     </section>}
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      league={context.native?.league}
+      screen="Phone · Moves"
+      route="phone/moves"
+      port={context.native?.port}
+    />}
   </MoveSheet>;
 }
 
@@ -105,7 +112,13 @@ export function ClaimSheet({ context, player, revision, blind, onDone, onClose }
         .catch(cause => setError(message(cause)));
     }}>Review claim</HQAct>}
     {state.review && <Review room={room} onConfirmed={() => onDone(`Claim placed for ${player.name}`)} />}
-    {(error || state.error) && <p role="alert">{error || state.error}</p>}
+    {(error || state.error) && <FailureAlert
+      message={error || state.error}
+      league={native.league}
+      screen="Phone · Moves"
+      route="phone/moves"
+      port={native.port}
+    />}
   </MoveSheet>;
 }
 
@@ -134,7 +147,14 @@ export function TradeSheet({ context, start, onDone, onClose }: { context: WarRo
   const change = (next: WarRoomDeal) => { setDeal(next); setBlockers(undefined); };
   const team = (id: string) => catalog?.teams.find(t => t.id === id);
   if (!catalog) return <MoveSheet title="Start a trade" onClose={onClose}>
-    {error ? <p role="alert">Unavailable: {error}</p> : <p role="status">Reading rosters…</p>}</MoveSheet>;
+    {error ? <FailureAlert
+      message={error}
+      prefix="Unavailable: "
+      league={context.native?.league}
+      screen="Phone · Moves"
+      route="phone/moves"
+      port={context.native?.port}
+    /> : <p role="status">Reading rosters…</p>}</MoveSheet>;
   if (!deal.partner) return <MoveSheet title="Trade with" onClose={onClose}>
     {catalog.teams.filter(t => t.id !== context.mine).map(t => <HQAct key={t.id} className="mv4-row"
       onAction={() => change({ partner: t.id, give: [], get: [] })}>
@@ -172,6 +192,12 @@ export function TradeSheet({ context, start, onDone, onClose }: { context: WarRo
         await executeWarRoomOffer(context, catalog, deal);
         onDone(`Offer sent to ${team(deal.partner)?.name ?? deal.partner}`);
       })} />}
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      league={context.native?.league}
+      screen="Phone · Moves"
+      route="phone/moves"
+      port={context.native?.port}
+    />}
   </MoveSheet>;
 }

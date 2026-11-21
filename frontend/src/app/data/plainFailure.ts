@@ -1,3 +1,5 @@
+import { attachErrorCode } from './errorCodes';
+
 // Go's offline sentences, offline.Sentence in internal/offline/offline.go: "Can't reach <site>."
 // then ADVICE. Go may put its own context in front ("site news: startup: …"); a person sees the
 // sentence alone.
@@ -6,7 +8,8 @@ export const OFFLINE = "Can't reach the league site." + ADVICE;
 const SENTENCE = new RegExp("Can't reach [^.]+\\." + ADVICE.replace(/[.,]/g, '\\$&'));
 
 export function plainFailure(text: string): string {
-  return text.match(SENTENCE)?.[0] ?? text;
+  const cleaned = text.replace(/^Error:\s*/i, '');
+  return cleaned.match(SENTENCE)?.[0] ?? cleaned;
 }
 
 type Bound = Record<string, Record<string, Record<string, unknown>>>;
@@ -23,7 +26,9 @@ export function plainBindings(go: unknown): void {
           .catch((cause: unknown) => {
             const text = cause instanceof Error ? cause.message : String(cause);
             const plain = plainFailure(text);
-            throw plain === text ? cause : new Error(plain);
+            const result = plain === text ? cause : new Error(plain);
+            if (result instanceof Error) attachErrorCode(result);
+            throw result;
           });
       }
     }

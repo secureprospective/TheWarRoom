@@ -1,4 +1,5 @@
 import { pointsLabel, type PulseResults } from '../data/nativePulse';
+import { FailureAlert } from '../data/FailureAlert';
 import { RailLeaguePicker } from './leaguePicker';
 import type { Node } from './nodes';
 import { useNativeLineup, NativeLineupReview } from './hqNativeLineup';
@@ -50,7 +51,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
   const [selected, select] = useState<string>();
   const [revision, refresh] = useState(0);
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), [port]);
-  const { reading, error, pending } = useContractRead<NativeHQ>(
+  const { reading, error, errorCode, pending } = useContractRead<NativeHQ>(
     JSON.stringify([league, mine, revision, canManage]),
     publish => readNativeHQ(league, mine, port, publish, canManage, true), provider);
   useEffect(() => {
@@ -70,8 +71,16 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key);
       }, []);
   if (!reading) return <div className="hq-v10">{!embedded && <RailLeaguePicker />}
-    <p className="empty" role="status"
-    title={error}>{absent(pending)}</p></div>;
+    {error ? <FailureAlert
+      message={error}
+      code={errorCode}
+      className="empty"
+      league={league}
+      screen="Franchise HQ"
+      route="hq/lineup"
+      port={port}
+    /> : <p className="empty" role="status">{absent(pending)}</p>}
+  </div>;
   const { snapshot, lineup, runway, moves = [] } = reading;
   const settings = { ...reading.settings };
   const positions = new Map(lineup?.starters.concat(lineup.bench).map(p => [p.id, p.position ||

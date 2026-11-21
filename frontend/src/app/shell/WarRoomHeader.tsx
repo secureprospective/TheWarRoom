@@ -1,4 +1,6 @@
 import { HQAct as WarRoomAct } from './HQAct';
+import type { HostedPort } from '../commissioner/hostedRoom';
+import { FailureAlert } from '../data/FailureAlert';
 import type { WarRoomHeaderReading } from './warroomReads';
 import type { WarRoomEvent } from './warroomCalendar';
 import { countdown } from '../clock/urgency';
@@ -11,9 +13,11 @@ export function WarRoomEmpty({ reason, pending }: { reason?: string; pending?: b
   return <p className="empty" role={pending ? 'status' : undefined}
     >{pending ? absent(true) : reason || unavailable}</p>;
 }
-export function WarRoomHeader({ name, reading, windowLabel, lens, choose, pending, problem }: { name?: string;
+export function WarRoomHeader({ name, reading, windowLabel, lens, choose, pending, problem, problemCode,
+  league, port }: { name?: string;
   reading?: WarRoomHeaderReading; windowLabel?: string; lens?: WarRoomLens;
-  choose?: (d: Direction) => void; pending?: boolean; problem?: string }) {
+  choose?: (d: Direction) => void; pending?: boolean; problem?: string; problemCode?: string;
+  league?: string; port?: HostedPort }) {
   const you = lens && !lens.preparing ? lens.you : undefined;
   const ages = reading?.age ?? [];
   const peak = Math.max(0, ...ages.map(b => b.value));
@@ -24,8 +28,16 @@ export function WarRoomHeader({ name, reading, windowLabel, lens, choose, pendin
       reading?.record, reading?.standing, reading?.standingsNote)}{!windowLabel ? '' :
       windowLabel === 'none open' ? ' · no window open' : ` · open now: ${windowLabel}`}</div>
     </div>
-    <div className="mini"><span className="h">DIRECTION
-      {problem && <small role="alert">not recorded: {problem}</small>}</span>
+    <div className="mini"><span className="h">DIRECTION</span>
+      {problem && <FailureAlert
+        message={problem}
+        prefix="not recorded: "
+        code={problemCode}
+        league={league}
+        screen="War Room"
+        route="war/trade-desk"
+        port={port}
+      />}
       <div className="post">{directions.map(d => <WarRoomAct key={d} disabled={!choose || !you || pending}
         title="Your direction is shown to the whole league. Your lens follows it."
         active={Boolean(you?.set && you.direction === d)} onAction={() => choose?.(d)}>

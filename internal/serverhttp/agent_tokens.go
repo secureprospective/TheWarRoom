@@ -60,6 +60,7 @@ func (h Hosted) deviceSession(w http.ResponseWriter, r *http.Request) (accounts.
 		h.sessionFailure(w, r, err)
 		return session, account, false
 	}
+	setFailureAccount(r.Context(), account.ID)
 	if h.Tokens == nil {
 		http.Error(w, "session refused", http.StatusUnauthorized)
 		return session, account, false
@@ -85,6 +86,7 @@ func (h Hosted) agentToken(w http.ResponseWriter, r *http.Request) {
 		writeHosted(w, AgentTokenResponse{Protocol: 1, ID: raw.ID})
 		return
 	}
+	setFailureLeague(r.Context(), raw.Scope.League)
 	principal, err := account.Principal()
 	if err != nil {
 		http.Error(w, "session refused", http.StatusUnauthorized)

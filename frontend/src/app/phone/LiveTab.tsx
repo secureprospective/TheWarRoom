@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { onHostedTopics } from '../data/hostedReads';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
+import { FailureAlert } from '../data/FailureAlert';
 import { myChance, percent, pointsLabel } from '../data/nativePulse';
 import { Field, gameTime } from '../now/LiveGame';
 import type { Game } from '../now/liveContract';
@@ -87,8 +89,18 @@ function LiveBody({ league, port, readBrief, subscribe }: { league: LeagueChoice
           <HQAct className="live6__link" label="Box score" disabled={!rows.length}
             onAction={() => { pick(undefined); toBoxes('lg'); }}>Box score</HQAct>
         </span></div>
-      {words ? <p role={failure || brief?.errors.results ? 'alert' : 'status'}
-        className="live6__note">{words}</p>
+      {words ? (failure || brief?.errors.results)
+        ? <FailureAlert
+            message={failure || brief!.errors.results!}
+            prefix={`${unavailable} · `}
+            className="live6__note"
+            league={league.id}
+            leagueName={league.name}
+            screen="Phone · Live"
+            route="phone/live"
+            port={port}
+          />
+        : <p role="status" className="live6__note">{words}</p>
         : <Matchup brief={brief!} mine={mine} />}
       {!words && myRows.length > 0 && <div className="live6__myp">
         {myRows.map(p => {
@@ -141,7 +153,8 @@ function LiveBody({ league, port, readBrief, subscribe }: { league: LeagueChoice
           onAction={() => setBox('lg')}>Matchup box score</HQAct>
       </div>
       <section className="live6__panel" aria-label={box === 'nfl' ? 'NFL box score' : 'Matchup box score'}>
-        {box === 'nfl' ? <NflBox game={followed} /> : <MatchupBox row={selected} sides={sides} />}
+        {box === 'nfl' ? <NflBox game={followed} />
+          : <MatchupBox row={selected} sides={sides} league={league.id} port={port} />}
       </section>
     </div>
 
@@ -198,13 +211,15 @@ function Matchup({ brief, mine }: { brief: HomeBrief; mine: string }) {
 }
 
 type Sides = { left: PulseStarterRow[]; right: PulseStarterRow[]; leftName: string; rightName: string;
-  leftPoints?: number; rightPoints?: number; words: string };
+  leftPoints?: number; rightPoints?: number; words: string; error?: string; errorCode?: string };
 
 /** useSides is the chosen matchup's two lineups: my game's from the brief, any other from the same
  *  matchup read League Pulse uses. */
 function useSides(brief: HomeBrief | undefined, row: PulseRow | undefined, league: string,
   port: HostedPort, mine: string): Sides {
-  const [read, setRead] = useState<{ key: string; matchup?: PulseMatchup; error?: string }>();
+  const [read, setRead] = useState<{
+    key: string; matchup?: PulseMatchup; error?: string; errorCode?: string;
+  }>();
   const results = brief?.results;
   const own = row?.mine ? brief?.matchup : undefined;
   useEffect(() => {
@@ -215,7 +230,11 @@ function useSides(brief: HomeBrief | undefined, row: PulseRow | undefined, leagu
     readPulseMatchup(league, brief.pulse.season, results.week, [away, home],
       { [away]: starters(away), [home]: starters(home) }, port)
       .then(matchup => { if (active) setRead({ key: row.key, matchup }); })
-      .catch(cause => { if (active) setRead({ key: row.key, error: String(cause?.message ?? cause) }); });
+      .catch(cause => {
+        if (active) setRead({
+          key: row.key, error: errorMessage(cause), errorCode: errorCodeFor(cause),
+        });
+      });
     return () => { active = false; };
   }, [row, results, brief?.pulse, own, league, port]);
   if (!row) return { left: [], right: [], leftName: '', rightName: '',
@@ -226,13 +245,17 @@ function useSides(brief: HomeBrief | undefined, row: PulseRow | undefined, leagu
   const side = (id: string) => starterRows(scoreOf(results, id), matchup?.lineups[id],
     matchup?.projections ?? {});
   const total = (id: string) => { const s = scoreOf(results, id); return s?.points ?? s?.provisional; };
+  const hasError = read?.key === row.key && Boolean(read.error);
   return { left: side(l), right: side(r), leftPoints: total(l), rightPoints: total(r),
     leftName: flip ? row.game.homeName : row.game.awayName,
     rightName: flip ? row.game.awayName : row.game.homeName,
-    words: read?.key === row.key && read.error ? `${unavailable} · ${read.error}` : '' };
+    words: '', error: hasError ? read?.error : '',
+    errorCode: hasError ? read?.errorCode : undefined };
 }
 
-function MatchupBox({ row, sides }: { row?: PulseRow; sides: Sides }) {
+function MatchupBox({ row, sides, league, port }: {
+  row?: PulseRow; sides: Sides; league: string; port: HostedPort;
+}) {
   if (!row) return <p className="live6__note">{sides.words}</p>;
   const pairs = pairStarters(sides.left, sides.right).flatMap(g => g.pairs);
   const leftUp = (sides.leftPoints ?? 0) >= (sides.rightPoints ?? 0);
@@ -244,7 +267,16 @@ function MatchupBox({ row, sides }: { row?: PulseRow; sides: Sides }) {
       <div className={`is-r${leftUp ? '' : ' is-lead'}`}><span>{sides.rightName}</span>
         <b>{pointsLabel(sides.rightPoints)}</b></div>
     </div>
-    {sides.words && <p role="alert" className="live6__note">{sides.words}</p>}
+    {sides.error && <FailureAlert
+      message={sides.error}
+      prefix={`${unavailable} · `}
+      code={sides.errorCode}
+      className="live6__note"
+      league={league}
+      screen="Phone · Live"
+      route="phone/live"
+      port={port}
+    />}
     {!pairs.length ? <p className="live6__note">{row.game.words || 'No lineup is recorded for this week.'}</p>
       : pairs.map((pair, i) => <div key={`${pair.slot}-${i}`} className="live6__pair">
         <span>{pair.left?.name ?? ''}</span><b>{pointsLabel(pair.left?.points)}</b>

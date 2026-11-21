@@ -1,3 +1,4 @@
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { hostedCommandAvailable } from '../commands/native';
 import { actTable, type ActDefinition } from './actTable';
@@ -13,10 +14,10 @@ const fixCommands = [
   'commish.standings.record.adjust', 'commish.contract.edit', 'commish.correction.revert',
 ] as const;
 
-export function HostedControlRoomFix({ league, room, port, readings, pending, error, definition, initial,
-  onOpen }: {
+export function HostedControlRoomFix({ league, room, port, readings, pending, error, errorCode,
+  definition, initial, onOpen }: {
   league: string; room: HostedLeagueRoom; port?: HostedPort; readings?: HostedFixReadings;
-  pending: boolean; error: string; definition?: ActDefinition; initial?: ActValues;
+  pending: boolean; error: string; errorCode?: string; definition?: ActDefinition; initial?: ActValues;
   onOpen(definition: ActDefinition, initial?: ActValues): void;
 }) {
   const definitions = fixCommands.map(command => actTable.find(row => row.command === command));
@@ -50,7 +51,14 @@ export function HostedControlRoomFix({ league, room, port, readings, pending, er
     readings.calendarExceptions !== undefined;
 
   return <div className="cr-col hosted-fix" data-testid="hosted-control-room-fix">
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      code={errorCode}
+      league={league}
+      screen="Control Room · Fix"
+      route="control/fix"
+      port={port}
+    />}
     <div className="cr-fix">
       {definitions.map(act => act && <div key={act.command} className="hosted-fix-action"
         data-fix-command={act.command}>

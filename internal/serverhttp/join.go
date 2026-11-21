@@ -95,6 +95,7 @@ func (h Hosted) join(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if raw.Join != nil {
+		setFailureLeague(r.Context(), raw.Join.League)
 		list, err := h.Join.Franchises(r.Context(), *raw.Join)
 		if err != nil {
 			joinFailure(w, r, err)
@@ -103,6 +104,7 @@ func (h Hosted) join(w http.ResponseWriter, r *http.Request) {
 		writeJoin(w, http.StatusOK, JoinFranchisesResponse{Protocol: 1, League: raw.Join.League, Franchises: list})
 		return
 	}
+	setFailureLeague(r.Context(), raw.Claim.League)
 	if h.LeagueAdmission != nil {
 		// A claim commits an account, then a seat in the league: refuse it before either when the league is paused.
 		if err := h.LeagueAdmission(raw.Claim.League); err != nil {

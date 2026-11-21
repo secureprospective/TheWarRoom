@@ -6,6 +6,7 @@ import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { FranchisePicker } from '../shell/FranchisePicker';
 import type { Snapshot } from '../data/contract';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
 import type { Scope, Readings, Reading, PlayerContract, ContractsProvider, Year, Row } from './contract';
 import { contractsProvider } from './provider';
 import './contracts.css';
@@ -15,7 +16,7 @@ import ReleasePlans from './ReleasePlans';
 import ContractActs, { ContractMovePanel } from './ContractActs';
 import { WhatIfPanel, WhatIfActs } from './WhatIfPanel';
 
-type Result<T> = { reading?: T; error?: string; pending?: boolean };
+type Result<T> = { reading?: T; error?: string; errorCode?: string; pending?: boolean };
 // Infer T from the returned promise, not from the progress callback.
 export type ReadPublish<T> = (reading: [T][T extends unknown ? 0 : never]) => void;
 // The one read-state helper behind every screen. Two rules keep a working read from reading as a
@@ -51,7 +52,9 @@ export function useContractRead<T>(
       };
       void read(publish).then(
         reading => ({ reading, pending: false }) as Result<T>,
-        cause => ({ error: String(cause), pending: false }) as Result<T>,
+        cause => ({
+          error: errorMessage(cause), errorCode: errorCodeFor(cause), pending: false,
+        }) as Result<T>,
       ).then(next => {
         running = false;
         if (!active) return;
@@ -73,7 +76,8 @@ export function useContractRead<T>(
     };
     // key describes every argument; callers memoize the provider.
   }, [key, provider]);
-  return result.key === key ? { reading: result.reading, error: result.error, pending: result.pending }
+  return result.key === key
+    ? { reading: result.reading, error: result.error, errorCode: result.errorCode, pending: result.pending }
     : { pending: true };
 }
 

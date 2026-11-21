@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { createReadQuery } from '../data/query';
 import { hostedReads, hostedSnapshot, onHostedChange } from '../data/hostedReads';
 import { normalized, type ReadTags } from '../data/session';
@@ -120,7 +121,14 @@ export function HQNativeWhatIf({ snapshot, league, mine, chosen, select, port = 
       <div><b>{reading?.season ?? unavailable}</b><span>SEASON</span></div></div>
     <p className="note">Nothing is saved or sent. Every change is quoted by the league server.</p>
     {state.pending && <p role="status">{stillReading}</p>}
-    {state.error && <p role="alert">{state.error}</p>}
+    {state.error && <FailureAlert
+      message={state.error}
+      code={state.errorCode}
+      league={league}
+      screen="Franchise HQ · What-If"
+      route="hq/what-if"
+      port={port}
+    />}
     {reading && <div className="wi-runway" aria-label="Combined cap runway">
       <h3>Combined runway</h3><table><thead><tr><th>Season</th><th>Committed</th>
         <th>Dead</th><th>Room</th></tr></thead>

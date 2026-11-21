@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ProblemReportsRead, parseProblemReports, type ProblemReport } from './problemReports';
+import { FailureAlert } from '../data/FailureAlert';
 import type { HostedPort } from './hostedRoom';
 import { hostedWorkflow } from '../control/nativeApi';
 import './problemReports.css';
@@ -32,7 +33,13 @@ export function HostedControlRoomFeedback({ league, port = hostedWorkflow, refre
 
   return <section className="hosted-feedback" aria-label="Problem reports">
     <h2>Problem reports</h2>
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      league={league}
+      screen="Control Room · Feedback"
+      route="control/feedback"
+      port={port}
+    />}
     {!reports && !error && <p role="status">Reading reports…</p>}
     {reports?.length === 0 && <p>No reports have been sent.</p>}
     {reports && reports.length > 0 && <>

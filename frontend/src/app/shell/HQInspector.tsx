@@ -1,4 +1,6 @@
 import type { LeaguePlayerValue } from '../data/nativeValues';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
+import { FailureAlert } from '../data/FailureAlert';
 import { Act } from '../commands/Act';
 import type { NativeCut } from '../commissioner/hqReading';
 import { HQAct } from './HQAct';
@@ -63,9 +65,11 @@ export function UsageRows({ usage, projection, position }: { usage?: Usage; proj
     <KV label={`Matchup vs ${position ?? '—'}`} value={usage?.label && usage.allowedRank !== undefined ?
       `${usage.label} · ${usage.allowedRank}` : undefined} title={usage?.reason} /></>;
 }
-export function NotesThread({ notes, count, pending, error, add, remove }: { notes?: Note[]; count?: number;
-  pending?: boolean; error?: string; add?: (text: string) => Promise<void>; remove?: (note: Note) =>
-    Promise<void> }) {
+export function NotesThread({ notes, count, pending, error, errorCode, league, port, add, remove }: {
+  notes?: Note[]; count?: number; pending?: boolean; error?: string; errorCode?: string;
+  league?: string; port?: HostedPort;
+  add?: (text: string) => Promise<void>; remove?: (note: Note) => Promise<void>;
+}) {
   const [text, setText] = useState('');
   return <Drawer title="MY NOTES" mine detail={count ?? unavailable}>
     {notes ? notes.length ? <ol>{notes.map(note => <li key={note.at}><time dateTime={note.at}>{new
@@ -77,7 +81,15 @@ export function NotesThread({ notes, count, pending, error, add, remove }: { not
       <textarea aria-label="Add personal note" value={text} maxLength={8000} disabled={!add || pending}
         onChange={e => setText(e.target.value)} />
       <HQAct className="btn" submit disabled={!add || pending || !text.trim()}>ADD NOTE</HQAct>
-    </form>{error && <p role="alert">{error}</p>}
+    </form>
+    {error && <FailureAlert
+      message={error}
+      code={errorCode}
+      league={league}
+      screen="Franchise HQ · Notes"
+      route="hq/inspector"
+      port={port}
+    />}
   </Drawer>;
 }
 export function HQInspector({ snapshot, mine, id, facts, projection, native = false, bench, position, cut,
@@ -133,15 +145,17 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
   const [revision, setRevision] = useState(0);
   const { arc, usage, notes: readNotes, assets, years } = useHQInspectorData(native, league, mine, id,
     revision, port);
-  const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string>();
   const change = async (action: 'add' | 'remove', text = '', at = '') => {
     if (busy || (native && !league)) return;
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setErrorCode(undefined);
     try {
       if (native) await setHostedPlayerNote(league!, id, text, port, at || undefined);
       else await personalWire.change(mine, 'note', { id, entity: 'player', action, text, at });
       setRevision(n => n + 1);
-    } catch (e) { setError(String(e)); throw e; }
+    } catch (e) { setError(errorMessage(e)); setErrorCode(errorCodeFor(e)); throw e; }
     finally { setBusy(false); }
   };
   const noteData = !readNotes.error && readNotes.reading?.player === id &&
@@ -179,6 +193,7 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
       <Drawer title="AGE ARC" mine detail={arc.value?.age.toFixed(1) ?? unavailable}><AgeArc
         arc={arc.value} season={snapshot.league.value.season} /></Drawer>
       <NotesThread notes={noteData?.notes} count={noteData?.count} pending={busy} error={error}
+        errorCode={errorCode} league={league} port={port}
         add={noteData ? text => change('add', text) : undefined} remove={noteData ?
           note => change('remove', note.text, note.at).catch(() => {}) : undefined} />
     </div>
@@ -190,9 +205,13 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
       <HQAct className="btn" disabled={!mine || (!native && Boolean(teamReason))} title={teamReason}
         onAction={() => addHQTrade(mine, id, snapshot, league)}>ADD TO TRADE</HQAct>
       {native ? <HQAct className="btn" disabled={!league || !noteData || busy}
-        onAction={() => { if (!league || !noteData || busy) return; setBusy(true); setError('');
+        onAction={() => {
+          if (!league || !noteData || busy) return;
+          setBusy(true); setError(''); setErrorCode(undefined);
           void setHostedPlayerWatch(league, id, !noteData.watched, port).then(() => setRevision(n => n + 1))
-            .catch(e => setError(String(e))).finally(() => setBusy(false)); }}>
+            .catch(e => { setError(errorMessage(e)); setErrorCode(errorCodeFor(e)); })
+            .finally(() => setBusy(false));
+        }}>
         {noteData?.watched ? 'WATCHED' : 'WATCH'}
       </HQAct> : (
         <Act variant="button" className="btn" verb="watch.add"

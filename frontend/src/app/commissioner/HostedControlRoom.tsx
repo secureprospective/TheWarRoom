@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { onHostedTopics } from '../data/hostedReads';
+import { errorCodeFor } from '../data/errorCodes';
+import { FailureAlert } from '../data/FailureAlert';
 import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedBackupNow } from './HostedBackupNow';
@@ -41,19 +43,21 @@ export function useHostedControlRoom(league: string, port?: HostedPort, heldRoom
   const [feedbackRefreshVersion, setFeedbackRefreshVersion] = useState(0);
   const [jobSnoozes, setJobSnoozes] = useState<JobSnoozes>();
   const [snoozeError, setSnoozeError] = useState('');
+  const [snoozeErrorCode, setSnoozeErrorCode] = useState<string>();
   const [snoozePending, setSnoozePending] = useState('');
   const [jobNow, setJobNow] = useState(Date.now());
   const preferencePort = port ?? hostedWorkflow;
   const loadJobSnoozes = useCallback(async (isCurrent: () => boolean = () => true) => {
-    if (isCurrent()) { setJobSnoozes(undefined); setSnoozeError(''); }
+    if (isCurrent()) { setJobSnoozes(undefined); setSnoozeError(''); setSnoozeErrorCode(undefined); }
     try {
       const response = await preferencePort({ command: 'job.snoozes.read', mode: 'read', arguments: {} });
       const state = parseJobSnoozes(response.data);
-      if (isCurrent()) { setJobSnoozes(state); setSnoozeError(''); }
-    } catch {
+      if (isCurrent()) { setJobSnoozes(state); setSnoozeError(''); setSnoozeErrorCode(undefined); }
+    } catch (cause) {
       if (isCurrent()) {
         setJobSnoozes(undefined);
         setSnoozeError('Your private job snoozes could not be read. Jobs are shown normally.');
+        setSnoozeErrorCode(errorCodeFor(cause));
       }
     }
   }, [preferencePort]);
@@ -109,11 +113,13 @@ export function useHostedControlRoom(league: string, port?: HostedPort, heldRoom
     if (snoozePending) return;
     setSnoozePending(jobID);
     setSnoozeError('');
+    setSnoozeErrorCode(undefined);
     try {
       const response = await preferencePort(request);
       setJobSnoozes(parseJobSnoozes(response.data));
-    } catch {
+    } catch (cause) {
       setSnoozeError('Could not update your private job snoozes. Refresh and try again.');
+      setSnoozeErrorCode(errorCodeFor(cause));
     } finally {
       setSnoozePending('');
     }
@@ -161,8 +167,8 @@ export function useHostedControlRoom(league: string, port?: HostedPort, heldRoom
   };
   return {
     room, roomState, jobsState, fixState, tab, definition, openedTab, initialValues, job, routeWords,
-    feedbackRefreshVersion, jobSnoozes, snoozeError, snoozePending, jobNow, snoozeJob, wakeJob, openTool,
-    openSeasonTool, showRoute, navigateTo, jobCount, refreshAll,
+    feedbackRefreshVersion, jobSnoozes, snoozeError, snoozeErrorCode, snoozePending, jobNow, snoozeJob,
+    wakeJob, openTool, openSeasonTool, showRoute, navigateTo, jobCount, refreshAll,
   };
 }
 
@@ -215,9 +221,18 @@ export function HostedControlRoomBody({ c, league, port }: {
   return <>
     {c.routeWords && <p role="status" className="cr-note">{c.routeWords}</p>}
     {c.tab === 'jobs' && <div className="hosted-jobs-column">
-      {c.jobsState.error && <p role="alert" className="cr-note">{c.jobsState.error}</p>}
+      {c.jobsState.error && <FailureAlert
+        message={c.jobsState.error}
+        code={c.jobsState.errorCode}
+        className="cr-note"
+        league={league}
+        screen="Control Room · Jobs"
+        route="control/jobs"
+        port={port}
+      />}
       <HostedControlRoomJobs league={league} jobs={c.jobsState.jobs} snoozes={c.jobSnoozes} now={c.jobNow}
-        snoozeError={c.snoozeError} pendingJob={c.snoozePending} onSnooze={c.snoozeJob} onWake={c.wakeJob}
+        snoozeError={c.snoozeError} snoozeErrorCode={c.snoozeErrorCode} port={port}
+        pendingJob={c.snoozePending} onSnooze={c.snoozeJob} onWake={c.wakeJob}
         onOpen={c.openTool} onUnavailable={c.showRoute} />
       {c.definition && c.openedTab === 'jobs' && <HostedCommissionerActTray definition={c.definition}
         league={league} room={c.room} port={port} initial={c.initialValues} />}
@@ -225,7 +240,14 @@ export function HostedControlRoomBody({ c, league, port }: {
     </div>}
     {c.tab === 'situations' && <HostedControlRoomSituations
       onTab={c.navigateTo} onTool={next => c.openTool(next)} onUnavailable={c.showRoute} />}
-    {c.tab === 'rules' && c.roomState.error && <p role="alert">{c.roomState.error}</p>}
+    {c.tab === 'rules' && c.roomState.error && <FailureAlert
+      message={c.roomState.error}
+      code={c.roomState.errorCode}
+      league={league}
+      screen="Control Room · Rules"
+      route="control/rules"
+      port={port}
+    />}
     {c.tab === 'rules' && c.roomState.stale &&
       <p role="status">Rules are read-only until refreshed from the league server.</p>}
     {c.tab === 'rules' && c.roomState.message && <p role="status">{c.roomState.message}</p>}
@@ -246,6 +268,7 @@ export function HostedControlRoomBody({ c, league, port }: {
       refreshVersion={c.feedbackRefreshVersion} />}
     {c.tab === 'fix' && <HostedControlRoomFix league={league} room={c.room} port={port}
       readings={c.fixState.fixes} pending={c.fixState.pending} error={c.fixState.error}
+      errorCode={c.fixState.errorCode}
       definition={c.openedTab === 'fix' ? c.definition : undefined} initial={c.initialValues}
       onOpen={(next, initial) => c.openTool(next, undefined, 'fix', initial)} />}
     {!['jobs', 'situations', 'rules', 'season', 'server', 'picks', 'people', 'feedback', 'fix', 'league']
@@ -272,7 +295,14 @@ function HostedServerTab({ league, port = hostedWorkflow }: { league: string; po
     <h4>Feeds and upgrades</h4>
     <p>Feed controls and upgrades are operator-only and unavailable here.</p>
     <h4>Ledger</h4>
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      code={ledgerState.errorCode}
+      league={league}
+      screen="Control Room · Server"
+      route="control/server"
+      port={port}
+    />}
     {!ledger && !error && <p role="status">Reading server ledger…</p>}
     {ledger && (ledger.entries.length ? <ol>{ledger.entries.map(entry => <li key={entry.id}>
       <strong>{entry.what}</strong><p>By {entry.who} · {new Date(entry.when).toLocaleString()}</p>

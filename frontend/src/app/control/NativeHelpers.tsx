@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { copyHelperConnection } from './api';
+import { FailureAlert } from '../data/FailureAlert';
 import { Act } from '../commands/Act';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { helperAction, readConfirmRequest, type HelperAction, type NativeSeat } from './nativeApi';
@@ -63,7 +64,7 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
     <h2 id="helpers-title">AI helpers</h2>
     <p>An AI helper can read this league and suggest changes for you through the twr command.
       Bigger changes always wait for you to confirm them here. Verify a fresh authenticator code first.</p>
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert message={error} league={league} screen="AI helpers" route="control/helpers" />}
     {message && <p role="status">{message}</p>}
     <h3>Connect a helper</h3>
     <label>What it may do<select value={level} disabled={pending}

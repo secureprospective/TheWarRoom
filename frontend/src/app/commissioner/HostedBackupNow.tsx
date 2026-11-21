@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { errorCodeFor, errorMessage } from '../data/errorCodes';
+import { FailureAlert } from '../data/FailureAlert';
 import { object, requiredText, timestamp } from '../data/parseValues';
 import { HQAct } from '../shell/HQAct';
 import type { NativeRequest } from '../commands/native';
@@ -33,11 +35,12 @@ export function HostedBackupNow({ league, port = hostedWorkflow, autoPreview = f
   const [result, setResult] = useState<BackupResult>();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string>();
   const request = useCallback((mode: 'preview' | 'execute'): NativeRequest => ({
     command: 'backup.now', mode, arguments: { league },
   }), [league]);
   const previewBackup = useCallback(async () => {
-    setPending(true); setError(''); setPreview(undefined);
+    setPending(true); setError(''); setErrorCode(undefined); setPreview(undefined);
     try {
       const response = await port(request('preview'));
       const checked = parsePreview(response.data);
@@ -46,27 +49,36 @@ export function HostedBackupNow({ league, port = hostedWorkflow, autoPreview = f
       }
       setPreview(checked);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
+      setErrorCode(errorCodeFor(cause));
     } finally { setPending(false); }
   }, [league, port, request]);
   useEffect(() => { if (autoPreview) void previewBackup(); }, [autoPreview, previewBackup]);
   const confirmBackup = async () => {
     if (!preview || pending) return;
-    setPending(true); setError('');
+    setPending(true); setError(''); setErrorCode(undefined);
     try {
       const response = await port(request('execute'));
       const saved = parseBackupResult(response.data);
       if (saved.league !== league) throw new Error('The server returned a backup for another league.');
       setResult(saved); setPreview(undefined); onDone?.();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(errorMessage(cause));
+      setErrorCode(errorCodeFor(cause));
     } finally { setPending(false); }
   };
   return <section aria-label="Back up now">
     <h4>Back up now</h4>
     <p>Save and check a fresh off-site backup of this league before continuing.</p>
     <HQAct disabled={pending} onAction={() => { void previewBackup(); }}>Preview backup now</HQAct>
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      code={errorCode}
+      league={league}
+      screen="Control Room · Backup"
+      route="control/server"
+      port={port}
+    />}
     {preview && <PreviewReview preview={preview} confirm={<HoldToFire
       label="Confirm back up now" body={JSON.stringify({ league, command: 'backup.now' })}
       disabled={pending} answer={pending ? 'sending' : ''}

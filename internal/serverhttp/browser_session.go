@@ -224,6 +224,7 @@ func (h Hosted) browserLoginProof(w http.ResponseWriter, r *http.Request, raw Ra
 
 func (h Hosted) finishBrowserSession(w http.ResponseWriter, r *http.Request, session accounts.DeviceSession,
 	proof accounts.RecentAuth) {
+	setFailureAccount(r.Context(), session.Account.ID)
 	admissions, err := h.browserAdmissions(r.Context(), session.Account)
 	if err != nil {
 		h.rejectNewBrowserSession(w, r, session.RawSession, http.StatusServiceUnavailable, "league access unavailable")
@@ -279,6 +280,7 @@ func (h Hosted) readBrowserSession(w http.ResponseWriter, r *http.Request) {
 		h.sessionFailure(w, r, err)
 		return
 	}
+	setFailureAccount(r.Context(), account.ID)
 	admissions, err := h.browserAdmissions(r.Context(), account)
 	if err != nil {
 		writeUnavailable(w, "league access unavailable")
