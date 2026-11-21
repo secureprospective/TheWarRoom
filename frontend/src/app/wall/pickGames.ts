@@ -29,10 +29,11 @@ export function nextKickoff(games: Game[], now: number): string {
 }
 
 /** wallGrid lays n phones on the 1920x1080 stage: columns, rows and the scale of a 390x844 phone. */
-export function wallGrid(n: number, bezel = 12, head = 40) {
-  const cols = n <= 3 ? Math.max(n, 1) : n <= 8 ? Math.ceil(n / 2) : 3;
+export function wallGrid(n: number, bezel = 12, head = 28, gap = 16, padX = 24, padY = 16) {
+  const cols = n <= 4 ? Math.max(n, 1) : n <= 8 ? Math.ceil(n / 2) : 3;
   const rows = Math.ceil(Math.max(n, 1) / cols);
-  const scale = Math.min((1920 / cols - 16) / (390 + 2 * bezel),
-    (1080 / rows - 16 - head) / (844 + 2 * bezel));
+  const w = (1920 - 2 * padX - (cols - 1) * gap) / cols;
+  const h = (1080 - 2 * padY - (rows - 1) * gap) / rows - head;
+  const scale = Math.min(w / (390 + 2 * bezel), h / (844 + 2 * bezel));
   return { cols, rows, scale };
 }

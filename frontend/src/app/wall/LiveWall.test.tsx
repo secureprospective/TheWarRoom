@@ -27,8 +27,10 @@ describe('pickGames', () => {
     expect([wallCount('?n=3'), wallCount('?n=9'), wallCount('?n=0'), wallCount('?n=10'), wallCount('?n=x'),
       wallCount('')]).toEqual([3, 9, 6, 6, 6, 6]);
   });
-  it('lays six phones as 3x2 and names the next kickoff in Central', () => {
+  it('lays six phones as 3x2, 1-4 in one row, and names the next kickoff in Central', () => {
     expect(wallGrid(6)).toMatchObject({ cols: 3, rows: 2 });
+    expect(wallGrid(4)).toMatchObject({ cols: 4, rows: 1 });
+    expect(wallGrid(4).scale).toBeGreaterThan(wallGrid(6).scale);
     expect(nextKickoff([g(0, 'pre', '2026-11-22T19:00:00Z')], NOW))
       .toBe('Next kickoff Sun, Nov 22, 1:00 PM CT');
   });
@@ -57,10 +59,20 @@ describe('LiveWall', () => {
     expect(el.textContent).toContain('Next kickoff Sun, Nov 29, 1:00 PM CT');
     expect(el.querySelectorAll('.wall__tile')).toHaveLength(0);
   });
-  it('draws one phone per live game, up to ?n=', async () => {
+  it('draws one phone per live game, up to ?n=, with up to 6 plays newest first', async () => {
     const games = [0, 1, 2, 3, 4, 5].map(i => wallGame(i));
-    expect((await show(games)).querySelectorAll('.wall__tile')).toHaveLength(6);
+    const el = await show(games);
+    expect(el.querySelectorAll('.wall__tile')).toHaveLength(6);
+    const firstPlays = el.querySelector('.wall__tile')?.querySelectorAll('.live6__plays li');
+    expect(firstPlays).toHaveLength(6);
+    expect(firstPlays?.[0]?.textContent).toContain('N. Gray');
     await act(async () => root!.unmount()); host!.remove(); root = undefined;
     expect((await show(games, '?n=2')).querySelectorAll('.wall__tile')).toHaveLength(2);
+  });
+  it('shows no-plays note when a live game holds no plays', async () => {
+    const empty = { ...wallGame(0), plays: [], last: null } as unknown as ReturnType<typeof wallGame>;
+    const el = await show([empty]);
+    expect(el.querySelector('.live6__plays')).toBeNull();
+    expect(el.textContent).toContain('No plays are held for this game yet.');
   });
 });

@@ -4,8 +4,9 @@
   overflow: hidden; }
 .wall__mark { position: absolute; right: 18px; top: 8px; z-index: 2; font: 700 11px ui-monospace, monospace;
   letter-spacing: .22em; color: hsl(220 12% 55%); }
-.wall__grid { display: grid; width: 100%; height: 100%; align-items: center; justify-items: center;
-  align-content: center; }
+.wall__grid { display: grid; width: 100%; height: 100%; padding: 16px 24px; gap: 16px;
+  box-sizing: border-box; align-items: start; justify-items: center; align-content: center;
+  justify-content: center; }
 .wall__tile { display: grid; justify-items: center; gap: 6px; }
 .wall__head { display: flex; justify-content: space-between; align-items: baseline; width: 100%;
   padding: 0 6px; font: 700 15px ui-monospace, monospace; letter-spacing: .08em; }
@@ -15,6 +16,6 @@
   width: 390px; height: 844px; background: hsl(220 10% 14%); border-radius: 48px;
   box-shadow: 0 0 0 2px hsl(220 8% 30%); }
 .wall__screen { width: 390px; height: 844px; border-radius: 38px; overflow: hidden; background: #000; }
-.wall__empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 12px;
-  font-size: 40px; }
+.wall__empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center;
+  gap: 12px; font-size: 40px; }
 .wall__next { font-size: 24px; color: hsl(220 12% 70%); }

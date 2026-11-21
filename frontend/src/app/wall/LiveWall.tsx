@@ -4,6 +4,7 @@ import { onHostedTopics } from '../data/hostedReads';
 import type { Game } from '../now/liveContract';
 import { clockWords, useNow } from '../shell/hostedGames';
 import { LiveField } from '../phone/LiveField';
+import '../phone/LiveTab.css';
 import { nextKickoff, wallCount, wallGrid } from './pickGames';
 import { useWallGames } from './useWallGames';
 import './wall.css';
@@ -33,7 +34,7 @@ export function LiveWall({ league, port, subscribe, search = window.location.sea
           {read.board && <p className="wall__next">{nextKickoff(read.board, now)}</p>}
           {read.error && !read.board && <p className="wall__next">{read.error}</p>}
         </div>
-        : <div className="wall__grid" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+        : <div className="wall__grid" style={{ gridTemplateColumns: `repeat(${cols}, auto)` }}>
           {read.picked.map(g => <Tile key={g.id} game={g} scale={scale} />)}
         </div>}
     </div>
@@ -49,10 +50,29 @@ function Tile({ game, scale }: { game: Game; scale: number }) {
     <div className="wall__phone"
       style={{ width: (390 + 2 * bezel) * scale, height: (844 + 2 * bezel) * scale }}>
       <div className="wall__bezel" style={{ transform: `scale(${scale})`, padding: bezel }}>
-        <div className="wall__screen"><LiveField game={game} reduced={false} /></div>
+        <div className="wall__screen live6">
+          <LiveField game={game} reduced={false} />
+          <section className="live6__card" aria-label="Play by play">
+            <div className="live6__head">
+              <b>Play by play</b><span className="live6__m">newest first</span>
+            </div>
+            <WallPlays game={game} />
+          </section>
+        </div>
       </div>
     </div>
   </section>;
+}
+
+function WallPlays({ game }: { game: Game }) {
+  if (!game.plays.length) return <p className="live6__note">{game.status === 'pre'
+    ? 'The game has not kicked off.' : 'No plays are held for this game yet.'}</p>;
+  const abbr = (id?: string) => id === game.home.id ? game.home.abbreviation
+    : id === game.away.id ? game.away.abbreviation : '·';
+  return <ol className="live6__plays">{[...game.plays].sort((a, b) => b.sequence - a.sequence).slice(0, 6)
+    .map(p => <li key={p.id}><span className="live6__m">Q{p.period} {p.clock}</span>
+      <b>{abbr(p.start?.possession)}</b><span>{p.text}</span>
+      <em>{p.awayScore}-{p.homeScore}</em></li>)}</ol>;
 }
 
 /** useFit scales the 1920x1080 stage down to a smaller window; at 1920x1080 it is exactly 1. */
