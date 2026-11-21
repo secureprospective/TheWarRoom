@@ -170,6 +170,7 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 | The engine plan and rulings | `docs/build-handoffs/Core_Build_Plan_2026-10.md` |
 | Why the plan is shaped this way | `docs/build-handoffs/Core_Build_Reasoning_2026-10.md` |
 | Where each feature lives (two hops), and where new code goes | `SYSTEM_MAP.md` |
+| Product terms and architecture decisions | Product terms: GLOSSARY.md. Decisions: docs/adr/. |
 | Future direction: AI-first seams, social moments, tiny models (11-08) | `docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md` |
 | **Before any new server feature** (moments, shares, invites, chat, new AI powers): where it plugs in | `docs/architecture/future-seams.md` (`grep -rn "FUTURE-SEAM(" internal`) |
 | What exists at length, and the import rules | `docs/architecture/system-narrative.md` |
