@@ -300,6 +300,7 @@ export function parseHostedStandings(v: unknown) {
         'losses',
         'ties',
         'record',
+        'streak',
         'computedRecord',
         'pointsFor',
         'pointsWords',
