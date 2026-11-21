@@ -116,7 +116,8 @@ describe('createFieldView', () => {
     const box = document.createElement('div');
     document.body.append(box);
     const view = createFieldView(box, { L: club('BUF'), R: club('KC') }, () => true);
-    await view.sync({ poss: 'R', x: 57, lat: 0, down: 1, dist: 11, driveStart: 75, over: true }, { instant: true });
+    const game = { poss: 'R' as const, x: 57, lat: 0, down: 1, dist: 11, driveStart: 75, over: true };
+    await view.sync(game, { instant: true });
     expect(box.querySelector('#hDown')?.textContent).toBe('—');
     expect(box.querySelector('#hDist')?.textContent).toBe('—');
     expect(box.querySelector('#v2stk')?.classList.contains('away')).toBe(true);
