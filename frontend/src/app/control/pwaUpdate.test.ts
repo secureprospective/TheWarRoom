@@ -30,6 +30,7 @@ function fixture(controller: unknown = {}, shared: Env = env()) {
     activeElement: null as unknown,
   });
   const reload = vi.fn();
+  const win = new EventTarget();
   const store = {
     getItem: (key: string) => shared.values.get(key) ?? null,
     setItem: (key: string, value: string) => { shared.values.set(key, value); },
@@ -40,9 +41,10 @@ function fixture(controller: unknown = {}, shared: Env = env()) {
     reload,
     store,
     now: () => shared.clock.t,
+    win: win as unknown as Window,
   });
   stops.push(stop);
-  return { reg, container, doc, reload, stop, shared };
+  return { reg, container, doc, reload, stop, shared, win };
 }
 
 const controllerChange = (c: EventTarget) => c.dispatchEvent(new Event('controllerchange'));
@@ -169,4 +171,15 @@ it('lets a later call retry after a failed registration', async () => {
   stops.push(startPwaUpdates(deps));
   await flush();
   expect(container.register).toHaveBeenCalledTimes(2);
+});
+
+it('reloads once onto the new release when an old page cannot load a code file', async () => {
+  const f = fixture();
+  await flush();
+  const stale = new Event('vite:preloadError', { cancelable: true });
+  f.win.dispatchEvent(stale);
+  expect(f.reload).toHaveBeenCalledTimes(1);
+  expect(stale.defaultPrevented).toBe(true);
+  f.win.dispatchEvent(new Event('vite:preloadError', { cancelable: true }));
+  expect(f.reload).toHaveBeenCalledTimes(1);
 });

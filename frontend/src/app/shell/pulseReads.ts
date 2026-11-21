@@ -179,8 +179,12 @@ export async function readPulseSeason(league: string, season: number, through: n
   port: HostedPort = hostedWorkflow): Promise<PulseSeason> {
   const r = await port({ command: 'schedule.read', mode: 'read', arguments: { league } });
   const schedule = parsePulseSchedule(r.data, league);
-  const played = await Promise.all(schedule.weeks.filter(w => w.week <= through)
-    .map(w => readPulseWeekResults(league, season, w.week, port)));
+  // Two weeks at a time: eleven parallel results reads overloaded the server and it refused some.
+  const weeks = schedule.weeks.filter(w => w.week <= through).map(w => w.week);
+  const played: PulseResults[] = [];
+  for (let i = 0; i < weeks.length; i += 2)
+    played.push(...await Promise.all(weeks.slice(i, i + 2)
+      .map(week => readPulseWeekResults(league, season, week, port))));
   return { schedule, played: Object.fromEntries(played.map(week => [week.week, week])) };
 }
 
