@@ -915,11 +915,22 @@ func (h Hosted) leagueHead(ctx context.Context, league string) (int64, error) {
 // path allowlist passes it. The cache itself answers the desktop's /headshot/<mfl id>.
 const PhotoPathPrefix = "/v1/headshot/"
 
+// PhotoSizedPrefix is the versioned route the web app uses: /v1/headshot/350/<mfl id>.
+const PhotoSizedPrefix = PhotoPathPrefix + "350/"
+
 // photo serves a player photo on the app host only. A server without a photo cache answers 404,
 // which the card reads as "show the team instead".
 func (h Hosted) photo(w http.ResponseWriter, r *http.Request) {
 	if h.Photos == nil || !validPublicHost(h.PublicHost) || r.Host != h.PublicHost {
 		http.NotFound(w, r)
+		return
+	}
+	if id, sized := strings.CutPrefix(r.URL.Path, PhotoSizedPrefix); sized {
+		// The size segment gives sharper photos a new address, so a CDN copy of an older size is
+		// never reused. The cache itself answers /headshot/<id>.
+		r = r.Clone(r.Context())
+		r.URL.Path, r.URL.RawPath = "/headshot/"+id, ""
+		h.Photos.ServeHTTP(w, r)
 		return
 	}
 	http.StripPrefix("/v1", h.Photos).ServeHTTP(w, r)

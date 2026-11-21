@@ -40,3 +40,16 @@ func TestHostedPhotoRoute(t *testing.T) {
 		})
 	}
 }
+
+// The sized route reaches the same cache path, so a new photo size gets a fresh CDN address.
+func TestHostedSizedPhotoRoute(t *testing.T) {
+	var got string
+	stub := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) { got = r.URL.Path })
+	h := Hosted{Photos: stub, PublicHost: "league.example.test"}
+	r := httptest.NewRequest(http.MethodGet, "https://league.example.test/v1/headshot/350/16162", nil)
+	r.Host = "league.example.test"
+	h.photo(httptest.NewRecorder(), r)
+	if got != "/headshot/16162" {
+		t.Fatalf("cache got %q, want /headshot/16162", got)
+	}
+}
