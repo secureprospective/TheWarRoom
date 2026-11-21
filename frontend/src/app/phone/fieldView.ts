@@ -8,6 +8,8 @@ import { clubColours, type Club } from './liveClubs';
 export type FieldTeams = Record<Side, Club>;
 export type FieldGame = {
   poss: Side; x: number; lat: number; down: number; dist: number; driveStart: number;
+  /** over: the game has ended, so there is no down or distance to show */
+  over?: boolean;
 };
 type Pt = { x: number; y: number; z: number };
 type Opts = KeyframeAnimationOptions;
@@ -285,7 +287,7 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
   async function sync(G: FieldGame, o: { instant?: boolean; flip?: boolean; first?: boolean } = {}) {
     const d = G.poss === 'L' ? 1 : -1, goal = toEnd(G.x, G.poss) <= G.dist, x = wx(G.x), y = wy(G.lat);
     const fxd = goal ? wx(d > 0 ? 100 : 0) : wx(G.x + d * G.dist);
-    const ddText = `${ORD[G.down - 1] ?? '—'} & ${goal ? 'GOAL' : G.dist}`;
+    const ddText = G.over ? 'FINAL' : `${ORD[G.down - 1] ?? '—'} & ${goal ? 'GOAL' : G.dist}`;
     stage.classList.toggle('instant', !!o.instant);
     teamVars(G.poss, 'p');
     if (o.flip) { // possession change: marker spins round in the new colour
@@ -313,7 +315,8 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     pad.style.transform = `translateX(${fxd}px) translateZ(1px)`;
     sc.style.transform = `translateX(${Math.min(x, fxd)}px) translateZ(1px)`;
     sc.style.width = `${Math.abs(fxd - x)}px`;
-    for (const e of [sb, sc, pad]) e.classList.toggle('away', goal);
+    for (const e of [sb, sc, pad]) e.classList.toggle('away', goal || !!G.over);
+    sa.classList.toggle('away', !!G.over);
     if (n.textContent !== dn) {
       n.textContent = dn;
       if (!o.instant && !reduced()) {
@@ -321,8 +324,8 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
           { duration: 300, delay: 300, easing: 'cubic-bezier(.2,.9,.3,1.2)', fill: 'backwards' });
       }
     }
-    setNum(q<HTMLElement>('#hDown'), ORD[G.down - 1] ?? '—', !o.instant);
-    setNum(q<HTMLElement>('#hDist'), goal ? 'GOAL' : String(G.dist), !o.instant);
+    setNum(q<HTMLElement>('#hDown'), G.over ? '—' : ORD[G.down - 1] ?? '—', !o.instant);
+    setNum(q<HTMLElement>('#hDist'), G.over ? '—' : goal ? 'GOAL' : String(G.dist), !o.instant);
     setNum(q<HTMLElement>('#hSpot'), spotText(G.x), !o.instant);
     setNum(q<HTMLElement>('#hGoal'), `${toEnd(G.x, G.poss)} YD`, false);
     q('#v2rib').innerHTML = `<span>${Array(14).fill(`${esc(name(G.poss))} BALL &nbsp;◆&nbsp; ${ddText} `

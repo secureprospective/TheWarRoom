@@ -26,8 +26,8 @@ export function useReducedMotion(): boolean {
 type Moment = { play: Play; fp?: FieldPlay; after?: Spot; drive: number };
 type Card = { play: Play; fp?: FieldPlay };
 
-const fieldGame = (s: Spot, drive: number): FieldGame =>
-  ({ poss: s.poss, x: s.x, lat: 0, down: Math.max(1, s.down), dist: s.dist, driveStart: drive });
+const fieldGame = (s: Spot, drive: number, over = false): FieldGame =>
+  ({ poss: s.poss, x: s.x, lat: 0, down: Math.max(1, s.down), dist: s.dist, driveStart: drive, over });
 /* scorer from the play's own words: the receiver on a touchdown pass, else the first named player */
 const scorerOf = (p: FieldPlay) => (p.how === 'pass' && p.type === 'td'
   ? p.text.match(/\bto ([A-Z][\w'-]*\.\s?[\w'-]+)/)?.[1]
@@ -70,7 +70,7 @@ export function LiveField({ game, fresh, reduced: forced }: {
       () => reducedRef.current);
     view.current = v;
     const s = fieldSpot(g.state, g);
-    if (s) void v.sync(fieldGame(s, driveStart(g, s)), { instant: true });
+    if (s) void v.sync(fieldGame(s, driveStart(g, s), g.status === 'post'), { instant: true });
     seen.current = latestSequence(g);
     let timer = 0, toldTimer = 0;
     const q = new PlayQueue<Moment>(async m => {

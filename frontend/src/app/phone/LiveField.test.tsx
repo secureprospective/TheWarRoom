@@ -112,6 +112,18 @@ describe('LiveField', () => {
 });
 
 describe('createFieldView', () => {
+  it('shows no down or distance once the game is over', async () => {
+    const box = document.createElement('div');
+    document.body.append(box);
+    const view = createFieldView(box, { L: club('BUF'), R: club('KC') }, () => true);
+    await view.sync({ poss: 'R', x: 57, lat: 0, down: 1, dist: 11, driveStart: 75, over: true }, { instant: true });
+    expect(box.querySelector('#hDown')?.textContent).toBe('—');
+    expect(box.querySelector('#hDist')?.textContent).toBe('—');
+    expect(box.querySelector('#v2stk')?.classList.contains('away')).toBe(true);
+    view.destroy();
+    box.remove();
+  });
+
   it('clears all pending timers when destroy() is called', async () => {
     vi.useFakeTimers();
     const box = document.createElement('div');
