@@ -3,6 +3,7 @@ import { nativeAction, nativeStartup, subscribeNativeUpdate, type NativeView } f
 import { isWebTransport } from './transport';
 import { errorCodeFor, newClientErrorCode } from '../data/errorCodes';
 import { suspendHostedReads } from '../data/hostedReads';
+import { startPwaUpdates } from './pwaUpdate';
 import './pwa.css';
 
 const FailureAlert = lazy(() => import('../data/FailureAlert')
@@ -30,16 +31,14 @@ export function NativeStartup() {
       if (!active || !browser) return;
       setOnline(true);
       void nativeAction('status').then(setView).catch(() => {});
-      void navigator.serviceWorker?.register('/app/sw.js', { scope: '/app/' }).catch(() => {});
+      startPwaUpdates();
     };
     if (browser) {
       window.addEventListener('offline', offline);
       window.addEventListener('twr:offline', offline);
       window.addEventListener('online', onlineAgain);
     }
-    if (browser && navigator.onLine) {
-      void navigator.serviceWorker?.register('/app/sw.js', { scope: '/app/' }).catch(() => {});
-    }
+    if (browser && navigator.onLine) startPwaUpdates();
     nativeStartup().then(value => { if (active) setView(value); }).catch(cause => {
       if (!active) return;
       setErrorCode(errorCodeFor(cause) ?? newClientErrorCode());
