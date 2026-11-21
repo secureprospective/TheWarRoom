@@ -25,7 +25,7 @@ import '../control/room/controlRoom.css';
 
 export type ControlBodyProps = { c: HostedControlRoomState; league: string; port?: HostedPort;
   badge: ReactNode; people?: People; peoplePending?: boolean; peopleError?: string;
-  refreshPeople?: () => void };
+  peopleErrorCode?: string; refreshPeople?: () => void };
 
 /** v3 bodies by tab; a tab missing here falls back to the old room's body. */
 const BODIES: Partial<Record<HostedControlTab, (p: ControlBodyProps) => ReactNode>> = {
@@ -76,8 +76,8 @@ export default function ControlRoomV3({ league, port, tab, setTab, badge }: { le
     if (c.tab !== tab) setTab(c.tab);
   }, [c.tab]); // eslint-disable-line react-hooks/exhaustive-deps
   const Body = BODIES[tab];
-  return Body ? <>{Body({ c, league, port, badge, people,
-    peoplePending: peopleReading.pending, peopleError: peopleReading.error, refreshPeople })}</>
+  return Body ? <>{Body({ c, league, port, badge, people, peoplePending: peopleReading.pending,
+    peopleError: peopleReading.error, peopleErrorCode: peopleReading.errorCode, refreshPeople })}</>
     : <div className="wbody"><section className="crx hosted-control-room legacy-cr"
       style={{ height: '100%', overflow: 'auto' }}>
       <div className="cr-main on hosted-control-content">

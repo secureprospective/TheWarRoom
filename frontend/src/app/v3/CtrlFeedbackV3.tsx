@@ -1,6 +1,7 @@
 // Desktop v3 Control Room, Feedback tab: problem reports sent from the league's app screens, read via
 // commish.feedback.read and refreshed from c.feedbackRefreshVersion.
 import type { ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { hostedWorkflow } from '../control/nativeApi';
 import { memberDisplayName } from '../commissioner/people';
 import type { ProblemReport } from '../commissioner/problemReports';
@@ -26,7 +27,7 @@ export function reportMeta(
 }
 
 export function CtrlFeedbackV3({ c, league, port = hostedWorkflow, badge, people }: ControlBodyProps) {
-  const { reports, error } = useProblemReports(league, port, c.feedbackRefreshVersion);
+  const { reports, error, errorCode } = useProblemReports(league, port, c.feedbackRefreshVersion);
 
   const foot = reports
     ? (reports.length ? 'Showing up to 100 newest reports.' : 'No reports have been sent.')
@@ -36,7 +37,8 @@ export function CtrlFeedbackV3({ c, league, port = hostedWorkflow, badge, people
     style={{ gridTemplateColumns: 'minmax(0,1fr)' }}>
     <Panel title="Feedback" badge={badge}
       tag={reports ? <span className="tag o">{reports.length}</span> : null} foot={foot}>
-      {error && <St><span role="alert">{error}</span></St>}
+      {error && <St><FailureAlert message={error} code={errorCode} league={league}
+        screen="Control Room · Feedback" route="control/feedback" port={port} /></St>}
       {!reports && !error && <St><span role="status">Reading reports…</span></St>}
       {reports?.length === 0 && <St>No reports have been sent.</St>}
       {reports && reports.length > 0 && reports.map(report => <div key={report.id} className="row"

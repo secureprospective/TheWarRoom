@@ -2,6 +2,8 @@
 // and picks made, the board of players still available, my picks and my auto-pick queue. Reads are the
 // War Room's own (draft.read, draft.queue.read); making a pick stays in the league draft room, opened below.
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
+import { errorCodeFor } from '../data/errorCodes';
 import { HQAct } from '../shell/HQAct';
 import { useWarRoomRead, type WarRoomContext } from '../shell/warroomReads';
 import { readWarRoomDraft, saveWarRoomDraftQueue } from '../shell/warroomDraftReads';
@@ -42,14 +44,18 @@ export function WarDraftV3({ context, badge }: { context: WarRoomContext; badge:
   const [held, setHeld] = useState<{ key: string; players: string[] }>();
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState('');
+  const [problemCode, setProblemCode] = useState<string>();
   const [room, setRoom] = useState(false);
-  useEffect(() => { setHeld(undefined); setProblem(''); }, [queueKey]);
+  useEffect(() => { setHeld(undefined); setProblem(''); setProblemCode(undefined); }, [queueKey]);
   const queue = held?.key === queueKey ? held.players : reading.reading?.queue;
   const save = async (players: string[]) => {
     if (!native || !queue || saving) return;
-    setSaving(true); setProblem('');
+    setSaving(true); setProblem(''); setProblemCode(undefined);
     try { setHeld({ key: queueKey, players: await saveWarRoomDraftQueue(native, players) }); }
-    catch { setProblem('The queue was not saved. Try again.'); }
+    catch (cause) {
+      setProblem('The queue was not saved. Try again.');
+      setProblemCode(errorCodeFor(cause));
+    }
     finally { setSaving(false); }
   };
   const move = (i: number, d: number) => {
@@ -114,7 +120,9 @@ export function WarDraftV3({ context, badge }: { context: WarRoomContext; badge:
                   onAction={() => move(i, 1)}>▼</HQAct>
                 <HQAct className="btn sm" disabled={saving}
                   onAction={() => void save(queue.filter(x => x !== id))}>✕</HQAct></span></div>)}
-      {problem && <St><span role="alert">{problem}</span></St>}
+      {problem && <St><FailureAlert message={problem} code={problemCode}
+        league={native?.league} screen="War Room · Draft room" route="war/draft-room"
+        port={native?.port} /></St>}
       {native && <div className="tbar"><HQAct className="btn sm" onAction={() => setRoom(v => !v)}>
         {room ? 'Close the draft room' : 'Open the draft room to pick ▾'}</HQAct></div>}
     </Panel>

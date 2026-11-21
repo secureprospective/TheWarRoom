@@ -2,6 +2,7 @@
 // Settings board grouped into rule boards with board filter chips, source tags, governed glyphs, and the
 // shared rule-change editor tray, alongside Pending changes and Rule sections from the same rules read.
 import { useState, type ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import { GovernedGlyph } from '../governed/GovernedGlyph';
 import { HostedRuleEditorTray, RULE_BOARDS, SECTION_BOARD, hostedRule, ruleSource, useHostedRules,
@@ -60,7 +61,7 @@ export function pendingChanges(rules: Rules | undefined): PendingChange[] {
     .map(p => ({ label: r.label, value: p.value, when: p.when, entry: p.entry }))));
 }
 
-export function CtrlRulesV3({ c, badge }: ControlBodyProps) {
+export function CtrlRulesV3({ c, league, port, badge }: ControlBodyProps) {
   const [board, setBoard] = useState<RuleBoard | 'All'>('All');
   const rules = c.roomState.reading?.rules;
   const { selection, open, close, screen, background, state, row } = useHostedRules(rules, c.room);
@@ -85,7 +86,9 @@ export function CtrlRulesV3({ c, badge }: ControlBodyProps) {
             onAction={() => setBoard(g.board)}>
             {g.board} <span className="m">{g.rows.length}</span></HQAct>)}
         </div>}
-        {c.roomState.error && <St><span role="alert">{c.roomState.error}</span></St>}
+        {c.roomState.error && <St><FailureAlert message={c.roomState.error}
+          code={c.roomState.errorCode} league={league} screen="Control Room · Rules"
+          route="control/rules" port={port} /></St>}
         {c.roomState.stale && <St>
           <span role="status">Rules are read-only until refreshed from the league server.</span></St>}
         {c.roomState.message && <St><span role="status">{c.roomState.message}</span></St>}

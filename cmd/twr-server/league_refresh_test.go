@@ -127,6 +127,8 @@ func (f *cliRefreshFixture) withStore(
 	if err != nil {
 		t.Fatal(err)
 	}
+	// One clock: commands stamped through the store and the refresh read the same pinned server time.
+	store.SetClock(func() time.Time { return f.now })
 	acct, err := commissionerSignIn(t.Context(), files, f.creds)
 	if err != nil {
 		t.Fatal(err)

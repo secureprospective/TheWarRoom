@@ -1,57 +1,196 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { onHostedTopics } from '../data/hostedReads';
 import type { Game } from '../now/liveContract';
-import { clockWords, useNow } from '../shell/hostedGames';
-import { LiveField } from '../phone/LiveField';
+import { LiveField, useReducedMotion } from '../phone/LiveField';
+import { presentation } from '../phone/livePlays';
 import '../phone/LiveTab.css';
-import { nextKickoff, wallCount, wallGrid } from './pickGames';
+import { clockWords, useNow } from '../shell/hostedGames';
+import { chooseWallLayout, TICKER_H, useViewport, type RailMode } from './layout';
+import { nextKickoff, wallCount } from './pickGames';
+import { useWallSpotlight, type SpotlightItem } from './spotlight';
 import { useWallGames } from './useWallGames';
+import { buildTicker, selectBigPlays, type BigPlay, type TickerItem } from './wallPlays';
 import './wall.css';
 
 type Subscribe = (load: () => void) => () => void;
 const topicsFor = (league: string): Subscribe => load =>
   onHostedTopics(topics => { if (topics.some(topic => topic.league === league)) load(); });
 
-/** LiveWall is the marketing wall: one phone per live NFL game on a fixed 1920x1080 stage (OBS size),
- *  each phone the real phone Live field fed by that game's detail read. */
+/** LiveWall is the full-screen NFL broadcast wall: fluid viewport grid of real phone Live fields,
+ *  full-board scrolling ticker, queued play spotlights, and a Big Plays rail in leftover space. */
 export function LiveWall({ league, port, subscribe, search = window.location.search }: {
   league: string; port: HostedPort; subscribe?: Subscribe; search?: string;
 }) {
   const cap = wallCount(search);
   const changes = useRef(subscribe ?? topicsFor(league)); changes.current = subscribe ?? topicsFor(league);
   const onChange = useCallback<Subscribe>(load => changes.current(load), []);
-  const read = useWallGames(league, port, cap, onChange);
+  const wall = useWallGames(league, port, cap, onChange);
   const now = useNow(30_000);
-  const fit = useFit();
-  const { cols, scale } = wallGrid(read.picked.length);
-  return <div className="wall" data-testid="live-wall">
-    <div className="wall__stage" style={{ transform: `scale(${fit})` }}>
-      <b className="wall__mark">THE WAR ROOM</b>
-      {read.picked.length === 0
+  const reduced = useReducedMotion();
+  const mode = presentation(reduced);
+  const wallRef = useRef<HTMLDivElement>(null);
+  const viewport = useViewport(wallRef);
+  const layout = useMemo(
+    () => chooseWallLayout(wall.picked.length, viewport.w, viewport.h),
+    [wall.picked.length, viewport.w, viewport.h],
+  );
+  const ticker = useMemo(() => buildTicker(wall.allGames), [wall.allGames]);
+  const bigPlays = useMemo(() => selectBigPlays(wall.allGames, 8), [wall.allGames]);
+  const spotlight = useWallSpotlight(wall.picked);
+
+  return <div className="wall" ref={wallRef} data-testid="live-wall" data-motion={mode}
+    data-rail={layout.rail} style={{
+      ['--k' as string]: layout.scale,
+      ['--ticker-h' as string]: `${TICKER_H}px`,
+      ['--wall-pad' as string]: `${layout.pad}px`,
+      ['--wall-gap' as string]: `${layout.gap}px`,
+    }}>
+    <TickerBar items={ticker} />
+    {spotlight && <SpotlightBanner item={spotlight} />}
+    <main className={`wall__body wall__body--${layout.rail}`}>
+      {wall.picked.length === 0
         ? <div className="wall__empty" role="status">
-          <p>{read.board || read.error ? 'No NFL games live right now' : 'Reading the NFL board…'}</p>
-          {read.board && <p className="wall__next">{nextKickoff(read.board, now)}</p>}
-          {read.error && !read.board && <p className="wall__next">{read.error}</p>}
+          <p>{wall.board || wall.error ? 'No NFL games live right now' : 'Reading the NFL board…'}</p>
+          {wall.board && <p className="wall__next">{nextKickoff(wall.board, now)}</p>}
+          {wall.error && !wall.board && <p className="wall__next">{wall.error}</p>}
         </div>
-        : <div className="wall__grid" style={{ gridTemplateColumns: `repeat(${cols}, auto)` }}>
-          {read.picked.map(g => <Tile key={g.id} game={g} scale={scale} />)}
-        </div>}
-    </div>
+        : <>
+          <div className="wall__grid-wrap">
+            <div className="wall__grid" style={{
+              gridTemplateColumns: `repeat(${layout.cols}, ${layout.tileW}px)`,
+              gap: `${layout.gap}px`,
+            }}>
+              {wall.picked.map(g => <Tile key={g.id} game={g} scale={layout.scale}
+                bezel={layout.bezel} headH={layout.headH} tileGap={layout.tileGap}
+                phoneW={layout.phoneW} phoneH={layout.phoneH} reduced={reduced}
+                spotlight={spotlight?.gameId === g.id ? spotlight : undefined} />)}
+            </div>
+          </div>
+          {layout.rail !== 'none' && <BigPlaysRail plays={bigPlays} mode={layout.rail}
+            width={layout.railW} height={layout.railH} />}
+        </>}
+    </main>
   </div>;
 }
 
-function Tile({ game, scale }: { game: Game; scale: number }) {
-  const bezel = 12;
+function TickerBar({ items }: { items: TickerItem[] }) {
+  const duration = `${Math.max(20, items.length * 4.5)}s`;
+  return <header className="wall__ticker" aria-label="NFL scoreboard ticker">
+    <div className="wall__brand">
+      <b className="wall__mark">THE WAR ROOM</b>
+    </div>
+    <div className="wall__ticker-view">
+      {items.length > 0
+        ? <div className="wall__ticker-track" style={{ ['--ticker-s' as string]: duration }}>
+          <TickerList items={items} duplicate={false} />
+          <TickerList items={items} duplicate />
+        </div>
+        : <span className="wall__ticker-idle">NFL LIVE BOARD</span>}
+    </div>
+  </header>;
+}
+
+function TickerList({ items, duplicate }: { items: TickerItem[]; duplicate: boolean }) {
+  return <ul className="wall__ticker-list" aria-hidden={duplicate || undefined}
+    data-testid={duplicate ? undefined : 'wall-ticker-list'}>
+    {items.map(item => <li key={`${duplicate ? 'dup-' : ''}${item.id}`}
+      className={`wall__tk wall__tk--${item.status}`}>
+      <span className="wall__tk-side">
+        <i className="wall__tk-bar" style={{ background: item.awayColor }} />
+        <b className="wall__tk-ab">{item.awayAb}</b>
+        {item.poss === 'L' && <i className="wall__tk-poss" aria-label="possession"
+          style={{ background: item.awayColor }} />}
+        <em className="wall__tk-sc">{item.status === 'pre' ? '–' : item.awayScore}</em>
+      </span>
+      <span className="wall__tk-sep">@</span>
+      <span className="wall__tk-side">
+        <i className="wall__tk-bar" style={{ background: item.homeColor }} />
+        <b className="wall__tk-ab">{item.homeAb}</b>
+        {item.poss === 'R' && <i className="wall__tk-poss" aria-label="possession"
+          style={{ background: item.homeColor }} />}
+        <em className="wall__tk-sc">{item.status === 'pre' ? '–' : item.homeScore}</em>
+      </span>
+      <span className="wall__tk-clk">
+        {item.status === 'in' && <i className="wall__tk-live" />}
+        {item.clock}
+      </span>
+    </li>)}
+  </ul>;
+}
+
+function SpotlightBanner({ item }: { item: SpotlightItem }) {
+  return <aside className="wall__banner" role="status" aria-live="assertive"
+    data-testid="wall-spotlight" data-kind={item.kind} style={{
+      ['--spot-c' as string]: item.color,
+      ['--spot-f' as string]: item.fill,
+      ['--spot-ink' as string]: item.ink,
+    }}>
+    <div className="wall__banner-top">
+      <span className="wall__banner-tag">{item.tag}</span>
+      <span className="wall__banner-sub">{item.subtitle}</span>
+    </div>
+    <h2 className="wall__banner-title">{item.title}</h2>
+    <p className="wall__banner-text">{item.text}</p>
+  </aside>;
+}
+
+function BigPlaysRail({ plays, mode, width, height }: {
+  plays: BigPlay[]; mode: Exclude<RailMode, 'none'>; width: number; height: number;
+}) {
+  const cols = mode === 'bottom' ? (width >= 1100 ? 4 : width >= 680 ? 2 : 1) : 1;
+  const compact = mode === 'bottom' && height < 240;
+  return <aside className={`wall__rail wall__rail--${mode}${compact ? ' wall__rail--tight' : ''}`}
+    aria-label="Big plays" data-testid="wall-big-plays" style={{
+      width: mode === 'right' ? width : '100%',
+      height: mode === 'bottom' ? height : '100%',
+      ['--rail-cols' as string]: cols,
+    }}>
+    <header className="wall__rail-head">
+      <b>BIG PLAYS</b>
+      <span>SCORING · TURNOVERS · 20+ YDS</span>
+    </header>
+    {plays.length === 0
+      ? <p className="wall__rail-empty">Waiting for scoring plays, turnovers and 20+ yard gains.</p>
+      : <ol className="wall__rail-list">
+        {plays.map(p => <li key={p.id} className={`wall__bp wall__bp--${p.kind}`}
+          style={{ ['--bp-c' as string]: p.color, ['--bp-f' as string]: p.fill,
+            ['--bp-ink' as string]: p.ink }}>
+          <div className="wall__bp-top">
+            <span className="wall__bp-tag">{p.tag}</span>
+            <span className="wall__bp-game">{p.matchup}</span>
+            <span className="wall__bp-clk">{p.clock}</span>
+          </div>
+          <b className="wall__bp-title">{p.headline}</b>
+          <p className="wall__bp-text">{p.text}</p>
+          <span className="wall__bp-score">{p.score}</span>
+        </li>)}
+      </ol>}
+  </aside>;
+}
+
+function Tile({ game, scale, bezel, headH, tileGap, phoneW, phoneH, reduced, spotlight }: {
+  game: Game; scale: number; bezel: number; headH: number; tileGap: number;
+  phoneW: number; phoneH: number; reduced: boolean; spotlight?: SpotlightItem;
+}) {
   const name = `${game.away.abbreviation} at ${game.home.abbreviation}`;
-  return <section className="wall__tile" aria-label={name}>
-    <header className="wall__head"><b>{name}</b>
-      <span>{clockWords(game)}</span></header>
-    <div className="wall__phone"
-      style={{ width: (390 + 2 * bezel) * scale, height: (844 + 2 * bezel) * scale }}>
+  return <section className={`wall__tile${spotlight ? ' wall__tile--spot' : ''}`}
+    aria-label={name} data-game-id={game.id} data-spotlight={spotlight ? 'on' : undefined}
+    style={{
+      width: phoneW,
+      gap: tileGap,
+      ['--k' as string]: scale,
+      ...(spotlight ? { ['--spot-c' as string]: spotlight.color,
+        ['--spot-f' as string]: spotlight.fill } : {}),
+    }}>
+    <header className="wall__head" style={{ height: headH }}>
+      <b>{name}</b>
+      <span>{clockWords(game)}</span>
+    </header>
+    <div className="wall__phone" style={{ width: phoneW, height: phoneH }}>
       <div className="wall__bezel" style={{ transform: `scale(${scale})`, padding: bezel }}>
         <div className="wall__screen live6">
-          <LiveField game={game} reduced={false} />
+          <LiveField game={game} reduced={reduced} />
           <section className="live6__card" aria-label="Play by play">
             <div className="live6__head">
               <b>Play by play</b><span className="live6__m">newest first</span>
@@ -73,18 +212,6 @@ function WallPlays({ game }: { game: Game }) {
     .map(p => <li key={p.id}><span className="live6__m">Q{p.period} {p.clock}</span>
       <b>{abbr(p.start?.possession)}</b><span>{p.text}</span>
       <em>{p.awayScore}-{p.homeScore}</em></li>)}</ol>;
-}
-
-/** useFit scales the 1920x1080 stage down to a smaller window; at 1920x1080 it is exactly 1. */
-function useFit() {
-  const calc = () => Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-  const [fit, setFit] = useState(calc);
-  useEffect(() => {
-    const on = () => setFit(calc());
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
-  return fit;
 }
 
 export default LiveWall;

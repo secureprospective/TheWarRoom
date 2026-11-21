@@ -2,6 +2,7 @@
 // Markup and class names follow TheWarRoom-mock-v3-FINAL.html (shell.js, grid.js, pieces.js) one for one;
 // the styling is v3.css, copied verbatim. Only the data differs: every row here comes from hosted reads.
 import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { FailureAlert } from '../data/FailureAlert';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { LeagueChoice } from '../shell/leaguePicker';
@@ -36,7 +37,9 @@ export type V3ShellProps = { leagues: LeagueChoice[]; active?: { league: LeagueC
   /** Account menu entries (the initials button). */
   account?: ReactNode;
   /** A failed account action's reason, shown in the status line. */
-  status?: string };
+  status?: string;
+  /** Server or client error code paired with `status`. */
+  statusCode?: string };
 
 const PALETTE: Record<ThinHomeEntry, string> = { hq: 'pal-hq', lineup: 'pal-hq', war: 'pal-war',
   bids: 'pal-war', trades: 'pal-war', pulse: 'pal-pulse', league: 'pal-pulse', home: 'pal-slate',
@@ -56,7 +59,7 @@ const isOn = (k: ThinHomeEntry, e: ThinHomeEntry) => e === k || (k === 'hq' && e
   || (k === 'war' && (e === 'bids' || e === 'trades'));
 
 export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onSignOut, accountName,
-  port = hostedWorkflow, children, panel, account, status }: V3ShellProps) {
+  port = hostedWorkflow, children, panel, account, status, statusCode }: V3ShellProps) {
   const leagues = useMemo(() => dress(admitted), [admitted]);
   const { briefs, needs, loading, now } = useHome(leagues, port);
   const docket = useMemo(() => [...docketOf(needs, leagues, now), ...lanesOf(leagues, briefs, now)],
@@ -207,7 +210,9 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         <i className={`lamp${liveOn ? ' live' : ''}`} />{liveOn ? 'LIVE · NO DELAY' : 'CURRENT'}</HQAct>
       <HQAct className="stb" attributes={tip('Season calendar')}>
         {ctStamp(now)} CT{week !== undefined ? ` · WEEK ${week}` : ''}</HQAct>
-      {status && <span className="r" role="alert">{status}</span>}
+      {status && <FailureAlert message={status} code={statusCode} className="r"
+        league={L?.id} screen="Desktop shell" route="home/overview"
+        allowSend={Boolean(L?.id)} port={port} />}
       <span className="idp">TWR-MK3 · {accountName ? accountName.toUpperCase() : 'SIGNED IN'} · <HQAct
         onAction={onSignOut} style={{ textDecoration: 'underline' }}>SIGN OUT</HQAct></span>
     </footer>

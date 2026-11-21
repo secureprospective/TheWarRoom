@@ -3,7 +3,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Game } from '../now/liveContract';
-import { fakeWallPort, wallGame } from './fixtures';
+import { createDemoFeed, demoBoard, fakeWallPort, wallGame } from './fixtures';
 import { LiveWall } from './LiveWall';
 import { nextKickoff, pickGames, wallCount, wallGrid } from './pickGames';
 
@@ -27,10 +27,10 @@ describe('pickGames', () => {
     expect([wallCount('?n=3'), wallCount('?n=9'), wallCount('?n=0'), wallCount('?n=10'), wallCount('?n=x'),
       wallCount('')]).toEqual([3, 9, 6, 6, 6, 6]);
   });
-  it('lays six phones as 3x2, 1-4 in one row, and names the next kickoff in Central', () => {
-    expect(wallGrid(6)).toMatchObject({ cols: 3, rows: 2 });
-    expect(wallGrid(4)).toMatchObject({ cols: 4, rows: 1 });
-    expect(wallGrid(4).scale).toBeGreaterThan(wallGrid(6).scale);
+  it('picks fluid grid dimensions for viewport and names next kickoff in Central', () => {
+    expect(wallGrid(6, 1280, 1400)).toMatchObject({ cols: 3, rows: 2, rail: 'right' });
+    expect(wallGrid(6, 2560, 1440)).toMatchObject({ cols: 6, rows: 1, rail: 'bottom' });
+    expect(wallGrid(4, 1920, 1080).scale).toBeGreaterThan(wallGrid(6, 1920, 1080).scale);
     expect(nextKickoff([g(0, 'pre', '2026-11-22T19:00:00Z')], NOW))
       .toBe('Next kickoff Sun, Nov 22, 1:00 PM CT');
   });
@@ -42,6 +42,7 @@ afterEach(async () => {
   if (root) await act(async () => root!.unmount());
   host?.remove(); root = undefined; host = undefined; vi.restoreAllMocks(); vi.useRealTimers();
 });
+
 async function show(games: ReturnType<typeof wallGame>[], search = '') {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
@@ -74,5 +75,39 @@ describe('LiveWall', () => {
     const el = await show([empty]);
     expect(el.querySelector('.live6__plays')).toBeNull();
     expect(el.textContent).toContain('No plays are held for this game yet.');
+  });
+  it('shows every board game in the ticker even when phones are capped, plus Big Plays rail', async () => {
+    Object.defineProperty(window, 'innerWidth', { value: 1920, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 1080, configurable: true });
+    const el = await show(demoBoard(), '?n=4');
+    expect(el.querySelectorAll('.wall__tile')).toHaveLength(4);
+    const tickerItems = el.querySelectorAll('[data-testid="wall-ticker-list"] > li');
+    expect(tickerItems).toHaveLength(12);
+    expect(el.querySelector('.wall__mark')?.textContent).toBe('THE WAR ROOM');
+
+    await act(async () => root!.unmount()); host!.remove(); root = undefined;
+    const withRail = await show(demoBoard());
+    const rail = withRail.querySelector('[data-testid="wall-big-plays"]');
+    expect(rail).not.toBeNull();
+    expect(rail!.querySelectorAll('.wall__bp').length).toBeGreaterThan(0);
+    expect(rail!.querySelectorAll('.wall__bp').length).toBeLessThanOrEqual(8);
+  });
+  it('spotlights a scoring play when a new demo play arrives and highlights that phone tile', async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const feed = createDemoFeed(0);
+    host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+    await act(async () => root!.render(<LiveWall league="league" port={feed.port}
+      subscribe={feed.subscribe} search="" />));
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(host.querySelector('[data-testid="wall-spotlight"]')).toBeNull();
+
+    await act(async () => {
+      feed.advance();
+      await new Promise(r => setTimeout(r, 20));
+    });
+    const banner = host.querySelector('[data-testid="wall-spotlight"]');
+    expect(banner?.textContent).toContain('TOUCHDOWN KC — Kelce 8 yd');
+    const spotTile = host.querySelector('.wall__tile--spot');
+    expect(spotTile?.getAttribute('data-game-id')).toBe('400');
   });
 });

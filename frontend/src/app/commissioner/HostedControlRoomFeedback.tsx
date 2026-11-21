@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ProblemReportsRead, parseProblemReports, type ProblemReport } from './problemReports';
 import { FailureAlert } from '../data/FailureAlert';
+import { errorCodeFor } from '../data/errorCodes';
 import type { HostedPort } from './hostedRoom';
 import { hostedWorkflow } from '../control/nativeApi';
 import './problemReports.css';
@@ -10,31 +11,37 @@ import './problemReports.css';
 export function useProblemReports(league: string, port: HostedPort = hostedWorkflow, refreshVersion = 0) {
   const [reports, setReports] = useState<ProblemReport[]>();
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<string>();
   useEffect(() => {
     let active = true;
     setReports(undefined);
     setError('');
+    setErrorCode(undefined);
     void port({ command: ProblemReportsRead, mode: 'read', arguments: { league } })
       .then(response => {
         const result = parseProblemReports(response.data, league);
         if (active) setReports(result);
       }).catch(cause => {
-        if (active) setError(cause instanceof Error ? cause.message : String(cause));
+        if (active) {
+          setError(cause instanceof Error ? cause.message : String(cause));
+          setErrorCode(errorCodeFor(cause));
+        }
       });
     return () => { active = false; };
   }, [league, port, refreshVersion]);
-  return { reports, error };
+  return { reports, error, errorCode };
 }
 
 export function HostedControlRoomFeedback({ league, port = hostedWorkflow, refreshVersion = 0 }: {
   league: string; port?: HostedPort; refreshVersion?: number;
 }) {
-  const { reports, error } = useProblemReports(league, port, refreshVersion);
+  const { reports, error, errorCode } = useProblemReports(league, port, refreshVersion);
 
   return <section className="hosted-feedback" aria-label="Problem reports">
     <h2>Problem reports</h2>
     {error && <FailureAlert
       message={error}
+      code={errorCode}
       league={league}
       screen="Control Room · Feedback"
       route="control/feedback"
