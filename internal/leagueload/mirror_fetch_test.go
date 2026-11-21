@@ -3,9 +3,8 @@ package leagueload
 import (
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
-	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 )
 
 func TestMirrorFetchHelpers(t *testing.T) {
@@ -22,31 +21,36 @@ func TestMirrorFetchHelpers(t *testing.T) {
 	}); err == nil {
 		t.Fatal("expected error for invalid year")
 	}
-	if got := collectNFLScheduleWeeks(mflsource.Export{}); len(got) != 1 || got[0] != 1 {
+	if got := collectNFLScheduleWeeks(leaguemigration.Plan{}); len(got) != 1 || got[0] != 1 {
 		t.Fatalf("empty schedule weeks = %v; want [1]", got)
 	}
-	weeks := collectNFLScheduleWeeks(mflsource.Export{
-		Schedule:    []leagueschedule.RawScheduleWeek{{Week: "3"}, {Week: "1"}},
-		Results:     []leaguefeed.WeekResult{{Week: 2}, {Week: 1}},
-		LiveLineups: &leaguefeed.Lineups{Week: 4},
-	})
+	plan := leaguemigration.Plan{
+		Schedule: []commissioner.ScheduleWeek{{Week: 3}, {Week: 1}},
+		Recorded: &commissioner.RawRecordedResults{
+			CutoverWeek: 3,
+			Teams: []commissioner.RecordedTeamResult{
+				{Week: 1, Franchise: "franchise.01"},
+				{Week: 1, Franchise: "franchise.02"},
+				{Week: 2, Franchise: "franchise.01"},
+			},
+		},
+		Lineups: []commissioner.RawLineupChange{{Week: 4}},
+		Seed: commissioner.RawNativeSnapshot{
+			Players: []commissioner.NativePlayer{
+				{ID: "0001", ContractMissing: false},
+				{ID: "0002", ContractMissing: true},
+				{ID: "0003", ContractMissing: false},
+			},
+		},
+	}
+	weeks := collectNFLScheduleWeeks(plan)
 	if len(weeks) != 4 || weeks[0] != 1 || weeks[3] != 4 {
 		t.Fatalf("collected weeks = %v; want [1 2 3 4]", weeks)
 	}
-	contracts := countRosterContracts([]mflsource.Rostered{
-		{Player: "0001", Salary: "5.00", ContractYear: "2027", ContractStatus: "UFA"},
-		{Player: "0002"},
-		{Player: "0003", Salary: "1.25"},
-	})
-	if contracts != 2 {
-		t.Fatalf("contracts = %d; want 2", contracts)
+	if got := countPlanContracts(plan); got != 2 {
+		t.Fatalf("contracts = %d; want 2", got)
 	}
-	scored := countScoredWeeks([]leaguefeed.WeekResult{
-		{Week: 1, Games: []leaguefeed.Game{{Home: leaguefeed.Side{Scored: true}}}},
-		{Week: 2, Games: []leaguefeed.Game{{Home: leaguefeed.Side{Scored: false}}}},
-		{Week: 3, Others: []leaguefeed.Side{{Scored: true}}},
-	})
-	if scored != 2 {
-		t.Fatalf("scored weeks = %d; want 2", scored)
+	if got := countPlanScoreWeeks(plan); got != 2 {
+		t.Fatalf("score weeks = %d; want 2", got)
 	}
 }

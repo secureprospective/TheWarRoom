@@ -14,7 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/transactions"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -52,21 +52,13 @@ type MirrorFetchResult struct {
 }
 
 // FetchMirror pulls fresh MFL league exports, the player directory, and NFL schedule weeks into
-// req.Store through archive.Transport, reusing mflsource.Source and mflsource.Read (the desktop
-// Prepare fetch path). It verifies the resulting mirror can build football evidence offline.
+// req.Store through archive.Transport, reusing (*mflsource.Source).Read and mflsource.Prepare
+// (the desktop Prepare path). It verifies the resulting mirror can build football evidence offline.
 func FetchMirror(ctx context.Context, req MirrorFetchRequest) (MirrorFetchResult, error) {
 	if err := checkMirrorFetchRequest(req); err != nil {
 		return MirrorFetchResult{}, err
 	}
-	now := req.Now
-	if now == nil {
-		now = time.Now
-	}
-	rps := req.RPS
-	if rps == 0 {
-		rps = defaultMirrorFetchRPS
-	}
-	mflLeague := strings.TrimSpace(req.MFLLeague)
+	now, rps, mflLeague := mirrorFetchDefaults(req)
 	var seasonHint atomic.Int64
 	if req.Year != 0 {
 		seasonHint.Store(int64(req.Year))
@@ -77,11 +69,52 @@ func FetchMirror(ctx context.Context, req MirrorFetchRequest) (MirrorFetchResult
 	if err != nil {
 		return MirrorFetchResult{}, err
 	}
+	candidate, playerCount, err := readPreparedMirror(ctx, client, mflLeague, req.Year, now, &seasonHint)
+	if err != nil {
+		return MirrorFetchResult{}, err
+	}
+	seasonHint.Store(int64(candidate.Season))
+	nflWeeks, err := fetchMirrorNFLWeeks(ctx, client, candidate.Season, candidate.Plan)
+	if err != nil {
+		return MirrorFetchResult{}, err
+	}
+	mirror := Mirror{Store: req.Store}
+	fetchedAt := now().UTC()
+	if _, _, err := mirror.Football(ctx, candidate.Season, fetchedAt); err != nil {
+		return MirrorFetchResult{}, fmt.Errorf("verify mirror football evidence: %w", err)
+	}
+	txns, err := countArchivedTransactions(ctx, mirror, candidate.Season, mflLeague)
+	if err != nil {
+		return MirrorFetchResult{}, err
+	}
+	return buildMirrorFetchResult(mflLeague, candidate, playerCount, txns, nflWeeks, fetchedAt), nil
+}
+
+func mirrorFetchDefaults(req MirrorFetchRequest) (func() time.Time, float64, string) {
+	now := req.Now
+	if now == nil {
+		now = time.Now
+	}
+	rps := req.RPS
+	if rps == 0 {
+		rps = defaultMirrorFetchRPS
+	}
+	return now, rps, strings.TrimSpace(req.MFLLeague)
+}
+
+func readPreparedMirror(
+	ctx context.Context,
+	client *mfl.Client,
+	mflLeague string,
+	year int,
+	now func() time.Time,
+	seasonHint *atomic.Int64,
+) (leaguemigration.Candidate, int, error) {
 	playerCount := 0
 	src := &mflsource.Source{
 		Client: client,
 		ID:     mflLeague,
-		Season: req.Year,
+		Season: year,
 		Now:    now,
 		FetchPlayers: func(ctx context.Context, season int) (map[string]string, error) {
 			seasonHint.Store(int64(season))
@@ -93,20 +126,16 @@ func FetchMirror(ctx context.Context, req MirrorFetchRequest) (MirrorFetchResult
 			return Names(raw), nil
 		},
 	}
-	export, err := mflsource.Read(ctx, src, now())
+	candidate, err := src.Read(ctx, now())
 	if err != nil {
-		return MirrorFetchResult{}, fmt.Errorf("fetch MFL league %s: %w", mflLeague, err)
+		return leaguemigration.Candidate{}, 0, fmt.Errorf("fetch MFL league %s: %w", mflLeague, err)
 	}
-	seasonHint.Store(int64(export.Season))
-	nflWeeks, err := fetchMirrorNFLWeeks(ctx, client, export)
-	if err != nil {
-		return MirrorFetchResult{}, err
+	if len(candidate.Problems) > 0 {
+		return leaguemigration.Candidate{}, 0, fmt.Errorf(
+			"prepare MFL league %s: %w", mflLeague, &leaguemigration.Problems{List: candidate.Problems},
+		)
 	}
-	fetchedAt := now().UTC()
-	if _, _, err := (Mirror{Store: req.Store}).Football(ctx, export.Season, fetchedAt); err != nil {
-		return MirrorFetchResult{}, fmt.Errorf("verify mirror football evidence: %w", err)
-	}
-	return buildMirrorFetchResult(mflLeague, export, playerCount, nflWeeks, fetchedAt), nil
+	return candidate, playerCount, nil
 }
 
 func checkMirrorFetchRequest(req MirrorFetchRequest) error {
@@ -156,11 +185,13 @@ func defaultMFLKeySource(ctx context.Context, league string, season int) (mflkey
 	return key, nil
 }
 
-func fetchMirrorNFLWeeks(ctx context.Context, client *mfl.Client, export mflsource.Export) (int, error) {
-	weeks := collectNFLScheduleWeeks(export)
-	season := strconv.Itoa(export.Season)
+func fetchMirrorNFLWeeks(
+	ctx context.Context, client *mfl.Client, season int, plan leaguemigration.Plan,
+) (int, error) {
+	weeks := collectNFLScheduleWeeks(plan)
+	year := strconv.Itoa(season)
 	for _, week := range weeks {
-		raw, err := nflschedule.Fetch(ctx, client, season, week)
+		raw, err := nflschedule.Fetch(ctx, client, year, week)
 		if err != nil {
 			return 0, fmt.Errorf("fetch NFL schedule week %d: %w", week, err)
 		}
@@ -171,23 +202,24 @@ func fetchMirrorNFLWeeks(ctx context.Context, client *mfl.Client, export mflsour
 	return len(weeks), nil
 }
 
-func collectNFLScheduleWeeks(export mflsource.Export) []int {
+func collectNFLScheduleWeeks(plan leaguemigration.Plan) []int {
 	seen := map[int]bool{}
 	addWeek := func(w int) {
 		if w >= 1 && w <= 22 {
 			seen[w] = true
 		}
 	}
-	for _, w := range export.Schedule {
-		if n, err := strconv.Atoi(strings.TrimSpace(w.Week)); err == nil {
-			addWeek(n)
+	for _, w := range plan.Schedule {
+		addWeek(w.Week)
+	}
+	if plan.Recorded != nil {
+		for _, r := range plan.Recorded.Teams {
+			addWeek(r.Week)
 		}
+		addWeek(plan.Recorded.CutoverWeek)
 	}
-	for _, r := range export.Results {
-		addWeek(r.Week)
-	}
-	if export.LiveLineups != nil {
-		addWeek(export.LiveLineups.Week)
+	for _, l := range plan.Lineups {
+		addWeek(l.Week)
 	}
 	if len(seen) == 0 {
 		return []int{1}
@@ -200,64 +232,66 @@ func collectNFLScheduleWeeks(export mflsource.Export) []int {
 	return weeks
 }
 
+func countArchivedTransactions(
+	ctx context.Context, mirror Mirror, season int, mflLeague string,
+) (int, error) {
+	key := fmt.Sprintf("/%d/export?JSON=1&L=%s&TYPE=transactions", season, mflLeague)
+	body, found, err := mirror.Lookup(ctx, key)
+	if err != nil {
+		return 0, fmt.Errorf("read archived transactions: %w", err)
+	}
+	if !found {
+		return 0, nil
+	}
+	raw, err := transactions.Parse(body)
+	if err != nil {
+		return 0, fmt.Errorf("parse archived transactions: %w", err)
+	}
+	return len(raw.Transactions), nil
+}
+
 func buildMirrorFetchResult(
-	mflLeague string, export mflsource.Export, playerCount, nflWeeks int, fetchedAt time.Time,
+	mflLeague string,
+	candidate leaguemigration.Candidate,
+	playerCount, txns, nflWeeks int,
+	fetchedAt time.Time,
 ) MirrorFetchResult {
-	name := strings.TrimSpace(export.Name)
+	name := strings.TrimSpace(candidate.Name)
 	if name == "" {
 		name = mflLeague
 	}
-	txns := 0
-	if export.Transactions != nil {
-		txns = len(export.Transactions.Transactions)
-	}
 	return MirrorFetchResult{
-		League:       leaguemigration.AppLeagueID(mflLeague, export.Season),
+		League:       leaguemigration.AppLeagueID(mflLeague, candidate.Season),
 		LeagueName:   name,
 		MFLLeague:    mflLeague,
-		Season:       export.Season,
-		Franchises:   len(export.Config.Franchises),
+		Season:       candidate.Season,
+		Franchises:   len(candidate.Plan.Seed.Franchises),
 		Players:      playerCount,
-		Contracts:    countRosterContracts(export.Rosters),
+		Contracts:    countPlanContracts(candidate.Plan),
 		Transactions: txns,
-		ScoreWeeks:   countScoredWeeks(export.Results),
+		ScoreWeeks:   countPlanScoreWeeks(candidate.Plan),
 		NFLWeeks:     nflWeeks,
 		FetchedAt:    fetchedAt,
 	}
 }
 
-func countRosterContracts(rosters []mflsource.Rostered) int {
+func countPlanContracts(plan leaguemigration.Plan) int {
 	n := 0
-	for _, r := range rosters {
-		if strings.TrimSpace(r.Salary) != "" ||
-			strings.TrimSpace(r.ContractYear) != "" ||
-			strings.TrimSpace(r.ContractStatus) != "" {
+	for _, p := range plan.Seed.Players {
+		if !p.ContractMissing {
 			n++
 		}
 	}
 	return n
 }
 
-func countScoredWeeks(weeks []leaguefeed.WeekResult) int {
-	n := 0
-	for _, w := range weeks {
-		if weekHasScores(w) {
-			n++
-		}
+func countPlanScoreWeeks(plan leaguemigration.Plan) int {
+	if plan.Recorded == nil {
+		return 0
 	}
-	return n
-}
-
-func weekHasScores(w leaguefeed.WeekResult) bool {
-	for _, g := range w.Games {
-		if g.Home.Scored || g.Away.Scored {
-			return true
-		}
+	weeks := map[int]bool{}
+	for _, t := range plan.Recorded.Teams {
+		weeks[t.Week] = true
 	}
-	for _, side := range w.Others {
-		if side.Scored {
-			return true
-		}
-	}
-	return false
+	return len(weeks)
 }
