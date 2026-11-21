@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { stubFrames } from './frameStub';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -150,7 +151,7 @@ describe('createFieldView', () => {
     let now = 0;
     vi.spyOn(performance, 'now').mockImplementation(() => now);
     const frames: FrameRequestCallback[] = [];
-    vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(cb => {
+    stubFrames(cb => {
       frames.push(cb);
       return frames.length;
     });
