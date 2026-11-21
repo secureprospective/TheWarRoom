@@ -19,11 +19,11 @@ export const targetWithdrawRoster = TargetWithdrawRoster;
 export type PhotoReader = (id: string) => Promise<platform.PhotoView>;
 type GoWindow = { go?: { platform?: { API?: { TargetPhoto?: PhotoReader } } } };
 
-// hostedPhoto is the web app's photo: the server's /headshot/ cache (same route as the desktop),
-// so img-src stays 'self'. A missing photo is a 404 and the card shows the team instead.
+// hostedPhoto is the web app photo: the server photo cache at /v1/headshot/ (inside the tunnel
+// path allowlist), so img-src stays self. A missing photo is a 404; the card shows the team.
 export const hostedPhoto: PhotoReader = (id) =>
   Promise.resolve(/^[0-9]{1,8}$/.test(id)
-    ? { src: `/headshot/${id}`, alt: 'Photo' }
+    ? { src: `/v1/headshot/${id}`, alt: 'Photo' }
     : { src: '', alt: '' });
 
 // photoReader is Go's photo verdict in the desktop app, else the server's photo cache.

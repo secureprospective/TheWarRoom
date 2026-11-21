@@ -898,8 +898,9 @@ func (h Hosted) leagueHead(ctx context.Context, league string) (int64, error) {
 	return store.CommittedHead(ctx, league, commissioner.Stream) //nolint:wrapcheck // the store names its read
 }
 
-// PhotoPathPrefix is the player photo route, shared with the desktop app: /headshot/<mfl id>.
-const PhotoPathPrefix = "/headshot/"
+// PhotoPathPrefix is the web player photo route, /v1/headshot/<mfl id>: under /v1 so the tunnel's
+// path allowlist passes it. The cache itself answers the desktop's /headshot/<mfl id>.
+const PhotoPathPrefix = "/v1/headshot/"
 
 // photo serves a player photo on the app host only. A server without a photo cache answers 404,
 // which the card reads as "show the team instead".
@@ -908,5 +909,5 @@ func (h Hosted) photo(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	h.Photos.ServeHTTP(w, r)
+	http.StripPrefix("/v1", h.Photos).ServeHTTP(w, r)
 }

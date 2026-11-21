@@ -8,8 +8,11 @@ import (
 
 // The web app reads player photos from /headshot/<mfl id> on the app host, so img-src stays 'self'.
 func TestHostedPhotoRoute(t *testing.T) {
-	stub := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	stub := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
+		if r.URL.Path != "/headshot/16162" {
+			t.Errorf("cache got %q", r.URL.Path)
+		}
 		_, _ = w.Write([]byte("png"))
 	})
 	cases := []struct {
@@ -24,7 +27,7 @@ func TestHostedPhotoRoute(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodGet, "https://"+c.host+"/headshot/16162", nil)
+			r := httptest.NewRequest(http.MethodGet, "https://"+c.host+"/v1/headshot/16162", nil)
 			r.Host = c.host
 			w := httptest.NewRecorder()
 			c.h.photo(w, r)
