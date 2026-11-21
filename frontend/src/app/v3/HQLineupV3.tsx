@@ -4,7 +4,8 @@
 import { Fragment, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { boardSlots, type HQLineup, type HQSlot } from '../shell/HQBoard';
-import { fitsSlot, placePlayer } from '../shell/hqPlacement';
+import { fitsSlot, placePlayer, quickMove } from '../shell/hqPlacement';
+export { quickMove } from '../shell/hqPlacement';
 import { totalProjection } from '../shell/hqPlayerData';
 import type { HQSettings } from '../shell/hqModel';
 import type { NativeHQ } from '../commissioner/hqReading';
@@ -70,15 +71,6 @@ function Form({ points, projection }: { points?: { week: number; points: number 
   return <span className="fm" title={words}>
     {shown.map(p => <i key={p.week} className={projection !== undefined && p.points >= projection ? 'up' : ''}
       style={{ height: `${Math.max(4, Math.abs(p.points) / max * 100)}%` }} />)}</span>;
-}
-
-/** quickMove decides what one click on a player name does when nothing is picked: a starter goes to
- *  the bench, a bench player fills the first open starting slot his position fits, else the card opens. */
-export function quickMove(id: string, slots: HQSlot[], fits: (slot: HQSlot) => boolean):
-  { kind: 'bench' } | { kind: 'fill'; slot: HQSlot } | { kind: 'card' } {
-  if (slots.some(s => s.id === id)) return { kind: 'bench' };
-  const open = slots.find(s => !s.id && fits(s));
-  return open ? { kind: 'fill', slot: open } : { kind: 'card' } as const;
 }
 
 export function HQLineupV3({ reading, mine, name, editor, select, badge, league, port, now, openGame }: {

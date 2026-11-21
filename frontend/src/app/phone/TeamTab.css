@@ -73,6 +73,36 @@
 .team-tab.moving .team-row.can .team-row__mv {
   box-shadow: inset 0 0 0 1px var(--phone-blue), 0 2px 0 var(--phone-black);
   color: var(--phone-blue); }
+.team-tab.dragging { touch-action: none; user-select: none; -webkit-user-select: none; }
+.moving .team-row.can.over { background: hsla(210, 80%, 66%, .16);
+  box-shadow: inset 0 0 0 1px var(--phone-blue); }
+.team-drag-pill { position: fixed; z-index: 50; pointer-events: none; padding: 4px 8px;
+  background: var(--phone-raised); border: 1px solid var(--phone-blue); color: var(--phone-ink);
+  font: 700 11px var(--t-mono); letter-spacing: .06em;
+  box-shadow: 0 4px 12px hsla(0, 0%, 0%, .45); }
+.team-sheet {
+  --sunken: var(--phone-sunken); --tile: var(--phone-tile); --black: var(--phone-black);
+  --edge: var(--phone-edge); --edge-hi: var(--phone-edge-hi); --rule: var(--t-rule);
+  --ink: var(--phone-ink); --ink2: var(--phone-ink2); --ink3: var(--phone-ink3);
+  --mono: var(--t-mono); --sans: var(--surface-sans, system-ui, sans-serif);
+}
+.team-card__title { display: grid; gap: 2px; }
+.team-card__title b { font-size: 18px; color: var(--phone-ink); }
+.team-card__title span { font: 10px var(--t-mono); color: var(--phone-ink3);
+  text-transform: uppercase; letter-spacing: .08em; }
+.team-card__tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.team-card__tabs .chip { min-height: 40px; padding: 0 6px; border: 0; background: var(--t-key);
+  color: var(--phone-ink2); font: 700 9.5px var(--t-mono); letter-spacing: .08em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 var(--phone-key-lit), 0 2px 0 var(--phone-black); }
+.team-card__tabs .chip[aria-pressed="true"], .team-card__tabs .chip.active {
+  color: var(--phone-blue);
+  box-shadow: inset 0 0 0 1px var(--phone-blue), 0 2px 0 var(--phone-black); }
+.team-card .pcd-main { padding: 0; }
+.team-card .pcd-meta { grid-template-columns: 1fr; }
+.team-card .pcd-photo .pos, .team-card .pcd-photo .tag {
+  font: 700 9px var(--t-mono); letter-spacing: .1em; padding: 1px 4px;
+  background: var(--phone-edge-hi); color: var(--phone-black); text-transform: uppercase; }
 .team-pick { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px;
   border-top: 1px solid var(--t-rule); }
 .team-pick:first-child { border-top: 0; }

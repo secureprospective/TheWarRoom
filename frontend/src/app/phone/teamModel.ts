@@ -89,6 +89,11 @@ export function canMoveTo(from: TeamRow, to: TeamRow, reading: NativeHQ): boolea
     { code: starter.slot, side: 'off' }, reading.settings);
 }
 
+/** benchStarter removes a starter id from the starting list so he moves straight to the bench. */
+export function benchStarter(lineup: HQLineup, id: string): string[] {
+  return lineup.starters.filter(p => p.id !== id).map(p => p.id);
+}
+
 /** moveStarters is the starter id list after the swap; the hosted lineup command checks it. */
 export function moveStarters(lineup: HQLineup, from: TeamRow, to: TeamRow): string[] {
   const [starter, bench] = from.section === 'starters' ? [from, to] : [to, from];
