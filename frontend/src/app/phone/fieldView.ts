@@ -13,7 +13,6 @@ type Pt = { x: number; y: number; z: number };
 type Opts = KeyframeAnimationOptions;
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-const wait = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 const ease = { lin: (t: number) => t, out: (t: number) => 1 - Math.pow(1 - t, 3) };
 const ORD = ['1ST', '2ND', '3RD', '4TH'];
 const GLYPH = '▓▒░#/\\<>01';
@@ -65,7 +64,17 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     if (typeof node.animate !== 'function') return Promise.resolve();
     return node.animate(frames, o).finished.then(() => undefined, () => undefined);
   };
-  const hold = (ms: number) => reduced() || !alive ? Promise.resolve() : wait(ms);
+  const timers = new Set<ReturnType<typeof setTimeout>>();
+  const after = (fn: () => void, ms: number) => {
+    if (!alive) return;
+    const id = setTimeout(() => { timers.delete(id); if (alive) fn(); }, ms);
+    timers.add(id);
+  };
+  const hold = (ms: number) => reduced() || !alive ? Promise.resolve()
+    : new Promise<void>(res => {
+      const id = setTimeout(() => { timers.delete(id); res(); }, ms);
+      timers.add(id);
+    });
   const TEAM = { L: clubColours(teams.L), R: clubColours(teams.R) };
   const name = (k: Side) => TEAM[k].name;
 
@@ -169,6 +178,9 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
   const stage = q('#v2stage'), world = q('#v2world'), world2 = q('#v2world2'), cam = q('#v2cam');
   const cam2 = q('.v2-cam.over'), up = q('#v2up'), paint = q('#v2paint'), fx = q('#v2fx'), mk = q('#v2mk');
   const los = q('#v2los'), first = q('#v2first'), dd = q('#v2dd'), drv = q('#v2drv'), togo = q('#v2togo');
+  const camNodes = [world, world2, cam, cam2];
+  const yardLines = [...world.querySelectorAll<HTMLElement>('.yl')]
+    .map(node => ({ el: node, yd: Number(node.dataset.yd) }));
   let cur = { x: 0, y: 0 }, focus = 50;
   stage.style.setProperty('--tilt', `${TILT}deg`);
 
@@ -181,11 +193,14 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     stage.style.setProperty(`--${pre}trim`, t.trimc);
   };
   /* camera: slide the world under a fixed lens; yd is the yard the lens centres on */
-  function look(yd: number, ms = 700, z = 1) {
+  function pan(yd: number) {
     focus = clamp(yd, PAN[0], PAN[1]);
-    for (const n of [world, world2, cam, cam2]) n.style.transitionDuration = `${reduced() ? 0 : ms}ms`;
     world.style.transform = world2.style.transform = `translate3d(${-wx(focus)}px,0,0)`;
+  }
+  function look(yd: number, ms = 700, z = 1) {
+    for (const n of camNodes) n.style.transitionDuration = `${reduced() ? 0 : ms}ms`;
     stage.style.setProperty('--zoom', String(z));
+    pan(yd);
   }
   /* a billboard: stands upright at a spot on the field, facing the lens */
   function bb(x: number, y: number, z: number, html: string, cls = '') {
@@ -315,7 +330,7 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     const ms = o.instant ? 0 : o.flip ? 850 : 460;
     look(G.x + d * LEAD, ms + 140);
     if (o.first && !o.flip) {
-      stage.classList.add('firstdown'); setTimeout(() => stage.classList.remove('firstdown'), 1100);
+      stage.classList.add('firstdown'); after(() => stage.classList.remove('firstdown'), 1100);
       fdBlocks(x, fxd, d);
     }
     await moveMk(x, y, ms);
@@ -336,20 +351,22 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
         { clipPath: 'inset(0 0 0 0)', offset: .74 }, { clipPath: 'inset(100% 0 0 0)' }],
       { duration: 1500, delay: 380 + i * 55, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'both' });
     }
-    setTimeout(() => box.remove(), 380 + n * 55 + 1600);
+    after(() => box.remove(), 380 + n * 55 + 1600);
   }
 
   /* ===== Big plays (20+ yards from scrimmage): camera chases the ball, crossed yard lines fire in
      the club's colour, a streak paints behind him, then blast doors slam shut (BIG | PLAY). ===== */
   const isBig = (p: FieldPlay) => ['run', 'pass', 'td'].includes(p.type) && p.gain >= BIG;
   type Chase = { p: FieldPlay; d: number; td: boolean; gain: number; x0: number; y0: number; x1: number;
-    y1: number; ms: number; fired: Set<number>; sl: HTMLElement; big: boolean };
+    y1: number; ms: number; fired: Set<number>; sl: HTMLElement; sLen: number; big: boolean };
   function ride(set: ((x: number, y: number) => void) | null, xa: number, ya: number, xb: number, yb: number,
     ms: number, c: Chase, e = runSpeed, z = 1.12) {
+    for (const n of camNodes) n.style.transitionDuration = `${reduced() ? 0 : 160}ms`;
+    stage.style.setProperty('--zoom', String(z));
     return tween(ms, k => {
       const x = xa + (xb - xa) * k, y = ya + (yb - ya) * k;
       if (set) set(x, y);
-      look(ydOf(x) + c.d * 7, 160, z); step(c, (x - c.x0) * c.d / U, x, y);
+      pan(ydOf(x) + c.d * 7); step(c, (x - c.x0) * c.d / U, x, y);
     }, e);
   }
   const jolt = (px = 4) => anim(stage, [
@@ -357,16 +374,17 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     { transform: 'none' },
   ], { duration: 180, easing: 'steps(3,end)' });
   function step(c: Chase, yds: number, x: number, y: number) {
-    c.sl.style.width = `${Math.hypot(x - c.x0, y - c.y0)}px`;
-    c.sl.style.transform = `${t3(c.x0, c.y0, 1)} rotate(${Math.atan2(y - c.y0, x - c.x0)}rad)`;
-    world.querySelectorAll<HTMLElement>('.yl').forEach(l => {
-      const yd = Number(l.dataset.yd), sx = c.p.start.x;
+    const len = Math.hypot(x - c.x0, y - c.y0);
+    c.sl.style.transform = `${t3(c.x0, c.y0, 1)} rotate(${Math.atan2(y - c.y0, x - c.x0)}rad) `
+      + `scaleX(${(len / c.sLen).toFixed(4)})`;
+    for (const { el: l, yd } of yardLines) {
+      const sx = c.p.start.x;
       const crossed = c.d > 0 ? ydOf(x) >= yd && yd > sx : ydOf(x) <= yd && yd < sx;
       if (crossed && !c.fired.has(yd)) {
         c.fired.add(yd); l.style.animationDelay = '0ms'; l.classList.add('fire');
-        setTimeout(() => l.classList.remove('fire'), 1000);
+        after(() => l.classList.remove('fire'), 1000);
       }
-    });
+    }
     if (yds >= BIG && !c.big) { c.big = true; wipe('bp', 520); }
   }
   /* blast doors: two grip slabs slam shut, the seam is the club's colour, the yards punch out of the seam */
@@ -401,9 +419,11 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     const d = p.dir, td = p.type === 'td', x0 = wx(p.start.x), y0 = cur.y, y1 = wy(p.lat1);
     const x1 = wx(p.start.x + d * p.gain) + (td ? d * 4 * U : 0);
     const pass = p.type === 'pass' || (td && p.how === 'pass');
-    const streak = line(x0, y0, x0 + d, y0, 'bp-streak');
+    const sLen = Math.max(1, Math.hypot(x1 - x0, y1 - y0));
+    const streak = line(x0, y0, x1, y1, 'bp-streak');
+    streak.parentElement!.style.transform = `${t3(x0, y0, 1)} scaleX(0)`;
     const c: Chase = { p, d, td, gain: p.gain, x0, y0, x1, y1, ms: clamp(900 + p.gain * 22, 1400, 2600),
-      fired: new Set(), sl: streak.parentElement!, big: false };
+      fired: new Set(), sl: streak.parentElement!, sLen, big: false };
     if (!pass) {
       void grow(line(x0, y0, x1, y1, ''), c.ms, 'linear');
       await ride((x, y) => setMk(x, y), x0, y0, x1, y1, c.ms, c);
@@ -480,7 +500,7 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
         const tx = x0 + (x1 - x0) * i / steps; los.style.transform = `translateX(${tx}px)`;
         await moveMk(tx, cur.y, 170, 'ease-out'); await hold(110);
       }
-      setTimeout(() => stage.classList.remove('flagged'), 1100);
+      after(() => stage.classList.remove('flagged'), 1100);
     } else if (['fg', 'fgmiss', 'punt'].includes(p.type)) {
       const punt = p.type === 'punt', kx = x0 - d * (punt ? 12 : 7) * U, ms = punt ? 1100 : 1000;
       const tyd = punt ? clamp(p.start.x + d * p.kick, -4, 104) : (d > 0 ? 110 : -10);
@@ -492,7 +512,7 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
       f.ball.remove();
       if (p.type === 'fg') {
         const goalPost = world.querySelector(`.v2-post[data-side=${d > 0 ? 'R' : 'L'}]`)!;
-        goalPost.classList.add('good'); setTimeout(() => goalPost.classList.remove('good'), 6200);
+        goalPost.classList.add('good'); after(() => goalPost.classList.remove('good'), 6200);
       } else if (p.type === 'fgmiss') {
         label(tx - d * 40, ty, 'NO GOOD', 'red', 70);
         f.dots.forEach(n => n.classList.add('dead')); await hold(500);
@@ -510,11 +530,11 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     look(side === 'R' ? 82 : 18, 700, 1);
     if (td) {
       q(`#v2ezfx${side}`).classList.add('lit');
-      world.querySelectorAll<HTMLElement>('.yl').forEach(l => {
-        const yd = Number(l.dataset.yd), i = (side === 'R' ? 100 - yd : yd) / 5;
+      for (const { el: l, yd } of yardLines) {
+        const i = (side === 'R' ? 100 - yd : yd) / 5;
         l.style.animationDelay = `${i * 34}ms`; l.classList.add('fire');
-        setTimeout(() => l.classList.remove('fire'), 1900);
-      });
+        after(() => l.classList.remove('fire'), 1900);
+      }
       await hold(720);
     }
     const b = q('#v1ban'); b.hidden = false; b.className = `v1-ban ${td ? 'td' : 'fg'}`;
@@ -550,5 +570,13 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
   }
 
   resize();
-  return { sync, play, banner, resize, destroy() { alive = false; host.replaceChildren(); } };
+  return {
+    sync, play, banner, resize,
+    destroy() {
+      alive = false;
+      for (const id of timers) clearTimeout(id);
+      timers.clear();
+      host.replaceChildren();
+    },
+  };
 }
