@@ -60,6 +60,7 @@ type Bio struct {
 	College  string `json:"college,omitempty"`
 	Draft    string `json:"draft,omitempty"`
 	Headshot string `json:"headshot,omitempty"`
+	Jersey   string `json:"jersey,omitempty"`
 	Team     string `json:"team,omitempty"`
 	Position string `json:"position,omitempty"`
 	Status   string `json:"status,omitempty"`
@@ -150,6 +151,7 @@ type RawAthleteBio struct {
 		DisplayDOB    string `json:"displayDOB"`
 		Age           int    `json:"age"`
 		DisplayDraft  string `json:"displayDraft"`
+		Jersey        string `json:"jersey"`
 		College       struct {
 			Name      string `json:"name"`
 			ShortName string `json:"shortName"`
@@ -241,6 +243,7 @@ func ParseBio(body []byte) (Bio, error) {
 		College:  college,
 		Draft:    strings.TrimSpace(a.DisplayDraft),
 		Headshot: safeHTTPSURL(a.Headshot.Href),
+		Jersey:   jerseyNumber(a.Jersey),
 		Team:     strings.TrimSpace(a.Team.Abbreviation),
 		Position: strings.TrimSpace(a.Position.Abbreviation),
 		Status:   strings.TrimSpace(a.Status.Name),
@@ -558,4 +561,13 @@ func allDigits(s string) bool {
 		}
 	}
 	return true
+}
+
+// jerseyNumber keeps ESPN's jersey only when it is a real one- or two-digit number.
+func jerseyNumber(raw string) string {
+	n := strings.TrimSpace(raw)
+	if len(n) == 0 || len(n) > 2 || strings.Trim(n, "0123456789") != "" {
+		return ""
+	}
+	return n
 }

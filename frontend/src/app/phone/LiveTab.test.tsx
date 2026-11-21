@@ -103,6 +103,26 @@ describe('LiveTab', () => {
     await tap('Close Week 11 matchups');
     expect(host!.querySelector('dialog')).toBeNull();
   });
+  it('follows the matchup picked in All matchups and returns to mine from the header', async () => {
+    Element.prototype.scrollIntoView ??= () => {};
+    const otherRow = { week: 11, home: 'h2', away: 'a2', homeName: 'Hammers', awayName: 'Arrows',
+      status: 'in', homeProvisional: 40.5, awayProvisional: 31.25, words: '', why: [] };
+    const b = brief([myGameRow, otherRow]);
+    b.pulse!.odds!.games.push({ week: 11, home: 'h2', away: 'a2', homeName: 'Hammers',
+      awayName: 'Arrows', homeWin: 0.7 });
+    await show(async () => b);
+    const score = () => host!.querySelector('[aria-label="My matchup"] .mys')?.textContent ?? '';
+    expect(score()).toContain('YOU');
+    await tap('All matchups');
+    await tap('Arrows 31.3, Hammers 40.5');
+    expect(score()).toContain('Arrows');
+    expect(score()).toContain('Hammers');
+    expect(score()).toContain('30% WIN');
+    expect(score()).not.toContain('YOU');
+    await tap('Show my matchup');
+    expect(score()).toContain('Iron Curtain · YOU');
+    expect(score()).toContain('44% WIN');
+  });
   it('says there is no game when the week holds none for me', async () => {
     await show(async () => brief([]));
     expect(region('My matchup')).toContain('No game this week');
@@ -117,7 +137,7 @@ describe('LiveTab', () => {
   it('keeps the matchup header as one row: title, then both controls', async () => {
     await show(async () => brief([myGameRow]));
     const row = host!.querySelector<HTMLElement>('[aria-label="My matchup"] .live6__head')!;
-    expect(row.children[0].tagName).toBe('B');
+    expect(row.children[0].getAttribute('aria-label')).toBe('Show my matchup');
     expect(row.querySelectorAll(':scope > span > .live6__link')).toHaveLength(2);
   });
   it('shows how old the held scores are, refreshed every 30 seconds', async () => {

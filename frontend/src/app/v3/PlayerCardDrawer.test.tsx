@@ -132,7 +132,7 @@ function makePort() {
           league: 'L', player: String(request.arguments.player), espnId: '4429795',
           bio: {
             height: `5' 9"`, weight: '200 lbs', born: '2002-03-20', age: 24,
-            college: 'Alabama', draft: '2023: Rd 1, Pk 12 (DET)',
+            college: 'Alabama', draft: '2023: Rd 1, Pk 12 (DET)', jersey: '26',
             headshot: 'https://a.espncdn.com/i/headshots/nfl/players/full/4429795.png',
             team: 'DET', position: 'RB', status: 'Active',
           },
@@ -211,6 +211,8 @@ describe('PlayerCardDrawer', () => {
     expect(text).toContain('200 lbs');
     expect(text).toContain('Mar 20, 2002 (24)');
     expect(text).toContain('Alabama');
+    expect(dialog.querySelector('[aria-label="Number 26"]')?.textContent).toBe('#26');
+    expect(dialog.querySelector('.pcd-ghost')?.textContent).toBe('26');
     expect(text).toContain('2023: Rd 1, Pk 12 (DET)');
     expect(text).toContain('$13.5M');
     expect(text).toContain('2029');
@@ -218,7 +220,7 @@ describe('PlayerCardDrawer', () => {
     expect(text).toContain('Not available');
     expect(text).not.toContain('Career Stats');
     const photoImg = dialog.querySelector<HTMLImageElement>('.pcd-photo img');
-    expect(photoImg?.getAttribute("src")).toBe("/v1/headshot/16162");
+    expect(photoImg?.getAttribute("src")).toBe("/v1/headshot/16162?s=350");
 
     // News tab (default) shows ESPN items (bold headline link in new tab, age, description, source tag)
     expect(text).toContain('Player news');

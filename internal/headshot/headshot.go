@@ -26,8 +26,11 @@ import (
 )
 
 const (
-	// espnURL asks ESPN's resizer for a 96×70 crop (about 7 KB) instead of the 230 KB original.
-	espnURL    = "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/%s.png&w=96&h=70&scale=crop"
+	// espnURL asks ESPN's resizer for a 350×254 crop (about 110 KB, half the original): sharp on a
+	// phone player card at 3× density. The 96×70 thumbnail it replaced blurred the face.
+	espnURL = "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/%s.png&w=350&h=254&scale=crop"
+	// CacheDir names the cache folder; it changes with the photo size so old thumbnails are never served.
+	CacheDir   = "headshots-350"
 	sleeperURL = "https://sleepercdn.com/content/nfl/players/%s.jpg"
 
 	minBytes = 200     // smaller is no photo

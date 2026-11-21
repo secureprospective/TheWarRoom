@@ -12,6 +12,7 @@ import type { ContractsProvider, PlayerContract, Reading } from '../contracts/co
 import type { WhatIf, WhatIfProvider } from '../contracts/whatif';
 import { hostedPlayerReadingUnavailable } from '../control/nativeApi';
 import type { Provenance, Snapshot } from '../data/contract';
+import { club } from '../phone/liveClubs';
 import { readPlayerStatus, type PlayerStatus } from '../phone/playerStatus';
 import { readPlayerUsage } from '../research/api';
 import { formatBioBorn, readPlayerNews, type PlayerNews } from '../research/espnNews';
@@ -216,11 +217,16 @@ export function usePlayerCard({
     <HQAct className="chip" active={tab === 'proj'} onAction={() => setTab('proj')}>Projections</HQAct>
   </>;
 
+  const jersey = bio?.jersey;
+  const clubTeam = model.team || bio?.team;
   const main = <div className="pcd-main">
-    <header className="pcd-head">
+    <header className="pcd-head"
+      style={clubTeam ? { ['--tc' as string]: club(clubTeam).pri } : undefined}>
       <div className="pcd-photo">
-        <PlayerPhoto view={effectivePhoto} team={model.team || bio?.team} />
+        {jersey && <span className="pcd-ghost" aria-hidden="true">{jersey}</span>}
+        <PlayerPhoto view={effectivePhoto} team={clubTeam} />
         <div className="pcd-badges">
+          {jersey && <span className="num" aria-label={`Number ${jersey}`}>#{jersey}</span>}
           {(model.position || bio?.position) && <span className="pos">
             {model.position || bio?.position}</span>}
           {model.status.map(s => <span key={s.label} className="tag">{s.label}</span>)}

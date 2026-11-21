@@ -23,7 +23,7 @@ type GoWindow = { go?: { platform?: { API?: { TargetPhoto?: PhotoReader } } } };
 // path allowlist), so img-src stays self. A missing photo is a 404; the card shows the team.
 export const hostedPhoto: PhotoReader = (id) =>
   Promise.resolve(/^[0-9]{1,8}$/.test(id)
-    ? { src: `/v1/headshot/${id}`, alt: 'Photo' }
+    ? { src: `/v1/headshot/${id}?s=350`, alt: 'Photo' }
     : { src: '', alt: '' });
 
 // photoReader is Go's photo verdict in the desktop app, else the server's photo cache.

@@ -100,6 +100,25 @@
   box-shadow: inset 0 0 0 1px var(--phone-blue), 0 2px 0 var(--phone-black); }
 .team-card .pcd-main { padding: 0; }
 .team-card .pcd-meta { grid-template-columns: 1fr; }
+/* Player card hero (phone): club-colour band, a large clear headshot, the jersey number big and ghosted. */
+.team-card .pcd-head { grid-template-columns: 1fr; gap: 0; padding: 0; overflow: hidden; }
+.team-card .pcd-photo { position: relative; grid-template-columns: auto 1fr; align-items: end;
+  justify-items: start; gap: 0 12px; min-height: 140px; padding: 12px 12px 0; overflow: hidden;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--tc, var(--phone-edge)) 92%, #000) 0,
+    color-mix(in srgb, var(--tc, var(--phone-edge)) 45%, #000) 55%, var(--phone-sunken) 100%);
+  border-bottom: 3px solid var(--tc, var(--phone-edge)); }
+.team-card .pcd-ghost { position: absolute; right: -6px; bottom: -34px; z-index: 0;
+  font: 700 150px/1 var(--t-mono); letter-spacing: -.06em; color: #fff; opacity: .1; pointer-events: none; }
+.team-card .pcd-photo .player-photo { position: relative; z-index: 1; width: 172px; height: 125px;
+  border: 0; border-radius: 0; background: transparent; align-self: end; }
+.team-card .pcd-photo .player-photo img { object-fit: cover; object-position: center top;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .55)); }
+.team-card .pcd-photo .player-photo-fallback { font: 700 28px var(--t-mono); color: #fff; opacity: .8; }
+.team-card .pcd-badges { position: relative; z-index: 1; display: grid; justify-items: start;
+  align-content: center; gap: 6px; align-self: center; padding-bottom: 10px; }
+.team-card .pcd-photo .num { font: 700 34px/1 var(--t-mono); letter-spacing: -.02em; color: #fff;
+  background: none; padding: 0; text-shadow: 0 2px 0 rgba(0, 0, 0, .45); }
+.team-card .pcd-meta { padding: 4px 12px 10px; }
 .team-card .pcd-photo .pos, .team-card .pcd-photo .tag {
   font: 700 9px var(--t-mono); letter-spacing: .1em; padding: 1px 4px;
   background: var(--phone-edge-hi); color: var(--phone-black); text-transform: uppercase; }

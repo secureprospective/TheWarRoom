@@ -96,7 +96,7 @@ func (a *App) startHeadshots() {
 			return a.core.History.SourceID(ctx, id, source)
 		},
 		Install: func(ids func(context.Context, string) (string, string, error)) {
-			a.core.Headshots.Store(headshot.New(filepath.Join(a.core.Paths.DataDir, "headshots"), ids, &http.Client{Timeout: photoTimeout, Transport: a.core.Network}))
+			a.core.Headshots.Store(headshot.New(filepath.Join(a.core.Paths.DataDir, headshot.CacheDir), ids, &http.Client{Timeout: photoTimeout, Transport: a.core.Network}))
 		}, Settings: func() (bool, error) { settings, err := a.readSettings(); return settings.PhotosOff, err }, SetOff: a.core.PhotosOff.Store,
 	}).Initialize()
 }

@@ -120,6 +120,17 @@ func TestParseBioFixtures(t *testing.T) {
 	}
 }
 
+func TestJerseyNumberKeepsOnlyRealNumbers(t *testing.T) {
+	cases := []struct{ raw, want string }{
+		{"7", "7"}, {" 87 ", "87"}, {"", ""}, {"100", ""}, {"7a", ""}, {"-1", ""},
+	}
+	for _, c := range cases {
+		if got := jerseyNumber(c.raw); got != c.want {
+			t.Fatalf("jerseyNumber(%q) = %q, want %q", c.raw, got, c.want)
+		}
+	}
+}
+
 func TestFetchPlayerNewsFallsBackToSiteEndpoint(t *testing.T) {
 	siteBody := readFixture(t, "player_news_site.json")
 	var calls []string

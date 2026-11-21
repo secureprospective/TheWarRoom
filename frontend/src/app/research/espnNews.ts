@@ -9,6 +9,7 @@ export type PlayerBio = {
   college?: string;
   draft?: string;
   headshot?: string;
+  jersey?: string;
   team?: string;
   position?: string;
   status?: string;
@@ -73,6 +74,7 @@ function parseBio(raw: unknown): PlayerBio {
     college: asStr(o.college) || undefined,
     draft: asStr(o.draft) || undefined,
     headshot: asStr(o.headshot) || undefined,
+    jersey: /^\d{1,2}$/.test(asStr(o.jersey)) ? asStr(o.jersey) : undefined,
     team: asStr(o.team) || undefined,
     position: asStr(o.position) || undefined,
     status: asStr(o.status) || undefined,

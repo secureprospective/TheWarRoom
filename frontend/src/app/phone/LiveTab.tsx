@@ -89,7 +89,10 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
   return <div className={`live6${reduced ? ' rm' : ''}`} data-testid="live-tab">
     <section className="panel mym live6__mym" aria-label="My matchup">
       <div className="bhead live6__head">
-        <b className="lbl">My matchup{results ? ` · wk ${results.week}` : ''}</b>
+        <HQAct className={`lbl live6__mine${selected && !selected.mine ? ' is-away' : ''}`}
+          label="Show my matchup" disabled={!rows.length} onAction={() => pick(undefined)}>
+          {selected && !selected.mine ? '‹ My matchup' : 'My matchup'}{results ? ` · wk ${results.week}` : ''}
+        </HQAct>
         <span>
           <HQAct className="live6__link" label="All matchups" disabled={!rows.length}
             onAction={() => setSheet({ kind: 'matchups' })}>All matchups</HQAct>
@@ -108,7 +111,7 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
             port={port}
           />
         : <p role="status" className="live6__note">{words}</p>
-        : <Matchup brief={brief!} mine={mine} reduced={reduced} />}
+        : <Matchup brief={brief!} mine={mine} focus={selected?.game} reduced={reduced} />}
     </section>
 
     <nav className="strip live6__strip" aria-label="NFL games"><b className="strip-l live6__strip-l">NFL</b>
@@ -178,16 +181,22 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
   </div>;
 }
 
-function Matchup({ brief, mine, reduced }: { brief: HomeBrief; mine: string; reduced: boolean }) {
-  const game = brief.results?.games.find(g => g.home === mine || g.away === mine);
-  const home = game?.home === mine;
+/** Matchup is the score row for the matchup picked in All matchups, or mine when none is picked. */
+function Matchup({ brief, mine, focus, reduced }: {
+  brief: HomeBrief; mine: string; focus?: { home: string; away: string }; reduced: boolean;
+}) {
+  const games = brief.results?.games ?? [];
+  const game = (focus && games.find(g => g.home === focus.home && g.away === focus.away))
+    ?? games.find(g => g.home === mine || g.away === mine);
+  const lead = game && (game.home === mine || game.away === mine) ? mine : game?.away ?? '';
+  const home = game?.home === lead;
   const myId = game ? (home ? game.home : game.away) : '';
   const theirId = game ? (home ? game.away : game.home) : '';
   const score = (side: 'home' | 'away') =>
     game ? game[`${side}Points`] ?? game[`${side}Provisional`] : undefined;
   const myScore = score(home ? 'home' : 'away');
   const theirScore = score(home ? 'away' : 'home');
-  const chance = myChance(brief.pulse?.odds, mine);
+  const chance = myChance(brief.pulse?.odds, lead);
   const held = chance && chance.week === brief.results?.week ? chance.mine : undefined;
   const heldPct = held === undefined ? undefined : Math.round(held * 100);
   const ctx = `${brief.results?.league ?? ''}:${brief.results?.week ?? ''}:${myId}:${theirId}`;
@@ -206,8 +215,8 @@ function Matchup({ brief, mine, reduced }: { brief: HomeBrief; mine: string; red
   const projPace = projectedPair(brief, myId, theirId);
 
   return <div className="mys live6__mys">
-    <div className="t me live6__t is-me">
-      <span><span className="live6__nm">{myLabel}</span>{' · YOU'}</span>
+    <div className={`t live6__t${lead === mine ? ' me is-me' : ''}`}>
+      <span><span className="live6__nm">{myLabel}</span>{lead === mine ? ' · YOU' : ''}</span>
       <b key={myAnim.flashKey} className={myAnim.changing ? 'chg' : undefined}>
         {pointsLabel(myAnim.display)}</b>
     </div>

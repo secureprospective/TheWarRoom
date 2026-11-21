@@ -93,7 +93,7 @@ func newHostedPhotos(databasePath string, reference *history.Store) http.Handler
 		}
 		return espn, sleeper, nil
 	}
-	dir := filepath.Join(filepath.Dir(databasePath), "headshots")
+	dir := filepath.Join(filepath.Dir(databasePath), headshot.CacheDir)
 	photos := headshot.New(dir, ids, &http.Client{Timeout: hostedPhotoTimeout})
 	return photos.Handler(func() bool { return true })
 }
