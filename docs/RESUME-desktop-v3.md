@@ -1,3 +1,56 @@
+# COMPACT POINT 11-21 ~3:45 PM CT — Live checked, fixes 1-2 shipped to lab v43, MAIN PUSH IN FLIGHT (newest; READ FIRST)
+
+## NEXT (his instruction): work through T673, T674, T675, T676 in that order
+- T673 🔴 Live field proof Sun 11-22 12:00 PM CT on S25. Already proven 11-21 on finished IND-HOU (ESPN 401873066):
+  collector polling (checkpoint /var/lib/twr/live-scores/checkpoint.json, week 11 board, 13 games), summary held with
+  159 plays all with yard lines, nfl.game.read returned 160 plays + state, phone drew field (ball IND 30).
+  Unproven: 5-s in-game poll on v43. During games: watch lab log `grep "server live" /var/lib/twr/server.log`.
+- T674 ⚪ finished game shows "1ST & 11" (END GAME play down=0 → render; hide down/dist when status post) in
+  frontend/src/app/phone/LiveField.tsx / fieldView.ts HUD (hDown/hDist). Console: CSP "Applying inline style" warnings
+  + one 404 on Live tab (find which URL; harness lv2.js logs >=400).
+- T675 🟡 lab CT 260 disk 2.0 GB free / 8.4. Candidates seen: /twr-b7lab-new (old tarballs v4), labrel-* dirs,
+  first-start-data.tar.gz at / of CT. Check which are referenced by the running release before deleting.
+- T676 🔴 his steps: sign out other sessions on the lab account; rotate lab R2 keys. Hand him numbered steps.
+
+## IN FLIGHT AT COMPACTION
+- Push of squash commit e371ff5f to main, run by Christopher via `!` from Claudebox chat (background task output
+  /tmp/claude-0/-root/61ea614a-bffb-482b-b76e-4b768b2d36b1/tasks/bez3vfvd1.output). Pre-push checks were running
+  (go test on 9 changed pkgs). Check: `ssh beelink 'ps -eo args | grep -c "[h]ook-type=pre-push"'` (0 = done) and
+  `git -C ~/scratch/merge-pc fetch -q origin && git -C ~/scratch/merge-pc log --oneline -1 origin/main`
+  (landed = e371ff5f-equivalent "Mobile alpha walk..." on top of eb6dd752d). Main at compaction: eb6dd752d.
+- If it landed: release main to lab (REF=origin/main twr-lab-release-ref.sh 44 with prev
+  ~/fleet/runs/labrel-v43-1121/release-v43/metadata/targets.json), walk w40.js, `cc task check T671`, then
+  `git worktree remove ~/scratch/merge-pc` and delete ~/scratch/lineup-1121.
+  If push failed: read the output file; branch protection may need the browser PR path
+  (https://github.com/secureprospective/TheWarRoom/compare/main...session/player-card, Squash and merge).
+- Never run the push or anything containing its text yourself: hook blocks it (even a pgrep with that string).
+
+## SHIPPED SINCE LAST COMPACT (branch session/player-card 1b4e2fcd3, lab v43, walked)
+- Live: starter tiles removed from My matchup (8fd71daee).
+- Fix 1: score row follows matchup picked in All matchups; header "My matchup" is a button (aria "Show my matchup"),
+  shows "‹ My matchup" when away. Walked: BUF 4.2 98% NYJ → back to ARZ 32.3 93% CAR 38.0.
+- Fix 2: headshots 350x254 (was 96x70) in package subfolder headshots/350; route /v1/headshot/350/<id>; ESPN jersey
+  in Bio.Jersey; phone card hero (club colour --tc, #7, ghost number). Walked: Stroud natural 350x254, #7.
+- Tests: frontend 807 pass in touched dirs; Go tests pass for changed pkgs.
+
+## REFUTED / LEARNED — DO NOT RETEST
+- `?s=350` query on photo URL: hosted server refuses ANY query string (hosted.go RawQuery check) → 400. Don't loosen.
+- Cloudflare caches /v1/headshot/<id> (max-age 86400, cf-cache-status HIT) → use versioned path, not purge.
+- boundarycheck refuses changes to internal/composition/platform_host.go startHeadshots → put policy in the package.
+- Push hooks need PATH=/usr/local/go/bin:$HOME/go/bin (wails missing otherwise). Fresh worktree needs frontend/dist
+  copied for ifaceguard.
+- Lab release script builds what is PUSHED: a failed push silently released old code (v39).
+
+## DECISIONS
+- Pre-game preview: direction B (Broadcast) picked; later build T672. No betting odds. Game-time weather (NWS hourly),
+  not day high/low. Mock ~/work/TheWarRoom/design-mocks/live-pregame-preview-B.html.
+- Small fixes logged to ~/work/TheWarRoom/design-mocks/FIXES-mobile-batch-1121.md (1-2 done).
+- He approved this merge to main 11-21 ("go ahead and merge it. i approve").
+
+## TASK LIST (Hermes) this session
+T671 rewritten (merge state), T668, T660 updated; T672 B picked; added T673-T676.
+
+---
 # COMPACT POINT 11-21 ~1:05 PM CT — mobile walk on S25, lab v37 (newest; READ FIRST)
 
 ## WHAT WE ARE DOING
