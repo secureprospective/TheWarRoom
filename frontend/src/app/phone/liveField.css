@@ -625,7 +625,7 @@
   transition:transform .46s cubic-bezier(.45,0,.2,1) .09s,width .46s cubic-bezier(.45,0,.2,1) .09s}
 .lf .v2-pad{width:16px;height:10px;margin-left:-8px;background:var(--hv);border:1px solid #000;
   transition:transform .46s cubic-bezier(.45,0,.2,1) .18s}
-.lf .v2-stk.sticks.two.away .bb-in,.lf .v2-chain.sticks.away,.lf .v2-pad.away{visibility:hidden}
+.lf .v2-stk.sticks.away:not(.two) .bb-in,.lf .v2-stk.sticks.two.away .bb-in,.lf .v2-chain.sticks.away,.lf .v2-pad.away{visibility:hidden}
 .lf .v2-stage.instant .v2-pad,.lf .v2-stage.instant .v2-stk.sticks{transition:none}
 .lf .fdb{transform:translateZ(1.2px);pointer-events:none}
 .lf .fdb i{position:absolute;top:0;height:100%;opacity:.62;background:repeating-linear-gradient(180deg,
