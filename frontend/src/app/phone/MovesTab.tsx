@@ -15,6 +15,7 @@ import { dealFromWarRoomOffer, type WarRoomDeal } from '../shell/warroomTradeRea
 import { AddSheet, ClaimSheet, PlayerSheet, TradeSheet, type MovesPlayer,
   type MovesRoster } from './MovesSheets';
 import { onHostedTopics } from '../data/hostedReads';
+import { FailureAlert } from '../data/FailureAlert';
 import type { Game } from '../now/liveContract';
 import { useHostedGames } from '../shell/hostedGames';
 import { dayTime, gameWords } from './teamModel';
@@ -100,8 +101,15 @@ const ordinal = (n: number) => {
   return `${n}${tail}`;
 };
 
-const unavailableLine = (words?: string) =>
-  <p className="mv4-empty" role="alert">Unavailable: {words || 'no reading'}</p>;
+const unavailableLine = (words?: string, league?: string, port?: HostedPort) => <FailureAlert
+  message={words || 'no reading'}
+  prefix="Unavailable: "
+  className="mv4-empty"
+  league={league}
+  screen="Phone · Moves"
+  route="phone/moves"
+  port={port}
+/>;
 
 /** readMovesContext is the War Room context the move sheets reuse: the hosted HQ reading for this seat. */
 export async function readMovesContext(league: string, mine: string,
@@ -159,7 +167,8 @@ function MovesBody({ league, port, read, readContext, subscribe }: { league: Lea
   const games = live.view?.games;
   if (!league || !mine) return <section className="mv4" aria-label="Moves">
     <p className="mv4-empty">Moves opens once you hold a franchise in a league.</p></section>;
-  if (failure) return <section className="mv4" aria-label="Moves">{unavailableLine(failure)}</section>;
+  if (failure) return <section className="mv4" aria-label="Moves">
+    {unavailableLine(failure, league.id, port)}</section>;
   if (!reading) return <section className="mv4" aria-label="Moves">
     <p role="status">Reading moves…</p></section>;
   const claims = reading.waivers.value?.claims.length;
@@ -187,8 +196,9 @@ function MovesBody({ league, port, read, readContext, subscribe }: { league: Lea
       onChanged={() => setRevision(n => n + 1)} />}
     {segment === 'trades' && <Trades reading={reading.trades} league={league.id} mine={mine} port={port}
       onChanged={() => setRevision(n => n + 1)} onTrade={deal => setSheet({ kind: 'trade', deal })} />}
-    {sheet && !context && <p role={contextError ? 'alert' : 'status'}>
-      {contextError ? `Unavailable: ${contextError}` : 'Opening…'}</p>}
+    {sheet && !context && (contextError
+      ? unavailableLine(contextError, league.id, port)
+      : <p role="status">Opening…</p>)}
     {sheet && context && sheet.kind === 'player' && <PlayerSheet context={context} player={sheet.player}
       onMove={() => move(sheet.player)} onClose={close} />}
     {sheet && context && sheet.kind === 'add' && reading.roster && <AddSheet context={context}
@@ -268,8 +278,10 @@ function Waivers({ reading, league, mine, port, onChanged }: { reading: MovesRea
         <HQAct label="Cancel claim" disabled={off}
           onAction={() => change({ command: 'waivers.claim.cancel', claim: c.id })}>✕</HQAct></span>
     </div>)}</div>
-    {error && <p role="alert">{error}</p>}
-    {state.error && <p role="alert">{state.error}</p>}
+    {error && <FailureAlert message={error} league={league} screen="Phone · Moves"
+      route="phone/moves" port={port} />}
+    {state.error && <FailureAlert message={state.error} league={league} screen="Phone · Moves"
+      route="phone/moves" port={port} />}
     {state.review && <Review room={room} onConfirmed={onChanged} />}
   </>;
 }
@@ -323,8 +335,10 @@ function Trades({ reading, league, mine, port, onChanged, onTrade }: { reading: 
         </div> : <p className="mv4-res">{offer.words}</p>}
       </article>;
     })}
-    {error && <p role="alert">{error}</p>}
-    {state.error && <p role="alert">{state.error}</p>}
+    {error && <FailureAlert message={error} league={league} screen="Phone · Moves"
+      route="phone/moves" port={port} />}
+    {state.error && <FailureAlert message={state.error} league={league} screen="Phone · Moves"
+      route="phone/moves" port={port} />}
     {state.message && <p role="status">{state.message}</p>}
     {state.review && <Review room={room} onConfirmed={onChanged} />}
   </>;

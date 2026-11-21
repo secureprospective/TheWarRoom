@@ -138,6 +138,7 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 		h.sessionFailure(w, r, err)
 		return
 	}
+	setFailureAccount(r.Context(), token.Account.ID)
 	if raw.Workflow != nil && catalog.IsAccountWorkflow(raw.Workflow.Command) {
 		http.Error(w, "agent tokens cannot access account preferences", http.StatusForbidden)
 		return

@@ -3,6 +3,16 @@ import {defineConfig, type Plugin} from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 const webBuild = process.env.TWR_WEB_BUILD === '1'
+const appVersion = (() => {
+  try {
+    const raw = JSON.parse(readFileSync(new URL('../wails.json', import.meta.url), 'utf8')) as {
+      info?: { productVersion?: string }
+    }
+    return raw.info?.productVersion || '0.5.0'
+  } catch {
+    return '0.5.0'
+  }
+})()
 
 // Content-Security-Policy for the built app: same-origin scripts only, no eval, nothing remote.
 // Photos come from the asset handler (/headshot/…); Vite may inline small images and fonts as
@@ -59,6 +69,7 @@ function pwaShell(): Plugin {
 export default defineConfig({
   base: webBuild ? '/app/' : '/',
   publicDir: webBuild ? 'public' : false,
+  define: { __TWR_APP_VERSION__: JSON.stringify(appVersion) },
   plugins: [react(), csp(), ...(webBuild ? [pwaShell()] : [])],
   test: {setupFiles: ['src/test/nativeWailsShim.ts', 'src/test/hqPrefetchStub.ts']},
   build: {

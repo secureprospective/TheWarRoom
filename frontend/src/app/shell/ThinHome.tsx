@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
+import { FailureAlert } from '../data/FailureAlert';
 import { unavailable } from './hqModel';
 import { gatherNeedsYou, type NeedsYouItem } from './homeNeedsYou';
 import { readThinHomeBrief, type HomeBrief } from './homeReads';
@@ -108,7 +109,13 @@ export function ThinHome({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       <section className="thin-home__needs" aria-labelledby="thin-home-needs-title">
         <div className="thin-home__section-head"><h2 id="thin-home-needs-title">NEEDS YOU</h2>
           <span>{loading ? 'READING' : `${needsYou.length} ITEMS`}</span></div>
-        {failures['*'] && <p role="alert">{unavailable} · {failures['*']}</p>}
+        {failures['*'] && <FailureAlert
+          message={failures['*']}
+          prefix={`${unavailable} · `}
+          screen="Home"
+          route="home/overview"
+          port={port}
+        />}
         {loading && <p role="status">Reading your league…</p>}
         {!loading && needsYou.length === 0 &&
           <p className="thin-home__empty">Nothing needs you right now.</p>}
@@ -171,8 +178,15 @@ function LeagueCard({ league, brief, failure, now, onOpen }: { league: LeagueCho
         : next
           ? <p><span>NEXT DEADLINE</span><b>{next.event.label} · {shortTime(next.at, now)}</b></p>
           : brief?.calendar && <p><span>NEXT DEADLINE</span><b>None scheduled</b></p>}
-      {failure && <p role="alert" className="thin-home__unavailable"><span>LEAGUE READ</span>
-        <b>{unavailable} · {failure}</b></p>}
+      {failure && <FailureAlert
+        message={failure}
+        prefix={`${unavailable} · `}
+        className="thin-home__unavailable"
+        league={league.id}
+        leagueName={league.name}
+        screen="Home"
+        route="home/overview"
+      />}
       {!brief && !failure && <p role="status" className="thin-home__reading">Reading league details…</p>}
     </div>
     <nav className="thin-home__shortcuts" aria-label={`${league.name} shortcuts`}>

@@ -190,3 +190,44 @@ it('keeps the browser interface aligned with the transport contract', () => {
   ];
   expect(Object.keys(webTransport).sort()).toEqual(required.sort());
 });
+
+it('captures server X-TWR-Error-Code headers and mints client codes on network failures', async () => {
+  vi.stubGlobal('window', { location: { origin: 'https://league.example' },
+    addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() });
+  vi.resetModules();
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce(new Response('League refused', {
+      status: 409,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-TWR-Error-Code': 'TWR-7K9M-2P4X',
+      },
+    }))
+    .mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  vi.stubGlobal('fetch', fetcher);
+  const api = await import('./nativeApi');
+  const codes = await import('../data/errorCodes');
+  const request = {
+    command: 'feedback.report.create', mode: 'execute',
+    arguments: {
+      league: 'native.test', text: 'hi', route: 'home/overview',
+      appRelease: 42, viewportWidth: 1200,
+    },
+  } as NativeRequest;
+
+  let serverErr: unknown;
+  try {
+    await api.hostedWorkflow(request);
+  } catch (err) {
+    serverErr = err;
+  }
+  expect(codes.errorCodeFor(serverErr)).toBe('TWR-7K9M-2P4X');
+
+  let networkErr: unknown;
+  try {
+    await api.hostedWorkflow(request);
+  } catch (err) {
+    networkErr = err;
+  }
+  expect(codes.errorCodeFor(networkErr)).toMatch(/^TWR-C/);
+});

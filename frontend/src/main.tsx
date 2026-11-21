@@ -2,6 +2,7 @@ import React from 'react'
 import {createRoot} from 'react-dom/client'
 import './style.css'
 import { NativeStartup } from './app/control/NativeStartup'
+import { AppErrorBoundary } from './app/data/AppErrorBoundary'
 import { plainBindings } from './app/data/plainFailure'
 
 // Before any screen calls Go: an offline failure reads as one plain sentence everywhere.
@@ -13,6 +14,8 @@ const root = createRoot(container!)
 
 root.render(
     <React.StrictMode>
-        <NativeStartup/>
+        <AppErrorBoundary>
+            <NativeStartup/>
+        </AppErrorBoundary>
     </React.StrictMode>
 )

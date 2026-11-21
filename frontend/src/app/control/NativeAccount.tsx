@@ -5,6 +5,8 @@ import { commands } from '../commands/registry';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { nativeAction, selectBrowserLeague, type NativeAction, type NativeView } from './nativeApi';
 import { isWebTransport } from './transport';
+import { FailureAlert } from '../data/FailureAlert';
+import { setFailureScreen } from '../data/errorCodes';
 import { hostedSnapshot, onHostedChange, observeView } from '../data/hostedReads';
 import NativeHelpers from './NativeHelpers';
 import { HQAct } from '../shell/HQAct';
@@ -101,6 +103,16 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   // On a phone the app frame owns the whole screen: none of this page's own chrome may show.
   const phoneFrame = browser && phoneViewport && homeReady && screen === 'login'
     && !(activeLeague && activeEntry === 'control');
+  useEffect(() => {
+    if (phoneFrame) {
+      const label = phoneTab[0].toUpperCase() + phoneTab.slice(1);
+      setFailureScreen(`Phone · ${label}`, `phone/${phoneTab}`);
+    } else if (showThinHome) {
+      setFailureScreen('Home', 'home/overview');
+    } else if (!activeLeague) {
+      setFailureScreen(`Account · ${screen}`, `account/${screen}`);
+    }
+  }, [phoneFrame, phoneTab, showThinHome, activeLeague, screen]);
   const selectedPhoneLeagueId = admission?.league ?? '';
   const currentPhoneBrief = phoneBrief?.leagueId === selectedPhoneLeagueId ? phoneBrief : undefined;
   const phoneWeek = currentPhoneBrief?.brief.pulse?.week;
@@ -212,7 +224,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
         <Act key={id} variant="button" verb="commissioner.surface"
         args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
     </nav></>}
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert message={error} allowSend={Boolean(admission?.league)} />}
     {view.message && !showThinHome && !phoneFrame && <p role="status">{view.message}</p>}
     <div hidden={screen !== 'login'}>
     {view.name && !homeReady && <section aria-label="Your league access">

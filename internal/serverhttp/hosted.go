@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -80,7 +81,9 @@ type Hosted struct {
 	TrustedProxy netip.Addr
 	// PublicHost is the one configured external HTTPS hostname allowed to use the browser app.
 	PublicHost string
-	appAuth    *browserSessionAuth
+	// ErrorLog records one structured slog line per server error code; nil uses slog.Default().
+	ErrorLog *slog.Logger
+	appAuth  *browserSessionAuth
 }
 
 func (h Hosted) Handler() http.Handler {
@@ -91,8 +94,11 @@ func (h Hosted) Handler() http.Handler {
 	if h.appAuth == nil {
 		h.appAuth = newBrowserSessionAuth()
 	}
-	return resourceLimitsWithOrigin(versionGate(h.invalidationHandler(h.backupAdmission(http.HandlerFunc(h.serveHTTP)))), h.TrustedProxy,
-		h.originAdmissible, h.sessionOriginRequired)
+	chain := resourceLimitsWithOrigin(
+		versionGate(h.invalidationHandler(h.backupAdmission(http.HandlerFunc(h.serveHTTP)))),
+		h.TrustedProxy, h.originAdmissible, h.sessionOriginRequired,
+	)
+	return h.withErrorCodes(chain)
 }
 
 func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -270,6 +276,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid native request", http.StatusBadRequest)
 		return
 	}
+	recordNativeFailureMeta(r.Context(), raw)
 	if authenticationErr != nil {
 		h.agent(w, r, rawSession, raw)
 		return
@@ -331,6 +338,7 @@ func (h Hosted) authenticateNative(w http.ResponseWriter, r *http.Request) (nati
 			h.sessionFailure(w, r, err)
 			return nativeAuth{raw: rawSession}, false
 		}
+		setFailureAccount(r.Context(), account.ID)
 		if proof := h.appAuth.recent(rawSession.Bearer); proof != "" {
 			r.Header.Set("X-TWR-Recent-Auth", proof)
 		} else {
@@ -349,6 +357,7 @@ func (h Hosted) authenticateNative(w http.ResponseWriter, r *http.Request) (nati
 	}
 	account, authenticationErr := h.Sessions.Authenticate(r.Context(), rawSession)
 	if authenticationErr == nil {
+		setFailureAccount(r.Context(), account.ID)
 		return nativeAuth{raw: rawSession, account: account}, true
 	}
 	if !sessionRefused(authenticationErr) || h.Tokens == nil {

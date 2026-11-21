@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { onHostedTopics } from '../data/hostedReads';
+import { FailureAlert } from '../data/FailureAlert';
 import { myChance, percent, pointsLabel } from '../data/nativePulse';
 import { Field, gameTime } from '../now/LiveGame';
 import type { Game } from '../now/liveContract';
@@ -87,8 +88,18 @@ function LiveBody({ league, port, readBrief, subscribe }: { league: LeagueChoice
           <HQAct className="live6__link" label="Box score" disabled={!rows.length}
             onAction={() => { pick(undefined); toBoxes('lg'); }}>Box score</HQAct>
         </span></div>
-      {words ? <p role={failure || brief?.errors.results ? 'alert' : 'status'}
-        className="live6__note">{words}</p>
+      {words ? (failure || brief?.errors.results)
+        ? <FailureAlert
+            message={failure || brief!.errors.results!}
+            prefix={`${unavailable} · `}
+            className="live6__note"
+            league={league.id}
+            leagueName={league.name}
+            screen="Phone · Live"
+            route="phone/live"
+            port={port}
+          />
+        : <p role="status" className="live6__note">{words}</p>
         : <Matchup brief={brief!} mine={mine} />}
       {!words && myRows.length > 0 && <div className="live6__myp">
         {myRows.map(p => {
@@ -244,7 +255,12 @@ function MatchupBox({ row, sides }: { row?: PulseRow; sides: Sides }) {
       <div className={`is-r${leftUp ? '' : ' is-lead'}`}><span>{sides.rightName}</span>
         <b>{pointsLabel(sides.rightPoints)}</b></div>
     </div>
-    {sides.words && <p role="alert" className="live6__note">{sides.words}</p>}
+    {sides.words && <FailureAlert
+      message={sides.words}
+      className="live6__note"
+      screen="Phone · Live"
+      route="phone/live"
+    />}
     {!pairs.length ? <p className="live6__note">{row.game.words || 'No lineup is recorded for this week.'}</p>
       : pairs.map((pair, i) => <div key={`${pair.slot}-${i}`} className="live6__pair">
         <span>{pair.left?.name ?? ''}</span><b>{pointsLabel(pair.left?.points)}</b>

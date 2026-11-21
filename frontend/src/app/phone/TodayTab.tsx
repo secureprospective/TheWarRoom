@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { myChance, percent, pointsLabel } from '../data/nativePulse';
+import { FailureAlert } from '../data/FailureAlert';
 import { unavailable } from '../shell/hqModel';
 import { gatherNeedsYou, type NeedsYouItem } from '../shell/homeNeedsYou';
 import { readThinHomeBrief, type HomeBrief } from '../shell/homeReads';
@@ -160,14 +161,36 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
     <div className="today6__sec"><b>Needs you</b>
       <span>{loading ? 'reading' : open ? `${open} open` : ''}</span></div>
     <section className="today6__grp" aria-label="Needs you">
-      {snoozeError && <p role="alert" className="today6__note">{snoozeError}</p>}
-      {failures['*'] && <p role="alert" className="today6__note">{unavailable} · {failures['*']}</p>}
+      {snoozeError && <FailureAlert
+        message={snoozeError}
+        className="today6__note"
+        league={shown}
+        screen="Phone · Today"
+        route="phone/today"
+        port={port}
+      />}
+      {failures['*'] && <FailureAlert
+        message={failures['*']}
+        prefix={`${unavailable} · `}
+        className="today6__note"
+        league={shown}
+        screen="Phone · Today"
+        route="phone/today"
+        port={port}
+      />}
       {loading && <p role="status" className="today6__note">Reading your leagues…</p>}
       {!loading && !failed && jobs.length === 0 &&
         <div className="today6__clear"><i aria-hidden="true">✓</i>Nothing needs you right now.</div>}
       {!loading && failed && open === 0 && !failures['*'] &&
-        <p role="alert" className="today6__note">
-          {unavailable} · Some reads failed, so this list may be short.</p>}
+        <FailureAlert
+          message="Some reads failed, so this list may be short."
+          prefix={`${unavailable} · `}
+          className="today6__note"
+          league={shown}
+          screen="Phone · Today"
+          route="phone/today"
+          port={port}
+        />}
       {jobs.map(({ item, lane }) => <div key={item.id}
         className={`today6__job${lane === 'NOW' ? ' is-now' : ''}`
         + `${lane === 'NOT AVAILABLE' ? ' is-off' : ''}`}>
@@ -197,7 +220,16 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       <p role="status" className="today6__note">
         {unavailable} · No owner franchise is admitted for these boards.</p>}
     {first?.franchise && failures[first.id] &&
-      <p role="alert" className="today6__note">{unavailable} · {failures[first.id]}</p>}
+      <FailureAlert
+        message={failures[first.id]}
+        prefix={`${unavailable} · `}
+        className="today6__note"
+        league={first.id}
+        leagueName={first.name}
+        screen="Phone · Today"
+        route="phone/today"
+        port={port}
+      />}
     {first?.franchise && !failures[first.id] && !briefs[first.id] &&
       <p role="status" className="today6__note">Reading your boards…</p>}
     {first?.franchise && briefs[first.id] && <div className="today6__boards">

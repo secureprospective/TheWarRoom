@@ -60,6 +60,7 @@ func (h Hosted) deviceSession(w http.ResponseWriter, r *http.Request) (accounts.
 		h.sessionFailure(w, r, err)
 		return session, account, false
 	}
+	setFailureAccount(r.Context(), account.ID)
 	if h.Tokens == nil {
 		http.Error(w, "session refused", http.StatusUnauthorized)
 		return session, account, false

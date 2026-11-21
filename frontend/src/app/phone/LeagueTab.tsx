@@ -4,6 +4,7 @@ import { parseHostedRoster } from '../commissioner/hostedReadings';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { parseJobs } from '../commissioner/jobs';
 import type { PulseActivity, PulseResults, PulseSeat, PulseStandingRow } from '../data/nativePulse';
+import { FailureAlert } from '../data/FailureAlert';
 import { HQAct } from '../shell/HQAct';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import { PhoneSheet } from '../shell/PhoneAppFrame';
@@ -111,7 +112,15 @@ export function LeagueTab({ league, port = hostedWorkflow, read, readWeek, readR
         .map(([id, label]) => <HQAct key={id} role="tab" selected={view === id}
           className={view === id ? 'on' : ''} onAction={() => setView(id)}>{label}</HQAct>)}
     </div>
-    {!pulse ? <p className="lg5-empty" role="alert">{reading.pulse.error || NOT_YET}</p>
+    {!pulse ? <FailureAlert
+        message={reading.pulse.error || NOT_YET}
+        className="lg5-empty"
+        league={league.id}
+        leagueName={league.name}
+        screen="Phone · League"
+        route="phone/league"
+        port={port}
+      />
       : view === 'st' ? <Table pulse={pulse} mine={mine} onTeam={setTeam} />
         : view === 'mu' ? <Scores pulse={pulse} mine={mine} season={reading.season.value} onWatch={onWatch}
           readWeek={readWeek ?? ((l, s, w) => readPulseWeekResults(l, s, w, port))} />
@@ -151,7 +160,13 @@ export const streakClass = (streak?: string) => streak?.startsWith('W') ? 'w'
 function Table({ pulse, mine, onTeam }: { pulse: NativePulse; mine: string;
   onTeam: (row: PulseStandingRow) => void }) {
   const rows = useMemo(() => pulse.standings?.rows ?? [], [pulse.standings]);
-  if (!pulse.standings) return <p className="lg5-empty" role="alert">{pulse.standingsError || NOT_YET}</p>;
+  if (!pulse.standings) return <FailureAlert
+    message={pulse.standingsError || NOT_YET}
+    className="lg5-empty"
+    league={pulse.league}
+    screen="Phone · League"
+    route="phone/league"
+  />;
   if (!rows.length) return <p className="lg5-empty" role="status">
     {pulse.standings.words || 'No standings yet.'}</p>;
   const cut = cutOf(pulse, false);
@@ -209,7 +224,13 @@ function Scores({ pulse, mine, season, readWeek, onWatch }: { pulse: NativePulse
         <span>{names.get(g.home) ?? g.home}</span><span>{names.get(g.away) ?? g.away}</span>
         <em>{g.home === mine || g.away === mine ? 'YOUR MATCHUP · ' : ''}WEEK {week}</em></div>);
   } else if (!results) body = <p className="lg5-empty" role="status">Reading week {week}…</p>;
-  else if (!r) body = <p className="lg5-empty" role="alert">{results.error}</p>;
+  else if (!r) body = <FailureAlert
+    message={results.error || NOT_YET}
+    className="lg5-empty"
+    league={pulse.league}
+    screen="Phone · League"
+    route="phone/league"
+  />;
   else if (!r.games.length) body = <p className="lg5-empty" role="status">{r.words || 'No results yet.'}</p>;
   else body = mineFirst(r.games).map(g => {
     const me = g.home === mine || g.away === mine;
@@ -238,7 +259,13 @@ function Scores({ pulse, mine, season, readWeek, onWatch }: { pulse: NativePulse
 
 function Schedule({ pulse, mine, season }: { pulse: NativePulse; mine: string; season: Part<PulseSeason> }) {
   const s = season.value;
-  if (!s) return <p className="lg5-empty" role="alert">{season.error || pulse.scheduleError || NOT_YET}</p>;
+  if (!s) return <FailureAlert
+    message={season.error || pulse.scheduleError || NOT_YET}
+    className="lg5-empty"
+    league={pulse.league}
+    screen="Phone · League"
+    route="phone/league"
+  />;
   const names = new Map(pulse.seats.map(seat => [seat.franchise, seat.name]));
   const weeks = s.schedule.weeks.filter(w => w.games.some(g => g.home === mine || g.away === mine));
   if (!mine || !weeks.length) return <p className="lg5-empty" role="status">
@@ -273,7 +300,12 @@ function Activity({ activity, status }: { activity: Part<PulseActivity>; status?
       .map(([id, label]) => <HQAct key={id} className={filter === id ? 'on' : ''} selected={filter === id}
         onAction={() => setFilter(id)}>{label}</HQAct>)}</div>
     <section className="lg5-grp">
-      {filter !== 'pl' && (activity.error ? <p className="lg5-empty" role="alert">{activity.error}</p>
+      {filter !== 'pl' && (activity.error ? <FailureAlert
+          message={activity.error}
+          className="lg5-empty"
+          screen="Phone · League"
+          route="phone/league"
+        />
         : !events.length ? <p className="lg5-empty" role="status">No league activity yet.</p>
           : events.map(e => <div key={e.id} className="ac"><em>{when(e.when)} · {e.kind.toUpperCase()}</em>
             <p>{e.summary}</p></div>))}
@@ -337,7 +369,13 @@ function TeamSheet({ team, mine, commissioner, league, status, readRoster, seaso
       <p className="lg5-note">Owner: {ownerWords(seat)}</p>
       <section className="lg5-grp" aria-label="Roster">
         {!roster ? <p className="lg5-empty" role="status">Reading the roster…</p>
-          : roster.error ? <p className="lg5-empty" role="alert">{roster.error}</p>
+          : roster.error ? <FailureAlert
+              message={roster.error}
+              className="lg5-empty"
+              league={league}
+              screen="Phone · League"
+              route="phone/league"
+            />
             : !roster.value!.length ? <p className="lg5-empty" role="status">No players on this roster.</p>
               : roster.value!.map(p => <div key={p.id} className="lg5-pk"><span><b>{p.name}</b>
                 <em>{p.position || '–'}{status?.facts.get(p.id)

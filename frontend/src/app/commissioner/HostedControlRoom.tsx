@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { HQAct } from '../shell/HQAct';
 import { onHostedTopics } from '../data/hostedReads';
+import { FailureAlert } from '../data/FailureAlert';
 import { HostedRules } from './HostedRules';
 import { HostedCommissionerActTray } from './CommissionerActTray';
 import { HostedBackupNow } from './HostedBackupNow';
@@ -177,7 +178,14 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         aria-label={hostedControlTabs.find(([id]) => id === tab)?.[1]}>
         {routeWords && <p role="status" className="cr-note">{routeWords}</p>}
         {tab === 'jobs' && <div className="hosted-jobs-column">
-          {jobsState.error && <p role="alert" className="cr-note">{jobsState.error}</p>}
+          {jobsState.error && <FailureAlert
+            message={jobsState.error}
+            className="cr-note"
+            league={league}
+            screen="Control Room · Jobs"
+            route="control/jobs"
+            port={port}
+          />}
           <HostedControlRoomJobs league={league} jobs={jobsState.jobs} snoozes={jobSnoozes} now={jobNow}
             snoozeError={snoozeError} pendingJob={snoozePending} onSnooze={snoozeJob} onWake={wakeJob}
             onOpen={openTool} onUnavailable={showRoute} />
@@ -187,7 +195,13 @@ export function HostedControlRoom({ league, port, heldRoom }: {
         </div>}
         {tab === 'situations' && <HostedControlRoomSituations
           onTab={navigateTo} onTool={next => openTool(next)} onUnavailable={showRoute} />}
-        {tab === 'rules' && roomState.error && <p role="alert">{roomState.error}</p>}
+        {tab === 'rules' && roomState.error && <FailureAlert
+          message={roomState.error}
+          league={league}
+          screen="Control Room · Rules"
+          route="control/rules"
+          port={port}
+        />}
         {tab === 'rules' && roomState.stale &&
           <p role="status">Rules are read-only until refreshed from the league server.</p>}
         {tab === 'rules' && roomState.message && <p role="status">{roomState.message}</p>}
@@ -248,7 +262,13 @@ function HostedServerTab({ league, port = hostedWorkflow }: { league: string; po
     <h4>Feeds and upgrades</h4>
     <p>Feed controls and upgrades are operator-only and unavailable here.</p>
     <h4>Ledger</h4>
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      league={league}
+      screen="Control Room · Server"
+      route="control/server"
+      port={port}
+    />}
     {!ledger && !error && <p role="status">Reading server ledger…</p>}
     {ledger && (ledger.entries.length ? <ol>{ledger.entries.map(entry => <li key={entry.id}>
       <strong>{entry.what}</strong><p>By {entry.who} · {new Date(entry.when).toLocaleString()}</p>

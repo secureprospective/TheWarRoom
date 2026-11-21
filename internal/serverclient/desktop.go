@@ -342,6 +342,22 @@ type retryAfterRefusal struct {
 func (e *retryAfterRefusal) Error() string { return e.err.Error() }
 func (e *retryAfterRefusal) Unwrap() error { return e.err }
 
+type serverCodedError struct {
+	code string
+	err  error
+}
+
+func (e *serverCodedError) Error() string { return e.err.Error() }
+func (e *serverCodedError) Unwrap() error { return e.err }
+
+func serverErrorCode(err error) string {
+	var coded *serverCodedError
+	if errors.As(err, &coded) {
+		return coded.code
+	}
+	return ""
+}
+
 func retryDelay(value string) (time.Duration, bool) {
 	seconds, err := strconv.Atoi(value)
 	if err != nil || seconds < 0 || seconds > 30 {
@@ -395,6 +411,9 @@ func postDesktopSnapshot[T desktopPayload](ctx context.Context, session desktopS
 		unauthorized := response.StatusCode == http.StatusUnauthorized
 		refusal := desktopRefusal(path, response.StatusCode)
 		refusal = desktopWorkflowRefusal(response, path, refusal)
+		if code := response.Header.Get(serverhttp.ErrorCodeHeader); serverhttp.ValidErrorCode(code) {
+			refusal = &serverCodedError{code: code, err: refusal}
+		}
 		if response.StatusCode == http.StatusServiceUnavailable {
 			refusal = &retryAfterRefusal{after: response.Header.Get("Retry-After"), err: refusal}
 		}

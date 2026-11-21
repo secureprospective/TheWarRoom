@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { nativeAction, type NativeView } from './nativeApi';
+import { FailureAlert } from '../data/FailureAlert';
 import { Act } from '../commands/Act';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import '../look/look.css';
@@ -40,6 +41,12 @@ export default function UpdateRequired({ initial, onRetry }: {
       args={{ screen: 'desktop-update', action: 'check', value: '' }} label={label}>{label}</Act></div>
     {pending && <p role="status">{app ? 'Keep this window open while the update is checked.'
       : 'Returning to sign in…'}</p>}
-    {error && <p role="alert">{error}</p>}
+    {error && <FailureAlert
+      message={error}
+      league={initial.league}
+      screen="Update required"
+      route="account/update"
+      allowSend={false}
+    />}
   </main>;
 }

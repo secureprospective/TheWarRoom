@@ -4,6 +4,7 @@ import type { PlayerCandidate } from '../shell/ThinPlayerSearch';
 import type { Node } from '../shell/nodes';
 import type { PulseTab } from '../shell/NativeLeaguePulse';
 import { HostedRules } from './HostedRules';
+import { FailureAlert } from '../data/FailureAlert';
 import { Review } from './HostedReview';
 import { createHostedLeagueRoom, type HostedLeagueRoom, type HostedPort } from './hostedRoom';
 import { HostedControlRoom } from './HostedControlRoom';
@@ -39,7 +40,13 @@ export function HostedCommissionerLeague({ league, port, embedded, view = 'home'
       </>}
       <HQAct disabled={state.pending} onAction={() => room.refresh()}>Refresh league server</HQAct>
     </nav>
-    {tab !== 'control' && state.error && <p role="alert">{state.error}</p>}
+    {tab !== 'control' && state.error && <FailureAlert
+      message={state.error}
+      league={league}
+      screen="Commissioner"
+      route="control/league"
+      port={port}
+    />}
     {tab !== 'control' && state.stale &&
       <p role="status">Rules are read-only until refreshed from the league server.</p>}
     {tab !== 'control' && state.message && <p role="status">{state.message}</p>}
