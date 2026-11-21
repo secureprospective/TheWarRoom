@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { AgeBand } from '../data/nativeValues';
 import type { Node } from './nodes';
 import { useContractRead, type ReadPublish } from '../contracts/Contracts';
@@ -16,7 +17,11 @@ export type WarRoomNative = { league: string; mine: string; port?: HostedPort;
   leave: (node?: Node) => void; week?: number; embedded?: boolean; tabs?: HTMLElement | null;
   workspace?: string; navigateWorkspace?: (workspace: string) => void;
   reading?: NativeHQ; owner?: boolean; inspectPlayer?: PlayerCandidate;
-  onPlayers?: (players: PlayerCandidate[]) => void };
+  onPlayers?: (players: PlayerCandidate[]) => void;
+  /** The league's franchises once read, for a franchise picker outside the War Room. */
+  onTeams?: (teams: { id: string; name: string }[]) => void;
+  /** Draw in the desktop v3 frame with this league's badge (tabs built so far; the rest as before). */
+  v3?: { badge: ReactNode } };
 export type WarRoomContext = { snapshot: Snapshot; mine: string; week: number; native?: WarRoomNative };
 export type WarRoomHeaderReading = { name?: string; record?: string; standing?: string;
   standingsNote?: string;

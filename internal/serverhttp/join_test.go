@@ -9,6 +9,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -187,6 +189,11 @@ func TestJoinLinkConcurrentClaimsConsumeOneSeatOnly(t *testing.T) {
 func TestCommissionerTakesAnOpenFranchise(t *testing.T) {
 	f := newHostedFixture(t, false) // the commissioner holds no team, like CT 257
 	commish := governance.Principal(f.principal)
+	// The console's no-login door seats whoever holds the commissioner role, found from the league itself.
+	if found, err := (leagueservice.JoinSeats{Store: f.history}).Commissioner(t.Context(), "native.hosted"); err != nil ||
+		found != commish {
+		t.Fatalf("league commissioner = %q, %v; want %q", found, err, commish)
+	}
 	if err := f.join.Take(t.Context(), "native.hosted", "franchise.02", governance.Principal("acct.00000000-0000-4000-8000-000000000000")); err == nil {
 		t.Fatal("a non-commissioner took a franchise")
 	}

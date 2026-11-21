@@ -61,7 +61,8 @@ function Lens({ label, side, ends }: { label: string; side?: LensSide; ends: [st
     <span className="ends"><span>{ends[0]}</span><span>{ends[1]}</span></span></div>
     <span className="n">{side ? signed(side.net) : <CompactAbsent />}</span></div>;
 }
-export function WarRoomTrade({ context, catalog, deal, change, select, lens, lensPending, previewNonce }: {
+/** The trade desk's reads, deal edits and send state, shared by the War Room desk and the v3 desk. */
+export function useWarRoomTrade({ context, catalog, deal, change, select, lens, lensPending, previewNonce }: {
   context: WarRoomContext; catalog?: WarRoomCatalog; deal: WarRoomDeal; change: (d: WarRoomDeal) => void;
   select: (a: WarRoomAsset) => void; lens?: WarRoomLens; lensPending?: boolean; previewNonce?: number }) {
   const [filter, setFilter] = useState<typeof filters[number]>('ALL');
@@ -100,6 +101,19 @@ export function WarRoomTrade({ context, catalog, deal, change, select, lens, len
   };
   const waiting = lens?.preparing ? 'Values are being prepared' : absent(lensPending);
   const n = held?.starterN;
+  return {
+    filter, setFilter, send, setSend, fingerprint, mine, theirs, key, partner, preview, delta, held, value,
+    ranked, teamName, toggle, block, names, verdict, total, waiting, n
+  };
+}
+export function WarRoomTrade({ context, catalog, deal, change, select, lens, lensPending, previewNonce }: {
+  context: WarRoomContext; catalog?: WarRoomCatalog; deal: WarRoomDeal; change: (d: WarRoomDeal) => void;
+  select: (a: WarRoomAsset) => void; lens?: WarRoomLens; lensPending?: boolean; previewNonce?: number }) {
+  const {
+    filter, setFilter, send, setSend, fingerprint, mine, theirs, key, partner, preview, delta, held, value,
+    ranked, teamName, toggle, block, names, verdict, total, waiting, n
+  } = useWarRoomTrade({ context, catalog, deal, change, select, lens, lensPending,
+    previewNonce });
   return <section className="desk ws on" aria-label="Trade desk"><div className="shelf">
     <div className="ch"><b>MY SHELF</b><span>drag to SEND</span></div><div className="bench">
       <div className="filters">{filters.map(p => <WarRoomAct key={p} className="chip" active={p === filter}

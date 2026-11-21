@@ -74,9 +74,13 @@ function createSeasonQuery(league: string, port: HostedPort) {
   });
 }
 
-export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool }: {
-  league: string; port?: HostedPort; onTool(definition: ActDefinition): void;
-}) {
+/** Season calendar, schedule, playoff and rollover reads and action state; shared by the old room and
+ *  the desktop v3 Season body. */
+export function useHostedSeason(
+  league: string,
+  port: HostedPort = hostedWorkflow,
+  onTool?: (definition: ActDefinition) => void,
+) {
   const query = useMemo(() => createSeasonQuery(league, port), [league, port]);
   const state = query.use();
   const [backingUpForRollover, setBackingUpForRollover] = useState(false);
@@ -88,8 +92,16 @@ export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool 
     && hostedCommandAvailable(command));
   const open = (command: string) => {
     const definition = actTable.find(action => action.command === command);
-    if (definition) onTool(definition);
+    if (definition && onTool) onTool(definition);
   };
+  return { state, available, open, backingUpForRollover, setBackingUpForRollover };
+}
+
+export function HostedControlRoomSeason({ league, port = hostedWorkflow, onTool }: {
+  league: string; port?: HostedPort; onTool(definition: ActDefinition): void;
+}) {
+  const { state, available, open, backingUpForRollover, setBackingUpForRollover } =
+    useHostedSeason(league, port, onTool);
   return <div className="cr-col hosted-season" aria-label="Season">
     {state.error && <p role="alert">{state.error}</p>}
     {!state.schedule && !state.error && <p role="status">Reading season from the league server…</p>}

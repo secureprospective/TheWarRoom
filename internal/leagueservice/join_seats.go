@@ -95,6 +95,19 @@ func (j JoinSeats) IsCommissioner(ctx context.Context, league string, p governan
 	return state.HasRole(p, governance.Commissioner), nil
 }
 
+// Commissioner returns the league's one commissioner, for the server console's no-login seat door.
+func (j JoinSeats) Commissioner(ctx context.Context, league string) (governance.Principal, error) {
+	_, state, err := j.policy(ctx, league)
+	if err != nil {
+		return "", err
+	}
+	members := state.Members(governance.Commissioner)
+	if len(members) != 1 {
+		return "", fmt.Errorf("league has %d commissioners; the no-login seat needs exactly one", len(members))
+	}
+	return members[0], nil
+}
+
 // LinkClaimed reports whether a committed seat event has consumed this join-link digest.
 func (j JoinSeats) LinkClaimed(ctx context.Context, league, digest string) (bool, error) {
 	records, _, err := j.policy(ctx, league)

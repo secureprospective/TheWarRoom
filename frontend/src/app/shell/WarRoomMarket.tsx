@@ -58,9 +58,9 @@ type BidEditor = { type: 'place'; player: WarRoomMarketPlayer; salary: string; y
 type BidReview = Extract<WarRoomMarketActionResult, { kind: 'review' }>;
 type RefreshedBids = { bids?: WarRoomOwnBid[]; revision?: number; capRoom?: number; error?: string };
 type RosterAddEditor = { player: WarRoomMarketPlayer; drop: string; reason: string };
-export function WarRoomMarket({ context, room, needs, select, onPlayers }: { context: WarRoomContext;
-  room?: number; needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void;
-  onPlayers?: (players: PlayerCandidate[]) => void }) {
+/** The pool's reads and bid actions, shared by the War Room market and the desktop v3 pool. */
+export function useWarRoomMarket(context: WarRoomContext, room?: number, needs?: LensNeed[],
+  onPlayers?: (players: PlayerCandidate[]) => void) {
   const [refresh, setRefresh] = useState(0);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
@@ -227,6 +227,26 @@ export function WarRoomMarket({ context, room, needs, select, onPlayers }: { con
           ? 'Waiver status is unavailable; direct add is unavailable'
           : value.writable !== true || !value.football || value.rosterRevision === undefined
             ? 'Add unavailable until the server reading is ready' : '';
+  return {
+     refresh, setRefresh, filter, setFilter, search, setSearch, pending, setPending, error, setError,
+    notice, setNotice, editor, setEditor, review, setReview, addEditor, setAddEditor, addReview,
+    setAddReview, addNotice, setAddNotice, fresh, setFresh, own, setOwn, reading, value, targets,
+    capRoom, bidRevision, sourceBids, bids, shown, change, bid, revise, reviewBid, reviewRosterAdd,
+    confirmRosterAdd, confirmBid, drag, needPositions, players, filterUnavailable, canManageBids,
+    canManageTargets, addUnavailable
+  };
+}
+export function WarRoomMarket({ context, room, needs, select, onPlayers }: { context: WarRoomContext;
+  room?: number; needs?: LensNeed[]; select: (p: WarRoomMarketPlayer) => void;
+  onPlayers?: (players: PlayerCandidate[]) => void }) {
+  const {
+     setRefresh, filter, setFilter, search, setSearch, pending, error, setError, notice, editor,
+    setEditor, review, setReview, addEditor, setAddEditor, addReview, setAddReview, addNotice,
+    setAddNotice, fresh, setFresh, reading, value, targets, capRoom, bids, shown, change, bid, revise,
+    reviewBid, reviewRosterAdd, confirmRosterAdd, confirmBid, drag, players, filterUnavailable,
+    canManageBids, canManageTargets, addUnavailable
+  } =
+    useWarRoomMarket(context, room, needs, onPlayers);
   return <section className="mk3 ws on" aria-label="Market"><div className="tg"><div className="ch">
     <b>MY TARGETS</b><span>ranked per need</span></div><div className="tg-l">
     {value?.targets?.length ? [...warRoomTargetLanes(context, value)].map(([position, lane]) => <div

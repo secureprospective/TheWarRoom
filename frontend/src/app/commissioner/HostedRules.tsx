@@ -13,10 +13,13 @@ import { Review } from './HostedReview';
 import SideTray from './SideTray';
 import './commissioner.css';
 
-const hostedRule = (field: string) =>
+export const hostedRule = (field: string) =>
   /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(field);
 
-const SECTION_BOARD: Record<string, string> = {
+export const RULE_BOARDS = ['Structure', 'Rosters', 'Scoring', 'Money', 'Moves', 'Draft', 'Other'] as const;
+export type RuleBoard = (typeof RULE_BOARDS)[number];
+
+export const SECTION_BOARD: Record<string, RuleBoard> = {
   'League shape': 'Structure', 'Player pools': 'Structure',
   Roster: 'Rosters', Lineup: 'Rosters', IR: 'Rosters', 'Taxi squad': 'Rosters',
   Scoring: 'Scoring', Standings: 'Scoring',
@@ -25,17 +28,15 @@ const SECTION_BOARD: Record<string, string> = {
   Schedule: 'Structure', Playoffs: 'Structure', Calendar: 'Structure',
   Draft: 'Draft',
 };
-const RULE_BOARDS = ['Structure', 'Rosters', 'Scoring', 'Money', 'Moves', 'Draft', 'Other'] as const;
 
-function ruleSource(row: RuleRow) {
+export function ruleSource(row: RuleRow): string {
   if (row.governed) return row.governed.who === 'commissioner' ? 'YOU' : row.governed.who;
   if (/import/i.test(row.citation)) return 'IMPORTED';
   return row.citation || 'Starting value';
 }
 
-export function HostedRules({ rules, commissioner, room }: {
-  rules: Rules; commissioner: boolean; room: HostedLeagueRoom;
-}) {
+/** Shared state and side-tray registration for viewing and editing hosted league rules. */
+export function useHostedRules(rules: Rules | undefined, room: HostedLeagueRoom) {
   const [selection, setSelection] = useState<{ field: string; opener: HTMLElement }>();
   const screen = useId();
   const background = useRef<HTMLDivElement>(null);
@@ -44,7 +45,34 @@ export function HostedRules({ rules, commissioner, room }: {
     if (args.action === 'close') close();
   }), [screen, room]);
   const state = room.use();
-  const row = rules.sections.flatMap(s => s.rows).find(r => r.field === selection?.field);
+  const row = rules?.sections.flatMap(s => s.rows).find(r => r.field === selection?.field);
+  const open = (field: string, opener: HTMLElement) => {
+    room.cancel();
+    setSelection({ field, opener });
+  };
+  return { selection, open, close, screen, background, state, row };
+}
+
+/** Embedded rule-change editor and review tray, shared by the old room and v3 Rules tab. */
+export function HostedRuleEditorTray({
+  rules, row, room, opener, screen, background, onClose, review,
+}: {
+  rules: Rules; row: RuleRow; room: HostedLeagueRoom; opener: HTMLElement;
+  screen: string; background: HTMLElement | null; onClose: () => void; review: boolean;
+}) {
+  return <SideTray title={`Change ${row.label}`} screen={screen}
+    opener={opener} background={background} onClose={onClose}
+    closeLabel="Close rule editor">
+    <RuleEditor key={`${row.field}:${rules.revision}`} row={row}
+      rules={rules} room={room} disabled={!room.canChange() || review} />
+    {review && <Review room={room} />}
+  </SideTray>;
+}
+
+export function HostedRules({ rules, commissioner, room }: {
+  rules: Rules; commissioner: boolean; room: HostedLeagueRoom;
+}) {
+  const { selection, open, close, screen, background, state, row } = useHostedRules(rules, room);
   return <>
     <div ref={background}>
       <h3>League rules</h3>
@@ -54,7 +82,7 @@ export function HostedRules({ rules, commissioner, room }: {
       {RULE_BOARDS.map(board => {
         const rows = rules.sections.flatMap(section => section.rows
           .filter(() => (SECTION_BOARD[section.label] ?? 'Other') === board)
-          .map(row => ({ row, section: section.label })));
+          .map(r => ({ row: r, section: section.label })));
         if (!rows.length) return null;
         return <section key={board} aria-label={`${board} rules`}>
           <h4>{board}</h4>
@@ -64,22 +92,16 @@ export function HostedRules({ rules, commissioner, room }: {
               {r.pending.map(pending => <span className="hosted-rule-pending" key={pending.entry}>
                 Takes effect: {pending.when}</span>)}
               {commissioner && hostedRule(r.field) && <HQAct disabled={!room.canChange()}
-                onAction={() => {
-                  room.cancel();
-                  setSelection({ field: r.field, opener: document.activeElement as HTMLElement });
-                }}>Change {r.label}</HQAct>}</dd>
+                onAction={() => open(r.field, document.activeElement as HTMLElement)}>
+                Change {r.label}</HQAct>}</dd>
             <small>{section}</small>
           </div>)}</dl>
         </section>;
       })}
     </div>
-    {commissioner && row && selection && <SideTray title={`Change ${row.label}`} screen={screen}
-      opener={selection.opener} background={background.current} onClose={close}
-      closeLabel="Close rule editor">
-      <RuleEditor key={`${row.field}:${rules.revision}`} row={row}
-        rules={rules} room={room} disabled={!room.canChange() || Boolean(state.review)} />
-      {state.review && <Review room={room} />}
-    </SideTray>}
+    {commissioner && row && selection && <HostedRuleEditorTray rules={rules} row={row} room={room}
+      opener={selection.opener} screen={screen} background={background.current} onClose={close}
+      review={Boolean(state.review)} />}
   </>;
 }
 

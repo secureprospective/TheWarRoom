@@ -37,7 +37,7 @@ function decisionDate(value: string): string {
   return new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(new Date(value));
 }
-function ContractDecisionList({ reading, canDecide, decide }: { reading?: ContractDecisions;
+export function ContractDecisionList({ reading, canDecide, decide }: { reading?: ContractDecisions;
   canDecide: boolean; decide?: (selection: ContractDecisionSubmit) => void }) {
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
