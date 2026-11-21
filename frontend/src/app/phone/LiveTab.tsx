@@ -289,17 +289,19 @@ function useSides(brief: HomeBrief | undefined, row: PulseRow | undefined, leagu
   const [read, setRead] = useState<{ key: string; matchup?: PulseMatchup; error?: string }>();
   const results = brief?.results;
   const own = row?.mine ? brief?.matchup : undefined;
+  const rowKey = row?.key, away = row?.game.away, home = row?.game.home;
+  const season = brief?.pulse?.season;
+  const hasOwn = Boolean(own);
   useEffect(() => {
-    if (!row || !results || !brief?.pulse || own) return;
+    if (!rowKey || !away || !home || !results || season === undefined || hasOwn) return;
     let active = true;
-    const { away, home } = row.game;
     const starters = (id: string) => scoreOf(results, id)?.starters.map(s => s.player) ?? [];
-    readPulseMatchup(league, brief.pulse.season, results.week, [away, home],
+    readPulseMatchup(league, season, results.week, [away, home],
       { [away]: starters(away), [home]: starters(home) }, port)
-      .then(matchup => { if (active) setRead({ key: row.key, matchup }); })
-      .catch(cause => { if (active) setRead({ key: row.key, error: String(cause?.message ?? cause) }); });
+      .then(matchup => { if (active) setRead({ key: rowKey, matchup }); })
+      .catch(cause => { if (active) setRead({ key: rowKey, error: String(cause?.message ?? cause) }); });
     return () => { active = false; };
-  }, [row, results, brief?.pulse, own, league, port]);
+  }, [rowKey, away, home, results, season, hasOwn, league, port]);
   if (!row) return { left: [], right: [], leftName: '', rightName: '',
     words: 'No game is read for this week yet.' };
   const matchup = own ?? (read?.key === row.key ? read.matchup : undefined);
@@ -363,7 +365,7 @@ function FieldState({ game, words, fresh, anchor, reduced }: {
   if (!game) return <section className="live6__card" aria-label="NFL live" ref={anchor}>
     <p className="live6__note">{words}</p></section>;
   return <section className="live6__live" aria-label="NFL live" ref={anchor}>
-    <LiveField game={game} fresh={fresh} reduced={reduced} /></section>;
+    <LiveField key={game.id} game={game} fresh={fresh} reduced={reduced} /></section>;
 }
 
 function Plays({ game }: { game?: Game }) {
