@@ -126,3 +126,36 @@ export class PlayQueue<T> {
 
 /** presentation: reduced motion gets the mock's plain text banner instead of field motion. */
 export function presentation(reduced: boolean): 'banner' | 'motion' { return reduced ? 'banner' : 'motion'; }
+
+/** driveStart: where the current drive began, from the newest plays run by the side with the ball. */
+export function driveStart(game: Game, spot: Spot): number {
+  let x = spot.x;
+  for (const p of [...game.plays].sort((a, b) => b.sequence - a.sequence)) {
+    const s = fieldSpot(p.start, game);
+    if (!s || s.poss !== spot.poss) break;
+    x = s.x;
+  }
+  return x;
+}
+
+const ORD = ['1ST', '2ND', '3RD', '4TH'];
+export function spotWords(x: number, game: Game): string {
+  const r = Math.round(x);
+  return r === 50 ? '50' : r < 50 ? `${game.away.abbreviation} ${r}` : `${game.home.abbreviation} ${100 - r}`;
+}
+export function downWords(s: Spot): string {
+  if (s.down < 1) return '';
+  const goal = (s.poss === 'L' ? 100 - s.x : s.x) <= s.dist;
+  return `${ORD[s.down - 1]} & ${goal ? 'GOAL' : s.dist}`;
+}
+
+/** bannerText is the mock's reduced-motion banner: the moment in words and where the ball now is. */
+export function bannerText(p: FieldPlay, game: Game, after?: Spot): { big: string; small: string } {
+  const ab = (s: Side) => s === 'L' ? game.away.abbreviation : game.home.abbreviation;
+  const big = p.scoring === 'td' ? `TOUCHDOWN ${ab(p.poss)}`
+    : p.scoring === 'fg' ? `FIELD GOAL ${ab(p.poss)} · ${p.kick} YDS` : p.title.toUpperCase();
+  const small = p.scoring ? `${ab('L')} ${p.score.L} · ${ab('R')} ${p.score.R}`
+    : !after ? '' : p.flip ? `${ab(after.poss)} ball at ${spotWords(after.x, game)}`
+      : `${downWords(after)} at ${spotWords(after.x, game)}`;
+  return { big, small };
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FieldState, Game, Play } from '../now/liveContract';
-import { fieldPlay, fieldSpot, freshPlays, PlayQueue, presentation } from './livePlays';
+import { bannerText, driveStart, fieldPlay, fieldSpot, freshPlays, PlayQueue, presentation } from './livePlays';
 
 const at = (possession: string, toEndzone: number, down = 1, distance = 10): FieldState =>
   ({ possession, down, distance, yardLine: 0, toEndzone });
@@ -124,5 +124,20 @@ describe('presentation', () => {
   it('shows the text banner instead of motion when reduced motion is asked for', () => {
     expect(presentation(true)).toBe('banner');
     expect(presentation(false)).toBe('motion');
+  });
+  it('words the banner the way the mock does', () => {
+    const g = game();
+    const td = fieldPlay(mk('I.Pacheco left end for 12 yards, TOUCHDOWN.', at('H', 12), null, [3, 13]), g)!;
+    expect(bannerText(td, g)).toEqual({ big: 'TOUCHDOWN KC', small: 'BUF 3 · KC 13' });
+    const run = fieldPlay(mk('J.Cook right end for 4 yards.', at('A', 70), at('A', 66, 2, 6)), g)!;
+    expect(bannerText(run, g, fieldSpot(at('A', 66, 2, 6), g))).toEqual({ big: '4-YARD RUN',
+      small: '2ND & 6 at BUF 34' });
+  });
+});
+
+describe('driveStart', () => {
+  it('walks back through the plays run by the side with the ball', () => {
+    const g = game([mk('a', at('A', 40), null), mk('b', at('H', 75), null), mk('c', at('H', 66), null)]);
+    expect(driveStart(g, fieldSpot(at('H', 57), g)!)).toBe(75);
   });
 });

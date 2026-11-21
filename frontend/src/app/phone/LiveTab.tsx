@@ -3,7 +3,7 @@ import { hostedWorkflow } from '../commissioner/api';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { onHostedTopics } from '../data/hostedReads';
 import { myChance, percent, pointsLabel } from '../data/nativePulse';
-import { Field, gameTime } from '../now/LiveGame';
+import { gameTime } from '../now/LiveGame';
 import type { Game } from '../now/liveContract';
 import { clockWords, followKey, useHostedGames, useNow } from '../shell/hostedGames';
 import { unavailable } from '../shell/hqModel';
@@ -15,6 +15,7 @@ import { espnTeam, pairStarters, pulseRows, scoreOf, starterRows, type PulseRow,
   from '../shell/pulseModel';
 import { readPulseMatchup, type PulseMatchup } from '../shell/pulseReads';
 import { compactLine } from '../shell/statLine';
+import { LiveField } from './LiveField';
 import './LiveTab.css';
 
 type BriefReader = (league: string, mine: string, port: HostedPort) => Promise<HomeBrief>;
@@ -279,77 +280,8 @@ function FieldState({ game, words, fresh, anchor }: { game?: Game; words: string
   anchor: RefObject<HTMLElement> }) {
   if (!game) return <section className="live6__card" aria-label="NFL live" ref={anchor}>
     <p className="live6__note">{words}</p></section>;
-  const s = game.state;
-  const known = game.status === 'in' && s !== null && s.toEndzone >= 0
-    && [game.home.id, game.away.id].includes(s.possession);
-  const offense = known ? (s.possession === game.home.id ? game.home : game.away) : undefined;
-  const defense = offense === game.home ? game.away : game.home;
-  const ballOn = known && offense ? s.toEndzone > 50 ? `${offense.abbreviation} ${100 - s.toEndzone}`
-    : s.toEndzone === 50 ? '50' : `${defense.abbreviation} ${s.toEndzone}` : '—';
-  const down = known && s.down > 0 ? `${ordinal(s.down)} & ${s.distance}` : '';
   return <section className="live6__live" aria-label="NFL live" ref={anchor}>
-    <div className="live6__score">
-      <Side team={game.away} ball={known && offense === game.away} />
-      <div className="live6__mid"><b>{clockWords(game)}</b>{down && <span className="live6__dd">{down}</span>}
-        {known && <span>{ballOn}</span>}</div>
-      <Side team={game.home} ball={known && offense === game.home} right />
-    </div>
-    {known && <div className="live6__field"><Field game={game} /></div>}
-    {known && offense && <DriveBar game={game} toEndzone={s.toEndzone} distance={s.down > 0 ? s.distance : 0}
-      homeHasBall={offense === game.home} />}
-    <div className="live6__head live6__pad"><b>NFL live</b>
-      <span className="live6__m">
-        {game.away.abbreviation} at {game.home.abbreviation} · {gameTime(game)}</span></div>
-    {fresh && <p className="live6__m live6__pad">{fresh}</p>}
-    <div className="live6__sit">
-      <div><span>Down</span><b>{known && s.down > 0 ? ordinal(s.down).toUpperCase() : '—'}</b></div>
-      <div><span>To go</span><b>{known && s.down > 0 ? s.distance : '—'}</b></div>
-      <div><span>Ball on</span><b>{ballOn}</b></div>
-      <div><span>To goal</span><b>{known ? `${s.toEndzone} YD` : '—'}</b></div>
-    </div>
-    {!known && <p className="live6__note">{game.status === 'pre' ? gameTime(game)
-      : game.status === 'post' ? 'Final' : 'Field position not supplied'}</p>}
-    <LastPlay game={game} />
-  </section>;
-}
-
-function Side({ team, ball, right }: { team: Game['home']; ball: boolean; right?: boolean }) {
-  const id = <div className="live6__id"><b>{team.abbreviation}</b>
-    {team.record && <span>{team.record}</span>}</div>;
-  const mark = ball && <i className="live6__poss" title="has the ball" aria-label="has the ball" />;
-  return <div className={`live6__side${right ? ' is-r' : ''}`}>
-    {right ? <>{mark}<strong>{team.score}</strong>{id}</> : <>{id}<strong>{team.score}</strong>{mark}</>}
-  </div>;
-}
-
-/** DriveBar is the mock's drive bar: the field left (away goal) to right (home goal), the ball and the
- *  line to gain, placed from the read's own yards-to-endzone. */
-function DriveBar({ game, toEndzone, distance, homeHasBall }: { game: Game; toEndzone: number;
-  distance: number; homeHasBall: boolean }) {
-  // Away defends the left goal: the away offense drives right, the home offense drives left.
-  const at = (yards: number) => homeHasBall ? yards : 100 - yards;
-  const ball = at(toEndzone);
-  const gain = distance > 0 ? at(Math.max(0, toEndzone - distance)) : undefined;
-  const pos = (yards: number) => `${(100 / 120) * (10 + yards)}%`;
-  return <div className="live6__dbar" data-dir={homeHasBall ? 'l' : 'r'} data-testid="live-drive-bar"
-    aria-label={`Ball ${toEndzone} yards from the goal`} role="img">
-    <div className="live6__track"><i className="live6__ez" /><i className="live6__ez is-r" />
-      <i className="live6__ball" style={{ left: pos(ball) }} />
-      {gain !== undefined && <i className="live6__first" style={{ left: pos(gain) }} />}</div>
-    <div className="live6__dnums"><span>{game.away.abbreviation}</span><span>20</span><span>50</span>
-      <span>20</span><span>{game.home.abbreviation}</span></div>
-  </div>;
-}
-
-/** LastPlay is the mock's latest-play card: the read's own last play, or its absence. */
-function LastPlay({ game }: { game: Game }) {
-  const last = game.last ?? [...game.plays].sort((a, b) => b.sequence - a.sequence)[0];
-  return <section className="live6__lastp" aria-label="Latest play">
-    <div className="live6__head"><b>Last play</b>
-      {last && <span className="live6__m">Q{last.period} {last.clock}</span>}</div>
-    <p>{last ? last.text
-      : game.status === 'pre' ? 'The game has not kicked off.' : 'No play is held yet.'}</p>
-  </section>;
+    <LiveField game={game} fresh={fresh} /></section>;
 }
 
 function Plays({ game }: { game?: Game }) {
@@ -391,6 +323,5 @@ function onField(p: PulseStarterRow, g?: Game) {
 }
 /** surname: the mock's starter tiles name a player by surname ("Patrick Mahomes" reads "Mahomes"). */
 export function surname(name: string) { return name.trim().split(/\s+/).slice(1).join(' ') || name; }
-function ordinal(n: number) { return `${n}${['th', 'st', 'nd', 'rd'][n] ?? 'th'}`; }
 
 export default LiveTab;

@@ -84,7 +84,7 @@ describe('LiveTab', () => {
     expect(region('My matchup')).toContain('Mahomes');
     expect(region('NFL games')).toContain('BUF3KC7Q2 8:42');
     expect(region('League matchups')).toBe('');
-    expect(region('NFL live')).toContain('2nd & 7');
+    expect(region('NFL live')).toContain('2ND & 7');
     expect(region('NFL live')).toContain('KC 43');
     expect(region('NFL live')).toContain('57 YD');
     expect(host!.querySelector('.live6__fresh')?.textContent).toContain('updated');
@@ -151,7 +151,7 @@ describe('LiveTab', () => {
   });
   it('draws the field graphic only when the field position is known', async () => {
     await show(async () => brief([myGameRow]));
-    expect(host!.querySelector('[aria-label="NFL live"] .live-field')).not.toBeNull();
+    expect(host!.querySelector('[aria-label="NFL live"] .field:not([hidden])')).not.toBeNull();
   });
   it('shows no field graphic when the game holds no field position', async () => {
     const noPosition = { ...nflGame, state: null };
@@ -160,19 +160,18 @@ describe('LiveTab', () => {
         board: { stale: false, source: 'ESPN', at: '', failure: '', games: [noPosition] } })
       : reply({ league: 'league', game: noPosition, at: '', stale: false, words: '' }));
     await show(async () => brief([myGameRow]), port);
-    expect(host!.querySelector('[aria-label="NFL live"] .live-field')).toBeNull();
+    expect(host!.querySelector('[aria-label="NFL live"] .field:not([hidden])')).toBeNull();
     expect(region('NFL live')).toContain('Field position not supplied');
   });
   it('shows the mock score header, drive bar and last play from the followed game', async () => {
     await show(async () => brief([myGameRow]));
     const live = host!.querySelector('[aria-label="NFL live"]')!;
-    expect(live.querySelector('.live6__side.is-r .live6__id')?.textContent).toBe('KC8-2');
-    expect(live.querySelector('.live6__side.is-r [aria-label="has the ball"]')).not.toBeNull();
-    expect(live.querySelector('.live6__side:not(.is-r) [aria-label="has the ball"]')).toBeNull();
+    expect(live.querySelector('.tm-R .tm-ab')?.textContent).toBe('KC');
+    expect(live.querySelector('[aria-label="Score"]')?.getAttribute('data-poss')).toBe('R');
     const bar = host!.querySelector<HTMLElement>('[data-testid="live-drive-bar"]')!;
     expect(bar.dataset.dir).toBe('l');
-    expect(bar.querySelector<HTMLElement>('.live6__ball')!.style.left).toBe(`${(100 / 120) * 67}%`);
-    expect(bar.querySelector<HTMLElement>('.live6__first')!.style.left).toBe(`${(100 / 120) * 60}%`);
+    expect(bar.querySelector<HTMLElement>('.db-ball')!.style.left).toBe(`${(100 / 120) * 67}%`);
+    expect(bar.querySelector<HTMLElement>('.db-first')!.style.left).toBe(`${(100 / 120) * 60}%`);
     expect(bar.textContent).toBe('BUF205020KC');
     expect(region('Latest play')).toContain('Q2 8:42');
     expect(region('Latest play')).toContain('Mahomes pass short right');
