@@ -1,4 +1,5 @@
 import type { NativeHQ } from '../commissioner/hqReading';
+import { slotRank } from '../shell/pulseModel';
 import type { Draft } from '../draftroom/draft';
 import type { Game } from '../now/liveContract';
 import { boardSlots, type HQLineup } from '../shell/HQBoard';
@@ -65,7 +66,8 @@ export function teamView(reading: NativeHQ, lineup: HQLineup | undefined, mine: 
       range, locked: game.started };
   };
   const starters = boardSlots(lineup, reading.settings).map((slot, i) =>
-    row('starters', slot.code, i, slot.id, lineup?.starters.find(p => p.id === slot.id)?.position));
+    row('starters', slot.code, i, slot.id, lineup?.starters.find(p => p.id === slot.id)?.position))
+    .sort((a, b) => slotRank(a.slot) - slotRank(b.slot));
   const irIds = new Set(roster.filter(p => p.rosterStatus === 'IR').map(p => p.id));
   const bench = (lineup?.bench ?? []).filter(p => !irIds.has(p.id))
     .map((p, i) => row('bench', 'BN', i, p.id, p.position));
