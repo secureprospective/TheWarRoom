@@ -7,7 +7,7 @@ import { HQAct } from '../shell/HQAct';
 import { percent, pointsLabel, type PulseOdds, type PulseResults } from '../data/nativePulse';
 import { applyFilter, espnTeam, pulseRows, PULSE_FILTERS, scoreOf, statChanges,
   type PulseFilter, type PulseRow,
-  type PulseStarterRow } from '../shell/pulseModel';
+  type PulseStarterRow, bySlot } from '../shell/pulseModel';
 import { useStarterSides, type StarterSides } from '../shell/PulseNow';
 import { clockWords } from '../shell/hostedGames';
 import { fieldPositions } from '../now/LiveGame';
@@ -180,7 +180,8 @@ const lineOf = (p: PulseStarterRow) => {
     : p.projection !== undefined ? `proj ${p.projection.toFixed(1)}` : 'later';
 };
 
-function Lineup({ rows, games }: { rows: PulseStarterRow[]; games: Game[] }) {
+function Lineup({ rows: given, games }: { rows: PulseStarterRow[]; games: Game[] }) {
+  const rows = [...given].sort((a, b) => bySlot(a.slot, b.slot));
   const firstDef = rows.findIndex(r => DEFENSE.has(r.slot));
   return <div>{rows.map((p, i) => <div key={p.player}
     className={`xr${i === firstDef && i > 0 ? ' defs' : ''}`}
