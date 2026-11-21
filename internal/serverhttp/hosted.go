@@ -408,8 +408,21 @@ func (h Hosted) admitLeague(ctx context.Context, w http.ResponseWriter, league s
 	return pin, true
 }
 
+// decodeNative logs why a request was refused (never its body): an old app copy sending a shape
+// this server no longer reads otherwise shows only "400, no command" in the error log.
 func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest) bool {
-	return r.Method == http.MethodPost && decodeHosted(w, r, raw) == nil && raw.Validate() == nil && raw.matchesPath(r.URL.Path)
+	if r.Method != http.MethodPost {
+		return false
+	}
+	if err := decodeHosted(w, r, raw); err != nil {
+		log.Printf("native request refused: %v", err)
+		return false
+	}
+	if err := raw.Validate(); err != nil {
+		log.Printf("native request refused: %v", err)
+		return false
+	}
+	return raw.matchesPath(r.URL.Path)
 }
 
 // LeaguePin is the store a league is served from and the football evidence it is pinned to. Missing
