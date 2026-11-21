@@ -73,6 +73,15 @@ function Form({ points, projection }: { points?: { week: number; points: number 
       style={{ height: `${Math.max(4, Math.abs(p.points) / max * 100)}%` }} />)}</span>;
 }
 
+/** quickMove decides what one click on a player name does when nothing is picked: a starter goes to
+ *  the bench, a bench player fills the first open starting slot his position fits, else the card opens. */
+export function quickMove(id: string, slots: HQSlot[], fits: (slot: HQSlot) => boolean):
+  { kind: 'bench' } | { kind: 'fill'; slot: HQSlot } | { kind: 'card' } {
+  if (slots.some(s => s.id === id)) return { kind: 'bench' };
+  const open = slots.find(s => !s.id && fits(s));
+  return open ? { kind: 'fill', slot: open } : { kind: 'card' } as const;
+}
+
 export function HQLineupV3({ reading, mine, name, editor, select, badge, league, port, now, openGame }: {
   reading: NativeHQ; mine: string; name: string; editor: Editor; select: (id: string) => void;
   badge: ReactNode; league: string; port?: HostedPort; now: number; openGame?: () => void }) {
@@ -120,7 +129,12 @@ export function HQLineupV3({ reading, mine, name, editor, select, badge, league,
         if (editor.canEdit) setPicked(picked === id ? undefined : id); }}>{posOf(id)}</HQAct></span>;
   const nm = (id: string) => <HQAct className="nm" onAction={() => {
     if (picked && picked !== id) { const s = slots.find(x => x.id === id); if (s) move(picked, s);
-      else if (slots.some(x => x.id === picked)) move(picked); setPicked(undefined); } else select(id); }}>
+      else if (slots.some(x => x.id === picked)) move(picked); setPicked(undefined); return; }
+    if (picked === id) { setPicked(undefined); return; }
+    const quick = editor.canEdit && lineup ? quickMove(id, slots, s => canPlace(id, s))
+      : { kind: 'card' } as const;
+    if (quick.kind === 'bench') move(id); else if (quick.kind === 'fill') move(id, quick.slot);
+    else select(id); }}>
     {directory.get(id)?.name ?? id}<small>{directory.get(id)?.team}</small></HQAct>;
   const state = (id: string, reserve?: string) => {
     if (reserve) return <span className="stt d">{reserve}</span>;
@@ -161,7 +175,8 @@ export function HQLineupV3({ reading, mine, name, editor, select, badge, league,
           onAction={() => { void editor.save(); }}>CHECK AND SAVE</HQAct></>
         : <span className="d mono" title={reading.errors.join(' · ')}
           style={{ fontSize: 10, maxWidth: 280, lineHeight: 1.5 }}>{editor.canEdit
-          ? 'Drag a position tag to move a player, or click it and then click the slot. Illegal slots dim.'
+          ? 'Click a name: starters sit, bench players fill an open slot. ' +
+            'Or drag a position tag. Illegal slots dim.'
           : editor.message}</span>}
     </div>
     <div className="hq-board">
