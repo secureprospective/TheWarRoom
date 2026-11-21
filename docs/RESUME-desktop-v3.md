@@ -1,3 +1,53 @@
+# COMPACT POINT 11-20 ~8:40 PM CT — alpha push, Sunday 11-22 kickoff (12 PM CT)
+
+## WHAT WE ARE DOING
+Alpha for Sunday kickoff + phone live scoring that matches mobile mock v1 (THE marketing hook, 7 weeks of season left).
+Christopher walks desktop v3 + phone and signs off the ONE alpha merge Saturday 11-21 MORNING.
+
+## STATUS / BRANCHES (all on Beelink ~/work/TheWarRoom/.worktrees/)
+| Branch | State |
+|---|---|
+| session/desktop-v3-shell (dv3-shell) | pushed e74d8b7dc; RESUME commits local (6489793c8, 139e1336c, this one) |
+| session/glossary-adr | pushed 12ccd292f |
+| session/mfl-sync (mfl-sync) | DONE + PUSHED d85693da1. Runs 1-3 (engine d85711676+04bcb4761, league-refresh 58766113a+3351322a4, mirror-fetch 72e12e715+d85693da1), every Argon finding fixed, verified by Claudebox. |
+| session/error-codes (error-codes) T667 | built 401bf3b1c; Argon: fix first (server code lost in UI etc). Fix run cut off by Neon quota with ~34 UNCOMMITTED files, tsc error HQInspector.tsx:208 setErrorCode, 4 failing vitest. Resume run t667fix2 auto-launches ~10:00 PM (brief ~/fleet/briefs/agy-t667-fix2-1121.md, watcher blwwlshkq). Then verify (go test serverhttp/serverclient, vitest src/app/data src/app/phone, tsc). |
+| session/phone-live (phone-live) wave 1 | RUNNING: AGY Claude Opus 5.5 Low, run ~/fleet/runs/phonelive-w1-1120 (brief ~/fleet/briefs/agy-phone-live-w1-1121.md, watcher bfhgvju2m). Live field + big-play engine from real plays + reduced motion. Gap list: ~/fleet/runs/bee-bee-mockgap-1121-1120/stdout.out; mock screenshots ~/fleet/runs/mockgap-1120/screenshots/. |
+| T668 PWA auto-update | NOT STARTED. frontend/pwa/sw.js cache name hardcoded v1, cache-first. Needed so weekly mock waves reach phones. |
+| T670 live wall | NOT STARTED: one phone per live NFL game on a Beelink page for OBS; after wave 1. |
+
+## LAB PROOF (MFL sync) — on a COPY, live lab untouched
+~/scratch/mflsync-dry-1121 (KEEP.md): lab backup tgz, fresh mirror history.db (32 franchises, 2762 players, 976 tx, 10 weeks), dry run = no data change (sqlite .dump identical), real refresh 68 adds/50 removes/29 picks/352 lineups, rerun "already up to date". Arizona 47, Cleveland 55, New Orleans 43 match MFL exactly. Real lab refresh ships with the alpha bundle (needs reference.db beside server.db; commissioner creds ~/fleet/runs/pulse-lab4/private/commissioner.json, never print).
+
+## RUNNING SERVICES
+- Live score recorder T669: Hermes `live-recorder.service` (~/live-recorder, data ~/live-recorder/data/YYYY-MM-DD/packets.jsonl.gz). Source ~/fleet/live-recorder (Beelink, git session/recorder-v1). Check Sunday: `journalctl --user -u live-recorder -n 5` on Hermes — expect mode=LIVE polls every 5 s.
+- Tracker: http://192.168.1.222:8790/ (Hermes fleet-tracker.service + collect timer). My file /home/hermes/fleet/tracker/data/plan.json — read data/answers.jsonl FIRST each update.
+- Desktop v3 dev server was STOPPED 8:25 PM (memory). Restart before Christopher's Saturday walk: `cd ~/work/TheWarRoom/.worktrees/dv3-shell/frontend && npx vite --port 5199` (check the RESUME section below for the exact earlier command).
+
+## ROUTING / QUOTA (see ~/fleet/ROUTING.md, memory reference_gemini_pacing_1120)
+- Neon locked until ~10:02 PM (5-hour window). Argon locked until Fri 11/27 2:24 PM (weekly). Max 2 Neon lanes at once.
+- Bee/Luna (fleet-dispatch.sh) is READ-ONLY and blocked when swap > 80% → builds via agy-run.sh (Claude Opus/Sonnet via AGY).
+- Usage ledger: `python3 ~/fleet/bin/agy-usage.py` (agy-run.sh now records model/minutes/quota per run).
+- Beelink: cleared 84 GB go-build cache (disk 69%); swap ~88% from Claude-OS VM + Christopher's Brave — leave them.
+
+## DECISIONS 11-20 evening (do not relitigate)
+- Direction (memory project_twr_direction_1120): Legacy stays on MFL for years; real native league = July 2027 startup draft, target full 32 teams; Christopher is solo tester until ~March; sequence = phone live scoring hook now → off-season commissioner-work proof → draft.
+- Phone mock v1 starts NOW, not after the reset. Weekly reveals via auto-update (T668).
+- Live wall for streaming (T670). Recorder data can replay into it.
+- Rotate lab R2 backup keys (they were printed in session output 6:20 PM; not sent anywhere) — flagged.
+
+## NEXT ACTIONS, IN ORDER
+1. When wave 1 lands: verify (vitest src/app/phone, tsc, screenshots vs mock), review with Sol/Terra or Opus (Argon locked), fix, push branch.
+2. ~10 PM: T667 fix2 lands → verify → push session/error-codes.
+3. Start T668 PWA auto-update (Neon or Opus via AGY), small.
+4. Build the ALPHA BUNDLE branch: desktop-v3 + glossary + mfl-sync + error-codes + phone-live w1 + T668; full tests; restart dev server; Saturday morning walk.
+5. After sign-off (Christopher runs main merge): lab release + real lab MFL refresh (backup first) + phone check before kickoff.
+6. Wave 2 (matchup header, win-chance swing, score animations) + T670 wall.
+7. Direction grilling continues (open question: which commissioner jobs eat most time).
+
+## NEEDS CHRISTOPHER
+- Saturday morning: walk + alpha merge sign-off (main merge command to be handed over).
+- Rotate lab R2 backup keys.
+
 # ALIGNMENT CONVERSATION 11-20 ~4:00-5:40 PM CT (Christopher's rulings — do not relitigate)
 
 **Alpha (scope frozen; Sunday 11-22 kickoff is a target, not a hard deadline)**
