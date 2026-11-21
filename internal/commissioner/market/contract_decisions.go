@@ -117,6 +117,20 @@ func ContractDecisionsReading(scope RawContractDecisionsScope, franchise string,
 	return out, nil
 }
 
+// StampRevision sets the reading's revision and every quote's to the same value. A hosted server
+// shows each viewer an opaque revision instead of the ledger count; a quote left on the count made
+// the app refuse the whole reading as "quote belongs to another decision".
+func (d *ContractDecisions) StampRevision(revision int64) {
+	d.Revision = revision
+	for i := range d.Players {
+		for j := range d.Players[i].Options {
+			for k := range d.Players[i].Options[j].Choices {
+				d.Players[i].Options[j].Choices[k].Quote.Revision = revision
+			}
+		}
+	}
+}
+
 // contractGapWords is the snapshot's own words when this franchise's contracts cannot be priced yet.
 func contractGapWords(snapshot *commissioner.RawNativeSnapshot, franchise string) string {
 	if err := snapshot.CheckContracts(franchise); err != nil {

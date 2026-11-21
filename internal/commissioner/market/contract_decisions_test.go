@@ -207,3 +207,28 @@ func TestContractDecisionInputRejectsUnruledWalk(t *testing.T) {
 		t.Fatalf("owner actions diverged from rule-priced reads: %v", OwnerContractDecisionActions())
 	}
 }
+
+// A viewer revision replaces the ledger count on the reading and on every quote alike.
+func TestContractDecisionsStampRevisionReachesEveryQuote(t *testing.T) {
+	b := contractDecisionLedger(t)
+	reading, err := ContractDecisionsReading(RawContractDecisionsScope{League: rolloverLeague, ViewerZone: "UTC"},
+		"franchise.02", b.records, seasonMoment(13), time.UTC, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reading.StampRevision(6474956963375357)
+	quotes := 0
+	for _, player := range reading.Players {
+		for _, option := range player.Options {
+			for _, choice := range option.Choices {
+				quotes++
+				if choice.Quote.Revision != reading.Revision || reading.Revision != 6474956963375357 {
+					t.Fatalf("quote revision %d, reading %d", choice.Quote.Revision, reading.Revision)
+				}
+			}
+		}
+	}
+	if quotes == 0 {
+		t.Fatal("fixture priced no quotes; the check proved nothing")
+	}
+}
