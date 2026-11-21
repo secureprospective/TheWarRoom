@@ -43,6 +43,8 @@
 .lf .tm-sc{font:700 44px/1 var(--mono);letter-spacing:-.02em;min-width:54px;height:44px;position:relative;
   overflow:hidden;text-align:center;transition:color .4s}
 .lf .tm-sc span{position:absolute;inset:0}
+.lf .tm-sc span.roll{animation:lf-roll 130ms ease-out}
+@keyframes lf-roll{from{transform:translateY(70%);opacity:0}to{transform:translateY(0);opacity:1}}
 .lf .tm-sc.scoring{color:var(--tc)}
 .lf .tm-poss{position:absolute;top:50%;margin-top:-7px;width:24px;height:13px;opacity:0;
   transform:scale(.4) rotate(-18deg);transition:opacity .2s,transform .35s var(--spring)}
@@ -503,16 +505,7 @@
 .lf.hw-b .v1-ban .bw{font-weight:500;letter-spacing:.1em;font-size:42px}
 .lf.hw-b .v1-ban.fg .bw{font-size:38px}
 .lf.hw-b .v1-ban .bw.set{text-shadow:none;box-shadow:0 5px 0 -2px var(--tc);padding-bottom:6px}
-.lf.hw-x{--grain:url("data:image/svg+xml,
-  %3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbu\
-lence type='fractalNoise' baseFrequency='1.3' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeC\
-olorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .34 -.15'/%3E%3C/filter%3E%3Crect width='160'\
- height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-  --pit:url("data:image/svg+xml,
-  %3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbu\
-lence type='fractalNoise' baseFrequency='.55' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3CfeC\
-olorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.3 .5'/%3E%3C/filter%3E%3Crect width='160' \
-height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+.lf.hw-x{--grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .34 -.15'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");--pit:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.3 .5'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
 .lf.hw-x .card,.lf.hw-x .panel,.lf.hw-x .tracker,.lf.hw-x .gc,.lf.hw-x .mc{border:1px solid #000;
   background:var(--canvas);background-image:none}
 .lf.hw-x .gc,.lf.hw-x .mc{border:1px solid var(--edge)}

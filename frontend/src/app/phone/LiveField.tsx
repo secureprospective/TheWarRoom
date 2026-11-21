@@ -3,6 +3,7 @@ import type { Game, Play } from '../now/liveContract';
 import { clockWords } from '../shell/hostedGames';
 import { createFieldView, type FieldGame, type FieldView } from './fieldView';
 import { club, clubColours } from './liveClubs';
+import { useScoreRoll } from './liveMotion';
 import { bannerText, downWords, driveStart, fieldPlay, fieldSpot, freshPlays, latestSequence, PlayQueue,
   presentation, spotWords, type FieldPlay, type Side, type Spot } from './livePlays';
 import './liveField.css';
@@ -116,12 +117,12 @@ export function LiveField({ game, fresh, reduced: forced }: {
       ['--tfR' as string]: R.fillc }}>
     <section className="score" aria-label="Score" data-poss={poss}
       style={{ ['--pc' as string]: poss ? (poss === 'L' ? L : R).color : undefined }}>
-      <ScoreSide k="L" t={L} team={game.away} />
+      <ScoreSide k="L" t={L} team={game.away} gameId={game.id} reduced={reduced} />
       <div className="mid"><div className="mid-clock"><b>{clockWords(game)}</b>
         {game.status === 'in' && <span className="live-dot" />}</div>
         {dd && <div className="mid-dd">{dd}</div>}
         {spot && <div className="mid-spot">{spotWords(spot.x, game)}</div>}</div>
-      <ScoreSide k="R" t={R} team={game.home} />
+      <ScoreSide k="R" t={R} team={game.home} gameId={game.id} reduced={reduced} />
     </section>
     {spot && <DriveBar spot={spot} drive={driveStart(game, spot)} game={game}
       colour={(poss === 'L' ? L : R).color} />}
@@ -138,14 +139,19 @@ export function LiveField({ game, fresh, reduced: forced }: {
   </div>;
 }
 
-function ScoreSide({ k, t, team }: { k: Side; t: ReturnType<typeof clubColours>; team: Game['home'] }) {
+function ScoreSide({ k, t, team, gameId, reduced }: {
+  k: Side; t: ReturnType<typeof clubColours>; team: Game['home']; gameId: string; reduced: boolean;
+}) {
+  const { display, scoring, rollSeq } = useScoreRoll(team.score, gameId, reduced);
   return <div className={`tm tm-${k}`} style={{ ['--tc' as string]: t.color }}>
     <div className="tm-id"><b className="tm-ab" style={{ background: t.fillc, color: t.onc,
       borderColor: t.trimc }}>{team.abbreviation}</b>
       {team.record && <span className="tm-rec">
         <span className="tm-city">{t.name} · </span>{team.record}</span>}
     </div>
-    <div className="tm-sc"><span>{team.score}</span></div>
+    <div className={`tm-sc${scoring ? ' scoring' : ''}`}>
+      <span key={rollSeq} className={rollSeq > 0 && !reduced ? 'roll' : undefined}>{display}</span>
+    </div>
     <i className="tm-poss" title="has the ball"><svg viewBox="0 0 26 14" aria-hidden="true">
       <path className="lth" d="M1 7C6 -.5 20 -.5 25 7C20 14.5 6 14.5 1 7Z" />
       <path className="lc" d="M8 7h10M11 5v4M13 5v4M15 5v4" /></svg></i>

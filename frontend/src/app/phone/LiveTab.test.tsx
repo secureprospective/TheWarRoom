@@ -176,4 +176,78 @@ describe('LiveTab', () => {
     expect(region('Latest play')).toContain('Q2 8:42');
     expect(region('Latest play')).toContain('Mahomes pass short right');
   });
+  it('renders the mock matchup header, win-chance bar, and starter badges with possession icon', async () => {
+    const richBrief = brief([myGameRow]);
+    richBrief.pulse!.seats = [
+      { franchise: 'mine', name: 'Iron Curtain', abbreviation: 'IRN', division: '', owner: 'me' },
+      { franchise: 'other', name: 'Gridlock', abbreviation: 'GRD', division: '', owner: 'opp' },
+    ];
+    richBrief.results!.scores[0].starters = [
+      starter('m1', 'Mahomes, Patrick', 'QB', 18.1),
+      starter('m2', 'Bass, Tyler', 'K', 2.5),
+      starter('m3', 'Allen, Josh', 'QB', 5.3),
+    ];
+    richBrief.matchup!.lineups.mine = [
+      { player: 'm1', team: 'KC', locked: true },
+      { player: 'm2', team: 'KC', locked: true },
+      { player: 'm3', team: 'BUF', locked: true },
+    ];
+    await show(async () => richBrief);
+    const mym = host!.querySelector('[aria-label="My matchup"]')!;
+    expect(mym.classList.contains('mym')).toBe(true);
+    expect(mym.querySelector('.mys .t.me')?.textContent).toContain('IRN · YOU');
+    expect(mym.querySelector('.mys .t.r')?.textContent).toContain('GRD');
+    expect(mym.querySelector<HTMLElement>('.wp-bar i')?.style.width).toBe('44%');
+    const tiles = [...mym.querySelectorAll('.myp .live6__pl')];
+    expect(tiles).toHaveLength(3);
+    // KC holds possession (id '12'): KC QB has the football icon; KC kicker and BUF QB do not.
+    expect(tiles[0].querySelector('.onf.is-live svg')).not.toBeNull();
+    expect(tiles[1].querySelector('.onf.is-live')).toBeNull();
+    expect(tiles[2].querySelector('.onf.is-live')).toBeNull();
+  });
+  it('animates held score and win-chance updates between reads, snapping under reduced motion', async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    vi.useFakeTimers({ toNotFake: ['queueMicrotask', 'nextTick'] });
+    let notify: (() => void) | undefined;
+    let current = brief([myGameRow]);
+    const read = async () => current;
+    const port = fakePort();
+    const subscribe = (load: () => void) => { notify = load; return () => {}; };
+    host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+    await act(async () => root!.render(<LiveTab league={league} port={port} readBrief={read}
+      subscribe={subscribe} reduced={false} />));
+    await act(async () => { vi.advanceTimersByTime(10); });
+
+    const mym = () => host!.querySelector('[aria-label="My matchup"]')!;
+    expect(mym().querySelector('.mys .t.me b')?.textContent).toBe('24.2');
+    expect(mym().querySelector<HTMLElement>('.wp-bar i')?.style.width).toBe('44%');
+
+    const updated = brief([{ ...myGameRow, homeProvisional: 34.5, awayProvisional: 26.8 }]);
+    updated.pulse!.odds!.games[0].homeWin = 0.74;
+    current = updated;
+    await act(async () => { notify?.(); });
+    await act(async () => { await Promise.resolve(); });
+
+    const midScore = Number(mym().querySelector('.mys .t.me b')?.textContent);
+    expect(midScore).toBeGreaterThan(24.2);
+    expect(mym().querySelector('.mys .t.me b')?.classList.contains('chg')).toBe(true);
+    expect(mym().querySelector<HTMLElement>('.wp-bar i')?.style.width).toBe('74%');
+
+    await act(async () => { vi.advanceTimersByTime(600); });
+    expect(mym().querySelector('.mys .t.me b')?.textContent).toBe('34.5');
+    expect(mym().querySelector('.wp-l b')?.textContent).toBe('74% WIN');
+
+    // Reduced motion snaps instantly with .rm and no .chg highlight.
+    await act(async () => root!.render(<LiveTab league={league} port={port} readBrief={read}
+      subscribe={subscribe} reduced={true} />));
+    const third = brief([{ ...myGameRow, homeProvisional: 38.9, awayProvisional: 26.8 }]);
+    third.pulse!.odds!.games[0].homeWin = 0.82;
+    current = third;
+    await act(async () => { notify?.(); });
+    await act(async () => { await Promise.resolve(); });
+    expect(host!.querySelector('.live6.rm')).not.toBeNull();
+    expect(mym().querySelector('.mys .t.me b')?.textContent).toBe('38.9');
+    expect(mym().querySelector('.mys .t.me b')?.classList.contains('chg')).toBe(false);
+    expect(mym().querySelector('.wp-l b')?.textContent).toBe('82% WIN');
+  });
 });
