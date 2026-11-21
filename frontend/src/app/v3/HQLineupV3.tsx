@@ -10,6 +10,7 @@ import type { HQSettings } from '../shell/hqModel';
 import type { NativeHQ } from '../commissioner/hqReading';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { pointsLabel, type PulseResults } from '../data/nativePulse';
+import { slotRank } from '../shell/pulseModel';
 import { readPulseOdds, readRecentResults, usePulseRead } from '../shell/pulseReads';
 import type { useNativeLineup } from '../shell/hqNativeLineup';
 import type { HQTab } from '../shell/HQShell';
@@ -17,9 +18,7 @@ import { Icon } from './icons';
 import { Seg } from './PulseV3';
 
 type Editor = ReturnType<typeof useNativeLineup>;
-const ORDER = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'OL', 'DL', 'DT', 'DE', 'LB', 'DB', 'CB', 'S', 'D·FLX',
-  'K', 'PK'];
-const rank = (code: string) => { const i = ORDER.indexOf(code); return i < 0 ? ORDER.length : i; };
+const rank = slotRank;
 const St = ({ children }: { children: ReactNode }) =>
   <div className="st"><div className="eng">{children}</div></div>;
 const cash = (v?: number | null) => v == null ? '—' : `$${(v / 100_000_000).toFixed(1)}M`;
