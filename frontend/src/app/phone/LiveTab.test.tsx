@@ -250,4 +250,35 @@ describe('LiveTab', () => {
     expect(mym().querySelector('.mys .t.me b')?.classList.contains('chg')).toBe(false);
     expect(mym().querySelector('.wp-l b')?.textContent).toBe('82% WIN');
   });
+  it('does not refetch another matchup on 30s freshness ticks or tab switches', async () => {
+    vi.useFakeTimers({ toNotFake: ['setTimeout', 'queueMicrotask', 'nextTick'] });
+    vi.setSystemTime(new Date('2026-11-15T18:00:00Z'));
+    const otherGameRow = { week: 11, home: 't3', away: 't4', homeName: 'North Stars', awayName: 'Bayou',
+      status: 'in', homeProvisional: 19.0, awayProvisional: 14.5, words: '', why: [] };
+    const port = vi.fn<HostedPort>(async request => {
+      if (request.command === 'nfl.games.read') return reply({ league: 'league', board: { stale: false,
+        source: 'ESPN', at: '2026-11-15T18:00:00Z', failure: '', games: [nflGame] } });
+      if (request.command === 'nfl.game.read') return reply({ league: 'league', game: nflGame,
+        at: '2026-11-15T18:00:00Z', stale: false, words: '' });
+      if (request.command === 'lineup.read') return reply({ league: 'league',
+        franchise: request.arguments?.franchise, week: 11, starters: [], bench: [] });
+      if (request.command === 'projections.read') return reply({ league: 'league', season: 2026,
+        week: 11, projections: [] });
+      throw new Error(`Unexpected read ${request.command}`);
+    });
+    const lineupReads = () => port.mock.calls.filter(([req]) => req.command === 'lineup.read').length;
+
+    await show(async () => brief([myGameRow, otherGameRow]), port);
+    await tap('All matchups');
+    await tap('Bayou 14.5, North Stars 19.0');
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    const afterPick = lineupReads();
+    expect(afterPick).toBe(2);
+
+    await act(async () => { vi.advanceTimersByTime(3 * 60_000); });
+    await tap('NFL box score');
+    await tap('Matchup box score');
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(lineupReads()).toBe(afterPick);
+  });
 });

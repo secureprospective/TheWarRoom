@@ -33,6 +33,11 @@ const scorerOf = (p: FieldPlay) => (p.how === 'pass' && p.type === 'td'
   ? p.text.match(/\bto ([A-Z][\w'-]*\.\s?[\w'-]+)/)?.[1]
   : p.text.match(/^([A-Z][\w'-]*\.\s?[\w'-]+)/)?.[1]) ?? '';
 
+const initialCard = (game: Game): Card | undefined => {
+  const last = game.last ?? [...game.plays].sort((a, b) => b.sequence - a.sequence)[0];
+  return last ? { play: last, fp: fieldPlay(last, game) } : undefined;
+};
+
 /** LiveField is mock v1's live block for the followed game: score bar, drive bar, the 3D field and the
  *  latest-play card. New held plays play out on the field one at a time; unknown ones show only the card. */
 export function LiveField({ game, fresh, reduced: forced }: {
@@ -46,24 +51,28 @@ export function LiveField({ game, fresh, reduced: forced }: {
   const queue = useRef<PlayQueue<Moment>>();
   const seen = useRef<number>();
   const gameRef = useRef(game); gameRef.current = game;
-  const [card, setCard] = useState<Card | undefined>(() => {
-    const last = game.last ?? [...game.plays].sort((a, b) => b.sequence - a.sequence)[0];
-    return last ? { play: last, fp: fieldPlay(last, game) } : undefined;
-  });
+  const [card, setCard] = useState<Card | undefined>(() => initialCard(game));
   const [banner, setBanner] = useState<{ big: string; small: string }>();
   const spot = fieldSpot(game.state, game);
+  const hasSpot = Boolean(spot);
   const teamsKey = `${game.id}:${game.away.abbreviation}:${game.home.abbreviation}`;
+  const mountedTeams = useRef(teamsKey);
 
   useEffect(() => {
     const g = gameRef.current;
     if (!host.current) return;
+    if (mountedTeams.current !== teamsKey) {
+      mountedTeams.current = teamsKey;
+      setCard(initialCard(g));
+      setBanner(undefined);
+    }
     const v = createFieldView(host.current, { L: club(g.away.abbreviation), R: club(g.home.abbreviation) },
       () => reducedRef.current);
     view.current = v;
     const s = fieldSpot(g.state, g);
     if (s) void v.sync(fieldGame(s, driveStart(g, s)), { instant: true });
     seen.current = latestSequence(g);
-    let timer = 0;
+    let timer = 0, toldTimer = 0;
     const q = new PlayQueue<Moment>(async m => {
       if (presentation(reducedRef.current) === 'banner') {
         setCard({ play: m.play, fp: m.fp });
@@ -81,8 +90,11 @@ export function LiveField({ game, fresh, reduced: forced }: {
         return;
       }
       const fp = m.fp;
-      const told = new Promise<void>(r => setTimeout(() => { setCard({ play: m.play, fp }); r(); },
-        fp.scoring ? 1500 : 320));
+      const told = new Promise<void>(r => {
+        clearTimeout(toldTimer);
+        toldTimer = window.setTimeout(() => { toldTimer = 0; setCard({ play: m.play, fp }); r(); },
+          fp.scoring ? 1500 : 320);
+      });
       await v.play(fp);
       if (fp.scoring) await v.banner(fp, scorerOf(fp));
       if (m.after) await v.sync(fieldGame(m.after, m.drive), { first: fp.first, flip: fp.flip });
@@ -92,10 +104,15 @@ export function LiveField({ game, fresh, reduced: forced }: {
     const onResize = () => v.resize();
     window.addEventListener('resize', onResize);
     return () => {
-      q.close(); v.destroy(); clearTimeout(timer); window.removeEventListener('resize', onResize);
+      q.close(); v.destroy(); clearTimeout(timer); clearTimeout(toldTimer);
+      window.removeEventListener('resize', onResize);
       view.current = undefined;
     };
   }, [teamsKey]);
+
+  useEffect(() => {
+    if (hasSpot) view.current?.resize();
+  }, [hasSpot]);
 
   useEffect(() => {
     const plays = freshPlays(seen.current, game);
