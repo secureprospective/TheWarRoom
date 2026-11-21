@@ -505,6 +505,26 @@ string
 "player"?: string;
 "action"?: string;
 "status"?: string;
+"contract"?: ({
+"contractMissing"?: boolean;
+"salaryCents"?: number;
+"expirationYear"?: number;
+"contractStatus"?: string;
+"contractInfo"?: string;
+"heldContractStatus"?: string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[]
+}) | null;
+"charge"?: ({
+"kind"?: string;
+"season"?: number;
+"id": string;
+"franchise": string;
+"amountCents": number;
+"description": string
+}) | null;
 "entry"?: string;
 "via"?: string;
 "history"?: ({
@@ -515,7 +535,12 @@ string
 "slot"?: number;
 "season": number;
 "round": number;
-"original": string
+"original": string;
+"player"?: string;
+"skipped"?: boolean;
+"add"?: boolean;
+"clear"?: boolean;
+"remove"?: boolean
 }) | null;
 "owner"?: string;
 "rule"?: string;
@@ -854,7 +879,12 @@ string
 "slot"?: number;
 "season": number;
 "round": number;
-"original": string
+"original": string;
+"player"?: string;
+"skipped"?: boolean;
+"add"?: boolean;
+"clear"?: boolean;
+"remove"?: boolean
 };
 "owner": string;
 "evidence": {
@@ -1165,6 +1195,26 @@ string
 "player"?: string;
 "action"?: string;
 "status"?: string;
+"contract"?: ({
+"contractMissing"?: boolean;
+"salaryCents"?: number;
+"expirationYear"?: number;
+"contractStatus"?: string;
+"contractInfo"?: string;
+"heldContractStatus"?: string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[]
+}) | null;
+"charge"?: ({
+"kind"?: string;
+"season"?: number;
+"id": string;
+"franchise": string;
+"amountCents": number;
+"description": string
+}) | null;
 "entry"?: string;
 "via"?: string;
 "history"?: ({
@@ -1175,7 +1225,12 @@ string
 "slot"?: number;
 "season": number;
 "round": number;
-"original": string
+"original": string;
+"player"?: string;
+"skipped"?: boolean;
+"add"?: boolean;
+"clear"?: boolean;
+"remove"?: boolean
 }) | null;
 "owner"?: string;
 "rule"?: string;
@@ -1514,7 +1569,12 @@ string
 "slot"?: number;
 "season": number;
 "round": number;
-"original": string
+"original": string;
+"player"?: string;
+"skipped"?: boolean;
+"add"?: boolean;
+"clear"?: boolean;
+"remove"?: boolean
 };
 "owner": string;
 "evidence": {
@@ -1800,6 +1860,26 @@ string
 "player"?: string;
 "action"?: string;
 "status"?: string;
+"contract"?: ({
+"contractMissing"?: boolean;
+"salaryCents"?: number;
+"expirationYear"?: number;
+"contractStatus"?: string;
+"contractInfo"?: string;
+"heldContractStatus"?: string;
+"contractSchedule"?: ({
+"season": number;
+"cents": number
+})[]
+}) | null;
+"charge"?: ({
+"kind"?: string;
+"season"?: number;
+"id": string;
+"franchise": string;
+"amountCents": number;
+"description": string
+}) | null;
 "entry"?: string;
 "via"?: string;
 "history"?: ({
@@ -1810,7 +1890,12 @@ string
 "slot"?: number;
 "season": number;
 "round": number;
-"original": string
+"original": string;
+"player"?: string;
+"skipped"?: boolean;
+"add"?: boolean;
+"clear"?: boolean;
+"remove"?: boolean
 }) | null;
 "owner"?: string;
 "rule"?: string;
@@ -2149,7 +2234,12 @@ string
 "slot"?: number;
 "season": number;
 "round": number;
-"original": string
+"original": string;
+"player"?: string;
+"skipped"?: boolean;
+"add"?: boolean;
+"clear"?: boolean;
+"remove"?: boolean
 };
 "owner": string;
 "evidence": {
