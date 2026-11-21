@@ -1,8 +1,13 @@
-const CACHE = 'twr-static-shell-v1';
+// The build step swaps the version placeholder below for a hash of the shell and this file, so every
+// release installs a new worker and the activate step drops the previous release's cache.
+const BUILD = '__TWR_BUILD__';
+const CACHE = `twr-static-shell-${BUILD}`;
 const APP_SHELL = __APP_SHELL__;
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(APP_SHELL))
+  // cache: 'reload' skips the browser HTTP cache so the new shell comes from the server.
+  event.waitUntil(caches.open(CACHE)
+    .then(cache => cache.addAll(APP_SHELL.map(path => new Request(path, { cache: 'reload' }))))
     .then(() => self.skipWaiting()));
 });
 

@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { nativeAction, nativeStartup, subscribeNativeUpdate, type NativeView } from './nativeApi';
 import { isWebTransport } from './transport';
 import { suspendHostedReads } from '../data/hostedReads';
+import { startPwaUpdates } from './pwaUpdate';
 import './pwa.css';
 
 const UpdateRequired = lazy(() => import('./UpdateRequired'));
@@ -26,16 +27,14 @@ export function NativeStartup() {
       if (!active || !browser) return;
       setOnline(true);
       void nativeAction('status').then(setView).catch(() => {});
-      void navigator.serviceWorker?.register('/app/sw.js', { scope: '/app/' }).catch(() => {});
+      startPwaUpdates();
     };
     if (browser) {
       window.addEventListener('offline', offline);
       window.addEventListener('twr:offline', offline);
       window.addEventListener('online', onlineAgain);
     }
-    if (browser && navigator.onLine) {
-      void navigator.serviceWorker?.register('/app/sw.js', { scope: '/app/' }).catch(() => {});
-    }
+    if (browser && navigator.onLine) startPwaUpdates();
     nativeStartup().then(value => { if (active) setView(value); }).catch(() => {
       if (!active) return;
       setError(browser ? 'Your league server could not be reached. Refresh to try again.'
