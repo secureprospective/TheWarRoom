@@ -23,7 +23,7 @@ const CLUBS: Record<string, [string, string, string]> = {
   TEN: ['TENNESSEE', '#0C2340', '#4B92DB'], WSH: ['WASHINGTON', '#5A1414', '#FFB612'],
 };
 
-/** club: the club's colours by its ESPN abbreviation; an unknown club gets neutral greys and its own letters. */
+/** club: the club's colours by ESPN abbreviation; an unknown club gets neutral greys and its own letters. */
 export function club(ab: string): Club {
   const c = CLUBS[ab];
   return c ? { ab, name: c[0], pri: c[1], sec: c[2] } : { ab, name: ab, pri: '#5B6270', sec: '#C9CED6' };
@@ -35,7 +35,10 @@ const lum = (c: RGB) => {
   const f = (v: number) => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); };
   return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]);
 };
-const contrast = (a: RGB, b: RGB) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+const contrast = (a: RGB, b: RGB) => {
+  const x = lum(a), y = lum(b);
+  return (Math.max(x, y) + .05) / (Math.min(x, y) + .05);
+};
 function toHsl([r, g, b]: RGB): RGB {
   r /= 255; g /= 255; b /= 255;
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
@@ -64,8 +67,8 @@ function inkOn(pri: RGB, sec: RGB, bg = C_CANVAS, min = 5.5): RGB {
 }
 const textOn = (fill: RGB) => contrast(C_WHITE, fill) >= contrast(C_BLACK, fill) ? C_WHITE : C_BLACK;
 
-export type ClubColours = { ab: string; name: string; color: string; fillc: string; onc: string; trimc: string;
-  turf: string };
+export type ClubColours = { ab: string; name: string; color: string; fillc: string; onc: string;
+  trimc: string; turf: string };
 export function clubColours(t: Club): ClubColours {
   const pri = hex(t.pri), sec = hex(t.sec);
   /* a club colour painted on the turf: a green club on green turf uses its second colour */

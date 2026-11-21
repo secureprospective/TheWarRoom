@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FieldState, Game, Play } from '../now/liveContract';
-import { bannerText, driveStart, fieldPlay, fieldSpot, freshPlays, PlayQueue, presentation } from './livePlays';
+import {
+  bannerText, driveStart, fieldPlay, fieldSpot, freshPlays, PlayQueue, presentation,
+} from './livePlays';
 
 const at = (possession: string, toEndzone: number, down = 1, distance = 10): FieldState =>
   ({ possession, down, distance, yardLine: 0, toEndzone });
@@ -28,7 +30,9 @@ describe('fieldSpot', () => {
 describe('fieldPlay', () => {
   const g = game();
   it('reads a run and its yards from the field states', () => {
-    const p = fieldPlay(mk('I.Pacheco up the middle to KC 48 for 9 yards.', at('H', 57), at('H', 48, 2, 1)), g);
+    const p = fieldPlay(
+      mk('I.Pacheco up the middle to KC 48 for 9 yards.', at('H', 57), at('H', 48, 2, 1)), g,
+    );
     expect(p).toMatchObject({ type: 'run', gain: 9, dir: -1, poss: 'R', first: false });
     expect(p?.start.x).toBe(57);
   });
@@ -57,7 +61,9 @@ describe('fieldPlay', () => {
       .toMatchObject({ type: 'td', how: 'pass', gain: 8 });
   });
   it('reads field goals good and no good', () => {
-    expect(fieldPlay(mk('H.Butker 44 yard field goal is GOOD, Center-J.Winchester.', at('H', 26, 4), null), g))
+    expect(fieldPlay(
+      mk('H.Butker 44 yard field goal is GOOD, Center-J.Winchester.', at('H', 26, 4), null), g,
+    ))
       .toMatchObject({ type: 'fg', kick: 44, scoring: 'fg' });
     expect(fieldPlay(mk('T.Bass 52 yard field goal is No Good, Wide Right.', at('A', 34, 4), null), g))
       .toMatchObject({ type: 'fgmiss', kick: 52 });
@@ -65,7 +71,9 @@ describe('fieldPlay', () => {
   it('reads a penalty with the team, the foul and the yards', () => {
     const p = fieldPlay(mk('PENALTY on KC-W.Morris, False Start, 5 yards, enforced at KC 43 - No Play.',
       at('H', 57, 2, 7), at('H', 62, 2, 12)), g);
-    expect(p).toMatchObject({ type: 'penalty', gain: -5, pen: { team: 'KC', name: 'False Start', moved: 5 } });
+    expect(p).toMatchObject({
+      type: 'penalty', gain: -5, pen: { team: 'KC', name: 'False Start', moved: 5 },
+    });
   });
   it('reads a punt', () => {
     expect(fieldPlay(mk('T.Araiza punts 48 yards to BUF 12, Center-J.Winchester.', at('H', 60, 4),

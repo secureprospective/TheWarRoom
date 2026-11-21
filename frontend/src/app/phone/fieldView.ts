@@ -6,7 +6,9 @@ import type { FieldPlay, Side } from './livePlays';
 import { clubColours, type Club } from './liveClubs';
 
 export type FieldTeams = Record<Side, Club>;
-export type FieldGame = { poss: Side; x: number; lat: number; down: number; dist: number; driveStart: number };
+export type FieldGame = {
+  poss: Side; x: number; lat: number; down: number; dist: number; driveStart: number;
+};
 type Pt = { x: number; y: number; z: number };
 type Opts = KeyframeAnimationOptions;
 
@@ -16,7 +18,8 @@ const ease = { lin: (t: number) => t, out: (t: number) => 1 - Math.pow(1 - t, 3)
 const ORD = ['1ST', '2ND', '3RD', '4TH'];
 const GLYPH = '▓▒░#/\\<>01';
 const pick = (s: string) => s[Math.floor(Math.random() * s.length)];
-const t3 = (x: number, y: number, z = 0) => `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,${z.toFixed(1)}px)`;
+const t3 = (x: number, y: number, z = 0) =>
+  `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,${z.toFixed(1)}px)`;
 function el(tag: string, cls?: string, html?: string): HTMLElement {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -86,10 +89,11 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
         + `${esc(t.name)}</text>`;
     };
     s += ez('L', -10, -90) + ez('R', 100, 90);
-    for (let yd = 0; yd <= 100; yd += 5) s += `<rect class="yl" data-yd="${yd}" x="${wx(yd) - (yd % 100 ? 1.5 : 3)}" `
-      + `y="${FT_}" width="${yd % 100 ? 3 : 6}" height="${FH}" fill="#fff" opacity="${yd % 10 ? .5 : .85}"/>`;
-    const dash = (y: number, w: number) => `<path d="M${wx(0)} ${y}H${wx(100)}" stroke="#fff" stroke-opacity=".7" `
-      + `stroke-width="${w}" stroke-dasharray="2 8" fill="none"/>`;
+    for (let yd = 0; yd <= 100; yd += 5) s += `<rect class="yl" data-yd="${yd}" `
+      + `x="${wx(yd) - (yd % 100 ? 1.5 : 3)}" y="${FT_}" width="${yd % 100 ? 3 : 6}" height="${FH}" `
+      + `fill="#fff" opacity="${yd % 10 ? .5 : .85}"/>`;
+    const dash = (y: number, w: number) => `<path d="M${wx(0)} ${y}H${wx(100)}" stroke="#fff" `
+      + `stroke-opacity=".7" stroke-width="${w}" stroke-dasharray="2 8" fill="none"/>`;
     for (const off of [-4.4, 4.4]) s += dash(FT_ + FH / 2 + off * U, 12);
     for (const y of [FT_ + 5, FT_ + FH - 5]) s += dash(y, 10);
     for (let yd = 10; yd <= 90; yd += 10) {
@@ -109,24 +113,29 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
       + `<rect x="${wx(-10)}" y="${FT_}" width="${120 * U}" height="${FH}" fill="none" stroke="#fff" `
       + 'stroke-width="6"/></svg>';
   }
-  /* a pylon: a real orange box standing on the corner, faces shaded so it reads as a solid as the camera pans */
+  /* a pylon: a real orange box standing on the corner, faces shaded so it reads solid as the camera pans */
   const pylon = (x: number, y: number) => `<div class="v2-py" style="transform:${t3(x, y)}">`
     + `<i class="f" style="transform:translateY(${PYW / 2}px) rotateX(-90deg)"></i>`
     + `<i class="b" style="transform:translateY(${-PYW / 2}px) rotateX(-90deg)"></i>`
     + `<i class="s" style="transform:translateX(${-PYW / 2}px) rotateZ(90deg) rotateX(-90deg)"></i>`
     + `<i class="s" style="transform:translateX(${PYW / 2}px) rotateZ(90deg) rotateX(-90deg)"></i>`
     + `<i class="t" style="transform:translateZ(${PYH}px)"></i></div>`;
-  const post = (k: Side, yd: number) => `<div class="v2-post" data-side="${k}" style="transform:${t3(wx(yd), wy(0))} `
-    + `rotateX(-90deg) rotateY(${k === 'L' ? 62 : -62}deg)"><i class="stem"></i><i class="fork"></i></div>`;
-  const zone = (cls: string, extra = '') => `<div class="${cls}" style="top:${FT_}px;height:${FH}px;${extra}"></div>`;
+  const post = (k: Side, yd: number) => `<div class="v2-post" data-side="${k}" `
+    + `style="transform:${t3(wx(yd), wy(0))} rotateX(-90deg) rotateY(${k === 'L' ? 62 : -62}deg)">`
+    + '<i class="stem"></i><i class="fork"></i></div>';
+  const zone = (cls: string, extra = '') =>
+    `<div class="${cls}" style="top:${FT_}px;height:${FH}px;${extra}"></div>`;
   const sy = FT_ + FH + 1.1 * U;
 
   host.innerHTML = `<div class="v2-stage skin-night" id="v2stage" style="--wh:${WALL}px">`
-    + `<div class="v2-cam" id="v2cam"><div class="v2-world" id="v2world" style="width:${WW}px;height:${WH}px">`
+    + `<div class="v2-cam" id="v2cam">`
+    + `<div class="v2-world" id="v2world" style="width:${WW}px;height:${WH}px">`
     + `<div class="v2-wall" style="width:${WW}px"><div class="crowd"></div>`
-    + `<div class="board" id="v2board" style="left:${wx(50)}px"></div><div class="ribbon" id="v2rib"></div></div>`
+    + `<div class="board" id="v2board" style="left:${wx(50)}px"></div>`
+    + '<div class="ribbon" id="v2rib"></div></div>'
     + turf()
-    + `<div class="v2-tint" id="v2tint" style="left:${wx(0)}px;top:${FT_}px;width:${100 * U}px;height:${FH}px"></div>`
+    + `<div class="v2-tint" id="v2tint" style="left:${wx(0)}px;top:${FT_}px;`
+    + `width:${100 * U}px;height:${FH}px"></div>`
     + zone('v2-zone drv', `width:${100 * U}px`).replace('<div', '<div id="v2drv"')
     + zone('v2-zone togo', `width:${100 * U}px`).replace('<div', '<div id="v2togo"')
     + zone('v2-ezfx', `left:${wx(-10)}px;width:${10 * U}px`).replace('<div', '<div id="v2ezfxL"')
@@ -142,17 +151,19 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     + '<div class="bb v2-stk sticks two" id="v2stk2"><div class="bb-in"><i class="disc"></i><i class="pen">'
     + '<i></i><i></i><i></i><i></i></i><i class="tip"></i></div></div>'
     + post('L', -10) + post('R', 110)
-    + [0, -10, 100, 110].flatMap(yd => [FT_ - PYW / 2, FT_ + FH + PYW / 2].map(y => pylon(wx(yd), y))).join('')
+    + [0, -10, 100, 110].flatMap(yd =>
+      [FT_ - PYW / 2, FT_ + FH + PYW / 2].map(y => pylon(wx(yd), y))).join('')
     + '<div class="bb v2-mk" id="v2mk"><i class="disc"></i><div class="bb-in"><div class="pin">'
     + '<svg viewBox="0 0 30 20" width="30" height="20"><ellipse cx="15" cy="10" rx="13.5" ry="8.2"/>'
     + '<path d="M8 10h14M12 7.4v5.2M15 7v6M18 7.4v5.2"/></svg><i></i></div></div></div>'
     + '</div></div>'
     + '<div class="v2-fx" id="v2fx"></div><div class="v2-third" id="v2third" hidden></div>'
     + '<div class="v2-hud" id="v2hud"><div class="hc"><i>DOWN</i><b id="hDown"></b></div>'
-    + '<div class="hc"><i>TO GO</i><b id="hDist"></b></div><div class="hc w"><i>BALL ON</i><b id="hSpot"></b></div>'
+    + '<div class="hc"><i>TO GO</i><b id="hDist"></b></div>'
+    + '<div class="hc w"><i>BALL ON</i><b id="hSpot"></b></div>'
     + '<div class="hc w"><i>TO GOAL</i><b id="hGoal"></b></div></div>'
-    + '<div class="v2-cam over" aria-hidden="true"><div class="v2-world" id="v2world2"><div class="v2-up" id="v2up">'
-    + '</div></div></div><div class="v1-ban" id="v1ban" hidden></div></div>';
+    + '<div class="v2-cam over" aria-hidden="true"><div class="v2-world" id="v2world2">'
+    + '<div class="v2-up" id="v2up"></div></div></div><div class="v1-ban" id="v1ban" hidden></div></div>';
 
   const q = <T extends Element = HTMLElement>(s: string) => host.querySelector(s) as T;
   const stage = q('#v2stage'), world = q('#v2world'), world2 = q('#v2world2'), cam = q('#v2cam');
@@ -212,10 +223,12 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
   function wipe(cls: string, ms = 560) {
     if (reduced()) return;
     const f = el('i', `wp ${cls}`); fx.appendChild(f);
-    void anim(f, [{ transform: 'translateX(-140%) skewX(-20deg)' }, { transform: 'translateX(330%) skewX(-20deg)' }],
-      { duration: ms, easing: 'cubic-bezier(.6,0,.3,1)' }).then(() => f.remove());
+    void anim(f, [
+      { transform: 'translateX(-140%) skewX(-20deg)' },
+      { transform: 'translateX(330%) skewX(-20deg)' },
+    ], { duration: ms, easing: 'cubic-bezier(.6,0,.3,1)' }).then(() => f.remove());
   }
-  /* a ball in the air: dots hang along the arc and fill in as the ball passes; the shadow runs along the turf */
+  /* a ball in the air: dots hang along the arc and fill as the ball passes; shadow runs on the turf */
   async function flight(a: Pt, b: Pt, peak: number, ms: number, cls = '') {
     const N = 16;
     const at = (t: number): Pt => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t,
@@ -241,7 +254,9 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
   }
   function clearPlay() {
     up.replaceChildren();
-    for (const n of [...paint.children]) { if (n.classList.contains('old')) n.remove(); else n.classList.add('old'); }
+    for (const n of [...paint.children]) {
+      if (n.classList.contains('old')) n.remove(); else n.classList.add('old');
+    }
   }
   const spotText = (x: number) => { x = Math.round(x); return x === 50 ? '50' : x < 50 ? `${TEAM.L.ab} ${x}`
     : `${TEAM.R.ab} ${100 - x}`; };
@@ -258,7 +273,7 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     const ddText = `${ORD[G.down - 1] ?? '—'} & ${goal ? 'GOAL' : G.dist}`;
     stage.classList.toggle('instant', !!o.instant);
     teamVars(G.poss, 'p');
-    if (o.flip) {                                       // possession change: marker spins round in the new colour
+    if (o.flip) { // possession change: marker spins round in the new colour
       clearPlay(); paint.replaceChildren();
       void anim(mk.querySelector('.pin')!, [{ transform: 'rotateY(0) scale(1)' },
         { transform: 'rotateY(540deg) scale(1.5)', offset: .5 }, { transform: 'rotateY(1080deg) scale(1)' }],
@@ -268,23 +283,28 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     los.style.transform = `translateX(${x}px)`;
     first.style.transform = `translateX(${fxd}px)`; first.style.opacity = goal ? '0' : '1';
     const a = wx(G.driveStart);
-    const span = (n: HTMLElement, p: number, r: number) => { n.style.transform = `translateX(${Math.min(p, r)}px) `
-      + `scaleX(${Math.max(Math.abs(r - p) / (100 * U), .0001)})`; };
+    const span = (n: HTMLElement, p: number, r: number) => {
+      n.style.transform = `translateX(${Math.min(p, r)}px) `
+        + `scaleX(${Math.max(Math.abs(r - p) / (100 * U), .0001)})`;
+    };
     span(drv, a, x); span(togo, x, fxd);
     dd.dataset.dir = d > 0 ? 'r' : 'l'; dd.style.transform = `translateX(${x}px) translateZ(1px)`;
     dd.firstElementChild!.textContent = d > 0 ? `${ddText} ▸` : `◂ ${ddText}`;
     dd.style.opacity = '1';
-    /* the real sticks on the near sideline: down box at the ball, line-to-gain stick at the first-down line */
+    /* real sticks on the near sideline: down box at the ball, line-to-gain stick at the first-down line */
     const sa = q('#v2stk'), sb = q('#v2stk2'), sc = q('#v2chain'), pad = q('#v2pad'), n = q('#stkDn');
     const dn = String(G.down);
     sa.style.transform = t3(x, sy, 0); sb.style.transform = t3(fxd, sy, 0);
     pad.style.transform = `translateX(${fxd}px) translateZ(1px)`;
-    sc.style.transform = `translateX(${Math.min(x, fxd)}px) translateZ(1px)`; sc.style.width = `${Math.abs(fxd - x)}px`;
+    sc.style.transform = `translateX(${Math.min(x, fxd)}px) translateZ(1px)`;
+    sc.style.width = `${Math.abs(fxd - x)}px`;
     for (const e of [sb, sc, pad]) e.classList.toggle('away', goal);
     if (n.textContent !== dn) {
       n.textContent = dn;
-      if (!o.instant && !reduced()) void anim(n, [{ transform: 'rotateX(90deg)' }, { transform: 'rotateX(0)' }],
-        { duration: 300, delay: 300, easing: 'cubic-bezier(.2,.9,.3,1.2)', fill: 'backwards' });
+      if (!o.instant && !reduced()) {
+        void anim(n, [{ transform: 'rotateX(90deg)' }, { transform: 'rotateX(0)' }],
+          { duration: 300, delay: 300, easing: 'cubic-bezier(.2,.9,.3,1.2)', fill: 'backwards' });
+      }
     }
     setNum(q<HTMLElement>('#hDown'), ORD[G.down - 1] ?? '—', !o.instant);
     setNum(q<HTMLElement>('#hDist'), goal ? 'GOAL' : String(G.dist), !o.instant);
@@ -305,7 +325,8 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
   /* first down: the new ten yards build up on the turf in the club's colour, a column of blocks per yard */
   function fdBlocks(xa: number, xb: number, d: number) {
     if (reduced() || Math.abs(xb - xa) < U) return;
-    const n = Math.max(1, Math.round(Math.abs(xb - xa) / U)), cw = Math.abs(xb - xa) / n, box = el('div', 'fdb');
+    const n = Math.max(1, Math.round(Math.abs(xb - xa) / U));
+    const cw = Math.abs(xb - xa) / n, box = el('div', 'fdb');
     box.style.cssText = `left:${Math.min(xa, xb)}px;top:${FT_}px;width:${Math.abs(xb - xa)}px;height:${FH}px`;
     world.appendChild(box);
     for (let i = 0; i < n; i++) {
@@ -318,8 +339,8 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     setTimeout(() => box.remove(), 380 + n * 55 + 1600);
   }
 
-  /* ===== Big plays (20+ yards from scrimmage): the camera chases the ball, each yard line he crosses fires in
-     the club's colour and a streak paints behind him; then the blast doors slam shut (BIG | PLAY). ===== */
+  /* ===== Big plays (20+ yards from scrimmage): camera chases the ball, crossed yard lines fire in
+     the club's colour, a streak paints behind him, then blast doors slam shut (BIG | PLAY). ===== */
   const isBig = (p: FieldPlay) => ['run', 'pass', 'td'].includes(p.type) && p.gain >= BIG;
   type Chase = { p: FieldPlay; d: number; td: boolean; gain: number; x0: number; y0: number; x1: number;
     y1: number; ms: number; fired: Set<number>; sl: HTMLElement; big: boolean };
@@ -331,8 +352,10 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
       look(ydOf(x) + c.d * 7, 160, z); step(c, (x - c.x0) * c.d / U, x, y);
     }, e);
   }
-  const jolt = (px = 4) => anim(stage, [{ transform: `translateY(${px}px)` }, { transform: `translateY(${-px / 2}px)` },
-    { transform: 'none' }], { duration: 180, easing: 'steps(3,end)' });
+  const jolt = (px = 4) => anim(stage, [
+    { transform: `translateY(${px}px)` }, { transform: `translateY(${-px / 2}px)` },
+    { transform: 'none' },
+  ], { duration: 180, easing: 'steps(3,end)' });
   function step(c: Chase, yds: number, x: number, y: number) {
     c.sl.style.width = `${Math.hypot(x - c.x0, y - c.y0)}px`;
     c.sl.style.transform = `${t3(c.x0, c.y0, 1)} rotate(${Math.atan2(y - c.y0, x - c.x0)}rad)`;
@@ -348,22 +371,27 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
   }
   /* blast doors: two grip slabs slam shut, the seam is the club's colour, the yards punch out of the seam */
   async function doors(c: Chase) {
-    const st = el('div', 'bpx bp-doors', '<div class="dr l"><b>BIG</b><i class="bolt"></i><i class="bolt"></i></div>'
+    const st = el('div', 'bpx bp-doors',
+      '<div class="dr l"><b>BIG</b><i class="bolt"></i><i class="bolt"></i></div>'
       + '<div class="dr r"><b>PLAY</b><i class="bolt"></i><i class="bolt"></i></div><div class="seam"></div>'
       + `<div class="yd"><b>+${c.gain}</b><span>${c.td ? 'TOUCHDOWN' : 'YARDS'}</span></div>`);
     stage.appendChild(st);
-    const [l, r] = [...st.querySelectorAll('.dr')], sm = st.querySelector('.seam')!, yd = st.querySelector('.yd')!;
+    const [l, r] = [...st.querySelectorAll('.dr')];
+    const sm = st.querySelector('.seam')!, yd = st.querySelector('.yd')!;
     const shut = { duration: 300, easing: 'cubic-bezier(.7,0,1,1)' };
     await Promise.all([anim(l, [{ transform: 'translateX(-101%)' }, { transform: 'none' }], shut),
       anim(r, [{ transform: 'translateX(101%)' }, { transform: 'none' }], shut)]);
     void jolt(6); void anim(sm, [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }],
       { duration: 160, easing: 'steps(3,end)' });
     await hold(260);
-    await anim(yd, [{ transform: 'translate(-50%,-50%) scale(0)' },
-      { transform: 'translate(-50%,-50%) scale(1.25)', offset: .7 }, { transform: 'translate(-50%,-50%) scale(1)' }],
-    { duration: 260, easing: 'steps(5,end)', fill: 'both' });
+    await anim(yd, [
+      { transform: 'translate(-50%,-50%) scale(0)' },
+      { transform: 'translate(-50%,-50%) scale(1.25)', offset: .7 },
+      { transform: 'translate(-50%,-50%) scale(1)' },
+    ], { duration: 260, easing: 'steps(5,end)', fill: 'both' });
     void jolt(3); await hold(c.td ? 1200 : 1800);
-    void anim(yd, [{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'steps(2,end)', fill: 'forwards' });
+    void anim(yd, [{ opacity: 1 }, { opacity: 0 }],
+      { duration: 120, easing: 'steps(2,end)', fill: 'forwards' });
     const part = { duration: 280, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' as FillMode };
     await Promise.all([anim(l, [{ transform: 'none' }, { transform: 'translateX(-101%)' }], part),
       anim(r, [{ transform: 'none' }, { transform: 'translateX(101%)' }], part)]);
@@ -371,7 +399,8 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
   }
   async function bigPlay(p: FieldPlay) {
     const d = p.dir, td = p.type === 'td', x0 = wx(p.start.x), y0 = cur.y, y1 = wy(p.lat1);
-    const x1 = wx(p.start.x + d * p.gain) + (td ? d * 4 * U : 0), pass = p.type === 'pass' || (td && p.how === 'pass');
+    const x1 = wx(p.start.x + d * p.gain) + (td ? d * 4 * U : 0);
+    const pass = p.type === 'pass' || (td && p.how === 'pass');
     const streak = line(x0, y0, x0 + d, y0, 'bp-streak');
     const c: Chase = { p, d, td, gain: p.gain, x0, y0, x1, y1, ms: clamp(900 + p.gain * 22, 1400, 2600),
       fired: new Set(), sl: streak.parentElement!, big: false };
@@ -381,7 +410,8 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     } else {
       const qx = x0 - d * 5 * U, xc = wx(p.start.x + d * p.air), fms = clamp(700 + p.air * 16, 900, 1600);
       await grow(line(x0, y0, qx, y0, 'thin'), 260);
-      const fl = flight({ x: qx, y: y0, z: 16 }, { x: xc, y: y1, z: 12 }, clamp(50 + p.air * 3.6, 60, 200), fms);
+      const fl = flight({ x: qx, y: y0, z: 16 }, { x: xc, y: y1, z: 12 },
+        clamp(50 + p.air * 3.6, 60, 200), fms);
       await ride(null, qx, y0, xc, y1, fms, c, ease.lin);
       const f = await fl;
       f.ball.remove(); setMk(x1, y1);
@@ -416,7 +446,8 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
         clamp(34 + p.air * 3.4, 44, 170), ms, done ? '' : 'miss');
       if (!done) {
         cross(xc, y1); f.ball.remove(); f.dots.forEach(n => n.classList.add('dead'));
-        label(xc, y1, p.type === 'int' ? 'INTERCEPTED' : 'INCOMPLETE', 'red', 44, 120); await hold(380); return;
+        label(xc, y1, p.type === 'int' ? 'INTERCEPTED' : 'INCOMPLETE', 'red', 44, 120);
+        await hold(380); return;
       }
       const x1 = wx(p.start.x + d * p.gain) + (p.type === 'td' ? d * 4 * U : 0);
       f.ball.remove();
@@ -425,23 +456,27 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     } else if (p.type === 'penalty') {
       const x1 = wx(p.start.x + d * p.gain), a = Math.min(x0, x1), w = Math.abs(x1 - x0);
       const flag = bb(x0 + d * 30, y0 - 40, 0, '<i></i>', 'flag');
-      await anim(flag, [{ transform: t3(x0 - d * 60, y0 - 120, 190) },
-        { transform: t3(x0 + d * 10, y0 - 60, 130), offset: .55 }, { transform: t3(x0 + d * 30, y0 - 40, 0) }],
-      { duration: 460, easing: 'cubic-bezier(.4,0,.9,.6)' });
+      await anim(flag, [
+        { transform: t3(x0 - d * 60, y0 - 120, 190) },
+        { transform: t3(x0 + d * 10, y0 - 60, 130), offset: .55 },
+        { transform: t3(x0 + d * 30, y0 - 40, 0) },
+      ], { duration: 460, easing: 'cubic-bezier(.4,0,.9,.6)' });
       stage.classList.add('flagged'); wipe('flagw', 520);
       await hold(200);
       const hz = el('div', 'hz');
       hz.style.cssText = `left:${a}px;top:${FT_}px;width:${w}px;height:${FH}px;`
         + `transform-origin:${p.gain < 0 ? '100%' : '0'} 50%`;
       paint.appendChild(hz);
-      void anim(hz, [{ transform: 'translateZ(1px) scaleX(0)' }, { transform: 'translateZ(1px) scaleX(1)' }], 320);
+      void anim(hz, [
+        { transform: 'translateZ(1px) scaleX(0)' }, { transform: 'translateZ(1px) scaleX(1)' },
+      ], 320);
       const moved = p.pen?.moved ?? Math.abs(p.gain);
       const call = p.pen ? `${p.pen.name.toUpperCase()} ${p.gain > 0 ? '+' : '−'}${moved}` : 'FLAG';
       label(a + w / 2, wy(-.75), call, 'flagc', 70);
       if (p.pen) label(a + w / 2, wy(-.75), `ON ${p.pen.team}`, 'mini', 44, 220);
       await hold(380);
       const steps = Math.max(1, Math.round(moved / 5));
-      for (let i = 1; i <= steps; i++) {                                     // walked off five yards at a time
+      for (let i = 1; i <= steps; i++) { // walked off five yards at a time
         const tx = x0 + (x1 - x0) * i / steps; los.style.transform = `translateX(${tx}px)`;
         await moveMk(tx, cur.y, 170, 'ease-out'); await hold(110);
       }
@@ -459,12 +494,13 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
         const goalPost = world.querySelector(`.v2-post[data-side=${d > 0 ? 'R' : 'L'}]`)!;
         goalPost.classList.add('good'); setTimeout(() => goalPost.classList.remove('good'), 6200);
       } else if (p.type === 'fgmiss') {
-        label(tx - d * 40, ty, 'NO GOOD', 'red', 70); f.dots.forEach(n => n.classList.add('dead')); await hold(500);
+        label(tx - d * 40, ty, 'NO GOOD', 'red', 70);
+        f.dots.forEach(n => n.classList.add('dead')); await hold(500);
       } else { label(tx, ty, `PUNT ${p.kick}`, '', 40); await hold(450); }
     }
   }
 
-  /* the scoring plate (mock v1's moment, in the club's own colours): the yard lines fire in sequence away from
+  /* the scoring plate (mock v1's moment, in the club's own colours): the yard lines fire in sequence from
      the end zone, then a plate opens over the field between two moving colour rails and the word decodes. */
   async function banner(p: FieldPlay, scorer: string) {
     if (!alive || !p.scoring) return;
@@ -500,7 +536,9 @@ export function createFieldView(host: HTMLElement, teams: FieldTeams, reducedMot
     await hold(200);
     await tween(760, k => {
       let s = '';
-      for (let i = 0; i < n; i++) s += word[i] === ' ' ? ' ' : k >= (i + 1.5) / (n + 1.5) ? word[i] : pick(GLYPH);
+      for (let i = 0; i < n; i++) {
+        s += word[i] === ' ' ? ' ' : k >= (i + 1.5) / (n + 1.5) ? word[i] : pick(GLYPH);
+      }
       bw.textContent = s;
     }, ease.lin);
     bw.textContent = word; bw.classList.add('set');

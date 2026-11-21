@@ -29,11 +29,14 @@ const fieldGame = (s: Spot, drive: number): FieldGame =>
   ({ poss: s.poss, x: s.x, lat: 0, down: Math.max(1, s.down), dist: s.dist, driveStart: drive });
 /* scorer from the play's own words: the receiver on a touchdown pass, else the first named player */
 const scorerOf = (p: FieldPlay) => (p.how === 'pass' && p.type === 'td'
-  ? p.text.match(/\bto ([A-Z][\w'-]*\.\s?[\w'-]+)/)?.[1] : p.text.match(/^([A-Z][\w'-]*\.\s?[\w'-]+)/)?.[1]) ?? '';
+  ? p.text.match(/\bto ([A-Z][\w'-]*\.\s?[\w'-]+)/)?.[1]
+  : p.text.match(/^([A-Z][\w'-]*\.\s?[\w'-]+)/)?.[1]) ?? '';
 
 /** LiveField is mock v1's live block for the followed game: score bar, drive bar, the 3D field and the
  *  latest-play card. New held plays play out on the field one at a time; unknown ones show only the card. */
-export function LiveField({ game, fresh, reduced: forced }: { game: Game; fresh?: string; reduced?: boolean }) {
+export function LiveField({ game, fresh, reduced: forced }: {
+  game: Game; fresh?: string; reduced?: boolean;
+}) {
   const prefers = useReducedMotion();
   const reduced = forced ?? prefers;
   const reducedRef = useRef(reduced); reducedRef.current = reduced;
@@ -120,7 +123,8 @@ export function LiveField({ game, fresh, reduced: forced }: { game: Game; fresh?
         {spot && <div className="mid-spot">{spotWords(spot.x, game)}</div>}</div>
       <ScoreSide k="R" t={R} team={game.home} />
     </section>
-    {spot && <DriveBar spot={spot} drive={driveStart(game, spot)} game={game} colour={(poss === 'L' ? L : R).color} />}
+    {spot && <DriveBar spot={spot} drive={driveStart(game, spot)} game={game}
+      colour={(poss === 'L' ? L : R).color} />}
     <section className="fieldwrap" aria-label="Field">
       <div className="fhead"><b className="lbl">NFL LIVE</b>
         <span className="fhead-r">{fresh || `${L.name} at ${R.name}`}</span></div>
@@ -138,7 +142,8 @@ function ScoreSide({ k, t, team }: { k: Side; t: ReturnType<typeof clubColours>;
   return <div className={`tm tm-${k}`} style={{ ['--tc' as string]: t.color }}>
     <div className="tm-id"><b className="tm-ab" style={{ background: t.fillc, color: t.onc,
       borderColor: t.trimc }}>{team.abbreviation}</b>
-      {team.record && <span className="tm-rec"><span className="tm-city">{t.name} · </span>{team.record}</span>}
+      {team.record && <span className="tm-rec">
+        <span className="tm-city">{t.name} · </span>{team.record}</span>}
     </div>
     <div className="tm-sc"><span>{team.score}</span></div>
     <i className="tm-poss" title="has the ball"><svg viewBox="0 0 26 14" aria-hidden="true">
@@ -155,14 +160,14 @@ function DriveBar({ spot, drive, game, colour }: { spot: Spot; drive: number; ga
   return <div className="dbar" data-dir={d > 0 ? 'r' : 'l'} data-testid="live-drive-bar" role="img"
     aria-label={`Ball on ${spotWords(spot.x, game)}`} style={{ ['--pc' as string]: colour }}>
     <div className="db-track"><i className="db-ez l" /><i className="db-ez r" />
-      <i className="db-drive" style={{ left: pc(Math.min(drive, spot.x)), width: `${Math.abs(spot.x - drive) / 1.2}%`,
-        transform: 'none' }} />
+      <i className="db-drive" style={{ left: pc(Math.min(drive, spot.x)),
+        width: `${Math.abs(spot.x - drive) / 1.2}%`, transform: 'none' }} />
       <i className="db-start" style={{ ...at(drive), transform: 'none' }} />
       {spot.down > 0 && <i className="db-first" style={{ ...at(spot.x + d * spot.dist), transform: 'none',
         opacity: goal ? 0 : 1 }} />}
       <i className="db-ball" style={{ ...at(spot.x), transform: 'none' }} /></div>
-    <div className="db-nums"><span>{game.away.abbreviation}</span><span>20</span><span>50</span><span>20</span>
-      <span>{game.home.abbreviation}</span></div>
+    <div className="db-nums"><span>{game.away.abbreviation}</span><span>20</span><span>50</span>
+      <span>20</span><span>{game.home.abbreviation}</span></div>
   </div>;
 }
 
@@ -177,10 +182,12 @@ function PlayCard({ card, game }: { card?: Card; game: Game }) {
   const tc = ab ? clubColours(club(ab.abbreviation)).color : undefined;
   return <div key={play.id} className={`card-in${fp?.scoring ? ' is-score' : ''}${fp?.flip && !fp.scoring
     ? ' is-turn' : ''}`} style={{ ['--tc' as string]: tc }}>
-    <div className="c-top"><span className={`tag ${fp?.scoring ? 'am' : tag === 'FLAG' ? 'yl' : 'o'}`}>{tag}</span>
+    <div className="c-top">
+      <span className={`tag ${fp?.scoring ? 'am' : tag === 'FLAG' ? 'yl' : 'o'}`}>{tag}</span>
       <b className="c-title">{fp?.title ?? 'Last play'}</b></div>
     <p className="c-text">{play.text}</p>
-    <div className="c-ctx">{start && start.down > 0 ? `${downWords(start)} at ${spotWords(start.x, game)} · ` : ''}
+    <div className="c-ctx">
+      {start && start.down > 0 ? `${downWords(start)} at ${spotWords(start.x, game)} · ` : ''}
       Q{play.period} {play.clock}</div>
   </div>;
 }

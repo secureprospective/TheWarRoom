@@ -6,8 +6,8 @@ export type Side = 'L' | 'R';
 export type Spot = { poss: Side; x: number; down: number; dist: number };
 export type PlayType = 'run' | 'pass' | 'inc' | 'int' | 'td' | 'sack' | 'fumble' | 'penalty' | 'fg' | 'fgmiss'
   | 'punt';
-export type FieldPlay = { id: string; type: PlayType; how: 'run' | 'pass'; dir: 1 | -1; poss: Side; start: Spot;
-  end?: Spot; gain: number; air: number; yac: number; lat1: number; kick: number;
+export type FieldPlay = { id: string; type: PlayType; how: 'run' | 'pass'; dir: 1 | -1; poss: Side;
+  start: Spot; end?: Spot; gain: number; air: number; yac: number; lat1: number; kick: number;
   pen?: { team: string; name: string; moved: number }; scoring?: 'td' | 'fg'; score: { L: number; R: number };
   first: boolean; flip: boolean; q: number; clock: string; text: string; title: string; tag: string };
 
@@ -74,12 +74,14 @@ export function fieldPlay(play: Play, game: Game): FieldPlay | undefined {
           : textYards(play.text) ?? 0;
   if (['fg', 'fgmiss', 'punt', 'int'].includes(type)) gain = 0;
   const how = type === 'td' && /\bpass\b/i.test(play.text) ? 'pass' : 'run';
-  const kick = Number(play.text.match(/(\d+) yard field goal|punts (\d+) yards?/i)?.slice(1).find(Boolean) ?? 0);
+  const kickMatch = play.text.match(/(\d+) yard field goal|punts (\d+) yards?/i);
+  const kick = Number(kickMatch?.slice(1).find(Boolean) ?? 0);
   const air = type === 'pass' || (type === 'td' && how === 'pass') ? Math.max(gain, 1)
     : type === 'inc' ? /\bdeep\b/i.test(play.text) ? 20 : /\bshort\b/i.test(play.text) ? 7 : 10
       : type === 'int' && end ? Math.min(50, Math.max(5, Math.abs(end.x - start.x))) : 0;
   const flip = ['td', 'fg', 'fgmiss', 'punt', 'int'].includes(type) || (!!end && end.poss !== start.poss);
-  const first = !flip && !!end && end.down === 1 && start.down > 0 && ['run', 'pass', 'penalty'].includes(type);
+  const first = !flip && !!end && end.down === 1 && start.down > 0
+    && ['run', 'pass', 'penalty'].includes(type);
   const scoring = type === 'td' ? 'td' : type === 'fg' ? 'fg' : undefined;
   return { id: play.id, type, how, dir, poss: start.poss, start, end, gain, air, yac: 0,
     lat1: /\bleft\b/i.test(play.text) ? -0.3 : /\bright\b/i.test(play.text) ? 0.3 : 0, kick, pen, scoring,
