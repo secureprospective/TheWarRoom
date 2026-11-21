@@ -189,6 +189,12 @@ func footballDigest(body []byte) string {
 	return hex.EncodeToString(hash[:])
 }
 
+// ValidateFootball decodes and validates football evidence bytes against week parts held by s.
+func (s *Store) ValidateFootball(ctx context.Context, body []byte) error {
+	_, err := decodeFootball(body, s.storeParts(ctx))
+	return err
+}
+
 // ImportFootball validates everything before writing. It reuses history's immutable,
 // matched-backup archive; no active environment is changed by an import. Split evidence's week
 // parts must already be imported (ImportFootballWeek).

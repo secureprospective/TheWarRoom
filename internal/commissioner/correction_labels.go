@@ -27,10 +27,7 @@ func correctionDescription(names *assetNames, r Record) string {
 	player := func(id string) string { return names.name(id, true) }
 	switch r.Command.Command {
 	case CorrectRoster:
-		if c.Action == "add" {
-			return fmt.Sprintf("Added %s to %s to correct the roster", player(c.Player), team(c.Franchise))
-		}
-		return fmt.Sprintf("Removed %s from %s to correct the roster", player(c.Player), team(c.Franchise))
+		return rosterCorrectionDescription(c, player, team)
 	case CorrectTransaction:
 		for _, original := range names.records {
 			if original.Receipt.Entry != c.Entry {
@@ -39,12 +36,13 @@ func correctionDescription(names *assetNames, r Record) string {
 			return "Reversed a recorded " + correctionTransactionKind(original.Command.Command)
 		}
 	case CorrectProvenance:
-		via := map[string]string{"held": "the starting roster", "draft": "the rookie draft", "waiver": "a waiver claim",
-			"trade": "a trade", "free_agent": "free agency", "commissioner": "a commissioner assignment"}
+		via := map[string]string{
+			"held": "the starting roster", "draft": "the rookie draft", "waiver": "a waiver claim",
+			"trade": "a trade", "free_agent": "free agency", "commissioner": "a commissioner assignment",
+		}
 		return fmt.Sprintf("Corrected %s's acquisition to %s", player(c.Player), via[c.Via])
 	case CorrectPick:
-		return fmt.Sprintf("Corrected the season %d round %d pick originally belonging to %s: now owned by %s",
-			c.Pick.Season, c.Pick.Round, team(c.Pick.Original), team(c.Owner))
+		return pickCorrectionDescription(c, player, team)
 	case RuleException:
 		scope := "for " + team(c.Scope.Franchise)
 		if c.Scope.Player != "" {
@@ -123,6 +121,43 @@ func (n *assetNames) name(id string, player bool) string {
 		return name
 	}
 	return "Franchise " + strings.TrimPrefix(id, "franchise.")
+}
+
+func rosterCorrectionDescription(c *RawCorrection, player, team func(string) string) string {
+	switch c.Action {
+	case "add":
+		return fmt.Sprintf("Added %s to %s to correct the roster", player(c.Player), team(c.Franchise))
+	case "status":
+		return fmt.Sprintf("Set %s's roster status on %s to %s", player(c.Player), team(c.Franchise), c.Status)
+	case "contract":
+		return fmt.Sprintf("Updated %s's contract on %s", player(c.Player), team(c.Franchise))
+	case "adjustment":
+		return fmt.Sprintf("Recorded salary adjustment %s on %s", c.Charge.ID, team(c.Franchise))
+	case "remove_adjustment":
+		return fmt.Sprintf("Removed salary adjustment %s from %s", c.Charge.ID, team(c.Franchise))
+	default:
+		return fmt.Sprintf("Removed %s from %s to correct the roster", player(c.Player), team(c.Franchise))
+	}
+}
+
+func pickCorrectionDescription(c *RawCorrection, player, team func(string) string) string {
+	base := fmt.Sprintf("the season %d round %d pick originally belonging to %s",
+		c.Pick.Season, c.Pick.Round, team(c.Pick.Original))
+	if c.Pick.Original == "" {
+		base = fmt.Sprintf("the season %d round %d slot %d pick", c.Pick.Season, c.Pick.Round, c.Pick.Slot)
+	}
+	switch {
+	case c.Pick.Remove:
+		return "Removed " + base
+	case c.Pick.Player != "":
+		return fmt.Sprintf("Corrected %s: owned by %s, selected %s", base, team(c.Owner), player(c.Pick.Player))
+	case c.Pick.Skipped:
+		return fmt.Sprintf("Corrected %s: owned by %s, skipped", base, team(c.Owner))
+	case c.Pick.Clear:
+		return fmt.Sprintf("Corrected %s: owned by %s, selection cleared", base, team(c.Owner))
+	default:
+		return fmt.Sprintf("Corrected %s: now owned by %s", base, team(c.Owner))
+	}
 }
 
 func correctionRuleLabel(rule string) string {

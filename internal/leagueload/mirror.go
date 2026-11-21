@@ -68,6 +68,42 @@ func (m Mirror) Players(ctx context.Context) ([]players.RawPlayer, error) {
 	return list, nil
 }
 
+// LeagueSeason returns the season year of the newest held TYPE=league export for mflLeague,
+// or 0 when the mirror holds none.
+func (m Mirror) LeagueSeason(ctx context.Context, mflLeague string) (int, error) {
+	want := strings.TrimSpace(mflLeague)
+	if want == "" {
+		return 0, nil
+	}
+	var season int
+	_, err := m.Store.ArchivedBodies(
+		ctx, "TYPE=league", func(fetched string, _ []byte, _ time.Time) bool {
+			u, uerr := url.Parse(fetched)
+			if uerr != nil {
+				return false
+			}
+			q := u.Query()
+			if q.Get("TYPE") != "league" || q.Get("L") != want {
+				return false
+			}
+			parts := strings.Split(strings.TrimPrefix(u.Path, "/"), "/")
+			if len(parts) < 2 || parts[1] != "export" {
+				return false
+			}
+			year, yerr := strconv.Atoi(parts[0])
+			if yerr != nil || year < 1920 || year > 9999 {
+				return false
+			}
+			season = year
+			return true
+		},
+	)
+	if err != nil {
+		return 0, fmt.Errorf("read held league season: %w", err)
+	}
+	return season, nil
+}
+
 // Names is the held player list as MFL id → name, the shape the MFL league reader takes.
 func Names(list []players.RawPlayer) map[string]string {
 	out := make(map[string]string, len(list))

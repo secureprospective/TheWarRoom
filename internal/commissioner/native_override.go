@@ -80,7 +80,8 @@ func (r RawNativeOverride) validateTarget(command string) error {
 func (r RawNativeOverride) validateChange(command string) error {
 	switch command {
 	case ContractEdit:
-		if r.Years == nil || *r.Years < 1 || *r.Years > 9999 || r.Salary == nil || *r.Salary < 0 || r.Amount != nil {
+		badYears := r.Years == nil || *r.Years < 1 || *r.Years > 9999
+		if badYears || r.Salary == nil || *r.Salary < 0 || r.Amount != nil {
 			return fmt.Errorf("give a positive contract length and a nonnegative salary in cents")
 		}
 	case CapAdjust:
@@ -120,8 +121,27 @@ func (r RawCommand) validateOverridePlacement() error {
 	return nil
 }
 
-// PendingTradeCapCheck says whether a contract or cap correction would change the money in a trade still waiting
-// for acceptance, review or an appeal ruling. That trade was judged on the old figures, so it must be settled first.
+func (t TradeState) open(now time.Time) bool {
+	return t.Status == "review" || t.Status == "appealed" || (t.Status == "offered" && now.Before(t.ExpiresAt))
+}
+
+// OpenTrades returns unsettled trades (unexpired offers, trades in review, or appealed vetoes).
+func OpenTrades(league string, records []Record, now time.Time) ([]TradeState, error) {
+	_, book, err := nativeAssetsState(league, records, now)
+	if err != nil {
+		return nil, err
+	}
+	var out []TradeState
+	for _, t := range book.Trades {
+		if t.open(now) {
+			out = append(out, t.Clone())
+		}
+	}
+	return out, nil
+}
+
+// PendingTradeCapCheck says whether a contract or cap correction would change the money in a trade waiting
+// for acceptance, review or an appeal ruling. That trade was judged on the old figures, so settle it first.
 func PendingTradeCapCheck(raw RawCommand, records []Record, now time.Time) (bool, string) {
 	o := raw.Args.Override
 	if o == nil || len(records) == 0 {
@@ -132,8 +152,7 @@ func PendingTradeCapCheck(raw RawCommand, records []Record, now time.Time) (bool
 		return false, "No pending trades"
 	}
 	for _, t := range book.Trades {
-		pending := t.Status == "review" || t.Status == "appealed" || (t.Status == "offered" && now.Before(t.ExpiresAt))
-		if pending && (slices.Contains(t.Parties, o.Franchise) ||
+		if t.open(now) && (slices.Contains(t.Parties, o.Franchise) ||
 			slices.ContainsFunc(t.Assets, func(a TradeAsset) bool { return a.Player != "" && a.Player == o.Player })) {
 			return true, "Trade " + t.ID + " is waiting on these figures"
 		}
