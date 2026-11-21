@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { parseHostedWaivers } from '../commissioner/hostedMarkets';
 import type { HostedPort } from '../commissioner/hostedRoom';
+import type { NativeHQ } from '../commissioner/hqReading';
+import type { Provenance, Snapshot } from '../data/contract';
+import { readNewsFeed, type NewsFeed } from '../research/espnNews';
 import { gatherNeedsYou, type NeedsYouItem } from '../shell/homeNeedsYou';
 import { readThinHomeBrief, type HomeBrief } from '../shell/homeReads';
 import { left } from '../shell/homeTiles';
@@ -17,7 +20,7 @@ const IDC = ['hsl(172,30%,52%)', 'hsl(210,28%,66%)', 'hsl(14,48%,58%)', 'hsl(75,
 
 export type V3League = LeagueChoice & { bd: string; c: string; commish: boolean; team: boolean };
 export type Waivers = ReturnType<typeof parseHostedWaivers>;
-export type Brief = { brief?: HomeBrief; error?: string; waivers?: Waivers };
+export type Brief = { brief?: HomeBrief; error?: string; waivers?: Waivers; news?: NewsFeed };
 export type Lane = 'need' | 'wait' | 'land';
 export type DocketItem = { id: string; lg: string; lane: Lane; t: string; who: string; clock: string;
   btn: string; entry?: ThinHomeEntry; urgent?: boolean; bad?: boolean };
@@ -66,10 +69,11 @@ export function useHome(leagues: V3League[], port: HostedPort) {
       },
       readBrief: async (id, mine, hosted, _owner, commish) => {
         try {
-          const [brief, waivers] = await Promise.all([
+          const [brief, waivers, news] = await Promise.all([
             readThinHomeBrief(id, mine, hosted, undefined, commish),
-            mine ? readWaivers(id, mine, hosted) : Promise.resolve(undefined)]);
-          keep(id, { brief, waivers });
+            mine ? readWaivers(id, mine, hosted) : Promise.resolve(undefined),
+            readLeagueNews(id, hosted)]);
+          keep(id, { brief, waivers, news });
           return brief;
         } catch (cause) {
           keep(id, { error: cause instanceof Error ? cause.message : String(cause) });
@@ -91,6 +95,40 @@ async function readWaivers(league: string, franchise: string, port: HostedPort) 
     const w = parseHostedWaivers(r.data);
     return w.league === league && w.franchise === franchise ? w : undefined;
   } catch { return undefined; }
+}
+
+async function readLeagueNews(league: string, port: HostedPort): Promise<NewsFeed | undefined> {
+  try {
+    return await readNewsFeed(league, port);
+  } catch { return undefined; }
+}
+
+const HOME_PROV: Provenance = {
+  source: 'League ledger', kind: 'live',
+  freshness: { state: 'live', fetchedAt: '', note: '' },
+};
+
+/** Build a NativeHQ view from a Home brief so clicking a player on Home opens the shared card drawer. */
+export function homeCardReading(brief?: HomeBrief): NativeHQ {
+  const season = brief?.pulse?.season ?? new Date().getFullYear();
+  const emptySnap: Snapshot = {
+    league: { value: { season, franchiseCount: 0 }, provenance: HOME_PROV },
+    franchises: { value: [], provenance: HOME_PROV },
+    rosters: { value: [], provenance: HOME_PROV },
+    players: { value: [], provenance: HOME_PROV },
+    eligibility: {
+      players: {}, feeds: { injuries: HOME_PROV, players: HOME_PROV, rosters: HOME_PROV },
+    },
+  };
+  return {
+    revision: 0,
+    errors: [],
+    week: brief?.pulse?.week,
+    searchPlayers: [],
+    settings: { positions: [] },
+    snapshot: brief?.assets ?? emptySnap,
+    thisWeek: brief?.pulse?.results,
+  } as unknown as NativeHQ;
 }
 
 function entryFor(item: NeedsYouItem): ThinHomeEntry | undefined {

@@ -1,6 +1,9 @@
 // Home board and its pieces, after the mock's grid.js (24x14 grid, piece frame) and pieces.js (R[id]).
 // Each body returns the mock's { fb, b, f }: filter bar, body and footer line.
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  ctDateTime, isInjuryNews, openExternalArticle, shortNewsAge, type FeedNewsItem,
+} from '../research/espnNews';
 import { left, nameOf } from '../shell/homeTiles';
 import { HQAct } from '../shell/HQAct';
 import type { ThinHomeEntry } from '../shell/ThinHome';
@@ -44,7 +47,7 @@ function St({ children }: { children: ReactNode }) {
 }
 
 export type Ctx = { leagues: V3League[]; briefs: Record<string, Brief>; docket: DocketItem[]; now: number;
-  open: Open; loading: boolean };
+  open: Open; openPlayer?: (league: V3League, playerId: string) => void; loading: boolean };
 type PieceCtx = Ctx & { size: string; w: number };
 type Body = { fb?: ReactNode; b: ReactNode; f?: string };
 
@@ -172,19 +175,120 @@ function shortcuts(c: PieceCtx): Body {
   f: 'pin any tab with the star in the rail' };
 }
 
-function news(c: PieceCtx): Body {
-  return { fb: <div className="fbar">{['All', 'My players', 'Injuries', 'On the wire'].map((t, i) =>
-    <HQAct key={t} className="chip" active={i === 0}>{`${t} 0`}</HQAct>)}</div>,
-  b: <St>{c.loading ? 'Reading the news…' : 'Player news is not on this league server yet.'}</St>,
-  f: 'every player in the news' };
+type NewsFilter = 'all' | 'mine' | 'injuries' | 'wire';
+type NewsMention = {
+  league: V3League; playerId: string; name: string; onMyRoster: boolean; onAnyRoster: boolean;
+  knownRosters: boolean;
+};
+type HomeNewsRow = { item: FeedNewsItem; mentions: NewsMention[]; injury: boolean };
+
+const NEWS_CHIPS: [NewsFilter, string][] = [
+  ['all', 'All'], ['mine', 'My players'], ['injuries', 'Injuries'], ['wire', 'On the wire'],
+];
+
+function collectHomeNews(c: PieceCtx): { rows: HomeNewsRow[]; asOf: string; stale: boolean; reason: string } {
+  const byId = new Map<string, HomeNewsRow>();
+  let asOf = '', stale = false, reason = '';
+  for (const L of c.leagues) {
+    const entry = c.briefs[L.id];
+    const feed = entry?.news;
+    if (!feed) continue;
+    if (feed.asOf && (!asOf || feed.asOf > asOf)) asOf = feed.asOf;
+    if (feed.stale) stale = true;
+    if (!reason && feed.reason) reason = feed.reason;
+    const snap = entry?.brief?.assets;
+    const playersById = new Map((snap?.players.value ?? []).map(p => [p.id, p.name]));
+    const rostered = new Set<string>();
+    const mine = new Set<string>();
+    const knownRosters = Boolean(snap?.rosters.value.length);
+    for (const r of snap?.rosters.value ?? []) {
+      for (const p of r.players) {
+        rostered.add(p.id);
+        if (L.franchise && r.franchiseId === L.franchise) mine.add(p.id);
+      }
+    }
+    for (const item of feed.items) {
+      let row = byId.get(item.id);
+      if (!row) {
+        row = { item, mentions: [], injury: isInjuryNews(item) };
+        byId.set(item.id, row);
+      }
+      for (const pid of item.players) {
+        if (row.mentions.some(m => m.league.id === L.id && m.playerId === pid)) continue;
+        row.mentions.push({
+          league: L, playerId: pid, name: playersById.get(pid) || `Player ${pid}`,
+          onMyRoster: mine.has(pid), onAnyRoster: rostered.has(pid), knownRosters,
+        });
+      }
+    }
+  }
+  const rows = [...byId.values()].sort((a, b) =>
+    (Date.parse(b.item.published) || 0) - (Date.parse(a.item.published) || 0));
+  return { rows, asOf, stale, reason };
 }
 
-function Piece({ inst, c, place, lane, setLane }: { inst: Inst; c: Ctx; place: (i: Inst) => CSSProperties;
-  lane: number; setLane: (n: number) => void }) {
+function matchesNewsFilter(row: HomeNewsRow, filter: NewsFilter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'mine') return row.mentions.some(m => m.onMyRoster);
+  if (filter === 'injuries') return row.injury;
+  return row.mentions.some(m => m.knownRosters && !m.onAnyRoster);
+}
+
+function emptyNewsWords(filter: NewsFilter, loading: boolean, reason: string): string {
+  if (loading) return 'Reading the news…';
+  if (filter === 'mine') return 'No recent ESPN news mentions players on your roster.';
+  if (filter === 'injuries') return 'No injury updates in the current ESPN news feed.';
+  if (filter === 'wire') return 'No recent ESPN news mentions an unrostered player.';
+  return reason || 'No ESPN news is available from this league server yet.';
+}
+
+function news(c: PieceCtx, filter: NewsFilter, setFilter: (f: NewsFilter) => void): Body {
+  const { rows, asOf, stale, reason } = collectHomeNews(c);
+  const count = (f: NewsFilter) => rows.filter(r => matchesNewsFilter(r, f)).length;
+  const shown = rows.filter(r => matchesNewsFilter(r, filter));
+  const fb = <div className="fbar">{NEWS_CHIPS.map(([k, label]) =>
+    <HQAct key={k} className="chip" active={filter === k}
+      onAction={() => setFilter(k)}>{`${label} ${count(k)}`}</HQAct>)}</div>;
+  const b = !shown.length ? <St>{emptyNewsWords(filter, c.loading, reason)}</St>
+    : <>{shown.map(({ item, mentions, injury }) => {
+      const isMine = mentions.some(m => m.onMyRoster);
+      const uniquePlayers = mentions.filter((m, i) =>
+        mentions.findIndex(x => x.playerId === m.playerId) === i);
+      return <div key={item.id} className={`news${isMine ? ' mine' : ''}`}>
+        <span className="m" title={ctDateTime(item.published)}>
+          {shortNewsAge(item.published, c.now)}</span>
+        <b>
+          {item.url
+            ? <HQAct className="espn-news-link" attributes={{ 'data-url': item.url }}
+              label={`Open article on ${item.source}: ${item.headline}`}
+              onAction={() => openExternalArticle(item.url)}>{item.headline}</HQAct>
+            : item.headline}
+          <small>{item.source}{injury ? ' · INJURY' : ''}</small>
+        </b>
+        {uniquePlayers.length > 0 && <div className="news-players">
+          {uniquePlayers.map(m => <HQAct key={`${m.league.id}:${m.playerId}`}
+            className="tag" attributes={{ 'data-a': 'player' }}
+            label={`Open ${m.name} player card`}
+            onAction={() => c.openPlayer?.(m.league, m.playerId)}>{m.name}</HQAct>)}
+        </div>}
+        {item.description && <p>{item.description}</p>}
+      </div>;
+    })}</>;
+  const foot = asOf
+    ? `as of ${ctTime(asOf)} CT · ESPN${stale ? ' · cached copy' : ''}`
+    : 'ESPN · every player in the news';
+  return { fb, b, f: foot };
+}
+
+function Piece({ inst, c, place, lane, setLane, newsFilter, setNewsFilter }: {
+  inst: Inst; c: Ctx; place: (i: Inst) => CSSProperties;
+  lane: number; setLane: (n: number) => void;
+  newsFilter: NewsFilter; setNewsFilter: (f: NewsFilter) => void;
+}) {
   const p = PIECES[inst.pid], size = sizeOf(inst.w, inst.h), ctx: PieceCtx = { ...c, size, w: inst.w };
   const r = inst.pid === 'docket' ? docket(ctx, lane, setLane) : inst.pid === 'week' ? week(ctx)
     : inst.pid === 'today' ? today(ctx) : inst.pid === 'deadlines' ? deadlines(ctx)
-      : inst.pid === 'shortcuts' ? shortcuts(ctx) : news(ctx);
+      : inst.pid === 'shortcuts' ? shortcuts(ctx) : news(ctx, newsFilter, setNewsFilter);
   const live = p.live
     && c.leagues.some(L => c.briefs[L.id]?.brief?.pulse?.results?.evidence?.live === 'live');
   return <div className={`pc ${p.pal} sz-${size}`} data-iid={inst.iid} tabIndex={0} aria-label={p.title}
@@ -202,6 +306,7 @@ export function HomeBoard({ c }: { c: Ctx }) {
   const grid = useRef<HTMLDivElement>(null);
   const [cell, setCell] = useState<{ cw: number; ch: number }>();
   const [lane, setLane] = useState(0);
+  const [newsFilter, setNewsFilter] = useState<NewsFilter>('all');
   useLayoutEffect(() => {
     const g = grid.current;
     if (!g) return;
@@ -226,6 +331,7 @@ export function HomeBoard({ c }: { c: Ctx }) {
       <HQAct className="key" label="Edit">
         <Icon n="pencil" /><span className="lb">Edit</span></HQAct></div></div>
     <div className="wbody"><div className="grid" id="grid" ref={grid} style={vars}>
-      {TODAY.insts.map(i => <Piece key={i.iid} inst={i} c={c} place={place} lane={lane} setLane={setLane} />)}
+      {TODAY.insts.map(i => <Piece key={i.iid} inst={i} c={c} place={place} lane={lane} setLane={setLane}
+        newsFilter={newsFilter} setNewsFilter={setNewsFilter} />)}
     </div></div></>;
 }

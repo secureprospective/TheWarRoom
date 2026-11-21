@@ -4,7 +4,11 @@ import { Act } from '../commands/Act';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { hostedPlayerReadingUnavailable } from '../control/nativeApi';
 import { ReportView } from '../reports/ReportView';
+import { HQAct } from '../shell/HQAct';
 import { parseUsage, type Usage } from '../shell/hqPlayerData';
+import {
+  ctDateTime, isInjuryNews, newsAge, openExternalArticle, readPlayerNews, type PlayerNews,
+} from './espnNews';
 import { researchState } from './state';
 import type { Research as ResearchBoard } from './contract';
 import './research.css';
@@ -12,13 +16,15 @@ import { readPlayerUsage, researchAPI, researchAvailable, subscribeResearchPlaye
 
 export default function ResearchPlayerInspector({
   id, identity = true, league, port, position, usage: suppliedUsage, usageDone,
+  news: suppliedNews, newsDone,
 }: {
   id: string; identity?: boolean; league?: string; port?: HostedPort; position?: string;
-  usage?: Usage; usageDone?: boolean;
+  usage?: Usage; usageDone?: boolean; news?: PlayerNews; newsDone?: boolean;
 }) {
   const [player, setPlayer] = useState<PlayerReading>();
   const [error, setError] = useState('');
   const [fetchedUsage, setFetchedUsage] = useState<{ ready: boolean; value?: Usage }>({ ready: false });
+  const [fetchedNews, setFetchedNews] = useState<{ ready: boolean; value?: PlayerNews }>({ ready: false });
   const hostedOnly = Boolean(league) && !researchAvailable();
   useEffect(() => {
     let disposed = false;
@@ -50,11 +56,23 @@ export default function ResearchPlayerInspector({
     }).catch(() => { if (!disposed) setFetchedUsage({ ready: true }); });
     return () => { disposed = true; };
   }, [hostedOnly, id, league, port, usageDone]);
+  useEffect(() => {
+    if (!hostedOnly || newsDone !== undefined || !league) return;
+    let disposed = false;
+    setFetchedNews({ ready: false });
+    void readPlayerNews(league, id, port).then(value => {
+      if (!disposed) setFetchedNews({ ready: true, value });
+    }).catch(() => { if (!disposed) setFetchedNews({ ready: true }); });
+    return () => { disposed = true; };
+  }, [hostedOnly, id, league, port, newsDone]);
   if (hostedOnly) {
     const usage = usageDone !== undefined ? suppliedUsage : fetchedUsage.value;
     const ready = usageDone ?? fetchedUsage.ready;
+    const news = newsDone !== undefined ? suppliedNews : fetchedNews.value;
+    const newsReady = newsDone ?? fetchedNews.ready;
     return <section aria-label="Research player Inspector">
-      <HostedResearchView usage={usage} ready={ready} position={position} />
+      <HostedResearchView usage={usage} ready={ready} position={position}
+        news={news} newsReady={newsReady} />
     </section>;
   }
   return <section aria-label="Research player Inspector">
@@ -64,8 +82,46 @@ export default function ResearchPlayerInspector({
   </section>;
 }
 
-function HostedResearchView({ usage, ready, position }: {
-  usage?: Usage; ready: boolean; position?: string;
+function HostedNewsSection({ news, ready }: { news?: PlayerNews; ready: boolean }) {
+  const now = Date.now();
+  return <section className="research-facts" aria-label="Player news">
+    <h5>Player news</h5>
+    {!ready ? <p role="status">Reading player news…</p>
+      : !news ? <p>Not available</p>
+      : !news.items.length ? <p>{news.reason
+          || (news.stale && !news.asOf ? 'Fetching player news from ESPN…'
+            : 'No recent ESPN news for this player.')}</p>
+      : <>
+        <ul className="espn-news-list">{news.items.map(item => {
+          const age = newsAge(item.published, now);
+          const stamp = ctDateTime(item.published);
+          return <li key={item.id} className="espn-news-item">
+            <div className="espn-news-head">
+              <strong className="espn-news-title">
+                {item.url
+                  ? <HQAct className="espn-news-link" attributes={{ 'data-url': item.url }}
+                    label={`Open article on ${item.source}: ${item.headline}`}
+                    onAction={() => openExternalArticle(item.url)}>{item.headline}</HQAct>
+                  : item.headline}
+              </strong>
+              <span className="espn-news-meta">
+                {age && <time dateTime={item.published} title={stamp}>{age}</time>}
+                <span className="tag">{item.source}</span>
+                {isInjuryNews(item) && <span className="tag am">Injury</span>}
+              </span>
+            </div>
+            {item.description && <p className="espn-news-desc">{item.description}</p>}
+          </li>;
+        })}</ul>
+        {news.asOf && <p className="espn-news-foot">
+          Updated {ctDateTime(news.asOf)}{news.stale ? ' · cached copy' : ''}
+        </p>}
+      </>}
+  </section>;
+}
+
+function HostedResearchView({ usage, ready, position, news, newsReady }: {
+  usage?: Usage; ready: boolean; position?: string; news?: PlayerNews; newsReady: boolean;
 }) {
   const shareLabel = position === 'RB' ? 'Carry share, last 4'
     : ['QB', 'DT', 'DE', 'LB', 'CB', 'S'].includes(position ?? '') ? 'Snap share, last 4'
@@ -74,10 +130,7 @@ function HostedResearchView({ usage, ready, position }: {
     : ['QB', 'DT', 'DE', 'LB', 'CB', 'S'].includes(position ?? '') ? usage?.snapShare
       : usage?.targetShare;
   return <div className="draft-reports">
-    <section className="research-facts" aria-label="Player news">
-      <h5>Player news</h5>
-      <p>Not available</p>
-    </section>
+    <HostedNewsSection news={news} ready={newsReady} />
     <section className="research-facts" aria-label="Player research facts">
       <h5>Research facts</h5>
       {!ready ? <p role="status">Reading player usage…</p> : !usage ? <p>Not available</p> : <dl>

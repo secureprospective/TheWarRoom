@@ -72,3 +72,22 @@
 .pcd-contract .contract-source,
 .pcd-contract .contract-footnote,
 .pcd-contract details { font: 10px var(--mono); color: var(--ink3); margin-top: 4px; }
+.espn-news-list { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 8px; }
+.espn-news-item {
+  padding: 8px 10px; background: var(--sunken); border: 1px solid var(--rule); display: grid; gap: 4px;
+}
+.espn-news-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.espn-news-title { font-size: 13px; color: var(--ink); line-height: 1.35; }
+.espn-news-link {
+  background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}
+.espn-news-meta {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  font: 10px var(--mono); color: var(--ink3);
+}
+.espn-news-desc { margin: 0; font-size: 12px; color: var(--ink2); line-height: 1.45; }
+.espn-news-foot { margin: 6px 0 0; font: 10px var(--mono); color: var(--ink3); }
+.news-players { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0; }
+.news .espn-news-link { text-decoration: none; }
+.news .espn-news-link:hover { text-decoration: underline; }

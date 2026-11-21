@@ -14,6 +14,7 @@ import { hostedPlayerReadingUnavailable } from '../control/nativeApi';
 import type { Provenance, Snapshot } from '../data/contract';
 import { readPlayerStatus, type PlayerStatus } from '../phone/playerStatus';
 import { readPlayerUsage } from '../research/api';
+import { formatBioBorn, readPlayerNews, type PlayerNews } from '../research/espnNews';
 import ResearchPlayerInspector from '../research/PlayerInspector';
 import { HQAct } from './HQAct';
 import { KV, UsageRows } from './HQInspector';
@@ -124,6 +125,7 @@ export function usePlayerCard({
   const [tab, setTab] = useState<Tab>('news');
   const [loadedStatus, setLoadedStatus] = useState<PlayerStatus>();
   const [usage, setUsage] = useState<{ ready: boolean; value?: Usage }>({ ready: false });
+  const [news, setNews] = useState<{ ready: boolean; value?: PlayerNews }>({ ready: false });
   const { snapshot } = reading;
   const season = snapshot.league.value.season;
   const ownerRoster = snapshot.rosters.value.find(r => r.players.some(p => p.id === id));
@@ -156,7 +158,27 @@ export function usePlayerCard({
     return () => { live = false; };
   }, [id, league, port]);
 
+  useEffect(() => {
+    let live = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    setNews({ ready: false });
+    const load = (attempt: number) => {
+      void readPlayerNews(league, id, port).then(value => {
+        if (!live) return;
+        setNews({ ready: true, value });
+        if (value && value.espnId && !value.asOf && value.stale && attempt < 2) {
+          timer = setTimeout(() => load(attempt + 1), 1200);
+        }
+      }).catch(() => { if (live) setNews({ ready: true }); });
+    };
+    load(0);
+    return () => { live = false; if (timer) clearTimeout(timer); };
+  }, [id, league, port]);
+
   const injuries = fetchStatus ? loadedStatus : suppliedStatus;
+  const bio = news.value?.bio;
+  const effectivePhoto = photo?.src ? photo
+    : bio?.headshot ? { src: bio.headshot, alt: model.name } : undefined;
   const annual = reading.contracts?.get(id) ?? [];
   const ends = annual.length ? Math.max(...annual.map(y => y.season))
     : rosterPlayer?.yearsRemaining !== undefined ? season + rosterPlayer.yearsRemaining - 1 : undefined;
@@ -169,14 +191,15 @@ export function usePlayerCard({
     .filter(Boolean).join(' · ') || NA;
   const contractStatus = rosterPlayer?.contractStatus && rosterPlayer.contractStatus !== 'FLAG'
     ? rosterPlayer.contractStatus : NA;
-  const sub = [model.team, model.position, ownerName].filter(Boolean).join(' · ') || NA;
+  const sub = [model.team || bio?.team, model.position || bio?.position, ownerName]
+    .filter(Boolean).join(' · ') || NA;
 
   const meta: [string, string][] = [
-    ['Ht', NA],
-    ['Wt', NA],
-    ['Born', bornText(player?.birthdate, model.age)],
-    ['College', NA],
-    ['Draft', NA],
+    ['Ht', bio?.height || NA],
+    ['Wt', bio?.weight || NA],
+    ['Born', formatBioBorn(bio?.born, bio?.age) || bornText(player?.birthdate, model.age)],
+    ['College', bio?.college || NA],
+    ['Draft', bio?.draft || NA],
     ['Status', statusLine],
     ['Acquired', NA],
     ['Salary', rosterPlayer?.salary != null ? model.salary : NA],
@@ -196,9 +219,10 @@ export function usePlayerCard({
   const main = <div className="pcd-main">
     <header className="pcd-head">
       <div className="pcd-photo">
-        <PlayerPhoto view={photo} team={model.team} />
+        <PlayerPhoto view={effectivePhoto} team={model.team || bio?.team} />
         <div className="pcd-badges">
-          {model.position && <span className="pos">{model.position}</span>}
+          {(model.position || bio?.position) && <span className="pos">
+            {model.position || bio?.position}</span>}
           {model.status.map(s => <span key={s.label} className="tag">{s.label}</span>)}
         </div>
       </div>
@@ -208,7 +232,8 @@ export function usePlayerCard({
     </header>
     {tab === 'news' && <div className="pcd-panel">
       <ResearchPlayerInspector id={id} identity={false} league={league} port={port}
-        position={model.position} usage={usage.value} usageDone={usage.ready} />
+        position={model.position || bio?.position} usage={usage.value} usageDone={usage.ready}
+        news={news.value} newsDone={news.ready} />
     </div>}
     {tab === 'stats' && <div className="pcd-panel">
       <div className="pcd-nums">

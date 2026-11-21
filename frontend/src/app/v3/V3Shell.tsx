@@ -13,9 +13,12 @@ import { HQAct } from '../shell/HQAct';
 import { hostedControlTabs, type HostedControlTab } from '../commissioner/hostedControlRoomData';
 import { TeamPick } from './HQLineupV3';
 import { Icon } from './icons';
-import { ctStamp, docketOf, dress, lanesOf, roleWords, SCREENS, useHome, type V3League } from './model';
+import {
+  ctStamp, docketOf, dress, homeCardReading, lanesOf, roleWords, SCREENS, useHome, type V3League,
+} from './model';
 import { AssistantDrawer, Commands, DocketDrawer, Switcher } from './overlays';
 import { Badge, HomeBoard } from './pieces';
+import { PlayerCardDrawer } from './PlayerCardDrawer';
 import './v3.css';
 import './legacyHost.css';
 import './fixes.css';
@@ -81,11 +84,13 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const setHqTeam = (f: (t: Record<string, string>) => Record<string, string>) => setHqTeamState(t => {
     const next = f(t); localStorage.setItem('twr.hqTeam', JSON.stringify(next)); return next; });
   const [layer, setLayer] = useState<'switch' | 'cmdk' | 'account' | 'docket' | 'assist' | null>(null);
-  const home = () => { setSelected(undefined); onHome(); };
+  const [cardPlayer, setCardPlayer] = useState<{ league: V3League; id: string } | null>(null);
+  const home = () => { setSelected(undefined); setCardPlayer(null); onHome(); };
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
-      if (e.key === 'Escape' && layer) setLayer(null);
+      if (e.key === 'Escape' && cardPlayer) setCardPlayer(null);
+      else if (e.key === 'Escape' && layer) setLayer(null);
       else if ((e.ctrlKey || e.metaKey) && k === 'k') { e.preventDefault(); setLayer('cmdk'); }
       else if (e.altKey && k === 'a') { e.preventDefault(); setLayer('assist'); }
       else if (e.altKey && k === 'd') { e.preventDefault(); setLayer('docket'); }
@@ -95,7 +100,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
     if (typeof window.addEventListener !== 'function') return;
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [layer, onHome]);
+  }, [layer, cardPlayer, onHome]);
   const L = leagues.find(l => l.id === (active?.league.id ?? selected)) ?? null;
   const open = (l: V3League, e: ThinHomeEntry) => onOpen(admitted.find(a => a.id === l.id) ?? l, e);
   const screen = active ? PALETTE[active.entry] : 'pal-slate';
@@ -113,7 +118,8 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
   const week = Object.values(briefs).map(b => b.brief?.pulse?.week).find(w => w !== undefined);
   const liveOn = Object.values(briefs).some(b => b.brief?.pulse?.results?.evidence?.live === 'live');
   const initials = (accountName ?? 'You').slice(0, 2).toUpperCase();
-  const c = { leagues, briefs, docket, now, open, loading };
+  const openPlayer = (league: V3League, id: string) => setCardPlayer({ league, id });
+  const c = { leagues, briefs, docket, now, open, openPlayer, loading };
   const scrim = layer === 'cmdk' || layer === 'docket';
   const plural = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
 
@@ -234,6 +240,10 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         {account ?? <HQAct onAction={() => { setLayer(null); onSignOut(); }}>
           <Icon n="x" /> Sign out</HQAct>}</div>}
     </div>}</div>
+    {cardPlayer && <PlayerCardDrawer id={cardPlayer.id}
+      reading={homeCardReading(briefs[cardPlayer.league.id]?.brief)}
+      league={cardPlayer.league.id} mine={cardPlayer.league.franchise ?? ''} port={port}
+      close={() => setCardPlayer(null)} />}
   </div>;
 }
 

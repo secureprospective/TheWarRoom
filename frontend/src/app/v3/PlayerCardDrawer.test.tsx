@@ -116,6 +116,39 @@ function makePort() {
         },
       };
     }
+    if (request.command === 'player.news.read') {
+      if (request.arguments.player === '16200') {
+        return {
+          label: 'L', writable: false, football: '',
+          data: {
+            league: 'L', player: '16200', espnId: '', bio: {}, items: [], asOf: '', stale: false,
+            reason: 'No ESPN player mapping is on file for this player.',
+          },
+        };
+      }
+      return {
+        label: 'L', writable: false, football: '',
+        data: {
+          league: 'L', player: String(request.arguments.player), espnId: '4429795',
+          bio: {
+            height: `5' 9"`, weight: '200 lbs', born: '2002-03-20', age: 24,
+            college: 'Alabama', draft: '2023: Rd 1, Pk 12 (DET)',
+            headshot: 'https://a.espncdn.com/i/headshots/nfl/players/full/4429795.png',
+            team: 'DET', position: 'RB', status: 'Active',
+          },
+          items: [
+            {
+              id: '505001', headline: 'Gibbs explodes for two TDs in Lions win',
+              description: 'Jahmyr Gibbs led Detroit with 142 scrimmage yards.',
+              published: new Date(Date.now() - 5 * 86_400_000).toISOString(),
+              url: 'https://www.espn.com/nfl/story/_/id/505001/gibbs-two-tds',
+              source: 'ESPN', type: 'Story',
+            },
+          ],
+          asOf: '2026-11-21T12:00:00Z', stale: false,
+        },
+      };
+    }
     if (request.command === 'player.note.read') {
       const text = saved.at(-1) ?? 'Hold as core RB1';
       return {
@@ -174,15 +207,32 @@ describe('PlayerCardDrawer', () => {
     const text = dialog.textContent ?? '';
     expect(text).toContain('JAHMYR GIBBS');
     expect(text).toContain('DET · RB · Motor City');
-    expect(text).toContain('Mar 20, 2002');
+    expect(text).toContain(`5' 9"`);
+    expect(text).toContain('200 lbs');
+    expect(text).toContain('Mar 20, 2002 (24)');
+    expect(text).toContain('Alabama');
+    expect(text).toContain('2023: Rd 1, Pk 12 (DET)');
     expect(text).toContain('$13.5M');
     expect(text).toContain('2029');
     expect(text).toContain('RFA');
     expect(text).toContain('Not available');
     expect(text).not.toContain('Career Stats');
+    const photoImg = dialog.querySelector<HTMLImageElement>('.pcd-photo img');
+    expect(photoImg?.src).toContain('4429795.png');
 
-    // News tab (default) shows research facts from player.usage.read + news fallback
+    // News tab (default) shows ESPN items (bold headline link in new tab, age, description, source tag)
     expect(text).toContain('Player news');
+    expect(text).toContain('Gibbs explodes for two TDs in Lions win');
+    expect(text).toContain('5 days ago');
+    expect(text).toContain('Jahmyr Gibbs led Detroit with 142 scrimmage yards.');
+    expect(text).toContain('ESPN');
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const articleBtn = dialog.querySelector<HTMLButtonElement>('.espn-news-title .espn-news-link')!;
+    expect(articleBtn.dataset.url).toContain('espn.com/nfl/story/_/id/505001');
+    await act(async () => articleBtn.click());
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://www.espn.com/nfl/story/_/id/505001/gibbs-two-tds', '_blank', 'noopener,noreferrer',
+    );
     expect(text).toContain('MIN');
     expect(text).toContain('62%');
 
@@ -249,11 +299,13 @@ describe('PlayerCardDrawer', () => {
     });
     expect(layer.querySelector('[role="dialog"]')).toBeNull();
 
-    // Expiring contracts panel (.lk) also opens the card
+    // Expiring contracts panel (.lk) also opens the card; unmapped player shows plain reason
     const expiringBtn = [...host.querySelectorAll('button.lk')]
       .filter(b => b.textContent === 'Expiring Back').at(-1)!;
     await act(async () => (expiringBtn as HTMLElement).click());
     await flush();
-    expect(layer.querySelector('[role="dialog"]')?.textContent).toContain('EXPIRING BACK');
+    const unmappedDialog = layer.querySelector('[role="dialog"]')!;
+    expect(unmappedDialog.textContent).toContain('EXPIRING BACK');
+    expect(unmappedDialog.textContent).toContain('No ESPN player mapping is on file for this player.');
   });
 });
