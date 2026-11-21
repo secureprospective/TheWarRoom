@@ -92,12 +92,16 @@ func (r RawWorkflowScope) validateCommand(command string) error {
 		if err != nil {
 			return fmt.Errorf("choose when to read the league: %w", err)
 		}
-		if command == "week.read" && at.After(time.Now()) {
+		if command == "week.read" && at.After(time.Now().Add(weekReadClockSkew)) {
 			return fmt.Errorf("choose a past time to read the week")
 		}
 	}
 	return nil
 }
+
+// weekReadClockSkew lets a phone whose clock runs a little ahead of the server read the week: the
+// app sends "now" from the device, and an S25 a few seconds fast got "choose a past time".
+const weekReadClockSkew = 5 * time.Minute
 
 func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) {
 	if kept, complete, matched := r.franchiseScope(command); matched {

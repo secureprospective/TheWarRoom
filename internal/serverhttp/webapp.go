@@ -59,6 +59,12 @@ func webAssetsHandler(assets fs.FS) http.Handler {
 			if path.Ext(name) != "" {
 				// A stale phone copy asks for files an older build named; the path says which build.
 				slog.Warn("browser app: no file", slog.String("file", logSafePath(name)))
+				if strings.HasPrefix(name, "assets/") {
+					// Only a page from an older release asks for a build file that is gone. Drop that
+					// device's app cache and worker so its next open loads the current release; the
+					// sign-in cookie is not touched. (An S25 stayed on an old page after many releases.)
+					w.Header().Set("Clear-Site-Data", `"cache", "storage"`)
+				}
 				http.NotFound(w, r)
 				return
 			}

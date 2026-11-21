@@ -73,8 +73,9 @@ func TestBrowserAppRoutesUseSafeHeadersAndAssetTypes(t *testing.T) {
 	}
 	missing := httptest.NewRecorder()
 	handler.ServeHTTP(missing, httptest.NewRequest(http.MethodGet, "/app/assets/missing.js", nil))
-	if missing.Code != http.StatusNotFound {
-		t.Fatalf("missing static file status=%d", missing.Code)
+	if missing.Code != http.StatusNotFound || missing.Header().Get("Clear-Site-Data") != `"cache", "storage"` {
+		t.Fatalf("missing build file: status=%d clear=%q (an old page must drop its app copy)",
+			missing.Code, missing.Header().Get("Clear-Site-Data"))
 	}
 	method := httptest.NewRecorder()
 	handler.ServeHTTP(method, httptest.NewRequest(http.MethodPost, "/app/", nil))
