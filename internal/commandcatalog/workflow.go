@@ -168,7 +168,7 @@ func (r RawWorkflowScope) pulseScope(command string) (RawWorkflowScope, bool, bo
 	case "projections.read":
 		kept.Players, kept.Season, kept.Week = r.Players, r.Season, r.Week
 		return kept, r.Players != "" && r.Season >= 1920 && r.Week > 0, true
-	case "player.usage.read", "player.agearc.read":
+	case "player.usage.read", "player.agearc.read", leagueservice.PlayerNewsRead:
 		kept.Player = r.Player
 		return kept, r.Player != "", true
 	case "bracket.read":
@@ -269,7 +269,8 @@ type workflowOutput interface {
 		commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets |
 		commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck |
 		commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules |
-		leagueservice.NFLGames | leagueservice.NFLGame | leagueservice.NFLPlayerStatus | commissioner.NativeCapCheck |
+		leagueservice.NFLGames | leagueservice.NFLGame | leagueservice.NFLPlayerStatus |
+		leagueservice.PlayerNewsReading | leagueservice.NewsFeedReading | commissioner.NativeCapCheck |
 		market.ContractQuote | market.WhatIfStack | market.ContractDecisions | leagueservice.DraftQueue |
 		leagueservice.PlayerNotes | leagueservice.PlayerWatchList | leagueservice.PlayerPrivateChange |
 		leagueservice.TradeDraftList | leagueservice.SavedTradeDraft | leagueservice.TradeDraftDeleted |
@@ -301,7 +302,7 @@ func RunWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWor
 
 func validateWorkflowPlayer(command, player string) error {
 	switch command {
-	case "player.usage.read", "player.agearc.read":
+	case "player.usage.read", "player.agearc.read", leagueservice.PlayerNewsRead:
 		id, err := playerid.New(player)
 		if err != nil || id.String() != player {
 			return fmt.Errorf("use a full league player id")

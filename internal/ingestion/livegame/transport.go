@@ -31,42 +31,61 @@ func (r Endpoints) Validate() error {
 	}
 	return nil
 }
+
+// FetchHTTPS reads one validated HTTPS URL without credentials through transport (4 MiB cap).
+func FetchHTTPS(ctx context.Context, transport Transport, rawURL string) (result []byte, failure error) {
+	if transport == nil {
+		return nil, fmt.Errorf("livegame transport: nil")
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, fmt.Errorf("livegame url: %w", err)
+	}
+	if u.Scheme != "https" || u.Host == "" || u.User != nil {
+		return nil, fmt.Errorf("livegame url: requires HTTPS without credentials")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("livegame request: %w", err)
+	}
+	resp, err := transport.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("livegame transport: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil && failure == nil {
+			failure = fmt.Errorf("livegame close: %w", err)
+		}
+	}()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("livegame status: HTTP %d", resp.StatusCode)
+	}
+	const limit = 4 << 20
+	body, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
+	if err != nil {
+		return nil, fmt.Errorf("livegame body: %w", err)
+	}
+	if len(body) > limit {
+		return nil, fmt.Errorf("livegame body: over %d bytes", limit)
+	}
+	return body, nil
+}
+
 func HTTPFetch(transport Transport, endpoints Endpoints) Fetch {
-	return func(ctx context.Context, kind, id string) (result []byte, failure error) {
+	return func(ctx context.Context, kind, id string) ([]byte, error) {
 		if err := endpoints.Validate(); err != nil {
 			return nil, err
 		}
 		if id != "" && !digits(id) {
 			return nil, fmt.Errorf("event id: invalid")
 		}
-		address := map[string]string{"espn": endpoints.ESPN, "yahoo": endpoints.Yahoo, "summary": endpoints.Summary, "plays": endpoints.Plays}[kind]
+		address := map[string]string{
+			"espn": endpoints.ESPN, "yahoo": endpoints.Yahoo,
+			"summary": endpoints.Summary, "plays": endpoints.Plays,
+		}[kind]
 		if address == "" {
 			return nil, fmt.Errorf("source kind: unknown")
 		}
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.ReplaceAll(address, "{id}", id), nil)
-		if err != nil {
-			return nil, fmt.Errorf("livegame request: %w", err)
-		}
-		resp, err := transport.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("livegame transport: %w", err)
-		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil && failure == nil {
-				failure = fmt.Errorf("livegame close: %w", err)
-			}
-		}()
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("livegame status: HTTP %d", resp.StatusCode)
-		}
-		const limit = 4 << 20
-		body, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
-		if err != nil {
-			return nil, fmt.Errorf("livegame body: %w", err)
-		}
-		if len(body) > limit {
-			return nil, fmt.Errorf("livegame body: over %d bytes", limit)
-		}
-		return body, nil
+		return FetchHTTPS(ctx, transport, strings.ReplaceAll(address, "{id}", id))
 	}
 }

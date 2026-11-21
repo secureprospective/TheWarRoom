@@ -1,0 +1,708 @@
+{
+  "resultsCount": 2,
+  "feed": [
+    {
+      "id": 64884228,
+      "nowId": "23-64884228",
+      "contentKey": "64884228-23-1-1",
+      "dataSourceIdentifier": "8742ff093355d",
+      "type": "Rotowire",
+      "headline": "Bowers (ankle) said Friday that his availability for Sunday's game against the Broncos remains up in the air, Sam Warren of The Athletic reports.",
+      "description": "Bowers (ankle) said Friday that his availability for Sunday's game against the Broncos remains up in the air, Sam Warren of The Athletic reports.",
+      "categorized": "2026-11-20T21:17:35Z",
+      "lastModified": "2026-11-20T21:14:23Z",
+      "published": "2026-11-20T21:14:23Z",
+      "images": [],
+      "story": "\"We still have some conversations to have, so we'll see,\" Bowers said. With the tight end already slated to carry a questionable tag into the weekend, his own comments don't provide added clarity about whether he'll suit up Sunday. The Raiders may wait until closer to the 4:25 p.m. ET kickoff before making a final call on Bowers' status. Jack Bech was the big winner in terms of playing time and targets after Bowers left last Sunday's game against the Seahawks.",
+      "allowContentReactions": false,
+      "allowSearch": false,
+      "isLiveBlog": false,
+      "links": {
+        "api": {
+          "self": {}
+        },
+        "mobile": {
+          "href": "http://m.espn.go.com/wireless/story?storyId=64884228"
+        }
+      },
+      "premium": false,
+      "playerId": 4432665
+    },
+    {
+      "id": 50494331,
+      "nowId": "1-50494331",
+      "contentKey": "50494331-1-6-1",
+      "dataSourceIdentifier": "216b4113488f4",
+      "publishedkey": "FFSundayHighLows-50494331",
+      "type": "Story",
+      "feedDisplayType": "Default",
+      "headline": "Week 10 winners and losers: McCaffrey, Gibbs and Mahomes dominate Sunday",
+      "description": "Christian McCafffrey, Jahmyr Gibbs and Patrick Mahomes put fantasy teams on their back in Week 10, while Jonathan Taylor and the Packers and Panthers' passing games had quiet days.",
+      "title": "Week 10 winners and losers: CMC, Gibbs, Mahomes lead the way",
+      "linkText": "Week 10 winners and losers: CMC, Gibbs dominate, Mahomes has biggest game in years",
+      "categorized": "2026-11-20T21:05:28Z",
+      "originallyPosted": "2026-11-16T04:48:00Z",
+      "lastModified": "2026-11-16T05:17:59Z",
+      "published": "2026-11-16T05:17:59Z",
+      "pageName": "FFSundayHighLows-50494331",
+      "root": "ffl/2026",
+      "section": "Fantasy",
+      "images": [
+        {
+          "dataSourceIdentifier": "78ffa48f5a2f5",
+          "id": 50497427,
+          "type": "header",
+          "name": "Christian McCaffrey [1296x729]",
+          "caption": "Christian McCaffrey had the biggest receiving day of his illustrious career on Sunday.",
+          "alt": "San Francisco 49ers running back Christian McCaffrey breaks free for a long touchdown during the NFL game between the San Francisco 49ers and the Dallas Cowboys on November 15, 2026 at AT&T Stadium in Arlington, Texas.",
+          "credit": "Brian Rothmuller/Icon Sportswire",
+          "height": 729,
+          "width": 1296,
+          "url": "https://a.espncdn.com/photo/2026/1116/r1746461_1296x729_16-9.jpg"
+        },
+        {
+          "dataSourceIdentifier": "f464738a183a4",
+          "id": 50495461,
+          "type": "header",
+          "name": "Patrick Mahomes [1296x729]",
+          "caption": "Patrick Mahomes threw for five touchdowns in Kansas City's route of the Falcons.",
+          "alt": "Kansas City quarterback Patrick Mahomes (15) reacts during the NFL game between the Kansas City Chiefs and the Atlanta Falcons on November 15, 2026 at Mercedes-Benz Stadium in Atlanta, GA.",
+          "credit": "Rich von Biberstein/Icon Sportswire",
+          "height": 729,
+          "width": 1296,
+          "url": "https://a.espncdn.com/photo/2026/1115/r1746379_2_1296x729_16-9.jpg"
+        },
+        {
+          "type": "Media",
+          "name": "Why fantasy managers should keep riding the hot hand with Patrick Mahomes",
+          "caption": "Why fantasy managers should keep riding the hot hand with Patrick Mahomes",
+          "height": 324,
+          "width": 576,
+          "url": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/ss_20261115_165320335_37441971015/ss_20261115_165320335_37441971015.jpg"
+        }
+      ],
+      "related": [
+        {
+          "id": 40699880,
+          "dataSourceIdentifier": "3b5ddc54255df",
+          "publishedkey": "40699880",
+          "type": "Story",
+          "headline": "Fantasy buzz: Does anything change in Indy with Richardson under center?",
+          "title": "Fantasy value of Colts with Anthony Richardson Sr. at QB",
+          "linkText": "Fantasy buzz: Does anything change in Indy with Richardson under center?",
+          "images": [
+            {
+              "dataSourceIdentifier": "78c859780f76f",
+              "id": 50542551,
+              "type": "header",
+              "name": "Anthony Richardson Sr. [1296x729]",
+              "caption": "Anthony Richardson Sr. will get his first start since 2024 next week against the Giants.",
+              "alt": "Anthony Richardson Sr., Indianapolis Colts quarterback",
+              "credit": "Troy Taormina-Imagn Images",
+              "height": 729,
+              "width": 1296,
+              "url": "https://a.espncdn.com/photo/2026/1120/r1748617_1296x729_16-9.jpg"
+            }
+          ],
+          "byline": "ESPN Fantasy",
+          "isLiveBlog": false,
+          "links": {
+            "api": {
+              "self": {
+                "href": "https://content.core.api.espn.com/v1/sports/news/40699880"
+              }
+            },
+            "app": {
+              "sportscenter": {
+                "href": "sportscenter://x-callback-url/showStory?uid=40699880"
+              }
+            },
+            "mobile": {
+              "href": "http://m.espn.go.com/wireless/story?storyId=40699880"
+            },
+            "web": {
+              "href": "https://www.espn.com/fantasy/football/story/_/id/40699880/fantasy-football-injuries-position-battles-nfl-news-analysis"
+            }
+          },
+          "premium": false
+        },
+        {
+          "id": 50443510,
+          "dataSourceIdentifier": "ef57ad8125e5f",
+          "publishedkey": "50443510",
+          "type": "Story",
+          "headline": "NFL Week 10: Big takeaways, questions and fantasy spin from Sunday's games",
+          "title": "NFL Week 10 takeaways, questions, fantasy spin on Sunday's games",
+          "linkText": "Big questions from NFL Week 10: Are Bengals a Super Bowl threat? Could 49ers' offense be even better?",
+          "source": "ESPN",
+          "images": [
+            {
+              "dataSourceIdentifier": "e1663567bc2ae",
+              "id": 50498395,
+              "type": "header",
+              "name": "Bengals celebration [608x342]",
+              "credit": "Tanner Pearson/AP",
+              "height": 342,
+              "width": 608,
+              "url": "https://a.espncdn.com/photo/2026/1116/r1746498_608x342_16-9.jpg"
+            }
+          ],
+          "byline": "NFL Nation",
+          "isLiveBlog": false,
+          "links": {
+            "api": {
+              "self": {
+                "href": "https://content.core.api.espn.com/v1/sports/news/50443510"
+              }
+            },
+            "app": {
+              "sportscenter": {
+                "href": "sportscenter://x-callback-url/showStory?uid=50443510"
+              }
+            },
+            "mobile": {
+              "href": "http://m.espn.go.com/nfl/story?storyId=50443510"
+            },
+            "web": {
+              "href": "https://www.espn.com/nfl/story/_/id/50443510/week-10-sunday-games-takeaways-questions-2026"
+            }
+          },
+          "premium": false
+        }
+      ],
+      "authors": [
+        {
+          "dataSourceIdentifier": "631dcd03483b5",
+          "guid": "9fe58b95-78bb-367f-a97a-0fb2544fca92",
+          "slug": "matt-bowen",
+          "displayName": "Matt Bowen",
+          "shortName": "M. Bowen",
+          "firstName": "Matt",
+          "lastName": "Bowen",
+          "contactInfo": "matt.bowen@espn.com",
+          "twitterUserName": "MattBowen41",
+          "biography": "Matt Bowen is a fantasy football and NFL writer for ESPN. He joined ESPN in 2015, writes regularly for ESPN+ and spent multiple years on \"NFL Matchup.\" After graduating from the University of Iowa, Matt played safety in the NFL for St. Louis, Green Bay, Washington and Buffalo over seven seasons.",
+          "sourceLine": "ESPN Writer",
+          "links": {
+            "api": {
+              "self": {
+                "href": "https://content.core.api.espn.com/v1/sports/news/9362128"
+              }
+            }
+          },
+          "images": [
+            {
+              "type": "headshot",
+              "name": "",
+              "alt": "",
+              "credit": "",
+              "url": "https://a.espncdn.com/i/columnists/full/bowen_matt.png"
+            }
+          ]
+        },
+        {
+          "dataSourceIdentifier": "cac71e4bf1a6e",
+          "guid": "6f206a9b-4c7e-3475-bf3f-090be4770216",
+          "slug": "tristan-h-cockcroft",
+          "displayName": "Tristan H. Cockcroft",
+          "shortName": "T. Cockcroft",
+          "firstName": "Tristan",
+          "lastName": "Cockcroft",
+          "contactInfo": "tristan.cockcroft@espn.com",
+          "twitterUserName": "SultanofStat",
+          "biography": "Tristan H. Cockcroft is senior writer for fantasy baseball and football at ESPN. Tristan is a member of the FSWA Hall of Fame. He is also two-time LABR and four-time Tout Wars champion. ",
+          "sourceLine": "ESPN Senior Writer",
+          "links": {
+            "api": {
+              "self": {
+                "href": "https://content.core.api.espn.com/v1/sports/news/2141876"
+              }
+            }
+          },
+          "images": [
+            {
+              "type": "headshot",
+              "name": "",
+              "alt": "",
+              "credit": "",
+              "url": "https://a.espncdn.com/i/columnists/full/tristan-cockcroft.png"
+            }
+          ]
+        }
+      ],
+      "story": "<p><photo1></p>\n<p>Week 10 of the 2026 fantasy football season featured huge games by\u00a0<a data-player-guid=\"db08ac19-dbd9-a776-5885-de1fe6830bc2\" href=\"https://www.espn.com/nfl/player/_/id/3117251/chri",
+      "allowAMP": true,
+      "allowComments": true,
+      "allowContentReactions": true,
+      "allowSearch": true,
+      "byline": "Matt Bowen and Tristan H. Cockcroft",
+      "isLiveBlog": false,
+      "links": {
+        "api": {
+          "self": {
+            "href": "https://content.core.api.espn.com/v1/sports/news/50494331"
+          }
+        },
+        "app": {
+          "sportscenter": {
+            "href": "sportscenter://x-callback-url/showStory?uid=50494331"
+          }
+        },
+        "mobile": {
+          "href": "http://m.espn.go.com/wireless/story?storyId=50494331"
+        },
+        "web": {
+          "href": "https://www.espn.com/fantasy/football/story/_/page/FFSundayHighLows-50494331/nfl-week-10-fantasy-football-winners-losers-injuries-rankings-more"
+        }
+      },
+      "premium": false,
+      "video": [
+        {
+          "id": 50494330,
+          "dataSourceIdentifier": "6ea9c72704c2a",
+          "cerebroId": "6afa29cdf1fa10791970cacb",
+          "pccId": "38389ed3-f182-4095-9580-dfb654921650",
+          "source": "espn",
+          "headline": "Why fantasy managers should keep riding the hot hand with Patrick Mahomes",
+          "shortHeadline": "Why fantasy managers should keep riding the hot hand with Patrick Mahomes",
+          "caption": "Why fantasy managers should keep riding the hot hand with Patrick Mahomes",
+          "title": "Why fantasy managers should keep riding the hot hand with Patrick Mahomes",
+          "description": "Why fantasy managers should keep riding the hot hand with Patrick Mahomes",
+          "shortDescription": "Why fantasy managers should keep riding the hot hand with Patrick Mahomes",
+          "lastModified": "2026-11-15T21:56:21Z",
+          "originalPublishDate": "2026-11-15T21:53:18Z",
+          "premium": false,
+          "syndicatable": true,
+          "duration": 61,
+          "videoRatio": "16:9",
+          "timeRestrictions": {
+            "embargoDate": "2026-11-15T21:53:17Z",
+            "expirationDate": "2026-11-22T18:00:00Z"
+          },
+          "deviceRestrictions": {
+            "devices": [
+              "settop",
+              "tablet",
+              "handset",
+              "ipad",
+              "desktop"
+            ],
+            "type": "whitelist"
+          },
+          "thumbnail": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/ss_20261115_165320335_37441971015/ss_20261115_165320335_37441971015.jpg",
+          "images": [
+            {
+              "name": "Poster Image",
+              "caption": "",
+              "alt": "",
+              "credit": "",
+              "height": 324,
+              "width": 576,
+              "url": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/ss_20261115_165320335_37441971015/ss_20261115_165320335_37441971015.jpg"
+            }
+          ],
+          "posterImages": {
+            "default": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/ss_20261115_165320335_37441971015/ss_20261115_165320335_37441971015_default.jpg",
+              "width": 576,
+              "height": 324
+            },
+            "firstFrame": {
+              "href": "https://cmp-espn.media.dssott.com/opp/img/espn/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197/thumb-1-w720-h406-f4.jpg"
+            },
+            "full": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/ss_20261115_165320335_37441971015/ss_20261115_165320335_37441971015.jpg"
+            },
+            "square": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/ss_20261115_165320335_37441971015/ss_20261115_165320335_37441971015_1x1.jpg"
+            },
+            "wide": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/ss_20261115_165320335_37441971015/ss_20261115_165320335_37441971015_5x2.jpg"
+            }
+          },
+          "links": {
+            "api": {
+              "artwork": {
+                "href": "https://artwork.api.espn.com/artwork/collections/media/38389ed3-f182-4095-9580-dfb654921650"
+              },
+              "self": {
+                "href": "https://content.core.api.espn.com/v1/video/clips/50494330"
+              }
+            },
+            "mobile": {
+              "href": "https://watch.auth.api.espn.com/video/auth/brightcove/38389ed3-f182-4095-9580-dfb654921650/asset?UMADPARAMreferer=https://www.espn.com/video/clip/_/id/50494330/why-fantasy-managers-keep-riding-hot-hand-patrick-mahomes",
+              "alert": {
+                "href": "https://m.espn.com/general/video/videoAlert?vid=50494330"
+              },
+              "progressiveDownload": {
+                "href": "https://watch.auth.api.espn.com/video/auth/brightcove/38389ed3-f182-4095-9580-dfb654921650/asset?UMADPARAMreferer=https://www.espn.com/video/clip/_/id/50494330/why-fantasy-managers-keep-riding-hot-hand-patrick-mahomes"
+              },
+              "source": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197.mp4"
+              },
+              "streaming": {
+                "href": "https://watch.auth.api.espn.com/video/auth/brightcove/38389ed3-f182-4095-9580-dfb654921650/asset?UMADPARAMreferer=https://www.espn.com/video/clip/_/id/50494330/why-fantasy-managers-keep-riding-hot-hand-patrick-mahomes"
+              }
+            },
+            "source": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197.mp4",
+              "HD": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197.mp4"
+              },
+              "HLS": {
+                "href": "https://cmp-espn.media.dssott.com/opp/hls/espn/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197/playlist.m3u8",
+                "HD": {
+                  "href": "https://cmp-espn.media.dssott.com/opp/hls/espn/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197/playlist.m3u8"
+                },
+                "cmaf": {
+                  "href": "https://cmp-espn.media.dssott.com/opp/cmaf/espn/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197/playlist.m3u8"
+                },
+                "shield": {
+                  "href": "https://watch.auth.api.espn.com/video/auth/media/38389ed3-f182-4095-9580-dfb654921650/asset"
+                }
+              },
+              "flash": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197.mp4"
+              },
+              "full": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197.mp4"
+              },
+              "mezzanine": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/ss_20261115_165320335_3744197/ss_20261115_165320335_3744197.mp4"
+              }
+            },
+            "sportscenter": {
+              "href": "sportscenter://x-callback-url/showVideo?videoID=50494330&videoDSI=6ea9c72704c2a"
+            },
+            "web": {
+              "href": "https://www.espn.com/video/clip/_/id/50494330/why-fantasy-managers-keep-riding-hot-hand-patrick-mahomes",
+              "self": {
+                "href": "https://www.espn.com/video/clip/_/id/50494330/why-fantasy-managers-keep-riding-hot-hand-patrick-mahomes",
+                "dsi": {
+                  "href": "https://www.espn.com/video/clip?id=6ea9c72704c2a"
+                }
+              }
+            }
+          },
+          "categories": [
+            {
+              "id": 12024,
+              "type": "league",
+              "uid": "s:20~l:3080",
+              "guid": "a472a0eb-d630-3568-bf2a-59572429de6c",
+              "description": "Fantasy NFL",
+              "sportId": 3080,
+              "leagueId": 3080,
+              "league": {
+                "id": 3080,
+                "description": "Fantasy NFL",
+                "abbreviation": "NFLFD"
+              }
+            },
+            {
+              "id": 409228,
+              "type": "topic",
+              "guid": "3d170ccb-7b75-54f1-78c4-cfbf3ee3322d",
+              "description": "fantasy",
+              "sportId": 0,
+              "topicId": 785
+            },
+            {
+              "id": 166867,
+              "type": "athlete",
+              "uid": "s:20~l:28~a:3139477",
+              "guid": "37d87523-280a-9d4a-0adb-22cfc6d3619c",
+              "description": "Patrick Mahomes",
+              "sportId": 28,
+              "athleteId": 3139477,
+              "athlete": {
+                "id": 3139477,
+                "description": "Patrick Mahomes",
+                "links": {
+                  "mobile": {
+                    "athletes": {
+                      "href": "https://www.espn.com/nfl/player/_/id/3139477/patrick-mahomes"
+                    }
+                  },
+                  "web": {
+                    "athletes": {
+                      "href": "https://www.espn.com/nfl/player/_/id/3139477/patrick-mahomes"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 730035,
+              "type": "editorialindicator",
+              "guid": "765b3968-7a2d-3d80-bded-8ba8b1e1cc03",
+              "description": "Verts - Exclude Content"
+            },
+            {
+              "id": 9572,
+              "type": "league",
+              "uid": "s:20~l:28",
+              "guid": "ad4c3bd2-ddb6-3f8c-8abf-744855a08fa4",
+              "description": "NFL",
+              "sportId": 28,
+              "leagueId": 28,
+              "league": {
+                "id": 28,
+                "description": "NFL",
+                "abbreviation": "NFL",
+                "links": {
+                  "mobile": {
+                    "leagues": {
+                      "href": "https://www.espn.com/nfl/"
+                    }
+                  },
+                  "web": {
+                    "leagues": {
+                      "href": "https://www.espn.com/nfl/"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "ad": {
+            "bundle": "sunday_fantasy_reactions",
+            "sport": "fantasy"
+          },
+          "contributingPartner": "wsc",
+          "contributingSystem": "wsc",
+          "tracking": {
+            "coverageType": "Fantasy",
+            "leagueName": "Fantasy NFL",
+            "program": "espnnfl",
+            "sportName": "football",
+            "trackingId": "dm_NFL_FANTASY_why_fantasy_managers_should_keep_riding_the_hot_hand_with_patrick_mahomes",
+            "trackingName": "COM_NFL Fantasy (Why fantasy managers should keep riding the hot hand with Patrick Mahomes) 2026/11/15 FFIA"
+          }
+        },
+        {
+          "id": 50494901,
+          "dataSourceIdentifier": "e9556d9bcdb7f",
+          "cerebroId": "6afa326bf141af2171a6bafb",
+          "pccId": "564980a9-9ff0-424f-89ad-ebc0c5c41282",
+          "source": "espn",
+          "headline": "Adam Rank: Trevor Lawrence needs to be a must-start fantasy QB every week",
+          "shortHeadline": "Adam Rank: Trevor Lawrence needs to be a must-start fantasy QB every week",
+          "caption": "Adam Rank: Trevor Lawrence needs to be a must-start fantasy QB every week",
+          "title": "Adam Rank: Trevor Lawrence needs to be a must-start fantasy QB every week",
+          "description": "Adam Rank: Trevor Lawrence needs to be a must-start fantasy QB every week",
+          "shortDescription": "Adam Rank: Trevor Lawrence needs to be a must-start fantasy QB every week",
+          "lastModified": "2026-11-15T22:35:25Z",
+          "originalPublishDate": "2026-11-15T22:30:03Z",
+          "premium": false,
+          "syndicatable": true,
+          "duration": 52,
+          "videoRatio": "16:9",
+          "timeRestrictions": {
+            "embargoDate": "2026-11-15T22:24:31Z",
+            "expirationDate": "2026-11-22T21:25:00Z"
+          },
+          "deviceRestrictions": {
+            "devices": [
+              "settop",
+              "tablet",
+              "handset",
+              "ipad",
+              "desktop"
+            ],
+            "type": "whitelist"
+          },
+          "thumbnail": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence.jpg",
+          "images": [
+            {
+              "name": "Poster Image",
+              "caption": "",
+              "alt": "",
+              "credit": "",
+              "height": 324,
+              "width": 576,
+              "url": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence.jpg"
+            }
+          ],
+          "posterImages": {
+            "default": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence_default.jpg",
+              "width": 576,
+              "height": 324
+            },
+            "firstFrame": {
+              "href": "https://cmp-espn.media.dssott.com/opp/img/espn/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence/thumb-1-w720-h406-f4.jpg"
+            },
+            "full": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence.jpg"
+            },
+            "square": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence_1x1.jpg"
+            },
+            "wide": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/common/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence_5x2.jpg"
+            }
+          },
+          "links": {
+            "api": {
+              "artwork": {
+                "href": "https://artwork.api.espn.com/artwork/collections/media/564980a9-9ff0-424f-89ad-ebc0c5c41282"
+              },
+              "self": {
+                "href": "https://content.core.api.espn.com/v1/video/clips/50494901"
+              }
+            },
+            "mobile": {
+              "href": "https://watch.auth.api.espn.com/video/auth/brightcove/564980a9-9ff0-424f-89ad-ebc0c5c41282/asset?UMADPARAMreferer=https://www.espn.com/video/clip/_/id/50494901/trevor-lawrence-needs-must-start-fantasy-qb-every-week",
+              "alert": {
+                "href": "https://m.espn.com/general/video/videoAlert?vid=50494901"
+              },
+              "progressiveDownload": {
+                "href": "https://watch.auth.api.espn.com/video/auth/brightcove/564980a9-9ff0-424f-89ad-ebc0c5c41282/asset?UMADPARAMreferer=https://www.espn.com/video/clip/_/id/50494901/trevor-lawrence-needs-must-start-fantasy-qb-every-week"
+              },
+              "source": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence.mp4"
+              },
+              "streaming": {
+                "href": "https://watch.auth.api.espn.com/video/auth/brightcove/564980a9-9ff0-424f-89ad-ebc0c5c41282/asset?UMADPARAMreferer=https://www.espn.com/video/clip/_/id/50494901/trevor-lawrence-needs-must-start-fantasy-qb-every-week"
+              }
+            },
+            "source": {
+              "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence.mp4",
+              "HD": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence.mp4"
+              },
+              "HLS": {
+                "href": "https://cmp-espn.media.dssott.com/opp/hls/espn/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence/playlist.m3u8",
+                "HD": {
+                  "href": "https://cmp-espn.media.dssott.com/opp/hls/espn/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence/playlist.m3u8"
+                },
+                "cmaf": {
+                  "href": "https://cmp-espn.media.dssott.com/opp/cmaf/espn/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence/playlist.m3u8"
+                },
+                "shield": {
+                  "href": "https://watch.auth.api.espn.com/video/auth/media/564980a9-9ff0-424f-89ad-ebc0c5c41282/asset"
+                }
+              },
+              "flash": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence.mp4"
+              },
+              "full": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence.mp4"
+              },
+              "mezzanine": {
+                "href": "https://espnmedia-cdn.akamaized.net/espn/media/16x9/2026/1115/dm_261115_Trevor_Lawrence/dm_261115_Trevor_Lawrence.mp4"
+              }
+            },
+            "sportscenter": {
+              "href": "sportscenter://x-callback-url/showVideo?videoID=50494901&videoDSI=e9556d9bcdb7f"
+            },
+            "web": {
+              "href": "https://www.espn.com/video/clip/_/id/50494901/trevor-lawrence-needs-must-start-fantasy-qb-every-week",
+              "self": {
+                "href": "https://www.espn.com/video/clip/_/id/50494901/trevor-lawrence-needs-must-start-fantasy-qb-every-week",
+                "dsi": {
+                  "href": "https://www.espn.com/video/clip?id=e9556d9bcdb7f"
+                }
+              }
+            }
+          },
+          "categories": [
+            {
+              "id": 409228,
+              "type": "topic",
+              "guid": "3d170ccb-7b75-54f1-78c4-cfbf3ee3322d",
+              "description": "fantasy",
+              "sportId": 0,
+              "topicId": 785
+            },
+            {
+              "id": 12024,
+              "type": "league",
+              "uid": "s:20~l:3080",
+              "guid": "a472a0eb-d630-3568-bf2a-59572429de6c",
+              "description": "Fantasy NFL",
+              "sportId": 3080,
+              "leagueId": 3080,
+              "league": {
+                "id": 3080,
+                "description": "Fantasy NFL",
+                "abbreviation": "NFLFD"
+              }
+            },
+            {
+              "id": 470112,
+              "type": "athlete",
+              "uid": "s:20~l:28~a:4360310",
+              "guid": "76111495-d1d9-2333-170d-4206eebe673f",
+              "description": "Trevor Lawrence",
+              "sportId": 28,
+              "athleteId": 4360310,
+              "athlete": {
+                "id": 4360310,
+                "description": "Trevor Lawrence",
+                "links": {
+                  "mobile": {
+                    "athletes": {
+                      "href": "https://www.espn.com/nfl/player/_/id/4360310/trevor-lawrence"
+                    }
+                  },
+                  "web": {
+                    "athletes": {
+                      "href": "https://www.espn.com/nfl/player/_/id/4360310/trevor-lawrence"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 730035,
+              "type": "editorialindicator",
+              "guid": "765b3968-7a2d-3d80-bded-8ba8b1e1cc03",
+              "description": "Verts - Exclude Content"
+            },
+            {
+              "id": 9572,
+              "type": "league",
+              "uid": "s:20~l:28",
+              "guid": "ad4c3bd2-ddb6-3f8c-8abf-744855a08fa4",
+              "description": "NFL",
+              "sportId": 28,
+              "leagueId": 28,
+              "league": {
+                "id": 28,
+                "description": "NFL",
+                "abbreviation": "NFL",
+                "links": {
+                  "mobile": {
+                    "leagues": {
+                      "href": "https://www.espn.com/nfl/"
+                    }
+                  },
+                  "web": {
+                    "leagues": {
+                      "href": "https://www.espn.com/nfl/"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "ad": {
+            "bundle": "sunday_fantasy_reactions",
+            "sport": "fantasy"
+          },
+          "tracking": {
+            "coverageType": "Fantasy",
+            "leagueName": "Fantasy NFL",
+            "program": "ESPN",
+            "sportName": "football",
+            "trackingId": "dm_261115_Trevor_Lawrence",
+            "trackingName": "COM_NFL Fantasy (Adam Rank: Trevor Lawrence needs to be a must-start fantasy QB every week) 2025/11/15 FFIA"
+          }
+        }
+      ],
+      "playerId": 3139477
+    }
+  ]
+}

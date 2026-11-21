@@ -86,6 +86,33 @@ func TestNFLPlayerStatusIsAHostedLeagueViewRead(t *testing.T) {
 	}
 }
 
+func TestESPNNewsReadsAreHostedLeagueViewReads(t *testing.T) {
+	want := map[string]string{
+		"player.news.read": "TargetPlayerNews",
+		"news.feed.read":   "TargetNewsFeed",
+	}
+	seen := map[string]bool{}
+	for _, command := range NativeCommands(Schema{}) {
+		method, ok := want[command.ID]
+		if !ok {
+			continue
+		}
+		if command.Method != method || command.Availability != "server" ||
+			command.Permission != "league-view" || len(command.Modes) != 1 || command.Modes[0] != Read {
+			t.Fatalf("%s catalog entry = %+v", command.ID, command)
+		}
+		seen[command.ID] = true
+	}
+	for id := range want {
+		if !seen[id] {
+			t.Errorf("%s missing from catalog", id)
+		}
+		if _, ok := WorkflowCommands()[id]; !ok {
+			t.Errorf("%s missing from hosted workflow", id)
+		}
+	}
+}
+
 func TestBidWithdrawalIsNotPublishedThroughCommandDoors(t *testing.T) {
 	for _, command := range NativeCommands(Schema{}) {
 		if command.ID == "bid.withdraw" {

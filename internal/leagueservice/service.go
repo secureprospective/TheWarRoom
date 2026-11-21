@@ -106,6 +106,7 @@ type Service struct {
 	cancels        readCancels
 	games          *LiveGames
 	injuryFeed     NFLInjuryFeedSource
+	news           *NewsService
 	backupRunner   BackupRunner
 	problemReports *history.Store
 }

@@ -124,7 +124,7 @@ func startHosted(ctx context.Context, args []string, output io.Writer) error {
 	if pins, ok := handler.Leagues.(*leaguePins); ok {
 		defer startHostedScores(ctx, pins, files, config, handler)()
 	}
-	defer startHostedBackground(ctx, files, handler.Worker)()
+	defer startHostedBackground(ctx, files, handler.Worker, handler.News)()
 
 	return serveHosted(ctx, *config.address, certificate, handler, output)
 }
@@ -369,7 +369,8 @@ func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte,
 		return serverhttp.Hosted{}, fmt.Errorf("initialize human confirmation: %w", err)
 	}
 	// Store is the family: it gives the clock; every league's data comes from its own store (Pins).
-	handler := serverhttp.Hosted{Publisher: serverhttp.NewPublisher(), LiveGames: leagueservice.NewLiveGames(), InjuryFeed: newNFLInjuryFeed(family.Over(files.reference)), Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Leagues: leagues}), Confirmations: confirmations, Store: family, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
+	refStore := family.Over(files.reference)
+	handler := serverhttp.Hosted{Publisher: serverhttp.NewPublisher(), LiveGames: leagueservice.NewLiveGames(), InjuryFeed: newNFLInjuryFeed(refStore), News: newHostedNewsService(refStore), Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Leagues: leagues}), Confirmations: confirmations, Store: family, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Passwords: passwords, Worker: worker, Registry: catalogue,
 		Join:               accounts.NewJoin(credentials, leagueservice.JoinSeats{Leagues: leagues}, work),
@@ -454,11 +455,14 @@ func recoverPlayers(ctx context.Context, files stateFiles, output io.Writer) err
 	return nil
 }
 
-// startHostedBackground starts the hosted timers (NFL injury refresh, due-job worker, archive purge)
-// and returns one stop that ends them in reverse start order.
-func startHostedBackground(ctx context.Context, files stateFiles, worker *leagueservice.DueWorker) func() {
+// startHostedBackground starts the hosted timers (NFL injury refresh, ESPN news refresh, due-job worker,
+// archive purge) and returns one stop that ends them in reverse start order.
+func startHostedBackground(
+	ctx context.Context, files stateFiles, worker *leagueservice.DueWorker, news *leagueservice.NewsService,
+) func() {
 	stopInjuries := startHostedInjuryRefresh(ctx, files.leagues.family.Over(files.reference))
+	stopNews := news.StartLeagueRefresh(ctx)
 	stopDue := startHostedDueWorker(ctx, worker)
 	stopPurge := startArchivePurge(ctx, files.leagues.root, time.Now, func(line string) { log.Print(line) })
-	return func() { stopPurge(); stopDue(); stopInjuries() }
+	return func() { stopPurge(); stopDue(); stopNews(); news.Close(); stopInjuries() }
 }

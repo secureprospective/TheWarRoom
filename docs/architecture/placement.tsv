@@ -36,6 +36,7 @@ internal/ingestion/college	sources
 internal/ingestion/contracts	sources
 internal/ingestion/crosswalk	sources
 internal/ingestion/draftreports	draft
+internal/ingestion/espnnews	research
 internal/ingestion/feeds	sources
 internal/ingestion/freeagents	offers
 internal/ingestion/injuries	research

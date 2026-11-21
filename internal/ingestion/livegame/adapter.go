@@ -64,8 +64,14 @@ func (w Window) plays(g Game) bool {
 	teams := []string{Canonical(w.Teams[0]), Canonical(w.Teams[1])}
 	return slices.Contains(teams, Canonical(g.Home.Abbreviation)) && slices.Contains(teams, Canonical(g.Away.Abbreviation))
 }
-func delay(base time.Duration, failures int) time.Duration {
+
+// Backoff doubles base per consecutive failure, capped at 16x.
+func Backoff(base time.Duration, failures int) time.Duration {
 	return base * time.Duration(1<<min(failures, 4))
+}
+
+func delay(base time.Duration, failures int) time.Duration {
+	return Backoff(base, failures)
 }
 func (a *Adapter) EffectiveWindows(windows []Window) []Window {
 	out := slices.Clone(windows)
