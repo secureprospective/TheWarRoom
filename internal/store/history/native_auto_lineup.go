@@ -3,6 +3,7 @@ package history
 import (
 	"context"
 	"fmt"
+	"log"
 	"slices"
 	"time"
 
@@ -13,7 +14,23 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-const autoLineupLead = time.Hour
+const (
+	autoLineupLead         = time.Hour
+	autoLineupInjuryMaxAge = 45 * time.Minute
+)
+
+// LiveInjuryReport holds live NFL injury designations and when they were last fetched.
+type LiveInjuryReport struct {
+	Designations map[string]leaguerules.NFLStatus
+	FetchedAt    time.Time
+	Available    bool
+}
+
+// LiveInjurySource reads and refreshes the shared live NFL injury report for automatic lineups.
+type LiveInjurySource interface {
+	ReadLiveInjuries(ctx context.Context) (LiveInjuryReport, error)
+	RefreshLiveInjuries(ctx context.Context, season int) error
+}
 
 // clockLineupAuthorizer is narrower than any human role: the lineup clock may only set lineups for
 // franchises that have no human lineup for the week.
@@ -114,7 +131,8 @@ func (s *Store) NextLineupDeadline(ctx context.Context, league string, at time.T
 
 // ProcessDueLineups sets the best-projected healthy lineup for every AUTOMATIC franchise when a
 // kickoff wave of the current lineup week is within 60 minutes. Locked starters are preserved.
-func (s *Store) ProcessDueLineups(ctx context.Context, league string, at time.Time) error {
+func (s *Store) ProcessDueLineups(ctx context.Context, league string, at time.Time,
+	injuries LiveInjurySource) error {
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("stop lineup clock: %w", err)
 	}
@@ -137,7 +155,7 @@ func (s *Store) ProcessDueLineups(ctx context.Context, league string, at time.Ti
 	if !env.ScheduleHeld {
 		return nil
 	}
-	return s.applyDueLineups(ctx, league, records, state, wave, env, at)
+	return s.applyDueLineups(ctx, league, records, state, wave, env, at, injuries)
 }
 
 // dueLineupWave returns the latest kickoff wave whose wake time (kickoff - 60m) has arrived while at
@@ -157,7 +175,8 @@ func dueLineupWave(waves []time.Time, at time.Time) (time.Time, bool) {
 }
 
 func (s *Store) applyDueLineups(ctx context.Context, league string, records []commissioner.Record,
-	state lineupWeekContext, wave time.Time, env commissioner.LineupFacts, at time.Time) error {
+	state lineupWeekContext, wave time.Time, env commissioner.LineupFacts, at time.Time,
+	injuries LiveInjurySource) error {
 	assets, franchises, err := autoLineupRoster(league, records, state.waves[0], at)
 	if err != nil {
 		return err
@@ -166,17 +185,71 @@ func (s *Store) applyDueLineups(ctx context.Context, league string, records []co
 	if len(allIDs) == 0 {
 		return nil
 	}
+	pending, err := pendingAutoFranchises(league, records, franchises, activeByTeam, state, wave)
+	if err != nil || len(pending) == 0 {
+		return err
+	}
 	projMap, err := s.autoLineupProjections(ctx, league, state.season, state.week.Number, allIDs)
 	if err != nil {
 		return err
 	}
-	for _, franchise := range franchises {
+	liveInjuries := liveInjuriesForWave(ctx, injuries, state.season, at)
+	for _, franchise := range pending {
 		if err := s.setAutoLineupForFranchise(ctx, league, franchise, state, wave, env,
-			activeByTeam[franchise], projMap, at); err != nil {
+			activeByTeam[franchise], projMap, liveInjuries, at); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func pendingAutoFranchises(league string, records []commissioner.Record, franchises []string,
+	activeByTeam map[string][]string, state lineupWeekContext, wave time.Time) ([]string, error) {
+	pending := make([]string, 0, len(franchises))
+	for _, franchise := range franchises {
+		if len(activeByTeam[franchise]) == 0 {
+			continue
+		}
+		auto, err := commissioner.IsAutomaticLineupFranchise(records, franchise, state.season, state.week.Number)
+		if err != nil {
+			return nil, fmt.Errorf("check automatic franchise %s: %w", franchise, err)
+		}
+		if !auto || hasLineupRequest(records, autoLineupRequest(league, state, wave, franchise)) {
+			continue
+		}
+		pending = append(pending, franchise)
+	}
+	return pending, nil
+}
+
+func liveInjuriesForWave(ctx context.Context, src LiveInjurySource, season int,
+	at time.Time) map[string]leaguerules.NFLStatus {
+	if src == nil {
+		return nil
+	}
+	report, err := src.ReadLiveInjuries(ctx)
+	if err != nil {
+		log.Printf("automatic lineup: read live injuries failed; trying refresh: %v", err)
+	}
+	if err != nil || !report.Available || report.FetchedAt.IsZero() ||
+		at.Sub(report.FetchedAt) > autoLineupInjuryMaxAge {
+		if rerr := src.RefreshLiveInjuries(ctx, season); rerr != nil {
+			log.Printf("automatic lineup: live injury refresh failed; using held report: %v", rerr)
+		} else if refreshed, rerr := src.ReadLiveInjuries(ctx); rerr != nil {
+			log.Printf("automatic lineup: read refreshed live injuries failed; using held report: %v", rerr)
+		} else {
+			report = refreshed
+		}
+	}
+	if !report.Available || len(report.Designations) == 0 {
+		return nil
+	}
+	return report.Designations
+}
+
+func autoLineupRequest(league string, state lineupWeekContext, wave time.Time, franchise string) string {
+	return fmt.Sprintf("lineup-clock.%s.%d.w%d.%d.%s",
+		league, state.season, state.week.Number, wave.UTC().Unix(), franchise)
 }
 
 func autoLineupRoster(league string, records []commissioner.Record, firstLock, at time.Time) (
@@ -237,7 +310,7 @@ func (s *Store) autoLineupProjections(ctx context.Context, league string, season
 
 func (s *Store) setAutoLineupForFranchise(ctx context.Context, league, franchise string,
 	state lineupWeekContext, wave time.Time, env commissioner.LineupFacts, roster []string,
-	projMap map[string]NativeProjection, at time.Time) error {
+	projMap map[string]NativeProjection, liveInjuries map[string]leaguerules.NFLStatus, at time.Time) error {
 	if len(roster) == 0 {
 		return nil
 	}
@@ -252,8 +325,7 @@ func (s *Store) setAutoLineupForFranchise(ctx context.Context, league, franchise
 	if !auto {
 		return nil
 	}
-	request := fmt.Sprintf("lineup-clock.%s.%d.w%d.%d.%s",
-		league, state.season, state.week.Number, wave.UTC().Unix(), franchise)
+	request := autoLineupRequest(league, state, wave, franchise)
 	if hasLineupRequest(records, request) {
 		return nil
 	}
@@ -262,7 +334,7 @@ func (s *Store) setAutoLineupForFranchise(ctx context.Context, league, franchise
 		return fmt.Errorf("read standing lineup for %s: %w", franchise, err)
 	}
 	candidates := buildAutoCandidates(roster, held.Starters, state.rules.Lineup.Lock.Value,
-		state.waves[0], env, projMap, at)
+		state.waves[0], env, projMap, liveInjuries, at)
 	starters := nativecheck.SelectAutoLineup(state.rules.Lineup, candidates)
 	if len(starters) == 0 || (found && sameStarterSet(held.Starters, starters)) {
 		return nil
@@ -287,7 +359,7 @@ func (s *Store) setAutoLineupForFranchise(ctx context.Context, league, franchise
 
 func buildAutoCandidates(roster, standing []string, policy leaguerules.LineupLock, firstLock time.Time,
 	env commissioner.LineupFacts, projMap map[string]NativeProjection,
-	at time.Time) []nativecheck.AutoLineupCandidate {
+	liveInjuries map[string]leaguerules.NFLStatus, at time.Time) []nativecheck.AutoLineupCandidate {
 	inStanding := make(map[string]bool, len(standing))
 	for _, id := range standing {
 		inStanding[id] = true
@@ -298,7 +370,8 @@ func buildAutoCandidates(roster, standing []string, policy leaguerules.LineupLoc
 		kickoff, hasGame := playerGameKickoff(f, env.Locks)
 		locked := playerLockedAt(policy, firstLock, kickoff, hasGame, at)
 		proj := projMap[id]
-		eligible := !locked && hasGame && !nativecheck.IneligibleDesignation(f.Designation)
+		designation := effectiveDesignation(id, f.Designation, liveInjuries)
+		eligible := !locked && hasGame && !nativecheck.IneligibleDesignation(designation)
 		out = append(out, nativecheck.AutoLineupCandidate{
 			ID:        id,
 			Position:  f.Position,
@@ -310,6 +383,14 @@ func buildAutoCandidates(roster, standing []string, policy leaguerules.LineupLoc
 		})
 	}
 	return out
+}
+
+func effectiveDesignation(id string, fallback leaguerules.NFLStatus,
+	live map[string]leaguerules.NFLStatus) leaguerules.NFLStatus {
+	if status, ok := live[id]; ok && status != "" {
+		return status
+	}
+	return fallback
 }
 
 func playerGameKickoff(f nativecheck.PlayerFacts, locks map[string]time.Time) (time.Time, bool) {
