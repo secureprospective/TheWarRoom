@@ -303,7 +303,9 @@ describe('LiveTab', () => {
       throw new Error(`Unexpected read ${request.command}`);
     });
 
-    await show(async () => brief([myGameRow]), port);
+    const preBrief = brief([myGameRow]);
+    preBrief.matchup!.projections = { m1: 21.4 };
+    await show(async () => preBrief, port);
     // Live game: LiveField shows, preview never shows.
     expect(host!.querySelector('[data-testid="live-field"]')).not.toBeNull();
     expect(host!.querySelector('[data-testid="live-pregame"]')).toBeNull();
@@ -314,7 +316,8 @@ describe('LiveTab', () => {
     expect(host!.querySelector('[data-testid="live-pregame"]')).not.toBeNull();
     expect(host!.querySelector('[data-testid="live-field"]')).toBeNull();
     expect(host!.querySelector('[data-testid="pregame-winbar"]')?.textContent).toContain('KC 45%');
-    expect(host!.querySelector('[data-testid="pregame-crawl"]')?.textContent).toContain('Patrick Mahomes');
+    expect(host!.querySelector('[data-testid="pregame-crawl"]')?.textContent)
+      .toContain('Patrick Mahomes QB · KC · YOURS · proj 21.4');
     expect(host!.querySelector('[data-testid="pregame-crawl"]')?.textContent).toContain('Josh Allen');
 
     // Final game: preview never shows; LiveField shows as today.

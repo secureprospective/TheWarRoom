@@ -10,6 +10,7 @@ export type PregameGuy = {
   side: string;
   mine: boolean;
   projection?: number;
+  average?: number;
 };
 
 const NICKNAMES: Record<string, string> = {
@@ -165,15 +166,28 @@ export function LivePregame({ game, guys, now, reduced }: {
   </div>;
 }
 
+function guyStat(guy: PregameGuy): string {
+  if (guy.projection !== undefined && Number.isFinite(guy.projection)) {
+    return `proj ${guy.projection.toFixed(1)}`;
+  }
+  if (guy.average !== undefined && Number.isFinite(guy.average)) {
+    return `avg ${guy.average.toFixed(1)}`;
+  }
+  return '';
+}
+
 function CrawlItems({ guys, dup }: { guys: PregameGuy[]; dup: boolean }) {
   return <>
-    {guys.map(g => <Fragment key={`${dup ? 'd' : 'p'}-${g.side}-${g.id}`}>
-      <span className={`cr${dup ? ' bc-dup' : ''}`} aria-hidden={dup || undefined}>
-        <b className={g.mine ? 'me' : 'op'}>{g.name}</b>{' '}
-        {g.position} · {g.team} · {g.side}
-        {g.projection !== undefined ? ` · PROJ ${g.projection.toFixed(1)}` : ''}
-      </span>
-      <i className={`dot${dup ? ' bc-dup' : ''}`} aria-hidden="true" />
-    </Fragment>)}
+    {guys.map(g => {
+      const stat = guyStat(g);
+      return <Fragment key={`${dup ? 'd' : 'p'}-${g.side}-${g.id}`}>
+        <span className={`cr${dup ? ' bc-dup' : ''}`} aria-hidden={dup || undefined}>
+          <b className={g.mine ? 'me' : 'op'}>{g.name}</b>{' '}
+          {g.position} · {g.team} · {g.side}
+          {stat && <> · <span className="cr-stat">{stat}</span></>}
+        </span>
+        <i className={`dot${dup ? ' bc-dup' : ''}`} aria-hidden="true" />
+      </Fragment>;
+    })}
   </>;
 }
