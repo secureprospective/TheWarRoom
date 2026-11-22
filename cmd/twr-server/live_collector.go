@@ -47,6 +47,7 @@ type liveCollector struct {
 	poller      now.LiveStatsPoller
 	published   bool
 	restoring   bool
+	inPoll      bool
 	notifyMu    sync.Mutex
 	board       []livegame.Game
 	scoreDigest string
@@ -123,7 +124,9 @@ func (c *liveCollector) SetLiveStats(ctx context.Context, season, week int, _ ti
 	c.notifyMu.Lock()
 	c.scoreDigest = liveDigest(body)
 	c.notifyMu.Unlock()
-	c.notifyScores(season, week)
+	if !c.inPoll {
+		c.notifyScores(season, week)
+	}
 	return nil
 }
 
@@ -182,6 +185,8 @@ func (c *liveCollector) checkpoint() (string, error) {
 
 func (c *liveCollector) poll(ctx context.Context) time.Duration {
 	defer c.logTick(time.Now(), c.notifiedDigest())()
+	c.inPoll = true
+	defer func() { c.inPoll = false }()
 	c.ensureClient()
 	look, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
@@ -200,55 +205,88 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 		endpoints.ESPN = scoreboard
 	}
 	c.packets.boardURL = endpoints.ESPN
-	games, season, week, ok := c.readBoard(look, endpoints)
+	games, season, week, seasonType, ok := c.readBoard(look, endpoints)
 	if !ok {
 		return 5 * time.Minute
 	}
 	packet := c.packets.held.Packets[endpoints.ESPN]
 	previousBoard := c.boardSnapshot()
 	c.holdBoard(games, packet.At)
-	if c.packets.held.Season != season || c.packets.held.Week != week {
-		c.packets.held = rawLiveCheckpoint{Version: 1, Season: season, Week: week, Packets: map[string]rawLivePacket{endpoints.ESPN: packet}, IDs: map[string]map[string]string{}}
+	if seasonType == 2 && (c.packets.held.Season != season || c.packets.held.Week != week) {
+		c.packets.held = rawLiveCheckpoint{
+			Version: 1, Season: season, Week: week,
+			Packets: map[string]rawLivePacket{endpoints.ESPN: packet},
+			IDs:     map[string]map[string]string{},
+		}
 	}
 	c.prepareSummaries(look, endpoints, games, previousBoard)
-	c.packets.prefetched = &packet
-	c.poller.Poll(look, now.LiveStatsRun{Evidence: c, RequireComplete: true, Network: c.packets, Client: c.client, Season: season, Week: func() int { return week }, Scoreboard: scoreboard})
+	if seasonType == 2 {
+		c.packets.prefetched = &packet
+		c.poller.Poll(look, now.LiveStatsRun{
+			Evidence: c, RequireComplete: true, Network: c.packets, Client: c.client,
+			Season: season, Week: func() int { return week }, Scoreboard: scoreboard,
+		})
+	}
 	c.finishTick(ctx, games, endpoints, season, week)
 	return c.interval(games)
 }
 
-// readBoard reads the scoreboard and the one regular-season week it shows. A finished-week collector
-// takes the board only when it is that week and every game on it is final.
-func (c *liveCollector) readBoard(ctx context.Context, endpoints livegame.Endpoints) ([]livegame.Game, int, int, bool) {
+// readBoard reads the scoreboard and the one regular-season or playoff week it shows. A
+// finished-week collector takes the board only when it is that regular-season week and every game
+// on it is final.
+func (c *liveCollector) readBoard(
+	ctx context.Context, endpoints livegame.Endpoints,
+) ([]livegame.Game, int, int, int, bool) {
 	body, err := livegame.HTTPFetch(c.client, endpoints)(ctx, "espn", "")
 	if err != nil {
 		log.Printf("server live scoreboard: %v", err)
-		return nil, 0, 0, false
+		return nil, 0, 0, 0, false
 	}
 	games, err := livegame.ParseScoreboard(body)
 	if err != nil {
 		log.Printf("server live scoreboard: %v", err)
-		return nil, 0, 0, false
+		return nil, 0, 0, 0, false
 	}
+	if len(games) > 16 {
+		return nil, 0, 0, 0, false
+	}
+	season, week, seasonType, ok := boardScope(games, c.finished == [2]int{})
+	if !ok {
+		return nil, 0, 0, 0, false
+	}
+	if c.finished != [2]int{} && (seasonType != 2 || c.finished != [2]int{season, week} || !allFinal(games)) {
+		log.Printf("server live: week %d/%d is not finished on the board; not held",
+			c.finished[0], c.finished[1])
+		return nil, 0, 0, 0, false
+	}
+	return games, season, week, seasonType, true
+}
+
+func boardScope(games []livegame.Game, allowPlayoffs bool) (int, int, int, bool) {
+	if season, week, ok := uniformBoardScope(games, 2); ok {
+		return season, week, 2, true
+	}
+	if allowPlayoffs {
+		if season, week, ok := uniformBoardScope(games, 3); ok {
+			return season, week, 3, true
+		}
+	}
+	return 0, 0, 0, false
+}
+
+func uniformBoardScope(games []livegame.Game, seasonType int) (int, int, bool) {
 	season, week := 0, 0
 	for _, game := range games {
-		if game.SeasonType != 2 {
+		if game.SeasonType != seasonType {
 			continue
 		}
 		if season != 0 && (season != game.Season || week != game.Week) {
 			log.Print("server live: mixed scoreboard scope")
-			return nil, 0, 0, false
+			return 0, 0, false
 		}
 		season, week = game.Season, game.Week
 	}
-	if season == 0 || week == 0 || len(games) > 16 {
-		return nil, 0, 0, false
-	}
-	if c.finished != [2]int{} && (c.finished != [2]int{season, week} || !allFinal(games)) {
-		log.Printf("server live: week %d/%d is not finished on the board; not held", c.finished[0], c.finished[1])
-		return nil, 0, 0, false
-	}
-	return games, season, week, true
+	return season, week, season != 0 && week != 0
 }
 
 // finishTick holds cached game details, publishes scores, then triggers background pre-game warming.
@@ -334,15 +372,24 @@ func (c *liveCollector) restore(ctx context.Context) error {
 	return nil
 }
 
-func startHostedLive(ctx context.Context, pins *leaguePins, root string, publisher scoresPublisher, games *leagueservice.LiveGames) func() {
+func startHostedLive(
+	ctx context.Context,
+	pins *leaguePins,
+	root string,
+	publisher scoresPublisher,
+	games *leagueservice.LiveGames,
+) (func(), <-chan struct{}) {
 	scope, cancel := context.WithCancel(ctx)
-	done, linked := make(chan struct{}), make(chan struct{})
+	done, linked, restored := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	go func() {
 		defer close(linked)
 		keepLiveIdentities(scope, pins.files.family.Over(pins.files.reference))
 	}()
 	go func() {
 		defer close(done)
+		var restoreOnce sync.Once
+		markRestored := func() { restoreOnce.Do(func() { close(restored) }) }
+		defer markRestored()
 		directory := filepath.Join(root, "live-scores")
 		if err := os.MkdirAll(directory, 0o700); err != nil {
 			log.Printf("server live: %v", err)
@@ -358,6 +405,7 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 		if err := c.restore(scope); err != nil {
 			log.Printf("server live restart: %v", err)
 		}
+		markRestored()
 		for {
 			delay := c.poll(scope)
 			c.keepLastWeek(scope, directory, finished)
@@ -370,7 +418,7 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 			}
 		}
 	}()
-	return func() { cancel(); <-done; <-linked }
+	return func() { cancel(); <-done; <-linked }, restored
 }
 
 // holdDetails reuses acquired summary packets and cached pre-game details without network I/O.
@@ -454,7 +502,7 @@ func (c *liveCollector) prepareSummaries(ctx context.Context, endpoints livegame
 	var group sync.WaitGroup
 	slots := make(chan struct{}, 4)
 	for _, game := range games {
-		if game.Status != "in" || game.SeasonType != 2 {
+		if game.Status != "in" || (game.SeasonType != 2 && game.SeasonType != 3) {
 			continue
 		}
 		address := strings.ReplaceAll(endpoints.Summary, "{id}", game.ID)
@@ -463,7 +511,7 @@ func (c *liveCollector) prepareSummaries(ctx context.Context, endpoints livegame
 		}
 	}
 	for _, game := range games {
-		if game.Status != "in" || game.SeasonType != 2 {
+		if game.Status != "in" || (game.SeasonType != 2 && game.SeasonType != 3) {
 			continue
 		}
 		address := strings.ReplaceAll(endpoints.Summary, "{id}", game.ID)
@@ -543,6 +591,12 @@ func restoreFinished(ctx context.Context, current *liveCollector, directory stri
 // evidence carries no statistics, so this is what keeps last week's results once the board moves on.
 // It is read once when missing and reread every finishedRefresh until this week's first kickoff.
 func (c *liveCollector) keepLastWeek(ctx context.Context, directory string, finished map[[2]int]*liveCollector) {
+	board := c.boardSnapshot()
+	if len(board) > 0 && !slices.ContainsFunc(board, func(g livegame.Game) bool {
+		return g.SeasonType == 2
+	}) {
+		return
+	}
 	season, week := c.packets.held.Season, c.packets.held.Week
 	if season == 0 || week < 2 {
 		return
@@ -553,7 +607,7 @@ func (c *liveCollector) keepLastWeek(ctx context.Context, directory string, fini
 		f = c.finishedCollector(directory, last[0], last[1])
 		finished[last] = f
 	}
-	kicked := slices.ContainsFunc(c.boardSnapshot(), func(g livegame.Game) bool {
+	kicked := slices.ContainsFunc(board, func(g livegame.Game) bool {
 		return g.SeasonType == 2 && g.Status != "pre"
 	})
 	if (c.pins.live.Closed(last[0], last[1]) && (kicked || time.Since(f.fetched) < finishedRefresh)) ||

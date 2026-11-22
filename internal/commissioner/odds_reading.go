@@ -31,10 +31,17 @@ const (
 
 // OddsCache retains bounded simulation results by their complete simulation inputs.
 type OddsCache struct {
-	mu     sync.Mutex
-	values map[[32]byte]map[string]int
-	hits   int
-	misses int
+	mu      sync.Mutex
+	values  map[[32]byte]map[string]int
+	flights map[[32]byte]*oddsFlight
+	hits    int
+	misses  int
+}
+
+type oddsFlight struct {
+	done  chan struct{}
+	made  map[string]int
+	words string
 }
 
 // Stats reports simulation cache hits and misses.
@@ -51,22 +58,51 @@ func (c *OddsCache) result(key [32]byte, run func() (map[string]int, string)) (m
 		c.mu.Unlock()
 		return maps.Clone(made), ""
 	}
+	if flight := c.flights[key]; flight != nil {
+		c.mu.Unlock()
+		<-flight.done
+		if flight.words == "" {
+			c.mu.Lock()
+			c.hits++
+			c.mu.Unlock()
+		}
+		return maps.Clone(flight.made), flight.words
+	}
 	c.misses++
+	flight := &oddsFlight{done: make(chan struct{}), words: "odds simulation did not finish"}
+	if c.flights == nil {
+		c.flights = map[[32]byte]*oddsFlight{}
+	}
+	c.flights[key] = flight
 	c.mu.Unlock()
+
+	finished := false
+	defer func() {
+		if !finished {
+			c.mu.Lock()
+			delete(c.flights, key)
+			close(flight.done)
+			c.mu.Unlock()
+		}
+	}()
+
 	made, words := run()
-	if words != "" {
-		return nil, words
-	}
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.values == nil {
-		c.values = map[[32]byte]map[string]int{}
+	flight.made, flight.words = made, words
+	if words == "" {
+		if c.values == nil {
+			c.values = map[[32]byte]map[string]int{}
+		}
+		if len(c.values) >= oddsCacheEntries {
+			clear(c.values)
+		}
+		c.values[key] = maps.Clone(made)
 	}
-	if len(c.values) >= oddsCacheEntries {
-		clear(c.values)
-	}
-	c.values[key] = maps.Clone(made)
-	return made, ""
+	delete(c.flights, key)
+	close(flight.done)
+	finished = true
+	c.mu.Unlock()
+	return made, words
 }
 
 // OddsPlayer is one rostered player's on-field-now value, from the league's own value read.

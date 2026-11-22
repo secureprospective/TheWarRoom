@@ -213,6 +213,9 @@ func (c *WeatherCache) matchByName(name string) (Stadium, bool) {
 func (c *WeatherCache) openMeteoWeather(
 	ctx context.Context, st Stadium, kickoff time.Time,
 ) *livegame.Weather {
+	if ctx.Err() != nil {
+		return nil
+	}
 	key := fmt.Sprintf("%.4f,%.4f", st.Lat, st.Lon)
 	now := c.clock()
 
@@ -237,26 +240,49 @@ func (c *WeatherCache) openMeteoWeather(
 	c.inflight[key] = flight
 	c.mu.Unlock()
 
+	finished := false
+	defer func() {
+		if !finished {
+			c.mu.Lock()
+			delete(c.inflight, key)
+			close(flight.done)
+			c.mu.Unlock()
+		}
+	}()
+
 	forecast, err := c.fetchOpenMeteoForecast(ctx, st)
+	cancelled := err != nil && ctx.Err() != nil
 	ttl := c.ttl()
 	if err != nil {
 		ttl = weatherFailureHold
 		forecast = nil
 	}
 
-	writeAt := c.clock()
 	c.mu.Lock()
+	if !cancelled {
+		c.storeWeatherLocked(key, forecast, ttl)
+	}
+	flight.forecast = forecast
+	delete(c.inflight, key)
+	close(flight.done)
+	finished = true
+	c.mu.Unlock()
+	return selectOpenMeteoSlot(forecast, kickoff)
+}
+
+func (c *WeatherCache) storeWeatherLocked(
+	key string, forecast *RawOpenMeteoForecast, ttl time.Duration,
+) {
+	writeAt := c.clock()
+	if c.entries == nil {
+		c.entries = map[string]weatherEntry{}
+	}
 	for k, entry := range c.entries {
 		if !writeAt.Before(entry.expires) {
 			delete(c.entries, k)
 		}
 	}
 	c.entries[key] = weatherEntry{forecast: forecast, expires: writeAt.Add(ttl)}
-	flight.forecast = forecast
-	delete(c.inflight, key)
-	close(flight.done)
-	c.mu.Unlock()
-	return selectOpenMeteoSlot(forecast, kickoff)
 }
 
 func (c *WeatherCache) fetchOpenMeteoForecast(
