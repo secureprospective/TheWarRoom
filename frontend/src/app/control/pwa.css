@@ -1,9 +1,0 @@
-.pwa-offline {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  margin: 0;
-  color: #e8ebf0;
-  background: #090a0c;
-  font: 600 1.25rem Inter, system-ui, sans-serif;
-}

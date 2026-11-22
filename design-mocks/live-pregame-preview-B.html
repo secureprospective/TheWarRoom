@@ -1,0 +1,168 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#121316"><title>TWR Live · pre-game · 3 directions</title><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+:root{--canvas:hsl(220,6%,7.5%);--sunken:hsl(220,22%,4%);--tile:hsl(220,18%,9%);--black:hsl(220,25%,2%);
+--ink:hsl(40,9%,83%);--ink2:hsl(40,5%,64%);--ink3:hsl(40,4%,50%);--edge:hsl(220,4%,19%);--edge-hi:hsl(40,5%,52%);
+--blue:hsl(212,52%,64%);--amber:hsl(38,74%,58%);--mat:hsl(220,4%,10.5%);--mat-hi:hsl(220,3%,19%);--mat-lo:hsl(220,6%,6%);
+--grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .34 -.15'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");--pit:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='2' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.3 .5'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");--knurl:repeating-linear-gradient(45deg,hsla(0,0%,100%,.035) 0 1px,transparent 1px 4px);
+--mono:"JetBrains Mono","DejaVu Sans Mono",ui-monospace,Menlo,monospace;--sans:"Inter","Noto Sans",system-ui,sans-serif}
+*{box-sizing:border-box;margin:0}
+body{background:var(--sunken);color:var(--ink);font:13px/1.35 var(--sans);font-feature-settings:"tnum" 1;padding:0 0 40px;
+background-image:radial-gradient(circle,hsl(220,10%,13%) 0 1px,transparent 1.5px);background-size:14px 14px}
+.top{padding:16px 14px 6px;border-bottom:1px solid var(--edge);background:var(--canvas)}
+.top b{font:700 11px var(--mono);letter-spacing:.16em;display:block}.top span{font:11px var(--mono);color:var(--ink3);display:block;margin-top:4px}
+.vh{padding:26px 14px 8px}.vh b{font:700 12px var(--mono);letter-spacing:.14em;color:var(--amber);text-transform:uppercase}
+.vh p{font:12px/1.45 var(--sans);color:var(--ink2);margin-top:4px}
+.lbl{font:700 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+.m{font:10px var(--mono);color:var(--ink3);letter-spacing:.04em}
+.tag{font:700 9px var(--mono);letter-spacing:.12em;background:var(--edge-hi);color:var(--black);padding:2px 5px;display:inline-block}
+.tag.o{background:none;color:var(--ink2);border:1px solid var(--edge);padding:1px 4px}
+.gl{width:28px;height:21px;color:var(--ink);vertical-align:middle}
+.lf{background:var(--canvas);border-block:1px solid #000;margin:0 0 4px}
+.score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:12px 12px 10px;background-image:var(--knurl);border-bottom:1px solid var(--edge)}
+.tm{display:flex;align-items:center;gap:8px}.tm.r{justify-content:flex-end}
+.ab{font:700 15px var(--mono);letter-spacing:.1em;padding:2px 7px;color:#fff;border-bottom:3px solid}
+.rec{font:10px var(--mono);color:var(--ink2)}
+.mid{display:grid;justify-items:center;gap:3px}.clk{font:700 13px var(--mono);letter-spacing:.08em}.spot{font:10px var(--mono);letter-spacing:.12em;color:var(--ink3)}
+.fw{padding:8px 12px 10px}.fhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.field{position:relative;overflow:hidden;background:var(--black);border:1px solid var(--edge)}
+.turf{display:block;width:100%;height:150px}.field.tall .turf{height:236px}
+.hud{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;background:#000;border-bottom:1px solid var(--edge);height:46px}
+.hc{display:grid;align-content:center;gap:4px;padding-left:9px;border-left:1px solid var(--edge)}.hc:first-child{border-left:0}
+.hc i{font:700 7.5px/1 var(--mono);font-style:normal;letter-spacing:.16em;color:var(--ink3)}
+.hc b{font:500 17px/1 var(--mono);letter-spacing:.04em;white-space:nowrap}.hc b .gl{width:24px;height:18px}
+.hc.w2{grid-column:span 1}.hc.w3{grid-column:span 3}
+.plate{position:absolute;left:14px;right:14px;bottom:12px;padding:9px 12px;background:var(--black);border:1px solid var(--edge-hi);text-align:center}
+.plate b{display:block;font:700 16px var(--mono);letter-spacing:.1em}.plate span{font:11px var(--mono);color:var(--ink2)}
+.wb{margin-top:10px}.wbl{display:flex;justify-content:space-between;align-items:baseline;font:700 10px var(--mono);letter-spacing:.08em;margin-bottom:5px}
+.wbl span{color:var(--ink3);font-weight:400;font-size:9px;letter-spacing:.14em}
+.wbt{height:8px;display:flex;border:1px solid var(--edge);background:#000}.wbt i{display:block;height:100%}
+.wb.flat{margin:10px 0 0}
+.big{position:absolute;inset:12px 14px auto;background:hsla(220,25%,2%,.86);border:1px solid var(--edge-hi);padding:12px 12px 11px;text-align:center}
+.bt{display:flex;justify-content:center;align-items:center;gap:10px}.bt b{font:500 48px/1 var(--mono);letter-spacing:-.03em}.bt sup{font-size:15px;color:var(--ink2);vertical-align:top;margin-left:2px}
+.gl2 .gl{width:46px;height:34px}
+.bc{font:700 11px var(--mono);letter-spacing:.14em;color:var(--ink2);margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:10px}
+.bv{font:10px var(--mono);letter-spacing:.12em;color:var(--ink3);margin-top:10px}
+.mym{margin:10px;padding:0 0 12px;border:5px solid transparent;
+background:linear-gradient(var(--canvas),var(--canvas)) padding-box,var(--grain) border-box,var(--pit) border-box,linear-gradient(var(--mat),var(--mat)) border-box;
+box-shadow:inset 0 0 0 1px #000,0 0 0 1px #000,0 -1px 0 1px var(--mat-hi)}
+.mym > :not(.bhead){margin-inline:10px}
+.bhead{display:flex;justify-content:space-between;align-items:center;padding:7px 9px;margin-bottom:6px;background:var(--grain),var(--pit),var(--mat);border-bottom:1px solid #000;box-shadow:inset 0 -1px 0 var(--mat-lo),0 1px 0 hsl(0,0%,14%)}
+.lnk{font:700 10px var(--mono);letter-spacing:.1em;color:var(--blue)}
+.rows div{display:grid;grid-template-columns:92px 1fr;align-items:center;padding:8px 0;border-bottom:1px solid hsl(220,5%,13%)}
+.rows i{font:700 9px var(--mono);font-style:normal;letter-spacing:.14em;color:var(--ink3)}.rows b{font:500 13px var(--mono);display:flex;align-items:center;gap:8px}
+.row-sky .gl{width:22px;height:17px}
+.inst{display:grid;grid-template-columns:1.25fr 1fr .6fr;gap:1px;background:var(--edge);border-bottom:1px solid var(--edge)}
+.inst>div{background:var(--tile);background-image:var(--knurl);padding:10px;display:grid;justify-items:center;align-content:start;gap:4px;text-align:center}
+.inst i{font:700 8px var(--mono);font-style:normal;letter-spacing:.16em;color:var(--ink3);justify-self:start}
+.g1 b{font:500 50px/1 var(--mono);letter-spacing:-.03em;margin-top:8px}.g1 span,.g2 span{font:9px var(--mono);letter-spacing:.1em;color:var(--ink2)}
+.g2 svg{width:62px;height:62px}.g2 b,.g3 b{font:700 13px var(--mono);letter-spacing:.06em}
+.meter{width:14px;height:62px;border:1px solid var(--edge);background:#000;display:flex;align-items:flex-end;margin-top:2px}.meter i{display:block;width:100%;background:var(--blue);min-height:2px}
+.venue{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:10px 12px 0}.venue b{font:700 13px var(--mono);letter-spacing:.08em}.venue .m{flex-basis:100%}
+.inst + .venue + .wb{margin:10px 12px 12px}
+.cards{display:grid;gap:8px;padding:10px 12px 0}.card{border:1px solid var(--edge);background:var(--tile)}
+.ci{padding:10px 11px;display:grid;gap:6px;border-left:3px solid var(--tc)}.ct{font:700 16px var(--sans)}
+.ci .chips{justify-content:flex-start;margin-top:2px}.wxr{display:flex;align-items:center;gap:8px}
+.tri{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px dashed var(--edge);padding-top:7px}
+.tri i{font:700 8px var(--mono);font-style:normal;letter-spacing:.16em;color:var(--ink3);display:block}.tri b{font:500 16px var(--mono)}
+.cards + .wb{margin:10px 12px 12px}
+.dbar{padding:12px 12px 6px;background:var(--tile);border-bottom:1px dashed var(--edge)}
+.trk{position:relative;height:14px;background:var(--sunken);border:1px solid var(--edge);background-image:repeating-linear-gradient(90deg,transparent 0 calc(100%/12 - 1px),var(--edge) calc(100%/12 - 1px) calc(100%/12))}
+.trk i{position:absolute;top:0;bottom:0}.trk .ez{width:8.33%;left:0}.trk .ez.r{left:auto;right:0}
+.trk .fill{top:4px;bottom:4px;opacity:.9}.trk .ball{width:0;top:-3px}
+.trk .ball::after{content:"";position:absolute;left:-5px;top:0;border:9px solid transparent;border-left:10px solid var(--ink);border-right:0}
+.nums{display:flex;justify-content:space-between;font:700 10px var(--mono);letter-spacing:.1em;margin-top:6px}.nums span:nth-child(2){color:var(--ink3);font-weight:400;letter-spacing:.16em;font-size:9px}
+.nums span:first-child{color:#2bc4cc}.nums span:last-child{color:#7fa6ff}
+.tick{display:flex;align-items:center;gap:7px;padding:10px 12px;font:700 10px var(--mono);letter-spacing:.12em;color:var(--ink2);border-bottom:1px solid hsl(220,5%,13%);white-space:nowrap;overflow:hidden}
+.tick b{font:500 17px var(--mono);color:var(--ink);letter-spacing:0}.tick .sep{color:var(--edge-hi)}.tick .gl{width:24px;height:18px}
+.venue.thin{padding:9px 12px 12px}
+.foot{padding:24px 14px 0;font:11px var(--mono);color:var(--ink3);line-height:1.6}
+
+.arc{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:9px;font:9px var(--mono);letter-spacing:.12em;color:var(--ink3)}
+.arc b{color:var(--ink);font-weight:500;font-size:12px;letter-spacing:0}.arc i{width:18px;height:1px;background:var(--edge-hi)}
+.mq{position:absolute;left:0;right:0;bottom:50px}
+.mq-h{font:700 8px var(--mono);letter-spacing:.18em;color:var(--ink2);padding:0 0 4px 48px;text-shadow:0 1px 0 #000}
+.mq-t{overflow:hidden;margin:0 40px;mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.mq-r{display:flex;gap:8px;width:max-content;animation:mq 26s linear infinite}
+@keyframes mq{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.mq-r{animation:none}}
+.pt{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px 0 0;background:hsla(220,25%,2%,.9);border:1px solid var(--edge);border-left:3px solid var(--tc);white-space:nowrap}
+.pt.me{border-color:hsl(212,52%,40%);border-left-color:var(--tc);box-shadow:inset 0 0 0 1px hsla(212,52%,64%,.15)}
+.pt .s{font:700 9px var(--mono);font-style:normal;background:var(--mat-hi);color:var(--ink);padding:7px 5px 6px;letter-spacing:.04em}
+.pt b{font:600 12px var(--sans)}.pt em{font:700 9px var(--mono);font-style:normal;color:var(--ink3);letter-spacing:.1em}
+.pt .ln{font:10px var(--mono);color:var(--ink2)}.pt .w{font:700 8px var(--mono);font-style:normal;letter-spacing:.12em;color:var(--ink3)}
+.pt.me .w{color:var(--blue)}
+.dbar + .fw{padding-top:10px}
+
+/* B broadcast */
+.bc-wrap{background:#000}
+.bc-stage{position:relative;height:150px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr}
+.bc-l,.bc-r{display:grid;align-content:center;padding:0 18px;gap:2px;position:relative}
+.bc-l{background:linear-gradient(115deg,#008E97 0 82%,#FC4C02 82% 86%,transparent 86%)}
+.bc-r{background:linear-gradient(115deg,transparent 0 14%,#C60C30 14% 18%,#00338D 18%);justify-items:end;text-align:right}
+.bc-stage::after{content:"";position:absolute;inset:0;background:var(--grain);opacity:.6;pointer-events:none}
+.bc-ab{font:700 46px/1 var(--mono);letter-spacing:.02em;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35)}
+.bc-nm{font:700 11px var(--mono);letter-spacing:.3em;color:rgba(255,255,255,.85)}.bc-rec{font:12px var(--mono);color:rgba(255,255,255,.7)}
+.bc-vs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;background:#000;border:1px solid var(--edge-hi);padding:7px 10px;display:grid;justify-items:center;
+ font:700 9px var(--mono);letter-spacing:.18em;color:var(--ink2);box-shadow:0 0 0 4px rgba(0,0,0,.5)}
+.bc-vs .t{font:500 22px var(--mono);letter-spacing:0;color:#fff}
+.bc-wp{position:relative;display:flex;height:22px;border-block:1px solid #000}.bc-wp span{display:block;height:100%}
+.bc-wp em{position:absolute;top:4px;font:700 11px var(--mono);font-style:normal;color:#fff;letter-spacing:.06em}
+.bc-wp .l{left:8px}.bc-wp .r{right:8px}.bc-wp .c{left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:.24em;color:rgba(255,255,255,.75)}
+.bc-third{display:grid;grid-template-columns:auto 1fr;margin:14px 12px 12px;background:var(--tile);border:1px solid var(--edge)}
+.bc-tag{background:var(--amber);color:#000;font:700 9px/1.15 var(--mono);letter-spacing:.14em;padding:9px 9px;display:grid;align-content:center}
+.bc-tx{padding:9px 11px;display:grid;gap:4px}.bc-tx b{font:700 12px var(--mono);letter-spacing:.1em}.bc-tx span{font:13px/1.35 var(--sans);color:var(--ink2)}
+.bc-crawl{display:flex;align-items:stretch;height:30px;background:var(--ink);color:#000}
+.bc-live{background:var(--blue);color:#000;font:700 9px var(--mono);letter-spacing:.16em;display:grid;place-items:center;padding:0 9px;white-space:nowrap}
+.bc-ct{overflow:hidden;flex:1}.bc-cr{display:flex;align-items:center;height:100%;width:max-content;animation:mq 30s linear infinite}
+.cr{font:11px var(--mono);letter-spacing:.06em;white-space:nowrap;padding:0 10px}.cr b{font-weight:700}.cr b.me{color:hsl(212,70%,34%)}.cr b.op{color:#555}.cr b.wx{color:hsl(30,80%,32%)}
+.dot{width:5px;height:5px;background:#000;flex:none}
+/* C stakes */
+.st{margin:10px;padding:12px;background:var(--tile);border:1px solid var(--edge)}
+.st-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.st-q{display:grid;grid-template-columns:auto 1fr auto auto 1fr;align-items:baseline;gap:6px}
+.st-q b{font:500 40px/1 var(--mono);letter-spacing:-.03em;color:var(--blue)}.st-q b.op{color:var(--ink2);font-size:28px}
+.st-q span{font:10px/1.2 var(--mono);color:var(--ink3);letter-spacing:.04em}.st-q i{font:700 9px var(--mono);font-style:normal;color:var(--ink3);letter-spacing:.14em}
+.st-bar{display:flex;height:6px;margin:10px 0 6px;border:1px solid var(--edge)}.st-bar i{display:block}
+.st-net{font:700 9px var(--mono);letter-spacing:.14em;color:var(--ink3)}.st-net b{color:var(--green);font-size:11px}
+.duel{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;margin:14px 0 12px}
+.duel>div:not(.v){display:flex;align-items:center;gap:7px;padding:7px;background:var(--black);border:1px solid var(--edge)}
+.duel .me{border-left:3px solid var(--blue)!important}.duel .op{justify-content:flex-end;text-align:right;border-right:3px solid hsl(0,0%,40%)!important}
+.duel b{font:600 12px var(--sans);display:block}.duel span{font:9px var(--mono);color:var(--ink3);letter-spacing:.06em}
+.duel .s{font:700 9px var(--mono);font-style:normal;background:var(--mat-hi);padding:4px 4px}.duel .v{font:700 10px var(--mono);color:var(--ink3)}
+.cond{display:grid;grid-template-columns:18px 1fr;gap:1px 6px;padding:8px 0;border-top:1px solid hsl(220,5%,13%)}
+.cond .ck{grid-row:span 2;font:700 13px var(--mono);color:var(--green)}.cond:nth-of-type(2) .ck{color:var(--amber)}
+.cond b{font:600 13px var(--sans)}.cond span:last-child{font:12px var(--sans);color:var(--ink2)}
+.st-f{font:10px var(--mono);color:var(--ink3);letter-spacing:.04em;border-top:1px solid hsl(220,5%,13%);padding-top:9px}
+</style></head><body>
+<div class="top"><b>LIVE · PRE-GAME · 3 DIRECTIONS</b><span>Same data in all three: MIA @ BUF, NWS game-time weather, ESPN win chance, Shakir (yours) and Coleman (Carolina's). Stat lines are examples.</span></div>
+<div class="vh"><b>A · Refined (safe)</b><p>Round 2 tightened. The field stays the hero; nothing new to learn at kickoff, the turf just comes alive.</p></div><div class="lf"><div class="score"><div class="tm"><b class="ab" style="background:#008E97;border-color:#FC4C02">MIA</b><span class="rec">4-6</span></div>
+<div class="mid"><span class="clk">SUN 12:00 PM</span><span class="spot">KICKOFF · CT</span></div>
+<div class="tm r"><span class="rec">8-2</span><b class="ab" style="background:#00338D;border-color:#C60C30">BUF</b></div></div>
+<div class="dbar"><div class="trk"><i class="ez" style="background:#008E97"></i><i class="ez r" style="background:#00338D"></i><i class="fill" style="left:8.33%;width:79.2%;background:#00338D"></i><i class="ball" style="left:87.5%"></i></div>
+<div class="nums"><span>MIA 5%</span><span>WIN CHANCE · ESPN</span><span>BUF 95%</span></div></div>
+<div class="fw"><div class="field tall"><svg class="turf" viewBox="-100 0 1200 1051" preserveAspectRatio="xMidYMid slice" style="opacity:0.75;height:340px"><rect x="-100" width="1200" height="1051" fill="hsl(150,20%,3%)"/><rect x="0" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="50" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><rect x="100" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="150" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><rect x="200" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="250" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><rect x="300" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="350" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><rect x="400" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="450" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><rect x="500" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="550" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><rect x="600" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="650" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><rect x="700" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="750" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><rect x="800" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="850" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><rect x="900" y="0" width="50" height="1051" fill="hsl(142,36%,13.5%)"/><rect x="950" y="0" width="50" height="1051" fill="hsl(142,34%,10.5%)"/><path d="M50 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><path d="M100 0V1051" stroke="#fff" stroke-opacity="0.85" stroke-width="2"/><path d="M150 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><path d="M200 0V1051" stroke="#fff" stroke-opacity="0.85" stroke-width="2"/><path d="M250 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><path d="M300 0V1051" stroke="#fff" stroke-opacity="0.85" stroke-width="2"/><path d="M350 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><path d="M400 0V1051" stroke="#fff" stroke-opacity="0.85" stroke-width="2"/><path d="M450 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><path d="M500 0V1051" stroke="#fff" stroke-opacity="0.85" stroke-width="2"/><path d="M550 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><path d="M600 0V1051" stroke="#fff" stroke-opacity="0.85" stroke-width="2"/><path d="M650 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><path d="M700 0V1051" stroke="#fff" stroke-opacity="0.85" stroke-width="2"/><path d="M750 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><path d="M800 0V1051" stroke="#fff" stroke-opacity="0.85" stroke-width="2"/><path d="M850 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><path d="M900 0V1051" stroke="#fff" stroke-opacity="0.85" stroke-width="2"/><path d="M950 0V1051" stroke="#fff" stroke-opacity="0.5" stroke-width="1.2"/><text x="100" y="1021" fill="#fff" fill-opacity=".32" font-family="JetBrains Mono,monospace" font-weight="700" font-size="44" text-anchor="middle">10</text><text x="200" y="1021" fill="#fff" fill-opacity=".32" font-family="JetBrains Mono,monospace" font-weight="700" font-size="44" text-anchor="middle">20</text><text x="300" y="1021" fill="#fff" fill-opacity=".32" font-family="JetBrains Mono,monospace" font-weight="700" font-size="44" text-anchor="middle">30</text><text x="400" y="1021" fill="#fff" fill-opacity=".32" font-family="JetBrains Mono,monospace" font-weight="700" font-size="44" text-anchor="middle">40</text><text x="500" y="1021" fill="#fff" fill-opacity=".32" font-family="JetBrains Mono,monospace" font-weight="700" font-size="44" text-anchor="middle">50</text><text x="600" y="1021" fill="#fff" fill-opacity=".32" font-family="JetBrains Mono,monospace" font-weight="700" font-size="44" text-anchor="middle">40</text><text x="700" y="1021" fill="#fff" fill-opacity=".32" font-family="JetBrains Mono,monospace" font-weight="700" font-size="44" text-anchor="middle">30</text><text x="800" y="1021" fill="#fff" fill-opacity=".32" font-family="JetBrains Mono,monospace" font-weight="700" font-size="44" text-anchor="middle">20</text><text x="900" y="1021" fill="#fff" fill-opacity=".32" font-family="JetBrains Mono,monospace" font-weight="700" font-size="44" text-anchor="middle">10</text><rect x="-100" y="0" width="100" height="1051" fill="#008E97"/><text x="-50" y="534" fill="#fff" font-family="JetBrains Mono,monospace" font-weight="700" font-size="40" letter-spacing="10" text-anchor="middle" transform="rotate(-90 -50 525)">MIAMI</text><rect x="1000" y="0" width="100" height="1051" fill="#00338D"/><text x="1050" y="534" fill="#fff" font-family="JetBrains Mono,monospace" font-weight="700" font-size="40" letter-spacing="10" text-anchor="middle" transform="rotate(90 1050 525)">BUFFALO</text><rect x="0" y="1" width="1000" height="1049" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="2"/></svg>
+<div class="big"><div class="lbl" style="color:var(--amber);margin-bottom:6px">GAME-TIME FORECAST</div>
+<div class="bt"><span class="gl2"><svg class="gl" viewBox="0 0 32 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.6" stroke="var(--amber)" opacity=".55"/><path d="M8 21h17a4.5 4.5 0 0 0 0-9 6.5 6.5 0 0 0-12.3 1.8A3.7 3.7 0 0 0 8 21z" fill="var(--tile)"/></g></svg></span><b>66<sup>°F</sup></b></div><div class="bc">MOSTLY CLOUDY AT KICKOFF</div>
+<div class="arc"><span>KICK <b>66°</b></span><i></i><span>HALF <b>66°</b></span><i></i><span>Q4 <b>65°</b></span></div>
+<div class="chips"><span class="tag">WIND 7 S</span><span class="tag">RAIN 0%</span><span class="tag o">GRASS</span><span class="tag o">OPEN AIR</span></div>
+<div class="bv">HIGHMARK STADIUM · ORCHARD PARK, NY</div></div>
+<div class="mq" aria-label="Your matchup's players in this game"><div class="mq-h">IN THIS GAME · ARZ v CAR</div><div class="mq-t"><div class="mq-r"><span class="pt me" style="--tc:#00338D"><i class="s">WR</i><b>Shakir</b><em>BUF</em><span class="ln">PROJ 11.4 · 58 YDS/G</span><i class="w">YOU</i></span><span class="pt " style="--tc:#00338D"><i class="s">WR</i><b>Coleman</b><em>BUF</em><span class="ln">PROJ 8.2 · 41 YDS/G</span><i class="w">CAR</i></span><span class="pt me" style="--tc:#00338D"><i class="s">WR</i><b>Shakir</b><em>BUF</em><span class="ln">6 REC · 64 YDS LAST WK</span><i class="w">YOU</i></span><span class="pt " style="--tc:#00338D"><i class="s">WR</i><b>Coleman</b><em>BUF</em><span class="ln">TD IN 2 STRAIGHT</span><i class="w">CAR</i></span><span class="pt me" style="--tc:#00338D"><i class="s">WR</i><b>Shakir</b><em>BUF</em><span class="ln">PROJ 11.4 · 58 YDS/G</span><i class="w">YOU</i></span><span class="pt " style="--tc:#00338D"><i class="s">WR</i><b>Coleman</b><em>BUF</em><span class="ln">PROJ 8.2 · 41 YDS/G</span><i class="w">CAR</i></span><span class="pt me" style="--tc:#00338D"><i class="s">WR</i><b>Shakir</b><em>BUF</em><span class="ln">6 REC · 64 YDS LAST WK</span><i class="w">YOU</i></span><span class="pt " style="--tc:#00338D"><i class="s">WR</i><b>Coleman</b><em>BUF</em><span class="ln">TD IN 2 STRAIGHT</span><i class="w">CAR</i></span></div></div></div>
+</div></div></div><div class="vh"><b>B · Broadcast (radical)</b><p>The preview is a TV pre-game graphic: club colours split the screen, a lower-third reads the conditions like a sideline reporter, and your players run in the crawl along the bottom. Loud, built for the 11:55 glance.</p></div><div class="lf bc-wrap">
+<div class="bc-stage"><div class="bc-l"><span class="bc-ab">MIA</span><span class="bc-nm">DOLPHINS</span><span class="bc-rec">4-6</span></div>
+<div class="bc-r"><span class="bc-ab">BUF</span><span class="bc-nm">BILLS</span><span class="bc-rec">8-2</span></div>
+<div class="bc-vs"><b>SUN</b><b class="t">12:00</b><b>PM CT</b></div></div>
+<div class="bc-wp"><span style="width:5%;background:#008E97"></span><span style="width:95%;background:#00338D"></span><em class="l">5%</em><em class="r">95%</em><em class="c">WIN CHANCE</em></div>
+<div class="bc-third"><div class="bc-tag">FROM<br>THE<br>STADIUM</div><div class="bc-tx"><b>HIGHMARK STADIUM · ORCHARD PARK</b><span>66° at kickoff · mostly cloudy · 65° by the fourth · wind 7 mph south · grass · open air</span></div></div>
+<div class="bc-crawl"><span class="bc-live">YOUR GUYS</span><div class="bc-ct"><div class="bc-cr"><span class="cr"><b class="me">SHAKIR</b> WR · BUF · YOURS · PROJ 11.4</span><i class="dot"></i><span class="cr"><b class="op">COLEMAN</b> WR · BUF · CAR · PROJ 8.2</span><i class="dot"></i><span class="cr"><b class="wx">KICKOFF</b> 66° MOSTLY CLOUDY · WIND 7 S · RAIN 0%</span><i class="dot"></i><span class="cr"><b class="me">SHAKIR</b> 64 YDS LAST WEEK</span><i class="dot"></i><span class="cr"><b class="op">COLEMAN</b> TD IN 2 STRAIGHT</span><i class="dot"></i><span class="cr"><b class="me">SHAKIR</b> WR · BUF · YOURS · PROJ 11.4</span><i class="dot"></i><span class="cr"><b class="op">COLEMAN</b> WR · BUF · CAR · PROJ 8.2</span><i class="dot"></i><span class="cr"><b class="wx">KICKOFF</b> 66° MOSTLY CLOUDY · WIND 7 S · RAIN 0%</span><i class="dot"></i><span class="cr"><b class="me">SHAKIR</b> 64 YDS LAST WEEK</span><i class="dot"></i><span class="cr"><b class="op">COLEMAN</b> TD IN 2 STRAIGHT</span><i class="dot"></i></div></div></div></div><div class="vh"><b>C · Your stake (radical)</b><p>Fantasy first, football second. It leads with what this game is worth to your matchup, puts the head-to-head players face to face, and turns weather and win chance into one-line reasons. The weather lines come from simple rules, not opinion.</p></div><div class="lf"><div class="score"><div class="tm"><b class="ab" style="background:#008E97;border-color:#FC4C02">MIA</b><span class="rec">4-6</span></div>
+<div class="mid"><span class="clk">SUN 12:00 PM</span><span class="spot">KICKOFF · CT</span></div>
+<div class="tm r"><span class="rec">8-2</span><b class="ab" style="background:#00338D;border-color:#C60C30">BUF</b></div></div>
+<div class="st"><div class="st-h"><span class="lbl">WHAT THIS GAME MEANS TO YOU</span><span class="m">ARZ v CAR · WK 11</span></div>
+<div class="st-q"><b>11.4</b><span>your points riding on it</span><i>vs</i><b class="op">8.2</b><span>Carolina's</span></div>
+<div class="st-bar"><i style="width:58%;background:var(--blue)"></i><i style="width:42%;background:hsl(0,0%,32%)"></i></div>
+<div class="st-net">NET <b>+3.2</b> IN YOUR FAVOUR IF BUFFALO PLAYS TO PROJECTION</div>
+<div class="duel"><div class="me"><i class="s">WR</i><div><b>Khalil Shakir</b><span>BUF · PROJ 11.4</span></div></div><div class="v">v</div>
+<div class="op"><div><b>Keon Coleman</b><span>BUF · PROJ 8.2</span></div><i class="s">WR</i></div></div>
+<div class="cond"><span class="ck">✓</span><b>Throwing weather.</b><span>66°, mostly cloudy, 7 mph wind, no rain at kickoff.</span></div>
+<div class="cond"><span class="ck">◷</span><b>Buffalo is 95% to win.</b><span>A blowout script can mean fewer late targets.</span></div>
+<div class="st-f">Highmark Stadium · Orchard Park, NY · grass · open air</div></div></div><div class="foot">Pick A, B or C, or mix ("A with B's crawl").</div></body></html>
