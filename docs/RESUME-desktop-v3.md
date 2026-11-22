@@ -1,4 +1,35 @@
-# COMPACT POINT 11-21 ~3:45 PM CT — Live checked, fixes 1-2 shipped to lab v43, MAIN PUSH IN FLIGHT (newest; READ FIRST)
+# RESUME — desktop v3 / phone live
+
+## COMPACT POINT 11-21 ~8:30 PM CT — NEXT: start T672 (phone Live pre-game preview, design B "Broadcast")
+Christopher's instruction: after compaction start T672.
+- Spec: task T672 on Hermes (`cc task show T672`). Approved mock: Beelink `~/work/TheWarRoom/design-mocks/live-pregame-preview-B.html` (28012 B).
+  Rulings: no betting odds; weather = game-time conditions (NWS hourly; ESPN day forecast abroad; "Indoors" for domes, no invented temps);
+  ESPN predictor drives the win-chance bar (drive bar becomes win %); scrolling marquee of the selected matchup's players in that NFL game.
+  Must be on theme (tokens in LiveTab.css / liveField.css / fieldView.ts), sits where the field sits before kickoff.
+- Branch from origin/main (cc7898ca2+). Work worktree suggestion: `.worktrees/live-pregame`. Pushing needs frontend/dist copied in +
+  node_modules symlinked to `readlink -f ../dv3-shell/frontend/node_modules` + PATH=$HOME/go/bin:/usr/local/go/bin (wails).
+- Do NOT release to the lab during Sunday games (12:00 PM–~10 PM CT): a restart makes the first app open time out (T677).
+
+## STATE AT THIS POINT
+- main = cc7898ca2 (#454 matchup/headshots, #455 FINAL HUD, #456 server CSP = app build policy). Lab CT260 = v46, all status OK, 5.8 GB free.
+- T671, T674, T675, T676 checked. T676: all sessions of the leaked lab account revoked (S25 + Beelink dev page must sign in again — Christopher);
+  R2 token "twr-lab objects (lab only)" rolled in Cloudflare, new values in Beelink ~/.config/thewarroom/r2-lab and lab /etc/twr/backup.json,
+  backups verified in R2 01:15 UTC. Caveat: page lookup showed key ID + ~first quarter of secret in this transcript; offered a re-roll.
+- T677 open: build results/standings/odds/bracket readings at server start (cold 3.5-5 s vs 5 s limit). After Sunday.
+- T673 open: live proof Sun 11-22 12:00 PM CT. Wall (/app/wall) uses same nfl.games.read/nfl.game.read path; never run on real data; needs sign-in.
+- Tracker (http://192.168.1.222:8790): source Beelink ~/fleet/tracker (commit there), deploy = copy collect.py/index.html to Hermes ~/fleet/tracker.
+  Board, plan cards (by T### in title), Needs Christopher (report <12 h else 🔴 tasks) and idle alarm now derive from Task_list. cc stamps dates in Central.
+  "Update the tracker" = audit every section + screenshot; fix slop without asking (memory feedback_update_tracker_means_whole_page).
+
+## IN FLIGHT
+- Lab dev server: vite pid 557753 on 127.0.0.1:5199, cwd `~/work/TheWarRoom/.worktrees/lab-dev/frontend` (branch session/lab-dev = main),
+  log ~/logs/vite-lab-dev.log. KEEP running (Christopher's /app/ and /app/wall?demo). Stop: kill 557753.
+- Harness ~/scratch/lineup-1121 (w40.js walk, wf.js read timings, csp.js console check, state-lab.json — session now REVOKED, re-capture after sign-in).
+
+## NEEDS CHRISTOPHER
+1. Sign in at http://127.0.0.1:5199/app/ (Beelink) and on the S25 lab app. Then I check /app/wall shows the real slate.
+2. Sunday 12:00 PM CT: open Live on S25 during a game (T673).
+
 
 ## NEXT (his instruction): work through T673, T674, T675, T676 in that order
 - T673 🔴 Live field proof Sun 11-22 12:00 PM CT on S25. Already proven 11-21 on finished IND-HOU (ESPN 401873066):
