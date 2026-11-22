@@ -1,4 +1,5 @@
-> DORMANT since 11-14: SQLite per-league split slices 5-8, conversion proof, and league move drills. Current work: RESUME-build-plan.md.
+> DORMANT since 11-14: SQLite per-league split slices 5-8, conversion proof, and league move drills. Current
+> work: RESUME-build-plan.md.
 
 # RESUME #9 UPDATE 8 (compact-safe) — 2026-11-14 ~11:50 AM CT — read this first
 

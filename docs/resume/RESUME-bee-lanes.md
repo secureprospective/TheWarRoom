@@ -1,4 +1,5 @@
-> DORMANT since 11-19: Bee lanes (rel11, pulse-m0frame) retired from HANDOFF.md. Current work: RESUME-build-plan.md.
+> DORMANT since 11-19: Bee lanes (rel11, pulse-m0frame) retired from HANDOFF.md. Current work:
+> RESUME-build-plan.md.
 
 # Bee Lanes Resume
 

@@ -1,4 +1,5 @@
-> DORMANT since 11-09: 2026-11-09 repo debloat rulings, cut counts, and follow-ups. Current work: RESUME-build-plan.md.
+> DORMANT since 11-09: 2026-11-09 repo debloat rulings, cut counts, and follow-ups. Current work:
+> RESUME-build-plan.md.
 
 # TheWarRoom debloat — resume point (written 2026-11-09 by Tom on the Beelink)
 
