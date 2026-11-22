@@ -104,3 +104,21 @@ func TestAutoLineupPassesJudgeLineupAcrossRuleSets(t *testing.T) {
 		})
 	}
 }
+
+func TestAutoLineupStartsBenchedPlayerOnlyToMeetAMinimum(t *testing.T) {
+	rules := leaguerules.LineupRules{
+		Positions: leaguerules.Known(map[leaguerules.Position]leaguerules.Bounds{
+			leaguerules.QB: {Min: leaguerules.Known(1), Max: leaguerules.Known(1)},
+			leaguerules.OL: {Min: leaguerules.Known(1), Max: leaguerules.Known(1)},
+		}),
+	}
+	got := SelectAutoLineup(rules, []AutoLineupCandidate{
+		{ID: "qb-bye", Position: leaguerules.QB, Median: 30, Eligible: false},
+		{ID: "qb-playing", Position: leaguerules.QB, Median: 10, Eligible: true},
+		{ID: "ol-bye", Position: leaguerules.OL, Median: 8, Eligible: false},
+	})
+	slices.Sort(got)
+	if !slices.Equal(got, []string{"ol-bye", "qb-playing"}) {
+		t.Fatalf("lineup %v, want the playing QB and the only O-Line card (on bye)", got)
+	}
+}
