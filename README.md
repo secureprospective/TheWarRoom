@@ -30,13 +30,26 @@ downloadable browser mocks in [docs/product-tour.md](docs/product-tour.md).
 | Need | Location |
 |:--|:--|
 | Direction & scope | [North_Star.md](North_Star.md), product decisions in [docs/adr/product/](docs/adr/product/README.md) |
-| Rules for agents | [CLAUDE.md](CLAUDE.md), [AGENTS.md](AGENTS.md), [agent-codex.md](docs/agent-codex.md) |
+| Rules for agents | [CLAUDE.md](CLAUDE.md) (the one entry; see Rules below) |
 | Current work (one per workstream) | [docs/resume/](docs/resume/README.md) |
 | Architecture decisions | [docs/adr/](docs/adr/README.md) |
 | Product words | [GLOSSARY.md](GLOSSARY.md) |
 | What exists (two-hop directory) | [SYSTEM_MAP.md](SYSTEM_MAP.md) |
 | Old / superseded docs | [docs/archive/INDEX.md](docs/archive/INDEX.md) |
 | Full tour & mock downloads | [docs/product-tour.md](docs/product-tour.md) |
+
+Task numbers (T###) are on the one task list, on Hermes: `/home/hermes/work/command-center/Task_list.md`
+(read: `ssh hermes`, or the read-only Beelink mirror `~/Documents/Projects/Task_list.md`; write only with
+`cc` on Hermes).
+
+## Rules
+
+[CLAUDE.md](CLAUDE.md) is the one rules entry for agents. What the other docs are for:
+- [AGENTS.md](AGENTS.md) — advisory guidance on code footprint, security, three-layer imports, and
+  stack commands (enforced by hooks and `make lint`).
+- [docs/standards/quality-contract.md](docs/standards/quality-contract.md) — how code is written and
+  judged, loaded before a build or review.
+- [docs/agent-codex.md](docs/agent-codex.md) — older build doctrine, reference only.
 
 ## How to run it
 

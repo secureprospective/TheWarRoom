@@ -1,3 +1,5 @@
+> DORMANT since 11-19: Bee lanes (rel11, pulse-m0frame) retired from HANDOFF.md. Current work: RESUME-build-plan.md.
+
 # Bee Lanes Resume
 
 ## Batons from HANDOFF.md (retired 2026-11-22)

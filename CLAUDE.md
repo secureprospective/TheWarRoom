@@ -1,5 +1,5 @@
 # TheWarRoom — Project CLAUDE.md
-**Version:** 3.4 — 2026-11-14
+**Version:** 3.5 — 2026-11-22
 **Project path:** `~/work/TheWarRoom` on the Beelink (the only clone that builds and runs the app)
 **Pillars:** Business, Technical
 
@@ -35,8 +35,11 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 
 ## Where the work stands
 
-- **Governing plan:** `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` (one always-on server, the same
-  React app as PWA and desktop, CLI/MCP) with its rulings in `docs/audit/`.
+- **Reading order:** `README.md` -> `North_Star.md` -> `docs/adr/product/README.md` -> newest
+  resume in `docs/resume/` (currently `docs/resume/RESUME-build-plan.md`).
+- **Server design (history / reference, not governing):** `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`
+  (one always-on server, the same React app as PWA and desktop, CLI/MCP) with its rulings in
+  `docs/audit/`.
 - **Direction after that:** `docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md` and the seam
   registry `docs/architecture/future-seams.md`.
 - **Latest state:** `docs/resume/` (see `docs/resume/README.md`). The 2026-11-09 debloat (what was
@@ -57,8 +60,9 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 ## Session start
 
 1. `git branch --show-current`. Never work on main; branches are `session/<short-description>`.
-2. Read `North_Star.md`, the governing plan, `docs/architecture/desktop-modes.md` (run its checks)
-   and `docs/resume/README.md` (then the relevant `docs/resume/RESUME-*.md`).
+2. Follow the reading order: `README.md` -> `North_Star.md` -> `docs/adr/product/README.md` ->
+   newest resume in `docs/resume/` (`docs/resume/README.md` -> `RESUME-build-plan.md`), plus
+   `docs/architecture/desktop-modes.md` (run its checks).
 3. Toolchain (Go 1.26.11; the git hooks need this too):
    `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.11 GOMEMLIMIT=1500MiB
    GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`.
@@ -165,7 +169,7 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 | How code is written and judged: load before any build or review | `docs/standards/quality-contract.md`, `docs/standards/architecture-review.md` |
 | Older build doctrine (reference only) | `docs/agent-codex.md` |
 | Purpose, scope and what earns build time | `North_Star.md` |
-| The governing plan (client/server, PWA) and its rulings | `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`, `docs/audit/` |
+| Server design (history / reference, not governing) and its rulings | `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`, `docs/audit/` |
 | Earlier plan; its Method section is still how work is briefed | `docs/build-handoffs/Hardening_Plan_2026-10.md` |
 | The engine plan and rulings | `docs/build-handoffs/Core_Build_Plan_2026-10.md` |
 | Why the plan is shaped this way | `docs/build-handoffs/Core_Build_Reasoning_2026-10.md` |

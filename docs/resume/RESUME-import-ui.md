@@ -1,3 +1,5 @@
+> DORMANT since 11-11: UI-to-mocks trade desk, draft scarcity, and push batch. Current work: RESUME-build-plan.md.
+
 # TheWarRoom — UI-to-mocks RESUME (compact-safe #11, 2026-11-11 ~03:35 CT) — TRADE DESK: PUSH BATCH IN PROGRESS
 
 ## 0. FIRST THING AFTER COMPACT

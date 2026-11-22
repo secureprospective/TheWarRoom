@@ -1,3 +1,5 @@
+> DORMANT since 11-09: Lab server load testing, cache tier, tunnel, and backup status. Current work: RESUME-build-plan.md.
+
 # TheWarRoom RESUME #7: 2026-11-09 ~11:50 CT (newest on top; #6 below)
 
 ## WHAT WE ARE DOING

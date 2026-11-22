@@ -1,3 +1,5 @@
+> DORMANT since 11-10: Public landing page (warroom.secureprospective.com) and PR #224. Current work: RESUME-build-plan.md.
+
 # RESUME: TheWarRoom landing page (warroom.secureprospective.com), 2026-11-10 (third compaction, ~11:35 CST)
 
 Written by Tom (Claude Code on the Beelink). On "we are back": read this, check the in-flight job (section 2), start at NEXT ACTIONS item 1. Do not recap or re-plan.
