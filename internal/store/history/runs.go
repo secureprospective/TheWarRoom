@@ -163,6 +163,14 @@ func (s *Store) LatestRun(ctx context.Context, season int, kind RunKind) (Run, b
 	return s.run(ctx, `WHERE season = ? AND kind = ? ORDER BY run_id DESC LIMIT 1`, season, string(kind))
 }
 
+// latestModelRun returns the newest stored model run across all seasons, or false when none exists.
+func (s *Store) latestModelRun(ctx context.Context) (Run, bool, error) {
+	if s == nil {
+		return Run{}, false, nil
+	}
+	return s.run(ctx, `WHERE kind = ? ORDER BY run_id DESC LIMIT 1`, string(RunModel))
+}
+
 // RunParams returns the parameter set a run scored with. ok is false when the set is absent, or
 // when no store is open yet.
 func (s *Store) RunParams(ctx context.Context, paramSetID string) (ParamSet, bool, error) {

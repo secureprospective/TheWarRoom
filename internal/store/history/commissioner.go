@@ -302,7 +302,12 @@ func (s *Store) checkAppend(ctx context.Context, raw commissioner.RawCommand, pr
 		{"move from MFL", func() error { return commissioner.CheckCutoverAppend(raw, records) }},
 		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, now) }},
 		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, now) }},
-		{"rookie draft", func() error { return commissioner.CheckDraftAppend(raw, records, now, facts.draft) }},
+		{"rookie draft", func() error {
+			if principal == commissioner.DraftAutoPickPrincipal && raw.Command == commissioner.DraftPick {
+				return commissioner.CheckAutoDraftPickAppend(raw, records, now, facts.players, facts.draft)
+			}
+			return commissioner.CheckDraftAppend(raw, records, now, facts.draft)
+		}},
 		{"league schedule", func() error { return commissioner.CheckScheduleAppend(raw, records) }},
 		{"season rollover", func() error { return commissioner.CheckRolloverAppend(raw, records) }},
 		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, now) }},
@@ -403,6 +408,8 @@ func commandRole(raw commissioner.RawCommand, principal string, auth commissione
 	case clockBidAuthorizer, clockWaiverAuthorizer, olineClockAuthorizer, clockDraftAuthorizer:
 		// Automated writes use a stricter actor-and-command authorizer, not a human office permission.
 		return authorizeCommandWithAuthorizer(raw, principal, auth)
+	case autoPickDraftAuthorizer:
+		return authorizeAutoPickDraft(raw, principal, auth, records)
 	}
 	if usesRecordAuthorization(raw.Command, auth) {
 		return authorizeRecordCommand(raw, principal, auth, records)
