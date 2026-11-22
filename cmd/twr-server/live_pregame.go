@@ -35,6 +35,8 @@ type preDetail struct {
 type pregameJob struct {
 	endpoints livegame.Endpoints
 	games     []livegame.Game
+	season    int
+	week      int
 }
 
 type pregameWork struct {
@@ -46,9 +48,10 @@ type pregameWork struct {
 // pregameFetcher warms pre-game summaries and weather in one background goroutine so slow
 // upstream calls never delay live score ticks.
 type pregameFetcher struct {
-	client  *http.Client
-	weather *now.WeatherCache
-	games   *leagueservice.LiveGames
+	client   *http.Client
+	weather  *now.WeatherCache
+	games    *leagueservice.LiveGames
+	onUpdate func(season, week int)
 
 	mu        sync.Mutex
 	summaries map[string]preSummary
@@ -76,6 +79,7 @@ func (c *liveCollector) ensurePregame(endpoints livegame.Endpoints) *pregameFetc
 		client:    client,
 		weather:   weather,
 		games:     c.games,
+		onUpdate:  c.notifyScores,
 		summaries: map[string]preSummary{},
 		details:   map[string]preDetail{},
 		wake:      make(chan struct{}, 1),
@@ -84,14 +88,14 @@ func (c *liveCollector) ensurePregame(endpoints livegame.Endpoints) *pregameFetc
 }
 
 func (c *liveCollector) schedulePregame(
-	ctx context.Context, endpoints livegame.Endpoints, games []livegame.Game,
+	ctx context.Context, endpoints livegame.Endpoints, games []livegame.Game, season, week int,
 ) {
 	if c.packets == nil || c.packets.replay || c.finished != [2]int{} {
 		return
 	}
 	pre := make([]livegame.Game, 0, len(games))
 	for _, game := range games {
-		if game.Status == "pre" && game.SeasonType == 2 {
+		if game.Status == "pre" && (game.SeasonType == 2 || game.SeasonType == 3) {
 			pre = append(pre, game)
 		}
 	}
@@ -101,7 +105,10 @@ func (c *liveCollector) schedulePregame(
 		}
 		return
 	}
-	c.ensurePregame(endpoints).enqueue(ctx, endpoints, pre)
+	if season == 0 {
+		season, week = pre[0].Season, pre[0].Week
+	}
+	c.ensurePregame(endpoints).enqueue(ctx, endpoints, pre, season, week)
 }
 
 func (c *liveCollector) stopPregame() {
@@ -135,10 +142,10 @@ func (c *liveCollector) cachedPregameDetail(
 }
 
 func (f *pregameFetcher) enqueue(
-	ctx context.Context, endpoints livegame.Endpoints, pre []livegame.Game,
+	ctx context.Context, endpoints livegame.Endpoints, pre []livegame.Game, season, week int,
 ) {
 	f.mu.Lock()
-	f.pending = &pregameJob{endpoints: endpoints, games: pre}
+	f.pending = &pregameJob{endpoints: endpoints, games: pre, season: season, week: week}
 	if f.cancel == nil {
 		workCtx, cancel := context.WithCancel(ctx)
 		done := make(chan struct{})
@@ -247,8 +254,8 @@ func (f *pregameFetcher) refresh(ctx context.Context, job pregameJob) {
 		})
 	}
 	group.Wait()
-	if ctx.Err() == nil && len(updated) > 0 {
-		f.games.MergePregame(updated)
+	if ctx.Err() == nil && len(updated) > 0 && f.games.MergePregame(updated) && f.onUpdate != nil {
+		f.onUpdate(job.season, job.week)
 	}
 }
 

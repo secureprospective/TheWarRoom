@@ -47,6 +47,7 @@ type liveCollector struct {
 	poller      now.LiveStatsPoller
 	published   bool
 	restoring   bool
+	notifyMu    sync.Mutex
 	board       []livegame.Game
 	scoreDigest string
 	notified    string
@@ -119,26 +120,49 @@ func (c *liveCollector) SetLiveStats(ctx context.Context, season, week int, _ ti
 	if err != nil {
 		return fmt.Errorf("fingerprint live scores: %w", err)
 	}
+	c.notifyMu.Lock()
 	c.scoreDigest = liveDigest(body)
+	c.notifyMu.Unlock()
 	c.notifyScores(season, week)
 	return nil
 }
 
+func (c *liveCollector) notifiedDigest() string {
+	c.notifyMu.Lock()
+	defer c.notifyMu.Unlock()
+	return c.notified
+}
+
+func (c *liveCollector) boardSnapshot() []livegame.Game {
+	c.notifyMu.Lock()
+	defer c.notifyMu.Unlock()
+	return slices.Clone(c.board)
+}
+
 func (c *liveCollector) notifyScores(season, week int) {
+	c.notifyMu.Lock()
+	var pregame []leagueservice.NFLGamePregame
+	if c.games != nil {
+		pregame = c.games.PregameSnapshot()
+	}
 	body, err := json.Marshal(struct {
-		Games  []livegame.Game
-		Scores string
-	}{c.board, c.scoreDigest})
+		Games   []livegame.Game
+		Scores  string
+		Pregame []leagueservice.NFLGamePregame
+	}{c.board, c.scoreDigest, pregame})
 	if err != nil {
+		c.notifyMu.Unlock()
 		log.Printf("server live notification: %v", err)
 		return
 	}
 	digest := liveDigest(body)
 	if digest == c.notified {
+		c.notifyMu.Unlock()
 		return
 	}
 	c.notified = digest
-	if c.publisher != nil {
+	c.notifyMu.Unlock()
+	if c.publisher != nil && c.pins != nil {
 		for _, league := range c.pins.files.leagues() {
 			c.publisher.PublishScores(league, season, week)
 		}
@@ -157,7 +181,7 @@ func (c *liveCollector) checkpoint() (string, error) {
 }
 
 func (c *liveCollector) poll(ctx context.Context) time.Duration {
-	defer c.logTick(time.Now(), c.notified)()
+	defer c.logTick(time.Now(), c.notifiedDigest())()
 	c.ensureClient()
 	look, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
@@ -181,7 +205,7 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 		return 5 * time.Minute
 	}
 	packet := c.packets.held.Packets[endpoints.ESPN]
-	previousBoard := c.board
+	previousBoard := c.boardSnapshot()
 	c.holdBoard(games, packet.At)
 	if c.packets.held.Season != season || c.packets.held.Week != week {
 		c.packets.held = rawLiveCheckpoint{Version: 1, Season: season, Week: week, Packets: map[string]rawLivePacket{endpoints.ESPN: packet}, IDs: map[string]map[string]string{}}
@@ -235,7 +259,7 @@ func (c *liveCollector) finishTick(
 		c.holdDetails(games, endpoints)
 	}
 	c.notifyScores(season, week)
-	c.schedulePregame(ctx, endpoints, games)
+	c.schedulePregame(ctx, endpoints, games, season, week)
 }
 
 func (c *liveCollector) ensureClient() {
@@ -246,7 +270,7 @@ func (c *liveCollector) ensureClient() {
 
 func (c *liveCollector) logTick(started time.Time, previous string) func() {
 	return func() {
-		if previous != c.notified {
+		if previous != c.notifiedDigest() {
 			log.Printf("server live: tick %d changed=1", time.Since(started).Milliseconds())
 		}
 	}
@@ -283,7 +307,9 @@ func (c *liveCollector) holdBoard(games []livegame.Game, at time.Time) {
 	if at.IsZero() {
 		at = time.Now()
 	}
+	c.notifyMu.Lock()
 	c.board = games
+	c.notifyMu.Unlock()
 	if c.finished == [2]int{} {
 		c.games.Set(games, at, "ESPN")
 	}
@@ -527,7 +553,9 @@ func (c *liveCollector) keepLastWeek(ctx context.Context, directory string, fini
 		f = c.finishedCollector(directory, last[0], last[1])
 		finished[last] = f
 	}
-	kicked := slices.ContainsFunc(c.board, func(g livegame.Game) bool { return g.SeasonType == 2 && g.Status != "pre" })
+	kicked := slices.ContainsFunc(c.boardSnapshot(), func(g livegame.Game) bool {
+		return g.SeasonType == 2 && g.Status != "pre"
+	})
 	if (c.pins.live.Closed(last[0], last[1]) && (kicked || time.Since(f.fetched) < finishedRefresh)) ||
 		time.Since(f.tried) < 5*time.Minute {
 		return

@@ -87,11 +87,16 @@ func (r RawOpenMeteoForecast) Validate() error {
 }
 
 type weatherEntry struct {
-	weather *livegame.Weather
-	expires time.Time
+	forecast *RawOpenMeteoForecast
+	expires  time.Time
 }
 
-// WeatherCache resolves pre-game stadium weather via Open-Meteo with a 30-minute cache.
+type weatherFlight struct {
+	done     chan struct{}
+	forecast *RawOpenMeteoForecast
+}
+
+// WeatherCache resolves pre-game stadium weather via Open-Meteo with a 30-minute per-stadium cache.
 type WeatherCache struct {
 	Transport   livegame.Transport
 	ForecastURL string
@@ -101,6 +106,7 @@ type WeatherCache struct {
 	mu       sync.Mutex
 	stadiums []Stadium
 	entries  map[string]weatherEntry
+	inflight map[string]*weatherFlight
 }
 
 func NewWeatherCache(transport livegame.Transport, forecastURL string) (*WeatherCache, error) {
@@ -115,6 +121,7 @@ func NewWeatherCache(transport livegame.Transport, forecastURL string) (*Weather
 		Now:         time.Now,
 		stadiums:    stadiums,
 		entries:     map[string]weatherEntry{},
+		inflight:    map[string]*weatherFlight{},
 	}, nil
 }
 
@@ -206,22 +213,35 @@ func (c *WeatherCache) matchByName(name string) (Stadium, bool) {
 func (c *WeatherCache) openMeteoWeather(
 	ctx context.Context, st Stadium, kickoff time.Time,
 ) *livegame.Weather {
-	hour := kickoff.UTC().Truncate(time.Hour).Format(time.RFC3339)
-	key := fmt.Sprintf("%.4f,%.4f|%s", st.Lat, st.Lon, hour)
+	key := fmt.Sprintf("%.4f,%.4f", st.Lat, st.Lon)
 	now := c.clock()
 
 	c.mu.Lock()
 	if hit, ok := c.entries[key]; ok && now.Before(hit.expires) {
 		c.mu.Unlock()
-		return cloneWeather(hit.weather)
+		return selectOpenMeteoSlot(hit.forecast, kickoff)
 	}
+	if flight, ok := c.inflight[key]; ok {
+		c.mu.Unlock()
+		select {
+		case <-flight.done:
+			return selectOpenMeteoSlot(flight.forecast, kickoff)
+		case <-ctx.Done():
+			return nil
+		}
+	}
+	flight := &weatherFlight{done: make(chan struct{})}
+	if c.inflight == nil {
+		c.inflight = map[string]*weatherFlight{}
+	}
+	c.inflight[key] = flight
 	c.mu.Unlock()
 
-	weather, err := c.fetchOpenMeteo(ctx, st, kickoff)
+	forecast, err := c.fetchOpenMeteoForecast(ctx, st)
 	ttl := c.ttl()
 	if err != nil {
 		ttl = weatherFailureHold
-		weather = nil
+		forecast = nil
 	}
 
 	writeAt := c.clock()
@@ -231,14 +251,17 @@ func (c *WeatherCache) openMeteoWeather(
 			delete(c.entries, k)
 		}
 	}
-	c.entries[key] = weatherEntry{weather: cloneWeather(weather), expires: writeAt.Add(ttl)}
+	c.entries[key] = weatherEntry{forecast: forecast, expires: writeAt.Add(ttl)}
+	flight.forecast = forecast
+	delete(c.inflight, key)
+	close(flight.done)
 	c.mu.Unlock()
-	return weather
+	return selectOpenMeteoSlot(forecast, kickoff)
 }
 
-func (c *WeatherCache) fetchOpenMeteo(
-	ctx context.Context, st Stadium, kickoff time.Time,
-) (*livegame.Weather, error) {
+func (c *WeatherCache) fetchOpenMeteoForecast(
+	ctx context.Context, st Stadium,
+) (*RawOpenMeteoForecast, error) {
 	reqURL := strings.NewReplacer(
 		"{lat}", fmt.Sprintf("%.4f", st.Lat),
 		"{lon}", fmt.Sprintf("%.4f", st.Lon),
@@ -251,7 +274,7 @@ func (c *WeatherCache) fetchOpenMeteo(
 	if err != nil {
 		return nil, fmt.Errorf("open-meteo hourly: %w", err)
 	}
-	return ParseOpenMeteoHourly(body, kickoff)
+	return parseOpenMeteoForecast(body)
 }
 
 func validateOpenMeteoURL(rawURL string) error {
@@ -265,8 +288,7 @@ func validateOpenMeteoURL(rawURL string) error {
 	return nil
 }
 
-// ParseOpenMeteoHourly selects the UTC hourly slot covering kickoff and validates its fields.
-func ParseOpenMeteoHourly(body []byte, kickoff time.Time) (*livegame.Weather, error) {
+func parseOpenMeteoForecast(body []byte) (*RawOpenMeteoForecast, error) {
 	var raw RawOpenMeteoForecast
 	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("open-meteo decode: %w", err)
@@ -274,14 +296,40 @@ func ParseOpenMeteoHourly(body []byte, kickoff time.Time) (*livegame.Weather, er
 	if err := raw.Validate(); err != nil {
 		return nil, err
 	}
+	return &raw, nil
+}
+
+func selectOpenMeteoSlot(raw *RawOpenMeteoForecast, kickoff time.Time) *livegame.Weather {
+	if raw == nil || raw.Hourly == nil {
+		return nil
+	}
+	w, err := openMeteoWeatherForKickoff(raw.Hourly, kickoff)
+	if err != nil {
+		return nil
+	}
+	return w
+}
+
+// ParseOpenMeteoHourly selects the UTC hourly slot covering kickoff and validates its fields.
+func ParseOpenMeteoHourly(body []byte, kickoff time.Time) (*livegame.Weather, error) {
+	raw, err := parseOpenMeteoForecast(body)
+	if err != nil {
+		return nil, err
+	}
+	return openMeteoWeatherForKickoff(raw.Hourly, kickoff)
+}
+
+func openMeteoWeatherForKickoff(
+	hourly *RawOpenMeteoHourly, kickoff time.Time,
+) (*livegame.Weather, error) {
 	target := kickoff.UTC().Truncate(time.Hour)
 	want := target.Format("2006-01-02T15:04")
-	for i, ts := range raw.Hourly.Time {
+	for i, ts := range hourly.Time {
 		if ts == want {
-			return openMeteoSlotToWeather(raw.Hourly, i)
+			return openMeteoSlotToWeather(hourly, i)
 		}
 		if parsed, ok := parseOpenMeteoTime(ts); ok && parsed.Equal(target) {
-			return openMeteoSlotToWeather(raw.Hourly, i)
+			return openMeteoSlotToWeather(hourly, i)
 		}
 	}
 	return nil, nil
@@ -390,20 +438,4 @@ func (c *WeatherCache) ttl() time.Duration {
 		return c.TTL
 	}
 	return defaultWeatherTTL
-}
-
-func cloneWeather(w *livegame.Weather) *livegame.Weather {
-	if w == nil {
-		return nil
-	}
-	cp := *w
-	if w.TempF != nil {
-		t := *w.TempF
-		cp.TempF = &t
-	}
-	if w.PrecipPct != nil {
-		p := *w.PrecipPct
-		cp.PrecipPct = &p
-	}
-	return &cp
 }

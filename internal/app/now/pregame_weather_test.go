@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,17 +17,25 @@ import (
 )
 
 type stubWeatherTransport struct {
+	mu      sync.Mutex
 	calls   []*http.Request
 	replies map[string][]byte
 	err     error
+	onDo    func(*http.Request)
 }
 
 func (s *stubWeatherTransport) Do(req *http.Request) (*http.Response, error) {
-	s.calls = append(s.calls, req)
-	if s.err != nil {
-		return nil, s.err
+	if s.onDo != nil {
+		s.onDo(req)
 	}
+	s.mu.Lock()
+	s.calls = append(s.calls, req)
+	err := s.err
 	body, ok := s.replies[req.URL.String()]
+	s.mu.Unlock()
+	if err != nil {
+		return nil, err
+	}
 	if !ok {
 		return &http.Response{
 			StatusCode: http.StatusNotFound,
@@ -446,10 +455,9 @@ func TestWeatherCacheEvictsExpiredEntriesOnWrite(t *testing.T) {
 	g3 := livegame.Game{Status: "pre", Kickoff: kickoff, Home: livegame.Team{Abbreviation: "KC"}}
 	cache.Resolve(context.Background(), &g3)
 
-	hour := kickoff.UTC().Truncate(time.Hour).Format(time.RFC3339)
-	bufKey := fmt.Sprintf("%.4f,%.4f|%s", 42.7738, -78.7870, hour)
-	gbKey := fmt.Sprintf("%.4f,%.4f|%s", 44.5013, -88.0622, hour)
-	kcKey := fmt.Sprintf("%.4f,%.4f|%s", 39.0489, -94.4839, hour)
+	bufKey := fmt.Sprintf("%.4f,%.4f", 42.7738, -78.7870)
+	gbKey := fmt.Sprintf("%.4f,%.4f", 44.5013, -88.0622)
+	kcKey := fmt.Sprintf("%.4f,%.4f", 39.0489, -94.4839)
 	if len(cache.entries) != 2 {
 		t.Fatalf("want expired BUF evicted leaving 2 entries, got %d", len(cache.entries))
 	}
@@ -461,5 +469,51 @@ func TestWeatherCacheEvictsExpiredEntriesOnWrite(t *testing.T) {
 	}
 	if _, ok := cache.entries[kcKey]; !ok {
 		t.Fatalf("new entry %q missing after write", kcKey)
+	}
+}
+
+func TestWeatherCacheFetchesSameStadiumOncePerRefresh(t *testing.T) {
+	endpoints, err := LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// MetLife Stadium (NYG and NYJ share 40.8135, -74.0745).
+	metLifeURL := openMeteoURL(endpoints.OpenMeteo, 40.8135, -74.0745)
+	body := readNowFixture(t, "openmeteo-hourly-buf.json")
+	started := make(chan struct{})
+	release := make(chan struct{})
+	var startOnce sync.Once
+	tr := &stubWeatherTransport{
+		replies: map[string][]byte{metLifeURL: body},
+		onDo: func(*http.Request) {
+			startOnce.Do(func() { close(started) })
+			<-release
+		},
+	}
+	cache, err := NewWeatherCache(tr, endpoints.OpenMeteo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	early := time.Date(2026, 11, 22, 17, 0, 0, 0, time.UTC)
+	late := time.Date(2026, 11, 22, 18, 0, 0, 0, time.UTC)
+	g1 := livegame.Game{Status: "pre", Kickoff: early, Home: livegame.Team{Abbreviation: "NYG"}}
+	g2 := livegame.Game{Status: "pre", Kickoff: late, Home: livegame.Team{Abbreviation: "NYJ"}}
+
+	var wg sync.WaitGroup
+	wg.Go(func() { cache.Resolve(context.Background(), &g1) })
+	<-started
+	wg.Go(func() { cache.Resolve(context.Background(), &g2) })
+	time.Sleep(15 * time.Millisecond)
+	close(release)
+	wg.Wait()
+
+	if len(tr.calls) != 1 {
+		t.Fatalf("expected 1 Open-Meteo fetch for shared stadium, got %d", len(tr.calls))
+	}
+	if g1.Weather == nil || g1.Weather.TempF == nil || *g1.Weather.TempF != 46 {
+		t.Fatalf("early game weather = %+v, want 46F", g1.Weather)
+	}
+	if g2.Weather == nil || g2.Weather.TempF == nil || *g2.Weather.TempF != 48 {
+		t.Fatalf("late game weather = %+v, want 48F", g2.Weather)
 	}
 }
