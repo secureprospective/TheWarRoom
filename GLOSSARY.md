@@ -179,8 +179,16 @@ The always-on league server accessible over HTTPS where a native league runs so 
 _Avoid_: Remote, cloud, SaaS
 
 **Lab**:
-A disposable, isolated test server seeded with a copy of the real Legacy NFL league for rehearsing releases, stress runs, and UI walks without touching production data.
-_Avoid_: Staging, sandbox, dev server
+The test bench (Proxmox CT 260) where every new build lands first. Disposable: it may be wiped or
+reseeded at any time, and holds a copy of the Legacy NFL league for rehearsals, stress runs and UI walks.
+It is never the live league host.
+_Avoid_: Staging, sandbox, dev server, prod, test server, laptop
+
+**Season server**:
+The always-on machine (Alpine, 192.168.1.162) that runs the two rehearsal leagues as a real league's
+host. Frozen from one Saturday swap to the next; changed only on Saturday night with Christopher's OK;
+its league data is never reset.
+_Avoid_: prod, test server, laptop
 
 **Release**:
 A signed software build of the server or desktop application verified through the offline TUF trust ceremony before installation or upgrade (distinct from cutting a player or vacating a seat).

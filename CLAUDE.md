@@ -1,5 +1,5 @@
 # TheWarRoom — Project CLAUDE.md
-**Version:** 3.6 — 2026-11-22
+**Version:** 3.7 — 2026-11-22
 **Project path:** `~/work/TheWarRoom` on the Beelink (the only clone that builds and runs the app)
 **Pillars:** Business, Technical
 
@@ -63,6 +63,43 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 - **UI:** the target spec is `docs/ui/Target_UI_Spec_2026-10.md`. Every endpoint is a row in
   `docs/ui/endpoint-registry.csv`; `frontend/scripts/gen-endpoints.mjs` generates
   `frontend/src/app/registry/endpoints.gen.ts` from it (never hand-edit the generated file).
+
+## Environments
+
+Three places TheWarRoom runs. Use these names everywhere: docs, scripts, tracker cards, talk.
+
+- **Dev** — Beelink worktrees.
+  - For: building and tests.
+  - Who may change it: any agent, any time, on a `session/` branch.
+- **Lab** (test bench) — Proxmox CT 260. The current lab URL is unchanged.
+  - For: every new build lands here first; live fixes during build-session Sundays; S8 and iPhone
+    field tests.
+  - Who may change it: Tom, any day, any time. No sign-off needed. Post each release on the tracker.
+    On a build-session Sunday, hot patches are allowed; each fix is on a branch with its test, and is
+    merged properly after.
+- **Season server** — Acer laptop, Alpine, 192.168.1.162.
+  - For: the two rehearsal leagues; behaves like a real league's host.
+  - Who may change it: ONLY Saturday night, ONLY with Christopher's OK each time (hand him the exact
+    command). Frozen from the Saturday swap until the next Saturday, game days included. Never a hot
+    patch. Never test builds.
+
+Rules that follow from it:
+
+1. A build reaches the Season server only after one Lab check passes (health 200, both leagues load,
+   a live screen renders). Same binary, no rebuild between Lab and Season.
+2. The old "no lab release noon–10 PM on game days" rule is retired for the Lab. Its purpose now
+   belongs to the Season server freeze. T663 (hold releases during games) applies to the Season server only.
+3. Data: the Lab may be wiped, reseeded or reset any time. The Season server's league data is never
+   reset; it is backed up nightly to CT105 and before every Saturday swap.
+4. Every script, runbook and tracker card names its target: `lab` or `season`. No script defaults to
+   the Season server; the season target must be typed explicitly.
+5. MFL leagues (Legacy etc.) stay read-only on both. Rehearsal leagues are native and live on the
+   Season server once it is ready; until then they run on the Lab (Nov 29).
+6. Claudebox assumption (Christopher can overrule): Lab releases need no per-release OK from
+   Christopher; only the Season server does.
+
+Tracker card titles say "Lab" or "Season server", never just "lab". The Saturday swap is
+`deploy/season/season-swap.sh` (guarded; see `deploy/season/README.md`).
 
 ## Session start
 

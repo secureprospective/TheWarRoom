@@ -1,5 +1,7 @@
 # Alpine league-server deployment (slices 34–36)
 
+Target: applies to the Lab and the Season server (both Alpine). Rules: CLAUDE.md "Environments".
+
 Encrypted Cloudflare R2 recovery and CT-only setup: [BACKUPS.md](BACKUPS.md).
 Replacing a lost server, and signing everyone out after an incident: [RESTORE.md](RESTORE.md).
 The daily look at the server's health, and what to do when away: [CHECKLIST.md](CHECKLIST.md).

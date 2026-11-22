@@ -64,7 +64,7 @@ Repo: `~/work/TheWarRoom` on the Beelink. Claudebox (CT105) is `ssh claudebox` f
 |---|---|---|
 | 12:00 PM | T673 live field proof on Christopher's S25; Hermes recorder goes live | Christopher walks; Tom watches `server live` log |
 | 12:00 PM | T670 wall at `127.0.0.1:5199/app/wall?n=7` (signed in) | Tom, if Christopher wants it |
-| 12:00–~10 PM | **No lab releases** (restart triggers T677 timeouts) | — |
+| 12:00–~10 PM | Lab rules: CLAUDE.md "Environments" (noon–10 PM rule retired) | — |
 | after the SNF game ends (~10:30 PM) | T668 release v50 (Stage 2) | Tom; Christopher already said yes |
 
 During the games, Tom works Stage 1 (it never touches the lab) and builds Stage 2 code on branches.
@@ -111,7 +111,7 @@ tracker shows before/after numbers. Never run `rm -rf` on a path built from a va
 checking it is non-empty and inside `~/work/TheWarRoom`. **Proof (Q27):** Claudebox (not Tom) runs a cold-start agent ("start work on
 TheWarRoom") after the merge; it must find current work, direction and rules within 5 minutes.
 
-## Stage 2 — Finish the alpha loose ends (code on branches during games; releases after 10 PM)
+## Stage 2 — Finish the alpha loose ends (branches during games; see CLAUDE.md "Environments")
 1. **T668 phones update themselves.** Fix is on `session/pwa-sw-shell` (3be79c9d7). YES GIVEN 11-22;
    after 10 PM: lab release v50 from that branch, phone check on S8 + iPhone (registration exists,
    `caches.keys()` holds `twr-static-shell-<new BUILD>`). Steps: RESUME-gameday-1122.md section 4.
