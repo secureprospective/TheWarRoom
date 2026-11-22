@@ -1,5 +1,7 @@
 # TWR lab (nested Proxmox, real installer, real Tunnel)
 
+Target: the installer drill box (VM 503), not the Lab (CT 260); never the Season server.
+
 The lab is VM 503 `twr-lab` (Proxmox VE 9.2, nested) at `192.168.1.182`. It runs the **real**
 `proxmox.sh` from a release bundle with a **real** Cloudflare Tunnel, so drills test the path an owner
 runs. It never holds a real league or real owners. It replaces the retired QEMU staging VM.

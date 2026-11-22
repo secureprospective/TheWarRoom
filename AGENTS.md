@@ -8,6 +8,7 @@
 - **Primary language(s):** Go 1.26 (backend, scoring engine), TypeScript + React (frontend)
 - **Public exposure:** Preproduction hosted league server (PWA, desktop, CLI/MCP); real owners join after the client/server plan's gates close
 - **Standards version:** christopher-coding-standards Go overlay (Phase 2)
+- **Environments:** Dev, Lab and Season server. Rules: `CLAUDE.md` → "Environments" (not copied here).
 
 ## Build doctrine — load before writing or reviewing code
 
