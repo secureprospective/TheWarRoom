@@ -371,18 +371,26 @@ const (
 )
 
 // startResultsWarm warms standings, odds, bracket and weekly results for each pinned league in the
-// background at server start and before the reuse window ends, so first opens never hit the 5 s deadline.
-func startResultsWarm(ctx context.Context, pins *leaguePins) func() {
-	return startResultsWarmWithLog(ctx, pins, log.Printf)
+// background after live checkpoint restoration and before the reuse window ends, so first opens never
+// hit the 5 s deadline.
+func startResultsWarm(ctx context.Context, pins *leaguePins, ready <-chan struct{}) func() {
+	return startResultsWarmWithLog(ctx, pins, ready, log.Printf)
 }
 
 func startResultsWarmWithLog(
-	ctx context.Context, pins *leaguePins, logf func(string, ...any),
+	ctx context.Context, pins *leaguePins, ready <-chan struct{}, logf func(string, ...any),
 ) func() {
 	scope, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
+		if ready != nil {
+			select {
+			case <-ready:
+			case <-scope.Done():
+				return
+			}
+		}
 		warmResults(scope, pins, logf)
 		for {
 			timer := time.NewTimer(resultsWarmEvery)
@@ -398,17 +406,47 @@ func startResultsWarmWithLog(
 	return func() { cancel(); <-done }
 }
 
+type warmTarget struct {
+	league     string
+	store      *history.Store
+	season     int
+	warmedWeek int
+}
+
 func warmResults(ctx context.Context, pins *leaguePins, logf func(string, ...any)) {
 	if logf == nil {
 		logf = log.Printf
 	}
 	started := time.Now()
 	leagues := pins.files.leagues()
+	targets := make([]warmTarget, 0, len(leagues))
 	for _, league := range leagues {
 		if ctx.Err() != nil {
 			return
 		}
-		warmLeagueReads(ctx, pins, league, logf)
+		pin := pins.pin(ctx, league)
+		if pin.Err != nil {
+			logf("server startup warm-up failed for league %s: %v", league, pin.Err)
+			continue
+		}
+		if pin.Store == nil || pin.Football == nil {
+			continue
+		}
+		targets = append(targets, warmTarget{
+			league: league, store: pin.Store, season: pin.Football.Season(),
+		})
+	}
+	for i := range targets {
+		if ctx.Err() != nil {
+			return
+		}
+		targets[i].warmedWeek = warmLeagueHeadline(ctx, targets[i], logf)
+	}
+	for _, target := range targets {
+		if ctx.Err() != nil {
+			return
+		}
+		warmLeagueResults(ctx, target.store, target.league, target.season, target.warmedWeek, logf)
 	}
 	if ctx.Err() == nil {
 		logf("server startup warm-up: %d leagues in %s",
@@ -416,31 +454,34 @@ func warmResults(ctx context.Context, pins *leaguePins, logf func(string, ...any
 	}
 }
 
-func warmLeagueReads(
-	ctx context.Context, pins *leaguePins, league string, logf func(string, ...any),
-) {
-	pin := pins.pin(ctx, league)
-	if pin.Err != nil {
-		logf("server startup warm-up failed for league %s: %v", league, pin.Err)
-		return
-	}
-	if pin.Store == nil || pin.Football == nil {
-		return
-	}
-	season := pin.Football.Season()
+func warmLeagueHeadline(
+	ctx context.Context, target warmTarget, logf func(string, ...any),
+) int {
+	warmedWeek := 0
 	if ctx.Err() == nil {
-		_, err := pin.Store.NativeStandings(ctx, league, season)
-		warmLogErr(ctx, league, "standings", err, logf)
+		standings, err := target.store.NativeStandings(ctx, target.league, target.season)
+		warmLogErr(ctx, target.league, "standings", err, logf)
+		if err == nil && standings.Through > 0 && standings.Through <= resultsWarmWeeks {
+			warmedWeek = standings.Through
+		}
 	}
 	if ctx.Err() == nil {
-		_, err := pin.Store.NativeOdds(ctx, league, season, leagueservice.HostedOddsValues())
-		warmLogErr(ctx, league, "odds", err, logf)
+		_, err := target.store.NativeOdds(
+			ctx, target.league, target.season, leagueservice.HostedOddsValues(),
+		)
+		warmLogErr(ctx, target.league, "odds", err, logf)
 	}
 	if ctx.Err() == nil {
-		_, err := pin.Store.NativeBracket(ctx, league, season)
-		warmLogErr(ctx, league, "bracket", err, logf)
+		_, err := target.store.NativeBracket(ctx, target.league, target.season)
+		warmLogErr(ctx, target.league, "bracket", err, logf)
 	}
-	warmLeagueResults(ctx, pin.Store, league, season, logf)
+	if warmedWeek > 0 && ctx.Err() == nil {
+		_, err := target.store.NativeResults(ctx, target.league, target.season, warmedWeek)
+		if err != nil && ctx.Err() == nil {
+			warmedWeek = 0
+		}
+	}
+	return warmedWeek
 }
 
 func warmLogErr(ctx context.Context, league, name string, err error, logf func(string, ...any)) {
@@ -450,10 +491,17 @@ func warmLogErr(ctx context.Context, league, name string, err error, logf func(s
 }
 
 func warmLeagueResults(
-	ctx context.Context, store *history.Store, league string, season int, logf func(string, ...any),
+	ctx context.Context,
+	store *history.Store,
+	league string,
+	season, skipWeek int,
+	logf func(string, ...any),
 ) {
 	logged := false
 	for week := 1; week <= resultsWarmWeeks && ctx.Err() == nil; week++ {
+		if week == skipWeek {
+			continue
+		}
 		_, err := store.NativeResults(ctx, league, season, week)
 		if err != nil && ctx.Err() == nil && !logged {
 			logf("server startup warm-up failed for league %s results week %d: %v",

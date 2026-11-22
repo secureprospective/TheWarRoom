@@ -517,3 +517,116 @@ func TestWeatherCacheFetchesSameStadiumOncePerRefresh(t *testing.T) {
 		t.Fatalf("late game weather = %+v, want 48F", g2.Weather)
 	}
 }
+
+func TestWeatherCacheZeroValueCancelAndPanicSafety(t *testing.T) {
+	endpoints, err := LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stadiums, err := NFLStadiums()
+	if err != nil {
+		t.Fatal(err)
+	}
+	kickoff := time.Date(2026, 11, 22, 18, 0, 0, 0, time.UTC)
+	bufURL := openMeteoURL(endpoints.OpenMeteo, 42.7738, -78.7870)
+	body := readNowFixture(t, "openmeteo-hourly-buf.json")
+
+	t.Run("zero-value entries map does not panic", func(t *testing.T) {
+		tr := &stubWeatherTransport{replies: map[string][]byte{bufURL: body}}
+		cache := &WeatherCache{
+			Transport:   tr,
+			ForecastURL: endpoints.OpenMeteo,
+			stadiums:    stadiums,
+		}
+		g := livegame.Game{Status: "pre", Kickoff: kickoff, Home: livegame.Team{Abbreviation: "BUF"}}
+		cache.Resolve(t.Context(), &g)
+		if g.Weather == nil || g.Weather.TempF == nil || *g.Weather.TempF != 48 {
+			t.Fatalf("zero-value cache weather = %+v, want 48F", g.Weather)
+		}
+	})
+
+	t.Run("cancelled caller does not cache failure hold", func(t *testing.T) {
+		cancelCtx, cancel := context.WithCancel(t.Context())
+		first := true
+		tr := &stubWeatherTransport{
+			replies: map[string][]byte{bufURL: body},
+			onDo: func(*http.Request) {
+				if first {
+					first = false
+					cancel()
+				}
+			},
+		}
+		tr.err = context.Canceled
+		cache, err := NewWeatherCache(tr, endpoints.OpenMeteo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g1 := livegame.Game{Status: "pre", Kickoff: kickoff, Home: livegame.Team{Abbreviation: "BUF"}}
+		cache.Resolve(cancelCtx, &g1)
+		if g1.Weather != nil {
+			t.Fatalf("cancelled fetch weather = %+v, want nil", g1.Weather)
+		}
+
+		tr.mu.Lock()
+		tr.err = nil
+		tr.mu.Unlock()
+		g2 := livegame.Game{Status: "pre", Kickoff: kickoff, Home: livegame.Team{Abbreviation: "BUF"}}
+		cache.Resolve(t.Context(), &g2)
+		if g2.Weather == nil || g2.Weather.TempF == nil || *g2.Weather.TempF != 48 {
+			t.Fatalf("retry after cancel weather = %+v, want 48F", g2.Weather)
+		}
+		if len(tr.calls) != 2 {
+			t.Fatalf("expected 2 Open-Meteo calls after cancel, got %d", len(tr.calls))
+		}
+	})
+
+	t.Run("transport panic still releases inflight waiters", func(t *testing.T) {
+		started := make(chan struct{})
+		release := make(chan struct{})
+		shouldPanic := true
+		tr := &stubWeatherTransport{
+			replies: map[string][]byte{bufURL: body},
+			onDo: func(*http.Request) {
+				if shouldPanic {
+					shouldPanic = false
+					close(started)
+					<-release
+					panic("boom")
+				}
+			},
+		}
+		cache, err := NewWeatherCache(tr, endpoints.OpenMeteo)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g1 := livegame.Game{Status: "pre", Kickoff: kickoff, Home: livegame.Team{Abbreviation: "BUF"}}
+		g2 := livegame.Game{Status: "pre", Kickoff: kickoff, Home: livegame.Team{Abbreviation: "BUF"}}
+		waiterDone := make(chan struct{})
+		panicked := make(chan any, 1)
+		go func() {
+			defer func() { panicked <- recover() }()
+			cache.Resolve(t.Context(), &g1)
+		}()
+		<-started
+		go func() {
+			defer close(waiterDone)
+			cache.Resolve(t.Context(), &g2)
+		}()
+		time.Sleep(15 * time.Millisecond)
+		close(release)
+		if r := <-panicked; r == nil {
+			t.Fatal("expected leader panic")
+		}
+		select {
+		case <-waiterDone:
+		case <-time.After(2 * time.Second):
+			t.Fatal("waiter hung after leader panic")
+		}
+		g3 := livegame.Game{Status: "pre", Kickoff: kickoff, Home: livegame.Team{Abbreviation: "BUF"}}
+		cache.Resolve(t.Context(), &g3)
+		if g3.Weather == nil || g3.Weather.TempF == nil || *g3.Weather.TempF != 48 {
+			t.Fatalf("post-panic resolve = %+v, want 48F", g3.Weather)
+		}
+	})
+}
