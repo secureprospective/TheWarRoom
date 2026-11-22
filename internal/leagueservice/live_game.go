@@ -57,6 +57,26 @@ func cloneLiveGame(game *livegame.Game) *livegame.Game {
 		}
 		out.Box[i] = box
 	}
+	if game.Predictor != nil {
+		p := *game.Predictor
+		out.Predictor = &p
+	}
+	if game.Venue != nil {
+		v := *game.Venue
+		out.Venue = &v
+	}
+	if game.Weather != nil {
+		w := *game.Weather
+		if game.Weather.TempF != nil {
+			t := *game.Weather.TempF
+			w.TempF = &t
+		}
+		if game.Weather.PrecipPct != nil {
+			pct := *game.Weather.PrecipPct
+			w.PrecipPct = &pct
+		}
+		out.Weather = &w
+	}
 	return &out
 }
 

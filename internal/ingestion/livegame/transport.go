@@ -14,14 +14,22 @@ type Endpoints struct {
 	Yahoo   string `json:"yahoo"`
 	Summary string `json:"summary"`
 	Plays   string `json:"plays"`
+	NWS     string `json:"nws,omitempty"`
 }
 type Transport interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
 func (r Endpoints) Validate() error {
-	for name, s := range map[string]string{"espn": r.ESPN, "yahoo": r.Yahoo, "summary": r.Summary, "plays": r.Plays} {
-		u, err := url.Parse(strings.ReplaceAll(s, "{id}", "1"))
+	urls := map[string]string{
+		"espn": r.ESPN, "yahoo": r.Yahoo, "summary": r.Summary, "plays": r.Plays,
+	}
+	if r.NWS != "" {
+		urls["nws"] = r.NWS
+	}
+	for name, s := range urls {
+		sample := strings.NewReplacer("{id}", "1", "{lat}", "0", "{lon}", "0").Replace(s)
+		u, err := url.Parse(sample)
 		if err != nil {
 			return fmt.Errorf("%s endpoint: %w", name, err)
 		}
@@ -33,7 +41,14 @@ func (r Endpoints) Validate() error {
 }
 
 // FetchHTTPS reads one validated HTTPS URL without credentials through transport (4 MiB cap).
-func FetchHTTPS(ctx context.Context, transport Transport, rawURL string) (result []byte, failure error) {
+func FetchHTTPS(ctx context.Context, transport Transport, rawURL string) ([]byte, error) {
+	return FetchHTTPSWithHeaders(ctx, transport, rawURL, nil)
+}
+
+// FetchHTTPSWithHeaders reads one validated HTTPS URL with optional request headers (4 MiB cap).
+func FetchHTTPSWithHeaders(
+	ctx context.Context, transport Transport, rawURL string, headers map[string]string,
+) (result []byte, failure error) {
 	if transport == nil {
 		return nil, fmt.Errorf("livegame transport: nil")
 	}
@@ -47,6 +62,9 @@ func FetchHTTPS(ctx context.Context, transport Transport, rawURL string) (result
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("livegame request: %w", err)
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
 	}
 	resp, err := transport.Do(req)
 	if err != nil {

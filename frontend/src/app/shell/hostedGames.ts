@@ -47,7 +47,8 @@ export function useHostedGames(league: string, port: NonNullable<PulseScope['por
         if (!selected) return;
         const detail = await port({ command: 'nfl.game.read', mode: 'read',
           arguments: { league, game: selected.id } });
-        view.followed = parseHostedGame(detail.data, league, selected.id);
+        view.followed = parseHostedGame(detail.data, league, selected.id)
+          ?? (selected.status === 'pre' ? selected : null);
         if (current()) setHeld({ view, error: '', at: Date.now() });
       } catch (e: unknown) {
         const error = e instanceof Error ? e.message : String(e);

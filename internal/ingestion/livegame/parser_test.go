@@ -318,3 +318,60 @@ func TestSummaryAtKickoffBeforeTheFirstPlay(t *testing.T) {
 		t.Fatalf("kickoff %+v", g)
 	}
 }
+
+func TestSummaryParsesPregamePredictorVenueAndWeather(t *testing.T) {
+	outdoor, err := ParseSummary(fixture(t, "espn-summary-pregame-outdoor"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outdoor.Predictor == nil || outdoor.Predictor.Home != 59.1 || outdoor.Predictor.Away != 40.6 {
+		t.Fatalf("outdoor predictor = %+v", outdoor.Predictor)
+	}
+	if outdoor.Venue == nil || outdoor.Venue.Name != "Highmark Stadium" ||
+		outdoor.Venue.City != "Orchard Park" || outdoor.Venue.Indoor {
+		t.Fatalf("outdoor venue = %+v", outdoor.Venue)
+	}
+	if outdoor.Weather == nil || outdoor.Weather.TempF == nil || *outdoor.Weather.TempF != 66 ||
+		outdoor.Weather.Text != "Mostly Cloudy" {
+		t.Fatalf("outdoor weather = %+v", outdoor.Weather)
+	}
+
+	indoor, err := ParseSummary(fixture(t, "espn-summary-pregame-indoor"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if indoor.Predictor == nil || indoor.Predictor.Home != 62.5 || indoor.Predictor.Away != 37.5 {
+		t.Fatalf("indoor predictor = %+v", indoor.Predictor)
+	}
+	if indoor.Venue == nil || !indoor.Venue.Indoor || indoor.Venue.Name != "Ford Field" {
+		t.Fatalf("indoor venue = %+v", indoor.Venue)
+	}
+	if indoor.Weather == nil || indoor.Weather.Text != "Indoors" || indoor.Weather.TempF != nil {
+		t.Fatalf("indoor must show Indoors with no temperature, got %+v", indoor.Weather)
+	}
+
+	abroad, err := ParseSummary(fixture(t, "espn-summary-pregame-abroad"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if abroad.Predictor != nil {
+		t.Fatalf("absent predictor should be nil, got %+v", abroad.Predictor)
+	}
+	if abroad.Venue == nil || abroad.Venue.City != "London" || abroad.Venue.Country != "United Kingdom" {
+		t.Fatalf("abroad venue = %+v", abroad.Venue)
+	}
+	if abroad.Weather == nil || abroad.Weather.TempF == nil || *abroad.Weather.TempF != 54 ||
+		abroad.Weather.Text != "Light Rain" {
+		t.Fatalf("abroad weather = %+v", abroad.Weather)
+	}
+
+	// Malformed or mismatched predictor drops the predictor cleanly without failing the summary.
+	badPred := strings.Replace(string(fixture(t, "espn-summary-pregame-outdoor")), `"59.1"`, `"150"`, 1)
+	gotBad, err := ParseSummary([]byte(badPred))
+	if err != nil {
+		t.Fatalf("bad predictor failed summary: %v", err)
+	}
+	if gotBad.Predictor != nil {
+		t.Fatalf("out-of-range predictor admitted: %+v", gotBad.Predictor)
+	}
+}

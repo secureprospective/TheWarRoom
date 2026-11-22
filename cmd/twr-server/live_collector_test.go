@@ -624,3 +624,53 @@ func TestLiveCollectorHoldsLastWeekAfterTheBoardMovesOn(t *testing.T) {
 		t.Fatal("restart did not rebuild the identical finished week from its checkpoint")
 	}
 }
+
+func TestLiveCollectorHoldsPregameDetailsEvenWhenNWSFails(t *testing.T) {
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	summaryBody := []byte(`{"header":{"id":"401873100","season":{"year":2026,"type":2},"week":11,` +
+		`"competitions":[{"date":"2026-11-22T18:00Z","status":{"type":{"state":"pre","completed":false}},` +
+		`"competitors":[{"id":"2","homeAway":"home","team":{"id":"2","abbreviation":"BUF"}},` +
+		`{"id":"15","homeAway":"away","team":{"id":"15","abbreviation":"MIA"}}]}]},` +
+		`"boxscore":{"players":[]},"predictor":{"homeTeam":{"id":"2","gameProjection":"59.1"},` +
+		`"awayTeam":{"id":"15","gameProjection":"40.6"}},"gameInfo":{"venue":` +
+		`{"fullName":"Highmark Stadium","address":{"city":"Orchard Park","state":"NY","country":"USA"},` +
+		`"indoor":false}}}`)
+	summaryURL := strings.ReplaceAll(endpoints.Summary, "{id}", "401873100")
+	network := &countingLiveTransport{
+		packets: map[string]rawLivePacket{
+			summaryURL: {URL: summaryURL, Body: summaryBody, Digest: liveDigest(summaryBody), At: time.Now().UTC()},
+		},
+		calls: map[string]int{},
+	}
+	collector := &liveCollector{
+		games:   leagueservice.NewLiveGames(),
+		packets: &livePackets{network: network, held: rawLiveCheckpoint{Packets: map[string]rawLivePacket{}}},
+	}
+	collector.ensureClient()
+	board := []livegame.Game{{
+		ID: "401873100", Season: 2026, Week: 11, SeasonType: 2, Status: "pre",
+		Kickoff: time.Date(2026, 11, 22, 18, 0, 0, 0, time.UTC),
+		Home:    livegame.Team{ID: "2", Abbreviation: "BUF"},
+		Away:    livegame.Team{ID: "15", Abbreviation: "MIA"},
+	}}
+	collector.preparePreSummaries(t.Context(), endpoints, board)
+	collector.holdDetails(t.Context(), board, endpoints)
+
+	service := leagueservice.New(nil).WithLiveGames(collector.games)
+	detail, err := service.TargetNFLGame("native.test", "401873100")
+	if err != nil {
+		t.Fatalf("TargetNFLGame failed when NWS failed: %v", err)
+	}
+	if detail.Game == nil || detail.Game.Predictor == nil || detail.Game.Predictor.Home != 59.1 {
+		t.Fatalf("pregame predictor missing: %+v", detail.Game)
+	}
+	if detail.Game.Venue == nil || detail.Game.Venue.Name != "Highmark Stadium" {
+		t.Fatalf("pregame venue missing: %+v", detail.Game)
+	}
+	if detail.Game.Weather != nil {
+		t.Fatalf("expected nil weather when NWS fails, got %+v", detail.Game.Weather)
+	}
+}

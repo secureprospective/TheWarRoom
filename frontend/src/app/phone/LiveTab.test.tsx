@@ -276,4 +276,53 @@ describe('LiveTab', () => {
     await act(async () => { await new Promise(r => setTimeout(r, 0)); });
     expect(lineupReads()).toBe(afterPick);
   });
+
+  it('shows the Broadcast pre-game preview for pre games and keeps LiveField for live and final games',
+    async () => {
+    vi.useFakeTimers({ toNotFake: ['setTimeout', 'queueMicrotask', 'nextTick'] });
+    vi.setSystemTime(new Date('2026-11-22T16:00:00Z'));
+    const preGame = {
+      season: 2026, week: 11, seasonType: 2, id: '405', kickoff: '2026-11-22T18:00:00Z',
+      home: { id: '2', abbreviation: 'BUF', score: 0, record: '8-2' },
+      away: { id: '12', abbreviation: 'KC', score: 0, record: '9-1' },
+      status: 'pre', clock: '', period: 0, state: null, last: null, plays: [], box: [],
+      predictor: { away: 45, home: 55 },
+      venue: { name: 'Highmark Stadium', city: 'Orchard Park', state: 'NY', indoor: false },
+      weather: { text: 'Mostly Cloudy', tempF: 66, wind: '7 mph S', precipPct: 0, source: 'NWS' },
+    };
+    const finalGame = { ...nflGame, id: '406', status: 'post', clock: '0:00', period: 4 };
+    const port = vi.fn<HostedPort>(async request => {
+      if (request.command === 'nfl.games.read') return reply({ league: 'league', board: { stale: false,
+        source: 'ESPN', at: '2026-11-22T16:00:00Z', failure: '', games: [nflGame, preGame, finalGame] } });
+      if (request.command === 'nfl.game.read') {
+        const id = (request.arguments as { game: string }).game;
+        const found = [nflGame, preGame, finalGame].find(g => g.id === id) ?? null;
+        return reply({ league: 'league', game: found, at: '2026-11-22T16:00:00Z',
+          stale: false, words: '' });
+      }
+      throw new Error(`Unexpected read ${request.command}`);
+    });
+
+    await show(async () => brief([myGameRow]), port);
+    // Live game: LiveField shows, preview never shows.
+    expect(host!.querySelector('[data-testid="live-field"]')).not.toBeNull();
+    expect(host!.querySelector('[data-testid="live-pregame"]')).toBeNull();
+
+    // Switch to the pre-game: Broadcast preview shows with both matchup sides' players in the crawl.
+    await tap('Follow KC at BUF');
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(host!.querySelector('[data-testid="live-pregame"]')).not.toBeNull();
+    expect(host!.querySelector('[data-testid="live-field"]')).toBeNull();
+    expect(host!.querySelector('[data-testid="pregame-winbar"]')?.textContent).toContain('KC 45%');
+    expect(host!.querySelector('[data-testid="pregame-crawl"]')?.textContent).toContain('Patrick Mahomes');
+    expect(host!.querySelector('[data-testid="pregame-crawl"]')?.textContent).toContain('Josh Allen');
+
+    // Final game: preview never shows; LiveField shows as today.
+    const buttons = [...host!.querySelectorAll<HTMLElement>('button')]
+      .filter(b => b.getAttribute('aria-label') === 'Follow BUF at KC');
+    await act(async () => buttons[buttons.length - 1].click());
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(host!.querySelector('[data-testid="live-pregame"]')).toBeNull();
+    expect(host!.querySelector('[data-testid="live-field"]')).not.toBeNull();
+  });
 });

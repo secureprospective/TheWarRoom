@@ -1,0 +1,40 @@
+{
+  "header": {
+    "id": "401873100",
+    "season": { "year": 2026, "type": 2 },
+    "week": 11,
+    "competitions": [
+      {
+        "date": "2026-11-22T18:00Z",
+        "status": { "type": { "state": "pre", "completed": false } },
+        "competitors": [
+          {
+            "id": "2",
+            "homeAway": "home",
+            "team": { "id": "2", "abbreviation": "BUF" },
+            "record": [{ "type": "total", "summary": "8-2" }]
+          },
+          {
+            "id": "15",
+            "homeAway": "away",
+            "team": { "id": "15", "abbreviation": "MIA" },
+            "record": [{ "type": "total", "summary": "4-6" }]
+          }
+        ]
+      }
+    ]
+  },
+  "boxscore": { "players": [] },
+  "predictor": {
+    "homeTeam": { "id": "2", "gameProjection": "59.1" },
+    "awayTeam": { "id": "15", "gameProjection": "40.6" }
+  },
+  "gameInfo": {
+    "venue": {
+      "fullName": "Highmark Stadium",
+      "address": { "city": "Orchard Park", "state": "NY", "country": "USA" },
+      "indoor": false
+    },
+    "weather": { "temperature": 66, "displayValue": "Mostly Cloudy" }
+  }
+}

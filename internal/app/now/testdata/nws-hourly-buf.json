@@ -1,0 +1,26 @@
+{
+  "properties": {
+    "periods": [
+      {
+        "startTime": "2026-11-22T12:00:00-05:00",
+        "endTime": "2026-11-22T13:00:00-05:00",
+        "temperature": 62,
+        "temperatureUnit": "F",
+        "probabilityOfPrecipitation": { "value": 10 },
+        "windSpeed": "5 mph",
+        "windDirection": "SW",
+        "shortForecast": "Partly Sunny"
+      },
+      {
+        "startTime": "2026-11-22T13:00:00-05:00",
+        "endTime": "2026-11-22T14:00:00-05:00",
+        "temperature": 66,
+        "temperatureUnit": "F",
+        "probabilityOfPrecipitation": { "value": 0 },
+        "windSpeed": "7 mph",
+        "windDirection": "S",
+        "shortForecast": "Mostly Cloudy"
+      }
+    ]
+  }
+}

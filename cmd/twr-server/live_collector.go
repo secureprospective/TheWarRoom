@@ -41,14 +41,17 @@ type liveCollector struct {
 	path       string
 	publisher  scoresPublisher
 	// games holds the latest parsed scoreboard for nfl.games.read; nil keeps it unset.
-	games       *leagueservice.LiveGames
-	client      *http.Client
-	poller      now.LiveStatsPoller
-	published   bool
-	restoring   bool
-	board       []livegame.Game
-	scoreDigest string
-	notified    string
+	games        *leagueservice.LiveGames
+	client       *http.Client
+	preClient    *http.Client
+	preSummaries map[string]preSummary
+	weather      *now.WeatherCache
+	poller       now.LiveStatsPoller
+	published    bool
+	restoring    bool
+	board        []livegame.Game
+	scoreDigest  string
+	notified     string
 	// finished is the season and week this collector holds as a finished week; zero follows the current board.
 	finished [2]int
 	// fetched is when a finished week was last read from the sources; tried is the last attempt.
@@ -186,9 +189,10 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 		c.packets.held = rawLiveCheckpoint{Version: 1, Season: season, Week: week, Packets: map[string]rawLivePacket{endpoints.ESPN: packet}, IDs: map[string]map[string]string{}}
 	}
 	c.prepareSummaries(look, endpoints, games, previousBoard)
+	c.preparePreSummaries(look, endpoints, games)
 	c.packets.prefetched = &packet
 	c.poller.Poll(look, now.LiveStatsRun{Evidence: c, RequireComplete: true, Network: c.packets, Client: c.client, Season: season, Week: func() int { return week }, Scoreboard: scoreboard})
-	c.finishTick(games, endpoints.Summary, season, week)
+	c.finishTick(look, games, endpoints, season, week)
 	return c.interval(games)
 }
 
@@ -227,9 +231,11 @@ func (c *liveCollector) readBoard(ctx context.Context, endpoints livegame.Endpoi
 }
 
 // finishTick holds each live game detail for nfl.game.read, then publishes scores if anything changed.
-func (c *liveCollector) finishTick(games []livegame.Game, summary string, season, week int) {
+func (c *liveCollector) finishTick(
+	ctx context.Context, games []livegame.Game, endpoints livegame.Endpoints, season, week int,
+) {
 	if c.finished == [2]int{} {
-		c.holdDetails(games, summary)
+		c.holdDetails(ctx, games, endpoints)
 	}
 	c.notifyScores(season, week)
 }
@@ -238,6 +244,7 @@ func (c *liveCollector) ensureClient() {
 	if c.client == nil {
 		c.client = &http.Client{Timeout: 10 * time.Second, Transport: c.packets}
 	}
+	c.ensurePreClient()
 }
 
 func (c *liveCollector) logTick(started time.Time, previous string) func() {
@@ -342,11 +349,20 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 	return func() { cancel(); <-done; <-linked }
 }
 
-// holdDetails reuses acquired summary packets; no extra requests or cadence changes.
-func (c *liveCollector) holdDetails(games []livegame.Game, endpoint string) {
+// holdDetails reuses acquired summary packets and enriches pre-game previews for nfl.game.read.
+func (c *liveCollector) holdDetails(
+	ctx context.Context, games []livegame.Game, endpoints livegame.Endpoints,
+) {
 	details := make(map[string]leagueservice.NFLGame)
+	weather := c.ensureWeather(endpoints)
 	for _, board := range games {
-		packet, ok := c.packets.held.Packets[strings.ReplaceAll(endpoint, "{id}", board.ID)]
+		if board.Status == "pre" {
+			if detail, ok := c.pregameDetail(ctx, board, endpoints.Summary, weather); ok {
+				details[board.ID] = detail
+			}
+			continue
+		}
+		packet, ok := c.packets.held.Packets[strings.ReplaceAll(endpoints.Summary, "{id}", board.ID)]
 		if !ok {
 			continue
 		}
@@ -361,7 +377,7 @@ func (c *liveCollector) holdDetails(games []livegame.Game, endpoint string) {
 		var behind bool
 		if game, behind = boardAhead(game, board); behind {
 			// Refetch next tick instead of reusing a summary the board has already passed.
-			address := strings.ReplaceAll(endpoint, "{id}", board.ID)
+			address := strings.ReplaceAll(endpoints.Summary, "{id}", board.ID)
 			c.packets.mu.Lock()
 			delete(c.packets.nextSummary, address)
 			c.packets.mu.Unlock()

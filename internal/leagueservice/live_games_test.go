@@ -72,3 +72,34 @@ func TestNFLGameDetailsAreDetachedAndReplacedWithTheSlate(t *testing.T) {
 		t.Fatalf("old slate retained: %+v, %v", empty, err)
 	}
 }
+
+func TestNFLGameDetailsClonePregameFields(t *testing.T) {
+	at := time.Date(2026, 11, 22, 16, 0, 0, 0, time.UTC)
+	holder := &LiveGames{now: func() time.Time { return at }}
+	service := New(nil).WithLiveGames(holder)
+	temp, precip := 66, 10
+	game := livegame.Game{
+		ID: "402", Status: "pre",
+		Predictor: &livegame.Predictor{Home: 59.1, Away: 40.6},
+		Venue:     &livegame.Venue{Name: "Highmark Stadium", City: "Orchard Park", State: "NY"},
+		Weather:   &livegame.Weather{Text: "Mostly Cloudy", TempF: &temp, PrecipPct: &precip, Source: "NWS"},
+	}
+	holder.SetDetails(map[string]NFLGame{"402": {Game: &game, At: at}})
+	temp, precip = 99, 99
+	game.Predictor.Home = 1
+	game.Venue.Name = "Mutated"
+
+	detail, err := service.TargetNFLGame("native.test", "402")
+	if err != nil || detail.Game == nil {
+		t.Fatalf("TargetNFLGame: %v %+v", err, detail)
+	}
+	if detail.Game.Predictor.Home != 59.1 || detail.Game.Venue.Name != "Highmark Stadium" ||
+		*detail.Game.Weather.TempF != 66 || *detail.Game.Weather.PrecipPct != 10 {
+		t.Fatalf("pregame fields mutated on set: %+v", detail.Game)
+	}
+	*detail.Game.Weather.TempF = 12
+	reread, err := service.TargetNFLGame("native.test", "402")
+	if err != nil || *reread.Game.Weather.TempF != 66 {
+		t.Fatalf("reader mutated held weather: %v %+v", err, reread.Game.Weather)
+	}
+}

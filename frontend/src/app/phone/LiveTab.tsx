@@ -18,6 +18,7 @@ import { espnTeam, pairStarters, pulseRows, scoreOf, starterRows, type PulseRow,
 import { readPulseMatchup, type PulseMatchup } from '../shell/pulseReads';
 import { compactLine } from '../shell/statLine';
 import { LiveField, useReducedMotion } from './LiveField';
+import { LivePregame, type PregameGuy } from './LivePregame';
 import { useAnimatedValue } from './liveMotion';
 import './LiveTab.css';
 
@@ -77,6 +78,20 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
   const selected = rows.find(r => r.key === picked) ?? rows.find(r => r.mine) ?? rows[0];
   const sides = useSides(brief, selected, league.id, port, mine);
   const followed = current ? live.view?.followed ?? undefined : undefined;
+  const pregameGuys = useMemo(
+    () => followed?.status === 'pre' ? matchupGuysInGame(followed, selected, sides, brief, mine) : [],
+    [followed, selected, sides, brief, mine],
+  );
+  const preferKey = useMemo(() => {
+    if (!games.length || games.some(g => g.status === 'in')) return '';
+    const pre = games.filter(g => g.status === 'pre');
+    if (!pre.length) return '';
+    const featured = pre.find(g => matchupGuysInGame(g, selected, sides, brief, mine).length > 0);
+    return followKey(featured ?? pre[0]);
+  }, [games, selected, sides, brief, mine]);
+  useEffect(() => {
+    if (preferKey) live.prefer(preferKey);
+  }, [preferKey, live.prefer]);
   const toBoxes = (which: 'nfl' | 'lg') => {
     setBox(which);
     boxes.current?.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
@@ -129,7 +144,7 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
           <em>{clockWords(g)}</em>
         </HQAct>)}
       </div></nav>
-    <FieldState game={followed} anchor={field} reduced={reduced}
+    <FieldState game={followed} anchor={field} reduced={reduced} guys={pregameGuys} now={now}
       fresh={live.heldAt === undefined ? '' : freshness(now - live.heldAt)}
       words={!current ? 'Live games show for the week being played.'
       : live.error && !live.view ? `${unavailable} · ${live.error}`
@@ -360,13 +375,54 @@ function freshness(ms: number) {
   return minutes < 1 ? 'Updated just now' : `Updated ${minutes} min ago`;
 }
 
-function FieldState({ game, words, fresh, anchor, reduced }: {
+function FieldState({ game, words, fresh, anchor, reduced, guys, now }: {
   game?: Game; words: string; fresh: string; anchor: RefObject<HTMLElement>; reduced: boolean;
+  guys: PregameGuy[]; now: number;
 }) {
   if (!game) return <section className="live6__card" aria-label="NFL live" ref={anchor}>
     <p className="live6__note">{words}</p></section>;
+  if (game.status === 'pre') return <section className="live6__live" aria-label="NFL live" ref={anchor}>
+    <LivePregame key={game.id} game={game} guys={guys} now={now} reduced={reduced} /></section>;
   return <section className="live6__live" aria-label="NFL live" ref={anchor}>
     <LiveField key={game.id} game={game} fresh={fresh} reduced={reduced} /></section>;
+}
+
+function matchupGuysInGame(
+  game: Game, row: PulseRow | undefined, sides: Sides, brief: HomeBrief | undefined, mine: string,
+): PregameGuy[] {
+  if (!row) return [];
+  const awayAb = game.away.abbreviation;
+  const homeAb = game.home.abbreviation;
+  const flip = row.game.home === mine;
+  const [leftId, rightId] = flip ? [row.game.home, row.game.away] : [row.game.away, row.game.home];
+  const tagOf = (id: string, fallback: string) =>
+    brief?.pulse?.seats.find(s => s.franchise === id)?.abbreviation?.trim() || fallback;
+  const scoreTeamMap = (id: string) => {
+    const map = new Map<string, string>();
+    for (const s of scoreOf(brief?.results, id)?.starters ?? []) {
+      if (s.team) map.set(s.player, s.team);
+    }
+    return map;
+  };
+  const collect = (
+    list: PulseStarterRow[], franchiseId: string, sideLabel: string, isMine: boolean,
+  ): PregameGuy[] => {
+    const fallbackTeams = scoreTeamMap(franchiseId);
+    const out: PregameGuy[] = [];
+    for (const p of list) {
+      const clubCode = espnTeam(p.team ?? fallbackTeams.get(p.player));
+      if (clubCode !== awayAb && clubCode !== homeAb) continue;
+      out.push({
+        id: p.player, name: p.name, position: p.slot, team: clubCode,
+        side: sideLabel, mine: isMine, projection: p.projection,
+      });
+    }
+    return out;
+  };
+  return [
+    ...collect(sides.left, leftId, row.mine ? 'YOURS' : tagOf(leftId, sides.leftName), row.mine),
+    ...collect(sides.right, rightId, tagOf(rightId, sides.rightName), false),
+  ];
 }
 
 function Plays({ game }: { game?: Game }) {

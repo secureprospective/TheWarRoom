@@ -3,8 +3,150 @@ package livegame
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"slices"
+	"strconv"
+	"strings"
 )
+
+type RawFlexFloat struct {
+	Value float64
+	Set   bool
+}
+
+func (f *RawFlexFloat) UnmarshalJSON(body []byte) error {
+	trimmed := strings.TrimSpace(string(body))
+	if trimmed == "" || trimmed == "null" || trimmed == `""` {
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(body, &s); err == nil {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			return nil
+		}
+		v, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return fmt.Errorf("float string: %w", err)
+		}
+		f.Value, f.Set = v, true
+		return nil
+	}
+	var v float64
+	if err := json.Unmarshal(body, &v); err != nil {
+		return fmt.Errorf("float value: %w", err)
+	}
+	f.Value, f.Set = v, true
+	return nil
+}
+
+type RawPredictorSide struct {
+	ID             string       `json:"id"`
+	GameProjection RawFlexFloat `json:"gameProjection"`
+}
+type RawPredictor struct {
+	HomeTeam *RawPredictorSide `json:"homeTeam"`
+	AwayTeam *RawPredictorSide `json:"awayTeam"`
+}
+
+func (r RawPredictor) Validate() error {
+	if r.HomeTeam == nil || r.AwayTeam == nil {
+		return fmt.Errorf("predictor: missing homeTeam or awayTeam")
+	}
+	if !r.HomeTeam.GameProjection.Set || !r.AwayTeam.GameProjection.Set {
+		return fmt.Errorf("predictor: missing gameProjection")
+	}
+	h, a := r.HomeTeam.GameProjection.Value, r.AwayTeam.GameProjection.Value
+	if math.IsNaN(h) || math.IsInf(h, 0) || math.IsNaN(a) || math.IsInf(a, 0) {
+		return fmt.Errorf("predictor: non-finite projection")
+	}
+	if h < 0 || h > 100 || a < 0 || a > 100 || h+a <= 0 {
+		return fmt.Errorf("predictor: projection out of range")
+	}
+	return nil
+}
+
+func (r *RawPredictor) toPredictor(homeID, awayID string) *Predictor {
+	if r == nil || r.Validate() != nil {
+		return nil
+	}
+	if r.HomeTeam.ID != "" && homeID != "" && r.HomeTeam.ID != homeID {
+		return nil
+	}
+	if r.AwayTeam.ID != "" && awayID != "" && r.AwayTeam.ID != awayID {
+		return nil
+	}
+	return &Predictor{
+		Home: r.HomeTeam.GameProjection.Value,
+		Away: r.AwayTeam.GameProjection.Value,
+	}
+}
+
+type RawVenueAddress struct {
+	City    string `json:"city"`
+	State   string `json:"state"`
+	Country string `json:"country"`
+}
+type RawVenue struct {
+	FullName string          `json:"fullName"`
+	Address  RawVenueAddress `json:"address"`
+	Indoor   bool            `json:"indoor"`
+}
+
+func (r RawVenue) Validate() error {
+	if strings.TrimSpace(r.FullName) == "" && strings.TrimSpace(r.Address.City) == "" {
+		return fmt.Errorf("venue: missing name and city")
+	}
+	return nil
+}
+
+func (r *RawVenue) toVenue() *Venue {
+	if r == nil || r.Validate() != nil {
+		return nil
+	}
+	return &Venue{
+		Name:    strings.TrimSpace(r.FullName),
+		City:    strings.TrimSpace(r.Address.City),
+		State:   strings.TrimSpace(r.Address.State),
+		Country: strings.TrimSpace(r.Address.Country),
+		Indoor:  r.Indoor,
+	}
+}
+
+type RawWeather struct {
+	Temperature  *int   `json:"temperature"`
+	DisplayValue string `json:"displayValue"`
+}
+
+func (r RawWeather) Validate() error {
+	if r.Temperature != nil && (*r.Temperature < -60 || *r.Temperature > 140) {
+		return fmt.Errorf("weather: temperature out of range")
+	}
+	if r.Temperature == nil && strings.TrimSpace(r.DisplayValue) == "" {
+		return fmt.Errorf("weather: empty")
+	}
+	return nil
+}
+
+func (r *RawWeather) toWeather() *Weather {
+	if r == nil || r.Validate() != nil {
+		return nil
+	}
+	w := &Weather{
+		Text:   strings.TrimSpace(r.DisplayValue),
+		Source: "ESPN",
+	}
+	if r.Temperature != nil {
+		temp := *r.Temperature
+		w.TempF = &temp
+	}
+	return w
+}
+
+type RawGameInfo struct {
+	Venue   *RawVenue   `json:"venue"`
+	Weather *RawWeather `json:"weather"`
+}
 
 type RawBox struct {
 	Team       RawTeam `json:"team"`
@@ -29,6 +171,8 @@ type RawSummary struct {
 		Previous []RawDrive `json:"previous"`
 		Current  *RawDrive  `json:"current"`
 	} `json:"drives"`
+	Predictor *RawPredictor `json:"predictor"`
+	GameInfo  *RawGameInfo  `json:"gameInfo"`
 }
 
 func boxCategory(s string) bool {
@@ -118,6 +262,15 @@ func ParseSummary(body []byte) (Game, error) {
 		return Game{}, err
 	}
 	g := r.Header.game()
+	g.Predictor = r.Predictor.toPredictor(g.Home.ID, g.Away.ID)
+	if r.GameInfo != nil {
+		g.Venue = r.GameInfo.Venue.toVenue()
+		if g.Venue != nil && g.Venue.Indoor {
+			g.Weather = &Weather{Text: "Indoors"}
+		} else {
+			g.Weather = r.GameInfo.Weather.toWeather()
+		}
+	}
 	if g.Status != "pre" {
 		for _, b := range r.Boxscore.Players {
 			for _, s := range b.Statistics {

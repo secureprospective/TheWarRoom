@@ -1,0 +1,30 @@
+{
+  "header": {
+    "id": "401873101",
+    "season": { "year": 2026, "type": 2 },
+    "week": 11,
+    "competitions": [
+      {
+        "date": "2026-11-22T18:00Z",
+        "status": { "type": { "state": "pre", "completed": false } },
+        "competitors": [
+          { "id": "8", "homeAway": "home", "team": { "id": "8", "abbreviation": "DET" } },
+          { "id": "9", "homeAway": "away", "team": { "id": "9", "abbreviation": "GB" } }
+        ]
+      }
+    ]
+  },
+  "boxscore": { "players": [] },
+  "predictor": {
+    "homeTeam": { "id": "8", "gameProjection": 62.5 },
+    "awayTeam": { "id": "9", "gameProjection": 37.5 }
+  },
+  "gameInfo": {
+    "venue": {
+      "fullName": "Ford Field",
+      "address": { "city": "Detroit", "state": "MI", "country": "USA" },
+      "indoor": true
+    },
+    "weather": { "temperature": 72, "displayValue": "Indoors" }
+  }
+}
