@@ -16,7 +16,9 @@
 - **`CLAUDE.md` → Hard Constraints** — the never-route-around rules. Locked decisions are not reopened silently; flag conflicts to Christopher.
 - **`North_Star.md`** — purpose and scope: AI and CLI first, PWA-centric, one build for every league, small on purpose.
 - **`docs/architecture/desktop-modes.md`** — what the thin (hosted) desktop and the legacy local desktop each do today. Read it and run its checks before planning desktop, server or phone work; never assume which mode is meant.
-- **`docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`** — the governing plan. `docs/build-handoffs/Hardening_Plan_2026-10.md` is the earlier plan; its Method section still applies.
+- **`docs/reset/BUILD-PLAN.md`** — the live plan. Current state: `README.md` -> `docs/resume/`.
+- **`docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`** — history / reference, not governing.
+  `docs/build-handoffs/Hardening_Plan_2026-10.md` is the earlier plan; its Method section still applies.
 - **`docs/build-handoffs/Core_Build_Plan_2026-10.md`** — the engine build plan and its rulings (R1–R12).
 
 ## Code footprint
@@ -74,6 +76,7 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 - `SYSTEM_MAP.md` — the feature directory: where each feature lives and where new code goes. Check before writing.
 - Product terms: GLOSSARY.md. Decisions: docs/adr/.
 - `docs/architecture/system-narrative.md` — what exists at length: layers, IPC, data, services.
-- `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` — the governing plan; `docs/resume/README.md` — latest state.
+- `docs/reset/BUILD-PLAN.md` — the live plan; `README.md` -> `docs/resume/` — latest state.
+- `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` — history / reference, not governing.
 - `docs/` — engine spec, rubrics, data layer, UI, backend architecture.
 - `.pre-commit-config.yaml` + `.golangci.yml` — the gates that run on your commit.
