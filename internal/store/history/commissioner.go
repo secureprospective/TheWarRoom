@@ -311,7 +311,12 @@ func (s *Store) checkAppend(ctx context.Context, raw commissioner.RawCommand, pr
 		{"league schedule", func() error { return commissioner.CheckScheduleAppend(raw, records) }},
 		{"season rollover", func() error { return commissioner.CheckRolloverAppend(raw, records) }},
 		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, now) }},
-		{"lineup", func() error { return commissioner.CheckLineupAppend(raw, records, now, facts.lineup) }},
+		{"lineup", func() error {
+			if principal == commissioner.LineupClockPrincipal {
+				return commissioner.CheckAutomaticLineupAppend(raw, records, now, facts.lineup)
+			}
+			return commissioner.CheckLineupAppend(raw, records, now, facts.lineup)
+		}},
 		{"playoffs", func() error { return commissioner.CheckPlayoffAppend(raw, records, now, facts.lineup) }},
 		{"statistic", func() error {
 			if principal == commissioner.StatFeedPrincipal {
@@ -394,6 +399,13 @@ func commandRole(raw commissioner.RawCommand, principal string, auth commissione
 		role, err := clock.Allow(raw.League, principal, raw.Command)
 		if err != nil {
 			return "", fmt.Errorf("authorize reserve clock: %w", err)
+		}
+		return role, nil
+	}
+	if clock, ok := auth.(clockLineupAuthorizer); ok {
+		role, err := clock.allowRecords(raw, principal, records)
+		if err != nil {
+			return "", fmt.Errorf("authorize lineup clock: %w", err)
 		}
 		return role, nil
 	}
