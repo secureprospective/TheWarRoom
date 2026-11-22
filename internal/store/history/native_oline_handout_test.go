@@ -377,9 +377,20 @@ func TestOLineHandoutAuthorizerRefusesSeatedAndSold(t *testing.T) {
 	}
 
 	f.recordAuctionClosed()
+	// franchise.03 gets an owner but no card: only the seat check can refuse it.
+	f.exec("creator", "commish.seat.replace", commissioner.RawArgs{
+		People: &commissioner.RawPeople{Franchise: "franchise.03", Principal: "owner.three"},
+	})
 	recs, err := f.s.nativeRecords(t.Context(), f.league)
 	if err != nil {
 		t.Fatal(err)
+	}
+	cardlessSeated := olineHandoutAuthorizer{
+		records: recs, franchise: "franchise.03", player: unsold, now: f.c.Now(),
+	}
+	if _, err := cardlessSeated.Allow(f.league, commissioner.OLineHandoutPrincipal,
+		commissioner.RosterAdd); err == nil {
+		t.Fatal("authorizer allowed handout for a seated franchise holding no card")
 	}
 	seatedAuth := olineHandoutAuthorizer{
 		records: recs, franchise: "franchise.01", player: unsold, now: f.c.Now(),
