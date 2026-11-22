@@ -1,7 +1,19 @@
-# RESUME — game day Sun 11-22 (Tom session on the Beelink, ~9:45–10:30 AM CT)
+# RESUME — game day Sun 11-22 (Tom session on the Beelink, ~9:45–10:40 AM CT)
 
 For Claudebox to plan from. Written by Tom (Claude Opus 5.5 on the Beelink).
 Christopher's own words are quoted; everything else is what was observed.
+
+## COMPACT POINT 11-22 ~10:40 AM CT — WAIT FOR CHRISTOPHER'S FIRST JOBS
+- New role (Christopher, 10:40 AM): "I have Claudebox setting up your plan now, after compaction I will
+  give you your 1st jobs - you are the headbrain, use agy and Haiku on claudebox when appropriate."
+  → Tom is head-brain for this workstream: plan, brief, judge, verify the tree. Bulk building goes to
+  AGY (`~/fleet/bin/agy-run.sh <job> <brief> "<model>" <workdir>`; Neon/Hydrogen/Flash; Argon sparingly)
+  and Haiku as Claude Code on Claudebox (`ssh claudebox`, claude 2.1.330). Not Tom's own subagents for
+  Haiku. GPT side is down. Routing: `~/fleet/ROUTING.md`. Check `python3 ~/fleet/bin/agy-usage.py` first.
+- Claudebox's plan will arrive from Christopher; it outranks NEXT below.
+- In flight: nothing of mine running. Vite pid 557753 (127.0.0.1:5199, Christopher's wall/dev page)
+  stays up on purpose; stop with `kill 557753`. S8 adb connected 192.168.1.122:5555.
+- Pending question to Christopher: may Tom release `session/pwa-sw-shell` to the lab after 10 PM for T668?
 
 ## 1. Live games readiness (done, verified 9:45–9:55 AM)
 
