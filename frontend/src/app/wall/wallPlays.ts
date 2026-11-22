@@ -21,6 +21,8 @@ export type BigPlay = {
   atMs: number; sequence: number;
 };
 
+export type FirstDownPlay = Omit<BigPlay, 'kind'> & { kind: 'first' };
+
 const statusRank: Record<Game['status'], number> = { in: 0, pre: 1, post: 2 };
 
 /** buildTicker turns every game on the board into a ticker item, live games first. */
@@ -118,38 +120,67 @@ function gamePlays(game: Game): Play[] {
   return list;
 }
 
+const isBigGain = (fp: FieldPlay) =>
+  !fp.scoring && !isTurnover(fp) && fp.type !== 'penalty' && fp.gain >= 20;
+
+const isBigPlay = (fp: FieldPlay) => Boolean(fp.scoring || isTurnover(fp) || isBigGain(fp));
+
+const newestFirst = (a: { atMs: number; sequence: number; gameId: string },
+  b: { atMs: number; sequence: number; gameId: string }) =>
+  b.atMs - a.atMs || b.sequence - a.sequence || b.gameId.localeCompare(a.gameId);
+
+function railMeta(game: Game, play: Play, teamAb: string) {
+  const c = clubColours(club(teamAb));
+  return {
+    id: `${game.id}:${play.id}`, gameId: game.id, playId: play.id,
+    teamAb, color: c.color, fill: c.fillc, ink: c.onc, text: play.text,
+    matchup: `${game.away.abbreviation} @ ${game.home.abbreviation}`,
+    score: `${game.away.abbreviation} ${play.awayScore} · ${game.home.abbreviation} ${play.homeScore}`,
+    clock: `${play.period > 4 ? 'OT' : `Q${play.period}`} ${play.clock}`,
+    atMs: Date.parse(play.at) || 0, sequence: play.sequence,
+  };
+}
+
 /** selectBigPlays picks the newest `limit` scoring, turnover, or 20+ yard plays across all games. */
 export function selectBigPlays(games: Game[], limit = 8): BigPlay[] {
   const found: BigPlay[] = [];
   for (const game of games) {
     for (const play of gamePlays(game)) {
       const fp = fieldPlay(play, game);
-      if (!fp) continue;
+      if (!fp || !isBigPlay(fp)) continue;
       const turn = isTurnover(fp);
-      const bigGain = !fp.scoring && !turn && fp.type !== 'penalty' && fp.gain >= 20;
-      if (!fp.scoring && !turn && !bigGain) continue;
+      const bigGain = isBigGain(fp);
       const kind: BigPlayKind = fp.scoring === 'td' ? 'td' : fp.scoring === 'fg' ? 'fg'
         : turn ? 'turnover' : 'gain';
       const teamAb = fp.scoring || bigGain ? sideAb(fp.poss, game) : spotlightClub(fp, game);
-      const c = clubColours(club(teamAb));
       const actor = playActor(fp);
       const tag = fp.scoring === 'td' ? 'TOUCHDOWN' : fp.scoring === 'fg' ? 'FIELD GOAL'
         : fp.type === 'int' ? 'INTERCEPTION' : turn ? 'TURNOVER' : `${fp.gain} YDS`;
       const headline = fp.scoring || turn ? spotlightTitle(fp, game)
         : [teamAb, actor, `${fp.gain} yd ${fp.type === 'pass' ? 'catch' : 'run'}`]
           .filter(Boolean).join(' · ');
-      found.push({
-        id: `${game.id}:${play.id}`, gameId: game.id, playId: play.id,
-        kind, tag, teamAb, color: c.color, fill: c.fillc, ink: c.onc,
-        headline, text: play.text,
-        matchup: `${game.away.abbreviation} @ ${game.home.abbreviation}`,
-        score: `${game.away.abbreviation} ${play.awayScore} · ${game.home.abbreviation} ${play.homeScore}`,
-        clock: `${play.period > 4 ? 'OT' : `Q${play.period}`} ${play.clock}`,
-        atMs: Date.parse(play.at) || 0, sequence: play.sequence,
-      });
+      found.push({ ...railMeta(game, play, teamAb), kind, tag, headline });
     }
   }
-  return found
-    .sort((a, b) => b.atMs - a.atMs || b.sequence - a.sequence || b.gameId.localeCompare(a.gameId))
-    .slice(0, limit);
+  return found.sort(newestFirst).slice(0, limit);
+}
+
+/** selectFirstDowns picks the newest `limit` normal first-down plays (excluding big plays). */
+export function selectFirstDowns(games: Game[], limit = 16): FirstDownPlay[] {
+  const found: FirstDownPlay[] = [];
+  for (const game of games) {
+    for (const play of gamePlays(game)) {
+      const fp = fieldPlay(play, game);
+      if (!fp || !fp.first || isBigPlay(fp)) continue;
+      const teamAb = sideAb(fp.poss, game);
+      const actor = playActor(fp);
+      const tag = fp.type === 'penalty' ? '1ST · PEN' : '1ST DOWN';
+      const detail = fp.type === 'penalty'
+        ? 'penalty 1st down'
+        : `${fp.gain} yd ${fp.type === 'pass' ? 'catch' : 'run'}`;
+      const headline = [teamAb, actor, detail].filter(Boolean).join(' · ');
+      found.push({ ...railMeta(game, play, teamAb), kind: 'first', tag, headline });
+    }
+  }
+  return found.sort(newestFirst).slice(0, limit);
 }

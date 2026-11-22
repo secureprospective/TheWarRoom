@@ -109,6 +109,43 @@ describe('LiveField', () => {
     await act(async () => root!.render(<LiveField game={gameA} reduced={true} />));
     expect(stage.style.getPropertyValue('--k')).toBe('2.000');
   });
+
+  it('renders possession football in its own slot element outside .tm-sc for home and away', async () => {
+    const homePoss: Game = {
+      ...gameA,
+      away: { ...gameA.away, score: 3 },
+      home: { ...gameA.home, score: 13 },
+      state: { possession: gameA.home.id, down: 2, distance: 8, yardLine: 16, toEndzone: 16 },
+    };
+    await mount(<LiveField game={homePoss} reduced={true} />);
+    const scoreEl = host!.querySelector('.score')!;
+    expect(scoreEl.getAttribute('data-poss')).toBe('R');
+
+    for (const side of ['L', 'R'] as const) {
+      const tm = host!.querySelector(`.tm-${side}`)!;
+      const sc = tm.querySelector('.tm-sc')!;
+      const slot = tm.querySelector(`[data-testid="poss-slot-${side}"]`)!;
+      const ball = slot.querySelector('.tm-poss')!;
+      expect(sc.contains(ball)).toBe(false);
+      expect(slot.contains(ball)).toBe(true);
+      expect(sc.nextElementSibling).toBe(slot);
+      expect(sc.classList.contains('is-wide')).toBe(false);
+    }
+
+    const awayPoss3Digit: Game = {
+      ...gameA,
+      away: { ...gameA.away, score: 105 },
+      home: { ...gameA.home, score: 24 },
+      state: { possession: gameA.away.id, down: 1, distance: 10, yardLine: 35, toEndzone: 65 },
+    };
+    await act(async () => root!.render(<LiveField game={awayPoss3Digit} reduced={true} />));
+    expect(scoreEl.getAttribute('data-poss')).toBe('L');
+    const awaySc = host!.querySelector('.tm-L .tm-sc')!;
+    const awaySlot = host!.querySelector('[data-testid="poss-slot-L"]')!;
+    expect(awaySc.classList.contains('is-wide')).toBe(true);
+    expect(awaySc.contains(awaySlot.querySelector('.tm-poss'))).toBe(false);
+    expect(awaySc.nextElementSibling).toBe(awaySlot);
+  });
 });
 
 describe('createFieldView', () => {
