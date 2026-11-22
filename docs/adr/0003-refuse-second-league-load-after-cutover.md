@@ -3,7 +3,9 @@
 Status: Accepted
 Date: 2026-11-20
 
-`twr-server league-load` (`cmd/twr-server/league_load.go`, `internal/leagueload/load.go:64-123`) is strictly a one-time creation and cutover bootstrap: once a league has been loaded and cut over onto the hosted server, a second load or cutover is refused at three independent gates—`leagueFiles.create` (`cmd/twr-server/league_files.go:144-169`, `"already on this server"`), `CheckNativeAppend` (`internal/commissioner/native_seed.go:330-334`, `"this league already has its starting snapshot"`), and `Service.Cutover` / `CheckCutoverAppend` (`internal/leaguemigration/service.go:261-263`, `internal/commissioner/migration.go:58-60`, `"this league has already been moved over from MFL"`). Ongoing synchronization from an MFL mirror is separated into an explicit `twr-server league-refresh` command so an operator can never accidentally wipe an active native league's append-only ledger, claimed seats, or audit chain by re-running the initial load recipe.
+**In plain words:** A league is loaded onto the server once. After that it is only ever refreshed, so a second load can never wipe a live league.
+
+`twr-server league-load` (`cmd/twr-server/league_load.go`, `internal/leagueload/load.go`) is strictly a one-time creation and cutover bootstrap: once a league has been loaded and cut over onto the hosted server, a second load or cutover is refused at three independent gates—`leagueFiles.create` (`cmd/twr-server/league_files.go`, `"already on this server"`), `CheckNativeAppend` (`internal/commissioner/native_seed.go`, `"this league already has its starting snapshot"`), and `Service.Cutover` / `CheckCutoverAppend` (`internal/leaguemigration/service.go`, `internal/commissioner/migration.go`, `"this league has already been moved over from MFL"`). Ongoing synchronization from an MFL mirror is separated into an explicit `twr-server league-refresh` command so an operator can never accidentally wipe an active native league's append-only ledger, claimed seats, or audit chain by re-running the initial load recipe.
 
 ## Considered Options
 

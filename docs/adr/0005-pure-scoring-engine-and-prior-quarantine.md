@@ -3,7 +3,9 @@
 Status: Accepted
 Date: 2026-11-20
 
-The scoring and valuation engine (`internal/engine`, `internal/model`) is enforced pure with zero I/O or store imports by `depguard` (`.golangci.yml`, `SYSTEM_MAP.md:28`), receiving all state as explicit parameters assembled by `internal/composition`. In addition, the Layer 4 scouting prior is strictly quarantined from fantasy production and scoring configuration (`CLAUDE.md`) so dynasty valuations never double-count production.
+**In plain words:** The scoring and valuation maths cannot touch storage or the network, so the same inputs always give the same answer; scouting opinions are kept out of scoring so nothing is counted twice.
+
+The scoring and valuation engine (`internal/engine`, `internal/model`) is enforced pure with zero I/O or store imports by `depguard` (`.golangci.yml`, `SYSTEM_MAP.md`), receiving all state as explicit parameters assembled by `internal/composition`. In addition, the Layer 4 scouting prior is strictly quarantined from fantasy production and scoring configuration (`CLAUDE.md`) so dynasty valuations never double-count production.
 
 ## Considered Options
 

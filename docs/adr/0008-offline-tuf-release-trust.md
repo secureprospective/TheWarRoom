@@ -3,7 +3,9 @@
 Status: Accepted
 Date: 2026-11-20
 
-Server and desktop releases are verified using offline TUF (The Update Framework) metadata with a 2-of-3 Ed25519 root threshold, distinct targets/snapshot/timestamp keys, and pinned bootstrap metadata (`docs/delivery/Release_Trust.md:3-36`, `internal/releasetrust`) instead of relying on OS code-signing or TLS certificate pinning. This guarantees cryptographic rollback, freeze, and key-compromise protection for thin client and hosted server upgrades without paying for Apple/Microsoft notarization or breaking when public HTTPS certificates renew.
+**In plain words:** Updates are checked against our own signing keys, so nobody can push a fake or older update, and we don't pay Apple or Microsoft for signing.
+
+Server and desktop releases are verified using offline TUF (The Update Framework) metadata with a 2-of-3 Ed25519 root threshold, distinct targets/snapshot/timestamp keys, and pinned bootstrap metadata (`docs/delivery/Release_Trust.md`, `internal/releasetrust`) instead of relying on OS code-signing or TLS certificate pinning. This guarantees cryptographic rollback, freeze, and key-compromise protection for thin client and hosted server upgrades without paying for Apple/Microsoft notarization or breaking when public HTTPS certificates renew.
 
 ## Considered Options
 

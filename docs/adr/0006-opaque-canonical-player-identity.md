@@ -3,7 +3,9 @@
 Status: Accepted
 Date: 2026-11-20
 
-TheWarRoom assigns each player an opaque, immutable `player.<128-bit random hex>` canonical identity (`docs/architecture/storage-recovery-identity.md:144-162`, `internal/commissioner/native_seed.go`) mapped to external providers (`mfl`, `gsis`, `sleeper`, `espn`, `pfr`) via `player_external_id`, and keys roster ownership uniquely on `(league, side, canonical_player)` rather than MFL player IDs. This decouples the native league ledger and multi-provider football data from MFL's string IDs and supports twin-pool leagues (where each conference side owns an independent copy of every NFL player) without schema changes.
+**In plain words:** Every player gets TheWarRoom's own permanent ID, with MFL, ESPN and the rest as labels on it, so no outside site can scramble a league's roster.
+
+TheWarRoom assigns each player an opaque, immutable `player.<128-bit random hex>` canonical identity (`docs/architecture/storage-recovery-identity.md`, `internal/commissioner/native_seed.go`) mapped to external providers (`mfl`, `gsis`, `sleeper`, `espn`, `pfr`) via `player_external_id`, and keys roster ownership uniquely on `(league, side, canonical_player)` rather than MFL player IDs. This decouples the native league ledger and multi-provider football data from MFL's string IDs and supports twin-pool leagues (where each conference side owns an independent copy of every NFL player) without schema changes.
 
 ## Considered Options
 
@@ -12,5 +14,5 @@ TheWarRoom assigns each player an opaque, immutable `player.<128-bit random hex>
 
 ## Consequences
 
-- Legacy MFL-shaped APIs and what-if caches require an explicit compatibility adapter (`docs/architecture/storage-recovery-identity.md:152-154`).
+- Legacy MFL-shaped APIs and what-if caches require an explicit compatibility adapter (`docs/architecture/storage-recovery-identity.md`).
 - Roster restore points and transfer documents must bundle owned canonical IDs and provider links so imports can verify identity without guessing.

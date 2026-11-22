@@ -3,7 +3,9 @@
 Status: Accepted
 Date: 2026-11-20
 
-Browser access at `/app/` uses strict same-origin `__Host-twr_session` cookies (`HttpOnly`, `Secure`, `SameSite=Strict`) and single-league admission, while forbidding `Authorization` bearer headers and rejecting agent tokens when an `Origin` header is present (`internal/serverhttp/browser.go:79-106`, `internal/serverhttp/browser_session.go:159-174,225-245`, `docs/architecture/desktop-modes.md:4-5,18`). This keeps long-lived owner bearer credentials and AI helper tokens completely out of browser JavaScript/WebViews and blocks cross-site request forgery.
+**In plain words:** In the browser, sign-in lives in a locked cookie the page's code cannot read, so a bad link or script cannot steal an owner's access.
+
+Browser access at `/app/` uses strict same-origin `__Host-twr_session` cookies (`HttpOnly`, `Secure`, `SameSite=Strict`) and single-league admission, while forbidding `Authorization` bearer headers and rejecting agent tokens when an `Origin` header is present (`internal/serverhttp/browser.go`, `internal/serverhttp/browser_session.go`, `docs/architecture/desktop-modes.md`). This keeps long-lived owner bearer credentials and AI helper tokens completely out of browser JavaScript/WebViews and blocks cross-site request forgery.
 
 ## Considered Options
 
