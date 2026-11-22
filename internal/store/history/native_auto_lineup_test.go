@@ -63,7 +63,7 @@ func TestProcessDueLineupsLeavesHumanUntouchedAndSetsForgetterAndVacant(t *testi
 	}
 	// f.a has a human lineup; f.b is seated (owner-b) but forgot to set a lineup.
 	f.at = f.dallas.Add(-time.Hour)
-	if err := f.s.ProcessDueLineups(t.Context(), "native.test", f.at); err != nil {
+	if err := f.s.ProcessDueLineups(t.Context(), "native.test", f.at, nil); err != nil {
 		t.Fatalf("ProcessDueLineups: %v", err)
 	}
 	records := scoreRecords(t, f.s)
@@ -80,7 +80,7 @@ func TestProcessDueLineupsLeavesHumanUntouchedAndSetsForgetterAndVacant(t *testi
 	}
 	// Second pass at the same wave is idempotent.
 	before := len(records)
-	if err := f.s.ProcessDueLineups(t.Context(), "native.test", f.at); err != nil {
+	if err := f.s.ProcessDueLineups(t.Context(), "native.test", f.at, nil); err != nil {
 		t.Fatalf("second ProcessDueLineups: %v", err)
 	}
 	if after := len(scoreRecords(t, f.s)); after != before {
@@ -92,7 +92,7 @@ func TestProcessDueLineupsSecondWaveKeepsLockedAndReplacesUnlocked(t *testing.T)
 	f, env := autoLineupFixture(t)
 	// Wave 1 (DAL kickoff - 60 min): f.b gets an automatic lineup with DAL offense + NYG defense/PK.
 	f.at = f.dallas.Add(-time.Hour)
-	if err := f.s.ProcessDueLineups(t.Context(), "native.test", f.at); err != nil {
+	if err := f.s.ProcessDueLineups(t.Context(), "native.test", f.at, nil); err != nil {
 		t.Fatalf("wave 1: %v", err)
 	}
 	wave1, found, err := commissioner.RecordedLineupFor(scoreRecords(t, f.s), f.b, 2026, 1)
@@ -122,7 +122,7 @@ func TestProcessDueLineupsSecondWaveKeepsLockedAndReplacesUnlocked(t *testing.T)
 	env.facts[unlockedNYG] = nygFact
 
 	f.at = f.nyGiants.Add(-time.Hour)
-	if err := f.s.ProcessDueLineups(t.Context(), "native.test", f.at); err != nil {
+	if err := f.s.ProcessDueLineups(t.Context(), "native.test", f.at, nil); err != nil {
 		t.Fatalf("wave 2: %v", err)
 	}
 	wave2, found, err := commissioner.RecordedLineupFor(scoreRecords(t, f.s), f.b, 2026, 1)

@@ -374,6 +374,7 @@ func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte,
 	}
 	// Store is the family: it gives the clock; every league's data comes from its own store (Pins).
 	refStore := family.Over(files.reference)
+	worker.WithNFLInjuryFeed(newNFLInjuryFeed(refStore))
 	handler := serverhttp.Hosted{Publisher: serverhttp.NewPublisher(), LiveGames: leagueservice.NewLiveGames(), InjuryFeed: newNFLInjuryFeed(refStore), News: newHostedNewsService(refStore), Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Leagues: leagues}), Confirmations: confirmations, Store: family, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Passwords: passwords, Worker: worker, Registry: catalogue,
