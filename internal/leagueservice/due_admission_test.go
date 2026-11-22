@@ -83,6 +83,8 @@ func TestDueWorkerSystemPrincipalCannotUpgradeAuthority(t *testing.T) {
 		{"native.bid.clock", commissioner.BidsProcess, true},
 		{"native.waiver.clock", commissioner.WaiverProcess, true},
 		{commissioner.DraftClockPrincipal, commissioner.DraftArchive, true},
+		{commissioner.DraftAutoPickPrincipal, commissioner.DraftPick, true},
+		{commissioner.DraftAutoPickPrincipal, commissioner.DraftArchive, false},
 		{"native.bid.clock", commissioner.BidPlace, false},
 		{"native.bid.clock", commissioner.BidsOverride, false},
 		{"native.bid.clock", commissioner.WaiverProcess, false},

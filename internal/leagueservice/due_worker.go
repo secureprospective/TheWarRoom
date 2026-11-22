@@ -47,6 +47,7 @@ type DueWorker struct {
 	leagues   history.LeagueResolver
 	facts     func() nativecheck.Facts
 	clock     DueClock
+	ranking   history.DraftRanking
 	wake      chan struct{}
 	reconcile time.Duration
 }
@@ -54,7 +55,15 @@ type DueWorker struct {
 // NewDueWorker reaches every league through leagues; each store shares the clock configured by
 // the composition root.
 func NewDueWorker(leagues history.LeagueResolver, facts func() nativecheck.Facts, clock DueClock) *DueWorker {
-	return &DueWorker{leagues: leagues, facts: facts, clock: clock, wake: make(chan struct{}, 1), reconcile: time.Minute}
+	return NewDueWorkerWithRanking(leagues, facts, clock, nil)
+}
+
+// NewDueWorkerWithRanking builds a DueWorker using ranking for automatic draft picks; a nil
+// ranking falls back to the store's DynastyDraftRanking.
+func NewDueWorkerWithRanking(leagues history.LeagueResolver, facts func() nativecheck.Facts,
+	clock DueClock, ranking history.DraftRanking) *DueWorker {
+	return &DueWorker{leagues: leagues, facts: facts, clock: clock, ranking: ranking,
+		wake: make(chan struct{}, 1), reconcile: time.Minute}
 }
 
 // Host adds post-commit wakes and transaction-time clock admission to a hosted adapter.
@@ -158,9 +167,13 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	ctx = commissioner.WithCredentialAdmission(ctx, dueAdmission{worker: w, system: true})
 	at := w.clock.Now()
 	facts := w.facts()
-	// Waivers clear before bids are evaluated; a draft is closed once its clock has used the last pick.
+	// Waivers clear before bids are evaluated; automatic draft picks run before finished drafts close.
 	for _, process := range []func(context.Context, string, nativecheck.Facts) error{
-		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids, store.ProcessDueOLines, store.CloseFinishedDrafts,
+		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids, store.ProcessDueOLines,
+		func(ctx context.Context, league string, facts nativecheck.Facts) error {
+			return store.ProcessDueAutoPicks(ctx, league, at, facts, w.ranking)
+		},
+		store.CloseFinishedDrafts,
 	} {
 		if err := process(ctx, league, facts); err != nil {
 			return time.Time{}, fmt.Errorf("record due work: %w", err)
