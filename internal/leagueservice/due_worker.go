@@ -180,6 +180,9 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 			return time.Time{}, fmt.Errorf("record due work: %w", err)
 		}
 	}
+	if err := store.ProcessDueLineups(ctx, league, at); err != nil {
+		return time.Time{}, fmt.Errorf("record due lineups: %w", err)
+	}
 	// The held, memoised ledger the due processors just read: its fold is shared with every reader of this
 	// revision, where a fresh decode of the event log was folded again after every commit.
 	records, err := store.SharedCommissionerRecords(ctx, league)
@@ -196,6 +199,13 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	}
 	if !draft.IsZero() && (next.IsZero() || draft.Before(next)) {
 		next = draft
+	}
+	lineup, err := store.NextLineupDeadline(ctx, league, at)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("read next lineup deadline: %w", err)
+	}
+	if !lineup.IsZero() && (next.IsZero() || lineup.Before(next)) {
+		next = lineup
 	}
 	return next, nil
 }

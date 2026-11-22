@@ -49,6 +49,8 @@ func systemDueCommand(principal, command string) bool {
 		return command == commissioner.DraftArchive
 	case commissioner.DraftAutoPickPrincipal:
 		return command == commissioner.DraftPick
+	case commissioner.LineupClockPrincipal:
+		return command == commissioner.LineupSet
 	default:
 		return false
 	}
