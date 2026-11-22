@@ -624,3 +624,216 @@ func TestLiveCollectorHoldsLastWeekAfterTheBoardMovesOn(t *testing.T) {
 		t.Fatal("restart did not rebuild the identical finished week from its checkpoint")
 	}
 }
+
+func TestLiveCollectorHoldsPregameDetailsEvenWhenWeatherFails(t *testing.T) {
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	summaryBody := []byte(`{"header":{"id":"401873100","season":{"year":2026,"type":2},"week":11,` +
+		`"competitions":[{"date":"2026-11-22T18:00Z","status":{"type":{"state":"pre","completed":false}},` +
+		`"competitors":[{"id":"2","homeAway":"home","team":{"id":"2","abbreviation":"BUF"}},` +
+		`{"id":"15","homeAway":"away","team":{"id":"15","abbreviation":"MIA"}}]}]},` +
+		`"boxscore":{"players":[]},"predictor":{"homeTeam":{"id":"2","gameProjection":"59.1"},` +
+		`"awayTeam":{"id":"15","gameProjection":"40.6"}},"gameInfo":{"venue":` +
+		`{"fullName":"Highmark Stadium","address":{"city":"Orchard Park","state":"NY","country":"USA"},` +
+		`"indoor":false}}}`)
+	summaryURL := strings.ReplaceAll(endpoints.Summary, "{id}", "401873100")
+	network := &countingLiveTransport{
+		packets: map[string]rawLivePacket{
+			summaryURL: {URL: summaryURL, Body: summaryBody, Digest: liveDigest(summaryBody), At: time.Now().UTC()},
+		},
+		calls: map[string]int{},
+	}
+	collector := &liveCollector{
+		games:   leagueservice.NewLiveGames(),
+		packets: &livePackets{network: network, held: rawLiveCheckpoint{Packets: map[string]rawLivePacket{}}},
+	}
+	defer collector.stopPregame()
+	collector.ensureClient()
+	board := []livegame.Game{{
+		ID: "401873100", Season: 2026, Week: 11, SeasonType: 2, Status: "pre",
+		Kickoff: time.Date(2026, 11, 22, 18, 0, 0, 0, time.UTC),
+		Home:    livegame.Team{ID: "2", Abbreviation: "BUF"},
+		Away:    livegame.Team{ID: "15", Abbreviation: "MIA"},
+	}}
+	collector.games.Set(board, time.Now().UTC(), "ESPN")
+	collector.holdDetails(board, endpoints)
+	collector.schedulePregame(t.Context(), endpoints, board)
+
+	service := leagueservice.New(nil).WithLiveGames(collector.games)
+	var detail leagueservice.NFLGame
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		detail, err = service.TargetNFLGame("native.test", "401873100")
+		if err != nil {
+			t.Fatalf("TargetNFLGame failed when weather failed: %v", err)
+		}
+		if detail.Game != nil && detail.Game.Predictor != nil {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if detail.Game == nil || detail.Game.Predictor == nil || detail.Game.Predictor.Home != 59.1 {
+		t.Fatalf("pregame predictor missing: %+v", detail.Game)
+	}
+	if detail.Game.Venue == nil || detail.Game.Venue.Name != "Highmark Stadium" {
+		t.Fatalf("pregame venue missing: %+v", detail.Game)
+	}
+	if detail.Game.Weather != nil {
+		t.Fatalf("expected nil weather when Open-Meteo fails, got %+v", detail.Game.Weather)
+	}
+	network.mu.Lock()
+	callsBefore := network.calls[summaryURL]
+	network.mu.Unlock()
+	collector.holdDetails(board, endpoints)
+	network.mu.Lock()
+	callsAfter := network.calls[summaryURL]
+	network.mu.Unlock()
+	if callsAfter != callsBefore {
+		t.Fatalf("holdDetails made network call: before=%d after=%d", callsBefore, callsAfter)
+	}
+}
+
+type stallingPregameTransport struct {
+	base           http.RoundTripper
+	stallSummaryID string
+	summaryHit     chan struct{}
+	weatherHit     chan struct{}
+	summaryOnce    sync.Once
+	weatherOnce    sync.Once
+}
+
+func (s *stallingPregameTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	address := r.URL.String()
+	if strings.Contains(address, "event="+s.stallSummaryID) {
+		s.summaryOnce.Do(func() { close(s.summaryHit) })
+		<-r.Context().Done()
+		return nil, r.Context().Err()
+	}
+	if strings.EqualFold(r.URL.Host, "api.open-meteo.com") {
+		s.weatherOnce.Do(func() { close(s.weatherHit) })
+		<-r.Context().Done()
+		return nil, r.Context().Err()
+	}
+	return s.base.RoundTrip(r)
+}
+
+func TestLiveCollectorStalledPregameDoesNotDelayLiveTick(t *testing.T) {
+	checkpoint := liveBusyCheckpoint(t)
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	packet := checkpoint.Packets[endpoints.ESPN]
+	var board livegame.RawScoreboard
+	if err := json.Unmarshal(packet.Body, &board); err != nil {
+		t.Fatal(err)
+	}
+	if len(board.Events) < 3 {
+		t.Fatalf("fixture needs at least 3 events, got %d", len(board.Events))
+	}
+	setPre := func(ev *livegame.RawEvent) string {
+		st := &ev.Competitions[0].Status
+		st.Type.State = "pre"
+		*st.Type.Completed = false
+		st.DisplayClock = ""
+		if ev.Status != nil {
+			*ev.Status = *st
+		}
+		return ev.ID
+	}
+	stallID := setPre(&board.Events[1])
+	weatherID := setPre(&board.Events[2])
+	// Keep 1 live game and 2 pre-game events so the tick itself stays well under 1s even under -race.
+	board.Events = board.Events[:3]
+	packet.Body, err = json.Marshal(board)
+	if err != nil {
+		t.Fatal(err)
+	}
+	packet.Digest = liveDigest(packet.Body)
+
+	liveSummaryURL := strings.ReplaceAll(endpoints.Summary, "{id}", board.Events[0].ID)
+	sleeperURL := "https://api.sleeper.com/v1/stats/nfl/regular/2026/9"
+	sleeperBody := []byte(`{}`)
+	outdoorSummary := []byte(fmt.Sprintf(
+		`{"header":{"id":%q,"season":{"year":2026,"type":2},"week":9,`+
+			`"competitions":[{"date":"2026-11-22T18:00Z","status":{"type":{"state":"pre","completed":false}},`+
+			`"competitors":[{"id":"2","homeAway":"home","team":{"id":"2","abbreviation":"BUF"}},`+
+			`{"id":"15","homeAway":"away","team":{"id":"15","abbreviation":"MIA"}}]}]},`+
+			`"boxscore":{"players":[]},"gameInfo":{"venue":{"fullName":"Highmark Stadium",`+
+			`"address":{"city":"Orchard Park","state":"NY","country":"USA"},"indoor":false}}}`,
+		weatherID,
+	))
+	weatherURL := strings.ReplaceAll(endpoints.Summary, "{id}", weatherID)
+	packets := map[string]rawLivePacket{
+		endpoints.ESPN: packet,
+		liveSummaryURL: checkpoint.Packets[liveSummaryURL],
+		sleeperURL: {
+			URL: sleeperURL, Body: sleeperBody, Digest: liveDigest(sleeperBody), At: packet.At,
+		},
+		weatherURL: {
+			URL: weatherURL, Body: outdoorSummary, Digest: liveDigest(outdoorSummary), At: packet.At,
+		},
+	}
+	trimmed := rawLiveCheckpoint{
+		Version: 1, Season: 2026, Week: 9,
+		Packets: map[string]rawLivePacket{},
+		IDs:     checkpoint.IDs,
+	}
+
+	collector, publisher := replayCollector(t, trimmed)
+	collector.games = leagueservice.NewLiveGames()
+	files := openTestServer(t, t.TempDir())
+	collector.identities = files.leagues.family.Over(files.reference)
+	collector.packets.replay = false
+	stall := &stallingPregameTransport{
+		base:           &countingLiveTransport{packets: packets, calls: map[string]int{}},
+		stallSummaryID: stallID,
+		summaryHit:     make(chan struct{}),
+		weatherHit:     make(chan struct{}),
+	}
+	collector.packets.network = stall
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	defer collector.stopPregame()
+
+	start := time.Now()
+	delay := collector.poll(ctx)
+	elapsed := time.Since(start)
+	if elapsed >= time.Second {
+		t.Fatalf("live tick blocked on stalled pregame: %s", elapsed)
+	}
+	if delay != 5*time.Second {
+		t.Fatalf("live cadence %s, want 5s", delay)
+	}
+	if !collector.published || len(publisher.observed) != 1 || publisher.store.LiveEpoch() == "" {
+		t.Fatalf("live scores not published: published=%v observed=%v",
+			collector.published, publisher.observed)
+	}
+
+	waitHit := func(name string, ch <-chan struct{}) {
+		t.Helper()
+		select {
+		case <-ch:
+		case <-time.After(2 * time.Second):
+			t.Fatalf("background pregame worker did not reach stalled %s", name)
+		}
+	}
+	waitHit("summary", stall.summaryHit)
+	waitHit("weather", stall.weatherHit)
+
+	// A second live tick while pregame requests remain stalled must also finish under 1s.
+	secondStart := time.Now()
+	collector.poll(ctx)
+	if secondElapsed := time.Since(secondStart); secondElapsed >= time.Second {
+		t.Fatalf("second live tick blocked on stalled pregame: %s", secondElapsed)
+	}
+
+	// Shutdown cancels stalled pregame requests and stops the goroutine promptly.
+	stopStart := time.Now()
+	collector.stopPregame()
+	if stopElapsed := time.Since(stopStart); stopElapsed >= time.Second {
+		t.Fatalf("stopPregame did not exit promptly: %s", stopElapsed)
+	}
+}

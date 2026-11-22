@@ -276,4 +276,136 @@ describe('LiveTab', () => {
     await act(async () => { await new Promise(r => setTimeout(r, 0)); });
     expect(lineupReads()).toBe(afterPick);
   });
+
+  it('shows the Broadcast pre-game preview for pre games and keeps LiveField for live and final games',
+    async () => {
+    vi.useFakeTimers({ toNotFake: ['setTimeout', 'queueMicrotask', 'nextTick'] });
+    vi.setSystemTime(new Date('2026-11-22T16:00:00Z'));
+    const preGame = {
+      season: 2026, week: 11, seasonType: 2, id: '405', kickoff: '2026-11-22T18:00:00Z',
+      home: { id: '2', abbreviation: 'BUF', score: 0, record: '8-2' },
+      away: { id: '12', abbreviation: 'KC', score: 0, record: '9-1' },
+      status: 'pre', clock: '', period: 0, state: null, last: null, plays: [], box: [],
+      predictor: { away: 45, home: 55 },
+      venue: { name: 'Highmark Stadium', city: 'Orchard Park', state: 'NY', indoor: false },
+      weather: { text: 'Partly cloudy', tempF: 48, wind: '9 mph', precipPct: 20, source: 'Open-Meteo' },
+    };
+    const finalGame = { ...nflGame, id: '406', status: 'post', clock: '0:00', period: 4 };
+    const port = vi.fn<HostedPort>(async request => {
+      if (request.command === 'nfl.games.read') return reply({ league: 'league', board: { stale: false,
+        source: 'ESPN', at: '2026-11-22T16:00:00Z', failure: '', games: [nflGame, preGame, finalGame] } });
+      if (request.command === 'nfl.game.read') {
+        const id = (request.arguments as { game: string }).game;
+        const found = [nflGame, preGame, finalGame].find(g => g.id === id) ?? null;
+        return reply({ league: 'league', game: found, at: '2026-11-22T16:00:00Z',
+          stale: false, words: '' });
+      }
+      throw new Error(`Unexpected read ${request.command}`);
+    });
+
+    await show(async () => brief([myGameRow]), port);
+    // Live game: LiveField shows, preview never shows.
+    expect(host!.querySelector('[data-testid="live-field"]')).not.toBeNull();
+    expect(host!.querySelector('[data-testid="live-pregame"]')).toBeNull();
+
+    // Switch to the pre-game: Broadcast preview shows with both matchup sides' players in the crawl.
+    await tap('Follow KC at BUF');
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(host!.querySelector('[data-testid="live-pregame"]')).not.toBeNull();
+    expect(host!.querySelector('[data-testid="live-field"]')).toBeNull();
+    expect(host!.querySelector('[data-testid="pregame-winbar"]')?.textContent).toContain('KC 45%');
+    expect(host!.querySelector('[data-testid="pregame-crawl"]')?.textContent).toContain('Patrick Mahomes');
+    expect(host!.querySelector('[data-testid="pregame-crawl"]')?.textContent).toContain('Josh Allen');
+
+    // Final game: preview never shows; LiveField shows as today.
+    const buttons = [...host!.querySelectorAll<HTMLElement>('button')]
+      .filter(b => b.getAttribute('aria-label') === 'Follow BUF at KC');
+    await act(async () => buttons[buttons.length - 1].click());
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(host!.querySelector('[data-testid="live-pregame"]')).toBeNull();
+    expect(host!.querySelector('[data-testid="live-field"]')).not.toBeNull();
+  });
+
+  it('auto-picks a featured pre-game until the user taps a game, then keeps their pick',
+    async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    vi.useFakeTimers({ toNotFake: ['setTimeout', 'queueMicrotask', 'nextTick'] });
+    vi.setSystemTime(new Date('2026-11-22T16:00:00Z'));
+    const preOther = {
+      season: 2026, week: 11, seasonType: 2, id: '410', kickoff: '2026-11-22T18:00:00Z',
+      home: { id: '21', abbreviation: 'PHI', score: 0, record: '7-3' },
+      away: { id: '6', abbreviation: 'DAL', score: 0, record: '5-5' },
+      status: 'pre', clock: '', period: 0, state: null, last: null, plays: [], box: [],
+      predictor: { away: 38, home: 62 },
+    };
+    const preFeatured = {
+      season: 2026, week: 11, seasonType: 2, id: '411', kickoff: '2026-11-22T18:00:00Z',
+      home: { id: '2', abbreviation: 'BUF', score: 0, record: '8-2' },
+      away: { id: '12', abbreviation: 'KC', score: 0, record: '9-1' },
+      status: 'pre', clock: '', period: 0, state: null, last: null, plays: [], box: [],
+      predictor: { away: 45, home: 55 },
+    };
+    const allPre = [preOther, preFeatured];
+    const port = vi.fn<HostedPort>(async request => {
+      if (request.command === 'nfl.games.read') {
+        return reply({ league: 'league', board: { stale: false, source: 'ESPN',
+          at: '2026-11-22T16:00:00Z', failure: '', games: allPre } });
+      }
+      if (request.command === 'nfl.game.read') {
+        const id = (request.arguments as { game: string }).game;
+        const found = allPre.find(g => g.id === id) ?? null;
+        return reply({ league: 'league', game: found, at: '2026-11-22T16:00:00Z',
+          stale: false, words: '' });
+      }
+      if (request.command === 'lineup.read') {
+        return reply({ league: 'league', franchise: request.arguments?.franchise, week: 11,
+          starters: [{ player: 'm1', name: 'Mahomes, Patrick', team: 'KC', position: 'QB' }],
+          bench: [] });
+      }
+      if (request.command === 'projections.read') {
+        return reply({ league: 'league', season: 2026, week: 11, projections: [] });
+      }
+      throw new Error(`Unexpected read ${request.command}`);
+    });
+    const listeners: (() => void)[] = [];
+    let currentBrief = brief([myGameRow]);
+    const read = async () => currentBrief;
+    const subscribe = (load: () => void) => {
+      listeners.push(load);
+      return () => {
+        const i = listeners.indexOf(load);
+        if (i >= 0) listeners.splice(i, 1);
+      };
+    };
+    const notifyAll = () => { for (const fn of [...listeners]) fn(); };
+    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true; };
+    HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.open = false; };
+    Element.prototype.scrollIntoView ??= () => {};
+    host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+    await act(async () => root!.render(<LiveTab league={league} port={port} readBrief={read}
+      subscribe={subscribe} />));
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+
+    // Before the user taps a game, auto-pick selects the pre-game featuring matchup players.
+    expect(host!.querySelector('[data-testid="pregame-winbar"]')?.textContent).toContain('KC 45%');
+
+    // User taps DAL at PHI in the NFL strip.
+    await tap('Follow DAL at PHI');
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(host!.querySelector('[data-testid="pregame-winbar"]')?.textContent).toContain('DAL 38%');
+    const gameReadsAfterTap = port.mock.calls.filter(([r]) => r.command === 'nfl.game.read').length;
+
+    // A later brief refresh (changing matchup data) must not override the user's tapped game.
+    currentBrief = brief([{ ...myGameRow, homeProvisional: 28.0 }]);
+    await act(async () => { notifyAll(); });
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(host!.querySelector('[data-testid="pregame-winbar"]')?.textContent).toContain('DAL 38%');
+
+    // Every subsequent nfl.game.read (if any) must be for DAL at PHI (410), never KC at BUF (411).
+    const laterGameIDs = port.mock.calls
+      .filter(([r]) => r.command === 'nfl.game.read')
+      .slice(gameReadsAfterTap)
+      .map(([r]) => (r.arguments as { game: string }).game);
+    expect(laterGameIDs.every(id => id === '410')).toBe(true);
+  });
 });

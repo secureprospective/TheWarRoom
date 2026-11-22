@@ -205,12 +205,103 @@
 .live6__big small { font-size: 11px; color: var(--l6-ink3); }
 .phone-app .live6 .live6__link:hover, .phone-app .live6 .live6__seg > *:hover { background: none; }
 
+/* Pre-game Broadcast preview (mock section B), scoped under .bc-wrap */
+.live6__live .bc-wrap { background: #000; border-bottom: 1px solid #000; }
+.bc-stage {
+  position: relative; height: 150px; overflow: hidden;
+  display: grid; grid-template-columns: 1fr 1fr;
+}
+.bc-l, .bc-r {
+  display: grid; align-content: center; padding: 0 18px; gap: 2px; position: relative;
+}
+.bc-l {
+  background: linear-gradient(115deg, var(--bc-lp) 0 82%, var(--bc-ls) 82% 86%, transparent 86%);
+  color: var(--bc-lon, #fff);
+}
+.bc-r {
+  background: linear-gradient(115deg, transparent 0 14%, var(--bc-rs) 14% 18%, var(--bc-rp) 18%);
+  justify-items: end; text-align: right; color: var(--bc-ron, #fff);
+}
+.bc-stage::after {
+  content: ""; position: absolute; inset: 0; background: var(--l6-grain);
+  opacity: .6; pointer-events: none;
+}
+.bc-ab {
+  font: 700 44px/1 var(--l6-mono); letter-spacing: .02em;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, .35);
+}
+.bc-nm { font: 700 11px var(--l6-mono); letter-spacing: .24em; opacity: .88; }
+.bc-rec { font: 12px var(--l6-mono); opacity: .74; }
+.bc-vs {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2;
+  background: #000; border: 1px solid var(--l6-edge-hi); padding: 6px 10px;
+  display: grid; justify-items: center; gap: 1px;
+  font: 700 9px var(--l6-mono); letter-spacing: .16em; color: var(--l6-ink2);
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, .5); white-space: nowrap;
+}
+.bc-vs .t { font: 500 21px/1.05 var(--l6-mono); letter-spacing: 0; color: #fff; }
+.bc-cd { font: 700 8.5px var(--l6-mono); letter-spacing: .14em; color: var(--l6-amber); margin-top: 2px; }
+.bc-wp {
+  position: relative; display: flex; height: 22px; border-block: 1px solid #000;
+}
+.bc-wp span { display: block; height: 100%; }
+.bc-wp em {
+  position: absolute; top: 4px; font: 700 10.5px var(--l6-mono); font-style: normal;
+  color: #fff; letter-spacing: .06em; text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+}
+.bc-wp .l { left: 8px; }
+.bc-wp .r { right: 8px; }
+.bc-wp .c {
+  left: 50%; transform: translateX(-50%); font-size: 9px;
+  letter-spacing: .22em; color: rgba(255, 255, 255, .82);
+}
+.bc-third {
+  display: grid; grid-template-columns: auto 1fr; margin: 12px 12px;
+  background: var(--l6-tile); border: 1px solid var(--l6-edge);
+}
+.bc-tag {
+  background: var(--l6-amber); color: #000; font: 700 9px/1.15 var(--l6-mono);
+  letter-spacing: .14em; padding: 9px 9px; display: grid; align-content: center;
+}
+.bc-tx { padding: 9px 11px; display: grid; gap: 4px; min-width: 0; }
+.bc-tx b { font: 700 12px var(--l6-mono); letter-spacing: .1em; color: var(--l6-ink); }
+.bc-tx span { font: 13px/1.35 var(--l6-sans); color: var(--l6-ink2); }
+.bc-wx-credit { font: 10px/1.2 var(--l6-mono); letter-spacing: .05em; color: var(--l6-ink3); }
+.bc-crawl {
+  display: flex; align-items: stretch; min-height: 30px;
+  background: var(--l6-ink); color: #000;
+}
+.bc-live {
+  background: var(--l6-blue); color: #000; font: 700 9px var(--l6-mono);
+  letter-spacing: .16em; display: grid; place-items: center; padding: 0 9px; white-space: nowrap;
+}
+.bc-ct { overflow: hidden; flex: 1; min-width: 0; }
+.bc-cr {
+  display: flex; align-items: center; min-height: 30px; width: max-content;
+  animation: bc-mq 30s linear infinite;
+}
+@keyframes bc-mq { to { transform: translateX(-50%); } }
+.cr { font: 11px var(--l6-mono); letter-spacing: .06em; white-space: nowrap; padding: 0 10px; }
+.cr b { font-weight: 700; }
+.cr b.me { color: hsl(212, 70%, 34%); }
+.cr b.op { color: #555; }
+.bc-crawl .dot { width: 5px; height: 5px; background: #000; flex: none; }
+.bc-crawl.is-static .bc-ct { overflow-x: auto; }
+.bc-crawl.is-static .bc-cr {
+  animation: none; width: auto; flex-wrap: wrap; row-gap: 4px; padding: 5px 0;
+}
+.bc-crawl.is-static .bc-dup { display: none; }
+
 /* Reduced motion: instant state changes everywhere */
 .live6.rm *, .live6.rm *::before, .live6.rm *::after {
   animation: none !important; transition: none !important;
 }
+.live6.rm .bc-cr { width: auto; flex-wrap: wrap; row-gap: 4px; padding: 5px 0; }
+.live6.rm .bc-dup { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .live6 *, .live6 *::before, .live6 *::after {
     animation: none !important; transition: none !important;
   }
+  .bc-cr { width: auto; flex-wrap: wrap; row-gap: 4px; padding: 5px 0; }
+  .bc-dup { display: none; }
 }

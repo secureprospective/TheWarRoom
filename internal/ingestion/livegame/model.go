@@ -46,21 +46,42 @@ type BoxRow struct {
 	Name  string   `json:"name"`
 	Stats []string `json:"stats"`
 }
+type Predictor struct {
+	Home float64 `json:"home"`
+	Away float64 `json:"away"`
+}
+type Venue struct {
+	Name    string `json:"name"`
+	City    string `json:"city,omitempty"`
+	State   string `json:"state,omitempty"`
+	Country string `json:"country,omitempty"`
+	Indoor  bool   `json:"indoor,omitempty"`
+}
+type Weather struct {
+	Text      string `json:"text,omitempty"`
+	TempF     *int   `json:"tempF,omitempty"`
+	Wind      string `json:"wind,omitempty"`
+	PrecipPct *int   `json:"precipPct,omitempty"`
+	Source    string `json:"source,omitempty"`
+}
 type Game struct {
-	Season     int       `json:"season,omitempty"`
-	Week       int       `json:"week,omitempty"`
-	SeasonType int       `json:"seasonType,omitempty"`
-	ID         string    `json:"id"`
-	Kickoff    time.Time `json:"kickoff" ts_type:"string"`
-	Home       Team      `json:"home"`
-	Away       Team      `json:"away"`
-	Status     string    `json:"status"`
-	Clock      string    `json:"clock"`
-	Period     int       `json:"period"`
-	State      *State    `json:"state"`
-	Last       *Play     `json:"last"`
-	Box        []Box     `json:"box"`
-	Plays      []Play    `json:"plays"`
+	Season     int        `json:"season,omitempty"`
+	Week       int        `json:"week,omitempty"`
+	SeasonType int        `json:"seasonType,omitempty"`
+	ID         string     `json:"id"`
+	Kickoff    time.Time  `json:"kickoff" ts_type:"string"`
+	Home       Team       `json:"home"`
+	Away       Team       `json:"away"`
+	Status     string     `json:"status"`
+	Clock      string     `json:"clock"`
+	Period     int        `json:"period"`
+	State      *State     `json:"state"`
+	Last       *Play      `json:"last"`
+	Box        []Box      `json:"box"`
+	Plays      []Play     `json:"plays"`
+	Predictor  *Predictor `json:"predictor,omitempty"`
+	Venue      *Venue     `json:"venue,omitempty"`
+	Weather    *Weather   `json:"weather,omitempty"`
 }
 
 func digits(s string) bool {

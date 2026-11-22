@@ -12311,6 +12311,60 @@ export namespace livegame {
 		}
 	}
 	
+	export class Weather {
+	    text?: string;
+	    tempF?: number;
+	    wind?: string;
+	    precipPct?: number;
+	    source?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Weather(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.text = source["text"];
+	        this.tempF = source["tempF"];
+	        this.wind = source["wind"];
+	        this.precipPct = source["precipPct"];
+	        this.source = source["source"];
+	    }
+	}
+	export class Venue {
+	    name: string;
+	    city?: string;
+	    state?: string;
+	    country?: string;
+	    indoor?: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Venue(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.city = source["city"];
+	        this.state = source["state"];
+	        this.country = source["country"];
+	        this.indoor = source["indoor"];
+	    }
+	}
+	export class Predictor {
+	    home: number;
+	    away: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Predictor(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.home = source["home"];
+	        this.away = source["away"];
+	    }
+	}
 	export class Play {
 	    id: string;
 	    sequence: number;
@@ -12414,6 +12468,9 @@ export namespace livegame {
 	    last?: Play;
 	    box: Box[];
 	    plays: Play[];
+	    predictor?: Predictor;
+	    venue?: Venue;
+	    weather?: Weather;
 	
 	    static createFrom(source: any = {}) {
 	        return new Game(source);
@@ -12435,6 +12492,9 @@ export namespace livegame {
 	        this.last = this.convertValues(source["last"], Play);
 	        this.box = this.convertValues(source["box"], Box);
 	        this.plays = this.convertValues(source["plays"], Play);
+	        this.predictor = this.convertValues(source["predictor"], Predictor);
+	        this.venue = this.convertValues(source["venue"], Venue);
+	        this.weather = this.convertValues(source["weather"], Weather);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -12493,6 +12553,9 @@ export namespace livegame {
 		    return a;
 		}
 	}
+	
+	
+	
 	
 	
 

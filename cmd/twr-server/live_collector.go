@@ -43,6 +43,7 @@ type liveCollector struct {
 	// games holds the latest parsed scoreboard for nfl.games.read; nil keeps it unset.
 	games       *leagueservice.LiveGames
 	client      *http.Client
+	pregame     *pregameFetcher
 	poller      now.LiveStatsPoller
 	published   bool
 	restoring   bool
@@ -188,7 +189,7 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 	c.prepareSummaries(look, endpoints, games, previousBoard)
 	c.packets.prefetched = &packet
 	c.poller.Poll(look, now.LiveStatsRun{Evidence: c, RequireComplete: true, Network: c.packets, Client: c.client, Season: season, Week: func() int { return week }, Scoreboard: scoreboard})
-	c.finishTick(games, endpoints.Summary, season, week)
+	c.finishTick(ctx, games, endpoints, season, week)
 	return c.interval(games)
 }
 
@@ -226,12 +227,15 @@ func (c *liveCollector) readBoard(ctx context.Context, endpoints livegame.Endpoi
 	return games, season, week, true
 }
 
-// finishTick holds each live game detail for nfl.game.read, then publishes scores if anything changed.
-func (c *liveCollector) finishTick(games []livegame.Game, summary string, season, week int) {
+// finishTick holds cached game details, publishes scores, then triggers background pre-game warming.
+func (c *liveCollector) finishTick(
+	ctx context.Context, games []livegame.Game, endpoints livegame.Endpoints, season, week int,
+) {
 	if c.finished == [2]int{} {
-		c.holdDetails(games, summary)
+		c.holdDetails(games, endpoints)
 	}
 	c.notifyScores(season, week)
+	c.schedulePregame(ctx, endpoints, games)
 }
 
 func (c *liveCollector) ensureClient() {
@@ -320,6 +324,7 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 		}
 		c := &liveCollector{pins: pins, identities: pins.files.family.Over(pins.files.reference), path: filepath.Join(directory, "checkpoint.json"), publisher: publisher, games: games,
 			packets: &livePackets{network: http.DefaultTransport, held: rawLiveCheckpoint{Version: 1, Packets: map[string]rawLivePacket{}, IDs: map[string]map[string]string{}}}}
+		defer c.stopPregame()
 		if publisher == nil {
 			log.Print("server live: no scores publisher; change streams will not hear about live scores")
 		}
@@ -342,11 +347,17 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 	return func() { cancel(); <-done; <-linked }
 }
 
-// holdDetails reuses acquired summary packets; no extra requests or cadence changes.
-func (c *liveCollector) holdDetails(games []livegame.Game, endpoint string) {
+// holdDetails reuses acquired summary packets and cached pre-game details without network I/O.
+func (c *liveCollector) holdDetails(games []livegame.Game, endpoints livegame.Endpoints) {
 	details := make(map[string]leagueservice.NFLGame)
 	for _, board := range games {
-		packet, ok := c.packets.held.Packets[strings.ReplaceAll(endpoint, "{id}", board.ID)]
+		if board.Status == "pre" {
+			if detail, ok := c.cachedPregameDetail(board, endpoints.Summary); ok {
+				details[board.ID] = detail
+			}
+			continue
+		}
+		packet, ok := c.packets.held.Packets[strings.ReplaceAll(endpoints.Summary, "{id}", board.ID)]
 		if !ok {
 			continue
 		}
@@ -361,7 +372,7 @@ func (c *liveCollector) holdDetails(games []livegame.Game, endpoint string) {
 		var behind bool
 		if game, behind = boardAhead(game, board); behind {
 			// Refetch next tick instead of reusing a summary the board has already passed.
-			address := strings.ReplaceAll(endpoint, "{id}", board.ID)
+			address := strings.ReplaceAll(endpoints.Summary, "{id}", board.ID)
 			c.packets.mu.Lock()
 			delete(c.packets.nextSummary, address)
 			c.packets.mu.Unlock()

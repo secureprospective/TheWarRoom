@@ -9,8 +9,12 @@ export type Play = { id: string; sequence: number; text: string; clock: string; 
 export type Team = { id: string; abbreviation: string; score: number; record?: string };
 export type Box = { team: string; category: string; labels: string[];
   rows: { name: string; stats: string[] }[] };
+export type Predictor = { home: number; away: number };
+export type Venue = { name: string; city?: string; state?: string; country?: string; indoor?: boolean };
+export type Weather = { text?: string; tempF?: number; wind?: string; precipPct?: number; source?: string };
 export type Game = { id: string; kickoff: string; home: Team; away: Team; status: 'pre' | 'in' | 'post';
-  clock: string; period: number; state: FieldState | null; last: Play | null; box: Box[]; plays: Play[] };
+  clock: string; period: number; state: FieldState | null; last: Play | null; box: Box[]; plays: Play[];
+  predictor?: Predictor; venue?: Venue; weather?: Weather };
 export type Spine = { player: { id: string; name: string; team: string; mine: boolean;
   photo: { src: string; alt: string } }; play: Play; game: string };
 export type LiveView = { games: Game[]; followed: Game | null; source: string; asOf: string; failure: string;
@@ -60,16 +64,53 @@ function box(v: unknown, p: string): Box {
   });
   return { team: text(r.team, p), category: text(r.category, p), labels, rows };
 }
+function pct(v: unknown, p: string): number {
+  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 100)
+    throw new Error(`${p}: expected percentage 0..100`);
+  return v;
+}
+function predictor(v: unknown, p: string): Predictor | undefined {
+  if (v === undefined || v === null) return undefined;
+  const r = object(v, p, ['home', 'away']);
+  return { home: pct(r.home, `${p}.home`), away: pct(r.away, `${p}.away`) };
+}
+function venue(v: unknown, p: string): Venue | undefined {
+  if (v === undefined || v === null) return undefined;
+  const r = object(v, p, ['name', 'city', 'state', 'country', 'indoor']);
+  const out: Venue = { name: text(r.name, `${p}.name`) };
+  if (r.city !== undefined) out.city = text(r.city, `${p}.city`);
+  if (r.state !== undefined) out.state = text(r.state, `${p}.state`);
+  if (r.country !== undefined) out.country = text(r.country, `${p}.country`);
+  if (r.indoor !== undefined) out.indoor = bool(r.indoor, `${p}.indoor`);
+  return out;
+}
+function weather(v: unknown, p: string): Weather | undefined {
+  if (v === undefined || v === null) return undefined;
+  const r = object(v, p, ['text', 'tempF', 'wind', 'precipPct', 'source']);
+  const out: Weather = {};
+  if (r.text !== undefined) out.text = text(r.text, `${p}.text`);
+  if (r.tempF !== undefined && r.tempF !== null) out.tempF = count(r.tempF, `${p}.tempF`, 140, -60);
+  if (r.wind !== undefined) out.wind = text(r.wind, `${p}.wind`);
+  if (r.precipPct !== undefined && r.precipPct !== null)
+    out.precipPct = count(r.precipPct, `${p}.precipPct`, 100);
+  if (r.source !== undefined) out.source = text(r.source, `${p}.source`);
+  return out;
+}
 function game(v: unknown, p: string): Game {
   const r = object(v, p, ['id', 'season', 'week', 'seasonType', 'kickoff', 'home', 'away', 'status', 'clock',
-    'period', 'state', 'last',
-    'box', 'plays']);
+    'period', 'state', 'last', 'box', 'plays', 'predictor', 'venue', 'weather']);
+  const pred = predictor(r.predictor, `${p}.predictor`);
+  const ven = venue(r.venue, `${p}.venue`);
+  const wx = weather(r.weather, `${p}.weather`);
   return { id: requiredText(r.id, p), kickoff: timestamp(r.kickoff, p), home: team(r.home, p),
     away: team(r.away, p),
     status: choice(r.status, p, ['pre', 'in', 'post']), clock: text(r.clock, p),
     period: count(r.period, p, 10),
     state: field(r.state, p), last: r.last === null ? null : play(r.last, p), box: array(r.box, p, box),
-    plays: array(r.plays, p, play) };
+    plays: array(r.plays, p, play),
+    ...(pred ? { predictor: pred } : {}),
+    ...(ven ? { venue: ven } : {}),
+    ...(wx ? { weather: wx } : {}) };
 }
 function spine(v: unknown, p: string): Spine {
   const r = object(v, p, ['player', 'play', 'game']);
