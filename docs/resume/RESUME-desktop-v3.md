@@ -1,3 +1,6 @@
+STATUS 11-22: the 11-21 main push landed (#458 live pre-game read, #459 North Star v3 + product decisions,
+#460 docs front door). Current work: see RESUME-build-plan.md.
+
 # COMPACT POINT 11-21 ~3:45 PM CT — Live checked, fixes 1-2 shipped to lab v43, MAIN PUSH IN FLIGHT (newest; READ FIRST)
 
 ## NEXT (his instruction): work through T673, T674, T675, T676 in that order
