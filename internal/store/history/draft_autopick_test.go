@@ -554,3 +554,245 @@ func TestAutoPickSpeed32Team3RoundPass(t *testing.T) {
 	t.Logf("32-team 3-round startup pass (31 automatic picks to human turn): %v (%.2f ms/pick)",
 		elapsed, float64(elapsed.Microseconds())/1000.0/31.0)
 }
+
+func TestAutoPickFillsStartingNeedsBeforeThirdWR(t *testing.T) {
+	t.Parallel()
+	facts := nativecheck.Facts{
+		"2001": {Name: "WR 1", Position: leaguerules.WR, Team: "MIN"},
+		"2002": {Name: "WR 2", Position: leaguerules.WR, Team: "CIN"},
+		"2003": {Name: "WR 3", Position: leaguerules.WR, Team: "DAL"},
+		"2004": {Name: "WR 4", Position: leaguerules.WR, Team: "PHI"},
+		"2005": {Name: "WR 5", Position: leaguerules.WR, Team: "DET"},
+		"2006": {Name: "WR 6", Position: leaguerules.WR, Team: "MIA"},
+		"2007": {Name: "WR 7", Position: leaguerules.WR, Team: "LAR"},
+		"2008": {Name: "WR 8", Position: leaguerules.WR, Team: "SF"},
+		"2009": {Name: "PK 1", Position: leaguerules.PK, Team: "BAL"},
+		"2010": {Name: "PK 2", Position: leaguerules.PK, Team: "KC"},
+		"2011": {Name: "CB 1", Position: leaguerules.CB, Team: "DEN"},
+		"2012": {Name: "CB 2", Position: leaguerules.CB, Team: "NYJ"},
+		"2013": {Name: "CB 3", Position: leaguerules.CB, Team: "HOU"},
+		"2014": {Name: "CB 4", Position: leaguerules.CB, Team: "KC"},
+	}
+	order := []string{"franchise.01", "franchise.02"}
+	f := newAutoPickFixture(t, "native.autofill", commissioner.PresetDefault32, 2, 6, "", order, facts)
+	f.setRule("lineup.positions",
+		`{"WR":{"min":1,"max":2},"PK":{"min":1,"max":1},"CB":{"min":2,"max":2}}`)
+	f.setRule("lineup.groups",
+		`{"offense":{"min":2,"max":2},"defense":{"min":2,"max":2},"total":{"min":5,"max":5}}`)
+	f.openStartup()
+
+	rank := fixedDraftRanking{order: []string{
+		"2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008",
+		"2009", "2010", "2011", "2012", "2013", "2014",
+	}}
+	if err := f.s.ProcessDueAutoPicks(t.Context(), f.league, f.c.now, facts, rank); err != nil {
+		t.Fatal(err)
+	}
+
+	d := f.draftReading("franchise.01")
+	if !d.Draft.Exhausted {
+		t.Fatalf("draft not exhausted; onClock = %+v", d.Draft.OnClock)
+	}
+	byTeam := map[string][]leaguerules.Position{}
+	for _, p := range d.Draft.Picks {
+		byTeam[p.Owner] = append(byTeam[p.Owner], facts[p.Player].Position)
+	}
+	want := []leaguerules.Position{
+		leaguerules.WR, leaguerules.WR, leaguerules.PK,
+		leaguerules.CB, leaguerules.CB, leaguerules.WR,
+	}
+	for _, team := range order {
+		if !slices.Equal(byTeam[team], want) {
+			t.Fatalf("%s picked positions %v, want %v", team, byTeam[team], want)
+		}
+	}
+}
+
+func fullStartupPoolFacts(perPos map[leaguerules.Position]int,
+	order []leaguerules.Position) (nativecheck.Facts, []string) {
+	facts := nativecheck.Facts{}
+	ranked := []string{}
+	seq := 1
+	for _, pos := range order {
+		for i := 1; i <= perPos[pos]; i++ {
+			id := fmt.Sprintf("%05d", 10000+seq)
+			seq++
+			facts[id] = nativecheck.PlayerFacts{
+				Name:     fmt.Sprintf("%s %03d", pos, i),
+				Position: pos,
+				Team:     "KC",
+			}
+			ranked = append(ranked, id)
+		}
+	}
+	return facts, ranked
+}
+
+func bestLegalLineup(rules leaguerules.LineupRules, players []commissioner.NativePlayer,
+	facts nativecheck.Facts) []nativecheck.Starter {
+	byPos := map[leaguerules.Position][]string{}
+	for _, p := range players {
+		if pf, ok := facts.Of(p.ID); ok && pf.Position != "" {
+			byPos[pf.Position] = append(byPos[pf.Position], p.ID)
+		}
+	}
+	starters := []nativecheck.Starter{}
+	used := map[leaguerules.Position]int{}
+	add := func(pos leaguerules.Position) bool {
+		idx := used[pos]
+		if idx >= len(byPos[pos]) {
+			return false
+		}
+		used[pos] = idx + 1
+		starters = append(starters, nativecheck.Starter{
+			ID: byPos[pos][idx], Position: pos, Points: 10000,
+		})
+		return true
+	}
+	limits := rules.Positions.Value
+	for pos, b := range limits {
+		if pos == leaguerules.OL {
+			starters = append(starters, nativecheck.Starter{
+				ID: "ol-card", Position: leaguerules.OL, Points: 10000,
+			})
+			continue
+		}
+		if b.Min.State == leaguerules.IsKnown {
+			for i := 0; i < b.Min.Value; i++ {
+				add(pos)
+			}
+		}
+	}
+	fillGroup := func(positions []leaguerules.Position, target int) {
+		have := 0
+		for _, pos := range positions {
+			have += used[pos]
+		}
+		for have < target {
+			added := false
+			for _, pos := range positions {
+				b := limits[pos]
+				if b.Max.State == leaguerules.IsKnown && used[pos] >= b.Max.Value {
+					continue
+				}
+				if add(pos) {
+					have++
+					added = true
+					break
+				}
+			}
+			if !added {
+				break
+			}
+		}
+	}
+	offPos := []leaguerules.Position{leaguerules.QB, leaguerules.RB, leaguerules.WR, leaguerules.TE}
+	defPos := []leaguerules.Position{
+		leaguerules.DT, leaguerules.DE, leaguerules.LB, leaguerules.CB, leaguerules.S,
+	}
+	if b, ok := rules.Groups.Value[leaguerules.Offense]; ok && b.Min.State == leaguerules.IsKnown {
+		fillGroup(offPos, b.Min.Value)
+	}
+	if b, ok := rules.Groups.Value[leaguerules.Defense]; ok && b.Min.State == leaguerules.IsKnown {
+		fillGroup(defPos, b.Min.Value)
+	}
+	return starters
+}
+
+func TestAutoPickFullDefault32StartupLegalLineups(t *testing.T) {
+	t.Parallel()
+	const teams = 32
+	const rounds = 18
+	order := make([]string, teams)
+	for i := 1; i <= teams; i++ {
+		order[i-1] = fmt.Sprintf("franchise.%02d", i)
+	}
+	// Rank WR/RB first and PK/CB last so pure best-available would leave illegal lineups.
+	posOrder := []leaguerules.Position{
+		leaguerules.WR, leaguerules.RB, leaguerules.LB, leaguerules.TE,
+		leaguerules.QB, leaguerules.DE, leaguerules.DT, leaguerules.S,
+		leaguerules.CB, leaguerules.PK,
+	}
+	facts, rankedOrder := fullStartupPoolFacts(map[leaguerules.Position]int{
+		leaguerules.WR: 180, leaguerules.RB: 140, leaguerules.LB: 160, leaguerules.TE: 50,
+		leaguerules.QB: 40, leaguerules.DE: 50, leaguerules.DT: 50, leaguerules.S: 50,
+		leaguerules.CB: 80, leaguerules.PK: 40,
+	}, posOrder)
+
+	f := newAutoPickFixture(t, "native.autofull32", commissioner.PresetDefault32,
+		teams, rounds, "", order, facts)
+	f.seat("franchise.32", "owner.human")
+	f.openStartup()
+
+	rank := fixedDraftRanking{order: rankedOrder}
+	humanIdx := 0
+	start := time.Now()
+	for {
+		if err := f.s.ProcessDueAutoPicks(t.Context(), f.league, f.c.now, facts, rank); err != nil {
+			t.Fatal(err)
+		}
+		d := f.draftReading("franchise.32")
+		if d.Draft.Exhausted {
+			break
+		}
+		if d.Draft.OnClock == nil || d.Draft.OnClock.Owner != "franchise.32" {
+			t.Fatalf("unexpected onClock = %+v", d.Draft.OnClock)
+		}
+		taken := map[string]bool{}
+		for _, p := range d.Draft.Picks {
+			if p.Player != "" {
+				taken[p.Player] = true
+			}
+		}
+		for humanIdx < len(rankedOrder) && taken[rankedOrder[humanIdx]] {
+			humanIdx++
+		}
+		pickPlayer := rankedOrder[humanIdx]
+		f.c.now = f.c.now.Add(time.Second)
+		recs, err := f.s.nativeRecords(t.Context(), f.league)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gate, err := commissioner.NativeActionGate(f.league, recs, "franchise.32",
+			"draft_pick", f.c.now, time.UTC)
+		if err != nil {
+			t.Fatal(err)
+		}
+		permit, open := gate.Permit()
+		if !open {
+			t.Fatalf("draft_pick gate closed: %s", gate.Sentence)
+		}
+		if _, err := f.s.RecordDraftPick(t.Context(), permit, commissioner.DraftPickInput{
+			League: f.league, Season: 2026, Franchise: "franchise.32", Player: pickPlayer,
+			Request: fmt.Sprintf("human.%d", humanIdx), Expected: int64(len(recs)), Startup: true,
+		}, "owner.human", facts, time.UTC); err != nil {
+			t.Fatalf("human pick %s: %v", pickPlayer, err)
+		}
+		f.c.now = f.c.now.Add(time.Second)
+	}
+	elapsed := time.Since(start)
+	t.Logf("32-team %d-round Default32 startup draft (31 vacant seats, %d picks): %v",
+		rounds, teams*rounds, elapsed)
+
+	recs, err := f.s.nativeRecords(t.Context(), f.league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assets, err := commissioner.NativeAssetsReading(f.league, recs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byFranchise := map[string][]commissioner.NativePlayer{}
+	for _, p := range assets.Snapshot.Players {
+		byFranchise[p.Franchise] = append(byFranchise[p.Franchise], p)
+	}
+	rules := leaguerules.Default32().Lineup
+	for i := 1; i <= 31; i++ {
+		fr := fmt.Sprintf("franchise.%02d", i)
+		starters := bestLegalLineup(rules, byFranchise[fr], facts)
+		v := nativecheck.JudgeLineup(rules, true, starters)
+		if v.Status != nativecheck.LineupValid {
+			t.Fatalf("%s cannot field a legal Default32 lineup: %s", fr, v.Words)
+		}
+	}
+}

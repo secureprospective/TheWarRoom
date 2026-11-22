@@ -173,3 +173,89 @@ func appendBound(problems []LineupProblem, name string, n int, b leaguerules.Bou
 	}
 	return append(problems, LineupProblem{Subject: name, Words: words, Kind: kind})
 }
+
+// LineupNeedsPosition reports whether adding a player at pos moves a franchise holding held
+// closer to a legal starting lineup under rules: pos has an unmet position minimum, or pos
+// belongs to a lineup group with an unmet group minimum and pos has not reached its maximum.
+func LineupNeedsPosition(rules leaguerules.LineupRules, held map[leaguerules.Position]int,
+	pos leaguerules.Position) bool {
+	if pos == "" ||
+		(rules.Positions.State != leaguerules.IsKnown && rules.Groups.State != leaguerules.IsKnown) {
+		return false
+	}
+	if rules.Positions.State == leaguerules.IsKnown {
+		b, ok := rules.Positions.Value[pos]
+		if !ok {
+			return false
+		}
+		if b.Min.State == leaguerules.IsKnown && held[pos] < b.Min.Value {
+			return true
+		}
+		if b.Max.State == leaguerules.IsKnown && held[pos] >= b.Max.Value {
+			return false
+		}
+	}
+	if rules.Groups.State != leaguerules.IsKnown {
+		return false
+	}
+	return groupNeedsPosition(rules, held, pos)
+}
+
+func groupNeedsPosition(rules leaguerules.LineupRules, held map[leaguerules.Position]int,
+	pos leaguerules.Position) bool {
+	groups := rules.Groups.Value
+	reserved := reservedByGroup(rules, held)
+	side := sideOf(pos)
+	if side == leaguerules.Offense || side == leaguerules.Defense {
+		if b, ok := groups[side]; ok {
+			if b.Min.State == leaguerules.IsKnown && reserved[side] < b.Min.Value {
+				return true
+			}
+			if b.Max.State == leaguerules.IsKnown && reserved[side] >= b.Max.Value {
+				return false
+			}
+		}
+	}
+	totalBounds, ok := groups[leaguerules.Total]
+	if !ok || totalBounds.Min.State != leaguerules.IsKnown {
+		return false
+	}
+	total := reserved[leaguerules.Total] +
+		effectiveGroupCount(reserved[leaguerules.Offense], groups[leaguerules.Offense]) +
+		effectiveGroupCount(reserved[leaguerules.Defense], groups[leaguerules.Defense])
+	return total < totalBounds.Min.Value
+}
+
+func reservedByGroup(rules leaguerules.LineupRules,
+	held map[leaguerules.Position]int) map[leaguerules.LineupGroup]int {
+	out := map[leaguerules.LineupGroup]int{}
+	if rules.Positions.State == leaguerules.IsKnown {
+		for p, b := range rules.Positions.Value {
+			n := held[p]
+			if b.Max.State == leaguerules.IsKnown && n > b.Max.Value {
+				n = b.Max.Value
+			}
+			if b.Min.State == leaguerules.IsKnown && n < b.Min.Value {
+				n = b.Min.Value
+			}
+			out[sideOf(p)] += n
+		}
+		return out
+	}
+	for p, n := range held {
+		if p != "" && n > 0 {
+			out[sideOf(p)] += n
+		}
+	}
+	return out
+}
+
+func effectiveGroupCount(n int, b leaguerules.Bounds) int {
+	if b.Min.State == leaguerules.IsKnown && n < b.Min.Value {
+		n = b.Min.Value
+	}
+	if b.Max.State == leaguerules.IsKnown && n > b.Max.Value {
+		n = b.Max.Value
+	}
+	return n
+}
