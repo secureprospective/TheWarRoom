@@ -25,13 +25,14 @@ const (
 var nflStadiumsJSON []byte
 
 type Stadium struct {
-	Team  string  `json:"team,omitempty"`
-	Name  string  `json:"name"`
-	City  string  `json:"city"`
-	State string  `json:"state,omitempty"`
-	Lat   float64 `json:"lat"`
-	Lon   float64 `json:"lon"`
-	Dome  bool    `json:"dome"`
+	Team        string  `json:"team,omitempty"`
+	Name        string  `json:"name"`
+	City        string  `json:"city"`
+	State       string  `json:"state,omitempty"`
+	Lat         float64 `json:"lat"`
+	Lon         float64 `json:"lon"`
+	Dome        bool    `json:"dome"`
+	Retractable bool    `json:"retractable,omitempty"`
 }
 
 func (s Stadium) Validate() error {
@@ -131,7 +132,7 @@ func (c *WeatherCache) Resolve(ctx context.Context, g *livegame.Game) {
 		g.Weather = nil
 		return
 	}
-	if st.Dome {
+	if st.Dome && !st.Retractable {
 		if g.Venue != nil {
 			g.Venue.Indoor = true
 		}
@@ -223,8 +224,14 @@ func (c *WeatherCache) openMeteoWeather(
 		weather = nil
 	}
 
+	writeAt := c.clock()
 	c.mu.Lock()
-	c.entries[key] = weatherEntry{weather: cloneWeather(weather), expires: now.Add(ttl)}
+	for k, entry := range c.entries {
+		if !writeAt.Before(entry.expires) {
+			delete(c.entries, k)
+		}
+	}
+	c.entries[key] = weatherEntry{weather: cloneWeather(weather), expires: writeAt.Add(ttl)}
 	c.mu.Unlock()
 	return weather
 }

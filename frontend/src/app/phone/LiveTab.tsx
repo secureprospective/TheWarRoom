@@ -56,6 +56,7 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
   const [failure, setFailure] = useState('');
   const [tick, setTick] = useState(0);
   const [picked, pick] = useState<string>();
+  const [pickedGame, setPickedGame] = useState(false);
   const [box, setBox] = useState<'nfl' | 'lg'>('nfl');
   const [sheet, setSheet] = useState<Sheet>();
   const now = useNow(30_000);
@@ -83,15 +84,15 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
     [followed, selected, sides, brief, mine],
   );
   const preferKey = useMemo(() => {
-    if (!games.length || games.some(g => g.status === 'in')) return '';
+    if (pickedGame || !games.length || games.some(g => g.status === 'in')) return '';
     const pre = games.filter(g => g.status === 'pre');
     if (!pre.length) return '';
     const featured = pre.find(g => matchupGuysInGame(g, selected, sides, brief, mine).length > 0);
     return followKey(featured ?? pre[0]);
-  }, [games, selected, sides, brief, mine]);
+  }, [pickedGame, games, selected, sides, brief, mine]);
   useEffect(() => {
-    if (preferKey) live.prefer(preferKey);
-  }, [preferKey, live.prefer]);
+    if (!pickedGame && preferKey) live.prefer(preferKey);
+  }, [pickedGame, preferKey, live.prefer]);
   const toBoxes = (which: 'nfl' | 'lg') => {
     setBox(which);
     boxes.current?.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
@@ -138,7 +139,7 @@ function LiveBody({ league, port, readBrief, subscribe, forcedReduced }: {
         {games.map(g => <HQAct key={g.id}
           className={`gc live6__gc${g.id === followed?.id ? ' on is-on' : ''}`}
           label={`Follow ${g.away.abbreviation} at ${g.home.abbreviation}`}
-          onAction={() => live.follow(followKey(g))}>
+          onAction={() => { setPickedGame(true); live.follow(followKey(g)); }}>
           <span>{g.away.abbreviation}<b>{g.status === 'pre' ? '' : g.away.score}</b></span>
           <span>{g.home.abbreviation}<b>{g.status === 'pre' ? '' : g.home.score}</b></span>
           <em>{clockWords(g)}</em>

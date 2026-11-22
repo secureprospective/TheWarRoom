@@ -105,3 +105,47 @@ func TestNFLGameDetailsClonePregameFields(t *testing.T) {
 		t.Fatalf("reader mutated held weather: %v %+v", err, reread.Game.Weather)
 	}
 }
+
+func TestMergePregameUpdatesPreOnlyWithoutClobberingLiveOrFinal(t *testing.T) {
+	at := time.Date(2026, 11, 22, 16, 0, 0, 0, time.UTC)
+	holder := &LiveGames{now: func() time.Time { return at }}
+	service := New(nil).WithLiveGames(holder)
+	holder.Set([]livegame.Game{
+		{ID: "401", Status: "in", Home: livegame.Team{Abbreviation: "KC", Score: 7}},
+		{ID: "402", Status: "pre", Home: livegame.Team{Abbreviation: "BUF"}},
+		{ID: "403", Status: "post", Home: livegame.Team{Abbreviation: "DET", Score: 21}},
+	}, at, "ESPN")
+	live := livegame.Game{ID: "401", Status: "in", Home: livegame.Team{Abbreviation: "KC", Score: 7}}
+	final := livegame.Game{ID: "403", Status: "post", Home: livegame.Team{Abbreviation: "DET", Score: 21}}
+	holder.SetDetails(map[string]NFLGame{
+		"401": {Game: &live, At: at},
+		"403": {Game: &final, At: at},
+	})
+	stalePreLive := livegame.Game{ID: "401", Status: "pre", Predictor: &livegame.Predictor{Home: 50}}
+	freshPre := livegame.Game{ID: "402", Status: "pre", Predictor: &livegame.Predictor{Home: 59.1}}
+	stalePreFinal := livegame.Game{ID: "403", Status: "pre", Predictor: &livegame.Predictor{Home: 60}}
+	offBoard := livegame.Game{ID: "999", Status: "pre", Predictor: &livegame.Predictor{Home: 55}}
+	holder.MergePregame(map[string]NFLGame{
+		"401": {Game: &stalePreLive, At: at},
+		"402": {Game: &freshPre, At: at},
+		"403": {Game: &stalePreFinal, At: at},
+		"999": {Game: &offBoard, At: at},
+	})
+
+	dLive, err := service.TargetNFLGame("native.test", "401")
+	if err != nil || dLive.Game == nil || dLive.Game.Status != "in" || dLive.Game.Home.Score != 7 {
+		t.Fatalf("live game overwritten by MergePregame: %v %+v", err, dLive)
+	}
+	dPre, err := service.TargetNFLGame("native.test", "402")
+	if err != nil || dPre.Game == nil || dPre.Game.Predictor == nil || dPre.Game.Predictor.Home != 59.1 {
+		t.Fatalf("pregame detail not merged: %v %+v", err, dPre)
+	}
+	dFinal, err := service.TargetNFLGame("native.test", "403")
+	if err != nil || dFinal.Game == nil || dFinal.Game.Status != "post" || dFinal.Game.Home.Score != 21 {
+		t.Fatalf("final game overwritten by MergePregame: %v %+v", err, dFinal)
+	}
+	dOff, err := service.TargetNFLGame("native.test", "999")
+	if err != nil || dOff.Game != nil {
+		t.Fatalf("off-board pregame merged: %v %+v", err, dOff)
+	}
+}

@@ -23,12 +23,57 @@ func (g *LiveGames) SetDetails(details map[string]NFLGame) {
 	if g == nil {
 		return
 	}
+	g.detailMu.Lock()
+	defer g.detailMu.Unlock()
 	held := make(map[string]NFLGame, len(details))
 	for id, detail := range details {
 		detail.Game = cloneLiveGame(detail.Game)
 		held[id] = detail
 	}
 	g.details.Store(&held)
+}
+
+// MergePregame updates held details for pre-game entries without touching live or final games.
+func (g *LiveGames) MergePregame(updates map[string]NFLGame) {
+	if g == nil || len(updates) == 0 {
+		return
+	}
+	g.detailMu.Lock()
+	defer g.detailMu.Unlock()
+	next := make(map[string]NFLGame, len(updates))
+	if current := g.details.Load(); current != nil {
+		for id, detail := range *current {
+			next[id] = detail
+		}
+	}
+	board := g.held.Load()
+	changed := false
+	for id, detail := range updates {
+		if detail.Game == nil || detail.Game.Status != "pre" || !canMergePregame(board, next, id) {
+			continue
+		}
+		detail.Game = cloneLiveGame(detail.Game)
+		next[id] = detail
+		changed = true
+	}
+	if changed {
+		g.details.Store(&next)
+	}
+}
+
+func canMergePregame(board *livegame.Held, current map[string]NFLGame, id string) bool {
+	if existing, ok := current[id]; ok && existing.Game != nil && existing.Game.Status != "pre" {
+		return false
+	}
+	if board == nil {
+		return true
+	}
+	for _, game := range board.Games {
+		if game.ID == id {
+			return game.Status == "pre"
+		}
+	}
+	return false
 }
 
 func cloneLiveGame(game *livegame.Game) *livegame.Game {

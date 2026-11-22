@@ -41,17 +41,15 @@ type liveCollector struct {
 	path       string
 	publisher  scoresPublisher
 	// games holds the latest parsed scoreboard for nfl.games.read; nil keeps it unset.
-	games        *leagueservice.LiveGames
-	client       *http.Client
-	preClient    *http.Client
-	preSummaries map[string]preSummary
-	weather      *now.WeatherCache
-	poller       now.LiveStatsPoller
-	published    bool
-	restoring    bool
-	board        []livegame.Game
-	scoreDigest  string
-	notified     string
+	games       *leagueservice.LiveGames
+	client      *http.Client
+	pregame     *pregameFetcher
+	poller      now.LiveStatsPoller
+	published   bool
+	restoring   bool
+	board       []livegame.Game
+	scoreDigest string
+	notified    string
 	// finished is the season and week this collector holds as a finished week; zero follows the current board.
 	finished [2]int
 	// fetched is when a finished week was last read from the sources; tried is the last attempt.
@@ -189,10 +187,9 @@ func (c *liveCollector) poll(ctx context.Context) time.Duration {
 		c.packets.held = rawLiveCheckpoint{Version: 1, Season: season, Week: week, Packets: map[string]rawLivePacket{endpoints.ESPN: packet}, IDs: map[string]map[string]string{}}
 	}
 	c.prepareSummaries(look, endpoints, games, previousBoard)
-	c.preparePreSummaries(look, endpoints, games)
 	c.packets.prefetched = &packet
 	c.poller.Poll(look, now.LiveStatsRun{Evidence: c, RequireComplete: true, Network: c.packets, Client: c.client, Season: season, Week: func() int { return week }, Scoreboard: scoreboard})
-	c.finishTick(look, games, endpoints, season, week)
+	c.finishTick(ctx, games, endpoints, season, week)
 	return c.interval(games)
 }
 
@@ -230,21 +227,21 @@ func (c *liveCollector) readBoard(ctx context.Context, endpoints livegame.Endpoi
 	return games, season, week, true
 }
 
-// finishTick holds each live game detail for nfl.game.read, then publishes scores if anything changed.
+// finishTick holds cached game details, publishes scores, then triggers background pre-game warming.
 func (c *liveCollector) finishTick(
 	ctx context.Context, games []livegame.Game, endpoints livegame.Endpoints, season, week int,
 ) {
 	if c.finished == [2]int{} {
-		c.holdDetails(ctx, games, endpoints)
+		c.holdDetails(games, endpoints)
 	}
 	c.notifyScores(season, week)
+	c.schedulePregame(ctx, endpoints, games)
 }
 
 func (c *liveCollector) ensureClient() {
 	if c.client == nil {
 		c.client = &http.Client{Timeout: 10 * time.Second, Transport: c.packets}
 	}
-	c.ensurePreClient()
 }
 
 func (c *liveCollector) logTick(started time.Time, previous string) func() {
@@ -327,6 +324,7 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 		}
 		c := &liveCollector{pins: pins, identities: pins.files.family.Over(pins.files.reference), path: filepath.Join(directory, "checkpoint.json"), publisher: publisher, games: games,
 			packets: &livePackets{network: http.DefaultTransport, held: rawLiveCheckpoint{Version: 1, Packets: map[string]rawLivePacket{}, IDs: map[string]map[string]string{}}}}
+		defer c.stopPregame()
 		if publisher == nil {
 			log.Print("server live: no scores publisher; change streams will not hear about live scores")
 		}
@@ -349,15 +347,12 @@ func startHostedLive(ctx context.Context, pins *leaguePins, root string, publish
 	return func() { cancel(); <-done; <-linked }
 }
 
-// holdDetails reuses acquired summary packets and enriches pre-game previews for nfl.game.read.
-func (c *liveCollector) holdDetails(
-	ctx context.Context, games []livegame.Game, endpoints livegame.Endpoints,
-) {
+// holdDetails reuses acquired summary packets and cached pre-game details without network I/O.
+func (c *liveCollector) holdDetails(games []livegame.Game, endpoints livegame.Endpoints) {
 	details := make(map[string]leagueservice.NFLGame)
-	weather := c.ensureWeather(endpoints)
 	for _, board := range games {
 		if board.Status == "pre" {
-			if detail, ok := c.pregameDetail(ctx, board, endpoints.Summary, weather); ok {
+			if detail, ok := c.cachedPregameDetail(board, endpoints.Summary); ok {
 				details[board.ID] = detail
 			}
 			continue
