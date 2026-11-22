@@ -220,7 +220,28 @@ func (s *Store) pickFirstAccepted(ctx context.Context, league string, at time.Ti
 	facts nativecheck.Facts, standings commissioner.DraftStandings) (bool, error) {
 	reqKey := autoPickRequestKey(league, turn.Key, turn.Round, turn.Slot)
 	skipped := 0
+	for _, needOnly := range []bool{true, false} {
+		picked, err := s.pickMatching(ctx, league, at, records, turn, ranked, facts, standings,
+			reqKey, needOnly, &skipped)
+		if err != nil || picked {
+			return picked, err
+		}
+	}
+	log.Printf("draft autopick: league=%s round=%d slot=%d skipped=%d (no legal pick)",
+		league, turn.Round, turn.Slot, skipped)
+	return false, nil
+}
+
+func (s *Store) pickMatching(ctx context.Context, league string, at time.Time,
+	records []commissioner.Record, turn commissioner.AutoPickTurn, ranked []string,
+	facts nativecheck.Facts, standings commissioner.DraftStandings, reqKey string,
+	needOnly bool, skipped *int) (bool, error) {
 	for _, playerID := range ranked {
+		pf, ok := facts.Of(playerID)
+		needed := ok && nativecheck.LineupNeedsPosition(turn.Lineup, turn.Held, pf.Position)
+		if needed != needOnly {
+			continue
+		}
 		in := commissioner.DraftPickInput{League: league, Season: turn.Key.Season,
 			Franchise: turn.Franchise, Player: playerID, Request: reqKey,
 			Expected: int64(len(records)), Startup: turn.Key.Startup}
@@ -228,7 +249,7 @@ func (s *Store) pickFirstAccepted(ctx context.Context, league string, at time.Ti
 		if err != nil {
 			var refusal *commissioner.Refusal
 			if errors.As(err, &refusal) {
-				skipped++
+				*skipped++
 				continue
 			}
 			return false, fmt.Errorf("plan automatic draft pick: %w", err)
@@ -238,14 +259,12 @@ func (s *Store) pickFirstAccepted(ctx context.Context, league string, at time.Ti
 			auth, facts, time.UTC); err != nil {
 			return false, fmt.Errorf("record automatic draft pick: %w", err)
 		}
-		if skipped > 0 {
+		if *skipped > 0 {
 			log.Printf("draft autopick: league=%s round=%d slot=%d skipped=%d",
-				league, turn.Round, turn.Slot, skipped)
+				league, turn.Round, turn.Slot, *skipped)
 		}
 		return true, nil
 	}
-	log.Printf("draft autopick: league=%s round=%d slot=%d skipped=%d (no legal pick)",
-		league, turn.Round, turn.Slot, skipped)
 	return false, nil
 }
 
