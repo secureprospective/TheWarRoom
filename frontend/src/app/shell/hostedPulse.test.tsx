@@ -3,7 +3,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import HostedLeague from '../commissioner/HostedLeague';
-import NativeLeaguePulse, { PULSE_FOLLOW_MS } from './NativeLeaguePulse';
+import NativeLeaguePulse, { PULSE_FOLLOW_MS, useHostedGames } from './NativeLeaguePulse';
 import { readNativePulse, readPulseMatchup } from './pulseReads';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import * as nfl from '../now/api';
@@ -642,4 +642,34 @@ it.each(['now', 'race'] as const)('keeps refused odds unavailable in %s until a 
     expect(oddsCount()).toBe(2);
     unavailable();
   } finally { vi.useRealTimers(); }
+});
+
+it('logs a failed pre-game read at debug level and keeps rendering the preview game', async () => {
+  const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+  const preGame = { ...nflGame, status: 'pre', clock: '', period: 0,
+    home: { id: '12', abbreviation: 'KC', score: 0 }, away: { id: '2', abbreviation: 'BUF', score: 0 } };
+  const port = vi.fn<HostedPort>(async request => {
+    if (request.command === 'nfl.games.read') {
+      return { label: 'Live', writable: false, football: 'sha', appRelease: 1,
+        data: { league: 'test', board: { stale: false, source: 'ESPN', at: '2026-11-15T18:00:00Z',
+          failure: '', games: [preGame] } } };
+    }
+    if (request.command === 'nfl.game.read') {
+      return { label: 'Live', writable: false, football: 'sha', appRelease: 1,
+        data: { league: 'test', game: preGame, at: '2026-11-15T18:00:00Z', stale: false, words: '' } };
+    }
+    if (request.command === 'nfl.game.pregame.read') throw new Error('pre-game cache unavailable');
+    throw new Error(`unexpected ${request.command}`);
+  });
+  const noChange = () => () => {};
+  let followGame: ((key: string) => void) | undefined;
+  function Probe() {
+    const live = useHostedGames('test', port, noChange);
+    followGame = live.follow;
+    return <div>{live.view?.followed?.away.abbreviation ?? 'none'}|{live.error}</div>;
+  }
+  await act(async () => root.render(<Probe />));
+  await act(async () => followGame!('BUF-KC'));
+  expect(debug).toHaveBeenCalledWith('Pre-game read failed:', expect.any(Error));
+  expect(host.textContent).toBe('BUF|');
 });

@@ -56,8 +56,9 @@ export function useHostedGames(league: string, port: NonNullable<PulseScope['por
             const pre = await port({ command: 'nfl.game.pregame.read', mode: 'read',
               arguments: { league, game: selected.id } });
             followed = { ...followed, ...parseHostedPregame(pre.data, league, selected.id) };
-          } catch {
+          } catch (error: unknown) {
             // Older servers or unavailable pre-game cache still render the preview without these fields.
+            console.debug('Pre-game read failed:', error);
           }
         }
         view.followed = followed;
