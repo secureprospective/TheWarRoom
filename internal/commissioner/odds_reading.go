@@ -33,14 +33,25 @@ const (
 type OddsCache struct {
 	mu     sync.Mutex
 	values map[[32]byte]map[string]int
+	hits   int
+	misses int
+}
+
+// Stats reports simulation cache hits and misses.
+func (c *OddsCache) Stats() (hits, misses int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.hits, c.misses
 }
 
 func (c *OddsCache) result(key [32]byte, run func() (map[string]int, string)) (map[string]int, string) {
 	c.mu.Lock()
 	if made, ok := c.values[key]; ok {
+		c.hits++
 		c.mu.Unlock()
 		return maps.Clone(made), ""
 	}
+	c.misses++
 	c.mu.Unlock()
 	made, words := run()
 	if words != "" {

@@ -40,11 +40,18 @@ func (a *Service) TargetNativeOdds(league string, season int) (commissioner.Nati
 	return reading, nil
 }
 
+// HostedOddsValues is the reduced values input used when the host has no player value read.
+func HostedOddsValues() commissioner.OddsValues {
+	return commissioner.OddsValues{
+		Reduced: "player values are not on this server yet, so the odds come from results alone",
+	}
+}
+
 // oddsValues is the league's value read, every franchise's players, in the form the odds reading counts.
 func (a *Service) oddsValues(ctx context.Context, league string, season int) commissioner.OddsValues {
 	host, ok := a.host.(valueHost)
 	if !ok {
-		return commissioner.OddsValues{Reduced: "player values are not on this server yet, so the odds come from results alone"}
+		return HostedOddsValues()
 	}
 	reading, err := host.NativeValues(ctx, league, "", season)
 	return OddsValuesOf(reading, err)
