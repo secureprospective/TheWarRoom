@@ -217,57 +217,68 @@ func (c *WeatherCache) openMeteoWeather(
 		return nil
 	}
 	key := fmt.Sprintf("%.4f,%.4f", st.Lat, st.Lon)
-	now := c.clock()
-
-	c.mu.Lock()
-	if hit, ok := c.entries[key]; ok && now.Before(hit.expires) {
-		c.mu.Unlock()
-		return selectOpenMeteoSlot(hit.forecast, kickoff)
+	forecast, flight, ok := c.claimWeather(ctx, key)
+	if flight != nil {
+		forecast, ok = c.fillWeather(ctx, key, st, flight), true
 	}
-	if flight, ok := c.inflight[key]; ok {
+	if !ok {
+		return nil
+	}
+	return selectOpenMeteoSlot(forecast, kickoff)
+}
+
+// claimWeather answers from the cache or from another caller's fetch already in flight. When neither has
+// it, it registers a new flight that the caller must fill. ok is false when ctx ended while waiting.
+func (c *WeatherCache) claimWeather(
+	ctx context.Context, key string,
+) (forecast *RawOpenMeteoForecast, flight *weatherFlight, ok bool) {
+	c.mu.Lock()
+	if hit, found := c.entries[key]; found && c.clock().Before(hit.expires) {
+		c.mu.Unlock()
+		return hit.forecast, nil, true
+	}
+	if other, found := c.inflight[key]; found {
 		c.mu.Unlock()
 		select {
-		case <-flight.done:
-			return selectOpenMeteoSlot(flight.forecast, kickoff)
+		case <-other.done:
+			return other.forecast, nil, true
 		case <-ctx.Done():
-			return nil
+			return nil, nil, false
 		}
 	}
-	flight := &weatherFlight{done: make(chan struct{})}
+	flight = &weatherFlight{done: make(chan struct{})}
 	if c.inflight == nil {
 		c.inflight = map[string]*weatherFlight{}
 	}
 	c.inflight[key] = flight
 	c.mu.Unlock()
+	return nil, flight, false
+}
 
-	finished := false
+// fillWeather fetches for a claimed flight and always releases its waiters, even on panic. A failure is
+// held briefly; a failure caused by this caller's own cancelled ctx is never cached.
+func (c *WeatherCache) fillWeather(
+	ctx context.Context, key string, st Stadium, flight *weatherFlight,
+) (forecast *RawOpenMeteoForecast) {
 	defer func() {
-		if !finished {
-			c.mu.Lock()
-			delete(c.inflight, key)
-			close(flight.done)
-			c.mu.Unlock()
-		}
+		c.mu.Lock()
+		flight.forecast = forecast
+		delete(c.inflight, key)
+		close(flight.done)
+		c.mu.Unlock()
 	}()
-
-	forecast, err := c.fetchOpenMeteoForecast(ctx, st)
-	cancelled := err != nil && ctx.Err() != nil
+	fetched, err := c.fetchOpenMeteoForecast(ctx, st)
 	ttl := c.ttl()
 	if err != nil {
-		ttl = weatherFailureHold
-		forecast = nil
+		if ctx.Err() != nil {
+			return nil
+		}
+		fetched, ttl = nil, weatherFailureHold
 	}
-
 	c.mu.Lock()
-	if !cancelled {
-		c.storeWeatherLocked(key, forecast, ttl)
-	}
-	flight.forecast = forecast
-	delete(c.inflight, key)
-	close(flight.done)
-	finished = true
+	c.storeWeatherLocked(key, fetched, ttl)
 	c.mu.Unlock()
-	return selectOpenMeteoSlot(forecast, kickoff)
+	return fetched
 }
 
 func (c *WeatherCache) storeWeatherLocked(
