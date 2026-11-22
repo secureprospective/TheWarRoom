@@ -62,6 +62,8 @@ type autoLineupState struct {
 	rules      leaguerules.LineupRules
 	pool       []AutoLineupCandidate
 	used       []bool
+	reserve    []AutoLineupCandidate // allowed but benched (bye, injury): only to meet a position minimum
+	reserveUse []bool
 	selected   []AutoLineupCandidate
 	posCount   map[leaguerules.Position]int
 	groupCount map[leaguerules.LineupGroup]int
@@ -83,13 +85,19 @@ func newAutoLineupState(rules leaguerules.LineupRules, candidates []AutoLineupCa
 			s.addSelected(c)
 			continue
 		}
-		if !c.Eligible || !s.positionAllowed(c.Position) {
+		if !s.positionAllowed(c.Position) {
+			continue
+		}
+		if !c.Eligible {
+			s.reserve = append(s.reserve, c)
 			continue
 		}
 		s.pool = append(s.pool, c)
 	}
 	slices.SortFunc(s.pool, compareAutoCandidate)
+	slices.SortFunc(s.reserve, compareAutoCandidate)
 	s.used = make([]bool, len(s.pool))
+	s.reserveUse = make([]bool, len(s.reserve))
 	return s
 }
 
@@ -160,8 +168,9 @@ func (s *autoLineupState) fillPositionMinimums() {
 		if b.Min.State != leaguerules.IsKnown {
 			continue
 		}
+		atPos := func(c AutoLineupCandidate) bool { return c.Position == pos }
 		for s.posCount[pos] < b.Min.Value {
-			if !s.pickNext(func(c AutoLineupCandidate) bool { return c.Position == pos }) {
+			if !s.pickNext(atPos) && !s.pickReserve(atPos) {
 				break
 			}
 		}
@@ -222,6 +231,21 @@ func (s *autoLineupState) pickNext(match func(AutoLineupCandidate) bool) bool {
 			continue
 		}
 		s.used[i] = true
+		s.addSelected(c)
+		return true
+	}
+	return false
+}
+
+// pickReserve starts a benched player (bye week, injury) only when no playing player can meet a
+// position minimum: a legal lineup with a zero in one slot beats an invalid one the league penalises
+// (a team's only O-Line card on its bye week).
+func (s *autoLineupState) pickReserve(match func(AutoLineupCandidate) bool) bool {
+	for i, c := range s.reserve {
+		if s.reserveUse[i] || !match(c) || !s.canAdd(c.Position) {
+			continue
+		}
+		s.reserveUse[i] = true
 		s.addSelected(c)
 		return true
 	}
