@@ -83,3 +83,12 @@ func TestBrowserAppRoutesUseSafeHeadersAndAssetTypes(t *testing.T) {
 		t.Fatalf("POST app asset status=%d", method.Code)
 	}
 }
+
+func TestBrowserAppCSPMatchesTheAppBuild(t *testing.T) {
+	for _, want := range []string{"script-src 'self';", "img-src 'self' data:;", "style-src 'self' 'unsafe-inline';",
+		"object-src 'none';", "frame-ancestors 'none'"} {
+		if !strings.Contains(browserAppCSP, want) {
+			t.Fatalf("browser app policy lacks %q: %s", want, browserAppCSP)
+		}
+	}
+}

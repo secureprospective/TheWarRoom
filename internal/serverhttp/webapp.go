@@ -16,7 +16,12 @@ import (
 //go:embed all:webassets
 var webassets embed.FS
 
-const browserAppCSP = "default-src 'self'; frame-ancestors 'none'"
+// browserAppCSP matches the policy the app build writes into its own page (frontend/vite.config.ts
+// contentSecurityPolicy) plus frame-ancestors, which only a header can carry. A browser enforces
+// every policy it receives, so a stricter header here blocks the app's own textures and styles.
+const browserAppCSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+	"img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; " +
+	"base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 
 func webAppHandler() http.Handler {
 	assets, err := fs.Sub(webassets, "webassets")
