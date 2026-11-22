@@ -700,6 +700,9 @@ func bestLegalLineup(rules leaguerules.LineupRules, players []commissioner.Nativ
 }
 
 func TestAutoPickFullDefault32StartupLegalLineups(t *testing.T) {
+	if os.Getenv("TWR_SLOW_DRAFT") != "1" {
+		t.Skip("full-size 32-team draft (~55 s); run with TWR_SLOW_DRAFT=1")
+	}
 	t.Parallel()
 	const teams = 32
 	const rounds = 18
