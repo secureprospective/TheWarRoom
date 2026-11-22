@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/governance"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
@@ -17,6 +18,8 @@ type AutoPickTurn struct {
 	Slot      int
 	Original  string
 	Pool      []string
+	Lineup    leaguerules.LineupRules
+	Held      map[leaguerules.Position]int
 }
 
 // AutomaticFranchise reports whether the franchise has no seated owner (vacant, caretaker or not).
@@ -51,22 +54,22 @@ func DueAutoPick(records []Record, at time.Time, facts nativecheck.Facts,
 		if !ok || f.Seat != "" {
 			continue
 		}
-		pool, err := availablePoolIDs(basis, records, at, facts)
+		pool, held, err := turnPoolAndHeld(basis, records, at, clock.Owner, facts)
 		if err != nil {
 			return AutoPickTurn{}, false, err
 		}
 		return AutoPickTurn{Key: key, Franchise: clock.Owner, Round: clock.Round, Slot: clock.Slot,
-			Original: clock.Original, Pool: pool}, true, nil
+			Original: clock.Original, Pool: pool, Lineup: basis.rules.Lineup, Held: held}, true, nil
 	}
 	return AutoPickTurn{}, false, nil
 }
 
-func availablePoolIDs(basis draftBasis, records []Record, at time.Time,
-	facts nativecheck.Facts) ([]string, error) {
+func turnPoolAndHeld(basis draftBasis, records []Record, at time.Time, franchise string,
+	facts nativecheck.Facts) ([]string, map[leaguerules.Position]int, error) {
 	through := RecordsThrough(records, at)
 	assets, err := NativeAssetsReading(records[0].Command.League, through)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	taken := draftTakenSet(basis, assets)
 	var players []DraftPlayer
@@ -79,7 +82,35 @@ func availablePoolIDs(basis draftBasis, records []Record, at time.Time,
 	for i, p := range players {
 		ids[i] = p.ID
 	}
-	return ids, nil
+	return ids, franchiseHeldPositions(basis, assets, franchise, facts), nil
+}
+
+func franchiseHeldPositions(basis draftBasis, assets NativeAssets, franchise string,
+	facts nativecheck.Facts) map[leaguerules.Position]int {
+	seen := map[string]bool{}
+	held := map[leaguerules.Position]int{}
+	add := func(id string) {
+		if id == "" || seen[id] {
+			return
+		}
+		seen[id] = true
+		if pf, ok := facts.Of(id); ok && pf.Position != "" {
+			held[pf.Position]++
+		}
+	}
+	if assets.Seeded {
+		for _, p := range assets.Snapshot.Players {
+			if p.Franchise == franchise {
+				add(p.ID)
+			}
+		}
+	}
+	for _, pick := range basis.draft.Picks {
+		if pick.Owner == franchise && pick.Player != "" {
+			add(pick.Player)
+		}
+	}
+	return held
 }
 
 func draftTakenSet(basis draftBasis, assets NativeAssets) map[string]bool {

@@ -167,3 +167,107 @@ func Total(starters []Starter) leaguerules.Decimal {
 	}
 	return sum
 }
+
+func TestLineupNeedsPosition(t *testing.T) {
+	t.Parallel()
+	d32 := leaguerules.Default32().Lineup
+	allDraftable := []leaguerules.Position{
+		leaguerules.QB, leaguerules.RB, leaguerules.WR, leaguerules.TE, leaguerules.PK,
+		leaguerules.DT, leaguerules.DE, leaguerules.LB, leaguerules.CB, leaguerules.S,
+	}
+
+	t.Run("default32 unmet position minimum", func(t *testing.T) {
+		t.Parallel()
+		held := map[leaguerules.Position]int{leaguerules.CB: 1}
+		if !LineupNeedsPosition(d32, held, leaguerules.CB) {
+			t.Fatal("CB with 1/2 held should be needed")
+		}
+		if !LineupNeedsPosition(d32, held, leaguerules.PK) {
+			t.Fatal("PK with 0/1 held should be needed")
+		}
+		if !LineupNeedsPosition(d32, held, leaguerules.TE) {
+			t.Fatal("TE with 0 held should be needed for unmet Offense group min")
+		}
+	})
+
+	t.Run("default32 unmet group minimum respects position max and reserved mins", func(t *testing.T) {
+		t.Parallel()
+		held := map[leaguerules.Position]int{
+			leaguerules.QB: 1, leaguerules.RB: 1, leaguerules.WR: 2,
+		}
+		if !LineupNeedsPosition(d32, held, leaguerules.WR) {
+			t.Fatal("WR under max 4 should be needed while Offense is 4/6")
+		}
+		if LineupNeedsPosition(d32, held, leaguerules.QB) {
+			t.Fatal("QB at max 1 should not be needed")
+		}
+		// 4 WRs + 1 reserved QB + 1 reserved RB already fill all 6 Offense slots.
+		fourWR := map[leaguerules.Position]int{leaguerules.WR: 4}
+		if LineupNeedsPosition(d32, fourWR, leaguerules.WR) {
+			t.Fatal("WR at max 4 should not be needed")
+		}
+		if LineupNeedsPosition(d32, fourWR, leaguerules.TE) {
+			t.Fatal("TE should not be needed when 4 WR + reserved QB/RB fill Offense")
+		}
+		if !LineupNeedsPosition(d32, fourWR, leaguerules.QB) {
+			t.Fatal("QB with 0/1 held should still be needed")
+		}
+	})
+
+	t.Run("default32 all draftable minimums met leaves nothing draftable needed", func(t *testing.T) {
+		t.Parallel()
+		full := map[leaguerules.Position]int{
+			leaguerules.QB: 1, leaguerules.RB: 1, leaguerules.WR: 4, leaguerules.PK: 1,
+			leaguerules.DT: 1, leaguerules.DE: 1, leaguerules.LB: 6, leaguerules.CB: 2,
+			leaguerules.S: 1,
+		}
+		for _, pos := range allDraftable {
+			if LineupNeedsPosition(d32, full, pos) {
+				t.Errorf("%s should not be needed once all draftable minimums are met", pos)
+			}
+		}
+		if LineupNeedsPosition(d32, full, "XX") || LineupNeedsPosition(d32, full, "") {
+			t.Error("unknown or empty position should never be needed")
+		}
+	})
+
+	t.Run("mirror16 and legacy rules", func(t *testing.T) {
+		t.Parallel()
+		m16 := leaguerules.Mirror16().Lineup
+		held := map[leaguerules.Position]int{
+			leaguerules.QB: 1, leaguerules.RB: 1, leaguerules.WR: 2,
+		}
+		if !LineupNeedsPosition(m16, held, leaguerules.WR) {
+			t.Fatal("Mirror16 WR should be needed at Offense 4/5")
+		}
+		if LineupNeedsPosition(m16, held, leaguerules.OL) {
+			t.Fatal("Mirror16 has no OL slot so OL must not be needed")
+		}
+		held[leaguerules.WR] = 3
+		if LineupNeedsPosition(m16, held, leaguerules.WR) {
+			t.Fatal("Mirror16 WR should not be needed once Offense reaches 5/5")
+		}
+
+		// LegacyNFL has no Offense min (only max 8) and Total 21..21.
+		leg := leaguerules.LegacyNFL().Lineup
+		legHeld := map[leaguerules.Position]int{
+			leaguerules.QB: 1, leaguerules.RB: 1, leaguerules.WR: 2,
+			leaguerules.TE: 1, leaguerules.PK: 1,
+		}
+		if !LineupNeedsPosition(leg, legHeld, leaguerules.WR) {
+			t.Fatal("LegacyNFL WR should be needed to reach Total min 21")
+		}
+		legHeld[leaguerules.WR] = 5
+		if LineupNeedsPosition(leg, legHeld, leaguerules.RB) {
+			t.Fatal("LegacyNFL RB should not be needed once Offense hits max 8")
+		}
+
+		unset := leaguerules.LineupRules{
+			Positions: leaguerules.Needs[map[leaguerules.Position]leaguerules.Bounds](""),
+			Groups:    leaguerules.Needs[map[leaguerules.LineupGroup]leaguerules.Bounds](""),
+		}
+		if LineupNeedsPosition(unset, nil, leaguerules.QB) {
+			t.Fatal("unjudged lineup rules should never report a need")
+		}
+	})
+}
