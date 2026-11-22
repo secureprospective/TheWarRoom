@@ -160,18 +160,21 @@ function ScoreSide({ k, t, team, gameId, reduced }: {
   k: Side; t: ReturnType<typeof clubColours>; team: Game['home']; gameId: string; reduced: boolean;
 }) {
   const { display, scoring, rollSeq } = useScoreRoll(team.score, gameId, reduced);
+  const wide = String(display).length >= 3;
   return <div className={`tm tm-${k}`} style={{ ['--tc' as string]: t.color }}>
     <div className="tm-id"><b className="tm-ab" style={{ background: t.fillc, color: t.onc,
       borderColor: t.trimc }}>{team.abbreviation}</b>
       {team.record && <span className="tm-rec">
         <span className="tm-city">{t.name} · </span>{team.record}</span>}
     </div>
-    <div className={`tm-sc${scoring ? ' scoring' : ''}`}>
+    <div className={`tm-sc${scoring ? ' scoring' : ''}${wide ? ' is-wide' : ''}`}>
       <span key={rollSeq} className={rollSeq > 0 && !reduced ? 'roll' : undefined}>{display}</span>
     </div>
-    <i className="tm-poss" title="has the ball"><svg viewBox="0 0 26 14" aria-hidden="true">
-      <path className="lth" d="M1 7C6 -.5 20 -.5 25 7C20 14.5 6 14.5 1 7Z" />
-      <path className="lc" d="M8 7h10M11 5v4M13 5v4M15 5v4" /></svg></i>
+    <span className="tm-poss-slot" data-testid={`poss-slot-${k}`}>
+      <i className="tm-poss" title="has the ball"><svg viewBox="0 0 26 14" aria-hidden="true">
+        <path className="lth" d="M1 7C6 -.5 20 -.5 25 7C20 14.5 6 14.5 1 7Z" />
+        <path className="lc" d="M8 7h10M11 5v4M13 5v4M15 5v4" /></svg></i>
+    </span>
   </div>;
 }
 

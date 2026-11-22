@@ -110,4 +110,47 @@ describe('LiveWall', () => {
     const spotTile = host.querySelector('.wall__tile--spot');
     expect(spotTile?.getAttribute('data-game-id')).toBe('400');
   });
+
+  it('renders a 50/50 split rail with big plays on top and first downs on bottom, newest first', async () => {
+    Object.defineProperty(window, 'innerWidth', { value: 412, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 915, configurable: true });
+    const base = Date.parse('2026-11-22T20:00:00Z');
+    const at = (min: number) => new Date(base + min * 60_000).toISOString();
+    const games = demoBoard().slice(0, 6);
+    const g0 = games[0];
+    const h = g0.home.id, a = g0.away.id;
+    const st = (p: string, down: number, distance: number, toEndzone: number) =>
+      ({ possession: p, down, distance, yardLine: toEndzone, toEndzone });
+    g0.plays = [
+      { id: 'fd-1', sequence: 1, text: 'KC rush up the middle I. Pacheco for 6 yards', clock: '9:00',
+        period: 2, at: at(10), homeScore: 7, awayScore: 3,
+        start: st(h, 3, 4, 60), end: st(h, 1, 10, 54), participants: [] },
+      { id: 'short-1', sequence: 2, text: 'KC rush left guard I. Pacheco for 2 yards', clock: '8:30',
+        period: 2, at: at(11), homeScore: 7, awayScore: 3,
+        start: st(h, 1, 10, 54), end: st(h, 2, 8, 52), participants: [] },
+      { id: 'big-1', sequence: 3, text: 'KC pass deep middle to R. Rice for 25 yards', clock: '8:00',
+        period: 2, at: at(12), homeScore: 7, awayScore: 3,
+        start: st(h, 2, 8, 52), end: st(h, 1, 10, 27), participants: [] },
+      { id: 'fd-2', sequence: 4, text: 'KC pass short right to T. Kelce for 12 yards', clock: '7:30',
+        period: 2, at: at(13), homeScore: 7, awayScore: 3,
+        start: st(h, 1, 10, 27), end: st(h, 1, 10, 15), participants: [] },
+      { id: 'big-2', sequence: 5, text: 'KC pass short left to N. Gray for 15 yards, TOUCHDOWN.',
+        clock: '7:00', period: 2, at: at(14), homeScore: 14, awayScore: 3,
+        start: st(h, 1, 10, 15), end: st(a, 1, 10, 75), participants: [] },
+    ];
+    g0.last = g0.plays[g0.plays.length - 1];
+    for (const gm of games.slice(1)) { gm.plays = []; gm.last = null; }
+
+    const el = await show(games);
+    const bigHalf = el.querySelector('[data-testid="wall-rail-big"]');
+    const firstHalf = el.querySelector('[data-testid="wall-rail-first"]');
+    expect(bigHalf).not.toBeNull();
+    expect(firstHalf).not.toBeNull();
+
+    const bigTitles = [...bigHalf!.querySelectorAll('.wall__bp-title')].map(n => n.textContent);
+    const firstTitles = [...firstHalf!.querySelectorAll('.wall__bp-title')].map(n => n.textContent);
+    expect(bigTitles).toEqual(['TOUCHDOWN KC — Gray 15 yd', 'KC · Rice · 25 yd catch']);
+    expect(firstTitles).toEqual(['KC · Kelce · 12 yd catch', 'KC · Pacheco · 6 yd run']);
+    expect(el.querySelector('[data-testid="wall-big-plays"]')?.textContent).not.toContain('for 2 yards');
+  });
 });

@@ -70,7 +70,7 @@ export function chooseWallLayout(n: number, viewportW: number, viewportH: number
   const rightSpace = stageW - gridW - gap;
   const bottomSpace = stageH - gridH - gap;
   const canRight = rightSpace >= MIN_RIGHT_RAIL && stageH >= 320;
-  const canBottom = bottomSpace >= MIN_BOTTOM_RAIL && stageW >= 420;
+  const canBottom = bottomSpace >= MIN_BOTTOM_RAIL && stageW >= 320;
   let rail: RailMode = 'none';
   if (canRight && canBottom) {
     rail = rightSpace >= 280 || rightSpace * stageH >= stageW * bottomSpace ? 'right' : 'bottom';

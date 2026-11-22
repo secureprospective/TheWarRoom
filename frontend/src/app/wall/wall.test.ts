@@ -4,7 +4,7 @@ import { fieldPlay } from '../phone/livePlays';
 import { createDemoFeed, demoBoard, wallGame } from './fixtures';
 import { chooseWallLayout, TICKER_H, WALL_PAD } from './layout';
 import { createSpotlightQueue, SPOTLIGHT_MS, toSpotlightItem } from './spotlight';
-import { buildTicker, isSpotlightPlay, selectBigPlays, spotlightTitle } from './wallPlays';
+import { buildTicker, isSpotlightPlay, selectBigPlays, selectFirstDowns, spotlightTitle } from './wallPlays';
 
 const asGame = (g: ReturnType<typeof wallGame>) => g as unknown as Game;
 
@@ -58,6 +58,12 @@ describe('chooseWallLayout', () => {
     const four = chooseWallLayout(4, 1920, 1080);
     expect(four).toMatchObject({ cols: 4, rows: 1, rail: 'none' });
     expect(four.scale).toBeGreaterThan(chooseWallLayout(6, 1920, 1080).scale);
+  });
+
+  it('keeps the split bottom rail visible on S25 phone width (412x915)', () => {
+    const phone = chooseWallLayout(6, 412, 915);
+    expect(phone.rail).toBe('bottom');
+    expect(phone.railH).toBeGreaterThanOrEqual(150);
   });
 });
 
@@ -176,6 +182,40 @@ describe('selectBigPlays', () => {
     expect(list[1].kind).toBe('td');
     expect(list.some(p => p.playId === 'short' || p.playId === 'pen25')).toBe(false);
     expect(list.every(p => p.color.startsWith('rgb('))).toBe(true);
+  });
+
+  it('splits a mix of plays into big plays and normal first downs, newest first', () => {
+    const g0 = asGame(wallGame(0));
+    const base = Date.parse('2026-11-22T20:00:00Z');
+    const at = (min: number) => new Date(base + min * 60_000).toISOString();
+    const plays: Play[] = [
+      makePlay(g0, { id: 'fd-old', sequence: 1, at: at(1),
+        text: 'KC rush up the middle I. Pacheco for 6 yards',
+        start: { possession: g0.home.id, down: 3, distance: 4, yardLine: 60, toEndzone: 60 },
+        end: { possession: g0.home.id, down: 1, distance: 10, yardLine: 54, toEndzone: 54 } }),
+      makePlay(g0, { id: 'short-no-fd', sequence: 2, at: at(2),
+        text: 'KC rush left guard I. Pacheco for 3 yards',
+        start: { possession: g0.home.id, down: 1, distance: 10, yardLine: 54, toEndzone: 54 },
+        end: { possession: g0.home.id, down: 2, distance: 7, yardLine: 51, toEndzone: 51 } }),
+      makePlay(g0, { id: 'big-old', sequence: 3, at: at(3),
+        text: 'KC pass deep middle to R. Rice for 24 yards',
+        start: { possession: g0.home.id, down: 2, distance: 7, yardLine: 51, toEndzone: 51 },
+        end: { possession: g0.home.id, down: 1, distance: 10, yardLine: 27, toEndzone: 27 } }),
+      makePlay(g0, { id: 'fd-new', sequence: 4, at: at(4),
+        text: 'KC pass short right to T. Kelce for 11 yards',
+        start: { possession: g0.home.id, down: 1, distance: 10, yardLine: 27, toEndzone: 27 },
+        end: { possession: g0.home.id, down: 1, distance: 10, yardLine: 16, toEndzone: 16 } }),
+      makePlay(g0, { id: 'big-new', sequence: 5, at: at(5),
+        text: 'KC pass short right to T. Kelce for 16 yards, TOUCHDOWN.',
+        start: { possession: g0.home.id, down: 1, distance: 10, yardLine: 16, toEndzone: 16 },
+        end: { possession: g0.away.id, down: 1, distance: 10, yardLine: 75, toEndzone: 75 } }),
+    ];
+    const game: Game = { ...g0, plays, last: plays[plays.length - 1] };
+    const big = selectBigPlays([game], 8);
+    const firsts = selectFirstDowns([game], 16);
+    expect(big.map(p => p.playId)).toEqual(['big-new', 'big-old']);
+    expect(firsts.map(p => p.playId)).toEqual(['fd-new', 'fd-old']);
+    expect(firsts.every(p => p.tag === '1ST DOWN')).toBe(true);
   });
 });
 

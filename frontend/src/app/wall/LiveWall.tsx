@@ -10,7 +10,10 @@ import { chooseWallLayout, TICKER_H, useViewport, type RailMode } from './layout
 import { nextKickoff, wallCount } from './pickGames';
 import { useWallSpotlight, type SpotlightItem } from './spotlight';
 import { useWallGames } from './useWallGames';
-import { buildTicker, selectBigPlays, type BigPlay, type TickerItem } from './wallPlays';
+import {
+  buildTicker, selectBigPlays, selectFirstDowns,
+  type BigPlay, type FirstDownPlay, type TickerItem,
+} from './wallPlays';
 import './wall.css';
 
 type Subscribe = (load: () => void) => () => void;
@@ -37,6 +40,7 @@ export function LiveWall({ league, port, subscribe, search = window.location.sea
   );
   const ticker = useMemo(() => buildTicker(wall.allGames), [wall.allGames]);
   const bigPlays = useMemo(() => selectBigPlays(wall.allGames, 8), [wall.allGames]);
+  const firstDowns = useMemo(() => selectFirstDowns(wall.allGames, 16), [wall.allGames]);
   const spotlight = useWallSpotlight(wall.picked);
 
   return <div className="wall" ref={wallRef} data-testid="live-wall" data-motion={mode}
@@ -67,8 +71,8 @@ export function LiveWall({ league, port, subscribe, search = window.location.sea
                 spotlight={spotlight?.gameId === g.id ? spotlight : undefined} />)}
             </div>
           </div>
-          {layout.rail !== 'none' && <BigPlaysRail plays={bigPlays} mode={layout.rail}
-            width={layout.railW} height={layout.railH} />}
+          {layout.rail !== 'none' && <BigPlaysRail plays={bigPlays} firstDowns={firstDowns}
+            mode={layout.rail} width={layout.railW} height={layout.railH} />}
         </>}
     </main>
   </div>;
@@ -135,38 +139,55 @@ function SpotlightBanner({ item }: { item: SpotlightItem }) {
   </aside>;
 }
 
-function BigPlaysRail({ plays, mode, width, height }: {
-  plays: BigPlay[]; mode: Exclude<RailMode, 'none'>; width: number; height: number;
+function BigPlaysRail({ plays, firstDowns, mode, width, height }: {
+  plays: BigPlay[]; firstDowns: FirstDownPlay[];
+  mode: Exclude<RailMode, 'none'>; width: number; height: number;
 }) {
   const cols = mode === 'bottom' ? (width >= 1100 ? 4 : width >= 680 ? 2 : 1) : 1;
-  const compact = mode === 'bottom' && height < 240;
+  const compact = mode === 'bottom' && height < 340;
   return <aside className={`wall__rail wall__rail--${mode}${compact ? ' wall__rail--tight' : ''}`}
-    aria-label="Big plays" data-testid="wall-big-plays" style={{
+    aria-label="Big plays and first downs" data-testid="wall-big-plays" style={{
       width: mode === 'right' ? width : '100%',
       height: mode === 'bottom' ? height : '100%',
       ['--rail-cols' as string]: cols,
     }}>
-    <header className="wall__rail-head">
-      <b>BIG PLAYS</b>
-      <span>SCORING · TURNOVERS · 20+ YDS</span>
-    </header>
-    {plays.length === 0
-      ? <p className="wall__rail-empty">Waiting for scoring plays, turnovers and 20+ yard gains.</p>
-      : <ol className="wall__rail-list">
-        {plays.map(p => <li key={p.id} className={`wall__bp wall__bp--${p.kind}`}
-          style={{ ['--bp-c' as string]: p.color, ['--bp-f' as string]: p.fill,
-            ['--bp-ink' as string]: p.ink }}>
-          <div className="wall__bp-top">
-            <span className="wall__bp-tag">{p.tag}</span>
-            <span className="wall__bp-game">{p.matchup}</span>
-            <span className="wall__bp-clk">{p.clock}</span>
-          </div>
-          <b className="wall__bp-title">{p.headline}</b>
-          <p className="wall__bp-text">{p.text}</p>
-          <span className="wall__bp-score">{p.score}</span>
-        </li>)}
-      </ol>}
+    <RailHalf title="BIG PLAYS" subtitle="SCORING · TURNOVERS · 20+ YDS"
+      empty="Waiting for scoring plays, turnovers and 20+ yard gains."
+      testId="wall-rail-big" itemClass="wall__bp" items={plays} />
+    <RailHalf title="FIRST DOWNS" subtitle="CHAINS MOVED · NEWEST FIRST"
+      empty="Waiting for first downs."
+      testId="wall-rail-first" itemClass="wall__fd" items={firstDowns} />
   </aside>;
+}
+
+function RailHalf({ title, subtitle, empty, testId, itemClass, items }: {
+  title: string; subtitle: string; empty: string; testId: string; itemClass: string;
+  items: (BigPlay | FirstDownPlay)[];
+}) {
+  return <section className="wall__rail-half" aria-label={title} data-testid={testId}>
+    <header className="wall__rail-head">
+      <b>{title}</b>
+      <span>{subtitle}</span>
+    </header>
+    <div className="wall__rail-scroll">
+      {items.length === 0
+        ? <p className="wall__rail-empty">{empty}</p>
+        : <ol className="wall__rail-list">
+          {items.map(p => <li key={p.id} className={`${itemClass} wall__bp--${p.kind}`}
+            style={{ ['--bp-c' as string]: p.color, ['--bp-f' as string]: p.fill,
+              ['--bp-ink' as string]: p.ink }}>
+            <div className="wall__bp-top">
+              <span className="wall__bp-tag">{p.tag}</span>
+              <span className="wall__bp-game">{p.matchup}</span>
+              <span className="wall__bp-clk">{p.clock}</span>
+            </div>
+            <b className="wall__bp-title">{p.headline}</b>
+            <p className="wall__bp-text">{p.text}</p>
+            <span className="wall__bp-score">{p.score}</span>
+          </li>)}
+        </ol>}
+    </div>
+  </section>;
 }
 
 function Tile({ game, scale, bezel, headH, tileGap, phoneW, phoneH, reduced, spotlight }: {
