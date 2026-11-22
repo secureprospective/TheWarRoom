@@ -113,39 +113,8 @@ func (r *RawVenue) toVenue() *Venue {
 	}
 }
 
-type RawWeather struct {
-	Temperature  *int   `json:"temperature"`
-	DisplayValue string `json:"displayValue"`
-}
-
-func (r RawWeather) Validate() error {
-	if r.Temperature != nil && (*r.Temperature < -60 || *r.Temperature > 140) {
-		return fmt.Errorf("weather: temperature out of range")
-	}
-	if r.Temperature == nil && strings.TrimSpace(r.DisplayValue) == "" {
-		return fmt.Errorf("weather: empty")
-	}
-	return nil
-}
-
-func (r *RawWeather) toWeather() *Weather {
-	if r == nil || r.Validate() != nil {
-		return nil
-	}
-	w := &Weather{
-		Text:   strings.TrimSpace(r.DisplayValue),
-		Source: "ESPN",
-	}
-	if r.Temperature != nil {
-		temp := *r.Temperature
-		w.TempF = &temp
-	}
-	return w
-}
-
 type RawGameInfo struct {
-	Venue   *RawVenue   `json:"venue"`
-	Weather *RawWeather `json:"weather"`
+	Venue *RawVenue `json:"venue"`
 }
 
 type RawBox struct {
@@ -267,8 +236,6 @@ func ParseSummary(body []byte) (Game, error) {
 		g.Venue = r.GameInfo.Venue.toVenue()
 		if g.Venue != nil && g.Venue.Indoor {
 			g.Weather = &Weather{Text: "Indoors"}
-		} else {
-			g.Weather = r.GameInfo.Weather.toWeather()
 		}
 	}
 	if g.Status != "pre" {

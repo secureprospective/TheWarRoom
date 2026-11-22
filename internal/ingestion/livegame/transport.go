@@ -10,11 +10,11 @@ import (
 )
 
 type Endpoints struct {
-	ESPN    string `json:"espn"`
-	Yahoo   string `json:"yahoo"`
-	Summary string `json:"summary"`
-	Plays   string `json:"plays"`
-	NWS     string `json:"nws,omitempty"`
+	ESPN      string `json:"espn"`
+	Yahoo     string `json:"yahoo"`
+	Summary   string `json:"summary"`
+	Plays     string `json:"plays"`
+	OpenMeteo string `json:"openmeteo,omitempty"`
 }
 type Transport interface {
 	Do(*http.Request) (*http.Response, error)
@@ -24,8 +24,8 @@ func (r Endpoints) Validate() error {
 	urls := map[string]string{
 		"espn": r.ESPN, "yahoo": r.Yahoo, "summary": r.Summary, "plays": r.Plays,
 	}
-	if r.NWS != "" {
-		urls["nws"] = r.NWS
+	if r.OpenMeteo != "" {
+		urls["openmeteo"] = r.OpenMeteo
 	}
 	for name, s := range urls {
 		sample := strings.NewReplacer("{id}", "1", "{lat}", "0", "{lon}", "0").Replace(s)
@@ -35,6 +35,9 @@ func (r Endpoints) Validate() error {
 		}
 		if u.Scheme != "https" || u.Host == "" || u.User != nil {
 			return fmt.Errorf("%s endpoint: requires HTTPS without credentials", name)
+		}
+		if name == "openmeteo" && !strings.EqualFold(u.Host, "api.open-meteo.com") {
+			return fmt.Errorf("openmeteo endpoint: unexpected host %q", u.Host)
 		}
 	}
 	return nil

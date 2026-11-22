@@ -39,7 +39,7 @@ func (c *liveCollector) ensureWeather(endpoints livegame.Endpoints) *now.Weather
 	if c.packets == nil || !c.packets.replay {
 		transport = c.preClient
 	}
-	cache, err := now.NewWeatherCache(transport, endpoints.NWS)
+	cache, err := now.NewWeatherCache(transport, endpoints.OpenMeteo)
 	if err != nil {
 		log.Printf("server live weather init: %v", err)
 		return nil

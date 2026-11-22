@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"net/url"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -16,7 +15,8 @@ import (
 )
 
 const (
-	nwsUserAgent       = "TheWarRoom (lab)"
+	weatherUserAgent   = "TheWarRoom (lab)"
+	openMeteoHost      = "api.open-meteo.com"
 	defaultWeatherTTL  = 30 * time.Minute
 	weatherFailureHold = 2 * time.Minute
 )
@@ -25,21 +25,21 @@ const (
 var nflStadiumsJSON []byte
 
 type Stadium struct {
-	Team  string  `json:"team"`
+	Team  string  `json:"team,omitempty"`
 	Name  string  `json:"name"`
 	City  string  `json:"city"`
-	State string  `json:"state"`
+	State string  `json:"state,omitempty"`
 	Lat   float64 `json:"lat"`
 	Lon   float64 `json:"lon"`
 	Dome  bool    `json:"dome"`
 }
 
 func (s Stadium) Validate() error {
-	if s.Team == "" || s.Name == "" || s.City == "" {
-		return fmt.Errorf("stadium: team, name and city are required")
+	if s.Name == "" || s.City == "" {
+		return fmt.Errorf("stadium: name and city are required")
 	}
 	if s.Lat < -90 || s.Lat > 90 || s.Lon < -180 || s.Lon > 180 {
-		return fmt.Errorf("stadium %s: coordinates out of range", s.Team)
+		return fmt.Errorf("stadium %s: coordinates out of range", s.Name)
 	}
 	return nil
 }
@@ -58,69 +58,29 @@ func NFLStadiums() ([]Stadium, error) {
 	return raw, nil
 }
 
-type RawNWSPoints struct {
-	Properties struct {
-		ForecastHourly string `json:"forecastHourly"`
-	} `json:"properties"`
+type RawOpenMeteoHourly struct {
+	Time          []string   `json:"time"`
+	Temperature2m []*float64 `json:"temperature_2m"`
+	WeatherCode   []*int     `json:"weather_code"`
+	WindSpeed10m  []*float64 `json:"wind_speed_10m"`
+	PrecipProb    []*int     `json:"precipitation_probability"`
 }
 
-func (r RawNWSPoints) Validate(expectedHost string) error {
-	u, err := url.Parse(r.Properties.ForecastHourly)
-	if err != nil {
-		return fmt.Errorf("nws forecastHourly: %w", err)
-	}
-	if u.Scheme != "https" || u.Host == "" || u.User != nil {
-		return fmt.Errorf("nws forecastHourly: requires HTTPS without credentials")
-	}
-	if expectedHost != "" && !strings.EqualFold(u.Host, expectedHost) {
-		return fmt.Errorf("nws forecastHourly: unexpected host %q", u.Host)
-	}
-	return nil
+type RawOpenMeteoForecast struct {
+	Hourly *RawOpenMeteoHourly `json:"hourly"`
 }
 
-type RawNWSPeriod struct {
-	StartTime     string `json:"startTime"`
-	EndTime       string `json:"endTime"`
-	Temperature   *int   `json:"temperature"`
-	TempUnit      string `json:"temperatureUnit"`
-	WindSpeed     string `json:"windSpeed"`
-	WindDirection string `json:"windDirection"`
-	ShortForecast string `json:"shortForecast"`
-	Precip        *struct {
-		Value *int `json:"value"`
-	} `json:"probabilityOfPrecipitation"`
-}
-
-func (p RawNWSPeriod) Validate() error {
-	start, err := time.Parse(time.RFC3339, p.StartTime)
-	if err != nil {
-		return fmt.Errorf("nws period startTime: %w", err)
+func (r RawOpenMeteoForecast) Validate() error {
+	if r.Hourly == nil || len(r.Hourly.Time) == 0 {
+		return fmt.Errorf("open-meteo forecast: hourly data missing")
 	}
-	end, err := time.Parse(time.RFC3339, p.EndTime)
-	if err != nil {
-		return fmt.Errorf("nws period endTime: %w", err)
+	n := len(r.Hourly.Time)
+	if len(r.Hourly.Temperature2m) != n || len(r.Hourly.WeatherCode) != n ||
+		len(r.Hourly.WindSpeed10m) != n {
+		return fmt.Errorf("open-meteo forecast: hourly column length mismatch")
 	}
-	if !end.After(start) {
-		return fmt.Errorf("nws period: end before start")
-	}
-	if p.Temperature == nil {
-		return fmt.Errorf("nws period: missing temperature")
-	}
-	if p.TempUnit != "F" && p.TempUnit != "C" {
-		return fmt.Errorf("nws period: unsupported unit %q", p.TempUnit)
-	}
-	return nil
-}
-
-type RawNWSForecast struct {
-	Properties struct {
-		Periods []RawNWSPeriod `json:"periods"`
-	} `json:"properties"`
-}
-
-func (r RawNWSForecast) Validate() error {
-	if r.Properties.Periods == nil {
-		return fmt.Errorf("nws forecast: periods missing")
+	if len(r.Hourly.PrecipProb) != 0 && len(r.Hourly.PrecipProb) != n {
+		return fmt.Errorf("open-meteo forecast: precipitation_probability length mismatch")
 	}
 	return nil
 }
@@ -130,36 +90,34 @@ type weatherEntry struct {
 	expires time.Time
 }
 
-// WeatherCache resolves pre-game stadium weather with a 30-minute NWS cache.
+// WeatherCache resolves pre-game stadium weather via Open-Meteo with a 30-minute cache.
 type WeatherCache struct {
-	Transport livegame.Transport
-	PointsURL string
-	TTL       time.Duration
-	Now       func() time.Time
+	Transport   livegame.Transport
+	ForecastURL string
+	TTL         time.Duration
+	Now         func() time.Time
 
 	mu       sync.Mutex
 	stadiums []Stadium
-	gridURLs map[string]string
 	entries  map[string]weatherEntry
 }
 
-func NewWeatherCache(transport livegame.Transport, pointsURL string) (*WeatherCache, error) {
+func NewWeatherCache(transport livegame.Transport, forecastURL string) (*WeatherCache, error) {
 	stadiums, err := NFLStadiums()
 	if err != nil {
 		return nil, err
 	}
 	return &WeatherCache{
-		Transport: transport,
-		PointsURL: pointsURL,
-		TTL:       defaultWeatherTTL,
-		Now:       time.Now,
-		stadiums:  stadiums,
-		gridURLs:  map[string]string{},
-		entries:   map[string]weatherEntry{},
+		Transport:   transport,
+		ForecastURL: forecastURL,
+		TTL:         defaultWeatherTTL,
+		Now:         time.Now,
+		stadiums:    stadiums,
+		entries:     map[string]weatherEntry{},
 	}, nil
 }
 
-// Resolve populates g.Weather following the indoor -> NWS US outdoor -> ESPN abroad -> omitted order.
+// Resolve populates g.Weather following the indoor -> Open-Meteo -> omit order.
 func (c *WeatherCache) Resolve(ctx context.Context, g *livegame.Game) {
 	if c == nil || g == nil {
 		return
@@ -168,13 +126,9 @@ func (c *WeatherCache) Resolve(ctx context.Context, g *livegame.Game) {
 		g.Weather = &livegame.Weather{Text: "Indoors"}
 		return
 	}
-	if isAbroadVenue(g.Venue) {
-		g.Weather = validESPNWeather(g.Weather)
-		return
-	}
 	st, matched := c.matchStadium(g)
 	if !matched {
-		g.Weather = validESPNWeather(g.Weather)
+		g.Weather = nil
 		return
 	}
 	if st.Dome {
@@ -184,25 +138,20 @@ func (c *WeatherCache) Resolve(ctx context.Context, g *livegame.Game) {
 		g.Weather = &livegame.Weather{Text: "Indoors"}
 		return
 	}
-	if g.Kickoff.IsZero() || c.Transport == nil || c.PointsURL == "" {
+	if g.Kickoff.IsZero() || c.Transport == nil || c.ForecastURL == "" {
 		g.Weather = nil
 		return
 	}
-	g.Weather = c.nwsWeather(ctx, st, g.Kickoff)
+	g.Weather = c.openMeteoWeather(ctx, st, g.Kickoff)
 }
 
 func (c *WeatherCache) matchStadium(g *livegame.Game) (Stadium, bool) {
-	if g.Venue != nil && (g.Venue.Name != "" || g.Venue.City != "") {
-		if st, ok := c.matchByVenue(g.Venue); ok {
-			return st, true
-		}
-		if g.Venue.State == "" || !isUSState(g.Venue.State) {
-			return Stadium{}, false
-		}
+	if g.Venue != nil && (strings.TrimSpace(g.Venue.Name) != "" || strings.TrimSpace(g.Venue.City) != "") {
+		return c.matchByVenue(g.Venue)
 	}
 	home := livegame.Canonical(g.Home.Abbreviation)
 	for _, st := range c.stadiums {
-		if st.Team == home {
+		if st.Team != "" && st.Team == home {
 			return st, true
 		}
 	}
@@ -210,26 +159,54 @@ func (c *WeatherCache) matchStadium(g *livegame.Game) (Stadium, bool) {
 }
 
 func (c *WeatherCache) matchByVenue(v *livegame.Venue) (Stadium, bool) {
-	name := strings.ToLower(strings.TrimSpace(v.Name))
-	city := strings.ToLower(strings.TrimSpace(v.City))
-	state := strings.ToUpper(strings.TrimSpace(v.State))
-	for _, st := range c.stadiums {
-		if name != "" && strings.EqualFold(st.Name, name) {
+	name := normalizePlace(v.Name)
+	if name != "" {
+		if st, ok := c.matchByName(name); ok {
 			return st, true
 		}
-		if city != "" && strings.EqualFold(st.City, city) && (state == "" || st.State == state) {
+	}
+	city := normalizePlace(v.City)
+	if city == "" {
+		return Stadium{}, false
+	}
+	state := strings.ToUpper(strings.TrimSpace(v.State))
+	var match Stadium
+	matched := false
+	for _, st := range c.stadiums {
+		if normalizePlace(st.City) != city {
+			continue
+		}
+		if state != "" && st.State != "" && st.State != state {
+			continue
+		}
+		if matched && !strings.EqualFold(match.Name, st.Name) {
+			return Stadium{}, false
+		}
+		match, matched = st, true
+	}
+	return match, matched
+}
+
+func (c *WeatherCache) matchByName(name string) (Stadium, bool) {
+	for _, st := range c.stadiums {
+		if normalizePlace(st.Name) == name {
+			return st, true
+		}
+	}
+	for _, st := range c.stadiums {
+		stName := normalizePlace(st.Name)
+		if len(stName) >= 8 && strings.Contains(name, stName) {
 			return st, true
 		}
 	}
 	return Stadium{}, false
 }
 
-func (c *WeatherCache) nwsWeather(
+func (c *WeatherCache) openMeteoWeather(
 	ctx context.Context, st Stadium, kickoff time.Time,
 ) *livegame.Weather {
-	coord := fmt.Sprintf("%.4f,%.4f", st.Lat, st.Lon)
 	hour := kickoff.UTC().Truncate(time.Hour).Format(time.RFC3339)
-	key := coord + "|" + hour
+	key := fmt.Sprintf("%.4f,%.4f|%s", st.Lat, st.Lon, hour)
 	now := c.clock()
 
 	c.mu.Lock()
@@ -237,10 +214,9 @@ func (c *WeatherCache) nwsWeather(
 		c.mu.Unlock()
 		return cloneWeather(hit.weather)
 	}
-	gridURL := c.gridURLs[coord]
 	c.mu.Unlock()
 
-	weather, nextGrid, err := c.fetchNWS(ctx, st, gridURL, kickoff)
+	weather, err := c.fetchOpenMeteo(ctx, st, kickoff)
 	ttl := c.ttl()
 	if err != nil {
 		ttl = weatherFailureHold
@@ -248,96 +224,151 @@ func (c *WeatherCache) nwsWeather(
 	}
 
 	c.mu.Lock()
-	if nextGrid != "" {
-		c.gridURLs[coord] = nextGrid
-	}
 	c.entries[key] = weatherEntry{weather: cloneWeather(weather), expires: now.Add(ttl)}
 	c.mu.Unlock()
 	return weather
 }
 
-func (c *WeatherCache) fetchNWS(
-	ctx context.Context, st Stadium, gridURL string, kickoff time.Time,
-) (*livegame.Weather, string, error) {
-	headers := map[string]string{
-		"User-Agent": nwsUserAgent,
-		"Accept":     "application/geo+json",
-	}
-	pointsURL := strings.NewReplacer(
+func (c *WeatherCache) fetchOpenMeteo(
+	ctx context.Context, st Stadium, kickoff time.Time,
+) (*livegame.Weather, error) {
+	reqURL := strings.NewReplacer(
 		"{lat}", fmt.Sprintf("%.4f", st.Lat),
 		"{lon}", fmt.Sprintf("%.4f", st.Lon),
-	).Replace(c.PointsURL)
-	parsedPoints, err := url.Parse(pointsURL)
+	).Replace(c.ForecastURL)
+	if err := validateOpenMeteoURL(reqURL); err != nil {
+		return nil, err
+	}
+	headers := map[string]string{"User-Agent": weatherUserAgent}
+	body, err := livegame.FetchHTTPSWithHeaders(ctx, c.Transport, reqURL, headers)
 	if err != nil {
-		return nil, "", fmt.Errorf("nws points url: %w", err)
+		return nil, fmt.Errorf("open-meteo hourly: %w", err)
 	}
-	if gridURL == "" {
-		body, err := livegame.FetchHTTPSWithHeaders(ctx, c.Transport, pointsURL, headers)
-		if err != nil {
-			return nil, "", fmt.Errorf("nws points: %w", err)
-		}
-		var pts RawNWSPoints
-		if err := json.Unmarshal(body, &pts); err != nil {
-			return nil, "", fmt.Errorf("nws points decode: %w", err)
-		}
-		if err := pts.Validate(parsedPoints.Host); err != nil {
-			return nil, "", err
-		}
-		gridURL = pts.Properties.ForecastHourly
-	}
-	body, err := livegame.FetchHTTPSWithHeaders(ctx, c.Transport, gridURL, headers)
-	if err != nil {
-		return nil, gridURL, fmt.Errorf("nws hourly: %w", err)
-	}
-	weather, err := ParseNWSHourly(body, kickoff)
-	if err != nil {
-		return nil, gridURL, err
-	}
-	return weather, gridURL, nil
+	return ParseOpenMeteoHourly(body, kickoff)
 }
 
-// ParseNWSHourly selects the NWS hourly period covering kickoff and validates its fields.
-func ParseNWSHourly(body []byte, kickoff time.Time) (*livegame.Weather, error) {
-	var raw RawNWSForecast
+func validateOpenMeteoURL(rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("open-meteo url: %w", err)
+	}
+	if u.Scheme != "https" || u.User != nil || !strings.EqualFold(u.Host, openMeteoHost) {
+		return fmt.Errorf("open-meteo url: requires https://%s without credentials", openMeteoHost)
+	}
+	return nil
+}
+
+// ParseOpenMeteoHourly selects the UTC hourly slot covering kickoff and validates its fields.
+func ParseOpenMeteoHourly(body []byte, kickoff time.Time) (*livegame.Weather, error) {
+	var raw RawOpenMeteoForecast
 	if err := json.Unmarshal(body, &raw); err != nil {
-		return nil, fmt.Errorf("nws hourly decode: %w", err)
+		return nil, fmt.Errorf("open-meteo decode: %w", err)
 	}
 	if err := raw.Validate(); err != nil {
 		return nil, err
 	}
-	target := kickoff.UTC()
-	for _, p := range raw.Properties.Periods {
-		if p.Validate() != nil {
-			continue
+	target := kickoff.UTC().Truncate(time.Hour)
+	want := target.Format("2006-01-02T15:04")
+	for i, ts := range raw.Hourly.Time {
+		if ts == want {
+			return openMeteoSlotToWeather(raw.Hourly, i)
 		}
-		start, _ := time.Parse(time.RFC3339, p.StartTime)
-		end, _ := time.Parse(time.RFC3339, p.EndTime)
-		if !target.Before(start) && target.Before(end) {
-			return nwsPeriodToWeather(p), nil
+		if parsed, ok := parseOpenMeteoTime(ts); ok && parsed.Equal(target) {
+			return openMeteoSlotToWeather(raw.Hourly, i)
 		}
 	}
 	return nil, nil
 }
 
-func nwsPeriodToWeather(p RawNWSPeriod) *livegame.Weather {
-	tempF := *p.Temperature
-	if p.TempUnit == "C" {
-		tempF = int(math.Round(float64(tempF)*9.0/5.0 + 32.0))
+func parseOpenMeteoTime(ts string) (time.Time, bool) {
+	if t, err := time.Parse("2006-01-02T15:04", ts); err == nil {
+		return t.UTC(), true
 	}
-	wind := strings.TrimSpace(strings.TrimSpace(p.WindSpeed) + " " + strings.TrimSpace(p.WindDirection))
-	w := &livegame.Weather{
-		Text:   strings.TrimSpace(p.ShortForecast),
-		TempF:  &tempF,
-		Wind:   wind,
-		Source: "NWS",
+	if t, err := time.Parse(time.RFC3339, ts); err == nil {
+		return t.UTC(), true
 	}
-	if p.Precip != nil && p.Precip.Value != nil {
-		v := *p.Precip.Value
-		if v >= 0 && v <= 100 {
+	return time.Time{}, false
+}
+
+func finiteInRange(v *float64, lo, hi float64) (float64, bool) {
+	if v == nil || math.IsNaN(*v) || math.IsInf(*v, 0) || *v < lo || *v > hi {
+		return 0, false
+	}
+	return *v, true
+}
+
+func openMeteoSlotToWeather(h *RawOpenMeteoHourly, idx int) (*livegame.Weather, error) {
+	temp, ok := finiteInRange(h.Temperature2m[idx], -60, 140)
+	if !ok {
+		return nil, fmt.Errorf("open-meteo: invalid temperature")
+	}
+	tempF := int(math.Round(temp))
+	w := &livegame.Weather{TempF: &tempF, Source: "Open-Meteo"}
+	if code := h.WeatherCode[idx]; code != nil {
+		w.Text = wmoWeatherText(*code)
+	}
+	if h.WindSpeed10m[idx] != nil {
+		wind, ok := finiteInRange(h.WindSpeed10m[idx], 0, 200)
+		if !ok {
+			return nil, fmt.Errorf("open-meteo: invalid wind speed")
+		}
+		w.Wind = fmt.Sprintf("%d mph", int(math.Round(wind)))
+	}
+	if idx < len(h.PrecipProb) && h.PrecipProb[idx] != nil {
+		if v := *h.PrecipProb[idx]; v >= 0 && v <= 100 {
 			w.PrecipPct = &v
 		}
 	}
-	return w
+	return w, nil
+}
+
+func wmoWeatherText(code int) string {
+	switch code {
+	case 0, 1:
+		return "Clear"
+	case 2:
+		return "Partly cloudy"
+	case 3:
+		return "Cloudy"
+	case 45, 48:
+		return "Fog"
+	case 51, 53, 55, 56, 57:
+		return "Drizzle"
+	case 61, 63, 65, 66, 67:
+		return "Rain"
+	case 71, 73, 75, 77, 85, 86:
+		return "Snow"
+	case 80, 81, 82:
+		return "Showers"
+	case 95, 96, 99:
+		return "Thunderstorms"
+	default:
+		return ""
+	}
+}
+
+func normalizePlace(s string) string {
+	folded := strings.Map(func(r rune) rune {
+		switch r {
+		case 'á', 'à', 'â', 'ã', 'ä', 'Á', 'À', 'Â', 'Ã', 'Ä':
+			return 'a'
+		case 'é', 'è', 'ê', 'ë', 'É', 'È', 'Ê', 'Ë':
+			return 'e'
+		case 'í', 'ì', 'î', 'ï', 'Í', 'Ì', 'Î', 'Ï':
+			return 'i'
+		case 'ó', 'ò', 'ô', 'õ', 'ö', 'Ó', 'Ò', 'Ô', 'Õ', 'Ö':
+			return 'o'
+		case 'ú', 'ù', 'û', 'ü', 'Ú', 'Ù', 'Û', 'Ü':
+			return 'u'
+		case 'ñ', 'Ñ':
+			return 'n'
+		case 'ç', 'Ç':
+			return 'c'
+		default:
+			return r
+		}
+	}, strings.TrimSpace(s))
+	return strings.ToLower(folded)
 }
 
 func (c *WeatherCache) clock() time.Time {
@@ -352,31 +383,6 @@ func (c *WeatherCache) ttl() time.Duration {
 		return c.TTL
 	}
 	return defaultWeatherTTL
-}
-
-func isAbroadVenue(v *livegame.Venue) bool {
-	if v == nil || strings.TrimSpace(v.Country) == "" {
-		return false
-	}
-	country := strings.ToUpper(strings.TrimSpace(v.Country))
-	return !slices.Contains([]string{"US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"}, country)
-}
-
-func isUSState(state string) bool {
-	code := strings.ToUpper(strings.TrimSpace(state))
-	return slices.Contains([]string{
-		"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN",
-		"IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
-		"NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT",
-		"VT", "VA", "WA", "WV", "WI", "WY",
-	}, code)
-}
-
-func validESPNWeather(w *livegame.Weather) *livegame.Weather {
-	if w == nil || (w.Text == "" && w.TempF == nil) {
-		return nil
-	}
-	return cloneWeather(w)
 }
 
 func cloneWeather(w *livegame.Weather) *livegame.Weather {

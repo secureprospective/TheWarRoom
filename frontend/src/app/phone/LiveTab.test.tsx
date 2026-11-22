@@ -288,7 +288,7 @@ describe('LiveTab', () => {
       status: 'pre', clock: '', period: 0, state: null, last: null, plays: [], box: [],
       predictor: { away: 45, home: 55 },
       venue: { name: 'Highmark Stadium', city: 'Orchard Park', state: 'NY', indoor: false },
-      weather: { text: 'Mostly Cloudy', tempF: 66, wind: '7 mph S', precipPct: 0, source: 'NWS' },
+      weather: { text: 'Partly cloudy', tempF: 48, wind: '9 mph', precipPct: 20, source: 'Open-Meteo' },
     };
     const finalGame = { ...nflGame, id: '406', status: 'post', clock: '0:00', period: 4 };
     const port = vi.fn<HostedPort>(async request => {

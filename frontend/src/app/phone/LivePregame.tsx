@@ -73,8 +73,8 @@ function weatherLine(game: Game): string {
   const parts: string[] = [];
   if (w.tempF !== undefined) parts.push(`${w.tempF}°F`);
   if (w.text) parts.push(w.text);
-  if (w.wind) parts.push(`wind ${w.wind}`);
-  if (w.precipPct !== undefined) parts.push(`rain ${w.precipPct}%`);
+  if (w.wind) parts.push(`Wind ${w.wind}`);
+  if (w.precipPct !== undefined) parts.push(`${w.precipPct}% rain`);
   return parts.join(' · ');
 }
 
@@ -102,6 +102,7 @@ export function LivePregame({ game, guys, now, reduced }: {
 
   const heading = stadiumHeading(game);
   const conditions = weatherLine(game);
+  const showWeatherCredit = Boolean(conditions && conditions !== 'Indoors');
   const hasThird = Boolean(heading || conditions);
 
   return <div className="lf bc-wrap" data-testid="live-pregame" style={{
@@ -146,6 +147,8 @@ export function LivePregame({ game, guys, now, reduced }: {
       <div className="bc-tx">
         {heading && <b>{heading}</b>}
         {conditions && <span data-testid="pregame-weather">{conditions}</span>}
+        {showWeatherCredit && <small className="bc-wx-credit"
+          data-testid="pregame-weather-credit">Weather: Open-Meteo</small>}
       </div>
     </div>}
 

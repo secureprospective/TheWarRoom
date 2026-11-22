@@ -319,7 +319,7 @@ func TestSummaryAtKickoffBeforeTheFirstPlay(t *testing.T) {
 	}
 }
 
-func TestSummaryParsesPregamePredictorVenueAndWeather(t *testing.T) {
+func TestSummaryParsesPregamePredictorAndVenue(t *testing.T) {
 	outdoor, err := ParseSummary(fixture(t, "espn-summary-pregame-outdoor"))
 	if err != nil {
 		t.Fatal(err)
@@ -331,9 +331,8 @@ func TestSummaryParsesPregamePredictorVenueAndWeather(t *testing.T) {
 		outdoor.Venue.City != "Orchard Park" || outdoor.Venue.Indoor {
 		t.Fatalf("outdoor venue = %+v", outdoor.Venue)
 	}
-	if outdoor.Weather == nil || outdoor.Weather.TempF == nil || *outdoor.Weather.TempF != 66 ||
-		outdoor.Weather.Text != "Mostly Cloudy" {
-		t.Fatalf("outdoor weather = %+v", outdoor.Weather)
+	if outdoor.Weather != nil {
+		t.Fatalf("outdoor summary must ignore ESPN weather, got %+v", outdoor.Weather)
 	}
 
 	indoor, err := ParseSummary(fixture(t, "espn-summary-pregame-indoor"))
@@ -360,9 +359,8 @@ func TestSummaryParsesPregamePredictorVenueAndWeather(t *testing.T) {
 	if abroad.Venue == nil || abroad.Venue.City != "London" || abroad.Venue.Country != "United Kingdom" {
 		t.Fatalf("abroad venue = %+v", abroad.Venue)
 	}
-	if abroad.Weather == nil || abroad.Weather.TempF == nil || *abroad.Weather.TempF != 54 ||
-		abroad.Weather.Text != "Light Rain" {
-		t.Fatalf("abroad weather = %+v", abroad.Weather)
+	if abroad.Weather != nil {
+		t.Fatalf("abroad summary must ignore ESPN weather, got %+v", abroad.Weather)
 	}
 
 	// Malformed or mismatched predictor drops the predictor cleanly without failing the summary.

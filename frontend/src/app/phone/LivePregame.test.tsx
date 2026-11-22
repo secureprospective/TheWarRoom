@@ -19,7 +19,7 @@ const basePre: Game = {
   plays: [],
   predictor: { away: 40.6, home: 59.1 },
   venue: { name: 'Highmark Stadium', city: 'Orchard Park', state: 'NY', country: 'USA', indoor: false },
-  weather: { text: 'Mostly Cloudy', tempF: 66, wind: '7 mph S', precipPct: 0, source: 'NWS' },
+  weather: { text: 'Partly cloudy', tempF: 48, wind: '9 mph', precipPct: 20, source: 'Open-Meteo' },
 };
 
 const guys: PregameGuy[] = [
@@ -74,7 +74,9 @@ describe('LivePregame', () => {
     const stadium = host!.querySelector('[data-testid="pregame-stadium"]')!;
     expect(stadium.textContent).toContain('HIGHMARK STADIUM · ORCHARD PARK, NY');
     expect(host!.querySelector('[data-testid="pregame-weather"]')?.textContent)
-      .toBe('66°F · Mostly Cloudy · wind 7 mph S · rain 0%');
+      .toBe('48°F · Partly cloudy · Wind 9 mph · 20% rain');
+    expect(host!.querySelector('[data-testid="pregame-weather-credit"]')?.textContent)
+      .toBe('Weather: Open-Meteo');
 
     const crawl = host!.querySelector('[data-testid="pregame-crawl"]')!;
     expect(crawl.classList.contains('is-static')).toBe(false);
@@ -91,16 +93,17 @@ describe('LivePregame', () => {
     expect(host!.querySelector('[data-testid="pregame-winbar"]')).toBeNull();
   });
 
-  it('hides the weather line when weather is missing', async () => {
+  it('hides the weather line and Open-Meteo credit when weather is missing', async () => {
     const noWeather: Game = { ...basePre, weather: undefined };
     await mount(<LivePregame game={noWeather} guys={guys} now={Date.parse('2026-11-22T17:00:00Z')}
       reduced={false} />);
     expect(host!.querySelector('[data-testid="pregame-stadium"]')?.textContent)
       .toContain('HIGHMARK STADIUM');
     expect(host!.querySelector('[data-testid="pregame-weather"]')).toBeNull();
+    expect(host!.querySelector('[data-testid="pregame-weather-credit"]')).toBeNull();
   });
 
-  it('shows exact Indoors with no temperature for indoor venues', async () => {
+  it('shows exact Indoors with no temperature or Open-Meteo credit for indoor venues', async () => {
     const indoor: Game = {
       ...basePre,
       venue: { name: 'Ford Field', city: 'Detroit', state: 'MI', indoor: true },
@@ -112,6 +115,21 @@ describe('LivePregame', () => {
     expect(wx).toBe('Indoors');
     expect(wx).not.toContain('72');
     expect(wx).not.toContain('°');
+    expect(host!.querySelector('[data-testid="pregame-weather-credit"]')).toBeNull();
+  });
+
+  it('shows Weather: Open-Meteo credit whenever a forecast line is shown', async () => {
+    const abroad: Game = {
+      ...basePre,
+      venue: { name: 'Tottenham Hotspur Stadium', city: 'London', country: 'United Kingdom' },
+      weather: { text: 'Rain', tempF: 54, wind: '12 mph', precipPct: 60, source: 'Open-Meteo' },
+    };
+    await mount(<LivePregame game={abroad} guys={[]} now={Date.parse('2026-11-22T12:00:00Z')}
+      reduced={false} />);
+    expect(host!.querySelector('[data-testid="pregame-weather"]')?.textContent)
+      .toBe('54°F · Rain · Wind 12 mph · 60% rain');
+    expect(host!.querySelector('[data-testid="pregame-weather-credit"]')?.textContent)
+      .toBe('Weather: Open-Meteo');
   });
 
   it('hides the crawl completely when no selected-matchup players play in this game', async () => {

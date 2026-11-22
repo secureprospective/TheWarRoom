@@ -30,5 +30,13 @@
   {"team":"SF","name":"Levi's Stadium","city":"Santa Clara","state":"CA","lat":37.4033,"lon":-121.9694,"dome":false},
   {"team":"TB","name":"Raymond James Stadium","city":"Tampa","state":"FL","lat":27.9759,"lon":-82.5033,"dome":false},
   {"team":"TEN","name":"Nissan Stadium","city":"Nashville","state":"TN","lat":36.1665,"lon":-86.7713,"dome":false},
-  {"team":"WSH","name":"Northwest Stadium","city":"Landover","state":"MD","lat":38.9076,"lon":-76.8645,"dome":false}
+  {"team":"WSH","name":"Northwest Stadium","city":"Landover","state":"MD","lat":38.9076,"lon":-76.8645,"dome":false},
+  {"name":"Tottenham Hotspur Stadium","city":"London","lat":51.6042,"lon":-0.0662,"dome":false},
+  {"name":"Wembley Stadium","city":"London","lat":51.5560,"lon":-0.2795,"dome":false},
+  {"name":"Allianz Arena","city":"Munich","lat":48.2188,"lon":11.6247,"dome":false},
+  {"name":"Olympiastadion","city":"Berlin","lat":52.5147,"lon":13.2395,"dome":false},
+  {"name":"Santiago Bernabéu","city":"Madrid","lat":40.4530,"lon":-3.6883,"dome":false},
+  {"name":"Estadio Azteca","city":"Mexico City","lat":19.3029,"lon":-99.1505,"dome":false},
+  {"name":"Arena Corinthians","city":"São Paulo","lat":-23.5453,"lon":-46.4742,"dome":false},
+  {"name":"Croke Park","city":"Dublin","lat":53.3607,"lon":-6.2513,"dome":false}
 ]

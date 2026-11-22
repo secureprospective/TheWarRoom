@@ -1,5 +1,0 @@
-{
-  "properties": {
-    "forecastHourly": "https://api.weather.gov/gridpoints/BUF/39,46/forecast/hourly"
-  }
-}

@@ -266,6 +266,7 @@
 .bc-tx { padding: 9px 11px; display: grid; gap: 4px; min-width: 0; }
 .bc-tx b { font: 700 12px var(--l6-mono); letter-spacing: .1em; color: var(--l6-ink); }
 .bc-tx span { font: 13px/1.35 var(--l6-sans); color: var(--l6-ink2); }
+.bc-wx-credit { font: 10px/1.2 var(--l6-mono); letter-spacing: .05em; color: var(--l6-ink3); }
 .bc-crawl {
   display: flex; align-items: stretch; min-height: 30px;
   background: var(--l6-ink); color: #000;

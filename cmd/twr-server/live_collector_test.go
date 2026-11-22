@@ -625,7 +625,7 @@ func TestLiveCollectorHoldsLastWeekAfterTheBoardMovesOn(t *testing.T) {
 	}
 }
 
-func TestLiveCollectorHoldsPregameDetailsEvenWhenNWSFails(t *testing.T) {
+func TestLiveCollectorHoldsPregameDetailsEvenWhenWeatherFails(t *testing.T) {
 	endpoints, err := now.LiveEndpoints()
 	if err != nil {
 		t.Fatal(err)
@@ -662,7 +662,7 @@ func TestLiveCollectorHoldsPregameDetailsEvenWhenNWSFails(t *testing.T) {
 	service := leagueservice.New(nil).WithLiveGames(collector.games)
 	detail, err := service.TargetNFLGame("native.test", "401873100")
 	if err != nil {
-		t.Fatalf("TargetNFLGame failed when NWS failed: %v", err)
+		t.Fatalf("TargetNFLGame failed when weather failed: %v", err)
 	}
 	if detail.Game == nil || detail.Game.Predictor == nil || detail.Game.Predictor.Home != 59.1 {
 		t.Fatalf("pregame predictor missing: %+v", detail.Game)
@@ -671,6 +671,6 @@ func TestLiveCollectorHoldsPregameDetailsEvenWhenNWSFails(t *testing.T) {
 		t.Fatalf("pregame venue missing: %+v", detail.Game)
 	}
 	if detail.Game.Weather != nil {
-		t.Fatalf("expected nil weather when NWS fails, got %+v", detail.Game.Weather)
+		t.Fatalf("expected nil weather when Open-Meteo fails, got %+v", detail.Game.Weather)
 	}
 }

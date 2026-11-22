@@ -82,7 +82,9 @@ func TestNFLGameDetailsClonePregameFields(t *testing.T) {
 		ID: "402", Status: "pre",
 		Predictor: &livegame.Predictor{Home: 59.1, Away: 40.6},
 		Venue:     &livegame.Venue{Name: "Highmark Stadium", City: "Orchard Park", State: "NY"},
-		Weather:   &livegame.Weather{Text: "Mostly Cloudy", TempF: &temp, PrecipPct: &precip, Source: "NWS"},
+		Weather: &livegame.Weather{
+			Text: "Partly cloudy", TempF: &temp, PrecipPct: &precip, Source: "Open-Meteo",
+		},
 	}
 	holder.SetDetails(map[string]NFLGame{"402": {Game: &game, At: at}})
 	temp, precip = 99, 99
