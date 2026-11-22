@@ -1,0 +1,71 @@
+import { Fragment, lazy, Suspense } from 'react';
+import { PlayerActMount } from './MovesMount';
+import type { Snapshot } from '../data/contract';
+import { PlayerCard } from '../cards/PlayerCard';
+import { playerCardModel } from '../cards/playerModel';
+import type { PlayerSubject } from './state';
+import { commands } from '../commands/registry';
+import { AssetNumber } from '../assets/AssetNumber';
+
+const PlayerLists = lazy(() => import('../personal/PersonalLists').then(m => ({ default: m.PlayerLists })));
+const ResearchInspector = lazy(() => import('../research/PlayerInspector'));
+
+const ContractPanel = lazy(() =>
+  import('../contracts/Contracts').then((m) => ({ default: m.ContractPanel })),
+);
+
+export function PlayerInspector({
+  snapshot,
+  subject,
+}: {
+  snapshot: Snapshot;
+  subject: PlayerSubject;
+}) {
+  const mine = commands.use().franchiseId;
+  if (!subject.franchiseId) return <>
+    <Suspense fallback={<p role="status">Reading player…</p>}>
+      <ResearchInspector id={subject.id} />
+    </Suspense>
+    <Suspense fallback={null}><PlayerLists id={subject.id} /></Suspense>
+  </>;
+  const model = playerCardModel(snapshot, subject.franchiseId, subject.id, new Date(), true);
+  return (
+    <>
+      <PlayerCard
+        snapshot={snapshot}
+        franchiseId={subject.franchiseId}
+        playerId={subject.id}
+        asOf={new Date()}
+        model={model}
+      />
+      <Suspense fallback={<p role="status">Reading player research…</p>}>
+        <ResearchInspector id={subject.id} identity={false} />
+      </Suspense>
+      <Suspense fallback={<p role="status">Reading contract years…</p>}>
+        <ContractPanel id={subject.id} />
+      </Suspense>
+      {subject.franchiseId === mine && <PlayerActMount subject={subject} />}
+      <Suspense fallback={null}><PlayerLists id={subject.id} /></Suspense>
+      <section className="zone interrogate">
+        <h5>Interrogate</h5>
+        <div className="provenance-detail">{model.provenance.detail}</div>
+        <dl className="kv">
+          <dt>Status</dt>
+          <dd>{model.contractStatus}</dd>
+          <dt>Years</dt>
+          <dd>{model.years ?? 'Unavailable'}</dd>
+          <dt>Salary</dt>
+          <dd>{model.salary}</dd>
+        </dl>
+        <dl className="kv asset-values">
+          {([['On-field-now', 'now'], ['Dynasty value', 'dynasty'], ['Market', 'market']] as const)
+            .map(([label, which]) => <Fragment key={label}>
+              <dt>{label}</dt>
+              <dd><AssetNumber playerId={subject.id} which={which} /></dd>
+            </Fragment>)}
+        </dl>
+
+      </section>
+    </>
+  );
+}

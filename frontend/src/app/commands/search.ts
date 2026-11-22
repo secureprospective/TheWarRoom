@@ -1,0 +1,146 @@
+import { commandBarIds } from './commandbar.gen';
+import { endpoints } from '../registry';
+import type { Snapshot, Position } from '../data/contract';
+import { nodes, nodeKeys } from '../shell/nodes';
+import { presetIds, presets } from '../shell/presets';
+import type { createCommands, CommandId, CommandArgs } from './registry';
+
+type Invocation = {
+  [K in CommandId]: { verb: K; args: CommandArgs<K> };
+}[CommandId];
+
+export type SearchResult = {
+  label: string;
+  aliases: readonly string[];
+  kind: 'command' | 'place' | 'endpoint' | 'player' | 'franchise';
+  position?: Position;
+  invocation: Invocation;
+};
+
+export type IndexedResult = SearchResult & { texts: readonly string[]; words: readonly string[] };
+
+export function indexResult(result: SearchResult): IndexedResult {
+  const texts = [result.label, ...result.aliases].map((text) => text.toLowerCase());
+  return { ...result, texts, words: texts.flatMap((text) => text.split(/\s+/)) };
+}
+
+type Executor = ReturnType<typeof createCommands>;
+
+export function searchCandidates(executor: Executor, snapshot?: Snapshot): IndexedResult[] {
+  const results: SearchResult[] = [];
+  for (const id of commandBarIds) {
+    const command = executor.registry[id];
+    if (!executor.canDispatch(id)) continue;
+    results.push({
+      label: command.label + (command.keys?.length ? ` · ${command.keys.map((k) => k.key).join(', ')}` : ''),
+      aliases: command.aliases,
+      kind: 'command',
+      invocation: { verb: id, args: {} } as Invocation,
+    });
+  }
+  for (const preset of presetIds.filter(id => executor.hasRoles(presets[id].roles))) {
+    results.push({
+      label: `Preset: ${presets[preset].label}`,
+      aliases: [presets[preset].label],
+      kind: 'command',
+      invocation: { verb: 'preset.apply', args: { preset } },
+    });
+  }
+  for (const density of ['narrative', 'tactical', 'matrix'] as const) {
+    results.push({
+      label: `Density: ${density} · ` +
+        ['N', 'T', 'M'][['narrative', 'tactical', 'matrix'].indexOf(density)],
+      aliases: [density],
+      kind: 'command',
+      invocation: { verb: 'density.set', args: { density } },
+    });
+  }
+  for (const node of nodeKeys) {
+    for (const workspace of nodes[node].workspaces) {
+      results.push({
+        label: `${nodes[node].label} › ${workspace.label}`,
+        aliases: [workspace.label],
+        kind: 'place',
+        invocation: {
+          verb: 'nav.open',
+          args: { node, workspace: workspace.slug },
+        } as Invocation,
+      });
+    }
+  }
+  for (const row of endpoints.filter((e) =>
+    e.disposition === 'kept' && e.status === 'landed' && /\bRead\b/.test(e.kind))) {
+    results.push({
+      label: row.name.replace(/\s+[OR]=\w+/gi, ''),
+      aliases: [row.name],
+      kind: 'endpoint',
+      invocation: { verb: 'endpoint.open', args: { id: row.id } },
+    });
+  }
+  const owners = new Map((snapshot?.franchises.value ?? [])
+    .map((franchise) => [franchise.id, franchise.name]));
+  for (const franchise of snapshot?.franchises.value ?? []) {
+    results.push({ label: franchise.name ?? 'Franchise name unavailable', aliases: [], kind: 'franchise',
+      invocation: { verb: 'inspector.pin', args: { entity: { kind: 'franchise', id: franchise.id } } } });
+  }
+  const players = new Map((snapshot?.players.value ?? []).map((player) => [player.id, player]));
+  for (const roster of snapshot?.rosters.value ?? []) {
+    for (const player of roster.players) {
+      const identity = players.get(player.id);
+      const name = identity?.name ?? 'Player name unavailable';
+      const owner = owners.get(roster.franchiseId);
+      const context = [name, identity?.position, identity?.team, owner ?? 'Franchise name unavailable']
+        .filter(Boolean).join(' · ');
+      results.push({
+        label: context,
+        aliases: [],
+        kind: 'player',
+        position: identity?.position,
+        invocation: {
+          verb: 'inspector.open',
+          args: {
+            subject: { kind: 'player', id: player.id, franchiseId: roster.franchiseId },
+          },
+        },
+      });
+    }
+  }
+  const rostered = new Set(snapshot?.rosters.value.flatMap(r => r.players.map(p => p.id)) ?? []);
+  for (const player of snapshot?.players.value ?? []) {
+    if (rostered.has(player.id)) continue;
+    results.push({ label: [player.name ?? 'Player name unavailable', player.position, player.team]
+      .filter(Boolean).join(' · '), aliases: [], kind: 'player', position: player.position,
+      invocation: { verb: 'inspector.pin', args: { entity: { kind: 'player', id: player.id,
+        franchiseId: '' } } } });
+  }
+  return results.map(indexResult);
+}
+
+export function rankResults(
+  query: string,
+  candidates: readonly IndexedResult[],
+): SearchResult[] {
+  const normalized = query.trim().toLowerCase();
+  const order = { command: 0, place: 1, endpoint: 2, player: 3, franchise: 4 };
+  return candidates
+    .map((result) => ({
+      result,
+      score: result.texts.some((text) => text.startsWith(normalized)) ? 0 :
+        result.words.some((word) => word.startsWith(normalized)) ? 1 :
+        result.texts.some((text) => text.includes(normalized)) ? 2 : 3,
+    }))
+    .filter((entry) => entry.score < 3)
+    .sort(
+      (a, b) =>
+        a.score - b.score ||
+        order[a.result.kind] - order[b.result.kind] ||
+        (a.result.label < b.result.label ? -1 : a.result.label > b.result.label ? 1 : 0),
+    )
+    .slice(0, 8)
+    .map((entry) => entry.result);
+}
+
+export function runResult(executor: Executor, result: SearchResult) {
+  const { verb, args } = result.invocation;
+  executor.dispatch(verb, args);
+}

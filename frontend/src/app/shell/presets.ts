@@ -1,0 +1,62 @@
+import type { Density } from '../cards/Card';
+import type { Route } from './nodes';
+
+export type Role = 'gm' | 'commish' | 'admin';
+
+export function holdsRole(required: readonly Role[], held: readonly Role[]): boolean {
+  return required.some(role => held.includes(role));
+}
+
+type Preset = {
+  label: string;
+  route: Route;
+  density: Density;
+  inspector: 'closed' | 'rest' | 'expanded';
+  roles: readonly ('gm' | 'commish' | 'admin')[];
+};
+
+export const presets = {
+  default: {
+    label: 'Default',
+    route: { node: 'home', workspace: 'overview' },
+    density: 'tactical',
+    inspector: 'rest',
+    roles: ['gm', 'commish', 'admin'],
+  },
+  draft: {
+    label: 'Draft Mode',
+    route: { node: 'war', workspace: 'draft-room' },
+    density: 'matrix',
+    inspector: 'closed',
+    roles: ['gm', 'commish', 'admin'],
+  },
+  gameday: {
+    label: 'Gameday',
+    route: { node: 'pulse', workspace: 'now' },
+    density: 'tactical',
+    inspector: 'expanded',
+    roles: ['gm', 'commish', 'admin'],
+  },
+  trade: {
+    label: 'Trade Season',
+    route: { node: 'war', workspace: 'trade-desk' },
+    density: 'tactical',
+    inspector: 'closed',
+    roles: ['gm', 'commish', 'admin'],
+  },
+  admin: {
+    label: 'Admin',
+    route: { node: 'control', workspace: 'league' },
+    density: 'matrix',
+    inspector: 'closed',
+    roles: ['commish', 'admin'],
+  },
+} as const satisfies Record<string, Preset>;
+
+export type PresetId = keyof typeof presets;
+export const presetIds = Object.keys(presets) as PresetId[];
+
+export function presetAllowed(id: PresetId, held: readonly Role[] = ['gm']): boolean {
+  const preset: Preset = presets[id];
+  return holdsRole(preset.roles, held);
+}

@@ -1,0 +1,68 @@
+.problem-report-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 78%);
+}
+.problem-report-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(720px, calc(100dvh - 32px));
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid var(--edge-hi);
+  background: var(--surface-1, #121417);
+  color: var(--ink, #f1f1f1);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 48%);
+}
+.problem-report-dialog header,
+.problem-report-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.problem-report-dialog header { margin-bottom: 18px; }
+.problem-report-dialog h2 { margin: 0; font-size: 20px; }
+.problem-report-dialog label { display: block; margin-bottom: 8px; font-weight: 700; }
+.problem-report-dialog textarea {
+  display: block;
+  width: 100%;
+  min-height: 160px;
+  box-sizing: border-box;
+  padding: 10px;
+  resize: vertical;
+  border: 1px solid var(--edge-hi);
+  background: var(--sunken, #08090b);
+  color: inherit;
+  font: inherit;
+}
+.problem-report-dialog p { overflow-wrap: anywhere; line-height: 1.5; }
+.problem-report-dialog footer { justify-content: flex-end; margin-top: 18px; }
+.problem-report-dialog button {
+  min-width: 84px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--edge-hi);
+  background: var(--surface-2, #22262c);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.problem-report-dialog button:disabled { cursor: wait; opacity: .6; }
+.problem-report-dialog :focus-visible { outline: 2px solid var(--signal-blue, #70b7ff); outline-offset: 2px; }
+.problem-report-dialog [role=alert] { color: var(--signal-red, #ff7777); }
+.problem-report-entry {
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid var(--edge);
+  background: transparent;
+  color: var(--ink2);
+  font: 600 10px var(--mono);
+  text-align: left;
+  cursor: pointer;
+}
+.problem-report-entry:hover { border-color: var(--edge-hi); color: var(--ink); }

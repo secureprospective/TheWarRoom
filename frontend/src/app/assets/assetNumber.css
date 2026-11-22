@@ -1,0 +1,5 @@
+.twr-app .matrix-roster td:has(.asset-value) {
+  white-space: normal; overflow: visible; text-overflow: clip;
+}
+.twr-app .matrix-roster .asset-value { display: block; }
+.twr-app .matrix-roster .asset-table-sub { display: block; white-space: normal; }

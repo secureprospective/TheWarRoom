@@ -1,0 +1,56 @@
+export const nodes = {
+  home: {
+    label: 'Home',
+    workspaces: [
+      { slug: 'overview', label: 'Overview', ring: 'Ring 1' },
+    ],
+  },
+  war: {
+    label: 'War Room',
+    workspaces: [
+      { slug: 'valuations-and-pool', label: 'Valuations and pool', ring: 'Ring 2' },
+      { slug: 'trade-desk', label: 'Trade desk', ring: 'Ring 1' },
+      { slug: 'draft-room', label: 'Draft room', ring: 'Ring 2' },
+    ],
+  },
+  hq: {
+    label: 'Franchise HQ',
+    workspaces: [
+      { slug: 'lineup-and-roster', label: 'Lineup and roster', ring: 'Ring 1' },
+      { slug: 'contracts-and-cap', label: 'Contracts and cap', ring: 'Ring 2' },
+      { slug: 'my-moves', label: 'My moves', ring: 'Ring 1' },
+    ],
+  },
+  pulse: {
+    label: 'League Pulse',
+    workspaces: [
+      { slug: 'now', label: 'Now', ring: 'Ring 1' },
+      { slug: 'race', label: 'Race', ring: 'Ring 3' },
+    ],
+  },
+  control: {
+    label: 'Control Room',
+    workspaces: [
+      { slug: 'app', label: 'App', ring: 'Ring 3' },
+      { slug: 'league', label: 'League', ring: 'Ring 3' },
+    ],
+  },
+} as const;
+export type Node = keyof typeof nodes;
+export type Route = {
+  [N in Node]: { node: N; workspace: (typeof nodes)[N]['workspaces'][number]['slug'];
+    trade?: N extends 'war' ? { mine: string; player: string; league?: string } : never };
+}[Node];
+export type WorkspaceMemory = {
+  [N in Node]: (typeof nodes)[N]['workspaces'][number]['slug'];
+};
+export const nodeKeys = Object.keys(nodes) as Node[];
+export const homeRoute: Route = { node: 'home', workspace: 'overview' };
+export function isNode(value: string): value is Node {
+  return Object.prototype.hasOwnProperty.call(nodes, value);
+}
+export function routeFor(node: Node, workspace: string): Route | undefined {
+  return nodes[node].workspaces.some((w) => w.slug === workspace)
+    ? ({ node, workspace } as Route)
+    : undefined;
+}

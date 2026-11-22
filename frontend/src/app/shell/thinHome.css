@@ -1,0 +1,112 @@
+.native-account.has-thin-home {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 12px clamp(12px, 2vw, 28px);
+}
+.native-account.has-thin-home > header,
+.native-account.has-thin-home > nav,
+.native-account.has-thin-home > .native-actions { flex: none; max-width: none; }
+.native-account.has-thin-home > header { display: flex; align-items: baseline; justify-content: space-between; }
+.native-account.has-thin-home > header h1 { font-size: 18px; margin: 0; }
+.native-account.has-thin-home > header p { margin: 0 0 0 12px; display: inline; }
+.native-account.has-thin-home > nav { gap: 8px; margin: 8px 0; }
+.native-account.has-thin-home > nav .act { min-height: 34px; padding: 5px 10px; }
+.native-account.has-thin-home > .native-actions { gap: 6px; margin: 4px 0 0; }
+.native-account.has-thin-home > .native-actions .act { min-height: 32px; padding: 4px 8px; font-size: 11px; }
+.native-account.has-thin-home > div:not([hidden]):not(.native-actions) { flex: 1; min-height: 0; max-width: none; display: flex;
+  flex-direction: column; }
+.native-account.has-thin-home > div:not([hidden]) > section[aria-label="Your league access"] { display: none; }
+.native-account.has-thin-home footer { display: none; }
+.native-account .thin-home { --th-bg: hsl(220 20% 7%); --th-raised: hsl(220 18% 11%);
+  --th-edge: hsl(220 9% 31%); --th-bright: hsl(220 8% 78%); --th-text: hsl(220 18% 92%);
+  --th-muted: hsl(220 9% 67%); --th-dim: hsl(220 8% 51%); flex: 1; min-height: 0; width: 100%;
+  max-width: none; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--th-edge);
+  background: var(--th-bg); color: var(--th-text); font: 13px/1.4 var(--surface-sans); }
+.native-account .thin-home * { min-width: 0; }
+.thin-home__header { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 18px; border-bottom: 2px solid #000; background: #0a0b0d; }
+.thin-home__header h1 { margin: 2px 0 0; font-size: 21px; line-height: 1.15; }
+.thin-home__eyebrow, .thin-home__count, .thin-home__section-head, .thin-home__facts p > span {
+  font: 600 10px/1.35 var(--surface-mono); letter-spacing: .12em; color: var(--th-muted); }
+.thin-home__count { border: 1px solid var(--th-edge); padding: 5px 8px; white-space: nowrap; }
+.thin-home__content { display: grid; grid-template-columns: minmax(260px, .82fr) minmax(0, 1.5fr);
+  min-height: 0; flex: 1; }
+.thin-home__needs, .thin-home__leagues { min-height: 0; overflow: auto; }
+.thin-home__needs { border-right: 2px solid #000; background: #0b0c0e; }
+.thin-home__leagues { padding-bottom: 16px; }
+.thin-home__section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 12px 14px 10px; border-bottom: 1px solid var(--th-edge); background: #090a0c; }
+.thin-home__section-head h2 { margin: 0; color: var(--th-text); font: inherit; }
+.thin-home__section-head > span { color: var(--th-dim); white-space: nowrap; }
+.thin-home__items { list-style: none; margin: 0; padding: 0 10px 14px; }
+.thin-home__items li { border-bottom: 1px solid #1b1d21; }
+.thin-home .thin-home__need.act { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px;
+  width: 100%; min-height: 0; padding: 10px 8px; border: 0; border-radius: 0; background: transparent;
+  color: var(--th-text); text-align: left; }
+.thin-home .thin-home__need.act:hover:not(:disabled) { background: var(--th-raised); }
+.thin-home__need-league { grid-column: 1 / -1; color: var(--th-dim); font: 600 9px var(--surface-mono);
+  letter-spacing: .1em; text-transform: uppercase; }
+.thin-home__need-words { overflow-wrap: anywhere; }
+.thin-home__need time { color: var(--signal-amber); font: 11px var(--surface-mono); white-space: nowrap; }
+.thin-home__need.is-unavailable .thin-home__need-words { color: var(--th-muted); }
+.thin-home__empty, .thin-home [role="alert"], .thin-home [role="status"] { margin: 12px 14px; color: var(--th-muted); }
+.thin-home__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 12px; padding: 12px; }
+.thin-home__card { display: flex; min-height: 220px; flex-direction: column; border: 1px solid var(--th-edge);
+  background: #0a0b0d; box-shadow: 3px 3px 0 #000; }
+.thin-home__card::before { content: ""; height: 4px; flex: none; background: repeating-linear-gradient(-45deg,
+  var(--th-bright) 0 5px, #08090a 5px 10px); }
+.thin-home .thin-home__league-open.act { display: flex; align-items: center; width: 100%; gap: 10px; min-height: 0;
+  padding: 12px; border: 0; border-bottom: 1px solid var(--th-edge); border-radius: 0; background: transparent;
+  color: var(--th-text); text-align: left; }
+.thin-home .thin-home__league-open.act:hover:not(:disabled) { background: var(--th-raised); }
+.thin-home__crest { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border: 1px solid var(--th-bright);
+  background: #111317; color: var(--th-bright); font: 700 10px var(--surface-mono); }
+.thin-home__league-name { flex: 1; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.thin-home__open-mark { color: var(--th-muted); font: 600 10px var(--surface-mono); letter-spacing: .08em; white-space: nowrap; }
+.thin-home__facts { display: grid; gap: 0; padding: 6px 12px 4px; }
+.thin-home__facts p { display: flex; justify-content: space-between; gap: 12px; margin: 0; padding: 6px 0;
+  border-bottom: 1px solid #1b1d21; }
+.thin-home__facts p:last-child { border-bottom: 0; }
+.thin-home__facts p > span { flex: none; color: var(--th-dim); }
+.thin-home__facts p > b { overflow-wrap: anywhere; font-weight: 550; text-align: right; }
+.thin-home__facts .thin-home__unavailable b { color: var(--th-muted); font: 11px/1.4 var(--surface-mono); }
+.thin-home__facts .thin-home__reading { margin: 8px 0; color: var(--th-dim); font: 11px var(--surface-mono); }
+.thin-home .thin-home__shortcuts { display: flex; flex-wrap: wrap; gap: 6px; margin: auto 0 0; padding: 10px 12px 12px;
+  border-top: 1px solid #1b1d21; }
+.thin-home .thin-home__shortcut.act { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 32px; padding: 5px 8px; border: 1px solid var(--th-edge); border-radius: 0; background: #111317;
+  color: var(--th-muted); font: 600 10px var(--surface-mono); }
+.thin-home .thin-home__shortcut.act:hover:not(:disabled) { transform: translate(-1px, -1px); border-color: var(--th-bright);
+  color: var(--th-text); box-shadow: 2px 2px 0 #000; }
+@media (max-width: 800px) {
+  .native-account.has-thin-home { padding: 8px; }
+  .native-account.has-thin-home > header .native-address { display: none; }
+  .thin-home__content { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(180px, .72fr) minmax(0, 1.28fr); }
+  .thin-home__needs { border-right: 0; border-bottom: 2px solid #000; }
+  .thin-home__cards { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 699px) {
+  .native-account.has-thin-home { padding: 8px 8px 12px; }
+  .native-account .thin-home { overflow-y: auto; }
+  .thin-home__header { align-items: flex-start; gap: 8px; padding: 12px; }
+  .thin-home__header h1 { font-size: 20px; }
+  .thin-home__content { display: flex; flex-direction: column; overflow: visible; }
+  .thin-home__needs, .thin-home__leagues { flex: none; width: 100%; overflow: visible; }
+  .thin-home__needs { border-bottom: 2px solid #000; }
+  .thin-home__section-head { padding: 12px; }
+  .thin-home__items { padding: 0 8px 12px; }
+  .thin-home .thin-home__need.act { min-height: 62px; padding: 10px 8px; gap: 5px 8px; }
+  .thin-home .thin-home__need time { align-self: center; }
+  .thin-home__cards { gap: 10px; padding: 10px 8px 12px; }
+  .thin-home__card { min-height: 0; }
+  .thin-home .thin-home__league-open.act { min-height: 48px; padding: 8px; }
+  .thin-home__crest { width: 36px; height: 36px; }
+  .thin-home__facts { padding-inline: 10px; }
+  .thin-home .thin-home__shortcuts { gap: 6px; padding: 8px; }
+  .thin-home .thin-home__shortcut.act { min-height: 44px; padding-inline: 10px; }
+}

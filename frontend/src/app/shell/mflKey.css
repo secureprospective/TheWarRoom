@@ -1,0 +1,32 @@
+.twr-app .mfl-connection {
+  display: grid;
+  gap: 8px;
+  max-width: 72ch;
+  margin-bottom: 24px;
+}
+.twr-app .mfl-key-status {
+  min-height: 3em;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.twr-app .mfl-connection input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  color: var(--surface-tx1);
+  background: var(--surface-2);
+  border: 1px solid var(--surface-line);
+  font: inherit;
+}
+.twr-app .mfl-key-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+.twr-app .mfl-connection input:focus-visible {
+  outline: 2px solid var(--surface-tx1);
+  outline-offset: 2px;
+}

@@ -1,0 +1,513 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import { renderToStaticMarkup } from 'react-dom/server';
+import fixture from '../data/fixtures/snapshot.json';
+import { parseEnvelopeDemo, parseSnapshot } from '../data/parse';
+import type { AuditEntry, EligibilityDecision, PlayerEligibility } from '../data/contract';
+import { lineupReceipt } from '../data/lineupReceiptTestData';
+import { FixtureProvider, LiveProvider } from '../data/provider';
+import { createCommands } from '../commands/registry';
+import { EnvelopeRail, RailStrip, railStages } from './EnvelopeRail';
+import ReceiptStatus from './ReceiptStatus';
+import { stateLabel } from './moveLabels';
+import PlayerAct from './PlayerAct';
+import MyMoves from './MyMoves';
+import { renderState } from './state';
+import { clockDom } from '../clock/testDom';
+
+const demoImports = vi.fn();
+vi.mock('../data/fixtures/envelope-demo.json', () => {
+  demoImports();
+  return { default: JSON.parse(readFileSync('src/app/data/fixtures/envelope-demo.json', 'utf8')) };
+});
+const snapshot = parseSnapshot(fixture);
+const receipt = parseEnvelopeDemo(JSON.parse(readFileSync(
+  'src/app/data/fixtures/envelope-demo.json', 'utf8',
+))).receipt;
+const subject = { kind: 'player' as const, id: '11675', franchiseId: '0001' };
+// The demo receipt describes its own player — tools/fixtures picks the first one the held rules
+// leave unchecked, 11675 in franchise 0001 — so the inspector
+// tests need a receipt for the player under inspection.
+function forSubject(r: typeof receipt, spec: Partial<typeof receipt.spec> = {}): typeof receipt {
+  return {
+    ...r,
+    spec: {
+      ...r.spec, ...spec,
+      franchiseId: subject.franchiseId,
+      subject: { players: [subject.id], picks: [] },
+    },
+  };
+}
+const serverExecutor = (executor: ReturnType<typeof createCommands>) => ({
+  ...executor,
+  use: () => renderState(executor.read()),
+  useMoves: <T,>(selector: (state: ReturnType<typeof executor.readMoves>) => T) =>
+    selector(executor.readMoves()),
+});
+const render = (executor: ReturnType<typeof createCommands>) =>
+  renderToStaticMarkup(createElement(MyMoves, { snapshot, executor: serverExecutor(executor) }));
+
+const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'].map((key) => ({
+  key, descriptor: Object.getOwnPropertyDescriptor(globalThis, key),
+}));
+afterEach(() => {
+  for (const { key, descriptor } of globals) {
+    if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+    else Reflect.deleteProperty(globalThis, key);
+  }
+});
+
+describe('move rail', () => {
+  it('renders the real demo in order with local times, notes and landed current', () => {
+    expect(railStages(receipt)).toEqual(['draft', 'ready', 'handed_off', 'not_yet_done', 'landed']);
+    const html = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt }));
+    const demoPlayer = snapshot.players.value.find(
+      (p) => p.id === receipt.spec.subject.players[0])!;
+    expect(html).toContain(demoPlayer.name);
+    expect(html).toContain('IR placement');
+    expect(html).toContain('G2 · reversible');
+    expect(html).toMatch(/aria-current="step"[^>]*><span[^>]*>Landed/);
+    let index = -1;
+    for (const label of ['Draft', 'Ready', 'Handed off', 'Not yet done', 'Landed']) {
+      const next = html.indexOf(`>${label}<`);
+      expect(next).toBeGreaterThan(index);
+      index = next;
+    }
+    for (const entry of receipt.audit) {
+      expect(html).toContain(entry.note);
+      expect(html).toContain(`dateTime="${entry.at}"`);
+      expect(html).toContain(new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' })
+        .format(new Date(entry.at)));
+    }
+  });
+  it('replaces supersession IDs with owner-facing text', () => {
+    const ready = lineupReceipt();
+    const correlationId = 'lineup-0123456789abcdef0123456789abcdef';
+    const stale = {
+      ...ready, state: 'stale' as const, audit: [...ready.audit, {
+        at: '2026-10-07T14:01:00Z', from: 'ready' as const, event: 'invalidate' as const,
+        to: 'stale' as const, note: `superseded by ${correlationId}`,
+      }],
+    };
+    const html = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: stale }));
+    expect(html).toContain('<p>Replaced by a newer plan</p>');
+    expect(html).not.toContain(correlationId);
+    expect(html).not.toContain('superseded by');
+  });
+  it.each(['not_verified', 'landed'] as const)(
+    'keeps Not verified in audit order with its time and note when currently %s', (state) => {
+      const ready = lineupReceipt();
+      const audit: AuditEntry[] = [ready.audit[0], {
+        at: '2026-10-07T14:01:00Z', from: 'ready' as const, event: 'hand_off' as const,
+        to: 'handed_off' as const, note: 'Opened MFL',
+      }, {
+        at: '2026-10-07T14:02:00Z', from: 'handed_off' as const, event: 'partial' as const,
+        to: 'not_verified' as const, note: 'Saved lineup not verified',
+      }];
+      if (state === 'landed') audit.push({
+        at: '2026-10-07T14:03:00Z', from: 'not_verified', event: 'match',
+        to: 'landed', note: 'MFL saved the drafted starters',
+      });
+      const plan = { ...ready, state, audit };
+      const stages = ['draft', 'ready', 'handed_off', 'not_verified'];
+      if (state === 'landed') stages.push('not_yet_done', 'landed');
+      expect(railStages(plan)).toEqual(stages);
+      const html = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: plan }));
+      expect(html.match(/>Not verified</g)).toHaveLength(1);
+      expect(html.indexOf('>Not verified<')).toBeGreaterThan(html.indexOf('>Handed off<'));
+      expect(html).toContain('<p>Saved lineup not verified</p>');
+      expect(html).toContain('dateTime="2026-10-07T14:02:00Z"');
+      expect(html).toContain(new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' })
+        .format(new Date('2026-10-07T14:02:00Z')));
+    },
+  );
+  it.each(['roster.ir', 'roster.taxi'])(
+    'omits the %s summary when the player is unavailable', (intent) => {
+      const unknown = { ...receipt, spec: {
+        ...receipt.spec, intent, expected: { player: 'missing', rosterStatus: 'TAXI_SQUAD' as const },
+      } };
+      const html = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: unknown }));
+      expect(html).toContain('<h4>Player unavailable</h4>');
+      expect(html).not.toContain('<p>IR Player unavailable</p>');
+      expect(html).not.toContain('<p>+Taxi Player unavailable</p>');
+    },
+  );
+  it('ends at blocked with the exact Go note and no later stages', () => {
+    const blocked = {
+      ...receipt,
+      state: 'blocked' as const,
+      spec: { ...receipt.spec, target: { kind: 'unmapped' as const } },
+      audit: [{
+        at: receipt.audit[0].at, from: 'draft' as const, event: 'checks_block' as const,
+        to: 'blocked' as const, note: 'MFL target not verified',
+      }],
+    };
+    expect(railStages(blocked)).toEqual(['draft', 'blocked']);
+    const html = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: blocked }));
+    expect(html).toContain('MFL target not verified');
+    expect(html).toMatch(/aria-current="step"[^>]*><span[^>]*signal-red[^>]*>Blocked/);
+    expect(html).not.toContain('>Ready<');
+    expect(html).not.toContain('>Landed<');
+  });
+  it('inserts pending stages only when the trail visits them and mutes future stages', () => {
+    const pending = {
+      ...receipt, state: 'dot_review' as const,
+      audit: [receipt.audit[0], {
+        at: receipt.audit[1].at, from: 'ready' as const, event: 'await_dot' as const,
+        to: 'dot_review' as const, note: 'Awaiting DOT',
+      }],
+    };
+    expect(railStages(pending)).toEqual([
+      'draft', 'ready', 'dot_review', 'handed_off', 'not_yet_done', 'landed',
+    ]);
+    const html = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: pending }));
+    expect(html).toContain('Awaiting DOT');
+    expect(html.match(/data-reached="false"/g)).toHaveLength(3);
+    expect(html).not.toContain('Bid pending');
+    expect(html).not.toContain('Waiver pending');
+  });
+});
+
+describe('My moves and inspector', () => {
+  it('loads the live empty list without importing demo and surfaces failures', async () => {
+    const provider = new LiveProvider();
+    const moves = vi.spyOn(provider, 'moves').mockResolvedValue([]);
+    const executor = createCommands(() => undefined, provider);
+    executor.loadSnapshot(snapshot);
+    executor.dispatch('franchise.set', { franchiseId: '0001' });
+    const { document, element } = clockDom([]);
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    vi.stubGlobal('document', document);
+    vi.stubGlobal('window', { document, HTMLIFrameElement: class {} });
+    const root = createRoot(element);
+    await act(async () => {
+      root.render(createElement(MyMoves, { snapshot, executor }));
+      await executor.loadMoves('0001');
+    });
+    expect(moves).toHaveBeenCalledWith('0001');
+    expect(element.textContent).toContain('No moves drafted this session');
+    expect(demoImports).not.toHaveBeenCalled();
+    expect(element.textContent).not.toContain('Fixture');
+    moves.mockRejectedValue(new Error('binding unavailable'));
+    await act(async () => { await executor.loadMoves('0001'); });
+    expect(element.textContent).toContain('binding unavailable');
+    expect(element.textContent).not.toContain('No moves drafted this session');
+    await act(async () => { root.unmount(); });
+  });
+  it('shows only the newest fifteen rails with an older-moves count, without paging', async () => {
+    const provider = new LiveProvider();
+    vi.spyOn(provider, 'moves').mockResolvedValue(Array.from({ length: 31 }, (_, index) => ({
+      ...forSubject(receipt), correlationId: `move-${index}`,
+      audit: receipt.audit.map((entry) => ({
+        ...entry, at: `2026-10-06T00:00:${String(index).padStart(2, '0')}Z`,
+      })),
+    })));
+    const executor = createCommands(() => undefined, provider);
+    executor.loadSnapshot(snapshot);
+    executor.dispatch('franchise.set', { franchiseId: '0001' });
+    await executor.loadMoves('0001');
+    expect(executor.readMoves().moves[0].correlationId).toBe('move-30');
+    const html = render(executor);
+    expect(html.match(/aria-label="Move stages"/g)).toHaveLength(15);
+    expect(html).toContain('16 older moves this session not shown');
+    expect(html).not.toContain('Next moves');
+    expect(executor.registry).not.toHaveProperty('moves.page');
+    expect(executor.read()).not.toHaveProperty('movesPage');
+  });
+  it('shows Drafting immediately, then shows a rejected binding in the inspector', async () => {
+    const provider = new LiveProvider();
+    let reject!: (cause: Error) => void;
+    let started!: () => void;
+    const fired = new Promise<void>((resolve) => { started = resolve; });
+    vi.spyOn(provider, 'draftIR').mockImplementation(() =>
+      new Promise<typeof receipt>((_resolve, fail) => {
+        reject = fail;
+        started();
+      }));
+    const executor = createCommands(() => undefined, provider);
+    executor.loadSnapshot(snapshot);
+    executor.dispatch('franchise.set', { franchiseId: '0001' });
+    const { document, element } = clockDom([]);
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    vi.stubGlobal('document', document);
+    vi.stubGlobal('window', { document, HTMLIFrameElement: class {} });
+    const root = createRoot(element);
+    await act(async () => { root.render(createElement(PlayerAct, { subject, executor })); });
+    act(() => { executor.dispatch('roster.ir', { subject }); });
+    expect(element.textContent).toContain('Drafting…');
+    expect(element.querySelector('[disabled]')).toBeDefined();
+    await act(async () => { await fired; });
+    await act(async () => { reject(new Error('draft rejected')); });
+    expect(element.textContent).toContain('draft rejected');
+    expect(element.textContent).not.toContain('Drafting…');
+    await act(async () => { root.unmount(); });
+  });
+  it('labels the fixture landing as simulated and never offers an enabled draft', async () => {
+    const executor = createCommands(() => undefined, new FixtureProvider());
+    executor.loadSnapshot(snapshot);
+    await executor.loadMoves('0001');
+    const html = render(executor);
+    expect(demoImports).toHaveBeenCalledTimes(1);
+    expect(html).toContain(
+      'Fixture · demo envelope · landing simulated from a real roster snapshot',
+    );
+    expect(html).toContain('>Landed<');
+    const inspector = renderToStaticMarkup(createElement(PlayerAct, {
+      subject, executor: serverExecutor(executor),
+    }));
+    expect(inspector).toContain('disabled=""');
+    expect(inspector).toContain('Drafting needs the desktop app');
+    expect(inspector).toContain('My moves');
+  });
+  it('renders not-my-franchise disabled with the reason beside the control', () => {
+    const executor = createCommands(() => undefined, new LiveProvider());
+    executor.loadSnapshot(snapshot);
+    executor.dispatch('franchise.set', { franchiseId: '0002' });
+    const html = renderToStaticMarkup(createElement(PlayerAct, {
+      subject, executor: serverExecutor(executor),
+    }));
+    expect(html).toContain('disabled=""');
+    expect(html).toContain('<p>Only players on my franchise</p>');
+  });
+});
+
+describe('Inspector IR and taxi Acts', () => {
+  function inspector(executor: ReturnType<typeof createCommands>) {
+    return renderToStaticMarkup(createElement(PlayerAct, {
+      subject, executor: serverExecutor(executor),
+    }));
+  }
+  function held(status: 'ROSTER' | 'IR' | 'TAXI_SQUAD', eligibility?: PlayerEligibility) {
+    const value = structuredClone(snapshot);
+    const player = value.rosters.value.find((r) => r.franchiseId === subject.franchiseId)!
+      .players.find((p) => p.id === subject.id)!;
+    player.rosterStatus = status;
+    if (eligibility) value.eligibility.players[subject.id] = eligibility;
+    // The lines' as-of times read the feeds provenance. Inject a live one: the fixture's own
+    // injuries feed is offline with no copy, so it holds no time to show.
+    for (const feed of Object.values(value.eligibility.feeds))
+      feed.freshness = { state: 'live', fetchedAt: '2026-10-10T16:02:00Z', note: '' };
+    const provider = new LiveProvider();
+    const executor = createCommands(() => undefined, provider);
+    executor.loadSnapshot(value);
+    executor.dispatch('franchise.set', { franchiseId: subject.franchiseId });
+    return { executor, provider };
+  }
+  it.each([
+    ['ROSTER', 'Draft move to taxi squad', true],
+    ['TAXI_SQUAD', 'Draft promotion from taxi', false],
+  ] as const)('names the direction from held %s', (status, label, irAllowed) => {
+    const { executor } = held(status);
+    const html = inspector(executor);
+    expect(html).toContain(`>${label}</button>`);
+    expect(html.includes('>Draft IR placement</button>')).toBe(irAllowed);
+  });
+  it.each([
+    ['eligible', undefined, false],
+    ['ineligible', 'activation unavailable', true],
+    ['unknown', 'roster not held', false],
+  ] as const)('labels an on-IR %s Act and follows its verdict', (verdict, reason, disabled) => {
+    const { executor } = held('IR', {
+      ir: decision({ direction: 'off_ir', source: 'rosters', verdict, reason }),
+      taxi: decision({ direction: 'to_taxi', verdict: 'ineligible', reason: 'on injured reserve' }),
+    });
+    const html = inspector(executor);
+    const button = html.match(/<button[^>]*>Draft activation from IR<\/button>/)![0];
+    expect(button.includes('disabled')).toBe(disabled);
+    expect(button).toContain(`aria-label="Draft activation from IR${disabled ? ': ' + reason : ''}"`);
+    expect(html).not.toContain('Draft IR placement');
+    if (verdict === 'eligible') expect(html).toContain('IR: eligible to activate (MFL rosters, ');
+  });
+  it('does not offer taxi for an IR player', () => {
+    const html = inspector(held('IR').executor);
+    expect(html).not.toContain('Draft move to taxi squad');
+    expect(html).not.toContain('Draft promotion from taxi');
+  });
+  it.each([
+    ['roster.ir', 'IR', 'Open MFL IR page', 'Place ', ' on IR'],
+    ['roster.ir', 'ROSTER', 'Open MFL IR page for activation', 'Activate ', ''],
+    ['roster.taxi', 'TAXI_SQUAD', 'Open MFL taxi page', 'Move ', ' to the taxi squad'],
+    ['roster.taxi', 'ROSTER', 'Open MFL taxi page', 'Promote ', ' from the taxi squad'],
+  ] as const)('shows %s %s hand-off and summary as visible text',
+    async (intent, status, label, prefix, suffix) => {
+    const { executor, provider } = held('ROSTER');
+    const ready = forSubject({
+      ...receipt, state: 'ready' as const, audit: receipt.audit.slice(0, 1),
+      spec: { ...receipt.spec, intent, expected: { player: subject.id, rosterStatus: status } },
+    });
+    vi.spyOn(provider, 'moves').mockResolvedValue([ready]);
+    await executor.loadMoves(subject.franchiseId);
+    expect(inspector(executor)).toContain(`>${label}</button>`);
+    const rail = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: ready }));
+    expect(rail).toContain(`>${label}</button>`);
+    const name = snapshot.players.value.find((p) => p.id === subject.id)!.name!;
+    expect(rail).toContain(`<h4>${name}</h4>`);
+    expect(rail).toContain(`<p>${prefix}${name.split(',')[0]}${suffix}</p>`);
+    expect(rail).not.toContain(`<p>${prefix}${name}</p>`);
+    expect(rail).not.toContain('roster.taxi');
+    if (intent === 'roster.ir' && status === 'ROSTER') {
+      expect(rail).toContain('IR activation');
+      expect(rail).not.toContain('IR placement');
+      const movesHtml = render(executor);
+      expect(movesHtml).toContain('IR activation');
+      expect(movesHtml).not.toContain('IR placement');
+    }
+  });
+  const decision = (overrides: Partial<EligibilityDecision>): EligibilityDecision => ({
+    direction: 'to_ir', verdict: 'eligible', source: 'injuries', ...overrides,
+  });
+  it('disables an ineligible Act with the reason as its tooltip and shows both lines', () => {
+    const { executor } = held('ROSTER', {
+      ir: decision({ verdict: 'ineligible', reason: 'not on NFL injured reserve' }),
+      taxi: decision({
+        verdict: 'ineligible', source: 'players', direction: 'to_taxi',
+        reason: '3 or more years of NFL experience (drafted 2014)',
+      }),
+    });
+    const html = inspector(executor);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*title="Draft IR placement[^"]*"/);
+    expect(html).toContain('title="Draft IR placement: not on NFL injured reserve"');
+    expect(html).toContain('IR: not eligible, not on NFL injured reserve (MFL injuries, ');
+    expect(html).toContain(
+      'Taxi: not eligible, 3 or more years of NFL experience (drafted 2014) (MFL players, ');
+  });
+  it('keeps an unknown Act available for MFL to decide and says so', () => {
+    const { executor } = held('ROSTER', {
+      ir: decision({ verdict: 'unknown', reason: 'stale' }),
+      taxi: decision({
+        verdict: 'unknown', reason: 'no draft year held', source: 'players', direction: 'to_taxi',
+      }),
+    });
+    const html = inspector(executor);
+    expect(html).not.toContain('disabled');
+    expect(html).toContain('IR: not checked, stale; MFL will decide (MFL injuries, ');
+    expect(html).toContain('Taxi: not checked, no draft year held; MFL will decide (MFL players, ');
+  });
+  it('shows the not-checked note on a drafted plan and still offers the hand-off', async () => {
+    const { executor, provider } = held('ROSTER', {
+      ir: decision({ verdict: 'unknown', reason: 'stale' }),
+      taxi: decision({ verdict: 'unknown', reason: 'stale', source: 'players', direction: 'to_taxi' }),
+    });
+    const notChecked = forSubject({
+      ...receipt, state: 'ready' as const,
+      spec: { ...receipt.spec, intent: 'roster.ir' as const,
+        expected: { player: subject.id, rosterStatus: 'IR' as const } },
+      audit: [{ ...receipt.audit[0], to: 'ready' as const, event: 'checks_pass' as const,
+        note: 'Not checked: stale; MFL will decide' }],
+    });
+    vi.spyOn(provider, 'moves').mockResolvedValue([notChecked]);
+    await executor.loadMoves(subject.franchiseId);
+    const html = inspector(executor);
+    expect(html).toContain('Not checked: stale; MFL will decide');
+    expect(html).toContain('>Ready<');
+    expect(html).toContain('Open MFL IR page');
+  });
+  it('shows eligible Acts with their lines, including activation and promotion directions', () => {
+    const { executor } = held('ROSTER', {
+      ir: decision({}),
+      taxi: decision({ source: 'players', direction: 'to_taxi' }),
+    });
+    const html = inspector(executor);
+    expect(html).not.toContain('disabled');
+    expect(html).toContain('IR: eligible (MFL injuries, ');
+    expect(html).toContain('Taxi: eligible (MFL players, ');
+    const promoted = held('TAXI_SQUAD', {
+      ir: decision({ verdict: 'ineligible', reason: 'on the taxi squad', source: 'rosters' }),
+      taxi: decision({ verdict: 'eligible', source: 'rosters', direction: 'off_taxi' }),
+    });
+    const taxiHtml = inspector(promoted.executor);
+    expect(taxiHtml).toContain('Taxi: eligible to promote (MFL rosters, ');
+    expect(taxiHtml).toContain('IR: not eligible, on the taxi squad (MFL rosters, ');
+  });
+  it('returns a Ready plan to Draft with the reason when eligibility turns, with no hand-off', async () => {
+    const { executor, provider } = held('ROSTER', {
+      ir: decision({ verdict: 'ineligible', reason: 'not on NFL injured reserve' }),
+      taxi: decision({
+        verdict: 'ineligible', source: 'players', direction: 'to_taxi',
+        reason: '3 or more years of NFL experience (drafted 2014)',
+      }),
+    });
+    const at = (minutes: number) => `2026-10-10T12:${String(minutes).padStart(2, '0')}:00Z`;
+    const base = receipt.audit[0];
+    const yanked = forSubject({
+      ...receipt, state: 'draft' as const,
+      spec: { ...receipt.spec, intent: 'roster.ir' as const,
+        expected: { player: subject.id, rosterStatus: 'IR' as const } },
+      audit: [
+        { ...base, at: at(0), from: 'draft' as const, event: 'checks_pass' as const,
+          to: 'ready' as const, note: 'eligibility checked (MFL injuries)' },
+        { ...base, at: at(1), from: 'ready' as const, event: 'invalidate' as const,
+          to: 'stale' as const, note: 'player no longer eligible: not on NFL injured reserve' },
+        { ...base, at: at(2), from: 'stale' as const, event: 'rebase' as const,
+          to: 'draft' as const, note: 'player no longer eligible: not on NFL injured reserve' },
+      ],
+    });
+    vi.spyOn(provider, 'moves').mockResolvedValue([yanked]);
+    await executor.loadMoves(subject.franchiseId);
+    const html = inspector(executor);
+    expect(html).toContain('>Draft<');
+    expect(html).toContain('player no longer eligible: not on NFL injured reserve');
+    expect(html).not.toContain('Open MFL');
+  });
+  it.each(['roster.ir', 'roster.taxi'])('shows the %s block note, never a hand-off', async (intent) => {
+    const { executor, provider } = held('ROSTER');
+    const blocked = forSubject({
+      ...receipt, state: 'blocked' as const, spec: { ...receipt.spec, intent },
+      audit: [{ ...receipt.audit[0], to: 'blocked' as const, note: 'MFL eligibility not held' }],
+    });
+    vi.spyOn(provider, 'moves').mockResolvedValue([blocked]);
+    await executor.loadMoves(subject.franchiseId);
+    const html = inspector(executor);
+    expect(html).toContain('MFL eligibility not held');
+    expect(html).not.toContain('Open MFL');
+    const rail = renderToStaticMarkup(createElement(EnvelopeRail, { snapshot, receipt: blocked }));
+    expect(rail).not.toContain('Open MFL');
+  });
+  it('shows opening and a hand-off failure inline, and excludes unrelated lineup receipts', async () => {
+    const { executor, provider } = held('ROSTER');
+    const ready = forSubject({ ...receipt, state: 'ready' as const, audit: receipt.audit.slice(0, 1) });
+    const unrelatedSpec = { ...ready.spec, intent: 'mfl.lineup.set' };
+    const unrelated = { ...ready, correlationId: 'lineup', spec: unrelatedSpec };
+    vi.spyOn(provider, 'moves').mockResolvedValue([unrelated, ready]);
+    let reject!: (cause: Error) => void;
+    const handoff = vi.spyOn(provider, 'handOff').mockImplementation(() =>
+      new Promise<typeof receipt>((_done, fail) => {
+        reject = fail;
+      }));
+    await executor.loadMoves(subject.franchiseId);
+    expect(inspector(executor)).toContain('>Open MFL IR page</button>');
+    executor.dispatch('move.handoff', { correlationId: ready.correlationId });
+    for (let attempt = 0; attempt < 100 && !handoff.mock.calls.length; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    expect(handoff).toHaveBeenCalledWith(ready.correlationId);
+    expect(inspector(executor)).toContain('>Opening MFL…</button>');
+    expect(inspector(executor)).toMatch(/disabled=""[^>]*>Opening MFL…/);
+    reject(new Error('MFL page could not open'));
+    for (let attempt = 0; attempt < 100 && executor.readMoves().drafting[
+      `handoff:${ready.correlationId}`
+    ]; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    expect(inspector(executor)).toContain('<p role="alert">Error: MFL page could not open</p>');
+    expect(inspector(executor)).not.toContain('Opening MFL…');
+  });
+});
+
+describe('posted plans awaiting verification', () => {
+  it.each([['fa.resign', 'Pending'], ['contract.extend', 'Pending'], ['roster.buyout', 'Pending'],
+    ['bid.submit', 'Bid pending']])('labels %s as %s on the strip and the status chip', (intent, want) => {
+    expect(stateLabel('bid_pending', intent)).toBe(want);
+    const audit = [{ at: receipt.audit[0].at, from: 'handed_off' as const, to: 'bid_pending' as const,
+      note: 'You posted it' }];
+    const strip = renderToStaticMarkup(createElement(RailStrip,
+      { receipt: { state: 'bid_pending', spec: { intent }, audit } }));
+    expect(strip).toContain(`>${want}<`);
+    const chip = renderToStaticMarkup(createElement(ReceiptStatus, { receipt: { ...receipt,
+      state: 'bid_pending', spec: { ...receipt.spec, intent } } }));
+    expect(chip).toContain(`>${want}<`);
+    if (want === 'Pending') expect(strip + chip).not.toContain('Bid pending');
+  });
+});

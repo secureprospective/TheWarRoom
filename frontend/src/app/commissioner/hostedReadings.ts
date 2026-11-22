@@ -1,0 +1,276 @@
+import { array, choice, integer, object, requiredText, text, timestamp } from '../data/parseValues';
+import { POSITIONS, type Position } from '../data/contract';
+
+const flag = (v: unknown): boolean => {
+  if (typeof v !== 'boolean') throw new Error('Unreadable league status.');
+  return v;
+};
+const pickFlag = (v: unknown, path: string): boolean => {
+  if (typeof v !== 'boolean') throw new Error(`${path}: unreadable pick status`);
+  return v;
+};
+export type HostedPlayer = {
+  player: string;
+  name: string;
+  position: string;
+  locked: boolean;
+  words: string;
+};
+export type HostedLineup = {
+  available: boolean;
+  league: string;
+  franchise: string;
+  revision: number;
+  season: number;
+  week: number;
+  words: string;
+  verdict: string;
+  starters: HostedPlayer[];
+  bench: HostedPlayer[];
+};
+export function parseHostedLineup(v: unknown): HostedLineup {
+  const r = object(v, 'Lineup', [
+    'league',
+    'name',
+    'revision',
+    'season',
+    'week',
+    'franchise',
+    'franchiseName',
+    'zone',
+    'set',
+    'corrected',
+    'words',
+    'reason',
+    'starters',
+    'bench',
+    'verdict',
+    'rules',
+  ]);
+  const player = (v: unknown, p: string): HostedPlayer => {
+    const r = object(v, p, ['player', 'name', 'position', 'team', 'locked', 'locksAt', 'words']);
+    if (r.locksAt !== undefined) timestamp(r.locksAt, p);
+    return {
+      player: text(r.player, p),
+      name: text(r.name, p),
+      position: text(r.position, p),
+      locked: flag(r.locked),
+      words: text(r.words, p),
+    };
+  };
+  const verdict = object(r.verdict, 'Lineup verdict', [
+    'status',
+    'problems',
+    'words',
+    'penalty',
+    'flagged',
+  ]);
+  return {
+    available: true,
+    league: text(r.league, 'League'),
+    franchise: text(r.franchise, 'Franchise'),
+    revision: integer(r.revision, 'Version'),
+    season: integer(r.season, 'Season'),
+    week: integer(r.week, 'Week'),
+    words: text(r.words, 'Lineup'),
+    verdict: text(verdict.words, 'Verdict'),
+    starters: array(r.starters, 'Starters', player),
+    bench: array(r.bench, 'Bench', player),
+  };
+}
+export type HostedRoster = {
+  identities: { player: string; franchise: string; side: string; name: string; position?: Position }[];
+  openBenchSlots?: Record<string, number>;
+  league: string;
+  revision: number;
+  season: number;
+  franchises: { value: string; label: string }[];
+  pool: { value: string; label: string }[];
+  market: { id: string; name: string; position: string; string: string; points: string;
+    team?: string; average?: string; age?: string; value?:
+    string; minimum?: string; minimumCents?: number }[];
+  picks: {
+    season: number; round: number; slot: number; original: string; owner: string;
+    compensatory: boolean; correction: string; player: string; skipped: boolean; used: boolean;
+  }[];
+  players: {
+    id: string;
+    name: string;
+    franchise: string;
+    bucket: 'active' | 'ir' | 'taxi';
+  }[];
+};
+function parseOpenBenchSlots(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    throw new Error('Open bench slots: expected object');
+  const source = object(value, 'Open bench slots', Object.keys(value));
+  const slots: Record<string, number> = {};
+  for (const [franchise, count] of Object.entries(source)) {
+    const id = requiredText(franchise, 'Open bench franchise');
+    slots[id] = integer(count, `Open bench slots.${id}`);
+  }
+  return slots;
+}
+export function parseHostedRoster(v: unknown): HostedRoster {
+  const r = object(v, 'Roster', [
+    'openBenchSlots',
+    'pool', 'identities', 'poolPointsNote',
+    'corrections',
+    'league',
+    'revision',
+    'seeded',
+    'entry',
+    'source',
+    'snapshot',
+  ]);
+  if (!flag(r.seeded)) throw new Error('Ask your commissioner to record the starting rosters.');
+  const openBenchSlots = r.openBenchSlots === undefined ? undefined : parseOpenBenchSlots(r.openBenchSlots);
+  const s = object(r.snapshot, 'Roster snapshot', [
+    'standingsOrder',
+    'season',
+    'champion',
+    'champions',
+    'conferences',
+    'rosterAt',
+    'draftAt',
+    'futureAt',
+    'franchises',
+    'players',
+    'picks',
+    'pickHistory',
+    'adjustments',
+    'pool',
+    'sides',
+  ]);
+  return {
+    league: text(r.league, 'League'),
+    openBenchSlots,
+    market: array(r.pool ?? [], 'Market pool', (v, p) => {
+      const row = object(v, p, ['player', 'name', 'position', 'string', 'points', 'age', 'value', 'minimum',
+        'team', 'average']);
+      return { id: text(row.player, p), name: text(row.name, p), position: text(row.position, p),
+        string: text(row.string, p), points: text(row.points, p),
+        age: row.age === undefined ? undefined : text(row.age, p),
+        value: row.value === undefined ? undefined : text(row.value, p),
+        ...(row.team === undefined ? {} : { team: text(row.team, p) }),
+        ...(row.average === undefined ? {} : { average: text(row.average, p) }),
+        ...(row.minimum === undefined ? {} : (() => {
+          const m = object(row.minimum, p, ['cents', 'text']);
+          return { minimum: text(m.text, p), minimumCents: integer(m.cents, p) };
+        })()) };
+    }),
+    revision: integer(r.revision, 'Roster version'),
+    identities: array(r.identities ?? [], 'Player identities', (v, p) => {
+      const i = object(v, p, ['player', 'franchise', 'side', 'name', 'position']);
+      const position = choice(i.position, p, [...POSITIONS, 'PK', 'OL', ''] as const);
+      return { player: text(i.player, p), franchise: text(i.franchise, p),
+        side: i.side === undefined ? '' : text(i.side, p), name: text(i.name, p),
+        position: position === 'PK' ? 'K' : position === '' || position === 'OL' ? undefined : position };
+    }),
+    season: integer(s.season, 'Roster season'),
+    franchises: array(s.franchises, 'Franchises', (v) => {
+      const f = object(v, 'Franchise', ['id', 'heldId', 'name', 'abbreviation', 'division']);
+      return { value: text(f.id, 'Franchise'), label: text(f.name, 'Name') };
+    }),
+    pool: array(s.pool ?? [], 'Free agents', (v) => {
+      const p = object(v, 'Free agent', ['player', 'name', 'season']);
+      return { value: text(p.player, 'Player'), label: text(p.name, 'Name') };
+    }),
+    picks: array(s.picks, 'Picks', (v, path) => {
+      const p = object(v, path, [
+        'compensatory',
+        'correction',
+        'season',
+        'round',
+        'slot',
+        'original',
+        'owner',
+        'player',
+        'skipped',
+      ]);
+      const player = text(p.player, `${path}.player`);
+      const skipped = pickFlag(p.skipped, `${path}.skipped`);
+      return {
+        season: integer(p.season, `${path}.season`),
+        round: integer(p.round, `${path}.round`),
+        slot: integer(p.slot, `${path}.slot`),
+        original: text(p.original, `${path}.original`),
+        owner: text(p.owner, `${path}.owner`),
+        compensatory: p.compensatory === undefined ? false
+          : pickFlag(p.compensatory, `${path}.compensatory`),
+        correction: p.correction === undefined ? '' : text(p.correction, `${path}.correction`),
+        player,
+        skipped,
+        used: Boolean(player) || skipped,
+      };
+    }),
+    players: array(s.players, 'Roster players', (v, p) => {
+      const r = object(v, p, [
+        'contractMissing',
+        'acquiredVia',
+        'correction',
+        'name',
+        'rookieRound',
+        'pending',
+        'restructured',
+        'id',
+        'franchise',
+        'status',
+        'salaryCents',
+        'expirationYear',
+        'contractStatus',
+        'contractInfo',
+        'heldContractStatus',
+      ]);
+      if (r.contractMissing !== undefined && typeof r.contractMissing !== 'boolean')
+        throw new Error(`${p}: unreadable missing-contract state`);
+      if (r.contractMissing === true && (r.salaryCents !== null || r.expirationYear !== null) ||
+          r.contractMissing !== true && (r.salaryCents === null || r.expirationYear === null))
+        throw new Error(`${p}: missing-contract state disagrees with its terms`);
+      const status = choice(r.status, p, ['ROSTER', 'IR', 'TAXI_SQUAD'] as const);
+      return {
+        id: text(r.id, p),
+        name: r.name ? text(r.name, p) : 'Unnamed player — ask your commissioner',
+        franchise: text(r.franchise, p),
+        bucket: status === 'IR' ? 'ir' : status === 'TAXI_SQUAD' ? 'taxi' : 'active',
+      };
+    }),
+  };
+}
+export type HostedReserves = {
+  franchise: string;
+  words: string[];
+  players: { player: string; words: string; experienceYears?: number; taxiYearsLeft?: number }[];
+}[];
+export function parseHostedReserves(v: unknown): HostedReserves {
+  const r = object(v, 'Reserves', [
+    'corrections',
+    'league',
+    'name',
+    'revision',
+    'rosterSeason',
+    'rulesSeason',
+    'seeded',
+    'source',
+    'rules',
+    'franchises',
+  ]);
+  return array(r.franchises, 'Reserve squads', (v, p) => {
+    const r = object(v, p, ['franchise', 'name', 'abbreviation', 'ir', 'taxi', 'players']);
+    const words = [r.ir, r.taxi].map((v) => {
+      const r = object(v, p, ['used', 'slots', 'judged', 'words']);
+      return text(r.words, p);
+    });
+    return {
+      franchise: text(r.franchise, p),
+      words,
+      players: array(r.players, p, (v, p) => {
+        const r = object(v, p, ['player', 'name', 'squad', 'standing', 'words', 'experienceYears',
+          'taxiYearsLeft']);
+        return { player: text(r.player, p), words: text(r.words, p),
+          ...(r.experienceYears === undefined ? {} : { experienceYears: integer(r.experienceYears, p) }),
+          ...(r.taxiYearsLeft === undefined ? {} : { taxiYearsLeft: integer(r.taxiYearsLeft, p) }) };
+      }),
+    };
+  });
+}

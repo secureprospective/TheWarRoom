@@ -1,0 +1,26 @@
+.twr-app .draft-room { display: grid; gap: 12px; padding-block: 12px; }
+.twr-app .draft-room > div { display: grid; gap: 12px; }
+.twr-app .draft-room label { display: grid; gap: 4px; max-width: 48ch; }
+.twr-app .draft-clock,
+.twr-app .draft-your-pick,
+.twr-app .draft-closed {
+  display: grid; gap: 6px; border: 1px solid var(--surface-line); padding: 8px 12px;
+}
+.twr-app .draft-clock p,
+.twr-app .draft-closed p,
+.twr-app .draft-closed ul { margin: 0; }
+.twr-app .draft-countdown { font-variant-numeric: tabular-nums; }
+.twr-app .draft-launchers { display: flex; flex-wrap: wrap; gap: 8px; }
+.twr-app .draft-board { width: 100%; border-collapse: collapse; }
+.twr-app .draft-board caption { text-align: start; font-weight: 600; padding-block: 4px; }
+.twr-app .draft-board td,
+.twr-app .draft-board th { text-align: start; vertical-align: top; padding: 4px 8px; }
+.twr-app .draft-board td > * { margin-inline-end: 8px; }
+.twr-app .draft-board tr[data-state="clock"] { background: var(--surface-1, rgb(255 255 255 / 8%)); }
+.twr-app .draft-board .act { margin: 0 4px 4px 0; }
+.twr-app .draft-how { color: var(--surface-tx2); }
+.twr-app .draft-rules dl { display: grid; gap: 4px; margin: 8px 0 0; }
+.twr-app .draft-rules dl > div {
+  display: grid; grid-template-columns: minmax(12ch, max-content) 1fr; gap: 12px;
+}
+.twr-app .draft-rules dd { margin: 0; }
