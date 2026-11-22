@@ -4,15 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
+
+const autoLineupInjuryRefreshTimeout = 2 * time.Minute
+
+type nflInjuryRefresher interface {
+	Refresh(ctx context.Context, season int, base http.RoundTripper, output io.Writer) error
+}
 
 // DueClock must report untrusted wall time until the host has established clock health.
 // Implementations must be safe for simultaneous worker and transaction admission calls.
@@ -44,12 +53,13 @@ func (c HostClock) Trusted() error {
 // DueWorker owns hosted scheduling; it never starts the desktop ticker. All effects
 // use the existing due processors and their transaction-time legality checks.
 type DueWorker struct {
-	leagues   history.LeagueResolver
-	facts     func() nativecheck.Facts
-	clock     DueClock
-	ranking   history.DraftRanking
-	wake      chan struct{}
-	reconcile time.Duration
+	leagues    history.LeagueResolver
+	facts      func() nativecheck.Facts
+	clock      DueClock
+	ranking    history.DraftRanking
+	injuryFeed NFLInjuryFeedSource
+	wake       chan struct{}
+	reconcile  time.Duration
 }
 
 // NewDueWorker reaches every league through leagues; each store shares the clock configured by
@@ -64,6 +74,12 @@ func NewDueWorkerWithRanking(leagues history.LeagueResolver, facts func() native
 	clock DueClock, ranking history.DraftRanking) *DueWorker {
 	return &DueWorker{leagues: leagues, facts: facts, clock: clock, ranking: ranking,
 		wake: make(chan struct{}, 1), reconcile: time.Minute}
+}
+
+// WithNFLInjuryFeed supplies the hosted live injury source read by automatic lineups.
+func (w *DueWorker) WithNFLInjuryFeed(source NFLInjuryFeedSource) *DueWorker {
+	w.injuryFeed = source
+	return w
 }
 
 // Host adds post-commit wakes and transaction-time clock admission to a hosted adapter.
@@ -180,7 +196,7 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 			return time.Time{}, fmt.Errorf("record due work: %w", err)
 		}
 	}
-	if err := store.ProcessDueLineups(ctx, league, at); err != nil {
+	if err := store.ProcessDueLineups(ctx, league, at, w.liveInjuries()); err != nil {
 		return time.Time{}, fmt.Errorf("record due lineups: %w", err)
 	}
 	// The held, memoised ledger the due processors just read: its fold is shared with every reader of this
@@ -208,6 +224,46 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 		next = lineup
 	}
 	return next, nil
+}
+
+func (w *DueWorker) liveInjuries() history.LiveInjurySource {
+	if w.injuryFeed == nil {
+		return nil
+	}
+	return liveInjuryAdapter{source: w.injuryFeed}
+}
+
+type liveInjuryAdapter struct {
+	source NFLInjuryFeedSource
+}
+
+func (a liveInjuryAdapter) ReadLiveInjuries(ctx context.Context) (history.LiveInjuryReport, error) {
+	feed, err := a.source.ReadNFLInjuryFeed(ctx)
+	if err != nil {
+		return history.LiveInjuryReport{}, fmt.Errorf("read NFL injury feed: %w", err)
+	}
+	designations := make(map[string]leaguerules.NFLStatus, len(feed.Injuries))
+	for _, row := range feed.Injuries {
+		designations[row.ID.String()] = leaguerules.NFLStatus(row.Status)
+	}
+	return history.LiveInjuryReport{
+		Designations: designations,
+		FetchedAt:    feed.FetchedAt,
+		Available:    feed.Available,
+	}, nil
+}
+
+func (a liveInjuryAdapter) RefreshLiveInjuries(ctx context.Context, season int) error {
+	refresher, ok := a.source.(nflInjuryRefresher)
+	if !ok {
+		return nil
+	}
+	attempt, cancel := context.WithTimeout(ctx, autoLineupInjuryRefreshTimeout)
+	defer cancel()
+	if err := refresher.Refresh(attempt, season, nil, nil); err != nil {
+		return fmt.Errorf("refresh NFL injury feed: %w", err)
+	}
+	return nil
 }
 
 // NativeOdds passes the odds read through to the host that holds the league's results.
