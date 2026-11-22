@@ -3,6 +3,59 @@
 For Claudebox to plan from. Written by Tom (Claude Opus 5.5 on the Beelink).
 Christopher's own words are quoted; everything else is what was observed.
 
+## COMPACT POINT 3 — 11-22 1:35 PM CT (newest; READ FIRST)
+Christopher: "You know the plan". Nothing in flight: all AGY jobs done, Vite 557753 (wall) kept on purpose.
+- **Tracker times:** Hermes runs UTC. Every log line:
+  `datetime.datetime.now(zoneinfo.ZoneInfo("America/Chicago")).strftime("%-I:%M %p")`. Backups used through
+  `plan.json.bak-1122aa` (next: `ab`). Claudebox caught guessed times once; never type a time.
+- **AGY quota 1:20 PM (REMAINING):** Gemini 5-hour 0.39% (resets ~4:14 PM), week 27.4%; Argon week ~84%
+  (separate). No Gemini jobs until ~4:14 PM; Argon or Tom himself meanwhile.
+
+### Done since compact point 2 (verified)
+- Main: #460 merged c23b63597, #461 merged 513b7058a (cold-start fixes: CLAUDE.md v3.5 reading order, one rules
+  entry, `docs/resume/RESUME-build-plan.md`, DORMANT marks, task-list line). Asked Claudebox to re-run the
+  cold-start test: `~/Downloads/TOM-ASKS-CLAUDEBOX-coldstart-rerun.md` (Stage 1 card: waiting on that).
+- pulse-a010u2/u3 deleted (Christopher yes): tips 702a8c0a9 on main + in CT105 bundle; 2.1 GB.
+- **T677+T679 READY for v51:** `session/t677-t679` pushed at 6ebae8b0d. Neon fix pass cb4cd1ad0 (8/8 findings,
+  each with fail-without test; report `~/fleet/runs/twr-t677-t679-fix-1122/REPORT.md`). Neon claimed all gates
+  passed but `make lint` failed (funlen openMeteoWeather); Tom split it (6ebae8b0d), mutant-checked, lint 0.
+  Argon re-check SHIP: `~/fleet/runs/twr-t677-t679-recheck-1122/RECHECK.md`.
+- **T683+T686 READY for v51:** `session/live-panel-ball` pushed at 087c96b95, cut ON TOP of t677-t679, so
+  v51 = this branch tip. Wall rail split 50/50 (big plays / first downs), scorebug football own slot. Tests fail
+  without fixes. Screenshots `~/fleet/runs/twr-live-panel-ball-1122/` (S25 x3, wall-1920.png, wall-2560x1440.png).
+- **T675 lab disk done:** 4.9 -> 5.8 GB free. Deleted labrel v43-v47, /root/twr-new, /root/twr-b7lab-new, 6 old
+  `/var/lib/twr/upgrades/*`. Kept upgrades 20261122T043826Z-26535 (= v48 server, hash 95bb5e6c matches v48
+  tarball) and 20261122T032354Z-26124; v48, v49, /root/seed, manual-* (Christopher: keep).
+- **Stage 3 prep:** `session/stage3-load` pushed 8fd437531, `scripts/load/gameday.py`; 1-team local dry run
+  PASS 0 x 502, p95 148 ms. CAVEAT: it uses the SSE invalidation stream, which browser phones do not get (T685),
+  so it under-models phone polling; also needs the real league, not the thin fixture.
+- **Workspaces list** (Claudebox item 4): none unmerged AND idle >7 days (oldest 6.9). Table of 19 idle 4+ days
+  on `session/build-plan-wt-list` bb4d83796 (docs; no PR yet, rides the next docs merge ask).
+- **T685 added (for 11-23):** browsers/phones get no change push (`frontend/src/app/control/transport.ts:108`
+  subscribeChanged is a no-op for cookie sessions); wall re-reads only every 20 s, phone Live tab may not
+  refresh until tapped. Fix needs a lab release. Christopher: "flag the fix for tomorrow".
+
+### Refuted — do not retest (new)
+- Lab has no public `/healthz` `/ready`: by design (status_test asserts absent); public `/app/` 200 + live ticks
+  are the health signal. `twr-server status -origin 127.0.0.1:8443 -origin-cert /etc/twr/origin.pem` said origin
+  "" (flag parsing unclear; not chased).
+- Beelink slowness of the wall is not load (16 cores, load ~6, OBS is another agent's job); it is the 20 s poll.
+- Headless brave `--virtual-time-budget` never returns on the wall demo (timers); use a CDP script with a fixed wait.
+- `pkill -f <pattern>` kills your own shell when the pattern is in the command line; kill by pid.
+
+### Next actions, in order (Claudebox next-up list `~/Downloads/CLAUDEBOX-ANSWERS-TOM-next-up-1122.md`)
+1. Read any new `~/Downloads/CLAUDEBOX-ANSWERS-TOM-*.md` (cold-start re-run result -> Stage 1 card done).
+2. ~10:30 PM after SNF: v50 (T668) `REF=origin/session/pwa-sw-shell ~/fleet/bin/twr-lab-release-ref.sh 50
+   ~/fleet/runs/labrel-v49-1121/release-v49/metadata/targets.json <rundir>`; phone check (section 4 below).
+3. Then v51 from `origin/session/live-panel-ball` (= pwa-sw-shell + T677 + T679 + T683 + T686); both phones must
+   self-update; then ONE merge ask to Christopher for the stack.
+4. Stage 2 step 6: diff `live-wall`, `error-codes`, `glossary-adr` against main.
+5. 11-23: T685 (change push for browsers), then the real 32-team load run (after T685 or script polls like phones).
+
+### Needs Christopher
+- Tonight after v51: one merge ask (pwa-sw-shell + t677-t679 + live-panel-ball).
+- Docs branch `session/build-plan-wt-list` (workspace table) merge, with the next docs ask.
+
 ## COMPACT POINT 2 — 11-22 12:20 PM CT (working the build plan)
 On resume Christopher said: "after compaction make sure everything is healthy". Do that first (list below).
 - **Plan:** `~/Downloads/TWR-BUILD-PLAN-1122.md` (Claudebox; re-read Stages 4-6 before them, updated
