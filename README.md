@@ -29,7 +29,7 @@ downloadable browser mocks in [docs/product-tour.md](docs/product-tour.md).
 
 | Need | Location |
 |:--|:--|
-| Direction & scope | [North_Star.md](North_Star.md), product decisions in [docs/adr/product/](docs/adr/product/) |
+| Direction & scope | [North_Star.md](North_Star.md), product decisions in [docs/adr/product/](docs/adr/product/README.md) |
 | Rules for agents | [CLAUDE.md](CLAUDE.md), [AGENTS.md](AGENTS.md), [agent-codex.md](docs/agent-codex.md) |
 | Current work (one per workstream) | [docs/resume/](docs/resume/README.md) |
 | Architecture decisions | [docs/adr/](docs/adr/README.md) |
