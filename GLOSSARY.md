@@ -26,6 +26,10 @@ _Avoid_: GM, manager, user, customer
 A commissioner temporarily running a vacant (orphan) franchise to set its lineups until a new owner claims the seat.
 _Avoid_: Interim owner, proxy owner, bot
 
+**Stand-in**:
+An AI that holds an empty seat and plays the franchise as an owner would (lineups, bids, trades) until a real person claims it; test leagues only for now.
+_Avoid_: Bot, AI owner, autopilot, ghost owner
+
 **Commissioner**:
 The league's head administrator with full authority over rules, seats, roles, calendar windows, and manual corrections.
 _Avoid_: Admin, superuser, host

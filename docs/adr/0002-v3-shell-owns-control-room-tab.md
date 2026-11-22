@@ -1,9 +1,9 @@
 # Desktop v3 shell owns Control Room tab state
 
-Status: Accepted
+Status: Retired 2026-11-22 (a screen-wiring detail, not a lasting decision; the code and its tests carry it)
 Date: 2026-11-20
 
-In the desktop v3 shell (on the v3 UI branch: `V3Shell.tsx`), the outer frame owns the active Control Room tab (`crTab`) and passes `tab` and `setTab` down into `ControlRoomV3`, which syncs its underlying `useHostedControlRoom` hook (`frontend/src/app/commissioner/HostedControlRoom.tsx:27-35`) to follow the shell on mount and on every shell click while propagating room-initiated jumps (such as a job or situation card opening a tool on another tab) back up to `setTab` after mount. We do this because the v3 frame renders Control Room tab controls in two shell-owned regions outside the room body—the top workspace tab strip (`.ws-tabs`) and the left navigation rail leaves (`.rail .leaf`)—while progressively mounting individual v3 tab bodies or falling back to `HostedControlRoomBody` for unported tabs.
+In the desktop v3 shell (on the v3 UI branch: `V3Shell.tsx`), the outer frame owns the active Control Room tab (`crTab`) and passes `tab` and `setTab` down into `ControlRoomV3`, which syncs its underlying `useHostedControlRoom` hook (`frontend/src/app/commissioner/HostedControlRoom.tsx`) to follow the shell on mount and on every shell click while propagating room-initiated jumps (such as a job or situation card opening a tool on another tab) back up to `setTab` after mount. We do this because the v3 frame renders Control Room tab controls in two shell-owned regions outside the room body—the top workspace tab strip (`.ws-tabs`) and the left navigation rail leaves (`.rail .leaf`)—while progressively mounting individual v3 tab bodies or falling back to `HostedControlRoomBody` for unported tabs.
 
 ## Considered Options
 
