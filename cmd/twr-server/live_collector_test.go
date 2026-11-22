@@ -662,36 +662,57 @@ func TestLiveCollectorHoldsPregameDetailsEvenWhenWeatherFails(t *testing.T) {
 	collector.schedulePregame(t.Context(), endpoints, board)
 
 	service := leagueservice.New(nil).WithLiveGames(collector.games)
-	var detail leagueservice.NFLGame
+	var pregame leagueservice.NFLGamePregame
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		detail, err = service.TargetNFLGame("native.test", "401873100")
+		pregame, err = service.TargetNFLGamePregame("native.test", "401873100")
 		if err != nil {
-			t.Fatalf("TargetNFLGame failed when weather failed: %v", err)
+			t.Fatalf("TargetNFLGamePregame failed when weather failed: %v", err)
 		}
-		if detail.Game != nil && detail.Game.Predictor != nil {
+		if pregame.Predictor != nil {
 			break
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
-	if detail.Game == nil || detail.Game.Predictor == nil || detail.Game.Predictor.Home != 59.1 {
-		t.Fatalf("pregame predictor missing: %+v", detail.Game)
+	if pregame.Predictor == nil || pregame.Predictor.Home != 59.1 {
+		t.Fatalf("pregame predictor missing: %+v", pregame)
 	}
-	if detail.Game.Venue == nil || detail.Game.Venue.Name != "Highmark Stadium" {
-		t.Fatalf("pregame venue missing: %+v", detail.Game)
+	if pregame.Venue == nil || pregame.Venue.Name != "Highmark Stadium" {
+		t.Fatalf("pregame venue missing: %+v", pregame)
 	}
-	if detail.Game.Weather != nil {
-		t.Fatalf("expected nil weather when Open-Meteo fails, got %+v", detail.Game.Weather)
+	if pregame.Weather != nil {
+		t.Fatalf("expected nil weather when Open-Meteo fails, got %+v", pregame.Weather)
+	}
+	detail, err := service.TargetNFLGame("native.test", "401873100")
+	if err != nil || detail.Game == nil {
+		t.Fatalf("TargetNFLGame failed: %v %+v", err, detail)
+	}
+	rawGame, err := json.Marshal(detail.Game)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var keys map[string]json.RawMessage
+	if err := json.Unmarshal(rawGame, &keys); err != nil {
+		t.Fatal(err)
+	}
+	for _, forbidden := range []string{"predictor", "venue", "weather"} {
+		if _, found := keys[forbidden]; found {
+			t.Fatalf("TargetNFLGame serialized %q: %s", forbidden, rawGame)
+		}
 	}
 	network.mu.Lock()
 	callsBefore := network.calls[summaryURL]
 	network.mu.Unlock()
+	if _, err := service.TargetNFLGamePregame("native.test", "401873100"); err != nil {
+		t.Fatalf("cached pregame read failed: %v", err)
+	}
 	collector.holdDetails(board, endpoints)
 	network.mu.Lock()
 	callsAfter := network.calls[summaryURL]
 	network.mu.Unlock()
 	if callsAfter != callsBefore {
-		t.Fatalf("holdDetails made network call: before=%d after=%d", callsBefore, callsAfter)
+		t.Fatalf("pregame read or holdDetails made network call: before=%d after=%d",
+			callsBefore, callsAfter)
 	}
 }
 

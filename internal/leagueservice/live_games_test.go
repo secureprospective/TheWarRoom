@@ -1,6 +1,7 @@
 package leagueservice
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -95,14 +96,42 @@ func TestNFLGameDetailsClonePregameFields(t *testing.T) {
 	if err != nil || detail.Game == nil {
 		t.Fatalf("TargetNFLGame: %v %+v", err, detail)
 	}
-	if detail.Game.Predictor.Home != 59.1 || detail.Game.Venue.Name != "Highmark Stadium" ||
-		*detail.Game.Weather.TempF != 66 || *detail.Game.Weather.PrecipPct != 10 {
-		t.Fatalf("pregame fields mutated on set: %+v", detail.Game)
+	rawGame, err := json.Marshal(detail.Game)
+	if err != nil {
+		t.Fatal(err)
 	}
-	*detail.Game.Weather.TempF = 12
-	reread, err := service.TargetNFLGame("native.test", "402")
-	if err != nil || *reread.Game.Weather.TempF != 66 {
-		t.Fatalf("reader mutated held weather: %v %+v", err, reread.Game.Weather)
+	var keys map[string]json.RawMessage
+	if err := json.Unmarshal(rawGame, &keys); err != nil {
+		t.Fatal(err)
+	}
+	for _, forbidden := range []string{"predictor", "venue", "weather"} {
+		if _, found := keys[forbidden]; found {
+			t.Fatalf("nfl.game.read leaked %q in JSON: %s", forbidden, rawGame)
+		}
+	}
+
+	pre, err := service.TargetNFLGamePregame("native.test", "402")
+	if err != nil {
+		t.Fatalf("TargetNFLGamePregame: %v", err)
+	}
+	if pre.League != "native.test" || pre.Game != "402" || !pre.At.Equal(at) {
+		t.Fatalf("pregame metadata mismatch: %+v", pre)
+	}
+	if pre.Predictor == nil || pre.Predictor.Home != 59.1 || pre.Venue == nil ||
+		pre.Venue.Name != "Highmark Stadium" || pre.Weather == nil ||
+		*pre.Weather.TempF != 66 || *pre.Weather.PrecipPct != 10 {
+		t.Fatalf("pregame fields mutated on set: %+v", pre)
+	}
+	*pre.Weather.TempF = 12
+	pre.Predictor.Home = 1
+	pre.Venue.Name = "Changed"
+	reread, err := service.TargetNFLGamePregame("native.test", "402")
+	if err != nil || *reread.Weather.TempF != 66 || reread.Predictor.Home != 59.1 ||
+		reread.Venue.Name != "Highmark Stadium" {
+		t.Fatalf("reader mutated held pregame fields: %v %+v", err, reread)
+	}
+	if _, err := service.TargetNFLGamePregame("native.test", "../402"); err == nil {
+		t.Fatal("invalid game id accepted by TargetNFLGamePregame")
 	}
 }
 
@@ -136,9 +165,17 @@ func TestMergePregameUpdatesPreOnlyWithoutClobberingLiveOrFinal(t *testing.T) {
 	if err != nil || dLive.Game == nil || dLive.Game.Status != "in" || dLive.Game.Home.Score != 7 {
 		t.Fatalf("live game overwritten by MergePregame: %v %+v", err, dLive)
 	}
+	preLive, err := service.TargetNFLGamePregame("native.test", "401")
+	if err != nil || preLive.Predictor != nil {
+		t.Fatalf("live game leaked pregame data: %v %+v", err, preLive)
+	}
 	dPre, err := service.TargetNFLGame("native.test", "402")
-	if err != nil || dPre.Game == nil || dPre.Game.Predictor == nil || dPre.Game.Predictor.Home != 59.1 {
-		t.Fatalf("pregame detail not merged: %v %+v", err, dPre)
+	if err != nil || dPre.Game == nil || dPre.Game.Predictor != nil {
+		t.Fatalf("nfl.game.read leaked pregame predictor: %v %+v", err, dPre)
+	}
+	preData, err := service.TargetNFLGamePregame("native.test", "402")
+	if err != nil || preData.Predictor == nil || preData.Predictor.Home != 59.1 {
+		t.Fatalf("pregame detail not merged: %v %+v", err, preData)
 	}
 	dFinal, err := service.TargetNFLGame("native.test", "403")
 	if err != nil || dFinal.Game == nil || dFinal.Game.Status != "post" || dFinal.Game.Home.Score != 21 {

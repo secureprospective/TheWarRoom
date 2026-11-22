@@ -79,9 +79,9 @@ type Game struct {
 	Last       *Play      `json:"last"`
 	Box        []Box      `json:"box"`
 	Plays      []Play     `json:"plays"`
-	Predictor  *Predictor `json:"predictor,omitempty"`
-	Venue      *Venue     `json:"venue,omitempty"`
-	Weather    *Weather   `json:"weather,omitempty"`
+	Predictor  *Predictor `json:"-"`
+	Venue      *Venue     `json:"-"`
+	Weather    *Weather   `json:"-"`
 }
 
 func digits(s string) bool {

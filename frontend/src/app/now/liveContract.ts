@@ -12,6 +12,7 @@ export type Box = { team: string; category: string; labels: string[];
 export type Predictor = { home: number; away: number };
 export type Venue = { name: string; city?: string; state?: string; country?: string; indoor?: boolean };
 export type Weather = { text?: string; tempF?: number; wind?: string; precipPct?: number; source?: string };
+export type PregameDetail = { predictor?: Predictor; venue?: Venue; weather?: Weather };
 export type Game = { id: string; kickoff: string; home: Team; away: Team; status: 'pre' | 'in' | 'post';
   clock: string; period: number; state: FieldState | null; last: Play | null; box: Box[]; plays: Play[];
   predictor?: Predictor; venue?: Venue; weather?: Weather };
@@ -168,4 +169,21 @@ export function parseHostedGame(v: unknown, league: string, expected: string): G
   const detail = r.game === null ? null : game(r.game, p);
   if (detail && detail.id !== expected) throw new Error(`${p}: reading is for another game`);
   return detail;
+}
+
+/** parseHostedPregame reads nfl.game.pregame.read: cached pre-game win chance, venue and weather. */
+export function parseHostedPregame(v: unknown, league: string, expected: string): PregameDetail {
+  const p = 'NFL pregame';
+  const r = object(v, p, ['league', 'game', 'at', 'predictor', 'venue', 'weather']);
+  if (requiredText(r.league, p) !== league) throw new Error(`${p}: reading is for another league`);
+  if (requiredText(r.game, p) !== expected) throw new Error(`${p}: reading is for another game`);
+  timestamp(r.at, p);
+  const pred = predictor(r.predictor, `${p}.predictor`);
+  const ven = venue(r.venue, `${p}.venue`);
+  const wx = weather(r.weather, `${p}.weather`);
+  return {
+    ...(pred ? { predictor: pred } : {}),
+    ...(ven ? { venue: ven } : {}),
+    ...(wx ? { weather: wx } : {}),
+  };
 }

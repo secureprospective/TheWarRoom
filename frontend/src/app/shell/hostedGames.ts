@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { kickoffText } from '../now/LiveGame';
-import { parseHostedGame, parseHostedGames, type Game, type LiveView } from '../now/liveContract';
+import {
+  parseHostedGame, parseHostedGames, parseHostedPregame, type Game, type LiveView,
+} from '../now/liveContract';
 import type { usePulseLive } from './hqLive';
 import type { PulseScope } from './pulseReads';
 
@@ -47,8 +49,18 @@ export function useHostedGames(league: string, port: NonNullable<PulseScope['por
         if (!selected) return;
         const detail = await port({ command: 'nfl.game.read', mode: 'read',
           arguments: { league, game: selected.id } });
-        view.followed = parseHostedGame(detail.data, league, selected.id)
+        let followed = parseHostedGame(detail.data, league, selected.id)
           ?? (selected.status === 'pre' ? selected : null);
+        if (followed && followed.status === 'pre') {
+          try {
+            const pre = await port({ command: 'nfl.game.pregame.read', mode: 'read',
+              arguments: { league, game: selected.id } });
+            followed = { ...followed, ...parseHostedPregame(pre.data, league, selected.id) };
+          } catch {
+            // Older servers or unavailable pre-game cache still render the preview without these fields.
+          }
+        }
+        view.followed = followed;
         if (current()) setHeld({ view, error: '', at: Date.now() });
       } catch (e: unknown) {
         const error = e instanceof Error ? e.message : String(e);
