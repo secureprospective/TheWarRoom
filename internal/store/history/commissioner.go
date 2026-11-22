@@ -410,6 +410,8 @@ func commandRole(raw commissioner.RawCommand, principal string, auth commissione
 		return authorizeCommandWithAuthorizer(raw, principal, auth)
 	case autoPickDraftAuthorizer:
 		return authorizeAutoPickDraft(raw, principal, auth, records)
+	case olineHandoutAuthorizer:
+		return authorizeOLineHandout(raw, principal, auth, records)
 	}
 	if usesRecordAuthorization(raw.Command, auth) {
 		return authorizeRecordCommand(raw, principal, auth, records)
@@ -714,10 +716,8 @@ func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records
 		}
 		return nil
 	}
-	if principal == commissioner.OLineClockPrincipal {
-		if err := checkPendingOLineAppend(*raw, records, now); err != nil {
-			return err
-		}
+	if err := checkOLinePrincipalAppend(*raw, principal, records, now); err != nil {
+		return err
 	}
 	if err := commissioner.PrepareOLineClose(raw, records, now); err != nil {
 		return fmt.Errorf("close O-Line auction: %w", commissioner.Refused(err))
