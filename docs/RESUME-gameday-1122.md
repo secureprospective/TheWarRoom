@@ -3,17 +3,72 @@
 For Claudebox to plan from. Written by Tom (Claude Opus 5.5 on the Beelink).
 Christopher's own words are quoted; everything else is what was observed.
 
-## COMPACT POINT 11-22 ~10:40 AM CT — WAIT FOR CHRISTOPHER'S FIRST JOBS
-- New role (Christopher, 10:40 AM): "I have Claudebox setting up your plan now, after compaction I will
-  give you your 1st jobs - you are the headbrain, use agy and Haiku on claudebox when appropriate."
-  → Tom is head-brain for this workstream: plan, brief, judge, verify the tree. Bulk building goes to
-  AGY (`~/fleet/bin/agy-run.sh <job> <brief> "<model>" <workdir>`; Neon/Hydrogen/Flash; Argon sparingly)
-  and Haiku as Claude Code on Claudebox (`ssh claudebox`, claude 2.1.330). Not Tom's own subagents for
-  Haiku. GPT side is down. Routing: `~/fleet/ROUTING.md`. Check `python3 ~/fleet/bin/agy-usage.py` first.
-- Claudebox's plan will arrive from Christopher; it outranks NEXT below.
-- In flight: nothing of mine running. Vite pid 557753 (127.0.0.1:5199, Christopher's wall/dev page)
-  stays up on purpose; stop with `kill 557753`. S8 adb connected 192.168.1.122:5555.
-- Pending question to Christopher: may Tom release `session/pwa-sw-shell` to the lab after 10 PM for T668?
+## COMPACT POINT 2 — 11-22 12:20 PM CT (working the build plan)
+On resume Christopher said: "after compaction make sure everything is healthy". Do that first (list below).
+- **Plan:** `~/Downloads/TWR-BUILD-PLAN-1122.md` (Claudebox; re-read Stages 4-6 before them, updated
+  12:00), rulings `~/Downloads/TheWarRoom-DIRECTION-GRILL-1122.md`. Tom = head-brain: briefs, verify;
+  builds via AGY (`~/fleet/bin/agy-run.sh`). Haiku: only via `~/Downloads/TOM-ASKS-CLAUDEBOX-<topic>.md`.
+  Questions to Claudebox: write that file, card `needs_you`; answers land as `~/Downloads/CLAUDEBOX-ANSWERS-TOM-*.md`.
+- **Tracker** Hermes `~/fleet/tracker/data/plan.json`: Claudebox writes it too. Find cards BY TITLE
+  (`next(l for l in d["lanes"] if l["title"].startswith("Stage 1"))`), never by index; back up first
+  (`plan.json.bak-1122<letter>`, last used `o`); no apostrophes inside the ssh-quoted python (breaks quoting).
+  Read `data/answers.jsonl` first (only q1 from 11-21, already in `seen`).
+- **AGY quota 12:15 PM (REMAINING):** Gemini week 44.33% (refresh Sat 11/28 ~4 AM), 5-hour 57.26%
+  (refresh ~4:14 PM), Argon week 84.31%, Claude/GPT via AGY 0% until Fri 11/27. Saved as USED in
+  `~/fleet/agy-quota.json`.
+
+### In flight at compaction
+| Job | Check alive | Output | On result |
+|---|---|---|---|
+| Neon Medium fix pass T677+T679 (pid 1462641, started 12:04 PM) | `cat ~/fleet/runs/twr-t677-t679-fix-1122/exit`; `ps -p 1462641` | `~/fleet/runs/twr-t677-t679-fix-1122/REPORT.md`, commit on `session/t677-t679` | Verify: each of 8 Argon findings fixed with fail-without test; run gates (cmd/twr-server is slow under race: `-run` focused + `-timeout 900s`); then a short Argon re-review of finding #1 (startup order) and #4 (cache). Then push branch. |
+| PR #460 auto-merge loop (bg shell, `gh pr merge 460 --squash` when green; Christopher said "yes merge #460") | `gh pr view 460 --json state -q .state` | merge commit on main | If loop died and checks green: run `gh pr merge 460 --squash` (approved). Then card: Claudebox runs the Q27 cold-start test. Then `git -C ~/work/TheWarRoom pull --ff-only` on main. |
+| Vite pid 557753 (127.0.0.1:5199, wall/dev page) | `ps -p 557753` | `~/logs/vite-lab-dev.log` | Keep up all day (Christopher: "the wall is working well"). |
+
+### Done today since 10:40 (all verified)
+- Stage 1 main checkout: 592 files existed only in the git INDEX (status `AD`), so the plan's
+  `git diff HEAD` would save nothing; saved index patch + worktree patch + untracked tar + raw .git/index
+  to CT105 `/mnt/storage/claudebox/backups/twr-clean-1122/` (sha256 checked). Archive branch
+  `archive/league-history-pwa-1122` pushed (476c330ca index state, ae856d1d0 worktree state). Main checkout
+  on main, clean. `tools/league-history/` (849 MB ignored data incl. mfl.db) backed up (tgz on CT105) and
+  hidden via `.git/info/exclude`.
+- Workspaces 165 -> 58; branches local 370 -> 135, remote 376 -> 51; disk 112 -> 130 GB free. All tips
+  bundled+verified on CT105 (`worktrees/`, `branches-unmerged-gt30d-1122.bundle`, `branches-merged-recent-1122.bundle`
+  541 tips 70,594,803 B). Claudebox ruled merged work under 7/30 days may go (Option A).
+  Left: `.worktrees/pulse-a010u2`, `pulse-a010u3` half-removed (read-only Go cache; git refused; ~2 GB,
+  unregistered) — needs Christopher's ok to `chmod -R u+w` + delete. Kept `session/split-scoring` (T473 parked).
+  Inventory: `~/fleet/runs/twr-clean-1122/INVENTORY.md` (+ `inventory.py`).
+- Docs PR #460 (Hydrogen built, Tom verified nothing lost from README): README one page, `docs/product-tour.md`,
+  `docs/resume/` (7), HANDOFF.md retired, 2 docs to `docs/archive/` + INDEX. Links North_Star + docs/adr/product/README.md.
+- PR #459 (Claudebox, North Star v3 + product ADRs) merged 12:00 PM, main 6c3f13e3f.
+- T677+T679 built by Neon (7acfa36b9, aa6fc20e4 on `session/t677-t679`, cut from pwa-sw-shell). Argon High
+  review: FIX FIRST, 4 high (warm-up runs before live restore → wrong cache keys; warm test proves nothing;
+  playoff scoreboards dropped by readBoard; recordedStartersCache writes empty/partial entries), 3 medium, 1 low.
+  `~/fleet/runs/twr-t677-t679-review-1122/REVIEW.md`.
+- Noon: lab live ticks every 10 s, wall working (Christopher), Hermes recorder LIVE recording full plays
+  (ESPN plays/summary/scoreboard + Sleeper). Yahoo scoreboard URL 404 since kickoff (flagged; after Sunday).
+
+### Refuted — do not retest
+- `cmd/twr-server` race-test timeout at 10 m is NOT a hang from T677: the running test
+  `TestPostCommitPinAndReportErrorsNoteAlreadyCommitted` passes on branch (66 s) and base (102 s).
+- 503 `nfl.game.read` at 08:02 UTC were 4 isolated errors; none since. value.read 409s are a known host limit.
+
+### Health check on resume (Christopher asked)
+`ps -p 557753`; lab `grep "server live" /var/lib/twr/server.log | tail -2` (heredoc form); Hermes
+`journalctl --user -u live-recorder -n 2`; Neon exit file; `gh pr view 460`; tracker updated stamp.
+
+### Next actions, in order
+1. Run the health check above; post one tracker log line.
+2. Verify Neon's fix pass (table above), Argon re-check of #1/#4, push `session/t677-t679`.
+3. Stage 1 done lines: #460 merged, Claudebox cold-start test (theirs). Then Stage 1 card `done`.
+4. After SNF ends (~10:30 PM): T668 lab release v50 from `origin/session/pwa-sw-shell` (section 4), phone check.
+5. Then v51 from `session/t677-t679`; both phones must self-update; one merge ask (Stage 2 step 5).
+6. Stage 2 step 6: diff `session/live-wall`, `session/error-codes`, `session/glossary-adr` against main.
+
+### Needs Christopher
+- OK to delete the two half-removed workspaces (pulse-a010u2/u3, ~2 GB).
+- Later: one merge ask for pwa-sw-shell + T677 + T679 (Stage 2).
+- Filing gate fails on ~27 `~/scratch-*.png/.log` at home top: another agent's live OBS/overlay job (bridge pid
+  1221803), not Tom's; left alone.
 
 ## 1. Live games readiness (done, verified 9:45–9:55 AM)
 
