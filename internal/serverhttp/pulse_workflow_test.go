@@ -452,6 +452,107 @@ func TestHostedNFLGameReadDoesNotInventUnavailableTimeouts(t *testing.T) {
 	}
 }
 
+func TestHostedNFLGamePregameReadAndLegacyWireShape(t *testing.T) {
+	f := newHostedFixture(t, true, true)
+	bearer := f.login(t, "owner", "private-password")
+	temp := 48
+	nowAt := time.Date(2026, 11, 22, 16, 0, 0, 0, time.UTC)
+	preGame := livegame.Game{
+		ID: "402", Status: "pre", Kickoff: nowAt.Add(2 * time.Hour),
+		Home:      livegame.Team{ID: "2", Abbreviation: "BUF"},
+		Away:      livegame.Team{ID: "15", Abbreviation: "MIA"},
+		Predictor: &livegame.Predictor{Home: 59.1, Away: 40.6},
+		Venue:     &livegame.Venue{Name: "Highmark Stadium", City: "Orchard Park", State: "NY"},
+		Weather:   &livegame.Weather{Text: "Partly cloudy", TempF: &temp, Source: "Open-Meteo"},
+	}
+	liveGame := livegame.Game{
+		ID: "401", Status: "in",
+		Predictor: &livegame.Predictor{Home: 55, Away: 45},
+		Venue:     &livegame.Venue{Name: "Arrowhead Stadium"},
+	}
+	f.games.SetDetails(map[string]leagueservice.NFLGame{
+		"401": {Game: &liveGame, At: nowAt},
+		"402": {Game: &preGame, At: nowAt},
+	})
+
+	// nfl.game.read must never serialize predictor, venue, or weather for pre or live games.
+	for _, id := range []string{"401", "402"} {
+		raw := workflowRequest(t, "nfl.game.read", "read",
+			fmt.Sprintf(`{"league":"native.hosted","game":%q}`, id), "")
+		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+		if err != nil {
+			t.Fatal(err)
+		}
+		status, result := f.send(t, serverhttp.WorkflowPath, string(body), bearer, "")
+		if status != 200 {
+			t.Fatalf("nfl.game.read %s status %d: %s", id, status, result)
+		}
+		var resp serverhttp.WorkflowResponse
+		if err := json.Unmarshal(result, &resp); err != nil {
+			t.Fatal(err)
+		}
+		var envelope struct {
+			Game map[string]json.RawMessage `json:"game"`
+		}
+		if err := json.Unmarshal(resp.Data, &envelope); err != nil {
+			t.Fatal(err)
+		}
+		for _, forbidden := range []string{"predictor", "venue", "weather"} {
+			if _, ok := envelope.Game[forbidden]; ok {
+				t.Fatalf("nfl.game.read(%s) leaked %q: %s", id, forbidden, resp.Data)
+			}
+		}
+	}
+
+	// nfl.game.pregame.read serves cached pre-game fields and enforces league admission.
+	for _, tc := range []struct {
+		league, game string
+		wantData     bool
+		status       int
+	}{
+		{"native.hosted", "402", true, 200},
+		{"native.hosted", "401", false, 200},
+		{"native.hosted", "999", false, 200},
+		{"native.other", "402", false, 403},
+	} {
+		t.Run(tc.league+"/"+tc.game, func(t *testing.T) {
+			raw := workflowRequest(t, "nfl.game.pregame.read", "read",
+				fmt.Sprintf(`{"league":%q,"game":%q}`, tc.league, tc.game), "")
+			body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+			if err != nil {
+				t.Fatal(err)
+			}
+			status, result := f.send(t, serverhttp.WorkflowPath, string(body), bearer, "")
+			if status != tc.status {
+				t.Fatalf("status %d, want %d: %s", status, tc.status, result)
+			}
+			if status != 200 {
+				return
+			}
+			var resp serverhttp.WorkflowResponse
+			if err := json.Unmarshal(result, &resp); err != nil {
+				t.Fatal(err)
+			}
+			var got leagueservice.NFLGamePregame
+			if err := json.Unmarshal(resp.Data, &got); err != nil {
+				t.Fatal(err)
+			}
+			if got.League != tc.league || got.Game != tc.game {
+				t.Fatalf("wrong scope: %+v", got)
+			}
+			if tc.wantData {
+				if got.Predictor == nil || got.Predictor.Home != 59.1 || got.Venue == nil ||
+					got.Venue.Name != "Highmark Stadium" || got.Weather == nil ||
+					*got.Weather.TempF != 48 {
+					t.Fatalf("missing cached pregame fields: %+v", got)
+				}
+			} else if got.Predictor != nil || got.Venue != nil || got.Weather != nil {
+				t.Fatalf("unexpected pregame fields: %+v", got)
+			}
+		})
+	}
+}
+
 func TestHostedFranchiseHQMoneyReads(t *testing.T) {
 	f := newHostedFixture(t, true, true)
 	bearer, proof := f.directCommissioner(t)

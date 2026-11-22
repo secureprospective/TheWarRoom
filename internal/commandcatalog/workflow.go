@@ -163,7 +163,7 @@ func (r RawWorkflowScope) franchiseScope(command string) (RawWorkflowScope, bool
 func (r RawWorkflowScope) pulseScope(command string) (RawWorkflowScope, bool, bool) {
 	kept := RawWorkflowScope{League: r.League}
 	switch command {
-	case "nfl.game.read":
+	case "nfl.game.read", "nfl.game.pregame.read":
 		kept.Game = r.Game
 		return kept, r.Game != "" && len(r.Game) <= 32 && strings.Trim(r.Game, "0123456789") == "", true
 	case "week.read":
@@ -273,7 +273,8 @@ type workflowOutput interface {
 		commissioner.NativeOdds | commissioner.Corrections | commissioner.NativeAssets |
 		commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck |
 		commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules |
-		leagueservice.NFLGames | leagueservice.NFLGame | leagueservice.NFLPlayerStatus |
+		leagueservice.NFLGames | leagueservice.NFLGame | leagueservice.NFLGamePregame |
+		leagueservice.NFLPlayerStatus |
 		leagueservice.PlayerNewsReading | leagueservice.NewsFeedReading | commissioner.NativeCapCheck |
 		market.ContractQuote | market.WhatIfStack | market.ContractDecisions | leagueservice.DraftQueue |
 		leagueservice.PlayerNotes | leagueservice.PlayerWatchList | leagueservice.PlayerPrivateChange |

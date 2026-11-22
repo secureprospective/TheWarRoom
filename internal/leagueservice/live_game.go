@@ -18,6 +18,16 @@ type NFLGame struct {
 	Words  string         `json:"words"`
 }
 
+// NFLGamePregame is cached public pre-game win chance, venue and weather for one NFL game.
+type NFLGamePregame struct {
+	League    string              `json:"league"`
+	Game      string              `json:"game"`
+	At        time.Time           `json:"at"`
+	Predictor *livegame.Predictor `json:"predictor,omitempty"`
+	Venue     *livegame.Venue     `json:"venue,omitempty"`
+	Weather   *livegame.Weather   `json:"weather,omitempty"`
+}
+
 // SetDetails atomically replaces the current slate's details with detached parsed summaries.
 func (g *LiveGames) SetDetails(details map[string]NFLGame) {
 	if g == nil {
@@ -102,25 +112,40 @@ func cloneLiveGame(game *livegame.Game) *livegame.Game {
 		}
 		out.Box[i] = box
 	}
-	if game.Predictor != nil {
-		p := *game.Predictor
-		out.Predictor = &p
+	out.Predictor = clonePredictor(game.Predictor)
+	out.Venue = cloneVenue(game.Venue)
+	out.Weather = cloneWeather(game.Weather)
+	return &out
+}
+
+func clonePredictor(src *livegame.Predictor) *livegame.Predictor {
+	if src == nil {
+		return nil
 	}
-	if game.Venue != nil {
-		v := *game.Venue
-		out.Venue = &v
+	out := *src
+	return &out
+}
+
+func cloneVenue(src *livegame.Venue) *livegame.Venue {
+	if src == nil {
+		return nil
 	}
-	if game.Weather != nil {
-		w := *game.Weather
-		if game.Weather.TempF != nil {
-			t := *game.Weather.TempF
-			w.TempF = &t
-		}
-		if game.Weather.PrecipPct != nil {
-			pct := *game.Weather.PrecipPct
-			w.PrecipPct = &pct
-		}
-		out.Weather = &w
+	out := *src
+	return &out
+}
+
+func cloneWeather(src *livegame.Weather) *livegame.Weather {
+	if src == nil {
+		return nil
+	}
+	out := *src
+	if src.TempF != nil {
+		t := *src.TempF
+		out.TempF = &t
+	}
+	if src.PrecipPct != nil {
+		pct := *src.PrecipPct
+		out.PrecipPct = &pct
 	}
 	return &out
 }
@@ -138,8 +163,12 @@ func cloneLivePlay(play livegame.Play) livegame.Play {
 	return play
 }
 
+func validNFLGameScope(league, game string) bool {
+	return league != "" && game != "" && len(game) <= 32 && strings.Trim(game, "0123456789") == ""
+}
+
 func (a *Service) TargetNFLGame(league, game string) (NFLGame, error) {
-	if league == "" || game == "" || len(game) > 32 || strings.Trim(game, "0123456789") != "" {
+	if !validNFLGameScope(league, game) {
 		return NFLGame{}, fmt.Errorf("nfl game: league and numeric game id are required")
 	}
 	if err := a.admitRead(league, "native.directory.read", ""); err != nil {
@@ -151,10 +180,37 @@ func (a *Service) TargetNFLGame(league, game string) (NFLGame, error) {
 			if found, ok := (*held)[game]; ok {
 				detail = found
 				detail.Game = cloneLiveGame(found.Game)
+				if detail.Game != nil {
+					detail.Game.Predictor = nil
+					detail.Game.Venue = nil
+					detail.Game.Weather = nil
+				}
 				detail.Stale = a.games.now().Sub(detail.At) > liveGamesStale
 			}
 		}
 	}
 	detail.League = league
 	return detail, nil
+}
+
+// TargetNFLGamePregame reads cached public pre-game preview data without performing network I/O.
+func (a *Service) TargetNFLGamePregame(league, game string) (NFLGamePregame, error) {
+	if !validNFLGameScope(league, game) {
+		return NFLGamePregame{}, fmt.Errorf("nfl game pregame: league and numeric game id are required")
+	}
+	if err := a.admitRead(league, "native.directory.read", ""); err != nil {
+		return NFLGamePregame{}, err
+	}
+	out := NFLGamePregame{League: league, Game: game}
+	if a.games != nil {
+		if held := a.games.details.Load(); held != nil {
+			if found, ok := (*held)[game]; ok && found.Game != nil && found.Game.Status == "pre" {
+				out.At = found.At
+				out.Predictor = clonePredictor(found.Game.Predictor)
+				out.Venue = cloneVenue(found.Game.Venue)
+				out.Weather = cloneWeather(found.Game.Weather)
+			}
+		}
+	}
+	return out, nil
 }

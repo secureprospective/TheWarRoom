@@ -2911,6 +2911,7 @@ export type WorkflowArgumentMap = {
 "contract.decisions.read": NativeArguments<"contract.decisions.read">;
 "market.wins.read": NativeArguments<"market.wins.read">;
 "league.activity.read": NativeArguments<"league.activity.read">;
+"nfl.game.pregame.read": NativeArguments<"nfl.game.pregame.read">;
 "nfl.player-status.read": NativeArguments<"nfl.player-status.read">;
 "player.news.read": NativeArguments<"player.news.read">;
 "news.feed.read": NativeArguments<"news.feed.read">;

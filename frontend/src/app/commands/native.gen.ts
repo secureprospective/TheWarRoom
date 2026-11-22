@@ -4973,10 +4973,11 @@ const schema351 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"TargetNFLPlayerStatus",
+  Validator:"TargetNFLGamePregame",
   Nullable:false,
   Fields:[
-    {Name:"league",Optional:false,Schema:schema2}
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"game",Optional:false,Schema:schema2}
   ],
   Items:null,
 } as const;
@@ -4984,7 +4985,7 @@ const schema352 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"TargetNewsFeed",
+  Validator:"TargetNFLPlayerStatus",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2}
@@ -4995,7 +4996,7 @@ const schema353 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawProblemReportsScope.Validate",
+  Validator:"TargetNewsFeed",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2}
@@ -5003,6 +5004,17 @@ const schema353 = {
   Items:null,
 } as const;
 const schema354 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawProblemReportsScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema355 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5017,7 +5029,7 @@ const schema354 = {
   ],
   Items:null,
 } as const;
-const schema355 = {
+const schema356 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5028,7 +5040,7 @@ const schema355 = {
   ],
   Items:null,
 } as const;
-const schema356 = {
+const schema357 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5040,7 +5052,7 @@ const schema356 = {
   ],
   Items:null,
 } as const;
-const schema357 = {
+const schema358 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5051,7 +5063,7 @@ const schema357 = {
   ],
   Items:null,
 } as const;
-const schema358 = {
+const schema359 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5066,7 +5078,7 @@ const schema358 = {
   ],
   Items:null,
 } as const;
-const schema359 = {
+const schema360 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5078,7 +5090,7 @@ const schema359 = {
   ],
   Items:null,
 } as const;
-const schema360 = {
+const schema361 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5089,7 +5101,7 @@ const schema360 = {
   ],
   Items:null,
 } as const;
-const schema361 = {
+const schema362 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5101,7 +5113,7 @@ const schema361 = {
   ],
   Items:null,
 } as const;
-const schema362 = {
+const schema363 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5112,7 +5124,7 @@ const schema362 = {
   ],
   Items:null,
 } as const;
-const schema363 = {
+const schema364 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5125,7 +5137,7 @@ const schema363 = {
   ],
   Items:null,
 } as const;
-const schema364 = {
+const schema365 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -5137,7 +5149,7 @@ const schema364 = {
   ],
   Items:null,
 } as const;
-const schema365 = {
+const schema366 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -8394,6 +8406,25 @@ export const serverCommands = {
   },
   phrase: "read league activity",
 },
+"nfl.game.pregame.read": {
+  definition: {
+    "ID": "nfl.game.pregame.read",
+    "Method": "TargetNFLGamePregame",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "league-view",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "stat-evidence",
+    "Safeguards": "cached public pre-game win chance, venue and weather only",
+    "Arguments": schema351
+  },
+  phrase: "read nfl game pregame",
+},
 "nfl.player-status.read": {
   definition: {
     "ID": "nfl.player-status.read",
@@ -8409,7 +8440,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "public-nfl-status",
     "Safeguards": "public NFL injury designation, body part and expected return week only",
-    "Arguments": schema351
+    "Arguments": schema352
   },
   phrase: "read nfl player-status",
 },
@@ -8447,7 +8478,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "public-nfl-news",
     "Safeguards": "cached public ESPN league news tagged with league player ids",
-    "Arguments": schema352
+    "Arguments": schema353
   },
   phrase: "read news feed",
 },
@@ -8466,7 +8497,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "current commissioner or co-commissioner; private reports only",
-    "Arguments": schema353
+    "Arguments": schema354
   },
   phrase: "read league feedback",
 },
@@ -8485,7 +8516,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "current league member; trusted User-Agent; ten reports per hour per principal",
-    "Arguments": schema354
+    "Arguments": schema355
   },
   phrase: "create feedback report",
 },
@@ -8504,7 +8535,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema355
+    "Arguments": schema356
   },
   phrase: "read draft queue",
 },
@@ -8523,7 +8554,7 @@ export const serverCommands = {
     "Undo": "replace-own-private-queue",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema356
+    "Arguments": schema357
   },
   phrase: "set draft queue",
 },
@@ -8542,7 +8573,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema357
+    "Arguments": schema358
   },
   phrase: "read trade draft",
 },
@@ -8561,7 +8592,7 @@ export const serverCommands = {
     "Undo": "delete-own-private-proposal",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema358
+    "Arguments": schema359
   },
   phrase: "save trade draft",
 },
@@ -8580,7 +8611,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-entries",
     "Safeguards": "authenticated-franchise",
-    "Arguments": schema359
+    "Arguments": schema360
   },
   phrase: "delete trade draft",
 },
@@ -8599,7 +8630,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-account-data",
     "Safeguards": "session account scope; no request account ID; agents denied; uncached",
-    "Arguments": schema360
+    "Arguments": schema361
   },
   phrase: "read home layout",
 },
@@ -8618,7 +8649,7 @@ export const serverCommands = {
     "Undo": "replace-own-account-preference",
     "Facts": "private-account-data",
     "Safeguards": "session account scope; no request account ID; agent denied; revision checked",
-    "Arguments": schema361
+    "Arguments": schema362
   },
   phrase: "set home layout",
 },
@@ -8637,7 +8668,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "private-account-data",
     "Safeguards": "session account scope; no request account ID; agents denied; uncached",
-    "Arguments": schema362
+    "Arguments": schema363
   },
   phrase: "read job snoozes",
 },
@@ -8656,7 +8687,7 @@ export const serverCommands = {
     "Undo": "replace-own-account-snooze",
     "Facts": "private-account-data",
     "Safeguards": "session account scope; no request account ID; agent denied",
-    "Arguments": schema363
+    "Arguments": schema364
   },
   phrase: "set job snooze",
 },
@@ -8675,7 +8706,7 @@ export const serverCommands = {
     "Undo": "clear-own-account-snooze",
     "Facts": "private-account-data",
     "Safeguards": "session account scope; no request account ID; agent denied",
-    "Arguments": schema364
+    "Arguments": schema365
   },
   phrase: "wake job snooze",
 },
@@ -8695,7 +8726,7 @@ export const serverCommands = {
     "Undo": "none",
     "Facts": "server-held league database and R2 settings",
     "Safeguards": "current commissioner seat; per-league backup manager; refuse concurrent backup",
-    "Arguments": schema365
+    "Arguments": schema366
   },
   phrase: "now backup",
 },

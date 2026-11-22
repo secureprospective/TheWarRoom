@@ -145,5 +145,34 @@ describe('LivePregame', () => {
     expect(crawl.classList.contains('is-static')).toBe(true);
     expect(crawl.querySelectorAll('.cr')).toHaveLength(2);
     expect(crawl.querySelectorAll('.bc-dup')).toHaveLength(0);
+    const stats = [...crawl.querySelectorAll('.cr-stat')].map(el => el.textContent);
+    expect(stats).toEqual(['proj 11.4', 'proj 8.2']);
+  });
+
+  it('shows projection first, falls back to season average, and omits the stat when neither exists',
+    async () => {
+    const mixed: PregameGuy[] = [
+      { id: 'p1', name: 'Josh Allen', position: 'QB', team: 'BUF', side: 'YOURS', mine: true,
+        projection: 24.24, average: 21.5 },
+      { id: 'p2', name: 'Tyreek Hill', position: 'WR', team: 'MIA', side: 'CAR', mine: false,
+        average: 11.8 },
+      { id: 'p3', name: 'Dalton Kincaid', position: 'TE', team: 'BUF', side: 'YOURS', mine: true },
+    ];
+    await mount(<LivePregame game={basePre} guys={mixed} now={Date.parse('2026-11-22T17:00:00Z')}
+      reduced={true} />);
+    const items = [...host!.querySelectorAll('[data-testid="pregame-crawl"] .cr')];
+    expect(items).toHaveLength(3);
+
+    // Projection takes priority over average and formats to one decimal.
+    expect(items[0].querySelector('.cr-stat')?.textContent).toBe('proj 24.2');
+    expect(items[0].textContent).toBe('Josh Allen QB · BUF · YOURS · proj 24.2');
+
+    // Without projection, falls back to season average.
+    expect(items[1].querySelector('.cr-stat')?.textContent).toBe('avg 11.8');
+    expect(items[1].textContent).toBe('Tyreek Hill WR · MIA · CAR · avg 11.8');
+
+    // Without either value, no stat, placeholder, or dash renders.
+    expect(items[2].querySelector('.cr-stat')).toBeNull();
+    expect(items[2].textContent).toBe('Dalton Kincaid TE · BUF · YOURS');
   });
 });

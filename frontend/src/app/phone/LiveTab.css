@@ -285,6 +285,10 @@
 .cr b { font-weight: 700; }
 .cr b.me { color: hsl(212, 70%, 34%); }
 .cr b.op { color: #555; }
+.cr-stat {
+  color: color-mix(in srgb, var(--l6-ink3) 68%, #000);
+  font-variant-numeric: tabular-nums;
+}
 .bc-crawl .dot { width: 5px; height: 5px; background: #000; flex: none; }
 .bc-crawl.is-static .bc-ct { overflow-x: auto; }
 .bc-crawl.is-static .bc-cr {
