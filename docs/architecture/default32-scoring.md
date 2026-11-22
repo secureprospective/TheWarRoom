@@ -52,5 +52,5 @@ Conversions credit the rusher or receiver and, on passing conversions, the passe
 The red zone is `yardline_100 <= 20`, including the 20-yard line. Carries use the same carry
 rule. Pass attempts require `pass_attempt == 1` and no sack; targets use the same gate and
 credit the named receiver. Spikes and throwaways count as attempts. The boundary awaits the
-owner's confirmation. Older held play bodies without a `sack` column cannot exclude sacks;
-see [handoff](../../HANDOFF.md).
+owner's confirmation. Older held play bodies without a `sack` column cannot exclude sacks; see
+[bee-lanes resume](../resume/RESUME-bee-lanes.md).

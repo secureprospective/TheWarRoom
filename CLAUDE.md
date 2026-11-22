@@ -39,9 +39,9 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
   React app as PWA and desktop, CLI/MCP) with its rulings in `docs/audit/`.
 - **Direction after that:** `docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md` and the seam
   registry `docs/architecture/future-seams.md`.
-- **Latest state:** the newest `docs/RESUME-*.md`. The 2026-11-09 debloat (what was cut, what was
-  kept and why) is `docs/RESUME-debloat-1109.md`; words that still disagree across documents are
-  listed in `docs/DEBLOAT-semantic-pot-1109.md`.
+- **Latest state:** `docs/resume/` (see `docs/resume/README.md`). The 2026-11-09 debloat (what was
+  cut, what was kept and why) is `docs/resume/RESUME-debloat.md`; words that still disagree across
+  documents are listed in `docs/DEBLOAT-semantic-pot-1109.md`.
 - **Engine plan and rulings R1–R12:** `docs/build-handoffs/Core_Build_Plan_2026-10.md`; the reasoning
   is `Core_Build_Reasoning_2026-10.md`. Where a later ruling disagrees (R2 is superseded: the native
   ledger wins), the later ruling governs.
@@ -58,7 +58,7 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 
 1. `git branch --show-current`. Never work on main; branches are `session/<short-description>`.
 2. Read `North_Star.md`, the governing plan, `docs/architecture/desktop-modes.md` (run its checks)
-   and the newest `docs/RESUME-*.md`.
+   and `docs/resume/README.md` (then the relevant `docs/resume/RESUME-*.md`).
 3. Toolchain (Go 1.26.11; the git hooks need this too):
    `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.11 GOMEMLIMIT=1500MiB
    GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`.
