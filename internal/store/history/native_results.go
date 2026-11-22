@@ -327,6 +327,8 @@ const recordedStartersTTL = time.Hour
 type recordedStartersCache struct {
 	mu      sync.Mutex
 	entries map[string]recordedStartersEntry
+	hits    int
+	misses  int
 }
 
 type recordedStartersEntry struct {
@@ -334,18 +336,30 @@ type recordedStartersEntry struct {
 	starters map[string][]commissioner.StarterScore
 }
 
-func (c *recordedStartersCache) apply(key string, now time.Time, out *commissioner.NativeResults, build func()) {
+func (c *recordedStartersCache) stats() (hits, misses int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.hits, c.misses
+}
+
+func (c *recordedStartersCache) apply(
+	key string, now time.Time, out *commissioner.NativeResults, build func(),
+) {
 	c.mu.Lock()
 	hit, ok := c.entries[key]
-	c.mu.Unlock()
 	if ok && now.Sub(hit.at) < recordedStartersTTL {
+		c.hits++
+		c.mu.Unlock()
 		for i := range out.Scores {
-			if starters, held := hit.starters[out.Scores[i].Franchise]; held && out.Scores[i].RecordedResult != "" {
-				out.Scores[i].Starters = slices.Clone(starters)
+			score := &out.Scores[i]
+			if starters, held := hit.starters[score.Franchise]; held && score.RecordedResult != "" {
+				score.Starters = slices.Clone(starters)
 			}
 		}
 		return
 	}
+	c.misses++
+	c.mu.Unlock()
 	build()
 	kept := map[string][]commissioner.StarterScore{}
 	for _, score := range out.Scores {
@@ -359,4 +373,31 @@ func (c *recordedStartersCache) apply(key string, now time.Time, out *commission
 		c.entries = map[string]recordedStartersEntry{}
 	}
 	c.entries[key] = recordedStartersEntry{at: now, starters: kept}
+}
+
+// WarmCacheStats reports hit and miss counts for the caches warmed at server startup.
+type WarmCacheStats struct {
+	ScoreHits     int
+	ScoreMisses   int
+	StarterHits   int
+	StarterMisses int
+	OddsHits      int
+	OddsMisses    int
+}
+
+// WarmCacheStats returns cache reuse counters for results, standings, odds and bracket reads.
+func (s *Store) WarmCacheStats() WarmCacheStats {
+	s.scores.mu.Lock()
+	scoreHits, scoreMisses := s.scores.hits, s.scores.misses
+	s.scores.mu.Unlock()
+	starterHits, starterMisses := s.recordedStarters.stats()
+	oddsHits, oddsMisses := s.oddsCache.Stats()
+	return WarmCacheStats{
+		ScoreHits:     scoreHits,
+		ScoreMisses:   scoreMisses,
+		StarterHits:   starterHits,
+		StarterMisses: starterMisses,
+		OddsHits:      oddsHits,
+		OddsMisses:    oddsMisses,
+	}
 }
