@@ -37,6 +37,8 @@ func systemDueCommand(principal, command string) bool {
 	switch principal {
 	case commissioner.OLineClockPrincipal:
 		return command == commissioner.OLineAuctionClose
+	case commissioner.OLineHandoutPrincipal:
+		return command == commissioner.RosterAdd
 	case commissioner.ReserveClockPrincipal:
 		return command == commissioner.RosterReserve
 	case "native.bid.clock":
