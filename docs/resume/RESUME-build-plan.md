@@ -1,7 +1,8 @@
 # Build Plan Resume (from Sun 11-22)
 
-**Plan:** `/home/chris/Downloads/TWR-BUILD-PLAN-1122.md` (written by Claudebox; Tom builds).
-**Rulings:** `/home/chris/Downloads/TheWarRoom-DIRECTION-GRILL-1122.md` (beside the plan).
+**Plan (live):** `docs/reset/BUILD-PLAN.md` (written by Claudebox; Tom builds).
+**Rehearsal (live):** `docs/reset/REHEARSAL-SEASON-1122.md` (goes ahead of Stages 3–7).
+**Rulings:** `docs/reset/RULINGS-1122.md` (Christopher's 11-22 decisions). Index: `docs/reset/README.md`.
 **Progress tracker:** Hermes `~/fleet/tracker/data/plan.json` (`ssh hermes`, UI at
 `http://192.168.1.222:8790/`).
 
@@ -23,7 +24,6 @@
 
 ## State (11-22 ~1 PM CT)
 
-- **Stage 1:** done apart from this cold-start docs PR.
+- **Stage 1:** done (this PR).
 - **Stage 2:** T668 v50 lab release waits until after Sunday Night Football (~10:30 PM CT); T677+T679 on
   `session/t677-t679` are in review fixes.
-- **Live game-day notes:** `docs/RESUME-gameday-1122.md` on branch `session/pwa-sw-shell`.

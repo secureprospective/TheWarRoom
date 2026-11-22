@@ -1,5 +1,5 @@
 # TheWarRoom — Project CLAUDE.md
-**Version:** 3.5 — 2026-11-22
+**Version:** 3.6 — 2026-11-22
 **Project path:** `~/work/TheWarRoom` on the Beelink (the only clone that builds and runs the app)
 **Pillars:** Business, Technical
 
@@ -35,6 +35,13 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 
 ## Where the work stands
 
+- **Plan docs, LIVE or HISTORY.** Only the two LIVE docs set today's work; HISTORY docs are reference.
+  - **LIVE:** `docs/reset/BUILD-PLAN.md` (build order, Stages 1–7) and
+    `docs/reset/REHEARSAL-SEASON-1122.md` (season rehearsal, ahead of Stages 3–7).
+  - **HISTORY:** `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`,
+    `docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md`, `docs/build-handoffs/Hardening_Plan_2026-10.md`,
+    `docs/build-handoffs/UI_Target_Roadmap_2026-10.md`, and `docs/build-handoffs/Core_Build_Plan_2026-10.md`
+    (its engine rulings R1–R12 still stand unless a later ruling replaced them).
 - **Reading order:** `README.md` -> `North_Star.md` -> `docs/adr/product/README.md` -> newest
   resume in `docs/resume/` (currently `docs/resume/RESUME-build-plan.md`).
 - **Server design (history / reference, not governing):** `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`
