@@ -74,6 +74,6 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 - `SYSTEM_MAP.md` — the feature directory: where each feature lives and where new code goes. Check before writing.
 - Product terms: GLOSSARY.md. Decisions: docs/adr/.
 - `docs/architecture/system-narrative.md` — what exists at length: layers, IPC, data, services.
-- `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` — the governing plan; the newest `docs/RESUME-*.md` — latest state.
+- `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` — the governing plan; `docs/resume/README.md` — latest state.
 - `docs/` — engine spec, rubrics, data layer, UI, backend architecture.
 - `.pre-commit-config.yaml` + `.golangci.yml` — the gates that run on your commit.

@@ -7,7 +7,9 @@
 1. **The shape of the product:** TWR is **AI first, CLI first, with a GUI overlay** so non-technical people can use it. Most future work will be AI-driven.
 2. **Keep the code malleable:** build the server with open, **labelled seams** for future builds (moments, shares, invites, chat, new AI powers). Don't be rigid. **Security stays top notch.**
 3. **The past failure to avoid:** unlabelled stubs were missed when the real feature was later built. So every seam is labelled, registered and gated (§2).
-4. **Fantasy football is a network** of friends, family and workmates. Growth comes from that community, not marketing (10-28 ruling; DIRECTION §5; `docs/RESUME-2026-11-08.md` §12). His 10–30 league mates are the first real community.
+4. **Fantasy football is a network** of friends, family and workmates. Growth comes from that
+   community, not marketing (10-28 ruling; DIRECTION §5; `docs/resume/RESUME-server-lab.md` §12).
+   His 10–30 league mates are the first real community.
 5. **Tiny models are prospecting only:** no measuring or testing now. Keep sessions focused: this is research and documentation for later.
 6. **Open question:** "leave that out of the picture": does it mean the social features themselves are out for now (seams only)? Asked, not yet answered.
 

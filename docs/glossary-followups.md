@@ -81,8 +81,8 @@ Places in the UI, code, CLI, and docs that still use an avoided word from [GLOSS
 | `frontend/src/app/shell/WarRoomMarket.test.tsx:134` | `Release a player` | Cut |
 | `cmd/twr-server/join_link.go:36` | `-release FRANCHISE` | Vacate seat |
 | `cmd/twr-server/README.md:348,359` | `-release franchise.07` | Vacate seat |
-| `docs/RESUME-2026-11-08.md:147` | `join-link -release` | Vacate seat |
-| `docs/RESUME-storage-1114.md:562` | `join-link -release` | Vacate seat |
+| `docs/resume/RESUME-server-lab.md:147` | `join-link -release` | Vacate seat |
+| `docs/resume/RESUME-storage.md:562` | `join-link -release` | Vacate seat |
 
 ## 6. Native league / Thin client (avoid: `app league`, `App league`, `Hosted (thin)` / `-native` client confusion)
 

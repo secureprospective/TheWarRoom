@@ -4,7 +4,9 @@
 
 TheWarRoom is AI first and CLI first, with a GUI overlay for people who aren't technical. The server is built so these features plug into existing paths. They don't get new side doors.
 
-**Ruling (Christopher, 2026-11-08):** keep the code open for these builds, but don't build them now. Leave labelled places to connect them. Security stays top notch. The background is in `docs/RESUME-2026-11-08.md` §12 (the community and growth-loop ruling of 10-28).
+**Ruling (Christopher, 2026-11-08):** keep the code open for these builds, but don't build them
+now. Leave labelled places to connect them. Security stays top notch. The background is in
+`docs/resume/RESUME-server-lab.md` §12 (the community and growth-loop ruling of 10-28).
 
 ## Rules
 
