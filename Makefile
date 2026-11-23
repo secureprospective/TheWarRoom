@@ -44,10 +44,12 @@ bloat:
 
 # placement checks the repo layout: every root *.go file and internal/ package has one row in
 # docs/architecture/placement.tsv naming a SYSTEM_MAP.md feature, and the root holds no more *.go
-# files than docs/architecture/root-go-baseline.txt (scripts/check-placement.sh, check-root-ratchet.sh).
+# files than docs/architecture/root-go-baseline.txt (scripts/check-placement.sh, check-root-ratchet.sh), and no area outgrows
+# docs/architecture/line-budget-baseline.txt without a written reason (check-line-budget.sh).
 placement:
 	scripts/check-placement.sh
 	scripts/check-root-ratchet.sh
+	scripts/check-line-budget.sh
 	scripts/check-source-branches.sh
 
 # measure-dictionary renders docs/data-layer/Measure_Dictionary.md from the registry CSVs in
