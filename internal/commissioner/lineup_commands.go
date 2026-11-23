@@ -13,6 +13,8 @@ const (
 	// commissioner side's CM-029 ruling on which lineup counts, lock or no lock.
 	LineupSet     = "commish.lineup.set"
 	LineupCorrect = "commish.lineup.correct"
+	// LineupClockPrincipal is who the app itself acts as when it sets an automatic lineup.
+	LineupClockPrincipal = "native.lineup.clock"
 )
 
 // RawLineupChange is a lineup command's argument (Args.Lineup): the whole set of starters for one

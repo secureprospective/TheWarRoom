@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto'
-import {readFileSync} from 'node:fs'
+import {existsSync, readFileSync} from 'node:fs'
+import {join} from 'node:path'
 import {defineConfig, type Plugin} from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
@@ -44,9 +45,13 @@ function csp(): Plugin {
 }
 
 function pwaShell(): Plugin {
+  let listed: string[] = []
   return {
     name: 'twr-pwa-shell',
     apply: 'build',
+    // Run after Vite drops the empty script files of CSS-only chunks. Listing one of those made every
+    // phone's worker install fail (one missing file fails the whole precache), so no update ever ran.
+    enforce: 'post',
     transformIndexHtml: () => [{
       tag: 'meta', attrs: {name: 'theme-color', content: '#090a0c'}, injectTo: 'head',
     }, {
@@ -56,6 +61,7 @@ function pwaShell(): Plugin {
       const assets = Object.values(bundle).filter(output => output.fileName.startsWith('assets/')
         && /[.-][A-Za-z0-9_-]{8,}\.[^/]+$/.test(output.fileName))
         .map(output => `/app/${output.fileName}`);
+      listed = assets;
       const shell = JSON.stringify(['/app/', ...assets]);
       const template = readFileSync(new URL('./pwa/sw.js', import.meta.url), 'utf8');
       // Version = hash of what the worker precaches plus the worker code itself. A release that
@@ -65,6 +71,12 @@ function pwaShell(): Plugin {
       const manifest = readFileSync(new URL('./pwa/manifest.webmanifest', import.meta.url), 'utf8');
       this.emitFile({type: 'asset', fileName: 'sw.js', source: worker});
       this.emitFile({type: 'asset', fileName: 'manifest.webmanifest', source: manifest});
+    },
+    // Guard: the worker must list only files this build wrote, or no phone can install it.
+    writeBundle(options) {
+      const dir = options.dir ?? ''
+      const missing = listed.filter(file => !existsSync(join(dir, file.slice('/app/'.length))))
+      if (missing.length) throw new Error(`sw.js lists files the build did not write: ${missing.join(', ')}`)
     },
   }
 }

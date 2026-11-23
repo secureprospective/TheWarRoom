@@ -49,6 +49,12 @@ it('restores, signs in and signs out through the cookie session without a bearer
   }
 });
 
+// The change stream also rides fetch; these tests count only the session calls.
+function ignoringChangeStream(fetcher: (path: string, init?: RequestInit) => unknown) {
+  return (path: string, init?: RequestInit) => (path === '/v1/native/invalidations'
+    ? new Promise<Response>(() => {}) : fetcher(path, init));
+}
+
 it('runs browser startup, sign-in and sign-out through the public session API', async () => {
   vi.stubGlobal('window', { location: { origin: 'https://league.example' },
     addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() });
@@ -58,7 +64,7 @@ it('runs browser startup, sign-in and sign-out through the public session API', 
     .mockResolvedValueOnce(jsonResponse(sessionResponse))
     .mockResolvedValueOnce(jsonResponse(sessionResponse))
     .mockResolvedValueOnce(new Response(null, { status: 204 }));
-  vi.stubGlobal('fetch', fetcher);
+  vi.stubGlobal('fetch', ignoringChangeStream(fetcher));
   const api = await import('./nativeApi');
   const restored = await api.nativeStartup();
   expect(restored?.league).toBe('native.test');
@@ -87,7 +93,7 @@ it('rejects a browser session response that includes bearer material', async () 
   const fetcher = vi.fn()
     .mockResolvedValueOnce(jsonResponse(sessionResponse))
     .mockResolvedValueOnce(jsonResponse({ ...sessionResponse, bearer: 'must-not-enter-js-state' }));
-  vi.stubGlobal('fetch', fetcher);
+  vi.stubGlobal('fetch', ignoringChangeStream(fetcher));
   const api = await import('./nativeApi');
   await api.nativeStartup();
   await expect(api.nativeAction('login', 'owner', 'private-password'))
@@ -136,14 +142,22 @@ it('routes private job snooze workflows through the account preference endpoint'
   } });
 });
 
-it('does not open the desktop bearer-only invalidation stream for browser sessions', () => {
-  const eventSource = vi.fn();
-  vi.stubGlobal('EventSource', eventSource);
+it('opens the change stream with the session cookie and hands each event to the listener', async () => {
+  const frames = 'event: invalidate\ndata: {"protocol":1,"topics":[]}\n\n: keepalive\n\n'
+    + 'event: invalidate\ndata: {"protocol":1,"league":"native.test","topics":[]}\n\n';
+  const fetcher = vi.fn().mockResolvedValue(new Response(new ReadableStream({
+    start(c) { c.enqueue(new TextEncoder().encode(frames)); },
+  }), { status: 200, headers: { 'Content-Type': 'text/event-stream' } }));
+  vi.stubGlobal('fetch', fetcher);
   webTransport.setIdentity('native.test', '4');
   const listener = vi.fn();
   const close = webTransport.subscribeChanged(listener);
-  expect(eventSource).not.toHaveBeenCalled();
-  expect(listener).not.toHaveBeenCalled();
+  await vi.waitFor(() => expect(listener).toHaveBeenCalledTimes(2));
+  const [path, init] = fetcher.mock.calls[0];
+  expect(path).toBe('/v1/native/invalidations');
+  expect(init.credentials).toBe('same-origin');
+  expect(init.headers).toEqual({ 'X-TWR-League': 'native.test', 'X-TWR-Invalidation': '2' });
+  expect(listener.mock.calls[1][0]).toMatchObject({ league: 'native.test' });
   close();
 });
 
@@ -204,7 +218,7 @@ it('captures server X-TWR-Error-Code headers and mints client codes on network f
       },
     }))
     .mockRejectedValueOnce(new TypeError('Failed to fetch'));
-  vi.stubGlobal('fetch', fetcher);
+  vi.stubGlobal('fetch', ignoringChangeStream(fetcher));
   const api = await import('./nativeApi');
   const codes = await import('../data/errorCodes');
   const request = {
@@ -239,7 +253,7 @@ it('shares identical reads in flight, then reads fresh', async () => {
   const body = JSON.stringify({ label: 'L', writable: true, football: 'f', data: { n: 1 } });
   const reply = () => new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
   const fetcher = vi.fn(async () => reply());
-  vi.stubGlobal('fetch', fetcher);
+  vi.stubGlobal('fetch', ignoringChangeStream(fetcher));
   const api = await import('./nativeApi');
   const read = { command: 'results.read', mode: 'read',
     arguments: { league: 'native.test', season: 2026, week: 3 } } as NativeRequest;

@@ -132,8 +132,10 @@ func startHosted(ctx context.Context, args []string, output io.Writer) error {
 
 // startHostedScores starts live scores and, when the operator asked for them, official statistics.
 func startHostedScores(ctx context.Context, pins *leaguePins, files stateFiles, config hostedFlags, handler serverhttp.Hosted) func() {
-	stopLive := startHostedLive(ctx, pins, filepath.Dir(*config.path), handler.Publisher, handler.LiveGames)
-	stopWarm := startResultsWarm(ctx, pins)
+	stopLive, liveRestored := startHostedLive(
+		ctx, pins, filepath.Dir(*config.path), handler.Publisher, handler.LiveGames,
+	)
+	stopWarm := startResultsWarm(ctx, pins, liveRestored)
 	if !*config.official {
 		return func() { stopWarm(); stopLive() }
 	}
@@ -372,6 +374,7 @@ func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte,
 	}
 	// Store is the family: it gives the clock; every league's data comes from its own store (Pins).
 	refStore := family.Over(files.reference)
+	worker.WithNFLInjuryFeed(newNFLInjuryFeed(refStore))
 	handler := serverhttp.Hosted{Publisher: serverhttp.NewPublisher(), LiveGames: leagueservice.NewLiveGames(), InjuryFeed: newNFLInjuryFeed(refStore), News: newHostedNewsService(refStore), Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Leagues: leagues}), Confirmations: confirmations, Store: family, Leagues: leagues, Pins: leagues.pin, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Passwords: passwords, Worker: worker, Registry: catalogue,

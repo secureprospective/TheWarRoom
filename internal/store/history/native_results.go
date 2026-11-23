@@ -163,7 +163,7 @@ func (s *Store) readNativeResults(ctx context.Context, league string, season, we
 	if err != nil {
 		return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
 	}
-	s.recordedStarters.apply(startersKey, s.now(), &out, func() {
+	s.recordedStarters.apply(ctx, startersKey, s.now(), &out, func() {
 		commissioner.RecordedStarters(ctx, records, src, &out)
 	})
 	out.Evidence = src.scoreEvidence(season, week)
@@ -327,6 +327,9 @@ const recordedStartersTTL = time.Hour
 type recordedStartersCache struct {
 	mu      sync.Mutex
 	entries map[string]recordedStartersEntry
+	flights map[string]*startersFlight
+	hits    int
+	misses  int
 }
 
 type recordedStartersEntry struct {
@@ -334,19 +337,58 @@ type recordedStartersEntry struct {
 	starters map[string][]commissioner.StarterScore
 }
 
-func (c *recordedStartersCache) apply(key string, now time.Time, out *commissioner.NativeResults, build func()) {
+type startersFlight struct {
+	done     chan struct{}
+	starters map[string][]commissioner.StarterScore
+	ok       bool
+}
+
+func (c *recordedStartersCache) stats() (hits, misses int) {
 	c.mu.Lock()
-	hit, ok := c.entries[key]
-	c.mu.Unlock()
-	if ok && now.Sub(hit.at) < recordedStartersTTL {
-		for i := range out.Scores {
-			if starters, held := hit.starters[out.Scores[i].Franchise]; held && out.Scores[i].RecordedResult != "" {
-				out.Scores[i].Starters = slices.Clone(starters)
-			}
+	defer c.mu.Unlock()
+	return c.hits, c.misses
+}
+
+func hasRecordedResult(scores []commissioner.FranchiseWeekScore) bool {
+	return slices.ContainsFunc(scores, func(score commissioner.FranchiseWeekScore) bool {
+		return score.RecordedResult != ""
+	})
+}
+
+func copyRecordedStarters(
+	out *commissioner.NativeResults, held map[string][]commissioner.StarterScore,
+) {
+	for i := range out.Scores {
+		score := &out.Scores[i]
+		if starters, ok := held[score.Franchise]; ok && score.RecordedResult != "" {
+			score.Starters = slices.Clone(starters)
 		}
+	}
+}
+
+func (c *recordedStartersCache) apply(
+	ctx context.Context, key string, now time.Time, out *commissioner.NativeResults, build func(),
+) {
+	if !hasRecordedResult(out.Scores) || ctx.Err() != nil {
 		return
 	}
+	flight := c.begin(ctx, key, now, out)
+	if flight == nil {
+		return
+	}
+	finished := false
+	defer func() {
+		if !finished {
+			c.mu.Lock()
+			delete(c.flights, key)
+			close(flight.done)
+			c.mu.Unlock()
+		}
+	}()
 	build()
+	if ctx.Err() != nil {
+		return
+	}
 	kept := map[string][]commissioner.StarterScore{}
 	for _, score := range out.Scores {
 		if score.RecordedResult != "" {
@@ -354,9 +396,78 @@ func (c *recordedStartersCache) apply(key string, now time.Time, out *commission
 		}
 	}
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	if c.entries == nil || len(c.entries) >= 256 {
 		c.entries = map[string]recordedStartersEntry{}
 	}
 	c.entries[key] = recordedStartersEntry{at: now, starters: kept}
+	flight.starters, flight.ok = kept, true
+	delete(c.flights, key)
+	close(flight.done)
+	finished = true
+	c.mu.Unlock()
+}
+
+func (c *recordedStartersCache) begin(
+	ctx context.Context, key string, now time.Time, out *commissioner.NativeResults,
+) *startersFlight {
+	for {
+		c.mu.Lock()
+		if hit, ok := c.entries[key]; ok && now.Sub(hit.at) < recordedStartersTTL {
+			c.hits++
+			c.mu.Unlock()
+			copyRecordedStarters(out, hit.starters)
+			return nil
+		}
+		if flight := c.flights[key]; flight != nil {
+			c.mu.Unlock()
+			select {
+			case <-flight.done:
+				if flight.ok {
+					c.mu.Lock()
+					c.hits++
+					c.mu.Unlock()
+					copyRecordedStarters(out, flight.starters)
+					return nil
+				}
+				continue
+			case <-ctx.Done():
+				return nil
+			}
+		}
+		c.misses++
+		flight := &startersFlight{done: make(chan struct{})}
+		if c.flights == nil {
+			c.flights = map[string]*startersFlight{}
+		}
+		c.flights[key] = flight
+		c.mu.Unlock()
+		return flight
+	}
+}
+
+// WarmCacheStats reports hit and miss counts for the caches warmed at server startup.
+type WarmCacheStats struct {
+	ScoreHits     int
+	ScoreMisses   int
+	StarterHits   int
+	StarterMisses int
+	OddsHits      int
+	OddsMisses    int
+}
+
+// WarmCacheStats returns cache reuse counters for results, standings, odds and bracket reads.
+func (s *Store) WarmCacheStats() WarmCacheStats {
+	s.scores.mu.Lock()
+	scoreHits, scoreMisses := s.scores.hits, s.scores.misses
+	s.scores.mu.Unlock()
+	starterHits, starterMisses := s.recordedStarters.stats()
+	oddsHits, oddsMisses := s.oddsCache.Stats()
+	return WarmCacheStats{
+		ScoreHits:     scoreHits,
+		ScoreMisses:   scoreMisses,
+		StarterHits:   starterHits,
+		StarterMisses: starterMisses,
+		OddsHits:      oddsHits,
+		OddsMisses:    oddsMisses,
+	}
 }

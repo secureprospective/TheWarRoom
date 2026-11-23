@@ -94,7 +94,7 @@ function Standings({ reading, standings, rows, view, setView, conferences, mine,
   </Panel>;
 }
 
-function Power({ odds, mine, badge, errors }: { odds?: PulseOdds; mine: string; badge: ReactNode;
+export function Power({ odds, mine, badge, errors }: { odds?: PulseOdds; mine: string; badge: ReactNode;
   errors: string[] }) {
   const rows = (odds?.rows ?? []).filter(r => r.power).sort((a, b) => (a.power ?? 0) - (b.power ?? 0));
   const top = Math.max(...rows.map(r => r.powerScore), 0.0001);
@@ -106,7 +106,8 @@ function Power({ odds, mine, badge, errors }: { odds?: PulseOdds; mine: string; 
       : rows.map(r => <div key={r.franchise} className={`row${r.franchise === mine ? ' me' : ''}`}
         title={`${r.record} · expected ${r.expected.toFixed(1)} · playoffs ${percent(r.playoffOdds)}`}
         style={{ gridTemplateColumns: '24px minmax(0,1fr) 40px 110px' }}>
-        <span className="m">{r.power}</span><span className="ell">{r.name}</span>
+        <span className="m">{r.power}</span><span className="ell">{r.name}
+          {r.dynastyPower ? <small> · Dynasty #{r.dynastyPower}</small> : null}</span>
         <span className="v">{(r.powerScore * 100).toFixed(1)}</span>
         <Ladder v={r.powerScore / top} n={14} /></div>)}
   </Panel>;

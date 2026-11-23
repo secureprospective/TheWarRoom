@@ -349,12 +349,10 @@ func emitInvalidation(controller *http.ResponseController, w http.ResponseWriter
 }
 
 func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request, league string) (*leagueservice.Service, accountAdmission, string) {
-	authorization := r.Header.Get("Authorization")
-	if len(r.Header.Values("Authorization")) != 1 || !strings.HasPrefix(authorization, "Bearer ") {
-		http.Error(w, "session required", http.StatusUnauthorized)
+	session, proof, ok := h.invalidationSession(w, r)
+	if !ok {
 		return nil, accountAdmission{}, ""
 	}
-	session := accounts.RawSession{Bearer: strings.TrimPrefix(authorization, "Bearer ")}
 	account, err := h.Sessions.Authenticate(r.Context(), session)
 	if err != nil {
 		h.sessionFailure(w, r, err)
@@ -372,7 +370,7 @@ func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request, leag
 		return nil, accountAdmission{}, ""
 	}
 	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
-	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(session), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
+	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(session), totp: h.TOTP, proof: accounts.RecentAuth{Token: proof}}
 	service := leagueservice.NewHosted(h.Worker.Host(host), gate)
 	return service, gate, session.Bearer
 }
@@ -433,4 +431,23 @@ func (p *invalidationPoll) publicWake(ctx context.Context, checkSession func(con
 
 func (p *invalidationPoll) heartbeat(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, deadline *time.Timer) bool {
 	return p.wake(ctx, controller, w, deadline, p.head) && keepalive(controller, w) == nil
+}
+
+// invalidationSession is the stream's session and recent-auth proof: a browser's own cookie (same host,
+// no Origin, no cross-site fetch, no Authorization beside it, the proof kept server-side as for browser
+// reads) or a desktop's bearer. !ok means the refusal was written.
+func (h Hosted) invalidationSession(w http.ResponseWriter, r *http.Request) (accounts.RawSession, string, bool) {
+	if cookie, has, valid := browserSessionCookie(r); has {
+		if !h.ownBrowserOrigin(r) || !valid || len(r.Header.Values("Authorization")) != 0 {
+			http.Error(w, "browser session refused", http.StatusForbidden)
+			return accounts.RawSession{}, "", false
+		}
+		return accounts.RawSession{Bearer: cookie}, h.appAuth.recent(cookie), true
+	}
+	authorization := r.Header.Get("Authorization")
+	if len(r.Header.Values("Authorization")) != 1 || !strings.HasPrefix(authorization, "Bearer ") {
+		http.Error(w, "session required", http.StatusUnauthorized)
+		return accounts.RawSession{}, "", false
+	}
+	return accounts.RawSession{Bearer: strings.TrimPrefix(authorization, "Bearer ")}, r.Header.Get("X-TWR-Recent-Auth"), true
 }

@@ -79,19 +79,22 @@ function FranchiseName({ id, name, open }: { id: string; name: string;
     onAction={() => open(id)}>{name}</PulseAct> : <span>{name}</span>;
 }
 
-function Power({ reading, mine, onFranchise }: { reading: NativePulse; mine: string;
+export function Power({ reading, mine, onFranchise }: { reading: NativePulse; mine: string;
   onFranchise?: (id: string) => void }) {
   const odds = reading.odds;
   const rows = (odds?.rows ?? []).filter(r => r.power).sort((x, y) => (x.power ?? 0) - (y.power ?? 0));
   if (!rows.length) return <PulseIdle words={odds ? `The power ranking is unavailable · ${odds.powerWords}`
     : reading.errors.length ? `The power ranking is unavailable · ${reading.errors.join(' · ')}`
       : 'Reading the power ranking…'} />;
+  const dyn = rows.some(r => r.dynastyPower);
   return <>
     <div className="scroll"><table className="ct power">
-      <thead><tr><th>PWR</th><th>FRANCHISE</th><th>W–L–T</th><th>POWER SCORE</th><th>EXP PTS</th>
+      <thead><tr><th>PWR</th>{dyn && <th>DYNASTY</th>}<th>FRANCHISE</th>
+        <th>W–L–T</th><th>POWER SCORE</th><th>EXP PTS</th>
         <th>ODDS</th></tr></thead>
       <tbody>{rows.map(r => <tr key={r.franchise} className={r.franchise === mine ? 'sel' : undefined}>
-        <td className="sd">{r.power}</td><td><FranchiseName id={r.franchise} name={r.name}
+        <td className="sd">{r.power}</td>{dyn && <td>{r.dynastyPower ? `#${r.dynastyPower}` : null}</td>}
+        <td><FranchiseName id={r.franchise} name={r.name}
           open={onFranchise} /></td><td>{r.record}</td>
         <td><span className="tk"><i style={{ width: percent(r.powerScore) }} /></span>
           {Math.round(r.powerScore * 100)}</td><td>{r.expected.toFixed(1)}</td>

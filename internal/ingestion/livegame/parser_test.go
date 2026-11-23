@@ -372,4 +372,22 @@ func TestSummaryParsesPregamePredictorAndVenue(t *testing.T) {
 	if gotBad.Predictor != nil {
 		t.Fatalf("out-of-range predictor admitted: %+v", gotBad.Predictor)
 	}
+
+	// Playoff games (ESPN season type 3) carry the same predictor and venue as regular season.
+	playoffBody := strings.Replace(
+		string(fixture(t, "espn-summary-pregame-outdoor")), `"type": 2`, `"type": 3`, 1,
+	)
+	playoff, err := ParseSummary([]byte(playoffBody))
+	if err != nil {
+		t.Fatalf("playoff summary failed: %v", err)
+	}
+	if playoff.SeasonType != 3 {
+		t.Fatalf("playoff seasonType = %d, want 3", playoff.SeasonType)
+	}
+	if playoff.Predictor == nil || *playoff.Predictor != *outdoor.Predictor {
+		t.Fatalf("playoff predictor = %+v, want %+v", playoff.Predictor, outdoor.Predictor)
+	}
+	if playoff.Venue == nil || *playoff.Venue != *outdoor.Venue {
+		t.Fatalf("playoff venue = %+v, want %+v", playoff.Venue, outdoor.Venue)
+	}
 }

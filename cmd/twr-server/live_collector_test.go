@@ -659,7 +659,7 @@ func TestLiveCollectorHoldsPregameDetailsEvenWhenWeatherFails(t *testing.T) {
 	}}
 	collector.games.Set(board, time.Now().UTC(), "ESPN")
 	collector.holdDetails(board, endpoints)
-	collector.schedulePregame(t.Context(), endpoints, board)
+	collector.schedulePregame(t.Context(), endpoints, board, 2026, 11)
 
 	service := leagueservice.New(nil).WithLiveGames(collector.games)
 	var pregame leagueservice.NFLGamePregame
@@ -856,5 +856,178 @@ func TestLiveCollectorStalledPregameDoesNotDelayLiveTick(t *testing.T) {
 	collector.stopPregame()
 	if stopElapsed := time.Since(stopStart); stopElapsed >= time.Second {
 		t.Fatalf("stopPregame did not exit promptly: %s", stopElapsed)
+	}
+}
+
+type countScoresPublisher struct {
+	mu    sync.Mutex
+	calls []string
+}
+
+func (p *countScoresPublisher) PublishScores(league string, season, week int) {
+	p.mu.Lock()
+	p.calls = append(p.calls, fmt.Sprintf("%s/%d/%d", league, season, week))
+	p.mu.Unlock()
+}
+
+func (p *countScoresPublisher) count() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return len(p.calls)
+}
+
+func TestLiveCollectorPregameChangeTriggersInvalidation(t *testing.T) {
+	files := openTestServer(t, t.TempDir())
+	hostedLeague(t, files)
+	pins := newLeaguePins(files.leagues)
+	pub := &countScoresPublisher{}
+	games := leagueservice.NewLiveGames()
+	board := []livegame.Game{{
+		ID: "401873100", Season: 2026, Week: 11, SeasonType: 2, Status: "pre",
+		Kickoff: time.Date(2026, 11, 22, 18, 0, 0, 0, time.UTC),
+		Home:    livegame.Team{ID: "2", Abbreviation: "BUF"},
+		Away:    livegame.Team{ID: "15", Abbreviation: "MIA"},
+	}}
+	collector := &liveCollector{pins: pins, publisher: pub, games: games}
+	collector.holdBoard(board, time.Now().UTC())
+	collector.notifyScores(2026, 11)
+	if got := pub.count(); got != 1 {
+		t.Fatalf("initial notify count = %d, want 1", got)
+	}
+	firstDigest := collector.notifiedDigest()
+
+	// Unchanged board and pre-game state produces the same fingerprint and no invalidation.
+	collector.notifyScores(2026, 11)
+	if got := pub.count(); got != 1 {
+		t.Fatalf("unchanged notify count = %d, want 1", got)
+	}
+
+	// Updating only pre-game data (board and scoreDigest unchanged) produces a new fingerprint.
+	temp := 48
+	withPre := board[0]
+	withPre.Predictor = &livegame.Predictor{Home: 59.1, Away: 40.6}
+	withPre.Venue = &livegame.Venue{Name: "Highmark Stadium", City: "Orchard Park", State: "NY"}
+	withPre.Weather = &livegame.Weather{TempF: &temp, Text: "Partly cloudy", Source: "Open-Meteo"}
+	if !games.MergePregame(map[string]leagueservice.NFLGame{
+		withPre.ID: {Game: &withPre, At: time.Now().UTC()},
+	}) {
+		t.Fatal("expected MergePregame to report change")
+	}
+	collector.notifyScores(2026, 11)
+	if got := pub.count(); got != 2 {
+		t.Fatalf("pre-game update notify count = %d, want 2", got)
+	}
+	secondDigest := collector.notifiedDigest()
+	if secondDigest == firstDigest {
+		t.Fatal("fingerprint did not change after pre-game data arrived")
+	}
+
+	// Changing only weather temperature fires another invalidation.
+	cooler := 41
+	withPre.Weather = &livegame.Weather{TempF: &cooler, Text: "Rain", Source: "Open-Meteo"}
+	games.MergePregame(map[string]leagueservice.NFLGame{
+		withPre.ID: {Game: &withPre, At: time.Now().UTC()},
+	})
+	collector.notifyScores(2026, 11)
+	if got := pub.count(); got != 3 {
+		t.Fatalf("weather update notify count = %d, want 3", got)
+	}
+	if collector.notifiedDigest() == secondDigest {
+		t.Fatal("fingerprint did not change after weather update")
+	}
+}
+
+func TestLiveCollectorPlayoffPregameMatchesRegularSeason(t *testing.T) {
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	boardBody := []byte(`{"events":[{"id":"401873901","date":"2027-01-17T21:30Z",` +
+		`"season":{"year":2026,"type":3},"week":{"number":1},"competitions":[{` +
+		`"date":"2027-01-17T21:30Z","status":{"type":{"state":"pre","completed":false}},` +
+		`"competitors":[{"id":"2","homeAway":"home","team":{"id":"2","abbreviation":"BUF"}},` +
+		`{"id":"15","homeAway":"away","team":{"id":"15","abbreviation":"MIA"}}]}]}]}`)
+	summaryBody := []byte(`{"header":{"id":"401873901","season":{"year":2026,"type":3},"week":1,` +
+		`"competitions":[{"date":"2027-01-17T21:30Z","status":{"type":{"state":"pre","completed":false}},` +
+		`"competitors":[{"id":"2","homeAway":"home","team":{"id":"2","abbreviation":"BUF"}},` +
+		`{"id":"15","homeAway":"away","team":{"id":"15","abbreviation":"MIA"}}]}]},` +
+		`"boxscore":{"players":[]},"predictor":{"homeTeam":{"id":"2","gameProjection":"59.1"},` +
+		`"awayTeam":{"id":"15","gameProjection":"40.6"}},"gameInfo":{"venue":` +
+		`{"fullName":"Highmark Stadium","address":{"city":"Orchard Park","state":"NY","country":"USA"},` +
+		`"indoor":false}}}`)
+	summaryURL := strings.ReplaceAll(endpoints.Summary, "{id}", "401873901")
+	nowAt := time.Now().UTC()
+	network := &countingLiveTransport{
+		packets: map[string]rawLivePacket{
+			endpoints.ESPN: {URL: endpoints.ESPN, Body: boardBody, Digest: liveDigest(boardBody), At: nowAt},
+			summaryURL:     {URL: summaryURL, Body: summaryBody, Digest: liveDigest(summaryBody), At: nowAt},
+		},
+		calls: map[string]int{},
+	}
+	collector := &liveCollector{
+		games:   leagueservice.NewLiveGames(),
+		packets: &livePackets{network: network, held: rawLiveCheckpoint{Packets: map[string]rawLivePacket{}}},
+	}
+	defer collector.stopPregame()
+
+	collector.poll(t.Context())
+	if collector.published {
+		t.Fatal("playoff-only board should not publish regular-season live stats")
+	}
+
+	service := leagueservice.New(nil).WithLiveGames(collector.games)
+	var pregame leagueservice.NFLGamePregame
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		pregame, err = service.TargetNFLGamePregame("native.test", "401873901")
+		if err != nil {
+			t.Fatalf("TargetNFLGamePregame failed: %v", err)
+		}
+		if pregame.Predictor != nil {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if pregame.Predictor == nil || pregame.Predictor.Home != 59.1 || pregame.Predictor.Away != 40.6 {
+		t.Fatalf("playoff predictor = %+v, want 59.1/40.6", pregame.Predictor)
+	}
+	if pregame.Venue == nil || pregame.Venue.Name != "Highmark Stadium" ||
+		pregame.Venue.City != "Orchard Park" {
+		t.Fatalf("playoff venue = %+v, want Highmark Stadium", pregame.Venue)
+	}
+}
+
+func TestLiveCollectorPreToInTransitionNotifiesOnce(t *testing.T) {
+	checkpoint := liveReplayCheckpoint(t)
+	endpoints, err := now.LiveEndpoints()
+	if err != nil {
+		t.Fatal(err)
+	}
+	games, err := livegame.ParseScoreboard(checkpoint.Packets[endpoints.ESPN].Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(games) == 0 {
+		t.Fatal("replay checkpoint has no scoreboard games")
+	}
+
+	collector, _ := replayCollector(t, checkpoint)
+	pub := &countScoresPublisher{}
+	collector.publisher = pub
+	collector.games = leagueservice.NewLiveGames()
+	// Seed a prior pre-game detail for a game that has now transitioned out of "pre" on the board.
+	prior := games[0]
+	prior.Status = "pre"
+	prior.Predictor = &livegame.Predictor{Home: 55.0, Away: 45.0}
+	collector.games.SetDetails(map[string]leagueservice.NFLGame{
+		prior.ID: {Game: &prior, At: time.Now().UTC()},
+	})
+
+	collector.poll(t.Context())
+	if !collector.published {
+		t.Fatal("expected poll to publish live scores")
+	}
+	if got := pub.count(); got != 1 {
+		t.Fatalf("pre-to-live transition fired %d invalidations in one tick, want 1", got)
 	}
 }

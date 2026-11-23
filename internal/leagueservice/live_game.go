@@ -44,9 +44,10 @@ func (g *LiveGames) SetDetails(details map[string]NFLGame) {
 }
 
 // MergePregame updates held details for pre-game entries without touching live or final games.
-func (g *LiveGames) MergePregame(updates map[string]NFLGame) {
+// It reports whether any pre-game entry was updated.
+func (g *LiveGames) MergePregame(updates map[string]NFLGame) bool {
 	if g == nil || len(updates) == 0 {
-		return
+		return false
 	}
 	g.detailMu.Lock()
 	defer g.detailMu.Unlock()
@@ -69,6 +70,41 @@ func (g *LiveGames) MergePregame(updates map[string]NFLGame) {
 	if changed {
 		g.details.Store(&next)
 	}
+	return changed
+}
+
+// PregameSnapshot returns held pre-game predictor, venue and weather sorted by game id for
+// change fingerprinting. Timestamps are omitted so only pre-game data changes alter the digest.
+func (g *LiveGames) PregameSnapshot() []NFLGamePregame {
+	if g == nil {
+		return nil
+	}
+	held := g.details.Load()
+	if held == nil || len(*held) == 0 {
+		return nil
+	}
+	out := make([]NFLGamePregame, 0, len(*held))
+	for id, detail := range *held {
+		if detail.Game == nil || detail.Game.Status != "pre" {
+			continue
+		}
+		if detail.Game.Predictor == nil && detail.Game.Venue == nil && detail.Game.Weather == nil {
+			continue
+		}
+		out = append(out, NFLGamePregame{
+			Game:      id,
+			Predictor: clonePredictor(detail.Game.Predictor),
+			Venue:     cloneVenue(detail.Game.Venue),
+			Weather:   cloneWeather(detail.Game.Weather),
+		})
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	slices.SortFunc(out, func(a, b NFLGamePregame) int {
+		return strings.Compare(a.Game, b.Game)
+	})
+	return out
 }
 
 func canMergePregame(board *livegame.Held, current map[string]NFLGame, id string) bool {

@@ -23,6 +23,15 @@ type LineupEnvironment interface {
 // lineup cannot be set or corrected, because nothing could say who is locked.
 func (s *Store) SetLineupEnvironment(env LineupEnvironment) { s.lineupEnv = env }
 
+// PinnedPlayerFacts is who each player is according to the installed football evidence, or nil when none
+// is installed.
+func (s *Store) PinnedPlayerFacts() nativecheck.Facts {
+	if s.lineupEnv == nil {
+		return nil
+	}
+	return s.lineupEnv.PlayerFacts()
+}
+
 var errNoLineupFacts = errors.New("lineups can't be judged until the app holds the NFL players and schedule")
 
 // lineupFactsFor gathers a lineup command's facts before the write begins; any other command needs none.

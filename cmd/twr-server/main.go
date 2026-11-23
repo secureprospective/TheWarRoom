@@ -47,7 +47,7 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runBackupCheck(args, output)
 	case "hosted":
 		return true, runHosted(ctx, args, output)
-	case "checkpoint", "pin-football", "mirror-fetch":
+	case "checkpoint", "pin-football", "mirror-fetch", "export-model-run", "import-model-scores":
 		return true, outputCommand(name)(ctx, args, output)
 	case "refresh-nfl-schedule":
 		return true, runRefreshNFLSchedule(ctx, args, output)
@@ -80,6 +80,8 @@ func repairCommand(ctx context.Context, name string, args []string, output io.Wr
 	switch name {
 	case "conversion-proof":
 		return true, runConversionProof(ctx, args, output)
+	case "create-league":
+		return true, runCreateLeague(ctx, args, output)
 	case "delete-league":
 		return true, runDeleteLeague(ctx, args, output)
 	case "export-league":
@@ -233,6 +235,10 @@ func outputCommand(name string) func(context.Context, []string, io.Writer) error
 		return runPinFootball
 	case "mirror-fetch":
 		return runMirrorFetch
+	case "export-model-run":
+		return runExportModelRun
+	case "import-model-scores":
+		return runImportModelScores
 	default:
 		return runCheckpoint
 	}

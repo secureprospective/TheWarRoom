@@ -8,6 +8,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
@@ -141,6 +142,17 @@ func LedgerWeekLineup(records []Record, franchise string, season, week int) (Wee
 // must be legal under the lineup check and may not move a player whose game has started; a correction
 // overrides the lock and is judged, not refused, for legality: an illegal one is penalised when scored.
 func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env LineupFacts) error {
+	return checkLineupAppend(raw, records, now, env, false)
+}
+
+// CheckAutomaticLineupAppend checks an automatic lineup against roster, season, commissioner ruling and
+// lock rules, but permits a partial lineup when no legal starter set exists so scoring can judge it.
+func CheckAutomaticLineupAppend(raw RawCommand, records []Record, now time.Time, env LineupFacts) error {
+	return checkLineupAppend(raw, records, now, env, true)
+}
+
+func checkLineupAppend(raw RawCommand, records []Record, now time.Time,
+	env LineupFacts, allowPartial bool) error {
 	if !isLineupCommand(raw.Command) {
 		return nil
 	}
@@ -179,7 +191,57 @@ func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env Line
 	if raw.Command == LineupCorrect {
 		return nil
 	}
-	return checkOwnerLineup(records, now, env, change, seat)
+	return checkOwnerLineup(records, now, env, change, seat, allowPartial)
+}
+
+// IsAutomaticLineupFranchise reports whether no human lineup.set, commissioner correction or synced
+// lineup stands for (franchise, season, week). While a lineup sync has not yet read the week, no
+// franchise is automatic: the sync may still record the lineup.
+func IsAutomaticLineupFranchise(records []Record, franchise string, season, week int) (bool, error) {
+	if LineupSyncPending(records, season, week) {
+		return false, nil
+	}
+	var active map[string]bool
+	for _, r := range records {
+		if !isLineupCommand(r.Command.Command) {
+			continue
+		}
+		if active == nil {
+			active = Replay(records).Active
+		}
+		change, err := DecodeLineupChange(r.Command.Args, r.Command.Command)
+		if err != nil {
+			return false, err
+		}
+		if !active[r.Receipt.Entry] || change.Franchise != franchise ||
+			change.Season != season || change.Week != week {
+			continue
+		}
+		if r.Command.Command == LineupSet && r.Principal != LineupClockPrincipal {
+			return false, nil
+		}
+		if r.Command.Command == LineupCorrect {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+// LineupWaveLockTimes returns the distinct sorted kickoff lock instants for one NFL week under policy.
+func LineupWaveLockTimes(policy leaguerules.LineupLock, week leagueweek.Week) []time.Time {
+	if len(week.Games) == 0 {
+		return nil
+	}
+	if policy == leaguerules.FirstKickoff {
+		return []time.Time{leagueweek.FirstLock(week).UTC()}
+	}
+	locks := leagueweek.Locks(week)
+	waves := make([]time.Time, 0, len(locks))
+	for _, kickoff := range locks {
+		waves = append(waves, kickoff.UTC())
+	}
+	slices.SortFunc(waves, time.Time.Compare)
+	return slices.CompactFunc(waves, time.Time.Equal)
 }
 
 func isPreCutoverLineupCorrection(raw RawCommand, records []Record, change RawLineupChange) bool {
@@ -209,7 +271,7 @@ func lineupAssetsForCheck(
 // checkOwnerLineup holds an owner's lineup to this season, to the commissioner's ruling if one stands, to the
 // league's lineup check and to the locks.
 func checkOwnerLineup(records []Record, now time.Time, env LineupFacts, change RawLineupChange,
-	seat NativeDirectorySeat) error {
+	seat NativeDirectorySeat, allowPartial bool) error {
 	at := ReadingInstant(records, now)
 	if current, err := SeasonAt(records, at); err != nil || current != change.Season {
 		return Refused(fmt.Errorf("owners set this season's lineups; ask a commissioner to correct an earlier one"))
@@ -226,8 +288,11 @@ func checkOwnerLineup(records []Record, now time.Time, env LineupFacts, change R
 	if err != nil {
 		return err
 	}
-	if verdict, _ := judgeStarters(rules.Lineup, true, change.Starters, env.Facts); verdict.Status != nativecheck.LineupValid {
-		return Refused(fmt.Errorf("%s", verdict.Words))
+	if !allowPartial {
+		verdict, _ := judgeStarters(rules.Lineup, true, change.Starters, env.Facts)
+		if verdict.Status != nativecheck.LineupValid {
+			return Refused(fmt.Errorf("%s", verdict.Words))
+		}
 	}
 	if rules.Lineup.Lock.State != leaguerules.IsKnown {
 		return Refused(fmt.Errorf("set the league's lineup lock before setting a lineup"))

@@ -4,15 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
+
+const autoLineupInjuryRefreshTimeout = 2 * time.Minute
+
+type nflInjuryRefresher interface {
+	Refresh(ctx context.Context, season int, base http.RoundTripper, output io.Writer) error
+}
 
 // DueClock must report untrusted wall time until the host has established clock health.
 // Implementations must be safe for simultaneous worker and transaction admission calls.
@@ -44,17 +53,33 @@ func (c HostClock) Trusted() error {
 // DueWorker owns hosted scheduling; it never starts the desktop ticker. All effects
 // use the existing due processors and their transaction-time legality checks.
 type DueWorker struct {
-	leagues   history.LeagueResolver
-	facts     func() nativecheck.Facts
-	clock     DueClock
-	wake      chan struct{}
-	reconcile time.Duration
+	leagues    history.LeagueResolver
+	facts      func() nativecheck.Facts
+	clock      DueClock
+	ranking    history.DraftRanking
+	injuryFeed NFLInjuryFeedSource
+	wake       chan struct{}
+	reconcile  time.Duration
 }
 
 // NewDueWorker reaches every league through leagues; each store shares the clock configured by
 // the composition root.
 func NewDueWorker(leagues history.LeagueResolver, facts func() nativecheck.Facts, clock DueClock) *DueWorker {
-	return &DueWorker{leagues: leagues, facts: facts, clock: clock, wake: make(chan struct{}, 1), reconcile: time.Minute}
+	return NewDueWorkerWithRanking(leagues, facts, clock, nil)
+}
+
+// NewDueWorkerWithRanking builds a DueWorker using ranking for automatic draft picks; a nil
+// ranking falls back to the store's DynastyDraftRanking.
+func NewDueWorkerWithRanking(leagues history.LeagueResolver, facts func() nativecheck.Facts,
+	clock DueClock, ranking history.DraftRanking) *DueWorker {
+	return &DueWorker{leagues: leagues, facts: facts, clock: clock, ranking: ranking,
+		wake: make(chan struct{}, 1), reconcile: time.Minute}
+}
+
+// WithNFLInjuryFeed supplies the hosted live injury source read by automatic lineups.
+func (w *DueWorker) WithNFLInjuryFeed(source NFLInjuryFeedSource) *DueWorker {
+	w.injuryFeed = source
+	return w
 }
 
 // Host adds post-commit wakes and transaction-time clock admission to a hosted adapter.
@@ -150,6 +175,15 @@ func (w *DueWorker) step(ctx context.Context) (time.Time, error) {
 	return next, errors.Join(failures...)
 }
 
+// factsFor is the worker's player facts, or the league's pinned football evidence when it has none (the
+// hosted server holds facts only in each league store).
+func (w *DueWorker) factsFor(store *history.Store) nativecheck.Facts {
+	if facts := w.facts(); len(facts) > 0 {
+		return facts
+	}
+	return store.PinnedPlayerFacts()
+}
+
 func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time, error) {
 	store, err := w.leagues.League(ctx, league)
 	if err != nil {
@@ -157,14 +191,21 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	}
 	ctx = commissioner.WithCredentialAdmission(ctx, dueAdmission{worker: w, system: true})
 	at := w.clock.Now()
-	facts := w.facts()
-	// Waivers clear before bids are evaluated; a draft is closed once its clock has used the last pick.
+	facts := w.factsFor(store)
+	// Waivers clear before bids are evaluated; automatic draft picks run before finished drafts close.
 	for _, process := range []func(context.Context, string, nativecheck.Facts) error{
-		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids, store.ProcessDueOLines, store.CloseFinishedDrafts,
+		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids, store.ProcessDueOLines,
+		func(ctx context.Context, league string, facts nativecheck.Facts) error {
+			return store.ProcessDueAutoPicks(ctx, league, at, facts, w.ranking)
+		},
+		store.CloseFinishedDrafts,
 	} {
 		if err := process(ctx, league, facts); err != nil {
 			return time.Time{}, fmt.Errorf("record due work: %w", err)
 		}
+	}
+	if err := store.ProcessDueLineups(ctx, league, at, w.liveInjuries()); err != nil {
+		return time.Time{}, fmt.Errorf("record due lineups: %w", err)
 	}
 	// The held, memoised ledger the due processors just read: its fold is shared with every reader of this
 	// revision, where a fresh decode of the event log was folded again after every commit.
@@ -183,7 +224,54 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	if !draft.IsZero() && (next.IsZero() || draft.Before(next)) {
 		next = draft
 	}
+	lineup, err := store.NextLineupDeadline(ctx, league, at)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("read next lineup deadline: %w", err)
+	}
+	if !lineup.IsZero() && (next.IsZero() || lineup.Before(next)) {
+		next = lineup
+	}
 	return next, nil
+}
+
+func (w *DueWorker) liveInjuries() history.LiveInjurySource {
+	if w.injuryFeed == nil {
+		return nil
+	}
+	return liveInjuryAdapter{source: w.injuryFeed}
+}
+
+type liveInjuryAdapter struct {
+	source NFLInjuryFeedSource
+}
+
+func (a liveInjuryAdapter) ReadLiveInjuries(ctx context.Context) (history.LiveInjuryReport, error) {
+	feed, err := a.source.ReadNFLInjuryFeed(ctx)
+	if err != nil {
+		return history.LiveInjuryReport{}, fmt.Errorf("read NFL injury feed: %w", err)
+	}
+	designations := make(map[string]leaguerules.NFLStatus, len(feed.Injuries))
+	for _, row := range feed.Injuries {
+		designations[row.ID.String()] = leaguerules.NFLStatus(row.Status)
+	}
+	return history.LiveInjuryReport{
+		Designations: designations,
+		FetchedAt:    feed.FetchedAt,
+		Available:    feed.Available,
+	}, nil
+}
+
+func (a liveInjuryAdapter) RefreshLiveInjuries(ctx context.Context, season int) error {
+	refresher, ok := a.source.(nflInjuryRefresher)
+	if !ok {
+		return nil
+	}
+	attempt, cancel := context.WithTimeout(ctx, autoLineupInjuryRefreshTimeout)
+	defer cancel()
+	if err := refresher.Refresh(attempt, season, nil, nil); err != nil {
+		return fmt.Errorf("refresh NFL injury feed: %w", err)
+	}
+	return nil
 }
 
 // NativeOdds passes the odds read through to the host that holds the league's results.

@@ -13,6 +13,9 @@ import (
 // DraftClockPrincipal is who the app itself acts as when it closes a draft at its last pick.
 const DraftClockPrincipal = "native.draft.clock"
 
+// DraftAutoPickPrincipal is who the app itself acts as when it picks for a vacant franchise.
+const DraftAutoPickPrincipal = "native.draft.autopick"
+
 // DraftPlayer is a rookie as the draft room names him.
 type DraftPlayer struct {
 	ID       string `json:"id"`

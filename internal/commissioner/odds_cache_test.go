@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -95,5 +97,51 @@ func TestOddsCacheReturnsCopiesAndDoesNotCacheFailures(t *testing.T) {
 	_, _ = cache.result(failed, func() (map[string]int, string) { calls++; return map[string]int{"east": 1}, "" })
 	if calls != 2 {
 		t.Fatalf("failed result was cached: calls=%d", calls)
+	}
+}
+
+func TestOddsCacheDeduplicatesInFlight(t *testing.T) {
+	var cache OddsCache
+	key := [32]byte{7}
+	started := make(chan struct{})
+	release := make(chan struct{})
+	calls := 0
+	var (
+		wg         sync.WaitGroup
+		got1, got2 map[string]int
+		w1, w2     string
+	)
+	wg.Go(func() {
+		got1, w1 = cache.result(key, func() (map[string]int, string) {
+			calls++
+			close(started)
+			<-release
+			return map[string]int{"east": 1200, "west": 800}, ""
+		})
+	})
+	<-started
+	wg.Go(func() {
+		got2, w2 = cache.result(key, func() (map[string]int, string) {
+			calls++
+			return map[string]int{"east": 1}, ""
+		})
+	})
+	time.Sleep(15 * time.Millisecond)
+	close(release)
+	wg.Wait()
+
+	if calls != 1 {
+		t.Fatalf("concurrent result ran simulation %d times, want 1", calls)
+	}
+	if w1 != "" || w2 != "" || got1["east"] != 1200 || got2["east"] != 1200 {
+		t.Fatalf("got1=%v (%q) got2=%v (%q)", got1, w1, got2, w2)
+	}
+	got1["east"] = 0
+	if got2["east"] != 1200 {
+		t.Fatal("in-flight callers share map memory")
+	}
+	hits, misses := cache.Stats()
+	if hits != 1 || misses != 1 {
+		t.Fatalf("stats = hits:%d misses:%d, want 1/1", hits, misses)
 	}
 }
