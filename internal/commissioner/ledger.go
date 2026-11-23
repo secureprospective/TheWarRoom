@@ -166,12 +166,13 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 	roots := reversalRoots(records)
 	names := namesFor(records)
 	hasRollover := slices.ContainsFunc(records, func(r Record) bool { return r.Command.Command == SeasonRollover })
+	holds := seatsHeldBy(records, principal)
 	for i := len(records) - 1; i >= 0; i-- {
 		r := records[i]
 		if r.Receipt.Revision > out.Revision {
 			out.Revision = r.Receipt.Revision
 		}
-		if !ledgerEntryVisible(r, records[roots[r.Receipt.Entry]], records, principal, private) {
+		if !ledgerEntryVisibleTo(r, records[roots[r.Receipt.Entry]], records, principal, private, holds) {
 			continue
 		}
 		what, err := entryLabelTarget(records, i, records[roots[r.Receipt.Entry]], names)
@@ -385,6 +386,13 @@ func undoPlacement(records []Record, i, root int, p Projection, principal string
 }
 
 func ledgerEntryVisible(r, target Record, records []Record, principal string, privileged bool) bool {
+	return ledgerEntryVisibleTo(r, target, records, principal, privileged, seatsHeldBy(records, principal))
+}
+
+// ledgerEntryVisibleTo is ledgerEntryVisible with the reader's seats worked out once by the caller, so a
+// whole-ledger pass folds governance once rather than once per automatic lineup.
+func ledgerEntryVisibleTo(r, target Record, records []Record, principal string, privileged bool,
+	holds func(franchise string) bool) bool {
 	if privateWaiverRecord(target, records) {
 		ownerEntry := slices.Contains([]string{WaiverClaim, WaiverClaimOrderSet, WaiverClaimCancel}, r.Command.Command)
 		return (SamePrincipal(records, r.Principal, principal) && ownerEntry) ||
@@ -393,25 +401,29 @@ func ledgerEntryVisible(r, target Record, records []Record, principal string, pr
 	if privateBidRecord(target, records) {
 		return SamePrincipal(records, r.Principal, principal) || (privileged && decidedBidRecord(r, records))
 	}
-	return r.Command.Visibility != "private" || privileged || ownAutomaticLineup(r, records, principal)
+	return r.Command.Visibility != "private" || privileged || ownAutomaticLineup(r, holds)
 }
 
 // ownAutomaticLineup is true for a lineup the server's clock set on the reader's franchise: the owner
-// never sent it, but it is their lineup, so they see it. Seat is judged as of that record.
-func ownAutomaticLineup(r Record, records []Record, principal string) bool {
-	if r.Command.Command != LineupSet || r.Principal != LineupClockPrincipal || r.Command.Args.Lineup == nil {
-		return false
-	}
-	i := int(r.Receipt.Revision) - 1
-	if i < 0 || i >= len(records) || records[i].Receipt.Entry != r.Receipt.Entry {
-		i = slices.IndexFunc(records, func(x Record) bool { return x.Receipt.Entry == r.Receipt.Entry })
-		if i < 0 {
-			return false
+// never sent it, but it is their lineup, so they see it. The seat is the reader's seat now.
+func ownAutomaticLineup(r Record, holds func(franchise string) bool) bool {
+	return r.Command.Command == LineupSet && r.Principal == LineupClockPrincipal && r.Command.Args.Lineup != nil &&
+		holds(r.Command.Args.Lineup.Franchise)
+}
+
+// seatsHeldBy folds governance at most once, and only when an automatic lineup asks.
+func seatsHeldBy(records []Record, principal string) func(franchise string) bool {
+	var state governance.State
+	var folded, ok bool
+	who := governance.Principal(PrincipalFor(records, principal))
+	return func(franchise string) bool {
+		if !folded {
+			folded = true
+			s, err := GovernanceState(records)
+			state, ok = s, err == nil
 		}
+		return ok && state.HoldsSeat(governance.FranchiseID(franchise), who)
 	}
-	state, err := GovernanceState(records[:i+1])
-	return err == nil && state.HoldsSeat(governance.FranchiseID(r.Command.Args.Lineup.Franchise),
-		governance.Principal(PrincipalFor(records, principal)))
 }
 
 func privilegedLedgerReader(league, principal string, auth Authorizer) bool {
