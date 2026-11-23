@@ -120,7 +120,8 @@ func importPracticeFootball(ctx context.Context, store *history.Store, at time.T
 		if p.id == "0100" {
 			facts.Designation = leaguerules.InjuredReserve
 		}
-		raw.Players[p.id] = history.RawFootballPlayer{Identity: "practice." + p.id, Facts: facts}
+		// A GSIS-shaped identity (00- and seven digits): pinned statistics require one for every player.
+		raw.Players[p.id] = history.RawFootballPlayer{Identity: "00-000" + p.id, Facts: facts}
 	}
 	for week := 1; week <= 22; week++ {
 		raw.Weeks = append(raw.Weeks, leagueweek.Week{Number: week, Games: []leagueweek.Game{{Teams: [2]string{"DAL", "NYG"}, Kickoff: at.Add(24 * time.Hour)}}})
