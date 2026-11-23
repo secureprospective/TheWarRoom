@@ -2808,6 +2808,8 @@ export namespace commissioner {
 	    record: string;
 	    power: number;
 	    powerScore: number;
+	    dynastyPower?: number;
+	    dynastyScore?: number;
 	    expected: number;
 	    playoffOdds?: number;
 	
@@ -2823,6 +2825,8 @@ export namespace commissioner {
 	        this.record = source["record"];
 	        this.power = source["power"];
 	        this.powerScore = source["powerScore"];
+	        this.dynastyPower = source["dynastyPower"];
+	        this.dynastyScore = source["dynastyScore"];
 	        this.expected = source["expected"];
 	        this.playoffOdds = source["playoffOdds"];
 	    }
