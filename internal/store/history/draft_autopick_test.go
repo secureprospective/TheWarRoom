@@ -820,3 +820,35 @@ func TestAutoPickLoopFollowsAdvancingClock(t *testing.T) {
 		t.Fatalf("draft not exhausted; onClock = %+v", d.Draft.OnClock)
 	}
 }
+
+// A batch stops at its limit and says more picks are due, so the worker can give other leagues a turn;
+// the next batches carry on from where it stopped until the draft is used up.
+func TestAutoPickBatchStopsAtLimitAndSaysMoreAreDue(t *testing.T) {
+	t.Parallel()
+	order := []string{"franchise.01", "franchise.02", "franchise.03", "franchise.04"}
+	facts := testFacts(12)
+	f := newAutoPickFixture(t, "native.autobatch", commissioner.PresetDefault32, 4, 2, "", order, facts)
+	f.openStartup()
+	rank := fixedDraftRanking{order: []string{"1001", "1002", "1003", "1004", "1005", "1006", "1007", "1008"}}
+	picked := func() int {
+		n := 0
+		for _, p := range f.draftReading("franchise.01").Draft.Picks {
+			if p.Player != "" {
+				n++
+			}
+		}
+		return n
+	}
+	for i, want := range []struct {
+		picks int
+		more  bool
+	}{{3, true}, {6, true}, {8, false}} {
+		more, err := f.s.ProcessDueAutoPicksUpTo(t.Context(), f.league, f.c.now, facts, rank, 3)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := picked(); got != want.picks || more != want.more {
+			t.Fatalf("batch %d: %d picks, more=%v; want %d, more=%v", i+1, got, more, want.picks, want.more)
+		}
+	}
+}

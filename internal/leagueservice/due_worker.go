@@ -184,6 +184,34 @@ func (w *DueWorker) factsFor(store *history.Store) nativecheck.Facts {
 	return store.PinnedPlayerFacts()
 }
 
+// recordDueWork runs the league's due processors in order and says whether more automatic picks are due.
+func (w *DueWorker) recordDueWork(ctx context.Context, store *history.Store, league string, at time.Time) (bool, error) {
+	facts := w.factsFor(store)
+	morePicks := false
+	// Waivers clear before bids are evaluated; automatic draft picks run before finished drafts close.
+	for _, process := range []func(context.Context, string, nativecheck.Facts) error{
+		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids, store.ProcessDueOLines,
+		func(ctx context.Context, league string, facts nativecheck.Facts) error {
+			var err error
+			morePicks, err = store.ProcessDueAutoPicksUpTo(ctx, league, at, facts, w.ranking, autoPicksPerPass)
+			return err //nolint:wrapcheck // wrapped below with the step
+		},
+		store.CloseFinishedDrafts,
+	} {
+		if err := process(ctx, league, facts); err != nil {
+			return false, fmt.Errorf("record due work: %w", err)
+		}
+	}
+	if err := store.ProcessDueLineups(ctx, league, at, w.liveInjuries()); err != nil {
+		return false, fmt.Errorf("record due lineups: %w", err)
+	}
+	return morePicks, nil
+}
+
+// autoPicksPerPass bounds one league's automatic draft picks per worker pass (one round of a
+// 32-team draft), so a long run of empty seats in one league never holds up another league's due work.
+const autoPicksPerPass = 32
+
 func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time, error) {
 	store, err := w.leagues.League(ctx, league)
 	if err != nil {
@@ -191,21 +219,13 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	}
 	ctx = commissioner.WithCredentialAdmission(ctx, dueAdmission{worker: w, system: true})
 	at := w.clock.Now()
-	facts := w.factsFor(store)
-	// Waivers clear before bids are evaluated; automatic draft picks run before finished drafts close.
-	for _, process := range []func(context.Context, string, nativecheck.Facts) error{
-		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids, store.ProcessDueOLines,
-		func(ctx context.Context, league string, facts nativecheck.Facts) error {
-			return store.ProcessDueAutoPicks(ctx, league, at, facts, w.ranking)
-		},
-		store.CloseFinishedDrafts,
-	} {
-		if err := process(ctx, league, facts); err != nil {
-			return time.Time{}, fmt.Errorf("record due work: %w", err)
-		}
+	morePicks, err := w.recordDueWork(ctx, store, league, at)
+	if err != nil {
+		return time.Time{}, err
 	}
-	if err := store.ProcessDueLineups(ctx, league, at, w.liveInjuries()); err != nil {
-		return time.Time{}, fmt.Errorf("record due lineups: %w", err)
+	if morePicks {
+		// More empty seats are due: come straight back after the other leagues have had their turn.
+		return at, nil
 	}
 	// The held, memoised ledger the due processors just read: its fold is shared with every reader of this
 	// revision, where a fresh decode of the event log was folded again after every commit.
