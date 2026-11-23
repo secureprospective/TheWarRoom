@@ -151,6 +151,8 @@ function withClientCode(cause: unknown): Error {
 function responseMessage(response: Response, fallback: string): Promise<string> {
   return response.text().then(text => text.trim().slice(0, 4096) || fallback).catch(() => fallback);
 }
+const noSeatMessage = 'This account has no team in a league on this server yet. '
+  + 'Sign in with another account, or ask your commissioner for a join link.';
 export async function nativeStartup(): Promise<NativeView | null> {
   let response: Response;
   try {
@@ -164,10 +166,7 @@ export async function nativeStartup(): Promise<NativeView | null> {
   }
   // Signed in, but the account holds no seat in any league here: offer sign-in with another account.
   if (nativeTransport.kind === 'web' && response.status === 403) {
-    const view = browserView(undefined, 'This account has no team in a league on this server yet. '
-      + 'Sign in with another account, or ask your commissioner for a join link.');
-    observeView(view);
-    return view;
+    const view = browserView(undefined, noSeatMessage); observeView(view); return view;
   }
   if (!response.ok) {
     throw createFailureError('Desktop startup unavailable.', responseErrorCode(response));
@@ -209,6 +208,9 @@ async function post(body: Record<string, string>): Promise<NativeView> {
     const view = browserView(undefined, 'Your sign-in expired. Sign in again.');
     observeView(view);
     return view;
+  }
+  if (nativeTransport.kind === 'web' && response.status === 403 && body.action === 'enter') {
+    const view = browserView(undefined, noSeatMessage); observeView(view); return view;
   }
   if (!response.ok) {
     throw createFailureError(
