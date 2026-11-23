@@ -22,6 +22,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
@@ -55,7 +56,12 @@ type releaseCLIFixture struct {
 	address   string
 }
 
-func newReleaseCLI(t *testing.T) *releaseCLIFixture {
+func newReleaseCLI(t *testing.T) *releaseCLIFixture { return newReleaseCLIWith(t, nil) }
+
+// newReleaseCLIWith is newReleaseCLI with the league built by seed instead of the two-franchise
+// matrix league. seed records the whole of "native.hosted" (and must seat the principal itself) and returns the
+// digest of the football evidence it imported, which the server is then pinned to.
+func newReleaseCLIWith(t *testing.T, seed func(context.Context, *history.Store, governance.Principal) (string, error)) *releaseCLIFixture {
 	t.Helper()
 	pools, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "server.db"), history.SchemaVersion())
 	if err != nil {
@@ -76,14 +82,21 @@ func newReleaseCLI(t *testing.T) *releaseCLIFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := hostedfixture.CreateLeague(t.Context(), ledger, principal); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := ledger.ExecuteCommissioner(t.Context(), commissioner.RawCommand{League: "native.hosted", Command: "commish.seat.replace", Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.01", Principal: string(principal)}}, Expected: 1, Request: "seat", Reason: "Seat disposable commissioner", Effective: "now", Visibility: "league"}, string(principal), nil); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := ledger.ExecuteCommissioner(t.Context(), commissioner.RawCommand{League: "native.other", Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Other league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2}, Request: "create", Reason: "Create a second disposable league", Effective: "now", Visibility: "league"}, string(principal), nil); err != nil {
-		t.Fatal(err)
+	digest := ""
+	if seed != nil {
+		if digest, err = seed(t.Context(), ledger, principal); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := hostedfixture.CreateLeague(t.Context(), ledger, principal); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := ledger.ExecuteCommissioner(t.Context(), commissioner.RawCommand{League: "native.hosted", Command: "commish.seat.replace", Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.01", Principal: string(principal)}}, Expected: 1, Request: "seat", Reason: "Seat disposable commissioner", Effective: "now", Visibility: "league"}, string(principal), nil); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := ledger.ExecuteCommissioner(t.Context(), commissioner.RawCommand{League: "native.other", Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Other league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2}, Request: "create", Reason: "Create a second disposable league", Effective: "now", Visibility: "league"}, string(principal), nil); err != nil {
+			t.Fatal(err)
+		}
 	}
 	passwords := accounts.New(credentials)
 	sessions := accounts.NewSessions(passwords, credentials)
@@ -113,6 +126,15 @@ func newReleaseCLI(t *testing.T) *releaseCLIFixture {
 		t.Fatal(err)
 	}
 	handler := serverhttp.Hosted{Store: ledger, Leagues: history.NewOneFile(ledger), Sessions: sessions, Tokens: tokens, TOTP: totp, Enrollment: accounts.NewEnrollment(credentials, releaseCLIPolicy{state, principal}), Worker: leagueservice.NewDueWorker(history.NewOneFile(ledger), nil, releaseCLIClock{}), Confirmations: confirmations, Registry: "id,name,gm_question,governs\n"}
+	if digest != "" {
+		handler.FootballDigest = digest
+		if handler.Football, err = ledger.LoadFootball(t.Context(), digest); err != nil {
+			t.Fatal(err)
+		}
+		ledger.SetPinnedFootball(handler.Football)
+		pinned := serverhttp.LeaguePin{Store: ledger, Personal: personal.NewLeague(pools), Football: handler.Football, Digest: digest}
+		handler.Pins = func(context.Context, string) serverhttp.LeaguePin { return pinned }
+	}
 	server := httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(server.Close)
 	memory := &memoryStore{tokens: map[string]string{}}
