@@ -112,15 +112,16 @@ func importPracticeFootball(ctx context.Context, store *history.Store, at time.T
 	for _, p := range []struct {
 		id, name string
 		position leaguerules.Position
-	}{{"0099", "Practice quarterback", leaguerules.QB}, {"0100", "Injured prospect", leaguerules.WR}, {"0101", "Young receiver", leaguerules.WR}, {"5001", "Practice rookie", leaguerules.RB}, {"6001", "Practice free agent", leaguerules.WR}, {"6002", "Second practice free agent", leaguerules.WR}, {"6003", "Third practice free agent", leaguerules.WR}, {"6004", "Fourth practice free agent", leaguerules.WR}, {"0102", "Other team receiver", leaguerules.WR}} {
+	}{{"0099", "Practice quarterback", leaguerules.QB}, {"0100", "Injured prospect", leaguerules.WR}, {"0101", "Young receiver", leaguerules.WR}, {"5001", "Practice rookie", leaguerules.RB}, {"5002", "Second practice rookie", leaguerules.QB}, {"6001", "Practice free agent", leaguerules.WR}, {"6002", "Second practice free agent", leaguerules.WR}, {"6003", "Third practice free agent", leaguerules.WR}, {"6004", "Fourth practice free agent", leaguerules.WR}, {"0102", "Other team receiver", leaguerules.WR}} {
 		facts := nativecheck.PlayerFacts{Name: p.name, Position: p.position, Team: "DAL", DesignationHeld: true, DraftYear: 2026, DraftYearHeld: true}
-		if p.id == "5001" {
+		if p.id == "5001" || p.id == "5002" {
 			facts.DraftYear = 2027
 		}
 		if p.id == "0100" {
 			facts.Designation = leaguerules.InjuredReserve
 		}
-		raw.Players[p.id] = history.RawFootballPlayer{Identity: "practice." + p.id, Facts: facts}
+		// A GSIS-shaped identity (00- and seven digits): pinned statistics require one for every player.
+		raw.Players[p.id] = history.RawFootballPlayer{Identity: "00-000" + p.id, Facts: facts}
 	}
 	for week := 1; week <= 22; week++ {
 		raw.Weeks = append(raw.Weeks, leagueweek.Week{Number: week, Games: []leagueweek.Game{{Teams: [2]string{"DAL", "NYG"}, Kickoff: at.Add(24 * time.Hour)}}})
