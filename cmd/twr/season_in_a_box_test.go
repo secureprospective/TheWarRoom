@@ -18,6 +18,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livestats"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
@@ -114,6 +115,211 @@ func (f *releaseCLIFixture) boxRead(t *testing.T, token accounts.AgentToken, com
 	}
 }
 
+// boxSeat signs one owner in and enrolls its authenticator, then returns its session and a recent-auth proof:
+// the steps an owner takes before PickPath or an owner lineup is admitted.
+func (f *releaseCLIFixture) boxSeat(t *testing.T, raw accounts.RawCredentials) (boxOwner, error) {
+	t.Helper()
+	passwords := accounts.New(f.credentials)
+	totp, err := accounts.NewTOTP(passwords, f.credentials, bytes.Repeat([]byte{19}, 32))
+	if err != nil {
+		return boxOwner{}, err
+	}
+	session, err := accounts.NewSessions(passwords, f.credentials).Login(t.Context(), raw, "season box")
+	if err != nil {
+		return boxOwner{}, fmt.Errorf("sign in %s: %w", raw.Username, err)
+	}
+	setup, err := totp.Begin(t.Context(), raw)
+	if err != nil {
+		return boxOwner{}, fmt.Errorf("begin authenticator for %s: %w", raw.Username, err)
+	}
+	now := time.Now().UTC()
+	code, err := hostedfixture.Code(setup.Seed, now)
+	if err != nil {
+		return boxOwner{}, err
+	}
+	if err := totp.Confirm(t.Context(), raw, accounts.RawTOTP{Code: code}); err != nil {
+		return boxOwner{}, fmt.Errorf("confirm authenticator for %s: %w", raw.Username, err)
+	}
+	// The next code is a new 30-second step, as an owner's second code is.
+	if code, err = hostedfixture.Code(setup.Seed, now.Add(30*time.Second)); err != nil {
+		return boxOwner{}, err
+	}
+	proof, err := totp.StepUp(t.Context(), raw, accounts.RawTOTP{Code: code})
+	if err != nil {
+		return boxOwner{}, fmt.Errorf("recent-auth proof for %s: %w", raw.Username, err)
+	}
+	principal, err := session.Account.Principal()
+	if err != nil {
+		return boxOwner{}, err
+	}
+	return boxOwner{session: session, proof: proof.Token, principal: string(principal)}, nil
+}
+
+// boxOwner is a seated owner in the season box: its signed-in session, its recent-auth proof, its principal.
+type boxOwner struct {
+	session   accounts.DeviceSession
+	proof     string
+	principal string
+}
+
+// boxOwnerPost sends one owner action (a draft pick) over the hosted door, as the owner's signed-in session.
+func (f *releaseCLIFixture) boxOwnerPost(t *testing.T, path, bearer, proof string, payload serverhttp.RawNativeRequest) ([]byte, error) {
+	t.Helper()
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, f.address+path, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Bearer "+bearer)
+	request.Header.Set("X-TWR-Recent-Auth", proof)
+	response, err := (&http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: f.env.roots, MinVersion: tls.VersionTLS12}}}).Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = response.Body.Close() }()
+	reply, _ := io.ReadAll(response.Body)
+	if response.StatusCode != http.StatusOK {
+		return reply, fmt.Errorf("%s: %d %s", path, response.StatusCode, bytes.TrimSpace(reply))
+	}
+	return reply, nil
+}
+
+// quickDraft is STEP 2 (B3, B5). The seed opens a one-round 2027 rookie draft that starts on franchise.01, and only
+// franchise.01 has an owner. This seats a second owner on franchise.04, moves franchise.04 to pick two (the
+// commissioner's draft.order.set while the clock runs, with its reason), and has each owner pick its own rookie:
+// through PickPath first, and where the door refuses, through the store's RecordDraftPick under the owner's principal.
+// No pick is skipped or assigned by the commissioner.
+func quickDraft(t *testing.T, f *releaseCLIFixture, clock *boxClock) (boxOwner, error) {
+	t.Helper()
+	creds := accounts.RawCredentials{Username: "season-box-owner", Password: "season-box-password"}
+	if err := hostedfixture.AddWorkflowOwner(t.Context(), f.store, f.credentials, governance.Principal(f.principal), "franchise.04", creds); err != nil {
+		return boxOwner{}, fmt.Errorf("seat franchise.04: %w", err)
+	}
+	owner, err := f.boxSeat(t, creds)
+	if err != nil {
+		return boxOwner{}, err
+	}
+	commissionerSeat, err := f.boxSeat(t, accounts.RawCredentials{Username: "commissioner", Password: "release-matrix-password"})
+	if err != nil {
+		return boxOwner{}, err
+	}
+	// The seed starts the draft two seconds after it was built; the box clock passes that start here.
+	clock.Advance(3 * time.Second)
+	order := []string{"franchise.01", "franchise.04"}
+	for n := 2; n <= 32; n++ {
+		if n != 4 {
+			order = append(order, fmt.Sprintf("franchise.%02d", n))
+		}
+	}
+	assets, err := f.store.NativeAssets(t.Context(), "native.hosted")
+	if err != nil {
+		return boxOwner{}, err
+	}
+	reorder := commissioner.RawCommand{League: "native.hosted", Command: commissioner.DraftOrderSet, Expected: assets.Revision, Request: "box.draft.order",
+		Reason:    "Season box: franchise.04 has a seated owner and picks second; franchise.02 and franchise.03 have none",
+		Effective: "now", Visibility: "league",
+		Args: commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: 2027, Order: order, Running: true}}}
+	if _, err := f.store.ExecuteCommissioner(t.Context(), reorder, f.principal, nil); err != nil {
+		return boxOwner{}, fmt.Errorf("move franchise.04 to pick two (draft.order.set while the clock runs): %w", err)
+	}
+	picks := []struct {
+		franchise, player, request string
+		actor                      boxOwner
+		bearer                     string
+	}{
+		{"franchise.01", "5001", "box.pick.01", commissionerSeat, f.human.Bearer},
+		{"franchise.04", "5002", "box.pick.04", owner, owner.session.Bearer},
+	}
+	zone, err := time.LoadLocation("America/Chicago") // the league's calendar.timezone (tools/hostedfixture/workflows.go)
+	if err != nil {
+		return boxOwner{}, err
+	}
+	for _, p := range picks {
+		// Owners pick seconds apart. The box clock stands still between calls, and a pick stamped at the very
+		// instant of the one before it would not yet count when the next pick is judged (a fake-clock artifact).
+		clock.Advance(time.Minute)
+		assets, err := f.store.NativeAssets(t.Context(), "native.hosted")
+		if err != nil {
+			return boxOwner{}, err
+		}
+		input := commissioner.DraftPickInput{League: "native.hosted", Season: 2027, Franchise: p.franchise, Player: p.player, Expected: assets.Revision, Request: p.request}
+		// The owner door first: PickPath, the route the owner's app takes.
+		_, doorErr := f.boxOwnerPost(t, serverhttp.PickPath, p.bearer, p.actor.proof, serverhttp.RawNativeRequest{Protocol: 1, Pick: &input})
+		if doorErr == nil {
+			continue
+		}
+		notReached(t, 2, fmt.Sprintf("owner door: PickPath refused %s's pick of %s (%v). The door's owner host has no rookie facts: "+
+			"internal/serverhttp/hosted.go:495 pins football for workflow requests only, internal/leagueservice/hosted.go:42 returns nil facts, "+
+			"and cmd/twr-server/hosted.go:367 gives the due worker nil facts", p.franchise, p.player, doorErr))
+		// The store's pick under the owner's principal, with the calendar's permit and the league's pinned facts.
+		if err := f.recordPick(t, clock, zone, p.actor.principal, input); err != nil {
+			return boxOwner{}, fmt.Errorf("pick %s with %s: %w", p.player, p.franchise, err)
+		}
+	}
+	assets, err = f.store.NativeAssets(t.Context(), "native.hosted")
+	if err != nil {
+		return boxOwner{}, err
+	}
+	for _, p := range picks {
+		if !rostered(assets, p.player, p.franchise) {
+			return boxOwner{}, fmt.Errorf("pick %s did not land on %s", p.player, p.franchise)
+		}
+	}
+	return owner, nil
+}
+
+// recordPick records one owner's pick in the league's store. It is the call the owner door makes once it has
+// admitted the owner, with the same calendar permit (commissioner.NativeActionGate) and the league's pinned football
+// facts, which the door does not have (see the notReached in quickDraft).
+func (f *releaseCLIFixture) recordPick(t *testing.T, clock *boxClock, zone *time.Location, principal string, in commissioner.DraftPickInput) error {
+	t.Helper()
+	events, err := f.store.Events(t.Context(), "native.hosted", commissioner.Stream, 0)
+	if err != nil {
+		return err
+	}
+	records := make([]commissioner.Record, 0, len(events))
+	for _, e := range events {
+		records = append(records, *e.Payload.Commissioner)
+	}
+	gate, err := commissioner.NativeActionGate("native.hosted", records, in.Franchise, "draft_pick", clock.Now(), zone)
+	if err != nil {
+		return err
+	}
+	permit, ok := gate.Permit()
+	if !ok {
+		return fmt.Errorf("the calendar is closed to %s's pick: %s", in.Franchise, gate.Sentence)
+	}
+	_, err = f.store.RecordDraftPick(t.Context(), permit, in, principal, f.pin.Football.PlayerFacts(), zone)
+	return err
+}
+
+// rostered says a player is on a franchise's roster in the league's assets.
+func rostered(assets commissioner.NativeAssets, player, franchise string) bool {
+	for _, p := range assets.Snapshot.Players {
+		if p.ID == player && p.Franchise == franchise {
+			return true
+		}
+	}
+	return false
+}
+
+// opponentLineup records franchise.04's week-1 lineup under franchise.04's principal (ExecuteCommissioner, the same
+// store route the spike uses for franchise.01). Its one starter is the rookie it drafted.
+func opponentLineup(t *testing.T, f *releaseCLIFixture, owner boxOwner) error {
+	assets, err := f.store.NativeAssets(t.Context(), "native.hosted")
+	if err != nil {
+		return err
+	}
+	lineup := commissioner.RawCommand{League: "native.hosted", Command: commissioner.LineupSet, Request: "box.lineup.04", Effective: "now", Visibility: "private", Expected: assets.Revision,
+		Args: commissioner.RawArgs{Lineup: &commissioner.RawLineupChange{Season: 2026, Franchise: "franchise.04", Week: 1, Starters: []string{"5002"}}}}
+	_, err = f.store.ExecuteCommissioner(t.Context(), lineup, owner.principal, nil)
+	return err
+}
+
 // TestSeasonInABoxSpike walks one recorded NFL week through a throwaway hosted league: create ->
 // lineups -> lineup lock -> live stat lines in pieces (scores move) -> official final -> standings.
 // Every step the box cannot yet reach says so with t.Log("NOT REACHED ..."); see the design doc.
@@ -143,7 +349,20 @@ func TestSeasonInABoxSpike(t *testing.T) {
 	}
 	f.env.out.(*bytes.Buffer).Reset()
 	t.Log("STEP 1 league created (CreateWorkflowLeague, 32 franchises); twr ledger revision", ledger.Revision)
-	t.Log("NOT REACHED STEP 2 quick draft: needs an owner pick per slot (PickPath) or a commissioner autopick command; blocker B3")
+
+	// STEP 2 quick draft: franchise.01 and its week-1 opponent franchise.04 each draft a rookie through the owner door.
+	// A failure here is a NOT REACHED step, not a regression: the draft is new to the box.
+	opponent, err := quickDraft(t, f, clock)
+	if err != nil {
+		notReached(t, 2, "quick draft: "+err.Error())
+	} else {
+		t.Log("STEP 2 quick draft: franchise.01 took rookie 5001 and franchise.04 took rookie 5002, each recorded under the owner's principal (the store's RecordDraftPick, see the owner-door NOT REACHED above); franchise.04 moved to pick two (draft.order.set while the clock runs, with a reason)")
+		if err := opponentLineup(t, f, opponent); err != nil {
+			notReached(t, 3, "franchise.04 lineup (5002 at QB): "+err.Error())
+		} else {
+			t.Log("STEP 3 franchise.04 lineup set: starter 5002 (QB), recorded under franchise.04's principal, the same store route as franchise.01's lineup")
+		}
+	}
 
 	// STEP 3 lineups: the CLI previews, the commissioner's own session records (G2 confirmation).
 	lineup := commissioner.RawCommand{League: "native.hosted", Command: commissioner.LineupSet, Request: "box.lineup", Effective: "now", Visibility: "private",
@@ -261,10 +480,25 @@ func TestSeasonInABoxSpike(t *testing.T) {
 		return
 	}
 	t.Logf("STEP 8 standings.read answered: status %q, %d decided, %d pending, through week %d", standings.Status, standings.Decided, standings.Pending, standings.Through)
+	// The week-1 game (franchise.01 at franchise.04) is decided once both franchises have a complete final score.
 	if standings.Decided == 0 {
-		// The one pinned game (franchise.01 at franchise.04) reads "No result yet" until franchise.04 sets a lineup. A
-		// second owner would need a rostered starter for franchise.04, and the seed rosters only franchise.01 and .02.
-		t.Log("NOT REACHED STEP 8 decided games: franchise.04 has no lineup, so week 1 has no result; it has no rostered player (tools/hostedfixture/workflows.go:44-48 seeds franchise.01 and franchise.02 only), and a lineup can be set only for the setter's own franchise (internal/commissioner/governance.go:330), one person holds one seat (internal/governance/seats.go:85)")
+		var week1 commissioner.NativeResults
+		f.boxRead(t, token, "results.read", 1, &week1)
+		opponent04, _ := franchiseScore(week1, "franchise.04")
+		notReached(t, 8, fmt.Sprintf("decided games: 0 of %d; franchise.04 week 1 is %q: %s (a starter without a final line keeps the score incomplete, internal/commissioner/native_week_score.go:120)",
+			standings.Decided+standings.Pending, opponent04.Status, opponent04.Words))
+	} else {
+		var week1 commissioner.NativeResults
+		f.boxRead(t, token, "results.read", 1, &week1)
+		game, found := weekGame(week1, "franchise.04", "franchise.01")
+		home, homeOK := franchiseScore(week1, "franchise.04")
+		away, awayOK := franchiseScore(week1, "franchise.01")
+		if !found || !homeOK || !awayOK || home.Points == nil || away.Points == nil {
+			notReached(t, 8, fmt.Sprintf("standings count %d decided, but the franchise.01 v franchise.04 game has no two final scores (%s; %s)", standings.Decided, home.Words, away.Words))
+		} else {
+			t.Logf("STEP 8 decided game: %s at %s, status %q; franchise.01 %d, franchise.04 %d (final points); %d decided, %d pending, through week %d",
+				game.Away, game.Home, game.Status, int64(*away.Points), int64(*home.Points), standings.Decided, standings.Pending, standings.Through)
+		}
 	}
 
 	// STEP 9 report: results.read answers the week's report; the recap text has no hosted read yet.
@@ -292,6 +526,16 @@ func franchiseScore(r commissioner.NativeResults, franchise string) (commissione
 		}
 	}
 	return commissioner.FranchiseWeekScore{}, false
+}
+
+// weekGame is the week's game between two franchises, in either order.
+func weekGame(r commissioner.NativeResults, one, two string) (commissioner.NativeGame, bool) {
+	for _, game := range r.Games {
+		if game.Home == one && game.Away == two || game.Home == two && game.Away == one {
+			return game, true
+		}
+	}
+	return commissioner.NativeGame{}, false
 }
 
 // franchiseStarter is one starter of a franchise's week score.

@@ -1,6 +1,6 @@
 # Season in a box (T711 spike)
 
-**Status:** spike, 2026-11-22. Test: `TestSeasonInABoxSpike` in `cmd/twr/season_in_a_box_test.go`.
+**Status:** spike, 2026-11-22; STEP 2 and STEP 8 (decided game) added the same day. Test: `TestSeasonInABoxSpike` in `cmd/twr/season_in_a_box_test.go`.
 **Goal:** a whole league week, played in seconds, offline, from a recorded real NFL game, so a regression in the
 create -> lineup -> lock -> live scores -> final -> correction -> standings -> recap chain fails a test instead of a Sunday.
 
@@ -8,36 +8,35 @@ create -> lineup -> lock -> live scores -> final -> correction -> standings -> r
 
 Run: `go test ./cmd/twr -run TestSeasonInABoxSpike -count=1 -v`.
 
-Run time (`time go test ./cmd/twr -run TestSeasonInABoxSpike -count=1`): 3.9 s wall with a warm build cache; the test
-itself 2.8 s; 6.5 s on the first run after an edit. The 5-minute budget is not close.
+Run time (`time go test ./cmd/twr -run TestSeasonInABoxSpike -count=1`, warm cache, 2026-11-22): 7.0 s wall, the test itself 5.9 s (`go test -race`: 15.7 s test, 51 s wall). The 5-minute budget is not close. Test status on the final tree: `cmd/twr`, `cmd/twr-server`, `internal/app/commissioner`, `internal/commissioner`, `internal/serverhttp` pass; `tools/twr-practice` passes 6 of 7 tests: `TestPrebuiltSandboxHTTPSLifecycleWithoutGo` fails on the base commit too (`frontend/dist` is not built, `tools/twr-practice/main_test.go:186`). `golangci-lint` on the changed packages: 0 issues.
 
 | # | Journey step | How it runs | Status |
 |---|---|---|---|
 | 1 | Create native league | `hostedfixture.CreateWorkflowLeague` (32 franchises, rules, schedule, pinned football), then `twr ledger` over HTTPS | reached |
-| 2 | Quick draft | none | not reached (B3) |
-| 3 | Set lineups | `twr preview` of `commish.lineup.set` through the real token and dispatch path; recorded through the commissioner's own session (G2 needs a human confirmation). Only franchise.01 sets one: see B5 | reached (franchise.01 only) |
+| 2 | Quick draft | Second owner seated on franchise.04 (`hostedfixture.AddWorkflowOwner`). `draft.order.set` moves franchise.04 to pick 2 while the clock runs, with a reason. Then franchise.01 takes rookie 5001 and franchise.04 takes rookie 5002, each through the store's `RecordDraftPick` under the owner's principal, with the calendar permit and the pinned facts. The owner door (`PickPath`) refuses both (B7). | reached through the store (`RecordDraftPick`); owner door NOT REACHED (B7) |
+| 3 | Set lineups | `twr preview` of `commish.lineup.set` through the real token and dispatch path; recorded through the commissioner's own session (G2 needs a human confirmation). franchise.04 sets its own (starter 5002, a QB) under its principal, the same store route | reached (franchise.01 and franchise.04) |
 | 4 | Pass lineup lock | fake clock advances 25 h past kickoff; a lineup that adds a player is refused ("locked at kickoff") | reached |
 | 5 | Feed live stat lines in pieces, scores move | recorded ESPN summaries (`cmd/twr-server/testdata/live-week9.tar.gz`, frames 01 then 02) published to `history.LiveOverlay`; `results.read` read twice over HTTPS; franchise.01 goes 30.000 -> 60.500 provisional | reached |
 | 6 | Final | `PinOfficialStats` on the synthetic 2026 week-1 files in `cmd/twr/testdata/official/` (no network); `results.read` shows franchise.01 final, no provisional (23.5 points) | reached |
 | 7 | One stat correction | second pin of `stats_player_week_2026_corrected.csv.gz` (QB passing yards 250 -> 262); franchise.01 moves 23.5 -> 24.1. The starter's revision (the move off the last live line) is NOT REACHED, see B6 | reached (points); NOT REACHED (starter revision) |
-| 8 | Standings | `standings.read` answers with status "Ranked" (not "Needs a ruling"). 0 of 16 games decided: the one pinned game waits for franchise.04's lineup. See B5 | answered; NOT REACHED (decided games, B5) |
+| 8 | Standings | `standings.read` answers with status "Ranked" (not "Needs a ruling"). 1 of 16 games decided: franchise.04 at franchise.01, status "Final" (franchise.01 241000 = 24.1; franchise.04 0, its rookie's zero stat line). 15 pending. | reached (1 decided game) |
 | 9 | Report / recap read | `results.read` answers week 1 (16 games, 32 franchise scores). The recap text has no hosted read: NOT REACHED (B2 recap) | report answered; NOT REACHED (recap) |
 
 Values in the test log are the engine's fixed-point numbers (10,000 per point): `235000` is 23.5 points.
 
 ## Real versus faked
 
-Real: the hosted HTTP handler (`serverhttp.Hosted`, TLS, token scope, workflow door), the `twr` cobra commands and
+Real: the hosted HTTP handler (`serverhttp.Hosted`, TLS, token scope, workflow door), the draft rules and calendar gate (`NativeActionGate`) and the pick checks inside `RecordDraftPick` (seat, turn, rookie pool, roster, cap), the `twr` cobra commands and
 `serverclient.Agent`, the commissioner ledger and every rule check, native week scoring
 (`commissioner.NativeResultsReading`, `history.nativeSources`), the live overlay, SQLite.
 
-Faked: the process boundary (the server runs in the test process on `httptest`, not as the `twr-server` binary); the
+Faked: owner picks skip the owner door (B7) and are recorded through the store with the owner's principal and the pinned facts; the process boundary (the server runs in the test process on `httptest`, not as the `twr-server` binary); the
 clock (`Store.SetClock`; account and due-worker clocks stay real); the NFL feed (recorded frames, no network); the
 commissioner's G2 confirmation (the test calls `ExecuteCommissioner` as the seated principal); NFL player identity
 (the box football evidence names `00-0000099` as the QB's NFL id, and the live generation carries the same id,
 because the recorded game is week 9 replayed as league week 1). The official week-1 files are synthetic: one QB row
 and one END GAME play, with the header copied from the real 2025 weekly file. Because they are synthetic, they show
-the pin and correction mechanics; they are not real 2026 statistics.
+the pin and correction mechanics; they are not real 2026 statistics. The second row (`00-0005002`, QB, every stat 0) is the rookie franchise.04 starts. Both week-1 rookies (5001, 5002) are seeded practice players, not a real draft class.
 
 Reuse: `newReleaseCLIWith` in `release_matrix_test.go` is `newReleaseCLI` with an optional seed that returns the
 football digest; the matrix test is unchanged in behaviour. No new dependency.
@@ -86,10 +85,32 @@ spike to one file. Revisit when the box runs the real `twr-server` binary: then 
   ignored (`internal/store/history/live_overlay.go:204-206`), so no live line is in the week's evidence and the
   revision is nil. Read from the code, not yet traced at runtime. Fix options: keep live lines in the evidence
   after the official pin, or accept that the revision is shown only on the live path.
-- **B3. Quick draft.** The workflow league seeds rosters directly and starts a 2027 rookie draft; each pick is an
-  owner action (`serverhttp.PickPath`, `draft.pick`, `internal/commissioner/draft_wire.go:21`). No commissioner
-  autopick/quick-draft command exists to drive 32 slots. Proposal: a test loop that seats a principal per franchise
-  (as `hostedfixture.AddWorkflowOwner`) and picks in order, or a G3 `draft.autopick` command if the product wants one.
+- **B3. Quick draft: the box drives two owners, not 32 slots (partly closed).** The seed starts a one-round 2027 rookie
+  draft on franchise.01. Only franchise.01 and franchise.02 are seated by the seed; the box needs two picks (01 and 04). The box
+  moves franchise.04 to pick two with `draft.order.set` (`internal/commissioner/draft_commands.go:69`, a change while the clock
+  runs needs `Running` and a reason). No auto-pick path exists in Go: `autopick` is only a rule value
+  (`internal/leaguerules/menus.go:106`) and nothing reads it, so the picks are the owners' own. Skips and assigns were not used:
+  a skip forfeits the pick (`internal/commissioner/draft_preview.go:108`).
+- **B5. The week-1 opponent has no roster (closed for the box).** franchise.04 now has a second owner (`AddWorkflowOwner`,
+  `tools/hostedfixture/owner.go:36`), and the shared seed (`tools/hostedfixture/workflows.go`) adds one 2027 rookie QB, `5002`,
+  with a GSIS id `00-0005002`. The seed change is the one shared-seed change in this step: Christopher to confirm it (option A
+  in the old note). The box also gives `5002` a zero stat row in both week-1 files (`cmd/twr/testdata/official/`), so
+  franchise.04 has a complete final score. A lineup can be set only for the setter's own franchise
+  (`internal/commissioner/governance.go:330`), so franchise.04's lineup is recorded under its own principal.
+- **B7. The owner door refuses every rookie pick (production, open).** `PickPath` (`/v1/native/draft/pick`) returns 409
+  "owner action refused" for every rookie. The cause is that the owner host has no rookie facts:
+  `internal/serverhttp/hosted.go:495` (`workflowHost`) pins football only for workflow requests, so a pick request is served by
+  `leagueservice.StoredHost`, whose `NativeFacts` returns nil (`internal/leagueservice/hosted.go:42`). With nil facts a
+  candidate's entry season is 0, so `admits` refuses it ("choose a rookie from this season's player pool",
+  `internal/engine/rookiedraft/startup.go:181`). The due worker is built with nil facts too (`cmd/twr-server/hosted.go:367`),
+  and `dueHost` does not override `NativeFacts`. Evidence: the same store call returns that refusal with nil facts and succeeds
+  with the pinned facts (`f.pin.Football.PlayerFacts()`); the door hides its message, so the 409 is inferred from that, not
+  read off the door. Impact: in the hosted server no owner can draft a rookie yet. Fix (production, not done here): pin football
+  for pick requests in `workflowHost` (`raw.Pick != nil` too), and give the owner host the facts. The box test calls the store's
+  `RecordDraftPick` with the same permit and facts the service uses, and logs the door's NOT REACHED beside it.
+- **Harness note (not a product bug).** The box clock stands still between calls and keeps nanoseconds. A pick stamped at the
+  instant of the one before would not yet count in the next pick's judgement (`s.now()` truncates to microseconds). The box
+  advances the clock a minute between picks. Real owners pick seconds apart.
 - **B4. Real binary and a clock it obeys.** `twr-server` reads wall time in many places: `cmd/twr-server/hosted.go:364-365`
   (`NewHostClock`, the store and due worker), `football_pins.go:52`, `official_stats.go:72`, `league_load.go:370`,
   `league_refresh.go:101`, `live_collector.go:160,256,284`, `live_packets.go:124-185`. No flag or env var replaces them.
@@ -103,8 +124,10 @@ spike to one file. Revisit when the box runs the real `twr-server` binary: then 
 ## Next steps, in order
 
 1. `twr read` (B1): makes every read in the journey a CLI call.
-2. Official stats (B2): done in process for final and correction. Next: run the server's own official job
+2. Owner door for picks (B7, production): pin the football for pick requests and give the owner host its facts. Needs
+   Christopher's OK: it changes the hosted server. Once it lands, the box's `PickPath` attempt succeeds and the store fallback
+   can be removed from `quickDraft`.
+3. Official stats (B2): done in process for final and correction. Next: run the server's own official job
    (`-official-dir`, B2a) and add a recap read (B2 recap).
-3. Draft loop (B3), and the franchise.04 opponent (B5), so week 1 has a decided game.
 4. Clock and feed flags, then swap the in-process server for the real binary (B4); consider testscript then.
 5. Starter revision after a correction (B6).
