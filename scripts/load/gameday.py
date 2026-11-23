@@ -360,7 +360,7 @@ class LoadRunner:
             },
         )
         if isinstance(w, dict):
-            wk = w.get("week") or w.get("nextWeek")
+            wk = (w.get("current") or {}).get("week") or w.get("nextWeek")  # current week first, like the phone (T662)
             if wk:
                 ctx["week"] = wk
         return ctx
