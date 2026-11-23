@@ -30,8 +30,16 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - **Base every build on the branch the Lab runs** (lab-v5x / rehearsal-auto), not main. Main is 37+ commits behind.
   Memory: `base-briefs-on-live-stack.md`.
 
-## 4. In flight (11-23 6:20 AM CT)
-- **Nothing running.** All of Claudebox's Haiku jobs are finished; no watchers are left.
+## 4. In flight (11-23 ~7:45 AM CT) — Christopher: "take the wheel ... drive the session" (phones are test-only, use freely)
+- **Merges ("merge all", Christopher 11-23):** PR **#468 MERGED** (main 2806fb444 = Lab v50–v53 + resume docs).
+  Remaining = ONE branch `session/merge-rest-1123` in worktree `.worktrees/merge-read-1123`: season box (#467 content),
+  report card (Agent.Read + twr-check), `twr read`, no-team sign-in fix, line budget + re-counted baseline + one-write fix.
+  First push FAILED pre-push on a >110-char test line (fixed, not yet committed at compaction). Next: commit, push
+  (frontend must be built: `cd frontend && npm run build`), open PR, close #467 as included, CI green, squash-merge.
+  Push log: `~/fleet/runs/overnight-rehearsal-1122/push-merge-rest.log`.
+- Old worktrees `.worktrees/merge-lab-1123`, `merge-sb-1123` are done (branches merged/folded): remove after merge-rest lands.
+- **Overnight run closed** 11-23 ~7:30 AM. Watcher for any new background job: `~/fleet/bin/run-watch.sh` (skill overnight-run v3).
+- (old) All of Claudebox's Haiku jobs are finished.
   - Claudebox run dirs `/root/{twr-read,b2,b2impl,b3,b7,ap,ap1,ap2}-1122/` are disposable (their patches are applied).
 - **Overnight run dir:** `~/fleet/runs/overnight-rehearsal-1122/`: REPORT.md (event log), B2-PLAN.md,
   AUTOPICK-PLAN.md (SUPERSEDED), test-inventory/ (filed workbench).
@@ -107,6 +115,18 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
   commissioner's username+password on stdin.
 - Lab status command: `pct exec 260 -- /usr/local/libexec/twr-status`. Plain `twr-server status -status-socket` is wrong (no such flag).
 - S8 "league server could not be reached" = /app/session 403 "league access unavailable": its account has no seat. Not a server fault.
+  The wrong message is FIXED on merge-rest (cf659e6f5): web 403 at startup -> sign-in view "This account has no team in a
+  league on this server yet...". Test `nativeStartupBrowser.test.tsx` (fails without the fix).
+- REFUTED 11-23: "Tom can seat a phone without Christopher". Every console door that makes a join link (join-link
+  -rotate, reset-password) needs the commissioner's username+password; `-no-login` only seats the commissioner. By design;
+  do not add a bypass. Phones get used once Christopher signs in on them himself (cookie persists).
+- iPhone inspector: works when Chrome shows a real web page; on Chrome's own new-tab page `runtime_enable` hangs forever.
+  pymobiledevice3 lives in pipx (`~/.local/share/pipx/venvs/pymobiledevice3/bin/python`), not system python.
+- Dates: the REHEARSAL-SEASON doc (Claudebox's) still says drafts Nov 26–29; the LATER ruling is drafts Tue Dec 8, first
+  scoring week NFL 14 (Thu Dec 10), first report card Tue Dec 15. Claudebox asked to fix its doc
+  (`/root/TOM-ASKS-CLAUDEBOX-rehearsal-dates-1123.md`).
+- VM 503 = the twr-lab VM (192.168.1.182) holding CT 260. After the 11-23 Proxmox reboot it came back fine: v53, 8/8 OK.
+- line-budget `--write` once needed two runs (baseline file grew by a line when a new area appeared): fixed to loop until stable.
 - Sign-in backup "paused" right after a Lab restart is normal for ~15 min (first backup). Not a fault.
 
 ## 8. Decisions (Christopher, 11-22)
@@ -121,17 +141,18 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
    locked starters kept, a human lineup never touched; dynasty order ignores each league's own scoring this once;
    a benched player starts only to meet a minimum nobody playing can fill (O-Line card on bye).
 
-## 9. Ledger state
+## 9. Ledger state (11-23: #468 on main; rest on session/merge-rest-1123)
 All work committed and pushed on branches (rehearsal-auto, lab-v52-1122, t685-1122, t705-1122, t705-screen-1122, t688-replay-1122,
 should9-1122, should10-1122). Nothing uncommitted.
 
-## 10. Next actions, in order (11-23 morning)
-1. Update the tracker (http://192.168.1.222:8790/, Hermes `~/fleet/tracker/data/plan.json`; back up as plan.json.bak-1122ay+).
-   - Cards: "Owner pick door" -> fixed, on Lab v53; Next 5 -> v53 shipped; Overnight brief card.
-   - Correct the auto-pick false alarm on the log.
-   - Then tell Christopher the morning summary (he asked: "update the html and myself after the compaction").
-2. Finish `~/Downloads/TOM-REPORT-overnight-1122.md`: add v53 and the 6:14 AM status. It must be right by 7 AM.
-3. When Christopher pastes the twr1 helper line, run `setup-commish.sh` per league
+## 10. Next actions, in order (11-23 ~7:45 AM)
+1. Land merge-rest: commit the line-length fix, push, PR (pr skill format), close #467 as included, CI, squash-merge.
+2. Lab release from new main (`REF=origin/main ~/fleet/bin/twr-lab-release-ref.sh <V=54> <prev targets.json> ~/fleet/runs/labrel-v54-1123`),
+   check 8/8, then S8 should show the sign-in screen instead of "could not be reached" (prove on the phone, screenshot).
+3. Tracker: release line + cards (merges done, no-team fix). Task list on Hermes.
+4. Phones: once Christopher has signed in on them, check v52/v53 screens (Dynasty column, update worker) at phone width.
+5. Prep the Tuesday report card job on Hermes (twr-check; needs a read token from the helper connection; first run Tue Dec 15).
+6. When Christopher pastes the twr1 helper line, run `setup-commish.sh` per league
    (`~/fleet/runs/twr-rehearsal-leagues-runbook-1122/setup/`, twin needs `twin`).
    - Set a short `draft.clock` and `draft.onExpire = autopick`, open the startup draft.
    - Watch auto-picks fill 31 teams (server.log "draft autopick").
@@ -143,11 +164,11 @@ should9-1122, should10-1122). Nothing uncommitted.
 6. Later: T694 after Claudebox confirms one-season; laptop Season server (not before Dec 13).
 
 ## 11. Needs Christopher
+- Sign in on the iPhone (on the Lab sign-in screen now) and, after v54, on the S8, with his own account (holds franchise.01).
 - Test leagues: AI helpers -> Connect a helper -> "also record" in each test league; paste the twr1 line to Tom.
-- Unlock the iPhone and keep Chrome in front.
-- Seat the S8 test account: needs his commissioner sign-in.
-- Rulings: (a) solo-owner tools when the desktop comes out (T710 report); (b) a Lab-only confirm stand-in for canaries (T708 report).
-- Merge OKs: the v51 stack (pwa-sw-shell + t677-t679 + live-panel-ball), then rehearsal-auto + B7, PR #467 (season box), twr-read, line-budget.
+- Rulings: (a) solo-owner tools when the desktop comes out (T710 report) — he said "I don't understand", re-explain plainly;
+  (b) a Lab-only confirm stand-in for canaries (explained plainly 11-23; Tom recommends yes, test leagues only).
+- Merges: DONE as authorised ("merge all" 11-23) — no further merge OK needed for these five.
 
 ## 12. Environment notes
 - Guard hook: any command holding both `push` and a `-f`/`--force` (even `rm -f`, `worktree remove --force`) is blocked as a
