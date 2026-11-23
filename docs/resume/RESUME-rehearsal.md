@@ -7,10 +7,10 @@ owns one team in each; the other 62 are automatic. Plan: `docs/reset/REHEARSAL-S
 edits it). Environments (Dev / Lab CT 260 / Season server 192.168.1.162): CLAUDE.md "Environments".
 Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree `.worktrees/rehearsal-auto`).
 
-## 2. Done looks like (Rehearsal A, due Thu 11-26)
+## 2. Done looks like (Rehearsal A, ready Thu 12-03; real drafts Tue 12-08)
 - [x] Gaps posted on the tracker before building (inventory `~/fleet/runs/twr-rehearsal-a-1122/`).
-- [x] Auto-pick, auto-lineup, O-Line handout built, each checked with a planted break.
-- [ ] Argon review of the stack addressed (running, see 4).
+- [x] Auto-pick and auto-lineup built, each checked with a planted break. O-Line handout REMOVED (bfb91c18d): the auction close already hands leftover cards to every team without one.
+- [x] Argon review addressed (5 BLOCKERs verified + fixed, each with a planted break: 106a71ae2 server facts, 563b51d11 clock advance, ebed15dcc lineup lock/wave/per-team, bfb91c18d handout revert). SHOULDs 6/7/9/10 open, see 13.
 - [ ] Lab data check: `model_runs`/`model_scores` rows and weekly stats exist for the rehearsal leagues.
 - [ ] Both leagues created on the Lab, one TEST draft each, clean; card to needs_you "ready for real drafts".
 
@@ -22,7 +22,10 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - Briefs `~/fleet/briefs/`, runs `~/fleet/runs/<job>-1122/`. AGY: `~/fleet/bin/agy-run.sh <job> <brief> "<model>"
   <workdir>`; done = `exit` file. Quota 13:20: Gemini week 27.4% left (now less: 4 Neon runs + 1 Argon since).
 
-## 4. In flight at compaction
+## 4. In flight
+- 11-22 6:45 PM: Haiku Lab data check (read-only) running as a Tom subagent.
+
+## 4b. Old (pre-compaction 6 PM) in-flight notes
 - **Argon (High) review** of `session/rehearsal-auto`, started 5:47 PM, pid 2066167. Alive: `ps -p 2066167`.
   Output `~/fleet/runs/twr-rehearsal-auto-review-1122/REVIEW.md`; done = `exit` file there. Brief
   `~/fleet/briefs/twr-rehearsal-auto-review-1122.md`. On result: verify each BLOCKER yourself, fix on the branch
@@ -69,6 +72,8 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
   a grep for `--- FAIL|^ok` hides "[build failed]" (always grep `^FAIL` and `build failed`).
 
 ## 8. Decisions (Christopher, 11-22)
+0. TIMELINE MOVED (6:20 PM): real drafts Tue Dec 8. Nov 29 is NFL week 12 (starts Wed 11-25); a week's lineups use the roster at its first kickoff, so Thu/Fri drafts would score nothing. First scoring week = NFL week 14 (Thu Dec 10 7:15 PM CT); first rehearsal Sunday Dec 13; first report card Tue Dec 15; schedule 18 weeks with 1-13 empty (test 53a8c2b4b). Claudebox told: ~/Downloads/TOM-ASKS-CLAUDEBOX-rehearsal-timeline.md.
+6. Routing: Haiku high + Sonnet medium subagents on Tom's account; Gemini only for second opinions when clarity is thin or a bug is hard.
 1. Computer draft picks: TWR dynasty value, FILL STARTERS FIRST, then best available.
 2. Unsold O-Line cards -> computer teams without one, at the minimum price, after the auction closes.
 3. Report card runs TUESDAY ~9 AM CT (Monday-night finals land Tuesday morning). First: Tue Dec 1.
@@ -111,4 +116,4 @@ All work above is committed on branches; nothing uncommitted. Main has #462 (doc
 Code is built and unit-tested, never run on a real server. Unproven: the Lab holds model scores and weekly stats
 (else picks fall back to projection and lineups to ID order); draft speed on the 2-core Lab across 43 rounds;
 MFL injuries lag on Sunday inactives; how the draft room shows 600+ instant picks (browser change push is a no-op,
-T685). ETA for "ready for real drafts": Wed 11-25 if Argon finds no blocker.
+T685). Open Argon SHOULDs: (6) startup draft is O(N^2), est 5-10 min for 43 rounds on the 2-core Lab: measure on the Lab test draft; (7) reserve players not used for group minimums; (9) auto-lineup would overwrite MFL-synced lineups (native leagues unaffected); (10) automatic lineup not pushed to a seated owner's open screen. ETA ready for real drafts: Thu Dec 3.
