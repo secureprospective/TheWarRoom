@@ -215,7 +215,8 @@ function Scores({ pulse, mine, season, port, readWeek, onWatch }: { pulse: Nativ
   const names = new Map(pulse.seats.map(s => [s.franchise, s.name]));
   const r = results?.value;
   // LIVE only while something is being scored: a game holding provisional (in-play) points.
-  const playing = r?.games.filter(g => g.homeProvisional !== undefined || g.awayProvisional !== undefined).length ?? 0;
+  const playing = r?.games
+    .filter(g => g.homeProvisional !== undefined || g.awayProvisional !== undefined).length ?? 0;
   const state = upcoming ? 'UPCOMING' : r?.published ? 'FINAL'
     : week === current ? playing > 0 ? 'LIVE' : 'THIS WEEK' : 'FINAL';
   const mineFirst = <T extends { home: string; away: string }>(list: T[]) => [...list].sort((x, y) =>
