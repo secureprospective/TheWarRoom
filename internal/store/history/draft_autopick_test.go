@@ -799,3 +799,24 @@ func TestAutoPickFullDefault32StartupLegalLineups(t *testing.T) {
 		}
 	}
 }
+
+// A real clock moves on after every commit; the loop must read the draft through the new instant or it
+// re-plans a slot it already filled.
+func TestAutoPickLoopFollowsAdvancingClock(t *testing.T) {
+	t.Parallel()
+	order := []string{"franchise.01", "franchise.02", "franchise.03", "franchise.04"}
+	facts := testFacts(12)
+	f := newAutoPickFixture(t, "native.autoclock", commissioner.PresetDefault32, 4, 1, "", order, facts)
+	f.openStartup()
+	f.s.SetClock(func() time.Time {
+		f.c.now = f.c.now.Add(time.Second)
+		return f.c.now
+	})
+	rank := fixedDraftRanking{order: []string{"1001", "1002", "1003", "1004"}}
+	if err := f.s.ProcessDueAutoPicks(t.Context(), f.league, f.c.now, facts, rank); err != nil {
+		t.Fatal(err)
+	}
+	if d := f.draftReading("franchise.04"); !d.Draft.Exhausted {
+		t.Fatalf("draft not exhausted; onClock = %+v", d.Draft.OnClock)
+	}
+}
