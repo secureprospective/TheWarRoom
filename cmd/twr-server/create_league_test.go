@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -34,7 +35,7 @@ func TestCreateLeagueMakesAnOpenableNativeLeague(t *testing.T) {
 	ctx := t.Context()
 	path := emptyServerPath(t)
 	var out bytes.Buffer
-	if err := runCreateLeague(ctx, createLeagueArgs(path), &out); err != nil {
+	if err := runCreateLeague(ctx, createLeagueArgs(path), strings.NewReader(""), &out); err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{createdLeagueID, "32 franchises", "pin-football", "refresh-nfl-schedule", "join-link"} {
@@ -97,10 +98,10 @@ func TestCreateLeagueMakesAnOpenableNativeLeague(t *testing.T) {
 
 func TestCreateLeagueRefusesAnExistingLeague(t *testing.T) {
 	path := emptyServerPath(t)
-	if err := runCreateLeague(t.Context(), createLeagueArgs(path), &bytes.Buffer{}); err != nil {
+	if err := runCreateLeague(t.Context(), createLeagueArgs(path), strings.NewReader(""), &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
-	err := runCreateLeague(t.Context(), createLeagueArgs(path), &bytes.Buffer{})
+	err := runCreateLeague(t.Context(), createLeagueArgs(path), strings.NewReader(""), &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "already on this server") {
 		t.Fatalf("second create: %v", err)
 	}
@@ -109,12 +110,55 @@ func TestCreateLeagueRefusesAnExistingLeague(t *testing.T) {
 func TestCreateLeagueRefusesAnUnknownPreset(t *testing.T) {
 	path := emptyServerPath(t)
 	args := []string{"-db", path, "-league", createdLeagueID, "-name", "X", "-preset", "no_such_preset", "-season", "2026"}
-	err := runCreateLeague(t.Context(), args, &bytes.Buffer{})
+	err := runCreateLeague(t.Context(), args, strings.NewReader(""), &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "default_32") {
 		t.Fatalf("unknown preset: %v", err)
 	}
 	files := openTestServer(t, filepath.Dir(path))
 	if len(files.leagues.leagues()) != 0 {
+		t.Fatal("a refused create left a league file")
+	}
+}
+
+// -commissioner names the new league's commissioner account: a free name is made and becomes the one
+// commissioner; an existing name must give its password, and a wrong one leaves no league behind.
+func TestCreateLeagueNamesItsCommissionerAccount(t *testing.T) {
+	ctx := t.Context()
+	path := emptyServerPath(t)
+	first := `{"username":"labcommish","password":"correct horse battery staple"}`
+	var out bytes.Buffer
+	if err := runCreateLeague(ctx, createLeagueArgs(path, "-commissioner"), strings.NewReader(first), &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "commissioner is labcommish") {
+		t.Fatalf("report does not name the commissioner: %s", out.String())
+	}
+	files := openTestServer(t, filepath.Dir(path))
+	account, err := accounts.New(signInStore(files)).Authenticate(ctx,
+		accounts.RawCredentials{Username: "labcommish", Password: "correct horse battery staple"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := account.Principal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store, err := leagueStore(ctx, files, createdLeagueID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := leagueservice.JoinSeats{Store: store}.Commissioner(ctx, createdLeagueID)
+	if err != nil || got != want {
+		t.Fatalf("commissioner = %q, %v; want %q", got, err, want)
+	}
+	_ = files.Close()
+	wrong := `{"username":"labcommish","password":"not the right password at all"}`
+	args := []string{"-db", path, "-league", "native.second", "-name", "Second", "-preset", "default_32", "-season", "2026", "-commissioner"}
+	if err := runCreateLeague(ctx, args, strings.NewReader(wrong), &bytes.Buffer{}); err == nil {
+		t.Fatal("a wrong password for an existing account still created a league")
+	}
+	again := openTestServer(t, filepath.Dir(path))
+	if len(again.leagues.leagues()) != 1 {
 		t.Fatal("a refused create left a league file")
 	}
 }

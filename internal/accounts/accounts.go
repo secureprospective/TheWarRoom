@@ -104,6 +104,21 @@ func NewWithPasswordWork(store Repository, work *PasswordWork) *Service {
 // LocalBootstrap is a local operator door, never an enrollment or league-role grant.
 // The store must atomically refuse it once any account exists.
 func (s *Service) LocalBootstrap(ctx context.Context, raw RawCredentials) (Account, error) {
+	return s.insertNew(ctx, raw, true)
+}
+
+// ConsoleAccount is the local operator door that names a new league's commissioner: it makes the
+// account when the username is free, and otherwise signs the existing account in by its password,
+// so the console never takes over an account it cannot sign in to.
+func (s *Service) ConsoleAccount(ctx context.Context, raw RawCredentials) (Account, error) {
+	account, err := s.insertNew(ctx, raw, false)
+	if errors.Is(err, ErrUsernameTaken) {
+		return s.Authenticate(ctx, raw)
+	}
+	return account, err
+}
+
+func (s *Service) insertNew(ctx context.Context, raw RawCredentials, onlyIfEmpty bool) (Account, error) {
 	if err := raw.Validate(); err != nil {
 		return Account{}, err
 	}
@@ -120,7 +135,7 @@ func (s *Service) LocalBootstrap(ctx context.Context, raw RawCredentials) (Accou
 		return Account{}, err
 	}
 	account := Account{ID: id, Username: username}
-	if err := s.store.Insert(ctx, Credential{Account: account, PasswordHash: hash}, true); err != nil {
+	if err := s.store.Insert(ctx, Credential{Account: account, PasswordHash: hash}, onlyIfEmpty); err != nil {
 		return Account{}, fmt.Errorf("bootstrap account: %w", err)
 	}
 	return account, nil

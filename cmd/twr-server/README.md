@@ -356,6 +356,11 @@ directory. Nobody is seated, so every franchise plays automatically until the co
 with `join-link`. An existing league ID or an unknown preset is refused and nothing is changed. The command
 then prints the next steps: `pin-football`, `refresh-nfl-schedule` and `join-link`.
 
+To give the league a real commissioner account, add `-commissioner` and pipe
+`{"username":"…","password":"…"}` on stdin. A free username becomes a new account; an existing one must give
+its own password, so the console never takes over an account. That account is recorded as the commissioner
+instead of `creator`, and `join-link -take franchise.01 -no-login` then seats it.
+
 ### Refresh missing published NFL kickoff dates (local console, service stopped)
 
 The hosted server reads schedule dates from its pinned football evidence; restart and
