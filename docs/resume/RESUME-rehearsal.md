@@ -22,22 +22,31 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - Briefs `~/fleet/briefs/`, runs `~/fleet/runs/<job>-1122/`. AGY: `~/fleet/bin/agy-run.sh <job> <brief> "<model>"
   <workdir>`; done = `exit` file. Quota 13:20: Gemini week 27.4% left (now less: 4 Neon runs + 1 Argon since).
 
-## 4. In flight (11-22 ~7:45 PM CT)
-- No subagents running. T695 plan DONE -> `~/Downloads/TOM-REPORT-sleeper-projections-plan.md` (8 slices; top risk: Sleeper
-  projections URL unknown in code and Sleeper not in Approved_Sources; needs one supervised look + Claudebox/Christopher OK).
-- Waiting on Claudebox: `~/Downloads/CLAUDEBOX-ANSWERS-TOM-environments-rerun.md` (pass -> Environments card done, `cc task check T690`);
-  replies to `TOM-ASKS-CLAUDEBOX-rehearsal-timeline.md`, `TOM-ASKS-CLAUDEBOX-icp-tasks-ack.md`, `TOM-REPORT-redraft-check.md`.
-- Scheduled wakeup ~8:19 PM re-checks the above and starts the Lab night when SNF is final.
+## 4. In flight (11-22 ~8:35 PM CT)
+- No subagents running. Background timer `sleep` (pid 2484380) fires ~10:35 PM CT = start Lab night.
+- Overnight run dir: `~/fleet/runs/overnight-rehearsal-1122/` (PLAN.md, REPORT.md event log, t705-PLAN.md, t688-PLAN.md).
+- NEW BRIEF (Claudebox ~9 PM): `~/Downloads/CLAUDEBOX-BRIEF-TOM-overnight-1122.md` (4,620 B). After v50/v51 ship: jobs in order
+  T711 season-in-a-box design+spike (branch session/season-box-1122, PR open not merged), T708 canary inventory (report),
+  T709 line budget (branch session/line-budget-1122), T710 desktop keep-list (report, delete nothing), test inventory (report),
+  AI-parts licence check (official pages). Reports `~/Downloads/TOM-REPORT-<topic>.md` + tracker card + `cc task` note each;
+  morning report `~/Downloads/TOM-REPORT-overnight-1122.md` by ~7 AM CT, "Needs Christopher" at top. Rulings: docs/reset/RULINGS-1122.md
+  Part 6 + docs/architecture/infra-map.md on branch session/infra-map-1122 (PR #466). Tasks T708-T711 on Hermes.
+- Still no `CLAUDEBOX-ANSWERS-TOM-environments-rerun.md` (8:19 PM check).
+- Phones: iPhone 13 USB (`idevice_id -l` 00008110-000A74960EA0401E); S8 SM-G892U wifi adb `192.168.1.122:5555`
+  (Android 9: loses adb-wifi on reboot; its USB port is flaky — catch it with a 1 s `adb devices` loop then `adb tcpip 5555`).
+- Claude-OS was off; started 7:4x PM, at desktop. Leave it running.
 
 ## 5. Gates / status
 | What | State |
 |---|---|
-| Argon BLOCKERs 1-5 | all fixed, each with a planted break caught |
-| `session/rehearsal-auto` head 8e48bb48a (pushed) | touched pkgs ok; lint 0 issues |
-| `session/lab-v52-1122` head f4e2ac276 (pushed) = origin/session/live-panel-ball + the 21 code commits of the stack (docs commits left out: v51 branch predates docs/resume/) | history, leagueservice, commissioner/..., nativecheck, rookiedraft, cmd/twr-server, serverhttp ok; lint 0 issues |
-| Full draft speed, 2 cores (Beelink GOMAXPROCS=2) | 42 rounds x 32 = 1,344 picks in 3 min 6 s; late burst of 31 computer picks ~10 s |
-| Lab data (CT 260 reference.db) | model_runs 0, model_scores 0 -> load via import-model-scores; weekly stats are nflverse files via fetch_log (not checked per season); MFL injuries feed fetching every 4 h (ok) |
-| PR | none yet; main is now past #465 (rebase before the merge ask) |
+| Argon BLOCKERs 1-5 + SHOULD 7/9/10 | fixed, each with a Tom planted break caught. SHOULD 6 (draft speed) measured ok; 8 moot (handout reverted). Argon now RETIRED (Christopher 7:50 PM: no more Argon runs) |
+| `session/rehearsal-auto` head 4418163e5 (pushed) | + should9 4708d5bfa, should10 64bff17ea + a31bd2db0 (seat fold once per read), T705 0a082ae7f + bf893112a |
+| `session/lab-v52-1122` head ce7417190 (pushed) = v52 | live-panel-ball + stack + above + T685 8998e185a/ba9d770b5 (browser-cookie change stream) + dynasty rank screen ce7417190 |
+| `session/t688-replay-1122` 2461ed596 (pushed) | cmd/twr-check report-card comparator (read mode only); untested on real Lab |
+| Full draft speed, 2 cores | 1,344 picks in 3 min 6 s |
+| Lab data (CT 260 reference.db) | model_scores 0 until import-model-scores; disk 5.8 GB free |
+| PR | none yet; main past #465 |
+| Frontend installs | main checkout `frontend/node_modules` lacks vitest; all worktrees symlink `.worktrees/t705/frontend/node_modules` — keep t705 worktree until the night ends |
 
 ## 6. Artifacts
 - Stack `session/rehearsal-auto` (base 513b7058a): twin/twin32/midseason proof tests; auto-pick (starters first) + fixes 106a71ae2
@@ -86,21 +95,18 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
    a benched player starts only to meet a minimum nobody playing can fill (O-Line card on bye).
 
 ## 9. Ledger state
-All work above is committed on branches; nothing uncommitted. Main has #462 (docs/reset) and #463 (environments).
+All work committed and pushed on branches (rehearsal-auto, lab-v52-1122, t685-1122, t705-1122, t705-screen-1122, t688-replay-1122,
+should9-1122, should10-1122). Nothing uncommitted.
 
 ## 10. Next actions, in order (Christopher 11-22: push through the night)
-1. After SNF final (~10:30 PM CT): Lab v50 then v51 per `docs/RESUME-gameday-1122.md` on `session/pwa-sw-shell` (COMPACT POINT 3):
-   `REF=origin/session/pwa-sw-shell ~/fleet/bin/twr-lab-release-ref.sh 50 ~/fleet/runs/labrel-v49-1121/release-v49/metadata/targets.json <rundir>`,
-   then 51 from `origin/session/live-panel-ball`; check phones self-update.
-2. Lab v52 from `origin/session/lab-v52-1122` (same script, targets from the v51 run).
-3. On the Lab CT (ssh root@192.168.1.182 -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes, then `pct` into 260): copy model-run-10.json in,
-   stop server, `twr-server import-model-scores -db /var/lib/twr/server.db -file model-run-10.json`, start.
-4. Create TEST leagues native.rehtest-default and native.rehtest-twin with `setup/setup-root.sh` + `setup-commish.sh`; seat Christopher's
-   account on franchise.01 each (join-link); short draft clock for the test; run both startup drafts; screenshot draft room + league switcher
-   on Claude-OS; note timings. Fix anything UNPROVEN that fails (runbook lists them).
-5. Delete the test leagues (`twr-server delete-league`), tracker card Rehearsal A -> needs_you "ready for real drafts Dec 8".
-6. Then: T694 redraft S pieces only after Claudebox confirms one-season; T705 native power-rank input;
-   Argon SHOULDs 9/10; laptop Season server setup (not before Dec 13).
+1. ~10:35 PM CT (SNF final): Lab v50: `REF=origin/session/pwa-sw-shell ~/fleet/bin/twr-lab-release-ref.sh 50 ~/fleet/runs/labrel-v49-1121/release-v49/metadata/targets.json ~/fleet/runs/labrel-v50-1122`;
+   check both phones get the new app shell (iPhone USB, S8 adb). Steps: `docs/RESUME-gameday-1122.md` on session/pwa-sw-shell.
+2. v51 from `origin/session/live-panel-ball` (prev = v50 run's release-v50/metadata/targets.json); phones must self-update.
+3. v52 from `origin/session/lab-v52-1122` (prev = v51 targets). Check on phones: plays land in 1-2 s (T685); Dynasty column on race screen (narrow-width truncation?).
+4. Lab CT: copy `~/fleet/runs/twr-lab-model-run-1122/model-run-10.json` in, stop server, `twr-server import-model-scores -db /var/lib/twr/server.db -file model-run-10.json`, start.
+5. Test leagues per `~/fleet/runs/twr-rehearsal-leagues-runbook-1122/RUNBOOK.md` + setup/: create native.rehtest-default + native.rehtest-twin (`twr-server create-league`), seat Christopher franchise.01 (join-link), short draft clock, run both drafts, screenshots draft room + league switcher on Claude-OS; try `twr-check` with a read token (can it read all 32 lineups? refusal code?). Delete test leagues; Rehearsal A card -> needs_you "ready for real drafts Dec 8".
+6. Claudebox overnight brief jobs 1-6 (see section 4), subagents Sonnet medium / Haiku high; morning report by 7 AM.
+7. Later: T694 after Claudebox confirms one-season; laptop Season server (not before Dec 13).
 
 ## 11. Needs Christopher
 - Merge OK for the v51 stack (pwa-sw-shell + t677-t679 + live-panel-ball) after tonight's Lab check.
