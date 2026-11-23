@@ -172,6 +172,15 @@ func epochThresholds(records []Record) (all, public []time.Time, ok bool) {
 	return all, public, true
 }
 
+// RecordsViewKey names the identity map and closed books a held ledger is read through, so a cache of a
+// reading folded from these records is never served for records resolved another way.
+func RecordsViewKey(records []Record) string {
+	if len(records) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s\x00%p", records[0].principals.Key(), records[0].books)
+}
+
 // ReadingViewKey names what a reading made under ctx may see, so two identical readings share one
 // computation only when their viewers would be shown the same thing. Shareable is false for a hosted
 // request carrying credential admission or a token audit: those readings always run on their own.

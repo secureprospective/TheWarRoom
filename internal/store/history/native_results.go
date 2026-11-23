@@ -150,22 +150,30 @@ func (s *Store) NativeResults(ctx context.Context, league string, season, week i
 	starters := league + "|" + mark + "|" + src.weekKey(season, week) + fmt.Sprintf("|%d|%d", season, week)
 	return shareReading(ctx, &s.flights, "NativeResults", args,
 		func(ctx context.Context) (commissioner.NativeResults, error) {
-			return s.readNativeResults(ctx, league, season, week, src, starters)
+			return s.readNativeResults(ctx, league, season, week, src, starters, mark)
 		})
 }
 
-func (s *Store) readNativeResults(ctx context.Context, league string, season, week int, src *nativeSources, startersKey string) (commissioner.NativeResults, error) {
+func (s *Store) readNativeResults(ctx context.Context, league string, season, week int, src *nativeSources,
+	startersKey, mark string) (commissioner.NativeResults, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeResults{}, err
 	}
-	out, err := commissioner.NativeResultsReading(ctx, league, records, src, season, week, src.now)
-	if err != nil {
-		return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
+	read := func() (commissioner.NativeResults, error) {
+		out, err := commissioner.NativeResultsReading(ctx, league, records, src, season, week, src.now)
+		if err != nil {
+			return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
+		}
+		s.recordedStarters.apply(ctx, startersKey, s.now(), &out, func() {
+			commissioner.RecordedStarters(ctx, records, src, &out)
+		})
+		return out, nil
 	}
-	s.recordedStarters.apply(ctx, startersKey, s.now(), &out, func() {
-		commissioner.RecordedStarters(ctx, records, src, &out)
-	})
+	out, err := sharedReading(ctx, s, &s.results, src, records, mark, season, week, read)
+	if err != nil {
+		return commissioner.NativeResults{}, err
+	}
 	out.Evidence = src.scoreEvidence(season, week)
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
@@ -181,18 +189,26 @@ func (s *Store) NativeStandings(ctx context.Context, league string, season int) 
 	args := src.liveKey() + "|" + mark + "|" + fmt.Sprintf("%s|%d", league, season)
 	return shareReading(ctx, &s.flights, "NativeStandings", args,
 		func(ctx context.Context) (commissioner.NativeStandings, error) {
-			return s.readNativeStandings(ctx, league, season, src)
+			return s.readNativeStandings(ctx, league, season, src, mark)
 		})
 }
 
-func (s *Store) readNativeStandings(ctx context.Context, league string, season int, src *nativeSources) (commissioner.NativeStandings, error) {
+func (s *Store) readNativeStandings(ctx context.Context, league string, season int, src *nativeSources,
+	mark string) (commissioner.NativeStandings, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeStandings{}, err
 	}
-	out, err := commissioner.NativeStandingsReading(ctx, league, records, src, season, src.now)
+	read := func() (commissioner.NativeStandings, error) {
+		out, err := commissioner.NativeStandingsReading(ctx, league, records, src, season, src.now)
+		if err != nil {
+			return commissioner.NativeStandings{}, fmt.Errorf("read native standings: %w", err)
+		}
+		return out, nil
+	}
+	out, err := sharedReading(ctx, s, &s.standings, src, records, mark, season, 0, read)
 	if err != nil {
-		return commissioner.NativeStandings{}, fmt.Errorf("read native standings: %w", err)
+		return commissioner.NativeStandings{}, err
 	}
 	out.Evidence = src.scoreEvidence(season, 0)
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
