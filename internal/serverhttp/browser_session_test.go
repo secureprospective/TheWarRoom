@@ -383,3 +383,74 @@ func TestBrowserSessionUsesADeviceSessionRecord(t *testing.T) {
 		t.Fatalf("session device = %q", device)
 	}
 }
+
+func browserStream(t *testing.T, f *hostedFixture, cookie string, mutate func(*http.Request)) *http.Response {
+	t.Helper()
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, f.server.URL+serverhttp.InvalidationPath, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Host = "league.example.test"
+	request.Header.Set("X-TWR-League", "native.hosted")
+	request.Header.Set("X-TWR-Invalidation", "2")
+	if cookie != "" {
+		request.AddCookie(&http.Cookie{Name: "__Host-twr_session", Value: cookie, Path: "/",
+			Secure: true, HttpOnly: true, SameSite: http.SameSiteStrictMode})
+	}
+	if mutate != nil {
+		mutate(request)
+	}
+	response, err := f.server.Client().Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = response.Body.Close() })
+	return response
+}
+
+func TestBrowserCookieOpensChangeStream(t *testing.T) {
+	f := newHostedFixture(t)
+	_, cookie := appLogin(t, f, "commissioner", "private-password", "")
+	response := browserStream(t, f, cookie.Value, nil) //nolint:bodyclose // closed by t.Cleanup
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("cookie stream status=%d, want 200", response.StatusCode)
+	}
+	events := streamEvents(response)
+	select {
+	case <-events: // the first event is the open-time resync
+	case <-time.After(2 * time.Second):
+		t.Fatal("no opening event")
+	}
+	appendStreamNote(t, f, "league")
+	select {
+	case event := <-events:
+		if !strings.HasPrefix(event, "event: invalidate\n") {
+			t.Fatalf("unexpected event %q", event)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("browser stream missed a league write")
+	}
+	for name, mutate := range map[string]func(*http.Request){
+		"cross-site":    func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "cross-site") },
+		"other host":    func(r *http.Request) { r.Host = "elsewhere.example.test" },
+		"bearer+cookie": func(r *http.Request) { r.Header.Set("Authorization", "Bearer "+cookie.Value) },
+		"with origin":   func(r *http.Request) { r.Header.Set("Origin", browserOrigin) },
+	} {
+		if got := browserStreamStatus(t, f, cookie.Value, mutate); got < 400 {
+			t.Errorf("%s: status=%d, want refusal", name, got)
+		}
+	}
+	if got := browserStreamStatus(t, f, "not-a-session", nil); got != http.StatusUnauthorized {
+		t.Errorf("bad cookie status=%d, want 401", got)
+	}
+	if got := browserStreamStatus(t, f, "", nil); got != http.StatusUnauthorized {
+		t.Errorf("no credentials status=%d, want 401", got)
+	}
+}
+
+func browserStreamStatus(t *testing.T, f *hostedFixture, cookie string, mutate func(*http.Request)) int {
+	t.Helper()
+	response := browserStream(t, f, cookie, mutate)
+	defer response.Body.Close()
+	return response.StatusCode
+}
