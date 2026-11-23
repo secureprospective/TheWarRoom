@@ -16,8 +16,11 @@ One line per check: GREEN, AMBER, RED or UNKNOWN. Exit 0 = nothing red, 1 = some
 
 ## Read-only token
 A commissioner makes it in The War Room: AI helpers, Connect a helper, choose "look and suggest"
-(read mode only, no change rights). It needs results.read, standings.read, nfl.games.read and
-lineup.read. Save the token line to a file (`chmod 600`) and pass it with `-token-file`.
+(read mode only, no change rights). It needs native.directory.read (every league read checks the
+league's directory first; without it each read is refused with 403), results.read, standings.read,
+nfl.games.read and lineup.read. A token is for one league, so each league needs its own. Save the
+helper line (`twr1.…`) or the bare token to a file (`chmod 600`) and pass it with `-token-file`.
+Read-only tokens last 30 days.
 
 ## Hermes cron (not installed; Tuesday 9:00 and 11:00 AM Central)
     CRON_TZ=America/Chicago

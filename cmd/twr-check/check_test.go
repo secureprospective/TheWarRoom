@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -85,7 +86,7 @@ func (l *league) serve(t *testing.T) (*httptest.Server, string) {
 			http.Error(w, "bad", http.StatusBadRequest)
 			return
 		}
-		if r.Header.Get("Authorization") != "Bearer tok" {
+		if r.Header.Get("Authorization") != "Bearer "+testBearer() {
 			http.Error(w, "no", http.StatusUnauthorized)
 			return
 		}
@@ -120,7 +121,7 @@ func (l *league) serve(t *testing.T) (*httptest.Server, string) {
 	}))
 	t.Cleanup(srv.Close)
 	file := filepath.Join(t.TempDir(), "token")
-	if err := os.WriteFile(file, []byte("tok\n"), 0o600); err != nil {
+	if err := os.WriteFile(file, []byte(testBearer()+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	return srv, file
@@ -251,3 +252,23 @@ func TestBadTokenExitsTwo(t *testing.T) {
 		t.Fatalf("exit %d: %s", code, errs.String())
 	}
 }
+
+// The War Room hands a commissioner a helper line (twr1.<id>.<bearer>); twr-check takes that line as
+// well as the bare token, so an operator can save what the app shows.
+func TestHelperLineTokenIsAccepted(t *testing.T) {
+	l := goodLeague()
+	srv, _ := l.serve(t)
+	roots := x509.NewCertPool()
+	roots.AddCert(srv.Certificate())
+	file := filepath.Join(t.TempDir(), "token")
+	_ = os.WriteFile(file, []byte("twr1."+testTokenID()+"."+testBearer()+"\n"), 0o600)
+	var out, errs bytes.Buffer
+	code := run([]string{"-server", srv.URL, "-token-file", file, "-league", "native.test", "-season", "2026", "-week", "2"}, &out, &errs, roots)
+	if code != 0 {
+		t.Fatalf("exit %d: %s", code, errs.String())
+	}
+}
+
+// Real-shaped token parts (32 bytes, 43 base64url characters), like the ones the app issues.
+func testBearer() string  { return base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{'b'}, 32)) }
+func testTokenID() string { return base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{'i'}, 32)) }

@@ -11,8 +11,10 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - [x] Gaps posted on the tracker before building (inventory `~/fleet/runs/twr-rehearsal-a-1122/`).
 - [x] Auto-pick and auto-lineup built, each checked with a planted break. O-Line handout REMOVED (bfb91c18d): the auction close already hands leftover cards to every team without one.
 - [x] Argon review addressed (5 BLOCKERs verified + fixed, each with a planted break: 106a71ae2 server facts, 563b51d11 clock advance, ebed15dcc lineup lock/wave/per-team, bfb91c18d handout revert). SHOULDs 6/7/9/10 open, see 13.
-- [ ] Lab data check: `model_runs`/`model_scores` rows and weekly stats exist for the rehearsal leagues.
-- [ ] Both leagues created on the Lab, one TEST draft each, clean; card to needs_you "ready for real drafts".
+- [x] Lab data check: model scores imported (run 1, 2,277); test drafts drew from them (11-23).
+- [x] Both leagues created on the Lab, one TEST draft each, clean (11-23, Tom Test + Tom Test Twin, v57); card "ready for real drafts".
+- [x] S8 + iPhone seated via join links and signed in (11-23).
+- [ ] One join link for the whole league (ruled 11-23 ~1 PM), built + on the Lab.
 
 ## 3. Agents + routing
 - **11-23 7:35 AM (LATEST, overrides all below): own Haiku subagents only (Agent tool, model haiku). NO Claudebox Haiku /
@@ -33,22 +35,28 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - **Base every build on the branch the Lab runs** (lab-v5x / rehearsal-auto), not main. Main is 37+ commits behind.
   Memory: `base-briefs-on-live-stack.md`.
 
-## 4. In flight (11-23 ~9:00 AM CT) — Christopher: "go ahead, keep driving"
-- **Nothing running in the background.** No agents, no pushes, no watchers.
-- **PR #470** `session/no-seat-quiet-1123` (worktree `.worktrees/no-seat-1123`, head 3c27c45cc): no-seat 403 on 'enter' →
-  plain message (no red box) + this resume's 11-23 rulings. Pushed; CI not watched yet; WAITS for Christopher's merge OK.
-  After merge: remove the worktree.
-- **Report card job on Hermes** (installed 11-23): `~/fleet/twr-reportcard/{run.sh,twr-check,server.url}`, user timer
-  `twr-reportcard.timer` Tue 9 AM CT (first fire Tue 11-24: exits quietly, before season). Missing: `~/fleet/twr-reportcard/token`
-  (read-only connection token, chmod 600). Leagues native.rehtest-default/-twin; target lab. Test env vars REPORTCARD_DATE /
-  REPORTCARD_PLAN. Build copy + KEEP.md: `~/scratch/reportcard-1123/`.
-- Phones: S8 on wifi adb + Chrome inspector works (`~/fleet/bin/phone-chrome.py s8 eval|shot|goto`); iPhone inspector works on
-  a real page. Keep the adb server (pid in tidy-check) running for the phones.
-- Scratch `~/scratch/merge-1123/` (KEEP.md): PR bodies, s8-v54.png / s8-v55.png evidence.
+## 4. In flight (11-23 ~1 PM CT) — Christopher: "keep driving after compaction"
+- **Nothing running in the background.** No agents, watchers or releases. adb server stays up for the phones.
+- **Lab kit (secrets, never print):** `~/scratch/commish-1123/` (KEEP.md): `lab-commish.json` (tomlab account), `totp.seed`,
+  `phone-s8.json` / `phone-iphone.json` (s8lab / iphonelab), `codes-*.txt` (recovery codes), `helper-native.tomtest-*.txt` (twr1
+  lines, expire 11-24 ~17:27 UTC), `cfg/` + `cfg-twin/` (twr connections), `bin/twr`, `server.url`, rendered setup in
+  `rehearsal-tomtest-*`. Scripts (copies without secrets in `~/fleet/runs/twr-testdrafts-1123/`):
+  - `labcommish.py enroll|helper <league>|confirm <twrc1-file>|revoke <league>` (User-Agent `twr-lab-script/1`; default
+    Python UA gets Cloudflare 1010).
+  - `apply.sh <change.json>...` preview -> confirm via labcommish -> execute (set XDG_CONFIG_HOME=cfg or cfg-twin).
+  - `cycle.sh` deletes + recreates both Tom Test leagues, helpers, setup, opens both drafts (10 s clock).
+  - `cdp_join.py` (S8: new Chrome tab via devtools `adb forward tcp:9290 localabstract:chrome_devtools_remote`),
+    `cdp_app.py` (sign in through the installed app window), `seat_phone.py` (iPhone via phone-chrome.py).
+- Report card job on Hermes still has no token (`~/fleet/twr-reportcard/token`); it now can be made from tomlab.
 
-## 5. Gates / status (11-23 ~9 AM)
+## 5. Gates / status (11-23 ~1 PM)
 | What | State |
 |---|---|
+| **main = 1d3a368b3** (#471) | create-league -commissioner + autopick batches of 32 per worker pass. #470 merged d2bfb7ab. CI all green |
+| **Lab = v57** 341ad1189 (= main code) | 8/8 OK after restart (sign-in backup pause ~1 min). Test leagues native.tomtest-default ("Tom Test") + native.tomtest-twin, commissioner tomlab (acct 13d4c223) at franchise.01 |
+| Test drafts on v57 | both 43-round startup drafts opened 17:31 UTC, ran together without stalls; twin AFC+NFC closed 11:49 AM CT, Tom Test closed ~12:05 PM CT |
+| Phones | S8 = s8lab, Franchise 2 in Tom Test; iPhone = iphonelab, Franchise 3. Both signed in, Today shows week 14 (screens in ~/fleet/runs/twr-testdrafts-1123/) |
+| Tracker on Hermes | lanes/order/flags refreshed 11-23; collector timer fixed (OnStartupSec, tracker repo 5718ba3) |
 | **main = 9fcc4a771** (#469) | after #468 2806fb444. Season box, report card checker, twr read, no-team sign-in, line-budget draft. CI all green |
 | **Lab = v55** `session/no-seat-quiet-1123` 259e3a0d | main + no-seat polish. 8/8 OK at 8:49 AM. S8 shows only the plain no-team message + sign-in form (s8-v55.png) |
 | Lab v54 = main 9fcc4a77 | 8/8 OK; S8 showed the message but with the raw red error above (fixed in v55) |
@@ -120,8 +128,22 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - VM 503 = the twr-lab VM (192.168.1.182) holding CT 260. After the 11-23 Proxmox reboot it came back fine: v53, 8/8 OK.
 - line-budget `--write` once needed two runs (baseline file grew by a line when a new area appeared): fixed to loop until stable.
 - Sign-in backup "paused" right after a Lab restart is normal for ~15 min (first backup). Not a fault.
+- REFUTED 11-23: "a Lab sign-in reset makes Tom commissioner". Leagues name their commissioner by account ID; an empty
+  accounts file makes nobody commissioner. The fix was create-league -commissioner (#471).
+- REFUTED 11-23: "draft.onExpire=autopick". The engine refuses it ("not built yet; choose skip"); empty seats auto-pick
+  regardless; a seated owner's expired clock is skipped (replay, no ledger record). Keep onExpire = skip.
+- 11-23 FOUND+FIXED: one league's long autopick run held the single due worker (Tom Test froze 7 min at round 13 while the
+  twin's all-empty NFC side drafted). Fixed by batches of 32 per pass (#471). Expected 409 "league version ... reread" on a
+  draft.timer change while picks land: not a bug.
+- 11-23: S8 page loads time out when the phone screen is off (dozing): wake it (`input keyevent KEYCODE_WAKEUP`, swipe,
+  `svc power stayon true`, turn off after). phone-chrome `goto` on S8 attaches to installed-app windows; use a new tab.
+- 11-23: join links are SINGLE USE today (claim consumes the code); `join-link -rotate` needs the server stopped and
+  commissioner creds on stdin. iPhone: a goto that only changes the #hash does not reload: call location.reload().
 
 ## 8. Decisions (Christopher, 11-22)
+- 11-23 ~11 AM: Lab guards loosened: the Lab no longer needs commissioner/password guards; the Season server (laptop) keeps every guard. Tom may own Lab commissioner accounts. (memory `lab-guards-loosened.md`)
+- 11-23 ~1 PM: ONE join link for the whole league (not one per owner). Any owner can use it until seats run out; commissioner can still revoke/replace it.
+- 11-23: merged #470 (OK "merge it") and #471 (OK "merge 471 when CI is green").
 0. TIMELINE MOVED (6:20 PM): real drafts Tue Dec 8. Nov 29 is NFL week 12 (starts Wed 11-25); a week's lineups use the roster at its first kickoff, so Thu/Fri drafts would score nothing. First scoring week = NFL week 14 (Thu Dec 10 7:15 PM CT); first rehearsal Sunday Dec 13; first report card Tue Dec 15; schedule 18 weeks with 1-13 empty (test 53a8c2b4b). Claudebox told: ~/Downloads/TOM-ASKS-CLAUDEBOX-rehearsal-timeline.md.
 6. Routing: Haiku high + Sonnet medium subagents on Tom's account; Gemini only for second opinions when clarity is thin or a bug is hard.
 1. Computer draft picks: TWR dynasty value, FILL STARTERS FIRST, then best available.
@@ -133,32 +155,28 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
    locked starters kept, a human lineup never touched; dynasty order ignores each league's own scoring this once;
    a benched player starts only to meet a minimum nobody playing can fill (O-Line card on bye).
 
-## 9. Ledger state (11-23 ~9 AM)
-main 9fcc4a771 holds everything from "merge all" (#468, #469; #467 closed as included). Remote `session/autopick-1122` deleted
-(content already on main). Only open branch of this workstream: `session/no-seat-quiet-1123` (PR #470). Nothing uncommitted.
+## 9. Ledger state (11-23 ~1 PM)
+main 1d3a368b3 (#471). Branches of this workstream merged and deleted locally; this resume update is on
+`session/resume-1123b` (worktree `.worktrees/cl-commish-1123`). Tracker repo on Hermes 5718ba3 (timer). Task list 14aa12a.
 
-## 10. Next actions, in order (11-23 ~9 AM) — all but 1 wait on Christopher's commissioner sign-in
-1. Watch CI on #470 (`gh pr checks 470`); merge only with Christopher's OK (`gh pr merge 470 --squash`), then remove
-   `.worktrees/no-seat-1123` and Lab-release main as v56 if the code differs from v55.
-2. With Christopher signed in as commissioner (account 564f67ef, franchise.01 in both test leagues): make join links for the
-   S8 account 3da8c020 and the iPhone (never print links), seat both phones, then check v52/v53 screens at phone width.
-3. When he pastes the twr1 helper line: `setup-commish.sh` per league (`~/fleet/runs/twr-rehearsal-leagues-runbook-1122/setup/`,
-   twin needs `twin`); short `draft.clock`, `draft.onExpire = autopick`, open startup draft, watch auto-picks fill 31 teams
-   (server.log "draft autopick"), screenshots, then delete/reset the test leagues. Rehearsal A card -> "ready for real drafts".
-4. Put a read-only token at Hermes `~/fleet/twr-reportcard/token` (chmod 600); dry-run with `REPORTCARD_DATE=2026-12-15
-   REPORTCARD_PLAN=/tmp/copy.json ./run.sh`.
-5. T715 Lab test confirmer: NO server change. Lab-only commissioner account whose authenticator secret lives only in the Lab test
-   script; script signs in, steps up, POSTs /v1/native/confirm (serverhttp/confirmation.go:76-98). Needs the account created.
-6. Later: T694; laptop Season server (not before Dec 13); line-budget into CI (T709); season box real binary + fake clock (T711).
+## 10. Next actions, in order (11-23 ~1 PM)
+1. Build ONE join link per league (ruling 11-23): the link stays valid for every open seat until the commissioner revokes or
+   replaces it; each claim still takes one open franchise; a full league says so plainly. Find the single-use check
+   (`joinLinkClaimed`, internal/leagueservice/join_seats.go ~111; accounts/join.go claim ~262-300), test first (two claims on
+   one link both succeed; revoke still kills it), PR, Lab release, prove with S8+iPhone or the API. Merge needs his OK.
+2. Small phone wording fixes (same or separate PR): join done page "The Franchise 2 are yours" (use "Franchise 2 is yours" /
+   team name), "Open The War Room app on your computer" -> phone-neutral; sign-in screen double "Sign in" + "HttpOnly cookie"
+   jargon; "LIVE" badge with 0 playing.
+3. Report-card token: issue a read-only token from tomlab (labcommish-style, modes ["read"]) for the Tom Test leagues, point
+   `~/fleet/twr-reportcard/run.sh` LEAGUES at native.tomtest-*, put token at Hermes `~/fleet/twr-reportcard/token` (600),
+   dry-run with REPORTCARD_DATE=2026-12-15 on a plan.json copy.
+4. File the Lab kit properly (T715 home: fleet runs dir or repo scripts/lab/), keep secrets in scratch.
+5. Stage 3: 32-team load test (scripts/load/gameday.py on branch session/stage3-load).
+6. Later: Season server setup (Saturday, his OK); T709 line-budget into CI; T711; T694.
 
 ## 11. Needs Christopher
-- ONE commissioner sign-in on the Lab unlocks: phone seats, the helper line for test drafts, the report-card token, T715.
-- Merge OK for PR #470 (`gh pr merge 470 --squash`).
-- RULED 11-23 ~8:15 AM (Christopher): (a) the MFL solo-owner tools (mflref, transactions, offers, what-if) STAY for now;
-  the desktop is not retired before the rehearsal season and these tools are decided later (no delete).
-  (b) YES to a test-only "confirmer" that types the G2/G3 confirmation code, on Lab test leagues ONLY; never the
-  Season server or a real league.
-- "merge all" (11-23) is used up: #468 + #469 merged. New PRs need a new OK.
+- Nothing blocking. Merges to main and Season-server changes still need his OK each time.
+- Earlier rulings: 11-23 ~8:15 AM (a) MFL solo-owner tools STAY for now; (b) YES Lab-only test confirmer (done, T715 checked).
 
 ## 12. Environment notes
 - Guard hook: any command holding both `push` and a `-f`/`--force` (even `rm -f`, `worktree remove --force`) is blocked as a
@@ -166,15 +184,14 @@ main 9fcc4a771 holds everything from "merge all" (#468, #469; #467 closed as inc
 - `golangci-lint cache clean` after deleting a worktree (stale cache made the pre-commit lint fail).
 - Lab CT 260 has no sqlite3/python3: `pct pull 260 /var/lib/twr/<db> <tmp>` on VM 503 and query the copy; delete copies after.
 - Hermes tracker `~/fleet/tracker/data/plan.json`: find cards by title, back up first (last backup suffix
-  `bak-1122aq`, next `ar`), log times from Chicago zoneinfo (Hermes is UTC), no apostrophes in the heredoc.
+  `bak-1123d`, next `1123e`), log times from Chicago zoneinfo (Hermes is UTC), no apostrophes in the heredoc.
 - Claudebox: `ssh claudebox`; prompt right after `claude -p`, add `< /dev/null`.
+- Hook blocks commit messages containing "reboot" (power-state guard): reword.
+- Hermes git commits: run ssh from `cd /tmp` (repo hook refuses when cwd is the main checkout).
 - New worktrees need `frontend/dist/.placeholder` (and a `frontend/node_modules` symlink for `make lint`).
 
 ## 13. Honest status
-11-23: the merged code runs on the Lab (v54/v55) and the S8 screen is proven; test drafts, seats and the report card against
-real league data are still unproven because they wait on the commissioner sign-in. Older note:
-Code is unit-tested and combined; NOTHING of the rehearsal stack has run on a real server yet. Unproven until tonight's Lab run:
-create-league on the real server, import-model-scores on the real reference.db, refresh-nfl-schedule with empty weeks 1-13,
-helper-token rights for pools/draft.clock/draft.startup.open, draft.timer side args, O-Line close on 32 teams, draft speed on the
-Lab CPU, the PWA league switcher. MFL injuries lag on Sunday inactives; draft room showing 600+ instant picks (T685).
-ETA "ready for real drafts": Thu Dec 3 (real drafts Tue Dec 8).
+11-23 ~1 PM: Rehearsal A is proven on the Lab: two leagues, full startup drafts, autopick, scripted commissioner confirms,
+two phones seated and signed in. Not yet proven: one-link-per-league (not built), the report card against real data (no
+token yet), anything on the Season server (not set up), lineups/scoring for week 14 (starts Thu Dec 10). Real drafts Tue Dec 8.
+
