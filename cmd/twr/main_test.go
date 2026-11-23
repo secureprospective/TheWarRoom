@@ -45,17 +45,30 @@ type dispatched struct {
 	Command *commissioner.RawCommand
 }
 
+// readCall is one read-only command twr sent, with the scope the league received.
+type readCall struct {
+	Command string
+	Scope   serverhttp.RawWorkflowScope
+}
+
+// fakeReadData is what the league answers to a read; the rows prove the server's data reaches the person.
+const fakeReadData = `{"command":"standings.read","rows":[{"franchise":"franchise.01","wins":3}]}`
+
 // fakeLeague answers the two paths twr uses and records what each dispatch asked for.
 type fakeLeague struct {
-	mu         sync.Mutex
-	revoked    bool
-	dispatched []dispatched
-	confirms   []string
+	mu          sync.Mutex
+	revoked     bool
+	refuseReads bool
+	requests    int
+	reads       []readCall
+	dispatched  []dispatched
+	confirms    []string
 }
 
 func (f *fakeLeague) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	f.requests++
 	if f.revoked || r.Header.Get("Authorization") != "Bearer "+testToken {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -74,15 +87,27 @@ func (f *fakeLeague) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		if request.Workflow.Mode != "read" {
-			var command commissioner.RawCommand
-			if err := json.Unmarshal(request.Workflow.Arguments, &command); err != nil {
+		if request.Workflow.Mode == "read" {
+			var scope serverhttp.RawWorkflowScope
+			if err := json.Unmarshal(request.Workflow.Arguments, &scope); err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			f.dispatched = append(f.dispatched, dispatched{Mode: request.Workflow.Mode, Command: &command})
-			f.confirms = append(f.confirms, r.Header.Get("X-TWR-Human-Confirmation"))
+			f.reads = append(f.reads, readCall{Command: request.Workflow.Command, Scope: scope})
+			if f.refuseReads {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+			_, _ = w.Write([]byte(`{"label":"Hosted","writable":false,"football":"fb","appRelease":1,"data":` + fakeReadData + `}`))
+			return
 		}
+		var command commissioner.RawCommand
+		if err := json.Unmarshal(request.Workflow.Arguments, &command); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		f.dispatched = append(f.dispatched, dispatched{Mode: request.Workflow.Mode, Command: &command})
+		f.confirms = append(f.confirms, r.Header.Get("X-TWR-Human-Confirmation"))
 		_, _ = w.Write([]byte(`{"label":"Hosted","writable":true,"football":"fb","appRelease":1,"data":{"mode":"` + request.Workflow.Mode + `"}}`))
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -167,7 +192,7 @@ func TestTwrMCPOffersLedgerPreviewAndExecute(t *testing.T) {
 	}
 	defer func() { _ = session.Close() }()
 	tools, err := session.ListTools(t.Context(), nil)
-	if err != nil || len(tools.Tools) != 3 {
+	if err != nil || len(tools.Tools) != 4 {
 		t.Fatalf("tools = %+v (%v)", tools, err)
 	}
 	result, err := session.CallTool(t.Context(), &mcp.CallToolParams{Name: "preview_change",

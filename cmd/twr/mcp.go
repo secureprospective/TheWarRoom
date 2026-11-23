@@ -7,6 +7,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +31,13 @@ func (in changeInput) raw() commissioner.RawCommand {
 
 type noInput struct{}
 
+// readInput is one read-only league command. Scope is free-form here so the tool does not demand a
+// league: twr fills in the saved league itself. read.go still decodes it strictly.
+type readInput struct {
+	Command string         `json:"command" jsonschema:"a read-only league command whose name ends in .read, such as standings.read"`
+	Scope   map[string]any `json:"scope,omitempty" jsonschema:"optional filters for the read, such as season, week or franchise"`
+}
+
 func (e env) mcpCommand() *cobra.Command {
 	return &cobra.Command{Use: "mcp", Short: "Serve the saved connection to an AI helper over MCP (stdio)", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -40,7 +48,7 @@ func (e env) mcpCommand() *cobra.Command {
 		}}
 }
 
-// mcpServer offers the same three things the CLI does. Every call reads the saved connection
+// mcpServer offers the same things the CLI does. Every call reads the saved connection
 // fresh, so twr disconnect or a revoked token stops the helper at once.
 func (e env) mcpServer() *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "twr", Version: "1"}, nil)
@@ -55,6 +63,18 @@ func (e env) mcpServer() *mcp.Server {
 				return failed(err), nil, nil
 			}
 			return replied(ledger)
+		})
+	mcp.AddTool(server, &mcp.Tool{Name: "league_read", Description: "Read one read-only league answer, such as standings.read. It never changes the league."},
+		func(ctx context.Context, _ *mcp.CallToolRequest, in readInput) (*mcp.CallToolResult, any, error) {
+			scope, err := scopeFrom(in.Scope)
+			if err != nil {
+				return failed(err), nil, nil
+			}
+			reply, err := e.read(ctx, in.Command, scope)
+			if err != nil {
+				return failed(err), nil, nil
+			}
+			return replied(reply)
 		})
 	for _, mode := range []string{"preview", "execute"} {
 		description := "Show what a league change would do, without recording it. Always preview first."
@@ -75,6 +95,18 @@ func (e env) mcpServer() *mcp.Server {
 			})
 	}
 	return server
+}
+
+// scopeFrom turns the tool's scope object into the same strict scope the CLI reads from a file.
+func scopeFrom(scope map[string]any) (serverhttp.RawWorkflowScope, error) {
+	if scope == nil {
+		return serverhttp.RawWorkflowScope{}, nil
+	}
+	data, err := json.Marshal(scope)
+	if err != nil {
+		return serverhttp.RawWorkflowScope{}, fmt.Errorf("encode the scope: %w", err)
+	}
+	return decodeScope(data)
 }
 
 func failed(err error) *mcp.CallToolResult {

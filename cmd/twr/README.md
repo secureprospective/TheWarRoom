@@ -24,8 +24,9 @@ never signs in, never makes tokens, and never confirms a change on its own.
 | `twr ledger` | prints the league's recorded changes |
 | `twr preview CHANGE.json` | shows what a change would do; records nothing |
 | `twr execute CHANGE.json [--confirmation CODE]` | records a change; G2/G3 need the commissioner's code |
+| `twr read COMMAND.read [SCOPE.json\|-]` | prints one read-only league answer as JSON (for example `twr read standings.read`); refuses any command whose name does not end in `.read` |
 | `twr disconnect` | forgets the saved connection on this computer |
-| `twr mcp` | serves `league_ledger`, `preview_change` and `execute_change` to an AI helper over MCP (stdio) |
+| `twr mcp` | serves `league_ledger`, `league_read`, `preview_change` and `execute_change` to an AI helper over MCP (stdio) |
 
 `CHANGE.json` is one league change (`command`, `args`, `reason`, …); `-` reads it
 from stdin. When `expected` is missing, `twr` reads the current revision first.
