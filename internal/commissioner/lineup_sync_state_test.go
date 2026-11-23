@@ -75,3 +75,32 @@ func TestMissedLineupIsNotFlaggedWhileTheSyncHasNotReachedTheWeek(t *testing.T) 
 		t.Fatalf("not flagged after the sync read week 8: %+v", after.Lineup)
 	}
 }
+
+// A lineup that came from an MFL sync or import stands for its week: the automatic lineup clock
+// must not overwrite it. While the lineup sync has not yet read the week, no automatic lineup
+// is written at all.
+func TestAutomaticLineupNeverOverwritesASyncedLineup(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name    string
+		records []Record
+		want    bool
+	}{
+		{"no lineup recorded", nil, true},
+		{"an MFL import lineup stands for the week", []Record{syncLineupRecord("a", "mfl-import.lineup.franchise.01.8", 8)}, false},
+		{"an MFL refresh lineup stands for the week", []Record{syncLineupRecord("a", "mfl-refresh.2026.franchise.01.8", 8)}, false},
+		{"a commissioner correction stands for the week", []Record{syncLineupRecord("a", "commish.lineup.correct.8", 8)}, false},
+		{"a lineup sync has not read the week yet", []Record{syncLineupRecord("a", "lineup.sync.3.franchise.02.7", 7)}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := IsAutomaticLineupFranchise(tc.records, "franchise.01", 2026, 8)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tc.want {
+				t.Fatalf("IsAutomaticLineupFranchise = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
