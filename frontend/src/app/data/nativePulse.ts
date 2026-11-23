@@ -399,7 +399,8 @@ export function parsePulseLineup(value: unknown, league: string, franchise: stri
 /** PulseOdds is the league's own win chance, power and playoff odds (odds.read). Each part carries the words
  *  that say why it is missing; a missing part is undefined, never zero. */
 export type PulseOddsRow = { franchise: string; name: string; rank: number; record: string;
-  power?: number; powerScore: number; dynastyPower?: number; dynastyScore?: number; expected: number; playoffOdds?: number };
+  power?: number; powerScore: number; dynastyPower?: number; dynastyScore?: number; expected: number;
+  playoffOdds?: number };
 export type PulseOddsGame = { week: number; home: string; away: string; homeName: string; awayName: string;
   homeWin: number };
 export type PulseOdds = { league: string; season: number; revision: number; status: string; words: string;
