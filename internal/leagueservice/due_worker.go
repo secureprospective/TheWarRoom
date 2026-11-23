@@ -175,6 +175,15 @@ func (w *DueWorker) step(ctx context.Context) (time.Time, error) {
 	return next, errors.Join(failures...)
 }
 
+// factsFor is the worker's player facts, or the league's pinned football evidence when it has none (the
+// hosted server holds facts only in each league store).
+func (w *DueWorker) factsFor(store *history.Store) nativecheck.Facts {
+	if facts := w.facts(); len(facts) > 0 {
+		return facts
+	}
+	return store.PinnedPlayerFacts()
+}
+
 func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time, error) {
 	store, err := w.leagues.League(ctx, league)
 	if err != nil {
@@ -182,7 +191,7 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	}
 	ctx = commissioner.WithCredentialAdmission(ctx, dueAdmission{worker: w, system: true})
 	at := w.clock.Now()
-	facts := w.facts()
+	facts := w.factsFor(store)
 	// Waivers clear before bids are evaluated; automatic draft picks run before finished drafts close.
 	for _, process := range []func(context.Context, string, nativecheck.Facts) error{
 		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids, store.ProcessDueOLines,
