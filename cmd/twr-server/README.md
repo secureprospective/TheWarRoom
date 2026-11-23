@@ -327,6 +327,21 @@ is still open, the refresh stops without writing anything and lists the open off
 name. `-dry-run` changes nothing and prints the same plain-English summary counts; running
 again against the same mirror is a zero-change no-op.
 
+### Load desktop model scores for computer draft picks (local console, service stopped)
+
+Computer draft picks rank by the newest model run's dynasty value, which only the desktop computes.
+Export it from the desktop history file (opened read-only), then import it on the server:
+
+```sh
+twr-server export-model-run -db ~/.config/TheWarRoom/history.db -out model-run.json   # -run N for an older run
+rc-service twr-server stop
+twr-server import-model-scores -db /var/lib/twr/server.db -file model-run.json
+rc-service twr-server start
+```
+
+Players are keyed by MFL id, the id the draft pool uses. A second import of the same run reports
+"already held" and changes nothing.
+
 ### Refresh missing published NFL kickoff dates (local console, service stopped)
 
 The hosted server reads schedule dates from its pinned football evidence; restart and
