@@ -185,8 +185,7 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	facts := w.facts()
 	// Waivers clear before bids are evaluated; automatic draft picks run before finished drafts close.
 	for _, process := range []func(context.Context, string, nativecheck.Facts) error{
-		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids,
-		store.ProcessDueOLines, store.ProcessDueOLineHandouts,
+		store.ProcessDueReserves, store.ProcessDueWaivers, store.ProcessDueBids, store.ProcessDueOLines,
 		func(ctx context.Context, league string, facts nativecheck.Facts) error {
 			return store.ProcessDueAutoPicks(ctx, league, at, facts, w.ranking)
 		},

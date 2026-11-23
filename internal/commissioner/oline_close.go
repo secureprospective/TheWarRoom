@@ -15,7 +15,6 @@ import (
 
 const OLineAuctionClose = "oline.auction.close"
 const OLineClockPrincipal = "native.oline.clock"
-const OLineHandoutPrincipal = "native.oline.handout"
 
 // OLineOutcome reserves a fixed unit and contract even while its franchise must make room.
 // Only the append transaction supplies it, never a caller.
