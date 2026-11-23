@@ -107,6 +107,24 @@ func (a *Agent) Dispatch(ctx context.Context, raw commissioner.RawCommand, mode,
 	return response.Data, err
 }
 
+// Read runs one read-only league command (mode "read"); it can never change the league. A refusal
+// (the token does not cover this read) satisfies IsRefused.
+func (a *Agent) Read(ctx context.Context, command string, scope serverhttp.RawWorkflowScope) (json.RawMessage, error) {
+	scope.League = a.league
+	args, err := json.Marshal(scope)
+	if err != nil {
+		return nil, fmt.Errorf("encode league read: %w", err)
+	}
+	response, err := a.postWorkflow(ctx, serverhttp.RawWorkflow{Command: command, Version: "1", Mode: "read", Arguments: args}, "")
+	return response.Data, err
+}
+
+// IsRefused reports whether the league refused a request, for example a token that does not cover a read.
+func IsRefused(err error) bool {
+	var r refusal
+	return errors.As(err, &r)
+}
+
 func (a *Agent) postWorkflow(ctx context.Context, request serverhttp.RawWorkflow, confirmation string) (serverhttp.WorkflowResponse, error) {
 	var response serverhttp.WorkflowResponse
 	body, err := a.post(ctx, serverhttp.WorkflowPath, serverhttp.RawNativeRequest{Protocol: 1, Workflow: &request}, confirmation)
