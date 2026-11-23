@@ -186,8 +186,9 @@ func (s *autoLineupState) fillGroupMinimums() {
 		if !ok || b.Min.State != leaguerules.IsKnown {
 			continue
 		}
+		match := func(c AutoLineupCandidate) bool { return sideOf(c.Position) == side }
 		for s.groupCount[side] < b.Min.Value {
-			if !s.pickNext(func(c AutoLineupCandidate) bool { return sideOf(c.Position) == side }) {
+			if !s.pickNext(match) && !s.pickReserve(match) {
 				break
 			}
 		}
