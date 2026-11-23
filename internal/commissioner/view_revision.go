@@ -7,6 +7,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/governance"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -53,13 +55,17 @@ func RecipientRevision(records []Record, principal string, at time.Time) int64 {
 	open := rulesErr == nil && modeErr == nil && mode == leaguerules.Open
 	roots := reversalRoots(records)
 	ids := []string{league, PrincipalFor(records, principal)}
+	who := governance.Principal(PrincipalFor(records, principal))
+	holds := func(franchise string) bool {
+		return err == nil && state.HoldsSeat(governance.FranchiseID(franchise), who)
+	}
 	for _, r := range records {
 		target := records[roots[r.Receipt.Entry]]
 		own := SamePrincipal(records, target.Principal, principal) || SamePrincipal(records, r.Principal, principal)
 		// Private contract decisions immediately change the public contract projection. Keep their opaque
 		// identities in every recipient's concurrency token without making the private ledger body visible.
 		publicContractEffect := target.Command.Command == ContractDecisionSet
-		if own || ledgerEntryVisible(r, target, records, principal, privileged) || publicContractEffect ||
+		if own || ledgerEntryVisibleTo(r, target, records, principal, privileged, holds) || publicContractEffect ||
 			(open && privateBidRecord(r, records)) {
 			ids = append(ids, r.Receipt.Entry)
 		}
