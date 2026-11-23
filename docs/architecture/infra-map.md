@@ -142,3 +142,29 @@ Christopher is warm to Litestream + DuckDB. Licences checked only from listings:
 Sources: github.com/benbjohnson/litestream · github.com/ffverse · github.com/ffverse/ffopportunity ·
 github.com/FantasyFootballAnalytics/ffanalytics · github.com/modelcontextprotocol/go-sdk ·
 github.com/opensandbox-group/OpenSandbox · mcpmarket.com/server/offshoot · pypi.org/project/nfl-mcp
+
+## 7. The AI harness: clock, model service, test bench (11-22; Haiku pass = LEADS, verify before adopting)
+Design (Claudebox): three parts, none of them "cron in the CLI".
+1. **Clock / job runner — inside twr-server.** Jobs fire on LEAGUE EVENTS from leagueclock (e.g. recap =
+   Monday-night final + stat corrections settled), not wall-clock time. Durable, run-once per
+   (league, job kind, event), retried. Ships with the server; Hermes stays for our own ops only.
+   Today: leagueclock action calendar + commissioner jobs exist; scattered tickers; NO general job runner.
+2. **Model service — its own container beside the league server** (11-08 rule). Called over local
+   HTTP (OpenAI-style). Outputs are drafts/suggestions through the command catalog; publish-automatically
+   vs commissioner-reviews is a league setting; league changes still need a person.
+3. **Test bench.** Per job, a golden set from our own leagues (Today order for sample owners, projections
+   vs real stat lines, plain-words -> command). Every model or update must pass before shipping; shadow-log
+   in production.
+| Part | Candidate combo | Licence (reported) | Caveat |
+|---|---|---|---|
+| Job runner | backlite (SQLite-only, retries, delayed jobs) + our own unique index (league, kind, event) | MIT | no cron; River's SQLite is preview only — skip |
+| Generative + embed + rerank | llama.cpp llama-server, router mode (`--models-dir`, `--rerank`); llama-swap only if several instances | MIT | flags from secondary summary; check `--help` |
+| Tiny classifiers / embedder / reranker in Go | hugot (pure-Go backend) | Apache-2.0 | tested amd64-linux only |
+| Table model (projections) | onnxruntime_go | MIT | needs cgo + pinned ORT lib |
+| Voice (recap) | sherpa-onnx (Go API; Kokoro/Piper) | Apache-2.0 | separate process |
+| All-in-one alternative | LocalAI (LLM, embed, rerank, TTS, STT, CPU) | MIT (brand reserved) | heavier |
+| Test bench | promptfoo (CI golden sets) | MIT | confirm local base-URL setting |
+| Model pinning | HF commit hash + sha256 lock file; KitOps/ORAS OCI artifacts; models mounted as a volume | Apache-2.0 | fits existing TUF/sigstore release trust |
+Sources: github.com/mikestefanello/backlite · github.com/riverqueue/river · github.com/ggml-org/llama.cpp/tree/master/tools/server ·
+github.com/mostlygeek/llama-swap · github.com/mudler/LocalAI · github.com/k2-fsa/sherpa-onnx · github.com/knights-analytics/hugot ·
+github.com/yalue/onnxruntime_go · github.com/promptfoo/promptfoo · github.com/kitops-ml/kitops · huggingface.co/docs/huggingface_hub/guides/download
