@@ -387,7 +387,13 @@ func (h Hosted) requestContext(ctx context.Context, raw RawNativeRequest, princi
 	if raw.Workflow != nil {
 		ctx = leagueservice.WithFootballDigest(ctx, raw.Workflow.Football)
 	}
-	return h.withRequestPin(withReplyPrincipal(ctx, principal), raw.leagueName())
+	ctx = h.withRequestPin(withReplyPrincipal(ctx, principal), raw.leagueName())
+	if raw.Pick != nil {
+		// A pick names no evidence the owner reviewed, so it is judged by the league's own pinned football,
+		// the same evidence its draft reading shows.
+		ctx = leagueservice.WithFootballDigest(ctx, h.pinFor(ctx, raw.leagueName()).Digest)
+	}
+	return ctx
 }
 
 // admitLeague is the request's league pin, refused when the server does not hold the league or when
@@ -489,12 +495,12 @@ func (r RawNativeRequest) leagueName() string {
 	return r.League
 }
 
-// workflowHost pins a workflow request to its league's football evidence. A league whose evidence is
-// missing is served without football: its readings say what they cannot show, and workflow refuses
-// its changes.
+// workflowHost pins a workflow or rookie-pick request to its league's football evidence. A league whose
+// evidence is missing is served without football: its readings say what they cannot show, and workflow
+// refuses its changes.
 func (h Hosted) workflowHost(ctx context.Context, host leagueservice.Host, raw RawNativeRequest) (leagueservice.Host, error) {
 	pin := h.pinFor(ctx, raw.leagueName())
-	if raw.Workflow != nil && pin.Digest != "" && !pin.Missing {
+	if (raw.Workflow != nil || raw.Pick != nil) && pin.Digest != "" && !pin.Missing {
 		pinned, err := leagueservice.WithPinnedFootball(host, pin.Football)
 		if err != nil {
 			return nil, fmt.Errorf("select workflow evidence: %w", err)
