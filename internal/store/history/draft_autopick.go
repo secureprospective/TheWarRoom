@@ -155,6 +155,15 @@ func authorizeAutoPickDraft(raw commissioner.RawCommand, principal string,
 // is on the clock, stopping when a seated franchise is on the clock or the draft is exhausted.
 func (s *Store) ProcessDueAutoPicks(ctx context.Context, league string, at time.Time,
 	facts nativecheck.Facts, ranking DraftRanking) error {
+	_, err := s.ProcessDueAutoPicksUpTo(ctx, league, at, facts, ranking, 0)
+	return err
+}
+
+// ProcessDueAutoPicksUpTo is ProcessDueAutoPicks that stops after limit picks (0: no limit) and says
+// whether more were due, so one league's long run of empty seats cannot hold up every other league's
+// due work: the worker takes a batch per league per pass and comes straight back.
+func (s *Store) ProcessDueAutoPicksUpTo(ctx context.Context, league string, at time.Time,
+	facts nativecheck.Facts, ranking DraftRanking, limit int) (bool, error) {
 	if at.IsZero() {
 		at = s.now()
 	}
@@ -164,7 +173,7 @@ func (s *Store) ProcessDueAutoPicks(ctx context.Context, league string, at time.
 	standings := s.draftStandings(ctx, league)
 	stalled := map[commissioner.DraftKey]bool{}
 	cache := map[commissioner.DraftKey][]string{}
-	for {
+	for made := 0; ; {
 		// Each committed pick is recorded at the store clock; read the draft through that instant so the
 		// next iteration sees it. A frozen clock keeps the caller's time.
 		if now := s.now(); now.After(at) {
@@ -172,25 +181,30 @@ func (s *Store) ProcessDueAutoPicks(ctx context.Context, league string, at time.
 		}
 		records, err := s.nativeRecords(ctx, league)
 		if err != nil {
-			return err
+			return false, err
 		}
 		turn, ok, err := commissioner.DueAutoPick(records, at, facts, standings, stalled)
 		if err != nil {
-			return fmt.Errorf("read due auto-picks: %w", err)
+			return false, fmt.Errorf("read due auto-picks: %w", err)
 		}
 		if !ok {
-			return nil
+			return false, nil
+		}
+		if limit > 0 && made >= limit {
+			return true, nil
 		}
 		ranked, err := cachedRankPool(ctx, ranking, league, turn, cache)
 		if err != nil {
-			return fmt.Errorf("rank draft pool: %w", err)
+			return false, fmt.Errorf("rank draft pool: %w", err)
 		}
 		picked, err := s.pickFirstAccepted(ctx, league, at, records, turn, ranked, facts, standings)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if !picked {
 			stalled[turn.Key] = true
+		} else {
+			made++
 		}
 	}
 }
