@@ -212,14 +212,14 @@ func TestSeasonInABoxSpike(t *testing.T) {
 	clock.Advance(6 * time.Hour)
 	final, err := f.pinOfficial(t, clock, "stats_player_week_2026.csv.gz")
 	if err != nil {
-		notReached(t, 6, "official final did not pin: "+err.Error())
+		regressed(t, 6, "official final did not pin: "+err.Error())
 		return
 	}
 	var official commissioner.NativeResults
 	f.boxRead(t, token, "results.read", 1, &official)
 	finalScore, ok := franchiseScore(official, "franchise.01")
 	if !ok || finalScore.Points == nil || finalScore.Provisional != nil {
-		notReached(t, 6, "franchise.01 has no final week 1 points after the pin (internal/commissioner/native_week_score.go:55)")
+		regressed(t, 6, "franchise.01 has no final week 1 points after the pin (internal/commissioner/native_week_score.go:55)")
 		return
 	}
 	t.Logf("STEP 6 official final pinned from testdata/official (weeks %v, digest %.12s): franchise.01 final %d", final.Weeks, final.Digest, int64(*finalScore.Points))
@@ -228,18 +228,18 @@ func TestSeasonInABoxSpike(t *testing.T) {
 	clock.Advance(time.Hour)
 	correction, err := f.pinOfficial(t, clock, "stats_player_week_2026_corrected.csv.gz")
 	if err != nil {
-		notReached(t, 7, "stat correction did not pin: "+err.Error())
+		regressed(t, 7, "stat correction did not pin: "+err.Error())
 		return
 	}
 	var corrected commissioner.NativeResults
 	f.boxRead(t, token, "results.read", 1, &corrected)
 	moved, ok := franchiseScore(corrected, "franchise.01")
 	if !ok || moved.Points == nil {
-		notReached(t, 7, "franchise.01 has no final week 1 points after the correction (internal/commissioner/native_week_score.go:55)")
+		regressed(t, 7, "franchise.01 has no final week 1 points after the correction (internal/commissioner/native_week_score.go:55)")
 		return
 	}
 	if *moved.Points == *finalScore.Points {
-		notReached(t, 7, fmt.Sprintf("the correction left franchise.01 at %d (%s, weeks %v)", int64(*moved.Points), correction.Digest, correction.Weeks))
+		regressed(t, 7, fmt.Sprintf("the correction left franchise.01 at %d (%s, weeks %v)", int64(*moved.Points), correction.Digest, correction.Weeks))
 		return
 	}
 	t.Logf("STEP 7 stat correction: franchise.01 %d -> %d (digest %.12s)", int64(*finalScore.Points), int64(*moved.Points), correction.Digest)
@@ -257,7 +257,7 @@ func TestSeasonInABoxSpike(t *testing.T) {
 	var standings commissioner.NativeStandings
 	f.boxRead(t, token, "standings.read", 0, &standings)
 	if standings.Status == "Needs a ruling" {
-		notReached(t, 8, "standings need a ruling: "+standings.Words+" (internal/commissioner/standings_reading.go:116)")
+		regressed(t, 8, "standings need a ruling: "+standings.Words+" (internal/commissioner/standings_reading.go:116)")
 		return
 	}
 	t.Logf("STEP 8 standings.read answered: status %q, %d decided, %d pending, through week %d", standings.Status, standings.Decided, standings.Pending, standings.Through)
@@ -270,6 +270,12 @@ func TestSeasonInABoxSpike(t *testing.T) {
 	// STEP 9 report: results.read answers the week's report; the recap text has no hosted read yet.
 	t.Logf("STEP 9 report: results.read answered for week 1: %d games, %d franchise scores", len(corrected.Games), len(corrected.Scores))
 	notReached(t, 9, "recap: no hosted recap read exists; the recap text is built from a desktop snapshot in internal/app/now/recap_reading.go:110 (blocker B2 recap)")
+}
+
+// regressed fails the box at a step it has passed before: a step once reached must stay reached.
+func regressed(t *testing.T, step int, reason string) {
+	t.Helper()
+	t.Fatalf("STEP %d regressed: %s", step, reason)
 }
 
 // notReached records a step the box cannot pass yet, with its reason. The test stops there and stays green.
