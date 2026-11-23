@@ -43,6 +43,13 @@ func TestCreateLeagueMakesAnOpenableNativeLeague(t *testing.T) {
 		}
 	}
 	files := openTestServer(t, filepath.Dir(path))
+	entries, err := signInStore(files).Directory(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].League != createdLeagueID {
+		t.Fatalf("sign-in directory = %+v, want the new league listed so owners can reach it", entries)
+	}
 	store, err := leagueStore(ctx, files, createdLeagueID)
 	if err != nil {
 		t.Fatal(err)
