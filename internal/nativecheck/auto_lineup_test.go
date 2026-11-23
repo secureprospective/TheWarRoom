@@ -122,3 +122,39 @@ func TestAutoLineupStartsBenchedPlayerOnlyToMeetAMinimum(t *testing.T) {
 		t.Fatalf("lineup %v, want the playing QB and the only O-Line card (on bye)", got)
 	}
 }
+
+func TestAutoLineupStartsBenchedDefenderOnlyToMeetASideMinimum(t *testing.T) {
+	rules := leaguerules.LineupRules{
+		Groups: leaguerules.Known(map[leaguerules.LineupGroup]leaguerules.Bounds{
+			leaguerules.Defense: {Min: leaguerules.Known(2)},
+		}),
+	}
+	offense := []AutoLineupCandidate{
+		{ID: "qb-1", Position: leaguerules.QB, Median: 20, Ceiling: 30, Available: true, Eligible: true},
+		{ID: "rb-1", Position: leaguerules.RB, Median: 18, Ceiling: 25, Available: true, Eligible: true},
+		{ID: "wr-1", Position: leaguerules.WR, Median: 16, Ceiling: 24, Available: true, Eligible: true},
+	}
+
+	// One eligible defender and one on bye: the benched one fills the Defense minimum.
+	short := append([]AutoLineupCandidate{
+		{ID: "cb-playing", Position: leaguerules.CB, Median: 9, Ceiling: 12, Available: true, Eligible: true},
+		{ID: "lb-bye", Position: leaguerules.LB, Median: 8, Ceiling: 11, Available: true, Eligible: false},
+	}, offense...)
+	got := SelectAutoLineup(rules, short)
+	slices.Sort(got)
+	want := []string{"cb-playing", "lb-bye", "qb-1", "rb-1", "wr-1"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("lineup %v, want both defenders filling the Defense minimum %v", got, want)
+	}
+
+	// Two eligible defenders already meet the minimum: the benched one stays out.
+	full := append([]AutoLineupCandidate{
+		{ID: "cb-playing", Position: leaguerules.CB, Median: 9, Ceiling: 12, Available: true, Eligible: true},
+		{ID: "s-playing", Position: leaguerules.S, Median: 7, Ceiling: 10, Available: true, Eligible: true},
+		{ID: "lb-bye", Position: leaguerules.LB, Median: 30, Ceiling: 40, Available: true, Eligible: false},
+	}, offense...)
+	got = SelectAutoLineup(rules, full)
+	if slices.Contains(got, "lb-bye") {
+		t.Fatalf("lineup %v starts the benched defender although two eligible defenders meet the minimum", got)
+	}
+}
