@@ -162,6 +162,13 @@ export async function nativeStartup(): Promise<NativeView | null> {
   if (nativeTransport.kind === 'web' && response.status === 401) {
     const view = browserView(); observeView(view); return view;
   }
+  // Signed in, but the account holds no seat in any league here: offer sign-in with another account.
+  if (nativeTransport.kind === 'web' && response.status === 403) {
+    const view = browserView(undefined, 'This account has no team in a league on this server yet. '
+      + 'Sign in with another account, or ask your commissioner for a join link.');
+    observeView(view);
+    return view;
+  }
   if (!response.ok) {
     throw createFailureError('Desktop startup unavailable.', responseErrorCode(response));
   }
