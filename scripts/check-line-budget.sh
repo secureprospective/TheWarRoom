@@ -83,11 +83,18 @@ measure > "$tmp/counts.tsv"
 
 case ${1:-} in
   --write)
-    {
-      echo "# line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down."
-      echo "# Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand."
-      cat "$tmp/counts.tsv"
-    } > "$baseline_file"
+    # The baseline is itself a counted docs file: writing it can change its own line count, so write
+    # until the counts it records are the counts it leaves behind.
+    for _ in 1 2 3; do
+      {
+        echo "# line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down."
+        echo "# Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand."
+        cat "$tmp/counts.tsv"
+      } > "$baseline_file"
+      measure > "$tmp/after.tsv"
+      cmp -s "$tmp/counts.tsv" "$tmp/after.tsv" && break
+      mv "$tmp/after.tsv" "$tmp/counts.tsv"
+    done
     echo "check-line-budget: wrote $baseline_file ($(wc -l < "$tmp/counts.tsv") areas)"
     exit 0
     ;;
