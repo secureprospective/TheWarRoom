@@ -69,6 +69,8 @@ func joinFailure(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, accounts.ErrFranchiseTaken):
 		http.Error(w, accounts.ErrFranchiseTaken.Error(), http.StatusConflict)
+	case errors.Is(err, accounts.ErrLeagueFull):
+		http.Error(w, accounts.LeagueFullMessage, http.StatusGone)
 	case errors.Is(err, accounts.ErrUsernameTaken):
 		http.Error(w, "that username is taken; choose another", http.StatusConflict)
 	case errors.Is(err, accounts.ErrJoinRefused):

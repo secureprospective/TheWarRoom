@@ -106,12 +106,12 @@ func TestJoinClaimRaceExactlyOneWins(t *testing.T) {
 		switch status {
 		case http.StatusCreated:
 			won++
-		case http.StatusForbidden:
+		case http.StatusConflict:
 			lost++
 		}
 	}
 	if won != 1 || lost != 1 {
-		t.Fatalf("statuses = %v, want one 201 and one 403", statuses)
+		t.Fatalf("statuses = %v, want one 201 and one 409", statuses)
 	}
 	accountsMade := 0
 	for i := range statuses {

@@ -50,6 +50,10 @@ _Avoid_: Trade committee, review board
 A person's verified membership and role in a league—obtained by redeeming a private invitation or claiming an open team via a join link—that lets them enter the league.
 _Avoid_: Enrollment, onboarding, registration
 
+**Join link**:
+Join link: one per league, reusable for every open seat until the commissioner replaces or revokes it (ruling 2026-11-23).
+_Avoid_: Invite code, single-use link
+
 **Twin-pool league**:
 A league format with two conferences where each conference has its own independent copy of every NFL player.
 _Avoid_: Mirror league, 16-Team Mirror, per-side league

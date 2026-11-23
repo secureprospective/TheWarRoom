@@ -108,25 +108,6 @@ func (j JoinSeats) Commissioner(ctx context.Context, league string) (governance.
 	return members[0], nil
 }
 
-// LinkClaimed reports whether a committed seat event has consumed this join-link digest.
-func (j JoinSeats) LinkClaimed(ctx context.Context, league, digest string) (bool, error) {
-	records, _, err := j.policy(ctx, league)
-	if err != nil {
-		return false, err
-	}
-	return joinLinkClaimed(records, digest), nil
-}
-
-func joinLinkClaimed(records []commissioner.Record, digest string) bool {
-	request := "join.claim." + digest
-	for _, record := range records {
-		if record.Command.Request == request {
-			return true
-		}
-	}
-	return false
-}
-
 func (j JoinSeats) record(ctx context.Context, league, command, request, reason string, people commissioner.RawPeople, actor governance.Principal, expected int64) error {
 	raw := commissioner.RawCommand{League: league, Command: command, Args: commissioner.RawArgs{People: &people}, Expected: expected,
 		Request: request, Reason: reason, Effective: "now", Visibility: "league"}
@@ -156,30 +137,19 @@ func (j JoinSeats) Seat(ctx context.Context, league, franchise string, owner, is
 		records[len(records)-1].Receipt.Revision)
 }
 
-// Claim spends the join link with the seat event. Its unique request key uses only the stored link digest,
-// so the ledger transaction both seats the owner and permanently marks this code as used.
+// Claim seats owner through the league's join link. The link stays live for the next open seat
+// (ruling 2026-11-23); the request key records which link digest seated this owner, for audit.
 func (j JoinSeats) Claim(ctx context.Context, league, franchise string, owner, issuer governance.Principal, digest string) error {
 	records, state, err := j.policy(ctx, league)
 	if err != nil {
 		return err
 	}
-	if joinLinkClaimed(records, digest) {
-		return accounts.ErrJoinRefused
-	}
 	if f, ok := state.Franchise(governance.FranchiseID(franchise)); !ok || f.Seat != "" {
 		return accounts.ErrFranchiseTaken
 	}
-	request := "join.claim." + digest
-	err = j.record(ctx, league, "commish.seat.replace", request,
+	return j.record(ctx, league, "commish.seat.replace", "join.claim."+digest+"."+string(owner),
 		"Owner claimed this franchise through the league join link", commissioner.RawPeople{Franchise: franchise, Principal: string(owner)}, issuer,
 		records[len(records)-1].Receipt.Revision)
-	if err != nil {
-		used, checkErr := j.LinkClaimed(ctx, league, digest)
-		if checkErr == nil && used {
-			return accounts.ErrJoinRefused
-		}
-	}
-	return err
 }
 
 // Release removes franchise's owner so the franchise can be claimed again.
