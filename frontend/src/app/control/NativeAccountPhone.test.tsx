@@ -188,3 +188,19 @@ it('shows Live for the league the bar has selected, not the first league', async
   expect(host.querySelector('.live-league')?.textContent).toBe('native.second');
   vi.doUnmock('../phone/LiveTab');
 });
+
+it('signed-out phone sign-in shows one Sign in button and no cookie jargon', async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  setPhoneViewport(390);
+  goDescriptor = Object.getOwnPropertyDescriptor(window, 'go');
+  Reflect.deleteProperty(window, 'go');
+  await vi.resetModules();
+  const { default: NativeAccount } = await import('./NativeAccount');
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('unauthorized', { status: 401 })));
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  await act(async () => root!.render(<NativeAccount initial={initial} />));
+  const signIns = [...host.querySelectorAll('button')].filter(b => b.textContent?.trim() === 'Sign in');
+  expect(signIns).toHaveLength(1);
+  expect(host.textContent).not.toMatch(/HttpOnly|cookie/i);
+  expect(host.textContent).toContain('You stay signed in on this device.');
+});

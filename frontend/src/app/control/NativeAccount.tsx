@@ -187,7 +187,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const title = screen === 'join' ? 'Create your account'
     : screen === 'authenticator' ? 'Authenticator (optional)' : 'Sign in';
   const visibleTabs = browser
-    ? view.name ? [['login', 'League']] as const : [['login', 'Sign in']] as const
+    // Signed out in a browser there is only one way in: the form's own Sign in button, no tab beside it.
+    ? view.name ? [['login', 'League']] as const : [] as const
     : view.name ? openTabs : tabs;
   const submitLabel = pending ? 'Please wait…' : screen === 'join' ? 'Create account'
     : screen === 'authenticator' ? 'Verify fresh code' : browser ? 'Sign in' : 'Sign in to server';
@@ -404,7 +405,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     </div>
     {accountForms}
     {!phoneFrame && <footer>{browser
-      ? 'Your sign-in stays in this browser as an HttpOnly cookie. The league needs an internet connection.'
+      ? 'You stay signed in on this device. The league needs an internet connection.'
       : 'This computer keeps your sign-in in its keychain when it has one, '
         + 'otherwise until you close the app. Revoke all devices signs you out everywhere. '
         + 'Authenticator codes are never saved. The league needs an internet connection.'}</footer>}

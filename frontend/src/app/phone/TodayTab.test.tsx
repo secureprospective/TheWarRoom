@@ -176,6 +176,25 @@ describe('TodayTab', () => {
     expect(keyWord({ ...base, kind: 'commissioner' })).toBe('Open');
   });
 
+  it('no game in play: nothing says LIVE, the heading reads This week', async () => {
+    const quiet = (): HomeBrief => {
+      const b = loaded();
+      b.results!.games = [{ ...b.results!.games[0], status: '', homeProvisional: undefined,
+        awayProvisional: undefined }];
+      return b;
+    };
+    const view = await show(async () => quiet(), layoutPort([], { saved: defaultLayout(), revision: 0 }));
+    await act(async () => {
+      for (let i = 0; i < 50 && !view.querySelector('[data-testid="home-brief"]'); i++)
+        await new Promise(resolve => setTimeout(resolve, 10));
+    });
+    expect(view.querySelector('[data-testid="home-brief"]')).not.toBeNull();
+    expect(view.textContent).toContain('0 playing now');
+    expect(view.textContent).toContain('This week');
+    expect(view.textContent).not.toContain('Live now');
+    expect(view.textContent).not.toContain('LIVEWeek 11');
+    expect(view.textContent).not.toContain('WK 11 LIVE');
+  });
   it('live now: one row per admitted league, each with its own read or failure words', async () => {
     const other: LeagueChoice = { ...league, id: 'f32', name: 'Foundry 32' };
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });

@@ -188,6 +188,9 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
   const opPts = pointsLabel(pts(b.results?.scores.find(s => s.franchise === opp)));
   const next = b.calendar?.filter(e => e.at && Date.parse(e.at) > Date.now())
     .sort((x, y) => Date.parse(x.at!) - Date.parse(y.at!))[0];
+  // LIVE only while my game holds in-play points (the rule behind Today's "playing now" count).
+  const inPlay = Boolean(g && !isFinal(g.status) && !g.winner
+    && (g.homeProvisional !== undefined || g.awayProvisional !== undefined));
   const nowLine = phase === 'in' && g
     ? `Week ${week} · ${standing(pts(b.results?.scores.find(s => s.franchise === mine)),
       pts(b.results?.scores.find(s => s.franchise === opp)), isFinal(g.status))} ${nameOf(b,
@@ -277,7 +280,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
         <section className="now" aria-label="Now">
           <div className="nl"><span className="tag">{known === undefined ? 'READING…' : known === 'off' ?
             'OFFSEASON' : g && isFinal(g.status) ?
-            'FINAL' : 'LIVE'}</span>{nowLine}</div>
+            'FINAL' : inPlay ? 'LIVE' : 'THIS WEEK'}</span>{nowLine}</div>
           {stats.map(([v, l]) => <div className="st" key={l}><b>{v}</b><span>{l}</span></div>)}
         </section>
         <HomeAct className={`aband${alertsLost ? ' unavail' : !alerts.length ? ' clear' : alerts[0].level ===
@@ -294,7 +297,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
           <span className="more">{alerts.length > 1 && <b>+{alerts.length - 1}</b>}ALL ALERTS ›</span>
             </HomeAct>
         <div className="tick" title="Hover to pause"><span className="tl0">TOP 5 · WK {week ?? '—'}
-          {g && !isFinal(g.status) ? ' LIVE' : ' FINAL'}</span>
+          {inPlay ? ' LIVE' : g && isFinal(g.status) ? ' FINAL' : ''}</span>
           <div className="tkw"><div className="tkr">{ticker.length ? <>{tickerHtml}{tickerHtml}</>
             : <span className="tp">{b.errors.results ? `${unavailable} · ${b.errors.results}` :
               'No scored starters yet'}</span>}
