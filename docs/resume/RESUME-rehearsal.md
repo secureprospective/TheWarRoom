@@ -35,44 +35,31 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - **Base every build on the branch the Lab runs** (lab-v5x / rehearsal-auto), not main. Main is 37+ commits behind.
   Memory: `base-briefs-on-live-stack.md`.
 
-## 4. In flight (11-23 ~1 PM CT) — Christopher: "keep driving after compaction"
-- **Nothing running in the background.** No agents, watchers or releases. adb server stays up for the phones.
-- **Lab kit (secrets, never print):** `~/scratch/commish-1123/` (KEEP.md): `lab-commish.json` (tomlab account), `totp.seed`,
-  `phone-s8.json` / `phone-iphone.json` (s8lab / iphonelab), `codes-*.txt` (recovery codes), `helper-native.tomtest-*.txt` (twr1
-  lines, expire 11-24 ~17:27 UTC), `cfg/` + `cfg-twin/` (twr connections), `bin/twr`, `server.url`, rendered setup in
-  `rehearsal-tomtest-*`. Scripts (copies without secrets in `~/fleet/runs/twr-testdrafts-1123/`):
-  - `labcommish.py enroll|helper <league>|confirm <twrc1-file>|revoke <league>` (User-Agent `twr-lab-script/1`; default
-    Python UA gets Cloudflare 1010).
-  - `apply.sh <change.json>...` preview -> confirm via labcommish -> execute (set XDG_CONFIG_HOME=cfg or cfg-twin).
-  - `cycle.sh` deletes + recreates both Tom Test leagues, helpers, setup, opens both drafts (10 s clock).
-  - `cdp_join.py` (S8: new Chrome tab via devtools `adb forward tcp:9290 localabstract:chrome_devtools_remote`),
-    `cdp_app.py` (sign in through the installed app window), `seat_phone.py` (iPhone via phone-chrome.py).
-- Report card job on Hermes still has no token (`~/fleet/twr-reportcard/token`); it now can be made from tomlab.
+## 4. In flight (11-23 ~4:05 PM CT) — Christopher: "merge 476 when the load test passes, then keep pushing"
+- **Load test v59 (running, started ~3:46 PM CT, ~26 min):** `gameday.py` 31 teams x 2 devices x 15 min against
+  native.tomload ("Tom Load", 32 teams, tomlab on franchise.01, drafted). Alive: `pgrep -af gameday.py`. Output:
+  `~/fleet/runs/twr-stage3-load-1123/v59/{run.log,latency.jsonl,rss.log}`; last line `PASS: 0 x 502, 0 x 5xx, p95 … ms`.
+  Compare with v58 run (p95 851 ms; results.read p95 1,863; RSS 408 MB). PASS + p95 better -> merge #476
+  (`gh pr merge 476 --squash`, his OK given 11-23 ~4 PM). Break latency down by op AND by 5-s bucket (bursts every 60 s).
+- RSS sampler loop (~28 min) writes v59/rss.log; ends by itself.
+- **Lab kit (secrets, never print):** `~/scratch/commish-1123/` (KEEP.md). New: `reader-<league>.txt` (bare read
+  bearers), `join-load.txt` (Tom Test link, league full now), `join-tomload.txt` (Tom Load link), `cfg-load/`,
+  `helper-native.tomload.txt`, `make-load-league.sh` (setup after create-league + take; refresh is last).
+  Scripts in repo: `scripts/lab/` (TWR_LAB_KIT=<kit dir>, LAB_SSH_CONF for cycle.sh).
+- Report card on Hermes: `~/fleet/twr-reportcard/token-native.tomtest-{default,twin}` (bare bearer, read-only, expire
+  12-23 ~19:17 UTC: reissue with `labcommish.py reader <league>` then scp). run.sh: per-league token, LEAGUES env
+  `REPORTCARD_LEAGUES`, default tomtest. Dry run 12-15: both GREEN.
 
-## 5. Gates / status (11-23 ~1 PM)
+## 5. Gates / status (11-23 ~4:05 PM)
 | What | State |
 |---|---|
-| **main = 1d3a368b3** (#471) | create-league -commissioner + autopick batches of 32 per worker pass. #470 merged d2bfb7ab. CI all green |
-| **Lab = v57** 341ad1189 (= main code) | 8/8 OK after restart (sign-in backup pause ~1 min). Test leagues native.tomtest-default ("Tom Test") + native.tomtest-twin, commissioner tomlab (acct 13d4c223) at franchise.01 |
-| Test drafts on v57 | both 43-round startup drafts opened 17:31 UTC, ran together without stalls; twin AFC+NFC closed 11:49 AM CT, Tom Test closed ~12:05 PM CT |
-| Phones | S8 = s8lab, Franchise 2 in Tom Test; iPhone = iphonelab, Franchise 3. Both signed in, Today shows week 14 (screens in ~/fleet/runs/twr-testdrafts-1123/) |
-| Tracker on Hermes | lanes/order/flags refreshed 11-23; collector timer fixed (OnStartupSec, tracker repo 5718ba3) |
-| **main = 9fcc4a771** (#469) | after #468 2806fb444. Season box, report card checker, twr read, no-team sign-in, line-budget draft. CI all green |
-| **Lab = v55** `session/no-seat-quiet-1123` 259e3a0d | main + no-seat polish. 8/8 OK at 8:49 AM. S8 shows only the plain no-team message + sign-in form (s8-v55.png) |
-| Lab v54 = main 9fcc4a77 | 8/8 OK; S8 showed the message but with the raw red error above (fixed in v55) |
-| Report card on Hermes | tested 3 paths on a copy of plan.json: before season quiet; no token → 1 red line; bad token → reaches Lab, plain refusal |
-| **Lab = v53** `session/lab-v53-1122` a211f8f9e | v52 ce7417190 + the B7 owner-pick-door fix. Status 8/8 OK at 6:14 AM (sign-in backup was paused for the first ~15 min after restart, then OK) |
-| Lab v50 b94fe7d1 / v51 087c96b9 / v52 ce741719 | Each shipped 8/8 OK. S8 self-updated e45a22cef5c1 -> 6b38e277e7ef -> 195e3b46bacf (T668 proven on Android). iPhone not checked |
-| Lab data | model scores imported (run 1, 2026, 2,277). Test leagues native.rehtest-default + native.rehtest-twin created (default_32, 2026); commissioner account 564f67ef holds franchise.01 + commissioner seat in both |
-| S8 account 3da8c020 | no league seat (403 on /app/session since 11-21): v52 screens unchecked on the phone |
-| `session/b7-pick-door-1122` d626c91f6 (main base) | B7 fix + season box drafting via PickPath; TestHostedOwnerRookiePickAdmitted |
-| `session/season-box-1122` 23742d295, PR #467 | season box: draft (store), lineups, lock, scores move, official final, stat correction, standings with 1 decided game, results. ~3 s |
-| `session/twr-read-1122` cded5ccef (on t688 base) | `twr read` + MCP `league_read` |
-| `session/line-budget-1122` 847154bce | draft line-budget guard; not in CI |
-| `session/autopick-1122` 95d2b13e3 | **SUPERSEDED, do not merge.** Duplicates auto-pick that already exists on the Rehearsal A stack |
-| `session/rehearsal-auto` c6fb1a8ca | stack + resume doc |
-| `session/t688-replay-1122` 2461ed596 | twr-check comparator |
-| Frontend installs | main checkout lacks vitest; worktrees symlink `.worktrees/t705/frontend/node_modules` |
+| **main = 234f99a08** | merged 11-23 with his OK: #474 one join link (1ef46749e), #472 Lab kit + twr-check helper line (f1f5031fa), #475 load script (18bd5f815), #473 phone wording (234f99a08). Post-merge CI was running |
+| **PR #476** `session/results-read-speed` b527e7133 | results/standings memo + one computation per burst. CI: check. Merge when v59 load test passes |
+| **Lab = v59** dc72f2a81 (`session/lab-v58` = one-link + wording + Today LIVE + #476) | 8/8 OK after restart |
+| v58 load test (Tom Test, 29x2, 15 min) | PASS 0x502/5xx, 22,238 req, RSS 408 MB, p95 851 ms; slow only in 60-s bursts; 409s were the script's wrong week (fixed) |
+| One link proven live | 29 claims on one link (201); then 410 "Every franchise in this league already has an owner…" |
+| Tom Test | full: 01 tomlab, 02 S8, 03 iPhone, 04-32 load accounts (creds gone). Football pin refreshed weeks 15-18 (both tomtest) |
+| Phones | iPhone Today showed "LIVE NOW" with 0 playing on v58 -> fixed in #473 (Today) / v59; not yet re-checked on the phone |
 
 ## 6. Artifacts
 - Stack `session/rehearsal-auto` (base 513b7058a): twin/twin32/midseason proof tests; auto-pick (starters first) + fixes 106a71ae2
@@ -140,6 +127,12 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - 11-23: join links are SINGLE USE today (claim consumes the code); `join-link -rotate` needs the server stopped and
   commissioner creds on stdin. iPhone: a goto that only changes the #hash does not reload: call location.reload().
 
+- 11-23 PM: T662 (lineup.read 409 "pinned football evidence does not hold NFL week 15") = load-script bug: it used
+  week.read's nextWeek; week.read answers {current:{week}, nextWeek}. App reads current.week. Settled, fixed in #475.
+- 11-23 PM: Lab slowness is NOT per-read CPU (results.read ~3 ms on the fixture): it is the 60-s burst where every device
+  re-reads at once (300-400 req in 5-10 s on 2 CPUs). Fix = one computation per burst (#476).
+- 11-23 PM: report-card 403 = token lacked native.directory.read; twr-check now accepts the twr1 line too.
+
 ## 8. Decisions (Christopher, 11-22)
 - 11-23 ~11 AM: Lab guards loosened: the Lab no longer needs commissioner/password guards; the Season server (laptop) keeps every guard. Tom may own Lab commissioner accounts. (memory `lab-guards-loosened.md`)
 - 11-23 ~1 PM: ONE join link for the whole league (not one per owner). Any owner can use it until seats run out; commissioner can still revoke/replace it.
@@ -155,28 +148,22 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
    locked starters kept, a human lineup never touched; dynasty order ignores each league's own scoring this once;
    a benched player starts only to meet a minimum nobody playing can fill (O-Line card on bye).
 
-## 9. Ledger state (11-23 ~1 PM)
-main 1d3a368b3 (#471). Branches of this workstream merged and deleted locally; this resume update is on
-`session/resume-1123b` (worktree `.worktrees/cl-commish-1123`). Tracker repo on Hermes 5718ba3 (timer). Task list 14aa12a.
+## 9. Ledger state (11-23 ~4:05 PM)
+main 234f99a08. Open: PR #476. This resume update: `session/resume-1123c` (worktree `.worktrees/resume-1123c`).
+Worktrees to remove after #476: one-join-link, phone-wording, lab-v58, results-read-speed, stage3-load, cl-commish-1123.
+Remote branch `session/resume-1123b` is stale (content merged via #472). Task list: T662 T1819 checked; T631 T640 updated.
 
-## 10. Next actions, in order (11-23 ~1 PM)
-1. Build ONE join link per league (ruling 11-23): the link stays valid for every open seat until the commissioner revokes or
-   replaces it; each claim still takes one open franchise; a full league says so plainly. Find the single-use check
-   (`joinLinkClaimed`, internal/leagueservice/join_seats.go ~111; accounts/join.go claim ~262-300), test first (two claims on
-   one link both succeed; revoke still kills it), PR, Lab release, prove with S8+iPhone or the API. Merge needs his OK.
-2. Small phone wording fixes (same or separate PR): join done page "The Franchise 2 are yours" (use "Franchise 2 is yours" /
-   team name), "Open The War Room app on your computer" -> phone-neutral; sign-in screen double "Sign in" + "HttpOnly cookie"
-   jargon; "LIVE" badge with 0 playing.
-3. Report-card token: issue a read-only token from tomlab (labcommish-style, modes ["read"]) for the Tom Test leagues, point
-   `~/fleet/twr-reportcard/run.sh` LEAGUES at native.tomtest-*, put token at Hermes `~/fleet/twr-reportcard/token` (600),
-   dry-run with REPORTCARD_DATE=2026-12-15 on a plan.json copy.
-4. File the Lab kit properly (T715 home: fleet runs dir or repo scripts/lab/), keep secrets in scratch.
-5. Stage 3: 32-team load test (scripts/load/gameday.py on branch session/stage3-load).
+## 10. Next actions, in order (11-23 ~4:05 PM)
+1. Read the v59 load test; if PASS (0 x 502/5xx) and p95 not worse, merge #476 (his OK). Post p95/RSS on tracker + PR.
+2. Re-check the iPhone Today screen on v59 (no "LIVE" with 0 playing): `~/fleet/bin/phone-chrome.py iphone eval '…innerText'`.
+3. If p95 still > 200 ms: break down by op; next suspects native.directory.read (p50 452 ms, service.go:159 Location) and
+   standings; consider GOMAXPROCS on the Lab CT (2) vs the Season laptop.
+4. Open a PR for this resume branch (docs only).
+5. Clean up merged worktrees (above) with `git worktree remove` (no --force next to push), `golangci-lint cache clean`.
 6. Later: Season server setup (Saturday, his OK); T709 line-budget into CI; T711; T694.
 
 ## 11. Needs Christopher
-- Nothing blocking. Merges to main and Season-server changes still need his OK each time.
-- Earlier rulings: 11-23 ~8:15 AM (a) MFL solo-owner tools STAY for now; (b) YES Lab-only test confirmer (done, T715 checked).
+- Nothing blocking. #476 merge pre-approved if the load test passes. Season-server changes still need his OK each time.
 
 ## 12. Environment notes
 - Guard hook: any command holding both `push` and a `-f`/`--force` (even `rm -f`, `worktree remove --force`) is blocked as a
@@ -190,8 +177,12 @@ main 1d3a368b3 (#471). Branches of this workstream merged and deleted locally; t
 - Hermes git commits: run ssh from `cd /tmp` (repo hook refuses when cwd is the main checkout).
 - New worktrees need `frontend/dist/.placeholder` (and a `frontend/node_modules` symlink for `make lint`).
 
-## 13. Honest status
-11-23 ~1 PM: Rehearsal A is proven on the Lab: two leagues, full startup drafts, autopick, scripted commissioner confirms,
-two phones seated and signed in. Not yet proven: one-link-per-league (not built), the report card against real data (no
-token yet), anything on the Season server (not set up), lineups/scoring for week 14 (starts Thu Dec 10). Real drafts Tue Dec 8.
+- Pre-push needs `frontend/node_modules` in each worktree: `cd frontend && pnpm install --frozen-lockfile` (else
+  "Cannot find module ./frontend/node_modules/typescript"). Go builds need `frontend/dist/.keep`.
+- twr-server console commands that exit non-zero under `set -e` leave the Lab server STOPPED: always start it again.
+- Read tokens need `native.directory.read` too (every hosted read checks the directory first; else 403).
 
+## 13. Honest status
+11-23 ~4:05 PM: Rehearsal A proven on the Lab; one join link built, proven live and merged; phone wording merged; report card
+works (dry run). Unproven: the speed fix's effect on Lab p95 (load test running), iPhone Today wording on v59, anything on
+the Season server, week-14 scoring (Thu Dec 10). Real drafts Tue Dec 8.
