@@ -43,11 +43,20 @@ class Client:
 
     def __init__(self, base, ssl_ctx, use_gzip=True):
         u = urllib.parse.urlsplit(base)
+        self.scheme = u.scheme or "https"
         self.host = u.hostname
-        self.port = u.port or 443
+        self.port = u.port or (80 if self.scheme == "http" else 443)
         self.ssl_ctx = ssl_ctx
         self.use_gzip = use_gzip
         self.conn = None
+        self.last_connect_ms = None
+
+    def _new_conn(self, timeout):
+        if self.scheme == "http":
+            return http.client.HTTPConnection(self.host, self.port, timeout=timeout)
+        return http.client.HTTPSConnection(
+            self.host, self.port, timeout=timeout, context=self.ssl_ctx
+        )
 
     def post(self, path, body, bearer=None, timeout=30):
         h = dict(HDR)
@@ -56,12 +65,15 @@ class Client:
         if self.use_gzip:
             h["Accept-Encoding"] = "gzip"
         data = json.dumps(body).encode()
+        self.last_connect_ms = None
         for attempt in (0, 1):
             try:
                 if self.conn is None:
-                    self.conn = http.client.HTTPSConnection(
-                        self.host, self.port, timeout=timeout, context=self.ssl_ctx
-                    )
+                    self.conn = self._new_conn(timeout)
+                if self.conn.sock is None:
+                    tc0 = time.perf_counter()
+                    self.conn.connect()
+                    self.last_connect_ms = (time.perf_counter() - tc0) * 1000.0
                 t0 = time.perf_counter()
                 self.conn.request("POST", path, body=data, headers=h)
                 resp = self.conn.getresponse()
@@ -254,7 +266,7 @@ class LoadRunner:
                 os.path.join(args.log_dir, "latency.jsonl"), "a", buffering=1
             )
 
-    def record(self, fid, dev, op, status, ms):
+    def record(self, fid, dev, op, status, ms, connect_ms=None):
         with self.lock:
             self.statuses[status] = self.statuses.get(status, 0) + 1
             if status == 200:
@@ -268,11 +280,13 @@ class LoadRunner:
                     "s": status,
                     "ms": round(ms, 1),
                 }
+                if connect_ms is not None:
+                    rec["connect_ms"] = round(connect_ms, 1)
                 self.log_fp.write(json.dumps(rec) + "\n")
 
     def read_op(self, client, bearer, fid, dev, op, args):
         s, raw, ms, _ = wf(client, bearer, op, args)
-        self.record(fid, dev, op, s, ms)
+        self.record(fid, dev, op, s, ms, connect_ms=client.last_connect_ms)
         if s == 200 and raw:
             try:
                 return json.loads(raw).get("data")
