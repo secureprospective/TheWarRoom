@@ -17,7 +17,7 @@ it('gives an account with no league seat the sign-in view, not "server could not
   expect(view?.league ?? '').toBe('');
 });
 
-it('opening a league with no seat gives the same plain message, not the raw "league access unavailable"', async () => {
+it('opening a league with no seat gives the plain no-team message, not the raw refusal', async () => {
   vi.stubGlobal('window', { location: { origin: 'https://league.example' } });
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403,
     headers: new Headers({ 'Content-Type': 'text/plain' }), text: async () => 'league access unavailable' }));
