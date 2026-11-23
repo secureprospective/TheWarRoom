@@ -80,6 +80,8 @@ func repairCommand(ctx context.Context, name string, args []string, output io.Wr
 	switch name {
 	case "conversion-proof":
 		return true, runConversionProof(ctx, args, output)
+	case "create-league":
+		return true, runCreateLeague(ctx, args, output)
 	case "delete-league":
 		return true, runDeleteLeague(ctx, args, output)
 	case "export-league":
