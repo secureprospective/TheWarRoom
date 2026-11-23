@@ -109,6 +109,7 @@ func (c *OddsCache) result(key [32]byte, run func() (map[string]int, string)) (m
 type OddsPlayer struct {
 	Franchise, Position string
 	NowPPG, Age         float64
+	DynastyPPG          float64
 	AgeKnown, Available bool
 }
 
@@ -130,7 +131,10 @@ type OddsRow struct {
 	Record     string  `json:"record"`
 	Power      int     `json:"power"` // 1 is strongest; 0 when not ranked
 	PowerScore float64 `json:"powerScore"`
-	Expected   float64 `json:"expected"` // expected points in one game
+	// DynastyPower is the same blend run on dynasty value and age alone (1 is strongest; 0 when not ranked).
+	DynastyPower int     `json:"dynastyPower,omitempty"`
+	DynastyScore float64 `json:"dynastyScore,omitempty"`
+	Expected     float64 `json:"expected"` // expected points in one game
 	// PlayoffOdds is the share of played-out seasons that put the franchise in the playoff field, 0 to 1.
 	PlayoffOdds *float64 `json:"playoffOdds,omitempty"`
 }
@@ -313,6 +317,10 @@ func expectedPoints(s NativeStandings, lineup leaguerules.LineupRules, values Od
 }
 
 func oddsCountable(players []OddsPlayer) map[string][]powerrankings.CountValue {
+	return oddsCountableBy(players, func(p OddsPlayer) float64 { return p.NowPPG })
+}
+
+func oddsCountableBy(players []OddsPlayer, value func(OddsPlayer) float64) map[string][]powerrankings.CountValue {
 	by := map[string][]powerrankings.CountValue{}
 	for _, p := range players {
 		if !p.Available || p.Franchise == "" {
@@ -322,7 +330,7 @@ func oddsCountable(players []OddsPlayer) map[string][]powerrankings.CountValue {
 		if p.AgeKnown {
 			age = p.Age
 		}
-		by[p.Franchise] = append(by[p.Franchise], powerrankings.CountValue{Position: p.Position, Value: p.NowPPG, Age: age})
+		by[p.Franchise] = append(by[p.Franchise], powerrankings.CountValue{Position: p.Position, Value: value(p), Age: age})
 	}
 	return by
 }
@@ -372,6 +380,33 @@ func (out *NativeOdds) power(s NativeStandings, lineup leaguerules.LineupRules, 
 		out.Rows[i].Expected = math.Round(expected[out.Rows[i].Franchise]*100) / 100
 	}
 	out.PowerWords = fmt.Sprintf("Lineup value blended with results after %d games", played)
+	if values.Reduced == "" {
+		return out.dynastyPower(s, rules, values)
+	}
+	return nil
+}
+
+// dynastyPower ranks the same franchises with the same blend on dynasty value and the roster's age alone,
+// as the MFL board's franchise view does: this season's record says little about the next five.
+func (out *NativeOdds) dynastyPower(s NativeStandings, rules powerrankings.LineupRules, values OddsValues) error {
+	by := oddsCountableBy(values.Players, func(p OddsPlayer) float64 { return p.DynastyPPG })
+	inputs := make([]powerrankings.Input, 0, len(s.Computed))
+	for _, row := range s.Computed {
+		value, age := powerrankings.Count("lineup", rules, by[row.Franchise])
+		inputs = append(inputs, powerrankings.Input{FranchiseID: row.Franchise, RosterValue: value, Age: age})
+	}
+	blended, err := powerrankings.Blend(inputs, powerrankings.Weights{Roster: 1, Age: powerrankings.FranchiseAgeWeight})
+	if err != nil {
+		return fmt.Errorf("dynasty power ranking: %w", err)
+	}
+	at := map[string]powerrankings.Row{}
+	for _, r := range blended {
+		at[r.FranchiseID] = r
+	}
+	for i := range out.Rows {
+		r := at[out.Rows[i].Franchise]
+		out.Rows[i].DynastyPower, out.Rows[i].DynastyScore = r.Rank, r.PowerScore
+	}
 	return nil
 }
 
