@@ -48,8 +48,7 @@ func prepareWaiverFrame(f commissioner.Frame, raw *commissioner.RawCommand, prin
 	}
 	x := waiverExecution{assets: f.Assets, state: f.Book, rules: f.Rules, records: records, now: now,
 		facts: facts, zone: zone, principal: principal}
-	if commissioner.OwnerWaiverAction(raw.Command) != "" &&
-		(raw.Command != commissioner.RosterAdd || principal != commissioner.OLineHandoutPrincipal) {
+	if commissioner.OwnerWaiverAction(raw.Command) != "" {
 		if err := f.Gate(raw.Args.Waiver.Franchise, x.reserveAction(*raw)); err != nil {
 			//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 			return err
@@ -171,14 +170,14 @@ func (x *waiverExecution) add(raw *commissioner.RawCommand) error {
 }
 
 func (x *waiverExecution) freeAgent(args *commissioner.RawWaiverArgs) (nativecheck.PlayerFacts, bidExecution, error) {
-	facts, ok := x.facts.Of(args.Player)
+	facts, ok := x.facts[args.Player]
 	if !ok {
 		return nativecheck.PlayerFacts{}, bidExecution{}, fmt.Errorf("choose a free agent the app holds")
 	}
 	if !slices.ContainsFunc(x.assets.Snapshot.Franchises, func(f commissioner.NativeFranchise) bool { return f.ID == args.Franchise }) {
 		return nativecheck.PlayerFacts{}, bidExecution{}, fmt.Errorf("choose a franchise in this app league")
 	}
-	if x.blockedStartingCard(args.Player) {
+	if commissioner.StartingCardLot(x.records, args.Player) {
 		return nativecheck.PlayerFacts{}, bidExecution{}, fmt.Errorf("this player is in the league-start auction; place a bid instead")
 	}
 	if facts.DraftYearHeld && facts.DraftYear > x.rules.Season {
@@ -202,13 +201,6 @@ func (x *waiverExecution) freeAgent(args *commissioner.RawWaiverArgs) (nativeche
 		return nativecheck.PlayerFacts{}, bidExecution{}, fmt.Errorf("bids on %s are awaiting a decision", facts.Name)
 	}
 	return facts, bid, nil
-}
-
-func (x *waiverExecution) blockedStartingCard(player string) bool {
-	if !commissioner.StartingCardLot(x.records, player) {
-		return false
-	}
-	return x.state.OLine == nil || x.principal != commissioner.OLineHandoutPrincipal
 }
 
 func (x *waiverExecution) freeAgentContract(args *commissioner.RawWaiverArgs, facts nativecheck.PlayerFacts) (commissioner.NativePlayer, error) {
@@ -277,9 +269,6 @@ func (x *waiverExecution) rosterAddCandidate(raw *commissioner.RawCommand, signe
 	}
 	candidate.Players = append(candidate.Players, signed)
 	rules := x.rules
-	if x.principal == commissioner.OLineHandoutPrincipal {
-		rules.Roster.Limits.Value.Min = leaguerules.Known(0)
-	}
 	if dropped != nil {
 		rules = commissioner.AllowDebtReduction(x.assets.Snapshot, &candidate, x.records, rules, args.Franchise)
 		rules = commissioner.PendingOLineCutRules(x.state, x.assets.Snapshot, &candidate, rules, args.Franchise)
