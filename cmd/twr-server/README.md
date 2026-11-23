@@ -342,6 +342,20 @@ rc-service twr-server start
 Players are keyed by MFL id, the id the draft pool uses. A second import of the same run reports
 "already held" and changes nothing.
 
+### Create a new native league (local console, service stopped)
+
+```sh
+rc-service twr-server stop
+twr-server create-league -db /var/lib/twr/server.db -league native.example -name "Example" -preset default_32 -season 2026 [-teams 32]
+rc-service twr-server start
+```
+
+This makes the league's own file, records the ordinary `commish.league.create` as the `creator` principal
+(which also records the starting snapshot with empty rosters), and adds the league to the server's
+directory. Nobody is seated, so every franchise plays automatically until the commissioner takes a seat
+with `join-link`. An existing league ID or an unknown preset is refused and nothing is changed. The command
+then prints the next steps: `pin-football`, `refresh-nfl-schedule` and `join-link`.
+
 ### Refresh missing published NFL kickoff dates (local console, service stopped)
 
 The hosted server reads schedule dates from its pinned football evidence; restart and
