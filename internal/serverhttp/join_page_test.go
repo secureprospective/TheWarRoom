@@ -94,6 +94,22 @@ func TestJoinPageServedWithStrictCSPAndNoHardcodedTeams(t *testing.T) {
 	}
 }
 
+// Phone field test: the done page must read right for any team name and on any device.
+func TestJoinDonePageWordingWorksForAnyNameAndDevice(t *testing.T) {
+	f := newHostedFixture(t, true)
+	_, _, body := f.get(t, serverhttp.JoinPagePath)
+	for _, bad := range []string{" are yours", "on your computer"} {
+		if bytes.Contains(body, []byte(bad)) {
+			t.Fatalf("done page still says %q", bad)
+		}
+	}
+	for _, want := range []string{`"You now own "`, `href="` + serverhttp.AppPath + `">Open The War Room</a>`} {
+		if !bytes.Contains(body, []byte(want)) {
+			t.Fatalf("done page lacks %s", want)
+		}
+	}
+}
+
 // A browser POST to the join doors is allowed only when it comes from this server's own origin.
 func TestJoinDoorsAllowOnlySameOriginBrowser(t *testing.T) {
 	f := newHostedFixture(t, true)

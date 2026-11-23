@@ -214,7 +214,10 @@ function Scores({ pulse, mine, season, port, readWeek, onWatch }: { pulse: Nativ
   if (current === undefined) return <p className="lg5-empty" role="status">{pulse.weekNote || NOT_YET}</p>;
   const names = new Map(pulse.seats.map(s => [s.franchise, s.name]));
   const r = results?.value;
-  const state = upcoming ? 'UPCOMING' : r?.published ? 'FINAL' : week === current ? 'LIVE' : 'FINAL';
+  // LIVE only while something is being scored: a game holding provisional (in-play) points.
+  const playing = r?.games.filter(g => g.homeProvisional !== undefined || g.awayProvisional !== undefined).length ?? 0;
+  const state = upcoming ? 'UPCOMING' : r?.published ? 'FINAL'
+    : week === current ? playing > 0 ? 'LIVE' : 'THIS WEEK' : 'FINAL';
   const mineFirst = <T extends { home: string; away: string }>(list: T[]) => [...list].sort((x, y) =>
     Number(y.home === mine || y.away === mine) - Number(x.home === mine || x.away === mine));
   let body;

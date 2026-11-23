@@ -129,6 +129,7 @@
   .next { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline); }
   .next li { padding: 14px 0; border-bottom: 1px solid var(--hairline); font-size: 14px; color: var(--text-secondary); display: grid; grid-template-columns: 7ch 1fr; gap: 10px; }
   .next b { font: 11px/1.6 var(--mono); color: var(--text-tertiary); letter-spacing: .06em; text-transform: uppercase; font-weight: 400; }
+  .next a.open-app { color: var(--text-primary); font-weight: 600; }
   .next code { font: 14px var(--mono); color: var(--text-primary); }
 
   .view { animation: in 160ms ease-out; }
@@ -195,7 +196,7 @@
       <ol id="codes"></ol>
     </div>
     <ul class="next">
-      <li><b>Sign in</b><span>Open The War Room app on your computer and sign in as <code id="doneUser"></code> with your password.</span></li>
+      <li><b>Sign in</b><span><a class="open-app" href="/app/">Open The War Room</a> and sign in as <code id="doneUser"></code> with the password you just chose.</span></li>
     </ul>
   </section>
 </main>
@@ -346,10 +347,10 @@
       var name = document.createElement("b");
       if (picked.id === "commissioner") {
         name.textContent = "commissioner's seat";
-        lede.append("The ", name, " is yours.");
+        lede.append("You now hold the ", name, ".");
       } else {
         name.textContent = picked.name;
-        lede.append("The ", name, " are yours.");
+        lede.append("You now own ", name, ".");
       }
       $("doneUser").textContent = username;
       var codes = data.recoveryCodes || [];

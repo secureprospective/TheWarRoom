@@ -42,7 +42,8 @@ const game = (week: number, home: string, away: string, hp?: number, ap?: number
   status: '', homePoints: hp, awayPoints: ap, winner, words: '', why: [] });
 const results = (week: number, published: boolean): PulseResults => ({ league: 'lg', season: 2026, week,
   revision: 1, published, words: '', games: [game(week, 'b', 'c', 90, 80, published ? 'b' : undefined),
-    game(week, 'a', 'c', 100.5, 99, published ? 'a' : undefined)], scores: [], missed: [] });
+    { ...game(week, 'a', 'c', 100.5, 99, published ? 'a' : undefined),
+      ...(published ? {} : { homeProvisional: 100.5 }) }], scores: [], missed: [] });
 const loaded = (): LeagueReading => ({ pulse: { value: pulse() },
   season: { value: { schedule: { season: 2026, weeks: [1, 2, 3].map(week => ({ week,
     games: [{ home: 'a', away: week === 1 ? 'b' : 'c' }] })) }, played: { 1: { ...results(1, true),
@@ -54,6 +55,7 @@ const loaded = (): LeagueReading => ({ pulse: { value: pulse() },
 async function show(league: LeagueChoice, read: () => Promise<LeagueReading>,
   extra: { onTrade?: () => void; onControlRoom?: () => void; onWatch?: () => void;
     readRoster?: () => Promise<LeagueRosterPlayer[]>;
+    readWeek?: (league: string, season: number, week: number) => Promise<PulseResults>;
     readProjections?: (league: string, season: number, week: number, players: string[])
       => Promise<Record<string, number>> } = {}) {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -105,6 +107,13 @@ describe('LeagueTab', () => {
     });
     const reading = await readLeague('lg', 'a', false, port as never);
     expect(reading.status?.error).toBe('Assets held');
+  });
+  it('current week with no game in play is not LIVE', async () => {
+    const view = await show(owner, async () => loaded(), { readWeek: async (_l, _s, week) =>
+      week < 2 ? results(week, true) : { ...results(week, false), games: [game(week, 'a', 'c')] } });
+    await click(/^Scores$/);
+    expect(view.textContent).toContain('WEEK 2 · THIS WEEK');
+    expect(view.textContent).not.toContain('LIVE');
   });
   it('report a problem opens the shared report form', async () => {
     const view = await show(owner, async () => loaded());
