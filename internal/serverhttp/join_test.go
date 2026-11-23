@@ -62,8 +62,9 @@ func (f *hostedFixture) lastCommissionerEvent(t *testing.T) commissioner.Record 
 	return *last.Payload.Commissioner
 }
 
-// The commissioner's join link lists franchises; one successful claim seats an ordinary owner and
-// consumes the link. Taken, wrong, rotated, revoked and reused links are refused; release reopens a franchise.
+// The commissioner's join link lists franchises; each claim seats an ordinary owner and the same link
+// stays live for the next open seat (ruling 2026-11-23). Taken picks, wrong, rotated and revoked links
+// are refused; release reopens a franchise.
 func TestJoinLinkClaimReleaseAndRotation(t *testing.T) {
 	f := newHostedFixture(t, true)
 	commish := governance.Principal(f.principal)
@@ -85,15 +86,29 @@ func TestJoinLinkClaimReleaseAndRotation(t *testing.T) {
 	f.post(t, serverhttp.JoinFranchisesPath, joinBody(wrong, "", ""), "", "", http.StatusForbidden)
 	f.post(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.02", "thief"), "", "", http.StatusConflict)
 	f.post(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.04", "fourth"), "", "", http.StatusCreated)
-	f.post(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.05", "fifth"), "", "", http.StatusForbidden)
-	f.post(t, serverhttp.JoinFranchisesPath, joinBody(code.Code, "", ""), "", "", http.StatusForbidden)
-	var secondAccount int
-	if err := f.pools.Read().QueryRowContext(t.Context(), `SELECT count(*) FROM accounts WHERE username = 'fifth'`).Scan(&secondAccount); err != nil || secondAccount != 0 {
-		t.Fatalf("reused link created second account: count=%d err=%v", secondAccount, err)
+	first := f.lastCommissionerEvent(t)
+	if first.Command.Command != "commish.seat.replace" || first.Command.Args.People.Franchise != "franchise.04" || first.Principal != f.principal {
+		t.Fatalf("claim event = %s %+v by %s", first.Command.Command, first.Command.Args.People, first.Principal)
 	}
+	// Person B opens the same link after A claimed: B sees the league, A's seat taken, the rest open.
+	// (Service calls here keep the test under the doors' 10-a-minute limit.)
+	seen, err := f.join.Franchises(t.Context(), accounts.RawJoin{League: "native.hosted", Code: code.Code})
+	if err != nil {
+		t.Fatalf("second holder opening the link after a claim: %v", err)
+	}
+	for _, franchise := range seen {
+		if franchise.ID == "franchise.05" && franchise.Taken || franchise.ID == "franchise.04" && franchise.ClaimedBy != "fourth" {
+			t.Fatalf("second holder sees %+v", franchise)
+		}
+	}
+	if _, err := f.join.Claim(t.Context(), accounts.RawJoinClaim{RawJoin: accounts.RawJoin{League: "native.hosted", Code: code.Code},
+		Franchise: "franchise.04", Username: "thief2", Password: "private-password"}); !errors.Is(err, accounts.ErrFranchiseTaken) {
+		t.Fatalf("second holder took a claimed seat: %v", err)
+	}
+	f.post(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.05", "fifth"), "", "", http.StatusCreated)
 	claimed := f.lastCommissionerEvent(t)
-	if claimed.Command.Command != "commish.seat.replace" || claimed.Command.Args.People.Franchise != "franchise.04" || claimed.Principal != f.principal {
-		t.Fatalf("claim event = %s %+v by %s", claimed.Command.Command, claimed.Command.Args.People, claimed.Principal)
+	if claimed.Command.Args.People.Franchise != "franchise.05" || !strings.HasPrefix(claimed.Command.Request, "join.claim.") {
+		t.Fatalf("second claim event = %+v request %q", claimed.Command.Args.People, claimed.Command.Request)
 	}
 	bearer := f.login(t, "fourth", "private-password")
 	f.post(t, serverhttp.LedgerPath, `{"protocol":1,"league":"native.hosted"}`, bearer, "", 200)
@@ -105,8 +120,8 @@ func TestJoinLinkClaimReleaseAndRotation(t *testing.T) {
 	if !listed["franchise.04"].Taken || listed["franchise.04"].ClaimedBy != "fourth" {
 		t.Fatalf("claimed franchise = %+v, want claimedBy fourth", listed["franchise.04"])
 	}
-	if listed["franchise.05"].Taken || listed["franchise.05"].ClaimedBy != "" {
-		t.Fatalf("open franchise = %+v, want no claimant", listed["franchise.05"])
+	if listed["franchise.06"].Taken || listed["franchise.06"].ClaimedBy != "" {
+		t.Fatalf("open franchise = %+v, want no claimant", listed["franchise.06"])
 	}
 
 	if err := f.join.Release(t.Context(), "native.hosted", "franchise.04", commish); err != nil {
@@ -132,6 +147,7 @@ func TestJoinLinkClaimReleaseAndRotation(t *testing.T) {
 	}
 }
 
+// Two holders of the one link race for the same franchise: one owner, one 409, one account.
 func TestJoinLinkConcurrentClaimsConsumeOneSeatOnly(t *testing.T) {
 	f := newHostedFixture(t, true)
 	code, err := f.join.Rotate(t.Context(), "native.hosted", governance.Principal(f.principal))
@@ -142,7 +158,7 @@ func TestJoinLinkConcurrentClaimsConsumeOneSeatOnly(t *testing.T) {
 	start := make(chan struct{})
 	statuses := make(chan int, 2)
 	var attempts sync.WaitGroup
-	for i, franchise := range []string{"franchise.04", "franchise.05"} {
+	for i, franchise := range []string{"franchise.04", "franchise.04"} {
 		attempts.Add(1)
 		go func(franchise, username string) {
 			defer attempts.Done()
@@ -160,10 +176,10 @@ func TestJoinLinkConcurrentClaimsConsumeOneSeatOnly(t *testing.T) {
 		switch status {
 		case http.StatusCreated:
 			created++
-		case http.StatusForbidden:
+		case http.StatusConflict:
 			refused++
 		default:
-			t.Fatalf("concurrent claim status = %d, want 201 or 403", status)
+			t.Fatalf("concurrent claim status = %d, want 201 or 409", status)
 		}
 	}
 	if created != 1 || refused != 1 {
@@ -178,9 +194,45 @@ func TestJoinLinkConcurrentClaimsConsumeOneSeatOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	franchises := f.franchises(t, inspection.Code)
-	if franchises["franchise.04"].Taken == franchises["franchise.05"].Taken {
-		t.Fatalf("concurrent claims state = %v, %v; want exactly one seat", franchises["franchise.04"].Taken, franchises["franchise.05"].Taken)
+	if !franchises["franchise.04"].Taken || !strings.HasPrefix(franchises["franchise.04"].ClaimedBy, "concurrent.") {
+		t.Fatalf("concurrent claims state = %+v; want franchise.04 owned by the winner", franchises["franchise.04"])
 	}
+}
+
+// Once every franchise has an owner the one link says so plainly, both on opening and on claiming,
+// and creates no account. Releasing a seat lets the same link fill it again.
+func TestJoinLinkSaysLeagueIsFull(t *testing.T) {
+	f := newHostedFixture(t, true)
+	commish := governance.Principal(f.principal)
+	code, err := f.join.Rotate(t.Context(), "native.hosted", commish)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for id, taken := range f.openFranchises(t, code.Code) {
+		if taken {
+			continue
+		}
+		claim := accounts.RawJoinClaim{RawJoin: accounts.RawJoin{League: "native.hosted", Code: code.Code}, Franchise: id,
+			Username: "owner." + strings.TrimPrefix(id, "franchise."), Password: "private-password"}
+		if _, err := f.join.Claim(t.Context(), claim); err != nil {
+			t.Fatalf("claim %s with the shared link: %v", id, err)
+		}
+	}
+	const full = "Every franchise in this league already has an owner. Ask your commissioner if you think this is wrong."
+	if body := string(f.post(t, serverhttp.JoinFranchisesPath, joinBody(code.Code, "", ""), "", "", http.StatusGone)); strings.TrimSpace(body) != full {
+		t.Fatalf("full league listing = %q", body)
+	}
+	if body := string(f.post(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.04", "late"), "", "", http.StatusGone)); strings.TrimSpace(body) != full {
+		t.Fatalf("full league claim = %q", body)
+	}
+	var late int
+	if err := f.pools.Read().QueryRowContext(t.Context(), `SELECT count(*) FROM accounts WHERE username = 'late'`).Scan(&late); err != nil || late != 0 {
+		t.Fatalf("full league created an account: count=%d err=%v", late, err)
+	}
+	if err := f.join.Release(t.Context(), "native.hosted", "franchise.04", commish); err != nil {
+		t.Fatal(err)
+	}
+	f.post(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.04", "late"), "", "", http.StatusCreated)
 }
 
 // The commissioner can also own a team on the same sign-in (11-14 ruling): taking an open franchise records

@@ -38,7 +38,6 @@ func (joinSeats) Franchises(context.Context, string) ([]accounts.JoinFranchise, 
 func (joinSeats) IsCommissioner(context.Context, string, governance.Principal) (bool, error) {
 	return true, nil
 }
-func (joinSeats) LinkClaimed(context.Context, string, string) (bool, error) { return false, nil }
 func (joinSeats) Seat(context.Context, string, string, governance.Principal, governance.Principal) error {
 	return nil
 }

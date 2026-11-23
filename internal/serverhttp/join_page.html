@@ -279,7 +279,14 @@
   }
   function spent() {
     $("welcomeHead").textContent = "This link no longer works.";
-    $("welcomeLede").textContent = "Each link works once, and your commissioner can replace it. Already claimed your seat? Open The War Room app and sign in with the name and password you chose. If not, ask your commissioner for a new link.";
+    $("welcomeLede").textContent = "Your commissioner may have replaced it. Already claimed your seat? Open The War Room app and sign in with the name and password you chose. If not, ask your commissioner for the current link.";
+    $("welcomeError").textContent = "";
+    $("start").hidden = true;
+    $("facts").hidden = true;
+  }
+  function full(message) {
+    $("welcomeHead").textContent = "This league is full.";
+    $("welcomeLede").textContent = message;
     $("welcomeError").textContent = "";
     $("start").hidden = true;
     $("facts").hidden = true;
@@ -305,15 +312,19 @@
       })
       .catch(function (err) {
         if (err.status === 403) { spent(); return; }
+        if (err.status === 410) { full(err.message); return; }
         $("welcomeError").textContent = err.message;
       })
       .finally(function () { $("start").disabled = false; });
   }
-  // Check the link as the page opens, so a used one never invites a tap.
+  // Check the link as the page opens, so a dead link or a full league never invites a tap.
   function check() {
     if (!league || !code) return;
     api("/v1/auth/join/franchises", { protocol: 1, join: { league: league, code: code } })
-      .catch(function (err) { if (err.status === 403) spent(); });
+      .catch(function (err) {
+        if (err.status === 403) spent();
+        if (err.status === 410) full(err.message);
+      });
   }
   $("start").addEventListener("click", load);
   $("cA").addEventListener("click", function () { side = 0; render(); });

@@ -18,9 +18,15 @@ var (
 	ErrJoinRefused = errors.New("this join link is not valid; ask the commissioner for the current link")
 	// ErrFranchiseTaken is the loser of a claim race, or a pick of a franchise that already has an owner.
 	ErrFranchiseTaken = errors.New("that franchise already has an owner; pick another or ask the commissioner")
+	// ErrLeagueFull is a live link opened or used when every franchise already has an owner.
+	// The join page shows LeagueFullMessage for it.
+	ErrLeagueFull = errors.New("every franchise in this league already has an owner")
 	// ErrJoinCredentials is a username or password the claimant must change; it reveals nothing else.
 	ErrJoinCredentials = errors.New("choose a username of 3 to 64 letters, digits, dots, underscores or hyphens and a longer password")
 )
+
+// LeagueFullMessage is what a holder of a live link reads when the league has no open seat.
+const LeagueFullMessage = "Every franchise in this league already has an owner. Ask your commissioner if you think this is wrong."
 
 // JoinRepository holds join link digests and creates the claimant's account.
 type JoinRepository interface {
@@ -43,11 +49,10 @@ type JoinFranchise struct {
 }
 
 // JoinSeats is the league ledger as the join link uses it. Claim records the owner's seat and the
-// consumed link digest in one commissioner event; Seat and Release remain ordinary league actions.
+// link digest it was claimed with in one commissioner event; Seat and Release remain ordinary league actions.
 type JoinSeats interface {
 	Franchises(ctx context.Context, league string) ([]JoinFranchise, error)
 	IsCommissioner(ctx context.Context, league string, p governance.Principal) (bool, error)
-	LinkClaimed(ctx context.Context, league, digest string) (bool, error)
 	Seat(ctx context.Context, league, franchise string, owner, issuer governance.Principal) error
 	Claim(ctx context.Context, league, franchise string, owner, issuer governance.Principal, digest string) error
 	Release(ctx context.Context, league, franchise string, commissioner governance.Principal) error
@@ -56,8 +61,9 @@ type JoinSeats interface {
 // FUTURE-SEAM(join): every link-based sign-up (league recruiting, share-to-join) redeems through this
 // one service: a revocable per-league secret, first pick binds, an ordinary owner seat, ledger events.
 //
-// JoinService is pick-your-team sign-up: one revocable link per league, usable for one successful
-// claim. The commissioner issues a fresh link for each owner; the account is an ordinary owner of its seat.
+// JoinService is pick-your-team sign-up: one revocable link per league, reusable for every open seat
+// until the commissioner replaces or revokes it (ruling 2026-11-23). Each claim takes one franchise and
+// makes one new account, an ordinary owner of its seat.
 type JoinService struct {
 	store JoinRepository
 	seats JoinSeats
@@ -192,16 +198,12 @@ func (s *JoinService) Franchises(ctx context.Context, raw RawJoin) ([]JoinFranch
 		}
 		return claimFranchises(claim), nil
 	}
-	used, err := s.seats.LinkClaimed(ctx, raw.League, enrollmentDigest(raw.Code))
-	if err != nil {
-		return nil, fmt.Errorf("check join link use: %w", err)
-	}
-	if used {
-		return nil, ErrJoinRefused
-	}
 	list, err := s.seats.Franchises(ctx, raw.League)
 	if err != nil {
 		return nil, fmt.Errorf("read franchises: %w", err)
+	}
+	if leagueFull(list) {
+		return nil, ErrLeagueFull
 	}
 	for i := range list {
 		id := strings.TrimPrefix(list[i].Seat, "acct.")
@@ -246,7 +248,7 @@ func (r RawJoinClaim) Validate() error {
 }
 
 // Claim creates the owner's account and seats it in franchise, if the link is live and the franchise
-// has no owner. The successful seat event consumes the link; a second use gets ErrJoinRefused.
+// has no owner. The link stays live for the next claimant; a full league gets ErrLeagueFull.
 func (s *JoinService) Claim(ctx context.Context, raw RawJoinClaim) (Account, error) {
 	if err := raw.Validate(); err != nil {
 		return Account{}, err
@@ -281,13 +283,6 @@ func (s *JoinService) Claim(ctx context.Context, raw RawJoinClaim) (Account, err
 	}
 	s.claims.Lock()
 	defer s.claims.Unlock()
-	used, err := s.seats.LinkClaimed(ctx, raw.League, enrollmentDigest(raw.Code))
-	if err != nil {
-		return Account{}, fmt.Errorf("check join link use: %w", err)
-	}
-	if used {
-		return Account{}, ErrJoinRefused
-	}
 	if err := s.vacant(ctx, raw.League, raw.Franchise); err != nil {
 		return Account{}, err
 	}
@@ -305,6 +300,9 @@ func (s *JoinService) vacant(ctx context.Context, league, franchise string) erro
 	if err != nil {
 		return fmt.Errorf("read franchises: %w", err)
 	}
+	if leagueFull(list) {
+		return ErrLeagueFull
+	}
 	for _, f := range list {
 		if f.ID == franchise {
 			if f.Taken {
@@ -314,4 +312,14 @@ func (s *JoinService) vacant(ctx context.Context, league, franchise string) erro
 		}
 	}
 	return ErrJoinRefused
+}
+
+// leagueFull reports whether every franchise already has an owner.
+func leagueFull(list []JoinFranchise) bool {
+	for _, f := range list {
+		if !f.Taken {
+			return false
+		}
+	}
+	return len(list) > 0
 }

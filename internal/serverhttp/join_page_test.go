@@ -150,5 +150,5 @@ func TestJoinClaimIssuesRecoveryCodesOnce(t *testing.T) {
 	if err := f.pools.Read().QueryRowContext(t.Context(), `SELECT count(*) FROM account_recovery_codes WHERE account_id = ?`, claim.Account.ID).Scan(&stored); err != nil || stored != accounts.RecoveryCodeCount {
 		t.Fatalf("stored codes=%d: %v", stored, err)
 	}
-	f.post(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.04", "codes.owner"), "", "", http.StatusForbidden)
+	f.post(t, serverhttp.JoinClaimPath, joinBody(code.Code, "franchise.04", "codes.owner"), "", "", http.StatusConflict)
 }

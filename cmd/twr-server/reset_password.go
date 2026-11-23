@@ -13,7 +13,7 @@ import (
 )
 
 // runResetPassword is the commissioner's console door for a lost owner password. It rotates the
-// league link, releases the team, and prints a fresh link opened on that team: the owner claims it
+// league link, releases the team, and prints the new link opened on that team: the owner claims it
 // again with a new sign-in. Nothing here sets a password chosen by the commissioner.
 func runResetPassword(ctx context.Context, args []string, input io.Reader, output io.Writer) error {
 	flags := flag.NewFlagSet("twr-server reset-password", flag.ContinueOnError)
@@ -63,7 +63,7 @@ func resetPasswordAction(ctx context.Context, service *accounts.JoinService, lea
 		return fmt.Errorf("%s was released, but the new join link failed: %w", team, err)
 	}
 	link := serverhttp.JoinPageLink(league, code.Code, team)
-	_, err = fmt.Fprintf(output, "Reset link for %s: its owner must claim the team again with this one-time link. The previous league join link no longer works.\n  league %s\n  code   %s\n  open   %s\nShare it only with the new owner of %s. The old account keeps its password but no longer owns the team.\n",
+	_, err = fmt.Fprintf(output, "Reset link for %s: its owner must claim the team again with this link. It is now the league's one join link (it works for any unowned team); the previous link no longer works.\n  league %s\n  code   %s\n  open   %s\nShare it with the new owner of %s. The old account keeps its password but no longer owns the team.\n",
 		team, league, code.Code, link, team)
 	if err != nil {
 		return fmt.Errorf("print reset link (the new link is already live): %w", err)
