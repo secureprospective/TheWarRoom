@@ -14,7 +14,10 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - [ ] Lab data check: `model_runs`/`model_scores` rows and weekly stats exist for the rehearsal leagues.
 - [ ] Both leagues created on the Lab, one TEST draft each, clean; card to needs_you "ready for real drafts".
 
-## 3. Agents + routing (Christopher, 11-22 ~6 PM — overrides older notes)
+## 3. Agents + routing
+- **11-23 7:35 AM (LATEST, overrides all below): own Haiku subagents only (Agent tool, model haiku). NO Claudebox Haiku /
+  `claude -p` (Christopher needs Claudebox for other projects). AGY only when a 2nd opinion is absolutely necessary.**
+- (older, superseded where it conflicts) 11-22 ~6 PM:
 - **After the current lanes finish, Tom pushes the project himself.** Haiku subagents (Agent tool, model haiku)
   for small well-scoped jobs; **Sonnet at medium** for slightly larger ones. **Gemini weekly is thin: keep it
   for second opinions** (Argon reviews), not bulk building. Claudebox `claude -p` on a `git archive` copy
@@ -30,37 +33,26 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - **Base every build on the branch the Lab runs** (lab-v5x / rehearsal-auto), not main. Main is 37+ commits behind.
   Memory: `base-briefs-on-live-stack.md`.
 
-## 4. In flight (11-23 ~7:45 AM CT) — Christopher: "take the wheel ... drive the session" (phones are test-only, use freely)
-- **Merges ("merge all", Christopher 11-23):** PR **#468 MERGED** (main 2806fb444 = Lab v50–v53 + resume docs).
-  Remaining = ONE branch `session/merge-rest-1123` in worktree `.worktrees/merge-read-1123`: season box (#467 content),
-  report card (Agent.Read + twr-check), `twr read`, no-team sign-in fix, line budget + re-counted baseline + one-write fix.
-  First push FAILED pre-push on a >110-char test line (fixed, not yet committed at compaction). Next: commit, push
-  (frontend must be built: `cd frontend && npm run build`), open PR, close #467 as included, CI green, squash-merge.
-  Push log: `~/fleet/runs/overnight-rehearsal-1122/push-merge-rest.log`.
-- Old worktrees `.worktrees/merge-lab-1123`, `merge-sb-1123` are done (branches merged/folded): remove after merge-rest lands.
-- **Overnight run closed** 11-23 ~7:30 AM. Watcher for any new background job: `~/fleet/bin/run-watch.sh` (skill overnight-run v3).
-- (old) All of Claudebox's Haiku jobs are finished.
-  - Claudebox run dirs `/root/{twr-read,b2,b2impl,b3,b7,ap,ap1,ap2}-1122/` are disposable (their patches are applied).
-- **Overnight run dir:** `~/fleet/runs/overnight-rehearsal-1122/`: REPORT.md (event log), B2-PLAN.md,
-  AUTOPICK-PLAN.md (SUPERSEDED), test-inventory/ (filed workbench).
-- **Morning report:** `~/Downloads/TOM-REPORT-overnight-1122.md`, with Needs Christopher at the top.
-- **Six brief reports:** `~/Downloads/TOM-REPORT-{canary-inventory,line-budget,desktop-keep-list,test-inventory,ai-parts-licences}.md`,
-  plus T711 = PR #467.
-- **Open ask:** `~/Downloads/TOM-ASKS-CLAUDEBOX-owner-pick-door-1122.md` (copy at claudebox /root/).
-  - It asks for a review of the B7 16-line fix only.
-  - Its earlier auto-pick questions are withdrawn.
-  - Answer will land at `~/Downloads/CLAUDEBOX-ANSWERS-TOM-owner-pick-door-1122.md`.
-- **Worktrees from tonight:** season-box (now on branch session/autopick-1122), line-budget, twr-read, lab-v53.
-  - Keep t705: node_modules symlinks point at it.
-- **Phones:** iPhone 13 USB (`idevice_id -l` 00008110-000A74960EA0401E). S8 SM-G892U on wifi adb `192.168.1.122:5555`.
-  - The S8's adb-wifi is lost on reboot. Its USB is flaky: catch it with a 1 s `adb devices` loop, then `adb tcpip 5555`.
-  - The iPhone's Chrome can be launched with `pymobiledevice3 developer dvt launch com.google.chrome.ios`.
-    Webinspector eval still hung all night (locked?).
-- **Claude-OS:** running, at the desktop.
+## 4. In flight (11-23 ~9:00 AM CT) — Christopher: "go ahead, keep driving"
+- **Nothing running in the background.** No agents, no pushes, no watchers.
+- **PR #470** `session/no-seat-quiet-1123` (worktree `.worktrees/no-seat-1123`, head 3c27c45cc): no-seat 403 on 'enter' →
+  plain message (no red box) + this resume's 11-23 rulings. Pushed; CI not watched yet; WAITS for Christopher's merge OK.
+  After merge: remove the worktree.
+- **Report card job on Hermes** (installed 11-23): `~/fleet/twr-reportcard/{run.sh,twr-check,server.url}`, user timer
+  `twr-reportcard.timer` Tue 9 AM CT (first fire Tue 11-24: exits quietly, before season). Missing: `~/fleet/twr-reportcard/token`
+  (read-only connection token, chmod 600). Leagues native.rehtest-default/-twin; target lab. Test env vars REPORTCARD_DATE /
+  REPORTCARD_PLAN. Build copy + KEEP.md: `~/scratch/reportcard-1123/`.
+- Phones: S8 on wifi adb + Chrome inspector works (`~/fleet/bin/phone-chrome.py s8 eval|shot|goto`); iPhone inspector works on
+  a real page. Keep the adb server (pid in tidy-check) running for the phones.
+- Scratch `~/scratch/merge-1123/` (KEEP.md): PR bodies, s8-v54.png / s8-v55.png evidence.
 
-## 5. Gates / status (11-23 6:20 AM)
+## 5. Gates / status (11-23 ~9 AM)
 | What | State |
 |---|---|
+| **main = 9fcc4a771** (#469) | after #468 2806fb444. Season box, report card checker, twr read, no-team sign-in, line-budget draft. CI all green |
+| **Lab = v55** `session/no-seat-quiet-1123` 259e3a0d | main + no-seat polish. 8/8 OK at 8:49 AM. S8 shows only the plain no-team message + sign-in form (s8-v55.png) |
+| Lab v54 = main 9fcc4a77 | 8/8 OK; S8 showed the message but with the raw red error above (fixed in v55) |
+| Report card on Hermes | tested 3 paths on a copy of plan.json: before season quiet; no token → 1 red line; bad token → reaches Lab, plain refusal |
 | **Lab = v53** `session/lab-v53-1122` a211f8f9e | v52 ce7417190 + the B7 owner-pick-door fix. Status 8/8 OK at 6:14 AM (sign-in backup was paused for the first ~15 min after restart, then OK) |
 | Lab v50 b94fe7d1 / v51 087c96b9 / v52 ce741719 | Each shipped 8/8 OK. S8 self-updated e45a22cef5c1 -> 6b38e277e7ef -> 195e3b46bacf (T668 proven on Android). iPhone not checked |
 | Lab data | model scores imported (run 1, 2026, 2,277). Test leagues native.rehtest-default + native.rehtest-twin created (default_32, 2026); commissioner account 564f67ef holds franchise.01 + commissioner seat in both |
@@ -141,36 +133,32 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
    locked starters kept, a human lineup never touched; dynasty order ignores each league's own scoring this once;
    a benched player starts only to meet a minimum nobody playing can fill (O-Line card on bye).
 
-## 9. Ledger state (11-23: #468 on main; rest on session/merge-rest-1123)
-All work committed and pushed on branches (rehearsal-auto, lab-v52-1122, t685-1122, t705-1122, t705-screen-1122, t688-replay-1122,
-should9-1122, should10-1122). Nothing uncommitted.
+## 9. Ledger state (11-23 ~9 AM)
+main 9fcc4a771 holds everything from "merge all" (#468, #469; #467 closed as included). Remote `session/autopick-1122` deleted
+(content already on main). Only open branch of this workstream: `session/no-seat-quiet-1123` (PR #470). Nothing uncommitted.
 
-## 10. Next actions, in order (11-23 ~7:45 AM)
-1. Land merge-rest: commit the line-length fix, push, PR (pr skill format), close #467 as included, CI, squash-merge.
-2. Lab release from new main (`REF=origin/main ~/fleet/bin/twr-lab-release-ref.sh <V=54> <prev targets.json> ~/fleet/runs/labrel-v54-1123`),
-   check 8/8, then S8 should show the sign-in screen instead of "could not be reached" (prove on the phone, screenshot).
-3. Tracker: release line + cards (merges done, no-team fix). Task list on Hermes.
-4. Phones: once Christopher has signed in on them, check v52/v53 screens (Dynasty column, update worker) at phone width.
-5. Prep the Tuesday report card job on Hermes (twr-check; needs a read token from the helper connection; first run Tue Dec 15).
-6. When Christopher pastes the twr1 helper line, run `setup-commish.sh` per league
-   (`~/fleet/runs/twr-rehearsal-leagues-runbook-1122/setup/`, twin needs `twin`).
-   - Set a short `draft.clock` and `draft.onExpire = autopick`, open the startup draft.
-   - Watch auto-picks fill 31 teams (server.log "draft autopick").
-   - Take screenshots on Claude-OS.
-   - Try `twr-check` with a read token.
-   - Delete the test leagues (`twr-server delete-league`, server stopped). Rehearsal A card -> needs_you "ready for real drafts".
-4. Check on the iPhone (unlocked): the v53 update worker and cache. Seat the S8 account (needs Christopher's commissioner sign-in), then check the Dynasty column at phone width.
-5. After Claudebox's answer: if the B7 review is OK, keep it. Delete remote `session/autopick-1122` (superseded) once Claudebox agrees.
-6. Later: T694 after Claudebox confirms one-season; laptop Season server (not before Dec 13).
+## 10. Next actions, in order (11-23 ~9 AM) — all but 1 wait on Christopher's commissioner sign-in
+1. Watch CI on #470 (`gh pr checks 470`); merge only with Christopher's OK (`gh pr merge 470 --squash`), then remove
+   `.worktrees/no-seat-1123` and Lab-release main as v56 if the code differs from v55.
+2. With Christopher signed in as commissioner (account 564f67ef, franchise.01 in both test leagues): make join links for the
+   S8 account 3da8c020 and the iPhone (never print links), seat both phones, then check v52/v53 screens at phone width.
+3. When he pastes the twr1 helper line: `setup-commish.sh` per league (`~/fleet/runs/twr-rehearsal-leagues-runbook-1122/setup/`,
+   twin needs `twin`); short `draft.clock`, `draft.onExpire = autopick`, open startup draft, watch auto-picks fill 31 teams
+   (server.log "draft autopick"), screenshots, then delete/reset the test leagues. Rehearsal A card -> "ready for real drafts".
+4. Put a read-only token at Hermes `~/fleet/twr-reportcard/token` (chmod 600); dry-run with `REPORTCARD_DATE=2026-12-15
+   REPORTCARD_PLAN=/tmp/copy.json ./run.sh`.
+5. T715 Lab test confirmer: NO server change. Lab-only commissioner account whose authenticator secret lives only in the Lab test
+   script; script signs in, steps up, POSTs /v1/native/confirm (serverhttp/confirmation.go:76-98). Needs the account created.
+6. Later: T694; laptop Season server (not before Dec 13); line-budget into CI (T709); season box real binary + fake clock (T711).
 
 ## 11. Needs Christopher
-- Sign in on the iPhone (on the Lab sign-in screen now) and, after v54, on the S8, with his own account (holds franchise.01).
-- Test leagues: AI helpers -> Connect a helper -> "also record" in each test league; paste the twr1 line to Tom.
+- ONE commissioner sign-in on the Lab unlocks: phone seats, the helper line for test drafts, the report-card token, T715.
+- Merge OK for PR #470 (`gh pr merge 470 --squash`).
 - RULED 11-23 ~8:15 AM (Christopher): (a) the MFL solo-owner tools (mflref, transactions, offers, what-if) STAY for now;
   the desktop is not retired before the rehearsal season and these tools are decided later (no delete).
   (b) YES to a test-only "confirmer" that types the G2/G3 confirmation code, on Lab test leagues ONLY; never the
   Season server or a real league.
-- Merges: DONE as authorised ("merge all" 11-23) — no further merge OK needed for these five.
+- "merge all" (11-23) is used up: #468 + #469 merged. New PRs need a new OK.
 
 ## 12. Environment notes
 - Guard hook: any command holding both `push` and a `-f`/`--force` (even `rm -f`, `worktree remove --force`) is blocked as a
@@ -183,6 +171,8 @@ should9-1122, should10-1122). Nothing uncommitted.
 - New worktrees need `frontend/dist/.placeholder` (and a `frontend/node_modules` symlink for `make lint`).
 
 ## 13. Honest status
+11-23: the merged code runs on the Lab (v54/v55) and the S8 screen is proven; test drafts, seats and the report card against
+real league data are still unproven because they wait on the commissioner sign-in. Older note:
 Code is unit-tested and combined; NOTHING of the rehearsal stack has run on a real server yet. Unproven until tonight's Lab run:
 create-league on the real server, import-model-scores on the real reference.db, refresh-nfl-schedule with empty weeks 1-13,
 helper-token rights for pools/draft.clock/draft.startup.open, draft.timer side args, O-Line close on 32 teams, draft speed on the
