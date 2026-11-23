@@ -165,6 +165,11 @@ func (s *Store) ProcessDueAutoPicks(ctx context.Context, league string, at time.
 	stalled := map[commissioner.DraftKey]bool{}
 	cache := map[commissioner.DraftKey][]string{}
 	for {
+		// Each committed pick is recorded at the store clock; read the draft through that instant so the
+		// next iteration sees it. A frozen clock keeps the caller's time.
+		if now := s.now(); now.After(at) {
+			at = now
+		}
 		records, err := s.nativeRecords(ctx, league)
 		if err != nil {
 			return err
