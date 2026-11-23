@@ -246,7 +246,9 @@ function Power({ b, mine }: { b: HomeBrief; mine: string }) {
     <div className="m" style={{ padding: '6px 12px', font: '10px var(--mono)', color: 'var(--ink3)',
       borderBottom: '1px solid var(--edge)' }}>SEASON · {odds?.powerWords}</div>
     {rows.map(r => row(`pw${r.franchise === mine ? ' me' : ''}`, <><span className="m">{r.power}</span>
-      <span className="nm">{r.name}</span><span className="v">{Math.round(r.powerScore * 100)}</span>
+      <span className="nm">{r.name}
+      {r.dynastyPower ? <small> · Dynasty #{r.dynastyPower}</small> : null}</span>
+      <span className="v">{Math.round(r.powerScore * 100)}</span>
       <span className="bar"><i style={{ width: `${Math.round(r.powerScore * 100)}%` }} /></span></>,
       r.franchise))}
   </>;
