@@ -217,7 +217,8 @@ func TestDesktopHostedLineupDraftReconnectAndRevocation(t *testing.T) {
 	if err := json.Unmarshal(draftResponse.Data, &draft); err != nil {
 		t.Fatal(err)
 	}
-	if draft.Draft.OnClock == nil || draft.Draft.OnClock.Owner != "franchise.01" || len(draft.Available) != 1 {
+	// The practice pool holds two 2027 rookies, 5001 and 5002 (tools/hostedfixture/workflows.go).
+	if draft.Draft.OnClock == nil || draft.Draft.OnClock.Owner != "franchise.01" || len(draft.Available) != 2 {
 		t.Fatalf("practice draft not usable: %+v", draft)
 	}
 	pick := commissioner.DraftPickInput{League: "native.hosted", Season: 2027, Franchise: "franchise.01", Player: "5001", Request: "pick.one", Expected: draft.Revision}

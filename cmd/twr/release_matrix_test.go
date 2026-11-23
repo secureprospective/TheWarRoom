@@ -56,6 +56,8 @@ type releaseCLIFixture struct {
 	address   string
 	// pin is the league's pin the server reads on every request; a test moves the football by changing it.
 	pin *serverhttp.LeaguePin
+	// credentials is the account store the server signs in from; a test seats more owners in it.
+	credentials *accountstore.Store
 }
 
 func newReleaseCLI(t *testing.T) *releaseCLIFixture { return newReleaseCLIWith(t, nil) }
@@ -143,7 +145,7 @@ func newReleaseCLIWith(t *testing.T, seed func(context.Context, *history.Store, 
 	t.Cleanup(server.Close)
 	memory := &memoryStore{tokens: map[string]string{}}
 	e := env{configDir: t.TempDir(), roots: server.Client().Transport.(*http.Transport).TLSClientConfig.RootCAs, out: &bytes.Buffer{}, keychain: func(origin, league string) tokenStore { return memoryKey{store: memory, key: origin + " " + league} }}
-	return &releaseCLIFixture{ledger, tokens, human.RawSession, string(principal), e, memory, server.URL, pin}
+	return &releaseCLIFixture{ledger, tokens, human.RawSession, string(principal), e, memory, server.URL, pin, credentials}
 }
 
 func TestReleaseMatrixCLIAndMCPTokenModes(t *testing.T) {
