@@ -61,3 +61,25 @@ draft in existing PWA draft room, no clock for him, instant auto-picks, test dra
 laptop = season server (Sat updates w/ OK, frozen game days); lab open for live fixes on build Sundays; Monday report card;
 wall = real live screens by Dec 5; Dec 6 recording + overnight phone/tablet size sweep + real S8/iPhone live session on lab.
 Standing: reuse what exists.
+
+## Part 6 (quality and silent breakage) — Christopher 11-22 evening
+Why: the code base is too big for one person and his AI helpers to hand-check. Go production grew from
+142k lines (11-09) to 168k (11-22). Breakage is found only by chance. TWR must stay AI-maintained AND
+human-maintained: minimal, fast, robust.
+28. **Randomized canary checks** (T708). About 20 league journeys (sign in, lineup, live score moves, trade, waivers, final,
+    recap) run on the Lab by a robot through the twr CLI/MCP. Each run picks a random subset at random times, with the seed
+    logged so a red run can be replayed. The aim is human-like coverage at low token cost. Results show green/red on the tracker.
+    The T688 report card is the seed of this. **Gate:** no new infrastructure (tiny models, AI harness) lands before the canaries exist.
+29. **Line budget** (T709). Extend the root-file ratchet to the whole repo. A feature PR is net ~0 lines or carries a written
+    reason. Baselines only go down.
+30. **Desktop app out of the main build** (T710). It was a loss leader and learning, not the answer. Before removal, list
+    anything worth keeping; Claudebox reviews that list.
+31. **Season-in-a-box Go test on every PR** (T711):
+    - real twr-server binary, temp dirs, fake clock;
+    - one recorded real NFL week replayed from the archive;
+    - driven through the twr CLI (testscript style): draft, lineup lock, live scoring, final, stat correction, standings, recap.
+    It extends release_matrix_test and the league-refresh end-to-end test.
+32. **Inspection after the season**, one area a week. The season-in-a-box test and the canaries prove nothing broke.
+    Piece-tests they make redundant are removed carefully.
+33. **AI-harness research re-run on 2027-01-02** (T707). The tiny-model and harness plan (infra-map §7) is directional bias,
+    not a build.
