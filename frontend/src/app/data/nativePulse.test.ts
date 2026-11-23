@@ -115,3 +115,11 @@ it('preserves a uint64 odds seed as an exact decimal string', () => {
   'native.x', 2026);
   expect(odds.seed).toBe(seed);
 });
+
+it('reads the dynasty power rank beside the on-field-now one', () => {
+  const odds = parsePulseOdds({ league: 'native.x', name: 'L', season: 2026, revision: 1, status: '',
+    words: '', powerWords: '', gameWords: '', oddsWords: '', week: 10, runs: 0, seed: '1', games: [],
+    rows: [{ franchise: 'franchise.01', name: 'A', rank: 1, record: '0-0', power: 1, powerScore: 0.9,
+      dynastyPower: 32, dynastyScore: 0.1, expected: 100 }] }, 'native.x', 2026);
+  expect(odds.rows[0]).toMatchObject({ power: 1, dynastyPower: 32, dynastyScore: 0.1 });
+});
