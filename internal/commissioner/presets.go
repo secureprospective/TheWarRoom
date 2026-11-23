@@ -20,6 +20,10 @@ const (
 	// PresetMirror16 is the 16-Team Mirror: two sides, each with its own copy of every player.
 	PresetMirror16 = "mirror_16"
 	mirror16Teams  = 16
+	// PresetOneSeason10, 12 and 16 fill in a one-season league: no rookie draft or taxi squad.
+	PresetOneSeason10 = "one_season_10"
+	PresetOneSeason12 = "one_season_12"
+	PresetOneSeason16 = "one_season_16"
 	// PresetMFLLeague is an MFL league's own settings, carried value for value by the import: the one
 	// entry whose values Go reads from the league being moved rather than from the catalog.
 	PresetMFLLeague = "mfl_league"
@@ -72,6 +76,7 @@ func presetCatalog() []presetEntry {
 			native: true, source: SourceNative, defaultTeams: mirror16Teams, choice: "the 16-Team Mirror",
 			history: "the 16-Team Mirror rules", preview: "16-Team Mirror rules", citation: "16-Team Mirror rules",
 			rules: leaguerules.Mirror16ForTeams},
+		oneSeason(PresetOneSeason10, 10), oneSeason(PresetOneSeason12, 12), oneSeason(PresetOneSeason16, mirror16Teams),
 		{StartingPreset: StartingPreset{ID: PresetLegacy, Label: "Legacy NFL",
 			Description:    "The Legacy NFL's rules, as its league runs them. Every value can be changed afterwards.",
 			SuggestedTeams: legacyTeams},
@@ -90,6 +95,17 @@ func presetCatalog() []presetEntry {
 			history: "the MFL league's own settings", preview: "Your MFL league's own settings",
 			citation: "Your MFL league"},
 	}
+}
+
+func oneSeason(id string, teams int) presetEntry {
+	name := fmt.Sprintf("%d-Team One Season", teams)
+	return presetEntry{StartingPreset: StartingPreset{ID: id, Label: name,
+		Description: name + " plays this season only: a startup draft with one-year minimum contracts, no " +
+			"rookie draft, no taxi squad, and computer picks ranked by this season's value. Every value can " +
+			"be changed afterwards.", SuggestedTeams: teams},
+		native: true, source: SourceNative, defaultTeams: teams, choice: "the " + name,
+		history: "the " + name + " rules", preview: name + " rules", citation: name + " rules",
+		rules: leaguerules.OneSeasonForTeams}
 }
 
 // StartingPresets are the presets a new app league may start from, for the start form.

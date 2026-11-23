@@ -38,7 +38,7 @@ func presetLeague(t *testing.T, preset string, teams int) []Record {
 // and preview words and its rules in force hash to what they were before the catalog (20a00b25). The
 // rules reading is pinned too where the citation wording did not change; the 32-Team Default's reading
 // now cites its own preset (see TestStartingCitationNamesTheLeaguesOwnPreset). Player pools and sides
-// (F8), range rules and the startup rookies setting are the only additions since: without them every digest is unchanged.
+// (F8), range rules and the startup rookies setting and the computer pick ranking are the only additions since: without them every digest is unchanged.
 func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 	for _, c := range []struct {
 		preset        string
@@ -75,13 +75,14 @@ func withoutPools(records []Record, rules *leaguerules.RuleSet, reading *Rules) 
 	f8 := func(field string) bool {
 		return field == poolsField || field == sidesField || field == "scoring.rules" ||
 			field == "draft.startupRookies" || field == "schedule.follow" ||
-			field == "lineup.lock" || field == "league.startingAssets"
+			field == "lineup.lock" || field == "league.startingAssets" || field == "draft.autopickRanking"
 	}
 	records[0].Command.Args.Seed = slices.DeleteFunc(slices.Clone(records[0].Command.Args.Seed),
 		func(s SeedValue) bool { return f8(s.Field) })
 	rules.League.Pools, rules.League.Sides = leaguerules.Value[leaguerules.PlayerPools]{}, leaguerules.Value[map[string]string]{}
 	rules.Scoring.Rules = leaguerules.Value[map[leaguerules.StatID][]leaguerules.RangeRule]{}
 	rules.Draft.StartupRookies = leaguerules.Value[bool]{}
+	rules.Draft.AutoPickRanking = leaguerules.Value[leaguerules.AutoPickRanking]{}
 	rules.Schedule.Follow = leaguerules.Value[leaguerules.ScheduleFollow]{}
 	rules.Lineup.Lock = leaguerules.Value[leaguerules.LineupLock]{}
 	rules.League.StartingAssets = leaguerules.Value[leaguerules.StartingAssets]{}
@@ -238,7 +239,8 @@ func TestTheStartFormListsTheNativeCatalog(t *testing.T) {
 			t.Errorf("%s: incomplete catalog entry %+v", p.ID, p)
 		}
 	}
-	if !slices.Equal(ids, []string{PresetDefault32, PresetMirror16, PresetLegacy, PresetEmpty}) {
+	if !slices.Equal(ids, []string{PresetDefault32, PresetMirror16,
+		PresetOneSeason10, PresetOneSeason12, PresetOneSeason16, PresetLegacy, PresetEmpty}) {
 		t.Fatalf("start form presets: %v", ids)
 	}
 	if MFLImportPreset() != PresetLegacy {
@@ -285,5 +287,32 @@ func TestOnlyTheCatalogNamesAPreset(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A one-season template only fills in settings: no rookie draft, no taxi squad, computer picks ranked by
+// this season's value. The league validates and its rookie draft job has nothing to run or schedule.
+func TestOneSeasonPresetsAreSettingsOnly(t *testing.T) {
+	for _, c := range []struct {
+		preset string
+		teams  int
+	}{{PresetOneSeason10, 10}, {PresetOneSeason12, 12}, {PresetOneSeason16, 16}} {
+		records := presetLeague(t, c.preset, 0)
+		rules, err := RulesInForce(records, 2026, noChangeTime())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if rules.League.Teams.Value != c.teams || rules.Draft.Rounds.Value != 0 || rules.Taxi.Slots.Value != 0 ||
+			rules.Draft.AutoPickRanking.Value != leaguerules.SeasonRanking || rules.Draft.StartupYears.Value != 1 {
+			t.Fatalf("%s: teams %v rounds %v taxi %v ranking %v years %v", c.preset, rules.League.Teams,
+				rules.Draft.Rounds, rules.Taxi.Slots, rules.Draft.AutoPickRanking, rules.Draft.StartupYears)
+		}
+		jobs, err := JobsReading("native.test", records, noChangeTime())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if job, _ := jobFor(jobs.Jobs, "rookie_draft"); strings.Contains(job.Words, "start time") {
+			t.Fatalf("%s: rookie draft asks for a start: %+v", c.preset, job)
+		}
 	}
 }

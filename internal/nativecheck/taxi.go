@@ -87,6 +87,8 @@ func taxiStanding(rules leaguerules.TaxiRules, season int, id string, f PlayerFa
 func CanEnterTaxi(rules leaguerules.TaxiRules, f PlayerFacts, season, used int, exceptions ...DecisionException) Entry {
 	e := taxiExperience(rules, f, season, exceptions...)
 	switch {
+	case rules.Slots.State == leaguerules.IsKnown && rules.Slots.Value == 0:
+		return Entry{Known: true, Words: "Cannot go on the taxi squad: this league has no taxi squad"}
 	case !e.known:
 		return Entry{Words: "Can't tell: " + e.reason}
 	case e.years > rules.MaximumYears.Value:
