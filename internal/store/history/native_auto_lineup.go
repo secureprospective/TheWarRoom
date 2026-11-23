@@ -2,6 +2,7 @@ package history
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"slices"
@@ -158,16 +159,13 @@ func (s *Store) ProcessDueLineups(ctx context.Context, league string, at time.Ti
 	return s.applyDueLineups(ctx, league, records, state, wave, env, at, injuries)
 }
 
-// dueLineupWave returns the latest kickoff wave whose wake time (kickoff - 60m) has arrived while at
-// least one wave remains unlocked.
+// dueLineupWave returns the latest kickoff wave whose window [kickoff - 60m, kickoff) contains at.
+// Once a wave has kicked off it is never returned again, so its request key is not reused.
 func dueLineupWave(waves []time.Time, at time.Time) (time.Time, bool) {
-	if len(waves) == 0 || !at.Before(waves[len(waves)-1]) {
-		return time.Time{}, false
-	}
 	var chosen time.Time
 	found := false
 	for _, kickoff := range waves {
-		if !at.Before(kickoff.Add(-autoLineupLead)) {
+		if !at.Before(kickoff.Add(-autoLineupLead)) && at.Before(kickoff) {
 			chosen, found = kickoff, true
 		}
 	}
@@ -194,13 +192,14 @@ func (s *Store) applyDueLineups(ctx context.Context, league string, records []co
 		return err
 	}
 	liveInjuries := liveInjuriesForWave(ctx, injuries, state.season, at)
+	var errs []error
 	for _, franchise := range pending {
 		if err := s.setAutoLineupForFranchise(ctx, league, franchise, state, wave, env,
 			activeByTeam[franchise], projMap, liveInjuries, at); err != nil {
-			return err
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func pendingAutoFranchises(league string, records []commissioner.Record, franchises []string,
@@ -369,6 +368,9 @@ func buildAutoCandidates(roster, standing []string, policy leaguerules.LineupLoc
 		f, _ := env.Facts.Of(id)
 		kickoff, hasGame := playerGameKickoff(f, env.Locks)
 		locked := playerLockedAt(policy, firstLock, kickoff, hasGame, at)
+		if locked && !inStanding[id] {
+			continue // kicked off while benched: cannot be started, not even to meet a minimum
+		}
 		proj := projMap[id]
 		designation := effectiveDesignation(id, f.Designation, liveInjuries)
 		eligible := !locked && hasGame && !nativecheck.IneligibleDesignation(designation)
@@ -378,7 +380,7 @@ func buildAutoCandidates(roster, standing []string, policy leaguerules.LineupLoc
 			Median:    proj.Median,
 			Ceiling:   proj.Ceiling,
 			Available: proj.Available,
-			Locked:    locked && inStanding[id],
+			Locked:    locked,
 			Eligible:  eligible,
 		})
 	}
