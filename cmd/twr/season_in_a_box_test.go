@@ -485,7 +485,7 @@ func TestSeasonInABoxSpike(t *testing.T) {
 		var week1 commissioner.NativeResults
 		f.boxRead(t, token, "results.read", 1, &week1)
 		opponent04, _ := franchiseScore(week1, "franchise.04")
-		notReached(t, 8, fmt.Sprintf("decided games: 0 of %d; franchise.04 week 1 is %q: %s (a starter without a final line keeps the score incomplete, internal/commissioner/native_week_score.go:120)",
+		regressed(t, 8, fmt.Sprintf("decided games: 0 of %d; franchise.04 week 1 is %q: %s (a starter without a final line keeps the score incomplete, internal/commissioner/native_week_score.go:120)",
 			standings.Decided+standings.Pending, opponent04.Status, opponent04.Words))
 	} else {
 		var week1 commissioner.NativeResults
