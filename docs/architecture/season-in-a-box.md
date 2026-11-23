@@ -13,7 +13,7 @@ Run time (`time go test ./cmd/twr -run TestSeasonInABoxSpike -count=1`, warm cac
 | # | Journey step | How it runs | Status |
 |---|---|---|---|
 | 1 | Create native league | `hostedfixture.CreateWorkflowLeague` (32 franchises, rules, schedule, pinned football), then `twr ledger` over HTTPS | reached |
-| 2 | Quick draft | Second owner seated on franchise.04 (`hostedfixture.AddWorkflowOwner`). `draft.order.set` moves franchise.04 to pick 2 while the clock runs, with a reason. Then franchise.01 takes rookie 5001 and franchise.04 takes rookie 5002, each through the store's `RecordDraftPick` under the owner's principal, with the calendar permit and the pinned facts. The owner door (`PickPath`) refuses both (B7). | reached through the store (`RecordDraftPick`); owner door NOT REACHED (B7) |
+| 2 | Quick draft | Second owner seated on franchise.04 (`hostedfixture.AddWorkflowOwner`). `draft.order.set` moves franchise.04 to pick 2 while the clock runs, with a reason. Then franchise.01 takes rookie 5001 and franchise.04 takes rookie 5002, each through the owner door (`PickPath`), with the owner's draft-reading league version as the expected revision. | reached through the owner door (`PickPath`) |
 | 3 | Set lineups | `twr preview` of `commish.lineup.set` through the real token and dispatch path; recorded through the commissioner's own session (G2 needs a human confirmation). franchise.04 sets its own (starter 5002, a QB) under its principal, the same store route | reached (franchise.01 and franchise.04) |
 | 4 | Pass lineup lock | fake clock advances 25 h past kickoff; a lineup that adds a player is refused ("locked at kickoff") | reached |
 | 5 | Feed live stat lines in pieces, scores move | recorded ESPN summaries (`cmd/twr-server/testdata/live-week9.tar.gz`, frames 01 then 02) published to `history.LiveOverlay`; `results.read` read twice over HTTPS; franchise.01 goes 30.000 -> 60.500 provisional | reached |
@@ -30,7 +30,7 @@ Real: the hosted HTTP handler (`serverhttp.Hosted`, TLS, token scope, workflow d
 `serverclient.Agent`, the commissioner ledger and every rule check, native week scoring
 (`commissioner.NativeResultsReading`, `history.nativeSources`), the live overlay, SQLite.
 
-Faked: owner picks skip the owner door (B7) and are recorded through the store with the owner's principal and the pinned facts; the process boundary (the server runs in the test process on `httptest`, not as the `twr-server` binary); the
+Faked: the process boundary (the server runs in the test process on `httptest`, not as the `twr-server` binary); the
 clock (`Store.SetClock`; account and due-worker clocks stay real); the NFL feed (recorded frames, no network); the
 commissioner's G2 confirmation (the test calls `ExecuteCommissioner` as the seated principal); NFL player identity
 (the box football evidence names `00-0000099` as the QB's NFL id, and the live generation carries the same id,
@@ -97,17 +97,14 @@ spike to one file. Revisit when the box runs the real `twr-server` binary: then 
   in the old note). The box also gives `5002` a zero stat row in both week-1 files (`cmd/twr/testdata/official/`), so
   franchise.04 has a complete final score. A lineup can be set only for the setter's own franchise
   (`internal/commissioner/governance.go:330`), so franchise.04's lineup is recorded under its own principal.
-- **B7. The owner door refuses every rookie pick (production, open).** `PickPath` (`/v1/native/draft/pick`) returns 409
-  "owner action refused" for every rookie. The cause is that the owner host has no rookie facts:
-  `internal/serverhttp/hosted.go:495` (`workflowHost`) pins football only for workflow requests, so a pick request is served by
-  `leagueservice.StoredHost`, whose `NativeFacts` returns nil (`internal/leagueservice/hosted.go:42`). With nil facts a
-  candidate's entry season is 0, so `admits` refuses it ("choose a rookie from this season's player pool",
-  `internal/engine/rookiedraft/startup.go:181`). The due worker is built with nil facts too (`cmd/twr-server/hosted.go:367`),
-  and `dueHost` does not override `NativeFacts`. Evidence: the same store call returns that refusal with nil facts and succeeds
-  with the pinned facts (`f.pin.Football.PlayerFacts()`); the door hides its message, so the 409 is inferred from that, not
-  read off the door. Impact: in the hosted server no owner can draft a rookie yet. Fix (production, not done here): pin football
-  for pick requests in `workflowHost` (`raw.Pick != nil` too), and give the owner host the facts. The box test calls the store's
-  `RecordDraftPick` with the same permit and facts the service uses, and logs the door's NOT REACHED beside it.
+- **B7. The owner door refused every rookie pick (closed 2026-11-22).** Two causes, both fixed or corrected:
+  (a) the box sent the wrong `expected`: the store's record count (`NativeAssets.Revision`), not the league version
+  the owner's draft reading carries (`draft.read`); (b) the owner door had no football facts for a pick request:
+  `workflowHost` pinned football for workflow requests only, so `NativeFacts` was nil and `admits` refused every rookie
+  ("choose a rookie from this season's player pool", `internal/engine/rookiedraft/startup.go:181`). Fix:
+  `internal/serverhttp/hosted.go` pins football for `Pick` requests and gives them the league's pinned digest (the
+  store refuses an empty digest). Test: `internal/serverhttp/hosted_pick_test.go`, which fails without the fix. The
+  due worker's nil facts (`cmd/twr-server/hosted.go:367`) are unchanged: no auto-pick command exists.
 - **Harness note (not a product bug).** The box clock stands still between calls and keeps nanoseconds. A pick stamped at the
   instant of the one before would not yet count in the next pick's judgement (`s.now()` truncates to microseconds). The box
   advances the clock a minute between picks. Real owners pick seconds apart.
@@ -124,9 +121,7 @@ spike to one file. Revisit when the box runs the real `twr-server` binary: then 
 ## Next steps, in order
 
 1. `twr read` (B1): makes every read in the journey a CLI call.
-2. Owner door for picks (B7, production): pin the football for pick requests and give the owner host its facts. Needs
-   Christopher's OK: it changes the hosted server. Once it lands, the box's `PickPath` attempt succeeds and the store fallback
-   can be removed from `quickDraft`.
+2. Owner door for picks (B7): done 2026-11-22. `quickDraft` has no store fallback; a door refusal fails STEP 2.
 3. Official stats (B2): done in process for final and correction. Next: run the server's own official job
    (`-official-dir`, B2a) and add a recap read (B2 recap).
 4. Clock and feed flags, then swap the in-process server for the real binary (B4); consider testscript then.

@@ -155,6 +155,45 @@ func (f *releaseCLIFixture) boxSeat(t *testing.T, raw accounts.RawCredentials) (
 	return boxOwner{session: session, proof: proof.Token, principal: string(principal)}, nil
 }
 
+// boxDraftRevision reads the 2027 draft as one owner sees it and returns the league version it carries. That is the
+// expected revision a pick must quote; a record count is not (see expectedViewRevision, internal/store/history).
+func (f *releaseCLIFixture) boxDraftRevision(t *testing.T, bearer, proof, franchise string) (int64, error) {
+	t.Helper()
+	arguments, err := json.Marshal(map[string]any{"league": "native.hosted", "season": 2027, "franchise": franchise})
+	if err != nil {
+		return 0, err
+	}
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &serverhttp.RawWorkflow{Command: "draft.read", Version: "1", Mode: "read", Arguments: arguments}})
+	if err != nil {
+		return 0, err
+	}
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, f.address+serverhttp.WorkflowPath, bytes.NewReader(body))
+	if err != nil {
+		return 0, err
+	}
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Bearer "+bearer)
+	request.Header.Set("X-TWR-Recent-Auth", proof)
+	response, err := (&http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: f.env.roots, MinVersion: tls.VersionTLS12}}}).Do(request)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = response.Body.Close() }()
+	reply, _ := io.ReadAll(response.Body)
+	if response.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("draft.read for %s: %d %s", franchise, response.StatusCode, bytes.TrimSpace(reply))
+	}
+	var envelope serverhttp.WorkflowResponse
+	if err := json.Unmarshal(reply, &envelope); err != nil {
+		return 0, err
+	}
+	var draft commissioner.NativeDraft
+	if err := json.Unmarshal(envelope.Data, &draft); err != nil {
+		return 0, err
+	}
+	return draft.Revision, nil
+}
+
 // boxOwner is a seated owner in the season box: its signed-in session, its recent-auth proof, its principal.
 type boxOwner struct {
 	session   accounts.DeviceSession
@@ -190,9 +229,9 @@ func (f *releaseCLIFixture) boxOwnerPost(t *testing.T, path, bearer, proof strin
 
 // quickDraft is STEP 2 (B3, B5). The seed opens a one-round 2027 rookie draft that starts on franchise.01, and only
 // franchise.01 has an owner. This seats a second owner on franchise.04, moves franchise.04 to pick two (the
-// commissioner's draft.order.set while the clock runs, with its reason), and has each owner pick its own rookie:
-// through PickPath first, and where the door refuses, through the store's RecordDraftPick under the owner's principal.
-// No pick is skipped or assigned by the commissioner.
+// commissioner's draft.order.set while the clock runs, with its reason), and has each owner pick its own rookie
+// through PickPath, the owner door. A refusal there is a regression (B7 is closed). No pick is skipped or assigned
+// by the commissioner.
 func quickDraft(t *testing.T, f *releaseCLIFixture, clock *boxClock) (boxOwner, error) {
 	t.Helper()
 	creds := accounts.RawCredentials{Username: "season-box-owner", Password: "season-box-password"}
@@ -231,33 +270,22 @@ func quickDraft(t *testing.T, f *releaseCLIFixture, clock *boxClock) (boxOwner, 
 		actor                      boxOwner
 		bearer                     string
 	}{
-		{"franchise.01", "5001", "box.pick.01", commissionerSeat, f.human.Bearer},
+		{"franchise.01", "5001", "box.pick.01", commissionerSeat, commissionerSeat.session.Bearer},
 		{"franchise.04", "5002", "box.pick.04", owner, owner.session.Bearer},
-	}
-	zone, err := time.LoadLocation("America/Chicago") // the league's calendar.timezone (tools/hostedfixture/workflows.go)
-	if err != nil {
-		return boxOwner{}, err
 	}
 	for _, p := range picks {
 		// Owners pick seconds apart. The box clock stands still between calls, and a pick stamped at the very
 		// instant of the one before it would not yet count when the next pick is judged (a fake-clock artifact).
 		clock.Advance(time.Minute)
-		assets, err := f.store.NativeAssets(t.Context(), "native.hosted")
+		// The expected revision is the league version the owner's own draft reading carries, as the app sends it.
+		expected, err := f.boxDraftRevision(t, p.bearer, p.actor.proof, p.franchise)
 		if err != nil {
 			return boxOwner{}, err
 		}
-		input := commissioner.DraftPickInput{League: "native.hosted", Season: 2027, Franchise: p.franchise, Player: p.player, Expected: assets.Revision, Request: p.request}
-		// The owner door first: PickPath, the route the owner's app takes.
-		_, doorErr := f.boxOwnerPost(t, serverhttp.PickPath, p.bearer, p.actor.proof, serverhttp.RawNativeRequest{Protocol: 1, Pick: &input})
-		if doorErr == nil {
-			continue
-		}
-		notReached(t, 2, fmt.Sprintf("owner door: PickPath refused %s's pick of %s (%v). The door's owner host has no rookie facts: "+
-			"internal/serverhttp/hosted.go:495 pins football for workflow requests only, internal/leagueservice/hosted.go:42 returns nil facts, "+
-			"and cmd/twr-server/hosted.go:367 gives the due worker nil facts", p.franchise, p.player, doorErr))
-		// The store's pick under the owner's principal, with the calendar's permit and the league's pinned facts.
-		if err := f.recordPick(t, clock, zone, p.actor.principal, input); err != nil {
-			return boxOwner{}, fmt.Errorf("pick %s with %s: %w", p.player, p.franchise, err)
+		input := commissioner.DraftPickInput{League: "native.hosted", Season: 2027, Franchise: p.franchise, Player: p.player, Expected: expected, Request: p.request}
+		// The owner door: PickPath, the route the owner's app takes. A refusal here is a regression.
+		if _, err := f.boxOwnerPost(t, serverhttp.PickPath, p.bearer, p.actor.proof, serverhttp.RawNativeRequest{Protocol: 1, Pick: &input}); err != nil {
+			regressed(t, 2, fmt.Sprintf("owner door refused %s's pick of %s: %v", p.franchise, p.player, err))
 		}
 	}
 	assets, err = f.store.NativeAssets(t.Context(), "native.hosted")
@@ -266,35 +294,10 @@ func quickDraft(t *testing.T, f *releaseCLIFixture, clock *boxClock) (boxOwner, 
 	}
 	for _, p := range picks {
 		if !rostered(assets, p.player, p.franchise) {
-			return boxOwner{}, fmt.Errorf("pick %s did not land on %s", p.player, p.franchise)
+			regressed(t, 2, fmt.Sprintf("pick %s did not land on %s after the owner door admitted it", p.player, p.franchise))
 		}
 	}
 	return owner, nil
-}
-
-// recordPick records one owner's pick in the league's store. It is the call the owner door makes once it has
-// admitted the owner, with the same calendar permit (commissioner.NativeActionGate) and the league's pinned football
-// facts, which the door does not have (see the notReached in quickDraft).
-func (f *releaseCLIFixture) recordPick(t *testing.T, clock *boxClock, zone *time.Location, principal string, in commissioner.DraftPickInput) error {
-	t.Helper()
-	events, err := f.store.Events(t.Context(), "native.hosted", commissioner.Stream, 0)
-	if err != nil {
-		return err
-	}
-	records := make([]commissioner.Record, 0, len(events))
-	for _, e := range events {
-		records = append(records, *e.Payload.Commissioner)
-	}
-	gate, err := commissioner.NativeActionGate("native.hosted", records, in.Franchise, "draft_pick", clock.Now(), zone)
-	if err != nil {
-		return err
-	}
-	permit, ok := gate.Permit()
-	if !ok {
-		return fmt.Errorf("the calendar is closed to %s's pick: %s", in.Franchise, gate.Sentence)
-	}
-	_, err = f.store.RecordDraftPick(t.Context(), permit, in, principal, f.pin.Football.PlayerFacts(), zone)
-	return err
 }
 
 // rostered says a player is on a franchise's roster in the league's assets.
@@ -350,13 +353,14 @@ func TestSeasonInABoxSpike(t *testing.T) {
 	f.env.out.(*bytes.Buffer).Reset()
 	t.Log("STEP 1 league created (CreateWorkflowLeague, 32 franchises); twr ledger revision", ledger.Revision)
 
-	// STEP 2 quick draft: franchise.01 and its week-1 opponent franchise.04 each draft a rookie through the owner door.
-	// A failure here is a NOT REACHED step, not a regression: the draft is new to the box.
+	// STEP 2 quick draft: franchise.01 and its week-1 opponent franchise.04 each draft a rookie through the owner door
+	// (PickPath). A refusal by the door is a regression (regressed, inside quickDraft). A setup failure before the picks
+	// (seating, the draft order) is a NOT REACHED step.
 	opponent, err := quickDraft(t, f, clock)
 	if err != nil {
 		notReached(t, 2, "quick draft: "+err.Error())
 	} else {
-		t.Log("STEP 2 quick draft: franchise.01 took rookie 5001 and franchise.04 took rookie 5002, each recorded under the owner's principal (the store's RecordDraftPick, see the owner-door NOT REACHED above); franchise.04 moved to pick two (draft.order.set while the clock runs, with a reason)")
+		t.Log("STEP 2 quick draft: through the owner door (PickPath), franchise.01 took rookie 5001 and franchise.04 took rookie 5002; franchise.04 moved to pick two (draft.order.set while the clock runs, with a reason)")
 		if err := opponentLineup(t, f, opponent); err != nil {
 			notReached(t, 3, "franchise.04 lineup (5002 at QB): "+err.Error())
 		} else {
