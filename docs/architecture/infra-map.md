@@ -123,3 +123,22 @@ Per-league SQLite scales by adding files, not servers. Reference.db is the share
 - https://litestream.io/how-it-works/ ; https://simonwillison.net/2025/Oct/3/litestream
 - https://docs.ropensci.org/piggyback/articles/cloud_native.html (DuckDB over nflverse Parquet)
 - https://pypi.org/project/nfl-mcp/0.1.1/ (nflverse + DuckDB + MCP reference)
+
+## 6. FOSS parts and pieces pass (11-22, GitHub/PyPI/R-universe; Reddit not used)
+Christopher is warm to Litestream + DuckDB. Licences checked only from listings: verify before adopting.
+| Need | Candidate | Verdict |
+|---|---|---|
+| Continuous SQLite backup | Litestream (Apache-2.0, v0.5 LTX format) | ADOPT-TRIAL on Lab after T693; one process can replicate many league.db files |
+| Analytics/model store | DuckDB + Parquet (MIT); parquet-go already in go.mod | ADOPT for model/research jobs on Hermes; app stays SQLite |
+| NFL source data | nflverse via nflreadpy (nfl_data_py is deprecated) | USE for own model (T696) |
+| Expected fantasy points | ffverse ffopportunity (code GPL-3, data CC-BY-SA-4.0) | STUDY its method; do NOT ship its data (share-alike) without a licence ruling |
+| Season simulation | ffverse ffsimulator | STUDY for replay/sandbox and playoff odds |
+| League API clients | ffverse ffscrapr (MIT: MFL, Sleeper, ESPN, Fleaflicker) | REFERENCE for history import (GATE part 4, T698) field mapping |
+| Projection aggregation | FantasyFootballAnalytics ffanalytics | REFERENCE for blending sources |
+| MCP server | official modelcontextprotocol/go-sdk (already used, v1.8) | KEEP; mark3labs/mcp-go not needed |
+| League sandbox clone | SQLite built-ins: VACUUM INTO / backup API (file copy per sandbox) | ADOPT: simplest clone; Offshoot (MCP SQLite branching) is a design reference only |
+| Code sandboxes for agents | OpenSandbox, agent-infra/sandbox | NOT NEEDED: TWR sandboxes leagues, not code; Lab/Dev cover builds |
+| Example of nflverse+DuckDB+MCP | nfl-mcp (PyPI) | REFERENCE shape for a future "ask the data" MCP tool |
+Sources: github.com/benbjohnson/litestream · github.com/ffverse · github.com/ffverse/ffopportunity ·
+github.com/FantasyFootballAnalytics/ffanalytics · github.com/modelcontextprotocol/go-sdk ·
+github.com/opensandbox-group/OpenSandbox · mcpmarket.com/server/offshoot · pypi.org/project/nfl-mcp
