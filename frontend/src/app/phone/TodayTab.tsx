@@ -158,6 +158,7 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
       && (game.homeProvisional !== undefined || game.awayProvisional !== undefined));
   };
   const playing = appLeagues.filter(isPlaying).length;
+  const liveWord = playing > 0 ? 'Live now' : 'This week';
   const shown = current ?? first?.id;
   const shownPlaying = playing > 0 && appLeagues.some(league => league.id === shown && isPlaying(league));
   const marks = loading ? undefined : badgesFor(jobs, shown, shownPlaying);
@@ -226,8 +227,8 @@ export function TodayTab({ leagues, onOpen, port = hostedWorkflow, readBrief, no
             strokeWidth="1.8"><circle cx="8" cy="8" r="6.2" /><path d="M8 4.5V8l2.5 1.6" /></svg></HQAct>}
       </div>)}
     </section>
-    <div className="today6__sec"><b>Live now</b><span>your matchups</span></div>
-    <section className="today6__grp" aria-label="Live now">
+    <div className="today6__sec"><b>{liveWord}</b><span>your matchups</span></div>
+    <section className="today6__grp" aria-label={liveWord}>
       {appLeagues.map(league => <LiveRow key={league.id} league={league} brief={briefs[league.id]}
         failure={failures[league.id]} onOpen={() => onOpen(league, 'pulse')} />)}
     </section>
