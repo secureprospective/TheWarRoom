@@ -194,9 +194,13 @@ func checkLineupAppend(raw RawCommand, records []Record, now time.Time,
 	return checkOwnerLineup(records, now, env, change, seat, allowPartial)
 }
 
-// IsAutomaticLineupFranchise reports whether no human lineup.set (or non-synced commissioner
-// correction) stands for (franchise, season, week).
+// IsAutomaticLineupFranchise reports whether no human lineup.set, commissioner correction or synced
+// lineup stands for (franchise, season, week). While a lineup sync has not yet read the week, no
+// franchise is automatic: the sync may still record the lineup.
 func IsAutomaticLineupFranchise(records []Record, franchise string, season, week int) (bool, error) {
+	if LineupSyncPending(records, season, week) {
+		return false, nil
+	}
 	var active map[string]bool
 	for _, r := range records {
 		if !isLineupCommand(r.Command.Command) {
@@ -216,7 +220,7 @@ func IsAutomaticLineupFranchise(records []Record, franchise string, season, week
 		if r.Command.Command == LineupSet && r.Principal != LineupClockPrincipal {
 			return false, nil
 		}
-		if r.Command.Command == LineupCorrect && !isSyncedLineupRequest(r.Command.Request) {
+		if r.Command.Command == LineupCorrect {
 			return false, nil
 		}
 	}
