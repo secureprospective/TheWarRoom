@@ -150,22 +150,32 @@ func (s *Store) NativeResults(ctx context.Context, league string, season, week i
 	starters := league + "|" + mark + "|" + src.weekKey(season, week) + fmt.Sprintf("|%d|%d", season, week)
 	return shareReading(ctx, &s.flights, "NativeResults", args,
 		func(ctx context.Context) (commissioner.NativeResults, error) {
-			return s.readNativeResults(ctx, league, season, week, src, starters)
+			return s.readNativeResults(ctx, league, season, week, src, starters, mark)
 		})
 }
 
-func (s *Store) readNativeResults(ctx context.Context, league string, season, week int, src *nativeSources, startersKey string) (commissioner.NativeResults, error) {
+func (s *Store) readNativeResults(ctx context.Context, league string, season, week int, src *nativeSources,
+	startersKey, mark string) (commissioner.NativeResults, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeResults{}, err
 	}
-	out, err := commissioner.NativeResultsReading(ctx, league, records, src, season, week, src.now)
-	if err != nil {
-		return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
+	memoKey, shared := s.resultsMemoKey(ctx, src, records, mark, season, week)
+	out, hit := commissioner.NativeResults{}, false
+	if shared {
+		out, hit = s.results.get(memoKey, src.now)
 	}
-	s.recordedStarters.apply(ctx, startersKey, s.now(), &out, func() {
-		commissioner.RecordedStarters(ctx, records, src, &out)
-	})
+	if !hit {
+		if out, err = commissioner.NativeResultsReading(ctx, league, records, src, season, week, src.now); err != nil {
+			return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
+		}
+		s.recordedStarters.apply(ctx, startersKey, s.now(), &out, func() {
+			commissioner.RecordedStarters(ctx, records, src, &out)
+		})
+		if shared && ctx.Err() == nil {
+			s.results.put(memoKey, src.now, out)
+		}
+	}
 	out.Evidence = src.scoreEvidence(season, week)
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil

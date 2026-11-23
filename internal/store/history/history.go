@@ -70,7 +70,9 @@ type Store struct {
 	flights readingFlights
 	// recordedStarters reuses finished weeks' starters across results reads (native_results.go).
 	recordedStarters recordedStartersCache
-	oddsCache        commissioner.OddsCache
+	// results reuses each week's results reading between ledger writes (results_memo.go).
+	results   resultsMemo
+	oddsCache commissioner.OddsCache
 	// projMu guards the one scored projections book, keyed by league, rules digest and files.
 	projMu   sync.Mutex
 	projKey  string
