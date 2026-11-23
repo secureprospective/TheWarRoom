@@ -61,7 +61,7 @@ func OddsValuesOf(reading appvalue.Reading, err error) commissioner.OddsValues {
 	out := commissioner.OddsValues{Players: make([]commissioner.OddsPlayer, 0, len(reading.Players))}
 	for _, p := range reading.Players {
 		out.Players = append(out.Players, commissioner.OddsPlayer{Franchise: p.Franchise, Position: p.Position,
-			NowPPG: p.NowPPG, Age: p.Age, AgeKnown: p.AgeKnown, Available: p.Available})
+			NowPPG: p.NowPPG, DynastyPPG: p.DynastyPP, Age: p.Age, AgeKnown: p.AgeKnown, Available: p.Available})
 	}
 	return out
 }
