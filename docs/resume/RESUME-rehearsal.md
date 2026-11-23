@@ -166,8 +166,10 @@ should9-1122, should10-1122). Nothing uncommitted.
 ## 11. Needs Christopher
 - Sign in on the iPhone (on the Lab sign-in screen now) and, after v54, on the S8, with his own account (holds franchise.01).
 - Test leagues: AI helpers -> Connect a helper -> "also record" in each test league; paste the twr1 line to Tom.
-- Rulings: (a) solo-owner tools when the desktop comes out (T710 report) — he said "I don't understand", re-explain plainly;
-  (b) a Lab-only confirm stand-in for canaries (explained plainly 11-23; Tom recommends yes, test leagues only).
+- RULED 11-23 ~8:15 AM (Christopher): (a) the MFL solo-owner tools (mflref, transactions, offers, what-if) STAY for now;
+  the desktop is not retired before the rehearsal season and these tools are decided later (no delete).
+  (b) YES to a test-only "confirmer" that types the G2/G3 confirmation code, on Lab test leagues ONLY; never the
+  Season server or a real league.
 - Merges: DONE as authorised ("merge all" 11-23) — no further merge OK needed for these five.
 
 ## 12. Environment notes
