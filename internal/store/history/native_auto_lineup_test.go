@@ -55,7 +55,7 @@ func autoLineupFixture(t *testing.T) (*lineupFixture, *autoLineupEnv) {
 	return f, env
 }
 
-func TestProcessDueLineupsLeavesHumanUntouchedAndSetsForgetterAndVacant(t *testing.T) {
+func TestProcessDueLineupsLeavesHumanUntouchedAndSetsForgetter(t *testing.T) {
 	f, _ := autoLineupFixture(t)
 	humanStarters := f.legal(f.a)
 	if _, err := f.set(t, f.a, humanStarters); err != nil {
@@ -158,5 +158,50 @@ func TestClockLineupAuthorizerRefusesHumanLineup(t *testing.T) {
 		clockLineupAuthorizer{}, env.facts, time.UTC)
 	if err == nil || !strings.Contains(err.Error(), "already has a human lineup") {
 		t.Fatalf("expected human-lineup refusal, got: %v", err)
+	}
+}
+
+func TestDueLineupWaveOnlyInsideItsWindow(t *testing.T) {
+	thu := time.Date(2026, 10, 15, 0, 20, 0, 0, time.UTC)
+	sun := time.Date(2026, 10, 18, 17, 0, 0, 0, time.UTC)
+	waves := []time.Time{thu, sun}
+	cases := []struct {
+		name string
+		at   time.Time
+		want time.Time
+	}{
+		{"before wake", thu.Add(-61 * time.Minute), time.Time{}},
+		{"thursday window", thu.Add(-30 * time.Minute), thu},
+		{"friday noon", time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC), time.Time{}},
+		{"sunday window", sun.Add(-30 * time.Minute), sun},
+		{"after last kickoff", sun.Add(time.Minute), time.Time{}},
+	}
+	for _, c := range cases {
+		got, due := dueLineupWave(waves, c.at)
+		if due != !c.want.IsZero() || !got.Equal(c.want) {
+			t.Errorf("%s: got %v due=%v, want %v", c.name, got, due, c.want)
+		}
+	}
+}
+
+func TestProcessDueLineupsNeverStartsLockedBenchPlayer(t *testing.T) {
+	f, env := autoLineupFixture(t)
+	// Second wave: every DAL player has kicked off and none is in a standing lineup. Each position
+	// with a minimum has a locked bench player; none may be started to meet it.
+	f.at = f.nyGiants.Add(-time.Hour)
+	if err := f.s.ProcessDueLineups(t.Context(), "native.test", f.at, nil); err != nil {
+		t.Fatalf("ProcessDueLineups: %v", err)
+	}
+	got, found, err := commissioner.RecordedLineupFor(scoreRecords(t, f.s), f.b, 2026, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !found {
+		t.Fatal("no automatic lineup was set")
+	}
+	for _, id := range got.Starters {
+		if env.facts[id].Team == "DAL" {
+			t.Fatalf("started %s whose game already kicked off", id)
+		}
 	}
 }
