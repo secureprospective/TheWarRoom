@@ -23,8 +23,8 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
   <workdir>`; done = `exit` file. Quota 13:20: Gemini week 27.4% left (now less: 4 Neon runs + 1 Argon since).
 
 ## 4. In flight (11-22 ~7:45 PM CT)
-- Sonnet subagent (Tom's account): T695 PLAN only (Sleeper stat-line projections) -> `~/fleet/runs/twr-sleeper-projections-plan-1122/PLAN.md`.
-  On result: review, copy to `~/Downloads/TOM-REPORT-sleeper-projections-plan.md` for Claudebox. If lost, re-run (read-only, cheap).
+- No subagents running. T695 plan DONE -> `~/Downloads/TOM-REPORT-sleeper-projections-plan.md` (8 slices; top risk: Sleeper
+  projections URL unknown in code and Sleeper not in Approved_Sources; needs one supervised look + Claudebox/Christopher OK).
 - Waiting on Claudebox: `~/Downloads/CLAUDEBOX-ANSWERS-TOM-environments-rerun.md` (pass -> Environments card done, `cc task check T690`);
   replies to `TOM-ASKS-CLAUDEBOX-rehearsal-timeline.md`, `TOM-ASKS-CLAUDEBOX-icp-tasks-ack.md`, `TOM-REPORT-redraft-check.md`.
 - Scheduled wakeup ~8:19 PM re-checks the above and starts the Lab night when SNF is final.
@@ -99,7 +99,7 @@ All work above is committed on branches; nothing uncommitted. Main has #462 (doc
    account on franchise.01 each (join-link); short draft clock for the test; run both startup drafts; screenshot draft room + league switcher
    on Claude-OS; note timings. Fix anything UNPROVEN that fails (runbook lists them).
 5. Delete the test leagues (`twr-server delete-league`), tracker card Rehearsal A -> needs_you "ready for real drafts Dec 8".
-6. Then: T695 plan to Claudebox; T694 redraft S pieces only after Claudebox confirms one-season; T705 native power-rank input;
+6. Then: T694 redraft S pieces only after Claudebox confirms one-season; T705 native power-rank input;
    Argon SHOULDs 9/10; laptop Season server setup (not before Dec 13).
 
 ## 11. Needs Christopher
