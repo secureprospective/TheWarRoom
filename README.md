@@ -11,6 +11,31 @@ same server-owned clock.
 See the full feature tour, architecture diagrams, 32-team default scoring study, and
 downloadable browser mocks in [docs/product-tour.md](docs/product-tour.md).
 
+## Why TheWarRoom
+
+No fantasy app does everything well. Serious leagues run on a patchwork: one site to host,
+another for trade values, a spreadsheet for contracts, a group chat for the trash talk, and
+a payment app for dues. The bigger the league, the worse it gets. A 32-team, two-conference
+dynasty league has had one real choice for twenty years, and it looks like 2005.
+
+TheWarRoom replaces the whole patchwork, built first for the leagues everyone else forgot:
+**big dynasty leagues** of 20 to 32+ teams, twin player pools, contracts, defensive players,
+and decades of history. Redraft and smaller leagues are welcome too.
+
+| What you get | Status |
+|:--|:--|
+| **One league, one ledger.** Rosters, contracts, cap, picks and every rule, exact to the penny | Built |
+| **Live football on your phone.** A live field, big-play moments, matchup win chances | Built, being polished |
+| **Your history comes with you.** Import past champions, records and rivalries from ESPN and MFL, and export everything any time. You are never trapped | Next up |
+| **Projections built for your scoring.** Real stat-line projections scored by your league's own rules, with a model that knows the backups. In a 32-team league, the third-stringer matters | In progress |
+| **One server, one feed.** Every NFL fact is fetched once and shared by every league on the server, so a small box runs many leagues fast | In progress |
+| **A Today tab that knows what matters now.** Across all your leagues: waivers closing, a trade waiting, five minutes to kickoff | Designing |
+| **Lore that grows with your league.** Trophies that pass from champion to champion like engraved plates, a Hall of Fame, a Tuesday-morning recap in your league's own voice, two power rankings for dynasty (this season and the next three) | Designing |
+| **Mini-games that keep last place logged in.** Pick'em, an in-season cup, a stash challenge, bounties. Prizes paid in league currency: picks, FAAB, lottery odds | Planned |
+| **A sandbox, not a box.** Rules one tap from the moment they matter, trade review your way, and setup wizards that walk a first-time commissioner through a 32-team league | Planned |
+
+The test: if the commissioner ever quits, the owners love it so much they start their own league.
+
 ## Showcase
 
 <img src="docs/ui/showcase/v1/phone-bigplay-td.gif" width="320"
