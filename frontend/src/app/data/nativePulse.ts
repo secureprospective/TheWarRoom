@@ -399,7 +399,7 @@ export function parsePulseLineup(value: unknown, league: string, franchise: stri
 /** PulseOdds is the league's own win chance, power and playoff odds (odds.read). Each part carries the words
  *  that say why it is missing; a missing part is undefined, never zero. */
 export type PulseOddsRow = { franchise: string; name: string; rank: number; record: string;
-  power?: number; powerScore: number; expected: number; playoffOdds?: number };
+  power?: number; powerScore: number; dynastyPower?: number; dynastyScore?: number; expected: number; playoffOdds?: number };
 export type PulseOddsGame = { week: number; home: string; away: string; homeName: string; awayName: string;
   homeWin: number };
 export type PulseOdds = { league: string; season: number; revision: number; status: string; words: string;
@@ -434,10 +434,12 @@ export function parsePulseOdds(value: unknown, league: string, season: number): 
     seed: oddsSeed(r.seed),
     rows: array(r.rows, 'Odds rows', (v, p) => {
       const s = object(v, p, ['franchise', 'name', 'rank', 'record', 'power', 'powerScore', 'expected',
-        'playoffOdds']);
+        'playoffOdds', 'dynastyPower', 'dynastyScore']);
       const power = integer(s.power, p);
       return { franchise: text(s.franchise, p), name: text(s.name, p), rank: integer(s.rank, p, 1),
         record: text(s.record, p), power: power || undefined, powerScore: share(s.powerScore, p),
+        dynastyPower: integer(s.dynastyPower ?? 0, p) || undefined,
+        dynastyScore: s.dynastyScore == null ? undefined : share(s.dynastyScore, p),
         expected: finite(s.expected, p),
         playoffOdds: s.playoffOdds == null ? undefined : share(s.playoffOdds, p) };
     }),
