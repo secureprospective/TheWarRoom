@@ -393,7 +393,25 @@ func ledgerEntryVisible(r, target Record, records []Record, principal string, pr
 	if privateBidRecord(target, records) {
 		return SamePrincipal(records, r.Principal, principal) || (privileged && decidedBidRecord(r, records))
 	}
-	return r.Command.Visibility != "private" || privileged
+	return r.Command.Visibility != "private" || privileged || ownAutomaticLineup(r, records, principal)
+}
+
+// ownAutomaticLineup is true for a lineup the server's clock set on the reader's franchise: the owner
+// never sent it, but it is their lineup, so they see it. Seat is judged as of that record.
+func ownAutomaticLineup(r Record, records []Record, principal string) bool {
+	if r.Command.Command != LineupSet || r.Principal != LineupClockPrincipal || r.Command.Args.Lineup == nil {
+		return false
+	}
+	i := int(r.Receipt.Revision) - 1
+	if i < 0 || i >= len(records) || records[i].Receipt.Entry != r.Receipt.Entry {
+		i = slices.IndexFunc(records, func(x Record) bool { return x.Receipt.Entry == r.Receipt.Entry })
+		if i < 0 {
+			return false
+		}
+	}
+	state, err := GovernanceState(records[:i+1])
+	return err == nil && state.HoldsSeat(governance.FranchiseID(r.Command.Args.Lineup.Franchise),
+		governance.Principal(PrincipalFor(records, principal)))
 }
 
 func privilegedLedgerReader(league, principal string, auth Authorizer) bool {
