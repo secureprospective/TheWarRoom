@@ -22,40 +22,42 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - Briefs `~/fleet/briefs/`, runs `~/fleet/runs/<job>-1122/`. AGY: `~/fleet/bin/agy-run.sh <job> <brief> "<model>"
   <workdir>`; done = `exit` file. Quota 13:20: Gemini week 27.4% left (now less: 4 Neon runs + 1 Argon since).
 
-## 4. In flight
-- 11-22 6:45 PM: Haiku Lab data check (read-only) running as a Tom subagent.
-
-## 4b. Old (pre-compaction 6 PM) in-flight notes
-- **Argon (High) review** of `session/rehearsal-auto`, started 5:47 PM, pid 2066167. Alive: `ps -p 2066167`.
-  Output `~/fleet/runs/twr-rehearsal-auto-review-1122/REVIEW.md`; done = `exit` file there. Brief
-  `~/fleet/briefs/twr-rehearsal-auto-review-1122.md`. On result: verify each BLOCKER yourself, fix on the branch
-  with a test that fails without it, re-run lint + touched tests.
-- **Claudebox cold-start re-run** for the environments directive (asked 5:23 PM in
-  `~/Downloads/TOM-ASKS-CLAUDEBOX-environments-rerun.md`); answer will be
-  `~/Downloads/CLAUDEBOX-ANSWERS-TOM-environments-rerun.md`. Pass = "the Lab, never the Season server" ->
-  tracker card "Environments" done, task T690 checked.
-- Beelink Vite 557753 (Christopher's wall) is up on purpose; leave it.
+## 4. In flight (11-22 ~7:45 PM CT)
+- Sonnet subagent (Tom's account): T695 PLAN only (Sleeper stat-line projections) -> `~/fleet/runs/twr-sleeper-projections-plan-1122/PLAN.md`.
+  On result: review, copy to `~/Downloads/TOM-REPORT-sleeper-projections-plan.md` for Claudebox. If lost, re-run (read-only, cheap).
+- Waiting on Claudebox: `~/Downloads/CLAUDEBOX-ANSWERS-TOM-environments-rerun.md` (pass -> Environments card done, `cc task check T690`);
+  replies to `TOM-ASKS-CLAUDEBOX-rehearsal-timeline.md`, `TOM-ASKS-CLAUDEBOX-icp-tasks-ack.md`, `TOM-REPORT-redraft-check.md`.
+- Scheduled wakeup ~8:19 PM re-checks the above and starts the Lab night when SNF is final.
 
 ## 5. Gates / status
 | What | State |
 |---|---|
-| Stack lint (`make lint`) | 0 issues (5:45 PM) |
-| `go test` history, leagueservice, commissioner/..., nativecheck, rookiedraft, cmd/twr-server | all ok (5:45 PM) |
-| Full 32-team auto-pick draft test | opt-in `TWR_SLOW_DRAFT=1` (~55 s); passed 18 rounds, all 31 teams legal |
-| Stack base | 513b7058a (old main). Main is now 0e33a8182: rebase before the PR |
-| PR | none yet; one merge ask after Argon + Lab test drafts |
+| Argon BLOCKERs 1-5 | all fixed, each with a planted break caught |
+| `session/rehearsal-auto` head 8e48bb48a (pushed) | touched pkgs ok; lint 0 issues |
+| `session/lab-v52-1122` head f4e2ac276 (pushed) = origin/session/live-panel-ball + the 21 code commits of the stack (docs commits left out: v51 branch predates docs/resume/) | history, leagueservice, commissioner/..., nativecheck, rookiedraft, cmd/twr-server, serverhttp ok; lint 0 issues |
+| Full draft speed, 2 cores (Beelink GOMAXPROCS=2) | 42 rounds x 32 = 1,344 picks in 3 min 6 s; late burst of 31 computer picks ~10 s |
+| Lab data (CT 260 reference.db) | model_runs 0, model_scores 0 -> load via import-model-scores; weekly stats are nflverse files via fetch_log (not checked per season); MFL injuries feed fetching every 4 h (ok) |
+| PR | none yet; main is now past #465 (rebase before the merge ask) |
 
 ## 6. Artifacts
-- Branch `session/rehearsal-auto` head e0dbb4475 (11 commits on 513b7058a; superset of `session/rehearsal-a`
-  98a94bcff's tests, `session/auto-pick` 76bb9fa06+c51403cc9, `session/auto-lineup` 1a4b28343,
-  `session/oline-handout` 642878130). The four source branches can be deleted after the stack merges.
-- Reports: `~/fleet/runs/twr-{auto-pick,autopick-fill,auto-lineup,lineup-injuries,oline-handout}-1122/REPORT.md`;
-  survey files `~/fleet/runs/twr-rehearsal-a-1122/{rehearsal-inventory,native-stats-trace,twinpool-proof,
-  twin32-proof,autoplay-facts}.md`; Claudebox `/root/twr-dynasty-hosted-1122.md`,
-  `/root/twr-schedule-weeks-proof-1122.md`.
-- Season swap script (merged, #463): `deploy/season/season-swap.sh`, tests `deploy/season/test_season_swap.py`.
+- Stack `session/rehearsal-auto` (base 513b7058a): twin/twin32/midseason proof tests; auto-pick (starters first) + fixes 106a71ae2
+  (server player facts) 563b51d11 (clock advance); auto-lineup + injuries + bye reserve + ebed15dcc (locked bench, wave window,
+  per-team errors) + 8e48bb48a (side minimum reserve); O-Line handout REVERTED bfb91c18d; schedule test weeks 1-13 empty 53a8c2b4b;
+  dd7e5ecd6+90da91b4b `twr-server export-model-run` / `import-model-scores`; a5f5a0d0a+17b80349a `twr-server create-league`.
+- Model run export (Beelink history.db run 10, 2026-10-29): `~/fleet/runs/twr-lab-model-run-1122/model-run-10.json` 1,007,117 B, 2,277 scores.
+- League setup: runbook `~/fleet/runs/twr-rehearsal-leagues-runbook-1122/RUNBOOK.md` (+ corrections), `DOOR.md`, scripts
+  `.../setup/` (setup-root.sh, setup-commish.sh, gen-schedule.py, render-commands.py, commands/, check.sh passes offline, README.md).
+- Reports to Claudebox (in ~/Downloads): TOM-REPORT-shared-facts-audit.md (T693 checked), TOM-REPORT-redraft-check.md,
+  TOM-ASKS-CLAUDEBOX-rehearsal-timeline.md, TOM-ASKS-CLAUDEBOX-icp-tasks-ack.md. Claudebox brief: CLAUDEBOX-BRIEF-TOM-icp-tasks-1122.md.
+- Earlier reports: `~/fleet/runs/twr-{auto-pick,autopick-fill,auto-lineup,lineup-injuries,oline-handout,rehearsal-auto-review}-1122/`.
 
 ## 7. Refuted / settled — do not retest
+- "Browser door admits one league per hostname": REFUTED (browser_session.go browserAdmissions lists every league; PWA switches per request).
+- Model scores and the draft pool use the same MFL ids (PinnedFootball.Players keyed by canonical MFL id): no id mapping needed.
+- AFC = franchise.01-16, NFC = 17-32 in Default32 (default32Alignment). Schedule validation allows cross-side games.
+- The hosted server has NO way to run a model run (desktop only) and had NO create-league: both now built as console commands.
+- `commish.league.seed_held` is desktop-only on the door; create-league seeds through the normal create path.
+- Native redraft does not exist (no rollover reset, contracts always on); one-season redraft needs only S pieces (see redraft report).
 - Twin pools DO hold once-per-side (test + 2 planted breaks). Two leagues stay apart (two ledgers; one shared
   store not tested).
 - Scores fill in by themselves for native leagues: live running totals (ESPN/Sleeper, 5 s), finals from nflverse
@@ -86,34 +88,37 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 ## 9. Ledger state
 All work above is committed on branches; nothing uncommitted. Main has #462 (docs/reset) and #463 (environments).
 
-## 10. Next actions, in order
-1. Read Argon's REVIEW.md; verify and fix BLOCKERs (Sonnet-medium subagent for bigger fixes, Haiku for small).
-2. After Sunday Night Football (~10:30 PM): Lab v50 then v51 — steps in `docs/RESUME-gameday-1122.md` on branch
-   `session/pwa-sw-shell` (COMPACT POINT 3 section). Command:
-   `REF=origin/session/pwa-sw-shell ~/fleet/bin/twr-lab-release-ref.sh 50
-   ~/fleet/runs/labrel-v49-1121/release-v49/metadata/targets.json <rundir>`; then v51 from
-   `origin/session/live-panel-ball`; phones update themselves; then one merge ask for that stack.
-3. Lab data check: newest `model_runs` row and `model_scores` count by position in the Lab reference file;
-   weekly stats (`stats_player_week`) held; injury feed answering.
-4. Rebase `session/rehearsal-auto` on main, release it to the Lab, create both leagues (Default32 32 teams; twin =
-   Default32 + `players.pools="per_side"`; schedule 18 weeks with 1-12 empty; long `draft.clock`), seat
-   Christopher on one team each, run one TEST startup draft per league, screenshot; card -> needs_you.
-5. Laptop Season server setup (after the releases; not needed before Nov 29): versioned install, OpenRC service,
-   firewall, nightly backup to CT105, Hermes watch. Handoff `~/Downloads/CLAUDEBOX-ANSWERS-TOM-laptop-season-server.md`.
-6. Report card checker on Hermes (T688) after Rehearsal A.
+## 10. Next actions, in order (Christopher 11-22: push through the night)
+1. After SNF final (~10:30 PM CT): Lab v50 then v51 per `docs/RESUME-gameday-1122.md` on `session/pwa-sw-shell` (COMPACT POINT 3):
+   `REF=origin/session/pwa-sw-shell ~/fleet/bin/twr-lab-release-ref.sh 50 ~/fleet/runs/labrel-v49-1121/release-v49/metadata/targets.json <rundir>`,
+   then 51 from `origin/session/live-panel-ball`; check phones self-update.
+2. Lab v52 from `origin/session/lab-v52-1122` (same script, targets from the v51 run).
+3. On the Lab CT (ssh root@192.168.1.182 -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes, then `pct` into 260): copy model-run-10.json in,
+   stop server, `twr-server import-model-scores -db /var/lib/twr/server.db -file model-run-10.json`, start.
+4. Create TEST leagues native.rehtest-default and native.rehtest-twin with `setup/setup-root.sh` + `setup-commish.sh`; seat Christopher's
+   account on franchise.01 each (join-link); short draft clock for the test; run both startup drafts; screenshot draft room + league switcher
+   on Claude-OS; note timings. Fix anything UNPROVEN that fails (runbook lists them).
+5. Delete the test leagues (`twr-server delete-league`), tracker card Rehearsal A -> needs_you "ready for real drafts Dec 8".
+6. Then: T695 plan to Claudebox; T694 redraft S pieces only after Claudebox confirms one-season; T705 native power-rank input;
+   Argon SHOULDs 9/10; laptop Season server setup (not before Dec 13).
 
 ## 11. Needs Christopher
-- Merge OK for the v51 stack (pwa-sw-shell + t677-t679 + live-panel-ball) after the Lab check tonight.
-- Later: merge OK for `session/rehearsal-auto`; then real drafts Thu/Fri.
+- Merge OK for the v51 stack (pwa-sw-shell + t677-t679 + live-panel-ball) after tonight's Lab check.
+- Later: merge OK for `session/rehearsal-auto` (rebased on main) after the Lab test drafts; real drafts Tue Dec 8.
 
 ## 12. Environment notes
+- Guard hook: any command holding both `push` and a `-f`/`--force` (even `rm -f`, `worktree remove --force`) is blocked as a
+  force-push; split them. Commit from inside a worktree (hook refuses when the shell cwd is the main checkout on main).
+- `golangci-lint cache clean` after deleting a worktree (stale cache made the pre-commit lint fail).
+- Lab CT 260 has no sqlite3/python3: `pct pull 260 /var/lib/twr/<db> <tmp>` on VM 503 and query the copy; delete copies after.
 - Hermes tracker `~/fleet/tracker/data/plan.json`: find cards by title, back up first (last backup suffix
   `bak-1122aq`, next `ar`), log times from Chicago zoneinfo (Hermes is UTC), no apostrophes in the heredoc.
 - Claudebox: `ssh claudebox`; prompt right after `claude -p`, add `< /dev/null`.
 - New worktrees need `frontend/dist/.placeholder` (and a `frontend/node_modules` symlink for `make lint`).
 
 ## 13. Honest status
-Code is built and unit-tested, never run on a real server. Unproven: the Lab holds model scores and weekly stats
-(else picks fall back to projection and lineups to ID order); draft speed on the 2-core Lab across 43 rounds;
-MFL injuries lag on Sunday inactives; how the draft room shows 600+ instant picks (browser change push is a no-op,
-T685). Open Argon SHOULDs: (6) startup draft is O(N^2): MEASURED 11-22 on the Beelink at GOMAXPROCS=2, 42 rounds x 32 teams (1,344 picks, 31 computer seats) = 3 min 6 s, so a computer burst of 31 picks late in the draft is ~10 s; confirm on the Lab test draft; (7) reserve players not used for group minimums; (9) auto-lineup would overwrite MFL-synced lineups (native leagues unaffected); (10) automatic lineup not pushed to a seated owner's open screen. ETA ready for real drafts: Thu Dec 3.
+Code is unit-tested and combined; NOTHING of the rehearsal stack has run on a real server yet. Unproven until tonight's Lab run:
+create-league on the real server, import-model-scores on the real reference.db, refresh-nfl-schedule with empty weeks 1-13,
+helper-token rights for pools/draft.clock/draft.startup.open, draft.timer side args, O-Line close on 32 teams, draft speed on the
+Lab CPU, the PWA league switcher. MFL injuries lag on Sunday inactives; draft room showing 600+ instant picks (T685).
+ETA "ready for real drafts": Thu Dec 3 (real drafts Tue Dec 8).
