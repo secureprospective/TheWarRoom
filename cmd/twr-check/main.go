@@ -45,7 +45,11 @@ func run(args []string, stdout, stderr io.Writer, roots *x509.CertPool) int {
 		_, _ = fmt.Fprintln(stderr, "can't read the token file:", err)
 		return 2
 	}
-	agent, err := serverclient.NewAgent(*server, *league, strings.TrimSpace(string(raw)), roots)
+	bearer := strings.TrimSpace(string(raw))
+	if _, lineBearer, err := serverclient.ParseHelperLink(bearer); err == nil {
+		bearer = lineBearer // the twr1 helper line the app shows; the bare token also works
+	}
+	agent, err := serverclient.NewAgent(*server, *league, bearer, roots)
 	if err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return 2
