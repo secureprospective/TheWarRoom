@@ -21,32 +21,50 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
   still works for read-only surveys (launch shape in memory `haiku-runs-on-claudebox.md`).
 - Briefs `~/fleet/briefs/`, runs `~/fleet/runs/<job>-1122/`. AGY: `~/fleet/bin/agy-run.sh <job> <brief> "<model>"
   <workdir>`; done = `exit` file. Quota 13:20: Gemini week 27.4% left (now less: 4 Neon runs + 1 Argon since).
+- **11-22 ~9:40 PM Christopher: "just the Haiku on Claudebox the rest of the night".**
+  - Shape: ship a `git archive` + `git init` repo to claudebox `/root/<job>-1122/repo`, plus a brief.
+  - Launch: `nohup claude -p "$(cat brief.md)" --model haiku --effort high --allowedTools "Bash Read Edit Write Grep Glob"`.
+  - The job writes `out/REPORT.md`, a format-patch and a `sentinel`.
+  - Tom pulls the patch, applies it on a Beelink worktree, tests, plants a break, then commits and pushes.
+  - Claudebox has Go 1.26.4 and 6 GB RAM.
+- **Base every build on the branch the Lab runs** (lab-v5x / rehearsal-auto), not main. Main is 37+ commits behind.
+  Memory: `base-briefs-on-live-stack.md`.
 
-## 4. In flight (11-22 ~8:35 PM CT)
-- No subagents running. Background timer `sleep` (pid 2484380) fires ~10:35 PM CT = start Lab night.
-- Overnight run dir: `~/fleet/runs/overnight-rehearsal-1122/` (PLAN.md, REPORT.md event log, t705-PLAN.md, t688-PLAN.md).
-- NEW BRIEF (Claudebox ~9 PM): `~/Downloads/CLAUDEBOX-BRIEF-TOM-overnight-1122.md` (4,620 B). After v50/v51 ship: jobs in order
-  T711 season-in-a-box design+spike (branch session/season-box-1122, PR open not merged), T708 canary inventory (report),
-  T709 line budget (branch session/line-budget-1122), T710 desktop keep-list (report, delete nothing), test inventory (report),
-  AI-parts licence check (official pages). Reports `~/Downloads/TOM-REPORT-<topic>.md` + tracker card + `cc task` note each;
-  morning report `~/Downloads/TOM-REPORT-overnight-1122.md` by ~7 AM CT, "Needs Christopher" at top. Rulings: docs/reset/RULINGS-1122.md
-  Part 6 + docs/architecture/infra-map.md on branch session/infra-map-1122 (PR #466). Tasks T708-T711 on Hermes.
-- Still no `CLAUDEBOX-ANSWERS-TOM-environments-rerun.md` (8:19 PM check).
-- Phones: iPhone 13 USB (`idevice_id -l` 00008110-000A74960EA0401E); S8 SM-G892U wifi adb `192.168.1.122:5555`
-  (Android 9: loses adb-wifi on reboot; its USB port is flaky — catch it with a 1 s `adb devices` loop then `adb tcpip 5555`).
-- Claude-OS was off; started 7:4x PM, at desktop. Leave it running.
+## 4. In flight (11-23 6:20 AM CT)
+- **Nothing running.** All of Claudebox's Haiku jobs are finished; no watchers are left.
+  - Claudebox run dirs `/root/{twr-read,b2,b2impl,b3,b7,ap,ap1,ap2}-1122/` are disposable (their patches are applied).
+- **Overnight run dir:** `~/fleet/runs/overnight-rehearsal-1122/`: REPORT.md (event log), B2-PLAN.md,
+  AUTOPICK-PLAN.md (SUPERSEDED), test-inventory/ (filed workbench).
+- **Morning report:** `~/Downloads/TOM-REPORT-overnight-1122.md`, with Needs Christopher at the top.
+- **Six brief reports:** `~/Downloads/TOM-REPORT-{canary-inventory,line-budget,desktop-keep-list,test-inventory,ai-parts-licences}.md`,
+  plus T711 = PR #467.
+- **Open ask:** `~/Downloads/TOM-ASKS-CLAUDEBOX-owner-pick-door-1122.md` (copy at claudebox /root/).
+  - It asks for a review of the B7 16-line fix only.
+  - Its earlier auto-pick questions are withdrawn.
+  - Answer will land at `~/Downloads/CLAUDEBOX-ANSWERS-TOM-owner-pick-door-1122.md`.
+- **Worktrees from tonight:** season-box (now on branch session/autopick-1122), line-budget, twr-read, lab-v53.
+  - Keep t705: node_modules symlinks point at it.
+- **Phones:** iPhone 13 USB (`idevice_id -l` 00008110-000A74960EA0401E). S8 SM-G892U on wifi adb `192.168.1.122:5555`.
+  - The S8's adb-wifi is lost on reboot. Its USB is flaky: catch it with a 1 s `adb devices` loop, then `adb tcpip 5555`.
+  - The iPhone's Chrome can be launched with `pymobiledevice3 developer dvt launch com.google.chrome.ios`.
+    Webinspector eval still hung all night (locked?).
+- **Claude-OS:** running, at the desktop.
 
-## 5. Gates / status
+## 5. Gates / status (11-23 6:20 AM)
 | What | State |
 |---|---|
-| Argon BLOCKERs 1-5 + SHOULD 7/9/10 | fixed, each with a Tom planted break caught. SHOULD 6 (draft speed) measured ok; 8 moot (handout reverted). Argon now RETIRED (Christopher 7:50 PM: no more Argon runs) |
-| `session/rehearsal-auto` head 4418163e5 (pushed) | + should9 4708d5bfa, should10 64bff17ea + a31bd2db0 (seat fold once per read), T705 0a082ae7f + bf893112a |
-| `session/lab-v52-1122` head ce7417190 (pushed) = v52 | live-panel-ball + stack + above + T685 8998e185a/ba9d770b5 (browser-cookie change stream) + dynasty rank screen ce7417190 |
-| `session/t688-replay-1122` 2461ed596 (pushed) | cmd/twr-check report-card comparator (read mode only); untested on real Lab |
-| Full draft speed, 2 cores | 1,344 picks in 3 min 6 s |
-| Lab data (CT 260 reference.db) | model_scores 0 until import-model-scores; disk 5.8 GB free |
-| PR | none yet; main past #465 |
-| Frontend installs | main checkout `frontend/node_modules` lacks vitest; all worktrees symlink `.worktrees/t705/frontend/node_modules` — keep t705 worktree until the night ends |
+| **Lab = v53** `session/lab-v53-1122` a211f8f9e | v52 ce7417190 + the B7 owner-pick-door fix. Status 8/8 OK at 6:14 AM (sign-in backup was paused for the first ~15 min after restart, then OK) |
+| Lab v50 b94fe7d1 / v51 087c96b9 / v52 ce741719 | Each shipped 8/8 OK. S8 self-updated e45a22cef5c1 -> 6b38e277e7ef -> 195e3b46bacf (T668 proven on Android). iPhone not checked |
+| Lab data | model scores imported (run 1, 2026, 2,277). Test leagues native.rehtest-default + native.rehtest-twin created (default_32, 2026); commissioner account 564f67ef holds franchise.01 + commissioner seat in both |
+| S8 account 3da8c020 | no league seat (403 on /app/session since 11-21): v52 screens unchecked on the phone |
+| `session/b7-pick-door-1122` d626c91f6 (main base) | B7 fix + season box drafting via PickPath; TestHostedOwnerRookiePickAdmitted |
+| `session/season-box-1122` 23742d295, PR #467 | season box: draft (store), lineups, lock, scores move, official final, stat correction, standings with 1 decided game, results. ~3 s |
+| `session/twr-read-1122` cded5ccef (on t688 base) | `twr read` + MCP `league_read` |
+| `session/line-budget-1122` 847154bce | draft line-budget guard; not in CI |
+| `session/autopick-1122` 95d2b13e3 | **SUPERSEDED, do not merge.** Duplicates auto-pick that already exists on the Rehearsal A stack |
+| `session/rehearsal-auto` c6fb1a8ca | stack + resume doc |
+| `session/t688-replay-1122` 2461ed596 | twr-check comparator |
+| Frontend installs | main checkout lacks vitest; worktrees symlink `.worktrees/t705/frontend/node_modules` |
 
 ## 6. Artifacts
 - Stack `session/rehearsal-auto` (base 513b7058a): twin/twin32/midseason proof tests; auto-pick (starters first) + fixes 106a71ae2
@@ -82,6 +100,15 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - Planted-break traps hit today: `false && A || B` still runs B; sed on a two-line signature breaks the build and
   a grep for `--- FAIL|^ok` hides "[build failed]" (always grep `^FAIL` and `build failed`).
 
+- REFUTED 11-23 ~1 AM: "draft auto-pick is not built". It IS built on the Rehearsal A stack: e5b24bf99, b730dfd1a,
+  b48d146cd (pinned facts on server), ec9050c3d (model scores). It is only missing on main. session/autopick-1122 duplicates it.
+- REFUTED: runbook step 2 "seat Christopher needs a join link". `twr-server join-link -no-login -take franchise.01` (as user
+  twr, server stopped) seats the league's commissioner account directly. A join link for ANOTHER account needs the
+  commissioner's username+password on stdin.
+- Lab status command: `pct exec 260 -- /usr/local/libexec/twr-status`. Plain `twr-server status -status-socket` is wrong (no such flag).
+- S8 "league server could not be reached" = /app/session 403 "league access unavailable": its account has no seat. Not a server fault.
+- Sign-in backup "paused" right after a Lab restart is normal for ~15 min (first backup). Not a fault.
+
 ## 8. Decisions (Christopher, 11-22)
 0. TIMELINE MOVED (6:20 PM): real drafts Tue Dec 8. Nov 29 is NFL week 12 (starts Wed 11-25); a week's lineups use the roster at its first kickoff, so Thu/Fri drafts would score nothing. First scoring week = NFL week 14 (Thu Dec 10 7:15 PM CT); first rehearsal Sunday Dec 13; first report card Tue Dec 15; schedule 18 weeks with 1-13 empty (test 53a8c2b4b). Claudebox told: ~/Downloads/TOM-ASKS-CLAUDEBOX-rehearsal-timeline.md.
 6. Routing: Haiku high + Sonnet medium subagents on Tom's account; Gemini only for second opinions when clarity is thin or a bug is hard.
@@ -98,19 +125,29 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 All work committed and pushed on branches (rehearsal-auto, lab-v52-1122, t685-1122, t705-1122, t705-screen-1122, t688-replay-1122,
 should9-1122, should10-1122). Nothing uncommitted.
 
-## 10. Next actions, in order (Christopher 11-22: push through the night)
-1. ~10:35 PM CT (SNF final): Lab v50: `REF=origin/session/pwa-sw-shell ~/fleet/bin/twr-lab-release-ref.sh 50 ~/fleet/runs/labrel-v49-1121/release-v49/metadata/targets.json ~/fleet/runs/labrel-v50-1122`;
-   check both phones get the new app shell (iPhone USB, S8 adb). Steps: `docs/RESUME-gameday-1122.md` on session/pwa-sw-shell.
-2. v51 from `origin/session/live-panel-ball` (prev = v50 run's release-v50/metadata/targets.json); phones must self-update.
-3. v52 from `origin/session/lab-v52-1122` (prev = v51 targets). Check on phones: plays land in 1-2 s (T685); Dynasty column on race screen (narrow-width truncation?).
-4. Lab CT: copy `~/fleet/runs/twr-lab-model-run-1122/model-run-10.json` in, stop server, `twr-server import-model-scores -db /var/lib/twr/server.db -file model-run-10.json`, start.
-5. Test leagues per `~/fleet/runs/twr-rehearsal-leagues-runbook-1122/RUNBOOK.md` + setup/: create native.rehtest-default + native.rehtest-twin (`twr-server create-league`), seat Christopher franchise.01 (join-link), short draft clock, run both drafts, screenshots draft room + league switcher on Claude-OS; try `twr-check` with a read token (can it read all 32 lineups? refusal code?). Delete test leagues; Rehearsal A card -> needs_you "ready for real drafts Dec 8".
-6. Claudebox overnight brief jobs 1-6 (see section 4), subagents Sonnet medium / Haiku high; morning report by 7 AM.
-7. Later: T694 after Claudebox confirms one-season; laptop Season server (not before Dec 13).
+## 10. Next actions, in order (11-23 morning)
+1. Update the tracker (http://192.168.1.222:8790/, Hermes `~/fleet/tracker/data/plan.json`; back up as plan.json.bak-1122ay+).
+   - Cards: "Owner pick door" -> fixed, on Lab v53; Next 5 -> v53 shipped; Overnight brief card.
+   - Correct the auto-pick false alarm on the log.
+   - Then tell Christopher the morning summary (he asked: "update the html and myself after the compaction").
+2. Finish `~/Downloads/TOM-REPORT-overnight-1122.md`: add v53 and the 6:14 AM status. It must be right by 7 AM.
+3. When Christopher pastes the twr1 helper line, run `setup-commish.sh` per league
+   (`~/fleet/runs/twr-rehearsal-leagues-runbook-1122/setup/`, twin needs `twin`).
+   - Set a short `draft.clock` and `draft.onExpire = autopick`, open the startup draft.
+   - Watch auto-picks fill 31 teams (server.log "draft autopick").
+   - Take screenshots on Claude-OS.
+   - Try `twr-check` with a read token.
+   - Delete the test leagues (`twr-server delete-league`, server stopped). Rehearsal A card -> needs_you "ready for real drafts".
+4. Check on the iPhone (unlocked): the v53 update worker and cache. Seat the S8 account (needs Christopher's commissioner sign-in), then check the Dynasty column at phone width.
+5. After Claudebox's answer: if the B7 review is OK, keep it. Delete remote `session/autopick-1122` (superseded) once Claudebox agrees.
+6. Later: T694 after Claudebox confirms one-season; laptop Season server (not before Dec 13).
 
 ## 11. Needs Christopher
-- Merge OK for the v51 stack (pwa-sw-shell + t677-t679 + live-panel-ball) after tonight's Lab check.
-- Later: merge OK for `session/rehearsal-auto` (rebased on main) after the Lab test drafts; real drafts Tue Dec 8.
+- Test leagues: AI helpers -> Connect a helper -> "also record" in each test league; paste the twr1 line to Tom.
+- Unlock the iPhone and keep Chrome in front.
+- Seat the S8 test account: needs his commissioner sign-in.
+- Rulings: (a) solo-owner tools when the desktop comes out (T710 report); (b) a Lab-only confirm stand-in for canaries (T708 report).
+- Merge OKs: the v51 stack (pwa-sw-shell + t677-t679 + live-panel-ball), then rehearsal-auto + B7, PR #467 (season box), twr-read, line-budget.
 
 ## 12. Environment notes
 - Guard hook: any command holding both `push` and a `-f`/`--force` (even `rm -f`, `worktree remove --force`) is blocked as a
