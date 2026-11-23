@@ -55,6 +55,9 @@ func TestModelRunExportImportRanksPoolByDynastyPPG(t *testing.T) {
 	if err != nil || held {
 		t.Fatalf("import = %+v held=%v err=%v", run, held, err)
 	}
+	if run.Season != 2026 || !run.AsOf.Equal(time.Date(2026, 10, 29, 12, 0, 0, 0, time.UTC)) || run.Engine == "" {
+		t.Fatalf("imported run = season %d as of %v engine %q, want the exported run's", run.Season, run.AsOf, run.Engine)
+	}
 	if got := rank(); !slices.Equal(got, []string{"9826", "1002", "0800"}) {
 		t.Fatalf("rank after import = %v, want dynasty_ppg order", got)
 	}
