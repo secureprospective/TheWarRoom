@@ -68,11 +68,12 @@ type officialKeeper struct {
 func startOfficialStats(ctx context.Context, pins *leaguePins, signIns *accountstore.Store) func() {
 	scope, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
+	files, first, refresh := officialSource(nflverseFiles(&http.Client{Timeout: 5 * time.Minute}))
 	k := &officialKeeper{pins: pins, signIns: signIns, directory: pins.files.family.Over(pins.files.reference),
-		files: nflverseFiles(&http.Client{Timeout: 5 * time.Minute}), now: time.Now, logf: log.Printf}
+		files: files, now: serverClock().Now, logf: log.Printf}
 	go func() {
 		defer close(done)
-		delay := officialFirst
+		delay := first
 		for {
 			timer := time.NewTimer(delay)
 			select {
@@ -82,7 +83,7 @@ func startOfficialStats(ctx context.Context, pins *leaguePins, signIns *accounts
 			case <-timer.C:
 			}
 			k.pass(scope)
-			delay = officialRefresh
+			delay = refresh
 		}
 	}()
 	return func() { cancel(); <-done }
@@ -156,5 +157,9 @@ func officialSeason(files seasonFiles, links map[string]string, at time.Time) (h
 	if err != nil {
 		return history.OfficialSeason{}, fmt.Errorf("official play-by-play: %w", err)
 	}
-	return history.OfficialSeason{Weekly: w, Plays: p, Roster: bytes.NewReader(files.roster), At: at, GSIS: links}, nil
+	out := history.OfficialSeason{Weekly: w, Plays: p, At: at, GSIS: links}
+	if len(files.roster) > 0 {
+		out.Roster = bytes.NewReader(files.roster)
+	}
+	return out, nil
 }

@@ -363,7 +363,7 @@ func hostedServices(ctx context.Context, files stateFiles, encryptionKey []byte,
 	if err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize server authenticators: %w", err)
 	}
-	clock := leagueservice.NewHostClock()
+	clock := serverClock()
 	family.SetClock(clock.Now)
 	leagues := newLeaguePins(files.leagues)
 	worker := leagueservice.NewDueWorker(leagues, func() nativecheck.Facts { return nil }, clock)
