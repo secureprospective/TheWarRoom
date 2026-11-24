@@ -7,7 +7,7 @@ owns one team in each; the other 62 are automatic. Plan: `docs/reset/REHEARSAL-S
 edits it). Environments (Dev / Lab CT 260 / Season server 192.168.1.162): CLAUDE.md "Environments".
 Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree `.worktrees/rehearsal-auto`).
 
-## 2. Done looks like (Rehearsal A, ready Thu 12-03; real drafts Tue 12-08)
+## 2. Done looks like (Rehearsal A; real drafts Tue 12-01, practice Sun 11-29 on the Lab)
 - [x] Gaps posted on the tracker before building (inventory `~/fleet/runs/twr-rehearsal-a-1122/`).
 - [x] Auto-pick and auto-lineup built, each checked with a planted break. O-Line handout REMOVED (bfb91c18d): the auction close already hands leftover cards to every team without one.
 - [x] Argon review addressed (5 BLOCKERs verified + fixed, each with a planted break: 106a71ae2 server facts, 563b51d11 clock advance, ebed15dcc lineup lock/wave/per-team, bfb91c18d handout revert). SHOULDs 6/7/9/10 open, see 13.
@@ -35,37 +35,28 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - **Base every build on the branch the Lab runs** (lab-v5x / rehearsal-auto), not main. Main is 37+ commits behind.
   Memory: `base-briefs-on-live-stack.md`.
 
-## 4. In flight (11-23 ~6:20 PM CT) — Christopher: "merge 479 480 481 482 when green"; after compaction: brief him on ETAs for everything on the plan
-- **Merges (11-23 ~6:30 PM):** #480, #481, #482 MERGED. #479 refreshed (merged origin/main, `--write`, reason file
-  `docs/architecture/line-budget-reasons/session-line-budget-ci.md`, 2b22a01e0) and a background shell merges it when CI is
-  green. Check: `gh pr view 479 -R secureprospective/TheWarRoom --json state`. If CI failed: `gh pr checks 479`.
-  After: main CI green? Remove worktrees line-budget-ci, loadtest-warm; `golangci-lint cache clean`.
-- **Gemini lanes (agy-run.sh, started ~6:05 PM; done = `<run>/exit`):**
-  - `~/fleet/runs/twr-nativegen-off-desktop-1123/` (Neon High, worktree `.worktrees/nativegen-off-desktop`): command-table
-    generator off `internal/composition`. DONE as DRAFT (3cbd4256b pushed, no PR): deps clean, `-check` byte-identical,
-    3 tests fail because 11 MFL helper commands (`mfl.pool.*`, `mfl.bid.*`, `mfl.lineup.set`, `mfl.trade.accept`, wire
-    structs in internal/app/offers) and ~150 desktop window bindings exist only in the desktop. Order for T710: plain-word
-    spec for the small MFL helper rebuild -> rebuild -> delete desktop (Argon review). Branch is older than #481; merge main.
-  - `~/fleet/runs/twr-season-box-live-1123/` (Neon Medium, worktree `.worktrees/season-box-live`, based on old
-    session/season-box-binary = #480): live-frame replay seam in the binary season box. Its branch must merge origin/main.
-  - Alive: `pgrep -af agy`; output `out.log`, `report.md`/`REPORT.md`. Lanes push branches; Tom opens PRs (merge = his OK).
-- **MNF phone check (T685):** background timer fires 7:35 PM CT. Then: S8/iPhone on the Lab during the Monday game, plays
-  should land within 1-2 s (`~/fleet/bin/phone-chrome.py <s8|iphone> eval ...`). Wake the S8 first.
-- **Lab auto-release (T663, permanent, his task):** Hermes `twr-lab-autorelease.timer` every 10 min ->
-  `~/fleet/bin/twr-lab-autorelease.sh` on the Beelink; state `~/fleet/runs/twr-lab-autorelease/state`; log
-  `~/logs/TheWarRoom/lab-autorelease.log`. After the merges it should release v61 by itself: CHECK the log + twr-status
-  (first fully automatic run; unproven). Stop: `ssh hermes systemctl --user disable --now twr-lab-autorelease.timer`.
+## 4. In flight (11-23 ~8:30 PM CT) — Christopher: "merge those pr when green" (#486, #487)
+- **Merge chain #486 then #487** (his OK 8:30 PM): `~/fleet/runs/twr-merge-486-487-1123/run.sh`, log `run.log` there.
+  First run 8:30 PM: #486 green but merge conflict (line-budget baseline vs #485); fixed (merge main 85e50954a), pushed, chain re-run. Waits #486 green -> squash-merge -> merges origin/main into worktree `.worktrees/results-read-speed-2` (branch
+  session/results-read-speed-3; line-budget baseline conflict resolved by --write) -> push -> waits #487 green -> merge.
+  Alive: `pgrep -af twr-merge-486`. If it stopped: read run.log; fix and re-run the remaining step by hand (OK stands).
+- **Lab auto-release (T663) PROVEN:** v62, v63, v64 released by themselves (log `~/logs/TheWarRoom/lab-autorelease.log`).
+  After #486/#487 merge it should release again; check log + `twr-status` and post on tracker.
+- **Gemini quota OUT 7:13 PM, resets ~11 PM** (5-hour pool). Tom builds with own Claude helpers (Agent, opus/low) meanwhile.
 - Lab kit (secrets, never print): `~/scratch/commish-1123/` (KEEP.md). Report-card tokens on Hermes expire 12-23.
+- Stray: pid 2647187 tsc watcher in `.worktrees/t705` (up ~24 h, not this session's) is the source of the LeagueTab.tsx
+  editor diagnostics; not mine, left alone.
 
-## 5. Gates / status (11-23 ~6:20 PM)
+## 5. Gates / status (11-23 ~8:30 PM)
 | Item | State |
 |---|---|
-| Stage 3 load (zero 502 at 32-team load) | MET twice: v58 22,238 req p95 851 ms; v59 24,430 req, all 200, p95 393 ms, results 536, RSS 535 MB |
-| p95 < 200 ms | NOT met on Lab 2 CPUs; sign-in directory read likely measurement (connect in timer), #482 fixes the script |
-| Stage 4 assumptions | DONE, #478 merged with his rulings (docs/reset/ASSUMPTIONS.md) |
-| T663 Lab auto-release | Built; v60 = bbe4f298f by it; fully automatic path unproven until next merge |
-| Merged today PM | #476 speed, #477 resume, #478 Stage 4, #480 season box binary, #481 one-season leagues |
-| Open | #482 (auto-merge on green), #479 (re-baseline then merge) |
+| Stage 3 load | MET twice (v59: 24,430 req, all 200, p95 393 ms, results.read 536 ms) |
+| p95 < 200 ms | NOT met yet; #487 makes results.read 14.5x faster in a GOMAXPROCS=2 benchmark (2.16 ms -> 0.149 ms/op). Rerun the Lab load after merge. Next cost: per-request SQLite in standings (nativeRecords, scoreRevisionFor, recordsMarkFor) |
+| T685 phone push | PASS 11-23 MNF: iPhone 17 pushes <=1.03 s; S8 0.3-0.8 s after its +1.68 s clock skew. `~/fleet/runs/twr-t685-phone-1123/RESULT.md`. Task checked |
+| T663 Lab auto-release | PROVEN (v62-v64 hands-free) |
+| Season box (T711) | binary box: live replay merged (#483); draft via owner door + Tuesday report card in #486 (2 server fixes: agent tokens see NFL games; official weeks read final, newest official time) |
+| Merged 11-23 evening | #479 line budget CI, #483, #484 (Dec 1 dates), #485 (MFL helper spec) |
+| Open | #486, #487 (merge chain running, his OK given) |
 
 ## 6. Artifacts
 - Stack `session/rehearsal-auto` (base 513b7058a): twin/twin32/midseason proof tests; auto-pick (starters first) + fixes 106a71ae2
@@ -168,24 +159,31 @@ main = #481 merged (plus earlier #476-#478, #480). Resume update: `session/resum
 Worktrees still in use: line-budget-ci (#479), loadtest-warm (#482), nativegen-off-desktop, season-box-live (Gemini), resume-1123d.
 Remove after merge, then `golangci-lint cache clean`.
 
-## 10. Next actions, in order (11-23 ~6:20 PM)
-1. FIRST after compaction: brief Christopher on ETAs for everything on the plan (his ask; plain words; sections 13 + BUILD-PLAN).
-2. Finish the merge chain (#482, then #479 re-baseline). Post merges on the tracker (Hermes plan.json, back up first,
-   next suffix `bak-1123n`).
-3. Check the Lab auto-released the new main (v61) and Everything is working; post on tracker.
-4. 7:35 PM: T685 phone check during MNF.
-5. Read the Gemini lane reports; review each diff yourself (plant one break); open PRs; ask his merge OK.
-6. Lab click-through: create a 12-Team One Season league on the Lab, check the template values on the phone.
-7. Next builds (Gemini first, Argon only for risky reviews): desktop removal (T710; Claudebox keep-list review first, Argon
-   review of the deletion), MFL helper tools rebuilt small (plain-word spec first), season box draft/recap gaps (B7, B2).
-8. Saturday 11-28 night with his OK: Season server setup (laptop) — hand him exact commands.
+## 10. Next actions, in order (11-23 ~8:30 PM)
+1. Watch the merge chain (#486, #487); post merges + the next Lab release on the tracker (backup suffix next `bak-1123p`).
+2. Rerun the Lab load test (gameday.py, see `~/fleet/runs/twr-stage3-load-1123/`) on the release holding #487; record p95.
+3. ~11 PM Gemini back: launch Neon lane for the small MFL helper (spec `docs/specs/mfl-helper-small.md`, merged #485:
+   free agents, bid plan + checks, lineup plan + checks, Open on MFL / I did it; NO trade offers; never sends to MFL).
+4. Second Neon lane: standings.read speed (per-request SQLite reads), same brief shape as `~/fleet/briefs/twr-results-read-speed-1123.md`.
+5. Lab: create a 12-team One Season league (needs a brief server stop; `twr-server create-league -preset one_season_12`),
+   check template values, delete it. Not done yet.
+6. Before Sun 11-29: prep practice drafts on the Lab: `~/fleet/runs/twr-testdrafts-1123/cycle.sh` recreates Tom Test /
+   Tom Test Twin; Christopher needs a seat link for his own hand picks. Setup scripts already moved to week 13
+   (`~/fleet/runs/twr-rehearsal-leagues-runbook-1122/setup/gen-schedule.py` FIRST=13; check.sh PASS).
+7. Sat 11-28 night with his OK: Season server setup (hand him exact commands). Mon 11-30: one fix allowed only if Sunday finds one.
+8. After the MFL helper: delete the desktop (T710) with Argon review (Argon unlocks Fri 11-27).
 
 ## 11. Needs Christopher
-- Nothing blocking right now; #479-#482 merge OK given. Future PRs: fresh OK each.
-- Saturday: Season server (laptop) setup, his OK each command.
+- Nothing blocking. #486/#487 merge OK given 8:30 PM. Future PRs: fresh OK each.
+- Saturday: Season server (laptop) setup, his OK each command. Sunday 11-29: his hands on practice drafts.
 - Open product question, ask only when projections are next: where projected stat lines come from.
 
 ## 12. Environment notes
+- Gemini lane stop = 5-hour quota (exit 3, AGY_ERROR 429 in err.log); work up to that point is usually committed.
+- After a squash-merge, rebuild a stacked branch with `git cherry-pick <own commits>` onto origin/main (merge gives AA conflicts).
+- Line-budget: each branch needs `docs/architecture/line-budget-reasons/<branch-with-dashes>.md` + `--write`; parallel PRs
+  conflict on the baseline file: take main's, re-run --write.
+- S8 clock runs ~1.7 s fast; S8 Chrome pauses hidden tabs (wake + `am start` Chrome first). S8 screen timeout reset to 30 s.
 - Guard hook: any command holding both `push` and a `-f`/`--force` (even `rm -f`, `worktree remove --force`) is blocked as a
   force-push; split them. Commit from inside a worktree (hook refuses when the shell cwd is the main checkout on main).
 - `golangci-lint cache clean` after deleting a worktree (stale cache made the pre-commit lint fail).
@@ -203,10 +201,10 @@ Remove after merge, then `golangci-lint cache clean`.
 - Read tokens need `native.directory.read` too (every hosted read checks the directory first; else 403).
 
 ## 13. Honest status
-11-23 ~6:20 PM. Proven: Stage 3 (two load passes, zero errors), Stage 4 rulings recorded, Lab self-release (one hand-finished
-run), one-season templates (tests + planted break; not clicked on the Lab yet), whole-season test on the real binary
-(no draft/live/recap yet). Unproven: fully automatic Lab release, phone live push latency (T685), p95 under 200 ms,
-anything on the Season server. Timeline (MOVED 11-23 7 PM, Christopher): Season server Sat 11-28 (his OK) -> practice drafts by his hand Sun 11-29 on
+11-23 ~8:30 PM. Proven: Stage 3, Stage 4 rulings, Lab self-release (hands-free v62-v64), phone push <1 s on both phones
+(T685), whole-season test on the real binary with live/final/correction (merged) and draft + report card (#486). Unproven:
+p95 under 200 ms on the Lab (benchmark only), one-season template clicked on the Lab, anything on the Season server, the
+small MFL helper (spec only). Timeline (MOVED 11-23 7 PM, Christopher): Season server Sat 11-28 (his OK) -> practice drafts by his hand Sun 11-29 on
 the Lab (copies) -> one allowed Season server fix Mon 11-30 if practice found one -> REAL DRAFTS TUE DEC 1 -> week 13 Thu Dec 3
 -> Rehearsal Sunday 1 = Sun Dec 6 (also the recording/report-card day) -> first report card Tue Dec 8. Ruling in docs/reset/ASSUMPTIONS.md.
 Christopher was concerned 11-23 evening by off-lane questions (resume chatbot etc. from a raw task-list sweep): ask only
