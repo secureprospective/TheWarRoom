@@ -287,8 +287,17 @@ func assertDirectTransferParity(t *testing.T, store *history.Store, got history.
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(standings, got.Standings) {
-		t.Fatal("standings differ")
+	// Standings are kept frozen too: compare the bytes an owner is sent, not the hidden encode cache.
+	directStandings, err := json.Marshal(standings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replayStandings, err := json.Marshal(got.Standings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(directStandings, replayStandings) {
+		t.Fatalf("standings differ:\n%s\n%s", directStandings, replayStandings)
 	}
 	if len(got.Bids) != 2 || got.Bids[0].ActiveBids != 1 || len(got.Lineups) != 32 || !got.Lineups[0].Set {
 		t.Fatal("lineups or owner bids missing")
