@@ -1,4 +1,3 @@
-github.com/secureprospective/TheWarRoom/tools/fixtures	3.608
 github.com/secureprospective/TheWarRoom/cmd/twr	62.221
 github.com/secureprospective/TheWarRoom/tools/twr-practice	59.539
 github.com/secureprospective/TheWarRoom/cmd/twr-server	46.907
@@ -29,7 +28,6 @@ github.com/secureprospective/TheWarRoom/internal/app/mflref/trades	1.220
 github.com/secureprospective/TheWarRoom/internal/archive	1.079
 github.com/secureprospective/TheWarRoom/internal/commandcatalog	1.039
 github.com/secureprospective/TheWarRoom/internal/commissioner	252.301
-github.com/secureprospective/TheWarRoom/internal/composition	1567.886
 github.com/secureprospective/TheWarRoom/internal/db	11.534
 github.com/secureprospective/TheWarRoom/internal/domain	1.020
 github.com/secureprospective/TheWarRoom/internal/engine	1.031

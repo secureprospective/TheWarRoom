@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -97,6 +98,9 @@ func checkSources(keys []string, current, baseline map[string]string) error {
 func decisions(root string) (map[string]string, error) {
 	out := map[string]string{}
 	for _, directory := range []string{"internal/composition", "internal/app/core"} {
+		if _, err := os.Stat(filepath.Join(root, directory)); errors.Is(err, fs.ErrNotExist) {
+			continue // removed with the desktop (desktop-removal PR-D, PR-E)
+		}
 		paths, err := boundaryPaths(filepath.Join(root, directory))
 		if err != nil {
 			return nil, err

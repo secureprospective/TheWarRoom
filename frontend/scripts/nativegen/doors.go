@@ -69,10 +69,6 @@ func generateDoors(registry *catalog.Registry) (map[string][]byte, error) {
 	}
 	finishDoorSources(&wails, &cli, &bar, features)
 	slices.Sort(manifest)
-	wailsGo, err := format.Source([]byte(wails.String()))
-	if err != nil {
-		return nil, fmt.Errorf("format Wails surface: %w", err)
-	}
 	cliGo, err := format.Source([]byte(cli.String()))
 	if err != nil {
 		return nil, fmt.Errorf("format CLI verbs: %w", err)
@@ -82,7 +78,6 @@ func generateDoors(registry *catalog.Registry) (map[string][]byte, error) {
 		return nil, err
 	}
 	return map[string][]byte{
-		"internal/composition/wails_surface.gen.go":   wailsGo,
 		"testdata/bindings/manifest.txt":              []byte(strings.Join(manifest, "\n") + "\n"),
 		"cmd/twr/verbs.gen.go":                        cliGo,
 		"frontend/src/app/commands/arguments.gen.ts":  generateArguments(registry.Entries()),

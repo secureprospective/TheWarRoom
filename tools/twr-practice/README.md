@@ -21,7 +21,7 @@ On a Linux build machine with Go, pnpm and the normal WebKitGTK 4.1 development
 libraries, run this one-liner from the repository root:
 
 ```sh
-(cd frontend && pnpm install && pnpm build) && mkdir -p .scratch/practice-bundle && go build -o .scratch/practice-bundle/twr-practice ./tools/twr-practice && go build -tags practice -o .scratch/practice-bundle/twr-server ./cmd/twr-server && go build -tags desktop,production,webkit2_41 -o .scratch/practice-bundle/thewarroom . && cp docs/ui/endpoint-registry.csv .scratch/practice-bundle/registry.csv
+(cd frontend && pnpm install && pnpm build) && mkdir -p .scratch/practice-bundle && go build -o .scratch/practice-bundle/twr-practice ./tools/twr-practice && go build -tags practice -o .scratch/practice-bundle/twr-server ./cmd/twr-server && cp docs/ui/endpoint-registry.csv .scratch/practice-bundle/registry.csv
 ```
 
 The desktop embeds the freshly built frontend assets. Use the same Linux architecture
@@ -33,19 +33,18 @@ bundle. Copy the **whole directory**, including `registry.csv`, preserving execu
 scp -r .scratch/practice-bundle tester@test-machine:~/practice-bundle
 ```
 
-On the test machine, with OpenSSL and the desktop runtime libraries already installed:
+On the test machine, with OpenSSL already installed:
 
 ```sh
 mkdir -p "$HOME/practice-sandboxes"
 "$HOME/practice-bundle/twr-practice" up -bin "$HOME/practice-bundle" "$HOME/practice-sandboxes/click-test"
-# Launch the exact Desktop command printed by up, in the graphical session.
+# Open the printed Server address in a browser (the desktop app was removed, desktop-removal PR-D).
 "$HOME/practice-bundle/twr-practice" code "$HOME/practice-sandboxes/click-test"
-# Close the desktop window first.
 "$HOME/practice-bundle/twr-practice" down "$HOME/practice-sandboxes/click-test"
 ```
 
 No checkout, Go, pkg-config, development headers, pnpm or frontend files are needed on the
-test machine. `-bin` copies `twr-server` and `thewarroom` into the sandbox, refusing missing,
+test machine. `-bin` copies `twr-server` into the sandbox, refusing missing,
 non-regular or non-executable files, and copies the bundle's preview registry. OpenSSL still
 creates fresh disposable TLS keys. Without `-bin`, `up` keeps its repository-based build
 behavior. `code` and `down` never build anything. Keep the launcher in place until cleanup;
@@ -108,17 +107,6 @@ off-site protection. The release builder never uses this tag. A normal server
 binary remains paused without verified R2 coverage; there is no runtime switch
 to disable that rule. Prebuilt practice bundles must use the tagged build shown
 above. Never use the practice binary for real league state.
-
-### Update-required screen
-
-`up` also prints an **Update-required click test** command. With an unstamped development
-binary, this sets `TWR_PRACTICE_UPDATE=app` in the isolated practice profile and opens the real
-blocking desktop screen. It offers one button, **Update and reopen**. Without installer trust,
-clicking it must explain that update setup is missing, preserve the screen, and permit retry;
-no test signing keys or unsigned executable are installed. Release-stamped builds ignore the
-practice override. For a valid verified-executable launch use the generated-key staging test
-in `internal/releasetrust`; actual signed release/three-OS click drills require the install
-handoff in `docs/delivery/Release_Trust.md`.
 
 ## Lineup, reserves and draft walkthrough
 
