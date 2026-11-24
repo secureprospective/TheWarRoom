@@ -27,6 +27,11 @@ func runCreateLeague(ctx context.Context, args []string, input io.Reader, output
 	if err != nil {
 		return err
 	}
+	lock, err := lockStoppedServer(req.path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Close() }()
 	var raw accounts.RawCredentials
 	if req.commissioner {
 		if raw, err = readConsoleCredentials(input); err != nil {

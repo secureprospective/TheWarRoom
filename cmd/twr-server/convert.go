@@ -26,6 +26,11 @@ func runConversionProof(ctx context.Context, args []string, output io.Writer) er
 	if flags.NArg() != 0 || *path == "" {
 		return fmt.Errorf("conversion-proof needs -db, with the server stopped")
 	}
+	lock, err := lockStoppedServer(*path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Close() }()
 	if err := checkHostedDatabase(*path, 0); err != nil {
 		return err
 	}

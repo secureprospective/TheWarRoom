@@ -161,17 +161,28 @@ func parseAndLockHosted(args []string) (hostedFlags, *os.File, error) {
 // same database refuses to start instead of keeping its own drifting picture of every league. The lock is
 // taken before the database is checked or opened, and the operating system drops it when the process exits.
 func lockHostedDatabase(path string, extraArgs int) (*os.File, error) {
+	lock, err := lockStoppedServer(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := checkHostedDatabase(path, extraArgs); err != nil {
+		_ = lock.Close()
+		return nil, err
+	}
+	return lock, nil
+}
+
+func lockStoppedServer(path string) (*os.File, error) {
+	if path == "" { // the command's own flag check names -db
+		return nil, nil
+	}
 	lock, err := os.OpenFile(path+".lock", os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("open the server lock next to %s: %w", path, err)
 	}
 	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		_ = lock.Close()
-		return nil, fmt.Errorf("another twr-server is already using %s; stop it first", path)
-	}
-	if err := checkHostedDatabase(path, extraArgs); err != nil {
-		_ = lock.Close()
-		return nil, err
+		return nil, fmt.Errorf("the server is running on %s; stop it first", path)
 	}
 	return lock, nil
 }

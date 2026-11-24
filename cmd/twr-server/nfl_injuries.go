@@ -147,6 +147,11 @@ func runRefreshNFLInjuries(ctx context.Context, args []string, output io.Writer)
 	if flags.NArg() != 0 || *path == "" || *season < 1920 || *season > 9999 {
 		return fmt.Errorf("refresh-nfl-injuries needs -db and a valid -season; stop the server first")
 	}
+	lock, err := lockStoppedServer(*path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Close() }()
 	if err := checkHostedDatabase(*path, 0); err != nil {
 		return err
 	}
