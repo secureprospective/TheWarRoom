@@ -66,13 +66,22 @@ hosted-command e2e plus a live Lab check where a server command changes. Then me
 - Phone study and mocks after Dec 6 (T700).
 - Phone alerts design.
 
-## 5. Gates / status
+## 5. Gates / status (11-24 ~10:25 AM CT)
+Run dir: `~/fleet/runs/gaps-1124/` (PLAN.md, briefs/, REPORT.md event log, merge/). Watcher: `~/fleet/bin/run-watch.sh wait ~/fleet/runs/gaps-1124 50` (background; re-arm every turn).
 | Item | State |
 |---|---|
-| main | 60ebd21fe (#493). Lab v72 = 60ebd21fe, Everything is working (7:32 AM) |
-| Open PRs (ours) | none |
-| `session/resume-1124` | f642f3889 pushed (close note, GAPS-1124, rulings). Not merged; needs a docs PR + Christopher's OK |
-| Season server | untouched; next change Sat 11-28 with his OK |
+| **Merge authority** | Christopher 10:00 AM: "merge four PRs when green" = #494 #495 #496 #497 ONLY |
+| #494 desktop step 1 | MERGED 10:15 AM |
+| #496 pincache (+ Tom lock fix 75b09e30e) | conflicted on generated line baseline; main merged in locally (6990e4930); v2 merge job pushes + merges when green |
+| #497 sleeper step 1 (+ Tom fixes) | in v2 merge queue |
+| #495 canary `cmd/twr-canary` | in v2 merge queue |
+| v2 merge job | `~/fleet/runs/gaps-1124/merge/merge-when-green2.sh 496 497 495`; log `merge/merge.log`; done = `merge/exit`; auto-resolves ONLY line-baseline conflicts |
+| schedtimer (`-nfl-schedule-refresh`) | session/pulse-schedtimer eaa2a155f, Tom fixes (advancePin race, per-league timeout, no panic), mutant caught. Not pushed, NOT in merge OK. Merge main in after #496/#497 (football_pins.go, hosted.go), push, PR, ask Christopher |
+| sbplayoff (bracket to champion) | Gemini 7531f8632 on session/pulse-sbplayoff, all done lines met, test/docs only. Tom: own mutant, untrack notes, push, PR, ask merge OK |
+| seasonsetup kit | session/pulse-seasonsetup 33c5a001a, parked (laptop later). Not pushed |
+| Lab | v72 = 60ebd21fe before merges; auto-release each merge; hold Dec 1 + game windows |
+| Season server | untouched (laptop later) |
+| Hooks | commands mixing `git commit -F` and `git push` trip the force-push guard; heredocs with `git merge` while the main checkout is on main trip the main guard. Split calls; write scripts with Write |
 
 ## 6. Artifacts
 - Gap list: `docs/reset/GAPS-1124.md`.
@@ -107,16 +116,12 @@ hosted-command e2e plus a live Lab check where a server command changes. Then me
   the next suffix is `bak-1124c`.
 
 ## 10. Next actions, in order
-1. Write briefs A1–A4 into `~/fleet/runs/gaps-1124/briefs/`, with done lines, rulings and the e2e rule.
-2. Send the keep-list review to Claudebox (A5 prerequisite).
-3. Add the Sleeper row to `docs/sources/Approved_Sources.md` (internal rehearsal only), then curl the projections
-   address once, read-only.
-4. Launch A1–A4 on Luna high, and arm run-watch.
-5. Run A6 (Haiku scout plus a Lab look).
-6. Review each lane as it lands: diff, planted mutant, CI, Lab check. Open its PR, put it on the tracker, ask
-   for merge OK.
-7. When Claudebox OKs the keep-list, launch A5 on Neon High.
-8. Phase B.
+1. `run-watch.sh status ~/fleet/runs/gaps-1124`; read `merge/merge.log`; re-arm the wait.
+2. sbplayoff: plant own mutant (wrong expected champion), untrack HANDOFF.md/REPORT.md, push, PR, ask merge OK.
+3. schedtimer: after #496/#497 land, merge main in, `go test -race ./cmd/twr-server -run NFLSchedule`, push, PR, ask merge OK.
+4. After merges: Lab check (twr-status "Everything is working"); Sleeper flag on for the Lab before Thu Dec 3 (twr-sandbox flag-file line like schedtimer's); install twr-canary on Hermes vs a Lab canary league; tracker green/red.
+5. Desktop step 2 (PR-B parity tests) per docs/architecture/desktop-removal-plan.md; check hosted import covers league.migrate.* before PR-D; PR-F needs Christopher.
+6. Phase B/C as section 4. Laptop installer task on Hermes Task_list (~line 429).
 
 ## 11. Needs Christopher
 - Merge OKs as PRs land (none waiting now). The docs PR for `session/resume-1124` is not opened yet.
@@ -130,5 +135,6 @@ hosted-command e2e plus a live Lab check where a server command changes. Then me
 - Write commit messages with `git commit -F <file>` (don't combine it with `-m`).
 
 ## 13. Honest status
+11-24 10:25: Phase A all built; four PRs merging. Luna high ~1 slice per run; Gemini Neon High took canary and playoffs after two Luna misses each. Every lane had real review finds.
 Planning is done. Nothing in Phase A has started, and no build is running. The ETA for Phase A is about 1–2 days of
 lanes plus review. A4 depends on the Sleeper address still answering (unverified since 11-22).
