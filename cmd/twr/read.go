@@ -30,16 +30,20 @@ func (e env) readCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			var pretty bytes.Buffer
-			if err := json.Indent(&pretty, reply, "", "  "); err != nil {
-				return fmt.Errorf("print the reply: %w", err)
-			}
-			pretty.WriteByte('\n')
-			if _, err := e.out.Write(pretty.Bytes()); err != nil {
-				return fmt.Errorf("print the reply: %w", err)
-			}
-			return nil
+			return e.printReply(reply)
 		}}
+}
+
+func (e env) printReply(reply json.RawMessage) error {
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, reply, "", "  "); err != nil {
+		return fmt.Errorf("print the reply: %w", err)
+	}
+	pretty.WriteByte('\n')
+	if _, err := e.out.Write(pretty.Bytes()); err != nil {
+		return fmt.Errorf("print the reply: %w", err)
+	}
+	return nil
 }
 
 // read is shared by the CLI and the MCP tool. A command that is not a read is refused before the
