@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"math/rand/v2"
+	"os"
 	"strings"
 	"testing"
 )
@@ -15,23 +15,43 @@ func TestSeedReplaysSubsetAndOrder(t *testing.T) {
 	first := selectJourneys(rng)
 	_, _, rng, _ = makeSeed("202648-9f3a", 2026, 48)
 	second := selectJourneys(rng)
-	for id := range first {
-		if !second[id] {
-			t.Fatalf("subset changed: %v / %v", first, second)
-		}
+	if !sameSelection(first, second) {
+		t.Fatalf("subset or order changed: %v / %v", first, second)
 	}
 	if len(first) != 12 {
 		t.Fatalf("selected %d journeys, want 12: %v", len(first), first)
 	}
-	_ = rand.New // keep test tied to standard-library PRNG
+}
+
+func sameSelection(a, b map[string]bool) bool {
+	for id, selected := range a {
+		if b[id] != selected {
+			return false
+		}
+	}
+	return len(a) == len(b)
 }
 
 func TestRefusalsHappenBeforeContact(t *testing.T) {
-	for _, args := range [][]string{{"-target", "season"}, {"-target", "lab", "-server", "https://unused", "-token-file", "missing", "-league", "native.other", "-season", "2026", "-week", "1", "-allow-file", t.TempDir() + "/allow"}} {
-		var out, stderr bytes.Buffer
-		code := run(args, &out, &stderr, nil)
-		if code != 2 || strings.Contains(out.String(), "PASS") {
-			t.Fatalf("code=%d out=%q stderr=%q", code, out.String(), stderr.String())
-		}
+	dir := t.TempDir()
+	allow := dir + "/allow"
+	if err := os.WriteFile(allow, []byte("native.other\\nmfl.14432\\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"season target", []string{"-target", "season"}},
+		{"not allowlisted", []string{"-target", "lab", "-server", "https://127.0.0.1:1", "-token-file", dir + "/missing", "-league", "native.absent", "-season", "2026", "-week", "1", "-allow-file", allow}},
+		{"MFL league", []string{"-target", "lab", "-server", "https://127.0.0.1:1", "-token-file", dir + "/missing", "-league", "mfl.14432", "-season", "2026", "-week", "1", "-allow-file", allow}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out, stderr bytes.Buffer
+			code := run(tc.args, &out, &stderr, nil)
+			if code != 2 || strings.Contains(out.String(), "PASS") {
+				t.Fatalf("code=%d out=%q stderr=%q", code, out.String(), stderr.String())
+			}
+		})
 	}
 }

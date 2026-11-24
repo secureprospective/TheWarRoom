@@ -1,0 +1,1 @@
+The seeded canary CLI, its refusal/seed tests and user-facing safety documentation are the approved T708 deliverable. The runner currently remains read-only; the added footprint makes the unfinished limits explicit rather than implying mutating safety. The small increase is justified for this task.

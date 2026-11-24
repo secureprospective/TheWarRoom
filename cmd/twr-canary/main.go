@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"crypto/x509"
 	"flag"
 	"fmt"
@@ -125,14 +126,14 @@ func run(args []string, stdout, stderr io.Writer, roots *x509.CertPool) int {
 	lines := []string{first}
 	red := false
 	for _, j := range journeys() {
-		if !chosen[j.id] {
-			continue
-		}
 		started := time.Now()
 		status, detail := "SKIPPED", j.reason
-		if j.id == "1" {
+		switch {
+		case !chosen[j.id]:
+			detail = "not selected by this seed"
+		case j.id == "1":
 			status, detail = "PASS", "token accepted by agent constructor"
-		} else if j.reason == "" && j.command != "" {
+		case j.reason == "" && j.command != "":
 			data, e := agent.Read(ctx, j.command, serverhttp.RawWorkflowScope{Season: *season, Week: *week})
 			switch {
 			case e != nil:
@@ -184,7 +185,11 @@ func makeSeed(input string, season, week int) (int64, uint16, *rand.Rand, error)
 	var nonce uint64
 	if input == "" {
 		seed = int64(season*100 + week)
-		nonce = uint64(time.Now().UnixNano()) & 0xffff
+		var random [2]byte
+		if _, err := cryptorand.Read(random[:]); err != nil {
+			return 0, 0, nil, fmt.Errorf("generate run nonce: %w", err)
+		}
+		nonce = uint64(random[0])<<8 | uint64(random[1])
 	} else {
 		parts := strings.Split(input, "-")
 		if len(parts) != 2 {
