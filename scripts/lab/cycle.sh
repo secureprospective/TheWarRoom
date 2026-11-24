@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # cycle.sh (target: lab) — one command prepares both practice drafts: deletes and recreates
 # native.rehtest-default and native.rehtest-twin with the Lab commissioner, sets up the schedule and the
-# 13-day pick clock, opens both drafts, applies the 14-day draft timers, loads NFL kickoff dates.
+# 13-day pick clock, loads NFL kickoff dates. Drafts stay closed: claim seats, then open-drafts.sh.
 # Never touches native.rehearsal-* (guard_id refuses). Needs TWR_LAB_KIT and LAB_SSH_CONF.
 set -euo pipefail
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -28,11 +28,6 @@ for L in "${LEAGUES[@]}"; do id=${L%%|*}; rest=${L#*|}; nm=${rest%%|*}
   lab_twrserver create-league -db $DB -league "$id" -name "\"$nm\"" -preset default_32 -season 2026 -commissioner < lab-commish.json | head -1
   lab_twrserver join-link -db $DB -league "$id" -take franchise.01 -no-login </dev/null | tail -1
 done
-# NFL kickoff dates (server must be stopped). A failure here is a warning, not a stop.
-for L in "${LEAGUES[@]}"; do id=${L%%|*}
-  lab_twrserver refresh-nfl-schedule -db $DB -league "$id" -season 2026 </dev/null 2>&1 | tail -1 \
-    || echo "WARNING: refresh-nfl-schedule failed for $id; kickoff times may be missing" >&2
-done
 lab_start
 
 for i in $(seq 1 20); do python3 -I labcommish.py helper native.rehtest-default >/dev/null 2>&1 && break; sleep 30; done
@@ -45,9 +40,13 @@ Wd=$D/rehearsal-rehtest-default; Wt=$D/rehearsal-rehtest-twin
 # League rule: 13-day pick clock (cmd/20-draft-clock.json as rendered, not overridden).
 XDG_CONFIG_HOME=$D/cfg ./apply.sh "$Wd/schedule-generate.json" "$Wd/schedule-publish.json" "$Wd/cmd/20-draft-clock.json"
 XDG_CONFIG_HOME=$D/cfg-twin ./apply.sh "$Wt/cmd/05-pools-twin.json" "$Wt/schedule-generate.json" "$Wt/schedule-publish.json" "$Wt/cmd/20-draft-clock.json"
-XDG_CONFIG_HOME=$D/cfg ./apply.sh "$Wd/cmd/30-draft-open.json"
-XDG_CONFIG_HOME=$D/cfg-twin ./apply.sh "$Wt/cmd/30-draft-open.json"
-# Live clock on each opened draft: the 14-day draft.timer (draft.onExpire stays skip).
-XDG_CONFIG_HOME=$D/cfg ./apply.sh "$Wd/cmd/40-timer-default.json"
-XDG_CONFIG_HOME=$D/cfg-twin ./apply.sh "$Wt/cmd/40-timer-twin-afc.json" "$Wt/cmd/41-timer-twin-nfc.json"
-echo "both drafts open at $(date -u +%T) UTC (target: lab)"
+# NFL kickoff dates need the published schedule and a stopped server. A failure here is a warning, not a stop.
+lab_stop
+for L in "${LEAGUES[@]}"; do id=${L%%|*}
+  lab_twrserver refresh-nfl-schedule -db $DB -league "$id" -season 2026 </dev/null 2>&1 | tail -1 \
+    || echo "WARNING: refresh-nfl-schedule failed for $id; kickoff times may be missing" >&2
+done
+lab_start
+# The drafts are NOT opened here: the computer drafts every open seat within minutes, so seats are claimed
+# first (seat-link.sh), then open-drafts.sh opens both. The 13-day league clock covers a seated owner's turn.
+echo "both practice leagues ready, drafts closed, at $(date -u +%T) UTC (target: lab). Next: seat-link.sh, then open-drafts.sh"
