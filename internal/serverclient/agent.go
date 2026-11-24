@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -116,6 +117,37 @@ func (a *Agent) Read(ctx context.Context, command string, scope serverhttp.RawWo
 		return nil, fmt.Errorf("encode league read: %w", err)
 	}
 	response, err := a.postWorkflow(ctx, serverhttp.RawWorkflow{Command: command, Version: "1", Mode: "read", Arguments: args}, "")
+	var refused refusal
+	if errors.As(err, &refused) && refused.status == http.StatusConflict {
+		message := "the league refused this read"
+		var words refusedWords
+		if errors.As(refused.error, &words) {
+			message += ": " + string(words)
+		}
+		return nil, refusal{status: refused.status, error: errors.New(message)}
+	}
+	return response.Data, err
+}
+
+// Workflow runs any league workflow after adding the connection's league to its argument object.
+func (a *Agent) Workflow(ctx context.Context, command, mode string,
+	args json.RawMessage) (json.RawMessage, error) {
+	var object map[string]json.RawMessage
+	if err := json.Unmarshal(args, &object); err != nil || object == nil {
+		return nil, fmt.Errorf("workflow arguments must be a JSON object")
+	}
+	league, err := json.Marshal(a.league)
+	if err != nil {
+		return nil, fmt.Errorf("encode league workflow: %w", err)
+	}
+	object["league"] = league
+	arguments, err := json.Marshal(object)
+	if err != nil {
+		return nil, fmt.Errorf("encode league workflow: %w", err)
+	}
+	workflow := serverhttp.RawWorkflow{Command: command, Version: "1", Mode: mode,
+		Arguments: arguments}
+	response, err := a.postWorkflow(ctx, workflow, "")
 	return response.Data, err
 }
 
@@ -164,7 +196,7 @@ func (a *Agent) post(ctx context.Context, path string, payload serverhttp.RawNat
 	case http.StatusUnauthorized:
 		return nil, fmt.Errorf("the connection token was refused: it may have expired or been revoked. Ask the commissioner for a new one, then run twr connect")
 	case http.StatusConflict:
-		return nil, refusal{status: response.StatusCode, error: ErrRefused}
+		return nil, workflowConflictRefusal(response)
 	case http.StatusServiceUnavailable:
 		return nil, fmt.Errorf("the league server is busy; try again in a minute")
 	default:
@@ -175,6 +207,24 @@ func (a *Agent) post(ctx context.Context, path string, payload serverhttp.RawNat
 		return nil, fmt.Errorf("the league server sent an unreadable reply; try again")
 	}
 	return body, nil
+}
+
+// refusedWords is a 409 that carried the server's plain words. It still is ErrRefused, so callers that
+// map a refusal (a preview to ErrPreviewRefused) keep working; new paths show the words.
+type refusedWords string
+
+func (r refusedWords) Error() string        { return string(r) }
+func (r refusedWords) Is(target error) bool { return target == ErrRefused }
+
+func workflowConflictRefusal(response *http.Response) refusal {
+	mediaType, _, _ := mime.ParseMediaType(response.Header.Get("Content-Type"))
+	if mediaType == "text/plain" {
+		message, err := io.ReadAll(io.LimitReader(response.Body, 4<<10))
+		if err == nil && strings.TrimSpace(string(message)) != "" {
+			return refusal{status: response.StatusCode, error: refusedWords(strings.TrimSpace(string(message)))}
+		}
+	}
+	return refusal{status: response.StatusCode, error: ErrRefused}
 }
 
 // Prepare names the league and, when the caller left it 0, the current revision: the exact change

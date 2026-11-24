@@ -38,6 +38,12 @@ type readInput struct {
 	Scope   map[string]any `json:"scope,omitempty" jsonschema:"optional filters for the read, such as season, week or franchise"`
 }
 
+type workflowInput struct {
+	Command   string         `json:"command" jsonschema:"the league workflow command to run"`
+	Mode      string         `json:"mode" jsonschema:"read or execute"`
+	Arguments map[string]any `json:"arguments" jsonschema:"the command's argument object"`
+}
+
 func (e env) mcpCommand() *cobra.Command {
 	return &cobra.Command{Use: "mcp", Short: "Serve the saved connection to an AI helper over MCP (stdio)", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -76,6 +82,7 @@ func (e env) mcpServer() *mcp.Server {
 			}
 			return replied(reply)
 		})
+	registerWorkflowTool(server, e)
 	for _, mode := range []string{"preview", "execute"} {
 		description := "Show what a league change would do, without recording it. Always preview first."
 		if mode == "execute" {
@@ -95,6 +102,26 @@ func (e env) mcpServer() *mcp.Server {
 			})
 	}
 	return server
+}
+
+func registerWorkflowTool(server *mcp.Server, e env) {
+	mcp.AddTool(server, &mcp.Tool{Name: "league_workflow",
+		Description: "Run any league workflow command in read or execute mode."},
+		func(ctx context.Context, _ *mcp.CallToolRequest, in workflowInput) (*mcp.CallToolResult, any, error) {
+			arguments, err := json.Marshal(in.Arguments)
+			if err != nil {
+				return failed(fmt.Errorf("encode workflow arguments: %w", err)), nil, nil
+			}
+			agent, _, err := e.agent()
+			if err != nil {
+				return failed(err), nil, nil
+			}
+			reply, err := agent.Workflow(ctx, in.Command, in.Mode, arguments)
+			if err != nil {
+				return failed(err), nil, nil
+			}
+			return replied(reply)
+		})
 }
 
 // scopeFrom turns the tool's scope object into the same strict scope the CLI reads from a file.

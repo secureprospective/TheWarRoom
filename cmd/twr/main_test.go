@@ -56,13 +56,18 @@ const fakeReadData = `{"command":"standings.read","rows":[{"franchise":"franchis
 
 // fakeLeague answers the two paths twr uses and records what each dispatch asked for.
 type fakeLeague struct {
-	mu          sync.Mutex
-	revoked     bool
-	refuseReads bool
-	requests    int
-	reads       []readCall
-	dispatched  []dispatched
-	confirms    []string
+	mu                sync.Mutex
+	revoked           bool
+	refuseReads       bool
+	refuseStatus      int
+	refuseBody        string
+	refuseContentType string
+	refuseChanges     string // when set, every change is refused 409 text/plain with these words
+	requests          int
+	reads             []readCall
+	workflows         []serverhttp.RawWorkflow
+	dispatched        []dispatched
+	confirms          []string
 }
 
 func (f *fakeLeague) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +92,7 @@ func (f *fakeLeague) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		f.workflows = append(f.workflows, *request.Workflow)
 		if request.Workflow.Mode == "read" {
 			var scope serverhttp.RawWorkflowScope
 			if err := json.Unmarshal(request.Workflow.Arguments, &scope); err != nil {
@@ -95,7 +101,15 @@ func (f *fakeLeague) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			f.reads = append(f.reads, readCall{Command: request.Workflow.Command, Scope: scope})
 			if f.refuseReads {
-				w.WriteHeader(http.StatusForbidden)
+				status := f.refuseStatus
+				if status == 0 {
+					status = http.StatusForbidden
+				}
+				if f.refuseContentType != "" {
+					w.Header().Set("Content-Type", f.refuseContentType)
+				}
+				w.WriteHeader(status)
+				_, _ = w.Write([]byte(f.refuseBody))
 				return
 			}
 			_, _ = w.Write([]byte(`{"label":"Hosted","writable":false,"football":"fb","appRelease":1,"data":` + fakeReadData + `}`))
@@ -104,6 +118,12 @@ func (f *fakeLeague) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		var command commissioner.RawCommand
 		if err := json.Unmarshal(request.Workflow.Arguments, &command); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if f.refuseChanges != "" {
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(f.refuseChanges))
 			return
 		}
 		f.dispatched = append(f.dispatched, dispatched{Mode: request.Workflow.Mode, Command: &command})
@@ -192,7 +212,7 @@ func TestTwrMCPOffersLedgerPreviewAndExecute(t *testing.T) {
 	}
 	defer func() { _ = session.Close() }()
 	tools, err := session.ListTools(t.Context(), nil)
-	if err != nil || len(tools.Tools) != 4 {
+	if err != nil || len(tools.Tools) != 5 {
 		t.Fatalf("tools = %+v (%v)", tools, err)
 	}
 	result, err := session.CallTool(t.Context(), &mcp.CallToolParams{Name: "preview_change",

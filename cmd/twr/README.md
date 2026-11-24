@@ -25,11 +25,25 @@ never signs in, never makes tokens, and never confirms a change on its own.
 | `twr preview CHANGE.json` | shows what a change would do; records nothing |
 | `twr execute CHANGE.json [--confirmation CODE]` | records a change; G2/G3 need the commissioner's code |
 | `twr read COMMAND.read [SCOPE.json\|-]` | prints one read-only league answer as JSON (for example `twr read standings.read`); refuses any command whose name does not end in `.read` |
+| `twr workflow COMMAND [--mode read|execute] [--json OBJECT | --file PATH|-]` | runs any league workflow command; defaults to read mode |
 | `twr disconnect` | forgets the saved connection on this computer |
 | `twr mcp` | serves `league_ledger`, `league_read`, `preview_change` and `execute_change` to an AI helper over MCP (stdio) |
 
 `CHANGE.json` is one league change (`command`, `args`, `reason`, …); `-` reads it
 from stdin. When `expected` is missing, `twr` reads the current revision first.
+
+## Any command
+
+Use `twr workflow` when a command has fields beyond the common read scope or change shape.
+The server validates the command and authorization; the saved league always overrides `league`.
+Arguments come from `--json` or a file (`-` reads stdin), and the reply's data is printed as JSON.
+
+```
+twr workflow draft.read --json '{"franchise":"franchise.01","season":2026}'
+twr workflow draft.queue.set --mode execute --json '{"players":[]}'
+```
+
+The MCP tool `league_workflow` exposes the same command, mode and argument object.
 
 Bigger changes (G2/G3): `twr preview` adds a `confirmRequest` line starting
 `twrc1.`. The commissioner pastes it under **AI helpers → Confirm a helper's
