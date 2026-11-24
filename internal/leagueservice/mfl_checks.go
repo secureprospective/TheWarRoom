@@ -3,9 +3,9 @@ package leagueservice
 import (
 	"context"
 	"fmt"
-	"math"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -29,15 +29,15 @@ type (
 	MflPlanLink    = mflmirror.PlanLink
 )
 
-// RawMflBidCheck is one bid to judge: the player to add, the one annual salary in dollars, the years, and the
+// RawMflBidCheck is one bid to judge: the player to add, the one annual salary in cents, the years, and the
 // players to drop to make room.
 type RawMflBidCheck struct {
-	League    string   `json:"league"`
-	Franchise string   `json:"franchise,omitempty"`
-	Add       string   `json:"add"`
-	Amount    float64  `json:"amount"`
-	Years     int      `json:"years,omitempty"`
-	Drop      []string `json:"drop,omitempty"`
+	League      string       `json:"league"`
+	Franchise   string       `json:"franchise,omitempty"`
+	Add         string       `json:"add"`
+	AmountCents domain.Money `json:"amountCents"`
+	Years       int          `json:"years,omitempty"`
+	Drop        []string     `json:"drop,omitempty"`
 }
 
 func (r RawMflBidCheck) Validate() error {
@@ -47,7 +47,7 @@ func (r RawMflBidCheck) Validate() error {
 	if _, err := playerid.New(r.Add); err != nil {
 		return fmt.Errorf("choose the player to add")
 	}
-	if r.Amount <= 0 || r.Amount > 1e9 || math.IsNaN(r.Amount) {
+	if r.AmountCents <= 0 || r.AmountCents > 1e11 {
 		return fmt.Errorf("enter one annual salary above $0")
 	}
 	if r.Years < 0 || r.Years > bid.MaxYears {
@@ -171,7 +171,7 @@ func (a *Service) MflMovesBidCheckContext(ctx context.Context, raw RawMflBidChec
 	if err != nil {
 		return MflBidCheck{}, err
 	}
-	return engine.BidCheck(ctx, seat, mflmirror.BidInput{Add: raw.Add, Amount: raw.Amount, Years: raw.Years, Drop: raw.Drop}), nil
+	return engine.BidCheck(ctx, seat, mflmirror.BidInput{Add: raw.Add, AmountCents: raw.AmountCents, Years: raw.Years, Drop: raw.Drop}), nil
 }
 
 func (a *Service) MflMovesLineupCheck(raw RawMflLineupCheck) (MflLineupCheck, error) {

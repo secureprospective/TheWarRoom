@@ -286,7 +286,7 @@ func TestMflChecksAuthorizeBeforeCheckingHostCapability(t *testing.T) {
 		!strings.Contains(err.Error(), "seated franchise owner") {
 		t.Fatalf("plans.read without fetcher leaked capability before auth: %v", err)
 	}
-	if _, err := svc.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000}); err == nil ||
+	if _, err := svc.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 100_000_000}); err == nil ||
 		!strings.Contains(err.Error(), "seated franchise owner") {
 		t.Fatalf("bid.check without fetcher leaked capability before auth: %v", err)
 	}

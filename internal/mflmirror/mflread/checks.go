@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
@@ -124,7 +123,7 @@ func (Fetcher) BidCheck(_ context.Context, s mflmirror.Seat, in mflmirror.BidInp
 
 func (v view) bidCheck(in mflmirror.BidInput) mflmirror.BidCheck {
 	years := max(in.Years, 1)
-	salary := domain.Money(math.Round(in.Amount * 100))
+	salary := in.AmountCents
 	out := mflmirror.BidCheck{League: v.League, Player: v.name(in.Add), Salary: salary, Years: years,
 		Problems: []string{}, NotChecked: []string{}}
 	facts, known := domain.PlayerFacts{}, false
