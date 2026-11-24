@@ -111,18 +111,20 @@ spike to one file. Revisit when the box runs the real `twr-server` binary: then 
 - **Harness note (not a product bug).** The box clock stands still between calls and keeps nanoseconds. A pick stamped at the
   instant of the one before would not yet count in the next pick's judgement (`s.now()` truncates to microseconds). The box
   advances the clock a minute between picks. Real owners pick seconds apart.
-- **B4 (clock and binary: closed 2026-11-23; live feed still open).** `TestSeasonInABoxBinary`
+- **B4 (clock, live replay and binary: closed 2026-11-23).** `TestSeasonInABoxBinary`
   (`cmd/twr/season_box_binary_test.go`) builds `twr-server -tags practice` once, seeds a temp database as
-  `tools/twr-practice` does (workflow league, franchise.01 lineup, an agent token), runs `upgrade`, starts `hosted
-  -official-stats` on `127.0.0.1:0`, and drives it with `twr ledger`, `twr preview` and `twr read`: preview admitted
-  before kickoff, "locked at kickoff" after the fake clock moves 25 h, the server's own official job pins
-  `testdata/official` (final 23.5) and then the corrected file (24.1), `standings.read` "Ranked". About 15 s
-  (20 s with `-race`); skipped under `-short`. Seams (practice build only, `cmd/twr-server/clock_practice.go`):
+  `tools/twr-practice` does (workflow league, franchise.01 lineup, replay QB IDs, an agent token), runs `upgrade`,
+  starts `hosted -official-stats` on `127.0.0.1:0`, and drives it with `twr ledger`, `twr preview` and `twr read`:
+  preview admitted before kickoff, "locked at kickoff" after the fake clock moves 25 h, recorded live frames
+  replayed from `testdata/live-week9.tar.gz` moving provisional points (3.00 -> 6.05), the server's own
+  official job pinning `testdata/official` (final 23.5) and then the corrected file (24.1), `standings.read`
+  "Ranked". Skipped under `-short`. Seams (practice build only, `cmd/twr-server/clock_practice.go`):
   `TWR_PRACTICE_CLOCK_FILE` (one RFC 3339 instant; the clock is that instant plus wall time since the write; feeds the
-  store, due worker and official job) and `TWR_PRACTICE_OFFICIAL_DIR` (the official job reads the season files from a
-  directory, first pass after 1 s, then every 1 s). Release builds (`backup_hosted.go`) never read either;
-  `TestReleaseServerIgnoresPracticeSeams` proves it. Still open in the binary box: the draft (B7), live frames (no
-  replay feed; the in-process spike covers both), the recap. Other wall-clock sites listed below are not on the
+  store, due worker, live replay job and official job), `TWR_PRACTICE_LIVE_DIR` (the live job replays recorded ESPN
+  summary JSON frames from a directory in sorted filename order instead of the network, with an optional `week` file),
+  and `TWR_PRACTICE_OFFICIAL_DIR` (the official job reads the season files from a directory, first pass after 1 s,
+  then every 1 s). Release builds (`backup_hosted.go`) never read any of them; `TestReleaseServerIgnoresPracticeSeams`
+  proves it. Still open in the binary box: the draft (B7) and the recap. Other wall-clock sites listed below are not on the
   fake clock. Original note:
 - **B4. Real binary and a clock it obeys.** `twr-server` reads wall time in many places: `cmd/twr-server/hosted.go:364-365`
   (`NewHostClock`, the store and due worker), `football_pins.go:52`, `official_stats.go:72`, `league_load.go:370`,
