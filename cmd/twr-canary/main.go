@@ -15,144 +15,116 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
-	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
-type journey struct {
-	id, name, command string
-	scope             serverhttp.RawWorkflowScope
-	reason            string
+type cliOptions struct {
+	server, tokenFile, league, franchise, seedFlag, out, allow, target, confirmation string
+	season, week                                                                     int
 }
-
-func journeys() []journey {
-	return []journey{
-		{"1", "connect", "", serverhttp.RawWorkflowScope{}, "pre-minted token is supplied; sign-in is human-only"},
-		{"2", "week and lineup", "week.read", serverhttp.RawWorkflowScope{}, ""},
-		{"3", "set lineup", "commish.lineup.set", serverhttp.RawWorkflowScope{}, "no safe fixture-independent lineup payload"},
-		{"4", "live score", "nfl.games.read", serverhttp.RawWorkflowScope{}, ""},
-		{"5", "trade propose", "trade.offer", serverhttp.RawWorkflowScope{}, "no safe fixture-independent trade payload"},
-		{"6", "trade accept", "trade.accept", serverhttp.RawWorkflowScope{}, "requires second owner token"},
-		{"7", "trade review", "trade.review", serverhttp.RawWorkflowScope{}, "commissioner confirmation is human-only; preview arguments unavailable"},
-		{"8", "waiver claim", "waivers.claim", serverhttp.RawWorkflowScope{}, "preview payload requires a seeded player identity"},
-		{"9", "waiver processing", "waivers.process", serverhttp.RawWorkflowScope{}, "timed commissioner operation"},
-		{"10", "free-agent bid", "bid.place", serverhttp.RawWorkflowScope{}, "no safe fixture-independent bid payload"},
-		{"11", "roster change", "roster.cut", serverhttp.RawWorkflowScope{}, "no safe fixture-independent roster payload"},
-		{"12", "week final", "results.read", serverhttp.RawWorkflowScope{}, ""},
-		{"13", "standings", "standings.read", serverhttp.RawWorkflowScope{}, ""},
-		{"14", "playoff bracket", "bracket.read", serverhttp.RawWorkflowScope{}, "read door not confirmed available"},
-		{"15", "weekly recap", "", serverhttp.RawWorkflowScope{}, "no command exists"},
-		{"16", "league feed", "league.activity.read", serverhttp.RawWorkflowScope{}, "read door not confirmed available"},
-		{"17", "chat", "", serverhttp.RawWorkflowScope{}, "no command exists"},
-		{"18", "notification delivery", "", serverhttp.RawWorkflowScope{}, "no command exists"},
-		{"19", "commissioner act", "commish.notice.publish", serverhttp.RawWorkflowScope{}, "preview payload unavailable; never execute commissioner changes"},
-		{"20", "rule read-back", "commish.rules.read", serverhttp.RawWorkflowScope{}, "read door not confirmed available"},
-		{"21", "stat correction", "commish.stat.correct", serverhttp.RawWorkflowScope{}, "preview payload unavailable"},
-		{"22", "invite and join", "", serverhttp.RawWorkflowScope{}, "human-only token boundary"},
-		{"23", "draft pick trade", "trade.draft.read", serverhttp.RawWorkflowScope{}, "read door not confirmed available"},
-		{"24", "rookie draft", "draft.queue.read", serverhttp.RawWorkflowScope{}, "read door not confirmed available"},
-	}
-}
-func alwaysJourneys() []string { return []string{"1", "2", "3", "4", "8", "13", "20"} }
 
 func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr, nil)) }
 
-//nolint:gocyclo,funlen // The CLI boundary owns option validation, safety refusals, run and exit codes.
-func run(args []string, stdout, stderr io.Writer, roots *x509.CertPool) int {
+func parseOptions(args []string, stderr io.Writer) (cliOptions, bool) {
 	fs := flag.NewFlagSet("twr-canary", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	server := fs.String("server", "", "Lab league server https:// address")
-	tokenFile := fs.String("token-file", "", "connection token file")
-	league := fs.String("league", "", "canary league ID (native.…)")
-	season := fs.Int("season", 0, "season")
-	week := fs.Int("week", 0, "week")
-	seedFlag := fs.String("seed", "", "replay seed YEARWEEK-hexnonce")
-	out := fs.String("out", "", "markdown report path")
-	allow := fs.String("allow-file", "", "one allowlisted native league ID per line")
-	target := fs.String("target", "", "must be lab")
+	var o cliOptions
+	fs.StringVar(&o.server, "server", "", "Lab league server https:// address")
+	fs.StringVar(&o.tokenFile, "token-file", "", "connection token file")
+	fs.StringVar(&o.league, "league", "", "canary league ID (native.…)")
+	fs.StringVar(&o.franchise, "franchise", "", "canary franchise ID (franchise.…)")
+	fs.IntVar(&o.season, "season", 0, "season")
+	fs.IntVar(&o.week, "week", 0, "week")
+	fs.StringVar(&o.seedFlag, "seed", "", "replay seed YEARWEEK-hexnonce")
+	fs.StringVar(&o.out, "out", "", "markdown report path")
+	fs.StringVar(&o.allow, "allow-file", "", "one allowlisted native league ID per line")
+	fs.StringVar(&o.target, "target", "", "must be lab")
+	fs.StringVar(&o.confirmation, "confirmation", "", "optional human confirmation code for G2/G3 execute")
 	if fs.Parse(args) != nil {
-		return 2
+		return o, false
 	}
-	if *target != "lab" {
-		fmt.Fprintln(stderr, "refusing: -target must be lab")
-		return 2
+	return o, true
+}
+
+func validateTargetAndAllowlist(o cliOptions, stderr io.Writer) bool {
+	if o.target != "lab" {
+		_, _ = fmt.Fprintln(stderr, "refusing: -target must be lab")
+		return false
 	}
-	if *server == "" || *tokenFile == "" || *league == "" || *season < 1 || *week < 1 || *allow == "" {
-		fmt.Fprintln(stderr, "usage: twr-canary -target lab -server https://host -token-file F -league native.id -season N -week N -allow-file F")
-		return 2
+	if o.server == "" || o.tokenFile == "" || o.league == "" || o.season < 1 || o.week < 1 || o.allow == "" {
+		_, _ = fmt.Fprintln(stderr, "usage: twr-canary -target lab -server https://host -token-file F -league native.id [-franchise franchise.01] -season N -week N -allow-file F")
+		return false
 	}
-	if !strings.HasPrefix(*league, "native.") {
-		fmt.Fprintln(stderr, "refusing: only native leagues are allowed")
-		return 2
+	if !strings.HasPrefix(o.league, "native.") {
+		_, _ = fmt.Fprintln(stderr, "refusing: only native leagues are allowed")
+		return false
 	}
-	allowData, err := os.ReadFile(*allow)
+	allowData, err := os.ReadFile(o.allow)
 	if err != nil {
-		fmt.Fprintln(stderr, "can't read allowlist:", err)
-		return 2
+		_, _ = fmt.Fprintln(stderr, "can't read allowlist:", err)
+		return false
 	}
-	listed := false
-	for _, line := range strings.Split(string(allowData), "\n") {
-		if strings.TrimSpace(line) == *league {
-			listed = true
+	for line := range strings.SplitSeq(string(allowData), "\n") {
+		if strings.TrimSpace(line) == o.league {
+			return true
 		}
 	}
-	if !listed {
-		fmt.Fprintln(stderr, "refusing: league is not on the allowlist")
-		return 2
-	}
-	seed, nonce, rng, err := makeSeed(*seedFlag, *season, *week)
+	_, _ = fmt.Fprintln(stderr, "refusing: league is not on the allowlist")
+	return false
+}
+
+func loadAgent(o cliOptions, roots *x509.CertPool, stderr io.Writer) (*serverclient.Agent, bool) {
+	raw, err := os.ReadFile(o.tokenFile)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
-		return 2
-	}
-	first := fmt.Sprintf("seed=%d-%04x", seed, nonce)
-	fmt.Fprintln(stdout, first)
-	raw, err := os.ReadFile(*tokenFile)
-	if err != nil {
-		fmt.Fprintln(stderr, "can't read token file:", err)
-		return 2
+		_, _ = fmt.Fprintln(stderr, "can't read token file:", err)
+		return nil, false
 	}
 	bearer := strings.TrimSpace(string(raw))
 	if _, parsed, e := serverclient.ParseHelperLink(bearer); e == nil {
 		bearer = parsed
 	}
-	agent, err := serverclient.NewAgent(*server, *league, bearer, roots)
+	agent, err := serverclient.NewAgent(o.server, o.league, bearer, roots)
 	if err != nil {
-		fmt.Fprintln(stderr, err)
+		_, _ = fmt.Fprintln(stderr, err)
+		return nil, false
+	}
+	return agent, true
+}
+
+func run(args []string, stdout, stderr io.Writer, roots *x509.CertPool) int {
+	opts, ok := parseOptions(args, stderr)
+	if !ok || !validateTargetAndAllowlist(opts, stderr) {
 		return 2
 	}
-	chosen := selectJourneys(rng)
+	seed, nonce, rng, err := makeSeed(opts.seedFlag, opts.season, opts.week)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return 2
+	}
+	seedText := fmt.Sprintf("%d-%04x", seed, nonce)
+	first := "seed=" + seedText
+	_, _ = fmt.Fprintln(stdout, first)
+	agent, ok := loadAgent(opts, roots, stderr)
+	if !ok {
+		return 2
+	}
+	cfg := canaryConfig{
+		target:       opts.target,
+		league:       opts.league,
+		franchise:    opts.franchise,
+		seedLabel:    seedText,
+		confirmation: opts.confirmation,
+		season:       opts.season,
+		week:         opts.week,
+		allowlisted:  true,
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	lines := []string{first}
-	red := false
-	for _, j := range journeys() {
-		started := time.Now()
-		status, detail := "SKIPPED", j.reason
-		switch {
-		case !chosen[j.id]:
-			detail = "not selected by this seed"
-		case j.id == "1":
-			status, detail = "PASS", "token accepted by agent constructor"
-		case j.reason == "" && j.command != "":
-			data, e := agent.Read(ctx, j.command, serverhttp.RawWorkflowScope{Season: *season, Week: *week})
-			switch {
-			case e != nil:
-				status, detail, red = "FAIL", e.Error(), true
-			case len(data) == 0 || string(data) == "null":
-				status, detail, red = "FAIL", "empty response", true
-			default:
-				status, detail = "PASS", "read response received"
-			}
-		}
-		line := fmt.Sprintf("%s %s [%s] %dms %s", status, j.name, j.command, time.Since(started).Milliseconds(), detail)
-		lines = append(lines, line)
-		fmt.Fprintln(stdout, line)
-	}
-	if *out != "" {
+	selected := selectJourneys(rng)
+	lines, red := executeJourneys(ctx, agent, cfg, selected, first, stdout)
+	if opts.out != "" {
 		body := "# Lab canary\n\n" + strings.Join(lines, "\n") + "\n"
-		//nolint:gosec // The operator explicitly chooses the report destination.
-		if e := os.WriteFile(*out, []byte(body), 0o600); e != nil {
-			fmt.Fprintln(stderr, "can't write report:", e)
+		if e := os.WriteFile(opts.out, []byte(body), 0o600); e != nil {
+			_, _ = fmt.Fprintln(stderr, "can't write report:", e)
 			return 2
 		}
 	}
@@ -161,23 +133,61 @@ func run(args []string, stdout, stderr io.Writer, roots *x509.CertPool) int {
 	}
 	return 0
 }
-func selectJourneys(rng *rand.Rand) map[string]bool {
+
+func executeJourneys(ctx context.Context, agent *serverclient.Agent, cfg canaryConfig, selected []string, first string, stdout io.Writer) ([]string, bool) {
+	byID := map[string]journey{}
+	all := journeys()
+	for _, j := range all {
+		byID[j.id] = j
+	}
 	chosen := map[string]bool{}
-	for _, id := range alwaysJourneys() {
+	lines := []string{first}
+	red := false
+	for _, id := range selected {
+		chosen[id] = true
+		j := byID[id]
+		started := time.Now()
+		status, detail := runOneJourney(ctx, agent, cfg, j)
+		if status == "FAIL" {
+			red = true
+		}
+		line := fmt.Sprintf("%s %s [%s] %dms %s", status, j.name, j.command, time.Since(started).Milliseconds(), detail)
+		lines = append(lines, line)
+		_, _ = fmt.Fprintln(stdout, line)
+	}
+	for _, j := range all {
+		if chosen[j.id] {
+			continue
+		}
+		detail := "not selected by this seed"
+		if j.excluded && j.reason != "" {
+			detail = j.reason
+		}
+		line := fmt.Sprintf("SKIPPED %s [%s] 0ms %s", j.name, j.command, detail)
+		lines = append(lines, line)
+		_, _ = fmt.Fprintln(stdout, line)
+	}
+	return lines, red
+}
+
+func selectJourneys(rng *rand.Rand) []string {
+	selected := append([]string{}, alwaysJourneys()...)
+	chosen := map[string]bool{}
+	for _, id := range selected {
 		chosen[id] = true
 	}
 	var pool []journey
 	for _, j := range journeys() {
-		if !chosen[j.id] && j.id != "15" && j.id != "17" && j.id != "18" && j.id != "22" {
+		if !chosen[j.id] && !j.excluded {
 			pool = append(pool, j)
 		}
 	}
-	for n := 0; n < 5 && n < len(pool); n++ {
+	for n := 0; n < 5 && len(pool) > 0; n++ {
 		idx := rng.IntN(len(pool))
-		chosen[pool[idx].id] = true
+		selected = append(selected, pool[idx].id)
 		pool = append(pool[:idx], pool[idx+1:]...)
 	}
-	return chosen
+	return selected
 }
 
 func makeSeed(input string, season, week int) (int64, uint16, *rand.Rand, error) {
