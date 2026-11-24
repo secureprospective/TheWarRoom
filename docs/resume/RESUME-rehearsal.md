@@ -35,31 +35,35 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - **Base every build on the branch the Lab runs** (lab-v5x / rehearsal-auto), not main. Main is 37+ commits behind.
   Memory: `base-briefs-on-live-stack.md`.
 
-## 4. In flight (11-23 ~4:05 PM CT) — Christopher: "merge 476 when the load test passes, then keep pushing"
-- **Load test v59 (running, started ~3:46 PM CT, ~26 min):** `gameday.py` 31 teams x 2 devices x 15 min against
-  native.tomload ("Tom Load", 32 teams, tomlab on franchise.01, drafted). Alive: `pgrep -af gameday.py`. Output:
-  `~/fleet/runs/twr-stage3-load-1123/v59/{run.log,latency.jsonl,rss.log}`; last line `PASS: 0 x 502, 0 x 5xx, p95 … ms`.
-  Compare with v58 run (p95 851 ms; results.read p95 1,863; RSS 408 MB). PASS + p95 better -> merge #476
-  (`gh pr merge 476 --squash`, his OK given 11-23 ~4 PM). Break latency down by op AND by 5-s bucket (bursts every 60 s).
-- RSS sampler loop (~28 min) writes v59/rss.log; ends by itself.
-- **Lab kit (secrets, never print):** `~/scratch/commish-1123/` (KEEP.md). New: `reader-<league>.txt` (bare read
-  bearers), `join-load.txt` (Tom Test link, league full now), `join-tomload.txt` (Tom Load link), `cfg-load/`,
-  `helper-native.tomload.txt`, `make-load-league.sh` (setup after create-league + take; refresh is last).
-  Scripts in repo: `scripts/lab/` (TWR_LAB_KIT=<kit dir>, LAB_SSH_CONF for cycle.sh).
-- Report card on Hermes: `~/fleet/twr-reportcard/token-native.tomtest-{default,twin}` (bare bearer, read-only, expire
-  12-23 ~19:17 UTC: reissue with `labcommish.py reader <league>` then scp). run.sh: per-league token, LEAGUES env
-  `REPORTCARD_LEAGUES`, default tomtest. Dry run 12-15: both GREEN.
+## 4. In flight (11-23 ~6:20 PM CT) — Christopher: "merge 479 480 481 482 when green"; after compaction: brief him on ETAs for everything on the plan
+- **Merge chain (background shell, survives compaction):** #480 MERGED, #481 MERGED, #482 waiting on CI then auto-merge
+  (`gh pr view 482 -R secureprospective/TheWarRoom --json state`). If not merged, `gh pr checks 482` and merge when green.
+- **#479 line limit (his OK given) — do LAST, by hand:** its baseline predates #480/#481/#482, so main would fail the
+  budget. In `.worktrees/line-budget-ci`: `git merge origin/main` (no rebase: force-push is blocked), run
+  `scripts/check-line-budget.sh --write`, commit, push, wait CI green, `gh pr merge 479 --squash`. Check main CI after.
+- **Gemini lanes (agy-run.sh, started ~6:05 PM; done = `<run>/exit`):**
+  - `~/fleet/runs/twr-nativegen-off-desktop-1123/` (Neon High, worktree `.worktrees/nativegen-off-desktop`): command-table
+    generator off `internal/composition` (first step of desktop removal). Review diff + `go run ./frontend/scripts/nativegen -check`.
+  - `~/fleet/runs/twr-season-box-live-1123/` (Neon Medium, worktree `.worktrees/season-box-live`, based on old
+    session/season-box-binary = #480): live-frame replay seam in the binary season box. Its branch must merge origin/main.
+  - Alive: `pgrep -af agy`; output `out.log`, `report.md`/`REPORT.md`. Lanes push branches; Tom opens PRs (merge = his OK).
+- **MNF phone check (T685):** background timer fires 7:35 PM CT. Then: S8/iPhone on the Lab during the Monday game, plays
+  should land within 1-2 s (`~/fleet/bin/phone-chrome.py <s8|iphone> eval ...`). Wake the S8 first.
+- **Lab auto-release (T663, permanent, his task):** Hermes `twr-lab-autorelease.timer` every 10 min ->
+  `~/fleet/bin/twr-lab-autorelease.sh` on the Beelink; state `~/fleet/runs/twr-lab-autorelease/state`; log
+  `~/logs/TheWarRoom/lab-autorelease.log`. After the merges it should release v61 by itself: CHECK the log + twr-status
+  (first fully automatic run; unproven). Stop: `ssh hermes systemctl --user disable --now twr-lab-autorelease.timer`.
+- Lab kit (secrets, never print): `~/scratch/commish-1123/` (KEEP.md). Report-card tokens on Hermes expire 12-23.
 
-## 5. Gates / status (11-23 ~4:05 PM)
-| What | State |
+## 5. Gates / status (11-23 ~6:20 PM)
+| Item | State |
 |---|---|
-| **main = 234f99a08** | merged 11-23 with his OK: #474 one join link (1ef46749e), #472 Lab kit + twr-check helper line (f1f5031fa), #475 load script (18bd5f815), #473 phone wording (234f99a08). Post-merge CI was running |
-| **PR #476** `session/results-read-speed` b527e7133 | results/standings memo + one computation per burst. CI: check. Merge when v59 load test passes |
-| **Lab = v59** dc72f2a81 (`session/lab-v58` = one-link + wording + Today LIVE + #476) | 8/8 OK after restart |
-| v58 load test (Tom Test, 29x2, 15 min) | PASS 0x502/5xx, 22,238 req, RSS 408 MB, p95 851 ms; slow only in 60-s bursts; 409s were the script's wrong week (fixed) |
-| One link proven live | 29 claims on one link (201); then 410 "Every franchise in this league already has an owner…" |
-| Tom Test | full: 01 tomlab, 02 S8, 03 iPhone, 04-32 load accounts (creds gone). Football pin refreshed weeks 15-18 (both tomtest) |
-| Phones | iPhone Today showed "LIVE NOW" with 0 playing on v58 -> fixed in #473 (Today) / v59; not yet re-checked on the phone |
+| Stage 3 load (zero 502 at 32-team load) | MET twice: v58 22,238 req p95 851 ms; v59 24,430 req, all 200, p95 393 ms, results 536, RSS 535 MB |
+| p95 < 200 ms | NOT met on Lab 2 CPUs; sign-in directory read likely measurement (connect in timer), #482 fixes the script |
+| Stage 4 assumptions | DONE, #478 merged with his rulings (docs/reset/ASSUMPTIONS.md) |
+| T663 Lab auto-release | Built; v60 = bbe4f298f by it; fully automatic path unproven until next merge |
+| Merged today PM | #476 speed, #477 resume, #478 Stage 4, #480 season box binary, #481 one-season leagues |
+| Open | #482 (auto-merge on green), #479 (re-baseline then merge) |
 
 ## 6. Artifacts
 - Stack `session/rehearsal-auto` (base 513b7058a): twin/twin32/midseason proof tests; auto-pick (starters first) + fixes 106a71ae2
@@ -133,7 +137,16 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
   re-reads at once (300-400 req in 5-10 s on 2 CPUs). Fix = one computation per burst (#476).
 - 11-23 PM: report-card 403 = token lacked native.directory.read; twr-check now accepts the twr1 line too.
 
+- 11-23 PM: v59 directory read 1.35 s p50 = first request per device; timer included TCP+TLS connect (store cost 0.52 ms,
+  Location check 0.064 ms). Not a server bug (to confirm with #482 on next run).
+- 11-23 PM: #476 first CI fail = TestResultsWarmReadsPinnedLeaguesAndStops expected a starter-cache hit the memo pre-empts;
+  test relaxed to "no new starter miss" (not a product bug).
+
 ## 8. Decisions (Christopher, 11-22)
+- 11-23 evening (Stage 4, #478): remove the desktop program; rebuild MFL helper tools small as a reference against mistakes;
+  one-season leagues as settings ("sandbox, no new app structure, open the possibilities"); many templates, each only
+  fills in settings; projections = projected STATS scored by each league's own rules; desktop-era ideas retired;
+  T537/T654/T659 closed. Lean into Gemini (Neon/Hydrogen); Argon sparingly (heavy token eater).
 - 11-23 ~11 AM: Lab guards loosened: the Lab no longer needs commissioner/password guards; the Season server (laptop) keeps every guard. Tom may own Lab commissioner accounts. (memory `lab-guards-loosened.md`)
 - 11-23 ~1 PM: ONE join link for the whole league (not one per owner). Any owner can use it until seats run out; commissioner can still revoke/replace it.
 - 11-23: merged #470 (OK "merge it") and #471 (OK "merge 471 when CI is green").
@@ -148,22 +161,27 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
    locked starters kept, a human lineup never touched; dynasty order ignores each league's own scoring this once;
    a benched player starts only to meet a minimum nobody playing can fill (O-Line card on bye).
 
-## 9. Ledger state (11-23 ~4:05 PM)
-main 234f99a08. Open: PR #476. This resume update: `session/resume-1123c` (worktree `.worktrees/resume-1123c`).
-Worktrees to remove after #476: one-join-link, phone-wording, lab-v58, results-read-speed, stage3-load, cl-commish-1123.
-Remote branch `session/resume-1123b` is stale (content merged via #472). Task list: T662 T1819 checked; T631 T640 updated.
+## 9. Ledger state (11-23 ~6:20 PM)
+main = #481 merged (plus earlier #476-#478, #480). Resume update: `session/resume-1123d` (worktree `.worktrees/resume-1123d`).
+Worktrees still in use: line-budget-ci (#479), loadtest-warm (#482), nativegen-off-desktop, season-box-live (Gemini), resume-1123d.
+Remove after merge, then `golangci-lint cache clean`.
 
-## 10. Next actions, in order (11-23 ~4:05 PM)
-1. Read the v59 load test; if PASS (0 x 502/5xx) and p95 not worse, merge #476 (his OK). Post p95/RSS on tracker + PR.
-2. Re-check the iPhone Today screen on v59 (no "LIVE" with 0 playing): `~/fleet/bin/phone-chrome.py iphone eval '…innerText'`.
-3. If p95 still > 200 ms: break down by op; next suspects native.directory.read (p50 452 ms, service.go:159 Location) and
-   standings; consider GOMAXPROCS on the Lab CT (2) vs the Season laptop.
-4. Open a PR for this resume branch (docs only).
-5. Clean up merged worktrees (above) with `git worktree remove` (no --force next to push), `golangci-lint cache clean`.
-6. Later: Season server setup (Saturday, his OK); T709 line-budget into CI; T711; T694.
+## 10. Next actions, in order (11-23 ~6:20 PM)
+1. FIRST after compaction: brief Christopher on ETAs for everything on the plan (his ask; plain words; sections 13 + BUILD-PLAN).
+2. Finish the merge chain (#482, then #479 re-baseline). Post merges on the tracker (Hermes plan.json, back up first,
+   next suffix `bak-1123m`).
+3. Check the Lab auto-released the new main (v61) and Everything is working; post on tracker.
+4. 7:35 PM: T685 phone check during MNF.
+5. Read the Gemini lane reports; review each diff yourself (plant one break); open PRs; ask his merge OK.
+6. Lab click-through: create a 12-Team One Season league on the Lab, check the template values on the phone.
+7. Next builds (Gemini first, Argon only for risky reviews): desktop removal (T710; Claudebox keep-list review first, Argon
+   review of the deletion), MFL helper tools rebuilt small (plain-word spec first), season box draft/recap gaps (B7, B2).
+8. Saturday 11-28 night with his OK: Season server setup (laptop) — hand him exact commands.
 
 ## 11. Needs Christopher
-- Nothing blocking. #476 merge pre-approved if the load test passes. Season-server changes still need his OK each time.
+- Nothing blocking right now; #479-#482 merge OK given. Future PRs: fresh OK each.
+- Saturday: Season server (laptop) setup, his OK each command.
+- Open product question, ask only when projections are next: where projected stat lines come from.
 
 ## 12. Environment notes
 - Guard hook: any command holding both `push` and a `-f`/`--force` (even `rm -f`, `worktree remove --force`) is blocked as a
@@ -183,6 +201,11 @@ Remote branch `session/resume-1123b` is stale (content merged via #472). Task li
 - Read tokens need `native.directory.read` too (every hosted read checks the directory first; else 403).
 
 ## 13. Honest status
-11-23 ~4:05 PM: Rehearsal A proven on the Lab; one join link built, proven live and merged; phone wording merged; report card
-works (dry run). Unproven: the speed fix's effect on Lab p95 (load test running), iPhone Today wording on v59, anything on
-the Season server, week-14 scoring (Thu Dec 10). Real drafts Tue Dec 8.
+11-23 ~6:20 PM. Proven: Stage 3 (two load passes, zero errors), Stage 4 rulings recorded, Lab self-release (one hand-finished
+run), one-season templates (tests + planted break; not clicked on the Lab yet), whole-season test on the real binary
+(no draft/live/recap yet). Unproven: fully automatic Lab release, phone live push latency (T685), p95 under 200 ms,
+anything on the Season server. Timeline: Season server Sat 11-28 (his OK) -> Dec 6 wall/recording session -> real drafts
+Tue Dec 8 -> week 14 Thu Dec 10 -> Rehearsal Sunday 1 Dec 13 -> first report card Tue Dec 15.
+Christopher was concerned 11-23 evening by off-lane questions (resume chatbot etc. from a raw task-list sweep): ask only
+current TheWarRoom product choices, plain words, click-through (memory questions-stay-in-lane).
+
