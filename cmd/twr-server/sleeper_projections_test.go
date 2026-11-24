@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -111,4 +113,28 @@ func sleeperProjectionTestStore(t *testing.T) (*history.Store, *db.Pools) {
 		t.Fatal(err)
 	}
 	return history.New(pools, registry), pools
+}
+
+// The offline report runs on a server database; a league with no held Sleeper snapshot reports zero players
+// rather than failing, and a missing week is refused in words.
+func TestSleeperAccuracyCommandPrintsReport(t *testing.T) {
+	host, _, _ := scheduleRefreshFixture(t)
+	if err := host.files.Close(); err != nil {
+		t.Fatal(err)
+	}
+	dbPath := filepath.Join(host.dir, "server.db")
+	var out bytes.Buffer
+	if err := runSleeperAccuracy(t.Context(), []string{"-db", dbPath, "-league", "native.hosted", "-season", "2026"}, &out); err == nil ||
+		!strings.Contains(err.Error(), "-week") {
+		t.Fatalf("no week: err = %v, want the usage naming -week", err)
+	}
+	args := []string{"-db", dbPath, "-league", "native.hosted", "-season", "2026", "-week", "12"}
+	if err := runSleeperAccuracy(t.Context(), args, &out); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Players: 0", "Mean miss: 0.00", "Bias: 0.00"} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output %q lacks %q", out.String(), want)
+		}
+	}
 }

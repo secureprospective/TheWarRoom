@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +14,43 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
+
+func runSleeperAccuracy(ctx context.Context, args []string, output io.Writer) error {
+	flags := flag.NewFlagSet("sleeper-accuracy", flag.ContinueOnError)
+	path := flags.String("db", "", "database path")
+	league := flags.String("league", "", "league ID")
+	season := flags.Int("season", 0, "season")
+	week := flags.Int("week", 0, "week")
+	if err := flags.Parse(args); err != nil {
+		return fmt.Errorf("parse sleeper-accuracy flags: %w", err)
+	}
+	if flags.NArg() != 0 || *path == "" || *league == "" || *season == 0 || *week == 0 {
+		return fmt.Errorf("sleeper-accuracy needs -db, -league, -season and -week (store rejects zero season/week)")
+	}
+	files, err := openStateFiles(ctx, *path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = files.Close() }()
+	store, err := leagueStore(ctx, files, *league)
+	if err != nil {
+		return err
+	}
+	report, err := store.SleeperAccuracy(ctx, *league, *season, *week)
+	if err != nil {
+		return fmt.Errorf("sleeper accuracy: %w", err)
+	}
+	_, err = fmt.Fprintf(output, "Players: %d\nNo actual: %d\nMean miss: %.2f\nBias: %.2f\n", report.Players, report.NoActual, report.MeanAbsError, report.Bias)
+	if err != nil {
+		return fmt.Errorf("write sleeper accuracy report: %w", err)
+	}
+	for _, miss := range report.Misses {
+		if _, err := fmt.Fprintf(output, "%s: projected %.2f actual %.2f\n", miss.Player, miss.Projected, miss.Actual); err != nil {
+			return fmt.Errorf("write sleeper accuracy miss: %w", err)
+		}
+	}
+	return nil
+}
 
 const (
 	sleeperProjectionCadence = 6 * time.Hour

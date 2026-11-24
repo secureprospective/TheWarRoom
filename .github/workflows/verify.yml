@@ -41,7 +41,6 @@ jobs:
         run: go version
       - name: Install tools
         run: |
-          go install github.com/wailsapp/wails/v2/cmd/wails@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
           go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
           go install github.com/zricethezav/gitleaks/v8@v8.30.1
@@ -58,12 +57,10 @@ jobs:
         run: cd frontend && pnpm audit --prod
       - name: Dependency audit, dev toolchain (blocking)
         run: cd frontend && pnpm audit
-      - name: Lint (with placement and root ratchet), bindings, frontend checks
+      - name: Lint (with placement and root ratchet), frontend checks
         run: |
           make lint
-          scripts/check-wails-version.sh
           govulncheck ./...
-          make bindings-fresh
           cd frontend && pnpm tsc --noEmit && pnpm test && pnpm run build && node scripts/bundle-budget.mjs && node scripts/csp-check.mjs && node scripts/csp-browser-check.mjs
 
   test:

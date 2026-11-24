@@ -132,7 +132,7 @@ func TestLoadMovesTheLeagueActiveOntoTheServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.League != leaguemigration.AppLeagueID("14432", 2026) || result.Franchises != 32 || result.Football == "" {
+	if result.League != leaguemigration.AppLeagueID("14432", 2026) || result.Franchises != 32 || result.Football == "" || result.Review.Summary == "" {
 		t.Fatalf("result = %+v", result)
 	}
 	status, err := server.TransferStatus(t.Context(), result.League)
