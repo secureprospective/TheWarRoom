@@ -22,10 +22,11 @@ type SleeperProjectionStats struct {
 	Note     string `json:"note,omitempty"`
 }
 
-// SleeperProjectedPoints scores the newest held Sleeper snapshot under this league's rules.
+// SleeperProjectedPoints scores the newest held Sleeper snapshot under this league's rules, in the engine's
+// fixed-point points (10,000 per point). A row that cannot be scored is counted in Unmapped, never an error (R11).
 // The archived body remains neutral; points are recalculated on every read.
-func (s *Store) SleeperProjectedPoints(ctx context.Context, league string, season, week int) (map[string]float64, SleeperProjectionStats, error) {
-	points := map[string]float64{}
+func (s *Store) SleeperProjectedPoints(ctx context.Context, league string, season, week int) (map[string]leaguerules.Decimal, SleeperProjectionStats, error) {
+	points := map[string]leaguerules.Decimal{}
 	stats := SleeperProjectionStats{}
 	if season < 1920 || season > 9999 || week < 1 || week > 22 {
 		return nil, stats, fmt.Errorf("sleeper projections: choose an NFL season and week")
@@ -77,8 +78,8 @@ func (s *Store) SleeperProjectedPoints(ctx context.Context, league string, seaso
 	return points, stats, nil
 }
 
-func scoreSleeperRows(rows []source.SleeperProjection, facts map[string]nativecheck.PlayerFacts, rules leaguerules.ScoringRules) (map[string]float64, SleeperProjectionStats, error) {
-	points := make(map[string]float64, len(rows))
+func scoreSleeperRows(rows []source.SleeperProjection, facts map[string]nativecheck.PlayerFacts, rules leaguerules.ScoringRules) (map[string]leaguerules.Decimal, SleeperProjectionStats, error) {
+	points := make(map[string]leaguerules.Decimal, len(rows))
 	stats := SleeperProjectionStats{}
 	for _, row := range rows {
 		position, ok := sleeperScoringPosition(row, facts)
@@ -87,13 +88,11 @@ func scoreSleeperRows(rows []source.SleeperProjection, facts map[string]nativech
 			continue
 		}
 		score, _, err := fantasyscore.Score(rules, position, row.Line)
-		if err != nil {
-			return nil, stats, fmt.Errorf("sleeper projections: score %s: %w", row.CanonicalID, err)
+		if err != nil || score.State != leaguerules.IsKnown {
+			stats.Unmapped++ // one player the rules cannot score never loses the others
+			continue
 		}
-		if score.State != leaguerules.IsKnown {
-			return nil, stats, fmt.Errorf("sleeper projections: score %s: %s", row.CanonicalID, score.Citation)
-		}
-		points[row.CanonicalID] = float64(score.Value) / 10000
+		points[row.CanonicalID] = score.Value
 		stats.Scored++
 	}
 	return points, stats, nil
@@ -104,9 +103,9 @@ func sleeperScoringPosition(row source.SleeperProjection, facts map[string]nativ
 		_, held := facts[row.CanonicalID]
 		return "DEF", held
 	}
-	if row.Position != "" {
-		return row.Position, true
+	// The league's own player record wins; the feed's label is only a fallback.
+	if position := facts[row.CanonicalID].Position; position != "" {
+		return position, true
 	}
-	position := facts[row.CanonicalID].Position
-	return position, position != ""
+	return row.Position, row.Position != ""
 }

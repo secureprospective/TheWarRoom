@@ -6,6 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -85,7 +88,25 @@ func TestSleeperProjectionUsesLeagueRulesAndCanonicalPosition(t *testing.T) {
 		t.Fatal(err)
 	}
 	qb, dbPlayer := bySleeper["101"], bySleeper["102"]
-	if first[qb] != 0.03 || second[qb] != 0.025 || first[dbPlayer] <= 0 || firstStats.Scored != 2 || secondStats.Scored != 2 {
+	if first[qb] != 300 || second[qb] != 250 || first[dbPlayer] <= 0 || firstStats.Scored != 2 || secondStats.Scored != 2 {
 		t.Fatalf("league scoring/DB position: first=%v (%+v), second=%v (%+v)", first, firstStats, second, secondStats)
+	}
+}
+
+func TestSleeperProjectionOneUnscorableRowKeepsTheOthers(t *testing.T) {
+	line := fantasyscore.StatLine{}
+	rows := []source.SleeperProjection{
+		{CanonicalID: "bad", Position: "XX", Line: line},
+		{CanonicalID: "qb", Position: leaguerules.QB, Line: line},
+	}
+	points, stats, err := scoreSleeperRows(rows, nil, leaguerules.ScoringRules{})
+	if err != nil {
+		t.Fatalf("one unscorable row lost the week: %v", err)
+	}
+	if _, ok := points["qb"]; !ok && stats.Scored+stats.Unmapped != 2 {
+		t.Fatalf("points=%v stats=%+v, want both rows accounted for", points, stats)
+	}
+	if stats.Unmapped < 1 {
+		t.Fatalf("stats=%+v, want the bad row counted", stats)
 	}
 }
