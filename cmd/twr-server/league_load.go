@@ -405,10 +405,29 @@ func reportLoad(output io.Writer, result leagueload.Result, commissioner, pin st
 			return err
 		}
 	}
+	if err := printMFLComparison(output, result.Review); err != nil {
+		return fmt.Errorf("report MFL comparison (the load has already committed): %w", err)
+	}
 	_, err := fmt.Fprintf(output, "League %s is active on this server with %d franchises; %s is its commissioner. Football evidence %s.\n",
 		result.League, result.Franchises, commissioner, result.Football)
 	if err != nil {
 		return fmt.Errorf("report league load (the load has already committed): %w", err)
+	}
+	return nil
+}
+
+func printMFLComparison(output io.Writer, review leaguemigration.Review) error {
+	lines := []string{"MFL comparison: " + review.Summary}
+	lines = append(lines, review.LeagueWide...)
+	for _, franchise := range review.Franchises {
+		if !franchise.Matches {
+			lines = append(lines, franchise.Name+": "+strings.Join(franchise.Lines, "; "))
+		}
+	}
+	for _, line := range lines {
+		if _, err := fmt.Fprintln(output, line); err != nil {
+			return fmt.Errorf("write MFL comparison: %w", err)
+		}
 	}
 	return nil
 }

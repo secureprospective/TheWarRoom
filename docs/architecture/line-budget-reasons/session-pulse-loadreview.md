@@ -1,0 +1,1 @@
+The hosted league-load must return the existing MFL comparison and print it for the commissioner at cutover; tests cover retained review data and exact comparison wording. This small growth delivers the requested operator-visible behavior.

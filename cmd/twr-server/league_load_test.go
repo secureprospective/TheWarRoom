@@ -3,7 +3,19 @@ package main
 import (
 	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 )
+
+func TestPrintMFLComparison(t *testing.T) {
+	var output strings.Builder
+	err := printMFLComparison(&output, leaguemigration.Review{Summary: "2 differences", Franchises: []leaguemigration.FranchiseCheck{
+		{Name: "Mismatch", Lines: []string{"a", "b"}}, {Name: "Match", Matches: true},
+	}})
+	if err != nil || !strings.Contains(output.String(), "MFL comparison: 2 differences") || !strings.Contains(output.String(), "Mismatch: a; b") || strings.Contains(output.String(), "Match") {
+		t.Fatalf("comparison output = %q, err = %v", output.String(), err)
+	}
+}
 
 // The commissioner's password arrives on stdin even though RawCredentials hides it from JSON.
 func TestConsoleCredentialsReadThePassword(t *testing.T) {
