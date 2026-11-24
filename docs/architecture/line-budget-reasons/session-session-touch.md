@@ -1,0 +1,1 @@
+Session activity touch on a busy accounts.db writer: bound writer acquisition to 25 ms (ExecWriteBounded) so readers never queue behind the once-a-minute last_used_at stamp (97.5 s wait in 60 s on Lab) while uncontended commits still finish cleanly. Growth is ExecWriteBounded, the guarded UPDATE, and the writer-held regression test.

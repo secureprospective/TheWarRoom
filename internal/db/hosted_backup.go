@@ -12,17 +12,53 @@ import (
 func (p *Pools) SetWriteGuard(guard func() error) { p.writeGuard = guard }
 
 func (p *Pools) BeginWrite(ctx context.Context) (*sql.Tx, error) {
-	if p.writeGuard != nil {
-		// The returned SQL transaction rolls back automatically at its context deadline.
-		// Its admission margin is one minute; no hosted transaction can outlive thirty seconds.
-		bounded, cancel := context.WithTimeout(ctx, 30*time.Second)
-		context.AfterFunc(bounded, cancel)
-		ctx = bounded
-	}
-	tx, err := p.write.BeginTx(ctx, nil)
+	tx, err := p.write.BeginTx(p.boundWrite(ctx), nil)
 	if err != nil {
 		return nil, fmt.Errorf("begin database write: %w", err)
 	}
+	return p.guardWrite(tx)
+}
+
+func (p *Pools) ExecWrite(ctx context.Context, execute func(*sql.Tx) (sql.Result, error)) (sql.Result, error) {
+	tx, err := p.BeginWrite(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return finishWrite(tx, execute)
+}
+
+// ExecWriteBounded runs a write only if the single writer is acquired within acquireTimeout.
+func (p *Pools) ExecWriteBounded(ctx context.Context, acquireTimeout time.Duration, execute func(*sql.Tx) (sql.Result, error)) (sql.Result, error) {
+	acquireCtx, cancel := context.WithTimeout(ctx, acquireTimeout)
+	defer cancel()
+	conn, err := p.write.Conn(acquireCtx)
+	if err != nil {
+		return nil, fmt.Errorf("acquire database writer: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+	tx, err := conn.BeginTx(p.boundWrite(ctx), nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin database write: %w", err)
+	}
+	tx, err = p.guardWrite(tx)
+	if err != nil {
+		return nil, err
+	}
+	return finishWrite(tx, execute)
+}
+
+func (p *Pools) boundWrite(ctx context.Context) context.Context {
+	if p.writeGuard == nil {
+		return ctx
+	}
+	// The returned SQL transaction rolls back automatically at its context deadline.
+	// Its admission margin is one minute; no hosted transaction can outlive thirty seconds.
+	bounded, cancel := context.WithTimeout(ctx, 30*time.Second)
+	context.AfterFunc(bounded, cancel)
+	return bounded
+}
+
+func (p *Pools) guardWrite(tx *sql.Tx) (*sql.Tx, error) {
 	if p.writeGuard != nil {
 		if err := p.writeGuard(); err != nil {
 			_ = tx.Rollback()
@@ -32,11 +68,7 @@ func (p *Pools) BeginWrite(ctx context.Context) (*sql.Tx, error) {
 	return tx, nil
 }
 
-func (p *Pools) ExecWrite(ctx context.Context, execute func(*sql.Tx) (sql.Result, error)) (sql.Result, error) {
-	tx, err := p.BeginWrite(ctx)
-	if err != nil {
-		return nil, err
-	}
+func finishWrite(tx *sql.Tx, execute func(*sql.Tx) (sql.Result, error)) (sql.Result, error) {
 	defer func() { _ = tx.Rollback() }()
 	result, err := execute(tx)
 	if err != nil {
