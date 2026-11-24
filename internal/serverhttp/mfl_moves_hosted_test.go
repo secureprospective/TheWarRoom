@@ -235,6 +235,12 @@ func TestHostedMflMovesEndToEnd(t *testing.T) {
 	if !bidCheck.OK {
 		t.Fatalf("bid.check = %+v", bidCheck)
 	}
+	// 9b. Two drops: the owner reads the rule in plain words (409), not "invalid native request" (400).
+	twoDrops := invokeRaw(t, c, leagueservice.MflMovesBidCheck, "read",
+		[]byte(`{"league":"native.hosted","add":"0531","amount":1500000,"years":1,"drop":["0001","0002"]}`), 409)
+	if !strings.Contains(strings.ToLower(string(twoDrops)), "a bid can hold one drop") {
+		t.Fatalf("two-drop bid.check body = %q", twoDrops)
+	}
 
 	// 10. plan.save saves the bid plan; duplicate bid on same player gets plain-word 409.
 	var saved leagueservice.MflPlan

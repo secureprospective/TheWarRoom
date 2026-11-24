@@ -53,8 +53,8 @@ func (r RawMflBidCheck) Validate() error {
 	if r.Years < 0 || r.Years > bid.MaxYears {
 		return fmt.Errorf("a bid runs 1 to %d years", bid.MaxYears)
 	}
-	if len(r.Drop) > 1 {
-		return mflRefused("a bid can hold one drop")
+	if len(r.Drop) > 8 {
+		return fmt.Errorf("drop at most 8 players")
 	}
 	for _, d := range r.Drop {
 		if _, err := playerid.New(d); err != nil {
@@ -162,6 +162,11 @@ func (a *Service) MflMovesBidCheckContext(ctx context.Context, raw RawMflBidChec
 		return MflBidCheck{}, err
 	}
 	defer done()
+	// The one-drop rule is a refusal in plain words, not an input error: Validate runs while the hosted
+	// request is decoded, where any error becomes "invalid native request".
+	if len(raw.Drop) > 1 {
+		return MflBidCheck{}, mflRefused("a bid can hold one drop")
+	}
 	engine, err := a.mflEngine()
 	if err != nil {
 		return MflBidCheck{}, err
