@@ -44,3 +44,10 @@ An owner whose league still lives on MFL opens TheWarRoom on a phone or a browse
 ## Decided
 
 - Incoming trade offers stay out (Christopher, 11-23 evening).
+- An owner says which MFL team is theirs by typing the MFL league number and picking their team from the public
+  list. Their plans stay private to them. No MFL password is ever asked for (Christopher, 11-23 ~8:50 PM).
+- The MFL league is a normal league seat in the same app: its rules are pulled from MFL as plain league settings.
+  There is no separate login and no special kind of league (follows from the house rules; Christopher 11-23:
+  "it would pull the rules of the league").
+- The league's public MFL data is fetched only when an owner asks, at most once every 5 minutes per league, read
+  only. Nothing runs on a timer (design: ~/fleet/runs/overnight-twr-1123/mfl-helper-DESIGN.md).
