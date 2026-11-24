@@ -8,7 +8,7 @@ go run ./frontend/scripts/nativegen -check
 go test -race ./frontend/scripts/nativegen
 ```
 
-The generator binds the executable registry through `composition.CommandRegistry()` and validates its native publication before
+The generator builds the catalog registry through `catalog.GenerationRegistry()` and validates its native publication before
 writing `frontend/src/app/commands/native.gen.ts`. Identical schema subtrees are emitted once as
 shared literal constants; the command table references them. This retains every schema, version,
 permission, mode and safeguard without repeating nested mutation envelopes. TypeScript derives
