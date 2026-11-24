@@ -159,7 +159,7 @@ func menus() map[string][]string {
 		"ReviewRoute": {"dot", "commissioner", "none"}, "BoundarySide": {"start_of_day", "end_of_day"},
 		"DraftMode": {"slow", "live"}, "ExpiryAction": {"skip", "autopick"},
 		"OrderSource": {"standings"}, "OrderPattern": {"linear", "snake"},
-		"StartupOrderSource": {"random", "commissioner"},
+		"StartupOrderSource": {"random", "commissioner"}, "AutoPickRanking": {"dynasty", "season"},
 		"Criterion": {"win_percentage", "head_to_head", "division_percentage", "conference_percentage",
 			"all_play_percentage", "points", "power_rank"},
 		"Position":    {"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL"},

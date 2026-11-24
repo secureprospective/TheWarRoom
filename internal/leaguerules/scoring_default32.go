@@ -84,6 +84,18 @@ func Default32ForTeams(count int) RuleSet {
 	return r
 }
 
+// OneSeasonForTeams is the 32-Team Default for one season: no rookie draft, no taxi squad, computer
+// picks ranked by this season's value. Contracts stay at the startup draft's one year at the minimum.
+func OneSeasonForTeams(count int) RuleSet {
+	const why = "One-season template"
+	r := Default32ForTeams(count)
+	r.League.Dynasty = cited(false, why)
+	r.Draft.Rounds = cited(0, why)
+	r.Taxi.Slots = cited(0, why)
+	r.Draft.AutoPickRanking = cited(SeasonRanking, why)
+	return r
+}
+
 // default32Divisions is the NFL layout in franchise order: four franchises to a division.
 func default32Divisions() []string {
 	return []string{"AFC East", "AFC North", "AFC South", "AFC West", "NFC East", "NFC North", "NFC South", "NFC West"}

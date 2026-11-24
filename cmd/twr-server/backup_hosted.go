@@ -254,3 +254,12 @@ func configureHostedBackup(ctx context.Context, handler *serverhttp.Hosted, file
 	handler.BackupLeague = status.backupLeague
 	return stop, status, nil
 }
+
+// serverClock is the host's NTP-checked wall clock. Release builds have no clock or official-statistics seam:
+// the practice variables (clock_practice.go) are never read here.
+func serverClock() leagueservice.DueClock { return leagueservice.NewHostClock() }
+
+// officialSource is nflverse over the network, on the release schedule.
+func officialSource(network officialFiles) (officialFiles, time.Duration, time.Duration) {
+	return network, officialFirst, officialRefresh
+}

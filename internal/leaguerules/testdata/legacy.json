@@ -4942,6 +4942,11 @@
       "State": 1,
       "Value": false,
       "Citation": "Startup draft rookies, 2026-10-27: off unless the commissioner turns it on"
+    },
+    "AutoPickRanking": {
+      "State": 1,
+      "Value": "dynasty",
+      "Citation": "Computer picks rank by dynasty value unless the league chooses this season's value (T694, 2026-11-23)"
     }
   },
   "Notify": {

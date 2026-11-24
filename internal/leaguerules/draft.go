@@ -30,6 +30,8 @@ type DraftRules struct {
 	// StartupRookies says whether the incoming rookie class is in the startup draft's pool. It stands
 	// alone: off only leaves the class out of the pool, and never turns a rookie draft on or off.
 	StartupRookies Value[bool] `json:",omitzero"`
+	// AutoPickRanking is how computer picks rank the pool; unset ranks by dynasty value.
+	AutoPickRanking Value[AutoPickRanking] `json:",omitzero"`
 }
 
 func legacyDraft() DraftRules {
@@ -57,6 +59,8 @@ func legacyDraft() DraftRules {
 		StartupYears:   cited[int](1, startupRuling),
 		StartupSalary:  cited[Money](33000000, startupRuling+"; Rulebook §6"),
 		StartupRookies: cited(false, startupRookiesRuling),
+		AutoPickRanking: cited(DynastyRanking, "Computer picks rank by dynasty value unless the league chooses "+
+			"this season's value (T694, 2026-11-23)"),
 	}
 }
 
@@ -90,6 +94,7 @@ func draftFields() []ruleField {
 		field[int]{path: "draft.startupYears", label: "Startup draft contract years", access: func(r *RuleSet) *Value[int] { return &r.Draft.StartupYears }},
 		field[Money]{path: "draft.startupSalary", label: "Startup draft salary", access: func(r *RuleSet) *Value[Money] { return &r.Draft.StartupSalary }},
 		field[bool]{path: "draft.startupRookies", label: "Incoming rookie class in the startup draft pool", access: func(r *RuleSet) *Value[bool] { return &r.Draft.StartupRookies }},
+		field[AutoPickRanking]{path: "draft.autopickRanking", label: "Computer pick ranking", access: func(r *RuleSet) *Value[AutoPickRanking] { return &r.Draft.AutoPickRanking }},
 	}
 }
 
