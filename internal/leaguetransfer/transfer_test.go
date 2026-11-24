@@ -270,7 +270,17 @@ func assertDirectTransferParity(t *testing.T, store *history.Store, got history.
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(results, got.Results[0]) || results.Games[0].Status != commissioner.GameFinal {
+	// The store serves a kept (frozen) reading and the replay a fresh one: compare what an owner is sent,
+	// which is byte-identical by design, not the hidden encode cache.
+	directJSON, err := json.Marshal(results)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replayJSON, err := json.Marshal(got.Results[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(directJSON, replayJSON) || results.Games[0].Status != commissioner.GameFinal {
 		t.Fatalf("results differ or are incomplete: %+v", results.Games[0])
 	}
 	standings, err := store.NativeStandings(t.Context(), "native.test", 2026)
