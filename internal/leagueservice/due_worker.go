@@ -12,6 +12,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
@@ -92,6 +93,11 @@ type dueHost struct {
 }
 
 func (h dueHost) PrivateEntries() *personal.Store { return privateEntriesFor(h.Host) }
+func (h dueHost) MFLMirror() *mflmirror.Store     { return mflMirrorFor(h.Host) }
+func (h dueHost) MFLFetcher() mflmirror.Source    { return mflFetcherFor(h.Host) }
+func (h dueHost) LatestModelScores(ctx context.Context) ([]history.ModelScore, bool, error) {
+	return latestModelScoresFor(ctx, h.Host)
+}
 
 func (h dueHost) ExecuteCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location) (commissioner.Receipt, error) {

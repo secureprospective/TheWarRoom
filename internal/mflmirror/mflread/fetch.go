@@ -1,15 +1,17 @@
 package mflread
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/freeagents"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
@@ -32,15 +34,92 @@ type Fetcher struct {
 }
 
 func (f Fetcher) client() (*mfl.Client, error) {
+	return f.clientWith(f.Transport)
+}
+
+func (f Fetcher) clientWith(transport http.RoundTripper) (*mfl.Client, error) {
 	rps := f.RPS
 	if rps == 0 {
 		rps = defaultRPS
 	}
-	c, err := mfl.New("api", rps, mfl.WithTransport(ReadOnly(f.Transport)))
+	c, err := mfl.New("api", rps, mfl.WithTransport(ReadOnly(transport)))
 	if err != nil {
 		return nil, fmt.Errorf("open the MFL reader: %w", err)
 	}
 	return c, nil
+}
+
+// onceLeagueTransport caches the one GET TYPE=league 200 reply for a single refresh so host
+// discovery, franchises and league rules all read from one MFL call.
+type onceLeagueTransport struct {
+	base   http.RoundTripper
+	mu     sync.Mutex
+	url    string
+	body   []byte
+	header http.Header
+}
+
+func (t *onceLeagueTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	base := t.base
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	if req.URL == nil || req.URL.Query().Get("TYPE") != "league" {
+		return base.RoundTrip(req) //nolint:wrapcheck // transport errors pass through unchanged.
+	}
+	key := req.URL.String()
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.url == key && t.body != nil {
+		return &http.Response{StatusCode: http.StatusOK, Status: "200 OK", Header: t.header.Clone(),
+			Body: io.NopCloser(bytes.NewReader(t.body)), Request: req}, nil
+	}
+	resp, err := base.RoundTrip(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return resp, err //nolint:wrapcheck // transport errors pass through unchanged.
+	}
+	body, rerr := io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if rerr != nil {
+		return nil, fmt.Errorf("read MFL league export: %w", rerr)
+	}
+	t.url, t.body, t.header = key, body, resp.Header.Clone()
+	resp.Body = io.NopCloser(bytes.NewReader(body))
+	return resp, nil
+}
+
+// FetchRefresh reads free agents, all league data and (when needPlayers is true) the player
+// directory through one MFL client so TYPE=league is fetched once per refresh.
+func (f Fetcher) FetchRefresh(ctx context.Context, mflLeague string, season int,
+	needPlayers bool) ([]string, mflmirror.LeagueData, []byte, error) {
+	c, err := f.clientWith(&onceLeagueTransport{base: f.Transport})
+	if err != nil {
+		return nil, mflmirror.LeagueData{}, nil, err
+	}
+	year := strconv.Itoa(season)
+	data, err := fetchLeagueData(ctx, c, year, mflLeague)
+	if err != nil {
+		return nil, mflmirror.LeagueData{}, nil, err
+	}
+	raw, err := freeagents.Fetch(ctx, c, year, mflLeague)
+	if err != nil {
+		return nil, mflmirror.LeagueData{}, nil, fmt.Errorf("fetch MFL free agents: %w", err)
+	}
+	ids := make([]string, 0, len(raw))
+	for _, r := range raw {
+		ids = append(ids, r.ID)
+	}
+	var playersBody []byte
+	if needPlayers {
+		rawPlayers, perr := players.Fetch(ctx, c, year, mflLeague)
+		if perr != nil {
+			return nil, mflmirror.LeagueData{}, nil, fmt.Errorf("fetch MFL player directory: %w", perr)
+		}
+		if playersBody, err = json.Marshal(rawPlayers); err != nil {
+			return nil, mflmirror.LeagueData{}, nil, fmt.Errorf("encode MFL player directory: %w", err)
+		}
+	}
+	return ids, data, playersBody, nil
 }
 
 // FetchFreeAgents reads the league's free-agent list.
@@ -58,34 +137,6 @@ func (f Fetcher) FetchFreeAgents(ctx context.Context, mflLeague string, season i
 		ids = append(ids, r.ID)
 	}
 	return ids, nil
-}
-
-// FetchFranchises reads the league's public franchise list from the `league` export.
-func (f Fetcher) FetchFranchises(ctx context.Context, mflLeague string, season int) ([]mflmirror.Franchise, error) {
-	c, err := f.client()
-	if err != nil {
-		return nil, err
-	}
-	env, err := ingestion.FetchLeagueExport[struct {
-		League struct {
-			Franchises struct {
-				Franchise ingestion.MFLList[struct {
-					ID   string `json:"id"`
-					Name string `json:"name"`
-				}] `json:"franchise"`
-			} `json:"franchises"`
-		} `json:"league"`
-	}](ctx, c, "league", strconv.Itoa(season), mflLeague, nil)
-	if err != nil {
-		return nil, fmt.Errorf("fetch MFL franchises: %w", err)
-	}
-	out := []mflmirror.Franchise{}
-	for _, row := range env.League.Franchises.Franchise {
-		if row.ID != "" {
-			out = append(out, mflmirror.Franchise{ID: row.ID, Name: row.Name})
-		}
-	}
-	return out, nil
 }
 
 // FetchPlayers reads the player directory. MFL allows this export about once a day, so the
@@ -115,18 +166,25 @@ func (Fetcher) Directory(playersJSON []byte) (mflmirror.Directory, error) {
 	return lookup, nil
 }
 
-// FetchLeagueData reads the league's public rosters, salary adjustments, league rules and the NFL
-// bye weeks through the same GET-only client.
+// FetchLeagueData reads the league's public franchises, rosters, salary adjustments, league rules
+// and the NFL bye weeks through the same GET-only client.
 func (f Fetcher) FetchLeagueData(ctx context.Context, mflLeague string, season int) (mflmirror.LeagueData, error) {
-	c, err := f.client()
+	c, err := f.clientWith(&onceLeagueTransport{base: f.Transport})
 	if err != nil {
 		return mflmirror.LeagueData{}, err
 	}
-	year := strconv.Itoa(season)
+	return fetchLeagueData(ctx, c, strconv.Itoa(season), mflLeague)
+}
+
+func fetchLeagueData(ctx context.Context, c *mfl.Client, year, mflLeague string) (mflmirror.LeagueData, error) {
 	out := mflmirror.LeagueData{Byes: map[string]int{}}
 	config, err := league.Fetch(ctx, c, year, mflLeague)
 	if err != nil {
 		return mflmirror.LeagueData{}, fmt.Errorf("fetch MFL league rules: %w", err)
+	}
+	out.Franchises = make([]mflmirror.Franchise, 0, len(config.Franchises))
+	for _, fr := range config.Franchises {
+		out.Franchises = append(out.Franchises, mflmirror.Franchise{ID: fr.ID, Name: fr.Name})
 	}
 	if out.Config, err = json.Marshal(config); err != nil {
 		return mflmirror.LeagueData{}, fmt.Errorf("hold MFL league rules: %w", err)

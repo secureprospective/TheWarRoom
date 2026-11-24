@@ -1,7 +1,9 @@
 package leagueservice
 
 import (
+	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -77,16 +79,17 @@ type MflRefresh struct {
 
 // MflPoolRow is one free agent with this league's values beside him.
 type MflPoolRow struct {
-	ID         string   `json:"id"`
-	Name       string   `json:"name"`
-	Position   string   `json:"position"`
-	Team       string   `json:"team"`
-	Age        string   `json:"age"`
-	Experience string   `json:"experience"`
-	Minimum    string   `json:"minimum"`
-	NowPPG     *float64 `json:"nowPPG,omitempty"`
-	Dynasty    *float64 `json:"dynastyPPG,omitempty"`
-	Value      string   `json:"value"`
+	ID           string       `json:"id"`
+	Name         string       `json:"name"`
+	Position     string       `json:"position"`
+	Team         string       `json:"team"`
+	Age          string       `json:"age"`
+	Experience   string       `json:"experience"`
+	Minimum      string       `json:"minimum"`
+	minimumCents domain.Money // numeric cents for sort:"minimum"; omitted from JSON
+	NowPPG       *float64     `json:"nowPPG,omitempty"`
+	Dynasty      *float64     `json:"dynastyPPG,omitempty"`
+	Value        string       `json:"value"`
 }
 
 type MflPool struct {
@@ -120,13 +123,51 @@ type mflSeat struct {
 	cancel    context.CancelFunc
 }
 
+func mflMirrorFor(host Host) *mflmirror.Store {
+	if provider, ok := host.(mflMirrorHost); ok {
+		return provider.MFLMirror()
+	}
+	return nil
+}
+
+func mflFetcherFor(host Host) mflmirror.Source {
+	if provider, ok := host.(mflFetcherHost); ok {
+		return provider.MFLFetcher()
+	}
+	return nil
+}
+
+func latestModelScoresFor(ctx context.Context, host Host) ([]history.ModelScore, bool, error) {
+	if provider, ok := host.(modelScoreHost); ok {
+		return provider.LatestModelScores(ctx) //nolint:wrapcheck // forwards the wrapped host's model-score reading unchanged
+	}
+	return nil, false, nil
+}
+
+// mflRefusal promotes safe owner-facing mflmirror refusals to commissioner.Refusal for hosted replies.
+func mflRefusal(err error) error {
+	var r mflmirror.Refusal
+	if errors.As(err, &r) {
+		return fmt.Errorf("MFL moves: %w", commissioner.Refused(err))
+	}
+	return err
+}
+
+func mflRefused(msg string) error {
+	return fmt.Errorf("MFL moves: %w", commissioner.Refused(errors.New(msg)))
+}
+
 func (a *Service) mflAccess(ctx context.Context, league, operation, mode string) (context.Context, mflSeat, error) {
+	return a.mflSeatAccess(ctx, league, operation, mode, false)
+}
+
+func (a *Service) mflSeatAccess(ctx context.Context, league, operation, mode string, allowUnset bool) (context.Context, mflSeat, error) {
 	ctx, franchise, records, cancel, err := a.franchiseOwnerAccess(ctx, league, operation, mode)
 	if err != nil {
 		return nil, mflSeat{}, err
 	}
-	host, ok := a.host.(mflMirrorHost)
-	if !ok || host.MFLMirror() == nil {
+	store := mflMirrorFor(a.host)
+	if store == nil {
 		cancel()
 		return nil, mflSeat{}, fmt.Errorf("MFL moves storage is not available on this host")
 	}
@@ -137,17 +178,17 @@ func (a *Service) mflAccess(ctx context.Context, league, operation, mode string)
 	}
 	number := strings.TrimSpace(rules.MFL.League.Value)
 	if rules.MFL.League.State != leaguerules.IsKnown || number == "" {
+		if allowUnset {
+			return ctx, mflSeat{store: store, franchise: franchise, records: records, cancel: cancel}, nil
+		}
 		cancel()
-		return nil, mflSeat{}, fmt.Errorf("this league follows no MFL league yet; the commissioner sets the MFL league number in the league rules (mfl.league)")
+		return nil, mflSeat{}, mflRefused("this league follows no MFL league yet; the commissioner sets it in league settings")
 	}
-	return ctx, mflSeat{store: host.MFLMirror(), mflLeague: number, franchise: franchise, records: records, cancel: cancel}, nil
+	return ctx, mflSeat{store: store, mflLeague: number, franchise: franchise, records: records, cancel: cancel}, nil
 }
 
 func (a *Service) mflSource() mflmirror.Source {
-	if h, ok := a.host.(mflFetcherHost); ok {
-		return h.MFLFetcher()
-	}
-	return nil
+	return mflFetcherFor(a.host)
 }
 
 func (a *Service) MflMovesRefresh(raw RawMflMovesScope) (MflRefresh, error) {
@@ -198,7 +239,7 @@ func (a *Service) MflMovesPoolReadContext(ctx context.Context, raw RawMflPoolSco
 		return MflPool{}, fmt.Errorf("read held MFL pool: %w", err)
 	}
 	if !ok {
-		return MflPool{}, fmt.Errorf("no MFL free agents are held yet; refresh first")
+		return MflPool{}, mflRefused("no MFL free agents are held yet; refresh first")
 	}
 	source := a.mflSource()
 	if source == nil {
@@ -286,8 +327,9 @@ func mflPoolRows(ids []string, lookup mflmirror.Directory, season int, now time.
 			continue
 		}
 		years, experience := mflExperience(season, facts)
+		minSalary := bid.MinimumSalary(years)
 		row := MflPoolRow{ID: id.String(), Name: facts.Name, Position: pos, Team: facts.Team, Age: mflAge(facts, now),
-			Experience: experience, Minimum: bid.MoneyText(bid.MinimumSalary(years)), Value: "Not valued"}
+			Experience: experience, Minimum: bid.MoneyText(minSalary), minimumCents: minSalary, Value: "Not valued"}
 		if v, ok := values[row.ID]; ok && v.ok {
 			now, dyn := v.now, v.dynasty
 			row.NowPPG, row.Dynasty = &now, &dyn
@@ -321,7 +363,7 @@ func sortMflPool(rows []MflPoolRow, key string) {
 		case "lab":
 			return cmpFirst(cmpFloat(num(y.Dynasty), num(x.Dynasty)), strings.Compare(x.Name, y.Name))
 		case "minimum":
-			return cmpFirst(strings.Compare(x.Minimum, y.Minimum), strings.Compare(x.Name, y.Name))
+			return cmpFirst(cmp.Compare(x.minimumCents, y.minimumCents), strings.Compare(x.Name, y.Name))
 		default:
 			return strings.Compare(x.Name, y.Name)
 		}

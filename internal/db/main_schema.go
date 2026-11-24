@@ -15,6 +15,15 @@ func (p *Pools) InitializeMain(ctx context.Context) error {
 	return err
 }
 
+// EnsureMoveTables creates the append-only move and bid-fact tables if missing without changing
+// PRAGMA user_version, so hosted league databases keep their own schema version.
+func (p *Pools) EnsureMoveTables(ctx context.Context) error {
+	if _, err := p.Write().ExecContext(ctx, mainMovesDDL+mainBidFactsDDL); err != nil {
+		return fmt.Errorf("db: ensure move tables: %w", err)
+	}
+	return nil
+}
+
 func mainMigrations() []Migration { return []Migration{adoptMain, guardMainJSON} }
 
 func adoptMain(ctx context.Context, tx *sql.Tx) error {

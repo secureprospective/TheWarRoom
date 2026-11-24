@@ -773,13 +773,25 @@ func ServeHosted(ctx context.Context, listener net.Listener, certificate tls.Cer
 }
 
 func privateOwnerPersonalOperation(operation string) bool {
-	if privateTradeDraftOperation(operation) {
+	if privateTradeDraftOperation(operation) || privateMflMovesOperation(operation) {
 		return true
 	}
 	switch operation {
 	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchRead,
 		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder, leagueservice.WhatIfStackRead,
 		leagueservice.ContractDecisionsRead, "draft.queue.read", "draft.queue.set":
+		return true
+	default:
+		return false
+	}
+}
+
+func privateMflMovesOperation(operation string) bool {
+	switch operation {
+	case leagueservice.MflMovesRefresh, leagueservice.MflMovesTeamsRead, leagueservice.MflMovesTeamSet,
+		leagueservice.MflMovesRosterRead, leagueservice.MflMovesPoolRead, leagueservice.MflMovesBidCheck,
+		leagueservice.MflMovesLineupCheck, leagueservice.MflMovesPlanSave, leagueservice.MflMovesPlansRead,
+		leagueservice.MflMovesPlanLink, leagueservice.MflMovesPlanDone, leagueservice.MflMovesPlanWithdraw:
 		return true
 	default:
 		return false

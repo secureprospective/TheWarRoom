@@ -67,16 +67,17 @@ func (a *Service) MflMovesPlanSaveContext(ctx context.Context, raw RawMflPlanSav
 	if err := raw.Validate(); err != nil {
 		return MflPlan{}, fmt.Errorf("MFL plan input: %w", err)
 	}
-	engine, err := a.mflEngine()
-	if err != nil {
-		return MflPlan{}, err
-	}
 	ctx, seat, done, err := a.mflOwnerSeat(ctx, raw.League, MflMovesPlanSave, "execute", true)
 	if err != nil {
 		return MflPlan{}, err
 	}
 	defer done()
-	return engine.PlanSave(ctx, seat, raw.Kind, raw.Body) //nolint:wrapcheck // the engine speaks plain words
+	engine, err := a.mflEngine()
+	if err != nil {
+		return MflPlan{}, err
+	}
+	out, err := engine.PlanSave(ctx, seat, raw.Kind, raw.Body)
+	return out, mflRefusal(err)
 }
 
 func (a *Service) MflMovesPlansRead(raw RawMflMovesScope) (MflPlans, error) {
@@ -88,16 +89,17 @@ func (a *Service) MflMovesPlansReadContext(ctx context.Context, raw RawMflMovesS
 	if err := raw.Validate(); err != nil {
 		return MflPlans{}, fmt.Errorf("MFL plans input: %w", err)
 	}
-	engine, err := a.mflEngine()
-	if err != nil {
-		return MflPlans{}, err
-	}
 	ctx, seat, done, err := a.mflOwnerSeat(ctx, raw.League, MflMovesPlansRead, "read", false)
 	if err != nil {
 		return MflPlans{}, err
 	}
 	defer done()
-	return engine.PlansRead(ctx, seat) //nolint:wrapcheck // the engine speaks plain words
+	engine, err := a.mflEngine()
+	if err != nil {
+		return MflPlans{}, err
+	}
+	out, err := engine.PlansRead(ctx, seat)
+	return out, mflRefusal(err)
 }
 
 // planStep is one plan change or reading on the seat's own plan.
@@ -106,16 +108,16 @@ func (a *Service) planStep(ctx context.Context, raw RawMflPlanScope, operation, 
 	if err := raw.Validate(); err != nil {
 		return fmt.Errorf("MFL plan input: %w", err)
 	}
-	engine, err := a.mflEngine()
-	if err != nil {
-		return err
-	}
 	ctx, seat, done, err := a.mflOwnerSeat(ctx, raw.League, operation, mode, false)
 	if err != nil {
 		return err
 	}
 	defer done()
-	return run(engine, ctx, seat, raw.Plan)
+	engine, err := a.mflEngine()
+	if err != nil {
+		return err
+	}
+	return mflRefusal(run(engine, ctx, seat, raw.Plan))
 }
 
 func (a *Service) MflMovesPlanLink(raw RawMflPlanScope) (MflPlanLink, error) {

@@ -26,20 +26,40 @@ type mflMovesMFL struct {
 
 func (f *mflMovesMFL) FetchLeagueData(context.Context, string, int) (mflmirror.LeagueData, error) {
 	f.calls.Add(1)
+	var data mflmirror.LeagueData
 	if f.data != nil {
-		return *f.data, nil
+		data = *f.data
+	} else {
+		data = mflDefaultLeagueData(40)
 	}
-	return mflDefaultLeagueData(40), nil
+	if len(data.Franchises) == 0 {
+		data.Franchises = []mflmirror.Franchise{{ID: "0001", Name: "Alpha"}, {ID: "0002", Name: "Beta"}}
+	}
+	return data, nil
+}
+
+func (f *mflMovesMFL) FetchRefresh(ctx context.Context, mflLeague string, season int,
+	needPlayers bool) ([]string, mflmirror.LeagueData, []byte, error) {
+	ids, err := f.FetchFreeAgents(ctx, mflLeague, season)
+	if err != nil {
+		return nil, mflmirror.LeagueData{}, nil, err
+	}
+	data, err := f.FetchLeagueData(ctx, mflLeague, season)
+	if err != nil {
+		return nil, mflmirror.LeagueData{}, nil, err
+	}
+	var rawPlayers []byte
+	if needPlayers {
+		if rawPlayers, err = f.FetchPlayers(ctx, mflLeague, season); err != nil {
+			return nil, mflmirror.LeagueData{}, nil, err
+		}
+	}
+	return ids, data, rawPlayers, nil
 }
 
 func (f *mflMovesMFL) FetchFreeAgents(context.Context, string, int) ([]string, error) {
 	f.calls.Add(1)
 	return []string{"0531", "13593"}, nil
-}
-
-func (f *mflMovesMFL) FetchFranchises(context.Context, string, int) ([]mflmirror.Franchise, error) {
-	f.calls.Add(1)
-	return []mflmirror.Franchise{{ID: "0001", Name: "Alpha"}, {ID: "0002", Name: "Beta"}}, nil
 }
 
 func (f *mflMovesMFL) FetchPlayers(context.Context, string, int) ([]byte, error) {
@@ -254,5 +274,31 @@ func TestMflPoolValuesAnUnrosteredFreeAgentFromTheModelRun(t *testing.T) {
 	}
 	if v := byID["13593"]; v.NowPPG != nil || v.Value != "Not valued: No usable season: no games" {
 		t.Fatalf("free agent 13593 = %+v", v)
+	}
+}
+
+func TestMflChecksAuthorizeBeforeCheckingHostCapability(t *testing.T) {
+	f := newMflMovesFixture(t, "stranger")
+	host := f.service.host.(StoredHost)
+	host.Fetcher = nil
+	svc := NewHosted(host, admissionFunc(func(context.Context, commissioner.Access) error { return nil }))
+	if _, err := svc.MflMovesPlansReadContext(t.Context(), RawMflMovesScope{League: f.league}); err == nil ||
+		!strings.Contains(err.Error(), "seated franchise owner") {
+		t.Fatalf("plans.read without fetcher leaked capability before auth: %v", err)
+	}
+	if _, err := svc.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000}); err == nil ||
+		!strings.Contains(err.Error(), "seated franchise owner") {
+		t.Fatalf("bid.check without fetcher leaked capability before auth: %v", err)
+	}
+}
+
+func TestMflPoolSortMinimumComparesMoneyNotStrings(t *testing.T) {
+	rows := []MflPoolRow{
+		{ID: "a", Name: "Vet", Minimum: "$1,000,000", minimumCents: 1_000_000_00},
+		{ID: "b", Name: "Rookie", Minimum: "$500,000", minimumCents: 500_000_00},
+	}
+	sortMflPool(rows, "minimum")
+	if rows[0].ID != "b" || rows[1].ID != "a" {
+		t.Fatalf("sort minimum order = %+v", rows)
 	}
 }

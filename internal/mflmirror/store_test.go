@@ -12,17 +12,12 @@ import (
 type fakeMFL struct{ calls map[string]int }
 
 func (f *fakeMFL) total() int {
-	return f.calls["freeAgents"] + f.calls["players"] + f.calls["franchises"]
+	return f.calls["freeAgents"] + f.calls["players"] + f.calls["leagueData"]
 }
 
 func (f *fakeMFL) FetchFreeAgents(context.Context, string, int) ([]string, error) {
 	f.calls["freeAgents"]++
 	return []string{"0531", "13593"}, nil
-}
-
-func (f *fakeMFL) FetchFranchises(context.Context, string, int) ([]Franchise, error) {
-	f.calls["franchises"]++
-	return []Franchise{{ID: "0001", Name: "Alpha"}, {ID: "0002", Name: "Beta"}}, nil
 }
 
 func (f *fakeMFL) FetchPlayers(context.Context, string, int) ([]byte, error) {
@@ -32,7 +27,7 @@ func (f *fakeMFL) FetchPlayers(context.Context, string, int) ([]byte, error) {
 
 func (f *fakeMFL) FetchLeagueData(context.Context, string, int) (LeagueData, error) {
 	f.calls["leagueData"]++
-	return LeagueData{}, nil
+	return LeagueData{Franchises: []Franchise{{ID: "0001", Name: "Alpha"}, {ID: "0002", Name: "Beta"}}}, nil
 }
 
 func (f *fakeMFL) Directory([]byte) (Directory, error) { return nil, nil }

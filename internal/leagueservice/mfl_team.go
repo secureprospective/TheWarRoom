@@ -59,7 +59,7 @@ func (a *Service) MflMovesTeamSetContext(ctx context.Context, raw RawMflTeamSet)
 	}
 	defer seat.cancel()
 	if err := seat.store.SetTeam(ctx, seat.franchise, seat.mflLeague, raw.Team); err != nil {
-		return MflTeams{}, fmt.Errorf("save MFL team: %w", err)
+		return MflTeams{}, mflRefusal(fmt.Errorf("save MFL team: %w", err))
 	}
 	return a.mflTeams(ctx, seat, raw.League)
 }
@@ -73,11 +73,18 @@ func (a *Service) MflMovesTeamsReadContext(ctx context.Context, raw RawMflMovesS
 	if err := raw.Validate(); err != nil {
 		return MflTeams{}, fmt.Errorf("MFL teams input: %w", err)
 	}
-	ctx, seat, err := a.mflAccess(ctx, raw.League, MflMovesTeamsRead, "read")
+	ctx, seat, err := a.mflSeatAccess(ctx, raw.League, MflMovesTeamsRead, "read", true)
 	if err != nil {
 		return MflTeams{}, err
 	}
 	defer seat.cancel()
+	if seat.mflLeague == "" {
+		return MflTeams{
+			League: raw.League,
+			Teams:  []MflTeam{},
+			Words:  "This league follows no MFL league yet; the commissioner sets it in league settings.",
+		}, nil
+	}
 	return a.mflTeams(ctx, seat, raw.League)
 }
 
@@ -87,7 +94,12 @@ func (a *Service) mflTeams(ctx context.Context, seat mflSeat, league string) (Mf
 		return MflTeams{}, fmt.Errorf("read held MFL teams: %w", err)
 	}
 	if !ok || len(held.Franchises) == 0 {
-		return MflTeams{}, fmt.Errorf("no MFL teams are held yet; refresh first")
+		return MflTeams{
+			League:    league,
+			MFLLeague: seat.mflLeague,
+			Teams:     []MflTeam{},
+			Words:     "Refresh from MFL to load the teams.",
+		}, nil
 	}
 	yours, _, err := seat.store.Team(ctx, seat.franchise, seat.mflLeague)
 	if err != nil {

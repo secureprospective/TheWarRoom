@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
@@ -37,6 +38,11 @@ type footballHost struct {
 
 func (h footballHost) NativeFacts() nativecheck.Facts  { return h.evidence.PlayerFacts() }
 func (h footballHost) PrivateEntries() *personal.Store { return privateEntriesFor(h.Host) }
+func (h footballHost) MFLMirror() *mflmirror.Store     { return mflMirrorFor(h.Host) }
+func (h footballHost) MFLFetcher() mflmirror.Source    { return mflFetcherFor(h.Host) }
+func (h footballHost) LatestModelScores(ctx context.Context) ([]history.ModelScore, bool, error) {
+	return latestModelScoresFor(ctx, h.Host)
+}
 
 func (h footballHost) NativeScheduleDates(ctx context.Context, season int, _ time.Time) ([]leagueweek.Week, error) {
 	weeks, err := h.evidence.ScheduleDates(ctx, season)

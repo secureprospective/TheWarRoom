@@ -20,9 +20,7 @@ import (
 type Source interface {
 	FetchFreeAgents(ctx context.Context, mflLeague string, season int) ([]string, error)
 	FetchPlayers(ctx context.Context, mflLeague string, season int) ([]byte, error)
-	// FetchFranchises reads the league's public franchise list (id and name).
-	FetchFranchises(ctx context.Context, mflLeague string, season int) ([]Franchise, error)
-	// FetchLeagueData reads the league's public rosters, salary adjustments, rules and NFL bye weeks.
+	// FetchLeagueData reads the league's public franchises, rosters, salary adjustments, rules and NFL bye weeks.
 	FetchLeagueData(ctx context.Context, mflLeague string, season int) (LeagueData, error)
 	// Directory reads a held player directory (the bytes FetchPlayers returned) into player facts.
 	Directory(playersJSON []byte) (Directory, error)
@@ -50,9 +48,10 @@ type Adjustment struct {
 	Cents     int64  `json:"cents"`
 }
 
-// LeagueData is the public league data the bid and lineup checks read: every roster, the cap
-// adjustments, MFL's league and lineup rules, and each NFL team's bye week.
+// LeagueData is the public league data the bid and lineup checks read: franchises, every roster,
+// the cap adjustments, MFL's league and lineup rules, and each NFL team's bye week.
 type LeagueData struct {
+	Franchises  []Franchise     `json:"franchises,omitempty"`
 	Rosters     []RosterRow     `json:"rosters"`
 	Adjustments []Adjustment    `json:"adjustments"`
 	Byes        map[string]int  `json:"byes"`
@@ -136,10 +135,10 @@ func (s *Store) SetTeam(ctx context.Context, franchise, mflLeague, team string) 
 		return err
 	}
 	if !ok || len(held.Franchises) == 0 {
-		return errors.New("MFL teams are not held yet; refresh first")
+		return Refused("MFL teams are not held yet; refresh first")
 	}
 	if !slices.ContainsFunc(held.Franchises, func(f Franchise) bool { return f.ID == team }) {
-		return fmt.Errorf("team %q is not one of this MFL league's teams", team)
+		return Refused(fmt.Sprintf("team %q is not one of this MFL league's teams", team))
 	}
 	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO mfl_mirror_team(franchise,mfl_league,team) VALUES(?,?,?)
 ON CONFLICT(franchise) DO UPDATE SET mfl_league=excluded.mfl_league, team=excluded.team`,
@@ -193,33 +192,21 @@ func (s *Store) Refresh(ctx context.Context, f Source, mflLeague string) (Result
 		return Result{Held: held, Age: now.Sub(held.FetchedAt)}, nil
 	}
 	season := Season(now)
-	ids, franchises, data, err := s.fetchAll(ctx, f, mflLeague, season)
+	needPlayers, err := s.playersStale(ctx, season, now)
 	if err != nil {
 		return Result{}, err
 	}
-	if err := s.refreshPlayers(ctx, f, mflLeague, season, now); err != nil {
+	ids, franchises, data, playersRaw, err := s.fetchAll(ctx, f, mflLeague, season, needPlayers)
+	if err != nil {
 		return Result{}, err
 	}
-	if err := s.holdLeague(ctx, mflLeague, data); err != nil {
+	if needPlayers {
+		if err := s.holdPlayers(ctx, f, mflLeague, season, now, playersRaw); err != nil {
+			return Result{}, err
+		}
+	}
+	if err := s.holdRefresh(ctx, mflLeague, season, now, ids, franchises, data); err != nil {
 		return Result{}, err
-	}
-	fbody, err := json.Marshal(franchises)
-	if err != nil {
-		return Result{}, fmt.Errorf("mflmirror: encode franchises: %w", err)
-	}
-	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO mfl_mirror_franchises(mfl_league,body) VALUES(?,?)
-ON CONFLICT(mfl_league) DO UPDATE SET body=excluded.body`, mflLeague, string(fbody)); err != nil {
-		return Result{}, fmt.Errorf("mflmirror: hold franchises: %w", err)
-	}
-	body, err := json.Marshal(ids)
-	if err != nil {
-		return Result{}, fmt.Errorf("mflmirror: encode free agents: %w", err)
-	}
-	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO mfl_mirror_hold(mfl_league,season,last_fetched_at,free_agents)
-VALUES(?,?,?,?) ON CONFLICT(mfl_league) DO UPDATE SET season=excluded.season,
-last_fetched_at=excluded.last_fetched_at, free_agents=excluded.free_agents`,
-		mflLeague, season, now.UTC().Format(time.RFC3339Nano), string(body)); err != nil {
-		return Result{}, fmt.Errorf("mflmirror: hold free agents: %w", err)
 	}
 	held, _, err = s.read(ctx, mflLeague)
 	if err != nil {
@@ -228,21 +215,57 @@ last_fetched_at=excluded.last_fetched_at, free_agents=excluded.free_agents`,
 	return Result{Held: held, Age: now.Sub(held.FetchedAt), Fetched: true}, nil
 }
 
-// fetchAll reads everything one refresh holds from MFL: free agents, the franchise list and the league data.
-func (*Store) fetchAll(ctx context.Context, f Source, mflLeague string, season int) ([]string, []Franchise, LeagueData, error) {
+func (s *Store) holdRefresh(ctx context.Context, mflLeague string, season int, now time.Time,
+	ids []string, franchises []Franchise, data LeagueData) error {
+	if err := s.holdLeague(ctx, mflLeague, data); err != nil {
+		return err
+	}
+	fbody, err := json.Marshal(franchises)
+	if err != nil {
+		return fmt.Errorf("mflmirror: encode franchises: %w", err)
+	}
+	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO mfl_mirror_franchises(mfl_league,body) VALUES(?,?)
+ON CONFLICT(mfl_league) DO UPDATE SET body=excluded.body`, mflLeague, string(fbody)); err != nil {
+		return fmt.Errorf("mflmirror: hold franchises: %w", err)
+	}
+	body, err := json.Marshal(ids)
+	if err != nil {
+		return fmt.Errorf("mflmirror: encode free agents: %w", err)
+	}
+	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO mfl_mirror_hold(mfl_league,season,last_fetched_at,free_agents)
+VALUES(?,?,?,?) ON CONFLICT(mfl_league) DO UPDATE SET season=excluded.season,
+last_fetched_at=excluded.last_fetched_at, free_agents=excluded.free_agents`,
+		mflLeague, season, now.UTC().Format(time.RFC3339Nano), string(body)); err != nil {
+		return fmt.Errorf("mflmirror: hold free agents: %w", err)
+	}
+	return nil
+}
+
+// refreshSource lets a Source share one MFL client across a refresh so `TYPE=league` is fetched once.
+type refreshSource interface {
+	FetchRefresh(ctx context.Context, mflLeague string, season int, needPlayers bool) ([]string, LeagueData, []byte, error)
+}
+
+// fetchAll reads everything one refresh holds from MFL: free agents, league data (including franchises)
+// and, when stale, the player directory.
+func (*Store) fetchAll(ctx context.Context, f Source, mflLeague string, season int,
+	needPlayers bool) ([]string, []Franchise, LeagueData, []byte, error) {
+	if batch, ok := f.(refreshSource); ok {
+		ids, data, rawPlayers, err := batch.FetchRefresh(ctx, mflLeague, season, needPlayers)
+		if err != nil {
+			return nil, nil, LeagueData{}, nil, fmt.Errorf("mflmirror: refresh: %w", err)
+		}
+		return ids, data.Franchises, data, rawPlayers, nil
+	}
 	ids, err := f.FetchFreeAgents(ctx, mflLeague, season)
 	if err != nil {
-		return nil, nil, LeagueData{}, fmt.Errorf("mflmirror: free agents: %w", err)
-	}
-	franchises, err := f.FetchFranchises(ctx, mflLeague, season)
-	if err != nil {
-		return nil, nil, LeagueData{}, fmt.Errorf("mflmirror: franchises: %w", err)
+		return nil, nil, LeagueData{}, nil, fmt.Errorf("mflmirror: free agents: %w", err)
 	}
 	data, err := f.FetchLeagueData(ctx, mflLeague, season)
 	if err != nil {
-		return nil, nil, LeagueData{}, fmt.Errorf("mflmirror: league data: %w", err)
+		return nil, nil, LeagueData{}, nil, fmt.Errorf("mflmirror: league data: %w", err)
 	}
-	return ids, franchises, data, nil
+	return ids, data.Franchises, data, nil, nil
 }
 
 func (s *Store) holdLeague(ctx context.Context, mflLeague string, data LeagueData) error {
@@ -257,20 +280,27 @@ ON CONFLICT(mfl_league) DO UPDATE SET body=excluded.body`, mflLeague, string(bod
 	return nil
 }
 
-func (s *Store) refreshPlayers(ctx context.Context, f Source, mflLeague string, season int, now time.Time) error {
+func (s *Store) playersStale(ctx context.Context, season int, now time.Time) (bool, error) {
 	var at string
 	found, err := s.queryOne(ctx, `SELECT fetched_at FROM mfl_mirror_players WHERE season=?`, []any{season}, &at)
 	if err != nil {
-		return fmt.Errorf("mflmirror: read player hold: %w", err)
+		return false, fmt.Errorf("mflmirror: read player hold: %w", err)
 	}
 	if found {
 		if t, perr := time.Parse(time.RFC3339Nano, at); perr == nil && now.Sub(t) < PlayersTTL {
-			return nil
+			return false, nil
 		}
 	}
-	raw, err := f.FetchPlayers(ctx, mflLeague, season)
-	if err != nil {
-		return fmt.Errorf("mflmirror: players: %w", err)
+	return true, nil
+}
+
+func (s *Store) holdPlayers(ctx context.Context, f Source, mflLeague string, season int, now time.Time, raw []byte) error {
+	if raw == nil {
+		var err error
+		raw, err = f.FetchPlayers(ctx, mflLeague, season)
+		if err != nil {
+			return fmt.Errorf("mflmirror: players: %w", err)
+		}
 	}
 	if !json.Valid(raw) {
 		return errors.New("mflmirror: the player directory is not JSON")

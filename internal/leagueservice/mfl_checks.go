@@ -121,7 +121,7 @@ func (a *Service) mflOwnerSeat(ctx context.Context, league, operation, mode stri
 		return fail(fmt.Errorf("read your MFL team: %w", err))
 	}
 	if needTeam && !hasTeam {
-		return fail(fmt.Errorf("%s", mflPickTeamFirst))
+		return fail(commissioner.Refused(fmt.Errorf("%s", mflPickTeamFirst)))
 	}
 	out.Team = team
 	held, found, err := seat.store.Read(ctx, seat.mflLeague)
@@ -129,7 +129,7 @@ func (a *Service) mflOwnerSeat(ctx context.Context, league, operation, mode stri
 		return fail(fmt.Errorf("read held MFL copy: %w", err))
 	}
 	if needTeam && (!found || !held.HasLeague) {
-		return fail(fmt.Errorf("%s", mflRefreshFirst))
+		return fail(commissioner.Refused(fmt.Errorf("%s", mflRefreshFirst)))
 	}
 	if found {
 		out.Held = held
@@ -157,15 +157,15 @@ func (a *Service) MflMovesBidCheckContext(ctx context.Context, raw RawMflBidChec
 	if err := raw.Validate(); err != nil {
 		return MflBidCheck{}, fmt.Errorf("MFL bid check input: %w", err)
 	}
-	engine, err := a.mflEngine()
-	if err != nil {
-		return MflBidCheck{}, err
-	}
 	ctx, seat, done, err := a.mflOwnerSeat(ctx, raw.League, MflMovesBidCheck, "read", true)
 	if err != nil {
 		return MflBidCheck{}, err
 	}
 	defer done()
+	engine, err := a.mflEngine()
+	if err != nil {
+		return MflBidCheck{}, err
+	}
 	return engine.BidCheck(ctx, seat, mflmirror.BidInput{Add: raw.Add, Amount: raw.Amount, Years: raw.Years, Drop: raw.Drop}), nil
 }
 
@@ -178,14 +178,15 @@ func (a *Service) MflMovesLineupCheckContext(ctx context.Context, raw RawMflLine
 	if err := raw.Validate(); err != nil {
 		return MflLineupCheck{}, fmt.Errorf("MFL lineup check input: %w", err)
 	}
-	engine, err := a.mflEngine()
-	if err != nil {
-		return MflLineupCheck{}, err
-	}
 	ctx, seat, done, err := a.mflOwnerSeat(ctx, raw.League, MflMovesLineupCheck, "read", true)
 	if err != nil {
 		return MflLineupCheck{}, err
 	}
 	defer done()
-	return engine.LineupCheck(ctx, seat, mflmirror.LineupInput{Week: raw.Week, Starters: raw.Starters}) //nolint:wrapcheck // the engine speaks plain words
+	engine, err := a.mflEngine()
+	if err != nil {
+		return MflLineupCheck{}, err
+	}
+	out, err := engine.LineupCheck(ctx, seat, mflmirror.LineupInput{Week: raw.Week, Starters: raw.Starters})
+	return out, mflRefusal(err)
 }

@@ -60,7 +60,7 @@ func stateWords(s envelope.State) string {
 
 func (v view) store(ctx context.Context) (*moves.Store, error) {
 	store := moves.New(v.Pools)
-	if err := store.Initialize(ctx); err != nil {
+	if err := store.EnsureTables(ctx); err != nil {
 		return nil, fmt.Errorf("MFL plans storage: %w", err)
 	}
 	return store, nil
@@ -83,6 +83,11 @@ func decode(body json.RawMessage, into any) error {
 	return nil
 }
 
+// mflRefused marks an owner-facing refusal; leagueservice adds the "MFL moves:" prefix once.
+func mflRefused(msg string) error {
+	return mflmirror.Refused(msg) //nolint:wrapcheck // the refusal is the owner-facing words; leagueservice adds the prefix
+}
+
 // PlanSave re-runs the check on the server and saves the plan for the seated franchise only.
 func (Fetcher) PlanSave(ctx context.Context, s mflmirror.Seat, kind string, body json.RawMessage) (mflmirror.Plan, error) {
 	v := view{s}
@@ -98,7 +103,7 @@ func (Fetcher) PlanSave(ctx context.Context, s mflmirror.Seat, kind string, body
 	case "lineup":
 		return v.saveLineup(ctx, store, body)
 	}
-	return mflmirror.Plan{}, fmt.Errorf("a plan is a bid or a lineup")
+	return mflmirror.Plan{}, mflRefused("a plan is a bid or a lineup")
 }
 
 func (v view) saveBid(ctx context.Context, store *moves.Store, body json.RawMessage) (mflmirror.Plan, error) {
@@ -107,15 +112,15 @@ func (v view) saveBid(ctx context.Context, store *moves.Store, body json.RawMess
 		return mflmirror.Plan{}, err
 	}
 	if len(b.Drop) > 1 {
-		return mflmirror.Plan{}, fmt.Errorf("a bid plan holds one conditional drop")
+		return mflmirror.Plan{}, mflRefused("a bid plan holds one conditional drop")
 	}
 	player, err := playerid.New(b.Add)
 	if err != nil || b.Amount <= 0 || b.Years < 0 || b.Years > bid.MaxYears {
-		return mflmirror.Plan{}, fmt.Errorf("choose the player, one annual salary above $0 and 1 to %d years", bid.MaxYears)
+		return mflmirror.Plan{}, mflRefused(fmt.Sprintf("choose the player, one annual salary above $0 and 1 to %d years", bid.MaxYears))
 	}
 	check := v.bidCheck(mflmirror.BidInput{Add: b.Add, Amount: b.Amount, Years: b.Years, Drop: b.Drop})
 	if !check.OK {
-		return mflmirror.Plan{}, fmt.Errorf("this bid has problems, so it was not saved: %s", strings.Join(check.Problems, " "))
+		return mflmirror.Plan{}, mflRefused(fmt.Sprintf("this bid has problems, so it was not saved: %s", strings.Join(check.Problems, " ")))
 	}
 	if err := v.requireNoOpenBid(ctx, store, player, check.Player); err != nil {
 		return mflmirror.Plan{}, err
@@ -149,7 +154,7 @@ func (v view) requireNoOpenBid(ctx context.Context, store *moves.Store, player p
 	for _, r := range receipts {
 		if r.Spec.Intent == envelope.BidIntent && r.Spec.Expected.Player == player &&
 			(r.State == envelope.Ready || r.State == envelope.HandedOff) {
-			return fmt.Errorf("you already have an open bid plan on %s", name)
+			return mflRefused(fmt.Sprintf("you already have an open bid plan on %s", name))
 		}
 	}
 	return nil
@@ -170,7 +175,7 @@ func (v view) saveLineup(ctx context.Context, store *moves.Store, body json.RawM
 		return mflmirror.Plan{}, err
 	}
 	if b.Week < 1 || b.Week > 22 {
-		return mflmirror.Plan{}, fmt.Errorf("choose the NFL week, 1 to 22")
+		return mflmirror.Plan{}, mflRefused("choose the NFL week, 1 to 22")
 	}
 	ids, err := starterIDs(b.Starters)
 	if err != nil {
@@ -207,7 +212,7 @@ func (v view) saveLineup(ctx context.Context, store *moves.Store, body json.RawM
 		if audit := e.Receipt().Audit; len(audit) > 0 {
 			note = audit[len(audit)-1].Note
 		}
-		return mflmirror.Plan{}, fmt.Errorf("this lineup is not ready, so it was not saved: %s", note)
+		return mflmirror.Plan{}, mflRefused(fmt.Sprintf("this lineup is not ready, so it was not saved: %s", note))
 	}
 	// One live lineup plan per week, as on the desktop: this one supersedes the owner's older planned one.
 	if err := v.supersedeLineups(ctx, store, e); err != nil {
@@ -224,7 +229,7 @@ func lineupRefusal(check mflmirror.LineupCheck) error {
 	for _, p := range check.Problems {
 		words = append(words, p.Message)
 	}
-	return fmt.Errorf("this lineup has problems, so it was not saved: %s", strings.Join(words, " "))
+	return mflRefused(fmt.Sprintf("this lineup has problems, so it was not saved: %s", strings.Join(words, " ")))
 }
 
 // supersedeLineups moves the owner's older planned lineup for the same week to Stale, as the desktop does.
@@ -331,11 +336,11 @@ func (Fetcher) PlansRead(ctx context.Context, s mflmirror.Seat) (mflmirror.Plans
 func (v view) loadOwn(ctx context.Context, store *moves.Store, id string) (envelope.Envelope, error) {
 	e, err := store.Get(ctx, id)
 	if err != nil {
-		return envelope.Envelope{}, fmt.Errorf("%s", mflmirror.PlanNotFound)
+		return envelope.Envelope{}, mflRefused(mflmirror.PlanNotFound)
 	}
 	spec := e.Receipt().Spec
 	if spec.FranchiseID != v.Franchise || spec.LeagueID != v.League || !isPlanIntent(spec.Intent) {
-		return envelope.Envelope{}, fmt.Errorf("%s", mflmirror.PlanNotFound)
+		return envelope.Envelope{}, mflRefused(mflmirror.PlanNotFound)
 	}
 	return e, nil
 }
@@ -367,7 +372,7 @@ func (Fetcher) PlanLink(ctx context.Context, s mflmirror.Seat, plan string) (mfl
 func (Fetcher) PlanDone(ctx context.Context, s mflmirror.Seat, plan string) (mflmirror.Plan, error) {
 	return view{s}.move(ctx, plan, func(e envelope.Envelope, at time.Time) (envelope.Envelope, error) {
 		if e.State() != envelope.Ready {
-			return envelope.Envelope{}, fmt.Errorf("only a planned step can be marked done; this one is %s", strings.ToLower(stateWords(e.State())))
+			return envelope.Envelope{}, mflRefused(fmt.Sprintf("only a planned step can be marked done; this one is %s", strings.ToLower(stateWords(e.State()))))
 		}
 		if e.Receipt().Spec.Intent == envelope.BidIntent {
 			return e.HandOffManual(at, "You said you posted this bid; nothing was sent from here.")
@@ -380,7 +385,7 @@ func (Fetcher) PlanDone(ctx context.Context, s mflmirror.Seat, plan string) (mfl
 func (Fetcher) PlanWithdraw(ctx context.Context, s mflmirror.Seat, plan string) (mflmirror.Plan, error) {
 	return view{s}.move(ctx, plan, func(e envelope.Envelope, at time.Time) (envelope.Envelope, error) {
 		if !planned(e.State()) {
-			return envelope.Envelope{}, fmt.Errorf("only a plan that is still planned can be withdrawn; this one is %s", strings.ToLower(stateWords(e.State())))
+			return envelope.Envelope{}, mflRefused(fmt.Sprintf("only a plan that is still planned can be withdrawn; this one is %s", strings.ToLower(stateWords(e.State()))))
 		}
 		if e.Receipt().Spec.Intent == envelope.BidIntent {
 			return e.WithdrawBid(at, envelope.RemovePlanNote)

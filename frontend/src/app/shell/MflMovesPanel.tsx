@@ -18,9 +18,8 @@ type Plan = { id: string; kind: string; state: string; words: string; canDone: b
 type Verdict = { ok: boolean; words: string; problems: string[] };
 type MflRosterPlayer = { id: string; name: string; position: string; status: string };
 
-const NO_LEAGUE = /no MFL league/i;
-const NO_LEAGUE_LINE = 'This league does not follow an MFL league yet. '
-  + 'The commissioner sets "MFL league number" in league settings.';
+const NO_LEAGUE_LINE = 'This league follows no MFL league yet; '
+  + 'the commissioner sets it in league settings.';
 
 const obj = (v: unknown): Obj => (v && typeof v === 'object' && !Array.isArray(v) ? v as Obj : {});
 const str = (v: unknown) => typeof v === 'string' ? v : '';
@@ -37,9 +36,16 @@ export function ageWords(seconds: number): string {
   return `held ${days} days ago`;
 }
 
-function parseTeams(data: unknown): { teams: Team[]; yours: string } {
+function parseTeams(data: unknown): {
+  mflLeague: string; teams: Team[]; yours: string; words: string;
+} {
   const row = obj(data);
-  return { teams: list(row.teams).map(t => ({ id: str(t.id), name: str(t.name) })), yours: str(row.yours) };
+  return {
+    mflLeague: str(row.mflLeague),
+    teams: list(row.teams).map(t => ({ id: str(t.id), name: str(t.name) })),
+    yours: str(row.yours),
+    words: str(row.words),
+  };
 }
 function parsePool(data: unknown): Pool {
   const row = obj(data);
@@ -99,12 +105,18 @@ export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
       try {
         const found = parseTeams(await call('mflmoves.teams.read', 'read'));
         if (!live) return;
+        if (!found.mflLeague) {
+          setNote(found.words || NO_LEAGUE_LINE);
+          setState('no-league');
+          return;
+        }
         setTeams(found.teams);
+        if (found.teams.length === 0 && found.words) setNote(found.words);
         setState(found.yours ? 'main' : 'pick');
       } catch (e) {
         if (!live) return;
-        if (NO_LEAGUE.test(say(e))) setState('no-league');
-        else { setError(say(e)); setState('pick'); }
+        setError(say(e));
+        setState('pick');
       }
     })();
     return () => { live = false; };
@@ -135,7 +147,13 @@ export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
       setNote(row.askedMfl === false
         ? 'MFL was not asked again: the held copy is under 5 minutes old.'
         : str(row.words) || 'Refreshed from MFL.');
-      await readPool();
+      if (state === 'pick') {
+        const found = parseTeams(await call('mflmoves.teams.read', 'read'));
+        setTeams(found.teams);
+        if (found.yours) setState('main');
+      } else {
+        await readPool();
+      }
     } catch (e) { setError(say(e)); }
   };
   const act = async (command: 'mflmoves.plan.done' | 'mflmoves.plan.withdraw', plan: string) => {
@@ -151,9 +169,11 @@ export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
   };
 
   if (state === 'loading') return <p role="status">Opening My MFL moves…</p>;
-  if (state === 'no-league') return <p role="status">{NO_LEAGUE_LINE}</p>;
+  if (state === 'no-league') return <p role="status">{note || NO_LEAGUE_LINE}</p>;
   if (state === 'pick') return <section className={box} aria-label="Pick your MFL team">
     <h3>Which MFL team is yours?</h3>
+    <div className="mb-2"><HQAct className={btn} onAction={refresh}>Refresh from MFL</HQAct></div>
+    {note && <p role="status">{note}</p>}
     {error && <p role="alert">{error}</p>}
     <ul>{teams.map(t => <li key={t.id}>{t.name}{' '}
       <HQAct className={btn} onAction={() => pickTeam(t.id)}>This is my team</HQAct></li>)}</ul>

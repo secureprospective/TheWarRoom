@@ -124,3 +124,11 @@ type PlanLink struct {
 
 // PlanNotFound is what a missing plan and another seat's plan both read.
 const PlanNotFound = "That plan was not found."
+
+// Refusal marks a safe, owner-facing domain refusal (not an internal storage or host failure).
+type Refusal struct{ msg string }
+
+func (r Refusal) Error() string { return r.msg }
+
+// Refused returns a safe, owner-facing refusal carrying msg.
+func Refused(msg string) error { return Refusal{msg: msg} }

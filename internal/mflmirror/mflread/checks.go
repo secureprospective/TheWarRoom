@@ -305,17 +305,17 @@ func (v view) heldSnapshot() snapshot.Snapshot {
 
 func starterIDs(raw []string) ([]playerid.PlayerID, error) {
 	if len(raw) == 0 || len(raw) > 40 {
-		return nil, fmt.Errorf("choose your starters")
+		return nil, fmt.Errorf("MFL lineup: %w", mflmirror.Refused("choose your starters"))
 	}
 	ids := make([]playerid.PlayerID, 0, len(raw))
 	seen := map[playerid.PlayerID]bool{}
 	for _, s := range raw {
 		id, err := playerid.New(s)
 		if err != nil {
-			return nil, fmt.Errorf("choose starters from your roster")
+			return nil, fmt.Errorf("MFL lineup: %w", mflmirror.Refused("choose starters from your roster"))
 		}
 		if seen[id] {
-			return nil, fmt.Errorf("a starter is listed twice")
+			return nil, fmt.Errorf("MFL lineup: %w", mflmirror.Refused("a starter is listed twice"))
 		}
 		seen[id] = true
 		ids = append(ids, id)

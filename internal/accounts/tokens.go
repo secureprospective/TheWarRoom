@@ -86,11 +86,21 @@ func DelegableCommand(command string) bool {
 	}
 	if strings.HasSuffix(command, ".read") || command == "player.note.set" || command == "player.watch.set" ||
 		command == "player.watch.order" || command == "draft.queue.set" || command == "trade.draft.save" || command == "trade.draft.delete" ||
-		command == "contract.quote" || command == commissioner.RulesSet {
+		command == "contract.quote" || command == commissioner.RulesSet || delegableMflMovesCommand(command) {
 		return true
 	}
 	_, err := commissioner.DefinitionFor(command)
 	return err == nil
+}
+
+func delegableMflMovesCommand(command string) bool {
+	switch command {
+	case "mflmoves.refresh", "mflmoves.team.set", "mflmoves.bid.check", "mflmoves.lineup.check",
+		"mflmoves.plan.save", "mflmoves.plan.link", "mflmoves.plan.done", "mflmoves.plan.withdraw":
+		return true
+	default:
+		return false
+	}
 }
 
 func (r RawTokenScope) Lifetime() time.Duration {

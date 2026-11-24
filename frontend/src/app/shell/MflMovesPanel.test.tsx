@@ -7,7 +7,11 @@ import MflMovesPanel, { ageWords } from './MflMovesPanel';
 afterEach(async () => { await unmount(); vi.restoreAllMocks(); });
 
 const reply = (data: unknown) => ({ label: '', writable: true, football: 'pin', data });
-const teams = { teams: [{ id: '0001', name: 'Alpha' }, { id: '0002', name: 'Beta' }], yours: '' };
+const teams = {
+  mflLeague: '14432',
+  teams: [{ id: '0001', name: 'Alpha' }, { id: '0002', name: 'Beta' }],
+  yours: '',
+};
 const pool = { rows: [{ id: '100', name: 'Runner One', position: 'RB', team: 'BUF', age: '24', minimum: '$1',
   value: 'High' }], positions: ['RB'], sorts: ['value'], ageSeconds: 180 };
 const plan = (over: object) => ({ id: 'p1', kind: 'bid', state: 'ready', words: 'Bid $5 on Runner One.',
@@ -32,13 +36,34 @@ function port(over: Record<string, (args: Record<string, unknown>) => unknown> =
 }
 
 it('says one line when the league has no MFL number', async () => {
-  const p = vi.fn<HostedPort>(async () => {
-    throw new Error('this league follows no MFL league yet; set it');
+  const p = port({
+    'mflmoves.teams.read': () => ({
+      mflLeague: '',
+      teams: [],
+      words: 'This league follows no MFL league yet; the commissioner sets it in league settings.',
+    }),
   });
   const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
   await flush();
-  expect(present(host, 'MFL league number')).toBe(true);
+  expect(present(host, 'follows no MFL league yet')).toBe(true);
   expect(all(host, 'button')).toHaveLength(0);
+});
+
+it('lets the owner refresh from MFL on the pick screen when no teams are held yet', async () => {
+  let held = false;
+  const p = port({
+    'mflmoves.teams.read': () => (held ? teams : {
+      mflLeague: '14432', teams: [], words: 'Refresh from MFL to load the teams.',
+    }),
+    'mflmoves.refresh': () => { held = true; return { askedMfl: true, words: 'Fresh from MFL just now.' }; },
+  });
+  const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
+  await flush();
+  expect(present(host, 'Refresh from MFL to load the teams.')).toBe(true);
+  await click(button(host, 'Refresh from MFL'));
+  await flush();
+  expect(present(host, 'Alpha')).toBe(true);
+  expect(present(host, 'Beta')).toBe(true);
 });
 
 it('lets the owner pick their team from the public list', async () => {

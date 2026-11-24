@@ -66,8 +66,6 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	pin := h.pinFor(r.Context(), league)
-	privateQueueSet := raw.Command == "draft.queue.set"
-	privateDraftChange := raw.Command == leagueservice.TradeDraftSave || raw.Command == leagueservice.TradeDraftDelete
 	if message := workflowFootballRefusal(raw, pin); message != "" {
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
 		http.Error(w, message, http.StatusConflict)
@@ -88,7 +86,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	h.Requests.add(raw.Command, raw.Mode, 5, uint64(len(data)))
-	writable := location.Writable && (!pin.Missing || privateQueueSet || privateDraftChange)
+	writable := location.Writable && (!pin.Missing || workflowExemptFromFootballPin(raw.Command))
 	response := WorkflowResponse{Label: location.Label, Writable: writable, Football: pin.Digest,
 		AppRelease: serverversion.Current().Release, Data: data}
 	if !h.attachPrivateWorkflowTags(r.Context(), raw.Command, league, pin.Digest, &response) {
@@ -160,6 +158,14 @@ func workflowActionRefusal(w http.ResponseWriter, r *http.Request, raw RawWorkfl
 		http.Error(w, leagueservice.BackupInProgressMessage, http.StatusConflict)
 		return
 	}
+	if privateMflMovesOperation(raw.Command) && !errors.Is(err, context.DeadlineExceeded) &&
+		!errors.Is(err, context.Canceled) {
+		var refusal *commissioner.Refusal
+		if errors.As(err, &refusal) && !refusal.PermissionDenied() && refusal.Reason() != "" {
+			http.Error(w, refusal.Reason(), http.StatusConflict)
+			return
+		}
+	}
 	workflowRefusal(w, r, err)
 }
 
@@ -172,10 +178,14 @@ func workflowRefusal(w http.ResponseWriter, r *http.Request, err error) {
 	http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
 }
 
+func workflowExemptFromFootballPin(command string) bool {
+	return command == "draft.queue.set" || privateTradeDraftOperation(command) ||
+		privateMflMovesOperation(command)
+}
+
 func workflowFootballRefusal(raw RawWorkflow, pin LeaguePin) string {
 	if raw.Mode == "read" || raw.Command == leagueservice.BackupNowCommand ||
-		raw.Command == commissioner.ProblemReportCreate || raw.Command == "draft.queue.set" ||
-		privateTradeDraftOperation(raw.Command) {
+		raw.Command == commissioner.ProblemReportCreate || workflowExemptFromFootballPin(raw.Command) {
 		return ""
 	}
 	if pin.Digest == "" {
@@ -191,7 +201,7 @@ func workflowFootballRefusal(raw RawWorkflow, pin LeaguePin) string {
 // The envelope (label, writable) is never cached: it is read for every request.
 func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service, raw RawWorkflow, league string) (json.RawMessage, error) {
 	if raw.Mode != "read" || raw.Command == "draft.queue.read" || raw.Command == leagueservice.TradeDraftRead ||
-		raw.Command == commissioner.ProblemReportsRead {
+		raw.Command == commissioner.ProblemReportsRead || privateMflMovesOperation(raw.Command) {
 		return runWorkflow(ctx, service, raw)
 	}
 	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.pinFor(ctx, league).cacheKey()+"|"+raw.Football)
