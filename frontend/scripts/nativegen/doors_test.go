@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/composition"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 func TestEveryGeneratedDoorIsFreshAndRejectsDrift(t *testing.T) {
-	registry, err := composition.CommandRegistry()
+	registry, err := catalog.GenerationRegistry()
 	if err != nil {
 		t.Fatal(err)
 	}

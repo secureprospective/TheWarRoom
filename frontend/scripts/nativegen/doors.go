@@ -10,11 +10,10 @@ import (
 	"strings"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
-	"github.com/secureprospective/TheWarRoom/internal/composition"
 )
 
 func runDoors(root string, check bool) error {
-	registry, err := composition.CommandRegistry()
+	registry, err := catalog.GenerationRegistry()
 	if err != nil {
 		return fmt.Errorf("bind generation registry: %w", err)
 	}
