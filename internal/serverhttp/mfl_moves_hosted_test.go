@@ -184,7 +184,7 @@ func TestHostedMflMovesEndToEnd(t *testing.T) {
 
 	// 5b. bid.check before picking team returns plain-word 409 refusal.
 	pickMsg := invokeRaw(t, c, leagueservice.MflMovesBidCheck, "read",
-		[]byte(`{"league":"native.hosted","add":"0531","amount":1000000,"years":1}`), 409)
+		[]byte(`{"league":"native.hosted","add":"0531","amountCents":100000000,"years":1}`), 409)
 	if !strings.Contains(string(pickMsg), "Pick your MFL team first") {
 		t.Fatalf("bid.check before pick team = %q", pickMsg)
 	}
@@ -242,7 +242,7 @@ func TestHostedMflMovesEndToEnd(t *testing.T) {
 	}
 	// 9b. Two drops: the owner reads the rule in plain words (409), not "invalid native request" (400).
 	twoDrops := invokeRaw(t, c, leagueservice.MflMovesBidCheck, "read",
-		[]byte(`{"league":"native.hosted","add":"0531","amount":1500000,"years":1,"drop":["0001","0002"]}`), 409)
+		[]byte(`{"league":"native.hosted","add":"0531","amountCents":150000000,"years":1,"drop":["0001","0002"]}`), 409)
 	if !strings.Contains(strings.ToLower(string(twoDrops)), "a bid can hold one drop") {
 		t.Fatalf("two-drop bid.check body = %q", twoDrops)
 	}
@@ -250,14 +250,14 @@ func TestHostedMflMovesEndToEnd(t *testing.T) {
 	// 10. plan.save saves the bid plan; duplicate bid on same player gets plain-word 409.
 	var saved leagueservice.MflPlan
 	if err := json.Unmarshal(c.invoke(leagueservice.MflMovesPlanSave, "execute",
-		[]byte(`{"league":"native.hosted","kind":"bid","body":{"add":"0531","amount":1500000,"years":1}}`), 200).Data, &saved); err != nil {
+		[]byte(`{"league":"native.hosted","kind":"bid","body":{"add":"0531","amountCents":150000000,"years":1}}`), 200).Data, &saved); err != nil {
 		t.Fatal(err)
 	}
 	if saved.ID == "" || saved.Kind != "bid" || !saved.CanWithdraw {
 		t.Fatalf("plan.save = %+v", saved)
 	}
 	dupMsg := invokeRaw(t, c, leagueservice.MflMovesPlanSave, "execute",
-		[]byte(`{"league":"native.hosted","kind":"bid","body":{"add":"0531","amount":1600000,"years":1}}`), 409)
+		[]byte(`{"league":"native.hosted","kind":"bid","body":{"add":"0531","amountCents":160000000,"years":1}}`), 409)
 	if !strings.Contains(string(dupMsg), "already have an open bid plan") {
 		t.Fatalf("duplicate plan refusal = %q", dupMsg)
 	}

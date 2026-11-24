@@ -92,7 +92,7 @@ it('says the held copy age and that MFL was not asked again', async () => {
 
 it('shows bid problems, cap room, and notes the server did not check', async () => {
   const p = port({ 'mflmoves.bid.check': () => ({
-    ok: false, words: 'Not ready.', capRoomAfter: 304750000,
+    ok: false, words: 'Not ready.', capRoomAfterCents: 304750000,
     notChecked: ['MFL names no roster minimum, so the minimum roster size was not checked.'],
     problems: ['This leaves you $2 over the cap.'] }) });
   const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
@@ -131,7 +131,7 @@ it('opens only the server URL and hides buttons that are not allowed', async () 
 
 it('shows plan identity and details for saved bid and lineup replies', async () => {
   const p = port({ 'mflmoves.plans.read': () => ({ plans: [
-    plan({ playerName: 'Aguilar, Joey', salary: 33000000, years: 1, dropName: 'Quinn QB' }),
+    plan({ playerName: 'Aguilar, Joey', salaryCents: 33000000, years: 1, dropName: 'Quinn QB' }),
     plan({ id: 'p2', kind: 'lineup', week: 12, starters: Array(16).fill('id') }),
   ] }) });
   const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));

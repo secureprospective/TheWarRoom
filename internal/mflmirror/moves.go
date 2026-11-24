@@ -96,7 +96,7 @@ type Plan struct {
 	Words       string       `json:"words"`
 	Player      string       `json:"player,omitempty"`
 	PlayerName  string       `json:"playerName,omitempty"`
-	Salary      domain.Money `json:"salary,omitempty"`
+	Salary      domain.Money `json:"salaryCents,omitempty"`
 	Years       int          `json:"years,omitempty"`
 	Points      string       `json:"points,omitempty"`
 	Drop        string       `json:"drop,omitempty"`

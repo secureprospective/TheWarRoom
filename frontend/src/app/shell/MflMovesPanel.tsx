@@ -64,7 +64,7 @@ function parseRoster(data: unknown): MflRosterPlayer[] {
 function parsePlans(data: unknown): Plan[] {
   return list(obj(data).plans).map(p => ({ id: str(p.id), kind: str(p.kind), state: str(p.state),
     words: str(p.words), ...(typeof p.playerName === 'string' ? { playerName: p.playerName } : {}),
-    ...(typeof p.salary === 'number' ? { salary: p.salary } : {}),
+    ...(typeof p.salaryCents === 'number' ? { salary: p.salaryCents } : {}),
     ...(typeof p.years === 'number' ? { years: p.years } : {}), dropName: str(p.dropName),
     ...(typeof p.week === 'number' ? { week: p.week } : {}),
     ...(Array.isArray(p.starters) ? { starters: p.starters.map(str) } : {}),
@@ -75,7 +75,7 @@ function parseVerdict(data: unknown, lineup: boolean): Verdict {
   const problems = lineup ? list(row.problems).map(p => str(p.message))
     : (Array.isArray(row.problems) ? row.problems.map(str) : []);
   return { ok: row.ok === true, words: str(row.words), problems,
-    ...(typeof row.capRoomAfter === 'number' ? { capRoomAfter: row.capRoomAfter } : {}),
+    ...(typeof row.capRoomAfterCents === 'number' ? { capRoomAfter: row.capRoomAfterCents } : {}),
     notChecked: Array.isArray(row.notChecked) ? row.notChecked.map(str) : [] };
 }
 
