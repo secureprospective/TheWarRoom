@@ -1,0 +1,1 @@
+Cache heldSeasonKey's gsis/pfr identity digest and shared gsis map across reads, invalidated via ReferencePools().Revision (SQLite data_version), plus a >=100k-id benchmark fixture and invalidation tests.

@@ -149,7 +149,7 @@ func (m *readingMemo[T]) lookup(ctx context.Context, full func() (readingMemoKey
 	if hit, ok := m.entries[key]; ok && now.Sub(hit.at) < readingMemoTTL && !now.Before(hit.at) {
 		m.hits++
 		m.mu.Unlock()
-		return deepclone.Of(hit.out), nil
+		return share(hit.out), nil
 	}
 	m.misses++
 	m.runs++
@@ -159,6 +159,12 @@ func (m *readingMemo[T]) lookup(ctx context.Context, full func() (readingMemoKey
 		return out, err
 	}
 	kept := deepclone.Of(out)
+	if f, ok := any(&kept).(freezer); ok {
+		if err := f.Freeze(); err != nil {
+			return out, nil //nolint:nilerr // an answer that cannot be encoded is still answered; it is not kept
+		}
+		out = kept
+	}
 	m.mu.Lock()
 	if m.entries == nil || len(m.entries) >= readingMemoLimit {
 		m.entries = map[readingMemoKey]readingMemoEntry[T]{}
@@ -188,7 +194,7 @@ func (m *readingMemo[T]) wait(ctx context.Context, fl *readingMemoFlight[T]) (T,
 		m.mu.Lock()
 		m.hits++
 		m.mu.Unlock()
-		return deepclone.Of(fl.out), true, nil
+		return share(fl.out), true, nil
 	case <-ctx.Done():
 		return zero, false, fmt.Errorf("wait for reading: %w", ctx.Err())
 	}
@@ -206,7 +212,7 @@ func (m *readingMemo[T]) run(ctx context.Context, key readingFlightKey, fl *read
 	}
 	if err == nil && ctx.Err() == nil {
 		if fl.waiters > 0 {
-			fl.out = deepclone.Of(out)
+			fl.out = share(out)
 		}
 		fl.ok = true
 	}
@@ -218,4 +224,16 @@ func (m *readingMemo[T]) stats() (hits, misses, runs int) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.hits, m.misses, m.runs
+}
+
+// freezer is a reading that can encode its viewer-independent body once (commissioner.NativeResults.Freeze).
+type freezer interface{ Freeze() error }
+
+// share hands a kept reading to one more caller. A frozen reading is shared read-only (callers set only its
+// top-level per-read fields, on their own copy of the struct); anything else is deep-copied.
+func share[T any](v T) T {
+	if f, ok := any(v).(interface{ Frozen() bool }); ok && f.Frozen() {
+		return v
+	}
+	return deepclone.Of(v)
 }
