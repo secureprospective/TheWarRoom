@@ -1,0 +1,13 @@
+# Sleeper projections lane report
+- Overall: slices 1–4 NOT MET; this commit is a partial foundation, not a working fetch/score feature.
+- Source entry and runtime host/path registration: met; documented undocumented/free/no-key/internal-only limits. `internal/measures/sources.csv` and Approved_Sources updated.
+- Fetcher/archive: not met. No worker, flag, schedule, retry/backoff, or fetch-log dedup test exists.
+- Parser: partial. `ParseSleeperProjections` validates/maps supported stats, counts unsupported/unmapped/empty rows; DEF uses `DEF:<team>` pending a canonical team identity contract.
+- Golden parser test: `go test -race ./internal/fantasyscore/source/...` passed; fixture position counts: QB/RB/WR/TE/PK/DT/DE/LB/CB/DEF each 5; empty-line S rows count unmapped; unmapped count is nonzero.
+- Scoring at read: not met; no history-store scoring function or two-rules scoring test.
+- `go test -race ./internal/measures/...` passed after `make measure-dictionary` refreshed the derived dictionary.
+- `make lint VERSION=dev COMMIT=sleeper BUILD_DATE=sleeper` passed (LINE_BUDGET_REASON set); golangci-lint: 0 issues.
+- `git diff --check` passed.
+- No network requests made. No projections.read or screen changed.
+- Files: Approved_Sources.md, sources.csv, generated Measure_Dictionary.md, parser + test + compressed fixture, line-budget reason, this report.
+- Open gaps: worker and fake transport archive test; canonical team defense mapping; scorer and scoring test; then rerun affected checks.
