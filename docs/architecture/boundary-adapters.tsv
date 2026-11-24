@@ -1,39 +1,4 @@
 # Boundary identity (function or #source)	SHA-256 of Go tokens and semantic source directives	classification
 # adapter: resource, transport, representation or synchronization only; fixture source rows freeze test helpers.
-internal/app/core/clone.go:#source	f3548d9da494ed8d621c8807c2d5d583574daecd369af8d55f3862b8d837e3d4	adapter
-internal/app/core/clone.go:cloneAssets	553b24c85dd62361cc9070a20e45142b3cd5168c1707b0410d823ce810abdbbd	adapter
-internal/app/core/clone.go:clonePtr	1969adf3016ec595c92f11ca18759aa95675e5da1d25bad3a10999e4ebddf4ec	adapter
-internal/app/core/coretest/builder.go:#source	aa941fdba4f9fa04f8bf999f04dd11ff5fe129ab4bf873755e536bb012f8d493	adapter
-internal/app/core/coretest/transport.go:#source	a5aead422675494f3d6c953d52c6bfaff996bc7140f6c4dc7851f9608a06379d	adapter
-internal/app/core/host_commissioner.go:#source	d8678fb8e22374fc2fc734e7023a39db91521f3a234641071d8b61ed01df9c44	adapter
-internal/app/core/host_contracts.go:#source	e29452188654f6f247e174c556d8a3e3461a64df4d6c78d76328be2849825a3c	adapter
-internal/app/core/host_contracts.go:(*State).ContractsLeagueHost	c5a7cc5a4f51d6bc37becc10085b41b451c78b23d6e8f4c87998f419fddbc5a5	adapter
-internal/app/core/host_contracts.go:(*State).ContractsLineups	6534eeb6656c4f21d796c032c12228399668178b3f9c8739b8b363e1b0c67476	adapter
-internal/app/core/host_contracts.go:(*State).PendingTrades	54350f91ad955e1ceb74cbdeff974c7723008602593459030b3389e3a8b83af3	adapter
-internal/app/core/host_contracts.go:(*State).WakeMoves	e167be68c831c3ce665fa77b1705ec7d55d7644a2ba25ed88ea7f84d56d4ce3b	adapter
-internal/app/core/host_contracts.go:cloneSnapshot	ea240229bfa6105e885a0691d0b6509cc0c468662d816d2b5ac9c30058807a57	adapter
-internal/app/core/host_draft.go:#source	95f601a1ecdcb699da676662952d1dadf8c2f0fa55df16fc767e02105b052f65	adapter
-internal/app/core/host_draft.go:(*State).DraftFeeds	36c443cae60a2c990ac4325594ef6a3c30a562abafe03e99b40db96408ee9d9d	adapter
-internal/app/core/host_draft.go:(*State).DraftLeague	3a8a9ad75e31baf6739ec7752e216f85e2c125dd236b71011f32c5026dec0ff4	adapter
-internal/app/core/host_draft.go:(*State).DraftReady	2644f9fe46ef824340bc18b26ede01df88ee5e6360349869d5b8f7f466bed0cd	adapter
-internal/app/core/host_feed.go:#source	e39502fe7619ea25b1509385f5cb57f101dac34bbee69f4490d0947b6234194c	adapter
-internal/app/core/host_feed.go:(*State).FeedContext	026f742bf7e4a46a86186f663e3947226f9bb2e35abe9d664f36c8023e059685	adapter
-internal/app/core/host_feed.go:(*State).MFLDestination	56e510b2d874c23373866ebe118c55f5e5d647ff1fef1eb65bbef3e6bdb669bb	adapter
-internal/app/core/host_offers.go:#source	db973a396a6465e6ea7568d147ee6975ae0569a894038cb7f8a03fbbd37210da	adapter
-internal/app/core/host_offers.go:(*State).OffersSnapshotNames	f861edd0333429b3f16d0ea8cb510ce98b343e25d1fbdfa7377abf0e1b1bb325	adapter
-internal/app/core/host_offers.go:(*State).OffersWeek	6c63e7677dccbec88054a7e627dcc5b4ffe92a43b805fb9895342394d4ec3c6b	adapter
-internal/app/core/host_offers.go:(*State).OffersZone	b3f4c56aa711433d9738ebe56895e3b77cc34215fa7577002fbc8aba82742cfa	adapter
-internal/app/core/host_race.go:#source	11530ea4a5c9168a905a5bb623c53848b823dccdd8b0e278e70b784ea9d4c937	adapter
-internal/app/core/host_race.go:(*State).RaceInput	81cf6ddcf7e1b62e8d7de0c8f6ed9b4cad8179a8bd0dc98078263aa7244a7ef3	adapter
-internal/app/core/host_race.go:CloneLineups	1d6fdf2b3528f974e538d4831d89ec3d59c9d27296cd77c3a85d5c78feb5ddf7	adapter
-internal/app/core/host_research.go:#source	92ec0269c81957f7d630271293312b7724b7d405328093b6cb4c0b2f7d7c534b	adapter
-internal/app/core/host_research.go:(*State).MarketZone	f88476fc307fb72c62ef49cf5197c5ff71660fa8ec8521bcbb3992fbecc0f47b	adapter
-internal/app/core/host_research.go:(*State).ResearchZone	29b1832b38475179f6cefa827a2a24f65d81c3292134e11f8df78f34ae1d0983	adapter
-internal/app/core/host_sources.go:#source	9019b914c39b39498cad6960545fcd67388010b637c6136490783ff2ee6c7f4e	adapter
-internal/app/core/host_sources.go:(*State).SerializeSourcesLoad	e8040ffb281db607f523ebaf24a5e71fe27e18f38c7a77390f722fee050b3cc5	adapter
-internal/app/core/host_sources.go:(*State).SourcesPhotos	9404f29fa251d56974c767e3f3e13b46f5ff8a89f3dbed496e1fbd0e0fcfb4da	adapter
-internal/app/core/host_sources.go:(*State).SourcesRostered	cb7900f0d8fdc9b464cddf9f88457cfcafea132c8b95c89b8ed411cdf6ff8ac4	adapter
-internal/app/core/host_sources.go:(*State).SourcesZone	6f74c325b1a5cf38988d0a68c1ffc57e87af988631974e792e076885caf63f4a	adapter
-internal/app/core/state.go:#source	69f4de6cfcfd8f7938194baf2be3d65450883e8f872f7033c5b77c86bafc23df	adapter
-internal/app/core/state.go:ArchivedOnly	bc47debe9ea9f112b932d24cc9d96d2227f1913f737b34b11963211e30f18d35	adapter
+# Desktop composition and internal/app/core were removed in desktop-removal PR-D and PR-E.
 # No legacy policy entries remain. Ordinary comments and formatting are not fingerprinted.
