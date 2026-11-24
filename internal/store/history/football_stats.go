@@ -247,10 +247,12 @@ func (p *PinnedFootball) officialWeek(week int) bool {
 
 // officialAsOf is the newest official revision's instant for week, or false when week is not official.
 func (p *PinnedFootball) officialAsOf(week int) (time.Time, bool) {
+	var newest time.Time
+	found := false
 	for _, file := range p.stats {
-		if file.official[week] {
-			return file.at, true
+		if file.official[week] && (!found || file.at.After(newest)) {
+			newest, found = file.at, true
 		}
 	}
-	return time.Time{}, false
+	return newest, found
 }

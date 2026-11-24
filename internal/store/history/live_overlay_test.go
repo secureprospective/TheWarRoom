@@ -487,8 +487,9 @@ func TestOfficialWeekScoreEvidenceIsFinalNotProvisional(t *testing.T) {
 	f := resultsTest(t)
 	at := t0().Add(6 * time.Hour)
 	f.s.SetLineupEnvironment(&PinnedFootball{
-		raw:   RawFootballEvidence{Season: 2026, AsOf: at},
-		stats: []heldFile{{at: at, official: map[int]bool{1: true}}},
+		raw: RawFootballEvidence{Season: 2026, AsOf: at},
+		// A correction pinned later: the evidence names the newest official file.
+		stats: []heldFile{{at: at.Add(-2 * time.Hour), official: map[int]bool{1: true}}, {at: at, official: map[int]bool{1: true}}},
 	})
 	overlay := &LiveOverlay{}
 	f.s.SetLiveOverlay(overlay)
