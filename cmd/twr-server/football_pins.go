@@ -38,21 +38,22 @@ import (
 // and the evidence is looked for again at most once a minute, so the league opens again by itself.
 // A running server changes a pin through pin-football on its private socket (setPin).
 type leaguePins struct {
-	live   *history.LiveOverlay
-	files  *leagueFiles
-	mu     sync.RWMutex
-	server string            // the server's -football digest; empty pins nothing
-	chosen map[string]string // each league's own pin from the directory
-	built  map[string]serverhttp.LeaguePin
-	tried  map[string]time.Time
-	now    func() time.Time
+	live     *history.LiveOverlay
+	files    *leagueFiles
+	mu       sync.RWMutex
+	server   string            // the server's -football digest; empty pins nothing
+	chosen   map[string]string // each league's own pin from the directory
+	built    map[string]serverhttp.LeaguePin
+	football map[string]*history.PinnedFootball
+	tried    map[string]time.Time
+	now      func() time.Time
 }
 
 const footballRetry = time.Minute
 
 func newLeaguePins(files *leagueFiles) *leaguePins {
 	return &leaguePins{files: files, chosen: map[string]string{}, built: map[string]serverhttp.LeaguePin{},
-		tried: map[string]time.Time{}, now: time.Now, live: &history.LiveOverlay{}}
+		football: map[string]*history.PinnedFootball{}, tried: map[string]time.Time{}, now: time.Now, live: &history.LiveOverlay{}}
 }
 
 // selectPins records the server pin (digest, may be empty) and every league's own pin from directory,
@@ -72,9 +73,11 @@ func (p *leaguePins) selectPins(ctx context.Context, digest string, directory []
 	for _, league := range p.files.leagues() {
 		pin := p.buildLocked(ctx, league)
 		if pin.Err != nil {
+			p.pruneFootballLocked()
 			return fmt.Errorf("select football for league %s: %w", league, pin.Err)
 		}
 	}
+	p.pruneFootballLocked()
 	return nil
 }
 
@@ -113,7 +116,11 @@ func (p *leaguePins) loadPin(ctx context.Context, league string, base *history.S
 	if digest == "" {
 		return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl}
 	}
-	evidence, err := store.LoadFootball(ctx, digest)
+	evidence := p.football[digest]
+	var err error
+	if evidence == nil {
+		evidence, err = store.LoadFootball(ctx, digest)
+	}
 	if errors.Is(err, history.ErrNoBody) {
 		p.tried[digest] = p.now()
 		return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl, Digest: digest, Missing: true}
@@ -121,6 +128,7 @@ func (p *leaguePins) loadPin(ctx context.Context, league string, base *history.S
 	if err != nil {
 		return serverhttp.LeaguePin{Err: err}
 	}
+	p.football[digest] = evidence
 	store.SetPinnedFootball(evidence)
 	return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl, Football: evidence, Digest: digest}
 }
@@ -201,22 +209,22 @@ func (p *leaguePins) swapPin(ctx context.Context, signIns *accountstore.Store, l
 	if !ok {
 		return fmt.Errorf("league %s is not on this server; nothing was changed", league)
 	}
-	p.mu.RLock()
-	effective := digest
-	if effective == "" {
-		effective = p.server
-	}
-	p.mu.RUnlock()
-	next := p.loadPin(ctx, league, base, effective)
-	if next.Err != nil || (digest != "" && next.Missing) {
-		return fmt.Errorf("the reference file cannot give that football evidence; nothing was changed: %w", errors.Join(next.Err, missingErr(next)))
-	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if from != nil && p.digestLocked(league) != *from {
 		return fmt.Errorf("league %s was pinned to other football evidence meanwhile; nothing was changed", league)
 	}
+	effective := digest
+	if effective == "" {
+		effective = p.server
+	}
+	next := p.loadPin(ctx, league, base, effective)
+	if next.Err != nil || (digest != "" && next.Missing) {
+		p.pruneFootballLocked()
+		return fmt.Errorf("the reference file cannot give that football evidence; nothing was changed: %w", errors.Join(next.Err, missingErr(next)))
+	}
 	if err := signIns.PinFootball(ctx, league, digest); err != nil {
+		p.pruneFootballLocked()
 		return fmt.Errorf("pin football: %w", err)
 	}
 	if digest == "" {
@@ -225,7 +233,23 @@ func (p *leaguePins) swapPin(ctx context.Context, signIns *accountstore.Store, l
 		p.chosen[league] = digest
 	}
 	p.built[league] = next
+	p.pruneFootballLocked()
 	return nil
+}
+
+// pruneFootballLocked drops decoded evidence no successfully built league currently points at.
+func (p *leaguePins) pruneFootballLocked() {
+	used := make(map[string]bool, len(p.built))
+	for _, pin := range p.built {
+		if pin.Football != nil {
+			used[pin.Digest] = true
+		}
+	}
+	for digest := range p.football {
+		if !used[digest] {
+			delete(p.football, digest)
+		}
+	}
 }
 
 func missingErr(pin serverhttp.LeaguePin) error {

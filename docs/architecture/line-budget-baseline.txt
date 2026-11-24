@@ -4,10 +4,10 @@ docs	53716
 frontend-generated	5272
 frontend-src	77265
 frontend-tests	47008
-go-prod	174999
+go-prod	175023
 go-prod/cmd/twr	1139
 go-prod/cmd/twr-check	508
-go-prod/cmd/twr-server	9956
+go-prod/cmd/twr-server	9980
 go-prod/frontend	572
 go-prod/internal/accounts	2200
 go-prod/internal/app	26665
@@ -65,6 +65,6 @@ go-prod/internal/transactions	2046
 go-prod/root	25
 go-prod/scripts	56
 go-prod/tools	2212
-go-test	117932
+go-test	118022
 go-testdata	41047
 other	38535
