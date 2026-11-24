@@ -22,6 +22,10 @@ if [ "$#" = 0 ]; then
   if [ -e /etc/twr/nfl-schedule-refresh ]; then
     set -- "$@" -nfl-schedule-refresh
   fi
+  # The operator opts into archiving Sleeper stat-line projections (internal rehearsal use only) with this file.
+  if [ -e /etc/twr/sleeper-projections ]; then
+    set -- "$@" -sleeper-projections
+  fi
 fi
 exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop ALL \
   --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind /bin /bin \
