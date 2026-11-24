@@ -7,8 +7,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -34,6 +36,84 @@ func importFootball(t *testing.T, files stateFiles, name string) (string, []byte
 		t.Fatal(err)
 	}
 	return digest, body
+}
+
+func TestLeaguePinsShareDecodedFootballByDigest(t *testing.T) {
+	ctx := t.Context()
+	files := openTestServer(t, t.TempDir())
+	for _, league := range []string{"native.a", "native.b", "native.c"} {
+		leagueOn(t, files, league)
+	}
+	shared, _ := importFootball(t, files, "Shared pin")
+	other, _ := importFootball(t, files, "Other pin")
+	signIns := signInStore(files)
+	if err := signIns.RecordLeagues(ctx, []accountstore.DirectoryEntry{
+		{League: "native.a", State: "active", Created: "2026-11-14", Football: shared},
+		{League: "native.b", State: "active", Created: "2026-11-14", Football: shared},
+		{League: "native.c", State: "active", Created: "2026-11-14", Football: other},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	pins := newLeaguePins(files.leagues)
+	if err := pins.selectPins(ctx, "", []accountstore.DirectoryEntry{
+		{League: "native.a", Football: shared}, {League: "native.b", Football: shared}, {League: "native.c", Football: other},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	a, b, c := pins.pin(ctx, "native.a"), pins.pin(ctx, "native.b"), pins.pin(ctx, "native.c")
+	if a.Football == nil || a.Football != b.Football || a.Football == c.Football {
+		t.Fatalf("football pointers: shared a=%p b=%p, distinct c=%p", a.Football, b.Football, c.Football)
+	}
+	newDigest, _ := importFootball(t, files, "New pin")
+	if err := pins.setPin(ctx, signIns, "native.a", newDigest); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := pins.football[shared]; !ok {
+		t.Fatal("shared digest evicted while native.b still points to it")
+	}
+	if err := pins.setPin(ctx, signIns, "native.b", newDigest); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := pins.football[shared]; ok {
+		t.Fatal("unused old digest remains cached")
+	}
+}
+
+func TestLeaguePinsSharedDigestHeapAllocation(t *testing.T) {
+	files := openTestServer(t, t.TempDir())
+	const count = 8
+	entries := make([]accountstore.DirectoryEntry, 0, count)
+	for i := 0; i < count; i++ {
+		league := fmt.Sprintf("native.heap%d", i)
+		leagueOn(t, files, league)
+		entries = append(entries, accountstore.DirectoryEntry{League: league, State: "active", Created: "2026-11-14"})
+	}
+	digest, _ := importFootball(t, files, "Heap sample")
+	for i := range entries {
+		entries[i].Football = digest
+	}
+	runtime.GC()
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	for _, entry := range entries {
+		base, ok := files.leagues.store(entry.League)
+		if !ok {
+			t.Fatalf("missing store %s", entry.League)
+		}
+		if _, err := base.LoadFootball(t.Context(), digest); err != nil {
+			t.Fatal(err)
+		}
+	}
+	runtime.ReadMemStats(&after)
+	baseline := after.TotalAlloc - before.TotalAlloc
+	pins := newLeaguePins(files.leagues)
+	runtime.ReadMemStats(&before)
+	if err := pins.selectPins(t.Context(), "", entries); err != nil {
+		t.Fatal(err)
+	}
+	runtime.ReadMemStats(&after)
+	shared := after.TotalAlloc - before.TotalAlloc
+	t.Logf("N=8 decoded heap allocations: independent=%d B, shared=%d B", baseline, shared)
 }
 
 // Two leagues pinned to different football; an unpinned league uses the server's pin; re-pinning one
