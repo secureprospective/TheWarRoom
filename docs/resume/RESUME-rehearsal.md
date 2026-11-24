@@ -169,7 +169,7 @@ Remove after merge, then `golangci-lint cache clean`.
 ## 10. Next actions, in order (11-23 ~6:20 PM)
 1. FIRST after compaction: brief Christopher on ETAs for everything on the plan (his ask; plain words; sections 13 + BUILD-PLAN).
 2. Finish the merge chain (#482, then #479 re-baseline). Post merges on the tracker (Hermes plan.json, back up first,
-   next suffix `bak-1123m`).
+   next suffix `bak-1123n`).
 3. Check the Lab auto-released the new main (v61) and Everything is working; post on tracker.
 4. 7:35 PM: T685 phone check during MNF.
 5. Read the Gemini lane reports; review each diff yourself (plant one break); open PRs; ask his merge OK.
