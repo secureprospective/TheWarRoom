@@ -3739,6 +3739,13 @@
       "Citation": "Follow reference transactions only when enabled"
     }
   },
+  "MFL": {
+    "League": {
+      "State": 1,
+      "Value": "",
+      "Citation": "Follows no MFL league until one is named"
+    }
+  },
   "Schedule": {
     "Follow": {
       "State": 1,

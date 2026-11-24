@@ -107,6 +107,20 @@ func validModelScores(scores []ModelScore) (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
+// LatestModelScores returns the newest model run's scores; ok is false when no model run is held.
+// A hosted server has no player record of its own, so this stored run is its value feed.
+func (s *Store) LatestModelScores(ctx context.Context) ([]ModelScore, bool, error) {
+	run, ok, err := s.latestModelRun(ctx)
+	if err != nil || !ok {
+		return nil, false, err
+	}
+	scores, err := s.ModelScores(ctx, run.ID)
+	if err != nil {
+		return nil, false, err
+	}
+	return scores, true, nil
+}
+
 const modelCols = `mfl_id, position, now, now_ppg, dynasty, dynasty_ppg, prior,
 	past_games, season_games, z_past, z_now, on_field, inputs`
 

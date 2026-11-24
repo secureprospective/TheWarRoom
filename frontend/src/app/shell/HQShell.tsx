@@ -10,12 +10,14 @@ export function lockLabel(at: string): string {
   return `Locks ${day} ${time}`;
 }
 export type HQTab = 'lineup-and-roster' | 'contracts-and-cap' | 'my-moves';
+/** The hosted franchise screen adds My MFL moves; the desktop's own screen does not have it. */
+export type HostedHQTab = HQTab | 'mfl-moves';
 export function HQShell({ root, week, lock, tab, navigate, navigateNode, children, inspector, queue,
-  leagueName, fullscreen, liveCount, embedded }: {
+  leagueName, fullscreen, liveCount, embedded, mflMoves }: {
   root?: RefObject<HTMLDivElement>; week?: number; lock?: { at?: string }; tab: HQTab;
   navigate: (tab: HQTab) => void; navigateNode: (node: Node) => void;
   children: ReactNode; inspector: ReactNode; queue?: ReactNode; leagueName?: string; fullscreen?: boolean;
-    liveCount?: number; embedded?: boolean;
+    liveCount?: number; embedded?: boolean; mflMoves?: { selected: boolean; open: () => void };
 }) {
   return <div className={`hq-v10 shell${embedded ? ' embedded' : ''}`} ref={root}
     style={fullscreen ? { position: 'fixed', inset: 0,
@@ -37,10 +39,13 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
             <span className="k">{index + 1}</span>{name}<span className="car">›</span></HQAct>
           {index === 2 && <><HQAct className="leaf now" disabled><span className="tag">NOW</span>{lock?.at
             ? lockLabel(lock.at) : unavailable}</HQAct>
-            {(['lineup-and-roster', 'contracts-and-cap', 'my-moves'] as const).map((ws, i) => <HQAct
-              key={ws} className={`leaf ${tab === ws ? 'sel' : ''}`} onAction={() => navigate(ws)}>
-              <span className="tr">{i === 2 ? '└' : '├'}</span>{['Lineup and roster', 'Contracts and cap',
-                'My moves'][i]}</HQAct>)}</>}
+            {(['lineup-and-roster', 'contracts-and-cap', 'my-moves',
+              ...(mflMoves ? ['mfl-moves' as const] : [])] as const).map((ws, i) => <HQAct
+              key={ws} className={`leaf ${tab === ws ? 'sel' : ''}`}
+              onAction={() => (ws === 'mfl-moves' ? mflMoves?.open() : navigate(ws))}>
+              <span className="tr">{i === (mflMoves ? 3 : 2) ? '└' : '├'}</span>{[
+                'Lineup and roster', 'Contracts and cap',
+                'My moves', 'My MFL moves'][i]}</HQAct>)}</>}
         </div>)}
       </div><div className="rail-foot"><HQAct className="btn" disabled
         title={unavailable}>CUSTOMIZE</HQAct><span>/ command</span></div>
@@ -54,6 +59,8 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
         <HQAct className={`queue ${tab === 'my-moves' ? 'on' : ''}`} onAction={() => navigate('my-moves')}
           label="My moves queue"><span
           className="ql">MY MOVES</span>{queue}</HQAct>
+        {mflMoves && <HQAct role="tab" selected={mflMoves.selected} onAction={mflMoves.open}>
+          MY MFL MOVES</HQAct>}
       </div>}
       {children}
     </main>

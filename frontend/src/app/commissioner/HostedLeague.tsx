@@ -18,7 +18,7 @@ import { parseHostedRoster } from './hostedReadings';
 import { HostedWorkflows, type HostedTask } from './HostedWorkflows';
 import { ThinLeagueShell } from '../shell/ThinLeagueShell';
 import type { PlayerCandidate, ThinScreenRoute } from '../shell/ThinPlayerSearch';
-import type { HQTab } from '../shell/HQShell';
+import type { HostedHQTab } from '../shell/HQShell';
 import type { PulseTab } from '../shell/NativeLeaguePulse';
 import type { Node } from '../shell/nodes';
 
@@ -130,8 +130,8 @@ export default function HostedLeague(props: {
         leave={openNode} onPlayer={openPlayer} onPlayers={publishPulsePlayers} />
     : screen === 'hq' ? <Suspense fallback={<p>Opening your franchise…</p>}>
         <NativeFranchiseHQ key={`${props.league}:${props.franchise}`} league={props.league}
-          mine={props.franchise} name={props.name} port={props.port} embedded
-          tab={route.workspace as HQTab} navigate={workspace => setRoute({ node: 'hq', workspace })}
+          mine={props.franchise} name={props.name} port={props.port} embedded mflMoves
+          tab={route.workspace as HostedHQTab} navigate={workspace => setRoute({ node: 'hq', workspace })}
           leave={openNode} onPlayers={publishHQPlayers} />
       </Suspense>
     : screen === 'war' ? <Suspense fallback={<p>Opening War Room…</p>}>

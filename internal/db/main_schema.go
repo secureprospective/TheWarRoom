@@ -15,6 +15,33 @@ func (p *Pools) InitializeMain(ctx context.Context) error {
 	return err
 }
 
+// TablesExist reports, through a read connection, whether every named table exists, so a caller
+// that creates tables on first use never queues for the single writer once they do.
+func (p *Pools) TablesExist(ctx context.Context, names ...string) (bool, error) {
+	var found int
+	for _, name := range names {
+		var n int
+		if err := p.Read().QueryRowContext(ctx,
+			`SELECT count(*) FROM sqlite_master WHERE type='table' AND name=?`, name).Scan(&n); err != nil {
+			return false, fmt.Errorf("db: look up table %s: %w", name, err)
+		}
+		found += n
+	}
+	return found == len(names), nil
+}
+
+// EnsureMoveTables creates the append-only move and bid-fact tables if missing without changing
+// PRAGMA user_version, so hosted league databases keep their own schema version.
+func (p *Pools) EnsureMoveTables(ctx context.Context) error {
+	if ok, err := p.TablesExist(ctx, "move_envelopes", "move_audit", "bid_facts", "bid_conditions"); err != nil || ok {
+		return err
+	}
+	if _, err := p.Write().ExecContext(ctx, mainMovesDDL+mainBidFactsDDL); err != nil {
+		return fmt.Errorf("db: ensure move tables: %w", err)
+	}
+	return nil
+}
+
 func mainMigrations() []Migration { return []Migration{adoptMain, guardMainJSON} }
 
 func adoptMain(ctx context.Context, tx *sql.Tx) error {

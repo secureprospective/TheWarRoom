@@ -114,3 +114,11 @@ type TransactionRules struct{ Follow Value[bool] }
 func transactionFields() []ruleField {
 	return []ruleField{field[bool]{path: "transactions.follow", label: "Follow reference transactions", access: func(r *RuleSet) *Value[bool] { return &r.Transactions.Follow }}}
 }
+
+// MFLRules names the MFL league this league reads for reference; empty follows none. It is an ordinary
+// setting changed through the rule-change flow, not a kind of league.
+type MFLRules struct{ League Value[string] }
+
+func mflFields() []ruleField {
+	return []ruleField{field[string]{path: "mfl.league", label: "MFL league number", access: func(r *RuleSet) *Value[string] { return &r.MFL.League }}}
+}

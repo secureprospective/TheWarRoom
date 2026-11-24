@@ -14,7 +14,7 @@ import { pointsLabel, type PulseResults } from '../data/nativePulse';
 import { slotRank } from '../shell/pulseModel';
 import { readPulseOdds, readRecentResults, usePulseRead } from '../shell/pulseReads';
 import type { useNativeLineup } from '../shell/hqNativeLineup';
-import type { HQTab } from '../shell/HQShell';
+import type { HostedHQTab } from '../shell/HQShell';
 import { Icon } from './icons';
 import { Seg } from './PulseV3';
 
@@ -23,13 +23,16 @@ const rank = slotRank;
 const St = ({ children }: { children: ReactNode }) =>
   <div className="st"><div className="eng">{children}</div></div>;
 const cash = (v?: number | null) => v == null ? '—' : `$${(v / 100_000_000).toFixed(1)}M`;
-const TABS: [HQTab, string][] = [['lineup-and-roster', 'Lineup and roster'],
-  ['contracts-and-cap', 'Contracts and cap'], ['my-moves', 'My moves']];
+const TABS: [HostedHQTab, string][] = [['lineup-and-roster', 'Lineup and roster'],
+  ['contracts-and-cap', 'Contracts and cap'], ['my-moves', 'My moves'], ['mfl-moves', 'My MFL moves']];
 
-export function HQTabs({ tab, navigate, badge, kind, moves, pick }: { tab: HQTab;
-  navigate: (t: HQTab) => void; badge: ReactNode; kind: string; moves: number; pick?: ReactNode }) {
+export function HQTabs({ tab, navigate, badge, kind, moves, pick, mflMoves = false }: { tab: HostedHQTab;
+  navigate: (t: HostedHQTab) => void; badge: ReactNode; kind: string; moves: number; pick?: ReactNode;
+  /** The hosted franchise screens show My MFL moves; the local desktop does not. */ mflMoves?: boolean }) {
   return <div className="ws-tabs"><span className="ttl"><Icon n="shield" />FRANCHISE HQ</span>
-    {TABS.map(([t, words]) => <HQAct key={t} className="tb" selected={tab === t} onAction={() => navigate(t)}>
+    {TABS.filter(([t]) => mflMoves || t !== 'mfl-moves').map(([t, words]) => <HQAct key={t} className="tb"
+      selected={tab === t}
+      onAction={() => navigate(t)}>
       {words}{t === 'my-moves' && moves > 0 && <span className="tag am">{moves}</span>}</HQAct>)}
     <div className="tools">{pick}<span className="d mono" style={{ fontSize: 10, letterSpacing: '.08em' }}>
       {badge} {kind}</span></div></div>;
