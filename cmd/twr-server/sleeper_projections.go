@@ -52,7 +52,19 @@ func (f sleeperProjectionFetcher) Fetch(ctx context.Context, season, week int) e
 	return nil
 }
 
+// sleeperProjectionWorker is what the worker reaches outside itself; tests swap the transport, the first wait
+// and the week lookup.
+type sleeperProjectionWorker struct {
+	base  http.RoundTripper
+	first time.Duration
+	week  func(context.Context) (int, int, error)
+}
+
 func startHostedSleeperProjections(ctx context.Context, store *history.Store, enabled bool) func() {
+	return sleeperProjectionWorker{first: 2 * time.Minute, week: currentNFLWeek}.start(ctx, store, enabled)
+}
+
+func (w sleeperProjectionWorker) start(ctx context.Context, store *history.Store, enabled bool) func() {
 	if !enabled {
 		return func() {}
 	}
@@ -60,9 +72,9 @@ func startHostedSleeperProjections(ctx context.Context, store *history.Store, en
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		fetcher := newSleeperProjectionFetcher(store, nil)
+		fetcher := newSleeperProjectionFetcher(store, w.base)
 		refresh := func() error {
-			season, week, err := currentNFLWeek(workerCtx)
+			season, week, err := w.week(workerCtx)
 			if err != nil {
 				return err
 			}
@@ -83,7 +95,7 @@ func startHostedSleeperProjections(ctx context.Context, store *history.Store, en
 			}
 			return nil
 		}
-		wait := 2 * time.Minute
+		wait := w.first
 		for {
 			select {
 			case <-workerCtx.Done():

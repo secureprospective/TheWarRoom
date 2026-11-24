@@ -10,7 +10,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-// SleeperProjection retains the feed's player key, resolved canonical id, true position and raw line.
+// SleeperProjection retains the feed's player key, resolved canonical id, position and raw line. Position is
+// empty when the feed's label is not a scoring position (Sleeper's DB, DL, OLB...): the scorer takes the
+// canonical player's own position then.
 type SleeperProjection struct {
 	ExternalID  string
 	CanonicalID string
@@ -45,12 +47,10 @@ func ParseSleeperProjections(body []byte, identities map[string]string) ([]Sleep
 	positions := map[leaguerules.Position]int{}
 	out := make([]SleeperProjection, 0, len(rows))
 	unmapped := 0
-	for i, row := range rows {
+	for _, row := range rows {
 		projection, supported, err := mapSleeperProjection(row, identities)
-		if err != nil {
-			return nil, nil, 0, fmt.Errorf("sleeper projection row %d: %w", i, err)
-		}
-		if !supported {
+		if err != nil || !supported {
+			// One odd row never loses the snapshot (R11): it is counted with the unmapped ones.
 			unmapped++
 			continue
 		}
@@ -67,9 +67,6 @@ func mapSleeperProjection(row rawSleeperProjection, identities map[string]string
 	position := projectionPosition(row.Player.Position)
 	if row.PlayerID == row.Team && row.Team != "" {
 		position = "DEF"
-	}
-	if position == "" {
-		return SleeperProjection{}, false, nil
 	}
 	canonical := identities[row.PlayerID]
 	if position == "DEF" {

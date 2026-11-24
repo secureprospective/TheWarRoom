@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,10 +17,12 @@ import (
 type sleeperProjectionTransport struct {
 	body  string
 	calls int
+	seen  atomic.Int64
 }
 
 func (t *sleeperProjectionTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	t.calls++
+	t.seen.Add(1)
 	if req.Header.Get("User-Agent") != "TheWarRoom-rehearsal" {
 		panic("unexpected user-agent")
 	}
@@ -27,17 +31,7 @@ func (t *sleeperProjectionTransport) RoundTrip(req *http.Request) (*http.Respons
 
 func TestSleeperProjectionFetchArchivesDeduplicatedBodies(t *testing.T) {
 	ctx := t.Context()
-	base := newOneFileServer(t)
-	pools, err := db.Open(ctx, base.path, history.SchemaVersion())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = pools.Close() })
-	registry, err := measures.Embedded()
-	if err != nil {
-		t.Fatal(err)
-	}
-	store := history.New(pools, registry)
+	store, pools := sleeperProjectionTestStore(t)
 	transport := &sleeperProjectionTransport{body: "same projection body"}
 	fetcher := newSleeperProjectionFetcher(store, transport)
 	for range 2 {
@@ -81,6 +75,40 @@ func assertSleeperArchive(t *testing.T, pools *db.Pools, store *history.Store, t
 }
 
 func TestSleeperProjectionFlagOffMakesNoRequest(t *testing.T) {
-	stop := startHostedSleeperProjections(t.Context(), nil, false)
-	stop()
+	week := func(context.Context) (int, int, error) { return 2026, 12, nil }
+	store, _ := sleeperProjectionTestStore(t)
+	run := func(enabled bool) int64 {
+		transport := &sleeperProjectionTransport{body: "[]"}
+		stop := sleeperProjectionWorker{base: transport, week: week}.start(t.Context(), store, enabled)
+		deadline := time.Now().Add(2 * time.Second)
+		for enabled && transport.seen.Load() < 2 && time.Now().Before(deadline) {
+			time.Sleep(10 * time.Millisecond)
+		}
+		if !enabled {
+			time.Sleep(200 * time.Millisecond)
+		}
+		stop()
+		return transport.seen.Load()
+	}
+	if got := run(true); got < 2 {
+		t.Fatalf("flag on: %d requests, want the current and next week", got)
+	}
+	if got := run(false); got != 0 {
+		t.Fatalf("flag off: %d requests, want none", got)
+	}
+}
+
+func sleeperProjectionTestStore(t *testing.T) (*history.Store, *db.Pools) {
+	t.Helper()
+	base := newOneFileServer(t)
+	pools, err := db.Open(t.Context(), base.path, history.SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	registry, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return history.New(pools, registry), pools
 }

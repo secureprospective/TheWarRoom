@@ -59,3 +59,22 @@ func TestParseSleeperProjectionSample(t *testing.T) {
 		t.Fatal("no projections parsed")
 	}
 }
+
+func TestParseSleeperProjectionsKeepsGoodRowsAndIDPLabels(t *testing.T) {
+	body := []byte(`[
+ {"player_id":"1","team":"KC","week":12,"sport":"nfl","season_type":"regular","player":{"position":"QB"},"stats":{"pass_yd":250.5}},
+ {"player_id":"","team":"KC","week":12,"sport":"nfl","season_type":"regular","player":{"position":"QB"},"stats":{"pass_yd":1}},
+ {"player_id":"3","team":"KC","week":12,"sport":"nfl","season_type":"regular","player":{"position":"RB"}},
+ {"player_id":"4","team":"KC","week":12,"sport":"nfl","season_type":"regular","player":{"position":"DB"},"stats":{"idp_tkl_solo":4.2}}
+]`)
+	projections, _, unmapped, err := ParseSleeperProjections(body, map[string]string{"1": "c1", "3": "c3", "4": "c4"})
+	if err != nil {
+		t.Fatalf("one broken row lost the snapshot: %v", err)
+	}
+	if len(projections) != 2 || unmapped != 2 {
+		t.Fatalf("projections=%d unmapped=%d, want the QB and the DB kept and the two broken rows counted", len(projections), unmapped)
+	}
+	if projections[1].CanonicalID != "c4" || projections[1].Position != "" {
+		t.Fatalf("DB row = %+v, want kept with its position left to the canonical player", projections[1])
+	}
+}
