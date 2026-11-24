@@ -24,7 +24,7 @@ An owner whose league still lives on MFL opens TheWarRoom on a phone or a browse
 ## What is left out (on purpose: small)
 
 - **Incoming trade offers.** Only your own MFL sign-in can see them, so the app would have to hold your MFL password.
-  Recommendation: leave them out and read offers on MFL. (The desktop had this; it is the one helper not rebuilt.)
+  **Christopher 11-23: leave it out;** read offers on MFL. (The desktop had this; it is the one helper not rebuilt.)
 - Bid history, bid strategy tips, a calendar of waiver runs: not rebuilt.
 - No new storage kind: plans are kept the way owner-private notes already are (private per owner).
 
@@ -41,6 +41,6 @@ An owner whose league still lives on MFL opens TheWarRoom on a phone or a browse
 2. Delete the desktop program, with a second-model review (Argon) because it deletes a lot of code.
 3. Reword CLAUDE.md and `docs/architecture/desktop-modes.md` in the same change.
 
-## Questions for Christopher
+## Decided
 
-- Leave incoming trade offers out (read them on MFL)? Recommended: yes.
+- Incoming trade offers stay out (Christopher, 11-23 evening).
