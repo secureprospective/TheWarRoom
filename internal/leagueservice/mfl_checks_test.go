@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
@@ -71,7 +72,7 @@ func TestMflChecksSayPickYourTeamFirst(t *testing.T) {
 	if _, err := f.service.MflMovesRefreshContext(ctx, RawMflMovesScope{League: f.league}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.service.MflMovesBidCheckContext(ctx, RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000}); err == nil ||
+	if _, err := f.service.MflMovesBidCheckContext(ctx, RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 10_000_000_000}); err == nil ||
 		!strings.Contains(err.Error(), "Pick your MFL team first") {
 		t.Fatalf("bid check with no team: %v", err)
 	}
@@ -83,7 +84,7 @@ func TestMflChecksSayPickYourTeamFirst(t *testing.T) {
 
 func TestMflBidCheckPassesAGoodBid(t *testing.T) {
 	f := mflOwnerFixture(t, nil)
-	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000, Years: 1})
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 10_000_000_000, Years: 1})
 	if err != nil || !got.OK || len(got.Problems) != 0 {
 		t.Fatalf("good bid = %+v, %v", got, err)
 	}
@@ -95,12 +96,12 @@ func TestMflBidCheckPassesAGoodBid(t *testing.T) {
 func TestMflBidCheckCapRoomAfterTheBid(t *testing.T) {
 	f := mflOwnerFixture(t, nil)
 	// Held: 2.0M + 0.4M (4 x 0.1M active) + 0.05M IR half + 43 x 0.05M = ~4.2M of 10M; a 6M bid goes over.
-	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 6_000_000, Years: 3})
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 600_000_000, Years: 3})
 	if err != nil || got.OK || !hasProblem(got.Problems, "salary cap") {
 		t.Fatalf("over-cap bid = %+v, %v", got, err)
 	}
 	// Dropping the $2M player on the roster makes room: his salary frees, less 35% of one remaining year.
-	ok, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 6_000_000, Years: 3, Drop: []string{"1008"}})
+	ok, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 600_000_000, Years: 3, Drop: []string{"1008"}})
 	if err != nil || hasProblem(ok.Problems, "salary cap") {
 		t.Fatalf("bid with a drop = %+v, %v", ok, err)
 	}
@@ -109,7 +110,7 @@ func TestMflBidCheckCapRoomAfterTheBid(t *testing.T) {
 func TestMflBidCheckRejectsMoreThanOneDropInPlainWords(t *testing.T) {
 	f := mflOwnerFixture(t, nil)
 	_, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league,
-		Add: "0531", Amount: 1_000_000, Drop: []string{"1001", "1002"}})
+		Add: "0531", AmountCents: 10_000_000_000, Drop: []string{"1001", "1002"}})
 	if err == nil || !strings.Contains(err.Error(), "a bid can hold one drop") {
 		t.Fatalf("two-drop bid error = %v", err)
 	}
@@ -118,17 +119,17 @@ func TestMflBidCheckRejectsMoreThanOneDropInPlainWords(t *testing.T) {
 func TestMflBidCheckRosterSizeAfterDrops(t *testing.T) {
 	data := mflDefaultLeagueData(48)
 	f := mflOwnerFixture(t, &data)
-	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000})
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 10_000_000_000})
 	if err != nil || got.ActiveAfter != 49 || !hasProblem(got.Problems, "48 active roster spots") {
 		t.Fatalf("49 active = %+v, %v", got, err)
 	}
-	dropped, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000, Drop: []string{"1001"}})
+	dropped, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 10_000_000_000, Drop: []string{"1001"}})
 	if err != nil || dropped.ActiveAfter != 48 || hasProblem(dropped.Problems, "48 active roster spots") {
 		t.Fatalf("drop makes room = %+v, %v", dropped, err)
 	}
 	small := mflDefaultLeagueData(20)
 	f2 := mflOwnerFixture(t, &small)
-	below, err := f2.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f2.league, Add: "0531", Amount: 1_000_000})
+	below, err := f2.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f2.league, Add: "0531", AmountCents: 10_000_000_000})
 	// MFL names no roster minimum, so none is invented: the check says it did not look.
 	if err != nil || hasProblem(below.Problems, "in-season minimum") || !hasProblem(below.NotChecked, "no roster minimum") {
 		t.Fatalf("below 35 = %+v, %v", below, err)
@@ -149,11 +150,11 @@ func TestMflBidCheckUsesTheLeaguesOwnRosterSize(t *testing.T) {
 	// 25 active players is under the desktop's 48 but a 26th is over this league's 25.
 	data := mflLeagueWith(25, func(c *league.RawConfig) { c.RosterSize = "25" })
 	f := mflOwnerFixture(t, &data)
-	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000})
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 10_000_000_000})
 	if err != nil || got.ActiveAfter != 26 || !hasProblem(got.Problems, "fit 25 active roster spots") {
 		t.Fatalf("26 active in a 25-player league = %+v, %v", got, err)
 	}
-	fits, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000, Drop: []string{"1001"}})
+	fits, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 10_000_000_000, Drop: []string{"1001"}})
 	if err != nil || hasProblem(fits.Problems, "active roster spots") {
 		t.Fatalf("a drop makes room = %+v, %v", fits, err)
 	}
@@ -162,7 +163,7 @@ func TestMflBidCheckUsesTheLeaguesOwnRosterSize(t *testing.T) {
 func TestMflBidCheckWithNoRosterSizeSaysItDidNotLook(t *testing.T) {
 	data := mflLeagueWith(60, func(c *league.RawConfig) { c.RosterSize = "" })
 	f := mflOwnerFixture(t, &data)
-	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000})
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 10_000_000_000})
 	if err != nil || hasProblem(got.Problems, "active roster spots") || !hasProblem(got.NotChecked, "no roster size") {
 		t.Fatalf("no roster size = %+v, %v", got, err)
 	}
@@ -171,7 +172,7 @@ func TestMflBidCheckWithNoRosterSizeSaysItDidNotLook(t *testing.T) {
 func TestMflBidCheckFlagsReserveSlotsOverTheLeagueLimit(t *testing.T) {
 	data := mflLeagueWith(30, func(c *league.RawConfig) { c.InjuredReserve = "0"; c.TaxiSquad = "0" })
 	f := mflOwnerFixture(t, &data)
-	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000})
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 10_000_000_000})
 	if err != nil || !hasProblem(got.Problems, "injured reserve holds 1") || !hasProblem(got.Problems, "taxi squad holds 1") {
 		t.Fatalf("reserve limits = %+v, %v", got, err)
 	}
@@ -180,7 +181,7 @@ func TestMflBidCheckFlagsReserveSlotsOverTheLeagueLimit(t *testing.T) {
 func TestMflBidCheckMinimumSalary(t *testing.T) {
 	f := mflOwnerFixture(t, nil)
 	// 0531 was drafted 2020: six years, minimum $530,000.
-	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 100_000})
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 10_000_000})
 	if err != nil || !hasProblem(got.Problems, "minimum salary for this player is $530,000") {
 		t.Fatalf("below minimum salary = %+v, %v", got, err)
 	}
@@ -190,14 +191,14 @@ func TestMflBidCheckBidLimit(t *testing.T) {
 	f := mflOwnerFixture(t, nil)
 	// The Legacy rules cap a one year bid; a very large one year bid breaks the limit or the cap, and a
 	// long bid at the same salary must not trip the length rule.
-	long, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 2_000_000, Years: 3})
+	long, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 200_000_000, Years: 3})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(long.NotChecked) != 0 {
 		t.Skipf("fixture rules do not set the bid limits: %v", long.NotChecked)
 	}
-	short, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 13_000_000, Years: 1})
+	short, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 1_300_000_000, Years: 1})
 	if err != nil || !hasProblem(short.Problems, "1 year bid can be no more than") {
 		t.Fatalf("one year limit = %+v, %v", short, err)
 	}
@@ -205,7 +206,7 @@ func TestMflBidCheckBidLimit(t *testing.T) {
 
 func TestMflBidCheckPlayerOnAnotherTeam(t *testing.T) {
 	f := mflOwnerFixture(t, nil)
-	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "1007", Amount: 1_000_000})
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "1007", AmountCents: 10_000_000_000})
 	if err != nil || got.OK || !hasProblem(got.Problems, "another team's roster") {
 		t.Fatalf("rostered player = %+v, %v", got, err)
 	}
@@ -442,7 +443,7 @@ func TestMflBidCheckGivesTheDesktopVerdict(t *testing.T) {
 	for _, c := range g.Cases {
 		data := mflDefaultLeagueData(c.Players)
 		f := mflOwnerFixture(t, &data)
-		got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: c.Amount, Years: 3})
+		got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: domain.Money(c.Amount * 100), Years: 3})
 		if err != nil {
 			t.Fatal(err)
 		}

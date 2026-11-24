@@ -98,9 +98,11 @@ it('shows bid problems, cap room, and notes the server did not check', async () 
   const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
   await flush();
   await type(control(host, 'Player'), '100');
-  await type(control(host, 'Amount'), '5');
+  await type(control(host, 'Amount'), '1250000');
   await click(button(host, 'Check'));
   await flush();
+  expect(p).toHaveBeenCalledWith(expect.objectContaining({ command: 'mflmoves.bid.check',
+    arguments: expect.objectContaining({ amountCents: 125000000 }) }));
   expect(present(host, 'This leaves you $2 over the cap.')).toBe(true);
   expect(present(host, 'Cap room after bid: $3,047,500.')).toBe(true);
   expect(present(host, 'MFL names no roster minimum, so the minimum roster size was not checked.'))

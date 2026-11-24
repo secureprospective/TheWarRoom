@@ -226,14 +226,19 @@ func TestHostedMflMovesEndToEnd(t *testing.T) {
 		t.Fatalf("free agent 0531 not valued through hosted wrappers: %+v", pool.Rows[1])
 	}
 
-	// 9. bid.check passes a valid bid on 0531.
+	// 9. bid.check passes a cents bid on 0531; the legacy amount key is ignored.
 	var bidCheck leagueservice.MflBidCheck
 	if err := json.Unmarshal(c.invoke(leagueservice.MflMovesBidCheck, "read",
-		[]byte(`{"league":"native.hosted","add":"0531","amount":1500000,"years":1}`), 200).Data, &bidCheck); err != nil {
+		[]byte(`{"league":"native.hosted","add":"0531","amountCents":125000000,"years":1}`), 200).Data, &bidCheck); err != nil {
 		t.Fatal(err)
 	}
-	if !bidCheck.OK {
-		t.Fatalf("bid.check = %+v", bidCheck)
+	if !bidCheck.OK || bidCheck.Salary != 125000000 {
+		t.Fatalf("bid.check salary cents = %+v", bidCheck)
+	}
+	legacy := invokeRaw(t, c, leagueservice.MflMovesBidCheck, "read",
+		[]byte(`{"league":"native.hosted","add":"0531","amount":1500000,"years":1}`), 400)
+	if len(legacy) == 0 {
+		t.Fatal("legacy amount key was not rejected")
 	}
 	// 9b. Two drops: the owner reads the rule in plain words (409), not "invalid native request" (400).
 	twoDrops := invokeRaw(t, c, leagueservice.MflMovesBidCheck, "read",

@@ -38,13 +38,13 @@ type Engine interface {
 	PlanWithdraw(ctx context.Context, s Seat, plan string) (Plan, error)
 }
 
-// BidInput is one bid to judge: the player to add, the one annual salary in dollars, the years, and the
+// BidInput is one bid to judge: the player to add, the one annual salary in cents, the years, and the
 // players to drop to make room.
 type BidInput struct {
-	Add    string
-	Amount float64
-	Years  int
-	Drop   []string
+	Add         string
+	AmountCents domain.Money
+	Years       int
+	Drop        []string
 }
 
 // LineupInput is one week's starters as MFL player ids.
@@ -57,14 +57,14 @@ type LineupInput struct {
 type BidCheck struct {
 	League        string        `json:"league"`
 	Player        string        `json:"player"`
-	Salary        domain.Money  `json:"salary"`
+	Salary        domain.Money  `json:"salaryCents"`
 	Years         int           `json:"years"`
 	OK            bool          `json:"ok"`
 	Problems      []string      `json:"problems"`
 	NotChecked    []string      `json:"notChecked"`
-	CapUsedBefore domain.Money  `json:"capUsedBefore"`
-	CapUsedAfter  domain.Money  `json:"capUsedAfter"`
-	CapRoomAfter  *domain.Money `json:"capRoomAfter,omitempty"`
+	CapUsedBefore domain.Money  `json:"capUsedBeforeCents"`
+	CapUsedAfter  domain.Money  `json:"capUsedAfterCents"`
+	CapRoomAfter  *domain.Money `json:"capRoomAfterCents,omitempty"`
 	ActiveAfter   int           `json:"activeAfter"`
 	Words         string        `json:"words"`
 }

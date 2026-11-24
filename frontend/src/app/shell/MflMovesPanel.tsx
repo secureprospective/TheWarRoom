@@ -269,7 +269,7 @@ function BidForm({ call, pool, roster, saved }: { call: Call; pool: PoolRow[]; r
   const [drop, setDrop] = useState('');
   const [verdict, setVerdict] = useState<Verdict>();
   const [message, setMessage] = useState('');
-  const body = () => ({ add, amount: Number(amount), ...(years ? { years: Number(years) } : {}),
+  const body = () => ({ add, amountCents: Math.round(Number(amount) * 100), ...(years ? { years: Number(years) } : {}),
     ...(drop ? { drop: [drop] } : {}) });
   const check = async () => {
     setMessage('');
