@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	app "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
@@ -14,7 +13,10 @@ func TestNativeClientCatalogParity(t *testing.T) {
 	if err := run("../../src/app/commands/native.gen.ts", true); err != nil {
 		t.Fatal(err)
 	}
-	commands := app.NativeCommands()
+	commands, err := registryCommands(catalog.NativeDoor)
+	if err != nil {
+		t.Fatal(err)
+	}
 	first, err := generate(commands)
 	if err != nil {
 		t.Fatal(err)

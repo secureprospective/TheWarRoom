@@ -26,20 +26,21 @@ import (
 )
 
 type hostedFlags struct {
-	flags           *flag.FlagSet
-	path            *string
-	address         *string
-	cert            *string
-	key             *string
-	totpKey         *string
-	registry        *string
-	football        *string
-	backup          *string
-	trusted         *string
-	publicHost      *string
-	status          *string
-	official        *bool
-	scheduleRefresh *bool
+	flags              *flag.FlagSet
+	path               *string
+	address            *string
+	cert               *string
+	key                *string
+	totpKey            *string
+	registry           *string
+	football           *string
+	backup             *string
+	trusted            *string
+	publicHost         *string
+	status             *string
+	official           *bool
+	scheduleRefresh    *bool
+	sleeperProjections *bool
 }
 
 // replyCacheBytes bounds the league-state replies the server keeps in memory (serverhttp.ReplyCache).
@@ -60,6 +61,7 @@ func parseHostedFlags(args []string) (hostedFlags, error) {
 	status := flags.String("status-socket", "", "owner-only Unix socket for the console status dashboard; empty serves none")
 	official := flags.Bool("official-stats", false, "re-pin each league to nflverse's official statistics as its weeks finish")
 	scheduleRefresh := flags.Bool("nfl-schedule-refresh", false, "refresh published NFL schedules every 6 hours")
+	sleeperProjections := flags.Bool("sleeper-projections", false, "archive internal rehearsal Sleeper stat-line projections")
 	if err := flags.Parse(args); err != nil {
 		return hostedFlags{}, fmt.Errorf("parse hosted flags: %w", err)
 	}
@@ -68,7 +70,7 @@ func parseHostedFlags(args []string) (hostedFlags, error) {
 			return hostedFlags{}, fmt.Errorf("parse hosted flags: %w", err)
 		}
 	}
-	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, publicHost: publicHost, status: status, official: official, scheduleRefresh: scheduleRefresh}, nil
+	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, publicHost: publicHost, status: status, official: official, scheduleRefresh: scheduleRefresh, sleeperProjections: sleeperProjections}, nil
 }
 
 func runHosted(ctx context.Context, args []string, output io.Writer) error {
@@ -138,11 +140,12 @@ func startHostedScores(ctx context.Context, pins *leaguePins, files stateFiles, 
 		ctx, pins, filepath.Dir(*config.path), handler.Publisher, handler.LiveGames,
 	)
 	stopWarm := startResultsWarm(ctx, pins, liveRestored)
+	stopSleeper := startHostedSleeperProjections(ctx, files.leagues.family.Over(files.reference), *config.sleeperProjections)
 	if !*config.official {
-		return func() { stopWarm(); stopLive() }
+		return func() { stopSleeper(); stopWarm(); stopLive() }
 	}
 	stopOfficial := startOfficialStats(ctx, pins, signInStore(files))
-	return func() { stopOfficial(); stopWarm(); stopLive() }
+	return func() { stopOfficial(); stopSleeper(); stopWarm(); stopLive() }
 }
 
 func checkHostedDatabase(path string, extraArgs int) error {
