@@ -127,7 +127,7 @@ func startHosted(ctx context.Context, args []string, output io.Writer) error {
 	if pins, ok := handler.Leagues.(*leaguePins); ok {
 		defer startHostedScores(ctx, pins, files, config, handler)()
 	}
-	defer startHostedBackground(ctx, files, handler.Worker, handler.News, handler.Leagues.(*leaguePins), *config.scheduleRefresh)()
+	defer startHostedBackground(ctx, files, handler.Worker, handler.News, scheduleRefreshPins(handler.Leagues, *config.scheduleRefresh), *config.scheduleRefresh)()
 
 	return serveHosted(ctx, *config.address, certificate, handler, output)
 }
@@ -470,7 +470,7 @@ func startHostedBackground(
 ) func() {
 	stopInjuries := startHostedInjuryRefresh(ctx, files.leagues.family.Over(files.reference))
 	stopSchedule := func() {}
-	if refreshSchedule {
+	if refreshSchedule && pins != nil {
 		stopSchedule = startHostedNFLScheduleRefresh(ctx, pins, signInStore(files), files.leagues.family.Over(files.reference))
 	}
 	stopNews := news.StartLeagueRefresh(ctx)
@@ -484,4 +484,17 @@ func startHostedBackground(
 		stopSchedule()
 		stopInjuries()
 	}
+}
+
+// scheduleRefreshPins is the pins the NFL schedule timer re-pins, or nil (timer off) when the flag is off or
+// the server's leagues are not served by leaguePins.
+func scheduleRefreshPins(leagues any, enabled bool) *leaguePins {
+	pins, ok := leagues.(*leaguePins)
+	if !enabled || !ok {
+		if enabled {
+			log.Print("hosted NFL schedule: leagues are not pinned by this server; timer off")
+		}
+		return nil
+	}
+	return pins
 }

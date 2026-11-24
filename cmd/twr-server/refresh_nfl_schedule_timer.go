@@ -30,9 +30,7 @@ func startHostedNFLScheduleRefresh(ctx context.Context, pins *leaguePins, signIn
 	go func() {
 		defer close(done)
 		run := func() {
-			attempt, cancel := context.WithTimeout(workerCtx, nflScheduleRefreshTimeout)
-			defer cancel()
-			pass := refreshHostedNFLSchedulePass(attempt, pins, signIns, nflSeasonAt(time.Now()), newNFLWeekFetcher(reference, nil))
+			pass := refreshHostedNFLSchedulePass(workerCtx, pins, signIns, nflSeasonAt(time.Now()), newNFLWeekFetcher(reference, nil))
 			log.Printf("hosted NFL schedule: weeks fetched=%d, leagues revised=%d, leagues unchanged=%d, errors=%d", pass.weeksFetched, pass.leaguesRevised, pass.leaguesUnchanged, pass.errors)
 		}
 		timer := time.NewTimer(nflScheduleRefreshStartup)
@@ -76,7 +74,10 @@ func refreshHostedNFLSchedulePass(ctx context.Context, pins *leaguePins, signIns
 			log.Printf("hosted NFL schedule: league %s: %v", league, err)
 			break
 		}
-		changed, err := refreshHostedNFLScheduleLeague(ctx, pins, signIns, league, season, memoized)
+		// Each league gets its own time budget, so a server with many leagues is not cut off part-way.
+		attempt, cancel := context.WithTimeout(ctx, nflScheduleRefreshTimeout)
+		changed, err := refreshHostedNFLScheduleLeague(attempt, pins, signIns, league, season, memoized)
+		cancel()
 		if err != nil {
 			pass.errors++
 			log.Printf("hosted NFL schedule: league %s: %v", league, err)
@@ -105,7 +106,8 @@ func refreshHostedNFLScheduleLeague(ctx context.Context, pins *leaguePins, signI
 		return false, errors.New("league has no pinned football evidence")
 	}
 	return reviseNFLWeekEvidence(ctx, store, league, season, digest, expected, fetch, io.Discard, func(ctx context.Context, next string) error {
-		return pins.setPin(ctx, signIns, league, next)
+		// advancePin, not setPin: a version a commissioner pinned meanwhile wins over this revision.
+		return pins.advancePin(ctx, signIns, league, digest, next)
 	})
 }
 

@@ -111,6 +111,33 @@ func TestHostedNFLSchedulePassFetchesEachWeekOnceAndRePinsChangedLeagues(t *test
 			t.Fatalf("second pass changed %s digest from %s to %s", league, want, got)
 		}
 	}
+	// A commissioner re-pins native.hosted while a pass is fetching: the pass must not overwrite that choice.
+	// Put the league back on the version that lacks its weeks, so the pass fetches; mid-fetch the commissioner
+	// chooses the revised version instead.
+	chosen := firstPins["native.hosted"]
+	if err := pins.setPin(ctx, signInStore(host.files), "native.hosted", digest); err != nil {
+		t.Fatal(err)
+	}
+	repinned := false
+	racing := func(ctx context.Context, _, week int) (leagueweek.Week, error) {
+		if !repinned {
+			repinned = true
+			if err := pins.setPin(ctx, signInStore(host.files), "native.hosted", chosen); err != nil {
+				t.Fatalf("commissioner re-pin: %v", err)
+			}
+		}
+		moved := futureScheduleWeek(week)
+		for i := range moved.Games {
+			moved.Games[i].Kickoff = moved.Games[i].Kickoff.Add(time.Hour)
+		}
+		return moved, nil
+	}
+	if _, err := refreshHostedNFLScheduleLeague(ctx, pins, signInStore(host.files), "native.hosted", 2026, racing); err == nil || !repinned {
+		t.Fatalf("the timer re-pinned over a version the commissioner chose meanwhile (err=%v, fetched=%t)", err, repinned)
+	}
+	if got := pins.digest("native.hosted"); got != chosen {
+		t.Fatalf("native.hosted pin = %q, want the commissioner's %q", got, chosen)
+	}
 }
 
 func TestHostedNFLSchedulePinSwapServesOldOrNewStore(t *testing.T) {
