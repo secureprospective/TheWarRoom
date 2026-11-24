@@ -1,0 +1,1 @@
+Sleeper stat-line rehearsal lane documents an undocumented source and adds a validated parser plus a compressed golden fixture; this is the minimum evidence for parser safety and source provenance.

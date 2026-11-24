@@ -9,6 +9,16 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 )
 
+func TestPinnedKickoffsReturnACopy(t *testing.T) {
+	kickoff := time.Date(2026, time.September, 10, 0, 0, 0, 0, time.UTC)
+	pinned := &PinnedFootball{raw: RawFootballEvidence{Weeks: []leagueweek.Week{{Games: []leagueweek.Game{{Kickoff: kickoff}}}}}}
+	first := pinned.Kickoffs()
+	first[0] = kickoff.Add(time.Hour)
+	if got := pinned.Kickoffs()[0]; !got.Equal(kickoff) {
+		t.Fatalf("caller changed pinned kickoff: got %s, want %s", got, kickoff)
+	}
+}
+
 func TestExtendFootballScheduleKeepsOldEvidenceAndAddsOnlyNewWeeks(t *testing.T) {
 	store, _, _ := newStore(t)
 	ctx := t.Context()
