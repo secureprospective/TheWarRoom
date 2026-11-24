@@ -150,7 +150,7 @@ func newReleaseCLIWith(t *testing.T, seed func(context.Context, *history.Store, 
 
 func TestReleaseMatrixCLIAndMCPTokenModes(t *testing.T) {
 	t.Parallel()
-	body, err := os.ReadFile("../../internal/app/commissioner/testdata/release-mutations.json")
+	body, err := os.ReadFile("testdata/release-mutations.json")
 	if err != nil {
 		t.Fatal(err)
 	}

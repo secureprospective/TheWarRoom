@@ -8,6 +8,6 @@ Release-blocker evidence and the current-role matrix are recorded in
 tables use disposable SQLite leagues and injected server clocks, never live data.
 
 The catalog-backed mutation fixture and adapter tests live in
-`internal/app/commissioner/testdata/release-mutations.json` and adjacent
+`cmd/twr/testdata/release-mutations.json` and adjacent
 `release_*_test.go` files; CLI/MCP use that same fixture. Future support/operator
 grants remain outside the implemented role model.
