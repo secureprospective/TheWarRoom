@@ -125,12 +125,9 @@ linters:
           files:
             - "**/internal/**"
             - "!**/internal/app/**"
-            - "!**/internal/composition/**"
           deny:
             - pkg: github.com/secureprospective/TheWarRoom/internal/app/
               desc: "non-app internals cannot import application services"
-            - pkg: github.com/secureprospective/TheWarRoom$
-              desc: "internals cannot import the root composition package"
 
         app-no-platform-imports:
           list-mode: lax
@@ -139,8 +136,6 @@ linters:
           deny:
             - pkg: github.com/wailsapp/wails
               desc: "application services cannot import Wails; inject a callback at root"
-            - pkg: github.com/secureprospective/TheWarRoom$
-              desc: "services cannot import the root composition package"
 
         # Shared set: report and season. Unknown features default to shared-only imports;
         # declare their own subtree below when extracting a feature (including tests).

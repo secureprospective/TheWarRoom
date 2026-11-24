@@ -127,7 +127,6 @@ func prepareFiles(ctx context.Context, dir, bin string) error {
 	commands := [][]string{
 		{"openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:P-256", "-nodes", "-keyout", filepath.Join(dir, "server.key"), "-out", filepath.Join(dir, "server.pem"), "-days", "1", "-subj", "/CN=Disposable loopback", "-addext", "subjectAltName=IP:127.0.0.1"},
 		{"go", "build", "-tags", "practice", "-o", filepath.Join(dir, "twr-server"), "./cmd/twr-server"},
-		{"go", "build", "-tags", "webkit2_41", "-o", filepath.Join(dir, "thewarroom"), "."},
 	}
 	if bin != "" {
 		if err := copyBinaries(dir, bin); err != nil {
@@ -172,7 +171,7 @@ func awaitAddress(ctx context.Context, dir string) (string, error) {
 }
 
 func copyBinaries(dir, bin string) error {
-	for _, name := range []string{"twr-server", "thewarroom"} {
+	for _, name := range []string{"twr-server"} {
 		source := filepath.Join(bin, name)
 		file, err := os.Open(source)
 		if err != nil {

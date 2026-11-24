@@ -9,14 +9,13 @@
 # it (or a bare short SHA before the first), matching only release tags so an
 # archive/* tag never becomes a version. `--dirty` marks an uncommitted
 # tree so an unreleased build can never masquerade as a clean tag. These flow
-# into the `composition.version/commit/buildDate` vars via `-ldflags -X` (version.go).
-# A plain `go build` / `wails dev` leaves the vars at their "dev" defaults —
+# into the server and CLI `main.version/commit/buildDate` vars via `-ldflags -X`.
+# A plain `go build` leaves the vars at their "dev" defaults —
 # deliberately visibly distinct from a stamped release.
 VERSION    := $(shell git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo dev)
 COMMIT     := $(shell git rev-parse --short HEAD 2>/dev/null)
 BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-PKG        := github.com/secureprospective/TheWarRoom/internal/composition
-LDFLAGS    := -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).buildDate=$(BUILD_DATE)
+LDFLAGS    := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildDate=$(BUILD_DATE)
 
 # ifaceguard — custom go/analysis vettool flagging empty-interface
 # (interface{}/any) escapes in EXPORTED signatures — the one gap no enabled
@@ -114,26 +113,10 @@ verify: lint
 	cd frontend && pnpm test && pnpm run build && node scripts/bundle-budget.mjs && node scripts/csp-check.mjs && node scripts/csp-browser-check.mjs
 	@set -eu; trap 'scripts/stage-webapp.sh --clean' EXIT; scripts/stage-webapp.sh; go test -race -timeout $(GO_TEST_TIMEOUT) ./...
 
-# Desktop shell. Wails embeds the built frontend; before the frontend is wired
-# substitute `go build ./...`. The build stamp is injected here (see LDFLAGS).
-# WAILS_TAGS defaults to webkit2_41 — the Alpha target is WebKitGTK 4.1 (Wails'
-# bare default links 4.0, absent on the build/gate machines). Override for a
-# 4.0 host: `make build WAILS_TAGS=`  (Beta distro-matrix concern, docketed).
-WAILS_TAGS ?= webkit2_41
+# The server and CLI, stamped (see LDFLAGS). The desktop shell was removed in desktop-removal PR-D;
+# releases ship through deploy/server/goreleaser.yaml with the same stamp.
 build:
-	wails build -tags "$(WAILS_TAGS)" -ldflags "$(LDFLAGS)"; status=$$?; chmod 0644 frontend/wailsjs/runtime/*; exit $$status
-
-.PHONY: bindings bindings-fresh
-bindings-fresh:
-	scripts/check-bindings-fresh.sh
-
-bindings:
-	wails generate module; status=$$?; chmod 0644 frontend/wailsjs/runtime/*; exit $$status
-
-# dev is intentionally UNstamped — the "dev" var defaults make a `wails dev`
-# binary read as a dev build in the UI, which is the point.
-dev:
-	wails dev
+	go build -ldflags "$(LDFLAGS)" -o build/bin/ ./cmd/twr-server ./cmd/twr
 
 # ── Release (D-V4) ────────────────────────────────────────────────────────────
 # Tags a version off already-gated main. There is NO separate release gate: the
