@@ -36,6 +36,9 @@ hosted-command e2e plus a live Lab check where a server command changes. Then me
 - **Watcher:** `~/fleet/bin/run-watch.sh`. Arm it when lanes run, and stop it when they finish.
 - **Briefs:** the previous briefs are in `~/fleet/runs/overnight-twr-1123/briefs/` (format to copy). New briefs go to
   `~/fleet/runs/gaps-1124/briefs/`. Each one carries done lines, quoted rulings, assumption flags and "what the owner sees".
+- **11-24 10:40 Christopher:** "lean more into luna, gemini is getting a tad thin, save it for multi file only".
+- **Luna pattern seen 11-24:** never hangs, but quits after ~1 slice and over-reports ("tests pass" when broken, "no
+  server twin" when there was one, quits on heavy-ok). Always verify claims; after 2 misses Tom finishes it.
 - **Protect context:** read lane REPORT.md files and diffs by `--stat` first, then only the hunks that need
   review. Use scout/Explore subagents for wide reads.
 
@@ -66,22 +69,23 @@ hosted-command e2e plus a live Lab check where a server command changes. Then me
 - Phone study and mocks after Dec 6 (T700).
 - Phone alerts design.
 
-## 5. Gates / status (11-24 ~10:25 AM CT)
-Run dir: `~/fleet/runs/gaps-1124/` (PLAN.md, briefs/, REPORT.md event log, merge/). Watcher: `~/fleet/bin/run-watch.sh wait ~/fleet/runs/gaps-1124 50` (background; re-arm every turn).
+## 5. Gates / status (11-24 1:45 PM CT)
+Run dir: `~/fleet/runs/gaps-1124/` (briefs/, REPORT.md event log, merge/). Watcher: `~/fleet/bin/run-watch.sh wait ~/fleet/runs/gaps-1124 50` (background; re-arm every turn; exit 143 = replaced, ignore).
 | Item | State |
 |---|---|
-| **Merge authority** | Christopher 10:00 AM: "merge four PRs when green" = #494 #495 #496 #497 ONLY |
-| #494 desktop step 1 | MERGED 10:15 AM |
-| #496 pincache (+ Tom lock fix 75b09e30e) | conflicted on generated line baseline; main merged in locally (6990e4930); v2 merge job pushes + merges when green |
-| #497 sleeper step 1 (+ Tom fixes) | in v2 merge queue |
-| #495 canary `cmd/twr-canary` | in v2 merge queue |
-| v2 merge job | `~/fleet/runs/gaps-1124/merge/merge-when-green2.sh 496 497 495`; log `merge/merge.log`; done = `merge/exit`; auto-resolves ONLY line-baseline conflicts |
-| schedtimer (`-nfl-schedule-refresh`) | session/pulse-schedtimer eaa2a155f, Tom fixes (advancePin race, per-league timeout, no panic), mutant caught. Not pushed, NOT in merge OK. Merge main in after #496/#497 (football_pins.go, hosted.go), push, PR, ask Christopher |
-| sbplayoff (bracket to champion) | Gemini 7531f8632 on session/pulse-sbplayoff, all done lines met, test/docs only. Tom: own mutant, untrack notes, push, PR, ask merge OK |
-| seasonsetup kit | session/pulse-seasonsetup 33c5a001a, parked (laptop later). Not pushed |
-| Lab | v72 = 60ebd21fe before merges; auto-release each merge; hold Dec 1 + game windows |
+| Merge authority | OK given for #494-#505 (all PRs so far). Nothing else. |
+| MERGED | #494 desktop 1, #495 canary, #496 pincache, #497 Sleeper, #498 playoff test, #500 NFL schedule timer (+ Sleeper opt-in file), #501 MFL money in cents |
+| Merge job (running) | `merge/merge-when-green2.sh 499 502 505 503 504` started ~1:40 PM from `.worktrees/pulse-sbplayoff`; log `merge/merge.log`; done = `merge/exit`; watcher name `merge6`. Auto-resolves ONLY line-baseline conflicts; anything else is logged "left open" |
+| #499 desktop step 2.1 | MFL separation test (server twin), updated for cents after #501 |
+| #502 | twr-server hosted refuses a second copy (flock on `<db>.lock`, in hosted.go) |
+| #503 | docs: catalogue-preview-undo.md (134 write cmds: 97 both, 11 neither, 12 no undo, 14 no preview; 7 G3 draft-room cmds no undo) |
+| #504 | desktop step 3 (PR-C): desktop CI out; prepush keeps `make bindings` on purpose |
+| #505 | official stats built once per football version (GATE 3 leftover 2) |
+| Lab | v77 = 5097adb50 (#500); `/etc/twr/sleeper-projections` and `/etc/twr/nfl-schedule-refresh` ON since 1:00 PM; first run 1:02 PM ok (schedule weeks=1 revised=5 errors=0; Sleeper current+next week). Auto-release per merge; hold Dec 1 + game windows |
+| Desktop step 2.2 | no PR needed: every server restore behaviour already tested (`gaps-1124/desktopb2-restore-coverage.md`) |
 | Season server | untouched (laptop later) |
-| Hooks | commands mixing `git commit -F` and `git push` trip the force-push guard; heredocs with `git merge` while the main checkout is on main trip the main guard. Split calls; write scripts with Write |
+| Luna lanes | none running |
+| Parked | seasonsetup kit (session/pulse-seasonsetup 33c5a001a, not pushed) |
 
 ## 6. Artifacts
 - Gap list: `docs/reset/GAPS-1124.md`.
@@ -116,16 +120,16 @@ Run dir: `~/fleet/runs/gaps-1124/` (PLAN.md, briefs/, REPORT.md event log, merge
   the next suffix is `bak-1124c`.
 
 ## 10. Next actions, in order
-1. `run-watch.sh status ~/fleet/runs/gaps-1124`; read `merge/merge.log`; re-arm the wait.
-2. sbplayoff: plant own mutant (wrong expected champion), untrack HANDOFF.md/REPORT.md, push, PR, ask merge OK.
-3. schedtimer: after #496/#497 land, merge main in, `go test -race ./cmd/twr-server -run NFLSchedule`, push, PR, ask merge OK.
-4. After merges: Lab check (twr-status "Everything is working"); Sleeper flag on for the Lab before Thu Dec 3 (twr-sandbox flag-file line like schedtimer's); install twr-canary on Hermes vs a Lab canary league; tracker green/red.
-5. Desktop step 2 (PR-B parity tests) per docs/architecture/desktop-removal-plan.md; check hosted import covers league.migrate.* before PR-D; PR-F needs Christopher.
-6. Phase B/C as section 4. Laptop installer task on Hermes Task_list (~line 429).
+1. `run-watch.sh status ~/fleet/runs/gaps-1124`; read `merge/merge.log`; re-arm the wait. Handle any "left open" PR by hand (merge main in with `merge/update-branch.sh <worktree>`, fix, push).
+2. After each merge: Lab auto-release; check `ssh -F .worktrees/pulse-a010s/.scratch/ssh-lab.conf lab pct exec 260 -- /usr/local/libexec/twr-status` says "Everything is working"; tracker card + log line.
+3. Next Luna lanes (one slice each): Sleeper projection-vs-actual log before Thu Dec 3; install twr-canary on Hermes against a Lab canary league (Tom ops); desktop PR-D (check hosted import covers league.migrate.* first); offline commands (upgrade, restore-league, league-load) take the #502 lock (careful: join-link/seat-link may run while the server runs).
+4. Phase B/C as section 4: wall plan T689 (week of Nov 30), history import spec, 10/12/16 leagues, rollback drill, token renewal by Dec 22, phone study after Dec 6, alerts, native chat.
+5. Clean up finished worktrees (pulse-desktopb2 has only RESULT.md; others after merge) and `golangci-lint cache clean`.
 
 ## 11. Needs Christopher
-- Merge OKs as PRs land (none waiting now). The docs PR for `session/resume-1124` is not opened yet.
-- Sat 11-28: Season server setup, with his OK on each command.
+- Nothing waiting: merge OKs given through #505.
+- Product call later (from #503): give the commissioner draft-room commands an undo rule before an outside league?
+- Sat 11-28: no Season server setup now (Lab hosts the Dec 1 drafts).
 
 ## 12. Environment notes
 - Force-push is blocked by a hook: merge main in, then push normally.
@@ -135,6 +139,4 @@ Run dir: `~/fleet/runs/gaps-1124/` (PLAN.md, briefs/, REPORT.md event log, merge
 - Write commit messages with `git commit -F <file>` (don't combine it with `-m`).
 
 ## 13. Honest status
-11-24 10:25: Phase A all built; four PRs merging. Luna high ~1 slice per run; Gemini Neon High took canary and playoffs after two Luna misses each. Every lane had real review finds.
-Planning is done. Nothing in Phase A has started, and no build is running. The ETA for Phase A is about 1–2 days of
-lanes plus review. A4 depends on the Sleeper address still answering (unverified since 11-22).
+11-24 1:45 PM: Phase A built and merged except #499/#502-#505 (merge job running). Lab v77 healthy with both new jobs on. Every Luna lane needed Tom to finish or fix it; review caught real owner-visible bugs (MFL panel losing salary lines, mis-scaled tests). Unproven: official-stats grouping on the live Lab (needs a finished NFL week with `-official-stats`); Sleeper accuracy log not built.
