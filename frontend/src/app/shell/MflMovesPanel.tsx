@@ -269,8 +269,8 @@ function BidForm({ call, pool, roster, saved }: { call: Call; pool: PoolRow[]; r
   const [drop, setDrop] = useState('');
   const [verdict, setVerdict] = useState<Verdict>();
   const [message, setMessage] = useState('');
-  const body = () => ({ add, amountCents: Math.round(Number(amount) * 100), ...(years ? { years: Number(years) } : {}),
-    ...(drop ? { drop: [drop] } : {}) });
+  const body = () => ({ add, amountCents: Math.round(Number(amount) * 100),
+    ...(years ? { years: Number(years) } : {}), ...(drop ? { drop: [drop] } : {}) });
   const check = async () => {
     setMessage('');
     try { setVerdict(parseVerdict(await call('mflmoves.bid.check', 'read', body()), false)); }
