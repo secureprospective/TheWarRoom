@@ -211,6 +211,9 @@ func mflMovesWorkflows() map[string]WorkflowCommand {
 		leagueservice.MflMovesRefresh: workflowInputCommand[leagueservice.RawMflMovesScope, *leagueservice.RawMflMovesScope]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflMovesScope) (json.RawMessage, error) {
 			return workflowJSON(s.MflMovesRefreshContext(ctx, input))
 		}),
+		leagueservice.MflMovesRosterRead: workflowInputCommand[leagueservice.RawMflMovesScope, *leagueservice.RawMflMovesScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflMovesScope) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesRosterReadContext(ctx, input))
+		}),
 		leagueservice.MflMovesPoolRead: workflowInputCommand[leagueservice.RawMflPoolScope, *leagueservice.RawMflPoolScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflPoolScope) (json.RawMessage, error) {
 			return workflowJSON(s.MflMovesPoolReadContext(ctx, input))
 		}),

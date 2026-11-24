@@ -262,7 +262,7 @@ func acquisitionLimits(out *AcquisitionView, s mflwhatif.WhatIfSession, before, 
 	if s.Cap != nil {
 		out.Team = append(out.Team, Figure("Cap room this season", *s.Cap-before, *s.Cap-after))
 	}
-	out.Reasons = append(out.Reasons, nativecheck.AcquisitionReasons(s.Cap, after, active)...)
+	out.Reasons = append(out.Reasons, nativecheck.AcquisitionReasons(s.Cap, after, active, nativecheck.InSeasonBounds())...)
 }
 
 func acquisitionCut(ctx context.Context, r RawAcquisition, current, store *state.Store, incomingID string, out *AcquisitionView) error {

@@ -277,7 +277,7 @@ type workflowOutput interface {
 		leagueservice.NFLPlayerStatus |
 		leagueservice.PlayerNewsReading | leagueservice.NewsFeedReading | commissioner.NativeCapCheck |
 		market.ContractQuote | market.WhatIfStack | market.ContractDecisions | leagueservice.DraftQueue |
-		leagueservice.PlayerNotes | leagueservice.PlayerWatchList | leagueservice.PlayerPrivateChange | leagueservice.MflRefresh | leagueservice.MflTeams | leagueservice.MflPool | leagueservice.MflBidCheck | leagueservice.MflLineupCheck | leagueservice.MflPlan | leagueservice.MflPlans | leagueservice.MflPlanLink |
+		leagueservice.PlayerNotes | leagueservice.PlayerWatchList | leagueservice.PlayerPrivateChange | leagueservice.MflRefresh | leagueservice.MflTeams | leagueservice.MflPool | leagueservice.MflRoster | leagueservice.MflBidCheck | leagueservice.MflLineupCheck | leagueservice.MflPlan | leagueservice.MflPlans | leagueservice.MflPlanLink |
 		leagueservice.TradeDraftList | leagueservice.SavedTradeDraft | leagueservice.TradeDraftDeleted |
 		leagueservice.BackupResult | accounts.HomeLayoutState | commissioner.LeagueActivity |
 		commissioner.ProblemReportReceipt | commissioner.ProblemReportsReading |

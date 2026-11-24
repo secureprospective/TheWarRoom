@@ -101,6 +101,7 @@ func playerPersonalNativeReads() []Command {
 			Modes: []Mode{Read}, Undo: "none", Facts: "private-player-data",
 			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
 		ownerPrivateCommand(leagueservice.MflMovesTeamsRead, "MflMovesTeamsRead", reflect.TypeFor[leagueservice.RawMflMovesScope](), Read, "G0", "none", privatePlayerData()),
+		ownerPrivateCommand(leagueservice.MflMovesRosterRead, "MflMovesRosterRead", reflect.TypeFor[leagueservice.RawMflMovesScope](), Read, "G0", "none", privatePlayerData()),
 		ownerPrivateCommand(leagueservice.MflMovesPoolRead, "MflMovesPoolRead", reflect.TypeFor[leagueservice.RawMflPoolScope](), Read, "G0", "none", privatePlayerData()),
 		ownerPrivateCommand(leagueservice.MflMovesBidCheck, "MflMovesBidCheck", reflect.TypeFor[leagueservice.RawMflBidCheck](), Read, "G0", "none", privatePlayerData()),
 		ownerPrivateCommand(leagueservice.MflMovesLineupCheck, "MflMovesLineupCheck", reflect.TypeFor[leagueservice.RawMflLineupCheck](), Read, "G0", "none", privatePlayerData()),

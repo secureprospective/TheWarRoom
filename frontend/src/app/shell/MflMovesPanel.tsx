@@ -15,7 +15,7 @@ type Pool = { rows: PoolRow[]; positions: string[]; sorts: string[]; ageSeconds:
 type Plan = { id: string; kind: string; state: string; words: string; canDone: boolean;
   canWithdraw: boolean };
 type Verdict = { ok: boolean; words: string; problems: string[] };
-export type MflRosterPlayer = { id: string; name: string };
+type MflRosterPlayer = { id: string; name: string; position: string; status: string };
 
 const NO_LEAGUE = /no MFL league/i;
 const NO_LEAGUE_LINE = 'This league does not follow an MFL league yet. The commissioner sets "MFL league number" in league settings.';
@@ -47,6 +47,10 @@ function parsePool(data: unknown): Pool {
     rows: list(row.rows).map(r => ({ id: str(r.id), name: str(r.name), position: str(r.position),
       team: str(r.team), age: str(r.age), minimum: str(r.minimum), value: str(r.value) })) };
 }
+function parseRoster(data: unknown): MflRosterPlayer[] {
+  return list(obj(data).players).map(p => ({ id: str(p.id), name: str(p.name), position: str(p.position),
+    status: str(p.status) }));
+}
 function parsePlans(data: unknown): Plan[] {
   return list(obj(data).plans).map(p => ({ id: str(p.id), kind: str(p.kind), state: str(p.state),
     words: str(p.words), canDone: p.canDone === true, canWithdraw: p.canWithdraw === true }));
@@ -62,8 +66,8 @@ const box = 'rounded border border-neutral-700 p-3 mb-3';
 const btn = 'rounded border border-neutral-500 px-2 py-1 text-sm disabled:opacity-50';
 const field = 'ml-2 rounded border border-neutral-600 bg-transparent px-1 py-0.5';
 
-export default function MflMovesPanel({ league, roster = [], week, port = hostedWorkflow }: {
-  league: string; roster?: MflRosterPlayer[]; week?: number; port?: HostedPort;
+export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
+  league: string; week?: number; port?: HostedPort;
 }) {
   const [state, setState] = useState<'loading' | 'no-league' | 'pick' | 'main'>('loading');
   const [teams, setTeams] = useState<Team[]>([]);
@@ -71,6 +75,7 @@ export default function MflMovesPanel({ league, roster = [], week, port = hosted
   const [note, setNote] = useState('');
   const [pool, setPool] = useState<Pool>();
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [roster, setRoster] = useState<MflRosterPlayer[]>([]);
   const [position, setPosition] = useState('');
   const [sort, setSort] = useState('');
 
@@ -108,8 +113,11 @@ export default function MflMovesPanel({ league, roster = [], week, port = hosted
     let live = true;
     readPool().catch(e => { if (live) setError(say(e)); });
     readPlans().catch(e => { if (live) setError(say(e)); });
+    // The drop and starter lists are the owner's MFL team, not this app's roster.
+    call('mflmoves.roster.read', 'read').then(r => { if (live) setRoster(parseRoster(r)); })
+      .catch(e => { if (live) setError(say(e)); });
     return () => { live = false; };
-  }, [state, readPool, readPlans]);
+  }, [state, readPool, readPlans, call]);
 
   const pickTeam = async (team: string) => {
     setError('');
@@ -222,7 +230,7 @@ function BidForm({ call, pool, roster, saved }: { call: Call; pool: PoolRow[]; r
       onChange={e => setYears(e.target.value)} /></label>
     <fieldset><legend>Drops</legend>{roster.map(p => <label key={p.id} className="mr-3">
       <input type="checkbox" checked={drop.includes(p.id)} onChange={e => setDrop(d => e.target.checked
-        ? [...d, p.id] : d.filter(x => x !== p.id))} />{p.name}</label>)}</fieldset>
+        ? [...d, p.id] : d.filter(x => x !== p.id))} />{p.name}{p.position && ` · ${p.position}`}{p.status !== 'active' && ` (${p.status})`}</label>)}</fieldset>
     <button className={btn} disabled={!add || !amount} onClick={() => { void check(); }}>Check</button>{' '}
     <button className={btn} disabled={!add || !amount} onClick={() => { void save(); }}>Save plan</button>
     {message && <p role="status">{message}</p>}<Verdicts v={verdict} /></div>;
@@ -251,7 +259,7 @@ function LineupForm({ call, roster, week, saved }: { call: Call; roster: MflRost
       onChange={e => setWk(e.target.value)} /></label>
     <fieldset><legend>Starters</legend>{roster.map(p => <label key={p.id} className="mr-3">
       <input type="checkbox" checked={starters.includes(p.id)} onChange={e => setStarters(s => e.target.checked
-        ? [...s, p.id] : s.filter(x => x !== p.id))} />{p.name}</label>)}</fieldset>
+        ? [...s, p.id] : s.filter(x => x !== p.id))} />{p.name}{p.position && ` · ${p.position}`}{p.status !== 'active' && ` (${p.status})`}</label>)}</fieldset>
     <button className={btn} disabled={!wk || starters.length === 0} onClick={() => { void check(); }}>
       Check</button>{' '}
     <button className={btn} disabled={!wk || starters.length === 0} onClick={() => { void save(); }}>

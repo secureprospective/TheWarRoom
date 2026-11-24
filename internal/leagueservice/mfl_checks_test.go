@@ -35,7 +35,7 @@ func mflDefaultLeagueData(active int) mflmirror.LeagueData {
 		rows = append(rows, mflmirror.RosterRow{Franchise: "0001", Player: fmt.Sprintf("9%03d", i), Salary: 50_000_00,
 			ContractYear: 2026, Status: "ROSTER"})
 	}
-	config, _ := json.Marshal(league.RawConfig{SalaryCapAmount: "10", IncludeTaxiWithSalary: "0", IncludeIRWithSalary: "50",
+	config, _ := json.Marshal(league.RawConfig{SalaryCapAmount: "10", RosterSize: "48", InjuredReserve: "12", TaxiSquad: "8", IncludeTaxiWithSalary: "0", IncludeIRWithSalary: "50",
 		Starters: league.Starters{Count: "3", Positions: []league.PositionLimit{{Name: "QB", Limit: "1"},
 			{Name: "RB", Limit: "1"}, {Name: "WR", Limit: "1"}}}})
 	return mflmirror.LeagueData{Rosters: rows, Byes: map[string]int{"MIA": 9, "BUF": 12}, Config: config}
@@ -120,8 +120,51 @@ func TestMflBidCheckRosterSizeAfterDrops(t *testing.T) {
 	small := mflDefaultLeagueData(20)
 	f2 := mflOwnerFixture(t, &small)
 	below, err := f2.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f2.league, Add: "0531", Amount: 1_000_000})
-	if err != nil || !hasProblem(below.Problems, "35-player") {
-		t.Fatalf("below minimum = %+v, %v", below, err)
+	// MFL names no roster minimum, so none is invented: the check says it did not look.
+	if err != nil || hasProblem(below.Problems, "in-season minimum") || !hasProblem(below.NotChecked, "no roster minimum") {
+		t.Fatalf("below 35 = %+v, %v", below, err)
+	}
+}
+
+// config is a copy of the default league whose rules change by the given edit.
+func mflLeagueWith(active int, edit func(*league.RawConfig)) mflmirror.LeagueData {
+	data := mflDefaultLeagueData(active)
+	var c league.RawConfig
+	_ = json.Unmarshal(data.Config, &c)
+	edit(&c)
+	data.Config, _ = json.Marshal(c)
+	return data
+}
+
+func TestMflBidCheckUsesTheLeaguesOwnRosterSize(t *testing.T) {
+	// 25 active players is under the desktop's 48 but a 26th is over this league's 25.
+	data := mflLeagueWith(25, func(c *league.RawConfig) { c.RosterSize = "25" })
+	f := mflOwnerFixture(t, &data)
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000})
+	if err != nil || got.ActiveAfter != 26 || !hasProblem(got.Problems, "fit 25 active roster spots") {
+		t.Fatalf("26 active in a 25-player league = %+v, %v", got, err)
+	}
+	fits, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000, Drop: []string{"1001"}})
+	if err != nil || hasProblem(fits.Problems, "active roster spots") {
+		t.Fatalf("a drop makes room = %+v, %v", fits, err)
+	}
+}
+
+func TestMflBidCheckWithNoRosterSizeSaysItDidNotLook(t *testing.T) {
+	data := mflLeagueWith(60, func(c *league.RawConfig) { c.RosterSize = "" })
+	f := mflOwnerFixture(t, &data)
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000})
+	if err != nil || hasProblem(got.Problems, "active roster spots") || !hasProblem(got.NotChecked, "no roster size") {
+		t.Fatalf("no roster size = %+v, %v", got, err)
+	}
+}
+
+func TestMflBidCheckFlagsReserveSlotsOverTheLeagueLimit(t *testing.T) {
+	data := mflLeagueWith(30, func(c *league.RawConfig) { c.InjuredReserve = "0"; c.TaxiSquad = "0" })
+	f := mflOwnerFixture(t, &data)
+	got, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000})
+	if err != nil || !hasProblem(got.Problems, "injured reserve holds 1") || !hasProblem(got.Problems, "taxi squad holds 1") {
+		t.Fatalf("reserve limits = %+v, %v", got, err)
 	}
 }
 
@@ -393,6 +436,13 @@ func TestMflBidCheckGivesTheDesktopVerdict(t *testing.T) {
 		if c.After != 0 && int64(got.CapUsedAfter) != c.After || got.ActiveAfter != c.Active {
 			t.Fatalf("%s: hosted cap after %d, active %d; golden %d, %d", c.Name, got.CapUsedAfter, got.ActiveAfter, c.After, c.Active)
 		}
+		if len(c.Reasons) == 1 && strings.Contains(c.Reasons[0], "in-season minimum") {
+			// The desktop holds a fixed 35; MFL names no minimum, so the hosted check leaves it out and says so.
+			if hasProblem(got.Problems, "in-season minimum") || !hasProblem(got.NotChecked, "no roster minimum") {
+				t.Fatalf("%s: hosted invented a minimum: %+v", c.Name, got)
+			}
+			continue
+		}
 		shared := []string{}
 		for _, p := range got.Problems {
 			if strings.HasPrefix(p, "The add ") || strings.HasPrefix(p, "The roster ") {
@@ -428,5 +478,67 @@ func TestMflPlanLinkRefusesAnAddressOffMfl(t *testing.T) {
 	}
 	if link, err := f.service.MflMovesPlanLinkContext(ctx, RawMflPlanScope{League: f.league, Plan: "lineup-planted"}); err == nil {
 		t.Fatalf("a link off MFL was returned: %+v", link)
+	}
+}
+
+func TestMflRosterReadGivesThePickedTeamsRoster(t *testing.T) {
+	f := mflOwnerFixture(t, nil)
+	got, err := f.service.MflMovesRosterReadContext(t.Context(), RawMflMovesScope{League: f.league})
+	if err != nil || got.Team != "0001" {
+		t.Fatalf("roster = %+v, %v", got, err)
+	}
+	status := map[string]string{}
+	for _, p := range got.Players {
+		status[p.ID] = p.Status
+		if p.ID == "1001" && (p.Name != "Quinn QB" || p.Position != "QB" || p.Team != "BUF" || p.Salary != 100_000_00 || p.ContractThrough != 2027) {
+			t.Fatalf("player 1001 = %+v", p)
+		}
+	}
+	if status["1005"] != "IR" || status["1006"] != "taxi" || status["1008"] != "active" {
+		t.Fatalf("statuses = %v", status)
+	}
+	if _, other := status["1007"]; other {
+		t.Fatal("another team's player is on my roster")
+	}
+}
+
+func TestMflRosterReadNeedsAPickedTeamAndRefusesARequestFranchise(t *testing.T) {
+	f := newMflMovesFixture(t, "owner.one")
+	if _, err := f.service.MflMovesRefreshContext(t.Context(), RawMflMovesScope{League: f.league}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.service.MflMovesRosterReadContext(t.Context(), RawMflMovesScope{League: f.league}); err == nil ||
+		!strings.Contains(err.Error(), "Pick your MFL team first") {
+		t.Fatalf("no team: %v", err)
+	}
+	if _, err := f.service.MflMovesRosterReadContext(t.Context(), RawMflMovesScope{League: f.league, Franchise: "franchise.02"}); err == nil {
+		t.Fatal("a request naming a franchise was accepted")
+	}
+}
+
+func TestMflLineupPlanSupersedesTheOlderPlanForTheSameWeek(t *testing.T) {
+	f := mflOwnerFixture(t, nil)
+	save := func(week int, ids ...string) MflPlan {
+		t.Helper()
+		plan, err := f.service.MflMovesPlanSaveContext(t.Context(), RawMflPlanSave{League: f.league, Kind: "lineup",
+			Body: planBody(map[string]any{"week": week, "starters": ids})})
+		if err != nil {
+			t.Fatalf("save week %d: %v", week, err)
+		}
+		return plan
+	}
+	first := save(3, "1001", "1002", "1003")
+	otherWeek := save(4, "1001", "1002", "1003")
+	second := save(3, "1001", "1002", "1008")
+	plans, err := f.service.MflMovesPlansReadContext(t.Context(), RawMflMovesScope{League: f.league})
+	if err != nil {
+		t.Fatal(err)
+	}
+	live := map[string]bool{}
+	for _, p := range plans.Plans {
+		live[p.ID] = p.CanWithdraw
+	}
+	if live[first.ID] || !live[second.ID] || !live[otherWeek.ID] {
+		t.Fatalf("first week-3 plan still live=%v, newer=%v, week 4=%v", live[first.ID], live[second.ID], live[otherWeek.ID])
 	}
 }

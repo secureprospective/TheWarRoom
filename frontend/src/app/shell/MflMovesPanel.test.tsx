@@ -13,6 +13,10 @@ const pool = { rows: [{ id: '100', name: 'Runner One', position: 'RB', team: 'BU
 const plan = (over: object) => ({ id: 'p1', kind: 'bid', state: 'ready', words: 'Bid $5 on Runner One.',
   canDone: true, canWithdraw: true, ...over });
 
+const mflRoster = { players: [
+  { id: '1001', name: 'Quinn QB', position: 'QB', team: 'BUF', status: 'active' },
+  { id: '1005', name: 'Ira Injured', position: 'WR', team: 'PHI', status: 'IR' }] };
+
 function port(over: Record<string, (args: Record<string, unknown>) => unknown> = {}) {
   return vi.fn<HostedPort>(async request => {
     const handler = over[request.command];
@@ -21,11 +25,11 @@ function port(over: Record<string, (args: Record<string, unknown>) => unknown> =
       case 'mflmoves.teams.read': return reply({ ...teams, yours: '0001' });
       case 'mflmoves.pool.read': return reply(pool);
       case 'mflmoves.plans.read': return reply({ plans: [] });
+      case 'mflmoves.roster.read': return reply(mflRoster);
       default: throw new Error(`unexpected ${request.command}`);
     }
   });
 }
-const roster = [{ id: '100', name: 'Mine One' }];
 
 it('says one line when the league has no MFL number', async () => {
   const p = vi.fn<HostedPort>(async () => { throw new Error('this league follows no MFL league yet; set it'); });
@@ -61,7 +65,7 @@ it('says the held copy age and that MFL was not asked again', async () => {
 
 it('shows the server problems for a bid check', async () => {
   const p = port({ 'mflmoves.bid.check': () => ({ ok: false, words: 'Not ready.', problems: ['This leaves you $2 over the cap.'] }) });
-  const host = await mount(render(MflMovesPanel, { league: 'L', roster, port: p }));
+  const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
   await flush();
   await type(control(host, 'Player'), '100');
   await type(control(host, 'Amount'), '5');
@@ -87,4 +91,16 @@ it('opens only the server URL and hides buttons that are not allowed', async () 
   await flush();
   expect(open).toHaveBeenCalledTimes(1);
   expect(open.mock.calls[0][0]).toBe('https://www.myfantasyleague.com/x');
+});
+
+it('drop list shows the MFL roster from roster.read', async () => {
+  const p = port();
+  const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
+  await flush();
+  expect(p).toHaveBeenCalledWith(expect.objectContaining({ command: 'mflmoves.roster.read',
+    arguments: { league: 'L' } }));
+  const drops = (label: string) => all(host, 'fieldset').filter(f => f.textContent?.startsWith(label))[0];
+  expect(drops('Drops').textContent).toContain('Quinn QB');
+  expect(drops('Drops').textContent).toContain('Ira Injured');
+  expect(drops('Starters').textContent).toContain('Quinn QB');
 });

@@ -38,12 +38,14 @@ import type { ReactNode } from 'react';
 const MflMovesPanel = lazy(() => import('./MflMovesPanel'));
 
 export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded,
-  tab: activeTab, navigate, canManage = true, onPlayers, v3, openGame }: {
+  tab: activeTab, navigate, canManage = true, onPlayers, v3, openGame, mflMoves = false }: {
   league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void;
   embedded?: boolean; canManage?: boolean; tab?: HostedHQTab; navigate?: (tab: HostedHQTab) => void;
   onPlayers?: (players: PlayerCandidate[]) => void;
   /** Draw in the desktop v3 frame: its tab strip, plate and board, with this league's badge. */
   v3?: { badge: ReactNode; kind: string; pickTeam?: (id: string) => void }; openGame?: () => void;
+  /** Show My MFL moves: on the hosted franchise screens only, never in local desktop mode. */
+  mflMoves?: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [localTab, setLocalTab] = useState<HostedHQTab>('lineup-and-roster');
@@ -106,9 +108,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     const playerName = decisions.players.find(p => p.player === selection.player)?.name ?? selection.player;
     void editor.room.review(request, `Record ${selection.action.replace('_', ' ')} for ${playerName}`);
   };
-  const mflRoster = roster.map(p => ({ id: p.id, name: snapshot.players.value.find(v => v.id === p.id)?.name ?? p.id }));
   const mflPanel = <Suspense fallback={<p role="status">Opening My MFL moves…</p>}>
-    <MflMovesPanel league={league} roster={mflRoster} week={reading.week} port={port} /></Suspense>;
+    <MflMovesPanel league={league} week={reading.week} port={port} /></Suspense>;
   const teamName = snapshot.franchises.value.find(f => f.id === mine)?.name ?? name;
   const others = <>
     <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
@@ -126,7 +127,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       league={league} mine={mine} port={port} cut={cut?.player === selected ? cut : undefined}
       close={() => setDrawer(undefined)} />}</>;
   if (v3) return <>
-    <HQTabs tab={tab} navigate={setTab} badge={v3.badge} kind={v3.kind} moves={moves.length}
+    <HQTabs tab={tab} navigate={setTab} badge={v3.badge} kind={v3.kind} moves={moves.length} mflMoves={mflMoves}
       pick={v3.pickTeam && <TeamPick mine={mine} pick={v3.pickTeam}
         teams={snapshot.franchises.value.map(f => ({ id: f.id, name: f.name ?? f.id }))} />} />
     {!mine ? <div className="wbody"><div className="st"><div className="eng">Choose a franchise above. As
@@ -137,7 +138,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
         select={openCard} chosen={selected} whatIf={() => setDrawer('whatif')}
         release={canManage ? () => { if (selected) setRelease(selected); } : undefined}
         decide={canManage && reading.contractDecisions ? () => setDrawer('decide') : undefined} />
-      : tab === 'mfl-moves' ? <div className="wbody">{mflPanel}</div>
+      : mflMoves && tab === 'mfl-moves' ? <div className="wbody">{mflPanel}</div>
       : <HQMovesV3 snapshot={snapshot} moves={moves}
         available={reading.moves !== undefined && reading.moveReason !== OWNER_ONLY_MOVES}
         reason={reading.moveReason} badge={v3.badge} history={<HQMoveHistory
@@ -145,7 +146,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
           league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} />}
     {others}</>;
   const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab as HQTab} navigate={setTab}
-    mflMoves={{ selected: tab === 'mfl-moves', open: () => setTab('mfl-moves') }}
+    mflMoves={mflMoves ? { selected: tab === 'mfl-moves', open: () => setTab('mfl-moves') } : undefined}
     week={reading.week}
     leagueName={reading.leagueName}
     navigateNode={node => { if (node !== 'hq') leave(node); }} lock={reading.lock ? { at: reading.lock } :
@@ -189,7 +190,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
         contractDecisions={reading.contractDecisions} decisionReady={editor.canEdit} decide={reviewDecision}
         cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player, cut.deadNow]])}
         select={id => { select(id); setRelease(id); }} />
-        : tab === 'mfl-moves' ? mflPanel
+        : mflMoves && tab === 'mfl-moves' ? mflPanel
         : <HQMoves native snapshot={snapshot} moves={moves} available={reading.moves !== undefined}
           reason={reading.moveReason} history={<HQMoveHistory
             key={JSON.stringify([league, mine, snapshot.league.value.season])}

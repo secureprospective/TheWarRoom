@@ -8568,6 +8568,25 @@ export const serverCommands = {
   },
   phrase: "read mflmoves teams",
 },
+"mflmoves.roster.read": {
+  definition: {
+    "ID": "mflmoves.roster.read",
+    "Method": "MflMovesRosterRead",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "server",
+    "Permission": "franchise-owner",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "private-player-data",
+    "Safeguards": "authenticated seated franchise; no request franchise; uncached private entries",
+    "Arguments": schema347
+  },
+  phrase: "read mflmoves roster",
+},
 "mflmoves.pool.read": {
   definition: {
     "ID": "mflmoves.pool.read",

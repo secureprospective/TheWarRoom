@@ -2914,6 +2914,7 @@ export type WorkflowArgumentMap = {
 "mflmoves.plan.withdraw": NativeArguments<"mflmoves.plan.withdraw">;
 "player.watch.read": NativeArguments<"player.watch.read">;
 "mflmoves.teams.read": NativeArguments<"mflmoves.teams.read">;
+"mflmoves.roster.read": NativeArguments<"mflmoves.roster.read">;
 "mflmoves.pool.read": NativeArguments<"mflmoves.pool.read">;
 "mflmoves.bid.check": NativeArguments<"mflmoves.bid.check">;
 "mflmoves.lineup.check": NativeArguments<"mflmoves.lineup.check">;

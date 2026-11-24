@@ -282,6 +282,7 @@ export type EndpointId =
   | "S-24"
   | "S-25"
   | "S-26"
+  | "S-27"
 ;
 export type Placement =
   | "Home › Overview"
@@ -5248,6 +5249,23 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     ring: 4,
     status: "planned",
     disposition_note: "Ends a plan that is still only planned; a step marked done stays on record.",
+    merged_into: Object.freeze([] as const),
+    merged_place: "",
+  } as const),
+  Object.freeze({
+    id: "S-27",
+    source: "shell",
+    name: "My MFL roster",
+    kind: "Read",
+    gm_question: "Who is on my MFL team?",
+    gravity: "G0",
+    clock: "none",
+    placement: places[8],
+    verb: "mflmoves.roster.read",
+    disposition: "kept",
+    ring: 4,
+    status: "planned",
+    disposition_note: "Reads the held roster of the MFL team you picked, never MFL; your seat only.",
     merged_into: Object.freeze([] as const),
     merged_place: "",
   } as const),

@@ -181,11 +181,7 @@ func (v view) saveLineup(ctx context.Context, store *moves.Store, body json.RawM
 		return mflmirror.Plan{}, err
 	}
 	if !check.OK {
-		words := []string{}
-		for _, p := range check.Problems {
-			words = append(words, p.Message)
-		}
-		return mflmirror.Plan{}, fmt.Errorf("this lineup has problems, so it was not saved: %s", strings.Join(words, " "))
+		return mflmirror.Plan{}, lineupRefusal(check)
 	}
 	config, err := v.config()
 	if err != nil {
@@ -213,10 +209,50 @@ func (v view) saveLineup(ctx context.Context, store *moves.Store, body json.RawM
 		}
 		return mflmirror.Plan{}, fmt.Errorf("this lineup is not ready, so it was not saved: %s", note)
 	}
+	// One live lineup plan per week, as on the desktop: this one supersedes the owner's older planned one.
+	if err := v.supersedeLineups(ctx, store, e); err != nil {
+		return mflmirror.Plan{}, fmt.Errorf("replace the older lineup plan: %w", err)
+	}
 	if err := store.Save(ctx, e); err != nil {
 		return mflmirror.Plan{}, fmt.Errorf("save the plan: %w", err)
 	}
 	return v.planView(e.Receipt(), envelope.BidFacts{}), nil
+}
+
+func lineupRefusal(check mflmirror.LineupCheck) error {
+	words := []string{}
+	for _, p := range check.Problems {
+		words = append(words, p.Message)
+	}
+	return fmt.Errorf("this lineup has problems, so it was not saved: %s", strings.Join(words, " "))
+}
+
+// supersedeLineups moves the owner's older planned lineup for the same week to Stale, as the desktop does.
+// Only a plan still waiting to be done competes; a step already marked done stays on record. (The desktop's
+// own SupersedeMoves lives in a package this one may not import.)
+func (v view) supersedeLineups(ctx context.Context, store *moves.Store, next envelope.Envelope) error {
+	spec := next.Receipt().Spec
+	receipts, err := store.List(ctx, v.League, v.Franchise)
+	if err != nil {
+		return fmt.Errorf("list your plans: %w", err)
+	}
+	for _, r := range receipts {
+		if r.Spec.Intent != spec.Intent || r.State != envelope.Ready || r.Spec.Expected.Lineup.Week != spec.Expected.Lineup.Week {
+			continue
+		}
+		old, err := store.Get(ctx, r.CorrelationID)
+		if err != nil {
+			return fmt.Errorf("load the older plan: %w", err)
+		}
+		stale, err := old.Invalidate(v.Now.UTC(), "superseded by "+next.ID())
+		if err != nil {
+			return fmt.Errorf("replace the older plan: %w", err)
+		}
+		if err := store.Save(ctx, stale); err != nil {
+			return fmt.Errorf("save the replaced plan: %w", err)
+		}
+	}
+	return nil
 }
 
 // seatSnapshot is the held snapshot with the picked MFL team's roster scoped to the seat, as plans are.

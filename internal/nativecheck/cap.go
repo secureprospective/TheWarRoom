@@ -259,25 +259,26 @@ func checkedCapMoney(value *big.Int) (domain.Money, error) {
 	return domain.Money(value.Int64()), nil
 }
 
-// The in-season active roster bounds the acquisition preview and the hosted bid check hold an add to.
-const (
-	MaxActiveRoster = 48
-	MinActiveRoster = 35
-)
+// RosterBounds are the active roster sizes an acquisition is held to; 0 means no bound is known.
+type RosterBounds struct{ Min, Max int }
+
+// InSeasonBounds are the desktop acquisition preview's fixed in-season active roster bounds.
+func InSeasonBounds() RosterBounds { return RosterBounds{Min: 35, Max: 48} }
 
 // AcquisitionReasons says what is wrong with a roster after one add: the cap used after it against the
-// salary cap (nil when MFL names none) and the active player count after it. The desktop acquisition
-// preview and the hosted bid check both read it, so the same inputs give the same words.
-func AcquisitionReasons(salaryCap *domain.Money, capAfter domain.Money, active int) []string {
+// salary cap (nil when MFL names none) and the active player count after it against the bounds. The
+// desktop acquisition preview (InSeasonBounds) and the hosted bid check (the MFL league's own) both read it,
+// so the same inputs give the same words.
+func AcquisitionReasons(salaryCap *domain.Money, capAfter domain.Money, active int, bounds RosterBounds) []string {
 	out := []string{}
 	if salaryCap != nil && capAfter > *salaryCap {
 		out = append(out, "The add does not fit the salary cap; choose a cut and inspect its dead cap.")
 	}
-	if active > MaxActiveRoster {
-		out = append(out, "The add needs a cut to fit 48 active roster spots.")
+	if bounds.Max > 0 && active > bounds.Max {
+		out = append(out, fmt.Sprintf("The add needs a cut to fit %d active roster spots.", bounds.Max))
 	}
-	if active < MinActiveRoster {
-		out = append(out, "The roster is below the 35-player in-season minimum.")
+	if bounds.Min > 0 && active < bounds.Min {
+		out = append(out, fmt.Sprintf("The roster is below the %d-player in-season minimum.", bounds.Min))
 	}
 	return out
 }

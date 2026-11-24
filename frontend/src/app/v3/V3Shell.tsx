@@ -172,7 +172,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
         ? keep(<Suspense
           fallback={<div className="st"><div className="eng">Opening Franchise HQ…</div></div>}>
           <NativeFranchiseHQ key={`${L.id}:${hqTeam[L.id] || L.franchise || ''}`} league={L.id}
-            mine={hqTeam[L.id] || L.franchise || ''} name={L.franchiseName ?? ''} port={port} embedded
+            mine={hqTeam[L.id] || L.franchise || ''} name={L.franchiseName ?? ''} port={port} embedded mflMoves
             tab={hqTab} navigate={setHqTab} canManage={(hqTeam[L.id] || L.franchise) === L.franchise}
             leave={home} openGame={() => { setPulseTab('now'); open(L, 'pulse'); }}
             v3={{ badge: <Badge L={L} />, kind: roleWords(L).toUpperCase(), pickTeam: L.commish

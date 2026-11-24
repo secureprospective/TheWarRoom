@@ -158,12 +158,54 @@ func (v view) bidCheck(in mflmirror.BidInput) mflmirror.BidCheck {
 		room := *salaryCap - after
 		out.CapRoomAfter = &room
 	}
-	out.Problems = append(out.Problems, nativecheck.AcquisitionReasons(salaryCap, after, active)...)
+	bounds, boundNotes := v.rosterBounds()
+	out.NotChecked = append(out.NotChecked, boundNotes...)
+	out.Problems = append(out.Problems, nativecheck.AcquisitionReasons(salaryCap, after, active, bounds)...)
+	out.Problems = append(out.Problems, v.reserveProblems(roster, dropped)...)
 	out.Problems, out.NotChecked = v.bidRules(facts, years, salary, out.Problems, out.NotChecked)
 	out.OK = len(out.Problems) == 0
 	out.Words = "This bid fits your cap and roster."
 	if !out.OK {
 		out.Words = "This bid has problems; fix them before you plan it."
+	}
+	return out
+}
+
+// rosterBounds is the league's own active roster size from MFL's rules. MFL names a maximum (rosterSize,
+// which leaves IR and the taxi squad out) and no minimum, so a missing figure is listed as not checked.
+func (v view) rosterBounds() (nativecheck.RosterBounds, []string) {
+	c, _ := v.config()
+	notes := []string{"MFL names no roster minimum, so the minimum roster size was not checked."}
+	size, err := strconv.Atoi(strings.TrimSpace(c.RosterSize))
+	if err != nil || size <= 0 {
+		return nativecheck.RosterBounds{}, append(notes, "MFL names no roster size for this league, so the roster maximum was not checked.")
+	}
+	return nativecheck.RosterBounds{Max: size}, notes
+}
+
+// reserveProblems flags an injured reserve or taxi squad that already holds more than the league's slots; a
+// bid cannot fix it, but MFL will not accept moves from a team over its limits.
+func (v view) reserveProblems(roster map[string]mflmirror.RosterRow, dropped map[string]bool) []string {
+	c, _ := v.config()
+	var ir, taxi int
+	for id, r := range roster {
+		if dropped[id] {
+			continue
+		}
+		switch rosterStatus(r.Status) {
+		case domain.RosterIR:
+			ir++
+		case domain.RosterTaxi:
+			taxi++
+		case domain.RosterActive:
+		}
+	}
+	out := []string{}
+	if slots, err := strconv.Atoi(strings.TrimSpace(c.InjuredReserve)); err == nil && slots >= 0 && ir > slots {
+		out = append(out, fmt.Sprintf("Your injured reserve holds %d players but the league allows %d.", ir, slots))
+	}
+	if slots, err := strconv.Atoi(strings.TrimSpace(c.TaxiSquad)); err == nil && slots >= 0 && taxi > slots {
+		out = append(out, fmt.Sprintf("Your taxi squad holds %d players but the league allows %d.", taxi, slots))
 	}
 	return out
 }

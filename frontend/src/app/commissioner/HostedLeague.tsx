@@ -130,7 +130,7 @@ export default function HostedLeague(props: {
         leave={openNode} onPlayer={openPlayer} onPlayers={publishPulsePlayers} />
     : screen === 'hq' ? <Suspense fallback={<p>Opening your franchise…</p>}>
         <NativeFranchiseHQ key={`${props.league}:${props.franchise}`} league={props.league}
-          mine={props.franchise} name={props.name} port={props.port} embedded
+          mine={props.franchise} name={props.name} port={props.port} embedded mflMoves
           tab={route.workspace as HostedHQTab} navigate={workspace => setRoute({ node: 'hq', workspace })}
           leave={openNode} onPlayers={publishHQPlayers} />
       </Suspense>
