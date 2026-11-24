@@ -366,6 +366,13 @@ func runPinFootball(ctx context.Context, args []string, output io.Writer) error 
 	if *socket != "" {
 		return pinRunning(ctx, *socket, pinRequest{League: *league, Football: *digest}, output)
 	}
+	if *socket == "" {
+		lock, err := lockStoppedServer(*path)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = lock.Close() }()
+	}
 	if err := checkHostedDatabase(*path, 0); err != nil {
 		return err
 	}

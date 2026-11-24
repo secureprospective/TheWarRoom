@@ -62,6 +62,11 @@ func runRestoreLeague(ctx context.Context, args []string, input io.Reader, outpu
 	if !validLeagueID(*league) {
 		return fmt.Errorf("%q is not a league id", *league)
 	}
+	lock, err := lockStoppedServer(*path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Close() }()
 	identity, config, before, err := parseRestoreInput(input)
 	if err != nil {
 		return err
