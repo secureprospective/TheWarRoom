@@ -23,13 +23,14 @@ import (
 	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
-// binaryBox is the real twr-server (practice build) running in a temp directory with a fake clock file and an
-// official-statistics directory (cmd/twr-server/clock_practice.go), and twr connected to it as an owner's agent.
+// binaryBox is the real twr-server (practice build) running in a temp directory with a fake clock file,
+// live-frames directory and official-statistics directory (cmd/twr-server/clock_practice.go), and twr
+// connected to it as an owner's agent.
 type binaryBox struct {
-	dir, clockFile, officialDir string
-	at                          time.Time
-	env                         env
-	out                         *bytes.Buffer
+	dir, clockFile, liveDir, officialDir string
+	at                                   time.Time
+	env                                  env
+	out                                  *bytes.Buffer
 }
 
 // setClock writes the server's fake clock; the server reads it plus the wall time since the write.
@@ -77,6 +78,40 @@ func (b *binaryBox) useOfficial(t *testing.T, weekly string) {
 		if err := os.Rename(temp, filepath.Join(b.officialDir, to)); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// useLiveFrame puts one recorded ESPN summary frame where the server's practice live job reads it.
+func (b *binaryBox) useLiveFrame(t *testing.T, bodies map[string][]byte, name string) {
+	t.Helper()
+	body, ok := bodies[name]
+	if !ok {
+		t.Fatalf("missing replay frame %s", name)
+	}
+	temp := filepath.Join(b.liveDir, name+".tmp")
+	if err := os.WriteFile(temp, body, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(temp, filepath.Join(b.liveDir, name)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// awaitProvisional polls results.read via twr read until franchise.01's week-1 provisional points satisfy ok.
+func (b *binaryBox) awaitProvisional(t *testing.T, ok func(int64) bool) int64 {
+	t.Helper()
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		var results commissioner.NativeResults
+		b.read(t, "results.read", map[string]int{"season": 2026, "week": 1}, &results)
+		if score, found := franchiseScore(results, "franchise.01"); found && score.Provisional != nil && score.Points == nil && ok(int64(*score.Provisional)) {
+			return int64(*score.Provisional)
+		}
+		if time.Now().After(deadline) {
+			log, _ := os.ReadFile(filepath.Join(b.dir, "server.log"))
+			t.Fatalf("franchise.01 week 1 provisional points never moved; server log:\n%s", log)
+		}
+		time.Sleep(150 * time.Millisecond)
 	}
 }
 
@@ -139,6 +174,12 @@ func seedBinaryBox(t *testing.T, dir string) (string, accounts.AgentToken) {
 	if _, err := store.ExecuteCommissioner(ctx, boxLineup(assets.Revision, "box.lineup", "0099"), string(principal), nil); err != nil {
 		t.Fatalf("record franchise.01 lineup: %v", err)
 	}
+	if _, err := store.LinkPlayerIDs(ctx, "dynastyprocess", []history.PlayerIDLink{
+		{IDType: "espn", IDValue: "4360310", PlayerID: "0099"},
+		{IDType: "gsis", IDValue: "00-0000099", PlayerID: "0099"},
+	}); err != nil {
+		t.Fatalf("link replay quarterback ids: %v", err)
+	}
 	human, err := accounts.NewSessions(accounts.New(credentials), credentials).Login(ctx, raw, "season box")
 	if err != nil {
 		t.Fatal(err)
@@ -164,15 +205,19 @@ func boxLineup(expected int64, request string, starters ...string) commissioner.
 func startBinaryBox(t *testing.T) *binaryBox {
 	t.Helper()
 	dir := t.TempDir()
-	b := &binaryBox{dir: dir, clockFile: filepath.Join(dir, "clock"), officialDir: filepath.Join(dir, "official"), out: &bytes.Buffer{}}
+	b := &binaryBox{dir: dir, clockFile: filepath.Join(dir, "clock"), liveDir: filepath.Join(dir, "live"), officialDir: filepath.Join(dir, "official"), out: &bytes.Buffer{}}
 	if err := os.Chmod(dir, 0o700); err != nil { //nolint:gosec // G302: directories need owner traversal.
 		t.Fatal(err)
 	}
 	// The practice build insists on a private disposable layout (cmd/twr-server/backup_practice.go).
-	for _, name := range []string{"official", "home", "config", "data", "cache", "runtime"} {
+	for _, name := range []string{"live", "official", "home", "config", "data", "cache", "runtime"} {
 		if err := os.Mkdir(filepath.Join(dir, name), 0o700); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// The recorded ESPN summaries are week 9; replay them as league week 1 (same as TestSeasonInABoxSpike).
+	if err := os.WriteFile(filepath.Join(b.liveDir, "week"), []byte("1\n"), 0o600); err != nil {
+		t.Fatal(err)
 	}
 	server := filepath.Join(dir, "twr-server")
 	key, pem := filepath.Join(dir, "server.key"), filepath.Join(dir, "server.pem")
@@ -211,7 +256,7 @@ func startBinaryBox(t *testing.T) *binaryBox {
 	child := exec.CommandContext(ctx, server, "hosted", "-football", digest, "-db", db, "-listen", "127.0.0.1:0",
 		"-tls-cert", pem, "-tls-key", key, "-totp-key-file", filepath.Join(dir, "authenticator.key"),
 		"-preview-registry", filepath.Join(dir, "registry.csv"), "-official-stats")
-	child.Env = append(os.Environ(), "TWR_PRACTICE_CLOCK_FILE="+b.clockFile, "TWR_PRACTICE_OFFICIAL_DIR="+b.officialDir)
+	child.Env = append(os.Environ(), "TWR_PRACTICE_CLOCK_FILE="+b.clockFile, "TWR_PRACTICE_LIVE_DIR="+b.liveDir, "TWR_PRACTICE_OFFICIAL_DIR="+b.officialDir)
 	child.Stdout, child.Stderr = log, log
 	if err := child.Start(); err != nil {
 		t.Fatal(err)
@@ -252,8 +297,9 @@ func awaitOrigin(t *testing.T, logPath string) string {
 }
 
 // TestSeasonInABoxBinary is the season box against the real twr-server binary (B4): a subprocess on a temp port
-// and temp data, a fake clock it obeys, official statistics replayed from testdata/official by the server's own
-// official job, and every league action through twr. Draft and live frames stay in TestSeasonInABoxSpike.
+// and temp data, a fake clock it obeys, live frames replayed from testdata/live-week9.tar.gz by the server's
+// practice live job, official statistics replayed from testdata/official by the server's own official job, and
+// every league action through twr. Draft stays in TestSeasonInABoxSpike.
 func TestSeasonInABoxBinary(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds and runs the twr-server binary")
@@ -289,6 +335,14 @@ func TestSeasonInABoxBinary(t *testing.T) {
 	}
 	t.Log("STEP 4 lineup lock held by the binary after the fake clock passed kickoff: the preview names \"locked at kickoff\"")
 
+	// STEP 5 live frames: recorded ESPN summaries replayed from disk; twr read sees provisional points move.
+	frames := replayFrames(t)
+	b.useLiveFrame(t, frames, "espn-401873037-synthetic-01-progress.json")
+	first := b.awaitProvisional(t, func(p int64) bool { return p > 0 })
+	b.useLiveFrame(t, frames, "espn-401873037-synthetic-02-progress.json")
+	second := b.awaitProvisional(t, func(p int64) bool { return p > first })
+	t.Logf("STEP 5 live scores move (twr read): franchise.01 %d -> %d (provisional, frames 01 -> 02)", first, second)
+
 	// STEP 6 final: the clock passes week 1's games; the server's official job pins the files on its own.
 	b.setClock(t, b.at.Add(6*time.Hour))
 	b.useOfficial(t, "stats_player_week_2026.csv.gz")
@@ -308,6 +362,6 @@ func TestSeasonInABoxBinary(t *testing.T) {
 		regressed(t, 8, "standings need a ruling: "+standings.Words)
 	}
 	t.Logf("STEP 8 standings.read: status %q, %d decided, %d pending", standings.Status, standings.Decided, standings.Pending)
-	notReached(t, 2, "binary box: draft and live frames run only in-process (TestSeasonInABoxSpike); "+
-		"the binary has no live replay feed (-live-replay-dir) and owner picks are refused at the door (B7)")
+	notReached(t, 2, "binary box: draft runs only in-process (TestSeasonInABoxSpike); "+
+		"owner picks are refused at the door (B7)")
 }

@@ -379,6 +379,9 @@ func startHostedLive(
 	publisher scoresPublisher,
 	games *leagueservice.LiveGames,
 ) (func(), <-chan struct{}) {
+	if stop, restored, ok := startPracticeLive(ctx, pins, publisher, games); ok {
+		return stop, restored
+	}
 	scope, cancel := context.WithCancel(ctx)
 	done, linked, restored := make(chan struct{}), make(chan struct{}), make(chan struct{})
 	go func() {

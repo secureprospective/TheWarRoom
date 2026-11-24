@@ -263,3 +263,11 @@ func serverClock() leagueservice.DueClock { return leagueservice.NewHostClock() 
 func officialSource(network officialFiles) (officialFiles, time.Duration, time.Duration) {
 	return network, officialFirst, officialRefresh
 }
+
+// startPracticeLive is absent from release builds: the practice live-frames variable (clock_practice.go)
+// is never read here.
+func startPracticeLive(
+	_ context.Context, _ *leaguePins, _ scoresPublisher, _ *leagueservice.LiveGames,
+) (func(), <-chan struct{}, bool) {
+	return nil, nil, false
+}
