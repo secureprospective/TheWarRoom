@@ -24,6 +24,23 @@ Run time (`time go test ./cmd/twr -run TestSeasonInABoxSpike -count=1`, warm cac
 
 Values in the test log are the engine's fixed-point numbers (10,000 per point): `235000` is 23.5 points.
 
+## Playoffs
+
+`TestSeasonInABoxPlayoff` uses the same hosted binary, CLI, fake clock and synthetic official files. The first
+read gate is unresolved conference assignment; it does not use commissioner/store internals for playoff commands.
+
+| # | Playoff step | How it runs | Status |
+|---|---|---|---|
+| 1 | Probe bracket build | `twr preview` sends `bracket.build` through the hosted workflow command path | reached (preview only) |
+| 2 | Read bracket status | `twr read bracket.read` through the hosted handler | reached: Needs a ruling |
+| 3 | Build bracket and seed from final standings | blocked by the exact hosted read refusal: `Needs a ruling: which conference the division "Practice division 1" is in` | NOT REACHED |
+| 4 | Score one playoff week and advance | requires a built/seeded bracket; no playoff score or advance was attempted | NOT REACHED |
+| 5 | Decide championship and name champion | requires playoff advancement; no final or champion was attempted | NOT REACHED |
+
+`bracket.build` has a hosted preview door. The shared fixture has no conference assignment for its practice
+divisions, so the real read cannot construct a ranked playoff field; after that is resolved, its one scheduled
+regular-season week (against thirteen required by the rules) is another gate. No rehearsal playoffs are substituted.
+
 ## Real versus faked
 
 Real: the hosted HTTP handler (`serverhttp.Hosted`, TLS, token scope, workflow door), the draft rules and calendar gate (`NativeActionGate`) and the pick checks inside `RecordDraftPick` (seat, turn, rookie pool, roster, cap), the `twr` cobra commands and

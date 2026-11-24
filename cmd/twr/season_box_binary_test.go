@@ -412,7 +412,7 @@ func seedBinaryBoxAuth(
 	twrScope := accounts.RawTokenScope{
 		League: "native.hosted", Franchise: "franchise.01", Modes: []string{"read", "preview"},
 		Commands: []string{"results.read", "standings.read", "commish.ledger.read", "native.assets.read",
-			"native.directory.read", "nfl.games.read", commissioner.LineupSet},
+			"native.directory.read", "nfl.games.read", "bracket.read", commissioner.BracketBuild, commissioner.BracketAdvance, commissioner.LineupSet},
 	}
 	token, err := tokens.Issue(ctx, commish.RawSession, twrScope)
 	if err != nil {

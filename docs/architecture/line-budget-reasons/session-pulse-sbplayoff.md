@@ -1,0 +1,1 @@
+The season box now probes playoff build/read on the hosted command path and records the actual blocker, rather than claiming playoff proof from unit tests. The focused integration test and its status table are worth the measured 37 documentation and 69 Go-test lines; production code does not grow.
