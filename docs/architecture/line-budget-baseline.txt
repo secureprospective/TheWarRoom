@@ -4,7 +4,7 @@ docs	53714
 frontend-generated	5272
 frontend-src	77229
 frontend-tests	46952
-go-prod	174816
+go-prod	174853
 go-prod/cmd/twr	1053
 go-prod/cmd/twr-check	508
 go-prod/cmd/twr-server	9956
@@ -16,7 +16,7 @@ go-prod/internal/archive	310
 go-prod/internal/commandcatalog	3108
 go-prod/internal/commissioner	31857
 go-prod/internal/composition	4989
-go-prod/internal/db	3663
+go-prod/internal/db	3681
 go-prod/internal/deepclone	103
 go-prod/internal/domain	324
 go-prod/internal/engine	3804
@@ -37,9 +37,9 @@ go-prod/internal/leagueweek	142
 go-prod/internal/lineupdelta	192
 go-prod/internal/m2service	575
 go-prod/internal/measures	718
-go-prod/internal/mfl	574
+go-prod/internal/mfl	577
 go-prod/internal/mflkey	138
-go-prod/internal/mflmirror	1631
+go-prod/internal/mflmirror	1647
 go-prod/internal/mflref	2184
 go-prod/internal/model	2437
 go-prod/internal/modelrun	685
@@ -65,6 +65,6 @@ go-prod/internal/transactions	2046
 go-prod/root	25
 go-prod/scripts	56
 go-prod/tools	2212
-go-test	117652
+go-test	117746
 go-testdata	41047
 other	38521

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -94,7 +95,8 @@ type Held struct {
 type Store struct {
 	pools *db.Pools
 	now   func() time.Time
-	mu    sync.Mutex // single-flight: one refresh at a time
+	mu    sync.Mutex  // single-flight: one refresh at a time
+	ready atomic.Bool // the tables are known to exist
 }
 
 func NewStore(pools *db.Pools, now func() time.Time) *Store {
@@ -118,9 +120,20 @@ func (s *Store) ensure(ctx context.Context) error {
 	if s == nil || s.pools == nil {
 		return errors.New("MFL mirror storage unavailable")
 	}
-	if _, err := s.pools.Write().ExecContext(ctx, schema); err != nil {
-		return fmt.Errorf("mflmirror: create tables: %w", err)
+	if s.ready.Load() {
+		return nil
 	}
+	ok, err := s.pools.TablesExist(ctx, "mfl_mirror_franchises", "mfl_mirror_league", "mfl_mirror_team",
+		"mfl_mirror_hold", "mfl_mirror_players")
+	if err != nil {
+		return fmt.Errorf("mflmirror: %w", err)
+	}
+	if !ok {
+		if _, err := s.pools.Write().ExecContext(ctx, schema); err != nil {
+			return fmt.Errorf("mflmirror: create tables: %w", err)
+		}
+	}
+	s.ready.Store(true)
 	return nil
 }
 

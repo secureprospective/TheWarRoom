@@ -78,10 +78,13 @@ func (t *onceLeagueTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return resp, err //nolint:wrapcheck // transport errors pass through unchanged.
 	}
-	body, rerr := io.ReadAll(resp.Body)
+	body, rerr := io.ReadAll(io.LimitReader(resp.Body, mfl.MaxBodyBytes+1))
 	_ = resp.Body.Close()
 	if rerr != nil {
 		return nil, fmt.Errorf("read MFL league export: %w", rerr)
+	}
+	if len(body) > mfl.MaxBodyBytes {
+		return nil, fmt.Errorf("read MFL league export: %w: over %d bytes", mfl.ErrBodyTooLarge, mfl.MaxBodyBytes)
 	}
 	t.url, t.body, t.header = key, body, resp.Header.Clone()
 	resp.Body = io.NopCloser(bytes.NewReader(body))

@@ -121,3 +121,27 @@ func TestMirrorTeamChoiceIsKeyedBySeatAndHeldList(t *testing.T) {
 		t.Fatal("a choice made for one MFL league applies to another")
 	}
 }
+
+// Once the mirror tables exist, a read never queues for the single writer (a busy writer
+// must not stall an owner's MFL screen).
+func TestMirrorReadSkipsWriterOnceTablesExist(t *testing.T) {
+	now := time.Date(2026, 11, 24, 12, 0, 0, 0, time.UTC)
+	store := newTestStore(t, &now)
+	ctx := context.Background()
+	if _, _, err := store.Read(ctx, "14432"); err != nil {
+		t.Fatal(err)
+	}
+	busy, err := store.Pools().Write().BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = busy.Rollback() })
+	short, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	defer cancel()
+	if _, _, err := store.Read(short, "14432"); err != nil {
+		t.Fatalf("read waited on the busy writer: %v", err)
+	}
+	if _, _, err := store.Team(short, "franchise.01", "14432"); err != nil {
+		t.Fatalf("team read waited on the busy writer: %v", err)
+	}
+}
