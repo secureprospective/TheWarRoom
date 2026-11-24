@@ -1,0 +1,1 @@
+standings.read freezes its encoded body once (like #487 did for results) and reads the ledger once per request instead of three times: 163 us to 70 us per read, same answer bytes. Adds standings_frozen.go and its same-answer tests.
