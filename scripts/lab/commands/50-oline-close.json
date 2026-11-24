@@ -1,0 +1,1 @@
+{"league":"@LEAGUE@","command":"oline.auction.close","args":{},"reason":"Practice draft: close the O-Line auction","request":"oline-close-@SLUG@","effective":"now","visibility":"league"}
