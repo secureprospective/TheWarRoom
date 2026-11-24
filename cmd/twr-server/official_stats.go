@@ -14,6 +14,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -63,6 +64,7 @@ type officialKeeper struct {
 	files     officialFiles
 	now       func() time.Time
 	logf      func(string, ...any)
+	build     func(context.Context, serverhttp.LeaguePin, history.OfficialSeason) (history.OfficialPin, error) // tests count builds
 }
 
 func startOfficialStats(ctx context.Context, pins *leaguePins, signIns *accountstore.Store) func() {
@@ -89,12 +91,17 @@ func startOfficialStats(ctx context.Context, pins *leaguePins, signIns *accounts
 	return func() { cancel(); <-done }
 }
 
-// pass reads each season some league is pinned to once, and offers it to every league on that season.
+// pass reads each season some league is pinned to once. Leagues on the same football version get the official
+// statistics built once for that version, and each league then moves from the version it was seen on.
 func (k *officialKeeper) pass(ctx context.Context) {
-	bySeason := map[int][]string{}
+	bySeason := map[int]map[string][]string{} // season -> football digest -> leagues
 	for _, league := range k.pins.files.leagues() {
 		if pin := k.pins.pin(ctx, league); pin.Err == nil && pin.Football != nil {
-			bySeason[pin.Football.Season()] = append(bySeason[pin.Football.Season()], league)
+			season := pin.Football.Season()
+			if bySeason[season] == nil {
+				bySeason[season] = map[string][]string{}
+			}
+			bySeason[season][pin.Digest] = append(bySeason[season][pin.Digest], league)
 		}
 	}
 	links, err := k.directory.SourceIDs(ctx, "gsis")
@@ -109,36 +116,55 @@ func (k *officialKeeper) pass(ctx context.Context) {
 			continue
 		}
 		at := k.now()
-		for _, league := range bySeason[season] {
-			k.offer(ctx, league, files, links, at)
+		for _, digest := range slices.Sorted(maps.Keys(bySeason[season])) {
+			k.offer(ctx, digest, bySeason[season][digest], files, links, at)
 		}
 	}
 }
 
-// offer gives one league official statistics, pinning it to the new evidence when there is any.
-func (k *officialKeeper) offer(ctx context.Context, league string, files seasonFiles, links map[string]string, at time.Time) {
-	pin := k.pins.pin(ctx, league)
-	if pin.Err != nil || pin.Football == nil {
+// offer builds official statistics once for the leagues on football version from, then pins each of them to the
+// new evidence. A league a commissioner re-pinned meanwhile keeps its own choice (advancePin).
+func (k *officialKeeper) offer(ctx context.Context, from string, leagues []string, files seasonFiles, links map[string]string, at time.Time) {
+	var pin serverhttp.LeaguePin
+	for _, league := range leagues { // any league still on from builds it; the rest were re-pinned meanwhile
+		if pin = k.pins.pin(ctx, league); pin.Err == nil && pin.Football != nil && pin.Digest == from {
+			break
+		}
+	}
+	if pin.Football == nil || pin.Digest != from {
 		return
 	}
 	in, err := officialSeason(files, links, at)
 	if err != nil {
-		k.logf("server official stats %s: %v", league, err)
+		k.logf("server official stats %s: %v", strings.Join(leagues, ", "), err)
 		return
 	}
-	got, err := pin.Store.PinOfficialStats(ctx, pin.Football, in)
+	got, err := k.buildOfficial(ctx, pin, in)
 	if err != nil {
-		k.logf("server official stats %s: %v", league, err)
+		k.logf("server official stats %s: %v", strings.Join(leagues, ", "), err)
 		return
 	}
 	if got.Digest == "" {
 		return
 	}
-	if err := k.pins.advancePin(ctx, k.signIns, league, pin.Digest, got.Digest); err != nil {
-		k.logf("server official stats %s: %v", league, err)
-		return
+	for _, league := range leagues {
+		if err := k.pins.advancePin(ctx, k.signIns, league, from, got.Digest); err != nil {
+			k.logf("server official stats %s: %v", league, err)
+			continue
+		}
+		k.logf("server official stats %s: pinned %s with official weeks %v%s", league, got.Digest, got.Weeks, skipped(got.Skipped))
 	}
-	k.logf("server official stats %s: pinned %s with official weeks %v%s", league, got.Digest, got.Weeks, skipped(got.Skipped))
+}
+
+func (k *officialKeeper) buildOfficial(ctx context.Context, pin serverhttp.LeaguePin, in history.OfficialSeason) (history.OfficialPin, error) {
+	if k.build != nil {
+		return k.build(ctx, pin, in)
+	}
+	got, err := pin.Store.PinOfficialStats(ctx, pin.Football, in)
+	if err != nil {
+		return got, fmt.Errorf("build official statistics: %w", err)
+	}
+	return got, nil
 }
 
 func skipped(why []string) string {
