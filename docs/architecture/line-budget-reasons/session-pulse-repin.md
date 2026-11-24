@@ -1,0 +1,1 @@
+The 45-line increase groups official-stat builds by season and starting digest, then advances each league conditionally. This prevents repeating identical expensive parsing/build work while preserving commissioner re-pin safety.
