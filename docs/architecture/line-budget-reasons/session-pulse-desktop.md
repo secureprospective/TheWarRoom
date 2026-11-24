@@ -1,0 +1,1 @@
+T710 Step 0 records the 60ebd21fe desktop-removal plan and keep-list, and PR-A moves nativegen's command-shape registry into internal/commandcatalog so nativegen drops its internal/composition and internal/app/commissioner imports ahead of removing ~43.8k desktop lines in PR-D..I.

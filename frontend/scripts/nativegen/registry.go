@@ -4,11 +4,10 @@ import (
 	"fmt"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
-	"github.com/secureprospective/TheWarRoom/internal/composition"
 )
 
 func registryCommands(door catalog.Door) ([]catalog.Command, error) {
-	registry, err := composition.CommandRegistry()
+	registry, err := catalog.GenerationRegistry()
 	if err != nil {
 		return nil, fmt.Errorf("bind generation registry: %w", err)
 	}
@@ -24,7 +23,7 @@ func registryCommands(door catalog.Door) ([]catalog.Command, error) {
 }
 
 func registryServerWorkflowCommands() ([]catalog.Command, error) {
-	registry, err := composition.CommandRegistry()
+	registry, err := catalog.GenerationRegistry()
 	if err != nil {
 		return nil, fmt.Errorf("bind server workflow registry: %w", err)
 	}
@@ -38,7 +37,7 @@ func registryServerWorkflowCommands() ([]catalog.Command, error) {
 }
 
 func registryBrowserCommands() ([]catalog.BrowserCommand, error) {
-	registry, err := composition.CommandRegistry()
+	registry, err := catalog.GenerationRegistry()
 	if err != nil {
 		return nil, fmt.Errorf("bind browser registry: %w", err)
 	}
