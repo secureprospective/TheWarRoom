@@ -1,5 +1,5 @@
 # Resume — overnight run 11-23/24 (Claude Opus head brain on the Beelink) — CLOSED
-Updated 2026-11-24 06:45 CT. Run folder: `~/fleet/runs/overnight-twr-1123/` (REPORT.md: closing summary on top, full log below).
+Updated 2026-11-24 07:25 CT. Run folder: `~/fleet/runs/overnight-twr-1123/` (REPORT.md: closing summary on top, full log below).
 
 ## 1. What we did
 We worked the pickup note's five steps (docs/from-tom/2026-11-23-twr-pickup.md, branch session/resume-1123e).
@@ -7,7 +7,7 @@ Repo: `~/work/TheWarRoom`. Lab: `ssh -F ~/work/TheWarRoom/.worktrees/pulse-a010s
 
 ## 2. Done looks like
 1. **MET.** #487 merged and carried by the Lab (now v70, faa12dd1e).
-2. **MET, waiting for Christopher's OK.** The MFL helper is PR #489, ready, CI 7/7 green on 541fb783f. It was observed
+2. **MET.** The MFL helper is PR #489, merged as a99d18c84 and live on the Lab as v71. It was observed
    working on the real Lab server in `~/fleet/runs/mfllive2-1124/`, `mfllive3-1124/` and `mfllive4-1124/`.
 3. **MET.** standings.read is 2.3x faster: #488 merged.
 4. **MET.** The load test was rerun on v68 and v70 (`<run>/load2/RESULT.md`).
@@ -26,8 +26,8 @@ Repo: `~/work/TheWarRoom`. Lab: `ssh -F ~/work/TheWarRoom/.worktrees/pulse-a010s
 | Item | State |
 |---|---|
 | #488, #490, #491, #492 | MERGED 11-24 ~04:00 on Christopher's OK |
-| #489 My MFL moves (session/mfl-helper-build, 541fb783f) | ready, CI green, mergeable; waits for OK |
-| #493 `twr workflow` (session/pulse-twrwf, f868585e8) | open, CI green, mergeable; waits for OK |
+| #489 My MFL moves | MERGED a99d18c84 (Lab v71) |
+| #493 `twr workflow` | MERGED 60ebd21fe |
 | Lab CT 260 | v70 faa12dd1e, twr-status all OK at 12:17 UTC |
 
 ## 5. Artifacts
@@ -61,14 +61,12 @@ None open on #489. Known limits are listed in the PR body:
 Everything is committed and pushed. Nothing is uncommitted.
 
 ## 10. Next actions
-1. **When Christopher OKs #489 and/or #493:** squash-merge (`gh pr merge <n> --squash`).
-   - After #489 merges, the Hermes timer releases the Lab.
-   - Then remove `.worktrees/mfl-helper-build` and `.worktrees/pulse-twrwf`.
-2. **Optional:** profile one score-update burst on the Lab (method: `~/fleet/runs/profile-1123/`) to find what the p95 tail is.
-3. **Later:** money units in the MFL JSON are mixed (dollars in, cents out). Settle this before more helpers build on it.
+1. **Optional:** profile one score-update burst on the Lab (method: `~/fleet/runs/profile-1123/`) to find what the p95 tail is.
+2. **Later:** money units in the MFL JSON are mixed (dollars in, cents out). Settle this before more helpers build on it.
+3. **Handoff:** `docs/from-tom/2026-11-24-overnight-close.md`.
 
 ## 11. Needs Christopher
-- **Merge OKs:** #489 and #493.
+- **Merge OKs:** none waiting.
 - **Sunday 11-29:** `cycle.sh` -> `seat-link.sh native.rehtest-default` -> `open-drafts.sh` (scripts/lab/README.md).
 
 ## 12. Environment notes
