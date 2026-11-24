@@ -1,0 +1,1 @@
+The season box now proves the full 4-team playoff round to a champion against the real twr-server binary (week-1 final standings seeding, bracket.build, bracket.seed, week-2 semi-finals, bracket.advance, week-3 final, and champion). Growth is test code, synthetic official fixture docs, and the Playoffs status table only; production Go code does not grow.
