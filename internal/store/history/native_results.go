@@ -58,6 +58,9 @@ type nativeSources struct {
 	facts   nativecheck.Facts
 	// revision is the season score cache's name for the ledger last scored, worked out once per ledger.
 	revision *scoreRevisionKey
+	// canon, when set, is the league's own ledger read at the start of this request; the score revision
+	// uses it instead of reading the ledger again.
+	canon []commissioner.Record
 }
 
 func (s *Store) nativeSources(league string, season int) *nativeSources {
@@ -181,24 +184,24 @@ func (s *Store) readNativeResults(ctx context.Context, league string, season, we
 
 // NativeStandings ranks a season's regular-season results.
 func (s *Store) NativeStandings(ctx context.Context, league string, season int) (commissioner.NativeStandings, error) {
-	mark, err := s.recordsMarkFor(ctx, league)
-	if err != nil {
-		return commissioner.NativeStandings{}, err
-	}
-	src := s.nativeSources(league, season)
-	args := src.liveKey() + "|" + mark + "|" + fmt.Sprintf("%s|%d", league, season)
-	return shareReading(ctx, &s.flights, "NativeStandings", args,
-		func(ctx context.Context) (commissioner.NativeStandings, error) {
-			return s.readNativeStandings(ctx, league, season, src, mark)
-		})
-}
-
-func (s *Store) readNativeStandings(ctx context.Context, league string, season int, src *nativeSources,
-	mark string) (commissioner.NativeStandings, error) {
+	// The ledger is read once: its mark names the flight, the reading folds these records, and the score
+	// revision checks them as the league's own entries (nativeSources.canon) instead of reading them again.
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeStandings{}, err
 	}
+	mark := recordsMark(records)
+	src := s.nativeSources(league, season)
+	src.canon = records
+	args := src.liveKey() + "|" + mark + "|" + fmt.Sprintf("%s|%d", league, season)
+	return shareReading(ctx, &s.flights, "NativeStandings", args,
+		func(ctx context.Context) (commissioner.NativeStandings, error) {
+			return s.readNativeStandings(ctx, league, season, src, records, mark)
+		})
+}
+
+func (s *Store) readNativeStandings(ctx context.Context, league string, season int, src *nativeSources,
+	records []commissioner.Record, mark string) (commissioner.NativeStandings, error) {
 	read := func() (commissioner.NativeStandings, error) {
 		out, err := commissioner.NativeStandingsReading(ctx, league, records, src, season, src.now)
 		if err != nil {

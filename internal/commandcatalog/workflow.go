@@ -288,6 +288,13 @@ func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error)
 	if err != nil {
 		return nil, fmt.Errorf("league action: %w", err)
 	}
+	if encoded, ok := any(value).(interface{ EncodedJSON() ([]byte, error) }); ok {
+		body, err := encoded.EncodedJSON()
+		if err != nil {
+			return nil, fmt.Errorf("encode league action: %w", err)
+		}
+		return body, nil
+	}
 	body, err := json.Marshal(value)
 	if err != nil {
 		return nil, fmt.Errorf("encode league action: %w", err)

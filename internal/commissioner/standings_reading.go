@@ -62,6 +62,8 @@ type NativeStandings struct {
 	counted  seasonGames
 	teams    []competition.RankTeam
 	criteria []leaguerules.Criterion
+	// frozen holds the body already encoded (Freeze); nil encodes afresh.
+	frozen *frozenStandings
 }
 
 // seasonGames is every decided game and complete score of the counted weeks.

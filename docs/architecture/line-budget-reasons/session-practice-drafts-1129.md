@@ -1,0 +1,1 @@
+Sunday 11-29 practice drafts on the Lab: one guarded script set (cycle.sh, open-drafts.sh, seat-link.sh, oline-close.sh, lib.sh) replaces hand steps that skipped the owner's turn (10-second clock) and could leave the Lab server stopped. Lab-only shell, no product code.

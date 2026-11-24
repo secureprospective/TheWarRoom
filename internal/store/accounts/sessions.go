@@ -84,7 +84,10 @@ type sessionRow struct {
 
 // sessionTouchInterval bounds activity writes: a busy server reads the session without also
 // taking the single writer unless its last activity is at least this old.
-const sessionTouchInterval = time.Minute
+const (
+	sessionTouchInterval       = time.Minute
+	sessionTouchAcquireTimeout = 25 * time.Millisecond
+)
 
 // Read admission uses the independent reader pool while the history writer is held.
 // Revocations share that single writer, so none can commit between this check and append.
@@ -104,8 +107,8 @@ func (s *Store) SessionAccount(ctx context.Context, digest string, touch bool) (
 	if now.Sub(used) < sessionTouchInterval {
 		return account, nil
 	}
-	if _, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
-		return tx.ExecContext(ctx, `UPDATE account_sessions SET last_used_at = ? WHERE token_hash = ? AND last_used_at < ?`, now.UnixNano(), digest, now.Add(-sessionTouchInterval).UnixNano())
+	if _, err := s.pools.ExecWriteBounded(ctx, sessionTouchAcquireTimeout, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `UPDATE account_sessions SET last_used_at = ? WHERE token_hash = ? AND revoked = 0 AND last_used_at < ?`, now.UnixNano(), digest, now.Add(-sessionTouchInterval).UnixNano())
 	}); err != nil {
 		// The session was read and is valid; a busy writer only skips this activity stamp. Skipping can
 		// only shorten the idle lifetime, never lengthen it, so a valid owner is not told the server failed.

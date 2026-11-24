@@ -20,6 +20,11 @@ type execer interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
+// querier is what read helpers need from a pool or transaction.
+type querier interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
 // LoadReport says what one load wrote. A reload of unchanged data adds nothing.
 type LoadReport struct {
 	LoadID     int64
@@ -461,7 +466,11 @@ func (s *Store) SourceID(ctx context.Context, playerID, idType string) (string, 
 // SourceIDs returns, for every player with an id of idType, the same value SourceID returns,
 // in one query: a whole-directory join reads this instead of one SourceID call per player.
 func (s *Store) SourceIDs(ctx context.Context, idType string) (map[string]string, error) {
-	rows, err := s.pools.Read().QueryContext(ctx,
+	return querySourceIDs(ctx, s.pools.Read(), idType)
+}
+
+func querySourceIDs(ctx context.Context, q querier, idType string) (map[string]string, error) {
+	rows, err := q.QueryContext(ctx,
 		`SELECT player_id, MIN(id_value) FROM player_ids WHERE id_type = ? GROUP BY player_id`, idType)
 	if err != nil {
 		return nil, fmt.Errorf("history: directory read: %w", err)
