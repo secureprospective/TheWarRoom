@@ -161,8 +161,8 @@ func TestMFLBoundaryLeavesSharedPackagesAvailable(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range []string{
-		"internal/domain", "internal/app/platform",
-		"internal/app/offers", "internal/engine/bid",
+		"internal/domain", "internal/app/report",
+		"internal/app/season", "internal/engine/bid",
 		"internal/store/state", "internal/snapshot",
 	} {
 		if rules.fences[target] {

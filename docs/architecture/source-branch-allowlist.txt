@@ -2,7 +2,6 @@
 # Adding a file here needs a reason in the commit; behaviour must come from settings (Christopher, 10-31).
 
 # One-time ordinary-command backfill for imports predating schedule.follow; never read during following.
-internal/app/commissioner/native_seed_api.go
 internal/commissioner/command.go
 internal/commissioner/creation.go
 internal/commissioner/jobs_league.go

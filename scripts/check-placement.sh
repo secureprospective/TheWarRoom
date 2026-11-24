@@ -29,6 +29,7 @@ for path in "${!feature_of[@]}"; do
 done
 
 for f in *.go; do
+  [[ -e $f ]] || continue # no root Go files since desktop-removal PR-D
   [[ -n ${feature_of[$f]:-} ]] || bad "root file '$f' has no row in $manifest"
 done
 while read -r pkg; do

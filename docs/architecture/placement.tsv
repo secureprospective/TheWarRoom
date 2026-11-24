@@ -2,15 +2,8 @@
 # feature from the SYSTEM_MAP.md feature table. One row per path: <path><TAB><feature>.
 # scripts/check-placement.sh enforces it (make lint, CI). Add the row in the same commit as the file.
 path	feature
-main.go	platform
-internal/app/commissioner	commissioner
 internal/app/mflref/contracts	contracts
 internal/app/mflref/contracts/contractstest	contracts
-internal/app/draft	draft
-internal/app/draft/drafttest	draft
-internal/app/market	market
-internal/app/market/markettest	market
-internal/app/commissioner/native	commissioner
 internal/app/report	platform
 internal/app/season	platform
 internal/archive	sources
@@ -89,25 +82,12 @@ internal/transactions/deadcap	contracts
 internal/transactions/freeagency	contracts
 internal/app/sources	sources
 internal/app/scoring	scoring
-internal/app/research	research
-internal/app/research/researchtest	research
-internal/app/offers	offers
-internal/app/offers/personal	offers
-internal/app/offers/pool	offers
 internal/app/mflref/bids	offers
-internal/app/race	race
-internal/app/control	control
 internal/app/season/seasontest	platform
 internal/app/now	now
 internal/app/now/nowtest	now
 internal/app/mflref/trades	trades
-internal/app/core	core
-internal/app/core/coretest	core
 internal/commandcatalog	core
-internal/app/offers/offerstest	offers
-internal/app/commissioner/commissionertest	commissioner
-internal/app/platform	platform
-internal/composition	platform
 internal/leagueservice	platform
 internal/serverhttp	platform
 internal/serverhttp/landing	platform

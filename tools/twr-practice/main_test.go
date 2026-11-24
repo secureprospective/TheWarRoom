@@ -64,7 +64,7 @@ func sandboxHTTPSLifecycle(t *testing.T, bin string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{state.Address, state.Password, state.Seed, "DBUS_SESSION_BUS_ADDRESS=", "SSL_CERT_FILE=", "-native", launcher + " code " + quote(dir), launcher + " down " + quote(dir)} {
+	for _, want := range []string{state.Address, state.Password, state.Seed, launcher + " code " + quote(dir), launcher + " down " + quote(dir)} {
 		if !strings.Contains(output.String(), want) {
 			t.Fatalf("missing launch instruction %q", want)
 		}
@@ -180,7 +180,6 @@ func TestPrebuiltSandboxHTTPSLifecycleWithoutGo(t *testing.T) {
 	bin := t.TempDir()
 	for _, args := range [][]string{
 		{"build", "-tags", "practice", "-o", filepath.Join(bin, "twr-server"), "./cmd/twr-server"},
-		{"build", "-tags", "webkit2_41", "-o", filepath.Join(bin, "thewarroom"), "."},
 	} {
 		if output, err := exec.CommandContext(t.Context(), "go", args...).CombinedOutput(); err != nil {
 			t.Fatalf("build bundle: %v: %s", err, output)
@@ -210,14 +209,14 @@ func TestPrebuiltSandboxHTTPSLifecycleWithoutGo(t *testing.T) {
 }
 
 func TestPrebuiltSandboxRefusesInvalidBinaries(t *testing.T) {
-	for _, name := range []string{"twr-server", "thewarroom"} {
+	for _, name := range []string{"twr-server"} {
 		for _, kind := range []string{"missing", "not executable", "directory"} {
 			t.Run(name+"/"+kind, func(t *testing.T) {
 				bin := t.TempDir()
 				if err := writePrivate(filepath.Join(bin, "registry.csv"), []byte("unused")); err != nil {
 					t.Fatal(err)
 				}
-				for _, executable := range []string{"twr-server", "thewarroom"} {
+				for _, executable := range []string{"twr-server"} {
 					path := filepath.Join(bin, executable)
 					if executable == name && kind == "missing" {
 						continue
@@ -254,7 +253,7 @@ func TestPrebuiltSandboxRefusesInvalidBinaries(t *testing.T) {
 
 func assertCopiedBinaries(t *testing.T, dir, bin string) {
 	t.Helper()
-	for _, name := range []string{"twr-server", "thewarroom"} {
+	for _, name := range []string{"twr-server"} {
 		source, err := os.ReadFile(filepath.Join(bin, name))
 		if err != nil {
 			t.Fatal(err)
