@@ -90,6 +90,12 @@ hosted-command e2e plus a live Lab check where a server command changes. Then me
   don't belong in Validate()).
 
 ## 8. Decisions
+- **11-24 (Season host):** "Lab now, laptop later". The real drafts (Tue Dec 1) and the first rehearsal weeks run on the
+  Lab. Reason: `deploy/server/install.sh` only installs into a Proxmox container (the host firewall in front, console
+  admin), and the only signed bundles are LAB-ONLY. A laptop installer (local firewall, Season signing key, same
+  binary) is built later; the leagues move over on a Saturday with his OK. While the Lab hosts them: no Lab reset of
+  the rehearsal leagues, and Lab auto-release holds on Dec 1 and during game windows (`~/fleet/bin/twr-lab-autorelease.sh`
+  `in_hold`, Thu/Mon 17-24, Sun 11-24 Central; a `hold` file stops all releases).
 - **11-24:** no rehearsal playoffs; the season-in-a-box test proves them.
 - **11-24:** the campaign waits for Christopher's phone OK, even past January.
 - **11-24 routing:** Luna high is the workhorse, Gemini Neon High for harder jobs, Haiku high / Sonnet medium if tokens run out.
