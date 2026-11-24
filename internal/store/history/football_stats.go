@@ -241,10 +241,18 @@ func officialZero(held source.HeldWeek, gsis string, season, week int) source.He
 
 // officialWeek says whether the pin holds official statistics for the week.
 func (p *PinnedFootball) officialWeek(week int) bool {
+	_, ok := p.officialAsOf(week)
+	return ok
+}
+
+// officialAsOf is the newest official revision's instant for week, or false when week is not official.
+func (p *PinnedFootball) officialAsOf(week int) (time.Time, bool) {
+	var newest time.Time
+	found := false
 	for _, file := range p.stats {
-		if file.official[week] {
-			return true
+		if file.official[week] && (!found || file.at.After(newest)) {
+			newest, found = file.at, true
 		}
 	}
-	return false
+	return newest, found
 }

@@ -595,3 +595,41 @@ func TestHostedFranchiseHQMoneyReads(t *testing.T) {
 		}
 	}
 }
+
+func TestHostedNFLGamesReadableByAgentToken(t *testing.T) {
+	f := newHostedFixture(t, true, true)
+	human, _ := f.directCommissioner(t)
+	token, err := f.tokens.Issue(t.Context(), accounts.RawSession{Bearer: human}, accounts.RawTokenScope{
+		League: "native.hosted", Franchise: "franchise.01", Modes: []string{"read"},
+		Commands: []string{"native.directory.read", "nfl.games.read"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	summaryBody, err := os.ReadFile("../ingestion/livegame/testdata/espn-summary-401873061-kickoff.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	summary, err := livegame.ParseSummary(summaryBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.games.Set([]livegame.Game{summary}, time.Now(), "ESPN")
+	raw := workflowRequest(t, "nfl.games.read", "read", `{"league":"native.hosted"}`, "")
+	body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reply := f.post(t, serverhttp.WorkflowPath, string(body), token.Bearer, "", 200)
+	var response serverhttp.WorkflowResponse
+	if err := json.Unmarshal(reply, &response); err != nil {
+		t.Fatal(err)
+	}
+	var games leagueservice.NFLGames
+	if err := json.Unmarshal(response.Data, &games); err != nil {
+		t.Fatal(err)
+	}
+	if len(games.Board.Games) != 1 || games.Board.Games[0].ID != summary.ID {
+		t.Fatalf("agent token did not read the server's NFL board: %+v", games)
+	}
+}
