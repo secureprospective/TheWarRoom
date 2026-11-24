@@ -20,7 +20,7 @@ func TestHostedInstanceLockRefusesSecondCopyBeforeDatabaseOpen(t *testing.T) {
 	}
 	args := []string{"-db", dbPath}
 	err = startHosted(context.Background(), args, io.Discard)
-	if err == nil || !strings.Contains(err.Error(), "another twr-server is already using "+dbPath+"; stop it first") {
+	if err == nil || !strings.Contains(err.Error(), "the server is running on "+dbPath+"; stop it first") {
 		t.Fatalf("unexpected startup result: %v", err)
 	}
 	if info, err := os.Stat(dbPath); err != nil || info.Size() != 0 {
@@ -29,7 +29,7 @@ func TestHostedInstanceLockRefusesSecondCopyBeforeDatabaseOpen(t *testing.T) {
 	if err := lock.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if err := startHosted(context.Background(), args, io.Discard); err == nil || strings.Contains(err.Error(), "another twr-server") {
+	if err := startHosted(context.Background(), args, io.Discard); err == nil || strings.Contains(err.Error(), "the server is running") {
 		t.Fatalf("startup did not pass lock after release: %v", err)
 	}
 }
@@ -67,5 +67,48 @@ func TestHostedBackupRequiresActualRuntimeSettings(t *testing.T) {
 	files[0] = filepath.Join(t.TempDir(), "authenticator.key")
 	if err := checkBackupFiles(dir, files); err == nil {
 		t.Fatal("backup omitted the running authenticator key")
+	}
+}
+
+// Console commands that say "server stopped" refuse while a server holds the database's lock; pin-football's
+// -status-socket mode talks to the running server on purpose and is never refused for it.
+func TestStoppedServerCommandsRefuseWhileServerRuns(t *testing.T) {
+	dir := t.TempDir()
+	db := filepath.Join(dir, "server.db")
+	if err := os.WriteFile(db, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	held, err := lockStoppedServer(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = held.Close() }()
+	file := filepath.Join(dir, "input")
+	if err := os.WriteFile(file, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	league, stage := "native.locked", filepath.Join(dir, "stage")
+	for _, args := range [][]string{
+		{"conversion-proof", "-db", db},
+		{"create-league", "-db", db, "-league", league, "-name", "Locked", "-preset", "default_32", "-season", "2026"},
+		{"delete-league", "-db", db, "-league", league},
+		{"export-league", "-db", db, "-league", league, "-out", stage},
+		{"import-league", "-db", db, "-in", file, "-stage", stage},
+		{"finish-move", "-db", db, "-league", league},
+		{"cancel-move", "-db", db, "-league", league},
+		{"restore-league", "-db", db, "-league", league, "-stage", stage},
+		{"import-model-scores", "-db", db, "-file", file},
+		{"refresh-nfl-injuries", "-db", db, "-season", "2026"},
+		{"refresh-nfl-schedule", "-db", db, "-league", league, "-season", "2026"},
+		{"pin-football", "-db", db, "-league", league, "-football", strings.Repeat("e", 64)},
+	} {
+		if err := run(t.Context(), args, io.Discard); err == nil || !strings.Contains(err.Error(), "stop it first") {
+			t.Errorf("%s with the server running: err = %v, want refused (stop it first)", args[0], err)
+		}
+	}
+	socket := filepath.Join(dir, "status.sock")
+	err = run(t.Context(), []string{"pin-football", "-status-socket", socket, "-league", league, "-football", strings.Repeat("e", 64)}, io.Discard)
+	if err != nil && strings.Contains(err.Error(), "stop it first") {
+		t.Fatalf("pin-football -status-socket refused for the lock: %v", err)
 	}
 }

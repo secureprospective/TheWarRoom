@@ -89,6 +89,11 @@ func runExportLeague(ctx context.Context, args []string, output io.Writer) error
 	if flags.NArg() != 0 || *path == "" || *league == "" || *out == "" {
 		return fmt.Errorf("export-league needs -db, -league and a new -out folder, with the server stopped")
 	}
+	lock, err := lockStoppedServer(*path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Close() }()
 	if err := checkHostedDatabase(*path, 0); err != nil {
 		return err
 	}
