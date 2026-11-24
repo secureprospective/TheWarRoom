@@ -152,7 +152,7 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
 - 11-23 ~11 AM: Lab guards loosened: the Lab no longer needs commissioner/password guards; the Season server (laptop) keeps every guard. Tom may own Lab commissioner accounts. (memory `lab-guards-loosened.md`)
 - 11-23 ~1 PM: ONE join link for the whole league (not one per owner). Any owner can use it until seats run out; commissioner can still revoke/replace it.
 - 11-23: merged #470 (OK "merge it") and #471 (OK "merge 471 when CI is green").
-0. TIMELINE MOVED (6:20 PM): real drafts Tue Dec 8. Nov 29 is NFL week 12 (starts Wed 11-25); a week's lineups use the roster at its first kickoff, so Thu/Fri drafts would score nothing. First scoring week = NFL week 14 (Thu Dec 10 7:15 PM CT); first rehearsal Sunday Dec 13; first report card Tue Dec 15; schedule 18 weeks with 1-13 empty (test 53a8c2b4b). Claudebox told: ~/Downloads/TOM-ASKS-CLAUDEBOX-rehearsal-timeline.md.
+0. TIMELINE MOVED AGAIN (11-23 7 PM): real drafts Tue Dec 1, first scoring week 13 (Thu Dec 3), schedule weeks 1-12 empty (test updated). Practice drafts Sun 11-29 on the Lab by his hand; one Season server fix allowed Mon 11-30. Older note: real drafts Tue Dec 8. Nov 29 is NFL week 12 (starts Wed 11-25); a week's lineups use the roster at its first kickoff, so Thu/Fri drafts would score nothing. First scoring week = NFL week 14 (Thu Dec 10 7:15 PM CT); first rehearsal Sunday Dec 13; first report card Tue Dec 15; schedule 18 weeks with 1-13 empty (test 53a8c2b4b). Claudebox told: ~/Downloads/TOM-ASKS-CLAUDEBOX-rehearsal-timeline.md.
 6. Routing: Haiku high + Sonnet medium subagents on Tom's account; Gemini only for second opinions when clarity is thin or a bug is hard.
 1. Computer draft picks: TWR dynasty value, FILL STARTERS FIRST, then best available.
 2. Unsold O-Line cards -> computer teams without one, at the minimum price, after the auction closes.
@@ -206,8 +206,9 @@ Remove after merge, then `golangci-lint cache clean`.
 11-23 ~6:20 PM. Proven: Stage 3 (two load passes, zero errors), Stage 4 rulings recorded, Lab self-release (one hand-finished
 run), one-season templates (tests + planted break; not clicked on the Lab yet), whole-season test on the real binary
 (no draft/live/recap yet). Unproven: fully automatic Lab release, phone live push latency (T685), p95 under 200 ms,
-anything on the Season server. Timeline: Season server Sat 11-28 (his OK) -> Dec 6 wall/recording session -> real drafts
-Tue Dec 8 -> week 14 Thu Dec 10 -> Rehearsal Sunday 1 Dec 13 -> first report card Tue Dec 15.
+anything on the Season server. Timeline (MOVED 11-23 7 PM, Christopher): Season server Sat 11-28 (his OK) -> practice drafts by his hand Sun 11-29 on
+the Lab (copies) -> one allowed Season server fix Mon 11-30 if practice found one -> REAL DRAFTS TUE DEC 1 -> week 13 Thu Dec 3
+-> Rehearsal Sunday 1 = Sun Dec 6 (also the recording/report-card day) -> first report card Tue Dec 8. Ruling in docs/reset/ASSUMPTIONS.md.
 Christopher was concerned 11-23 evening by off-lane questions (resume chatbot etc. from a raw task-list sweep): ask only
 current TheWarRoom product choices, plain words, click-through (memory questions-stay-in-lane).
 
