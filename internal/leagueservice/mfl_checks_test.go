@@ -106,6 +106,15 @@ func TestMflBidCheckCapRoomAfterTheBid(t *testing.T) {
 	}
 }
 
+func TestMflBidCheckRejectsMoreThanOneDropInPlainWords(t *testing.T) {
+	f := mflOwnerFixture(t, nil)
+	_, err := f.service.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league,
+		Add: "0531", Amount: 1_000_000, Drop: []string{"1001", "1002"}})
+	if err == nil || !strings.Contains(err.Error(), "a bid can hold one drop") {
+		t.Fatalf("two-drop bid error = %v", err)
+	}
+}
+
 func TestMflBidCheckRosterSizeAfterDrops(t *testing.T) {
 	data := mflDefaultLeagueData(48)
 	f := mflOwnerFixture(t, &data)
@@ -278,6 +287,10 @@ func TestMflPlanSaveRerunsTheCheckAndKeepsItPrivate(t *testing.T) {
 	plan, err := saveBid(t, f, "0531", 1_000_000)
 	if err != nil || plan.Kind != "bid" || !plan.CanDone || !plan.CanWithdraw || plan.PlayerName != "Doe, John" {
 		t.Fatalf("saved bid = %+v, %v", plan, err)
+	}
+	single, err := f.service.MflMovesPlansReadContext(ctx, RawMflMovesScope{League: f.league})
+	if err != nil || single.Words != "1 plan. Nothing here was sent to MFL." {
+		t.Fatalf("one-plan wording = %+v, %v", single, err)
 	}
 	if _, err := saveBid(t, f, "0531", 1_200_000); err == nil || !strings.Contains(err.Error(), "already have an open bid plan") {
 		t.Fatalf("second plan on the same player: %v", err)

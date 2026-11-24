@@ -327,7 +327,12 @@ func (Fetcher) PlansRead(ctx context.Context, s mflmirror.Seat) (mflmirror.Plans
 		}
 		out.Plans = append(out.Plans, v.planView(r, f))
 	}
-	out.Words = fmt.Sprintf("%d plans. Nothing here was sent to MFL.", len(out.Plans))
+	count := len(out.Plans)
+	label := "plans"
+	if count == 1 {
+		label = "plan"
+	}
+	out.Words = fmt.Sprintf("%d %s. Nothing here was sent to MFL.", count, label)
 	return out, nil
 }
 

@@ -216,7 +216,7 @@ func (a *Service) MflMovesRefreshContext(ctx context.Context, raw RawMflMovesSco
 		words = "Fresh from MFL just now."
 	}
 	return MflRefresh{League: raw.League, MFLLeague: seat.mflLeague, Season: res.Held.Season,
-		FetchedAt: res.Held.FetchedAt, AgeSeconds: int(res.Age.Seconds()), AskedMFL: res.Fetched,
+		FetchedAt: res.Held.FetchedAt, AgeSeconds: int(res.Age.Round(time.Second).Seconds()), AskedMFL: res.Fetched,
 		FreeAgents: len(res.Held.FreeAgents), Words: words}, nil
 }
 

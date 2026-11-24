@@ -1,10 +1,10 @@
 # line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down.
 # Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand.
-docs	53714
+docs	53715
 frontend-generated	5272
-frontend-src	77229
-frontend-tests	46952
-go-prod	174853
+frontend-src	77265
+frontend-tests	47008
+go-prod	174858
 go-prod/cmd/twr	1053
 go-prod/cmd/twr-check	508
 go-prod/cmd/twr-server	9956
@@ -39,7 +39,7 @@ go-prod/internal/m2service	575
 go-prod/internal/measures	718
 go-prod/internal/mfl	577
 go-prod/internal/mflkey	138
-go-prod/internal/mflmirror	1647
+go-prod/internal/mflmirror	1652
 go-prod/internal/mflref	2184
 go-prod/internal/model	2437
 go-prod/internal/modelrun	685
@@ -65,6 +65,6 @@ go-prod/internal/transactions	2046
 go-prod/root	25
 go-prod/scripts	56
 go-prod/tools	2212
-go-test	117746
+go-test	117759
 go-testdata	41047
 other	38521

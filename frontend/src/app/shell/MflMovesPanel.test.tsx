@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { all, button, click, control, flush, mount, present, render, type, unmount } from
+import { all, button, check, click, control, flush, mount, present, render, type, unmount } from
   '../commissioner/commissionerDom';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import MflMovesPanel, { ageWords } from './MflMovesPanel';
@@ -90,9 +90,11 @@ it('says the held copy age and that MFL was not asked again', async () => {
   expect(present(host, 'MFL was not asked again')).toBe(true);
 });
 
-it('shows the server problems for a bid check', async () => {
+it('shows bid problems, cap room, and notes the server did not check', async () => {
   const p = port({ 'mflmoves.bid.check': () => ({
-    ok: false, words: 'Not ready.', problems: ['This leaves you $2 over the cap.'] }) });
+    ok: false, words: 'Not ready.', capRoomAfter: 304750000,
+    notChecked: ['MFL names no roster minimum, so the minimum roster size was not checked.'],
+    problems: ['This leaves you $2 over the cap.'] }) });
   const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
   await flush();
   await type(control(host, 'Player'), '100');
@@ -100,6 +102,9 @@ it('shows the server problems for a bid check', async () => {
   await click(button(host, 'Check'));
   await flush();
   expect(present(host, 'This leaves you $2 over the cap.')).toBe(true);
+  expect(present(host, 'Cap room after bid: $3,047,500.')).toBe(true);
+  expect(present(host, 'MFL names no roster minimum, so the minimum roster size was not checked.'))
+    .toBe(true);
 });
 
 it('opens only the server URL and hides buttons that are not allowed', async () => {
@@ -120,6 +125,57 @@ it('opens only the server URL and hides buttons that are not allowed', async () 
   await flush();
   expect(open).toHaveBeenCalledTimes(1);
   expect(open.mock.calls[0][0]).toBe('https://www.myfantasyleague.com/x');
+});
+
+it('shows plan identity and details for saved bid and lineup replies', async () => {
+  const p = port({ 'mflmoves.plans.read': () => ({ plans: [
+    plan({ playerName: 'Aguilar, Joey', salary: 33000000, years: 1, dropName: 'Quinn QB' }),
+    plan({ id: 'p2', kind: 'lineup', week: 12, starters: Array(16).fill('id') }),
+  ] }) });
+  const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
+  await flush();
+  expect(present(host, 'Bid: Aguilar, Joey, $330,000 per year for 1 yr, drop Quinn QB.')).toBe(true);
+  expect(present(host, 'Lineup, week 12: 16 starters.')).toBe(true);
+});
+
+it('uses owner-facing sort labels and falls back for unknown keys', async () => {
+  const p = port({ 'mflmoves.pool.read': () => ({ ...pool,
+    sorts: ['name', 'position', 'team', 'ppg', 'lab', 'minimum', 'mystery'] }) });
+  const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
+  await flush();
+  for (const label of ['Name', 'Position', 'NFL team', 'Points per game', 'Model value',
+    'MFL minimum salary', 'mystery']) expect(present(host, label)).toBe(true);
+});
+
+it('uses one radio choice for bid drops and sends at most one', async () => {
+  const p = port();
+  const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
+  await flush();
+  expect(present(host, 'No drop')).toBe(true);
+  const radios = all(host, 'input').filter(input => input.props().type === 'radio');
+  expect(radios).toHaveLength(3);
+  await check(radios[1], true);
+  await type(control(host, 'Player'), '100');
+  await type(control(host, 'Amount'), '5');
+  await click(button(host, 'Check'));
+  await flush();
+  expect(p).toHaveBeenCalledWith(expect.objectContaining({ command: 'mflmoves.bid.check',
+    arguments: expect.objectContaining({ drop: ['1001'] }) }));
+});
+
+it('refresh reloads the MFL roster used by Drops and Starters', async () => {
+  let refreshed = false;
+  const p = port({
+    'mflmoves.refresh': () => { refreshed = true; return { askedMfl: true, words: 'Fresh.' }; },
+    'mflmoves.roster.read': () => ({ players: refreshed
+      ? [{ id: '2001', name: 'New Player', position: 'WR', status: 'active' }] : mflRoster.players }),
+  });
+  const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
+  await flush();
+  expect(present(host, 'Quinn QB')).toBe(true);
+  await click(button(host, 'Refresh from MFL'));
+  await flush();
+  expect(present(host, 'New Player')).toBe(true);
 });
 
 it('drop list shows the MFL roster from roster.read', async () => {

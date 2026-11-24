@@ -53,8 +53,8 @@ func (r RawMflBidCheck) Validate() error {
 	if r.Years < 0 || r.Years > bid.MaxYears {
 		return fmt.Errorf("a bid runs 1 to %d years", bid.MaxYears)
 	}
-	if len(r.Drop) > 8 {
-		return fmt.Errorf("drop at most 8 players")
+	if len(r.Drop) > 1 {
+		return mflRefused("a bid can hold one drop")
 	}
 	for _, d := range r.Drop {
 		if _, err := playerid.New(d); err != nil {

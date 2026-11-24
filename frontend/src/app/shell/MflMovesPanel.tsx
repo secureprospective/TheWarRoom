@@ -13,9 +13,11 @@ type Team = { id: string; name: string };
 type PoolRow = { id: string; name: string; position: string; team: string; age: string; minimum: string;
   value: string };
 type Pool = { rows: PoolRow[]; positions: string[]; sorts: string[]; ageSeconds: number };
-type Plan = { id: string; kind: string; state: string; words: string; canDone: boolean;
-  canWithdraw: boolean };
-type Verdict = { ok: boolean; words: string; problems: string[] };
+type Plan = { id: string; kind: string; state: string; words: string; playerName?: string;
+  salary?: number; years?: number; dropName?: string; week?: number; starters?: string[];
+  canDone: boolean; canWithdraw: boolean };
+type Verdict = { ok: boolean; words: string; problems: string[]; capRoomAfter?: number;
+  notChecked: string[] };
 type MflRosterPlayer = { id: string; name: string; position: string; status: string };
 
 const NO_LEAGUE_LINE = 'This league follows no MFL league yet; '
@@ -61,15 +63,45 @@ function parseRoster(data: unknown): MflRosterPlayer[] {
 }
 function parsePlans(data: unknown): Plan[] {
   return list(obj(data).plans).map(p => ({ id: str(p.id), kind: str(p.kind), state: str(p.state),
-    words: str(p.words), canDone: p.canDone === true, canWithdraw: p.canWithdraw === true }));
+    words: str(p.words), ...(typeof p.playerName === 'string' ? { playerName: p.playerName } : {}),
+    ...(typeof p.salary === 'number' ? { salary: p.salary } : {}),
+    ...(typeof p.years === 'number' ? { years: p.years } : {}), dropName: str(p.dropName),
+    ...(typeof p.week === 'number' ? { week: p.week } : {}),
+    ...(Array.isArray(p.starters) ? { starters: p.starters.map(str) } : {}),
+    canDone: p.canDone === true, canWithdraw: p.canWithdraw === true }));
 }
 function parseVerdict(data: unknown, lineup: boolean): Verdict {
   const row = obj(data);
   const problems = lineup ? list(row.problems).map(p => str(p.message))
     : (Array.isArray(row.problems) ? row.problems.map(str) : []);
-  return { ok: row.ok === true, words: str(row.words), problems };
+  return { ok: row.ok === true, words: str(row.words), problems,
+    ...(typeof row.capRoomAfter === 'number' ? { capRoomAfter: row.capRoomAfter } : {}),
+    notChecked: Array.isArray(row.notChecked) ? row.notChecked.map(str) : [] };
 }
 
+function moneyCents(cents: number): string {
+  return `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0,
+    maximumFractionDigits: 2 })}`;
+}
+
+function planDescription(p: Plan): string {
+  if (p.kind === 'bid') {
+    const salary = p.salary === undefined ? '' : `${moneyCents(p.salary)} per year`;
+    const years = p.years === undefined ? '' : `for ${p.years} yr`;
+    const details = [p.playerName, [salary, years].filter(Boolean).join(' '),
+      p.dropName ? `drop ${p.dropName}` : ''].filter(Boolean);
+    return details.length ? `Bid: ${details.join(', ')}` : '';
+  }
+  if (p.kind === 'lineup' && (p.week !== undefined || p.starters !== undefined)) {
+    const details = [p.week === undefined ? '' : `week ${p.week}`,
+      p.starters === undefined ? '' : `${p.starters.length} starters`].filter(Boolean);
+    return `Lineup, ${details.join(': ')}`;
+  }
+  return '';
+}
+
+const sortLabels: Record<string, string> = { name: 'Name', position: 'Position', team: 'NFL team',
+  ppg: 'Points per game', lab: 'Model value', minimum: 'MFL minimum salary' };
 const box = 'rounded border border-neutral-700 p-3 mb-3';
 const btn = 'rounded border border-neutral-500 px-2 py-1 text-sm disabled:opacity-50';
 const field = 'ml-2 rounded border border-neutral-600 bg-transparent px-1 py-0.5';
@@ -152,7 +184,8 @@ export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
         setTeams(found.teams);
         if (found.yours) setState('main');
       } else {
-        await readPool();
+        await Promise.all([readPool(), call('mflmoves.roster.read', 'read')
+          .then(r => setRoster(parseRoster(r)))]);
       }
     } catch (e) { setError(say(e)); }
   };
@@ -194,7 +227,7 @@ export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
           {pool.positions.map(p => <option key={p} value={p}>{p}</option>)}</select></label>{' '}
         <label>Sort<select className={field} value={sort} onChange={e => setSort(e.target.value)}>
           <option value="">Default</option>
-          {pool.sorts.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
+          {pool.sorts.map(s => <option key={s} value={s}>{sortLabels[s] ?? s}</option>)}</select></label>
         <table><thead><tr><th>Name</th><th>Pos</th><th>Team</th><th>Age</th><th>Minimum</th><th>Value</th>
         </tr></thead><tbody>{pool.rows.map(r => <tr key={r.id}><td>{r.name}</td><td>{r.position}</td>
           <td>{r.team}</td><td>{r.age}</td><td>{r.minimum}</td><td>{r.value}</td></tr>)}</tbody></table></>}
@@ -204,7 +237,8 @@ export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
     <div className={box}>
       <h3>My plans</h3>
       {plans.length === 0 && <p>No plans yet.</p>}
-      <ul>{plans.map(p => <li key={p.id}><b>{p.state}</b> {p.words}{' '}
+      <ul>{plans.map(p => <li key={p.id}><b>{p.state}</b>
+        {planDescription(p) && ` ${planDescription(p)}.`} {p.words}{' '}
         <HQAct className={btn} onAction={() => open(p.id)}>Open on MFL</HQAct>
         {p.canDone && <HQAct className={btn} onAction={() => act('mflmoves.plan.done', p.id)}>
           I did it</HQAct>}
@@ -222,6 +256,8 @@ type Call = (command: NativeRequest['command'], mode: 'read' | 'execute', args?:
 function Verdicts({ v }: { v?: Verdict }) {
   if (!v) return null;
   return <div role="status">{v.words && <p>{v.words}</p>}
+    {v.capRoomAfter !== undefined && <p>Cap room after bid: {moneyCents(v.capRoomAfter)}.</p>}
+    {v.notChecked.map(p => <p key={p}>{p}</p>)}
     {v.problems.length > 0 && <ul>{v.problems.map(p => <li key={p}>{p}</li>)}</ul>}</div>;
 }
 
@@ -230,11 +266,11 @@ function BidForm({ call, pool, roster, saved }: { call: Call; pool: PoolRow[]; r
   const [add, setAdd] = useState('');
   const [amount, setAmount] = useState('');
   const [years, setYears] = useState('');
-  const [drop, setDrop] = useState<string[]>([]);
+  const [drop, setDrop] = useState('');
   const [verdict, setVerdict] = useState<Verdict>();
   const [message, setMessage] = useState('');
   const body = () => ({ add, amount: Number(amount), ...(years ? { years: Number(years) } : {}),
-    ...(drop.length ? { drop } : {}) });
+    ...(drop ? { drop: [drop] } : {}) });
   const check = async () => {
     setMessage('');
     try { setVerdict(parseVerdict(await call('mflmoves.bid.check', 'read', body()), false)); }
@@ -254,10 +290,10 @@ function BidForm({ call, pool, roster, saved }: { call: Call; pool: PoolRow[]; r
       onChange={e => setAmount(e.target.value)} /></label>{' '}
     <label>Years<input className={field} inputMode="numeric" value={years}
       onChange={e => setYears(e.target.value)} /></label>
-    <fieldset><legend>Drops</legend>{roster.map(p => <label key={p.id} className="mr-3">
-      <input type="checkbox" checked={drop.includes(p.id)}
-        onChange={e => setDrop(d => e.target.checked ? [...d, p.id] : d.filter(x => x !== p.id))} />
-      {rosterLabel(p)}</label>)}</fieldset>
+    <fieldset><legend>Drops</legend><label className="mr-3"><input type="radio" name="bid-drop"
+      checked={!drop} onChange={() => setDrop('')} />No drop</label>{roster.map(p =>
+      <label key={p.id} className="mr-3"><input type="radio" name="bid-drop" value={p.id}
+        checked={drop === p.id} onChange={() => setDrop(p.id)} />{rosterLabel(p)}</label>)}</fieldset>
     <HQAct className={btn} disabled={!add || !amount} onAction={check}>Check</HQAct>{' '}
     <HQAct className={btn} disabled={!add || !amount} onAction={save}>Save plan</HQAct>
     {message && <p role="status">{message}</p>}<Verdicts v={verdict} /></div>;
