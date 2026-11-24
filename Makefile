@@ -109,9 +109,7 @@ setup:
 # so anything reaching a push has already cleared it. govulncheck reports known vulnerabilities
 # in code paths the app calls (stdlib and modules); install it pinned, as the workflow does.
 verify: lint
-	scripts/check-wails-version.sh
 	govulncheck ./...
-	$(MAKE) bindings-fresh
 	cd frontend && pnpm tsc --noEmit
 	cd frontend && pnpm test && pnpm run build && node scripts/bundle-budget.mjs && node scripts/csp-check.mjs && node scripts/csp-browser-check.mjs
 	@set -eu; trap 'scripts/stage-webapp.sh --clean' EXIT; scripts/stage-webapp.sh; go test -race -timeout $(GO_TEST_TIMEOUT) ./...

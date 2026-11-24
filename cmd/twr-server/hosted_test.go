@@ -1,9 +1,38 @@
 package main
 
 import (
+	"context"
+	"io"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestHostedInstanceLockRefusesSecondCopyBeforeDatabaseOpen(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "server.db")
+	if err := os.WriteFile(dbPath, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	lock, err := lockHostedDatabase(dbPath, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	args := []string{"-db", dbPath}
+	err = startHosted(context.Background(), args, io.Discard)
+	if err == nil || !strings.Contains(err.Error(), "another twr-server is already using "+dbPath+"; stop it first") {
+		t.Fatalf("unexpected startup result: %v", err)
+	}
+	if info, err := os.Stat(dbPath); err != nil || info.Size() != 0 {
+		t.Fatalf("refused start touched the database: %v", err)
+	}
+	if err := lock.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := startHosted(context.Background(), args, io.Discard); err == nil || strings.Contains(err.Error(), "another twr-server") {
+		t.Fatalf("startup did not pass lock after release: %v", err)
+	}
+}
 
 func TestTrustedProxyFlagAcceptsOnlyLoopback(t *testing.T) {
 	if hop, err := trustedProxy(""); err != nil || hop.IsValid() {
