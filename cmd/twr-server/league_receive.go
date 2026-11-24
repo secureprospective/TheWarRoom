@@ -36,6 +36,11 @@ func runImportLeague(ctx context.Context, args []string, input io.Reader, output
 	if flags.NArg() != 0 || *path == "" || *in == "" || *stage == "" {
 		return fmt.Errorf("import-league needs -db, -in and a new -stage folder, with the server stopped")
 	}
+	lock, err := lockStoppedServer(*path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Close() }()
 	line, err := bufio.NewReader(io.LimitReader(input, 512)).ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("read the move code: %w", err)
@@ -216,6 +221,11 @@ func moveDecision(ctx context.Context, name string, args []string, output io.Wri
 	if flags.NArg() != 0 || *path == "" || *league == "" {
 		return fmt.Errorf("%s needs -db and -league, with the server stopped", name)
 	}
+	lock, err := lockStoppedServer(*path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Close() }()
 	if err := checkHostedDatabase(*path, 0); err != nil {
 		return err
 	}

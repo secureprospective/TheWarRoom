@@ -139,6 +139,11 @@ func runDeleteLeague(ctx context.Context, args []string, output io.Writer) error
 	if flags.NArg() != 0 || *league == "" || *path == "" {
 		return fmt.Errorf("delete-league needs -db and -league, with the server stopped")
 	}
+	lock, err := lockStoppedServer(*path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Close() }()
 	if err := checkHostedDatabase(*path, 0); err != nil {
 		return err
 	}

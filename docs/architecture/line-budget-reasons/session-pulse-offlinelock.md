@@ -1,0 +1,1 @@
+Offline server commands take the same lock as the running server (PR #502), so a console command marked 'server stopped' refuses while the server runs instead of writing under it. About 5 lines per command plus one table test.
