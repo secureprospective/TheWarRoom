@@ -1,8 +1,8 @@
-# Season in a box (T711 spike)
+# Season in a box (T711 spike + binary box)
 
-**Status:** spike, 2026-11-22; STEP 2 and STEP 8 (decided game) added the same day. Test: `TestSeasonInABoxSpike` in `cmd/twr/season_in_a_box_test.go`.
+**Status:** spike, 2026-11-22 (`TestSeasonInABoxSpike` in `cmd/twr/season_in_a_box_test.go`); real-binary box added 2026-11-23 (`TestSeasonInABoxBinary` in `cmd/twr/season_box_binary_test.go`, covering STEP 1–9 including owner-door draft picks and the Tuesday report card `twr-check`).
 **Goal:** a whole league week, played in seconds, offline, from a recorded real NFL game, so a regression in the
-create -> lineup -> lock -> live scores -> final -> correction -> standings -> recap chain fails a test instead of a Sunday.
+create -> draft -> lineup -> lock -> live scores -> final -> correction -> standings -> report card -> recap chain fails a test instead of a Sunday.
 
 ## What the spike does today
 
@@ -97,35 +97,39 @@ spike to one file. Revisit when the box runs the real `twr-server` binary: then 
   in the old note). The box also gives `5002` a zero stat row in both week-1 files (`cmd/twr/testdata/official/`), so
   franchise.04 has a complete final score. A lineup can be set only for the setter's own franchise
   (`internal/commissioner/governance.go:330`), so franchise.04's lineup is recorded under its own principal.
-- **B7. The owner door refuses every rookie pick (production, open).** `PickPath` (`/v1/native/draft/pick`) returns 409
-  "owner action refused" for every rookie. The cause is that the owner host has no rookie facts:
-  `internal/serverhttp/hosted.go:495` (`workflowHost`) pins football only for workflow requests, so a pick request is served by
-  `leagueservice.StoredHost`, whose `NativeFacts` returns nil (`internal/leagueservice/hosted.go:42`). With nil facts a
-  candidate's entry season is 0, so `admits` refuses it ("choose a rookie from this season's player pool",
-  `internal/engine/rookiedraft/startup.go:181`). The due worker is built with nil facts too (`cmd/twr-server/hosted.go:367`),
-  and `dueHost` does not override `NativeFacts`. Evidence: the same store call returns that refusal with nil facts and succeeds
-  with the pinned facts (`f.pin.Football.PlayerFacts()`); the door hides its message, so the 409 is inferred from that, not
-  read off the door. Impact: in the hosted server no owner can draft a rookie yet. Fix (production, not done here): pin football
-  for pick requests in `workflowHost` (`raw.Pick != nil` too), and give the owner host the facts. The box test calls the store's
-  `RecordDraftPick` with the same permit and facts the service uses, and logs the door's NOT REACHED beside it.
+- **B7. The owner door refuses every rookie pick (closed 2026-11-23).** Fixed on `main` (PR #468): `workflowHost` in
+  `internal/serverhttp/hosted.go` now pins football for `raw.Pick != nil` as well as workflows, and `requestContext` sets the
+  league's pinned football digest for pick requests. Covered by `TestHostedOwnerRookiePickAdmitted`
+  (`internal/serverhttp/hosted_pick_test.go`) and STEP 2 of `TestSeasonInABoxBinary` (`cmd/twr/season_box_binary_test.go`),
+  where `franchise.01` and `franchise.04` each pick a rookie (`5001`, `5002`) through `PickPath` with their own owner session
+  tokens and `twr read native.assets.read` confirms both rookies on their rosters.
 - **Harness note (not a product bug).** The box clock stands still between calls and keeps nanoseconds. A pick stamped at the
   instant of the one before would not yet count in the next pick's judgement (`s.now()` truncates to microseconds). The box
   advances the clock a minute between picks. Real owners pick seconds apart.
-- **B4 (clock, live replay and binary: closed 2026-11-23).** `TestSeasonInABoxBinary`
-  (`cmd/twr/season_box_binary_test.go`) builds `twr-server -tags practice` once, seeds a temp database as
-  `tools/twr-practice` does (workflow league, franchise.01 lineup, replay QB IDs, an agent token), runs `upgrade`,
-  starts `hosted -official-stats` on `127.0.0.1:0`, and drives it with `twr ledger`, `twr preview` and `twr read`:
-  preview admitted before kickoff, "locked at kickoff" after the fake clock moves 25 h, recorded live frames
-  replayed from `testdata/live-week9.tar.gz` moving provisional points (3.00 -> 6.05), the server's own
-  official job pinning `testdata/official` (final 23.5) and then the corrected file (24.1), `standings.read`
-  "Ranked". Skipped under `-short`. Seams (practice build only, `cmd/twr-server/clock_practice.go`):
+- **B4 (clock, live replay, binary draft and report card: closed 2026-11-23).** `TestSeasonInABoxBinary`
+  (`cmd/twr/season_box_binary_test.go`) builds `twr-server -tags practice` and `twr-check` once, seeds a temp database as
+  `tools/twr-practice` does (workflow league, second owner on `franchise.04`, pick-2 draft order, `franchise.01` lineup,
+  replay QB IDs, agent tokens for `twr` and read-only `twr-check`), runs `upgrade`, starts `hosted -official-stats` on
+  `127.0.0.1:0`, and drives the full week:
+  - STEP 1: `twr ledger` over HTTPS.
+  - STEP 2: `franchise.01` and `franchise.04` each draft a rookie (`5001`, `5002`) through the owner door (`PickPath`, owner
+    session tokens), verified on their rosters via `twr read native.assets.read`.
+  - STEP 3–4: `franchise.04` sets its week-1 lineup (`5002`) via `LineupPath`; `twr preview` admits `franchise.01`'s lineup
+    before kickoff and refuses it with `"locked at kickoff"` after the fake clock moves 25 h.
+  - STEP 5–8: recorded live frames replayed from `testdata/live-week9.tar.gz` move provisional points (3.00 -> 6.05) and mark
+    the NFL game final; the server's official job pins `testdata/official` (final 23.5) and the corrected file (24.1);
+    `standings.read` reports `"Ranked"` with 1 decided game (`franchise.01` over `franchise.04`) and 15 pending.
+  - STEP 9: the Tuesday report card (`twr-check`, read mode) runs against the binary and passes (exit 0, no RED; `Official stats
+    final` and `Lineups locked at kickoff` GREEN; `Scores add up` verifies both finished teams, 30 unfinished teams AMBER;
+    `Standings match games` AMBER because only 1 of 16 week-1 games is decided).
+  Skipped under `-short`. Seams (practice build only, `cmd/twr-server/clock_practice.go`):
   `TWR_PRACTICE_CLOCK_FILE` (one RFC 3339 instant; the clock is that instant plus wall time since the write; feeds the
   store, due worker, live replay job and official job), `TWR_PRACTICE_LIVE_DIR` (the live job replays recorded ESPN
   summary JSON frames from a directory in sorted filename order instead of the network, with an optional `week` file),
   and `TWR_PRACTICE_OFFICIAL_DIR` (the official job reads the season files from a directory, first pass after 1 s,
   then every 1 s). Release builds (`backup_hosted.go`) never read any of them; `TestReleaseServerIgnoresPracticeSeams`
-  proves it. Still open in the binary box: the draft (B7) and the recap. Other wall-clock sites listed below are not on the
-  fake clock. Original note:
+  proves it. Still open in the binary box: the written recap text (sentences; no hosted recap read exists yet, B2 recap).
+  Other wall-clock sites listed below are not on the fake clock. Original note:
 - **B4. Real binary and a clock it obeys.** `twr-server` reads wall time in many places: `cmd/twr-server/hosted.go:364-365`
   (`NewHostClock`, the store and due worker), `football_pins.go:52`, `official_stats.go:72`, `league_load.go:370`,
   `league_refresh.go:101`, `live_collector.go:160,256,284`, `live_packets.go:124-185`. No flag or env var replaces them.
@@ -138,11 +142,6 @@ spike to one file. Revisit when the box runs the real `twr-server` binary: then 
 
 ## Next steps, in order
 
-1. `twr read` (B1): makes every read in the journey a CLI call.
-2. Owner door for picks (B7, production): pin the football for pick requests and give the owner host its facts. Needs
-   Christopher's OK: it changes the hosted server. Once it lands, the box's `PickPath` attempt succeeds and the store fallback
-   can be removed from `quickDraft`.
-3. Official stats (B2): done in process for final and correction. Next: run the server's own official job
-   (`-official-dir`, B2a) and add a recap read (B2 recap).
-4. Clock and feed flags, then swap the in-process server for the real binary (B4); consider testscript then.
-5. Starter revision after a correction (B6).
+1. Written recap text (B2 recap): add a hosted recap read (written sentences); `TestSeasonInABoxBinary` already runs the Tuesday report card (`twr-check`, STEP 9) and logs recap text as the one open STEP 9 sub-step.
+2. Starter revision after a correction (B6).
+3. Closed: `twr read` (B1), owner door for picks (B7), official stats job (B2a), real binary + fake clock + live replay + draft + report card (B4).
