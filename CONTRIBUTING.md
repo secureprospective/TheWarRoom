@@ -35,6 +35,13 @@ TheWarRoom holds itself to a strict engineering bar. Before you open a PR:
 
 - **Build green.** `GOMEMLIMIT=3000MiB GOGC=40 make lint` reports 0, and
   `go test -race ./...` passes. No `--no-verify`, ever.
+- **Line budget (net ~0).** `make lint` runs `scripts/check-line-budget.sh`:
+  no area may grow past `docs/architecture/line-budget-baseline.txt` unless the
+  branch carries a written reason in
+  `docs/architecture/line-budget-reasons/<branch with / as ->.md` (or
+  `LINE_BUDGET_REASON="…"` for a local run), with the baseline raised by
+  `scripts/check-line-budget.sh --write` in the same commit. When an area
+  shrinks, lock it in with `--write`: the baseline only goes down.
 - **Respect the architecture.** The three-layer separation, the single-writer
   law, and the pure engine are compiler-enforced — a violation is a build
   failure, not a style note. Read [`SYSTEM_MAP.md`](SYSTEM_MAP.md) first.

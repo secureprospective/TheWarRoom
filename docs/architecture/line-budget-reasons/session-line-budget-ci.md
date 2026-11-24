@@ -1,0 +1,1 @@
+Starting baseline = main after #480 (whole-season test), #481 (one-season leagues) and #482 (load script), all merged 11-23 with Christopher OK before this guard went live. From here the baseline only goes down unless a PR carries its own reason.
