@@ -5,14 +5,14 @@ import type { Node } from './nodes';
 import { useNativeLineup, NativeLineupReview } from './hqNativeLineup';
 import { HQAct } from './HQAct';
 import type { PlayerCandidate } from './ThinPlayerSearch';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { readNativeHQ, readNativeCut, type NativeHQ } from '../commissioner/hqReading';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { contractDecisionRequest } from './hqContractDecisions';
 import { useContractRead } from '../contracts/Contracts';
 import { hqEvents } from './hqReads';
-import { HQShell, type HQTab } from './HQShell';
+import { HQShell, type HostedHQTab, type HQTab } from './HQShell';
 import { HQHeader } from './HQHeader';
 import { HQBoard } from './HQBoard';
 import { HQContracts, HQReserves } from './HQPanels';
@@ -35,16 +35,18 @@ import { BDrawer } from '../v3/pulseDrawers';
 import { ContractDecisionList } from './HQPanels';
 import type { ReactNode } from 'react';
 
+const MflMovesPanel = lazy(() => import('./MflMovesPanel'));
+
 export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded,
   tab: activeTab, navigate, canManage = true, onPlayers, v3, openGame }: {
   league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void;
-  embedded?: boolean; canManage?: boolean; tab?: HQTab; navigate?: (tab: HQTab) => void;
+  embedded?: boolean; canManage?: boolean; tab?: HostedHQTab; navigate?: (tab: HostedHQTab) => void;
   onPlayers?: (players: PlayerCandidate[]) => void;
   /** Draw in the desktop v3 frame: its tab strip, plate and board, with this league's badge. */
   v3?: { badge: ReactNode; kind: string; pickTeam?: (id: string) => void }; openGame?: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
-  const [localTab, setLocalTab] = useState<HQTab>('lineup-and-roster');
+  const [localTab, setLocalTab] = useState<HostedHQTab>('lineup-and-roster');
   const tab = activeTab ?? localTab;
   const setTab = navigate ?? setLocalTab;
   const [drawer, setDrawer] = useState<'ir' | 'taxi' | 'whatif' | 'decide' | 'player'>();
@@ -104,6 +106,9 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     const playerName = decisions.players.find(p => p.player === selection.player)?.name ?? selection.player;
     void editor.room.review(request, `Record ${selection.action.replace('_', ' ')} for ${playerName}`);
   };
+  const mflRoster = roster.map(p => ({ id: p.id, name: snapshot.players.value.find(v => v.id === p.id)?.name ?? p.id }));
+  const mflPanel = <Suspense fallback={<p role="status">Opening My MFL moves…</p>}>
+    <MflMovesPanel league={league} roster={mflRoster} week={reading.week} port={port} /></Suspense>;
   const teamName = snapshot.franchises.value.find(f => f.id === mine)?.name ?? name;
   const others = <>
     <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
@@ -132,13 +137,15 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
         select={openCard} chosen={selected} whatIf={() => setDrawer('whatif')}
         release={canManage ? () => { if (selected) setRelease(selected); } : undefined}
         decide={canManage && reading.contractDecisions ? () => setDrawer('decide') : undefined} />
+      : tab === 'mfl-moves' ? <div className="wbody">{mflPanel}</div>
       : <HQMovesV3 snapshot={snapshot} moves={moves}
         available={reading.moves !== undefined && reading.moveReason !== OWNER_ONLY_MOVES}
         reason={reading.moveReason} badge={v3.badge} history={<HQMoveHistory
           key={JSON.stringify([league, mine, snapshot.league.value.season])}
           league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} />}
     {others}</>;
-  const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab} navigate={setTab}
+  const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab as HQTab} navigate={setTab}
+    mflMoves={{ selected: tab === 'mfl-moves', open: () => setTab('mfl-moves') }}
     week={reading.week}
     leagueName={reading.leagueName}
     navigateNode={node => { if (node !== 'hq') leave(node); }} lock={reading.lock ? { at: reading.lock } :
@@ -182,6 +189,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
         contractDecisions={reading.contractDecisions} decisionReady={editor.canEdit} decide={reviewDecision}
         cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player, cut.deadNow]])}
         select={id => { select(id); setRelease(id); }} />
+        : tab === 'mfl-moves' ? mflPanel
         : <HQMoves native snapshot={snapshot} moves={moves} available={reading.moves !== undefined}
           reason={reading.moveReason} history={<HQMoveHistory
             key={JSON.stringify([league, mine, snapshot.league.value.season])}

@@ -113,7 +113,7 @@ export default function AppLeagueMount({ league, view, leave, footer, hqTab, pul
           screen === 'hq' ? <NativeFranchiseHQ embedded
             league={league.id} mine={mine} name={league.name} port={localWorkflow} leave={leave}
             canManage={people?.yourFranchise === mine} tab={hqTab}
-            navigate={tab => commands.dispatch('nav.open', { node: 'hq', workspace: tab })} /> :
+            navigate={tab => { if (tab !== 'mfl-moves') void commands.dispatch('nav.open', { node: 'hq', workspace: tab }); }} /> :
           screen === 'home' ? <HomeBrief league={league.id} mine={mine}
             port={localWorkflow} owner={people?.yourFranchise === mine} accountSync={false}
             commissioner={people?.yourRole === 'Commissioner' || people?.yourRole === 'Co-commissioner'} /> :
