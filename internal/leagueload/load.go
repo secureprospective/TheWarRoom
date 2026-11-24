@@ -39,9 +39,10 @@ type Request struct {
 
 // Result is what the server now holds: the active league and its pinned football evidence.
 type Result struct {
-	League     string `json:"league"`
-	Franchises int    `json:"franchises"`
-	Football   string `json:"football"`
+	League     string                 `json:"league"`
+	Franchises int                    `json:"franchises"`
+	Football   string                 `json:"football"`
+	Review     leaguemigration.Review `json:"review"`
 }
 
 // ReplaySource reads the MFL league from mirror's held copies through the normal MFL reader. Its
@@ -87,7 +88,8 @@ func Load(ctx context.Context, r Request) (Result, error) {
 		return Result{}, fmt.Errorf("build the native league: nothing was recorded")
 	}
 	league := receipts[0].League
-	if err := cutover(ctx, service, r.MFLLeague, league, principal); err != nil {
+	review, err := cutover(ctx, service, r.MFLLeague, league, principal)
+	if err != nil {
 		return Result{}, err
 	}
 	records, err := leagueservice.Records(ctx, r.Workspace, league, "load")
@@ -111,22 +113,22 @@ func Load(ctx context.Context, r Request) (Result, error) {
 	if err := move(ctx, r, server, league, digest); err != nil {
 		return Result{}, err
 	}
-	return Result{League: league, Franchises: len(commissioner.LeagueFranchises(records)), Football: digest}, nil
+	return Result{League: league, Franchises: len(commissioner.LeagueFranchises(records)), Football: digest, Review: review}, nil
 }
 
-func cutover(ctx context.Context, service *leaguemigration.Service, mflLeague, league, principal string) error {
+func cutover(ctx context.Context, service *leaguemigration.Service, mflLeague, league, principal string) (leaguemigration.Review, error) {
 	request := leaguemigration.Request{MFLLeague: mflLeague, League: league}
 	review, err := service.Review(ctx, request)
 	if err != nil {
-		return fmt.Errorf("review the native league against MFL: %w", err)
+		return leaguemigration.Review{}, fmt.Errorf("review the native league against MFL: %w", err)
 	}
 	if review.CutOver {
-		return nil
+		return review, nil
 	}
 	if _, err := service.Cutover(ctx, request, review.Digest, reason, principal); err != nil {
-		return fmt.Errorf("move the league over from MFL: %w", err)
+		return leaguemigration.Review{}, fmt.Errorf("move the league over from MFL: %w", err)
 	}
-	return nil
+	return review, nil
 }
 
 func move(ctx context.Context, r Request, server *history.Store, league, football string) error {
