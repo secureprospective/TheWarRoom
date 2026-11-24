@@ -119,3 +119,12 @@ Each PR must pass `go build ./... && go vet ./...` and tests of touched packages
 | **PR-G** | **Desktop code in kept Go packages:** remove `commandcatalog/desktop.go`, `WailsDoor`, `serverclient/desktop*.go` + tests, `serverhttp/desktop*_test.go`, and desktop-only surfaces in `nativegen`; regenerate CLI/PWA tables. | Repeat PR-A byte-diff on kept CLI and browser outputs; `nativegen -check` clean. |
 | **PR-H** | **Frontend Wails removal and `go.mod`:** remove `frontend/wailsjs/` (28 files, 18,130 lines), update the 43 references across 24 files in `frontend/src/`, re-point `frontend/vite.config.ts:10` off `wails.json`, drop Wails deps from `go.mod` + `go mod tidy`. | `cd frontend && pnpm tsc --noEmit && pnpm test && pnpm run build` and bundle budget pass. |
 | **PR-I** | **Makefile, scripts, and docs cleanup:** move `Makefile:18-19` `LDFLAGS` to `internal/serverversion`; re-point `make build` (a `CLAUDE.md` gate) to the server build rather than deleting it; drop Wails targets/scripts (`check-bindings-fresh.sh`, `check-wails-version.sh`, Wails half of `check-frontend-transport.sh`, stale `bench-league` line); update `SYSTEM_MAP.md` and `system-narrative.md`. | Full `make lint` and verification gate pass once. |
+
+## Review notes (Tom, 11-24)
+- `internal/composition/generation_parity_test.go` keeps `catalog.GenerationRegistry` equal to the live desktop
+  registry (entries, desktop doors, argument names/types/optionality) until composition is removed in PR-D.
+  `nativegen -check` alone does not catch a changed argument type in the copy (planted 11-24: -check stayed green,
+  the parity test failed).
+- The six `league.migrate.*` entries (the desktop MFL→Native import assistant, Assist door) are not in the
+  generation registry; no generator reads them. **Before PR-D:** confirm the hosted import path (league-load /
+  move-league) covers everything that assistant does. The MFL import is the front door.
