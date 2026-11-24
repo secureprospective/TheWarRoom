@@ -233,6 +233,8 @@ func outputCommand(name string) func(context.Context, []string, io.Writer) error
 	switch name {
 	case "pin-football":
 		return runPinFootball
+	case "sleeper-accuracy":
+		return runSleeperAccuracy
 	case "mirror-fetch":
 		return runMirrorFetch
 	case "export-model-run":

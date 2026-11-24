@@ -74,6 +74,8 @@ type mflMovesFixture struct {
 	clock    *time.Time
 	admitted *commissioner.Access
 	league   string
+	store    *history.Store
+	mirror   *mflmirror.Store
 }
 
 type mflMovesDirectory map[string]domain.PlayerFacts
@@ -121,7 +123,7 @@ func newMflMovesFixtureFor(t *testing.T, principal, mflLeague string) mflMovesFi
 		admitted = access
 		return nil
 	}))
-	return mflMovesFixture{service: service, mfl: fake, clock: &now, admitted: &admitted, league: fixture.league}
+	return mflMovesFixture{service: service, mfl: fake, clock: &now, admitted: &admitted, league: fixture.league, store: fixture.store, mirror: mirror}
 }
 
 func TestMflMovesSeatedOwnerRefreshesAndReadsPool(t *testing.T) {
