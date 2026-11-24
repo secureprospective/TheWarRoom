@@ -1,0 +1,1 @@
+Sleeper projection accuracy report (T1834): compares Sleeper's held weekly projections, scored under the league's rules, with what players actually scored, so we can judge the projections before week 13. Adds about 70 lines of store code and an offline command, plus tests.

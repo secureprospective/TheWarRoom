@@ -110,3 +110,21 @@ func TestSleeperProjectionOneUnscorableRowKeepsTheOthers(t *testing.T) {
 		t.Fatalf("stats=%+v, want the bad row counted", stats)
 	}
 }
+
+// Three projected players, one who did not play. Misses: p1 projected 12 scored 10 (+2), p2 projected 5 scored
+// 9 (-4). Mean miss (2+4)/2 = 3.00; bias (2-4)/2 = -1.00 (Sleeper low); biggest miss first.
+func TestSleeperAccuracyMeanMissAndBias(t *testing.T) {
+	pts := func(v int64) *leaguerules.Decimal { d := leaguerules.Decimal(v * 10000); return &d }
+	actual := map[string]*leaguerules.Decimal{"p1": pts(10), "p2": pts(9)}
+	got, err := sleeperAccuracy(map[string]leaguerules.Decimal{"p1": *pts(12), "p2": *pts(5), "p3": *pts(7)},
+		func(player string) (*leaguerules.Decimal, error) { return actual[player], nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Players != 2 || got.NoActual != 1 || got.MeanAbsError != 3 || got.Bias != -1 {
+		t.Fatalf("report = %+v, want players 2, no actual 1, mean miss 3, bias -1", got)
+	}
+	if len(got.Misses) != 2 || got.Misses[0].Player != "p2" {
+		t.Fatalf("misses = %+v, want p2 (miss 4) first", got.Misses)
+	}
+}
