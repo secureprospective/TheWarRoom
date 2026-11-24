@@ -37,6 +37,8 @@ func scoringKindPaths() []FieldPath {
 //     pools existed: an older league keeps the one pool it always had.
 //   - version 7 (2026-10-28) records no range rules, as a new Legacy seed has them, for a seed recorded
 //     before them, so an older league scores exactly as it did.
+//   - version 10 (2026-11-23) records computer picks ranked by dynasty value, as they always were, for a
+//     seed recorded before the setting.
 //   - version 8 (2026-10-28) records the incoming rookie class out of the startup draft pool, as every
 //     new seed has it, for a seed recorded before the setting.
 func seedUpgrades() []seedUpgrade {
@@ -87,6 +89,11 @@ func seedUpgrades() []seedUpgrade {
 		{version: 9, fields: []FieldPath{"schedule.follow"},
 			applies: func(recorded map[FieldPath]Setting) bool {
 				return !anyRecorded(recorded, []FieldPath{"schedule.follow"})
+			},
+			values: legacyValues},
+		{version: 10, fields: []FieldPath{"draft.autopickRanking"},
+			applies: func(recorded map[FieldPath]Setting) bool {
+				return !anyRecorded(recorded, []FieldPath{"draft.autopickRanking"})
 			},
 			values: legacyValues},
 	}

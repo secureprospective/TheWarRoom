@@ -134,7 +134,7 @@ func StartupRules(r leaguerules.DraftRules, s Startup, first []string) leaguerul
 		Rounds: leaguerules.Known(s.Rounds), MaximumPicks: leaguerules.Known(s.Rounds),
 		ForfeitExtra: leaguerules.Known(false), OrderSource: leaguerules.Known(leaguerules.WorstStandingsFirst),
 		Order:        leaguerules.Known(map[int][]string{1: slices.Clone(first)}),
-		LaterPattern: leaguerules.Known(s.Pattern), TieRule: r.TieRule}
+		LaterPattern: leaguerules.Known(s.Pattern), TieRule: r.TieRule, AutoPickRanking: r.AutoPickRanking}
 	pricing, lengths, rfa := map[int][]leaguerules.SlotPrice{}, map[int]leaguerules.Value[int]{}, map[int]leaguerules.Value[bool]{}
 	slots := leaguerules.Bounds{Min: leaguerules.Known(1), Max: leaguerules.Known(len(first))}
 	for round := 1; round <= s.Rounds; round++ {

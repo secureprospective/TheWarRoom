@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
@@ -18,10 +19,12 @@ type DraftRanking interface {
 	Rank(ctx context.Context, league string, season int, pool []string) ([]string, error)
 }
 
-// DynastyDraftRanking orders players by the newest stored model run's dynasty_ppg descending,
-// then unscored players by this week's NativeProjections median descending, breaking ties by ID.
+// DynastyDraftRanking orders players by the newest stored model run's dynasty_ppg descending (now_ppg
+// when Season is set), then unscored players by this week's NativeProjections median descending,
+// breaking ties by ID.
 type DynastyDraftRanking struct {
-	Store *Store
+	Store  *Store
+	Season bool
 }
 
 // Rank returns pool sorted by stored dynasty_ppg (newest model run), then weekly projection median.
@@ -66,6 +69,9 @@ func (r DynastyDraftRanking) latestDynastyScores(ctx context.Context) (map[strin
 	for _, sc := range rows {
 		if !sc.Unavailable {
 			out[sc.MFLID] = sc.DynastyPPG
+			if r.Season {
+				out[sc.MFLID] = sc.NowPPG
+			}
 		}
 	}
 	return out, nil
@@ -167,9 +173,6 @@ func (s *Store) ProcessDueAutoPicksUpTo(ctx context.Context, league string, at t
 	if at.IsZero() {
 		at = s.now()
 	}
-	if ranking == nil {
-		ranking = DynastyDraftRanking{Store: s}
-	}
 	standings := s.draftStandings(ctx, league)
 	stalled := map[commissioner.DraftKey]bool{}
 	cache := map[commissioner.DraftKey][]string{}
@@ -193,7 +196,11 @@ func (s *Store) ProcessDueAutoPicksUpTo(ctx context.Context, league string, at t
 		if limit > 0 && made >= limit {
 			return true, nil
 		}
-		ranked, err := cachedRankPool(ctx, ranking, league, turn, cache)
+		turnRanking := ranking
+		if turnRanking == nil { // the league's draft.autopickRanking rule
+			turnRanking = DynastyDraftRanking{Store: s, Season: turn.Ranking == leaguerules.SeasonRanking}
+		}
+		ranked, err := cachedRankPool(ctx, turnRanking, league, turn, cache)
 		if err != nil {
 			return false, fmt.Errorf("rank draft pool: %w", err)
 		}

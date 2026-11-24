@@ -41,6 +41,10 @@ type PlayerPools string
 // StartupOrderSource is where a startup draft's first round order comes from.
 type StartupOrderSource string
 
+// AutoPickRanking is how the computer ranks players when it picks for an empty seat: dynasty value
+// (unset reads as dynasty) or this season's value.
+type AutoPickRanking string
+
 const (
 	QB Position = "QB"
 	RB Position = "RB"
@@ -111,6 +115,8 @@ const (
 	RandomOrder StartupOrderSource = "random"
 	// CommissionerOrder takes the startup draft's first round from the order the commissioner set.
 	CommissionerOrder StartupOrderSource = "commissioner"
+	DynastyRanking    AutoPickRanking    = "dynasty"
+	SeasonRanking     AutoPickRanking    = "season"
 )
 
 type Bounds struct {

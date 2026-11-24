@@ -142,6 +142,11 @@ func boolInt(b bool) int {
 }
 
 func TestTaxiExperienceByCareerGames(t *testing.T) {
+	off := legacyTaxi()
+	off.Slots = leaguerules.Known(0) // taxi.slots=0 is a league with no taxi squad, said plainly
+	if e := CanEnterTaxi(off, PlayerFacts{DraftYear: 2025, DraftYearHeld: true}, 2026, 0); e.Allowed || e.Words != "Cannot go on the taxi squad: this league has no taxi squad" {
+		t.Fatalf("taxi off: %+v", e)
+	}
 	rules := legacyTaxi()
 	rules.Basis = leaguerules.Known(leaguerules.CareerGames)
 	for _, c := range []struct {

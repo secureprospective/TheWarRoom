@@ -20,6 +20,7 @@ type AutoPickTurn struct {
 	Pool      []string
 	Lineup    leaguerules.LineupRules
 	Held      map[leaguerules.Position]int
+	Ranking   leaguerules.AutoPickRanking
 }
 
 // AutomaticFranchise reports whether the franchise has no seated owner (vacant, caretaker or not).
@@ -59,7 +60,8 @@ func DueAutoPick(records []Record, at time.Time, facts nativecheck.Facts,
 			return AutoPickTurn{}, false, err
 		}
 		return AutoPickTurn{Key: key, Franchise: clock.Owner, Round: clock.Round, Slot: clock.Slot,
-			Original: clock.Original, Pool: pool, Lineup: basis.rules.Lineup, Held: held}, true, nil
+			Original: clock.Original, Pool: pool, Lineup: basis.rules.Lineup, Held: held,
+			Ranking: basis.rules.Draft.AutoPickRanking.Value}, true, nil
 	}
 	return AutoPickTurn{}, false, nil
 }
